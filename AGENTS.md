@@ -10,9 +10,10 @@ UI patterns, read and follow:
 
 ## Frontend Structure
 
-Before adding or changing Angular components, services, routes, routeable
-screens, tabs with URL state, state/facade/store files, or frontend feature
-organization, read and follow:
+Before adding or changing Angular components, routeable smart/page components,
+child/presentational components, services, routes, tabs with URL state,
+state/facade/store files, data-access files, or frontend feature organization,
+read and follow:
 
 - `.architecture/FRONTEND_STRUCTURE.md`
 

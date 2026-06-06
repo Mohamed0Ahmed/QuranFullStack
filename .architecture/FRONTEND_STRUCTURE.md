@@ -355,3 +355,274 @@ When adding a new frontend screen later, the agent must state:
 - whether navigation metadata is needed
 
 If a feature has tabs but no URL state, the agent must explain why.
+
+## Feature Folder Structure
+
+Features must be organized by domain / feature, not by technical dumping folders.
+
+Recommended feature structure:
+
+```text
+src/app/features/<feature>/
+  pages/
+  components/
+  data-access/
+  state/
+  models/
+  <feature>.routes.ts
+```
+
+Rules:
+
+- Do not create empty folders in advance.
+- Add a folder only when the feature actually needs it.
+- `pages/` contains routeable smart / page components.
+- `components/` contains feature-owned child / presentational components.
+- `data-access/` contains API clients and backend communication for this feature.
+- `state/` contains facade / store / state services for this feature.
+- `models/` contains feature-owned frontend DTOs / view models / types when needed.
+- `<feature>.routes.ts` contains feature-owned route definitions when the feature
+  has multiple routes or child routes.
+- Do not create global `components/` / `services/` / `models/` dumping folders.
+- Truly reusable components may live in `shared/`, but only when they are genuinely
+  reused across features.
+- App-wide singleton services may live in `core/`, but `core` must not become a
+  dumping ground.
+
+Example:
+
+```text
+features/words/
+  pages/
+    words-explorer-page/
+      words-explorer-page.component.ts
+      words-explorer-page.component.html
+      words-explorer-page.component.scss
+  components/
+    words-tabs/
+    words-search-bar/
+    ordered-words-list/
+    unique-words-list/
+    roots-list/
+    word-card/
+    root-card/
+    word-detail-panel/
+    morphology-summary/
+    i3rab-preview/
+  data-access/
+    words.api.ts
+  state/
+    words-explorer.facade.ts
+    words-explorer.store.ts
+  models/
+    words.models.ts
+  words.routes.ts
+```
+
+This is an example shape only; do not implement it now.
+
+## Smart Page Components as Shells
+
+Routeable smart / page components must act as **page shells / orchestrators**.
+They should not contain the entire feature UI, all tabs, all panels, all modals,
+all state, and all API logic in one huge component.
+
+Rules:
+
+- A routeable smart / page component should compose smaller child components.
+- It may read route params and query params.
+- It may connect the page to a facade / store.
+- It may coordinate page-level mode / tab selection.
+- It may pass data into child components and handle output events.
+- It must not perform direct API orchestration when a facade / store / data-access
+  layer is appropriate.
+- It must not contain large business / data transformation logic.
+- It must not contain huge HTML templates for every tab / panel / modal.
+- It must not own unrelated modals, filters, selections, audio state, display
+  settings, and navigation all in one file.
+- A full feature must not be implemented inside one routeable component.
+
+If a page contains multiple major areas, tabs, panels, or workflows, split them
+into:
+
+- child components
+- facade / store state services
+- API / data-access services
+- focused helpers or mappers
+
+## Child and Presentational Components
+
+Rules:
+
+- Child components live under the owning feature's `components/` folder unless they
+  are truly shared.
+- They should focus on rendering one UI area or one reusable piece.
+- They should receive data through inputs and emit user events through outputs
+  where practical.
+- They should not call backend API services directly.
+- They should not read global route state directly unless that is explicitly part
+  of their job.
+- They should not know about navbar configuration or app-wide navigation unless
+  they are navigation components.
+- They should not duplicate shared `qd-` visual primitives.
+- Complex child components can have their own smaller children if needed.
+
+Examples:
+
+- `ayah-card`
+- `word-card`
+- `selected-word-panel`
+- `filter-panel`
+- table component
+- modal / dialog
+- toolbar
+- side nav
+
+## Data Access and State Separation
+
+Rules:
+
+- API services in `data-access/` should mainly call HTTP endpoints and do minimal
+  response mapping.
+- API services must not own page state, selected tabs, filters, modal state, or
+  complex UI workflows.
+- Facade / store / state services in `state/` own feature / page state and
+  orchestration.
+- Facade / store services may call data-access services.
+- Components should normally talk to the facade / store rather than directly
+  orchestrating multiple API calls.
+- Keep API DTOs, frontend view models, and UI state types clear and intentional.
+- Avoid mixing API response shape directly with complex UI state when a view model
+  is needed.
+
+## Large Page Split Examples
+
+Pages like **Words Explorer** and **Mushaf Reader** can become huge if not split
+early.
+
+### Example 1 — Words Explorer
+
+Do not build one giant component that owns:
+
+- ordered words
+- unique words
+- roots
+- stems
+- lemmas
+- i3rab
+- morphology
+- filters
+- search
+- pagination
+- selected word details
+- all tab rendering
+
+Recommended split:
+
+```text
+features/words/
+  pages/words-explorer-page/
+  components/words-tabs/
+  components/words-search-bar/
+  components/ordered-words-list/
+  components/unique-words-list/
+  components/roots-list/
+  components/word-card/
+  components/root-card/
+  components/word-detail-panel/
+  components/morphology-summary/
+  components/i3rab-preview/
+  data-access/words.api.ts
+  state/words-explorer.facade.ts
+  state/words-explorer.store.ts
+  models/words.models.ts
+  words.routes.ts
+```
+
+### Example 2 — Mushaf Reader
+
+Do not build one giant component that owns:
+
+- mushaf rendering
+- toolbar
+- page navigation
+- word selection
+- ayah selection
+- audio playback
+- display settings
+- surah index modal
+- ayah doors modal
+- gates highlighting
+- reader state
+- API calls
+
+Recommended split:
+
+```text
+features/mushaf/
+  pages/mushaf-reader-page/
+  components/mushaf-toolbar/
+  components/mushaf-page-view/
+  components/mushaf-line/
+  components/mushaf-word/
+  components/ayah-marker/
+  components/selected-word-panel/
+  components/selected-ayah-panel/
+  components/reader-audio-controls/
+  components/display-settings-popover/
+  components/surah-index-modal/
+  components/ayah-doors-modal/
+  components/gates-highlight-panel/
+  data-access/mushaf-pages.api.ts
+  data-access/mushaf-audio.api.ts
+  state/mushaf-reader.facade.ts
+  state/mushaf-selection.store.ts
+  state/mushaf-audio.store.ts
+  state/mushaf-display.store.ts
+  state/mushaf-gates.store.ts
+  models/mushaf.models.ts
+  mushaf.routes.ts
+```
+
+These are examples and not a command to implement now. They show how to avoid
+oversized routeable components.
+
+## Splitting Decision Rules
+
+A smart / page component should be split when:
+
+- it has multiple independent visual regions
+- it has major tabs with different content
+- it owns modals or panels that have their own behavior
+- it has repeated template sections
+- its HTML approaches the soft threshold
+- its TypeScript approaches the soft threshold
+- it mixes API loading, state management, rendering, and formatting
+- a child section can be understood and tested independently
+- the owner / admin may navigate to or configure part of it separately
+
+Rules:
+
+- Split by responsibility, not by arbitrary line count only.
+- Prefer meaningful child components over tiny useless fragments.
+- Do not create excessive micro-components for every small div.
+- Do not move logic into generic helpers just to reduce line count; split around
+  real responsibilities.
+- Keep related files near the feature that owns them.
+
+## Agent Behavior for Large Pages
+
+When implementing a large page later, the agent must state:
+
+- the routeable smart / page component
+- child components created
+- data-access services created
+- facade / store services created
+- where URL tab state lives
+- why the split keeps each file under the review thresholds
+
+If the agent chooses to keep a large page in one component, it must explicitly
+justify why splitting is not better.
+
+If the component would exceed the hard threshold, the agent must stop and propose a
+split.
