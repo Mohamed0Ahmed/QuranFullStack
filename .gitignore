@@ -1,0 +1,46 @@
+# ---------------------------------------------------------------------------
+# QuranDashboard backend — .gitignore
+# ---------------------------------------------------------------------------
+
+## Build output
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+build/
+out/
+artifacts/
+
+## IDE / editor
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Test results / coverage
+TestResults/
+[Tt]est[Rr]esults/
+*.trx
+*.coverage
+*.coveragexml
+
+## Logs
+logs/
+*.log
+
+## Local configuration, secrets and environment files
+appsettings.*.local.json
+appsettings.Local.json
+secrets.json
+*.env
+.env
+.env.*
+
+## OS files
+.DS_Store
+Thumbs.db
