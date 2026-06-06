@@ -240,6 +240,68 @@ Not allowed:
 - Random helpers
 - Anything that belongs to one feature only
 
+## Global Usings
+
+- Each C# project in the Backend may have its own `GlobalUsings.cs`.
+- Do not use one shared GlobalUsings file across all Backend projects.
+- Use project-local global usings only for namespaces that are common and
+  repeated across many files in the same project.
+- Keep each `GlobalUsings.cs` small, intentional, and layer-safe.
+- Do not add feature-specific namespaces to `GlobalUsings.cs`.
+- Do not use global usings to hide architectural dependencies.
+- Global usings must respect Clean Architecture boundaries.
+
+Layer-specific examples:
+
+- API project may include:
+
+  ```csharp
+  global using Microsoft.AspNetCore.Mvc;
+  ```
+
+- Infrastructure project may include:
+
+  ```csharp
+  global using Microsoft.EntityFrameworkCore;
+  ```
+
+- Application project may include shared result or application abstractions only
+  if they are used broadly.
+
+Layer restrictions:
+
+- Domain project must not include:
+  - ASP.NET Core namespaces
+  - EF Core namespaces
+  - Infrastructure namespaces
+  - Application namespaces
+- Application project must not include:
+  - Infrastructure namespaces
+  - ASP.NET Core namespaces unless there is an explicit approved reason
+- Infrastructure project must not leak infrastructure namespaces into Domain or
+  Application.
+
+Decision rule before adding a global using:
+
+1. Is this namespace used repeatedly across many files in this same project?
+2. Is it safe for this layer?
+3. Does it hide a dependency that should remain explicit?
+4. Is it feature-specific? If yes, keep it as a normal local using.
+
+Preferred file placement:
+
+```text
+api/QuranDashboard.Api/GlobalUsings.cs
+domain/QuranDashboard.Domain/GlobalUsings.cs
+application/QuranDashboard.Application/GlobalUsings.cs
+application/QuranDashboard.Application.Abstractions/GlobalUsings.cs
+infrastructure/QuranDashboard.Infrastructure/GlobalUsings.cs
+shared/QuranDashboard.Shared/GlobalUsings.cs
+```
+
+If a project has no repeated common usings yet, it does not need a
+`GlobalUsings.cs` file.
+
 ## File Placement Decision Rule
 
 Before creating a file, ask:
