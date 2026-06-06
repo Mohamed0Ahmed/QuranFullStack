@@ -32,7 +32,7 @@ This workspace is three separate repositories:
 
 `App/Backend` and `App/Frontend/quran-dashboard-ui` are tracked from the FullStack
 workspace as **submodules / gitlinks**. The workspace repo does not store the child
-files; it stores a *pointer* (a commit SHA) to each child repo. So if you commit
+files; it stores a _pointer_ (a commit SHA) to each child repo. So if you commit
 the workspace while it points at a child commit that doesn't exist yet (because the
 child wasn't committed first), the pointer is dangling and anyone cloning the
 workspace gets a broken submodule.
@@ -60,7 +60,7 @@ From the output, determine for each repo whether it has changes, and in the
 - **Submodule pointer changes:** a child repo moved to a new commit. Git shows
   these as `modified: Backend (new commits)` or
   `modified: Frontend/quran-dashboard-ui (new commits)`. A pointer change only
-  becomes meaningful *after* the child repo has actually committed that new
+  becomes meaningful _after_ the child repo has actually committed that new
   commit.
 
 Do not assume all changes belong to one repo. Decide per repo.
@@ -106,7 +106,7 @@ Example messages:
 - `Add workspace coding principles`
 - `Add backend project instruction files`
 - `Add frontend project instruction files`
-- `Update fullstack submodule pointers`
+- `Update fullstack submodule pointers "With Clear Commit Messages guide"`
 - `Add engineering review skill`
 
 ## 5. Push behavior
@@ -133,30 +133,37 @@ Return the plan in this structure:
 # Commit Workflow
 
 ## Repo Status
+
 - Backend:
 - Frontend:
 - FullStack:
 
 ## Recommended Commit Order
+
 1.
 2.
 3.
 
 ## Staging Plan
+
 List exact files to stage per repo.
 
 ## Commit Messages
+
 Suggest commit messages per repo.
 
 ## Warnings
+
 List any risks or unexpected files.
 If none, write:
 None.
 
 ## Commands
+
 Provide commands in the correct order.
 
 ## Final Checklist
+
 - Child repos committed first
 - FullStack repo committed last
 - No unrelated files staged
