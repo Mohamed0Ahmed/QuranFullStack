@@ -17,6 +17,15 @@ read and follow:
 
 - `.architecture/FRONTEND_STRUCTURE.md`
 
+## API Integration
+
+Before adding or changing frontend API services, data-access files, facade/store
+services that call APIs, `ApiResponse<T>` handling, API-backed loading/error/empty
+states, DTO/view model/state model mapping, or pagination/filter/search API
+integration, read and follow:
+
+- `.architecture/API_INTEGRATION_GUIDELINES.md`
+
 For product and visual context, also read:
 
 - `../../PRODUCT.md`
