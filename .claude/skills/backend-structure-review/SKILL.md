@@ -10,312 +10,113 @@ description: >-
   added, even if they don't say the word "structure". It checks domain/feature
   (bounded-context) grouping over technical-type grouping, flags global dumping
   folders like Enums/Models/DTOs/Helpers/Utils, verifies layer dependency
-  boundaries, and checks Quranic data safety, then returns a structured verdict.
-  This is a review skill only: do not implement fixes unless the user explicitly
-  asks.
+  boundaries, checks file-size/responsibility thresholds, and checks Quranic data
+  safety, then returns a structured verdict. It relies on the canonical backend
+  architecture docs rather than restating them. This is a review skill only: do
+  not implement fixes unless the user explicitly asks.
 ---
 
 # Backend Structure Review Skill
 
 Use this skill to review backend file organization, Clean Architecture
-boundaries, and domain/feature-based foldering for the Quran Dashboard backend.
-Its main job is to keep the backend organized by domain/feature first and to
-prevent technical-type dumping, such as global `Enums/`, `Models/`, `Helpers/`,
-or `Utils/` folders that collect unrelated concepts.
+boundaries, domain/feature foldering, and file-size/responsibility for the Quran
+Dashboard backend. Its core job: keep the backend organized by domain/feature
+first, prevent technical-type dumping (global `Enums/`, `Models/`, `Helpers/`,
+`Utils/`), verify layering, and flag oversized/overloaded files.
 
 This skill is review only. Do not implement fixes unless explicitly asked.
 
-## Required Context
+## Required Context / Reading Rules
 
-Before using this skill, rely on the relevant workspace/tool context already loaded by your agent (Claude, OpenCode, and Codex each load their own instruction files). Do not separately require reading those tool entrypoint files.
+Rely on the workspace/tool context already loaded by your agent for entrypoint
+files. Read the **canonical** docs for the full rules instead of restating them
+here:
 
-Read the stable reference documents this review needs:
+- **Always:** `CODING_PRINCIPLES.md`, `Backend/.architecture/BACKEND_STRUCTURE.md`
+  (canonical for file/folder placement, feature/domain organization, global usings
+  placement, and file-size/responsibility thresholds).
+- `Backend/.architecture/CLEAN_ARCHITECTURE.md` — when layer responsibilities,
+  dependency direction, or use-case/request flow are involved (canonical for
+  those).
+- `Backend/.architecture/API_GUIDELINES.md` — when the API boundary, HTTP
+  behavior, response shape, or API localization/messages are involved (canonical
+  for those).
 
-- `CODING_PRINCIPLES.md`
-- `Backend/.architecture/BACKEND_STRUCTURE.md`
-
-If a referenced document is missing or unavailable, state that clearly in the output.
+If a referenced document is missing or unavailable, state that clearly in the
+output. Do not copy large sections from these docs into the review; cite them.
 
 ## Backend Context
 
 - **Backend path:** `Backend/`
 - **Stack:** .NET 10, ASP.NET Core Web API, EF Core, PostgreSQL, Code First,
   Clean Architecture style.
-- **Current backend projects:**
-  - `api/QuranDashboard.Api`
-  - `domain/QuranDashboard.Domain`
-  - `application/QuranDashboard.Application.Abstractions`
-  - `application/QuranDashboard.Application`
-  - `infrastructure/QuranDashboard.Infrastructure`
-  - `shared/QuranDashboard.Shared`
+- **Projects:** `api/QuranDashboard.Api`, `domain/QuranDashboard.Domain`,
+  `application/QuranDashboard.Application.Abstractions`,
+  `application/QuranDashboard.Application`,
+  `infrastructure/QuranDashboard.Infrastructure`, `shared/QuranDashboard.Shared`.
 
-## Important: the anti-pattern example below is external
+## What to Check
 
-The structure example in this section is an **external conceptual anti-pattern**
-from another project. It is **not** necessarily present in this repository.
+### 1. File/folder placement
 
-- Do **not** assume these folders or files exist in the current Backend.
-- Do **not** search for them as current code.
-- Use the example only to understand the kind of backend organization to avoid.
+- Files grouped by domain/feature/bounded context.
+- No global dumping folders (`Enums/`, `Models/`, `DTOs/`, `Helpers/`, `Utils/`,
+  `Services/`) unless truly shared, cross-cutting, and small.
+- Each enum/value object/type lives next to the feature/domain/use case that owns
+  it. (Canonical: `BACKEND_STRUCTURE.md`.)
 
-External conceptual anti-pattern example:
+### 2. Layer boundaries and dependency direction
 
-```text
-Entities/
-  Approvals/
-  Audit/
-  Content/
-  Hierarchy/
-  Identity/
-  Navigation/
-  Quran/
-  Requests/
-
-Enums/
-  ActivityType.cs
-  ApprovalStatus.cs
-  AttributionType.cs
-  CategoryProtectionMode.cs
-  CategoryRelationshipType.cs
-  CopyContentMode.cs
-  HighlightTargetKind.cs
-  LineType.cs
-  NoteStatus.cs
-  WordCustomGroupItemType.cs
-  WordSortBy.cs
-```
-
-**Why this is a problem:** a global `Enums` folder becomes a dumping ground.
-Related enum/type files are separated from the domain concept that owns them.
-
-**Preferred principle:** organize by domain / feature / bounded context first, not
-by technical type.
-
-**Preferred rule:** place each enum, value object, domain type, and supporting
-type next to the domain feature / entity / use case that owns it.
-
-Examples of correct ownership:
-
-- `ApprovalStatus` belongs with Approvals.
-- `ActivityType` belongs with Audit.
-- `CategoryProtectionMode` and `CategoryRelationshipType` belong with
-  Categories / Gates / Hierarchy, depending on the actual domain naming.
-- `LineType` belongs with Quran/MushafPages or Quran/Lines.
-- `WordCustomGroupItemType` and `WordSortBy` belong with QuranWords/WordGroups or
-  Words.
-- `HighlightTargetKind` belongs with Highlighting, or the feature that owns
-  highlights.
-- `CopyContentMode` belongs with the copy/import/content operation that owns it.
-
-Avoid global dumping folders like `Enums/`, `Models/`, `DTOs/`, `Helpers/`,
-`Utils/` unless the files inside are truly shared, cross-cutting, and very small
-in number.
-
-## Backend Structure Rules
-
-### 1. Domain organization
-
-Inside Domain, group by bounded context / domain feature.
-
-Good example:
-
-```text
-Domain/
-  Common/
-    Entity.cs
-    ValueObject.cs
-    DomainException.cs
-
-  Quran/
-    Surahs/
-      Surah.cs
-      RevelationPlace.cs
-    Ayahs/
-      Ayah.cs
-      AyahText.cs
-    MushafPages/
-      MushafPage.cs
-      MushafLine.cs
-      LineType.cs
-    Words/
-      QuranWord.cs
-      WordLocation.cs
-
-  Gates/
-    Gate.cs
-    GateAyahLink.cs
-    GateRelation.cs
-    GateRelationType.cs
-    GateProtectionMode.cs
-
-  Approvals/
-    ApprovalRequest.cs
-    ApprovalStatus.cs
-
-  Audit/
-    ActivityLog.cs
-    ActivityType.cs
-```
-
-Bad example:
-
-```text
-Domain/
-  Entities/
-  Enums/
-  Models/
-  Helpers/
-  Utils/
-```
-
-Important nuance:
-
-- A small `Common` folder is allowed for true base primitives such as `Entity`,
-  `ValueObject`, `DomainEvent`, `DomainException`.
-- `Shared` should not become a dumping ground; it is only for truly cross-project,
-  cross-layer primitives.
-- If a type belongs to one domain feature, it must stay inside that feature folder.
-- If a domain folder grows, split it internally by subdomain/feature instead of
-  moving unrelated files into global technical folders.
-
-Example of splitting a large Quran domain:
-
-```text
-Quran/
-  Surahs/
-  Ayahs/
-  MushafPages/
-  Words/
-  Audio/
-  Tafsir/
-  Translations/
-```
-
-### 2. Application layer organization
-
-Prefer grouping use cases by feature:
-
-```text
-Application/
-  MushafPages/
-    Queries/
-      GetMushafPage/
-        GetMushafPageQuery.cs
-        GetMushafPageHandler.cs
-        GetMushafPageResponse.cs
-
-  QuranWords/
-    Queries/
-
-  Gates/
-    Commands/
-    Queries/
-```
-
-Avoid global dumping folders like:
-
-```text
-Application/
-  DTOs/
-  Services/
-  Validators/
-  Handlers/
-```
-
-unless they are truly shared and small in number. Commands, queries, handlers,
-validators, and responses should stay near the use case they belong to.
-
-### 3. Application.Abstractions organization
-
-Group abstractions by purpose and feature where useful.
-
-Good example:
-
-```text
-Application.Abstractions/
-  Persistence/
-  Files/
-  Reports/
-  Quran/
-  Gates/
-```
-
-Avoid one large unrelated interfaces folder if many contracts exist.
-
-### 4. Infrastructure organization
-
-Infrastructure may group by technical responsibility because it is an
-implementation layer, but it should still preserve feature clarity.
-
-Good example:
-
-```text
-Infrastructure/
-  Persistence/
-    QuranDashboardDbContext.cs
-    Configurations/
-      Quran/
-      Gates/
-      Approvals/
-    Migrations/
-
-  Files/
-  Reports/
-  DependencyInjection.cs
-```
-
-EF configurations:
-
-- Prefer feature/domain grouping under `Persistence/Configurations`.
-- Avoid one huge flat `Configurations` folder if many entities exist.
-
-### 5. API organization
-
-- Controllers/endpoints should be grouped by feature.
-- Controllers must stay thin.
-- No business logic in controllers.
-- No data processing hidden in controllers.
-- Request/response contracts may live near endpoints or in feature folders, not in
-  a huge unrelated global dumping folder.
-
-## Review Checklist
-
-1. Folder organization
-- Are files grouped by domain/feature/bounded context?
-- Are unrelated files grouped by technical type?
-- Are global folders like Enums/Models/Helpers/Utils being used as dumping grounds?
-- Are enums/value objects placed near the feature that owns them?
-
-2. Layer boundaries
-- Domain does not depend on Application/Infrastructure/Api.
+- Domain independent (no Application/Infrastructure/Api/EF dependencies).
 - Application does not depend on Infrastructure.
-- Infrastructure implements abstractions.
-- Api is only the entry point.
+- Application.Abstractions does not depend on Infrastructure/Api.
+- Infrastructure implements abstractions; does not leak into Domain/Application.
+- Api is the entry point only; uses Infrastructure for composition/DI wiring, not
+  controller logic. (Canonical: `CLEAN_ARCHITECTURE.md`.)
 
-3. Domain clarity
-- Entity, enum, value object, and domain rule names reflect Quran Dashboard
-  concepts clearly.
-- Avoid vague names like DataItem, Obj, Temp, Info2.
-- Domain folders are not too broad; if a folder grows, suggest subfolder splits.
+### 3. File-size and responsibility thresholds
 
-4. Application clarity
-- Use cases are feature-scoped.
-- Commands/queries/handlers/responses stay near each other.
-- No global DTO/Service dumping unless truly shared.
+Check changed files against the thresholds in `BACKEND_STRUCTURE.md` for:
+controllers/endpoints, handlers, services, repositories/read services,
+entities/aggregates, DTOs/contracts/models.
 
-5. Infrastructure clarity
-- EF configurations are organized.
-- File readers/importers/report writers are not mixed with domain logic.
-- Migrations are not manually changed without reason.
+- **Soft threshold exceeded:** ask whether the size is justified and whether
+  splitting would improve clarity.
+- **Hard threshold exceeded:** mark as a finding and recommend a split.
+- **1000+ line files:** serious design smell unless explicit human approval exists.
+- Thousands-of-lines files are not acceptable.
 
-6. API clarity
-- Controllers/endpoints are feature grouped.
-- Controllers are thin.
-- No business rules or data processing hidden in controllers.
+Terminology: use **overloaded service** / **oversized service** / **oversized
+store**. Do not use "God service".
 
-7. Quranic data safety
-- No Quranic/source-sensitive data is invented or silently modified.
-- Data processors/importers/generators preserve traceability and produce reports.
+### 4. Thinness and responsibility split
+
+- Controllers/endpoints stay thin (no business logic, EF queries, file parsing, or
+  Quranic data processing).
+- Handlers orchestrate one use case.
+- Services have one reason to change and are not overloaded/oversized.
+- Repositories/read services stay focused and do not own unrelated data access for
+  many domains.
+
+### 5. API structure (when API files changed)
+
+- Controllers/endpoints are feature-grouped; contracts live near endpoints/feature.
+- For boundary/response/localization rules, defer to `API_GUIDELINES.md`.
+
+### 6. Quranic data safety / traceability (when relevant)
+
+- No Quranic/source-sensitive data invented or silently modified.
+- Importers/generators preserve traceability and produce reports (totals, missing,
+  duplicates, warnings, validation result).
+
+## Anti-Pattern Reminder (external example — not necessarily present here)
+
+A global `Enums/` folder (or `Models/`, `Helpers/`, `Utils/`) that collects
+unrelated types is a dumping ground: it separates a type from the domain concept
+that owns it. Do **not** assume such folders exist in this repo or search for them
+as current code — use this only to recognize the smell. Preferred rule: organize
+by domain/feature/bounded context first; place each type next to the feature it
+belongs to.
 
 ## Output Format
 
@@ -334,25 +135,27 @@ Use one of:
 Briefly describe what was reviewed.
 
 ## Blocking Issues
-List issues that must be fixed before merge.
-If none, write:
-None.
+List issues that must be fixed before merge. If none, write: None.
 
 ## Structure Notes
-Discuss folder organization and domain/feature boundaries.
+Folder organization and domain/feature boundaries.
 
 ## Layering Check
-Discuss Clean Architecture dependency/layering rules.
+Clean Architecture dependency/layering rules.
+
+## File Size Check
+List files near/over soft thresholds, over hard thresholds, or 1000+ lines. If not
+applicable, say so.
 
 ## Anti-Pattern Check
-Mention whether global dumping folders such as Enums/Models/Helpers/Utils were introduced or expanded.
+Whether global dumping folders (Enums/Models/Helpers/Utils) were introduced or
+expanded.
 
 ## Quranic Data Safety Check
-Mention any source-sensitive data risk.
+Any source-sensitive data risk. Say PASS / CONCERN / NOT APPLICABLE.
 
 ## Recommendations
-List practical improvements.
-Do not request broad refactors unless necessary.
+Practical improvements. Do not request broad refactors unless necessary.
 
 ## Changed Files Reviewed
 List changed files if known.
@@ -361,13 +164,11 @@ List changed files if known.
 
 - Be direct and practical.
 - Do not implement fixes unless explicitly asked.
-- Do not invent facts.
-- If the file tree is not available, ask for or request the relevant tree/status.
-- Separate blocking issues from optional recommendations.
-- Prefer small, focused restructuring suggestions.
-- Do not force over-engineering.
-- Domain/feature grouping is the default.
-- Technical-type grouping is allowed only when it is truly cross-cutting and not a
-  dumping ground.
-- Remember that the anti-pattern example above is external and not necessarily
-  present in this repository.
+- Do not invent facts; if the file tree/status is unavailable, request it.
+- Rely on the canonical docs above; do not restate their full rules here.
+- Domain/feature grouping is the default; technical-type grouping is allowed only
+  when truly cross-cutting and not a dumping ground.
+- Separate blocking issues from optional recommendations; do not over-engineer.
+- Use "overloaded service" / "oversized service"; do not use "God service".
+- Keep this skill focused on backend structure, layering, placement, and file
+  size — do not duplicate the broader engineering-review skill.

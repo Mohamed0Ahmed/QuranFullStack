@@ -37,9 +37,11 @@ This is an **Arabic-first (RTL)**, **scholarly and calm** product dashboard for
 curating Quran research data: organizing gates (أبواب), reviewing ayah links, and
 preparing content for publishing. Users are Arabic-speaking admins and teachers.
 
-Before any frontend / UI work, read **`PRODUCT.md`** (strategic context: register,
-users, principles, anti-references) and, once it exists, **`DESIGN.md`** (visual
-system). Guiding principles: reverence without ornament, calm for long focus,
+Before any frontend / UI work, read **`PRODUCT.md`** and **`DESIGN.md`** when
+product/design context is relevant; both files exist. `PRODUCT.md` is the product
+strategy/context (register, users, principles, anti-references); `DESIGN.md` is the
+visual/design direction. Guiding principles: reverence without ornament, calm for
+long focus,
 trustworthy structure, genuinely Arabic-first, earned familiarity. Avoid generic
 SaaS templates, kitschy religious decor, gamified/consumer UI, and dense
 enterprise greige.
