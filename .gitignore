@@ -1,0 +1,12 @@
+resources/
+node_modules/
+dist/
+.angular/cache/
+bin/
+obj/
+.vs/
+.idea/
+logs/
+.env
+.env.*
+appsettings.*.local.json

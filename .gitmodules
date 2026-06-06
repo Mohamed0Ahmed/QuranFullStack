@@ -1,0 +1,7 @@
+[submodule "Backend"]
+	path = Backend
+	url = https://github.com/Mohamed0Ahmed/ManhagQurany.git
+
+[submodule "Frontend/quran-dashboard-ui"]
+	path = Frontend/quran-dashboard-ui
+	url = https://github.com/Mohamed0Ahmed/ManhagQuranyUI.git
