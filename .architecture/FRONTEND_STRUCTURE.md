@@ -177,3 +177,181 @@ If a frontend file would exceed **1000 lines**:
 
 - do not proceed without explicit human approval
 - propose a concrete split plan
+
+## Routeable Smart Components
+
+Distinguish two kinds of components.
+
+### 1. Routeable smart / page components
+
+Top-level screens or feature entry points that a user can open directly. They
+should have **stable routes**.
+
+Examples:
+
+- Mushaf pages viewer
+- Surahs page
+- Words explorer
+- Gates management / viewer
+- Tafsir resources
+- Audio resources
+- Settings pages
+
+### 2. Child / presentational components
+
+Internal UI pieces used inside a page. They do **not** get routes by default.
+
+Examples:
+
+- side nav
+- toolbar
+- ayah card
+- filter panel
+- selected word panel
+- modal / dialog
+- table component
+- reusable card / list component
+
+### Rules
+
+- Every routeable smart / page component must have a stable route.
+- Child components must not get routes unless they become a real standalone screen.
+- Do not create routes for every small component.
+- Routeable smart components should stay focused and compose child components.
+- Dynamic navigation must link to **route definitions**, not directly to component
+  classes.
+- Route labels can be changed by the owner / admin later, but route paths / keys
+  should remain stable.
+- Do not couple navbar text to component names.
+
+### Navigation item example
+
+```ts
+{
+  key: "mushaf-pages",
+  labelAr: "صفحات المصحف",
+  labelEn: "Mushaf Pages",
+  route: "/mushaf/pages"
+}
+```
+
+Clarifications:
+
+- The owner / admin may rename the navigation label.
+- The route remains the stable contract.
+- Navigation configuration should point to route keys / paths, not component class
+  names.
+
+## Tabs and URL State
+
+Important tabs that change the **main content** of a page must be represented in
+the URL.
+
+This allows:
+
+- refresh to preserve the selected tab
+- browser back / forward to work correctly
+- sharing direct links to the same tab
+- dynamic navigation shortcuts to open a specific tab
+- future breadcrumbs / analytics / permissions to understand the user location
+
+### Rules
+
+- Do not keep important page tabs only in in-memory component state.
+- Refreshing the page should return the user to the same important tab when
+  practical.
+- Internal tabs inside small modals or minor panels may remain local state if they
+  are not meaningful as a direct URL.
+- Use stable **tab keys**, not display labels.
+- Arabic / English labels may change, but tab keys should stay stable.
+- Avoid tab keys based on translated text.
+
+### Choosing URL style by tab importance
+
+#### 1. Child routes
+
+Use child routes when each tab is a major section or meaningful destination.
+
+Examples:
+
+- `/words/ordered`
+- `/words/unique`
+- `/words/roots`
+- `/gates/:id/ayahs`
+- `/gates/:id/articles`
+- `/roots/:root/ayahs`
+- `/roots/:root/morphology`
+
+#### 2. Query params
+
+Use query params when the tab is a lighter view mode, display mode, or filter-like
+state.
+
+Examples:
+
+- `/words?tab=unique-tashkeel`
+- `/mushaf/pages/5?mode=study`
+- `/translations?language=en&source=daryabadi`
+
+#### 3. Local state only
+
+Allowed only for minor UI states that do not need direct linking or refresh
+preservation.
+
+Examples:
+
+- tabs inside a small modal
+- temporary filter panel section
+- purely visual toggle that does not represent a meaningful location
+
+### Decision rule
+
+- If the owner / admin may link to it from navigation, sidebar, shortcut, or saved
+  menu item, it must have URL state.
+- If the user would be frustrated after refresh because the tab resets, it should
+  have URL state.
+- If the tab represents a major page section, prefer a **child route**.
+- If the tab represents a display mode / filter, prefer a **query param**.
+
+## Route Structure Guidance
+
+Rules:
+
+- Keep routes readable and predictable.
+- Prefer feature-owned route files when a feature grows.
+- Lazy-load feature routes where appropriate.
+- Do not hide business logic in route config.
+- Route data may include stable metadata such as `titleKey`, `navKey`,
+  `permissionKey` later.
+- Do not put large navigation configuration directly inside components.
+- Do not hardcode navbar items directly inside the navbar component when dynamic
+  navigation is planned.
+
+Example route metadata shape only:
+
+```ts
+{
+  path: "mushaf/pages",
+  loadComponent: () =>
+    import("./features/mushaf/pages/mushaf-pages/mushaf-pages.component")
+      .then(m => m.MushafPagesComponent),
+  data: {
+    navKey: "mushaf-pages",
+    titleKey: "navigation.mushafPages"
+  }
+}
+```
+
+Note: this is an example shape only. Do not implement it now.
+
+## Agent Behavior for New Screens
+
+When adding a new frontend screen later, the agent must state:
+
+- whether it is a routeable smart / page component or a child component
+- its route if it is routeable
+- whether it has important tabs
+- how the tab state is represented in the URL
+- whether navigation metadata is needed
+
+If a feature has tabs but no URL state, the agent must explain why.
