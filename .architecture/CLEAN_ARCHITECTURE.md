@@ -18,6 +18,17 @@ For file/folder organization rules, also read:
 
 - `.architecture/BACKEND_STRUCTURE.md`
 
+## Canonical Ownership
+
+To avoid drift between the backend architecture docs:
+
+- **This file (`CLEAN_ARCHITECTURE.md`)** is canonical for layer responsibilities,
+  dependency direction, and request/use-case flow.
+- **`BACKEND_STRUCTURE.md`** is canonical for file/folder placement and
+  file-size/responsibility thresholds.
+- **`API_GUIDELINES.md`** is canonical for the API boundary and
+  response/localization rules.
+
 ## Projects
 
 The backend uses these projects:

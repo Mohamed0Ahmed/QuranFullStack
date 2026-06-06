@@ -7,6 +7,18 @@ Quran Dashboard backend.
 
 Agents must read this before adding or moving backend files.
 
+## Canonical Ownership
+
+To avoid drift between the backend architecture docs:
+
+- **This file (`BACKEND_STRUCTURE.md`)** is canonical for backend file/folder
+  placement, feature/domain organization, global usings placement, and
+  file-size/responsibility thresholds.
+- **`CLEAN_ARCHITECTURE.md`** is canonical for layer responsibilities, dependency
+  direction, and request/use-case flow.
+- **`API_GUIDELINES.md`** is canonical for the API boundary, HTTP behavior,
+  response shape, and API localization/message rules.
+
 ## Main Rule
 
 Organize by domain, feature, and bounded context first.

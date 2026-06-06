@@ -175,14 +175,25 @@ See also section 10 (Localization and Messages) and the localization rules in
 
 ## 10. Localization and Messages
 
+This section is the canonical home for backend API localization and user-facing
+message rules. `Backend/AGENTS.md` and `Backend/CLAUDE.md` point here.
+
 - Arabic is the default response language.
 - English support is required later for visitor-facing responses.
+- If a language is missing or unsupported, fall back to Arabic.
 - API property names and code identifiers stay **English**.
 - Message values shown to users/admins must be localizable.
-- Avoid repeated hardcoded Arabic or English strings; centralize via message
-  keys/resources/constants close to the owning feature.
+- Do not return repeated hardcoded user-facing success, error, validation,
+  warning, or notification messages from controllers, handlers, services,
+  validators, or middleware.
+- Centralize reusable messages via message keys/resources/constants close to the
+  owning feature; truly shared messages go to a shared/common location. Prefer
+  keys such as `Common.NotFound`, `Common.ValidationFailed`,
+  `MushafPages.InvalidPageNumber`, `Gates.CreatedSuccessfully`.
+- Do not create broad dumping folders for unrelated messages.
 - Technical protocol strings such as `Authorization`, `Bearer`,
   `application/json`, `GET`, and `POST` are **not** user-facing messages.
+- Do not invent Quranic/religious content while writing messages.
 
 ## 11. Security and Safety
 

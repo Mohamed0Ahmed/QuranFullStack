@@ -22,20 +22,15 @@ Before adding or changing API endpoints, controllers, request/response contracts
 
 ## Backend Response Messages and Localization
 
-- Backend user-facing messages must be localizable.
-- Arabic is the default language.
-- English should be supported for visitor-facing responses when language switching is needed.
-- API property names, DTO property names, code identifiers, class names, method names, and database column names should remain English.
-- Do not return repeated hardcoded user-facing success, error, validation, warning, or notification messages directly from controllers, handlers, services, validators, or middleware.
-- Centralize reusable user-facing messages using localization resources, message keys, or feature-owned message constants.
-- Prefer message keys such as:
-  - `Common.NotFound`
-  - `Common.ValidationFailed`
-  - `MushafPages.InvalidPageNumber`
-  - `Gates.CreatedSuccessfully`
-- If a message belongs to one feature, keep its key/constants/resource close to that feature.
-- If a message is truly shared, place it in a shared/common message location.
-- Do not create broad dumping folders for unrelated messages.
-- Technical protocol strings such as `Authorization`, `Bearer`, `application/json`, `GET`, or `POST` are not considered user-facing messages.
-- If a language is missing or unsupported, fallback to Arabic.
+For backend API response messages, localization, the `ApiResponse` shape, and
+user-facing message rules, read (canonical):
+
+- `.architecture/API_GUIDELINES.md`
+
+Essential reminders:
+
+- Arabic is the default user-facing response language.
+- API identifiers/property names remain English.
+- Do not scatter hardcoded user-facing messages; centralize them close to the
+  owning feature.
 - Do not invent Quranic/religious content while writing messages.
