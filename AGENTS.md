@@ -39,6 +39,17 @@ OpenCode can use:
 
 - `.opencode/command/engineering-review.md`
 
+## Commit Workflow Skill
+
+For committing across the Backend, Frontend, and FullStack repos (submodules, so
+commit order matters), use the project commit workflow skill:
+
+- `.claude/skills/commit-workflow/SKILL.md`
+
+OpenCode can use:
+
+- `.opencode/command/commit-workflow.md`
+
 ## Design Context and Impeccable
 
 Before any UI, layout, visual design, or dashboard screen work, read
