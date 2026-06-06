@@ -20,21 +20,15 @@ This skill is for review only. Do not implement fixes unless explicitly asked.
 
 ## Required Context
 
-Before reviewing, read:
+Before using this skill, rely on the relevant workspace/tool context already loaded by your agent (Claude, OpenCode, and Codex each load their own instruction files). Do not separately require reading those tool entrypoint files.
 
-- CODING_PRINCIPLES.md
+Read the stable reference documents this review needs:
 
-If the change touches Backend, also read:
+- `CODING_PRINCIPLES.md`
+- If Backend changes are reviewed: `Backend/.architecture/BACKEND_STRUCTURE.md`
+- If Frontend/UI changes are reviewed and a frontend structure/design guide exists (for example `DESIGN.md` or `PRODUCT.md`), read it. Do not invent one if it does not exist; rely on the loaded tool context and note missing guidance only if needed.
 
-- Backend/AGENTS.md
-- Backend/CLAUDE.md
-
-If the change touches Frontend, also read:
-
-- Frontend/quran-dashboard-ui/AGENTS.md
-- Frontend/quran-dashboard-ui/CLAUDE.md
-
-If the review is UI/layout/design-related, also follow the frontend/product/design guidance referenced by the project instructions (PRODUCT.md and DESIGN.md).
+If a referenced document is missing or unavailable, state that clearly in the output.
 
 ## Review Goals
 
