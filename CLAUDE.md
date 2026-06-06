@@ -5,6 +5,10 @@ Before adding or moving Backend files, folders, entities, enums, value objects, 
 - `.architecture/BACKEND_STRUCTURE.md`
 - `.architecture/CLEAN_ARCHITECTURE.md`
 
+Before adding or changing API endpoints, controllers, request/response contracts, middleware, Swagger/OpenAPI setup, API error handling, response shapes, API configuration, or health checks, read and follow:
+
+- `.architecture/API_GUIDELINES.md`
+
 ## EF Core Migrations
 
 - Do not hand-write EF Core migrations.
