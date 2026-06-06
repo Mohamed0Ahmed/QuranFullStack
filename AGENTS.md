@@ -3,6 +3,42 @@ For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan
 <!-- SPECKIT END -->
 
+## Workspace Project Instructions
+
+This repository is a FullStack workspace.
+
+The root `AGENTS.md` contains general instructions that apply to the whole workspace.
+
+When working on the Backend project, also read and follow:
+
+- `Backend/AGENTS.md`
+
+When working on the Frontend project, also read and follow:
+
+- `Frontend/quran-dashboard-ui/AGENTS.md`
+
+If a task touches both Backend and Frontend, read all relevant instruction files before making changes.
+
+If a project-specific instruction conflicts with a root instruction, follow the more specific project instruction unless it would violate a root safety or product rule.
+
+## Coding Principles
+
+Before any implementation work, read and follow:
+
+- `CODING_PRINCIPLES.md`
+
+These principles apply to the whole FullStack workspace. Project-specific instruction files may add more detailed rules for Backend or Frontend work.
+
+## Engineering Review Skill
+
+For engineering/code reviews, use the project review skill:
+
+- `.claude/skills/engineering-review/SKILL.md`
+
+OpenCode can use:
+
+- `.opencode/command/engineering-review.md`
+
 ## Design Context and Impeccable
 
 Before any UI, layout, visual design, or dashboard screen work, read
