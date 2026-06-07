@@ -6,6 +6,77 @@
   gap: var(--qd-space-2);
 }
 
+.nav-links {
+  display: flex;
+  align-items: center;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: var(--qd-space-1);
+}
+
+.nav-item {
+  position: relative;
+}
+
+.nav-link {
+  border-radius: var(--qd-radius-sm);
+  font-size: 0.875rem;
+  padding: var(--qd-space-1) var(--qd-space-2);
+  white-space: nowrap;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.nav-link.active {
+  background-color: var(--qd-surface-elevated);
+  color: var(--qd-accent);
+}
+
+.more-dropdown {
+  position: relative;
+}
+
+.chevron {
+  margin-inline-start: var(--qd-space-1);
+  transition: transform 0.15s;
+}
+
+.more-dropdown.open .chevron {
+  transform: rotate(180deg);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  inset-inline-start: 0;
+  z-index: 100;
+  background: var(--qd-surface);
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-md);
+  box-shadow: var(--qd-floating-shadow);
+  list-style: none;
+  margin: 0;
+  padding: var(--qd-space-1) 0;
+  min-width: 180px;
+}
+
+.dropdown-link {
+  display: block;
+  width: 100%;
+  text-align: start;
+  padding: var(--qd-space-2) var(--qd-space-3);
+  border-radius: 0;
+  font-size: 0.875rem;
+}
+
+.dropdown-link:hover {
+  background-color: var(--qd-surface-elevated);
+}
+
+.dropdown-link.active {
+  color: var(--qd-accent);
+}
+
 .spacer {
   flex: 1 1 auto;
 }
@@ -23,7 +94,49 @@
   border-radius: var(--qd-radius-sm);
 }
 
+.mobile-menu {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: var(--qd-overlay);
+}
+
+.mobile-menu-panel {
+  background: var(--qd-surface);
+  border-bottom: 1px solid var(--qd-border);
+  padding: var(--qd-space-3) 0;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.mobile-menu-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.mobile-link {
+  display: block;
+  width: 100%;
+  text-align: start;
+  padding: var(--qd-space-3) var(--qd-space-4);
+  border-radius: 0;
+  font-size: 1rem;
+}
+
+.mobile-link:hover {
+  background-color: var(--qd-surface-elevated);
+}
+
+.mobile-link.active {
+  color: var(--qd-accent);
+}
+
 @media (max-width: 767px) {
+  .desktop-nav {
+    display: none;
+  }
+
   .menu-toggle {
     display: inline-flex;
   }
