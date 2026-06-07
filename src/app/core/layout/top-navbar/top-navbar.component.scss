@@ -1,0 +1,30 @@
+.brand {
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  gap: var(--qd-space-2);
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--qd-space-2);
+}
+
+.menu-toggle {
+  display: none;
+  padding: var(--qd-space-2);
+  line-height: 1;
+  border-radius: var(--qd-radius-sm);
+}
+
+@media (max-width: 767px) {
+  .menu-toggle {
+    display: inline-flex;
+  }
+}

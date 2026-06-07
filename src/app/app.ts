@@ -1,9 +1,10 @@
 import { Component } from '@angular/core';
+import { AppShellComponent } from './core/layout/app-shell/app-shell.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  template: '<span class="font-sans">Quran Dashboard UI</span>',
+  imports: [AppShellComponent],
+  template: '<qd-app-shell />',
 })
-export class App {
-}
+export class App {}
