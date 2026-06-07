@@ -68,12 +68,12 @@ independently testable increment.
 
 **Independent Test**: Launch the app; confirm RTL Arabic UI, the brand wordmark in the navbar, the three shell regions (navbar/content/footer), and the home page (welcome + description + 5 cards) — with no console errors and no horizontal scroll.
 
-- [ ] T013 [P] [US1] Create the footer component in `Frontend/quran-dashboard-ui/src/app/core/layout/footer/` (`.ts`/`.html`/`.scss`): brand line «المنهج القرآني © 2026» + short Arabic description; leave slots for version/environment + status (filled in US4), using `qd-footer`
-- [ ] T014 [P] [US1] Create the top-navbar component in `Frontend/quran-dashboard-ui/src/app/core/layout/top-navbar/`: brand wordmark «المنهج القرآني» (naskh), a user/actions area, and a mobile menu button, using `qd-navbar` (nav links added in US2, theme toggle in US3)
-- [ ] T015 [US1] Create the app-shell component in `Frontend/quran-dashboard-ui/src/app/core/layout/app-shell/` composing top-navbar + `<router-outlet>` + footer with `qd-shell` (depends on T013, T014)
-- [ ] T016 [US1] Update `Frontend/quran-dashboard-ui/src/app/app.ts` to render `<qd-app-shell>` (selector from T015) (depends on T015)
-- [ ] T017 [P] [US1] Create the home page in `Frontend/quran-dashboard-ui/src/app/features/dashboard/pages/dashboard-home/`: `qd-page` with welcome heading, short description, and exactly 5 `qd-card` overview cards linking to `/mushaf`, `/words`, `/tafsirs`, `/gates`, `/resources` (no fabricated stats)
-- [ ] T018 [US1] Update `Frontend/quran-dashboard-ui/src/app/app.routes.ts`: `''` → redirect to `dashboard` (`pathMatch: 'full'`) and `dashboard` → lazy-load the home page (depends on T017)
+- [x] T013 [P] [US1] Create the footer component in `Frontend/quran-dashboard-ui/src/app/core/layout/footer/` (`.ts`/`.html`/`.scss`): brand line «المنهج القرآني © 2026» + short Arabic description; leave slots for version/environment + status (filled in US4), using `qd-footer`
+- [x] T014 [P] [US1] Create the top-navbar component in `Frontend/quran-dashboard-ui/src/app/core/layout/top-navbar/`: brand wordmark «المنهج القرآني» (naskh), a user/actions area, and a mobile menu button, using `qd-navbar` (nav links added in US2, theme toggle in US3)
+- [x] T015 [US1] Create the app-shell component in `Frontend/quran-dashboard-ui/src/app/core/layout/app-shell/` composing top-navbar + `<router-outlet>` + footer with `qd-shell` (depends on T013, T014)
+- [x] T016 [US1] Update `Frontend/quran-dashboard-ui/src/app/app.ts` to render `<qd-app-shell>` (selector from T015) (depends on T015)
+- [x] T017 [P] [US1] Create the home page in `Frontend/quran-dashboard-ui/src/app/features/dashboard/pages/dashboard-home/`: `qd-page` with welcome heading, short description, and exactly 5 `qd-card` overview cards linking to `/mushaf`, `/words`, `/tafsirs`, `/gates`, `/resources` (no fabricated stats)
+- [x] T018 [US1] Update `Frontend/quran-dashboard-ui/src/app/app.routes.ts`: `''` → redirect to `dashboard` (`pathMatch: 'full'`) and `dashboard` → lazy-load the home page (depends on T017)
 
 **Checkpoint**: App loads RTL; brand + footer + home page visible; no console errors. MVP reached.
 
