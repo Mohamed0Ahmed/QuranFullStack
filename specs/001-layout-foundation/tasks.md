@@ -115,14 +115,14 @@ independently testable increment.
 
 **Independent Test**: Call `/api/health` and `/api/dashboard/info` and confirm the envelope + Arabic messages + db check; force a server error and confirm the failure envelope with no leaked internals; inspect committed config and confirm no real password.
 
-- [ ] T027 [US5] Update `Backend/api/QuranDashboard.Api/Contracts/ApiResponse.cs` to `{ IsSuccess, Message, Data, Errors }` with `Ok(data, message?)` and `Fail(message, errors?)` per `contracts/api-response-envelope.md`
-- [ ] T028 [P] [US5] Create `Backend/api/QuranDashboard.Api/Common/ApiMessages.cs` with Arabic-default `const` messages (e.g. `HealthOk`, `DashboardInfo`, `UnexpectedError`)
-- [ ] T029 [US5] Update `Backend/api/QuranDashboard.Api/Middleware/GlobalExceptionHandler.cs` to write the `ApiResponse.Fail` envelope (HTTP 500, `application/json`, Arabic safe message), still logging the exception and leaking no internals (depends on T027, T028)
-- [ ] T030 [P] [US5] Update `Backend/api/QuranDashboard.Api/Extensions/ServiceCollectionExtensions.cs`: register `AddHealthChecks().AddDbContextCheck<QuranDashboardDbContext>("database")` and set the Swagger title to «المنهج القرآني API» (depends on T001)
-- [ ] T031 [US5] Update `Backend/api/QuranDashboard.Api/Controllers/HealthController.cs` to inject `HealthCheckService`, run the checks, and return the envelope `data` `{ status, checks:[{name,status}] }` per `contracts/api-health.md` (no connection details) (depends on T027, T028, T030)
-- [ ] T032 [US5] Update `Backend/api/QuranDashboard.Api/Controllers/DashboardController.cs` to return `{ appName: "المنهج القرآني", version, environment }` (inject `IHostEnvironment`; read version from the entry assembly, fallback `"0.1.0"`) with an Arabic message, per `contracts/api-dashboard-info.md` (depends on T027, T028)
-- [ ] T033 [P] [US5] Remove the password from `Backend/api/QuranDashboard.Api/appsettings.json` and `appsettings.Development.json` (leave a placeholder; keep Host/Port/Database/Username)
-- [ ] T034 [P] [US5] Document the user-secrets/env setup for `ConnectionStrings:QuranDashboardDb` in a short note in `Backend/api/QuranDashboard.Api/README.md`
+- [x] T027 [US5] Update `Backend/api/QuranDashboard.Api/Contracts/ApiResponse.cs` to `{ IsSuccess, Message, Data, Errors }` with `Ok(data, message?)` and `Fail(message, errors?)` per `contracts/api-response-envelope.md`
+- [x] T028 [P] [US5] Create `Backend/api/QuranDashboard.Api/Common/ApiMessages.cs` with Arabic-default `const` messages (e.g. `HealthOk`, `DashboardInfo`, `UnexpectedError`)
+- [x] T029 [US5] Update `Backend/api/QuranDashboard.Api/Middleware/GlobalExceptionHandler.cs` to write the `ApiResponse.Fail` envelope (HTTP 500, `application/json`, Arabic safe message), still logging the exception and leaking no internals (depends on T027, T028)
+- [x] T030 [P] [US5] Update `Backend/api/QuranDashboard.Api/Extensions/ServiceCollectionExtensions.cs`: register `AddHealthChecks().AddDbContextCheck<QuranDashboardDbContext>("database")` and set the Swagger title to «المنهج القرآني API» (depends on T001)
+- [x] T031 [US5] Update `Backend/api/QuranDashboard.Api/Controllers/HealthController.cs` to inject `HealthCheckService`, run the checks, and return the envelope `data` `{ status, checks:[{name,status}] }` per `contracts/api-health.md` (no connection details) (depends on T027, T028, T030)
+- [x] T032 [US5] Update `Backend/api/QuranDashboard.Api/Controllers/DashboardController.cs` to return `{ appName: "المنهج القرآني", version, environment }` (inject `IHostEnvironment`; read version from the entry assembly, fallback `"0.1.0"`) with an Arabic message, per `contracts/api-dashboard-info.md` (depends on T027, T028)
+- [x] T033 [P] [US5] Remove the password from `Backend/api/QuranDashboard.Api/appsettings.json` and `appsettings.Development.json` (leave a placeholder; keep Host/Port/Database/Username)
+- [x] T034 [P] [US5] Document the user-secrets/env setup for `ConnectionStrings:QuranDashboardDb` in a short note in `Backend/api/QuranDashboard.Api/README.md`
 
 **Checkpoint**: Endpoints return the envelope with Arabic messages + db health; errors are safe; no secrets committed.
 
