@@ -11,9 +11,13 @@ description: >-
   thresholds, routeable components and URL state, API integration and
   ApiResponse<T> handling, the UI style system, strong typing, focused scope,
   error handling, Quranic data safety, and build/test/report verification, then
-  returns a structured verdict with severity levels. This is a review skill only:
-  produce findings and recommendations; do not implement fixes unless the user
-  explicitly asks.
+  returns a structured verdict with severity levels. When the change was implemented
+  from Spec Kit artifacts (the request mentions a Phase, a User Story/US, task IDs
+  like T013–T018, specs/<feature>/, spec.md, plan.md, tasks.md, contracts/,
+  quickstart.md, or "implemented Phase/tasks"), it additionally verifies the code
+  against the active spec, phase/task scope, locked decisions, and contracts. This is
+  a review skill only: produce findings and recommendations; do not implement fixes
+  unless the user explicitly asks.
 ---
 
 # Engineering Review Skill
@@ -64,6 +68,34 @@ context for those.
 - `PRODUCT.md` and `DESIGN.md` — when UI/product/design decisions are involved.
 
 **If both backend and frontend changed, read both relevant sets.**
+
+**If the change was implemented from Spec Kit, also read the Spec Kit artifacts.**
+
+This applies when the user asks to review an implementation that came from Spec Kit,
+or the request mentions any of:
+
+- a **Phase** (e.g. "implemented Phase 3")
+- a **User Story / US** (e.g. "US2")
+- **task IDs** like `T001`, `T013–T018`
+- `specs/<feature>/`
+- `spec.md`, `plan.md`, `tasks.md`
+- `contracts/`
+- `quickstart.md`
+- "implemented Phase" / "implemented tasks"
+
+In that case, additionally read:
+
+- `.claude/skills/engineering-review/SPEC_KIT_IMPLEMENTATION_REVIEW.md` — the extra
+  Spec Kit review rules.
+- the relevant `specs/<feature>/spec.md`
+- the relevant `specs/<feature>/plan.md`
+- the relevant `specs/<feature>/tasks.md`
+- the relevant files under `specs/<feature>/contracts/`
+- `specs/<feature>/quickstart.md` — when verification or acceptance criteria are
+  involved.
+
+If the change is a simple, non–Spec-Kit change, do **not** read the Spec Kit
+artifacts; review the code normally.
 
 If a referenced document is missing or unavailable, state that clearly in the
 output rather than inventing its rules.
@@ -276,7 +308,25 @@ Use one of:
 - frontend files reviewed
 - docs read
 
-## 3. Findings
+## 3. Spec Kit / Task Compliance Check
+
+Include this section **only** when the change was implemented from Spec Kit (see the
+conditional reading rules above and `SPEC_KIT_IMPLEMENTATION_REVIEW.md`). It reports:
+
+- **Spec/feature reviewed** — the `specs/<feature>/` under review.
+- **Phase/tasks reviewed** — the phase, user story, and/or task IDs in scope.
+- **Tasks completed** — task IDs confirmed implemented, with the file(s) for each.
+- **Tasks skipped** — required tasks in the requested phase that are missing or partial.
+- **Future tasks implemented early** — later-phase work that leaked in (with severity).
+- **Contract compliance summary** — per relevant contract: matches / deviates (with the
+  difference) / not applicable.
+- **Scope verdict** — whether the implementation stayed within the requested
+  phase/tasks.
+
+If Spec Kit does not apply, omit this section or write:
+`Not applicable — review was not based on Spec Kit artifacts.`
+
+## 4. Findings
 
 For each finding:
 
@@ -288,7 +338,7 @@ For each finding:
 
 If none, write: None.
 
-## 4. Threshold Check
+## 5. Threshold Check
 
 When relevant:
 
@@ -298,20 +348,20 @@ When relevant:
 
 If not applicable, say so.
 
-## 5. Architecture / Responsibility Check
+## 6. Architecture / Responsibility Check
 
 Summarize whether responsibilities are properly split (backend layering and/or
 frontend component/data-access/state separation).
 
-## 6. Quranic Data Safety Check
+## 7. Quranic Data Safety Check
 
 State explicitly one of: PASS / CONCERN / NOT APPLICABLE, with a one-line reason.
 
-## 7. Verification Check
+## 8. Verification Check
 
 Report build/test evidence if provided. If no build/test was run, say so clearly.
 
-## 8. Final Recommendation
+## 9. Final Recommendation
 
 Short, direct next step consistent with the verdict.
 
