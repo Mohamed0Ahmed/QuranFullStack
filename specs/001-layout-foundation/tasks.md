@@ -136,11 +136,11 @@ independently testable increment.
 
 > Depends on Phase 6 (US5) endpoints for correct data.
 
-- [ ] T035 [P] [US4] Create `Frontend/quran-dashboard-ui/src/app/core/data-access/api-response.model.ts` defining `ApiResponse<T>` per `contracts/api-response-envelope.md`
-- [ ] T036 [P] [US4] Create `Frontend/quran-dashboard-ui/src/app/core/data-access/system.models.ts` defining `AppInfo`, `HealthStatus`, `HealthCheckItem` per `data-model.md`
-- [ ] T037 [US4] Create `Frontend/quran-dashboard-ui/src/app/core/data-access/system.api.ts` (`providedIn: 'root'`) with `getDashboardInfo()` and `getHealth()` using `environment.apiBaseUrl`, unwrapping the envelope (depends on T035, T036, T003, T004)
-- [ ] T038 [P] [US4] Update the home page (`features/dashboard/pages/dashboard-home/`) to fetch app metadata once on load with explicit loading/success/error states + manual retry; show no fabricated values on error (depends on T037, T017)
-- [ ] T039 [P] [US4] Update the footer (`core/layout/footer/`) to fetch health once on load, show a live status indicator with loading/error states + manual retry, and never show a false "healthy" (depends on T037, T013)
+- [x] T035 [P] [US4] Create `Frontend/quran-dashboard-ui/src/app/core/data-access/api-response.model.ts` defining `ApiResponse<T>` per `contracts/api-response-envelope.md`
+- [x] T036 [P] [US4] Create `Frontend/quran-dashboard-ui/src/app/core/data-access/system.models.ts` defining `AppInfo`, `HealthStatus`, `HealthCheckItem` per `data-model.md`
+- [x] T037 [US4] Create `Frontend/quran-dashboard-ui/src/app/core/data-access/system.api.ts` (`providedIn: 'root'`) with `getDashboardInfo()` and `getHealth()` using `environment.apiBaseUrl`, unwrapping the envelope (depends on T035, T036, T003, T004)
+- [x] T038 [P] [US4] Update the home page (`features/dashboard/pages/dashboard-home/`) to fetch app metadata once on load with explicit loading/success/error states + manual retry; show no fabricated values on error (depends on T037, T017)
+- [x] T039 [P] [US4] Update the footer (`core/layout/footer/`) to fetch health once on load, show a live status indicator with loading/error states + manual retry, and never show a false "healthy" (depends on T037, T013)
 
 **Checkpoint**: Real metadata + live status when up; calm honest state when down.
 
