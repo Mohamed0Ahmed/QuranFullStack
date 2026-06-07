@@ -101,9 +101,9 @@ independently testable increment.
 
 **Independent Test**: Toggle the theme — the whole UI switches without reload; refresh keeps the chosen theme; with no stored choice the OS preference is used (default light).
 
-- [ ] T024 [P] [US3] Create `Frontend/quran-dashboard-ui/src/app/core/theme/theme.service.ts`: `providedIn: 'root'`; reads/writes `localStorage` key `qd-theme`, sets `data-theme` on `<html>`, resolves initial theme (stored → `prefers-color-scheme` → light), exposes `toggle()` (binary light↔dark)
-- [ ] T025 [US3] Add a binary theme toggle control to the top-navbar (`core/layout/top-navbar/`) wired to `ThemeService.toggle()` with an accessible label and icon (depends on T014, T024)
-- [ ] T026 [P] [US3] Add a tiny inline no-flash theme-bootstrap script to `Frontend/quran-dashboard-ui/src/index.html` `<head>` that sets `data-theme` from `localStorage`/`matchMedia` before first paint (depends on T005)
+- [x] T024 [P] [US3] Create `Frontend/quran-dashboard-ui/src/app/core/theme/theme.service.ts`: `providedIn: 'root'`; reads/writes `localStorage` key `qd-theme`, sets `data-theme` on `<html>`, resolves initial theme (stored → `prefers-color-scheme` → light), exposes `toggle()` (binary light↔dark)
+- [x] T025 [US3] Add a binary theme toggle control to the top-navbar (`core/layout/top-navbar/`) wired to `ThemeService.toggle()` with an accessible label and icon (depends on T014, T024)
+- [x] T026 [P] [US3] Add a tiny inline no-flash theme-bootstrap script to `Frontend/quran-dashboard-ui/src/index.html` `<head>` that sets `data-theme` from `localStorage`/`matchMedia` before first paint (depends on T005)
 
 **Checkpoint**: Theme toggles, persists across refresh, no flash; both themes pass contrast.
 
