@@ -34,3 +34,13 @@
 .qd-page-header {
   margin-block-end: var(--qd-space-5);
 }
+
+@media (max-width: 420px) {
+  .qd-page {
+    padding: var(--qd-space-3) var(--qd-space-2);
+  }
+
+  .qd-container {
+    padding-inline: var(--qd-space-2);
+  }
+}

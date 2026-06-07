@@ -4,6 +4,12 @@
   gap: var(--qd-space-4);
 }
 
+@media (max-width: 420px) {
+  .dashboard-cards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .dashboard-card {
   display: block;
   text-decoration: none;

@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, HostListener, inject, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { NAV_ITEMS, NavItem } from '../../navigation/nav-items';
@@ -13,6 +13,7 @@ import { ThemeService } from '../../theme/theme.service';
 })
 export class TopNavbarComponent {
   private readonly router = inject(Router);
+  private readonly elementRef = inject(ElementRef);
   readonly themeService = inject(ThemeService);
 
   readonly allItems: NavItem[] = NAV_ITEMS;
@@ -22,6 +23,27 @@ export class TopNavbarComponent {
 
   moreOpen = false;
   mobileOpen = false;
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.moreOpen) {
+      this.closeMore();
+    }
+    if (this.mobileOpen) {
+      this.closeMobile();
+    }
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    if (this.moreOpen) {
+      const el = this.elementRef.nativeElement as HTMLElement;
+      const target = event.target as HTMLElement | null;
+      if (target && !el.querySelector('.more-dropdown')?.contains(target)) {
+        this.closeMore();
+      }
+    }
+  }
 
   toggleMore(): void {
     this.moreOpen = !this.moreOpen;

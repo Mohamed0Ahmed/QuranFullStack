@@ -164,3 +164,36 @@
     display: inline-flex;
   }
 }
+
+@media (max-width: 420px) {
+  .qd-navbar {
+    padding: var(--qd-space-2) var(--qd-space-3);
+  }
+
+  .brand .qd-page-title {
+    font-size: 0.9375rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .qd-navbar {
+    padding: var(--qd-space-2);
+    gap: var(--qd-space-2);
+  }
+
+  .brand .qd-page-title {
+    font-size: 0.875rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 140px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-link,
+  .theme-toggle,
+  .chevron {
+    transition: none;
+  }
+}
