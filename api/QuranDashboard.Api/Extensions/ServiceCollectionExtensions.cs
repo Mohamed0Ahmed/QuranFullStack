@@ -1,5 +1,7 @@
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.OpenApi;
 using QuranDashboard.Api.Middleware;
+using QuranDashboard.Infrastructure.Persistence;
 
 namespace QuranDashboard.Api.Extensions;
 
@@ -13,10 +15,12 @@ public static class ServiceCollectionExtensions
         {
             options.SwaggerDoc("v1", new OpenApiInfo
             {
-                Title = "Quran Dashboard API",
+                Title = "المنهج القرآني API",
                 Version = "v1"
             });
         });
+        services.AddHealthChecks()
+            .AddDbContextCheck<QuranDashboardDbContext>("database");
         services.AddProblemDetails();
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddCors(options =>

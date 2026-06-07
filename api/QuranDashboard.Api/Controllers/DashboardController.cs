@@ -1,23 +1,24 @@
+using System.Reflection;
 using Microsoft.AspNetCore.Mvc;
+using QuranDashboard.Api.Common;
 using QuranDashboard.Api.Contracts;
 
 namespace QuranDashboard.Api.Controllers;
 
 [ApiController]
 [Route("api/dashboard")]
-public sealed class DashboardController : ControllerBase
+public sealed class DashboardController(IHostEnvironment environment) : ControllerBase
 {
     [HttpGet("info")]
-    public ActionResult<ApiResponse<object>> GetInfo()
+    public ActionResult<ApiResponse<AppInfoData>> GetInfo()
     {
-        var payload = new
-        {
-            name = "Quran Dashboard",
-            description = "Backend foundation for the Quran Dashboard application.",
-            scope = "foundation",
-            utc = DateTime.UtcNow
-        };
+        var version = Assembly.GetEntryAssembly()?
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+            .InformationalVersion ?? "0.1.0";
 
-        return Ok(ApiResponse<object>.Ok(payload));
+        var data = new AppInfoData("المنهج القرآني", version, environment.EnvironmentName);
+        return Ok(ApiResponse<AppInfoData>.Ok(data, ApiMessages.DashboardInfo));
     }
 }
+
+public sealed record AppInfoData(string AppName, string Version, string Environment);

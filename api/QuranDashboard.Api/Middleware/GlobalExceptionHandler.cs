@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Diagnostics;
-using Microsoft.AspNetCore.Mvc;
+using QuranDashboard.Api.Common;
+using QuranDashboard.Api.Contracts;
 
 namespace QuranDashboard.Api.Middleware;
 
@@ -17,18 +18,13 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
             return false;
         }
 
-        var problemDetails = new ProblemDetails
-        {
-            Status = StatusCodes.Status500InternalServerError,
-            Title = "Internal Server Error",
-            Detail = "An unexpected error occurred."
-        };
+        var response = ApiResponse<object>.Fail(ApiMessages.UnexpectedError);
 
         httpContext.Response.Clear();
         httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
-        httpContext.Response.ContentType = "application/problem+json";
+        httpContext.Response.ContentType = "application/json";
 
-        await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken);
+        await httpContext.Response.WriteAsJsonAsync(response, cancellationToken);
         return true;
     }
 }

@@ -1,22 +1,43 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using QuranDashboard.Api.Common;
 using QuranDashboard.Api.Contracts;
 
 namespace QuranDashboard.Api.Controllers;
 
 [ApiController]
 [Route("api/health")]
-public sealed class HealthController : ControllerBase
+public sealed class HealthController(HealthCheckService healthCheckService) : ControllerBase
 {
     [HttpGet]
-    public ActionResult<ApiResponse<object>> Get()
+    public async Task<ActionResult<ApiResponse<HealthReportData>>> Get(CancellationToken cancellationToken)
     {
-        var payload = new
+        var report = await healthCheckService.CheckHealthAsync(cancellationToken);
+
+        var checks = report.Entries.Select(e => new HealthCheckItem(
+            e.Key,
+            MapStatus(e.Value.Status))).ToList();
+
+        var overallStatus = MapStatus(report.Status);
+
+        var message = report.Status switch
         {
-            status = "ok",
-            service = "Quran Dashboard API",
-            utc = DateTime.UtcNow
+            HealthStatus.Healthy => ApiMessages.HealthOk,
+            _ => ApiMessages.HealthDegraded
         };
 
-        return Ok(ApiResponse<object>.Ok(payload));
+        var data = new HealthReportData(overallStatus, checks);
+        return Ok(ApiResponse<HealthReportData>.Ok(data, message));
     }
+
+    private static string MapStatus(HealthStatus status) => status switch
+    {
+        HealthStatus.Healthy => "healthy",
+        HealthStatus.Degraded => "degraded",
+        _ => "unhealthy"
+    };
 }
+
+public sealed record HealthReportData(string Status, IReadOnlyList<HealthCheckItem> Checks);
+
+public sealed record HealthCheckItem(string Name, string Status);
