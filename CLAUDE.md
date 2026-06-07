@@ -1,7 +1,11 @@
 <!-- SPECKIT START -->
 
-For additional context about technologies to be used, project structure,
-shell commands, and other important information, read the current plan
+Active feature: **Dashboard Layout & Foundation (Phase 0)** — branch `001-layout-foundation`.
+For technologies, project structure, shell commands, and design artifacts, read the current plan
+and its siblings:
+
+- `specs/001-layout-foundation/plan.md` — technical context, project structure, gates
+- `specs/001-layout-foundation/spec.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/`
 
 <!-- SPECKIT END -->
 
