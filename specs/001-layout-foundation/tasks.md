@@ -36,10 +36,10 @@ independently testable increment.
 
 **Purpose**: Install dependencies and wire configuration needed by later phases.
 
-- [ ] T001 Add NuGet package `Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore` (10.x) to `Backend/api/QuranDashboard.Api/QuranDashboard.Api.csproj`
-- [ ] T002 [P] Add self-hosted font files (regular + bold `woff2`) for **Amiri** and **IBM Plex Sans Arabic** under `Frontend/quran-dashboard-ui/public/fonts/`
-- [ ] T003 [P] Add `Frontend/quran-dashboard-ui/src/environments/environment.ts` (prod placeholder) and `environment.development.ts` (`apiBaseUrl: 'http://localhost:5014'`), and register the dev `fileReplacements` in `Frontend/quran-dashboard-ui/angular.json`
-- [ ] T004 [P] Add `provideHttpClient(withFetch())` to the providers in `Frontend/quran-dashboard-ui/src/app/app.config.ts`
+- [x] T001 Add NuGet package `Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore` (10.x) to `Backend/api/QuranDashboard.Api/QuranDashboard.Api.csproj`
+- [x] T002 [P] Add self-hosted font files (regular + bold `woff2`) for **Amiri** and **IBM Plex Sans Arabic** under `Frontend/quran-dashboard-ui/public/fonts/`
+- [x] T003 [P] Add `Frontend/quran-dashboard-ui/src/environments/environment.ts` (prod placeholder) and `environment.development.ts` (`apiBaseUrl: 'http://localhost:5014'`), and register the dev `fileReplacements` in `Frontend/quran-dashboard-ui/angular.json`
+- [x] T004 [P] Add `provideHttpClient(withFetch())` to the providers in `Frontend/quran-dashboard-ui/src/app/app.config.ts`
 
 ---
 
@@ -49,14 +49,14 @@ independently testable increment.
 
 **⚠️ CRITICAL**: No user-story UI work can begin until this phase is complete.
 
-- [ ] T005 [P] Set RTL/Arabic + branding in `Frontend/quran-dashboard-ui/src/index.html`: `<html lang="ar" dir="rtl">` and `<title>المنهج القرآني</title>`
-- [ ] T006 [P] Create `Frontend/quran-dashboard-ui/src/styles/_tokens.scss` defining all `--qd-*` tokens in `:root` with light "parchment" values (warm-tinted OKLCH; no pure `#fff`/`#000`) per `contracts/ui-design-tokens.md`
-- [ ] T007 [P] Create `Frontend/quran-dashboard-ui/src/styles/_typography.scss` with `@font-face` for self-hosted Amiri (content/headings) + IBM Plex Sans Arabic (UI), `font-display: swap`, and text classes `qd-page-title`, `qd-section-title`, `qd-card-title`, `qd-text`, `qd-text-muted`, `qd-text-meta`
-- [ ] T008 [P] Create `Frontend/quran-dashboard-ui/src/styles/_layout.scss` with layout primitives `qd-shell`, `qd-navbar`, `qd-container`, `qd-footer` (logical CSS properties, flat/hairline per DESIGN.md)
-- [ ] T009 [P] Create `Frontend/quran-dashboard-ui/src/styles/_components.scss` with `qd-card`, `qd-btn`/`qd-btn-primary`/`qd-btn-secondary`/`qd-btn-ghost`, `qd-badge`, `qd-empty-state`, `qd-loading-state`, `qd-error-state`
-- [ ] T010 [P] Create `Frontend/quran-dashboard-ui/src/styles/_forms.scss` (`qd-input`) and `Frontend/quran-dashboard-ui/src/styles/_utilities.scss` (small helpers)
-- [ ] T011 Create `Frontend/quran-dashboard-ui/src/styles/_themes.scss` with `[data-theme="dark"]` token overrides (warm "ink"; light is the `:root` default from T006) (depends on T006)
-- [ ] T012 Update `Frontend/quran-dashboard-ui/src/styles.scss` to keep the three `@tailwind` layers and `@use`/import all partials from `src/styles/` (depends on T006–T011)
+- [x] T005 [P] Set RTL/Arabic + branding in `Frontend/quran-dashboard-ui/src/index.html`: `<html lang="ar" dir="rtl">` and `<title>المنهج القرآني</title>`
+- [x] T006 [P] Create `Frontend/quran-dashboard-ui/src/styles/_tokens.scss` defining all `--qd-*` tokens in `:root` with light "parchment" values (warm-tinted OKLCH; no pure `#fff`/`#000`) per `contracts/ui-design-tokens.md`
+- [x] T007 [P] Create `Frontend/quran-dashboard-ui/src/styles/_typography.scss` with `@font-face` for self-hosted Amiri (content/headings) + IBM Plex Sans Arabic (UI), `font-display: swap`, and text classes `qd-page-title`, `qd-section-title`, `qd-card-title`, `qd-text`, `qd-text-muted`, `qd-text-meta`
+- [x] T008 [P] Create `Frontend/quran-dashboard-ui/src/styles/_layout.scss` with layout primitives `qd-shell`, `qd-navbar`, `qd-container`, `qd-footer` (logical CSS properties, flat/hairline per DESIGN.md)
+- [x] T009 [P] Create `Frontend/quran-dashboard-ui/src/styles/_components.scss` with `qd-card`, `qd-btn`/`qd-btn-primary`/`qd-btn-secondary`/`qd-btn-ghost`, `qd-badge`, `qd-empty-state`, `qd-loading-state`, `qd-error-state`
+- [x] T010 [P] Create `Frontend/quran-dashboard-ui/src/styles/_forms.scss` (`qd-input`) and `Frontend/quran-dashboard-ui/src/styles/_utilities.scss` (small helpers)
+- [x] T011 Create `Frontend/quran-dashboard-ui/src/styles/_themes.scss` with `[data-theme="dark"]` token overrides (warm "ink"; light is the `:root` default from T006) (depends on T006)
+- [x] T012 Update `Frontend/quran-dashboard-ui/src/styles.scss` to keep the three `@tailwind` layers and `@use`/import all partials from `src/styles/` (depends on T006–T011)
 
 **Checkpoint**: App renders RTL in the light theme; `qd-*` classes and tokens are available.
 
