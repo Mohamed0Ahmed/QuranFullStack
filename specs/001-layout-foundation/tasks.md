@@ -85,11 +85,11 @@ independently testable increment.
 
 **Independent Test**: Click every navbar / «المزيد» / Settings item; each loads its route (home or shared placeholder), the active item is marked, the URL updates, and refresh + back/forward preserve location; an unknown URL redirects to `/dashboard`.
 
-- [ ] T019 [P] [US2] Create `Frontend/quran-dashboard-ui/src/app/core/navigation/nav-items.ts` exporting the `NavItem[]` config (key/labelAr/labelEn/route/group) exactly per `contracts/ui-navigation.md`
-- [ ] T020 [P] [US2] Create the shared placeholder page in `Frontend/quran-dashboard-ui/src/app/shared/ui/placeholder-page/`: reads route `data.titleAr` as the title and shows the fixed Arabic body «سيتم ربط هذا القسم ضمن خطة الميزات التالية.» using `qd-page`/`qd-empty-state` (calm, no "coming soon")
-- [ ] T021 [P] [US2] Update `Frontend/quran-dashboard-ui/src/app/app.routes.ts`: add routes for `mushaf, words, tafsirs, gates, resources, i3rab, translations, audio, mutashabihat, settings` → the placeholder with `data: { titleAr }`, and add the `**` wildcard → redirect to `dashboard` (depends on T018, T019, T020)
-- [ ] T022 [US2] Update the top-navbar (`core/layout/top-navbar/`) to render `primary` items as links, `more` items inside a «المزيد» dropdown, and `settings` in the actions area, driven by `nav-items.ts`, with `routerLinkActive` for the active state (depends on T014, T019)
-- [ ] T023 [US2] Add the mobile collapse menu to the top-navbar (`core/layout/top-navbar/`) exposing all nav items via the mobile menu button (depends on T022)
+- [x] T019 [P] [US2] Create `Frontend/quran-dashboard-ui/src/app/core/navigation/nav-items.ts` exporting the `NavItem[]` config (key/labelAr/labelEn/route/group) exactly per `contracts/ui-navigation.md`
+- [x] T020 [P] [US2] Create the shared placeholder page in `Frontend/quran-dashboard-ui/src/app/shared/ui/placeholder-page/`: reads route `data.titleAr` as the title and shows the fixed Arabic body «سيتم ربط هذا القسم ضمن خطة الميزات التالية.» using `qd-page`/`qd-empty-state` (calm, no "coming soon")
+- [x] T021 [P] [US2] Update `Frontend/quran-dashboard-ui/src/app/app.routes.ts`: add routes for `mushaf, words, tafsirs, gates, resources, i3rab, translations, audio, mutashabihat, settings` → the placeholder with `data: { titleAr }`, and add the `**` wildcard → redirect to `dashboard` (depends on T018, T019, T020)
+- [x] T022 [US2] Update the top-navbar (`core/layout/top-navbar/`) to render `primary` items as links, `more` items inside a «المزيد» dropdown, and `settings` in the actions area, driven by `nav-items.ts`, with `routerLinkActive` for the active state (depends on T014, T019)
+- [x] T023 [US2] Add the mobile collapse menu to the top-navbar (`core/layout/top-navbar/`) exposing all nav items via the mobile menu button (depends on T022)
 
 **Checkpoint**: Every section reachable; active + URL state work; unknown routes go home.
 
