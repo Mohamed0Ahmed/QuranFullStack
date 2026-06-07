@@ -66,6 +66,18 @@ reference material for this one. Where the generic clean-code guidance conflicts
 project conventions, the project wins (see `CODING_PRINCIPLES.md`: C#/.NET `I`-prefixed
 interfaces and the `ApiResponse` API envelope are authoritative).
 
+**If the diff contains test files, also apply `test-guard` to the test-code portion**
+(test-code quality only; this skill keeps ownership of everything else):
+
+- `.claude/skills/test-guard/SKILL.md` — the nine test-code rules.
+- `.claude/skills/test-guard/references/dotnet.md` — for backend tests (xUnit,
+  `WebApplicationFactory`, EF Core + PostgreSQL via Testcontainers, `ApiResponse`).
+- `.claude/skills/test-guard/references/jest.md` — for frontend Angular/TypeScript tests.
+
+Recognize test files by pattern: `*Tests.cs`, `*Test.cs`, `*.spec.ts`, `*.test.ts`, and
+files under `tests/` or `__tests__/`. Test-code findings fold into the **Findings**
+section below with the normal severity levels.
+
 **If Backend changed, also read:**
 
 - `Backend/.architecture/BACKEND_STRUCTURE.md`
@@ -302,6 +314,21 @@ change:
 - changes Quranic display in a way that may affect meaning or readability.
 
 Any such issue is high priority (treat as BLOCKING or MAJOR depending on impact).
+
+## Test-Code Review (delegated to test-guard)
+
+When the diff includes test files, review the **test code** using `test-guard`'s nine
+rules (see the reading rules above). In scope: test behavior vs implementation,
+justified boundary mocks, data-driven variants, no tests for framework guarantees, real
+entities/DTOs/value objects, real infrastructure for persistence/query correctness, and
+source-safe Quranic test data. `engineering-review` still owns production code,
+architecture, Spec Kit compliance, Quranic data safety, API contracts, frontend
+structure, UI/product checks, and the final verdict.
+
+Keep this distinct from build/test verification below:
+
+- **test-guard answers:** is the test *code* good?
+- **Verification (below) answers:** were builds/tests *run*, and what happened?
 
 ## Testing and Verification
 

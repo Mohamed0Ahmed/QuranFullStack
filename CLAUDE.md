@@ -56,6 +56,26 @@ Notes:
   `I`-prefixed interface names and the `ApiResponse` contract /
   `Backend/.architecture/API_GUIDELINES.md` at the API boundary are authoritative.
 
+### Test-code self-check before delivery
+
+Before delivering tests, run a quick test-code self-check:
+
+- test behavior, not implementation details
+- every mock targets a real boundary
+- variants use data-driven tests
+- no tests for framework guarantees
+- real DTOs/entities/value objects are constructed, not mocked
+- persistence/query tests use real infrastructure where correctness matters
+- Quranic test data remains source-safe
+
+Consult `.claude/skills/test-guard/` only when writing or reviewing test code, or when
+deeper guidance is needed.
+
+Notes:
+
+- `engineering-review` remains the formal post-implementation review skill.
+- `test-guard` is only for test-code quality.
+
 ## Design Context
 
 This is an **Arabic-first (RTL)**, **scholarly and calm** product dashboard for

@@ -90,6 +90,11 @@ Frontend:
 - Run build after relevant changes when possible.
 - Run tests when tests exist or when logic is sensitive.
 - Report build/test status in the final summary.
+- Deeper test-code quality guidance lives in the `test-guard` skill
+  (`.claude/skills/test-guard/`): use `references/dotnet.md` for backend tests and
+  `references/jest.md` for frontend tests.
+- Quranic Data Safety (§10) applies to tests too: never invent Quran text, tafsir,
+  translations, morphology, roots, or gates in tests unless clearly synthetic.
 
 ## 10. Quranic Data Safety
 
