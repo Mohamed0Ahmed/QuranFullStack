@@ -35,6 +35,27 @@ Before any implementation work, read and follow:
 
 These principles apply to the whole FullStack workspace. Project-specific instruction files may add more detailed rules for Backend or Frontend work.
 
+### Clean-code self-check before delivery
+
+Before delivering implementation code, run a quick clean-code guard self-check against
+the reference pack at `.claude/skills/engineering-review/references/clean-code-guard/`,
+focusing on:
+
+- naming and functions
+- comments and formatting
+- SOLID
+- DRY / KISS / YAGNI
+- AI-generated-code failure modes
+
+Notes:
+
+- `engineering-review` remains the formal post-implementation review skill; this
+  self-check does not replace it.
+- The clean-code-guard pack is reference material only, not a separate skill.
+- Project-specific rules override generic clean-code guidance — in particular, C#/.NET
+  `I`-prefixed interface names and the `ApiResponse` contract /
+  `Backend/.architecture/API_GUIDELINES.md` at the API boundary are authoritative.
+
 ## Design Context
 
 This is an **Arabic-first (RTL)**, **scholarly and calm** product dashboard for

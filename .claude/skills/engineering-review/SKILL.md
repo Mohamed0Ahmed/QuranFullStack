@@ -47,6 +47,25 @@ context for those.
 
 - `CODING_PRINCIPLES.md`
 
+**For deep code-quality review, also consult the clean-code reference pack** (naming
+and functions, comments and formatting, SOLID, DRY/KISS/YAGNI, and AI-generated-code
+failure modes). Read the relevant file when a finding touches that principle, or walk
+the checklist when doing a thorough quality pass:
+
+- `.claude/skills/engineering-review/references/clean-code-guard/naming-and-functions.md`
+- `.claude/skills/engineering-review/references/clean-code-guard/comments-and-formatting.md`
+- `.claude/skills/engineering-review/references/clean-code-guard/solid.md`
+- `.claude/skills/engineering-review/references/clean-code-guard/dry-kiss-yagni.md`
+- `.claude/skills/engineering-review/references/clean-code-guard/ai-failure-modes.md`
+- `.claude/skills/engineering-review/references/clean-code-guard/review-checklist.md` — structured walk-through for a deep code-quality review.
+- `.claude/skills/engineering-review/references/clean-code-guard/sources.md` — bibliography; read only when a finding is contested and you need the source citation.
+
+This pack **deepens** the General Review Goals below; it does **not** replace any
+project-specific check, and it does not make this a second review skill — it is
+reference material for this one. Where the generic clean-code guidance conflicts with
+project conventions, the project wins (see `CODING_PRINCIPLES.md`: C#/.NET `I`-prefixed
+interfaces and the `ApiResponse` API envelope are authoritative).
+
 **If Backend changed, also read:**
 
 - `Backend/.architecture/BACKEND_STRUCTURE.md`
@@ -104,13 +123,18 @@ output rather than inventing its rules.
 
 1. **Clean Code** — clear descriptive names; small focused units; no vague names
    like `DataItem`, `Obj`, `Temp`, `Info2`; no comments restating obvious code;
-   readable flow.
+   readable flow. For deeper checks (intention-revealing names, function size and
+   single-level-of-abstraction, command/query separation, when a comment earns its
+   keep), see `references/clean-code-guard/naming-and-functions.md` and
+   `references/clean-code-guard/comments-and-formatting.md`.
 2. **SOLID** — single responsibility (one reason to change); focused, useful
    abstractions; high-level logic depends on abstractions not concrete
-   infrastructure; interfaces not bloated; implementations honor contracts.
+   infrastructure; interfaces not bloated; implementations honor contracts. For the
+   detection smells and modern phrasings, see `references/clean-code-guard/solid.md`.
 3. **DRY / KISS / YAGNI** — no duplicated business/validation logic; no unnecessary
    abstractions; no unrequested future features; simplest solution that meets the
-   requirement.
+   requirement. For knowledge-vs-text duplication, the wrong-abstraction caveat, and
+   complexity ceilings, see `references/clean-code-guard/dry-kiss-yagni.md`.
 4. **Strong typing** — explicit types in C# and TypeScript; avoid TypeScript `any`
    unless justified; enums/constants for known values; no magic strings/numbers
    where a named constant is clearer.
@@ -118,6 +142,16 @@ output rather than inventing its rules.
    touched; no broad refactor or UI redesign mixed into feature work.
 6. **Error handling** — errors are specific and actionable; raw internal exceptions
    are not exposed to users; avoid generic messages when a clearer one is possible.
+   Note: the generic "prefer exceptions over return codes" guidance in the pack
+   applies **inside layers**; at the API boundary the `ApiResponse` envelope and
+   `Backend/.architecture/API_GUIDELINES.md` are authoritative.
+7. **AI-generated-code failure modes** — watch for the systematic LLM defects
+   catalogued in `references/clean-code-guard/ai-failure-modes.md`: catch-all error
+   swallowing, defensive guards for impossible cases, premature abstraction, comment
+   pollution, hallucinated APIs/packages, hardcoded "success"/mock returns in
+   production code, copy-from-similar (plausible-but-wrong) logic, dead code, and
+   speculative configurability. For a thorough quality pass, walk
+   `references/clean-code-guard/review-checklist.md`.
 
 ## Backend Review Checklist
 
