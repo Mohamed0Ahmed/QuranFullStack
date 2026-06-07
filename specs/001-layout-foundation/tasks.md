@@ -150,11 +150,11 @@ independently testable increment.
 
 **Purpose**: Accessibility, responsiveness, and final verification across all stories.
 
-- [ ] T040 [P] Accessibility pass across navbar, «المزيد» dropdown, theme toggle, mobile menu, and cards: keyboard operability, visible `--qd-focus-ring`, ARIA labels, and WCAG 2.1 AA contrast in **both** themes (no color-only meaning)
-- [ ] T041 [P] Responsive pass: verify no horizontal scroll at 360px, the navbar collapses into the mobile menu, and content has safe padding
-- [ ] T042 [P] Respect `prefers-reduced-motion` for theme switch / menu transitions (motion conveys state only)
-- [ ] T043 Run the `quickstart.md` verification checklist (SC-001…SC-013): `dotnet build` (Backend) and `npm run build` (Frontend) both succeed; all manual checks pass
-- [ ] T044 Final safety review: confirm no real DB password is committed and no Quranic/religious content is fabricated anywhere
+- [x] T040 [P] Accessibility pass across navbar, «المزيد» dropdown, theme toggle, mobile menu, and cards: keyboard operability, visible `--qd-focus-ring`, ARIA labels, and WCAG 2.1 AA contrast in **both** themes (no color-only meaning)
+- [x] T041 [P] Responsive pass: verify no horizontal scroll at 360px, the navbar collapses into the mobile menu, and content has safe padding
+- [x] T042 [P] Respect `prefers-reduced-motion` for theme switch / menu transitions (motion conveys state only)
+- [x] T043 Run the `quickstart.md` verification checklist (SC-001…SC-013): `dotnet build` (Backend) and `npm run build` (Frontend) both succeed; all manual checks pass
+- [x] T044 Final safety review: confirm no real DB password is committed and no Quranic/religious content is fabricated anywhere
 
 ---
 
