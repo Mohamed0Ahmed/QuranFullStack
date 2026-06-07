@@ -1,0 +1,27 @@
+.qd-input {
+  display: block;
+  width: 100%;
+  padding: var(--qd-space-2) var(--qd-space-3);
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-sm);
+  background: var(--qd-surface);
+  color: var(--qd-text);
+  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+
+  &::placeholder {
+    color: var(--qd-text-muted);
+  }
+
+  &:focus {
+    outline: 2px solid var(--qd-focus-ring);
+    outline-offset: 1px;
+    border-color: var(--qd-accent);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}

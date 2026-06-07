@@ -1,3 +1,11 @@
+@use 'styles/tokens';
+@use 'styles/themes';
+@use 'styles/typography';
+@use 'styles/layout';
+@use 'styles/components';
+@use 'styles/forms';
+@use 'styles/utilities';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -9,5 +17,7 @@ body {
 }
 
 body {
-  font-family: system-ui, sans-serif;
+  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  background: var(--qd-bg);
+  color: var(--qd-text);
 }

@@ -1,0 +1,25 @@
+:root {
+  --qd-bg: oklch(0.96 0.008 75);
+  --qd-surface: oklch(0.985 0.006 75);
+  --qd-surface-elevated: oklch(0.995 0.005 75);
+  --qd-text: oklch(0.18 0.015 60);
+  --qd-text-muted: oklch(0.44 0.012 60);
+  --qd-border: oklch(0.82 0.01 75);
+  --qd-accent: oklch(0.45 0.08 55);
+  --qd-danger: oklch(0.55 0.15 25);
+  --qd-warning: oklch(0.70 0.14 75);
+  --qd-success: oklch(0.55 0.12 150);
+  --qd-focus-ring: oklch(0.50 0.10 55);
+  --qd-shadow: none;
+
+  --qd-radius-sm: 0.25rem;
+  --qd-radius-md: 0.5rem;
+  --qd-radius-lg: 0.75rem;
+
+  --qd-space-1: 0.25rem;
+  --qd-space-2: 0.5rem;
+  --qd-space-3: 0.75rem;
+  --qd-space-4: 1rem;
+  --qd-space-5: 1.5rem;
+  --qd-space-6: 2rem;
+}

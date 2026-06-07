@@ -1,0 +1,110 @@
+.qd-card {
+  background: var(--qd-surface);
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-md);
+  padding: var(--qd-space-4);
+}
+
+.qd-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--qd-space-2);
+  padding: var(--qd-space-2) var(--qd-space-4);
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-sm);
+  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.5;
+  cursor: pointer;
+  background: var(--qd-surface);
+  color: var(--qd-text);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+
+  &:hover {
+    background: var(--qd-surface-elevated);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--qd-focus-ring);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.qd-btn-primary {
+  background: var(--qd-accent);
+  color: oklch(0.98 0.005 75);
+  border-color: var(--qd-accent);
+
+  &:hover {
+    background: oklch(0.40 0.09 55);
+  }
+}
+
+.qd-btn-secondary {
+  background: transparent;
+  color: var(--qd-text);
+  border-color: var(--qd-border);
+
+  &:hover {
+    background: var(--qd-surface);
+  }
+}
+
+.qd-btn-ghost {
+  background: transparent;
+  color: var(--qd-text-muted);
+  border-color: transparent;
+
+  &:hover {
+    color: var(--qd-text);
+    background: var(--qd-surface);
+  }
+}
+
+.qd-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--qd-space-1) var(--qd-space-2);
+  border-radius: var(--qd-radius-sm);
+  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.4;
+  background: var(--qd-surface);
+  color: var(--qd-text-muted);
+  border: 1px solid var(--qd-border);
+}
+
+.qd-empty-state,
+.qd-loading-state,
+.qd-error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--qd-space-6);
+  text-align: center;
+  color: var(--qd-text-muted);
+  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+}
+
+.qd-loading-state {
+  opacity: 0.7;
+}
+
+.qd-error-state {
+  color: var(--qd-danger);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qd-btn {
+    transition: none;
+  }
+}
