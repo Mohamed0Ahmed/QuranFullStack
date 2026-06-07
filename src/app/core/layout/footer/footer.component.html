@@ -4,8 +4,33 @@
       <p class="qd-text-muted">المنهج القرآني © 2026</p>
       <p class="qd-text-meta">لوحة تحكم لتنظيم ومراجعة بيانات البحث القرآني</p>
 
-      <!-- Placeholder: version/environment info (US4 — Phase 7) -->
-      <!-- Placeholder: connection/status indicator (US4 — Phase 7) -->
+      @switch (viewState) {
+        @case ('loading') {
+          <span class="health-indicator health-loading" role="status" aria-live="polite">
+            جارٍ التحقق من الحالة...
+          </span>
+        }
+        @case ('success') {
+          <span class="health-indicator" [ngClass]="healthClass" role="status" aria-live="polite">
+            <span class="health-dot" [ngClass]="healthDotClass"></span>
+            {{ healthLabel }}
+            @if (databaseCheck) {
+              <span class="health-check">
+                <span class="health-dot" [ngClass]="databaseDotClass"></span>
+                {{ databaseLabel }}
+              </span>
+            }
+          </span>
+        }
+        @case ('error') {
+          <span class="health-indicator health-error" role="alert">
+            <span>{{ errorMessage }}</span>
+            <button class="qd-btn qd-btn-ghost health-retry-btn" type="button" (click)="retry()">
+              إعادة المحاولة
+            </button>
+          </span>
+        }
+      }
     </div>
   </div>
 </footer>

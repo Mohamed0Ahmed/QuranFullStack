@@ -3,6 +3,29 @@
     <div class="qd-page-header">
       <h1 class="qd-page-title">مرحباً بك في المنهج القرآني</h1>
       <p class="qd-text-muted">لوحة تحكم لتنظيم ومراجعة بيانات البحث القرآني وإعدادها للنشر.</p>
+
+      @switch (viewState) {
+        @case ('loading') {
+          <div class="qd-loading-state" role="status" aria-live="polite">
+            <span>جارٍ تحميل بيانات التطبيق...</span>
+          </div>
+        }
+        @case ('success') {
+          <div class="app-meta" role="status" aria-live="polite">
+            <span class="qd-badge">{{ appInfo?.appName }}</span>
+            <span class="qd-badge">الإصدار {{ appInfo?.version }}</span>
+            <span class="qd-badge">{{ appInfo?.environment }}</span>
+          </div>
+        }
+        @case ('error') {
+          <div class="qd-error-state app-meta-error" role="alert">
+            <span>{{ errorMessage }}</span>
+            <button class="qd-btn qd-btn-ghost" type="button" (click)="retry()">
+              إعادة المحاولة
+            </button>
+          </div>
+        }
+      }
     </div>
 
     <div class="dashboard-cards">

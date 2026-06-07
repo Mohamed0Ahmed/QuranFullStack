@@ -5,3 +5,53 @@
   text-align: center;
   padding-block: var(--qd-space-2);
 }
+
+.health-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--qd-space-2);
+  font-size: 0.8125rem;
+  color: var(--qd-text-meta);
+  flex-wrap: wrap;
+}
+
+.health-check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--qd-space-1);
+}
+
+.health-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dot-healthy {
+  background-color: var(--qd-success);
+}
+
+.dot-unhealthy {
+  background-color: var(--qd-danger);
+}
+
+.dot-degraded {
+  background-color: var(--qd-warning);
+}
+
+.health-loading {
+  opacity: 0.7;
+}
+
+.health-error {
+  color: var(--qd-danger);
+  flex-wrap: wrap;
+}
+
+.health-retry-btn {
+  font-size: 0.8125rem;
+  padding: var(--qd-space-1) var(--qd-space-2);
+}
