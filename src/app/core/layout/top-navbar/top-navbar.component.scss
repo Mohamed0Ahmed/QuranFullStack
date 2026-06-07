@@ -87,6 +87,29 @@
   gap: var(--qd-space-2);
 }
 
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--qd-space-1) var(--qd-space-2);
+  line-height: 1;
+  color: var(--qd-text-muted);
+  border-radius: var(--qd-radius-sm);
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.theme-toggle:hover {
+  color: var(--qd-text);
+  background-color: var(--qd-surface-elevated);
+}
+
+.mobile-theme-toggle {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--qd-space-2) var(--qd-space-4);
+  border-bottom: 1px solid var(--qd-border);
+}
+
 .menu-toggle {
   display: none;
   padding: var(--qd-space-2);

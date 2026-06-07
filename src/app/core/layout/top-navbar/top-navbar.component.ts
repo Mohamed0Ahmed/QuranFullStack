@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { NAV_ITEMS, NavItem } from '../../navigation/nav-items';
+import { ThemeService } from '../../theme/theme.service';
 
 @Component({
   selector: 'qd-top-navbar',
@@ -12,6 +13,7 @@ import { NAV_ITEMS, NavItem } from '../../navigation/nav-items';
 })
 export class TopNavbarComponent {
   private readonly router = inject(Router);
+  readonly themeService = inject(ThemeService);
 
   readonly allItems: NavItem[] = NAV_ITEMS;
   readonly primaryItems = NAV_ITEMS.filter((i) => i.group === 'primary');
