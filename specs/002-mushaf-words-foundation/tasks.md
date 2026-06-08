@@ -92,16 +92,16 @@ description: "Task list for Quran Mushaf Words & Layout Data Foundation"
 
 ### Tests for User Story 2
 
-- [ ] T031 [P] [US2] Integration test: a corrupted source (e.g. dropped word / duplicate location / wrong total) → import aborts, **0 rows persisted**, report `verdict:"fail"` names the rule in `Backend/tests/QuranDashboard.Tests/Quran/Import/ValidationFailureTests.cs`.
-- [ ] T032 [P] [US2] Integration test: valid source → `verdict:"pass-with-warnings"`, the only warning is `37:130`; report md+json both written, in `Backend/tests/QuranDashboard.Tests/Quran/Import/ValidationReportTests.cs`.
-- [ ] T033 [P] [US2] Unit test: every FR-018 check id present with correct severity (hard vs warning) in `Backend/tests/QuranDashboard.Tests/Quran/Import/ValidatorRulesTests.cs`.
+- [x] T031 [P] [US2] Integration test: a corrupted source (e.g. dropped word / duplicate location / wrong total) → import aborts, **0 rows persisted**, report `verdict:"fail"` names the rule in `Backend/tests/QuranDashboard.Tests/Quran/Import/ValidationFailureTests.cs`.
+- [x] T032 [P] [US2] Integration test: valid source → `verdict:"pass-with-warnings"`, the only warning is `37:130`; report md+json both written, in `Backend/tests/QuranDashboard.Tests/Quran/Import/ValidationReportTests.cs`.
+- [x] T033 [P] [US2] Unit test: every FR-018 check id present with correct severity (hard vs warning) in `Backend/tests/QuranDashboard.Tests/Quran/Import/ValidatorRulesTests.cs`.
 
 ### Implementation for User Story 2
 
-- [ ] T034 [US2] `QuranImportValidationResult` (totals, per-check results, warnings, verdict) in `Backend/application/QuranDashboard.Application/Quran/Import/Validation/QuranImportValidationResult.cs`.
-- [ ] T035 [US2] `QuranImportValidator` implementing every FR-018 hard check + the `37:130` warning + the encoding info note in `.../Quran/Import/Validation/QuranImportValidator.cs`.
-- [ ] T036 [US2] `MarkdownJsonImportReportWriter : IImportReportWriter` (writes report per `contracts/validation-report.schema.md`) in `Backend/infrastructure/QuranDashboard.Infrastructure/Reports/Quran/MarkdownJsonImportReportWriter.cs`.
-- [ ] T037 [US2] Wire validation into `ImportQuranFoundationHandler`: validate after assemble, **persist nothing on hard fail**, always write the report (depends on T027, T035, T036).
+- [x] T034 [US2] `QuranImportValidationResult` (totals, per-check results, warnings, verdict) in `Backend/application/QuranDashboard.Application/Quran/Import/Validation/QuranImportValidationResult.cs`.
+- [x] T035 [US2] `QuranImportValidator` implementing every FR-018 hard check + the `37:130` warning + the encoding info note in `.../Quran/Import/Validation/QuranImportValidator.cs`.
+- [x] T036 [US2] `MarkdownJsonImportReportWriter : IImportReportWriter` (writes report per `contracts/validation-report.schema.md`) in `Backend/infrastructure/QuranDashboard.Infrastructure/Reports/Quran/MarkdownJsonImportReportWriter.cs`.
+- [x] T037 [US2] Wire validation into `ImportQuranFoundationHandler`: validate after assemble, **persist nothing on hard fail**, always write the report (depends on T027, T035, T036).
 
 **Checkpoint**: Import is gated by validation; report is produced every run.
 

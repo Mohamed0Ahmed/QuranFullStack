@@ -1,0 +1,170 @@
+---
+alwaysApply: true
+---
+# Quran FullStack Cursor Rules
+
+Before exploring code, answering questions, making changes, reviewing, committing, or generating commands, read the relevant project instruction files.
+
+## Required reading order
+
+1. Root workspace:
+   - `AGENTS.md`
+   - `CODING_PRINCIPLES.md`
+
+2. Backend work:
+   When the task touches anything under `Backend/`, read:
+   - `Backend/AGENTS.md`
+   - `Backend/.architecture/BACKEND_STRUCTURE.md`
+   - `Backend/.architecture/CLEAN_ARCHITECTURE.md`
+
+   If the task touches API endpoints, controllers, request/response models, middleware, Swagger, API config, localization/messages, exception handling, or `ApiResponse`, also read:
+   - `Backend/.architecture/API_GUIDELINES.md`
+
+3. Frontend work:
+   When the task touches anything under `Frontend/quran-dashboard-ui/`, read:
+   - `Frontend/quran-dashboard-ui/AGENTS.md`
+   - `Frontend/quran-dashboard-ui/.architecture/FRONTEND_STRUCTURE.md`
+   - `Frontend/quran-dashboard-ui/.architecture/UI_STYLE_SYSTEM.md`
+   - `Frontend/quran-dashboard-ui/.architecture/API_INTEGRATION_GUIDELINES.md`
+
+4. FullStack / Spec Kit work:
+   When the task touches `specs/`, feature planning, phase implementation, tasks, contracts, or cross-repo workflow, read the active feature files:
+   - `spec.md`
+   - `plan.md`
+   - `tasks.md`
+   - `data-model.md` if present
+   - `quickstart.md` if present
+   - relevant files under `contracts/`
+
+If a more specific instruction file conflicts with a broader one, follow the more specific file unless it violates Quranic data safety, product safety, or the user's explicit instruction.
+
+Do not rely on `CLAUDE.md` unless the user explicitly asks. `CLAUDE.md` is for Claude-specific behavior.
+
+## Spec Kit phase discipline
+
+When implementing a phase:
+
+- Implement only the requested phase and requested tasks.
+- Do not implement future phases early.
+- Do not add future flags, future CLI options, future endpoints, future schema fields, or future behaviors unless explicitly requested.
+- Do not mark a task complete unless it is actually implemented and verified.
+- If a task appears to require changing a contract or architecture rule, stop and report that before changing it silently.
+- If the implementation needs behavior outside the current phase, report it as out of scope.
+
+## Contracts and schemas
+
+When code emits JSON, Markdown reports, API responses, imported records, validation reports, or command output that has a contract:
+
+- Read the relevant contract before coding.
+- Match the contract exactly.
+- Do not add fields, ids, severities, statuses, or enum-like string values unless the contract is updated in the same change and the update is explicitly justified.
+- Prefer constants for closed-set values such as verdicts, severities, statuses, check ids, route ids, and task ids.
+- Do not use scattered magic strings for contract values.
+
+## File size and responsibility rules
+
+Before reporting completion:
+
+- Check changed files against documented file-size thresholds.
+- If a file exceeds a hard threshold, split it before delivery.
+- If a file approaches or exceeds a soft threshold, report it and justify why it remains cohesive.
+- Do not create oversized services, handlers, components, validators, or utility classes.
+- Do not add unrelated responsibilities to an existing file just because it is convenient.
+
+Backend examples:
+- Keep console hosts thin.
+- Keep API endpoints/controllers thin.
+- Keep handlers focused on orchestration.
+- Keep validators separate from assemblers/importers.
+- Keep report writing in Infrastructure.
+- Keep EF/database logic in Infrastructure.
+- Keep Domain independent.
+
+Frontend examples:
+- Routeable page components should be shells/orchestrators.
+- Split large pages into components, state/facade, data-access, and models.
+- Do not put large HTML templates inline in TypeScript.
+- Repeated visual patterns should use centralized style tokens and reusable `qd-*` classes.
+
+## Quranic data safety
+
+Never invent, alter, normalize, correct, or fabricate:
+
+- Quran text
+- ayah text
+- surah names
+- word counts
+- tafsir
+- translations
+- roots
+- morphology
+- i3rab
+- mutashabihat
+- audio timing data
+- topic/gate links
+
+unless the instruction explicitly says to generate synthetic test data.
+
+For synthetic test data:
+- Use obvious placeholders.
+- Do not use real Quranic text or real religious labels unless loaded from a traceable source fixture.
+- Do not make synthetic data look like authentic Quranic data.
+
+Source resource files:
+- `resources/` is usually gitignored and used for import/source inspection.
+- Do not commit source resource files unless explicitly requested.
+- Do not modify source resource files.
+- Tests depending on local resources must be clearly gated/skipped or documented.
+
+## Commit workflow
+
+This workspace uses multiple repos:
+
+- `Backend/`
+- `Frontend/quran-dashboard-ui/`
+- FullStack root
+
+Before any commit:
+- Show repo status for all relevant repos.
+- Show proposed commit order.
+- Do not use `git add .` blindly.
+- Do not commit unless the user explicitly asks.
+- Do not push unless the user explicitly asks.
+
+Commit order:
+1. Commit child repos first: Backend and/or Frontend.
+2. Then commit FullStack root with updated submodule pointers.
+3. Push child repos before pushing FullStack.
+
+Never create a FullStack commit pointing to an uncommitted child repo state.
+
+## Verification
+
+Before delivery, run the relevant verification commands when possible.
+
+Backend:
+- `dotnet build QuranDashboard.sln`
+- relevant `dotnet test`
+- for import work, run the relevant import test filter if available
+
+Frontend:
+- `npm run build`
+- relevant tests if available
+
+Always run:
+- `git diff --check`
+
+If a command cannot be run, report why.
+
+## Delivery report
+
+At the end of implementation, report:
+
+- Changed files
+- Completed tasks
+- Verification commands and results
+- Any skipped checks and why
+- Confirmation that no future phase behavior was implemented
+- Confirmation that contracts/schemas still match emitted output
+- Confirmation that changed files respect file-size thresholds
+- Confirmation that no source Quran/resource files were modified
