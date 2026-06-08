@@ -130,11 +130,11 @@ description: "Task list for Quran Mushaf Words & Layout Data Foundation"
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T043 [P] Clean-code self-check (naming/functions, SOLID, DRY/KISS/YAGNI) and `test-guard` self-check on the new test code per `CLAUDE.md`.
-- [ ] T044 Run `engineering-review` and `backend-structure-review` on the feature; address findings.
-- [ ] T045 [P] Confirm no Quran data in the migration and no `search_normalized_text`/morphology/font columns leaked into the schema (`quran_mushaf_pages` has no font fields).
-- [ ] T046 Execute `quickstart.md` end-to-end (assemble → migrate → import → SQL verification → re-run safety); confirm verdict `pass-with-warnings`.
-- [ ] T047 Full solution build + run all tests green; report build/test status and the validation report path.
+- [x] T043 [P] Clean-code self-check (naming/functions, SOLID, DRY/KISS/YAGNI) and `test-guard` self-check on the new test code per `CLAUDE.md`.
+- [x] T044 Run `engineering-review` and `backend-structure-review` on the feature; address findings.
+- [x] T045 [P] Confirm no Quran data in the migration and no `search_normalized_text`/morphology/font columns leaked into the schema (`quran_mushaf_pages` has no font fields).
+- [x] T046 Execute `quickstart.md` end-to-end (assemble → migrate → import → SQL verification → re-run safety); confirm verdict `pass-with-warnings`.
+- [x] T047 Full solution build + run all tests green; report build/test status and the validation report path.
 
 ---
 
