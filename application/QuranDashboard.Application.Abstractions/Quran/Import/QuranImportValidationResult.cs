@@ -1,13 +1,17 @@
 namespace QuranDashboard.Application.Abstractions.Quran.Import;
 
 public sealed record QuranImportValidationResult(
+    DateTimeOffset RunAtUtc,
+    string SourceRoot,
+    string ManifestVersion,
     string Verdict,
     bool Persisted,
     bool Forced,
     ImportTotals Totals,
     IReadOnlyList<ImportCheckResult> Checks,
     IReadOnlyList<string> Warnings,
-    IReadOnlyList<string> Errors);
+    IReadOnlyList<string> Errors,
+    IReadOnlyList<string> InfoNotes);
 
 public sealed record ImportTotals(
     int Surahs,

@@ -5,6 +5,7 @@ using QuranDashboard.Application.Abstractions.Quran.Import;
 using QuranDashboard.Infrastructure.Files.Quran.Import;
 using QuranDashboard.Infrastructure.Persistence;
 using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Import;
+using QuranDashboard.Infrastructure.Reports.Quran;
 
 namespace QuranDashboard.Infrastructure;
 
@@ -26,6 +27,7 @@ public static class DependencyInjection
         services.AddSingleton<JsonMetadataSourceReader>();
         services.AddSingleton<IQuranImportSource, QuranImportSource>();
         services.AddScoped<IQuranImportWriter, EfBulkQuranImportWriter>();
+        services.AddSingleton<IImportReportWriter, MarkdownJsonImportReportWriter>();
 
         return services;
     }

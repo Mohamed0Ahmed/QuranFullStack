@@ -33,7 +33,15 @@ public sealed class QuranImportSource : IQuranImportSource
         var surahs = await metadataSourceReader.ReadSurahsAsync(GetSourcePath(manifest, "surah-meta"), ct);
         var ayahs = await metadataSourceReader.ReadAyahsAsync(GetSourcePath(manifest, "ayah-meta"), ct);
 
-        return new QuranImportSourceData(surahs, ayahs, glyph, uthmani, uthmaniSimple, imlaeiSimple, layout);
+        return new QuranImportSourceData(
+            surahs,
+            ayahs,
+            glyph,
+            uthmani,
+            uthmaniSimple,
+            imlaeiSimple,
+            layout,
+            manifest.Version);
     }
 
     private static string GetSourcePath(ImportManifest manifest, string key)

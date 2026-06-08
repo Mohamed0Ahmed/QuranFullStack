@@ -45,11 +45,6 @@ internal static class Program
                     $"Imported surahs={result.Totals.Surahs}, ayahs={result.Totals.Ayahs}, pages={result.Totals.Pages}, lines={result.Totals.Lines}, words={result.Totals.Words}.");
             }
 
-            if (!string.IsNullOrWhiteSpace(reportOutDir))
-            {
-                Console.WriteLine($"Report output path reserved for validation (US2): {reportOutDir}");
-            }
-
             return result.ExitCode;
         }
 

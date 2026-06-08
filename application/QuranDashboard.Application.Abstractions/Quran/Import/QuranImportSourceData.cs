@@ -7,4 +7,5 @@ public sealed record QuranImportSourceData(
     IReadOnlyList<WordRecordDto> Uthmani,
     IReadOnlyList<WordRecordDto> UthmaniSimple,
     IReadOnlyList<WordRecordDto> ImlaeiSimple,
-    LayoutDto Layout);
+    LayoutDto Layout,
+    string ManifestVersion = "1");
