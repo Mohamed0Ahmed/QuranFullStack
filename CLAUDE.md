@@ -1,11 +1,12 @@
 <!-- SPECKIT START -->
 
-Active feature: **Dashboard Layout & Foundation (Phase 0)** — branch `001-layout-foundation`.
+Active feature: **Quran Mushaf Words & Layout Data Foundation** — branch `002-mushaf-words-foundation`.
 For technologies, project structure, shell commands, and design artifacts, read the current plan
 and its siblings:
 
-- `specs/001-layout-foundation/plan.md` — technical context, project structure, gates
-- `specs/001-layout-foundation/spec.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/`
+- `specs/002-mushaf-words-foundation/plan.md` — technical context, project structure, gates
+- `specs/002-mushaf-words-foundation/spec.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/`
+- `docs/manhaj-qurani-mushaf-words-layout-data-foundation-plan.md` — long-form companion plan
 
 <!-- SPECKIT END -->
 
