@@ -115,14 +115,14 @@ description: "Task list for Quran Mushaf Words & Layout Data Foundation"
 
 ### Tests for User Story 3
 
-- [ ] T038 [P] [US3] Integration test: re-run without `--force` on populated tables refuses (non-zero exit) and changes nothing in `Backend/tests/QuranDashboard.Tests/Quran/Import/ReRunGuardTests.cs`.
-- [ ] T039 [P] [US3] Integration test: `--force` re-run produces a table state identical to the first import (counts + spot-checked rows) in `Backend/tests/QuranDashboard.Tests/Quran/Import/ForceReloadTests.cs`.
+- [x] T038 [P] [US3] Integration test: re-run without `--force` on populated tables refuses (non-zero exit) and changes nothing in `Backend/tests/QuranDashboard.Tests/Quran/Import/ReRunGuardTests.cs`.
+- [x] T039 [P] [US3] Integration test: `--force` re-run produces a table state identical to the first import (counts + spot-checked rows) in `Backend/tests/QuranDashboard.Tests/Quran/Import/ForceReloadTests.cs`.
 
 ### Implementation for User Story 3
 
-- [ ] T040 [US3] `IQuranImportWriter.AnyTargetTableHasDataAsync` implementation + refuse-unless-empty guard in `EfBulkQuranImportWriter` (depends on T028).
-- [ ] T041 [US3] `--force` path: atomic `TRUNCATE quran_words, quran_mushaf_lines, quran_mushaf_pages, quran_ayahs, quran_surahs RESTART IDENTITY CASCADE` then reload, all in one transaction (rollback on any failure) in `EfBulkQuranImportWriter`.
-- [ ] T042 [US3] Console: add `--force` flag, surface the refusal message + correct exit codes in `Backend/tools/QuranDashboard.DataImporter/Program.cs`.
+- [x] T040 [US3] `IQuranImportWriter.AnyTargetTableHasDataAsync` implementation + refuse-unless-empty guard in `EfBulkQuranImportWriter` (depends on T028).
+- [x] T041 [US3] `--force` path: atomic `TRUNCATE quran_words, quran_mushaf_lines, quran_mushaf_pages, quran_ayahs, quran_surahs RESTART IDENTITY CASCADE` then reload, all in one transaction (rollback on any failure) in `EfBulkQuranImportWriter`.
+- [x] T042 [US3] Console: add `--force` flag, surface the refusal message + correct exit codes in `Backend/tools/QuranDashboard.DataImporter/Program.cs`.
 
 **Checkpoint**: All three stories independently pass.
 
