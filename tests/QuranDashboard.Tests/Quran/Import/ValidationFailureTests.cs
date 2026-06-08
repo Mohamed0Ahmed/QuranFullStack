@@ -1,7 +1,4 @@
 using System.Text.Json;
-using FluentAssertions;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using QuranDashboard.Application.Quran.Import.ImportQuranFoundation;
 using QuranDashboard.Application.Quran.Import.Validation;
 using QuranDashboard.Infrastructure.Persistence;

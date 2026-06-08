@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using QuranDashboard.Domain.Quran.Ayahs;
 using QuranDashboard.Domain.Quran.MushafPages;
 using QuranDashboard.Domain.Quran.Surahs;

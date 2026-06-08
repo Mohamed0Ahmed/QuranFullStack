@@ -1,6 +1,4 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using QuranDashboard.Application;
 using QuranDashboard.Application.Quran.Import.ImportQuranFoundation;
 using QuranDashboard.Infrastructure;

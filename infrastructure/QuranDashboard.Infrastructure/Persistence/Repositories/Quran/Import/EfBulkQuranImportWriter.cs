@@ -1,5 +1,4 @@
 using System.Data;
-using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using QuranDashboard.Application.Abstractions.Quran.Import;
 using QuranDashboard.Domain.Quran.Ayahs;
