@@ -1,7 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using QuranDashboard.Application.Abstractions.Quran.Import;
+using QuranDashboard.Infrastructure.Files.Quran.Import;
 using QuranDashboard.Infrastructure.Persistence;
+using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Import;
 
 namespace QuranDashboard.Infrastructure;
 
@@ -16,6 +19,13 @@ public static class DependencyInjection
         {
             options.UseNpgsql(connectionString);
         });
+
+        services.AddSingleton<ManifestReader>();
+        services.AddSingleton<JsonWordSourceReader>();
+        services.AddSingleton<JsonLayoutSourceReader>();
+        services.AddSingleton<JsonMetadataSourceReader>();
+        services.AddSingleton<IQuranImportSource, QuranImportSource>();
+        services.AddScoped<IQuranImportWriter, EfBulkQuranImportWriter>();
 
         return services;
     }
