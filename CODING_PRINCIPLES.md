@@ -21,6 +21,20 @@ This document defines the general coding principles for the whole FullStack work
 - Avoid unnecessary comments that explain obvious code.
 - Code should read clearly without hidden surprises.
 
+Deeper clean-code review guidance (naming/functions, comments/formatting, SOLID,
+DRY/KISS/YAGNI, and AI-generated-code failure modes) lives under
+`.claude/skills/engineering-review/references/clean-code-guard/`. It is reference
+material for the `engineering-review` skill, not a separate skill.
+
+Project overrides for that generic guidance:
+
+- In C#/.NET code, project convention may use `I`-prefixed interface names (e.g.
+  `IUserService`); this overrides the generic clean-code "no `I` prefix" naming rule.
+- At the API boundary, the project `ApiResponse` contract and
+  `Backend/.architecture/API_GUIDELINES.md` are authoritative; the generic clean-code
+  "prefer exceptions over return codes" guidance applies inside layers only and must
+  not replace the API response envelope.
+
 ## 3. SOLID
 
 - Single Responsibility: one reason to change.
@@ -76,6 +90,11 @@ Frontend:
 - Run build after relevant changes when possible.
 - Run tests when tests exist or when logic is sensitive.
 - Report build/test status in the final summary.
+- Deeper test-code quality guidance lives in the `test-guard` skill
+  (`.claude/skills/test-guard/`): use `references/dotnet.md` for backend tests and
+  `references/jest.md` for frontend tests.
+- Quranic Data Safety (§10) applies to tests too: never invent Quran text, tafsir,
+  translations, morphology, roots, or gates in tests unless clearly synthetic.
 
 ## 10. Quranic Data Safety
 
