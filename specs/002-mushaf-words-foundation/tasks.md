@@ -24,10 +24,10 @@ description: "Task list for Quran Mushaf Words & Layout Data Foundation"
 
 **Purpose**: Create the new projects and the source staging tree the import needs.
 
-- [ ] T001 Create console host project `Backend/tools/QuranDashboard.DataImporter/QuranDashboard.DataImporter.csproj` (`net10.0`), reference Application, Application.Abstractions, Infrastructure, Shared; add to the solution.
-- [ ] T002 Create test project `Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj` (xUnit), reference Domain, Application, Application.Abstractions, Infrastructure; add to the solution.
-- [ ] T003 [P] Add packages: `Microsoft.Extensions.Hosting` to the console host; `Testcontainers.PostgreSql`, `FluentAssertions`, `Microsoft.NET.Test.Sdk`, `xunit`, `xunit.runner.visualstudio` to the test project.
-- [ ] T004 [P] Assemble the source staging tree `resources/import-sources/quran-foundation/` (mushaf/words/metadata — **no fonts**) and write `manifest.json` (7 sources) + `README.md` per `contracts/import-manifest.schema.md` and `quickstart.md` step 1. Do not modify source bytes.
+- [x] T001 Create console host project `Backend/tools/QuranDashboard.DataImporter/QuranDashboard.DataImporter.csproj` (`net10.0`), reference Application, Application.Abstractions, Infrastructure, Shared; add to the solution.
+- [x] T002 Create test project `Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj` (xUnit), reference Domain, Application, Application.Abstractions, Infrastructure; add to the solution.
+- [x] T003 [P] Add packages: `Microsoft.Extensions.Hosting` to the console host; `Testcontainers.PostgreSql`, `FluentAssertions`, `Microsoft.NET.Test.Sdk`, `xunit`, `xunit.runner.visualstudio` to the test project.
+- [x] T004 [P] Assemble the source staging tree `resources/import-sources/quran-foundation/` (mushaf/words/metadata — **no fonts**) and write `manifest.json` (7 sources) + `README.md` per `contracts/import-manifest.schema.md`, `source-provenance.md`, and `quickstart.md` step 1. Do not modify source bytes.
 
 ---
 
