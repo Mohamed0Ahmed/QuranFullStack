@@ -62,23 +62,23 @@ description: "Task list for Quran Mushaf Words & Layout Data Foundation"
 
 ### Tests for User Story 1
 
-- [ ] T017 [P] [US1] Integration test (Testcontainers PostgreSQL): import into empty DB asserts exact counts (114/6,236/604/9,046/83,668; markers 6,236; readable 77,432) in `Backend/tests/QuranDashboard.Tests/Quran/Import/ImportCountsTests.cs`.
-- [ ] T018 [P] [US1] Integration test: a sample word (`2:25:3`) and page-1 reconstruction (8 lines; line 1 `surah_name`, lines 2–8 `ayah`) in `Backend/tests/QuranDashboard.Tests/Quran/Import/ImportReconstructionTests.cs`.
-- [ ] T019 [P] [US1] Unit test: layout-range → page/line/`line_word_order` derivation and marker flagging in `Backend/tests/QuranDashboard.Tests/Quran/Import/AssemblyDerivationTests.cs`.
+- [x] T017 [P] [US1] Integration test (Testcontainers PostgreSQL): import into empty DB asserts exact counts (114/6,236/604/9,046/83,668; markers 6,236; readable 77,432) in `Backend/tests/QuranDashboard.Tests/Quran/Import/ImportCountsTests.cs`.
+- [x] T018 [P] [US1] Integration test: a sample word (`2:25:3`) and page-1 reconstruction (8 lines; line 1 `surah_name`, lines 2–8 `ayah`) in `Backend/tests/QuranDashboard.Tests/Quran/Import/ImportReconstructionTests.cs`.
+- [x] T019 [P] [US1] Unit test: layout-range → page/line/`line_word_order` derivation and marker flagging in `Backend/tests/QuranDashboard.Tests/Quran/Import/AssemblyDerivationTests.cs`.
 
 ### Implementation for User Story 1
 
-- [ ] T020 [P] [US1] `ManifestReader` (validates manifest + file presence/counts/checksums, fail-fast) in `Backend/infrastructure/QuranDashboard.Infrastructure/Files/Quran/Import/ManifestReader.cs`.
-- [ ] T021 [P] [US1] `JsonWordSourceReader` (parses the 4 location-keyed word files → `WordRecordDto`) in `.../Files/Quran/Import/JsonWordSourceReader.cs`.
-- [ ] T022 [P] [US1] `JsonLayoutSourceReader` (parses `qpc-v4-pages-layout.json` → `LayoutDto`) in `.../Files/Quran/Import/JsonLayoutSourceReader.cs`.
-- [ ] T023 [P] [US1] `JsonMetadataSourceReader` (surah + ayah metadata → DTOs) in `.../Files/Quran/Import/JsonMetadataSourceReader.cs`.
-- [ ] T024 [US1] `QuranImportSource : IQuranImportSource` composing the readers into `QuranImportSourceData` in `.../Files/Quran/Import/QuranImportSource.cs` (depends on T020–T023).
-- [ ] T025 [US1] Assembly logic: build the 83,668-word skeleton, attach glyph + 3 text forms by `location`, resolve `ayah_id`, derive `page_number`/`line_number`/`line_word_order` from layout ranges, flag `is_ayah_marker`, compute ayah `words_count_real`/`page_from`/`page_to` and page boundary fields → `AssembledQuranData` in `Backend/application/QuranDashboard.Application/Quran/Import/ImportQuranFoundation/QuranFoundationAssembler.cs`.
-- [ ] T026 [US1] `ImportQuranFoundationCommand` + `ImportQuranFoundationResult` in `.../Quran/Import/ImportQuranFoundation/`.
-- [ ] T027 [US1] `ImportQuranFoundationHandler` orchestration (load → assemble → [validate in US2] → write) in `.../Quran/Import/ImportQuranFoundation/ImportQuranFoundationHandler.cs` (depends on T024, T025).
-- [ ] T028 [US1] `EfBulkQuranImportWriter : IQuranImportWriter` — Npgsql binary `COPY`, insert order `surahs→ayahs→pages→words→lines`, single transaction (empty-table path) in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Repositories/Quran/Import/EfBulkQuranImportWriter.cs`.
-- [ ] T029 [US1] Console `Program.cs` — parse `--source`/`--report-out`, build host, invoke handler, map result to exit code in `Backend/tools/QuranDashboard.DataImporter/Program.cs` (no business logic); finalize DI in T015.
-- [ ] T030 [US1] Run a successful import against the staging tree; confirm T017–T019 pass.
+- [x] T020 [P] [US1] `ManifestReader` (validates manifest + file presence/counts/checksums, fail-fast) in `Backend/infrastructure/QuranDashboard.Infrastructure/Files/Quran/Import/ManifestReader.cs`.
+- [x] T021 [P] [US1] `JsonWordSourceReader` (parses the 4 location-keyed word files → `WordRecordDto`) in `.../Files/Quran/Import/JsonWordSourceReader.cs`.
+- [x] T022 [P] [US1] `JsonLayoutSourceReader` (parses `qpc-v4-pages-layout.json` → `LayoutDto`) in `.../Files/Quran/Import/JsonLayoutSourceReader.cs`.
+- [x] T023 [P] [US1] `JsonMetadataSourceReader` (surah + ayah metadata → DTOs) in `.../Files/Quran/Import/JsonMetadataSourceReader.cs`.
+- [x] T024 [US1] `QuranImportSource : IQuranImportSource` composing the readers into `QuranImportSourceData` in `.../Files/Quran/Import/QuranImportSource.cs` (depends on T020–T023).
+- [x] T025 [US1] Assembly logic: build the 83,668-word skeleton, attach glyph + 3 text forms by `location`, resolve `ayah_id`, derive `page_number`/`line_number`/`line_word_order` from layout ranges, flag `is_ayah_marker`, compute ayah `words_count_real`/`page_from`/`page_to` and page boundary fields → `AssembledQuranData` in `Backend/application/QuranDashboard.Application/Quran/Import/ImportQuranFoundation/QuranFoundationAssembler.cs`.
+- [x] T026 [US1] `ImportQuranFoundationCommand` + `ImportQuranFoundationResult` in `.../Quran/Import/ImportQuranFoundation/`.
+- [x] T027 [US1] `ImportQuranFoundationHandler` orchestration (load → assemble → [validate in US2] → write) in `.../Quran/Import/ImportQuranFoundation/ImportQuranFoundationHandler.cs` (depends on T024, T025).
+- [x] T028 [US1] `EfBulkQuranImportWriter : IQuranImportWriter` — Npgsql binary `COPY`, insert order `surahs→ayahs→pages→words→lines`, single transaction (empty-table path) in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Repositories/Quran/Import/EfBulkQuranImportWriter.cs`.
+- [x] T029 [US1] Console `Program.cs` — parse `--source`/`--report-out`, build host, invoke handler, map result to exit code in `Backend/tools/QuranDashboard.DataImporter/Program.cs` (no business logic); finalize DI in T015.
+- [x] T030 [US1] Run a successful import against the staging tree; confirm T017–T019 pass.
 
 **Checkpoint**: A clean import populates all five tables correctly (MVP).
 
