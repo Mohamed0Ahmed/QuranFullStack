@@ -41,10 +41,20 @@ public sealed class EfBulkQuranImportWriter : IQuranImportWriter
             throw new InvalidOperationException("Expected an Npgsql connection for bulk import.");
         }
 
+        if (!force && await AnyTargetTableHasDataAsync(ct))
+        {
+            throw new InvalidOperationException(ImportRefusalMessages.TablesNotEmpty);
+        }
+
         await using var transaction = await npgsqlConnection.BeginTransactionAsync(ct);
 
         try
         {
+            if (force)
+            {
+                await TruncateTargetTablesAsync(npgsqlConnection, ct);
+            }
+
             await CopySurahsAsync(npgsqlConnection, data.Surahs, ct);
             await CopyAyahsAsync(npgsqlConnection, data.Ayahs, ct);
             await CopyPagesAsync(npgsqlConnection, data.Pages, ct);
@@ -193,6 +203,14 @@ public sealed class EfBulkQuranImportWriter : IQuranImportWriter
         }
 
         await importer.CompleteAsync(ct);
+    }
+
+    private static async Task TruncateTargetTablesAsync(NpgsqlConnection connection, CancellationToken ct)
+    {
+        await using var command = connection.CreateCommand();
+        command.CommandText =
+            "TRUNCATE quran_words, quran_mushaf_lines, quran_mushaf_pages, quran_ayahs, quran_surahs RESTART IDENTITY CASCADE";
+        await command.ExecuteNonQueryAsync(ct);
     }
 
     private static string ToRevelationPlaceValue(RevelationPlace value) => value switch

@@ -11,7 +11,7 @@ internal static class Program
 {
     internal static async Task<int> Main(string[] args)
     {
-        if (!TryParseArguments(args, out var sourceRoot, out var reportOutDir, out var errorMessage))
+        if (!TryParseArguments(args, out var sourceRoot, out var reportOutDir, out var force, out var errorMessage))
         {
             Console.Error.WriteLine(errorMessage);
             PrintUsage();
@@ -33,7 +33,7 @@ internal static class Program
         await using var scope = host.Services.CreateAsyncScope();
         var handler = scope.ServiceProvider.GetRequiredService<ImportQuranFoundationHandler>();
         var result = await handler.HandleAsync(
-            new ImportQuranFoundationCommand(sourceRoot!, reportOutDir),
+            new ImportQuranFoundationCommand(sourceRoot!, reportOutDir, force),
             CancellationToken.None);
 
         if (result.Succeeded)
@@ -56,10 +56,12 @@ internal static class Program
         string[] args,
         out string? sourceRoot,
         out string? reportOutDir,
+        out bool force,
         out string errorMessage)
     {
         sourceRoot = null;
         reportOutDir = null;
+        force = false;
         errorMessage = string.Empty;
 
         for (var index = 0; index < args.Length; index++)
@@ -81,6 +83,9 @@ internal static class Program
                         return false;
                     }
 
+                    break;
+                case "--force":
+                    force = true;
                     break;
                 default:
                     errorMessage = $"Unknown argument '{args[index]}'.";
@@ -124,6 +129,6 @@ internal static class Program
     private static void PrintUsage()
     {
         Console.Error.WriteLine(
-            "Usage: QuranDashboard.DataImporter --source <path> [--report-out <path>]");
+            "Usage: QuranDashboard.DataImporter --source <path> [--report-out <path>] [--force]");
     }
 }

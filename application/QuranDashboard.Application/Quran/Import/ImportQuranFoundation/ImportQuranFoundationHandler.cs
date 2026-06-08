@@ -36,6 +36,11 @@ public sealed class ImportQuranFoundationHandler
 
         try
         {
+            if (!command.Force && await importWriter.AnyTargetTableHasDataAsync(ct))
+            {
+                return ImportQuranFoundationResult.Refused(ImportRefusalMessages.TablesNotEmpty);
+            }
+
             var sourceData = await importSource.LoadAsync(command.SourceRoot, ct);
             var assembled = assembler.Assemble(sourceData);
 
@@ -44,7 +49,7 @@ public sealed class ImportQuranFoundationHandler
                 sourceData.ManifestVersion,
                 sourceData,
                 assembled,
-                forced: false);
+                forced: command.Force);
 
             if (string.Equals(validation.Verdict, ImportValidationVerdicts.Fail, StringComparison.Ordinal))
             {
@@ -53,7 +58,7 @@ public sealed class ImportQuranFoundationHandler
                     $"Import validation failed ({validation.Errors.Count} hard rule(s)): {validation.Errors[0]}");
             }
 
-            await importWriter.WriteAsync(assembled, force: false, ct);
+            await importWriter.WriteAsync(assembled, command.Force, ct);
 
             validation = validation with { Persisted = true };
 

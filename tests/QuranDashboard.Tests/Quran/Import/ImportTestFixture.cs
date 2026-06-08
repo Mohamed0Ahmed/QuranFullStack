@@ -60,8 +60,12 @@ public sealed class ImportTestFixture : IAsyncLifetime
     public async Task<ImportQuranFoundationHandler> CreateHandlerAsync()
     {
         await TruncateQuranTablesAsync();
-        var provider = CreateServiceProvider();
-        return provider.GetRequiredService<ImportQuranFoundationHandler>();
+        return CreateHandlerWithoutTruncate();
+    }
+
+    public ImportQuranFoundationHandler CreateHandlerWithoutTruncate()
+    {
+        return CreateServiceProvider().GetRequiredService<ImportQuranFoundationHandler>();
     }
 
     public async Task TruncateQuranTablesAsync()
