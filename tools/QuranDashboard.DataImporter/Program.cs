@@ -22,6 +22,7 @@ internal static class Program
             .ConfigureAppConfiguration((_, configuration) =>
             {
                 configuration.AddJsonFile("appsettings.json", optional: true, reloadOnChange: false);
+                configuration.AddEnvironmentVariables();
             })
             .ConfigureServices((context, services) =>
             {
