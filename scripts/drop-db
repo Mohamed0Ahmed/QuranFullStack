@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BACKEND_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+if [[ $# -ne 1 ]] || [[ "$1" != "--yes" ]]; then
+  echo "WARNING: This will drop the configured database. All data will be lost." >&2
+  echo "Usage: ./scripts/drop-db --yes" >&2
+  exit 1
+fi
+
+cd "${BACKEND_ROOT}"
+# shellcheck source=_preflight-sandbox.sh
+source "${SCRIPT_DIR}/_preflight-sandbox.sh"
+preflight_check_stale_sandbox_assets "${BACKEND_ROOT}"
+
+export DOTNET_ENVIRONMENT=Development
+
+dotnet ef database drop \
+  --project infrastructure/QuranDashboard.Infrastructure \
+  --startup-project api/QuranDashboard.Api \
+  --context QuranDashboardDbContext \
+  --force
