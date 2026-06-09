@@ -80,6 +80,9 @@ public sealed class MarkdownJsonDisplayWordsReportWriter : IDisplayWordsReportWr
         builder.AppendLine();
         builder.AppendLine("## Checks");
         builder.AppendLine();
+        builder.AppendLine(
+            "_Hard checks gate persistence; `warning` checks are informational and never change the verdict._");
+        builder.AppendLine();
         builder.AppendLine("| Id | Severity | Expected | Observed | Passed |");
         builder.AppendLine("|---|---|---|---|---|");
 
