@@ -191,9 +191,9 @@ tables, source tables are never modified, and forced re-runs are idempotent.
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T040 [P] Run the clean-code self-check (`.claude/skills/engineering-review/references/clean-code-guard/`) and the test-code self-check on all new files; in particular confirm `SqlDisplayWordsRebuilder.cs` stays cohesive — if it approaches the repository soft threshold (~400 lines), keep all SQL text in `DisplayWordsSql.cs` and keep checks in the private `RunHardChecksAsync` (do not split into new public types unnecessarily).
-- [ ] T041 [P] Confirm the implemented default report path matches the specs: the handler (T024) must write to `resources/report/words-display/` when `--report-out` is omitted, exactly as documented in `quickstart.md` and `contracts/cli-verb.md`. Fix the code or the docs if they diverge.
-- [ ] T042 Run the full gate from repo root: `dotnet build Backend` then `dotnet test Backend/tests/QuranDashboard.Tests`; confirm all green. Record the derived unique counts the tests/report produced.
+- [x] T040 [P] Run the clean-code self-check (`.claude/skills/engineering-review/references/clean-code-guard/`) and the test-code self-check on all new files; in particular confirm `SqlDisplayWordsRebuilder.cs` stays cohesive — if it approaches the repository soft threshold (~400 lines), keep all SQL text in `DisplayWordsSql.cs` and keep checks in the private `RunHardChecksAsync` (do not split into new public types unnecessarily).
+- [x] T041 [P] Confirm the implemented default report path matches the specs: the handler (T024) must write to `resources/report/words-display/` when `--report-out` is omitted, exactly as documented in `quickstart.md` and `contracts/cli-verb.md`. Fix the code or the docs if they diverge.
+- [x] T042 Run the full gate from repo root: `dotnet build Backend` then `dotnet test Backend/tests/QuranDashboard.Tests`; confirm all green. Record the derived unique counts the tests/report produced.
 - [ ] T043 [P] (Optional, only if you ran it on the real imported DB) Capture the production rebuild report (verdict PASS, ordered = 77,432 each, actual unique counts) and note the unique counts vs the informational ~21,210 / ~14,783 in the report's notes.
 
 ---
