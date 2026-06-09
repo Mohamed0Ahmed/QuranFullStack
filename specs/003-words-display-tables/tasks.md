@@ -177,13 +177,13 @@ tables, source tables are never modified, and forced re-runs are idempotent.
 
 ### Implementation for User Story 3
 
-- [ ] T036 [US3] Review/confirm `SqlDisplayWordsRebuilder` (T020/T032) and `RebuildDisplayWordsHandler` (T024): the `TRUNCATE` statement lists EXACTLY the four `quran_words_*` derived tables with `RESTART IDENTITY` and nothing else; the handler's refuse path returns `Refused(DisplayWordsInvariants.TargetsNotEmpty)` with a non-zero exit and writes no report when `!force` and targets are non-empty. Fix if either is wrong. (No new files expected.)
+- [x] T036 [US3] Review/confirm `SqlDisplayWordsRebuilder` (T020/T032) and `RebuildDisplayWordsHandler` (T024): the `TRUNCATE` statement lists EXACTLY the four `quran_words_*` derived tables with `RESTART IDENTITY` and nothing else; the handler's refuse path returns `Refused(DisplayWordsInvariants.TargetsNotEmpty)` with a non-zero exit and writes no report when `!force` and targets are non-empty. Fix if either is wrong. (No new files expected.)
 
 ### Tests for User Story 3
 
-- [ ] T037 [P] [US3] Create `Backend/tests/QuranDashboard.Tests/Quran/WordsDisplay/DisplayWordsRefusalForceTests.cs`: seed + rebuild once (success). Run again with `force=false` → assert `Refused` (non-zero exit), and the existing derived rows are unchanged. Run again with `force=true` → assert success and tables rebuilt.
-- [ ] T038 [P] [US3] Create `DisplayWordsSourceUntouchedTests.cs`: capture `quran_words`/`quran_ayahs`/`quran_surahs` row counts before; run a forced rebuild; assert those counts are identical afterward.
-- [ ] T039 [P] [US3] Create `DisplayWordsIdempotencyTests.cs`: run a forced rebuild twice on unchanged source data; assert the four derived tables have identical row counts and that a representative ordered row and a representative unique row are byte-identical across the two runs.
+- [x] T037 [P] [US3] Create `Backend/tests/QuranDashboard.Tests/Quran/WordsDisplay/DisplayWordsRefusalForceTests.cs`: seed + rebuild once (success). Run again with `force=false` → assert `Refused` (non-zero exit), and the existing derived rows are unchanged. Run again with `force=true` → assert success and tables rebuilt.
+- [x] T038 [P] [US3] Create `DisplayWordsSourceUntouchedTests.cs`: capture `quran_words`/`quran_ayahs`/`quran_surahs` row counts before; run a forced rebuild; assert those counts are identical afterward.
+- [x] T039 [P] [US3] Create `DisplayWordsIdempotencyTests.cs`: run a forced rebuild twice on unchanged source data; assert the four derived tables have identical row counts and that a representative ordered row and a representative unique row are byte-identical across the two runs.
 
 **Checkpoint**: All three stories independently functional and verified.
 
