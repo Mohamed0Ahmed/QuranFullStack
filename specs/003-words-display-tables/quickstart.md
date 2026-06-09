@@ -17,12 +17,12 @@ configurations + `DbSet`s:
 # generate (name illustrative) — review the generated migration before applying
 dotnet ef migrations add WordsDisplayTables \
   --project infrastructure/QuranDashboard.Infrastructure \
-  --startup-project tools/QuranDashboard.DataImporter
+  --startup-project api/QuranDashboard.Api
 
 # apply when ready (only on explicit request)
 dotnet ef database update \
   --project infrastructure/QuranDashboard.Infrastructure \
-  --startup-project tools/QuranDashboard.DataImporter
+  --startup-project api/QuranDashboard.Api
 ```
 
 The migration creates exactly: `quran_words_ordered_tashkeel`,
