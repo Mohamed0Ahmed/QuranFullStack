@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using QuranDashboard.Application.Quran.Import.ImportQuranFoundation;
 using QuranDashboard.Application.Quran.Import.Validation;
+using QuranDashboard.Application.Quran.Words.RebuildDisplayWords;
 
 namespace QuranDashboard.Application;
 
@@ -11,6 +12,7 @@ public static class DependencyInjection
         services.AddSingleton<QuranFoundationAssembler>();
         services.AddSingleton<QuranImportValidator>();
         services.AddScoped<ImportQuranFoundationHandler>();
+        services.AddScoped<RebuildDisplayWordsHandler>();
 
         return services;
     }

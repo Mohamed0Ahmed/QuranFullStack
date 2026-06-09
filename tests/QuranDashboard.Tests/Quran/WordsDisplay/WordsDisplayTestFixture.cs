@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using QuranDashboard.Application;
+using QuranDashboard.Application.Quran.Words.RebuildDisplayWords;
 using QuranDashboard.Domain.Quran.Ayahs;
 using QuranDashboard.Domain.Quran.MushafPages;
 using QuranDashboard.Domain.Quran.Surahs;
@@ -55,10 +56,22 @@ public sealed class WordsDisplayTestFixture : IAsyncLifetime
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         await EnsurePrerequisitesAsync(dbContext, ayahList, wordList);
+        dbContext.ChangeTracker.Clear();
 
         dbContext.QuranAyahs.AddRange(ayahList);
         dbContext.QuranWords.AddRange(wordList);
         await dbContext.SaveChangesAsync();
+    }
+
+    public RebuildDisplayWordsHandler CreateHandler() =>
+        CreateServiceProvider().GetRequiredService<RebuildDisplayWordsHandler>();
+
+    public async Task SeedDefaultSyntheticDataAsync()
+    {
+        await TruncateAllAsync();
+        await SeedReadableWordsAsync(
+            DisplayWordsSyntheticSeed.Words.Append(DisplayWordsSyntheticSeed.AyahMarkerWord),
+            DisplayWordsSyntheticSeed.Ayahs);
     }
 
     public async Task TruncateAllAsync()

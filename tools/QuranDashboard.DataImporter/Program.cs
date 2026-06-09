@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using QuranDashboard.Application;
 using QuranDashboard.Application.Quran.Import.ImportQuranFoundation;
+using QuranDashboard.Application.Quran.Words.RebuildDisplayWords;
 using QuranDashboard.Infrastructure;
 
 namespace QuranDashboard.DataImporter;
@@ -11,14 +12,118 @@ internal static class Program
 {
     internal static async Task<int> Main(string[] args)
     {
-        if (!TryParseArguments(args, out var sourceRoot, out var reportOutDir, out var force, out var errorMessage))
+        if (args.Length == 0 || args[0].StartsWith('-'))
+        {
+            PrintUsage();
+            return RebuildDisplayWordsResult.FailureExitCode;
+        }
+
+        var verb = args[0];
+        var verbArgs = args[1..];
+
+        return verb switch
+        {
+            "import-foundation" => await RunImportFoundationAsync(verbArgs),
+            "rebuild-words" => await RunRebuildWordsAsync(verbArgs),
+            _ => UnknownVerb(verb)
+        };
+    }
+
+    private static async Task<int> RunImportFoundationAsync(string[] args)
+    {
+        if (!TryParseImportArguments(args, out var sourceRoot, out var reportOutDir, out var force, out var errorMessage))
         {
             Console.Error.WriteLine(errorMessage);
             PrintUsage();
             return ImportQuranFoundationResult.FailureExitCode;
         }
 
-        var host = Host.CreateDefaultBuilder(args)
+        var host = CreateHost(args);
+        await using var scope = host.Services.CreateAsyncScope();
+        var handler = scope.ServiceProvider.GetRequiredService<ImportQuranFoundationHandler>();
+        var result = await handler.HandleAsync(
+            new ImportQuranFoundationCommand(sourceRoot!, reportOutDir, force),
+            CancellationToken.None);
+
+        return WriteHandlerResult(result.Succeeded, result.Message, result.ExitCode, () =>
+        {
+            if (result.Totals is not null)
+            {
+                Console.WriteLine(
+                    $"Imported surahs={result.Totals.Surahs}, ayahs={result.Totals.Ayahs}, pages={result.Totals.Pages}, lines={result.Totals.Lines}, words={result.Totals.Words}.");
+            }
+        });
+    }
+
+    private static async Task<int> RunRebuildWordsAsync(string[] args)
+    {
+        if (!TryParseRebuildArguments(args, out var reportOutDir, out var force, out var errorMessage))
+        {
+            Console.Error.WriteLine(errorMessage);
+            PrintUsage();
+            return RebuildDisplayWordsResult.FailureExitCode;
+        }
+
+        var host = CreateHost(args);
+        await using var scope = host.Services.CreateAsyncScope();
+        var handler = scope.ServiceProvider.GetRequiredService<RebuildDisplayWordsHandler>();
+        var result = await handler.HandleAsync(
+            new RebuildDisplayWordsCommand(force, reportOutDir),
+            CancellationToken.None);
+
+        if (result.Succeeded)
+        {
+            Console.WriteLine(result.Message);
+            if (result.Totals is not null)
+            {
+                Console.WriteLine(
+                    $"ordered_tashkeel={result.Totals.OrderedTashkeelRows}, ordered_simple={result.Totals.OrderedSimpleRows}, unique_tashkeel={result.Totals.UniqueTashkeelRows}, unique_simple={result.Totals.UniqueSimpleRows}.");
+            }
+
+            WriteReportPath(result.ReportOutDir);
+            return result.ExitCode;
+        }
+
+        Console.Error.WriteLine(result.Message);
+        WriteReportPath(result.ReportOutDir);
+        return result.ExitCode;
+    }
+
+    private static void WriteReportPath(string? reportOutDir)
+    {
+        if (!string.IsNullOrWhiteSpace(reportOutDir))
+        {
+            Console.WriteLine($"Report written to: {reportOutDir}");
+        }
+    }
+
+    private static int UnknownVerb(string verb)
+    {
+        Console.Error.WriteLine($"Unknown verb '{verb}'.");
+        PrintUsage();
+        return RebuildDisplayWordsResult.FailureExitCode;
+    }
+
+    private static int WriteHandlerResult(
+        bool succeeded,
+        string message,
+        int exitCode,
+        Action writeSuccessDetails)
+    {
+        if (succeeded)
+        {
+            Console.WriteLine(message);
+            writeSuccessDetails();
+            return exitCode;
+        }
+
+        Console.Error.WriteLine(message);
+        return exitCode;
+    }
+
+    private static IHost CreateHost(string[] args)
+    {
+        return Host.CreateDefaultBuilder(args)
             .ConfigureAppConfiguration((_, configuration) =>
             {
                 configuration.AddJsonFile("appsettings.json", optional: true, reloadOnChange: false);
@@ -30,30 +135,9 @@ internal static class Program
                 services.AddInfrastructure(context.Configuration);
             })
             .Build();
-
-        await using var scope = host.Services.CreateAsyncScope();
-        var handler = scope.ServiceProvider.GetRequiredService<ImportQuranFoundationHandler>();
-        var result = await handler.HandleAsync(
-            new ImportQuranFoundationCommand(sourceRoot!, reportOutDir, force),
-            CancellationToken.None);
-
-        if (result.Succeeded)
-        {
-            Console.WriteLine(result.Message);
-            if (result.Totals is not null)
-            {
-                Console.WriteLine(
-                    $"Imported surahs={result.Totals.Surahs}, ayahs={result.Totals.Ayahs}, pages={result.Totals.Pages}, lines={result.Totals.Lines}, words={result.Totals.Words}.");
-            }
-
-            return result.ExitCode;
-        }
-
-        Console.Error.WriteLine(result.Message);
-        return result.ExitCode;
     }
 
-    private static bool TryParseArguments(
+    private static bool TryParseImportArguments(
         string[] args,
         out string? sourceRoot,
         out string? reportOutDir,
@@ -115,6 +199,45 @@ internal static class Program
         return true;
     }
 
+    private static bool TryParseRebuildArguments(
+        string[] args,
+        out string? reportOutDir,
+        out bool force,
+        out string errorMessage)
+    {
+        reportOutDir = null;
+        force = false;
+        errorMessage = string.Empty;
+
+        for (var index = 0; index < args.Length; index++)
+        {
+            switch (args[index])
+            {
+                case "--report-out":
+                    if (!TryReadValue(args, ref index, out reportOutDir))
+                    {
+                        errorMessage = "Missing value for --report-out.";
+                        return false;
+                    }
+
+                    break;
+                case "--force":
+                    force = true;
+                    break;
+                default:
+                    errorMessage = $"Unknown argument '{args[index]}'.";
+                    return false;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(reportOutDir))
+        {
+            reportOutDir = Path.GetFullPath(reportOutDir);
+        }
+
+        return true;
+    }
+
     private static bool TryReadValue(string[] args, ref int index, out string? value)
     {
         if (index + 1 >= args.Length)
@@ -130,6 +253,10 @@ internal static class Program
     private static void PrintUsage()
     {
         Console.Error.WriteLine(
-            "Usage: QuranDashboard.DataImporter --source <path> [--report-out <path>] [--force]");
+            "Usage:");
+        Console.Error.WriteLine(
+            "  QuranDashboard.DataImporter import-foundation --source <path> [--report-out <path>] [--force]");
+        Console.Error.WriteLine(
+            "  QuranDashboard.DataImporter rebuild-words [--report-out <path>] [--force]");
     }
 }
