@@ -1,0 +1,203 @@
+---
+
+description: "Task list for Quran Mushaf Words & Layout Data Foundation"
+---
+
+# Tasks: Quran Mushaf Words & Layout Data Foundation
+
+**Input**: Design documents from `specs/002-mushaf-words-foundation/`
+**Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/, quickstart.md
+
+**Tests**: **INCLUDED.** The spec defines an "Independent Test" per user story and is a correctness-critical data import; research.md R14 commits to xUnit + Testcontainers PostgreSQL. Tests target real boundaries only (validation logic, persistence, re-run) — no framework-guarantee or trivial tests (per `test-guard`).
+
+**Organization**: Tasks grouped by user story (US1 → US2 → US3) for independent implementation and testing.
+
+## Format: `[ID] [P?] [Story] Description`
+
+- **[P]**: Can run in parallel (different files, no dependency on an incomplete task)
+- **[Story]**: US1 / US2 / US3 (setup, foundational, and polish tasks carry no story label)
+- All paths are repo-relative; backend root is `Backend/`.
+
+---
+
+## Phase 1: Setup (Shared Infrastructure)
+
+**Purpose**: Create the new projects and the source staging tree the import needs.
+
+- [x] T001 Create console host project `Backend/tools/QuranDashboard.DataImporter/QuranDashboard.DataImporter.csproj` (`net10.0`), reference Application, Application.Abstractions, Infrastructure, Shared; add to the solution.
+- [x] T002 Create test project `Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj` (xUnit), reference Domain, Application, Application.Abstractions, Infrastructure; add to the solution.
+- [x] T003 [P] Add packages: `Microsoft.Extensions.Hosting` to the console host; `Testcontainers.PostgreSql`, `FluentAssertions`, `Microsoft.NET.Test.Sdk`, `xunit`, `xunit.runner.visualstudio` to the test project.
+- [x] T004 [P] Assemble the source staging tree `resources/import-sources/quran-foundation/` (mushaf/words/metadata — **no fonts**) and write `manifest.json` (7 sources) + `README.md` per `contracts/import-manifest.schema.md`, `source-provenance.md`, and `quickstart.md` step 1. Do not modify source bytes.
+
+---
+
+## Phase 2: Foundational (Blocking Prerequisites)
+
+**Purpose**: Domain model, persistence schema, import DTOs, and abstraction interfaces — required by every story.
+
+**⚠️ CRITICAL**: No user story work can begin until this phase is complete.
+
+- [x] T005 [P] Domain value objects `WordLocation` and `VerseKey` in `Backend/domain/QuranDashboard.Domain/Quran/Words/` (format/range validation; persisted later as strings).
+- [x] T006 [P] Domain enums `RevelationPlace` in `Backend/domain/QuranDashboard.Domain/Quran/Surahs/RevelationPlace.cs` and `MushafLineType` in `Backend/domain/QuranDashboard.Domain/Quran/MushafPages/MushafLineType.cs`.
+- [x] T007 [P] Domain entity `Surah` in `Backend/domain/QuranDashboard.Domain/Quran/Surahs/Surah.cs` (fields per data-model.md §1).
+- [x] T008 [P] Domain entity `Ayah` in `Backend/domain/QuranDashboard.Domain/Quran/Ayahs/Ayah.cs` (fields per data-model.md §2, incl. `words_count_source`/`words_count_real`/`page_from`/`page_to`).
+- [x] T009 [P] Domain entities `MushafPage` and `MushafLine` in `Backend/domain/QuranDashboard.Domain/Quran/MushafPages/` (fields per data-model.md §3–4).
+- [x] T010 [P] Domain entity `QuranWord` in `Backend/domain/QuranDashboard.Domain/Quran/Words/QuranWord.cs` (fields per data-model.md §5, incl. `is_ayah_marker`; **no** `search_normalized_text`).
+- [x] T011 [P] Import DTOs (`WordRecordDto`, `LineDto`, `LayoutDto`, `SurahMetaDto`, `AyahMetaDto`, `QuranImportSourceData`) in `Backend/application/QuranDashboard.Application.Abstractions/Quran/Import/` per `contracts/source-files.md`.
+- [x] T012 Abstraction interfaces `IQuranImportSource`, `IQuranImportWriter`, `IImportReportWriter` in `Backend/application/QuranDashboard.Application.Abstractions/Quran/Import/` per `contracts/import-abstractions.md`; also declare `IMushafPageReadRepository` (interface only, for follow-up 001b) in `.../Quran/MushafPages/`.
+- [x] T013 `QuranDashboardDbContext` with the five `DbSet`s in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/QuranDashboardDbContext.cs`.
+- [x] T014 [P] EF configurations in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Configurations/Quran/` — one file per entity: keys (`ValueGeneratedNever` on `quran_surahs.surah_number`, `quran_ayahs.id`, `quran_mushaf_pages.page_number`, `quran_words.id`), FKs per data-model.md, unique constraints, indexes incl. the partial `WHERE is_ayah_marker = false`, enum→text conversions, and the deliberate **no FK** on `quran_words.line_number`.
+- [x] T015 Register `QuranDashboardDbContext` (Npgsql) and import services in `Backend/infrastructure/QuranDashboard.Infrastructure/DependencyInjection.cs` (concrete wiring filled in as US1/US2 add implementations).
+- [x] T016 Generate the **schema-only** EF migration `QuranFoundationSchema` via EF tooling (per `Backend/CLAUDE.md`: generated by tooling, only when requested, no `HasData`, no data). Report migration name + files; run `database update` only when explicitly requested.
+
+**Checkpoint**: Schema exists; domain + abstractions compile. Story work can begin.
+
+---
+
+## Phase 3: User Story 1 - Import the complete Quran foundation data (Priority: P1) 🎯 MVP
+
+**Goal**: Read the manifested source set, assemble the five linked datasets (glyph + text forms + page/line/order + markers), and bulk-load them into empty tables.
+
+**Independent Test**: Run the importer against empty tables with the prepared source set; confirm 114 / 6,236 / 604 / 9,046 / 83,668 rows and that `location = '2:25:3'` resolves to one fully-populated word.
+
+### Tests for User Story 1
+
+- [x] T017 [P] [US1] Integration test (Testcontainers PostgreSQL): import into empty DB asserts exact counts (114/6,236/604/9,046/83,668; markers 6,236; readable 77,432) in `Backend/tests/QuranDashboard.Tests/Quran/Import/ImportCountsTests.cs`.
+- [x] T018 [P] [US1] Integration test: a sample word (`2:25:3`) and page-1 reconstruction (8 lines; line 1 `surah_name`, lines 2–8 `ayah`) in `Backend/tests/QuranDashboard.Tests/Quran/Import/ImportReconstructionTests.cs`.
+- [x] T019 [P] [US1] Unit test: layout-range → page/line/`line_word_order` derivation and marker flagging in `Backend/tests/QuranDashboard.Tests/Quran/Import/AssemblyDerivationTests.cs`.
+
+### Implementation for User Story 1
+
+- [x] T020 [P] [US1] `ManifestReader` (validates manifest + file presence/counts/checksums, fail-fast) in `Backend/infrastructure/QuranDashboard.Infrastructure/Files/Quran/Import/ManifestReader.cs`.
+- [x] T021 [P] [US1] `JsonWordSourceReader` (parses the 4 location-keyed word files → `WordRecordDto`) in `.../Files/Quran/Import/JsonWordSourceReader.cs`.
+- [x] T022 [P] [US1] `JsonLayoutSourceReader` (parses `qpc-v4-pages-layout.json` → `LayoutDto`) in `.../Files/Quran/Import/JsonLayoutSourceReader.cs`.
+- [x] T023 [P] [US1] `JsonMetadataSourceReader` (surah + ayah metadata → DTOs) in `.../Files/Quran/Import/JsonMetadataSourceReader.cs`.
+- [x] T024 [US1] `QuranImportSource : IQuranImportSource` composing the readers into `QuranImportSourceData` in `.../Files/Quran/Import/QuranImportSource.cs` (depends on T020–T023).
+- [x] T025 [US1] Assembly logic: build the 83,668-word skeleton, attach glyph + 3 text forms by `location`, resolve `ayah_id`, derive `page_number`/`line_number`/`line_word_order` from layout ranges, flag `is_ayah_marker`, compute ayah `words_count_real`/`page_from`/`page_to` and page boundary fields → `AssembledQuranData` in `Backend/application/QuranDashboard.Application/Quran/Import/ImportQuranFoundation/QuranFoundationAssembler.cs`.
+- [x] T026 [US1] `ImportQuranFoundationCommand` + `ImportQuranFoundationResult` in `.../Quran/Import/ImportQuranFoundation/`.
+- [x] T027 [US1] `ImportQuranFoundationHandler` orchestration (load → assemble → [validate in US2] → write) in `.../Quran/Import/ImportQuranFoundation/ImportQuranFoundationHandler.cs` (depends on T024, T025).
+- [x] T028 [US1] `EfBulkQuranImportWriter : IQuranImportWriter` — Npgsql binary `COPY`, insert order `surahs→ayahs→pages→words→lines`, single transaction (empty-table path) in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Repositories/Quran/Import/EfBulkQuranImportWriter.cs`.
+- [x] T029 [US1] Console `Program.cs` — parse `--source`/`--report-out`, build host, invoke handler, map result to exit code in `Backend/tools/QuranDashboard.DataImporter/Program.cs` (no business logic); finalize DI in T015.
+- [x] T030 [US1] Run a successful import against the staging tree; confirm T017–T019 pass.
+
+**Checkpoint**: A clean import populates all five tables correctly (MVP).
+
+---
+
+## Phase 4: User Story 2 - Prove the data is correct before it is trusted (Priority: P1)
+
+**Goal**: Validate the assembled model against all FR-018 rules before persisting; abort (persist nothing) on any hard failure; always emit the md+json report.
+
+**Independent Test**: Feed a source set with a deliberate fault → import aborts, tables stay empty, report names the rule; feed the valid set → `pass-with-warnings` with the `37:130` warning.
+
+### Tests for User Story 2
+
+- [x] T031 [P] [US2] Integration test: a corrupted source (e.g. dropped word / duplicate location / wrong total) → import aborts, **0 rows persisted**, report `verdict:"fail"` names the rule in `Backend/tests/QuranDashboard.Tests/Quran/Import/ValidationFailureTests.cs`.
+- [x] T032 [P] [US2] Integration test: valid source → `verdict:"pass-with-warnings"`, the only warning is `37:130`; report md+json both written, in `Backend/tests/QuranDashboard.Tests/Quran/Import/ValidationReportTests.cs`.
+- [x] T033 [P] [US2] Unit test: every FR-018 check id present with correct severity (hard vs warning) in `Backend/tests/QuranDashboard.Tests/Quran/Import/ValidatorRulesTests.cs`.
+
+### Implementation for User Story 2
+
+- [x] T034 [US2] `QuranImportValidationResult` (totals, per-check results, warnings, verdict) in `Backend/application/QuranDashboard.Application/Quran/Import/Validation/QuranImportValidationResult.cs`.
+- [x] T035 [US2] `QuranImportValidator` implementing every FR-018 hard check + the `37:130` warning + the encoding info note in `.../Quran/Import/Validation/QuranImportValidator.cs`.
+- [x] T036 [US2] `MarkdownJsonImportReportWriter : IImportReportWriter` (writes report per `contracts/validation-report.schema.md`) in `Backend/infrastructure/QuranDashboard.Infrastructure/Reports/Quran/MarkdownJsonImportReportWriter.cs`.
+- [x] T037 [US2] Wire validation into `ImportQuranFoundationHandler`: validate after assemble, **persist nothing on hard fail**, always write the report (depends on T027, T035, T036).
+
+**Checkpoint**: Import is gated by validation; report is produced every run.
+
+---
+
+## Phase 5: User Story 3 - Re-run the import safely and repeatably (Priority: P2)
+
+**Goal**: Refuse on non-empty tables unless `--force`; `--force` does an atomic truncate-and-reload yielding identical state.
+
+**Independent Test**: After a successful import, re-run without `--force` → refuses, 0 changes; re-run with `--force` → counts/keys/values identical to a fresh import.
+
+### Tests for User Story 3
+
+- [x] T038 [P] [US3] Integration test: re-run without `--force` on populated tables refuses (non-zero exit) and changes nothing in `Backend/tests/QuranDashboard.Tests/Quran/Import/ReRunGuardTests.cs`.
+- [x] T039 [P] [US3] Integration test: `--force` re-run produces a table state identical to the first import (counts + spot-checked rows) in `Backend/tests/QuranDashboard.Tests/Quran/Import/ForceReloadTests.cs`.
+
+### Implementation for User Story 3
+
+- [x] T040 [US3] `IQuranImportWriter.AnyTargetTableHasDataAsync` implementation + refuse-unless-empty guard in `EfBulkQuranImportWriter` (depends on T028).
+- [x] T041 [US3] `--force` path: atomic `TRUNCATE quran_words, quran_mushaf_lines, quran_mushaf_pages, quran_ayahs, quran_surahs RESTART IDENTITY CASCADE` then reload, all in one transaction (rollback on any failure) in `EfBulkQuranImportWriter`.
+- [x] T042 [US3] Console: add `--force` flag, surface the refusal message + correct exit codes in `Backend/tools/QuranDashboard.DataImporter/Program.cs`.
+
+**Checkpoint**: All three stories independently pass.
+
+---
+
+## Phase 6: Polish & Cross-Cutting Concerns
+
+- [x] T043 [P] Clean-code self-check (naming/functions, SOLID, DRY/KISS/YAGNI) and `test-guard` self-check on the new test code per `CLAUDE.md`.
+- [x] T044 Run `engineering-review` and `backend-structure-review` on the feature; address findings.
+- [x] T045 [P] Confirm no Quran data in the migration and no `search_normalized_text`/morphology/font columns leaked into the schema (`quran_mushaf_pages` has no font fields).
+- [x] T046 Execute `quickstart.md` end-to-end (assemble → migrate → import → SQL verification → re-run safety); confirm verdict `pass-with-warnings`.
+- [x] T047 Full solution build + run all tests green; report build/test status and the validation report path.
+
+---
+
+## Dependencies & Execution Order
+
+### Phase dependencies
+- **Setup (P1)**: no dependencies.
+- **Foundational (P2)**: depends on Setup; **blocks all stories**.
+- **US1 (P3)**: depends on Foundational. The MVP.
+- **US2 (P4)**: depends on Foundational + US1 assembly (T025/T027).
+- **US3 (P5)**: depends on Foundational + US1 writer (T028).
+- **Polish (P6)**: depends on all desired stories.
+
+### Story dependencies (note)
+Unlike the generic template, these stories are **sequential by data flow**: US2 validates what US1 assembles; US3 guards what US1 writes. Build US1 → US2 → US3. US1 alone is a usable (if ungated) MVP; US1+US2 is the recommended first releasable increment.
+
+### Within each story
+- Tests written first and expected to fail before implementation.
+- Readers before the composing source; assembler before handler; writer before console run.
+
+### Parallel opportunities
+- Setup: T003, T004 in parallel.
+- Foundational: T005–T011 (entities/VOs/enums/DTOs) in parallel; T014 config files in parallel after T013.
+- US1: T017–T019 (tests) in parallel; T020–T023 (readers) in parallel.
+- US2: T031–T033 in parallel. US3: T038–T039 in parallel.
+
+---
+
+## Parallel Example: User Story 1
+
+```bash
+# Tests for US1 together:
+Task: "Integration test counts in Backend/tests/QuranDashboard.Tests/Quran/Import/ImportCountsTests.cs"
+Task: "Integration test reconstruction in .../ImportReconstructionTests.cs"
+Task: "Unit test derivation/markers in .../AssemblyDerivationTests.cs"
+
+# Readers for US1 together:
+Task: "JsonWordSourceReader in .../Files/Quran/Import/JsonWordSourceReader.cs"
+Task: "JsonLayoutSourceReader in .../Files/Quran/Import/JsonLayoutSourceReader.cs"
+Task: "JsonMetadataSourceReader in .../Files/Quran/Import/JsonMetadataSourceReader.cs"
+```
+
+---
+
+## Implementation Strategy
+
+### MVP first
+1. Phase 1 Setup → 2. Phase 2 Foundational → 3. Phase 3 US1 → **STOP & validate counts/reconstruction**.
+
+### Recommended first releasable increment
+US1 + US2 (import is correctness-gated and self-reporting). Add US3 next for safe re-runs.
+
+### Notes
+- `[P]` = different files, no incomplete dependency. `[Story]` = traceability.
+- Tests target real boundaries (validation, persistence, re-run) on a real PostgreSQL via Testcontainers — not framework guarantees.
+- Commit after each task or logical group. Migration + `database update` only when explicitly requested.
+- The read endpoint (`GET /api/mushaf/pages/{pageNumber}`) is **out of scope** — follow-up feature 001b implements `IMushafPageReadRepository`.
+- Page fonts are **out of scope** (later public Mushaf Reader); `qpc_glyph` is retained on `quran_words` from `qpc-v4.json`.
+
+## Task summary
+
+- **Total tasks**: 47
+- **Setup**: 4 (T001–T004) · **Foundational**: 12 (T005–T016)
+- **US1 (P1, MVP)**: 14 (T017–T030) · **US2 (P1)**: 7 (T031–T037) · **US3 (P2)**: 5 (T038–T042)
+- **Polish**: 5 (T043–T047)
+- **Test tasks**: 8 (T017–T019, T031–T033, T038–T039)
