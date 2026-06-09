@@ -2,22 +2,16 @@
 name: engineering-review
 description: >-
   Review-only engineering/code review for the Quran Dashboard FullStack workspace
-  (.NET backend + Angular frontend). Use this skill whenever the user asks to
-  review code, a diff, a PR, a branch, or a change, or asks whether a change is
-  ready to merge, follows the coding principles, or respects the architecture,
-  even if they don't say the word "review". It reads the relevant architecture
-  docs path-based and checks Clean Code, SOLID, DRY/KISS/YAGNI, separation of
-  concerns, backend/frontend architecture, file size and responsibility
-  thresholds, routeable components and URL state, API integration and
-  ApiResponse<T> handling, the UI style system, strong typing, focused scope,
-  error handling, Quranic data safety, and build/test/report verification, then
-  returns a structured verdict with severity levels. When the change was implemented
-  from Spec Kit artifacts (the request mentions a Phase, a User Story/US, task IDs
-  like T013–T018, specs/<feature>/, spec.md, plan.md, tasks.md, contracts/,
-  quickstart.md, or "implemented Phase/tasks"), it additionally verifies the code
-  against the active spec, phase/task scope, locked decisions, and contracts. This is
-  a review skill only: produce findings and recommendations; do not implement fixes
-  unless the user explicitly asks.
+  (.NET backend + Angular frontend). Use this skill whenever the user asks to review
+  code, a diff, a PR, a branch, or a change; asks whether a change is ready to merge,
+  follows the coding principles, or respects the architecture; or shares freshly
+  implemented backend or frontend code for a quality or architecture check — even if
+  they don't say the word "review". Also use it when the change came from Spec Kit
+  (the request mentions a Phase, a User Story/US, task IDs like T013–T018,
+  specs/<feature>/, spec.md, plan.md, tasks.md, contracts/, or quickstart.md) and
+  should be checked against its spec, scope, and contracts. This is a review-only
+  skill: it produces findings and a verdict and does not implement fixes unless the
+  user explicitly asks.
 ---
 
 # Engineering Review Skill
@@ -66,8 +60,11 @@ reference material for this one. Where the generic clean-code guidance conflicts
 project conventions, the project wins (see `CODING_PRINCIPLES.md`: C#/.NET `I`-prefixed
 interfaces and the `ApiResponse` API envelope are authoritative).
 
-**If the diff contains test files, also apply `test-guard` to the test-code portion**
-(test-code quality only; this skill keeps ownership of everything else):
+**If the diff contains new or modified test files, apply `test-guard` as a mandatory
+dedicated review gate** (test-code quality only; this skill keeps ownership of everything
+else). Do **not** merely read `test-guard` as context or only list it under "Docs read" —
+you must apply it as a dedicated **Test Guard Review** subsection (see below) and report
+its result. Consult:
 
 - `.claude/skills/test-guard/SKILL.md` — the nine test-code rules.
 - `.claude/skills/test-guard/references/dotnet.md` — for backend tests (xUnit,
@@ -75,8 +72,9 @@ interfaces and the `ApiResponse` API envelope are authoritative).
 - `.claude/skills/test-guard/references/jest.md` — for frontend Angular/TypeScript tests.
 
 Recognize test files by pattern: `*Tests.cs`, `*Test.cs`, `*.spec.ts`, `*.test.ts`, and
-files under `tests/` or `__tests__/`. Test-code findings fold into the **Findings**
-section below with the normal severity levels.
+files under `tests/` or `__tests__/`. Test-code findings still use the same severity
+levels as every other finding and **must influence the final verdict** — they fold into
+the **Findings** section below and drive the dedicated **Test Guard Review** section.
 
 **If Backend changed, also read:**
 
@@ -325,6 +323,31 @@ source-safe Quranic test data. `engineering-review` still owns production code,
 architecture, Spec Kit compliance, Quranic data safety, API contracts, frontend
 structure, UI/product checks, and the final verdict.
 
+### Test Guard Review (required whenever tests changed)
+
+Whenever the diff adds or modifies test files, you **must** produce a dedicated **Test
+Guard Review** subsection (see the Review Output Format below). It is not optional, and it
+is **not** satisfied by listing `test-guard` under "Docs read". Evaluate, at minimum:
+
+- whether the tests actually prove the requested behavior.
+- assertion strength (specific, meaningful assertions vs. trivially-true checks).
+- false-positive risk (tests that pass regardless of correctness).
+- negative and edge-case coverage.
+- regression coverage for the behavior being changed or fixed.
+- fixture isolation and cleanup (no leaked shared state between tests).
+- synthetic/test data safety (no real or fabricated Quranic source data).
+- whether tests compare only counts or samples when full projections or checksums are
+  needed to prove correctness.
+- whether new test files are untracked (and could be omitted from the commit).
+- whether the tests can pass while the target behavior is broken.
+
+**Severity guidance for test-code findings:**
+
+- A test that can pass while the required behavior is broken is **at least MAJOR**.
+- Weak or missing test coverage that affects contract-critical behavior is **BLOCKING**.
+- New test files that are untracked and could be omitted from the commit are **at least
+  MINOR**, escalating to **MAJOR** when those tests are required for phase acceptance.
+
 Keep this distinct from build/test verification below:
 
 - **test-guard answers:** is the test *code* good?
@@ -362,6 +385,11 @@ Use one of:
 - PASS WITH NOTES
 - CHANGES REQUESTED
 - BLOCKED
+
+When tests were added or modified, the final verdict **must account for the Test Guard
+Review verdict** below. In particular: contract-critical weak tests must prevent PASS,
+and tests that can pass while the required behavior is broken should produce CHANGES
+REQUESTED or BLOCKED depending on impact.
 
 ## 2. Scope Reviewed
 
@@ -418,11 +446,29 @@ frontend component/data-access/state separation).
 
 State explicitly one of: PASS / CONCERN / NOT APPLICABLE, with a one-line reason.
 
-## 8. Verification Check
+## 8. Test Guard Review
+
+Include this section **only** when the diff adds or modifies test files (see the
+conditional reading rules and the Test-Code Review section above). If no test files
+changed, omit it. When present, report:
+
+- **Test scope** — which test files/areas changed and what behavior they target.
+- **Assertion strength** — are assertions specific and meaningful, or trivially true?
+- **False-positive risks** — can these tests pass regardless of correctness, or while
+  the target behavior is broken?
+- **Missing coverage** — negative/edge cases, regression coverage, and full
+  projections/checksums where comparing only counts or samples is insufficient.
+- **Fixture/data safety** — synthetic test data only; no real or fabricated Quranic
+  source data.
+- **Test isolation** — fixture isolation and cleanup; no leaked shared state; new test
+  files are tracked (not at risk of being omitted from the commit).
+- **Test Guard verdict:** PASS / PASS WITH NOTES / CHANGES REQUESTED / BLOCKED.
+
+## 9. Verification Check
 
 Report build/test evidence if provided. If no build/test was run, say so clearly.
 
-## 9. Final Recommendation
+## 10. Final Recommendation
 
 Short, direct next step consistent with the verdict.
 
