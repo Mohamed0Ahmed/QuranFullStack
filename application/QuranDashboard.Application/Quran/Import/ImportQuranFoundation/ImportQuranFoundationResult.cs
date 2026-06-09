@@ -1,4 +1,6 @@
 
+using QuranDashboard.Application.Abstractions.Quran.Import;
+
 namespace QuranDashboard.Application.Quran.Import.ImportQuranFoundation;
 
 public sealed record ImportQuranFoundationResult(

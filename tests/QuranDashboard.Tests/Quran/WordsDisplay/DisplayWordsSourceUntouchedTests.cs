@@ -1,4 +1,6 @@
 
+using QuranDashboard.Application.Quran.Words.RebuildDisplayWords;
+
 namespace QuranDashboard.Tests.Quran.WordsDisplay;
 
 [Collection(nameof(WordsDisplayTestCollection))]

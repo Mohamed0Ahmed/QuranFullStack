@@ -1,4 +1,6 @@
 
+using QuranDashboard.Domain.Quran.Words;
+
 namespace QuranDashboard.Application.Quran.Import.Validation;
 
 internal static class ImportValidationWordIndex

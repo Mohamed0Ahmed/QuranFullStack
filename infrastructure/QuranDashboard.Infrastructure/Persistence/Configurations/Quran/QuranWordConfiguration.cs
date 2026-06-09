@@ -1,4 +1,6 @@
 
+using QuranDashboard.Domain.Quran.Words;
+
 namespace QuranDashboard.Infrastructure.Persistence.Configurations.Quran;
 
 public sealed class QuranWordConfiguration : IEntityTypeConfiguration<QuranWord>

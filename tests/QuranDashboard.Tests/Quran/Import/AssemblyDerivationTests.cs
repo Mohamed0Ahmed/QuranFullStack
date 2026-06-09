@@ -1,6 +1,8 @@
 using QuranDashboard.Application.Abstractions.Quran.Import;
 using QuranDashboard.Domain.Quran.Words;
 
+using QuranDashboard.Application.Quran.Import.ImportQuranFoundation;
+
 namespace QuranDashboard.Tests.Quran.Import;
 
 public sealed class AssemblyDerivationTests

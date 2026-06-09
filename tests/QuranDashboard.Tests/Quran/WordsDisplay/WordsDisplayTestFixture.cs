@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using QuranDashboard.Application;
+using QuranDashboard.Application.Quran.Words.RebuildDisplayWords;
 using QuranDashboard.Domain.Quran.Ayahs;
 using QuranDashboard.Domain.Quran.MushafPages;
 using QuranDashboard.Domain.Quran.Surahs;
