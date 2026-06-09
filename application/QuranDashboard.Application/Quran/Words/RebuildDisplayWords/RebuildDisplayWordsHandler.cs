@@ -41,6 +41,10 @@ public sealed class RebuildDisplayWordsHandler
                         : "Display words rebuild validation failed.",
                     reportDir);
         }
+        catch (InvalidOperationException ex) when (ex.Message == DisplayWordsInvariants.TargetsNotEmpty)
+        {
+            return RebuildDisplayWordsResult.Refused(ex.Message);
+        }
         catch (Exception ex)
         {
             return RebuildDisplayWordsResult.Failure(ex.Message);

@@ -140,6 +140,7 @@ internal static class DisplayWordsSql
           f.first_line_number
         FROM first_occ f
         JOIN stats_tashkeel s ON s.text_uthmani = f.text_uthmani
+        ORDER BY f.first_word_order_in_mushaf, f.text_uthmani
         """;
 
     internal const string InsertUniqueSimple = ReadableBase + """
@@ -186,6 +187,7 @@ internal static class DisplayWordsSql
           f.first_line_number
         FROM first_occ f
         JOIN stats_simple s ON s.text_uthmani_simple = f.text_uthmani_simple
+        ORDER BY f.first_word_order_in_mushaf, f.text_uthmani_simple
         """;
 
     internal const string TruncateDerivedTables = """

@@ -38,6 +38,11 @@ public sealed class SqlDisplayWordsRebuilder : IDisplayWordsRebuilder
         int expectedReadableWords,
         CancellationToken ct)
     {
+        if (!force && await AnyTargetTableHasDataAsync(ct))
+        {
+            throw new InvalidOperationException(DisplayWordsInvariants.TargetsNotEmpty);
+        }
+
         var runAtUtc = DateTimeOffset.UtcNow;
         var connection = dbContext.Database.GetDbConnection();
 
