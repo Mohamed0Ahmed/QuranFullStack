@@ -7,6 +7,8 @@ namespace QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Words.Dis
 
 public sealed class SqlDisplayWordsRebuilder : IDisplayWordsRebuilder
 {
+    private const int CommandTimeoutSeconds = 600;
+
     private const string PassVerdict = "pass";
     private const string FailVerdict = "fail";
     private const string HardSeverity = "hard";
@@ -46,10 +48,12 @@ public sealed class SqlDisplayWordsRebuilder : IDisplayWordsRebuilder
         var runAtUtc = DateTimeOffset.UtcNow;
         var connection = dbContext.Database.GetDbConnection();
 
-        if (connection.State != ConnectionState.Open)
+        if (connection.State == ConnectionState.Open)
         {
-            await connection.OpenAsync(ct);
+            await dbContext.Database.CloseConnectionAsync();
         }
+
+        await connection.OpenAsync(ct);
 
         if (connection is not NpgsqlConnection npgsqlConnection)
         {
@@ -59,21 +63,20 @@ public sealed class SqlDisplayWordsRebuilder : IDisplayWordsRebuilder
         var sourceCountsBefore = await ReadSourceCountsAsync(npgsqlConnection, null, ct);
 
         await using var transaction = await npgsqlConnection.BeginTransactionAsync(ct);
-        await dbContext.Database.UseTransactionAsync(transaction, ct);
 
         try
         {
             if (force)
             {
-                await dbContext.Database.ExecuteSqlRawAsync(DisplayWordsSql.TruncateDerivedTables, ct);
+                await ExecuteNonQueryAsync(npgsqlConnection, transaction, DisplayWordsSql.TruncateDerivedTables, ct);
             }
 
-            await dbContext.Database.ExecuteSqlRawAsync(DisplayWordsSql.InsertOrderedTashkeel, ct);
-            await dbContext.Database.ExecuteSqlRawAsync(DisplayWordsSql.InsertOrderedSimple, ct);
-            await dbContext.Database.ExecuteSqlRawAsync(DisplayWordsSql.InsertUniqueTashkeel, ct);
-            await dbContext.Database.ExecuteSqlRawAsync(DisplayWordsSql.InsertUniqueSimple, ct);
+            await ExecuteNonQueryAsync(npgsqlConnection, transaction, DisplayWordsSql.InsertOrderedTashkeel, ct);
+            await ExecuteNonQueryAsync(npgsqlConnection, transaction, DisplayWordsSql.InsertOrderedSimple, ct);
+            await ExecuteNonQueryAsync(npgsqlConnection, transaction, DisplayWordsSql.InsertUniqueTashkeel, ct);
+            await ExecuteNonQueryAsync(npgsqlConnection, transaction, DisplayWordsSql.InsertUniqueSimple, ct);
 
-            var totals = await GatherTotalsAsync(ct);
+            var totals = await GatherTotalsAsync(npgsqlConnection, transaction, ct);
             var checks = await RunHardChecksAsync(
                 npgsqlConnection,
                 transaction,
@@ -301,14 +304,21 @@ public sealed class SqlDisplayWordsRebuilder : IDisplayWordsRebuilder
             .ToList();
     }
 
-    private async Task<DisplayWordsTotals> GatherTotalsAsync(CancellationToken ct)
+    private static async Task<DisplayWordsTotals> GatherTotalsAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        CancellationToken ct)
     {
-        var orderedTashkeelRows = await dbContext.QuranWordsOrderedTashkeel.CountAsync(ct);
-        var orderedSimpleRows = await dbContext.QuranWordsOrderedSimple.CountAsync(ct);
-        var uniqueTashkeelRows = await dbContext.QuranWordsUniqueTashkeel.CountAsync(ct);
-        var uniqueSimpleRows = await dbContext.QuranWordsUniqueSimple.CountAsync(ct);
-
-        var readableWords = await dbContext.QuranWords.CountAsync(word => !word.IsAyahMarker, ct);
+        var orderedTashkeelRows = await ExecuteScalarIntAsync(
+            connection, transaction, DisplayWordsSql.CheckOrdCountOrderedTashkeel, ct);
+        var orderedSimpleRows = await ExecuteScalarIntAsync(
+            connection, transaction, DisplayWordsSql.CheckOrdCountOrderedSimple, ct);
+        var uniqueTashkeelRows = await ExecuteScalarIntAsync(
+            connection, transaction, DisplayWordsSql.CheckUnqCountUniqueTashkeel, ct);
+        var uniqueSimpleRows = await ExecuteScalarIntAsync(
+            connection, transaction, DisplayWordsSql.CheckUnqCountUniqueSimple, ct);
+        var readableWords = await ExecuteScalarIntAsync(
+            connection, transaction, DisplayWordsSql.CheckOrdReadable, ct);
 
         return new DisplayWordsTotals(
             orderedTashkeelRows,
@@ -316,6 +326,19 @@ public sealed class SqlDisplayWordsRebuilder : IDisplayWordsRebuilder
             uniqueTashkeelRows,
             uniqueSimpleRows,
             readableWords);
+    }
+
+    private static async Task ExecuteNonQueryAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        string sql,
+        CancellationToken ct,
+        params NpgsqlParameter[] parameters)
+    {
+        await using var command = new NpgsqlCommand(sql, connection, transaction);
+        command.CommandTimeout = CommandTimeoutSeconds;
+        command.Parameters.AddRange(parameters);
+        await command.ExecuteNonQueryAsync(ct);
     }
 
     private static async Task<SourceCounts> ReadSourceCountsAsync(
@@ -337,6 +360,7 @@ public sealed class SqlDisplayWordsRebuilder : IDisplayWordsRebuilder
         params NpgsqlParameter[] parameters)
     {
         await using var command = new NpgsqlCommand(sql, connection, transaction);
+        command.CommandTimeout = CommandTimeoutSeconds;
         command.Parameters.AddRange(parameters);
         var result = await command.ExecuteScalarAsync(ct);
         return Convert.ToInt32(result);
