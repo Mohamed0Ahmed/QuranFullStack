@@ -10,10 +10,10 @@ description: >-
   sprawling/missing/shared `GlobalUsings.cs` — even if they don't say the exact words
   "global usings" (e.g. "the same imports are repeated in every Infrastructure file",
   "tidy the usings in the .NET projects", "our using statements are everywhere").
-  It promotes layer-safe namespaces that repeat in more than five files in the same
-  project (including feature/handler namespaces at that threshold), removes redundant
-  local usings, respects Clean Architecture layer boundaries from
-  BACKEND_STRUCTURE.md, and verifies with `dotnet build`. Do not edit
+  It promotes only common, layer-safe, non-feature-specific namespaces that repeat
+  in more than five files in the same project, removes redundant local usings,
+  respects Clean Architecture layer boundaries from BACKEND_STRUCTURE.md, and
+  verifies with `dotnet build`. Do not edit
   BACKEND_STRUCTURE.md as part of this skill. Not for adding a single using,
   frontend/TypeScript imports, or C# `using` resource/disposal statements.
 ---
@@ -40,20 +40,21 @@ That doc stays as written.
 | File placement (`GlobalUsings.cs` per project) | `BACKEND_STRUCTURE.md` |
 | Clean Architecture dependency direction | `CLEAN_ARCHITECTURE.md` |
 | **When repetition qualifies for promotion** | **This skill** — see threshold below |
-| **Feature/handler namespaces at high repetition** | **This skill** — promote at >5; do not revert because BACKEND_STRUCTURE prefers local feature usings in general |
+| Feature/handler namespaces | `BACKEND_STRUCTURE.md` — keep local; do not promote feature-specific namespaces |
 
 How the two fit together:
 
 - `BACKEND_STRUCTURE.md` says global usings are for namespaces **common and repeated
-  across many files**, and that feature-specific namespaces should normally stay local.
+  across many files**, and that feature-specific namespaces should stay local.
 - This skill defines **many** operationally: **more than five files in the same
-  project**. At that count, repetition is high enough that promotion reduces noise
-  without hiding layer boundaries.
-- Feature-specific namespaces (handlers, validation folders, etc.) **are promoted at
-  >5** like any other namespace. Folder structure and type names still show feature
-  ownership; the team accepts global usings for high repetition.
-- If count is ≤5, keep local — that aligns with BACKEND_STRUCTURE's default for
-  feature-specific and infrequent usings.
+  project**. At that count, a non-feature-specific namespace may be common enough
+  for promotion.
+- Feature-specific namespaces (handlers, validation folders, bounded-context folders,
+  concrete feature implementations, test feature folders, etc.) **stay local at any
+  count**. Repetition alone is not enough to promote them because it hides feature
+  ownership.
+- If count is ≤5, keep local unless the framework/cross-cutting majority exception
+  below applies.
 
 ## Required Context / Reading Rules
 
@@ -82,11 +83,14 @@ to that and say so in the report.
 A namespace qualifies for `GlobalUsings.cs` when **all** of these hold:
 
 1. **>5 files in this same project** — counted as local `using` lines (excluding
-   `GlobalUsings.cs`, EF `Migrations/`, and `bin/`/`obj/`). **Automatic promotion
-   threshold**: above five → promote unless a hard gate blocks it.
+   `GlobalUsings.cs`, EF `Migrations/`, and `bin/`/`obj/`). Above five makes the
+   namespace a promotion candidate, not an automatic promotion.
 2. **Layer-safe** — must not violate the restriction table below. **Never overridden
    by frequency.**
-3. **No cross-layer smell** — if repetition reveals a boundary problem (e.g. Domain
+3. **Non-feature-specific** — must be common/cross-cutting for the project. Feature,
+   handler, validation, bounded-context, and concrete implementation namespaces stay
+   local regardless of count.
+4. **No cross-layer smell** — if repetition reveals a boundary problem (e.g. Domain
    importing Infrastructure), **report it**; do not paper over with a global using.
 
 **At ≤5 files:** keep local.
@@ -95,9 +99,10 @@ A namespace qualifies for `GlobalUsings.cs` when **all** of these hold:
 **majority** of the project's files (e.g. `Microsoft.EntityFrameworkCore` across
 most Infrastructure persistence code) may be promoted even below six files.
 
-**Feature namespaces:** not exempt. Handler, validation, and feature-folder namespaces
-follow the same >5 rule (e.g. test handler usings repeated across a feature's test
-files).
+**Feature namespaces:** hard-excluded from promotion. Keep namespaces such as
+`*.Quran.Import.*`, `*.Quran.Words.Display`, `*.RebuildDisplayWords`, feature test
+folders, and other bounded-context namespaces as local `using` directives unless a
+human explicitly changes the architecture rule.
 
 ### Layer restriction table (hard gate — from `BACKEND_STRUCTURE.md`)
 
@@ -122,7 +127,8 @@ Never add these to a project's `GlobalUsings.cs`, regardless of count:
      | sort | uniq -c | sort -rn
    ```
 
-   Promote every namespace with **count > 5** unless the layer gate blocks it.
+   Treat every namespace with **count > 5** as a candidate, then promote only if it
+   also passes the layer-safety and non-feature-specific gates.
 3. **Exclude** from automatic promotion: `using static …`, `using Alias = …` (unless
    pervasive and obviously safe).
 4. **Apply the layer gate.** Blocked candidates → report as findings, do not promote.
@@ -135,6 +141,7 @@ Never add these to a project's `GlobalUsings.cs`, regardless of count:
 ## Leave alone
 
 - Namespaces at **≤5 files** (unless majority/framework exception above).
+- Feature-specific namespaces at any count.
 - `using var` / `using (...)` resource blocks — not import directives.
 - Aliases and `using static` — unless pervasive and safe.
 - Generated migrations, `bin/`/`obj/`, conditional `#if` usings.
@@ -171,8 +178,8 @@ Build and test status.
 ## Guardrails
 
 - **Import-only.** Only `using` directives and `GlobalUsings.cs`.
-- **>5 threshold is consistent.** Do not skip a qualifying namespace because it is
-  feature-specific — that is the team rule for this skill.
+- **>5 is only a candidate threshold.** Do not promote feature-specific namespaces
+  just because they are repeated.
 - **Layer boundaries are absolute.** From `BACKEND_STRUCTURE.md`; frequency never
   crosses them.
 - **One `GlobalUsings.cs` per project.**
