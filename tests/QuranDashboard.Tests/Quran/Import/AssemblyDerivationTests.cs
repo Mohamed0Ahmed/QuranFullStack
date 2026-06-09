@@ -1,5 +1,4 @@
 using QuranDashboard.Application.Abstractions.Quran.Import;
-using QuranDashboard.Application.Quran.Import.ImportQuranFoundation;
 using QuranDashboard.Domain.Quran.Words;
 
 namespace QuranDashboard.Tests.Quran.Import;

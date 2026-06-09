@@ -1,7 +1,5 @@
 using QuranDashboard.Application.Abstractions.Quran.Words.Display;
-using QuranDashboard.Application.Quran.Words.RebuildDisplayWords;
 using QuranDashboard.Domain.Quran.Words.Display;
-using QuranDashboard.Infrastructure.Persistence;
 
 namespace QuranDashboard.Tests.Quran.WordsDisplay;
 

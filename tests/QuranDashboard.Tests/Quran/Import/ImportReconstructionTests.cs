@@ -1,6 +1,4 @@
-using QuranDashboard.Application.Quran.Import.ImportQuranFoundation;
 using QuranDashboard.Domain.Quran.MushafPages;
-using QuranDashboard.Infrastructure.Persistence;
 
 namespace QuranDashboard.Tests.Quran.Import;
 

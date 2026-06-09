@@ -1,5 +1,3 @@
-using QuranDashboard.Application.Abstractions.Quran.Import;
-using QuranDashboard.Domain.Quran.Words;
 
 namespace QuranDashboard.Application.Quran.Import.Validation;
 

@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using QuranDashboard.Domain.Quran.Words;
 
 namespace QuranDashboard.Infrastructure.Persistence.Configurations.Quran;
 

@@ -1,5 +1,3 @@
-using QuranDashboard.Application.Quran.Import.ImportQuranFoundation;
-using QuranDashboard.Infrastructure.Persistence;
 
 namespace QuranDashboard.Tests.Quran.Import;
 

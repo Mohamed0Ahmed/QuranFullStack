@@ -1,6 +1,4 @@
 using System.Text.Json;
-using QuranDashboard.Application.Quran.Words.RebuildDisplayWords;
-using QuranDashboard.Infrastructure.Persistence;
 
 namespace QuranDashboard.Tests.Quran.WordsDisplay;
 

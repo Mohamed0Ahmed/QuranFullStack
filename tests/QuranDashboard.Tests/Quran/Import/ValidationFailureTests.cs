@@ -1,7 +1,5 @@
 using System.Text.Json;
-using QuranDashboard.Application.Quran.Import.ImportQuranFoundation;
 using QuranDashboard.Application.Quran.Import.Validation;
-using QuranDashboard.Infrastructure.Persistence;
 
 namespace QuranDashboard.Tests.Quran.Import;
 

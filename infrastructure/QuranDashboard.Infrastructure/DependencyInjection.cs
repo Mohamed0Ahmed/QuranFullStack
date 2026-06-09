@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using QuranDashboard.Application.Abstractions.Quran.Import;
 using QuranDashboard.Application.Abstractions.Quran.Words.Display;
 using QuranDashboard.Infrastructure.Files.Quran.Import;
 using QuranDashboard.Infrastructure.Persistence;
