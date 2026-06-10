@@ -5,7 +5,7 @@
 **Status**: Draft
 **Input**: User description: "Read the plan `docs/manhaj-qurani-mushaf-words-layout-data-foundation-plan.md` and create the spec per Spec Kit best practices. Generation only. Implementation will be done by a cheaper model, so the specification must be super clear."
 
-> **Reference plan (authoritative HOW):** `docs/manhaj-qurani-mushaf-words-layout-data-foundation-plan.md`.
+> **Reference plan (authoritative HOW):** `docs/feature-002-quran-foundation/manhaj-qurani-mushaf-words-layout-data-foundation-plan.md`.
 > **Reference data report (authoritative source facts & counts):** `resources/report/quran-mushaf-words-data-foundation-report.md`.
 > This spec defines **WHAT** must be true and **WHY**. The technical **HOW** (frameworks, project layout, persistence mechanism) lives in the plan and in the upcoming `/speckit-plan` output.
 

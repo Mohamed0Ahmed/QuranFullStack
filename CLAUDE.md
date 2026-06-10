@@ -1,12 +1,12 @@
 <!-- SPECKIT START -->
 
-Active feature: **Quran Mushaf Words & Layout Data Foundation** — branch `002-mushaf-words-foundation`.
+Active feature: **Quran Words Display Tables Foundation** — branch `003-words-display-tables`.
 For technologies, project structure, shell commands, and design artifacts, read the current plan
 and its siblings:
 
-- `specs/002-mushaf-words-foundation/plan.md` — technical context, project structure, gates
-- `specs/002-mushaf-words-foundation/spec.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/`
-- `docs/manhaj-qurani-mushaf-words-layout-data-foundation-plan.md` — long-form companion plan
+- `specs/003-words-display-tables/plan.md` — technical context, project structure, gates
+- `specs/003-words-display-tables/spec.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/`
+- `docs/feature-003-word-display-tables/manhaj-qurani-quran-words-display-tables-foundation-plan.md` — long-form companion plan
 
 <!-- SPECKIT END -->
 

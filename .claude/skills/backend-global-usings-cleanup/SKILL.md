@@ -10,186 +10,179 @@ description: >-
   sprawling/missing/shared `GlobalUsings.cs` — even if they don't say the exact words
   "global usings" (e.g. "the same imports are repeated in every Infrastructure file",
   "tidy the usings in the .NET projects", "our using statements are everywhere").
-  It promotes only common, layer-safe, non-feature-specific namespaces per project,
-  removes the redundant local usings, strictly respects Clean Architecture layer
-  boundaries (never promotes EF Core / ASP.NET Core / Infrastructure namespaces into
-  Domain or Application), keeps each `GlobalUsings.cs` small and intentional, and
-  verifies with `dotnet build`. Not for adding a single using, for frontend/TypeScript
-  imports, or for C# `using` resource/disposal statements.
+  It promotes only common, layer-safe, non-feature-specific namespaces that repeat
+  in more than five files in the same project, removes redundant local usings,
+  respects Clean Architecture layer boundaries from BACKEND_STRUCTURE.md, and
+  verifies with `dotnet build`. Do not edit
+  BACKEND_STRUCTURE.md as part of this skill. Not for adding a single using,
+  frontend/TypeScript imports, or C# `using` resource/disposal statements.
 ---
 
 # Backend Global Usings Cleanup Skill
 
 Use this skill to tidy and consolidate `global using` directives across the Quran
-Dashboard .NET backend. Its job: find namespaces that are imported over and over
-across a project's files, promote the genuinely ubiquitous and **layer-safe** ones
-into that project's `GlobalUsings.cs`, and delete the now-redundant per-file `using`
-lines — so each project keeps a small, intentional set of global usings and the
-individual files stay clean.
+Dashboard .NET backend. Its job: find namespaces imported over and over in the same
+project, promote the **layer-safe** ones into that project's `GlobalUsings.cs`, and
+delete the now-redundant per-file `using` lines.
 
-This is an **action skill**: it edits code. But the change must be **import-only and
+This is an **action skill**: it edits code. The change must be **import-only and
 behavior-preserving** — you touch `using` directives and `GlobalUsings.cs` files,
-nothing else. The `dotnet build` at the end is the safety net that proves you neither
-broke compilation nor left redundant-using warnings behind.
+nothing else. The `dotnet build` at the end is the safety net.
 
-The rules for *what belongs* in a global using are not invented here — they are
-canonical in `Backend/.architecture/BACKEND_STRUCTURE.md` (`## Global Usings`). Read
-that section and apply it; this skill is the *procedure* for carrying it out safely.
+## Relationship to `BACKEND_STRUCTURE.md`
+
+**Do not edit** `Backend/.architecture/BACKEND_STRUCTURE.md` as part of this skill.
+That doc stays as written.
+
+| Topic | Source of truth |
+|---|---|
+| Layer restrictions (what each project may never global-use) | `BACKEND_STRUCTURE.md` § Global Usings |
+| File placement (`GlobalUsings.cs` per project) | `BACKEND_STRUCTURE.md` |
+| Clean Architecture dependency direction | `CLEAN_ARCHITECTURE.md` |
+| **When repetition qualifies for promotion** | **This skill** — see threshold below |
+| Feature/handler namespaces | `BACKEND_STRUCTURE.md` — keep local; do not promote feature-specific namespaces |
+
+How the two fit together:
+
+- `BACKEND_STRUCTURE.md` says global usings are for namespaces **common and repeated
+  across many files**, and that feature-specific namespaces should stay local.
+- This skill defines **many** operationally: **more than five files in the same
+  project**. At that count, a non-feature-specific namespace may be common enough
+  for promotion.
+- Feature-specific namespaces (handlers, validation folders, bounded-context folders,
+  concrete feature implementations, test feature folders, etc.) **stay local at any
+  count**. Repetition alone is not enough to promote them because it hides feature
+  ownership.
+- If count is ≤5, keep local unless the framework/cross-cutting majority exception
+  below applies.
 
 ## Required Context / Reading Rules
 
-Read the canonical docs for the rules instead of trusting memory:
-
-- **Always:** `Backend/.architecture/BACKEND_STRUCTURE.md` — the `## Global Usings`
-  section is canonical for which namespaces may be promoted, the per-layer
-  restrictions, the preferred file placement, and the "decision rule before adding a
-  global using". `CODING_PRINCIPLES.md` — §7 Focused Changes (don't touch unrelated
-  files) and §6 Strong Typing apply.
-- **When layer direction is in question:** `Backend/.architecture/CLEAN_ARCHITECTURE.md`
-  — canonical for the dependency direction that gates which namespaces are safe in
-  which project.
-
-If a referenced doc is missing, say so in the report rather than guessing the rules.
+- **Always read:** `Backend/.architecture/BACKEND_STRUCTURE.md` — § Global Usings for
+  layer restrictions and placement. `CODING_PRINCIPLES.md` — §7 Focused Changes.
+- **When layer direction is in question:** `Backend/.architecture/CLEAN_ARCHITECTURE.md`.
+- **Do not** change `BACKEND_STRUCTURE.md` to match cleanup output.
 
 ## Backend Projects (default scope: all of them)
-
-Invoked without a target, sweep every backend C# project, each with its own
-`GlobalUsings.cs`:
 
 | Project | Path | Layer note |
 |---|---|---|
 | Domain | `domain/QuranDashboard.Domain` | Most restricted — no framework/infra namespaces |
 | Application.Abstractions | `application/QuranDashboard.Application.Abstractions` | Contracts only; no Infrastructure/Api |
 | Application | `application/QuranDashboard.Application` | No Infrastructure; no ASP.NET unless explicitly approved |
-| Infrastructure | `infrastructure/QuranDashboard.Infrastructure` | May globally use EF Core etc.; must not leak into Domain/Application |
+| Infrastructure | `infrastructure/QuranDashboard.Infrastructure` | May globally use EF Core etc. |
 | Api | `api/QuranDashboard.Api` | May globally use ASP.NET Core (e.g. MVC) |
 | Shared | `shared/QuranDashboard.Shared` | Keep genuinely cross-cutting only |
-| Tests | `tests/QuranDashboard.Tests` | Test-only framework usings (e.g. xUnit) |
+| Tests | `tests/QuranDashboard.Tests` | Test frameworks (xUnit, FluentAssertions) + shared test infrastructure |
 
 If the user names a specific project or only the current git diff is relevant, scope
-to that instead and say so in the report.
+to that and say so in the report.
 
-## The Gate: what may be promoted to a global using
+## The Gate: what may be promoted
 
-A namespace qualifies for `GlobalUsings.cs` only when **all** of these hold (this is
-`BACKEND_STRUCTURE.md`'s decision rule, applied per project):
+A namespace qualifies for `GlobalUsings.cs` when **all** of these hold:
 
-1. **Common in this same project** — imported across many of the project's files. Rule
-   of thumb: a clear majority of files, or many files where the namespace is plainly
-   framework/cross-cutting (e.g. `Microsoft.EntityFrameworkCore` in Infrastructure).
-   When in doubt, leave it local: a global using trades the locality signal ("this file
-   touches EF") for brevity, and only pays off when the namespace is genuinely
-   everywhere.
-2. **Layer-safe for this project** — promoting it must not violate the dependency
-   direction (see the table below). This is a hard gate, never overridden by frequency.
-3. **Not feature-specific** — namespaces like `QuranDashboard.Application.Quran.Import.Validation`
-   stay local even if repeated within their feature folder; they signal which feature a
-   file belongs to. Promote framework/cross-cutting namespaces, not feature ones.
-4. **Doesn't hide a dependency that should stay explicit** — if only a few files use it,
-   or its presence is a meaningful architectural signal, keep it local.
+1. **>5 files in this same project** — counted as local `using` lines (excluding
+   `GlobalUsings.cs`, EF `Migrations/`, and `bin/`/`obj/`). Above five makes the
+   namespace a promotion candidate, not an automatic promotion.
+2. **Layer-safe** — must not violate the restriction table below. **Never overridden
+   by frequency.**
+3. **Non-feature-specific** — must be common/cross-cutting for the project. Feature,
+   handler, validation, bounded-context, and concrete implementation namespaces stay
+   local regardless of count.
+4. **No cross-layer smell** — if repetition reveals a boundary problem (e.g. Domain
+   importing Infrastructure), **report it**; do not paper over with a global using.
 
-### Layer restriction table (hard gate)
+**At ≤5 files:** keep local.
 
-Never add these to a project's `GlobalUsings.cs`, regardless of how often they repeat:
+**Exception (still ≤5):** a plainly framework/cross-cutting namespace used in a clear
+**majority** of the project's files (e.g. `Microsoft.EntityFrameworkCore` across
+most Infrastructure persistence code) may be promoted even below six files.
+
+**Feature namespaces:** hard-excluded from promotion. Keep namespaces such as
+`*.Quran.Import.*`, `*.Quran.Words.Display`, `*.RebuildDisplayWords`, feature test
+folders, and other bounded-context namespaces as local `using` directives unless a
+human explicitly changes the architecture rule.
+
+### Layer restriction table (hard gate — from `BACKEND_STRUCTURE.md`)
+
+Never add these to a project's `GlobalUsings.cs`, regardless of count:
 
 | Project | Must NOT globally use |
 |---|---|
 | Domain | ASP.NET Core, EF Core, Infrastructure, Application namespaces |
 | Application.Abstractions | Infrastructure, Api namespaces |
 | Application | Infrastructure namespaces; ASP.NET Core (unless explicitly approved) |
-| Infrastructure | (none extra) — but its namespaces must not be promoted into Domain/Application |
-
-When a promotion would cross a boundary, that is a finding to report, not an edit to
-make. If the repetition itself reveals a layering smell (e.g. Domain files repeatedly
-importing an Infrastructure namespace), surface it — do not paper over it with a global
-using.
+| Infrastructure | — (its namespaces must not be promoted into Domain/Application) |
 
 ## Workflow
 
-1. **Read the canonical rules** (above). Confirm the project list and scope.
-2. **Inventory per project.** For each project, list the plain `using` directives and how
-   often each appears. A reliable starting point (adjust globs as needed):
+1. **Read** `BACKEND_STRUCTURE.md` § Global Usings (layer rules only). Confirm scope.
+2. **Inventory per project** — count each `using` namespace:
 
    ```bash
    rg -No '^using [^;]+;' <projectDir> \
      -g '!**/bin/**' -g '!**/obj/**' -g '!**/GlobalUsings.cs' \
+     -g '!**/Migrations/**' \
      | sort | uniq -c | sort -rn
    ```
 
-   Occurrence count ≈ file count (a file rarely repeats the same directive). Treat the
-   numbers as a guide, then apply judgment — the gate decides, not the raw count.
-3. **Select candidates** per project using the gate. Exclude `using static …` and
-   `using Alias = …` from automatic promotion (handle only if genuinely pervasive and
-   obviously safe; otherwise leave local).
-4. **Apply the layer gate.** Drop any candidate the restriction table forbids; note it
-   as a finding if the repetition hints at a real boundary problem.
-5. **Update `GlobalUsings.cs`** for the project (one file per project — never a single
-   shared cross-project file). Create it if absent; if the project has no qualifying
-   repeated usings, it doesn't need one. Keep entries sorted and grouped (framework
-   namespaces, then project namespaces), small and intentional.
-6. **Remove the redundant local usings.** For every namespace you promoted, delete its
-   per-file `using` line across that project. This step is mandatory: a local using that
-   duplicates a global using is a redundant-using warning, and the clean build depends on
-   removing them.
-7. **Verify** (below). If anything fails, fix or revert — never leave the backend in a
-   non-building state.
+   Treat every namespace with **count > 5** as a candidate, then promote only if it
+   also passes the layer-safety and non-feature-specific gates.
+3. **Exclude** from automatic promotion: `using static …`, `using Alias = …` (unless
+   pervasive and obviously safe).
+4. **Apply the layer gate.** Blocked candidates → report as findings, do not promote.
+5. **Update `GlobalUsings.cs`** — one file per project; create if absent. Group:
+   framework namespaces first, then project namespaces; keep sorted within each group.
+6. **Remove redundant local usings** for every promoted namespace. Mandatory — else
+   redundant-using warnings fail the build.
+7. **Verify** (below).
 
 ## Leave alone
 
-- **Feature-specific namespaces** — keep local; they carry meaning.
-- **`using` statements / resource blocks** (`using var x = …`, `using (…) { }`) — these
-  are not import directives; never touch them.
-- **Aliases and `using static`** — only promote if pervasive and obviously safe.
-- **Conditional `#if` usings**, generated files (EF `Migrations/`), and `bin/`/`obj/`.
-- **`Program.cs` top-level statements** and any non-import code.
+- Namespaces at **≤5 files** (unless majority/framework exception above).
+- Feature-specific namespaces at any count.
+- `using var` / `using (...)` resource blocks — not import directives.
+- Aliases and `using static` — unless pervasive and safe.
+- Generated migrations, `bin/`/`obj/`, conditional `#if` usings.
+- **`BACKEND_STRUCTURE.md`** — never edit as part of this cleanup.
 
 ## Verification
 
-- Run `dotnet build` from `Backend/` — it must finish **0 warnings, 0 errors**. Zero
-  warnings matters here: redundant-using and unused-using warnings are exactly how an
-  incomplete cleanup shows up.
-- If the test project was touched (or you want extra confidence), run `dotnet test`.
-- Report build/test status honestly. If the build breaks, the most common cause is a
-  removed local using whose namespace was *not* actually added globally — re-check the
-  promotion before reverting.
+- `dotnet build` from `Backend/` — **0 warnings, 0 errors**.
+- Run `dotnet test` when the test project was touched.
+- If build fails, check a removed local using was actually added globally before reverting.
 
 ## Output / Report
-
-After the work, report (matching `CODING_PRINCIPLES.md` §12 Definition of Done):
 
 ```
 # Backend Global Usings Cleanup
 
 ## Summary
-Scope (which projects), one-line outcome.
+Scope, one-line outcome.
 
 ## Per-Project Changes
 | Project | Promoted to GlobalUsings.cs | Local usings removed | Files touched |
 |---|---|---:|---:|
-...
 
 ## Layer-Safety Decisions
-Candidates deliberately NOT promoted because they would cross a boundary, and any
-layering smell the repetition revealed.
+Blocked candidates and any layering smells (not papered over).
 
 ## Verification
-Build status (warnings/errors) and test status if run.
+Build and test status.
 
 ## Skipped / Uncertain
-Anything left local on judgment, aliases/static usings deferred, or projects with
-nothing to consolidate.
+≤5 counts left local, aliases/static deferred, projects with nothing to consolidate.
 ```
 
 ## Guardrails
 
-- **Import-only, behavior-preserving.** Touch only `using` directives and
-  `GlobalUsings.cs`. Do not reorder/rename/refactor anything else, and do not mix in
-  unrelated edits (`CODING_PRINCIPLES.md` §7).
-- **Conservative by default.** Fewer, genuinely ubiquitous global usings beat a long
-  swept-up list. When unsure, leave it local.
-- **Layer boundaries are absolute.** Frequency never justifies crossing them.
-- **One `GlobalUsings.cs` per project.** Never introduce a shared cross-project usings
-  file.
-- **Cite, don't restate.** `BACKEND_STRUCTURE.md` is canonical for the rules; defer to
-  it when the situation is ambiguous.
-- **Never leave the backend non-building.** The clean `dotnet build` is the contract.
+- **Import-only.** Only `using` directives and `GlobalUsings.cs`.
+- **>5 is only a candidate threshold.** Do not promote feature-specific namespaces
+  just because they are repeated.
+- **Layer boundaries are absolute.** From `BACKEND_STRUCTURE.md`; frequency never
+  crosses them.
+- **One `GlobalUsings.cs` per project.**
+- **Do not edit `BACKEND_STRUCTURE.md`.** This skill operationalizes repetition
+  threshold; the architecture doc stays unchanged.
+- **Never leave the backend non-building.**
