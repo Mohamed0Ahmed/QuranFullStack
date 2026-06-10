@@ -79,6 +79,12 @@ public sealed class QuranWordConfiguration : IEntityTypeConfiguration<QuranWord>
             .IsRequired()
             .HasColumnName("is_ayah_marker");
 
+        builder.Property(w => w.UniqueTashkeelWordId)
+            .HasColumnName("unique_tashkeel_word_id");
+
+        builder.Property(w => w.UniqueSimpleWordId)
+            .HasColumnName("unique_simple_word_id");
+
         builder.HasIndex(w => w.Location).IsUnique();
 
         builder.HasIndex(w => new { w.SurahNumber, w.AyahNumber, w.WordNumber },
@@ -96,6 +102,14 @@ public sealed class QuranWordConfiguration : IEntityTypeConfiguration<QuranWord>
         builder.HasIndex(w => w.WordKeyImlaeiSimple, "IX_quran_words_word_key_imlaei_simple")
             .HasDatabaseName("IX_quran_words_word_key_imlaei_simple")
             .HasFilter("is_ayah_marker = false");
+
+        builder.HasIndex(w => w.UniqueTashkeelWordId)
+            .HasDatabaseName("IX_quran_words_unique_tashkeel_word_id")
+            .HasFilter("is_ayah_marker = false AND unique_tashkeel_word_id IS NOT NULL");
+
+        builder.HasIndex(w => w.UniqueSimpleWordId)
+            .HasDatabaseName("IX_quran_words_unique_simple_word_id")
+            .HasFilter("is_ayah_marker = false AND unique_simple_word_id IS NOT NULL");
 
         builder.HasOne(w => w.Ayah)
             .WithMany()

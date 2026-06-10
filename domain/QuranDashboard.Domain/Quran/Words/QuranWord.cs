@@ -17,6 +17,8 @@ public sealed class QuranWord
     public string TextImlaeiSimple { get; set; } = string.Empty;
     public string WordKeyImlaeiSimple { get; set; } = string.Empty;
     public bool IsAyahMarker { get; set; }
+    public int? UniqueTashkeelWordId { get; set; }
+    public int? UniqueSimpleWordId { get; set; }
 
     public Ayahs.Ayah Ayah { get; set; } = null!;
     public MushafPages.MushafPage Page { get; set; } = null!;
