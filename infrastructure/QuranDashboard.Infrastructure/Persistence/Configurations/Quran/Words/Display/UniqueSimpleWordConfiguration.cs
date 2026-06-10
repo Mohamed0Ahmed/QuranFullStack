@@ -13,6 +13,14 @@ public sealed class UniqueSimpleWordConfiguration : IEntityTypeConfiguration<Uni
         builder.Property(x => x.Id)
             .HasColumnName("id");
 
+        builder.Property(x => x.WordKeyImlaeiSimple)
+            .IsRequired()
+            .HasColumnName("word_key_imlaei_simple");
+
+        builder.Property(x => x.TextUthmani)
+            .IsRequired()
+            .HasColumnName("text_uthmani");
+
         builder.Property(x => x.TextUthmaniSimple)
             .IsRequired()
             .HasColumnName("text_uthmani_simple");
@@ -20,6 +28,10 @@ public sealed class UniqueSimpleWordConfiguration : IEntityTypeConfiguration<Uni
         builder.Property(x => x.TextImlaeiSimple)
             .IsRequired()
             .HasColumnName("text_imlaei_simple");
+
+        builder.Property(x => x.QpcGlyph)
+            .IsRequired()
+            .HasColumnName("qpc_glyph");
 
         builder.Property(x => x.OccurrencesCount)
             .IsRequired()
@@ -67,7 +79,7 @@ public sealed class UniqueSimpleWordConfiguration : IEntityTypeConfiguration<Uni
             .HasColumnType("smallint")
             .HasColumnName("first_line_number");
 
-        builder.HasIndex(x => x.TextUthmaniSimple).IsUnique();
+        builder.HasIndex(x => x.WordKeyImlaeiSimple).IsUnique();
 
         builder.HasIndex(x => x.FirstWordOrderInMushaf).IsUnique();
 

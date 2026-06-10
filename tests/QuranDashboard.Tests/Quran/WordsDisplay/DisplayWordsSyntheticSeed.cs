@@ -19,6 +19,10 @@ internal static class DisplayWordsSyntheticSeed
     public const string TokenBetaSimple = "س-ب";
     public const string TokenGammaSimple = "س-ج";
 
+    public const string KeyAlphaImlaei = "ك-أ";
+    public const string KeyBetaImlaei = "ك-ب";
+    public const string KeyGammaImlaei = "ك-ج";
+
     public static IReadOnlyList<Ayah> Ayahs { get; } =
     [
         new Ayah
@@ -115,9 +119,19 @@ internal static class DisplayWordsSyntheticSeed
             TextUthmani = textUthmani,
             TextUthmaniSimple = textUthmaniSimple,
             TextImlaeiSimple = $"إ-{textUthmaniSimple}",
+            WordKeyImlaeiSimple = ResolveImlaeiKey(textUthmaniSimple),
             IsAyahMarker = isAyahMarker
         };
     }
+
+    private static string ResolveImlaeiKey(string textUthmaniSimple) =>
+        textUthmaniSimple switch
+        {
+            TokenAlphaSimple => KeyAlphaImlaei,
+            TokenBetaSimple => KeyBetaImlaei,
+            TokenGammaSimple => KeyGammaImlaei,
+            _ => $"ك-{textUthmaniSimple}"
+        };
 
     internal sealed record TokenStats(int OccurrencesCount, int AyahsCount, int SurahsCount);
 }

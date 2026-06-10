@@ -56,6 +56,10 @@ public sealed class OrderedSimpleWordConfiguration : IEntityTypeConfiguration<Or
             .HasColumnType("smallint")
             .HasColumnName("word_order_in_surah");
 
+        builder.Property(x => x.WordKeyImlaeiSimple)
+            .IsRequired()
+            .HasColumnName("word_key_imlaei_simple");
+
         builder.Property(x => x.TextUthmaniSimple)
             .IsRequired()
             .HasColumnName("text_uthmani_simple");

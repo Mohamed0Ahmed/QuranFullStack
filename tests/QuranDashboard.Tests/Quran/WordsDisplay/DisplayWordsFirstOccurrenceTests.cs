@@ -56,7 +56,7 @@ public sealed class DisplayWordsFirstOccurrenceTests
         foreach (var uniqueRow in await dbContext.QuranWordsUniqueSimple.ToListAsync())
         {
             var groupRows = orderedSimpleRows
-                .Where(row => row.TextUthmaniSimple == uniqueRow.TextUthmaniSimple)
+                .Where(row => row.WordKeyImlaeiSimple == uniqueRow.WordKeyImlaeiSimple)
                 .ToList();
 
             var earliest = groupRows.MinBy(row => row.WordOrderInMushaf)!;

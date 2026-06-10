@@ -7,6 +7,7 @@ internal static class DisplayWordsSql
           SELECT w.id, w.location, w.ayah_id, w.surah_number, w.ayah_number,
                  w.word_number, w.page_number, w.line_number,
                  w.text_uthmani, w.text_uthmani_simple, w.text_imlaei_simple,
+                 w.word_key_imlaei_simple, w.qpc_glyph,
                  a.verse_key
           FROM quran_words w
           JOIN quran_ayahs a ON a.id = w.ayah_id
@@ -60,18 +61,18 @@ internal static class DisplayWordsSql
 
     internal const string InsertOrderedSimple = ReadableBase + """
         , stats_simple AS (
-          SELECT text_uthmani_simple,
+          SELECT word_key_imlaei_simple,
                  COUNT(*) AS occurrences_count,
                  COUNT(DISTINCT ayah_id) AS ayahs_count,
                  COUNT(DISTINCT surah_number) AS surahs_count
           FROM ranked
-          GROUP BY text_uthmani_simple
+          GROUP BY word_key_imlaei_simple
         )
         INSERT INTO quran_words_ordered_simple (
           word_order_in_mushaf, quran_word_id, location, verse_key,
           surah_number, ayah_number, page_number, line_number,
           word_order_in_ayah, word_order_in_surah,
-          text_uthmani_simple, text_imlaei_simple,
+          word_key_imlaei_simple, text_uthmani_simple, text_imlaei_simple,
           occurrences_count, ayahs_count, surahs_count
         )
         SELECT
@@ -85,13 +86,14 @@ internal static class DisplayWordsSql
           r.line_number,
           r.word_order_in_ayah,
           r.word_order_in_surah,
+          r.word_key_imlaei_simple,
           r.text_uthmani_simple,
           r.text_imlaei_simple,
           s.occurrences_count,
           s.ayahs_count,
           s.surahs_count
         FROM ranked r
-        JOIN stats_simple s ON s.text_uthmani_simple = r.text_uthmani_simple
+        JOIN stats_simple s ON s.word_key_imlaei_simple = r.word_key_imlaei_simple
         """;
 
     internal const string InsertUniqueTashkeel = ReadableBase + """
@@ -145,17 +147,20 @@ internal static class DisplayWordsSql
 
     internal const string InsertUniqueSimple = ReadableBase + """
         , stats_simple AS (
-          SELECT text_uthmani_simple,
+          SELECT word_key_imlaei_simple,
                  COUNT(*) AS occurrences_count,
                  COUNT(DISTINCT ayah_id) AS ayahs_count,
                  COUNT(DISTINCT surah_number) AS surahs_count
           FROM ranked
-          GROUP BY text_uthmani_simple
+          GROUP BY word_key_imlaei_simple
         ),
         first_occ AS (
-          SELECT DISTINCT ON (r.text_uthmani_simple)
+          SELECT DISTINCT ON (r.word_key_imlaei_simple)
+            r.word_key_imlaei_simple,
+            r.text_uthmani,
             r.text_uthmani_simple,
             r.text_imlaei_simple,
+            r.qpc_glyph,
             r.id AS first_quran_word_id,
             r.location AS first_location,
             r.surah_number AS first_surah_number,
@@ -164,17 +169,20 @@ internal static class DisplayWordsSql
             r.page_number AS first_page_number,
             r.line_number AS first_line_number
           FROM ranked r
-          ORDER BY r.text_uthmani_simple, r.word_order_in_mushaf
+          ORDER BY r.word_key_imlaei_simple, r.word_order_in_mushaf
         )
         INSERT INTO quran_words_unique_simple (
-          text_uthmani_simple, text_imlaei_simple,
+          word_key_imlaei_simple, text_uthmani, text_uthmani_simple, text_imlaei_simple, qpc_glyph,
           occurrences_count, ayahs_count, surahs_count,
           first_quran_word_id, first_location, first_surah_number, first_ayah_number,
           first_word_order_in_mushaf, first_page_number, first_line_number
         )
         SELECT
+          f.word_key_imlaei_simple,
+          f.text_uthmani,
           f.text_uthmani_simple,
           f.text_imlaei_simple,
+          f.qpc_glyph,
           s.occurrences_count,
           s.ayahs_count,
           s.surahs_count,
@@ -186,8 +194,8 @@ internal static class DisplayWordsSql
           f.first_page_number,
           f.first_line_number
         FROM first_occ f
-        JOIN stats_simple s ON s.text_uthmani_simple = f.text_uthmani_simple
-        ORDER BY f.first_word_order_in_mushaf, f.text_uthmani_simple
+        JOIN stats_simple s ON s.word_key_imlaei_simple = f.word_key_imlaei_simple
+        ORDER BY f.first_word_order_in_mushaf, f.word_key_imlaei_simple
         """;
 
     internal const string TruncateDerivedTables = """
@@ -330,7 +338,7 @@ internal static class DisplayWordsSql
         """;
 
     internal const string CheckUnqCountDistinctSimpleText = """
-        SELECT COUNT(DISTINCT text_uthmani_simple)::int FROM quran_words WHERE is_ayah_marker = false
+        SELECT COUNT(DISTINCT word_key_imlaei_simple)::int FROM quran_words WHERE is_ayah_marker = false
         """;
 
     internal const string CheckStatMatchViolations = """
@@ -360,15 +368,15 @@ internal static class DisplayWordsSql
           SELECT COUNT(*)::int
           FROM quran_words_ordered_simple o
           LEFT JOIN (
-            SELECT text_uthmani_simple,
+            SELECT word_key_imlaei_simple,
                    COUNT(*)::int AS occurrences_count,
                    COUNT(DISTINCT ayah_id)::int AS ayahs_count,
                    COUNT(DISTINCT surah_number)::int AS surahs_count
             FROM quran_words
             WHERE is_ayah_marker = false
-            GROUP BY text_uthmani_simple
-          ) g ON g.text_uthmani_simple = o.text_uthmani_simple
-          WHERE g.text_uthmani_simple IS NULL
+            GROUP BY word_key_imlaei_simple
+          ) g ON g.word_key_imlaei_simple = o.word_key_imlaei_simple
+          WHERE g.word_key_imlaei_simple IS NULL
              OR g.occurrences_count <> o.occurrences_count
              OR g.ayahs_count <> o.ayahs_count
              OR g.surahs_count <> o.surahs_count
@@ -392,15 +400,15 @@ internal static class DisplayWordsSql
           SELECT COUNT(*)::int
           FROM quran_words_unique_simple u
           LEFT JOIN (
-            SELECT text_uthmani_simple,
+            SELECT word_key_imlaei_simple,
                    COUNT(*)::int AS occurrences_count,
                    COUNT(DISTINCT ayah_id)::int AS ayahs_count,
                    COUNT(DISTINCT surah_number)::int AS surahs_count
             FROM quran_words
             WHERE is_ayah_marker = false
-            GROUP BY text_uthmani_simple
-          ) g ON g.text_uthmani_simple = u.text_uthmani_simple
-          WHERE g.text_uthmani_simple IS NULL
+            GROUP BY word_key_imlaei_simple
+          ) g ON g.word_key_imlaei_simple = u.word_key_imlaei_simple
+          WHERE g.word_key_imlaei_simple IS NULL
              OR g.occurrences_count <> u.occurrences_count
              OR g.ayahs_count <> u.ayahs_count
              OR g.surahs_count <> u.surahs_count
@@ -434,12 +442,12 @@ internal static class DisplayWordsSql
           WHERE u.first_word_order_in_mushaf <> (
             SELECT MIN(o.word_order_in_mushaf)
             FROM quran_words_ordered_simple o
-            WHERE o.text_uthmani_simple = u.text_uthmani_simple
+            WHERE o.word_key_imlaei_simple = u.word_key_imlaei_simple
           )
           OR NOT EXISTS (
             SELECT 1
             FROM quran_words_ordered_simple o
-            WHERE o.text_uthmani_simple = u.text_uthmani_simple
+            WHERE o.word_key_imlaei_simple = u.word_key_imlaei_simple
               AND o.word_order_in_mushaf = u.first_word_order_in_mushaf
               AND o.quran_word_id = u.first_quran_word_id
               AND o.location = u.first_location

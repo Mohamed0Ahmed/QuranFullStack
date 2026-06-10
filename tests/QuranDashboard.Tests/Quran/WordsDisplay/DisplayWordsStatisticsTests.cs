@@ -42,7 +42,7 @@ public sealed class DisplayWordsStatisticsTests
             && row.SurahsCount == DisplayWordsSyntheticSeed.AlphaTashkeelStats.SurahsCount);
 
         var alphaSimpleRows = await dbContext.QuranWordsOrderedSimple
-            .Where(row => row.TextUthmaniSimple == DisplayWordsSyntheticSeed.TokenAlphaSimple)
+            .Where(row => row.WordKeyImlaeiSimple == DisplayWordsSyntheticSeed.KeyAlphaImlaei)
             .ToListAsync();
 
         alphaSimpleRows.Should().OnlyContain(row =>

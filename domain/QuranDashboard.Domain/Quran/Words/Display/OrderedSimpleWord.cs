@@ -12,6 +12,7 @@ public sealed class OrderedSimpleWord
     public short LineNumber { get; set; }
     public short WordOrderInAyah { get; set; }
     public short WordOrderInSurah { get; set; }
+    public string WordKeyImlaeiSimple { get; set; } = string.Empty;
     public string TextUthmaniSimple { get; set; } = string.Empty;
     public string TextImlaeiSimple { get; set; } = string.Empty;
     public int OccurrencesCount { get; set; }

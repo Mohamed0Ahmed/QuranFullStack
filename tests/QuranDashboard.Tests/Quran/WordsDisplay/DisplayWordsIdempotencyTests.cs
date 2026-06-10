@@ -84,6 +84,7 @@ public sealed class DisplayWordsIdempotencyTests
                 row.LineNumber,
                 row.WordOrderInAyah,
                 row.WordOrderInSurah,
+                row.WordKeyImlaeiSimple,
                 row.TextUthmaniSimple,
                 row.TextImlaeiSimple,
                 row.OccurrencesCount,
@@ -115,11 +116,14 @@ public sealed class DisplayWordsIdempotencyTests
         var uniqueSimple = await dbContext.QuranWordsUniqueSimple
             .AsNoTracking()
             .OrderBy(row => row.FirstWordOrderInMushaf)
-            .ThenBy(row => row.TextUthmaniSimple)
+            .ThenBy(row => row.WordKeyImlaeiSimple)
             .Select(row => new UniqueSimpleProjection(
                 row.Id,
+                row.WordKeyImlaeiSimple,
+                row.TextUthmani,
                 row.TextUthmaniSimple,
                 row.TextImlaeiSimple,
+                row.QpcGlyph,
                 row.OccurrencesCount,
                 row.AyahsCount,
                 row.SurahsCount,
@@ -205,6 +209,7 @@ public sealed class DisplayWordsIdempotencyTests
         short LineNumber,
         short WordOrderInAyah,
         short WordOrderInSurah,
+        string WordKeyImlaeiSimple,
         string TextUthmaniSimple,
         string TextImlaeiSimple,
         int OccurrencesCount,
@@ -229,8 +234,11 @@ public sealed class DisplayWordsIdempotencyTests
 
     private sealed record UniqueSimpleProjection(
         int Id,
+        string WordKeyImlaeiSimple,
+        string TextUthmani,
         string TextUthmaniSimple,
         string TextImlaeiSimple,
+        string QpcGlyph,
         int OccurrencesCount,
         short AyahsCount,
         short SurahsCount,
