@@ -152,7 +152,7 @@ public sealed class EfBulkQuranImportWriter : IQuranImportWriter
         CancellationToken ct)
     {
         const string copyCommand =
-            "COPY quran_words (id, location, ayah_id, surah_number, ayah_number, word_number, page_number, line_number, line_word_order, qpc_glyph, text_uthmani, text_uthmani_simple, text_imlaei_simple, is_ayah_marker) FROM STDIN (FORMAT BINARY)";
+            "COPY quran_words (id, location, ayah_id, surah_number, ayah_number, word_number, page_number, line_number, line_word_order, qpc_glyph, text_uthmani, text_uthmani_simple, text_imlaei_simple, word_key_imlaei_simple, is_ayah_marker) FROM STDIN (FORMAT BINARY)";
 
         await using var importer = await connection.BeginBinaryImportAsync(copyCommand, ct);
 
@@ -172,6 +172,7 @@ public sealed class EfBulkQuranImportWriter : IQuranImportWriter
             await importer.WriteAsync(word.TextUthmani, ct);
             await importer.WriteAsync(word.TextUthmaniSimple, ct);
             await importer.WriteAsync(word.TextImlaeiSimple, ct);
+            await importer.WriteAsync(word.WordKeyImlaeiSimple, ct);
             await importer.WriteAsync(word.IsAyahMarker, ct);
         }
 

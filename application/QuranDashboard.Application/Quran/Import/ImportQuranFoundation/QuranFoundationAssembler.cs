@@ -188,6 +188,7 @@ public sealed class QuranFoundationAssembler
                 TextUthmani = uthmani.Text,
                 TextUthmaniSimple = uthmaniSimple.Text,
                 TextImlaeiSimple = imlaeiSimple.Text,
+                WordKeyImlaeiSimple = imlaeiSimple.TextClean ?? string.Empty,
                 IsAyahMarker = false
             });
         }

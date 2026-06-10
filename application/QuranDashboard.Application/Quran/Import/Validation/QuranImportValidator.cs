@@ -9,6 +9,7 @@ public sealed class QuranImportValidator
 {
     private readonly IdContiguityCheck idContiguityCheck = new();
     private readonly SourceAlignmentCheck sourceAlignmentCheck = new();
+    private readonly ImlaeiCleanKeyCheck imlaeiCleanKeyCheck = new();
     private readonly LayoutCoverageCheck layoutCoverageCheck = new();
     private readonly DenormPlacementCheck denormPlacementCheck = new();
     private readonly PageReconstructionCheck pageReconstructionCheck = new();
@@ -93,6 +94,7 @@ public sealed class QuranImportValidator
 
         checks.Add(idContiguityCheck.Evaluate(assembled.Words));
         checks.Add(sourceAlignmentCheck.Evaluate(source));
+        checks.Add(imlaeiCleanKeyCheck.Evaluate(source));
         checks.Add(layoutCoverageCheck.Evaluate(assembled.Lines));
 
         var wordsMissingPlacement = assembled.Words.Count(word => word.PageNumber <= 0 || word.LineNumber <= 0);

@@ -68,6 +68,13 @@ public sealed class QuranWordConfiguration : IEntityTypeConfiguration<QuranWord>
             .IsRequired()
             .HasColumnName("text_imlaei_simple");
 
+        // Clean imlaei identity key (no tashkeel, no Quranic annotation/control marks).
+        // Source of grouping/filtering/linking for "words without tashkeel"; display still
+        // comes from the Uthmani/QPC columns above.
+        builder.Property(w => w.WordKeyImlaeiSimple)
+            .IsRequired()
+            .HasColumnName("word_key_imlaei_simple");
+
         builder.Property(w => w.IsAyahMarker)
             .IsRequired()
             .HasColumnName("is_ayah_marker");
@@ -83,6 +90,11 @@ public sealed class QuranWordConfiguration : IEntityTypeConfiguration<QuranWord>
         builder.HasIndex(w => new { w.SurahNumber, w.AyahNumber, w.WordNumber },
                 "IX_quran_words_readable_surah_ayah_word")
             .HasDatabaseName("IX_quran_words_readable_surah_ayah_word")
+            .HasFilter("is_ayah_marker = false");
+
+        // Supports grouping/filtering "words without tashkeel" by clean imlaei identity.
+        builder.HasIndex(w => w.WordKeyImlaeiSimple, "IX_quran_words_word_key_imlaei_simple")
+            .HasDatabaseName("IX_quran_words_word_key_imlaei_simple")
             .HasFilter("is_ayah_marker = false");
 
         builder.HasOne(w => w.Ayah)

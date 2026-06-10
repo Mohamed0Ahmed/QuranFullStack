@@ -15,6 +15,7 @@ public sealed class QuranWord
     public string TextUthmani { get; set; } = string.Empty;
     public string TextUthmaniSimple { get; set; } = string.Empty;
     public string TextImlaeiSimple { get; set; } = string.Empty;
+    public string WordKeyImlaeiSimple { get; set; } = string.Empty;
     public bool IsAyahMarker { get; set; }
 
     public Ayahs.Ayah Ayah { get; set; } = null!;

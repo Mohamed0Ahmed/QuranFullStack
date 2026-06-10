@@ -12,6 +12,7 @@ public static class ImportValidationCheckIds
     public const string DuplicateLocation = "duplicate-location";
     public const string IdContiguous = "id-contiguous";
     public const string SourceAlignment = "source-alignment";
+    public const string ImlaeiCleanKey = "imlaei-clean-key";
     public const string LayoutCoverage = "layout-coverage";
     public const string WordPageLine = "word-page-line";
     public const string LineWordRefs = "line-word-refs";
@@ -34,6 +35,7 @@ public static class ImportValidationCheckIds
             [DuplicateLocation] = ImportValidationSeverities.Hard,
             [IdContiguous] = ImportValidationSeverities.Hard,
             [SourceAlignment] = ImportValidationSeverities.Hard,
+            [ImlaeiCleanKey] = ImportValidationSeverities.Hard,
             [LayoutCoverage] = ImportValidationSeverities.Hard,
             [WordPageLine] = ImportValidationSeverities.Hard,
             [LineWordRefs] = ImportValidationSeverities.Hard,
@@ -56,6 +58,7 @@ public static class ImportValidationCheckIds
         DuplicateLocation,
         IdContiguous,
         SourceAlignment,
+        ImlaeiCleanKey,
         LayoutCoverage,
         WordPageLine,
         LineWordRefs,

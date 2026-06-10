@@ -6,4 +6,5 @@ public sealed record WordRecordDto(
     int Ayah,
     int Word,
     string Location,
-    string Text);
+    string Text,
+    string? TextClean = null);
