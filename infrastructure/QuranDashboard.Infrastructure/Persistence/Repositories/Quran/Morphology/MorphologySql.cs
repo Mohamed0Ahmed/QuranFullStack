@@ -97,6 +97,69 @@ internal static class MorphologySql
           )
         """;
 
+    internal const string CheckDimensionResolvesRoots = """
+        SELECT count(*)::int
+        FROM quran_word_morphology m
+        WHERE m.root_id IS NOT NULL
+          AND NOT EXISTS (SELECT 1 FROM quran_roots r WHERE r.id = m.root_id)
+        """;
+
+    internal const string CheckDimensionResolvesLemmas = """
+        SELECT count(*)::int
+        FROM quran_word_morphology m
+        WHERE m.lemma_id IS NOT NULL
+          AND NOT EXISTS (SELECT 1 FROM quran_lemmas l WHERE l.id = m.lemma_id)
+        """;
+
+    internal const string CheckDimensionResolvesStems = """
+        SELECT count(*)::int
+        FROM quran_word_morphology m
+        WHERE m.stem_id IS NOT NULL
+          AND NOT EXISTS (SELECT 1 FROM quran_stems s WHERE s.id = m.stem_id)
+        """;
+
+    internal const string CheckSegRenderTotalNonEmpty = """
+        SELECT count(*)::int
+        FROM quran_word_morphology_segments
+        WHERE form_buckwalter <> '' AND form_arabic_normalized IS NULL
+        """;
+
+    internal const string CheckSegRenderTotalEmpty = """
+        SELECT count(*)::int
+        FROM quran_word_morphology_segments
+        WHERE form_buckwalter = '' AND form_arabic_normalized IS NOT NULL
+        """;
+
+    internal const string CheckSegTierValid = """
+        SELECT count(*)::int
+        FROM quran_word_morphology_segments
+        WHERE form_buckwalter <> ''
+          AND (arabic_render_tier IS NULL
+               OR arabic_render_tier NOT IN ('clean', 'quranic_marks', 'review', 'multiword'))
+        """;
+
+    internal const string CheckSegSourceValid = """
+        SELECT count(*)::int
+        FROM quran_word_morphology_segments
+        WHERE form_buckwalter <> ''
+          AND arabic_render_source IS DISTINCT FROM 'buckwalter-transliteration'
+        """;
+
+    internal const string CheckSegNotUthmani = """
+        SELECT count(*)::int
+        FROM quran_word_morphology_segments s
+        JOIN quran_words w ON w.id = s.quran_word_id
+        WHERE s.form_arabic_normalized IS NOT NULL
+          AND (s.form_arabic_normalized = w.text_uthmani
+               OR s.form_arabic_normalized = w.qpc_glyph)
+        """;
+
+    internal const string CheckSegBuckwalterPresent = """
+        SELECT count(*)::int
+        FROM quran_word_morphology_segments
+        WHERE form_buckwalter IS NULL
+        """;
+
     internal const string CountMorphologyRows = "SELECT count(*)::int FROM quran_word_morphology";
     internal const string CountSegmentRows = "SELECT count(*)::int FROM quran_word_morphology_segments";
     internal const string CountRootRows = "SELECT count(*)::int FROM quran_roots";
@@ -107,6 +170,30 @@ internal static class MorphologySql
         SELECT count(*)::int
         FROM quran_word_morphology_segments
         WHERE form_buckwalter = '' AND form_arabic_normalized IS NULL
+        """;
+
+    internal const string CountTierClean = """
+        SELECT count(*)::int
+        FROM quran_word_morphology_segments
+        WHERE arabic_render_tier = 'clean'
+        """;
+
+    internal const string CountTierQuranicMarks = """
+        SELECT count(*)::int
+        FROM quran_word_morphology_segments
+        WHERE arabic_render_tier = 'quranic_marks'
+        """;
+
+    internal const string CountTierReview = """
+        SELECT count(*)::int
+        FROM quran_word_morphology_segments
+        WHERE arabic_render_tier = 'review'
+        """;
+
+    internal const string CountTierMultiword = """
+        SELECT count(*)::int
+        FROM quran_word_morphology_segments
+        WHERE arabic_render_tier = 'multiword'
         """;
 
     internal const string TruncateMorphologyTables = """

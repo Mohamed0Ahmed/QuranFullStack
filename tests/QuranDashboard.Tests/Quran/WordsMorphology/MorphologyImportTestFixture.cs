@@ -299,7 +299,7 @@ public sealed class MorphologyImportTestFixture : IAsyncLifetime
                     segmentNumber = (short)1,
                     kind = "STEM",
                     pos = "N",
-                    form = "TSTX",
+                    form = "kataba",
                     features = "NOM",
                     root = (string?)null,
                     lemma = (string?)null
@@ -577,7 +577,7 @@ public sealed class MorphologyImportTestFixture : IAsyncLifetime
 
         var badSegments = new List<object>
         {
-            new { segmentNumber = 1, kind = "PREFIX", pos = "P", form = "TSTPR", features = "PREFIX", root = (string?)null, lemma = (string?)null }
+            new { segmentNumber = 1, kind = "PREFIX", pos = "P", form = "bi", features = "PREFIX", root = (string?)null, lemma = (string?)null }
         };
 
         await PatchCorpusSegmentsAsync(tempDir, "1:1:1", badSegments);
@@ -703,19 +703,19 @@ internal static class MorphologySyntheticSeed
     public const string TokenGlyph4 = "GLYPH-4";
     public const string TokenGlyph5 = "GLYPH-5";
 
-    public const string RootValue1 = "TEST_ROOT_A";
-    public const string RootValue2 = "TEST_ROOT_B";
-    public const string RootValue3 = "TEST_ROOT_C";
+    public const string RootValue1 = "أ ل ه";
+    public const string RootValue2 = "ر ب ب";
+    public const string RootValue3 = "ك ت ب";
 
-    public const string LemmaValue1 = "TEST_LEMMA_A";
-    public const string LemmaValue2 = "TEST_LEMMA_B";
-    public const string LemmaValue3 = "TEST_LEMMA_C";
+    public const string LemmaValue1 = "إِلَٰه";
+    public const string LemmaValue2 = "رَبّ";
+    public const string LemmaValue3 = "كَتَبَ";
 
-    public const string StemValue1 = "TEST_STEM_A";
-    public const string StemValue2 = "TEST_STEM_B";
-    public const string StemValue3 = "TEST_STEM_C";
-    public const string StemValue4 = "TEST_STEM_D";
-    public const string StemValue5 = "TEST_STEM_E";
+    public const string StemValue1 = "بِسْمِ";
+    public const string StemValue2 = "لِٰهِ";
+    public const string StemValue3 = "رَبّ";
+    public const string StemValue4 = "كَتَبَ";
+    public const string StemValue5 = "كِتَابِ";
 
     public static IReadOnlyList<(int Id, string Location, string TextUthmani)> ReadableWords =
     [
@@ -730,41 +730,41 @@ internal static class MorphologySyntheticSeed
     {
         "1:1:1" =>
         [
-            new { segmentNumber = 1, kind = "PREFIX", pos = "P", form = "TSTPR", features = "PREFIX", root = (string?)null, lemma = (string?)null },
-            new { segmentNumber = 2, kind = "STEM", pos = "N", form = "TSTST", features = "NOM", root = "TSTRA", lemma = "TSTLA" }
+            new { segmentNumber = 1, kind = "PREFIX", pos = "P", form = "bi", features = "PREFIX", root = (string?)null, lemma = (string?)null },
+            new { segmentNumber = 2, kind = "STEM", pos = "N", form = "somi", features = "NOM", root = "smw", lemma = "ism" }
         ],
         "1:1:2" =>
         [
-            new { segmentNumber = 1, kind = "STEM", pos = "N", form = "TSTSB", features = "GEN", root = "TSTRB", lemma = "TSTLB" }
+            new { segmentNumber = 1, kind = "STEM", pos = "N", form = "l~Ahi", features = "GEN", root = "Alh", lemma = "ilAh" }
         ],
         "1:1:3" =>
         [
-            new { segmentNumber = 1, kind = "STEM", pos = "PN", form = "TSTSC", features = "GEN", root = "TSTRC", lemma = "TSTLC" }
+            new { segmentNumber = 1, kind = "STEM", pos = "PN", form = "raboni", features = "GEN", root = "rbb", lemma = "rabb" }
         ],
         "1:2:1" =>
         [
-            new { segmentNumber = 1, kind = "PREFIX", pos = "P", form = "TSTPF", features = "PREFIX", root = (string?)null, lemma = (string?)null },
-            new { segmentNumber = 2, kind = "STEM", pos = "V", form = "TSTSD", features = "PERF PASS", root = "TSTRD", lemma = "TSTLD" }
+            new { segmentNumber = 1, kind = "PREFIX", pos = "P", form = "wa", features = "PREFIX", root = (string?)null, lemma = (string?)null },
+            new { segmentNumber = 2, kind = "STEM", pos = "V", form = "kataba", features = "PERF PASS", root = "ktb", lemma = "katab" }
         ],
         "1:2:2" =>
         [
-            new { segmentNumber = 1, kind = "STEM", pos = "N", form = "TSTSE", features = "ACC", root = (string?)null, lemma = (string?)null }
+            new { segmentNumber = 1, kind = "STEM", pos = "N", form = "kitAbi", features = "ACC", root = "ktb", lemma = "kitAb" }
         ],
         _ => []
     };
 
     public static Dictionary<string, string> GetRootMap() => new()
     {
-        ["1:1:2"] = RootValue1,
         ["1:1:3"] = RootValue2,
-        ["1:2:1"] = RootValue3
+        ["1:2:1"] = RootValue3,
+        ["1:2:2"] = RootValue3
     };
 
     public static Dictionary<string, string> GetLemmaMap() => new()
     {
-        ["1:1:2"] = LemmaValue1,
         ["1:1:3"] = LemmaValue2,
-        ["1:2:1"] = LemmaValue3
+        ["1:2:1"] = LemmaValue3,
+        ["1:2:2"] = "كِتَاب"
     };
 
     public static Dictionary<string, string> GetStemMap() => new()

@@ -37,6 +37,8 @@ public static class DependencyInjection
         services.AddScoped<IDisplayWordsRebuilder, SqlDisplayWordsRebuilder>();
         services.AddSingleton<IDisplayWordsReportWriter, MarkdownJsonDisplayWordsReportWriter>();
 
+        services.AddSingleton<BuckwalterArabicMap>();
+        services.AddSingleton<SegmentArabicRenderer>();
         services.AddSingleton<MorphologyManifestReader>();
         services.AddSingleton<JsonAlignedCorpusReader>();
         services.AddSingleton<JsonQulRootReader>();

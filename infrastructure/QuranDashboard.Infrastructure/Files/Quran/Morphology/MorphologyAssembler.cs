@@ -7,6 +7,13 @@ public sealed class MorphologyAssembler
 {
     private static readonly string[] VerbTenseMarkers = ["PERF", "IMPF", "IMPV"];
 
+    private readonly SegmentArabicRenderer renderer;
+
+    public MorphologyAssembler(SegmentArabicRenderer renderer)
+    {
+        this.renderer = renderer;
+    }
+
     public MorphologySourceData Assemble(
         IReadOnlyList<AlignedCorpusWord> corpusWords,
         IReadOnlyDictionary<string, int> readableWordIdsByLocation,
@@ -20,62 +27,278 @@ public sealed class MorphologyAssembler
         MorphologySourceValidation.ValidateCorpusCoverage(corpusWords, readableWordIdsByLocation);
 
         var corpusByLocation = corpusWords.ToDictionary(word => word.QpcLocation, StringComparer.Ordinal);
-        var alignedWords = new List<AlignedWordDto>(readableWordIdsByLocation.Count);
+        var orderedLocations = readableWordIdsByLocation
+            .OrderBy(entry => entry.Key, StringComparer.Ordinal)
+            .ToList();
 
-        foreach (var (location, _) in readableWordIdsByLocation.OrderBy(entry => entry.Key, StringComparer.Ordinal))
+        var charsetWarnings = new List<string>();
+        var reviewForms = new HashSet<string>(StringComparer.Ordinal);
+        var multiwordForms = new HashSet<string>(StringComparer.Ordinal);
+        var emptyFormLocations = new List<string>();
+        var agreementMatches = 0;
+        var alignedWords = new List<AlignedWordDto>(orderedLocations.Count);
+        var rootIndex = new Dictionary<string, DimensionEntry>(StringComparer.Ordinal);
+        var lemmaIndex = new Dictionary<string, DimensionEntry>(StringComparer.Ordinal);
+        var stemIndex = new Dictionary<string, DimensionEntry>(StringComparer.Ordinal);
+        var rootLemmaMap = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
+        var lemmaRootLinks = new Dictionary<string, (int RootId, int WordOrder)>(StringComparer.Ordinal);
+        var nextDimId = 1;
+
+        foreach (var (location, wordId) in orderedLocations)
         {
-            alignedWords.Add(BuildAlignedWord(location, corpusByLocation[location]));
+            var corpusWord = corpusByLocation[location];
+            var segments = BuildAlignedSegments(corpusWord, charsetWarnings);
+
+            if (WholeWordRender(segments) == corpusWord.QpcUthmani)
+            {
+                agreementMatches++;
+            }
+
+            CollectRenderLists(location, segments, reviewForms, multiwordForms, emptyFormLocations);
+
+            var stemSegment = segments.FirstOrDefault(s =>
+                string.Equals(s.Kind, "STEM", StringComparison.Ordinal));
+
+            var stemFeatures = stemSegment is null
+                ? []
+                : ParseFeatureTokens(stemSegment.FeaturesRaw);
+
+            var headPos = stemSegment?.Pos ?? segments.FirstOrDefault()?.Pos ?? string.Empty;
+            var isVerb = string.Equals(headPos, "V", StringComparison.Ordinal);
+
+            var corpusRoot = stemSegment?.RootBuckwalter;
+            var corpusLemma = stemSegment?.LemmaBuckwalter;
+
+            string? qulRoot = null;
+            string? qulLemma = null;
+            string? qulStem = null;
+
+            if (roots.TryGetValue(location, out var rv)) qulRoot = rv;
+            if (lemmas.TryGetValue(location, out var lv)) qulLemma = lv;
+            if (stems.TryGetValue(location, out var sv)) qulStem = sv;
+
+            int? rootId = null;
+            int? lemmaId = null;
+            int? stemId = null;
+
+            if (!string.IsNullOrWhiteSpace(qulRoot))
+            {
+                if (!rootIndex.TryGetValue(qulRoot, out var rootEntry))
+                {
+                    rootEntry = new DimensionEntry(nextDimId++, wordId);
+                    rootIndex[qulRoot] = rootEntry;
+                    rootLemmaMap[qulRoot] = [];
+                }
+
+                rootEntry.AddWord(wordId);
+                rootId = rootEntry.Id;
+
+                if (!string.IsNullOrWhiteSpace(corpusRoot))
+                {
+                    rootEntry.AddBuckwalter(corpusRoot);
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(qulLemma))
+            {
+                if (!lemmaIndex.TryGetValue(qulLemma, out var lemmaEntry))
+                {
+                    lemmaEntry = new DimensionEntry(nextDimId++, wordId);
+                    lemmaIndex[qulLemma] = lemmaEntry;
+                }
+
+                lemmaEntry.AddWord(wordId);
+                lemmaId = lemmaEntry.Id;
+
+                if (!string.IsNullOrWhiteSpace(corpusLemma))
+                {
+                    lemmaEntry.AddBuckwalter(corpusLemma);
+                }
+
+                if (rootId.HasValue && !string.IsNullOrWhiteSpace(qulRoot))
+                {
+                    var lemmaSet = rootLemmaMap[qulRoot];
+                    lemmaSet.Add(qulLemma);
+                }
+
+                // Link the lemma to its dominant (earliest, by mushaf order) co-occurring root.
+                if (rootId.HasValue &&
+                    (!lemmaRootLinks.TryGetValue(qulLemma, out var existingLink) || wordId < existingLink.WordOrder))
+                {
+                    lemmaRootLinks[qulLemma] = (rootId.Value, wordId);
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(qulStem))
+            {
+                if (!stemIndex.TryGetValue(qulStem, out var stemEntry))
+                {
+                    stemEntry = new DimensionEntry(nextDimId++, wordId);
+                    stemIndex[qulStem] = stemEntry;
+                }
+
+                stemEntry.AddWord(wordId);
+                stemId = stemEntry.Id;
+            }
+
+            alignedWords.Add(new AlignedWordDto(
+                location,
+                headPos,
+                isVerb,
+                isVerb ? MapVerbTense(stemFeatures) : null,
+                isVerb ? MapVerbVoice(stemFeatures) : null,
+                MapCaseFeature(stemFeatures),
+                BuildFeaturesJson(stemSegment?.FeaturesRaw),
+                segments,
+                rootId,
+                lemmaId,
+                stemId));
         }
+
+        var resolvedRoots = BuildResolvedRoots(rootIndex, rootLemmaMap);
+        var resolvedLemmas = BuildResolvedLemmas(lemmaIndex, lemmaRootLinks);
+        var resolvedStems = BuildResolvedStems(stemIndex);
 
         return new MorphologySourceData(
             alignedWords,
             roots,
             lemmas,
             stems,
-            CharsetWarnings: []);
+            resolvedRoots,
+            resolvedLemmas,
+            resolvedStems,
+            charsetWarnings,
+            new MorphologyRenderStats(
+                agreementMatches,
+                alignedWords.Count,
+                reviewForms.OrderBy(form => form, StringComparer.Ordinal).ToList(),
+                multiwordForms.OrderBy(form => form, StringComparer.Ordinal).ToList(),
+                emptyFormLocations));
     }
 
-    private static AlignedWordDto BuildAlignedWord(string location, AlignedCorpusWord corpusWord)
+    private List<AlignedSegmentDto> BuildAlignedSegments(
+        AlignedCorpusWord corpusWord, List<string> charsetWarnings)
     {
-        var segments = corpusWord.Segments
-            .OrderBy(segment => segment.SegmentNumber)
-            .Select(BuildAlignedSegment)
-            .ToList();
+        var segments = new List<AlignedSegmentDto>();
 
-        var stemSegment = segments.FirstOrDefault(segment =>
-            string.Equals(segment.Kind, "STEM", StringComparison.Ordinal));
+        foreach (var segment in corpusWord.Segments.OrderBy(s => s.SegmentNumber))
+        {
+            var (arabic, tier) = renderer.Render(segment.Form);
 
-        var stemFeatures = stemSegment is null
-            ? []
-            : ParseFeatureTokens(stemSegment.FeaturesRaw);
+            if (!string.IsNullOrEmpty(segment.Form))
+            {
+                var unmapped = renderer.CollectUnmappedCharacters(segment.Form);
+                if (unmapped.Count > 0)
+                {
+                    charsetWarnings.Add(
+                        $"Segment {segment.Kind}#{segment.SegmentNumber} form='{segment.Form}' " +
+                        $"unmapped chars: {string.Join(", ", unmapped.Select(c => $"'{c}' (U+{((int)c):X4})"))}");
+                }
+            }
 
-        var headPos = stemSegment?.Pos ?? segments.FirstOrDefault()?.Pos ?? string.Empty;
-        var isVerb = string.Equals(headPos, "V", StringComparison.Ordinal);
+            segments.Add(new AlignedSegmentDto(
+                segment.SegmentNumber,
+                segment.Kind,
+                segment.Pos,
+                segment.Form,
+                arabic,
+                tier,
+                MorphologyInvariants.RenderSource,
+                segment.Root,
+                segment.Lemma,
+                segment.Features,
+                BuildFeaturesJson(segment.Features)));
+        }
 
-        return new AlignedWordDto(
-            location,
-            headPos,
-            isVerb,
-            isVerb ? MapVerbTense(stemFeatures) : null,
-            isVerb ? MapVerbVoice(stemFeatures) : null,
-            MapCaseFeature(stemFeatures),
-            BuildFeaturesJson(stemSegment?.FeaturesRaw),
-            segments);
+        return segments;
     }
 
-    private static AlignedSegmentDto BuildAlignedSegment(AlignedCorpusSegment segment) =>
-        new(
-            segment.SegmentNumber,
-            segment.Kind,
-            segment.Pos,
-            segment.Form,
-            FormArabicNormalized: null,
-            RenderTier: null,
-            MorphologyInvariants.RenderSource,
-            segment.Root,
-            segment.Lemma,
-            segment.Features,
-            BuildFeaturesJson(segment.Features));
+    private static string WholeWordRender(IReadOnlyList<AlignedSegmentDto> segments) =>
+        string.Concat(segments.Select(segment => segment.FormArabicNormalized ?? string.Empty));
+
+    private static void CollectRenderLists(
+        string location,
+        IReadOnlyList<AlignedSegmentDto> segments,
+        HashSet<string> reviewForms,
+        HashSet<string> multiwordForms,
+        List<string> emptyFormLocations)
+    {
+        foreach (var segment in segments)
+        {
+            if (string.IsNullOrEmpty(segment.FormBuckwalter))
+            {
+                emptyFormLocations.Add($"{location}:{segment.SegmentNumber}");
+            }
+            else if (string.Equals(segment.RenderTier, "review", StringComparison.Ordinal))
+            {
+                reviewForms.Add(segment.FormBuckwalter);
+            }
+            else if (string.Equals(segment.RenderTier, "multiword", StringComparison.Ordinal))
+            {
+                multiwordForms.Add(segment.FormBuckwalter);
+            }
+        }
+    }
+
+    private static List<ResolvedRootDto> BuildResolvedRoots(
+        Dictionary<string, DimensionEntry> rootIndex,
+        Dictionary<string, HashSet<string>> rootLemmaMap)
+    {
+        var result = new List<ResolvedRootDto>(rootIndex.Count);
+
+        foreach (var (rootText, entry) in rootIndex.OrderBy(e => e.Value.FirstWordOrder))
+        {
+            var distinctLemmas = rootLemmaMap.TryGetValue(rootText, out var set) ? set.Count : 0;
+            result.Add(new ResolvedRootDto(
+                entry.Id,
+                rootText,
+                entry.Buckwalter,
+                entry.WordsCount,
+                (short)distinctLemmas,
+                entry.FirstWordOrder));
+        }
+
+        return result;
+    }
+
+    private static List<ResolvedLemmaDto> BuildResolvedLemmas(
+        Dictionary<string, DimensionEntry> lemmaIndex,
+        Dictionary<string, (int RootId, int WordOrder)> lemmaRootLinks)
+    {
+        var result = new List<ResolvedLemmaDto>(lemmaIndex.Count);
+
+        foreach (var (lemmaText, entry) in lemmaIndex.OrderBy(e => e.Value.FirstWordOrder))
+        {
+            int? rootId = lemmaRootLinks.TryGetValue(lemmaText, out var link) ? link.RootId : null;
+
+            result.Add(new ResolvedLemmaDto(
+                entry.Id,
+                lemmaText,
+                entry.Buckwalter,
+                rootId,
+                entry.WordsCount,
+                entry.FirstWordOrder));
+        }
+
+        return result;
+    }
+
+    private static List<ResolvedStemDto> BuildResolvedStems(
+        Dictionary<string, DimensionEntry> stemIndex)
+    {
+        var result = new List<ResolvedStemDto>(stemIndex.Count);
+
+        foreach (var (stemText, entry) in stemIndex.OrderBy(e => e.Value.FirstWordOrder))
+        {
+            result.Add(new ResolvedStemDto(
+                entry.Id,
+                stemText,
+                entry.WordsCount,
+                entry.FirstWordOrder));
+        }
+
+        return result;
+    }
 
     private static string? MapVerbTense(HashSet<string> features)
     {
@@ -139,5 +362,27 @@ public sealed class MorphologyAssembler
         return tokens.Count == 0
             ? null
             : JsonSerializer.Serialize(tokens.OrderBy(token => token, StringComparer.Ordinal));
+    }
+
+    private sealed class DimensionEntry(int id, int firstWordOrder)
+    {
+        public int Id { get; } = id;
+        public int FirstWordOrder { get; private set; } = firstWordOrder;
+        public int WordsCount { get; private set; }
+        public string? Buckwalter { get; private set; }
+
+        public void AddWord(int wordOrder)
+        {
+            WordsCount++;
+            if (wordOrder < FirstWordOrder)
+            {
+                FirstWordOrder = wordOrder;
+            }
+        }
+
+        public void AddBuckwalter(string buckwalter)
+        {
+            Buckwalter ??= buckwalter;
+        }
     }
 }

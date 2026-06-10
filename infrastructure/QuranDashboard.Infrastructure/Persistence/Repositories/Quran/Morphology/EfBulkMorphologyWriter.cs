@@ -72,14 +72,18 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
             }
 
             await CopyPosTagsAsync(npgsqlConnection, ct);
+            await CopyRootsAsync(npgsqlConnection, source, ct);
+            await CopyLemmasAsync(npgsqlConnection, source, ct);
+            await CopyStemsAsync(npgsqlConnection, source, ct);
             await CopyMorphologyAsync(npgsqlConnection, source, wordIdsByLocation, ct);
             await CopySegmentsAsync(npgsqlConnection, source, wordIdsByLocation, ct);
 
             var totals = await GatherTotalsAsync(npgsqlConnection, transaction, ct);
-            var checks = await RunUs1HardChecksAsync(
+            var checks = await RunAllHardChecksAsync(
                 npgsqlConnection,
                 transaction,
                 expectedReadableWords,
+                source,
                 ct);
 
             var sourceUnchanged = await sourceUnchangedCheck(ct);
@@ -90,8 +94,7 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
                 sourceUnchanged ? "unchanged" : "changed",
                 sourceUnchanged));
 
-            var dimCountsWarning = BuildDimCountsWarning(totals);
-            var warnings = new List<string> { dimCountsWarning };
+            var warnings = BuildWarnings(totals, source);
 
             var hardChecks = checks.Where(check => check.Severity == HardSeverity).ToList();
             var allHardPassed = hardChecks.All(check => check.Passed);
@@ -109,7 +112,7 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
                     checks,
                     warnings,
                     Errors: [],
-                    InfoNotes: ["Morphology import committed; segment and verb-feature checks passed."]);
+                    InfoNotes: ["Morphology import committed; all hard checks passed."]);
             }
 
             await transaction.RollbackAsync(ct);
@@ -171,6 +174,76 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
         await importer.CompleteAsync(ct);
     }
 
+    private static async Task CopyRootsAsync(
+        NpgsqlConnection connection, MorphologySourceData source, CancellationToken ct)
+    {
+        const string copyCommand = """
+            COPY quran_roots (id, root_text, root_buckwalter, words_count, distinct_lemmas_count, first_word_order_in_mushaf)
+            FROM STDIN (FORMAT BINARY)
+            """;
+
+        await using var importer = await connection.BeginBinaryImportAsync(copyCommand, ct);
+
+        foreach (var root in source.ResolvedRoots)
+        {
+            await importer.StartRowAsync(ct);
+            await importer.WriteAsync(root.AssignedId, ct);
+            await importer.WriteAsync(root.RootText, ct);
+            await importer.WriteAsync(root.RootBuckwalter, NpgsqlDbType.Text, ct);
+            await importer.WriteAsync(root.WordsCount, ct);
+            await importer.WriteAsync(root.DistinctLemmasCount, ct);
+            await importer.WriteAsync(root.FirstWordOrderInMushaf, ct);
+        }
+
+        await importer.CompleteAsync(ct);
+    }
+
+    private static async Task CopyLemmasAsync(
+        NpgsqlConnection connection, MorphologySourceData source, CancellationToken ct)
+    {
+        const string copyCommand = """
+            COPY quran_lemmas (id, lemma_text, lemma_buckwalter, root_id, words_count, first_word_order_in_mushaf)
+            FROM STDIN (FORMAT BINARY)
+            """;
+
+        await using var importer = await connection.BeginBinaryImportAsync(copyCommand, ct);
+
+        foreach (var lemma in source.ResolvedLemmas)
+        {
+            await importer.StartRowAsync(ct);
+            await importer.WriteAsync(lemma.AssignedId, ct);
+            await importer.WriteAsync(lemma.LemmaText, ct);
+            await importer.WriteAsync(lemma.LemmaBuckwalter, NpgsqlDbType.Text, ct);
+            await importer.WriteAsync(lemma.RootId, NpgsqlDbType.Integer, ct);
+            await importer.WriteAsync(lemma.WordsCount, ct);
+            await importer.WriteAsync(lemma.FirstWordOrderInMushaf, ct);
+        }
+
+        await importer.CompleteAsync(ct);
+    }
+
+    private static async Task CopyStemsAsync(
+        NpgsqlConnection connection, MorphologySourceData source, CancellationToken ct)
+    {
+        const string copyCommand = """
+            COPY quran_stems (id, stem_text, words_count, first_word_order_in_mushaf)
+            FROM STDIN (FORMAT BINARY)
+            """;
+
+        await using var importer = await connection.BeginBinaryImportAsync(copyCommand, ct);
+
+        foreach (var stem in source.ResolvedStems)
+        {
+            await importer.StartRowAsync(ct);
+            await importer.WriteAsync(stem.AssignedId, ct);
+            await importer.WriteAsync(stem.StemText, ct);
+            await importer.WriteAsync(stem.WordsCount, ct);
+            await importer.WriteAsync(stem.FirstWordOrderInMushaf, ct);
+        }
+
+        await importer.CompleteAsync(ct);
+    }
+
     private static async Task CopyMorphologyAsync(
         NpgsqlConnection connection,
         MorphologySourceData source,
@@ -199,9 +272,9 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
             await importer.WriteAsync(word.Location, ct);
             await importer.WriteAsync(word.HeadPos, ct);
             await importer.WriteAsync((short)word.Segments.Count, ct);
-            await importer.WriteAsync((int?)null, NpgsqlDbType.Integer, ct);
-            await importer.WriteAsync((int?)null, NpgsqlDbType.Integer, ct);
-            await importer.WriteAsync((int?)null, NpgsqlDbType.Integer, ct);
+            await importer.WriteAsync(word.RootId, NpgsqlDbType.Integer, ct);
+            await importer.WriteAsync(word.LemmaId, NpgsqlDbType.Integer, ct);
+            await importer.WriteAsync(word.StemId, NpgsqlDbType.Integer, ct);
             await importer.WriteAsync(word.IsVerb, ct);
             await importer.WriteAsync(word.VerbTense, NpgsqlDbType.Text, ct);
             await importer.WriteAsync(word.VerbVoice, NpgsqlDbType.Text, ct);
@@ -259,14 +332,29 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
         await importer.CompleteAsync(ct);
     }
 
-    private static async Task<List<MorphologyCheckResult>> RunUs1HardChecksAsync(
+    private static async Task<List<MorphologyCheckResult>> RunAllHardChecksAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        int expectedReadableWords,
+        MorphologySourceData source,
+        CancellationToken ct)
+    {
+        var checks = new List<MorphologyCheckResult>();
+
+        await AddUs1ChecksAsync(checks, connection, transaction, expectedReadableWords, ct);
+        await AddUs3ChecksAsync(checks, connection, transaction, source, ct);
+
+        return checks;
+    }
+
+    private static async Task AddUs1ChecksAsync(
+        List<MorphologyCheckResult> checks,
         NpgsqlConnection connection,
         NpgsqlTransaction transaction,
         int expectedReadableWords,
         CancellationToken ct)
     {
         var expectedText = FormatInt(expectedReadableWords);
-        var checks = new List<MorphologyCheckResult>();
 
         var morphologyCount = await ExecuteScalarIntAsync(
             connection, transaction, MorphologySql.CheckReadableComplete, ct);
@@ -330,8 +418,68 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
             "verbs: one tense + voice; non-verbs: null verb fields",
             verbViolations == 0 ? "0 violations" : $"{FormatInt(verbViolations)} violation(s)",
             verbViolations == 0));
+    }
 
-        return checks;
+    private static async Task AddUs3ChecksAsync(
+        List<MorphologyCheckResult> checks,
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        MorphologySourceData source,
+        CancellationToken ct)
+    {
+        var charsetViolations = source.CharsetWarnings.Count;
+        checks.Add(new MorphologyCheckResult(
+            "MORPH-SEG-CHARSET",
+            HardSeverity,
+            "0 unmapped",
+            $"{FormatInt(charsetViolations)} unmapped",
+            charsetViolations == 0));
+
+        var nonEmptyNullRender = await ExecuteScalarIntAsync(
+            connection, transaction, MorphologySql.CheckSegRenderTotalNonEmpty, ct);
+        var emptyNonNullRender = await ExecuteScalarIntAsync(
+            connection, transaction, MorphologySql.CheckSegRenderTotalEmpty, ct);
+        checks.Add(new MorphologyCheckResult(
+            "MORPH-SEG-RENDER-TOTAL",
+            HardSeverity,
+            "non-empty form → non-null render; empty form → NULL",
+            $"non_empty_null={FormatInt(nonEmptyNullRender)}, empty_non_null={FormatInt(emptyNonNullRender)}",
+            nonEmptyNullRender == 0 && emptyNonNullRender == 0));
+
+        var tierViolations = await ExecuteScalarIntAsync(
+            connection, transaction, MorphologySql.CheckSegTierValid, ct);
+        var sourceViolations = await ExecuteScalarIntAsync(
+            connection, transaction, MorphologySql.CheckSegSourceValid, ct);
+        checks.Add(new MorphologyCheckResult(
+            "MORPH-SEG-TIER-VALID",
+            HardSeverity,
+            "valid tier + correct source on all rendered rows",
+            $"tier_violations={FormatInt(tierViolations)}, source_violations={FormatInt(sourceViolations)}",
+            tierViolations == 0 && sourceViolations == 0));
+
+        var uthmaniViolations = await ExecuteScalarIntAsync(
+            connection, transaction, MorphologySql.CheckSegNotUthmani, ct);
+        var missingBuckwalter = await ExecuteScalarIntAsync(
+            connection, transaction, MorphologySql.CheckSegBuckwalterPresent, ct);
+        checks.Add(new MorphologyCheckResult(
+            "MORPH-SEG-NOT-UTHMANI",
+            HardSeverity,
+            "render never equals text_uthmani/qpc_glyph; form_buckwalter always present",
+            $"uthmani_match={FormatInt(uthmaniViolations)}, missing_buckwalter={FormatInt(missingBuckwalter)}",
+            uthmaniViolations == 0 && missingBuckwalter == 0));
+
+        var danglingRoots = await ExecuteScalarIntAsync(
+            connection, transaction, MorphologySql.CheckDimensionResolvesRoots, ct);
+        var danglingLemmas = await ExecuteScalarIntAsync(
+            connection, transaction, MorphologySql.CheckDimensionResolvesLemmas, ct);
+        var danglingStems = await ExecuteScalarIntAsync(
+            connection, transaction, MorphologySql.CheckDimensionResolvesStems, ct);
+        checks.Add(new MorphologyCheckResult(
+            "MORPH-DIMENSION-RESOLVES",
+            HardSeverity,
+            "0 dangling dimension references",
+            $"roots={FormatInt(danglingRoots)}, lemmas={FormatInt(danglingLemmas)}, stems={FormatInt(danglingStems)}",
+            danglingRoots == 0 && danglingLemmas == 0 && danglingStems == 0));
     }
 
     private static async Task<MorphologyImportTotals> GatherTotalsAsync(
@@ -348,6 +496,19 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
         var readableWords = await ExecuteScalarIntAsync(connection, transaction, MorphologySql.CheckReadableWordsCount, ct);
         var emptyFormRenders = await ExecuteScalarIntAsync(connection, transaction, MorphologySql.CountEmptyFormRenders, ct);
 
+        var clean = await ExecuteScalarIntAsync(connection, transaction, MorphologySql.CountTierClean, ct);
+        var quranicMarks = await ExecuteScalarIntAsync(connection, transaction, MorphologySql.CountTierQuranicMarks, ct);
+        var review = await ExecuteScalarIntAsync(connection, transaction, MorphologySql.CountTierReview, ct);
+        var multiword = await ExecuteScalarIntAsync(connection, transaction, MorphologySql.CountTierMultiword, ct);
+
+        var tierCounts = new Dictionary<string, int>(StringComparer.Ordinal)
+        {
+            ["clean"] = clean,
+            ["quranic_marks"] = quranicMarks,
+            ["review"] = review,
+            ["multiword"] = multiword
+        };
+
         return new MorphologyImportTotals(
             morphologyRows,
             segmentRows,
@@ -357,14 +518,53 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
             posTagRows,
             readableWords,
             emptyFormRenders,
-            new Dictionary<string, int>(StringComparer.Ordinal));
+            tierCounts);
     }
+
+    private static List<string> BuildWarnings(MorphologyImportTotals totals, MorphologySourceData source)
+    {
+        var stats = source.RenderStats;
+        var warnings = new List<string>
+        {
+            $"{MorphologyInvariants.CheckDimCounts}: roots={totals.RootRows}, lemmas={totals.LemmaRows}, stems={totals.StemRows}."
+        };
+
+        var totalRendered = totals.SegmentRows - totals.EmptyFormRenders;
+        if (totalRendered > 0)
+        {
+            warnings.Add($"MORPH-SEG-TIER-DIST: clean={totals.RenderTierCounts.GetValueOrDefault("clean", 0)}, " +
+                         $"quranic_marks={totals.RenderTierCounts.GetValueOrDefault("quranic_marks", 0)}, " +
+                         $"review={totals.RenderTierCounts.GetValueOrDefault("review", 0)}, " +
+                         $"multiword={totals.RenderTierCounts.GetValueOrDefault("multiword", 0)}.");
+        }
+
+        if (stats.WholeWordAgreementTotal > 0)
+        {
+            var rate = (double)stats.WholeWordAgreementMatches / stats.WholeWordAgreementTotal;
+            warnings.Add(
+                $"MORPH-SEG-WORD-AGREEMENT: whole-word agreement = {rate.ToString("P2", CultureInfo.InvariantCulture)} " +
+                $"({stats.WholeWordAgreementMatches}/{stats.WholeWordAgreementTotal}); baseline ≈ 79.83% (informational).");
+        }
+
+        warnings.Add(FormatListWarning("MORPH-SEG-REVIEW-LIST", "review-tier form(s)", stats.ReviewTierForms));
+        warnings.Add(FormatListWarning("MORPH-SEG-MULTIWORD-LIST", "multiword form(s)", stats.MultiwordForms));
+        warnings.Add(FormatListWarning("MORPH-SEG-EMPTY-LIST", "empty-form segment(s) → NULL", stats.EmptyFormLocations));
+
+        if (source.CharsetWarnings.Count > 0)
+        {
+            warnings.AddRange(source.CharsetWarnings);
+        }
+
+        return warnings;
+    }
+
+    private static string FormatListWarning(string id, string label, IReadOnlyList<string> items) =>
+        items.Count == 0
+            ? $"{id}: 0 {label}."
+            : $"{id}: {items.Count} {label}: {string.Join(", ", items)}.";
 
     private static string FormatInt(int value) =>
         value.ToString(CultureInfo.InvariantCulture);
-
-    private static string BuildDimCountsWarning(MorphologyImportTotals totals) =>
-        $"{MorphologyInvariants.CheckDimCounts}: roots={totals.RootRows}, lemmas={totals.LemmaRows}, stems={totals.StemRows}.";
 
     private static async Task<int> ExecuteScalarIntAsync(
         NpgsqlConnection connection,
