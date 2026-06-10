@@ -14,6 +14,8 @@ internal static class DisplayWordsSyntheticSeed
     public const string TokenGammaTashkeel = "ت-٣";
     public const string TokenDeltaTashkeelA = "ت-٤َ";
     public const string TokenDeltaTashkeelB = "ت-٤ً";
+    public const string TokenDeltaSimpleA = "س-٤أ";
+    public const string TokenDeltaSimpleB = "س-٤ب";
 
     public const string TokenAlphaSimple = "س-أ";
     public const string TokenBetaSimple = "س-ب";
@@ -73,8 +75,8 @@ internal static class DisplayWordsSyntheticSeed
         CreateWord(4, 2, 1, 2, 1, 1, 1, TokenAlphaTashkeel, TokenAlphaSimple),
         CreateWord(5, 2, 1, 2, 2, 1, 1, TokenGammaTashkeel, TokenGammaSimple),
         CreateWord(6, 3, 2, 1, 1, 2, 2, TokenAlphaTashkeel, TokenAlphaSimple),
-        CreateWord(7, 3, 2, 1, 2, 2, 2, TokenDeltaTashkeelA, TokenAlphaSimple),
-        CreateWord(8, 3, 2, 1, 3, 2, 2, TokenDeltaTashkeelB, TokenAlphaSimple)
+        CreateWord(7, 3, 2, 1, 2, 2, 2, TokenDeltaTashkeelA, TokenDeltaSimpleA),
+        CreateWord(8, 3, 2, 1, 3, 2, 2, TokenDeltaTashkeelB, TokenDeltaSimpleB)
     ];
 
     public static QuranWord AyahMarkerWord { get; } = CreateWord(
@@ -128,6 +130,8 @@ internal static class DisplayWordsSyntheticSeed
         textUthmaniSimple switch
         {
             TokenAlphaSimple => KeyAlphaImlaei,
+            TokenDeltaSimpleA => KeyAlphaImlaei,
+            TokenDeltaSimpleB => KeyAlphaImlaei,
             TokenBetaSimple => KeyBetaImlaei,
             TokenGammaSimple => KeyGammaImlaei,
             _ => $"ك-{textUthmaniSimple}"

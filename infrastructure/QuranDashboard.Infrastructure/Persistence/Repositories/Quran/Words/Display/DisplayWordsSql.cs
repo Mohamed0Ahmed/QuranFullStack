@@ -437,6 +437,64 @@ internal static class DisplayWordsSql
         )
         """;
 
+    internal const string CheckLinkReadableCompleteViolations = """
+        SELECT COUNT(*)::int
+        FROM quran_words
+        WHERE is_ayah_marker = false
+          AND (
+              unique_tashkeel_word_id IS NULL
+              OR unique_simple_word_id IS NULL
+          )
+        """;
+
+    internal const string CheckLinkMarkersNullViolations = """
+        SELECT COUNT(*)::int
+        FROM quran_words
+        WHERE is_ayah_marker = true
+          AND (
+              unique_tashkeel_word_id IS NOT NULL
+              OR unique_simple_word_id IS NOT NULL
+          )
+        """;
+
+    internal const string CheckLinkResolvesViolations = """
+        SELECT (
+          SELECT COUNT(*)::int
+          FROM quran_words w
+          WHERE w.unique_tashkeel_word_id IS NOT NULL
+            AND NOT EXISTS (
+              SELECT 1
+              FROM quran_words_unique_tashkeel u
+              WHERE u.id = w.unique_tashkeel_word_id
+            )
+        ) + (
+          SELECT COUNT(*)::int
+          FROM quran_words w
+          WHERE w.unique_simple_word_id IS NOT NULL
+            AND NOT EXISTS (
+              SELECT 1
+              FROM quran_words_unique_simple u
+              WHERE u.id = w.unique_simple_word_id
+            )
+        )
+        """;
+
+    internal const string CheckLinkConsistentViolations = """
+        SELECT (
+          SELECT COUNT(*)::int
+          FROM quran_words w
+          JOIN quran_words_unique_tashkeel u ON u.id = w.unique_tashkeel_word_id
+          WHERE w.is_ayah_marker = false
+            AND u.text_uthmani <> w.text_uthmani
+        ) + (
+          SELECT COUNT(*)::int
+          FROM quran_words w
+          JOIN quran_words_unique_simple u ON u.id = w.unique_simple_word_id
+          WHERE w.is_ayah_marker = false
+            AND u.word_key_imlaei_simple <> w.word_key_imlaei_simple
+        )
+        """;
+
     internal const string CheckFirstOccViolations = """
         SELECT (
           SELECT COUNT(*)::int

@@ -260,6 +260,42 @@ public sealed class SqlDisplayWordsRebuilder : IDisplayWordsRebuilder
             firstOccViolations == 0 ? "0 violations" : $"{FormatInt(firstOccViolations)} violation(s)",
             firstOccViolations == 0));
 
+        var linkReadableViolations = await ExecuteScalarIntAsync(
+            connection, transaction, DisplayWordsSql.CheckLinkReadableCompleteViolations, ct);
+        checks.Add(new DisplayWordsCheckResult(
+            "LINK-READABLE-COMPLETE",
+            HardSeverity,
+            "0",
+            FormatInt(linkReadableViolations),
+            linkReadableViolations == 0));
+
+        var linkMarkersViolations = await ExecuteScalarIntAsync(
+            connection, transaction, DisplayWordsSql.CheckLinkMarkersNullViolations, ct);
+        checks.Add(new DisplayWordsCheckResult(
+            "LINK-MARKERS-NULL",
+            HardSeverity,
+            "0",
+            FormatInt(linkMarkersViolations),
+            linkMarkersViolations == 0));
+
+        var linkResolvesViolations = await ExecuteScalarIntAsync(
+            connection, transaction, DisplayWordsSql.CheckLinkResolvesViolations, ct);
+        checks.Add(new DisplayWordsCheckResult(
+            "LINK-RESOLVES",
+            HardSeverity,
+            "0",
+            FormatInt(linkResolvesViolations),
+            linkResolvesViolations == 0));
+
+        var linkConsistentViolations = await ExecuteScalarIntAsync(
+            connection, transaction, DisplayWordsSql.CheckLinkConsistentViolations, ct);
+        checks.Add(new DisplayWordsCheckResult(
+            "LINK-CONSISTENT",
+            HardSeverity,
+            "0",
+            FormatInt(linkConsistentViolations),
+            linkConsistentViolations == 0));
+
         var sourceCountsAfter = await ReadSourceCountsAsync(connection, transaction, ct);
         var sourceUntouched = sourceCountsBefore == sourceCountsAfter;
         checks.Add(new DisplayWordsCheckResult(

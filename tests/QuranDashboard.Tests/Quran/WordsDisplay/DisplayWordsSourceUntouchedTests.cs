@@ -18,6 +18,7 @@ public sealed class DisplayWordsSourceUntouchedTests
     {
         await fixture.SeedDefaultSyntheticDataAsync();
         var sourceCountsBefore = await ReadSourceCountsAsync();
+        var sourceWordsBefore = await ReadSourceWordColumnsAsync();
 
         var handler = fixture.CreateHandler();
         var reportDir = Path.Combine(Path.GetTempPath(), $"words-display-source-{Guid.NewGuid():N}");
@@ -33,6 +34,9 @@ public sealed class DisplayWordsSourceUntouchedTests
 
         var sourceCountsAfter = await ReadSourceCountsAsync();
         sourceCountsAfter.Should().BeEquivalentTo(sourceCountsBefore);
+
+        var sourceWordsAfter = await ReadSourceWordColumnsAsync();
+        sourceWordsAfter.Should().BeEquivalentTo(sourceWordsBefore);
     }
 
     private async Task<SourceCounts> ReadSourceCountsAsync()
@@ -46,5 +50,31 @@ public sealed class DisplayWordsSourceUntouchedTests
             await dbContext.QuranSurahs.CountAsync());
     }
 
+    private async Task<IReadOnlyList<SourceWordColumns>> ReadSourceWordColumnsAsync()
+    {
+        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+
+        return await dbContext.QuranWords
+            .AsNoTracking()
+            .OrderBy(word => word.Id)
+            .Select(word => new SourceWordColumns(
+                word.Id,
+                word.TextUthmani,
+                word.TextUthmaniSimple,
+                word.TextImlaeiSimple,
+                word.QpcGlyph,
+                word.WordKeyImlaeiSimple))
+            .ToListAsync();
+    }
+
     private sealed record SourceCounts(int Words, int Ayahs, int Surahs);
+
+    private sealed record SourceWordColumns(
+        int Id,
+        string TextUthmani,
+        string TextUthmaniSimple,
+        string TextImlaeiSimple,
+        string QpcGlyph,
+        string WordKeyImlaeiSimple);
 }
