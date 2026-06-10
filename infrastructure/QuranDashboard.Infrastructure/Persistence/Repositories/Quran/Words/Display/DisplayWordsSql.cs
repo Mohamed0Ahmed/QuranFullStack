@@ -207,6 +207,28 @@ internal static class DisplayWordsSql
         RESTART IDENTITY
         """;
 
+    internal const string NullQuranWordLinks = """
+        UPDATE quran_words
+        SET unique_tashkeel_word_id = NULL,
+            unique_simple_word_id = NULL
+        """;
+
+    internal const string UpdateUniqueTashkeelLinks = """
+        UPDATE quran_words AS w
+        SET unique_tashkeel_word_id = u.id
+        FROM quran_words_unique_tashkeel AS u
+        WHERE w.is_ayah_marker = false
+          AND u.text_uthmani = w.text_uthmani
+        """;
+
+    internal const string UpdateUniqueSimpleLinks = """
+        UPDATE quran_words AS w
+        SET unique_simple_word_id = u.id
+        FROM quran_words_unique_simple AS u
+        WHERE w.is_ayah_marker = false
+          AND u.word_key_imlaei_simple = w.word_key_imlaei_simple
+        """;
+
     internal const string CheckOrdCountOrderedTashkeel = """
         SELECT COUNT(*)::int FROM quran_words_ordered_tashkeel
         """;

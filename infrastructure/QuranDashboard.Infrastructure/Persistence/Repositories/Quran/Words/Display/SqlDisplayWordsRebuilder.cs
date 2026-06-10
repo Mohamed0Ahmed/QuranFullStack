@@ -66,6 +66,8 @@ public sealed class SqlDisplayWordsRebuilder : IDisplayWordsRebuilder
 
         try
         {
+            await ExecuteNonQueryAsync(npgsqlConnection, transaction, DisplayWordsSql.NullQuranWordLinks, ct);
+
             if (force)
             {
                 await ExecuteNonQueryAsync(npgsqlConnection, transaction, DisplayWordsSql.TruncateDerivedTables, ct);
@@ -75,6 +77,9 @@ public sealed class SqlDisplayWordsRebuilder : IDisplayWordsRebuilder
             await ExecuteNonQueryAsync(npgsqlConnection, transaction, DisplayWordsSql.InsertOrderedSimple, ct);
             await ExecuteNonQueryAsync(npgsqlConnection, transaction, DisplayWordsSql.InsertUniqueTashkeel, ct);
             await ExecuteNonQueryAsync(npgsqlConnection, transaction, DisplayWordsSql.InsertUniqueSimple, ct);
+
+            await ExecuteNonQueryAsync(npgsqlConnection, transaction, DisplayWordsSql.UpdateUniqueTashkeelLinks, ct);
+            await ExecuteNonQueryAsync(npgsqlConnection, transaction, DisplayWordsSql.UpdateUniqueSimpleLinks, ct);
 
             var totals = await GatherTotalsAsync(npgsqlConnection, transaction, ct);
             var checks = await RunHardChecksAsync(
