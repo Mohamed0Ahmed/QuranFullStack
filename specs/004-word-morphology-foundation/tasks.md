@@ -37,7 +37,7 @@ in priority order.
 
 **Purpose**: Establish the baseline and the patterns to mirror.
 
-- [ ] T001 Verify the baseline builds and read the precedent files to mirror. Run `dotnet build Backend`
+- [x] T001 Verify the baseline builds and read the precedent files to mirror. Run `dotnet build Backend`
   to confirm a green baseline. Then open and skim these precedents (do not edit): entity
   `Backend/domain/QuranDashboard.Domain/Quran/Words/Display/OrderedTashkeelWord.cs`; EF config
   `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Configurations/Quran/QuranWordConfiguration.cs`;
@@ -63,49 +63,49 @@ types exist. **⚠️ No user-story work begins until this phase is done.**
 
 ### Domain — enums/value objects (`Backend/domain/QuranDashboard.Domain/Quran/Words/Morphology/`)
 
-- [ ] T002 [P] Create `SegmentKind.cs` enum — values `Prefix, Stem, Suffix` (maps to corpus `PREFIX/STEM/SUFFIX`). See `data-model.md` "Domain types".
-- [ ] T003 [P] Create `VerbTense.cs` enum — values `Past, Present, Imperative` (maps to `PERF/IMPF/IMPV`).
-- [ ] T004 [P] Create `VerbVoice.cs` enum — values `Active, Passive`.
-- [ ] T005 [P] Create `MorphologicalCase.cs` enum — values `Nominative, Accusative, Genitive` (maps to `NOM/ACC/GEN`).
+- [x] T002 [P] Create `SegmentKind.cs` enum — values `Prefix, Stem, Suffix` (maps to corpus `PREFIX/STEM/SUFFIX`). See `data-model.md` "Domain types".
+- [x] T003 [P] Create `VerbTense.cs` enum — values `Past, Present, Imperative` (maps to `PERF/IMPF/IMPV`).
+- [x] T004 [P] Create `VerbVoice.cs` enum — values `Active, Passive`.
+- [x] T005 [P] Create `MorphologicalCase.cs` enum — values `Nominative, Accusative, Genitive` (maps to `NOM/ACC/GEN`).
 
 ### Domain — entities (same folder; plain data carriers, no behavior; mirror `OrderedTashkeelWord.cs`)
 
-- [ ] T006 [P] Create `PosTag.cs` — properties for `quran_pos_tags` columns: `Code` (string), `ArabicLabel`, `EnglishLabel`, `Category` (string), `SortOrder` (short), `Description` (string?). Columns/keys per `data-model.md` §6.
-- [ ] T007 [P] Create `QuranRoot.cs` — `Id` (int), `RootText`, `RootBuckwalter` (string?), `WordsCount` (int), `DistinctLemmasCount` (short), `FirstWordOrderInMushaf` (int). Per `data-model.md` §3.
-- [ ] T008 [P] Create `QuranLemma.cs` — `Id`, `LemmaText`, `LemmaBuckwalter` (string?), `RootId` (int?), `WordsCount`, `FirstWordOrderInMushaf`. Per `data-model.md` §4.
-- [ ] T009 [P] Create `QuranStem.cs` — `Id`, `StemText`, `WordsCount`, `FirstWordOrderInMushaf`. Per `data-model.md` §5.
-- [ ] T010 [P] Create `WordMorphologySegment.cs` — `Id` (int), `QuranWordId` (int), `SegmentLocation`, `SegmentNumber` (short), `Kind`, `Pos`, `FormBuckwalter`, `FormArabicNormalized` (string?), `ArabicRenderTier` (string?), `ArabicRenderSource`, `RootBuckwalter` (string?), `LemmaBuckwalter` (string?), `FeaturesRaw`, `FeaturesJson` (string?). Per `data-model.md` §2.
-- [ ] T011 [P] Create `WordMorphology.cs` — `QuranWordId` (int, PK/FK), `Location`, `HeadPos`, `SegmentCount` (short), `RootId` (int?), `LemmaId` (int?), `StemId` (int?), `IsVerb` (bool), `VerbTense` (string?), `VerbVoice` (string?), `CaseFeature` (string?), `HeadFeaturesJson` (string?). Per `data-model.md` §1.
+- [x] T006 [P] Create `PosTag.cs` — properties for `quran_pos_tags` columns: `Code` (string), `ArabicLabel`, `EnglishLabel`, `Category` (string), `SortOrder` (short), `Description` (string?). Columns/keys per `data-model.md` §6.
+- [x] T007 [P] Create `QuranRoot.cs` — `Id` (int), `RootText`, `RootBuckwalter` (string?), `WordsCount` (int), `DistinctLemmasCount` (short), `FirstWordOrderInMushaf` (int). Per `data-model.md` §3.
+- [x] T008 [P] Create `QuranLemma.cs` — `Id`, `LemmaText`, `LemmaBuckwalter` (string?), `RootId` (int?), `WordsCount`, `FirstWordOrderInMushaf`. Per `data-model.md` §4.
+- [x] T009 [P] Create `QuranStem.cs` — `Id`, `StemText`, `WordsCount`, `FirstWordOrderInMushaf`. Per `data-model.md` §5.
+- [x] T010 [P] Create `WordMorphologySegment.cs` — `Id` (int), `QuranWordId` (int), `SegmentLocation`, `SegmentNumber` (short), `Kind`, `Pos`, `FormBuckwalter`, `FormArabicNormalized` (string?), `ArabicRenderTier` (string?), `ArabicRenderSource`, `RootBuckwalter` (string?), `LemmaBuckwalter` (string?), `FeaturesRaw`, `FeaturesJson` (string?). Per `data-model.md` §2.
+- [x] T011 [P] Create `WordMorphology.cs` — `QuranWordId` (int, PK/FK), `Location`, `HeadPos`, `SegmentCount` (short), `RootId` (int?), `LemmaId` (int?), `StemId` (int?), `IsVerb` (bool), `VerbTense` (string?), `VerbVoice` (string?), `CaseFeature` (string?), `HeadFeaturesJson` (string?). Per `data-model.md` §1.
 
 ### Infrastructure — EF configurations (`Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Configurations/Quran/Words/Morphology/`; mirror `QuranWordConfiguration.cs`)
 
-- [ ] T012 [P] Create `PosTagConfiguration.cs` — table `quran_pos_tags`; PK `code`; columns + indexes (`category`, `sort_order`) per `data-model.md` §6.
-- [ ] T013 [P] Create `QuranRootConfiguration.cs` — table `quran_roots`; identity PK `id`; `UNIQUE(root_text)`, `UNIQUE(first_word_order_in_mushaf)`, index `words_count`. Per `data-model.md` §3.
-- [ ] T014 [P] Create `QuranLemmaConfiguration.cs` — table `quran_lemmas`; identity PK; `UNIQUE(lemma_text)`, `UNIQUE(first_word_order_in_mushaf)`, FK `root_id`→`quran_roots.id` (nullable), index `root_id`. Per `data-model.md` §4.
-- [ ] T015 [P] Create `QuranStemConfiguration.cs` — table `quran_stems`; identity PK; `UNIQUE(stem_text)`, `UNIQUE(first_word_order_in_mushaf)`. Per `data-model.md` §5.
-- [ ] T016 [P] Create `WordMorphologySegmentConfiguration.cs` — table `quran_word_morphology_segments`; identity PK `id`; FK `quran_word_id`→`quran_words.id`; `UNIQUE(quran_word_id, segment_number)`; indexes `pos`, partial `(quran_word_id) WHERE kind='STEM'`, `arabic_render_tier`; `features_json`/(none) as `jsonb`. Per `data-model.md` §2.
-- [ ] T017 [P] Create `WordMorphologyConfiguration.cs` — table `quran_word_morphology`; PK/FK/UNIQUE `quran_word_id`→`quran_words.id`; FK `head_pos`→`quran_pos_tags.code`; FKs `root_id`/`lemma_id`/`stem_id` (nullable); `head_features_json` as `jsonb`; indexes `head_pos`, partial `(verb_tense)`/`(verb_voice) WHERE is_verb`, `case_feature`, `root_id`, `lemma_id`, `stem_id`. Per `data-model.md` §1.
+- [x] T012 [P] Create `PosTagConfiguration.cs` — table `quran_pos_tags`; PK `code`; columns + indexes (`category`, `sort_order`) per `data-model.md` §6.
+- [x] T013 [P] Create `QuranRootConfiguration.cs` — table `quran_roots`; identity PK `id`; `UNIQUE(root_text)`, `UNIQUE(first_word_order_in_mushaf)`, index `words_count`. Per `data-model.md` §3.
+- [x] T014 [P] Create `QuranLemmaConfiguration.cs` — table `quran_lemmas`; identity PK; `UNIQUE(lemma_text)`, `UNIQUE(first_word_order_in_mushaf)`, FK `root_id`→`quran_roots.id` (nullable), index `root_id`. Per `data-model.md` §4.
+- [x] T015 [P] Create `QuranStemConfiguration.cs` — table `quran_stems`; identity PK; `UNIQUE(stem_text)`, `UNIQUE(first_word_order_in_mushaf)`. Per `data-model.md` §5.
+- [x] T016 [P] Create `WordMorphologySegmentConfiguration.cs` — table `quran_word_morphology_segments`; identity PK `id`; FK `quran_word_id`→`quran_words.id`; `UNIQUE(quran_word_id, segment_number)`; indexes `pos`, partial `(quran_word_id) WHERE kind='STEM'`, `arabic_render_tier`; `features_json`/(none) as `jsonb`. Per `data-model.md` §2.
+- [x] T017 [P] Create `WordMorphologyConfiguration.cs` — table `quran_word_morphology`; PK/FK/UNIQUE `quran_word_id`→`quran_words.id`; FK `head_pos`→`quran_pos_tags.code`; FKs `root_id`/`lemma_id`/`stem_id` (nullable); `head_features_json` as `jsonb`; indexes `head_pos`, partial `(verb_tense)`/`(verb_voice) WHERE is_verb`, `case_feature`, `root_id`, `lemma_id`, `stem_id`. Per `data-model.md` §1.
 
 ### Infrastructure — DbContext
 
-- [ ] T018 Add six `DbSet<>`s (`WordMorphology`, `WordMorphologySegment`, `QuranRoot`, `QuranLemma`, `QuranStem`, `PosTag`) to `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/QuranDashboardDbContext.cs`. Configurations are auto-discovered (same as Feature 003) — do not register them manually unless the precedent does.
+- [x] T018 Add six `DbSet<>`s (`WordMorphology`, `WordMorphologySegment`, `QuranRoot`, `QuranLemma`, `QuranStem`, `PosTag`) to `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/QuranDashboardDbContext.cs`. Configurations are auto-discovered (same as Feature 003) — do not register them manually unless the precedent does.
 
 ### Application.Abstractions (`Backend/application/QuranDashboard.Application.Abstractions/Quran/Words/Morphology/`; mirror `Quran/Words/Display/` records)
 
-- [ ] T019 [P] Create `MorphologyInvariants.cs` — constants `ExpectedReadableWords = 77_432`, `ExpectedEmptyForms = 208`, `RenderSource = "buckwalter-transliteration"`, `InformationalWholeWordAgreement = 0.7983`, and messages `TargetsNotEmpty`, `SourceMismatch`. Exact contents in `contracts/morphology-abstractions.md` → "MorphologyInvariants".
-- [ ] T020 [P] Create result records `MorphologyImportResult.cs`, `MorphologyImportTotals.cs`, `MorphologyCheckResult.cs` — exact shapes in `contracts/morphology-abstractions.md` → "Records".
-- [ ] T021 [P] Create source DTOs `MorphologySourceData.cs`, `AlignedWordDto.cs`, `AlignedSegmentDto.cs` — exact shapes in `contracts/morphology-abstractions.md` → "Source DTOs".
-- [ ] T022 [P] Create interfaces `IMorphologyImportSource.cs`, `IMorphologyImportWriter.cs`, `IMorphologyReportWriter.cs` — exact signatures in `contracts/morphology-abstractions.md`. These expose records/DTOs only, never EF entities.
+- [x] T019 [P] Create `MorphologyInvariants.cs` — constants `ExpectedReadableWords = 77_432`, `ExpectedEmptyForms = 208`, `RenderSource = "buckwalter-transliteration"`, `InformationalWholeWordAgreement = 0.7983`, and messages `TargetsNotEmpty`, `SourceMismatch`. Exact contents in `contracts/morphology-abstractions.md` → "MorphologyInvariants".
+- [x] T020 [P] Create result records `MorphologyImportResult.cs`, `MorphologyImportTotals.cs`, `MorphologyCheckResult.cs` — exact shapes in `contracts/morphology-abstractions.md` → "Records".
+- [x] T021 [P] Create source DTOs `MorphologySourceData.cs`, `AlignedWordDto.cs`, `AlignedSegmentDto.cs` — exact shapes in `contracts/morphology-abstractions.md` → "Source DTOs".
+- [x] T022 [P] Create interfaces `IMorphologyImportSource.cs`, `IMorphologyImportWriter.cs`, `IMorphologyReportWriter.cs` — exact signatures in `contracts/morphology-abstractions.md`. These expose records/DTOs only, never EF entities.
 
 ### Infrastructure — source reading (`Backend/infrastructure/QuranDashboard.Infrastructure/Files/Quran/Morphology/`; mirror `Files/Quran/Import/`)
 
-- [ ] T023 [P] Create `MorphologyManifestReader.cs` — read `manifest.json`; verify the source folder contains **exactly** this required file set and no extras: `manifest.json`, `README.md`, `corpus/quranic-corpus-morphology-qpc-aligned.json`, `corpus/corpus-qpc-location-alignment-map.json`, `qul/word-root.json`, `qul/word-lemma.json`, `qul/word-stem-corrected-arabic.json`. Reject missing files, unexpected research-only artifacts/extra files (`.db`, raw `.txt`, samples, reports, derived dumps), wrong `expectedRecordCount`, wrong `fileSizeBytes`, or wrong `sha256`; expose a way to recompute size/sha256 for `MORPH-SOURCE-UNCHANGED`. Mirror `ManifestReader.cs`. Manifest fields per `quickstart.md` §1 / planning report §5.1.
-- [ ] T024 [P] Create `JsonAlignedCorpusReader.cs` — parse `corpus/quranic-corpus-morphology-qpc-aligned.json` with `System.Text.Json`; yield per word: `qpcLocation`, `qpcUthmani`, and `segments[]` (`segmentNumber`, `kind`, `pos`, `form`, `features`, `root`, `lemma`). Mirror `JsonWordSourceReader.cs`. Do NOT join `quran_words` here (the assembler does that).
-- [ ] T025 [P] Create `JsonQulRootReader.cs`, `JsonQulLemmaReader.cs`, `JsonQulStemReader.cs` — each parses its QUL file into a `location → Arabic string` map. Files: `qul/word-root.json` (50,298), `qul/word-lemma.json` (72,507), `qul/word-stem-corrected-arabic.json` (77,432).
+- [x] T023 [P] Create `MorphologyManifestReader.cs` — read `manifest.json`; verify the source folder contains **exactly** this required file set and no extras: `manifest.json`, `README.md`, `corpus/quranic-corpus-morphology-qpc-aligned.json`, `corpus/corpus-qpc-location-alignment-map.json`, `qul/word-root.json`, `qul/word-lemma.json`, `qul/word-stem-corrected-arabic.json`. Reject missing files, unexpected research-only artifacts/extra files (`.db`, raw `.txt`, samples, reports, derived dumps), wrong `expectedRecordCount`, wrong `fileSizeBytes`, or wrong `sha256`; expose a way to recompute size/sha256 for `MORPH-SOURCE-UNCHANGED`. Mirror `ManifestReader.cs`. Manifest fields per `quickstart.md` §1 / planning report §5.1.
+- [x] T024 [P] Create `JsonAlignedCorpusReader.cs` — parse `corpus/quranic-corpus-morphology-qpc-aligned.json` with `System.Text.Json`; yield per word: `qpcLocation`, `qpcUthmani`, and `segments[]` (`segmentNumber`, `kind`, `pos`, `form`, `features`, `root`, `lemma`). Mirror `JsonWordSourceReader.cs`. Do NOT join `quran_words` here (the assembler does that).
+- [x] T025 [P] Create `JsonQulRootReader.cs`, `JsonQulLemmaReader.cs`, `JsonQulStemReader.cs` — each parses its QUL file into a `location → Arabic string` map. Files: `qul/word-root.json` (50,298), `qul/word-lemma.json` (72,507), `qul/word-stem-corrected-arabic.json` (77,432).
 
 ### Application — POS controlled vocabulary (curated dictionary; blocking because `head_pos` FK references it)
 
-- [ ] T026 Create the curated POS dictionary `Backend/infrastructure/QuranDashboard.Infrastructure/Files/Quran/Morphology/PosTagSeed.cs` — a static, immutable list of ≈30 `PosTag` rows: `code`, `arabic_label`, `english_label`, `category` ∈ {`noun`,`verb`,`particle`,`other`}, `sort_order`, optional `description`. Cover every POS code the corpus emits (`N, V, PN, ADJ, PRON, P, CONJ, NEG, REL, DEM, VOC, INL, …`); categories per planning report §3.7. This is curated reference data, NOT a migration `HasData` seed (research R6). Do not invent religious content; labels are grammatical terms.
+- [x] T026 Create the curated POS dictionary `Backend/infrastructure/QuranDashboard.Infrastructure/Files/Quran/Morphology/PosTagSeed.cs` — a static, immutable list of ≈30 `PosTag` rows: `code`, `arabic_label`, `english_label`, `category` ∈ {`noun`,`verb`,`particle`,`other`}, `sort_order`, optional `description`. Cover every POS code the corpus emits (`N, V, PN, ADJ, PRON, P, CONJ, NEG, REL, DEM, VOC, INL, …`); categories per planning report §3.7. This is curated reference data, NOT a migration `HasData` seed (research R6). Do not invent religious content; labels are grammatical terms.
 
 ### Infrastructure — DI + verb wiring (deferred until concrete types exist)
 
@@ -115,7 +115,7 @@ DI and CLI wiring are intentionally moved to US2 tasks T041–T042 after those t
 
 ### Tests — shared fixture
 
-- [ ] T027 [P] Create `Backend/tests/QuranDashboard.Tests/Quran/WordsMorphology/MorphologyImportTestFixture.cs` — Testcontainers `postgres:16-alpine`; helpers to seed a small set of **synthetic, source-safe** `quran_words` (readable + a few markers) and to write a temporary local source folder (manifest + tiny aligned corpus JSON + alignment map + tiny QUL files + README) using fabricated single-word tokens. Include helpers for exact-source-file-set violations, missing/empty foundation data, forced reruns, injected validation/source failures, and stable ordered table snapshots/hashes. Mirror `WordsDisplayTestFixture.cs`. Reuse this fixture in all later test tasks.
+- [x] T027 [P] Create `Backend/tests/QuranDashboard.Tests/Quran/WordsMorphology/MorphologyImportTestFixture.cs` — Testcontainers `postgres:16-alpine`; helpers to seed a small set of **synthetic, source-safe** `quran_words` (readable + a few markers) and to write a temporary local source folder (manifest + tiny aligned corpus JSON + alignment map + tiny QUL files + README) using fabricated single-word tokens. Include helpers for exact-source-file-set violations, missing/empty foundation data, forced reruns, injected validation/source failures, and stable ordered table snapshots/hashes. Mirror `WordsDisplayTestFixture.cs`. Reuse this fixture in all later test tasks.
 
 **Checkpoint**: Solution compiles; schema entities/configs/DbSets exist; source readers + POS seed are in
 place. DI and CLI verb wiring are intentionally deferred until T041–T042, after concrete implementation
