@@ -28,5 +28,7 @@ Reports are grouped into one subfolder per feature/scope.
   - `imlaei-clean-import-binding-report.md`
 - `feature-003-word-identity-links/`
   - `feature-003-word-identity-links-restructure-report.md`
+  - `phase-1-unique-simple-identity-switch-report.md`
+  - `phase-7-dev-reset-reseed-report.md`
 
 See `file-organization-report.md` (this folder) for the before/after move record.
