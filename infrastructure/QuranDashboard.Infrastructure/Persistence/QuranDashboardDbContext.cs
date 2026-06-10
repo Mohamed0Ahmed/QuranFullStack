@@ -3,6 +3,7 @@ using QuranDashboard.Domain.Quran.MushafPages;
 using QuranDashboard.Domain.Quran.Surahs;
 using QuranDashboard.Domain.Quran.Words;
 using QuranDashboard.Domain.Quran.Words.Display;
+using QuranDashboard.Domain.Quran.Words.Morphology;
 
 namespace QuranDashboard.Infrastructure.Persistence;
 
@@ -17,6 +18,12 @@ public sealed class QuranDashboardDbContext(DbContextOptions<QuranDashboardDbCon
     public DbSet<OrderedSimpleWord> QuranWordsOrderedSimple => Set<OrderedSimpleWord>();
     public DbSet<UniqueTashkeelWord> QuranWordsUniqueTashkeel => Set<UniqueTashkeelWord>();
     public DbSet<UniqueSimpleWord> QuranWordsUniqueSimple => Set<UniqueSimpleWord>();
+    public DbSet<WordMorphology> WordMorphologies => Set<WordMorphology>();
+    public DbSet<WordMorphologySegment> WordMorphologySegments => Set<WordMorphologySegment>();
+    public DbSet<QuranRoot> QuranRoots => Set<QuranRoot>();
+    public DbSet<QuranLemma> QuranLemmas => Set<QuranLemma>();
+    public DbSet<QuranStem> QuranStems => Set<QuranStem>();
+    public DbSet<PosTag> PosTags => Set<PosTag>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

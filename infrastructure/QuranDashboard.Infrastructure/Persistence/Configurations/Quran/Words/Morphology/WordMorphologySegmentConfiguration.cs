@@ -1,0 +1,81 @@
+using QuranDashboard.Domain.Quran.Words.Morphology;
+
+namespace QuranDashboard.Infrastructure.Persistence.Configurations.Quran.Words.Morphology;
+
+public sealed class WordMorphologySegmentConfiguration : IEntityTypeConfiguration<WordMorphologySegment>
+{
+    public void Configure(EntityTypeBuilder<WordMorphologySegment> builder)
+    {
+        builder.ToTable("quran_word_morphology_segments");
+
+        builder.HasKey(s => s.Id);
+        builder.Property(s => s.Id)
+            .ValueGeneratedOnAdd()
+            .HasColumnName("id");
+
+        builder.Property(s => s.QuranWordId)
+            .IsRequired()
+            .HasColumnName("quran_word_id");
+
+        builder.Property(s => s.SegmentLocation)
+            .IsRequired()
+            .HasColumnName("segment_location");
+
+        builder.Property(s => s.SegmentNumber)
+            .IsRequired()
+            .HasColumnType("smallint")
+            .HasColumnName("segment_number");
+
+        builder.Property(s => s.Kind)
+            .IsRequired()
+            .HasColumnName("kind");
+
+        builder.Property(s => s.Pos)
+            .IsRequired()
+            .HasColumnName("pos");
+
+        builder.Property(s => s.FormBuckwalter)
+            .IsRequired()
+            .HasColumnName("form_buckwalter");
+
+        builder.Property(s => s.FormArabicNormalized)
+            .HasColumnName("form_arabic_normalized");
+
+        builder.Property(s => s.ArabicRenderTier)
+            .HasColumnName("arabic_render_tier");
+
+        builder.Property(s => s.ArabicRenderSource)
+            .IsRequired()
+            .HasColumnName("arabic_render_source");
+
+        builder.Property(s => s.RootBuckwalter)
+            .HasColumnName("root_buckwalter");
+
+        builder.Property(s => s.LemmaBuckwalter)
+            .HasColumnName("lemma_buckwalter");
+
+        builder.Property(s => s.FeaturesRaw)
+            .IsRequired()
+            .HasColumnName("features_raw");
+
+        builder.Property(s => s.FeaturesJson)
+            .HasColumnType("jsonb")
+            .HasColumnName("features_json");
+
+        builder.HasIndex(s => new { s.QuranWordId, s.SegmentNumber }).IsUnique();
+        builder.HasIndex(s => s.Pos);
+        builder.HasIndex(s => s.QuranWordId)
+            .HasDatabaseName("IX_quran_word_morphology_segments_stem")
+            .HasFilter("kind = 'STEM'");
+        builder.HasIndex(s => s.ArabicRenderTier);
+
+        builder.HasOne(s => s.QuranWord)
+            .WithMany()
+            .HasForeignKey(s => s.QuranWordId);
+
+        builder.HasOne<PosTag>()
+            .WithMany()
+            .HasForeignKey(s => s.Pos)
+            .OnDelete(DeleteBehavior.Restrict);
+    }
+}
