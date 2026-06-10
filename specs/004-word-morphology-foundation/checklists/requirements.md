@@ -43,3 +43,7 @@
   mirroring the Feature 003 `ORD-*`/`LINK-*` convention.
 - No `[NEEDS CLARIFICATION]` markers were required: the three planning docs and the locked decisions
   resolved every otherwise-ambiguous choice; remaining defaults are recorded under **Assumptions**.
+- `/speckit-clarify` session **2026-06-10** locked 2 open points into the spec: (1) Buckwalter-only
+  lemma/root with no QUL Arabic → null `lemma_id`/`root_id`, no fabricated dimension row (FR-018,
+  FR-022, edge cases); (2) verb voice stored as `active`/`passive` only, active-by-default convention,
+  no inferred flag (FR-016). See the spec's **Clarifications** section.

@@ -25,6 +25,13 @@ source of truth for display and is **never modified**. The normalized Arabic seg
 explicitly flagged *derived* reading aid — never Mushaf text and never claimed as an exact `qpcUthmani`
 substring.
 
+## Clarifications
+
+### Session 2026-06-10
+
+- Q: When a readable word has a corpus lemma/root (Buckwalter) but no QUL Arabic display value, how should Feature 004 represent that word's lemma/root? → A: Set `lemma_id`/`root_id` to NULL (create no dimension row without an Arabic value); retain the Buckwalter value only as the segment-level cross-reference for later resolution.
+- Q: Should the data distinguish corpus-marked voice from defaulted-active, or store only active/passive with the active-by-default rule as a convention? → A: Store only `verb_voice` ∈ {active, passive} (null for non-verbs): passive when the corpus marks PASS, otherwise active by documented convention; no separate "inferred" flag; the raw FEATURES string is retained for later recomputation.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Per-occurrence morphology exists for every readable word (Priority: P1)
@@ -81,7 +88,8 @@ run.
 2. **Given** any single hard check fails, **When** the import runs, **Then** nothing is written to any
    morphology table, a failure report is produced, and the process exits non-zero.
 3. **Given** the morphology tables are already populated, **When** the import is run without the force
-   option, **Then** it refuses, writes nothing, and clearly reports the refusal.
+   option, **Then** it refuses, writes nothing, clearly reports the refusal to the console, and writes no
+   report artifact.
 4. **Given** a forced re-run on unchanged source, **When** it completes, **Then** the morphology tables'
    contents are identical to the previous successful run, and `quran_words` is unchanged in row count
    and content.
@@ -158,15 +166,19 @@ words by POS category, verb tense, verb voice, and grammatical case — all from
   exactly one STEM and a head POS).
 - **Inconsistent verb features** (a verb with two tenses, a verb missing voice, or a non-verb carrying
   verb fields): MUST fail the validation gate.
-- **Source/manifest mismatch** (missing file, wrong record count, or checksum/size drift versus the
-  manifest): MUST cause an early refusal before any write.
-- **QUL coverage gaps** (root/lemma/stem available for fewer words than the readable total): the missing
-  Arabic display value stays **null**; it is not fabricated, and the gap does not fail the build.
+- **Source/manifest mismatch** (missing file, wrong record count, checksum/size drift versus the manifest,
+  or unexpected extra/research-only files): MUST cause an early refusal before any write and before any
+  report artifact is created.
+- **QUL coverage gaps** (root/lemma/stem available for fewer words than the readable total, e.g. the
+  ~1,704 words with a corpus Buckwalter lemma but no QUL Arabic lemma): the word's `root_id`/`lemma_id`/
+  `stem_id` stays **null**, the Buckwalter value is retained as the segment cross-reference, nothing is
+  fabricated, and the gap does not fail the build.
 - **Multi-word source token** (a single token that spans two words): rendered and flagged with the
   `multiword` tier for manual review, not split or "corrected."
-- **Foundation not loaded**: if `quran_words` is not present/populated, the import MUST refuse (it
-  depends on Feature 002 having run).
-- **Re-run over populated tables without force**: MUST change nothing and report the refusal.
+- **Foundation not loaded**: if `quran_words` is not present/populated, the import MUST refuse before any
+  write and before any report artifact is created (it depends on Feature 002 having run).
+- **Re-run over populated tables without force**: MUST change nothing, report the refusal to the console,
+  and write no report artifact.
 - **Segment Arabic ≠ Mushaf**: the per-word concatenation of segment renderings is **not** expected to
   equal the Uthmani text for every word (baseline whole-word agreement ≈ 79.83 %); divergence is
   reported as an informational warning, never as a build failure.
@@ -232,17 +244,21 @@ words by POS category, verb tense, verb voice, and grammatical case — all from
 - **FR-015**: Each word MUST resolve **exactly one STEM segment**, and the word's `head_pos` MUST be
   that STEM segment's POS.
 - **FR-016**: Verb features MUST be internally consistent: a verb MUST have exactly one of
-  past/present/imperative tense and a non-null voice; a non-verb MUST have null verb fields. Where voice
-  is not explicitly marked, an inferred active voice MUST be labelled as **inferred** (no silent
-  invention).
+  past/present/imperative tense and a non-null voice; a non-verb MUST have null verb fields. Voice MUST
+  be stored as `passive` when the corpus marks PASS and otherwise `active` by **documented convention**;
+  there is **no** separate "inferred-voice" flag. The verbatim corpus FEATURES string is retained per
+  segment so the presence/absence of an explicit PASS marker can be recomputed later.
 - **FR-017**: Grammatical case MUST be taken from the corpus where present and left **null** otherwise;
   case MUST NOT be invented.
 
 #### Arabic display values and normalized segment rendering (Option B)
 
 - **FR-018**: The Arabic display values for **root, lemma, and stem** MUST come from the QUL files.
-  Where QUL provides no value for a word, the corresponding display value MUST be **null** (coverage
-  gaps are not fabricated).
+  Where QUL provides no Arabic value for a word, the word's `root_id`/`lemma_id`/`stem_id` MUST be
+  **null** — even when the corpus supplies a Buckwalter root/lemma for that word. The Buckwalter value
+  MUST be retained only as the **segment-level cross-reference** (`root_buckwalter`/`lemma_buckwalter`)
+  for a future feature to resolve. No transliterated/fabricated Arabic value and no placeholder
+  dimension row may be created to fill a QUL gap.
 - **FR-019**: Each segment MUST store a normalized Arabic rendering (`form_arabic_normalized`) on a
   **best-effort basis for every non-empty form**; every **empty** form MUST render as **null** (expected
   208 empty forms).
@@ -251,9 +267,11 @@ words by POS category, verb tense, verb voice, and grammatical case — all from
 - **FR-021**: `form_arabic_normalized` MUST NEVER be used as Mushaf display text, MUST NEVER be claimed
   as an exact `qpcUthmani` substring, MUST NEVER be named `qpc_segment_text`, and MUST NEVER be written
   from `qpc_glyph`/`text_uthmani`. The raw `form_buckwalter` MUST be present on every segment row.
-- **FR-022**: Root, lemma, and stem values MUST be **deduplicated** into `quran_roots`, `quran_lemmas`,
-  and `quran_stems`, with each morphology record referencing the resolved dimension rows; every non-null
-  root/lemma/stem reference MUST resolve to an existing dimension row (no dangling references).
+- **FR-022**: Root, lemma, and stem dimension rows MUST be **deduplicated by their Arabic display
+  text** (one row per distinct Arabic value); a dimension row MUST exist **only** when an Arabic display
+  value is present (per FR-018, no row is created from a Buckwalter-only value). Each morphology record
+  references the resolved dimension rows, and every non-null root/lemma/stem reference MUST resolve to an
+  existing dimension row (no dangling references).
 
 #### POS controlled vocabulary (word-type filtering foundation)
 
@@ -296,10 +314,12 @@ words by POS category, verb tense, verb voice, and grammatical case — all from
 - **FR-029**: The import MUST also produce **warning** signals that are informational and MUST NOT change
   the pass/fail verdict, including: per-word segment-vs-Uthmani agreement (baseline ≈ 79.83 %), the tier
   distribution, and the review/fragile/empty lists for manual sign-off.
-- **FR-030**: Every run (success or failure) MUST produce a **traceable report** capturing per-table
-  totals, the tier distribution, the review/empty lists, the hard-check results, the warnings, and the
-  final outcome. A run **refused** for non-empty targets without force (FR-032) is not a build attempt:
-  it reports the refusal to the operator and does not write a report artifact.
+- **FR-030**: Every import **build attempt** that starts MUST produce a **traceable report** capturing
+   per-table totals, the tier distribution, the review/fragile tier list, the multiword tier list, the
+   empty-form rows/list/count, the hard-check results, the warnings, and the final outcome. Early refusals
+   such as source/manifest mismatch, missing or empty foundation data (`quran_words`), or non-empty targets
+   without `--force` are not build attempts: they report the refusal to the operator, write no report
+   artifact, and write no target data.
 
 #### Rebuild semantics and source safety
 
@@ -347,9 +367,9 @@ words by POS category, verb tense, verb voice, and grammatical case — all from
 - **Import operation**: an operator-run, transactional process that reads the local source, builds the
   six tables, enforces refusal/force semantics, never touches the source tables or files, and validates
   against the hard-check gate before committing.
-- **Import report**: a per-run, human-readable artifact recording per-table totals, the tier
-  distribution, review/empty lists, hard-check results, warnings, and the final outcome — the
-  traceability record for the build.
+- **Import report**: a per-build-attempt, human-readable artifact recording per-table totals, the tier
+  distribution, review/fragile tier list, multiword tier list, empty-form rows/list/count, hard-check
+  results, warnings, and the final outcome — the traceability record for a started build attempt.
 
 ## Success Criteria *(mandatory)*
 
@@ -374,10 +394,12 @@ words by POS category, verb tense, verb voice, and grammatical case — all from
 - **SC-008**: After any import run, `quran_words` and all other non-morphology tables are unchanged in
   row count and content, and the local source files match their manifest (size/checksum) before and
   after the run.
-- **SC-009**: Every import run produces a report from which a reviewer can confirm per-table totals,
-  tier distribution, review/empty lists, and hard-check outcomes without querying the database directly.
-- **SC-010**: An attempt to import over non-empty target tables without the force option changes nothing
-  and clearly reports the refusal.
+- **SC-009**: Every import build attempt that starts produces a report from which a reviewer can confirm
+   per-table totals, tier distribution, review/fragile tier list, multiword tier list, empty-form
+   rows/list/count, and hard-check outcomes without querying the database directly. Early refusals report
+   to the console and write no report artifact.
+- **SC-010**: An attempt to import over non-empty target tables without the force option changes nothing,
+   clearly reports the refusal to the console, and writes no report artifact.
 
 ## Assumptions
 

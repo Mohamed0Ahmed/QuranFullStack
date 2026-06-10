@@ -1,12 +1,12 @@
 <!-- SPECKIT START -->
 
-Active feature: **Quran Words Display Tables Foundation** — branch `003-words-display-tables`.
+Active feature: **Quran Word Morphology Foundation** — branch `004-word-morphology-foundation`.
 For technologies, project structure, shell commands, and design artifacts, read the current plan
 and its siblings:
 
-- `specs/003-words-display-tables/plan.md` — technical context, project structure, gates
-- `specs/003-words-display-tables/spec.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/`
-- `docs/feature-003-word-display-tables/manhaj-qurani-quran-words-display-tables-foundation-plan.md` — long-form companion plan
+- `specs/004-word-morphology-foundation/plan.md` — technical context, project structure, gates
+- `specs/004-word-morphology-foundation/spec.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/`
+- `docs/feature-004-word-morphology-foundation/feature-004-word-morphology-foundation-planning-report.md` — long-form companion plan (with decisions addendum + segment-rendering report siblings)
 
 <!-- SPECKIT END -->
 
