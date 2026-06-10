@@ -11,4 +11,6 @@ public static class MorphologyInvariants
         "Morphology tables are not empty. Re-run with --force to truncate and rebuild them.";
     public const string SourceMismatch =
         "Local morphology source files do not match manifest.json (presence/count/size/sha256).";
+    public const string FoundationNotLoaded =
+        "Quran foundation data (quran_words) is missing or empty. Run import-foundation first.";
 }

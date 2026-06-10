@@ -2,12 +2,15 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using QuranDashboard.Application;
+using QuranDashboard.Application.Abstractions.Quran.Words.Morphology;
+using QuranDashboard.Application.Quran.Words.ImportMorphology;
 using QuranDashboard.Domain.Quran.Ayahs;
 using QuranDashboard.Domain.Quran.MushafPages;
 using QuranDashboard.Domain.Quran.Surahs;
 using QuranDashboard.Domain.Quran.Words;
 using QuranDashboard.Infrastructure;
 using QuranDashboard.Infrastructure.Files.Quran.Morphology;
+using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Morphology;
 using Testcontainers.PostgreSql;
 
 namespace QuranDashboard.Tests.Quran.WordsMorphology;
@@ -45,7 +48,22 @@ public sealed class MorphologyImportTestFixture : IAsyncLifetime
             .AddSingleton<IConfiguration>(configuration)
             .AddApplication()
             .AddInfrastructure(configuration)
+            .AddMorphologyImportServices()
             .BuildServiceProvider();
+    }
+
+    public async Task<ImportMorphologyResult> RunImportAsync(
+        string sourcePath,
+        bool force = false,
+        int? expectedReadableWords = null)
+    {
+        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        var handler = scope.ServiceProvider.GetRequiredService<ImportMorphologyHandler>();
+        var readableCount = expectedReadableWords ?? GetReadableWordCount();
+
+        return await handler.HandleAsync(
+            new ImportMorphologyCommand(sourcePath, force, readableCount),
+            CancellationToken.None);
     }
 
     public async Task SeedSyntheticWordsAsync()
@@ -177,6 +195,151 @@ public sealed class MorphologyImportTestFixture : IAsyncLifetime
         await WriteJsonAsync(Path.Combine(tempDir, "manifest.json"), manifest);
 
         return tempDir;
+    }
+
+    public async Task PatchCorpusSegmentsAsync(
+        string sourcePath,
+        string location,
+        IReadOnlyList<object> segments)
+    {
+        var corpusPath = Path.Combine(
+            sourcePath, "corpus", "quranic-corpus-morphology-qpc-aligned.json");
+
+        await using var stream = File.OpenRead(corpusPath);
+        using var document = await JsonDocument.ParseAsync(stream);
+        var corpusObject = new Dictionary<string, object?>();
+
+        foreach (var entry in document.RootElement.EnumerateObject())
+        {
+            if (string.Equals(entry.Name, location, StringComparison.Ordinal))
+            {
+                var qpcUthmani = entry.Value.GetProperty("qpcUthmani").GetString();
+                corpusObject[entry.Name] = new { qpcUthmani, segments };
+            }
+            else
+            {
+                corpusObject[entry.Name] = JsonSerializer.Deserialize<object>(entry.Value.GetRawText());
+            }
+        }
+
+        await WriteJsonAsync(corpusPath, corpusObject);
+        await RefreshManifestChecksumsAsync(sourcePath);
+    }
+
+    public async Task PatchCorpusStemFeaturesAsync(
+        string sourcePath,
+        string location,
+        string features)
+    {
+        var corpusPath = Path.Combine(
+            sourcePath, "corpus", "quranic-corpus-morphology-qpc-aligned.json");
+
+        await using var stream = File.OpenRead(corpusPath);
+        using var document = await JsonDocument.ParseAsync(stream);
+        var corpusObject = new Dictionary<string, object?>();
+
+        foreach (var entry in document.RootElement.EnumerateObject())
+        {
+            if (!string.Equals(entry.Name, location, StringComparison.Ordinal))
+            {
+                corpusObject[entry.Name] = JsonSerializer.Deserialize<object>(entry.Value.GetRawText());
+                continue;
+            }
+
+            var qpcUthmani = entry.Value.GetProperty("qpcUthmani").GetString();
+            var segments = new List<object>();
+
+            foreach (var segmentElement in entry.Value.GetProperty("segments").EnumerateArray())
+            {
+                var kind = segmentElement.GetProperty("kind").GetString();
+                segments.Add(new
+                {
+                    segmentNumber = segmentElement.GetProperty("segmentNumber").GetInt16(),
+                    kind,
+                    pos = segmentElement.GetProperty("pos").GetString(),
+                    form = segmentElement.GetProperty("form").GetString(),
+                    features = string.Equals(kind, "STEM", StringComparison.Ordinal) ? features : segmentElement.GetProperty("features").GetString(),
+                    root = segmentElement.TryGetProperty("root", out var root) && root.ValueKind == JsonValueKind.String ? root.GetString() : null,
+                    lemma = segmentElement.TryGetProperty("lemma", out var lemma) && lemma.ValueKind == JsonValueKind.String ? lemma.GetString() : null
+                });
+            }
+
+            corpusObject[entry.Name] = new { qpcUthmani, segments };
+        }
+
+        await WriteJsonAsync(corpusPath, corpusObject);
+        await RefreshManifestChecksumsAsync(sourcePath);
+    }
+
+    public async Task<string> WriteSourceFolderWithExtraCorpusLocationAsync()
+    {
+        var tempDir = await WriteSyntheticSourceFolderAsync();
+        var corpusPath = Path.Combine(
+            tempDir, "corpus", "quranic-corpus-morphology-qpc-aligned.json");
+
+        await using var stream = File.OpenRead(corpusPath);
+        using var document = await JsonDocument.ParseAsync(stream);
+        var corpusObject = new Dictionary<string, object?>();
+
+        foreach (var entry in document.RootElement.EnumerateObject())
+        {
+            corpusObject[entry.Name] = JsonSerializer.Deserialize<object>(entry.Value.GetRawText());
+        }
+
+        corpusObject["9:9:9"] = new
+        {
+            qpcUthmani = "ت-٩",
+            segments = new[]
+            {
+                new
+                {
+                    segmentNumber = (short)1,
+                    kind = "STEM",
+                    pos = "N",
+                    form = "TSTX",
+                    features = "NOM",
+                    root = (string?)null,
+                    lemma = (string?)null
+                }
+            }
+        };
+
+        await WriteJsonAsync(corpusPath, corpusObject);
+        await RefreshManifestChecksumsAsync(tempDir);
+        return tempDir;
+    }
+
+    public async Task RefreshManifestChecksumsAsync(string sourcePath)
+    {
+        var manifestPath = Path.Combine(sourcePath, "manifest.json");
+
+        await using var stream = File.OpenRead(manifestPath);
+        using var document = await JsonDocument.ParseAsync(stream);
+        var root = document.RootElement;
+
+        var files = new List<object>();
+        foreach (var fileEntry in root.GetProperty("files").EnumerateArray())
+        {
+            var localPath = ReadManifestLocalPath(fileEntry);
+            var fullPath = Path.Combine(sourcePath, localPath);
+            var fileInfo = new FileInfo(fullPath);
+            var sha256 = Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(fullPath)));
+
+            files.Add(new
+            {
+                role = fileEntry.TryGetProperty("role", out var role) ? role.GetString() : localPath,
+                path = localPath,
+                originPath = fileEntry.TryGetProperty("originPath", out var originPath) ? originPath.GetString() : null,
+                expectedRecordCount = fileEntry.TryGetProperty("expectedRecordCount", out var erc) && erc.ValueKind != JsonValueKind.Null
+                    ? erc.GetInt32()
+                    : (int?)null,
+                fileSizeBytes = (long?)fileInfo.Length,
+                sha256,
+                notes = fileEntry.TryGetProperty("notes", out var notes) ? notes.GetString() : null
+            });
+        }
+
+        await WriteJsonAsync(manifestPath, new { files });
     }
 
     public async Task<string> WriteSourceFolderWithMissingFileAsync()
