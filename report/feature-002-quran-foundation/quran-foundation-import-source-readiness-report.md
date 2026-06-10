@@ -202,7 +202,7 @@ From `ImportQuranFoundationHandler.ResolveReportOutDir` + `MarkdownJsonImportRep
 - The report is written **after** persistence on success, and **instead of** persistence on a hard-fail.
 
 > Note: this readiness report is a **separate, manually-authored** document at
-> `Backend/report/quran-foundation-import-source-readiness-report.md`. The importer does **not** write to
+> `Backend/report/feature-002-quran-foundation/quran-foundation-import-source-readiness-report.md`. The importer does **not** write to
 > `Backend/report/`; it writes to `resources/report/` (or `--report-out`). They will not collide.
 
 ---
