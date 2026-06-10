@@ -6,7 +6,7 @@ and its siblings:
 
 - `specs/003-words-display-tables/plan.md` — technical context, project structure, gates
 - `specs/003-words-display-tables/spec.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/`
-- `docs/manhaj-qurani-quran-words-display-tables-foundation-plan.md` — long-form companion plan
+- `docs/feature-003-word-display-tables/manhaj-qurani-quran-words-display-tables-foundation-plan.md` — long-form companion plan
 
 <!-- SPECKIT END -->
 

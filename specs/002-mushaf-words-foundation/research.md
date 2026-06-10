@@ -1,6 +1,6 @@
 # Phase 0 Research — Quran Mushaf Words & Layout Data Foundation
 
-All items below were settled before planning (most in the companion plan `docs/manhaj-qurani-mushaf-words-layout-data-foundation-plan.md` and the data report). This file records each as a Decision / Rationale / Alternatives so the implementer needs no further investigation. **No NEEDS CLARIFICATION remain.**
+All items below were settled before planning (most in the companion plan `docs/feature-002-quran-foundation/manhaj-qurani-mushaf-words-layout-data-foundation-plan.md` and the data report). This file records each as a Decision / Rationale / Alternatives so the implementer needs no further investigation. **No NEEDS CLARIFICATION remain.**
 
 ---
 

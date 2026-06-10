@@ -4,7 +4,7 @@
 **Input**: Feature specification from `specs/003-words-display-tables/spec.md`
 
 > **Companion document (long-form rationale):**
-> `docs/manhaj-qurani-quran-words-display-tables-foundation-plan.md`
+> `docs/feature-003-word-display-tables/manhaj-qurani-quran-words-display-tables-foundation-plan.md`
 > **Governance:** `Backend/.architecture/{BACKEND_STRUCTURE,CLEAN_ARCHITECTURE,API_GUIDELINES}.md`,
 > `CODING_PRINCIPLES.md`, `Backend/CLAUDE.md` (EF migration policy).
 

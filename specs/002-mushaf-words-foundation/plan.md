@@ -4,7 +4,7 @@
 **Input**: Feature specification from `specs/002-mushaf-words-foundation/spec.md`
 
 > **Companion documents (authoritative detail):**
-> - Long-form plan & rationale: `docs/manhaj-qurani-mushaf-words-layout-data-foundation-plan.md`
+> - Long-form plan & rationale: `docs/feature-002-quran-foundation/manhaj-qurani-mushaf-words-layout-data-foundation-plan.md`
 > - Source-data facts & verified counts: `resources/report/quran-mushaf-words-data-foundation-report.md`
 > - Architecture governance: `Backend/.architecture/{BACKEND_STRUCTURE,CLEAN_ARCHITECTURE,API_GUIDELINES}.md`, `CODING_PRINCIPLES.md`
 

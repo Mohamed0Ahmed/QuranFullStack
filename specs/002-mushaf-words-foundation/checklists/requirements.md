@@ -32,7 +32,7 @@
 ## Notes
 
 - Validation run on 2026-06-08: **all items pass on the first iteration.**
-- **No `[NEEDS CLARIFICATION]` markers** — every decision was pre-settled in the reference plan (`docs/manhaj-qurani-mushaf-words-layout-data-foundation-plan.md`): operator-run non-networked import, manifested source set, endpoint deferred to 001b, refuse-unless-empty + force re-run, and no search-normalized field.
+- **No `[NEEDS CLARIFICATION]` markers** — every decision was pre-settled in the reference plan (`docs/feature-002-quran-foundation/manhaj-qurani-mushaf-words-layout-data-foundation-plan.md`): operator-run non-networked import, manifested source set, endpoint deferred to 001b, refuse-unless-empty + force re-run, and no search-normalized field.
 - Implementation specifics (database engine, frameworks, project layout, bulk-load mechanism) are intentionally **kept out of the spec** and live in the plan / upcoming `/speckit-plan` output.
 - The precise counts (114 / 6,236 / 604 / 9,046 / 83,668; 6,236 markers; 77,432 readable) are stated as **requirements and success criteria**, not implementation details — they are the correctness contract the implementer must satisfy.
 - Ready for `/speckit-plan` (or `/speckit-clarify` if the team wants an extra confirmation pass, though none is required).
