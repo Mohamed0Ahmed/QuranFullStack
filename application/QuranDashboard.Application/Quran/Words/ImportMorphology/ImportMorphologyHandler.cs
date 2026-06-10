@@ -6,13 +6,16 @@ public sealed class ImportMorphologyHandler
 {
     private readonly IMorphologyImportSource importSource;
     private readonly IMorphologyImportWriter importWriter;
+    private readonly IMorphologyReportWriter reportWriter;
 
     public ImportMorphologyHandler(
         IMorphologyImportSource importSource,
-        IMorphologyImportWriter importWriter)
+        IMorphologyImportWriter importWriter,
+        IMorphologyReportWriter reportWriter)
     {
         this.importSource = importSource;
         this.importWriter = importWriter;
+        this.reportWriter = reportWriter;
     }
 
     public async Task<ImportMorphologyResult> HandleAsync(
@@ -35,14 +38,20 @@ public sealed class ImportMorphologyHandler
                 source,
                 command.Force,
                 command.ExpectedReadableWords,
+                token => importSource.SourceUnchangedAsync(command.SourcePath, token),
                 ct);
 
+            var reportDir = ResolveReportOutDir(command);
+            Directory.CreateDirectory(reportDir);
+            await reportWriter.WriteAsync(result, reportDir, ct);
+
             return string.Equals(result.Verdict, "pass", StringComparison.Ordinal)
-                ? ImportMorphologyResult.Success(result.Totals)
+                ? ImportMorphologyResult.Success(result.Totals, reportDir)
                 : ImportMorphologyResult.Failure(
                     result.Errors.Count > 0
                         ? result.Errors[0]
-                        : "Morphology import validation failed.");
+                        : "Morphology import validation failed.",
+                    reportDir);
         }
         catch (InvalidOperationException ex) when (
             ex.Message == MorphologyInvariants.TargetsNotEmpty
@@ -58,5 +67,35 @@ public sealed class ImportMorphologyHandler
         {
             return ImportMorphologyResult.Refused(MorphologyInvariants.SourceMismatch);
         }
+    }
+
+    private static string ResolveReportOutDir(ImportMorphologyCommand command)
+    {
+        if (!string.IsNullOrWhiteSpace(command.ReportOutDir))
+        {
+            return Path.GetFullPath(command.ReportOutDir);
+        }
+
+        return Path.GetFullPath(Path.Combine(ResolveRepositoryRoot(), "resources", "report", "words-morphology"));
+    }
+
+    private static string ResolveRepositoryRoot()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+
+        while (directory is not null)
+        {
+            var resourcesPath = Path.Combine(directory.FullName, "resources");
+            var backendPath = Path.Combine(directory.FullName, "Backend");
+
+            if (Directory.Exists(resourcesPath) && Directory.Exists(backendPath))
+            {
+                return directory.FullName;
+            }
+
+            directory = directory.Parent;
+        }
+
+        throw new InvalidOperationException("Could not resolve the repository root directory.");
     }
 }

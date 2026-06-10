@@ -35,7 +35,7 @@ public sealed class MorphologyImportTestFixture : IAsyncLifetime
         await postgresContainer.DisposeAsync();
     }
 
-    public ServiceProvider CreateServiceProvider()
+    public ServiceProvider CreateServiceProvider(Action<IServiceCollection>? configure = null)
     {
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
@@ -44,12 +44,15 @@ public sealed class MorphologyImportTestFixture : IAsyncLifetime
             })
             .Build();
 
-        return new ServiceCollection()
+        var services = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
             .AddApplication()
             .AddInfrastructure(configuration)
-            .AddMorphologyImportServices()
-            .BuildServiceProvider();
+            .AddMorphologyImportServices();
+
+        configure?.Invoke(services);
+
+        return services.BuildServiceProvider();
     }
 
     public async Task<ImportMorphologyResult> RunImportAsync(
@@ -493,25 +496,25 @@ public sealed class MorphologyImportTestFixture : IAsyncLifetime
 
         return new TableSnapshot(
             MorphologyRows: await dbContext.Database.SqlQueryRaw<int>(
-                "SELECT count(*) FROM quran_word_morphology").FirstAsync(),
+                """SELECT count(*)::int AS "Value" FROM quran_word_morphology""").FirstAsync(),
             SegmentRows: await dbContext.Database.SqlQueryRaw<int>(
-                "SELECT count(*) FROM quran_word_morphology_segments").FirstAsync(),
+                """SELECT count(*)::int AS "Value" FROM quran_word_morphology_segments""").FirstAsync(),
             RootRows: await dbContext.Database.SqlQueryRaw<int>(
-                "SELECT count(*) FROM quran_roots").FirstAsync(),
+                """SELECT count(*)::int AS "Value" FROM quran_roots""").FirstAsync(),
             LemmaRows: await dbContext.Database.SqlQueryRaw<int>(
-                "SELECT count(*) FROM quran_lemmas").FirstAsync(),
+                """SELECT count(*)::int AS "Value" FROM quran_lemmas""").FirstAsync(),
             StemRows: await dbContext.Database.SqlQueryRaw<int>(
-                "SELECT count(*) FROM quran_stems").FirstAsync(),
+                """SELECT count(*)::int AS "Value" FROM quran_stems""").FirstAsync(),
             PosTagRows: await dbContext.Database.SqlQueryRaw<int>(
-                "SELECT count(*) FROM quran_pos_tags").FirstAsync(),
+                """SELECT count(*)::int AS "Value" FROM quran_pos_tags""").FirstAsync(),
             QuranWordRows: await dbContext.Database.SqlQueryRaw<int>(
-                "SELECT count(*) FROM quran_words").FirstAsync(),
+                """SELECT count(*)::int AS "Value" FROM quran_words""").FirstAsync(),
             MorphologyContentHash: await ComputeTableContentHashAsync(
                 dbContext,
                 """
                 SELECT COALESCE(
                     md5(string_agg(t::text, ',' ORDER BY quran_word_id)),
-                    'empty')
+                    'empty') AS "Value"
                 FROM quran_word_morphology t
                 """),
             SegmentContentHash: await ComputeTableContentHashAsync(
@@ -519,7 +522,7 @@ public sealed class MorphologyImportTestFixture : IAsyncLifetime
                 """
                 SELECT COALESCE(
                     md5(string_agg(t::text, ',' ORDER BY id)),
-                    'empty')
+                    'empty') AS "Value"
                 FROM quran_word_morphology_segments t
                 """),
             RootContentHash: await ComputeTableContentHashAsync(
@@ -527,7 +530,7 @@ public sealed class MorphologyImportTestFixture : IAsyncLifetime
                 """
                 SELECT COALESCE(
                     md5(string_agg(t::text, ',' ORDER BY id)),
-                    'empty')
+                    'empty') AS "Value"
                 FROM quran_roots t
                 """),
             LemmaContentHash: await ComputeTableContentHashAsync(
@@ -535,7 +538,7 @@ public sealed class MorphologyImportTestFixture : IAsyncLifetime
                 """
                 SELECT COALESCE(
                     md5(string_agg(t::text, ',' ORDER BY id)),
-                    'empty')
+                    'empty') AS "Value"
                 FROM quran_lemmas t
                 """),
             StemContentHash: await ComputeTableContentHashAsync(
@@ -543,7 +546,7 @@ public sealed class MorphologyImportTestFixture : IAsyncLifetime
                 """
                 SELECT COALESCE(
                     md5(string_agg(t::text, ',' ORDER BY id)),
-                    'empty')
+                    'empty') AS "Value"
                 FROM quran_stems t
                 """),
             PosTagContentHash: await ComputeTableContentHashAsync(
@@ -551,7 +554,7 @@ public sealed class MorphologyImportTestFixture : IAsyncLifetime
                 """
                 SELECT COALESCE(
                     md5(string_agg(t::text, ',' ORDER BY code)),
-                    'empty')
+                    'empty') AS "Value"
                 FROM quran_pos_tags t
                 """));
     }
@@ -566,6 +569,20 @@ public sealed class MorphologyImportTestFixture : IAsyncLifetime
     {
         var reader = new MorphologyManifestReader();
         return await reader.CaptureDigestsAsync(sourcePath, CancellationToken.None);
+    }
+
+    public async Task<string> WriteSourceFolderWithValidationViolationAsync()
+    {
+        var tempDir = await WriteSyntheticSourceFolderAsync();
+
+        var badSegments = new List<object>
+        {
+            new { segmentNumber = 1, kind = "PREFIX", pos = "P", form = "TSTPR", features = "PREFIX", root = (string?)null, lemma = (string?)null }
+        };
+
+        await PatchCorpusSegmentsAsync(tempDir, "1:1:1", badSegments);
+
+        return tempDir;
     }
 
     private static async Task<string> ComputeTableContentHashAsync(

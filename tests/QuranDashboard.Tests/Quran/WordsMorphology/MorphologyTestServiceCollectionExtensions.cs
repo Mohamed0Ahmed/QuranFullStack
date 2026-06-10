@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using QuranDashboard.Application.Abstractions.Quran.Words.Morphology;
 using QuranDashboard.Infrastructure.Files.Quran.Morphology;
 using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Morphology;
+using QuranDashboard.Infrastructure.Reports.Quran.Morphology;
 
 namespace QuranDashboard.Tests.Quran.WordsMorphology;
 
@@ -15,8 +16,10 @@ internal static class MorphologyTestServiceCollectionExtensions
         services.AddSingleton<JsonQulLemmaReader>();
         services.AddSingleton<JsonQulStemReader>();
         services.AddSingleton<MorphologyAssembler>();
-        services.AddScoped<IMorphologyImportSource, MorphologyImportSource>();
+        services.AddScoped<MorphologyImportSource>();
+        services.AddScoped<IMorphologyImportSource>(sp => sp.GetRequiredService<MorphologyImportSource>());
         services.AddScoped<IMorphologyImportWriter, EfBulkMorphologyWriter>();
+        services.AddSingleton<IMorphologyReportWriter, MarkdownJsonMorphologyReportWriter>();
 
         return services;
     }

@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using QuranDashboard.Application;
 using QuranDashboard.Application.Quran.Import.ImportQuranFoundation;
+using QuranDashboard.Application.Quran.Words.ImportMorphology;
 using QuranDashboard.Application.Quran.Words.RebuildDisplayWords;
 using QuranDashboard.Infrastructure;
 
@@ -25,6 +26,7 @@ internal static class Program
         {
             "import-foundation" => await RunImportFoundationAsync(verbArgs),
             "rebuild-words" => await RunRebuildWordsAsync(verbArgs),
+            "import-morphology" => await RunImportMorphologyAsync(verbArgs),
             _ => UnknownVerb(verb)
         };
     }
@@ -250,6 +252,128 @@ internal static class Program
         return true;
     }
 
+    private static async Task<int> RunImportMorphologyAsync(string[] args)
+    {
+        if (!TryParseMorphologyArguments(args, out var sourcePath, out var reportOutDir, out var force, out var errorMessage))
+        {
+            Console.Error.WriteLine(errorMessage);
+            PrintUsage();
+            return ImportMorphologyResult.FailureExitCode;
+        }
+
+        var host = CreateHost(args);
+        await using var scope = host.Services.CreateAsyncScope();
+        var handler = scope.ServiceProvider.GetRequiredService<ImportMorphologyHandler>();
+
+        sourcePath ??= ResolveDefaultMorphologySourcePath();
+
+        var result = await handler.HandleAsync(
+            new ImportMorphologyCommand(sourcePath, force, ReportOutDir: reportOutDir),
+            CancellationToken.None);
+
+        if (result.Succeeded)
+        {
+            Console.WriteLine(result.Message);
+            if (result.Totals is not null)
+            {
+                Console.WriteLine(
+                    $"morphology={result.Totals.MorphologyRows}, segments={result.Totals.SegmentRows}, roots={result.Totals.RootRows}, lemmas={result.Totals.LemmaRows}, stems={result.Totals.StemRows}, pos_tags={result.Totals.PosTagRows}.");
+            }
+
+            WriteReportPath(result.ReportOutDir);
+            return result.ExitCode;
+        }
+
+        Console.Error.WriteLine(result.Message);
+        WriteReportPath(result.ReportOutDir);
+        return result.ExitCode;
+    }
+
+    private static string ResolveDefaultMorphologySourcePath()
+    {
+        return Path.GetFullPath(Path.Combine(
+            ResolveRepositoryRoot(), "resources", "import-sources", "quran-morphology"));
+    }
+
+    private static string ResolveRepositoryRoot()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+
+        while (directory is not null)
+        {
+            var resourcesPath = Path.Combine(directory.FullName, "resources");
+            var backendPath = Path.Combine(directory.FullName, "Backend");
+
+            if (Directory.Exists(resourcesPath) && Directory.Exists(backendPath))
+            {
+                return directory.FullName;
+            }
+
+            directory = directory.Parent;
+        }
+
+        throw new InvalidOperationException("Could not resolve the repository root directory.");
+    }
+
+    private static bool TryParseMorphologyArguments(
+        string[] args,
+        out string? sourcePath,
+        out string? reportOutDir,
+        out bool force,
+        out string errorMessage)
+    {
+        sourcePath = null;
+        reportOutDir = null;
+        force = false;
+        errorMessage = string.Empty;
+
+        for (var index = 0; index < args.Length; index++)
+        {
+            switch (args[index])
+            {
+                case "--source":
+                    if (!TryReadValue(args, ref index, out sourcePath))
+                    {
+                        errorMessage = "Missing value for --source.";
+                        return false;
+                    }
+
+                    break;
+                case "--report-out":
+                    if (!TryReadValue(args, ref index, out reportOutDir))
+                    {
+                        errorMessage = "Missing value for --report-out.";
+                        return false;
+                    }
+
+                    break;
+                case "--force":
+                    force = true;
+                    break;
+                default:
+                    errorMessage = $"Unknown argument '{args[index]}'.";
+                    return false;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(sourcePath))
+        {
+            sourcePath = Path.GetFullPath(sourcePath);
+            if (!Directory.Exists(sourcePath))
+            {
+                errorMessage = $"Source directory was not found: {sourcePath}";
+                return false;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(reportOutDir))
+        {
+            reportOutDir = Path.GetFullPath(reportOutDir);
+        }
+
+        return true;
+    }
+
     private static void PrintUsage()
     {
         Console.Error.WriteLine(
@@ -258,5 +382,7 @@ internal static class Program
             "  QuranDashboard.DataImporter import-foundation --source <path> [--report-out <path>] [--force]");
         Console.Error.WriteLine(
             "  QuranDashboard.DataImporter rebuild-words [--report-out <path>] [--force]");
+        Console.Error.WriteLine(
+            "  QuranDashboard.DataImporter import-morphology [--source <path>] [--report-out <path>] [--force]");
     }
 }

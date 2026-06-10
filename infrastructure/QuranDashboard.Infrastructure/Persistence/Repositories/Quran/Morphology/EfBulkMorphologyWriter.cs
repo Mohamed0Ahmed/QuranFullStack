@@ -36,9 +36,11 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
         MorphologySourceData source,
         bool force,
         int expectedReadableWords,
+        Func<CancellationToken, Task<bool>> sourceUnchangedCheck,
         CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(sourceUnchangedCheck);
 
         if (!force && await AnyTargetTableHasDataAsync(ct))
         {
@@ -49,12 +51,10 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
         var wordIdsByLocation = await ReadReadableWordIdsAsync(ct);
         var connection = dbContext.Database.GetDbConnection();
 
-        if (connection.State == ConnectionState.Open)
+        if (connection.State != ConnectionState.Open)
         {
-            await dbContext.Database.CloseConnectionAsync();
+            await connection.OpenAsync(ct);
         }
-
-        await connection.OpenAsync(ct);
 
         if (connection is not NpgsqlConnection npgsqlConnection)
         {
@@ -65,6 +65,12 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
 
         try
         {
+            if (force)
+            {
+                await ExecuteNonQueryAsync(
+                    npgsqlConnection, transaction, MorphologySql.TruncateMorphologyTables, ct);
+            }
+
             await CopyPosTagsAsync(npgsqlConnection, ct);
             await CopyMorphologyAsync(npgsqlConnection, source, wordIdsByLocation, ct);
             await CopySegmentsAsync(npgsqlConnection, source, wordIdsByLocation, ct);
@@ -75,6 +81,17 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
                 transaction,
                 expectedReadableWords,
                 ct);
+
+            var sourceUnchanged = await sourceUnchangedCheck(ct);
+            checks.Add(new MorphologyCheckResult(
+                MorphologyInvariants.CheckSourceUnchanged,
+                HardSeverity,
+                "local source files match manifest.json size/sha256 before and after run",
+                sourceUnchanged ? "unchanged" : "changed",
+                sourceUnchanged));
+
+            var dimCountsWarning = BuildDimCountsWarning(totals);
+            var warnings = new List<string> { dimCountsWarning };
 
             var hardChecks = checks.Where(check => check.Severity == HardSeverity).ToList();
             var allHardPassed = hardChecks.All(check => check.Passed);
@@ -90,9 +107,9 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
                     force,
                     totals,
                     checks,
-                    Warnings: [],
+                    warnings,
                     Errors: [],
-                    InfoNotes: ["US1 morphology import committed with segment and verb-feature checks."]);
+                    InfoNotes: ["Morphology import committed; segment and verb-feature checks passed."]);
             }
 
             await transaction.RollbackAsync(ct);
@@ -109,7 +126,7 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
                 force,
                 totals,
                 checks,
-                Warnings: [],
+                warnings,
                 errors,
                 InfoNotes: ["Totals reflect the attempted import before rollback; no morphology rows were persisted."]);
         }
@@ -346,6 +363,9 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
     private static string FormatInt(int value) =>
         value.ToString(CultureInfo.InvariantCulture);
 
+    private static string BuildDimCountsWarning(MorphologyImportTotals totals) =>
+        $"{MorphologyInvariants.CheckDimCounts}: roots={totals.RootRows}, lemmas={totals.LemmaRows}, stems={totals.StemRows}.";
+
     private static async Task<int> ExecuteScalarIntAsync(
         NpgsqlConnection connection,
         NpgsqlTransaction transaction,
@@ -356,5 +376,16 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
         command.CommandTimeout = CommandTimeoutSeconds;
         var result = await command.ExecuteScalarAsync(ct);
         return Convert.ToInt32(result);
+    }
+
+    private static async Task ExecuteNonQueryAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        string sql,
+        CancellationToken ct)
+    {
+        await using var command = new NpgsqlCommand(sql, connection, transaction);
+        command.CommandTimeout = CommandTimeoutSeconds;
+        await command.ExecuteNonQueryAsync(ct);
     }
 }

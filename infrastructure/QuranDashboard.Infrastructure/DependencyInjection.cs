@@ -10,6 +10,7 @@ using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Import;
 using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Morphology;
 using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Words.Display;
 using QuranDashboard.Infrastructure.Reports.Quran;
+using QuranDashboard.Infrastructure.Reports.Quran.Morphology;
 using QuranDashboard.Infrastructure.Reports.Quran.Words;
 
 namespace QuranDashboard.Infrastructure;
@@ -44,6 +45,7 @@ public static class DependencyInjection
         services.AddSingleton<MorphologyAssembler>();
         services.AddScoped<IMorphologyImportSource, MorphologyImportSource>();
         services.AddScoped<IMorphologyImportWriter, EfBulkMorphologyWriter>();
+        services.AddSingleton<IMorphologyReportWriter, MarkdownJsonMorphologyReportWriter>();
 
         return services;
     }

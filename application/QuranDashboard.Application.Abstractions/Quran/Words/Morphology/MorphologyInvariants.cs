@@ -13,4 +13,7 @@ public static class MorphologyInvariants
         "Local morphology source files do not match manifest.json (presence/count/size/sha256).";
     public const string FoundationNotLoaded =
         "Quran foundation data (quran_words) is missing or empty. Run import-foundation first.";
+
+    public const string CheckSourceUnchanged = "MORPH-SOURCE-UNCHANGED";
+    public const string CheckDimCounts = "MORPH-DIM-COUNTS";
 }

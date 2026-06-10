@@ -108,4 +108,15 @@ internal static class MorphologySql
         FROM quran_word_morphology_segments
         WHERE form_buckwalter = '' AND form_arabic_normalized IS NULL
         """;
+
+    internal const string TruncateMorphologyTables = """
+        TRUNCATE
+            quran_word_morphology_segments,
+            quran_word_morphology,
+            quran_lemmas,
+            quran_roots,
+            quran_stems,
+            quran_pos_tags
+        RESTART IDENTITY CASCADE
+        """;
 }

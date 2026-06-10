@@ -10,7 +10,11 @@ public interface IMorphologyImportWriter
 {
     Task<bool> AnyTargetTableHasDataAsync(CancellationToken ct);
     Task<MorphologyImportResult> ImportAsync(
-        MorphologySourceData source, bool force, int expectedReadableWords, CancellationToken ct);
+        MorphologySourceData source,
+        bool force,
+        int expectedReadableWords,
+        Func<CancellationToken, Task<bool>> sourceUnchangedCheck,
+        CancellationToken ct);
 }
 
 public interface IMorphologyReportWriter
