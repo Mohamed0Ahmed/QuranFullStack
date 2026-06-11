@@ -122,10 +122,10 @@ segment-rendering columns. EF-tool-generated only; not hand-written; not applied
 | Id | Assertion |
 |---|---|
 | `MORPH-POS-RESOLVES` (D2) | every `head_pos` and segment `pos` resolves to a known `quran_pos_tags.code` (0 unknown) |
-| `MORPH-SEG-CHARSET` (D1) | every `form` character is in the QAC transliteration map; **0 unmapped** (a new char refuses the import) |
+| `MORPH-SEG-CHARSET` (D1) | every `form` character is in the QAC transliteration map; **0 unmapped** (a new char refuses the import); space is allowed only for `multiword` tier |
 | `MORPH-SEG-RENDER-TOTAL` (D1) | every non-empty form → non-empty `form_arabic_normalized`; every empty form → `NULL` (expected 208) |
 | `MORPH-SEG-TIER-VALID` (D1) | every rendered row has a valid `arabic_render_tier`; `arabic_render_source = 'buckwalter-transliteration'` on all rows |
-| `MORPH-SEG-NOT-UTHMANI` (D1, guard) | `form_arabic_normalized` never written from `qpc_glyph`/`text_uthmani`; `form_buckwalter` present on every row |
+| `MORPH-SEG-RENDER-PROVENANCE` (D1, guard) | `form_arabic_normalized` is reproducible from `form_buckwalter` using the approved renderer; `arabic_render_source = buckwalter-transliteration`; equality with `qpc_glyph`/`text_uthmani` is allowed when deterministic and remains informational |
 
 **Warning (informational, never change the verdict):**
 
@@ -134,6 +134,7 @@ segment-rendering columns. EF-tool-generated only; not hand-written; not applied
 | `MORPH-SEG-WORD-AGREEMENT` (D1) | per-word concatenated translit vs `qpcUthmani` exact match ≈ **79.83 %** (encoding-drift canary) |
 | `MORPH-SEG-TIER-DIST` (D1) | tier distribution ≈ 94.2 % / 5.4 % / 0.4 % / 1 |
 | `MORPH-SEG-REVIEW-LIST` (D1) | emit full `review` (134) + `multiword` (1) + empty (208) lists for manual sign-off |
+| `MORPH-MULTI-STEM-LIST` | emit multi-STEM count, POS-pair distribution, examples, and reference the full investigation report when present |
 
 These join the existing `MORPH-*` checks (`MORPH-READABLE-COMPLETE`, `MORPH-MARKERS-EXCLUDED`,
 `MORPH-LOCATION-MATCH`, `MORPH-SEGMENTS-PRESENT`, `MORPH-POS-PRESENT`,

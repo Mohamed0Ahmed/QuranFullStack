@@ -167,7 +167,7 @@ Backend/
   tests/QuranDashboard.Tests/Quran/WordsMorphology/
     MorphologyImportTests.cs          # e2e: stage small fixture → import → assert tables/validation/atomicity
     BuckwalterArabicMapTests.cs       # charset coverage + deterministic mapping (pure unit, no DB)
-    MorphologySegmentRenderingTests.cs# tiers, empties→NULL, never-Uthmani guard, raw form retained
+    MorphologySegmentRenderingTests.cs# tiers, empties→NULL, render provenance, raw form retained
     MorphologyPosResolutionTests.cs   # head_pos/segment pos resolve; POS vocabulary seeded
     MorphologyVerbFeatureTests.cs     # tense/voice consistency; active-by-default (no flag)
     MorphologyDimensionTests.cs       # dedup on Arabic; Buckwalter-only → null link; no dangling

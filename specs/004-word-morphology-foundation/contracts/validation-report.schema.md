@@ -12,14 +12,14 @@ results (FR-030). Written by `MarkdownJsonMorphologyReportWriter` from a `Morpho
 | `MORPH-MARKERS-EXCLUDED` | 0 morphology/segment rows map to a marker | join → `quran_words` on `is_ayah_marker` |
 | `MORPH-LOCATION-MATCH` | every morphology `location` matches `quran_words.location`; 0 unmatched | anti-join both directions |
 | `MORPH-SEGMENTS-PRESENT` | every word ≥ 1 segment; `segment_count` = segment-row count | grouped count vs `segment_count` |
-| `MORPH-POS-PRESENT` | every segment has `pos`; every word resolves exactly one STEM + `head_pos` | null check + STEM count per word |
+| `MORPH-POS-PRESENT` | every segment has `pos`; every word has at least one STEM; `head_pos` = first STEM POS by `segment_number` | null check + first-STEM check per word |
 | `MORPH-POS-RESOLVES` | every `head_pos` + segment `pos` ∈ `quran_pos_tags.code` (0 unknown) | anti-join to `quran_pos_tags` |
-| `MORPH-VERB-FEATURE-CONSISTENCY` | verbs: exactly one tense + non-null voice; non-verbs: null verb fields | grouped predicate checks |
+| `MORPH-VERB-FEATURE-CONSISTENCY` | head verbs: exactly one tense + valid voice; non-verbs: null word-level verb fields | first-STEM predicate checks |
 | `MORPH-DIMENSION-RESOLVES` | every non-null `root_id`/`lemma_id`/`stem_id` resolves (no dangling) | anti-join to each dimension |
-| `MORPH-SEG-CHARSET` | every `form` character ∈ QAC map; **0 unmapped** | charset scan during assembly (refuse on any) |
+| `MORPH-SEG-CHARSET` | every `form` character ∈ QAC map; **0 unmapped**; space allowed only for `multiword` tier | charset scan during assembly (refuse on any) |
 | `MORPH-SEG-RENDER-TOTAL` | non-empty form → non-empty render; empty form → `NULL` (expected 208 nulls) | null/non-null counts vs form emptiness |
 | `MORPH-SEG-TIER-VALID` | every rendered row has a valid tier; `arabic_render_source` = constant on all rows | enum + constant check |
-| `MORPH-SEG-NOT-UTHMANI` | render never equals/derived from `qpc_glyph`/`text_uthmani`; `form_buckwalter` present everywhere | guard join + null check |
+| `MORPH-SEG-RENDER-PROVENANCE` | rendered rows retain non-empty `form_buckwalter`, source = `buckwalter-transliteration`, and Arabic/tier match deterministic renderer output | recompute from `form_buckwalter` |
 | `MORPH-SOURCE-UNCHANGED` | local source files match `manifest.json` size/`sha256` before & after | digest compare pre/post run |
 
 ## Warning checks (never change the verdict)
@@ -29,6 +29,7 @@ results (FR-030). Written by `MarkdownJsonMorphologyReportWriter` from a `Morpho
 | `MORPH-SEG-WORD-AGREEMENT` | ≈ 79.83 % | per-word translit vs `qpcUthmani` exact-match rate; deviation = encoding-drift canary |
 | `MORPH-SEG-TIER-DIST` | ≈ 94.2 % / 5.4 % / 0.4 % / 1 | render-tier distribution; deviation → investigate |
 | `MORPH-SEG-REVIEW-LIST` | full lists | emit all `review` + `multiword` + empty (208) rows for manual sign-off |
+| `MORPH-MULTI-STEM-LIST` | full multi-STEM summary | emit count, POS-pair distribution, examples, and reference the full multi-STEM report when available |
 | `MORPH-DIM-COUNTS` | report actual | distinct root/lemma/stem counts (derived, never hardcoded) |
 
 ## JSON report shape
@@ -51,7 +52,7 @@ results (FR-030). Written by `MarkdownJsonMorphologyReportWriter` from a `Morpho
     "renderTierCounts": { "clean": 0, "quranic_marks": 0, "review": 0, "multiword": 1 }
   },
   "checks": [
-    { "id": "MORPH-SEG-CHARSET", "severity": "hard", "expected": "0 unmapped", "observed": "0 unmapped", "passed": true }
+    { "id": "MORPH-SEG-CHARSET", "severity": "hard", "expected": "0 unmapped characters; space allowed only for multiword-tier forms", "observed": "0 unmapped", "passed": true }
   ],
   "warnings": [
     "MORPH-SEG-WORD-AGREEMENT: whole-word agreement ≈ 79.83% (informational)."

@@ -49,7 +49,7 @@ Word-level head morphology + dimension links + derived verb/case fields. Primary
 |---|---|---|---|
 | `quran_word_id` | `int` | NO | **PK + FK** → `quran_words.id`; **UNIQUE**; 1:1 with readable words |
 | `location` | `text` | NO | `"s:a:w"` (= `quran_words.location` = `qpcLocation`); provenance/join audit |
-| `head_pos` | `text` | NO | POS of the `kind = 'STEM'` segment; **FK** → `quran_pos_tags.code` |
+| `head_pos` | `text` | NO | POS of the first `kind = 'STEM'` segment by `segment_number`; operational morphology summary, **FK** → `quran_pos_tags.code` |
 | `segment_count` | `smallint` | NO | ≥ 1; equals the number of segment rows |
 | `root_id` | `int` | YES | **FK** → `quran_roots.id`; null where no QUL Arabic root (incl. Buckwalter-only) |
 | `lemma_id` | `int` | YES | **FK** → `quran_lemmas.id`; null where no QUL Arabic lemma (incl. Buckwalter-only) |
@@ -76,7 +76,7 @@ Full segment fidelity (prefix/stem/suffix), each with its own POS and rendering.
 | `kind` | `text` | NO | `PREFIX` / `STEM` / `SUFFIX` |
 | `pos` | `text` | NO | segment POS code; **FK** → `quran_pos_tags.code` |
 | `form_buckwalter` | `text` | NO | corpus `form` (segment surface, Buckwalter) — **always retained, lossless** |
-| `form_arabic_normalized` | `text` | **YES** | Arabic rendering from Buckwalter; **`NULL`** for empty forms (expected 208); never Uthmani/Mushaf |
+| `form_arabic_normalized` | `text` | **YES** | Arabic rendering from Buckwalter; **`NULL`** for empty forms (expected 208); provenance-flagged and not authoritative Mushaf text |
 | `arabic_render_tier` | `text` | YES | `clean` / `quranic_marks` / `review` / `multiword` |
 | `arabic_render_source` | `text` | NO | constant `buckwalter-transliteration` (provenance flag) |
 | `root_buckwalter` | `text` | YES | corpus `root` (Buckwalter cross-reference) |
@@ -145,8 +145,9 @@ kind = 'STEM'`; `arabic_render_tier` (route `review`/`multiword` rows to curator
    is_ayah_marker}`.
 2. **Assemble per readable word** (join aligned corpus by `location`, `is_ayah_marker = false`):
    map segments (kind/pos/form/features), transliterate each non-empty `form` →
-   `form_arabic_normalized` + tier (`BuckwalterArabicMap` / `SegmentArabicRenderer`), pick the STEM
-   segment's POS as `head_pos`, derive `is_verb`/`verb_tense`/`verb_voice`/`case_feature` (research R7).
+   `form_arabic_normalized` + tier (`BuckwalterArabicMap` / `SegmentArabicRenderer`), pick the first
+   STEM segment's POS as `head_pos`, preserve any additional STEM segments, derive
+   `is_verb`/`verb_tense`/`verb_voice`/`case_feature` from the head STEM (research R7/R8).
 3. **Resolve dimensions** from QUL Arabic values (dedup on Arabic text); set `root_id`/`lemma_id`/
    `stem_id` (NULL when QUL has no Arabic value, even if a Buckwalter value exists — research R5 / Q1);
    compute `words_count`, `distinct_lemmas_count`, and `first_word_order_in_mushaf`.
@@ -171,14 +172,14 @@ Six plain entities in `Domain/Quran/Words/Morphology/`: `WordMorphology`, `WordM
 | `MORPH-MARKERS-EXCLUDED` | hard | 0 morphology/segment rows map to `is_ayah_marker = true` |
 | `MORPH-LOCATION-MATCH` | hard | every morphology `location` matches a `quran_words.location`; 0 unmatched |
 | `MORPH-SEGMENTS-PRESENT` | hard | every word has ≥ 1 segment; `segment_count` = segment-row count |
-| `MORPH-POS-PRESENT` | hard | every segment has a `pos`; every word resolves exactly one STEM + a `head_pos` |
+| `MORPH-POS-PRESENT` | hard | every segment has a `pos`; every word has at least one STEM; `head_pos` equals the first STEM POS by `segment_number` |
 | `MORPH-POS-RESOLVES` | hard | every `head_pos` and segment `pos` resolves to a `quran_pos_tags.code` (0 unknown) |
-| `MORPH-VERB-FEATURE-CONSISTENCY` | hard | verbs have exactly one tense + non-null voice; non-verbs null verb fields |
+| `MORPH-VERB-FEATURE-CONSISTENCY` | hard | head verbs have exactly one tense + valid voice; non-verbs null word-level verb fields |
 | `MORPH-DIMENSION-RESOLVES` | hard | every non-null `root_id`/`lemma_id`/`stem_id` resolves (no dangling) |
-| `MORPH-SEG-CHARSET` | hard | every `form` character is in the QAC map; **0 unmapped** (else refuse) |
+| `MORPH-SEG-CHARSET` | hard | every `form` character is in the QAC map; **0 unmapped** (else refuse); space is allowed only for `multiword` tier |
 | `MORPH-SEG-RENDER-TOTAL` | hard | every non-empty form → non-empty render; every empty form → `NULL` (expected 208) |
 | `MORPH-SEG-TIER-VALID` | hard | every rendered row has a valid tier; `arabic_render_source = 'buckwalter-transliteration'` |
-| `MORPH-SEG-NOT-UTHMANI` | hard (guard) | render never written from `qpc_glyph`/`text_uthmani`; `form_buckwalter` present on every row |
+| `MORPH-SEG-RENDER-PROVENANCE` | hard (guard) | every rendered value is reproducible from `form_buckwalter` via the approved renderer; render source is `buckwalter-transliteration`; equality with Uthmani/QPC is informational |
 | `MORPH-SOURCE-UNCHANGED` | hard | local source files match `manifest.json` size/`sha256` before & after the run |
 | `MORPH-SEG-WORD-AGREEMENT` | warning | per-word translit vs `qpcUthmani` exact match ≈ 79.83 % (encoding-drift canary) |
 | `MORPH-SEG-TIER-DIST` | warning | tier distribution ≈ 94.2 % / 5.4 % / 0.4 % / 1 |

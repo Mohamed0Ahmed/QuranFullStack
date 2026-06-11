@@ -125,9 +125,11 @@ unknown codes at runtime* (would admit unlabelled tags — fail-closed is safer)
 **Decision.** `verb_tense` ← {PERF→past, IMPF→present, IMPV→imperative}; `verb_voice` = `passive` iff the
 corpus marks PASS, otherwise `active` **by documented convention** (no separate inferred flag);
 `case_feature` ← {NOM→nominative, ACC→accusative, GEN→genitive}, else `NULL`. `is_verb = (head_pos = 'V')`.
-Non-verbs carry null verb fields. `MORPH-VERB-FEATURE-CONSISTENCY` enforces: each verb has exactly one
-tense and a non-null voice; no verb carries two tenses; non-verbs have null verb fields. The verbatim
-`features_raw` string is retained per segment so PASS presence/absence can be recomputed later.
+Non-verbs carry null verb fields. `MORPH-VERB-FEATURE-CONSISTENCY` is scoped to the head STEM: if
+`head_pos = 'V'`, the first STEM must have exactly one tense and the stored word-level tense/voice must
+match that head STEM; if `head_pos <> 'V'`, word-level verb fields stay null even when additional
+non-head STEM segments exist. The verbatim `features_raw` string is retained per segment so PASS
+presence/absence can be recomputed later.
 
 **Rationale.** Clarification Q2 (2026-06-10) + planning report §3.2 + FR-016/FR-017: KISS — store
 `active`/`passive` only; the raw FEATURES string preserves the explicit/inferred distinction for anyone
@@ -139,16 +141,20 @@ has a voice"; complicates filters).
 
 ---
 
-## R8. Grain: one row per readable word, keyed to `quran_word_id`; head POS from the STEM segment
+## R8. Grain: one row per readable word, keyed to `quran_word_id`; head POS from the first STEM segment
 
 **Decision.** `quran_word_morphology` PK = `quran_word_id` (FK→`quran_words.id`, 1:1 with readable
 words). The aligned corpus is joined to `quran_words` by `location` (= `qpcLocation`), filtered to
-`is_ayah_marker = false`. `head_pos` is the POS of the single `kind = 'STEM'` segment; `segment_count`
-matches the segment rows. Morphology is **per occurrence**, never keyed to Feature 003 identity links.
+`is_ayah_marker = false`. `head_pos` is the POS of the first `kind = 'STEM'` segment by
+`segment_number`; this is an operational morphology summary, not a full syntactic/iʿrab head claim.
+`segment_count` matches the segment rows, and all additional STEM segments are preserved. Morphology is
+**per occurrence**, never keyed to Feature 003 identity links.
 
-**Rationale.** Planning report §3.1–§3.2 + FR-009–FR-015: case and features vary by context, so the
-grain must be per occurrence. Markers receive no morphology (FR-010). Exactly one STEM resolves the head
-POS (FR-015).
+**Rationale.** Planning report §3.1–§3.2 + FR-009–FR-015 plus the real-source multi-STEM investigation:
+case and features vary by context, so the grain must be per occurrence. Markers receive no morphology
+(FR-010). The real corpus contains 483 fused words with two STEM segments and no words with zero or more
+than two STEM segments; preserving all segments while choosing the first STEM for `head_pos` keeps the
+word-level summary deterministic without discarding source analysis.
 
 **Alternatives rejected.** *Per-identity grain* (loses context-specific case/features). *Including markers*
 (forbidden). *Deriving head POS from a non-STEM segment* (incorrect).
@@ -274,11 +280,11 @@ guarantees losslessness and re-parseability (and supports R7's voice recomputati
 | How to compute | Read JSON → assemble in memory → Npgsql binary `COPY`, one transaction (R1) |
 | Source reads | Per-file readers + manifest verify; local-only `quran-morphology/`; never external path (R2) |
 | Transliteration | Central `BuckwalterArabicMap`; deterministic; `MORPH-SEG-CHARSET` fail-closed (R3) |
-| Segment Arabic | Option B: `form_arabic_normalized` + tier + source; empties→NULL; never Uthmani (R4) |
+| Segment Arabic | Option B: `form_arabic_normalized` + tier + source; empties→NULL; render provenance guard (R4) |
 | Dimensions | Dedup on Arabic text; Buckwalter-only ⇒ null link; Buckwalter kept as cross-ref (R5, Q1) |
 | POS vocabulary | Curated in-code dictionary, importer-seeded; fail-closed resolution (R6) |
 | Verb features | tense/voice/case mapping; active-by-default, no inferred flag (R7, Q2) |
-| Grain | One row per readable word, keyed `quran_word_id`; head POS = STEM segment (R8) |
+| Grain | One row per readable word, keyed `quran_word_id`; head POS = first STEM by `segment_number` (R8) |
 | Trigger | New `import-morphology` verb on the existing console host (R9) |
 | Atomicity & gate | One transaction; validate before commit; rollback on failure (R10) |
 | Validation home | Queries in Infra; constants/records in Abstractions; charset at assembly (R11) |

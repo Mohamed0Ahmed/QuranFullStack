@@ -120,9 +120,9 @@ dotnet test tests/QuranDashboard.Tests
 Integration tests use Testcontainers PostgreSQL (`postgres:16-alpine`) with **synthetic, source-safe**
 single-word fixtures (never real verse passages) to prove per-word morphology, POS resolution, verb
 tense/voice (active-by-default), dimension dedup on Arabic with Buckwalter-only → null link, segment
-rendering (tiers, empties → `NULL`, never-Uthmani guard), refusal/`--force`, atomic rollback on validation
-failure, and that source tables **and** source files are unchanged. The Buckwalter→Arabic map has pure
-unit tests (no DB) for full charset coverage and deterministic mapping.
+rendering (tiers, empties → `NULL`, deterministic render provenance), refusal/`--force`, atomic rollback
+on validation failure, and that source tables **and** source files are unchanged. The Buckwalter→Arabic
+map has pure unit tests (no DB) for full charset coverage and deterministic mapping.
 
 ## What this feature does NOT do
 

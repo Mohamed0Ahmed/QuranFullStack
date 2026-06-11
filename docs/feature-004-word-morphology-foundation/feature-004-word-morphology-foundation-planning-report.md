@@ -257,7 +257,7 @@ The primary read surface for word-detail and filters.
 |---|---|---|---|
 | `quran_word_id` | `int` | NO | **PK + FK** → `quran_words.id`; **UNIQUE**; 1:1 with readable words |
 | `location` | `text` | NO | `"s:a:w"` (= `quran_words.location` = `qpcLocation`) — provenance/join audit |
-| `head_pos` | `text` | NO | POS of the `kind == "STEM"` segment (e.g. `N`,`V`,`PN`,`ADJ`,`PRON`,`P`) |
+| `head_pos` | `text` | NO | POS of the first `kind == "STEM"` segment by `segment_number` (e.g. `N`,`V`,`PN`,`ADJ`,`PRON`,`P`); operational morphology summary, not full iʿrab/syntax |
 | `segment_count` | `smallint` | NO | ≥ 1 |
 | `root_id` | `int` | YES | **FK** → `quran_roots.id`; null where the word has no root (≈ 27k) |
 | `lemma_id` | `int` | YES | **FK** → `quran_lemmas.id`; null allowed |
@@ -584,14 +584,14 @@ the report.** Any hard-check failure ⇒ rollback + `verdict = "fail"` + non-zer
 | `MORPH-MARKERS-EXCLUDED` | zero morphology / segment rows map to `is_ayah_marker = true` |
 | `MORPH-LOCATION-MATCH` | every morphology `location` matches a `quran_words.location`; zero unmatched source locations; join is exact |
 | `MORPH-SEGMENTS-PRESENT` | every morphology word has `segment_count ≥ 1`; every word has ≥ 1 segment row |
-| `MORPH-POS-PRESENT` | every segment has a non-null `pos`; every word resolves a non-null `head_pos` (exactly one STEM segment) |
+| `MORPH-POS-PRESENT` | every segment has a non-null `pos`; every word has at least one STEM; `head_pos` equals the first STEM POS by `segment_number`; additional STEMs are preserved and warned |
 | `MORPH-POS-RESOLVES` *(D2)* | every `head_pos` and every segment `pos` resolves to a known `quran_pos_tags.code` (0 unknown codes) |
-| `MORPH-VERB-FEATURE-CONSISTENCY` | every `is_verb` word has exactly one of `past/present/imperative` and a non-null `verb_voice`; no verb carries two tenses; non-verbs have null verb fields |
+| `MORPH-VERB-FEATURE-CONSISTENCY` | if `head_pos = V`, the head STEM has exactly one of `past/present/imperative` and valid `verb_voice`; non-verbs have null word-level verb fields |
 | `MORPH-DIMENSION-RESOLVES` | every non-null `root_id`/`lemma_id`/`stem_id` resolves to a dimension row (no dangling) |
-| `MORPH-SEG-CHARSET` *(D1)* | every `form` character is in the QAC transliteration map; **0 unmapped** (a new char refuses the import rather than rendering `�`) |
+| `MORPH-SEG-CHARSET` *(D1)* | every `form` character is in the QAC transliteration map; **0 unmapped** (a new char refuses the import rather than rendering `�`); space is allowed only for `multiword` tier |
 | `MORPH-SEG-RENDER-TOTAL` *(D1)* | every **non-empty** form yields a non-empty `form_arabic_normalized`; every **empty** form yields `NULL` (expected 208) |
 | `MORPH-SEG-TIER-VALID` *(D1)* | every rendered row has a valid `arabic_render_tier`; `arabic_render_source = 'buckwalter-transliteration'` for all rows |
-| `MORPH-SEG-NOT-UTHMANI` *(D1, guard)* | `form_arabic_normalized` is never written from `qpc_glyph`/`text_uthmani`; `form_buckwalter` is present on every row |
+| `MORPH-SEG-RENDER-PROVENANCE` *(D1, guard)* | `form_arabic_normalized` is reproducible from `form_buckwalter` using the approved renderer; `arabic_render_source = buckwalter-transliteration`; equality with `qpc_glyph`/`text_uthmani` is allowed when deterministic and remains informational |
 | `MORPH-SOURCE-UNCHANGED` | the **local in-repo** source files (`quran-morphology/`, Git-ignored) match their `manifest.json` size/`sha256` **before and after** the run (importer reads, never writes them); the external research workspace is read-only provenance with no runtime dependency |
 
 ### 6.2 Null-tolerant checks (warnings, never fail)
@@ -606,6 +606,7 @@ the report.** Any hard-check failure ⇒ rollback + `verdict = "fail"` + non-zer
 | `MORPH-SEG-WORD-AGREEMENT` *(D1)* | per-word concatenated transliteration vs `qpcUthmani` exact-match rate ≈ **79.83 %** (encoding-drift canary; deviation → investigate). |
 | `MORPH-SEG-TIER-DIST` *(D1)* | tier distribution ≈ 94.2 % `clean` / 5.4 % `quranic_marks` / 0.4 % `review` / 1 `multiword`; deviation → investigate. |
 | `MORPH-SEG-REVIEW-LIST` *(D1)* | emit the full `review` (T3, 134 forms) + `multiword` (1) + empty (208) lists for manual curator sign-off. |
+| `MORPH-MULTI-STEM-LIST` | emit count, POS-pair distribution, examples, and link/reference to the full multi-STEM investigation report when present. |
 
 ### 6.3 Absolute-count + anchor checks (real-source integration tests + report only)
 
@@ -652,8 +653,8 @@ entities/DTOs, real Postgres (Testcontainers) where persistence is the subject, 
 - **Segment Arabic rendering (D1):** charset covers 100 % of forms (0 unmapped); empty forms →
   `form_arabic_normalized IS NULL`; tier `[Theory]` anchors — `بِسْمِ` segments → `clean`, `هُۥ`
   (`hu,`) → `quranic_marks`, `أَنۢبِـُٔ` (`>an[bi_#u`) → `review`, `إِلْ يَاسِينَ` → `multiword`;
-  concatenated-word agreement ≈ 79.83 %; assert `form_arabic_normalized` never equals `qpc_glyph` and
-  `form_buckwalter` is always present.
+  concatenated-word agreement ≈ 79.83 %; assert render provenance by recomputing from
+  `form_buckwalter`, and allow legitimate equality with `qpc_glyph`/Uthmani as informational.
 - **POS resolution (D2):** every `head_pos` and segment `pos` resolves to a `quran_pos_tags` row;
   `category` ∈ {`noun`,`verb`,`particle`,`other`} for every code; the future-filter queries (all nouns/
   verbs/particles, specific tag, tense, voice, case) return non-empty, marker-free sets on real import.
@@ -721,7 +722,7 @@ entities/DTOs, real Postgres (Testcontainers) where persistence is the subject, 
 3. **Controlled-vocabulary Arabic POS/tense/case labels are in 004** (a fixed lookup, not generated
    prose). Only **generated syntactic إعراب** waits for Feature 005.
 4. **(D1)** Flagged, derived **segment Arabic rendering** (`form_arabic_normalized` + tier + source) —
-   never Uthmani, never Mushaf display (§3.3a). **(D2)** The **`quran_pos_tags` word-type filtering
+   deterministic from Buckwalter with render provenance; not authoritative Mushaf display (§3.3a). **(D2)** The **`quran_pos_tags` word-type filtering
    foundation** (Arabic+English labels, broad category, derived verb/case fields, small enums/value
    objects) — data only, no UI/API. Full record in `feature-004-decisions-addendum.md`.
 

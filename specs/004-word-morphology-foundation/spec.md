@@ -60,7 +60,8 @@ populated tables, with no UI.
    word's root/lemma/stem.
 3. **Given** any morphology record, **When** its segments are read, **Then** there is at least one
    segment, each segment carries its order, kind (prefix/stem/suffix), POS, and raw source form, and
-   exactly one segment is the STEM that determines the word's head POS.
+   at least one segment is a STEM; the first STEM by segment order determines the word's operational
+   head POS, while any additional STEM segments are preserved.
 
 ---
 
@@ -162,8 +163,8 @@ words by POS category, verb tense, verb voice, and grammatical case — all from
   normalized Arabic rendering MUST be **null**, never an empty string and never invented text.
 - **Unknown source character**: if a segment form contains any character outside the known
   transliteration map, the import MUST **refuse** rather than emit a placeholder/replacement glyph.
-- **Word missing its STEM segment or POS**: MUST fail the validation gate (every word must resolve
-  exactly one STEM and a head POS).
+- **Word missing its STEM segment or POS**: MUST fail the validation gate (every word must resolve at
+  least one STEM and a head POS from the first STEM by `segment_number`).
 - **Inconsistent verb features** (a verb with two tenses, a verb missing voice, or a non-verb carrying
   verb fields): MUST fail the validation gate.
 - **Source/manifest mismatch** (missing file, wrong record count, checksum/size drift versus the manifest,
@@ -241,8 +242,9 @@ words by POS category, verb tense, verb voice, and grammatical case — all from
 - **FR-014**: Each `quran_word_morphology_segments` row MUST carry its order within the word, its kind
   (prefix / stem / suffix), its POS, the **raw source form** (`form_buckwalter`, always retained,
   never null for a present segment), and the segment's morphological features (raw and structured).
-- **FR-015**: Each word MUST resolve **exactly one STEM segment**, and the word's `head_pos` MUST be
-  that STEM segment's POS.
+- **FR-015**: Each word MUST resolve **at least one STEM segment**, and the word's `head_pos` MUST be
+  the POS of the first STEM by `segment_number`. Additional STEM segments, when present in fused source
+  forms, MUST be preserved at segment level and reported as informational multi-STEM evidence.
 - **FR-016**: Verb features MUST be internally consistent: a verb MUST have exactly one of
   past/present/imperative tense and a non-null voice; a non-verb MUST have null verb fields. Voice MUST
   be stored as `passive` when the corpus marks PASS and otherwise `active` by **documented convention**;
@@ -296,8 +298,8 @@ words by POS category, verb tense, verb voice, and grammatical case — all from
   - `MORPH-LOCATION-MATCH` — every morphology location matches a `quran_words.location`, with no
     unmatched source locations.
   - `MORPH-SEGMENTS-PRESENT` — every word has at least one segment and a matching segment count.
-  - `MORPH-POS-PRESENT` — every segment has a POS and every word resolves exactly one STEM and a head
-    POS.
+  - `MORPH-POS-PRESENT` — every segment has a POS; every word has at least one STEM; and `head_pos`
+    equals the first STEM POS by `segment_number`.
   - `MORPH-POS-RESOLVES` — every head POS and segment POS resolves to a `quran_pos_tags` code.
   - `MORPH-VERB-FEATURE-CONSISTENCY` — verb tense/voice consistency per FR-016.
   - `MORPH-DIMENSION-RESOLVES` — every non-null root/lemma/stem reference resolves (no dangling).
@@ -305,8 +307,10 @@ words by POS category, verb tense, verb voice, and grammatical case — all from
   - `MORPH-SEG-RENDER-TOTAL` — every non-empty form yields a non-empty rendering; every empty form
     yields null (expected 208 nulls).
   - `MORPH-SEG-TIER-VALID` — every rendered row has a valid tier and the constant render source.
-  - `MORPH-SEG-NOT-UTHMANI` — no rendering is written from `qpc_glyph`/`text_uthmani`; raw form present
-    on every row.
+  - `MORPH-SEG-RENDER-PROVENANCE` — rendered Arabic is reproducible from each row's
+    `form_buckwalter` via the approved renderer, every rendered row retains the raw form and
+    `arabic_render_source = buckwalter-transliteration`, and equality with Uthmani/QPC text is
+    informational rather than a failure.
   - `MORPH-SOURCE-UNCHANGED` — the local source files match their manifest (size/checksum) **before and
     after** the run and are never written.
 - **FR-028**: On any hard-check failure, the import MUST roll back so that **nothing** is written to any

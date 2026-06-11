@@ -231,10 +231,10 @@ Add to the morphology import gate (§ companion planning report uses `MORPH-*`):
 
 | Id | Severity | Assertion |
 |---|---|---|
-| `MORPH-SEG-CHARSET` | **hard** | every `form` character is in the QAC map; **0 unmapped** (else refuse — a new char means the map is stale) |
+| `MORPH-SEG-CHARSET` | **hard** | every `form` character is in the QAC map; **0 unmapped** (else refuse — a new char means the map is stale); space is allowed only for `multiword` tier |
 | `MORPH-SEG-RENDER-TOTAL` | **hard** | every **non-empty** form yields a non-empty `form_arabic_normalized`; every empty form yields `NULL` (expected 208) |
 | `MORPH-SEG-TIER-VALID` | **hard** | every rendered row has a valid `arabic_render_tier`; `arabic_render_source = 'buckwalter-transliteration'` |
-| `MORPH-SEG-NOT-UTHMANI` | **hard (guard)** | the column is never written from `qpc_glyph`/`text_uthmani`; raw `form_buckwalter` is always present |
+| `MORPH-SEG-RENDER-PROVENANCE` | **hard (guard)** | rendered Arabic is reproducible from `form_buckwalter` using the approved renderer; raw `form_buckwalter` and `arabic_render_source = buckwalter-transliteration` are present for rendered rows; equality with Uthmani/QPC is informational |
 | `MORPH-SEG-WORD-AGREEMENT` | warning | per-word concatenated translit vs `qpcUthmani` exact-match rate ≈ **79.83 %**; report deviation (encoding-drift canary) |
 | `MORPH-SEG-TIER-DIST` | warning | tier distribution ≈ 94.2 % / 5.4 % / 0.4 %; deviation → investigate |
 | `MORPH-SEG-REVIEW-LIST` | warning | emit the full T3 (134 forms) + T4 (1) + empty (208) lists for manual sign-off |
@@ -300,8 +300,9 @@ a ◌َ  u ◌ُ  i ◌ِ  F ◌ً  N ◌ٌ  K ◌ٍ        ~ ◌ّ  o ◌ْ  ` 
    always kept, so the rendering is fully reproducible and reversible.
 3. **The only real risk is misrepresentation — and B closes it.** The name `form_arabic_normalized`, the
    `arabic_render_source = buckwalter-transliteration` flag, the `arabic_render_tier`, and the
-   `MORPH-SEG-NOT-UTHMANI` guard make it impossible to honestly mistake this for Uthmani. The ~80 %
-   exact-match figure and the 20 % systematic divergence are documented, not hidden.
+   `MORPH-SEG-RENDER-PROVENANCE` guard make it impossible to honestly mistake this for Uthmani. The ~80 %
+   exact-match figure and the 20 % systematic divergence are documented, not hidden; legitimate exact
+   equality is allowed when it is the deterministic Buckwalter rendering.
 4. **It serves the Arabic-first product** without forcing curators to read Buckwalter, while honestly
    badging the ~5.4 % mark-bearing and ~0.4 % fragile rows.
 
