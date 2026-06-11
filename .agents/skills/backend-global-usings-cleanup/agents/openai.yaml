@@ -1,0 +1,4 @@
+interface:
+  display_name: "Backend Global Usings Cleanup"
+  short_description: "Consolidate backend C# global usings"
+  default_prompt: "Use $backend-global-usings-cleanup to tidy repeated backend C# using directives safely."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Backend Structure Review"
+  short_description: "Review backend structure and layers"
+  default_prompt: "Use $backend-structure-review to review backend file placement, layering, and size."
