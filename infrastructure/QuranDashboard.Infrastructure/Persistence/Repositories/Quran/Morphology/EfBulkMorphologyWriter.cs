@@ -14,12 +14,16 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
     private const string PassVerdict = "pass";
     private const string FailVerdict = "fail";
     private const string HardSeverity = "hard";
+    private const string MultiStemReportPath =
+        "resources/report/words-morphology/multi-stem-words-report.md";
 
     private readonly QuranDashboardDbContext dbContext;
+    private readonly SegmentArabicRenderer renderer;
 
-    public EfBulkMorphologyWriter(QuranDashboardDbContext dbContext)
+    public EfBulkMorphologyWriter(QuranDashboardDbContext dbContext, SegmentArabicRenderer renderer)
     {
         this.dbContext = dbContext;
+        this.renderer = renderer;
     }
 
     public async Task<bool> AnyTargetTableHasDataAsync(CancellationToken ct)
@@ -96,6 +100,7 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
                 transaction,
                 expectedReadableWords,
                 source,
+                renderer,
                 ct);
             checks.Add(posResolvesCheck);
 
@@ -350,12 +355,13 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
         NpgsqlTransaction transaction,
         int expectedReadableWords,
         MorphologySourceData source,
+        SegmentArabicRenderer renderer,
         CancellationToken ct)
     {
         var checks = new List<MorphologyCheckResult>();
 
         await AddUs1ChecksAsync(checks, connection, transaction, expectedReadableWords, ct);
-        await AddUs3ChecksAsync(checks, connection, transaction, source, ct);
+        await AddUs3ChecksAsync(checks, connection, transaction, source, renderer, ct);
 
         return checks;
     }
@@ -419,7 +425,7 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
         checks.Add(new MorphologyCheckResult(
             "MORPH-POS-PRESENT",
             HardSeverity,
-            "one STEM per word; head_pos = STEM pos",
+            "at least one STEM per word; head_pos = first STEM pos by segment_number",
             posViolations == 0 ? "0 violations" : $"{FormatInt(posViolations)} violation(s)",
             posViolations == 0));
 
@@ -428,7 +434,7 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
         checks.Add(new MorphologyCheckResult(
             "MORPH-VERB-FEATURE-CONSISTENCY",
             HardSeverity,
-            "verbs: one tense + voice; non-verbs: null verb fields",
+            "head verbs: exactly one head-STEM tense + valid voice; non-verb heads: null word-level verb fields",
             verbViolations == 0 ? "0 violations" : $"{FormatInt(verbViolations)} violation(s)",
             verbViolations == 0));
     }
@@ -438,13 +444,14 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
         NpgsqlConnection connection,
         NpgsqlTransaction transaction,
         MorphologySourceData source,
+        SegmentArabicRenderer renderer,
         CancellationToken ct)
     {
         var charsetViolations = source.CharsetWarnings.Count;
         checks.Add(new MorphologyCheckResult(
             "MORPH-SEG-CHARSET",
             HardSeverity,
-            "0 unmapped",
+            "0 unmapped characters; space allowed only for multiword-tier forms",
             $"{FormatInt(charsetViolations)} unmapped",
             charsetViolations == 0));
 
@@ -470,16 +477,16 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
             $"tier_violations={FormatInt(tierViolations)}, source_violations={FormatInt(sourceViolations)}",
             tierViolations == 0 && sourceViolations == 0));
 
-        var uthmaniViolations = await ExecuteScalarIntAsync(
-            connection, transaction, MorphologySql.CheckSegNotUthmani, ct);
-        var missingBuckwalter = await ExecuteScalarIntAsync(
-            connection, transaction, MorphologySql.CheckSegBuckwalterPresent, ct);
+        var provenance = await CheckRenderProvenanceAsync(connection, transaction, renderer, ct);
         checks.Add(new MorphologyCheckResult(
-            "MORPH-SEG-NOT-UTHMANI",
+            "MORPH-SEG-RENDER-PROVENANCE",
             HardSeverity,
-            "render never equals text_uthmani/qpc_glyph; form_buckwalter always present",
-            $"uthmani_match={FormatInt(uthmaniViolations)}, missing_buckwalter={FormatInt(missingBuckwalter)}",
-            uthmaniViolations == 0 && missingBuckwalter == 0));
+            "rendered rows retain non-empty form_buckwalter; source = buckwalter-transliteration; Arabic and tier recompute from each row's own form_buckwalter; deterministic Uthmani/QPC equality is allowed",
+            $"missing_buckwalter={FormatInt(provenance.MissingBuckwalter)}, " +
+            $"source_violations={FormatInt(provenance.SourceViolations)}, " +
+            $"render_mismatches={FormatInt(provenance.RenderMismatches)}, " +
+            $"tier_mismatches={FormatInt(provenance.TierMismatches)}",
+            provenance.Passed));
 
         var danglingRoots = await ExecuteScalarIntAsync(
             connection, transaction, MorphologySql.CheckDimensionResolvesRoots, ct);
@@ -629,6 +636,12 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
         warnings.Add(FormatListWarning("MORPH-SEG-MULTIWORD-LIST", "multiword form(s)", stats.MultiwordForms));
         warnings.Add(FormatListWarning("MORPH-SEG-EMPTY-LIST", "empty-form segment(s) → NULL", stats.EmptyFormLocations));
 
+        var multiStemWarning = BuildMultiStemWarning(source);
+        if (multiStemWarning is not null)
+        {
+            warnings.Add(multiStemWarning);
+        }
+
         if (source.CharsetWarnings.Count > 0)
         {
             warnings.AddRange(source.CharsetWarnings);
@@ -641,6 +654,109 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
         items.Count == 0
             ? $"{id}: 0 {label}."
             : $"{id}: {items.Count} {label}: {string.Join(", ", items)}.";
+
+    private static string? BuildMultiStemWarning(MorphologySourceData source)
+    {
+        var multiStemWords = source.Words
+            .Select(word => new
+            {
+                Word = word,
+                Stems = word.Segments
+                    .Where(segment => string.Equals(segment.Kind, "STEM", StringComparison.Ordinal))
+                    .OrderBy(segment => segment.SegmentNumber)
+                    .ToList()
+            })
+            .Where(item => item.Stems.Count > 1)
+            .ToList();
+
+        if (multiStemWords.Count == 0)
+        {
+            return null;
+        }
+
+        var pairSummaries = multiStemWords
+            .GroupBy(item => string.Join("+", item.Stems.Select(stem => stem.Pos)), StringComparer.Ordinal)
+            .Select(group => new
+            {
+                Pair = group.Key,
+                Count = group.Count(),
+                Example = group.OrderBy(item => item.Word.Location, StringComparer.Ordinal).First()
+            })
+            .OrderByDescending(item => item.Count)
+            .ThenBy(item => item.Pair, StringComparer.Ordinal)
+            .ToList();
+
+        var pairs = string.Join(", ", pairSummaries.Select(item => $"{item.Pair}={item.Count}"));
+        var examples = string.Join("; ", pairSummaries.Take(5).Select(item =>
+            $"{item.Pair} e.g. {item.Example.Word.Location}"));
+
+        return $"MORPH-MULTI-STEM-LIST: {multiStemWords.Count} multi-STEM word(s); " +
+               $"POS pairs: {pairs}; representative examples: {examples}; " +
+               $"full investigation report: {MultiStemReportPath}.";
+    }
+
+    private static async Task<RenderProvenanceCounts> CheckRenderProvenanceAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        SegmentArabicRenderer renderer,
+        CancellationToken ct)
+    {
+        var missingBuckwalter = 0;
+        var sourceViolations = 0;
+        var renderMismatches = 0;
+        var tierMismatches = 0;
+
+        await using var command = new NpgsqlCommand(
+            MorphologySql.SelectSegmentsForRenderProvenance,
+            connection,
+            transaction)
+        {
+            CommandTimeout = CommandTimeoutSeconds
+        };
+
+        await using var reader = await command.ExecuteReaderAsync(ct);
+        while (await reader.ReadAsync(ct))
+        {
+            var formBuckwalter = reader.IsDBNull(1) ? null : reader.GetString(1);
+            var formArabicNormalized = reader.IsDBNull(2) ? null : reader.GetString(2);
+            var arabicRenderTier = reader.IsDBNull(3) ? null : reader.GetString(3);
+            var arabicRenderSource = reader.IsDBNull(4) ? null : reader.GetString(4);
+
+            if (formArabicNormalized is not null && string.IsNullOrWhiteSpace(formBuckwalter))
+            {
+                missingBuckwalter++;
+                continue;
+            }
+
+            if (string.IsNullOrEmpty(formBuckwalter))
+            {
+                continue;
+            }
+
+            var (expectedArabic, expectedTier) = renderer.Render(formBuckwalter);
+
+            if (!string.Equals(arabicRenderSource, MorphologyInvariants.RenderSource, StringComparison.Ordinal))
+            {
+                sourceViolations++;
+            }
+
+            if (!string.Equals(formArabicNormalized, expectedArabic, StringComparison.Ordinal))
+            {
+                renderMismatches++;
+            }
+
+            if (!string.Equals(arabicRenderTier, expectedTier, StringComparison.Ordinal))
+            {
+                tierMismatches++;
+            }
+        }
+
+        return new RenderProvenanceCounts(
+            missingBuckwalter,
+            sourceViolations,
+            renderMismatches,
+            tierMismatches);
+    }
 
     private static string FormatInt(int value) =>
         value.ToString(CultureInfo.InvariantCulture);
@@ -666,5 +782,18 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
         await using var command = new NpgsqlCommand(sql, connection, transaction);
         command.CommandTimeout = CommandTimeoutSeconds;
         await command.ExecuteNonQueryAsync(ct);
+    }
+
+    private sealed record RenderProvenanceCounts(
+        int MissingBuckwalter,
+        int SourceViolations,
+        int RenderMismatches,
+        int TierMismatches)
+    {
+        public bool Passed =>
+            MissingBuckwalter == 0
+            && SourceViolations == 0
+            && RenderMismatches == 0
+            && TierMismatches == 0;
     }
 }

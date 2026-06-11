@@ -41,6 +41,19 @@ public static class PosTagSeed
         new PosTag { Code = "TIM", ArabicLabel = "ظرف زمان", EnglishLabel = "Temporal Adverb", Category = "noun", SortOrder = 33 },
         new PosTag { Code = "ABR", ArabicLabel = "مختصر", EnglishLabel = "Abbreviation", Category = "other", SortOrder = 34 },
         new PosTag { Code = "DET", ArabicLabel = "أداة تعريف", EnglishLabel = "Determiner", Category = "particle", SortOrder = 35, Description = "Definite article prefix (ال)" },
-        new PosTag { Code = "SUB", ArabicLabel = "اسم مبهم", EnglishLabel = "Substantive", Category = "noun", SortOrder = 36, Description = "Vague/ambiguous noun (e.g. ما)" }
+        new PosTag { Code = "SUB", ArabicLabel = "اسم مبهم", EnglishLabel = "Substantive", Category = "noun", SortOrder = 36, Description = "Vague/ambiguous noun (e.g. ما)" },
+        new PosTag { Code = "IMPN", ArabicLabel = "اسم فعل أمر", EnglishLabel = "Imperative Verbal Noun", Category = "noun", SortOrder = 37, Description = "Noun acting as an imperative verb" },
+        new PosTag { Code = "AVR", ArabicLabel = "حرف ردع", EnglishLabel = "Aversion", Category = "particle", SortOrder = 38, Description = "Aversion particle (e.g. كلا)" },
+        new PosTag { Code = "CERT", ArabicLabel = "حرف تحقيق", EnglishLabel = "Certainty", Category = "particle", SortOrder = 39, Description = "Particle of certainty (e.g. قد)" },
+        new PosTag { Code = "CIRC", ArabicLabel = "واو الحال", EnglishLabel = "Circumstantial", Category = "particle", SortOrder = 40, Description = "Circumstantial particle" },
+        new PosTag { Code = "EQ", ArabicLabel = "حرف تسوية", EnglishLabel = "Equalization", Category = "particle", SortOrder = 41, Description = "Equalization particle (e.g. سواء)" },
+        new PosTag { Code = "EXH", ArabicLabel = "حرف تحضيض", EnglishLabel = "Exhortation", Category = "particle", SortOrder = 42, Description = "Exhortation particle" },
+        new PosTag { Code = "EXP", ArabicLabel = "حرف استثناء", EnglishLabel = "Exceptive", Category = "particle", SortOrder = 43, Description = "Exceptive particle" },
+        new PosTag { Code = "INC", ArabicLabel = "حرف ابتداء", EnglishLabel = "Inceptive", Category = "particle", SortOrder = 44, Description = "Inceptive particle" },
+        new PosTag { Code = "INT", ArabicLabel = "حرف تفسير", EnglishLabel = "Interpretation", Category = "particle", SortOrder = 45, Description = "Particle of interpretation (e.g. أي المفسِّرة)" },
+        new PosTag { Code = "RET", ArabicLabel = "حرف إضراب", EnglishLabel = "Retraction", Category = "particle", SortOrder = 46, Description = "Retraction particle (e.g. بل)" },
+        new PosTag { Code = "RSLT", ArabicLabel = "فاء الجزاء", EnglishLabel = "Result", Category = "particle", SortOrder = 47, Description = "Result particle (e.g. فاء الجزاء)" },
+        new PosTag { Code = "SUP", ArabicLabel = "حرف زائد", EnglishLabel = "Supplemental", Category = "particle", SortOrder = 48, Description = "Supplemental/extra particle" },
+        new PosTag { Code = "SUR", ArabicLabel = "إذا الفجائية", EnglishLabel = "Surprise", Category = "particle", SortOrder = 49, Description = "Surprise particle (e.g. إذا الفجائية)" }
     ];
 }

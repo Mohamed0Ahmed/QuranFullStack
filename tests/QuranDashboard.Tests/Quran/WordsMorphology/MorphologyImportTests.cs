@@ -42,7 +42,7 @@ public sealed class MorphologyImportTests(MorphologyImportTestFixture fixture)
 
             segments.Should().HaveCount(row.SegmentCount);
 
-            var stemSegment = segments.Single(segment => segment.Kind == "STEM");
+            var stemSegment = segments.First(segment => segment.Kind == "STEM");
             row.HeadPos.Should().Be(stemSegment.Pos);
         }
 

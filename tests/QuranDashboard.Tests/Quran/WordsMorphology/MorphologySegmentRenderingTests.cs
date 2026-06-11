@@ -1,5 +1,6 @@
 using QuranDashboard.Application.Abstractions.Quran.Words.Morphology;
 using QuranDashboard.Application.Quran.Words.ImportMorphology;
+using QuranDashboard.Infrastructure.Files.Quran.Morphology;
 
 namespace QuranDashboard.Tests.Quran.WordsMorphology;
 
@@ -48,28 +49,134 @@ public sealed class MorphologySegmentRenderingTests(MorphologyImportTestFixture 
     }
 
     [Fact]
-    public async Task Not_uthmani_guard_no_render_equals_uthmani_or_qpc_glyph()
+    public async Task Render_equal_to_uthmani_passes_when_it_is_deterministic_from_buckwalter()
     {
         await fixture.SeedSyntheticWordsAsync();
         var sourcePath = await fixture.WriteSyntheticSourceFolderAsync();
         var readableCount = fixture.GetReadableWordCount();
 
-        await fixture.RunImportAsync(sourcePath, expectedReadableWords: readableCount);
+        var rendered = new BuckwalterArabicMap().Transliterate("l~Ahi").Arabic;
 
         await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
-        var joins = await dbContext.Database.SqlQueryRaw<int>(
-            """
-            SELECT count(*)::int AS "Value"
-            FROM quran_word_morphology_segments s
-            JOIN quran_words w ON w.id = s.quran_word_id
-            WHERE s.form_arabic_normalized IS NOT NULL
-              AND (s.form_arabic_normalized = w.text_uthmani
-                   OR s.form_arabic_normalized = w.qpc_glyph)
-            """).FirstAsync();
+        var word = await dbContext.QuranWords.SingleAsync(w => w.Location == "1:1:2");
+        word.TextUthmani = rendered;
+        word.QpcGlyph = rendered;
+        await dbContext.SaveChangesAsync();
 
-        joins.Should().Be(0, "no rendered segment should equal text_uthmani or qpc_glyph");
+        var result = await fixture.RunImportAsync(sourcePath, expectedReadableWords: readableCount);
+
+        result.ExitCode.Should().Be(ImportMorphologyResult.SuccessExitCode);
+
+        var check = await ReadReportCheckAsync(result.ReportOutDir!, "MORPH-SEG-RENDER-PROVENANCE");
+        check.Should().NotBeNull();
+        check!.Passed.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Copied_or_mismatching_render_fails_render_provenance()
+    {
+        await fixture.SeedSyntheticWordsAsync();
+        var sourcePath = await fixture.WriteSyntheticSourceFolderAsync();
+        var result = await RunWithMutatedSourceAsync(sourcePath, RenderMutation.WrongArabic);
+
+        result.ExitCode.Should().Be(ImportMorphologyResult.FailureExitCode);
+
+        var check = await ReadReportCheckAsync(result.ReportOutDir!, "MORPH-SEG-RENDER-PROVENANCE");
+        check.Should().NotBeNull();
+        check!.Passed.Should().BeFalse();
+        check.Observed.Should().Contain("render_mismatches=1");
+    }
+
+    [Fact]
+    public async Task Missing_buckwalter_form_fails_render_provenance()
+    {
+        await fixture.SeedSyntheticWordsAsync();
+        var sourcePath = await fixture.WriteSyntheticSourceFolderAsync();
+        var result = await RunWithMutatedSourceAsync(sourcePath, RenderMutation.MissingBuckwalter);
+
+        result.ExitCode.Should().Be(ImportMorphologyResult.FailureExitCode);
+
+        var check = await ReadReportCheckAsync(result.ReportOutDir!, "MORPH-SEG-RENDER-PROVENANCE");
+        check.Should().NotBeNull();
+        check!.Passed.Should().BeFalse();
+        check.Observed.Should().Contain("missing_buckwalter=1");
+    }
+
+    [Fact]
+    public async Task Wrong_render_source_fails_render_provenance()
+    {
+        await fixture.SeedSyntheticWordsAsync();
+        var sourcePath = await fixture.WriteSyntheticSourceFolderAsync();
+        var result = await RunWithMutatedSourceAsync(sourcePath, RenderMutation.WrongSource);
+
+        result.ExitCode.Should().Be(ImportMorphologyResult.FailureExitCode);
+
+        var check = await ReadReportCheckAsync(result.ReportOutDir!, "MORPH-SEG-RENDER-PROVENANCE");
+        check.Should().NotBeNull();
+        check!.Passed.Should().BeFalse();
+        check.Observed.Should().Contain("source_violations=1");
+    }
+
+    [Fact]
+    public async Task Multiword_tier_space_does_not_fail_charset()
+    {
+        await fixture.SeedSyntheticWordsAsync();
+        var sourcePath = await fixture.WriteSyntheticSourceFolderAsync();
+        await fixture.PatchCorpusSegmentsAsync(
+            sourcePath,
+            "1:1:3",
+            [
+                new
+                {
+                    segmentNumber = (short)1,
+                    kind = "STEM",
+                    pos = "PN",
+                    form = "<ilo yaAsiyna",
+                    features = "STEM|POS:PN|LEM:<iloyaAs|GEN",
+                    root = (string?)null,
+                    lemma = "<iloyaAs"
+                }
+            ]);
+
+        var result = await fixture.RunImportAsync(sourcePath, expectedReadableWords: fixture.GetReadableWordCount());
+
+        result.ExitCode.Should().Be(ImportMorphologyResult.SuccessExitCode);
+
+        var charset = await ReadReportCheckAsync(result.ReportOutDir!, "MORPH-SEG-CHARSET");
+        charset.Should().NotBeNull();
+        charset!.Passed.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Non_space_invalid_character_fails_charset()
+    {
+        await fixture.SeedSyntheticWordsAsync();
+        var sourcePath = await fixture.WriteSyntheticSourceFolderAsync();
+        await fixture.PatchCorpusSegmentsAsync(
+            sourcePath,
+            "1:1:3",
+            [
+                new
+                {
+                    segmentNumber = (short)1,
+                    kind = "STEM",
+                    pos = "PN",
+                    form = "ba€b",
+                    features = "STEM|POS:PN|GEN",
+                    root = (string?)null,
+                    lemma = (string?)null
+                }
+            ]);
+
+        var result = await fixture.RunImportAsync(sourcePath, expectedReadableWords: fixture.GetReadableWordCount());
+
+        result.ExitCode.Should().Be(ImportMorphologyResult.FailureExitCode);
+
+        var charset = await ReadReportCheckAsync(result.ReportOutDir!, "MORPH-SEG-CHARSET");
+        charset.Should().NotBeNull();
+        charset!.Passed.Should().BeFalse();
     }
 
     [Fact]
@@ -172,4 +279,82 @@ public sealed class MorphologySegmentRenderingTests(MorphologyImportTestFixture 
             """).FirstAsync();
         nonEmptyNullRender.Should().Be(0, "all non-empty forms should have a rendered Arabic value");
     }
+
+    private async Task<ImportMorphologyResult> RunWithMutatedSourceAsync(
+        string sourcePath,
+        RenderMutation mutation)
+    {
+        await using var scope = fixture.CreateServiceProvider(services =>
+        {
+            services.AddScoped<IMorphologyImportSource>(sp =>
+                new MutatingMorphologyImportSource(
+                    sp.GetRequiredService<MorphologyImportSource>(),
+                    mutation));
+        }).CreateAsyncScope();
+
+        var handler = scope.ServiceProvider.GetRequiredService<ImportMorphologyHandler>();
+        return await handler.HandleAsync(
+            new ImportMorphologyCommand(sourcePath, false, fixture.GetReadableWordCount()),
+            CancellationToken.None);
+    }
+
+    private static async Task<ReportCheck?> ReadReportCheckAsync(string reportDir, string checkId)
+    {
+        var jsonPath = Path.Combine(reportDir, "morphology-import-report.json");
+        File.Exists(jsonPath).Should().BeTrue();
+
+        await using var stream = File.OpenRead(jsonPath);
+        var report = await System.Text.Json.JsonSerializer.DeserializeAsync<ReportDocument>(
+            stream,
+            new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+
+        return report?.Checks.FirstOrDefault(check => check.Id == checkId);
+    }
+
+    private enum RenderMutation
+    {
+        WrongArabic,
+        MissingBuckwalter,
+        WrongSource
+    }
+
+    private sealed class MutatingMorphologyImportSource(
+        MorphologyImportSource inner,
+        RenderMutation mutation) : IMorphologyImportSource
+    {
+        public async Task<MorphologySourceData> LoadAsync(string sourcePath, CancellationToken ct)
+        {
+            var source = await inner.LoadAsync(sourcePath, ct);
+            var firstWord = source.Words[0];
+            var firstSegment = firstWord.Segments[0];
+            var mutatedSegment = mutation switch
+            {
+                RenderMutation.WrongArabic => firstSegment with { FormArabicNormalized = "نسخ" },
+                RenderMutation.MissingBuckwalter => firstSegment with { FormBuckwalter = "" },
+                RenderMutation.WrongSource => firstSegment with { RenderSource = "qpc-glyph" },
+                _ => firstSegment
+            };
+
+            var segments = firstWord.Segments
+                .Select((segment, index) => index == 0 ? mutatedSegment : segment)
+                .ToList();
+            var words = source.Words
+                .Select((word, index) => index == 0 ? word with { Segments = segments } : word)
+                .ToList();
+
+            return source with { Words = words };
+        }
+
+        public Task<bool> SourceUnchangedAsync(string sourcePath, CancellationToken ct) =>
+            inner.SourceUnchangedAsync(sourcePath, ct);
+    }
+
+    private sealed record ReportDocument(IReadOnlyList<ReportCheck> Checks);
+
+    private sealed record ReportCheck(
+        string Id,
+        string Severity,
+        string Expected,
+        string Observed,
+        bool Passed);
 }

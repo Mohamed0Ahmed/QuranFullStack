@@ -160,4 +160,56 @@ public sealed class MorphologyAssemblerTests
 
         result.Words.Single().Segments.Single().RenderTier.Should().Be(expectedTier);
     }
+
+    [Fact]
+    public void Multiword_form_space_is_not_flagged_but_out_of_map_chars_still_are()
+    {
+        var corpus = new List<AlignedCorpusWord>
+        {
+            // "<ilo yaAsiyna" (إل ياسين) is the single multiword form; the space is its word
+            // separator (renderer classifies it as the 'multiword' tier), not an unmapped glyph.
+            StemWord("1:1:1", "X1", "<ilo yaAsiyna"),
+            // '€' is genuinely outside the Buckwalter map and must still be reported.
+            StemWord("1:1:2", "X2", "ba€b"),
+        };
+        var ids = new Dictionary<string, int> { ["1:1:1"] = 1, ["1:1:2"] = 2 };
+        var empty = new Dictionary<string, string>();
+
+        var result = CreateAssembler().Assemble(corpus, ids, empty, empty, empty);
+
+        result.CharsetWarnings.Should().NotContain(
+            w => w.Contains("yaAsiyna"),
+            "a space inside a multiword-tier form is the legitimate separator, not an unmapped character");
+        result.CharsetWarnings.Should().Contain(
+            w => w.Contains("€"),
+            "characters genuinely outside the Buckwalter map must still be reported");
+    }
+
+    [Theory]
+    // The real QAC corpus encodes STEM features as pipe-delimited, prefixed tokens
+    // (e.g. "POS:V", "LEM:..", "ROOT:..") rather than the space-separated bare tokens the
+    // synthetic fixtures use. Verb tense/voice and grammatical case must still resolve.
+    [InlineData("V", "STEM|POS:V|PERF|LEM:kataba|ROOT:ktb", "past", "active", null)]
+    [InlineData("V", "STEM|POS:V|IMPF|LEM:Eabada|ROOT:Ebd|1P", "present", "active", null)] // observed 1:5:2
+    [InlineData("V", "STEM|POS:V|IMPV|LEM:hadaY|ROOT:hdy", "imperative", "active", null)]
+    [InlineData("V", "STEM|POS:V|PERF|PASS|LEM:xuliqa|ROOT:xlq", "past", "passive", null)]
+    [InlineData("N", "STEM|POS:N|LEM:{som|ROOT:smw|M|GEN", null, null, "genitive")]         // observed 1:1:1:2
+    [InlineData("N", "STEM|POS:N|ROOT:rbb|NOM", null, null, "nominative")]
+    [InlineData("N", "STEM|POS:N|ROOT:Hkm|ACC", null, null, "accusative")]
+    public void Verb_and_case_features_parse_from_pipe_delimited_corpus_format(
+        string pos, string features, string? expectedTense, string? expectedVoice, string? expectedCase)
+    {
+        var corpus = new List<AlignedCorpusWord>
+        {
+            new("1:1:1", "X1", [new AlignedCorpusSegment(1, "STEM", pos, "kataba", features, null, null)]),
+        };
+        var ids = new Dictionary<string, int> { ["1:1:1"] = 1 };
+        var empty = new Dictionary<string, string>();
+
+        var word = CreateAssembler().Assemble(corpus, ids, empty, empty, empty).Words.Single();
+
+        word.VerbTense.Should().Be(expectedTense);
+        word.VerbVoice.Should().Be(expectedVoice);
+        word.CaseFeature.Should().Be(expectedCase);
+    }
 }

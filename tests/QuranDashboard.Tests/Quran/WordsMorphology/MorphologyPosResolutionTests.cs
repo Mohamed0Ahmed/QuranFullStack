@@ -223,6 +223,28 @@ public sealed class MorphologyPosResolutionTests(MorphologyImportTestFixture fix
         }
     }
 
+    [Fact]
+    public void PosTagSeed_covers_all_observed_corpus_pos_codes()
+    {
+        var seedCodes = PosTagSeed.GetAll().Select(t => t.Code).ToHashSet();
+
+        // The full distinct set of segment POS codes the real QAC/QPC-aligned corpus emits (observed
+        // from the packaged source). The fail-closed MORPH-POS-RESOLVES gate refuses the import unless
+        // every one of these resolves to a quran_pos_tags.code.
+        var corpusPosCodes = new[]
+        {
+            "ACC", "ADJ", "AMD", "ANS", "AVR", "CAUS", "CERT", "CIRC", "COM", "COND", "CONJ", "DEM",
+            "DET", "EMPH", "EQ", "EXH", "EXL", "EXP", "FUT", "IMPN", "IMPV", "INC", "INL", "INT",
+            "INTG", "LOC", "N", "NEG", "P", "PN", "PREV", "PRO", "PRON", "PRP", "REL", "REM", "RES",
+            "RET", "RSLT", "SUB", "SUP", "SUR", "T", "V", "VOC",
+        };
+
+        var missing = corpusPosCodes.Where(code => !seedCodes.Contains(code)).ToList();
+
+        missing.Should().BeEmpty(
+            "PosTagSeed must cover every POS code the corpus emits, or the import fails closed");
+    }
+
     private static async Task<ReportCheck?> ReadHardCheckFromReportAsync(string reportDir, string checkId)
     {
         var jsonPath = Path.Combine(reportDir, "morphology-import-report.json");

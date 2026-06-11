@@ -66,33 +66,65 @@ internal static class MorphologySql
         FROM (
           SELECT m.quran_word_id
           FROM quran_word_morphology m
-          LEFT JOIN quran_word_morphology_segments s
-            ON s.quran_word_id = m.quran_word_id AND s.kind = 'STEM'
-          GROUP BY m.quran_word_id, m.head_pos
-          HAVING count(s.id) <> 1
-             OR max(s.pos) IS DISTINCT FROM m.head_pos
+          WHERE m.head_pos IS NULL
+             OR btrim(m.head_pos) = ''
+             OR NOT EXISTS (
+                SELECT 1
+                FROM quran_word_morphology_segments s
+                WHERE s.quran_word_id = m.quran_word_id
+                  AND s.kind = 'STEM'
+             )
+             OR m.head_pos IS DISTINCT FROM (
+                SELECT s.pos
+                FROM quran_word_morphology_segments s
+                WHERE s.quran_word_id = m.quran_word_id
+                  AND s.kind = 'STEM'
+                ORDER BY s.segment_number
+                LIMIT 1
+             )
         ) violations
         """;
 
     internal const string CheckVerbFeatureViolations = """
         SELECT count(*)::int
         FROM quran_word_morphology m
-        LEFT JOIN quran_word_morphology_segments s
-          ON s.quran_word_id = m.quran_word_id AND s.kind = 'STEM'
+        LEFT JOIN LATERAL (
+          SELECT
+            s.features_json,
+            (
+              SELECT count(*)::int
+              FROM jsonb_array_elements_text(COALESCE(s.features_json, '[]'::jsonb)) AS token(value)
+              WHERE token.value IN ('PERF', 'IMPF', 'IMPV')
+            ) AS tense_count,
+            CASE
+              WHEN COALESCE(s.features_json, '[]'::jsonb) ? 'PERF' THEN 'past'
+              WHEN COALESCE(s.features_json, '[]'::jsonb) ? 'IMPF' THEN 'present'
+              WHEN COALESCE(s.features_json, '[]'::jsonb) ? 'IMPV' THEN 'imperative'
+              ELSE NULL
+            END AS expected_tense,
+            CASE
+              WHEN COALESCE(s.features_json, '[]'::jsonb) ? 'PASS' THEN 'passive'
+              ELSE 'active'
+            END AS expected_voice
+          FROM quran_word_morphology_segments s
+          WHERE s.quran_word_id = m.quran_word_id
+            AND s.kind = 'STEM'
+          ORDER BY s.segment_number
+          LIMIT 1
+        ) head_stem ON true
         WHERE (
-            m.is_verb = true
+            m.is_verb IS DISTINCT FROM (m.head_pos = 'V')
+          )
+          OR (
+            m.head_pos = 'V'
             AND (
-              m.verb_tense IS NULL
-              OR m.verb_voice IS NULL
-              OR (
-                SELECT count(*)::int
-                FROM jsonb_array_elements_text(COALESCE(s.features_json, '[]'::jsonb)) AS token(value)
-                WHERE token.value IN ('PERF', 'IMPF', 'IMPV')
-              ) <> 1
+              head_stem.tense_count <> 1
+              OR m.verb_tense IS DISTINCT FROM head_stem.expected_tense
+              OR m.verb_voice IS DISTINCT FROM head_stem.expected_voice
             )
           )
           OR (
-            m.is_verb = false
+            m.head_pos <> 'V'
             AND (m.verb_tense IS NOT NULL OR m.verb_voice IS NOT NULL)
           )
         """;
@@ -145,19 +177,11 @@ internal static class MorphologySql
           AND arabic_render_source IS DISTINCT FROM 'buckwalter-transliteration'
         """;
 
-    internal const string CheckSegNotUthmani = """
-        SELECT count(*)::int
-        FROM quran_word_morphology_segments s
-        JOIN quran_words w ON w.id = s.quran_word_id
-        WHERE s.form_arabic_normalized IS NOT NULL
-          AND (s.form_arabic_normalized = w.text_uthmani
-               OR s.form_arabic_normalized = w.qpc_glyph)
-        """;
-
-    internal const string CheckSegBuckwalterPresent = """
-        SELECT count(*)::int
+    internal const string SelectSegmentsForRenderProvenance = """
+        SELECT id, form_buckwalter, form_arabic_normalized, arabic_render_tier, arabic_render_source
         FROM quran_word_morphology_segments
-        WHERE form_buckwalter IS NULL
+        WHERE form_buckwalter <> ''
+           OR form_arabic_normalized IS NOT NULL
         """;
 
     internal const string CountMorphologyRows = "SELECT count(*)::int FROM quran_word_morphology";
