@@ -9,6 +9,7 @@ public sealed record MorphologySourceData(
     IReadOnlyList<ResolvedLemmaDto> ResolvedLemmas,
     IReadOnlyList<ResolvedStemDto> ResolvedStems,
     IReadOnlyList<string> CharsetWarnings,
+    IReadOnlyList<string> UnknownPosCodes,
     MorphologyRenderStats RenderStats);
 
 /// <summary>

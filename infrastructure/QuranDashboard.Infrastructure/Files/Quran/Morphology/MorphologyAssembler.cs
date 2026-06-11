@@ -7,6 +7,12 @@ public sealed class MorphologyAssembler
 {
     private static readonly string[] VerbTenseMarkers = ["PERF", "IMPF", "IMPV"];
 
+    // The controlled POS vocabulary that head_pos / segment pos reference via FK. Resolving POS codes
+    // in memory (before the COPY) lets an unknown code fail the MORPH-POS-RESOLVES gate with a report
+    // instead of crashing the binary COPY on the quran_pos_tags foreign key.
+    private static readonly HashSet<string> KnownPosCodes =
+        PosTagSeed.GetAll().Select(tag => tag.Code).ToHashSet(StringComparer.Ordinal);
+
     private readonly SegmentArabicRenderer renderer;
 
     public MorphologyAssembler(SegmentArabicRenderer renderer)
@@ -32,6 +38,7 @@ public sealed class MorphologyAssembler
             .ToList();
 
         var charsetWarnings = new List<string>();
+        var unknownPosCodes = new SortedSet<string>(StringComparer.Ordinal);
         var reviewForms = new HashSet<string>(StringComparer.Ordinal);
         var multiwordForms = new HashSet<string>(StringComparer.Ordinal);
         var emptyFormLocations = new List<string>();
@@ -48,6 +55,7 @@ public sealed class MorphologyAssembler
         {
             var corpusWord = corpusByLocation[location];
             var segments = BuildAlignedSegments(corpusWord, charsetWarnings);
+            CollectUnknownPosCodes(segments, unknownPosCodes);
 
             if (WholeWordRender(segments) == corpusWord.QpcUthmani)
             {
@@ -168,6 +176,7 @@ public sealed class MorphologyAssembler
             resolvedLemmas,
             resolvedStems,
             charsetWarnings,
+            unknownPosCodes.ToList(),
             new MorphologyRenderStats(
                 agreementMatches,
                 alignedWords.Count,
@@ -211,6 +220,18 @@ public sealed class MorphologyAssembler
         }
 
         return segments;
+    }
+
+    private static void CollectUnknownPosCodes(
+        IReadOnlyList<AlignedSegmentDto> segments, SortedSet<string> unknownPosCodes)
+    {
+        foreach (var segment in segments)
+        {
+            if (!KnownPosCodes.Contains(segment.Pos))
+            {
+                unknownPosCodes.Add(segment.Pos);
+            }
+        }
     }
 
     private static string WholeWordRender(IReadOnlyList<AlignedSegmentDto> segments) =>

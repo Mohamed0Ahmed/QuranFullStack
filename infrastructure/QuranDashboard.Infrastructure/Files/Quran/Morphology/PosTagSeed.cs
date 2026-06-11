@@ -39,6 +39,8 @@ public static class PosTagSeed
         new PosTag { Code = "T", ArabicLabel = "تاء تأنيث", EnglishLabel = "Feminine Marker", Category = "other", SortOrder = 31, Description = "Feminine suffix marker" },
         new PosTag { Code = "LOC", ArabicLabel = "ظرف مكان", EnglishLabel = "Locative Adverb", Category = "noun", SortOrder = 32 },
         new PosTag { Code = "TIM", ArabicLabel = "ظرف زمان", EnglishLabel = "Temporal Adverb", Category = "noun", SortOrder = 33 },
-        new PosTag { Code = "ABR", ArabicLabel = "مختصر", EnglishLabel = "Abbreviation", Category = "other", SortOrder = 34 }
+        new PosTag { Code = "ABR", ArabicLabel = "مختصر", EnglishLabel = "Abbreviation", Category = "other", SortOrder = 34 },
+        new PosTag { Code = "DET", ArabicLabel = "أداة تعريف", EnglishLabel = "Determiner", Category = "particle", SortOrder = 35, Description = "Definite article prefix (ال)" },
+        new PosTag { Code = "SUB", ArabicLabel = "اسم مبهم", EnglishLabel = "Substantive", Category = "noun", SortOrder = 36, Description = "Vague/ambiguous noun (e.g. ما)" }
     ];
 }

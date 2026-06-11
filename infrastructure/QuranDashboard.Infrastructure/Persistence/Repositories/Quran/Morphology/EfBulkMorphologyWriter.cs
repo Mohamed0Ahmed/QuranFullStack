@@ -71,6 +71,18 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
                     npgsqlConnection, transaction, MorphologySql.TruncateMorphologyTables, ct);
             }
 
+            // Resolve POS coverage before any COPY (in-memory, the single source of truth — mirrors
+            // MORPH-SEG-CHARSET): head_pos and segment pos carry FKs to quran_pos_tags.code, so an
+            // unknown code would crash the binary COPY with a raw FK violation. Failing
+            // MORPH-POS-RESOLVES here keeps the import fail-closed *with a report* (research R6 /
+            // FR-024 / FR-030) instead of throwing past the report writer.
+            var posResolvesCheck = BuildPosResolvesCheck(source);
+            if (!posResolvesCheck.Passed)
+            {
+                await transaction.RollbackAsync(ct);
+                return BuildUnknownPosResult(runAtUtc, force, source, posResolvesCheck);
+            }
+
             await CopyPosTagsAsync(npgsqlConnection, ct);
             await CopyRootsAsync(npgsqlConnection, source, ct);
             await CopyLemmasAsync(npgsqlConnection, source, ct);
@@ -85,6 +97,7 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
                 expectedReadableWords,
                 source,
                 ct);
+            checks.Add(posResolvesCheck);
 
             var sourceUnchanged = await sourceUnchangedCheck(ct);
             checks.Add(new MorphologyCheckResult(
@@ -480,6 +493,72 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
             "0 dangling dimension references",
             $"roots={FormatInt(danglingRoots)}, lemmas={FormatInt(danglingLemmas)}, stems={FormatInt(danglingStems)}",
             danglingRoots == 0 && danglingLemmas == 0 && danglingStems == 0));
+    }
+
+    // MORPH-POS-RESOLVES is determined in memory from the source vs. the controlled vocabulary
+    // (PosTagSeed), the same way MORPH-SEG-CHARSET is determined from CharsetWarnings. This is the
+    // single source of truth and is evaluated before the COPY (see ImportAsync) so an unknown code
+    // fails closed with a report rather than tripping the quran_pos_tags foreign key mid-COPY.
+    private static MorphologyCheckResult BuildPosResolvesCheck(MorphologySourceData source)
+    {
+        var unknownCount = source.UnknownPosCodes.Count;
+        return new MorphologyCheckResult(
+            "MORPH-POS-RESOLVES",
+            HardSeverity,
+            "every head_pos and segment pos resolves to quran_pos_tags.code (0 unknown)",
+            unknownCount == 0
+                ? "0 unknown"
+                : $"{FormatInt(unknownCount)} unknown ({string.Join(", ", source.UnknownPosCodes)})",
+            unknownCount == 0);
+    }
+
+    private static MorphologyImportResult BuildUnknownPosResult(
+        DateTimeOffset runAtUtc, bool force, MorphologySourceData source, MorphologyCheckResult posCheck)
+    {
+        var unknownList = string.Join(", ", source.UnknownPosCodes);
+
+        return new MorphologyImportResult(
+            runAtUtc,
+            FailVerdict,
+            Persisted: false,
+            force,
+            BuildAttemptedTotals(source),
+            [posCheck],
+            Warnings: [],
+            Errors: [$"MORPH-POS-RESOLVES: source contains POS codes absent from the controlled vocabulary: {unknownList}."],
+            InfoNotes: ["Import refused before any write: unknown POS codes would violate the quran_pos_tags foreign keys; no morphology rows were written."]);
+    }
+
+    private static MorphologyImportTotals BuildAttemptedTotals(MorphologySourceData source)
+    {
+        var segments = source.Words.SelectMany(word => word.Segments).ToList();
+
+        var tierCounts = new Dictionary<string, int>(StringComparer.Ordinal)
+        {
+            ["clean"] = 0,
+            ["quranic_marks"] = 0,
+            ["review"] = 0,
+            ["multiword"] = 0
+        };
+
+        foreach (var segment in segments)
+        {
+            if (segment.RenderTier is not null && tierCounts.ContainsKey(segment.RenderTier))
+            {
+                tierCounts[segment.RenderTier]++;
+            }
+        }
+
+        return new MorphologyImportTotals(
+            source.Words.Count,
+            segments.Count,
+            source.ResolvedRoots.Count,
+            source.ResolvedLemmas.Count,
+            source.ResolvedStems.Count,
+            PosTagSeed.GetAll().Count,
+            source.Words.Count,
+            source.RenderStats.EmptyFormLocations.Count,
+            tierCounts);
     }
 
     private static async Task<MorphologyImportTotals> GatherTotalsAsync(
