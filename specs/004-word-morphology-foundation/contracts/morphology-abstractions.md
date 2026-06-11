@@ -39,11 +39,22 @@ public interface IMorphologyImportWriter
     // run validation queries → commit iff all hard checks pass, else roll back. Returns the full
     // result either way. `expectedReadableWords` is the value the hard checks compare against
     // (MORPH-READABLE-COMPLETE). The CLI passes MorphologyInvariants.ExpectedReadableWords (77,432);
-    // tests pass their synthetic fixture's readable-row count.
+    // tests pass their synthetic fixture's readable-row count. `sourceUnchangedCheck` is the
+    // MORPH-SOURCE-UNCHANGED re-verification, injected by the handler (see note below).
     Task<MorphologyImportResult> ImportAsync(
-        MorphologySourceData source, bool force, int expectedReadableWords, CancellationToken ct);
+        MorphologySourceData source,
+        bool force,
+        int expectedReadableWords,
+        Func<CancellationToken, Task<bool>> sourceUnchangedCheck,
+        CancellationToken ct);
 }
 ```
+
+`sourceUnchangedCheck` is injected by the handler (it closes over `IMorphologyImportSource.SourceUnchangedAsync`
+and the source path). The writer therefore stays free of source-path / file-digest knowledge, preserving
+Clean Architecture boundaries — file/source concerns live in Infrastructure's source reader, not the bulk
+writer. The import transaction invokes the callback as the `MORPH-SOURCE-UNCHANGED` hard check, so a source
+that changed before commit fails the gate and rolls the transaction back.
 
 Behavioral contract:
 - MUST NOT truncate, delete, or modify `quran_words` or any non-morphology table (FR-034).
