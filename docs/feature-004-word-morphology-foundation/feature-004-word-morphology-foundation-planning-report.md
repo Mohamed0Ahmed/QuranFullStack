@@ -378,6 +378,16 @@ code** (controlled vocabulary), not from the Quran source.
 
 **Indexes:** PK(`code`); `category`; `sort_order`. ≈ 30 rows, seeded idempotently.
 
+**`category` mapping (classical-grammar buckets — decided during US4/Phase 6):** the four buckets are
+`noun` / `verb` / `particle` / `other`. Relative pronouns (`REL` — اسم موصول), demonstratives (`DEM` —
+اسم إشارة), independent pronouns (`PRON`/`PRO`), and the substantive/ambiguous-noun tag (`SUB` — اسم مبهم)
+are bucketed as **`noun`**, following classical Arabic grammar (الأسماء المبنية) and matching their Arabic
+labels — *not* `particle`. This supersedes the earlier §6.3 frequency grouping (which listed `REL`/`DEM`
+under a functional "particles" row for corpus counts only) and the earlier T052 example; the count rows in
+§6.3 remain corpus-frequency groupings and do not redefine the `quran_pos_tags.category` value. `DET`
+(أداة تعريف, the definite-article prefix) stays `particle`. The seed is the single source of truth for
+these category assignments; the `MORPH-POS-RESOLVES` gate fails closed on any code not in the seed.
+
 **Why a table, not an enum:** the POS vocabulary is data (≈ 30 controlled rows, label/category/order),
 so it lives in `quran_pos_tags` — queryable, joinable, and extensible without code churn. Only the
 small, stable closed concepts stay as enums/value objects (§3.9).

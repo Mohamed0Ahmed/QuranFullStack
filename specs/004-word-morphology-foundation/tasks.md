@@ -229,12 +229,12 @@ verb voice, and grammatical case.
 
 ### Tests for User Story 4 (write FIRST)
 
-- [ ] T050 [P] [US4] Create `Backend/tests/QuranDashboard.Tests/Quran/WordsMorphology/MorphologyPosResolutionTests.cs` — assert: `quran_pos_tags` rows exist with non-null `arabic_label`/`english_label`/`category` (∈ noun/verb/particle/other)/`sort_order`; every `head_pos` and every segment `pos` resolves to a code; and grouping queries by `category`, `verb_tense`, `verb_voice`, `case_feature` return rows (no `quran_verbs` table needed).
+- [x] T050 [P] [US4] Create `Backend/tests/QuranDashboard.Tests/Quran/WordsMorphology/MorphologyPosResolutionTests.cs` — assert: `quran_pos_tags` rows exist with non-null `arabic_label`/`english_label`/`category` (∈ noun/verb/particle/other)/`sort_order`; every `head_pos` and every segment `pos` resolves to a code; and grouping queries by `category`, `verb_tense`, `verb_voice`, `case_feature` return rows (no `quran_verbs` table needed).
 
 ### Implementation for User Story 4
 
-- [ ] T051 [US4] Add the `MORPH-POS-RESOLVES` hard check to `MorphologySql` (T033) and the import flow — assert every `head_pos` and segment `pos` is present in `quran_pos_tags` (0 unknown codes; a new code refuses the import — research R6). Include it in the report checks. POS rows are already physically written before morphology/segment COPY by T032; this task is the explicit validation gate and report check.
-- [ ] T052 [US4] Review/complete `PosTagSeed` (T026) so it covers **every** POS code observed in the corpus (run the import on the full source once and confirm `MORPH-POS-RESOLVES` passes; if any code is missing, add its curated Arabic/English label + category + sort order). Confirm categories map correctly (e.g. `PN/ADJ/PRON`→noun-family vs `P/CONJ/NEG/REL/DEM/VOC/INL`→particle, per planning report §3.7).
+- [x] T051 [US4] Add the `MORPH-POS-RESOLVES` hard check to `MorphologySql` (T033) and the import flow — assert every `head_pos` and segment `pos` is present in `quran_pos_tags` (0 unknown codes; a new code refuses the import — research R6). Include it in the report checks. POS rows are already physically written before morphology/segment COPY by T032; this task is the explicit validation gate and report check.
+- [x] T052 [US4] Review/complete `PosTagSeed` (T026) so it covers **every** POS code observed in the corpus (run the import on the full source once and confirm `MORPH-POS-RESOLVES` passes; if any code is missing, add its curated Arabic/English label + category + sort order). Confirm categories map correctly per planning report §3.7: `PN/ADJ`→noun-family; nominal function words `PRON/PRO/REL (اسم موصول)/DEM (اسم إشارة)/SUB (اسم مبهم)`→**`noun`** (classical-grammar الأسماء المبنية, matching their Arabic labels); `P/CONJ/NEG/VOC/INL/DET`→`particle`. (Decided in Phase 6: relative pronouns and demonstratives are nouns, not particles — see §3.7 `category` mapping note.)
 
 **Checkpoint**: All four stories are independently testable; the full hard-gate (all `MORPH-*` checks)
 passes on the real source.
