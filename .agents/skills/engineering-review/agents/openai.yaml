@@ -1,0 +1,4 @@
+interface:
+  display_name: "Engineering Review"
+  short_description: "Review workspace code and architecture"
+  default_prompt: "Use $engineering-review to review this diff for architecture, quality, tests, and readiness."

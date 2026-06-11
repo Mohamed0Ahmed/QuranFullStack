@@ -1,0 +1,4 @@
+interface:
+  display_name: "Test Guard"
+  short_description: "Review test code quality gates"
+  default_prompt: "Use $test-guard to review the changed tests before delivery."
