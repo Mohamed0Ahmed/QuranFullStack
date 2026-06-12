@@ -54,7 +54,7 @@ Markdown+JSON report artifact is written per run (mirrors Feature 004's
     { "signatureKey": "STEM:N:GEN", "ruleFamily": "N.GEN", "i3rabArabic": "اسم مجرور", "segments": 10403 }
   ],
   "warnings": [
-    { "id": "I3RAB-LABEL-REVIEW", "note": "21 labels diverge from quran_pos_tags seed (rule layer owns labels)" }
+    { "id": "I3RAB-LABEL-REVIEW", "note": "21 rule-layer label corrections present (catalogue owns labels; overrides quran_pos_tags seed)" }
   ]
 }
 ```
