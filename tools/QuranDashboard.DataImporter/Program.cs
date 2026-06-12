@@ -398,12 +398,12 @@ internal static class Program
             if (result.Succeeded)
             {
                 Console.WriteLine(result.Message);
-                WriteReportPath(result.ReportOutDir);
+                WriteReportPath(result.ReportPath);
                 return result.ExitCode;
             }
 
             Console.Error.WriteLine(result.Message);
-            WriteReportPath(result.ReportOutDir);
+            WriteReportPath(result.ReportPath);
             return result.ExitCode;
         }
         catch (InvalidOperationException ex)
