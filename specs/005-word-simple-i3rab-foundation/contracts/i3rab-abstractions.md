@@ -106,6 +106,12 @@ I3rabExpectedCounts // injectable data-count invariants (record); production def
 > `Warnings` and dropped the always-null `ReportPath` (the handler returns the report file path via
 > `GenerateI3rabResult.ReportPath`); and the production-count literals were lifted into the injectable
 > `I3rabExpectedCounts` so the gate is testable against a fixture while production stays strict.
+>
+> **US4 (Phase 6) additions:** `II3rabCommandExecutor` (the refusal preflight — readiness + already-populated
+> — extracted out of the handler so it owns refuse-or-continue and writes the refusal report);
+> `II3rabGenerationReportWriter.WriteRefusal(I3rabRefusalReport, …)` for the refusal artifact; and the
+> infrastructure-only `II3rabGenerationWriteProbe` (production no-op) — a post-staging, pre-gate seam tests
+> use to inject the hard-check violations that cannot be produced through the assembler.
 
 ## Dependency direction (Clean Architecture)
 

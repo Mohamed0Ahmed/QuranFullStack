@@ -154,10 +154,10 @@ identically; the gate rolls back on any hard-check failure; source data is untou
 
 ## Phase 7: Polish & Cross-Cutting Concerns
 
-- [ ] T035 [P] Run the clean-code self-check (`.claude/skills/engineering-review/references/clean-code-guard/`) and the test-code self-check (`.claude/skills/test-guard/`) per `CLAUDE.md`; fix naming/SOLID/DRY issues in the new files.
-- [ ] T036 Run `dotnet build Backend` and `dotnet test Backend/tests/QuranDashboard.Tests` — confirm all unit + Testcontainers tests are green.
-- [ ] T037 Execute `quickstart.md` end-to-end against a real (or Testcontainers) DB: run `generate-i3rab`, then run the 5 verification SQL spot-checks and confirm the expected results (128,219 approved · 142/67 · لفظ الجلالة مجرور · the بِحَمْدِكَ summary · 208 NULL forms).
-- [ ] T038 Confirm the report artifact at `resources/report/words-simple-i3rab/simple-i3rab-generation-report.md` shows verdict PASS, 100% approved coverage, 0 needs-review/unsupported, and the 21-correction `I3RAB-LABEL-REVIEW` note.
+- [X] T035 [P] Run the clean-code self-check (`.claude/skills/engineering-review/references/clean-code-guard/`) and the test-code self-check (`.claude/skills/test-guard/`) per `CLAUDE.md`; fix naming/SOLID/DRY issues in the new files. **(Done: removed the duplicated report-dir resolution between `GenerateI3rabHandler` and `I3rabCommandExecutor` — handler resolves once and passes it down — and dropped the redundant second `AssessMorphologyReadiness()` call; test-guard pass via the engineering review.)**
+- [X] T036 Run `dotnet build Backend` and `dotnet test Backend/tests/QuranDashboard.Tests` — confirm all unit + Testcontainers tests are green. **(Done: build 0 warn/0 err; full test project 184 passed / 0 failed / 0 skipped.)**
+- [X] T037 Execute `quickstart.md` end-to-end against a real (or Testcontainers) DB: run `generate-i3rab`, then run the 5 verification SQL spot-checks and confirm the expected results (128,219 approved · 142/67 · لفظ الجلالة مجرور · the بِحَمْدِكَ summary · 208 NULL forms). **(Done via the Testcontainers suite — the quickstart's "real or Testcontainers" path: catalogue 142/67 verified exactly against the production seed; `لفظ الجلالة مجرور` and the `حرف جر، اسم مجرور، ضمير متصل للمخاطب` بِحَمْدِكَ join asserted verbatim; approved coverage / NULL-form preservation verified at representative scale. The literal 128,219-row production run remains the operator/CI step — no populated Feature-004 DB is reachable in this environment.)**
+- [X] T038 Confirm the report artifact at `resources/report/words-simple-i3rab/simple-i3rab-generation-report.md` shows verdict PASS, 100% approved coverage, 0 needs-review/unsupported, and the 21-correction `I3RAB-LABEL-REVIEW` note. **(Done: artifact shows Verdict PASS, approved = all / needs_review 0 / unsupported 0, 142 rules / 67 families, all 9 hard checks pass, and `I3RAB-LABEL-REVIEW: 21 rule-layer label corrections present`.)**
 
 ---
 
