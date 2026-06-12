@@ -12,24 +12,48 @@ public sealed class I3rabGenerationTests(I3rabGenerationTestFixture fixture)
     public async Task Refuses_when_morphology_is_missing()
     {
         await fixture.ResetToWordsOnlyAsync();
+        var reportDir = Path.Combine(Path.GetTempPath(), $"i3rab-refusal-{Guid.NewGuid():N}");
 
-        var result = await fixture.RunGenerationAsync();
+        try
+        {
+            var result = await fixture.RunGenerationAsync(reportOutDir: reportDir);
 
-        result.ExitCode.Should().Be(GenerateI3rabResult.RefusedExitCode);
-        result.Message.Should().Contain("Morphology is missing or empty");
-        result.ReportPath.Should().BeNull();
+            result.ExitCode.Should().Be(GenerateI3rabResult.RefusedExitCode);
+            result.Message.Should().Contain("Morphology is missing or empty");
+            result.ReportPath.Should().NotBeNull();
+            File.Exists(Path.Combine(reportDir, "simple-i3rab-generation-report.json")).Should().BeTrue();
+        }
+        finally
+        {
+            if (Directory.Exists(reportDir))
+            {
+                Directory.Delete(reportDir, true);
+            }
+        }
     }
 
     [Fact]
     public async Task Refuses_when_partial_morphology_does_not_meet_production_invariants()
     {
         await fixture.ResetToPartialMorphologyAsync();
+        var reportDir = Path.Combine(Path.GetTempPath(), $"i3rab-refusal-{Guid.NewGuid():N}");
 
-        var result = await fixture.RunGenerationAsync();
+        try
+        {
+            var result = await fixture.RunGenerationAsync(reportOutDir: reportDir);
 
-        result.ExitCode.Should().Be(GenerateI3rabResult.RefusedExitCode);
-        result.Message.Should().Contain(I3rabInvariants.ExpectedSegmentCount.ToString("N0"));
-        result.ReportPath.Should().BeNull();
+            result.ExitCode.Should().Be(GenerateI3rabResult.RefusedExitCode);
+            result.Message.Should().Contain(I3rabInvariants.ExpectedSegmentCount.ToString("N0"));
+            result.ReportPath.Should().NotBeNull();
+            File.Exists(Path.Combine(reportDir, "simple-i3rab-generation-report.json")).Should().BeTrue();
+        }
+        finally
+        {
+            if (Directory.Exists(reportDir))
+            {
+                Directory.Delete(reportDir, true);
+            }
+        }
     }
 
     [Fact]

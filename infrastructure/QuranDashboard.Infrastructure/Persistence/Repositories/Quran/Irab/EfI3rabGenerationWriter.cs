@@ -6,7 +6,10 @@ using QuranDashboard.Application.Abstractions.Quran.Words.Morphology.Irab;
 
 namespace QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Irab;
 
-public sealed class EfI3rabGenerationWriter(QuranDashboardDbContext dbContext, I3rabExpectedCounts expectedCounts)
+public sealed class EfI3rabGenerationWriter(
+    QuranDashboardDbContext dbContext,
+    I3rabExpectedCounts expectedCounts,
+    II3rabGenerationWriteProbe writeProbe)
     : II3rabGenerationWriter
 {
     public async Task<I3rabGenerationResult> WriteAsync(
@@ -42,6 +45,7 @@ public sealed class EfI3rabGenerationWriter(QuranDashboardDbContext dbContext, I
             await ExecuteNonQueryAsync(npgsqlConnection, transaction, I3rabSql.CreateStagingTable, ct);
             await CopyLabelsAsync(npgsqlConnection, labels, ct);
             await ExecuteNonQueryAsync(npgsqlConnection, transaction, I3rabSql.UpdateSegmentsFromStaging, ct);
+            await writeProbe.AfterSegmentUpdateAsync(npgsqlConnection, transaction, ct);
 
             var afterSnapshot = await I3rabValidationRunner.CaptureSnapshotAsync(npgsqlConnection, transaction, ct);
             var checks = await I3rabValidationRunner.RunHardChecksAsync(

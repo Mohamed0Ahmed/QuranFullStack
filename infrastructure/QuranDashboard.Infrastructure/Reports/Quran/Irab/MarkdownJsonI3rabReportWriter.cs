@@ -61,6 +61,63 @@ public sealed class MarkdownJsonI3rabReportWriter(QuranDashboardDbContext dbCont
         return markdownPath;
     }
 
+    public string WriteRefusal(I3rabRefusalReport refusal, string outputDirectory)
+    {
+        ArgumentNullException.ThrowIfNull(refusal);
+        ArgumentException.ThrowIfNullOrWhiteSpace(outputDirectory);
+
+        Directory.CreateDirectory(outputDirectory);
+
+        var document = new RefusalReportDocument(
+            DateTimeOffset.UtcNow,
+            "REFUSED",
+            false,
+            refusal.Forced,
+            refusal.RefusalReason,
+            new RefusalReadiness(
+                refusal.Readiness.SegmentCount,
+                refusal.Readiness.ReadableWordCount,
+                refusal.Readiness.NullFormCount,
+                refusal.Readiness.IsReady));
+
+        var jsonPath = Path.Combine(outputDirectory, JsonFileName);
+        var markdownPath = Path.Combine(outputDirectory, MarkdownFileName);
+        File.WriteAllText(jsonPath, JsonSerializer.Serialize(document, JsonOptions), Encoding.UTF8);
+        File.WriteAllText(markdownPath, BuildRefusalMarkdown(document), Encoding.UTF8);
+
+        return markdownPath;
+    }
+
+    private static string BuildRefusalMarkdown(RefusalReportDocument report)
+    {
+        var builder = new StringBuilder();
+        builder.AppendLine("# Word Simple I‘rab — Generation Report");
+        builder.AppendLine();
+        builder.AppendLine($"- Run (UTC): {report.RunUtc:u}");
+        builder.AppendLine($"- Verdict: {report.Verdict}");
+        builder.AppendLine($"- Persisted: {report.Persisted}");
+        builder.AppendLine($"- Forced: {report.Forced}");
+        builder.AppendLine();
+        builder.AppendLine("## Refusal");
+        builder.AppendLine();
+        builder.AppendLine(report.RefusalReason);
+        builder.AppendLine();
+        builder.AppendLine("## Readiness");
+        builder.AppendLine();
+        builder.AppendLine("| Metric | Value |");
+        builder.AppendLine("|---|---:|");
+        builder.AppendLine($"| segments | {report.Readiness.SegmentCount:N0} |");
+        builder.AppendLine($"| readable_words | {report.Readiness.ReadableWordCount:N0} |");
+        builder.AppendLine($"| null_forms | {report.Readiness.NullFormCount:N0} |");
+        builder.AppendLine($"| ready | {report.Readiness.IsReady} |");
+        builder.AppendLine();
+        builder.AppendLine("## Notes");
+        builder.AppendLine();
+        builder.AppendLine("Generation refused before any database writes.");
+
+        return builder.ToString();
+    }
+
     private IReadOnlyList<ReportRuleUsage> ReadRuleUsage()
     {
         var connection = dbContext.Database.GetDbConnection();
@@ -195,4 +252,18 @@ public sealed class MarkdownJsonI3rabReportWriter(QuranDashboardDbContext dbCont
         int Segments);
 
     private sealed record ReportWarning(string Id, string Note);
+
+    private sealed record RefusalReportDocument(
+        DateTimeOffset RunUtc,
+        string Verdict,
+        bool Persisted,
+        bool Forced,
+        string RefusalReason,
+        RefusalReadiness Readiness);
+
+    private sealed record RefusalReadiness(
+        int SegmentCount,
+        int ReadableWordCount,
+        int NullFormCount,
+        bool IsReady);
 }

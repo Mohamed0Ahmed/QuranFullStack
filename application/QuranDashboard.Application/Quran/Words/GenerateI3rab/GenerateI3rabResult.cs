@@ -13,8 +13,8 @@ public sealed record GenerateI3rabResult(
     public static GenerateI3rabResult Success(string message, string reportPath) =>
         new(true, SuccessExitCode, message, reportPath);
 
-    public static GenerateI3rabResult Refused(string message) =>
-        new(false, RefusedExitCode, message, null);
+    public static GenerateI3rabResult Refused(string message, string? reportPath = null) =>
+        new(false, RefusedExitCode, message, reportPath);
 
     public static GenerateI3rabResult Failure(string message, string? reportPath = null) =>
         new(false, FailureExitCode, message, reportPath);

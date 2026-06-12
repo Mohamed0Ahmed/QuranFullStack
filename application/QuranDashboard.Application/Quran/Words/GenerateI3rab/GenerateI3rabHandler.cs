@@ -3,6 +3,7 @@ using QuranDashboard.Application.Abstractions.Quran.Words.Morphology.Irab;
 namespace QuranDashboard.Application.Quran.Words.GenerateI3rab;
 
 public sealed class GenerateI3rabHandler(
+    II3rabCommandExecutor commandExecutor,
     II3rabGenerationSource generationSource,
     II3rabRuleCatalog ruleCatalog,
     II3rabAssembler assembler,
@@ -14,18 +15,13 @@ public sealed class GenerateI3rabHandler(
         ArgumentNullException.ThrowIfNull(command);
         ct.ThrowIfCancellationRequested();
 
+        var refusal = commandExecutor.TryRefuse(command.Force, command.ReportOutDir);
+        if (refusal is not null)
+        {
+            return GenerateI3rabResult.Refused(refusal.Message, refusal.ReportPath);
+        }
+
         var readiness = generationSource.AssessMorphologyReadiness();
-        if (!readiness.IsReady)
-        {
-            return GenerateI3rabResult.Refused(readiness.RefusalReason!);
-        }
-
-        if (!command.Force && generationSource.I3rabAlreadyPopulated())
-        {
-            return GenerateI3rabResult.Refused(
-                "I‘rab labels are already populated. Re-run with --force to overwrite them.");
-        }
-
         var segments = generationSource.LoadSegments();
         var labels = assembler.Assemble(segments);
         var rules = ruleCatalog.Rows();

@@ -9,6 +9,7 @@ using QuranDashboard.Domain.Quran.MushafPages;
 using QuranDashboard.Domain.Quran.Surahs;
 using QuranDashboard.Domain.Quran.Words;
 using QuranDashboard.Domain.Quran.Words.Morphology;
+using QuranDashboard.Domain.Quran.Words.Morphology.Irab;
 using QuranDashboard.Infrastructure;
 using Testcontainers.PostgreSql;
 
@@ -43,7 +44,9 @@ public sealed class I3rabGenerationTestFixture : IAsyncLifetime
         await postgresContainer.DisposeAsync();
     }
 
-    public ServiceProvider CreateServiceProvider(I3rabExpectedCounts? expectedCounts = null)
+    public ServiceProvider CreateServiceProvider(
+        I3rabExpectedCounts? expectedCounts = null,
+        Action<IServiceCollection>? configure = null)
     {
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
@@ -64,17 +67,90 @@ public sealed class I3rabGenerationTestFixture : IAsyncLifetime
             services.AddSingleton(expectedCounts);
         }
 
+        configure?.Invoke(services);
+
         return services.BuildServiceProvider();
     }
 
     public async Task<GenerateI3rabResult> RunGenerationAsync(
         I3rabExpectedCounts? expectedCounts = null,
         bool force = false,
-        string? reportOutDir = null)
+        string? reportOutDir = null,
+        Action<IServiceCollection>? configure = null)
     {
-        await using var scope = CreateServiceProvider(expectedCounts).CreateAsyncScope();
+        await using var scope = CreateServiceProvider(expectedCounts, configure).CreateAsyncScope();
         var handler = scope.ServiceProvider.GetRequiredService<GenerateI3rabHandler>();
         return await handler.HandleAsync(new GenerateI3rabCommand(force, reportOutDir), CancellationToken.None);
+    }
+
+    public async Task<I3rabSourceSafetySnapshot> CaptureSourceSafetySnapshotAsync()
+    {
+        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+
+        var segmentFingerprint = await dbContext.Database
+            .SqlQueryRaw<string>($"""SELECT ({SourceSafetySql.SegmentSourceFingerprint}) AS "Value" """)
+            .FirstAsync();
+        var wordsFingerprint = await dbContext.Database
+            .SqlQueryRaw<string>($"""SELECT ({SourceSafetySql.QuranWordsFingerprint}) AS "Value" """)
+            .FirstAsync();
+        var posTagsFingerprint = await dbContext.Database
+            .SqlQueryRaw<string>($"""SELECT ({SourceSafetySql.PosTagsFingerprint}) AS "Value" """)
+            .FirstAsync();
+        var segmentCount = await dbContext.WordMorphologySegments.AsNoTracking().CountAsync();
+        var nullFormIds = await dbContext.WordMorphologySegments.AsNoTracking()
+            .Where(segment => segment.FormArabicNormalized == null)
+            .Select(segment => segment.Id)
+            .OrderBy(id => id)
+            .ToListAsync();
+
+        return new I3rabSourceSafetySnapshot(
+            segmentCount,
+            segmentFingerprint,
+            wordsFingerprint,
+            posTagsFingerprint,
+            nullFormIds);
+    }
+
+    public async Task<I3rabCommittedStateSnapshot> CaptureCommittedStateAsync()
+    {
+        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+
+        var segmentStates = await dbContext.WordMorphologySegments.AsNoTracking()
+            .OrderBy(segment => segment.Id)
+            .Select(segment => new I3rabSegmentState(
+                segment.Id,
+                segment.I3rabArabic,
+                segment.I3rabRuleId,
+                segment.I3rabStatus,
+                segment.I3rabReviewReason))
+            .ToListAsync();
+
+        var rules = await dbContext.QuranI3rabRules.AsNoTracking()
+            .OrderBy(rule => rule.SortOrder)
+            .ThenBy(rule => rule.SignatureKey)
+            .Select(rule => new I3rabRuleState(
+                rule.SignatureKey,
+                rule.RuleFamily,
+                rule.I3rabArabic,
+                rule.DefaultStatus,
+                rule.Description,
+                rule.SortOrder))
+            .ToListAsync();
+
+        return new I3rabCommittedStateSnapshot(segmentStates, rules);
+    }
+
+    public async Task<int> CountPopulatedI3rabSegmentsAsync()
+    {
+        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+
+        return await dbContext.WordMorphologySegments.AsNoTracking()
+            .CountAsync(segment =>
+                segment.I3rabRuleId != null
+                || (segment.I3rabStatus != null && segment.I3rabStatus != I3rabStatusMapping.Unsupported));
     }
 
     public async Task ResetToWordsOnlyAsync()
@@ -340,3 +416,90 @@ public sealed class I3rabGenerationTestFixture : IAsyncLifetime
 
 [CollectionDefinition(nameof(I3rabGenerationTestCollection))]
 public sealed class I3rabGenerationTestCollection : ICollectionFixture<I3rabGenerationTestFixture>;
+
+public sealed record I3rabSourceSafetySnapshot(
+    int SegmentCount,
+    string SegmentFingerprint,
+    string QuranWordsFingerprint,
+    string PosTagsFingerprint,
+    IReadOnlyList<int> NullFormSegmentIds);
+
+public sealed record I3rabSegmentState(
+    int Id,
+    string? I3rabArabic,
+    int? I3rabRuleId,
+    string? I3rabStatus,
+    string? I3rabReviewReason);
+
+public sealed record I3rabRuleState(
+    string SignatureKey,
+    string RuleFamily,
+    string I3rabArabic,
+    string DefaultStatus,
+    string? Description,
+    short SortOrder);
+
+public sealed record I3rabCommittedStateSnapshot(
+    IReadOnlyList<I3rabSegmentState> Segments,
+    IReadOnlyList<I3rabRuleState> Rules);
+
+internal static class SourceSafetySql
+{
+    internal const string SegmentSourceFingerprint = """
+        SELECT COALESCE(
+            md5(string_agg(
+                concat_ws('|',
+                    id::text,
+                    quran_word_id::text,
+                    segment_location,
+                    segment_number::text,
+                    kind,
+                    pos,
+                    form_buckwalter,
+                    COALESCE(form_arabic_normalized, ''),
+                    COALESCE(arabic_render_tier, ''),
+                    arabic_render_source,
+                    COALESCE(root_buckwalter, ''),
+                    COALESCE(lemma_buckwalter, ''),
+                    features_raw,
+                    COALESCE(features_json::text, '')) ,
+                ',' ORDER BY id)),
+            'empty')
+        FROM quran_word_morphology_segments
+        """;
+
+    internal const string QuranWordsFingerprint = """
+        SELECT COALESCE(
+            md5(string_agg(
+                concat_ws('|',
+                    id::text,
+                    location,
+                    ayah_id::text,
+                    surah_number::text,
+                    ayah_number::text,
+                    word_number::text,
+                    page_number::text,
+                    line_number::text,
+                    line_word_order::text,
+                    qpc_glyph,
+                    text_uthmani,
+                    text_uthmani_simple,
+                    text_imlaei_simple,
+                    word_key_imlaei_simple,
+                    is_ayah_marker::text,
+                    COALESCE(unique_tashkeel_word_id::text, ''),
+                    COALESCE(unique_simple_word_id::text, '')),
+                ',' ORDER BY id)),
+            'empty')
+        FROM quran_words
+        """;
+
+    internal const string PosTagsFingerprint = """
+        SELECT COALESCE(
+            md5(string_agg(
+                concat_ws('|', code, arabic_label, english_label, category, sort_order::text, COALESCE(description, '')),
+                ',' ORDER BY code)),
+            'empty')
+        FROM quran_pos_tags
+        """;
+}
