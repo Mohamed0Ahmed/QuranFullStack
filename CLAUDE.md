@@ -1,12 +1,13 @@
 <!-- SPECKIT START -->
 
-Active feature: **Quran Word Morphology Foundation** — branch `004-word-morphology-foundation`.
+Active feature: **Word Simple I‘rab Foundation** — branch `005-word-simple-i3rab-foundation`.
 For technologies, project structure, shell commands, and design artifacts, read the current plan
 and its siblings:
 
-- `specs/004-word-morphology-foundation/plan.md` — technical context, project structure, gates
-- `specs/004-word-morphology-foundation/spec.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/`
-- `docs/feature-004-word-morphology-foundation/feature-004-word-morphology-foundation-planning-report.md` — long-form companion plan (with decisions addendum + segment-rendering report siblings)
+- `specs/005-word-simple-i3rab-foundation/plan.md` — technical context, project structure, gates
+- `specs/005-word-simple-i3rab-foundation/spec.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/`
+- `docs/feature-005-word-simple-i3rab-foundation/feature-005-word-simple-i3rab-foundation-planning-report.md` — long-form companion plan
+- `Backend/report/feature-005-word-simple-i3rab-foundation/segment-pattern-rule-coverage-report.md` — the authoritative 142-signature / 67-family catalogue + exact Arabic labels (source for the rule seed)
 
 <!-- SPECKIT END -->
 
