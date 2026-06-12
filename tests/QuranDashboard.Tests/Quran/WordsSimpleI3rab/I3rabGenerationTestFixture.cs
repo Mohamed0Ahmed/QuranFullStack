@@ -22,6 +22,9 @@ public sealed class I3rabGenerationTestFixture : IAsyncLifetime
     /// <summary>Counts of the <see cref="ResetToCompleteMorphologyAsync"/> fixture (6 segments / 5 readable words / 1 null form).</summary>
     public static I3rabExpectedCounts CompleteMorphologyCounts { get; } = new(SegmentCount: 6, ReadableWordCount: 5, NullFormCount: 1);
 
+    /// <summary>Counts of the <see cref="ResetToBihamdikaWordCompositionAsync"/> fixture (3 segments / 1 readable word / 0 null forms).</summary>
+    public static I3rabExpectedCounts BihamdikaWordCompositionCounts { get; } = new(SegmentCount: 3, ReadableWordCount: 1, NullFormCount: 0);
+
     private readonly PostgreSqlContainer postgresContainer = new PostgreSqlBuilder()
         .WithImage("postgres:16-alpine")
         .Build();
@@ -81,12 +84,9 @@ public sealed class I3rabGenerationTestFixture : IAsyncLifetime
         await SeedFoundationInContextAsync(dbContext);
         await SeedPosTagsAsync(dbContext);
         await ClearMorphologyDataAsync(dbContext);
-
-        if (!await dbContext.QuranWords.AnyAsync(word => word.Id == 1))
-        {
-            dbContext.QuranWords.AddRange(CreateSyntheticReadableWords());
-            await dbContext.SaveChangesAsync();
-        }
+        await dbContext.QuranWords.ExecuteDeleteAsync();
+        dbContext.QuranWords.AddRange(CreateSyntheticReadableWords());
+        await dbContext.SaveChangesAsync();
     }
 
     public async Task ResetToPartialMorphologyAsync()
@@ -140,6 +140,34 @@ public sealed class I3rabGenerationTestFixture : IAsyncLifetime
             CreateSegment(4, 4, "1:1:3", 1, "PREFIX", "P", "P", lemma: null),                   // PREFIX:P
             CreateSegment(5, 4, "1:1:3", 2, "STEM", "N", "GEN", lemma: "Hamd"),                 // STEM:N:GEN
             CreateSegment(6, 5, "1:2:2", 1, "STEM", "N", "NOM", lemma: "nAs", formArabicNormalized: null)); // STEM:N:NOM, null form
+
+        await dbContext.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Seeds a single three-segment word at <c>2:30:20</c> matching the بِحَمْدِكَ morphology pattern
+    /// (PREFIX P + STEM N GEN + SUFFIX PRON 2MS) so read-time <c>string_agg</c> composition can be verified.
+    /// </summary>
+    public async Task ResetToBihamdikaWordCompositionAsync()
+    {
+        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+
+        await SeedFoundationInContextAsync(dbContext);
+        await SeedPosTagsAsync(dbContext);
+        await ClearMorphologyDataAsync(dbContext);
+        await dbContext.QuranWords.ExecuteDeleteAsync();
+
+        dbContext.QuranWords.Add(CreateWord(
+            6, 1, 2, 30, 20, "GLYPH-TEST-6", "اختبار-كلمة-٦"));
+
+        dbContext.WordMorphologies.Add(
+            CreateMorphology(6, "2:30:20", "N", 3));
+
+        dbContext.WordMorphologySegments.AddRange(
+            CreateSegment(1, 6, "2:30:20", 1, "PREFIX", "P", "P", lemma: null),
+            CreateSegment(2, 6, "2:30:20", 2, "STEM", "N", "GEN", lemma: "Hamd"),
+            CreateSegment(3, 6, "2:30:20", 3, "SUFFIX", "PRON", "2MS", lemma: null));
 
         await dbContext.SaveChangesAsync();
     }
