@@ -35,7 +35,7 @@ block on them.
 
 The v1 grain is the **segment**: every segment carries its own simplified Arabic label and a review
 **status** (`approved` / `needs_review` / `unsupported`). The word-level summary
-(`حرف جر، اسم مجرور، ضمير متصل في محل جر مضاف إليه`) and idiom collapses (`جار ومجرور`) are
+(`حرف جر، اسم مجرور، ضمير متصل للمخاطب`) and idiom collapses (`جار ومجرور`) are
 **read-layer behavior**, derived by ordering segment labels — they are **not stored** in v1.
 
 ---
@@ -108,7 +108,7 @@ already-covered families, not new grammar.
    produce a short Arabic grammar label and a review **status**, derived deterministically from the
    Feature 004 morphology fields.
 2. **Per-word summary composed at read time** — *not stored*. The word phrase
-   (`حرف جر، اسم مجرور، ضمير متصل في محل جر مضاف إليه`) is produced by ordering the segment labels by
+   (`حرف جر، اسم مجرور، ضمير متصل للمخاطب`) is produced by ordering the stored segment labels by
    `segment_number` and joining with the Arabic comma «، ». Idiom collapses (`جار ومجرور`) are a later
    read-layer/UI behavior on top of the same ordered labels.
 3. **Primary source = Feature 004 morphology tables.** Rules read `quran_word_morphology`,
@@ -164,7 +164,7 @@ columns are added:
 
 | Column | Type | Null | Notes |
 |---|---|---|---|
-| `i3rab_arabic` | `text` | YES | simplified Arabic label, e.g. `حرف جر`, `اسم مجرور`, `ضمير متصل في محل جر مضاف إليه` |
+| `i3rab_arabic` | `text` | YES | simplified Arabic label, e.g. `حرف جر`, `اسم مجرور`, `ضمير متصل للمخاطب` |
 | `i3rab_rule_id` | `int` | YES | FK → `quran_i3rab_rules.id` (the rule that produced the label) |
 | `i3rab_status` | `text` | **NO** | one of `approved` · `needs_review` · `unsupported` |
 | `i3rab_review_reason` | `text` | YES | required for `unsupported`; review note for `needs_review` |
@@ -258,7 +258,7 @@ WHERE  quran_word_id = :id
 ORDER BY segment_number;        -- join with the Arabic comma «، »
 ```
 
-Example output: `حرف جر، اسم مجرور، ضمير متصل في محل جر مضاف إليه`.
+Example output: `حرف جر، اسم مجرور، ضمير متصل للمخاطب`.
 
 **Word-level idiom collapses are a later read-layer / UI behavior, not stored in v1:**
 
@@ -320,9 +320,9 @@ from 1,337 independent rules. The 1,337 enriched patterns serve as coverage proo
 |---|---|---|
 | بِ | `PREFIX` P | حرف جر |
 | حَمْدِ | `STEM` N (GEN) | اسم مجرور |
-| كَ | `SUFFIX` PRON | ضمير متصل في محل جر مضاف إليه |
+| كَ | `SUFFIX` PRON | ضمير متصل للمخاطب |
 
-**Joined read-time display:** `حرف جر، اسم مجرور، ضمير متصل في محل جر مضاف إليه`
+**Joined read-time display:** `حرف جر، اسم مجرور، ضمير متصل للمخاطب`
 **Optional later idiom display:** `جار ومجرور، والكاف مضاف إليه`
 
 ### 5.3 Representative segment rules (grounded in real POS codes / features)

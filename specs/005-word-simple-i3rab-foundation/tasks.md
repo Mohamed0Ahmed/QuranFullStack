@@ -120,13 +120,13 @@ they equal the FR-011 corrected values; confirm every `i3rab_rule_id` resolves.
 
 **Goal**: Word summaries derive from ordered segment labels with «، »; nothing word-level is stored.
 
-**Independent Test**: compose بِحَمْدِكَ (2:30:20) from its ordered segment labels and confirm
-`حرف جر، اسم مجرور، ضمير متصل في محل جر مضاف إليه`; confirm no `quran_word_i3rab` / `quran_word_segment_i3rab` table.
+**Independent Test**: compose بِحَمْدِكَ (2:30:20) from its ordered stored segment labels and confirm
+`حرف جر، اسم مجرور، ضمير متصل للمخاطب`; confirm no `quran_word_i3rab` / `quran_word_segment_i3rab` table.
 
 ### Tests for User Story 3
 
-- [ ] T028 [P] [US3] `I3rabWordCompositionTests.cs` (Testcontainers): after a run, run `string_agg(i3rab_arabic, '، ' ORDER BY segment_number)` for بِحَمْدِكَ (`2:30:20`) and assert it equals `حرف جر، اسم مجرور، ضمير متصل في محل جر مضاف إليه`; assert `I3RAB-WORD-DISPLAYABLE` = 77,432 (every word composes).
-- [ ] T029 [P] [US3] `I3rabSchemaShapeTests.cs` (Testcontainers): query `information_schema.tables` and assert **no** table named `quran_word_i3rab` and **no** `quran_word_segment_i3rab` exists, and that `quran_i3rab_rules` exists (spec SC-009, FR-018).
+- [X] T028 [P] [US3] `I3rabWordCompositionTests.cs` (Testcontainers): after a run, run `string_agg(i3rab_arabic, '، ' ORDER BY segment_number)` for بِحَمْدِكَ (`2:30:20`) and assert it equals `حرف جر، اسم مجرور، ضمير متصل للمخاطب`; assert `I3RAB-WORD-DISPLAYABLE` = 77,432 (every word composes).
+- [X] T029 [P] [US3] `I3rabSchemaShapeTests.cs` (Testcontainers): query `information_schema.tables` and assert **no** table named `quran_word_i3rab` and **no** `quran_word_segment_i3rab` exists, and that `quran_i3rab_rules` exists (spec SC-009, FR-018).
 
 **Checkpoint**: read-time composition verified; no stored word/segment i‘rab table.
 

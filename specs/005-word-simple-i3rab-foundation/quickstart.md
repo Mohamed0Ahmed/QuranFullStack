@@ -52,7 +52,7 @@ WHERE w.location = '1:1:2' AND s.segment_number = 1;          -- لفظ الجل
 -- 4) read-time word summary (e.g. بِحَمْدِكَ 2:30:20)
 SELECT string_agg(i3rab_arabic, '، ' ORDER BY segment_number)
 FROM quran_word_morphology_segments s JOIN quran_words w ON w.id = s.quran_word_id
-WHERE w.location LIKE '2:30:20';   -- حرف جر، اسم مجرور، ضمير متصل في محل جر مضاف إليه
+WHERE w.location LIKE '2:30:20';   -- حرف جر، اسم مجرور، ضمير متصل للمخاطب
 
 -- 5) NULL forms preserved
 SELECT count(*) FROM quran_word_morphology_segments WHERE form_arabic_normalized IS NULL;  -- 208

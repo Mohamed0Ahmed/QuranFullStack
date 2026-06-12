@@ -100,7 +100,7 @@ seed value.
 
 The downstream feature can show a single grammar phrase for a whole word by reading that word's segment
 labels **in order** and joining them with the Arabic comma «، » — for example `بِحَمْدِكَ` →
-`حرف جر، اسم مجرور، ضمير متصل في محل جر مضاف إليه`. No word-level summary is stored; it is always derived.
+`حرف جر، اسم مجرور، ضمير متصل للمخاطب`. No word-level summary is stored; it is always derived.
 
 **Why this priority**: It proves the design choice that word summaries need no storage, and it documents
 the exact read-time recipe for the next feature. It depends on US1/US2 but is independently demonstrable.
@@ -112,7 +112,7 @@ extra stored table.
 
 **Acceptance Scenarios**:
 
-1. **Given** the segments of `بِحَمْدِكَ` (2:30:20) in order, **When** their labels are joined with «، », **Then** the phrase is `حرف جر، اسم مجرور، ضمير متصل في محل جر مضاف إليه`.
+1. **Given** the segments of `بِحَمْدِكَ` (2:30:20) in order, **When** their stored segment labels are joined with «، », **Then** the phrase is `حرف جر، اسم مجرور، ضمير متصل للمخاطب`.
 2. **Given** the whole feature output, **When** the schema is inspected, **Then** there is **no** stored per-word i‘rab summary table (no `quran_word_i3rab`) and **no** separate per-segment i‘rab table (no `quran_word_segment_i3rab`).
 3. **Given** any readable word, **When** its ordered segment labels are read, **Then** a displayable Arabic phrase can be produced (100% of words are displayable).
 
