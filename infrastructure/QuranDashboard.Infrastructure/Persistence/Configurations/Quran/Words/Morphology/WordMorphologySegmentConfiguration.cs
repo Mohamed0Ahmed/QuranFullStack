@@ -6,7 +6,12 @@ public sealed class WordMorphologySegmentConfiguration : IEntityTypeConfiguratio
 {
     public void Configure(EntityTypeBuilder<WordMorphologySegment> builder)
     {
-        builder.ToTable("quran_word_morphology_segments");
+        builder.ToTable("quran_word_morphology_segments", table =>
+        {
+            table.HasCheckConstraint(
+                "CK_quran_word_morphology_segments_i3rab_status",
+                "i3rab_status IN ('approved', 'needs_review', 'unsupported')");
+        });
 
         builder.HasKey(s => s.Id);
         builder.Property(s => s.Id)
@@ -62,6 +67,20 @@ public sealed class WordMorphologySegmentConfiguration : IEntityTypeConfiguratio
             .HasColumnType("jsonb")
             .HasColumnName("features_json");
 
+        builder.Property(s => s.I3rabArabic)
+            .HasColumnName("i3rab_arabic");
+
+        builder.Property(s => s.I3rabRuleId)
+            .HasColumnName("i3rab_rule_id");
+
+        builder.Property(s => s.I3rabStatus)
+            .IsRequired()
+            .HasDefaultValue("unsupported")
+            .HasColumnName("i3rab_status");
+
+        builder.Property(s => s.I3rabReviewReason)
+            .HasColumnName("i3rab_review_reason");
+
         builder.HasIndex(s => new { s.QuranWordId, s.SegmentNumber }).IsUnique();
         builder.HasIndex(s => s.Pos);
         builder.HasIndex(s => s.QuranWordId)
@@ -76,6 +95,13 @@ public sealed class WordMorphologySegmentConfiguration : IEntityTypeConfiguratio
         builder.HasOne<PosTag>()
             .WithMany()
             .HasForeignKey(s => s.Pos)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasIndex(s => s.I3rabRuleId);
+
+        builder.HasOne(s => s.I3rabRule)
+            .WithMany()
+            .HasForeignKey(s => s.I3rabRuleId)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

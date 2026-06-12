@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using QuranDashboard.Application;
 using QuranDashboard.Application.Quran.Import.ImportQuranFoundation;
+using QuranDashboard.Application.Quran.Words.GenerateI3rab;
 using QuranDashboard.Application.Quran.Words.ImportMorphology;
 using QuranDashboard.Application.Quran.Words.RebuildDisplayWords;
 using QuranDashboard.Infrastructure;
@@ -27,6 +28,7 @@ internal static class Program
             "import-foundation" => await RunImportFoundationAsync(verbArgs),
             "rebuild-words" => await RunRebuildWordsAsync(verbArgs),
             "import-morphology" => await RunImportMorphologyAsync(verbArgs),
+            "generate-i3rab" => await RunGenerateI3rabAsync(verbArgs),
             _ => UnknownVerb(verb)
         };
     }
@@ -374,6 +376,82 @@ internal static class Program
         return true;
     }
 
+    private static async Task<int> RunGenerateI3rabAsync(string[] args)
+    {
+        if (!TryParseGenerateI3rabArguments(args, out var reportOutDir, out var force, out var errorMessage))
+        {
+            Console.Error.WriteLine(errorMessage);
+            PrintUsage();
+            return GenerateI3rabResult.FailureExitCode;
+        }
+
+        try
+        {
+            var host = CreateHost(args);
+            await using var scope = host.Services.CreateAsyncScope();
+            var handler = scope.ServiceProvider.GetRequiredService<GenerateI3rabHandler>();
+
+            var result = await handler.HandleAsync(
+                new GenerateI3rabCommand(force, reportOutDir),
+                CancellationToken.None);
+
+            if (result.Succeeded)
+            {
+                Console.WriteLine(result.Message);
+                WriteReportPath(result.ReportOutDir);
+                return result.ExitCode;
+            }
+
+            Console.Error.WriteLine(result.Message);
+            WriteReportPath(result.ReportOutDir);
+            return result.ExitCode;
+        }
+        catch (InvalidOperationException ex)
+        {
+            Console.Error.WriteLine(ex.Message);
+            return GenerateI3rabResult.FailureExitCode;
+        }
+    }
+
+    private static bool TryParseGenerateI3rabArguments(
+        string[] args,
+        out string? reportOutDir,
+        out bool force,
+        out string errorMessage)
+    {
+        reportOutDir = null;
+        force = false;
+        errorMessage = string.Empty;
+
+        for (var index = 0; index < args.Length; index++)
+        {
+            switch (args[index])
+            {
+                case "--report-out":
+                    if (!TryReadValue(args, ref index, out reportOutDir))
+                    {
+                        errorMessage = "Missing value for --report-out.";
+                        return false;
+                    }
+
+                    break;
+                case "--force":
+                    force = true;
+                    break;
+                default:
+                    errorMessage = $"Unknown argument '{args[index]}'.";
+                    return false;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(reportOutDir))
+        {
+            reportOutDir = Path.GetFullPath(reportOutDir);
+        }
+
+        return true;
+    }
+
     private static void PrintUsage()
     {
         Console.Error.WriteLine(
@@ -384,5 +462,7 @@ internal static class Program
             "  QuranDashboard.DataImporter rebuild-words [--report-out <path>] [--force]");
         Console.Error.WriteLine(
             "  QuranDashboard.DataImporter import-morphology [--source <path>] [--report-out <path>] [--force]");
+        Console.Error.WriteLine(
+            "  QuranDashboard.DataImporter generate-i3rab [--report-out <path>] [--force]");
     }
 }

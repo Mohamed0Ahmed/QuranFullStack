@@ -4,6 +4,7 @@ using QuranDashboard.Domain.Quran.Surahs;
 using QuranDashboard.Domain.Quran.Words;
 using QuranDashboard.Domain.Quran.Words.Display;
 using QuranDashboard.Domain.Quran.Words.Morphology;
+using QuranDashboard.Domain.Quran.Words.Morphology.Irab;
 
 namespace QuranDashboard.Infrastructure.Persistence;
 
@@ -24,6 +25,7 @@ public sealed class QuranDashboardDbContext(DbContextOptions<QuranDashboardDbCon
     public DbSet<QuranLemma> QuranLemmas => Set<QuranLemma>();
     public DbSet<QuranStem> QuranStems => Set<QuranStem>();
     public DbSet<PosTag> PosTags => Set<PosTag>();
+    public DbSet<QuranI3rabRule> QuranI3rabRules => Set<QuranI3rabRule>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

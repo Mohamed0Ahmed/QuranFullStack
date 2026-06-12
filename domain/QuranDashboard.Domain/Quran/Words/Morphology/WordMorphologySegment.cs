@@ -1,3 +1,5 @@
+using QuranDashboard.Domain.Quran.Words.Morphology.Irab;
+
 namespace QuranDashboard.Domain.Quran.Words.Morphology;
 
 public sealed class WordMorphologySegment
@@ -16,6 +18,11 @@ public sealed class WordMorphologySegment
     public string? LemmaBuckwalter { get; set; }
     public string FeaturesRaw { get; set; } = string.Empty;
     public string? FeaturesJson { get; set; }
+    public string? I3rabArabic { get; set; }
+    public int? I3rabRuleId { get; set; }
+    public string? I3rabStatus { get; set; }
+    public string? I3rabReviewReason { get; set; }
 
     public Words.QuranWord QuranWord { get; set; } = null!;
+    public QuranI3rabRule? I3rabRule { get; set; }
 }
