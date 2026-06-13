@@ -387,7 +387,7 @@ incoming — all using only the three tables and their indexes.
 
 ### Tests for User Story 5 (write FIRST)
 
-- [ ] T042 [P] [US5] Create `MutashabihatReadQueryTests.cs` — after a fixture import, assert: querying
+- [X] T042 [P] [US5] Create `MutashabihatReadQueryTests.cs` — after a fixture import, assert: querying
   `quran_mutashabihat_occurrences` by `ayah_id` returns all of an ayah's groups (the answer
   `phrase_verses.json` would give) with **no** `phrase_verses` table present; querying by `group_id`
   returns the group's occurrences; querying `quran_similar_ayah_links` by `target_ayah_id` returns incoming
@@ -395,7 +395,7 @@ incoming — all using only the three tables and their indexes.
 
 ### Implementation for User Story 5
 
-- [ ] T043 [US5] Confirm the read indexes exist and are used: `occurrences(ayah_id)` (T006),
+- [X] T043 [US5] Confirm the read indexes exist and are used: `occurrences(ayah_id)` (T006),
   `links(target_ayah_id)` (T007) — they are already in the configs/migration; this task verifies them with
   the T042 read-query tests and confirms the DB has **exactly three** mutashabihat tables (no
   `phrase_verses`, no reverse-link table). No new stored structures. Document the read recipes in
