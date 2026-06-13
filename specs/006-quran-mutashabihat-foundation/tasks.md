@@ -243,22 +243,22 @@ stored link count is exactly 3,552 (no synthesized reverse).
 
 ### Tests for User Story 2 (write FIRST; they must FAIL before T027–T029)
 
-- [ ] T025 [P] [US2] Create `MutashabihatSimilarReaderTests.cs` — pure unit: `JsonSimilarAyahReader` parses
+- [x] T025 [P] [US2] Create `MutashabihatSimilarReaderTests.cs` — pure unit: `JsonSimilarAyahReader` parses
   a tiny `matching-ayah.json` into directed link items; `score`/`coverage`/`matched_words_count`/ragged
   `match_words` preserved; a coverage > 100 value is read unchanged.
-- [ ] T026 [P] [US2] Extend `MutashabihatAssemblerTests.cs` (links part) — assert: both ends resolve to
+- [x] T026 [P] [US2] Extend `MutashabihatAssemblerTests.cs` (links part) — assert: both ends resolve to
   `ayah_id`; a fixture with a one-way link produces no reverse row; a coverage-200 row stays 200; a
   self-link fixture is detectable for the `MUT-LINK-NO-SELF` hard check.
 
 ### Implementation for User Story 2
 
-- [ ] T027 [US2] Extend `MutashabihatAssembler.cs` (T020) with the links part: for each source ayah resolve
+- [x] T027 [US2] Extend `MutashabihatAssembler.cs` (T020) with the links part: for each source ayah resolve
   `SourceAyahId`; for each item resolve `matched_ayah_key` → `TargetAyahId`; carry `Score`, raw `Coverage`,
   `MatchedWordsCount`, and `MatchWords` (verbatim json) unchanged; **synthesize no reverse rows**. Append to
   `MutashabihatSourceData.Links`. Per `research.md` R8/R9.
-- [ ] T028 [US2] Extend `EfBulkMutashabihatWriter.cs` (T022) to `COPY` `quran_similar_ayah_links` after
+- [x] T028 [US2] Extend `EfBulkMutashabihatWriter.cs` (T022) to `COPY` `quran_similar_ayah_links` after
   groups/occurrences (all ayah FKs already exist in `quran_ayahs`).
-- [ ] T029 [US2] Add the US2 hard checks to `MutashabihatSql.cs` (T023): `MUT-SIMILAR-SOURCE-COUNT` (1,162),
+- [x] T029 [US2] Add the US2 hard checks to `MutashabihatSql.cs` (T023): `MUT-SIMILAR-SOURCE-COUNT` (1,162),
   `MUT-SIMILAR-LINK-COUNT` (3,552), `MUT-LINK-NO-SELF`, `MUT-SCORE-RANGE` (50–100), `MUT-WORD-RANGE-SHAPE`
   (match_words), and extend `MUT-VERSEKEY-FORMAT` + `MUT-AYAH-RESOLVE` to cover both link ends. Per
   `contracts/validation-report.schema.md`.
