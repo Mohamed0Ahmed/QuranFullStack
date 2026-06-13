@@ -179,10 +179,10 @@ fields; counts equal the recomputed values.
 
 ### Tests for User Story 1 (write FIRST; they must FAIL before T020–T024)
 
-- [ ] T018 [P] [US1] Create `MutashabihatReaderTests.cs` — pure unit (no DB): `JsonPhrasesReader` parses a
+- [x] T018 [P] [US1] Create `MutashabihatReaderTests.cs` — pure unit (no DB): `JsonPhrasesReader` parses a
   tiny `phrases.json` into the expected group/occurrence shapes; opaque `source_group_id`, `source`
   `{key, from, to}`, and ragged `ayah` ranges preserved; raw occurrence entries counted correctly.
-- [ ] T019 [P] [US1] Create `MutashabihatAssemblerTests.cs` (groups part) — assert: `verse_key → ayah_id`
+- [x] T019 [P] [US1] Create `MutashabihatAssemblerTests.cs` (groups part) — assert: `verse_key → ayah_id`
   resolution; the 1 duplicate identical occurrence collapses (3 raw → 2 stored in a fixture mirroring group
   75); counters recomputed (a fixture with stale source counters → stored counts come from the actual
   occurrences, raw kept in `RawSourceCounts`); representative occurrence flagged; the `source.key`-absent
@@ -190,7 +190,7 @@ fields; counts equal the recomputed values.
 
 ### Implementation for User Story 1
 
-- [ ] T020 [US1] Create `Backend/infrastructure/QuranDashboard.Infrastructure/Files/Quran/Mutashabihat/MutashabihatAssembler.cs`
+- [x] T020 [US1] Create `Backend/infrastructure/QuranDashboard.Infrastructure/Files/Quran/Mutashabihat/MutashabihatAssembler.cs`
   (groups + occurrences part): given the parsed phrases + the `verse_key → ayah_id` map, for each group
   resolve `source.key` → `RepresentativeAyahId` and copy `source.from/to`; expand the `ayah` map into
   `OccurrenceDto`s (resolve each `verse_key` → `AyahId`); **collapse duplicates** on
@@ -198,26 +198,26 @@ fields; counts equal the recomputed values.
   `IsRepresentative = true` (group `1782`: none); **recompute** `OccurrenceCount` /
   `DistinctAyahCount` / `DistinctSurahCount`; set `RawSourceCounts` from the source `{surahs, ayahs, count}`.
   Logic per `research.md` R5–R7 and `data-model.md` §1–§2. Mirror `MorphologyAssembler.cs`.
-- [ ] T021 [US1] Create `Backend/infrastructure/QuranDashboard.Infrastructure/Files/Quran/Mutashabihat/MutashabihatImportSource.cs`
+- [x] T021 [US1] Create `Backend/infrastructure/QuranDashboard.Infrastructure/Files/Quran/Mutashabihat/MutashabihatImportSource.cs`
   implementing `IMutashabihatImportSource.LoadAsync` + `SourceUnchangedAsync` — verify the manifest (T013),
   parse both files (T014/T015), read `quran_ayahs.{id, verse_key, words_count_real}` (read-only) and build
   the `verse_key → ayah_id` map, run the assembler (T020) into `MutashabihatSourceData`. If `quran_ayahs`
   is missing/empty, surface a clean early refusal (`AyahsMissing`); if any reference fails to resolve,
   surface it for the `MUT-AYAH-RESOLVE` hard check. Capture pre-run file digests. Mirror
   `MorphologyImportSource.cs`. (Links assembly is added in US2 — T027.)
-- [ ] T022 [US1] Create `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Repositories/Quran/Mutashabihat/EfBulkMutashabihatWriter.cs`
+- [x] T022 [US1] Create `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Repositories/Quran/Mutashabihat/EfBulkMutashabihatWriter.cs`
   (groups + occurrences COPY part): implement `AnyTargetTableHasDataAsync` and the first `ImportAsync`
   path — inside a transaction, Npgsql binary `COPY` `quran_mutashabihat_groups` then
   `quran_mutashabihat_occurrences` (FK-safe order; occurrences reference groups), streaming surrogate ids.
   Mirror `EfBulkMorphologyWriter.cs` + `MorphologyBulkCopier.cs`. (Full validate-before-commit gate is
   completed in US3 — T032; for now COPY inside a transaction and commit.)
-- [ ] T023 [US1] Create `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Repositories/Quran/Mutashabihat/MutashabihatSql.cs`
+- [x] T023 [US1] Create `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Repositories/Quran/Mutashabihat/MutashabihatSql.cs`
   and add the US1 hard-check queries: `MUT-GROUP-COUNT` (814), `MUT-STORED-OCCURRENCE-COUNT` (3,557),
   `MUT-OCCURRENCE-UNIQUE`, `MUT-GROUP-MIN-SIZE` (≥2), `MUT-WORD-RANGE-SHAPE` (occurrence ranges),
   `MUT-VERSEKEY-FORMAT` + `MUT-AYAH-RESOLVE` (group source.key + occurrence refs). Plus the assembly-time
   `MUT-RAW-OCCURRENCE-COUNT` (3,558). Exact assertions in `data-model.md` "Validation invariants" +
   `contracts/validation-report.schema.md`. Mirror `MorphologySql.cs`.
-- [ ] T024 [US1] Create the Application command/handler
+- [x] T024 [US1] Create the Application command/handler
   `Backend/application/QuranDashboard.Application/Quran/Mutashabihat/ImportMutashabihat/{ImportMutashabihatCommand,ImportMutashabihatHandler,ImportMutashabihatResult}.cs`
   — orchestrate early refusals first (source/manifest mismatch → refuse; `quran_ayahs` missing/empty →
   refuse; `!force` && `AnyTargetTableHasDataAsync` → refuse), else `ImportAsync` → map verdict to
