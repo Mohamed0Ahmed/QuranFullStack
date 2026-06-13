@@ -341,32 +341,32 @@ ayahs).
 
 ### Tests for User Story 4 (write FIRST)
 
-- [ ] T036 [P] [US4] Create `MutashabihatReportShapeTests.cs` — assert the Markdown + JSON report contain:
+- [X] T036 [P] [US4] Create `MutashabihatReportShapeTests.cs` — assert the Markdown + JSON report contain:
   the four written counts + the raw occurrence count, per-check `id`/`severity`/`passed`, and the warning
   counts (coverage>100, duplicate-occurrence, source-key-absent, provenance/license-unknown, stale-counters).
-- [ ] T037 [P] [US4] Create `MutashabihatWarningTests.cs` — assert each warning/info check is **recorded
+- [X] T037 [P] [US4] Create `MutashabihatWarningTests.cs` — assert each warning/info check is **recorded
   but never blocks**: a coverage-200 fixture commits with `MUT-COVERAGE-GT-100 = 1`; the duplicate-occurrence
   fixture commits with `MUT-DUPLICATE-OCCURRENCE = 1`; the source-key-absent fixture commits with
   `MUT-SOURCE-KEY-ABSENT = 1`; a stale-counter fixture commits with recomputed values and the diff reported.
 
 ### Implementation for User Story 4
 
-- [ ] T038 [US4] Create
+- [X] T038 [US4] Create
   `Backend/infrastructure/QuranDashboard.Infrastructure/Reports/Quran/Mutashabihat/MarkdownJsonMutashabihatReportWriter.cs`
   implementing `IMutashabihatReportWriter` — write Markdown + JSON per
   `contracts/validation-report.schema.md` for every **started build** (pass or fail), default dir
   `resources/report/mutashabihat/`. Mirror `MarkdownJsonMorphologyReportWriter.cs`.
-- [ ] T039 [US4] Register `IMutashabihatReportWriter`→`MarkdownJsonMutashabihatReportWriter` in
+- [X] T039 [US4] Register `IMutashabihatReportWriter`→`MarkdownJsonMutashabihatReportWriter` in
   `Backend/infrastructure/QuranDashboard.Infrastructure/DependencyInjection.cs` (now that the concrete type
   from T038 exists — this completes the registrations deferred from T034), then wire the report writer into
   `ImportMutashabihatHandler` (T024): call it after every started build (commit or rollback); early
   refusals (manifest mismatch, missing/empty `quran_ayahs`, non-empty targets without `--force`) print to
   console and write **no** report artifact.
-- [ ] T040 [US4] Add the warning checks to `MutashabihatSql.cs` / assembler and the result `Checks`:
+- [X] T040 [US4] Add the warning checks to `MutashabihatSql.cs` / assembler and the result `Checks`:
   `MUT-COVERAGE-GT-100` (4), `MUT-DUPLICATE-OCCURRENCE` (1), `MUT-SOURCE-KEY-ABSENT` (1),
   `MUT-STALE-SOURCE-COUNTERS` (count), `MUT-WORD-RANGE-UPPER-BOUND` (vs `quran_ayahs.words_count_real`),
   `MUT-PROVENANCE-LICENSE-UNKNOWN` (2 source files). All severity `warning` — recorded, never gate.
-- [ ] T041 [US4] Add the informational checks: `MUT-ONEWAY-LINKS` (≈1,120), `MUT-CROSS-DATASET-OVERLAP`
+- [X] T041 [US4] Add the informational checks: `MUT-ONEWAY-LINKS` (≈1,120), `MUT-CROSS-DATASET-OVERLAP`
   (≈792 ayahs / 813 pairs), `MUT-SURAH-COVERAGE` (109/114; 3,084 distinct ayahs), and the optional
   `MUT-PHRASE-VERSES-CONSISTENCY` (only if `phrase_verses.json` is passed for cross-check; never stored).
   All severity `info`.
