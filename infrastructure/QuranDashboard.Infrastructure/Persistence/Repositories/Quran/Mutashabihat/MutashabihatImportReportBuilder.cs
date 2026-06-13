@@ -18,7 +18,7 @@ internal static class MutashabihatImportReportBuilder
         var storedOccurrenceCount = source.Groups.Sum(group => group.Occurrences.Count);
         var duplicateCount = rawOccurrenceCount - storedOccurrenceCount;
         var sourceKeyAbsentCount = source.Groups.Count(
-            group => group.Occurrences.All(occurrence => !occurrence.IsRepresentative));
+            group => !group.Occurrences.Any(occurrence => occurrence.AyahId == group.RepresentativeAyahId));
         var staleCounterCount = CountStaleSourceCounters(source);
 
         return

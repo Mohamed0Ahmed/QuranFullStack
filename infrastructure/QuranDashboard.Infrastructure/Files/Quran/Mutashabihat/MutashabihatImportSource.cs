@@ -83,7 +83,9 @@ public sealed class MutashabihatImportSource : IMutashabihatImportSource
     private static bool IsProvenanceLicenseUnknown(string? notes) =>
         string.IsNullOrWhiteSpace(notes)
         || notes.Contains("UNKNOWN", StringComparison.OrdinalIgnoreCase)
-        || notes.Contains("TODO", StringComparison.OrdinalIgnoreCase);
+        || notes.Contains("TODO", StringComparison.OrdinalIgnoreCase)
+        || notes.Contains("not yet documented", StringComparison.OrdinalIgnoreCase)
+        || notes.Contains("not documented", StringComparison.OrdinalIgnoreCase);
 
     public async Task<bool> SourceUnchangedAsync(string sourcePath, CancellationToken ct)
     {
