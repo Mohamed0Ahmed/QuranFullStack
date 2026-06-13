@@ -2,7 +2,7 @@ namespace QuranDashboard.Application.Abstractions.Quran.Words.Morphology.Irab;
 
 public interface II3rabGenerationSource
 {
-    bool MorphologyIsReady(out int segmentCount);
+    I3rabMorphologyReadiness AssessMorphologyReadiness();
 
     bool I3rabAlreadyPopulated();
 

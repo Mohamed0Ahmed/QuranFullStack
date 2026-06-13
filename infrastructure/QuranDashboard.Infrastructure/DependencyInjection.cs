@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using QuranDashboard.Application.Abstractions.Quran.Import;
 using QuranDashboard.Application.Abstractions.Quran.Words.Display;
 using QuranDashboard.Application.Abstractions.Quran.Words.Morphology;
+using QuranDashboard.Application.Abstractions.Quran.Words.Morphology.Irab;
 using QuranDashboard.Infrastructure.Files.Quran.Import;
 using QuranDashboard.Infrastructure.Files.Quran.Morphology;
 using QuranDashboard.Infrastructure.Persistence;
@@ -10,6 +11,9 @@ using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Import;
 using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Morphology;
 using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Words.Display;
 using QuranDashboard.Infrastructure.Reports.Quran;
+using QuranDashboard.Infrastructure.Files.Quran.Morphology.Irab;
+using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Irab;
+using QuranDashboard.Infrastructure.Reports.Quran.Irab;
 using QuranDashboard.Infrastructure.Reports.Quran.Morphology;
 using QuranDashboard.Infrastructure.Reports.Quran.Words;
 
@@ -48,6 +52,15 @@ public static class DependencyInjection
         services.AddScoped<IMorphologyImportSource, MorphologyImportSource>();
         services.AddScoped<IMorphologyImportWriter, EfBulkMorphologyWriter>();
         services.AddSingleton<IMorphologyReportWriter, MarkdownJsonMorphologyReportWriter>();
+
+        services.AddSingleton(I3rabExpectedCounts.Production);
+        services.AddSingleton<II3rabRuleCatalog, I3rabRuleCatalogSeed>();
+        services.AddSingleton<II3rabAssembler, I3rabAssembler>();
+        services.AddScoped<II3rabCommandExecutor, I3rabCommandExecutor>();
+        services.AddScoped<II3rabGenerationSource, EfI3rabGenerationSource>();
+        services.AddScoped<II3rabGenerationWriteProbe, NullI3rabGenerationWriteProbe>();
+        services.AddScoped<II3rabGenerationWriter, EfI3rabGenerationWriter>();
+        services.AddScoped<II3rabGenerationReportWriter, MarkdownJsonI3rabReportWriter>();
 
         return services;
     }

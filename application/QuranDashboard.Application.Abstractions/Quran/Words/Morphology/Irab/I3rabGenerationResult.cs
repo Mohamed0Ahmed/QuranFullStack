@@ -9,6 +9,8 @@ public sealed record I3rabGenerationResult(
     int UnsupportedCount,
     int RuleCount,
     int FamilyCount,
+    int ReadableWordCount,
     int WordsDisplayable,
+    int NullFormsPreserved,
     IReadOnlyList<I3rabCheckResult> Checks,
-    string? ReportPath);
+    IReadOnlyList<I3rabWarning> Warnings);
