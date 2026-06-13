@@ -407,19 +407,19 @@ incoming — all using only the three tables and their indexes.
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T044 Run the full import against the real staged source
+- [X] T044 Run the full import against the real staged source
   (`App/resources/import-sources/mutashabihat/`) via the CLI verb and confirm the report: verdict PASS,
   groups = 814, stored occurrences = 3,557 (raw 3,558), links = 3,552, sources = 1,162, distinct ayahs =
   3,084; warnings coverage>100=4, duplicate-occurrence=1, source-key-absent=1, provenance/license-unknown=2;
   all hard checks ✅. Save the report under `resources/report/mutashabihat/`.
-- [ ] T045 Run `dotnet test Backend/tests/QuranDashboard.Tests` and confirm all Mutashabihat tests pass;
+- [X] T045 Run `dotnet test Backend/tests/QuranDashboard.Tests` and confirm all Mutashabihat tests pass;
   run `dotnet build Backend` clean.
-- [ ] T046 [P] Clean-code + test-guard self-check (per root `CLAUDE.md`): naming/functions/SOLID/DRY/KISS;
+- [X] T046 [P] Clean-code + test-guard self-check (per root `CLAUDE.md`): naming/functions/SOLID/DRY/KISS;
   if `EfBulkMutashabihatWriter` or `MutashabihatAssembler` approaches the service soft threshold (300/450
   lines), split by responsibility (e.g. a `MutashabihatBulkCopier` / `MutashabihatValidationRunner` as
   morphology did); confirm tests assert behavior on real infrastructure (Testcontainers) and use only
   source-safe fabricated tokens (no real verse passages).
-- [ ] T047 [P] Update the long-form companion doc
+- [X] T047 [P] Update the long-form companion doc
   `docs/feature-006-quran-mutashabihat-foundation/feature-006-quran-mutashabihat-foundation-planning-report.md`
   only if implementation revealed a deviation from the plan (otherwise leave as-is).
 
