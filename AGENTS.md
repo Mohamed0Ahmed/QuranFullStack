@@ -1,13 +1,13 @@
 <!-- SPECKIT START -->
 
-Active feature: **Word Simple I‘rab Foundation** — branch `005-word-simple-i3rab-foundation`.
+Active feature: **Quran Mutashabihat Foundation** — branch `006-quran-mutashabihat-foundation`.
 For technologies, project structure, shell commands, and design artifacts, read the current plan
 and its siblings:
 
-- `specs/005-word-simple-i3rab-foundation/plan.md` — technical context, project structure, gates
-- `specs/005-word-simple-i3rab-foundation/spec.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/`
-- `docs/feature-005-word-simple-i3rab-foundation/feature-005-word-simple-i3rab-foundation-planning-report.md` — long-form companion plan
-- `Backend/report/feature-005-word-simple-i3rab-foundation/segment-pattern-rule-coverage-report.md` — the authoritative 142-signature / 67-family catalogue + exact Arabic labels (source for the rule seed)
+- `specs/006-quran-mutashabihat-foundation/plan.md` — technical context, project structure, gates
+- `specs/006-quran-mutashabihat-foundation/spec.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/`
+- `docs/feature-006-quran-mutashabihat-foundation/feature-006-quran-mutashabihat-foundation-planning-report.md` — long-form companion plan
+- `docs/feature-006-quran-mutashabihat-foundation/mutashabihat-data-capability-report.md` — the validated source inventory (every count traces here)
 
 <!-- SPECKIT END -->
 

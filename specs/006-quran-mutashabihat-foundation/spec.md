@@ -44,7 +44,7 @@ and are stored with **references and word positions only — never any copied Qu
 ### Session 2026-06-13
 
 These were the open decisions in the planning report. They are resolved here as locked v1 choices so
-implementation has no ambiguity. (Items still flagged for `/speckit.clarify` are noted in **Assumptions**.)
+implementation has no ambiguity.
 
 - Q: Should `coverage` values greater than 100 (4 known rows) be clamped on import? → A: **No.** Store
   the **raw** `coverage` exactly as in the source (range 5–200). Any clamping/normalisation is a future
@@ -60,6 +60,27 @@ implementation has no ambiguity. (Items still flagged for `/speckit.clarify` are
   stale for tens of groups. Trust them or recompute? → A: **Recompute** all stored counters from the
   actual occurrence data during import. The original stale counters MAY be kept verbatim in an audit
   column for traceability, but are never used as the stored counts.
+- Q: How many repeated-phrase occurrences are stored when the source has a duplicate identical range? →
+  A: The raw source contains **3,558** occurrence entries, including **1** duplicate identical occurrence
+  (group 75, ayah 16:28). The duplicate is collapsed by the occurrence uniqueness rule, so the stored
+  unique occurrence count is **3,557**.
+- Q: Must every group have an occurrence row flagged as representative? → A: **At most one** occurrence
+  row may be flagged representative per group. Normal groups whose `source.key` is present in their
+  occurrence list have exactly one representative occurrence. The known anomalous group
+  `source_group_id = 1782`, `source.key = 3:28`, is allowed to have **zero** representative occurrence
+  rows; its group-level `representative_ayah_id`, `representative_word_from`, and
+  `representative_word_to` are still stored from the source `source` metadata, and
+  `MUT-SOURCE-KEY-ABSENT` records the non-blocking warning.
+- Q: What does idempotency mean when target tables are already populated? → A: A **non-forced** run
+  against non-empty target tables refuses and writes nothing. A **forced** re-import against an unchanged
+  source produces identical stored data and counts.
+- Q: How should unknown source provenance/license affect the v1 import? → A: Allow the v1 import with
+  unknown provenance/license, but record it as a report warning and block any future publishing until
+  provenance/license are resolved.
+- Q: How should word-range index base be handled? → A: Treat word ranges as **1-based source indices**,
+  store them unchanged, and keep `MUT-WORD-RANGE-UPPER-BOUND` as a warning only.
+- Q: What should the default staged source package path be? → A: Keep
+  `resources/import-sources/mutashabihat/` as the default source package path.
 
 ---
 
@@ -82,25 +103,30 @@ there is nothing for phrase-occurrence navigation to read. It is independently v
 similar-ayah dataset (US2) were never imported.
 
 **Independent Test**: Run the import on the staged package, then query the group store: confirm exactly
-**814** groups and **3,558** occurrences exist, every occurrence's `ayah_id` resolves to a `quran_ayahs`
-row, every group has **at least 2** distinct ayahs, and a spot check of a known group (e.g. the group
-whose representative phrase is anchored at `2:23`) lists its expected member ayahs.
+**814** groups and **3,557** stored unique occurrences exist (from **3,558** raw source occurrence
+entries after collapsing **1** duplicate identical occurrence), every occurrence's `ayah_id` resolves to
+a `quran_ayahs` row, every group has **at least 2** distinct ayahs, and a spot check of a known group
+(e.g. the group whose representative phrase is anchored at `2:23`) lists its expected member ayahs.
 
 **Acceptance Scenarios**:
 
 1. **Given** the staged `phrases.json`, **When** the import commits, **Then** there are exactly **814**
-   rows in `quran_mutashabihat_groups` and **3,558** rows in `quran_mutashabihat_occurrences`.
+   rows in `quran_mutashabihat_groups` and **3,557** stored unique rows in
+   `quran_mutashabihat_occurrences`, with the **1** duplicate identical raw occurrence collapsed.
 2. **Given** any occurrence row, **When** its `ayah_id` is followed, **Then** it resolves to exactly one
    `quran_ayahs` row, and its `word_from`/`word_to` are positive with `word_to ≥ word_from`.
 3. **Given** any group row, **When** its occurrences are counted, **Then** the group has **≥ 2** distinct
-   member ayahs (no single-ayah groups), and exactly one of its occurrences is flagged
+   member ayahs (no single-ayah groups), and **at most one** of its occurrences is flagged
    `is_representative = true`.
 4. **Given** a group's stored `occurrence_count`, `distinct_ayah_count`, `distinct_surah_count`, **When**
    they are compared to its actual occurrence rows, **Then** they match the **recomputed** values (not
    the source's stale pre-computed numbers).
-5. **Given** the one source group whose representative phrase key is absent from its own occurrence list
+5. **Given** a normal group whose `source.key` is present in its occurrence list, **When** the import
+   commits, **Then** exactly one occurrence is flagged `is_representative = true`.
+6. **Given** the one source group whose representative phrase key is absent from its own occurrence list
    (group `source_group_id = 1782`, anchor `3:28`), **When** the import runs, **Then** the group is still
-   imported and a non-blocking warning records the anomaly.
+   imported with zero representative occurrence rows, its group-level representative fields remain
+   populated from source metadata, and a non-blocking warning records the anomaly.
 
 ---
 
@@ -149,11 +175,10 @@ already populated, it refuses unless an explicit **force** option is given.
 This story is what makes the import safe to run in CI and to re-run after a source refresh.
 
 **Independent Test**: (a) Snapshot `quran_ayahs`, `quran_words`, and the source file checksums, run the
-import, and confirm all are unchanged afterward. (b) Run the import twice and confirm the second run
-yields identical row counts (idempotent). (c) Run against already-populated tables without force and
-confirm it refuses and writes nothing; with force, confirm it cleanly repopulates to an identical
-result. (d) Force a hard-check failure and confirm a full rollback (all three tables empty, non-zero
-exit, failure report written).
+import, and confirm all are unchanged afterward. (b) Run a forced re-import against the unchanged source
+and confirm it produces identical stored data and counts. (c) Run against already-populated tables
+without force and confirm it refuses and writes nothing. (d) Force a hard-check failure and confirm a
+full rollback (all three tables empty, non-zero exit, failure report written).
 
 **Acceptance Scenarios**:
 
@@ -163,7 +188,7 @@ exit, failure report written).
    **Then** they are unchanged (the import never writes to the source).
 3. **Given** already-populated mutashabihat tables, **When** the import is run without force, **Then** it
    refuses with a clear message and writes nothing; **When** run with force, **Then** it cleanly
-   replaces the data and ends with the same counts as a fresh import.
+   replaces the data and ends with the same stored data and counts as a fresh import.
 4. **Given** a hard validation check fails during a run, **When** the gate evaluates, **Then** nothing is
    committed (all three tables remain empty / unchanged), a failure report is written, and the process
    exits non-zero.
@@ -185,9 +210,10 @@ anomalies are surfaced without failing the build. It depends on US1/US2 but is i
 demonstrable by inspecting the report artifact.
 
 **Independent Test**: Run the import and open the report: confirm it lists each hard check as passed,
-the exact written counts (814 / 3,558 / 3,552 / 1,162), the warning counts (coverage-over-100 = 4,
-duplicate-occurrence = 1, source-key-absent = 1, stale-counter groups), and the informational figures
-(one-way links, cross-dataset overlap, surah coverage).
+the exact written counts (814 / 3,557 / 3,552 / 1,162), the raw source occurrence count (**3,558**),
+the warning counts (coverage-over-100 = 4, duplicate-occurrence = 1, source-key-absent = 1,
+stale-counter groups), and the informational figures (one-way links, cross-dataset overlap, surah
+coverage).
 
 **Acceptance Scenarios**:
 
@@ -238,17 +264,19 @@ by `source_ayah_id` and its incoming ones by `target_ayah_id` — all using only
 - **An ayah belongs to many phrase groups (1–7):** ayah↔group is many-to-many, realised through
   occurrence rows; querying occurrences by `ayah_id` returns every group. (See FR-006, FR-027.)
 - **Duplicate identical occurrence in the source (1 known: group 75, ayah 16:28 has `[[17,19],[17,19]]`):**
-  collapsed by the occurrence uniqueness constraint; recorded as a non-blocking warning, not an error.
-  (See FR-009, FR-030.)
+  the raw source has **3,558** occurrence entries; this duplicate is collapsed by the occurrence
+  uniqueness constraint, yielding **3,557** stored unique occurrences. The duplicate is recorded as a
+  non-blocking warning, not an error. (See FR-009, FR-030.)
 - **A group's representative phrase key is absent from its own occurrence list (1 known: group 1782,
   `3:28`):** the group is still imported; a non-blocking warning records it. The representative word
-  range is still stored on the group. (See FR-008, FR-030.)
+  range and representative ayah are still stored on the group from source metadata. The group has zero
+  representative occurrence rows. (See FR-008, FR-030.)
 - **`coverage` greater than 100 (4 known rows):** stored raw (not clamped); recorded as a non-blocking
   warning. (See FR-016, FR-030.)
 - **One-way similar links with no reverse (≈1,120):** stored exactly as-is; **no** reverse row is
   invented. Recorded as an informational figure. (See FR-015, FR-031.)
 - **A word range whose upper index exceeds the ayah's word count:** flagged as a non-blocking warning
-  (possible index-base mismatch), never silently dropped. (See FR-030.)
+  (possible source/corpus alignment mismatch), never silently dropped or rewritten. (See FR-030.)
 - **Source file changed mid-run (checksum drifts between read and commit):** the run refuses to commit
   and rolls back rather than persisting possibly-inconsistent data. (See FR-024.)
 - **A referenced verse_key that does not resolve to `quran_ayahs`:** this is a **hard** failure (the
@@ -287,27 +315,36 @@ by `source_ayah_id` and its incoming ones by `target_ayah_id` — all using only
 - **FR-004**: `quran_mutashabihat_groups` MUST have a **unique** index on `source_group_id` (the
   idempotency/provenance key) and a non-unique index on `representative_ayah_id`.
 - **FR-005**: The three count columns (`occurrence_count`, `distinct_ayah_count`, `distinct_surah_count`)
-  MUST be **recomputed** from the group's actual occurrences during import. The source's pre-computed
-  `surahs`/`ayahs`/`count` MUST NOT be used as the stored counts; they MAY be preserved verbatim in
-  `raw_source_counts`. Every group MUST have `distinct_ayah_count ≥ 2` (no single-ayah groups).
+  MUST be **recomputed** from the group's stored unique occurrence rows after dedupe during import. The
+  source's pre-computed `surahs`/`ayahs`/`count` MUST NOT be used as the stored counts; they MAY be
+  preserved verbatim in `raw_source_counts`. Every group MUST have `distinct_ayah_count ≥ 2` (no
+  single-ayah groups).
 
 **Repeated-phrase occurrences — `quran_mutashabihat_occurrences`**
 
-- **FR-006**: The system MUST create `quran_mutashabihat_occurrences` with one row per (group, ayah,
-  word-range) occurrence (**3,558 rows**). Required columns: `id` (integer primary key, surrogate),
-  `group_id` (integer **NOT NULL**, foreign key → `quran_mutashabihat_groups.id`, **ON DELETE CASCADE**),
-  `ayah_id` (integer **NOT NULL**, foreign key → `quran_ayahs.id`), `word_from` (smallint **NOT NULL**),
-  `word_to` (smallint **NOT NULL**), and `is_representative` (boolean **NOT NULL, default false**).
+- **FR-006**: The system MUST create `quran_mutashabihat_occurrences` with one row per unique (group,
+  ayah, word-range) occurrence (**3,557 stored rows**), derived from **3,558** raw source occurrence
+  entries after collapsing **1** duplicate identical occurrence. Required columns: `id` (integer primary
+  key, surrogate), `group_id` (integer **NOT NULL**, foreign key →
+  `quran_mutashabihat_groups.id`, **ON DELETE CASCADE**), `ayah_id` (integer **NOT NULL**, foreign key →
+  `quran_ayahs.id`), `word_from` (smallint **NOT NULL**), `word_to` (smallint **NOT NULL**), and
+  `is_representative` (boolean **NOT NULL, default false**).
 - **FR-007**: `quran_mutashabihat_occurrences` MUST enforce a **unique** constraint on
   (`group_id`, `ayah_id`, `word_from`, `word_to`) — this collapses the one known duplicate occurrence —
   and MUST have a non-unique index on `ayah_id` (the "all mutashabihat of this ayah" lookup).
-- **FR-008**: For each group, exactly one occurrence MUST be flagged `is_representative = true` — the one
-  matching the source's `source` phrase (`source.key` + `source.from`/`source.to`). If the source key is
-  absent from the group's occurrence list (the 1 known case), the group still imports and no occurrence
-  is flagged representative for it; this is recorded as a warning (FR-030).
-- **FR-009**: Word ranges MUST be stored as the source's positive integer indices, with
+- **FR-008**: For each group, **at most one** occurrence MUST be flagged
+  `is_representative = true` — the one matching the source's `source` phrase (`source.key` +
+  `source.from`/`source.to`). For normal groups whose `source.key` is present in the group's occurrence
+  list, exactly one occurrence MUST be flagged representative. For the known anomalous group
+  `source_group_id = 1782`, `source.key = 3:28`, zero representative occurrence rows are allowed; the
+  group-level `representative_ayah_id`, `representative_word_from`, and `representative_word_to` remain
+  populated from the source `source` metadata, and the anomaly is recorded as warning
+  `MUT-SOURCE-KEY-ABSENT` (FR-030).
+- **FR-009**: Word ranges MUST be treated as **1-based source indices** and stored unchanged, with
   `word_from ≥ 1` and `word_to ≥ word_from`. Duplicate identical ranges within the same (group, ayah)
-  are collapsed by FR-007 and counted as a warning.
+  are collapsed by FR-007 and counted as a warning. If a range's upper index exceeds the referenced
+  ayah's word count, the row is still stored unchanged and reported via `MUT-WORD-RANGE-UPPER-BOUND`
+  (FR-030).
 
 **Similar-ayah links — `quran_similar_ayah_links`**
 
@@ -367,10 +404,9 @@ by `source_ayah_id` and its incoming ones by `target_ayah_id` — all using only
 - **FR-021**: The import MUST be **transactional and gated**: assemble both datasets in memory (resolving
   ayah ids and recomputing counters), run all hard checks (FR-029), and commit **only if all pass**; on
   any hard-check failure it MUST roll back (write nothing), emit a failure report, and exit non-zero.
-- **FR-022**: The import MUST be **idempotent**: re-running against the unchanged source yields identical
-  stored data and counts. It MUST **refuse** to overwrite already-populated mutashabihat tables unless an
-  explicit **force** option is given; a force run MUST cleanly replace all three tables and end with an
-  identical result.
+- **FR-022**: The import MUST use explicit safe re-run semantics: a non-forced run against non-empty
+  target tables MUST refuse and write nothing; a forced re-import against an unchanged source MUST
+  cleanly replace all three tables and produce identical stored data and counts.
 - **FR-023**: The import MUST detect that `quran_ayahs` is missing/empty (so references cannot resolve)
   and **refuse** with a clear message, writing nothing.
 - **FR-024**: The import MUST re-verify the source checksums (FR-019) after assembly and before commit
@@ -395,6 +431,8 @@ by `source_ayah_id` and its incoming ones by `target_ayah_id` — all using only
   - `MUT-JSON-SHAPE` — both roots are objects; group values carry `{source, ayah}`; each similar item
     carries `{matched_ayah_key, score, coverage, matched_words_count, match_words}`.
   - `MUT-GROUP-COUNT` — group count equals the manifest's expected **814**.
+  - `MUT-RAW-OCCURRENCE-COUNT` — raw occurrence entries in `phrases.json` equal **3,558**.
+  - `MUT-STORED-OCCURRENCE-COUNT` — stored unique occurrence rows after dedupe equal **3,557**.
   - `MUT-SIMILAR-SOURCE-COUNT` — distinct source-ayah count equals the manifest's expected **1,162**.
   - `MUT-SIMILAR-LINK-COUNT` — directed link count equals **3,552**.
   - `MUT-VERSEKEY-FORMAT` — every reference matches `surah:ayah` (`^\d+:\d+$`).
@@ -413,11 +451,16 @@ by `source_ayah_id` and its incoming ones by `target_ayah_id` — all using only
   - `MUT-DUPLICATE-OCCURRENCE` — count of identical occurrence ranges collapsed by FR-007 (expected
     **1**: group 75, ayah 16:28).
   - `MUT-SOURCE-KEY-ABSENT` — count of groups whose `source.key` is absent from their own occurrences
-    (expected **1**: group 1782, 3:28).
+    (expected **1**: group 1782, 3:28); this known anomaly allows zero representative occurrence rows
+    while keeping the group-level representative fields populated from source metadata.
   - `MUT-STALE-SOURCE-COUNTERS` — count of groups whose source `surahs`/`ayahs`/`count` disagreed with
     the recomputed values (recomputed values win).
   - `MUT-WORD-RANGE-UPPER-BOUND` — count of word ranges whose upper index exceeds the referenced ayah's
-    word count in `quran_ayahs` (`words_count_real`) — a possible index-base mismatch.
+    word count in `quran_ayahs` (`words_count_real`) — a possible source/corpus alignment mismatch;
+    ranges remain stored unchanged.
+  - `MUT-PROVENANCE-LICENSE-UNKNOWN` — source provenance/license remains unknown in the staged manifest
+    (expected **2** source files until resolved); this never gates the v1 import but blocks future
+    publishing.
 - **FR-031**: Each run MUST evaluate these **informational checks** (recorded in the report; never gate):
   - `MUT-ONEWAY-LINKS` — count of directed links with no stored reverse (≈ **1,120**).
   - `MUT-CROSS-DATASET-OVERLAP` — ayahs and undirected pairs shared by both datasets (≈ **792** ayahs /
@@ -430,11 +473,11 @@ by `source_ayah_id` and its incoming ones by `target_ayah_id` — all using only
 **Reporting**
 
 - **FR-032**: Each run that begins building MUST produce a single human-readable **report artifact**
-  (default location `resources/report/mutashabihat/`) containing: the written row counts (groups,
-  occurrences, links, distinct source ayahs), every hard check's pass/fail, every warning check's count,
-  every informational figure, and the final outcome (committed / rolled back). Early refusals (missing
-  file, checksum mismatch, non-empty tables without force, missing `quran_ayahs`) report to the console
-  and write no report artifact.
+  (default location `resources/report/mutashabihat/`) containing: the written row counts (groups, stored
+  unique occurrences, links, distinct source ayahs), the raw source occurrence count, every hard check's
+  pass/fail, every warning check's count, every informational figure, and the final outcome (committed /
+  rolled back). Early refusals (missing file, checksum mismatch, non-empty tables without force, missing
+  `quran_ayahs`) report to the console and write no report artifact.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -444,7 +487,8 @@ by `source_ayah_id` and its incoming ones by `target_ayah_id` — all using only
   `phrases.json`.
 - **Mutashabihat Occurrence** (`quran_mutashabihat_occurrences`) — one appearance of a group's phrase in
   an ayah, as a positional word range. Grain: one row per (group, ayah, word-range). Many occurrences per
-  group; many groups per ayah (1–7). **3,558 rows.**
+  group; many groups per ayah (1–7). **3,557 stored unique rows**, derived from **3,558** raw source
+  occurrence entries after **1** duplicate identical occurrence is collapsed.
 - **Similar Ayah Link** (`quran_similar_ayah_links`) — one **directed** source→target similarity edge with
   `score`, raw `coverage`, matched-word count, and matched word ranges. Grain: one row per directed pair.
   Stored faithfully and directed (no reverse rows synthesised). **3,552 rows** over **1,162** source
@@ -462,12 +506,15 @@ by `source_ayah_id` and its incoming ones by `target_ayah_id` — all using only
 
 ### Measurable Outcomes
 
-- **SC-001**: A successful import stores exactly **814** groups, **3,558** occurrences, **3,552**
-  directed links, and **1,162** distinct similar-ayah sources — matching the source files exactly.
+- **SC-001**: A successful import stores exactly **814** groups, **3,557** stored unique occurrences,
+  **3,552** directed links, and **1,162** distinct similar-ayah sources. The repeated-phrase source still
+  has **3,558** raw occurrence entries, with **1** duplicate identical occurrence collapsed during storage.
 - **SC-002**: **100%** of referenced verse_keys (all **3,084** distinct) resolve to a `quran_ayahs` row;
   **0** occurrence or link rows reference a non-existent ayah; **0** similar links are self-links.
-- **SC-003**: **100%** of groups have ≥ 2 distinct member ayahs, and every group's stored counts equal
-  the **recomputed** values (not the source's stale pre-computed numbers).
+- **SC-003**: **100%** of groups have ≥ 2 distinct member ayahs, every group's stored counts equal the
+  **recomputed** values (not the source's stale pre-computed numbers), every normal group has exactly one
+  representative occurrence, and the known group `1782` has zero representative occurrence rows while
+  retaining group-level representative fields from source metadata.
 - **SC-004**: `coverage` is stored **raw** for **100%** of links — the **4** rows with coverage > 100 are
   retained unchanged (0 clamped) — and **0** reverse/mirror links are synthesised (stored link count is
   exactly the source's 3,552).
@@ -475,13 +522,14 @@ by `source_ayah_id` and its incoming ones by `target_ayah_id` — all using only
   **no** merged/polymorphic relations table, and **no** Quran ayah text in any new table.
 - **SC-006**: A run changes **0** rows in `quran_ayahs` and `quran_words`, and leaves the source files'
   checksums unchanged (verified before/after).
-- **SC-007**: Re-running the import on the unchanged source yields **0** differences from the previous
-  run (idempotent); running against already-populated tables without force writes **0** rows; a forced
-  hard-check failure rolls back with **0** rows committed.
-- **SC-008**: **100%** of runs that begin building emit a report containing the written counts, every
-  hard-check result, every warning count (coverage>100 = 4, duplicate-occurrence = 1, source-key-absent
-  = 1, stale-counter group count), and the informational figures (one-way links, cross-dataset overlap,
-  surah coverage 109/114).
+- **SC-007**: A forced re-import against the unchanged source yields **0** differences from the previous
+  stored data and counts; running against already-populated tables without force refuses and writes **0**
+  rows; a forced hard-check failure rolls back with **0** rows committed.
+- **SC-008**: **100%** of runs that begin building emit a report containing the written counts
+  (814 / 3,557 / 3,552 / 1,162), the raw source occurrence count (3,558), every hard-check result, every
+  warning count (coverage>100 = 4, duplicate-occurrence = 1, source-key-absent = 1, provenance/license
+  unknown = 2 source files, stale-counter group count), and the informational figures (one-way links,
+  cross-dataset overlap, surah coverage 109/114).
 - **SC-009**: The downstream feature can answer "all groups of an ayah", "all occurrences of a group",
   and "similar ayahs of an ayah (outgoing and incoming)" using only the three tables — with **0**
   additional stored structures.
@@ -516,20 +564,17 @@ by `source_ayah_id` and its incoming ones by `target_ayah_id` — all using only
   `import-mutashabihat`), consistent with how Features 002/004 run their imports. No scheduled/online
   trigger in v1.
 - **Source package location.** The staged package lives at `resources/import-sources/mutashabihat/`
-  (already created and checksummed). Its sibling packages use a `quran-` prefix
-  (`quran-foundation`, `quran-morphology`); keeping the folder named `mutashabihat` vs. renaming to
-  `quran-mutashabihat` for prefix consistency is a **minor open item flagged for `/speckit.clarify`** —
-  it does not change any stored data, only the default source path the verb points at.
-- **Word-index base.** Word ranges are assumed **1-based** and aligned with `quran_words` ordering. To
-  keep a wrong assumption from breaking the import, the upper-bound check (`MUT-WORD-RANGE-UPPER-BOUND`)
-  is a **warning, not a hard gate**. Confirming the base is a **minor open item flagged for
-  `/speckit.clarify`**.
+  (already created and checksummed), and this remains the default source path for the import verb.
+- **Word-index base.** Word ranges are **1-based source indices** and are stored unchanged. The
+  upper-bound check (`MUT-WORD-RANGE-UPPER-BOUND`) is a **warning, not a hard gate**, so possible
+  source/corpus alignment differences do not block v1 import.
 - **Provenance / license.** The two datasets' upstream origin and license are **not yet documented**
-  (the manifest notes this as `UNKNOWN — TODO`). This does not block v1 storage but **must be recorded
-  before any future publishing** — flagged for `/speckit.clarify`.
-- **Counts are fixed invariants.** 814 groups / 3,558 occurrences / 1,162 sources / 3,552 links / 3,084
-  distinct ayahs come from the validated capability report and the manifest's `expectedRecordCount`; they
-  are used directly as hard-check expected values.
+  (the manifest notes this as `UNKNOWN — TODO`). This does not block v1 storage, but every import report
+  records a warning and any future publishing is blocked until provenance/license are resolved.
+- **Counts are fixed invariants.** 814 groups / 3,558 raw source occurrence entries / 1 duplicate
+  identical occurrence / 3,557 stored unique occurrences / 1,162 sources / 3,552 links / 3,084 distinct
+  ayahs come from the validated capability report, locked remediation decision, and the manifest's
+  `expectedRecordCount`; they are used directly as validation/report expected values.
 - **Quranic data safety.** The feature stores derived relationship references keyed by ayah identifier
   only — no ayah text — never modifies the Quran text, `quran_ayahs`, or `quran_words`, records anomalies
   as warnings rather than altering source values, and never mutates the source files.
