@@ -75,6 +75,11 @@ public sealed class EfBulkMutashabihatWriter : IMutashabihatImportWriter
 
                 var preCopyTotals = BuildTotals(source, importSession.RawOccurrenceCount);
                 var failedChecks = loadTimeChecks.Concat(preCopyChecks).ToList();
+                failedChecks.AddRange(MutashabihatImportReportBuilder.BuildAssemblyWarningChecks(
+                    source,
+                    importSession.RawOccurrenceCount,
+                    importSession.ProvenanceLicenseUnknownCount));
+                var preCopyWarnings = MutashabihatImportReportBuilder.BuildWarnings(failedChecks);
                 var preCopyErrors = preCopyChecks
                     .Where(check => !check.Passed)
                     .Select(check => $"{check.Id}: expected {check.Expected}, observed {check.Observed}")
@@ -87,9 +92,11 @@ public sealed class EfBulkMutashabihatWriter : IMutashabihatImportWriter
                     force,
                     preCopyTotals,
                     failedChecks,
-                    Warnings: [],
+                    preCopyWarnings,
                     preCopyErrors,
-                    InfoNotes: ["Pre-COPY hard check failed; no mutashabihat rows were persisted."]);
+                    InfoNotes: MutashabihatImportReportBuilder.BuildInfoNotes(
+                        failedChecks,
+                        ["Pre-COPY hard check failed; no mutashabihat rows were persisted."]));
             }
 
             var groupIdsBySourceGroupId = await MutashabihatBulkCopier.CopyGroupsAsync(
@@ -111,6 +118,15 @@ public sealed class EfBulkMutashabihatWriter : IMutashabihatImportWriter
                 sourceUnchanged ? "unchanged" : "changed",
                 sourceUnchanged));
 
+            checks.AddRange(MutashabihatImportReportBuilder.BuildAssemblyWarningChecks(
+                source,
+                importSession.RawOccurrenceCount,
+                importSession.ProvenanceLicenseUnknownCount));
+            checks.AddRange(await MutashabihatImportReportBuilder.RunPostCopyWarningAndInfoChecksAsync(
+                npgsqlConnection, transaction, ct));
+
+            var warnings = MutashabihatImportReportBuilder.BuildWarnings(checks);
+
             var hardChecks = checks.Where(check => check.Severity == HardSeverity).ToList();
             var allHardPassed = hardChecks.All(check => check.Passed);
 
@@ -125,9 +141,11 @@ public sealed class EfBulkMutashabihatWriter : IMutashabihatImportWriter
                     force,
                     totals,
                     checks,
-                    Warnings: [],
+                    warnings,
                     Errors: [],
-                    InfoNotes: ["Mutashabihat import committed; all hard checks passed."]);
+                    InfoNotes: MutashabihatImportReportBuilder.BuildInfoNotes(
+                        checks,
+                        ["Mutashabihat import committed; all hard checks passed."]));
             }
 
             await transaction.RollbackAsync(ct);
@@ -144,9 +162,11 @@ public sealed class EfBulkMutashabihatWriter : IMutashabihatImportWriter
                 force,
                 totals,
                 checks,
-                Warnings: [],
+                warnings,
                 errors,
-                InfoNotes: ["Totals reflect the attempted import before rollback; no mutashabihat rows were persisted."]);
+                InfoNotes: MutashabihatImportReportBuilder.BuildInfoNotes(
+                    checks,
+                    ["Totals reflect the attempted import before rollback; no mutashabihat rows were persisted."]));
         }
         catch
         {

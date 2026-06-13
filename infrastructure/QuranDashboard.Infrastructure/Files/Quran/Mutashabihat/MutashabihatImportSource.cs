@@ -54,8 +54,36 @@ public sealed class MutashabihatImportSource : IMutashabihatImportSource
         var groupsData = assembler.AssembleGroups(phrases, ayahIdsByVerseKey);
         var links = assembler.AssembleLinks(similarSources, ayahIdsByVerseKey);
 
+        importSession.ProvenanceLicenseUnknownCount = CountProvenanceLicenseUnknown(manifest);
+
         return new MutashabihatSourceData(groupsData.Groups, links);
     }
+
+    private static int CountProvenanceLicenseUnknown(MutashabihatManifest manifest)
+    {
+        var unknownCount = 0;
+
+        foreach (var relativePath in new[] { "mutashabihat-ul-quran/phrases.json", "similar-ayahs/matching-ayah.json" })
+        {
+            if (!manifest.Files.TryGetValue(relativePath, out var file))
+            {
+                unknownCount++;
+                continue;
+            }
+
+            if (IsProvenanceLicenseUnknown(file.Notes))
+            {
+                unknownCount++;
+            }
+        }
+
+        return unknownCount;
+    }
+
+    private static bool IsProvenanceLicenseUnknown(string? notes) =>
+        string.IsNullOrWhiteSpace(notes)
+        || notes.Contains("UNKNOWN", StringComparison.OrdinalIgnoreCase)
+        || notes.Contains("TODO", StringComparison.OrdinalIgnoreCase);
 
     public async Task<bool> SourceUnchangedAsync(string sourcePath, CancellationToken ct)
     {

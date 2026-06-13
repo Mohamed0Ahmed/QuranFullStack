@@ -13,12 +13,12 @@ public sealed record ImportMutashabihatResult(
     public const int FailureExitCode = 1;
     public const int RefusedExitCode = 2;
 
-    public static ImportMutashabihatResult Success(MutashabihatImportTotals totals) =>
-        new(true, SuccessExitCode, "Mutashabihat import completed successfully.", totals, null);
+    public static ImportMutashabihatResult Success(MutashabihatImportTotals totals, string reportOutDir) =>
+        new(true, SuccessExitCode, "Mutashabihat import completed successfully.", totals, reportOutDir);
 
     public static ImportMutashabihatResult Refused(string message) =>
         new(false, RefusedExitCode, message, null, null);
 
-    public static ImportMutashabihatResult Failure(string message) =>
-        new(false, FailureExitCode, message, null, null);
+    public static ImportMutashabihatResult Failure(string message, string? reportOutDir = null) =>
+        new(false, FailureExitCode, message, null, reportOutDir);
 }

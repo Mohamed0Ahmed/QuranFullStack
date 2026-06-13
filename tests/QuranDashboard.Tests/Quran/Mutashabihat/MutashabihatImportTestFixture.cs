@@ -70,15 +70,144 @@ public sealed class MutashabihatImportTestFixture : IAsyncLifetime
     public async Task<ImportMutashabihatResult> RunImportAsync(
         string sourcePath,
         bool force = false,
-        MutashabihatExpectedCounts? expectedCounts = null)
+        MutashabihatExpectedCounts? expectedCounts = null,
+        string? reportOutDir = null)
     {
         await using var scope = CreateServiceProvider(services => services.AddMutashabihatImportServices())
             .CreateAsyncScope();
         var handler = scope.ServiceProvider.GetRequiredService<ImportMutashabihatHandler>();
 
         return await handler.HandleAsync(
-            new ImportMutashabihatCommand(sourcePath, force, expectedCounts),
+            new ImportMutashabihatCommand(sourcePath, force, expectedCounts, reportOutDir),
             CancellationToken.None);
+    }
+
+    public async Task<(ImportMutashabihatResult Result, string ReportDir)> RunImportWithReportAsync(
+        string sourcePath,
+        bool force = false,
+        MutashabihatExpectedCounts? expectedCounts = null)
+    {
+        var reportDir = Path.Combine(Path.GetTempPath(), $"mutashabihat-report-{Guid.NewGuid():N}");
+        tempSourceDirs.Add(reportDir);
+
+        var result = await RunImportAsync(sourcePath, force, expectedCounts, reportDir);
+        return (result, reportDir);
+    }
+
+    public static string GetJsonReportPath(string reportDir) =>
+        Path.Combine(reportDir, "mutashabihat-import-report.json");
+
+    public static string GetMarkdownReportPath(string reportDir) =>
+        Path.Combine(reportDir, "mutashabihat-import-report.md");
+
+    public async Task<string> WriteSourceFolderWithCoverageGt100Async()
+    {
+        var similarAyahs = new Dictionary<string, object>
+        {
+            ["900:1"] = new object[]
+            {
+                new
+                {
+                    matched_ayah_key = "900:2",
+                    score = 90,
+                    coverage = 200,
+                    matched_words_count = 1,
+                    match_words = new[] { new[] { 1 } }
+                }
+            }
+        };
+
+        return await WriteSyntheticSourceFolderAsync(similarAyahs: similarAyahs);
+    }
+
+    public async Task<string> WriteSourceFolderWithDuplicateOccurrenceAsync()
+    {
+        var phrases = new Dictionary<string, object>
+        {
+            ["90001"] = new
+            {
+                surahs = 1,
+                ayahs = 2,
+                count = 3,
+                source = new { key = "900:1", from = 17, to = 19 },
+                ayah = new Dictionary<string, object[]>
+                {
+                    ["900:1"] = [new[] { 17, 19 }, new[] { 17, 19 }],
+                    ["900:2"] = [new[] { 17, 19 }]
+                }
+            }
+        };
+
+        return await WriteSyntheticSourceFolderAsync(phrases: phrases);
+    }
+
+    public async Task<string> WriteSourceFolderWithSourceKeyAbsentAsync()
+    {
+        var phrases = new Dictionary<string, object>
+        {
+            ["91782"] = new
+            {
+                surahs = 1,
+                ayahs = 2,
+                count = 2,
+                source = new { key = "900:99", from = 1, to = 1 },
+                ayah = new Dictionary<string, object[]>
+                {
+                    ["900:1"] = [new[] { 1, 2 }],
+                    ["900:2"] = [new[] { 1, 2 }]
+                }
+            }
+        };
+
+        return await WriteSyntheticSourceFolderAsync(
+            phrases: phrases,
+            similarAyahs: new Dictionary<string, object>());
+    }
+
+    public async Task<string> WriteSourceFolderWithStaleCountersAsync()
+    {
+        var phrases = new Dictionary<string, object>
+        {
+            ["90010"] = new
+            {
+                surahs = 9,
+                ayahs = 99,
+                count = 999,
+                source = new { key = "900:1", from = 1, to = 2 },
+                ayah = new Dictionary<string, object[]>
+                {
+                    ["900:1"] = [new[] { 1, 2 }],
+                    ["900:2"] = [new[] { 1, 2 }]
+                }
+            }
+        };
+
+        return await WriteSyntheticSourceFolderAsync(
+            phrases: phrases,
+            similarAyahs: new Dictionary<string, object>());
+    }
+
+    public async Task<string> WriteSourceFolderWithWordRangeUpperBoundAsync()
+    {
+        var phrases = new Dictionary<string, object>
+        {
+            ["90020"] = new
+            {
+                surahs = 1,
+                ayahs = 2,
+                count = 2,
+                source = new { key = "900:1", from = 1, to = 2 },
+                ayah = new Dictionary<string, object[]>
+                {
+                    ["900:1"] = [new[] { 1, 6 }],
+                    ["900:2"] = [new[] { 1, 2 }]
+                }
+            }
+        };
+
+        return await WriteSyntheticSourceFolderAsync(
+            phrases: phrases,
+            similarAyahs: new Dictionary<string, object>());
     }
 
     public async Task SeedSyntheticWordsAsync()

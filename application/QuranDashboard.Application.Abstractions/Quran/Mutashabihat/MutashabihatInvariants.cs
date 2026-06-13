@@ -30,6 +30,18 @@ public static class MutashabihatInvariants
     public const string CheckSourceUnchanged = "MUT-SOURCE-UNCHANGED";
     public const string CheckLinkNoSelf = "MUT-LINK-NO-SELF";
 
+    public const string CheckCoverageGt100 = "MUT-COVERAGE-GT-100";
+    public const string CheckDuplicateOccurrence = "MUT-DUPLICATE-OCCURRENCE";
+    public const string CheckSourceKeyAbsent = "MUT-SOURCE-KEY-ABSENT";
+    public const string CheckStaleSourceCounters = "MUT-STALE-SOURCE-COUNTERS";
+    public const string CheckWordRangeUpperBound = "MUT-WORD-RANGE-UPPER-BOUND";
+    public const string CheckProvenanceLicenseUnknown = "MUT-PROVENANCE-LICENSE-UNKNOWN";
+
+    public const string CheckOnewayLinks = "MUT-ONEWAY-LINKS";
+    public const string CheckCrossDatasetOverlap = "MUT-CROSS-DATASET-OVERLAP";
+    public const string CheckSurahCoverage = "MUT-SURAH-COVERAGE";
+    public const string CheckPhraseVersesConsistency = "MUT-PHRASE-VERSES-CONSISTENCY";
+
     public const string TargetsNotEmpty =
         "Mutashabihat tables are not empty. Re-run with --force to truncate and rebuild them.";
     public const string SourceMismatch =

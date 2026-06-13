@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using QuranDashboard.Application.Abstractions.Quran.Mutashabihat;
 using QuranDashboard.Infrastructure.Files.Quran.Mutashabihat;
 using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Mutashabihat;
+using QuranDashboard.Infrastructure.Reports.Quran.Mutashabihat;
 
 namespace QuranDashboard.Tests.Quran.Mutashabihat;
 
@@ -24,6 +25,7 @@ internal static class MutashabihatTestServiceCollectionExtensions
         services.AddScoped<MutashabihatImportSource>();
         services.AddScoped<IMutashabihatImportSource>(sp => sp.GetRequiredService<MutashabihatImportSource>());
         services.AddScoped<IMutashabihatImportWriter, EfBulkMutashabihatWriter>();
+        services.AddSingleton<IMutashabihatReportWriter, MarkdownJsonMutashabihatReportWriter>();
 
         return services;
     }

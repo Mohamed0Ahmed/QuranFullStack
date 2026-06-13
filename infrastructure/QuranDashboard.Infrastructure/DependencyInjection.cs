@@ -18,6 +18,7 @@ using QuranDashboard.Infrastructure.Files.Quran.Morphology.Irab;
 using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Irab;
 using QuranDashboard.Infrastructure.Reports.Quran.Irab;
 using QuranDashboard.Infrastructure.Reports.Quran.Morphology;
+using QuranDashboard.Infrastructure.Reports.Quran.Mutashabihat;
 using QuranDashboard.Infrastructure.Reports.Quran.Words;
 
 namespace QuranDashboard.Infrastructure;
@@ -63,6 +64,7 @@ public static class DependencyInjection
         services.AddScoped<MutashabihatImportSession>();
         services.AddScoped<IMutashabihatImportSource, MutashabihatImportSource>();
         services.AddScoped<IMutashabihatImportWriter, EfBulkMutashabihatWriter>();
+        services.AddSingleton<IMutashabihatReportWriter, MarkdownJsonMutashabihatReportWriter>();
 
         services.AddSingleton(I3rabExpectedCounts.Production);
         services.AddSingleton<II3rabRuleCatalog, I3rabRuleCatalogSeed>();

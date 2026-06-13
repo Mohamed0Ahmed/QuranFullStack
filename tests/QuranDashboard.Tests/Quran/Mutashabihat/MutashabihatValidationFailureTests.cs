@@ -23,6 +23,8 @@ public sealed class MutashabihatValidationFailureTests(MutashabihatImportTestFix
         handlerResult.Succeeded.Should().BeFalse();
         handlerResult.ExitCode.Should().Be(ImportMutashabihatResult.FailureExitCode);
         handlerResult.Message.Should().Contain("MUT-SCORE-RANGE");
+        handlerResult.ReportOutDir.Should().NotBeNullOrWhiteSpace();
+        File.Exists(MutashabihatImportTestFixture.GetJsonReportPath(handlerResult.ReportOutDir!)).Should().BeTrue();
 
         var importResult = await fixture.RunImportWriterAsync(sourcePath, expectedCounts: SyntheticExpected);
 
@@ -82,6 +84,8 @@ public sealed class MutashabihatValidationFailureTests(MutashabihatImportTestFix
         var forced = await fixture.RunImportAsync(violationPath, force: true, expectedCounts: SyntheticExpected);
         forced.Succeeded.Should().BeFalse();
         forced.ExitCode.Should().Be(ImportMutashabihatResult.FailureExitCode);
+        forced.ReportOutDir.Should().NotBeNullOrWhiteSpace();
+        File.Exists(MutashabihatImportTestFixture.GetJsonReportPath(forced.ReportOutDir!)).Should().BeTrue();
 
         var snapshotAfter = await fixture.CaptureTableSnapshotAsync();
 
