@@ -1,5 +1,4 @@
 using System.Data;
-using System.Globalization;
 using Npgsql;
 using QuranDashboard.Application.Abstractions.Quran.Mutashabihat;
 
@@ -61,6 +60,38 @@ public sealed class EfBulkMutashabihatWriter : IMutashabihatImportWriter
 
         try
         {
+            if (force)
+            {
+                await MutashabihatCommandExecutor.ExecuteNonQueryAsync(
+                    npgsqlConnection, transaction, MutashabihatSql.TruncateMutashabihatTables, ct);
+            }
+
+            var loadTimeChecks = MutashabihatValidationRunner.BuildLoadTimeChecks(
+                importSession.RawOccurrenceCount, expected);
+            var preCopyChecks = MutashabihatValidationRunner.BuildPreCopyHardChecks(source);
+            if (preCopyChecks.Any(check => !check.Passed))
+            {
+                await transaction.RollbackAsync(ct);
+
+                var preCopyTotals = BuildTotals(source, importSession.RawOccurrenceCount);
+                var failedChecks = loadTimeChecks.Concat(preCopyChecks).ToList();
+                var preCopyErrors = preCopyChecks
+                    .Where(check => !check.Passed)
+                    .Select(check => $"{check.Id}: expected {check.Expected}, observed {check.Observed}")
+                    .ToList();
+
+                return new MutashabihatImportResult(
+                    runAtUtc,
+                    FailVerdict,
+                    Persisted: false,
+                    force,
+                    preCopyTotals,
+                    failedChecks,
+                    Warnings: [],
+                    preCopyErrors,
+                    InfoNotes: ["Pre-COPY hard check failed; no mutashabihat rows were persisted."]);
+            }
+
             var groupIdsBySourceGroupId = await MutashabihatBulkCopier.CopyGroupsAsync(
                 npgsqlConnection, transaction, source, ct);
             await MutashabihatBulkCopier.CopyOccurrencesAsync(
@@ -68,32 +99,54 @@ public sealed class EfBulkMutashabihatWriter : IMutashabihatImportWriter
             await MutashabihatBulkCopier.CopyLinksAsync(npgsqlConnection, source, ct);
 
             var totals = BuildTotals(source, importSession.RawOccurrenceCount);
-            var checks = await RunHardChecksAsync(
-                npgsqlConnection, transaction, expected, importSession.RawOccurrenceCount, ct);
+            var checks = loadTimeChecks;
+            checks.AddRange(await MutashabihatValidationRunner.RunPostCopyHardChecksAsync(
+                npgsqlConnection, transaction, expected, ct));
 
-            var allHardPassed = checks.All(check => check.Passed);
-            var verdict = allHardPassed ? PassVerdict : FailVerdict;
-            var errors = allHardPassed
-                ? []
-                : checks
-                    .Where(check => !check.Passed)
-                    .Select(check => $"{check.Id}: expected {check.Expected}, observed {check.Observed}")
-                    .ToList();
+            var sourceUnchanged = await sourceUnchangedCheck(ct);
+            checks.Add(new MutashabihatCheckResult(
+                MutashabihatInvariants.CheckSourceUnchanged,
+                HardSeverity,
+                "local source files match manifest.json size/sha256 before and after run",
+                sourceUnchanged ? "unchanged" : "changed",
+                sourceUnchanged));
 
-            await transaction.CommitAsync(ct);
+            var hardChecks = checks.Where(check => check.Severity == HardSeverity).ToList();
+            var allHardPassed = hardChecks.All(check => check.Passed);
+
+            if (allHardPassed)
+            {
+                await transaction.CommitAsync(ct);
+
+                return new MutashabihatImportResult(
+                    runAtUtc,
+                    PassVerdict,
+                    Persisted: true,
+                    force,
+                    totals,
+                    checks,
+                    Warnings: [],
+                    Errors: [],
+                    InfoNotes: ["Mutashabihat import committed; all hard checks passed."]);
+            }
+
+            await transaction.RollbackAsync(ct);
+
+            var errors = hardChecks
+                .Where(check => !check.Passed)
+                .Select(check => $"{check.Id}: expected {check.Expected}, observed {check.Observed}")
+                .ToList();
 
             return new MutashabihatImportResult(
                 runAtUtc,
-                verdict,
-                Persisted: true,
+                FailVerdict,
+                Persisted: false,
                 force,
                 totals,
                 checks,
                 Warnings: [],
                 errors,
-                allHardPassed
-                    ? ["Mutashabihat groups, occurrences, and links committed (US1+US2 path)."]
-                    : ["Totals reflect the committed import; hard checks failed (US1+US2 path commits without rollback)."]);
+                InfoNotes: ["Totals reflect the attempted import before rollback; no mutashabihat rows were persisted."]);
         }
         catch
         {
@@ -122,145 +175,4 @@ public sealed class EfBulkMutashabihatWriter : IMutashabihatImportWriter
             source.Links.Select(link => link.SourceAyahId).Distinct().Count(),
             distinctAyahs);
     }
-
-    private static async Task<List<MutashabihatCheckResult>> RunHardChecksAsync(
-        NpgsqlConnection connection,
-        NpgsqlTransaction transaction,
-        MutashabihatExpectedCounts expected,
-        int rawOccurrenceCount,
-        CancellationToken ct)
-    {
-        var checks = new List<MutashabihatCheckResult>();
-
-        var groupCount = await ExecuteScalarIntAsync(connection, transaction, MutashabihatSql.CheckGroupCount, ct);
-        checks.Add(new MutashabihatCheckResult(
-            "MUT-GROUP-COUNT",
-            HardSeverity,
-            FormatInt(expected.Groups),
-            FormatInt(groupCount),
-            groupCount == expected.Groups));
-
-        var storedOccurrenceCount = await ExecuteScalarIntAsync(
-            connection, transaction, MutashabihatSql.CheckStoredOccurrenceCount, ct);
-        checks.Add(new MutashabihatCheckResult(
-            "MUT-STORED-OCCURRENCE-COUNT",
-            HardSeverity,
-            FormatInt(expected.StoredOccurrences),
-            FormatInt(storedOccurrenceCount),
-            storedOccurrenceCount == expected.StoredOccurrences));
-
-        checks.Add(new MutashabihatCheckResult(
-            "MUT-RAW-OCCURRENCE-COUNT",
-            HardSeverity,
-            FormatInt(expected.RawOccurrences),
-            FormatInt(rawOccurrenceCount),
-            rawOccurrenceCount == expected.RawOccurrences));
-
-        var similarSourceCount = await ExecuteScalarIntAsync(
-            connection, transaction, MutashabihatSql.CheckSimilarSourceCount, ct);
-        checks.Add(new MutashabihatCheckResult(
-            "MUT-SIMILAR-SOURCE-COUNT",
-            HardSeverity,
-            FormatInt(expected.SimilarSources),
-            FormatInt(similarSourceCount),
-            similarSourceCount == expected.SimilarSources));
-
-        var similarLinkCount = await ExecuteScalarIntAsync(
-            connection, transaction, MutashabihatSql.CheckSimilarLinkCount, ct);
-        checks.Add(new MutashabihatCheckResult(
-            "MUT-SIMILAR-LINK-COUNT",
-            HardSeverity,
-            FormatInt(expected.SimilarLinks),
-            FormatInt(similarLinkCount),
-            similarLinkCount == expected.SimilarLinks));
-
-        checks.Add(new MutashabihatCheckResult(
-            "MUT-VERSEKEY-FORMAT",
-            HardSeverity,
-            "every reference matches ^\\d+:\\d+$",
-            "validated during assembly",
-            true));
-
-        var duplicateViolations = await ExecuteScalarIntAsync(
-            connection, transaction, MutashabihatSql.CheckOccurrenceUniqueViolations, ct);
-        checks.Add(new MutashabihatCheckResult(
-            "MUT-OCCURRENCE-UNIQUE",
-            HardSeverity,
-            "0 duplicate tuples",
-            duplicateViolations == 0 ? "0 duplicates" : $"{FormatInt(duplicateViolations)} duplicate tuple(s)",
-            duplicateViolations == 0));
-
-        var minSizeViolations = await ExecuteScalarIntAsync(
-            connection, transaction, MutashabihatSql.CheckGroupMinSizeViolations, ct);
-        checks.Add(new MutashabihatCheckResult(
-            "MUT-GROUP-MIN-SIZE",
-            HardSeverity,
-            "every group distinct_ayah_count >= 2",
-            minSizeViolations == 0 ? "0 violations" : $"{FormatInt(minSizeViolations)} violation(s)",
-            minSizeViolations == 0));
-
-        var occurrenceWordRangeViolations = await ExecuteScalarIntAsync(
-            connection, transaction, MutashabihatSql.CheckOccurrenceWordRangeViolations, ct);
-        var linkWordRangeViolations = await ExecuteScalarIntAsync(
-            connection, transaction, MutashabihatSql.CheckLinkWordRangeViolations, ct);
-        var wordRangeViolations = occurrenceWordRangeViolations + linkWordRangeViolations;
-        checks.Add(new MutashabihatCheckResult(
-            "MUT-WORD-RANGE-SHAPE",
-            HardSeverity,
-            "occurrence and match_words ranges have from >= 1 and to >= from",
-            wordRangeViolations == 0 ? "0 violations" : $"{FormatInt(wordRangeViolations)} violation(s)",
-            wordRangeViolations == 0));
-
-        var selfLinkViolations = await ExecuteScalarIntAsync(
-            connection, transaction, MutashabihatSql.CheckSelfLinkViolations, ct);
-        checks.Add(new MutashabihatCheckResult(
-            "MUT-LINK-NO-SELF",
-            HardSeverity,
-            "0 self-links",
-            selfLinkViolations == 0 ? "0 self-links" : $"{FormatInt(selfLinkViolations)} self-link(s)",
-            selfLinkViolations == 0));
-
-        var scoreRangeViolations = await ExecuteScalarIntAsync(
-            connection, transaction, MutashabihatSql.CheckScoreRangeViolations, ct);
-        checks.Add(new MutashabihatCheckResult(
-            "MUT-SCORE-RANGE",
-            HardSeverity,
-            "every link score in [50, 100]",
-            scoreRangeViolations == 0 ? "0 violations" : $"{FormatInt(scoreRangeViolations)} violation(s)",
-            scoreRangeViolations == 0));
-
-        var unresolvedRepresentatives = await ExecuteScalarIntAsync(
-            connection, transaction, MutashabihatSql.CheckUnresolvedGroupRepresentativeAyahs, ct);
-        var unresolvedOccurrences = await ExecuteScalarIntAsync(
-            connection, transaction, MutashabihatSql.CheckUnresolvedOccurrenceAyahs, ct);
-        var unresolvedLinkSources = await ExecuteScalarIntAsync(
-            connection, transaction, MutashabihatSql.CheckUnresolvedLinkSourceAyahs, ct);
-        var unresolvedLinkTargets = await ExecuteScalarIntAsync(
-            connection, transaction, MutashabihatSql.CheckUnresolvedLinkTargetAyahs, ct);
-        var unresolvedTotal = unresolvedRepresentatives
-            + unresolvedOccurrences
-            + unresolvedLinkSources
-            + unresolvedLinkTargets;
-        checks.Add(new MutashabihatCheckResult(
-            "MUT-AYAH-RESOLVE",
-            HardSeverity,
-            "0 unresolved ayah references",
-            unresolvedTotal == 0 ? "0 unresolved" : $"{FormatInt(unresolvedTotal)} unresolved",
-            unresolvedTotal == 0));
-
-        return checks;
-    }
-
-    private static async Task<int> ExecuteScalarIntAsync(
-        NpgsqlConnection connection,
-        NpgsqlTransaction transaction,
-        string sql,
-        CancellationToken ct)
-    {
-        await using var command = new NpgsqlCommand(sql, connection, transaction);
-        var result = await command.ExecuteScalarAsync(ct);
-        return Convert.ToInt32(result, CultureInfo.InvariantCulture);
-    }
-
-    private static string FormatInt(int value) => value.ToString(CultureInfo.InvariantCulture);
 }

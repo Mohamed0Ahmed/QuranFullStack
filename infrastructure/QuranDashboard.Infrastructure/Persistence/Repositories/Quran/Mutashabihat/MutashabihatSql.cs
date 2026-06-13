@@ -2,6 +2,14 @@ namespace QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Mutashabi
 
 internal static class MutashabihatSql
 {
+    internal const string TruncateMutashabihatTables = """
+        TRUNCATE
+            quran_mutashabihat_groups,
+            quran_mutashabihat_occurrences,
+            quran_similar_ayah_links
+        RESTART IDENTITY CASCADE
+        """;
+
     internal const string CheckGroupCount = """
         SELECT count(*)::int
         FROM quran_mutashabihat_groups

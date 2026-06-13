@@ -24,6 +24,12 @@ public static class MutashabihatInvariants
         ExpectedSimilarLinks,
         ExpectedDistinctAyahs);
 
+    public const string CheckManifestSet = "MUT-MANIFEST-SET";
+    public const string CheckManifestChecksum = "MUT-MANIFEST-CHECKSUM";
+    public const string CheckJsonShape = "MUT-JSON-SHAPE";
+    public const string CheckSourceUnchanged = "MUT-SOURCE-UNCHANGED";
+    public const string CheckLinkNoSelf = "MUT-LINK-NO-SELF";
+
     public const string TargetsNotEmpty =
         "Mutashabihat tables are not empty. Re-run with --force to truncate and rebuild them.";
     public const string SourceMismatch =

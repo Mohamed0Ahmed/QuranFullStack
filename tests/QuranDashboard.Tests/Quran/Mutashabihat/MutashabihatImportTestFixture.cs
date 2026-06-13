@@ -7,6 +7,7 @@ using QuranDashboard.Application.Quran.Mutashabihat.ImportMutashabihat;
 using QuranDashboard.Domain.Quran.Ayahs;
 using QuranDashboard.Domain.Quran.MushafPages;
 using QuranDashboard.Domain.Quran.Surahs;
+using QuranDashboard.Domain.Quran.Words;
 using QuranDashboard.Infrastructure;
 using QuranDashboard.Infrastructure.Files.Quran.Mutashabihat;
 using Testcontainers.PostgreSql;
@@ -78,6 +79,87 @@ public sealed class MutashabihatImportTestFixture : IAsyncLifetime
         return await handler.HandleAsync(
             new ImportMutashabihatCommand(sourcePath, force, expectedCounts),
             CancellationToken.None);
+    }
+
+    public async Task SeedSyntheticWordsAsync()
+    {
+        await SeedSyntheticAyahsAsync((1, "900:1"), (2, "900:2"));
+
+        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+
+        var readableWords = new List<QuranWord>
+        {
+            CreateWord(1, 1, 900, 1, 1, "GLYPH-1", "اختبار-كلمة-١"),
+            CreateWord(2, 1, 900, 1, 2, "GLYPH-2", "اختبار-كلمة-٢"),
+            CreateWord(3, 2, 900, 2, 1, "GLYPH-3", "اختبار-كلمة-٣"),
+            CreateWord(4, 2, 900, 2, 2, "GLYPH-4", "اختبار-كلمة-٤")
+        };
+
+        var markerWord = CreateWord(99, 1, 900, 1, 99, "GLYPH-MARKER", "اختبار-علامة", isAyahMarker: true);
+
+        dbContext.QuranWords.AddRange(readableWords);
+        dbContext.QuranWords.Add(markerWord);
+        await dbContext.SaveChangesAsync();
+    }
+
+    public async Task<MutashabihatImportResult> RunImportWriterAsync(
+        string sourcePath,
+        bool force = false,
+        MutashabihatExpectedCounts? expectedCounts = null)
+    {
+        await using var scope = CreateServiceProvider(services => services.AddMutashabihatImportServices())
+            .CreateAsyncScope();
+        var importSource = scope.ServiceProvider.GetRequiredService<IMutashabihatImportSource>();
+        var importWriter = scope.ServiceProvider.GetRequiredService<IMutashabihatImportWriter>();
+
+        var source = await importSource.LoadAsync(sourcePath, CancellationToken.None);
+        return await importWriter.ImportAsync(
+            source,
+            force,
+            expectedCounts ?? new MutashabihatExpectedCounts(1, 2, 2, 1, 1, 2),
+            token => importSource.SourceUnchangedAsync(sourcePath, token),
+            CancellationToken.None);
+    }
+
+    public async Task<string> WriteSourceFolderWithValidationViolationAsync()
+    {
+        var similarAyahs = new Dictionary<string, object>
+        {
+            ["900:1"] = new object[]
+            {
+                new
+                {
+                    matched_ayah_key = "900:2",
+                    score = 40,
+                    coverage = 50,
+                    matched_words_count = 1,
+                    match_words = new[] { new[] { 1 } }
+                }
+            }
+        };
+
+        return await WriteSyntheticSourceFolderAsync(similarAyahs: similarAyahs);
+    }
+
+    public async Task<string> WriteSourceFolderWithSelfLinkViolationAsync()
+    {
+        var similarAyahs = new Dictionary<string, object>
+        {
+            ["900:1"] = new object[]
+            {
+                new
+                {
+                    matched_ayah_key = "900:1",
+                    score = 80,
+                    coverage = 50,
+                    matched_words_count = 1,
+                    match_words = new[] { new[] { 1 } }
+                }
+            }
+        };
+
+        return await WriteSyntheticSourceFolderAsync(similarAyahs: similarAyahs);
     }
 
     public async Task SeedSyntheticAyahsAsync(params (int Id, string VerseKey)[] ayahs)
@@ -285,6 +367,8 @@ public sealed class MutashabihatImportTestFixture : IAsyncLifetime
                 """SELECT count(*)::int AS "Value" FROM quran_similar_ayah_links""").FirstAsync(),
             AyahRows: await dbContext.Database.SqlQueryRaw<int>(
                 """SELECT count(*)::int AS "Value" FROM quran_ayahs""").FirstAsync(),
+            WordRows: await dbContext.Database.SqlQueryRaw<int>(
+                """SELECT count(*)::int AS "Value" FROM quran_words""").FirstAsync(),
             GroupContentHash: await ComputeTableContentHashAsync(
                 dbContext,
                 """
@@ -308,8 +392,51 @@ public sealed class MutashabihatImportTestFixture : IAsyncLifetime
                     md5(string_agg(t::text, ',' ORDER BY id)),
                     'empty') AS "Value"
                 FROM quran_similar_ayah_links t
+                """),
+            AyahContentHash: await ComputeTableContentHashAsync(
+                dbContext,
+                """
+                SELECT COALESCE(
+                    md5(string_agg(t::text, ',' ORDER BY id)),
+                    'empty') AS "Value"
+                FROM quran_ayahs t
+                """),
+            WordContentHash: await ComputeTableContentHashAsync(
+                dbContext,
+                """
+                SELECT COALESCE(
+                    md5(string_agg(t::text, ',' ORDER BY id)),
+                    'empty') AS "Value"
+                FROM quran_words t
                 """));
     }
+
+    private static QuranWord CreateWord(
+        int id,
+        int ayahId,
+        short surahNumber,
+        short ayahNumber,
+        short wordNumber,
+        string qpcGlyph,
+        string textUthmani,
+        bool isAyahMarker = false) => new()
+    {
+        Id = id,
+        AyahId = ayahId,
+        SurahNumber = surahNumber,
+        AyahNumber = ayahNumber,
+        WordNumber = wordNumber,
+        PageNumber = 900,
+        LineNumber = 1,
+        LineWordOrder = wordNumber,
+        Location = $"{surahNumber}:{ayahNumber}:{wordNumber}",
+        QpcGlyph = qpcGlyph,
+        TextUthmani = textUthmani,
+        TextUthmaniSimple = textUthmani,
+        TextImlaeiSimple = $"إ-{textUthmani}",
+        WordKeyImlaeiSimple = $"ك-{textUthmani}",
+        IsAyahMarker = isAyahMarker
+    };
 
     public async Task<bool> AreSourceFilesUnchangedAsync(
         string sourcePath, MutashabihatFileDigests before)
@@ -403,9 +530,12 @@ public sealed record MutashabihatTableSnapshot(
     int OccurrenceRows,
     int LinkRows,
     int AyahRows,
+    int WordRows,
     string GroupContentHash,
     string OccurrenceContentHash,
-    string LinkContentHash);
+    string LinkContentHash,
+    string AyahContentHash,
+    string WordContentHash);
 
 internal static class MutashabihatSyntheticSeed
 {

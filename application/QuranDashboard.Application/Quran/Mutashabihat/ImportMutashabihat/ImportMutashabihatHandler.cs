@@ -24,12 +24,12 @@ public sealed class ImportMutashabihatHandler
 
         try
         {
+            var source = await importSource.LoadAsync(command.SourcePath, ct);
+
             if (!command.Force && await importWriter.AnyTargetTableHasDataAsync(ct))
             {
                 return ImportMutashabihatResult.Refused(MutashabihatInvariants.TargetsNotEmpty);
             }
-
-            var source = await importSource.LoadAsync(command.SourcePath, ct);
 
             var result = await importWriter.ImportAsync(
                 source,
@@ -46,6 +46,10 @@ public sealed class ImportMutashabihatHandler
                         : "Mutashabihat import validation failed.");
         }
         catch (MutashabihatSourceException)
+        {
+            return ImportMutashabihatResult.Refused(MutashabihatInvariants.SourceMismatch);
+        }
+        catch (IOException)
         {
             return ImportMutashabihatResult.Refused(MutashabihatInvariants.SourceMismatch);
         }

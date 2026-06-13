@@ -191,6 +191,11 @@ public sealed class MutashabihatImportTests(MutashabihatImportTestFixture fixtur
         result.Succeeded.Should().BeFalse();
         result.ExitCode.Should().Be(ImportMutashabihatResult.FailureExitCode);
         result.Message.Should().Contain(expectedCheckId);
+
+        var snapshot = await fixture.CaptureTableSnapshotAsync();
+        snapshot.GroupRows.Should().Be(0);
+        snapshot.OccurrenceRows.Should().Be(0);
+        snapshot.LinkRows.Should().Be(0);
     }
 
     public static IEnumerable<object[]> LinkHardCheckFailureCases()
