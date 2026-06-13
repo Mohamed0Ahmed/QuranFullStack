@@ -60,7 +60,7 @@ public static class DependencyInjection
         services.AddScoped<II3rabGenerationSource, EfI3rabGenerationSource>();
         services.AddScoped<II3rabGenerationWriteProbe, NullI3rabGenerationWriteProbe>();
         services.AddScoped<II3rabGenerationWriter, EfI3rabGenerationWriter>();
-        services.AddSingleton<II3rabGenerationReportWriter, MarkdownJsonI3rabReportWriter>();
+        services.AddScoped<II3rabGenerationReportWriter, MarkdownJsonI3rabReportWriter>();
 
         return services;
     }

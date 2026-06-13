@@ -4,6 +4,9 @@ namespace QuranDashboard.Infrastructure.Files.Quran.Morphology.Irab;
 
 public static class SegmentSignatureBuilder
 {
+    // Attached pronouns (ضمير متصل) glue the person onto the POS token, e.g. "SUFFIX|PRON:3MP",
+    // unlike stems which carry the person as its own token, e.g. "STEM|POS:PRON|3MS".
+    private const string GluedPronounPrefix = "PRON:";
     private static readonly string[] VerbTenseMarkers = ["PERF", "IMPF", "IMPV"];
     private static readonly string[] PersonTokens =
     [
@@ -123,8 +126,30 @@ public static class SegmentSignatureBuilder
         return null;
     }
 
-    private static string? TryGetPersonToken(HashSet<string> features) =>
-        PersonTokens.FirstOrDefault(features.Contains);
+    private static string? TryGetPersonToken(HashSet<string> features)
+    {
+        var standalonePerson = PersonTokens.FirstOrDefault(features.Contains);
+        if (standalonePerson is not null)
+        {
+            return standalonePerson;
+        }
+
+        // Recover the person from an attached-pronoun token such as "PRON:3MP" that the feature
+        // tokenizer keeps intact (it splits on '|' and ' ', not ':').
+        foreach (var token in features)
+        {
+            if (token.StartsWith(GluedPronounPrefix, StringComparison.Ordinal))
+            {
+                var person = token[GluedPronounPrefix.Length..];
+                if (PersonTokens.Contains(person))
+                {
+                    return person;
+                }
+            }
+        }
+
+        return null;
+    }
 
     private static HashSet<string> ParseFeatureTokens(string? featuresRaw)
     {
