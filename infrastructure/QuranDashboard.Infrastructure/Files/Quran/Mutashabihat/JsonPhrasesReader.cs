@@ -1,4 +1,5 @@
 using System.Text.Json;
+using QuranDashboard.Application.Abstractions.Quran.Mutashabihat;
 
 namespace QuranDashboard.Infrastructure.Files.Quran.Mutashabihat;
 
@@ -18,7 +19,7 @@ public sealed class JsonPhrasesReader
 
         if (document.RootElement.ValueKind != JsonValueKind.Object)
         {
-            throw new InvalidDataException("phrases.json root must be a JSON object.");
+            throw new MutashabihatSourceException("phrases.json root must be a JSON object.");
         }
 
         var groups = new List<ParsedPhraseGroup>();
@@ -28,7 +29,7 @@ public sealed class JsonPhrasesReader
         {
             if (!int.TryParse(groupEntry.Name, out var sourceGroupId))
             {
-                throw new InvalidDataException(
+                throw new MutashabihatSourceException(
                     $"Phrase group key '{groupEntry.Name}' is not a valid integer source_group_id.");
             }
 
@@ -73,13 +74,13 @@ public sealed class JsonPhrasesReader
     {
         if (!value.TryGetProperty("source", out var source) || source.ValueKind != JsonValueKind.Object)
         {
-            throw new InvalidDataException(
+            throw new MutashabihatSourceException(
                 $"Group {sourceGroupId} is missing a 'source' object (MUT-JSON-SHAPE).");
         }
 
         if (!value.TryGetProperty("ayah", out var ayah) || ayah.ValueKind != JsonValueKind.Object)
         {
-            throw new InvalidDataException(
+            throw new MutashabihatSourceException(
                 $"Group {sourceGroupId} is missing an 'ayah' object (MUT-JSON-SHAPE).");
         }
 
@@ -104,7 +105,7 @@ public sealed class JsonPhrasesReader
         {
             if (ayahEntry.Value.ValueKind != JsonValueKind.Array)
             {
-                throw new InvalidDataException(
+                throw new MutashabihatSourceException(
                     $"Occurrence list for ayah '{ayahEntry.Name}' must be an array (MUT-JSON-SHAPE).");
             }
 
@@ -125,7 +126,7 @@ public sealed class JsonPhrasesReader
     {
         if (rangeElement.ValueKind != JsonValueKind.Array)
         {
-            throw new InvalidDataException("Word range must be a JSON array (MUT-JSON-SHAPE).");
+            throw new MutashabihatSourceException("Word range must be a JSON array (MUT-JSON-SHAPE).");
         }
 
         var values = rangeElement.EnumerateArray().ToList();
@@ -136,24 +137,24 @@ public sealed class JsonPhrasesReader
             return new WordRange(from, to);
         }
 
-        throw new InvalidDataException("Word range must contain one or two integers (MUT-JSON-SHAPE).");
+        throw new MutashabihatSourceException("Word range must contain one or two integers (MUT-JSON-SHAPE).");
     }
 
     private static string ReadRequiredString(JsonElement element, string propertyName)
     {
         if (!element.TryGetProperty(propertyName, out var property) || property.ValueKind != JsonValueKind.String)
         {
-            throw new InvalidDataException($"Property '{propertyName}' is missing or not a string.");
+            throw new MutashabihatSourceException($"Property '{propertyName}' is missing or not a string.");
         }
 
-        return property.GetString() ?? throw new InvalidDataException($"Property '{propertyName}' is empty.");
+        return property.GetString() ?? throw new MutashabihatSourceException($"Property '{propertyName}' is empty.");
     }
 
     private static short ReadRequiredInt16(JsonElement element, string propertyName)
     {
         if (!element.TryGetProperty(propertyName, out var property))
         {
-            throw new InvalidDataException($"Missing property '{propertyName}'.");
+            throw new MutashabihatSourceException($"Missing property '{propertyName}'.");
         }
 
         return ReadJsonInt16(property);
@@ -162,7 +163,7 @@ public sealed class JsonPhrasesReader
     private static short ReadJsonInt16(JsonElement property) =>
         property.ValueKind == JsonValueKind.Number
             ? property.GetInt16()
-            : short.Parse(property.GetString() ?? throw new InvalidDataException("Invalid short value."));
+            : short.Parse(property.GetString() ?? throw new MutashabihatSourceException("Invalid short value."));
 }
 
 public sealed record PhrasesReadResult(

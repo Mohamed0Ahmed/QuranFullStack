@@ -2,6 +2,8 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using QuranDashboard.Application;
+using QuranDashboard.Application.Abstractions.Quran.Mutashabihat;
+using QuranDashboard.Application.Quran.Mutashabihat.ImportMutashabihat;
 using QuranDashboard.Domain.Quran.Ayahs;
 using QuranDashboard.Domain.Quran.MushafPages;
 using QuranDashboard.Domain.Quran.Surahs;
@@ -62,6 +64,20 @@ public sealed class MutashabihatImportTestFixture : IAsyncLifetime
         configure?.Invoke(services);
 
         return services.BuildServiceProvider();
+    }
+
+    public async Task<ImportMutashabihatResult> RunImportAsync(
+        string sourcePath,
+        bool force = false,
+        MutashabihatExpectedCounts? expectedCounts = null)
+    {
+        await using var scope = CreateServiceProvider(services => services.AddMutashabihatImportServices())
+            .CreateAsyncScope();
+        var handler = scope.ServiceProvider.GetRequiredService<ImportMutashabihatHandler>();
+
+        return await handler.HandleAsync(
+            new ImportMutashabihatCommand(sourcePath, force, expectedCounts),
+            CancellationToken.None);
     }
 
     public async Task SeedSyntheticAyahsAsync(params (int Id, string VerseKey)[] ayahs)

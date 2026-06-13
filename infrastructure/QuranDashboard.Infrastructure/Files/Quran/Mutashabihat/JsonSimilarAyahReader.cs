@@ -1,4 +1,5 @@
 using System.Text.Json;
+using QuranDashboard.Application.Abstractions.Quran.Mutashabihat;
 
 namespace QuranDashboard.Infrastructure.Files.Quran.Mutashabihat;
 
@@ -14,7 +15,7 @@ public sealed class JsonSimilarAyahReader
 
         if (document.RootElement.ValueKind != JsonValueKind.Object)
         {
-            throw new InvalidDataException("matching-ayah.json root must be a JSON object.");
+            throw new MutashabihatSourceException("matching-ayah.json root must be a JSON object.");
         }
 
         var sources = new List<ParsedSimilarSource>();
@@ -23,7 +24,7 @@ public sealed class JsonSimilarAyahReader
         {
             if (sourceEntry.Value.ValueKind != JsonValueKind.Array)
             {
-                throw new InvalidDataException(
+                throw new MutashabihatSourceException(
                     $"Source ayah '{sourceEntry.Name}' must map to an array (MUT-JSON-SHAPE).");
             }
 
@@ -32,7 +33,7 @@ public sealed class JsonSimilarAyahReader
             {
                 if (item.ValueKind != JsonValueKind.Object)
                 {
-                    throw new InvalidDataException("Similar link item must be a JSON object (MUT-JSON-SHAPE).");
+                    throw new MutashabihatSourceException("Similar link item must be a JSON object (MUT-JSON-SHAPE).");
                 }
 
                 links.Add(new ParsedSimilarLinkItem(
@@ -53,12 +54,12 @@ public sealed class JsonSimilarAyahReader
     {
         if (!item.TryGetProperty("match_words", out var matchWords))
         {
-            throw new InvalidDataException("Similar link item is missing 'match_words' (MUT-JSON-SHAPE).");
+            throw new MutashabihatSourceException("Similar link item is missing 'match_words' (MUT-JSON-SHAPE).");
         }
 
         if (matchWords.ValueKind != JsonValueKind.Array)
         {
-            throw new InvalidDataException("Property 'match_words' must be an array (MUT-JSON-SHAPE).");
+            throw new MutashabihatSourceException("Property 'match_words' must be an array (MUT-JSON-SHAPE).");
         }
 
         return matchWords.GetRawText();
@@ -68,22 +69,22 @@ public sealed class JsonSimilarAyahReader
     {
         if (!element.TryGetProperty(propertyName, out var property) || property.ValueKind != JsonValueKind.String)
         {
-            throw new InvalidDataException($"Property '{propertyName}' is missing or not a string.");
+            throw new MutashabihatSourceException($"Property '{propertyName}' is missing or not a string.");
         }
 
-        return property.GetString() ?? throw new InvalidDataException($"Property '{propertyName}' is empty.");
+        return property.GetString() ?? throw new MutashabihatSourceException($"Property '{propertyName}' is empty.");
     }
 
     private static short ReadRequiredInt16(JsonElement element, string propertyName)
     {
         if (!element.TryGetProperty(propertyName, out var property))
         {
-            throw new InvalidDataException($"Missing property '{propertyName}'.");
+            throw new MutashabihatSourceException($"Missing property '{propertyName}'.");
         }
 
         return property.ValueKind == JsonValueKind.Number
             ? property.GetInt16()
-            : short.Parse(property.GetString() ?? throw new InvalidDataException($"Property '{propertyName}' is invalid."));
+            : short.Parse(property.GetString() ?? throw new MutashabihatSourceException($"Property '{propertyName}' is invalid."));
     }
 }
 

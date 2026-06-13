@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text.Json.Serialization;
+using QuranDashboard.Application.Abstractions.Quran.Mutashabihat;
 
 namespace QuranDashboard.Infrastructure.Files.Quran.Mutashabihat;
 
@@ -38,14 +39,13 @@ public sealed class MutashabihatManifestReader
         var manifestPath = Path.Combine(sourceRoot, "manifest.json");
         if (!File.Exists(manifestPath))
         {
-            throw new FileNotFoundException(
-                $"Manifest file was not found: {manifestPath}", manifestPath);
+            throw new MutashabihatSourceException($"Manifest file was not found: {manifestPath}");
         }
 
         await using var manifestStream = File.OpenRead(manifestPath);
         using var document = await JsonDocument.ParseAsync(manifestStream, cancellationToken: ct);
         var manifest = document.RootElement.Deserialize<MutashabihatManifestDocument>(JsonOptions)
-            ?? throw new InvalidDataException("manifest.json could not be parsed.");
+            ?? throw new MutashabihatSourceException("manifest.json could not be parsed.");
 
         ValidateSourceFolderContents(sourceRoot);
         ValidateManifestFileSet(manifest.Files);
@@ -57,19 +57,18 @@ public sealed class MutashabihatManifestReader
             var fullPath = Path.Combine(sourceRoot, localPath);
             if (!File.Exists(fullPath))
             {
-                throw new FileNotFoundException(
-                    $"Source file not found: {fullPath}", fullPath);
+                throw new MutashabihatSourceException($"Source file not found: {fullPath}");
             }
 
             if (string.IsNullOrWhiteSpace(file.Sha256))
             {
-                throw new InvalidDataException(
+                throw new MutashabihatSourceException(
                     $"Manifest entry for '{localPath}' is missing sha256.");
             }
 
             if (file.FileSizeBytes is null)
             {
-                throw new InvalidDataException(
+                throw new MutashabihatSourceException(
                     $"Manifest entry for '{localPath}' is missing fileSizeBytes.");
             }
 
@@ -103,8 +102,7 @@ public sealed class MutashabihatManifestReader
             var fullPath = Path.Combine(sourceRoot, relativePath);
             if (!File.Exists(fullPath))
             {
-                throw new FileNotFoundException(
-                    $"Source file not found: {fullPath}", fullPath);
+                throw new MutashabihatSourceException($"Source file not found: {fullPath}");
             }
 
             var fileInfo = new FileInfo(fullPath);
@@ -136,7 +134,7 @@ public sealed class MutashabihatManifestReader
             {
                 localPath = file.ResolveLocalPath();
             }
-            catch (InvalidDataException ex)
+            catch (MutashabihatSourceException ex)
             {
                 errors.Add(ex.Message);
                 continue;
@@ -162,7 +160,7 @@ public sealed class MutashabihatManifestReader
 
         if (errors.Count > 0)
         {
-            throw new InvalidDataException(
+            throw new MutashabihatSourceException(
                 $"Manifest file set validation failed. {string.Join("; ", errors)}");
         }
     }
@@ -204,7 +202,7 @@ public sealed class MutashabihatManifestReader
 
         if (errors.Count > 0)
         {
-            throw new InvalidDataException(
+            throw new MutashabihatSourceException(
                 $"Source folder validation failed. {string.Join("; ", errors)}");
         }
     }
@@ -217,7 +215,7 @@ public sealed class MutashabihatManifestReader
         var actual = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(fullPath)));
         if (!string.Equals(actual, expectedSha256, StringComparison.OrdinalIgnoreCase))
         {
-            throw new InvalidDataException($"Checksum mismatch for '{fullPath}'.");
+            throw new MutashabihatSourceException($"Checksum mismatch for '{fullPath}'.");
         }
     }
 
@@ -226,7 +224,7 @@ public sealed class MutashabihatManifestReader
         var actual = new FileInfo(fullPath).Length;
         if (actual != expectedSize)
         {
-            throw new InvalidDataException(
+            throw new MutashabihatSourceException(
                 $"File size mismatch for '{fullPath}': expected={expectedSize}, observed={actual}.");
         }
     }
@@ -239,13 +237,13 @@ public sealed class MutashabihatManifestReader
 
         if (document.RootElement.ValueKind != JsonValueKind.Object)
         {
-            throw new InvalidDataException($"Expected JSON object root in '{fullPath}'.");
+            throw new MutashabihatSourceException($"Expected JSON object root in '{fullPath}'.");
         }
 
         var observedCount = document.RootElement.EnumerateObject().Count();
         if (observedCount != expectedCount)
         {
-            throw new InvalidDataException(
+            throw new MutashabihatSourceException(
                 $"Record count mismatch for '{fullPath}': expected={expectedCount}, observed={observedCount}.");
         }
     }
@@ -276,7 +274,7 @@ public sealed record MutashabihatManifestFile(
 
         if (string.IsNullOrWhiteSpace(localPath))
         {
-            throw new InvalidDataException("Manifest file entry is missing 'path'.");
+            throw new MutashabihatSourceException("Manifest file entry is missing 'path'.");
         }
 
         return localPath.Replace('\\', '/');
