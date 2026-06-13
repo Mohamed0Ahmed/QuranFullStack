@@ -46,7 +46,7 @@ the pipeline incrementally in priority order. **MVP = US1 + US2** (both P1).
 
 **Purpose**: Establish the baseline and the patterns to mirror.
 
-- [ ] T001 Verify the baseline builds and read the precedent files to mirror. Run `dotnet build Backend`
+- [x] T001 Verify the baseline builds and read the precedent files to mirror. Run `dotnet build Backend`
   for a green baseline. Then open and skim these precedents (do **not** edit) — every new file in this
   feature mirrors one of them:
   - ayah FK target: `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Configurations/Quran/AyahConfiguration.cs`
@@ -71,72 +71,72 @@ concrete handler/source/writer/report-writer exist). **⚠️ No user-story work
 
 ### Domain — entities (`Backend/domain/QuranDashboard.Domain/Quran/Mutashabihat/`; plain data carriers, no behavior; mirror `QuranRoot.cs`)
 
-- [ ] T002 [P] Create `MutashabihatGroup.cs` — props for `quran_mutashabihat_groups` (data-model §1):
+- [x] T002 [P] Create `MutashabihatGroup.cs` — props for `quran_mutashabihat_groups` (data-model §1):
   `Id` (int), `SourceGroupId` (int), `RepresentativeAyahId` (int), `RepresentativeWordFrom` (short),
   `RepresentativeWordTo` (short), `OccurrenceCount` (short), `DistinctAyahCount` (short),
   `DistinctSurahCount` (short), `RawSourceCounts` (string?, holds jsonb).
-- [ ] T003 [P] Create `MutashabihatOccurrence.cs` — props for `quran_mutashabihat_occurrences`
+- [x] T003 [P] Create `MutashabihatOccurrence.cs` — props for `quran_mutashabihat_occurrences`
   (data-model §2): `Id` (int), `GroupId` (int), `AyahId` (int), `WordFrom` (short), `WordTo` (short),
   `IsRepresentative` (bool).
-- [ ] T004 [P] Create `SimilarAyahLink.cs` — props for `quran_similar_ayah_links` (data-model §3):
+- [x] T004 [P] Create `SimilarAyahLink.cs` — props for `quran_similar_ayah_links` (data-model §3):
   `Id` (int), `SourceAyahId` (int), `TargetAyahId` (int), `Score` (short), `Coverage` (short),
   `MatchedWordsCount` (short), `MatchWords` (string, holds jsonb).
 
 ### Infrastructure — EF configurations (`Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Configurations/Quran/Mutashabihat/`; mirror `QuranRootConfiguration.cs` / `WordMorphologySegmentConfiguration.cs`)
 
-- [ ] T005 [P] Create `MutashabihatGroupConfiguration.cs` — table `quran_mutashabihat_groups`; identity PK
+- [x] T005 [P] Create `MutashabihatGroupConfiguration.cs` — table `quran_mutashabihat_groups`; identity PK
   `id` (`ValueGeneratedOnAdd`); **UNIQUE(`source_group_id`)**; FK `representative_ayah_id` →
   `quran_ayahs.id`; index on `representative_ayah_id`; `raw_source_counts` as `jsonb` (nullable). Columns
   per data-model §1.
-- [ ] T006 [P] Create `MutashabihatOccurrenceConfiguration.cs` — table `quran_mutashabihat_occurrences`;
+- [x] T006 [P] Create `MutashabihatOccurrenceConfiguration.cs` — table `quran_mutashabihat_occurrences`;
   identity PK `id`; FK `group_id` → `quran_mutashabihat_groups.id` **ON DELETE CASCADE**; FK `ayah_id` →
   `quran_ayahs.id`; **UNIQUE(`group_id`, `ayah_id`, `word_from`, `word_to`)**; index on `ayah_id`;
   `is_representative` NOT NULL default `false`. Per data-model §2.
-- [ ] T007 [P] Create `SimilarAyahLinkConfiguration.cs` — table `quran_similar_ayah_links`; identity PK
+- [x] T007 [P] Create `SimilarAyahLinkConfiguration.cs` — table `quran_similar_ayah_links`; identity PK
   `id`; FKs `source_ayah_id` / `target_ayah_id` → `quran_ayahs.id`; **UNIQUE(`source_ayah_id`,
   `target_ayah_id`)**; **CHECK(`source_ayah_id <> target_ayah_id`)**; index on `target_ayah_id`;
   `match_words` as `jsonb` (NOT NULL). Per data-model §3.
 
 ### Infrastructure — DbContext
 
-- [ ] T008 Add three `DbSet<>`s (`MutashabihatGroup`, `MutashabihatOccurrence`, `SimilarAyahLink`) to
+- [x] T008 Add three `DbSet<>`s (`MutashabihatGroup`, `MutashabihatOccurrence`, `SimilarAyahLink`) to
   `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/QuranDashboardDbContext.cs`.
   Configurations are auto-discovered (same as Feature 004) — do not register them manually.
 
 ### Application.Abstractions (`Backend/application/QuranDashboard.Application.Abstractions/Quran/Mutashabihat/`; mirror `Quran/Words/Morphology/` records)
 
-- [ ] T009 [P] Create `MutashabihatInvariants.cs` + `MutashabihatExpectedCounts.cs` — exact constants,
+- [x] T009 [P] Create `MutashabihatInvariants.cs` + `MutashabihatExpectedCounts.cs` — exact constants,
   `Production` instance, score range, and messages (`TargetsNotEmpty`, `SourceMismatch`, `AyahsMissing`)
   from `contracts/mutashabihat-abstractions.md` → "MutashabihatInvariants".
-- [ ] T010 [P] Create result records `MutashabihatImportResult.cs`, `MutashabihatImportTotals.cs`,
+- [x] T010 [P] Create result records `MutashabihatImportResult.cs`, `MutashabihatImportTotals.cs`,
   `MutashabihatCheckResult.cs` — exact shapes in `contracts/mutashabihat-abstractions.md` → "Records".
-- [ ] T011 [P] Create source DTOs `MutashabihatSourceData.cs`, `PhraseGroupDto.cs`, `OccurrenceDto.cs`,
+- [x] T011 [P] Create source DTOs `MutashabihatSourceData.cs`, `PhraseGroupDto.cs`, `OccurrenceDto.cs`,
   `SimilarLinkDto.cs` — exact shapes in `contracts/mutashabihat-abstractions.md` → "Source DTOs".
-- [ ] T012 [P] Create interfaces `IMutashabihatImportSource.cs`, `IMutashabihatImportWriter.cs`,
+- [x] T012 [P] Create interfaces `IMutashabihatImportSource.cs`, `IMutashabihatImportWriter.cs`,
   `IMutashabihatReportWriter.cs` — exact signatures in `contracts/mutashabihat-abstractions.md`. Expose
   records/DTOs only, never EF entities.
 
 ### Infrastructure — source reading (`Backend/infrastructure/QuranDashboard.Infrastructure/Files/Quran/Mutashabihat/`; mirror `Files/Quran/Morphology/`)
 
-- [ ] T013 [P] Create `MutashabihatManifestReader.cs` — read `manifest.json`; verify the source folder
+- [x] T013 [P] Create `MutashabihatManifestReader.cs` — read `manifest.json`; verify the source folder
   contains **exactly** `manifest.json`, `README.md`, `mutashabihat-ul-quran/phrases.json`,
   `similar-ayahs/matching-ayah.json` (reject missing files, extra/derived files like `phrase_verses.json`,
   wrong `expectedRecordCount`, wrong `fileSizeBytes`, wrong `sha256`); expose a recompute of size/sha256
   for `MUT-SOURCE-UNCHANGED`. Mirror `MorphologyManifestReader.cs`. (Computes `MUT-MANIFEST-SET`,
   `MUT-MANIFEST-CHECKSUM`.)
-- [ ] T014 [P] Create `JsonPhrasesReader.cs` — parse `mutashabihat-ul-quran/phrases.json` with
+- [x] T014 [P] Create `JsonPhrasesReader.cs` — parse `mutashabihat-ul-quran/phrases.json` with
   `System.Text.Json`; yield per group: `source_group_id` (the object key, opaque int), `source` =
   `{key, from, to}`, and the `ayah` map `verse_key → [[word_from, word_to], …]`. Validate `{source, ayah}`
   shape (`MUT-JSON-SHAPE`); count raw occurrence entries (`MUT-RAW-OCCURRENCE-COUNT` = 3,558). Do NOT
   resolve `ayah_id` here (the assembler does that). Mirror `JsonAlignedCorpusReader.cs`.
-- [ ] T015 [P] Create `JsonSimilarAyahReader.cs` — parse `similar-ayahs/matching-ayah.json`; yield per
+- [x] T015 [P] Create `JsonSimilarAyahReader.cs` — parse `similar-ayahs/matching-ayah.json`; yield per
   source ayah (the object key = source `verse_key`) a list of items
   `{matched_ayah_key, score, coverage, matched_words_count, match_words}`. Validate the 5-field item shape
   (`MUT-JSON-SHAPE`). Preserve `match_words` ranges verbatim. Mirror `JsonAlignedCorpusReader.cs`.
 
 ### Infrastructure — schema migration (single migration for the feature)
 
-- [ ] T016 Generate the single schema-only EF migration `AddQuranMutashabihat`, once T002–T008 exist and
+- [x] T016 Generate the single schema-only EF migration `AddQuranMutashabihat`, once T002–T008 exist and
   `dotnet build Backend` is green:
   `dotnet ef migrations add AddQuranMutashabihat --project Backend/infrastructure/QuranDashboard.Infrastructure --startup-project Backend/api/QuranDashboard.Api`.
   **Generating this migration is pre-approved as part of implementing Feature 006** — it is the explicitly
@@ -151,7 +151,7 @@ concrete handler/source/writer/report-writer exist). **⚠️ No user-story work
 
 ### Tests — shared fixture (`Backend/tests/QuranDashboard.Tests/Quran/Mutashabihat/`; mirror `WordsMorphology/`)
 
-- [ ] T017 [P] Create `MutashabihatImportTestFixture.cs` + `MutashabihatTestServiceCollectionExtensions.cs`
+- [x] T017 [P] Create `MutashabihatImportTestFixture.cs` + `MutashabihatTestServiceCollectionExtensions.cs`
   — Testcontainers `postgres:16-alpine` with `MigrateAsync`; helpers to (a) seed a small set of
   **synthetic, source-safe** `quran_ayahs` rows (fabricated `verse_key`s, e.g. `900:1`, `900:2`); (b) write
   a temporary staged source folder (manifest + tiny `phrases.json` + tiny `matching-ayah.json` + README)
