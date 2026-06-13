@@ -65,9 +65,10 @@ public sealed class EfBulkMutashabihatWriter : IMutashabihatImportWriter
                 npgsqlConnection, transaction, source, ct);
             await MutashabihatBulkCopier.CopyOccurrencesAsync(
                 npgsqlConnection, source, groupIdsBySourceGroupId, ct);
+            await MutashabihatBulkCopier.CopyLinksAsync(npgsqlConnection, source, ct);
 
             var totals = BuildTotals(source, importSession.RawOccurrenceCount);
-            var checks = await RunUs1HardChecksAsync(
+            var checks = await RunHardChecksAsync(
                 npgsqlConnection, transaction, expected, importSession.RawOccurrenceCount, ct);
 
             var allHardPassed = checks.All(check => check.Passed);
@@ -91,8 +92,8 @@ public sealed class EfBulkMutashabihatWriter : IMutashabihatImportWriter
                 Warnings: [],
                 errors,
                 allHardPassed
-                    ? ["Mutashabihat groups and occurrences committed (US1 path)."]
-                    : ["Totals reflect the committed import; hard checks failed (US1 path commits without rollback)."]);
+                    ? ["Mutashabihat groups, occurrences, and links committed (US1+US2 path)."]
+                    : ["Totals reflect the committed import; hard checks failed (US1+US2 path commits without rollback)."]);
         }
         catch
         {
@@ -108,6 +109,8 @@ public sealed class EfBulkMutashabihatWriter : IMutashabihatImportWriter
             .SelectMany(group => group.Occurrences)
             .Select(occurrence => occurrence.AyahId)
             .Concat(source.Groups.Select(group => group.RepresentativeAyahId))
+            .Concat(source.Links.Select(link => link.SourceAyahId))
+            .Concat(source.Links.Select(link => link.TargetAyahId))
             .Distinct()
             .Count();
 
@@ -120,7 +123,7 @@ public sealed class EfBulkMutashabihatWriter : IMutashabihatImportWriter
             distinctAyahs);
     }
 
-    private static async Task<List<MutashabihatCheckResult>> RunUs1HardChecksAsync(
+    private static async Task<List<MutashabihatCheckResult>> RunHardChecksAsync(
         NpgsqlConnection connection,
         NpgsqlTransaction transaction,
         MutashabihatExpectedCounts expected,
@@ -153,6 +156,24 @@ public sealed class EfBulkMutashabihatWriter : IMutashabihatImportWriter
             FormatInt(rawOccurrenceCount),
             rawOccurrenceCount == expected.RawOccurrences));
 
+        var similarSourceCount = await ExecuteScalarIntAsync(
+            connection, transaction, MutashabihatSql.CheckSimilarSourceCount, ct);
+        checks.Add(new MutashabihatCheckResult(
+            "MUT-SIMILAR-SOURCE-COUNT",
+            HardSeverity,
+            FormatInt(expected.SimilarSources),
+            FormatInt(similarSourceCount),
+            similarSourceCount == expected.SimilarSources));
+
+        var similarLinkCount = await ExecuteScalarIntAsync(
+            connection, transaction, MutashabihatSql.CheckSimilarLinkCount, ct);
+        checks.Add(new MutashabihatCheckResult(
+            "MUT-SIMILAR-LINK-COUNT",
+            HardSeverity,
+            FormatInt(expected.SimilarLinks),
+            FormatInt(similarLinkCount),
+            similarLinkCount == expected.SimilarLinks));
+
         checks.Add(new MutashabihatCheckResult(
             "MUT-VERSEKEY-FORMAT",
             HardSeverity,
@@ -178,20 +199,48 @@ public sealed class EfBulkMutashabihatWriter : IMutashabihatImportWriter
             minSizeViolations == 0 ? "0 violations" : $"{FormatInt(minSizeViolations)} violation(s)",
             minSizeViolations == 0));
 
-        var wordRangeViolations = await ExecuteScalarIntAsync(
+        var occurrenceWordRangeViolations = await ExecuteScalarIntAsync(
             connection, transaction, MutashabihatSql.CheckOccurrenceWordRangeViolations, ct);
+        var linkWordRangeViolations = await ExecuteScalarIntAsync(
+            connection, transaction, MutashabihatSql.CheckLinkWordRangeViolations, ct);
+        var wordRangeViolations = occurrenceWordRangeViolations + linkWordRangeViolations;
         checks.Add(new MutashabihatCheckResult(
             "MUT-WORD-RANGE-SHAPE",
             HardSeverity,
-            "occurrence ranges have from >= 1 and to >= from",
+            "occurrence and match_words ranges have from >= 1 and to >= from",
             wordRangeViolations == 0 ? "0 violations" : $"{FormatInt(wordRangeViolations)} violation(s)",
             wordRangeViolations == 0));
+
+        var selfLinkViolations = await ExecuteScalarIntAsync(
+            connection, transaction, MutashabihatSql.CheckSelfLinkViolations, ct);
+        checks.Add(new MutashabihatCheckResult(
+            "MUT-LINK-NO-SELF",
+            HardSeverity,
+            "0 self-links",
+            selfLinkViolations == 0 ? "0 self-links" : $"{FormatInt(selfLinkViolations)} self-link(s)",
+            selfLinkViolations == 0));
+
+        var scoreRangeViolations = await ExecuteScalarIntAsync(
+            connection, transaction, MutashabihatSql.CheckScoreRangeViolations, ct);
+        checks.Add(new MutashabihatCheckResult(
+            "MUT-SCORE-RANGE",
+            HardSeverity,
+            "every link score in [50, 100]",
+            scoreRangeViolations == 0 ? "0 violations" : $"{FormatInt(scoreRangeViolations)} violation(s)",
+            scoreRangeViolations == 0));
 
         var unresolvedRepresentatives = await ExecuteScalarIntAsync(
             connection, transaction, MutashabihatSql.CheckUnresolvedGroupRepresentativeAyahs, ct);
         var unresolvedOccurrences = await ExecuteScalarIntAsync(
             connection, transaction, MutashabihatSql.CheckUnresolvedOccurrenceAyahs, ct);
-        var unresolvedTotal = unresolvedRepresentatives + unresolvedOccurrences;
+        var unresolvedLinkSources = await ExecuteScalarIntAsync(
+            connection, transaction, MutashabihatSql.CheckUnresolvedLinkSourceAyahs, ct);
+        var unresolvedLinkTargets = await ExecuteScalarIntAsync(
+            connection, transaction, MutashabihatSql.CheckUnresolvedLinkTargetAyahs, ct);
+        var unresolvedTotal = unresolvedRepresentatives
+            + unresolvedOccurrences
+            + unresolvedLinkSources
+            + unresolvedLinkTargets;
         checks.Add(new MutashabihatCheckResult(
             "MUT-AYAH-RESOLVE",
             HardSeverity,

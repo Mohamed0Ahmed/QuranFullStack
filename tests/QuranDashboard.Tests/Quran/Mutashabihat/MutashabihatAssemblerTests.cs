@@ -149,6 +149,66 @@ public sealed class MutashabihatAssemblerTests
             .Which.Message.Should().Contain("900:missing");
     }
 
+    [Fact]
+    public void AssembleLinks_resolves_both_ends_to_ayah_id()
+    {
+        var similarSources = CreateSimilarSources(
+            ("900:1",
+            [
+                new ParsedSimilarLinkItem("900:2", 80, 50, 2, """[[1,2]]""")
+            ]));
+
+        var links = AssembleLinks(similarSources);
+
+        links.Should().ContainSingle();
+        links.Single().SourceAyahId.Should().Be(1);
+        links.Single().TargetAyahId.Should().Be(2);
+    }
+
+    [Fact]
+    public void AssembleLinks_produces_no_reverse_row_for_one_way_link()
+    {
+        var similarSources = CreateSimilarSources(
+            ("900:1",
+            [
+                new ParsedSimilarLinkItem("900:2", 80, 50, 2, """[[1,2]]""")
+            ]));
+
+        var links = AssembleLinks(similarSources);
+
+        links.Should().HaveCount(1);
+        links.Should().NotContain(link => link.SourceAyahId == 2 && link.TargetAyahId == 1);
+    }
+
+    [Fact]
+    public void AssembleLinks_preserves_raw_coverage_above_100()
+    {
+        var similarSources = CreateSimilarSources(
+            ("900:1",
+            [
+                new ParsedSimilarLinkItem("900:2", 90, 200, 1, """[[1]]""")
+            ]));
+
+        var links = AssembleLinks(similarSources);
+
+        links.Single().Coverage.Should().Be(200);
+    }
+
+    [Fact]
+    public void AssembleLinks_detects_self_link_for_mut_link_no_self_check()
+    {
+        var similarSources = CreateSimilarSources(
+            ("900:1",
+            [
+                new ParsedSimilarLinkItem("900:1", 80, 50, 1, """[[1]]""")
+            ]));
+
+        var links = AssembleLinks(similarSources);
+
+        links.Should().ContainSingle();
+        links.Single().SourceAyahId.Should().Be(links.Single().TargetAyahId);
+    }
+
     private static PhrasesReadResult CreatePhrases(
         int sourceGroupId,
         string sourceKey,
@@ -168,4 +228,12 @@ public sealed class MutashabihatAssemblerTests
 
     private static MutashabihatSourceData Assemble(PhrasesReadResult phrases) =>
         new MutashabihatAssembler().AssembleGroups(phrases, AyahIds);
+
+    private static IReadOnlyList<ParsedSimilarSource> CreateSimilarSources(
+        params (string SourceVerseKey, IReadOnlyList<ParsedSimilarLinkItem> Links)[] sources) =>
+        sources.Select(source => new ParsedSimilarSource(source.SourceVerseKey, source.Links)).ToList();
+
+    private static IReadOnlyList<SimilarLinkDto> AssembleLinks(
+        IReadOnlyList<ParsedSimilarSource> similarSources) =>
+        new MutashabihatAssembler().AssembleLinks(similarSources, AyahIds);
 }

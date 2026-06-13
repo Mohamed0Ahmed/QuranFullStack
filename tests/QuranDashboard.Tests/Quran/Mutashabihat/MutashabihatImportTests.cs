@@ -28,6 +28,8 @@ public sealed class MutashabihatImportTests(MutashabihatImportTestFixture fixtur
         result.Totals!.GroupRows.Should().Be(1);
         result.Totals.StoredOccurrenceRows.Should().Be(2);
         result.Totals.RawOccurrenceEntries.Should().Be(2);
+        result.Totals.LinkRows.Should().Be(1);
+        result.Totals.DistinctSimilarSources.Should().Be(1);
 
         await using var scope = fixture.CreateServiceProvider(services => services.AddMutashabihatImportServices())
             .CreateAsyncScope();
@@ -35,6 +37,7 @@ public sealed class MutashabihatImportTests(MutashabihatImportTestFixture fixtur
 
         var groups = await dbContext.MutashabihatGroups.AsNoTracking().ToListAsync();
         var occurrences = await dbContext.MutashabihatOccurrences.AsNoTracking().ToListAsync();
+        var links = await dbContext.SimilarAyahLinks.AsNoTracking().ToListAsync();
 
         groups.Should().HaveCount(1);
         groups.Single().OccurrenceCount.Should().Be(2);
@@ -42,6 +45,14 @@ public sealed class MutashabihatImportTests(MutashabihatImportTestFixture fixtur
         occurrences.Should().HaveCount(2);
         occurrences.Should().OnlyContain(occurrence => occurrence.AyahId == 1 || occurrence.AyahId == 2);
         occurrences.Count(occurrence => occurrence.IsRepresentative).Should().Be(1);
+
+        links.Should().ContainSingle();
+        links.Single().SourceAyahId.Should().Be(1);
+        links.Single().TargetAyahId.Should().Be(2);
+        links.Single().Score.Should().Be(80);
+        links.Single().Coverage.Should().Be(50);
+        links.Single().MatchedWordsCount.Should().Be(2);
+        links.Single().MatchWords.Should().Be("""[[1, 2]]""");
     }
 
     [Fact]
@@ -64,7 +75,9 @@ public sealed class MutashabihatImportTests(MutashabihatImportTestFixture fixtur
             }
         };
 
-        var sourcePath = await fixture.WriteSyntheticSourceFolderAsync(phrases: phrases);
+        var sourcePath = await fixture.WriteSyntheticSourceFolderAsync(
+            phrases: phrases,
+            similarAyahs: new Dictionary<string, object>());
         var expected = new MutashabihatExpectedCounts(1, 3, 2, 0, 0, 2);
 
         var result = await fixture.RunImportAsync(sourcePath, expectedCounts: expected);
@@ -101,7 +114,9 @@ public sealed class MutashabihatImportTests(MutashabihatImportTestFixture fixtur
             }
         };
 
-        var sourcePath = await fixture.WriteSyntheticSourceFolderAsync(phrases: phrases);
+        var sourcePath = await fixture.WriteSyntheticSourceFolderAsync(
+            phrases: phrases,
+            similarAyahs: new Dictionary<string, object>());
         var expected = new MutashabihatExpectedCounts(1, 2, 2, 0, 0, 3);
 
         var result = await fixture.RunImportAsync(sourcePath, expectedCounts: expected);
@@ -121,6 +136,99 @@ public sealed class MutashabihatImportTests(MutashabihatImportTestFixture fixtur
         var occurrences = await dbContext.MutashabihatOccurrences.AsNoTracking().ToListAsync();
         occurrences.Should().OnlyContain(occurrence => !occurrence.IsRepresentative);
     }
+
+    [Fact]
+    public async Task Import_stores_similar_links_with_raw_coverage_above_100()
+    {
+        await fixture.SeedSyntheticAyahsAsync((1, "900:1"), (2, "900:2"));
+        var similarAyahs = new Dictionary<string, object>
+        {
+            ["900:1"] = new object[]
+            {
+                new
+                {
+                    matched_ayah_key = "900:2",
+                    score = 90,
+                    coverage = 200,
+                    matched_words_count = 1,
+                    match_words = new[] { new[] { 1 } }
+                }
+            }
+        };
+
+        var sourcePath = await fixture.WriteSyntheticSourceFolderAsync(similarAyahs: similarAyahs);
+        var expected = new MutashabihatExpectedCounts(1, 2, 2, 1, 1, 2);
+
+        var result = await fixture.RunImportAsync(sourcePath, expectedCounts: expected);
+
+        result.ExitCode.Should().Be(ImportMutashabihatResult.SuccessExitCode);
+
+        await using var scope = fixture.CreateServiceProvider(services => services.AddMutashabihatImportServices())
+            .CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+
+        var link = await dbContext.SimilarAyahLinks.AsNoTracking().SingleAsync();
+        link.Coverage.Should().Be(200);
+        link.SourceAyahId.Should().Be(1);
+        link.TargetAyahId.Should().Be(2);
+    }
+
+    [Theory]
+    [MemberData(nameof(LinkHardCheckFailureCases))]
+    public async Task Import_returns_failure_when_similar_link_hard_check_fails(
+        short score,
+        short coverage,
+        int[][] matchWords,
+        string expectedCheckId)
+    {
+        await fixture.SeedSyntheticAyahsAsync((1, "900:1"), (2, "900:2"));
+        var similarAyahs = CreateSingleSimilarLink(score, coverage, matchWords);
+        var sourcePath = await fixture.WriteSyntheticSourceFolderAsync(similarAyahs: similarAyahs);
+        var expected = new MutashabihatExpectedCounts(1, 2, 2, 1, 1, 2);
+
+        var result = await fixture.RunImportAsync(sourcePath, expectedCounts: expected);
+
+        result.Succeeded.Should().BeFalse();
+        result.ExitCode.Should().Be(ImportMutashabihatResult.FailureExitCode);
+        result.Message.Should().Contain(expectedCheckId);
+    }
+
+    public static IEnumerable<object[]> LinkHardCheckFailureCases()
+    {
+        yield return
+        [
+            (short)40,
+            (short)50,
+            new[] { new[] { 1 } },
+            "MUT-SCORE-RANGE"
+        ];
+
+        yield return
+        [
+            (short)90,
+            (short)50,
+            new[] { new[] { 2, 1 } },
+            "MUT-WORD-RANGE-SHAPE"
+        ];
+    }
+
+    private static Dictionary<string, object> CreateSingleSimilarLink(
+        short score,
+        short coverage,
+        int[][] matchWords) => new()
+        {
+            ["900:1"] = new object[]
+            {
+                new
+                {
+                    matched_ayah_key = "900:2",
+                    score,
+                    coverage,
+                    matched_words_count = 1,
+                    match_words = matchWords
+                }
+            }
+        };
 }
 
 [CollectionDefinition(nameof(MutashabihatImportTestCollection))]

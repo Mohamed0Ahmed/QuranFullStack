@@ -48,6 +48,40 @@ public sealed class MutashabihatAssembler
         return new MutashabihatSourceData(groups, Links: []);
     }
 
+    public IReadOnlyList<SimilarLinkDto> AssembleLinks(
+        IReadOnlyList<ParsedSimilarSource> similarSources,
+        IReadOnlyDictionary<string, int> ayahIdsByVerseKey)
+    {
+        ArgumentNullException.ThrowIfNull(similarSources);
+        ArgumentNullException.ThrowIfNull(ayahIdsByVerseKey);
+
+        var links = new List<SimilarLinkDto>();
+
+        foreach (var source in similarSources)
+        {
+            ValidateVerseKeyFormat(source.SourceVerseKey);
+            var sourceAyahId = ResolveSimilarAyahId(
+                source.SourceVerseKey, ayahIdsByVerseKey, "similar source verse_key");
+
+            foreach (var item in source.Links)
+            {
+                ValidateVerseKeyFormat(item.MatchedAyahKey);
+                var targetAyahId = ResolveSimilarAyahId(
+                    item.MatchedAyahKey, ayahIdsByVerseKey, "similar matched_ayah_key");
+
+                links.Add(new SimilarLinkDto(
+                    sourceAyahId,
+                    targetAyahId,
+                    item.Score,
+                    item.Coverage,
+                    item.MatchedWordsCount,
+                    item.MatchWordsJson));
+            }
+        }
+
+        return links;
+    }
+
     private static List<OccurrenceDto> BuildOccurrences(
         ParsedPhraseGroup parsedGroup,
         IReadOnlyDictionary<string, int> ayahIdsByVerseKey,
@@ -112,6 +146,20 @@ public sealed class MutashabihatAssembler
         {
             throw new InvalidDataException(
                 $"Unresolved verse_key '{verseKey}' for group {sourceGroupId} ({context}).");
+        }
+
+        return ayahId;
+    }
+
+    private static int ResolveSimilarAyahId(
+        string verseKey,
+        IReadOnlyDictionary<string, int> ayahIdsByVerseKey,
+        string context)
+    {
+        if (!ayahIdsByVerseKey.TryGetValue(verseKey, out var ayahId))
+        {
+            throw new InvalidDataException(
+                $"Unresolved verse_key '{verseKey}' for {context}.");
         }
 
         return ayahId;

@@ -86,6 +86,38 @@ internal static class MutashabihatBulkCopier
         await importer.CompleteAsync(ct);
     }
 
+    public static async Task CopyLinksAsync(
+        NpgsqlConnection connection,
+        MutashabihatSourceData source,
+        CancellationToken ct)
+    {
+        const string copyCommand = """
+            COPY quran_similar_ayah_links (
+                source_ayah_id,
+                target_ayah_id,
+                score,
+                coverage,
+                matched_words_count,
+                match_words)
+            FROM STDIN (FORMAT BINARY)
+            """;
+
+        await using var importer = await connection.BeginBinaryImportAsync(copyCommand, ct);
+
+        foreach (var link in source.Links)
+        {
+            await importer.StartRowAsync(ct);
+            await importer.WriteAsync(link.SourceAyahId, ct);
+            await importer.WriteAsync(link.TargetAyahId, ct);
+            await importer.WriteAsync(link.Score, ct);
+            await importer.WriteAsync(link.Coverage, ct);
+            await importer.WriteAsync(link.MatchedWordsCount, ct);
+            await importer.WriteAsync(link.MatchWordsJson, NpgsqlDbType.Jsonb, ct);
+        }
+
+        await importer.CompleteAsync(ct);
+    }
+
     private static async Task<Dictionary<int, int>> ReadGroupIdsBySourceGroupIdAsync(
         NpgsqlConnection connection,
         NpgsqlTransaction transaction,

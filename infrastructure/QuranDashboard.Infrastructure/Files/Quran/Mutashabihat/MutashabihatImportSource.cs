@@ -48,10 +48,13 @@ public sealed class MutashabihatImportSource : IMutashabihatImportSource
         var phrases = await phrasesReader.ReadAsync(phrasesPath, ct);
         importSession.RawOccurrenceCount = phrases.RawOccurrenceCount;
 
-        _ = await similarAyahReader.ReadAsync(
+        var similarSources = await similarAyahReader.ReadAsync(
             GetManifestPath(manifest, "similar-ayahs/matching-ayah.json"), ct);
 
-        return assembler.AssembleGroups(phrases, ayahIdsByVerseKey);
+        var groupsData = assembler.AssembleGroups(phrases, ayahIdsByVerseKey);
+        var links = assembler.AssembleLinks(similarSources, ayahIdsByVerseKey);
+
+        return new MutashabihatSourceData(groupsData.Groups, links);
     }
 
     public async Task<bool> SourceUnchangedAsync(string sourcePath, CancellationToken ct)
