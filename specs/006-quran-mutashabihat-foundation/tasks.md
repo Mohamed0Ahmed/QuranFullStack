@@ -280,48 +280,48 @@ byte-identical.
 
 ### Tests for User Story 3 (write FIRST)
 
-- [ ] T030 [P] [US3] Create `MutashabihatRefusalForceTests.cs` — assert: second run without `--force`
+- [X] T030 [P] [US3] Create `MutashabihatRefusalForceTests.cs` — assert: second run without `--force`
   refuses and writes nothing/no report; missing/empty `quran_ayahs` refuses cleanly with no report;
   `--force` truncates/rebuilds only the 3 mutashabihat tables; forced rerun on unchanged source is
   idempotent (compare stable ordered snapshots/hashes, **counts-only is not enough**); **both
   `quran_ayahs` and `quran_words` are unchanged** — snapshot each table's row count and content (stable
   ordered snapshot/hash) before and after every run and assert they are byte/row identical (proving the
   import reads `quran_ayahs` read-only and never touches `quran_words` at all); source files' size/sha256
-  unchanged after the run.
-- [ ] T031 [P] [US3] Create `MutashabihatValidationFailureTests.cs` — assert: (a) inject a hard violation
+  unchanged after the run. *(Report artifact/path assertions deferred to Phase 6 / T039 — no report writer in US3.)*
+- [X] T031 [P] [US3] Create `MutashabihatValidationFailureTests.cs` — assert: (a) inject a hard violation
   (e.g. an unresolved `ayah_id` or a self-link) into an empty target → rollback leaves all 3 tables empty,
-  `verdict = "fail"`, non-zero exit, failure report written; (b) successful import, snapshot all tables,
+  `verdict = "fail"`, non-zero exit; *(failure report file written: Phase 6 / T039)*; (b) successful import, snapshot all tables,
   then `--force` with an injected hard failure after the build starts → previous contents unchanged,
-  non-zero exit, failure report written; (c) over populated tables, `--force` with an injected
+  non-zero exit; *(failure report file written: Phase 6 / T039)*; (c) over populated tables, `--force` with an injected
   source/manifest failure → early refusal leaves snapshots unchanged, non-zero exit, **no** report.
 
 ### Implementation for User Story 3
 
-- [ ] T032 [US3] Complete the transaction/gate in `EfBulkMutashabihatWriter.ImportAsync` (T022/T028): wrap
+- [X] T032 [US3] Complete the transaction/gate in `EfBulkMutashabihatWriter.ImportAsync` (T022/T028): wrap
   truncate-if-force (`TRUNCATE quran_mutashabihat_groups, quran_mutashabihat_occurrences, quran_similar_ayah_links RESTART IDENTITY CASCADE`)
   + all COPYs + all hard-check queries (T023/T029) + the injected `sourceUnchangedCheck` in **ONE**
   transaction; **commit only if every hard check passes, else roll back**. `Persisted = true` iff committed.
   `quran_ayahs` / `quran_words` are never in the write set. Mirror `EfBulkMorphologyWriter.cs` +
   `MorphologyValidationRunner.cs`. Research R12.
-- [ ] T033 [US3] Wire the remaining gate checks: `MUT-SOURCE-UNCHANGED` (re-verify source sha256 after
+- [X] T033 [US3] Wire the remaining gate checks: `MUT-SOURCE-UNCHANGED` (re-verify source sha256 after
   assembly, before commit, via `IMutashabihatImportSource.SourceUnchangedAsync` injected by the handler),
   and ensure the assembly-time `MUT-MANIFEST-SET`, `MUT-MANIFEST-CHECKSUM`, `MUT-JSON-SHAPE`,
   `MUT-RAW-OCCURRENCE-COUNT` are recorded in the result `Checks`. Add the manifest/foundation early
   refusals to `ImportMutashabihatHandler` (T024). Per `contracts/validation-report.schema.md`.
-- [ ] T034 [US3] Register the new services in
+- [X] T034 [US3] Register the new services in
   `Backend/infrastructure/QuranDashboard.Infrastructure/DependencyInjection.cs` — register **only** the
   concrete types that exist by this phase: `IMutashabihatImportSource`→`MutashabihatImportSource`,
   `IMutashabihatImportWriter`→`EfBulkMutashabihatWriter`. Do **not** register
   `IMutashabihatReportWriter` here — its concrete `MarkdownJsonMutashabihatReportWriter` does not exist
   yet (it is created and registered in T038/T039). Keep the build green.
-- [ ] T035 [US3] Add the `import-mutashabihat` verb to `Backend/tools/QuranDashboard.DataImporter/Program.cs`
+- [X] T035 [US3] Add the `import-mutashabihat` verb to `Backend/tools/QuranDashboard.DataImporter/Program.cs`
   — extend the `verb switch` with `"import-mutashabihat" => await RunImportMutashabihatAsync(verbArgs)`, and
   add `RunImportMutashabihatAsync` + `ResolveDefaultMutashabihatSourcePath` mirroring
   `RunImportMorphologyAsync` / `ResolveDefaultMorphologySourcePath`: parse `[--source <path>]`
   (default `App/resources/import-sources/mutashabihat/`), `[--report-out <path>]`
   (default `resources/report/mutashabihat/`), `[--force]`; reject unknown args with usage; print
   `groups=…, occurrences=…, links=…, sources=…` + report path on success. Behavior per
-  `contracts/cli-verb.md`. Update `PrintUsage` with the new verb line.
+  `contracts/cli-verb.md`. Update `PrintUsage` with the new verb line. *(Report path printing wired in T039 when `IMutashabihatReportWriter` exists; `--report-out` is parsed but not surfaced until then.)*
 
 **Checkpoint**: The import is atomic, gated, reversible, and runnable as a CLI verb; US1–US3 tests pass.
 **Foundational + US1 + US2 + US3 = the deployable MVP: a validated, safe mutashabihat load.**
