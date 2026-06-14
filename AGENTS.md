@@ -1,13 +1,13 @@
 <!-- SPECKIT START -->
 
-Active feature: **Quran Mutashabihat Foundation** — branch `006-quran-mutashabihat-foundation`.
+Active feature: **Quran Tafsir Foundation** — branch `007-quran-tafsir-foundation`.
 For technologies, project structure, shell commands, and design artifacts, read the current plan
 and its siblings:
 
-- `specs/006-quran-mutashabihat-foundation/plan.md` — technical context, project structure, gates
-- `specs/006-quran-mutashabihat-foundation/spec.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/`
-- `docs/feature-006-quran-mutashabihat-foundation/feature-006-quran-mutashabihat-foundation-planning-report.md` — long-form companion plan
-- `docs/feature-006-quran-mutashabihat-foundation/mutashabihat-data-capability-report.md` — the validated source inventory (every count traces here)
+- `specs/007-quran-tafsir-foundation/plan.md` — technical context, project structure, gates
+- `specs/007-quran-tafsir-foundation/spec.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/`
+- `docs/feature-007-quran-tafsir-foundation/feature-007-quran-tafsir-foundation-planning-report.md` — long-form companion plan
+- `resources/import-sources/quran-tafsirs/README.md`, `manifest.json`, `package-report.md` — final local source package metadata (every import count traces here)
 
 <!-- SPECKIT END -->
 
