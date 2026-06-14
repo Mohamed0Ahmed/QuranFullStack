@@ -108,17 +108,9 @@ public sealed class EfBulkTafsirImportWriter : ITafsirImportWriter
                 acceptanceChecks,
                 Warnings: [],
                 Errors: [],
-                InfoNotes: ["Tafsir import passed validation; writing acceptance reports before commit."]);
+                InfoNotes: []);
 
-            try
-            {
-                await acceptanceReportWrite(successResult, ct);
-            }
-            catch
-            {
-                await transaction.RollbackAsync(ct);
-                throw;
-            }
+            await acceptanceReportWrite(successResult, ct);
 
             successResult = successResult with
             {

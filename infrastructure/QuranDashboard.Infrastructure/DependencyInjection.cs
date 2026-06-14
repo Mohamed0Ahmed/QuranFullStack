@@ -76,6 +76,7 @@ public static class DependencyInjection
         services.AddScoped<TafsirValidationRunner>();
         services.AddScoped<ITafsirImportSource, TafsirImportSource>();
         services.AddScoped<ITafsirImportWriter, EfBulkTafsirImportWriter>();
+        services.AddSingleton<ITafsirImportReportBuilder, TafsirImportReportBuilder>();
         services.AddSingleton<ITafsirReportWriter, MarkdownJsonTafsirReportWriter>();
 
         services.AddSingleton(I3rabExpectedCounts.Production);

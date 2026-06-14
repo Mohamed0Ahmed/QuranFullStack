@@ -6,16 +6,19 @@ public sealed class ImportTafsirsHandler
 {
     private readonly ITafsirImportSource importSource;
     private readonly ITafsirImportWriter importWriter;
-    private readonly ITafsirReportWriter reportWriter;
+    private readonly ITafsirImportReportBuilder reportBuilder;
+    private readonly TafsirImportReportEmitter reportEmitter;
 
     public ImportTafsirsHandler(
         ITafsirImportSource importSource,
         ITafsirImportWriter importWriter,
-        ITafsirReportWriter reportWriter)
+        ITafsirReportWriter reportWriter,
+        ITafsirImportReportBuilder reportBuilder)
     {
         this.importSource = importSource;
         this.importWriter = importWriter;
-        this.reportWriter = reportWriter;
+        this.reportBuilder = reportBuilder;
+        this.reportEmitter = new TafsirImportReportEmitter(reportWriter);
     }
 
     public async Task<ImportTafsirsResult> HandleAsync(ImportTafsirsCommand command, CancellationToken ct)
@@ -23,40 +26,47 @@ public sealed class ImportTafsirsHandler
         ArgumentNullException.ThrowIfNull(command);
         ArgumentException.ThrowIfNullOrWhiteSpace(command.SourcePath);
 
+        var sourcePath = Path.GetFullPath(command.SourcePath);
         var expectedCounts = command.ExpectedCounts ?? TafsirInvariants.Production;
+        var reportDir = ResolveReportOutDir(command);
 
         TafsirSourceData source;
         try
         {
-            source = await importSource.LoadAsync(command.SourcePath, expectedCounts, ct);
+            source = await importSource.LoadAsync(sourcePath, expectedCounts, ct);
         }
         catch (TafsirValidationException ex)
         {
-            return await WriteValidationFailureAsync(command, ex, ct);
+            return await WriteValidationFailureAsync(command, sourcePath, reportDir, ex, ct);
         }
         catch (TafsirSourceException)
         {
-            return ImportTafsirsResult.Refused(TafsirInvariants.SourceMismatch);
+            return await EmitPrePersistenceOutcomeAsync(
+                command, sourcePath, reportDir, source: null, TafsirInvariants.SourceMismatch, refused: true, ct);
         }
         catch (IOException)
         {
-            return ImportTafsirsResult.Refused(TafsirInvariants.SourceMismatch);
+            return await EmitPrePersistenceOutcomeAsync(
+                command, sourcePath, reportDir, source: null, TafsirInvariants.SourceMismatch, refused: true, ct);
         }
         catch (InvalidOperationException ex) when (ex.Message == TafsirInvariants.AyahsMissing)
         {
-            return ImportTafsirsResult.Refused(ex.Message);
+            return await EmitPrePersistenceOutcomeAsync(
+                command, sourcePath, reportDir, source: null, ex.Message, refused: true, ct);
         }
         catch (InvalidDataException ex)
         {
-            return ImportTafsirsResult.Failure(ex.Message);
+            return await EmitPrePersistenceOutcomeAsync(
+                command, sourcePath, reportDir, source: null, ex.Message, refused: false, ct);
         }
 
         if (!command.Force && await importWriter.AnyTargetTableHasDataAsync(ct))
         {
-            return ImportTafsirsResult.Refused(TafsirInvariants.TargetsNotEmpty);
+            return await EmitPrePersistenceOutcomeAsync(
+                command, sourcePath, reportDir, source, TafsirInvariants.TargetsNotEmpty, refused: true, ct);
         }
 
-        var reportDir = ResolveReportOutDir(command);
+        var successWarningCount = 0;
         TafsirImportResult result;
 
         try
@@ -65,17 +75,25 @@ public sealed class ImportTafsirsHandler
                 source,
                 command.Force,
                 expectedCounts,
-                token => importSource.SourceUnchangedAsync(command.SourcePath, token),
+                token => importSource.SourceUnchangedAsync(sourcePath, token),
                 async (candidateResult, token) =>
                 {
-                    Directory.CreateDirectory(reportDir);
-                    await reportWriter.WriteAsync(candidateResult, reportDir, token);
+                    var report = reportBuilder.BuildCandidateSuccess(
+                        sourcePath,
+                        source,
+                        command.Force,
+                        candidateResult.RunAtUtc,
+                        candidateResult.Totals,
+                        candidateResult.Checks);
+                    successWarningCount = report.Warnings.Count;
+                    await reportEmitter.WriteOrThrowAsync(report, reportDir, token);
                 },
                 ct);
         }
         catch (InvalidOperationException ex) when (ex.Message == TafsirInvariants.TargetsNotEmpty)
         {
-            return ImportTafsirsResult.Refused(ex.Message);
+            return await EmitPrePersistenceOutcomeAsync(
+                command, sourcePath, reportDir, source, ex.Message, refused: true, ct);
         }
         catch (IOException ex)
         {
@@ -92,58 +110,81 @@ public sealed class ImportTafsirsHandler
 
         if (!result.Persisted)
         {
-            try
+            var failureReport = reportBuilder.BuildValidationFailure(
+                sourcePath,
+                source,
+                command.Force,
+                result.RunAtUtc,
+                result.Totals,
+                result.Checks,
+                result.Errors);
+
+            var writeFailure = await reportEmitter.TryWriteAsync(failureReport, reportDir, ct);
+            if (writeFailure is not null)
             {
-                Directory.CreateDirectory(reportDir);
-                await reportWriter.WriteAsync(result, reportDir, ct);
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                return ImportTafsirsResult.Failure(
-                    $"{TafsirInvariants.ReportRequired} ({ex.Message})",
-                    reportDir);
+                return writeFailure;
             }
 
             return ImportTafsirsResult.Failure(
                 result.Errors.Count > 0
                     ? result.Errors[0]
                     : "Tafsir import validation failed.",
-                reportDir);
+                reportDir,
+                failureReport.Warnings.Count);
         }
 
-        return ImportTafsirsResult.Success(result.Totals, reportDir);
+        return ImportTafsirsResult.Success(result.Totals, reportDir, successWarningCount);
+    }
+
+    private async Task<ImportTafsirsResult> EmitPrePersistenceOutcomeAsync(
+        ImportTafsirsCommand command,
+        string sourcePath,
+        string reportDir,
+        TafsirSourceData? source,
+        string message,
+        bool refused,
+        CancellationToken ct)
+    {
+        var report = reportBuilder.BuildRefusal(
+            sourcePath,
+            source,
+            command.Force,
+            DateTimeOffset.UtcNow,
+            message);
+
+        var writeFailure = await reportEmitter.TryWriteAsync(report, reportDir, ct);
+        if (writeFailure is not null)
+        {
+            return writeFailure;
+        }
+
+        return refused
+            ? ImportTafsirsResult.Refused(message, reportDir)
+            : ImportTafsirsResult.Failure(message, reportDir);
     }
 
     private async Task<ImportTafsirsResult> WriteValidationFailureAsync(
         ImportTafsirsCommand command,
+        string sourcePath,
+        string reportDir,
         TafsirValidationException ex,
         CancellationToken ct)
     {
-        var reportDir = ResolveReportOutDir(command);
-        var totals = TafsirImportTotals.Empty;
-        var result = new TafsirImportResult(
-            DateTimeOffset.UtcNow,
-            TafsirImportConstants.FailVerdict,
-            Persisted: false,
+        var report = reportBuilder.BuildValidationFailure(
+            sourcePath,
+            source: null,
             command.Force,
-            totals,
+            DateTimeOffset.UtcNow,
+            TafsirImportTotals.Empty,
             ex.Checks,
-            Warnings: [],
             ex.FailedChecks
                 .Select(check => $"{check.Id}: expected {check.Expected}, observed {check.Observed}")
-                .ToList(),
-            InfoNotes: ["Tafsir import refused during source validation; no tafsir rows were persisted."]);
+                .ToList());
 
-        try
+        var writeFailure = await reportEmitter.TryWriteAsync(report, reportDir, ct);
+        if (writeFailure is not null)
         {
-            Directory.CreateDirectory(reportDir);
-            await reportWriter.WriteAsync(result, reportDir, ct);
-        }
-        catch (Exception writeEx) when (writeEx is IOException or UnauthorizedAccessException)
-        {
-            return ImportTafsirsResult.Failure(
-                $"{TafsirInvariants.ReportRequired} ({writeEx.Message})",
-                reportDir);
+            return writeFailure;
         }
 
         var firstFailed = ex.FailedChecks.FirstOrDefault();

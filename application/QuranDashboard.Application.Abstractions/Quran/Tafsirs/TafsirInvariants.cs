@@ -50,6 +50,12 @@ public static class TafsirInvariants
     public const string CheckSourceUnchanged = "TAFSIR-SOURCE-UNCHANGED";
     public const string CheckReportWritten = "TAFSIR-REPORT-WRITTEN";
 
+    public const string WarningProvenance = "TAFSIR-PROVENANCE-WARNING";
+    public const string WarningModernWorks = "TAFSIR-MODERN-WORKS-WARNING";
+    public const string InfoInlineMarkup = "TAFSIR-INLINE-MARKUP";
+    public const string InfoLanguageCoverage = "TAFSIR-LANGUAGE-COVERAGE";
+    public const string InfoTextBlockCount = "TAFSIR-TEXT-BLOCK-COUNT";
+
     public static readonly string[] LockedExcludedSourceKeys =
     [
         "ar-wajiz",

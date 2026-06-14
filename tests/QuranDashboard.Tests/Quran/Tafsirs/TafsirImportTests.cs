@@ -65,8 +65,10 @@ public sealed class TafsirImportTests(TafsirImportTestFixture fixture)
 
         var markdown = await File.ReadAllTextAsync(
             Path.Combine(reportDir, TafsirImportConstants.MarkdownReportFileName));
-        markdown.Should().Contain("Persisted: True");
-        markdown.Should().Contain($"{TafsirInvariants.CheckReportWritten} | required Markdown and JSON reports written | written | True");
+        markdown.Should().Contain("Persisted: true");
+        markdown.Should().Contain($"{TafsirInvariants.CheckReportWritten} | required Markdown and JSON reports written | written | yes");
+        reportRoot.GetProperty("sourcePath").GetString().Should().Be(Path.GetFullPath(packageDir));
+        reportRoot.GetProperty("sourceSummaries").GetArrayLength().Should().Be(1);
     }
 
     [Fact]

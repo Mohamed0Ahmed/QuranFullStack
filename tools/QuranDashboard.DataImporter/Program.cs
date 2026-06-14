@@ -395,7 +395,7 @@ internal static class Program
             if (result.Totals is not null)
             {
                 Console.WriteLine(
-                    $"sources={result.Totals.SourceRows}, ayahMappings={result.Totals.AyahMappingRows}, languages={result.Totals.LanguageCount}.");
+                    $"sources={result.Totals.SourceRows}, ayahMappings={result.Totals.AyahMappingRows}, languages={result.Totals.LanguageCount}, warnings={result.WarningCount}.");
             }
 
             WriteReportPath(result.ReportOutDir);
