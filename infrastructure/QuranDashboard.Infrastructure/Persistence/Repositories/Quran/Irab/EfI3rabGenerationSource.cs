@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using QuranDashboard.Application.Abstractions.Quran.Words.Morphology.Irab;
 using QuranDashboard.Domain.Quran.Words.Morphology.Irab;
 using QuranDashboard.Infrastructure.Files.Quran.Morphology.Irab;

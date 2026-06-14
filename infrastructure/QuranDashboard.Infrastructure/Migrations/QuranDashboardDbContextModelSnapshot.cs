@@ -159,6 +159,145 @@ namespace QuranDashboard.Infrastructure.Migrations
                     b.ToTable("quran_mushaf_pages", (string)null);
                 });
 
+            modelBuilder.Entity("QuranDashboard.Domain.Quran.Mutashabihat.MutashabihatGroup", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<short>("DistinctAyahCount")
+                        .HasColumnType("smallint")
+                        .HasColumnName("distinct_ayah_count");
+
+                    b.Property<short>("DistinctSurahCount")
+                        .HasColumnType("smallint")
+                        .HasColumnName("distinct_surah_count");
+
+                    b.Property<short>("OccurrenceCount")
+                        .HasColumnType("smallint")
+                        .HasColumnName("occurrence_count");
+
+                    b.Property<string>("RawSourceCounts")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("raw_source_counts");
+
+                    b.Property<int>("RepresentativeAyahId")
+                        .HasColumnType("integer")
+                        .HasColumnName("representative_ayah_id");
+
+                    b.Property<short>("RepresentativeWordFrom")
+                        .HasColumnType("smallint")
+                        .HasColumnName("representative_word_from");
+
+                    b.Property<short>("RepresentativeWordTo")
+                        .HasColumnType("smallint")
+                        .HasColumnName("representative_word_to");
+
+                    b.Property<int>("SourceGroupId")
+                        .HasColumnType("integer")
+                        .HasColumnName("source_group_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RepresentativeAyahId");
+
+                    b.HasIndex("SourceGroupId")
+                        .IsUnique();
+
+                    b.ToTable("quran_mutashabihat_groups", (string)null);
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Quran.Mutashabihat.MutashabihatOccurrence", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AyahId")
+                        .HasColumnType("integer")
+                        .HasColumnName("ayah_id");
+
+                    b.Property<int>("GroupId")
+                        .HasColumnType("integer")
+                        .HasColumnName("group_id");
+
+                    b.Property<bool>("IsRepresentative")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_representative");
+
+                    b.Property<short>("WordFrom")
+                        .HasColumnType("smallint")
+                        .HasColumnName("word_from");
+
+                    b.Property<short>("WordTo")
+                        .HasColumnType("smallint")
+                        .HasColumnName("word_to");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AyahId");
+
+                    b.HasIndex("GroupId", "AyahId", "WordFrom", "WordTo")
+                        .IsUnique();
+
+                    b.ToTable("quran_mutashabihat_occurrences", (string)null);
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Quran.Mutashabihat.SimilarAyahLink", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<short>("Coverage")
+                        .HasColumnType("smallint")
+                        .HasColumnName("coverage");
+
+                    b.Property<string>("MatchWords")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("match_words");
+
+                    b.Property<short>("MatchedWordsCount")
+                        .HasColumnType("smallint")
+                        .HasColumnName("matched_words_count");
+
+                    b.Property<short>("Score")
+                        .HasColumnType("smallint")
+                        .HasColumnName("score");
+
+                    b.Property<int>("SourceAyahId")
+                        .HasColumnType("integer")
+                        .HasColumnName("source_ayah_id");
+
+                    b.Property<int>("TargetAyahId")
+                        .HasColumnType("integer")
+                        .HasColumnName("target_ayah_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TargetAyahId");
+
+                    b.HasIndex("SourceAyahId", "TargetAyahId")
+                        .IsUnique();
+
+                    b.ToTable("quran_similar_ayah_links", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_quran_similar_ayah_links_no_self", "source_ayah_id <> target_ayah_id");
+                        });
+                });
+
             modelBuilder.Entity("QuranDashboard.Domain.Quran.Surahs.Surah", b =>
                 {
                     b.Property<short>("SurahNumber")
@@ -1074,6 +1213,45 @@ namespace QuranDashboard.Infrastructure.Migrations
                     b.Navigation("Page");
 
                     b.Navigation("Surah");
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Quran.Mutashabihat.MutashabihatGroup", b =>
+                {
+                    b.HasOne("QuranDashboard.Domain.Quran.Ayahs.Ayah", null)
+                        .WithMany()
+                        .HasForeignKey("RepresentativeAyahId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Quran.Mutashabihat.MutashabihatOccurrence", b =>
+                {
+                    b.HasOne("QuranDashboard.Domain.Quran.Ayahs.Ayah", null)
+                        .WithMany()
+                        .HasForeignKey("AyahId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("QuranDashboard.Domain.Quran.Mutashabihat.MutashabihatGroup", null)
+                        .WithMany()
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Quran.Mutashabihat.SimilarAyahLink", b =>
+                {
+                    b.HasOne("QuranDashboard.Domain.Quran.Ayahs.Ayah", null)
+                        .WithMany()
+                        .HasForeignKey("SourceAyahId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("QuranDashboard.Domain.Quran.Ayahs.Ayah", null)
+                        .WithMany()
+                        .HasForeignKey("TargetAyahId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("QuranDashboard.Domain.Quran.Words.Display.OrderedSimpleWord", b =>

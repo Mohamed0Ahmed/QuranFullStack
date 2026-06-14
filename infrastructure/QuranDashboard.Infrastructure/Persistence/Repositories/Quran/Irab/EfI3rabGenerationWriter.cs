@@ -1,6 +1,3 @@
-using System.Data;
-using Microsoft.EntityFrameworkCore;
-using Npgsql;
 using NpgsqlTypes;
 using QuranDashboard.Application.Abstractions.Quran.Words.Morphology.Irab;
 

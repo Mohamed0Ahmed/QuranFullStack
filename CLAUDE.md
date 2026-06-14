@@ -9,6 +9,31 @@ Before adding or changing API endpoints, controllers, request/response contracts
 
 - `.architecture/API_GUIDELINES.md`
 
+## Backend Reports and Import Sources
+
+Backend report outputs belong under:
+
+- `report/feature-XXX-feature-name/` from the Backend repo perspective
+- `/projects/Dashboard/App/Backend/report/feature-XXX-feature-name/` as an absolute path
+
+Use this location for backend implementation reports, import reports, engineering review outputs, real-run reports, validation reports, and backend feature completion reports.
+
+For backend report filename conventions, follow `report/README.md`: from Feature 006 onward, human-authored reports use three-digit chronological prefixes, while generated importer/tool outputs keep stable canonical names. Do not rename old reports unless explicitly requested.
+
+Importer/source-data rules:
+
+- Canonical local source packages live at `/projects/Dashboard/App/resources/import-sources/<feature-or-source-name>/`.
+- `resources/` is local and gitignored; do not assume these files are committed or available in CI/production.
+- Import features should read from staged/canonicalized source packages, not random upstream folders, when a staged package is required.
+- Treat upstream source folders as provenance/read-only inputs unless the task explicitly asks to stage or canonicalize a package.
+- Do not silently modify source data. Preserve traceability from imported/generated data back to the staged source package.
+
+Planning and Spec Kit separation:
+
+- Workspace planning reports and pre-Spec Kit documents belong under `/projects/Dashboard/App/docs/feature-XXX-feature-name/`.
+- Spec Kit artifacts belong under `/projects/Dashboard/App/specs/`.
+- Backend post-work and validation reports belong under `/projects/Dashboard/App/Backend/report/`, not under workspace `docs/`.
+
 ## EF Core Migrations
 
 - Do not hand-write EF Core migrations.

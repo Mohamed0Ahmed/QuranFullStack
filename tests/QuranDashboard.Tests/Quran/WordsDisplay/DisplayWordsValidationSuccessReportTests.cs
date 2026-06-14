@@ -1,4 +1,3 @@
-using System.Text.Json;
 using QuranDashboard.Application.Abstractions.Quran.Words.Display;
 using QuranDashboard.Application.Quran.Words.RebuildDisplayWords;
 

@@ -1,5 +1,4 @@
 using System.Collections.Frozen;
-using System.Text;
 
 namespace QuranDashboard.Infrastructure.Files.Quran.Morphology;
 

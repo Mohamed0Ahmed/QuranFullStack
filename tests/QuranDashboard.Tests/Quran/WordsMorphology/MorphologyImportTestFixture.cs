@@ -1,17 +1,12 @@
 using System.Security.Cryptography;
-using System.Text.Json;
-using Microsoft.Extensions.Configuration;
-using QuranDashboard.Application;
 using QuranDashboard.Application.Abstractions.Quran.Words.Morphology;
 using QuranDashboard.Application.Quran.Words.ImportMorphology;
 using QuranDashboard.Domain.Quran.Ayahs;
 using QuranDashboard.Domain.Quran.MushafPages;
 using QuranDashboard.Domain.Quran.Surahs;
 using QuranDashboard.Domain.Quran.Words;
-using QuranDashboard.Infrastructure;
 using QuranDashboard.Infrastructure.Files.Quran.Morphology;
 using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Morphology;
-using Testcontainers.PostgreSql;
 
 namespace QuranDashboard.Tests.Quran.WordsMorphology;
 

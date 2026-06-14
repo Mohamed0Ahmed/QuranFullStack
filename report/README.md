@@ -7,6 +7,31 @@ during or after implementation. Forward-looking **plans/design documents** live 
 
 Reports are grouped into one subfolder per feature/scope.
 
+## Filename Conventions
+
+From Feature 006 onward, human-authored backend reports inside a feature report folder should use a three-digit chronological prefix plus a descriptive kebab-case name:
+
+```text
+001-schema-implementation-report.md
+002-importer-implementation-report.md
+003-real-import-run-summary.md
+004-engineering-review.md
+005-remediation-report.md
+006-final-completion-report.md
+```
+
+Use numeric prefixes for manual reports that record workflow steps, reviews, remediation, validation summaries, or completion status. The prefix is local to that feature report folder.
+
+Generated importer/tool outputs should keep stable canonical names so commands, quickstarts, and repeated runs can target predictable files:
+
+```text
+mutashabihat-import-report.md
+mutashabihat-import-report.json
+validation-report.json
+```
+
+Do not rename historical reports retroactively unless a dedicated cleanup task explicitly asks for it. Do not renumber already-published reports just to insert a new step; append the next available number instead.
+
 ## Layout
 
 | Folder | Scope |

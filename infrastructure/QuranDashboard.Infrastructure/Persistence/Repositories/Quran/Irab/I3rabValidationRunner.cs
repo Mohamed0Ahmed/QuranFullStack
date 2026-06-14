@@ -1,5 +1,3 @@
-using System.Globalization;
-using Npgsql;
 using NpgsqlTypes;
 using QuranDashboard.Application.Abstractions.Quran.Words.Morphology.Irab;
 using QuranDashboard.Infrastructure.Files.Quran.Morphology.Irab;

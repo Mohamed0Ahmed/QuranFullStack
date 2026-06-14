@@ -1,4 +1,3 @@
-using FluentAssertions;
 using QuranDashboard.Application.Abstractions.Quran.Words.Morphology.Irab;
 using QuranDashboard.Application.Quran.Words.GenerateI3rab;
 using QuranDashboard.Domain.Quran.Words.Morphology.Irab;

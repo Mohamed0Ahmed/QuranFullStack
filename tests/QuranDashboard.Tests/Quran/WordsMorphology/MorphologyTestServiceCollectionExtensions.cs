@@ -1,4 +1,3 @@
-using Microsoft.Extensions.DependencyInjection;
 using QuranDashboard.Application.Abstractions.Quran.Words.Morphology;
 using QuranDashboard.Infrastructure.Files.Quran.Morphology;
 using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Morphology;

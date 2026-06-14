@@ -1,8 +1,4 @@
-using Microsoft.Extensions.Configuration;
-using QuranDashboard.Application;
 using QuranDashboard.Application.Quran.Import.ImportQuranFoundation;
-using QuranDashboard.Infrastructure;
-using Testcontainers.PostgreSql;
 
 namespace QuranDashboard.Tests.Quran.Import;
 

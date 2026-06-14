@@ -1,10 +1,6 @@
-using System.Text.Json;
-using FluentAssertions;
-using Microsoft.Extensions.DependencyInjection;
 using QuranDashboard.Application.Abstractions.Quran.Words.Morphology;
 using QuranDashboard.Application.Quran.Words.ImportMorphology;
 using QuranDashboard.Infrastructure.Files.Quran.Morphology;
-using Xunit;
 
 namespace QuranDashboard.Tests.Quran.WordsMorphology;
 

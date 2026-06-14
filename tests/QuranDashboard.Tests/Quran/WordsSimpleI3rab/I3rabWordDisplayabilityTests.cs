@@ -1,5 +1,4 @@
 using System.Data;
-using FluentAssertions;
 using Npgsql;
 using QuranDashboard.Application.Abstractions.Quran.Words.Morphology.Irab;
 using QuranDashboard.Domain.Quran.Words.Morphology.Irab;

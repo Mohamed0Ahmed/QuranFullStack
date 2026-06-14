@@ -1,12 +1,8 @@
-using Microsoft.Extensions.Configuration;
-using QuranDashboard.Application;
 using QuranDashboard.Application.Quran.Words.RebuildDisplayWords;
 using QuranDashboard.Domain.Quran.Ayahs;
 using QuranDashboard.Domain.Quran.MushafPages;
 using QuranDashboard.Domain.Quran.Surahs;
 using QuranDashboard.Domain.Quran.Words;
-using QuranDashboard.Infrastructure;
-using Testcontainers.PostgreSql;
 
 namespace QuranDashboard.Tests.Quran.WordsDisplay;
 
