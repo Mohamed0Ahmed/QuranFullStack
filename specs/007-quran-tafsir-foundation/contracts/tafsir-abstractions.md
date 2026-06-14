@@ -61,7 +61,7 @@ Responsibilities:
 ```csharp
 public interface ITafsirReportWriter
 {
-    Task WriteAsync(TafsirImportResult result, string outputDir, CancellationToken ct);
+    Task WriteAsync(TafsirImportReport report, string outputDir, CancellationToken ct);
 }
 ```
 
@@ -73,6 +73,45 @@ Responsibilities:
   warnings, errors, and info notes.
 
 Report writing is acceptance-critical: a run is not successful if required reports cannot be written.
+
+## `ITafsirImportReportBuilder`
+
+```csharp
+public interface ITafsirImportReportBuilder
+{
+    TafsirImportReport BuildValidationFailure(
+        string sourcePath,
+        TafsirSourceData? source,
+        bool forced,
+        DateTimeOffset runAtUtc,
+        TafsirImportTotals totals,
+        IReadOnlyList<TafsirCheckResult> checks,
+        IReadOnlyList<string> errors);
+
+    TafsirImportReport BuildRefusal(
+        string sourcePath,
+        TafsirSourceData? source,
+        bool forced,
+        DateTimeOffset runAtUtc,
+        string refusalMessage);
+
+    TafsirImportReport BuildCandidateSuccess(
+        string sourcePath,
+        TafsirSourceData source,
+        bool forced,
+        DateTimeOffset runAtUtc,
+        TafsirImportTotals totals,
+        IReadOnlyList<TafsirCheckResult> checks);
+}
+```
+
+Responsibilities:
+
+- Assemble the report payload (`TafsirImportReport`) from import outcomes and loaded source data.
+- Populate source summaries, excluded-source summaries, warnings, errors, and informational notes.
+- Keep report text free of tafsir body text and Quran ayah text.
+
+The Application handler depends on this abstraction; Infrastructure implements it.
 
 ## Required acceptance choreography
 
@@ -133,6 +172,35 @@ public sealed record TafsirCheckResult(
     string Expected,
     string Observed,
     bool Passed);
+
+public sealed record TafsirImportReport(
+    DateTimeOffset RunAtUtc,
+    string Verdict,                 // "pass" | "fail"
+    bool Persisted,
+    bool Forced,
+    string SourcePath,
+    TafsirImportTotals Totals,
+    IReadOnlyList<TafsirSourceSummary> SourceSummaries,
+    IReadOnlyList<TafsirExcludedSourceSummary> ExcludedSourceSummaries,
+    IReadOnlyList<TafsirCheckResult> Checks,
+    IReadOnlyList<string> Warnings,
+    IReadOnlyList<string> Errors,
+    IReadOnlyList<string> InfoNotes);
+
+public sealed record TafsirSourceSummary(
+    string SourceKey,
+    string LanguageCode,
+    string Direction,
+    string DisplayNameEn,
+    string PackageFile,
+    string Sha256,
+    string License,
+    string Provenance);
+
+public sealed record TafsirExcludedSourceSummary(
+    string SourceKey,
+    string Status,
+    string Reason);
 ```
 
 ## Source data records
