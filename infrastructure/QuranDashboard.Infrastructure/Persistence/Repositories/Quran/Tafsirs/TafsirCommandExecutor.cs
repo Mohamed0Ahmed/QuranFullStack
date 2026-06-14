@@ -1,6 +1,3 @@
-using System.Globalization;
-using Npgsql;
-
 namespace QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Tafsirs;
 
 internal static class TafsirCommandExecutor

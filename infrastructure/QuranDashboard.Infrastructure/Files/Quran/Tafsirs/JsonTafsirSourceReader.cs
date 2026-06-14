@@ -1,4 +1,3 @@
-using System.Text.Json;
 using QuranDashboard.Application.Abstractions.Quran.Tafsirs;
 
 namespace QuranDashboard.Infrastructure.Files.Quran.Tafsirs;

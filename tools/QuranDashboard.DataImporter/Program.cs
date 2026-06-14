@@ -1,3 +1,4 @@
+using System.Reflection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -134,9 +135,14 @@ internal static class Program
     private static IHost CreateHost(string[] args)
     {
         return Host.CreateDefaultBuilder(args)
-            .ConfigureAppConfiguration((_, configuration) =>
+            .ConfigureAppConfiguration((context, configuration) =>
             {
                 configuration.AddJsonFile("appsettings.json", optional: true, reloadOnChange: false);
+                if (context.HostingEnvironment.IsDevelopment())
+                {
+                    configuration.AddUserSecrets(Assembly.GetExecutingAssembly(), optional: true);
+                }
+
                 configuration.AddEnvironmentVariables();
             })
             .ConfigureServices((context, services) =>

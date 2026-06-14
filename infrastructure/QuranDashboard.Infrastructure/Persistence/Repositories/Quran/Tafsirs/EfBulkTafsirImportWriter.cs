@@ -1,5 +1,3 @@
-using System.Data;
-using Npgsql;
 using QuranDashboard.Application.Abstractions.Quran.Tafsirs;
 
 namespace QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Tafsirs;

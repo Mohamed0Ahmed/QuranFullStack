@@ -1,7 +1,3 @@
-using System.Globalization;
-using System.Text;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using QuranDashboard.Application.Abstractions.Quran.Tafsirs;
 
 namespace QuranDashboard.Infrastructure.Reports.Quran.Tafsirs;
