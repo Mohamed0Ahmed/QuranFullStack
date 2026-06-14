@@ -64,6 +64,40 @@ public sealed class TafsirJsonReportShapeTests(TafsirImportTestFixture fixture)
         excludedSummaries[0].GetProperty("reason").GetString().Should().NotBeNullOrWhiteSpace();
 
         root.GetProperty("checks").EnumerateArray().Should().NotBeEmpty();
+
+        // US4 AS1 / FR-027: a passing report must enumerate every hard check, all passed.
+        var hardChecks = root.GetProperty("checks").EnumerateArray()
+            .Where(check => check.GetProperty("severity").GetString() == TafsirImportConstants.HardSeverity)
+            .ToList();
+        var hardCheckIds = hardChecks
+            .Select(check => check.GetProperty("id").GetString())
+            .ToList();
+        hardCheckIds.Should().Contain(
+        [
+            TafsirInvariants.CheckPackageShape,
+            TafsirInvariants.CheckManifestFinal,
+            TafsirInvariants.CheckSourceCount,
+            TafsirInvariants.CheckExcludedCount,
+            TafsirInvariants.CheckArabicSourceCount,
+            TafsirInvariants.CheckNonArabicSourceCount,
+            TafsirInvariants.CheckSourceSet,
+            TafsirInvariants.CheckSourceHash,
+            TafsirInvariants.CheckNoExcludedSources,
+            TafsirInvariants.CheckCoverageCount,
+            TafsirInvariants.CheckJsonShape,
+            TafsirInvariants.CheckAyahKeysResolve,
+            TafsirInvariants.CheckPointersResolve,
+            TafsirInvariants.CheckNoEmptyText,
+            TafsirInvariants.CheckNoDuplicateAyahEntry,
+            TafsirInvariants.CheckTextUnchanged,
+            TafsirInvariants.CheckNoQuranTextCopy,
+            TafsirInvariants.CheckPostCopySourceRows,
+            TafsirInvariants.CheckPostCopyAyahMappings,
+            TafsirInvariants.CheckSourceUnchanged,
+            TafsirInvariants.CheckReportWritten
+        ]);
+        hardChecks.Should().OnlyContain(check => check.GetProperty("passed").GetBoolean());
+
         root.TryGetProperty("warnings", out _).Should().BeTrue();
         root.TryGetProperty("errors", out _).Should().BeTrue();
         root.TryGetProperty("infoNotes", out _).Should().BeTrue();

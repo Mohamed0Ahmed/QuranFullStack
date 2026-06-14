@@ -84,7 +84,8 @@ public sealed class ImportTafsirsHandler
                         command.Force,
                         candidateResult.RunAtUtc,
                         candidateResult.Totals,
-                        candidateResult.Checks);
+                        candidateResult.Checks,
+                        expectedCounts);
                     successWarningCount = report.Warnings.Count;
                     await reportEmitter.WriteOrThrowAsync(report, reportDir, token);
                 },
@@ -200,31 +201,14 @@ public sealed class ImportTafsirsHandler
 
     private static string ResolveReportOutDir(ImportTafsirsCommand command)
     {
-        if (!string.IsNullOrWhiteSpace(command.ReportOutDir))
+        // The default report directory is a host concern; the console composition root resolves it
+        // and supplies it on the command. The Application layer does not probe the filesystem layout.
+        if (string.IsNullOrWhiteSpace(command.ReportOutDir))
         {
-            return Path.GetFullPath(command.ReportOutDir);
+            throw new InvalidOperationException(
+                "A report output directory must be provided by the caller.");
         }
 
-        return Path.GetFullPath(Path.Combine(ResolveRepositoryRoot(), "resources", "report", "quran-tafsirs"));
-    }
-
-    private static string ResolveRepositoryRoot()
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-
-        while (directory is not null)
-        {
-            var resourcesPath = Path.Combine(directory.FullName, "resources");
-            var backendPath = Path.Combine(directory.FullName, "Backend");
-
-            if (Directory.Exists(resourcesPath) && Directory.Exists(backendPath))
-            {
-                return directory.FullName;
-            }
-
-            directory = directory.Parent;
-        }
-
-        throw new InvalidOperationException("Could not resolve the repository root directory.");
+        return Path.GetFullPath(command.ReportOutDir);
     }
 }

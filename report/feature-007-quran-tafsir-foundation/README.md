@@ -44,4 +44,19 @@ These reports are produced by later phases of `tasks.md` (filled in as each phas
 | `009-source-safety-check.md` | T066 | Source-package and Quran-foundation safety check |
 | `010-scope-check.md` | T067 | No API/frontend/public-reader/search/seeding scope creep |
 
-> Status: Phase 1 (Setup) scaffolding. Implementation reports are added as their phases complete.
+## Report index (complete)
+
+| Report | Status | Summary |
+| --- | --- | --- |
+| [001-us1-import-foundation-verification.md](./001-us1-import-foundation-verification.md) | PASS | US1 import foundation — 53 tafsir tests at US1 checkpoint |
+| [002-us2-integrity-verification.md](./002-us2-integrity-verification.md) | PASS | US2 integrity and refusal behavior |
+| [003-us3-rerun-verification.md](./003-us3-rerun-verification.md) | PASS | US3 safe re-run and `--force` rebuild |
+| [004-us4-reporting-verification.md](./004-us4-reporting-verification.md) | PASS | US4 audit-ready Markdown/JSON reports |
+| [005-build-verification.md](./005-build-verification.md) | PASS | Full solution build — 0 warnings, 0 errors |
+| [006-test-verification.md](./006-test-verification.md) | PASS | Full test suite — 318/318 passed |
+| [007-quickstart-validation.md](./007-quickstart-validation.md) | PARTIAL | CLI + package validated; live DB import blocked (credentials) |
+| [008-architecture-self-check.md](./008-architecture-self-check.md) | PASS | Clean Architecture / structure compliance |
+| [009-source-safety-check.md](./009-source-safety-check.md) | PASS | Source package and Quran foundation read-only |
+| [010-scope-check.md](./010-scope-check.md) | PASS | No API/frontend/search/seeding scope creep |
+
+> Status: Feature 007 implementation and final polish phase complete (2026-06-14).

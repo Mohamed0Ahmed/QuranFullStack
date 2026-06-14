@@ -224,6 +224,7 @@ public sealed class TafsirImportTestFixture : IAsyncLifetime
         string? reportOutDir = null,
         bool force = false)
     {
+        reportOutDir ??= Path.Combine(Path.GetTempPath(), $"tafsir-report-default-{Guid.NewGuid():N}");
         await using var scope = CreateServiceProvider().CreateAsyncScope();
         var handler = scope.ServiceProvider.GetRequiredService<ImportTafsirsHandler>();
         return await handler.HandleAsync(

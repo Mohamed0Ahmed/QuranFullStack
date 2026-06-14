@@ -24,5 +24,6 @@ public interface ITafsirImportReportBuilder
         bool forced,
         DateTimeOffset runAtUtc,
         TafsirImportTotals totals,
-        IReadOnlyList<TafsirCheckResult> checks);
+        IReadOnlyList<TafsirCheckResult> postCopyChecks,
+        TafsirExpectedCounts expected);
 }

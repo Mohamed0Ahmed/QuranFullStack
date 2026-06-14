@@ -380,6 +380,7 @@ internal static class Program
         var handler = scope.ServiceProvider.GetRequiredService<ImportTafsirsHandler>();
 
         sourcePath ??= ResolveDefaultTafsirSourcePath();
+        reportOutDir ??= ResolveDefaultTafsirReportDir();
 
         var result = await handler.HandleAsync(
             new ImportTafsirsCommand(
@@ -411,6 +412,12 @@ internal static class Program
     {
         return Path.GetFullPath(Path.Combine(
             ResolveRepositoryRoot(), "resources", "import-sources", "quran-tafsirs"));
+    }
+
+    private static string ResolveDefaultTafsirReportDir()
+    {
+        return Path.GetFullPath(Path.Combine(
+            ResolveRepositoryRoot(), "resources", "report", "quran-tafsirs"));
     }
 
     private static bool TryParseTafsirArguments(

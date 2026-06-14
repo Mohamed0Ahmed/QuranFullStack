@@ -71,7 +71,7 @@ public sealed class EfBulkTafsirImportWriter : ITafsirImportWriter
             await TafsirBulkCopier.CopySourceFilesAsync(
                 npgsqlConnection, transaction, source, runAtUtc, ct);
 
-            var totals = BuildTotals(source);
+            var totals = TafsirImportTotals.FromSource(source);
             var checks = await validationRunner.RunPostCopyChecksAsync(
                 npgsqlConnection,
                 transaction,
@@ -126,24 +126,6 @@ public sealed class EfBulkTafsirImportWriter : ITafsirImportWriter
             await transaction.RollbackAsync(ct);
             throw;
         }
-    }
-
-    private static TafsirImportTotals BuildTotals(TafsirSourceData source)
-    {
-        var arabicSources = source.Sources.Count(row => row.LanguageCode == "ar");
-        var languages = source.Sources.Select(row => row.LanguageCode).Distinct().Count();
-        var distinctAyahs = source.AyahEntries.Select(row => row.AyahId).Distinct().Count();
-
-        return new TafsirImportTotals(
-            source.Sources.Count,
-            source.Entries.Count,
-            source.AyahEntries.Count,
-            source.Sources.Count,
-            source.ExcludedSources.Count,
-            arabicSources,
-            source.Sources.Count - arabicSources,
-            languages,
-            distinctAyahs);
     }
 
     private static TafsirImportResult BuildFailureResult(
