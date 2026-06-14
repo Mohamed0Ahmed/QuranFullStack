@@ -2,6 +2,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using QuranDashboard.Application.Abstractions.Quran.Import;
 using QuranDashboard.Application.Abstractions.Quran.Mutashabihat;
+using QuranDashboard.Application.Abstractions.Quran.Tafsirs;
 using QuranDashboard.Application.Abstractions.Quran.Words.Display;
 using QuranDashboard.Application.Abstractions.Quran.Words.Morphology;
 using QuranDashboard.Application.Abstractions.Quran.Words.Morphology.Irab;
@@ -12,6 +13,7 @@ using QuranDashboard.Infrastructure.Persistence;
 using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Import;
 using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Morphology;
 using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Mutashabihat;
+using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Tafsirs;
 using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Words.Display;
 using QuranDashboard.Infrastructure.Reports.Quran;
 using QuranDashboard.Infrastructure.Files.Quran.Morphology.Irab;
@@ -19,6 +21,7 @@ using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Irab;
 using QuranDashboard.Infrastructure.Reports.Quran.Irab;
 using QuranDashboard.Infrastructure.Reports.Quran.Morphology;
 using QuranDashboard.Infrastructure.Reports.Quran.Mutashabihat;
+using QuranDashboard.Infrastructure.Reports.Quran.Tafsirs;
 using QuranDashboard.Infrastructure.Reports.Quran.Words;
 
 namespace QuranDashboard.Infrastructure;
@@ -65,6 +68,10 @@ public static class DependencyInjection
         services.AddScoped<IMutashabihatImportSource, MutashabihatImportSource>();
         services.AddScoped<IMutashabihatImportWriter, EfBulkMutashabihatWriter>();
         services.AddSingleton<IMutashabihatReportWriter, MarkdownJsonMutashabihatReportWriter>();
+
+        services.AddScoped<ITafsirImportSource, UnimplementedTafsirImportSource>();
+        services.AddScoped<ITafsirImportWriter, UnimplementedTafsirImportWriter>();
+        services.AddSingleton<ITafsirReportWriter, UnimplementedTafsirReportWriter>();
 
         services.AddSingleton(I3rabExpectedCounts.Production);
         services.AddSingleton<II3rabRuleCatalog, I3rabRuleCatalogSeed>();
