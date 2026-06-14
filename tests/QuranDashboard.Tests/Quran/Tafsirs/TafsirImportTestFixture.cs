@@ -145,6 +145,79 @@ public sealed class TafsirImportTestFixture : IAsyncLifetime
             """);
     }
 
+    public async Task<TafsirTableSnapshot> CaptureTafsirTableSnapshotAsync()
+    {
+        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+
+        return new TafsirTableSnapshot(
+            await dbContext.TafsirSources.CountAsync(),
+            await dbContext.TafsirEntries.CountAsync(),
+            await dbContext.TafsirAyahEntries.CountAsync());
+    }
+
+    public async Task<QuranFoundationSnapshot> CaptureQuranFoundationSnapshotAsync()
+    {
+        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+
+        var ayahTexts = await dbContext.QuranAyahs
+            .AsNoTracking()
+            .OrderBy(ayah => ayah.Id)
+            .Select(ayah => ayah.TextUthmani)
+            .ToListAsync();
+
+        return new QuranFoundationSnapshot(
+            await dbContext.QuranSurahs.CountAsync(),
+            await dbContext.QuranAyahs.CountAsync(),
+            Convert.ToHexString(SHA256.HashData(
+                System.Text.Encoding.UTF8.GetBytes(string.Join('|', ayahTexts)))));
+    }
+
+    public async Task<string> ComputePackageFileSha256Async(string packageDir, string relativePath)
+    {
+        var fullPath = Path.Combine(packageDir, relativePath.Replace('\\', '/'));
+        return Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(fullPath)));
+    }
+
+    public async Task TamperManifestFieldAsync(string packageDir, string fieldPath, object value)
+    {
+        var manifestPath = Path.Combine(packageDir, "manifest.json");
+        await using var stream = File.OpenRead(manifestPath);
+        using var document = await JsonDocument.ParseAsync(stream);
+        var root = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(document.RootElement.GetRawText())!;
+
+        var rebuilt = new Dictionary<string, object?>();
+        foreach (var (key, element) in root)
+        {
+            rebuilt[key] = key == fieldPath
+                ? value
+                : JsonElementToObject(element);
+        }
+
+        await WriteJsonAsync(manifestPath, rebuilt);
+    }
+
+    public async Task TamperManifestSummaryFieldAsync(string packageDir, string summaryField, object value)
+    {
+        var manifestPath = Path.Combine(packageDir, "manifest.json");
+        await using var stream = File.OpenRead(manifestPath);
+        using var document = await JsonDocument.ParseAsync(stream);
+        var root = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(document.RootElement.GetRawText())!;
+
+        var summary = JsonSerializer.Deserialize<Dictionary<string, object?>>(
+            root["summary"].GetRawText())!;
+        summary[summaryField] = value;
+
+        var rebuilt = new Dictionary<string, object?>();
+        foreach (var (key, element) in root)
+        {
+            rebuilt[key] = key == "summary" ? summary : JsonElementToObject(element);
+        }
+
+        await WriteJsonAsync(manifestPath, rebuilt);
+    }
+
     public async Task<ImportTafsirsResult> RunImportAsync(
         string packageDir,
         TafsirExpectedCounts expectedCounts,
@@ -399,6 +472,10 @@ public sealed record SyntheticTafsirSourceSpec(
     int ContentCoverageCount,
     IReadOnlyDictionary<string, object> Entries);
 
+public sealed record TafsirTableSnapshot(int SourceRows, int EntryRows, int AyahLinkRows);
+
+public sealed record QuranFoundationSnapshot(int SurahRows, int AyahRows, string AyahTextFingerprint);
+
 /// <summary>
 /// Source-safe synthetic seed values for tafsir tests. All tafsir text is clearly synthetic and every verse
 /// key lives in the non-existent surah <c>900</c>.
@@ -409,6 +486,9 @@ internal static class TafsirSyntheticSeed
 
     public static string SyntheticText(string verseKey) =>
         $"<p>نص تفسير اختباري مُصطنع للمفتاح {verseKey}.</p>";
+
+    public static string SyntheticTextForSource(string sourceKey, string verseKey) =>
+        $"<p>نص تفسير اختباري {sourceKey} للمفتاح {verseKey}.</p>";
 
     /// <summary>
     /// A single synthetic Arabic source exercising the three source shapes: a grouped leader
@@ -464,4 +544,81 @@ internal static class TafsirSyntheticSeed
     [
         DefaultSources[0] with { ContentCoverageCount = TafsirInvariants.ExpectedAyahsPerSource }
     ];
+
+    /// <summary>
+    /// Two approved sources that share verse key <c>900:1</c> but store different synthetic text per source.
+    /// Exercises post-copy <c>TAFSIR-TEXT-UNCHANGED</c> keyed by (source, entry).
+    /// </summary>
+    public static IReadOnlyList<SyntheticTafsirSourceSpec> TwoSourceIntegrationSources =>
+    [
+        BuildSharedVerseKeySource(
+            sourceKey: "ar-test-tafsir-a",
+            languageCode: "ar",
+            languageNameAr: "العربية",
+            languageNameEn: "Arabic",
+            nativeName: "العربية",
+            direction: "rtl"),
+        BuildSharedVerseKeySource(
+            sourceKey: "en-test-tafsir-b",
+            languageCode: "en",
+            languageNameAr: "الإنجليزية",
+            languageNameEn: "English",
+            nativeName: "English",
+            direction: "ltr")
+    ];
+
+    public static TafsirExpectedCounts TwoSourceTestExpectedCounts => new(
+        ApprovedSources: 2,
+        ExcludedSources: 0,
+        ArabicSources: 1,
+        NonArabicSources: 1,
+        Languages: 2,
+        AyahsPerSource: 3,
+        SourceAyahMappings: 6);
+
+    private static SyntheticTafsirSourceSpec BuildSharedVerseKeySource(
+        string sourceKey,
+        string languageCode,
+        string languageNameAr,
+        string languageNameEn,
+        string nativeName,
+        string direction) =>
+        new(
+            SourceKey: sourceKey,
+            LanguageCode: languageCode,
+            LanguageNameAr: languageNameAr,
+            LanguageNameEn: languageNameEn,
+            NativeName: nativeName,
+            Direction: direction,
+            TafsirKind: "brief",
+            ContentCoverageCount: TafsirInvariants.ExpectedAyahsPerSource,
+            Entries: new Dictionary<string, object>
+            {
+                ["900:1"] = new
+                {
+                    text = SyntheticTextForSource(sourceKey, "900:1"),
+                    ayah_keys = new[] { "900:1", "900:2" }
+                },
+                ["900:2"] = "900:1",
+                ["900:3"] = new { text = SyntheticTextForSource(sourceKey, "900:3") }
+            });
+
+    public static SyntheticTafsirSourceSpec ExcludedSourceAsApproved(string excludedKey) =>
+        DefaultSources[0] with
+        {
+            SourceKey = excludedKey,
+            ContentCoverageCount = TafsirInvariants.ExpectedAyahsPerSource,
+            Entries = BuildFullSyntheticEntries(TafsirInvariants.ExpectedAyahsPerSource)
+        };
+
+    public static IReadOnlyDictionary<string, object> BuildFullSyntheticEntries(int count)
+    {
+        var entries = new Dictionary<string, object>(StringComparer.Ordinal);
+        for (var i = 1; i <= count; i++)
+        {
+            entries[$"900:{i}"] = new { text = SyntheticText($"900:{i}") };
+        }
+
+        return entries;
+    }
 }

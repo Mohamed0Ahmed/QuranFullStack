@@ -23,10 +23,16 @@ public sealed class ImportTafsirsHandler
         ArgumentNullException.ThrowIfNull(command);
         ArgumentException.ThrowIfNullOrWhiteSpace(command.SourcePath);
 
+        var expectedCounts = command.ExpectedCounts ?? TafsirInvariants.Production;
+
         TafsirSourceData source;
         try
         {
-            source = await importSource.LoadAsync(command.SourcePath, ct);
+            source = await importSource.LoadAsync(command.SourcePath, expectedCounts, ct);
+        }
+        catch (TafsirValidationException ex)
+        {
+            return await WriteValidationFailureAsync(command, ex, ct);
         }
         catch (TafsirSourceException)
         {
@@ -58,7 +64,7 @@ public sealed class ImportTafsirsHandler
             result = await importWriter.ExecuteAcceptedImportAsync(
                 source,
                 command.Force,
-                command.ExpectedCounts ?? TafsirInvariants.Production,
+                expectedCounts,
                 token => importSource.SourceUnchangedAsync(command.SourcePath, token),
                 async (candidateResult, token) =>
                 {
@@ -106,6 +112,49 @@ public sealed class ImportTafsirsHandler
         }
 
         return ImportTafsirsResult.Success(result.Totals, reportDir);
+    }
+
+    private async Task<ImportTafsirsResult> WriteValidationFailureAsync(
+        ImportTafsirsCommand command,
+        TafsirValidationException ex,
+        CancellationToken ct)
+    {
+        var reportDir = ResolveReportOutDir(command);
+        var totals = TafsirImportTotals.Empty;
+        var result = new TafsirImportResult(
+            DateTimeOffset.UtcNow,
+            TafsirImportConstants.FailVerdict,
+            Persisted: false,
+            command.Force,
+            totals,
+            ex.Checks,
+            Warnings: [],
+            ex.FailedChecks
+                .Select(check => $"{check.Id}: expected {check.Expected}, observed {check.Observed}")
+                .ToList(),
+            InfoNotes: ["Tafsir import refused during source validation; no tafsir rows were persisted."]);
+
+        try
+        {
+            Directory.CreateDirectory(reportDir);
+            await reportWriter.WriteAsync(result, reportDir, ct);
+        }
+        catch (Exception writeEx) when (writeEx is IOException or UnauthorizedAccessException)
+        {
+            return ImportTafsirsResult.Failure(
+                $"{TafsirInvariants.ReportRequired} ({writeEx.Message})",
+                reportDir);
+        }
+
+        var firstFailed = ex.FailedChecks.FirstOrDefault();
+        if (firstFailed is null)
+        {
+            return ImportTafsirsResult.Failure(ex.Message, reportDir);
+        }
+
+        return ImportTafsirsResult.Failure(
+            $"{firstFailed.Id}: expected {firstFailed.Expected}, observed {firstFailed.Observed}",
+            reportDir);
     }
 
     private static string ResolveReportOutDir(ImportTafsirsCommand command)

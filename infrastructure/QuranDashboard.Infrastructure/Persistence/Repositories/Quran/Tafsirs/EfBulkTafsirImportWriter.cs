@@ -1,5 +1,4 @@
 using System.Data;
-using System.Globalization;
 using Npgsql;
 using QuranDashboard.Application.Abstractions.Quran.Tafsirs;
 
@@ -8,10 +7,14 @@ namespace QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Tafsirs;
 public sealed class EfBulkTafsirImportWriter : ITafsirImportWriter
 {
     private readonly QuranDashboardDbContext dbContext;
+    private readonly TafsirValidationRunner validationRunner;
 
-    public EfBulkTafsirImportWriter(QuranDashboardDbContext dbContext)
+    public EfBulkTafsirImportWriter(
+        QuranDashboardDbContext dbContext,
+        TafsirValidationRunner validationRunner)
     {
         this.dbContext = dbContext;
+        this.validationRunner = validationRunner;
     }
 
     public async Task<bool> AnyTargetTableHasDataAsync(CancellationToken ct)
@@ -40,6 +43,9 @@ public sealed class EfBulkTafsirImportWriter : ITafsirImportWriter
 
         var runAtUtc = DateTimeOffset.UtcNow;
         var connection = dbContext.Database.GetDbConnection();
+        var ayahTextsByVerseKey = await dbContext.QuranAyahs
+            .AsNoTracking()
+            .ToDictionaryAsync(ayah => ayah.VerseKey, ayah => ayah.TextUthmani, ct);
 
         if (connection.State != ConnectionState.Open)
         {
@@ -65,8 +71,14 @@ public sealed class EfBulkTafsirImportWriter : ITafsirImportWriter
                 npgsqlConnection, transaction, source, runAtUtc, ct);
 
             var totals = BuildTotals(source);
-            var checks = await RunPostCopyChecksAsync(
-                npgsqlConnection, transaction, expected, sourceUnchangedCheck, ct);
+            var checks = await validationRunner.RunPostCopyChecksAsync(
+                npgsqlConnection,
+                transaction,
+                source,
+                expected,
+                ayahTextsByVerseKey,
+                sourceUnchangedCheck,
+                ct);
 
             var hardChecks = checks.Where(check => check.Severity == TafsirImportConstants.HardSeverity).ToList();
             var allHardPassed = hardChecks.All(check => check.Passed);
@@ -121,45 +133,6 @@ public sealed class EfBulkTafsirImportWriter : ITafsirImportWriter
             await transaction.RollbackAsync(ct);
             throw;
         }
-    }
-
-    private static async Task<List<TafsirCheckResult>> RunPostCopyChecksAsync(
-        NpgsqlConnection connection,
-        NpgsqlTransaction transaction,
-        TafsirExpectedCounts expected,
-        Func<CancellationToken, Task<bool>> sourceUnchangedCheck,
-        CancellationToken ct)
-    {
-        var sourceCount = await TafsirCommandExecutor.ExecuteScalarIntAsync(
-            connection, transaction, TafsirSql.CheckSourceCount, ct);
-        var ayahMappingCount = await TafsirCommandExecutor.ExecuteScalarLongAsync(
-            connection, transaction, TafsirSql.CheckAyahMappingCount, ct);
-
-        var checks = new List<TafsirCheckResult>
-        {
-            new(
-                TafsirInvariants.CheckPostCopySourceRows,
-                TafsirImportConstants.HardSeverity,
-                expected.ApprovedSources.ToString(CultureInfo.InvariantCulture),
-                sourceCount.ToString(CultureInfo.InvariantCulture),
-                sourceCount == expected.ApprovedSources),
-            new(
-                TafsirInvariants.CheckPostCopyAyahMappings,
-                TafsirImportConstants.HardSeverity,
-                expected.SourceAyahMappings.ToString(CultureInfo.InvariantCulture),
-                ayahMappingCount.ToString(CultureInfo.InvariantCulture),
-                ayahMappingCount == expected.SourceAyahMappings)
-        };
-
-        var sourceUnchanged = await sourceUnchangedCheck(ct);
-        checks.Add(new TafsirCheckResult(
-            TafsirInvariants.CheckSourceUnchanged,
-            TafsirImportConstants.HardSeverity,
-            "local source files match manifest.json size/sha256 before and after run",
-            sourceUnchanged ? "unchanged" : "changed",
-            sourceUnchanged));
-
-        return checks;
     }
 
     private static TafsirImportTotals BuildTotals(TafsirSourceData source)

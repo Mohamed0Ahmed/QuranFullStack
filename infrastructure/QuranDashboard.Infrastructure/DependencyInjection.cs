@@ -73,6 +73,7 @@ public static class DependencyInjection
         services.AddSingleton<TafsirManifestReader>();
         services.AddSingleton<JsonTafsirSourceReader>();
         services.AddSingleton<TafsirAssembler>();
+        services.AddScoped<TafsirValidationRunner>();
         services.AddScoped<ITafsirImportSource, TafsirImportSource>();
         services.AddScoped<ITafsirImportWriter, EfBulkTafsirImportWriter>();
         services.AddSingleton<ITafsirReportWriter, MarkdownJsonTafsirReportWriter>();

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -13,7 +14,8 @@ public sealed class TafsirAssembler
         TafsirPackageManifest manifest,
         IReadOnlyDictionary<string, ParsedTafsirSourceFile> parsedSourcesByKey,
         IReadOnlyDictionary<string, int> ayahIdsByVerseKey,
-        IReadOnlyDictionary<string, string> ayahTextsByVerseKey)
+        IReadOnlyDictionary<string, string> ayahTextsByVerseKey,
+        int expectedAyahsPerSource = TafsirInvariants.ExpectedAyahsPerSource)
     {
         ArgumentNullException.ThrowIfNull(manifest);
         ArgumentNullException.ThrowIfNull(parsedSourcesByKey);
@@ -39,7 +41,8 @@ public sealed class TafsirAssembler
                 manifest.ManifestJson,
                 ayahIdsByVerseKey,
                 ayahTextsByVerseKey,
-                seenSourceAyah);
+                seenSourceAyah,
+                expectedAyahsPerSource);
 
             sources.Add(assembled.Source);
             entries.AddRange(assembled.Entries);
@@ -59,13 +62,16 @@ public sealed class TafsirAssembler
         string manifestJson,
         IReadOnlyDictionary<string, int> ayahIdsByVerseKey,
         IReadOnlyDictionary<string, string> ayahTextsByVerseKey,
-        HashSet<(string SourceKey, int AyahId)> seenSourceAyah)
+        HashSet<(string SourceKey, int AyahId)> seenSourceAyah,
+        int expectedAyahsPerSource = TafsirInvariants.ExpectedAyahsPerSource)
     {
         ArgumentNullException.ThrowIfNull(manifestSource);
         ArgumentNullException.ThrowIfNull(parsedSource);
         ArgumentNullException.ThrowIfNull(ayahIdsByVerseKey);
         ArgumentNullException.ThrowIfNull(ayahTextsByVerseKey);
         ArgumentNullException.ThrowIfNull(seenSourceAyah);
+
+        ValidateJsonShape(manifestSource.SourceKey, parsedSource, expectedAyahsPerSource);
 
         var sourceKey = manifestSource.SourceKey;
         var textBlocks = BuildTextBlocks(
@@ -83,6 +89,21 @@ public sealed class TafsirAssembler
                 textBlocks,
                 ayahIdsByVerseKey,
                 seenSourceAyah));
+    }
+
+    private static void ValidateJsonShape(
+        string sourceKey,
+        ParsedTafsirSourceFile parsedSource,
+        int expectedAyahsPerSource)
+    {
+        var observed = parsedSource.Entries.Count.ToString(CultureInfo.InvariantCulture);
+        var check = TafsirValidationChecks.Hard(
+            TafsirInvariants.CheckJsonShape,
+            expectedAyahsPerSource.ToString(CultureInfo.InvariantCulture),
+            observed,
+            parsedSource.Entries.Count == expectedAyahsPerSource);
+
+        TafsirValidationChecks.EnsureAllHardChecksPassed([check]);
     }
 
     private static TafsirSourceDto MapSourceDto(
@@ -131,6 +152,7 @@ public sealed class TafsirAssembler
 
             ValidateVerseKeyFormat(verseKey);
             var leaderAyahId = ResolveAyahId(verseKey, ayahIdsByVerseKey, sourceKey);
+            EnsureNotEmptyText(textOwning.Text, verseKey, sourceKey);
             EnsureNotQuranText(textOwning.Text, verseKey, ayahTextsByVerseKey);
 
             var coveredKeys = (textOwning.AyahKeys is { Length: > 0 } keys
@@ -195,8 +217,7 @@ public sealed class TafsirAssembler
 
             if (!seenSourceAyah.Add((sourceKey, resolved.AyahId)))
             {
-                throw new InvalidDataException(
-                    $"Duplicate source/ayah mapping for source '{sourceKey}' and ayah id {resolved.AyahId}.");
+                FailDuplicateMapping(sourceKey, resolved.AyahId);
             }
 
             ayahEntries.Add(new TafsirAyahEntryDto(
@@ -277,14 +298,12 @@ public sealed class TafsirAssembler
 
         if (!parsedSource.Entries.ContainsKey(pointer.LeaderVerseKey))
         {
-            throw new InvalidDataException(
-                $"Pointer target '{pointer.LeaderVerseKey}' does not exist in source '{sourceKey}'.");
+            FailPointerResolution(pointer.LeaderVerseKey, sourceKey, "missing target entry");
         }
 
         if (!leaders.ContainsKey(pointer.LeaderVerseKey))
         {
-            throw new InvalidDataException(
-                $"Pointer target '{pointer.LeaderVerseKey}' does not own text in source '{sourceKey}'.");
+            FailPointerResolution(pointer.LeaderVerseKey, sourceKey, "target does not own text");
         }
 
         return new ResolvedAyahEntry(
@@ -301,11 +320,30 @@ public sealed class TafsirAssembler
     {
         if (!ayahIdsByVerseKey.TryGetValue(verseKey, out var ayahId))
         {
-            throw new InvalidDataException(
-                $"Unresolved verse key '{verseKey}' for source '{sourceKey}'.");
+            var check = TafsirValidationChecks.Hard(
+                TafsirInvariants.CheckAyahKeysResolve,
+                verseKey,
+                "unresolved",
+                false);
+            throw new TafsirValidationException([check]);
         }
 
         return ayahId;
+    }
+
+    private static void EnsureNotEmptyText(string text, string verseKey, string sourceKey)
+    {
+        if (!string.IsNullOrWhiteSpace(text))
+        {
+            return;
+        }
+
+        var check = TafsirValidationChecks.Hard(
+            TafsirInvariants.CheckNoEmptyText,
+            $"non-empty text for {verseKey}",
+            "empty",
+            false);
+        throw new TafsirValidationException([check]);
     }
 
     private static void EnsureNotQuranText(
@@ -316,16 +354,45 @@ public sealed class TafsirAssembler
         if (ayahTextsByVerseKey.TryGetValue(verseKey, out var ayahText)
             && string.Equals(tafsirText, ayahText, StringComparison.Ordinal))
         {
-            throw new InvalidDataException(
-                $"Tafsir text for verse key '{verseKey}' matches Quran ayah text and must not be copied.");
+            var check = TafsirValidationChecks.Hard(
+                TafsirInvariants.CheckNoQuranTextCopy,
+                "no copied Quran ayah text",
+                $"matches ayah text for {verseKey}",
+                false);
+            throw new TafsirValidationException([check]);
         }
+    }
+
+    private static void FailDuplicateMapping(string sourceKey, int ayahId)
+    {
+        var check = TafsirValidationChecks.Hard(
+            TafsirInvariants.CheckNoDuplicateAyahEntry,
+            $"unique mapping for source '{sourceKey}'",
+            $"duplicate ayah id {ayahId}",
+            false);
+        throw new TafsirValidationException([check]);
+    }
+
+    private static void FailPointerResolution(string leaderVerseKey, string sourceKey, string reason)
+    {
+        var check = TafsirValidationChecks.Hard(
+            TafsirInvariants.CheckPointersResolve,
+            $"pointer to text-owning entry in source '{sourceKey}'",
+            $"{leaderVerseKey}: {reason}",
+            false);
+        throw new TafsirValidationException([check]);
     }
 
     private static void ValidateVerseKeyFormat(string verseKey)
     {
         if (!VerseKeyPattern.IsMatch(verseKey))
         {
-            throw new InvalidDataException($"Invalid verse key format '{verseKey}'.");
+            var check = TafsirValidationChecks.Hard(
+                TafsirInvariants.CheckAyahKeysResolve,
+                "valid surah:ayah verse key",
+                verseKey,
+                false);
+            throw new TafsirValidationException([check]);
         }
     }
 

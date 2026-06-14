@@ -68,4 +68,57 @@ public sealed class TafsirImportTests(TafsirImportTestFixture fixture)
         markdown.Should().Contain("Persisted: True");
         markdown.Should().Contain($"{TafsirInvariants.CheckReportWritten} | required Markdown and JSON reports written | written | True");
     }
+
+    [Fact]
+    public async Task Import_persists_multi_source_shared_verse_keys_with_TAFSIR_TEXT_UNCHANGED()
+    {
+        await fixture.TruncateTafsirTablesAsync();
+        await fixture.SeedSyntheticAyahsAsync(TafsirSyntheticSeed.DefaultAyahs);
+
+        var packageDir = await fixture.WriteSyntheticPackageAsync(
+            sources: TafsirSyntheticSeed.TwoSourceIntegrationSources);
+        var reportDir = Path.Combine(Path.GetTempPath(), $"tafsir-report-{Guid.NewGuid():N}");
+
+        var result = await fixture.RunImportAsync(
+            packageDir,
+            TafsirSyntheticSeed.TwoSourceTestExpectedCounts,
+            reportDir);
+
+        result.Succeeded.Should().BeTrue(result.Message);
+        result.Totals!.SourceRows.Should().Be(2);
+        result.Totals.AyahMappingRows.Should().Be(6);
+        result.Totals.TafsirTextBlockRows.Should().Be(4);
+
+        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+
+        var entries = await dbContext.TafsirEntries
+            .AsNoTracking()
+            .Join(
+                dbContext.TafsirSources.AsNoTracking(),
+                entry => entry.SourceId,
+                source => source.Id,
+                (entry, source) => new { source.SourceKey, entry.SourceEntryKey, entry.TafsirText })
+            .Where(row => row.SourceEntryKey == "900:1")
+            .ToListAsync();
+
+        entries.Should().HaveCount(2);
+        entries.Select(row => row.TafsirText).Distinct().Should().HaveCount(2);
+        entries.Should().Contain(row =>
+            row.SourceKey == "ar-test-tafsir-a"
+            && row.TafsirText == TafsirSyntheticSeed.SyntheticTextForSource("ar-test-tafsir-a", "900:1"));
+        entries.Should().Contain(row =>
+            row.SourceKey == "en-test-tafsir-b"
+            && row.TafsirText == TafsirSyntheticSeed.SyntheticTextForSource("en-test-tafsir-b", "900:1"));
+
+        var reportJson = await File.ReadAllTextAsync(
+            Path.Combine(reportDir, TafsirImportConstants.JsonReportFileName));
+        using var reportDocument = JsonDocument.Parse(reportJson);
+        var textUnchangedCheck = reportDocument.RootElement
+            .GetProperty("checks")
+            .EnumerateArray()
+            .Single(check => check.GetProperty("id").GetString() == TafsirInvariants.CheckTextUnchanged);
+
+        textUnchangedCheck.GetProperty("passed").GetBoolean().Should().BeTrue();
+    }
 }

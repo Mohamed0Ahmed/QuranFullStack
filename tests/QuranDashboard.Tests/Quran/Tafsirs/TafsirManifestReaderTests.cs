@@ -76,7 +76,7 @@ public sealed class TafsirManifestReaderTests
 
         var act = () => reader.ReadAsync(packageDir, CancellationToken.None);
 
-        await act.Should().ThrowAsync<TafsirSourceException>()
-            .WithMessage("*Unexpected source files outside approved manifest set*");
+        await act.Should().ThrowAsync<TafsirValidationException>()
+            .Where(ex => ex.FailedChecks.Any(check => check.Id == TafsirInvariants.CheckSourceSet));
     }
 }

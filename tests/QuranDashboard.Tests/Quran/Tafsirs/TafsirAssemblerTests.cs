@@ -35,7 +35,8 @@ public sealed class TafsirAssemblerTests
                 ["ar-test-tafsir"] = parsedSource
             },
             ayahIds,
-            ayahTexts);
+            ayahTexts,
+            expectedAyahsPerSource: 3);
 
         result.Sources.Should().ContainSingle();
         result.Entries.Should().HaveCount(2);
@@ -84,9 +85,10 @@ public sealed class TafsirAssemblerTests
                 ["ar-test-tafsir"] = parsedSource
             },
             ayahIds,
-            ayahTexts);
+            ayahTexts,
+            expectedAyahsPerSource: 3);
 
-        act.Should().Throw<InvalidDataException>()
-            .WithMessage("*Quran ayah text*");
+        act.Should().Throw<TafsirValidationException>()
+            .Where(ex => ex.FailedChecks.Any(check => check.Id == TafsirInvariants.CheckNoQuranTextCopy));
     }
 }

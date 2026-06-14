@@ -50,4 +50,11 @@ internal static class TafsirSql
         FROM quran_tafsir_sources
         WHERE source_key = @sourceKey
         """;
+
+    internal const string ReadPersistedEntryTexts = """
+        SELECT s.source_key, e.source_entry_key, e.tafsir_text, e.text_hash
+        FROM quran_tafsir_entries e
+        JOIN quran_tafsir_sources s ON s.id = e.source_id
+        ORDER BY s.source_key, e.source_entry_key
+        """;
 }

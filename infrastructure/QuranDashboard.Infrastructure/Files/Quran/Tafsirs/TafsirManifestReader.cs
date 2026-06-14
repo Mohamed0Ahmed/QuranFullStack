@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text.Json;
 using QuranDashboard.Application.Abstractions.Quran.Tafsirs;
@@ -18,7 +19,13 @@ public sealed class TafsirManifestReader
         "package-report.md"
     ];
 
-    public async Task<TafsirPackageManifest> ReadAsync(string packagePath, CancellationToken ct)
+    public async Task<TafsirPackageManifest> ReadAsync(string packagePath, CancellationToken ct) =>
+        await ReadAsync(packagePath, ct, expectedCounts: null);
+
+    public async Task<TafsirPackageManifest> ReadAsync(
+        string packagePath,
+        CancellationToken ct,
+        TafsirExpectedCounts? expectedCounts)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(packagePath);
 
@@ -27,7 +34,9 @@ public sealed class TafsirManifestReader
             throw new TafsirSourceException($"Tafsir source package directory was not found: {packagePath}");
         }
 
-        ValidatePackageShape(packagePath);
+        var checks = new List<TafsirCheckResult>();
+        checks.Add(ValidatePackageShape(packagePath));
+        TafsirValidationChecks.EnsureAllHardChecksPassed(checks);
 
         var manifestPath = Path.Combine(packagePath, "manifest.json");
         await using var manifestStream = File.OpenRead(manifestPath);
@@ -38,6 +47,9 @@ public sealed class TafsirManifestReader
             ?? throw new TafsirSourceException("manifest.json is missing manifestType.");
         var isFinalImportManifest = root.GetProperty("isFinalImportManifest").GetBoolean();
         var sourceCount = root.GetProperty("sourceCount").GetInt32();
+
+        checks.Add(ValidateManifestFinal(manifestType, isFinalImportManifest));
+        TafsirValidationChecks.EnsureAllHardChecksPassed(checks);
 
         var summary = root.GetProperty("summary");
         var approvedCount = summary.GetProperty("copiedApprovedTafsirSources").GetInt32();
@@ -55,16 +67,23 @@ public sealed class TafsirManifestReader
             var fullPath = Path.Combine(packagePath, record.PackageFile.Replace('\\', '/'));
             if (!File.Exists(fullPath))
             {
-                throw new TafsirSourceException($"Approved source file was not found: {fullPath}");
+                checks.Add(TafsirValidationChecks.Hard(
+                    TafsirInvariants.CheckSourceSet,
+                    record.PackageFile,
+                    "missing",
+                    false));
+                TafsirValidationChecks.EnsureAllHardChecksPassed(checks);
             }
 
-            ValidateChecksum(fullPath, record.Sha256);
-            ValidateFileSize(fullPath, record.FileSizeBytes);
+            checks.Add(ValidateChecksum(fullPath, record.Sha256));
+            checks.Add(ValidateFileSize(fullPath, record.FileSizeBytes));
+            TafsirValidationChecks.EnsureAllHardChecksPassed(checks);
 
             approvedSources.Add(record with { FullPath = fullPath });
         }
 
-        ValidateApprovedSourceFileSet(packagePath, approvedSources);
+        checks.Add(ValidateApprovedSourceFileSet(packagePath, approvedSources));
+        TafsirValidationChecks.EnsureAllHardChecksPassed(checks);
 
         var excludedSources = new List<ExcludedTafsirSourceDto>();
         if (root.TryGetProperty("excludedSourceSummary", out var excludedElement)
@@ -83,6 +102,17 @@ public sealed class TafsirManifestReader
                     item.GetProperty("reviewReason").GetString() ?? string.Empty));
             }
         }
+
+        checks.AddRange(ValidateManifestCounts(
+            sourceCount,
+            approvedCount,
+            excludedCount,
+            arabicCount,
+            nonArabicCount,
+            approvedSources,
+            excludedSources,
+            expectedCounts));
+        TafsirValidationChecks.EnsureAllHardChecksPassed(checks);
 
         return new TafsirPackageManifest(
             manifestType,
@@ -128,7 +158,7 @@ public sealed class TafsirManifestReader
         return before.Equals(after);
     }
 
-    private static void ValidatePackageShape(string packagePath)
+    private static TafsirCheckResult ValidatePackageShape(string packagePath)
     {
         var errors = new List<string>();
 
@@ -136,24 +166,91 @@ public sealed class TafsirManifestReader
         {
             if (!File.Exists(Path.Combine(packagePath, requiredFile)))
             {
-                errors.Add($"Missing required file: {requiredFile}");
+                errors.Add(requiredFile);
             }
         }
 
-        var sourcesDir = Path.Combine(packagePath, "sources");
-        if (!Directory.Exists(sourcesDir))
+        if (!Directory.Exists(Path.Combine(packagePath, "sources")))
         {
-            errors.Add("Missing required directory: sources/");
+            errors.Add("sources/");
         }
 
-        if (errors.Count > 0)
-        {
-            throw new TafsirSourceException(
-                $"Tafsir package shape validation failed. {string.Join("; ", errors)}");
-        }
+        return TafsirValidationChecks.Hard(
+            TafsirInvariants.CheckPackageShape,
+            "README.md, manifest.json, package-report.md, sources/",
+            errors.Count == 0 ? "present" : $"missing: {string.Join(", ", errors)}",
+            errors.Count == 0);
     }
 
-    private static void ValidateApprovedSourceFileSet(
+    private static TafsirCheckResult ValidateManifestFinal(string manifestType, bool isFinalImportManifest)
+    {
+        var passed = string.Equals(
+                manifestType,
+                TafsirImportConstants.ManifestType,
+                StringComparison.Ordinal)
+            && isFinalImportManifest;
+
+        return TafsirValidationChecks.Hard(
+            TafsirInvariants.CheckManifestFinal,
+            $"manifestType={TafsirImportConstants.ManifestType}, isFinalImportManifest=true",
+            $"manifestType={manifestType}, isFinalImportManifest={isFinalImportManifest.ToString().ToLowerInvariant()}",
+            passed);
+    }
+
+    private static IReadOnlyList<TafsirCheckResult> ValidateManifestCounts(
+        int sourceCount,
+        int approvedCount,
+        int excludedCount,
+        int arabicCount,
+        int nonArabicCount,
+        IReadOnlyList<TafsirManifestSourceRecord> approvedSources,
+        IReadOnlyList<ExcludedTafsirSourceDto> excludedSources,
+        TafsirExpectedCounts? expectedCounts)
+    {
+        var observedApproved = approvedSources.Count;
+        var observedExcluded = excludedSources.Count;
+        var observedArabic = approvedSources.Count(source => source.LanguageCode == "ar");
+        var observedNonArabic = observedApproved - observedArabic;
+
+        return
+        [
+            TafsirValidationChecks.Hard(
+                TafsirInvariants.CheckSourceCount,
+                expectedCounts?.ApprovedSources.ToString(CultureInfo.InvariantCulture)
+                    ?? approvedCount.ToString(CultureInfo.InvariantCulture),
+                observedApproved.ToString(CultureInfo.InvariantCulture),
+                sourceCount == observedApproved
+                    && approvedCount == observedApproved
+                    && (expectedCounts is null
+                        || observedApproved == expectedCounts.ApprovedSources)),
+            TafsirValidationChecks.Hard(
+                TafsirInvariants.CheckExcludedCount,
+                expectedCounts?.ExcludedSources.ToString(CultureInfo.InvariantCulture)
+                    ?? excludedCount.ToString(CultureInfo.InvariantCulture),
+                observedExcluded.ToString(CultureInfo.InvariantCulture),
+                excludedCount == observedExcluded
+                    && (expectedCounts is null
+                        || observedExcluded == expectedCounts.ExcludedSources)),
+            TafsirValidationChecks.Hard(
+                TafsirInvariants.CheckArabicSourceCount,
+                expectedCounts?.ArabicSources.ToString(CultureInfo.InvariantCulture)
+                    ?? arabicCount.ToString(CultureInfo.InvariantCulture),
+                observedArabic.ToString(CultureInfo.InvariantCulture),
+                arabicCount == observedArabic
+                    && (expectedCounts is null
+                        || observedArabic == expectedCounts.ArabicSources)),
+            TafsirValidationChecks.Hard(
+                TafsirInvariants.CheckNonArabicSourceCount,
+                expectedCounts?.NonArabicSources.ToString(CultureInfo.InvariantCulture)
+                    ?? nonArabicCount.ToString(CultureInfo.InvariantCulture),
+                observedNonArabic.ToString(CultureInfo.InvariantCulture),
+                nonArabicCount == observedNonArabic
+                    && (expectedCounts is null
+                        || observedNonArabic == expectedCounts.NonArabicSources))
+        ];
+    }
+
+    private static TafsirCheckResult ValidateApprovedSourceFileSet(
         string packagePath,
         IReadOnlyList<TafsirManifestSourceRecord> approvedSources)
     {
@@ -169,46 +266,52 @@ public sealed class TafsirManifestReader
             .Select(source => source.PackageFile.Replace('\\', '/'))
             .ToHashSet(StringComparer.Ordinal);
 
-        var errors = new List<string>();
         var missing = declaredFiles.Except(onDiskFiles).ToList();
-        if (missing.Count > 0)
-        {
-            errors.Add($"Missing approved source files on disk: {string.Join(", ", missing)}");
-        }
-
         var extra = onDiskFiles.Except(declaredFiles).ToList();
-        if (extra.Count > 0)
-        {
-            errors.Add($"Unexpected source files outside approved manifest set: {string.Join(", ", extra)}");
-        }
+        var passed = missing.Count == 0 && extra.Count == 0;
 
-        if (errors.Count > 0)
-        {
-            throw new TafsirSourceException(
-                $"Tafsir approved source file set validation failed. {string.Join("; ", errors)}");
-        }
+        var observed = passed
+            ? "exact match"
+            : string.Join(
+                "; ",
+                new[]
+                {
+                    missing.Count > 0 ? $"missing: {string.Join(", ", missing)}" : null,
+                    extra.Count > 0 ? $"extra: {string.Join(", ", extra)}" : null
+                }.Where(part => part is not null));
+
+        return TafsirValidationChecks.Hard(
+            TafsirInvariants.CheckSourceSet,
+            "sources/ exactly matches manifest approved package files",
+            observed,
+            passed);
     }
 
     private static string NormalizeRelativePath(string relativePath) =>
         relativePath.Replace('\\', '/');
 
-    private static void ValidateChecksum(string fullPath, string expectedSha256)
+    private static TafsirCheckResult ValidateChecksum(string fullPath, string expectedSha256)
     {
         var actual = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(fullPath)));
-        if (!string.Equals(actual, expectedSha256, StringComparison.OrdinalIgnoreCase))
-        {
-            throw new TafsirSourceException($"Checksum mismatch for '{fullPath}'.");
-        }
+        var passed = string.Equals(actual, expectedSha256, StringComparison.OrdinalIgnoreCase);
+
+        return TafsirValidationChecks.Hard(
+            TafsirInvariants.CheckSourceHash,
+            expectedSha256,
+            passed ? expectedSha256 : actual,
+            passed);
     }
 
-    private static void ValidateFileSize(string fullPath, long expectedSize)
+    private static TafsirCheckResult ValidateFileSize(string fullPath, long expectedSize)
     {
         var actual = new FileInfo(fullPath).Length;
-        if (actual != expectedSize)
-        {
-            throw new TafsirSourceException(
-                $"File size mismatch for '{fullPath}': expected={expectedSize}, observed={actual}.");
-        }
+        var passed = actual == expectedSize;
+
+        return TafsirValidationChecks.Hard(
+            TafsirInvariants.CheckSourceHash,
+            expectedSize.ToString(CultureInfo.InvariantCulture),
+            actual.ToString(CultureInfo.InvariantCulture),
+            passed);
     }
 }
 

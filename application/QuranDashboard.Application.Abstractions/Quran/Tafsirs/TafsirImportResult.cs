@@ -20,7 +20,10 @@ public sealed record TafsirImportTotals(
     int ArabicSources,
     int NonArabicSources,
     int LanguageCount,
-    int DistinctAyahs);
+    int DistinctAyahs)
+{
+    public static TafsirImportTotals Empty { get; } = new(0, 0, 0, 0, 0, 0, 0, 0, 0);
+}
 
 public sealed record TafsirCheckResult(
     string Id,

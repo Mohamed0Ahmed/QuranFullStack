@@ -28,10 +28,40 @@ public static class TafsirInvariants
     public const string ReportRequired =
         "Tafsir import passed validation, but required reports could not be written; no tafsir changes were accepted.";
 
+    public const string CheckPackageShape = "TAFSIR-PACKAGE-SHAPE";
+    public const string CheckManifestFinal = "TAFSIR-MANIFEST-FINAL";
+    public const string CheckSourceCount = "TAFSIR-SOURCE-COUNT";
+    public const string CheckExcludedCount = "TAFSIR-EXCLUDED-COUNT";
+    public const string CheckArabicSourceCount = "TAFSIR-ARABIC-SOURCE-COUNT";
+    public const string CheckNonArabicSourceCount = "TAFSIR-NON-ARABIC-SOURCE-COUNT";
+    public const string CheckSourceSet = "TAFSIR-SOURCE-SET";
+    public const string CheckSourceHash = "TAFSIR-SOURCE-HASH";
+    public const string CheckNoExcludedSources = "TAFSIR-NO-EXCLUDED-SOURCES";
+    public const string CheckCoverageCount = "TAFSIR-COVERAGE-COUNT";
+    public const string CheckJsonShape = "TAFSIR-JSON-SHAPE";
+    public const string CheckAyahKeysResolve = "TAFSIR-AYAH-KEYS-RESOLVE";
+    public const string CheckPointersResolve = "TAFSIR-POINTERS-RESOLVE";
+    public const string CheckNoEmptyText = "TAFSIR-NO-EMPTY-TEXT";
+    public const string CheckNoDuplicateAyahEntry = "TAFSIR-NO-DUPLICATE-AYAH-ENTRY";
+    public const string CheckTextUnchanged = "TAFSIR-TEXT-UNCHANGED";
+    public const string CheckNoQuranTextCopy = "TAFSIR-NO-QURAN-TEXT-COPY";
     public const string CheckPostCopySourceRows = "TAFSIR-POSTCOPY-SOURCE-ROWS";
     public const string CheckPostCopyAyahMappings = "TAFSIR-POSTCOPY-AYAH-MAPPINGS";
     public const string CheckSourceUnchanged = "TAFSIR-SOURCE-UNCHANGED";
     public const string CheckReportWritten = "TAFSIR-REPORT-WRITTEN";
+
+    public static readonly string[] LockedExcludedSourceKeys =
+    [
+        "ar-wajiz",
+        "ar-durr-al-manthur",
+        "ar-ibn-al-qayyim",
+        "ar-ibn-uthaymeen",
+        "ar-baydawi",
+        "ar-suddi",
+        "ar-muyassar-fi-al-gharib",
+        "id-saadi",
+        "tr-ibn-kathir"
+    ];
 }
 
 public sealed record TafsirExpectedCounts(
