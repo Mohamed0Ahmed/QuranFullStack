@@ -1,13 +1,13 @@
 <!-- SPECKIT START -->
 
-Active feature: **Word Simple I‘rab Foundation** — branch `005-word-simple-i3rab-foundation`.
+Active feature: **Quran Mutashabihat Foundation** — branch `006-quran-mutashabihat-foundation`.
 For technologies, project structure, shell commands, and design artifacts, read the current plan
 and its siblings:
 
-- `specs/005-word-simple-i3rab-foundation/plan.md` — technical context, project structure, gates
-- `specs/005-word-simple-i3rab-foundation/spec.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/`
-- `docs/feature-005-word-simple-i3rab-foundation/feature-005-word-simple-i3rab-foundation-planning-report.md` — long-form companion plan
-- `Backend/report/feature-005-word-simple-i3rab-foundation/segment-pattern-rule-coverage-report.md` — the authoritative 142-signature / 67-family catalogue + exact Arabic labels (source for the rule seed)
+- `specs/006-quran-mutashabihat-foundation/plan.md` — technical context, project structure, gates
+- `specs/006-quran-mutashabihat-foundation/spec.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/`
+- `docs/feature-006-quran-mutashabihat-foundation/feature-006-quran-mutashabihat-foundation-planning-report.md` — long-form companion plan
+- `docs/feature-006-quran-mutashabihat-foundation/mutashabihat-data-capability-report.md` — the validated source inventory (every count traces here)
 
 <!-- SPECKIT END -->
 
@@ -28,6 +28,19 @@ When working on the Frontend project, also read and follow:
 If a task touches both Backend and Frontend, read all relevant instruction files before making changes.
 
 If a project-specific instruction conflicts with a root instruction, follow the more specific project instruction unless it would violate a root safety or product rule.
+
+## Workspace Path Conventions
+
+Canonical workspace paths:
+
+- Import source files and local staged data packages live under `resources/`.
+- Importers should use staged source packages under `resources/import-sources/<feature-or-source-name>/`.
+- `resources/` is local and gitignored; do not assume files under it are committed or available in other clones.
+- Source packages must be staged/canonicalized before import features use them. Do not import directly from random upstream folders when a staged package is required.
+- Feature planning documents, capability reports, decision addendums, and pre-Spec Kit reports live under `docs/feature-XXX-feature-name/`.
+- Spec Kit artifacts live under `specs/`; do not confuse `docs/` planning reports with `specs/` feature specifications, plans, tasks, contracts, or quickstarts.
+- Backend implementation, import, engineering review, real-run, validation, and completion reports live under `Backend/report/feature-XXX-feature-name/`.
+- Frontend report conventions are not established yet; do not invent frontend report folders unless the task explicitly asks for that decision.
 
 ## Coding Principles
 

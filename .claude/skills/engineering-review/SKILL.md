@@ -338,15 +338,28 @@ is **not** satisfied by listing `test-guard` under "Docs read". Evaluate, at min
 - synthetic/test data safety (no real or fabricated Quranic source data).
 - whether tests compare only counts or samples when full projections or checksums are
   needed to prove correctness.
-- whether new test files are untracked (and could be omitted from the commit).
+- whether a required test file is genuinely missing from the working tree — i.e. a test
+  the task requires does not exist on disk at all. A file that exists but is merely
+  untracked or unstaged is **present**; review it normally. Git staging state is not a
+  verdict driver here (see the note below).
 - whether the tests can pass while the target behavior is broken.
 
 **Severity guidance for test-code findings:**
 
 - A test that can pass while the required behavior is broken is **at least MAJOR**.
 - Weak or missing test coverage that affects contract-critical behavior is **BLOCKING**.
-- New test files that are untracked and could be omitted from the commit are **at least
-  MINOR**, escalating to **MAJOR** when those tests are required for phase acceptance.
+- A required test file that is genuinely absent from the working tree (does not exist on
+  disk) is treated as missing coverage per the line above; rate it by the impact of the
+  behavior left unverified.
+
+**Git staging state is not a verdict driver.** Review the working tree as it is. A file
+that is untracked or unstaged is **not** a finding, must **not** downgrade the verdict,
+and must **not** trigger a request to stage or commit files — staging is owned by the
+commit workflow (`commit-workflow`, and the Spec Kit `speckit-git-commit` hook, which
+stages all changes automatically). You **may** add a one-line informational note about
+git state (e.g. "new test files are still untracked"), but it carries no severity and
+does not affect the verdict. The only time git/commit state legitimately enters the
+verdict is when the user **explicitly** asks for a commit-readiness or staged-diff review.
 
 Keep this distinct from build/test verification below:
 
@@ -460,8 +473,8 @@ changed, omit it. When present, report:
   projections/checksums where comparing only counts or samples is insufficient.
 - **Fixture/data safety** — synthetic test data only; no real or fabricated Quranic
   source data.
-- **Test isolation** — fixture isolation and cleanup; no leaked shared state; new test
-  files are tracked (not at risk of being omitted from the commit).
+- **Test isolation** — fixture isolation and cleanup; no leaked shared state between
+  tests.
 - **Test Guard verdict:** PASS / PASS WITH NOTES / CHANGES REQUESTED / BLOCKED.
 
 ## 9. Verification Check
@@ -477,6 +490,12 @@ Short, direct next step consistent with the verdict.
 - Be direct and practical.
 - Do not invent facts; if the diff or file tree is unavailable, request it.
 - If build/test status is unknown, say unknown.
+- Git staging state is not a verdict driver: do not mark CHANGES REQUESTED, downgrade
+  the verdict, or ask the implementer to stage/commit because a file is untracked or
+  unstaged. Review the working tree as-is; mention git state only as a non-blocking
+  note. Staging is owned by the commit workflow. (A required file genuinely missing from
+  the working tree, a failing build, or failing tests remain real findings; honor an
+  explicit commit-readiness/staged-diff request.)
 - Separate findings by severity; do not inflate severity.
 - Do not request broad refactors unless necessary.
 - Do not implement fixes unless explicitly asked.
