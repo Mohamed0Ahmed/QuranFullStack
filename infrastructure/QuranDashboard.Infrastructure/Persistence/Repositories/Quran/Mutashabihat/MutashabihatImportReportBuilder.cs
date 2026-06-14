@@ -1,6 +1,3 @@
-using System.Globalization;
-using System.Text.Json;
-using Npgsql;
 using QuranDashboard.Application.Abstractions.Quran.Mutashabihat;
 
 namespace QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Mutashabihat;

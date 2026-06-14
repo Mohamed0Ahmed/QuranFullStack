@@ -1,5 +1,10 @@
 global using FluentAssertions;
 global using Microsoft.EntityFrameworkCore;
+global using Microsoft.Extensions.Configuration;
 global using Microsoft.Extensions.DependencyInjection;
-global using QuranDashboard.Infrastructure.Persistence;
+global using System.Text.Json;
+global using Testcontainers.PostgreSql;
 global using Xunit;
+global using QuranDashboard.Application;
+global using QuranDashboard.Infrastructure;
+global using QuranDashboard.Infrastructure.Persistence;

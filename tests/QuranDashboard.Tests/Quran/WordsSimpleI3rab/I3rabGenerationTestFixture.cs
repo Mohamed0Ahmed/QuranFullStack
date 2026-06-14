@@ -1,7 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using QuranDashboard.Application;
 using QuranDashboard.Application.Abstractions.Quran.Words.Morphology.Irab;
 using QuranDashboard.Application.Quran.Words.GenerateI3rab;
 using QuranDashboard.Domain.Quran.Ayahs;
@@ -10,8 +6,6 @@ using QuranDashboard.Domain.Quran.Surahs;
 using QuranDashboard.Domain.Quran.Words;
 using QuranDashboard.Domain.Quran.Words.Morphology;
 using QuranDashboard.Domain.Quran.Words.Morphology.Irab;
-using QuranDashboard.Infrastructure;
-using Testcontainers.PostgreSql;
 
 namespace QuranDashboard.Tests.Quran.WordsSimpleI3rab;
 

@@ -1,4 +1,3 @@
-using Npgsql;
 
 namespace QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Irab;
 

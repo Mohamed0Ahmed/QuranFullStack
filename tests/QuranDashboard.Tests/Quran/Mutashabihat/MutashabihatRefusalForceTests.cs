@@ -1,7 +1,5 @@
-using FluentAssertions;
 using QuranDashboard.Application.Abstractions.Quran.Mutashabihat;
 using QuranDashboard.Application.Quran.Mutashabihat.ImportMutashabihat;
-using Xunit;
 
 namespace QuranDashboard.Tests.Quran.Mutashabihat;
 

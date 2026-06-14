@@ -1,5 +1,3 @@
-using System.Globalization;
-using Npgsql;
 using QuranDashboard.Application.Abstractions.Quran.Words.Morphology;
 using QuranDashboard.Infrastructure.Files.Quran.Morphology;
 

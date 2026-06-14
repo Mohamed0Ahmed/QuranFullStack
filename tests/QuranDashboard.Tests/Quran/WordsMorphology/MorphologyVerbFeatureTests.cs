@@ -1,4 +1,3 @@
-using FluentAssertions;
 using QuranDashboard.Application.Quran.Words.ImportMorphology;
 
 namespace QuranDashboard.Tests.Quran.WordsMorphology;

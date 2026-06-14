@@ -1,7 +1,4 @@
-using System.Text.Json;
-using FluentAssertions;
 using QuranDashboard.Application.Abstractions.Quran.Mutashabihat;
-using Xunit;
 
 namespace QuranDashboard.Tests.Quran.Mutashabihat;
 

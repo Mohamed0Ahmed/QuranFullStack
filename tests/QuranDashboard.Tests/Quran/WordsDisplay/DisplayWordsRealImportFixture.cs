@@ -1,10 +1,6 @@
-using Microsoft.Extensions.Configuration;
-using QuranDashboard.Application;
 using QuranDashboard.Application.Abstractions.Quran.Words.Display;
 using QuranDashboard.Application.Quran.Import.ImportQuranFoundation;
 using QuranDashboard.Application.Quran.Words.RebuildDisplayWords;
-using QuranDashboard.Infrastructure;
-using Testcontainers.PostgreSql;
 
 namespace QuranDashboard.Tests.Quran.WordsDisplay;
 

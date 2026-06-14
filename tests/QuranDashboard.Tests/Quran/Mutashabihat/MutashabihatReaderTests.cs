@@ -1,4 +1,3 @@
-using System.Text.Json;
 using QuranDashboard.Infrastructure.Files.Quran.Mutashabihat;
 
 namespace QuranDashboard.Tests.Quran.Mutashabihat;

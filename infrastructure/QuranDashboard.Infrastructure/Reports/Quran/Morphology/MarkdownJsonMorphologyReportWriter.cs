@@ -1,5 +1,3 @@
-using System.Text;
-using System.Text.Json.Serialization;
 using QuranDashboard.Application.Abstractions.Quran.Words.Morphology;
 
 namespace QuranDashboard.Infrastructure.Reports.Quran.Morphology;

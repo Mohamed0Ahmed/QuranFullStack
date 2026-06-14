@@ -1,4 +1,3 @@
-using Npgsql;
 using NpgsqlTypes;
 using QuranDashboard.Application.Abstractions.Quran.Mutashabihat;
 

@@ -1,5 +1,3 @@
-using FluentAssertions;
-using Microsoft.EntityFrameworkCore;
 using QuranDashboard.Application.Quran.Words.GenerateI3rab;
 
 namespace QuranDashboard.Tests.Quran.WordsSimpleI3rab;

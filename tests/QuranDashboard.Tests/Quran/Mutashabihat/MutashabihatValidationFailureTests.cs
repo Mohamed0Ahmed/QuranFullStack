@@ -1,9 +1,6 @@
-using FluentAssertions;
-using Microsoft.Extensions.DependencyInjection;
 using QuranDashboard.Application.Abstractions.Quran.Mutashabihat;
 using QuranDashboard.Application.Quran.Mutashabihat.ImportMutashabihat;
 using QuranDashboard.Infrastructure.Files.Quran.Mutashabihat;
-using Xunit;
 
 namespace QuranDashboard.Tests.Quran.Mutashabihat;
 

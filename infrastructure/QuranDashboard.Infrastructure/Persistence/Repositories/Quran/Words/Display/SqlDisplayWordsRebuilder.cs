@@ -1,6 +1,3 @@
-using System.Data;
-using System.Globalization;
-using Npgsql;
 using QuranDashboard.Application.Abstractions.Quran.Words.Display;
 
 namespace QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Words.Display;

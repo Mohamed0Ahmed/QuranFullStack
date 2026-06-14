@@ -1,5 +1,3 @@
-using System.Text.Json;
-using FluentAssertions;
 
 namespace QuranDashboard.Tests.Quran.Mutashabihat;
 

@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Text.RegularExpressions;
 using QuranDashboard.Application.Abstractions.Quran.Mutashabihat;
 

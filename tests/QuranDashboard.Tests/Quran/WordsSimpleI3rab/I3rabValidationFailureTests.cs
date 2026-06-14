@@ -1,6 +1,3 @@
-using System.Text.Json;
-using FluentAssertions;
-using Microsoft.Extensions.DependencyInjection;
 using QuranDashboard.Application.Abstractions.Quran.Words.Morphology.Irab;
 using QuranDashboard.Application.Quran.Words.GenerateI3rab;
 using QuranDashboard.Domain.Quran.Words.Morphology.Irab;

@@ -1,5 +1,4 @@
 using System.Security.Cryptography;
-using System.Text.Json.Serialization;
 using QuranDashboard.Application.Abstractions.Quran.Mutashabihat;
 
 namespace QuranDashboard.Infrastructure.Files.Quran.Mutashabihat;

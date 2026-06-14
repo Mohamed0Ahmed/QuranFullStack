@@ -1,5 +1,3 @@
-using System.Globalization;
-using Npgsql;
 
 namespace QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Mutashabihat;
 

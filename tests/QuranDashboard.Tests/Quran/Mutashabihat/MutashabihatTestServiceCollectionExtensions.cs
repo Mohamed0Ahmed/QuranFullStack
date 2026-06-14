@@ -1,4 +1,3 @@
-using Microsoft.Extensions.DependencyInjection;
 using QuranDashboard.Application.Abstractions.Quran.Mutashabihat;
 using QuranDashboard.Infrastructure.Files.Quran.Mutashabihat;
 using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Mutashabihat;
