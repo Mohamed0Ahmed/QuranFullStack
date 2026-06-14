@@ -8,7 +8,10 @@ use source/result records only and do not expose EF-specific types.
 ```csharp
 public interface ITafsirImportSource
 {
-    Task<TafsirSourceData> LoadAsync(string sourcePath, CancellationToken ct);
+    Task<TafsirSourceData> LoadAsync(
+        string sourcePath,
+        TafsirExpectedCounts expectedCounts,
+        CancellationToken ct);
 
     Task<bool> SourceUnchangedAsync(string sourcePath, CancellationToken ct);
 }
@@ -75,7 +78,7 @@ Report writing is acceptance-critical: a run is not successful if required repor
 
 The implementation must follow this order:
 
-1. `ITafsirImportSource.LoadAsync(...)` verifies and assembles the source package without database writes.
+1. `ITafsirImportSource.LoadAsync(...)` verifies and assembles the source package without database writes, using the supplied `TafsirExpectedCounts`.
 2. The Application handler checks existing tafsir data and `--force` intent through `ITafsirImportWriter`.
 3. `ITafsirImportWriter.ExecuteAcceptedImportAsync(...)` opens one database transaction.
 4. Inside that transaction, the writer clears tafsir-owned tables only when forced, writes sources/text
