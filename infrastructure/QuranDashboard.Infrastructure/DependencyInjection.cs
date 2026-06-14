@@ -9,6 +9,7 @@ using QuranDashboard.Application.Abstractions.Quran.Words.Morphology.Irab;
 using QuranDashboard.Infrastructure.Files.Quran.Import;
 using QuranDashboard.Infrastructure.Files.Quran.Morphology;
 using QuranDashboard.Infrastructure.Files.Quran.Mutashabihat;
+using QuranDashboard.Infrastructure.Files.Quran.Tafsirs;
 using QuranDashboard.Infrastructure.Persistence;
 using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Import;
 using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Morphology;
@@ -69,9 +70,12 @@ public static class DependencyInjection
         services.AddScoped<IMutashabihatImportWriter, EfBulkMutashabihatWriter>();
         services.AddSingleton<IMutashabihatReportWriter, MarkdownJsonMutashabihatReportWriter>();
 
-        services.AddScoped<ITafsirImportSource, UnimplementedTafsirImportSource>();
-        services.AddScoped<ITafsirImportWriter, UnimplementedTafsirImportWriter>();
-        services.AddSingleton<ITafsirReportWriter, UnimplementedTafsirReportWriter>();
+        services.AddSingleton<TafsirManifestReader>();
+        services.AddSingleton<JsonTafsirSourceReader>();
+        services.AddSingleton<TafsirAssembler>();
+        services.AddScoped<ITafsirImportSource, TafsirImportSource>();
+        services.AddScoped<ITafsirImportWriter, EfBulkTafsirImportWriter>();
+        services.AddSingleton<ITafsirReportWriter, MarkdownJsonTafsirReportWriter>();
 
         services.AddSingleton(I3rabExpectedCounts.Production);
         services.AddSingleton<II3rabRuleCatalog, I3rabRuleCatalogSeed>();

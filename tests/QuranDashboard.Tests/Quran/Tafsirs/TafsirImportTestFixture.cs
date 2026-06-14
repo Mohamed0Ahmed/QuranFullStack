@@ -1,4 +1,6 @@
 using System.Security.Cryptography;
+using QuranDashboard.Application.Abstractions.Quran.Tafsirs;
+using QuranDashboard.Application.Quran.Tafsirs.ImportTafsirs;
 using QuranDashboard.Domain.Quran.Ayahs;
 using QuranDashboard.Domain.Quran.MushafPages;
 using QuranDashboard.Domain.Quran.Surahs;
@@ -127,6 +129,33 @@ public sealed class TafsirImportTestFixture : IAsyncLifetime
         }
 
         await dbContext.SaveChangesAsync();
+    }
+
+    public async Task TruncateTafsirTablesAsync()
+    {
+        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+        await dbContext.Database.ExecuteSqlRawAsync(
+            """
+            TRUNCATE
+                quran_tafsir_ayah_entries,
+                quran_tafsir_entries,
+                quran_tafsir_sources
+            RESTART IDENTITY CASCADE;
+            """);
+    }
+
+    public async Task<ImportTafsirsResult> RunImportAsync(
+        string packageDir,
+        TafsirExpectedCounts expectedCounts,
+        string? reportOutDir = null,
+        bool force = false)
+    {
+        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        var handler = scope.ServiceProvider.GetRequiredService<ImportTafsirsHandler>();
+        return await handler.HandleAsync(
+            new ImportTafsirsCommand(packageDir, force, expectedCounts, reportOutDir),
+            CancellationToken.None);
     }
 
     public async Task TruncateFoundationAsync()
@@ -415,5 +444,24 @@ internal static class TafsirSyntheticSeed
         (1, "900:1"),
         (2, "900:2"),
         (3, "900:3")
+    ];
+
+    /// <summary>Expected counts for <see cref="DefaultSources"/> integration runs.</summary>
+    public static TafsirExpectedCounts DefaultTestExpectedCounts => new(
+        ApprovedSources: 1,
+        ExcludedSources: 0,
+        ArabicSources: 1,
+        NonArabicSources: 0,
+        Languages: 1,
+        AyahsPerSource: 3,
+        SourceAyahMappings: 3);
+
+    /// <summary>
+    /// Same as <see cref="DefaultSources"/> but with manifest/content coverage set to 6,236 for the DB check
+    /// constraint while the JSON still contains only the three synthetic ayah keys.
+    /// </summary>
+    public static IReadOnlyList<SyntheticTafsirSourceSpec> IntegrationSources =>
+    [
+        DefaultSources[0] with { ContentCoverageCount = TafsirInvariants.ExpectedAyahsPerSource }
     ];
 }

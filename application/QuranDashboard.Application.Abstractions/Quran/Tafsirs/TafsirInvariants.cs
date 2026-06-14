@@ -27,6 +27,11 @@ public static class TafsirInvariants
         "quran_ayahs is empty or missing; run import-foundation first.";
     public const string ReportRequired =
         "Tafsir import passed validation, but required reports could not be written; no tafsir changes were accepted.";
+
+    public const string CheckPostCopySourceRows = "TAFSIR-POSTCOPY-SOURCE-ROWS";
+    public const string CheckPostCopyAyahMappings = "TAFSIR-POSTCOPY-AYAH-MAPPINGS";
+    public const string CheckSourceUnchanged = "TAFSIR-SOURCE-UNCHANGED";
+    public const string CheckReportWritten = "TAFSIR-REPORT-WRITTEN";
 }
 
 public sealed record TafsirExpectedCounts(
