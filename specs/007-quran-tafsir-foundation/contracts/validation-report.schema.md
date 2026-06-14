@@ -192,7 +192,7 @@ than hard-coded.
 
 ## Contract guarantees
 
-- Successful report: `verdict = "pass"`, `persisted = true`, all hard checks passed.
+- Successful report: `verdict = "pass"`, `persisted = true`, and the `checks` array enumerates **every** hard check (load-time and post-copy), all passed.
 - Failed report: `verdict = "fail"`, `persisted = false`, failed hard checks listed in `errors`.
 - Report-write failure after validation: import is not accepted; no tafsir changes are kept.
 - Reports never include copied Quran ayah text.

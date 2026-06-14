@@ -101,7 +101,8 @@ public interface ITafsirImportReportBuilder
         bool forced,
         DateTimeOffset runAtUtc,
         TafsirImportTotals totals,
-        IReadOnlyList<TafsirCheckResult> checks);
+        IReadOnlyList<TafsirCheckResult> postCopyChecks,
+        TafsirExpectedCounts expected);
 }
 ```
 
@@ -109,6 +110,10 @@ Responsibilities:
 
 - Assemble the report payload (`TafsirImportReport`) from import outcomes and loaded source data.
 - Populate source summaries, excluded-source summaries, warnings, errors, and informational notes.
+- For a passing import, enumerate **every** hard check (the load-time checks verified during
+  `LoadAsync`, plus the supplied post-copy checks), all marked passed, so the success report satisfies
+  US4 AS1 / FR-027 ("all hard checks"). The load-time checks are fail-fast during `LoadAsync`, so
+  reaching acceptance proves each one passed.
 - Keep report text free of tafsir body text and Quran ayah text.
 
 The Application handler depends on this abstraction; Infrastructure implements it.
