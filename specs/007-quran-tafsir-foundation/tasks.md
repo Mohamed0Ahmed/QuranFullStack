@@ -125,17 +125,17 @@
 
 ### Tests for User Story 3
 
-- [ ] T043 [P] [US3] Add refusal tests for a normal second run when tafsir tables already contain data in `/projects/Dashboard/App/Backend/tests/QuranDashboard.Tests/Quran/Tafsirs/TafsirRefusalForceTests.cs`.
-- [ ] T044 [P] [US3] Add force rebuild tests that seed tafsir data and Quran ayah data, run with `--force`, and assert only `quran_tafsir_sources`, `quran_tafsir_entries`, and `quran_tafsir_ayah_entries` are replaced in `/projects/Dashboard/App/Backend/tests/QuranDashboard.Tests/Quran/Tafsirs/TafsirForceRebuildTests.cs`.
-- [ ] T045 [P] [US3] Add rollback tests for validation failure after a forced rebuild starts, excluding report-write failure cases owned by US4, in `/projects/Dashboard/App/Backend/tests/QuranDashboard.Tests/Quran/Tafsirs/TafsirRollbackTests.cs`.
+- [X] T043 [P] [US3] Add refusal tests for a normal second run when tafsir tables already contain data in `/projects/Dashboard/App/Backend/tests/QuranDashboard.Tests/Quran/Tafsirs/TafsirRefusalForceTests.cs`.
+- [X] T044 [P] [US3] Add force rebuild tests that seed tafsir data and Quran ayah data, run with `--force`, and assert only `quran_tafsir_sources`, `quran_tafsir_entries`, and `quran_tafsir_ayah_entries` are replaced in `/projects/Dashboard/App/Backend/tests/QuranDashboard.Tests/Quran/Tafsirs/TafsirForceRebuildTests.cs`.
+- [X] T045 [P] [US3] Add rollback tests for validation failure after a forced rebuild starts, excluding report-write failure cases owned by US4, in `/projects/Dashboard/App/Backend/tests/QuranDashboard.Tests/Quran/Tafsirs/TafsirRollbackTests.cs`.
 
 ### Implementation for User Story 3
 
-- [ ] T046 [US3] Implement `AnyTargetTableHasDataAsync` and normal-run refusal in `/projects/Dashboard/App/Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Repositories/Quran/Tafsirs/EfBulkTafsirImportWriter.cs` using the `TafsirInvariants.TargetsNotEmpty` message.
-- [ ] T047 [US3] Implement force rebuild clearing for tafsir-owned tables only in `/projects/Dashboard/App/Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Repositories/Quran/Tafsirs/TafsirSql.cs` and `/projects/Dashboard/App/Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Repositories/Quran/Tafsirs/EfBulkTafsirImportWriter.cs`.
-- [ ] T048 [US3] Ensure forced rebuild uses a single transaction boundary and never clears or rewrites non-tafsir tables in `/projects/Dashboard/App/Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Repositories/Quran/Tafsirs/EfBulkTafsirImportWriter.cs`.
-- [ ] T049 [US3] Ensure CLI parsing passes `--force` correctly into `ImportTafsirsCommand` and prints actionable refusal text in `/projects/Dashboard/App/Backend/tools/QuranDashboard.DataImporter/Program.cs`.
-- [ ] T050 [US3] Verify User Story 3 with `dotnet test tests/QuranDashboard.Tests --filter "FullyQualifiedName~Quran.Tafsirs"` from `/projects/Dashboard/App/Backend` and record the result in `/projects/Dashboard/App/Backend/report/feature-007-quran-tafsir-foundation/003-us3-rerun-verification.md`.
+- [X] T046 [US3] Implement `AnyTargetTableHasDataAsync` and normal-run refusal in `/projects/Dashboard/App/Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Repositories/Quran/Tafsirs/EfBulkTafsirImportWriter.cs` using the `TafsirInvariants.TargetsNotEmpty` message.
+- [X] T047 [US3] Implement force rebuild clearing for tafsir-owned tables only in `/projects/Dashboard/App/Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Repositories/Quran/Tafsirs/TafsirSql.cs` and `/projects/Dashboard/App/Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Repositories/Quran/Tafsirs/EfBulkTafsirImportWriter.cs`.
+- [X] T048 [US3] Ensure forced rebuild uses a single transaction boundary and never clears or rewrites non-tafsir tables in `/projects/Dashboard/App/Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Repositories/Quran/Tafsirs/EfBulkTafsirImportWriter.cs`.
+- [X] T049 [US3] Ensure CLI parsing passes `--force` correctly into `ImportTafsirsCommand` and prints actionable refusal text in `/projects/Dashboard/App/Backend/tools/QuranDashboard.DataImporter/Program.cs`.
+- [X] T050 [US3] Verify User Story 3 with `dotnet test tests/QuranDashboard.Tests --filter "FullyQualifiedName~Quran.Tafsirs"` from `/projects/Dashboard/App/Backend` and record the result in `/projects/Dashboard/App/Backend/report/feature-007-quran-tafsir-foundation/003-us3-rerun-verification.md`.
 
 **Checkpoint**: User Story 3 prevents accidental duplicate imports and supports explicit tafsir-only rebuilds with rollback on failure.
 
