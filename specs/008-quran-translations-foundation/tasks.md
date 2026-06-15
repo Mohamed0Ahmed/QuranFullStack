@@ -125,20 +125,20 @@
 
 ### Tests for User Story 3
 
-- [ ] T057 [P] [US3] Add JSON report shape tests covering success, validation failure, and refusal reports with top-level fields, totals, source summaries, excluded summaries, checks, warnings, errors, and info notes in `Backend/tests/QuranDashboard.Tests/Quran/Translations/TranslationReportShapeTests.cs`
-- [ ] T058 [P] [US3] Add Markdown report shape tests covering success, validation failure, and refusal reports with verdict, persisted, forced, source path, totals, hard checks, warnings, excluded sources, and reclassified sources in `Backend/tests/QuranDashboard.Tests/Quran/Translations/TranslationReportShapeTests.cs`
-- [ ] T059 [P] [US3] Add report content safety tests proving reports do not include translation body text or Arabic Quran ayah text in `Backend/tests/QuranDashboard.Tests/Quran/Translations/TranslationSourceSafetyTests.cs`
-- [ ] T060 [P] [US3] Add warning/info tests for `TR-PROVENANCE-WARNING`, `TR-INLINE-MARKUP`, `TR-LANGUAGE-COVERAGE`, and `TR-RECLASSIFIED` in `Backend/tests/QuranDashboard.Tests/Quran/Translations/TranslationReportShapeTests.cs`
-- [ ] T061 [US3] Add report-write failure rollback test for unwritable report path in `Backend/tests/QuranDashboard.Tests/Quran/Translations/TranslationRollbackTests.cs`
+- [X] T057 [P] [US3] Add JSON report shape tests covering success, validation failure, and refusal reports with top-level fields, totals, source summaries, excluded summaries, checks, warnings, errors, and info notes in `Backend/tests/QuranDashboard.Tests/Quran/Translations/TranslationReportShapeTests.cs`
+- [X] T058 [P] [US3] Add Markdown report shape tests covering success, validation failure, and refusal reports with verdict, persisted, forced, source path, totals, hard checks, warnings, excluded sources, and reclassified sources in `Backend/tests/QuranDashboard.Tests/Quran/Translations/TranslationReportShapeTests.cs`
+- [X] T059 [P] [US3] Add report content safety tests proving reports do not include translation body text or Arabic Quran ayah text in `Backend/tests/QuranDashboard.Tests/Quran/Translations/TranslationSourceSafetyTests.cs`
+- [X] T060 [P] [US3] Add warning/info tests for `TR-PROVENANCE-WARNING`, `TR-INLINE-MARKUP`, `TR-LANGUAGE-COVERAGE`, and `TR-RECLASSIFIED` in `Backend/tests/QuranDashboard.Tests/Quran/Translations/TranslationReportShapeTests.cs`
+- [X] T061 [US3] Add report-write failure rollback test for unwritable report path in `Backend/tests/QuranDashboard.Tests/Quran/Translations/TranslationRollbackTests.cs`
 
 ### Implementation for User Story 3
 
-- [ ] T062 [US3] Complete `TranslationImportReportBuilder` for success, validation failure, and refusal reports, including failures that occur before database writes and refusals caused by existing translation data without `--force`, in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Repositories/Quran/Translations/TranslationImportReportBuilder.cs`
-- [ ] T063 [US3] Ensure success reports enumerate every hard check from `FR-032`, all warning/info checks, source summaries, excluded summaries, and final verdict in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Repositories/Quran/Translations/TranslationImportReportBuilder.cs`
-- [ ] T064 [US3] Complete JSON and Markdown serialization with stable filenames `translation-import-report.json` and `translation-import-report.md` in `Backend/infrastructure/QuranDashboard.Infrastructure/Reports/Quran/Translations/MarkdownJsonTranslationReportWriter.cs`
-- [ ] T065 [US3] Update `TranslationImportReportEmitter` to write success, validation failure, and refusal reports, and to convert report-write exceptions into acceptance-critical failures without hiding the original report directory in `Backend/application/QuranDashboard.Application/Quran/Translations/ImportTranslations/TranslationImportReportEmitter.cs`
-- [ ] T066 [US3] Update `ImportTranslationsResult` message formatting so CLI output includes report directory, warning count, and first actionable error in `Backend/application/QuranDashboard.Application/Quran/Translations/ImportTranslations/ImportTranslationsResult.cs`
-- [ ] T067 [US3] Add generated report filename constants only to `Backend/application/QuranDashboard.Application.Abstractions/Quran/Translations/TranslationImportConstants.cs`
+- [X] T062 [US3] Complete `TranslationImportReportBuilder` for success, validation failure, and refusal reports, including failures that occur before database writes and refusals caused by existing translation data without `--force`, in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Repositories/Quran/Translations/TranslationImportReportBuilder.cs`
+- [X] T063 [US3] Ensure success reports enumerate every hard check from `FR-032`, all warning/info checks, source summaries, excluded summaries, and final verdict in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Repositories/Quran/Translations/TranslationImportReportBuilder.cs`
+- [X] T064 [US3] Complete JSON and Markdown serialization with stable filenames `translation-import-report.json` and `translation-import-report.md` in `Backend/infrastructure/QuranDashboard.Infrastructure/Reports/Quran/Translations/MarkdownJsonTranslationReportWriter.cs`
+- [X] T065 [US3] Update `TranslationImportReportEmitter` to write success, validation failure, and refusal reports, and to convert report-write exceptions into acceptance-critical failures without hiding the original report directory in `Backend/application/QuranDashboard.Application/Quran/Translations/ImportTranslations/TranslationImportReportEmitter.cs`
+- [X] T066 [US3] Update `ImportTranslationsResult` message formatting so CLI output includes report directory, warning count, and first actionable error in `Backend/application/QuranDashboard.Application/Quran/Translations/ImportTranslations/ImportTranslationsResult.cs`
+- [X] T067 [US3] Add generated report filename constants only to `Backend/application/QuranDashboard.Application.Abstractions/Quran/Translations/TranslationImportConstants.cs`
 
 **Checkpoint**: Reports are complete enough to audit the import without reading code or source files.
 
