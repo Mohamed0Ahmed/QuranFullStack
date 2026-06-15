@@ -15,11 +15,11 @@
 
 **Purpose**: Prepare the feature folders, report index, and implementation guardrails without changing behavior.
 
-- [ ] T001 Create Feature 008 backend source folders from `plan.md` if missing: `Backend/domain/QuranDashboard.Domain/Quran/Translations/`, `Backend/application/QuranDashboard.Application.Abstractions/Quran/Translations/`, `Backend/application/QuranDashboard.Application/Quran/Translations/ImportTranslations/`, `Backend/infrastructure/QuranDashboard.Infrastructure/Files/Quran/Translations/`, `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Configurations/Quran/Translations/`, `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Repositories/Quran/Translations/`, and `Backend/infrastructure/QuranDashboard.Infrastructure/Reports/Quran/Translations/`
-- [ ] T002 [P] Create Feature 008 test folder `Backend/tests/QuranDashboard.Tests/Quran/Translations/`
-- [ ] T003 [P] Create Feature 008 backend report folder and index `Backend/report/feature-008-quran-translations-foundation/README.md` following `Backend/report/README.md`
-- [ ] T004 [P] Confirm the local package files exist without modifying them: `resources/import-sources/quran-translations/README.md`, `resources/import-sources/quran-translations/manifest.json`, `resources/import-sources/quran-translations/source-display-metadata.json`, `resources/import-sources/quran-translations/package-report.md`, and `resources/import-sources/quran-translations/sources/`
-- [ ] T005 [P] Add a short implementation-scope note to `Backend/report/feature-008-quran-translations-foundation/001-implementation-scope.md` listing the no-frontend/no-API/no-source-mutation/no-hand-written-migration constraints
+- [X] T001 Create Feature 008 backend source folders from `plan.md` if missing: `Backend/domain/QuranDashboard.Domain/Quran/Translations/`, `Backend/application/QuranDashboard.Application.Abstractions/Quran/Translations/`, `Backend/application/QuranDashboard.Application/Quran/Translations/ImportTranslations/`, `Backend/infrastructure/QuranDashboard.Infrastructure/Files/Quran/Translations/`, `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Configurations/Quran/Translations/`, `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Repositories/Quran/Translations/`, and `Backend/infrastructure/QuranDashboard.Infrastructure/Reports/Quran/Translations/`
+- [X] T002 [P] Create Feature 008 test folder `Backend/tests/QuranDashboard.Tests/Quran/Translations/`
+- [X] T003 [P] Create Feature 008 backend report folder and index `Backend/report/feature-008-quran-translations-foundation/README.md` following `Backend/report/README.md`
+- [X] T004 [P] Confirm the local package files exist without modifying them: `resources/import-sources/quran-translations/README.md`, `resources/import-sources/quran-translations/manifest.json`, `resources/import-sources/quran-translations/source-display-metadata.json`, `resources/import-sources/quran-translations/package-report.md`, and `resources/import-sources/quran-translations/sources/`
+- [X] T005 [P] Add a short implementation-scope note to `Backend/report/feature-008-quran-translations-foundation/001-implementation-scope.md` listing the no-frontend/no-API/no-source-mutation/no-hand-written-migration constraints
 
 ---
 
