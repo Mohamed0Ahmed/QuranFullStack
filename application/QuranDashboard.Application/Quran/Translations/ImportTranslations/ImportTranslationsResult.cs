@@ -18,11 +18,58 @@ public sealed record ImportTranslationsResult(
         TranslationImportTotals totals,
         string reportOutDir,
         int warningCount = 0) =>
-        new(true, SuccessExitCode, "Translation import completed successfully.", totals, reportOutDir, warningCount);
+        new(
+            true,
+            SuccessExitCode,
+            FormatMessage("Translation import completed successfully.", reportOutDir, warningCount),
+            totals,
+            reportOutDir,
+            warningCount);
 
     public static ImportTranslationsResult Refused(string message, string? reportOutDir = null) =>
-        new(false, RefusedExitCode, message, null, reportOutDir);
+        new(
+            false,
+            RefusedExitCode,
+            FormatMessage(message, reportOutDir, warningCount: 0, firstActionableError: message),
+            null,
+            reportOutDir);
 
-    public static ImportTranslationsResult Failure(string message, string? reportOutDir = null, int warningCount = 0) =>
-        new(false, FailureExitCode, message, null, reportOutDir, warningCount);
+    public static ImportTranslationsResult Failure(
+        string message,
+        string? reportOutDir = null,
+        int warningCount = 0) =>
+        new(
+            false,
+            FailureExitCode,
+            FormatMessage(message, reportOutDir, warningCount, firstActionableError: message),
+            null,
+            reportOutDir,
+            warningCount);
+
+    private static string FormatMessage(
+        string coreMessage,
+        string? reportOutDir,
+        int warningCount,
+        string? firstActionableError = null)
+    {
+        var parts = new List<string> { coreMessage };
+
+        if (!string.IsNullOrWhiteSpace(firstActionableError)
+            && !string.Equals(coreMessage, firstActionableError, StringComparison.Ordinal))
+        {
+            parts.Add($"First error: {firstActionableError}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(reportOutDir))
+        {
+            parts.Add($"Report directory: {reportOutDir}");
+        }
+
+        if (warningCount > 0)
+        {
+            parts.Add($"Warnings: {warningCount}");
+        }
+
+        return string.Join(" ", parts);
+    }
 }

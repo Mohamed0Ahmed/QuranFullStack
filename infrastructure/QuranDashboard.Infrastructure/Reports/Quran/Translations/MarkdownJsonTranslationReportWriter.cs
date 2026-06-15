@@ -4,9 +4,6 @@ namespace QuranDashboard.Infrastructure.Reports.Quran.Translations;
 
 public sealed class MarkdownJsonTranslationReportWriter : ITranslationReportWriter
 {
-    private const string JsonReportFileName = "translation-import-report.json";
-    private const string MarkdownReportFileName = "translation-import-report.md";
-
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -21,8 +18,8 @@ public sealed class MarkdownJsonTranslationReportWriter : ITranslationReportWrit
 
         Directory.CreateDirectory(outputDir);
 
-        var jsonPath = Path.Combine(outputDir, JsonReportFileName);
-        var markdownPath = Path.Combine(outputDir, MarkdownReportFileName);
+        var jsonPath = Path.Combine(outputDir, TranslationImportConstants.JsonReportFileName);
+        var markdownPath = Path.Combine(outputDir, TranslationImportConstants.MarkdownReportFileName);
 
         await using (var jsonStream = File.Create(jsonPath))
         {
@@ -62,7 +59,8 @@ public sealed class MarkdownJsonTranslationReportWriter : ITranslationReportWrit
             sha256 = summary.Sha256,
             fileSizeBytes = summary.FileSizeBytes,
             containsInlineFootnotes = summary.ContainsInlineFootnotes,
-            containsHtmlMarkup = summary.ContainsHtmlMarkup
+            containsHtmlMarkup = summary.ContainsHtmlMarkup,
+            reclassifiedFromSimpleByContent = summary.ReclassifiedFromSimpleByContent
         }),
         excludedSourceSummaries = report.ExcludedSourceSummaries.Select(summary => new
         {
@@ -154,6 +152,24 @@ public sealed class MarkdownJsonTranslationReportWriter : ITranslationReportWrit
             foreach (var summary in report.ExcludedSourceSummaries)
             {
                 builder.AppendLine($"| {summary.SourceKey} | {summary.Status} | {summary.Reason} |");
+            }
+        }
+
+        var reclassifiedSources = report.SourceSummaries
+            .Where(summary => summary.ReclassifiedFromSimpleByContent)
+            .ToList();
+
+        if (reclassifiedSources.Count > 0)
+        {
+            builder.AppendLine();
+            builder.AppendLine("## Reclassified Sources");
+            builder.AppendLine();
+            builder.AppendLine("| Source key | Declared type | Final type |");
+            builder.AppendLine("|---|---|---|");
+            foreach (var summary in reclassifiedSources)
+            {
+                builder.AppendLine(
+                    $"| {summary.SourceKey} | simple | {summary.TranslationType} |");
             }
         }
 

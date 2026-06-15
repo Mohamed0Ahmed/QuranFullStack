@@ -55,9 +55,11 @@ public sealed class TranslationAssembler
         }
 
         var translationType = displayMetadata.TranslationType;
+        var reclassifiedFromSimpleByContent = false;
         if (containsInlineFootnotes && translationType == "simple")
         {
             translationType = "with_footnotes";
+            reclassifiedFromSimpleByContent = true;
         }
 
         var sourceDto = new TranslationSourceDto(
@@ -75,6 +77,7 @@ public sealed class TranslationAssembler
             displayMetadata.TranslatorNameAr,
             containsInlineFootnotes,
             containsHtmlMarkup,
+            reclassifiedFromSimpleByContent,
             manifestSource.ContentCoverageCount,
             manifestSource.PackageFile.Replace('\\', '/'),
             manifestSource.Sha256,

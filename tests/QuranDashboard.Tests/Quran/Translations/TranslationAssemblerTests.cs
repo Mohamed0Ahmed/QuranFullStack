@@ -88,12 +88,12 @@ public sealed class TranslationAssemblerTests
         var manifest = await manifestReader.ReadAsync(
             packageDir,
             CancellationToken.None,
-            new TranslationExpectedCounts(1, 1, 0, 0, 1, 1, 1));
+            new TranslationExpectedCounts(1, 0, 1, 0, 1, 1, 1));
         var manifestSource = manifest.ApprovedSources.Single();
         var display = await displayReader.ReadAsync(
             packageDir,
             [manifestSource.SourceKey],
-            new TranslationExpectedCounts(1, 1, 0, 0, 1, 1, 1),
+            new TranslationExpectedCounts(1, 0, 1, 0, 1, 1, 1),
             CancellationToken.None);
         var parsed = await sourceReader.ReadAsync(manifestSource.FullPath!, CancellationToken.None);
 

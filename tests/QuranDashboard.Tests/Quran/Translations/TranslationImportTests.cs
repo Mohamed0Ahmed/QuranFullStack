@@ -5,8 +5,8 @@ namespace QuranDashboard.Tests.Quran.Translations;
 [Collection(nameof(TranslationImportTestCollection))]
 public sealed class TranslationImportTests(TranslationImportTestFixture fixture)
 {
-    private const string JsonReportFileName = "translation-import-report.json";
-    private const string MarkdownReportFileName = "translation-import-report.md";
+    private const string JsonReportFileName = TranslationImportConstants.JsonReportFileName;
+    private const string MarkdownReportFileName = TranslationImportConstants.MarkdownReportFileName;
 
     [Fact]
     public async Task Import_persists_sources_ayah_rows_type_totals_exact_text_and_success_reports()

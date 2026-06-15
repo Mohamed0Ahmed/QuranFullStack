@@ -12,4 +12,7 @@ public static class TranslationImportConstants
     public const string DisplayMetadataType = "quran-translation-source-display-metadata";
     public const string DisplayMetadataFinalStatus = "final";
     public const string DisplayRecordFinalStatus = "final_display_ready";
+
+    public const string JsonReportFileName = "translation-import-report.json";
+    public const string MarkdownReportFileName = "translation-import-report.md";
 }

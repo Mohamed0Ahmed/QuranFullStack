@@ -11,12 +11,41 @@ internal sealed class TranslationImportReportEmitter
         this.reportWriter = reportWriter;
     }
 
+    public async Task WriteSuccessAsync(
+        TranslationImportReport report,
+        string reportDir,
+        CancellationToken ct)
+    {
+        await WriteOrThrowAsync(report, reportDir, ct);
+    }
+
+    public async Task<ImportTranslationsResult?> TryWriteFailureAsync(
+        TranslationImportReport report,
+        string reportDir,
+        CancellationToken ct) =>
+        await TryWriteAsync(report, reportDir, ct);
+
+    public async Task<ImportTranslationsResult?> TryWriteRefusalAsync(
+        TranslationImportReport report,
+        string reportDir,
+        CancellationToken ct) =>
+        await TryWriteAsync(report, reportDir, ct);
+
     public async Task WriteOrThrowAsync(
         TranslationImportReport report,
         string reportDir,
         CancellationToken ct)
     {
-        await reportWriter.WriteAsync(report, reportDir, ct);
+        try
+        {
+            await reportWriter.WriteAsync(report, reportDir, ct);
+        }
+        catch (Exception ex) when (IsReportWriteFailure(ex))
+        {
+            throw new IOException(
+                $"{TranslationInvariants.ReportRequired} ({ex.Message})",
+                ex);
+        }
     }
 
     public async Task<ImportTranslationsResult?> TryWriteAsync(
@@ -29,11 +58,14 @@ internal sealed class TranslationImportReportEmitter
             await reportWriter.WriteAsync(report, reportDir, ct);
             return null;
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        catch (Exception ex) when (IsReportWriteFailure(ex))
         {
             return ImportTranslationsResult.Failure(
                 $"{TranslationInvariants.ReportRequired} ({ex.Message})",
                 reportDir);
         }
     }
+
+    private static bool IsReportWriteFailure(Exception ex) =>
+        ex is IOException or UnauthorizedAccessException or DirectoryNotFoundException;
 }

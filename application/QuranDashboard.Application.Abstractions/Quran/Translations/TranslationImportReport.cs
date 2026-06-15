@@ -25,7 +25,8 @@ public sealed record TranslationSourceSummary(
     string Sha256,
     long FileSizeBytes,
     bool ContainsInlineFootnotes,
-    bool ContainsHtmlMarkup);
+    bool ContainsHtmlMarkup,
+    bool ReclassifiedFromSimpleByContent);
 
 public sealed record TranslationExcludedSourceSummary(
     string SourceKey,

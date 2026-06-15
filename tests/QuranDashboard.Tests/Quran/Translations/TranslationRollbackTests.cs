@@ -1,3 +1,4 @@
+using QuranDashboard.Application.Quran.Translations.ImportTranslations;
 using QuranDashboard.Application.Abstractions.Quran.Translations;
 
 namespace QuranDashboard.Tests.Quran.Translations;
@@ -43,6 +44,9 @@ public sealed class TranslationRollbackTests(TranslationImportTestFixture fixtur
             packageDir, TranslationSyntheticSeed.DefaultTestExpectedCounts, reportDir);
 
         result.Succeeded.Should().BeFalse();
+        result.Message.Should().Contain(TranslationInvariants.ReportRequired);
+        result.ReportOutDir.Should().Be(reportDir);
+        result.Message.Should().Contain($"Report directory: {reportDir}");
 
         var snapshot = await fixture.CaptureTranslationTableSnapshotAsync();
         snapshot.SourceRows.Should().Be(0);

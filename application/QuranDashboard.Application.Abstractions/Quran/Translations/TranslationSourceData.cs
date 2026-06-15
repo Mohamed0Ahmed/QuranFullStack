@@ -20,6 +20,7 @@ public sealed record TranslationSourceDto(
     string? TranslatorNameAr,
     bool ContainsInlineFootnotes,
     bool ContainsHtmlMarkup,
+    bool ReclassifiedFromSimpleByContent,
     int ContentCoverageCount,
     string PackageFile,
     string Sha256,

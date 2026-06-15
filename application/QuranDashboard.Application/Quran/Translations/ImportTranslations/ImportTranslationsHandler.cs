@@ -93,7 +93,7 @@ public sealed class ImportTranslationsHandler
                         candidateResult.Checks,
                         expectedCounts);
                     successWarningCount = report.Warnings.Count;
-                    await reportEmitter.WriteOrThrowAsync(report, reportDir, token);
+                    await reportEmitter.WriteSuccessAsync(report, reportDir, token);
                 },
                 ct);
         }
@@ -126,7 +126,7 @@ public sealed class ImportTranslationsHandler
                 result.Checks,
                 result.Errors);
 
-            var writeFailure = await reportEmitter.TryWriteAsync(failureReport, reportDir, ct);
+            var writeFailure = await reportEmitter.TryWriteFailureAsync(failureReport, reportDir, ct);
             if (writeFailure is not null)
             {
                 return writeFailure;
@@ -159,7 +159,7 @@ public sealed class ImportTranslationsHandler
             DateTimeOffset.UtcNow,
             message);
 
-        var writeFailure = await reportEmitter.TryWriteAsync(report, reportDir, ct);
+        var writeFailure = await reportEmitter.TryWriteRefusalAsync(report, reportDir, ct);
         if (writeFailure is not null)
         {
             return writeFailure;
@@ -188,7 +188,7 @@ public sealed class ImportTranslationsHandler
                 .Select(check => $"{check.Id}: expected {check.Expected}, observed {check.Observed}")
                 .ToList());
 
-        var writeFailure = await reportEmitter.TryWriteAsync(report, reportDir, ct);
+        var writeFailure = await reportEmitter.TryWriteFailureAsync(report, reportDir, ct);
         if (writeFailure is not null)
         {
             return writeFailure;

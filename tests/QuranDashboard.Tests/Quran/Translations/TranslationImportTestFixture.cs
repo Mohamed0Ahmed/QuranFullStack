@@ -194,6 +194,9 @@ public sealed class TranslationImportTestFixture : IAsyncLifetime
         var sourceRecords = new List<object>();
         var displayRecords = new List<object>();
 
+        var simpleCount = 0;
+        var withFootnotesCount = 0;
+
         foreach (var spec in sourceSpecs)
         {
             var packageFile = $"sources/{spec.SourceKey}.json";
@@ -207,13 +210,23 @@ public sealed class TranslationImportTestFixture : IAsyncLifetime
             var fileBytes = await File.ReadAllBytesAsync(fullPath);
             var sha256 = Convert.ToHexString(SHA256.HashData(fileBytes));
             var fileSize = fileBytes.LongLength;
+            var classifiedType = ClassifyTranslationType(spec);
+
+            if (classifiedType == "simple")
+            {
+                simpleCount++;
+            }
+            else
+            {
+                withFootnotesCount++;
+            }
 
             sourceRecords.Add(new
             {
                 sourceKey = spec.SourceKey,
                 packageFile,
                 languageCode = spec.LanguageCode,
-                translationType = spec.TranslationType,
+                translationType = classifiedType,
                 contentCoverageCount = spec.ContentCoverageCount,
                 fileSizeBytes = fileSize,
                 sha256
@@ -239,8 +252,6 @@ public sealed class TranslationImportTestFixture : IAsyncLifetime
             });
         }
 
-        var simpleCount = sourceSpecs.Count(spec => spec.TranslationType == "simple");
-        var withFootnotesCount = sourceSpecs.Count(spec => spec.TranslationType == "with_footnotes");
         var languages = sourceSpecs.Select(spec => spec.LanguageCode).Distinct().ToList();
         var mappingCount = sourceSpecs.Sum(spec => spec.Entries.Count);
         var contentCoverageCount = sourceSpecs.Max(spec => spec.ContentCoverageCount);
@@ -347,6 +358,16 @@ public sealed class TranslationImportTestFixture : IAsyncLifetime
     {
         var json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
         await File.WriteAllTextAsync(path, json);
+    }
+
+    private static string ClassifyTranslationType(SyntheticTranslationSourceSpec spec)
+    {
+        var hasInlineFootnotes = spec.Entries.Values
+            .Any(text => text.Contains("[[", StringComparison.Ordinal));
+
+        return spec.TranslationType == "simple" && hasInlineFootnotes
+            ? "with_footnotes"
+            : spec.TranslationType;
     }
 }
 
@@ -468,6 +489,37 @@ internal static class TranslationSyntheticSeed
         Languages: 1,
         AyahsPerSource: 3,
         SourceAyahMappings: 6);
+
+    public static IReadOnlyList<SyntheticTranslationSourceSpec> ReportTestSources =>
+    [
+        CreateSourceSpec(
+            sourceKey: "en-test-simple",
+            translationType: "simple",
+            ayahCount: TranslationInvariants.ExpectedAyahsPerSource),
+        CreateSourceSpec(
+            sourceKey: "en-test-footnotes",
+            translationType: "with_footnotes",
+            ayahCount: TranslationInvariants.ExpectedAyahsPerSource,
+            entryTextFactory: (sourceKey, verseKey) =>
+                $"SYNTHETIC-TRANSLATION-{sourceKey}-{verseKey} [[footnote]]"),
+        CreateSourceSpec(
+            sourceKey: "en-test-reclassified",
+            translationType: "simple",
+            ayahCount: TranslationInvariants.ExpectedAyahsPerSource,
+            entryTextFactory: (sourceKey, verseKey) =>
+                verseKey.EndsWith(":1", StringComparison.Ordinal)
+                    ? $"SYNTHETIC-TRANSLATION-{sourceKey}-{verseKey} [[footnote]]"
+                    : SyntheticText(sourceKey, verseKey))
+    ];
+
+    public static TranslationExpectedCounts ReportTestExpectedCounts => new(
+        ApprovedSources: 3,
+        SimpleSources: 1,
+        WithFootnotesSources: 2,
+        ExcludedSources: 0,
+        Languages: 1,
+        AyahsPerSource: TranslationInvariants.ExpectedAyahsPerSource,
+        SourceAyahMappings: TranslationInvariants.ExpectedAyahsPerSource * 3);
 
     private static SyntheticTranslationSourceSpec CreateSourceSpec(
         string sourceKey,

@@ -13,6 +13,10 @@ public sealed class TranslationImportReportBuilder : ITranslationImportReportBui
         IReadOnlyList<TranslationCheckResult> checks,
         IReadOnlyList<string> errors)
     {
+        var allChecks = checks
+            .Append(RollbackOnFailCheck(passed: true))
+            .ToList();
+
         return Build(
             sourcePath,
             source,
@@ -21,8 +25,9 @@ public sealed class TranslationImportReportBuilder : ITranslationImportReportBui
             persisted: false,
             forced,
             totals,
-            checks,
+            allChecks,
             errors,
+            BuildWarnings(source),
             infoNotes: ["Translation import failed validation; no translation rows were persisted."]);
     }
 
@@ -33,6 +38,14 @@ public sealed class TranslationImportReportBuilder : ITranslationImportReportBui
         DateTimeOffset runAtUtc,
         string refusalMessage)
     {
+        var checks = new List<TranslationCheckResult>();
+        if (string.Equals(refusalMessage, TranslationInvariants.TargetsNotEmpty, StringComparison.Ordinal))
+        {
+            checks.Add(RerunGuardCheck(passed: false, forced));
+        }
+
+        checks.Add(RollbackOnFailCheck(passed: true));
+
         return Build(
             sourcePath,
             source,
@@ -41,8 +54,9 @@ public sealed class TranslationImportReportBuilder : ITranslationImportReportBui
             persisted: false,
             forced,
             source is null ? TranslationImportTotals.Empty : TranslationImportTotals.FromSource(source),
-            checks: [],
+            checks,
             errors: [refusalMessage],
+            BuildWarnings(source),
             infoNotes: ["Translation import refused before persistence; no translation rows were written."]);
     }
 
@@ -55,8 +69,15 @@ public sealed class TranslationImportReportBuilder : ITranslationImportReportBui
         IReadOnlyList<TranslationCheckResult> postCopyChecks,
         TranslationExpectedCounts expected)
     {
+        var postCopyIds = postCopyChecks
+            .Select(check => check.Id)
+            .ToHashSet(StringComparer.Ordinal);
+
         var allChecks = BuildPassedLoadChecks(source, expected)
+            .Where(check => !postCopyIds.Contains(check.Id))
             .Concat(postCopyChecks)
+            .Append(RollbackOnFailCheck(passed: true))
+            .Append(RerunGuardCheck(passed: true, forced))
             .ToList();
 
         return Build(
@@ -69,7 +90,8 @@ public sealed class TranslationImportReportBuilder : ITranslationImportReportBui
             totals,
             allChecks,
             errors: [],
-            infoNotes: ["Translation import passed validation; acceptance reports written before commit."]);
+            BuildWarnings(source),
+            BuildSuccessInfoNotes(source, totals));
     }
 
     private static TranslationImportReport Build(
@@ -82,6 +104,7 @@ public sealed class TranslationImportReportBuilder : ITranslationImportReportBui
         TranslationImportTotals totals,
         IReadOnlyList<TranslationCheckResult> checks,
         IReadOnlyList<string> errors,
+        IReadOnlyList<string> warnings,
         IReadOnlyList<string> infoNotes)
     {
         var sourceSummaries = source is null
@@ -101,9 +124,9 @@ public sealed class TranslationImportReportBuilder : ITranslationImportReportBui
             sourceSummaries,
             excludedSummaries,
             checks,
-            BuildWarnings(source),
+            warnings,
             errors,
-            BuildInfoNotes(source, totals, infoNotes));
+            infoNotes);
     }
 
     private static IReadOnlyList<TranslationSourceSummary> BuildSourceSummaries(
@@ -121,7 +144,8 @@ public sealed class TranslationImportReportBuilder : ITranslationImportReportBui
                 source.Sha256,
                 source.FileSizeBytes,
                 source.ContainsInlineFootnotes,
-                source.ContainsHtmlMarkup))
+                source.ContainsHtmlMarkup,
+                source.ReclassifiedFromSimpleByContent))
             .ToList();
 
     private static IReadOnlyList<TranslationExcludedSourceSummary> BuildExcludedSummaries(
@@ -147,17 +171,14 @@ public sealed class TranslationImportReportBuilder : ITranslationImportReportBui
         ];
     }
 
-    private static IReadOnlyList<string> BuildInfoNotes(
-        TranslationSourceData? source,
-        TranslationImportTotals totals,
-        IReadOnlyList<string> baseNotes)
+    private static IReadOnlyList<string> BuildSuccessInfoNotes(
+        TranslationSourceData source,
+        TranslationImportTotals totals)
     {
-        var notes = new List<string>(baseNotes);
-
-        if (source is null)
+        var notes = new List<string>
         {
-            return notes;
-        }
+            "Translation import passed validation; acceptance reports written before commit."
+        };
 
         if (source.Sources.Any(row => row.ContainsInlineFootnotes || row.ContainsHtmlMarkup))
         {
@@ -167,6 +188,18 @@ public sealed class TranslationImportReportBuilder : ITranslationImportReportBui
 
         notes.Add($"{TranslationInvariants.InfoLanguageCoverage}: {totals.LanguageCount} languages.");
 
+        var reclassified = source.Sources
+            .Where(row => row.ReclassifiedFromSimpleByContent)
+            .Select(row => row.SourceKey)
+            .OrderBy(key => key, StringComparer.Ordinal)
+            .ToList();
+
+        if (reclassified.Count > 0)
+        {
+            notes.Add(
+                $"{TranslationInvariants.InfoReclassified}: {reclassified.Count.ToString(CultureInfo.InvariantCulture)} source(s) reclassified from simple to with_footnotes by content ({string.Join(", ", reclassified)}).");
+        }
+
         return notes;
     }
 
@@ -175,6 +208,8 @@ public sealed class TranslationImportReportBuilder : ITranslationImportReportBui
         TranslationExpectedCounts expected)
     {
         var approved = source.Sources.Count;
+        var simple = source.Sources.Count(row => row.TranslationType == "simple");
+        var withFootnotes = source.Sources.Count(row => row.TranslationType == "with_footnotes");
         var excluded = source.ExcludedSources.Count;
         var ayahsPerSource = expected.AyahsPerSource.ToString(CultureInfo.InvariantCulture);
 
@@ -211,6 +246,10 @@ public sealed class TranslationImportReportBuilder : ITranslationImportReportBui
                 expected.ApprovedSources.ToString(CultureInfo.InvariantCulture),
                 approved.ToString(CultureInfo.InvariantCulture),
                 approved == expected.ApprovedSources),
+            Hard(TranslationInvariants.CheckTypeCounts,
+                $"simple={expected.SimpleSources}, with_footnotes={expected.WithFootnotesSources}",
+                $"simple={simple}, with_footnotes={withFootnotes}",
+                simple == expected.SimpleSources && withFootnotes == expected.WithFootnotesSources),
             Hard(TranslationInvariants.CheckExcludedCount,
                 expected.ExcludedSources.ToString(CultureInfo.InvariantCulture),
                 excluded.ToString(CultureInfo.InvariantCulture),
@@ -233,4 +272,24 @@ public sealed class TranslationImportReportBuilder : ITranslationImportReportBui
                 "no duplicate source/ayah mapping", "none", passed: true)
         ];
     }
+
+    private static TranslationCheckResult RollbackOnFailCheck(bool passed) =>
+        new(
+            TranslationInvariants.CheckRollbackOnFail,
+            TranslationImportConstants.HardSeverity,
+            "failed hard checks leave no accepted partial import",
+            passed ? "no partial import persisted" : "partial import persisted",
+            passed);
+
+    private static TranslationCheckResult RerunGuardCheck(bool passed, bool forced) =>
+        new(
+            TranslationInvariants.CheckRerunGuard,
+            TranslationImportConstants.HardSeverity,
+            "normal re-run refuses non-empty targets; forced replacement revalidates before replacing",
+            passed
+                ? forced
+                    ? "forced replacement with pre-validation"
+                    : "no existing translation data"
+                : "translation tables not empty",
+            passed);
 }
