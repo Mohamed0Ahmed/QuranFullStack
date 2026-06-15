@@ -37,23 +37,23 @@ Do not rename historical reports retroactively unless a dedicated cleanup task e
 | Folder | Scope |
 | --- | --- |
 | `feature-002-quran-foundation/` | Quran foundation import (`002-mushaf-words-foundation`): source-readiness and import data investigations. |
-| `feature-003-word-display-tables/` | Feature 003 display/statistics tables: word-source normalization and unique-table audits. |
-| `feature-003-imlaei-clean-key/` | Imlaei clean identity key (`word_key_imlaei_simple`) enrichment + import binding. |
-| `feature-003-word-identity-links/` | Word identity links restructure analysis (unique-simple by clean imlaei key + `quran_words` link columns). |
+| `feature-003-quran-words-foundation/` | Feature 003 Quran words foundation: display-table audits, imlaei clean identity key binding, and word identity links restructure/phase reports. |
+| `feature-004-word-morphology-foundation/` | Feature 004 word morphology/segment foundation: completion record. |
+| `feature-005-word-simple-i3rab-foundation/` | Feature 005 simplified إعراب foundation: rule-coverage inventory, label inventory, and planning-sync review. |
+| `feature-006-quran-mutashabihat-foundation/` | Feature 006 متشابهات / similar-ayah foundation: implementation verification, import-run summary, source-safety, scope, and completion reports. |
+| `feature-007-quran-tafsir-foundation/` | Feature 007 tafsir import foundation: numbered verification/validation/check reports (US1–US4, build, test, quickstart, architecture, source-safety, scope). |
+| `database-inventory/` | Cross-feature database reference: live PostgreSQL inventory and the reset/seeding-order runbook. |
+
+Each feature folder carries its own `README.md` index. From Feature 006 onward, human-authored
+reports use numeric prefixes (see *Filename Conventions* above); Feature 002–005 reports keep their
+original content-named filenames; Feature 003 was normalized to numeric prefixes as a dedicated task.
 
 ## Contents
 
-- `feature-002-quran-foundation/`
-  - `quran-foundation-import-source-readiness-report.md`
-  - `ayah-37-130-word-count-investigation.md`
-- `feature-003-word-display-tables/`
-  - `word-import-source-normalization-audit-report.md`
-  - `words-unique-tables-audit-report.md`
-- `feature-003-imlaei-clean-key/`
-  - `imlaei-clean-import-binding-report.md`
-- `feature-003-word-identity-links/`
-  - `feature-003-word-identity-links-restructure-report.md`
-  - `phase-1-unique-simple-identity-switch-report.md`
-  - `phase-7-dev-reset-reseed-report.md`
-
-See `file-organization-report.md` (this folder) for the before/after move record.
+- `feature-002-quran-foundation/` — `README.md` + 2 reports
+- `feature-003-quran-words-foundation/` — `README.md` + `001`…`006` reports
+- `feature-004-word-morphology-foundation/` — `README.md` + `final-completion-report.md`
+- `feature-005-word-simple-i3rab-foundation/` — `README.md` + 3 reports
+- `feature-006-quran-mutashabihat-foundation/` — `README.md` + `001`…`005` reports
+- `feature-007-quran-tafsir-foundation/` — `README.md` + `001`…`010` reports
+- `database-inventory/` — `current-database-inventory.md`, `database-reset-and-seeding-order.md`

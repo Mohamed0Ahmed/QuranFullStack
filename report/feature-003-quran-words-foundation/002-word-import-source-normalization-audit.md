@@ -358,7 +358,7 @@ hand-written. If instead normalization is applied in-place to the existing `text
 **Expected reports**
 - A post-rebuild normalization report (before/after unique counts, collapsed-key list, residual
   multiword tokens).
-- Re-run the unique-tables audit (`words-unique-tables-audit-report.md`) to confirm no residual
+- Re-run the unique-tables audit (`003-words-unique-tables-audit.md`) to confirm no residual
   marks remain in identity keys.
 
 **DB reset/drop needed?** **No.** Migration (if columns added) + `rebuild-words --force`.
