@@ -48,6 +48,15 @@ These reports are produced by later phases of `tasks.md` (filled in as each phas
 
 | Report | Status | Summary |
 | --- | --- | --- |
-| [001-implementation-scope.md](./001-implementation-scope.md) | DRAFT | Phase 2 foundational — guardrails and planned DI mapping |
+| [001-implementation-scope.md](./001-implementation-scope.md) | COMPLETE | Guardrails and planned DI mapping |
+| [002-schema-and-importer-implementation-report.md](./002-schema-and-importer-implementation-report.md) | COMPLETE | Schema, import flow, changed paths |
+| [003-validation-and-reporting-verification.md](./003-validation-and-reporting-verification.md) | COMPLETE | All `TR-*` checks and report files |
+| [004-source-safety-and-scope-check.md](./004-source-safety-and-scope-check.md) | COMPLETE | Source safety and scope boundaries |
+| [005-test-verification.md](./005-test-verification.md) | COMPLETE | 62/62 translation tests passed |
+| [006-build-verification.md](./006-build-verification.md) | COMPLETE | Full solution build succeeded |
+| [007-quickstart-validation.md](./007-quickstart-validation.md) | COMPLETE | CLI argument validation smoke test |
+| [008-clean-code-self-check.md](./008-clean-code-self-check.md) | COMPLETE | Clean-code guard self-check |
+| [009-test-code-self-check.md](./009-test-code-self-check.md) | COMPLETE | Test-guard self-check |
+| [010-final-scope-check.md](./010-final-scope-check.md) | COMPLETE | Branch diff scope verification |
 
-> Status: Phase 2 foundational complete (2026-06-15). Migration `AddQuranTranslations` generated; `database update` not run.
+> Status: Feature 008 backend import foundation complete through Phase 7 polish (2026-06-15). Migration `AddQuranTranslations` generated; `database update` not run.
