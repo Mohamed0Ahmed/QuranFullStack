@@ -6,6 +6,7 @@ using QuranDashboard.Domain.Quran.Words.Display;
 using QuranDashboard.Domain.Quran.Words.Morphology;
 using QuranDashboard.Domain.Quran.Mutashabihat;
 using QuranDashboard.Domain.Quran.Tafsirs;
+using QuranDashboard.Domain.Quran.Translations;
 using QuranDashboard.Domain.Quran.Words.Morphology.Irab;
 
 namespace QuranDashboard.Infrastructure.Persistence;
@@ -34,6 +35,8 @@ public sealed class QuranDashboardDbContext(DbContextOptions<QuranDashboardDbCon
     public DbSet<TafsirSource> TafsirSources => Set<TafsirSource>();
     public DbSet<TafsirEntry> TafsirEntries => Set<TafsirEntry>();
     public DbSet<TafsirAyahEntry> TafsirAyahEntries => Set<TafsirAyahEntry>();
+    public DbSet<TranslationSource> TranslationSources => Set<TranslationSource>();
+    public DbSet<TranslationAyahEntry> TranslationAyahEntries => Set<TranslationAyahEntry>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

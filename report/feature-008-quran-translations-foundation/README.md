@@ -48,6 +48,6 @@ These reports are produced by later phases of `tasks.md` (filled in as each phas
 
 | Report | Status | Summary |
 | --- | --- | --- |
-| [001-implementation-scope.md](./001-implementation-scope.md) | DRAFT | Phase 1 setup — implementation guardrails |
+| [001-implementation-scope.md](./001-implementation-scope.md) | DRAFT | Phase 2 foundational — guardrails and planned DI mapping |
 
-> Status: Phase 1 setup in progress (2026-06-15).
+> Status: Phase 2 foundational complete (2026-06-15). Migration `AddQuranTranslations` generated; `database update` not run.

@@ -1,0 +1,29 @@
+namespace QuranDashboard.Application.Abstractions.Quran.Translations;
+
+public interface ITranslationImportReportBuilder
+{
+    TranslationImportReport BuildValidationFailure(
+        string sourcePath,
+        TranslationSourceData? source,
+        bool forced,
+        DateTimeOffset runAtUtc,
+        TranslationImportTotals totals,
+        IReadOnlyList<TranslationCheckResult> checks,
+        IReadOnlyList<string> errors);
+
+    TranslationImportReport BuildRefusal(
+        string sourcePath,
+        TranslationSourceData? source,
+        bool forced,
+        DateTimeOffset runAtUtc,
+        string refusalMessage);
+
+    TranslationImportReport BuildCandidateSuccess(
+        string sourcePath,
+        TranslationSourceData source,
+        bool forced,
+        DateTimeOffset runAtUtc,
+        TranslationImportTotals totals,
+        IReadOnlyList<TranslationCheckResult> postCopyChecks,
+        TranslationExpectedCounts expected);
+}

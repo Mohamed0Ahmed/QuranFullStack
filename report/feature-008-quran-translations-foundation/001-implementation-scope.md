@@ -38,4 +38,26 @@ these constraints unless the spec, plan, or an explicit user decision changes th
 
 ## Planned DI mapping
 
-_To be recorded in Phase 2 (T019) without editing `DependencyInjection.cs` until implementations exist (T042)._
+Recorded in Phase 2 (T019). **Do not register in `DependencyInjection.cs` until Phase 3 T042.**
+
+| Abstraction | Planned implementation | Lifetime | Project path |
+| --- | --- | --- | --- |
+| `ITranslationImportSource` | `TranslationImportSource` | Scoped | `Infrastructure/Files/Quran/Translations/TranslationImportSource.cs` |
+| `ITranslationImportWriter` | `EfBulkTranslationImportWriter` | Scoped | `Infrastructure/Persistence/Repositories/Quran/Translations/EfBulkTranslationImportWriter.cs` |
+| `ITranslationImportReportBuilder` | `TranslationImportReportBuilder` | Singleton | `Infrastructure/Persistence/Repositories/Quran/Translations/TranslationImportReportBuilder.cs` |
+| `ITranslationReportWriter` | `MarkdownJsonTranslationReportWriter` | Singleton | `Infrastructure/Reports/Quran/Translations/MarkdownJsonTranslationReportWriter.cs` |
+| `ImportTranslationsHandler` | _(concrete handler)_ | Scoped | `Application/Quran/Translations/ImportTranslations/ImportTranslationsHandler.cs` |
+
+Supporting infrastructure types (registered alongside the abstractions in T042):
+
+| Type | Lifetime | Project path |
+| --- | --- | --- |
+| `TranslationManifestReader` | Singleton | `Infrastructure/Files/Quran/Translations/TranslationManifestReader.cs` |
+| `TranslationDisplayMetadataReader` | Singleton | `Infrastructure/Files/Quran/Translations/TranslationDisplayMetadataReader.cs` |
+| `JsonTranslationSourceReader` | Singleton | `Infrastructure/Files/Quran/Translations/JsonTranslationSourceReader.cs` |
+| `TranslationAssembler` | Singleton | `Infrastructure/Files/Quran/Translations/TranslationAssembler.cs` |
+| `TranslationValidationRunner` | Scoped | `Infrastructure/Persistence/Repositories/Quran/Translations/TranslationValidationRunner.cs` |
+
+Internal persistence helpers (not exposed as Application abstractions):
+
+- `TranslationBulkCopier`, `TranslationCommandExecutor`, `TranslationSql`, `TranslationValidationChecks`
