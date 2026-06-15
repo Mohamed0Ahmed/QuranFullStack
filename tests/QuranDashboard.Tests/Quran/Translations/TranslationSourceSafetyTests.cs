@@ -1,4 +1,3 @@
-using System.Text.Json;
 using QuranDashboard.Application.Abstractions.Quran.Translations;
 
 namespace QuranDashboard.Tests.Quran.Translations;

@@ -1,4 +1,3 @@
-using NpgsqlTypes;
 using QuranDashboard.Application.Abstractions.Quran.Words.Morphology.Irab;
 
 namespace QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Irab;

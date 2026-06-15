@@ -1,4 +1,3 @@
-using System.Text.Json;
 using System.Text.Json.Nodes;
 using QuranDashboard.Application.Abstractions.Quran.Translations;
 using QuranDashboard.Infrastructure.Files.Quran.Translations;

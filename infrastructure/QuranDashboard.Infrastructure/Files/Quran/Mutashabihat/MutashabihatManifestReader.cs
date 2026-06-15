@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using QuranDashboard.Application.Abstractions.Quran.Mutashabihat;
 
 namespace QuranDashboard.Infrastructure.Files.Quran.Mutashabihat;

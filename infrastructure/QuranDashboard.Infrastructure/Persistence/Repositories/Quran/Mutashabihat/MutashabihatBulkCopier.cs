@@ -1,4 +1,3 @@
-using NpgsqlTypes;
 using QuranDashboard.Application.Abstractions.Quran.Mutashabihat;
 
 namespace QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Mutashabihat;

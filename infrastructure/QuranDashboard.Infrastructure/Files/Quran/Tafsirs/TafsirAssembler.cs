@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using QuranDashboard.Application.Abstractions.Quran.Tafsirs;
 

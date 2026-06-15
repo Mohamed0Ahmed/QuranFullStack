@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using QuranDashboard.Application.Abstractions.Quran.Translations;
 
 namespace QuranDashboard.Infrastructure.Files.Quran.Translations;

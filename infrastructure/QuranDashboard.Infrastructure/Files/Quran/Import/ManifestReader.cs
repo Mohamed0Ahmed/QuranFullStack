@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-
 namespace QuranDashboard.Infrastructure.Files.Quran.Import;
 
 public sealed class ManifestReader

@@ -1,5 +1,3 @@
-using System.Data;
-using Npgsql;
 using QuranDashboard.Application.Abstractions.Quran.Translations;
 using QuranDashboard.Domain.Quran.Translations;
 
