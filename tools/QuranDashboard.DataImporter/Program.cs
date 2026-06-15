@@ -9,7 +9,9 @@ using QuranDashboard.Application.Quran.Words.GenerateI3rab;
 using QuranDashboard.Application.Quran.Words.ImportMorphology;
 using QuranDashboard.Application.Quran.Words.RebuildDisplayWords;
 using QuranDashboard.Application.Quran.Tafsirs.ImportTafsirs;
+using QuranDashboard.Application.Quran.Translations.ImportTranslations;
 using QuranDashboard.Application.Abstractions.Quran.Tafsirs;
+using QuranDashboard.Application.Abstractions.Quran.Translations;
 using QuranDashboard.Application.Abstractions.Quran.Mutashabihat;
 using QuranDashboard.Infrastructure;
 
@@ -35,6 +37,7 @@ internal static class Program
             "import-morphology" => await RunImportMorphologyAsync(verbArgs),
             "import-mutashabihat" => await RunImportMutashabihatAsync(verbArgs),
             "import-tafsirs" => await RunImportTafsirsAsync(verbArgs),
+            "import-translations" => await RunImportTranslationsAsync(verbArgs),
             "generate-i3rab" => await RunGenerateI3rabAsync(verbArgs),
             _ => UnknownVerb(verb)
         };
@@ -485,6 +488,119 @@ internal static class Program
         return true;
     }
 
+    private static async Task<int> RunImportTranslationsAsync(string[] args)
+    {
+        if (!TryParseTranslationArguments(args, out var sourcePath, out var reportOutDir, out var force, out var errorMessage))
+        {
+            Console.Error.WriteLine(errorMessage);
+            PrintUsage();
+            return ImportTranslationsResult.FailureExitCode;
+        }
+
+        var host = CreateHost(args);
+        await using var scope = host.Services.CreateAsyncScope();
+        var handler = scope.ServiceProvider.GetRequiredService<ImportTranslationsHandler>();
+
+        sourcePath ??= ResolveDefaultTranslationSourcePath();
+        reportOutDir ??= ResolveDefaultTranslationReportDir();
+
+        var result = await handler.HandleAsync(
+            new ImportTranslationsCommand(
+                sourcePath,
+                force,
+                TranslationInvariants.Production,
+                reportOutDir),
+            CancellationToken.None);
+
+        if (result.Succeeded)
+        {
+            Console.WriteLine(result.Message);
+            if (result.Totals is not null)
+            {
+                Console.WriteLine(
+                    $"sources={result.Totals.SourceRows}, ayahMappings={result.Totals.AyahMappingRows}, languages={result.Totals.LanguageCount}, types=simple:{result.Totals.SimpleSources},with_footnotes:{result.Totals.WithFootnotesSources}, warnings={result.WarningCount}.");
+            }
+
+            WriteReportPath(result.ReportOutDir);
+            return result.ExitCode;
+        }
+
+        Console.Error.WriteLine(result.Message);
+        WriteReportPath(result.ReportOutDir);
+        return result.ExitCode;
+    }
+
+    private static string ResolveDefaultTranslationSourcePath()
+    {
+        return Path.GetFullPath(Path.Combine(
+            ResolveRepositoryRoot(), "resources", "import-sources", "quran-translations"));
+    }
+
+    private static string ResolveDefaultTranslationReportDir()
+    {
+        return Path.GetFullPath(Path.Combine(
+            ResolveRepositoryRoot(), "Backend", "report", "feature-008-quran-translations-foundation"));
+    }
+
+    private static bool TryParseTranslationArguments(
+        string[] args,
+        out string? sourcePath,
+        out string? reportOutDir,
+        out bool force,
+        out string errorMessage)
+    {
+        sourcePath = null;
+        reportOutDir = null;
+        force = false;
+        errorMessage = string.Empty;
+
+        for (var index = 0; index < args.Length; index++)
+        {
+            switch (args[index])
+            {
+                case "--source":
+                    if (!TryReadValue(args, ref index, out sourcePath))
+                    {
+                        errorMessage = "Missing value for --source.";
+                        return false;
+                    }
+
+                    break;
+                case "--report-out":
+                    if (!TryReadValue(args, ref index, out reportOutDir))
+                    {
+                        errorMessage = "Missing value for --report-out.";
+                        return false;
+                    }
+
+                    break;
+                case "--force":
+                    force = true;
+                    break;
+                default:
+                    errorMessage = $"Unknown argument '{args[index]}'.";
+                    return false;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(sourcePath))
+        {
+            sourcePath = Path.GetFullPath(sourcePath);
+            if (!Directory.Exists(sourcePath))
+            {
+                errorMessage = $"Source directory was not found: {sourcePath}";
+                return false;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(reportOutDir))
+        {
+            reportOutDir = Path.GetFullPath(reportOutDir);
+        }
+
+        return true;
+    }
+
     private static async Task<int> RunImportMorphologyAsync(string[] args)
     {
         if (!TryParseMorphologyArguments(args, out var sourcePath, out var reportOutDir, out var force, out var errorMessage))
@@ -697,6 +813,8 @@ internal static class Program
             "  QuranDashboard.DataImporter import-mutashabihat [--source <path>] [--report-out <path>] [--force]");
         Console.Error.WriteLine(
             "  QuranDashboard.DataImporter import-tafsirs [--source <path>] [--report-out <path>] [--force]");
+        Console.Error.WriteLine(
+            "  QuranDashboard.DataImporter import-translations [--source <path>] [--report-out <path>] [--force]");
         Console.Error.WriteLine(
             "  QuranDashboard.DataImporter generate-i3rab [--report-out <path>] [--force]");
     }

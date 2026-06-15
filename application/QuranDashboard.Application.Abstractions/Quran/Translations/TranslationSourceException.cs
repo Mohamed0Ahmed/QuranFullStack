@@ -2,6 +2,13 @@ namespace QuranDashboard.Application.Abstractions.Quran.Translations;
 
 public sealed class TranslationSourceException : Exception
 {
+    public TranslationSourceException(string message)
+        : base(message)
+    {
+        Checks = [];
+        FailedChecks = [];
+    }
+
     public TranslationSourceException(
         IReadOnlyList<TranslationCheckResult> checks,
         string? message = null)

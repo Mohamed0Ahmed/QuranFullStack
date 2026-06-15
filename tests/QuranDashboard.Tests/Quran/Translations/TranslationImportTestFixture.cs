@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using QuranDashboard.Application.Abstractions.Quran.Translations;
+using QuranDashboard.Application.Quran.Translations.ImportTranslations;
 using QuranDashboard.Domain.Quran.Ayahs;
 using QuranDashboard.Domain.Quran.MushafPages;
 using QuranDashboard.Domain.Quran.Surahs;
@@ -328,6 +329,20 @@ public sealed class TranslationImportTestFixture : IAsyncLifetime
         return packageDir;
     }
 
+    public async Task<ImportTranslationsResult> RunImportAsync(
+        string packageDir,
+        TranslationExpectedCounts expectedCounts,
+        string? reportOutDir = null,
+        bool force = false)
+    {
+        reportOutDir ??= Path.Combine(Path.GetTempPath(), $"translation-report-default-{Guid.NewGuid():N}");
+        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        var handler = scope.ServiceProvider.GetRequiredService<ImportTranslationsHandler>();
+        return await handler.HandleAsync(
+            new ImportTranslationsCommand(packageDir, force, expectedCounts, reportOutDir),
+            CancellationToken.None);
+    }
+
     private static async Task WriteJsonAsync(string path, object data)
     {
         var json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
@@ -432,10 +447,33 @@ internal static class TranslationSyntheticSeed
         AyahsPerSource: 3,
         SourceAyahMappings: 3);
 
+    public static IReadOnlyList<SyntheticTranslationSourceSpec> IntegrationSources =>
+    [
+        CreateSourceSpec(
+            sourceKey: "en-test-simple",
+            translationType: "simple",
+            ayahCount: 3),
+        CreateSourceSpec(
+            sourceKey: "en-test-footnotes",
+            translationType: "with_footnotes",
+            ayahCount: 3,
+            entryTextFactory: (sourceKey, verseKey) => $"SYNTHETIC-TRANSLATION-{sourceKey}-{verseKey} [[footnote]]")
+    ];
+
+    public static TranslationExpectedCounts IntegrationTestExpectedCounts => new(
+        ApprovedSources: 2,
+        SimpleSources: 1,
+        WithFootnotesSources: 1,
+        ExcludedSources: 0,
+        Languages: 1,
+        AyahsPerSource: 3,
+        SourceAyahMappings: 6);
+
     private static SyntheticTranslationSourceSpec CreateSourceSpec(
         string sourceKey,
         string translationType,
-        int ayahCount) =>
+        int ayahCount,
+        Func<string, string, string>? entryTextFactory = null) =>
         new(
             SourceKey: sourceKey,
             LanguageCode: "en",
@@ -444,11 +482,27 @@ internal static class TranslationSyntheticSeed
             NativeName: "English",
             Direction: "ltr",
             TranslationType: translationType,
-            DisplayNameEn: "Synthetic English Test",
-            DisplayNameAr: "ترجمة اختبارية إنجليزية",
+            DisplayNameEn: $"Synthetic English {sourceKey}",
+            DisplayNameAr: $"ترجمة اختبارية {sourceKey}",
             TranslatorKey: "test-translator",
             TranslatorNameEn: "Test Translator",
             TranslatorNameAr: "مترجم اختباري",
             ContentCoverageCount: ayahCount,
-            Entries: BuildEntries(sourceKey, ayahCount));
+            Entries: BuildEntries(sourceKey, ayahCount, entryTextFactory));
+
+    private static IReadOnlyDictionary<string, string> BuildEntries(
+        string sourceKey,
+        int ayahCount,
+        Func<string, string, string>? entryTextFactory = null)
+    {
+        var entries = new Dictionary<string, string>(ayahCount);
+        for (var ayah = 1; ayah <= ayahCount; ayah++)
+        {
+            var verseKey = SyntheticVerseKey(ayah);
+            entries[verseKey] = entryTextFactory?.Invoke(sourceKey, verseKey)
+                ?? SyntheticText(sourceKey, verseKey);
+        }
+
+        return entries;
+    }
 }
