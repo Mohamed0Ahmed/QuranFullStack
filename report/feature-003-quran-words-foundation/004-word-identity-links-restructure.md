@@ -22,7 +22,7 @@ set** (the 77,432 words flagged readable by imlaei-digit marker detection, joine
    This is the substantive product change and is well-founded: the clean imlaei key yields
    **14,783** distinct readable forms — exactly the long-standing "without-tashkeel"
    expectation — whereas the current `text_uthmani_simple` grouping yields **15,826**
-   (confirmed by the existing `words-unique-tables-audit-report.md`). Display stays Uthmani.
+   (confirmed by the existing `003-words-unique-tables-audit.md`). Display stays Uthmani.
 
 2. **Add per-occurrence identity links so Mushaf/page reads can color words.** The user's
    preference — **nullable columns on `quran_words`** — is the right call **for read
@@ -546,7 +546,7 @@ strictly foundation-only.
 not "no write." Confirm acceptable.
 
 **D4 — Unique-simple count changes 15,826 → 14,783.** Any existing dashboards, tests, fixtures, or
-docs asserting 15,826 (e.g. `words-unique-tables-audit-report.md`) must be updated. The change is
+docs asserting 15,826 (e.g. `003-words-unique-tables-audit.md`) must be updated. The change is
 intended, but it is a visible behavioral change.
 
 **D5 — Tashkeel mark pollution (§8).** Leaving `unique_tashkeel` on raw `text_uthmani` keeps ~84
