@@ -152,17 +152,17 @@
 
 ### Tests for User Story 4
 
-- [ ] T068 [P] [US4] Add normal re-run refusal test for non-empty translation target tables in `Backend/tests/QuranDashboard.Tests/Quran/Translations/TranslationRefusalForceTests.cs`
-- [ ] T069 [P] [US4] Add forced replacement success test proving only translation tables are rebuilt and Quran foundation rows remain unchanged in `Backend/tests/QuranDashboard.Tests/Quran/Translations/TranslationRefusalForceTests.cs`
-- [ ] T070 [P] [US4] Add forced replacement failure test proving previous accepted translation data remains unchanged when the new package fails validation in `Backend/tests/QuranDashboard.Tests/Quran/Translations/TranslationRollbackTests.cs`
+- [X] T068 [P] [US4] Add normal re-run refusal test for non-empty translation target tables in `Backend/tests/QuranDashboard.Tests/Quran/Translations/TranslationRefusalForceTests.cs`
+- [X] T069 [P] [US4] Add forced replacement success test proving only translation tables are rebuilt and Quran foundation rows remain unchanged in `Backend/tests/QuranDashboard.Tests/Quran/Translations/TranslationRefusalForceTests.cs`
+- [X] T070 [P] [US4] Add forced replacement failure test proving previous accepted translation data remains unchanged when the new package fails validation in `Backend/tests/QuranDashboard.Tests/Quran/Translations/TranslationRollbackTests.cs`
 
 ### Implementation for User Story 4
 
-- [ ] T071 [US4] Implement `AnyTargetTableHasDataAsync` for translation-owned tables in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Repositories/Quran/Translations/EfBulkTranslationImportWriter.cs`
-- [ ] T072 [US4] Implement force-only truncate/rebuild SQL limited to `quran_translation_ayah_entries` and `quran_translation_sources` in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Repositories/Quran/Translations/TranslationSql.cs`
-- [ ] T073 [US4] Ensure `EfBulkTranslationImportWriter` validates the replacement package before truncating existing translation data in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Repositories/Quran/Translations/EfBulkTranslationImportWriter.cs`
-- [ ] T074 [US4] Add `--force` parsing, refusal text, and forced-run console summary for `import-translations` in `Backend/tools/QuranDashboard.DataImporter/Program.cs`
-- [ ] T075 [US4] Ensure `ImportTranslationsHandler` refuses normal re-runs with `TR-RERUN-GUARD` evidence and accepts forced intent only through the command in `Backend/application/QuranDashboard.Application/Quran/Translations/ImportTranslations/ImportTranslationsHandler.cs`
+- [X] T071 [US4] Implement `AnyTargetTableHasDataAsync` for translation-owned tables in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Repositories/Quran/Translations/EfBulkTranslationImportWriter.cs`
+- [X] T072 [US4] Implement force-only truncate/rebuild SQL limited to `quran_translation_ayah_entries` and `quran_translation_sources` in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Repositories/Quran/Translations/TranslationSql.cs`
+- [X] T073 [US4] Ensure `EfBulkTranslationImportWriter` validates the replacement package before truncating existing translation data in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Repositories/Quran/Translations/EfBulkTranslationImportWriter.cs`
+- [X] T074 [US4] Add `--force` parsing, refusal text, and forced-run console summary for `import-translations` in `Backend/tools/QuranDashboard.DataImporter/Program.cs`
+- [X] T075 [US4] Ensure `ImportTranslationsHandler` refuses normal re-runs with `TR-RERUN-GUARD` evidence and accepts forced intent only through the command in `Backend/application/QuranDashboard.Application/Quran/Translations/ImportTranslations/ImportTranslationsHandler.cs`
 
 **Checkpoint**: Re-run and forced replacement behavior is safe, explicit, and transactionally verified.
 
