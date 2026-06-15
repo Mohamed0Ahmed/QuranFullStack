@@ -59,29 +59,29 @@
 
 ### Tests for User Story 1
 
-- [ ] T023 [P] [US1] Add manifest success tests for final manifest values, approved source count 167, type counts 129/38, excluded count 19, language count 83, and mapping count 1,041,412 in `Backend/tests/QuranDashboard.Tests/Quran/Translations/TranslationManifestReaderTests.cs`
-- [ ] T024 [P] [US1] Add display metadata success tests for final status, 167 records, required display fields, and manifest source-set alignment in `Backend/tests/QuranDashboard.Tests/Quran/Translations/TranslationDisplayMetadataReaderTests.cs`
-- [ ] T025 [P] [US1] Add source reader tests for object root, `{ "t": string }` values, 6,236-key set handling, and exact text preservation in `Backend/tests/QuranDashboard.Tests/Quran/Translations/TranslationSourceReaderTests.cs`
-- [ ] T026 [P] [US1] Add assembler tests for verse-key-to-ayah resolution, translation type by content, inline footnote flag, HTML flag, and exact text DTO output in `Backend/tests/QuranDashboard.Tests/Quran/Translations/TranslationAssemblerTests.cs`
-- [ ] T027 [US1] Add end-to-end successful import test for source rows, ayah rows, type totals, distinct ayahs, exact text, and success report files in `Backend/tests/QuranDashboard.Tests/Quran/Translations/TranslationImportTests.cs`
+- [X] T023 [P] [US1] Add manifest success tests for final manifest values, approved source count 167, type counts 129/38, excluded count 19, language count 83, and mapping count 1,041,412 in `Backend/tests/QuranDashboard.Tests/Quran/Translations/TranslationManifestReaderTests.cs`
+- [X] T024 [P] [US1] Add display metadata success tests for final status, 167 records, required display fields, and manifest source-set alignment in `Backend/tests/QuranDashboard.Tests/Quran/Translations/TranslationDisplayMetadataReaderTests.cs`
+- [X] T025 [P] [US1] Add source reader tests for object root, `{ "t": string }` values, 6,236-key set handling, and exact text preservation in `Backend/tests/QuranDashboard.Tests/Quran/Translations/TranslationSourceReaderTests.cs`
+- [X] T026 [P] [US1] Add assembler tests for verse-key-to-ayah resolution, translation type by content, inline footnote flag, HTML flag, and exact text DTO output in `Backend/tests/QuranDashboard.Tests/Quran/Translations/TranslationAssemblerTests.cs`
+- [X] T027 [US1] Add end-to-end successful import test for source rows, ayah rows, type totals, distinct ayahs, exact text, and success report files in `Backend/tests/QuranDashboard.Tests/Quran/Translations/TranslationImportTests.cs`
 
 ### Implementation for User Story 1
 
-- [ ] T028 [US1] Implement final manifest reader and package shape/hash/file-set validation for success paths in `Backend/infrastructure/QuranDashboard.Infrastructure/Files/Quran/Translations/TranslationManifestReader.cs`
-- [ ] T029 [US1] Implement final display metadata reader and manifest alignment for success paths in `Backend/infrastructure/QuranDashboard.Infrastructure/Files/Quran/Translations/TranslationDisplayMetadataReader.cs`
-- [ ] T030 [US1] Implement JSON translation source reader for object root and `{ "t": string }` source rows in `Backend/infrastructure/QuranDashboard.Infrastructure/Files/Quran/Translations/JsonTranslationSourceReader.cs`
-- [ ] T031 [US1] Implement assembler that merges manifest and display metadata, resolves verse keys to `quran_ayahs`, and produces `TranslationSourceData` in `Backend/infrastructure/QuranDashboard.Infrastructure/Files/Quran/Translations/TranslationAssembler.cs`
-- [ ] T032 [US1] Implement high-level source loader that coordinates manifest, display metadata, source files, ayah map, checks, and source unchanged digests in `Backend/infrastructure/QuranDashboard.Infrastructure/Files/Quran/Translations/TranslationImportSource.cs`
-- [ ] T033 [US1] Implement bulk copy for `quran_translation_sources` and `quran_translation_ayah_entries` in FK-safe order in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Repositories/Quran/Translations/TranslationBulkCopier.cs`
-- [ ] T034 [US1] Implement SQL constants for source/ayah row counts, duplicate checks, source unchanged checks, table existence checks, and optional truncation in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Repositories/Quran/Translations/TranslationSql.cs`
-- [ ] T035 [US1] Implement command executor wrapper for database commands used by translation import persistence in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Repositories/Quran/Translations/TranslationCommandExecutor.cs`
-- [ ] T036 [US1] Implement validation runner success checks for post-copy source rows, ayah mappings, text unchanged, no Quran text copy, and source unchanged in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Repositories/Quran/Translations/TranslationValidationRunner.cs`
-- [ ] T037 [US1] Implement transaction writer for successful imports, report callback before commit, and persisted result totals in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Repositories/Quran/Translations/EfBulkTranslationImportWriter.cs`
-- [ ] T038 [US1] Implement `ImportTranslationsHandler` success path orchestration using Application abstractions only in `Backend/application/QuranDashboard.Application/Quran/Translations/ImportTranslations/ImportTranslationsHandler.cs`
-- [ ] T039 [US1] Implement minimal success report builder payload needed for acceptance in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Repositories/Quran/Translations/TranslationImportReportBuilder.cs`
-- [ ] T040 [US1] Implement Markdown and JSON report file writing for passing imports in `Backend/infrastructure/QuranDashboard.Infrastructure/Reports/Quran/Translations/MarkdownJsonTranslationReportWriter.cs`
-- [ ] T041 [US1] Add `import-translations` verb dispatch, default source path, default report path, argument parsing, and success console summary in `Backend/tools/QuranDashboard.DataImporter/Program.cs`
-- [ ] T042 [US1] Add DI registrations for implemented translation readers, writer, report builder, report writer, and handler in `Backend/infrastructure/QuranDashboard.Infrastructure/DependencyInjection.cs`
+- [X] T028 [US1] Implement final manifest reader and package shape/hash/file-set validation for success paths in `Backend/infrastructure/QuranDashboard.Infrastructure/Files/Quran/Translations/TranslationManifestReader.cs`
+- [X] T029 [US1] Implement final display metadata reader and manifest alignment for success paths in `Backend/infrastructure/QuranDashboard.Infrastructure/Files/Quran/Translations/TranslationDisplayMetadataReader.cs`
+- [X] T030 [US1] Implement JSON translation source reader for object root and `{ "t": string }` source rows in `Backend/infrastructure/QuranDashboard.Infrastructure/Files/Quran/Translations/JsonTranslationSourceReader.cs`
+- [X] T031 [US1] Implement assembler that merges manifest and display metadata, resolves verse keys to `quran_ayahs`, and produces `TranslationSourceData` in `Backend/infrastructure/QuranDashboard.Infrastructure/Files/Quran/Translations/TranslationAssembler.cs`
+- [X] T032 [US1] Implement high-level source loader that coordinates manifest, display metadata, source files, ayah map, checks, and source unchanged digests in `Backend/infrastructure/QuranDashboard.Infrastructure/Files/Quran/Translations/TranslationImportSource.cs`
+- [X] T033 [US1] Implement bulk copy for `quran_translation_sources` and `quran_translation_ayah_entries` in FK-safe order in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Repositories/Quran/Translations/TranslationBulkCopier.cs`
+- [X] T034 [US1] Implement SQL constants for source/ayah row counts, duplicate checks, source unchanged checks, table existence checks, and optional truncation in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Repositories/Quran/Translations/TranslationSql.cs`
+- [X] T035 [US1] Implement command executor wrapper for database commands used by translation import persistence in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Repositories/Quran/Translations/TranslationCommandExecutor.cs`
+- [X] T036 [US1] Implement validation runner success checks for post-copy source rows, ayah mappings, text unchanged, no Quran text copy, and source unchanged in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Repositories/Quran/Translations/TranslationValidationRunner.cs`
+- [X] T037 [US1] Implement transaction writer for successful imports, report callback before commit, and persisted result totals in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Repositories/Quran/Translations/EfBulkTranslationImportWriter.cs`
+- [X] T038 [US1] Implement `ImportTranslationsHandler` success path orchestration using Application abstractions only in `Backend/application/QuranDashboard.Application/Quran/Translations/ImportTranslations/ImportTranslationsHandler.cs`
+- [X] T039 [US1] Implement minimal success report builder payload needed for acceptance in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Repositories/Quran/Translations/TranslationImportReportBuilder.cs`
+- [X] T040 [US1] Implement Markdown and JSON report file writing for passing imports in `Backend/infrastructure/QuranDashboard.Infrastructure/Reports/Quran/Translations/MarkdownJsonTranslationReportWriter.cs`
+- [X] T041 [US1] Add `import-translations` verb dispatch, default source path, default report path, argument parsing, and success console summary in `Backend/tools/QuranDashboard.DataImporter/Program.cs`
+- [X] T042 [US1] Add DI registrations for implemented translation readers, writer, report builder, report writer, and handler in `Backend/infrastructure/QuranDashboard.Infrastructure/DependencyInjection.cs`
 
 **Checkpoint**: MVP import path works against synthetic valid package and writes success reports.
 
