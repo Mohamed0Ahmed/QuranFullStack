@@ -2,7 +2,7 @@
 
 **Date:** 2026-06-10
 **Status:** Plan only. No code, no migrations, no commands, no commits.
-**Companion analysis:** `Backend/report/feature-003-word-identity-links/feature-003-word-identity-links-restructure-report.md`
+**Companion analysis:** `Backend/report/feature-003-quran-words-foundation/004-word-identity-links-restructure.md`
 **Scope:** Backend Feature 003 restructure only.
 
 This plan is implementation-ready: every change names the concrete file/construct it touches.
