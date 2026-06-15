@@ -521,6 +521,12 @@ internal static class Program
                     $"sources={result.Totals.SourceRows}, ayahMappings={result.Totals.AyahMappingRows}, languages={result.Totals.LanguageCount}, types=simple:{result.Totals.SimpleSources},with_footnotes:{result.Totals.WithFootnotesSources}, warnings={result.WarningCount}.");
             }
 
+            if (force)
+            {
+                Console.WriteLine(
+                    "forced=true (translation-owned tables cleared and rebuilt after package validation).");
+            }
+
             WriteReportPath(result.ReportOutDir);
             return result.ExitCode;
         }
