@@ -1,13 +1,14 @@
 <!-- SPECKIT START -->
 
-Active feature: **Quran Tafsir Foundation** — branch `007-quran-tafsir-foundation`.
+Active feature: **Quran Translations Foundation** — branch `008-quran-translations-foundation`.
 For technologies, project structure, shell commands, and design artifacts, read the current plan
 and its siblings:
 
-- `specs/007-quran-tafsir-foundation/plan.md` — technical context, project structure, gates
-- `specs/007-quran-tafsir-foundation/spec.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/`
-- `docs/feature-007-quran-tafsir-foundation/feature-007-quran-tafsir-foundation-planning-report.md` — long-form companion plan
-- `resources/import-sources/quran-tafsirs/README.md`, `manifest.json`, `package-report.md` — final local source package metadata (every import count traces here)
+- `specs/008-quran-translations-foundation/plan.md` — technical context, project structure, gates
+- `specs/008-quran-translations-foundation/spec.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/`
+- `docs/feature-008-quran-translations-foundation/feature-008-quran-translations-foundation-planning-report.md` — long-form companion plan
+- `docs/feature-008-quran-translations-foundation/translation-source-curation-report.md`, `feature-008-decisions-addendum.md` — source facts and locked decisions
+- `resources/import-sources/quran-translations/README.md`, `manifest.json`, `source-display-metadata.json`, `package-report.md` — final local source package metadata (every import count traces here)
 
 <!-- SPECKIT END -->
 
