@@ -172,15 +172,15 @@
 
 **Purpose**: Verify integration, document implementation evidence, and leave a clean handoff.
 
-- [ ] T076 [P] Add or update backend report `Backend/report/feature-008-quran-translations-foundation/002-schema-and-importer-implementation-report.md` summarizing schema, import flow, and exact changed paths
-- [ ] T077 [P] Add backend report `Backend/report/feature-008-quran-translations-foundation/003-validation-and-reporting-verification.md` summarizing all `TR-*` checks and report files
-- [ ] T078 [P] Add backend report `Backend/report/feature-008-quran-translations-foundation/004-source-safety-and-scope-check.md` confirming no source package mutation, no copied Arabic Quran text, no frontend/API/search work, and no non-translation table mutation
-- [ ] T079 Run Feature 008 test subset `dotnet test tests/QuranDashboard.Tests --filter "FullyQualifiedName~Quran.Translations"` from `Backend/` and record results in `Backend/report/feature-008-quran-translations-foundation/005-test-verification.md`
-- [ ] T080 Run backend build `dotnet build QuranDashboard.sln --no-restore` from `Backend/` after implementation and record results in `Backend/report/feature-008-quran-translations-foundation/006-build-verification.md`
-- [ ] T081 Run quickstart command smoke test for `import-translations --help` or argument validation without modifying the real database and record results in `Backend/report/feature-008-quran-translations-foundation/007-quickstart-validation.md`
-- [ ] T082 Run clean-code self-check against `.claude/skills/engineering-review/references/clean-code-guard/` for Feature 008 changed backend files and record results in `Backend/report/feature-008-quran-translations-foundation/008-clean-code-self-check.md`
-- [ ] T083 Run test-code self-check for `Backend/tests/QuranDashboard.Tests/Quran/Translations/` and record results in `Backend/report/feature-008-quran-translations-foundation/009-test-code-self-check.md`
-- [ ] T084 Verify git diff contains no frontend files, no API controllers, no source package edits under `resources/import-sources/quran-translations/`, and no hand-written migration edits; record results in `Backend/report/feature-008-quran-translations-foundation/010-final-scope-check.md`
+- [X] T076 [P] Add or update backend report `Backend/report/feature-008-quran-translations-foundation/002-schema-and-importer-implementation-report.md` summarizing schema, import flow, and exact changed paths
+- [X] T077 [P] Add backend report `Backend/report/feature-008-quran-translations-foundation/003-validation-and-reporting-verification.md` summarizing all `TR-*` checks and report files
+- [X] T078 [P] Add backend report `Backend/report/feature-008-quran-translations-foundation/004-source-safety-and-scope-check.md` confirming no source package mutation, no copied Arabic Quran text, no frontend/API/search work, and no non-translation table mutation
+- [X] T079 Run Feature 008 test subset `dotnet test tests/QuranDashboard.Tests --filter "FullyQualifiedName~Quran.Translations"` from `Backend/` and record results in `Backend/report/feature-008-quran-translations-foundation/005-test-verification.md`
+- [X] T080 Run backend build `dotnet build QuranDashboard.sln --no-restore` from `Backend/` after implementation and record results in `Backend/report/feature-008-quran-translations-foundation/006-build-verification.md`
+- [X] T081 Run quickstart command smoke test for `import-translations --help` or argument validation without modifying the real database and record results in `Backend/report/feature-008-quran-translations-foundation/007-quickstart-validation.md`
+- [X] T082 Run clean-code self-check against `.claude/skills/engineering-review/references/clean-code-guard/` for Feature 008 changed backend files and record results in `Backend/report/feature-008-quran-translations-foundation/008-clean-code-self-check.md`
+- [X] T083 Run test-code self-check for `Backend/tests/QuranDashboard.Tests/Quran/Translations/` and record results in `Backend/report/feature-008-quran-translations-foundation/009-test-code-self-check.md`
+- [X] T084 Verify git diff contains no frontend files, no API controllers, no source package edits under `resources/import-sources/quran-translations/`, and no hand-written migration edits; record results in `Backend/report/feature-008-quran-translations-foundation/010-final-scope-check.md`
 
 ---
 
