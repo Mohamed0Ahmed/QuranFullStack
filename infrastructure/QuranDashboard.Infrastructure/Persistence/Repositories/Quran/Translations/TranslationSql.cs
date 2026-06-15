@@ -51,4 +51,20 @@ internal static class TranslationSql
         JOIN quran_translation_sources s ON s.id = e.source_id
         ORDER BY s.source_key, e.verse_key
         """;
+
+    internal const string CheckDuplicateAyahEntryCount = """
+        SELECT count(*)::int
+        FROM (
+            SELECT source_id, ayah_id
+            FROM quran_translation_ayah_entries
+            GROUP BY source_id, ayah_id
+            HAVING count(*) > 1
+        ) dupes
+        """;
+
+    internal const string CheckExcludedSourceKeysPresent = """
+        SELECT count(*)::int
+        FROM quran_translation_sources
+        WHERE source_key = ANY(@excludedKeys)
+        """;
 }

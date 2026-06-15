@@ -1,3 +1,5 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using QuranDashboard.Application.Abstractions.Quran.Translations;
 using QuranDashboard.Infrastructure.Files.Quran.Translations;
 
@@ -67,5 +69,148 @@ public sealed class TranslationDisplayMetadataReaderTests
 
         await act.Should().ThrowAsync<TranslationValidationException>()
             .Where(ex => ex.FailedChecks.Any(check => check.Id == TranslationInvariants.CheckDisplayMetadataSet));
+    }
+
+    [Fact]
+    public async Task ReadAsync_throws_when_display_metadata_file_is_missing()
+    {
+        var packageDir = await fixture.WriteSyntheticPackageAsync();
+        File.Delete(Path.Combine(packageDir, "source-display-metadata.json"));
+
+        var act = () => reader.ReadAsync(
+            packageDir,
+            ["en-test-simple"],
+            TranslationSyntheticSeed.DefaultTestExpectedCounts,
+            CancellationToken.None);
+
+        await act.Should().ThrowAsync<TranslationSourceException>();
+    }
+
+    [Fact]
+    public async Task ReadAsync_throws_on_invalid_json()
+    {
+        var packageDir = await fixture.WriteSyntheticPackageAsync();
+        await File.WriteAllTextAsync(
+            Path.Combine(packageDir, "source-display-metadata.json"),
+            "{ this is not valid json");
+
+        var act = () => reader.ReadAsync(
+            packageDir,
+            ["en-test-simple"],
+            TranslationSyntheticSeed.DefaultTestExpectedCounts,
+            CancellationToken.None);
+
+        await act.Should().ThrowAsync<JsonException>();
+    }
+
+    [Fact]
+    public async Task ReadAsync_fails_tr_display_metadata_final_when_status_is_not_final()
+    {
+        var packageDir = await fixture.WriteSyntheticPackageAsync();
+        await ModifyDisplayMetadataAsync(packageDir, root =>
+        {
+            root["status"] = "draft";
+        });
+
+        var act = () => reader.ReadAsync(
+            packageDir,
+            ["en-test-simple"],
+            TranslationSyntheticSeed.DefaultTestExpectedCounts,
+            CancellationToken.None);
+
+        (await act.Should().ThrowAsync<TranslationValidationException>())
+            .Which.FailedChecks.Should().Contain(check =>
+                check.Id == TranslationInvariants.CheckDisplayMetadataFinal && !check.Passed);
+    }
+
+    [Fact]
+    public async Task ReadAsync_fails_tr_display_metadata_final_when_source_count_is_wrong()
+    {
+        var packageDir = await fixture.WriteSyntheticPackageAsync();
+        await ModifyDisplayMetadataAsync(packageDir, root =>
+        {
+            root["sourceCount"] = 999;
+        });
+
+        var act = () => reader.ReadAsync(
+            packageDir,
+            ["en-test-simple"],
+            TranslationSyntheticSeed.DefaultTestExpectedCounts,
+            CancellationToken.None);
+
+        (await act.Should().ThrowAsync<TranslationValidationException>())
+            .Which.FailedChecks.Should().Contain(check =>
+                check.Id == TranslationInvariants.CheckDisplayMetadataFinal && !check.Passed);
+    }
+
+    [Fact]
+    public async Task ReadAsync_fails_tr_display_metadata_required_fields_when_display_name_is_empty()
+    {
+        var packageDir = await fixture.WriteSyntheticPackageAsync();
+        await ModifyDisplayMetadataAsync(packageDir, root =>
+        {
+            root["records"]![0]!["displayNameEn"] = "";
+        });
+
+        var act = () => reader.ReadAsync(
+            packageDir,
+            ["en-test-simple"],
+            TranslationSyntheticSeed.DefaultTestExpectedCounts,
+            CancellationToken.None);
+
+        (await act.Should().ThrowAsync<TranslationValidationException>())
+            .Which.FailedChecks.Should().Contain(check =>
+                check.Id == TranslationInvariants.CheckDisplayMetadataRequiredFields && !check.Passed);
+    }
+
+    [Fact]
+    public async Task ReadAsync_fails_tr_display_metadata_required_fields_when_record_status_is_not_final()
+    {
+        var packageDir = await fixture.WriteSyntheticPackageAsync();
+        await ModifyDisplayMetadataAsync(packageDir, root =>
+        {
+            root["records"]![0]!["metadataStatus"] = "needs_review";
+        });
+
+        var act = () => reader.ReadAsync(
+            packageDir,
+            ["en-test-simple"],
+            TranslationSyntheticSeed.DefaultTestExpectedCounts,
+            CancellationToken.None);
+
+        (await act.Should().ThrowAsync<TranslationValidationException>())
+            .Which.FailedChecks.Should().Contain(check =>
+                check.Id == TranslationInvariants.CheckDisplayMetadataRequiredFields && !check.Passed);
+    }
+
+    [Fact]
+    public async Task ReadAsync_fails_tr_display_metadata_required_fields_when_translation_type_is_invalid()
+    {
+        var packageDir = await fixture.WriteSyntheticPackageAsync();
+        await ModifyDisplayMetadataAsync(packageDir, root =>
+        {
+            root["records"]![0]!["translationType"] = "word_by_word";
+        });
+
+        var act = () => reader.ReadAsync(
+            packageDir,
+            ["en-test-simple"],
+            TranslationSyntheticSeed.DefaultTestExpectedCounts,
+            CancellationToken.None);
+
+        (await act.Should().ThrowAsync<TranslationValidationException>())
+            .Which.FailedChecks.Should().Contain(check =>
+                check.Id == TranslationInvariants.CheckDisplayMetadataRequiredFields
+                && !check.Passed
+                && check.Observed.Contains("en-test-simple:translationType", StringComparison.Ordinal));
+    }
+
+    private static async Task ModifyDisplayMetadataAsync(string packageDir, Action<JsonObject> modify)
+    {
+        var path = Path.Combine(packageDir, "source-display-metadata.json");
+        var json = await File.ReadAllTextAsync(path);
+        var root = JsonNode.Parse(json)!.AsObject();
+        modify(root);
+        await File.WriteAllTextAsync(path, root.ToJsonString());
     }
 }

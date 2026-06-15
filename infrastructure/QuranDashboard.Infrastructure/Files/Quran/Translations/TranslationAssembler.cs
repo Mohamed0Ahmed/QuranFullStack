@@ -5,7 +5,6 @@ namespace QuranDashboard.Infrastructure.Files.Quran.Translations;
 
 public sealed class TranslationAssembler
 {
-    private static readonly Regex VerseKeyPattern = new(@"^\d+:\d+$", RegexOptions.Compiled);
     private static readonly Regex InlineFootnotePattern = new(@"\[\[.+?\]\]", RegexOptions.Compiled);
     private static readonly Regex HtmlTagPattern = new(@"<[^>]+>", RegexOptions.Compiled);
 
@@ -34,7 +33,6 @@ public sealed class TranslationAssembler
 
         foreach (var (verseKey, text) in parsedSource.Entries)
         {
-            ValidateVerseKeyFormat(verseKey);
             var ayahId = ResolveAyahId(verseKey, ayahIdsByVerseKey, sourceKey);
             EnsureNotQuranText(text, verseKey, ayahTextsByVerseKey);
 
@@ -98,14 +96,6 @@ public sealed class TranslationAssembler
             parsedSource.Entries.Count == expectedAyahsPerSource);
 
         TranslationValidationChecks.EnsureAllHardChecksPassed([check]);
-    }
-
-    private static void ValidateVerseKeyFormat(string verseKey)
-    {
-        if (!VerseKeyPattern.IsMatch(verseKey))
-        {
-            throw new InvalidDataException($"Malformed verse key '{verseKey}'.");
-        }
     }
 
     private static int ResolveAyahId(

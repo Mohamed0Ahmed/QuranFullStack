@@ -1,3 +1,4 @@
+using System.Text.Json;
 using QuranDashboard.Application.Abstractions.Quran.Translations;
 
 namespace QuranDashboard.Application.Quran.Translations.ImportTranslations;
@@ -40,6 +41,11 @@ public sealed class ImportTranslationsHandler
             return await WriteValidationFailureAsync(command, sourcePath, reportDir, ex, ct);
         }
         catch (TranslationSourceException)
+        {
+            return await EmitPrePersistenceOutcomeAsync(
+                command, sourcePath, reportDir, source: null, TranslationInvariants.SourceMismatch, refused: true, ct);
+        }
+        catch (JsonException)
         {
             return await EmitPrePersistenceOutcomeAsync(
                 command, sourcePath, reportDir, source: null, TranslationInvariants.SourceMismatch, refused: true, ct);

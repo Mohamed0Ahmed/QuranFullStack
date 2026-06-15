@@ -1,9 +1,14 @@
+using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 using QuranDashboard.Application.Abstractions.Quran.Translations;
 
 namespace QuranDashboard.Infrastructure.Files.Quran.Translations;
 
 public sealed class JsonTranslationSourceReader
 {
+    private static readonly Regex VerseKeyPattern = new(@"^\d+:\d+$", RegexOptions.Compiled);
+
     public async Task<ParsedTranslationSourceFile> ReadAsync(string sourceFilePath, CancellationToken ct)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(sourceFilePath);
@@ -13,47 +18,91 @@ public sealed class JsonTranslationSourceReader
             throw new TranslationSourceException($"Translation source file was not found: {sourceFilePath}");
         }
 
-        await using var stream = File.OpenRead(sourceFilePath);
-        using var document = await JsonDocument.ParseAsync(stream, cancellationToken: ct);
+        using var document = await OpenDocumentAsync(sourceFilePath, ct);
 
         if (document.RootElement.ValueKind != JsonValueKind.Object)
         {
-            throw new TranslationSourceException(
-                $"Translation source root must be a JSON object: {sourceFilePath}");
+            FailJsonShape(
+                $"object root in '{sourceFilePath}'",
+                $"{document.RootElement.ValueKind} root");
         }
 
         var entries = new Dictionary<string, string>(StringComparer.Ordinal);
 
         foreach (var property in document.RootElement.EnumerateObject())
         {
-            entries[property.Name] = ParseText(property.Name, property.Value, sourceFilePath);
+            EnsureVerseKeyFormat(property.Name);
+            entries[property.Name] = ParseText(property.Name, property.Value);
         }
 
         return new ParsedTranslationSourceFile(sourceFilePath, entries);
     }
 
-    private static string ParseText(string verseKey, JsonElement value, string sourceFilePath)
+    private static async Task<JsonDocument> OpenDocumentAsync(string sourceFilePath, CancellationToken ct)
+    {
+        try
+        {
+            await using var stream = File.OpenRead(sourceFilePath);
+            return await JsonDocument.ParseAsync(stream, cancellationToken: ct);
+        }
+        catch (JsonException ex)
+        {
+            FailJsonShape($"valid JSON object in '{sourceFilePath}'", ex.Message);
+            throw;
+        }
+    }
+
+    private static void EnsureVerseKeyFormat(string verseKey)
+    {
+        if (!VerseKeyPattern.IsMatch(verseKey))
+        {
+            FailHard(
+                TranslationInvariants.CheckAyahKeysResolve,
+                "canonical surah:ayah verse key",
+                verseKey);
+        }
+    }
+
+    private static string ParseText(string verseKey, JsonElement value)
     {
         if (value.ValueKind != JsonValueKind.Object)
         {
-            throw new TranslationSourceException(
-                $"Translation value for verse key '{verseKey}' must be an object in '{sourceFilePath}'.");
+            FailJsonShape(
+                $"{{ \"t\": string }} for verse key '{verseKey}'",
+                $"{verseKey}: {value.ValueKind}");
         }
 
         if (!value.TryGetProperty("t", out var textElement) || textElement.ValueKind != JsonValueKind.String)
         {
-            throw new TranslationSourceException(
-                $"Translation value for verse key '{verseKey}' is missing string 't' in '{sourceFilePath}'.");
+            FailNoEmptyText(verseKey, "missing or non-string t");
         }
 
         var text = textElement.GetString() ?? string.Empty;
         if (string.IsNullOrEmpty(text))
         {
-            throw new TranslationSourceException(
-                $"Translation text for verse key '{verseKey}' is empty in '{sourceFilePath}'.");
+            FailNoEmptyText(verseKey, "empty t");
         }
 
         return text;
+    }
+
+    [DoesNotReturn]
+    private static void FailJsonShape(string expected, string observed) =>
+        FailHard(TranslationInvariants.CheckJsonShape, expected, observed);
+
+    [DoesNotReturn]
+    private static void FailNoEmptyText(string verseKey, string reason) =>
+        FailHard(
+            TranslationInvariants.CheckNoEmptyText,
+            "non-empty string t",
+            $"{verseKey}: {reason}");
+
+    [DoesNotReturn]
+    private static void FailHard(string id, string expected, string observed)
+    {
+        var check = TranslationValidationChecks.Hard(id, expected, observed, passed: false);
+        TranslationValidationChecks.EnsureAllHardChecksPassed([check]);
+        throw new InvalidOperationException("Translation validation failed.");
     }
 }
 

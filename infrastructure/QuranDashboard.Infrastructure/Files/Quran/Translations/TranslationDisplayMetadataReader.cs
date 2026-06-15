@@ -144,6 +144,12 @@ public sealed class TranslationDisplayMetadataReader
                     failures.Add($"{record.SourceKey}:{field}");
                 }
             }
+
+            if (!string.IsNullOrWhiteSpace(record.TranslationType)
+                && record.TranslationType is not ("simple" or "with_footnotes"))
+            {
+                failures.Add($"{record.SourceKey}:translationType");
+            }
         }
 
         var passed = failures.Count == 0;

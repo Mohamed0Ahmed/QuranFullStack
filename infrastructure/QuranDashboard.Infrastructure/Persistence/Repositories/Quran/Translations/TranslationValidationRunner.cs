@@ -38,6 +38,7 @@ public sealed class TranslationValidationRunner
         checks.AddRange(await ValidatePersistedTextAsync(connection, transaction, source, ct));
         checks.AddRange(ValidateNoQuranTextCopy(source, ayahTextsByVerseKey));
         checks.AddRange(await ValidatePersistedTypeCountsAsync(connection, transaction, expected, ct));
+        checks.AddRange(await ValidateNoDuplicatesOrExcludedAsync(connection, transaction, source, ct));
 
         var sourceUnchanged = await sourceUnchangedCheck(ct);
         checks.Add(new TranslationCheckResult(
@@ -132,5 +133,66 @@ public sealed class TranslationValidationRunner
         [
             TranslationTypeCountValidation.BuildTypeCountsCheck(expected, simpleCount, withFootnotesCount)
         ];
+    }
+
+    private static async Task<IReadOnlyList<TranslationCheckResult>> ValidateNoDuplicatesOrExcludedAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        TranslationSourceData source,
+        CancellationToken ct)
+    {
+        var duplicateCount = await CountDuplicateAyahEntriesAsync(connection, transaction, ct);
+        var excludedPresent = await CountExcludedSourcesPresentAsync(connection, transaction, source, ct);
+
+        return
+        [
+            new TranslationCheckResult(
+                TranslationInvariants.CheckNoDuplicateAyahEntry,
+                TranslationImportConstants.HardSeverity,
+                "no duplicate (source_id, ayah_id) rows persisted",
+                duplicateCount == 0 ? "none" : $"{duplicateCount} duplicate groups",
+                duplicateCount == 0),
+            new TranslationCheckResult(
+                TranslationInvariants.CheckNoExcludedSources,
+                TranslationImportConstants.HardSeverity,
+                "no excluded source keys persisted",
+                excludedPresent == 0 ? "none" : $"{excludedPresent} excluded sources found",
+                excludedPresent == 0)
+        ];
+    }
+
+    private static async Task<int> CountDuplicateAyahEntriesAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        CancellationToken ct)
+    {
+        await using var command = new NpgsqlCommand(
+            TranslationSql.CheckDuplicateAyahEntryCount, connection, transaction);
+        command.CommandTimeout = TranslationCommandExecutor.CommandTimeoutSeconds;
+        var result = await command.ExecuteScalarAsync(ct);
+        return Convert.ToInt32(result, CultureInfo.InvariantCulture);
+    }
+
+    private static async Task<int> CountExcludedSourcesPresentAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        TranslationSourceData source,
+        CancellationToken ct)
+    {
+        var excludedKeys = source.ExcludedSources
+            .Select(excluded => excluded.SourceKey)
+            .ToArray();
+
+        if (excludedKeys.Length == 0)
+        {
+            return 0;
+        }
+
+        await using var command = new NpgsqlCommand(
+            TranslationSql.CheckExcludedSourceKeysPresent, connection, transaction);
+        command.CommandTimeout = TranslationCommandExecutor.CommandTimeoutSeconds;
+        command.Parameters.AddWithValue("excludedKeys", excludedKeys);
+        var result = await command.ExecuteScalarAsync(ct);
+        return Convert.ToInt32(result, CultureInfo.InvariantCulture);
     }
 }
