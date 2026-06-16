@@ -139,17 +139,17 @@ description: "Task list for Quran Navigation Metadata Foundation (Feature 009)"
 
 ### Tests for User Story 3 (write FIRST)
 
-- [ ] T050 [P] [US3] Write `NavigationRefusalForceTests` (rerun guard refuses when any nav table OR any ayah nav column is populated; `--force` reload yields identical state to fresh import) in `.../Quran/Navigation/NavigationRefusalForceTests.cs`.
-- [ ] T051 [P] [US3] Write source-path tests (no `--source` → resolves to `resources/import-sources/quran-navigation-metadata` package root; explicit `--source` honored; missing dir → clear error, no writes) — add to `.../Quran/Navigation/NavigationImportTests.cs` or a new `NavigationSourcePathTests.cs`.
-- [ ] T052 [P] [US3] Write isolation test (after import, surah/ayah-text/page/line/word/tafsir/translation/mutashabihat/morphology/i3rab rows are byte-identical to pre-run; only nav tables + 3 ayah columns changed) in `.../Quran/Navigation/NavigationIsolationTests.cs`.
+- [X] T050 [P] [US3] Write `NavigationRefusalForceTests` (rerun guard refuses when any nav table OR any ayah nav column is populated; `--force` reload yields identical state to fresh import) in `.../Quran/Navigation/NavigationRefusalForceTests.cs`.
+- [X] T051 [P] [US3] Write source-path tests (no `--source` → resolves to `resources/import-sources/quran-navigation-metadata` package root; explicit `--source` honored; missing dir → clear error, no writes) — add to `.../Quran/Navigation/NavigationImportTests.cs` or a new `NavigationSourcePathTests.cs`.
+- [X] T052 [P] [US3] Write isolation test (after import, surah/ayah-text/page/line/word/tafsir/translation/mutashabihat/morphology/i3rab rows are byte-identical to pre-run; only nav tables + 3 ayah columns changed) in `.../Quran/Navigation/NavigationIsolationTests.cs`.
 
 ### Implementation for User Story 3
 
-- [ ] T053 [US3] Add `ResolveDefaultNavigationSourcePath()` (`<repo-root>/resources/import-sources/quran-navigation-metadata`) and `ResolveDefaultNavigationReportDir()` (`<repo-root>/Backend/report/feature-009-quran-navigation-metadata-foundation`) using the existing `ResolveRepositoryRoot()`; default `sourcePath ??=` and `reportOutDir ??=` in the verb. Extends `Program.cs` (T041). Never hard-code an absolute path.
-- [ ] T054 [US3] Ensure `AnyTargetTableHasDataAsync` returns true if ANY of the 4 tables is non-empty OR any `quran_ayahs.juz_number/hizb_number/rub_number` is populated. Extends `EfBulkNavigationMetadataImportWriter.cs` (T036).
-- [ ] T055 [US3] Implement the `--force` reload: within the transaction, clear the 4 nav tables and reset the 3 ayah columns to NULL, then reload. Add the truncate/null SQL to `NavigationMetadataSql.cs` (T033) and call it from the executor (T035) only when `force` is true.
-- [ ] T056 [US3] Wire the `sourceUnchangedCheck` callback so the source sha256/size is re-verified just before commit; if changed, roll back (`NAV-SOURCE-UNCHANGED` fails). Extends executor/writer (T035/T036) + handler wiring (T038), mirroring the translations `sourceUnchangedCheck` parameter.
-- [ ] T057 [US3] Add an isolation guard/assert in the executor so the import only ever writes the 4 nav tables and the 3 ayah columns (no other SQL touches other tables). Extends `NavigationMetadataCommandExecutor.cs` (T035).
+- [X] T053 [US3] Add `ResolveDefaultNavigationSourcePath()` (`<repo-root>/resources/import-sources/quran-navigation-metadata`) and `ResolveDefaultNavigationReportDir()` (`<repo-root>/Backend/report/feature-009-quran-navigation-metadata-foundation`) using the existing `ResolveRepositoryRoot()`; default `sourcePath ??=` and `reportOutDir ??=` in the verb. Extends `Program.cs` (T041). Never hard-code an absolute path.
+- [X] T054 [US3] Ensure `AnyTargetTableHasDataAsync` returns true if ANY of the 4 tables is non-empty OR any `quran_ayahs.juz_number/hizb_number/rub_number` is populated. Extends `EfBulkNavigationMetadataImportWriter.cs` (T036).
+- [X] T055 [US3] Implement the `--force` reload: within the transaction, clear the 4 nav tables and reset the 3 ayah columns to NULL, then reload. Add the truncate/null SQL to `NavigationMetadataSql.cs` (T033) and call it from the executor (T035) only when `force` is true.
+- [X] T056 [US3] Wire the `sourceUnchangedCheck` callback so the source sha256/size is re-verified just before commit; if changed, roll back (`NAV-SOURCE-UNCHANGED` fails). Extends executor/writer (T035/T036) + handler wiring (T038), mirroring the translations `sourceUnchangedCheck` parameter.
+- [X] T057 [US3] Add an isolation guard/assert in the executor so the import only ever writes the 4 nav tables and the 3 ayah columns (no other SQL touches other tables). Extends `NavigationMetadataCommandExecutor.cs` (T035).
 
 **Checkpoint**: configurable source + rerun guard + `--force` + isolation all work. T050–T052 green. US1 and US2 stay green.
 
