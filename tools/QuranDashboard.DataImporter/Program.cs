@@ -548,19 +548,8 @@ internal static class Program
             return ImportNavigationMetadataResult.FailureExitCode;
         }
 
-        if (string.IsNullOrWhiteSpace(sourcePath))
-        {
-            Console.Error.WriteLine("Missing required --source argument.");
-            PrintUsage();
-            return ImportNavigationMetadataResult.FailureExitCode;
-        }
-
-        if (string.IsNullOrWhiteSpace(reportOutDir))
-        {
-            Console.Error.WriteLine("Missing required --report-out argument.");
-            PrintUsage();
-            return ImportNavigationMetadataResult.FailureExitCode;
-        }
+        sourcePath ??= NavigationImportPaths.ResolveDefaultNavigationSourcePath();
+        reportOutDir ??= NavigationImportPaths.ResolveDefaultNavigationReportDir();
 
         var host = CreateHost(args);
         await using var scope = host.Services.CreateAsyncScope();
@@ -581,6 +570,12 @@ internal static class Program
             {
                 Console.WriteLine(
                     $"juz={result.Totals.Juz}, hizb={result.Totals.Hizb}, rub={result.Totals.Rub}, sajda={result.Totals.Sajda}, ayahsTagged={result.Totals.AyahsTagged}, warnings={result.WarningCount}.");
+            }
+
+            if (force)
+            {
+                Console.WriteLine(
+                    "forced=true (navigation-owned tables cleared and rebuilt after package validation).");
             }
 
             WriteReportPath(result.ReportOutDir);
@@ -932,7 +927,7 @@ internal static class Program
         Console.Error.WriteLine(
             "  QuranDashboard.DataImporter import-translations [--source <path>] [--report-out <path>] [--force]");
         Console.Error.WriteLine(
-            "  QuranDashboard.DataImporter import-navigation-metadata --source <path> --report-out <path> [--force]");
+            "  QuranDashboard.DataImporter import-navigation-metadata [--source <path>] [--report-out <path>] [--force]");
         Console.Error.WriteLine(
             "  QuranDashboard.DataImporter generate-i3rab [--report-out <path>] [--force]");
     }

@@ -1,10 +1,16 @@
 using QuranDashboard.Application.Abstractions.Quran.Navigation;
+using QuranDashboard.Application.Abstractions.Quran.Translations;
 using QuranDashboard.Application.Quran.Navigation.ImportNavigationMetadata;
 using QuranDashboard.Domain.Quran.Ayahs;
 using QuranDashboard.Domain.Quran.MushafPages;
+using QuranDashboard.Domain.Quran.Mutashabihat;
 using QuranDashboard.Domain.Quran.Navigation;
 using QuranDashboard.Domain.Quran.Surahs;
+using QuranDashboard.Domain.Quran.Tafsirs;
+using QuranDashboard.Domain.Quran.Translations;
+using QuranDashboard.Domain.Quran.Words;
 using QuranDashboard.Infrastructure.Files.Quran.Navigation;
+using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Navigation;
 
 namespace QuranDashboard.Tests.Quran.Navigation;
 
@@ -121,11 +127,7 @@ public sealed class NavigationImportTestFixture : IAsyncLifetime
     {
         await using var scope = CreateServiceProvider().CreateAsyncScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
-        await dbContext.Database.ExecuteSqlRawAsync(
-            """
-            TRUNCATE quran_sajdas, quran_rubs, quran_hizbs, quran_juzs RESTART IDENTITY CASCADE;
-            UPDATE quran_ayahs SET juz_number = NULL, hizb_number = NULL, rub_number = NULL;
-            """);
+        await dbContext.Database.ExecuteSqlRawAsync(NavigationMetadataSql.ClearNavigationData);
     }
 
     public async Task TruncateFoundationAsync()
@@ -201,6 +203,210 @@ public sealed class NavigationImportTestFixture : IAsyncLifetime
             await dbContext.QuranAyahs.CountAsync(ayah =>
                 ayah.JuzNumber != null || ayah.HizbNumber != null || ayah.RubNumber != null));
     }
+
+    public async Task SeedIsolationCompanionDataAsync()
+    {
+        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+
+        dbContext.QuranMushafLines.Add(new MushafLine
+        {
+            PageNumber = 901,
+            LineNumber = 1,
+            LineType = MushafLineType.Ayah,
+            IsCentered = false,
+            WordsCount = 1
+        });
+
+        dbContext.QuranWords.Add(new QuranWord
+        {
+            Id = 1,
+            Location = "901:1:1",
+            AyahId = 1,
+            SurahNumber = NavigationSyntheticSeed.SyntheticSurahNumber,
+            AyahNumber = 1,
+            WordNumber = 1,
+            PageNumber = 901,
+            LineNumber = 1,
+            LineWordOrder = 1,
+            QpcGlyph = "TEST-GLYPH",
+            TextUthmani = "اختبار-كلمة",
+            TextUthmaniSimple = "اختبار-كلمة",
+            TextImlaeiSimple = "اختبار-كلمة",
+            WordKeyImlaeiSimple = "901:1:1",
+            IsAyahMarker = false
+        });
+
+        dbContext.TranslationSources.Add(new TranslationSource
+        {
+            SourceKey = "en-test-isolation",
+            LanguageCode = "en",
+            LanguageNameEn = "English",
+            LanguageNameAr = "الإنجليزية",
+            Direction = "ltr",
+            TranslationType = "simple",
+            DisplayNameEn = "Isolation Translation",
+            DisplayNameAr = "ترجمة-عزل",
+            ContentCoverageCount = (short)TranslationInvariants.ExpectedAyahsPerSource
+        });
+
+        await dbContext.SaveChangesAsync();
+
+        dbContext.TranslationAyahEntries.Add(new TranslationAyahEntry
+        {
+            SourceId = dbContext.TranslationSources.Single().Id,
+            AyahId = 1,
+            VerseKey = NavigationSyntheticSeed.SyntheticVerseKey(1),
+            Text = "SYNTHETIC-TRANSLATION-901:1"
+        });
+
+        dbContext.TafsirSources.Add(new TafsirSource
+        {
+            SourceKey = "test-isolation-tafsir",
+            LanguageCode = "ar",
+            LanguageNameAr = "العربية",
+            LanguageNameEn = "Arabic",
+            Direction = "rtl",
+            DisplayNameAr = "تفسير-عزل",
+            ShortNameAr = "تفسير-عزل",
+            DisplayNameEn = "Isolation Tafsir",
+            ShortNameEn = "Isolation Tafsir",
+            ContributorType = "author",
+            ResourceKind = "tafsir",
+            TafsirKind = "simple",
+            ContentCoverageCount = 6236,
+            PackageFile = "synthetic.json",
+            SourceFileOriginal = "synthetic.json",
+            Sha256 = "abc123",
+            FileSizeBytes = 10,
+            LicenseStatus = "test",
+            ProvenanceStatus = "test",
+            ManifestMetadata = "{}",
+            ImportedAtUtc = DateTimeOffset.UtcNow
+        });
+
+        await dbContext.SaveChangesAsync();
+
+        var tafsirSourceId = dbContext.TafsirSources.Single().Id;
+        dbContext.TafsirEntries.Add(new TafsirEntry
+        {
+            SourceId = tafsirSourceId,
+            SourceEntryKey = "901:1",
+            LeaderAyahId = 1,
+            TafsirText = "SYNTHETIC-TAFSIR-901:1",
+            CoveredAyahCount = 1,
+            CoveredAyahKeys = """["901:1"]""",
+            SourceShape = "flat",
+            TextHash = "hash-901-1"
+        });
+
+        await dbContext.SaveChangesAsync();
+
+        dbContext.TafsirAyahEntries.Add(new TafsirAyahEntry
+        {
+            SourceId = tafsirSourceId,
+            AyahId = 1,
+            TafsirEntryId = dbContext.TafsirEntries.Single().Id,
+            VerseKey = NavigationSyntheticSeed.SyntheticVerseKey(1),
+            SourceValueKind = "leader",
+            SourceLeaderVerseKey = NavigationSyntheticSeed.SyntheticVerseKey(1),
+            IsGroupLeader = true,
+            SortOrder = 1
+        });
+
+        dbContext.MutashabihatGroups.Add(new MutashabihatGroup
+        {
+            SourceGroupId = 90101,
+            RepresentativeAyahId = 1,
+            RepresentativeWordFrom = 1,
+            RepresentativeWordTo = 1,
+            OccurrenceCount = 1,
+            DistinctAyahCount = 1,
+            DistinctSurahCount = 1
+        });
+
+        await dbContext.SaveChangesAsync();
+
+        dbContext.MutashabihatOccurrences.Add(new MutashabihatOccurrence
+        {
+            GroupId = dbContext.MutashabihatGroups.Single().Id,
+            AyahId = 1,
+            WordFrom = 1,
+            WordTo = 1,
+            IsRepresentative = true
+        });
+
+        await dbContext.SaveChangesAsync();
+    }
+
+    public async Task<NavigationIsolationBaseline> CaptureIsolationBaselineAsync()
+    {
+        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+
+        return new NavigationIsolationBaseline(
+            await dbContext.QuranSurahs.AsNoTracking().OrderBy(row => row.SurahNumber).ToListAsync(),
+            await dbContext.QuranAyahs.AsNoTracking()
+                .OrderBy(row => row.Id)
+                .Select(row => new AyahIsolationRow(
+                    row.Id,
+                    row.VerseKey,
+                    row.TextUthmani,
+                    row.SurahNumber,
+                    row.AyahNumber,
+                    row.WordsCountSource,
+                    row.WordsCountReal,
+                    row.PageFrom,
+                    row.PageTo))
+                .ToListAsync(),
+            await dbContext.QuranMushafPages.AsNoTracking().OrderBy(row => row.PageNumber).ToListAsync(),
+            await dbContext.QuranMushafLines.AsNoTracking().OrderBy(row => row.Id).ToListAsync(),
+            await dbContext.QuranWords.AsNoTracking().OrderBy(row => row.Id).ToListAsync(),
+            await dbContext.TranslationSources.AsNoTracking().OrderBy(row => row.Id).ToListAsync(),
+            await dbContext.TranslationAyahEntries.AsNoTracking().OrderBy(row => row.Id).ToListAsync(),
+            await dbContext.TafsirSources.AsNoTracking().OrderBy(row => row.Id).ToListAsync(),
+            await dbContext.TafsirEntries.AsNoTracking().OrderBy(row => row.Id).ToListAsync(),
+            await dbContext.TafsirAyahEntries.AsNoTracking().OrderBy(row => row.Id).ToListAsync(),
+            await dbContext.MutashabihatGroups.AsNoTracking().OrderBy(row => row.Id).ToListAsync(),
+            await dbContext.MutashabihatOccurrences.AsNoTracking().OrderBy(row => row.Id).ToListAsync(),
+            await dbContext.WordMorphologies.CountAsync(),
+            await dbContext.WordMorphologySegments.CountAsync(),
+            await dbContext.QuranRoots.CountAsync(),
+            await dbContext.QuranLemmas.CountAsync(),
+            await dbContext.QuranStems.CountAsync(),
+            await dbContext.PosTags.CountAsync(),
+            await dbContext.QuranI3rabRules.CountAsync());
+    }
+
+    public async Task<NavigationDataSnapshot> CaptureNavigationDataSnapshotAsync()
+    {
+        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+
+        return new NavigationDataSnapshot(
+            await dbContext.QuranJuzs.AsNoTracking().OrderBy(row => row.JuzNumber).ToListAsync(),
+            await dbContext.QuranHizbs.AsNoTracking().OrderBy(row => row.HizbNumber).ToListAsync(),
+            await dbContext.QuranRubs.AsNoTracking().OrderBy(row => row.RubNumber).ToListAsync(),
+            await dbContext.QuranSajdas.AsNoTracking().OrderBy(row => row.SajdahNumber).ToListAsync(),
+            await dbContext.QuranAyahs.AsNoTracking()
+                .OrderBy(row => row.Id)
+                .Select(row => new AyahNavigationRow(row.Id, row.JuzNumber, row.HizbNumber, row.RubNumber))
+                .ToListAsync());
+    }
+
+    public async Task SeedOrphanedAyahNavigationColumnsAsync()
+    {
+        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+        await dbContext.Database.ExecuteSqlRawAsync(
+            """
+            SET session_replication_role = replica;
+            UPDATE quran_ayahs
+            SET juz_number = 1
+            WHERE id = 1;
+            SET session_replication_role = DEFAULT;
+            """);
+    }
 }
 
 public sealed record NavigationTableSnapshot(
@@ -209,6 +415,47 @@ public sealed record NavigationTableSnapshot(
     int RubRows,
     int SajdaRows,
     int TaggedAyahRows);
+
+public sealed record AyahIsolationRow(
+    int Id,
+    string VerseKey,
+    string TextUthmani,
+    short SurahNumber,
+    short AyahNumber,
+    short WordsCountSource,
+    short WordsCountReal,
+    short PageFrom,
+    short PageTo);
+
+public sealed record NavigationIsolationBaseline(
+    IReadOnlyList<Surah> Surahs,
+    IReadOnlyList<AyahIsolationRow> Ayahs,
+    IReadOnlyList<MushafPage> Pages,
+    IReadOnlyList<MushafLine> Lines,
+    IReadOnlyList<QuranWord> Words,
+    IReadOnlyList<TranslationSource> TranslationSources,
+    IReadOnlyList<TranslationAyahEntry> TranslationEntries,
+    IReadOnlyList<TafsirSource> TafsirSources,
+    IReadOnlyList<TafsirEntry> TafsirEntries,
+    IReadOnlyList<TafsirAyahEntry> TafsirAyahEntries,
+    IReadOnlyList<MutashabihatGroup> MutashabihatGroups,
+    IReadOnlyList<MutashabihatOccurrence> MutashabihatOccurrences,
+    int WordMorphologyRows,
+    int WordMorphologySegmentRows,
+    int RootRows,
+    int LemmaRows,
+    int StemRows,
+    int PosTagRows,
+    int I3rabRuleRows);
+
+public sealed record AyahNavigationRow(int Id, short? JuzNumber, short? HizbNumber, short? RubNumber);
+
+public sealed record NavigationDataSnapshot(
+    IReadOnlyList<Juz> Juz,
+    IReadOnlyList<Hizb> Hizb,
+    IReadOnlyList<Rub> Rub,
+    IReadOnlyList<Sajda> Sajda,
+    IReadOnlyList<AyahNavigationRow> AyahNavigation);
 
 internal sealed class TamperingNavigationImportSource : INavigationMetadataImportSource
 {

@@ -35,6 +35,8 @@ internal static class NavigationMetadataBulkCopier
             FROM STDIN (FORMAT BINARY)
             """;
 
+        NavigationMetadataCommandExecutor.EnsureAllowedBinaryCopyTarget(copyCommand);
+
         await using var importer = await connection.BeginBinaryImportAsync(copyCommand, ct);
         foreach (var row in rows)
         {
@@ -67,6 +69,8 @@ internal static class NavigationMetadataBulkCopier
                 last_verse_key)
             FROM STDIN (FORMAT BINARY)
             """;
+
+        NavigationMetadataCommandExecutor.EnsureAllowedBinaryCopyTarget(copyCommand);
 
         await using var importer = await connection.BeginBinaryImportAsync(copyCommand, ct);
         foreach (var row in rows)
@@ -102,6 +106,8 @@ internal static class NavigationMetadataBulkCopier
             FROM STDIN (FORMAT BINARY)
             """;
 
+        NavigationMetadataCommandExecutor.EnsureAllowedBinaryCopyTarget(copyCommand);
+
         await using var importer = await connection.BeginBinaryImportAsync(copyCommand, ct);
         foreach (var row in rows)
         {
@@ -132,6 +138,8 @@ internal static class NavigationMetadataBulkCopier
                 sajdah_type)
             FROM STDIN (FORMAT BINARY)
             """;
+
+        NavigationMetadataCommandExecutor.EnsureAllowedBinaryCopyTarget(copyCommand);
 
         await using var importer = await connection.BeginBinaryImportAsync(copyCommand, ct);
         foreach (var row in rows)
@@ -166,6 +174,8 @@ internal static class NavigationMetadataBulkCopier
                 rub_number)
             FROM STDIN (FORMAT BINARY)
             """;
+
+        NavigationMetadataCommandExecutor.EnsureAllowedBinaryCopyTarget(copyCommand);
 
         await using (var importer = await connection.BeginBinaryImportAsync(copyCommand, ct))
         {

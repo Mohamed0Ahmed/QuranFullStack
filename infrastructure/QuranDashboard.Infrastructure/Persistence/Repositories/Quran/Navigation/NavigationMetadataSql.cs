@@ -44,9 +44,12 @@ internal static class NavigationMetadataSql
         """;
 
     internal const string ClearNavigationData = """
-        TRUNCATE quran_sajdas, quran_rubs, quran_hizbs, quran_juzs RESTART IDENTITY CASCADE;
         UPDATE quran_ayahs
         SET juz_number = NULL, hizb_number = NULL, rub_number = NULL;
+        DELETE FROM quran_sajdas;
+        DELETE FROM quran_rubs;
+        DELETE FROM quran_hizbs;
+        DELETE FROM quran_juzs;
         """;
 
     internal const string CreateAyahUpdateTempTable = """
