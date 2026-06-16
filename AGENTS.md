@@ -1,14 +1,14 @@
 <!-- SPECKIT START -->
 
-Active feature: **Quran Translations Foundation** — branch `008-quran-translations-foundation`.
+Active feature: **Quran Navigation Metadata Foundation** — branch `009-quran-navigation-metadata-foundation`.
 For technologies, project structure, shell commands, and design artifacts, read the current plan
 and its siblings:
 
-- `specs/008-quran-translations-foundation/plan.md` — technical context, project structure, gates
-- `specs/008-quran-translations-foundation/spec.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/`
-- `docs/feature-008-quran-translations-foundation/feature-008-quran-translations-foundation-planning-report.md` — long-form companion plan
-- `docs/feature-008-quran-translations-foundation/translation-source-curation-report.md`, `feature-008-decisions-addendum.md` — source facts and locked decisions
-- `resources/import-sources/quran-translations/README.md`, `manifest.json`, `source-display-metadata.json`, `package-report.md` — final local source package metadata (every import count traces here)
+- `specs/009-quran-navigation-metadata-foundation/plan.md` — technical context, project structure, gates
+- `specs/009-quran-navigation-metadata-foundation/spec.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/`
+- `docs/feature-009-quran-navigation-metadata-foundation/feature-009-quran-navigation-metadata-foundation-planning-report.md` — long-form companion plan
+- `docs/feature-009-quran-navigation-metadata-foundation/quran-metadata-inventory-gap-analysis-report.md` — gap analysis (why only juz/hizb/rub/sajda are missing)
+- `resources/import-sources/quran-navigation-metadata/README.md`, `manifest.json`, `package-report.md` — final staged source package metadata (every import count traces here)
 
 <!-- SPECKIT END -->
 
