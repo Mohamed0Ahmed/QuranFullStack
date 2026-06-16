@@ -88,17 +88,27 @@ public sealed class TranslationManifestReader
 
         var excludedSources = new List<ExcludedTranslationSourceDto>();
         if (root.TryGetProperty("excludedSourceSummary", out var excludedElement)
-            && excludedElement.ValueKind == JsonValueKind.Array)
+            && excludedElement.ValueKind == JsonValueKind.Object)
         {
-            foreach (var item in excludedElement.EnumerateArray())
+            foreach (var categoryProperty in excludedElement.EnumerateObject())
             {
-                excludedSources.Add(new ExcludedTranslationSourceDto(
-                    item.GetProperty("sourceKey").GetString() ?? string.Empty,
-                    item.GetProperty("status").GetString() ?? string.Empty,
-                    item.GetProperty("reason").GetString() ?? string.Empty,
-                    item.TryGetProperty("packageFile", out var packageFile)
-                        ? packageFile.GetString()
-                        : null));
+                var (reason, status) = MapExcludedCategory(categoryProperty.Name);
+                foreach (var pathElement in categoryProperty.Value.EnumerateArray())
+                {
+                    var packageFile = pathElement.GetString();
+                    if (string.IsNullOrWhiteSpace(packageFile))
+                    {
+                        continue;
+                    }
+
+                    var normalizedPath = packageFile.Replace('\\', '/');
+                    var derivedKey = Path.GetFileNameWithoutExtension(normalizedPath);
+                    excludedSources.Add(new ExcludedTranslationSourceDto(
+                        string.IsNullOrWhiteSpace(derivedKey) ? normalizedPath : derivedKey,
+                        status,
+                        reason,
+                        packageFile));
+                }
             }
         }
 
@@ -227,6 +237,14 @@ public sealed class TranslationManifestReader
             $"manifestType={manifestType}, isFinalImportManifest={isFinalImportManifest.ToString().ToLowerInvariant()}",
             passed);
     }
+
+    private static (string Reason, string Status) MapExcludedCategory(string category) => category switch
+    {
+        "wordByWord" => ("word_by_word", "excluded"),
+        "emptyText" => ("empty_text", "excluded"),
+        "unattributedNearDuplicate" => ("unattributed_near_duplicate", "excluded"),
+        _ => (category, "excluded")
+    };
 
     private static IReadOnlyList<TranslationCheckResult> ValidateManifestCounts(
         int sourceCount,

@@ -47,6 +47,9 @@ public sealed class TranslationManifestReaderTests
 
         manifest.ExcludedSources.Should().ContainSingle();
         manifest.ExcludedSources[0].SourceKey.Should().Be("en-excluded-test");
+        manifest.ExcludedSources[0].PackageFile.Should().Be("excluded/en-excluded-test.json");
+        manifest.ExcludedSources[0].Status.Should().Be("excluded");
+        manifest.ExcludedSources[0].Reason.Should().Be("word_by_word");
     }
 
     [Fact]

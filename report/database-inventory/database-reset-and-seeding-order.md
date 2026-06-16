@@ -1,8 +1,8 @@
 # Database Reset & Seeding Order (Dev Runbook)
 
-**Date:** 2026-06-14
+**Date:** 2026-06-16 *(revised for Feature 008; original 2026-06-14)*
 **Scope:** Documentation only. Records the canonical local-dev order to reset, migrate, and seed the
-`quran_dashboard` PostgreSQL database across Features 002–007. No command was run to produce this
+`quran_dashboard` PostgreSQL database across Features 002–008. No command was run to produce this
 report; commands below are the documented/intended sequence — confirm flags against each feature’s
 quickstart before running.
 
@@ -37,6 +37,7 @@ rebuild-words step).
 | 7 | `20260612151359_AddWordSimpleI3rab` | 005 |
 | 8 | `20260613152703_AddQuranMutashabihat` | 006 |
 | 9 | `20260614120520_AddQuranTafsirs` | 007 |
+| 10 | `20260615112132_AddQuranTranslations` | 008 |
 
 ## 3. Seeding order (by data dependency)
 
@@ -53,8 +54,14 @@ the exact ones verified in the Phase 7 report; the remaining verbs are shown in 
 | 4 | `generate-i3rab` | 005 | morphology/segments (004) | `generate-i3rab [--report-out <path>] [--force]` |
 | 5 | `import-mutashabihat` | 006 | resolved ayahs (foundation) | verb present; `--source`/`--report-out`/`--force` per Feature 006 quickstart |
 | 6 | `import-tafsirs` | 007 | resolved ayahs (foundation) | verb present; `--source`/`--report-out`/`--force` per Feature 007 quickstart |
+| 7 | `import-translations` | 008 | resolved ayahs (foundation only) | `dotnet run --project tools/QuranDashboard.DataImporter -- import-translations` (defaults resolve to the staged package and `report/feature-008-quran-translations-foundation/`); **verified end-to-end 2026-06-16** — see §4 |
 
 > `import-sources` is a staging/utility verb, not part of the per-feature seeding chain.
+>
+> **Order-7 dependency note:** `import-translations` (008) resolves `verse_key -> ayah_id` against
+> `quran_ayahs` only. It does **not** depend on words, morphology, i3rab, mutashabihat, or tafsirs, so it
+> may be run any time after `import-foundation` (order 1). It is listed at order 7 to preserve the existing
+> numbering; it is independent of orders 2–6.
 
 ## 4. What is documented vs. inferred
 
@@ -64,6 +71,19 @@ the exact ones verified in the Phase 7 report; the remaining verbs are shown in 
   `import-morphology` (004) → `generate-i3rab` (005), and that `import-mutashabihat` (006) /
   `import-tafsirs` (007) require foundation ayahs (mutashabihat confirms this via the
   `MUT-AYAH-RESOLVE` hard check). Steps 3–6 have not been captured in a single end-to-end reseed report.
+- **Implemented, not yet run end-to-end:** none as of 2026-06-16. `import-translations` (008) was previously
+  in this category; it has since been run against the final package and is now verified (next bullet).
+- **Documented & verified (Feature 008, real run 2026-06-16):** migration `20260615112132_AddQuranTranslations`
+  applied via `./scripts/update-db`, then `import-translations` run against
+  `resources/import-sources/quran-translations` (connection supplied via `ConnectionStrings__QuranDashboardDb`,
+  since the DataImporter's `appsettings.json` default password differs from the local DB). Verdict `PASS`,
+  `persisted = true`, all hard checks green. Real counts confirmed in both the run report and direct DB
+  spot-checks: **167** sources (129 simple / 38 with-footnotes), **83** languages, **1,041,412** ayah
+  mappings, **6,236** distinct ayahs, **19** excluded (report-only), 0 orphan FKs, 0 duplicate
+  `(source_id, ayah_id)` rows, 0 copied-`text_uthmani` leaks. Canonical report at
+  `report/feature-008-quran-translations-foundation/translation-import-report.{md,json}`.
+  Note: this verified run applied only the 008 migration on top of an existing foundation-seeded DB; it was
+  **not** a full reset→reseed of the whole chain in one go.
 
 ## 5. Production note (not blocking dev)
 

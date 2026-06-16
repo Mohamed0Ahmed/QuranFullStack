@@ -1,4 +1,3 @@
-using System.Text.Json.Nodes;
 using QuranDashboard.Application.Abstractions.Quran.Translations;
 
 namespace QuranDashboard.Tests.Quran.Translations;
@@ -17,9 +16,8 @@ public sealed class TranslationExcludedSourceTests(TranslationImportTestFixture 
 
         var packageDir = await fixture.WriteSyntheticPackageAsync(
             sources: TranslationSyntheticSeed.DefaultSources,
-            excludedSourceKeys: ["en-excluded-wbw"]);
-
-        await SetExcludedStatusAsync(packageDir, "en-excluded-wbw", "excluded_word_by_word");
+            excludedSourceKeys: ["en-excluded-wbw"],
+            excludedCategory: "wordByWord");
 
         var result = await fixture.RunImportAsync(packageDir, ExpectedWithOneExcluded);
 
@@ -40,9 +38,8 @@ public sealed class TranslationExcludedSourceTests(TranslationImportTestFixture 
 
         var packageDir = await fixture.WriteSyntheticPackageAsync(
             sources: TranslationSyntheticSeed.DefaultSources,
-            excludedSourceKeys: ["en-excluded-empty"]);
-
-        await SetExcludedStatusAsync(packageDir, "en-excluded-empty", "excluded_empty_text");
+            excludedSourceKeys: ["en-excluded-empty"],
+            excludedCategory: "emptyText");
 
         var result = await fixture.RunImportAsync(packageDir, ExpectedWithOneExcluded);
 
@@ -63,9 +60,8 @@ public sealed class TranslationExcludedSourceTests(TranslationImportTestFixture 
 
         var packageDir = await fixture.WriteSyntheticPackageAsync(
             sources: TranslationSyntheticSeed.DefaultSources,
-            excludedSourceKeys: ["en-excluded-dup"]);
-
-        await SetExcludedStatusAsync(packageDir, "en-excluded-dup", "excluded_unattributed_near_duplicate");
+            excludedSourceKeys: ["en-excluded-dup"],
+            excludedCategory: "unattributedNearDuplicate");
 
         var result = await fixture.RunImportAsync(packageDir, ExpectedWithOneExcluded);
 
@@ -96,24 +92,5 @@ public sealed class TranslationExcludedSourceTests(TranslationImportTestFixture 
         var snapshot = await fixture.CaptureTranslationTableSnapshotAsync();
         snapshot.SourceRows.Should().Be(0);
         snapshot.AyahEntryRows.Should().Be(0);
-    }
-
-    private static async Task SetExcludedStatusAsync(string packageDir, string sourceKey, string status)
-    {
-        var manifestPath = Path.Combine(packageDir, "manifest.json");
-        var json = await File.ReadAllTextAsync(manifestPath);
-        var root = JsonNode.Parse(json)!.AsObject();
-        var summary = root["excludedSourceSummary"]!.AsArray();
-
-        foreach (var entry in summary)
-        {
-            if (entry!["sourceKey"]!.GetValue<string>() == sourceKey)
-            {
-                entry["status"] = status;
-                entry["reason"] = $"synthetic-{status}";
-            }
-        }
-
-        await File.WriteAllTextAsync(manifestPath, root.ToJsonString());
     }
 }

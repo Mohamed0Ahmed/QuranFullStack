@@ -174,7 +174,8 @@ public sealed class TranslationImportTestFixture : IAsyncLifetime
         IReadOnlyList<SyntheticTranslationSourceSpec>? sources = null,
         IReadOnlyList<string>? excludedSourceKeys = null,
         string manifestType = TranslationSyntheticSeed.ManifestType,
-        bool isFinalImportManifest = true)
+        bool isFinalImportManifest = true,
+        string excludedCategory = "wordByWord")
     {
         var sourceSpecs = sources ?? TranslationSyntheticSeed.DefaultSources;
         var excluded = excludedSourceKeys ?? Array.Empty<string>();
@@ -273,9 +274,9 @@ public sealed class TranslationImportTestFixture : IAsyncLifetime
             contentCoverageCount,
             excludedCounts = new
             {
-                wordByWord = 0,
-                emptyText = 0,
-                unattributedNearDuplicate = 0,
+                wordByWord = excludedCategory == "wordByWord" ? excluded.Count : 0,
+                emptyText = excludedCategory == "emptyText" ? excluded.Count : 0,
+                unattributedNearDuplicate = excludedCategory == "unattributedNearDuplicate" ? excluded.Count : 0,
                 total = excluded.Count
             },
             selectionRules = new
@@ -300,12 +301,10 @@ public sealed class TranslationImportTestFixture : IAsyncLifetime
                 direction = sourceSpecs.First(spec => spec.LanguageCode == code).Direction
             }),
             sources = sourceRecords,
-            excludedSourceSummary = excluded.Select(key => new
+            excludedSourceSummary = new Dictionary<string, string[]>
             {
-                sourceKey = key,
-                status = "excluded_word_by_word",
-                reason = "synthetic-excluded-for-test"
-            })
+                [excludedCategory] = excluded.Select(key => $"excluded/{key}.json").ToArray()
+            }
         };
 
         await WriteJsonAsync(Path.Combine(packageDir, "manifest.json"), manifest);
