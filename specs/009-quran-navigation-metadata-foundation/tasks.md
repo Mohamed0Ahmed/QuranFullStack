@@ -179,13 +179,13 @@ description: "Task list for Quran Navigation Metadata Foundation (Feature 009)"
 
 ## Phase 7: Polish & Cross-Cutting
 
-- [ ] T064 [P] Run `dotnet build Backend/QuranDashboard.sln` and apply `dotnet format`; resolve warnings introduced by this feature.
-- [ ] T065 [P] Run the clean-code-guard self-check (naming/functions/SOLID/DRY/KISS) against the new files per `.claude/skills/engineering-review/references/clean-code-guard/`; keep C# `I`-prefixed interfaces.
-- [ ] T066 [P] Run the test-guard self-check on the new tests (test behavior not implementation; real DTOs/entities; real PostgreSQL where correctness matters; Quranic test data stays source-safe — no ayah text).
-- [ ] T067 Run `dotnet test Backend/tests/QuranDashboard.Tests --filter FullyQualifiedName~Quran.Navigation` and confirm all green.
-- [ ] T068 (Gated: requires the staged package present AND the T024 migration already APPLIED to the target database with explicit authorization — generating the migration in T024 is NOT sufficient; `dotnet ef database update` / `./scripts/update-db` is a separate, explicitly-authorized step) Real run: `dotnet run --project Backend/tools/QuranDashboard.DataImporter -- import-navigation-metadata` (uses default `ExpectedCounts = Production`); verify quickstart.md SQL (30/60/240/15, 0 untagged ayahs, 15 sajda, `text_uthmani` unchanged) and that reports show `verdict=accepted`, `persisted=true`, coverage complete.
-- [ ] T069 Write the backend completion/real-run report under `Backend/report/feature-009-quran-navigation-metadata-foundation/` (follow `Backend/report/README.md` naming).
-- [ ] T070 Final full-suite `dotnet test Backend/tests/QuranDashboard.Tests` green; confirm no existing (foundation/words/tafsir/translation/etc.) tests regressed.
+- [X] T064 [P] Run `dotnet build Backend/QuranDashboard.sln` and apply `dotnet format`; resolve warnings introduced by this feature.
+- [X] T065 [P] Run the clean-code-guard self-check (naming/functions/SOLID/DRY/KISS) against the new files per `.claude/skills/engineering-review/references/clean-code-guard/`; keep C# `I`-prefixed interfaces.
+- [X] T066 [P] Run the test-guard self-check on the new tests (test behavior not implementation; real DTOs/entities; real PostgreSQL where correctness matters; Quranic test data stays source-safe — no ayah text).
+- [X] T067 Run `dotnet test Backend/tests/QuranDashboard.Tests --filter FullyQualifiedName~Quran.Navigation` and confirm all green.
+- [X] T068 (Gated: requires the staged package present AND the T024 migration already APPLIED to the target database with explicit authorization — generating the migration in T024 is NOT sufficient; `dotnet ef database update` / `./scripts/update-db` is a separate, explicitly-authorized step) Real run: `dotnet run --project Backend/tools/QuranDashboard.DataImporter -- import-navigation-metadata` (uses default `ExpectedCounts = Production`); verify quickstart.md SQL (30/60/240/15, 0 untagged ayahs, 15 sajda, `text_uthmani` unchanged) and that reports show `verdict=accepted`, `persisted=true`, coverage complete. **Status (2026-06-16): DONE — operator authorized; migration `20260616095937_AddQuranNavigationMetadata` applied and real import run completed. Verified: 30/60/240/15, 0 untagged ayahs of 6236, sajda 11 optional/4 required, hierarchy intact, `text_uthmani` untouched; report `verdict=accepted`, `persisted=true`, coverage complete. See `Backend/report/feature-009-quran-navigation-metadata-foundation/006-real-run-status.md`.**
+- [X] T069 Write the backend completion/real-run report under `Backend/report/feature-009-quran-navigation-metadata-foundation/` (follow `Backend/report/README.md` naming).
+- [X] T070 Final full-suite `dotnet test Backend/tests/QuranDashboard.Tests` green; confirm no existing (foundation/words/tafsir/translation/etc.) tests regressed.
 
 ---
 
