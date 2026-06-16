@@ -28,9 +28,9 @@ description: "Task list for Quran Navigation Metadata Foundation (Feature 009)"
 
 **Purpose**: Confirm baseline and create empty folders. No behavior yet.
 
-- [ ] T001 Confirm the working branch is `009-quran-navigation-metadata-foundation` in BOTH `App` and `Backend`, then run `dotnet build Backend/QuranDashboard.sln` and confirm it is green before any change.
-- [ ] T002 [P] Create empty folders (no files yet): `Backend/domain/QuranDashboard.Domain/Quran/Navigation/`, `Backend/application/QuranDashboard.Application.Abstractions/Quran/Navigation/`, `Backend/application/QuranDashboard.Application/Quran/Navigation/ImportNavigationMetadata/`, `Backend/infrastructure/QuranDashboard.Infrastructure/Files/Quran/Navigation/`, `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Configurations/Quran/Navigation/`, `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Repositories/Quran/Navigation/`, `Backend/infrastructure/QuranDashboard.Infrastructure/Reports/Quran/Navigation/`, `Backend/tests/QuranDashboard.Tests/Quran/Navigation/`.
-- [ ] T003 [P] Confirm the staged package exists at `resources/import-sources/quran-navigation-metadata/` (manifest.json + sources/{juz,hizb,rub,sajda}.json). If absent, note that real-data tasks (T028 real run, T068) are skipped; unit/integration tasks use synthetic fixtures and still run.
+- [x] T001 Confirm the working branch is `009-quran-navigation-metadata-foundation` in BOTH `App` and `Backend`, then run `dotnet build Backend/QuranDashboard.sln` and confirm it is green before any change.
+- [x] T002 [P] Create empty folders (no files yet): `Backend/domain/QuranDashboard.Domain/Quran/Navigation/`, `Backend/application/QuranDashboard.Application.Abstractions/Quran/Navigation/`, `Backend/application/QuranDashboard.Application/Quran/Navigation/ImportNavigationMetadata/`, `Backend/infrastructure/QuranDashboard.Infrastructure/Files/Quran/Navigation/`, `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Configurations/Quran/Navigation/`, `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Repositories/Quran/Navigation/`, `Backend/infrastructure/QuranDashboard.Infrastructure/Reports/Quran/Navigation/`, `Backend/tests/QuranDashboard.Tests/Quran/Navigation/`.
+- [x] T003 [P] Confirm the staged package exists at `resources/import-sources/quran-navigation-metadata/` (manifest.json + sources/{juz,hizb,rub,sajda}.json). If absent, note that real-data tasks (T028 real run, T068) are skipped; unit/integration tests use synthetic fixtures and still run.
 
 ---
 
