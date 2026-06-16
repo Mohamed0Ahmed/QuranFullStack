@@ -163,15 +163,15 @@ description: "Task list for Quran Navigation Metadata Foundation (Feature 009)"
 
 ### Tests for User Story 4 (write FIRST)
 
-- [ ] T058 [P] [US4] Write `NavigationReportShapeTests` (JSON has verdict/persisted/forced/sourcePath/totals/ayahCoverage/checks/warnings/errors/noQuranAyahTextReadOrStored; Markdown has the matching sections + closing no-text statement) in `.../Quran/Navigation/NavigationReportShapeTests.cs`.
-- [ ] T059 [P] [US4] Write `NavigationSourceSafetyTests` (the importer never reads a `text`/`text_uthmani` field from sources; the report's `noQuranAyahTextReadOrStored` is true; `quran_ayahs.text_uthmani` unchanged) in `.../Quran/Navigation/NavigationSourceSafetyTests.cs`.
+- [X] T058 [P] [US4] Write `NavigationReportShapeTests` (JSON has verdict/persisted/forced/sourcePath/totals/ayahCoverage/checks/warnings/errors/noQuranAyahTextReadOrStored; Markdown has the matching sections + closing no-text statement) in `.../Quran/Navigation/NavigationReportShapeTests.cs`.
+- [X] T059 [P] [US4] Write `NavigationSourceSafetyTests` (the importer never reads a `text`/`text_uthmani` field from sources; the report's `noQuranAyahTextReadOrStored` is true; `quran_ayahs.text_uthmani` unchanged) in `.../Quran/Navigation/NavigationSourceSafetyTests.cs`.
 
 ### Implementation for User Story 4
 
-- [ ] T060 [US4] Implement `NavigationMetadataImportReportBuilder` (`BuildCandidateSuccess`, `BuildValidationFailure`, `BuildRefusal` → full `NavigationMetadataImportReport`, incl. ayah-coverage summary and no-text flag) in `.../Persistence/Repositories/Quran/Navigation/NavigationMetadataImportReportBuilder.cs`. PATTERN: `Translations/TranslationImportReportBuilder.cs`.
-- [ ] T061 [US4] Implement `MarkdownJsonNavigationMetadataReportWriter` (writes both `.json` and `.md` to the report dir per contracts/validation-report.schema.md) in `.../Infrastructure/Reports/Quran/Navigation/MarkdownJsonNavigationMetadataReportWriter.cs`. PATTERN: `Reports/Quran/Translations/MarkdownJsonTranslationReportWriter.cs`.
-- [ ] T062 [US4] Emit the two warning checks: `NAV-VERSE-COUNT-MATCH` (source `verses_count` ≠ stored computed count → warn, carry source value) and `NAV-SAJDA-DISTRIBUTION` (split ≠ 11 optional / 4 required → warn). Wire into the report builder (T060) + validation runner (T046).
-- [ ] T063 [US4] Ensure acceptance requires both reports written (`NAV-REPORT-WRITTEN`): if report write fails after validation, keep no navigation changes (`ReportRequired` message), per contracts/cli-verb.md exit table. Extends handler/emitter (T038/T039).
+- [X] T060 [US4] Implement `NavigationMetadataImportReportBuilder` (`BuildCandidateSuccess`, `BuildValidationFailure`, `BuildRefusal` → full `NavigationMetadataImportReport`, incl. ayah-coverage summary and no-text flag) in `.../Persistence/Repositories/Quran/Navigation/NavigationMetadataImportReportBuilder.cs`. PATTERN: `Translations/TranslationImportReportBuilder.cs`.
+- [X] T061 [US4] Implement `MarkdownJsonNavigationMetadataReportWriter` (writes both `.json` and `.md` to the report dir per contracts/validation-report.schema.md) in `.../Infrastructure/Reports/Quran/Navigation/MarkdownJsonNavigationMetadataReportWriter.cs`. PATTERN: `Reports/Quran/Translations/MarkdownJsonTranslationReportWriter.cs`.
+- [X] T062 [US4] Emit the two warning checks: `NAV-VERSE-COUNT-MATCH` (source `verses_count` ≠ stored computed count → warn, carry source value) and `NAV-SAJDA-DISTRIBUTION` (split ≠ 11 optional / 4 required → warn). Wire into the report builder (T060) + validation runner (T046).
+- [X] T063 [US4] Ensure acceptance requires both reports written (`NAV-REPORT-WRITTEN`): if report write fails after validation, keep no navigation changes (`ReportRequired` message), per contracts/cli-verb.md exit table. Extends handler/emitter (T038/T039).
 
 **Checkpoint**: full audit reports for success/refusal/failure. T058–T059 green. All four stories green.
 
