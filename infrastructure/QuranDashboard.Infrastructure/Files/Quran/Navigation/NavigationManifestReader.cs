@@ -35,73 +35,167 @@ public sealed class NavigationManifestReader
         NavigationValidationChecks.EnsureAllHardChecksPassed(checks);
 
         var manifestPath = Path.Combine(packagePath, "manifest.json");
-        await using var manifestStream = File.OpenRead(manifestPath);
-        using var document = await JsonDocument.ParseAsync(manifestStream, cancellationToken: ct);
-        var root = document.RootElement;
-
-        var packageType = root.GetProperty("packageType").GetString()
-            ?? throw new NavigationMetadataSourceException("manifest.json is missing packageType.");
-        var isFinalImportManifest = root.GetProperty("isFinalImportManifest").GetBoolean();
-
-        checks.Add(ValidateManifestFinal(packageType, isFinalImportManifest));
-        NavigationValidationChecks.EnsureAllHardChecksPassed(checks);
-
-        var sourceFiles = new List<NavigationManifestFileRecord>();
-        foreach (var fileElement in root.GetProperty("sourceFiles").EnumerateArray())
+        JsonDocument document;
+        try
         {
-            var record = fileElement.Deserialize<NavigationManifestFileRecord>(JsonOptions)
-                ?? throw new NavigationMetadataSourceException("A manifest sourceFiles entry could not be parsed.");
+            await using var manifestStream = File.OpenRead(manifestPath);
+            document = await JsonDocument.ParseAsync(manifestStream, cancellationToken: ct);
+        }
+        catch (JsonException ex)
+        {
+            checks.Add(NavigationValidationChecks.Hard(
+                NavigationMetadataInvariants.CheckJsonShape,
+                "valid manifest.json",
+                ex.Message,
+                false));
+            NavigationValidationChecks.EnsureAllHardChecksPassed(checks);
+            throw new InvalidOperationException("Navigation validation failed.");
+        }
 
-            var relativePath = record.RelativePath.Replace('\\', '/');
-            var fullPath = Path.Combine(packagePath, relativePath);
-            if (!File.Exists(fullPath))
+        using (document)
+        {
+            var root = document.RootElement;
+
+            if (!root.TryGetProperty("packageType", out var packageTypeElement)
+                || packageTypeElement.ValueKind != JsonValueKind.String)
             {
                 checks.Add(NavigationValidationChecks.Hard(
-                    NavigationMetadataInvariants.CheckPackageShape,
-                    relativePath,
-                    "missing",
+                    NavigationMetadataInvariants.CheckJsonShape,
+                    "manifest packageType string",
+                    "missing or invalid",
                     false));
                 NavigationValidationChecks.EnsureAllHardChecksPassed(checks);
             }
 
-            checks.Add(ValidateChecksum(fullPath, record.Sha256));
-            checks.Add(ValidateFileSize(fullPath, record.SizeBytes));
-            checks.Add(ValidateRecordCount(fullPath, record.RecordCount, record.DatasetKey));
+            if (!root.TryGetProperty("isFinalImportManifest", out var finalElement)
+                || (finalElement.ValueKind != JsonValueKind.True && finalElement.ValueKind != JsonValueKind.False))
+            {
+                checks.Add(NavigationValidationChecks.Hard(
+                    NavigationMetadataInvariants.CheckJsonShape,
+                    "manifest isFinalImportManifest boolean",
+                    "missing or invalid",
+                    false));
+                NavigationValidationChecks.EnsureAllHardChecksPassed(checks);
+            }
+
+            var packageType = packageTypeElement.GetString() ?? string.Empty;
+            var isFinalImportManifest = finalElement.GetBoolean();
+
+            checks.Add(ValidateManifestFinal(packageType, isFinalImportManifest));
             NavigationValidationChecks.EnsureAllHardChecksPassed(checks);
 
-            sourceFiles.Add(record with { RelativePath = relativePath, FullPath = fullPath });
+            if (!root.TryGetProperty("sourceFiles", out var sourceFilesElement)
+                || sourceFilesElement.ValueKind != JsonValueKind.Array)
+            {
+                checks.Add(NavigationValidationChecks.Hard(
+                    NavigationMetadataInvariants.CheckJsonShape,
+                    "manifest sourceFiles array",
+                    "missing or invalid",
+                    false));
+                NavigationValidationChecks.EnsureAllHardChecksPassed(checks);
+            }
+
+            var sourceFiles = new List<NavigationManifestFileRecord>();
+            foreach (var fileElement in sourceFilesElement.EnumerateArray())
+            {
+                var record = fileElement.Deserialize<NavigationManifestFileRecord>(JsonOptions);
+                if (record is null)
+                {
+                    checks.Add(NavigationValidationChecks.Hard(
+                        NavigationMetadataInvariants.CheckJsonShape,
+                        "manifest sourceFiles entry",
+                        "could not be parsed",
+                        false));
+                    NavigationValidationChecks.EnsureAllHardChecksPassed(checks);
+                }
+
+                checks.Add(ValidateManifestSourceFileEntry(record));
+                NavigationValidationChecks.EnsureAllHardChecksPassed(checks);
+
+                var relativePath = record.RelativePath.Replace('\\', '/');
+                var fullPath = Path.Combine(packagePath, relativePath);
+                if (!File.Exists(fullPath))
+                {
+                    checks.Add(NavigationValidationChecks.Hard(
+                        NavigationMetadataInvariants.CheckPackageShape,
+                        relativePath,
+                        "missing",
+                        false));
+                    NavigationValidationChecks.EnsureAllHardChecksPassed(checks);
+                }
+
+                checks.Add(ValidateChecksum(fullPath, record.Sha256));
+                checks.Add(ValidateFileSize(fullPath, record.SizeBytes));
+                checks.Add(ValidateRecordCount(fullPath, record.RecordCount, record.DatasetKey));
+                NavigationValidationChecks.EnsureAllHardChecksPassed(checks);
+
+                sourceFiles.Add(record with { RelativePath = relativePath, FullPath = fullPath });
+            }
+
+            checks.Add(ValidateSourceFileSet(packagePath, sourceFiles));
+            checks.Add(ValidateSourceCounts(sourceFiles, expectedCounts));
+            NavigationValidationChecks.EnsureAllHardChecksPassed(checks);
+
+            return new NavigationPackageManifest(
+                packageType,
+                isFinalImportManifest,
+                sourceFiles,
+                root.GetRawText());
         }
-
-        checks.Add(ValidateSourceFileSet(packagePath, sourceFiles));
-        checks.Add(ValidateSourceCounts(sourceFiles, expectedCounts));
-        NavigationValidationChecks.EnsureAllHardChecksPassed(checks);
-
-        return new NavigationPackageManifest(
-            packageType,
-            isFinalImportManifest,
-            sourceFiles,
-            root.GetRawText());
     }
 
     public async Task<NavigationFileDigests> CapturePackageDigestsAsync(string packagePath, CancellationToken ct)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(packagePath);
 
-        var manifest = await ReadAsync(packagePath, ct);
-        var digests = new Dictionary<string, NavigationFileDigest>(StringComparer.Ordinal);
-
-        foreach (var sourceFile in manifest.SourceFiles)
+        var manifestPath = Path.Combine(packagePath, "manifest.json");
+        if (!File.Exists(manifestPath))
         {
-            var fullPath = sourceFile.FullPath
-                ?? throw new NavigationMetadataSourceException(
-                    $"Manifest file '{sourceFile.RelativePath}' has no resolved path.");
-
-            await using var stream = File.OpenRead(fullPath);
-            var sha256 = Convert.ToHexString(await SHA256.HashDataAsync(stream, ct));
-            digests[sourceFile.RelativePath] = new NavigationFileDigest(new FileInfo(fullPath).Length, sha256);
+            throw new NavigationMetadataSourceException(
+                $"Navigation source package directory was not found: {packagePath}");
         }
 
-        return new NavigationFileDigests(digests);
+        await using var manifestStream = File.OpenRead(manifestPath);
+        JsonDocument document;
+        try
+        {
+            document = await JsonDocument.ParseAsync(manifestStream, cancellationToken: ct);
+        }
+        catch (JsonException ex)
+        {
+            throw new NavigationMetadataSourceException(
+                $"Navigation source package manifest is invalid JSON: {ex.Message}");
+        }
+
+        using (document)
+        {
+            if (!document.RootElement.TryGetProperty("sourceFiles", out var sourceFilesElement)
+                || sourceFilesElement.ValueKind != JsonValueKind.Array)
+            {
+                throw new NavigationMetadataSourceException(
+                    "Navigation source package manifest is missing sourceFiles.");
+            }
+
+            var digests = new Dictionary<string, NavigationFileDigest>(StringComparer.Ordinal);
+            foreach (var fileElement in sourceFilesElement.EnumerateArray())
+            {
+                if (!fileElement.TryGetProperty("relativePath", out var relativePathElement)
+                    || relativePathElement.ValueKind != JsonValueKind.String)
+                {
+                    throw new NavigationMetadataSourceException(
+                        "A manifest sourceFiles entry is missing relativePath.");
+                }
+
+                var relativePath = relativePathElement.GetString()!.Replace('\\', '/');
+                var fullPath = Path.Combine(packagePath, relativePath);
+
+                await using var stream = File.OpenRead(fullPath);
+                var sha256 = Convert.ToHexString(await SHA256.HashDataAsync(stream, ct));
+                digests[relativePath] = new NavigationFileDigest(new FileInfo(fullPath).Length, sha256);
+            }
+
+            return new NavigationFileDigests(digests);
+        }
     }
 
     public async Task<bool> VerifyDigestsUnchangedAsync(
@@ -152,6 +246,42 @@ public sealed class NavigationManifestReader
             errors.Count == 0);
     }
 
+    private static NavigationCheckResult ValidateManifestSourceFileEntry(NavigationManifestFileRecord record)
+    {
+        var issues = new List<string>();
+
+        if (string.IsNullOrWhiteSpace(record.RelativePath))
+        {
+            issues.Add("relativePath");
+        }
+
+        if (string.IsNullOrWhiteSpace(record.DatasetKey))
+        {
+            issues.Add("datasetKey");
+        }
+
+        if (string.IsNullOrWhiteSpace(record.Sha256))
+        {
+            issues.Add("sha256");
+        }
+
+        if (record.RecordCount < 0)
+        {
+            issues.Add("recordCount");
+        }
+
+        if (record.SizeBytes < 0)
+        {
+            issues.Add("sizeBytes");
+        }
+
+        return NavigationValidationChecks.Hard(
+            NavigationMetadataInvariants.CheckJsonShape,
+            "manifest sourceFiles entry with relativePath, datasetKey, sha256, recordCount, sizeBytes",
+            issues.Count == 0 ? "valid" : $"missing or invalid: {string.Join(", ", issues)}",
+            issues.Count == 0);
+    }
+
     private static NavigationCheckResult ValidateManifestFinal(string packageType, bool isFinalImportManifest)
     {
         var passed = string.Equals(
@@ -194,15 +324,26 @@ public sealed class NavigationManifestReader
 
     private static NavigationCheckResult ValidateRecordCount(string fullPath, int expectedCount, string datasetKey)
     {
-        using var document = JsonDocument.Parse(File.ReadAllText(fullPath));
-        var actualCount = document.RootElement.EnumerateObject().Count();
-        var passed = actualCount == expectedCount;
+        try
+        {
+            using var document = JsonDocument.Parse(File.ReadAllText(fullPath));
+            var actualCount = document.RootElement.EnumerateObject().Count();
+            var passed = actualCount == expectedCount;
 
-        return NavigationValidationChecks.Hard(
-            NavigationMetadataInvariants.CheckSourceCount,
-            $"{datasetKey} recordCount={expectedCount.ToString(CultureInfo.InvariantCulture)}",
-            actualCount.ToString(CultureInfo.InvariantCulture),
-            passed);
+            return NavigationValidationChecks.Hard(
+                NavigationMetadataInvariants.CheckSourceCount,
+                $"{datasetKey} recordCount={expectedCount.ToString(CultureInfo.InvariantCulture)}",
+                actualCount.ToString(CultureInfo.InvariantCulture),
+                passed);
+        }
+        catch (JsonException)
+        {
+            return NavigationValidationChecks.Hard(
+                NavigationMetadataInvariants.CheckJsonShape,
+                $"{datasetKey} valid JSON object",
+                $"{Path.GetFileName(fullPath)}: invalid JSON",
+                false);
+        }
     }
 
     private static NavigationCheckResult ValidateSourceFileSet(
@@ -236,23 +377,33 @@ public sealed class NavigationManifestReader
                 true);
         }
 
-        var juz = sourceFiles.Single(file => file.DatasetKey == "juz").RecordCount;
-        var hizb = sourceFiles.Single(file => file.DatasetKey == "hizb").RecordCount;
-        var rub = sourceFiles.Single(file => file.DatasetKey == "rub").RecordCount;
-        var sajda = sourceFiles.Single(file => file.DatasetKey == "sajda").RecordCount;
-        var observed = $"{juz}/{hizb}/{rub}/{sajda}";
-        var expected = $"{expectedCounts.Juz}/{expectedCounts.Hizb}/{expectedCounts.Rub}/{expectedCounts.Sajda}";
-        var passed = juz == expectedCounts.Juz
-            && hizb == expectedCounts.Hizb
-            && rub == expectedCounts.Rub
-            && sajda == expectedCounts.Sajda;
+        var juzFile = FindSourceFile(sourceFiles, "juz");
+        var hizbFile = FindSourceFile(sourceFiles, "hizb");
+        var rubFile = FindSourceFile(sourceFiles, "rub");
+        var sajdaFile = FindSourceFile(sourceFiles, "sajda");
 
-        return NavigationValidationChecks.Hard(
-            NavigationMetadataInvariants.CheckSourceCount,
-            expected,
-            observed,
-            passed);
+        if (juzFile is null || hizbFile is null || rubFile is null || sajdaFile is null)
+        {
+            return NavigationValidationChecks.Hard(
+                NavigationMetadataInvariants.CheckPackageShape,
+                "juz,hizb,rub,sajda dataset keys",
+                string.Join(",", sourceFiles.Select(file => file.DatasetKey)),
+                false);
+        }
+
+        var juz = juzFile.RecordCount;
+        var hizb = hizbFile.RecordCount;
+        var rub = rubFile.RecordCount;
+        var sajda = sajdaFile.RecordCount;
+
+        return NavigationValidationChecks.ValidateSourceCounts(juz, hizb, rub, sajda, expectedCounts);
     }
+
+    private static NavigationManifestFileRecord? FindSourceFile(
+        IReadOnlyList<NavigationManifestFileRecord> sourceFiles,
+        string datasetKey) =>
+        sourceFiles.FirstOrDefault(file =>
+            string.Equals(file.DatasetKey, datasetKey, StringComparison.Ordinal));
 }
 
 public sealed record NavigationPackageManifest(

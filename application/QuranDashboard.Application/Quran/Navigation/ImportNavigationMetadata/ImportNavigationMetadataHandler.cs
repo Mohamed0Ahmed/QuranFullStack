@@ -42,6 +42,15 @@ public sealed class ImportNavigationMetadataHandler
         {
             return await WriteValidationFailureAsync(command, sourcePath, reportDir, ex, ct);
         }
+        catch (NavigationMetadataSourceException ex) when (ex.FailedChecks.Count > 0)
+        {
+            return await WriteValidationFailureAsync(
+                command,
+                sourcePath,
+                reportDir,
+                new NavigationMetadataValidationException(ex.FailedChecks),
+                ct);
+        }
         catch (NavigationMetadataSourceException)
         {
             return await EmitPrePersistenceOutcomeAsync(
@@ -95,6 +104,11 @@ public sealed class ImportNavigationMetadataHandler
                 ct);
         }
         catch (InvalidOperationException ex) when (ex.Message == NavigationMetadataInvariants.TargetsNotEmpty)
+        {
+            return await EmitPrePersistenceOutcomeAsync(
+                command, sourcePath, reportDir, source, ex.Message, refused: true, ct);
+        }
+        catch (InvalidOperationException ex) when (ex.Message == NavigationMetadataInvariants.AyahsMissing)
         {
             return await EmitPrePersistenceOutcomeAsync(
                 command, sourcePath, reportDir, source, ex.Message, refused: true, ct);

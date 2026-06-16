@@ -68,7 +68,16 @@ public sealed class EfBulkNavigationMetadataImportWriter : INavigationMetadataIm
             row => row.Id,
             StringComparer.Ordinal);
 
-        var assembled = validationRunner.AssembleAndValidate(source, ayahIdsByVerseKey, expected);
+        AssembledNavigationMetadata assembled;
+        try
+        {
+            assembled = validationRunner.AssembleAndValidate(source, ayahIdsByVerseKey, expected);
+        }
+        catch (NavigationMetadataValidationException ex)
+        {
+            return BuildValidationFailureResult(runAtUtc, force, ex.Checks);
+        }
+
         var totals = new NavigationImportTotals(
             assembled.Juz.Count,
             assembled.Hizb.Count,
@@ -155,6 +164,16 @@ public sealed class EfBulkNavigationMetadataImportWriter : INavigationMetadataIm
             throw;
         }
     }
+
+    private static NavigationMetadataImportResult BuildValidationFailureResult(
+        DateTimeOffset runAtUtc,
+        bool force,
+        IReadOnlyList<NavigationCheckResult> checks) =>
+        BuildFailureResult(
+            runAtUtc,
+            force,
+            NavigationImportTotals.Empty,
+            checks);
 
     private static NavigationMetadataImportResult BuildFailureResult(
         DateTimeOffset runAtUtc,

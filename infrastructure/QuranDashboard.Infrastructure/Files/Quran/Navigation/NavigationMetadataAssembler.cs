@@ -98,7 +98,9 @@ public sealed class NavigationMetadataAssembler
                 ParentHizbNumber: null));
         }
 
-        ValidateCoverage(rows, expectedAyahCount, divisionLabel);
+        NavigationValidationChecks.EnsureAllHardChecksPassed(
+            NavigationValidationChecks.ValidateRangeCoverage(rows, expectedAyahCount, divisionLabel));
+
         return rows;
     }
 
@@ -134,10 +136,16 @@ public sealed class NavigationMetadataAssembler
         return rows;
     }
 
-    private static SajdahType ParseSajdaType(string value) =>
-        string.Equals(value, "required", StringComparison.Ordinal)
+    private static SajdahType ParseSajdaType(string value)
+    {
+        NavigationValidationChecks.EnsureAllHardChecksPassed([
+            NavigationValidationChecks.ValidateSajdaTypeAllowed(value, "source")
+        ]);
+
+        return string.Equals(value, "required", StringComparison.Ordinal)
             ? SajdahType.Required
             : SajdahType.Optional;
+    }
 
     private static IReadOnlyList<AssembledDivision> AssignParent(
         IReadOnlyList<AssembledDivision> children,
@@ -154,15 +162,9 @@ public sealed class NavigationMetadataAssembler
                     && child.LastAyahId <= parent.LastAyahId)
                 .ToList();
 
-            if (matches.Count != 1)
-            {
-                var check = NavigationValidationChecks.Hard(
-                    NavigationMetadataInvariants.CheckHierarchy,
-                    "exactly one parent by range containment",
-                    $"{child.Number}: matches={matches.Count}",
-                    false);
-                NavigationValidationChecks.EnsureAllHardChecksPassed([check]);
-            }
+            NavigationValidationChecks.EnsureAllHardChecksPassed([
+                NavigationValidationChecks.ValidateHierarchyContainment(child.Number, matches.Count)
+            ]);
 
             updated.Add(assignParent(child, matches[0]));
         }
@@ -186,15 +188,12 @@ public sealed class NavigationMetadataAssembler
         ApplyDivisionAssignments(rubRows, assignments, ayahIdsByVerseKey, (assignment, number) =>
             assignment with { RubNumber = number });
 
-        if (assignments.Count != expectedAyahCount)
-        {
-            var check = NavigationValidationChecks.Hard(
-                NavigationMetadataInvariants.CheckAyahColumnsComplete,
-                expectedAyahCount.ToString(CultureInfo.InvariantCulture),
-                assignments.Count.ToString(CultureInfo.InvariantCulture),
-                false);
-            NavigationValidationChecks.EnsureAllHardChecksPassed([check]);
-        }
+        NavigationValidationChecks.EnsureAllHardChecksPassed([
+            NavigationValidationChecks.ValidateAyahColumnsComplete(
+                assignments.Count,
+                expectedAyahCount,
+                expectedAyahCount)
+        ]);
 
         return assignments;
     }
@@ -220,54 +219,6 @@ public sealed class NavigationMetadataAssembler
         }
     }
 
-    private static void ValidateCoverage(
-        IReadOnlyList<AssembledDivision> rows,
-        int expectedAyahCount,
-        string divisionLabel)
-    {
-        var allKeys = new HashSet<string>(StringComparer.Ordinal);
-        var overlap = new List<string>();
-
-        foreach (var row in rows)
-        {
-            foreach (var key in row.ExpandedVerseKeys)
-            {
-                if (!allKeys.Add(key))
-                {
-                    overlap.Add(key);
-                }
-            }
-        }
-
-        if (overlap.Count > 0)
-        {
-            var check = NavigationValidationChecks.Hard(
-                NavigationMetadataInvariants.CheckNoRangeGapsOverlaps,
-                "no overlaps",
-                $"{divisionLabel}: {string.Join(", ", overlap.Take(5))}",
-                false);
-            NavigationValidationChecks.EnsureAllHardChecksPassed([check]);
-        }
-
-        if (allKeys.Count != expectedAyahCount)
-        {
-            var checkId = divisionLabel switch
-            {
-                "juz" => NavigationMetadataInvariants.CheckRangeCoverageJuz,
-                "hizb" => NavigationMetadataInvariants.CheckRangeCoverageHizb,
-                "rub" => NavigationMetadataInvariants.CheckRangeCoverageRub,
-                _ => NavigationMetadataInvariants.CheckNoRangeGapsOverlaps
-            };
-
-            var check = NavigationValidationChecks.Hard(
-                checkId,
-                $"{expectedAyahCount} once",
-                $"{allKeys.Count} once",
-                false);
-            NavigationValidationChecks.EnsureAllHardChecksPassed([check]);
-        }
-    }
-
     public static IReadOnlyList<string> ExpandVerseMapping(IReadOnlyDictionary<string, string> verseMapping)
     {
         var keys = new List<string>();
@@ -289,17 +240,11 @@ public sealed class NavigationMetadataAssembler
 
     private static int ResolveAyahId(string verseKey, IReadOnlyDictionary<string, int> ayahIdsByVerseKey)
     {
-        if (!ayahIdsByVerseKey.TryGetValue(verseKey, out var ayahId))
-        {
-            var check = NavigationValidationChecks.Hard(
-                NavigationMetadataInvariants.CheckVerseKeysResolve,
-                verseKey,
-                "unresolved",
-                false);
-            NavigationValidationChecks.EnsureAllHardChecksPassed([check]);
-        }
+        NavigationValidationChecks.EnsureAllHardChecksPassed([
+            NavigationValidationChecks.ValidateVerseKeyResolves(verseKey, ayahIdsByVerseKey)
+        ]);
 
-        return ayahId;
+        return ayahIdsByVerseKey[verseKey];
     }
 }
 

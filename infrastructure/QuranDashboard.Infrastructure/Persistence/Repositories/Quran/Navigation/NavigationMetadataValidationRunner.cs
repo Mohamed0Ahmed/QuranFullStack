@@ -17,6 +17,13 @@ public sealed class NavigationMetadataValidationRunner
         IReadOnlyDictionary<string, int> ayahIdsByVerseKey,
         NavigationExpectedCounts expected)
     {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(ayahIdsByVerseKey);
+        ArgumentNullException.ThrowIfNull(expected);
+
+        NavigationValidationChecks.EnsureAllHardChecksPassed(
+            NavigationValidationChecks.ValidateSourceShape(source, expected));
+
         return assembler.Assemble(source, ayahIdsByVerseKey, expected);
     }
 
@@ -42,24 +49,10 @@ public sealed class NavigationMetadataValidationRunner
 
         var checks = new List<NavigationCheckResult>
         {
-            new(
-                NavigationMetadataInvariants.CheckSourceCount,
-                NavigationImportConstants.HardSeverity,
-                $"{expected.Juz}/{expected.Hizb}/{expected.Rub}/{expected.Sajda}",
-                $"{juzCount}/{hizbCount}/{rubCount}/{sajdaCount}",
-                juzCount == expected.Juz
-                    && hizbCount == expected.Hizb
-                    && rubCount == expected.Rub
-                    && sajdaCount == expected.Sajda),
-            new(
-                NavigationMetadataInvariants.CheckAyahColumnsComplete,
-                NavigationImportConstants.HardSeverity,
-                expected.Ayahs.ToString(CultureInfo.InvariantCulture),
-                taggedAyahs.ToString(CultureInfo.InvariantCulture),
-                taggedAyahs == expected.Ayahs && totalAyahs == expected.Ayahs),
-            new(
+            NavigationValidationChecks.ValidateSourceCounts(juzCount, hizbCount, rubCount, sajdaCount, expected),
+            NavigationValidationChecks.ValidateAyahColumnsComplete(taggedAyahs, totalAyahs, expected.Ayahs),
+            NavigationValidationChecks.Hard(
                 NavigationMetadataInvariants.CheckNoQuranTextCopy,
-                NavigationImportConstants.HardSeverity,
                 "no Quran ayah text read or stored",
                 "none",
                 true)

@@ -11,7 +11,9 @@ internal static class NavigationSyntheticPackageWriter
     public static async Task<string> WritePackageAsync(
         NavigationExpectedCounts expectedCounts,
         SyntheticNavigationPackageSpec? spec = null,
-        Action<string>? registerTempDir = null)
+        Action<string>? registerTempDir = null,
+        string? packageType = null,
+        bool? isFinalImportManifest = null)
     {
         spec ??= NavigationSyntheticSeed.DefaultPackageSpec;
 
@@ -29,8 +31,8 @@ internal static class NavigationSyntheticPackageWriter
 
         var manifest = new
         {
-            packageType = NavigationImportConstants.ManifestType,
-            isFinalImportManifest = true,
+            packageType = packageType ?? NavigationImportConstants.ManifestType,
+            isFinalImportManifest = isFinalImportManifest ?? true,
             expectedCounts = new
             {
                 juz = expectedCounts.Juz,

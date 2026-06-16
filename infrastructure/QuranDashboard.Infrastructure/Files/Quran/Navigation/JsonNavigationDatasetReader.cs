@@ -119,16 +119,9 @@ public sealed class JsonNavigationDatasetReader
 
     private static void ValidateSajdaType(string sajdaType, string filePath)
     {
-        if (!string.Equals(sajdaType, "required", StringComparison.Ordinal)
-            && !string.Equals(sajdaType, "optional", StringComparison.Ordinal))
-        {
-            var check = NavigationValidationChecks.Hard(
-                NavigationMetadataInvariants.CheckSajdaType,
-                "required|optional",
-                sajdaType,
-                false);
-            NavigationValidationChecks.EnsureAllHardChecksPassed([check]);
-        }
+        NavigationValidationChecks.EnsureAllHardChecksPassed([
+            NavigationValidationChecks.ValidateSajdaTypeAllowed(sajdaType, Path.GetFileName(filePath))
+        ]);
     }
 
     private static async Task<JsonDocument> OpenDocumentAsync(string filePath, CancellationToken ct)
@@ -160,7 +153,13 @@ public sealed class JsonNavigationDatasetReader
             return 0;
         }
 
-        return (short)number;
+        if (!NavigationValidationChecks.TryParsePositiveShort(number, out var parsed))
+        {
+            FailJsonShape(filePath, propertyName, $"out-of-range integer {number.ToString(CultureInfo.InvariantCulture)}");
+            return 0;
+        }
+
+        return parsed;
     }
 
     private static string ReadString(JsonElement element, string propertyName, string filePath)

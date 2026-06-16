@@ -4,6 +4,7 @@ using QuranDashboard.Domain.Quran.Ayahs;
 using QuranDashboard.Domain.Quran.MushafPages;
 using QuranDashboard.Domain.Quran.Navigation;
 using QuranDashboard.Domain.Quran.Surahs;
+using QuranDashboard.Infrastructure.Files.Quran.Navigation;
 
 namespace QuranDashboard.Tests.Quran.Navigation;
 
@@ -162,6 +163,78 @@ public sealed class NavigationImportTestFixture : IAsyncLifetime
             new ImportNavigationMetadataCommand(packageDir, force, expectedCounts, reportOutDir),
             CancellationToken.None);
     }
+
+    public async Task<ImportNavigationMetadataResult> RunImportWithTamperAfterLoadAsync(
+        string packageDir,
+        NavigationExpectedCounts expectedCounts,
+        Action<string> tamper,
+        string? reportOutDir = null)
+    {
+        reportOutDir ??= Path.Combine(Path.GetTempPath(), $"navigation-report-{Guid.NewGuid():N}");
+
+        await using var scope = CreateServiceProvider(services =>
+        {
+            services.AddScoped<INavigationMetadataImportSource>(sp =>
+                new TamperingNavigationImportSource(
+                    new NavigationMetadataImportSource(
+                        sp.GetRequiredService<NavigationManifestReader>(),
+                        sp.GetRequiredService<JsonNavigationDatasetReader>()),
+                    tamper));
+        }).CreateAsyncScope();
+
+        var handler = scope.ServiceProvider.GetRequiredService<ImportNavigationMetadataHandler>();
+        return await handler.HandleAsync(
+            new ImportNavigationMetadataCommand(packageDir, Force: false, expectedCounts, reportOutDir),
+            CancellationToken.None);
+    }
+
+    public async Task<NavigationTableSnapshot> CaptureNavigationSnapshotAsync()
+    {
+        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+
+        return new NavigationTableSnapshot(
+            await dbContext.QuranJuzs.CountAsync(),
+            await dbContext.QuranHizbs.CountAsync(),
+            await dbContext.QuranRubs.CountAsync(),
+            await dbContext.QuranSajdas.CountAsync(),
+            await dbContext.QuranAyahs.CountAsync(ayah =>
+                ayah.JuzNumber != null || ayah.HizbNumber != null || ayah.RubNumber != null));
+    }
+}
+
+public sealed record NavigationTableSnapshot(
+    int JuzRows,
+    int HizbRows,
+    int RubRows,
+    int SajdaRows,
+    int TaggedAyahRows);
+
+internal sealed class TamperingNavigationImportSource : INavigationMetadataImportSource
+{
+    private readonly INavigationMetadataImportSource inner;
+    private readonly Action<string> tamperAfterLoad;
+
+    public TamperingNavigationImportSource(
+        INavigationMetadataImportSource inner,
+        Action<string> tamperAfterLoad)
+    {
+        this.inner = inner;
+        this.tamperAfterLoad = tamperAfterLoad;
+    }
+
+    public async Task<NavigationMetadataSourceData> LoadAsync(
+        string sourcePath,
+        NavigationExpectedCounts expected,
+        CancellationToken ct)
+    {
+        var source = await inner.LoadAsync(sourcePath, expected, ct);
+        tamperAfterLoad(sourcePath);
+        return source;
+    }
+
+    public Task<bool> SourceUnchangedAsync(string sourcePath, CancellationToken ct) =>
+        inner.SourceUnchangedAsync(sourcePath, ct);
 }
 
 public sealed record SyntheticNavigationPackageSpec(
@@ -241,6 +314,64 @@ internal static class NavigationSyntheticSeed
         (1, SyntheticVerseKey(2), "optional"),
         (2, SyntheticVerseKey(5), "required")
     ];
+
+    public static SyntheticNavigationPackageSpec JuzGapPackageSpec => new(
+        Juz:
+        [
+            new SyntheticNavigationDivisionSpec(1, 2, SyntheticVerseKey(1), SyntheticVerseKey(2), new Dictionary<string, string> { ["901"] = "1-2" }),
+            new SyntheticNavigationDivisionSpec(2, 3, SyntheticVerseKey(4), SyntheticVerseKey(6), new Dictionary<string, string> { ["901"] = "4-6" })
+        ],
+        Hizb: DefaultPackageSpec.Hizb,
+        Rub: DefaultPackageSpec.Rub,
+        Sajda: DefaultPackageSpec.Sajda);
+
+    public static SyntheticNavigationPackageSpec RubOverlapPackageSpec => new(
+        Juz: DefaultPackageSpec.Juz,
+        Hizb: DefaultPackageSpec.Hizb,
+        Rub:
+        [
+            new SyntheticNavigationDivisionSpec(1, 3, SyntheticVerseKey(1), SyntheticVerseKey(3), new Dictionary<string, string> { ["901"] = "1-3" }),
+            new SyntheticNavigationDivisionSpec(2, 2, SyntheticVerseKey(3), SyntheticVerseKey(4), new Dictionary<string, string> { ["901"] = "3-4" }),
+            new SyntheticNavigationDivisionSpec(3, 1, SyntheticVerseKey(5), SyntheticVerseKey(5), new Dictionary<string, string> { ["901"] = "5-5" }),
+            new SyntheticNavigationDivisionSpec(4, 1, SyntheticVerseKey(6), SyntheticVerseKey(6), new Dictionary<string, string> { ["901"] = "6-6" })
+        ],
+        Sajda: DefaultPackageSpec.Sajda);
+
+    public static SyntheticNavigationPackageSpec HizbSpanningTwoJuzPackageSpec => new(
+        Juz: DefaultPackageSpec.Juz,
+        Hizb:
+        [
+            new SyntheticNavigationDivisionSpec(1, 6, SyntheticVerseKey(1), SyntheticVerseKey(6), new Dictionary<string, string> { ["901"] = "1-6" })
+        ],
+        Rub: DefaultPackageSpec.Rub,
+        Sajda: DefaultPackageSpec.Sajda);
+
+    public static SyntheticNavigationPackageSpec UnresolvedSajdaPackageSpec => DefaultPackageSpec with
+    {
+        Sajda =
+        [
+            new SyntheticNavigationSajdaSpec(1, SyntheticVerseKey(99), "optional"),
+            new SyntheticNavigationSajdaSpec(2, SyntheticVerseKey(5), "required")
+        ]
+    };
+
+    public static SyntheticNavigationPackageSpec InvalidSajdaTypePackageSpec => DefaultPackageSpec with
+    {
+        Sajda =
+        [
+            new SyntheticNavigationSajdaSpec(1, SyntheticVerseKey(2), "mandatory"),
+            new SyntheticNavigationSajdaSpec(2, SyntheticVerseKey(5), "required")
+        ]
+    };
+
+    public static SyntheticNavigationPackageSpec NonContiguousJuzNumbersPackageSpec => DefaultPackageSpec with
+    {
+        Juz =
+        [
+            new SyntheticNavigationDivisionSpec(1, 3, SyntheticVerseKey(1), SyntheticVerseKey(3), new Dictionary<string, string> { ["901"] = "1-3" }),
+            new SyntheticNavigationDivisionSpec(3, 3, SyntheticVerseKey(4), SyntheticVerseKey(6), new Dictionary<string, string> { ["901"] = "4-6" })
+        ]
+    };
 }
 
 [CollectionDefinition(nameof(NavigationImportTestCollection))]
