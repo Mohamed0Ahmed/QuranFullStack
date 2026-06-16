@@ -11,6 +11,9 @@ public sealed class Ayah
     public short WordsCountReal { get; set; }
     public short PageFrom { get; set; }
     public short PageTo { get; set; }
+    public short? JuzNumber { get; set; }
+    public short? HizbNumber { get; set; }
+    public short? RubNumber { get; set; }
 
     public Surahs.Surah Surah { get; set; } = null!;
 }
