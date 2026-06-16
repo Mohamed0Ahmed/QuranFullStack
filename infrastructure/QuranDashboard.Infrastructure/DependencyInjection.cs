@@ -4,10 +4,14 @@ using QuranDashboard.Application.Abstractions.Quran.Import;
 using QuranDashboard.Application.Abstractions.Quran.Mutashabihat;
 using QuranDashboard.Application.Abstractions.Quran.Tafsirs;
 using QuranDashboard.Application.Abstractions.Quran.Translations;
+using QuranDashboard.Application.Abstractions.Quran.Navigation;
 using QuranDashboard.Infrastructure.Files.Quran.Translations;
+using QuranDashboard.Infrastructure.Files.Quran.Navigation;
 using QuranDashboard.Infrastructure.Persistence;
 using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Translations;
+using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Navigation;
 using QuranDashboard.Infrastructure.Reports.Quran.Translations;
+using QuranDashboard.Infrastructure.Reports.Quran.Navigation;
 using QuranDashboard.Application.Abstractions.Quran.Words.Display;
 using QuranDashboard.Application.Abstractions.Quran.Words.Morphology;
 using QuranDashboard.Application.Abstractions.Quran.Words.Morphology.Irab;
@@ -92,6 +96,15 @@ public static class DependencyInjection
         services.AddScoped<ITranslationImportWriter, EfBulkTranslationImportWriter>();
         services.AddSingleton<ITranslationImportReportBuilder, TranslationImportReportBuilder>();
         services.AddSingleton<ITranslationReportWriter, MarkdownJsonTranslationReportWriter>();
+
+        services.AddSingleton<NavigationManifestReader>();
+        services.AddSingleton<JsonNavigationDatasetReader>();
+        services.AddSingleton<NavigationMetadataAssembler>();
+        services.AddScoped<NavigationMetadataValidationRunner>();
+        services.AddScoped<INavigationMetadataImportSource, NavigationMetadataImportSource>();
+        services.AddScoped<INavigationMetadataImportWriter, EfBulkNavigationMetadataImportWriter>();
+        services.AddSingleton<INavigationMetadataImportReportBuilder, NavigationMetadataImportReportBuilder>();
+        services.AddSingleton<INavigationMetadataReportWriter, MarkdownJsonNavigationMetadataReportWriter>();
 
         services.AddSingleton(I3rabExpectedCounts.Production);
         services.AddSingleton<II3rabRuleCatalog, I3rabRuleCatalogSeed>();

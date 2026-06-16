@@ -10,8 +10,10 @@ using QuranDashboard.Application.Quran.Words.ImportMorphology;
 using QuranDashboard.Application.Quran.Words.RebuildDisplayWords;
 using QuranDashboard.Application.Quran.Tafsirs.ImportTafsirs;
 using QuranDashboard.Application.Quran.Translations.ImportTranslations;
+using QuranDashboard.Application.Quran.Navigation.ImportNavigationMetadata;
 using QuranDashboard.Application.Abstractions.Quran.Tafsirs;
 using QuranDashboard.Application.Abstractions.Quran.Translations;
+using QuranDashboard.Application.Abstractions.Quran.Navigation;
 using QuranDashboard.Application.Abstractions.Quran.Mutashabihat;
 using QuranDashboard.Infrastructure;
 
@@ -38,6 +40,7 @@ internal static class Program
             "import-mutashabihat" => await RunImportMutashabihatAsync(verbArgs),
             "import-tafsirs" => await RunImportTafsirsAsync(verbArgs),
             "import-translations" => await RunImportTranslationsAsync(verbArgs),
+            "import-navigation-metadata" => await RunImportNavigationMetadataAsync(verbArgs),
             "generate-i3rab" => await RunGenerateI3rabAsync(verbArgs),
             _ => UnknownVerb(verb)
         };
@@ -536,6 +539,113 @@ internal static class Program
         return result.ExitCode;
     }
 
+    private static async Task<int> RunImportNavigationMetadataAsync(string[] args)
+    {
+        if (!TryParseNavigationArguments(args, out var sourcePath, out var reportOutDir, out var force, out var errorMessage))
+        {
+            Console.Error.WriteLine(errorMessage);
+            PrintUsage();
+            return ImportNavigationMetadataResult.FailureExitCode;
+        }
+
+        if (string.IsNullOrWhiteSpace(sourcePath))
+        {
+            Console.Error.WriteLine("Missing required --source argument.");
+            PrintUsage();
+            return ImportNavigationMetadataResult.FailureExitCode;
+        }
+
+        if (string.IsNullOrWhiteSpace(reportOutDir))
+        {
+            Console.Error.WriteLine("Missing required --report-out argument.");
+            PrintUsage();
+            return ImportNavigationMetadataResult.FailureExitCode;
+        }
+
+        var host = CreateHost(args);
+        await using var scope = host.Services.CreateAsyncScope();
+        var handler = scope.ServiceProvider.GetRequiredService<ImportNavigationMetadataHandler>();
+
+        var result = await handler.HandleAsync(
+            new ImportNavigationMetadataCommand(
+                sourcePath,
+                force,
+                NavigationMetadataInvariants.Production,
+                reportOutDir),
+            CancellationToken.None);
+
+        if (result.Succeeded)
+        {
+            Console.WriteLine(result.Message);
+            if (result.Totals is not null)
+            {
+                Console.WriteLine(
+                    $"juz={result.Totals.Juz}, hizb={result.Totals.Hizb}, rub={result.Totals.Rub}, sajda={result.Totals.Sajda}, ayahsTagged={result.Totals.AyahsTagged}, warnings={result.WarningCount}.");
+            }
+
+            WriteReportPath(result.ReportOutDir);
+            return result.ExitCode;
+        }
+
+        Console.Error.WriteLine(result.Message);
+        WriteReportPath(result.ReportOutDir);
+        return result.ExitCode;
+    }
+
+    private static bool TryParseNavigationArguments(
+        string[] args,
+        out string? sourcePath,
+        out string? reportOutDir,
+        out bool force,
+        out string errorMessage)
+    {
+        sourcePath = null;
+        reportOutDir = null;
+        force = false;
+        errorMessage = string.Empty;
+
+        for (var index = 0; index < args.Length; index++)
+        {
+            switch (args[index])
+            {
+                case "--source":
+                    if (!TryReadValue(args, ref index, out sourcePath))
+                    {
+                        errorMessage = "Missing value for --source.";
+                        return false;
+                    }
+
+                    break;
+                case "--report-out":
+                    if (!TryReadValue(args, ref index, out reportOutDir))
+                    {
+                        errorMessage = "Missing value for --report-out.";
+                        return false;
+                    }
+
+                    break;
+                case "--force":
+                    force = true;
+                    break;
+                default:
+                    errorMessage = $"Unknown argument '{args[index]}'.";
+                    return false;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(sourcePath))
+        {
+            sourcePath = Path.GetFullPath(sourcePath);
+        }
+
+        if (!string.IsNullOrWhiteSpace(reportOutDir))
+        {
+            reportOutDir = Path.GetFullPath(reportOutDir);
+        }
+
+        return true;
+    }
+
     private static string ResolveDefaultTranslationSourcePath()
     {
         return Path.GetFullPath(Path.Combine(
@@ -821,6 +931,8 @@ internal static class Program
             "  QuranDashboard.DataImporter import-tafsirs [--source <path>] [--report-out <path>] [--force]");
         Console.Error.WriteLine(
             "  QuranDashboard.DataImporter import-translations [--source <path>] [--report-out <path>] [--force]");
+        Console.Error.WriteLine(
+            "  QuranDashboard.DataImporter import-navigation-metadata --source <path> --report-out <path> [--force]");
         Console.Error.WriteLine(
             "  QuranDashboard.DataImporter generate-i3rab [--report-out <path>] [--force]");
     }
