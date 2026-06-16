@@ -107,6 +107,7 @@ public sealed class NavigationManifestReader
                         "could not be parsed",
                         false));
                     NavigationValidationChecks.EnsureAllHardChecksPassed(checks);
+                    continue;
                 }
 
                 checks.Add(ValidateManifestSourceFileEntry(record));
