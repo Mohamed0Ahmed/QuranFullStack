@@ -1,4 +1,5 @@
 using QuranDashboard.Domain.Quran.Ayahs;
+using QuranDashboard.Domain.Quran.Navigation;
 
 namespace QuranDashboard.Infrastructure.Persistence.Configurations.Quran;
 
@@ -51,11 +52,41 @@ public sealed class AyahConfiguration : IEntityTypeConfiguration<Ayah>
             .HasColumnType("smallint")
             .HasColumnName("page_to");
 
+        builder.Property(a => a.JuzNumber)
+            .HasColumnType("smallint")
+            .HasColumnName("juz_number");
+
+        builder.Property(a => a.HizbNumber)
+            .HasColumnType("smallint")
+            .HasColumnName("hizb_number");
+
+        builder.Property(a => a.RubNumber)
+            .HasColumnType("smallint")
+            .HasColumnName("rub_number");
+
         builder.HasIndex(a => a.VerseKey).IsUnique();
         builder.HasIndex(a => new { a.SurahNumber, a.AyahNumber }).IsUnique();
+        builder.HasIndex(a => a.JuzNumber);
+        builder.HasIndex(a => a.HizbNumber);
+        builder.HasIndex(a => a.RubNumber);
 
         builder.HasOne(a => a.Surah)
             .WithMany()
             .HasForeignKey(a => a.SurahNumber);
+
+        builder.HasOne<Juz>()
+            .WithMany()
+            .HasForeignKey(a => a.JuzNumber)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<Hizb>()
+            .WithMany()
+            .HasForeignKey(a => a.HizbNumber)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<Rub>()
+            .WithMany()
+            .HasForeignKey(a => a.RubNumber)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }
