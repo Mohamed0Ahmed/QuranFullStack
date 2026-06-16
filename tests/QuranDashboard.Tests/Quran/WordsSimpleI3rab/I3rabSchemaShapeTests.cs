@@ -1,6 +1,3 @@
-using System.Data;
-using Npgsql;
-
 namespace QuranDashboard.Tests.Quran.WordsSimpleI3rab;
 
 [Collection(nameof(I3rabGenerationTestCollection))]

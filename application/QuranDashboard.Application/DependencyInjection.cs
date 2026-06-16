@@ -3,6 +3,7 @@ using QuranDashboard.Application.Quran.Import.ImportQuranFoundation;
 using QuranDashboard.Application.Quran.Import.Validation;
 using QuranDashboard.Application.Quran.Mutashabihat.ImportMutashabihat;
 using QuranDashboard.Application.Quran.Tafsirs.ImportTafsirs;
+using QuranDashboard.Application.Quran.Translations.ImportTranslations;
 using QuranDashboard.Application.Quran.Words.GenerateI3rab;
 using QuranDashboard.Application.Quran.Words.ImportMorphology;
 using QuranDashboard.Application.Quran.Words.RebuildDisplayWords;
@@ -20,6 +21,7 @@ public static class DependencyInjection
         services.AddScoped<ImportMorphologyHandler>();
         services.AddScoped<ImportMutashabihatHandler>();
         services.AddScoped<ImportTafsirsHandler>();
+        services.AddScoped<ImportTranslationsHandler>();
         services.AddScoped<GenerateI3rabHandler>();
 
         return services;

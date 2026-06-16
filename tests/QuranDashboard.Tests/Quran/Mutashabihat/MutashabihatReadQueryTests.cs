@@ -1,5 +1,3 @@
-using System.Data;
-using Npgsql;
 using QuranDashboard.Application.Abstractions.Quran.Mutashabihat;
 using QuranDashboard.Application.Quran.Mutashabihat.ImportMutashabihat;
 using QuranDashboard.Domain.Quran.Mutashabihat;

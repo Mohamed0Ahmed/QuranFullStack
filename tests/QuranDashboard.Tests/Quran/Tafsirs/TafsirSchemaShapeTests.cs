@@ -1,6 +1,3 @@
-using System.Data;
-using Npgsql;
-
 namespace QuranDashboard.Tests.Quran.Tafsirs;
 
 [Collection(nameof(TafsirImportTestCollection))]

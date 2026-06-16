@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-
 namespace QuranDashboard.Infrastructure.Files.Quran.Morphology;
 
 public sealed class MorphologyManifestReader

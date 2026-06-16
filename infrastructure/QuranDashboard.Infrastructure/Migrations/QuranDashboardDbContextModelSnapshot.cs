@@ -616,6 +616,143 @@ namespace QuranDashboard.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("QuranDashboard.Domain.Quran.Translations.TranslationAyahEntry", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<int>("AyahId")
+                        .HasColumnType("integer")
+                        .HasColumnName("ayah_id");
+
+                    b.Property<int>("SourceId")
+                        .HasColumnType("integer")
+                        .HasColumnName("source_id");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("text");
+
+                    b.Property<string>("VerseKey")
+                        .HasColumnType("text")
+                        .HasColumnName("verse_key");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AyahId", "SourceId");
+
+                    b.HasIndex("SourceId", "AyahId")
+                        .IsUnique();
+
+                    b.ToTable("quran_translation_ayah_entries", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_quran_translation_ayah_entries_text", "text <> ''");
+                        });
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Quran.Translations.TranslationSource", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("ContainsHtmlMarkup")
+                        .HasColumnType("boolean")
+                        .HasColumnName("contains_html_markup");
+
+                    b.Property<bool>("ContainsInlineFootnotes")
+                        .HasColumnType("boolean")
+                        .HasColumnName("contains_inline_footnotes");
+
+                    b.Property<short>("ContentCoverageCount")
+                        .HasColumnType("smallint")
+                        .HasColumnName("content_coverage_count");
+
+                    b.Property<string>("Direction")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("direction");
+
+                    b.Property<string>("DisplayNameAr")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("display_name_ar");
+
+                    b.Property<string>("DisplayNameEn")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("display_name_en");
+
+                    b.Property<string>("LanguageCode")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("language_code");
+
+                    b.Property<string>("LanguageNameAr")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("language_name_ar");
+
+                    b.Property<string>("LanguageNameEn")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("language_name_en");
+
+                    b.Property<string>("NativeName")
+                        .HasColumnType("text")
+                        .HasColumnName("native_name");
+
+                    b.Property<string>("SourceKey")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("source_key");
+
+                    b.Property<string>("TranslationType")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("translation_type");
+
+                    b.Property<string>("TranslatorKey")
+                        .HasColumnType("text")
+                        .HasColumnName("translator_key");
+
+                    b.Property<string>("TranslatorNameAr")
+                        .HasColumnType("text")
+                        .HasColumnName("translator_name_ar");
+
+                    b.Property<string>("TranslatorNameEn")
+                        .HasColumnType("text")
+                        .HasColumnName("translator_name_en");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LanguageCode");
+
+                    b.HasIndex("SourceKey")
+                        .IsUnique();
+
+                    b.HasIndex("LanguageCode", "TranslationType");
+
+                    b.ToTable("quran_translation_sources", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_quran_translation_sources_content_coverage_count", "content_coverage_count = 6236");
+
+                            t.HasCheckConstraint("CK_quran_translation_sources_direction", "direction IN ('rtl', 'ltr')");
+
+                            t.HasCheckConstraint("CK_quran_translation_sources_required_fields", "btrim(source_key) <> '' AND\nbtrim(language_code) <> '' AND\nbtrim(language_name_en) <> '' AND\nbtrim(language_name_ar) <> '' AND\nbtrim(direction) <> '' AND\nbtrim(translation_type) <> '' AND\nbtrim(display_name_en) <> '' AND\nbtrim(display_name_ar) <> ''");
+
+                            t.HasCheckConstraint("CK_quran_translation_sources_translation_type", "translation_type IN ('simple', 'with_footnotes')");
+                        });
+                });
+
             modelBuilder.Entity("QuranDashboard.Domain.Quran.Words.Display.OrderedSimpleWord", b =>
                 {
                     b.Property<int>("WordOrderInMushaf")
@@ -1556,6 +1693,21 @@ namespace QuranDashboard.Infrastructure.Migrations
                         .IsRequired();
 
                     b.HasOne("QuranDashboard.Domain.Quran.Tafsirs.TafsirSource", null)
+                        .WithMany()
+                        .HasForeignKey("SourceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Quran.Translations.TranslationAyahEntry", b =>
+                {
+                    b.HasOne("QuranDashboard.Domain.Quran.Ayahs.Ayah", null)
+                        .WithMany()
+                        .HasForeignKey("AyahId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("QuranDashboard.Domain.Quran.Translations.TranslationSource", null)
                         .WithMany()
                         .HasForeignKey("SourceId")
                         .OnDelete(DeleteBehavior.Cascade)

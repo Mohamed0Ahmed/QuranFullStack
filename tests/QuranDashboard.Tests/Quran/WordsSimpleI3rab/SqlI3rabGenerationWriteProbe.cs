@@ -1,4 +1,3 @@
-using Npgsql;
 using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Irab;
 
 namespace QuranDashboard.Tests.Quran.WordsSimpleI3rab;

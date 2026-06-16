@@ -3,6 +3,11 @@ using Microsoft.Extensions.DependencyInjection;
 using QuranDashboard.Application.Abstractions.Quran.Import;
 using QuranDashboard.Application.Abstractions.Quran.Mutashabihat;
 using QuranDashboard.Application.Abstractions.Quran.Tafsirs;
+using QuranDashboard.Application.Abstractions.Quran.Translations;
+using QuranDashboard.Infrastructure.Files.Quran.Translations;
+using QuranDashboard.Infrastructure.Persistence;
+using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Translations;
+using QuranDashboard.Infrastructure.Reports.Quran.Translations;
 using QuranDashboard.Application.Abstractions.Quran.Words.Display;
 using QuranDashboard.Application.Abstractions.Quran.Words.Morphology;
 using QuranDashboard.Application.Abstractions.Quran.Words.Morphology.Irab;
@@ -10,7 +15,6 @@ using QuranDashboard.Infrastructure.Files.Quran.Import;
 using QuranDashboard.Infrastructure.Files.Quran.Morphology;
 using QuranDashboard.Infrastructure.Files.Quran.Mutashabihat;
 using QuranDashboard.Infrastructure.Files.Quran.Tafsirs;
-using QuranDashboard.Infrastructure.Persistence;
 using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Import;
 using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Morphology;
 using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Mutashabihat;
@@ -78,6 +82,16 @@ public static class DependencyInjection
         services.AddScoped<ITafsirImportWriter, EfBulkTafsirImportWriter>();
         services.AddSingleton<ITafsirImportReportBuilder, TafsirImportReportBuilder>();
         services.AddSingleton<ITafsirReportWriter, MarkdownJsonTafsirReportWriter>();
+
+        services.AddSingleton<TranslationManifestReader>();
+        services.AddSingleton<TranslationDisplayMetadataReader>();
+        services.AddSingleton<JsonTranslationSourceReader>();
+        services.AddSingleton<TranslationAssembler>();
+        services.AddScoped<TranslationValidationRunner>();
+        services.AddScoped<ITranslationImportSource, TranslationImportSource>();
+        services.AddScoped<ITranslationImportWriter, EfBulkTranslationImportWriter>();
+        services.AddSingleton<ITranslationImportReportBuilder, TranslationImportReportBuilder>();
+        services.AddSingleton<ITranslationReportWriter, MarkdownJsonTranslationReportWriter>();
 
         services.AddSingleton(I3rabExpectedCounts.Production);
         services.AddSingleton<II3rabRuleCatalog, I3rabRuleCatalogSeed>();
