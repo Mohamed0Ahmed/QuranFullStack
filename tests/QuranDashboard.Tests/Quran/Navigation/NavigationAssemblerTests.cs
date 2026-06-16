@@ -70,6 +70,12 @@ public sealed class NavigationAssemblerTests
                     string.Equals(row.SajdahType, "required", StringComparison.Ordinal)
                         ? SajdahType.Required
                         : SajdahType.Optional)));
+
+        assembled.Warnings.Should().HaveCount(2);
+        assembled.Warnings.Should().Contain(check =>
+            check.Id == NavigationMetadataInvariants.WarningVerseCountMatch && check.Passed);
+        assembled.Warnings.Should().Contain(check =>
+            check.Id == NavigationMetadataInvariants.WarningSajdaDistribution && check.Passed);
     }
 
     [Fact]

@@ -15,24 +15,25 @@ public sealed class NavigationMetadataAssembler
         ArgumentNullException.ThrowIfNull(expected);
 
         var warnings = new List<NavigationCheckResult>();
+        var verseCountMismatches = new List<string>();
 
         var juzRows = AssembleDivisions(
             source.Juz,
             ayahIdsByVerseKey,
             expected.Ayahs,
-            warnings,
+            verseCountMismatches,
             divisionLabel: "juz");
         var hizbRows = AssembleDivisions(
             source.Hizb,
             ayahIdsByVerseKey,
             expected.Ayahs,
-            warnings,
+            verseCountMismatches,
             divisionLabel: "hizb");
         var rubRows = AssembleDivisions(
             source.Rub,
             ayahIdsByVerseKey,
             expected.Ayahs,
-            warnings,
+            verseCountMismatches,
             divisionLabel: "rub");
 
         var hizbWithParents = AssignParent(
@@ -50,7 +51,10 @@ public sealed class NavigationMetadataAssembler
             rubWithParents,
             ayahIdsByVerseKey,
             expected.Ayahs);
-        var sajdaRows = AssembleSajda(source.Sajda, ayahIdsByVerseKey, warnings, expected);
+        var sajdaRows = AssembleSajda(source.Sajda, ayahIdsByVerseKey, expected);
+
+        warnings.Add(BuildVerseCountMatchCheck(verseCountMismatches));
+        warnings.Add(BuildSajdaDistributionCheck(sajdaRows, expected));
 
         return new AssembledNavigationMetadata(
             juzRows,
@@ -65,7 +69,7 @@ public sealed class NavigationMetadataAssembler
         IReadOnlyList<NavigationDivisionDto> divisions,
         IReadOnlyDictionary<string, int> ayahIdsByVerseKey,
         int expectedAyahCount,
-        List<NavigationCheckResult> warnings,
+        List<string> verseCountMismatches,
         string divisionLabel)
     {
         var rows = new List<AssembledDivision>(divisions.Count);
@@ -79,11 +83,8 @@ public sealed class NavigationMetadataAssembler
 
             if (division.VersesCount != computedCount)
             {
-                warnings.Add(NavigationValidationChecks.Warning(
-                    NavigationMetadataInvariants.WarningVerseCountMatch,
-                    $"{divisionLabel} {division.Number}: source={division.VersesCount}",
-                    $"computed={computedCount}",
-                    passed: false));
+                verseCountMismatches.Add(
+                    $"{divisionLabel} {division.Number}: source={division.VersesCount}, computed={computedCount}");
             }
 
             rows.Add(new AssembledDivision(
@@ -107,10 +108,8 @@ public sealed class NavigationMetadataAssembler
     private static IReadOnlyList<AssembledSajda> AssembleSajda(
         IReadOnlyList<NavigationSajdaDto> sajdas,
         IReadOnlyDictionary<string, int> ayahIdsByVerseKey,
-        List<NavigationCheckResult> warnings,
-        NavigationExpectedCounts expected)
-    {
-        var rows = sajdas
+        NavigationExpectedCounts expected) =>
+        sajdas
             .OrderBy(item => item.SajdahNumber)
             .Select(sajda => new AssembledSajda(
                 sajda.SajdahNumber,
@@ -119,21 +118,40 @@ public sealed class NavigationMetadataAssembler
                 ParseSajdaType(sajda.SajdahType)))
             .ToList();
 
+    private static NavigationCheckResult BuildVerseCountMatchCheck(IReadOnlyList<string> mismatches) =>
+        NavigationValidationChecks.Warning(
+            NavigationMetadataInvariants.WarningVerseCountMatch,
+            "source verses_count match computed ranges",
+            mismatches.Count == 0 ? "all match" : string.Join("; ", mismatches),
+            mismatches.Count == 0);
+
+    private static NavigationCheckResult BuildSajdaDistributionCheck(
+        IReadOnlyList<AssembledSajda> rows,
+        NavigationExpectedCounts expected)
+    {
         var required = rows.Count(row => row.SajdahType == SajdahType.Required);
         var optional = rows.Count(row => row.SajdahType == SajdahType.Optional);
+        var observed = $"optional={optional}, required={required}";
+        var productionExpected =
+            $"optional={NavigationMetadataInvariants.ExpectedSajdaOptional}, required={NavigationMetadataInvariants.ExpectedSajdaRequired}";
 
-        if (expected.Sajda == NavigationMetadataInvariants.ExpectedSajda
-            && (required != NavigationMetadataInvariants.ExpectedSajdaRequired
-                || optional != NavigationMetadataInvariants.ExpectedSajdaOptional))
+        if (expected.Sajda != NavigationMetadataInvariants.ExpectedSajda)
         {
-            warnings.Add(NavigationValidationChecks.Warning(
+            return NavigationValidationChecks.Warning(
                 NavigationMetadataInvariants.WarningSajdaDistribution,
-                $"optional={NavigationMetadataInvariants.ExpectedSajdaOptional}, required={NavigationMetadataInvariants.ExpectedSajdaRequired}",
-                $"optional={optional}, required={required}",
-                passed: false));
+                productionExpected,
+                $"{observed} (production distribution check not applicable)",
+                passed: true);
         }
 
-        return rows;
+        var passed = required == NavigationMetadataInvariants.ExpectedSajdaRequired
+            && optional == NavigationMetadataInvariants.ExpectedSajdaOptional;
+
+        return NavigationValidationChecks.Warning(
+            NavigationMetadataInvariants.WarningSajdaDistribution,
+            productionExpected,
+            observed,
+            passed);
     }
 
     private static SajdahType ParseSajdaType(string value)

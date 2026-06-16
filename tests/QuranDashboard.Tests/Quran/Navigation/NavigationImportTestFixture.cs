@@ -488,7 +488,8 @@ public sealed record SyntheticNavigationPackageSpec(
     IReadOnlyList<SyntheticNavigationDivisionSpec> Juz,
     IReadOnlyList<SyntheticNavigationDivisionSpec> Hizb,
     IReadOnlyList<SyntheticNavigationDivisionSpec> Rub,
-    IReadOnlyList<SyntheticNavigationSajdaSpec> Sajda);
+    IReadOnlyList<SyntheticNavigationSajdaSpec> Sajda,
+    bool IncludeDecoyQuranTextFields = false);
 
 public sealed record SyntheticNavigationDivisionSpec(
     short Number,
@@ -610,6 +611,18 @@ internal static class NavigationSyntheticSeed
             new SyntheticNavigationSajdaSpec(2, SyntheticVerseKey(5), "required")
         ]
     };
+
+    public static SyntheticNavigationPackageSpec ReportTestPackageSpec => DefaultPackageSpec with
+    {
+        Juz =
+        [
+            new SyntheticNavigationDivisionSpec(1, 99, SyntheticVerseKey(1), SyntheticVerseKey(3), new Dictionary<string, string> { ["901"] = "1-3" }),
+            new SyntheticNavigationDivisionSpec(2, 3, SyntheticVerseKey(4), SyntheticVerseKey(6), new Dictionary<string, string> { ["901"] = "4-6" })
+        ]
+    };
+
+    public static SyntheticNavigationPackageSpec DecoyQuranTextPackageSpec =>
+        DefaultPackageSpec with { IncludeDecoyQuranTextFields = true };
 
     public static SyntheticNavigationPackageSpec NonContiguousJuzNumbersPackageSpec => DefaultPackageSpec with
     {

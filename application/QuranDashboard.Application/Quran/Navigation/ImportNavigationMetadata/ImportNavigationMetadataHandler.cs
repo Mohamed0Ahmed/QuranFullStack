@@ -135,7 +135,8 @@ public sealed class ImportNavigationMetadataHandler
                 result.RunAtUtc,
                 result.Totals,
                 result.Checks,
-                result.Errors);
+                result.Errors,
+                expectedCounts);
 
             var writeFailure = await reportEmitter.TryWriteFailureAsync(failureReport, reportDir, ct);
             if (writeFailure is not null)
@@ -168,7 +169,8 @@ public sealed class ImportNavigationMetadataHandler
             source,
             command.Force,
             DateTimeOffset.UtcNow,
-            message);
+            message,
+            command.ExpectedCounts ?? NavigationMetadataInvariants.Production);
 
         var writeFailure = await reportEmitter.TryWriteRefusalAsync(report, reportDir, ct);
         if (writeFailure is not null)
@@ -197,7 +199,8 @@ public sealed class ImportNavigationMetadataHandler
             ex.Checks,
             ex.FailedChecks
                 .Select(check => $"{check.Id}: expected {check.Expected}, observed {check.Observed}")
-                .ToList());
+                .ToList(),
+            command.ExpectedCounts ?? NavigationMetadataInvariants.Production);
 
         var writeFailure = await reportEmitter.TryWriteFailureAsync(report, reportDir, ct);
         if (writeFailure is not null)

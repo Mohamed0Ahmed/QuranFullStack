@@ -9,14 +9,16 @@ public interface INavigationMetadataImportReportBuilder
         DateTimeOffset runAtUtc,
         NavigationImportTotals totals,
         IReadOnlyList<NavigationCheckResult> checks,
-        IReadOnlyList<string> errors);
+        IReadOnlyList<string> errors,
+        NavigationExpectedCounts? expected);
 
     NavigationMetadataImportReport BuildRefusal(
         string sourcePath,
         NavigationMetadataSourceData? source,
         bool forced,
         DateTimeOffset runAtUtc,
-        string refusalMessage);
+        string refusalMessage,
+        NavigationExpectedCounts? expected);
 
     NavigationMetadataImportReport BuildCandidateSuccess(
         string sourcePath,

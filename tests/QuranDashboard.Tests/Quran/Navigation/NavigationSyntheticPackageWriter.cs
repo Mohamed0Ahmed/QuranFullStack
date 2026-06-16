@@ -24,9 +24,9 @@ internal static class NavigationSyntheticPackageWriter
 
         var sourceFiles = new List<object>();
 
-        await WriteDivisionFileAsync(packageDir, "sources/quran-metadata-juz.json", spec.Juz, "juz_number", sourceFiles, "juz");
-        await WriteDivisionFileAsync(packageDir, "sources/quran-metadata-hizb.json", spec.Hizb, "hizb_number", sourceFiles, "hizb");
-        await WriteDivisionFileAsync(packageDir, "sources/quran-metadata-rub.json", spec.Rub, "rub_number", sourceFiles, "rub");
+        await WriteDivisionFileAsync(packageDir, "sources/quran-metadata-juz.json", spec.Juz, "juz_number", sourceFiles, "juz", spec.IncludeDecoyQuranTextFields);
+        await WriteDivisionFileAsync(packageDir, "sources/quran-metadata-hizb.json", spec.Hizb, "hizb_number", sourceFiles, "hizb", spec.IncludeDecoyQuranTextFields);
+        await WriteDivisionFileAsync(packageDir, "sources/quran-metadata-rub.json", spec.Rub, "rub_number", sourceFiles, "rub", spec.IncludeDecoyQuranTextFields);
         await WriteSajdaFileAsync(packageDir, spec.Sajda, sourceFiles);
 
         var manifest = new
@@ -53,13 +53,14 @@ internal static class NavigationSyntheticPackageWriter
         IReadOnlyList<SyntheticNavigationDivisionSpec> divisions,
         string numberField,
         List<object> sourceFiles,
-        string datasetKey)
+        string datasetKey,
+        bool includeDecoyQuranTextFields)
     {
         var fullPath = Path.Combine(packageDir, relativePath);
         var payload = new Dictionary<string, object>();
         foreach (var division in divisions)
         {
-            payload[division.Number.ToString()] = new Dictionary<string, object>
+            var entry = new Dictionary<string, object>
             {
                 [numberField] = division.Number,
                 ["verses_count"] = division.VersesCount,
@@ -67,6 +68,14 @@ internal static class NavigationSyntheticPackageWriter
                 ["last_verse_key"] = division.LastVerseKey,
                 ["verse_mapping"] = division.VerseMapping
             };
+
+            if (includeDecoyQuranTextFields)
+            {
+                entry["text"] = "DECOY-QURAN-TEXT-DO-NOT-STORE";
+                entry["text_uthmani"] = "DECOY-UTHMANI-DO-NOT-STORE";
+            }
+
+            payload[division.Number.ToString()] = entry;
         }
 
         await WriteJsonAsync(fullPath, payload);
