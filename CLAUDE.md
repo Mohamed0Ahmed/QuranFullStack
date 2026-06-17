@@ -1,14 +1,14 @@
 <!-- SPECKIT START -->
 
-Active feature: **Quran Navigation Metadata Foundation** — branch `009-quran-navigation-metadata-foundation`.
+Active feature: **Mushaf Reader Study Context** — branch `011-mushaf-reader-study-context`.
 For technologies, project structure, shell commands, and design artifacts, read the current plan
 and its siblings:
 
-- `specs/009-quran-navigation-metadata-foundation/plan.md` — technical context, project structure, gates
-- `specs/009-quran-navigation-metadata-foundation/spec.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/`
-- `docs/feature-009-quran-navigation-metadata-foundation/feature-009-quran-navigation-metadata-foundation-planning-report.md` — long-form companion plan
-- `docs/feature-009-quran-navigation-metadata-foundation/quran-metadata-inventory-gap-analysis-report.md` — gap analysis (why only juz/hizb/rub/sajda are missing)
-- `resources/import-sources/quran-navigation-metadata/README.md`, `manifest.json`, `package-report.md` — final staged source package metadata (every import count traces here)
+- `specs/011-mushaf-reader-study-context/plan.md` — technical context, project structure, gates (full-stack: .NET read APIs + Angular reader; HTTPS-only local dev)
+- `specs/011-mushaf-reader-study-context/spec.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/`
+- `docs/feature-011-mushaf-reader-study-context/feature-011-mushaf-reader-study-context-planning-report.md` — long-form locked planning report
+- `docs/feature-011-mushaf-reader-study-context/feature-011-ayah-word-data-capability-report.md` — data-capability report (join paths + DTO field provenance)
+- `Backend/report/database/current-database-tables-and-relationships-report.md` — read-only database baseline
 
 <!-- SPECKIT END -->
 
