@@ -21,6 +21,7 @@ public sealed class FullI3rabAssembler
         var sources = new List<FullI3rabSourceDto>();
         var entries = new List<FullI3rabEntryDto>();
         var ayahEntries = new List<FullI3rabAyahEntryDto>();
+        var warnings = new List<string>();
         var seenSourceAyah = new HashSet<(string SourceKey, int AyahId)>();
 
         foreach (var manifestSource in manifest.ApprovedSources)
@@ -42,9 +43,14 @@ public sealed class FullI3rabAssembler
             sources.Add(assembled.Source);
             entries.AddRange(assembled.Entries);
             ayahEntries.AddRange(assembled.AyahEntries);
+
+            foreach (var warning in assembled.Warnings)
+            {
+                warnings.Add($"[{manifestSource.SourceKey}] {warning.Id}: expected {warning.Expected}, observed {warning.Observed}");
+            }
         }
 
-        return new FullI3rabSourceData(sources, entries, ayahEntries);
+        return new FullI3rabSourceData(sources, entries, ayahEntries, warnings);
     }
 
     public FullI3rabPerSourceAssembly AssembleSource(

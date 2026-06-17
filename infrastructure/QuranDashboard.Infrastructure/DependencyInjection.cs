@@ -5,11 +5,14 @@ using QuranDashboard.Application.Abstractions.Quran.Mutashabihat;
 using QuranDashboard.Application.Abstractions.Quran.Tafsirs;
 using QuranDashboard.Application.Abstractions.Quran.Translations;
 using QuranDashboard.Application.Abstractions.Quran.Navigation;
+using QuranDashboard.Application.Abstractions.Quran.FullI3rab;
 using QuranDashboard.Infrastructure.Files.Quran.Translations;
 using QuranDashboard.Infrastructure.Files.Quran.Navigation;
+using QuranDashboard.Infrastructure.Files.Quran.FullI3rab;
 using QuranDashboard.Infrastructure.Persistence;
 using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Translations;
 using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Navigation;
+using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.FullI3rab;
 using QuranDashboard.Infrastructure.Reports.Quran.Translations;
 using QuranDashboard.Infrastructure.Reports.Quran.Navigation;
 using QuranDashboard.Application.Abstractions.Quran.Words.Display;
@@ -105,6 +108,12 @@ public static class DependencyInjection
         services.AddScoped<INavigationMetadataImportWriter, EfBulkNavigationMetadataImportWriter>();
         services.AddSingleton<INavigationMetadataImportReportBuilder, NavigationMetadataImportReportBuilder>();
         services.AddSingleton<INavigationMetadataReportWriter, MarkdownJsonNavigationMetadataReportWriter>();
+
+        services.AddSingleton<FullI3rabManifestReader>();
+        services.AddSingleton<JsonFullI3rabSourceReader>();
+        services.AddSingleton<FullI3rabAssembler>();
+        services.AddScoped<IFullI3rabImportSource, FullI3rabImportSource>();
+        services.AddScoped<IFullI3rabImportWriter, EfBulkFullI3rabImportWriter>();
 
         services.AddSingleton(I3rabExpectedCounts.Production);
         services.AddSingleton<II3rabRuleCatalog, I3rabRuleCatalogSeed>();

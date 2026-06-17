@@ -3,7 +3,8 @@ namespace QuranDashboard.Application.Abstractions.Quran.FullI3rab;
 public sealed record FullI3rabSourceData(
     IReadOnlyList<FullI3rabSourceDto> Sources,
     IReadOnlyList<FullI3rabEntryDto> Entries,
-    IReadOnlyList<FullI3rabAyahEntryDto> AyahEntries);
+    IReadOnlyList<FullI3rabAyahEntryDto> AyahEntries,
+    IReadOnlyList<string> Warnings);
 
 public sealed record FullI3rabSourceDto(
     string SourceKey,
