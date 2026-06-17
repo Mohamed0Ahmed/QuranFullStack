@@ -38,6 +38,9 @@ public static class FullI3rabInvariants
     public const string CheckPostCopyEntrySource = "FULLI3RAB-POSTCOPY-ENTRY-SOURCE";
     public const string CheckPostCopyAyahResolved = "FULLI3RAB-POSTCOPY-AYAH-RESOLVED";
     public const string CheckPostCopyNoEmptyHtml = "FULLI3RAB-POSTCOPY-NO-EMPTY-HTML";
+    public const string CheckPostCopyHtmlUnchanged = "FULLI3RAB-POSTCOPY-HTML-UNCHANGED";
+    public const string CheckPostCopySourceUnchanged = "FULLI3RAB-POSTCOPY-SOURCE-UNCHANGED";
+    public const string CheckPostCopyDistinctAyahs = "FULLI3RAB-POSTCOPY-DISTINCT-AYAHS";
     public const string CheckReportWritten = "FULLI3RAB-REPORT-WRITTEN";
 
     public const string WarningProvenance = "FULLI3RAB-PROVENANCE-WARNING";
@@ -69,4 +72,8 @@ public static class FullI3rabInvariants
 
 public sealed record FullI3rabExpectedCounts(
     int Sources,
-    int AyahsPerSource);
+    int AyahsPerSource,
+    long? ExpectedAyahMappingTotal = null)
+{
+    public long AyahMappingTotal => ExpectedAyahMappingTotal ?? (long)Sources * AyahsPerSource;
+}

@@ -115,8 +115,28 @@ public sealed class FullI3rabManifestReader
         FullI3rabFileDigests before,
         CancellationToken ct)
     {
-        var after = await CaptureDigestsAsync(packagePath, ct);
-        return before.Equals(after);
+        ArgumentException.ThrowIfNullOrWhiteSpace(packagePath);
+        ArgumentNullException.ThrowIfNull(before);
+
+        foreach (var (relativePath, priorDigest) in before.Digests)
+        {
+            var fullPath = Path.Combine(packagePath, relativePath.Replace('\\', '/'));
+            if (!File.Exists(fullPath))
+            {
+                return false;
+            }
+
+            var fileInfo = new FileInfo(fullPath);
+            await using var stream = File.OpenRead(fullPath);
+            var sha256 = Convert.ToHexString(await SHA256.HashDataAsync(stream, ct));
+            var current = new FullI3rabFileDigest(fileInfo.Length, sha256);
+            if (!current.Equals(priorDigest))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static FullI3rabManifestSourceRecord ReadSourceRecord(JsonElement element, string packagePath)

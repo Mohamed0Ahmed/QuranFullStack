@@ -34,6 +34,7 @@ using QuranDashboard.Infrastructure.Reports.Quran.Irab;
 using QuranDashboard.Infrastructure.Reports.Quran.Morphology;
 using QuranDashboard.Infrastructure.Reports.Quran.Mutashabihat;
 using QuranDashboard.Infrastructure.Reports.Quran.Tafsirs;
+using QuranDashboard.Infrastructure.Reports.Quran.FullI3rab;
 using QuranDashboard.Infrastructure.Reports.Quran.Words;
 
 namespace QuranDashboard.Infrastructure;
@@ -112,8 +113,11 @@ public static class DependencyInjection
         services.AddSingleton<FullI3rabManifestReader>();
         services.AddSingleton<JsonFullI3rabSourceReader>();
         services.AddSingleton<FullI3rabAssembler>();
+        services.AddScoped<FullI3rabValidationRunner>();
         services.AddScoped<IFullI3rabImportSource, FullI3rabImportSource>();
         services.AddScoped<IFullI3rabImportWriter, EfBulkFullI3rabImportWriter>();
+        services.AddSingleton<IFullI3rabImportReportBuilder, FullI3rabImportReportBuilder>();
+        services.AddSingleton<IFullI3rabReportWriter, MarkdownJsonFullI3rabReportWriter>();
 
         services.AddSingleton(I3rabExpectedCounts.Production);
         services.AddSingleton<II3rabRuleCatalog, I3rabRuleCatalogSeed>();

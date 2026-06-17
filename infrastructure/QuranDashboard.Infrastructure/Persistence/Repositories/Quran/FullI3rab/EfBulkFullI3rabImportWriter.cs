@@ -5,10 +5,14 @@ namespace QuranDashboard.Infrastructure.Persistence.Repositories.Quran.FullI3rab
 public sealed class EfBulkFullI3rabImportWriter : IFullI3rabImportWriter
 {
     private readonly QuranDashboardDbContext dbContext;
+    private readonly FullI3rabValidationRunner validationRunner;
 
-    public EfBulkFullI3rabImportWriter(QuranDashboardDbContext dbContext)
+    public EfBulkFullI3rabImportWriter(
+        QuranDashboardDbContext dbContext,
+        FullI3rabValidationRunner validationRunner)
     {
         this.dbContext = dbContext;
+        this.validationRunner = validationRunner;
     }
 
     public async Task<bool> AnyTargetTableHasDataAsync(CancellationToken ct)
@@ -62,8 +66,13 @@ public sealed class EfBulkFullI3rabImportWriter : IFullI3rabImportWriter
                 npgsqlConnection, transaction, source, runAtUtc, ct);
 
             var totals = FullI3rabImportTotals.FromSource(source);
-            var checks = await RunPostCopyChecksAsync(
-                npgsqlConnection, transaction, expected, ct);
+            var checks = await validationRunner.RunPostCopyChecksAsync(
+                npgsqlConnection,
+                transaction,
+                source,
+                expected,
+                sourceUnchangedCheck,
+                ct);
 
             var hardChecks = checks
                 .Where(check => check.Severity == FullI3rabImportConstants.HardSeverity)
@@ -112,52 +121,6 @@ public sealed class EfBulkFullI3rabImportWriter : IFullI3rabImportWriter
             await transaction.RollbackAsync(ct);
             throw;
         }
-    }
-
-    private static async Task<IReadOnlyList<FullI3rabCheckResult>> RunPostCopyChecksAsync(
-        NpgsqlConnection connection,
-        NpgsqlTransaction transaction,
-        FullI3rabExpectedCounts expected,
-        CancellationToken ct)
-    {
-        var sourceCount = await FullI3rabCommandExecutor.ExecuteScalarIntAsync(
-            connection, transaction, FullI3rabSql.CheckSourceCount, ct);
-        var ayahMappingCount = await FullI3rabCommandExecutor.ExecuteScalarLongAsync(
-            connection, transaction, FullI3rabSql.CheckAyahMappingCount, ct);
-        var coverageSum = await FullI3rabCommandExecutor.ExecuteScalarLongAsync(
-            connection, transaction, FullI3rabSql.CheckCoverageSum, ct);
-        var distinctAyahs = await FullI3rabCommandExecutor.ExecuteScalarIntAsync(
-            connection, transaction, FullI3rabSql.CheckDistinctAyahCount, ct);
-
-        var expectedMappings = expected.Sources * expected.AyahsPerSource;
-
-        return
-        [
-            new FullI3rabCheckResult(
-                FullI3rabInvariants.CheckPostCopySourceRows,
-                FullI3rabImportConstants.HardSeverity,
-                expected.Sources.ToString(CultureInfo.InvariantCulture),
-                sourceCount.ToString(CultureInfo.InvariantCulture),
-                sourceCount == expected.Sources),
-            new FullI3rabCheckResult(
-                FullI3rabInvariants.CheckPostCopyAyahMappings,
-                FullI3rabImportConstants.HardSeverity,
-                expectedMappings.ToString(CultureInfo.InvariantCulture),
-                ayahMappingCount.ToString(CultureInfo.InvariantCulture),
-                ayahMappingCount == expectedMappings),
-            new FullI3rabCheckResult(
-                FullI3rabInvariants.CheckPostCopyCoverageSum,
-                FullI3rabImportConstants.HardSeverity,
-                expectedMappings.ToString(CultureInfo.InvariantCulture),
-                coverageSum.ToString(CultureInfo.InvariantCulture),
-                coverageSum == expectedMappings),
-            new FullI3rabCheckResult(
-                FullI3rabInvariants.CheckPostCopyAyahResolved,
-                FullI3rabImportConstants.InfoSeverity,
-                expected.AyahsPerSource.ToString(CultureInfo.InvariantCulture),
-                distinctAyahs.ToString(CultureInfo.InvariantCulture),
-                distinctAyahs == expected.AyahsPerSource)
-        ];
     }
 
     private static FullI3rabImportResult BuildFailureResult(

@@ -6,13 +6,19 @@ public sealed class ImportFullI3rabHandler
 {
     private readonly IFullI3rabImportSource importSource;
     private readonly IFullI3rabImportWriter importWriter;
+    private readonly IFullI3rabImportReportBuilder reportBuilder;
+    private readonly FullI3rabImportReportEmitter reportEmitter;
 
     public ImportFullI3rabHandler(
         IFullI3rabImportSource importSource,
-        IFullI3rabImportWriter importWriter)
+        IFullI3rabImportWriter importWriter,
+        IFullI3rabReportWriter reportWriter,
+        IFullI3rabImportReportBuilder reportBuilder)
     {
         this.importSource = importSource;
         this.importWriter = importWriter;
+        this.reportBuilder = reportBuilder;
+        this.reportEmitter = new FullI3rabImportReportEmitter(reportWriter);
     }
 
     public async Task<ImportFullI3rabResult> HandleAsync(ImportFullI3rabCommand command, CancellationToken ct)
@@ -22,9 +28,7 @@ public sealed class ImportFullI3rabHandler
 
         var sourcePath = Path.GetFullPath(command.SourcePath);
         var expectedCounts = command.ExpectedCounts ?? FullI3rabInvariants.Production;
-        var reportDir = string.IsNullOrWhiteSpace(command.ReportOutDir)
-            ? null
-            : Path.GetFullPath(command.ReportOutDir);
+        var reportDir = ResolveReportOutDir(command);
 
         FullI3rabSourceData source;
         try
@@ -33,30 +37,36 @@ public sealed class ImportFullI3rabHandler
         }
         catch (FullI3rabValidationException ex)
         {
-            return ImportFullI3rabResult.Failure(BuildFirstFailureMessage(ex), reportDir);
+            return await WriteValidationFailureAsync(command, sourcePath, reportDir, ex, ct);
         }
         catch (FullI3rabSourceException)
         {
-            return ImportFullI3rabResult.Refused(FullI3rabInvariants.SourceMismatch, reportDir);
+            return await EmitPrePersistenceOutcomeAsync(
+                command, sourcePath, reportDir, source: null, FullI3rabInvariants.SourceMismatch, refused: true, ct);
         }
         catch (IOException)
         {
-            return ImportFullI3rabResult.Refused(FullI3rabInvariants.SourceMismatch, reportDir);
+            return await EmitPrePersistenceOutcomeAsync(
+                command, sourcePath, reportDir, source: null, FullI3rabInvariants.SourceMismatch, refused: true, ct);
         }
         catch (InvalidOperationException ex) when (ex.Message == FullI3rabInvariants.AyahsMissing)
         {
-            return ImportFullI3rabResult.Refused(ex.Message, reportDir);
+            return await EmitPrePersistenceOutcomeAsync(
+                command, sourcePath, reportDir, source: null, ex.Message, refused: true, ct);
         }
         catch (InvalidDataException ex)
         {
-            return ImportFullI3rabResult.Failure(ex.Message, reportDir);
+            return await EmitPrePersistenceOutcomeAsync(
+                command, sourcePath, reportDir, source: null, ex.Message, refused: false, ct);
         }
 
         if (!command.Force && await importWriter.AnyTargetTableHasDataAsync(ct))
         {
-            return ImportFullI3rabResult.Refused(FullI3rabInvariants.TargetsNotEmpty, reportDir);
+            return await EmitPrePersistenceOutcomeAsync(
+                command, sourcePath, reportDir, source, FullI3rabInvariants.TargetsNotEmpty, refused: true, ct);
         }
 
+        var successWarningCount = 0;
         FullI3rabImportResult result;
 
         try
@@ -66,33 +76,132 @@ public sealed class ImportFullI3rabHandler
                 command.Force,
                 expectedCounts,
                 token => importSource.SourceUnchangedAsync(sourcePath, token),
-                NoOpReportWriteAsync,
+                async (candidateResult, token) =>
+                {
+                    var report = reportBuilder.BuildCandidateSuccess(
+                        sourcePath,
+                        source,
+                        command.Force,
+                        candidateResult.RunAtUtc,
+                        candidateResult.Totals,
+                        candidateResult.Checks,
+                        expectedCounts);
+                    successWarningCount = source.Warnings.Count;
+                    await reportEmitter.WriteOrThrowAsync(report, reportDir, token);
+                },
                 ct);
         }
         catch (InvalidOperationException ex) when (ex.Message == FullI3rabInvariants.TargetsNotEmpty)
         {
-            return ImportFullI3rabResult.Refused(ex.Message, reportDir);
+            return await EmitPrePersistenceOutcomeAsync(
+                command, sourcePath, reportDir, source, ex.Message, refused: true, ct);
+        }
+        catch (IOException ex)
+        {
+            return ImportFullI3rabResult.Failure(
+                $"{FullI3rabInvariants.ReportRequired} ({ex.Message})",
+                reportDir);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return ImportFullI3rabResult.Failure(
+                $"{FullI3rabInvariants.ReportRequired} ({ex.Message})",
+                reportDir);
         }
 
         if (!result.Persisted)
         {
-            var message = result.Errors.Count > 0
-                ? result.Errors[0]
-                : "Full i'rab import validation failed.";
+            var failureReport = reportBuilder.BuildValidationFailure(
+                sourcePath,
+                source,
+                command.Force,
+                result.RunAtUtc,
+                result.Totals,
+                result.Checks,
+                result.Errors);
 
-            return ImportFullI3rabResult.Failure(message, reportDir, result.Warnings.Count);
+            var writeFailure = await reportEmitter.TryWriteAsync(failureReport, reportDir, ct);
+            if (writeFailure is not null)
+            {
+                return writeFailure;
+            }
+
+            return ImportFullI3rabResult.Failure(
+                result.Errors.Count > 0
+                    ? result.Errors[0]
+                    : "Full i'rab import validation failed.",
+                reportDir,
+                source.Warnings.Count);
         }
 
-        return ImportFullI3rabResult.Success(result.Totals, reportDir, result.Warnings.Count);
+        return ImportFullI3rabResult.Success(result.Totals, reportDir, successWarningCount);
     }
 
-    private static Task NoOpReportWriteAsync(FullI3rabImportResult _, CancellationToken __) => Task.CompletedTask;
-
-    private static string BuildFirstFailureMessage(FullI3rabValidationException ex)
+    private async Task<ImportFullI3rabResult> EmitPrePersistenceOutcomeAsync(
+        ImportFullI3rabCommand command,
+        string sourcePath,
+        string reportDir,
+        FullI3rabSourceData? source,
+        string message,
+        bool refused,
+        CancellationToken ct)
     {
+        var report = reportBuilder.BuildRefusal(
+            sourcePath,
+            source,
+            command.Force,
+            DateTimeOffset.UtcNow,
+            message);
+
+        var writeFailure = await reportEmitter.TryWriteAsync(report, reportDir, ct);
+        if (writeFailure is not null)
+        {
+            return writeFailure;
+        }
+
+        return refused
+            ? ImportFullI3rabResult.Refused(message, reportDir)
+            : ImportFullI3rabResult.Failure(message, reportDir);
+    }
+
+    private async Task<ImportFullI3rabResult> WriteValidationFailureAsync(
+        ImportFullI3rabCommand command,
+        string sourcePath,
+        string reportDir,
+        FullI3rabValidationException ex,
+        CancellationToken ct)
+    {
+        var report = reportBuilder.BuildValidationFailure(
+            sourcePath,
+            source: null,
+            command.Force,
+            DateTimeOffset.UtcNow,
+            FullI3rabImportTotals.Empty,
+            ex.Checks,
+            ex.FailedChecks
+                .Select(check => $"{check.Id}: expected {check.Expected}, observed {check.Observed}")
+                .ToList());
+
+        var writeFailure = await reportEmitter.TryWriteAsync(report, reportDir, ct);
+        if (writeFailure is not null)
+        {
+            return writeFailure;
+        }
+
         var firstFailed = ex.FailedChecks.FirstOrDefault();
-        return firstFailed is null
-            ? ex.Message
-            : $"{firstFailed.Id}: expected {firstFailed.Expected}, observed {firstFailed.Observed}";
+        if (firstFailed is null)
+        {
+            return ImportFullI3rabResult.Failure(ex.Message, reportDir);
+        }
+
+        return ImportFullI3rabResult.Failure(
+            $"{firstFailed.Id}: expected {firstFailed.Expected}, observed {firstFailed.Observed}",
+            reportDir);
+    }
+
+    private static string ResolveReportOutDir(ImportFullI3rabCommand command)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(command.ReportOutDir);
+        return Path.GetFullPath(command.ReportOutDir);
     }
 }

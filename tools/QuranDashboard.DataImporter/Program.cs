@@ -867,7 +867,7 @@ internal static class Program
             if (result.Totals is not null)
             {
                 Console.WriteLine(
-                    $"sources={result.Totals.SourceRows}, entries={result.Totals.EntryRows}, ayahMappings={result.Totals.AyahMappingRows}, distinctAyahs={result.Totals.DistinctAyahs}, warnings={result.WarningCount}.");
+                    $"sources={result.Totals.SourceRows}, entries={result.Totals.EntryRows}, ayahMappings={result.Totals.AyahMappingRows}, distinctAyahs={result.Totals.DistinctAyahs}, contentWarnings={result.WarningCount}.");
             }
 
             if (force)
@@ -876,10 +876,12 @@ internal static class Program
                     "forced=true (full-i'rab tables cleared and rebuilt after package validation).");
             }
 
+            WriteReportPath(result.ReportOutDir);
             return result.ExitCode;
         }
 
         Console.Error.WriteLine(result.Message);
+        WriteReportPath(result.ReportOutDir);
         return result.ExitCode;
     }
 

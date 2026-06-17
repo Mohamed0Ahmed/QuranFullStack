@@ -99,12 +99,26 @@ public sealed class FullI3rabImportTests(FullI3rabImportTestFixture fixture) : I
             ObservedHtmlClasses: new Dictionary<string, int>());
 
         var packageDir = await packages.WriteAsync(sources: [spec]);
+        var reportDir = fixture.CreateTempDir();
         var result = await fixture.RunImportAsync(
             packageDir,
-            new FullI3rabExpectedCounts(Sources: 1, AyahsPerSource: 3));
+            new FullI3rabExpectedCounts(Sources: 1, AyahsPerSource: 3),
+            reportDir);
 
         result.Succeeded.Should().BeTrue(result.Message);
-        result.WarningCount.Should().BeGreaterThan(0);
+        result.WarningCount.Should().Be(1);
+
+        var reportJson = await File.ReadAllTextAsync(
+            Path.Combine(reportDir, FullI3rabImportConstants.JsonReportFileName));
+        using var document = JsonDocument.Parse(reportJson);
+        var warnings = document.RootElement.GetProperty("warnings").EnumerateArray()
+            .Select(warning => warning.GetString())
+            .ToList();
+
+        warnings.Should().Contain(warning =>
+            warning!.Contains(FullI3rabInvariants.CheckHtmlAllowlist, StringComparison.Ordinal));
+        warnings.Should().Contain(warning =>
+            warning!.Contains("table", StringComparison.Ordinal));
     }
 
     public void Dispose() => packages.Dispose();

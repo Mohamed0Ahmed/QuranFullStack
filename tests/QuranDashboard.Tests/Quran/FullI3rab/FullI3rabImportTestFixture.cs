@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using System.Security.Cryptography;
+using System.Text;
 using QuranDashboard.Application;
 using QuranDashboard.Application.Abstractions.Quran.FullI3rab;
 using QuranDashboard.Application.Quran.FullI3rab.ImportFullI3rab;
@@ -174,7 +176,40 @@ public sealed class FullI3rabImportTestFixture : IAsyncLifetime
         Directory.CreateDirectory(dir);
         return dir;
     }
+
+    public async Task<FullI3rabTableSnapshot> CaptureFullI3rabTableSnapshotAsync()
+    {
+        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+
+        return new FullI3rabTableSnapshot(
+            await dbContext.FullI3rabSources.CountAsync(),
+            await dbContext.FullI3rabEntries.CountAsync(),
+            await dbContext.FullI3rabAyahEntries.CountAsync());
+    }
+
+    public async Task<QuranFoundationSnapshot> CaptureQuranFoundationSnapshotAsync()
+    {
+        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+
+        var ayahTexts = await dbContext.QuranAyahs
+            .AsNoTracking()
+            .OrderBy(ayah => ayah.Id)
+            .Select(ayah => ayah.TextUthmani)
+            .ToListAsync();
+
+        return new QuranFoundationSnapshot(
+            await dbContext.QuranSurahs.CountAsync(),
+            await dbContext.QuranAyahs.CountAsync(),
+            Convert.ToHexString(SHA256.HashData(
+                Encoding.UTF8.GetBytes(string.Join('|', ayahTexts)))));
+    }
 }
+
+public sealed record FullI3rabTableSnapshot(int SourceRows, int EntryRows, int AyahLinkRows);
+
+public sealed record QuranFoundationSnapshot(int SurahRows, int AyahRows, string AyahTextFingerprint);
 
 [CollectionDefinition(nameof(FullI3rabImportTestCollection))]
 public sealed class FullI3rabImportTestCollection : ICollectionFixture<FullI3rabImportTestFixture>;
