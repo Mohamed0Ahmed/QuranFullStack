@@ -1,8 +1,8 @@
 # Database Reset & Seeding Order (Dev Runbook)
 
-**Date:** 2026-06-16 *(revised for Feature 009; prior revision 2026-06-16 for Feature 008; original 2026-06-14)*
+**Date:** 2026-06-17 *(revised for Feature 010; prior revision 2026-06-16 for Feature 009; original 2026-06-14)*
 **Scope:** Documentation only. Records the canonical local-dev order to reset, migrate, and seed the
-`quran_dashboard` PostgreSQL database across Features 002–009. No command was run to produce this
+`quran_dashboard` PostgreSQL database across Features 002–010. No command was run to produce this
 report; commands below are the documented/intended sequence — confirm flags against each feature’s
 quickstart before running.
 
@@ -39,6 +39,7 @@ rebuild-words step).
 | 9 | `20260614120520_AddQuranTafsirs` | 007 |
 | 10 | `20260615112132_AddQuranTranslations` | 008 |
 | 11 | `20260616095937_AddQuranNavigationMetadata` | 009 |
+| 12 | `20260617104912_AddQuranFullI3rab` | 010 |
 
 ## 3. Seeding order (by data dependency)
 
@@ -57,6 +58,7 @@ the exact ones verified in the Phase 7 report; the remaining verbs are shown in 
 | 6 | `import-tafsirs` | 007 | resolved ayahs (foundation) | verb present; `--source`/`--report-out`/`--force` per Feature 007 quickstart |
 | 7 | `import-translations` | 008 | resolved ayahs (foundation only) | `dotnet run --project tools/QuranDashboard.DataImporter -- import-translations` (defaults resolve to the staged package and `report/feature-008-quran-translations-foundation/`); **verified end-to-end 2026-06-16** — see §4 |
 | 8 | `import-navigation-metadata` | 009 | resolved ayahs (foundation only) | `dotnet run --project tools/QuranDashboard.DataImporter -- import-navigation-metadata` (defaults resolve to the staged package and `report/feature-009-quran-navigation-metadata-foundation/`); **verified end-to-end 2026-06-16** — see §4 |
+| 9 | `import-full-i3rab` | 010 | resolved ayahs (foundation only) | `dotnet run --project tools/QuranDashboard.DataImporter -- import-full-i3rab` (defaults resolve to `resources/import-sources/quran-full-i3rab/` and `resources/report/quran-full-i3rab/`); **verified end-to-end 2026-06-17** — see §4 |
 
 > `import-sources` is a staging/utility verb, not part of the per-feature seeding chain.
 >
@@ -69,6 +71,11 @@ the exact ones verified in the Phase 7 report; the remaining verbs are shown in 
 > against `quran_ayahs` only and tags the three navigation columns on `quran_ayahs`. It does **not** depend
 > on words, morphology, i3rab, mutashabihat, tafsirs, or translations, so it may be run any time after
 > `import-foundation` (order 1). It is listed at order 8 for consistency with the feature sequence.
+>
+> **Order-9 dependency note:** `import-full-i3rab` (010) resolves `verse_key -> ayah_id` against
+> `quran_ayahs` only. It does **not** depend on words, morphology, simple i3rab (005), mutashabihat,
+> tafsirs, translations, or navigation metadata, so it may be run any time after `import-foundation`
+> (order 1). It is listed at order 9 for consistency with the feature sequence.
 
 ## 4. What is documented vs. inferred
 
@@ -101,6 +108,17 @@ the exact ones verified in the Phase 7 report; the remaining verbs are shown in 
   `ayahCoverage.complete=true`, `noQuranAyahTextReadOrStored=true`. Canonical report at
   `report/feature-009-quran-navigation-metadata-foundation/navigation-metadata-import-report.{md,json}`.
   Note: same caveat as 008 — migration + import on an existing DB, not a full reset→reseed of the whole chain.
+- **Documented & verified (Feature 010, real run 2026-06-17):** migration
+  `20260617104912_AddQuranFullI3rab` applied via `dotnet ef database update` (Api startup project),
+  then `import-full-i3rab` run against `resources/import-sources/quran-full-i3rab`
+  (connection via `ConnectionStrings__QuranDashboardDb`). Console summary:
+  `sources=4, entries=14513, ayahMappings=24944, distinctAyahs=6236, contentWarnings=0`. Post-run DB
+  checks: 4 source rows, 14,513 entry rows, 24,944 junction rows, 6,236 mappings per source
+  (`daas`, `darwish`, `jadwal`, `muyassar`). Importer report: `verdict=pass`, `persisted=true`,
+  `forced=false`, 21/21 hard checks green, provenance warning present. Canonical report at
+  `report/feature-010-quran-full-i3rab-foundation/full-i3rab-import-report.{md,json}`.
+  Note: same caveat as 008/009 — migration + import on an existing foundation-seeded DB, not a full
+  reset→reseed of the whole chain.
 
 ## 5. Production note (not blocking dev)
 

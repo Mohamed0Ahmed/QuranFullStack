@@ -42,6 +42,7 @@ Do not rename historical reports retroactively unless a dedicated cleanup task e
 | `feature-005-word-simple-i3rab-foundation/` | Feature 005 simplified إعراب foundation: rule-coverage inventory, label inventory, and planning-sync review. |
 | `feature-006-quran-mutashabihat-foundation/` | Feature 006 متشابهات / similar-ayah foundation: implementation verification, import-run summary, source-safety, scope, and completion reports. |
 | `feature-007-quran-tafsir-foundation/` | Feature 007 tafsir import foundation: numbered verification/validation/check reports (US1–US4, build, test, quickstart, architecture, source-safety, scope). |
+| `feature-010-quran-full-i3rab-foundation/` | Feature 010 full i'rab import foundation: build/test verification, clean-code self-checks, real-import run summary, and completion report. |
 | `database-inventory/` | Cross-feature database reference: live PostgreSQL inventory and the reset/seeding-order runbook. |
 
 Each feature folder carries its own `README.md` index. From Feature 006 onward, human-authored
@@ -56,4 +57,5 @@ original content-named filenames; Feature 003 was normalized to numeric prefixes
 - `feature-005-word-simple-i3rab-foundation/` — `README.md` + 3 reports
 - `feature-006-quran-mutashabihat-foundation/` — `README.md` + `001`…`005` reports
 - `feature-007-quran-tafsir-foundation/` — `README.md` + `001`…`010` reports
+- `feature-010-quran-full-i3rab-foundation/` — `README.md` + `001`…`006` reports + `full-i3rab-import-report.{md,json}`
 - `database-inventory/` — `current-database-inventory.md`, `database-reset-and-seeding-order.md`

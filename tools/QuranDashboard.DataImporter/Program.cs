@@ -11,10 +11,12 @@ using QuranDashboard.Application.Quran.Words.RebuildDisplayWords;
 using QuranDashboard.Application.Quran.Tafsirs.ImportTafsirs;
 using QuranDashboard.Application.Quran.Translations.ImportTranslations;
 using QuranDashboard.Application.Quran.Navigation.ImportNavigationMetadata;
+using QuranDashboard.Application.Quran.FullI3rab.ImportFullI3rab;
 using QuranDashboard.Application.Abstractions.Quran.Tafsirs;
 using QuranDashboard.Application.Abstractions.Quran.Translations;
 using QuranDashboard.Application.Abstractions.Quran.Navigation;
 using QuranDashboard.Application.Abstractions.Quran.Mutashabihat;
+using QuranDashboard.Application.Abstractions.Quran.FullI3rab;
 using QuranDashboard.Infrastructure;
 
 namespace QuranDashboard.DataImporter;
@@ -41,6 +43,7 @@ internal static class Program
             "import-tafsirs" => await RunImportTafsirsAsync(verbArgs),
             "import-translations" => await RunImportTranslationsAsync(verbArgs),
             "import-navigation-metadata" => await RunImportNavigationMetadataAsync(verbArgs),
+            "import-full-i3rab" => await RunImportFullI3rabAsync(verbArgs),
             "generate-i3rab" => await RunGenerateI3rabAsync(verbArgs),
             _ => UnknownVerb(verb)
         };
@@ -834,6 +837,125 @@ internal static class Program
         return true;
     }
 
+    private static async Task<int> RunImportFullI3rabAsync(string[] args)
+    {
+        if (!TryParseFullI3rabArguments(args, out var sourcePath, out var reportOutDir, out var force, out var errorMessage))
+        {
+            Console.Error.WriteLine(errorMessage);
+            PrintUsage();
+            return ImportFullI3rabResult.FailureExitCode;
+        }
+
+        var host = CreateHost(args);
+        await using var scope = host.Services.CreateAsyncScope();
+        var handler = scope.ServiceProvider.GetRequiredService<ImportFullI3rabHandler>();
+
+        sourcePath ??= ResolveDefaultFullI3rabSourcePath();
+        reportOutDir ??= ResolveDefaultFullI3rabReportDir();
+
+        var result = await handler.HandleAsync(
+            new ImportFullI3rabCommand(
+                sourcePath,
+                force,
+                FullI3rabInvariants.Production,
+                reportOutDir),
+            CancellationToken.None);
+
+        if (result.Succeeded)
+        {
+            Console.WriteLine(result.Message);
+            if (result.Totals is not null)
+            {
+                Console.WriteLine(
+                    $"sources={result.Totals.SourceRows}, entries={result.Totals.EntryRows}, ayahMappings={result.Totals.AyahMappingRows}, distinctAyahs={result.Totals.DistinctAyahs}, contentWarnings={result.WarningCount}.");
+            }
+
+            if (force)
+            {
+                Console.WriteLine(
+                    "forced=true (full-i'rab tables cleared and rebuilt after package validation).");
+            }
+
+            WriteReportPath(result.ReportOutDir);
+            return result.ExitCode;
+        }
+
+        Console.Error.WriteLine(result.Message);
+        WriteReportPath(result.ReportOutDir);
+        return result.ExitCode;
+    }
+
+    private static string ResolveDefaultFullI3rabSourcePath()
+    {
+        return Path.GetFullPath(Path.Combine(
+            ResolveRepositoryRoot(), "resources", "import-sources", "quran-full-i3rab"));
+    }
+
+    private static string ResolveDefaultFullI3rabReportDir()
+    {
+        return Path.GetFullPath(Path.Combine(
+            ResolveRepositoryRoot(), "resources", "report", "quran-full-i3rab"));
+    }
+
+    private static bool TryParseFullI3rabArguments(
+        string[] args,
+        out string? sourcePath,
+        out string? reportOutDir,
+        out bool force,
+        out string errorMessage)
+    {
+        sourcePath = null;
+        reportOutDir = null;
+        force = false;
+        errorMessage = string.Empty;
+
+        for (var index = 0; index < args.Length; index++)
+        {
+            switch (args[index])
+            {
+                case "--source":
+                    if (!TryReadValue(args, ref index, out sourcePath))
+                    {
+                        errorMessage = "Missing value for --source.";
+                        return false;
+                    }
+
+                    break;
+                case "--report-out":
+                    if (!TryReadValue(args, ref index, out reportOutDir))
+                    {
+                        errorMessage = "Missing value for --report-out.";
+                        return false;
+                    }
+
+                    break;
+                case "--force":
+                    force = true;
+                    break;
+                default:
+                    errorMessage = $"Unknown argument '{args[index]}'.";
+                    return false;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(sourcePath))
+        {
+            sourcePath = Path.GetFullPath(sourcePath);
+            if (!Directory.Exists(sourcePath))
+            {
+                errorMessage = $"Source directory was not found: {sourcePath}";
+                return false;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(reportOutDir))
+        {
+            reportOutDir = Path.GetFullPath(reportOutDir);
+        }
+
+        return true;
+    }
+
     private static async Task<int> RunGenerateI3rabAsync(string[] args)
     {
         if (!TryParseGenerateI3rabArguments(args, out var reportOutDir, out var force, out var errorMessage))
@@ -928,6 +1050,8 @@ internal static class Program
             "  QuranDashboard.DataImporter import-translations [--source <path>] [--report-out <path>] [--force]");
         Console.Error.WriteLine(
             "  QuranDashboard.DataImporter import-navigation-metadata [--source <path>] [--report-out <path>] [--force]");
+        Console.Error.WriteLine(
+            "  QuranDashboard.DataImporter import-full-i3rab [--source <path>] [--report-out <path>] [--force]");
         Console.Error.WriteLine(
             "  QuranDashboard.DataImporter generate-i3rab [--report-out <path>] [--force]");
     }

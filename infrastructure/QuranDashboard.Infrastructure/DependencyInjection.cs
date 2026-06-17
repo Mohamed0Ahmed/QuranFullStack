@@ -5,11 +5,14 @@ using QuranDashboard.Application.Abstractions.Quran.Mutashabihat;
 using QuranDashboard.Application.Abstractions.Quran.Tafsirs;
 using QuranDashboard.Application.Abstractions.Quran.Translations;
 using QuranDashboard.Application.Abstractions.Quran.Navigation;
+using QuranDashboard.Application.Abstractions.Quran.FullI3rab;
 using QuranDashboard.Infrastructure.Files.Quran.Translations;
 using QuranDashboard.Infrastructure.Files.Quran.Navigation;
+using QuranDashboard.Infrastructure.Files.Quran.FullI3rab;
 using QuranDashboard.Infrastructure.Persistence;
 using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Translations;
 using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Navigation;
+using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.FullI3rab;
 using QuranDashboard.Infrastructure.Reports.Quran.Translations;
 using QuranDashboard.Infrastructure.Reports.Quran.Navigation;
 using QuranDashboard.Application.Abstractions.Quran.Words.Display;
@@ -31,6 +34,7 @@ using QuranDashboard.Infrastructure.Reports.Quran.Irab;
 using QuranDashboard.Infrastructure.Reports.Quran.Morphology;
 using QuranDashboard.Infrastructure.Reports.Quran.Mutashabihat;
 using QuranDashboard.Infrastructure.Reports.Quran.Tafsirs;
+using QuranDashboard.Infrastructure.Reports.Quran.FullI3rab;
 using QuranDashboard.Infrastructure.Reports.Quran.Words;
 
 namespace QuranDashboard.Infrastructure;
@@ -105,6 +109,15 @@ public static class DependencyInjection
         services.AddScoped<INavigationMetadataImportWriter, EfBulkNavigationMetadataImportWriter>();
         services.AddSingleton<INavigationMetadataImportReportBuilder, NavigationMetadataImportReportBuilder>();
         services.AddSingleton<INavigationMetadataReportWriter, MarkdownJsonNavigationMetadataReportWriter>();
+
+        services.AddSingleton<FullI3rabManifestReader>();
+        services.AddSingleton<JsonFullI3rabSourceReader>();
+        services.AddSingleton<FullI3rabAssembler>();
+        services.AddScoped<FullI3rabValidationRunner>();
+        services.AddScoped<IFullI3rabImportSource, FullI3rabImportSource>();
+        services.AddScoped<IFullI3rabImportWriter, EfBulkFullI3rabImportWriter>();
+        services.AddSingleton<IFullI3rabImportReportBuilder, FullI3rabImportReportBuilder>();
+        services.AddSingleton<IFullI3rabReportWriter, MarkdownJsonFullI3rabReportWriter>();
 
         services.AddSingleton(I3rabExpectedCounts.Production);
         services.AddSingleton<II3rabRuleCatalog, I3rabRuleCatalogSeed>();
