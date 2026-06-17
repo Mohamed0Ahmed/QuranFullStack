@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using QuranDashboard.Application.Abstractions.Quran.Import;
+using QuranDashboard.Application.Abstractions.Quran.MushafReader;
 using QuranDashboard.Application.Abstractions.Quran.Mutashabihat;
 using QuranDashboard.Application.Abstractions.Quran.Tafsirs;
 using QuranDashboard.Application.Abstractions.Quran.Translations;
@@ -50,6 +51,8 @@ public static class DependencyInjection
         {
             options.UseNpgsql(connectionString);
         });
+
+        ConfigureMushafReader(services, configuration);
 
         services.AddSingleton<ManifestReader>();
         services.AddSingleton<JsonWordSourceReader>();
@@ -129,5 +132,15 @@ public static class DependencyInjection
         services.AddScoped<II3rabGenerationReportWriter, MarkdownJsonI3rabReportWriter>();
 
         return services;
+    }
+
+    /// <summary>
+    /// Wires the Mushaf reader feature. Reader/handler registrations are added by
+    /// their own stories (T020–T041); this only binds the configured default
+    /// source keys so handlers can resolve <see cref="MushafReaderOptions"/>.
+    /// </summary>
+    private static void ConfigureMushafReader(IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<MushafReaderOptions>(configuration.GetSection("MushafReader"));
     }
 }
