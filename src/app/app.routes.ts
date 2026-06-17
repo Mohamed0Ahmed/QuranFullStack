@@ -27,6 +27,11 @@ export const routes: Routes = [
         (m) => m.DashboardHomeComponent,
       ),
   },
+  {
+    path: 'dashboard/mushaf',
+    loadChildren: () =>
+      import('./features/mushaf/mushaf.routes').then((m) => m.MUSHAF_ROUTES),
+  },
   ...placeholderRoutes,
   {
     path: '**',

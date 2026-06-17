@@ -1,0 +1,30 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.mushaf-reader {
+  display: grid;
+  // dir="rtl" places the first grid column on the RIGHT, so the first DOM
+  // child (the Mushaf page) lands right ~58% and the second child (the study
+  // area) lands left ~42% — matching R9 (right Mushaf ~55–60%, left study
+  // ~40–45%). Responsive collapse/drawers are added in T054.
+  grid-template-columns: minmax(0, 58%) minmax(0, 42%);
+  gap: 1rem;
+  height: 100%;
+  min-height: 0;
+  &__study,
+  &__page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+    border-radius: 0.75rem;
+    background: var(--qd-surface, #f7f6f3);
+  }
+
+  &__placeholder {
+    color: var(--qd-text-muted, #8a8170);
+    font-size: 0.95rem;
+  }
+}
