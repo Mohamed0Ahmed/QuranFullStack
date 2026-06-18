@@ -63,3 +63,5 @@ Failure shape: `ApiResponse` with `isSuccess:false`, Arabic `message`, `errors:[
 - `textUthmani` is authoritative; never reconstructed from segments.
 - Division/sajda markers use the **first-line rule** (`MIN(line_number)` for that ayah on the page).
 - Thin controller: bind → call `GetMushafPageQuery` → map to `ApiResponse<T>`. No EF/logic in the controller.
+
+> **Jump-by-surah catalog:** `GET /api/mushaf/surahs` is documented in [`mushaf-surahs.api.md`](./mushaf-surahs.api.md) (added in Phase 4 for FR-017).
