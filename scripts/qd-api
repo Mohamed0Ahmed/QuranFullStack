@@ -27,16 +27,15 @@ open_swagger() {
   echo "API did not become ready in time. Open Swagger manually: $SWAGGER_URL"
 }
 
-echo "Building backend solution..."
 cd "$BACKEND_ROOT"
-dotnet build QuranDashboard.sln
 
 echo
-echo "Starting API (HTTPS profile)..."
+echo "Starting API (HTTPS profile, no build)..."
 echo "  API:     https://localhost:5015"
 echo "  Swagger: $SWAGGER_URL"
 echo "  Health:  $HEALTH_URL"
+echo "  Build:   run qd-build after backend code changes"
 echo
 
 open_swagger &
-dotnet run --project "$API_PROJECT" --launch-profile https
+dotnet run --project "$API_PROJECT" --launch-profile https --no-build

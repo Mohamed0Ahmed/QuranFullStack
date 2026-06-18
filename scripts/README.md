@@ -1,13 +1,24 @@
 # Dev CLI shortcuts
 
-Short commands to run the backend API and Angular dev server from any directory.
+Short commands to build/run the backend API and Angular dev server from any directory.
 
 ## Commands
 
 | Command | What it does |
 |---------|----------------|
-| `qd-api` | `dotnet build` then `dotnet run --launch-profile https`; opens Swagger when the API is ready |
+| `qd-build` | `dotnet build QuranDashboard.sln` for backend changes |
+| `qd-api` | `dotnet run --launch-profile https --no-build`; opens Swagger when the API is ready |
 | `qd-ui` | `npm run start:https` for the Angular dashboard |
+
+Typical daily flow:
+
+```bash
+qd-build
+qd-api
+qd-ui
+```
+
+After the first successful build, use `qd-api` directly until backend code changes.
 
 ## One-time setup (zsh)
 
@@ -27,12 +38,13 @@ source ~/.zshrc
 
 ```bash
 alias qd-api='/projects/Dashboard/App/Backend/scripts/qd-api'
+alias qd-build='/projects/Dashboard/App/Backend/scripts/qd-build'
 alias qd-ui='/projects/Dashboard/App/Backend/scripts/qd-ui'
 ```
 
 ## Prerequisites
 
-### Backend (`qd-api`)
+### Backend (`qd-build`, `qd-api`)
 
 - .NET 10 SDK
 - PostgreSQL with the seeded `quran_dashboard` database
@@ -83,7 +95,8 @@ This produces `localhost.pem` and `localhost-key.pem`, used by `npm run start:ht
 | Problem | Fix |
 |---------|-----|
 | `command not found: qd-api` | Add `Backend/scripts` to `PATH` or use the full path |
-| Build fails | Run `dotnet build` in `Backend/` and fix compile errors |
+| `qd-api` says the app was not built | Run `qd-build` first |
+| Build fails | Run `qd-build` and fix compile errors |
 | API won't start | Check PostgreSQL is running and user secrets are set |
 | `node_modules not found` | Run `npm install` in `Frontend/quran-dashboard-ui` |
 | SSL cert missing for UI | Run `mkcert localhost` in the frontend project |
