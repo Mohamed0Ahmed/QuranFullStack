@@ -1,6 +1,12 @@
 <div class="mushaf-reader" dir="rtl">
   <section class="mushaf-reader__page" aria-label="منطقة المصحف">
-    <span class="mushaf-reader__placeholder">منطقة عرض صفحة المصحف</span>
+    <qd-mushaf-page-area
+      [page]="facade.page()"
+      [loadState]="facade.pageLoadState()"
+      [surahCatalog]="facade.surahCatalog()"
+      (pageChange)="onPageChange($event)"
+      (surahJump)="onSurahJump($event)"
+    />
   </section>
   <section class="mushaf-reader__study" aria-label="منطقة الدراسة">
     <span class="mushaf-reader__placeholder">منطقة الدراسة (آية + كلمة)</span>

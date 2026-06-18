@@ -1,0 +1,10 @@
+.mushaf-line {
+  display: block;
+  text-align: start;
+  padding-block: 0.15rem;
+
+  &--centered,
+  &--surah-name {
+    text-align: center;
+  }
+}

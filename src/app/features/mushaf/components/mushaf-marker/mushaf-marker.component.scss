@@ -1,0 +1,12 @@
+.mushaf-marker {
+  display: inline-flex;
+  align-items: center;
+  margin-inline-start: 0.35rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: var(--qd-surface-elevated);
+  color: var(--qd-text-muted);
+  font-size: 0.7rem;
+  line-height: 1.4;
+  vertical-align: middle;
+}

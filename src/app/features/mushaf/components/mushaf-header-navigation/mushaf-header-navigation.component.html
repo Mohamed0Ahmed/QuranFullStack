@@ -1,0 +1,54 @@
+<header class="mushaf-header" aria-label="سياق الصفحة والتنقّل">
+  <div class="mushaf-header__context">
+    <span class="mushaf-header__page">صفحة {{ page().pageNumber }}</span>
+    @if (page().surahs.length) {
+      <span class="mushaf-header__surahs">
+        @for (surah of page().surahs; track surah.surahNumber) {
+          <span>{{ surah.nameArabic }}</span>
+        }
+      </span>
+    }
+    @if (page().navigation.juzNumbers.length) {
+      <span class="mushaf-header__meta">جزء {{ page().navigation.juzNumbers.join('، ') }}</span>
+    }
+    @if (page().navigation.hizbNumbers.length) {
+      <span class="mushaf-header__meta">حزب {{ page().navigation.hizbNumbers.join('، ') }}</span>
+    }
+    @if (page().navigation.rubNumbers.length) {
+      <span class="mushaf-header__meta">ربع {{ page().navigation.rubNumbers.join('، ') }}</span>
+    }
+  </div>
+
+  <div class="mushaf-header__controls">
+    <button
+      class="qd-btn qd-btn-ghost"
+      type="button"
+      [disabled]="page().previousPageNumber === null"
+      (click)="onPrevious()"
+    >
+      السابق
+    </button>
+    <button
+      class="qd-btn qd-btn-ghost"
+      type="button"
+      [disabled]="page().nextPageNumber === null"
+      (click)="onNext()"
+    >
+      التالي
+    </button>
+
+    <label class="mushaf-header__surah-jump">
+      <span class="sr-only">الانتقال إلى سورة</span>
+      <select
+        class="qd-select"
+        [disabled]="surahCatalog().length === 0"
+        (change)="onSurahSelect($event)"
+      >
+        <option value="" disabled selected>سورة</option>
+        @for (surah of surahCatalog(); track surah.surahNumber) {
+          <option [value]="surah.surahNumber">{{ surah.surahNumber }}. {{ surah.nameArabic }}</option>
+        }
+      </select>
+    </label>
+  </div>
+</header>

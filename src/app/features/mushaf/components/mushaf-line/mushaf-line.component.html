@@ -1,0 +1,13 @@
+<div
+  class="mushaf-line"
+  [class.mushaf-line--centered]="line().isCentered"
+  [class.mushaf-line--surah-name]="line().lineType === 'surah_name'"
+  [attr.data-line-type]="line().lineType"
+>
+  @for (word of line().words; track word.wordLocation) {
+    <qd-mushaf-word [word]="word" />
+  }
+  @for (marker of lineMarkers(); track marker.markerType + marker.markerNumber + marker.verseKey) {
+    <qd-mushaf-marker [marker]="marker" />
+  }
+</div>

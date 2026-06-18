@@ -1,0 +1,104 @@
+import { beforeEach, describe, expect, it } from 'vitest';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+
+import { MushafPageViewComponent } from './mushaf-page-view.component';
+import { MushafPageViewModel } from '../../models/mushaf.models';
+
+const pageFixture: MushafPageViewModel = {
+  pageNumber: 5,
+  previousPageNumber: 4,
+  nextPageNumber: 6,
+  surahs: [{ surahNumber: 2, nameArabic: 'البقرة', firstAyahOnPage: 25, lastAyahOnPage: 26 }],
+  ayahRange: { firstVerseKey: '2:25', lastVerseKey: '2:26' },
+  navigation: { juzNumbers: [1], hizbNumbers: [1], rubNumbers: [1, 2] },
+  lines: [
+    {
+      lineNumber: 1,
+      lineType: 'ayah',
+      isCentered: false,
+      surahNumber: null,
+      words: [
+        {
+          wordLocation: '2:25:1',
+          verseKey: '2:25',
+          wordNumber: 1,
+          lineWordOrder: 1,
+          textUthmani: 'وَبَشِّرِ',
+          isAyahMarker: false,
+        },
+        {
+          wordLocation: '2:25:2',
+          verseKey: '2:25',
+          wordNumber: 2,
+          lineWordOrder: 2,
+          textUthmani: 'ٱلَّذِينَ',
+          isAyahMarker: false,
+        },
+      ],
+    },
+    {
+      lineNumber: 2,
+      lineType: 'ayah',
+      isCentered: false,
+      surahNumber: null,
+      words: [
+        {
+          wordLocation: '2:26:1',
+          verseKey: '2:26',
+          wordNumber: 1,
+          lineWordOrder: 1,
+          textUthmani: 'ٱللَّهُ',
+          isAyahMarker: false,
+        },
+      ],
+    },
+  ],
+  markers: [
+    {
+      markerType: 'rub',
+      markerNumber: 2,
+      verseKey: '2:26',
+      lineNumber: 2,
+      wordLocation: '2:26:1',
+      sajdahType: null,
+    },
+  ],
+};
+
+describe('MushafPageViewComponent', () => {
+  let fixture: ComponentFixture<MushafPageViewComponent>;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [MushafPageViewComponent],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(MushafPageViewComponent);
+    fixture.componentRef.setInput('page', pageFixture);
+    fixture.detectChanges();
+  });
+
+  it('renders lines and words from the view model using textUthmani', () => {
+    const root = fixture.nativeElement as HTMLElement;
+    const text = root.textContent ?? '';
+
+    expect(text).toContain('وَبَشِّرِ');
+    expect(text).toContain('ٱلَّذِينَ');
+    expect(text).toContain('ٱللَّهُ');
+    expect(root.querySelectorAll('qd-mushaf-line').length).toBe(2);
+  });
+
+  it('does not render segment forms in the Mushaf area', () => {
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('[data-segment-form]')).toBeNull();
+  });
+
+  it('places markers on the first line where the ayah appears', () => {
+    const lines = fixture.nativeElement.querySelectorAll('qd-mushaf-line');
+    const firstLineText = lines[0]?.textContent ?? '';
+    const secondLineText = lines[1]?.textContent ?? '';
+
+    expect(firstLineText).not.toContain('ربع 2');
+    expect(secondLineText).toContain('ربع 2');
+  });
+});

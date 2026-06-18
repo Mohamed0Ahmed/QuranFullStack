@@ -1,0 +1,11 @@
+.mushaf-word {
+  display: inline;
+  font-family: var(--qd-font-quran);
+  font-size: 1.35rem;
+  line-height: 2.2;
+  white-space: pre-wrap;
+
+  &--marker {
+    color: var(--qd-text-muted);
+  }
+}

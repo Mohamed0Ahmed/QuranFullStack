@@ -1,0 +1,5 @@
+<div class="mushaf-page-view" data-testid="mushaf-page-view">
+  @for (line of page().lines; track line.lineNumber) {
+    <qd-mushaf-line [line]="line" [markers]="page().markers" />
+  }
+</div>

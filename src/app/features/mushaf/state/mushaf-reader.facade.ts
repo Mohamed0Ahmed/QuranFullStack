@@ -1,27 +1,44 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 
+import { MushafPagesApi } from '../data-access/mushaf-pages.api';
+import { MushafSurahCatalogApi } from '../data-access/mushaf-surah-catalog.api';
 import {
   AyahStudyViewModel,
   DEFAULT_MUSHAF_READER_STATE,
+  MushafPageDto,
   MushafPageViewModel,
   MushafReaderState,
+  MushafSurahCatalogItemDto,
   ResourceLoadState,
   WordAnalysisViewModel,
 } from '../models/mushaf.models';
+import { subscribeToApiLoad } from './mushaf-api-load.helpers';
+
+function toPageViewModel(dto: MushafPageDto): MushafPageViewModel {
+  return {
+    pageNumber: dto.pageNumber,
+    previousPageNumber: dto.previousPageNumber,
+    nextPageNumber: dto.nextPageNumber,
+    surahs: dto.surahs,
+    ayahRange: dto.ayahRange,
+    navigation: dto.navigation,
+    lines: dto.lines,
+    markers: dto.markers,
+  };
+}
 
 /**
  * Mushaf reader page-state facade.
  *
  * Owns all reader view state (selections, sources, tabs, and per-resource
- * loading/empty/error primitives). It is the single source of truth the shell
- * and child components render from; components never call APIs directly.
- *
- * Phase 2 skeleton: state holders only. Load methods (`loadPage`,
- * `loadAyahStudy`, `loadWordAnalysis`, source setters, and URL<->state sync)
- * are added by their stories (T025 / T035 / T044 / T048).
+ * loading/empty/error primitives). Load methods for ayah/word study and full
+ * URL sync are added by later stories (T035 / T044 / T048).
  */
 @Injectable({ providedIn: 'root' })
 export class MushafReaderFacade {
+  private readonly pagesApi = inject(MushafPagesApi);
+  private readonly surahCatalogApi = inject(MushafSurahCatalogApi);
+
   private readonly _pageNumber = signal(DEFAULT_MUSHAF_READER_STATE.pageNumber);
   private readonly _selectedAyahKey = signal(DEFAULT_MUSHAF_READER_STATE.selectedAyahKey);
   private readonly _selectedWordLocation = signal(DEFAULT_MUSHAF_READER_STATE.selectedWordLocation);
@@ -34,6 +51,7 @@ export class MushafReaderFacade {
   private readonly _page = signal<MushafPageViewModel | null>(null);
   private readonly _ayahStudy = signal<AyahStudyViewModel | null>(null);
   private readonly _wordAnalysis = signal<WordAnalysisViewModel | null>(null);
+  private readonly _surahCatalog = signal<MushafSurahCatalogItemDto[]>([]);
 
   private readonly _pageLoadState = signal<ResourceLoadState>(DEFAULT_MUSHAF_READER_STATE.page);
   private readonly _ayahStudyLoadState = signal<ResourceLoadState>(DEFAULT_MUSHAF_READER_STATE.ayahStudy);
@@ -51,12 +69,12 @@ export class MushafReaderFacade {
   readonly page = this._page.asReadonly();
   readonly ayahStudy = this._ayahStudy.asReadonly();
   readonly wordAnalysis = this._wordAnalysis.asReadonly();
+  readonly surahCatalog = this._surahCatalog.asReadonly();
 
   readonly pageLoadState = this._pageLoadState.asReadonly();
   readonly ayahStudyLoadState = this._ayahStudyLoadState.asReadonly();
   readonly wordAnalysisLoadState = this._wordAnalysisLoadState.asReadonly();
 
-  /** Aggregate reader state (mirrors the URL<->state contract). */
   readonly state = computed<MushafReaderState>(() => ({
     pageNumber: this._pageNumber(),
     selectedAyahKey: this._selectedAyahKey(),
@@ -70,4 +88,38 @@ export class MushafReaderFacade {
     ayahStudy: this._ayahStudyLoadState(),
     wordAnalysis: this._wordAnalysisLoadState(),
   }));
+
+  loadSurahCatalog(): void {
+    subscribeToApiLoad(this.surahCatalogApi.getCatalog(), {
+      onSuccess: (data) => this._surahCatalog.set(data.surahs),
+      onSettled: () => undefined,
+      emptyMessage: 'تعذّر تحميل فهرس السور.',
+      notFoundMessage: 'تعذّر تحميل فهرس السور.',
+      connectionMessage: 'تعذّر الاتصال بالخادم.',
+    });
+  }
+
+  resolveSurahStartPage(surahNumber: number): number | null {
+    const entry = this._surahCatalog().find((surah) => surah.surahNumber === surahNumber);
+    return entry?.startPageNumber ?? null;
+  }
+
+  loadPage(pageNumber: number): void {
+    const clamped = Math.min(604, Math.max(1, pageNumber));
+    this._pageNumber.set(clamped);
+    this._pageLoadState.set({ isLoading: true, isEmpty: false, errorMessage: null });
+
+    subscribeToApiLoad(this.pagesApi.getPage(clamped), {
+      onSuccess: (data) => this._page.set(toPageViewModel(data)),
+      onSettled: (loadState) => {
+        if (loadState.isEmpty) {
+          this._page.set(null);
+        }
+        this._pageLoadState.set(loadState);
+      },
+      emptyMessage: 'تعذّر تحميل الصفحة.',
+      notFoundMessage: 'الصفحة غير موجودة.',
+      connectionMessage: 'تعذّر الاتصال بالخادم.',
+    });
+  }
 }

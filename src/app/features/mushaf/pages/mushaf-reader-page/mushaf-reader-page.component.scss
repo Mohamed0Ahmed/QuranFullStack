@@ -16,15 +16,23 @@
   &__study,
   &__page {
     display: flex;
-    align-items: center;
-    justify-content: center;
+    flex-direction: column;
     min-height: 0;
     border-radius: 0.75rem;
-    background: var(--qd-surface, #f7f6f3);
+  }
+
+  &__study {
+    align-items: center;
+    justify-content: center;
+    background: var(--qd-surface);
+  }
+
+  &__page {
+    background: transparent;
   }
 
   &__placeholder {
-    color: var(--qd-text-muted, #8a8170);
+    color: var(--qd-text-muted);
     font-size: 0.95rem;
   }
 }

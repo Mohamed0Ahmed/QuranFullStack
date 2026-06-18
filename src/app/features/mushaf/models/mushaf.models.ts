@@ -73,6 +73,16 @@ export interface MushafPageDto {
   markers: PageMarkerDto[];
 }
 
+export interface MushafSurahCatalogItemDto {
+  surahNumber: number;
+  nameArabic: string;
+  startPageNumber: number;
+}
+
+export interface MushafSurahCatalogDto {
+  surahs: MushafSurahCatalogItemDto[];
+}
+
 /* ============================================================================
  * B2. Ayah study DTO (three sources together)
  * ========================================================================== */
