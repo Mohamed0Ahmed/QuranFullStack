@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using QuranDashboard.Application.Abstractions.Quran.Import;
+using QuranDashboard.Application.Abstractions.Quran.MushafReader;
 using QuranDashboard.Application.Abstractions.Quran.Mutashabihat;
 using QuranDashboard.Application.Abstractions.Quran.Tafsirs;
 using QuranDashboard.Application.Abstractions.Quran.Translations;
@@ -10,6 +11,9 @@ using QuranDashboard.Infrastructure.Files.Quran.Translations;
 using QuranDashboard.Infrastructure.Files.Quran.Navigation;
 using QuranDashboard.Infrastructure.Files.Quran.FullI3rab;
 using QuranDashboard.Infrastructure.Persistence;
+using Microsoft.Extensions.Caching.Memory;
+using QuranDashboard.Infrastructure.Caching.Quran.MushafReader;
+using QuranDashboard.Infrastructure.Persistence.Reads.Quran.MushafReader;
 using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Translations;
 using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Navigation;
 using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.FullI3rab;
@@ -50,6 +54,8 @@ public static class DependencyInjection
         {
             options.UseNpgsql(connectionString);
         });
+
+        ConfigureMushafReader(services, configuration);
 
         services.AddSingleton<ManifestReader>();
         services.AddSingleton<JsonWordSourceReader>();
@@ -129,5 +135,34 @@ public static class DependencyInjection
         services.AddScoped<II3rabGenerationReportWriter, MarkdownJsonI3rabReportWriter>();
 
         return services;
+    }
+
+    /// <summary>
+    /// Wires the Mushaf reader feature. Reader/handler registrations are added by
+    /// their own stories (T020–T041); this only binds the configured default
+    /// source keys so handlers can resolve <see cref="MushafReaderOptions"/>.
+    /// </summary>
+    private static void ConfigureMushafReader(IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<MushafReaderOptions>(configuration.GetSection("MushafReader"));
+        services.AddSingleton(sp => sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<MushafReaderOptions>>().Value);
+        services.AddMemoryCache();
+
+        services.AddScoped<EfMushafPageReader>();
+        services.AddScoped<IMushafPageReader>(sp => new CachedMushafPageReader(
+            sp.GetRequiredService<EfMushafPageReader>(),
+            sp.GetRequiredService<IMemoryCache>()));
+
+        services.AddScoped<EfAyahStudyReader>();
+        services.AddScoped<IAyahStudyReader>(sp => new CachedAyahStudyReader(
+            sp.GetRequiredService<EfAyahStudyReader>(),
+            sp.GetRequiredService<IMemoryCache>()));
+
+        services.AddScoped<IMushafSurahCatalogReader, EfMushafSurahCatalogReader>();
+
+        services.AddScoped<EfWordAnalysisReader>();
+        services.AddScoped<IWordAnalysisReader>(sp => new CachedWordAnalysisReader(
+            sp.GetRequiredService<EfWordAnalysisReader>(),
+            sp.GetRequiredService<IMemoryCache>()));
     }
 }

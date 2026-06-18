@@ -29,4 +29,8 @@
     <ProjectReference Include="..\..\tools\QuranDashboard.DataImporter\QuranDashboard.DataImporter.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Quran\MushafReader\mushaf-reader-seed.sql" />
+  </ItemGroup>
+
 </Project>
