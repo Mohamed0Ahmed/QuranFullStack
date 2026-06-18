@@ -5,7 +5,11 @@
   [attr.data-line-type]="line().lineType"
 >
   @for (word of line().words; track word.wordLocation) {
-    <qd-mushaf-word [word]="word" />
+    <qd-mushaf-word
+      [word]="word"
+      [selectedVerseKey]="selectedVerseKey()"
+      (ayahSelect)="ayahSelect.emit($event)"
+    />
   }
   @for (marker of lineMarkers(); track marker.markerType + marker.markerNumber + marker.verseKey) {
     <qd-mushaf-marker [marker]="marker" />

@@ -253,6 +253,12 @@ export type PanelMode = 'ayah' | 'word' | 'none';
 export type AyahStudyTab = 'tafsir' | 'translation' | 'full-i3rab';
 export type WordAnalysisTab = 'morphology' | 'segments' | 'i3rab' | 'identity';
 
+/** A selectable source entry for the ayah-study source selectors (v1). */
+export interface SourceOption {
+  key: string;
+  label: string;
+}
+
 /**
  * A segment enriched for rendering: the backend `segmentColorSlot` mapped to a
  * concrete color, plus an `isMissing` flag derived from `displayTextStatus`.

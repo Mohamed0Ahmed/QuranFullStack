@@ -22,9 +22,15 @@
   }
 
   &__study {
-    align-items: center;
-    justify-content: center;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
     background: var(--qd-surface);
+  }
+
+  &__ayah-study {
+    flex: 1;
+    min-height: 0;
   }
 
   &__page {

@@ -4,11 +4,26 @@
       [page]="facade.page()"
       [loadState]="facade.pageLoadState()"
       [surahCatalog]="facade.surahCatalog()"
+      [selectedVerseKey]="facade.selectedAyahKey()"
       (pageChange)="onPageChange($event)"
       (surahJump)="onSurahJump($event)"
+      (ayahSelect)="onAyahSelect($event)"
     />
   </section>
   <section class="mushaf-reader__study" aria-label="منطقة الدراسة">
-    <span class="mushaf-reader__placeholder">منطقة الدراسة (آية + كلمة)</span>
+    <qd-selected-ayah-section
+      class="mushaf-reader__ayah-study"
+      [study]="facade.ayahStudy()"
+      [loadState]="facade.ayahStudyLoadState()"
+      [activeTab]="facade.ayahTab()"
+      [selectedVerseKey]="facade.selectedAyahKey()"
+      [tafsirOptions]="facade.tafsirSourceOptions"
+      [translationOptions]="facade.translationSourceOptions"
+      [fullI3rabOptions]="facade.fullI3rabSourceOptions"
+      (tabChange)="onAyahTabChange($event)"
+      (tafsirSourceChange)="onTafsirSourceChange($event)"
+      (translationSourceChange)="onTranslationSourceChange($event)"
+      (fullI3rabSourceChange)="onFullI3rabSourceChange($event)"
+    />
   </section>
 </div>

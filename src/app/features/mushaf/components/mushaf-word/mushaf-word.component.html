@@ -1,3 +1,10 @@
-<span class="mushaf-word" [class.mushaf-word--marker]="word().isAyahMarker">
+<button
+  type="button"
+  class="mushaf-word"
+  [class.mushaf-word--marker]="word().isAyahMarker"
+  [class.mushaf-word--selected]="selectedVerseKey() === word().verseKey"
+  [disabled]="word().isAyahMarker"
+  (click)="onWordClick()"
+>
   {{ word().textUthmani }}
-</span>
+</button>

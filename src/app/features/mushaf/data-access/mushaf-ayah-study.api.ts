@@ -1,28 +1,39 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 import { environment } from '../../../../environments/environment';
 import { ApiResponse } from '../../../core/data-access/api-response.model';
 import { AyahStudyDto, MushafReaderSources } from '../models/mushaf.models';
 
-/**
- * Data-access service for the ayah-study endpoint. Loads the three selected
- * source kinds (tafsir, translation, full i3rab) together.
- *
- * Phase 2 shell: `getAyahStudy` is implemented by US3 (T033).
- */
+export type AyahStudySourceParams = Pick<
+  MushafReaderSources,
+  'tafsirSource' | 'translationSource' | 'fullI3rabSource'
+>;
+
 @Injectable({ providedIn: 'root' })
 export class MushafAyahStudyApi {
+  private readonly http = inject(HttpClient);
   private readonly baseUrl = environment.apiBaseUrl;
 
   getAyahStudy(
     verseKey: string,
-    sources: Pick<MushafReaderSources, 'tafsirSource' | 'translationSource' | 'fullI3rabSource'>,
+    sources: AyahStudySourceParams,
   ): Observable<ApiResponse<AyahStudyDto>> {
-    // Implemented in T033 (US3). Returns core ayah + the three sources together.
-    void this.baseUrl;
-    void verseKey;
-    void sources;
-    throw new Error('MushafAyahStudyApi.getAyahStudy not implemented — see task T033.');
+    let params = new HttpParams();
+    if (sources.tafsirSource) {
+      params = params.set('tafsirSource', sources.tafsirSource);
+    }
+    if (sources.translationSource) {
+      params = params.set('translationSource', sources.translationSource);
+    }
+    if (sources.fullI3rabSource) {
+      params = params.set('fullI3rabSource', sources.fullI3rabSource);
+    }
+
+    return this.http.get<ApiResponse<AyahStudyDto>>(
+      `${this.baseUrl}/api/mushaf/ayahs/${encodeURIComponent(verseKey)}/study`,
+      { params },
+    );
   }
 }

@@ -3,6 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { of, throwError } from 'rxjs';
 
+import { MushafAyahStudyApi } from '../data-access/mushaf-ayah-study.api';
 import { MushafPagesApi } from '../data-access/mushaf-pages.api';
 import { MushafSurahCatalogApi } from '../data-access/mushaf-surah-catalog.api';
 import { MushafReaderFacade } from './mushaf-reader.facade';
@@ -26,6 +27,7 @@ describe('MushafReaderFacade.loadPage', () => {
       providers: [
         MushafReaderFacade,
         { provide: MushafPagesApi, useValue: { getPage } },
+        { provide: MushafAyahStudyApi, useValue: { getAyahStudy: vi.fn() } },
         { provide: MushafSurahCatalogApi, useValue: { getCatalog: vi.fn() } },
       ],
     });
@@ -45,6 +47,7 @@ describe('MushafReaderFacade.loadPage', () => {
       providers: [
         MushafReaderFacade,
         { provide: MushafPagesApi, useValue: { getPage } },
+        { provide: MushafAyahStudyApi, useValue: { getAyahStudy: vi.fn() } },
         { provide: MushafSurahCatalogApi, useValue: { getCatalog: vi.fn() } },
       ],
     });
@@ -72,6 +75,7 @@ describe('MushafReaderFacade.loadPage', () => {
       providers: [
         MushafReaderFacade,
         { provide: MushafPagesApi, useValue: { getPage } },
+        { provide: MushafAyahStudyApi, useValue: { getAyahStudy: vi.fn() } },
         { provide: MushafSurahCatalogApi, useValue: { getCatalog: vi.fn() } },
       ],
     });
@@ -101,6 +105,7 @@ describe('MushafReaderFacade surah jump', () => {
       providers: [
         MushafReaderFacade,
         { provide: MushafPagesApi, useValue: { getPage: vi.fn() } },
+        { provide: MushafAyahStudyApi, useValue: { getAyahStudy: vi.fn() } },
         { provide: MushafSurahCatalogApi, useValue: { getCatalog } },
       ],
     });

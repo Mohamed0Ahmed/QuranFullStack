@@ -4,8 +4,29 @@
   font-size: 1.35rem;
   line-height: 2.2;
   white-space: pre-wrap;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  color: inherit;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: default;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--qd-focus-ring);
+    outline-offset: 2px;
+    border-radius: 0.2rem;
+  }
 
   &--marker {
     color: var(--qd-text-muted);
+  }
+
+  &--selected {
+    background: color-mix(in oklch, var(--qd-accent) 12%, transparent);
+    border-radius: 0.2rem;
   }
 }

@@ -18,6 +18,10 @@
       (pageChange)="pageChange.emit($event)"
       (surahJump)="surahJump.emit($event)"
     />
-    <qd-mushaf-page-view [page]="page()!" />
+    <qd-mushaf-page-view
+      [page]="page()!"
+      [selectedVerseKey]="selectedVerseKey()"
+      (ayahSelect)="ayahSelect.emit($event)"
+    />
   }
 </section>

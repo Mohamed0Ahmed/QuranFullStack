@@ -1,0 +1,45 @@
+.source-selector {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qd-space-2);
+
+  &__header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--qd-space-2);
+  }
+
+  &__label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--qd-text-muted);
+  }
+
+  &__used {
+    font-size: 0.75rem;
+    color: var(--qd-text-muted);
+  }
+
+  &__options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--qd-space-1);
+  }
+
+  &__option {
+    padding: var(--qd-space-1) var(--qd-space-2);
+    border: 1px solid var(--qd-border);
+    border-radius: var(--qd-radius-sm);
+    background: var(--qd-surface);
+    color: var(--qd-text);
+    font-size: 0.8125rem;
+    cursor: pointer;
+
+    &--active {
+      border-color: var(--qd-accent);
+      background: var(--qd-surface-elevated);
+    }
+  }
+}
