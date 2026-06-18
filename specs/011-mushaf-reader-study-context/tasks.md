@@ -191,19 +191,19 @@ description: "Task list for Feature 011 — Mushaf Reader Study Context"
 
 ### Backend cache (only after Phases 4–6 readers + tests are green)
 
-- [ ] T051 [P] Implement `IMemoryCache` decorators `CachedMushafPageReader`, `CachedAyahStudyReader`, `CachedWordAnalysisReader` + `MushafReaderCacheKeys` in `Backend/infrastructure/QuranDashboard.Infrastructure/Caching/Quran/MushafReader/`; register them as decorators in `Infrastructure/DependencyInjection.cs`. Keys per `data-model.md` §E; cache only successful immutable reads; never cache not-found/not-analyzable or user-specific data; no Redis.
-- [ ] T052 [P] Backend test `Backend/tests/QuranDashboard.Tests/Quran/MushafReader/MushafReaderCacheTests.cs`: second identical read is served from cache; failures/not-found are not cached.
+- [X] T051 [P] Implement `IMemoryCache` decorators `CachedMushafPageReader`, `CachedAyahStudyReader`, `CachedWordAnalysisReader` + `MushafReaderCacheKeys` in `Backend/infrastructure/QuranDashboard.Infrastructure/Caching/Quran/MushafReader/`; register them as decorators in `Infrastructure/DependencyInjection.cs`. Keys per `data-model.md` §E; cache only successful immutable reads; never cache not-found/not-analyzable or user-specific data; no Redis.
+- [X] T052 [P] Backend test `Backend/tests/QuranDashboard.Tests/Quran/MushafReader/MushafReaderCacheTests.cs`: second identical read is served from cache; failures/not-found are not cached.
 
 ### Frontend polish
 
-- [ ] T053 [P] Implement the bounded request cache + dedupe in `features/mushaf/state/mushaf-reader-cache.ts` (cache successful page/ayah/word responses by their keys; share in-flight observables for identical concurrent requests; optional prev/next page prefetch after the current page loads; bounded size) and use it from the facade.
-- [ ] T054 [P] Implement responsive behavior in the shell + study components: wide desktop two-column (Mushaf right ~55–60%, study left ~40–45%; word top ~35–40% / ayah bottom ~60–65%); tablet stack/collapse; mobile drawer/bottom-sheet with word/ayah tabs; all cards keep stable outer dimensions and scroll internally; URL state preserved across modes (compose `qd-` classes per `UI_STYLE_SYSTEM.md`).
-- [ ] T055 [P] Add a navigation entry for the Mushaf Reader (route `/dashboard/mushaf`, Arabic label) in `Frontend/quran-dashboard-ui/src/app/core/navigation/nav-items.ts`.
+- [X] T053 [P] Implement the bounded request cache + dedupe in `features/mushaf/state/mushaf-reader-cache.ts` (cache successful page/ayah/word responses by their keys; share in-flight observables for identical concurrent requests; optional prev/next page prefetch after the current page loads; bounded size) and use it from the facade.
+- [X] T054 [P] Implement responsive behavior in the shell + study components: wide desktop two-column (Mushaf right ~55–60%, study left ~40–45%; word top ~35–40% / ayah bottom ~60–65%); tablet stack/collapse; mobile drawer/bottom-sheet with word/ayah tabs; all cards keep stable outer dimensions and scroll internally; URL state preserved across modes (compose `qd-` classes per `UI_STYLE_SYSTEM.md`).
+- [X] T055 [P] Add a navigation entry for the Mushaf Reader (route `/dashboard/mushaf`, Arabic label) in `Frontend/quran-dashboard-ui/src/app/core/navigation/nav-items.ts`.
 
 ### Final guards & validation
 
-- [ ] T056 [P] Update Swagger summaries/descriptions for the three endpoints (clear, realistic, no placeholders) per `API_GUIDELINES.md` §9.
-- [ ] T057 Run the clean-code guard self-check and `test-guard` self-check; verify file-size thresholds for the shell, facade, and EF readers (split if a soft threshold is approached); confirm all user-facing messages are Arabic and centralized.
+- [X] T056 [P] Update Swagger summaries/descriptions for the three endpoints (clear, realistic, no placeholders) per `API_GUIDELINES.md` §9.
+- [X] T057 Run the clean-code guard self-check and `test-guard` self-check; verify file-size thresholds for the shell, facade, and EF readers (split if a soft threshold is approached); confirm all user-facing messages are Arabic and centralized.
 - [ ] T058 Run `specs/011-mushaf-reader-study-context/quickstart.md` end-to-end: both apps over HTTPS, the smoke-test table passes, and DevTools shows only HTTPS `/api/mushaf/*` calls (zero HTTP/mixed-content).
 
 ---
