@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BACKEND_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+WORKSPACE_ROOT="$(cd "$BACKEND_ROOT/.." && pwd)"
+FRONTEND_ROOT="$WORKSPACE_ROOT/Frontend/quran-dashboard-ui"
+
+if [[ ! -d "$FRONTEND_ROOT" ]]; then
+  echo "Frontend project not found: $FRONTEND_ROOT" >&2
+  exit 1
+fi
+
+cd "$FRONTEND_ROOT"
+
+if [[ ! -d node_modules ]]; then
+  echo "node_modules not found. Run: npm install" >&2
+  echo "  cd \"$FRONTEND_ROOT\" && npm install" >&2
+  exit 1
+fi
+
+if [[ ! -f localhost.pem || ! -f localhost-key.pem ]]; then
+  echo "SSL certificates not found in $FRONTEND_ROOT" >&2
+  echo "Generate them first, for example:" >&2
+  echo "  cd \"$FRONTEND_ROOT\" && mkcert localhost" >&2
+  exit 1
+fi
+
+echo "Starting Angular dev server (HTTPS)..."
+echo "  UI: https://localhost:4200"
+echo
+
+npm run start:https
