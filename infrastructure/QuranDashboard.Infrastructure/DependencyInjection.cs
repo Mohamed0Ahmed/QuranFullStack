@@ -143,7 +143,9 @@ public static class DependencyInjection
     private static void ConfigureMushafReader(IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<MushafReaderOptions>(configuration.GetSection("MushafReader"));
+        services.AddSingleton(sp => sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<MushafReaderOptions>>().Value);
         services.AddScoped<IMushafPageReader, EfMushafPageReader>();
+        services.AddScoped<IAyahStudyReader, EfAyahStudyReader>();
         services.AddScoped<IMushafSurahCatalogReader, EfMushafSurahCatalogReader>();
     }
 }
