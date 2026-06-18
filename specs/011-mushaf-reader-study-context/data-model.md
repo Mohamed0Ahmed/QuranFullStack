@@ -97,7 +97,7 @@ URL ↔ state mapping is owned by `mushaf-reader.facade.ts`. Components receive 
 |---|---|---|
 | `pageNumber` ∈ [1,604], integer | API bind + handler | else `400` `MushafPages.InvalidPageNumber`; missing → `404` |
 | `verseKey` matches `surah:ayah` and resolves to an ayah | handler | else `404` `Common.NotFound` |
-| `wordLocation` matches `surah:ayah:word` and resolves to a **readable** word | handler | unknown → `404`; ayah marker → `400`/controlled "not analyzable" `MushafWords.NotAnalyzable` |
+| `wordLocation` matches `surah:ayah:word` and resolves to a **readable** word | handler | unknown → `404` `Common.NotFound`; ayah marker → `400` `MushafWords.NotAnalyzable`; readable word with missing required morphology/identity/segment rows → `404` `MushafWords.AnalysisIncomplete` (never synthesize zero/empty analysis in `200`) |
 | Source key resolution: explicit → configured default → empty | `GetAyahStudyHandler` | missing source for a kind → that kind `null` + per-kind empty state; never substitute |
 | Marker placement | page reader | marker on `MIN(line_number)` for the ayah on the current page |
 | Segment display fallback | word reader | empty/null `form_arabic_normalized` → `displayTextStatus:"missing"`, no invented text |

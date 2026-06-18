@@ -30,7 +30,7 @@ public interface IWordAnalysisReader
 }
 ```
 
-- `WordAnalysisOutcome`: a small result type (e.g., `Found(WordAnalysisResponse)`, `NotFound`, `NotAnalyzable`) so the controller maps to `200/404/400` without exceptions for expected cases.
+- `WordAnalysisOutcome`: a small result type (e.g., `Found(WordAnalysisResponse)`, `NotFound`, `NotAnalyzable`, `IncompleteData`) so the controller maps to `200/404/400` without exceptions for expected cases.
 - Response DTOs (`MushafPageResponse`, `AyahStudyResponse`, `WordAnalysisResponse`) are defined with their use cases (see data-model.md §B).
 
 ## Options & defaults
@@ -58,6 +58,7 @@ public sealed class MushafReaderOptions   // bound from configuration section "M
 |---|---|---|
 | page/ayah/word found | 200 | `Ok(data, message)` |
 | not found | 404 | `Fail(Common.NotFound)` |
+| word analysis incomplete (readable word, missing required rows) | 404 | `Fail(MushafWords.AnalysisIncomplete)` |
 | invalid input | 400 | `Fail(<feature key>)` |
 | word is ayah marker | 400 | `Fail(MushafWords.NotAnalyzable)` |
 

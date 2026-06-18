@@ -13,6 +13,7 @@ GET /api/mushaf/words/{wordLocation}/analysis
 
 - Resolves the word by `location`. **Ayah-end marker rows (`is_ayah_marker = true`) are rejected** as not analyzable.
 - Returns occurrence identity + display forms, ordered/unique identity counts, head morphology, and ordered segments with a stable `segmentColorSlot` per segment.
+- **Incomplete analysis**: if the location resolves to a readable word but required morphology, ordered/unique identity, or segment rows are missing, return a controlled failure (`404` / `MushafWords.AnalysisIncomplete`). Do **not** synthesize zero counts or empty morphology in a `200` response.
 - **Segment fallback**: if a segment has no display form (`form_arabic_normalized` empty/null), return the segment with `displayTextStatus:"missing"` and no invented text; the full word is preserved by the frontend from `textUthmani`.
 
 ## Response
@@ -64,6 +65,7 @@ GET /api/mushaf/words/{wordLocation}/analysis
 | `200 OK` | readable word resolves | `MushafWords.AnalysisLoaded` |
 | `400 Bad Request` | malformed `wordLocation`, or location is an ayah-end marker | `MushafWords.InvalidWordLocation` / `MushafWords.NotAnalyzable` |
 | `404 Not Found` | location resolves to no word | `Common.NotFound` |
+| `404 Not Found` | readable word exists but required morphology/identity/segment rows are missing | `MushafWords.AnalysisIncomplete` |
 | `500` | unexpected | safe generic |
 
 ## Rules
