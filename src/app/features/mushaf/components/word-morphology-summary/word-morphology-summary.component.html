@@ -1,7 +1,7 @@
 <dl class="word-morphology-summary" data-testid="word-morphology-summary">
   <div class="word-morphology-summary__row">
     <dt>نوع الكلمة</dt>
-    <dd>{{ morphology().headPosLabel.ar }} ({{ morphology().headPosLabel.en }})</dd>
+    <dd>{{ morphology().headPosLabel.ar }}</dd>
   </div>
   @if (morphology().root?.text) {
     <div class="word-morphology-summary__row">
@@ -25,9 +25,9 @@
     <div class="word-morphology-summary__row">
       <dt>الفعل</dt>
       <dd>
-        {{ morphology().verbTense ?? '—' }}
+        {{ morphologyFeatureLabelAr(morphology().verbTense) }}
         @if (morphology().verbVoice) {
-          / {{ morphology().verbVoice }}
+          / {{ morphologyFeatureLabelAr(morphology().verbVoice) }}
         }
       </dd>
     </div>
@@ -35,7 +35,7 @@
   @if (morphology().caseFeature) {
     <div class="word-morphology-summary__row">
       <dt>الإعراب</dt>
-      <dd>{{ morphology().caseFeature }}</dd>
+      <dd>{{ morphologyFeatureLabelAr(morphology().caseFeature) }}</dd>
     </div>
   }
 </dl>

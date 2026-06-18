@@ -24,12 +24,16 @@ import { FullI3rabCardComponent } from '../full-i3rab-card/full-i3rab-card.compo
   ],
   templateUrl: './selected-ayah-section.component.html',
   styleUrls: ['./selected-ayah-section.component.scss'],
+  host: {
+    '[class.qd-selected-ayah-section--embedded]': 'embedded()',
+  },
 })
 export class SelectedAyahSectionComponent {
   readonly study = input<AyahStudyViewModel | null>(null);
   readonly loadState = input.required<ResourceLoadState>();
   readonly activeTab = input<AyahStudyTab>('tafsir');
   readonly selectedVerseKey = input<string | null>(null);
+  readonly embedded = input(false);
 
   readonly tafsirOptions = input<SourceOption[]>([]);
   readonly translationOptions = input<SourceOption[]>([]);

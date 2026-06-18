@@ -240,16 +240,48 @@ describe('SelectedWordSectionComponent', () => {
 
     expect(fixture.nativeElement.querySelector('[data-testid="word-morphology-summary"]')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('[data-testid="word-identity-summary"]')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.selected-word-section__title')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.selected-word-section__text')).toBeNull();
+
+    const morphologySummary = fixture.nativeElement.querySelector(
+      '[data-testid="word-morphology-summary"]',
+    ) as HTMLElement;
+    expect(morphologySummary.textContent).toContain('فعل');
+    expect(morphologySummary.textContent).toContain('ماضٍ');
+    expect(morphologySummary.textContent).toContain('معلوم');
+    expect(morphologySummary.textContent).not.toContain('Verb');
+    expect(morphologySummary.textContent).not.toContain('past');
+    expect(morphologySummary.textContent).not.toContain('active');
+
+    const segmentRows = fixture.nativeElement.querySelector(
+      '[data-testid="segment-data-rows"]',
+    ) as HTMLElement;
+    expect(getComputedStyle(segmentRows).flexDirection).toBe('row');
+    expect(segmentRows.textContent).not.toContain('STEM');
+    expect(segmentRows.textContent).not.toContain('SUFFIX');
+    expect(segmentRows.textContent).not.toContain('PREFIX');
 
     const gluedRoot = fixture.nativeElement.querySelector(
       '[data-testid="segment-rendered-word"]',
     ) as HTMLElement;
-    const gluedSeg1 = gluedRoot.querySelector('[data-segment-slot="1"]') as HTMLElement;
-    const gluedSeg2 = gluedRoot.querySelector('[data-segment-slot="2"]') as HTMLElement;
+    const highlightMode = gluedRoot.getAttribute('data-highlight-mode');
 
-    expect(gluedSeg1.style.color).toBe(expectedSlot1);
-    expect(gluedSeg2.style.color).toBe(expectedSlot2);
-    expect(gluedRoot.innerHTML).not.toMatch(/>\s+</);
+    expect(gluedRoot.textContent).toContain(WORD_TEXT_PLACEHOLDER);
+    expect(gluedRoot.textContent?.replace(/\u2026/g, '').trim()).toBe(WORD_TEXT_PLACEHOLDER);
+    expect(getComputedStyle(gluedRoot).gap).toBe('0px');
+
+    if (highlightMode === 'native') {
+      const wordText = gluedRoot.querySelector('.segment-rendered-word__text') as HTMLElement;
+      expect(wordText.textContent).toBe(WORD_TEXT_PLACEHOLDER);
+      expect(gluedRoot.querySelector('.segment-rendered-word__segment')).toBeNull();
+    } else {
+      const gluedSeg1 = gluedRoot.querySelector('[data-segment-slot="1"]') as HTMLElement;
+      const gluedSeg2 = gluedRoot.querySelector('[data-segment-slot="2"]') as HTMLElement;
+
+      expect(gluedSeg1.style.color).toBe(expectedSlot1);
+      expect(gluedSeg2.style.color).toBe(expectedSlot2);
+      expect(gluedRoot.innerHTML).not.toMatch(/>\s+</);
+    }
 
     const row1 = fixture.nativeElement.querySelector(
       '[data-testid="segment-data-rows"] [data-segment-slot="1"]',

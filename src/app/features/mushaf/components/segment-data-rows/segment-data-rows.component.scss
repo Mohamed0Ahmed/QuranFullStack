@@ -1,9 +1,12 @@
 .segment-data-rows {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: var(--qd-space-2);
+  overflow-x: auto;
 
   &__row {
+    flex: 1 1 0;
+    min-width: 9rem;
     padding: var(--qd-space-2);
     border: 1px solid var(--qd-border);
     border-inline-start-width: 3px;

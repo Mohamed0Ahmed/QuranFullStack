@@ -3,6 +3,11 @@
   flex-direction: column;
   min-height: 0;
   height: 100%;
+
+  &.qd-selected-word-section--embedded {
+    height: auto;
+    flex-shrink: 0;
+  }
 }
 
 .selected-word-section {
@@ -16,25 +21,19 @@
   border: 1px solid var(--qd-border);
   border-radius: var(--qd-radius-md);
 
+  :host.qd-selected-word-section--embedded & {
+    height: auto;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+  }
+
   &__header {
     display: flex;
     flex-direction: column;
-    gap: var(--qd-space-2);
+    gap: 0;
     flex-shrink: 0;
-  }
-
-  &__title {
-    margin: 0;
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: var(--qd-text);
-  }
-
-  &__text {
-    margin: 0;
-    font-size: 1.125rem;
-    line-height: 1.9;
-    color: var(--qd-text);
   }
 
   &__content {
@@ -44,6 +43,11 @@
     flex: 1;
     min-height: 0;
     overflow: auto;
+
+    :host.qd-selected-word-section--embedded .selected-word-section & {
+      flex: none;
+      overflow: visible;
+    }
   }
 
   &__section {

@@ -17,11 +17,15 @@ import { WordMorphologySummaryComponent } from '../word-morphology-summary/word-
   ],
   templateUrl: './selected-word-section.component.html',
   styleUrls: ['./selected-word-section.component.scss'],
+  host: {
+    '[class.qd-selected-word-section--embedded]': 'embedded()',
+  },
 })
 export class SelectedWordSectionComponent {
   readonly analysis = input<WordAnalysisViewModel | null>(null);
   readonly loadState = input.required<ResourceLoadState>();
   readonly selectedWordLocation = input<string | null>(null);
+  readonly embedded = input(false);
 
   readonly sectionFocus = output<void>();
 }

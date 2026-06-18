@@ -10,9 +10,76 @@ import { MushafWordAnalysisApi } from '../../data-access/mushaf-word-analysis.ap
 import { MushafReaderFacade } from '../../state/mushaf-reader.facade';
 import { MushafReaderPageComponent } from './mushaf-reader-page.component';
 
-describe('MushafReaderPageComponent panel semantics', () => {
-  it('keeps both study sections in the DOM on wide desktop regardless of panel', () => {
-    const queryParamMap$ = new BehaviorSubject(convertToParamMap({ page: '5', panel: 'word' }));
+const ayahStudyDto = {
+  ayah: {
+    verseKey: '2:25',
+    surahNumber: 2,
+    surahNameArabic: 'البقرة',
+    ayahNumber: 25,
+    textUthmani: 'نص تجريبي للآية',
+    wordsCount: 5,
+    pageFrom: 5,
+    pageTo: 5,
+    juzNumber: 1,
+    hizbNumber: 1,
+    rubNumber: 1,
+    sajda: null,
+  },
+  selectedSources: {
+    tafsirSource: 'ar-muyassar',
+    translationSource: 'en-sahih-international',
+    fullI3rabSource: 'muyassar',
+  },
+  tafsir: null,
+  translation: null,
+  fullI3rab: null,
+};
+
+const wordAnalysisDto = {
+  word: {
+    quranWordId: 2003,
+    wordLocation: '2:25:3',
+    verseKey: '2:25',
+    surahNumber: 2,
+    ayahNumber: 25,
+    wordNumber: 3,
+    pageNumber: 5,
+    lineNumber: 1,
+    lineWordOrder: 3,
+    textUthmani: 'كلمة-تجريبية',
+    textUthmaniSimple: 'كلمة-مبسطة',
+    textImlaeiSimple: 'كلمة-مبسطة',
+    qpcGlyph: 'glyph-test-1',
+  },
+  identity: {
+    orderedTashkeel: { occurrencesCount: 1, ayahsCount: 1, surahsCount: 1 },
+    orderedSimple: { occurrencesCount: 1, ayahsCount: 1, surahsCount: 1 },
+    uniqueTashkeel: { id: 1, occurrencesCount: 1, ayahsCount: 1, surahsCount: 1 },
+    uniqueSimple: {
+      id: 1,
+      occurrencesCount: 1,
+      ayahsCount: 1,
+      surahsCount: 1,
+      wordKeyImlaeiSimple: 'مفتاح-تجريبي',
+    },
+  },
+  morphology: {
+    headPos: 'V',
+    headPosLabel: { ar: 'فعل', en: 'Verb' },
+    root: null,
+    lemma: null,
+    stem: null,
+    isVerb: true,
+    verbTense: 'past',
+    verbVoice: 'active',
+    caseFeature: null,
+  },
+  renderedWordSegments: [],
+};
+
+describe('MushafReaderPageComponent study layout', () => {
+  it('renders a single unified study context card', () => {
+    const queryParamMap$ = new BehaviorSubject(convertToParamMap({ page: '5', word: '2:25:3', ayah: '2:25' }));
 
     TestBed.configureTestingModule({
       imports: [MushafReaderPageComponent],
@@ -47,8 +114,18 @@ describe('MushafReaderPageComponent panel semantics', () => {
             ),
           },
         },
-        { provide: MushafAyahStudyApi, useValue: { getAyahStudy: vi.fn() } },
-        { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis: vi.fn() } },
+        {
+          provide: MushafAyahStudyApi,
+          useValue: {
+            getAyahStudy: vi.fn(() => of({ isSuccess: true, message: 'ok', data: ayahStudyDto })),
+          },
+        },
+        {
+          provide: MushafWordAnalysisApi,
+          useValue: {
+            getWordAnalysis: vi.fn(() => of({ isSuccess: true, message: 'ok', data: wordAnalysisDto })),
+          },
+        },
         {
           provide: MushafSurahCatalogApi,
           useValue: {
@@ -65,10 +142,14 @@ describe('MushafReaderPageComponent panel semantics', () => {
     );
     fixture.detectChanges();
 
+    const facade = TestBed.inject(MushafReaderFacade);
+    expect(facade.selectedAyahKey()).toBe('2:25');
+    expect(facade.selectedWordLocation()).toBe('2:25:3');
+
     const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('[data-testid="study-context-section"]')).toBeTruthy();
     expect(root.querySelector('[data-testid="selected-word-section"]')).toBeTruthy();
     expect(root.querySelector('[data-testid="selected-ayah-section"]')).toBeTruthy();
-    expect(root.querySelector('.mushaf-reader--panel-word')).toBeTruthy();
-    expect(root.querySelector('.mushaf-reader__word-study--focused')).toBeTruthy();
+    expect(root.querySelector('.mushaf-reader__mobile-tabs')).toBeNull();
   });
 });

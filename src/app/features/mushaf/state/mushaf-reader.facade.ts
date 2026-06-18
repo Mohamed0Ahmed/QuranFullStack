@@ -32,6 +32,7 @@ import {
   parseMushafUrlParams,
 } from './mushaf-url-sync';
 import { applyAuthoritativeUrlSnapshot } from './mushaf-url-hydration';
+import { verseKeyFromWordLocation } from '../utils/mushaf-location-keys';
 
 function toPageViewModel(dto: MushafPageDto): MushafPageViewModel {
   return {
@@ -188,17 +189,37 @@ export class MushafReaderFacade {
   }
 
   selectAyah(verseKey: string): void {
-    this.patchUrlQuery({
+    const currentWord = this._selectedWordLocation();
+    const wordAyah = currentWord ? verseKeyFromWordLocation(currentWord) : null;
+    const queryParams: Partial<
+      Record<(typeof MUSHAF_URL_KEYS)[keyof typeof MUSHAF_URL_KEYS], string | number | null>
+    > = {
       [MUSHAF_URL_KEYS.ayah]: verseKey,
       [MUSHAF_URL_KEYS.panel]: 'ayah',
-    });
+    };
+
+    if (wordAyah && wordAyah !== verseKey) {
+      queryParams[MUSHAF_URL_KEYS.word] = null;
+      queryParams[MUSHAF_URL_KEYS.segment] = null;
+    }
+
+    this.patchUrlQuery(queryParams);
   }
 
   selectWord(wordLocation: string): void {
-    this.patchUrlQuery({
+    const verseKey = verseKeyFromWordLocation(wordLocation);
+    const queryParams: Partial<
+      Record<(typeof MUSHAF_URL_KEYS)[keyof typeof MUSHAF_URL_KEYS], string | number | null>
+    > = {
       [MUSHAF_URL_KEYS.word]: wordLocation,
       [MUSHAF_URL_KEYS.panel]: 'word',
-    });
+    };
+
+    if (verseKey) {
+      queryParams[MUSHAF_URL_KEYS.ayah] = verseKey;
+    }
+
+    this.patchUrlQuery(queryParams);
   }
 
   setPanel(panel: PanelMode): void {

@@ -59,6 +59,18 @@ describe('mushaf-url-sync', () => {
     });
   });
 
+  it('derives ayah from word when the URL has word but omits ayah', () => {
+    const snapshot = parseMushafUrlParams(
+      convertToParamMap({
+        page: '5',
+        word: '2:25:3',
+      }),
+    );
+
+    expect(snapshot.ayah).toBe('2:25');
+    expect(snapshot.word).toBe('2:25:3');
+  });
+
   it('builds URL corrections when raw enum values are out of scope', () => {
     const snapshot = parseMushafUrlParams(
       convertToParamMap({

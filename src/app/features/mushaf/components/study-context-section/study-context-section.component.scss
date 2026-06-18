@@ -1,0 +1,25 @@
+:host {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.study-context-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qd-space-4);
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--qd-space-3);
+  background: var(--qd-surface);
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-md);
+
+  &__divider {
+    flex-shrink: 0;
+    border-top: 1px solid var(--qd-border);
+    margin-inline: calc(-1 * var(--qd-space-3));
+  }
+}

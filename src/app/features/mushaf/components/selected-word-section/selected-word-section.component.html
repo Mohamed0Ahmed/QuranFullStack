@@ -17,10 +17,6 @@
     </div>
   } @else {
     <header class="selected-word-section__header">
-      <h2 class="selected-word-section__title">
-        {{ analysis()!.word.verseKey }} — كلمة {{ analysis()!.word.wordNumber }}
-      </h2>
-      <p class="selected-word-section__text" dir="rtl">{{ analysis()!.word.textUthmani }}</p>
       <qd-segment-rendered-word
         [segments]="analysis()!.segments"
         [fullWordText]="analysis()!.word.textUthmani"

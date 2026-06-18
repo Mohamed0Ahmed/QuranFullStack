@@ -1,16 +1,45 @@
+// Colors mirror SEGMENT_COLOR_PALETTE in state/segment-color-palette.ts
+$segment-slot-colors: (
+  1: #3d6b8e,
+  2: #9a6b3c,
+  3: #3a7d56,
+  4: #7d4a6b,
+  5: #5a5a9e,
+  6: #8b6914,
+);
+
 .segment-rendered-word {
-  display: inline;
+  display: inline-flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 0;
+  align-items: baseline;
+  white-space: nowrap;
+  font-family: var(--qd-font-quran);
   font-size: 1.25rem;
   line-height: 1.9;
 
+  &__text {
+    display: inline;
+    margin: 0;
+    padding: 0;
+  }
+
   &__segment {
     display: inline;
-    border-bottom: 2px solid currentColor;
-    padding-bottom: 1px;
+    margin: 0;
+    padding: 0;
   }
 
   &__placeholder {
     opacity: 0.55;
     font-style: normal;
+    margin-inline-start: 0.15em;
+  }
+}
+
+@each $slot, $color in $segment-slot-colors {
+  ::highlight(qd-segment-slot-#{$slot}) {
+    color: $color;
   }
 }

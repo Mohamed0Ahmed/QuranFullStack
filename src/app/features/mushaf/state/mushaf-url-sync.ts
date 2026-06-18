@@ -8,6 +8,7 @@ import {
   PanelMode,
   WordAnalysisTab,
 } from '../models/mushaf.models';
+import { verseKeyFromWordLocation } from '../utils/mushaf-location-keys';
 
 const VALID_PANELS: ReadonlySet<string> = new Set(['ayah', 'word', 'none']);
 const VALID_AYAH_TABS: ReadonlySet<string> = new Set(['tafsir', 'translation', 'full-i3rab']);
@@ -59,10 +60,14 @@ export function normalizeWordTab(value: string | null): WordAnalysisTab {
 }
 
 export function parseMushafUrlParams(params: ParamMap): MushafUrlSnapshot {
+  const word = params.get(MUSHAF_URL_KEYS.word);
+  const ayahParam = params.get(MUSHAF_URL_KEYS.ayah);
+  const ayah = ayahParam ?? (word ? verseKeyFromWordLocation(word) : null);
+
   return {
     pageNumber: clampMushafPageNumber(params.get(MUSHAF_URL_KEYS.page)),
-    ayah: params.get(MUSHAF_URL_KEYS.ayah),
-    word: params.get(MUSHAF_URL_KEYS.word),
+    ayah,
+    word,
     segment: params.get(MUSHAF_URL_KEYS.segment),
     panel: normalizePanelMode(params.get(MUSHAF_URL_KEYS.panel)),
     ayahTab: normalizeAyahTab(params.get(MUSHAF_URL_KEYS.ayahTab)),

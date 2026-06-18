@@ -1,8 +1,4 @@
-<div
-  class="mushaf-reader"
-  [ngClass]="panelClass(facade.panel())"
-  dir="rtl"
->
+<div class="mushaf-reader" dir="rtl">
   <section class="mushaf-reader__page" aria-label="منطقة المصحف">
     <qd-mushaf-page-area
       [page]="facade.page()"
@@ -17,47 +13,22 @@
     />
   </section>
   <section class="mushaf-reader__study" aria-label="منطقة الدراسة">
-    <nav class="mushaf-reader__mobile-tabs" aria-label="تبويبات الدراسة">
-      <button
-        type="button"
-        class="qd-btn mushaf-reader__mobile-tab"
-        [class.mushaf-reader__mobile-tab--active]="facade.panel() === 'word'"
-        (click)="onStudySectionFocus('word')"
-      >
-        تحليل الكلمة
-      </button>
-      <button
-        type="button"
-        class="qd-btn mushaf-reader__mobile-tab"
-        [class.mushaf-reader__mobile-tab--active]="facade.panel() === 'ayah'"
-        (click)="onStudySectionFocus('ayah')"
-      >
-        دراسة الآية
-      </button>
-    </nav>
-    <qd-selected-word-section
-      class="mushaf-reader__word-study"
-      [class.mushaf-reader__word-study--focused]="isPanelFocused('word')"
-      [analysis]="facade.wordAnalysis()"
-      [loadState]="facade.wordAnalysisLoadState()"
+    <qd-study-context-section
+      class="mushaf-reader__study-context"
+      [wordAnalysis]="facade.wordAnalysis()"
+      [wordLoadState]="facade.wordAnalysisLoadState()"
       [selectedWordLocation]="facade.selectedWordLocation()"
-      (sectionFocus)="onStudySectionFocus('word')"
-    />
-    <qd-selected-ayah-section
-      class="mushaf-reader__ayah-study"
-      [class.mushaf-reader__ayah-study--focused]="isPanelFocused('ayah')"
-      [study]="facade.ayahStudy()"
-      [loadState]="facade.ayahStudyLoadState()"
-      [activeTab]="facade.ayahTab()"
+      [ayahStudy]="facade.ayahStudy()"
+      [ayahLoadState]="facade.ayahStudyLoadState()"
+      [activeAyahTab]="facade.ayahTab()"
       [selectedVerseKey]="facade.selectedAyahKey()"
       [tafsirOptions]="facade.tafsirSourceOptions"
       [translationOptions]="facade.translationSourceOptions"
       [fullI3rabOptions]="facade.fullI3rabSourceOptions"
-      (tabChange)="onAyahTabChange($event)"
+      (ayahTabChange)="onAyahTabChange($event)"
       (tafsirSourceChange)="onTafsirSourceChange($event)"
       (translationSourceChange)="onTranslationSourceChange($event)"
       (fullI3rabSourceChange)="onFullI3rabSourceChange($event)"
-      (sectionFocus)="onStudySectionFocus('ayah')"
     />
   </section>
 </div>

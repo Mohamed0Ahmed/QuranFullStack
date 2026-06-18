@@ -157,16 +157,32 @@ describe('MushafReaderFacade URL sync', () => {
     expect(facade.wordAnalysis()?.word.wordLocation).toBe('2:25:3');
   });
 
-  it('writes URL updates with replaceUrl merge semantics', () => {
-    const { facade, route, navigate } = createFacadeTestBed({ page: '5' });
+  it('writes URL updates with replaceUrl merge semantics when selecting an ayah', () => {
+    const { facade, route, navigate } = createFacadeTestBed({ page: '5', word: '2:25:3' });
     facade.bindToRoute(route);
 
-    facade.selectAyah('2:25');
+    facade.selectAyah('2:26');
 
     expect(navigate).toHaveBeenCalledWith(
       [],
       expect.objectContaining({
-        queryParams: { ayah: '2:25', panel: 'ayah' },
+        queryParams: { ayah: '2:26', panel: 'ayah', word: null, segment: null },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      }),
+    );
+  });
+
+  it('sets ayah from the selected word location when selecting a word', () => {
+    const { facade, route, navigate } = createFacadeTestBed({ page: '5' });
+    facade.bindToRoute(route);
+
+    facade.selectWord('2:25:3');
+
+    expect(navigate).toHaveBeenCalledWith(
+      [],
+      expect.objectContaining({
+        queryParams: { word: '2:25:3', ayah: '2:25', panel: 'word' },
         queryParamsHandling: 'merge',
         replaceUrl: true,
       }),

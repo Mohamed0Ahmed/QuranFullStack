@@ -3,6 +3,11 @@
   flex-direction: column;
   min-height: 0;
   height: 100%;
+
+  &.qd-selected-ayah-section--embedded {
+    height: auto;
+    flex-shrink: 0;
+  }
 }
 
 .selected-ayah-section {
@@ -15,6 +20,14 @@
   background: var(--qd-surface);
   border: 1px solid var(--qd-border);
   border-radius: var(--qd-radius-md);
+
+  :host.qd-selected-ayah-section--embedded & {
+    height: auto;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+  }
 
   &__header {
     display: flex;
@@ -67,5 +80,10 @@
     flex: 1;
     min-height: 0;
     overflow: auto;
+
+    :host.qd-selected-ayah-section--embedded .selected-ayah-section & {
+      flex: none;
+      overflow: visible;
+    }
   }
 }

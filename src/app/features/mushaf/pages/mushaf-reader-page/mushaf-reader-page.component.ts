@@ -3,20 +3,14 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 
 import { MushafPageAreaComponent } from '../../components/mushaf-page-area/mushaf-page-area.component';
-import { SelectedAyahSectionComponent } from '../../components/selected-ayah-section/selected-ayah-section.component';
-import { SelectedWordSectionComponent } from '../../components/selected-word-section/selected-word-section.component';
-import { AyahStudyTab, PanelMode } from '../../models/mushaf.models';
+import { StudyContextSectionComponent } from '../../components/study-context-section/study-context-section.component';
+import { AyahStudyTab } from '../../models/mushaf.models';
 import { MushafReaderFacade } from '../../state/mushaf-reader.facade';
 
 @Component({
   selector: 'qd-mushaf-reader-page',
   standalone: true,
-  imports: [
-    CommonModule,
-    MushafPageAreaComponent,
-    SelectedWordSectionComponent,
-    SelectedAyahSectionComponent,
-  ],
+  imports: [CommonModule, MushafPageAreaComponent, StudyContextSectionComponent],
   templateUrl: './mushaf-reader-page.component.html',
   styleUrls: ['./mushaf-reader-page.component.scss'],
 })
@@ -27,15 +21,6 @@ export class MushafReaderPageComponent implements OnInit {
   ngOnInit(): void {
     this.facade.loadSurahCatalog();
     this.facade.bindToRoute(this.route);
-  }
-
-  protected panelClass(panel: PanelMode): string {
-    return `mushaf-reader--panel-${panel}`;
-  }
-
-  protected isPanelFocused(section: 'ayah' | 'word'): boolean {
-    const panel = this.facade.panel();
-    return panel === section;
   }
 
   protected onPageChange(pageNumber: number): void {
@@ -68,9 +53,5 @@ export class MushafReaderPageComponent implements OnInit {
 
   protected onFullI3rabSourceChange(sourceKey: string): void {
     this.facade.setFullI3rabSource(sourceKey);
-  }
-
-  protected onStudySectionFocus(section: 'ayah' | 'word'): void {
-    this.facade.setPanel(section);
   }
 }

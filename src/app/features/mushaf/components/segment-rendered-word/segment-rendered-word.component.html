@@ -1,20 +1,38 @@
-<span class="segment-rendered-word" dir="rtl" data-testid="segment-rendered-word">
-  @for (segment of segments(); track segment.segmentLocation) {
-    <span
-      class="segment-rendered-word__segment"
-      [style.color]="segment.color"
-      [attr.data-segment-slot]="segment.segmentColorSlot"
-      [attr.data-segment-form]="segment.isMissing ? null : segment.segmentDisplayText"
-    >
-      @if (segment.isMissing) {
-        <span
-          class="segment-rendered-word__placeholder"
-          aria-label="نص القطعة غير متوفر"
-          data-testid="segment-missing-placeholder"
-        >…</span>
-      } @else {
-        {{ segment.segmentDisplayText }}
-      }
-    </span>
+<span
+  class="segment-rendered-word"
+  dir="rtl"
+  data-testid="segment-rendered-word"
+  [attr.data-highlight-mode]="highlightSupported ? 'native' : 'fallback'"
+  [attr.aria-label]="fullWordText()"
+>
+  @if (highlightSupported) {
+    <span #wordHost class="segment-rendered-word__text">{{ fullWordText() }}</span>
+    @for (badge of missingBadges(); track badge.segmentColorSlot) {
+      <span
+        class="segment-rendered-word__placeholder"
+        [style.color]="badge.color"
+        [attr.data-segment-slot]="badge.segmentColorSlot"
+        aria-label="نص القطعة غير متوفر"
+        data-testid="segment-missing-placeholder"
+      >{{ badge.text }}</span>
+    }
+  } @else {
+    @for (slice of slices(); track slice.segmentColorSlot) {
+      <span
+        class="segment-rendered-word__segment"
+        [style.color]="slice.color"
+        [attr.data-segment-slot]="slice.segmentColorSlot"
+      >
+        @if (slice.isMissing) {
+          <span
+            class="segment-rendered-word__placeholder"
+            aria-label="نص القطعة غير متوفر"
+            data-testid="segment-missing-placeholder"
+          >{{ slice.text }}</span>
+        } @else {
+          {{ slice.text }}
+        }
+      </span>
+    }
   }
 </span>
