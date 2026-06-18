@@ -1,12 +1,19 @@
-<div class="mushaf-page-view" data-testid="mushaf-page-view">
-  @for (line of page().lines; track line.lineNumber) {
-    <qd-mushaf-line
-      [line]="line"
-      [markers]="page().markers"
-      [selectedVerseKey]="selectedVerseKey()"
-      [selectedWordLocation]="selectedWordLocation()"
-      (ayahSelect)="ayahSelect.emit($event)"
-      (wordSelect)="wordSelect.emit($event)"
-    />
-  }
+<div
+  class="mushaf-page-view"
+  [class.mushaf-page-view--opening-pages]="page().pageNumber <= 2"
+  data-testid="mushaf-page-view"
+>
+  <div class="mushaf-page-view__text-column">
+    @for (line of page().lines; track line.lineNumber) {
+      <qd-mushaf-line
+        [line]="line"
+        [markers]="page().markers"
+        [surahNameArabic]="surahNameArabicForLine(line)"
+        [selectedVerseKey]="selectedVerseKey()"
+        [selectedWordLocation]="selectedWordLocation()"
+        (ayahSelect)="ayahSelect.emit($event)"
+        (wordSelect)="wordSelect.emit($event)"
+      />
+    }
+  </div>
 </div>

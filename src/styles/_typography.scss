@@ -1,11 +1,9 @@
-@font-face {
-  font-family: 'Uthmanic Hafs';
-  src: url('/assets/fonts/quran/UthmanicHafs_V22.ttf') format('truetype');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
+// Mushaf text uses Amiri (declared below). The bundled UthmanicHafs_V22.ttf
+// ("KFGQPC HAFS Uthmanic Script") renders Uthmani annotation marks — notably
+// U+06DF ARABIC SMALL HIGH ROUNDED ZERO — as a wide baseline-spacing glyph
+// instead of a raised combining mark, producing stray dots between words. Amiri
+// positions these marks correctly. See
+// docs/feature-011-mushaf-reader-study-context/mushaf-text-rendering-diagnostic-report.md
 @font-face {
   font-family: 'Amiri';
   src: url('/fonts/amiri-regular.woff2') format('woff2');
@@ -38,8 +36,33 @@
   font-display: swap;
 }
 
+// Ayah-end digits only — not used for full Mushaf words (Uthmani marks mis-render there).
+@font-face {
+  font-family: 'Uthmanic Hafs';
+  src: url('/assets/fonts/quran/UthmanicHafs_V22.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Mushaf Surah Name';
+  src: url('/fonts/mushaf/surah-name-v2.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Mushaf Common';
+  src: url('/fonts/mushaf/quran-common.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 $font-naskh: 'Amiri', serif;
-$font-quran: 'Uthmanic Hafs', 'Amiri', serif;
+$font-quran: 'Amiri', serif;
 $font-sans: 'IBM Plex Sans Arabic', system-ui, sans-serif;
 
 .qd-page-title {

@@ -1,7 +1,7 @@
 import { Component, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
-import { MushafPageViewModel, MushafSurahCatalogItemDto } from '../../models/mushaf.models';
+import { MushafPageViewModel, MushafSurahCatalogItemDto, SurahOnPageDto } from '../../models/mushaf.models';
 
 @Component({
   selector: 'qd-mushaf-header-navigation',
@@ -37,5 +37,9 @@ export class MushafHeaderNavigationComponent {
       return;
     }
     this.surahJump.emit(value);
+  }
+
+  protected formatPageSurahNames(surahs: SurahOnPageDto[]): string {
+    return surahs.map((surah) => surah.nameArabic).join('، ');
   }
 }

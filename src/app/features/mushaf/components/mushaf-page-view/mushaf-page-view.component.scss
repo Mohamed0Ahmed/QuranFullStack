@@ -1,7 +1,27 @@
+:host {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
 .mushaf-page-view {
   display: flex;
+  flex: 1;
   flex-direction: column;
-  gap: 0.15rem;
+  align-items: center;
+  width: 100%;
+  min-height: 0;
+  gap: 0;
   padding: 1rem;
   overflow: auto;
+
+  &__text-column {
+    width: min(100%, var(--qd-mushaf-text-column-width));
+    display: flex;
+    flex-direction: column;
+  }
+
+  &--opening-pages {
+    justify-content: center;
+  }
 }

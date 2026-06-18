@@ -2,20 +2,10 @@
   <div class="mushaf-header__context">
     <span class="mushaf-header__page">صفحة {{ page().pageNumber }}</span>
     @if (page().surahs.length) {
-      <span class="mushaf-header__surahs">
-        @for (surah of page().surahs; track surah.surahNumber) {
-          <span>{{ surah.nameArabic }}</span>
-        }
-      </span>
+      <span class="mushaf-header__surahs">{{ formatPageSurahNames(page().surahs) }}</span>
     }
     @if (page().navigation.juzNumbers.length) {
       <span class="mushaf-header__meta">جزء {{ page().navigation.juzNumbers.join('، ') }}</span>
-    }
-    @if (page().navigation.hizbNumbers.length) {
-      <span class="mushaf-header__meta">حزب {{ page().navigation.hizbNumbers.join('، ') }}</span>
-    }
-    @if (page().navigation.rubNumbers.length) {
-      <span class="mushaf-header__meta">ربع {{ page().navigation.rubNumbers.join('، ') }}</span>
     }
   </div>
 

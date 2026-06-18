@@ -2,8 +2,8 @@
   display: inline;
   font-family: var(--qd-font-quran);
   font-size: 1.35rem;
-  line-height: 2.2;
-  white-space: pre-wrap;
+  line-height: 1.9;
+  white-space: normal;
   border: none;
   background: transparent;
   padding: 0;
@@ -22,6 +22,7 @@
   }
 
   &--marker {
+    font-family: var(--qd-font-quran-ayah-marker);
     color: var(--qd-text-muted);
   }
 

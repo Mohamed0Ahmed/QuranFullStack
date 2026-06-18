@@ -6,10 +6,9 @@
 .mushaf-reader {
   display: grid;
   // dir="rtl" places the first grid column on the RIGHT, so the first DOM
-  // child (the Mushaf page) lands right ~58% and the second child (the study
-  // area) lands left ~42% — matching R9 (right Mushaf ~55–60%, left study
-  // ~40–45%).
-  grid-template-columns: minmax(0, 58%) minmax(0, 42%);
+  // child (the Mushaf page) lands right ~40% and the second child (the study
+  // area) lands left ~60%.
+  grid-template-columns: minmax(0, 40%) minmax(0, 60%);
   gap: 1rem;
   height: 100%;
   min-height: 0;

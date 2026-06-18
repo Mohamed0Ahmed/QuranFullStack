@@ -93,12 +93,53 @@ describe('MushafPageViewComponent', () => {
     expect(root.querySelector('[data-segment-form]')).toBeNull();
   });
 
-  it('places markers on the first line where the ayah appears', () => {
+  it('does not render temporarily hidden rub/hizb/sajda page markers', () => {
     const lines = fixture.nativeElement.querySelectorAll('qd-mushaf-line');
     const firstLineText = lines[0]?.textContent ?? '';
     const secondLineText = lines[1]?.textContent ?? '';
 
     expect(firstLineText).not.toContain('ربع 2');
-    expect(secondLineText).toContain('ربع 2');
+    expect(secondLineText).not.toContain('ربع 2');
+  });
+
+  it('uses a fixed-width text column for Mushaf lines', () => {
+    const column = fixture.nativeElement.querySelector(
+      '.mushaf-page-view__text-column',
+    ) as HTMLElement;
+
+    expect(column).not.toBeNull();
+    expect(getComputedStyle(column).width).toContain('var(--qd-mushaf-text-column-width)');
+  });
+
+  it('does not vertically center regular pages beyond the opening spread', () => {
+    const root = fixture.nativeElement.querySelector('.mushaf-page-view') as HTMLElement;
+
+    expect(fixture.componentInstance.page().pageNumber).toBe(5);
+    expect(root.classList.contains('mushaf-page-view--opening-pages')).toBe(false);
+    expect(getComputedStyle(root).justifyContent).not.toBe('center');
+  });
+});
+
+describe('MushafPageViewComponent opening pages', () => {
+  it('vertically centers pages 1 and 2 within the Mushaf area', () => {
+    const openingPageFixture: MushafPageViewModel = {
+      ...pageFixture,
+      pageNumber: 1,
+      previousPageNumber: null,
+      nextPageNumber: 2,
+      surahs: [{ surahNumber: 1, nameArabic: 'الفاتحة', firstAyahOnPage: 1, lastAyahOnPage: 7 }],
+      ayahRange: { firstVerseKey: '1:1', lastVerseKey: '1:7' },
+      navigation: { juzNumbers: [1], hizbNumbers: [1], rubNumbers: [1] },
+      lines: pageFixture.lines.slice(0, 1),
+      markers: [],
+    };
+
+    const fixture = TestBed.createComponent(MushafPageViewComponent);
+    fixture.componentRef.setInput('page', openingPageFixture);
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement.querySelector('.mushaf-page-view') as HTMLElement;
+    expect(root.classList.contains('mushaf-page-view--opening-pages')).toBe(true);
+    expect(getComputedStyle(root).justifyContent).toBe('center');
   });
 });

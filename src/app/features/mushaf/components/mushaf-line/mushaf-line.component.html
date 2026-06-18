@@ -2,16 +2,29 @@
   class="mushaf-line"
   [class.mushaf-line--centered]="line().isCentered"
   [class.mushaf-line--surah-name]="line().lineType === 'surah_name'"
+  [class.mushaf-line--basmallah]="line().lineType === 'basmallah'"
   [attr.data-line-type]="line().lineType"
 >
-  @for (word of line().words; track word.wordLocation) {
-    <qd-mushaf-word
-      [word]="word"
-      [selectedVerseKey]="selectedVerseKey()"
-      [selectedWordLocation]="selectedWordLocation()"
-      (ayahSelect)="ayahSelect.emit($event)"
-      (wordSelect)="wordSelect.emit($event)"
-    />
+  @if (line().lineType === 'basmallah') {
+    <span class="mushaf-line__basmallah" dir="rtl">{{ basmallahText() }}</span>
+  } @else if (line().lineType === 'surah_name' && line().surahNumber) {
+    <div class="mushaf-line__surah-title" aria-hidden="true">
+      <span class="mushaf-line__surah-header">{{ surahHeaderLigature() }}</span>
+      <span class="mushaf-line__surah-name-glyph">{{ surahNameLigature(line().surahNumber!) }}</span>
+    </div>
+    @if (surahNameArabic()) {
+      <span class="mushaf-line__sr-only">سورة {{ surahNameArabic() }}</span>
+    }
+  } @else {
+    @for (word of line().words; track word.wordLocation) {
+      <qd-mushaf-word
+        [word]="word"
+        [selectedVerseKey]="selectedVerseKey()"
+        [selectedWordLocation]="selectedWordLocation()"
+        (ayahSelect)="ayahSelect.emit($event)"
+        (wordSelect)="wordSelect.emit($event)"
+      />
+    }
   }
   @for (marker of lineMarkers(); track marker.markerType + marker.markerNumber + marker.verseKey) {
     <qd-mushaf-marker [marker]="marker" />

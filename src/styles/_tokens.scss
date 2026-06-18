@@ -14,7 +14,14 @@
   --qd-floating-shadow: 0 0.25rem 0.75rem oklch(0.18 0.015 60 / 0.08);
   --qd-overlay: oklch(0.18 0.015 60 / 0.30);
 
-  --qd-font-quran: 'Uthmanic Hafs', 'Amiri', serif;
+  // Amiri positions Uthmani marks (e.g. U+06DF) correctly; the previous
+  // 'Uthmanic Hafs' (UthmanicHafs_V22.ttf) rendered them as baseline dots.
+  // See docs/feature-011-mushaf-reader-study-context/mushaf-text-rendering-diagnostic-report.md
+  --qd-font-quran: 'Amiri', serif;
+  --qd-font-quran-ayah-marker: 'Uthmanic Hafs', serif;
+  --qd-font-mushaf-surah-name: 'Mushaf Surah Name', serif;
+  --qd-font-mushaf-common: 'Mushaf Common', serif;
+  --qd-mushaf-text-column-width: 25rem;
 
   --qd-radius-sm: 0.25rem;
   --qd-radius-md: 0.5rem;
