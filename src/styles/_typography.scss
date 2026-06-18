@@ -1,4 +1,12 @@
 @font-face {
+  font-family: 'Uthmanic Hafs';
+  src: url('/assets/fonts/quran/UthmanicHafs_V22.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
   font-family: 'Amiri';
   src: url('/fonts/amiri-regular.woff2') format('woff2');
   font-weight: 400;
@@ -31,6 +39,7 @@
 }
 
 $font-naskh: 'Amiri', serif;
+$font-quran: 'Uthmanic Hafs', 'Amiri', serif;
 $font-sans: 'IBM Plex Sans Arabic', system-ui, sans-serif;
 
 .qd-page-title {

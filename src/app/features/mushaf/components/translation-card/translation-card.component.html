@@ -1,0 +1,13 @@
+@if (!entry()) {
+  <div class="qd-empty-state" role="status" data-testid="translation-empty">
+    <span>لا تتوفر ترجمة لهذه الآية من المصدر المحدد.</span>
+  </div>
+} @else {
+  <article class="study-card" data-testid="translation-card">
+    <div
+      class="study-card__body"
+      [attr.dir]="entry()!.direction"
+      [innerHTML]="entry()!.text | safeHtml"
+    ></div>
+  </article>
+}

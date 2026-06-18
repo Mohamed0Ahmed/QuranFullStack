@@ -6,7 +6,9 @@ const loadPlaceholderPage = () =>
     (m) => m.PlaceholderPageComponent,
   );
 
-const placeholderRoutes: Routes = NAV_ITEMS.filter((item) => item.key !== 'dashboard').map(
+const placeholderRoutes: Routes = NAV_ITEMS.filter(
+  (item) => item.key !== 'dashboard' && item.key !== 'mushaf',
+).map(
   (item) => ({
     path: item.route.replace(/^\//, ''),
     loadComponent: loadPlaceholderPage,
@@ -26,6 +28,11 @@ export const routes: Routes = [
       import('./features/dashboard/pages/dashboard-home/dashboard-home.component').then(
         (m) => m.DashboardHomeComponent,
       ),
+  },
+  {
+    path: 'dashboard/mushaf',
+    loadChildren: () =>
+      import('./features/mushaf/mushaf.routes').then((m) => m.MUSHAF_ROUTES),
   },
   ...placeholderRoutes,
   {

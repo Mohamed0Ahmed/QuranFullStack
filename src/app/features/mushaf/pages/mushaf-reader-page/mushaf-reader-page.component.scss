@@ -1,0 +1,120 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.mushaf-reader {
+  display: grid;
+  // dir="rtl" places the first grid column on the RIGHT, so the first DOM
+  // child (the Mushaf page) lands right ~58% and the second child (the study
+  // area) lands left ~42% — matching R9 (right Mushaf ~55–60%, left study
+  // ~40–45%).
+  grid-template-columns: minmax(0, 58%) minmax(0, 42%);
+  gap: 1rem;
+  height: 100%;
+  min-height: 0;
+
+  &__page,
+  &__study {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    border-radius: var(--qd-radius-md);
+  }
+
+  &__study {
+    gap: var(--qd-space-2);
+    background: var(--qd-surface);
+    min-height: 0;
+  }
+
+  &__word-study {
+    flex: 0 0 38%;
+    min-height: 0;
+  }
+
+  &__ayah-study {
+    flex: 1;
+    min-height: 0;
+  }
+
+  &__word-study,
+  &__ayah-study {
+    &--focused {
+      outline: 2px solid var(--qd-accent);
+      outline-offset: -2px;
+    }
+  }
+
+  &__mobile-tabs {
+    display: none;
+  }
+
+  &__page {
+    background: transparent;
+  }
+}
+
+// Tablet: stack Mushaf above study; both study cards remain visible together.
+@media (max-width: 1023px) and (min-width: 768px) {
+  .mushaf-reader {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(14rem, 42vh) minmax(0, 1fr);
+
+    &__word-study {
+      flex: 0 0 42%;
+    }
+
+    &__ayah-study {
+      flex: 1 1 auto;
+    }
+  }
+}
+
+// Mobile: bottom study drawer with word/ayah tabs; `panel` selects the active card.
+@media (max-width: 767px) {
+  .mushaf-reader {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+    gap: 0.75rem;
+
+    &__study {
+      position: relative;
+      max-height: min(52vh, 28rem);
+      padding: var(--qd-space-2);
+      border: 1px solid var(--qd-border);
+      box-shadow: 0 -4px 16px oklch(0.2 0.02 75 / 0.08);
+    }
+
+    &__mobile-tabs {
+      display: flex;
+      gap: var(--qd-space-2);
+      flex-shrink: 0;
+    }
+
+    &__mobile-tab {
+      flex: 1 1 0;
+
+      &--active {
+        border-color: var(--qd-accent);
+        color: var(--qd-text);
+        background: var(--qd-surface-elevated);
+        font-weight: 600;
+      }
+    }
+
+    &.mushaf-reader--panel-word .mushaf-reader__ayah-study {
+      display: none;
+    }
+
+    &.mushaf-reader--panel-ayah .mushaf-reader__word-study {
+      display: none;
+    }
+
+    &__word-study,
+    &__ayah-study {
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+  }
+}

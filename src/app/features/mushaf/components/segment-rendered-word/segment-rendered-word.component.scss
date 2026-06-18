@@ -1,0 +1,16 @@
+.segment-rendered-word {
+  display: inline;
+  font-size: 1.25rem;
+  line-height: 1.9;
+
+  &__segment {
+    display: inline;
+    border-bottom: 2px solid currentColor;
+    padding-bottom: 1px;
+  }
+
+  &__placeholder {
+    opacity: 0.55;
+    font-style: normal;
+  }
+}

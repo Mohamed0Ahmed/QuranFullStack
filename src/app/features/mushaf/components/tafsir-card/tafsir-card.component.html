@@ -1,0 +1,18 @@
+@if (!entry()) {
+  <div class="qd-empty-state" role="status" data-testid="tafsir-empty">
+    <span>لا يتوفر تفسير لهذه الآية من المصدر المحدد.</span>
+  </div>
+} @else {
+  <article class="study-card" data-testid="tafsir-card">
+    @if (entry()!.coveredAyahCount > 1) {
+      <p class="study-card__coverage" data-testid="grouped-coverage">
+        يغطي هذا التفسير الآيات: {{ entry()!.coveredAyahKeys.join('، ') }}
+      </p>
+    }
+    <div
+      class="study-card__body"
+      [attr.dir]="entry()!.direction"
+      [innerHTML]="entry()!.text | safeHtml"
+    ></div>
+  </article>
+}

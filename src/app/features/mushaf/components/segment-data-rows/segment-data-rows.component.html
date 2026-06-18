@@ -1,0 +1,35 @@
+<div class="segment-data-rows" data-testid="segment-data-rows">
+  @for (segment of segments(); track segment.segmentLocation) {
+    <div
+      class="segment-data-rows__row"
+      [style.borderInlineStartColor]="segment.color"
+      [attr.data-segment-slot]="segment.segmentColorSlot"
+    >
+      <div class="segment-data-rows__header">
+        <span class="segment-data-rows__number" [style.color]="segment.color">
+          {{ segment.segmentNumber }}
+        </span>
+        <span class="segment-data-rows__kind">{{ segment.segmentKind ?? '—' }}</span>
+        @if (segment.segmentPosLabel) {
+          <span class="segment-data-rows__pos">{{ segment.segmentPosLabel.ar }}</span>
+        }
+      </div>
+      <div class="segment-data-rows__form">
+        @if (segment.isMissing) {
+          <span class="segment-data-rows__placeholder" data-testid="segment-row-placeholder">…</span>
+        } @else {
+          {{ segment.segmentDisplayText }}
+        }
+      </div>
+      @if (segment.segmentI3rabArabic) {
+        <div
+          class="segment-data-rows__i3rab"
+          [style.color]="segment.color"
+          data-testid="segment-i3rab-label"
+        >
+          {{ segment.segmentI3rabArabic }}
+        </div>
+      }
+    </div>
+  }
+</div>

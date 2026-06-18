@@ -1,0 +1,99 @@
+<section class="selected-word-section" aria-label="تحليل الكلمة المحددة" data-testid="selected-word-section" tabindex="0" (focus)="sectionFocus.emit()">
+  @if (loadState().errorMessage) {
+    <div class="qd-error-state" role="alert" data-testid="word-analysis-error">
+      <span>{{ loadState().errorMessage }}</span>
+    </div>
+  } @else if (!selectedWordLocation()) {
+    <div class="qd-empty-state" role="status">
+      <span>اختر كلمة من المصحف لعرض التحليل.</span>
+    </div>
+  } @else if (loadState().isLoading) {
+    <div class="qd-loading-state" role="status" aria-live="polite">
+      <span>جارٍ تحميل تحليل الكلمة...</span>
+    </div>
+  } @else if (loadState().isEmpty || !analysis()) {
+    <div class="qd-empty-state" role="status">
+      <span>تعذّر تحميل تحليل الكلمة.</span>
+    </div>
+  } @else {
+    <header class="selected-word-section__header">
+      <h2 class="selected-word-section__title">
+        {{ analysis()!.word.verseKey }} — كلمة {{ analysis()!.word.wordNumber }}
+      </h2>
+      <p class="selected-word-section__text" dir="rtl">{{ analysis()!.word.textUthmani }}</p>
+      <qd-segment-rendered-word
+        [segments]="analysis()!.segments"
+        [fullWordText]="analysis()!.word.textUthmani"
+      />
+    </header>
+
+    <nav class="selected-word-section__tabs" aria-label="تبويبات تحليل الكلمة">
+      <button
+        type="button"
+        class="selected-word-section__tab"
+        [class.selected-word-section__tab--active]="activeTab() === 'morphology'"
+        (click)="tabChange.emit('morphology')"
+      >
+        الصرف
+      </button>
+      <button
+        type="button"
+        class="selected-word-section__tab"
+        [class.selected-word-section__tab--active]="activeTab() === 'segments'"
+        (click)="tabChange.emit('segments')"
+      >
+        القطع
+      </button>
+      <button
+        type="button"
+        class="selected-word-section__tab"
+        [class.selected-word-section__tab--active]="activeTab() === 'i3rab'"
+        (click)="tabChange.emit('i3rab')"
+      >
+        الإعراب
+      </button>
+      <button
+        type="button"
+        class="selected-word-section__tab"
+        [class.selected-word-section__tab--active]="activeTab() === 'identity'"
+        (click)="tabChange.emit('identity')"
+      >
+        الهوية
+      </button>
+    </nav>
+
+    <div class="selected-word-section__content">
+      @switch (activeTab()) {
+        @case ('morphology') {
+          <qd-word-morphology-summary [morphology]="analysis()!.morphology" />
+        }
+        @case ('segments') {
+          <qd-segment-data-rows [segments]="analysis()!.segments" />
+        }
+        @case ('i3rab') {
+          <qd-segment-data-rows [segments]="analysis()!.segments" />
+        }
+        @case ('identity') {
+          <dl class="selected-word-section__identity" data-testid="word-identity-summary">
+            <div class="selected-word-section__identity-row">
+              <dt>التكرار (بالتشكيل)</dt>
+              <dd>{{ analysis()!.identity.orderedTashkeel.occurrencesCount }} مرة في {{ analysis()!.identity.orderedTashkeel.surahsCount }} سورة</dd>
+            </div>
+            <div class="selected-word-section__identity-row">
+              <dt>التكرار (مبسّط)</dt>
+              <dd>{{ analysis()!.identity.orderedSimple.occurrencesCount }} مرة في {{ analysis()!.identity.orderedSimple.surahsCount }} سورة</dd>
+            </div>
+            <div class="selected-word-section__identity-row">
+              <dt>الهوية الفريدة (تشكيل)</dt>
+              <dd>#{{ analysis()!.identity.uniqueTashkeel.id }} — {{ analysis()!.identity.uniqueTashkeel.occurrencesCount }} مرة</dd>
+            </div>
+            <div class="selected-word-section__identity-row">
+              <dt>الهوية الفريدة (إملائي)</dt>
+              <dd>{{ analysis()!.identity.uniqueSimple.wordKeyImlaeiSimple }} — {{ analysis()!.identity.uniqueSimple.occurrencesCount }} مرة</dd>
+            </div>
+          </dl>
+        }
+      }
+    </div>
+  }
+</section>

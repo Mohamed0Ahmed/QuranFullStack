@@ -1,0 +1,23 @@
+.word-morphology-summary {
+  display: grid;
+  gap: var(--qd-space-2);
+  margin: 0;
+
+  &__row {
+    display: grid;
+    grid-template-columns: 6rem 1fr;
+    gap: var(--qd-space-2);
+    font-size: 0.875rem;
+  }
+
+  dt {
+    margin: 0;
+    color: var(--qd-text-muted);
+    font-weight: 500;
+  }
+
+  dd {
+    margin: 0;
+    color: var(--qd-text);
+  }
+}

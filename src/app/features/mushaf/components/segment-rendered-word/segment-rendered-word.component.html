@@ -1,0 +1,20 @@
+<span class="segment-rendered-word" dir="rtl" data-testid="segment-rendered-word">
+  @for (segment of segments(); track segment.segmentLocation) {
+    <span
+      class="segment-rendered-word__segment"
+      [style.color]="segment.color"
+      [attr.data-segment-slot]="segment.segmentColorSlot"
+      [attr.data-segment-form]="segment.isMissing ? null : segment.segmentDisplayText"
+    >
+      @if (segment.isMissing) {
+        <span
+          class="segment-rendered-word__placeholder"
+          aria-label="نص القطعة غير متوفر"
+          data-testid="segment-missing-placeholder"
+        >…</span>
+      } @else {
+        {{ segment.segmentDisplayText }}
+      }
+    </span>
+  }
+</span>
