@@ -29,4 +29,5 @@ export class SelectedWordSectionComponent {
   readonly selectedWordLocation = input<string | null>(null);
 
   readonly tabChange = output<WordAnalysisTab>();
+  readonly sectionFocus = output<void>();
 }

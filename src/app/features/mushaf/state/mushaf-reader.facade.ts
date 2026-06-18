@@ -1,4 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 
 import { MushafAyahStudyApi } from '../data-access/mushaf-ayah-study.api';
 import { MushafPagesApi } from '../data-access/mushaf-pages.api';
@@ -6,12 +8,15 @@ import { MushafSurahCatalogApi } from '../data-access/mushaf-surah-catalog.api';
 import { MushafWordAnalysisApi } from '../data-access/mushaf-word-analysis.api';
 import {
   AyahStudyDto,
+  AyahStudyTab,
   AyahStudyViewModel,
   DEFAULT_MUSHAF_READER_STATE,
+  MUSHAF_URL_KEYS,
   MushafPageDto,
   MushafPageViewModel,
   MushafReaderState,
   MushafSurahCatalogItemDto,
+  PanelMode,
   ResourceLoadState,
   SourceOption,
   WordAnalysisDto,
@@ -20,6 +25,12 @@ import {
 } from '../models/mushaf.models';
 import { subscribeToApiLoad } from './mushaf-api-load.helpers';
 import { segmentSlotToColor } from './segment-color-palette';
+import {
+  MushafUrlSnapshot,
+  buildUrlEnumCorrections,
+  parseMushafUrlParams,
+} from './mushaf-url-sync';
+import { applyAuthoritativeUrlSnapshot } from './mushaf-url-hydration';
 
 function toPageViewModel(dto: MushafPageDto): MushafPageViewModel {
   return {
@@ -79,8 +90,8 @@ const FULL_I3RAB_SOURCE_OPTIONS: SourceOption[] = [
 /**
  * Mushaf reader page-state facade.
  *
- * Owns all reader view state (selections, sources, tabs, and per-resource
- * loading/empty/error primitives). Full URL sync is added by US5 (T048).
+ * Owns all reader view state (selections, sources, tabs, per-resource
+ * loading/empty/error primitives) and URL ↔ state synchronization.
  */
 @Injectable({ providedIn: 'root' })
 export class MushafReaderFacade {
@@ -88,6 +99,10 @@ export class MushafReaderFacade {
   private readonly ayahStudyApi = inject(MushafAyahStudyApi);
   private readonly surahCatalogApi = inject(MushafSurahCatalogApi);
   private readonly wordAnalysisApi = inject(MushafWordAnalysisApi);
+  private readonly router = inject(Router);
+
+  private activeRoute: ActivatedRoute | null = null;
+  private routeSubscription: Subscription | null = null;
 
   private readonly _pageNumber = signal(DEFAULT_MUSHAF_READER_STATE.pageNumber);
   private readonly _selectedAyahKey = signal(DEFAULT_MUSHAF_READER_STATE.selectedAyahKey);
@@ -97,6 +112,7 @@ export class MushafReaderFacade {
   private readonly _ayahTab = signal(DEFAULT_MUSHAF_READER_STATE.ayahTab);
   private readonly _wordTab = signal(DEFAULT_MUSHAF_READER_STATE.wordTab);
   private readonly _sources = signal(DEFAULT_MUSHAF_READER_STATE.sources);
+  private readonly _urlExplicitSources = signal(DEFAULT_MUSHAF_READER_STATE.sources);
 
   private readonly _page = signal<MushafPageViewModel | null>(null);
   private readonly _ayahStudy = signal<AyahStudyViewModel | null>(null);
@@ -143,6 +159,72 @@ export class MushafReaderFacade {
     wordAnalysis: this._wordAnalysisLoadState(),
   }));
 
+  /** Subscribes to query params and hydrates state for deep links (page → ayah → word). */
+  bindToRoute(route: ActivatedRoute): void {
+    this.activeRoute = route;
+    this.routeSubscription?.unsubscribe();
+    this.routeSubscription = route.queryParamMap.subscribe((params) => {
+      const snapshot = parseMushafUrlParams(params);
+      this.hydrateFromUrl(snapshot);
+
+      const corrections = buildUrlEnumCorrections(params, snapshot);
+      if (Object.keys(corrections).length > 0) {
+        this.patchUrlQuery(corrections);
+      }
+    });
+  }
+
+  changePage(pageNumber: number): void {
+    this.patchUrlQuery({ [MUSHAF_URL_KEYS.page]: pageNumber });
+  }
+
+  jumpToSurah(surahNumber: number): void {
+    const startPage = this.resolveSurahStartPage(surahNumber);
+    if (startPage !== null) {
+      this.changePage(startPage);
+    }
+  }
+
+  selectAyah(verseKey: string): void {
+    this.patchUrlQuery({
+      [MUSHAF_URL_KEYS.ayah]: verseKey,
+      [MUSHAF_URL_KEYS.panel]: 'ayah',
+    });
+  }
+
+  selectWord(wordLocation: string): void {
+    this.patchUrlQuery({
+      [MUSHAF_URL_KEYS.word]: wordLocation,
+      [MUSHAF_URL_KEYS.panel]: 'word',
+    });
+  }
+
+  setPanel(panel: PanelMode): void {
+    this.patchUrlQuery({
+      [MUSHAF_URL_KEYS.panel]: panel === DEFAULT_MUSHAF_READER_STATE.panel ? null : panel,
+    });
+  }
+
+  setAyahTab(tab: AyahStudyTab): void {
+    this.patchUrlQuery({ [MUSHAF_URL_KEYS.ayahTab]: tab });
+  }
+
+  setWordTab(tab: WordAnalysisTab): void {
+    this.patchUrlQuery({ [MUSHAF_URL_KEYS.wordTab]: tab });
+  }
+
+  setTafsirSource(sourceKey: string): void {
+    this.patchUrlQuery({ [MUSHAF_URL_KEYS.tafsirSource]: sourceKey });
+  }
+
+  setTranslationSource(sourceKey: string): void {
+    this.patchUrlQuery({ [MUSHAF_URL_KEYS.translationSource]: sourceKey });
+  }
+
+  setFullI3rabSource(sourceKey: string): void {
+    this.patchUrlQuery({ [MUSHAF_URL_KEYS.fullI3rabSource]: sourceKey });
+  }
+
   loadSurahCatalog(): void {
     subscribeToApiLoad(this.surahCatalogApi.getCatalog(), {
       onSuccess: (data) => this._surahCatalog.set(data.surahs),
@@ -186,7 +268,7 @@ export class MushafReaderFacade {
     this._selectedAyahKey.set(verseKey);
     this._ayahStudyLoadState.set({ isLoading: true, isEmpty: false, errorMessage: null });
 
-    const sources = this._sources();
+    const sources = this._urlExplicitSources();
     subscribeToApiLoad(
       this.ayahStudyApi.getAyahStudy(verseKey, sources),
       {
@@ -240,70 +322,69 @@ export class MushafReaderFacade {
     });
   }
 
-  applyUrlState(params: {
-    ayah: string | null;
-    tafsirSource: string | null;
-    translationSource: string | null;
-    fullI3rabSource: string | null;
-    ayahTab: MushafReaderState['ayahTab'] | null;
-    word: string | null;
-    segment: string | null;
-    wordTab: WordAnalysisTab | null;
-  }): void {
-    if (params.ayahTab) {
-      this._ayahTab.set(params.ayahTab);
+  private hydrateFromUrl(snapshot: MushafUrlSnapshot): void {
+    this.loadPage(snapshot.pageNumber);
+    this.applyUrlState(snapshot);
+  }
+
+  private patchUrlQuery(
+    params: Partial<Record<(typeof MUSHAF_URL_KEYS)[keyof typeof MUSHAF_URL_KEYS], string | number | null>>,
+  ): void {
+    if (!this.activeRoute) {
+      return;
     }
 
-    if (params.wordTab) {
-      this._wordTab.set(params.wordTab);
-    }
+    void this.router.navigate([], {
+      relativeTo: this.activeRoute,
+      queryParams: params,
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
 
-    if (params.segment) {
-      this._selectedSegmentLocation.set(params.segment);
-    }
-
-    const previousWord = this._selectedWordLocation();
-    const wordChanged = params.word !== previousWord;
-
-    if (params.word) {
-      if (wordChanged) {
-        this.loadWordAnalysis(params.word);
-      } else {
-        this._selectedWordLocation.set(params.word);
-      }
-    } else {
-      this._selectedWordLocation.set(null);
-      this._selectedSegmentLocation.set(null);
-      this._wordAnalysis.set(null);
-      this._wordAnalysisLoadState.set({ isLoading: false, isEmpty: false, errorMessage: null });
-    }
-
-    const previousAyah = this._selectedAyahKey();
-    const previousSources = this._sources();
-    const nextSources = {
-      tafsirSource: params.tafsirSource ?? previousSources.tafsirSource,
-      translationSource: params.translationSource ?? previousSources.translationSource,
-      fullI3rabSource: params.fullI3rabSource ?? previousSources.fullI3rabSource,
-    };
-
-    const ayahChanged = params.ayah !== previousAyah;
-    const sourcesChanged =
-      nextSources.tafsirSource !== previousSources.tafsirSource ||
-      nextSources.translationSource !== previousSources.translationSource ||
-      nextSources.fullI3rabSource !== previousSources.fullI3rabSource;
-
-    this._sources.set(nextSources);
-
-    if (params.ayah) {
-      this._selectedAyahKey.set(params.ayah);
-      if (ayahChanged || sourcesChanged) {
-        this.loadAyahStudy(params.ayah);
-      }
-    } else {
-      this._selectedAyahKey.set(null);
-      this._ayahStudy.set(null);
-      this._ayahStudyLoadState.set({ isLoading: false, isEmpty: false, errorMessage: null });
-    }
+  /** Applies an authoritative URL snapshot (used by route hydration and tests). */
+  applyUrlState(snapshot: Pick<MushafUrlSnapshot, 'panel' | 'ayah' | 'word' | 'segment' | 'ayahTab' | 'wordTab' | 'sources'>): void {
+    applyAuthoritativeUrlSnapshot(
+      snapshot,
+      {
+        selectedAyahKey: this._selectedAyahKey(),
+        selectedWordLocation: this._selectedWordLocation(),
+        urlExplicitSources: this._urlExplicitSources(),
+      },
+      {
+        setUiState: (panel, ayahTab, wordTab, segmentLocation) => {
+          this._panel.set(panel);
+          this._ayahTab.set(ayahTab);
+          this._wordTab.set(wordTab);
+          this._selectedSegmentLocation.set(segmentLocation);
+        },
+        clearWordSelection: () => {
+          this._selectedWordLocation.set(null);
+          this._selectedSegmentLocation.set(null);
+          this._wordAnalysis.set(null);
+          this._wordAnalysisLoadState.set({ isLoading: false, isEmpty: false, errorMessage: null });
+        },
+        setWord: (wordLocation, reload) => {
+          if (reload) {
+            this.loadWordAnalysis(wordLocation);
+          } else {
+            this._selectedWordLocation.set(wordLocation);
+          }
+        },
+        setUrlExplicitSources: (sources) => this._urlExplicitSources.set(sources),
+        clearAyahSelection: () => {
+          this._selectedAyahKey.set(null);
+          this._ayahStudy.set(null);
+          this._ayahStudyLoadState.set({ isLoading: false, isEmpty: false, errorMessage: null });
+        },
+        setAyah: (verseKey, reload) => {
+          this._selectedAyahKey.set(verseKey);
+          if (reload) {
+            this.loadAyahStudy(verseKey);
+          }
+        },
+      },
+    );
   }
 
   private isAyahMarkerOnCurrentPage(wordLocation: string): boolean {

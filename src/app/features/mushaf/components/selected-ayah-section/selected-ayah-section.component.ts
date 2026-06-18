@@ -39,4 +39,5 @@ export class SelectedAyahSectionComponent {
   readonly tafsirSourceChange = output<string>();
   readonly translationSourceChange = output<string>();
   readonly fullI3rabSourceChange = output<string>();
+  readonly sectionFocus = output<void>();
 }

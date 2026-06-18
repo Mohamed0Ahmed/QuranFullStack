@@ -144,24 +144,30 @@ describe('MushafReaderFacade.applyUrlState', () => {
 
     const facade = TestBed.inject(MushafReaderFacade);
     facade.applyUrlState({
+      panel: 'none',
       ayah: '2:25',
-      tafsirSource: null,
-      translationSource: null,
-      fullI3rabSource: null,
-      ayahTab: null,
+      sources: {
+        tafsirSource: null,
+        translationSource: null,
+        fullI3rabSource: null,
+      },
+      ayahTab: 'tafsir',
       word: null,
       segment: null,
-      wordTab: null,
+      wordTab: 'segments',
     });
     facade.applyUrlState({
+      panel: 'none',
       ayah: '2:25',
-      tafsirSource: null,
-      translationSource: 'another-translation',
-      fullI3rabSource: null,
-      ayahTab: null,
+      sources: {
+        tafsirSource: null,
+        translationSource: 'another-translation',
+        fullI3rabSource: null,
+      },
+      ayahTab: 'tafsir',
       word: null,
       segment: null,
-      wordTab: null,
+      wordTab: 'segments',
     });
 
     expect(getAyahStudy).toHaveBeenCalledTimes(2);
@@ -185,24 +191,30 @@ describe('MushafReaderFacade.applyUrlState', () => {
 
     const facade = TestBed.inject(MushafReaderFacade);
     facade.applyUrlState({
+      panel: 'none',
       ayah: '2:25',
-      tafsirSource: null,
-      translationSource: null,
-      fullI3rabSource: null,
+      sources: {
+        tafsirSource: null,
+        translationSource: null,
+        fullI3rabSource: null,
+      },
       ayahTab: 'tafsir',
       word: null,
       segment: null,
-      wordTab: null,
+      wordTab: 'segments',
     });
     facade.applyUrlState({
+      panel: 'none',
       ayah: '2:25',
-      tafsirSource: null,
-      translationSource: null,
-      fullI3rabSource: null,
+      sources: {
+        tafsirSource: null,
+        translationSource: null,
+        fullI3rabSource: null,
+      },
       ayahTab: 'translation',
       word: null,
       segment: null,
-      wordTab: null,
+      wordTab: 'segments',
     });
 
     expect(getAyahStudy).toHaveBeenCalledTimes(1);

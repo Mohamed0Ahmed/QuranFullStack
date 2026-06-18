@@ -1,4 +1,8 @@
-<div class="mushaf-reader" dir="rtl">
+<div
+  class="mushaf-reader"
+  [ngClass]="panelClass(facade.panel())"
+  dir="rtl"
+>
   <section class="mushaf-reader__page" aria-label="منطقة المصحف">
     <qd-mushaf-page-area
       [page]="facade.page()"
@@ -15,14 +19,17 @@
   <section class="mushaf-reader__study" aria-label="منطقة الدراسة">
     <qd-selected-word-section
       class="mushaf-reader__word-study"
+      [class.mushaf-reader__word-study--focused]="isPanelFocused('word')"
       [analysis]="facade.wordAnalysis()"
       [loadState]="facade.wordAnalysisLoadState()"
       [activeTab]="facade.wordTab()"
       [selectedWordLocation]="facade.selectedWordLocation()"
       (tabChange)="onWordTabChange($event)"
+      (sectionFocus)="onStudySectionFocus('word')"
     />
     <qd-selected-ayah-section
       class="mushaf-reader__ayah-study"
+      [class.mushaf-reader__ayah-study--focused]="isPanelFocused('ayah')"
       [study]="facade.ayahStudy()"
       [loadState]="facade.ayahStudyLoadState()"
       [activeTab]="facade.ayahTab()"
@@ -34,6 +41,7 @@
       (tafsirSourceChange)="onTafsirSourceChange($event)"
       (translationSourceChange)="onTranslationSourceChange($event)"
       (fullI3rabSourceChange)="onFullI3rabSourceChange($event)"
+      (sectionFocus)="onStudySectionFocus('ayah')"
     />
   </section>
 </div>

@@ -1,4 +1,4 @@
-<section class="selected-word-section" aria-label="تحليل الكلمة المحددة" data-testid="selected-word-section">
+<section class="selected-word-section" aria-label="تحليل الكلمة المحددة" data-testid="selected-word-section" tabindex="0" (focus)="sectionFocus.emit()">
   @if (loadState().errorMessage) {
     <div class="qd-error-state" role="alert" data-testid="word-analysis-error">
       <span>{{ loadState().errorMessage }}</span>

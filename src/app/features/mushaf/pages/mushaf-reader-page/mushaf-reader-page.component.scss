@@ -39,12 +39,34 @@
     min-height: 0;
   }
 
-  &__page {
-    background: transparent;
+  &__word-study,
+  &__ayah-study {
+    &--focused {
+      outline: 2px solid var(--qd-accent);
+      outline-offset: -2px;
+    }
   }
 
-  &__placeholder {
-    color: var(--qd-text-muted);
-    font-size: 0.95rem;
+  // Below wide desktop, `panel` selects the active study section (T049).
+  // Full drawer/bottom-sheet polish is deferred to T054.
+  @media (max-width: 1023px) {
+    grid-template-columns: minmax(0, 1fr);
+
+    &.mushaf-reader--panel-word .mushaf-reader__ayah-study {
+      display: none;
+    }
+
+    &.mushaf-reader--panel-ayah .mushaf-reader__word-study {
+      display: none;
+    }
+
+    &__word-study,
+    &__ayah-study {
+      flex: 1 1 auto;
+    }
+  }
+
+  &__page {
+    background: transparent;
   }
 }

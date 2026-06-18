@@ -1,4 +1,4 @@
-<section class="selected-ayah-section" aria-label="دراسة الآية المحددة" data-testid="selected-ayah-section">
+<section class="selected-ayah-section" aria-label="دراسة الآية المحددة" data-testid="selected-ayah-section" tabindex="0" (focus)="sectionFocus.emit()">
   @if (!selectedVerseKey()) {
     <div class="qd-empty-state" role="status">
       <span>اختر آية من المصحف لعرض سياق الدراسة.</span>
