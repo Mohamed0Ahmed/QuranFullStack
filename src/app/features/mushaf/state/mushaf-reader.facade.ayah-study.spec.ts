@@ -95,11 +95,12 @@ describe('MushafReaderFacade.loadPage', () => {
 
     const facade = TestBed.inject(MushafReaderFacade);
     facade.loadPage(5);
-    expect(getPage).toHaveBeenCalledTimes(1);
+    // Initial load plus optional adjacent-page prefetch (pages 4 and 6).
+    expect(getPage).toHaveBeenCalledTimes(3);
     expect(facade.pageLoadState().isLoading).toBe(false);
 
     facade.loadPage(5);
-    expect(getPage).toHaveBeenCalledTimes(1);
+    expect(getPage).toHaveBeenCalledTimes(3);
     expect(facade.pageLoadState().isLoading).toBe(false);
   });
 });

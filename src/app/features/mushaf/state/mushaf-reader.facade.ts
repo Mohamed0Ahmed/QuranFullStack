@@ -24,6 +24,7 @@ import {
   WordAnalysisViewModel,
 } from '../models/mushaf.models';
 import { subscribeToApiLoad } from './mushaf-api-load.helpers';
+import { MushafReaderCache, MushafReaderCacheKeys } from './mushaf-reader-cache';
 import { segmentSlotToColor } from './segment-color-palette';
 import {
   MushafUrlSnapshot,
@@ -99,6 +100,7 @@ export class MushafReaderFacade {
   private readonly ayahStudyApi = inject(MushafAyahStudyApi);
   private readonly surahCatalogApi = inject(MushafSurahCatalogApi);
   private readonly wordAnalysisApi = inject(MushafWordAnalysisApi);
+  private readonly readerCache = inject(MushafReaderCache);
   private readonly router = inject(Router);
 
   private activeRoute: ActivatedRoute | null = null;
@@ -250,8 +252,13 @@ export class MushafReaderFacade {
     this._pageNumber.set(clamped);
     this._pageLoadState.set({ isLoading: true, isEmpty: false, errorMessage: null });
 
-    subscribeToApiLoad(this.pagesApi.getPage(clamped), {
-      onSuccess: (data) => this._page.set(toPageViewModel(data)),
+    subscribeToApiLoad(
+      this.readerCache.getOrLoad(MushafReaderCacheKeys.page(clamped), () => this.pagesApi.getPage(clamped)),
+      {
+      onSuccess: (data) => {
+        this._page.set(toPageViewModel(data));
+        this.prefetchAdjacentPages(data.previousPageNumber, data.nextPageNumber);
+      },
       onSettled: (loadState) => {
         if (loadState.isEmpty) {
           this._page.set(null);
@@ -269,8 +276,9 @@ export class MushafReaderFacade {
     this._ayahStudyLoadState.set({ isLoading: true, isEmpty: false, errorMessage: null });
 
     const sources = this._urlExplicitSources();
+    const cacheKey = MushafReaderCacheKeys.ayahStudy(verseKey, sources);
     subscribeToApiLoad(
-      this.ayahStudyApi.getAyahStudy(verseKey, sources),
+      this.readerCache.getOrLoad(cacheKey, () => this.ayahStudyApi.getAyahStudy(verseKey, sources)),
       {
         onSuccess: (data) => {
           this._ayahStudy.set(toAyahStudyViewModel(data));
@@ -308,7 +316,12 @@ export class MushafReaderFacade {
     this._selectedWordLocation.set(wordLocation);
     this._wordAnalysisLoadState.set({ isLoading: true, isEmpty: false, errorMessage: null });
 
-    subscribeToApiLoad(this.wordAnalysisApi.getWordAnalysis(wordLocation), {
+    subscribeToApiLoad(
+      this.readerCache.getOrLoad(
+        MushafReaderCacheKeys.wordAnalysis(wordLocation),
+        () => this.wordAnalysisApi.getWordAnalysis(wordLocation),
+      ),
+      {
       onSuccess: (data) => this._wordAnalysis.set(toWordAnalysisViewModel(data)),
       onSettled: (loadState) => {
         if (loadState.isEmpty) {
@@ -385,6 +398,22 @@ export class MushafReaderFacade {
         },
       },
     );
+  }
+
+  private prefetchAdjacentPages(previousPageNumber: number | null, nextPageNumber: number | null): void {
+    if (previousPageNumber !== null) {
+      this.readerCache.prefetch(
+        MushafReaderCacheKeys.page(previousPageNumber),
+        () => this.pagesApi.getPage(previousPageNumber),
+      );
+    }
+
+    if (nextPageNumber !== null) {
+      this.readerCache.prefetch(
+        MushafReaderCacheKeys.page(nextPageNumber),
+        () => this.pagesApi.getPage(nextPageNumber),
+      );
+    }
   }
 
   private isAyahMarkerOnCurrentPage(wordLocation: string): boolean {

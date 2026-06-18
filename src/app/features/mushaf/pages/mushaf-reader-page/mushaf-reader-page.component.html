@@ -17,6 +17,24 @@
     />
   </section>
   <section class="mushaf-reader__study" aria-label="منطقة الدراسة">
+    <nav class="mushaf-reader__mobile-tabs" aria-label="تبويبات الدراسة">
+      <button
+        type="button"
+        class="qd-btn mushaf-reader__mobile-tab"
+        [class.mushaf-reader__mobile-tab--active]="facade.panel() === 'word'"
+        (click)="onStudySectionFocus('word')"
+      >
+        تحليل الكلمة
+      </button>
+      <button
+        type="button"
+        class="qd-btn mushaf-reader__mobile-tab"
+        [class.mushaf-reader__mobile-tab--active]="facade.panel() === 'ayah'"
+        (click)="onStudySectionFocus('ayah')"
+      >
+        دراسة الآية
+      </button>
+    </nav>
     <qd-selected-word-section
       class="mushaf-reader__word-study"
       [class.mushaf-reader__word-study--focused]="isPanelFocused('word')"
