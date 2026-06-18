@@ -11,6 +11,8 @@ using QuranDashboard.Infrastructure.Files.Quran.Translations;
 using QuranDashboard.Infrastructure.Files.Quran.Navigation;
 using QuranDashboard.Infrastructure.Files.Quran.FullI3rab;
 using QuranDashboard.Infrastructure.Persistence;
+using Microsoft.Extensions.Caching.Memory;
+using QuranDashboard.Infrastructure.Caching.Quran.MushafReader;
 using QuranDashboard.Infrastructure.Persistence.Reads.Quran.MushafReader;
 using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Translations;
 using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Navigation;
@@ -144,9 +146,23 @@ public static class DependencyInjection
     {
         services.Configure<MushafReaderOptions>(configuration.GetSection("MushafReader"));
         services.AddSingleton(sp => sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<MushafReaderOptions>>().Value);
-        services.AddScoped<IMushafPageReader, EfMushafPageReader>();
-        services.AddScoped<IAyahStudyReader, EfAyahStudyReader>();
+        services.AddMemoryCache();
+
+        services.AddScoped<EfMushafPageReader>();
+        services.AddScoped<IMushafPageReader>(sp => new CachedMushafPageReader(
+            sp.GetRequiredService<EfMushafPageReader>(),
+            sp.GetRequiredService<IMemoryCache>()));
+
+        services.AddScoped<EfAyahStudyReader>();
+        services.AddScoped<IAyahStudyReader>(sp => new CachedAyahStudyReader(
+            sp.GetRequiredService<EfAyahStudyReader>(),
+            sp.GetRequiredService<IMemoryCache>()));
+
         services.AddScoped<IMushafSurahCatalogReader, EfMushafSurahCatalogReader>();
-        services.AddScoped<IWordAnalysisReader, EfWordAnalysisReader>();
+
+        services.AddScoped<EfWordAnalysisReader>();
+        services.AddScoped<IWordAnalysisReader>(sp => new CachedWordAnalysisReader(
+            sp.GetRequiredService<EfWordAnalysisReader>(),
+            sp.GetRequiredService<IMemoryCache>()));
     }
 }

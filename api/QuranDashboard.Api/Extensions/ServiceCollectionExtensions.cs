@@ -1,3 +1,4 @@
+using System.Reflection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.OpenApi;
 using QuranDashboard.Api.Middleware;
@@ -18,6 +19,14 @@ public static class ServiceCollectionExtensions
                 Title = "المنهج القرآني API",
                 Version = "v1"
             });
+
+            var xmlPath = Path.Combine(
+                AppContext.BaseDirectory,
+                $"{Assembly.GetExecutingAssembly().GetName().Name}.xml");
+            if (File.Exists(xmlPath))
+            {
+                options.IncludeXmlComments(xmlPath);
+            }
         });
         services.AddHealthChecks()
             .AddDbContextCheck<QuranDashboardDbContext>("database");
