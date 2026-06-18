@@ -11,6 +11,7 @@ using QuranDashboard.Infrastructure.Files.Quran.Translations;
 using QuranDashboard.Infrastructure.Files.Quran.Navigation;
 using QuranDashboard.Infrastructure.Files.Quran.FullI3rab;
 using QuranDashboard.Infrastructure.Persistence;
+using QuranDashboard.Infrastructure.Persistence.Reads.Quran.MushafReader;
 using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Translations;
 using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Navigation;
 using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.FullI3rab;
@@ -142,5 +143,7 @@ public static class DependencyInjection
     private static void ConfigureMushafReader(IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<MushafReaderOptions>(configuration.GetSection("MushafReader"));
+        services.AddScoped<IMushafPageReader, EfMushafPageReader>();
+        services.AddScoped<IMushafSurahCatalogReader, EfMushafSurahCatalogReader>();
     }
 }

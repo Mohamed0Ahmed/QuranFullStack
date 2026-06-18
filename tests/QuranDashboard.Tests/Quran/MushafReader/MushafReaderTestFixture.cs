@@ -72,7 +72,10 @@ public sealed class MushafReaderTestFixture : IAsyncLifetime
             return;
         }
 
-        await dbContext.Database.MigrateAsync();
+        // EnsureCreated builds the current EF model (snapshot includes navigation
+        // tables the single migration file does not). MigrateAsync would leave the
+        // seed without quran_juzs/hizbs/rubs and other reader tables.
+        await dbContext.Database.EnsureCreatedAsync();
         await SeedSliceAsync(dbContext);
     }
 
@@ -132,7 +135,16 @@ public sealed class MushafReaderTestFixture : IAsyncLifetime
     private static async Task SeedSliceAsync(QuranDashboardDbContext dbContext)
     {
         var sql = await ReadEmbeddedSeedScriptAsync();
-        await dbContext.Database.ExecuteSqlRawAsync(sql);
+
+        var connection = dbContext.Database.GetDbConnection();
+        if (connection.State != System.Data.ConnectionState.Open)
+        {
+            await connection.OpenAsync();
+        }
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        await command.ExecuteNonQueryAsync();
     }
 
     private static async Task<string> ReadEmbeddedSeedScriptAsync()

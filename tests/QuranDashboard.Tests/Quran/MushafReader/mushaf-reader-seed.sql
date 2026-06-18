@@ -3,7 +3,7 @@
 -- Feature 011 · read-only · deterministic · offline
 -- ----------------------------------------------------------------------
 -- Loaded by MushafReaderTestFixture into a fresh Testcontainers Postgres
--- instance AFTER EF migrations. Covers only the rows the reader tests assert
+-- instance AFTER EnsureCreatedAsync (see fixture for why not MigrateAsync). Covers only the rows the reader tests assert
 -- on; it is intentionally NOT the full DB.
 --
 -- FK ordering note: quran_ayahs has nullable juz/hizb/rub FKs while

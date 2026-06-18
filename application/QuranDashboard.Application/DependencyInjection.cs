@@ -9,6 +9,8 @@ using QuranDashboard.Application.Quran.Words.GenerateI3rab;
 using QuranDashboard.Application.Quran.Words.ImportMorphology;
 using QuranDashboard.Application.Quran.Words.RebuildDisplayWords;
 using QuranDashboard.Application.Quran.FullI3rab.ImportFullI3rab;
+using QuranDashboard.Application.Quran.MushafReader.Queries.GetMushafPage;
+using QuranDashboard.Application.Quran.MushafReader.Queries.GetMushafSurahCatalog;
 
 namespace QuranDashboard.Application;
 
@@ -27,6 +29,8 @@ public static class DependencyInjection
         services.AddScoped<ImportNavigationMetadataHandler>();
         services.AddScoped<ImportFullI3rabHandler>();
         services.AddScoped<GenerateI3rabHandler>();
+        services.AddScoped<GetMushafPageHandler>();
+        services.AddScoped<GetMushafSurahCatalogHandler>();
 
         return services;
     }
