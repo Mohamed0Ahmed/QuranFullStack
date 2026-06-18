@@ -44,6 +44,10 @@ testem.log
 /typings
 __screenshots__/
 
+# Local HTTPS dev certs (mkcert localhost)
+localhost.pem
+localhost-key.pem
+
 # System files
 .DS_Store
 Thumbs.db
