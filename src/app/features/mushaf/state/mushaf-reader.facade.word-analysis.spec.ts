@@ -218,7 +218,6 @@ describe('SelectedWordSectionComponent', () => {
       isEmpty: false,
       errorMessage: 'هذه الكلمة غير قابلة للتحليل (علامة نهاية آية)',
     });
-    fixture.componentRef.setInput('activeTab', 'segments');
     fixture.componentRef.setInput('selectedWordLocation', '2:25:5');
     fixture.detectChanges();
 
@@ -236,9 +235,11 @@ describe('SelectedWordSectionComponent', () => {
 
     fixture.componentRef.setInput('analysis', buildWordAnalysisViewModel());
     fixture.componentRef.setInput('loadState', { isLoading: false, isEmpty: false, errorMessage: null });
-    fixture.componentRef.setInput('activeTab', 'segments');
     fixture.componentRef.setInput('selectedWordLocation', '2:25:3');
     fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="word-morphology-summary"]')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('[data-testid="word-identity-summary"]')).toBeTruthy();
 
     const gluedRoot = fixture.nativeElement.querySelector(
       '[data-testid="segment-rendered-word"]',

@@ -40,9 +40,7 @@
       [class.mushaf-reader__word-study--focused]="isPanelFocused('word')"
       [analysis]="facade.wordAnalysis()"
       [loadState]="facade.wordAnalysisLoadState()"
-      [activeTab]="facade.wordTab()"
       [selectedWordLocation]="facade.selectedWordLocation()"
-      (tabChange)="onWordTabChange($event)"
       (sectionFocus)="onStudySectionFocus('word')"
     />
     <qd-selected-ayah-section

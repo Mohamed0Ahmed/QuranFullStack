@@ -5,7 +5,7 @@ import { ActivatedRoute } from '@angular/router';
 import { MushafPageAreaComponent } from '../../components/mushaf-page-area/mushaf-page-area.component';
 import { SelectedAyahSectionComponent } from '../../components/selected-ayah-section/selected-ayah-section.component';
 import { SelectedWordSectionComponent } from '../../components/selected-word-section/selected-word-section.component';
-import { AyahStudyTab, PanelMode, WordAnalysisTab } from '../../models/mushaf.models';
+import { AyahStudyTab, PanelMode } from '../../models/mushaf.models';
 import { MushafReaderFacade } from '../../state/mushaf-reader.facade';
 
 @Component({
@@ -56,10 +56,6 @@ export class MushafReaderPageComponent implements OnInit {
 
   protected onAyahTabChange(tab: AyahStudyTab): void {
     this.facade.setAyahTab(tab);
-  }
-
-  protected onWordTabChange(tab: WordAnalysisTab): void {
-    this.facade.setWordTab(tab);
   }
 
   protected onTafsirSourceChange(sourceKey: string): void {

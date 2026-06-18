@@ -211,10 +211,6 @@ export class MushafReaderFacade {
     this.patchUrlQuery({ [MUSHAF_URL_KEYS.ayahTab]: tab });
   }
 
-  setWordTab(tab: WordAnalysisTab): void {
-    this.patchUrlQuery({ [MUSHAF_URL_KEYS.wordTab]: tab });
-  }
-
   setTafsirSource(sourceKey: string): void {
     this.patchUrlQuery({ [MUSHAF_URL_KEYS.tafsirSource]: sourceKey });
   }

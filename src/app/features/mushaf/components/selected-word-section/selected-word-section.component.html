@@ -27,73 +27,38 @@
       />
     </header>
 
-    <nav class="selected-word-section__tabs" aria-label="تبويبات تحليل الكلمة">
-      <button
-        type="button"
-        class="selected-word-section__tab"
-        [class.selected-word-section__tab--active]="activeTab() === 'morphology'"
-        (click)="tabChange.emit('morphology')"
-      >
-        الصرف
-      </button>
-      <button
-        type="button"
-        class="selected-word-section__tab"
-        [class.selected-word-section__tab--active]="activeTab() === 'segments'"
-        (click)="tabChange.emit('segments')"
-      >
-        القطع
-      </button>
-      <button
-        type="button"
-        class="selected-word-section__tab"
-        [class.selected-word-section__tab--active]="activeTab() === 'i3rab'"
-        (click)="tabChange.emit('i3rab')"
-      >
-        الإعراب
-      </button>
-      <button
-        type="button"
-        class="selected-word-section__tab"
-        [class.selected-word-section__tab--active]="activeTab() === 'identity'"
-        (click)="tabChange.emit('identity')"
-      >
-        الهوية
-      </button>
-    </nav>
-
     <div class="selected-word-section__content">
-      @switch (activeTab()) {
-        @case ('morphology') {
-          <qd-word-morphology-summary [morphology]="analysis()!.morphology" />
-        }
-        @case ('segments') {
-          <qd-segment-data-rows [segments]="analysis()!.segments" />
-        }
-        @case ('i3rab') {
-          <qd-segment-data-rows [segments]="analysis()!.segments" />
-        }
-        @case ('identity') {
-          <dl class="selected-word-section__identity" data-testid="word-identity-summary">
-            <div class="selected-word-section__identity-row">
-              <dt>التكرار (بالتشكيل)</dt>
-              <dd>{{ analysis()!.identity.orderedTashkeel.occurrencesCount }} مرة في {{ analysis()!.identity.orderedTashkeel.surahsCount }} سورة</dd>
-            </div>
-            <div class="selected-word-section__identity-row">
-              <dt>التكرار (مبسّط)</dt>
-              <dd>{{ analysis()!.identity.orderedSimple.occurrencesCount }} مرة في {{ analysis()!.identity.orderedSimple.surahsCount }} سورة</dd>
-            </div>
-            <div class="selected-word-section__identity-row">
-              <dt>الهوية الفريدة (تشكيل)</dt>
-              <dd>#{{ analysis()!.identity.uniqueTashkeel.id }} — {{ analysis()!.identity.uniqueTashkeel.occurrencesCount }} مرة</dd>
-            </div>
-            <div class="selected-word-section__identity-row">
-              <dt>الهوية الفريدة (إملائي)</dt>
-              <dd>{{ analysis()!.identity.uniqueSimple.wordKeyImlaeiSimple }} — {{ analysis()!.identity.uniqueSimple.occurrencesCount }} مرة</dd>
-            </div>
-          </dl>
-        }
-      }
+      <section class="selected-word-section__section" aria-labelledby="word-morphology-heading">
+        <h3 id="word-morphology-heading" class="selected-word-section__section-title">الصرف</h3>
+        <qd-word-morphology-summary [morphology]="analysis()!.morphology" />
+      </section>
+
+      <section class="selected-word-section__section" aria-labelledby="word-segments-heading">
+        <h3 id="word-segments-heading" class="selected-word-section__section-title">القطع والإعراب</h3>
+        <qd-segment-data-rows [segments]="analysis()!.segments" />
+      </section>
+
+      <section class="selected-word-section__section" aria-labelledby="word-identity-heading">
+        <h3 id="word-identity-heading" class="selected-word-section__section-title">الهوية</h3>
+        <dl class="selected-word-section__identity" data-testid="word-identity-summary">
+          <div class="selected-word-section__identity-row">
+            <dt>التكرار (بالتشكيل)</dt>
+            <dd>{{ analysis()!.identity.orderedTashkeel.occurrencesCount }} مرة في {{ analysis()!.identity.orderedTashkeel.surahsCount }} سورة</dd>
+          </div>
+          <div class="selected-word-section__identity-row">
+            <dt>التكرار (مبسّط)</dt>
+            <dd>{{ analysis()!.identity.orderedSimple.occurrencesCount }} مرة في {{ analysis()!.identity.orderedSimple.surahsCount }} سورة</dd>
+          </div>
+          <div class="selected-word-section__identity-row">
+            <dt>الهوية الفريدة (تشكيل)</dt>
+            <dd>#{{ analysis()!.identity.uniqueTashkeel.id }} — {{ analysis()!.identity.uniqueTashkeel.occurrencesCount }} مرة</dd>
+          </div>
+          <div class="selected-word-section__identity-row">
+            <dt>الهوية الفريدة (إملائي)</dt>
+            <dd>{{ analysis()!.identity.uniqueSimple.wordKeyImlaeiSimple }} — {{ analysis()!.identity.uniqueSimple.occurrencesCount }} مرة</dd>
+          </div>
+        </dl>
+      </section>
     </div>
   }
 </section>
