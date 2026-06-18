@@ -18,4 +18,5 @@ public static class ApiMessages
     public const string MushafWordAnalysisLoaded = "تم تحميل تحليل الكلمة";
     public const string MushafInvalidWordLocation = "موقع الكلمة غير صالح";
     public const string MushafWordNotAnalyzable = "هذه الكلمة غير قابلة للتحليل (علامة نهاية آية)";
+    public const string MushafWordAnalysisIncomplete = "بيانات تحليل الكلمة غير مكتملة";
 }

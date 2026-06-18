@@ -14,8 +14,9 @@ public interface IWordAnalysisReader
 
 /// <summary>
 /// Result type for word analysis: <see cref="Found"/> (200), <see cref="NotFound"/>
-/// (404), or <see cref="NotAnalyzable"/> (400 — the location points at an
-/// ayah-end marker rather than a readable word).
+/// (404), <see cref="NotAnalyzable"/> (400 — ayah-end marker), or
+/// <see cref="IncompleteData"/> (404 — readable word exists but required
+/// morphology/identity/segment rows are missing).
 /// </summary>
 public abstract record WordAnalysisOutcome
 {
@@ -26,4 +27,6 @@ public abstract record WordAnalysisOutcome
     public sealed record NotFound : WordAnalysisOutcome;
 
     public sealed record NotAnalyzable : WordAnalysisOutcome;
+
+    public sealed record IncompleteData : WordAnalysisOutcome;
 }

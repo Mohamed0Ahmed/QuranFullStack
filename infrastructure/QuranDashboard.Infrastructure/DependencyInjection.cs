@@ -147,5 +147,6 @@ public static class DependencyInjection
         services.AddScoped<IMushafPageReader, EfMushafPageReader>();
         services.AddScoped<IAyahStudyReader, EfAyahStudyReader>();
         services.AddScoped<IMushafSurahCatalogReader, EfMushafSurahCatalogReader>();
+        services.AddScoped<IWordAnalysisReader, EfWordAnalysisReader>();
     }
 }
