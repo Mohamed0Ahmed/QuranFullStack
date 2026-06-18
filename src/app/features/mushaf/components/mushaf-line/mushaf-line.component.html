@@ -8,7 +8,9 @@
     <qd-mushaf-word
       [word]="word"
       [selectedVerseKey]="selectedVerseKey()"
+      [selectedWordLocation]="selectedWordLocation()"
       (ayahSelect)="ayahSelect.emit($event)"
+      (wordSelect)="wordSelect.emit($event)"
     />
   }
   @for (marker of lineMarkers(); track marker.markerType + marker.markerNumber + marker.verseKey) {

@@ -5,12 +5,22 @@
       [loadState]="facade.pageLoadState()"
       [surahCatalog]="facade.surahCatalog()"
       [selectedVerseKey]="facade.selectedAyahKey()"
+      [selectedWordLocation]="facade.selectedWordLocation()"
       (pageChange)="onPageChange($event)"
       (surahJump)="onSurahJump($event)"
       (ayahSelect)="onAyahSelect($event)"
+      (wordSelect)="onWordSelect($event)"
     />
   </section>
   <section class="mushaf-reader__study" aria-label="منطقة الدراسة">
+    <qd-selected-word-section
+      class="mushaf-reader__word-study"
+      [analysis]="facade.wordAnalysis()"
+      [loadState]="facade.wordAnalysisLoadState()"
+      [activeTab]="facade.wordTab()"
+      [selectedWordLocation]="facade.selectedWordLocation()"
+      (tabChange)="onWordTabChange($event)"
+    />
     <qd-selected-ayah-section
       class="mushaf-reader__ayah-study"
       [study]="facade.ayahStudy()"

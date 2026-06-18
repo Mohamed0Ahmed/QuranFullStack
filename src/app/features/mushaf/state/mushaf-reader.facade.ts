@@ -3,6 +3,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { MushafAyahStudyApi } from '../data-access/mushaf-ayah-study.api';
 import { MushafPagesApi } from '../data-access/mushaf-pages.api';
 import { MushafSurahCatalogApi } from '../data-access/mushaf-surah-catalog.api';
+import { MushafWordAnalysisApi } from '../data-access/mushaf-word-analysis.api';
 import {
   AyahStudyDto,
   AyahStudyViewModel,
@@ -13,9 +14,12 @@ import {
   MushafSurahCatalogItemDto,
   ResourceLoadState,
   SourceOption,
+  WordAnalysisDto,
+  WordAnalysisTab,
   WordAnalysisViewModel,
 } from '../models/mushaf.models';
 import { subscribeToApiLoad } from './mushaf-api-load.helpers';
+import { segmentSlotToColor } from './segment-color-palette';
 
 function toPageViewModel(dto: MushafPageDto): MushafPageViewModel {
   return {
@@ -40,6 +44,27 @@ function toAyahStudyViewModel(dto: AyahStudyDto): AyahStudyViewModel {
   };
 }
 
+function toWordAnalysisViewModel(dto: WordAnalysisDto): WordAnalysisViewModel {
+  return {
+    word: dto.word,
+    identity: dto.identity,
+    morphology: dto.morphology,
+    segments: dto.renderedWordSegments.map((segment) => ({
+      segmentLocation: segment.segmentLocation,
+      segmentNumber: segment.segmentNumber,
+      segmentColorSlot: segment.segmentColorSlot,
+      color: segmentSlotToColor(segment.segmentColorSlot),
+      segmentKind: segment.segmentKind,
+      segmentDisplayText: segment.segmentDisplayText,
+      isMissing: segment.displayTextStatus === 'missing',
+      segmentPos: segment.segmentPos,
+      segmentPosLabel: segment.segmentPosLabel,
+      segmentI3rabArabic: segment.segmentI3rabArabic,
+      i3rabStatus: segment.i3rabStatus,
+    })),
+  };
+}
+
 /** v1 source options exposed in the study-area selectors. */
 const TAFSIR_SOURCE_OPTIONS: SourceOption[] = [
   { key: 'ar-muyassar', label: 'التفسير الميسر' },
@@ -55,14 +80,14 @@ const FULL_I3RAB_SOURCE_OPTIONS: SourceOption[] = [
  * Mushaf reader page-state facade.
  *
  * Owns all reader view state (selections, sources, tabs, and per-resource
- * loading/empty/error primitives). Load methods for ayah/word study and full
- * URL sync is added by later stories (T044 / T048).
+ * loading/empty/error primitives). Full URL sync is added by US5 (T048).
  */
 @Injectable({ providedIn: 'root' })
 export class MushafReaderFacade {
   private readonly pagesApi = inject(MushafPagesApi);
   private readonly ayahStudyApi = inject(MushafAyahStudyApi);
   private readonly surahCatalogApi = inject(MushafSurahCatalogApi);
+  private readonly wordAnalysisApi = inject(MushafWordAnalysisApi);
 
   private readonly _pageNumber = signal(DEFAULT_MUSHAF_READER_STATE.pageNumber);
   private readonly _selectedAyahKey = signal(DEFAULT_MUSHAF_READER_STATE.selectedAyahKey);
@@ -186,15 +211,71 @@ export class MushafReaderFacade {
     );
   }
 
+  loadWordAnalysis(wordLocation: string): void {
+    if (this.isAyahMarkerOnCurrentPage(wordLocation)) {
+      this._selectedWordLocation.set(wordLocation);
+      this._wordAnalysis.set(null);
+      this._wordAnalysisLoadState.set({
+        isLoading: false,
+        isEmpty: false,
+        errorMessage: 'هذه الكلمة غير قابلة للتحليل (علامة نهاية آية)',
+      });
+      return;
+    }
+
+    this._selectedWordLocation.set(wordLocation);
+    this._wordAnalysisLoadState.set({ isLoading: true, isEmpty: false, errorMessage: null });
+
+    subscribeToApiLoad(this.wordAnalysisApi.getWordAnalysis(wordLocation), {
+      onSuccess: (data) => this._wordAnalysis.set(toWordAnalysisViewModel(data)),
+      onSettled: (loadState) => {
+        if (loadState.isEmpty) {
+          this._wordAnalysis.set(null);
+        }
+        this._wordAnalysisLoadState.set(loadState);
+      },
+      emptyMessage: 'تعذّر تحميل تحليل الكلمة.',
+      notFoundMessage: 'الكلمة غير موجودة.',
+      connectionMessage: 'تعذّر الاتصال بالخادم.',
+    });
+  }
+
   applyUrlState(params: {
     ayah: string | null;
     tafsirSource: string | null;
     translationSource: string | null;
     fullI3rabSource: string | null;
     ayahTab: MushafReaderState['ayahTab'] | null;
+    word: string | null;
+    segment: string | null;
+    wordTab: WordAnalysisTab | null;
   }): void {
     if (params.ayahTab) {
       this._ayahTab.set(params.ayahTab);
+    }
+
+    if (params.wordTab) {
+      this._wordTab.set(params.wordTab);
+    }
+
+    if (params.segment) {
+      this._selectedSegmentLocation.set(params.segment);
+    }
+
+    const previousWord = this._selectedWordLocation();
+    const wordChanged = params.word !== previousWord;
+
+    if (params.word) {
+      if (wordChanged) {
+        this.loadWordAnalysis(params.word);
+      } else {
+        this._selectedWordLocation.set(params.word);
+      }
+    } else {
+      this._selectedWordLocation.set(null);
+      this._selectedSegmentLocation.set(null);
+      this._wordAnalysis.set(null);
+      this._wordAnalysisLoadState.set({ isLoading: false, isEmpty: false, errorMessage: null });
     }
 
     const previousAyah = this._selectedAyahKey();
@@ -223,5 +304,21 @@ export class MushafReaderFacade {
       this._ayahStudy.set(null);
       this._ayahStudyLoadState.set({ isLoading: false, isEmpty: false, errorMessage: null });
     }
+  }
+
+  private isAyahMarkerOnCurrentPage(wordLocation: string): boolean {
+    const page = this._page();
+    if (!page) {
+      return false;
+    }
+
+    for (const line of page.lines) {
+      const word = line.words.find((candidate) => candidate.wordLocation === wordLocation);
+      if (word) {
+        return word.isAyahMarker;
+      }
+    }
+
+    return false;
   }
 }

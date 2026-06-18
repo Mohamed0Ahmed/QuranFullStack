@@ -21,7 +21,9 @@
     <qd-mushaf-page-view
       [page]="page()!"
       [selectedVerseKey]="selectedVerseKey()"
+      [selectedWordLocation]="selectedWordLocation()"
       (ayahSelect)="ayahSelect.emit($event)"
+      (wordSelect)="wordSelect.emit($event)"
     />
   }
 </section>

@@ -5,6 +5,7 @@ import { of } from 'rxjs';
 import { MushafAyahStudyApi } from '../data-access/mushaf-ayah-study.api';
 import { MushafPagesApi } from '../data-access/mushaf-pages.api';
 import { MushafSurahCatalogApi } from '../data-access/mushaf-surah-catalog.api';
+import { MushafWordAnalysisApi } from '../data-access/mushaf-word-analysis.api';
 import { AyahStudyDto } from '../models/mushaf.models';
 import { MushafReaderFacade } from './mushaf-reader.facade';
 import { SelectedAyahSectionComponent } from '../components/selected-ayah-section/selected-ayah-section.component';
@@ -88,6 +89,7 @@ describe('MushafReaderFacade.loadPage', () => {
         { provide: MushafPagesApi, useValue: { getPage } },
         { provide: MushafAyahStudyApi, useValue: { getAyahStudy: vi.fn() } },
         { provide: MushafSurahCatalogApi, useValue: { getCatalog: vi.fn() } },
+        { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis: vi.fn() } },
       ],
     });
 
@@ -112,6 +114,7 @@ describe('MushafReaderFacade.loadAyahStudy', () => {
         { provide: MushafPagesApi, useValue: { getPage: vi.fn() } },
         { provide: MushafAyahStudyApi, useValue: { getAyahStudy } },
         { provide: MushafSurahCatalogApi, useValue: { getCatalog: vi.fn() } },
+        { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis: vi.fn() } },
       ],
     });
 
@@ -135,6 +138,7 @@ describe('MushafReaderFacade.applyUrlState', () => {
         { provide: MushafPagesApi, useValue: { getPage: vi.fn() } },
         { provide: MushafAyahStudyApi, useValue: { getAyahStudy } },
         { provide: MushafSurahCatalogApi, useValue: { getCatalog: vi.fn() } },
+        { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis: vi.fn() } },
       ],
     });
 
@@ -145,6 +149,9 @@ describe('MushafReaderFacade.applyUrlState', () => {
       translationSource: null,
       fullI3rabSource: null,
       ayahTab: null,
+      word: null,
+      segment: null,
+      wordTab: null,
     });
     facade.applyUrlState({
       ayah: '2:25',
@@ -152,6 +159,9 @@ describe('MushafReaderFacade.applyUrlState', () => {
       translationSource: 'another-translation',
       fullI3rabSource: null,
       ayahTab: null,
+      word: null,
+      segment: null,
+      wordTab: null,
     });
 
     expect(getAyahStudy).toHaveBeenCalledTimes(2);
@@ -169,6 +179,7 @@ describe('MushafReaderFacade.applyUrlState', () => {
         { provide: MushafPagesApi, useValue: { getPage: vi.fn() } },
         { provide: MushafAyahStudyApi, useValue: { getAyahStudy } },
         { provide: MushafSurahCatalogApi, useValue: { getCatalog: vi.fn() } },
+        { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis: vi.fn() } },
       ],
     });
 
@@ -179,6 +190,9 @@ describe('MushafReaderFacade.applyUrlState', () => {
       translationSource: null,
       fullI3rabSource: null,
       ayahTab: 'tafsir',
+      word: null,
+      segment: null,
+      wordTab: null,
     });
     facade.applyUrlState({
       ayah: '2:25',
@@ -186,6 +200,9 @@ describe('MushafReaderFacade.applyUrlState', () => {
       translationSource: null,
       fullI3rabSource: null,
       ayahTab: 'translation',
+      word: null,
+      segment: null,
+      wordTab: null,
     });
 
     expect(getAyahStudy).toHaveBeenCalledTimes(1);

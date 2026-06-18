@@ -1,0 +1,43 @@
+.segment-data-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qd-space-2);
+
+  &__row {
+    padding: var(--qd-space-2);
+    border: 1px solid var(--qd-border);
+    border-inline-start-width: 3px;
+    border-radius: var(--qd-radius-sm);
+    background: var(--qd-surface-elevated);
+  }
+
+  &__header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--qd-space-2);
+    margin-bottom: var(--qd-space-1);
+    font-size: 0.8125rem;
+    color: var(--qd-text-muted);
+  }
+
+  &__number {
+    font-weight: 700;
+  }
+
+  &__form {
+    font-size: 1.125rem;
+    line-height: 1.8;
+    color: var(--qd-text);
+  }
+
+  &__placeholder {
+    opacity: 0.55;
+  }
+
+  &__i3rab {
+    margin-top: var(--qd-space-1);
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+}

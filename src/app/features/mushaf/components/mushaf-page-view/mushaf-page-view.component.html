@@ -4,7 +4,9 @@
       [line]="line"
       [markers]="page().markers"
       [selectedVerseKey]="selectedVerseKey()"
+      [selectedWordLocation]="selectedWordLocation()"
       (ayahSelect)="ayahSelect.emit($event)"
+      (wordSelect)="wordSelect.emit($event)"
     />
   }
 </div>

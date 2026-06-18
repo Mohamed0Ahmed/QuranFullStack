@@ -26,6 +26,12 @@
     flex-direction: column;
     min-height: 0;
     background: var(--qd-surface);
+    gap: var(--qd-space-2);
+  }
+
+  &__word-study {
+    flex: 0 0 38%;
+    min-height: 0;
   }
 
   &__ayah-study {

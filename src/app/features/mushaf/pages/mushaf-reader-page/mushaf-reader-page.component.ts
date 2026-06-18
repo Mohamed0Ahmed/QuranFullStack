@@ -4,10 +4,12 @@ import { ActivatedRoute, Router } from '@angular/router';
 
 import { MushafPageAreaComponent } from '../../components/mushaf-page-area/mushaf-page-area.component';
 import { SelectedAyahSectionComponent } from '../../components/selected-ayah-section/selected-ayah-section.component';
-import { AyahStudyTab, MUSHAF_URL_KEYS } from '../../models/mushaf.models';
+import { SelectedWordSectionComponent } from '../../components/selected-word-section/selected-word-section.component';
+import { AyahStudyTab, MUSHAF_URL_KEYS, WordAnalysisTab } from '../../models/mushaf.models';
 import { MushafReaderFacade } from '../../state/mushaf-reader.facade';
 
 const AYAH_TABS: ReadonlySet<string> = new Set(['tafsir', 'translation', 'full-i3rab']);
+const WORD_TABS: ReadonlySet<string> = new Set(['morphology', 'segments', 'i3rab', 'identity']);
 
 function parseAyahTab(value: string | null): AyahStudyTab | null {
   if (value && AYAH_TABS.has(value)) {
@@ -16,10 +18,22 @@ function parseAyahTab(value: string | null): AyahStudyTab | null {
   return null;
 }
 
+function parseWordTab(value: string | null): WordAnalysisTab | null {
+  if (value && WORD_TABS.has(value)) {
+    return value as WordAnalysisTab;
+  }
+  return null;
+}
+
 @Component({
   selector: 'qd-mushaf-reader-page',
   standalone: true,
-  imports: [CommonModule, MushafPageAreaComponent, SelectedAyahSectionComponent],
+  imports: [
+    CommonModule,
+    MushafPageAreaComponent,
+    SelectedWordSectionComponent,
+    SelectedAyahSectionComponent,
+  ],
   templateUrl: './mushaf-reader-page.component.html',
   styleUrls: ['./mushaf-reader-page.component.scss'],
 })
@@ -44,6 +58,9 @@ export class MushafReaderPageComponent implements OnInit {
         translationSource: params.get(MUSHAF_URL_KEYS.translationSource),
         fullI3rabSource: params.get(MUSHAF_URL_KEYS.fullI3rabSource),
         ayahTab: parseAyahTab(params.get(MUSHAF_URL_KEYS.ayahTab)),
+        word: params.get(MUSHAF_URL_KEYS.word),
+        segment: params.get(MUSHAF_URL_KEYS.segment),
+        wordTab: parseWordTab(params.get(MUSHAF_URL_KEYS.wordTab)),
       });
     });
   }
@@ -66,8 +83,19 @@ export class MushafReaderPageComponent implements OnInit {
     });
   }
 
+  protected onWordSelect(wordLocation: string): void {
+    this.navigateQueryParams({
+      [MUSHAF_URL_KEYS.word]: wordLocation,
+      [MUSHAF_URL_KEYS.panel]: 'word',
+    });
+  }
+
   protected onAyahTabChange(tab: AyahStudyTab): void {
     this.navigateQueryParams({ [MUSHAF_URL_KEYS.ayahTab]: tab });
+  }
+
+  protected onWordTabChange(tab: WordAnalysisTab): void {
+    this.navigateQueryParams({ [MUSHAF_URL_KEYS.wordTab]: tab });
   }
 
   protected onTafsirSourceChange(sourceKey: string): void {

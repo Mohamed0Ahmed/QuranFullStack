@@ -11,12 +11,15 @@ import { MushafWordDto } from '../../models/mushaf.models';
 export class MushafWordComponent {
   readonly word = input.required<MushafWordDto>();
   readonly selectedVerseKey = input<string | null>(null);
+  readonly selectedWordLocation = input<string | null>(null);
 
   readonly ayahSelect = output<string>();
+  readonly wordSelect = output<string>();
 
   protected onWordClick(): void {
     if (!this.word().isAyahMarker) {
       this.ayahSelect.emit(this.word().verseKey);
+      this.wordSelect.emit(this.word().wordLocation);
     }
   }
 }

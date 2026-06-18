@@ -14,6 +14,8 @@ import { MushafLineComponent } from '../mushaf-line/mushaf-line.component';
 export class MushafPageViewComponent {
   readonly page = input.required<MushafPageViewModel>();
   readonly selectedVerseKey = input<string | null>(null);
+  readonly selectedWordLocation = input<string | null>(null);
 
   readonly ayahSelect = output<string>();
+  readonly wordSelect = output<string>();
 }
