@@ -26,28 +26,12 @@
       >
         التالي
       </button>
-      <label class="mushaf-header__surah-jump">
-        <span class="sr-only">الانتقال إلى سورة</span>
-        <select
-          class="qd-select mushaf-header__surah-select"
-          [disabled]="surahCatalogByJuz().length === 0"
-          (change)="onSurahSelect($event)"
-        >
-          <option value="" disabled selected>سورة</option>
-          @for (group of surahCatalogByJuz(); track group.juzNumber) {
-            <optgroup
-              class="mushaf-header__surah-juz-group"
-              [label]="'الجزء ' + group.juzNumber"
-            >
-              @for (surah of group.surahs; track surah.surahNumber) {
-                <option [value]="surah.surahNumber">
-                  {{ surah.surahNumber }}. {{ surah.nameArabic }}
-                </option>
-              }
-            </optgroup>
-          }
-        </select>
-      </label>
+      <div class="mushaf-header__surah-jump">
+        <qd-surah-jump-picker
+          [surahCatalogByJuz]="surahCatalogByJuz()"
+          (surahJump)="onSurahJump($event)"
+        />
+      </div>
     </div>
   </div>
 </header>

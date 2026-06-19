@@ -1,0 +1,102 @@
+<div class="surah-jump-picker" data-testid="surah-jump-picker">
+  <button
+    #trigger
+    type="button"
+    class="qd-select surah-jump-picker__trigger"
+    data-testid="surah-jump-picker-trigger"
+    role="combobox"
+    aria-label="الانتقال إلى سورة"
+    [attr.aria-expanded]="panelOpen()"
+    [attr.aria-controls]="panelOpen() ? listboxId : null"
+    aria-haspopup="listbox"
+    [disabled]="isDisabled()"
+    (click)="togglePanel()"
+  >
+    <span class="surah-jump-picker__trigger-text surah-jump-picker__trigger-text--placeholder">
+      سورة
+    </span>
+    <span class="surah-jump-picker__trigger-chevron" aria-hidden="true">▾</span>
+  </button>
+
+  @if (panelOpen()) {
+    <div #panel class="surah-jump-picker__panel" data-testid="surah-jump-picker-panel">
+      <div class="surah-jump-picker__search">
+        <input
+          #searchInput
+          type="search"
+          class="qd-input surah-jump-picker__search-input"
+          placeholder="ابحث عن سورة…"
+          data-testid="surah-jump-picker-search"
+          role="searchbox"
+          aria-label="ابحث عن سورة"
+          [attr.aria-controls]="listboxId"
+          aria-autocomplete="list"
+          [value]="searchQuery()"
+          (input)="onSearchInput($event)"
+        />
+      </div>
+
+      <div
+        class="surah-jump-picker__scroll-body"
+        data-testid="surah-jump-picker-scroll-body"
+        [id]="listboxId"
+        role="listbox"
+        aria-label="قائمة السور"
+        [attr.aria-activedescendant]="activeOptionId()"
+      >
+        @if (isSearchMode()) {
+          @if (filteredUniqueSurahs().length === 0) {
+            <div class="surah-jump-picker__empty" role="status">لا توجد سورة مطابقة.</div>
+          } @else {
+            @for (surah of filteredUniqueSurahs(); track surah.surahNumber) {
+              <div
+                class="surah-jump-picker__row"
+                [class.surah-jump-picker__row--active]="isOptionActive(null, surah.surahNumber)"
+                [id]="optionId(null, surah.surahNumber)"
+                role="option"
+                [attr.aria-selected]="isOptionActive(null, surah.surahNumber)"
+                data-testid="surah-jump-picker-row"
+                tabindex="-1"
+                (click)="selectSurah(surah.surahNumber)"
+              >
+                <span class="surah-jump-picker__row-label">
+                  {{ formatSurahLabel(surah.surahNumber, surah.nameArabic) }}
+                </span>
+              </div>
+            }
+          }
+        } @else {
+          @for (group of surahCatalogByJuz(); track group.juzNumber) {
+            <div
+              class="surah-jump-picker__group"
+              role="group"
+              [attr.aria-label]="'الجزء ' + group.juzNumber"
+            >
+              <h3 class="surah-jump-picker__group-heading" aria-hidden="true">
+                الجزء {{ group.juzNumber }}
+              </h3>
+              @for (surah of group.surahs; track surah.surahNumber) {
+                <div
+                  class="surah-jump-picker__row"
+                  [class.surah-jump-picker__row--active]="
+                    isOptionActive(group.juzNumber, surah.surahNumber)
+                  "
+                  [id]="optionId(group.juzNumber, surah.surahNumber)"
+                  role="option"
+                  [attr.aria-selected]="isOptionActive(group.juzNumber, surah.surahNumber)"
+                  data-testid="surah-jump-picker-row"
+                  tabindex="-1"
+                  (click)="selectSurah(surah.surahNumber)"
+                >
+                  <span class="surah-jump-picker__row-label">
+                    {{ formatSurahLabel(surah.surahNumber, surah.nameArabic) }}
+                  </span>
+                </div>
+              }
+            </div>
+          }
+        }
+      </div>
+    </div>
+  }
+</div>

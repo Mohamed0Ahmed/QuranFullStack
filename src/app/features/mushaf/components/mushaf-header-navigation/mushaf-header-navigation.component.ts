@@ -1,12 +1,13 @@
 import { Component, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
+import { SurahJumpPickerComponent } from '../surah-jump-picker/surah-jump-picker.component';
 import { MushafPageViewModel, MushafSurahJuzGroupDto, SurahOnPageDto } from '../../models/mushaf.models';
 
 @Component({
   selector: 'qd-mushaf-header-navigation',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, SurahJumpPickerComponent],
   templateUrl: './mushaf-header-navigation.component.html',
   styleUrls: ['./mushaf-header-navigation.component.scss'],
 })
@@ -31,12 +32,8 @@ export class MushafHeaderNavigationComponent {
     }
   }
 
-  protected onSurahSelect(event: Event): void {
-    const value = Number((event.target as HTMLSelectElement).value);
-    if (!Number.isFinite(value) || value < 1) {
-      return;
-    }
-    this.surahJump.emit(value);
+  protected onSurahJump(surahNumber: number): void {
+    this.surahJump.emit(surahNumber);
   }
 
   protected formatPageSurahNames(surahs: SurahOnPageDto[]): string {

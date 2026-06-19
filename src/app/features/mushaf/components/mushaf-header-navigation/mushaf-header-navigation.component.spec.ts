@@ -56,19 +56,13 @@ describe('MushafHeaderNavigationComponent', () => {
     expect(contextText).not.toContain('ربع');
   });
 
-  it('renders juz-grouped surah options in the selector', () => {
+  it('renders the searchable surah jump picker', () => {
     const fixture = TestBed.createComponent(MushafHeaderNavigationComponent);
     fixture.componentRef.setInput('page', pageFixture);
     fixture.componentRef.setInput('surahCatalogByJuz', surahCatalogByJuzFixture);
     fixture.detectChanges();
 
-    const groups = fixture.nativeElement.querySelectorAll('optgroup');
-    expect(groups).toHaveLength(1);
-    expect(groups[0].classList.contains('mushaf-header__surah-juz-group')).toBe(true);
-    expect(groups[0].getAttribute('label')).toBe('الجزء 30');
-
-    const options = fixture.nativeElement.querySelectorAll('optgroup option');
-    expect(options).toHaveLength(2);
-    expect(options[0].textContent?.trim()).toBe('101. سورة-تجريبية-١');
+    expect(fixture.nativeElement.querySelector('qd-surah-jump-picker')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('select')).toBeNull();
   });
 });
