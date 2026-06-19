@@ -65,3 +65,4 @@ If `fullI3rabSource=does-not-exist` (and no usable default), `data.fullI3rab` is
 - Load only the one selected/default source per kind — never all sources.
 - HTML (`fullI3rab.html`, any markup in tafsir/translation) is returned **unmodified**; sanitization happens at render time on the frontend.
 - Thin controller → `GetAyahStudyQuery` → `ApiResponse<T>`.
+- **Study source catalog:** `GET /api/mushaf/study-sources` is documented in [`mushaf-study-sources.api.md`](./mushaf-study-sources.api.md) (selector UI loads all source keys once per session).
