@@ -29,6 +29,10 @@
     border-radius: 0;
   }
 
+  &__source {
+    flex-shrink: 0;
+  }
+
   &__tabs {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));

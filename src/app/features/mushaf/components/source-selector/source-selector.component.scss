@@ -89,13 +89,14 @@
     display: flex;
     flex-direction: column;
     gap: var(--qd-space-2);
-    max-height: min(18rem, 50vh);
+    max-height: var(--source-selector-panel-max-height, min(24rem, 70vh));
     padding: var(--qd-space-3);
     border: 1px solid var(--qd-border);
     border-radius: var(--qd-radius-md);
     background: var(--qd-surface);
     box-shadow: var(--qd-floating-shadow);
     overflow: hidden;
+    overscroll-behavior: contain;
   }
 
   &__search {
@@ -147,6 +148,8 @@
     list-style: none;
     overflow-y: auto;
     min-height: 0;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
   }
 
   &__row {

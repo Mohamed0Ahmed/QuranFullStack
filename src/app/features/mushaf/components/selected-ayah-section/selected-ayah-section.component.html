@@ -16,6 +16,38 @@
       <span>تعذّر تحميل دراسة الآية.</span>
     </div>
   } @else {
+    <div class="selected-ayah-section__source">
+      @switch (activeTab()) {
+        @case ('tafsir') {
+          <qd-source-selector
+            label="مصدر التفسير"
+            pickerMode="languageFirst"
+            [selectedKey]="study()!.selectedSources.tafsirSource"
+            [options]="tafsirOptions()"
+            (sourceChange)="tafsirSourceChange.emit($event)"
+          />
+        }
+        @case ('translation') {
+          <qd-source-selector
+            label="مصدر الترجمة"
+            pickerMode="languageFirst"
+            [selectedKey]="study()!.selectedSources.translationSource"
+            [options]="translationOptions()"
+            (sourceChange)="translationSourceChange.emit($event)"
+          />
+        }
+        @case ('full-i3rab') {
+          <qd-source-selector
+            label="مصدر الإعراب"
+            pickerMode="flat"
+            [selectedKey]="study()!.selectedSources.fullI3rabSource"
+            [options]="fullI3rabOptions()"
+            (sourceChange)="fullI3rabSourceChange.emit($event)"
+          />
+        }
+      }
+    </div>
+
     <nav class="selected-ayah-section__tabs" aria-label="تبويبات دراسة الآية">
       <button
         type="button"
@@ -52,33 +84,12 @@
     <div class="selected-ayah-section__content">
       @switch (activeTab()) {
         @case ('tafsir') {
-          <qd-source-selector
-            label="مصدر التفسير"
-            pickerMode="languageFirst"
-            [selectedKey]="study()!.selectedSources.tafsirSource"
-            [options]="tafsirOptions()"
-            (sourceChange)="tafsirSourceChange.emit($event)"
-          />
           <qd-tafsir-card [entry]="study()!.tafsir" />
         }
         @case ('translation') {
-          <qd-source-selector
-            label="مصدر الترجمة"
-            pickerMode="languageFirst"
-            [selectedKey]="study()!.selectedSources.translationSource"
-            [options]="translationOptions()"
-            (sourceChange)="translationSourceChange.emit($event)"
-          />
           <qd-translation-card [entry]="study()!.translation" />
         }
         @case ('full-i3rab') {
-          <qd-source-selector
-            label="مصدر الإعراب"
-            pickerMode="flat"
-            [selectedKey]="study()!.selectedSources.fullI3rabSource"
-            [options]="fullI3rabOptions()"
-            (sourceChange)="fullI3rabSourceChange.emit($event)"
-          />
           <qd-full-i3rab-card [entry]="study()!.fullI3rab" />
         }
       }

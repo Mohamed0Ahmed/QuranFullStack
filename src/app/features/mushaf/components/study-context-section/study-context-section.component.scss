@@ -11,7 +11,8 @@
   gap: var(--qd-space-4);
   flex: 1;
   min-height: 0;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   padding: var(--qd-space-3);
   background: var(--qd-surface);
   border: 1px solid var(--qd-border);
@@ -21,5 +22,19 @@
     flex-shrink: 0;
     border-top: 1px solid var(--qd-border);
     margin-inline: calc(-1 * var(--qd-space-3));
+  }
+}
+
+@media (min-width: 1024px) {
+  :host {
+    align-self: stretch;
+    min-height: 100%;
+  }
+
+  .study-context-section {
+    overflow: visible;
+    flex: 1;
+    min-height: 100%;
+    padding-block-end: var(--qd-space-5);
   }
 }

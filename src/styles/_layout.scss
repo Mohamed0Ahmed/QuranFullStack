@@ -1,8 +1,30 @@
 .qd-shell {
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   background: var(--qd-bg);
+}
+
+.qd-shell-viewport {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.qd-shell-viewport main {
+  flex: 1;
+  min-height: 0;
+}
+
+.qd-shell-viewport main.qd-shell-main--page-scroll {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 1024px) {
+  .qd-shell-viewport main.qd-shell-main--page-scroll {
+    flex: none;
+    min-height: auto;
+  }
 }
 
 .qd-navbar {

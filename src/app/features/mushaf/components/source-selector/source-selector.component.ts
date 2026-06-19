@@ -17,6 +17,11 @@ import {
   groupSourceOptionsByLanguage,
   LanguageSourceGroup,
 } from '../../utils/study-source-catalog.groups';
+import {
+  SOURCE_SELECTOR_PANEL_MAX_HEIGHT_VAR,
+  SOURCE_SELECTOR_PANEL_MIN_HEIGHT_PX,
+  SOURCE_SELECTOR_PANEL_VIEWPORT_PADDING_PX,
+} from './source-selector-panel.constants';
 
 type PickerMode = 'languageFirst' | 'flat';
 type PanelView = 'languages' | 'sources';
@@ -112,12 +117,14 @@ export class SourceSelectorComponent {
     this.activeLanguage.set(group);
     this.panelView.set('sources');
     this.searchQuery.set('');
+    this.schedulePanelLayout();
   }
 
   protected backToLanguages(): void {
     this.panelView.set('languages');
     this.activeLanguage.set(null);
     this.searchQuery.set('');
+    this.schedulePanelLayout();
   }
 
   protected selectSource(key: string): void {
@@ -131,6 +138,7 @@ export class SourceSelectorComponent {
 
     if (this.pickerMode() === 'flat') {
       this.panelView.set('sources');
+      this.schedulePanelLayout();
       return;
     }
 
@@ -138,20 +146,62 @@ export class SourceSelectorComponent {
     if (languageGroup) {
       this.activeLanguage.set(languageGroup);
       this.panelView.set('sources');
+      this.schedulePanelLayout();
       return;
     }
 
     if (this.activeLanguage()) {
       this.panelView.set('sources');
+      this.schedulePanelLayout();
       return;
     }
 
     this.panelView.set('languages');
+    this.schedulePanelLayout();
   }
 
   private closePanel(): void {
     this.panelOpen.set(false);
     this.searchQuery.set('');
+    this.clearPanelMaxHeight();
+  }
+
+  private schedulePanelLayout(): void {
+    requestAnimationFrame(() => {
+      this.fitPanelToViewport();
+      this.focusPanelSearch();
+    });
+  }
+
+  private fitPanelToViewport(): void {
+    const panel = this.queryPanelElement();
+    if (!panel) {
+      return;
+    }
+
+    const top = panel.getBoundingClientRect().top;
+    const available = window.innerHeight - top - SOURCE_SELECTOR_PANEL_VIEWPORT_PADDING_PX;
+    const maxHeight = Math.max(SOURCE_SELECTOR_PANEL_MIN_HEIGHT_PX, available);
+    panel.style.setProperty(SOURCE_SELECTOR_PANEL_MAX_HEIGHT_VAR, `${maxHeight}px`);
+  }
+
+  private clearPanelMaxHeight(): void {
+    this.queryPanelElement()?.style.removeProperty(SOURCE_SELECTOR_PANEL_MAX_HEIGHT_VAR);
+  }
+
+  private focusPanelSearch(): void {
+    const root = this.elementRef.nativeElement as HTMLElement;
+    const search =
+      (root.querySelector('[data-testid="source-selector-language-search"]') as HTMLInputElement | null) ??
+      (root.querySelector('[data-testid="source-selector-source-search"]') as HTMLInputElement | null);
+
+    search?.focus();
+  }
+
+  private queryPanelElement(): HTMLElement | null {
+    return this.elementRef.nativeElement.querySelector(
+      '[data-testid="source-selector-panel"]',
+    ) as HTMLElement | null;
   }
 
   private resolveLanguageGroupForSelectedKey(): LanguageSourceGroup | null {

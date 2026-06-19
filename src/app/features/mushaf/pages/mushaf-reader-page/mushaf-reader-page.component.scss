@@ -1,6 +1,8 @@
 :host {
   display: block;
   height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .mushaf-reader {
@@ -18,6 +20,7 @@
     display: flex;
     flex-direction: column;
     min-height: 0;
+    overflow: hidden;
     border-radius: var(--qd-radius-md);
   }
 
@@ -33,6 +36,39 @@
 
   &__page {
     background: transparent;
+  }
+}
+
+// Desktop: page scroll + sticky Mushaf column (header + page text stay visible).
+@media (min-width: 1024px) {
+  :host {
+    height: auto;
+    overflow: visible;
+  }
+
+  .mushaf-reader {
+    height: auto;
+    overflow: visible;
+    align-items: stretch;
+  }
+
+  .mushaf-reader__page {
+    position: sticky;
+    top: var(--qd-mushaf-sticky-top);
+    align-self: start;
+    max-height: calc(100dvh - var(--qd-mushaf-sticky-top) - var(--qd-space-3));
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .mushaf-reader__study {
+    overflow: visible;
+    align-self: stretch;
+  }
+
+  .mushaf-reader__study-context {
+    min-height: 100%;
   }
 }
 

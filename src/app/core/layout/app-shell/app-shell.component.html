@@ -1,9 +1,11 @@
 <div class="qd-shell">
-  <qd-top-navbar />
+  <div class="qd-shell-viewport">
+    <qd-top-navbar />
 
-  <main>
-    <router-outlet />
-  </main>
+    <main [class.qd-shell-main--page-scroll]="pageScrollLayout()">
+      <router-outlet />
+    </main>
+  </div>
 
   <qd-footer />
 </div>

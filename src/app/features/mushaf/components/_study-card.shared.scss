@@ -15,8 +15,7 @@
   }
 
   &__body {
-    overflow: auto;
-    max-height: 100%;
+    overflow: visible;
     font-size: 0.9375rem;
     line-height: 1.8;
     color: var(--qd-text);
