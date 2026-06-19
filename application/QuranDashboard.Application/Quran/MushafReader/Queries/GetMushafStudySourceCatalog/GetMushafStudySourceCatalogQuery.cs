@@ -1,0 +1,3 @@
+namespace QuranDashboard.Application.Quran.MushafReader.Queries.GetMushafStudySourceCatalog;
+
+public sealed record GetMushafStudySourceCatalogQuery;

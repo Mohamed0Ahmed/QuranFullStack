@@ -159,6 +159,7 @@ public static class DependencyInjection
             sp.GetRequiredService<IMemoryCache>()));
 
         services.AddScoped<IMushafSurahCatalogReader, EfMushafSurahCatalogReader>();
+        services.AddScoped<IMushafStudySourceCatalogReader, EfMushafStudySourceCatalogReader>();
 
         services.AddScoped<EfWordAnalysisReader>();
         services.AddScoped<IWordAnalysisReader>(sp => new CachedWordAnalysisReader(

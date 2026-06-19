@@ -12,6 +12,7 @@ public static class ApiMessages
 
     public const string MushafPageLoaded = "تم تحميل الصفحة بنجاح";
     public const string MushafSurahCatalogLoaded = "تم تحميل فهرس السور";
+    public const string MushafStudySourceCatalogLoaded = "تم تحميل كتالوج مصادر الدراسة";
     public const string MushafInvalidPageNumber = "رقم الصفحة غير صالح. يجب أن يكون بين 1 و 604.";
     public const string MushafAyahStudyLoaded = "تم تحميل سياق دراسة الآية";
     public const string MushafInvalidVerseKey = "مفتاح الآية غير صالح";
