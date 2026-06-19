@@ -1,23 +1,30 @@
 .word-morphology-summary {
-  display: grid;
+  display: flex;
+  flex-direction: row;
   gap: var(--qd-space-2);
   margin: 0;
+  overflow-x: auto;
 
-  &__row {
-    display: grid;
-    grid-template-columns: 6rem 1fr;
-    gap: var(--qd-space-2);
+  &__column {
+    flex: 1 1 0;
+    min-width: 7rem;
+    padding: var(--qd-space-2);
+    border: 1px solid var(--qd-border);
+    border-radius: var(--qd-radius-sm);
+    background: var(--qd-surface-elevated);
     font-size: 0.875rem;
   }
 
   dt {
-    margin: 0;
+    margin: 0 0 var(--qd-space-1);
     color: var(--qd-text-muted);
+    font-size: 0.8125rem;
     font-weight: 500;
   }
 
   dd {
     margin: 0;
     color: var(--qd-text);
+    line-height: 1.6;
   }
 }

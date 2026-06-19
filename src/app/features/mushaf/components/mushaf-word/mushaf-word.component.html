@@ -2,7 +2,6 @@
   type="button"
   class="mushaf-word"
   [class.mushaf-word--marker]="word().isAyahMarker"
-  [class.mushaf-word--selected]="selectedVerseKey() === word().verseKey"
   [class.mushaf-word--selected-word]="selectedWordLocation() === word().wordLocation"
   [disabled]="word().isAyahMarker"
   [attr.data-word-location]="word().wordLocation"

@@ -11,7 +11,6 @@ import { toMushafWordDisplayText } from './mushaf-word-display-text';
 })
 export class MushafWordComponent {
   readonly word = input.required<MushafWordDto>();
-  readonly selectedVerseKey = input<string | null>(null);
   readonly selectedWordLocation = input<string | null>(null);
 
   readonly ayahSelect = output<string>();

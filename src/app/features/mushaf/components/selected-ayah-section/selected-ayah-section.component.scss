@@ -29,26 +29,6 @@
     border-radius: 0;
   }
 
-  &__header {
-    display: flex;
-    flex-direction: column;
-    gap: var(--qd-space-2);
-  }
-
-  &__title {
-    margin: 0;
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--qd-text);
-  }
-
-  &__text {
-    margin: 0;
-    font-size: 1.125rem;
-    line-height: 1.9;
-    color: var(--qd-text);
-  }
-
   &__tabs {
     display: flex;
     flex-wrap: wrap;

@@ -22,24 +22,17 @@
     color: var(--qd-text-muted);
   }
 
-  &__options {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--qd-space-1);
+  &__field {
+    display: block;
   }
 
-  &__option {
-    padding: var(--qd-space-1) var(--qd-space-2);
-    border: 1px solid var(--qd-border);
-    border-radius: var(--qd-radius-sm);
-    background: var(--qd-surface);
-    color: var(--qd-text);
-    font-size: 0.8125rem;
-    cursor: pointer;
+  &__select {
+    width: 100%;
+    max-width: 100%;
+  }
 
-    &--active {
-      border-color: var(--qd-accent);
-      background: var(--qd-surface-elevated);
-    }
+  &__single {
+    font-size: 0.8125rem;
+    color: var(--qd-text);
   }
 }

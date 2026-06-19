@@ -24,18 +24,15 @@
     </header>
 
     <div class="selected-word-section__content">
-      <section class="selected-word-section__section" aria-labelledby="word-morphology-heading">
-        <h3 id="word-morphology-heading" class="selected-word-section__section-title">الصرف</h3>
-        <qd-word-morphology-summary [morphology]="analysis()!.morphology" />
-      </section>
-
       <section class="selected-word-section__section" aria-labelledby="word-segments-heading">
         <h3 id="word-segments-heading" class="selected-word-section__section-title">القطع والإعراب</h3>
-        <qd-segment-data-rows [segments]="analysis()!.segments" />
+        <div class="selected-word-section__segments-block">
+          <qd-segment-data-rows [segments]="analysis()!.segments" />
+          <qd-word-morphology-summary [morphology]="analysis()!.morphology" />
+        </div>
       </section>
 
-      <section class="selected-word-section__section" aria-labelledby="word-identity-heading">
-        <h3 id="word-identity-heading" class="selected-word-section__section-title">الهوية</h3>
+      <section class="selected-word-section__section" aria-label="تكرار الكلمة">
         <dl class="selected-word-section__identity" data-testid="word-identity-summary">
           <div class="selected-word-section__identity-row">
             <dt>التكرار (بالتشكيل)</dt>
@@ -44,14 +41,6 @@
           <div class="selected-word-section__identity-row">
             <dt>التكرار (مبسّط)</dt>
             <dd>{{ analysis()!.identity.orderedSimple.occurrencesCount }} مرة في {{ analysis()!.identity.orderedSimple.surahsCount }} سورة</dd>
-          </div>
-          <div class="selected-word-section__identity-row">
-            <dt>الهوية الفريدة (تشكيل)</dt>
-            <dd>#{{ analysis()!.identity.uniqueTashkeel.id }} — {{ analysis()!.identity.uniqueTashkeel.occurrencesCount }} مرة</dd>
-          </div>
-          <div class="selected-word-section__identity-row">
-            <dt>الهوية الفريدة (إملائي)</dt>
-            <dd>{{ analysis()!.identity.uniqueSimple.wordKeyImlaeiSimple }} — {{ analysis()!.identity.uniqueSimple.occurrencesCount }} مرة</dd>
           </div>
         </dl>
       </section>

@@ -16,3 +16,8 @@ export function morphologyFeatureLabelAr(value: string | null | undefined): stri
 
   return MORPHOLOGY_FEATURE_LABELS_AR[value] ?? '—';
 }
+
+export function morphologyTextOrDash(value: string | null | undefined): string {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : '—';
+}

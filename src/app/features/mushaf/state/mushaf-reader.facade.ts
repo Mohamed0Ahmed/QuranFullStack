@@ -4,6 +4,7 @@ import { Subscription } from 'rxjs';
 
 import { MushafAyahStudyApi } from '../data-access/mushaf-ayah-study.api';
 import { MushafPagesApi } from '../data-access/mushaf-pages.api';
+import { MushafStudySourceCatalogApi } from '../data-access/mushaf-study-sources.api';
 import { MushafSurahCatalogApi } from '../data-access/mushaf-surah-catalog.api';
 import { MushafWordAnalysisApi } from '../data-access/mushaf-word-analysis.api';
 import {
@@ -33,6 +34,11 @@ import {
 } from './mushaf-url-sync';
 import { applyAuthoritativeUrlSnapshot } from './mushaf-url-hydration';
 import { verseKeyFromWordLocation } from '../utils/mushaf-location-keys';
+import {
+  fullI3rabCatalogItemToOption,
+  tafsirCatalogItemToOption,
+  translationCatalogItemToOption,
+} from '../utils/study-source-catalog.labels';
 
 function toPageViewModel(dto: MushafPageDto): MushafPageViewModel {
   return {
@@ -78,17 +84,6 @@ function toWordAnalysisViewModel(dto: WordAnalysisDto): WordAnalysisViewModel {
   };
 }
 
-/** v1 source options exposed in the study-area selectors. */
-const TAFSIR_SOURCE_OPTIONS: SourceOption[] = [
-  { key: 'ar-muyassar', label: 'التفسير الميسر' },
-];
-const TRANSLATION_SOURCE_OPTIONS: SourceOption[] = [
-  { key: 'en-sahih-international', label: 'صحيح إنترناشونال' },
-];
-const FULL_I3RAB_SOURCE_OPTIONS: SourceOption[] = [
-  { key: 'muyassar', label: 'الإعراب الميسر' },
-];
-
 /**
  * Mushaf reader page-state facade.
  *
@@ -100,6 +95,7 @@ export class MushafReaderFacade {
   private readonly pagesApi = inject(MushafPagesApi);
   private readonly ayahStudyApi = inject(MushafAyahStudyApi);
   private readonly surahCatalogApi = inject(MushafSurahCatalogApi);
+  private readonly studySourceCatalogApi = inject(MushafStudySourceCatalogApi);
   private readonly wordAnalysisApi = inject(MushafWordAnalysisApi);
   private readonly readerCache = inject(MushafReaderCache);
   private readonly router = inject(Router);
@@ -121,6 +117,9 @@ export class MushafReaderFacade {
   private readonly _ayahStudy = signal<AyahStudyViewModel | null>(null);
   private readonly _wordAnalysis = signal<WordAnalysisViewModel | null>(null);
   private readonly _surahCatalog = signal<MushafSurahCatalogItemDto[]>([]);
+  private readonly _tafsirSourceOptions = signal<SourceOption[]>([]);
+  private readonly _translationSourceOptions = signal<SourceOption[]>([]);
+  private readonly _fullI3rabSourceOptions = signal<SourceOption[]>([]);
 
   private readonly _pageLoadState = signal<ResourceLoadState>(DEFAULT_MUSHAF_READER_STATE.page);
   private readonly _ayahStudyLoadState = signal<ResourceLoadState>(DEFAULT_MUSHAF_READER_STATE.ayahStudy);
@@ -139,14 +138,13 @@ export class MushafReaderFacade {
   readonly ayahStudy = this._ayahStudy.asReadonly();
   readonly wordAnalysis = this._wordAnalysis.asReadonly();
   readonly surahCatalog = this._surahCatalog.asReadonly();
+  readonly tafsirSourceOptions = this._tafsirSourceOptions.asReadonly();
+  readonly translationSourceOptions = this._translationSourceOptions.asReadonly();
+  readonly fullI3rabSourceOptions = this._fullI3rabSourceOptions.asReadonly();
 
   readonly pageLoadState = this._pageLoadState.asReadonly();
   readonly ayahStudyLoadState = this._ayahStudyLoadState.asReadonly();
   readonly wordAnalysisLoadState = this._wordAnalysisLoadState.asReadonly();
-
-  readonly tafsirSourceOptions = TAFSIR_SOURCE_OPTIONS;
-  readonly translationSourceOptions = TRANSLATION_SOURCE_OPTIONS;
-  readonly fullI3rabSourceOptions = FULL_I3RAB_SOURCE_OPTIONS;
 
   readonly state = computed<MushafReaderState>(() => ({
     pageNumber: this._pageNumber(),
@@ -250,6 +248,20 @@ export class MushafReaderFacade {
       onSettled: () => undefined,
       emptyMessage: 'تعذّر تحميل فهرس السور.',
       notFoundMessage: 'تعذّر تحميل فهرس السور.',
+      connectionMessage: 'تعذّر الاتصال بالخادم.',
+    });
+  }
+
+  loadStudySourceCatalog(): void {
+    subscribeToApiLoad(this.studySourceCatalogApi.getCatalog(), {
+      onSuccess: (data) => {
+        this._tafsirSourceOptions.set(data.tafsirSources.map(tafsirCatalogItemToOption));
+        this._translationSourceOptions.set(data.translationSources.map(translationCatalogItemToOption));
+        this._fullI3rabSourceOptions.set(data.fullI3rabSources.map(fullI3rabCatalogItemToOption));
+      },
+      onSettled: () => undefined,
+      emptyMessage: 'تعذّر تحميل كتالوج مصادر الدراسة.',
+      notFoundMessage: 'تعذّر تحميل كتالوج مصادر الدراسة.',
       connectionMessage: 'تعذّر الاتصال بالخادم.',
     });
   }

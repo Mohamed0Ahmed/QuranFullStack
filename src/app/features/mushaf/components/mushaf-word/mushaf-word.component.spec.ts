@@ -77,6 +77,18 @@ describe('MushafWordComponent', () => {
 
     const button = fixture.nativeElement.querySelector('button') as HTMLButtonElement;
     expect(button.classList.contains('mushaf-word--selected-word')).toBe(true);
+    expect(button.classList.contains('mushaf-word--selected')).toBe(false);
+  });
+
+  it('does not apply ayah background styling on the word button', () => {
+    const fixture = TestBed.createComponent(MushafWordComponent);
+    fixture.componentRef.setInput('word', buildWord({ wordLocation: '99:1:3', verseKey: '99:1' }));
+    fixture.componentRef.setInput('selectedWordLocation', '99:1:5');
+    fixture.detectChanges();
+
+    const button = fixture.nativeElement.querySelector('button') as HTMLButtonElement;
+    expect(button.classList.contains('mushaf-word--selected')).toBe(false);
+    expect(button.classList.contains('mushaf-word--selected-word')).toBe(false);
   });
 
   it('uses Amiri token for regular Mushaf words', () => {

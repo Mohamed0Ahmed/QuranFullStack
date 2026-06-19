@@ -20,6 +20,7 @@ export class MushafReaderPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.facade.loadSurahCatalog();
+    this.facade.loadStudySourceCatalog();
     this.facade.bindToRoute(this.route);
   }
 

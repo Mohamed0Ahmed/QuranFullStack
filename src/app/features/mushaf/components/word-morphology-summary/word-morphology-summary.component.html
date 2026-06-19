@@ -1,41 +1,18 @@
 <dl class="word-morphology-summary" data-testid="word-morphology-summary">
-  <div class="word-morphology-summary__row">
+  <div class="word-morphology-summary__column">
     <dt>نوع الكلمة</dt>
-    <dd>{{ morphology().headPosLabel.ar }}</dd>
+    <dd>{{ morphologyTextOrDash(morphology().headPosLabel.ar) }}</dd>
   </div>
-  @if (morphology().root?.text) {
-    <div class="word-morphology-summary__row">
-      <dt>الجذر</dt>
-      <dd>{{ morphology().root!.text }}</dd>
-    </div>
-  }
-  @if (morphology().lemma?.text) {
-    <div class="word-morphology-summary__row">
-      <dt>المادة</dt>
-      <dd>{{ morphology().lemma!.text }}</dd>
-    </div>
-  }
-  @if (morphology().stem?.text) {
-    <div class="word-morphology-summary__row">
-      <dt>الأصل</dt>
-      <dd>{{ morphology().stem!.text }}</dd>
-    </div>
-  }
-  @if (morphology().isVerb) {
-    <div class="word-morphology-summary__row">
-      <dt>الفعل</dt>
-      <dd>
-        {{ morphologyFeatureLabelAr(morphology().verbTense) }}
-        @if (morphology().verbVoice) {
-          / {{ morphologyFeatureLabelAr(morphology().verbVoice) }}
-        }
-      </dd>
-    </div>
-  }
-  @if (morphology().caseFeature) {
-    <div class="word-morphology-summary__row">
-      <dt>الإعراب</dt>
-      <dd>{{ morphologyFeatureLabelAr(morphology().caseFeature) }}</dd>
-    </div>
-  }
+  <div class="word-morphology-summary__column">
+    <dt>الجذر</dt>
+    <dd>{{ morphologyTextOrDash(morphology().root?.text) }}</dd>
+  </div>
+  <div class="word-morphology-summary__column">
+    <dt>الصيغة المعجمية</dt>
+    <dd>{{ morphologyTextOrDash(morphology().lemma?.text) }}</dd>
+  </div>
+  <div class="word-morphology-summary__column">
+    <dt>الأصل الصرفي</dt>
+    <dd>{{ morphologyTextOrDash(morphology().stem?.text) }}</dd>
+  </div>
 </dl>

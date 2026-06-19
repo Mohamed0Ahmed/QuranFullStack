@@ -83,6 +83,23 @@ export interface MushafSurahCatalogDto {
   surahs: MushafSurahCatalogItemDto[];
 }
 
+export interface StudySourceCatalogItemDto {
+  sourceKey: string;
+  displayNameAr: string;
+  displayNameEn: string | null;
+  languageCode: string;
+  languageNameAr: string | null;
+  direction: string;
+  tafsirKind: string | null;
+  translationType: string | null;
+}
+
+export interface MushafStudySourceCatalogDto {
+  tafsirSources: StudySourceCatalogItemDto[];
+  translationSources: StudySourceCatalogItemDto[];
+  fullI3rabSources: StudySourceCatalogItemDto[];
+}
+
 /* ============================================================================
  * B2. Ayah study DTO (three sources together)
  * ========================================================================== */
@@ -253,10 +270,11 @@ export type PanelMode = 'ayah' | 'word' | 'none';
 export type AyahStudyTab = 'tafsir' | 'translation' | 'full-i3rab';
 export type WordAnalysisTab = 'morphology' | 'segments' | 'i3rab' | 'identity';
 
-/** A selectable source entry for the ayah-study source selectors (v1). */
+/** A selectable source entry for the ayah-study source selectors. */
 export interface SourceOption {
   key: string;
   label: string;
+  languageNameAr?: string | null;
 }
 
 /**

@@ -2,7 +2,7 @@ import { Component, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 import { WordMorphologyDto } from '../../models/mushaf.models';
-import { morphologyFeatureLabelAr } from '../../utils/morphology-display.labels';
+import { morphologyTextOrDash } from '../../utils/morphology-display.labels';
 
 @Component({
   selector: 'qd-word-morphology-summary',
@@ -14,5 +14,5 @@ import { morphologyFeatureLabelAr } from '../../utils/morphology-display.labels'
 export class WordMorphologySummaryComponent {
   readonly morphology = input.required<WordMorphologyDto>();
 
-  protected readonly morphologyFeatureLabelAr = morphologyFeatureLabelAr;
+  protected readonly morphologyTextOrDash = morphologyTextOrDash;
 }
