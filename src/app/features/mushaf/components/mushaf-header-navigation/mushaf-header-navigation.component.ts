@@ -1,7 +1,7 @@
 import { Component, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
-import { MushafPageViewModel, MushafSurahCatalogItemDto, SurahOnPageDto } from '../../models/mushaf.models';
+import { MushafPageViewModel, MushafSurahJuzGroupDto, SurahOnPageDto } from '../../models/mushaf.models';
 
 @Component({
   selector: 'qd-mushaf-header-navigation',
@@ -12,7 +12,7 @@ import { MushafPageViewModel, MushafSurahCatalogItemDto, SurahOnPageDto } from '
 })
 export class MushafHeaderNavigationComponent {
   readonly page = input.required<MushafPageViewModel>();
-  readonly surahCatalog = input.required<MushafSurahCatalogItemDto[]>();
+  readonly surahCatalogByJuz = input.required<readonly MushafSurahJuzGroupDto[]>();
 
   readonly pageChange = output<number>();
   readonly surahJump = output<number>();

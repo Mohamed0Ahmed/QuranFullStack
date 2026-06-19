@@ -5,7 +5,6 @@ import { of, throwError } from 'rxjs';
 
 import { MushafAyahStudyApi } from '../data-access/mushaf-ayah-study.api';
 import { MushafPagesApi } from '../data-access/mushaf-pages.api';
-import { MushafSurahCatalogApi } from '../data-access/mushaf-surah-catalog.api';
 import { MushafWordAnalysisApi } from '../data-access/mushaf-word-analysis.api';
 import { MushafReaderFacade } from './mushaf-reader.facade';
 import { mushafStudySourceCatalogApiProvider } from './mushaf-study-source-catalog.api.mock';
@@ -30,7 +29,6 @@ describe('MushafReaderFacade.loadPage', () => {
         MushafReaderFacade,
         { provide: MushafPagesApi, useValue: { getPage } },
         { provide: MushafAyahStudyApi, useValue: { getAyahStudy: vi.fn() } },
-        { provide: MushafSurahCatalogApi, useValue: { getCatalog: vi.fn() } },
         { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis: vi.fn() } },
         mushafStudySourceCatalogApiProvider,
       ],
@@ -52,7 +50,6 @@ describe('MushafReaderFacade.loadPage', () => {
         MushafReaderFacade,
         { provide: MushafPagesApi, useValue: { getPage } },
         { provide: MushafAyahStudyApi, useValue: { getAyahStudy: vi.fn() } },
-        { provide: MushafSurahCatalogApi, useValue: { getCatalog: vi.fn() } },
         { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis: vi.fn() } },
         mushafStudySourceCatalogApiProvider,
       ],
@@ -82,7 +79,6 @@ describe('MushafReaderFacade.loadPage', () => {
         MushafReaderFacade,
         { provide: MushafPagesApi, useValue: { getPage } },
         { provide: MushafAyahStudyApi, useValue: { getAyahStudy: vi.fn() } },
-        { provide: MushafSurahCatalogApi, useValue: { getCatalog: vi.fn() } },
         { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis: vi.fn() } },
         mushafStudySourceCatalogApiProvider,
       ],
@@ -98,32 +94,22 @@ describe('MushafReaderFacade.loadPage', () => {
 });
 
 describe('MushafReaderFacade surah jump', () => {
-  it('resolves a surah start page from the loaded catalog', () => {
-    const getCatalog = vi.fn(() =>
-      of({
-        isSuccess: true,
-        message: 'ok',
-        data: {
-          surahs: [{ surahNumber: 2, nameArabic: 'البقرة', startPageNumber: 5 }],
-        },
-      }),
-    );
-
+  it('resolves a surah start page from the static catalog', () => {
     TestBed.configureTestingModule({
       providers: [
         MushafReaderFacade,
         { provide: MushafPagesApi, useValue: { getPage: vi.fn() } },
         { provide: MushafAyahStudyApi, useValue: { getAyahStudy: vi.fn() } },
-        { provide: MushafSurahCatalogApi, useValue: { getCatalog } },
         { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis: vi.fn() } },
         mushafStudySourceCatalogApiProvider,
       ],
     });
 
     const facade = TestBed.inject(MushafReaderFacade);
-    facade.loadSurahCatalog();
 
-    expect(facade.resolveSurahStartPage(2)).toBe(5);
-    expect(facade.resolveSurahStartPage(99)).toBeNull();
+    expect(facade.resolveSurahStartPage(2)).toBe(2);
+    expect(facade.resolveSurahStartPage(114)).toBe(604);
+    expect(facade.resolveSurahStartPage(999)).toBeNull();
+    expect(facade.surahCatalogByJuz().length).toBe(30);
   });
 });

@@ -79,7 +79,8 @@ export interface MushafSurahCatalogItemDto {
   startPageNumber: number;
 }
 
-export interface MushafSurahCatalogDto {
+export interface MushafSurahJuzGroupDto {
+  juzNumber: number;
   surahs: MushafSurahCatalogItemDto[];
 }
 

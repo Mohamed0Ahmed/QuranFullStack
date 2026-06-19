@@ -1,7 +1,7 @@
 import { Component, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
-import { MushafPageViewModel, MushafSurahCatalogItemDto, ResourceLoadState } from '../../models/mushaf.models';
+import { MushafPageViewModel, MushafSurahJuzGroupDto, ResourceLoadState } from '../../models/mushaf.models';
 import { MushafHeaderNavigationComponent } from '../mushaf-header-navigation/mushaf-header-navigation.component';
 import { MushafPageViewComponent } from '../mushaf-page-view/mushaf-page-view.component';
 
@@ -15,7 +15,7 @@ import { MushafPageViewComponent } from '../mushaf-page-view/mushaf-page-view.co
 export class MushafPageAreaComponent {
   readonly page = input<MushafPageViewModel | null>(null);
   readonly loadState = input.required<ResourceLoadState>();
-  readonly surahCatalog = input.required<MushafSurahCatalogItemDto[]>();
+  readonly surahCatalogByJuz = input.required<readonly MushafSurahJuzGroupDto[]>();
   readonly selectedVerseKey = input<string | null>(null);
   readonly selectedWordLocation = input<string | null>(null);
 

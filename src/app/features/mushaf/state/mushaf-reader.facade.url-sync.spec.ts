@@ -5,7 +5,6 @@ import { BehaviorSubject, of } from 'rxjs';
 
 import { MushafAyahStudyApi } from '../data-access/mushaf-ayah-study.api';
 import { MushafPagesApi } from '../data-access/mushaf-pages.api';
-import { MushafSurahCatalogApi } from '../data-access/mushaf-surah-catalog.api';
 import { MushafWordAnalysisApi } from '../data-access/mushaf-word-analysis.api';
 import { AyahStudyDto, WordAnalysisDto, DEFAULT_MUSHAF_READER_STATE } from '../models/mushaf.models';
 import { MushafReaderFacade } from './mushaf-reader.facade';
@@ -134,7 +133,6 @@ function createFacadeTestBed(queryParams: Record<string, string>) {
           getWordAnalysis: vi.fn(() => of({ isSuccess: true, message: 'ok', data: wordAnalysisDto })),
         },
       },
-      { provide: MushafSurahCatalogApi, useValue: { getCatalog: vi.fn() } },
       mushafStudySourceCatalogApiProvider,
     ],
   });

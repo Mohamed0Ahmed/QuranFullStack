@@ -3,17 +3,8 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid var(--qd-border);
-
-  &__context {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem 1rem;
-    font-size: 0.95rem;
-  }
+  padding-bottom: 0;
+  border-bottom: none;
 
   &__page {
     font-weight: 600;
@@ -24,14 +15,62 @@
     color: var(--qd-text-muted);
   }
 
-  &__controls {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+  &__surah-jump {
+    flex: 1 1 11.5rem;
+    min-width: 11.5rem;
+    max-width: 16rem;
   }
 
-  &__surah-jump {
-    min-width: 7rem;
+  &__surah-select {
+    optgroup.mushaf-header__surah-juz-group {
+      color: color-mix(in oklch, var(--qd-accent) 78%, var(--qd-text));
+      font-weight: 600;
+      font-style: normal;
+      background-color: color-mix(in oklch, var(--qd-accent) 9%, var(--qd-surface-elevated));
+    }
+
+    optgroup option {
+      color: var(--qd-text);
+      font-weight: 400;
+      background-color: var(--qd-surface);
+    }
+  }
+
+  &__deck {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    width: 100%;
+    gap: calc(var(--qd-space-1) + 0.125rem);
+    padding: calc(var(--qd-space-2) + 0.125rem);
+    border: 1px solid var(--qd-border);
+    border-radius: var(--qd-radius-lg);
+    background: var(--qd-surface);
+  }
+
+  &__deck-zone {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--qd-space-2) var(--qd-space-3);
+    font-size: 0.95rem;
+  }
+
+  &__deck-zone--context {
+    flex: 1;
+    min-width: 12rem;
+    padding: var(--qd-space-2) var(--qd-space-3);
+    border-radius: var(--qd-radius-md);
+    background: color-mix(in oklch, var(--qd-surface-elevated) 77.5%, var(--qd-surface));
+  }
+
+  &__deck-zone--nav {
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: var(--qd-space-2);
+    border-radius: var(--qd-radius-md);
+    background: color-mix(in oklch, var(--qd-accent) 5.5%, var(--qd-surface-elevated));
   }
 }
 

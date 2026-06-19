@@ -19,7 +19,6 @@ export class MushafReaderPageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
 
   ngOnInit(): void {
-    this.facade.loadSurahCatalog();
     this.facade.loadStudySourceCatalog();
     this.facade.bindToRoute(this.route);
   }

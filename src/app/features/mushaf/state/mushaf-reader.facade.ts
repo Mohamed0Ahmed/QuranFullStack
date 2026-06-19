@@ -5,8 +5,11 @@ import { Subscription } from 'rxjs';
 import { MushafAyahStudyApi } from '../data-access/mushaf-ayah-study.api';
 import { MushafPagesApi } from '../data-access/mushaf-pages.api';
 import { MushafStudySourceCatalogApi } from '../data-access/mushaf-study-sources.api';
-import { MushafSurahCatalogApi } from '../data-access/mushaf-surah-catalog.api';
 import { MushafWordAnalysisApi } from '../data-access/mushaf-word-analysis.api';
+import {
+  MUSHAF_SURAH_JUZ_GROUPS,
+  resolveMushafSurahStartPage,
+} from '../data/mushaf-surah-juz-catalog';
 import {
   AyahStudyDto,
   AyahStudyTab,
@@ -16,7 +19,7 @@ import {
   MushafPageDto,
   MushafPageViewModel,
   MushafReaderState,
-  MushafSurahCatalogItemDto,
+  MushafSurahJuzGroupDto,
   PanelMode,
   ResourceLoadState,
   SourceOption,
@@ -100,7 +103,6 @@ function toWordAnalysisViewModel(dto: WordAnalysisDto): WordAnalysisViewModel {
 export class MushafReaderFacade {
   private readonly pagesApi = inject(MushafPagesApi);
   private readonly ayahStudyApi = inject(MushafAyahStudyApi);
-  private readonly surahCatalogApi = inject(MushafSurahCatalogApi);
   private readonly studySourceCatalogApi = inject(MushafStudySourceCatalogApi);
   private readonly wordAnalysisApi = inject(MushafWordAnalysisApi);
   private readonly readerCache = inject(MushafReaderCache);
@@ -122,7 +124,7 @@ export class MushafReaderFacade {
   private readonly _page = signal<MushafPageViewModel | null>(null);
   private readonly _ayahStudy = signal<AyahStudyViewModel | null>(null);
   private readonly _wordAnalysis = signal<WordAnalysisViewModel | null>(null);
-  private readonly _surahCatalog = signal<MushafSurahCatalogItemDto[]>([]);
+  private readonly _surahCatalogByJuz = signal<readonly MushafSurahJuzGroupDto[]>(MUSHAF_SURAH_JUZ_GROUPS);
   private readonly _tafsirSourceOptions = signal<SourceOption[]>([]);
   private readonly _translationSourceOptions = signal<SourceOption[]>([]);
   private readonly _fullI3rabSourceOptions = signal<SourceOption[]>([]);
@@ -143,7 +145,7 @@ export class MushafReaderFacade {
   readonly page = this._page.asReadonly();
   readonly ayahStudy = this._ayahStudy.asReadonly();
   readonly wordAnalysis = this._wordAnalysis.asReadonly();
-  readonly surahCatalog = this._surahCatalog.asReadonly();
+  readonly surahCatalogByJuz = this._surahCatalogByJuz.asReadonly();
   readonly tafsirSourceOptions = this._tafsirSourceOptions.asReadonly();
   readonly translationSourceOptions = this._translationSourceOptions.asReadonly();
   readonly fullI3rabSourceOptions = this._fullI3rabSourceOptions.asReadonly();
@@ -264,16 +266,6 @@ export class MushafReaderFacade {
     this.patchUrlQuery({ [MUSHAF_URL_KEYS.fullI3rabSource]: sourceKey });
   }
 
-  loadSurahCatalog(): void {
-    subscribeToApiLoad(this.surahCatalogApi.getCatalog(), {
-      onSuccess: (data) => this._surahCatalog.set(data.surahs),
-      onSettled: () => undefined,
-      emptyMessage: 'تعذّر تحميل فهرس السور.',
-      notFoundMessage: 'تعذّر تحميل فهرس السور.',
-      connectionMessage: 'تعذّر الاتصال بالخادم.',
-    });
-  }
-
   loadStudySourceCatalog(): void {
     subscribeToApiLoad(this.studySourceCatalogApi.getCatalog(), {
       onSuccess: (data) => {
@@ -289,8 +281,7 @@ export class MushafReaderFacade {
   }
 
   resolveSurahStartPage(surahNumber: number): number | null {
-    const entry = this._surahCatalog().find((surah) => surah.surahNumber === surahNumber);
-    return entry?.startPageNumber ?? null;
+    return resolveMushafSurahStartPage(surahNumber);
   }
 
   loadPage(pageNumber: number): void {

@@ -1,9 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 
-import { MushafPageViewModel } from '../../models/mushaf.models';
+import { MushafPageViewModel, MushafSurahJuzGroupDto } from '../../models/mushaf.models';
 import { MushafHeaderNavigationComponent } from './mushaf-header-navigation.component';
 
+const surahCatalogByJuzFixture: readonly MushafSurahJuzGroupDto[] = [
+  {
+    juzNumber: 30,
+    surahs: [
+      { surahNumber: 101, nameArabic: 'سورة-تجريبية-١', startPageNumber: 600 },
+      { surahNumber: 102, nameArabic: 'سورة-تجريبية-٢', startPageNumber: 601 },
+    ],
+  },
+];
 /** Source-safe synthetic placeholders — not Quranic text. */
 const pageFixture: MushafPageViewModel = {
   pageNumber: 6,
@@ -24,7 +33,7 @@ describe('MushafHeaderNavigationComponent', () => {
   it('joins multiple surah names with Arabic comma separators', () => {
     const fixture = TestBed.createComponent(MushafHeaderNavigationComponent);
     fixture.componentRef.setInput('page', pageFixture);
-    fixture.componentRef.setInput('surahCatalog', []);
+    fixture.componentRef.setInput('surahCatalogByJuz', []);
     fixture.detectChanges();
 
     const surahs = fixture.nativeElement.querySelector('.mushaf-header__surahs') as HTMLElement;
@@ -36,14 +45,30 @@ describe('MushafHeaderNavigationComponent', () => {
   it('shows juz only and omits hizb and rub from page context', () => {
     const fixture = TestBed.createComponent(MushafHeaderNavigationComponent);
     fixture.componentRef.setInput('page', pageFixture);
-    fixture.componentRef.setInput('surahCatalog', []);
+    fixture.componentRef.setInput('surahCatalogByJuz', []);
     fixture.detectChanges();
 
-    const context = fixture.nativeElement.querySelector('.mushaf-header__context') as HTMLElement;
+    const context = fixture.nativeElement.querySelector('.mushaf-header__deck-zone--context') as HTMLElement;
     const contextText = context.textContent ?? '';
 
     expect(contextText).toContain('جزء 30');
     expect(contextText).not.toContain('حزب');
     expect(contextText).not.toContain('ربع');
+  });
+
+  it('renders juz-grouped surah options in the selector', () => {
+    const fixture = TestBed.createComponent(MushafHeaderNavigationComponent);
+    fixture.componentRef.setInput('page', pageFixture);
+    fixture.componentRef.setInput('surahCatalogByJuz', surahCatalogByJuzFixture);
+    fixture.detectChanges();
+
+    const groups = fixture.nativeElement.querySelectorAll('optgroup');
+    expect(groups).toHaveLength(1);
+    expect(groups[0].classList.contains('mushaf-header__surah-juz-group')).toBe(true);
+    expect(groups[0].getAttribute('label')).toBe('الجزء 30');
+
+    const options = fixture.nativeElement.querySelectorAll('optgroup option');
+    expect(options).toHaveLength(2);
+    expect(options[0].textContent?.trim()).toBe('101. سورة-تجريبية-١');
   });
 });

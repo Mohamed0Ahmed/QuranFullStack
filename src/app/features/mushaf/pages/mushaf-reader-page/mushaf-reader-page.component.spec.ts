@@ -6,7 +6,6 @@ import { BehaviorSubject, of } from 'rxjs';
 import { MushafAyahStudyApi } from '../../data-access/mushaf-ayah-study.api';
 import { MushafPagesApi } from '../../data-access/mushaf-pages.api';
 import { MushafStudySourceCatalogApi } from '../../data-access/mushaf-study-sources.api';
-import { MushafSurahCatalogApi } from '../../data-access/mushaf-surah-catalog.api';
 import { MushafWordAnalysisApi } from '../../data-access/mushaf-word-analysis.api';
 import { MushafReaderFacade } from '../../state/mushaf-reader.facade';
 import { MushafReaderPageComponent } from './mushaf-reader-page.component';
@@ -125,14 +124,6 @@ describe('MushafReaderPageComponent study layout', () => {
           provide: MushafWordAnalysisApi,
           useValue: {
             getWordAnalysis: vi.fn(() => of({ isSuccess: true, message: 'ok', data: wordAnalysisDto })),
-          },
-        },
-        {
-          provide: MushafSurahCatalogApi,
-          useValue: {
-            getCatalog: vi.fn(() =>
-              of({ isSuccess: true, message: 'ok', data: { surahs: [] } }),
-            ),
           },
         },
         {

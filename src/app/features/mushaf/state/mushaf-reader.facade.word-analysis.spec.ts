@@ -4,7 +4,6 @@ import { of } from 'rxjs';
 
 import { MushafAyahStudyApi } from '../data-access/mushaf-ayah-study.api';
 import { MushafPagesApi } from '../data-access/mushaf-pages.api';
-import { MushafSurahCatalogApi } from '../data-access/mushaf-surah-catalog.api';
 import { MushafWordAnalysisApi } from '../data-access/mushaf-word-analysis.api';
 import { MushafPageViewComponent } from '../components/mushaf-page-view/mushaf-page-view.component';
 import { MushafWordComponent } from '../components/mushaf-word/mushaf-word.component';
@@ -172,7 +171,6 @@ describe('MushafReaderFacade.loadWordAnalysis', () => {
         MushafReaderFacade,
         { provide: MushafPagesApi, useValue: { getPage: vi.fn() } },
         { provide: MushafAyahStudyApi, useValue: { getAyahStudy: vi.fn() } },
-        { provide: MushafSurahCatalogApi, useValue: { getCatalog: vi.fn() } },
         { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis } },
         mushafStudySourceCatalogApiProvider,
       ],
@@ -196,7 +194,6 @@ describe('MushafReaderFacade.loadWordAnalysis', () => {
         MushafReaderFacade,
         { provide: MushafPagesApi, useValue: { getPage } },
         { provide: MushafAyahStudyApi, useValue: { getAyahStudy: vi.fn() } },
-        { provide: MushafSurahCatalogApi, useValue: { getCatalog: vi.fn() } },
         { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis } },
         mushafStudySourceCatalogApiProvider,
       ],
