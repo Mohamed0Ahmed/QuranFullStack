@@ -12,17 +12,15 @@
   min-height: 0;
   gap: 0;
   padding: 1rem;
-  overflow-y: auto;
   overflow-x: hidden;
+  overflow-y: auto;
 
   &__text-column {
     width: min(100%, var(--qd-mushaf-text-column-width));
     margin-inline: auto;
+    margin-block: auto;
+    flex-shrink: 0;
     display: flex;
     flex-direction: column;
-  }
-
-  &--opening-pages {
-    justify-content: center;
   }
 }

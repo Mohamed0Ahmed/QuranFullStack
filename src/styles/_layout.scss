@@ -31,6 +31,10 @@
   display: flex;
   align-items: center;
   gap: var(--qd-space-4);
+  box-sizing: border-box;
+  height: var(--qd-navbar-block-size);
+  min-height: var(--qd-navbar-block-size);
+  max-height: var(--qd-navbar-block-size);
   padding: var(--qd-space-3) var(--qd-space-5);
   background: var(--qd-surface);
   border-block-end: 1px solid var(--qd-border);
