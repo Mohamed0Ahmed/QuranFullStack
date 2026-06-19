@@ -6,7 +6,7 @@
   <article class="study-card" data-testid="full-i3rab-card">
     @if (entry()!.coveredAyahCount > 1) {
       <p class="study-card__coverage" data-testid="grouped-coverage">
-        يغطي هذا الإعراب الآيات: {{ entry()!.coveredAyahKeys.join('، ') }}
+        يغطي هذا الإعراب الآيات: {{ coverageAyahNumbers() }}
       </p>
     }
     <div class="study-card__body" dir="rtl" [innerHTML]="entry()!.html | safeHtml"></div>

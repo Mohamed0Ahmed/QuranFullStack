@@ -31,9 +31,24 @@
 
   &__header {
     display: flex;
-    flex-direction: column;
-    gap: 0;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
     flex-shrink: 0;
+    padding-block: var(--qd-space-1);
+  }
+
+  &__rendered-word {
+    display: block;
+    width: 100%;
+    text-align: center;
+
+    ::ng-deep .segment-rendered-word {
+      justify-content: center;
+      font-size: 1.5rem;
+      font-weight: 600;
+      line-height: 1.8;
+    }
   }
 
   &__content {
@@ -60,15 +75,6 @@
     display: flex;
     flex-direction: column;
     gap: var(--qd-space-2);
-  }
-
-  &__section-title {
-    margin: 0;
-    padding-bottom: var(--qd-space-2);
-    border-bottom: 1px solid var(--qd-border);
-    font-size: 0.8125rem;
-    font-weight: 600;
-    color: var(--qd-text-muted);
   }
 
   &__identity {

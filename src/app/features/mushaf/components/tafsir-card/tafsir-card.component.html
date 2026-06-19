@@ -6,7 +6,7 @@
   <article class="study-card" data-testid="tafsir-card">
     @if (entry()!.coveredAyahCount > 1) {
       <p class="study-card__coverage" data-testid="grouped-coverage">
-        يغطي هذا التفسير الآيات: {{ entry()!.coveredAyahKeys.join('، ') }}
+        يغطي هذا التفسير الآيات: {{ coverageAyahNumbers() }}
       </p>
     }
     <div

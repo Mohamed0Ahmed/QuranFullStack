@@ -8,6 +8,7 @@ export function tafsirCatalogItemToOption(item: StudySourceCatalogItemDto): Sour
   return {
     key: item.sourceKey,
     label: withSuffix(item.displayNameAr, '(مفصّل)', item.tafsirKind === 'detailed'),
+    languageCode: item.languageCode,
     languageNameAr: item.languageNameAr,
   };
 }
@@ -16,6 +17,7 @@ export function translationCatalogItemToOption(item: StudySourceCatalogItemDto):
   return {
     key: item.sourceKey,
     label: withSuffix(item.displayNameAr, '(بملاحظات)', item.translationType === 'with_footnotes'),
+    languageCode: item.languageCode,
     languageNameAr: item.languageNameAr,
   };
 }
@@ -24,6 +26,7 @@ export function fullI3rabCatalogItemToOption(item: StudySourceCatalogItemDto): S
   return {
     key: item.sourceKey,
     label: item.displayNameAr,
+    languageCode: item.languageCode,
     languageNameAr: item.languageNameAr,
   };
 }

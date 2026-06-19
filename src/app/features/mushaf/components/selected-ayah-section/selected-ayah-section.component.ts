@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { Component, computed, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 import {
@@ -11,6 +11,7 @@ import { SourceSelectorComponent } from '../source-selector/source-selector.comp
 import { TafsirCardComponent } from '../tafsir-card/tafsir-card.component';
 import { TranslationCardComponent } from '../translation-card/translation-card.component';
 import { FullI3rabCardComponent } from '../full-i3rab-card/full-i3rab-card.component';
+import { toStudyAyahDisplayText } from '../../utils/mushaf-verse-key-display';
 
 @Component({
   selector: 'qd-selected-ayah-section',
@@ -44,4 +45,9 @@ export class SelectedAyahSectionComponent {
   readonly translationSourceChange = output<string>();
   readonly fullI3rabSourceChange = output<string>();
   readonly sectionFocus = output<void>();
+
+  protected readonly displayAyahText = computed(() => {
+    const text = this.study()?.ayah.textUthmani;
+    return text ? toStudyAyahDisplayText(text) : '';
+  });
 }

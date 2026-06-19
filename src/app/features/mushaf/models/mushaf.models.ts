@@ -274,6 +274,7 @@ export type WordAnalysisTab = 'morphology' | 'segments' | 'i3rab' | 'identity';
 export interface SourceOption {
   key: string;
   label: string;
+  languageCode?: string | null;
   languageNameAr?: string | null;
 }
 

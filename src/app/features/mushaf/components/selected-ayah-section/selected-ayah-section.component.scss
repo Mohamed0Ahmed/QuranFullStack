@@ -53,6 +53,18 @@
     }
   }
 
+  &__ayah {
+    margin: 0;
+    padding: var(--qd-space-2) var(--qd-space-3);
+    border-radius: var(--qd-radius-sm);
+    background: var(--qd-surface-elevated);
+    font-family: var(--qd-font-quran);
+    font-size: 0.875rem;
+    line-height: 1.9;
+    color: var(--qd-text);
+    text-align: justify;
+  }
+
   &__content {
     display: flex;
     flex-direction: column;

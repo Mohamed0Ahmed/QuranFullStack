@@ -115,6 +115,8 @@ describe('MushafWordComponent', () => {
     const button = fixture.nativeElement.querySelector('button') as HTMLButtonElement;
     expect(button.classList.contains('mushaf-word--marker')).toBe(true);
     expect(getComputedStyle(button).fontFamily).toBe('var(--qd-font-quran-ayah-marker)');
+    expect(getComputedStyle(button).fontSize).toBe('var(--qd-mushaf-ayah-marker-font-size)');
+    expect(getComputedStyle(button).color).toBe('var(--qd-mushaf-ayah-marker-color)');
     expect(fixture.componentInstance.word().textUthmani).toBe(SYNTHETIC_AYAH_DIGIT);
   });
 

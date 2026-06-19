@@ -18,14 +18,14 @@
   } @else {
     <header class="selected-word-section__header">
       <qd-segment-rendered-word
+        class="selected-word-section__rendered-word"
         [segments]="analysis()!.segments"
         [fullWordText]="analysis()!.word.textUthmani"
       />
     </header>
 
     <div class="selected-word-section__content">
-      <section class="selected-word-section__section" aria-labelledby="word-segments-heading">
-        <h3 id="word-segments-heading" class="selected-word-section__section-title">القطع والإعراب</h3>
+      <section class="selected-word-section__section" aria-label="قطع الكلمة والإعراب">
         <div class="selected-word-section__segments-block">
           <qd-segment-data-rows [segments]="analysis()!.segments" />
           <qd-word-morphology-summary [morphology]="analysis()!.morphology" />

@@ -43,13 +43,19 @@
       </button>
     </nav>
 
+    @if (displayAyahText()) {
+      <p class="selected-ayah-section__ayah" dir="rtl" data-testid="selected-ayah-section-ayah">
+        {{ displayAyahText() }}
+      </p>
+    }
+
     <div class="selected-ayah-section__content">
       @switch (activeTab()) {
         @case ('tafsir') {
           <qd-source-selector
             label="مصدر التفسير"
+            pickerMode="languageFirst"
             [selectedKey]="study()!.selectedSources.tafsirSource"
-            [usedLabel]="study()!.tafsir?.displayNameAr ?? null"
             [options]="tafsirOptions()"
             (sourceChange)="tafsirSourceChange.emit($event)"
           />
@@ -58,8 +64,8 @@
         @case ('translation') {
           <qd-source-selector
             label="مصدر الترجمة"
+            pickerMode="languageFirst"
             [selectedKey]="study()!.selectedSources.translationSource"
-            [usedLabel]="study()!.translation?.displayNameEn ?? study()!.translation?.displayNameAr ?? null"
             [options]="translationOptions()"
             (sourceChange)="translationSourceChange.emit($event)"
           />
@@ -68,8 +74,8 @@
         @case ('full-i3rab') {
           <qd-source-selector
             label="مصدر الإعراب"
+            pickerMode="flat"
             [selectedKey]="study()!.selectedSources.fullI3rabSource"
-            [usedLabel]="study()!.fullI3rab?.displayNameAr ?? null"
             [options]="fullI3rabOptions()"
             (sourceChange)="fullI3rabSourceChange.emit($event)"
           />

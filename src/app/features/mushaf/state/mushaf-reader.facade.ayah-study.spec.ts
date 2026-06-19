@@ -229,7 +229,7 @@ describe('MushafReaderFacade.applyUrlState', () => {
 });
 
 describe('SelectedAyahSectionComponent', () => {
-  it('shows grouped coverage note and source-used label for tafsir tab', () => {
+  it('shows grouped coverage note and selected source label for tafsir tab', () => {
     const fixture: ComponentFixture<SelectedAyahSectionComponent> = TestBed.createComponent(
       SelectedAyahSectionComponent,
     );
@@ -249,8 +249,9 @@ describe('SelectedAyahSectionComponent', () => {
     fixture.detectChanges();
 
     const el = fixture.nativeElement as HTMLElement;
-    expect(el.querySelector('[data-testid="grouped-coverage"]')?.textContent).toContain('2:25');
-    expect(el.querySelector('[data-testid="source-used-label"]')?.textContent).toContain('التفسير الميسر');
+    expect(el.querySelector('[data-testid="grouped-coverage"]')?.textContent).toContain('25');
+    expect(el.querySelector('[data-testid="selected-ayah-section-ayah"]')?.textContent).toContain('نص تجريبي للآية');
+    expect(el.querySelector('[data-testid="source-single-option"]')?.textContent).toContain('التفسير الميسر');
     expect(el.querySelector('[data-testid="tafsir-card"]')).toBeTruthy();
   });
 });

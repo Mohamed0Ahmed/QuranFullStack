@@ -23,7 +23,8 @@
 
   &--marker {
     font-family: var(--qd-font-quran-ayah-marker);
-    color: var(--qd-text-muted);
+    font-size: var(--qd-mushaf-ayah-marker-font-size);
+    color: var(--qd-mushaf-ayah-marker-color);
   }
 
   &--selected-word {
