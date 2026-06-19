@@ -156,4 +156,159 @@ describe('MushafReaderPageComponent study layout', () => {
     expect(root.querySelector('[data-testid="selected-ayah-section"]')).toBeTruthy();
     expect(root.querySelector('.mushaf-reader__mobile-tabs')).toBeNull();
   });
+
+  it('moves between words with ArrowLeft and ArrowRight', () => {
+    const queryParamMap$ = new BehaviorSubject(convertToParamMap({ page: '5', word: '2:25:3', ayah: '2:25' }));
+
+    TestBed.configureTestingModule({
+      imports: [MushafReaderPageComponent],
+      providers: [
+        MushafReaderFacade,
+        {
+          provide: ActivatedRoute,
+          useValue: { queryParamMap: queryParamMap$.asObservable() },
+        },
+        {
+          provide: Router,
+          useValue: { navigate: vi.fn().mockResolvedValue(true) },
+        },
+        {
+          provide: MushafPagesApi,
+          useValue: {
+            getPage: vi.fn(() =>
+              of({
+                isSuccess: true,
+                message: 'ok',
+                data: {
+                  pageNumber: 5,
+                  previousPageNumber: 4,
+                  nextPageNumber: 6,
+                  surahs: [],
+                  ayahRange: { firstVerseKey: '2:25', lastVerseKey: '2:26' },
+                  navigation: { juzNumbers: [], hizbNumbers: [], rubNumbers: [] },
+                  lines: [],
+                  markers: [],
+                },
+              }),
+            ),
+          },
+        },
+        {
+          provide: MushafAyahStudyApi,
+          useValue: {
+            getAyahStudy: vi.fn(() => of({ isSuccess: true, message: 'ok', data: ayahStudyDto })),
+          },
+        },
+        {
+          provide: MushafWordAnalysisApi,
+          useValue: {
+            getWordAnalysis: vi.fn(() => of({ isSuccess: true, message: 'ok', data: wordAnalysisDto })),
+          },
+        },
+        {
+          provide: MushafStudySourceCatalogApi,
+          useValue: {
+            getCatalog: vi.fn(() =>
+              of({
+                isSuccess: true,
+                message: 'ok',
+                data: { tafsirSources: [], translationSources: [], fullI3rabSources: [] },
+              }),
+            ),
+          },
+        },
+      ],
+    });
+
+    const fixture = TestBed.createComponent(MushafReaderPageComponent);
+    fixture.detectChanges();
+
+    const facade = TestBed.inject(MushafReaderFacade);
+    const moveSelectedWord = vi.spyOn(facade, 'moveSelectedWord');
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+
+    expect(moveSelectedWord).toHaveBeenCalledWith('next');
+    expect(moveSelectedWord).toHaveBeenCalledWith('previous');
+  });
+
+  it('ignores arrow keys when focus is inside an input', () => {
+    const queryParamMap$ = new BehaviorSubject(convertToParamMap({ page: '5', word: '2:25:3', ayah: '2:25' }));
+
+    TestBed.configureTestingModule({
+      imports: [MushafReaderPageComponent],
+      providers: [
+        MushafReaderFacade,
+        {
+          provide: ActivatedRoute,
+          useValue: { queryParamMap: queryParamMap$.asObservable() },
+        },
+        {
+          provide: Router,
+          useValue: { navigate: vi.fn().mockResolvedValue(true) },
+        },
+        {
+          provide: MushafPagesApi,
+          useValue: {
+            getPage: vi.fn(() =>
+              of({
+                isSuccess: true,
+                message: 'ok',
+                data: {
+                  pageNumber: 5,
+                  previousPageNumber: 4,
+                  nextPageNumber: 6,
+                  surahs: [],
+                  ayahRange: { firstVerseKey: '2:25', lastVerseKey: '2:26' },
+                  navigation: { juzNumbers: [], hizbNumbers: [], rubNumbers: [] },
+                  lines: [],
+                  markers: [],
+                },
+              }),
+            ),
+          },
+        },
+        {
+          provide: MushafAyahStudyApi,
+          useValue: {
+            getAyahStudy: vi.fn(() => of({ isSuccess: true, message: 'ok', data: ayahStudyDto })),
+          },
+        },
+        {
+          provide: MushafWordAnalysisApi,
+          useValue: {
+            getWordAnalysis: vi.fn(() => of({ isSuccess: true, message: 'ok', data: wordAnalysisDto })),
+          },
+        },
+        {
+          provide: MushafStudySourceCatalogApi,
+          useValue: {
+            getCatalog: vi.fn(() =>
+              of({
+                isSuccess: true,
+                message: 'ok',
+                data: { tafsirSources: [], translationSources: [], fullI3rabSources: [] },
+              }),
+            ),
+          },
+        },
+      ],
+    });
+
+    const fixture = TestBed.createComponent(MushafReaderPageComponent);
+    fixture.detectChanges();
+
+    const facade = TestBed.inject(MushafReaderFacade);
+    const moveSelectedWord = vi.spyOn(facade, 'moveSelectedWord');
+
+    const event = new KeyboardEvent('keydown', { key: 'ArrowLeft' });
+    const preventDefault = vi.spyOn(event, 'preventDefault');
+    Object.defineProperty(event, 'target', { value: document.createElement('input') });
+
+    (fixture.componentInstance as unknown as { onDocumentKeydown(e: KeyboardEvent): void }).onDocumentKeydown(event);
+
+    expect(moveSelectedWord).not.toHaveBeenCalled();
+    expect(preventDefault).not.toHaveBeenCalled();
+  });
 });

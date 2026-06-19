@@ -49,6 +49,8 @@ import {
   translationCatalogItemToOption,
 } from '../utils/study-source-catalog.labels';
 
+const WORD_ANALYSIS_SWITCH_DELAY_MS = 700;
+
 function toPageViewModel(dto: MushafPageDto): MushafPageViewModel {
   return {
     pageNumber: dto.pageNumber,
@@ -128,6 +130,9 @@ export class MushafReaderFacade {
   private readonly _tafsirSourceOptions = signal<SourceOption[]>([]);
   private readonly _translationSourceOptions = signal<SourceOption[]>([]);
   private readonly _fullI3rabSourceOptions = signal<SourceOption[]>([]);
+
+  private wordAnalysisRequestTimer: ReturnType<typeof setTimeout> | null = null;
+  private wordAnalysisRequestToken = 0;
 
   private readonly _pageLoadState = signal<ResourceLoadState>(DEFAULT_MUSHAF_READER_STATE.page);
   private readonly _ayahStudyLoadState = signal<ResourceLoadState>(DEFAULT_MUSHAF_READER_STATE.ayahStudy);
@@ -244,6 +249,106 @@ export class MushafReaderFacade {
     this.patchUrlQuery(queryParams);
   }
 
+  moveSelectedWord(direction: 'previous' | 'next'): boolean {
+    const page = this._page();
+    const selectedWordLocation = this._selectedWordLocation();
+
+    if (!page || !selectedWordLocation) {
+      return false;
+    }
+
+    const words = page.lines.flatMap((line) => line.words);
+    const currentIndex = words.findIndex((word) => word.wordLocation === selectedWordLocation);
+
+    if (currentIndex < 0) {
+      return false;
+    }
+
+    const step = direction === 'next' ? 1 : -1;
+    let nextIndex = currentIndex + step;
+
+    while (nextIndex >= 0 && nextIndex < words.length && words[nextIndex].isAyahMarker) {
+      nextIndex += step;
+    }
+
+    const nextWord = words[nextIndex];
+    if (!nextWord || nextWord.isAyahMarker) {
+      return false;
+    }
+
+    this.selectWord(nextWord.wordLocation);
+    return true;
+  }
+
+  loadWordAnalysis(wordLocation: string): void {
+    this._selectedWordLocation.set(wordLocation);
+    this.clearPendingWordAnalysisLoad();
+    const requestToken = ++this.wordAnalysisRequestToken;
+    this.runWordAnalysisLoad(wordLocation, requestToken);
+  }
+
+  private scheduleWordAnalysisLoad(wordLocation: string): void {
+    this.clearPendingWordAnalysisLoad();
+
+    const requestToken = ++this.wordAnalysisRequestToken;
+    this.wordAnalysisRequestTimer = setTimeout(() => {
+      this.wordAnalysisRequestTimer = null;
+      this.runWordAnalysisLoad(wordLocation, requestToken);
+    }, WORD_ANALYSIS_SWITCH_DELAY_MS);
+  }
+
+  private clearPendingWordAnalysisLoad(): void {
+    if (this.wordAnalysisRequestTimer !== null) {
+      clearTimeout(this.wordAnalysisRequestTimer);
+      this.wordAnalysisRequestTimer = null;
+    }
+
+    this.wordAnalysisRequestToken += 1;
+  }
+
+  private runWordAnalysisLoad(wordLocation: string, requestToken: number): void {
+    if (this.isAyahMarkerOnCurrentPage(wordLocation)) {
+      this._wordAnalysis.set(null);
+      this._wordAnalysisLoadState.set({
+        isLoading: false,
+        isEmpty: false,
+        errorMessage: 'هذه الكلمة غير قابلة للتحليل (علامة نهاية آية)',
+      });
+      return;
+    }
+
+    this._wordAnalysisLoadState.set({ isLoading: true, isEmpty: false, errorMessage: null });
+
+    subscribeToApiLoad(
+      this.readerCache.getOrLoad(
+        MushafReaderCacheKeys.wordAnalysis(wordLocation),
+        () => this.wordAnalysisApi.getWordAnalysis(wordLocation),
+      ),
+      {
+        onSuccess: (data) => {
+          if (this.wordAnalysisRequestToken !== requestToken) {
+            return;
+          }
+
+          this._wordAnalysis.set(toWordAnalysisViewModel(data));
+        },
+        onSettled: (loadState) => {
+          if (this.wordAnalysisRequestToken !== requestToken) {
+            return;
+          }
+
+          if (loadState.isEmpty) {
+            this._wordAnalysis.set(null);
+          }
+          this._wordAnalysisLoadState.set(loadState);
+        },
+        emptyMessage: 'تعذّر تحميل تحليل الكلمة.',
+        notFoundMessage: 'الكلمة غير موجودة.',
+        connectionMessage: 'تعذّر الاتصال بالخادم.',
+      },
+    );
+  }
+
   setPanel(panel: PanelMode): void {
     this.patchUrlQuery({
       [MUSHAF_URL_KEYS.panel]: panel === DEFAULT_MUSHAF_READER_STATE.panel ? null : panel,
@@ -343,40 +448,6 @@ export class MushafReaderFacade {
     );
   }
 
-  loadWordAnalysis(wordLocation: string): void {
-    if (this.isAyahMarkerOnCurrentPage(wordLocation)) {
-      this._selectedWordLocation.set(wordLocation);
-      this._wordAnalysis.set(null);
-      this._wordAnalysisLoadState.set({
-        isLoading: false,
-        isEmpty: false,
-        errorMessage: 'هذه الكلمة غير قابلة للتحليل (علامة نهاية آية)',
-      });
-      return;
-    }
-
-    this._selectedWordLocation.set(wordLocation);
-    this._wordAnalysisLoadState.set({ isLoading: true, isEmpty: false, errorMessage: null });
-
-    subscribeToApiLoad(
-      this.readerCache.getOrLoad(
-        MushafReaderCacheKeys.wordAnalysis(wordLocation),
-        () => this.wordAnalysisApi.getWordAnalysis(wordLocation),
-      ),
-      {
-      onSuccess: (data) => this._wordAnalysis.set(toWordAnalysisViewModel(data)),
-      onSettled: (loadState) => {
-        if (loadState.isEmpty) {
-          this._wordAnalysis.set(null);
-        }
-        this._wordAnalysisLoadState.set(loadState);
-      },
-      emptyMessage: 'تعذّر تحميل تحليل الكلمة.',
-      notFoundMessage: 'الكلمة غير موجودة.',
-      connectionMessage: 'تعذّر الاتصال بالخادم.',
-    });
-  }
-
   private hydrateFromUrl(snapshot: MushafUrlSnapshot): void {
     this.loadPage(snapshot.pageNumber);
     this.applyUrlState(snapshot);
@@ -414,16 +485,22 @@ export class MushafReaderFacade {
           this._selectedSegmentLocation.set(segmentLocation);
         },
         clearWordSelection: () => {
+          this.clearPendingWordAnalysisLoad();
           this._selectedWordLocation.set(null);
           this._selectedSegmentLocation.set(null);
           this._wordAnalysis.set(null);
           this._wordAnalysisLoadState.set({ isLoading: false, isEmpty: false, errorMessage: null });
         },
         setWord: (wordLocation, reload) => {
+          const hadWordSelection = this._selectedWordLocation() !== null;
+          this._selectedWordLocation.set(wordLocation);
+
           if (reload) {
-            this.loadWordAnalysis(wordLocation);
-          } else {
-            this._selectedWordLocation.set(wordLocation);
+            if (hadWordSelection) {
+              this.scheduleWordAnalysisLoad(wordLocation);
+            } else {
+              this.loadWordAnalysis(wordLocation);
+            }
           }
         },
         setUrlExplicitSources: (sources) => this._urlExplicitSources.set(sources),

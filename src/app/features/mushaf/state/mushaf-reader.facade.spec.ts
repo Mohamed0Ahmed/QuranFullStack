@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
-import { of, throwError } from 'rxjs';
+import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
+import { BehaviorSubject, Subject, of, throwError } from 'rxjs';
 
 import { MushafAyahStudyApi } from '../data-access/mushaf-ayah-study.api';
 import { MushafPagesApi } from '../data-access/mushaf-pages.api';
@@ -19,6 +20,149 @@ const pageDto = {
   lines: [],
   markers: [],
 };
+
+const wordNavigationPageDto = {
+  pageNumber: 5,
+  previousPageNumber: 4,
+  nextPageNumber: 6,
+  surahs: [],
+  ayahRange: { firstVerseKey: '2:25', lastVerseKey: '2:26' },
+  navigation: { juzNumbers: [], hizbNumbers: [], rubNumbers: [] },
+  lines: [
+    {
+      lineNumber: 1,
+      lineType: 'ayah' as const,
+      isCentered: false,
+      surahNumber: null,
+      words: [
+        {
+          wordLocation: '2:25:3',
+          verseKey: '2:25',
+          wordNumber: 3,
+          lineWordOrder: 3,
+          textUthmani: 'كلمة-١',
+          isAyahMarker: false,
+        },
+        {
+          wordLocation: '2:25:4',
+          verseKey: '2:25',
+          wordNumber: 4,
+          lineWordOrder: 4,
+          textUthmani: 'علامة-آية',
+          isAyahMarker: true,
+        },
+        {
+          wordLocation: '2:25:5',
+          verseKey: '2:25',
+          wordNumber: 5,
+          lineWordOrder: 5,
+          textUthmani: 'كلمة-٢',
+          isAyahMarker: false,
+        },
+      ],
+    },
+  ],
+  markers: [],
+};
+
+const wordAnalysisDto = {
+  word: {
+    quranWordId: 2003,
+    wordLocation: '2:25:3',
+    verseKey: '2:25',
+    surahNumber: 2,
+    ayahNumber: 25,
+    wordNumber: 3,
+    pageNumber: 5,
+    lineNumber: 1,
+    lineWordOrder: 3,
+    textUthmani: 'كلمة-١',
+    textUthmaniSimple: 'كلمة-مبسطة',
+    textImlaeiSimple: 'كلمة-مبسطة',
+    qpcGlyph: 'glyph-test-1',
+  },
+  identity: {
+    orderedTashkeel: { occurrencesCount: 1, ayahsCount: 1, surahsCount: 1 },
+    orderedSimple: { occurrencesCount: 1, ayahsCount: 1, surahsCount: 1 },
+    uniqueTashkeel: { id: 1, occurrencesCount: 1, ayahsCount: 1, surahsCount: 1 },
+    uniqueSimple: {
+      id: 1,
+      occurrencesCount: 1,
+      ayahsCount: 1,
+      surahsCount: 1,
+      wordKeyImlaeiSimple: 'مفتاح-تجريبي',
+    },
+  },
+  morphology: {
+    headPos: 'V',
+    headPosLabel: { ar: 'فعل', en: 'Verb' },
+    root: null,
+    lemma: null,
+    stem: null,
+    isVerb: true,
+    verbTense: 'past',
+    verbVoice: 'active',
+    caseFeature: null,
+  },
+  renderedWordSegments: [],
+};
+
+const ayahStudyDto = {
+  ayah: {
+    verseKey: '2:25',
+    surahNumber: 2,
+    surahNameArabic: 'البقرة',
+    ayahNumber: 25,
+    textUthmani: 'نص-تجريبي',
+    wordsCount: 5,
+    pageFrom: 5,
+    pageTo: 5,
+    juzNumber: 1,
+    hizbNumber: 1,
+    rubNumber: 1,
+    sajda: null,
+  },
+  selectedSources: {
+    tafsirSource: 'ar-muyassar',
+    translationSource: 'en-sahih-international',
+    fullI3rabSource: 'muyassar',
+  },
+  tafsir: null,
+  translation: null,
+  fullI3rab: null,
+};
+
+function createWordNavigationFacade(initialWordLocation: string) {
+  const queryParamMap$ = new BehaviorSubject(
+    convertToParamMap({ page: '5', ayah: '2:25', word: initialWordLocation, panel: 'word' }),
+  );
+  const navigate = vi.fn().mockResolvedValue(true);
+  const getPage = vi.fn(() => of({ isSuccess: true, message: 'ok', data: wordNavigationPageDto }));
+  const getWordAnalysis = vi.fn(() => of({ isSuccess: true, message: 'ok', data: wordAnalysisDto }));
+  const getAyahStudy = vi.fn(() => of({ isSuccess: true, message: 'ok', data: ayahStudyDto }));
+
+  TestBed.configureTestingModule({
+    providers: [
+      MushafReaderFacade,
+      {
+        provide: ActivatedRoute,
+        useValue: { queryParamMap: queryParamMap$.asObservable() },
+      },
+      { provide: Router, useValue: { navigate } },
+      { provide: MushafPagesApi, useValue: { getPage } },
+      { provide: MushafAyahStudyApi, useValue: { getAyahStudy } },
+      { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis } },
+      mushafStudySourceCatalogApiProvider,
+    ],
+  });
+
+  const facade = TestBed.inject(MushafReaderFacade);
+  const route = TestBed.inject(ActivatedRoute);
+
+  facade.bindToRoute(route);
+
+  return { facade, navigate };
+}
 
 describe('MushafReaderFacade.loadPage', () => {
   it('clamps page numbers to the Mushaf range 1–604 before calling the API', () => {
@@ -111,5 +255,81 @@ describe('MushafReaderFacade surah jump', () => {
     expect(facade.resolveSurahStartPage(114)).toBe(604);
     expect(facade.resolveSurahStartPage(999)).toBeNull();
     expect(facade.surahCatalogByJuz().length).toBe(30);
+  });
+});
+
+describe('MushafReaderFacade moveSelectedWord', () => {
+  it('moves to the next selectable word and skips ayah markers', () => {
+    const { facade, navigate } = createWordNavigationFacade('2:25:3');
+
+    facade.moveSelectedWord('next');
+
+    expect(navigate).toHaveBeenCalledWith(
+      [],
+      expect.objectContaining({
+        queryParams: { word: '2:25:5', ayah: '2:25', panel: 'word' },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      }),
+    );
+  });
+
+  it('moves to the previous selectable word and skips ayah markers', () => {
+    const { facade, navigate } = createWordNavigationFacade('2:25:5');
+
+    facade.moveSelectedWord('previous');
+
+    expect(navigate).toHaveBeenCalledWith(
+      [],
+      expect.objectContaining({
+        queryParams: { word: '2:25:3', ayah: '2:25', panel: 'word' },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      }),
+    );
+  });
+});
+
+describe('MushafReaderFacade word analysis cancellation', () => {
+  it('drops an in-flight analysis response after the selection is cleared', () => {
+    const wordAnalysis$ = new Subject<{
+      isSuccess: boolean;
+      message: string;
+      data: typeof wordAnalysisDto;
+    }>();
+    const getWordAnalysis = vi.fn(() => wordAnalysis$.asObservable());
+
+    TestBed.configureTestingModule({
+      providers: [
+        MushafReaderFacade,
+        { provide: MushafPagesApi, useValue: { getPage: vi.fn(() => of({ isSuccess: true, message: 'ok', data: pageDto })) } },
+        { provide: MushafAyahStudyApi, useValue: { getAyahStudy: vi.fn() } },
+        { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis } },
+        mushafStudySourceCatalogApiProvider,
+      ],
+    });
+
+    const facade = TestBed.inject(MushafReaderFacade);
+    facade.loadPage(1);
+    facade.loadWordAnalysis('2:25:3');
+
+    facade.applyUrlState({
+      panel: 'none',
+      ayah: null,
+      word: null,
+      segment: null,
+      ayahTab: 'tafsir',
+      wordTab: 'morphology',
+      sources: {
+        tafsirSource: null,
+        translationSource: null,
+        fullI3rabSource: null,
+      },
+    });
+
+    wordAnalysis$.next({ isSuccess: true, message: 'ok', data: wordAnalysisDto });
+
+    expect(facade.selectedWordLocation()).toBeNull();
+    expect(facade.wordAnalysis()).toBeNull();
   });
 });

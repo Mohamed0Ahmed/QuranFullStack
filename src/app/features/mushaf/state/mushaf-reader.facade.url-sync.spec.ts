@@ -109,6 +109,7 @@ function createFacadeTestBed(queryParams: Record<string, string>) {
   const queryParamMap$ = new BehaviorSubject(convertToParamMap(queryParams));
   const navigate = vi.fn().mockResolvedValue(true);
   const getPage = vi.fn(() => of({ isSuccess: true, message: 'ok', data: pageDto }));
+  const getWordAnalysis = vi.fn(() => of({ isSuccess: true, message: 'ok', data: wordAnalysisDto }));
   const getAyahStudy = vi.fn(() => of({ isSuccess: true, message: 'ok', data: ayahStudyDto }));
 
   TestBed.configureTestingModule({
@@ -130,7 +131,7 @@ function createFacadeTestBed(queryParams: Record<string, string>) {
       {
         provide: MushafWordAnalysisApi,
         useValue: {
-          getWordAnalysis: vi.fn(() => of({ isSuccess: true, message: 'ok', data: wordAnalysisDto })),
+          getWordAnalysis,
         },
       },
       mushafStudySourceCatalogApiProvider,
@@ -144,6 +145,7 @@ function createFacadeTestBed(queryParams: Record<string, string>) {
     queryParamMap$,
     getAyahStudy,
     getPage,
+    getWordAnalysis,
   };
 }
 
@@ -182,6 +184,34 @@ describe('MushafReaderFacade URL sync', () => {
     expect(facade.sources().translationSource).toBe('en-sahih-international');
     expect(facade.ayahStudy()?.ayah.verseKey).toBe('2:25');
     expect(facade.wordAnalysis()?.word.wordLocation).toBe('2:25:3');
+  });
+
+  it('debounces word-analysis requests when the selected word changes quickly', () => {
+    vi.useFakeTimers();
+
+    try {
+      const { facade, route, queryParamMap$, getWordAnalysis } = createFacadeTestBed({
+        page: '5',
+        ayah: '2:25',
+        word: '2:25:3',
+        panel: 'word',
+      });
+
+      facade.bindToRoute(route);
+      expect(getWordAnalysis).toHaveBeenCalledTimes(1);
+
+      queryParamMap$.next(convertToParamMap({ page: '5', ayah: '2:25', word: '2:25:5', panel: 'word' }));
+
+      expect(getWordAnalysis).toHaveBeenCalledTimes(1);
+
+      vi.advanceTimersByTime(699);
+      expect(getWordAnalysis).toHaveBeenCalledTimes(1);
+
+      vi.advanceTimersByTime(1);
+      expect(getWordAnalysis).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('writes URL updates with replaceUrl merge semantics when selecting an ayah', () => {
