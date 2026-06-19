@@ -32,6 +32,12 @@ import {
   buildUrlEnumCorrections,
   parseMushafUrlParams,
 } from './mushaf-url-sync';
+import {
+  isBareMushafEntry,
+  loadMushafReaderSession,
+  mushafSnapshotToQueryParams,
+  saveMushafReaderSession,
+} from './mushaf-reader-session';
 import { applyAuthoritativeUrlSnapshot } from './mushaf-url-hydration';
 import { verseKeyFromWordLocation } from '../utils/mushaf-location-keys';
 import {
@@ -165,8 +171,24 @@ export class MushafReaderFacade {
     this.activeRoute = route;
     this.routeSubscription?.unsubscribe();
     this.routeSubscription = route.queryParamMap.subscribe((params) => {
+      if (isBareMushafEntry(params)) {
+        const saved = loadMushafReaderSession();
+        if (saved) {
+          const restoredParams = mushafSnapshotToQueryParams(saved);
+          if (Object.keys(restoredParams).length > 0) {
+            void this.router.navigate([], {
+              relativeTo: route,
+              queryParams: restoredParams,
+              replaceUrl: true,
+            });
+            return;
+          }
+        }
+      }
+
       const snapshot = parseMushafUrlParams(params);
       this.hydrateFromUrl(snapshot);
+      saveMushafReaderSession(snapshot);
 
       const corrections = buildUrlEnumCorrections(params, snapshot);
       if (Object.keys(corrections).length > 0) {

@@ -26,20 +26,27 @@
     justify-content: space-between;
     gap: var(--qd-space-2);
     width: 100%;
-    padding: var(--qd-space-2) var(--qd-space-3);
-    border: 1px solid var(--qd-border);
-    border-radius: var(--qd-radius-sm);
-    background: var(--qd-surface);
+    min-height: 2.75rem;
+    padding: var(--qd-space-2) var(--qd-space-4);
+    border: 1px solid color-mix(in oklch, var(--qd-border) 80%, var(--qd-accent));
+    border-radius: var(--qd-radius-md);
+    background: var(--qd-surface-elevated);
     color: var(--qd-text);
     font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
     font-size: 0.9375rem;
+    font-weight: 600;
     line-height: 1.5;
     text-align: start;
     cursor: pointer;
     transition: background-color 0.15s ease, border-color 0.15s ease;
 
     &:hover {
-      background: var(--qd-surface-elevated);
+      background: color-mix(in oklch, var(--qd-surface-elevated) 85%, var(--qd-surface));
+    }
+
+    &[aria-expanded='true'] {
+      border-color: color-mix(in oklch, var(--qd-accent) 40%, var(--qd-border));
+      box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--qd-accent) 15%, transparent);
     }
 
     &:focus-visible {
@@ -62,8 +69,15 @@
   }
 
   &__trigger-chevron {
+    display: inline-flex;
     flex-shrink: 0;
-    color: var(--qd-text-muted);
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: var(--qd-radius-sm);
+    background: color-mix(in oklch, var(--qd-accent) 10%, var(--qd-surface));
+    color: var(--qd-accent);
     font-size: 0.75rem;
   }
 
@@ -76,11 +90,11 @@
     flex-direction: column;
     gap: var(--qd-space-2);
     max-height: min(18rem, 50vh);
-    padding: var(--qd-space-2);
+    padding: var(--qd-space-3);
     border: 1px solid var(--qd-border);
-    border-radius: var(--qd-radius-sm);
+    border-radius: var(--qd-radius-md);
     background: var(--qd-surface);
-    box-shadow: 0 4px 16px oklch(0 0 0 / 0.08);
+    box-shadow: var(--qd-floating-shadow);
     overflow: hidden;
   }
 
@@ -141,7 +155,7 @@
     justify-content: space-between;
     gap: var(--qd-space-2);
     width: 100%;
-    padding: var(--qd-space-2) var(--qd-space-3);
+    padding: calc(var(--qd-space-2) + 2px) var(--qd-space-3);
     border: 1px solid transparent;
     border-radius: var(--qd-radius-sm);
     background: transparent;

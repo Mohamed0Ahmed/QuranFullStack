@@ -78,15 +78,23 @@
   }
 
   &__identity {
-    display: grid;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
     gap: var(--qd-space-2);
     margin: 0;
   }
 
   &__identity-row {
-    display: grid;
-    grid-template-columns: 8rem 1fr;
-    gap: var(--qd-space-2);
+    display: flex;
+    flex: 1 1 12rem;
+    flex-direction: column;
+    gap: var(--qd-space-1);
+    min-width: 0;
+    padding: var(--qd-space-2);
+    border: 1px solid var(--qd-border);
+    border-radius: var(--qd-radius-sm);
+    background: var(--qd-surface-elevated);
     font-size: 0.875rem;
   }
 

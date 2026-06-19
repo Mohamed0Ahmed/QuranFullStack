@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
 import { BehaviorSubject, of } from 'rxjs';
@@ -7,8 +7,10 @@ import { MushafAyahStudyApi } from '../data-access/mushaf-ayah-study.api';
 import { MushafPagesApi } from '../data-access/mushaf-pages.api';
 import { MushafSurahCatalogApi } from '../data-access/mushaf-surah-catalog.api';
 import { MushafWordAnalysisApi } from '../data-access/mushaf-word-analysis.api';
-import { AyahStudyDto, WordAnalysisDto } from '../models/mushaf.models';
+import { AyahStudyDto, WordAnalysisDto, DEFAULT_MUSHAF_READER_STATE } from '../models/mushaf.models';
 import { MushafReaderFacade } from './mushaf-reader.facade';
+import { saveMushafReaderSession } from './mushaf-reader-session';
+import { MushafUrlSnapshot } from './mushaf-url-sync';
 import { mushafStudySourceCatalogApiProvider } from './mushaf-study-source-catalog.api.mock';
 
 const pageDto = {
@@ -89,9 +91,25 @@ const wordAnalysisDto: WordAnalysisDto = {
   renderedWordSegments: [],
 };
 
+const savedSessionSnapshot: MushafUrlSnapshot = {
+  pageNumber: 12,
+  ayah: '2:25',
+  word: '2:25:3',
+  segment: '2:25:3:1',
+  panel: 'word',
+  ayahTab: 'translation',
+  wordTab: 'morphology',
+  sources: {
+    tafsirSource: 'ar-muyassar',
+    translationSource: 'en-sahih-international',
+    fullI3rabSource: 'muyassar',
+  },
+};
+
 function createFacadeTestBed(queryParams: Record<string, string>) {
   const queryParamMap$ = new BehaviorSubject(convertToParamMap(queryParams));
   const navigate = vi.fn().mockResolvedValue(true);
+  const getPage = vi.fn(() => of({ isSuccess: true, message: 'ok', data: pageDto }));
   const getAyahStudy = vi.fn(() => of({ isSuccess: true, message: 'ok', data: ayahStudyDto }));
 
   TestBed.configureTestingModule({
@@ -104,7 +122,7 @@ function createFacadeTestBed(queryParams: Record<string, string>) {
       { provide: Router, useValue: { navigate } },
       {
         provide: MushafPagesApi,
-        useValue: { getPage: vi.fn(() => of({ isSuccess: true, message: 'ok', data: pageDto })) },
+        useValue: { getPage },
       },
       {
         provide: MushafAyahStudyApi,
@@ -127,10 +145,19 @@ function createFacadeTestBed(queryParams: Record<string, string>) {
     navigate,
     queryParamMap$,
     getAyahStudy,
+    getPage,
   };
 }
 
 describe('MushafReaderFacade URL sync', () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+  });
+
+  afterEach(() => {
+    sessionStorage.clear();
+  });
+
   it('hydrates page, ayah, word, tabs, sources, and panel from a deep link', () => {
     const { facade, route } = createFacadeTestBed({
       page: '5',
@@ -286,5 +313,132 @@ describe('MushafReaderFacade URL sync', () => {
       translationSource: null,
       fullI3rabSource: null,
     });
+  });
+
+  it('restores a saved session when returning to a bare mushaf route', () => {
+    saveMushafReaderSession(savedSessionSnapshot);
+    const { facade, route, navigate } = createFacadeTestBed({});
+
+    facade.bindToRoute(route);
+
+    expect(navigate).toHaveBeenCalledWith(
+      [],
+      expect.objectContaining({
+        queryParams: {
+          page: 12,
+          ayah: '2:25',
+          word: '2:25:3',
+          segment: '2:25:3:1',
+          panel: 'word',
+          ayahTab: 'translation',
+          wordTab: 'morphology',
+          tafsirSource: 'ar-muyassar',
+          translationSource: 'en-sahih-international',
+          fullI3rabSource: 'muyassar',
+        },
+        replaceUrl: true,
+      }),
+    );
+    expect(facade.pageNumber()).toBe(1);
+    expect(facade.selectedWordLocation()).toBeNull();
+  });
+
+  it('hydrates from the restored URL after a bare entry session redirect', () => {
+    saveMushafReaderSession(savedSessionSnapshot);
+    const { facade, route, navigate, queryParamMap$ } = createFacadeTestBed({});
+
+    facade.bindToRoute(route);
+    queryParamMap$.next(
+      convertToParamMap({
+        page: '12',
+        ayah: '2:25',
+        word: '2:25:3',
+        segment: '2:25:3:1',
+        panel: 'word',
+        ayahTab: 'translation',
+        wordTab: 'morphology',
+        tafsirSource: 'ar-muyassar',
+        translationSource: 'en-sahih-international',
+        fullI3rabSource: 'muyassar',
+      }),
+    );
+
+    expect(navigate).toHaveBeenCalledTimes(1);
+    expect(facade.pageNumber()).toBe(12);
+    expect(facade.selectedAyahKey()).toBe('2:25');
+    expect(facade.selectedWordLocation()).toBe('2:25:3');
+    expect(facade.panel()).toBe('word');
+  });
+
+  it('defaults to page 1 on a bare entry when no saved session exists', () => {
+    const { facade, route, navigate } = createFacadeTestBed({});
+
+    facade.bindToRoute(route);
+
+    expect(navigate).not.toHaveBeenCalled();
+    expect(facade.pageNumber()).toBe(1);
+    expect(facade.selectedAyahKey()).toBeNull();
+    expect(facade.selectedWordLocation()).toBeNull();
+  });
+
+  it('hydrates page 1 on bare entry when the saved session has only defaults', () => {
+    saveMushafReaderSession({
+      pageNumber: DEFAULT_MUSHAF_READER_STATE.pageNumber,
+      ayah: null,
+      word: null,
+      segment: null,
+      panel: DEFAULT_MUSHAF_READER_STATE.panel,
+      ayahTab: DEFAULT_MUSHAF_READER_STATE.ayahTab,
+      wordTab: DEFAULT_MUSHAF_READER_STATE.wordTab,
+      sources: {
+        tafsirSource: null,
+        translationSource: null,
+        fullI3rabSource: null,
+      },
+    });
+    const { facade, route, navigate, getPage } = createFacadeTestBed({});
+
+    facade.bindToRoute(route);
+
+    expect(navigate).not.toHaveBeenCalled();
+    expect(facade.pageNumber()).toBe(1);
+    expect(getPage).toHaveBeenCalledWith(1);
+    expect(facade.selectedAyahKey()).toBeNull();
+    expect(facade.selectedWordLocation()).toBeNull();
+  });
+
+  it('prefers explicit deep-link params over a saved session', () => {
+    saveMushafReaderSession(savedSessionSnapshot);
+    const { facade, route, navigate } = createFacadeTestBed({
+      page: '5',
+      word: '2:25:4',
+      panel: 'word',
+    });
+
+    facade.bindToRoute(route);
+
+    expect(navigate).not.toHaveBeenCalled();
+    expect(facade.pageNumber()).toBe(5);
+    expect(facade.selectedWordLocation()).toBe('2:25:4');
+  });
+
+  it('persists the hydrated reader snapshot to sessionStorage', () => {
+    const { facade, route } = createFacadeTestBed({
+      page: '5',
+      ayah: '2:25',
+      word: '2:25:3',
+      panel: 'word',
+    });
+
+    facade.bindToRoute(route);
+
+    expect(JSON.parse(sessionStorage.getItem('qd-mushaf-reader-session') ?? '{}')).toEqual(
+      expect.objectContaining({
+        pageNumber: 5,
+        ayah: '2:25',
+        word: '2:25:3',
+        panel: 'word',
+      }),
+    );
   });
 });

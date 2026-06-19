@@ -51,3 +51,6 @@ localhost-key.pem
 # System files
 .DS_Store
 Thumbs.db
+
+# Impeccable live mode (local config, server runtime, session journals)
+.impeccable/
