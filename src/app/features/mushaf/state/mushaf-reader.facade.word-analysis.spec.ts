@@ -11,6 +11,7 @@ import { MushafWordComponent } from '../components/mushaf-word/mushaf-word.compo
 import { SelectedWordSectionComponent } from '../components/selected-word-section/selected-word-section.component';
 import { WordAnalysisDto } from '../models/mushaf.models';
 import { MushafReaderFacade } from './mushaf-reader.facade';
+import { mushafStudySourceCatalogApiProvider } from './mushaf-study-source-catalog.api.mock';
 import { segmentSlotToColor } from './segment-color-palette';
 
 /** Source-safe synthetic placeholders — not Quranic text. */
@@ -173,6 +174,7 @@ describe('MushafReaderFacade.loadWordAnalysis', () => {
         { provide: MushafAyahStudyApi, useValue: { getAyahStudy: vi.fn() } },
         { provide: MushafSurahCatalogApi, useValue: { getCatalog: vi.fn() } },
         { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis } },
+        mushafStudySourceCatalogApiProvider,
       ],
     });
 
@@ -196,6 +198,7 @@ describe('MushafReaderFacade.loadWordAnalysis', () => {
         { provide: MushafAyahStudyApi, useValue: { getAyahStudy: vi.fn() } },
         { provide: MushafSurahCatalogApi, useValue: { getCatalog: vi.fn() } },
         { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis } },
+        mushafStudySourceCatalogApiProvider,
       ],
     });
 
@@ -247,11 +250,13 @@ describe('SelectedWordSectionComponent', () => {
       '[data-testid="word-morphology-summary"]',
     ) as HTMLElement;
     expect(morphologySummary.textContent).toContain('فعل');
-    expect(morphologySummary.textContent).toContain('ماضٍ');
-    expect(morphologySummary.textContent).toContain('معلوم');
+    expect(morphologySummary.textContent).toContain('نوع الكلمة');
+    expect(morphologySummary.textContent).toContain('الأصل الصرفي');
     expect(morphologySummary.textContent).not.toContain('Verb');
     expect(morphologySummary.textContent).not.toContain('past');
     expect(morphologySummary.textContent).not.toContain('active');
+    expect(morphologySummary.textContent).not.toContain('ماضٍ');
+    expect(morphologySummary.textContent).not.toContain('معلوم');
 
     const segmentRows = fixture.nativeElement.querySelector(
       '[data-testid="segment-data-rows"]',

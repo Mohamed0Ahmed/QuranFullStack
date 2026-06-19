@@ -8,6 +8,7 @@ import { MushafPagesApi } from '../data-access/mushaf-pages.api';
 import { MushafSurahCatalogApi } from '../data-access/mushaf-surah-catalog.api';
 import { MushafWordAnalysisApi } from '../data-access/mushaf-word-analysis.api';
 import { MushafReaderFacade } from './mushaf-reader.facade';
+import { mushafStudySourceCatalogApiProvider } from './mushaf-study-source-catalog.api.mock';
 
 const pageDto = {
   pageNumber: 1,
@@ -31,6 +32,7 @@ describe('MushafReaderFacade.loadPage', () => {
         { provide: MushafAyahStudyApi, useValue: { getAyahStudy: vi.fn() } },
         { provide: MushafSurahCatalogApi, useValue: { getCatalog: vi.fn() } },
         { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis: vi.fn() } },
+        mushafStudySourceCatalogApiProvider,
       ],
     });
 
@@ -52,6 +54,7 @@ describe('MushafReaderFacade.loadPage', () => {
         { provide: MushafAyahStudyApi, useValue: { getAyahStudy: vi.fn() } },
         { provide: MushafSurahCatalogApi, useValue: { getCatalog: vi.fn() } },
         { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis: vi.fn() } },
+        mushafStudySourceCatalogApiProvider,
       ],
     });
 
@@ -81,6 +84,7 @@ describe('MushafReaderFacade.loadPage', () => {
         { provide: MushafAyahStudyApi, useValue: { getAyahStudy: vi.fn() } },
         { provide: MushafSurahCatalogApi, useValue: { getCatalog: vi.fn() } },
         { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis: vi.fn() } },
+        mushafStudySourceCatalogApiProvider,
       ],
     });
 
@@ -112,6 +116,7 @@ describe('MushafReaderFacade surah jump', () => {
         { provide: MushafAyahStudyApi, useValue: { getAyahStudy: vi.fn() } },
         { provide: MushafSurahCatalogApi, useValue: { getCatalog } },
         { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis: vi.fn() } },
+        mushafStudySourceCatalogApiProvider,
       ],
     });
 

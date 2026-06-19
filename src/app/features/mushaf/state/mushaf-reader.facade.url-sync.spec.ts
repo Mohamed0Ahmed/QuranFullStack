@@ -9,6 +9,7 @@ import { MushafSurahCatalogApi } from '../data-access/mushaf-surah-catalog.api';
 import { MushafWordAnalysisApi } from '../data-access/mushaf-word-analysis.api';
 import { AyahStudyDto, WordAnalysisDto } from '../models/mushaf.models';
 import { MushafReaderFacade } from './mushaf-reader.facade';
+import { mushafStudySourceCatalogApiProvider } from './mushaf-study-source-catalog.api.mock';
 
 const pageDto = {
   pageNumber: 5,
@@ -116,6 +117,7 @@ function createFacadeTestBed(queryParams: Record<string, string>) {
         },
       },
       { provide: MushafSurahCatalogApi, useValue: { getCatalog: vi.fn() } },
+      mushafStudySourceCatalogApiProvider,
     ],
   });
 

@@ -8,6 +8,7 @@ import { MushafSurahCatalogApi } from '../data-access/mushaf-surah-catalog.api';
 import { MushafWordAnalysisApi } from '../data-access/mushaf-word-analysis.api';
 import { AyahStudyDto } from '../models/mushaf.models';
 import { MushafReaderFacade } from './mushaf-reader.facade';
+import { mushafStudySourceCatalogApiProvider } from './mushaf-study-source-catalog.api.mock';
 import { SelectedAyahSectionComponent } from '../components/selected-ayah-section/selected-ayah-section.component';
 
 const pageDto = {
@@ -90,6 +91,7 @@ describe('MushafReaderFacade.loadPage', () => {
         { provide: MushafAyahStudyApi, useValue: { getAyahStudy: vi.fn() } },
         { provide: MushafSurahCatalogApi, useValue: { getCatalog: vi.fn() } },
         { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis: vi.fn() } },
+        mushafStudySourceCatalogApiProvider,
       ],
     });
 
@@ -116,6 +118,7 @@ describe('MushafReaderFacade.loadAyahStudy', () => {
         { provide: MushafAyahStudyApi, useValue: { getAyahStudy } },
         { provide: MushafSurahCatalogApi, useValue: { getCatalog: vi.fn() } },
         { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis: vi.fn() } },
+        mushafStudySourceCatalogApiProvider,
       ],
     });
 
@@ -140,6 +143,7 @@ describe('MushafReaderFacade.applyUrlState', () => {
         { provide: MushafAyahStudyApi, useValue: { getAyahStudy } },
         { provide: MushafSurahCatalogApi, useValue: { getCatalog: vi.fn() } },
         { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis: vi.fn() } },
+        mushafStudySourceCatalogApiProvider,
       ],
     });
 
@@ -187,6 +191,7 @@ describe('MushafReaderFacade.applyUrlState', () => {
         { provide: MushafAyahStudyApi, useValue: { getAyahStudy } },
         { provide: MushafSurahCatalogApi, useValue: { getCatalog: vi.fn() } },
         { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis: vi.fn() } },
+        mushafStudySourceCatalogApiProvider,
       ],
     });
 
