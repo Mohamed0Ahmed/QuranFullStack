@@ -6,16 +6,26 @@
   overflow: visible;
 
   &__row {
+    --segment-accent: var(--qd-border);
+
     flex: 1 1 7.8rem;
     min-width: 0;
+    min-height: var(--qd-segment-card-min-height);
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: calc(var(--qd-space-1) * 0.79);
     padding: calc(var(--qd-space-1) * 1.65);
-    border: 1px solid var(--qd-border);
+    border: 1px solid color-mix(in oklch, var(--segment-accent) 35%, var(--qd-border));
     border-inline-start-width: 3px;
+    border-inline-start-color: var(--segment-accent);
     border-radius: var(--qd-radius-sm);
-    background: var(--qd-section-bg);
+    background: linear-gradient(
+      135deg,
+      color-mix(in oklch, var(--segment-accent) 32%, var(--qd-section-bg)) 0%,
+      color-mix(in oklch, var(--segment-accent) 22%, var(--qd-section-bg)) 50%,
+      color-mix(in oklch, var(--segment-accent) 28%, var(--qd-section-bg)) 100%
+    );
+    box-shadow: var(--qd-shadow-sm);
   }
 
   &__header {

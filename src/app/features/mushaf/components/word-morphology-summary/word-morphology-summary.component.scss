@@ -9,13 +9,16 @@
     display: flex;
     flex: 1 1 0;
     flex-direction: column;
+    align-items: center;
     gap: calc(var(--qd-space-1) * 0.82);
     min-width: 7.4rem;
     padding: calc(var(--qd-space-2) + 0.45 * var(--qd-space-1));
     border: 1px solid var(--qd-border);
     border-radius: var(--qd-radius-sm);
-    background: var(--qd-section-bg);
+    background: color-mix(in oklch, var(--qd-primary) 4%, var(--qd-surface));
     font-size: 0.875rem;
+    text-align: center;
+    box-shadow: var(--qd-shadow-sm);
   }
 
   dt {
@@ -24,6 +27,7 @@
     font-size: 0.75rem;
     font-weight: 500;
     letter-spacing: 0.01em;
+    width: 100%;
   }
 
   dd {
@@ -32,5 +36,6 @@
     font-size: 0.8975rem;
     font-weight: 600;
     line-height: 1.45;
+    width: 100%;
   }
 }

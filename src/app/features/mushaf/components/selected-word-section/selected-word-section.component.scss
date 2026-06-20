@@ -92,11 +92,12 @@
   }
 
   &__segment-skeleton {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
     flex: 1 1 7.8rem;
-    flex-direction: column;
     gap: calc(var(--qd-space-1) * 0.79);
     min-width: 0;
+    min-height: var(--qd-segment-card-min-height);
     padding: calc(var(--qd-space-1) * 1.65);
     border: 1px solid var(--qd-border);
     border-inline-start-width: 3px;
@@ -108,17 +109,22 @@
   // not come up shorter than the loaded card (UI-001 parity). The meta/i3rab
   // lines are centered like their real counterparts.
   &__segment-skeleton-form {
+    order: 1;
     height: 1.37rem;
   }
 
   &__segment-skeleton-meta {
+    order: 2;
     height: 0.9rem;
-    align-self: center;
+    justify-self: center;
+    width: 50%;
   }
 
   &__segment-skeleton-i3rab {
+    order: 3;
     height: 0.85rem;
-    align-self: center;
+    justify-self: center;
+    width: 75%;
   }
 
   // Morphology label cards: static labels stay; only the value shimmers.
@@ -136,12 +142,14 @@
     display: flex;
     flex: 1 1 0;
     flex-direction: column;
+    align-items: center;
     gap: calc(var(--qd-space-1) * 0.82);
     min-width: 7.4rem;
     padding: calc(var(--qd-space-2) + 0.45 * var(--qd-space-1));
     border: 1px solid var(--qd-border);
     border-radius: var(--qd-radius-sm);
-    background: var(--qd-section-bg);
+    background: color-mix(in oklch, var(--qd-primary) 4%, var(--qd-surface));
+    text-align: center;
 
     dt {
       margin: 0;
@@ -149,15 +157,18 @@
       font-size: 0.75rem;
       font-weight: 500;
       letter-spacing: 0.01em;
+      width: 100%;
     }
 
     dd {
       display: flex;
       align-items: center;
+      justify-content: center;
       margin: 0;
       // Reserve the real value line box (font 0.8975rem × line-height 1.45 ≈
       // 1.3rem) so the loading card does not shrink versus the loaded card.
       min-height: 1.3rem;
+      width: 100%;
     }
   }
 
@@ -185,6 +196,7 @@
     display: flex;
     flex: 1 1 12rem;
     flex-direction: column;
+    align-items: center;
     gap: var(--qd-space-1);
     min-width: 0;
     padding: var(--qd-space-2);
@@ -192,17 +204,21 @@
     border-radius: var(--qd-radius-sm);
     background: var(--qd-section-bg);
     font-size: 0.875rem;
+    text-align: center;
+    box-shadow: var(--qd-shadow-sm);
   }
 
   &__identity-row dt {
     margin: 0;
     color: var(--qd-text-muted);
     font-weight: 500;
+    width: 100%;
   }
 
   &__identity-row dd {
     margin: 0;
     color: var(--qd-text);
+    width: 100%;
   }
 
   // While loading, reserve the real value line box inside each identity card so
@@ -211,6 +227,7 @@
   &__identity--loading &__identity-row dd {
     display: flex;
     align-items: center;
+    justify-content: center;
     min-height: 1.3rem;
   }
 }

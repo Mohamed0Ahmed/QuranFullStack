@@ -2,7 +2,7 @@
   @for (segment of segments(); track segment.segmentLocation) {
     <div
       class="segment-data-rows__row"
-      [style.borderInlineStartColor]="segment.color"
+      [style.--segment-accent]="segment.color"
       [attr.data-segment-slot]="segment.segmentColorSlot"
     >
       <div class="segment-data-rows__form">

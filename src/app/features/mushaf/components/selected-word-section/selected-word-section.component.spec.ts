@@ -281,4 +281,35 @@ describe('SelectedWordSectionComponent — stable loading (UI-001)', () => {
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('.qd-empty-state')?.textContent).toContain('تعذّر');
   });
+
+  it('applies segment accent tint on loaded rows and matches skeleton min-height', () => {
+    const loadingFixture = TestBed.createComponent(SelectedWordSectionComponent);
+    setInputs(loadingFixture, {
+      analysis: null,
+      loadState: { isLoading: true, isEmpty: false, errorMessage: null },
+      selectedWordLocation: '2:25:3',
+    });
+
+    const skeleton = loadingFixture.nativeElement.querySelector(
+      '.selected-word-section__segment-skeleton',
+    ) as HTMLElement;
+    const skeletonMinHeight = getComputedStyle(skeleton).minHeight;
+
+    const loadedFixture = TestBed.createComponent(SelectedWordSectionComponent);
+    setInputs(loadedFixture, {
+      analysis: buildWordAnalysisViewModel(),
+      loadState: IDLE,
+      selectedWordLocation: '2:25:3',
+    });
+
+    const row = loadedFixture.nativeElement.querySelector(
+      '.segment-data-rows__row',
+    ) as HTMLElement;
+
+    expect(skeletonMinHeight).not.toBe('0px');
+    expect(getComputedStyle(row).minHeight).toBe(skeletonMinHeight);
+    expect(row.style.getPropertyValue('--segment-accent')).toBe(segmentSlotToColor(1));
+    expect(getComputedStyle(row).display).toBe('grid');
+    expect(getComputedStyle(skeleton).display).toBe('grid');
+  });
 });

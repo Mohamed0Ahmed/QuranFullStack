@@ -291,7 +291,7 @@ describe('SelectedWordSectionComponent', () => {
     const row1Marker = row1.querySelector('.segment-data-rows__number') as HTMLElement;
     const row1I3rab = row1.querySelector('[data-testid="segment-i3rab-label"]') as HTMLElement;
 
-    expect(normalizeCssColor(row1.style.borderInlineStartColor)).toBe(expectedSlot1);
+    expect(normalizeCssColor(row1.style.getPropertyValue('--segment-accent'))).toBe(expectedSlot1);
     expect(row1Marker.style.color).toBe(expectedSlot1);
     expect(row1I3rab.style.color).toBe(expectedSlot1);
     expect(row1I3rab.textContent).toContain(I3RAB_PLACEHOLDER);
