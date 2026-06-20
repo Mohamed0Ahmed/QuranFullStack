@@ -7,14 +7,29 @@
 }
 
 /* Interactive lift — add this class to clickable cards */
-.qd-card--hover {
+.qd-card--hover,
+.qd-interactive-surface {
+  cursor: pointer;
   transition: border-color var(--qd-t-fast), box-shadow var(--qd-t-fast),
               transform var(--qd-t-fast);
 }
-.qd-card--hover:hover {
+.qd-card--hover:hover,
+.qd-interactive-surface:hover {
   border-color: var(--qd-border-strong);
   box-shadow: var(--qd-shadow);
   transform: translateY(-2px);
+}
+
+.qd-interactive-surface:focus-visible {
+  outline: 2px solid var(--qd-focus-ring);
+  outline-offset: 2px;
+}
+
+button.qd-interactive-surface {
+  appearance: none;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
 }
 
 /* Quiet/recessed card: no shadow, warm tone */
@@ -255,11 +270,13 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .qd-card--hover {
+  .qd-card--hover,
+  .qd-interactive-surface {
     transition: border-color var(--qd-t-fast), box-shadow var(--qd-t-fast);
   }
   .qd-card--hover:hover,
-  .qd-card--mini.qd-card--hover:hover { transform: none; }
+  .qd-card--mini.qd-card--hover:hover,
+  .qd-interactive-surface:hover { transform: none; }
 
   .qd-btn {
     transition: background-color var(--qd-t-fast), border-color var(--qd-t-fast),

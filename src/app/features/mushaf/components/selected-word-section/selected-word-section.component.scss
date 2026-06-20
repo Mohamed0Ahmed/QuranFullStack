@@ -208,14 +208,14 @@
     box-shadow: var(--qd-shadow-sm);
   }
 
-  &__identity-row dt {
+  &__identity-label {
     margin: 0;
     color: var(--qd-text-muted);
     font-weight: 500;
     width: 100%;
   }
 
-  &__identity-row dd {
+  &__identity-value {
     margin: 0;
     color: var(--qd-text);
     width: 100%;

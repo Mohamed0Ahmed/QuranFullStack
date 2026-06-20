@@ -99,22 +99,22 @@
         </section>
 
         <section class="selected-word-section__section" aria-label="تكرار الكلمة">
-          <dl class="selected-word-section__identity" data-testid="word-identity-summary">
-            <div class="selected-word-section__identity-row">
-              <dt>التكرار (بالتشكيل)</dt>
-              <dd>
+          <div class="selected-word-section__identity" data-testid="word-identity-summary" role="group" aria-label="تكرار الكلمة">
+            <button type="button" class="selected-word-section__identity-row qd-interactive-surface">
+              <span class="selected-word-section__identity-label">التكرار (بالتشكيل)</span>
+              <span class="selected-word-section__identity-value">
                 {{ analysis()!.identity.orderedTashkeel.occurrencesCount }} مرة في
                 {{ analysis()!.identity.orderedTashkeel.surahsCount }} سورة
-              </dd>
-            </div>
-            <div class="selected-word-section__identity-row">
-              <dt>التكرار (مبسّط)</dt>
-              <dd>
+              </span>
+            </button>
+            <button type="button" class="selected-word-section__identity-row qd-interactive-surface">
+              <span class="selected-word-section__identity-label">التكرار (مبسّط)</span>
+              <span class="selected-word-section__identity-value">
                 {{ analysis()!.identity.orderedSimple.occurrencesCount }} مرة في
                 {{ analysis()!.identity.orderedSimple.surahsCount }} سورة
-              </dd>
-            </div>
-          </dl>
+              </span>
+            </button>
+          </div>
         </section>
       }
     </div>

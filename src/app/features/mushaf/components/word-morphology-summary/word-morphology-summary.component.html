@@ -1,18 +1,18 @@
-<dl class="word-morphology-summary" data-testid="word-morphology-summary">
-  <div class="word-morphology-summary__column">
-    <dt>نوع الكلمة</dt>
-    <dd>{{ morphologyTextOrDash(morphology().headPosLabel.ar) }}</dd>
-  </div>
-  <div class="word-morphology-summary__column">
-    <dt>الجذر</dt>
-    <dd>{{ morphologyTextOrDash(morphology().root?.text) }}</dd>
-  </div>
-  <div class="word-morphology-summary__column">
-    <dt>الصيغة المعجمية</dt>
-    <dd>{{ morphologyTextOrDash(morphology().lemma?.text) }}</dd>
-  </div>
-  <div class="word-morphology-summary__column">
-    <dt>الأصل الصرفي</dt>
-    <dd>{{ morphologyTextOrDash(morphology().stem?.text) }}</dd>
-  </div>
-</dl>
+<div class="word-morphology-summary" data-testid="word-morphology-summary" role="group" aria-label="ملخص الصرف">
+  <button type="button" class="word-morphology-summary__column qd-interactive-surface">
+    <span class="word-morphology-summary__label">نوع الكلمة</span>
+    <span class="word-morphology-summary__value">{{ morphologyTextOrDash(morphology().headPosLabel.ar) }}</span>
+  </button>
+  <button type="button" class="word-morphology-summary__column qd-interactive-surface">
+    <span class="word-morphology-summary__label">الجذر</span>
+    <span class="word-morphology-summary__value">{{ morphologyTextOrDash(morphology().root?.text) }}</span>
+  </button>
+  <button type="button" class="word-morphology-summary__column qd-interactive-surface">
+    <span class="word-morphology-summary__label">الصيغة المعجمية</span>
+    <span class="word-morphology-summary__value">{{ morphologyTextOrDash(morphology().lemma?.text) }}</span>
+  </button>
+  <button type="button" class="word-morphology-summary__column qd-interactive-surface">
+    <span class="word-morphology-summary__label">الأصل الصرفي</span>
+    <span class="word-morphology-summary__value">{{ morphologyTextOrDash(morphology().stem?.text) }}</span>
+  </button>
+</div>
