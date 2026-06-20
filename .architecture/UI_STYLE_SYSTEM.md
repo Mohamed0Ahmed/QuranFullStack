@@ -36,8 +36,16 @@ organization, theming, RTL). The **visual decisions** it serves — the actual
 palette, fonts, and "Quiet Scriptorium" character — are owned by the product and
 design context. Read those first and treat them as the source of truth:
 
-- `../../PRODUCT.md` — register, users, principles, anti-references
-- `../../DESIGN.md` — visual system (parchment & ink, typography, elevation, rules)
+- `../../PRODUCT.md` — register, users, principles, anti-references, Visual Identity
+- `../../DESIGN.md` — visual system (navy + gold + parchment, typography, elevation,
+  motion, rules)
+
+The official visual identity is the **Real Pages prototype**, adopted **with
+adaptation**: **navy + gold + parchment**, a soft surface + shadow ladder, light
+navbar, dark navy footer, subtle card hover motion. The app stays **light + dark**
+(prototype *ivory* → light, *midnight* → dark; *sage* not adopted). Section 15 below
+defines the prototype-derived implementation contract; the extraction reference is
+`../report/ui/real-pages-visual-system-extraction-report.md`.
 
 When this file and `DESIGN.md` describe the same thing, `DESIGN.md` wins on the
 visual choice; this file governs how that choice is implemented and reused.
@@ -113,20 +121,27 @@ Rules:
 
 Use **CSS variables** as the base source of truth for themeable values.
 
-Required token categories:
+Required token categories (the navy + gold + parchment role set; see Section 15B for
+the authoritative role list and reference values):
 
-- background
-- surface
-- elevated surface
+- page / app background
+- section / quiet background
+- card background
+- nested / recessed background
 - text
 - muted text
 - border
-- primary / accent
+- border-strong
+- primary (navy structural) / primary foreground
+- accent (gold) / accent-hover / accent-soft / accent-tint
+- footer: footer-bg / footer-bg-2 / footer-text / footer-muted / footer-accent /
+  footer-border
 - danger
 - warning
 - success
 - focus ring
-- shadow / elevation
+- shadow / elevation ladder (resting `sm`, hover, floating `lg`)
+- motion durations (fast ~140ms, base ~220ms)
 - radius
 - spacing scale
 
@@ -157,14 +172,20 @@ resolved in `DESIGN.md`):
 Rules:
 
 - Components **must** use CSS variables or shared classes.
-- Avoid hardcoded colors in component SCSS.
-- Avoid one-off shadows, borders, and radii unless justified.
-- Do **not** use pure black or pure white as the default dashboard visual language
-  unless a specific accessibility need requires it. Per `DESIGN.md`, neutrals are
-  tinted warm (the Warm Neutral Rule); depth comes from tonal layering and
-  hairline borders, not shadows (the Flat-By-Default Rule).
-- The accent token is used sparingly — for primary action, current selection, and
-  review/publish state only (the One Voice Rule), never as decoration.
+- Avoid hardcoded colors in component SCSS; re-author adopted prototype values as
+  OKLCH `--qd-*` tokens (never paste prototype hex/inline styles).
+- Use the shared **elevation ladder** and **motion duration** tokens; avoid one-off
+  shadows, borders, radii, and transition timings unless justified.
+- The page **canvas** stays warm parchment (tinted, never pure white); pure `#000`
+  is not used. Per the revised Warm Neutral Rule in `DESIGN.md`, **near-white/white
+  elevated cards are allowed** when paired with the parchment background, a border,
+  and a soft shadow. Depth comes from the **surface ladder + hairline borders +
+  controlled soft shadows together** (the Soft-Elevation Rule) — controlled soft
+  shadows are required for elevation, not banned.
+- The **gold accent** token is used sparingly — active state, links, icon
+  highlights, section eyebrows, and review/publish state (the One Voice Rule), never
+  as decoration. **Navy** is the structural/primary color (primary buttons, brand,
+  footer) and may appear more, but still calmly.
 
 ## 5. Light / Dark Themes
 
@@ -331,3 +352,143 @@ Any future style system change should report:
 - light / dark impact
 - RTL impact
 - build status
+
+## 15. Prototype-Derived Implementation Contract (Navy + Gold + Parchment)
+
+This section is the **future implementation contract** for adopting the Real Pages
+prototype as the visual source of truth. It is documentation only; nothing here is
+implemented yet. When a phase is actually built, re-author every value below as an
+OKLCH `--qd-*` token in the app's SCSS system — **do not paste prototype CSS, inline
+styles, or hex values into Angular.** Reference values are the prototype's; the
+extraction reference is `../report/ui/real-pages-visual-system-extraction-report.md`.
+
+App themes remain **light + dark** (prototype *ivory* → light, *midnight* → dark;
+*sage* not adopted). Every adopted token **must** be defined for both themes.
+
+### A. Typography
+
+- **UI font:** IBM Plex Sans Arabic for Arabic UI chrome; IBM Plex Sans for Latin UI.
+- **Weights:** use **400 / 500 / 600 / 700** where available. Mid-weights (500/600)
+  carry nav links, card titles, labels, and footer headings — ship them, do not rely
+  on only 400/700.
+- **Quran/Mushaf fonts stay as currently implemented** (Amiri for verse text plus the
+  existing ayah-marker face). **Do not replace or restyle Quran/Mushaf glyph fonts or
+  Quran rendering.** Keep `--qd-font-quran` and related tokens unchanged.
+- Headings use slightly tight tracking; large/section titles may scale fluidly.
+
+### B. Color roles
+
+Document the **roles**, not just raw colors. Reference hex is the prototype's visual
+anchor; implementation converts/adapts each into the app's OKLCH `--qd-*` convention,
+defined for both themes (see `DESIGN.md` §2 for the full light/dark/footer tables).
+
+| Role | Light reference | Suggested token direction |
+|------|-----------------|---------------------------|
+| App / page background | `#FCFAF4` parchment | `--qd-bg` (warm canvas) |
+| Section / quiet background | `#F6EFE5` | `--qd-section-bg` (new) |
+| Card background | near-white (`#FFFFFF`) | `--qd-surface` (elevated card) |
+| Nested / recessed background | `#EFE3D3` | `--qd-surface-recessed` (new) |
+| Border | navy @ ~12% | `--qd-border` |
+| Border-strong | navy @ ~22% | `--qd-border-strong` (new) |
+| Primary (structural) | navy `#12263A` | `--qd-primary` (new) |
+| Primary foreground | `#FCFAF4` | `--qd-primary-fg` (new) |
+| Accent | gold `#C79D43` | `--qd-accent` |
+| Accent-hover | `#B68A30` | `--qd-accent-hover` (new) |
+| Accent-soft | `#E5C98A` | `--qd-accent-soft` (new) |
+| Accent-tint | `#FAF1DD` | `--qd-accent-tint` (new) |
+| Footer bg | `#0F1F33` | `--qd-footer-bg` (new) |
+| Footer bg-2 | `#163149` | `--qd-footer-bg-2` (new) |
+| Footer text | `#E9E4D7` | `--qd-footer-text` (new) |
+| Footer muted | `#8C99B0` | `--qd-footer-muted` (new) |
+| Footer accent | `#D6B56D` | `--qd-footer-accent` (new) |
+| Footer border | `rgba(255,255,255,.08)` | `--qd-footer-border` (new) |
+| Focus ring | gold @ ~22% | `--qd-focus-ring` |
+
+Dark theme reference (adapted midnight): bg `#0D1322`, surface `#141C2E`, surface-2
+`#1B2538`, surface-3 `#232E45`, border `#28324A`, border-strong `#3A476A`, text
+`#E8E9EE`, text-muted `#98A0B5`, accent & primary gold `#D4AF6A`, primary-fg
+`#0D1322`, footer-bg `#080D1A`. Shadows are re-tuned heavier/darker for dark.
+
+### C. Navbar
+
+- Light / near-white background, **clearly distinct from cards/content** (do not
+  reuse the plain card surface as the navbar fill).
+- **Optional** translucency + backdrop blur (e.g. translucent surface +
+  `backdrop-filter`), only if performance is acceptable, with an **opaque fallback**.
+- Subtle **bottom border and/or soft shadow** so it lifts off the page.
+- **Active nav item** = gold accent text on an **accent-tint pill** background.
+- **Hover** = quiet surface (e.g. section/quiet bg) + accent text.
+- **No** heavy colored navbar in light mode.
+
+### D. Footer
+
+- The footer is a **dark navy anchor** (`--qd-footer-bg`), an end-cap to the page.
+- **Warm off-white** body text (`--qd-footer-text`); **muted blue-grey** secondary
+  text (`--qd-footer-muted`).
+- **Gold** section headings and link hover (`--qd-footer-accent`).
+- Subtle **gradient top hairline** (purposeful, low opacity — an allowed exception).
+- Use **dedicated footer tokens** for both themes.
+- During implementation, **fix/avoid undefined footer tokens** such as the current
+  `var(--qd-text-meta)` reference (it is not a defined token today); replace with a
+  real footer-muted token.
+
+### E. Cards and elevation
+
+- **Resting** cards: border + soft shadow (`shadow-sm`).
+- **Hover** cards: stronger border (`border-strong`) + stronger shadow (`shadow`) +
+  small **`translateY(-2px)`** lift.
+- **Mini cards:** smaller lift (~`-1px`), accent-soft hover border.
+- **Feature cards:** may deepen the shadow on hover **without** a large move.
+- **No scale-up** for content cards.
+- Variants to provide: default, hover, **quiet** (recessed surface, no shadow),
+  bordered (no shadow).
+
+### F. Motion
+
+- **Two-token motion contract:**
+  - **fast** hover transition ≈ **140ms ease** (color/border/background, small
+    transforms).
+  - **base** transition ≈ **220ms `cubic-bezier(.2,.7,.3,1)`** (popovers, modals,
+    theme/background transitions).
+- **Subtle only:** card lift ≤ ~2px, floating layers ≤ ~12px translate.
+- **No bounce**, no heavy/showy animation.
+- **Respect `prefers-reduced-motion`** (extend the app's existing handling).
+- Animate `transform` / `opacity` / `box-shadow` / `color` only — never layout
+  properties.
+- **Never animate Quran/Mushaf text, ayah glyphs, or word-segments.**
+
+### G. Buttons / active states
+
+- **Primary button:** structural **navy** (`--qd-primary`) background with
+  `--qd-primary-fg` text; hover toward accent-hover. (Replaces today's hardcoded
+  `.qd-btn-primary` literals.)
+- **Accent (gold):** active states, links, icon highlights, section eyebrows.
+- **Soft button:** accent-tint background + accent text (a tonal secondary action).
+- **Ghost button:** transparent with a (strong) border; hover → quiet surface +
+  accent border/text.
+- **Selected / active states:** accent-tint background + accent border/text; never a
+  heavy saturated fill (keep it calm).
+- **Badges / chips:** a tint distinct from the card surface (not the same fill).
+
+### H. Implementation phasing
+
+Future implementation order (build only when explicitly requested; each phase is
+additive and must keep `--qd-bg` / `--qd-surface` / `--qd-border` / `--qd-accent`
+working during migration):
+
+- **Phase 1 — Navbar + Footer chrome.** Introduce chrome + footer tokens (both
+  themes); light distinct navbar, dark navy footer, active-nav state, fix the
+  undefined footer token.
+- **Phase 2 — Global tokens / light-dark surface hierarchy.** Add the surface ladder,
+  `border-strong`, accent layers, shadow ladder, and motion duration tokens.
+- **Phase 3 — Card hover / elevation system.** Resting `shadow-sm` + hover
+  `translateY(-2px)` + `shadow` + `border-strong`; add quiet/feature/mini variants.
+- **Phase 4 — Buttons / active / selected states.** Tokenize the primary button,
+  add ghost/soft behavior, soft focus ring, accent-tint active/selected, chip
+  contrast.
+- **Phase 5 — Mushaf / study page-specific polish.** Apply the new surfaces and
+  elevation to the reader, ayah/study cards, side panels; keep Quran text and word
+  rendering untouched.
+
+**Implementation note:** do not paste prototype CSS directly into Angular. Re-author
+everything with the app's SCSS partials and OKLCH `--qd-*` tokens.
