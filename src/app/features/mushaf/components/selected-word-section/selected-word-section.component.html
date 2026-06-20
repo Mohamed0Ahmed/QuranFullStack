@@ -20,6 +20,11 @@
 
     <header class="selected-word-section__header">
       @if (loadState().isLoading) {
+        <!--
+          UI-001 refinement: while loading, the header never shows the previous
+          word glyph as current data — it renders a neutral wave/shimmer
+          placeholder of the same height instead, masking the retained word.
+        -->
         <span
           class="qd-skeleton qd-skeleton--rounded-md selected-word-section__word-skeleton"
           aria-hidden="true"
@@ -35,27 +40,55 @@
 
     <div class="selected-word-section__content">
       @if (loadState().isLoading) {
+        <!--
+          Structured, label-preserving loading: the static labels and grid stay
+          visible; only the values under them shimmer. The segment area (whose
+          count is dynamic) shows a small fixed set of segment-card placeholders.
+        -->
         <section class="selected-word-section__section" aria-label="قطع الكلمة والإعراب" aria-busy="true">
-          <div class="qd-skeleton-group selected-word-section__segments-block">
-            <span class="qd-skeleton qd-skeleton--text"></span>
-            <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-75"></span>
-            <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-50"></span>
-            <span class="qd-skeleton qd-skeleton--text"></span>
-            <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-75"></span>
+          <div class="selected-word-section__segments-block">
+            <div class="selected-word-section__segment-skeletons" data-testid="segment-skeletons" aria-hidden="true">
+              @for (placeholder of loadingSegmentPlaceholders; track placeholder) {
+                <div class="selected-word-section__segment-skeleton">
+                  <span class="qd-skeleton qd-skeleton--text selected-word-section__segment-skeleton-form"></span>
+                  <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-50"></span>
+                  <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-75"></span>
+                </div>
+              }
+            </div>
+
+            <dl class="selected-word-section__morphology-skeleton" data-testid="word-morphology-loading">
+              <div class="selected-word-section__morphology-skeleton-cell">
+                <dt>نوع الكلمة</dt>
+                <dd><span class="qd-skeleton qd-skeleton--text qd-skeleton--w-75" aria-hidden="true"></span></dd>
+              </div>
+              <div class="selected-word-section__morphology-skeleton-cell">
+                <dt>الجذر</dt>
+                <dd><span class="qd-skeleton qd-skeleton--text qd-skeleton--w-50" aria-hidden="true"></span></dd>
+              </div>
+              <div class="selected-word-section__morphology-skeleton-cell">
+                <dt>الصيغة المعجمية</dt>
+                <dd><span class="qd-skeleton qd-skeleton--text qd-skeleton--w-75" aria-hidden="true"></span></dd>
+              </div>
+              <div class="selected-word-section__morphology-skeleton-cell">
+                <dt>الأصل الصرفي</dt>
+                <dd><span class="qd-skeleton qd-skeleton--text qd-skeleton--w-50" aria-hidden="true"></span></dd>
+              </div>
+            </dl>
           </div>
         </section>
 
         <section class="selected-word-section__section" aria-label="تكرار الكلمة" aria-busy="true">
-          <div class="selected-word-section__identity">
+          <dl class="selected-word-section__identity selected-word-section__identity--loading" data-testid="word-identity-loading">
             <div class="selected-word-section__identity-row">
-              <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-50"></span>
-              <span class="qd-skeleton qd-skeleton--text"></span>
+              <dt>التكرار (بالتشكيل)</dt>
+              <dd><span class="qd-skeleton qd-skeleton--text qd-skeleton--w-75" aria-hidden="true"></span></dd>
             </div>
             <div class="selected-word-section__identity-row">
-              <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-50"></span>
-              <span class="qd-skeleton qd-skeleton--text"></span>
+              <dt>التكرار (مبسّط)</dt>
+              <dd><span class="qd-skeleton qd-skeleton--text qd-skeleton--w-75" aria-hidden="true"></span></dd>
             </div>
-          </div>
+          </dl>
         </section>
       } @else {
         <section class="selected-word-section__section" aria-label="قطع الكلمة والإعراب">

@@ -20,10 +20,24 @@
 
     <div class="selected-ayah-section__source">
       @if (loadState().isLoading) {
-        <span
-          class="qd-skeleton qd-skeleton--rounded-md selected-ayah-section__source-skeleton"
-          aria-hidden="true"
-        ></span>
+        <!--
+          UI-001 parity: keep the static source label visible (it does not depend
+          on the loaded study) and shimmer only the value, mirroring the
+          source-selector's label + trigger layout instead of one bare block.
+        -->
+        <div class="selected-ayah-section__source-loading" aria-busy="true">
+          <span class="selected-ayah-section__source-loading-label">
+            @switch (activeTab()) {
+              @case ('tafsir') { مصدر التفسير }
+              @case ('translation') { مصدر الترجمة }
+              @case ('full-i3rab') { مصدر الإعراب }
+            }
+          </span>
+          <span
+            class="qd-skeleton qd-skeleton--rounded-md selected-ayah-section__source-skeleton"
+            aria-hidden="true"
+          ></span>
+        </div>
       } @else {
         @switch (activeTab()) {
           @case ('tafsir') {
@@ -87,19 +101,17 @@
       </button>
     </nav>
 
-    @if (loadState().isLoading) {
-      <p class="selected-ayah-section__ayah selected-ayah-section__ayah--skeleton" dir="rtl" aria-hidden="true">
-        <span class="qd-skeleton qd-skeleton--rounded-md selected-ayah-section__ayah-skeleton"></span>
-      </p>
-    } @else if (displayAyahText()) {
-      <p class="selected-ayah-section__ayah" dir="rtl" data-testid="selected-ayah-section-ayah">
-        {{ displayAyahText() }}
-      </p>
-    }
-
     <div class="selected-ayah-section__content" [class.selected-ayah-section__content--loading]="loadState().isLoading">
       @if (loadState().isLoading) {
-        <div class="qd-skeleton-group selected-ayah-section__content-skeleton" aria-busy="true">
+        <!--
+          Structured loading: an ayah-text placeholder line plus several stacked
+          shimmer lines that read as loading tafsir/translation/i‘rab text —
+          not one giant block over the whole area.
+        -->
+        <p class="selected-ayah-section__ayah selected-ayah-section__ayah--skeleton" dir="rtl" aria-hidden="true">
+          <span class="qd-skeleton qd-skeleton--rounded-md selected-ayah-section__ayah-skeleton"></span>
+        </p>
+        <div class="qd-skeleton-group selected-ayah-section__content-skeleton" data-testid="ayah-content-skeleton" aria-busy="true">
           <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-50"></span>
           <span class="qd-skeleton qd-skeleton--text"></span>
           <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-90"></span>
@@ -108,6 +120,12 @@
           <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-50"></span>
         </div>
       } @else {
+        @if (displayAyahText()) {
+          <p class="selected-ayah-section__ayah" dir="rtl" data-testid="selected-ayah-section-ayah">
+            {{ displayAyahText() }}
+          </p>
+        }
+
         @switch (activeTab()) {
           @case ('tafsir') {
             <qd-tafsir-card [entry]="study()!.tafsir" />

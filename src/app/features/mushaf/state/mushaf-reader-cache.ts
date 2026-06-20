@@ -62,6 +62,21 @@ export class MushafReaderCache {
     return request$;
   }
 
+  /**
+   * Synchronously returns already-cached successful data for a key, or null when
+   * the key is not cached (an in-flight-only request is treated as a miss). Lets
+   * callers resolve a cache hit immediately without scheduling a debounced load
+   * or surfacing a loading state.
+   */
+  peek<T>(key: string): T | null {
+    const cached = this.cache.get(key);
+    if (cached?.isSuccess && cached.data != null) {
+      return cached.data as T;
+    }
+
+    return null;
+  }
+
   /** Warms the cache without surfacing errors to the caller. */
   prefetch<T>(key: string, loader: () => Observable<ApiResponse<T>>): void {
     if (this.cache.has(key) || this.inFlight.has(key)) {

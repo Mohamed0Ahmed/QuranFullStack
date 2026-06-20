@@ -92,7 +92,7 @@ function setInputs(
 }
 
 describe('SelectedWordSectionComponent — stable loading (UI-001)', () => {
-  it('keeps the shell + content sections mounted and shows skeletons instead of a one-line loading state', () => {
+  it('keeps the shell + static labels mounted and shows structured block skeletons while loading', () => {
     const fixture = TestBed.createComponent(SelectedWordSectionComponent);
     setInputs(fixture, {
       analysis: null,
@@ -102,25 +102,110 @@ describe('SelectedWordSectionComponent — stable loading (UI-001)', () => {
 
     const root = fixture.nativeElement as HTMLElement;
 
-    // The loading testid is present (replaces the old one-line qd-loading-state).
+    // Loading announced via the visually-hidden live region (not a one-liner).
     expect(root.querySelector('[data-testid="word-analysis-loading"]')).toBeTruthy();
-
-    // The OLD behavior rendered ONLY a one-line loading state and removed the
-    // shell. That must no longer happen.
     expect(root.querySelector('.qd-loading-state')).toBeNull();
 
-    // The card shell stays mounted: the section wrapper and its header/content
-    // structure are present even while loading.
+    // Card shell + content structure mounted.
     expect(root.querySelector('.selected-word-section__header')).toBeTruthy();
     expect(root.querySelector('.selected-word-section__content')).toBeTruthy();
-    expect(root.querySelector('.selected-word-section__identity')).toBeTruthy();
 
-    // Skeleton placeholders fill the content regions.
+    // Static labels remain visible during loading (only their values shimmer).
+    const morphology = root.querySelector('[data-testid="word-morphology-loading"]');
+    expect(morphology).toBeTruthy();
+    for (const label of ['نوع الكلمة', 'الجذر', 'الصيغة المعجمية', 'الأصل الصرفي']) {
+      expect(morphology?.textContent).toContain(label);
+    }
+    const identity = root.querySelector('[data-testid="word-identity-loading"]');
+    expect(identity?.textContent).toContain('التكرار (بالتشكيل)');
+    expect(identity?.textContent).toContain('التكرار (مبسّط)');
+
+    // Segment area shows segment-card placeholders (dynamic count → fixed set).
+    const segmentSkeletons = root.querySelector('[data-testid="segment-skeletons"]');
+    expect(segmentSkeletons).toBeTruthy();
+    expect(segmentSkeletons?.querySelectorAll('.selected-word-section__segment-skeleton').length).toBeGreaterThan(0);
+
+    // Shimmer placeholders fill the value slots; NOT one giant overlay block.
     expect(root.querySelectorAll('.qd-skeleton').length).toBeGreaterThan(0);
+    expect(root.querySelector('.qd-loading-overlay')).toBeNull();
+  });
 
-    // Real data rows are NOT mounted while loading (avoid stale content).
+  it('keeps each fixed info card mounted with a static label and shimmers only its value', () => {
+    const fixture = TestBed.createComponent(SelectedWordSectionComponent);
+    setInputs(fixture, {
+      analysis: null,
+      loadState: { isLoading: true, isEmpty: false, errorMessage: null },
+      selectedWordLocation: '2:25:3',
+    });
+
+    const root = fixture.nativeElement as HTMLElement;
+
+    // Each morphology card keeps its <dt> label as real text (not a skeleton)
+    // and shimmers only the <dd> value — i.e. the cards do not collapse.
+    const morphologyCells = Array.from(
+      root.querySelectorAll('.selected-word-section__morphology-skeleton-cell'),
+    );
+    expect(morphologyCells).toHaveLength(4);
+    for (const cell of morphologyCells) {
+      const label = cell.querySelector('dt');
+      expect(label?.textContent?.trim().length).toBeGreaterThan(0);
+      expect(label?.querySelector('.qd-skeleton')).toBeNull();
+      expect(cell.querySelector('dd .qd-skeleton')).toBeTruthy();
+    }
+
+    // The identity block carries the loading modifier (reserves the value line)
+    // and shimmers only the values under its two static labels.
+    const identity = root.querySelector('[data-testid="word-identity-loading"]');
+    expect(identity?.classList.contains('selected-word-section__identity--loading')).toBe(true);
+    const identityRows = Array.from(root.querySelectorAll('.selected-word-section__identity-row'));
+    expect(identityRows).toHaveLength(2);
+    for (const row of identityRows) {
+      expect(row.querySelector('dt')?.querySelector('.qd-skeleton')).toBeNull();
+      expect(row.querySelector('dd .qd-skeleton')).toBeTruthy();
+    }
+
+    // Segment area shows the fixed set of segment-card placeholders.
+    expect(root.querySelectorAll('.selected-word-section__segment-skeleton')).toHaveLength(3);
+  });
+
+  it('never exposes the previous word glyph in the header while loading (UI-001 refinement)', () => {
+    // Even when a previous analysis is still provided (a word switch), the header
+    // must show a neutral shimmer placeholder of stable height — not the glyph.
+    const fixture = TestBed.createComponent(SelectedWordSectionComponent);
+    setInputs(fixture, {
+      analysis: buildWordAnalysisViewModel(),
+      loadState: { isLoading: true, isEmpty: false, errorMessage: null },
+      selectedWordLocation: '2:25:3',
+    });
+
+    const root = fixture.nativeElement as HTMLElement;
+
+    // Header: glyph hidden, neutral shimmer placeholder shown instead.
     expect(root.querySelector('qd-segment-rendered-word')).toBeNull();
+    expect(root.querySelector('.selected-word-section__word-skeleton')).toBeTruthy();
+
+    // The real (loaded) data components are not mounted during loading; the
+    // structured skeletons stand in for them.
+    expect(root.querySelector('qd-segment-data-rows')).toBeNull();
     expect(root.querySelector('[data-testid="word-identity-summary"]')).toBeNull();
+    expect(root.querySelector('[data-testid="word-morphology-loading"]')).toBeTruthy();
+  });
+
+  it('uses structured block skeletons, not a single overlay block, while loading', () => {
+    const fixture = TestBed.createComponent(SelectedWordSectionComponent);
+    setInputs(fixture, {
+      analysis: buildWordAnalysisViewModel(),
+      loadState: { isLoading: true, isEmpty: false, errorMessage: null },
+      selectedWordLocation: '2:25:3',
+    });
+
+    const root = fixture.nativeElement as HTMLElement;
+
+    // No single covering overlay block — the cue is per-region shimmer.
+    expect(root.querySelector('.qd-loading-overlay')).toBeNull();
+    expect(root.querySelector('[data-testid="segment-skeletons"]')).toBeTruthy();
+    expect(root.querySelector('[data-testid="word-morphology-loading"]')).toBeTruthy();
+    expect(root.querySelector('[data-testid="word-identity-loading"]')).toBeTruthy();
   });
 
   it('renders real analysis data and no skeletons when loaded', () => {

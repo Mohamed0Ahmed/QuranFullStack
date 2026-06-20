@@ -112,7 +112,7 @@ function setInputs(
 }
 
 describe('SelectedAyahSectionComponent — stable loading (UI-001)', () => {
-  it('keeps the source slot + tabs mounted and shows skeletons instead of a one-line loading state', () => {
+  it('keeps the source slot + tabs mounted and shows stacked shimmer lines while loading', () => {
     const fixture = TestBed.createComponent(SelectedAyahSectionComponent);
     setInputs(fixture, {
       study: null,
@@ -122,25 +122,90 @@ describe('SelectedAyahSectionComponent — stable loading (UI-001)', () => {
 
     const root = fixture.nativeElement as HTMLElement;
 
-    // The OLD behavior rendered ONLY a one-line loading state and removed the
-    // source selector + tabs. That must no longer happen.
     expect(root.querySelector('.qd-loading-state')).toBeNull();
-
-    // The loading testid is present in the source slot.
     expect(root.querySelector('[data-testid="ayah-study-loading"]')).toBeTruthy();
 
-    // Shell stays mounted: source slot, tabs, ayah-text slot, content region.
+    // Static structure mounted: source slot, tabs, content region.
     expect(root.querySelector('.selected-ayah-section__source')).toBeTruthy();
     expect(root.querySelector('.selected-ayah-section__tabs')).toBeTruthy();
     expect(root.querySelectorAll('.selected-ayah-section__tab')).toHaveLength(3);
     expect(root.querySelector('.selected-ayah-section__content')).toBeTruthy();
 
-    // Skeleton placeholders fill the inner data regions.
-    expect(root.querySelectorAll('.qd-skeleton').length).toBeGreaterThan(0);
+    // Loading content is several stacked shimmer lines, not one giant block.
+    const contentSkeleton = root.querySelector('[data-testid="ayah-content-skeleton"]');
+    expect(contentSkeleton).toBeTruthy();
+    expect(contentSkeleton?.querySelectorAll('.qd-skeleton--text').length).toBeGreaterThanOrEqual(3);
+    expect(root.querySelector('.qd-loading-overlay')).toBeNull();
 
-    // Real study content is NOT mounted while loading.
+    // No real study content while loading.
     expect(root.querySelector('qd-tafsir-card')).toBeNull();
     expect(root.querySelector('[data-testid="selected-ayah-section-ayah"]')).toBeNull();
+  });
+
+  it('shows stacked shimmer lines (not the real study) while loading even if a previous study is provided', () => {
+    const fixture = TestBed.createComponent(SelectedAyahSectionComponent);
+    setInputs(fixture, {
+      study: buildAyahStudyViewModel(),
+      loadState: { isLoading: true, isEmpty: false, errorMessage: null },
+      selectedVerseKey: '2:25',
+    });
+
+    const root = fixture.nativeElement as HTMLElement;
+
+    // No single covering overlay block; structured stacked lines instead.
+    expect(root.querySelector('.qd-loading-overlay')).toBeNull();
+    expect(root.querySelector('[data-testid="ayah-content-skeleton"]')).toBeTruthy();
+
+    // The real study content is not mounted during loading.
+    expect(root.querySelector('qd-tafsir-card')).toBeNull();
+    expect(root.querySelector('[data-testid="selected-ayah-section-ayah"]')).toBeNull();
+
+    // Tabs stay mounted and disabled while loading.
+    const tabs = Array.from(root.querySelectorAll<HTMLButtonElement>('.selected-ayah-section__tab'));
+    expect(tabs).toHaveLength(3);
+    expect(tabs.every((tab) => tab.disabled)).toBe(true);
+
+    // Source slot shows a skeleton placeholder (not the live selector).
+    expect(root.querySelector('.selected-ayah-section__source-skeleton')).toBeTruthy();
+    expect(root.querySelector('qd-source-selector')).toBeNull();
+  });
+
+  it('keeps the static source label visible and shimmers only the value while loading', () => {
+    const fixture = TestBed.createComponent(SelectedAyahSectionComponent);
+    setInputs(fixture, {
+      study: null,
+      loadState: { isLoading: true, isEmpty: false, errorMessage: null },
+      selectedVerseKey: '2:25',
+      activeTab: 'tafsir',
+    });
+
+    const root = fixture.nativeElement as HTMLElement;
+
+    // Static label stays (it does not depend on the loaded study).
+    const label = root.querySelector('.selected-ayah-section__source-loading-label');
+    expect(label?.textContent?.trim()).toBe('مصدر التفسير');
+
+    // Only the value shimmers; the live selector is not mounted.
+    expect(root.querySelector('.selected-ayah-section__source-skeleton')).toBeTruthy();
+    expect(root.querySelector('qd-source-selector')).toBeNull();
+  });
+
+  it.each([
+    { activeTab: 'tafsir' as AyahStudyTab, label: 'مصدر التفسير' },
+    { activeTab: 'translation' as AyahStudyTab, label: 'مصدر الترجمة' },
+    { activeTab: 'full-i3rab' as AyahStudyTab, label: 'مصدر الإعراب' },
+  ])('shows the "$label" source label for the $activeTab tab while loading', ({ activeTab, label }) => {
+    const fixture = TestBed.createComponent(SelectedAyahSectionComponent);
+    setInputs(fixture, {
+      study: null,
+      loadState: { isLoading: true, isEmpty: false, errorMessage: null },
+      selectedVerseKey: '2:25',
+      activeTab,
+    });
+
+    const root = fixture.nativeElement as HTMLElement;
+    const loadingLabel = root.querySelector('.selected-ayah-section__source-loading-label');
+    expect(loadingLabel?.textContent?.trim()).toBe(label);
   });
 
   it('keeps the tab buttons mounted but disabled while loading', () => {

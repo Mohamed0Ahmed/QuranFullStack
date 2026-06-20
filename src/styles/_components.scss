@@ -104,18 +104,28 @@
 }
 
 /*
- * Skeleton / shimmer / wave placeholders.
+ * Skeleton / shimmer / wave placeholders + content-level loading overlay.
  *
- * Reusable loading affordances that keep a card *shell* mounted and only
- * replace inner data regions with placeholders, so the card does not
- * collapse/expand while data loads (see UI-001).
+ * Two complementary loading affordances, both built only from existing design
+ * tokens (no new palette):
  *
- * Built only from existing design tokens; animation respects
+ * - `.qd-skeleton*` — sized placeholder bars for genuinely empty regions.
+ * - `.qd-loading-overlay` — an absolutely-positioned overlay layered over a
+ *   data *body* region only. Used when we keep the previous content mounted to
+ *   hold the card's box height during a debounced load (UI-001 refinement);
+ *   the opaque tint + shimmer + "loading" label mask the retained content so it
+ *   is not read as current data. The covered body is `inert` / pointer-disabled
+ *   by the host component (see `.qd-loading-region`).
+ *
+ * Light-mode contrast: the original base tint was `--qd-surface-elevated`, which
+ * is *lighter* than `--qd-surface` in light mode and thus invisible. The base is
+ * now a darker token-based mix (`surface` toward `border`) so placeholders and
+ * the overlay read against near-white surfaces. Animation respects
  * prefers-reduced-motion by falling back to a static tinted block.
  */
 .qd-skeleton {
   display: block;
-  background: var(--qd-surface-elevated);
+  background: color-mix(in oklch, var(--qd-surface) 78%, var(--qd-border));
   border-radius: var(--qd-radius-sm);
   position: relative;
   overflow: hidden;
@@ -156,7 +166,9 @@
 }
 
 // Wave/shimmer overlay. Implemented as a moving gradient sweep over the base
-// tint so the base color (and thus the box size) stays stable.
+// tint so the base color (and thus the box size) stays stable. The sweep is
+// mixed toward `--qd-text` so there is a real luminance delta even over a
+// near-white light-mode surface.
 .qd-skeleton::after {
   content: '';
   position: absolute;
@@ -165,7 +177,7 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    color-mix(in oklch, var(--qd-surface) 55%, transparent) 50%,
+    color-mix(in oklch, var(--qd-surface) 60%, var(--qd-text) 22%) 50%,
     transparent 100%
   );
   animation: qd-skeleton-wave 1.6s ease-in-out infinite;
@@ -185,11 +197,11 @@
     transition: none;
   }
 
-  // Reduced-motion users get a static, slightly tinted placeholder with no
+  // Reduced-motion users get a static, sufficiently-visible tint with no
   // moving sweep, so the box still reads as "loading" without animation.
   .qd-skeleton::after {
     animation: none;
-    background: color-mix(in oklch, var(--qd-surface) 50%, transparent);
+    background: color-mix(in oklch, var(--qd-surface) 50%, var(--qd-text) 16%);
     transform: none;
   }
 }

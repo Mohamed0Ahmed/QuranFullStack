@@ -300,22 +300,51 @@ export class MushafReaderFacade {
    * Debounces a word-analysis fetch by {@link WORD_ANALYSIS_SWITCH_DELAY_MS}.
    * Used when switching words while one is already selected.
    *
-   * The load state flips to loading and the previous analysis view model is
-   * cleared immediately (not after the debounce window), so the panel shows its
-   * skeleton for the whole wait instead of the *previous* word's content.
-   * Mirrors the ayah-study switch debounce; the request-token guard keeps this
-   * safe from out-of-order responses. (UI-001)
+   * The load state flips to loading immediately (so the overlay shows for the
+   * whole wait), but the previous analysis view model is intentionally *kept*
+   * mounted: it holds the card's box height during loading, so the panel does
+   * not shrink-then-grow. A content-level overlay masks that retained content
+   * so it cannot be read as current data (UI-001 refinement). Mirrors the
+   * ayah-study switch debounce; the request-token guard keeps this safe from
+   * out-of-order responses.
    */
   private scheduleWordAnalysisLoad(wordLocation: string): void {
     this.clearPendingWordAnalysisLoad();
 
+    if (this.applyCachedWordAnalysis(wordLocation)) {
+      return;
+    }
+
     const requestToken = ++this.wordAnalysisRequestToken;
-    this._wordAnalysis.set(null);
     this._wordAnalysisLoadState.set({ isLoading: true, isEmpty: false, errorMessage: null });
     this.wordAnalysisRequestTimer = setTimeout(() => {
       this.wordAnalysisRequestTimer = null;
       this.runWordAnalysisLoad(wordLocation, requestToken);
     }, WORD_ANALYSIS_SWITCH_DELAY_MS);
+  }
+
+  /**
+   * Cache fast-path: when the requested word analysis is already cached, apply it
+   * immediately with no debounce and no loading state — so a cache hit never
+   * flashes the loading overlay. Returns true when a hit was applied.
+   * `clearPendingWordAnalysisLoad` has already bumped the request token, so any
+   * in-flight load from a prior selection is invalidated.
+   */
+  private applyCachedWordAnalysis(wordLocation: string): boolean {
+    if (this.isAyahMarkerOnCurrentPage(wordLocation)) {
+      return false;
+    }
+
+    const cached = this.readerCache.peek<WordAnalysisDto>(
+      MushafReaderCacheKeys.wordAnalysis(wordLocation),
+    );
+    if (!cached) {
+      return false;
+    }
+
+    this._wordAnalysis.set(toWordAnalysisViewModel(cached));
+    this._wordAnalysisLoadState.set({ isLoading: false, isEmpty: false, errorMessage: null });
+    return true;
   }
 
   private clearPendingWordAnalysisLoad(): void {
@@ -452,22 +481,51 @@ export class MushafReaderFacade {
    * the word-analysis switch debounce. The first ayah selection (and source-only
    * changes that keep the same verse key) still load immediately.
    *
-   * The load state flips to loading and the previous study view model is cleared
-   * immediately (not after the debounce window), so the panel shows its skeleton
-   * for the whole wait instead of the *previous* ayah's content — UI-001 forbids
-   * stale cross-ayah content during loading. The request-token guard makes this
-   * safe: any in-flight response from the prior selection is discarded.
+   * The load state flips to loading immediately (so the overlay shows for the
+   * whole wait), but the previous study view model is intentionally *kept*
+   * mounted: it holds the card's box height during loading, so the panel does
+   * not shrink-then-grow. A content-level overlay masks that retained content
+   * so it cannot be read as current data (UI-001 refinement). The request-token
+   * guard makes this safe: any in-flight response from the prior selection is
+   * discarded.
    */
   private scheduleAyahStudyLoad(verseKey: string): void {
     this.clearPendingAyahStudyLoad();
 
+    if (this.applyCachedAyahStudy(verseKey)) {
+      return;
+    }
+
     const requestToken = ++this.ayahStudyRequestToken;
-    this._ayahStudy.set(null);
     this._ayahStudyLoadState.set({ isLoading: true, isEmpty: false, errorMessage: null });
     this.ayahStudyRequestTimer = setTimeout(() => {
       this.ayahStudyRequestTimer = null;
       this.runAyahStudyLoad(verseKey, requestToken);
     }, AYAH_STUDY_SWITCH_DELAY_MS);
+  }
+
+  /**
+   * Cache fast-path mirror of {@link applyCachedWordAnalysis} for ayah study:
+   * an already-cached ayah (for the active sources) is applied immediately with
+   * no debounce and no loading overlay. Returns true when a hit was applied.
+   */
+  private applyCachedAyahStudy(verseKey: string): boolean {
+    const sources = this._urlExplicitSources();
+    const cached = this.readerCache.peek<AyahStudyDto>(
+      MushafReaderCacheKeys.ayahStudy(verseKey, sources),
+    );
+    if (!cached) {
+      return false;
+    }
+
+    this._ayahStudy.set(toAyahStudyViewModel(cached));
+    this._sources.set({
+      tafsirSource: cached.selectedSources.tafsirSource,
+      translationSource: cached.selectedSources.translationSource,
+      fullI3rabSource: cached.selectedSources.fullI3rabSource,
+    });
+    this._ayahStudyLoadState.set({ isLoading: false, isEmpty: false, errorMessage: null });
+    return true;
   }
 
   private clearPendingAyahStudyLoad(): void {

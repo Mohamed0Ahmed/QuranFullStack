@@ -44,8 +44,11 @@
   }
 
   &__word-skeleton {
-    width: 9rem;
-    height: 2rem;
+    // Reserve the same visual mass as the real rendered word
+    // (font-size 1.5rem, line-height 1.8 ≈ 2.7rem) so the header does not
+    // shrink between the loading and loaded states (UI-001 parity).
+    width: 11rem;
+    height: 2.4rem;
     border-radius: var(--qd-radius-md);
   }
 
@@ -73,6 +76,72 @@
     :host.qd-selected-word-section--embedded .selected-word-section & {
       flex: none;
       overflow: visible;
+    }
+  }
+
+  // Segment-card placeholders (the segment count is dynamic). Mirrors the real
+  // segment cards' wrap layout + card chrome so loading reads as structured.
+  &__segment-skeletons {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: var(--qd-space-1);
+  }
+
+  &__segment-skeleton {
+    display: flex;
+    flex: 1 1 7.8rem;
+    flex-direction: column;
+    gap: calc(var(--qd-space-1) * 0.79);
+    min-width: 0;
+    padding: calc(var(--qd-space-1) * 1.65);
+    border: 1px solid var(--qd-border);
+    border-inline-start-width: 3px;
+    border-radius: var(--qd-radius-sm);
+    background: var(--qd-surface-elevated);
+  }
+
+  &__segment-skeleton-form {
+    height: 1.3rem;
+  }
+
+  // Morphology label cards: static labels stay; only the value shimmers.
+  // Mirrors qd-word-morphology-summary's row-of-cards layout so the transition
+  // from loading to loaded does not shift.
+  &__morphology-skeleton {
+    display: flex;
+    flex-direction: row;
+    gap: calc(var(--qd-space-2) + 0.45 * var(--qd-space-1));
+    margin: 0;
+    overflow-x: auto;
+  }
+
+  &__morphology-skeleton-cell {
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    gap: calc(var(--qd-space-1) * 0.82);
+    min-width: 7.4rem;
+    padding: calc(var(--qd-space-2) + 0.45 * var(--qd-space-1));
+    border: 1px solid var(--qd-border);
+    border-radius: var(--qd-radius-sm);
+    background: var(--qd-surface-elevated);
+
+    dt {
+      margin: 0;
+      color: var(--qd-text-muted);
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+    }
+
+    dd {
+      display: flex;
+      align-items: center;
+      margin: 0;
+      // Reserve the real value line box (font 0.8975rem × line-height 1.45 ≈
+      // 1.3rem) so the loading card does not shrink versus the loaded card.
+      min-height: 1.3rem;
     }
   }
 
@@ -118,5 +187,14 @@
   &__identity-row dd {
     margin: 0;
     color: var(--qd-text);
+  }
+
+  // While loading, reserve the real value line box inside each identity card so
+  // the card keeps the same height as the loaded state (UI-001 parity); only
+  // the value shimmers, the label above it stays static.
+  &__identity--loading &__identity-row dd {
+    display: flex;
+    align-items: center;
+    min-height: 1.3rem;
   }
 }

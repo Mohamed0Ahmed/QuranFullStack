@@ -38,10 +38,26 @@
     min-height: 2.5rem;
   }
 
+  // Mirror source-selector's column layout (label above value) so the static
+  // label stays put and only the value shimmers (UI-001 parity).
+  &__source-loading {
+    display: flex;
+    flex-direction: column;
+    gap: var(--qd-space-2);
+  }
+
+  &__source-loading-label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--qd-text-muted);
+  }
+
   &__source-skeleton {
     display: block;
-    width: 12rem;
-    height: 2.25rem;
+    // Match the live source-selector trigger box (full width, 2.75rem tall) so
+    // the slot does not resize when the real selector mounts.
+    width: 100%;
+    height: 2.75rem;
   }
 
   &__tabs {
@@ -122,9 +138,9 @@
       line-height: 1.95;
     }
 
+    // While loading, reserve a stable body height for the stacked shimmer lines
+    // so the content region does not look collapsed (UI-001 refinement).
     &--loading {
-      // Reserve vertical space for the skeleton paragraph so the content
-      // region keeps a stable height during ayah loads (UI-001).
       min-height: 10rem;
     }
 
