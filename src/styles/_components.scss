@@ -38,12 +38,13 @@
 }
 
 .qd-btn-primary {
-  background: var(--qd-accent);
-  color: oklch(0.98 0.005 75);
-  border-color: var(--qd-accent);
+  background: var(--qd-primary);
+  color: var(--qd-primary-fg);
+  border-color: var(--qd-primary);
 
   &:hover {
-    background: oklch(0.40 0.09 55);
+    background: var(--qd-primary-hover);
+    border-color: var(--qd-primary-hover);
   }
 }
 

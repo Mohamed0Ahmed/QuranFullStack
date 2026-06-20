@@ -1,18 +1,62 @@
 :root {
-  --qd-bg: oklch(0.96 0.008 75);
-  --qd-surface: oklch(0.985 0.006 75);
-  --qd-surface-elevated: oklch(0.995 0.005 75);
-  --qd-text: oklch(0.18 0.015 60);
-  --qd-text-muted: oklch(0.44 0.012 60);
-  --qd-border: oklch(0.82 0.01 75);
-  --qd-accent: oklch(0.45 0.08 55);
-  --qd-danger: oklch(0.55 0.15 25);
+  /* ---- Surfaces (parchment canvas, near-white cards, warm recessed) ---- */
+  --qd-bg: oklch(0.985 0.008 91.5);
+  --qd-surface: oklch(0.997 0.003 90);
+  --qd-section-bg: oklch(0.955 0.015 77.1);
+  --qd-surface-recessed: oklch(0.921 0.025 75.3);
+  --qd-surface-elevated: var(--qd-section-bg);
+
+  /* ---- Text ---- */
+  --qd-text: oklch(0.278 0.030 256.8);
+  --qd-text-muted: oklch(0.544 0.035 265.1);
+
+  /* ---- Borders (navy-tinted hairlines) ---- */
+  --qd-border: oklch(0.263 0.046 250 / 0.12);
+  --qd-border-strong: oklch(0.263 0.046 250 / 0.22);
+
+  /* ---- Primary (navy structural) ---- */
+  --qd-primary: oklch(0.263 0.046 250.0);
+  --qd-primary-fg: oklch(0.985 0.008 91.5);
+  --qd-primary-hover: oklch(0.236 0.044 254.8);
+
+  /* ---- Accent (gold) + layers ---- */
+  --qd-accent: oklch(0.718 0.118 83.7);
+  --qd-accent-hover: oklch(0.660 0.117 81.6);
+  --qd-accent-soft: oklch(0.845 0.087 86.6);
+  --qd-accent-tint: oklch(0.960 0.028 86.6);
+  --qd-accent-text: var(--qd-primary);
+
+  /* ---- Status ---- */
+  --qd-danger: oklch(0.541 0.138 22.8);
   --qd-warning: oklch(0.70 0.14 75);
-  --qd-success: oklch(0.55 0.12 150);
-  --qd-focus-ring: oklch(0.50 0.10 55);
-  --qd-shadow: none;
-  --qd-floating-shadow: 0 0.25rem 0.75rem oklch(0.18 0.015 60 / 0.08);
-  --qd-overlay: oklch(0.18 0.015 60 / 0.30);
+  --qd-success: oklch(0.546 0.062 162.7);
+
+  /* ---- Focus ---- */
+  --qd-focus-ring: oklch(0.60 0.10 84);
+  --qd-ring: 0 0 0 4px oklch(0.718 0.118 84 / 0.22);
+
+  /* ---- Footer (dark anchor) ---- */
+  --qd-footer-bg: oklch(0.236 0.044 254.8);
+  --qd-footer-bg-2: oklch(0.304 0.055 247.5);
+  --qd-footer-text: oklch(0.919 0.018 89.4);
+  --qd-footer-muted: oklch(0.680 0.037 261.9);
+  --qd-footer-accent: oklch(0.786 0.099 85.6);
+  --qd-footer-accent-hover: oklch(0.841 0.090 85.8);
+  --qd-footer-border: oklch(1 0 0 / 0.08);
+
+  /* ---- Navbar chrome (translucent near-white) ---- */
+  --qd-chrome-bg: oklch(0.997 0.003 90 / 0.85);
+
+  /* ---- Elevation ladder (navy-tinted, soft) ---- */
+  --qd-shadow-sm: 0 1px 2px oklch(0.263 0.046 250 / 0.04), 0 1px 1px oklch(0.263 0.046 250 / 0.03);
+  --qd-shadow: 0 6px 20px oklch(0.263 0.046 250 / 0.07), 0 2px 6px oklch(0.263 0.046 250 / 0.04);
+  --qd-floating-shadow: 0 30px 70px oklch(0.263 0.046 250 / 0.14), 0 8px 22px oklch(0.263 0.046 250 / 0.07);
+
+  --qd-overlay: oklch(0.236 0.044 255 / 0.30);
+
+  /* ---- Motion tokens ---- */
+  --qd-t-fast: 140ms ease;
+  --qd-t-base: 220ms cubic-bezier(0.2, 0.7, 0.3, 1);
 
   // Amiri positions Uthmani marks (e.g. U+06DF) correctly; the previous
   // 'Uthmanic Hafs' (UthmanicHafs_V22.ttf) rendered them as baseline dots.
@@ -29,9 +73,10 @@
   --qd-mushaf-ayah-marker-color: var(--qd-text-muted);
   --qd-mushaf-sticky-top: var(--qd-space-3);
 
-  --qd-radius-sm: 0.25rem;
-  --qd-radius-md: 0.5rem;
-  --qd-radius-lg: 0.75rem;
+  --qd-radius-sm: 0.5rem;
+  --qd-radius-md: 0.875rem;
+  --qd-radius-lg: 1.375rem;
+  --qd-radius-pill: 999px;
 
   --qd-space-1: 0.25rem;
   --qd-space-2: 0.5rem;

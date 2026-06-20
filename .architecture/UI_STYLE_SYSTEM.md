@@ -392,10 +392,12 @@ defined for both themes (see `DESIGN.md` §2 for the full light/dark/footer tabl
 | Border-strong | navy @ ~22% | `--qd-border-strong` (new) |
 | Primary (structural) | navy `#12263A` | `--qd-primary` (new) |
 | Primary foreground | `#FCFAF4` | `--qd-primary-fg` (new) |
-| Accent | gold `#C79D43` | `--qd-accent` |
+| Primary hover | deeper navy `#0F1F33` | `--qd-primary-hover` (new) — AA-safe primary-btn hover |
+| Accent | gold `#C79D43` | `--qd-accent` — background/large-element use |
 | Accent-hover | `#B68A30` | `--qd-accent-hover` (new) |
 | Accent-soft | `#E5C98A` | `--qd-accent-soft` (new) |
 | Accent-tint | `#FAF1DD` | `--qd-accent-tint` (new) |
+| Accent text (AA-safe) | navy (light) / gold (dark) | `--qd-accent-text` (new) — accent-emphasis **text** |
 | Footer bg | `#0F1F33` | `--qd-footer-bg` (new) |
 | Footer bg-2 | `#163149` | `--qd-footer-bg-2` (new) |
 | Footer text | `#E9E4D7` | `--qd-footer-text` (new) |
@@ -416,8 +418,11 @@ Dark theme reference (adapted midnight): bg `#0D1322`, surface `#141C2E`, surfac
 - **Optional** translucency + backdrop blur (e.g. translucent surface +
   `backdrop-filter`), only if performance is acceptable, with an **opaque fallback**.
 - Subtle **bottom border and/or soft shadow** so it lifts off the page.
-- **Active nav item** = gold accent text on an **accent-tint pill** background.
-- **Hover** = quiet surface (e.g. section/quiet bg) + accent text.
+- **Active nav item** = `--qd-accent-text` label on an **accent-tint pill** background.
+  The pill carries the gold; the **label uses `--qd-accent-text`** (navy in light, gold
+  in dark) so it meets WCAG AA. Do **not** use raw `--qd-accent` (gold) for the label —
+  gold on the pale light tint is ~2.2:1 and fails AA.
+- **Hover** = quiet surface (e.g. section/quiet bg) + `--qd-accent-text` label.
 - **No** heavy colored navbar in light mode.
 
 ### D. Footer
@@ -460,15 +465,24 @@ Dark theme reference (adapted midnight): bg `#0D1322`, surface `#141C2E`, surfac
 ### G. Buttons / active states
 
 - **Primary button:** structural **navy** (`--qd-primary`) background with
-  `--qd-primary-fg` text; hover toward accent-hover. (Replaces today's hardcoded
-  `.qd-btn-primary` literals.)
-- **Accent (gold):** active states, links, icon highlights, section eyebrows.
-- **Soft button:** accent-tint background + accent text (a tonal secondary action).
+  `--qd-primary-fg` text; hover → `--qd-primary-hover` (deeper navy / lighter gold in
+  dark). (Replaces today's hardcoded `.qd-btn-primary` literals. Do not hover to raw
+  `--qd-accent-hover` — parchment-on-gold is only ~3:1.)
+- **Accent (gold) `--qd-accent`:** for **backgrounds, pills, large elements, icons,
+  section eyebrows**, and dark-surface text. **Not** for small text on light surfaces.
+- **Soft button:** accent-tint background + **`--qd-accent-text`** label (tonal
+  secondary action). Gold-on-tint fails AA in light; use `--qd-accent-text`.
 - **Ghost button:** transparent with a (strong) border; hover → quiet surface +
-  accent border/text.
-- **Selected / active states:** accent-tint background + accent border/text; never a
-  heavy saturated fill (keep it calm).
+  `--qd-accent-text`. (Note: nav-links reuse `.qd-btn-ghost` and must stay borderless —
+  see Phase 4 plan.)
+- **Selected / active states:** accent-tint background + `--qd-accent-text` border/text;
+  never a heavy saturated fill (keep it calm).
 - **Badges / chips:** a tint distinct from the card surface (not the same fill).
+
+> **Accessibility rule (color):** `--qd-accent` (gold) is a background/large-element
+> color. As **small text it fails WCAG AA on light surfaces** (~2.2–2.5:1). Whenever you
+> need accent-level emphasis as **text** (active nav, links, soft/selected labels), use
+> **`--qd-accent-text`** (navy in light, gold in dark). The app requires AA (§12).
 
 ### H. Implementation phasing
 

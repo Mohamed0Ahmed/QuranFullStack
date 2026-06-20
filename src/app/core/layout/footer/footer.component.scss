@@ -4,6 +4,14 @@
   gap: var(--qd-space-1);
   text-align: center;
   padding-block: var(--qd-space-2);
+
+  .qd-text-muted {
+    color: var(--qd-footer-text);
+  }
+
+  .qd-text-meta {
+    color: var(--qd-footer-muted);
+  }
 }
 
 .health-indicator {
@@ -12,7 +20,7 @@
   justify-content: center;
   gap: var(--qd-space-2);
   font-size: 0.8125rem;
-  color: var(--qd-text-meta);
+  color: var(--qd-footer-muted);
   flex-wrap: wrap;
 }
 
@@ -47,7 +55,7 @@
 }
 
 .health-error {
-  color: var(--qd-danger);
+  color: var(--qd-footer-text);
   flex-wrap: wrap;
 }
 
