@@ -35,14 +35,52 @@ a quiet archive or a serious research workspace, not a busy SaaS app. Voice is
 precise, respectful, and plain. Three words: scholarly, calm, trustworthy. The
 emotional goal is confidence and sustained focus.
 
+## Visual Identity
+
+The official visual identity is the **Real Pages prototype** (`/projects/Real
+Pages`, brand reference "الباحث القرآني"), adopted **with adaptation** as the
+visual source of truth. See the extraction report
+`Frontend/quran-dashboard-ui/report/ui/real-pages-visual-system-extraction-report.md`.
+
+The identity is **navy + gold + parchment**:
+
+- **Warm parchment light mode.** A calm Quranic research workspace on a warm
+  parchment canvas, with near-white elevated content cards lifting off it.
+- **Deep navy structural identity.** Navy carries the structural/primary role
+  (primary buttons, brand mark) and the footer.
+- **Restrained gold accent.** A single muted gold accent for active states, links,
+  icon highlights, and section eyebrows — used sparingly, never as decoration.
+- **Premium dark footer / dark anchor sections.** The footer is a deep navy anchor
+  with warm off-white text and gold accents; dark anchor surfaces give the page an
+  end-cap and visual weight.
+- **Subtle card elevation and hover movement.** Cards rest with a soft shadow and
+  lift slightly on hover (small translate + stronger shadow/border). Controlled
+  soft shadows are part of the identity, not an exception.
+- **Clean light navbar.** The top bar stays light/near-white and clearly distinct
+  from content, never a heavy colored bar.
+- **Calm, non-distracting motion.** Quick, subtle transitions only; no bounce, no
+  showy animation; reduced-motion respected.
+- **Quran text rendering stays sacred and stable.** Quran/Mushaf glyph fonts and
+  rendering are unchanged and are **never animated**.
+
+This supersedes any earlier exploratory color direction (including the
+green / teal / petrol chrome exploration): the official direction is now the
+prototype's navy + gold + parchment. The Angular app stays **light + dark** only
+(prototype *ivory* → light, *midnight* → dark; *sage* is not adopted). Implementation
+details and the future token contract live in
+`Frontend/quran-dashboard-ui/.architecture/UI_STYLE_SYSTEM.md` and `DESIGN.md`.
+
 ## Anti-references
 
 This should NOT look like any of the following:
 
 - **Generic SaaS template.** Bootstrap-style admin themes, identical gradient
   stat cards, cookie-cutter dashboard layouts.
-- **Kitschy religious decor.** Gold filigree, crescent moons, mosque clipart,
-  overwrought ornamentation. Reverence comes from restraint, not decoration.
+- **Kitschy religious decor.** Gold *filigree*, crescent moons, mosque clipart,
+  overwrought ornamentation. Reverence comes from restraint, not decoration. (Note:
+  this bans decorative gold *ornament*. The restrained gold *accent color* in the
+  Visual Identity above is a different thing and is allowed — it is used sparingly
+  for state and emphasis, never as applied decoration.)
 - **Consumer / gamified.** Bright playful palettes, emoji, badges, reward-style
   UI. This is professional curation work.
 - **Dense enterprise greige.** Cramped gray-on-gray tables with no breathing
