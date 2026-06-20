@@ -1,8 +1,11 @@
-import { Component, input, output } from '@angular/core';
+import { Component, computed, ElementRef, input, output, signal, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 import { MushafLineDto, MushafPageViewModel } from '../../models/mushaf.models';
+import { clampMushafPageNumber } from '../../state/mushaf-url-sync';
 import { MushafLineComponent } from '../mushaf-line/mushaf-line.component';
+import { mushafJuzNumberLigature } from '../mushaf-line/mushaf-juz-number-ligature';
+import { mushafSurahNameLigature } from '../mushaf-line/mushaf-surah-name-ligature';
 
 @Component({
   selector: 'qd-mushaf-page-view',
@@ -18,6 +21,22 @@ export class MushafPageViewComponent {
 
   readonly ayahSelect = output<string>();
   readonly wordSelect = output<string>();
+  readonly pageChange = output<number>();
+
+  private readonly pageJumpInputRef = viewChild<ElementRef<HTMLInputElement>>('pageJumpInput');
+
+  protected readonly isPageEditing = signal(false);
+  protected readonly pageDraft = signal('');
+
+  protected readonly displaySurah = computed(() => {
+    const surahs = this.page().surahs;
+    return surahs.length > 0 ? surahs[surahs.length - 1] : null;
+  });
+
+  protected readonly displayJuz = computed(() => {
+    const juzNumbers = this.page().navigation.juzNumbers;
+    return juzNumbers.length > 0 ? juzNumbers[juzNumbers.length - 1] : null;
+  });
 
   protected surahNameArabicForLine(line: MushafLineDto): string | null {
     const surahNumber = line.surahNumber;
@@ -26,5 +45,70 @@ export class MushafPageViewComponent {
     }
 
     return this.page().surahs.find((surah) => surah.surahNumber === surahNumber)?.nameArabic ?? null;
+  }
+
+  protected surahLigature(surahNumber: number): string {
+    return mushafSurahNameLigature(surahNumber) ?? '';
+  }
+
+  protected juzNumberLigature(juzNumber: number): string {
+    return mushafJuzNumberLigature(juzNumber) ?? '';
+  }
+
+  protected startPageEdit(): void {
+    this.pageDraft.set(String(this.page().pageNumber));
+    this.isPageEditing.set(true);
+
+    queueMicrotask(() => {
+      const input = this.pageJumpInputRef()?.nativeElement;
+      if (!input) {
+        return;
+      }
+
+      input.focus();
+      input.select();
+    });
+  }
+
+  protected onPageDraftInput(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.pageDraft.set(value);
+  }
+
+  protected onPageInputKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      this.commitPageEdit();
+      return;
+    }
+
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      this.cancelPageEdit();
+    }
+  }
+
+  protected onPageInputBlur(): void {
+    this.cancelPageEdit();
+  }
+
+  protected commitPageEdit(): void {
+    const trimmed = this.pageDraft().trim();
+    if (!trimmed) {
+      this.cancelPageEdit();
+      return;
+    }
+
+    const targetPage = clampMushafPageNumber(trimmed);
+    this.isPageEditing.set(false);
+
+    if (targetPage !== this.page().pageNumber) {
+      this.pageChange.emit(targetPage);
+    }
+  }
+
+  protected cancelPageEdit(): void {
+    this.isPageEditing.set(false);
+    this.pageDraft.set('');
   }
 }

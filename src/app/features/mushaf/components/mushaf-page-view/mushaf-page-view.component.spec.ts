@@ -117,4 +117,46 @@ describe('MushafPageViewComponent', () => {
     expect(getComputedStyle(root).overflowY).toBe('auto');
     expect(root.classList.contains('qd-scroll-stable')).toBe(true);
   });
+
+  it('renders the last surah on the page and juz chrome above the lines', () => {
+    const root = fixture.nativeElement as HTMLElement;
+
+    expect(root.querySelector('[data-testid="mushaf-page-surah-glyph"]')).toBeTruthy();
+    expect(root.querySelector('[data-testid="mushaf-page-juz-glyph"]')).toBeTruthy();
+    expect(root.textContent).toContain('جزء 1');
+    expect(root.textContent).toContain('سورة البقرة');
+  });
+
+  it('renders a centered page jump trigger below the lines', () => {
+    const trigger = fixture.nativeElement.querySelector(
+      '[data-testid="mushaf-page-jump-trigger"]',
+    ) as HTMLButtonElement;
+
+    expect(trigger).toBeTruthy();
+    expect(trigger.textContent?.trim()).toBe('5');
+  });
+
+  it('emits pageChange when the user enters a new page number', () => {
+    const emitted: number[] = [];
+    fixture.componentInstance.pageChange.subscribe((pageNumber) => emitted.push(pageNumber));
+
+    const trigger = fixture.nativeElement.querySelector(
+      '[data-testid="mushaf-page-jump-trigger"]',
+    ) as HTMLButtonElement;
+    trigger.click();
+    fixture.detectChanges();
+
+    const input = fixture.nativeElement.querySelector(
+      '[data-testid="mushaf-page-jump-input"]',
+    ) as HTMLInputElement;
+    input.value = '12';
+    input.dispatchEvent(new Event('input'));
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    fixture.detectChanges();
+
+    expect(emitted).toEqual([12]);
+    expect(
+      fixture.nativeElement.querySelector('[data-testid="mushaf-page-jump-input"]'),
+    ).toBeNull();
+  });
 });

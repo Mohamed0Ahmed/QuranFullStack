@@ -6,7 +6,7 @@
     "start": "ng serve",
     "start:https": "ng serve --ssl --ssl-cert localhost.pem --ssl-key localhost-key.pem",
     "build": "ng build",
-    "test": "ng test",
+    "test": "VITEST_MIN_FORKS=1 VITEST_MAX_FORKS=2 ng test",
     "watch": "ng build --watch --configuration development"
   },
   "prettier": {

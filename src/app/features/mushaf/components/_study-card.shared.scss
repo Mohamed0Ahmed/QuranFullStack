@@ -4,6 +4,10 @@
   gap: var(--qd-space-3);
   min-height: 0;
 
+  &.qd-card {
+    background: var(--qd-section-bg);
+  }
+
   &__coverage {
     margin: 0;
     padding: var(--qd-space-2) var(--qd-space-3);

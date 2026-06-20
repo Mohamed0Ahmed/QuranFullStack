@@ -30,30 +30,13 @@ const pageFixture: MushafPageViewModel = {
 };
 
 describe('MushafHeaderNavigationComponent', () => {
-  it('joins multiple surah names with Arabic comma separators', () => {
+  it('does not render the removed page context zone', () => {
     const fixture = TestBed.createComponent(MushafHeaderNavigationComponent);
     fixture.componentRef.setInput('page', pageFixture);
     fixture.componentRef.setInput('surahCatalogByJuz', []);
     fixture.detectChanges();
 
-    const surahs = fixture.nativeElement.querySelector('.mushaf-header__surahs') as HTMLElement;
-    expect(surahs.textContent?.trim()).toBe(
-      'سورة-تجريبية-١، سورة-تجريبية-٢، سورة-تجريبية-٣',
-    );
-  });
-
-  it('shows juz only and omits hizb and rub from page context', () => {
-    const fixture = TestBed.createComponent(MushafHeaderNavigationComponent);
-    fixture.componentRef.setInput('page', pageFixture);
-    fixture.componentRef.setInput('surahCatalogByJuz', []);
-    fixture.detectChanges();
-
-    const context = fixture.nativeElement.querySelector('.mushaf-header__deck-zone--context') as HTMLElement;
-    const contextText = context.textContent ?? '';
-
-    expect(contextText).toContain('جزء 30');
-    expect(contextText).not.toContain('حزب');
-    expect(contextText).not.toContain('ربع');
+    expect(fixture.nativeElement.querySelector('.mushaf-header__deck-zone--context')).toBeNull();
   });
 
   it('renders the searchable surah jump picker', () => {

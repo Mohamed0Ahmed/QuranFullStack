@@ -13,15 +13,6 @@
   padding-bottom: 0;
   border-bottom: none;
 
-  &__page {
-    font-weight: 600;
-  }
-
-  &__meta,
-  &__surahs {
-    color: var(--qd-text-muted);
-  }
-
   &__surah-jump {
     flex: 1 1 11.5rem;
     min-width: 11.5rem;
@@ -32,6 +23,7 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
+    justify-content: flex-end;
     width: 100%;
     gap: var(--qd-space-1);
     padding: var(--qd-space-1) var(--qd-space-2);
@@ -50,16 +42,9 @@
     line-height: 1.35;
   }
 
-  &__deck-zone--context {
-    flex: 1;
-    min-width: 12rem;
-    padding: var(--qd-space-1) var(--qd-space-2);
-    border-radius: var(--qd-radius-md);
-    background: var(--qd-section-bg);
-  }
-
   &__deck-zone--nav {
-    flex-shrink: 0;
+    flex: 1 1 auto;
+    justify-content: flex-end;
     flex-wrap: wrap;
     align-items: center;
     gap: var(--qd-space-1) var(--qd-space-2);

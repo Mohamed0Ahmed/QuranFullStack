@@ -1,14 +1,5 @@
-<header class="mushaf-header" aria-label="سياق الصفحة والتنقّل">
+<header class="mushaf-header" aria-label="التنقّل بين الصفحات">
   <div class="mushaf-header__deck">
-    <div class="mushaf-header__deck-zone mushaf-header__deck-zone--context">
-      <span class="mushaf-header__page">صفحة {{ page().pageNumber }}</span>
-      @if (page().surahs.length) {
-        <span class="mushaf-header__surahs">{{ formatPageSurahNames(page().surahs) }}</span>
-      }
-      @if (page().navigation.juzNumbers.length) {
-        <span class="mushaf-header__meta">جزء {{ page().navigation.juzNumbers.join('، ') }}</span>
-      }
-    </div>
     <div class="mushaf-header__deck-zone mushaf-header__deck-zone--nav">
       <button
         class="qd-btn qd-btn-ghost"

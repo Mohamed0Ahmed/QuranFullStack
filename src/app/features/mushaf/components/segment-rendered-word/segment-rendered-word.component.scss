@@ -1,11 +1,11 @@
 // Colors mirror SEGMENT_COLOR_PALETTE in state/segment-color-palette.ts
 $segment-slot-colors: (
-  1: #3d6b8e,
-  2: #9a6b3c,
-  3: #3a7d56,
-  4: #7d4a6b,
-  5: #5a5a9e,
-  6: #8b6914,
+  1: #c2410c, // orange
+  2: #15803d, // green
+  3: #be123c, // rose / red-pink
+  4: #2563eb, // blue
+  5: #7e22ce, // purple
+  6: #0f766e, // teal
 );
 
 .segment-rendered-word {
