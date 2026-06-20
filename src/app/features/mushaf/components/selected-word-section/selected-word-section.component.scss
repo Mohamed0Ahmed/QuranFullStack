@@ -101,8 +101,21 @@
     background: var(--qd-surface-elevated);
   }
 
+  // Mirror the three real segment rows' line heights so the loading card does
+  // not come up shorter than the loaded card (UI-001 parity). The meta/i3rab
+  // lines are centered like their real counterparts.
   &__segment-skeleton-form {
-    height: 1.3rem;
+    height: 1.37rem;
+  }
+
+  &__segment-skeleton-meta {
+    height: 0.9rem;
+    align-self: center;
+  }
+
+  &__segment-skeleton-i3rab {
+    height: 0.85rem;
+    align-self: center;
   }
 
   // Morphology label cards: static labels stay; only the value shimmers.
