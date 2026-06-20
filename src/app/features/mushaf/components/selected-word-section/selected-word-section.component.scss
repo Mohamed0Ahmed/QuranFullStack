@@ -44,11 +44,12 @@
   }
 
   &__word-skeleton {
-    // Reserve the same visual mass as the real rendered word
-    // (font-size 1.5rem, line-height 1.8 ≈ 2.7rem) so the header does not
-    // shrink between the loading and loaded states (UI-001 parity).
+    // Reserve the same visual mass as the real rendered word, whose line box is
+    // font-size 1.5rem × line-height 1.8 ≈ 2.7rem (the parent override above),
+    // so the header placeholder does not look smaller than the loaded word
+    // (UI-001 parity).
     width: 11rem;
-    height: 2.4rem;
+    height: 2.7rem;
     border-radius: var(--qd-radius-md);
   }
 
