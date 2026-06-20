@@ -1,4 +1,4 @@
-using QuranDashboard.Application.Abstractions.Quran.Words.Display;
+using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.DisplayRebuilding;
 
 namespace QuranDashboard.Tests.Quran.WordsDisplay;
 

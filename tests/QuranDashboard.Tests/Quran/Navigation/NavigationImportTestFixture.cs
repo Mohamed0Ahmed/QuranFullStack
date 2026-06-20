@@ -1,6 +1,6 @@
-using QuranDashboard.Application.Abstractions.Quran.Navigation;
-using QuranDashboard.Application.Abstractions.Quran.Translations;
-using QuranDashboard.Application.Quran.Navigation.ImportNavigationMetadata;
+using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Navigation;
+using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Translations;
+using QuranDashboard.Application.Quran.DataPipelines.Navigation;
 using QuranDashboard.Domain.Quran.Ayahs;
 using QuranDashboard.Domain.Quran.MushafPages;
 using QuranDashboard.Domain.Quran.Mutashabihat;
@@ -9,8 +9,8 @@ using QuranDashboard.Domain.Quran.Surahs;
 using QuranDashboard.Domain.Quran.Tafsirs;
 using QuranDashboard.Domain.Quran.Translations;
 using QuranDashboard.Domain.Quran.Words;
-using QuranDashboard.Infrastructure.Files.Quran.Navigation;
-using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Navigation;
+using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Navigation;
+using QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Navigation;
 
 namespace QuranDashboard.Tests.Quran.Navigation;
 

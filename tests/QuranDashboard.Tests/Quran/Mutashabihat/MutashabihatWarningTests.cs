@@ -1,4 +1,4 @@
-using QuranDashboard.Application.Abstractions.Quran.Mutashabihat;
+using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Mutashabihat;
 
 namespace QuranDashboard.Tests.Quran.Mutashabihat;
 

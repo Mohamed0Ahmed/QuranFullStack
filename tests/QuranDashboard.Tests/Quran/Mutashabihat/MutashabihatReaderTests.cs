@@ -1,4 +1,4 @@
-using QuranDashboard.Infrastructure.Files.Quran.Mutashabihat;
+using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Mutashabihat;
 
 namespace QuranDashboard.Tests.Quran.Mutashabihat;
 

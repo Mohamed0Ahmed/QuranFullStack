@@ -1,5 +1,5 @@
-using QuranDashboard.Application.Abstractions.Quran.FullI3rab;
-using QuranDashboard.Infrastructure.Files.Quran.FullI3rab;
+using QuranDashboard.Application.Abstractions.Quran.DataPipelines.FullI3rab;
+using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.FullI3rab;
 
 namespace QuranDashboard.Tests.Quran.FullI3rab;
 

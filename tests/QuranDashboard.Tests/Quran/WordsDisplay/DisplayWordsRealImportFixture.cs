@@ -1,6 +1,6 @@
-using QuranDashboard.Application.Abstractions.Quran.Words.Display;
-using QuranDashboard.Application.Quran.Import.ImportQuranFoundation;
-using QuranDashboard.Application.Quran.Words.RebuildDisplayWords;
+using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.DisplayRebuilding;
+using QuranDashboard.Application.Quran.DataPipelines.Foundation;
+using QuranDashboard.Application.Quran.DataPipelines.Words.DisplayRebuilding;
 
 namespace QuranDashboard.Tests.Quran.WordsDisplay;
 

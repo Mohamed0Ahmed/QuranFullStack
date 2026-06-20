@@ -1,4 +1,4 @@
-using QuranDashboard.Application.Abstractions.Quran.Tafsirs;
+using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Tafsirs;
 
 namespace QuranDashboard.Tests.Quran.Tafsirs;
 

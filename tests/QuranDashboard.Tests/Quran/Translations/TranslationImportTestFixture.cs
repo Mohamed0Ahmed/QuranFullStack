@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
-using QuranDashboard.Application.Abstractions.Quran.Translations;
-using QuranDashboard.Application.Quran.Translations.ImportTranslations;
+using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Translations;
+using QuranDashboard.Application.Quran.DataPipelines.Translations;
 using QuranDashboard.Domain.Quran.Ayahs;
 using QuranDashboard.Domain.Quran.MushafPages;
 using QuranDashboard.Domain.Quran.Surahs;

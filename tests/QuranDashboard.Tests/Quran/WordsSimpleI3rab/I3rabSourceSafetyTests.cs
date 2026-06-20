@@ -1,5 +1,5 @@
-using QuranDashboard.Application.Abstractions.Quran.Words.Morphology.Irab;
-using QuranDashboard.Application.Quran.Words.GenerateI3rab;
+using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.SimpleI3rabGeneration;
+using QuranDashboard.Application.Quran.DataPipelines.Words.SimpleI3rabGeneration;
 using QuranDashboard.Domain.Quran.Words.Morphology.Irab;
 
 namespace QuranDashboard.Tests.Quran.WordsSimpleI3rab;

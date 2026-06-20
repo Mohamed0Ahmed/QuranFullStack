@@ -1,4 +1,4 @@
-using QuranDashboard.Infrastructure.Files.Quran.Import;
+using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Foundation;
 
 namespace QuranDashboard.Tests.Quran.Import;
 

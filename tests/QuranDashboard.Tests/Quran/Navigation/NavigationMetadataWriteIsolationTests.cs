@@ -1,4 +1,4 @@
-using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Navigation;
+using QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Navigation;
 
 namespace QuranDashboard.Tests.Quran.Navigation;
 

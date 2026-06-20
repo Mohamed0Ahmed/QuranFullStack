@@ -1,5 +1,5 @@
-using QuranDashboard.Application.Quran.Translations.ImportTranslations;
-using QuranDashboard.Application.Abstractions.Quran.Translations;
+using QuranDashboard.Application.Quran.DataPipelines.Translations;
+using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Translations;
 
 namespace QuranDashboard.Tests.Quran.Translations;
 

@@ -1,5 +1,5 @@
 
-using QuranDashboard.Application.Quran.Import.ImportQuranFoundation;
+using QuranDashboard.Application.Quran.DataPipelines.Foundation;
 
 namespace QuranDashboard.Tests.Quran.Import;
 

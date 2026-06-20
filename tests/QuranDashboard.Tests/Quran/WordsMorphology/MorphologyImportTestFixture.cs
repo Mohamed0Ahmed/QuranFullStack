@@ -1,12 +1,12 @@
 using System.Security.Cryptography;
-using QuranDashboard.Application.Abstractions.Quran.Words.Morphology;
-using QuranDashboard.Application.Quran.Words.ImportMorphology;
+using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.MorphologyImporting;
+using QuranDashboard.Application.Quran.DataPipelines.Words.MorphologyImporting;
 using QuranDashboard.Domain.Quran.Ayahs;
 using QuranDashboard.Domain.Quran.MushafPages;
 using QuranDashboard.Domain.Quran.Surahs;
 using QuranDashboard.Domain.Quran.Words;
-using QuranDashboard.Infrastructure.Files.Quran.Morphology;
-using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Morphology;
+using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting;
+using QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Words.MorphologyImporting;
 
 namespace QuranDashboard.Tests.Quran.WordsMorphology;
 

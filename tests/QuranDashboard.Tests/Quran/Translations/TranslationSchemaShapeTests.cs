@@ -1,4 +1,4 @@
-using QuranDashboard.Application.Abstractions.Quran.Translations;
+using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Translations;
 using QuranDashboard.Domain.Quran.Translations;
 
 namespace QuranDashboard.Tests.Quran.Translations;

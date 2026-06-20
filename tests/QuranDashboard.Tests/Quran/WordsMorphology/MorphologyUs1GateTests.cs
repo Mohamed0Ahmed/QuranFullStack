@@ -1,5 +1,5 @@
-using QuranDashboard.Application.Abstractions.Quran.Words.Morphology;
-using QuranDashboard.Application.Quran.Words.ImportMorphology;
+using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.MorphologyImporting;
+using QuranDashboard.Application.Quran.DataPipelines.Words.MorphologyImporting;
 
 namespace QuranDashboard.Tests.Quran.WordsMorphology;
 

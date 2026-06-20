@@ -1,4 +1,4 @@
-using QuranDashboard.Application.Quran.Words.GenerateI3rab;
+using QuranDashboard.Application.Quran.DataPipelines.Words.SimpleI3rabGeneration;
 
 namespace QuranDashboard.Tests.Quran.WordsSimpleI3rab;
 

@@ -1,5 +1,5 @@
-using QuranDashboard.Application.Abstractions.Quran.Import;
-using QuranDashboard.Application.Quran.Import.Validation;
+using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Foundation;
+using QuranDashboard.Application.Quran.DataPipelines.Foundation.Validation;
 
 namespace QuranDashboard.Tests.Quran.Import;
 

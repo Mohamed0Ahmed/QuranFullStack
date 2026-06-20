@@ -1,6 +1,6 @@
 using System.Text.Json.Nodes;
-using QuranDashboard.Application.Abstractions.Quran.Translations;
-using QuranDashboard.Infrastructure.Files.Quran.Translations;
+using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Translations;
+using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Translations;
 
 namespace QuranDashboard.Tests.Quran.Translations;
 

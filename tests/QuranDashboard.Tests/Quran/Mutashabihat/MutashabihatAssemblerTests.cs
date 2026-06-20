@@ -1,6 +1,6 @@
-using QuranDashboard.Application.Abstractions.Quran.Mutashabihat;
-using QuranDashboard.Application.Quran.Mutashabihat.ImportMutashabihat;
-using QuranDashboard.Infrastructure.Files.Quran.Mutashabihat;
+using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Mutashabihat;
+using QuranDashboard.Application.Quran.DataPipelines.Mutashabihat;
+using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Mutashabihat;
 
 namespace QuranDashboard.Tests.Quran.Mutashabihat;
 

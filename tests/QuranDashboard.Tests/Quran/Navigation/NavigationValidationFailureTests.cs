@@ -1,7 +1,7 @@
-using QuranDashboard.Application.Abstractions.Quran.Navigation;
-using QuranDashboard.Application.Quran.Navigation.ImportNavigationMetadata;
-using QuranDashboard.Infrastructure.Files.Quran.Navigation;
-using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Navigation;
+using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Navigation;
+using QuranDashboard.Application.Quran.DataPipelines.Navigation;
+using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Navigation;
+using QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Navigation;
 
 namespace QuranDashboard.Tests.Quran.Navigation;
 

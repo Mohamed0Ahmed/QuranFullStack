@@ -1,4 +1,4 @@
-using QuranDashboard.Application.Quran.Words.RebuildDisplayWords;
+using QuranDashboard.Application.Quran.DataPipelines.Words.DisplayRebuilding;
 using QuranDashboard.Domain.Quran.Ayahs;
 using QuranDashboard.Domain.Quran.MushafPages;
 using QuranDashboard.Domain.Quran.Surahs;

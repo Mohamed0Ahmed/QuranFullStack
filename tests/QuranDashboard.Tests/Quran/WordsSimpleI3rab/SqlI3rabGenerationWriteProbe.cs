@@ -1,4 +1,4 @@
-using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Irab;
+using QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Words.SimpleI3rabGeneration;
 
 namespace QuranDashboard.Tests.Quran.WordsSimpleI3rab;
 

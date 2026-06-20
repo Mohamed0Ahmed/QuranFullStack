@@ -1,11 +1,11 @@
 using System.Security.Cryptography;
-using QuranDashboard.Application.Abstractions.Quran.Mutashabihat;
-using QuranDashboard.Application.Quran.Mutashabihat.ImportMutashabihat;
+using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Mutashabihat;
+using QuranDashboard.Application.Quran.DataPipelines.Mutashabihat;
 using QuranDashboard.Domain.Quran.Ayahs;
 using QuranDashboard.Domain.Quran.MushafPages;
 using QuranDashboard.Domain.Quran.Surahs;
 using QuranDashboard.Domain.Quran.Words;
-using QuranDashboard.Infrastructure.Files.Quran.Mutashabihat;
+using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Mutashabihat;
 
 namespace QuranDashboard.Tests.Quran.Mutashabihat;
 

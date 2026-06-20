@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
-using QuranDashboard.Application.Quran.Words.RebuildDisplayWords;
+using QuranDashboard.Application.Quran.DataPipelines.Words.DisplayRebuilding;
 
 namespace QuranDashboard.Tests.Quran.WordsDisplay;
 

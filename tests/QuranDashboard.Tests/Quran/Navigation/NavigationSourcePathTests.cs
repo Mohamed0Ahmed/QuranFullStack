@@ -1,6 +1,6 @@
-using QuranDashboard.Application.Abstractions.Quran.Navigation;
-using QuranDashboard.Application.Quran.Navigation.ImportNavigationMetadata;
-using QuranDashboard.DataImporter;
+using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Navigation;
+using QuranDashboard.Application.Quran.DataPipelines.Navigation;
+using QuranDashboard.DataImporter.Import.DefaultPaths;
 
 namespace QuranDashboard.Tests.Quran.Navigation;
 

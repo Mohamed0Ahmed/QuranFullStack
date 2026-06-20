@@ -1,7 +1,7 @@
-using QuranDashboard.Application.Abstractions.Quran.Import;
+using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Foundation;
 using QuranDashboard.Domain.Quran.Words;
 
-using QuranDashboard.Application.Quran.Import.ImportQuranFoundation;
+using QuranDashboard.Application.Quran.DataPipelines.Foundation;
 
 namespace QuranDashboard.Tests.Quran.Import;
 

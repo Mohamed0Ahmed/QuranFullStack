@@ -1,6 +1,6 @@
-using QuranDashboard.Application.Quran.Import.Validation;
+using QuranDashboard.Application.Quran.DataPipelines.Foundation.Validation;
 
-using QuranDashboard.Application.Quran.Import.ImportQuranFoundation;
+using QuranDashboard.Application.Quran.DataPipelines.Foundation;
 
 namespace QuranDashboard.Tests.Quran.Import;
 

@@ -1,7 +1,7 @@
-using QuranDashboard.Application.Abstractions.Quran.Words.Morphology;
-using QuranDashboard.Infrastructure.Files.Quran.Morphology;
-using QuranDashboard.Infrastructure.Persistence.Repositories.Quran.Morphology;
-using QuranDashboard.Infrastructure.Reports.Quran.Morphology;
+using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.MorphologyImporting;
+using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting;
+using QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Words.MorphologyImporting;
+using QuranDashboard.Infrastructure.Reports.Quran.DataPipelines.Words.MorphologyImporting;
 
 namespace QuranDashboard.Tests.Quran.WordsMorphology;
 

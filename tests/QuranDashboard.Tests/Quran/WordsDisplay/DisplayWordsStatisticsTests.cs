@@ -1,5 +1,5 @@
 
-using QuranDashboard.Application.Quran.Words.RebuildDisplayWords;
+using QuranDashboard.Application.Quran.DataPipelines.Words.DisplayRebuilding;
 
 namespace QuranDashboard.Tests.Quran.WordsDisplay;
 
