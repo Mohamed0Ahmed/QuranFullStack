@@ -14,7 +14,11 @@
   display: flex;
   flex-direction: column;
   gap: var(--qd-space-3);
-  min-height: 0;
+  // Stable floor so the card shell does not collapse to one line while the
+  // word analysis loads (UI-001); inner regions skeletonize instead. The
+  // scrolling content region below keeps its own min-height: 0 so it can
+  // shrink/scroll within this floor.
+  min-height: 14rem;
   height: 100%;
   padding: var(--qd-space-3);
   background: var(--qd-surface);
@@ -35,7 +39,14 @@
     align-items: center;
     width: 100%;
     flex-shrink: 0;
+    min-height: 2.75rem;
     padding-block: var(--qd-space-1);
+  }
+
+  &__word-skeleton {
+    width: 9rem;
+    height: 2rem;
+    border-radius: var(--qd-radius-md);
   }
 
   &__rendered-word {

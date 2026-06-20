@@ -7,49 +7,83 @@
     <div class="qd-empty-state" role="status">
       <span>اختر كلمة من المصحف لعرض التحليل.</span>
     </div>
-  } @else if (loadState().isLoading) {
-    <div class="qd-loading-state" role="status" aria-live="polite">
-      <span>جارٍ تحميل تحليل الكلمة...</span>
-    </div>
-  } @else if (loadState().isEmpty || !analysis()) {
+  } @else if (loadState().isEmpty || (!loadState().isLoading && !analysis())) {
     <div class="qd-empty-state" role="status">
       <span>تعذّر تحميل تحليل الكلمة.</span>
     </div>
   } @else {
+    @if (loadState().isLoading) {
+      <p class="qd-sr-only" role="status" aria-live="polite" data-testid="word-analysis-loading">
+        جارٍ تحميل تحليل الكلمة...
+      </p>
+    }
+
     <header class="selected-word-section__header">
-      <qd-segment-rendered-word
-        class="selected-word-section__rendered-word"
-        [segments]="analysis()!.segments"
-        [fullWordText]="analysis()!.word.textUthmani"
-      />
+      @if (loadState().isLoading) {
+        <span
+          class="qd-skeleton qd-skeleton--rounded-md selected-word-section__word-skeleton"
+          aria-hidden="true"
+        ></span>
+      } @else {
+        <qd-segment-rendered-word
+          class="selected-word-section__rendered-word"
+          [segments]="analysis()!.segments"
+          [fullWordText]="analysis()!.word.textUthmani"
+        />
+      }
     </header>
 
     <div class="selected-word-section__content">
-      <section class="selected-word-section__section" aria-label="قطع الكلمة والإعراب">
-        <div class="selected-word-section__segments-block">
-          <qd-segment-data-rows [segments]="analysis()!.segments" />
-          <qd-word-morphology-summary [morphology]="analysis()!.morphology" />
-        </div>
-      </section>
+      @if (loadState().isLoading) {
+        <section class="selected-word-section__section" aria-label="قطع الكلمة والإعراب" aria-busy="true">
+          <div class="qd-skeleton-group selected-word-section__segments-block">
+            <span class="qd-skeleton qd-skeleton--text"></span>
+            <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-75"></span>
+            <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-50"></span>
+            <span class="qd-skeleton qd-skeleton--text"></span>
+            <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-75"></span>
+          </div>
+        </section>
 
-      <section class="selected-word-section__section" aria-label="تكرار الكلمة">
-        <dl class="selected-word-section__identity" data-testid="word-identity-summary">
-          <div class="selected-word-section__identity-row">
-            <dt>التكرار (بالتشكيل)</dt>
-            <dd>
-              {{ analysis()!.identity.orderedTashkeel.occurrencesCount }} مرة في
-              {{ analysis()!.identity.orderedTashkeel.surahsCount }} سورة
-            </dd>
+        <section class="selected-word-section__section" aria-label="تكرار الكلمة" aria-busy="true">
+          <div class="selected-word-section__identity">
+            <div class="selected-word-section__identity-row">
+              <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-50"></span>
+              <span class="qd-skeleton qd-skeleton--text"></span>
+            </div>
+            <div class="selected-word-section__identity-row">
+              <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-50"></span>
+              <span class="qd-skeleton qd-skeleton--text"></span>
+            </div>
           </div>
-          <div class="selected-word-section__identity-row">
-            <dt>التكرار (مبسّط)</dt>
-            <dd>
-              {{ analysis()!.identity.orderedSimple.occurrencesCount }} مرة في
-              {{ analysis()!.identity.orderedSimple.surahsCount }} سورة
-            </dd>
+        </section>
+      } @else {
+        <section class="selected-word-section__section" aria-label="قطع الكلمة والإعراب">
+          <div class="selected-word-section__segments-block">
+            <qd-segment-data-rows [segments]="analysis()!.segments" />
+            <qd-word-morphology-summary [morphology]="analysis()!.morphology" />
           </div>
-        </dl>
-      </section>
+        </section>
+
+        <section class="selected-word-section__section" aria-label="تكرار الكلمة">
+          <dl class="selected-word-section__identity" data-testid="word-identity-summary">
+            <div class="selected-word-section__identity-row">
+              <dt>التكرار (بالتشكيل)</dt>
+              <dd>
+                {{ analysis()!.identity.orderedTashkeel.occurrencesCount }} مرة في
+                {{ analysis()!.identity.orderedTashkeel.surahsCount }} سورة
+              </dd>
+            </div>
+            <div class="selected-word-section__identity-row">
+              <dt>التكرار (مبسّط)</dt>
+              <dd>
+                {{ analysis()!.identity.orderedSimple.occurrencesCount }} مرة في
+                {{ analysis()!.identity.orderedSimple.surahsCount }} سورة
+              </dd>
+            </div>
+          </dl>
+        </section>
+      }
     </div>
   }
 </section>

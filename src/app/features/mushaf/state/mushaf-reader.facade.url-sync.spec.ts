@@ -214,6 +214,182 @@ describe('MushafReaderFacade URL sync', () => {
     }
   });
 
+  it('debounces ayah-study requests when the selected ayah changes quickly (UI-001)', () => {
+    vi.useFakeTimers();
+
+    try {
+      const { facade, route, queryParamMap$, getAyahStudy } = createFacadeTestBed({
+        page: '5',
+        ayah: '2:25',
+        word: '2:25:3',
+        panel: 'word',
+      });
+
+      facade.bindToRoute(route);
+      // Initial hydration loads ayah 2:25 immediately.
+      expect(getAyahStudy).toHaveBeenCalledTimes(1);
+
+      // Switching the ayah key while one is already selected is debounced.
+      queryParamMap$.next(convertToParamMap({ page: '5', ayah: '2:26', word: '2:26:1', panel: 'word' }));
+
+      // No fetch yet — the debounce window has not elapsed.
+      expect(getAyahStudy).toHaveBeenCalledTimes(1);
+
+      // UI-001: the panel must read as "loading" for the WHOLE debounce window
+      // and must not present the previous ayah's content as if it were current.
+      expect(facade.ayahStudyLoadState().isLoading).toBe(true);
+      expect(facade.ayahStudy()).toBeNull();
+
+      vi.advanceTimersByTime(699);
+      expect(getAyahStudy).toHaveBeenCalledTimes(1);
+      expect(facade.ayahStudyLoadState().isLoading).toBe(true);
+
+      vi.advanceTimersByTime(1);
+      // 700 ms elapsed → the debounced ayah-study fetch fires.
+      expect(getAyahStudy).toHaveBeenCalledTimes(2);
+      expect(getAyahStudy).toHaveBeenLastCalledWith('2:26', expect.anything());
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('shows the word-analysis panel as loading for the whole debounce window (UI-001)', () => {
+    vi.useFakeTimers();
+
+    try {
+      const { facade, route, queryParamMap$, getWordAnalysis } = createFacadeTestBed({
+        page: '5',
+        ayah: '2:25',
+        word: '2:25:3',
+        panel: 'word',
+      });
+
+      facade.bindToRoute(route);
+      expect(getWordAnalysis).toHaveBeenCalledTimes(1);
+
+      // Switching the word while one is already selected is debounced.
+      queryParamMap$.next(convertToParamMap({ page: '5', ayah: '2:25', word: '2:25:4', panel: 'word' }));
+
+      // UI-001: the panel must read as "loading" immediately, with no stale
+      // previous-word content shown as current during the debounce window.
+      expect(facade.wordAnalysisLoadState().isLoading).toBe(true);
+      expect(facade.wordAnalysis()).toBeNull();
+      expect(getWordAnalysis).toHaveBeenCalledTimes(1);
+
+      vi.advanceTimersByTime(699);
+      expect(getWordAnalysis).toHaveBeenCalledTimes(1);
+      expect(facade.wordAnalysisLoadState().isLoading).toBe(true);
+
+      vi.advanceTimersByTime(1);
+      expect(getWordAnalysis).toHaveBeenCalledTimes(2);
+      expect(getWordAnalysis).toHaveBeenLastCalledWith('2:25:4');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('cancels a pending debounced ayah-study fetch when the ayah is cleared', () => {
+    vi.useFakeTimers();
+
+    try {
+      const { facade, route, queryParamMap$, getAyahStudy } = createFacadeTestBed({
+        page: '5',
+        ayah: '2:25',
+        word: '2:25:3',
+        panel: 'word',
+      });
+
+      facade.bindToRoute(route);
+      expect(getAyahStudy).toHaveBeenCalledTimes(1);
+
+      // Trigger a debounced ayah switch to 2:26.
+      queryParamMap$.next(convertToParamMap({ page: '5', ayah: '2:26', word: '2:26:1', panel: 'word' }));
+      expect(getAyahStudy).toHaveBeenCalledTimes(1);
+
+      // Clear the ayah param before the debounce fires.
+      queryParamMap$.next(convertToParamMap({ page: '5', panel: 'none' }));
+
+      // Let the original debounce window fully elapse — no fetch should fire,
+      // and the ayah load state must not be left loading.
+      vi.advanceTimersByTime(1000);
+      expect(getAyahStudy).toHaveBeenCalledTimes(1);
+      expect(facade.ayahStudyLoadState().isLoading).toBe(false);
+      expect(facade.selectedAyahKey()).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('replaces a pending debounced ayah-study fetch when switching ayahs again before the window elapses', () => {
+    vi.useFakeTimers();
+
+    try {
+      const { facade, route, queryParamMap$, getAyahStudy } = createFacadeTestBed({
+        page: '5',
+        ayah: '2:25',
+        word: '2:25:3',
+        panel: 'word',
+      });
+
+      facade.bindToRoute(route);
+      expect(getAyahStudy).toHaveBeenCalledTimes(1);
+
+      // Start a debounced switch to 2:26.
+      queryParamMap$.next(convertToParamMap({ page: '5', ayah: '2:26', word: '2:26:1', panel: 'word' }));
+      expect(getAyahStudy).toHaveBeenCalledTimes(1);
+
+      // Switch again to 2:27 before the first debounce fires — should reset the
+      // window and only ever fetch the latest (2:27).
+      queryParamMap$.next(convertToParamMap({ page: '5', ayah: '2:27', word: '2:27:1', panel: 'word' }));
+
+      vi.advanceTimersByTime(699);
+      expect(getAyahStudy).toHaveBeenCalledTimes(1);
+
+      vi.advanceTimersByTime(1);
+      expect(getAyahStudy).toHaveBeenCalledTimes(2);
+      expect(getAyahStudy).toHaveBeenLastCalledWith('2:27', expect.anything());
+      expect(facade.selectedAyahKey()).toBe('2:27');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('loads immediately (not debounced) when only the source changes for the same ayah', () => {
+    vi.useFakeTimers();
+
+    try {
+      const { facade, route, queryParamMap$, getAyahStudy } = createFacadeTestBed({
+        page: '5',
+        ayah: '2:25',
+        word: '2:25:3',
+        panel: 'word',
+      });
+
+      facade.bindToRoute(route);
+      expect(getAyahStudy).toHaveBeenCalledTimes(1);
+
+      // Same ayah key, only the translation source changes → must reload
+      // immediately (source selector stays responsive), not be debounced.
+      queryParamMap$.next(
+        convertToParamMap({
+          page: '5',
+          ayah: '2:25',
+          word: '2:25:3',
+          panel: 'word',
+          translationSource: 'en-sahih-international',
+        }),
+      );
+
+      expect(getAyahStudy).toHaveBeenCalledTimes(2);
+      expect(getAyahStudy).toHaveBeenLastCalledWith(
+        '2:25',
+        expect.objectContaining({ translationSource: 'en-sahih-international' }),
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('writes URL updates with replaceUrl merge semantics when selecting an ayah', () => {
     const { facade, route, navigate } = createFacadeTestBed({ page: '5', word: '2:25:3' });
     facade.bindToRoute(route);

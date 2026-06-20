@@ -3,47 +3,56 @@
     <div class="qd-empty-state" role="status">
       <span>اختر آية من المصحف لعرض سياق الدراسة.</span>
     </div>
-  } @else if (loadState().isLoading) {
-    <div class="qd-loading-state" role="status" aria-live="polite">
-      <span>جارٍ تحميل دراسة الآية...</span>
-    </div>
   } @else if (loadState().errorMessage) {
-    <div class="qd-error-state" role="alert">
+    <div class="qd-error-state" role="alert" data-testid="ayah-study-error">
       <span>{{ loadState().errorMessage }}</span>
     </div>
-  } @else if (loadState().isEmpty || !study()) {
+  } @else if (loadState().isEmpty || (!loadState().isLoading && !study())) {
     <div class="qd-empty-state" role="status">
       <span>تعذّر تحميل دراسة الآية.</span>
     </div>
   } @else {
+    @if (loadState().isLoading) {
+      <p class="qd-sr-only" role="status" aria-live="polite" data-testid="ayah-study-loading">
+        جارٍ تحميل دراسة الآية...
+      </p>
+    }
+
     <div class="selected-ayah-section__source">
-      @switch (activeTab()) {
-        @case ('tafsir') {
-          <qd-source-selector
-            label="مصدر التفسير"
-            pickerMode="languageFirst"
-            [selectedKey]="study()!.selectedSources.tafsirSource"
-            [options]="tafsirOptions()"
-            (sourceChange)="tafsirSourceChange.emit($event)"
-          />
-        }
-        @case ('translation') {
-          <qd-source-selector
-            label="مصدر الترجمة"
-            pickerMode="languageFirst"
-            [selectedKey]="study()!.selectedSources.translationSource"
-            [options]="translationOptions()"
-            (sourceChange)="translationSourceChange.emit($event)"
-          />
-        }
-        @case ('full-i3rab') {
-          <qd-source-selector
-            label="مصدر الإعراب"
-            pickerMode="flat"
-            [selectedKey]="study()!.selectedSources.fullI3rabSource"
-            [options]="fullI3rabOptions()"
-            (sourceChange)="fullI3rabSourceChange.emit($event)"
-          />
+      @if (loadState().isLoading) {
+        <span
+          class="qd-skeleton qd-skeleton--rounded-md selected-ayah-section__source-skeleton"
+          aria-hidden="true"
+        ></span>
+      } @else {
+        @switch (activeTab()) {
+          @case ('tafsir') {
+            <qd-source-selector
+              label="مصدر التفسير"
+              pickerMode="languageFirst"
+              [selectedKey]="study()!.selectedSources.tafsirSource"
+              [options]="tafsirOptions()"
+              (sourceChange)="tafsirSourceChange.emit($event)"
+            />
+          }
+          @case ('translation') {
+            <qd-source-selector
+              label="مصدر الترجمة"
+              pickerMode="languageFirst"
+              [selectedKey]="study()!.selectedSources.translationSource"
+              [options]="translationOptions()"
+              (sourceChange)="translationSourceChange.emit($event)"
+            />
+          }
+          @case ('full-i3rab') {
+            <qd-source-selector
+              label="مصدر الإعراب"
+              pickerMode="flat"
+              [selectedKey]="study()!.selectedSources.fullI3rabSource"
+              [options]="fullI3rabOptions()"
+              (sourceChange)="fullI3rabSourceChange.emit($event)"
+            />
+          }
         }
       }
     </div>
@@ -53,6 +62,7 @@
         type="button"
         class="selected-ayah-section__tab"
         [class.selected-ayah-section__tab--active]="activeTab() === 'tafsir'"
+        [disabled]="loadState().isLoading"
         (click)="tabChange.emit('tafsir')"
       >
         التفسير
@@ -61,6 +71,7 @@
         type="button"
         class="selected-ayah-section__tab"
         [class.selected-ayah-section__tab--active]="activeTab() === 'translation'"
+        [disabled]="loadState().isLoading"
         (click)="tabChange.emit('translation')"
       >
         الترجمة
@@ -69,28 +80,44 @@
         type="button"
         class="selected-ayah-section__tab"
         [class.selected-ayah-section__tab--active]="activeTab() === 'full-i3rab'"
+        [disabled]="loadState().isLoading"
         (click)="tabChange.emit('full-i3rab')"
       >
         الإعراب الكامل
       </button>
     </nav>
 
-    @if (displayAyahText()) {
+    @if (loadState().isLoading) {
+      <p class="selected-ayah-section__ayah selected-ayah-section__ayah--skeleton" dir="rtl" aria-hidden="true">
+        <span class="qd-skeleton qd-skeleton--rounded-md selected-ayah-section__ayah-skeleton"></span>
+      </p>
+    } @else if (displayAyahText()) {
       <p class="selected-ayah-section__ayah" dir="rtl" data-testid="selected-ayah-section-ayah">
         {{ displayAyahText() }}
       </p>
     }
 
-    <div class="selected-ayah-section__content">
-      @switch (activeTab()) {
-        @case ('tafsir') {
-          <qd-tafsir-card [entry]="study()!.tafsir" />
-        }
-        @case ('translation') {
-          <qd-translation-card [entry]="study()!.translation" />
-        }
-        @case ('full-i3rab') {
-          <qd-full-i3rab-card [entry]="study()!.fullI3rab" />
+    <div class="selected-ayah-section__content" [class.selected-ayah-section__content--loading]="loadState().isLoading">
+      @if (loadState().isLoading) {
+        <div class="qd-skeleton-group selected-ayah-section__content-skeleton" aria-busy="true">
+          <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-50"></span>
+          <span class="qd-skeleton qd-skeleton--text"></span>
+          <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-90"></span>
+          <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-75"></span>
+          <span class="qd-skeleton qd-skeleton--text"></span>
+          <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-50"></span>
+        </div>
+      } @else {
+        @switch (activeTab()) {
+          @case ('tafsir') {
+            <qd-tafsir-card [entry]="study()!.tafsir" />
+          }
+          @case ('translation') {
+            <qd-translation-card [entry]="study()!.translation" />
+          }
+          @case ('full-i3rab') {
+            <qd-full-i3rab-card [entry]="study()!.fullI3rab" />
+          }
         }
       }
     </div>

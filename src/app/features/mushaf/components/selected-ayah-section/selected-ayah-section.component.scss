@@ -14,7 +14,11 @@
   display: flex;
   flex-direction: column;
   gap: var(--qd-space-3);
-  min-height: 0;
+  // Stable floor so the card shell does not collapse to one line while the
+  // ayah study loads (UI-001); inner regions skeletonize instead. The
+  // scrolling content region below keeps its own min-height: 0 so it can
+  // shrink/scroll within this floor.
+  min-height: 18rem;
   height: 100%;
   padding: var(--qd-space-3);
   background: var(--qd-surface);
@@ -31,6 +35,13 @@
 
   &__source {
     flex-shrink: 0;
+    min-height: 2.5rem;
+  }
+
+  &__source-skeleton {
+    display: block;
+    width: 12rem;
+    height: 2.25rem;
   }
 
   &__tabs {
@@ -59,6 +70,12 @@
       color: var(--qd-text);
       font-weight: 600;
     }
+
+    // Actions may be disabled while loading (UI-001) but must not disappear.
+    &:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
   }
 
   &__ayah {
@@ -72,6 +89,21 @@
     color: var(--qd-text);
     text-align: center;
     letter-spacing: 0.012em;
+
+    &--skeleton {
+      // The ayah-text slot must reserve its vertical space while loading so
+      // the shell does not jump; only the inner bar skeletonizes.
+      min-height: 3.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+
+  &__ayah-skeleton {
+    width: 70%;
+    height: 1.5rem;
+    border-radius: var(--qd-radius-md);
   }
 
   &__content {
@@ -88,6 +120,12 @@
     ::ng-deep .study-card__body {
       font-size: 1.0125rem;
       line-height: 1.95;
+    }
+
+    &--loading {
+      // Reserve vertical space for the skeleton paragraph so the content
+      // region keeps a stable height during ayah loads (UI-001).
+      min-height: 10rem;
     }
 
     :host.qd-selected-ayah-section--embedded .selected-ayah-section & {

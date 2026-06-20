@@ -103,8 +103,93 @@
   color: var(--qd-danger);
 }
 
+/*
+ * Skeleton / shimmer / wave placeholders.
+ *
+ * Reusable loading affordances that keep a card *shell* mounted and only
+ * replace inner data regions with placeholders, so the card does not
+ * collapse/expand while data loads (see UI-001).
+ *
+ * Built only from existing design tokens; animation respects
+ * prefers-reduced-motion by falling back to a static tinted block.
+ */
+.qd-skeleton {
+  display: block;
+  background: var(--qd-surface-elevated);
+  border-radius: var(--qd-radius-sm);
+  position: relative;
+  overflow: hidden;
+
+  // Stable baseline height so a row of skeleton lines reserves space even
+  // before layout settles; modifiers below override as needed.
+  min-height: 0.75rem;
+}
+
+.qd-skeleton--text {
+  height: 0.75rem;
+  width: 100%;
+}
+
+// Constrain width so skeleton text lines read like natural prose rather than
+// full-width bars. Usage: <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-75">
+.qd-skeleton--w-25 { width: 25%; }
+.qd-skeleton--w-50 { width: 50%; }
+.qd-skeleton--w-75 { width: 75%; }
+.qd-skeleton--w-90 { width: 90%; }
+
+.qd-skeleton--block {
+  min-height: 3rem;
+  height: 3rem;
+  width: 100%;
+}
+
+.qd-skeleton--rounded-md {
+  border-radius: var(--qd-radius-md);
+}
+
+// Container for stacked skeleton lines; mirrors a paragraph / list block.
+.qd-skeleton-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qd-space-2);
+  width: 100%;
+}
+
+// Wave/shimmer overlay. Implemented as a moving gradient sweep over the base
+// tint so the base color (and thus the box size) stays stable.
+.qd-skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in oklch, var(--qd-surface) 55%, transparent) 50%,
+    transparent 100%
+  );
+  animation: qd-skeleton-wave 1.6s ease-in-out infinite;
+}
+
+@keyframes qd-skeleton-wave {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .qd-btn {
     transition: none;
+  }
+
+  // Reduced-motion users get a static, slightly tinted placeholder with no
+  // moving sweep, so the box still reads as "loading" without animation.
+  .qd-skeleton::after {
+    animation: none;
+    background: color-mix(in oklch, var(--qd-surface) 50%, transparent);
+    transform: none;
   }
 }

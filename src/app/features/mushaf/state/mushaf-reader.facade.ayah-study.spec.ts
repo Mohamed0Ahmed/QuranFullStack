@@ -5,7 +5,7 @@ import { of } from 'rxjs';
 import { MushafAyahStudyApi } from '../data-access/mushaf-ayah-study.api';
 import { MushafPagesApi } from '../data-access/mushaf-pages.api';
 import { MushafWordAnalysisApi } from '../data-access/mushaf-word-analysis.api';
-import { AyahStudyDto } from '../models/mushaf.models';
+import { AyahStudyDto, WordAnalysisDto } from '../models/mushaf.models';
 import { MushafReaderFacade } from './mushaf-reader.facade';
 import { mushafStudySourceCatalogApiProvider } from './mushaf-study-source-catalog.api.mock';
 import { SelectedAyahSectionComponent } from '../components/selected-ayah-section/selected-ayah-section.component';
@@ -19,6 +19,53 @@ const pageDto = {
   navigation: { juzNumbers: [], hizbNumbers: [], rubNumbers: [] },
   lines: [],
   markers: [],
+};
+
+/*
+ * Source-safe synthetic word-analysis stub (not Quranic text). Used only by the
+ * same-ayah no-reload regression test below so the word-analysis path resolves
+ * without error while we assert the ayah study is NOT refetched.
+ */
+const wordAnalysisStub: WordAnalysisDto = {
+  word: {
+    quranWordId: 2003,
+    wordLocation: '2:25:3',
+    verseKey: '2:25',
+    surahNumber: 2,
+    ayahNumber: 25,
+    wordNumber: 3,
+    pageNumber: 5,
+    lineNumber: 1,
+    lineWordOrder: 3,
+    textUthmani: 'كلمة-تجريبية-١',
+    textUthmaniSimple: 'كلمة-مبسطة-١',
+    textImlaeiSimple: 'كلمة-مبسطة-١',
+    qpcGlyph: 'glyph-test-1',
+  },
+  identity: {
+    orderedTashkeel: { occurrencesCount: 1, ayahsCount: 1, surahsCount: 1 },
+    orderedSimple: { occurrencesCount: 1, ayahsCount: 1, surahsCount: 1 },
+    uniqueTashkeel: { id: 1, occurrencesCount: 1, ayahsCount: 1, surahsCount: 1 },
+    uniqueSimple: {
+      id: 1,
+      occurrencesCount: 1,
+      ayahsCount: 1,
+      surahsCount: 1,
+      wordKeyImlaeiSimple: 'مفتاح-كلمة-تجريبي',
+    },
+  },
+  morphology: {
+    headPos: 'V',
+    headPosLabel: { ar: 'فعل', en: 'Verb' },
+    root: null,
+    lemma: null,
+    stem: null,
+    isVerb: true,
+    verbTense: 'past',
+    verbVoice: 'active',
+    caseFeature: null,
+  },
+  renderedWordSegments: [],
 };
 
 const ayahStudyDto: AyahStudyDto = {
@@ -220,6 +267,59 @@ describe('MushafReaderFacade.applyUrlState', () => {
 
     expect(getAyahStudy).toHaveBeenCalledTimes(1);
     expect(facade.ayahTab()).toBe('translation');
+  });
+
+  it('does not reload ayah study when selecting a different word in the same ayah (UI-001 regression)', () => {
+    // Locks in the calm same-ayah behavior: `selectWord` writes the word's own
+    // verse-key into the `ayah` URL param, and hydration only reloads the ayah
+    // when `ayahChanged || sourcesChanged`. Selecting another word in the SAME
+    // ayah must therefore NOT set the ayah load state to loading and must NOT
+    // re-fetch the ayah study. The word analysis load is independent.
+    const getAyahStudy = vi.fn(() => of({ isSuccess: true, message: 'تم', data: ayahStudyDto }));
+    const getWordAnalysis = vi.fn(() =>
+      of({ isSuccess: true, message: 'تم', data: { ...wordAnalysisStub, word: { ...wordAnalysisStub.word, wordLocation: '2:25:4' } } }),
+    );
+
+    TestBed.configureTestingModule({
+      providers: [
+        MushafReaderFacade,
+        { provide: MushafPagesApi, useValue: { getPage: vi.fn(() => of({ isSuccess: true, message: 'ok', data: pageDto })) } },
+        { provide: MushafAyahStudyApi, useValue: { getAyahStudy } },
+        { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis } },
+        mushafStudySourceCatalogApiProvider,
+      ],
+    });
+
+    const facade = TestBed.inject(MushafReaderFacade);
+
+    // First: select a word in ayah 2:25 — this hydrates the ayah once.
+    facade.applyUrlState({
+      panel: 'word',
+      ayah: '2:25',
+      sources: { tafsirSource: null, translationSource: null, fullI3rabSource: null },
+      ayahTab: 'tafsir',
+      word: '2:25:3',
+      segment: null,
+      wordTab: 'segments',
+    });
+    const ayahCallsAfterFirstWord = getAyahStudy.mock.calls.length;
+    expect(ayahCallsAfterFirstWord).toBeGreaterThanOrEqual(1);
+
+    // Then: select a DIFFERENT word in the SAME ayah (2:25:4).
+    facade.applyUrlState({
+      panel: 'word',
+      ayah: '2:25',
+      sources: { tafsirSource: null, translationSource: null, fullI3rabSource: null },
+      ayahTab: 'tafsir',
+      word: '2:25:4',
+      segment: null,
+      wordTab: 'segments',
+    });
+
+    // The ayah study must NOT have been fetched again for the same ayah.
+    expect(getAyahStudy.mock.calls.length).toBe(ayahCallsAfterFirstWord);
+    // And the ayah load state must not have flipped to loading.
+    expect(facade.ayahStudyLoadState().isLoading).toBe(false);
   });
 });
 

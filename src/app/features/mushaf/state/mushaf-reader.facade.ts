@@ -50,6 +50,7 @@ import {
 } from '../utils/study-source-catalog.labels';
 
 const WORD_ANALYSIS_SWITCH_DELAY_MS = 700;
+const AYAH_STUDY_SWITCH_DELAY_MS = 700;
 
 function toPageViewModel(dto: MushafPageDto): MushafPageViewModel {
   return {
@@ -133,6 +134,14 @@ export class MushafReaderFacade {
 
   private wordAnalysisRequestTimer: ReturnType<typeof setTimeout> | null = null;
   private wordAnalysisRequestToken = 0;
+
+  // Mirrors the word-analysis debounce: a 700 ms delay + request token so that
+  // rapid ayah switching (e.g. clicking through words across different ayahs)
+  // does not fire overlapping ayah-study requests or apply out-of-order
+  // responses (see UI-001). The token is also bumped on cancel so any in-flight
+  // response is ignored.
+  private ayahStudyRequestTimer: ReturnType<typeof setTimeout> | null = null;
+  private ayahStudyRequestToken = 0;
 
   private readonly _pageLoadState = signal<ResourceLoadState>(DEFAULT_MUSHAF_READER_STATE.page);
   private readonly _ayahStudyLoadState = signal<ResourceLoadState>(DEFAULT_MUSHAF_READER_STATE.ayahStudy);
@@ -287,10 +296,22 @@ export class MushafReaderFacade {
     this.runWordAnalysisLoad(wordLocation, requestToken);
   }
 
+  /**
+   * Debounces a word-analysis fetch by {@link WORD_ANALYSIS_SWITCH_DELAY_MS}.
+   * Used when switching words while one is already selected.
+   *
+   * The load state flips to loading and the previous analysis view model is
+   * cleared immediately (not after the debounce window), so the panel shows its
+   * skeleton for the whole wait instead of the *previous* word's content.
+   * Mirrors the ayah-study switch debounce; the request-token guard keeps this
+   * safe from out-of-order responses. (UI-001)
+   */
   private scheduleWordAnalysisLoad(wordLocation: string): void {
     this.clearPendingWordAnalysisLoad();
 
     const requestToken = ++this.wordAnalysisRequestToken;
+    this._wordAnalysis.set(null);
+    this._wordAnalysisLoadState.set({ isLoading: true, isEmpty: false, errorMessage: null });
     this.wordAnalysisRequestTimer = setTimeout(() => {
       this.wordAnalysisRequestTimer = null;
       this.runWordAnalysisLoad(wordLocation, requestToken);
@@ -420,6 +441,45 @@ export class MushafReaderFacade {
 
   loadAyahStudy(verseKey: string): void {
     this._selectedAyahKey.set(verseKey);
+    this.clearPendingAyahStudyLoad();
+    const requestToken = ++this.ayahStudyRequestToken;
+    this.runAyahStudyLoad(verseKey, requestToken);
+  }
+
+  /**
+   * Debounces an ayah-study fetch by {@link AYAH_STUDY_SWITCH_DELAY_MS}. Used
+   * when switching to a different ayah while one is already selected, mirroring
+   * the word-analysis switch debounce. The first ayah selection (and source-only
+   * changes that keep the same verse key) still load immediately.
+   *
+   * The load state flips to loading and the previous study view model is cleared
+   * immediately (not after the debounce window), so the panel shows its skeleton
+   * for the whole wait instead of the *previous* ayah's content — UI-001 forbids
+   * stale cross-ayah content during loading. The request-token guard makes this
+   * safe: any in-flight response from the prior selection is discarded.
+   */
+  private scheduleAyahStudyLoad(verseKey: string): void {
+    this.clearPendingAyahStudyLoad();
+
+    const requestToken = ++this.ayahStudyRequestToken;
+    this._ayahStudy.set(null);
+    this._ayahStudyLoadState.set({ isLoading: true, isEmpty: false, errorMessage: null });
+    this.ayahStudyRequestTimer = setTimeout(() => {
+      this.ayahStudyRequestTimer = null;
+      this.runAyahStudyLoad(verseKey, requestToken);
+    }, AYAH_STUDY_SWITCH_DELAY_MS);
+  }
+
+  private clearPendingAyahStudyLoad(): void {
+    if (this.ayahStudyRequestTimer !== null) {
+      clearTimeout(this.ayahStudyRequestTimer);
+      this.ayahStudyRequestTimer = null;
+    }
+
+    this.ayahStudyRequestToken += 1;
+  }
+
+  private runAyahStudyLoad(verseKey: string, requestToken: number): void {
     this._ayahStudyLoadState.set({ isLoading: true, isEmpty: false, errorMessage: null });
 
     const sources = this._urlExplicitSources();
@@ -428,6 +488,10 @@ export class MushafReaderFacade {
       this.readerCache.getOrLoad(cacheKey, () => this.ayahStudyApi.getAyahStudy(verseKey, sources)),
       {
         onSuccess: (data) => {
+          if (this.ayahStudyRequestToken !== requestToken) {
+            return;
+          }
+
           this._ayahStudy.set(toAyahStudyViewModel(data));
           this._sources.set({
             tafsirSource: data.selectedSources.tafsirSource,
@@ -436,6 +500,10 @@ export class MushafReaderFacade {
           });
         },
         onSettled: (loadState) => {
+          if (this.ayahStudyRequestToken !== requestToken) {
+            return;
+          }
+
           if (loadState.isEmpty) {
             this._ayahStudy.set(null);
           }
@@ -505,14 +573,26 @@ export class MushafReaderFacade {
         },
         setUrlExplicitSources: (sources) => this._urlExplicitSources.set(sources),
         clearAyahSelection: () => {
+          this.clearPendingAyahStudyLoad();
           this._selectedAyahKey.set(null);
           this._ayahStudy.set(null);
           this._ayahStudyLoadState.set({ isLoading: false, isEmpty: false, errorMessage: null });
         },
         setAyah: (verseKey, reload) => {
+          const hadAyahSelection = this._selectedAyahKey() !== null;
+          const verseKeyChanged = this._selectedAyahKey() !== verseKey;
           this._selectedAyahKey.set(verseKey);
+
           if (reload) {
-            this.loadAyahStudy(verseKey);
+            // Debounce only on a genuine ayah-key switch while one is already
+            // selected — mirrors the word-analysis switch debounce. A source-only
+            // change (same verse key) stays immediate so the source selector
+            // stays responsive. The first ayah selection loads immediately too.
+            if (verseKeyChanged && hadAyahSelection) {
+              this.scheduleAyahStudyLoad(verseKey);
+            } else {
+              this.loadAyahStudy(verseKey);
+            }
           }
         },
       },
