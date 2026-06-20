@@ -171,11 +171,11 @@ Rules:
 Example:
 
 ```csharp
-public interface IMushafPageReadRepository
+public interface IMushafPageReader
 {
-    Task<MushafPageDetails?> GetPageAsync(
+    Task<MushafPageResponse?> GetPageAsync(
         int pageNumber,
-        CancellationToken cancellationToken);
+        CancellationToken ct);
 }
 ```
 
@@ -274,8 +274,8 @@ Flow:
 - `MushafPagesController`
 - `GetMushafPageQuery`
 - `GetMushafPageHandler`
-- `IMushafPageReadRepository`
-- `MushafPageReadRepository`
+- `IMushafPageReader`
+- `MushafPageReader`
 - response returned to API
 
 ## Repository and Data Access Policy
@@ -298,8 +298,8 @@ Rules:
 - Do not inject Infrastructure implementations directly into Application.
 - Do not expose DbContext to Application unless explicitly approved.
 - Prefer focused interfaces such as:
-  - `IMushafPageReadRepository`
-  - `IQuranWordReadRepository`
+  - `IMushafPageReader`
+  - `IWordAnalysisReader`
   - `IGateReadRepository`
 
 Avoid broad generic repositories unless there is a clear reason.
@@ -378,7 +378,7 @@ Domain:
 
 Application.Abstractions:
 
-- `Application.Abstractions/Quran/MushafPages/IMushafPageReadRepository.cs`
+- `Application.Abstractions/Quran/MushafReader/IMushafPageReader.cs`
 
 Application:
 
@@ -388,9 +388,9 @@ Application:
 
 Infrastructure:
 
-- `Infrastructure/Persistence/Repositories/Quran/MushafPageReadRepository.cs`
+- `Infrastructure/Persistence/Reads/Quran/MushafReader/EfMushafPageReader.cs`
   or, if file-backed:
-- `Infrastructure/Files/Quran/MushafPages/JsonMushafPageReadRepository.cs`
+- `Infrastructure/Files/Quran/MushafPages/JsonMushafPageReader.cs`
 
 Api:
 
