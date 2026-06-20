@@ -34,22 +34,41 @@
     padding-block-end: calc(var(--qd-space-2) + var(--qd-space-1));
   }
 
-  &__juz-glyph {
-    flex: 1 1 0;
+  &__surah-labels {
+    display: flex;
+    flex: 1 1 auto;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.2em;
     min-width: 0;
-    font-family: var(--qd-font-mushaf-common);
-    font-size: 0.9375rem;
-    font-weight: 600;
-    line-height: 1.4;
-    text-align: end;
   }
 
+  &__surah-icon-glyph,
   &__surah-glyph {
     flex: 0 0 auto;
     font-family: var(--qd-font-mushaf-surah-name);
     font-size: 1.25rem;
     line-height: 1;
     font-weight: 600;
+  }
+
+  &__surah-sep {
+    flex: 0 0 auto;
+    color: var(--qd-text-muted);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  &__juz-glyph {
+    flex: 0 0 auto;
+    min-width: 0;
+    font-family: var(--qd-font-mushaf-common);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1.4;
+    text-align: end;
   }
 
   &__chrome-bottom {

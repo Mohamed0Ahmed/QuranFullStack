@@ -118,13 +118,31 @@ describe('MushafPageViewComponent', () => {
     expect(root.classList.contains('qd-scroll-stable')).toBe(true);
   });
 
-  it('renders the last surah on the page and juz chrome above the lines', () => {
+  it('renders the surah icon, all surah glyphs, and juz chrome above the lines', () => {
     const root = fixture.nativeElement as HTMLElement;
 
-    expect(root.querySelector('[data-testid="mushaf-page-surah-glyph"]')).toBeTruthy();
+    expect(root.querySelector('[data-testid="mushaf-page-surah-icon-glyph"]')).toBeTruthy();
+    expect(root.querySelectorAll('[data-testid="mushaf-page-surah-glyph"]').length).toBe(1);
     expect(root.querySelector('[data-testid="mushaf-page-juz-glyph"]')).toBeTruthy();
     expect(root.textContent).toContain('جزء 1');
     expect(root.textContent).toContain('سورة البقرة');
+  });
+
+  it('renders every surah on the page with Arabic comma separators', () => {
+    fixture.componentRef.setInput('page', {
+      ...pageFixture,
+      surahs: [
+        { surahNumber: 105, nameArabic: 'سورة-تجريبية-١', firstAyahOnPage: 1, lastAyahOnPage: 5 },
+        { surahNumber: 106, nameArabic: 'سورة-تجريبية-٢', firstAyahOnPage: 1, lastAyahOnPage: 4 },
+      ],
+    });
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+
+    expect(root.querySelectorAll('[data-testid="mushaf-page-surah-glyph"]').length).toBe(2);
+    expect(root.textContent).toContain('،');
+    expect(root.textContent).toContain('سورة سورة-تجريبية-١، سورة-تجريبية-٢');
   });
 
   it('renders a centered page jump trigger below the lines', () => {

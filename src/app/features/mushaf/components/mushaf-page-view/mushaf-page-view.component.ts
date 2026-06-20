@@ -5,7 +5,7 @@ import { MushafLineDto, MushafPageViewModel } from '../../models/mushaf.models';
 import { clampMushafPageNumber } from '../../state/mushaf-url-sync';
 import { MushafLineComponent } from '../mushaf-line/mushaf-line.component';
 import { mushafJuzNumberLigature } from '../mushaf-line/mushaf-juz-number-ligature';
-import { mushafSurahNameLigature } from '../mushaf-line/mushaf-surah-name-ligature';
+import { mushafSurahIconLigature, mushafSurahNameLigature } from '../mushaf-line/mushaf-surah-name-ligature';
 
 @Component({
   selector: 'qd-mushaf-page-view',
@@ -28,10 +28,7 @@ export class MushafPageViewComponent {
   protected readonly isPageEditing = signal(false);
   protected readonly pageDraft = signal('');
 
-  protected readonly displaySurah = computed(() => {
-    const surahs = this.page().surahs;
-    return surahs.length > 0 ? surahs[surahs.length - 1] : null;
-  });
+  protected readonly displaySurahs = computed(() => this.page().surahs);
 
   protected readonly displayJuz = computed(() => {
     const juzNumbers = this.page().navigation.juzNumbers;
@@ -49,6 +46,16 @@ export class MushafPageViewComponent {
 
   protected surahLigature(surahNumber: number): string {
     return mushafSurahNameLigature(surahNumber) ?? '';
+  }
+
+  protected surahIconLigature(): string {
+    return mushafSurahIconLigature();
+  }
+
+  protected displaySurahNamesArabic(): string {
+    return this.displaySurahs()
+      .map((surah) => surah.nameArabic)
+      .join('، ');
   }
 
   protected juzNumberLigature(juzNumber: number): string {

@@ -39,12 +39,21 @@ describe('MushafHeaderNavigationComponent', () => {
     expect(fixture.nativeElement.querySelector('.mushaf-header__deck-zone--context')).toBeNull();
   });
 
-  it('renders the searchable surah jump picker', () => {
+  it('renders previous and next before the surah jump picker', () => {
     const fixture = TestBed.createComponent(MushafHeaderNavigationComponent);
     fixture.componentRef.setInput('page', pageFixture);
     fixture.componentRef.setInput('surahCatalogByJuz', surahCatalogByJuzFixture);
     fixture.detectChanges();
 
+    const navZone = fixture.nativeElement.querySelector(
+      '.mushaf-header__deck-zone--nav',
+    ) as HTMLElement;
+    const navActions = navZone.querySelector('.mushaf-header__nav-actions') as HTMLElement;
+    const surahJump = navZone.querySelector('.mushaf-header__surah-jump') as HTMLElement;
+    const buttons = [...navActions.querySelectorAll('button')].map((btn) => btn.textContent?.trim());
+
+    expect(buttons).toEqual(['السابق', 'التالي']);
+    expect(navZone.compareDocumentPosition(surahJump) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(fixture.nativeElement.querySelector('qd-surah-jump-picker')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('select')).toBeNull();
   });

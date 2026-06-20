@@ -13,10 +13,31 @@
   padding-bottom: 0;
   border-bottom: none;
 
+  &__nav-actions {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: var(--qd-space-1);
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+  }
+
   &__surah-jump {
-    flex: 1 1 11.5rem;
-    min-width: 11.5rem;
-    max-width: 16rem;
+    grid-column: 2;
+    grid-row: 1;
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+
+    qd-surah-jump-picker {
+      flex: 1 1 auto;
+      width: 100%;
+      min-width: 11.5rem;
+      max-width: 100%;
+    }
   }
 
   &__deck {
@@ -43,11 +64,11 @@
   }
 
   &__deck-zone--nav {
-    flex: 1 1 auto;
-    justify-content: flex-end;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: auto minmax(11.5rem, 1fr);
     align-items: center;
-    gap: var(--qd-space-1) var(--qd-space-2);
+    width: 100%;
+    gap: var(--qd-space-2);
     padding: var(--qd-space-1);
     border-radius: var(--qd-radius-md);
     background: color-mix(in oklch, var(--qd-accent) 5.5%, var(--qd-section-bg));

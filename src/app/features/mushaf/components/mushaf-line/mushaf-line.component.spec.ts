@@ -89,7 +89,7 @@ describe('MushafLineComponent', () => {
     expect(header.textContent?.trim()).toBe(mushafCommonLigature('surah_header'));
     expect(nameGlyph.textContent?.trim()).toBe(mushafSurahNameLigature(2));
     expect(getComputedStyle(header).fontFamily).toContain('var(--qd-font-mushaf-common)');
-    expect(getComputedStyle(nameGlyph).fontFamily).toContain('var(--qd-font-mushaf-surah-name)');
+    expect(getComputedStyle(nameGlyph).fontFamily).toContain('var(--qd-font-mushaf-surah-name-v2)');
     expect(srOnly.textContent?.trim()).toBe('سورة سورة-تجريبية-٢');
     expect(fixture.nativeElement.querySelector('qd-mushaf-word')).toBeNull();
   });
