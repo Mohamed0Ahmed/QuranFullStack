@@ -142,16 +142,42 @@ Never create a FullStack commit pointing to an uncommitted child repo state.
 
 Before delivery, run the relevant verification commands when possible.
 
-Backend:
-- `dotnet build QuranDashboard.sln`
-- relevant `dotnet test`
-- for import work, run the relevant import test filter if available
+### Backend tests
 
-Frontend:
-- `npm run build`
-- relevant tests if available
+Run from `Backend/`:
 
-Always run:
+- Build: `dotnet build QuranDashboard.sln`
+- All tests: `dotnet test QuranDashboard.sln`
+- A subset: `dotnet test QuranDashboard.sln --filter "FullyQualifiedName~<ClassOrNamespace>"`
+- For import work, run the relevant import test filter if available.
+
+### Frontend tests
+
+Run from `Frontend/quran-dashboard-ui/`. This project uses Angular's
+`@angular/build:unit-test` builder with the Vitest runner. **Uncapped, Vitest
+spawns one worker process per CPU core, each loading jsdom plus the app, which
+exhausts memory and freezes/crashes the machine.**
+
+- **Always cap the worker pool** with `VITEST_MAX_FORKS=2` (and
+  `VITEST_MIN_FORKS=1`). This is the only effective lever: the builder starts
+  Vitest with `config: false` (so `vitest.config.ts` is ignored) and its schema
+  is `additionalProperties: false` (so pool options can't go in `angular.json`).
+- **Prefer `npm test`** — its script already applies the cap.
+- **`ng test` / `npx ng test` called directly BYPASS that cap** — so prefix the
+  env var yourself:
+
+  ```bash
+  VITEST_MAX_FORKS=2 npx ng test --no-watch --include='**/some.spec.ts'
+  ```
+
+- **Do not raise the cap past ~3** on a typical dev machine, or the crash returns.
+- **Do not prepend `npm run build` to a test run.** `ng build` is a separate
+  production build; the test builder compiles its own bundle and ignores
+  `dist/`, so it only wastes time and memory. Run `npm run build` only when you
+  specifically need to verify the production build.
+
+### Always run
+
 - `git diff --check`
 
 If a command cannot be run, report why.
