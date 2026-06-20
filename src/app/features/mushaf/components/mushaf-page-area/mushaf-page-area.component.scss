@@ -11,5 +11,7 @@
   flex: 1;
   min-height: 0;
   border-radius: 0.75rem;
-  background: var(--qd-surface);
+  background: var(--qd-bg);
+  border: 1px solid var(--qd-border);
+  box-shadow: var(--qd-shadow-sm);
 }

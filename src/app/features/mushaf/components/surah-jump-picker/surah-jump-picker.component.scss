@@ -99,7 +99,7 @@
     margin: 0;
     padding: var(--qd-space-1) var(--qd-space-2);
     border-radius: var(--qd-radius-sm);
-    background: color-mix(in oklch, var(--qd-accent) 9%, var(--qd-surface-elevated));
+    background: var(--qd-section-bg);
     color: color-mix(in oklch, var(--qd-accent) 78%, var(--qd-text));
     font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
     font-size: 0.75rem;
@@ -121,11 +121,16 @@
     line-height: 1.4;
     text-align: start;
     cursor: pointer;
-    transition: background-color 0.15s ease;
+    transition: background-color var(--qd-t-fast), border-color var(--qd-t-fast);
 
-    &:hover,
+    &:hover {
+      background: var(--qd-section-bg);
+    }
+
     &--active {
-      background: var(--qd-surface-elevated);
+      background: var(--qd-accent-tint);
+      border-color: var(--qd-accent);
+      color: var(--qd-accent-text);
     }
 
     &:focus-visible {

@@ -3,6 +3,42 @@
   border: 1px solid var(--qd-border);
   border-radius: var(--qd-radius-md);
   padding: var(--qd-space-4);
+  box-shadow: var(--qd-shadow-sm);
+}
+
+/* Interactive lift — add this class to clickable cards */
+.qd-card--hover {
+  transition: border-color var(--qd-t-fast), box-shadow var(--qd-t-fast),
+              transform var(--qd-t-fast);
+}
+.qd-card--hover:hover {
+  border-color: var(--qd-border-strong);
+  box-shadow: var(--qd-shadow);
+  transform: translateY(-2px);
+}
+
+/* Quiet/recessed card: no shadow, warm tone */
+.qd-card--quiet {
+  background: var(--qd-section-bg);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+/* Border-only card: no shadow */
+.qd-card--bordered { box-shadow: none; }
+
+/* Feature card: larger radius/padding; deepen shadow on hover, NO translate */
+.qd-card--feature {
+  border-radius: var(--qd-radius-lg);
+  padding: var(--qd-space-5);
+}
+.qd-card--feature.qd-card--hover:hover { transform: none; box-shadow: var(--qd-shadow); }
+
+/* Mini card: smaller lift, accent-soft hover border */
+.qd-card--mini { padding: var(--qd-space-3); }
+.qd-card--mini.qd-card--hover:hover {
+  border-color: var(--qd-accent-soft);
+  transform: translateY(-1px);
 }
 
 .qd-btn {
@@ -20,15 +56,19 @@
   cursor: pointer;
   background: var(--qd-surface);
   color: var(--qd-text);
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  transition: background-color var(--qd-t-fast), border-color var(--qd-t-fast),
+              color var(--qd-t-fast), transform var(--qd-t-fast);
 
   &:hover {
     background: var(--qd-surface-elevated);
   }
 
+  &:active { transform: translateY(1px); }
+
   &:focus-visible {
     outline: 2px solid var(--qd-focus-ring);
     outline-offset: 2px;
+    box-shadow: var(--qd-ring);
   }
 
   &:disabled {
@@ -54,7 +94,8 @@
   border-color: var(--qd-border);
 
   &:hover {
-    background: var(--qd-surface);
+    background: var(--qd-section-bg);
+    border-color: var(--qd-border-strong);
   }
 }
 
@@ -65,8 +106,16 @@
 
   &:hover {
     color: var(--qd-text);
-    background: var(--qd-surface);
+    background: var(--qd-section-bg);
   }
+}
+
+.qd-btn-soft {
+  background: var(--qd-accent-tint);
+  color: var(--qd-accent-text);
+  border-color: transparent;
+
+  &:hover { background: var(--qd-accent-soft); }
 }
 
 .qd-badge {
@@ -78,9 +127,21 @@
   font-size: 0.75rem;
   font-weight: 500;
   line-height: 1.4;
-  background: var(--qd-surface);
+  background: var(--qd-section-bg);
   color: var(--qd-text-muted);
   border: 1px solid var(--qd-border);
+}
+
+.qd-badge--accent {
+  background: var(--qd-accent-tint);
+  color: var(--qd-accent-text);
+  border-color: transparent;
+}
+
+.qd-is-selected {
+  background: var(--qd-accent-tint);
+  border-color: var(--qd-accent);
+  color: var(--qd-accent-text);
 }
 
 .qd-empty-state,
@@ -194,9 +255,17 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .qd-btn {
-    transition: none;
+  .qd-card--hover {
+    transition: border-color var(--qd-t-fast), box-shadow var(--qd-t-fast);
   }
+  .qd-card--hover:hover,
+  .qd-card--mini.qd-card--hover:hover { transform: none; }
+
+  .qd-btn {
+    transition: background-color var(--qd-t-fast), border-color var(--qd-t-fast),
+                color var(--qd-t-fast);
+  }
+  .qd-btn:active { transform: none; }
 
   // Reduced-motion users get a static, sufficiently-visible tint with no
   // moving sweep, so the box still reads as "loading" without animation.

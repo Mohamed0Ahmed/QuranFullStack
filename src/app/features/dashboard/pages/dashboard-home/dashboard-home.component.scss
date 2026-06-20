@@ -13,10 +13,13 @@
 .dashboard-card {
   display: block;
   text-decoration: none;
-  transition: background-color 0.15s ease;
+  transition: border-color var(--qd-t-fast), box-shadow var(--qd-t-fast),
+              transform var(--qd-t-fast);
 
   &:hover {
-    background: var(--qd-surface-elevated);
+    border-color: var(--qd-border-strong);
+    box-shadow: var(--qd-shadow);
+    transform: translateY(-2px);
   }
 
   &:focus-visible {
@@ -40,6 +43,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .dashboard-card {
-    transition: none;
+    transition: border-color var(--qd-t-fast), box-shadow var(--qd-t-fast);
   }
+  .dashboard-card:hover { transform: none; }
 }

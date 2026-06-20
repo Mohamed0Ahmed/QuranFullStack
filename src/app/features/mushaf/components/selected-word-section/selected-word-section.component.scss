@@ -24,6 +24,7 @@
   background: var(--qd-surface);
   border: 1px solid var(--qd-border);
   border-radius: var(--qd-radius-md);
+  box-shadow: var(--qd-shadow-sm);
 
   :host.qd-selected-word-section--embedded & {
     height: auto;
@@ -31,6 +32,7 @@
     background: transparent;
     border: none;
     border-radius: 0;
+    box-shadow: none;
   }
 
   &__header {
@@ -99,7 +101,7 @@
     border: 1px solid var(--qd-border);
     border-inline-start-width: 3px;
     border-radius: var(--qd-radius-sm);
-    background: var(--qd-surface-elevated);
+    background: var(--qd-section-bg);
   }
 
   // Mirror the three real segment rows' line heights so the loading card does
@@ -139,7 +141,7 @@
     padding: calc(var(--qd-space-2) + 0.45 * var(--qd-space-1));
     border: 1px solid var(--qd-border);
     border-radius: var(--qd-radius-sm);
-    background: var(--qd-surface-elevated);
+    background: var(--qd-section-bg);
 
     dt {
       margin: 0;
@@ -188,7 +190,7 @@
     padding: var(--qd-space-2);
     border: 1px solid var(--qd-border);
     border-radius: var(--qd-radius-sm);
-    background: var(--qd-surface-elevated);
+    background: var(--qd-section-bg);
     font-size: 0.875rem;
   }
 

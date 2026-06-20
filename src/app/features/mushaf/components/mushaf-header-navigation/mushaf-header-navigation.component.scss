@@ -38,6 +38,7 @@
     border: 1px solid var(--qd-border);
     border-radius: var(--qd-radius-lg);
     background: var(--qd-surface);
+    box-shadow: var(--qd-shadow-sm);
   }
 
   &__deck-zone {
@@ -54,7 +55,7 @@
     min-width: 12rem;
     padding: var(--qd-space-1) var(--qd-space-2);
     border-radius: var(--qd-radius-md);
-    background: color-mix(in oklch, var(--qd-surface-elevated) 77.5%, var(--qd-surface));
+    background: var(--qd-section-bg);
   }
 
   &__deck-zone--nav {
@@ -64,7 +65,7 @@
     gap: var(--qd-space-1) var(--qd-space-2);
     padding: var(--qd-space-1);
     border-radius: var(--qd-radius-md);
-    background: color-mix(in oklch, var(--qd-accent) 5.5%, var(--qd-surface-elevated));
+    background: color-mix(in oklch, var(--qd-accent) 5.5%, var(--qd-section-bg));
     overflow: visible;
 
     .qd-btn {

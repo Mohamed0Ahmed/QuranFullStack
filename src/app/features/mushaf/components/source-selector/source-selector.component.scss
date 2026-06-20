@@ -30,7 +30,7 @@
     padding: var(--qd-space-2) var(--qd-space-4);
     border: 1px solid color-mix(in oklch, var(--qd-border) 80%, var(--qd-accent));
     border-radius: var(--qd-radius-md);
-    background: var(--qd-surface-elevated);
+    background: var(--qd-section-bg);
     color: var(--qd-text);
     font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
     font-size: 0.9375rem;
@@ -38,10 +38,10 @@
     line-height: 1.5;
     text-align: start;
     cursor: pointer;
-    transition: background-color 0.15s ease, border-color 0.15s ease;
+    transition: background-color var(--qd-t-fast), border-color var(--qd-t-fast);
 
     &:hover {
-      background: color-mix(in oklch, var(--qd-surface-elevated) 85%, var(--qd-surface));
+      background: var(--qd-surface-recessed);
     }
 
     &[aria-expanded='true'] {
@@ -53,6 +53,7 @@
       outline: 2px solid var(--qd-focus-ring);
       outline-offset: 1px;
       border-color: var(--qd-accent);
+      box-shadow: var(--qd-ring);
     }
   }
 
@@ -123,7 +124,7 @@
     cursor: pointer;
 
     &:hover {
-      background: var(--qd-surface-elevated);
+      background: var(--qd-section-bg);
       color: var(--qd-text);
     }
 
@@ -168,10 +169,10 @@
     line-height: 1.5;
     text-align: start;
     cursor: pointer;
-    transition: background-color 0.15s ease, border-color 0.15s ease;
+    transition: background-color var(--qd-t-fast), border-color var(--qd-t-fast);
 
     &:hover {
-      background: var(--qd-surface-elevated);
+      background: var(--qd-section-bg);
     }
 
     &:focus-visible {
@@ -180,8 +181,9 @@
     }
 
     &--active {
-      background: var(--qd-surface-elevated);
+      background: var(--qd-accent-tint);
       border-color: var(--qd-accent);
+      color: var(--qd-accent-text);
       font-weight: 600;
     }
   }

@@ -24,6 +24,7 @@
   background: var(--qd-surface);
   border: 1px solid var(--qd-border);
   border-radius: var(--qd-radius-md);
+  box-shadow: var(--qd-shadow-sm);
 
   :host.qd-selected-ayah-section--embedded & {
     height: auto;
@@ -31,6 +32,7 @@
     background: transparent;
     border: none;
     border-radius: 0;
+    box-shadow: none;
   }
 
   &__source {
@@ -67,13 +69,13 @@
     padding: calc(var(--qd-space-1) * 1.45);
     border: 1px solid var(--qd-border);
     border-radius: var(--qd-radius-md);
-    background: var(--qd-surface-elevated);
+    background: var(--qd-section-bg);
   }
 
   &__tab {
     width: 100%;
     padding: calc(var(--qd-space-1) * 1.45) calc(var(--qd-space-2) * 1.225);
-    border: none;
+    border: 1px solid transparent;
     border-radius: var(--qd-radius-sm);
     background: transparent;
     color: var(--qd-text-muted);
@@ -81,9 +83,9 @@
     cursor: pointer;
 
     &--active {
-      background: var(--qd-surface);
-      box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--qd-border) 70%, transparent);
-      color: var(--qd-text);
+      background: var(--qd-accent-tint);
+      border-color: var(--qd-accent);
+      color: var(--qd-accent-text);
       font-weight: 600;
     }
 
@@ -98,7 +100,7 @@
     margin: 0;
     padding: var(--qd-space-3) var(--qd-space-4);
     border-radius: var(--qd-radius-sm);
-    background: color-mix(in oklch, var(--qd-surface-elevated) 88%, var(--qd-surface));
+    background: var(--qd-surface-recessed);
     font-family: var(--qd-font-quran);
     font-size: 1.125rem;
     line-height: 2.15;
@@ -131,7 +133,7 @@
     overflow: auto;
     padding: calc(var(--qd-space-3) + var(--qd-space-1));
     border-radius: var(--qd-radius-md);
-    background: color-mix(in oklch, var(--qd-surface-elevated) 70%, var(--qd-surface));
+    background: var(--qd-surface-recessed);
 
     ::ng-deep .study-card__body {
       font-size: 1.0125rem;

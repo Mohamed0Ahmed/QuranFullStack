@@ -107,6 +107,8 @@
 
     &__study {
       max-height: min(52vh, 28rem);
+      border-radius: var(--qd-radius-md);
+      box-shadow: var(--qd-floating-shadow);
     }
   }
 }
