@@ -1,0 +1,4 @@
+interface:
+  display_name: "Performance Backend Review"
+  short_description: "Review-only backend / EF Core / PostgreSQL performance audit"
+  default_prompt: "Use $performance-backend-review to audit backend / EF Core / PostgreSQL performance on the changed backend scope. Review only: produce evidence-based findings, severities, and recommendations; do not modify code or weaken Quran data integrity."

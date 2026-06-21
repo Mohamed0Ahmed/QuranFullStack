@@ -1,0 +1,4 @@
+interface:
+  display_name: "Performance Angular Review"
+  short_description: "Review-only Angular / frontend performance audit"
+  default_prompt: "Use $performance-angular-review to audit Angular / frontend performance (change detection, Signals/RxJS, list/DOM rendering, network, bundle, tests) on the changed frontend scope. Review only: produce evidence-based findings, severities, and recommendations; do not modify code or compromise Quran rendering safety."
