@@ -189,17 +189,17 @@
 
 **Purpose**: Validate the full feature, reduce risk, and document the final implementation state.
 
-- [ ] T080 [P] Verify no EF migration files or model snapshot changes were created under `Backend/infrastructure/QuranDashboard.Infrastructure/Migrations/`
-- [ ] T081 [P] Verify no importer, source package, or resources changes were added under `Backend/tools/QuranDashboard.DataImporter/` or `resources/`
-- [ ] T082 [P] Review API contracts against implementation in `specs/012-mushaf-ayah-similarities/contracts/ayah-study-similarity-summary.api.md`, `specs/012-mushaf-ayah-similarities/contracts/similar-ayahs.api.md`, and `specs/012-mushaf-ayah-similarities/contracts/ayah-mutashabihat.api.md`
-- [ ] T083 [P] Review frontend lazy-loading and URL behavior against `specs/012-mushaf-ayah-similarities/contracts/frontend-url-state-and-lazy-loading.md`
-- [ ] T084 Run the full backend test suite for Feature 012 using `Backend/tests/QuranDashboard.Tests/`
-- [ ] T085 Run the full frontend test suite for Feature 012 using `Frontend/quran-dashboard-ui/src/app/features/mushaf/`
-- [ ] T086 Execute the smoke-test flow in `specs/012-mushaf-ayah-similarities/quickstart.md`
-- [ ] T087 Validate SC-008 label comprehension with at least a small reviewer sample or documented product review: participants must distinguish `آيات قريبة في المعنى` from `المتشابهات اللفظية للحفظ`; record the result in the implementation completion report
-- [ ] T088 Perform clean-code self-check against `.claude/skills/engineering-review/references/clean-code-guard/`
-- [ ] T089 Perform test-code self-check against `.claude/skills/test-guard/`
-- [ ] T090 Create implementation completion report in `Backend/report/feature-012-mushaf-reader-ayah-similarities/001-implementation-completion-report.md`
+- [X] T080 [P] Verify no EF migration files or model snapshot changes were created under `Backend/infrastructure/QuranDashboard.Infrastructure/Migrations/`
+- [X] T081 [P] Verify no importer, source package, or resources changes were added under `Backend/tools/QuranDashboard.DataImporter/` or `resources/`
+- [X] T082 [P] Review API contracts against implementation in `specs/012-mushaf-ayah-similarities/contracts/ayah-study-similarity-summary.api.md`, `specs/012-mushaf-ayah-similarities/contracts/similar-ayahs.api.md`, and `specs/012-mushaf-ayah-similarities/contracts/ayah-mutashabihat.api.md`
+- [X] T083 [P] Review frontend lazy-loading and URL behavior against `specs/012-mushaf-ayah-similarities/contracts/frontend-url-state-and-lazy-loading.md`
+- [X] T084 Run the full backend test suite for Feature 012 using `Backend/tests/QuranDashboard.Tests/`
+- [X] T085 Run the full frontend test suite for Feature 012 using `Frontend/quran-dashboard-ui/src/app/features/mushaf/`
+- [X] T086 Execute the smoke-test flow in `specs/012-mushaf-ayah-similarities/quickstart.md`
+- [X] T087 Validate SC-008 label comprehension with at least a small reviewer sample or documented product review: participants must distinguish `آيات قريبة في المعنى` from `المتشابهات اللفظية للحفظ`; record the result in the implementation completion report
+- [X] T088 Perform clean-code self-check against `.claude/skills/engineering-review/references/clean-code-guard/`
+- [X] T089 Perform test-code self-check against `.claude/skills/test-guard/`
+- [X] T090 Create implementation completion report in `Backend/report/feature-012-mushaf-reader-ayah-similarities/001-implementation-completion-report.md`
 
 ---
 
