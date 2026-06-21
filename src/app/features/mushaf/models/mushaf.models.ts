@@ -7,11 +7,11 @@
  * the backend; view models are the page-ready forms the facade emits to
  * components.
  *
- * Locked v1 enum scope (do not widen):
+ * Locked reader enum scope:
  *   panel   in { 'ayah' | 'word' | 'none' }
- *   ayahTab in { 'tafsir' | 'translation' | 'full-i3rab' }
+ *   ayahTab in { 'tafsir' | 'translation' | 'full-i3rab' | 'similar-ayahs' | 'mutashabihat' }
  *   wordTab in { 'morphology' | 'segments' | 'i3rab' | 'identity' }
- * `panel=sources` and `ayahTab=links` are out of scope for v1.
+ * `panel=sources` and unrelated ayah-link tabs are out of scope.
  */
 
 /* ============================================================================
@@ -171,12 +171,102 @@ export interface FullI3rabEntryDto {
   html: string;
 }
 
+export interface AyahSimilaritySummaryDto {
+  similarAyahCount: number;
+  mutashabihatGroupCount: number;
+  mutashabihatOccurrenceCount: number;
+}
+
+export type SimilarAyahRelationshipDirection = 'outgoing' | 'incoming' | 'bidirectional';
+
+export interface SimilarAyahItemDto {
+  targetVerseKey: string;
+  surahNumber: number;
+  surahNameArabic: string;
+  ayahNumber: number;
+  pageNumber: number;
+  juzNumber: number;
+  hizbNumber: number;
+  rubNumber: number;
+  textUthmani: string;
+  score: number;
+  coverage: number;
+  matchedWordsCount: number;
+  relationshipDirection: SimilarAyahRelationshipDirection;
+  hasReverseLink: boolean;
+}
+
+export interface SimilarAyahsDto {
+  verseKey: string;
+  count: number;
+  items: SimilarAyahItemDto[];
+}
+
+/** Target for in-reader navigation to an ayah on a specific Mushaf page. */
+export interface AyahNavigationTarget {
+  verseKey: string;
+  pageNumber: number;
+}
+
+export const SIMILAR_AYAHS_EMPTY_MESSAGE =
+  'لا توجد آيات قريبة في المعنى لهذه الآية في البيانات الحالية.';
+
+export const SIMILAR_AYAHS_LOADING_MESSAGE = 'جارٍ تحميل الآيات القريبة...';
+
+export interface MutashabihatSelectedOccurrenceDto {
+  verseKey: string;
+  wordFrom: number;
+  wordTo: number;
+  isRepresentative: boolean;
+  phraseTextUthmani: string | null;
+}
+
+export interface MutashabihatOccurrenceDto {
+  verseKey: string;
+  surahNumber: number;
+  surahNameArabic: string;
+  ayahNumber: number;
+  pageNumber: number;
+  wordFrom: number;
+  wordTo: number;
+  isSelectedAyah: boolean;
+  isRepresentative: boolean;
+  textUthmani: string;
+  phraseTextUthmani: string | null;
+}
+
+export interface MutashabihatGroupDto {
+  groupKey: string;
+  sourceGroupId: number;
+  representativeVerseKey: string;
+  representativeWordFrom: number;
+  representativeWordTo: number;
+  phraseTextUthmani: string | null;
+  occurrenceCount: number;
+  distinctAyahCount: number;
+  distinctSurahCount: number;
+  selectedOccurrences: MutashabihatSelectedOccurrenceDto[];
+  occurrences: MutashabihatOccurrenceDto[];
+}
+
+export interface AyahMutashabihatDto {
+  verseKey: string;
+  groupCount: number;
+  groups: MutashabihatGroupDto[];
+}
+
+export const MUTASHABIHAT_EMPTY_MESSAGE =
+  'لا توجد متشابهات لفظية مسجلة لهذه الآية في البيانات الحالية.';
+
+export const MUTASHABIHAT_LOADING_MESSAGE = 'جارٍ تحميل المتشابهات اللفظية...';
+
 export interface AyahStudyDto {
   ayah: AyahCoreDto;
   selectedSources: SelectedSourcesDto;
   tafsir: TafsirEntryDto | null;
   translation: TranslationEntryDto | null;
   fullI3rab: FullI3rabEntryDto | null;
+  similaritySummary: AyahSimilaritySummaryDto;
 }
 
 /* ============================================================================
@@ -268,8 +358,16 @@ export interface WordAnalysisDto {
  * ========================================================================== */
 
 export type PanelMode = 'ayah' | 'word' | 'none';
-export type AyahStudyTab = 'tafsir' | 'translation' | 'full-i3rab';
+export type AyahStudyTab = 'tafsir' | 'translation' | 'full-i3rab' | 'similar-ayahs' | 'mutashabihat';
 export type WordAnalysisTab = 'morphology' | 'segments' | 'i3rab' | 'identity';
+
+export const AYAH_STUDY_TAB_LABELS: Record<AyahStudyTab, { full: string; short: string }> = {
+  tafsir: { full: 'التفسير', short: 'التفسير' },
+  translation: { full: 'الترجمة', short: 'الترجمة' },
+  'full-i3rab': { full: 'الإعراب الكامل', short: 'الإعراب' },
+  'similar-ayahs': { full: 'آيات قريبة في المعنى', short: 'آيات قريبة' },
+  mutashabihat: { full: 'المتشابهات اللفظية للحفظ', short: 'المتشابهات' },
+};
 
 /** A selectable source entry for the ayah-study source selectors. */
 export interface SourceOption {
@@ -311,6 +409,7 @@ export interface AyahStudyViewModel {
   tafsir: TafsirEntryDto | null;
   translation: TranslationEntryDto | null;
   fullI3rab: FullI3rabEntryDto | null;
+  similaritySummary: AyahSimilaritySummaryDto;
 }
 
 export interface MushafPageViewModel {
@@ -353,12 +452,15 @@ export interface MushafReaderState {
   page: ResourceLoadState;
   ayahStudy: ResourceLoadState;
   wordAnalysis: ResourceLoadState;
+  similarAyahs: ResourceLoadState;
+  mutashabihat: ResourceLoadState;
 }
 
 /** Stable, natural Quran keys used in the URL query params. */
 export const MUSHAF_URL_KEYS = {
   page: 'page',
   ayah: 'ayah',
+  focusAyah: 'focusAyah',
   word: 'word',
   segment: 'segment',
   panel: 'panel',
@@ -386,4 +488,6 @@ export const DEFAULT_MUSHAF_READER_STATE: MushafReaderState = {
   page: { isLoading: false, isEmpty: false, errorMessage: null },
   ayahStudy: { isLoading: false, isEmpty: false, errorMessage: null },
   wordAnalysis: { isLoading: false, isEmpty: false, errorMessage: null },
+  similarAyahs: { isLoading: false, isEmpty: false, errorMessage: null },
+  mutashabihat: { isLoading: false, isEmpty: false, errorMessage: null },
 };

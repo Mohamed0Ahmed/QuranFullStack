@@ -20,6 +20,14 @@ export const MushafReaderCacheKeys = {
   wordAnalysis(wordLocation: string): string {
     return `mushaf:word-analysis:${wordLocation}`;
   },
+
+  similarAyahs(verseKey: string): string {
+    return `mushaf:similar-ayahs:${verseKey}`;
+  },
+
+  ayahMutashabihat(verseKey: string): string {
+    return `mushaf:mutashabihat:${verseKey}`;
+  },
 } as const;
 
 const DEFAULT_MAX_ENTRIES = 48;

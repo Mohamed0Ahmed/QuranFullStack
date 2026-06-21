@@ -4,6 +4,8 @@ import { Subscription } from 'rxjs';
 
 import { MushafAyahStudyApi } from '../data-access/mushaf-ayah-study.api';
 import { MushafPagesApi } from '../data-access/mushaf-pages.api';
+import { MushafSimilarAyahsApi } from '../data-access/mushaf-similar-ayahs.api';
+import { MushafAyahMutashabihatApi } from '../data-access/mushaf-ayah-mutashabihat.api';
 import { MushafStudySourceCatalogApi } from '../data-access/mushaf-study-sources.api';
 import { MushafWordAnalysisApi } from '../data-access/mushaf-word-analysis.api';
 import {
@@ -11,36 +13,32 @@ import {
   resolveMushafSurahStartPage,
 } from '../data/mushaf-surah-juz-catalog';
 import {
-  AyahStudyDto,
   AyahStudyTab,
   AyahStudyViewModel,
   DEFAULT_MUSHAF_READER_STATE,
   MUSHAF_URL_KEYS,
-  MushafPageDto,
   MushafPageViewModel,
   MushafReaderState,
   MushafSurahJuzGroupDto,
   PanelMode,
   ResourceLoadState,
+  SimilarAyahsDto,
+  AyahMutashabihatDto,
   SourceOption,
-  WordAnalysisDto,
   WordAnalysisTab,
   WordAnalysisViewModel,
 } from '../models/mushaf.models';
 import { subscribeToApiLoad } from './mushaf-api-load.helpers';
+import { AyahStudyLoadRunner } from './mushaf-ayah-study-load.runner';
 import { MushafReaderCache, MushafReaderCacheKeys } from './mushaf-reader-cache';
-import { segmentSlotToColor } from './segment-color-palette';
-import {
-  MushafUrlSnapshot,
-  buildUrlEnumCorrections,
-  parseMushafUrlParams,
-} from './mushaf-url-sync';
+import { prefetchAdjacentMushafPages } from './mushaf-reader-page.helpers';
 import {
   isBareMushafEntry,
   loadMushafReaderSession,
   mushafSnapshotToQueryParams,
   saveMushafReaderSession,
 } from './mushaf-reader-session';
+import { toPageViewModel } from './mushaf-reader-view-mappers';
 import { applyAuthoritativeUrlSnapshot } from './mushaf-url-hydration';
 import { verseKeyFromWordLocation } from '../utils/mushaf-location-keys';
 import {
@@ -48,53 +46,16 @@ import {
   tafsirCatalogItemToOption,
   translationCatalogItemToOption,
 } from '../utils/study-source-catalog.labels';
+import {
+  MushafUrlSnapshot,
+  buildUrlEnumCorrections,
+  parseMushafUrlParams,
+} from './mushaf-url-sync';
+import { SimilarAyahsLoadRunner } from './mushaf-similar-ayahs-load.runner';
+import { MutashabihatLoadRunner } from './mushaf-mutashabihat-load.runner';
+import { WordAnalysisLoadRunner } from './mushaf-word-analysis-load.runner';
 
-const WORD_ANALYSIS_SWITCH_DELAY_MS = 700;
-const AYAH_STUDY_SWITCH_DELAY_MS = 700;
-
-function toPageViewModel(dto: MushafPageDto): MushafPageViewModel {
-  return {
-    pageNumber: dto.pageNumber,
-    previousPageNumber: dto.previousPageNumber,
-    nextPageNumber: dto.nextPageNumber,
-    surahs: dto.surahs,
-    ayahRange: dto.ayahRange,
-    navigation: dto.navigation,
-    lines: dto.lines,
-    markers: dto.markers,
-  };
-}
-
-function toAyahStudyViewModel(dto: AyahStudyDto): AyahStudyViewModel {
-  return {
-    ayah: dto.ayah,
-    selectedSources: dto.selectedSources,
-    tafsir: dto.tafsir,
-    translation: dto.translation,
-    fullI3rab: dto.fullI3rab,
-  };
-}
-
-function toWordAnalysisViewModel(dto: WordAnalysisDto): WordAnalysisViewModel {
-  return {
-    word: dto.word,
-    identity: dto.identity,
-    morphology: dto.morphology,
-    segments: dto.renderedWordSegments.map((segment) => ({
-      segmentLocation: segment.segmentLocation,
-      segmentNumber: segment.segmentNumber,
-      segmentColorSlot: segment.segmentColorSlot,
-      color: segmentSlotToColor(segment.segmentColorSlot),
-      segmentKind: segment.segmentKind,
-      segmentDisplayText: segment.segmentDisplayText,
-      isMissing: segment.displayTextStatus === 'missing',
-      segmentPos: segment.segmentPos,
-      segmentPosLabel: segment.segmentPosLabel,
-      segmentI3rabArabic: segment.segmentI3rabArabic,
-      i3rabStatus: segment.i3rabStatus,
-    })),
-  };
-}
+const PEEK_FLASH_CLEAR_MS = 3000;
 
 /**
  * Mushaf reader page-state facade.
@@ -106,6 +67,8 @@ function toWordAnalysisViewModel(dto: WordAnalysisDto): WordAnalysisViewModel {
 export class MushafReaderFacade {
   private readonly pagesApi = inject(MushafPagesApi);
   private readonly ayahStudyApi = inject(MushafAyahStudyApi);
+  private readonly similarAyahsApi = inject(MushafSimilarAyahsApi);
+  private readonly mutashabihatApi = inject(MushafAyahMutashabihatApi);
   private readonly studySourceCatalogApi = inject(MushafStudySourceCatalogApi);
   private readonly wordAnalysisApi = inject(MushafWordAnalysisApi);
   private readonly readerCache = inject(MushafReaderCache);
@@ -116,8 +79,11 @@ export class MushafReaderFacade {
 
   private readonly _pageNumber = signal(DEFAULT_MUSHAF_READER_STATE.pageNumber);
   private readonly _selectedAyahKey = signal(DEFAULT_MUSHAF_READER_STATE.selectedAyahKey);
+  private readonly _focusAyahKey = signal<string | null>(null);
   private readonly _selectedWordLocation = signal(DEFAULT_MUSHAF_READER_STATE.selectedWordLocation);
-  private readonly _selectedSegmentLocation = signal(DEFAULT_MUSHAF_READER_STATE.selectedSegmentLocation);
+  private readonly _selectedSegmentLocation = signal(
+    DEFAULT_MUSHAF_READER_STATE.selectedSegmentLocation,
+  );
   private readonly _panel = signal(DEFAULT_MUSHAF_READER_STATE.panel);
   private readonly _ayahTab = signal(DEFAULT_MUSHAF_READER_STATE.ayahTab);
   private readonly _wordTab = signal(DEFAULT_MUSHAF_READER_STATE.wordTab);
@@ -126,29 +92,77 @@ export class MushafReaderFacade {
 
   private readonly _page = signal<MushafPageViewModel | null>(null);
   private readonly _ayahStudy = signal<AyahStudyViewModel | null>(null);
+  private readonly _similarAyahs = signal<SimilarAyahsDto | null>(null);
+  private readonly _mutashabihat = signal<AyahMutashabihatDto | null>(null);
   private readonly _wordAnalysis = signal<WordAnalysisViewModel | null>(null);
-  private readonly _surahCatalogByJuz = signal<readonly MushafSurahJuzGroupDto[]>(MUSHAF_SURAH_JUZ_GROUPS);
+  private readonly _surahCatalogByJuz =
+    signal<readonly MushafSurahJuzGroupDto[]>(MUSHAF_SURAH_JUZ_GROUPS);
   private readonly _tafsirSourceOptions = signal<SourceOption[]>([]);
   private readonly _translationSourceOptions = signal<SourceOption[]>([]);
   private readonly _fullI3rabSourceOptions = signal<SourceOption[]>([]);
 
-  private wordAnalysisRequestTimer: ReturnType<typeof setTimeout> | null = null;
   private wordAnalysisRequestToken = 0;
-
-  // Mirrors the word-analysis debounce: a 700 ms delay + request token so that
-  // rapid ayah switching (e.g. clicking through words across different ayahs)
-  // does not fire overlapping ayah-study requests or apply out-of-order
-  // responses (see UI-001). The token is also bumped on cancel so any in-flight
-  // response is ignored.
-  private ayahStudyRequestTimer: ReturnType<typeof setTimeout> | null = null;
   private ayahStudyRequestToken = 0;
+  private similarAyahsRequestToken = 0;
+  private mutashabihatRequestToken = 0;
+  private peekFlashClearTimer: ReturnType<typeof setTimeout> | null = null;
+
+  private readonly wordAnalysisLoadRunner = new WordAnalysisLoadRunner({
+    getPage: () => this._page(),
+    setAnalysis: (value) => this._wordAnalysis.set(value),
+    setLoadState: (state) => this._wordAnalysisLoadState.set(state),
+    bumpRequestToken: () => ++this.wordAnalysisRequestToken,
+    getRequestToken: () => this.wordAnalysisRequestToken,
+    wordAnalysisApi: this.wordAnalysisApi,
+    readerCache: this.readerCache,
+  });
+
+  private readonly ayahStudyLoadRunner = new AyahStudyLoadRunner({
+    getUrlExplicitSources: () => this._urlExplicitSources(),
+    setAyahStudy: (value) => this._ayahStudy.set(value),
+    setSources: (sources) => this._sources.set(sources),
+    setLoadState: (state) => this._ayahStudyLoadState.set(state),
+    bumpRequestToken: () => ++this.ayahStudyRequestToken,
+    getRequestToken: () => this.ayahStudyRequestToken,
+    ayahStudyApi: this.ayahStudyApi,
+    readerCache: this.readerCache,
+  });
+
+  private readonly similarAyahsLoadRunner = new SimilarAyahsLoadRunner({
+    setSimilarAyahs: (value) => this._similarAyahs.set(value),
+    setLoadState: (state) => this._similarAyahsLoadState.set(state),
+    bumpRequestToken: () => ++this.similarAyahsRequestToken,
+    getRequestToken: () => this.similarAyahsRequestToken,
+    similarAyahsApi: this.similarAyahsApi,
+    readerCache: this.readerCache,
+  });
+
+  private readonly mutashabihatLoadRunner = new MutashabihatLoadRunner({
+    setMutashabihat: (value) => this._mutashabihat.set(value),
+    setLoadState: (state) => this._mutashabihatLoadState.set(state),
+    bumpRequestToken: () => ++this.mutashabihatRequestToken,
+    getRequestToken: () => this.mutashabihatRequestToken,
+    mutashabihatApi: this.mutashabihatApi,
+    readerCache: this.readerCache,
+  });
 
   private readonly _pageLoadState = signal<ResourceLoadState>(DEFAULT_MUSHAF_READER_STATE.page);
-  private readonly _ayahStudyLoadState = signal<ResourceLoadState>(DEFAULT_MUSHAF_READER_STATE.ayahStudy);
-  private readonly _wordAnalysisLoadState = signal<ResourceLoadState>(DEFAULT_MUSHAF_READER_STATE.wordAnalysis);
+  private readonly _ayahStudyLoadState = signal<ResourceLoadState>(
+    DEFAULT_MUSHAF_READER_STATE.ayahStudy,
+  );
+  private readonly _similarAyahsLoadState = signal<ResourceLoadState>(
+    DEFAULT_MUSHAF_READER_STATE.similarAyahs,
+  );
+  private readonly _mutashabihatLoadState = signal<ResourceLoadState>(
+    DEFAULT_MUSHAF_READER_STATE.mutashabihat,
+  );
+  private readonly _wordAnalysisLoadState = signal<ResourceLoadState>(
+    DEFAULT_MUSHAF_READER_STATE.wordAnalysis,
+  );
 
   readonly pageNumber = this._pageNumber.asReadonly();
   readonly selectedAyahKey = this._selectedAyahKey.asReadonly();
+  readonly focusAyahKey = this._focusAyahKey.asReadonly();
   readonly selectedWordLocation = this._selectedWordLocation.asReadonly();
   readonly selectedSegmentLocation = this._selectedSegmentLocation.asReadonly();
   readonly panel = this._panel.asReadonly();
@@ -158,6 +172,8 @@ export class MushafReaderFacade {
 
   readonly page = this._page.asReadonly();
   readonly ayahStudy = this._ayahStudy.asReadonly();
+  readonly similarAyahs = this._similarAyahs.asReadonly();
+  readonly mutashabihat = this._mutashabihat.asReadonly();
   readonly wordAnalysis = this._wordAnalysis.asReadonly();
   readonly surahCatalogByJuz = this._surahCatalogByJuz.asReadonly();
   readonly tafsirSourceOptions = this._tafsirSourceOptions.asReadonly();
@@ -166,7 +182,11 @@ export class MushafReaderFacade {
 
   readonly pageLoadState = this._pageLoadState.asReadonly();
   readonly ayahStudyLoadState = this._ayahStudyLoadState.asReadonly();
+  readonly similarAyahsLoadState = this._similarAyahsLoadState.asReadonly();
+  readonly mutashabihatLoadState = this._mutashabihatLoadState.asReadonly();
   readonly wordAnalysisLoadState = this._wordAnalysisLoadState.asReadonly();
+
+  readonly mushafHighlightVerseKey = computed(() => this._focusAyahKey());
 
   readonly state = computed<MushafReaderState>(() => ({
     pageNumber: this._pageNumber(),
@@ -180,6 +200,8 @@ export class MushafReaderFacade {
     page: this._pageLoadState(),
     ayahStudy: this._ayahStudyLoadState(),
     wordAnalysis: this._wordAnalysisLoadState(),
+    similarAyahs: this._similarAyahsLoadState(),
+    mutashabihat: this._mutashabihatLoadState(),
   }));
 
   /** Subscribes to query params and hydrates state for deep links (page → ayah → word). */
@@ -213,8 +235,24 @@ export class MushafReaderFacade {
     });
   }
 
+  /** Cancels peek timers and route subscription when the reader page is destroyed. */
+  unbindFromRoute(): void {
+    this.cancelPeekFlashClearTimer();
+    this.wordAnalysisLoadRunner.clearPending();
+    this.ayahStudyLoadRunner.clearPending();
+    this.similarAyahsLoadRunner.clearPending();
+    this.mutashabihatLoadRunner.clearPending();
+    this.routeSubscription?.unsubscribe();
+    this.routeSubscription = null;
+    this.activeRoute = null;
+  }
+
   changePage(pageNumber: number): void {
-    this.patchUrlQuery({ [MUSHAF_URL_KEYS.page]: pageNumber });
+    this.cancelPeekFlashClearTimer();
+    this.patchUrlQuery({
+      [MUSHAF_URL_KEYS.page]: pageNumber,
+      [MUSHAF_URL_KEYS.focusAyah]: null,
+    });
   }
 
   jumpToSurah(surahNumber: number): void {
@@ -225,6 +263,26 @@ export class MushafReaderFacade {
   }
 
   selectAyah(verseKey: string): void {
+    this.patchAyahSelectionQuery(verseKey);
+  }
+
+  viewAyahOnPage(verseKey: string, pageNumber: number): void {
+    this.patchUrlQuery({
+      [MUSHAF_URL_KEYS.page]: pageNumber,
+      [MUSHAF_URL_KEYS.focusAyah]: verseKey,
+    });
+  }
+
+  private patchAyahSelectionQuery(verseKey: string): void {
+    this.cancelPeekFlashClearTimer();
+    this.patchUrlQuery(this.buildAyahSelectionQueryParams(verseKey));
+  }
+
+  private buildAyahSelectionQueryParams(
+    verseKey: string,
+  ): Partial<
+    Record<(typeof MUSHAF_URL_KEYS)[keyof typeof MUSHAF_URL_KEYS], string | number | null>
+  > {
     const currentWord = this._selectedWordLocation();
     const wordAyah = currentWord ? verseKeyFromWordLocation(currentWord) : null;
     const queryParams: Partial<
@@ -232,6 +290,7 @@ export class MushafReaderFacade {
     > = {
       [MUSHAF_URL_KEYS.ayah]: verseKey,
       [MUSHAF_URL_KEYS.panel]: 'ayah',
+      [MUSHAF_URL_KEYS.focusAyah]: null,
     };
 
     if (wordAyah && wordAyah !== verseKey) {
@@ -239,16 +298,18 @@ export class MushafReaderFacade {
       queryParams[MUSHAF_URL_KEYS.segment] = null;
     }
 
-    this.patchUrlQuery(queryParams);
+    return queryParams;
   }
 
   selectWord(wordLocation: string): void {
+    this.cancelPeekFlashClearTimer();
     const verseKey = verseKeyFromWordLocation(wordLocation);
     const queryParams: Partial<
       Record<(typeof MUSHAF_URL_KEYS)[keyof typeof MUSHAF_URL_KEYS], string | number | null>
     > = {
       [MUSHAF_URL_KEYS.word]: wordLocation,
       [MUSHAF_URL_KEYS.panel]: 'word',
+      [MUSHAF_URL_KEYS.focusAyah]: null,
     };
 
     if (verseKey) {
@@ -291,112 +352,7 @@ export class MushafReaderFacade {
 
   loadWordAnalysis(wordLocation: string): void {
     this._selectedWordLocation.set(wordLocation);
-    this.clearPendingWordAnalysisLoad();
-    const requestToken = ++this.wordAnalysisRequestToken;
-    this.runWordAnalysisLoad(wordLocation, requestToken);
-  }
-
-  /**
-   * Debounces a word-analysis fetch by {@link WORD_ANALYSIS_SWITCH_DELAY_MS}.
-   * Used when switching words while one is already selected.
-   *
-   * The load state flips to loading immediately (so the overlay shows for the
-   * whole wait), but the previous analysis view model is intentionally *kept*
-   * mounted: it holds the card's box height during loading, so the panel does
-   * not shrink-then-grow. A content-level overlay masks that retained content
-   * so it cannot be read as current data (UI-001 refinement). Mirrors the
-   * ayah-study switch debounce; the request-token guard keeps this safe from
-   * out-of-order responses.
-   */
-  private scheduleWordAnalysisLoad(wordLocation: string): void {
-    this.clearPendingWordAnalysisLoad();
-
-    if (this.applyCachedWordAnalysis(wordLocation)) {
-      return;
-    }
-
-    const requestToken = ++this.wordAnalysisRequestToken;
-    this._wordAnalysisLoadState.set({ isLoading: true, isEmpty: false, errorMessage: null });
-    this.wordAnalysisRequestTimer = setTimeout(() => {
-      this.wordAnalysisRequestTimer = null;
-      this.runWordAnalysisLoad(wordLocation, requestToken);
-    }, WORD_ANALYSIS_SWITCH_DELAY_MS);
-  }
-
-  /**
-   * Cache fast-path: when the requested word analysis is already cached, apply it
-   * immediately with no debounce and no loading state — so a cache hit never
-   * flashes the loading overlay. Returns true when a hit was applied.
-   * `clearPendingWordAnalysisLoad` has already bumped the request token, so any
-   * in-flight load from a prior selection is invalidated.
-   */
-  private applyCachedWordAnalysis(wordLocation: string): boolean {
-    if (this.isAyahMarkerOnCurrentPage(wordLocation)) {
-      return false;
-    }
-
-    const cached = this.readerCache.peek<WordAnalysisDto>(
-      MushafReaderCacheKeys.wordAnalysis(wordLocation),
-    );
-    if (!cached) {
-      return false;
-    }
-
-    this._wordAnalysis.set(toWordAnalysisViewModel(cached));
-    this._wordAnalysisLoadState.set({ isLoading: false, isEmpty: false, errorMessage: null });
-    return true;
-  }
-
-  private clearPendingWordAnalysisLoad(): void {
-    if (this.wordAnalysisRequestTimer !== null) {
-      clearTimeout(this.wordAnalysisRequestTimer);
-      this.wordAnalysisRequestTimer = null;
-    }
-
-    this.wordAnalysisRequestToken += 1;
-  }
-
-  private runWordAnalysisLoad(wordLocation: string, requestToken: number): void {
-    if (this.isAyahMarkerOnCurrentPage(wordLocation)) {
-      this._wordAnalysis.set(null);
-      this._wordAnalysisLoadState.set({
-        isLoading: false,
-        isEmpty: false,
-        errorMessage: 'هذه الكلمة غير قابلة للتحليل (علامة نهاية آية)',
-      });
-      return;
-    }
-
-    this._wordAnalysisLoadState.set({ isLoading: true, isEmpty: false, errorMessage: null });
-
-    subscribeToApiLoad(
-      this.readerCache.getOrLoad(
-        MushafReaderCacheKeys.wordAnalysis(wordLocation),
-        () => this.wordAnalysisApi.getWordAnalysis(wordLocation),
-      ),
-      {
-        onSuccess: (data) => {
-          if (this.wordAnalysisRequestToken !== requestToken) {
-            return;
-          }
-
-          this._wordAnalysis.set(toWordAnalysisViewModel(data));
-        },
-        onSettled: (loadState) => {
-          if (this.wordAnalysisRequestToken !== requestToken) {
-            return;
-          }
-
-          if (loadState.isEmpty) {
-            this._wordAnalysis.set(null);
-          }
-          this._wordAnalysisLoadState.set(loadState);
-        },
-        emptyMessage: 'تعذّر تحميل تحليل الكلمة.',
-        notFoundMessage: 'الكلمة غير موجودة.',
-        connectionMessage: 'تعذّر الاتصال بالخادم.',
-      },
-    );
+    this.wordAnalysisLoadRunner.loadImmediate(wordLocation);
   }
 
   setPanel(panel: PanelMode): void {
@@ -425,7 +381,9 @@ export class MushafReaderFacade {
     subscribeToApiLoad(this.studySourceCatalogApi.getCatalog(), {
       onSuccess: (data) => {
         this._tafsirSourceOptions.set(data.tafsirSources.map(tafsirCatalogItemToOption));
-        this._translationSourceOptions.set(data.translationSources.map(translationCatalogItemToOption));
+        this._translationSourceOptions.set(
+          data.translationSources.map(translationCatalogItemToOption),
+        );
         this._fullI3rabSourceOptions.set(data.fullI3rabSources.map(fullI3rabCatalogItemToOption));
       },
       onSettled: () => undefined,
@@ -450,137 +408,77 @@ export class MushafReaderFacade {
     this._pageLoadState.set({ isLoading: true, isEmpty: false, errorMessage: null });
 
     subscribeToApiLoad(
-      this.readerCache.getOrLoad(MushafReaderCacheKeys.page(clamped), () => this.pagesApi.getPage(clamped)),
-      {
-      onSuccess: (data) => {
-        this._page.set(toPageViewModel(data));
-        this.prefetchAdjacentPages(data.previousPageNumber, data.nextPageNumber);
-      },
-      onSettled: (loadState) => {
-        if (loadState.isEmpty) {
-          this._page.set(null);
-        }
-        this._pageLoadState.set(loadState);
-      },
-      emptyMessage: 'تعذّر تحميل الصفحة.',
-      notFoundMessage: 'الصفحة غير موجودة.',
-      connectionMessage: 'تعذّر الاتصال بالخادم.',
-    });
-  }
-
-  loadAyahStudy(verseKey: string): void {
-    this._selectedAyahKey.set(verseKey);
-    this.clearPendingAyahStudyLoad();
-    const requestToken = ++this.ayahStudyRequestToken;
-    this.runAyahStudyLoad(verseKey, requestToken);
-  }
-
-  /**
-   * Debounces an ayah-study fetch by {@link AYAH_STUDY_SWITCH_DELAY_MS}. Used
-   * when switching to a different ayah while one is already selected, mirroring
-   * the word-analysis switch debounce. The first ayah selection (and source-only
-   * changes that keep the same verse key) still load immediately.
-   *
-   * The load state flips to loading immediately (so the overlay shows for the
-   * whole wait), but the previous study view model is intentionally *kept*
-   * mounted: it holds the card's box height during loading, so the panel does
-   * not shrink-then-grow. A content-level overlay masks that retained content
-   * so it cannot be read as current data (UI-001 refinement). The request-token
-   * guard makes this safe: any in-flight response from the prior selection is
-   * discarded.
-   */
-  private scheduleAyahStudyLoad(verseKey: string): void {
-    this.clearPendingAyahStudyLoad();
-
-    if (this.applyCachedAyahStudy(verseKey)) {
-      return;
-    }
-
-    const requestToken = ++this.ayahStudyRequestToken;
-    this._ayahStudyLoadState.set({ isLoading: true, isEmpty: false, errorMessage: null });
-    this.ayahStudyRequestTimer = setTimeout(() => {
-      this.ayahStudyRequestTimer = null;
-      this.runAyahStudyLoad(verseKey, requestToken);
-    }, AYAH_STUDY_SWITCH_DELAY_MS);
-  }
-
-  /**
-   * Cache fast-path mirror of {@link applyCachedWordAnalysis} for ayah study:
-   * an already-cached ayah (for the active sources) is applied immediately with
-   * no debounce and no loading overlay. Returns true when a hit was applied.
-   */
-  private applyCachedAyahStudy(verseKey: string): boolean {
-    const sources = this._urlExplicitSources();
-    const cached = this.readerCache.peek<AyahStudyDto>(
-      MushafReaderCacheKeys.ayahStudy(verseKey, sources),
-    );
-    if (!cached) {
-      return false;
-    }
-
-    this._ayahStudy.set(toAyahStudyViewModel(cached));
-    this._sources.set({
-      tafsirSource: cached.selectedSources.tafsirSource,
-      translationSource: cached.selectedSources.translationSource,
-      fullI3rabSource: cached.selectedSources.fullI3rabSource,
-    });
-    this._ayahStudyLoadState.set({ isLoading: false, isEmpty: false, errorMessage: null });
-    return true;
-  }
-
-  private clearPendingAyahStudyLoad(): void {
-    if (this.ayahStudyRequestTimer !== null) {
-      clearTimeout(this.ayahStudyRequestTimer);
-      this.ayahStudyRequestTimer = null;
-    }
-
-    this.ayahStudyRequestToken += 1;
-  }
-
-  private runAyahStudyLoad(verseKey: string, requestToken: number): void {
-    this._ayahStudyLoadState.set({ isLoading: true, isEmpty: false, errorMessage: null });
-
-    const sources = this._urlExplicitSources();
-    const cacheKey = MushafReaderCacheKeys.ayahStudy(verseKey, sources);
-    subscribeToApiLoad(
-      this.readerCache.getOrLoad(cacheKey, () => this.ayahStudyApi.getAyahStudy(verseKey, sources)),
+      this.readerCache.getOrLoad(MushafReaderCacheKeys.page(clamped), () =>
+        this.pagesApi.getPage(clamped),
+      ),
       {
         onSuccess: (data) => {
-          if (this.ayahStudyRequestToken !== requestToken) {
-            return;
+          this._page.set(toPageViewModel(data));
+          prefetchAdjacentMushafPages(
+            data.previousPageNumber,
+            data.nextPageNumber,
+            this.readerCache,
+            this.pagesApi,
+          );
+          if (this._focusAyahKey() !== null) {
+            this.scheduleFocusAyahClear();
           }
-
-          this._ayahStudy.set(toAyahStudyViewModel(data));
-          this._sources.set({
-            tafsirSource: data.selectedSources.tafsirSource,
-            translationSource: data.selectedSources.translationSource,
-            fullI3rabSource: data.selectedSources.fullI3rabSource,
-          });
         },
         onSettled: (loadState) => {
-          if (this.ayahStudyRequestToken !== requestToken) {
-            return;
-          }
-
           if (loadState.isEmpty) {
-            this._ayahStudy.set(null);
+            this._page.set(null);
           }
-          this._ayahStudyLoadState.set(loadState);
+          this._pageLoadState.set(loadState);
         },
-        emptyMessage: 'تعذّر تحميل دراسة الآية.',
-        notFoundMessage: 'الآية غير موجودة.',
+        emptyMessage: 'تعذّر تحميل الصفحة.',
+        notFoundMessage: 'الصفحة غير موجودة.',
         connectionMessage: 'تعذّر الاتصال بالخادم.',
       },
     );
   }
 
+  loadAyahStudy(verseKey: string): void {
+    this._selectedAyahKey.set(verseKey);
+    this.ayahStudyLoadRunner.loadImmediate(verseKey);
+  }
+
   private hydrateFromUrl(snapshot: MushafUrlSnapshot): void {
     this.loadPage(snapshot.pageNumber);
+    const previousFocusAyah = this._focusAyahKey();
+    this._focusAyahKey.set(snapshot.focusAyah);
+    if (snapshot.focusAyah) {
+      if (snapshot.focusAyah !== previousFocusAyah) {
+        this.scheduleFocusAyahClear();
+      }
+    } else {
+      this.cancelPeekFlashClearTimer();
+    }
     this.applyUrlState(snapshot);
   }
 
+  private cancelPeekFlashClearTimer(): void {
+    if (this.peekFlashClearTimer === null) {
+      return;
+    }
+
+    clearTimeout(this.peekFlashClearTimer);
+    this.peekFlashClearTimer = null;
+  }
+
+  private scheduleFocusAyahClear(): void {
+    this.cancelPeekFlashClearTimer();
+    this.peekFlashClearTimer = setTimeout(() => {
+      this.peekFlashClearTimer = null;
+      if (this._focusAyahKey() !== null && this.activeRoute !== null) {
+        this.patchUrlQuery({ [MUSHAF_URL_KEYS.focusAyah]: null });
+      }
+    }, PEEK_FLASH_CLEAR_MS);
+  }
+
   private patchUrlQuery(
-    params: Partial<Record<(typeof MUSHAF_URL_KEYS)[keyof typeof MUSHAF_URL_KEYS], string | number | null>>,
+    params: Partial<
+      Record<(typeof MUSHAF_URL_KEYS)[keyof typeof MUSHAF_URL_KEYS], string | number | null>
+    >,
   ): void {
     if (!this.activeRoute) {
       return;
@@ -595,7 +493,12 @@ export class MushafReaderFacade {
   }
 
   /** Applies an authoritative URL snapshot (used by route hydration and tests). */
-  applyUrlState(snapshot: Pick<MushafUrlSnapshot, 'panel' | 'ayah' | 'word' | 'segment' | 'ayahTab' | 'wordTab' | 'sources'>): void {
+  applyUrlState(
+    snapshot: Pick<
+      MushafUrlSnapshot,
+      'panel' | 'ayah' | 'word' | 'segment' | 'ayahTab' | 'wordTab' | 'sources'
+    >,
+  ): void {
     applyAuthoritativeUrlSnapshot(
       snapshot,
       {
@@ -611,7 +514,7 @@ export class MushafReaderFacade {
           this._selectedSegmentLocation.set(segmentLocation);
         },
         clearWordSelection: () => {
-          this.clearPendingWordAnalysisLoad();
+          this.wordAnalysisLoadRunner.clearPending();
           this._selectedWordLocation.set(null);
           this._selectedSegmentLocation.set(null);
           this._wordAnalysis.set(null);
@@ -623,7 +526,7 @@ export class MushafReaderFacade {
 
           if (reload) {
             if (hadWordSelection) {
-              this.scheduleWordAnalysisLoad(wordLocation);
+              this.wordAnalysisLoadRunner.schedule(wordLocation);
             } else {
               this.loadWordAnalysis(wordLocation);
             }
@@ -631,7 +534,9 @@ export class MushafReaderFacade {
         },
         setUrlExplicitSources: (sources) => this._urlExplicitSources.set(sources),
         clearAyahSelection: () => {
-          this.clearPendingAyahStudyLoad();
+          this.ayahStudyLoadRunner.clearPending();
+          this.similarAyahsLoadRunner.clearData();
+          this.mutashabihatLoadRunner.clearData();
           this._selectedAyahKey.set(null);
           this._ayahStudy.set(null);
           this._ayahStudyLoadState.set({ isLoading: false, isEmpty: false, errorMessage: null });
@@ -641,13 +546,14 @@ export class MushafReaderFacade {
           const verseKeyChanged = this._selectedAyahKey() !== verseKey;
           this._selectedAyahKey.set(verseKey);
 
+          if (verseKeyChanged) {
+            this.similarAyahsLoadRunner.clearData();
+            this.mutashabihatLoadRunner.clearData();
+          }
+
           if (reload) {
-            // Debounce only on a genuine ayah-key switch while one is already
-            // selected — mirrors the word-analysis switch debounce. A source-only
-            // change (same verse key) stays immediate so the source selector
-            // stays responsive. The first ayah selection loads immediately too.
             if (verseKeyChanged && hadAyahSelection) {
-              this.scheduleAyahStudyLoad(verseKey);
+              this.ayahStudyLoadRunner.schedule(verseKey);
             } else {
               this.loadAyahStudy(verseKey);
             }
@@ -655,37 +561,34 @@ export class MushafReaderFacade {
         },
       },
     );
+
+    this.syncSimilarAyahsDetail(snapshot.ayah, snapshot.ayahTab);
+    this.syncMutashabihatDetail(snapshot.ayah, snapshot.ayahTab);
   }
 
-  private prefetchAdjacentPages(previousPageNumber: number | null, nextPageNumber: number | null): void {
-    if (previousPageNumber !== null) {
-      this.readerCache.prefetch(
-        MushafReaderCacheKeys.page(previousPageNumber),
-        () => this.pagesApi.getPage(previousPageNumber),
-      );
+  private syncSimilarAyahsDetail(verseKey: string | null, ayahTab: AyahStudyTab): void {
+    if (!verseKey || ayahTab !== 'similar-ayahs') {
+      return;
     }
 
-    if (nextPageNumber !== null) {
-      this.readerCache.prefetch(
-        MushafReaderCacheKeys.page(nextPageNumber),
-        () => this.pagesApi.getPage(nextPageNumber),
-      );
+    const current = this._similarAyahs();
+    if (current?.verseKey === verseKey && !this._similarAyahsLoadState().isLoading) {
+      return;
     }
+
+    this.similarAyahsLoadRunner.loadImmediate(verseKey);
   }
 
-  private isAyahMarkerOnCurrentPage(wordLocation: string): boolean {
-    const page = this._page();
-    if (!page) {
-      return false;
+  private syncMutashabihatDetail(verseKey: string | null, ayahTab: AyahStudyTab): void {
+    if (!verseKey || ayahTab !== 'mutashabihat') {
+      return;
     }
 
-    for (const line of page.lines) {
-      const word = line.words.find((candidate) => candidate.wordLocation === wordLocation);
-      if (word) {
-        return word.isAyahMarker;
-      }
+    const current = this._mutashabihat();
+    if (current?.verseKey === verseKey && !this._mutashabihatLoadState().isLoading) {
+      return;
     }
 
-    return false;
+    this.mutashabihatLoadRunner.loadImmediate(verseKey);
   }
 }

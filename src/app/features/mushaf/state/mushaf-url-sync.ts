@@ -11,13 +11,20 @@ import {
 import { verseKeyFromWordLocation } from '../utils/mushaf-location-keys';
 
 const VALID_PANELS: ReadonlySet<string> = new Set(['ayah', 'word', 'none']);
-const VALID_AYAH_TABS: ReadonlySet<string> = new Set(['tafsir', 'translation', 'full-i3rab']);
+const VALID_AYAH_TABS: ReadonlySet<string> = new Set([
+  'tafsir',
+  'translation',
+  'full-i3rab',
+  'similar-ayahs',
+  'mutashabihat',
+]);
 const VALID_WORD_TABS: ReadonlySet<string> = new Set(['morphology', 'segments', 'i3rab', 'identity']);
 
 /** Parsed, normalized Mushaf reader URL snapshot (natural Quran keys). */
 export interface MushafUrlSnapshot {
   pageNumber: number;
   ayah: string | null;
+  focusAyah: string | null;
   word: string | null;
   segment: string | null;
   panel: PanelMode;
@@ -67,6 +74,7 @@ export function parseMushafUrlParams(params: ParamMap): MushafUrlSnapshot {
   return {
     pageNumber: clampMushafPageNumber(params.get(MUSHAF_URL_KEYS.page)),
     ayah,
+    focusAyah: params.get(MUSHAF_URL_KEYS.focusAyah),
     word,
     segment: params.get(MUSHAF_URL_KEYS.segment),
     panel: normalizePanelMode(params.get(MUSHAF_URL_KEYS.panel)),

@@ -1,4 +1,4 @@
-import { Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 import { MushafLineDto, PageMarkerDto } from '../../models/mushaf.models';
@@ -13,13 +13,14 @@ import { mushafSurahNameLigature } from './mushaf-surah-name-ligature';
   selector: 'qd-mushaf-line',
   standalone: true,
   imports: [CommonModule, MushafWordComponent, MushafMarkerComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './mushaf-line.component.html',
   styleUrls: ['./mushaf-line.component.scss'],
 })
 export class MushafLineComponent {
   readonly line = input.required<MushafLineDto>();
   readonly markers = input<PageMarkerDto[]>([]);
-  readonly selectedVerseKey = input<string | null>(null);
+  readonly highlightedVerseKey = input<string | null>(null);
   readonly selectedWordLocation = input<string | null>(null);
   readonly surahNameArabic = input<string | null>(null);
 

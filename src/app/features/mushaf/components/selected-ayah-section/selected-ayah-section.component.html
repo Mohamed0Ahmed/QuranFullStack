@@ -18,58 +18,60 @@
       </p>
     }
 
-    <div class="selected-ayah-section__source">
-      @if (loadState().isLoading) {
-        <!--
-          UI-001 parity: keep the static source label visible (it does not depend
-          on the loaded study) and shimmer only the value, mirroring the
-          source-selector's label + trigger layout instead of one bare block.
-        -->
-        <div class="selected-ayah-section__source-loading" aria-busy="true">
-          <span class="selected-ayah-section__source-loading-label">
-            @switch (activeTab()) {
-              @case ('tafsir') { مصدر التفسير }
-              @case ('translation') { مصدر الترجمة }
-              @case ('full-i3rab') { مصدر الإعراب }
+    @if (activeTab() === 'tafsir' || activeTab() === 'translation' || activeTab() === 'full-i3rab') {
+      <div class="selected-ayah-section__source">
+        @if (loadState().isLoading) {
+          <!--
+            UI-001 parity: keep the static source label visible (it does not depend
+            on the loaded study) and shimmer only the value, mirroring the
+            source-selector's label + trigger layout instead of one bare block.
+          -->
+          <div class="selected-ayah-section__source-loading" aria-busy="true">
+            <span class="selected-ayah-section__source-loading-label">
+              @switch (activeTab()) {
+                @case ('tafsir') { مصدر التفسير }
+                @case ('translation') { مصدر الترجمة }
+                @case ('full-i3rab') { مصدر الإعراب }
+              }
+            </span>
+            <span
+              class="qd-skeleton qd-skeleton--rounded-md selected-ayah-section__source-skeleton"
+              aria-hidden="true"
+            ></span>
+          </div>
+        } @else {
+          @switch (activeTab()) {
+            @case ('tafsir') {
+              <qd-source-selector
+                label="مصدر التفسير"
+                pickerMode="languageFirst"
+                [selectedKey]="study()!.selectedSources.tafsirSource"
+                [options]="tafsirOptions()"
+                (sourceChange)="tafsirSourceChange.emit($event)"
+              />
             }
-          </span>
-          <span
-            class="qd-skeleton qd-skeleton--rounded-md selected-ayah-section__source-skeleton"
-            aria-hidden="true"
-          ></span>
-        </div>
-      } @else {
-        @switch (activeTab()) {
-          @case ('tafsir') {
-            <qd-source-selector
-              label="مصدر التفسير"
-              pickerMode="languageFirst"
-              [selectedKey]="study()!.selectedSources.tafsirSource"
-              [options]="tafsirOptions()"
-              (sourceChange)="tafsirSourceChange.emit($event)"
-            />
-          }
-          @case ('translation') {
-            <qd-source-selector
-              label="مصدر الترجمة"
-              pickerMode="languageFirst"
-              [selectedKey]="study()!.selectedSources.translationSource"
-              [options]="translationOptions()"
-              (sourceChange)="translationSourceChange.emit($event)"
-            />
-          }
-          @case ('full-i3rab') {
-            <qd-source-selector
-              label="مصدر الإعراب"
-              pickerMode="flat"
-              [selectedKey]="study()!.selectedSources.fullI3rabSource"
-              [options]="fullI3rabOptions()"
-              (sourceChange)="fullI3rabSourceChange.emit($event)"
-            />
+            @case ('translation') {
+              <qd-source-selector
+                label="مصدر الترجمة"
+                pickerMode="languageFirst"
+                [selectedKey]="study()!.selectedSources.translationSource"
+                [options]="translationOptions()"
+                (sourceChange)="translationSourceChange.emit($event)"
+              />
+            }
+            @case ('full-i3rab') {
+              <qd-source-selector
+                label="مصدر الإعراب"
+                pickerMode="flat"
+                [selectedKey]="study()!.selectedSources.fullI3rabSource"
+                [options]="fullI3rabOptions()"
+                (sourceChange)="fullI3rabSourceChange.emit($event)"
+              />
+            }
           }
         }
-      }
-    </div>
+      </div>
+    }
 
     <nav class="selected-ayah-section__tabs" aria-label="تبويبات دراسة الآية">
       <button
@@ -79,7 +81,7 @@
         [disabled]="loadState().isLoading"
         (click)="tabChange.emit('tafsir')"
       >
-        التفسير
+        {{ tabLabels.tafsir.short }}
       </button>
       <button
         type="button"
@@ -88,7 +90,7 @@
         [disabled]="loadState().isLoading"
         (click)="tabChange.emit('translation')"
       >
-        الترجمة
+        {{ tabLabels.translation.short }}
       </button>
       <button
         type="button"
@@ -97,11 +99,45 @@
         [disabled]="loadState().isLoading"
         (click)="tabChange.emit('full-i3rab')"
       >
-        الإعراب الكامل
+        {{ tabLabels['full-i3rab'].short }}
+      </button>
+      <button
+        type="button"
+        class="selected-ayah-section__tab"
+        [class.selected-ayah-section__tab--active]="activeTab() === 'similar-ayahs'"
+        [disabled]="loadState().isLoading"
+        data-testid="ayah-tab-similar-ayahs"
+        (click)="tabChange.emit('similar-ayahs')"
+      >
+        <span class="selected-ayah-section__tab-label">{{ tabLabels['similar-ayahs'].short }}</span>
+        @if (tabCount('similar-ayahs') !== null) {
+          <span class="selected-ayah-section__tab-count" data-testid="similar-ayah-count">
+            {{ tabCount('similar-ayahs') }}
+          </span>
+        }
+      </button>
+      <button
+        type="button"
+        class="selected-ayah-section__tab"
+        [class.selected-ayah-section__tab--active]="activeTab() === 'mutashabihat'"
+        [disabled]="loadState().isLoading"
+        data-testid="ayah-tab-mutashabihat"
+        (click)="tabChange.emit('mutashabihat')"
+      >
+        <span class="selected-ayah-section__tab-label">{{ tabLabels.mutashabihat.short }}</span>
+        @if (tabCount('mutashabihat') !== null) {
+          <span class="selected-ayah-section__tab-count" data-testid="mutashabihat-group-count">
+            {{ tabCount('mutashabihat') }}
+          </span>
+        }
       </button>
     </nav>
 
-    <div class="selected-ayah-section__content" [class.selected-ayah-section__content--loading]="loadState().isLoading">
+    <div
+      class="selected-ayah-section__content"
+      [class.selected-ayah-section__content--loading]="loadState().isLoading"
+      [class.selected-ayah-section__content--flow]="activeTab() === 'mutashabihat'"
+    >
       @if (loadState().isLoading) {
         <!--
           Structured loading: an ayah-text placeholder line plus several stacked
@@ -121,9 +157,16 @@
         </div>
       } @else {
         @if (displayAyahText()) {
-          <p class="selected-ayah-section__ayah" dir="rtl" data-testid="selected-ayah-section-ayah">
+          <button
+            type="button"
+            class="selected-ayah-section__ayah selected-ayah-section__ayah--navigable"
+            dir="rtl"
+            data-testid="selected-ayah-section-ayah"
+            [attr.aria-label]="selectedAyahNavigateLabel()"
+            (click)="onSelectedAyahNavigate()"
+          >
             {{ displayAyahText() }}
-          </p>
+          </button>
         }
 
         @switch (activeTab()) {
@@ -135,6 +178,20 @@
           }
           @case ('full-i3rab') {
             <qd-full-i3rab-card [entry]="study()!.fullI3rab" />
+          }
+          @case ('similar-ayahs') {
+            <qd-similar-ayahs-card
+              [similarAyahs]="similarAyahs()"
+              [loadState]="similarAyahsLoadState()"
+              (ayahNavigate)="ayahNavigate.emit($event)"
+            />
+          }
+          @case ('mutashabihat') {
+            <qd-mutashabihat-groups-card
+              [mutashabihat]="mutashabihat()"
+              [loadState]="mutashabihatLoadState()"
+              (ayahNavigate)="ayahNavigate.emit($event)"
+            />
           }
         }
       }

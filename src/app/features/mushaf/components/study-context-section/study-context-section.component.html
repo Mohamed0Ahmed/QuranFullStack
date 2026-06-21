@@ -22,6 +22,10 @@
         [embedded]="true"
         [study]="ayahStudy()"
         [loadState]="ayahLoadState()"
+        [similarAyahs]="similarAyahs()"
+        [similarAyahsLoadState]="similarAyahsLoadState()"
+        [mutashabihat]="mutashabihat()"
+        [mutashabihatLoadState]="mutashabihatLoadState()"
         [activeTab]="activeAyahTab()"
         [selectedVerseKey]="selectedVerseKey()"
         [tafsirOptions]="tafsirOptions()"
@@ -31,6 +35,7 @@
         (tafsirSourceChange)="tafsirSourceChange.emit($event)"
         (translationSourceChange)="translationSourceChange.emit($event)"
         (fullI3rabSourceChange)="fullI3rabSourceChange.emit($event)"
+        (ayahNavigate)="ayahNavigate.emit($event)"
       />
     }
   }

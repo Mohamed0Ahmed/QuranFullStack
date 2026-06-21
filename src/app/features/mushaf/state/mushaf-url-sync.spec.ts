@@ -23,8 +23,19 @@ describe('mushaf-url-sync', () => {
     expect(normalizePanelMode('word')).toBe('word');
     expect(normalizeAyahTab('links')).toBe('tafsir');
     expect(normalizeAyahTab('full-i3rab')).toBe('full-i3rab');
+    expect(normalizeAyahTab('similar-ayahs')).toBe('similar-ayahs');
+    expect(normalizeAyahTab('mutashabihat')).toBe('mutashabihat');
     expect(normalizeWordTab('unknown')).toBe('segments');
     expect(normalizeWordTab('identity')).toBe('identity');
+  });
+
+  it('parses similarity ayah tabs from the URL', () => {
+    expect(parseMushafUrlParams(convertToParamMap({ ayahTab: 'similar-ayahs' })).ayahTab).toBe(
+      'similar-ayahs',
+    );
+    expect(parseMushafUrlParams(convertToParamMap({ ayahTab: 'mutashabihat' })).ayahTab).toBe(
+      'mutashabihat',
+    );
   });
 
   it('parses a full deep-link URL snapshot with natural Quran keys', () => {
@@ -48,6 +59,7 @@ describe('mushaf-url-sync', () => {
       ayah: '2:25',
       word: '2:25:3',
       segment: '2:25:3:1',
+      focusAyah: null,
       panel: 'word',
       ayahTab: 'tafsir',
       wordTab: 'segments',
@@ -70,6 +82,31 @@ describe('mushaf-url-sync', () => {
     expect(snapshot.ayah).toBe('2:25');
     expect(snapshot.word).toBe('2:25:3');
   });
+
+  it.each(['similar-ayahs', 'mutashabihat'] as const)(
+    'does not correct valid ayahTab=%s in the URL',
+    (ayahTab) => {
+      const snapshot = parseMushafUrlParams(
+        convertToParamMap({
+          page: '5',
+          ayah: '2:25',
+          ayahTab,
+        }),
+      );
+
+      const corrections = buildUrlEnumCorrections(
+        convertToParamMap({
+          page: '5',
+          ayah: '2:25',
+          ayahTab,
+        }),
+        snapshot,
+      );
+
+      expect(corrections).toEqual({});
+      expect(snapshot.ayahTab).toBe(ayahTab);
+    },
+  );
 
   it('builds URL corrections when raw enum values are out of scope', () => {
     const snapshot = parseMushafUrlParams(

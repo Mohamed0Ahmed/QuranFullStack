@@ -2,12 +2,18 @@ import { Component, computed, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 import {
+  AyahNavigationTarget,
   AyahStudyTab,
   AyahStudyViewModel,
+  AYAH_STUDY_TAB_LABELS,
   ResourceLoadState,
+  SimilarAyahsDto,
+  AyahMutashabihatDto,
   SourceOption,
 } from '../../models/mushaf.models';
 import { SourceSelectorComponent } from '../source-selector/source-selector.component';
+import { SimilarAyahsCardComponent } from '../similar-ayahs-card/similar-ayahs-card.component';
+import { MutashabihatGroupsCardComponent } from '../mutashabihat-groups-card/mutashabihat-groups-card.component';
 import { TafsirCardComponent } from '../tafsir-card/tafsir-card.component';
 import { TranslationCardComponent } from '../translation-card/translation-card.component';
 import { FullI3rabCardComponent } from '../full-i3rab-card/full-i3rab-card.component';
@@ -19,6 +25,8 @@ import { toStudyAyahDisplayText } from '../../utils/mushaf-verse-key-display';
   imports: [
     CommonModule,
     SourceSelectorComponent,
+    SimilarAyahsCardComponent,
+    MutashabihatGroupsCardComponent,
     TafsirCardComponent,
     TranslationCardComponent,
     FullI3rabCardComponent,
@@ -32,6 +40,18 @@ import { toStudyAyahDisplayText } from '../../utils/mushaf-verse-key-display';
 export class SelectedAyahSectionComponent {
   readonly study = input<AyahStudyViewModel | null>(null);
   readonly loadState = input.required<ResourceLoadState>();
+  readonly similarAyahs = input<SimilarAyahsDto | null>(null);
+  readonly similarAyahsLoadState = input<ResourceLoadState>({
+    isLoading: false,
+    isEmpty: false,
+    errorMessage: null,
+  });
+  readonly mutashabihat = input<AyahMutashabihatDto | null>(null);
+  readonly mutashabihatLoadState = input<ResourceLoadState>({
+    isLoading: false,
+    isEmpty: false,
+    errorMessage: null,
+  });
   readonly activeTab = input<AyahStudyTab>('tafsir');
   readonly selectedVerseKey = input<string | null>(null);
   readonly embedded = input(false);
@@ -45,9 +65,56 @@ export class SelectedAyahSectionComponent {
   readonly translationSourceChange = output<string>();
   readonly fullI3rabSourceChange = output<string>();
   readonly sectionFocus = output<void>();
+  readonly ayahNavigate = output<AyahNavigationTarget>();
 
   protected readonly displayAyahText = computed(() => {
     const text = this.study()?.ayah.textUthmani;
     return text ? toStudyAyahDisplayText(text) : '';
   });
+
+  protected readonly tabLabels = AYAH_STUDY_TAB_LABELS;
+
+  protected readonly similarAyahCount = computed(
+    () => this.study()?.similaritySummary.similarAyahCount ?? 0,
+  );
+
+  protected readonly mutashabihatGroupCount = computed(
+    () => this.study()?.similaritySummary.mutashabihatGroupCount ?? 0,
+  );
+
+  protected tabCount(tab: AyahStudyTab): number | null {
+    if (this.loadState().isLoading || !this.study()) {
+      return null;
+    }
+
+    switch (tab) {
+      case 'similar-ayahs':
+        return this.similarAyahCount();
+      case 'mutashabihat':
+        return this.mutashabihatGroupCount();
+      default:
+        return null;
+    }
+  }
+
+  protected selectedAyahNavigateLabel(): string {
+    const ayah = this.study()?.ayah;
+    if (!ayah) {
+      return 'فتح الآية في المصحف';
+    }
+
+    return `فتح ${ayah.surahNameArabic} — ${ayah.ayahNumber} في المصحف`;
+  }
+
+  protected onSelectedAyahNavigate(): void {
+    const ayah = this.study()?.ayah;
+    if (!ayah) {
+      return;
+    }
+
+    this.ayahNavigate.emit({
+      verseKey: ayah.verseKey,
+      pageNumber: ayah.pageFrom,
+    });
+  }
 }

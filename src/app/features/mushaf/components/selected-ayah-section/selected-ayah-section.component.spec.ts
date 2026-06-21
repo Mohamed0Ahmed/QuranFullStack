@@ -1,10 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { SelectedAyahSectionComponent } from './selected-ayah-section.component';
 import {
   AyahStudyTab,
   AyahStudyViewModel,
+  AyahMutashabihatDto,
   ResourceLoadState,
   SourceOption,
 } from '../../models/mushaf.models';
@@ -14,6 +15,18 @@ import {
  * placeholders used in mushaf-reader.facade.ayah-study.spec.ts.
  */
 const AYAH_TEXT_PLACEHOLDER = 'نص تجريبي للآية';
+
+const ZERO_SIMILARITY_SUMMARY = {
+  similarAyahCount: 0,
+  mutashabihatGroupCount: 0,
+  mutashabihatOccurrenceCount: 0,
+};
+
+const SAMPLE_SIMILARITY_SUMMARY = {
+  similarAyahCount: 2,
+  mutashabihatGroupCount: 2,
+  mutashabihatOccurrenceCount: 3,
+};
 
 const IDLE: ResourceLoadState = { isLoading: false, isEmpty: false, errorMessage: null };
 
@@ -84,8 +97,51 @@ function buildAyahStudyViewModel(verseKey = '2:25'): AyahStudyViewModel {
       coveredAyahKeys: [verseKey],
       html: '<p>إعراب تجريبي</p>',
     },
+    similaritySummary: SAMPLE_SIMILARITY_SUMMARY,
   };
 }
+
+const SAMPLE_MUTASHABIHAT: AyahMutashabihatDto = {
+  verseKey: '2:25',
+  groupCount: 1,
+  groups: [
+    {
+      groupKey: 'mutashabihat:90001',
+      sourceGroupId: 90001,
+      representativeVerseKey: '2:25',
+      representativeWordFrom: 1,
+      representativeWordTo: 2,
+      phraseTextUthmani: 'عبارة-مجموعة-أولى',
+      occurrenceCount: 1,
+      distinctAyahCount: 1,
+      distinctSurahCount: 1,
+      selectedOccurrences: [
+        {
+          verseKey: '2:25',
+          wordFrom: 1,
+          wordTo: 2,
+          isRepresentative: true,
+          phraseTextUthmani: 'عبارة-مجموعة-أولى',
+        },
+      ],
+      occurrences: [
+        {
+          verseKey: '2:25',
+          surahNumber: 2,
+          surahNameArabic: 'البقرة',
+          ayahNumber: 25,
+          pageNumber: 5,
+          wordFrom: 1,
+          wordTo: 2,
+          isSelectedAyah: true,
+          isRepresentative: true,
+          textUthmani: 'نص-آية-25',
+          phraseTextUthmani: 'عبارة-مجموعة-أولى',
+        },
+      ],
+    },
+  ],
+};
 
 function setInputs(
   fixture: ComponentFixture<SelectedAyahSectionComponent>,
@@ -98,6 +154,8 @@ function setInputs(
     translationOptions?: SourceOption[];
     fullI3rabOptions?: SourceOption[];
     embedded?: boolean;
+    mutashabihat?: AyahMutashabihatDto | null;
+    mutashabihatLoadState?: ResourceLoadState;
   },
 ): void {
   fixture.componentRef.setInput('study', inputs.study ?? null);
@@ -108,6 +166,11 @@ function setInputs(
   fixture.componentRef.setInput('translationOptions', inputs.translationOptions ?? translationOptions);
   fixture.componentRef.setInput('fullI3rabOptions', inputs.fullI3rabOptions ?? fullI3rabOptions);
   fixture.componentRef.setInput('embedded', inputs.embedded ?? false);
+  fixture.componentRef.setInput('mutashabihat', inputs.mutashabihat ?? null);
+  fixture.componentRef.setInput(
+    'mutashabihatLoadState',
+    inputs.mutashabihatLoadState ?? { isLoading: false, isEmpty: false, errorMessage: null },
+  );
   fixture.detectChanges();
 }
 
@@ -128,7 +191,7 @@ describe('SelectedAyahSectionComponent — stable loading (UI-001)', () => {
     // Static structure mounted: source slot, tabs, content region.
     expect(root.querySelector('.selected-ayah-section__source')).toBeTruthy();
     expect(root.querySelector('.selected-ayah-section__tabs')).toBeTruthy();
-    expect(root.querySelectorAll('.selected-ayah-section__tab')).toHaveLength(3);
+    expect(root.querySelectorAll('.selected-ayah-section__tab')).toHaveLength(5);
     expect(root.querySelector('.selected-ayah-section__content')).toBeTruthy();
 
     // Loading content is several stacked shimmer lines, not one giant block.
@@ -162,7 +225,7 @@ describe('SelectedAyahSectionComponent — stable loading (UI-001)', () => {
 
     // Tabs stay mounted and disabled while loading.
     const tabs = Array.from(root.querySelectorAll<HTMLButtonElement>('.selected-ayah-section__tab'));
-    expect(tabs).toHaveLength(3);
+    expect(tabs).toHaveLength(5);
     expect(tabs.every((tab) => tab.disabled)).toBe(true);
 
     // Source slot shows a skeleton placeholder (not the live selector).
@@ -219,7 +282,7 @@ describe('SelectedAyahSectionComponent — stable loading (UI-001)', () => {
     const root = fixture.nativeElement as HTMLElement;
     const tabs = Array.from(root.querySelectorAll<HTMLButtonElement>('.selected-ayah-section__tab'));
     // Actions may be disabled while loading but must not disappear.
-    expect(tabs).toHaveLength(3);
+    expect(tabs).toHaveLength(5);
     expect(tabs.every((tab) => tab.disabled)).toBe(true);
   });
 
@@ -284,5 +347,135 @@ describe('SelectedAyahSectionComponent — stable loading (UI-001)', () => {
     expect(root.querySelector('.qd-empty-state')).toBeTruthy();
     expect(root.querySelector('.qd-skeleton')).toBeNull();
     expect(root.querySelector('[data-testid="ayah-study-loading"]')).toBeNull();
+  });
+});
+
+describe('SelectedAyahSectionComponent — similarity actions (US1)', () => {
+  it('renders the two new similarity tabs with count badges when study is loaded', () => {
+    const fixture = TestBed.createComponent(SelectedAyahSectionComponent);
+    setInputs(fixture, {
+      study: buildAyahStudyViewModel(),
+      loadState: IDLE,
+      selectedVerseKey: '2:25',
+    });
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('[data-testid="ayah-tab-similar-ayahs"]')).toBeTruthy();
+    expect(root.querySelector('[data-testid="ayah-tab-mutashabihat"]')).toBeTruthy();
+    expect(root.querySelector('[data-testid="similar-ayah-count"]')?.textContent?.trim()).toBe('2');
+    expect(root.querySelector('[data-testid="mutashabihat-group-count"]')?.textContent?.trim()).toBe('2');
+  });
+
+  it('does not show similarity count badges while loading', () => {
+    const fixture = TestBed.createComponent(SelectedAyahSectionComponent);
+    setInputs(fixture, {
+      study: buildAyahStudyViewModel(),
+      loadState: { isLoading: true, isEmpty: false, errorMessage: null },
+      selectedVerseKey: '2:25',
+    });
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('[data-testid="similar-ayah-count"]')).toBeNull();
+    expect(root.querySelector('[data-testid="mutashabihat-group-count"]')).toBeNull();
+  });
+
+  it('emits tabChange for the similarity tabs and renders the similar ayahs card only for similar-ayahs', () => {
+    const fixture = TestBed.createComponent(SelectedAyahSectionComponent);
+    const tabChange = vi.fn();
+    fixture.componentInstance.tabChange.subscribe(tabChange);
+
+    setInputs(fixture, {
+      study: buildAyahStudyViewModel(),
+      loadState: IDLE,
+      selectedVerseKey: '2:25',
+      activeTab: 'similar-ayahs',
+    });
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('qd-similar-ayahs-card')).toBeTruthy();
+    expect(root.querySelector('qd-mutashabihat-groups-card')).toBeNull();
+
+    root.querySelector<HTMLButtonElement>('[data-testid="ayah-tab-mutashabihat"]')?.click();
+    expect(tabChange).toHaveBeenCalledWith('mutashabihat');
+  });
+
+  it('renders the mutashabihat groups card only for the mutashabihat tab', () => {
+    const fixture = TestBed.createComponent(SelectedAyahSectionComponent);
+
+    setInputs(fixture, {
+      study: buildAyahStudyViewModel(),
+      loadState: IDLE,
+      selectedVerseKey: '2:25',
+      activeTab: 'mutashabihat',
+    });
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('qd-mutashabihat-groups-card')).toBeTruthy();
+    expect(root.querySelector('qd-similar-ayahs-card')).toBeNull();
+  });
+
+  it('shows zero counts for an ayah without similarity data', () => {
+    const fixture = TestBed.createComponent(SelectedAyahSectionComponent);
+    const study = buildAyahStudyViewModel('1:1');
+    study.similaritySummary = ZERO_SIMILARITY_SUMMARY;
+
+    setInputs(fixture, {
+      study,
+      loadState: IDLE,
+      selectedVerseKey: '1:1',
+    });
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('[data-testid="similar-ayah-count"]')?.textContent?.trim()).toBe('0');
+    expect(root.querySelector('[data-testid="mutashabihat-group-count"]')?.textContent?.trim()).toBe('0');
+  });
+});
+
+describe('SelectedAyahSectionComponent — ayah navigation', () => {
+  it('emits ayahNavigate when the selected ayah header is clicked', () => {
+    const fixture = TestBed.createComponent(SelectedAyahSectionComponent);
+    const ayahNavigate = vi.fn();
+    fixture.componentInstance.ayahNavigate.subscribe(ayahNavigate);
+
+    setInputs(fixture, {
+      study: buildAyahStudyViewModel('2:25'),
+      loadState: IDLE,
+      selectedVerseKey: '2:25',
+    });
+
+    const ayahButton = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(
+      '[data-testid="selected-ayah-section-ayah"]',
+    );
+    ayahButton?.click();
+
+    expect(ayahNavigate).toHaveBeenCalledWith({
+      verseKey: '2:25',
+      pageNumber: 5,
+    });
+  });
+
+  it('emits ayahNavigate when a mutashabihat occurrence text is clicked', () => {
+    const fixture = TestBed.createComponent(SelectedAyahSectionComponent);
+    const ayahNavigate = vi.fn();
+    fixture.componentInstance.ayahNavigate.subscribe(ayahNavigate);
+
+    setInputs(fixture, {
+      study: buildAyahStudyViewModel('2:25'),
+      loadState: IDLE,
+      selectedVerseKey: '2:25',
+      activeTab: 'mutashabihat',
+      mutashabihat: SAMPLE_MUTASHABIHAT,
+      mutashabihatLoadState: IDLE,
+    });
+
+    const textButton = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(
+      '[data-testid="mutashabihat-occurrence-text"]',
+    );
+    textButton?.click();
+
+    expect(ayahNavigate).toHaveBeenCalledWith({
+      verseKey: '2:25',
+      pageNumber: 5,
+    });
   });
 });

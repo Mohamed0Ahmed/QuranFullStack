@@ -1,0 +1,80 @@
+@use '../study-card.shared';
+
+.similar-ayahs-card {
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--qd-space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--qd-space-2);
+  }
+
+  &__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--qd-space-2);
+    color: var(--qd-text-muted);
+    font-size: 0.8125rem;
+    line-height: 1.5;
+  }
+
+  &__reference {
+    color: var(--qd-text);
+    font-weight: 600;
+  }
+
+  &__context {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--qd-space-2);
+  }
+
+  &__page {
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__text {
+    margin: 0;
+    font-size: 0.9375rem;
+    line-height: 1.9;
+    color: var(--qd-text);
+
+    &--navigable {
+      display: block;
+      width: 100%;
+      padding: 0;
+      border: none;
+      background: transparent;
+      font-family: inherit;
+      text-align: inherit;
+      cursor: pointer;
+      border-radius: var(--qd-radius-sm);
+      transition: color 120ms ease;
+
+      &:hover {
+        color: var(--qd-accent);
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--qd-accent);
+        outline-offset: 2px;
+      }
+    }
+  }
+
+  &__skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: var(--qd-space-2);
+  }
+}

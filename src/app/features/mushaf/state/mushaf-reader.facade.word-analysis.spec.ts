@@ -10,7 +10,7 @@ import { MushafWordComponent } from '../components/mushaf-word/mushaf-word.compo
 import { SelectedWordSectionComponent } from '../components/selected-word-section/selected-word-section.component';
 import { WordAnalysisDto } from '../models/mushaf.models';
 import { MushafReaderFacade } from './mushaf-reader.facade';
-import { mushafStudySourceCatalogApiProvider } from './mushaf-study-source-catalog.api.mock';
+import { mushafAyahMutashabihatApiProvider, mushafSimilarAyahsApiProvider, mushafStudySourceCatalogApiProvider } from './mushaf-study-source-catalog.api.mock';
 import { segmentSlotToColor } from './segment-color-palette';
 
 /** Source-safe synthetic placeholders — not Quranic text. */
@@ -173,6 +173,8 @@ describe('MushafReaderFacade.loadWordAnalysis', () => {
         { provide: MushafAyahStudyApi, useValue: { getAyahStudy: vi.fn() } },
         { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis } },
         mushafStudySourceCatalogApiProvider,
+        mushafSimilarAyahsApiProvider,
+        mushafAyahMutashabihatApiProvider,
       ],
     });
 
@@ -196,6 +198,8 @@ describe('MushafReaderFacade.loadWordAnalysis', () => {
         { provide: MushafAyahStudyApi, useValue: { getAyahStudy: vi.fn() } },
         { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis } },
         mushafStudySourceCatalogApiProvider,
+        mushafSimilarAyahsApiProvider,
+        mushafAyahMutashabihatApiProvider,
       ],
     });
 
@@ -320,6 +324,42 @@ describe('MushafWordComponent marker selection', () => {
     expect(button.disabled).toBe(true);
     button.click();
     expect(wordSelect).not.toHaveBeenCalled();
+  });
+
+  it('applies ayah highlight to words matching highlightedVerseKey', () => {
+    const fixture = TestBed.createComponent(MushafWordComponent);
+    fixture.componentRef.setInput('word', {
+      wordLocation: '2:25:3',
+      verseKey: '2:25',
+      wordNumber: 3,
+      lineWordOrder: 3,
+      textUthmani: 'كلمة-تجريبية',
+      isAyahMarker: false,
+    });
+    fixture.componentRef.setInput('highlightedVerseKey', '2:25');
+    fixture.detectChanges();
+
+    const button = fixture.nativeElement.querySelector('button') as HTMLButtonElement;
+    expect(button.classList.contains('mushaf-word--highlighted-ayah')).toBe(true);
+  });
+
+  it('prefers selected-word styling over ayah highlight for the active word', () => {
+    const fixture = TestBed.createComponent(MushafWordComponent);
+    fixture.componentRef.setInput('word', {
+      wordLocation: '2:25:3',
+      verseKey: '2:25',
+      wordNumber: 3,
+      lineWordOrder: 3,
+      textUthmani: 'كلمة-تجريبية',
+      isAyahMarker: false,
+    });
+    fixture.componentRef.setInput('highlightedVerseKey', '2:25');
+    fixture.componentRef.setInput('selectedWordLocation', '2:25:3');
+    fixture.detectChanges();
+
+    const button = fixture.nativeElement.querySelector('button') as HTMLButtonElement;
+    expect(button.classList.contains('mushaf-word--selected-word')).toBe(true);
+    expect(button.classList.contains('mushaf-word--highlighted-ayah')).toBe(false);
   });
 });
 

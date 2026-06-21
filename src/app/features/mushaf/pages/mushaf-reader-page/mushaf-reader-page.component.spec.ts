@@ -9,31 +9,9 @@ import { MushafStudySourceCatalogApi } from '../../data-access/mushaf-study-sour
 import { MushafWordAnalysisApi } from '../../data-access/mushaf-word-analysis.api';
 import { MushafReaderFacade } from '../../state/mushaf-reader.facade';
 import { MushafReaderPageComponent } from './mushaf-reader-page.component';
+import { ayahStudyDtoMock, mushafAyahMutashabihatApiProvider, mushafSimilarAyahsApiProvider, mushafStudySourceCatalogApiProvider } from '../../state/mushaf-study-source-catalog.api.mock';
 
-const ayahStudyDto = {
-  ayah: {
-    verseKey: '2:25',
-    surahNumber: 2,
-    surahNameArabic: 'البقرة',
-    ayahNumber: 25,
-    textUthmani: 'نص تجريبي للآية',
-    wordsCount: 5,
-    pageFrom: 5,
-    pageTo: 5,
-    juzNumber: 1,
-    hizbNumber: 1,
-    rubNumber: 1,
-    sajda: null,
-  },
-  selectedSources: {
-    tafsirSource: 'ar-muyassar',
-    translationSource: 'en-sahih-international',
-    fullI3rabSource: 'muyassar',
-  },
-  tafsir: null,
-  translation: null,
-  fullI3rab: null,
-};
+const ayahStudyDto = ayahStudyDtoMock;
 
 const wordAnalysisDto = {
   word: {
@@ -138,6 +116,8 @@ describe('MushafReaderPageComponent study layout', () => {
             ),
           },
         },
+        mushafSimilarAyahsApiProvider,
+        mushafAyahMutashabihatApiProvider,
       ],
     });
 
@@ -217,6 +197,8 @@ describe('MushafReaderPageComponent study layout', () => {
             ),
           },
         },
+        mushafSimilarAyahsApiProvider,
+        mushafAyahMutashabihatApiProvider,
       ],
     });
 
@@ -293,6 +275,8 @@ describe('MushafReaderPageComponent study layout', () => {
             ),
           },
         },
+        mushafSimilarAyahsApiProvider,
+        mushafAyahMutashabihatApiProvider,
       ],
     });
 
@@ -310,5 +294,80 @@ describe('MushafReaderPageComponent study layout', () => {
 
     expect(moveSelectedWord).not.toHaveBeenCalled();
     expect(preventDefault).not.toHaveBeenCalled();
+  });
+
+  it('unbinds the facade route on destroy', () => {
+    const queryParamMap$ = new BehaviorSubject(convertToParamMap({ page: '5', word: '2:25:3', ayah: '2:25' }));
+
+    TestBed.configureTestingModule({
+      imports: [MushafReaderPageComponent],
+      providers: [
+        MushafReaderFacade,
+        {
+          provide: ActivatedRoute,
+          useValue: { queryParamMap: queryParamMap$.asObservable() },
+        },
+        {
+          provide: Router,
+          useValue: { navigate: vi.fn().mockResolvedValue(true) },
+        },
+        {
+          provide: MushafPagesApi,
+          useValue: {
+            getPage: vi.fn(() =>
+              of({
+                isSuccess: true,
+                message: 'ok',
+                data: {
+                  pageNumber: 5,
+                  previousPageNumber: 4,
+                  nextPageNumber: 6,
+                  surahs: [],
+                  ayahRange: { firstVerseKey: '2:25', lastVerseKey: '2:26' },
+                  navigation: { juzNumbers: [], hizbNumbers: [], rubNumbers: [] },
+                  lines: [],
+                  markers: [],
+                },
+              }),
+            ),
+          },
+        },
+        {
+          provide: MushafAyahStudyApi,
+          useValue: {
+            getAyahStudy: vi.fn(() => of({ isSuccess: true, message: 'ok', data: ayahStudyDto })),
+          },
+        },
+        {
+          provide: MushafWordAnalysisApi,
+          useValue: {
+            getWordAnalysis: vi.fn(() => of({ isSuccess: true, message: 'ok', data: wordAnalysisDto })),
+          },
+        },
+        {
+          provide: MushafStudySourceCatalogApi,
+          useValue: {
+            getCatalog: vi.fn(() =>
+              of({
+                isSuccess: true,
+                message: 'ok',
+                data: { tafsirSources: [], translationSources: [], fullI3rabSources: [] },
+              }),
+            ),
+          },
+        },
+        mushafSimilarAyahsApiProvider,
+        mushafAyahMutashabihatApiProvider,
+      ],
+    });
+
+    const fixture = TestBed.createComponent(MushafReaderPageComponent);
+    const facade = TestBed.inject(MushafReaderFacade);
+    const unbindFromRoute = vi.spyOn(facade, 'unbindFromRoute');
+
+    fixture.detectChanges();
+    fixture.destroy();
+
+    expect(unbindFromRoute).toHaveBeenCalled();
   });
 });

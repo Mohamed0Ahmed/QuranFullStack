@@ -73,7 +73,10 @@ export function mushafSnapshotToQueryParams(snapshot: MushafUrlSnapshot): Mushaf
 
 export function saveMushafReaderSession(snapshot: MushafUrlSnapshot): void {
   try {
-    sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(snapshot));
+    sessionStorage.setItem(
+      SESSION_STORAGE_KEY,
+      JSON.stringify({ ...snapshot, focusAyah: null }),
+    );
   } catch {
     // Storage may be unavailable in restricted browser contexts.
   }
@@ -117,6 +120,7 @@ function parseStoredSession(raw: string): MushafUrlSnapshot | null {
   return {
     pageNumber: clampMushafPageNumber(String(record['pageNumber'] ?? '1')),
     ayah: readNullableString(record['ayah']),
+    focusAyah: null,
     word: readNullableString(record['word']),
     segment: readNullableString(record['segment']),
     panel: normalizePanelMode(readNullableString(record['panel'])),

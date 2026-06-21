@@ -1,22 +1,35 @@
-import { Component, computed, ElementRef, input, output, signal, viewChild } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  computed,
+  input,
+  output,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 
-import { MushafLineDto, MushafPageViewModel } from '../../models/mushaf.models';
+import { MushafPageViewModel } from '../../models/mushaf.models';
 import { clampMushafPageNumber } from '../../state/mushaf-url-sync';
 import { MushafLineComponent } from '../mushaf-line/mushaf-line.component';
 import { mushafJuzNumberLigature } from '../mushaf-line/mushaf-juz-number-ligature';
-import { mushafSurahIconLigature, mushafSurahNameLigature } from '../mushaf-line/mushaf-surah-name-ligature';
+import {
+  mushafSurahIconLigature,
+  mushafSurahNameLigature,
+} from '../mushaf-line/mushaf-surah-name-ligature';
 
 @Component({
   selector: 'qd-mushaf-page-view',
   standalone: true,
   imports: [CommonModule, MushafLineComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './mushaf-page-view.component.html',
   styleUrls: ['./mushaf-page-view.component.scss'],
 })
 export class MushafPageViewComponent {
   readonly page = input.required<MushafPageViewModel>();
-  readonly selectedVerseKey = input<string | null>(null);
+  readonly highlightedVerseKey = input<string | null>(null);
   readonly selectedWordLocation = input<string | null>(null);
 
   readonly ayahSelect = output<string>();
@@ -35,14 +48,15 @@ export class MushafPageViewComponent {
     return juzNumbers.length > 0 ? juzNumbers[juzNumbers.length - 1] : null;
   });
 
-  protected surahNameArabicForLine(line: MushafLineDto): string | null {
-    const surahNumber = line.surahNumber;
-    if (surahNumber === null) {
-      return null;
-    }
-
-    return this.page().surahs.find((surah) => surah.surahNumber === surahNumber)?.nameArabic ?? null;
-  }
+  protected readonly displayLines = computed(() => {
+    const page = this.page();
+    const surahNames = new Map(page.surahs.map((surah) => [surah.surahNumber, surah.nameArabic]));
+    return page.lines.map((line) => ({
+      line,
+      surahNameArabic:
+        line.surahNumber === null ? null : (surahNames.get(line.surahNumber) ?? null),
+    }));
+  });
 
   protected surahLigature(surahNumber: number): string {
     return mushafSurahNameLigature(surahNumber) ?? '';

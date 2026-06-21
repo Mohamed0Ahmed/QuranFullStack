@@ -7,7 +7,7 @@ import { MushafPagesApi } from '../data-access/mushaf-pages.api';
 import { MushafWordAnalysisApi } from '../data-access/mushaf-word-analysis.api';
 import { AyahStudyDto, WordAnalysisDto } from '../models/mushaf.models';
 import { MushafReaderFacade } from './mushaf-reader.facade';
-import { mushafStudySourceCatalogApiProvider } from './mushaf-study-source-catalog.api.mock';
+import { mushafAyahMutashabihatApiProvider, mushafSimilarAyahsApiProvider, mushafStudySourceCatalogApiProvider } from './mushaf-study-source-catalog.api.mock';
 import { SelectedAyahSectionComponent } from '../components/selected-ayah-section/selected-ayah-section.component';
 
 const pageDto = {
@@ -124,6 +124,11 @@ const ayahStudyDto: AyahStudyDto = {
     coveredAyahKeys: ['2:25'],
     html: '<p>إعراب تجريبي</p>',
   },
+  similaritySummary: {
+    similarAyahCount: 2,
+    mutashabihatGroupCount: 2,
+    mutashabihatOccurrenceCount: 3,
+  },
 };
 
 describe('MushafReaderFacade.loadPage', () => {
@@ -137,6 +142,8 @@ describe('MushafReaderFacade.loadPage', () => {
         { provide: MushafAyahStudyApi, useValue: { getAyahStudy: vi.fn() } },
         { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis: vi.fn() } },
         mushafStudySourceCatalogApiProvider,
+        mushafSimilarAyahsApiProvider,
+        mushafAyahMutashabihatApiProvider,
       ],
     });
 
@@ -163,6 +170,8 @@ describe('MushafReaderFacade.loadAyahStudy', () => {
         { provide: MushafAyahStudyApi, useValue: { getAyahStudy } },
         { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis: vi.fn() } },
         mushafStudySourceCatalogApiProvider,
+        mushafSimilarAyahsApiProvider,
+        mushafAyahMutashabihatApiProvider,
       ],
     });
 
@@ -173,6 +182,33 @@ describe('MushafReaderFacade.loadAyahStudy', () => {
     expect(facade.ayahStudy()?.translation?.sourceKey).toBe('en-sahih-international');
     expect(facade.ayahStudy()?.fullI3rab?.sourceKey).toBe('muyassar');
     expect(facade.sources().tafsirSource).toBe('ar-muyassar');
+    expect(facade.ayahStudy()?.similaritySummary).toEqual({
+      similarAyahCount: 2,
+      mutashabihatGroupCount: 2,
+      mutashabihatOccurrenceCount: 3,
+    });
+  });
+
+  it('maps similaritySummary without calling similarity detail APIs', () => {
+    const getAyahStudy = vi.fn(() => of({ isSuccess: true, message: 'تم', data: ayahStudyDto }));
+
+    TestBed.configureTestingModule({
+      providers: [
+        MushafReaderFacade,
+        { provide: MushafPagesApi, useValue: { getPage: vi.fn() } },
+        { provide: MushafAyahStudyApi, useValue: { getAyahStudy } },
+        { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis: vi.fn() } },
+        mushafStudySourceCatalogApiProvider,
+        mushafSimilarAyahsApiProvider,
+        mushafAyahMutashabihatApiProvider,
+      ],
+    });
+
+    const facade = TestBed.inject(MushafReaderFacade);
+    facade.loadAyahStudy('2:25');
+
+    expect(getAyahStudy).toHaveBeenCalledTimes(1);
+    expect(facade.ayahStudy()?.similaritySummary.similarAyahCount).toBe(2);
   });
 });
 
@@ -187,6 +223,8 @@ describe('MushafReaderFacade.applyUrlState', () => {
         { provide: MushafAyahStudyApi, useValue: { getAyahStudy } },
         { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis: vi.fn() } },
         mushafStudySourceCatalogApiProvider,
+        mushafSimilarAyahsApiProvider,
+        mushafAyahMutashabihatApiProvider,
       ],
     });
 
@@ -234,6 +272,8 @@ describe('MushafReaderFacade.applyUrlState', () => {
         { provide: MushafAyahStudyApi, useValue: { getAyahStudy } },
         { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis: vi.fn() } },
         mushafStudySourceCatalogApiProvider,
+        mushafSimilarAyahsApiProvider,
+        mushafAyahMutashabihatApiProvider,
       ],
     });
 
@@ -287,6 +327,8 @@ describe('MushafReaderFacade.applyUrlState', () => {
         { provide: MushafAyahStudyApi, useValue: { getAyahStudy } },
         { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis } },
         mushafStudySourceCatalogApiProvider,
+        mushafSimilarAyahsApiProvider,
+        mushafAyahMutashabihatApiProvider,
       ],
     });
 
@@ -334,6 +376,7 @@ describe('SelectedAyahSectionComponent', () => {
       tafsir: ayahStudyDto.tafsir,
       translation: ayahStudyDto.translation,
       fullI3rab: ayahStudyDto.fullI3rab,
+      similaritySummary: ayahStudyDto.similaritySummary,
     });
     fixture.componentRef.setInput('loadState', { isLoading: false, isEmpty: false, errorMessage: null });
     fixture.componentRef.setInput('activeTab', 'tafsir');

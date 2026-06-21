@@ -1,7 +1,8 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
-import { BehaviorSubject, of } from 'rxjs';
+import { BehaviorSubject, of, timer } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 import { MushafAyahStudyApi } from '../data-access/mushaf-ayah-study.api';
 import { MushafPagesApi } from '../data-access/mushaf-pages.api';
@@ -10,7 +11,7 @@ import { AyahStudyDto, WordAnalysisDto, DEFAULT_MUSHAF_READER_STATE } from '../m
 import { MushafReaderFacade } from './mushaf-reader.facade';
 import { saveMushafReaderSession } from './mushaf-reader-session';
 import { MushafUrlSnapshot } from './mushaf-url-sync';
-import { mushafStudySourceCatalogApiProvider } from './mushaf-study-source-catalog.api.mock';
+import { mushafAyahMutashabihatApiProvider, mushafSimilarAyahsApiProvider, mushafStudySourceCatalogApiProvider } from './mushaf-study-source-catalog.api.mock';
 
 const pageDto = {
   pageNumber: 5,
@@ -46,6 +47,11 @@ const ayahStudyDto: AyahStudyDto = {
   tafsir: null,
   translation: null,
   fullI3rab: null,
+  similaritySummary: {
+    similarAyahCount: 0,
+    mutashabihatGroupCount: 0,
+    mutashabihatOccurrenceCount: 0,
+  },
 };
 
 const wordAnalysisDto: WordAnalysisDto = {
@@ -93,6 +99,7 @@ const wordAnalysisDto: WordAnalysisDto = {
 const savedSessionSnapshot: MushafUrlSnapshot = {
   pageNumber: 12,
   ayah: '2:25',
+  focusAyah: null,
   word: '2:25:3',
   segment: '2:25:3:1',
   panel: 'word',
@@ -134,7 +141,9 @@ function createFacadeTestBed(queryParams: Record<string, string>) {
           getWordAnalysis,
         },
       },
-      mushafStudySourceCatalogApiProvider,
+        mushafStudySourceCatalogApiProvider,
+        mushafSimilarAyahsApiProvider,
+        mushafAyahMutashabihatApiProvider,
     ],
   });
 
@@ -482,11 +491,314 @@ describe('MushafReaderFacade URL sync', () => {
     expect(navigate).toHaveBeenCalledWith(
       [],
       expect.objectContaining({
-        queryParams: { ayah: '2:26', panel: 'ayah', word: null, segment: null },
+        queryParams: { ayah: '2:26', panel: 'ayah', focusAyah: null, word: null, segment: null },
         queryParamsHandling: 'merge',
         replaceUrl: true,
       }),
     );
+  });
+
+  it('writes page and focusAyah when peeking at an ayah on another Mushaf page', () => {
+    const { facade, route, navigate } = createFacadeTestBed({
+      page: '5',
+      ayah: '2:25',
+      word: '2:25:3',
+      ayahTab: 'similar-ayahs',
+    });
+    facade.bindToRoute(route);
+
+    facade.viewAyahOnPage('4:57', 92);
+
+    expect(navigate).toHaveBeenCalledWith(
+      [],
+      expect.objectContaining({
+        queryParams: { page: 92, focusAyah: '4:57' },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      }),
+    );
+    expect(navigate).not.toHaveBeenCalledWith(
+      [],
+      expect.objectContaining({
+        queryParams: expect.objectContaining({ ayah: '4:57' }),
+      }),
+    );
+  });
+
+  it('clears focusAyah when returning to the study anchor page via peek', () => {
+    const { facade, route, navigate } = createFacadeTestBed({
+      page: '92',
+      ayah: '2:25',
+      focusAyah: '4:57',
+      ayahTab: 'similar-ayahs',
+    });
+    facade.bindToRoute(route);
+
+    facade.viewAyahOnPage('2:25', 5);
+
+    expect(navigate).toHaveBeenCalledWith(
+      [],
+      expect.objectContaining({
+        queryParams: { page: 5, focusAyah: '2:25' },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      }),
+    );
+  });
+
+  it('does not reload ayah study when peeking at a similar ayah', async () => {
+    const { facade, route, getAyahStudy, queryParamMap$ } = createFacadeTestBed({
+      page: '5',
+      ayah: '2:25',
+      ayahTab: 'similar-ayahs',
+    });
+    facade.bindToRoute(route);
+
+    await vi.waitFor(() => {
+      expect(getAyahStudy).toHaveBeenCalledTimes(1);
+    });
+
+    facade.viewAyahOnPage('4:57', 92);
+    queryParamMap$.next(
+      convertToParamMap({
+        page: '92',
+        ayah: '2:25',
+        focusAyah: '4:57',
+        ayahTab: 'similar-ayahs',
+      }),
+    );
+
+    await vi.waitFor(() => {
+      expect(facade.focusAyahKey()).toBe('4:57');
+    });
+    expect(getAyahStudy).toHaveBeenCalledTimes(1);
+    expect(facade.selectedAyahKey()).toBe('2:25');
+  });
+
+  it('auto-clears focusAyah after 3 seconds without changing the study anchor', () => {
+    vi.useFakeTimers();
+
+    try {
+      const { facade, route, navigate, queryParamMap$ } = createFacadeTestBed({
+        page: '5',
+        ayah: '2:25',
+        ayahTab: 'similar-ayahs',
+      });
+      facade.bindToRoute(route);
+
+      facade.viewAyahOnPage('4:57', 92);
+      queryParamMap$.next(
+        convertToParamMap({
+          page: '92',
+          ayah: '2:25',
+          focusAyah: '4:57',
+          ayahTab: 'similar-ayahs',
+        }),
+      );
+
+      expect(facade.focusAyahKey()).toBe('4:57');
+      vi.advanceTimersByTime(2999);
+      expect(facade.focusAyahKey()).toBe('4:57');
+
+      navigate.mockClear();
+      vi.advanceTimersByTime(1);
+
+      expect(navigate).toHaveBeenCalledWith(
+        [],
+        expect.objectContaining({
+          queryParams: { focusAyah: null },
+          queryParamsHandling: 'merge',
+          replaceUrl: true,
+        }),
+      );
+
+      queryParamMap$.next(
+        convertToParamMap({
+          page: '92',
+          ayah: '2:25',
+          ayahTab: 'similar-ayahs',
+        }),
+      );
+
+      expect(facade.focusAyahKey()).toBeNull();
+      expect(facade.selectedAyahKey()).toBe('2:25');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('does not navigate when the peek flash timer fires after unbinding from the route', () => {
+    vi.useFakeTimers();
+
+    try {
+      const { facade, route, navigate, queryParamMap$ } = createFacadeTestBed({
+        page: '5',
+        ayah: '2:25',
+        ayahTab: 'similar-ayahs',
+      });
+      facade.bindToRoute(route);
+
+      facade.viewAyahOnPage('4:57', 92);
+      queryParamMap$.next(
+        convertToParamMap({
+          page: '92',
+          ayah: '2:25',
+          focusAyah: '4:57',
+          ayahTab: 'similar-ayahs',
+        }),
+      );
+
+      facade.unbindFromRoute();
+      navigate.mockClear();
+
+      vi.advanceTimersByTime(3000);
+      expect(navigate).not.toHaveBeenCalled();
+      expect(facade.focusAyahKey()).toBe('4:57');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('resets the peek flash timer when peeking at another ayah within 3 seconds', () => {
+    vi.useFakeTimers();
+
+    try {
+      const { facade, route, navigate, queryParamMap$ } = createFacadeTestBed({
+        page: '5',
+        ayah: '2:25',
+        ayahTab: 'similar-ayahs',
+      });
+      facade.bindToRoute(route);
+
+      facade.viewAyahOnPage('4:57', 92);
+      queryParamMap$.next(
+        convertToParamMap({
+          page: '92',
+          ayah: '2:25',
+          focusAyah: '4:57',
+          ayahTab: 'similar-ayahs',
+        }),
+      );
+
+      vi.advanceTimersByTime(2000);
+
+      facade.viewAyahOnPage('3:10', 50);
+      queryParamMap$.next(
+        convertToParamMap({
+          page: '50',
+          ayah: '2:25',
+          focusAyah: '3:10',
+          ayahTab: 'similar-ayahs',
+        }),
+      );
+
+      vi.advanceTimersByTime(2000);
+      expect(facade.focusAyahKey()).toBe('3:10');
+
+      navigate.mockClear();
+      vi.advanceTimersByTime(1000);
+      queryParamMap$.next(
+        convertToParamMap({
+          page: '50',
+          ayah: '2:25',
+          ayahTab: 'similar-ayahs',
+        }),
+      );
+
+      expect(navigate).toHaveBeenCalledWith(
+        [],
+        expect.objectContaining({
+          queryParams: { focusAyah: null },
+        }),
+      );
+      expect(facade.focusAyahKey()).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('restarts the peek flash timer when the target page finishes loading', () => {
+    vi.useFakeTimers();
+
+    try {
+      const page92Dto = { ...pageDto, pageNumber: 92 };
+      const queryParamMap$ = new BehaviorSubject(
+        convertToParamMap({ page: '5', ayah: '2:25', ayahTab: 'similar-ayahs' }),
+      );
+      const navigate = vi.fn().mockResolvedValue(true);
+      const getPage = vi.fn((pageNum: number) => {
+        if (pageNum === 92) {
+          return timer(2000).pipe(map(() => ({ isSuccess: true, message: 'ok', data: page92Dto })));
+        }
+        return of({ isSuccess: true, message: 'ok', data: pageDto });
+      });
+      const getAyahStudy = vi.fn(() => of({ isSuccess: true, message: 'ok', data: ayahStudyDto }));
+
+      TestBed.configureTestingModule({
+        providers: [
+          MushafReaderFacade,
+          {
+            provide: ActivatedRoute,
+            useValue: { queryParamMap: queryParamMap$.asObservable() },
+          },
+          { provide: Router, useValue: { navigate } },
+          { provide: MushafPagesApi, useValue: { getPage } },
+          { provide: MushafAyahStudyApi, useValue: { getAyahStudy } },
+          {
+            provide: MushafWordAnalysisApi,
+            useValue: { getWordAnalysis: vi.fn(() => of({ isSuccess: true, message: 'ok', data: wordAnalysisDto })) },
+          },
+          mushafStudySourceCatalogApiProvider,
+          mushafSimilarAyahsApiProvider,
+          mushafAyahMutashabihatApiProvider,
+        ],
+      });
+
+      const facade = TestBed.inject(MushafReaderFacade);
+      const route = TestBed.inject(ActivatedRoute);
+      facade.bindToRoute(route);
+
+      facade.viewAyahOnPage('4:57', 92);
+      queryParamMap$.next(
+        convertToParamMap({
+          page: '92',
+          ayah: '2:25',
+          focusAyah: '4:57',
+          ayahTab: 'similar-ayahs',
+        }),
+      );
+
+      vi.advanceTimersByTime(1999);
+      expect(facade.pageNumber()).toBe(92);
+      expect(facade.focusAyahKey()).toBe('4:57');
+
+      vi.advanceTimersByTime(1);
+      expect(facade.pageNumber()).toBe(92);
+      expect(facade.focusAyahKey()).toBe('4:57');
+
+      vi.advanceTimersByTime(2999);
+      expect(facade.focusAyahKey()).toBe('4:57');
+
+      navigate.mockClear();
+      vi.advanceTimersByTime(1);
+      expect(navigate).toHaveBeenCalledWith(
+        [],
+        expect.objectContaining({
+          queryParams: { focusAyah: null },
+        }),
+      );
+
+      queryParamMap$.next(
+        convertToParamMap({
+          page: '92',
+          ayah: '2:25',
+          ayahTab: 'similar-ayahs',
+        }),
+      );
+      expect(facade.focusAyahKey()).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('sets ayah from the selected word location when selecting a word', () => {
@@ -498,7 +810,7 @@ describe('MushafReaderFacade URL sync', () => {
     expect(navigate).toHaveBeenCalledWith(
       [],
       expect.objectContaining({
-        queryParams: { word: '2:25:3', ayah: '2:25', panel: 'word' },
+        queryParams: { word: '2:25:3', ayah: '2:25', panel: 'word', focusAyah: null },
         queryParamsHandling: 'merge',
         replaceUrl: true,
       }),
@@ -672,6 +984,7 @@ describe('MushafReaderFacade URL sync', () => {
     saveMushafReaderSession({
       pageNumber: DEFAULT_MUSHAF_READER_STATE.pageNumber,
       ayah: null,
+      focusAyah: null,
       word: null,
       segment: null,
       panel: DEFAULT_MUSHAF_READER_STATE.panel,

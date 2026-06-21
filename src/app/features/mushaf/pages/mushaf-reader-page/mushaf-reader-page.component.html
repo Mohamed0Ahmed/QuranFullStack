@@ -4,7 +4,7 @@
       [page]="facade.page()"
       [loadState]="facade.pageLoadState()"
       [surahCatalogByJuz]="facade.surahCatalogByJuz()"
-      [selectedVerseKey]="facade.selectedAyahKey()"
+      [highlightedVerseKey]="facade.mushafHighlightVerseKey()"
       [selectedWordLocation]="facade.selectedWordLocation()"
       (pageChange)="onPageChange($event)"
       (surahJump)="onSurahJump($event)"
@@ -20,6 +20,10 @@
       [selectedWordLocation]="facade.selectedWordLocation()"
       [ayahStudy]="facade.ayahStudy()"
       [ayahLoadState]="facade.ayahStudyLoadState()"
+      [similarAyahs]="facade.similarAyahs()"
+      [similarAyahsLoadState]="facade.similarAyahsLoadState()"
+      [mutashabihat]="facade.mutashabihat()"
+      [mutashabihatLoadState]="facade.mutashabihatLoadState()"
       [activeAyahTab]="facade.ayahTab()"
       [selectedVerseKey]="facade.selectedAyahKey()"
       [tafsirOptions]="facade.tafsirSourceOptions()"
@@ -29,6 +33,7 @@
       (tafsirSourceChange)="onTafsirSourceChange($event)"
       (translationSourceChange)="onTranslationSourceChange($event)"
       (fullI3rabSourceChange)="onFullI3rabSourceChange($event)"
+      (ayahNavigate)="onAyahNavigate($event)"
     />
   </section>
 </div>

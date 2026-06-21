@@ -75,6 +75,14 @@
   --qd-mushaf-ayah-marker-color: var(--qd-text-muted);
   --qd-mushaf-sticky-top: var(--qd-space-3);
 
+  /* Segment analysis colors: categorical text accents, theme-owned for contrast. */
+  --qd-segment-cat-1: oklch(0.515 0.151 45.3);
+  --qd-segment-cat-2: oklch(0.486 0.118 149.2);
+  --qd-segment-cat-3: oklch(0.51 0.173 17.6);
+  --qd-segment-cat-4: oklch(0.53 0.161 259.8);
+  --qd-segment-cat-5: oklch(0.505 0.179 304.5);
+  --qd-segment-cat-6: oklch(0.485 0.105 192.2);
+
   --qd-radius-sm: 0.5rem;
   --qd-radius-md: 0.875rem;
   --qd-radius-lg: 1.375rem;

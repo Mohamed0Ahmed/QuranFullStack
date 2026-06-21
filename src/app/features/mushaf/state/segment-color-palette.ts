@@ -1,11 +1,11 @@
 /** Visual-linking palette for segment color slots (not POS-semantic). */
 export const SEGMENT_COLOR_PALETTE = [
-  '#c2410c',
-  '#15803d',
-  '#be123c',
-  '#2563eb',
-  '#7e22ce',
-  '#0f766e',
+  'var(--qd-segment-cat-1)',
+  'var(--qd-segment-cat-2)',
+  'var(--qd-segment-cat-3)',
+  'var(--qd-segment-cat-4)',
+  'var(--qd-segment-cat-5)',
+  'var(--qd-segment-cat-6)',
 ] as const;
 
 export function segmentSlotToColor(slot: number): string {

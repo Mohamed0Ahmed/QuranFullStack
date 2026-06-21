@@ -1,14 +1,21 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { BehaviorSubject, Subject, of, throwError } from 'rxjs';
 
+import { MushafAyahMutashabihatApi } from '../data-access/mushaf-ayah-mutashabihat.api';
 import { MushafAyahStudyApi } from '../data-access/mushaf-ayah-study.api';
 import { MushafPagesApi } from '../data-access/mushaf-pages.api';
+import { MushafSimilarAyahsApi } from '../data-access/mushaf-similar-ayahs.api';
 import { MushafWordAnalysisApi } from '../data-access/mushaf-word-analysis.api';
 import { MushafReaderFacade } from './mushaf-reader.facade';
-import { mushafStudySourceCatalogApiProvider } from './mushaf-study-source-catalog.api.mock';
+import { saveMushafReaderSession } from './mushaf-reader-session';
+import {
+  mushafAyahMutashabihatApiProvider,
+  mushafSimilarAyahsApiProvider,
+  mushafStudySourceCatalogApiProvider,
+} from './mushaf-study-source-catalog.api.mock';
 
 const pageDto = {
   pageNumber: 1,
@@ -130,6 +137,11 @@ const ayahStudyDto = {
   tafsir: null,
   translation: null,
   fullI3rab: null,
+  similaritySummary: {
+    similarAyahCount: 0,
+    mutashabihatGroupCount: 0,
+    mutashabihatOccurrenceCount: 0,
+  },
 };
 
 function createWordNavigationFacade(initialWordLocation: string) {
@@ -138,7 +150,9 @@ function createWordNavigationFacade(initialWordLocation: string) {
   );
   const navigate = vi.fn().mockResolvedValue(true);
   const getPage = vi.fn(() => of({ isSuccess: true, message: 'ok', data: wordNavigationPageDto }));
-  const getWordAnalysis = vi.fn(() => of({ isSuccess: true, message: 'ok', data: wordAnalysisDto }));
+  const getWordAnalysis = vi.fn(() =>
+    of({ isSuccess: true, message: 'ok', data: wordAnalysisDto }),
+  );
   const getAyahStudy = vi.fn(() => of({ isSuccess: true, message: 'ok', data: ayahStudyDto }));
 
   TestBed.configureTestingModule({
@@ -153,6 +167,8 @@ function createWordNavigationFacade(initialWordLocation: string) {
       { provide: MushafAyahStudyApi, useValue: { getAyahStudy } },
       { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis } },
       mushafStudySourceCatalogApiProvider,
+      mushafSimilarAyahsApiProvider,
+      mushafAyahMutashabihatApiProvider,
     ],
   });
 
@@ -175,6 +191,8 @@ describe('MushafReaderFacade.loadPage', () => {
         { provide: MushafAyahStudyApi, useValue: { getAyahStudy: vi.fn() } },
         { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis: vi.fn() } },
         mushafStudySourceCatalogApiProvider,
+        mushafSimilarAyahsApiProvider,
+        mushafAyahMutashabihatApiProvider,
       ],
     });
 
@@ -196,6 +214,8 @@ describe('MushafReaderFacade.loadPage', () => {
         { provide: MushafAyahStudyApi, useValue: { getAyahStudy: vi.fn() } },
         { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis: vi.fn() } },
         mushafStudySourceCatalogApiProvider,
+        mushafSimilarAyahsApiProvider,
+        mushafAyahMutashabihatApiProvider,
       ],
     });
 
@@ -225,6 +245,8 @@ describe('MushafReaderFacade.loadPage', () => {
         { provide: MushafAyahStudyApi, useValue: { getAyahStudy: vi.fn() } },
         { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis: vi.fn() } },
         mushafStudySourceCatalogApiProvider,
+        mushafSimilarAyahsApiProvider,
+        mushafAyahMutashabihatApiProvider,
       ],
     });
 
@@ -246,6 +268,8 @@ describe('MushafReaderFacade surah jump', () => {
         { provide: MushafAyahStudyApi, useValue: { getAyahStudy: vi.fn() } },
         { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis: vi.fn() } },
         mushafStudySourceCatalogApiProvider,
+        mushafSimilarAyahsApiProvider,
+        mushafAyahMutashabihatApiProvider,
       ],
     });
 
@@ -267,7 +291,7 @@ describe('MushafReaderFacade moveSelectedWord', () => {
     expect(navigate).toHaveBeenCalledWith(
       [],
       expect.objectContaining({
-        queryParams: { word: '2:25:5', ayah: '2:25', panel: 'word' },
+        queryParams: { word: '2:25:5', ayah: '2:25', panel: 'word', focusAyah: null },
         queryParamsHandling: 'merge',
         replaceUrl: true,
       }),
@@ -282,7 +306,7 @@ describe('MushafReaderFacade moveSelectedWord', () => {
     expect(navigate).toHaveBeenCalledWith(
       [],
       expect.objectContaining({
-        queryParams: { word: '2:25:3', ayah: '2:25', panel: 'word' },
+        queryParams: { word: '2:25:3', ayah: '2:25', panel: 'word', focusAyah: null },
         queryParamsHandling: 'merge',
         replaceUrl: true,
       }),
@@ -302,10 +326,15 @@ describe('MushafReaderFacade word analysis cancellation', () => {
     TestBed.configureTestingModule({
       providers: [
         MushafReaderFacade,
-        { provide: MushafPagesApi, useValue: { getPage: vi.fn(() => of({ isSuccess: true, message: 'ok', data: pageDto })) } },
+        {
+          provide: MushafPagesApi,
+          useValue: { getPage: vi.fn(() => of({ isSuccess: true, message: 'ok', data: pageDto })) },
+        },
         { provide: MushafAyahStudyApi, useValue: { getAyahStudy: vi.fn() } },
         { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis } },
         mushafStudySourceCatalogApiProvider,
+        mushafSimilarAyahsApiProvider,
+        mushafAyahMutashabihatApiProvider,
       ],
     });
 
@@ -331,5 +360,329 @@ describe('MushafReaderFacade word analysis cancellation', () => {
 
     expect(facade.selectedWordLocation()).toBeNull();
     expect(facade.wordAnalysis()).toBeNull();
+  });
+});
+
+describe('MushafReaderFacade ayah study similarity summary (US1)', () => {
+  it('maps similaritySummary from ayah study without loading similarity detail APIs', () => {
+    const getAyahStudy = vi.fn(() => of({ isSuccess: true, message: 'تم', data: ayahStudyDto }));
+
+    TestBed.configureTestingModule({
+      providers: [
+        MushafReaderFacade,
+        { provide: MushafPagesApi, useValue: { getPage: vi.fn() } },
+        { provide: MushafAyahStudyApi, useValue: { getAyahStudy } },
+        { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis: vi.fn() } },
+        mushafStudySourceCatalogApiProvider,
+        mushafSimilarAyahsApiProvider,
+        mushafAyahMutashabihatApiProvider,
+      ],
+    });
+
+    const facade = TestBed.inject(MushafReaderFacade);
+    facade.loadAyahStudy('2:25');
+
+    expect(getAyahStudy).toHaveBeenCalledTimes(1);
+    expect(facade.ayahStudy()?.similaritySummary).toEqual({
+      similarAyahCount: 0,
+      mutashabihatGroupCount: 0,
+      mutashabihatOccurrenceCount: 0,
+    });
+  });
+});
+
+describe('MushafReaderFacade similarity ayah tabs', () => {
+  describe('US1 tab preservation', () => {
+    it('preserves ayahTab=mutashabihat through URL hydration without normalizing to default', () => {
+      const queryParamMap$ = new BehaviorSubject(
+        convertToParamMap({ page: '5', ayah: '2:25', ayahTab: 'mutashabihat' }),
+      );
+      const navigate = vi.fn().mockResolvedValue(true);
+      const getAyahStudy = vi.fn(() => of({ isSuccess: true, message: 'تم', data: ayahStudyDto }));
+
+      TestBed.configureTestingModule({
+        providers: [
+          MushafReaderFacade,
+          {
+            provide: ActivatedRoute,
+            useValue: { queryParamMap: queryParamMap$.asObservable() },
+          },
+          { provide: Router, useValue: { navigate } },
+          {
+            provide: MushafPagesApi,
+            useValue: {
+              getPage: vi.fn(() => of({ isSuccess: true, message: 'ok', data: pageDto })),
+            },
+          },
+          { provide: MushafAyahStudyApi, useValue: { getAyahStudy } },
+          { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis: vi.fn() } },
+          mushafStudySourceCatalogApiProvider,
+          mushafSimilarAyahsApiProvider,
+          mushafAyahMutashabihatApiProvider,
+        ],
+      });
+
+      const facade = TestBed.inject(MushafReaderFacade);
+      const route = TestBed.inject(ActivatedRoute);
+      facade.bindToRoute(route);
+
+      expect(facade.ayahTab()).toBe('mutashabihat');
+      expect(navigate).not.toHaveBeenCalledWith(
+        [],
+        expect.objectContaining({
+          queryParams: expect.objectContaining({ ayahTab: 'tafsir' }),
+        }),
+      );
+    });
+
+    it('setAyahTab writes the widened tab to the URL without refetching ayah study', () => {
+      const queryParamMap$ = new BehaviorSubject(
+        convertToParamMap({ page: '5', ayah: '2:25', ayahTab: 'tafsir' }),
+      );
+      const navigate = vi.fn().mockResolvedValue(true);
+      const getAyahStudy = vi.fn(() => of({ isSuccess: true, message: 'تم', data: ayahStudyDto }));
+
+      TestBed.configureTestingModule({
+        providers: [
+          MushafReaderFacade,
+          {
+            provide: ActivatedRoute,
+            useValue: { queryParamMap: queryParamMap$.asObservable() },
+          },
+          { provide: Router, useValue: { navigate } },
+          {
+            provide: MushafPagesApi,
+            useValue: {
+              getPage: vi.fn(() => of({ isSuccess: true, message: 'ok', data: pageDto })),
+            },
+          },
+          { provide: MushafAyahStudyApi, useValue: { getAyahStudy } },
+          { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis: vi.fn() } },
+          mushafStudySourceCatalogApiProvider,
+          mushafSimilarAyahsApiProvider,
+          mushafAyahMutashabihatApiProvider,
+        ],
+      });
+
+      const facade = TestBed.inject(MushafReaderFacade);
+      const route = TestBed.inject(ActivatedRoute);
+      facade.bindToRoute(route);
+      const ayahCallsAfterHydration = getAyahStudy.mock.calls.length;
+
+      facade.setAyahTab('similar-ayahs');
+
+      expect(navigate).toHaveBeenCalledWith(
+        [],
+        expect.objectContaining({
+          queryParams: { ayahTab: 'similar-ayahs' },
+          queryParamsHandling: 'merge',
+          replaceUrl: true,
+        }),
+      );
+      expect(getAyahStudy.mock.calls.length).toBe(ayahCallsAfterHydration);
+    });
+  });
+
+  describe('US4 deep-link restoration', () => {
+    beforeEach(() => {
+      sessionStorage.clear();
+    });
+
+    afterEach(() => {
+      sessionStorage.clear();
+    });
+
+    it('restores ayahTab=similar-ayahs from URL and lazy-loads only the similar ayahs detail API', async () => {
+      const queryParamMap$ = new BehaviorSubject(
+        convertToParamMap({ page: '5', ayah: '2:25', ayahTab: 'similar-ayahs' }),
+      );
+      const navigate = vi.fn().mockResolvedValue(true);
+      const getAyahStudy = vi.fn(() => of({ isSuccess: true, message: 'تم', data: ayahStudyDto }));
+      const getSimilarAyahs = vi.fn(() =>
+        of({ isSuccess: true, message: 'ok', data: { verseKey: '2:25', count: 0, items: [] } }),
+      );
+      const getAyahMutashabihat = vi.fn(() =>
+        of({
+          isSuccess: true,
+          message: 'ok',
+          data: { verseKey: '2:25', groupCount: 0, groups: [] },
+        }),
+      );
+
+      TestBed.configureTestingModule({
+        providers: [
+          MushafReaderFacade,
+          {
+            provide: ActivatedRoute,
+            useValue: { queryParamMap: queryParamMap$.asObservable() },
+          },
+          { provide: Router, useValue: { navigate } },
+          {
+            provide: MushafPagesApi,
+            useValue: {
+              getPage: vi.fn(() => of({ isSuccess: true, message: 'ok', data: pageDto })),
+            },
+          },
+          { provide: MushafAyahStudyApi, useValue: { getAyahStudy } },
+          { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis: vi.fn() } },
+          mushafStudySourceCatalogApiProvider,
+          { provide: MushafSimilarAyahsApi, useValue: { getSimilarAyahs } },
+          { provide: MushafAyahMutashabihatApi, useValue: { getAyahMutashabihat } },
+        ],
+      });
+
+      const facade = TestBed.inject(MushafReaderFacade);
+      const route = TestBed.inject(ActivatedRoute);
+      facade.bindToRoute(route);
+
+      expect(facade.ayahTab()).toBe('similar-ayahs');
+      expect(facade.pageNumber()).toBe(5);
+      expect(facade.selectedAyahKey()).toBe('2:25');
+      await vi.waitFor(() => {
+        expect(getSimilarAyahs).toHaveBeenCalledWith('2:25');
+      });
+      expect(getAyahMutashabihat).not.toHaveBeenCalled();
+    });
+
+    it('restores ayahTab=mutashabihat from URL and lazy-loads only the mutashabihat detail API', async () => {
+      const queryParamMap$ = new BehaviorSubject(
+        convertToParamMap({ page: '5', ayah: '2:25', ayahTab: 'mutashabihat' }),
+      );
+      const navigate = vi.fn().mockResolvedValue(true);
+      const getAyahStudy = vi.fn(() => of({ isSuccess: true, message: 'تم', data: ayahStudyDto }));
+      const getSimilarAyahs = vi.fn(() =>
+        of({ isSuccess: true, message: 'ok', data: { verseKey: '2:25', count: 0, items: [] } }),
+      );
+      const getAyahMutashabihat = vi.fn(() =>
+        of({
+          isSuccess: true,
+          message: 'ok',
+          data: { verseKey: '2:25', groupCount: 0, groups: [] },
+        }),
+      );
+
+      TestBed.configureTestingModule({
+        providers: [
+          MushafReaderFacade,
+          {
+            provide: ActivatedRoute,
+            useValue: { queryParamMap: queryParamMap$.asObservable() },
+          },
+          { provide: Router, useValue: { navigate } },
+          {
+            provide: MushafPagesApi,
+            useValue: {
+              getPage: vi.fn(() => of({ isSuccess: true, message: 'ok', data: pageDto })),
+            },
+          },
+          { provide: MushafAyahStudyApi, useValue: { getAyahStudy } },
+          { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis: vi.fn() } },
+          mushafStudySourceCatalogApiProvider,
+          { provide: MushafSimilarAyahsApi, useValue: { getSimilarAyahs } },
+          { provide: MushafAyahMutashabihatApi, useValue: { getAyahMutashabihat } },
+        ],
+      });
+
+      const facade = TestBed.inject(MushafReaderFacade);
+      const route = TestBed.inject(ActivatedRoute);
+      facade.bindToRoute(route);
+
+      expect(facade.ayahTab()).toBe('mutashabihat');
+      expect(facade.pageNumber()).toBe(5);
+      expect(facade.selectedAyahKey()).toBe('2:25');
+      await vi.waitFor(() => {
+        expect(getAyahMutashabihat).toHaveBeenCalledWith('2:25');
+      });
+      expect(getSimilarAyahs).not.toHaveBeenCalled();
+    });
+
+    it('restores a bare-entry saved session with ayahTab=similar-ayahs and lazy-loads similar ayahs after URL hydration', async () => {
+      const savedSimilarAyahsSession = {
+        pageNumber: 5,
+        ayah: '2:25',
+        focusAyah: null,
+        word: null,
+        segment: null,
+        panel: 'ayah' as const,
+        ayahTab: 'similar-ayahs' as const,
+        wordTab: 'segments' as const,
+        sources: {
+          tafsirSource: null,
+          translationSource: null,
+          fullI3rabSource: null,
+        },
+      };
+      saveMushafReaderSession(savedSimilarAyahsSession);
+
+      const queryParamMap$ = new BehaviorSubject(convertToParamMap({}));
+      const navigate = vi.fn().mockResolvedValue(true);
+      const getAyahStudy = vi.fn(() => of({ isSuccess: true, message: 'تم', data: ayahStudyDto }));
+      const getSimilarAyahs = vi.fn(() =>
+        of({ isSuccess: true, message: 'ok', data: { verseKey: '2:25', count: 0, items: [] } }),
+      );
+      const getAyahMutashabihat = vi.fn(() =>
+        of({
+          isSuccess: true,
+          message: 'ok',
+          data: { verseKey: '2:25', groupCount: 0, groups: [] },
+        }),
+      );
+
+      TestBed.configureTestingModule({
+        providers: [
+          MushafReaderFacade,
+          {
+            provide: ActivatedRoute,
+            useValue: { queryParamMap: queryParamMap$.asObservable() },
+          },
+          { provide: Router, useValue: { navigate } },
+          {
+            provide: MushafPagesApi,
+            useValue: {
+              getPage: vi.fn(() => of({ isSuccess: true, message: 'ok', data: pageDto })),
+            },
+          },
+          { provide: MushafAyahStudyApi, useValue: { getAyahStudy } },
+          { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis: vi.fn() } },
+          mushafStudySourceCatalogApiProvider,
+          { provide: MushafSimilarAyahsApi, useValue: { getSimilarAyahs } },
+          { provide: MushafAyahMutashabihatApi, useValue: { getAyahMutashabihat } },
+        ],
+      });
+
+      const facade = TestBed.inject(MushafReaderFacade);
+      const route = TestBed.inject(ActivatedRoute);
+      facade.bindToRoute(route);
+
+      expect(navigate).toHaveBeenCalledWith(
+        [],
+        expect.objectContaining({
+          queryParams: {
+            page: 5,
+            ayah: '2:25',
+            panel: 'ayah',
+            ayahTab: 'similar-ayahs',
+          },
+          replaceUrl: true,
+        }),
+      );
+
+      queryParamMap$.next(
+        convertToParamMap({
+          page: '5',
+          ayah: '2:25',
+          panel: 'ayah',
+          ayahTab: 'similar-ayahs',
+        }),
+      );
+
+      expect(facade.ayahTab()).toBe('similar-ayahs');
+      expect(facade.pageNumber()).toBe(5);
+      expect(facade.selectedAyahKey()).toBe('2:25');
+      await vi.waitFor(() => {
+        expect(getSimilarAyahs).toHaveBeenCalledWith('2:25');
+      });
+      expect(getAyahMutashabihat).not.toHaveBeenCalled();
+    });
   });
 });
