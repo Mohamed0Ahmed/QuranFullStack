@@ -16,6 +16,10 @@ public static class MushafReaderCacheKeys
 
     public static string WordAnalysis(string wordLocation) => $"mushaf:word-analysis:{wordLocation}";
 
+    public static string SimilarAyahs(string verseKey) => $"mushaf:similar-ayahs:{verseKey}";
+
+    public static string AyahMutashabihat(string verseKey) => $"mushaf:mutashabihat:{verseKey}";
+
     private static string Sentinel(string? sourceKey) =>
         string.IsNullOrWhiteSpace(sourceKey) ? "none" : sourceKey;
 }

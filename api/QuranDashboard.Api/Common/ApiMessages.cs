@@ -15,6 +15,8 @@ public static class ApiMessages
     public const string MushafStudySourceCatalogLoaded = "تم تحميل كتالوج مصادر الدراسة";
     public const string MushafInvalidPageNumber = "رقم الصفحة غير صالح. يجب أن يكون بين 1 و 604.";
     public const string MushafAyahStudyLoaded = "تم تحميل سياق دراسة الآية";
+    public const string MushafSimilarAyahsLoaded = "تم تحميل الآيات القريبة في المعنى";
+    public const string MushafAyahMutashabihatLoaded = "تم تحميل المتشابهات اللفظية";
     public const string MushafInvalidVerseKey = "مفتاح الآية غير صالح";
     public const string MushafWordAnalysisLoaded = "تم تحميل تحليل الكلمة";
     public const string MushafInvalidWordLocation = "موقع الكلمة غير صالح";
