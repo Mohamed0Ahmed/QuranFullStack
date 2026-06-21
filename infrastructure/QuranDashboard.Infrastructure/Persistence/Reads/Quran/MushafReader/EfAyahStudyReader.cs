@@ -41,49 +41,83 @@ public sealed class EfAyahStudyReader(QuranDashboardDbContext db) : IAyahStudyRe
             .FirstOrDefaultAsync(s => s.AyahId == ayah.Id, ct);
 
         var ayahCore = MapAyahCore(ayah, sajda);
-        var effectiveTafsirKey = await ResolveTafsirSourceKeyAsync(tafsirSourceKey, ct);
-        var effectiveTranslationKey = await ResolveTranslationSourceKeyAsync(translationSourceKey, ct);
-        var effectiveFullI3rabKey = await ResolveFullI3rabSourceKeyAsync(fullI3rabSourceKey, ct);
 
-        var tafsir = effectiveTafsirKey is not null
-            ? await LoadTafsirAsync(ayah.Id, effectiveTafsirKey, ct)
-            : null;
-        var translation = effectiveTranslationKey is not null
-            ? await LoadTranslationAsync(ayah.Id, effectiveTranslationKey, ct)
-            : null;
-        var fullI3rab = effectiveFullI3rabKey is not null
-            ? await LoadFullI3rabAsync(ayah.Id, effectiveFullI3rabKey, ct)
-            : null;
+        // Each Load* method resolves the source row itself, so the source kind's
+        // existence check and the row fetch share a single round-trip (previously
+        // the existence was verified twice: once by Resolve*SourceKeyAsync and
+        // again when Load* re-fetched the same row). Load* returns the resolved
+        // source key separately from the (nullable) content block: the key is
+        // echoed in selectedSources whenever the source exists, independent of
+        // whether this ayah has content in it (ayah-study.api.md: "selectedSources
+        // echoes the resolved key actually used per kind").
+        var tafsir = tafsirSourceKey is not null
+            ? await LoadTafsirAsync(ayah.Id, tafsirSourceKey, ct)
+            : ResolvedSource<TafsirEntryDto>.NoSource;
+        var translation = translationSourceKey is not null
+            ? await LoadTranslationAsync(ayah.Id, translationSourceKey, ct)
+            : ResolvedSource<TranslationEntryDto>.NoSource;
+        var fullI3rab = fullI3rabSourceKey is not null
+            ? await LoadFullI3rabAsync(ayah.Id, fullI3rabSourceKey, ct)
+            : ResolvedSource<FullI3rabEntryDto>.NoSource;
+        var similaritySummary = await LoadSimilaritySummaryAsync(ayah.Id, ct);
 
         return new AyahStudyResponse(
             ayahCore,
-            new SelectedSourcesDto(effectiveTafsirKey, effectiveTranslationKey, effectiveFullI3rabKey),
-            tafsir,
-            translation,
-            fullI3rab);
+            new SelectedSourcesDto(
+                tafsir.ResolvedKey,
+                translation.ResolvedKey,
+                fullI3rab.ResolvedKey),
+            tafsir.Entry,
+            translation.Entry,
+            fullI3rab.Entry,
+            similaritySummary);
     }
 
-    private async Task<string?> ResolveTafsirSourceKeyAsync(string? requestedKey, CancellationToken ct) =>
-        await ResolveSourceKeyAsync(requestedKey, db.TafsirSources.AsNoTracking().Select(s => s.SourceKey), ct);
+    private async Task<SimilaritySummaryDto> LoadSimilaritySummaryAsync(int ayahId, CancellationToken ct)
+    {
+        var similarAyahCount = await CountDistinctSimilarAyahsAsync(ayahId, ct);
+        var (groupCount, occurrenceCount) = await CountMutashabihatAsync(ayahId, ct);
 
-    private async Task<string?> ResolveTranslationSourceKeyAsync(string? requestedKey, CancellationToken ct) =>
-        await ResolveSourceKeyAsync(requestedKey, db.TranslationSources.AsNoTracking().Select(s => s.SourceKey), ct);
+        return new SimilaritySummaryDto(similarAyahCount, groupCount, occurrenceCount);
+    }
 
-    private async Task<string?> ResolveFullI3rabSourceKeyAsync(string? requestedKey, CancellationToken ct) =>
-        await ResolveSourceKeyAsync(requestedKey, db.FullI3rabSources.AsNoTracking().Select(s => s.SourceKey), ct);
+    private async Task<int> CountDistinctSimilarAyahsAsync(int ayahId, CancellationToken ct)
+    {
+        var outgoing = db.SimilarAyahLinks
+            .AsNoTracking()
+            .Where(link => link.SourceAyahId == ayahId)
+            .Select(link => link.TargetAyahId);
 
-    private static async Task<string?> ResolveSourceKeyAsync(
-        string? requestedKey,
-        IQueryable<string> sourceKeys,
+        var incoming = db.SimilarAyahLinks
+            .AsNoTracking()
+            .Where(link => link.TargetAyahId == ayahId)
+            .Select(link => link.SourceAyahId);
+
+        return await outgoing.Union(incoming).Distinct().CountAsync(ct);
+    }
+
+    private async Task<(int GroupCount, int OccurrenceCount)> CountMutashabihatAsync(
+        int ayahId,
         CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(requestedKey))
+        var groupIds = db.MutashabihatOccurrences
+            .AsNoTracking()
+            .Where(occurrence => occurrence.AyahId == ayahId)
+            .Select(occurrence => occurrence.GroupId)
+            .Distinct();
+
+        var groupCount = await groupIds.CountAsync(ct);
+        if (groupCount == 0)
         {
-            return null;
+            return (0, 0);
         }
 
-        var exists = await sourceKeys.AnyAsync(key => key == requestedKey, ct);
-        return exists ? requestedKey : null;
+        var occurrenceCount = await db.MutashabihatOccurrences
+            .AsNoTracking()
+            .Where(occurrence => groupIds.Contains(occurrence.GroupId))
+            .CountAsync(ct);
+
+        return (groupCount, occurrenceCount);
     }
 
     private static AyahCoreDto MapAyahCore(Ayah ayah, Sajda? sajda) => new(
@@ -105,7 +139,7 @@ public sealed class EfAyahStudyReader(QuranDashboardDbContext db) : IAyahStudyRe
                 sajda.VerseKey,
                 MapSajdahType(sajda.SajdahType)));
 
-    private async Task<TafsirEntryDto?> LoadTafsirAsync(int ayahId, string sourceKey, CancellationToken ct)
+    private async Task<ResolvedSource<TafsirEntryDto>> LoadTafsirAsync(int ayahId, string sourceKey, CancellationToken ct)
     {
         var source = await db.TafsirSources
             .AsNoTracking()
@@ -113,7 +147,7 @@ public sealed class EfAyahStudyReader(QuranDashboardDbContext db) : IAyahStudyRe
 
         if (source is null)
         {
-            return null;
+            return ResolvedSource<TafsirEntryDto>.NoSource;
         }
 
         var ayahEntry = await db.TafsirAyahEntries
@@ -122,7 +156,7 @@ public sealed class EfAyahStudyReader(QuranDashboardDbContext db) : IAyahStudyRe
 
         if (ayahEntry is null)
         {
-            return null;
+            return new ResolvedSource<TafsirEntryDto>(source.SourceKey, null);
         }
 
         var entry = await db.TafsirEntries
@@ -131,10 +165,10 @@ public sealed class EfAyahStudyReader(QuranDashboardDbContext db) : IAyahStudyRe
 
         if (entry is null)
         {
-            return null;
+            return new ResolvedSource<TafsirEntryDto>(source.SourceKey, null);
         }
 
-        return new TafsirEntryDto(
+        var dto = new TafsirEntryDto(
             source.SourceKey,
             source.DisplayNameAr,
             string.IsNullOrWhiteSpace(source.ShortNameAr) ? null : source.ShortNameAr,
@@ -147,9 +181,11 @@ public sealed class EfAyahStudyReader(QuranDashboardDbContext db) : IAyahStudyRe
             entry.CoveredAyahCount,
             ParseCoveredAyahKeys(entry.CoveredAyahKeys),
             entry.TafsirText);
+
+        return new ResolvedSource<TafsirEntryDto>(source.SourceKey, dto);
     }
 
-    private async Task<TranslationEntryDto?> LoadTranslationAsync(int ayahId, string sourceKey, CancellationToken ct)
+    private async Task<ResolvedSource<TranslationEntryDto>> LoadTranslationAsync(int ayahId, string sourceKey, CancellationToken ct)
     {
         var source = await db.TranslationSources
             .AsNoTracking()
@@ -157,7 +193,7 @@ public sealed class EfAyahStudyReader(QuranDashboardDbContext db) : IAyahStudyRe
 
         if (source is null)
         {
-            return null;
+            return ResolvedSource<TranslationEntryDto>.NoSource;
         }
 
         var ayahEntry = await db.TranslationAyahEntries
@@ -166,10 +202,10 @@ public sealed class EfAyahStudyReader(QuranDashboardDbContext db) : IAyahStudyRe
 
         if (ayahEntry is null)
         {
-            return null;
+            return new ResolvedSource<TranslationEntryDto>(source.SourceKey, null);
         }
 
-        return new TranslationEntryDto(
+        var dto = new TranslationEntryDto(
             source.SourceKey,
             string.IsNullOrWhiteSpace(source.DisplayNameAr) ? null : source.DisplayNameAr,
             string.IsNullOrWhiteSpace(source.DisplayNameEn) ? null : source.DisplayNameEn,
@@ -178,9 +214,11 @@ public sealed class EfAyahStudyReader(QuranDashboardDbContext db) : IAyahStudyRe
             source.TranslationType,
             source.ContainsHtmlMarkup,
             ayahEntry.Text);
+
+        return new ResolvedSource<TranslationEntryDto>(source.SourceKey, dto);
     }
 
-    private async Task<FullI3rabEntryDto?> LoadFullI3rabAsync(int ayahId, string sourceKey, CancellationToken ct)
+    private async Task<ResolvedSource<FullI3rabEntryDto>> LoadFullI3rabAsync(int ayahId, string sourceKey, CancellationToken ct)
     {
         var source = await db.FullI3rabSources
             .AsNoTracking()
@@ -188,7 +226,7 @@ public sealed class EfAyahStudyReader(QuranDashboardDbContext db) : IAyahStudyRe
 
         if (source is null)
         {
-            return null;
+            return ResolvedSource<FullI3rabEntryDto>.NoSource;
         }
 
         var ayahEntry = await db.FullI3rabAyahEntries
@@ -197,7 +235,7 @@ public sealed class EfAyahStudyReader(QuranDashboardDbContext db) : IAyahStudyRe
 
         if (ayahEntry is null)
         {
-            return null;
+            return new ResolvedSource<FullI3rabEntryDto>(source.SourceKey, null);
         }
 
         var entry = await db.FullI3rabEntries
@@ -206,10 +244,10 @@ public sealed class EfAyahStudyReader(QuranDashboardDbContext db) : IAyahStudyRe
 
         if (entry is null)
         {
-            return null;
+            return new ResolvedSource<FullI3rabEntryDto>(source.SourceKey, null);
         }
 
-        return new FullI3rabEntryDto(
+        var dto = new FullI3rabEntryDto(
             source.SourceKey,
             source.DisplayNameAr,
             string.IsNullOrWhiteSpace(source.ShortNameAr) ? null : source.ShortNameAr,
@@ -220,6 +258,18 @@ public sealed class EfAyahStudyReader(QuranDashboardDbContext db) : IAyahStudyRe
             entry.CoveredAyahCount,
             ParseCoveredAyahKeys(entry.CoveredAyahKeys),
             entry.I3rabHtml);
+
+        return new ResolvedSource<FullI3rabEntryDto>(source.SourceKey, dto);
+    }
+
+    /// <summary>
+    /// Pairs a resolved source key with the (nullable) content block for that kind.
+    /// <see cref="ResolvedKey"/> is non-null when the source exists — independent
+    /// of whether this ayah has content — so it can be echoed in selectedSources.
+    /// </summary>
+    private sealed record ResolvedSource<T>(string? ResolvedKey, T? Entry)
+    {
+        public static ResolvedSource<T> NoSource => new(null, default);
     }
 
     private static IReadOnlyList<string> ParseCoveredAyahKeys(string json)

@@ -23,11 +23,23 @@ public sealed class EfMushafSurahCatalogReader(QuranDashboardDbContext db) : IMu
             .Where(a => a.AyahNumber == 1)
             .ToDictionaryAsync(a => a.SurahNumber, a => (int)a.PageFrom, ct);
 
-        var minAyahPages = await db.QuranAyahs
-            .AsNoTracking()
-            .GroupBy(a => a.SurahNumber)
-            .Select(g => new { SurahNumber = g.Key, MinPage = g.Min(a => a.PageFrom) })
-            .ToDictionaryAsync(x => x.SurahNumber, x => (int)x.MinPage, ct);
+        // The min-page GROUP-BY fallback only matters for surahs whose ayah 1 is
+        // missing from the current slice. In a complete DB that set is empty, so the
+        // aggregate is only run for the (typically empty) gap rather than for every
+        // surah on every catalog call.
+        var surahNumbersMissingAyahOne = surahs
+            .Select(s => s.SurahNumber)
+            .Where(surahNumber => !firstAyahPages.ContainsKey(surahNumber))
+            .ToList();
+
+        var minAyahPages = surahNumbersMissingAyahOne.Count == 0
+            ? new Dictionary<short, int>()
+            : await db.QuranAyahs
+                .AsNoTracking()
+                .Where(a => surahNumbersMissingAyahOne.Contains(a.SurahNumber))
+                .GroupBy(a => a.SurahNumber)
+                .Select(g => new { SurahNumber = g.Key, MinPage = g.Min(a => a.PageFrom) })
+                .ToDictionaryAsync(x => x.SurahNumber, x => (int)x.MinPage, ct);
 
         var items = new List<MushafSurahCatalogItem>(surahs.Count);
         foreach (var surah in surahs)

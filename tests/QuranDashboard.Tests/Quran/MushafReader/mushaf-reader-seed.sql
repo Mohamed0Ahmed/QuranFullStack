@@ -258,3 +258,37 @@ SET unique_tashkeel_word_id =
     unique_simple_word_id =
       (SELECT id FROM quran_words_unique_simple WHERE first_word_order_in_mushaf = 2003)
 WHERE id = 2003;
+
+-- ======================================================================
+-- Ayah similarity summary slice (Feature 012 US1)
+-- ======================================================================
+
+-- Similar ayah links for 2:25 (id=25):
+--   outgoing  2:25 -> 2:26
+--   incoming  1:2  -> 2:25
+--   reverse   2:26 -> 2:25  (bidirectional dedup with outgoing)
+-- Expected similarAyahCount for 2:25 = 2 distinct related ayahs (26, 12)
+INSERT INTO quran_similar_ayah_links
+  (id, source_ayah_id, target_ayah_id, score, coverage, matched_words_count, match_words)
+VALUES
+  (1, 25, 26, 80, 90, 3, '[]'::jsonb),
+  (2, 12, 25, 70, 85, 2, '[]'::jsonb),
+  (3, 26, 25, 80, 90, 3, '[]'::jsonb);
+
+-- Mutashabihat groups containing 2:25:
+--   group 1: occurrences on 2:25 + 2:26  (2 total in group)
+--   group 2: occurrence on 2:25 only     (1 total in group)
+-- Expected mutashabihatGroupCount = 2, mutashabihatOccurrenceCount = 3
+INSERT INTO quran_mutashabihat_groups
+  (id, source_group_id, representative_ayah_id, representative_word_from, representative_word_to,
+   occurrence_count, distinct_ayah_count, distinct_surah_count, raw_source_counts)
+VALUES
+  (1, 90001, 25, 1, 2, 2, 2, 1, NULL),
+  (2, 90002, 25, 3, 4, 1, 1, 1, NULL);
+
+INSERT INTO quran_mutashabihat_occurrences
+  (id, group_id, ayah_id, word_from, word_to, is_representative)
+VALUES
+  (1, 1, 25, 1, 2, TRUE),
+  (2, 1, 26, 1, 1, FALSE),
+  (3, 2, 25, 3, 4, TRUE);

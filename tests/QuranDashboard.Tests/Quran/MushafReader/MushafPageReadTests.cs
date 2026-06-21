@@ -47,6 +47,10 @@ public sealed class MushafPageReadTests(MushafReaderTestFixture fixture)
         json.Should().NotContain("translation");
         json.Should().NotContain("morphology");
         json.Should().NotContain("segment");
+        json.Should().NotContain("similaritySummary");
+        json.Should().NotContain("similarAyahCount");
+        json.Should().NotContain("mutashabihatGroupCount");
+        json.Should().NotContain("mutashabihatOccurrenceCount");
     }
 
     [Fact]

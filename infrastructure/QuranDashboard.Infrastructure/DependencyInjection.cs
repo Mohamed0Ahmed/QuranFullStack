@@ -142,6 +142,13 @@ public static class DependencyInjection
     /// their own stories (T020–T041); this only binds the configured default
     /// source keys so handlers can resolve <see cref="MushafReaderOptions"/>.
     /// </summary>
+    /// <remarks>
+    /// Cache policy: <see cref="Microsoft.Extensions.Caching.Memory.IMemoryCache"/> is
+    /// registered with no size limit and every reader decorator caches successful
+    /// responses without expiration (cache-forever). This relies on the operating
+    /// assumption that the API host is restarted after any import; see
+    /// <see cref="MushafReaderCacheKeys"/> for the full rationale.
+    /// </remarks>
     private static void ConfigureMushafReader(IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<MushafReaderOptions>(configuration.GetSection("MushafReader"));
@@ -158,12 +165,29 @@ public static class DependencyInjection
             sp.GetRequiredService<EfAyahStudyReader>(),
             sp.GetRequiredService<IMemoryCache>()));
 
-        services.AddScoped<IMushafSurahCatalogReader, EfMushafSurahCatalogReader>();
-        services.AddScoped<IMushafStudySourceCatalogReader, EfMushafStudySourceCatalogReader>();
+        services.AddScoped<EfMushafSurahCatalogReader>();
+        services.AddScoped<IMushafSurahCatalogReader>(sp => new CachedMushafSurahCatalogReader(
+            sp.GetRequiredService<EfMushafSurahCatalogReader>(),
+            sp.GetRequiredService<IMemoryCache>()));
+
+        services.AddScoped<EfMushafStudySourceCatalogReader>();
+        services.AddScoped<IMushafStudySourceCatalogReader>(sp => new CachedMushafStudySourceCatalogReader(
+            sp.GetRequiredService<EfMushafStudySourceCatalogReader>(),
+            sp.GetRequiredService<IMemoryCache>()));
 
         services.AddScoped<EfWordAnalysisReader>();
         services.AddScoped<IWordAnalysisReader>(sp => new CachedWordAnalysisReader(
             sp.GetRequiredService<EfWordAnalysisReader>(),
+            sp.GetRequiredService<IMemoryCache>()));
+
+        services.AddScoped<EfAyahSimilaritiesReader>();
+        services.AddScoped<IAyahSimilaritiesReader>(sp => new CachedAyahSimilaritiesReader(
+            sp.GetRequiredService<EfAyahSimilaritiesReader>(),
+            sp.GetRequiredService<IMemoryCache>()));
+
+        services.AddScoped<EfAyahMutashabihatReader>();
+        services.AddScoped<IAyahMutashabihatReader>(sp => new CachedAyahMutashabihatReader(
+            sp.GetRequiredService<EfAyahMutashabihatReader>(),
             sp.GetRequiredService<IMemoryCache>()));
     }
 }

@@ -23,6 +23,34 @@ public sealed class AyahStudyMissingSourceTests(MushafReaderTestFixture fixture)
         response.Translation.Should().NotBeNull();
     }
 
+    [Fact]
+    public async Task GetAyahStudy_existing_source_without_ayah_content_echoes_resolved_key_with_null_block()
+    {
+        // Ayah 1:1 exists but the fixture seeds no tafsir/translation/full-i3rab
+        // content for it, while all three sources exist. selectedSources must
+        // still echo the resolved keys (the source is "used"), with null blocks.
+        // This guards against silently conflating "source missing" with
+        // "source present but no content for this ayah" (ayah-study.api.md:23).
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetAyahStudyHandler>();
+
+        var outcome = await handler.HandleAsync(
+            new GetAyahStudyQuery("1:1", "ar-muyassar", "en-sahih-international", "muyassar"),
+            CancellationToken.None);
+
+        var response = outcome.Should().BeOfType<GetAyahStudyOutcome.Success>().Subject.Response;
+        response.Ayah.VerseKey.Should().Be("1:1");
+
+        response.Tafsir.Should().BeNull();
+        response.Translation.Should().BeNull();
+        response.FullI3rab.Should().BeNull();
+
+        response.SelectedSources.TafsirSource.Should().Be("ar-muyassar",
+            "an existing source is selected even when this ayah has no content in it");
+        response.SelectedSources.TranslationSource.Should().Be("en-sahih-international");
+        response.SelectedSources.FullI3rabSource.Should().Be("muyassar");
+    }
+
     [Theory]
     [InlineData("invalid")]
     [InlineData("2")]
