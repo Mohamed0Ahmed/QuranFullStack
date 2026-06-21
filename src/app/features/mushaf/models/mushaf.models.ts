@@ -7,11 +7,11 @@
  * the backend; view models are the page-ready forms the facade emits to
  * components.
  *
- * Locked v1 enum scope (do not widen):
+ * Locked reader enum scope:
  *   panel   in { 'ayah' | 'word' | 'none' }
- *   ayahTab in { 'tafsir' | 'translation' | 'full-i3rab' }
+ *   ayahTab in { 'tafsir' | 'translation' | 'full-i3rab' | 'similar-ayahs' | 'mutashabihat' }
  *   wordTab in { 'morphology' | 'segments' | 'i3rab' | 'identity' }
- * `panel=sources` and `ayahTab=links` are out of scope for v1.
+ * `panel=sources` and unrelated ayah-link tabs are out of scope.
  */
 
 /* ============================================================================
@@ -268,8 +268,16 @@ export interface WordAnalysisDto {
  * ========================================================================== */
 
 export type PanelMode = 'ayah' | 'word' | 'none';
-export type AyahStudyTab = 'tafsir' | 'translation' | 'full-i3rab';
+export type AyahStudyTab = 'tafsir' | 'translation' | 'full-i3rab' | 'similar-ayahs' | 'mutashabihat';
 export type WordAnalysisTab = 'morphology' | 'segments' | 'i3rab' | 'identity';
+
+export const AYAH_STUDY_TAB_LABELS: Record<AyahStudyTab, { full: string; short: string }> = {
+  tafsir: { full: 'التفسير', short: 'التفسير' },
+  translation: { full: 'الترجمة', short: 'الترجمة' },
+  'full-i3rab': { full: 'الإعراب الكامل', short: 'الإعراب' },
+  'similar-ayahs': { full: 'آيات قريبة في المعنى', short: 'آيات قريبة' },
+  mutashabihat: { full: 'المتشابهات اللفظية للحفظ', short: 'المتشابهات' },
+};
 
 /** A selectable source entry for the ayah-study source selectors. */
 export interface SourceOption {
