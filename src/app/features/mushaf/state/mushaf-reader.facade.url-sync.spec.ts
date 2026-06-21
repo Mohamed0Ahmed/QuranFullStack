@@ -10,7 +10,7 @@ import { AyahStudyDto, WordAnalysisDto, DEFAULT_MUSHAF_READER_STATE } from '../m
 import { MushafReaderFacade } from './mushaf-reader.facade';
 import { saveMushafReaderSession } from './mushaf-reader-session';
 import { MushafUrlSnapshot } from './mushaf-url-sync';
-import { mushafStudySourceCatalogApiProvider } from './mushaf-study-source-catalog.api.mock';
+import { mushafSimilarAyahsApiProvider, mushafStudySourceCatalogApiProvider } from './mushaf-study-source-catalog.api.mock';
 
 const pageDto = {
   pageNumber: 5,
@@ -139,7 +139,8 @@ function createFacadeTestBed(queryParams: Record<string, string>) {
           getWordAnalysis,
         },
       },
-      mushafStudySourceCatalogApiProvider,
+        mushafStudySourceCatalogApiProvider,
+        mushafSimilarAyahsApiProvider,
     ],
   });
 

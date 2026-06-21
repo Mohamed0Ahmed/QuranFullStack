@@ -168,6 +168,12 @@
           @case ('full-i3rab') {
             <qd-full-i3rab-card [entry]="study()!.fullI3rab" />
           }
+          @case ('similar-ayahs') {
+            <qd-similar-ayahs-card
+              [similarAyahs]="similarAyahs()"
+              [loadState]="similarAyahsLoadState()"
+            />
+          }
         }
       }
     </div>

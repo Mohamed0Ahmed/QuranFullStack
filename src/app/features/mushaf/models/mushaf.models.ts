@@ -177,6 +177,36 @@ export interface AyahSimilaritySummaryDto {
   mutashabihatOccurrenceCount: number;
 }
 
+export type SimilarAyahRelationshipDirection = 'outgoing' | 'incoming' | 'bidirectional';
+
+export interface SimilarAyahItemDto {
+  targetVerseKey: string;
+  surahNumber: number;
+  surahNameArabic: string;
+  ayahNumber: number;
+  pageNumber: number;
+  juzNumber: number;
+  hizbNumber: number;
+  rubNumber: number;
+  textUthmani: string;
+  score: number;
+  coverage: number;
+  matchedWordsCount: number;
+  relationshipDirection: SimilarAyahRelationshipDirection;
+  hasReverseLink: boolean;
+}
+
+export interface SimilarAyahsDto {
+  verseKey: string;
+  count: number;
+  items: SimilarAyahItemDto[];
+}
+
+export const SIMILAR_AYAHS_EMPTY_MESSAGE =
+  'لا توجد آيات قريبة في المعنى لهذه الآية في البيانات الحالية.';
+
+export const SIMILAR_AYAHS_LOADING_MESSAGE = 'جارٍ تحميل الآيات القريبة...';
+
 export interface AyahStudyDto {
   ayah: AyahCoreDto;
   selectedSources: SelectedSourcesDto;
@@ -369,6 +399,7 @@ export interface MushafReaderState {
   page: ResourceLoadState;
   ayahStudy: ResourceLoadState;
   wordAnalysis: ResourceLoadState;
+  similarAyahs: ResourceLoadState;
 }
 
 /** Stable, natural Quran keys used in the URL query params. */
@@ -402,4 +433,5 @@ export const DEFAULT_MUSHAF_READER_STATE: MushafReaderState = {
   page: { isLoading: false, isEmpty: false, errorMessage: null },
   ayahStudy: { isLoading: false, isEmpty: false, errorMessage: null },
   wordAnalysis: { isLoading: false, isEmpty: false, errorMessage: null },
+  similarAyahs: { isLoading: false, isEmpty: false, errorMessage: null },
 };

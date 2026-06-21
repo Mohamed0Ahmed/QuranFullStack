@@ -2,6 +2,7 @@ import { vi } from 'vitest';
 import { of } from 'rxjs';
 
 import { MushafStudySourceCatalogApi } from '../data-access/mushaf-study-sources.api';
+import { MushafSimilarAyahsApi } from '../data-access/mushaf-similar-ayahs.api';
 import { AyahStudyDto } from '../models/mushaf.models';
 
 export const ayahStudyDtoMock: AyahStudyDto = {
@@ -42,6 +43,19 @@ export const mushafStudySourceCatalogApiProvider = {
         isSuccess: true,
         message: 'ok',
         data: { tafsirSources: [], translationSources: [], fullI3rabSources: [] },
+      }),
+    ),
+  },
+};
+
+export const mushafSimilarAyahsApiProvider = {
+  provide: MushafSimilarAyahsApi,
+  useValue: {
+    getSimilarAyahs: vi.fn(() =>
+      of({
+        isSuccess: true,
+        message: 'ok',
+        data: { verseKey: '2:25', count: 0, items: [] },
       }),
     ),
   },

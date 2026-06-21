@@ -329,7 +329,7 @@ describe('SelectedAyahSectionComponent — similarity actions (US1)', () => {
     expect(root.querySelector('[data-testid="mutashabihat-group-count"]')).toBeNull();
   });
 
-  it('emits tabChange for the similarity tabs without rendering detail cards', () => {
+  it('emits tabChange for the similarity tabs and renders the similar ayahs card only for similar-ayahs', () => {
     const fixture = TestBed.createComponent(SelectedAyahSectionComponent);
     const tabChange = vi.fn();
     fixture.componentInstance.tabChange.subscribe(tabChange);
@@ -342,10 +342,11 @@ describe('SelectedAyahSectionComponent — similarity actions (US1)', () => {
     });
 
     const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('qd-similar-ayahs-card')).toBeTruthy();
+    expect(root.querySelector('qd-mutashabihat-groups-card')).toBeNull();
+
     root.querySelector<HTMLButtonElement>('[data-testid="ayah-tab-mutashabihat"]')?.click();
     expect(tabChange).toHaveBeenCalledWith('mutashabihat');
-    expect(root.querySelector('qd-similar-ayahs-card')).toBeNull();
-    expect(root.querySelector('qd-mutashabihat-groups-card')).toBeNull();
   });
 
   it('shows zero counts for an ayah without similarity data', () => {

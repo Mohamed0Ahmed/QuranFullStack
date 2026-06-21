@@ -1,0 +1,62 @@
+@use '../study-card.shared';
+
+.similar-ayahs-card {
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--qd-space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--qd-space-2);
+  }
+
+  &__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--qd-space-2);
+    color: var(--qd-text-muted);
+    font-size: 0.8125rem;
+    line-height: 1.5;
+  }
+
+  &__reference {
+    color: var(--qd-text);
+    font-weight: 600;
+  }
+
+  &__context {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--qd-space-2);
+  }
+
+  &__verse-key {
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__page {
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__text {
+    margin: 0;
+    font-size: 0.9375rem;
+    line-height: 1.9;
+    color: var(--qd-text);
+  }
+
+  &__skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: var(--qd-space-2);
+  }
+}

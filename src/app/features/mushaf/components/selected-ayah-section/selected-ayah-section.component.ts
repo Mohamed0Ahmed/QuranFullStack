@@ -6,9 +6,11 @@ import {
   AyahStudyViewModel,
   AYAH_STUDY_TAB_LABELS,
   ResourceLoadState,
+  SimilarAyahsDto,
   SourceOption,
 } from '../../models/mushaf.models';
 import { SourceSelectorComponent } from '../source-selector/source-selector.component';
+import { SimilarAyahsCardComponent } from '../similar-ayahs-card/similar-ayahs-card.component';
 import { TafsirCardComponent } from '../tafsir-card/tafsir-card.component';
 import { TranslationCardComponent } from '../translation-card/translation-card.component';
 import { FullI3rabCardComponent } from '../full-i3rab-card/full-i3rab-card.component';
@@ -20,6 +22,7 @@ import { toStudyAyahDisplayText } from '../../utils/mushaf-verse-key-display';
   imports: [
     CommonModule,
     SourceSelectorComponent,
+    SimilarAyahsCardComponent,
     TafsirCardComponent,
     TranslationCardComponent,
     FullI3rabCardComponent,
@@ -33,6 +36,12 @@ import { toStudyAyahDisplayText } from '../../utils/mushaf-verse-key-display';
 export class SelectedAyahSectionComponent {
   readonly study = input<AyahStudyViewModel | null>(null);
   readonly loadState = input.required<ResourceLoadState>();
+  readonly similarAyahs = input<SimilarAyahsDto | null>(null);
+  readonly similarAyahsLoadState = input<ResourceLoadState>({
+    isLoading: false,
+    isEmpty: false,
+    errorMessage: null,
+  });
   readonly activeTab = input<AyahStudyTab>('tafsir');
   readonly selectedVerseKey = input<string | null>(null);
   readonly embedded = input(false);
