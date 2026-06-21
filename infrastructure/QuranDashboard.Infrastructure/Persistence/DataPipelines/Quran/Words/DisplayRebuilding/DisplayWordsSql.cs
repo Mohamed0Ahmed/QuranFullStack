@@ -121,12 +121,13 @@ internal static class DisplayWordsSql
           ORDER BY r.text_uthmani, r.word_order_in_mushaf
         )
         INSERT INTO quran_words_unique_tashkeel (
-          text_uthmani, text_uthmani_simple, text_imlaei_simple,
+          id, text_uthmani, text_uthmani_simple, text_imlaei_simple,
           occurrences_count, ayahs_count, surahs_count,
           first_quran_word_id, first_location, first_surah_number, first_ayah_number,
           first_word_order_in_mushaf, first_page_number, first_line_number
         )
         SELECT
+          f.first_quran_word_id,
           f.text_uthmani,
           f.text_uthmani_simple,
           f.text_imlaei_simple,
@@ -172,12 +173,13 @@ internal static class DisplayWordsSql
           ORDER BY r.word_key_imlaei_simple, r.word_order_in_mushaf
         )
         INSERT INTO quran_words_unique_simple (
-          word_key_imlaei_simple, text_uthmani, text_uthmani_simple, text_imlaei_simple, qpc_glyph,
+          id, word_key_imlaei_simple, text_uthmani, text_uthmani_simple, text_imlaei_simple, qpc_glyph,
           occurrences_count, ayahs_count, surahs_count,
           first_quran_word_id, first_location, first_surah_number, first_ayah_number,
           first_word_order_in_mushaf, first_page_number, first_line_number
         )
         SELECT
+          f.first_quran_word_id,
           f.word_key_imlaei_simple,
           f.text_uthmani,
           f.text_uthmani_simple,
@@ -361,6 +363,28 @@ internal static class DisplayWordsSql
 
     internal const string CheckUnqCountDistinctSimpleText = """
         SELECT COUNT(DISTINCT word_key_imlaei_simple)::int FROM quran_words WHERE is_ayah_marker = false
+        """;
+
+    internal const string CheckUnqIdDeterministicViolations = """
+        SELECT (
+          SELECT COUNT(*)::int
+          FROM quran_words_unique_tashkeel
+          WHERE id <> first_quran_word_id
+        ) + (
+          SELECT COUNT(*)::int
+          FROM quran_words_unique_simple
+          WHERE id <> first_quran_word_id
+        )
+        """;
+
+    internal const string CheckUnqIdDuplicateViolations = """
+        SELECT (
+          SELECT COUNT(*)::int - COUNT(DISTINCT id)::int
+          FROM quran_words_unique_tashkeel
+        ) + (
+          SELECT COUNT(*)::int - COUNT(DISTINCT id)::int
+          FROM quran_words_unique_simple
+        )
         """;
 
     internal const string CheckStatMatchViolations = """

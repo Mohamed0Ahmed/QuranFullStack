@@ -232,23 +232,23 @@ VALUES
   (2003, 2003, '2:25:3', '2:25', 2, 25, 5, 1, 3, 3,
    'امنوا', 'ءامنوا', 'آمنوا', 1, 1, 1);
 
--- Unique identity rows (auto-id; referenced back by quran_words) --------
+-- Unique identity rows (deterministic id := first_quran_word_id) ---------
 INSERT INTO quran_words_unique_tashkeel
-  (text_uthmani, text_uthmani_simple, text_imlaei_simple,
+  (id, text_uthmani, text_uthmani_simple, text_imlaei_simple,
    occurrences_count, ayahs_count, surahs_count,
    first_quran_word_id, first_location, first_surah_number, first_ayah_number,
    first_word_order_in_mushaf, first_page_number, first_line_number)
 VALUES
-  ('ءَامَنُوا۟', 'ءامنوا', 'آمنوا', 1, 1, 1,
+  (2003, 'ءَامَنُوا۟', 'ءامنوا', 'آمنوا', 1, 1, 1,
    2003, '2:25:3', 2, 25, 2003, 5, 1);
 
 INSERT INTO quran_words_unique_simple
-  (word_key_imlaei_simple, text_uthmani, text_uthmani_simple, text_imlaei_simple, qpc_glyph,
+  (id, word_key_imlaei_simple, text_uthmani, text_uthmani_simple, text_imlaei_simple, qpc_glyph,
    occurrences_count, ayahs_count, surahs_count,
    first_quran_word_id, first_location, first_surah_number, first_ayah_number,
    first_word_order_in_mushaf, first_page_number, first_line_number)
 VALUES
-  ('امنوا', 'ءَامَنُوا۟', 'ءامنوا', 'آمنوا', 'g2003',
+  (2003, 'امنوا', 'ءَامَنُوا۟', 'ءامنوا', 'آمنوا', 'g2003',
    1, 1, 1, 2003, '2:25:3', 2, 25, 2003, 5, 1);
 
 -- Link the source word to its unique identity rows ----------------------

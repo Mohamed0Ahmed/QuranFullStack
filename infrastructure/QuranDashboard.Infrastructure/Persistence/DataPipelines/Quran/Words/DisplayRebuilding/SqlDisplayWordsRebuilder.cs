@@ -11,8 +11,10 @@ public sealed class SqlDisplayWordsRebuilder : IDisplayWordsRebuilder
     private const string HardSeverity = "hard";
     private const string WarningSeverity = "warning";
 
-    private const string DerivedUniqueCountsNote =
-        "Unique counts are derived from the database; informational expectations are 21,210 / 14,783.";
+    private static readonly string DerivedUniqueCountsNote =
+        "Unique counts are derived from the database; informational expectations are "
+        + $"{DisplayWordsInvariants.InformationalUniqueTashkeel.ToString("N0", CultureInfo.InvariantCulture)} / "
+        + $"{DisplayWordsInvariants.InformationalUniqueSimple.ToString("N0", CultureInfo.InvariantCulture)}.";
 
     private const string RollbackTotalsNote =
         "Totals reflect the attempted in-transaction rebuild before rollback; no derived rows were persisted.";
@@ -234,6 +236,24 @@ public sealed class SqlDisplayWordsRebuilder : IDisplayWordsRebuilder
             $"tashkeel={FormatInt(distinctTashkeelText)}, simple={FormatInt(distinctSimpleText)}",
             $"tashkeel={FormatInt(uniqueTashkeelCount)}, simple={FormatInt(uniqueSimpleCount)}",
             unqCountPassed));
+
+        var unqIdDeterministicViolations = await ExecuteScalarIntAsync(
+            connection, transaction, DisplayWordsSql.CheckUnqIdDeterministicViolations, ct);
+        checks.Add(new DisplayWordsCheckResult(
+            "UNQ-ID-DETERMINISTIC",
+            HardSeverity,
+            "id = first_quran_word_id",
+            unqIdDeterministicViolations == 0 ? "0 violations" : $"{FormatInt(unqIdDeterministicViolations)} violation(s)",
+            unqIdDeterministicViolations == 0));
+
+        var unqIdDuplicateViolations = await ExecuteScalarIntAsync(
+            connection, transaction, DisplayWordsSql.CheckUnqIdDuplicateViolations, ct);
+        checks.Add(new DisplayWordsCheckResult(
+            "UNQ-ID-UNIQUE",
+            HardSeverity,
+            "0 duplicate ids",
+            unqIdDuplicateViolations == 0 ? "0" : FormatInt(unqIdDuplicateViolations),
+            unqIdDuplicateViolations == 0));
 
         var statViolations = await ExecuteScalarIntAsync(
             connection,
