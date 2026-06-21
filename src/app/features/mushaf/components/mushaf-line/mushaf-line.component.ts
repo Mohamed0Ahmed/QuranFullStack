@@ -19,7 +19,7 @@ import { mushafSurahNameLigature } from './mushaf-surah-name-ligature';
 export class MushafLineComponent {
   readonly line = input.required<MushafLineDto>();
   readonly markers = input<PageMarkerDto[]>([]);
-  readonly selectedVerseKey = input<string | null>(null);
+  readonly highlightedVerseKey = input<string | null>(null);
   readonly selectedWordLocation = input<string | null>(null);
   readonly surahNameArabic = input<string | null>(null);
 

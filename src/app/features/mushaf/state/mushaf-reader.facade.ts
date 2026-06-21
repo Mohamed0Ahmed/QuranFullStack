@@ -55,6 +55,8 @@ import { SimilarAyahsLoadRunner } from './mushaf-similar-ayahs-load.runner';
 import { MutashabihatLoadRunner } from './mushaf-mutashabihat-load.runner';
 import { WordAnalysisLoadRunner } from './mushaf-word-analysis-load.runner';
 
+const PEEK_FLASH_CLEAR_MS = 3000;
+
 /**
  * Mushaf reader page-state facade.
  *
@@ -77,6 +79,7 @@ export class MushafReaderFacade {
 
   private readonly _pageNumber = signal(DEFAULT_MUSHAF_READER_STATE.pageNumber);
   private readonly _selectedAyahKey = signal(DEFAULT_MUSHAF_READER_STATE.selectedAyahKey);
+  private readonly _focusAyahKey = signal<string | null>(null);
   private readonly _selectedWordLocation = signal(DEFAULT_MUSHAF_READER_STATE.selectedWordLocation);
   private readonly _selectedSegmentLocation = signal(DEFAULT_MUSHAF_READER_STATE.selectedSegmentLocation);
   private readonly _panel = signal(DEFAULT_MUSHAF_READER_STATE.panel);
@@ -99,6 +102,7 @@ export class MushafReaderFacade {
   private ayahStudyRequestToken = 0;
   private similarAyahsRequestToken = 0;
   private mutashabihatRequestToken = 0;
+  private peekFlashClearTimer: ReturnType<typeof setTimeout> | null = null;
 
   private readonly wordAnalysisLoadRunner = new WordAnalysisLoadRunner({
     getPage: () => this._page(),
@@ -147,6 +151,7 @@ export class MushafReaderFacade {
 
   readonly pageNumber = this._pageNumber.asReadonly();
   readonly selectedAyahKey = this._selectedAyahKey.asReadonly();
+  readonly focusAyahKey = this._focusAyahKey.asReadonly();
   readonly selectedWordLocation = this._selectedWordLocation.asReadonly();
   readonly selectedSegmentLocation = this._selectedSegmentLocation.asReadonly();
   readonly panel = this._panel.asReadonly();
@@ -169,6 +174,8 @@ export class MushafReaderFacade {
   readonly similarAyahsLoadState = this._similarAyahsLoadState.asReadonly();
   readonly mutashabihatLoadState = this._mutashabihatLoadState.asReadonly();
   readonly wordAnalysisLoadState = this._wordAnalysisLoadState.asReadonly();
+
+  readonly mushafHighlightVerseKey = computed(() => this._focusAyahKey());
 
   readonly state = computed<MushafReaderState>(() => ({
     pageNumber: this._pageNumber(),
@@ -217,8 +224,20 @@ export class MushafReaderFacade {
     });
   }
 
+  /** Cancels peek timers and route subscription when the reader page is destroyed. */
+  unbindFromRoute(): void {
+    this.cancelPeekFlashClearTimer();
+    this.routeSubscription?.unsubscribe();
+    this.routeSubscription = null;
+    this.activeRoute = null;
+  }
+
   changePage(pageNumber: number): void {
-    this.patchUrlQuery({ [MUSHAF_URL_KEYS.page]: pageNumber });
+    this.cancelPeekFlashClearTimer();
+    this.patchUrlQuery({
+      [MUSHAF_URL_KEYS.page]: pageNumber,
+      [MUSHAF_URL_KEYS.focusAyah]: null,
+    });
   }
 
   jumpToSurah(surahNumber: number): void {
@@ -229,6 +248,24 @@ export class MushafReaderFacade {
   }
 
   selectAyah(verseKey: string): void {
+    this.patchAyahSelectionQuery(verseKey);
+  }
+
+  viewAyahOnPage(verseKey: string, pageNumber: number): void {
+    this.patchUrlQuery({
+      [MUSHAF_URL_KEYS.page]: pageNumber,
+      [MUSHAF_URL_KEYS.focusAyah]: verseKey,
+    });
+  }
+
+  private patchAyahSelectionQuery(verseKey: string): void {
+    this.cancelPeekFlashClearTimer();
+    this.patchUrlQuery(this.buildAyahSelectionQueryParams(verseKey));
+  }
+
+  private buildAyahSelectionQueryParams(verseKey: string): Partial<
+    Record<(typeof MUSHAF_URL_KEYS)[keyof typeof MUSHAF_URL_KEYS], string | number | null>
+  > {
     const currentWord = this._selectedWordLocation();
     const wordAyah = currentWord ? verseKeyFromWordLocation(currentWord) : null;
     const queryParams: Partial<
@@ -236,6 +273,7 @@ export class MushafReaderFacade {
     > = {
       [MUSHAF_URL_KEYS.ayah]: verseKey,
       [MUSHAF_URL_KEYS.panel]: 'ayah',
+      [MUSHAF_URL_KEYS.focusAyah]: null,
     };
 
     if (wordAyah && wordAyah !== verseKey) {
@@ -243,16 +281,18 @@ export class MushafReaderFacade {
       queryParams[MUSHAF_URL_KEYS.segment] = null;
     }
 
-    this.patchUrlQuery(queryParams);
+    return queryParams;
   }
 
   selectWord(wordLocation: string): void {
+    this.cancelPeekFlashClearTimer();
     const verseKey = verseKeyFromWordLocation(wordLocation);
     const queryParams: Partial<
       Record<(typeof MUSHAF_URL_KEYS)[keyof typeof MUSHAF_URL_KEYS], string | number | null>
     > = {
       [MUSHAF_URL_KEYS.word]: wordLocation,
       [MUSHAF_URL_KEYS.panel]: 'word',
+      [MUSHAF_URL_KEYS.focusAyah]: null,
     };
 
     if (verseKey) {
@@ -359,6 +399,9 @@ export class MushafReaderFacade {
             this.readerCache,
             this.pagesApi,
           );
+          if (this._focusAyahKey() !== null) {
+            this.scheduleFocusAyahClear();
+          }
         },
         onSettled: (loadState) => {
           if (loadState.isEmpty) {
@@ -380,7 +423,35 @@ export class MushafReaderFacade {
 
   private hydrateFromUrl(snapshot: MushafUrlSnapshot): void {
     this.loadPage(snapshot.pageNumber);
+    const previousFocusAyah = this._focusAyahKey();
+    this._focusAyahKey.set(snapshot.focusAyah);
+    if (snapshot.focusAyah) {
+      if (snapshot.focusAyah !== previousFocusAyah) {
+        this.scheduleFocusAyahClear();
+      }
+    } else {
+      this.cancelPeekFlashClearTimer();
+    }
     this.applyUrlState(snapshot);
+  }
+
+  private cancelPeekFlashClearTimer(): void {
+    if (this.peekFlashClearTimer === null) {
+      return;
+    }
+
+    clearTimeout(this.peekFlashClearTimer);
+    this.peekFlashClearTimer = null;
+  }
+
+  private scheduleFocusAyahClear(): void {
+    this.cancelPeekFlashClearTimer();
+    this.peekFlashClearTimer = setTimeout(() => {
+      this.peekFlashClearTimer = null;
+      if (this._focusAyahKey() !== null && this.activeRoute !== null) {
+        this.patchUrlQuery({ [MUSHAF_URL_KEYS.focusAyah]: null });
+      }
+    }, PEEK_FLASH_CLEAR_MS);
   }
 
   private patchUrlQuery(
@@ -472,11 +543,21 @@ export class MushafReaderFacade {
       return;
     }
 
+    const current = this._similarAyahs();
+    if (current?.verseKey === verseKey && !this._similarAyahsLoadState().isLoading) {
+      return;
+    }
+
     this.similarAyahsLoadRunner.loadImmediate(verseKey);
   }
 
   private syncMutashabihatDetail(verseKey: string | null, ayahTab: AyahStudyTab): void {
     if (!verseKey || ayahTab !== 'mutashabihat') {
+      return;
+    }
+
+    const current = this._mutashabihat();
+    if (current?.verseKey === verseKey && !this._mutashabihatLoadState().isLoading) {
       return;
     }
 

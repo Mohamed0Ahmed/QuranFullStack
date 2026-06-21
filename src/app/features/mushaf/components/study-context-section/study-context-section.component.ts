@@ -2,6 +2,7 @@ import { Component, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 import {
+  AyahNavigationTarget,
   AyahStudyTab,
   AyahStudyViewModel,
   ResourceLoadState,
@@ -42,4 +43,5 @@ export class StudyContextSectionComponent {
   readonly tafsirSourceChange = output<string>();
   readonly translationSourceChange = output<string>();
   readonly fullI3rabSourceChange = output<string>();
+  readonly ayahNavigate = output<AyahNavigationTarget>();
 }

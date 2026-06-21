@@ -11,6 +11,7 @@ import { toMushafWordDisplayText } from './mushaf-word-display-text';
 })
 export class MushafWordComponent {
   readonly word = input.required<MushafWordDto>();
+  readonly highlightedVerseKey = input<string | null>(null);
   readonly selectedWordLocation = input<string | null>(null);
 
   readonly ayahSelect = output<string>();
@@ -20,6 +21,20 @@ export class MushafWordComponent {
   protected readonly displayText = computed(() =>
     toMushafWordDisplayText(this.word().textUthmani),
   );
+
+  protected isHighlightedAyahWord(): boolean {
+    const word = this.word();
+    const highlightedVerseKey = this.highlightedVerseKey();
+    if (!highlightedVerseKey || word.isAyahMarker) {
+      return false;
+    }
+
+    if (this.selectedWordLocation() === word.wordLocation) {
+      return false;
+    }
+
+    return word.verseKey === highlightedVerseKey;
+  }
 
   protected onWordClick(): void {
     if (!this.word().isAyahMarker) {

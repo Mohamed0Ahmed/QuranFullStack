@@ -39,10 +39,6 @@
     gap: var(--qd-space-2);
   }
 
-  &__verse-key {
-    font-variant-numeric: tabular-nums;
-  }
-
   &__page {
     font-variant-numeric: tabular-nums;
   }
@@ -52,6 +48,28 @@
     font-size: 0.9375rem;
     line-height: 1.9;
     color: var(--qd-text);
+
+    &--navigable {
+      display: block;
+      width: 100%;
+      padding: 0;
+      border: none;
+      background: transparent;
+      font-family: inherit;
+      text-align: inherit;
+      cursor: pointer;
+      border-radius: var(--qd-radius-sm);
+      transition: color 120ms ease;
+
+      &:hover {
+        color: var(--qd-accent);
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--qd-accent);
+        outline-offset: 2px;
+      }
+    }
   }
 
   &__skeleton {

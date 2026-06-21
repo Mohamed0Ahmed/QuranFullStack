@@ -1,10 +1,10 @@
-import { Component, HostListener, OnInit, inject } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 
 import { MushafPageAreaComponent } from '../../components/mushaf-page-area/mushaf-page-area.component';
 import { StudyContextSectionComponent } from '../../components/study-context-section/study-context-section.component';
-import { AyahStudyTab } from '../../models/mushaf.models';
+import { AyahStudyTab, AyahNavigationTarget } from '../../models/mushaf.models';
 import { MushafReaderFacade } from '../../state/mushaf-reader.facade';
 
 @Component({
@@ -14,7 +14,7 @@ import { MushafReaderFacade } from '../../state/mushaf-reader.facade';
   templateUrl: './mushaf-reader-page.component.html',
   styleUrls: ['./mushaf-reader-page.component.scss'],
 })
-export class MushafReaderPageComponent implements OnInit {
+export class MushafReaderPageComponent implements OnInit, OnDestroy {
   protected readonly facade = inject(MushafReaderFacade);
   private readonly route = inject(ActivatedRoute);
 
@@ -41,6 +41,10 @@ export class MushafReaderPageComponent implements OnInit {
   ngOnInit(): void {
     this.facade.loadStudySourceCatalog();
     this.facade.bindToRoute(this.route);
+  }
+
+  ngOnDestroy(): void {
+    this.facade.unbindFromRoute();
   }
 
   protected onPageChange(pageNumber: number): void {
@@ -73,6 +77,10 @@ export class MushafReaderPageComponent implements OnInit {
 
   protected onFullI3rabSourceChange(sourceKey: string): void {
     this.facade.setFullI3rabSource(sourceKey);
+  }
+
+  protected onAyahNavigate(target: AyahNavigationTarget): void {
+    this.facade.viewAyahOnPage(target.verseKey, target.pageNumber);
   }
 
   private shouldHandleWordNavigation(event: KeyboardEvent): boolean {

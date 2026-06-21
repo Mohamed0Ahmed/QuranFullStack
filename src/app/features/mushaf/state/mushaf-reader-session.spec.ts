@@ -15,6 +15,7 @@ const SESSION_STORAGE_KEY = 'qd-mushaf-reader-session';
 const sampleSnapshot: MushafUrlSnapshot = {
   pageNumber: 12,
   ayah: '2:25',
+  focusAyah: null,
   word: '2:25:3',
   segment: '2:25:3:1',
   panel: 'word',
@@ -60,6 +61,7 @@ describe('mushaf-reader-session', () => {
     const defaultsOnly: MushafUrlSnapshot = {
       pageNumber: DEFAULT_MUSHAF_READER_STATE.pageNumber,
       ayah: null,
+      focusAyah: null,
       word: null,
       segment: null,
       panel: DEFAULT_MUSHAF_READER_STATE.panel,
@@ -82,10 +84,20 @@ describe('mushaf-reader-session', () => {
     expect(loadMushafReaderSession()).toEqual(sampleSnapshot);
   });
 
+  it('does not persist transient focusAyah in session storage', () => {
+    saveMushafReaderSession({ ...sampleSnapshot, focusAyah: '4:57' });
+
+    expect(loadMushafReaderSession()?.focusAyah).toBeNull();
+    expect(mushafSnapshotToQueryParams({ ...sampleSnapshot, focusAyah: '4:57' })).toEqual(
+      mushafSnapshotToQueryParams(sampleSnapshot),
+    );
+  });
+
   it('serializes widened similarity ayah tabs to query params', () => {
     const similarAyahsSnapshot: MushafUrlSnapshot = {
       pageNumber: 5,
       ayah: '2:25',
+      focusAyah: null,
       word: null,
       segment: null,
       panel: 'ayah',
@@ -121,6 +133,7 @@ describe('mushaf-reader-session', () => {
       const snapshot: MushafUrlSnapshot = {
         pageNumber: 5,
         ayah: '2:25',
+        focusAyah: null,
         word: null,
         segment: null,
         panel: 'ayah',

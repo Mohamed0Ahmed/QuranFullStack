@@ -2,6 +2,7 @@ import { Component, computed, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 import {
+  AyahNavigationTarget,
   AyahStudyTab,
   AyahStudyViewModel,
   AYAH_STUDY_TAB_LABELS,
@@ -64,6 +65,7 @@ export class SelectedAyahSectionComponent {
   readonly translationSourceChange = output<string>();
   readonly fullI3rabSourceChange = output<string>();
   readonly sectionFocus = output<void>();
+  readonly ayahNavigate = output<AyahNavigationTarget>();
 
   protected readonly displayAyahText = computed(() => {
     const text = this.study()?.ayah.textUthmani;
@@ -93,5 +95,26 @@ export class SelectedAyahSectionComponent {
       default:
         return null;
     }
+  }
+
+  protected selectedAyahNavigateLabel(): string {
+    const ayah = this.study()?.ayah;
+    if (!ayah) {
+      return 'فتح الآية في المصحف';
+    }
+
+    return `فتح ${ayah.surahNameArabic} — ${ayah.ayahNumber} في المصحف`;
+  }
+
+  protected onSelectedAyahNavigate(): void {
+    const ayah = this.study()?.ayah;
+    if (!ayah) {
+      return;
+    }
+
+    this.ayahNavigate.emit({
+      verseKey: ayah.verseKey,
+      pageNumber: ayah.pageFrom,
+    });
   }
 }

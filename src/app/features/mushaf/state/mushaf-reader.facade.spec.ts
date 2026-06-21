@@ -583,6 +583,7 @@ describe('MushafReaderFacade similarity ayah tabs', () => {
       const savedSimilarAyahsSession = {
         pageNumber: 5,
         ayah: '2:25',
+        focusAyah: null,
         word: null,
         segment: null,
         panel: 'ayah' as const,

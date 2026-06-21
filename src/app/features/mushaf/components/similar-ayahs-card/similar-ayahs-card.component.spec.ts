@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { SimilarAyahsCardComponent } from './similar-ayahs-card.component';
@@ -96,6 +96,8 @@ describe('SimilarAyahsCardComponent (US2)', () => {
     const items = root.querySelectorAll('[data-testid="similar-ayah-item"]');
     expect(items).toHaveLength(2);
 
+    expect(root.querySelector('.similar-ayahs-card__verse-key')).toBeNull();
+
     const references = Array.from(root.querySelectorAll('[data-testid="similar-ayah-reference"]')).map(
       (node) => node.textContent?.trim(),
     );
@@ -110,6 +112,25 @@ describe('SimilarAyahsCardComponent (US2)', () => {
       node.textContent?.trim(),
     );
     expect(texts).toEqual(['نص مرتبط أول', 'نص مرتبط ثان']);
+  });
+
+  it('emits ayahNavigate when a similar ayah text is clicked', () => {
+    const fixture = TestBed.createComponent(SimilarAyahsCardComponent);
+    const ayahNavigate = vi.fn();
+    fixture.componentInstance.ayahNavigate.subscribe(ayahNavigate);
+
+    const root = render(fixture, {
+      similarAyahs: SAMPLE_SIMILAR_AYAHS,
+      loadState: IDLE,
+    });
+
+    const firstTextButton = root.querySelector('[data-testid="similar-ayah-text"]') as HTMLButtonElement;
+    firstTextButton.click();
+
+    expect(ayahNavigate).toHaveBeenCalledWith({
+      verseKey: '2:26',
+      pageNumber: 5,
+    });
   });
 
   it('shows the scoped error state when similar ayahs loading fails', () => {

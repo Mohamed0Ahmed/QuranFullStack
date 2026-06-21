@@ -295,4 +295,79 @@ describe('MushafReaderPageComponent study layout', () => {
     expect(moveSelectedWord).not.toHaveBeenCalled();
     expect(preventDefault).not.toHaveBeenCalled();
   });
+
+  it('unbinds the facade route on destroy', () => {
+    const queryParamMap$ = new BehaviorSubject(convertToParamMap({ page: '5', word: '2:25:3', ayah: '2:25' }));
+
+    TestBed.configureTestingModule({
+      imports: [MushafReaderPageComponent],
+      providers: [
+        MushafReaderFacade,
+        {
+          provide: ActivatedRoute,
+          useValue: { queryParamMap: queryParamMap$.asObservable() },
+        },
+        {
+          provide: Router,
+          useValue: { navigate: vi.fn().mockResolvedValue(true) },
+        },
+        {
+          provide: MushafPagesApi,
+          useValue: {
+            getPage: vi.fn(() =>
+              of({
+                isSuccess: true,
+                message: 'ok',
+                data: {
+                  pageNumber: 5,
+                  previousPageNumber: 4,
+                  nextPageNumber: 6,
+                  surahs: [],
+                  ayahRange: { firstVerseKey: '2:25', lastVerseKey: '2:26' },
+                  navigation: { juzNumbers: [], hizbNumbers: [], rubNumbers: [] },
+                  lines: [],
+                  markers: [],
+                },
+              }),
+            ),
+          },
+        },
+        {
+          provide: MushafAyahStudyApi,
+          useValue: {
+            getAyahStudy: vi.fn(() => of({ isSuccess: true, message: 'ok', data: ayahStudyDto })),
+          },
+        },
+        {
+          provide: MushafWordAnalysisApi,
+          useValue: {
+            getWordAnalysis: vi.fn(() => of({ isSuccess: true, message: 'ok', data: wordAnalysisDto })),
+          },
+        },
+        {
+          provide: MushafStudySourceCatalogApi,
+          useValue: {
+            getCatalog: vi.fn(() =>
+              of({
+                isSuccess: true,
+                message: 'ok',
+                data: { tafsirSources: [], translationSources: [], fullI3rabSources: [] },
+              }),
+            ),
+          },
+        },
+        mushafSimilarAyahsApiProvider,
+        mushafAyahMutashabihatApiProvider,
+      ],
+    });
+
+    const fixture = TestBed.createComponent(MushafReaderPageComponent);
+    const facade = TestBed.inject(MushafReaderFacade);
+    const unbindFromRoute = vi.spyOn(facade, 'unbindFromRoute');
+
+    fixture.detectChanges();
+    fixture.destroy();
+
+    expect(unbindFromRoute).toHaveBeenCalled();
+  });
 });

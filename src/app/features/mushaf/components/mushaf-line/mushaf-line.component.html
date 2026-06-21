@@ -19,6 +19,7 @@
     @for (word of line().words; track word.wordLocation) {
       <qd-mushaf-word
         [word]="word"
+        [highlightedVerseKey]="highlightedVerseKey()"
         [selectedWordLocation]="selectedWordLocation()"
         (ayahSelect)="ayahSelect.emit($event)"
         (wordSelect)="wordSelect.emit($event)"

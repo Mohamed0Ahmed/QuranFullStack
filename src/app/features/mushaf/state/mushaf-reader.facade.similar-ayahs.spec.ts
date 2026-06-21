@@ -187,4 +187,44 @@ describe('MushafReaderFacade similar ayahs lazy loading (US2)', () => {
     expect(getSimilarAyahs).toHaveBeenCalledTimes(1);
     expect(facade.similarAyahs()).toEqual(similarAyahsDto);
   });
+
+  it('does not re-fetch similar ayahs when focusAyah auto-clears', async () => {
+    vi.useFakeTimers();
+
+    try {
+      const { facade, getSimilarAyahs, queryParamMap$ } = createFacade({
+        page: '5',
+        ayah: '2:25',
+        panel: 'ayah',
+        ayahTab: 'similar-ayahs',
+      });
+
+      await vi.waitFor(() => {
+        expect(getSimilarAyahs).toHaveBeenCalledTimes(1);
+      });
+
+      facade.viewAyahOnPage('4:57', 92);
+      queryParamMap$.next(
+        convertToParamMap({
+          page: '92',
+          ayah: '2:25',
+          focusAyah: '4:57',
+          ayahTab: 'similar-ayahs',
+        }),
+      );
+
+      vi.advanceTimersByTime(3000);
+      queryParamMap$.next(
+        convertToParamMap({
+          page: '92',
+          ayah: '2:25',
+          ayahTab: 'similar-ayahs',
+        }),
+      );
+
+      expect(getSimilarAyahs).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

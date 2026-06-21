@@ -202,6 +202,12 @@ export interface SimilarAyahsDto {
   items: SimilarAyahItemDto[];
 }
 
+/** Target for in-reader navigation to an ayah on a specific Mushaf page. */
+export interface AyahNavigationTarget {
+  verseKey: string;
+  pageNumber: number;
+}
+
 export const SIMILAR_AYAHS_EMPTY_MESSAGE =
   'لا توجد آيات قريبة في المعنى لهذه الآية في البيانات الحالية.';
 
@@ -454,6 +460,7 @@ export interface MushafReaderState {
 export const MUSHAF_URL_KEYS = {
   page: 'page',
   ayah: 'ayah',
+  focusAyah: 'focusAyah',
   word: 'word',
   segment: 'segment',
   panel: 'panel',

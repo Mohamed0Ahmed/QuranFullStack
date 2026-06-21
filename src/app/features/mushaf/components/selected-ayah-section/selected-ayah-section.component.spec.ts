@@ -380,3 +380,27 @@ describe('SelectedAyahSectionComponent — similarity actions (US1)', () => {
     expect(root.querySelector('[data-testid="mutashabihat-group-count"]')?.textContent?.trim()).toBe('0');
   });
 });
+
+describe('SelectedAyahSectionComponent — ayah navigation', () => {
+  it('emits ayahNavigate when the selected ayah header is clicked', () => {
+    const fixture = TestBed.createComponent(SelectedAyahSectionComponent);
+    const ayahNavigate = vi.fn();
+    fixture.componentInstance.ayahNavigate.subscribe(ayahNavigate);
+
+    setInputs(fixture, {
+      study: buildAyahStudyViewModel('2:25'),
+      loadState: IDLE,
+      selectedVerseKey: '2:25',
+    });
+
+    const ayahButton = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(
+      '[data-testid="selected-ayah-section-ayah"]',
+    );
+    ayahButton?.click();
+
+    expect(ayahNavigate).toHaveBeenCalledWith({
+      verseKey: '2:25',
+      pageNumber: 5,
+    });
+  });
+});

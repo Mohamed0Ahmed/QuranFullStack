@@ -16,7 +16,7 @@ import { mushafSurahIconLigature, mushafSurahNameLigature } from '../mushaf-line
 })
 export class MushafPageViewComponent {
   readonly page = input.required<MushafPageViewModel>();
-  readonly selectedVerseKey = input<string | null>(null);
+  readonly highlightedVerseKey = input<string | null>(null);
   readonly selectedWordLocation = input<string | null>(null);
 
   readonly ayahSelect = output<string>();

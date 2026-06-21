@@ -24,15 +24,21 @@
             {{ item.surahNameArabic }} — {{ item.ayahNumber }}
           </span>
           <span class="similar-ayahs-card__context">
-            <span class="similar-ayahs-card__verse-key">{{ item.targetVerseKey }}</span>
             <span class="similar-ayahs-card__page" data-testid="similar-ayah-page-context">
               صفحة {{ item.pageNumber }}
             </span>
           </span>
         </header>
-        <p class="similar-ayahs-card__text" dir="rtl" data-testid="similar-ayah-text">
+        <button
+          type="button"
+          class="similar-ayahs-card__text similar-ayahs-card__text--navigable"
+          dir="rtl"
+          data-testid="similar-ayah-text"
+          [attr.aria-label]="ayahNavigateLabel(item)"
+          (click)="onAyahNavigate(item)"
+        >
           {{ displayAyahText(item.textUthmani) }}
-        </p>
+        </button>
       </li>
     }
   </ul>

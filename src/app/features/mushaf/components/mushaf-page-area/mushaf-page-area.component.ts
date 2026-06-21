@@ -16,7 +16,7 @@ export class MushafPageAreaComponent {
   readonly page = input<MushafPageViewModel | null>(null);
   readonly loadState = input.required<ResourceLoadState>();
   readonly surahCatalogByJuz = input.required<readonly MushafSurahJuzGroupDto[]>();
-  readonly selectedVerseKey = input<string | null>(null);
+  readonly highlightedVerseKey = input<string | null>(null);
   readonly selectedWordLocation = input<string | null>(null);
 
   readonly pageChange = output<number>();

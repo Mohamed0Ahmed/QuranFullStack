@@ -153,9 +153,16 @@
         </div>
       } @else {
         @if (displayAyahText()) {
-          <p class="selected-ayah-section__ayah" dir="rtl" data-testid="selected-ayah-section-ayah">
+          <button
+            type="button"
+            class="selected-ayah-section__ayah selected-ayah-section__ayah--navigable"
+            dir="rtl"
+            data-testid="selected-ayah-section-ayah"
+            [attr.aria-label]="selectedAyahNavigateLabel()"
+            (click)="onSelectedAyahNavigate()"
+          >
             {{ displayAyahText() }}
-          </p>
+          </button>
         }
 
         @switch (activeTab()) {
@@ -172,6 +179,7 @@
             <qd-similar-ayahs-card
               [similarAyahs]="similarAyahs()"
               [loadState]="similarAyahsLoadState()"
+              (ayahNavigate)="ayahNavigate.emit($event)"
             />
           }
           @case ('mutashabihat') {
