@@ -1,12 +1,12 @@
 <!-- SPECKIT START -->
 
-Active feature: **Mushaf Reader Study Context** — branch `011-mushaf-reader-study-context`.
+Active feature: **Mushaf Reader Ayah Similarities** — branch `012-mushaf-reader-ayah-similarities`.
 For technologies, project structure, shell commands, and design artifacts, read the current plan
 and its siblings:
 
-- `specs/011-mushaf-reader-study-context/plan.md` — technical context, project structure, gates (full-stack: .NET read APIs + Angular reader; HTTPS-only local dev)
-- `specs/011-mushaf-reader-study-context/spec.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/`
-- `docs/feature-011-mushaf-reader-study-context/feature-011-mushaf-reader-study-context-planning-report.md` — long-form locked planning report
+- `specs/012-mushaf-ayah-similarities/plan.md` — technical context, project structure, gates (full-stack: .NET read APIs + Angular Mushaf Reader extension; read-only similarity data)
+- `specs/012-mushaf-ayah-similarities/spec.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/`
+- `docs/feature-012-mushaf-reader-ayah-similarities/feature-012-mushaf-reader-ayah-similarities-planning-report.md` — locked planning report (scope + UX + API direction + lazy loading)
 - `docs/feature-011-mushaf-reader-study-context/feature-011-ayah-word-data-capability-report.md` — data-capability report (join paths + DTO field provenance)
 - `Backend/report/database/current-database-tables-and-relationships-report.md` — read-only database baseline
 
