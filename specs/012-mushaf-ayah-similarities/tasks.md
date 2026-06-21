@@ -169,17 +169,17 @@
 
 ### Tests for User Story 4
 
-- [ ] T072 [P] [US4] Add URL parsing and normalization tests for `ayahTab=similar-ayahs` and `ayahTab=mutashabihat` in `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-url-sync.spec.ts`
-- [ ] T073 [P] [US4] Add session/query-param serialization tests for the widened `ayahTab` values in `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader-session.spec.ts`
-- [ ] T074 [P] [US4] Add facade deep-link restoration tests proving only the active similarity detail loads in `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader.facade.spec.ts`
+- [X] T072 [P] [US4] Add URL parsing and normalization tests for `ayahTab=similar-ayahs` and `ayahTab=mutashabihat` in `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-url-sync.spec.ts`
+- [X] T073 [P] [US4] Add session/query-param serialization tests for the widened `ayahTab` values in `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader-session.spec.ts`
+- [X] T074 [P] [US4] Add facade deep-link restoration tests proving only the active similarity detail loads in `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader.facade.spec.ts`
 
 ### Implementation for User Story 4
 
-- [ ] T075 [US4] Widen `VALID_AYAH_TABS` and `normalizeAyahTab` behavior for `similar-ayahs` and `mutashabihat` in `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-url-sync.ts`
-- [ ] T076 [US4] Preserve widened `ayahTab` values during query-param serialization in `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader-session.ts`
-- [ ] T077 [US4] Trigger similar ayahs lazy load when restored state has `ayahTab=similar-ayahs` and a selected ayah in `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader.facade.ts`
-- [ ] T078 [US4] Trigger mutashabihat lazy load when restored state has `ayahTab=mutashabihat` and a selected ayah in `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader.facade.ts`
-- [ ] T079 [US4] Run the US4 frontend tests listed in `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-url-sync.spec.ts`, `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader-session.spec.ts`, and `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader.facade.spec.ts`
+- [X] T075 [US4] Widen `VALID_AYAH_TABS` and `normalizeAyahTab` behavior for `similar-ayahs` and `mutashabihat` in `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-url-sync.ts`
+- [X] T076 [US4] Preserve widened `ayahTab` values during query-param serialization in `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader-session.ts`
+- [X] T077 [US4] Trigger similar ayahs lazy load when restored state has `ayahTab=similar-ayahs` and a selected ayah in `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader.facade.ts`
+- [X] T078 [US4] Trigger mutashabihat lazy load when restored state has `ayahTab=mutashabihat` and a selected ayah in `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader.facade.ts`
+- [X] T079 [US4] Run the US4 frontend tests listed in `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-url-sync.spec.ts`, `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader-session.spec.ts`, and `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader.facade.spec.ts`
 
 **Checkpoint**: User Story 4 is independently functional. URLs restore both new selected-ayah actions.
 
