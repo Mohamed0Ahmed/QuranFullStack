@@ -60,24 +60,24 @@
 
 ### Tests for User Story 1
 
-- [ ] T011 [P] [US1] Add backend integration tests for `similaritySummary` count fields in `Backend/tests/QuranDashboard.Tests/Quran/MushafReader/AyahStudySimilaritySummaryTests.cs`
-- [ ] T012 [P] [US1] Add backend regression test proving `MushafPageResponse` has no similarity counters in `Backend/tests/QuranDashboard.Tests/Quran/MushafReader/MushafPageReadTests.cs`
-- [ ] T013 [P] [US1] Add frontend facade test proving selected ayah study maps `similaritySummary` without loading detail APIs in `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader.facade.spec.ts`
-- [ ] T014 [P] [US1] Add selected ayah section component test for the two new actions and count display in `Frontend/quran-dashboard-ui/src/app/features/mushaf/components/selected-ayah-section/selected-ayah-section.component.spec.ts`
+- [X] T011 [P] [US1] Add backend integration tests for `similaritySummary` count fields in `Backend/tests/QuranDashboard.Tests/Quran/MushafReader/AyahStudySimilaritySummaryTests.cs`
+- [X] T012 [P] [US1] Add backend regression test proving `MushafPageResponse` has no similarity counters in `Backend/tests/QuranDashboard.Tests/Quran/MushafReader/MushafPageReadTests.cs`
+- [X] T013 [P] [US1] Add frontend facade test proving selected ayah study maps `similaritySummary` without loading detail APIs in `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader.facade.spec.ts`
+- [X] T014 [P] [US1] Add selected ayah section component test for the two new actions and count display in `Frontend/quran-dashboard-ui/src/app/features/mushaf/components/selected-ayah-section/selected-ayah-section.component.spec.ts`
 
 ### Implementation for User Story 1
 
-- [ ] T015 [US1] Add `SimilaritySummaryDto` and `SimilaritySummary` to `AyahStudyResponse` in `Backend/application/QuranDashboard.Application.Abstractions/Quran/MushafReader/Responses/AyahStudyResponse.cs`
-- [ ] T016 [US1] Compute `similarAyahCount`, `mutashabihatGroupCount`, and `mutashabihatOccurrenceCount` in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/MushafReader/EfAyahStudyReader.cs`
-- [ ] T017 [US1] Ensure the selected ayah study handler returns the extended response without changing query inputs in `Backend/application/QuranDashboard.Application/Quran/MushafReader/Queries/GetAyahStudy/GetAyahStudyHandler.cs`
-- [ ] T018 [US1] Update cache test fixtures for the new `AyahStudyResponse` constructor field in `Backend/tests/QuranDashboard.Tests/Quran/MushafReader/MushafReaderCacheTests.cs`
-- [ ] T019 [US1] Add `AyahSimilaritySummaryDto` and `similaritySummary` to ayah study frontend DTO/view-model types in `Frontend/quran-dashboard-ui/src/app/features/mushaf/models/mushaf.models.ts`
-- [ ] T020 [US1] Update selected ayah study API mock data to include `similaritySummary` in `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-study-source-catalog.api.mock.ts` and `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader.facade.spec.ts`
-- [ ] T021 [US1] Map `similaritySummary` from API data into selected ayah view state in `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader.facade.ts`
-- [ ] T022 [US1] Add `similar-ayahs` and `mutashabihat` buttons to the selected ayah tab/action nav in `Frontend/quran-dashboard-ui/src/app/features/mushaf/components/selected-ayah-section/selected-ayah-section.component.html`
-- [ ] T023 [US1] Add inputs or computed helpers for displaying the two new action counts in `Frontend/quran-dashboard-ui/src/app/features/mushaf/components/selected-ayah-section/selected-ayah-section.component.ts`
-- [ ] T024 [US1] Update five-action layout styles while preserving RTL and stable panel bounds in `Frontend/quran-dashboard-ui/src/app/features/mushaf/components/selected-ayah-section/selected-ayah-section.component.scss`
-- [ ] T025 [US1] Run the US1 backend and frontend tests listed in `Backend/tests/QuranDashboard.Tests/Quran/MushafReader/AyahStudySimilaritySummaryTests.cs`, `Backend/tests/QuranDashboard.Tests/Quran/MushafReader/MushafPageReadTests.cs`, `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader.facade.spec.ts`, and `Frontend/quran-dashboard-ui/src/app/features/mushaf/components/selected-ayah-section/selected-ayah-section.component.spec.ts`
+- [X] T015 [US1] Add `SimilaritySummaryDto` and `SimilaritySummary` to `AyahStudyResponse` in `Backend/application/QuranDashboard.Application.Abstractions/Quran/MushafReader/Responses/AyahStudyResponse.cs`
+- [X] T016 [US1] Compute `similarAyahCount`, `mutashabihatGroupCount`, and `mutashabihatOccurrenceCount` in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/MushafReader/EfAyahStudyReader.cs`
+- [X] T017 [US1] Ensure the selected ayah study handler returns the extended response without changing query inputs in `Backend/application/QuranDashboard.Application/Quran/MushafReader/Queries/GetAyahStudy/GetAyahStudyHandler.cs`
+- [X] T018 [US1] Update cache test fixtures for the new `AyahStudyResponse` constructor field in `Backend/tests/QuranDashboard.Tests/Quran/MushafReader/MushafReaderCacheTests.cs`
+- [X] T019 [US1] Add `AyahSimilaritySummaryDto` and `similaritySummary` to ayah study frontend DTO/view-model types in `Frontend/quran-dashboard-ui/src/app/features/mushaf/models/mushaf.models.ts`
+- [X] T020 [US1] Update selected ayah study API mock data to include `similaritySummary` in `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-study-source-catalog.api.mock.ts` and `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader.facade.spec.ts`
+- [X] T021 [US1] Map `similaritySummary` from API data into selected ayah view state in `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader.facade.ts`
+- [X] T022 [US1] Add `similar-ayahs` and `mutashabihat` buttons to the selected ayah tab/action nav in `Frontend/quran-dashboard-ui/src/app/features/mushaf/components/selected-ayah-section/selected-ayah-section.component.html`
+- [X] T023 [US1] Add inputs or computed helpers for displaying the two new action counts in `Frontend/quran-dashboard-ui/src/app/features/mushaf/components/selected-ayah-section/selected-ayah-section.component.ts`
+- [X] T024 [US1] Update five-action layout styles while preserving RTL and stable panel bounds in `Frontend/quran-dashboard-ui/src/app/features/mushaf/components/selected-ayah-section/selected-ayah-section.component.scss`
+- [X] T025 [US1] Run the US1 backend and frontend tests listed in `Backend/tests/QuranDashboard.Tests/Quran/MushafReader/AyahStudySimilaritySummaryTests.cs`, `Backend/tests/QuranDashboard.Tests/Quran/MushafReader/MushafPageReadTests.cs`, `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader.facade.spec.ts`, and `Frontend/quran-dashboard-ui/src/app/features/mushaf/components/selected-ayah-section/selected-ayah-section.component.spec.ts`
 
 **Checkpoint**: User Story 1 is independently functional. The selected ayah study area shows counts and two new actions, but details remain lazy.
 
