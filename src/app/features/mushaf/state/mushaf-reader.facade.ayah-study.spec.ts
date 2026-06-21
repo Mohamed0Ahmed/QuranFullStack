@@ -124,6 +124,11 @@ const ayahStudyDto: AyahStudyDto = {
     coveredAyahKeys: ['2:25'],
     html: '<p>إعراب تجريبي</p>',
   },
+  similaritySummary: {
+    similarAyahCount: 2,
+    mutashabihatGroupCount: 2,
+    mutashabihatOccurrenceCount: 3,
+  },
 };
 
 describe('MushafReaderFacade.loadPage', () => {
@@ -173,6 +178,31 @@ describe('MushafReaderFacade.loadAyahStudy', () => {
     expect(facade.ayahStudy()?.translation?.sourceKey).toBe('en-sahih-international');
     expect(facade.ayahStudy()?.fullI3rab?.sourceKey).toBe('muyassar');
     expect(facade.sources().tafsirSource).toBe('ar-muyassar');
+    expect(facade.ayahStudy()?.similaritySummary).toEqual({
+      similarAyahCount: 2,
+      mutashabihatGroupCount: 2,
+      mutashabihatOccurrenceCount: 3,
+    });
+  });
+
+  it('maps similaritySummary without calling similarity detail APIs', () => {
+    const getAyahStudy = vi.fn(() => of({ isSuccess: true, message: 'تم', data: ayahStudyDto }));
+
+    TestBed.configureTestingModule({
+      providers: [
+        MushafReaderFacade,
+        { provide: MushafPagesApi, useValue: { getPage: vi.fn() } },
+        { provide: MushafAyahStudyApi, useValue: { getAyahStudy } },
+        { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis: vi.fn() } },
+        mushafStudySourceCatalogApiProvider,
+      ],
+    });
+
+    const facade = TestBed.inject(MushafReaderFacade);
+    facade.loadAyahStudy('2:25');
+
+    expect(getAyahStudy).toHaveBeenCalledTimes(1);
+    expect(facade.ayahStudy()?.similaritySummary.similarAyahCount).toBe(2);
   });
 });
 
@@ -334,6 +364,7 @@ describe('SelectedAyahSectionComponent', () => {
       tafsir: ayahStudyDto.tafsir,
       translation: ayahStudyDto.translation,
       fullI3rab: ayahStudyDto.fullI3rab,
+      similaritySummary: ayahStudyDto.similaritySummary,
     });
     fixture.componentRef.setInput('loadState', { isLoading: false, isEmpty: false, errorMessage: null });
     fixture.componentRef.setInput('activeTab', 'tafsir');

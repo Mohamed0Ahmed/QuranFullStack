@@ -23,8 +23,19 @@ describe('mushaf-url-sync', () => {
     expect(normalizePanelMode('word')).toBe('word');
     expect(normalizeAyahTab('links')).toBe('tafsir');
     expect(normalizeAyahTab('full-i3rab')).toBe('full-i3rab');
+    expect(normalizeAyahTab('similar-ayahs')).toBe('similar-ayahs');
+    expect(normalizeAyahTab('mutashabihat')).toBe('mutashabihat');
     expect(normalizeWordTab('unknown')).toBe('segments');
     expect(normalizeWordTab('identity')).toBe('identity');
+  });
+
+  it('parses similarity ayah tabs from the URL', () => {
+    expect(
+      parseMushafUrlParams(convertToParamMap({ ayahTab: 'similar-ayahs' })).ayahTab,
+    ).toBe('similar-ayahs');
+    expect(
+      parseMushafUrlParams(convertToParamMap({ ayahTab: 'mutashabihat' })).ayahTab,
+    ).toBe('mutashabihat');
   });
 
   it('parses a full deep-link URL snapshot with natural Quran keys', () => {

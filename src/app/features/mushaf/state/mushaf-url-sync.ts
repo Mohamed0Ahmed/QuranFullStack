@@ -11,7 +11,13 @@ import {
 import { verseKeyFromWordLocation } from '../utils/mushaf-location-keys';
 
 const VALID_PANELS: ReadonlySet<string> = new Set(['ayah', 'word', 'none']);
-const VALID_AYAH_TABS: ReadonlySet<string> = new Set(['tafsir', 'translation', 'full-i3rab']);
+const VALID_AYAH_TABS: ReadonlySet<string> = new Set([
+  'tafsir',
+  'translation',
+  'full-i3rab',
+  'similar-ayahs',
+  'mutashabihat',
+]);
 const VALID_WORD_TABS: ReadonlySet<string> = new Set(['morphology', 'segments', 'i3rab', 'identity']);
 
 /** Parsed, normalized Mushaf reader URL snapshot (natural Quran keys). */

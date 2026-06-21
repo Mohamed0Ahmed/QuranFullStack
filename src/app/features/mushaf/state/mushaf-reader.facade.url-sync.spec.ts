@@ -46,6 +46,11 @@ const ayahStudyDto: AyahStudyDto = {
   tafsir: null,
   translation: null,
   fullI3rab: null,
+  similaritySummary: {
+    similarAyahCount: 0,
+    mutashabihatGroupCount: 0,
+    mutashabihatOccurrenceCount: 0,
+  },
 };
 
 const wordAnalysisDto: WordAnalysisDto = {

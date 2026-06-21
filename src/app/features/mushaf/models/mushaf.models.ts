@@ -171,12 +171,19 @@ export interface FullI3rabEntryDto {
   html: string;
 }
 
+export interface AyahSimilaritySummaryDto {
+  similarAyahCount: number;
+  mutashabihatGroupCount: number;
+  mutashabihatOccurrenceCount: number;
+}
+
 export interface AyahStudyDto {
   ayah: AyahCoreDto;
   selectedSources: SelectedSourcesDto;
   tafsir: TafsirEntryDto | null;
   translation: TranslationEntryDto | null;
   fullI3rab: FullI3rabEntryDto | null;
+  similaritySummary: AyahSimilaritySummaryDto;
 }
 
 /* ============================================================================
@@ -319,6 +326,7 @@ export interface AyahStudyViewModel {
   tafsir: TafsirEntryDto | null;
   translation: TranslationEntryDto | null;
   fullI3rab: FullI3rabEntryDto | null;
+  similaritySummary: AyahSimilaritySummaryDto;
 }
 
 export interface MushafPageViewModel {

@@ -9,31 +9,9 @@ import { MushafStudySourceCatalogApi } from '../../data-access/mushaf-study-sour
 import { MushafWordAnalysisApi } from '../../data-access/mushaf-word-analysis.api';
 import { MushafReaderFacade } from '../../state/mushaf-reader.facade';
 import { MushafReaderPageComponent } from './mushaf-reader-page.component';
+import { ayahStudyDtoMock } from '../../state/mushaf-study-source-catalog.api.mock';
 
-const ayahStudyDto = {
-  ayah: {
-    verseKey: '2:25',
-    surahNumber: 2,
-    surahNameArabic: 'البقرة',
-    ayahNumber: 25,
-    textUthmani: 'نص تجريبي للآية',
-    wordsCount: 5,
-    pageFrom: 5,
-    pageTo: 5,
-    juzNumber: 1,
-    hizbNumber: 1,
-    rubNumber: 1,
-    sajda: null,
-  },
-  selectedSources: {
-    tafsirSource: 'ar-muyassar',
-    translationSource: 'en-sahih-international',
-    fullI3rabSource: 'muyassar',
-  },
-  tafsir: null,
-  translation: null,
-  fullI3rab: null,
-};
+const ayahStudyDto = ayahStudyDtoMock;
 
 const wordAnalysisDto = {
   word: {

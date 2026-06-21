@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import {
   AyahStudyTab,
   AyahStudyViewModel,
+  AYAH_STUDY_TAB_LABELS,
   ResourceLoadState,
   SourceOption,
 } from '../../models/mushaf.models';
@@ -50,4 +51,29 @@ export class SelectedAyahSectionComponent {
     const text = this.study()?.ayah.textUthmani;
     return text ? toStudyAyahDisplayText(text) : '';
   });
+
+  protected readonly tabLabels = AYAH_STUDY_TAB_LABELS;
+
+  protected readonly similarAyahCount = computed(
+    () => this.study()?.similaritySummary.similarAyahCount ?? 0,
+  );
+
+  protected readonly mutashabihatGroupCount = computed(
+    () => this.study()?.similaritySummary.mutashabihatGroupCount ?? 0,
+  );
+
+  protected tabCount(tab: AyahStudyTab): number | null {
+    if (this.loadState().isLoading || !this.study()) {
+      return null;
+    }
+
+    switch (tab) {
+      case 'similar-ayahs':
+        return this.similarAyahCount();
+      case 'mutashabihat':
+        return this.mutashabihatGroupCount();
+      default:
+        return null;
+    }
+  }
 }
