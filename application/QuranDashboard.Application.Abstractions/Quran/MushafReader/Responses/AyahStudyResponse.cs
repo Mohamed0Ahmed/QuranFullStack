@@ -11,7 +11,13 @@ public sealed record AyahStudyResponse(
     SelectedSourcesDto SelectedSources,
     TafsirEntryDto? Tafsir,
     TranslationEntryDto? Translation,
-    FullI3rabEntryDto? FullI3rab);
+    FullI3rabEntryDto? FullI3rab,
+    SimilaritySummaryDto SimilaritySummary);
+
+public sealed record SimilaritySummaryDto(
+    int SimilarAyahCount,
+    int MutashabihatGroupCount,
+    int MutashabihatOccurrenceCount);
 
 public sealed record AyahCoreDto(
     string VerseKey,

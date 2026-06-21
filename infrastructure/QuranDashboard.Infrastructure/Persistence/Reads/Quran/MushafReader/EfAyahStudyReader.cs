@@ -54,13 +54,62 @@ public sealed class EfAyahStudyReader(QuranDashboardDbContext db) : IAyahStudyRe
         var fullI3rab = effectiveFullI3rabKey is not null
             ? await LoadFullI3rabAsync(ayah.Id, effectiveFullI3rabKey, ct)
             : null;
+        var similaritySummary = await LoadSimilaritySummaryAsync(ayah.Id, ct);
 
         return new AyahStudyResponse(
             ayahCore,
             new SelectedSourcesDto(effectiveTafsirKey, effectiveTranslationKey, effectiveFullI3rabKey),
             tafsir,
             translation,
-            fullI3rab);
+            fullI3rab,
+            similaritySummary);
+    }
+
+    private async Task<SimilaritySummaryDto> LoadSimilaritySummaryAsync(int ayahId, CancellationToken ct)
+    {
+        var similarAyahCount = await CountDistinctSimilarAyahsAsync(ayahId, ct);
+        var (groupCount, occurrenceCount) = await CountMutashabihatAsync(ayahId, ct);
+
+        return new SimilaritySummaryDto(similarAyahCount, groupCount, occurrenceCount);
+    }
+
+    private async Task<int> CountDistinctSimilarAyahsAsync(int ayahId, CancellationToken ct)
+    {
+        var outgoing = db.SimilarAyahLinks
+            .AsNoTracking()
+            .Where(link => link.SourceAyahId == ayahId)
+            .Select(link => link.TargetAyahId);
+
+        var incoming = db.SimilarAyahLinks
+            .AsNoTracking()
+            .Where(link => link.TargetAyahId == ayahId)
+            .Select(link => link.SourceAyahId);
+
+        return await outgoing.Union(incoming).Distinct().CountAsync(ct);
+    }
+
+    private async Task<(int GroupCount, int OccurrenceCount)> CountMutashabihatAsync(
+        int ayahId,
+        CancellationToken ct)
+    {
+        var groupIds = db.MutashabihatOccurrences
+            .AsNoTracking()
+            .Where(occurrence => occurrence.AyahId == ayahId)
+            .Select(occurrence => occurrence.GroupId)
+            .Distinct();
+
+        var groupCount = await groupIds.CountAsync(ct);
+        if (groupCount == 0)
+        {
+            return (0, 0);
+        }
+
+        var occurrenceCount = await db.MutashabihatOccurrences
+            .AsNoTracking()
+            .Where(occurrence => groupIds.Contains(occurrence.GroupId))
+            .CountAsync(ct);
+
+        return (groupCount, occurrenceCount);
     }
 
     private async Task<string?> ResolveTafsirSourceKeyAsync(string? requestedKey, CancellationToken ct) =>

@@ -121,7 +121,8 @@ public sealed class MushafReaderCacheTests
                 new SelectedSourcesDto(tafsirSourceKey, translationSourceKey, fullI3rabSourceKey),
                 null,
                 null,
-                null));
+                null,
+                new SimilaritySummaryDto(0, 0, 0)));
         }
     }
 
