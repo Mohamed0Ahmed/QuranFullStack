@@ -170,5 +170,10 @@ public static class DependencyInjection
         services.AddScoped<IAyahSimilaritiesReader>(sp => new CachedAyahSimilaritiesReader(
             sp.GetRequiredService<EfAyahSimilaritiesReader>(),
             sp.GetRequiredService<IMemoryCache>()));
+
+        services.AddScoped<EfAyahMutashabihatReader>();
+        services.AddScoped<IAyahMutashabihatReader>(sp => new CachedAyahMutashabihatReader(
+            sp.GetRequiredService<EfAyahMutashabihatReader>(),
+            sp.GetRequiredService<IMemoryCache>()));
     }
 }

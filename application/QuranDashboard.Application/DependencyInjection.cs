@@ -13,6 +13,7 @@ using QuranDashboard.Application.Quran.MushafReader.Queries.GetMushafPage;
 using QuranDashboard.Application.Quran.MushafReader.Queries.GetAyahStudy;
 using QuranDashboard.Application.Quran.MushafReader.Queries.GetMushafSurahCatalog;
 using QuranDashboard.Application.Quran.MushafReader.Queries.GetMushafStudySourceCatalog;
+using QuranDashboard.Application.Quran.MushafReader.Queries.GetAyahMutashabihat;
 using QuranDashboard.Application.Quran.MushafReader.Queries.GetSimilarAyahs;
 using QuranDashboard.Application.Quran.MushafReader.Queries.GetWordAnalysis;
 
@@ -39,6 +40,7 @@ public static class DependencyInjection
         services.AddScoped<GetMushafStudySourceCatalogHandler>();
         services.AddScoped<GetWordAnalysisHandler>();
         services.AddScoped<GetSimilarAyahsHandler>();
+        services.AddScoped<GetAyahMutashabihatHandler>();
 
         return services;
     }
