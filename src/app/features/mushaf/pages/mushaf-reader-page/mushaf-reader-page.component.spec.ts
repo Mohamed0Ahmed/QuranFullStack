@@ -9,7 +9,7 @@ import { MushafStudySourceCatalogApi } from '../../data-access/mushaf-study-sour
 import { MushafWordAnalysisApi } from '../../data-access/mushaf-word-analysis.api';
 import { MushafReaderFacade } from '../../state/mushaf-reader.facade';
 import { MushafReaderPageComponent } from './mushaf-reader-page.component';
-import { ayahStudyDtoMock, mushafSimilarAyahsApiProvider, mushafStudySourceCatalogApiProvider } from '../../state/mushaf-study-source-catalog.api.mock';
+import { ayahStudyDtoMock, mushafAyahMutashabihatApiProvider, mushafSimilarAyahsApiProvider, mushafStudySourceCatalogApiProvider } from '../../state/mushaf-study-source-catalog.api.mock';
 
 const ayahStudyDto = ayahStudyDtoMock;
 
@@ -117,6 +117,7 @@ describe('MushafReaderPageComponent study layout', () => {
           },
         },
         mushafSimilarAyahsApiProvider,
+        mushafAyahMutashabihatApiProvider,
       ],
     });
 
@@ -197,6 +198,7 @@ describe('MushafReaderPageComponent study layout', () => {
           },
         },
         mushafSimilarAyahsApiProvider,
+        mushafAyahMutashabihatApiProvider,
       ],
     });
 
@@ -274,6 +276,7 @@ describe('MushafReaderPageComponent study layout', () => {
           },
         },
         mushafSimilarAyahsApiProvider,
+        mushafAyahMutashabihatApiProvider,
       ],
     });
 

@@ -349,6 +349,21 @@ describe('SelectedAyahSectionComponent — similarity actions (US1)', () => {
     expect(tabChange).toHaveBeenCalledWith('mutashabihat');
   });
 
+  it('renders the mutashabihat groups card only for the mutashabihat tab', () => {
+    const fixture = TestBed.createComponent(SelectedAyahSectionComponent);
+
+    setInputs(fixture, {
+      study: buildAyahStudyViewModel(),
+      loadState: IDLE,
+      selectedVerseKey: '2:25',
+      activeTab: 'mutashabihat',
+    });
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('qd-mutashabihat-groups-card')).toBeTruthy();
+    expect(root.querySelector('qd-similar-ayahs-card')).toBeNull();
+  });
+
   it('shows zero counts for an ayah without similarity data', () => {
     const fixture = TestBed.createComponent(SelectedAyahSectionComponent);
     const study = buildAyahStudyViewModel('1:1');

@@ -3,6 +3,7 @@ import { of } from 'rxjs';
 
 import { MushafStudySourceCatalogApi } from '../data-access/mushaf-study-sources.api';
 import { MushafSimilarAyahsApi } from '../data-access/mushaf-similar-ayahs.api';
+import { MushafAyahMutashabihatApi } from '../data-access/mushaf-ayah-mutashabihat.api';
 import { AyahStudyDto } from '../models/mushaf.models';
 
 export const ayahStudyDtoMock: AyahStudyDto = {
@@ -56,6 +57,19 @@ export const mushafSimilarAyahsApiProvider = {
         isSuccess: true,
         message: 'ok',
         data: { verseKey: '2:25', count: 0, items: [] },
+      }),
+    ),
+  },
+};
+
+export const mushafAyahMutashabihatApiProvider = {
+  provide: MushafAyahMutashabihatApi,
+  useValue: {
+    getAyahMutashabihat: vi.fn(() =>
+      of({
+        isSuccess: true,
+        message: 'ok',
+        data: { verseKey: '2:25', groupCount: 0, groups: [] },
       }),
     ),
   },

@@ -5,10 +5,10 @@ import { BehaviorSubject, of } from 'rxjs';
 
 import { MushafAyahStudyApi } from '../data-access/mushaf-ayah-study.api';
 import { MushafPagesApi } from '../data-access/mushaf-pages.api';
-import { MushafSimilarAyahsApi } from '../data-access/mushaf-similar-ayahs.api';
+import { MushafAyahMutashabihatApi } from '../data-access/mushaf-ayah-mutashabihat.api';
 import { MushafWordAnalysisApi } from '../data-access/mushaf-word-analysis.api';
 import { MushafReaderFacade } from './mushaf-reader.facade';
-import { mushafAyahMutashabihatApiProvider, mushafStudySourceCatalogApiProvider } from './mushaf-study-source-catalog.api.mock';
+import { mushafSimilarAyahsApiProvider, mushafStudySourceCatalogApiProvider } from './mushaf-study-source-catalog.api.mock';
 
 const pageDto = {
   pageNumber: 5,
@@ -45,43 +45,76 @@ const ayahStudyDto = {
   translation: null,
   fullI3rab: null,
   similaritySummary: {
-    similarAyahCount: 2,
-    mutashabihatGroupCount: 0,
-    mutashabihatOccurrenceCount: 0,
+    similarAyahCount: 0,
+    mutashabihatGroupCount: 2,
+    mutashabihatOccurrenceCount: 3,
   },
 };
 
-const similarAyahsDto = {
+const mutashabihatDto = {
   verseKey: '2:25',
-  count: 1,
-  items: [
+  groupCount: 1,
+  groups: [
     {
-      targetVerseKey: '2:26',
-      surahNumber: 2,
-      surahNameArabic: 'البقرة',
-      ayahNumber: 26,
-      pageNumber: 5,
-      juzNumber: 1,
-      hizbNumber: 1,
-      rubNumber: 2,
-      textUthmani: 'نص-مرتبط-تجريبي',
-      score: 80,
-      coverage: 90,
-      matchedWordsCount: 3,
-      relationshipDirection: 'bidirectional' as const,
-      hasReverseLink: true,
+      groupKey: 'mutashabihat:90001',
+      sourceGroupId: 90001,
+      representativeVerseKey: '2:25',
+      representativeWordFrom: 1,
+      representativeWordTo: 2,
+      phraseTextUthmani: 'عبارة-تجريبية-أولى',
+      occurrenceCount: 2,
+      distinctAyahCount: 2,
+      distinctSurahCount: 1,
+      selectedOccurrences: [
+        {
+          verseKey: '2:25',
+          wordFrom: 1,
+          wordTo: 2,
+          isRepresentative: true,
+          phraseTextUthmani: 'عبارة-تجريبية-أولى',
+        },
+      ],
+      occurrences: [
+        {
+          verseKey: '2:25',
+          surahNumber: 2,
+          surahNameArabic: 'البقرة',
+          ayahNumber: 25,
+          pageNumber: 5,
+          wordFrom: 1,
+          wordTo: 2,
+          isSelectedAyah: true,
+          isRepresentative: true,
+          textUthmani: 'نص-مجموعة-أولى',
+          phraseTextUthmani: 'عبارة-تجريبية-أولى',
+        },
+        {
+          verseKey: '2:26',
+          surahNumber: 2,
+          surahNameArabic: 'البقرة',
+          ayahNumber: 26,
+          pageNumber: 5,
+          wordFrom: 1,
+          wordTo: 1,
+          isSelectedAyah: false,
+          isRepresentative: false,
+          textUthmani: 'نص-مجموعة-ثان',
+          phraseTextUthmani: 'كلمة-تجريبية',
+        },
+      ],
     },
   ],
 };
 
 function createFacade(initialParams: Record<string, string>) {
   const queryParamMap$ = new BehaviorSubject(convertToParamMap(initialParams));
-  const getSimilarAyahs = vi.fn(() => of({ isSuccess: true, message: 'ok', data: similarAyahsDto }));
+  const getAyahMutashabihat = vi.fn(() => of({ isSuccess: true, message: 'ok', data: mutashabihatDto }));
 
   TestBed.configureTestingModule({
     providers: [
       MushafReaderFacade,
       mushafStudySourceCatalogApiProvider,
+      mushafSimilarAyahsApiProvider,
       {
         provide: ActivatedRoute,
         useValue: { queryParamMap: queryParamMap$.asObservable() },
@@ -103,10 +136,9 @@ function createFacade(initialParams: Record<string, string>) {
         },
       },
       {
-        provide: MushafSimilarAyahsApi,
-        useValue: { getSimilarAyahs },
+        provide: MushafAyahMutashabihatApi,
+        useValue: { getAyahMutashabihat },
       },
-      mushafAyahMutashabihatApiProvider,
       {
         provide: MushafWordAnalysisApi,
         useValue: {
@@ -119,49 +151,49 @@ function createFacade(initialParams: Record<string, string>) {
   const facade = TestBed.inject(MushafReaderFacade);
   facade.bindToRoute(TestBed.inject(ActivatedRoute));
 
-  return { facade, getSimilarAyahs, queryParamMap$ };
+  return { facade, getAyahMutashabihat, queryParamMap$ };
 }
 
-describe('MushafReaderFacade similar ayahs lazy loading (US2)', () => {
-  it('does not request similar ayahs detail until the similar-ayahs tab is active', () => {
-    const { facade, getSimilarAyahs } = createFacade({ page: '5', ayah: '2:25', panel: 'ayah' });
+describe('MushafReaderFacade mutashabihat lazy loading (US3)', () => {
+  it('does not request mutashabihat detail until the mutashabihat tab is active', () => {
+    const { facade, getAyahMutashabihat } = createFacade({ page: '5', ayah: '2:25', panel: 'ayah' });
 
     expect(facade.selectedAyahKey()).toBe('2:25');
     expect(facade.ayahTab()).toBe('tafsir');
-    expect(getSimilarAyahs).not.toHaveBeenCalled();
-    expect(facade.similarAyahs()).toBeNull();
+    expect(getAyahMutashabihat).not.toHaveBeenCalled();
+    expect(facade.mutashabihat()).toBeNull();
   });
 
-  it('lazy-loads similar ayahs when the similar-ayahs tab becomes active', async () => {
-    const { facade, getSimilarAyahs } = createFacade({
+  it('lazy-loads mutashabihat when the mutashabihat tab becomes active', async () => {
+    const { facade, getAyahMutashabihat } = createFacade({
       page: '5',
       ayah: '2:25',
       panel: 'ayah',
-      ayahTab: 'similar-ayahs',
+      ayahTab: 'mutashabihat',
     });
 
     await vi.waitFor(() => {
-      expect(getSimilarAyahs).toHaveBeenCalledWith('2:25');
+      expect(getAyahMutashabihat).toHaveBeenCalledWith('2:25');
     });
 
-    expect(facade.similarAyahs()).toEqual(similarAyahsDto);
-    expect(facade.similarAyahsLoadState()).toEqual({
+    expect(facade.mutashabihat()).toEqual(mutashabihatDto);
+    expect(facade.mutashabihatLoadState()).toEqual({
       isLoading: false,
       isEmpty: false,
       errorMessage: null,
     });
   });
 
-  it('dedupes repeated similar ayahs requests via the reader cache', async () => {
-    const { facade, getSimilarAyahs } = createFacade({
+  it('dedupes repeated mutashabihat requests via the reader cache', async () => {
+    const { facade, getAyahMutashabihat } = createFacade({
       page: '5',
       ayah: '2:25',
       panel: 'ayah',
-      ayahTab: 'similar-ayahs',
+      ayahTab: 'mutashabihat',
     });
 
     await vi.waitFor(() => {
-      expect(facade.similarAyahs()).toEqual(similarAyahsDto);
+      expect(facade.mutashabihat()).toEqual(mutashabihatDto);
     });
 
     facade.applyUrlState({
@@ -179,12 +211,12 @@ describe('MushafReaderFacade similar ayahs lazy loading (US2)', () => {
       ayah: '2:25',
       word: null,
       segment: null,
-      ayahTab: 'similar-ayahs',
+      ayahTab: 'mutashabihat',
       wordTab: 'segments',
       sources: { tafsirSource: null, translationSource: null, fullI3rabSource: null },
     });
 
-    expect(getSimilarAyahs).toHaveBeenCalledTimes(1);
-    expect(facade.similarAyahs()).toEqual(similarAyahsDto);
+    expect(getAyahMutashabihat).toHaveBeenCalledTimes(1);
+    expect(facade.mutashabihat()).toEqual(mutashabihatDto);
   });
 });

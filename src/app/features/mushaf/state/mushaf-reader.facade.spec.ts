@@ -9,7 +9,7 @@ import { MushafPagesApi } from '../data-access/mushaf-pages.api';
 import { MushafSimilarAyahsApi } from '../data-access/mushaf-similar-ayahs.api';
 import { MushafWordAnalysisApi } from '../data-access/mushaf-word-analysis.api';
 import { MushafReaderFacade } from './mushaf-reader.facade';
-import { mushafSimilarAyahsApiProvider, mushafStudySourceCatalogApiProvider } from './mushaf-study-source-catalog.api.mock';
+import { mushafAyahMutashabihatApiProvider, mushafSimilarAyahsApiProvider, mushafStudySourceCatalogApiProvider } from './mushaf-study-source-catalog.api.mock';
 
 const pageDto = {
   pageNumber: 1,
@@ -160,6 +160,7 @@ function createWordNavigationFacade(initialWordLocation: string) {
       { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis } },
       mushafStudySourceCatalogApiProvider,
       mushafSimilarAyahsApiProvider,
+      mushafAyahMutashabihatApiProvider,
     ],
   });
 
@@ -183,6 +184,8 @@ describe('MushafReaderFacade.loadPage', () => {
         { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis: vi.fn() } },
         mushafStudySourceCatalogApiProvider,
         mushafSimilarAyahsApiProvider,
+        mushafAyahMutashabihatApiProvider,
+      mushafAyahMutashabihatApiProvider,
       ],
     });
 
@@ -205,6 +208,8 @@ describe('MushafReaderFacade.loadPage', () => {
         { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis: vi.fn() } },
         mushafStudySourceCatalogApiProvider,
         mushafSimilarAyahsApiProvider,
+        mushafAyahMutashabihatApiProvider,
+      mushafAyahMutashabihatApiProvider,
       ],
     });
 
@@ -235,6 +240,8 @@ describe('MushafReaderFacade.loadPage', () => {
         { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis: vi.fn() } },
         mushafStudySourceCatalogApiProvider,
         mushafSimilarAyahsApiProvider,
+        mushafAyahMutashabihatApiProvider,
+      mushafAyahMutashabihatApiProvider,
       ],
     });
 
@@ -257,6 +264,8 @@ describe('MushafReaderFacade surah jump', () => {
         { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis: vi.fn() } },
         mushafStudySourceCatalogApiProvider,
         mushafSimilarAyahsApiProvider,
+        mushafAyahMutashabihatApiProvider,
+      mushafAyahMutashabihatApiProvider,
       ],
     });
 
@@ -318,6 +327,8 @@ describe('MushafReaderFacade word analysis cancellation', () => {
         { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis } },
         mushafStudySourceCatalogApiProvider,
         mushafSimilarAyahsApiProvider,
+        mushafAyahMutashabihatApiProvider,
+      mushafAyahMutashabihatApiProvider,
       ],
     });
 
@@ -358,6 +369,8 @@ describe('MushafReaderFacade ayah study similarity summary (US1)', () => {
         { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis: vi.fn() } },
         mushafStudySourceCatalogApiProvider,
         mushafSimilarAyahsApiProvider,
+        mushafAyahMutashabihatApiProvider,
+      mushafAyahMutashabihatApiProvider,
       ],
     });
 
@@ -403,6 +416,7 @@ describe('MushafReaderFacade similarity ayah tabs', () => {
           { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis: vi.fn() } },
           mushafStudySourceCatalogApiProvider,
           { provide: MushafSimilarAyahsApi, useValue: { getSimilarAyahs } },
+          mushafAyahMutashabihatApiProvider,
         ],
       });
 
@@ -445,6 +459,9 @@ describe('MushafReaderFacade similarity ayah tabs', () => {
           { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis: vi.fn() } },
           mushafStudySourceCatalogApiProvider,
           mushafSimilarAyahsApiProvider,
+          mushafAyahMutashabihatApiProvider,
+        mushafAyahMutashabihatApiProvider,
+      mushafAyahMutashabihatApiProvider,
         ],
       });
 
@@ -496,6 +513,7 @@ describe('MushafReaderFacade similarity ayah tabs', () => {
           { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis: vi.fn() } },
           mushafStudySourceCatalogApiProvider,
           { provide: MushafSimilarAyahsApi, useValue: { getSimilarAyahs } },
+          mushafAyahMutashabihatApiProvider,
         ],
       });
 

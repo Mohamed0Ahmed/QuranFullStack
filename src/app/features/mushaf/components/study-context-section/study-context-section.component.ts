@@ -6,6 +6,7 @@ import {
   AyahStudyViewModel,
   ResourceLoadState,
   SimilarAyahsDto,
+  AyahMutashabihatDto,
   SourceOption,
   WordAnalysisViewModel,
 } from '../../models/mushaf.models';
@@ -28,6 +29,8 @@ export class StudyContextSectionComponent {
   readonly ayahLoadState = input.required<ResourceLoadState>();
   readonly similarAyahs = input<SimilarAyahsDto | null>(null);
   readonly similarAyahsLoadState = input.required<ResourceLoadState>();
+  readonly mutashabihat = input<AyahMutashabihatDto | null>(null);
+  readonly mutashabihatLoadState = input.required<ResourceLoadState>();
   readonly activeAyahTab = input<AyahStudyTab>('tafsir');
   readonly selectedVerseKey = input<string | null>(null);
 

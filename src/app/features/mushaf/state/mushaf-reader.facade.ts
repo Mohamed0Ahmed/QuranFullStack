@@ -5,6 +5,7 @@ import { Subscription } from 'rxjs';
 import { MushafAyahStudyApi } from '../data-access/mushaf-ayah-study.api';
 import { MushafPagesApi } from '../data-access/mushaf-pages.api';
 import { MushafSimilarAyahsApi } from '../data-access/mushaf-similar-ayahs.api';
+import { MushafAyahMutashabihatApi } from '../data-access/mushaf-ayah-mutashabihat.api';
 import { MushafStudySourceCatalogApi } from '../data-access/mushaf-study-sources.api';
 import { MushafWordAnalysisApi } from '../data-access/mushaf-word-analysis.api';
 import {
@@ -22,6 +23,7 @@ import {
   PanelMode,
   ResourceLoadState,
   SimilarAyahsDto,
+  AyahMutashabihatDto,
   SourceOption,
   WordAnalysisTab,
   WordAnalysisViewModel,
@@ -50,6 +52,7 @@ import {
   parseMushafUrlParams,
 } from './mushaf-url-sync';
 import { SimilarAyahsLoadRunner } from './mushaf-similar-ayahs-load.runner';
+import { MutashabihatLoadRunner } from './mushaf-mutashabihat-load.runner';
 import { WordAnalysisLoadRunner } from './mushaf-word-analysis-load.runner';
 
 /**
@@ -63,6 +66,7 @@ export class MushafReaderFacade {
   private readonly pagesApi = inject(MushafPagesApi);
   private readonly ayahStudyApi = inject(MushafAyahStudyApi);
   private readonly similarAyahsApi = inject(MushafSimilarAyahsApi);
+  private readonly mutashabihatApi = inject(MushafAyahMutashabihatApi);
   private readonly studySourceCatalogApi = inject(MushafStudySourceCatalogApi);
   private readonly wordAnalysisApi = inject(MushafWordAnalysisApi);
   private readonly readerCache = inject(MushafReaderCache);
@@ -84,6 +88,7 @@ export class MushafReaderFacade {
   private readonly _page = signal<MushafPageViewModel | null>(null);
   private readonly _ayahStudy = signal<AyahStudyViewModel | null>(null);
   private readonly _similarAyahs = signal<SimilarAyahsDto | null>(null);
+  private readonly _mutashabihat = signal<AyahMutashabihatDto | null>(null);
   private readonly _wordAnalysis = signal<WordAnalysisViewModel | null>(null);
   private readonly _surahCatalogByJuz = signal<readonly MushafSurahJuzGroupDto[]>(MUSHAF_SURAH_JUZ_GROUPS);
   private readonly _tafsirSourceOptions = signal<SourceOption[]>([]);
@@ -93,6 +98,7 @@ export class MushafReaderFacade {
   private wordAnalysisRequestToken = 0;
   private ayahStudyRequestToken = 0;
   private similarAyahsRequestToken = 0;
+  private mutashabihatRequestToken = 0;
 
   private readonly wordAnalysisLoadRunner = new WordAnalysisLoadRunner({
     getPage: () => this._page(),
@@ -124,9 +130,19 @@ export class MushafReaderFacade {
     readerCache: this.readerCache,
   });
 
+  private readonly mutashabihatLoadRunner = new MutashabihatLoadRunner({
+    setMutashabihat: (value) => this._mutashabihat.set(value),
+    setLoadState: (state) => this._mutashabihatLoadState.set(state),
+    bumpRequestToken: () => ++this.mutashabihatRequestToken,
+    getRequestToken: () => this.mutashabihatRequestToken,
+    mutashabihatApi: this.mutashabihatApi,
+    readerCache: this.readerCache,
+  });
+
   private readonly _pageLoadState = signal<ResourceLoadState>(DEFAULT_MUSHAF_READER_STATE.page);
   private readonly _ayahStudyLoadState = signal<ResourceLoadState>(DEFAULT_MUSHAF_READER_STATE.ayahStudy);
   private readonly _similarAyahsLoadState = signal<ResourceLoadState>(DEFAULT_MUSHAF_READER_STATE.similarAyahs);
+  private readonly _mutashabihatLoadState = signal<ResourceLoadState>(DEFAULT_MUSHAF_READER_STATE.mutashabihat);
   private readonly _wordAnalysisLoadState = signal<ResourceLoadState>(DEFAULT_MUSHAF_READER_STATE.wordAnalysis);
 
   readonly pageNumber = this._pageNumber.asReadonly();
@@ -141,6 +157,7 @@ export class MushafReaderFacade {
   readonly page = this._page.asReadonly();
   readonly ayahStudy = this._ayahStudy.asReadonly();
   readonly similarAyahs = this._similarAyahs.asReadonly();
+  readonly mutashabihat = this._mutashabihat.asReadonly();
   readonly wordAnalysis = this._wordAnalysis.asReadonly();
   readonly surahCatalogByJuz = this._surahCatalogByJuz.asReadonly();
   readonly tafsirSourceOptions = this._tafsirSourceOptions.asReadonly();
@@ -150,6 +167,7 @@ export class MushafReaderFacade {
   readonly pageLoadState = this._pageLoadState.asReadonly();
   readonly ayahStudyLoadState = this._ayahStudyLoadState.asReadonly();
   readonly similarAyahsLoadState = this._similarAyahsLoadState.asReadonly();
+  readonly mutashabihatLoadState = this._mutashabihatLoadState.asReadonly();
   readonly wordAnalysisLoadState = this._wordAnalysisLoadState.asReadonly();
 
   readonly state = computed<MushafReaderState>(() => ({
@@ -165,6 +183,7 @@ export class MushafReaderFacade {
     ayahStudy: this._ayahStudyLoadState(),
     wordAnalysis: this._wordAnalysisLoadState(),
     similarAyahs: this._similarAyahsLoadState(),
+    mutashabihat: this._mutashabihatLoadState(),
   }));
 
   /** Subscribes to query params and hydrates state for deep links (page → ayah → word). */
@@ -418,6 +437,7 @@ export class MushafReaderFacade {
         clearAyahSelection: () => {
           this.ayahStudyLoadRunner.clearPending();
           this.similarAyahsLoadRunner.clearData();
+          this.mutashabihatLoadRunner.clearData();
           this._selectedAyahKey.set(null);
           this._ayahStudy.set(null);
           this._ayahStudyLoadState.set({ isLoading: false, isEmpty: false, errorMessage: null });
@@ -429,6 +449,7 @@ export class MushafReaderFacade {
 
           if (verseKeyChanged) {
             this.similarAyahsLoadRunner.clearData();
+            this.mutashabihatLoadRunner.clearData();
           }
 
           if (reload) {
@@ -443,6 +464,7 @@ export class MushafReaderFacade {
     );
 
     this.syncSimilarAyahsDetail(snapshot.ayah, snapshot.ayahTab);
+    this.syncMutashabihatDetail(snapshot.ayah, snapshot.ayahTab);
   }
 
   private syncSimilarAyahsDetail(verseKey: string | null, ayahTab: AyahStudyTab): void {
@@ -451,5 +473,13 @@ export class MushafReaderFacade {
     }
 
     this.similarAyahsLoadRunner.loadImmediate(verseKey);
+  }
+
+  private syncMutashabihatDetail(verseKey: string | null, ayahTab: AyahStudyTab): void {
+    if (!verseKey || ayahTab !== 'mutashabihat') {
+      return;
+    }
+
+    this.mutashabihatLoadRunner.loadImmediate(verseKey);
   }
 }

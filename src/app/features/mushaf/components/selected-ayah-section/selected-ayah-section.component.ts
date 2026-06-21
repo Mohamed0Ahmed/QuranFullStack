@@ -7,10 +7,12 @@ import {
   AYAH_STUDY_TAB_LABELS,
   ResourceLoadState,
   SimilarAyahsDto,
+  AyahMutashabihatDto,
   SourceOption,
 } from '../../models/mushaf.models';
 import { SourceSelectorComponent } from '../source-selector/source-selector.component';
 import { SimilarAyahsCardComponent } from '../similar-ayahs-card/similar-ayahs-card.component';
+import { MutashabihatGroupsCardComponent } from '../mutashabihat-groups-card/mutashabihat-groups-card.component';
 import { TafsirCardComponent } from '../tafsir-card/tafsir-card.component';
 import { TranslationCardComponent } from '../translation-card/translation-card.component';
 import { FullI3rabCardComponent } from '../full-i3rab-card/full-i3rab-card.component';
@@ -23,6 +25,7 @@ import { toStudyAyahDisplayText } from '../../utils/mushaf-verse-key-display';
     CommonModule,
     SourceSelectorComponent,
     SimilarAyahsCardComponent,
+    MutashabihatGroupsCardComponent,
     TafsirCardComponent,
     TranslationCardComponent,
     FullI3rabCardComponent,
@@ -38,6 +41,12 @@ export class SelectedAyahSectionComponent {
   readonly loadState = input.required<ResourceLoadState>();
   readonly similarAyahs = input<SimilarAyahsDto | null>(null);
   readonly similarAyahsLoadState = input<ResourceLoadState>({
+    isLoading: false,
+    isEmpty: false,
+    errorMessage: null,
+  });
+  readonly mutashabihat = input<AyahMutashabihatDto | null>(null);
+  readonly mutashabihatLoadState = input<ResourceLoadState>({
     isLoading: false,
     isEmpty: false,
     errorMessage: null,

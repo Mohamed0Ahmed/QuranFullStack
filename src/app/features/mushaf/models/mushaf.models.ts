@@ -207,6 +207,53 @@ export const SIMILAR_AYAHS_EMPTY_MESSAGE =
 
 export const SIMILAR_AYAHS_LOADING_MESSAGE = 'جارٍ تحميل الآيات القريبة...';
 
+export interface MutashabihatSelectedOccurrenceDto {
+  verseKey: string;
+  wordFrom: number;
+  wordTo: number;
+  isRepresentative: boolean;
+  phraseTextUthmani: string | null;
+}
+
+export interface MutashabihatOccurrenceDto {
+  verseKey: string;
+  surahNumber: number;
+  surahNameArabic: string;
+  ayahNumber: number;
+  pageNumber: number;
+  wordFrom: number;
+  wordTo: number;
+  isSelectedAyah: boolean;
+  isRepresentative: boolean;
+  textUthmani: string;
+  phraseTextUthmani: string | null;
+}
+
+export interface MutashabihatGroupDto {
+  groupKey: string;
+  sourceGroupId: number;
+  representativeVerseKey: string;
+  representativeWordFrom: number;
+  representativeWordTo: number;
+  phraseTextUthmani: string | null;
+  occurrenceCount: number;
+  distinctAyahCount: number;
+  distinctSurahCount: number;
+  selectedOccurrences: MutashabihatSelectedOccurrenceDto[];
+  occurrences: MutashabihatOccurrenceDto[];
+}
+
+export interface AyahMutashabihatDto {
+  verseKey: string;
+  groupCount: number;
+  groups: MutashabihatGroupDto[];
+}
+
+export const MUTASHABIHAT_EMPTY_MESSAGE =
+  'لا توجد متشابهات لفظية مسجلة لهذه الآية في البيانات الحالية.';
+
+export const MUTASHABIHAT_LOADING_MESSAGE = 'جارٍ تحميل المتشابهات اللفظية...';
+
 export interface AyahStudyDto {
   ayah: AyahCoreDto;
   selectedSources: SelectedSourcesDto;
@@ -400,6 +447,7 @@ export interface MushafReaderState {
   ayahStudy: ResourceLoadState;
   wordAnalysis: ResourceLoadState;
   similarAyahs: ResourceLoadState;
+  mutashabihat: ResourceLoadState;
 }
 
 /** Stable, natural Quran keys used in the URL query params. */
@@ -434,4 +482,5 @@ export const DEFAULT_MUSHAF_READER_STATE: MushafReaderState = {
   ayahStudy: { isLoading: false, isEmpty: false, errorMessage: null },
   wordAnalysis: { isLoading: false, isEmpty: false, errorMessage: null },
   similarAyahs: { isLoading: false, isEmpty: false, errorMessage: null },
+  mutashabihat: { isLoading: false, isEmpty: false, errorMessage: null },
 };
