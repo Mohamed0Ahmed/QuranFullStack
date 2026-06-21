@@ -165,5 +165,10 @@ public static class DependencyInjection
         services.AddScoped<IWordAnalysisReader>(sp => new CachedWordAnalysisReader(
             sp.GetRequiredService<EfWordAnalysisReader>(),
             sp.GetRequiredService<IMemoryCache>()));
+
+        services.AddScoped<EfAyahSimilaritiesReader>();
+        services.AddScoped<IAyahSimilaritiesReader>(sp => new CachedAyahSimilaritiesReader(
+            sp.GetRequiredService<EfAyahSimilaritiesReader>(),
+            sp.GetRequiredService<IMemoryCache>()));
     }
 }
