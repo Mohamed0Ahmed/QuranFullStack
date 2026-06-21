@@ -2,7 +2,6 @@ using QuranDashboard.Application.Abstractions.Quran.MushafReader;
 using QuranDashboard.Application.Abstractions.Quran.MushafReader.Responses;
 using QuranDashboard.Domain.Quran.MushafPages;
 using QuranDashboard.Domain.Quran.Navigation;
-using QuranDashboard.Domain.Quran.Words;
 using QuranDashboard.Infrastructure.Persistence;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.MushafReader;
@@ -36,12 +35,27 @@ public sealed class EfMushafPageReader(QuranDashboardDbContext db) : IMushafPage
             return null;
         }
 
+        // Project only the word + ayah fields the page view consumes, instead of
+        // materializing the full QuranWord + Ayah graphs via Include(.Ayah).
         var words = await db.QuranWords
             .AsNoTracking()
             .Where(w => w.PageNumber == pageNumber)
-            .Include(w => w.Ayah)
             .OrderBy(w => w.LineNumber)
             .ThenBy(w => w.LineWordOrder)
+            .Select(w => new PageWordRow(
+                w.Location,
+                w.AyahId,
+                w.Ayah.VerseKey,
+                w.SurahNumber,
+                w.AyahNumber,
+                w.WordNumber,
+                w.LineNumber,
+                w.LineWordOrder,
+                w.TextUthmani,
+                w.IsAyahMarker,
+                w.Ayah.JuzNumber,
+                w.Ayah.HizbNumber,
+                w.Ayah.RubNumber))
             .ToListAsync(ct);
 
         if (words.Count == 0)
@@ -74,19 +88,14 @@ public sealed class EfMushafPageReader(QuranDashboardDbContext db) : IMushafPage
 
         var firstWord = orderedWords[0];
         var lastWord = orderedWords[^1];
-        var ayahRange = new AyahRange(firstWord.Ayah.VerseKey, lastWord.Ayah.VerseKey);
-
-        var distinctAyahs = words
-            .Select(w => w.Ayah)
-            .DistinctBy(a => a.Id)
-            .ToList();
+        var ayahRange = new AyahRange(firstWord.VerseKey, lastWord.VerseKey);
 
         var navigation = new PageNavigationSummary(
-            distinctAyahs.Where(a => a.JuzNumber.HasValue).Select(a => (int)a.JuzNumber!.Value).Distinct().OrderBy(n => n).ToList(),
-            distinctAyahs.Where(a => a.HizbNumber.HasValue).Select(a => (int)a.HizbNumber!.Value).Distinct().OrderBy(n => n).ToList(),
-            distinctAyahs.Where(a => a.RubNumber.HasValue).Select(a => (int)a.RubNumber!.Value).Distinct().OrderBy(n => n).ToList());
+            words.Where(w => w.JuzNumber.HasValue).Select(w => (int)w.JuzNumber!.Value).Distinct().OrderBy(n => n).ToList(),
+            words.Where(w => w.HizbNumber.HasValue).Select(w => (int)w.HizbNumber!.Value).Distinct().OrderBy(n => n).ToList(),
+            words.Where(w => w.RubNumber.HasValue).Select(w => (int)w.RubNumber!.Value).Distinct().OrderBy(n => n).ToList());
 
-        var ayahIds = distinctAyahs.Select(a => a.Id).ToList();
+        var ayahIds = words.Select(w => w.AyahId).Distinct().ToList();
 
         var wordsByLine = words
             .GroupBy(w => w.LineNumber)
@@ -117,7 +126,7 @@ public sealed class EfMushafPageReader(QuranDashboardDbContext db) : IMushafPage
     private async Task<IReadOnlyList<PageMarkerDto>> BuildMarkersAsync(
         int pageNumber,
         List<int> ayahIds,
-        List<QuranWord> words,
+        List<PageWordRow> words,
         CancellationToken ct)
     {
         var ayahFirstWord = words
@@ -164,22 +173,22 @@ public sealed class EfMushafPageReader(QuranDashboardDbContext db) : IMushafPage
         string markerType,
         int markerNumber,
         int ayahId,
-        IReadOnlyDictionary<int, QuranWord> ayahFirstWord,
+        IReadOnlyDictionary<int, PageWordRow> ayahFirstWord,
         string? sajdahType)
     {
         var word = ayahFirstWord[ayahId];
         return new PageMarkerDto(
             markerType,
             markerNumber,
-            word.Ayah.VerseKey,
+            word.VerseKey,
             word.LineNumber,
             word.Location,
             sajdahType);
     }
 
-    private static MushafWordDto MapWord(QuranWord word) => new(
+    private static MushafWordDto MapWord(PageWordRow word) => new(
         word.Location,
-        word.Ayah.VerseKey,
+        word.VerseKey,
         word.WordNumber,
         word.LineWordOrder,
         word.TextUthmani,
@@ -199,4 +208,23 @@ public sealed class EfMushafPageReader(QuranDashboardDbContext db) : IMushafPage
         SajdahType.Optional => "optional",
         _ => "required",
     };
+
+    /// <summary>
+    /// Lean projected row carrying only the word and ayah fields the page view
+    /// consumes (avoiding full QuranWord + Ayah graph materialization).
+    /// </summary>
+    private sealed record PageWordRow(
+        string Location,
+        int AyahId,
+        string VerseKey,
+        short SurahNumber,
+        short AyahNumber,
+        short WordNumber,
+        short LineNumber,
+        short LineWordOrder,
+        string TextUthmani,
+        bool IsAyahMarker,
+        short? JuzNumber,
+        short? HizbNumber,
+        short? RubNumber);
 }

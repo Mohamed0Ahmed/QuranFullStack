@@ -8,6 +8,8 @@ public sealed class ImportTestFixture : IAsyncLifetime
         .WithImage("postgres:16-alpine")
         .Build();
 
+    private ServiceProvider? _rootProvider;
+
     public string SourceRoot { get; private set; } = string.Empty;
 
     public async Task InitializeAsync()
@@ -24,30 +26,41 @@ public sealed class ImportTestFixture : IAsyncLifetime
             throw new DirectoryNotFoundException($"Import source staging tree was not found: {SourceRoot}");
         }
 
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        // Single owned root provider for the whole fixture; disposed in
+        // DisposeAsync so neither providers nor scopes leak across tests or
+        // per-call rebuilds. Mirrors MushafReaderTestFixture's provider strategy.
+        _rootProvider = BuildServiceProvider();
+
+        await using var scope = _rootProvider.CreateAsyncScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         await dbContext.Database.MigrateAsync();
     }
 
     public async Task DisposeAsync()
     {
+        if (_rootProvider is not null)
+        {
+            await _rootProvider.DisposeAsync();
+            _rootProvider = null;
+        }
+
         await postgresContainer.DisposeAsync();
     }
 
+    /// <summary>
+    /// Returns the fixture's single shared root service provider. Callers should
+    /// resolve scoped services through <c>CreateAsyncScope()</c> and dispose that
+    /// scope (the root provider is owned and disposed by the fixture).
+    /// </summary>
     public ServiceProvider CreateServiceProvider()
     {
-        var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["ConnectionStrings:QuranDashboardDb"] = postgresContainer.GetConnectionString()
-            })
-            .Build();
+        if (_rootProvider is null)
+        {
+            throw new InvalidOperationException(
+                $"{nameof(ImportTestFixture)} has not been initialized. Ensure it is used as a shared fixture (ICollectionFixture / collection fixture).");
+        }
 
-        return new ServiceCollection()
-            .AddSingleton<IConfiguration>(configuration)
-            .AddApplication()
-            .AddInfrastructure(configuration)
-            .BuildServiceProvider();
+        return _rootProvider;
     }
 
     public async Task<ImportQuranFoundationHandler> CreateHandlerAsync()
@@ -67,5 +80,21 @@ public sealed class ImportTestFixture : IAsyncLifetime
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         await dbContext.Database.ExecuteSqlRawAsync(
             "TRUNCATE quran_words, quran_mushaf_lines, quran_mushaf_pages, quran_ayahs, quran_surahs RESTART IDENTITY CASCADE;");
+    }
+
+    private ServiceProvider BuildServiceProvider()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ConnectionStrings:QuranDashboardDb"] = postgresContainer.GetConnectionString()
+            })
+            .Build();
+
+        return new ServiceCollection()
+            .AddSingleton<IConfiguration>(configuration)
+            .AddApplication()
+            .AddInfrastructure(configuration)
+            .BuildServiceProvider();
     }
 }

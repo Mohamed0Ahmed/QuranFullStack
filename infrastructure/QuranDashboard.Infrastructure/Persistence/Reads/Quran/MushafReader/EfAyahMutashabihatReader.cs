@@ -2,7 +2,6 @@ using QuranDashboard.Application.Abstractions.Quran.MushafReader;
 using QuranDashboard.Application.Abstractions.Quran.MushafReader.Responses;
 using QuranDashboard.Domain.Quran.Ayahs;
 using QuranDashboard.Domain.Quran.Mutashabihat;
-using QuranDashboard.Domain.Quran.Words;
 using QuranDashboard.Infrastructure.Persistence;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.MushafReader;
@@ -77,19 +76,23 @@ public sealed class EfAyahMutashabihatReader(QuranDashboardDbContext db) : IAyah
         return new AyahMutashabihatResponse(verseKey, groupDtos.Count, groupDtos);
     }
 
-    private async Task<IReadOnlyDictionary<int, IReadOnlyList<QuranWord>>> LoadWordsByAyahAsync(
+    private async Task<IReadOnlyDictionary<int, IReadOnlyList<MutashabihatWordRow>>> LoadWordsByAyahAsync(
         IReadOnlyList<int> ayahIds,
         CancellationToken ct)
     {
+        // Project only the word fields used for phrase derivation (WordNumber +
+        // TextUthmani), instead of materializing full QuranWord rows for every
+        // ayah across the matched groups.
         var words = await db.QuranWords
             .AsNoTracking()
             .Where(word => ayahIds.Contains(word.AyahId) && !word.IsAyahMarker)
             .OrderBy(word => word.WordNumber)
+            .Select(word => new MutashabihatWordRow(word.AyahId, word.WordNumber, word.TextUthmani))
             .ToListAsync(ct);
 
         return words
             .GroupBy(word => word.AyahId)
-            .ToDictionary(group => group.Key, group => (IReadOnlyList<QuranWord>)group.ToList());
+            .ToDictionary(group => group.Key, group => (IReadOnlyList<MutashabihatWordRow>)group.ToList());
     }
 
     private static MutashabihatGroupDto MapGroup(
@@ -98,7 +101,7 @@ public sealed class EfAyahMutashabihatReader(QuranDashboardDbContext db) : IAyah
         string selectedVerseKey,
         IReadOnlyList<MutashabihatOccurrence> allOccurrences,
         IReadOnlyDictionary<int, Ayah> ayahs,
-        IReadOnlyDictionary<int, IReadOnlyList<QuranWord>> wordsByAyah)
+        IReadOnlyDictionary<int, IReadOnlyList<MutashabihatWordRow>> wordsByAyah)
     {
         var groupOccurrences = allOccurrences
             .Where(occurrence => occurrence.GroupId == group.Id)
@@ -147,7 +150,7 @@ public sealed class EfAyahMutashabihatReader(QuranDashboardDbContext db) : IAyah
         MutashabihatOccurrence occurrence,
         int selectedAyahId,
         IReadOnlyDictionary<int, Ayah> ayahs,
-        IReadOnlyDictionary<int, IReadOnlyList<QuranWord>> wordsByAyah)
+        IReadOnlyDictionary<int, IReadOnlyList<MutashabihatWordRow>> wordsByAyah)
     {
         var ayah = ayahs[occurrence.AyahId];
 
@@ -166,7 +169,7 @@ public sealed class EfAyahMutashabihatReader(QuranDashboardDbContext db) : IAyah
     }
 
     private static string? DerivePhraseText(
-        IReadOnlyDictionary<int, IReadOnlyList<QuranWord>> wordsByAyah,
+        IReadOnlyDictionary<int, IReadOnlyList<MutashabihatWordRow>> wordsByAyah,
         int ayahId,
         int wordFrom,
         int wordTo)
@@ -188,4 +191,13 @@ public sealed class EfAyahMutashabihatReader(QuranDashboardDbContext db) : IAyah
 
         return string.Join(' ', selectedWords.Select(word => word.TextUthmani));
     }
+
+    /// <summary>
+    /// Lean projected row carrying only the word fields used for mutashabihat
+    /// phrase derivation (avoiding full QuranWord materialization per ayah).
+    /// </summary>
+    private sealed record MutashabihatWordRow(
+        int AyahId,
+        int WordNumber,
+        string TextUthmani);
 }
