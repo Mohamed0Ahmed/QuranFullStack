@@ -130,32 +130,32 @@
 
 ### Tests for User Story 3
 
-- [ ] T049 [P] [US3] Add backend validation tests for malformed and unknown verse keys in `Backend/tests/QuranDashboard.Tests/Quran/MushafReader/AyahMutashabihatValidationTests.cs`
-- [ ] T050 [P] [US3] Add backend grouped read tests for empty groups, multiple groups, sibling occurrences, selected occurrences, and phrase text derivation in `Backend/tests/QuranDashboard.Tests/Quran/MushafReader/AyahMutashabihatReadTests.cs`
-- [ ] T051 [P] [US3] Add frontend API/facade lazy-loading tests for mutashabihat in `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader.facade.mutashabihat.spec.ts`
-- [ ] T052 [P] [US3] Add grouped mutashabihat rendering tests in `Frontend/quran-dashboard-ui/src/app/features/mushaf/components/mutashabihat-groups-card/mutashabihat-groups-card.component.spec.ts`
+- [X] T049 [P] [US3] Add backend validation tests for malformed and unknown verse keys in `Backend/tests/QuranDashboard.Tests/Quran/MushafReader/AyahMutashabihatValidationTests.cs`
+- [X] T050 [P] [US3] Add backend grouped read tests for empty groups, multiple groups, sibling occurrences, selected occurrences, and phrase text derivation in `Backend/tests/QuranDashboard.Tests/Quran/MushafReader/AyahMutashabihatReadTests.cs`
+- [X] T051 [P] [US3] Add frontend API/facade lazy-loading tests for mutashabihat in `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader.facade.mutashabihat.spec.ts`
+- [X] T052 [P] [US3] Add grouped mutashabihat rendering tests in `Frontend/quran-dashboard-ui/src/app/features/mushaf/components/mutashabihat-groups-card/mutashabihat-groups-card.component.spec.ts`
 
 ### Implementation for User Story 3
 
-- [ ] T053 [P] [US3] Create `AyahMutashabihatResponse`, `MutashabihatGroupDto`, `MutashabihatSelectedOccurrenceDto`, and `MutashabihatOccurrenceDto` in `Backend/application/QuranDashboard.Application.Abstractions/Quran/MushafReader/Responses/AyahMutashabihatResponse.cs`
-- [ ] T054 [P] [US3] Create `IAyahMutashabihatReader` abstraction in `Backend/application/QuranDashboard.Application.Abstractions/Quran/MushafReader/IAyahMutashabihatReader.cs`
-- [ ] T055 [US3] Create `GetAyahMutashabihatQuery` with `VerseKey` in `Backend/application/QuranDashboard.Application/Quran/MushafReader/Queries/GetAyahMutashabihat/GetAyahMutashabihatQuery.cs`
-- [ ] T056 [US3] Create `GetAyahMutashabihatOutcome` variants for success, invalid verse key, and not found in `Backend/application/QuranDashboard.Application/Quran/MushafReader/Queries/GetAyahMutashabihat/GetAyahMutashabihatOutcome.cs`
-- [ ] T057 [US3] Implement `GetAyahMutashabihatHandler` with verse-key validation and reader call in `Backend/application/QuranDashboard.Application/Quran/MushafReader/Queries/GetAyahMutashabihat/GetAyahMutashabihatHandler.cs`
-- [ ] T058 [US3] Implement grouped selected-ayah occurrence lookup, group loading, sibling occurrence loading, canonical ayah joins, canonical word-span phrase derivation, and group/occurrence sorting in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/MushafReader/EfAyahMutashabihatReader.cs`
-- [ ] T059 [US3] Implement successful-read caching decorator for mutashabihat in `Backend/infrastructure/QuranDashboard.Infrastructure/Caching/Quran/MushafReader/CachedAyahMutashabihatReader.cs`
-- [ ] T060 [US3] Register `GetAyahMutashabihatHandler` in `Backend/application/QuranDashboard.Application/DependencyInjection.cs`
-- [ ] T061 [US3] Register `IAyahMutashabihatReader`, `EfAyahMutashabihatReader`, and cache decorator in `Backend/infrastructure/QuranDashboard.Infrastructure/DependencyInjection.cs`
-- [ ] T062 [US3] Add read-only controller action for `GET /api/mushaf/ayahs/{verseKey}/mutashabihat` in `Backend/api/QuranDashboard.Api/Controllers/MushafReader/Ayahs/MushafAyahMutashabihatController.cs`
-- [ ] T063 [US3] Add `AyahMutashabihatDto`, `MutashabihatGroupDto`, `MutashabihatSelectedOccurrenceDto`, and `MutashabihatOccurrenceDto` frontend types in `Frontend/quran-dashboard-ui/src/app/features/mushaf/models/mushaf.models.ts`
-- [ ] T064 [US3] Create `MushafAyahMutashabihatApi` that calls `/api/mushaf/ayahs/{verseKey}/mutashabihat` in `Frontend/quran-dashboard-ui/src/app/features/mushaf/data-access/mushaf-ayah-mutashabihat.api.ts`
-- [ ] T065 [US3] Add mutashabihat cache lookup, in-flight dedupe, and load state handling in `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader.facade.ts`
-- [ ] T066 [US3] Create grouped mutashabihat component class with inputs for data/loading/error/empty state in `Frontend/quran-dashboard-ui/src/app/features/mushaf/components/mutashabihat-groups-card/mutashabihat-groups-card.component.ts`
-- [ ] T067 [US3] Create grouped mutashabihat template with one section per group, selected-occurrence labels, occurrence lists, and Arabic empty/loading states in `Frontend/quran-dashboard-ui/src/app/features/mushaf/components/mutashabihat-groups-card/mutashabihat-groups-card.component.html`
-- [ ] T068 [US3] Create grouped mutashabihat styles that preserve calm RTL grouping and stable internal scrolling in `Frontend/quran-dashboard-ui/src/app/features/mushaf/components/mutashabihat-groups-card/mutashabihat-groups-card.component.scss`
-- [ ] T069 [US3] Render `qd-mutashabihat-groups-card` when `activeTab() === 'mutashabihat'` in `Frontend/quran-dashboard-ui/src/app/features/mushaf/components/selected-ayah-section/selected-ayah-section.component.html`
-- [ ] T070 [US3] Add component imports and inputs/outputs needed for the mutashabihat groups card in `Frontend/quran-dashboard-ui/src/app/features/mushaf/components/selected-ayah-section/selected-ayah-section.component.ts`
-- [ ] T071 [US3] Run the US3 backend and frontend tests listed in `Backend/tests/QuranDashboard.Tests/Quran/MushafReader/AyahMutashabihatValidationTests.cs`, `Backend/tests/QuranDashboard.Tests/Quran/MushafReader/AyahMutashabihatReadTests.cs`, `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader.facade.mutashabihat.spec.ts`, and `Frontend/quran-dashboard-ui/src/app/features/mushaf/components/mutashabihat-groups-card/mutashabihat-groups-card.component.spec.ts`
+- [X] T053 [P] [US3] Create `AyahMutashabihatResponse`, `MutashabihatGroupDto`, `MutashabihatSelectedOccurrenceDto`, and `MutashabihatOccurrenceDto` in `Backend/application/QuranDashboard.Application.Abstractions/Quran/MushafReader/Responses/AyahMutashabihatResponse.cs`
+- [X] T054 [P] [US3] Create `IAyahMutashabihatReader` abstraction in `Backend/application/QuranDashboard.Application.Abstractions/Quran/MushafReader/IAyahMutashabihatReader.cs`
+- [X] T055 [US3] Create `GetAyahMutashabihatQuery` with `VerseKey` in `Backend/application/QuranDashboard.Application/Quran/MushafReader/Queries/GetAyahMutashabihat/GetAyahMutashabihatQuery.cs`
+- [X] T056 [US3] Create `GetAyahMutashabihatOutcome` variants for success, invalid verse key, and not found in `Backend/application/QuranDashboard.Application/Quran/MushafReader/Queries/GetAyahMutashabihat/GetAyahMutashabihatOutcome.cs`
+- [X] T057 [US3] Implement `GetAyahMutashabihatHandler` with verse-key validation and reader call in `Backend/application/QuranDashboard.Application/Quran/MushafReader/Queries/GetAyahMutashabihat/GetAyahMutashabihatHandler.cs`
+- [X] T058 [US3] Implement grouped selected-ayah occurrence lookup, group loading, sibling occurrence loading, canonical ayah joins, canonical word-span phrase derivation, and group/occurrence sorting in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/MushafReader/EfAyahMutashabihatReader.cs`
+- [X] T059 [US3] Implement successful-read caching decorator for mutashabihat in `Backend/infrastructure/QuranDashboard.Infrastructure/Caching/Quran/MushafReader/CachedAyahMutashabihatReader.cs`
+- [X] T060 [US3] Register `GetAyahMutashabihatHandler` in `Backend/application/QuranDashboard.Application/DependencyInjection.cs`
+- [X] T061 [US3] Register `IAyahMutashabihatReader`, `EfAyahMutashabihatReader`, and cache decorator in `Backend/infrastructure/QuranDashboard.Infrastructure/DependencyInjection.cs`
+- [X] T062 [US3] Add read-only controller action for `GET /api/mushaf/ayahs/{verseKey}/mutashabihat` in `Backend/api/QuranDashboard.Api/Controllers/MushafReader/Ayahs/MushafAyahMutashabihatController.cs`
+- [X] T063 [US3] Add `AyahMutashabihatDto`, `MutashabihatGroupDto`, `MutashabihatSelectedOccurrenceDto`, and `MutashabihatOccurrenceDto` frontend types in `Frontend/quran-dashboard-ui/src/app/features/mushaf/models/mushaf.models.ts`
+- [X] T064 [US3] Create `MushafAyahMutashabihatApi` that calls `/api/mushaf/ayahs/{verseKey}/mutashabihat` in `Frontend/quran-dashboard-ui/src/app/features/mushaf/data-access/mushaf-ayah-mutashabihat.api.ts`
+- [X] T065 [US3] Add mutashabihat cache lookup, in-flight dedupe, and load state handling in `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader.facade.ts`
+- [X] T066 [US3] Create grouped mutashabihat component class with inputs for data/loading/error/empty state in `Frontend/quran-dashboard-ui/src/app/features/mushaf/components/mutashabihat-groups-card/mutashabihat-groups-card.component.ts`
+- [X] T067 [US3] Create grouped mutashabihat template with one section per group, selected-occurrence labels, occurrence lists, and Arabic empty/loading states in `Frontend/quran-dashboard-ui/src/app/features/mushaf/components/mutashabihat-groups-card/mutashabihat-groups-card.component.html`
+- [X] T068 [US3] Create grouped mutashabihat styles that preserve calm RTL grouping and stable internal scrolling in `Frontend/quran-dashboard-ui/src/app/features/mushaf/components/mutashabihat-groups-card/mutashabihat-groups-card.component.scss`
+- [X] T069 [US3] Render `qd-mutashabihat-groups-card` when `activeTab() === 'mutashabihat'` in `Frontend/quran-dashboard-ui/src/app/features/mushaf/components/selected-ayah-section/selected-ayah-section.component.html`
+- [X] T070 [US3] Add component imports and inputs/outputs needed for the mutashabihat groups card in `Frontend/quran-dashboard-ui/src/app/features/mushaf/components/selected-ayah-section/selected-ayah-section.component.ts`
+- [X] T071 [US3] Run the US3 backend and frontend tests listed in `Backend/tests/QuranDashboard.Tests/Quran/MushafReader/AyahMutashabihatValidationTests.cs`, `Backend/tests/QuranDashboard.Tests/Quran/MushafReader/AyahMutashabihatReadTests.cs`, `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader.facade.mutashabihat.spec.ts`, and `Frontend/quran-dashboard-ui/src/app/features/mushaf/components/mutashabihat-groups-card/mutashabihat-groups-card.component.spec.ts`
 
 **Checkpoint**: User Story 3 is independently functional. Mutashabihat load lazily and render grouped by phrase/group.
 
