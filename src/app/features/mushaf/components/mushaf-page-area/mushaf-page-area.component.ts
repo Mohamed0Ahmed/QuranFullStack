@@ -1,7 +1,11 @@
-import { Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
-import { MushafPageViewModel, MushafSurahJuzGroupDto, ResourceLoadState } from '../../models/mushaf.models';
+import {
+  MushafPageViewModel,
+  MushafSurahJuzGroupDto,
+  ResourceLoadState,
+} from '../../models/mushaf.models';
 import { MushafHeaderNavigationComponent } from '../mushaf-header-navigation/mushaf-header-navigation.component';
 import { MushafPageViewComponent } from '../mushaf-page-view/mushaf-page-view.component';
 
@@ -9,6 +13,7 @@ import { MushafPageViewComponent } from '../mushaf-page-view/mushaf-page-view.co
   selector: 'qd-mushaf-page-area',
   standalone: true,
   imports: [CommonModule, MushafHeaderNavigationComponent, MushafPageViewComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './mushaf-page-area.component.html',
   styleUrls: ['./mushaf-page-area.component.scss'],
 })

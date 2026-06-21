@@ -1,7 +1,4 @@
-<div
-  class="mushaf-page-view qd-scroll-stable"
-  data-testid="mushaf-page-view"
->
+<div class="mushaf-page-view qd-scroll-stable" data-testid="mushaf-page-view">
   <div class="mushaf-page-view__text-column">
     @if (displaySurahs().length) {
       <div class="mushaf-page-view__chrome-top">
@@ -40,11 +37,11 @@
       </div>
     }
 
-    @for (line of page().lines; track line.lineNumber) {
+    @for (lineView of displayLines(); track lineView.line.lineNumber) {
       <qd-mushaf-line
-        [line]="line"
+        [line]="lineView.line"
         [markers]="page().markers"
-        [surahNameArabic]="surahNameArabicForLine(line)"
+        [surahNameArabic]="lineView.surahNameArabic"
         [highlightedVerseKey]="highlightedVerseKey()"
         [selectedWordLocation]="selectedWordLocation()"
         (ayahSelect)="ayahSelect.emit($event)"

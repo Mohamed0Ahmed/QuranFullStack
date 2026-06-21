@@ -81,7 +81,9 @@ export class MushafReaderFacade {
   private readonly _selectedAyahKey = signal(DEFAULT_MUSHAF_READER_STATE.selectedAyahKey);
   private readonly _focusAyahKey = signal<string | null>(null);
   private readonly _selectedWordLocation = signal(DEFAULT_MUSHAF_READER_STATE.selectedWordLocation);
-  private readonly _selectedSegmentLocation = signal(DEFAULT_MUSHAF_READER_STATE.selectedSegmentLocation);
+  private readonly _selectedSegmentLocation = signal(
+    DEFAULT_MUSHAF_READER_STATE.selectedSegmentLocation,
+  );
   private readonly _panel = signal(DEFAULT_MUSHAF_READER_STATE.panel);
   private readonly _ayahTab = signal(DEFAULT_MUSHAF_READER_STATE.ayahTab);
   private readonly _wordTab = signal(DEFAULT_MUSHAF_READER_STATE.wordTab);
@@ -93,7 +95,8 @@ export class MushafReaderFacade {
   private readonly _similarAyahs = signal<SimilarAyahsDto | null>(null);
   private readonly _mutashabihat = signal<AyahMutashabihatDto | null>(null);
   private readonly _wordAnalysis = signal<WordAnalysisViewModel | null>(null);
-  private readonly _surahCatalogByJuz = signal<readonly MushafSurahJuzGroupDto[]>(MUSHAF_SURAH_JUZ_GROUPS);
+  private readonly _surahCatalogByJuz =
+    signal<readonly MushafSurahJuzGroupDto[]>(MUSHAF_SURAH_JUZ_GROUPS);
   private readonly _tafsirSourceOptions = signal<SourceOption[]>([]);
   private readonly _translationSourceOptions = signal<SourceOption[]>([]);
   private readonly _fullI3rabSourceOptions = signal<SourceOption[]>([]);
@@ -144,10 +147,18 @@ export class MushafReaderFacade {
   });
 
   private readonly _pageLoadState = signal<ResourceLoadState>(DEFAULT_MUSHAF_READER_STATE.page);
-  private readonly _ayahStudyLoadState = signal<ResourceLoadState>(DEFAULT_MUSHAF_READER_STATE.ayahStudy);
-  private readonly _similarAyahsLoadState = signal<ResourceLoadState>(DEFAULT_MUSHAF_READER_STATE.similarAyahs);
-  private readonly _mutashabihatLoadState = signal<ResourceLoadState>(DEFAULT_MUSHAF_READER_STATE.mutashabihat);
-  private readonly _wordAnalysisLoadState = signal<ResourceLoadState>(DEFAULT_MUSHAF_READER_STATE.wordAnalysis);
+  private readonly _ayahStudyLoadState = signal<ResourceLoadState>(
+    DEFAULT_MUSHAF_READER_STATE.ayahStudy,
+  );
+  private readonly _similarAyahsLoadState = signal<ResourceLoadState>(
+    DEFAULT_MUSHAF_READER_STATE.similarAyahs,
+  );
+  private readonly _mutashabihatLoadState = signal<ResourceLoadState>(
+    DEFAULT_MUSHAF_READER_STATE.mutashabihat,
+  );
+  private readonly _wordAnalysisLoadState = signal<ResourceLoadState>(
+    DEFAULT_MUSHAF_READER_STATE.wordAnalysis,
+  );
 
   readonly pageNumber = this._pageNumber.asReadonly();
   readonly selectedAyahKey = this._selectedAyahKey.asReadonly();
@@ -227,6 +238,10 @@ export class MushafReaderFacade {
   /** Cancels peek timers and route subscription when the reader page is destroyed. */
   unbindFromRoute(): void {
     this.cancelPeekFlashClearTimer();
+    this.wordAnalysisLoadRunner.clearPending();
+    this.ayahStudyLoadRunner.clearPending();
+    this.similarAyahsLoadRunner.clearPending();
+    this.mutashabihatLoadRunner.clearPending();
     this.routeSubscription?.unsubscribe();
     this.routeSubscription = null;
     this.activeRoute = null;
@@ -263,7 +278,9 @@ export class MushafReaderFacade {
     this.patchUrlQuery(this.buildAyahSelectionQueryParams(verseKey));
   }
 
-  private buildAyahSelectionQueryParams(verseKey: string): Partial<
+  private buildAyahSelectionQueryParams(
+    verseKey: string,
+  ): Partial<
     Record<(typeof MUSHAF_URL_KEYS)[keyof typeof MUSHAF_URL_KEYS], string | number | null>
   > {
     const currentWord = this._selectedWordLocation();
@@ -364,7 +381,9 @@ export class MushafReaderFacade {
     subscribeToApiLoad(this.studySourceCatalogApi.getCatalog(), {
       onSuccess: (data) => {
         this._tafsirSourceOptions.set(data.tafsirSources.map(tafsirCatalogItemToOption));
-        this._translationSourceOptions.set(data.translationSources.map(translationCatalogItemToOption));
+        this._translationSourceOptions.set(
+          data.translationSources.map(translationCatalogItemToOption),
+        );
         this._fullI3rabSourceOptions.set(data.fullI3rabSources.map(fullI3rabCatalogItemToOption));
       },
       onSettled: () => undefined,
@@ -389,7 +408,9 @@ export class MushafReaderFacade {
     this._pageLoadState.set({ isLoading: true, isEmpty: false, errorMessage: null });
 
     subscribeToApiLoad(
-      this.readerCache.getOrLoad(MushafReaderCacheKeys.page(clamped), () => this.pagesApi.getPage(clamped)),
+      this.readerCache.getOrLoad(MushafReaderCacheKeys.page(clamped), () =>
+        this.pagesApi.getPage(clamped),
+      ),
       {
         onSuccess: (data) => {
           this._page.set(toPageViewModel(data));
@@ -455,7 +476,9 @@ export class MushafReaderFacade {
   }
 
   private patchUrlQuery(
-    params: Partial<Record<(typeof MUSHAF_URL_KEYS)[keyof typeof MUSHAF_URL_KEYS], string | number | null>>,
+    params: Partial<
+      Record<(typeof MUSHAF_URL_KEYS)[keyof typeof MUSHAF_URL_KEYS], string | number | null>
+    >,
   ): void {
     if (!this.activeRoute) {
       return;
@@ -470,7 +493,12 @@ export class MushafReaderFacade {
   }
 
   /** Applies an authoritative URL snapshot (used by route hydration and tests). */
-  applyUrlState(snapshot: Pick<MushafUrlSnapshot, 'panel' | 'ayah' | 'word' | 'segment' | 'ayahTab' | 'wordTab' | 'sources'>): void {
+  applyUrlState(
+    snapshot: Pick<
+      MushafUrlSnapshot,
+      'panel' | 'ayah' | 'word' | 'segment' | 'ayahTab' | 'wordTab' | 'sources'
+    >,
+  ): void {
     applyAuthoritativeUrlSnapshot(
       snapshot,
       {

@@ -17,47 +17,65 @@
   </div>
 } @else {
   <div class="mutashabihat-groups-card__groups" data-testid="mutashabihat-groups-list">
-    @for (group of mutashabihat()!.groups; track group.groupKey) {
+    @for (group of displayGroups(); track group.groupKey) {
       <section class="mutashabihat-groups-card__group qd-card" data-testid="mutashabihat-group">
         <header class="mutashabihat-groups-card__group-header">
           <h3 class="mutashabihat-groups-card__group-title" data-testid="mutashabihat-group-title">
             @if (group.phraseTextUthmani) {
-              <span class="mutashabihat-groups-card__phrase" dir="rtl">{{ group.phraseTextUthmani }}</span>
+              <span class="mutashabihat-groups-card__phrase" dir="rtl">{{
+                group.phraseTextUthmani
+              }}</span>
             } @else {
               <span class="mutashabihat-groups-card__phrase-range">
-                {{ wordRangeLabel(group.representativeWordFrom, group.representativeWordTo) }}
+                {{ group.wordRangeLabel }}
                 — {{ group.representativeVerseKey }}
               </span>
             }
           </h3>
           <p class="mutashabihat-groups-card__group-meta" data-testid="mutashabihat-group-meta">
-            {{ group.occurrenceCount }} حدوث · {{ group.distinctAyahCount }} آيات · {{ group.distinctSurahCount }} سور
+            {{ group.occurrenceCount }} حدوث · {{ group.distinctAyahCount }} آيات ·
+            {{ group.distinctSurahCount }} سور
           </p>
         </header>
 
         <ul
           class="mutashabihat-groups-card__occurrences"
-          [id]="occurrenceListId(group.groupKey)"
+          [id]="group.occurrenceListId"
           data-testid="mutashabihat-occurrence-list"
         >
-          @for (occurrence of visibleOccurrences(group); track occurrence.verseKey + ':' + occurrence.wordFrom; let i = $index) {
+          @for (
+            occurrence of group.visibleOccurrences;
+            track occurrence.verseKey + ':' + occurrence.wordFrom;
+            let i = $index
+          ) {
             <li
               class="mutashabihat-groups-card__occurrence"
               [class.mutashabihat-groups-card__occurrence--selected]="occurrence.isSelectedAyah"
               data-testid="mutashabihat-occurrence"
             >
               <header class="mutashabihat-groups-card__occurrence-meta">
-                <span class="mutashabihat-groups-card__occurrence-index" data-testid="mutashabihat-occurrence-index">
+                <span
+                  class="mutashabihat-groups-card__occurrence-index"
+                  data-testid="mutashabihat-occurrence-index"
+                >
                   {{ i + 1 }}
                 </span>
-                <span class="mutashabihat-groups-card__occurrence-reference" data-testid="mutashabihat-occurrence-reference">
+                <span
+                  class="mutashabihat-groups-card__occurrence-reference"
+                  data-testid="mutashabihat-occurrence-reference"
+                >
                   {{ occurrence.surahNameArabic }} — {{ occurrence.ayahNumber }}
                 </span>
                 <span class="mutashabihat-groups-card__occurrence-context">
-                  <span data-testid="mutashabihat-occurrence-page">صفحة {{ occurrence.pageNumber }}</span>
+                  <span data-testid="mutashabihat-occurrence-page"
+                    >صفحة {{ occurrence.pageNumber }}</span
+                  >
                 </span>
                 @if (occurrence.isSelectedAyah) {
-                  <span class="mutashabihat-groups-card__selected-badge" data-testid="mutashabihat-occurrence-selected-label">
+                  <span
+                    class="mutashabihat-groups-card__selected-badge"
+                    data-testid="mutashabihat-occurrence-selected-label"
+                  >
                     الآية المحددة
                   </span>
                 }
@@ -67,28 +85,28 @@
                 class="mutashabihat-groups-card__text mutashabihat-groups-card__text--navigable"
                 dir="rtl"
                 data-testid="mutashabihat-occurrence-text"
-                [attr.aria-label]="ayahNavigateLabel(occurrence)"
+                [attr.aria-label]="occurrence.navigateLabel"
                 (click)="onAyahNavigate(occurrence)"
               >
-                {{ displayAyahText(occurrence.textUthmani) }}
+                {{ occurrence.displayText }}
               </button>
             </li>
           }
         </ul>
 
-        @if (showExpandToggle(group)) {
+        @if (group.showExpandToggle) {
           <button
             type="button"
             class="mutashabihat-groups-card__expand-toggle"
             data-testid="mutashabihat-expand-toggle"
-            [attr.aria-expanded]="isGroupExpanded(group.groupKey)"
-            [attr.aria-controls]="occurrenceListId(group.groupKey)"
+            [attr.aria-expanded]="group.isExpanded"
+            [attr.aria-controls]="group.occurrenceListId"
             (click)="toggleGroupExpanded(group.groupKey)"
           >
-            @if (isGroupExpanded(group.groupKey)) {
+            @if (group.isExpanded) {
               عرض أقل
             } @else {
-              عرض الكل ({{ hiddenOccurrenceCount(group) }} آية أخرى)
+              عرض الكل ({{ group.hiddenOccurrenceCount }} آية أخرى)
             }
           </button>
         }

@@ -11,7 +11,11 @@ import { MushafSimilarAyahsApi } from '../data-access/mushaf-similar-ayahs.api';
 import { MushafWordAnalysisApi } from '../data-access/mushaf-word-analysis.api';
 import { MushafReaderFacade } from './mushaf-reader.facade';
 import { saveMushafReaderSession } from './mushaf-reader-session';
-import { mushafAyahMutashabihatApiProvider, mushafSimilarAyahsApiProvider, mushafStudySourceCatalogApiProvider } from './mushaf-study-source-catalog.api.mock';
+import {
+  mushafAyahMutashabihatApiProvider,
+  mushafSimilarAyahsApiProvider,
+  mushafStudySourceCatalogApiProvider,
+} from './mushaf-study-source-catalog.api.mock';
 
 const pageDto = {
   pageNumber: 1,
@@ -146,7 +150,9 @@ function createWordNavigationFacade(initialWordLocation: string) {
   );
   const navigate = vi.fn().mockResolvedValue(true);
   const getPage = vi.fn(() => of({ isSuccess: true, message: 'ok', data: wordNavigationPageDto }));
-  const getWordAnalysis = vi.fn(() => of({ isSuccess: true, message: 'ok', data: wordAnalysisDto }));
+  const getWordAnalysis = vi.fn(() =>
+    of({ isSuccess: true, message: 'ok', data: wordAnalysisDto }),
+  );
   const getAyahStudy = vi.fn(() => of({ isSuccess: true, message: 'ok', data: ayahStudyDto }));
 
   TestBed.configureTestingModule({
@@ -285,7 +291,7 @@ describe('MushafReaderFacade moveSelectedWord', () => {
     expect(navigate).toHaveBeenCalledWith(
       [],
       expect.objectContaining({
-        queryParams: { word: '2:25:5', ayah: '2:25', panel: 'word' },
+        queryParams: { word: '2:25:5', ayah: '2:25', panel: 'word', focusAyah: null },
         queryParamsHandling: 'merge',
         replaceUrl: true,
       }),
@@ -300,7 +306,7 @@ describe('MushafReaderFacade moveSelectedWord', () => {
     expect(navigate).toHaveBeenCalledWith(
       [],
       expect.objectContaining({
-        queryParams: { word: '2:25:3', ayah: '2:25', panel: 'word' },
+        queryParams: { word: '2:25:3', ayah: '2:25', panel: 'word', focusAyah: null },
         queryParamsHandling: 'merge',
         replaceUrl: true,
       }),
@@ -320,7 +326,10 @@ describe('MushafReaderFacade word analysis cancellation', () => {
     TestBed.configureTestingModule({
       providers: [
         MushafReaderFacade,
-        { provide: MushafPagesApi, useValue: { getPage: vi.fn(() => of({ isSuccess: true, message: 'ok', data: pageDto })) } },
+        {
+          provide: MushafPagesApi,
+          useValue: { getPage: vi.fn(() => of({ isSuccess: true, message: 'ok', data: pageDto })) },
+        },
         { provide: MushafAyahStudyApi, useValue: { getAyahStudy: vi.fn() } },
         { provide: MushafWordAnalysisApi, useValue: { getWordAnalysis } },
         mushafStudySourceCatalogApiProvider,
@@ -493,7 +502,11 @@ describe('MushafReaderFacade similarity ayah tabs', () => {
         of({ isSuccess: true, message: 'ok', data: { verseKey: '2:25', count: 0, items: [] } }),
       );
       const getAyahMutashabihat = vi.fn(() =>
-        of({ isSuccess: true, message: 'ok', data: { verseKey: '2:25', groupCount: 0, groups: [] } }),
+        of({
+          isSuccess: true,
+          message: 'ok',
+          data: { verseKey: '2:25', groupCount: 0, groups: [] },
+        }),
       );
 
       TestBed.configureTestingModule({
@@ -541,7 +554,11 @@ describe('MushafReaderFacade similarity ayah tabs', () => {
         of({ isSuccess: true, message: 'ok', data: { verseKey: '2:25', count: 0, items: [] } }),
       );
       const getAyahMutashabihat = vi.fn(() =>
-        of({ isSuccess: true, message: 'ok', data: { verseKey: '2:25', groupCount: 0, groups: [] } }),
+        of({
+          isSuccess: true,
+          message: 'ok',
+          data: { verseKey: '2:25', groupCount: 0, groups: [] },
+        }),
       );
 
       TestBed.configureTestingModule({
@@ -604,7 +621,11 @@ describe('MushafReaderFacade similarity ayah tabs', () => {
         of({ isSuccess: true, message: 'ok', data: { verseKey: '2:25', count: 0, items: [] } }),
       );
       const getAyahMutashabihat = vi.fn(() =>
-        of({ isSuccess: true, message: 'ok', data: { verseKey: '2:25', groupCount: 0, groups: [] } }),
+        of({
+          isSuccess: true,
+          message: 'ok',
+          data: { verseKey: '2:25', groupCount: 0, groups: [] },
+        }),
       );
 
       TestBed.configureTestingModule({

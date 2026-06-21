@@ -17,7 +17,7 @@
   </div>
 } @else {
   <ul class="similar-ayahs-card__list" data-testid="similar-ayahs-list">
-    @for (item of similarAyahs()!.items; track item.targetVerseKey) {
+    @for (item of displayItems(); track item.targetVerseKey) {
       <li class="similar-ayahs-card__item study-card qd-card" data-testid="similar-ayah-item">
         <header class="similar-ayahs-card__meta">
           <span class="similar-ayahs-card__reference" data-testid="similar-ayah-reference">
@@ -34,10 +34,10 @@
           class="similar-ayahs-card__text similar-ayahs-card__text--navigable"
           dir="rtl"
           data-testid="similar-ayah-text"
-          [attr.aria-label]="ayahNavigateLabel(item)"
+          [attr.aria-label]="item.navigateLabel"
           (click)="onAyahNavigate(item)"
         >
-          {{ displayAyahText(item.textUthmani) }}
+          {{ item.displayText }}
         </button>
       </li>
     }
