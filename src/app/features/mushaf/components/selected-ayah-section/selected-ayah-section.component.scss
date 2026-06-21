@@ -145,12 +145,21 @@
     &--navigable {
       display: block;
       width: 100%;
-      border: none;
+      margin-block-end: var(--qd-space-3);
+      border: 1px solid color-mix(in oklch, var(--qd-accent) 60%, var(--qd-border));
+      border-radius: var(--qd-radius-md);
+      background: var(--qd-accent-tint);
+      box-shadow:
+        var(--qd-shadow-sm),
+        inset 0 0 0 1px color-mix(in oklch, var(--qd-accent) 12%, transparent);
       cursor: pointer;
-      transition: color 120ms ease;
+      transition:
+        color 120ms ease,
+        border-color 120ms ease;
 
       &:hover {
         color: var(--qd-accent);
+        border-color: color-mix(in oklch, var(--qd-accent) 75%, var(--qd-border));
       }
 
       &:focus-visible {
@@ -197,11 +206,21 @@
       min-height: 10rem;
     }
 
+    &--flow {
+      overflow: visible;
+      min-height: auto;
+    }
+
     :host.qd-selected-ayah-section--embedded .selected-ayah-section & {
       flex: 1;
       min-height: 0;
       margin-block-end: var(--qd-space-2);
       overflow: auto;
+
+      &--flow {
+        overflow: visible;
+        min-height: auto;
+      }
     }
   }
 }

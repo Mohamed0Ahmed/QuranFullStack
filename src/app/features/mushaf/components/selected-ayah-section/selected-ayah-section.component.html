@@ -133,7 +133,11 @@
       </button>
     </nav>
 
-    <div class="selected-ayah-section__content" [class.selected-ayah-section__content--loading]="loadState().isLoading">
+    <div
+      class="selected-ayah-section__content"
+      [class.selected-ayah-section__content--loading]="loadState().isLoading"
+      [class.selected-ayah-section__content--flow]="activeTab() === 'mutashabihat'"
+    >
       @if (loadState().isLoading) {
         <!--
           Structured loading: an ayah-text placeholder line plus several stacked
@@ -186,6 +190,7 @@
             <qd-mutashabihat-groups-card
               [mutashabihat]="mutashabihat()"
               [loadState]="mutashabihatLoadState()"
+              (ayahNavigate)="ayahNavigate.emit($event)"
             />
           }
         }

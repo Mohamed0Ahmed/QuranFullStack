@@ -1,10 +1,36 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { MutashabihatGroupsCardComponent } from './mutashabihat-groups-card.component';
-import { AyahMutashabihatDto, MUTASHABIHAT_EMPTY_MESSAGE, ResourceLoadState } from '../../models/mushaf.models';
+import {
+  AyahMutashabihatDto,
+  MutashabihatOccurrenceDto,
+  MUTASHABIHAT_EMPTY_MESSAGE,
+  ResourceLoadState,
+} from '../../models/mushaf.models';
 
 const IDLE: ResourceLoadState = { isLoading: false, isEmpty: false, errorMessage: null };
+
+function buildOccurrence(
+  verseKey: string,
+  ayahNumber: number,
+  overrides: Partial<MutashabihatOccurrenceDto> = {},
+): MutashabihatOccurrenceDto {
+  return {
+    verseKey,
+    surahNumber: 2,
+    surahNameArabic: 'البقرة',
+    ayahNumber,
+    pageNumber: 5,
+    wordFrom: 1,
+    wordTo: 2,
+    isSelectedAyah: false,
+    isRepresentative: false,
+    textUthmani: `نص-آية-${ayahNumber}`,
+    phraseTextUthmani: `عبارة-${ayahNumber}`,
+    ...overrides,
+  };
+}
 
 const SAMPLE_MUTASHABIHAT: AyahMutashabihatDto = {
   verseKey: '2:25',
@@ -30,32 +56,16 @@ const SAMPLE_MUTASHABIHAT: AyahMutashabihatDto = {
         },
       ],
       occurrences: [
-        {
-          verseKey: '2:25',
-          surahNumber: 2,
-          surahNameArabic: 'البقرة',
-          ayahNumber: 25,
-          pageNumber: 5,
-          wordFrom: 1,
-          wordTo: 2,
+        buildOccurrence('2:25', 25, {
           isSelectedAyah: true,
           isRepresentative: true,
-          textUthmani: 'نص-آية-محددة',
+          textUthmani: 'نص يحتوي عبارة-مجموعة-أولى في الآية',
           phraseTextUthmani: 'عبارة-مجموعة-أولى',
-        },
-        {
-          verseKey: '2:26',
-          surahNumber: 2,
-          surahNameArabic: 'البقرة',
-          ayahNumber: 26,
-          pageNumber: 5,
-          wordFrom: 1,
-          wordTo: 1,
-          isSelectedAyah: false,
-          isRepresentative: false,
-          textUthmani: 'نص-آية-شقيقة',
+        }),
+        buildOccurrence('2:26', 26, {
+          textUthmani: 'نص يحتوي كلمة-شقيقة في الآية',
           phraseTextUthmani: 'كلمة-شقيقة',
-        },
+        }),
       ],
     },
     {
@@ -78,22 +88,89 @@ const SAMPLE_MUTASHABIHAT: AyahMutashabihatDto = {
         },
       ],
       occurrences: [
-        {
-          verseKey: '2:25',
-          surahNumber: 2,
-          surahNameArabic: 'البقرة',
-          ayahNumber: 25,
-          pageNumber: 5,
-          wordFrom: 3,
-          wordTo: 4,
+        buildOccurrence('2:25', 25, {
           isSelectedAyah: true,
           isRepresentative: true,
-          textUthmani: 'نص-آية-محددة',
+          textUthmani: 'نص يحتوي عبارة-مجموعة-ثانية في الآية',
           phraseTextUthmani: 'عبارة-مجموعة-ثانية',
-        },
+        }),
       ],
     },
   ],
+};
+
+function buildLargeGroup(): AyahMutashabihatDto {
+  const occurrences = Array.from({ length: 7 }, (_, index) =>
+    buildOccurrence(`2:${30 + index}`, 30 + index, {
+      isSelectedAyah: index === 0,
+      pageNumber: 6 + index,
+    }),
+  );
+
+  return {
+    verseKey: '2:25',
+    groupCount: 1,
+    groups: [
+      {
+        groupKey: 'mutashabihat:90010',
+        sourceGroupId: 90010,
+        representativeVerseKey: '2:30',
+        representativeWordFrom: 1,
+        representativeWordTo: 2,
+        phraseTextUthmani: 'عبارة-مجموعة-كبيرة',
+        occurrenceCount: 7,
+        distinctAyahCount: 7,
+        distinctSurahCount: 1,
+        selectedOccurrences: [
+          {
+            verseKey: '2:30',
+            wordFrom: 1,
+            wordTo: 2,
+            isRepresentative: true,
+            phraseTextUthmani: 'عبارة-مجموعة-كبيرة',
+          },
+        ],
+        occurrences,
+      },
+    ],
+  };
+}
+
+function buildLargeGroupWithLateSelectedAyah(): AyahMutashabihatDto {
+  const occurrences = Array.from({ length: 7 }, (_, index) =>
+    buildOccurrence(`2:${30 + index}`, 30 + index, {
+      isSelectedAyah: index === 6,
+      pageNumber: 6 + index,
+    }),
+  );
+
+  return {
+    verseKey: '2:25',
+    groupCount: 1,
+    groups: [
+      {
+        groupKey: 'mutashabihat:90011',
+        sourceGroupId: 90011,
+        representativeVerseKey: '2:30',
+        representativeWordFrom: 1,
+        representativeWordTo: 2,
+        phraseTextUthmani: 'عبارة-مجموعة-متأخرة',
+        occurrenceCount: 7,
+        distinctAyahCount: 7,
+        distinctSurahCount: 1,
+        selectedOccurrences: [
+          {
+            verseKey: '2:36',
+            wordFrom: 1,
+            wordTo: 2,
+            isRepresentative: false,
+            phraseTextUthmani: 'عبارة-مجموعة-متأخرة',
+          },
+        ],
+        occurrences,
+      },
+    ],
+  };
 };
 
 function render(
@@ -134,7 +211,7 @@ describe('MutashabihatGroupsCardComponent (US3)', () => {
     );
   });
 
-  it('renders separate group sections with selected-occurrence labels and occurrence lists', () => {
+  it('renders separate group sections with selected-occurrence labels and numbered occurrence lists', () => {
     const fixture = TestBed.createComponent(MutashabihatGroupsCardComponent);
     const root = render(fixture, {
       mutashabihat: SAMPLE_MUTASHABIHAT,
@@ -149,12 +226,13 @@ describe('MutashabihatGroupsCardComponent (US3)', () => {
     );
     expect(phrases).toEqual(['عبارة-مجموعة-أولى', 'عبارة-مجموعة-ثانية']);
 
-    const selectedBadges = root.querySelectorAll('[data-testid="mutashabihat-selected-badge"]');
-    expect(selectedBadges.length).toBeGreaterThan(0);
-    expect(Array.from(selectedBadges).every((node) => node.textContent?.trim() === 'الآية المحددة')).toBe(true);
-
     const firstGroupOccurrences = groups[0].querySelectorAll('[data-testid="mutashabihat-occurrence"]');
     expect(firstGroupOccurrences).toHaveLength(2);
+
+    const indexes = Array.from(
+      groups[0].querySelectorAll('[data-testid="mutashabihat-occurrence-index"]'),
+    ).map((node) => node.textContent?.trim());
+    expect(indexes).toEqual(['1', '2']);
 
     const references = Array.from(
       groups[0].querySelectorAll('[data-testid="mutashabihat-occurrence-reference"]'),
@@ -164,15 +242,69 @@ describe('MutashabihatGroupsCardComponent (US3)', () => {
     const selectedOccurrenceLabel = groups[0].querySelector('[data-testid="mutashabihat-occurrence-selected-label"]');
     expect(selectedOccurrenceLabel?.textContent?.trim()).toBe('الآية المحددة');
 
-    const pageContexts = Array.from(
-      groups[0].querySelectorAll('[data-testid="mutashabihat-occurrence-page"]'),
-    ).map((node) => node.textContent?.trim());
-    expect(pageContexts).toEqual(['صفحة 5', 'صفحة 5']);
+    expect(groups[0].querySelector('[data-testid="mutashabihat-occurrence-phrase"]')).toBeNull();
+  });
 
-    const selectedRanges = Array.from(groups[0].querySelectorAll('.mutashabihat-groups-card__selected-range')).map(
-      (node) => node.textContent?.trim(),
-    );
-    expect(selectedRanges).toEqual(['كلمات 1–2']);
+  it('shows only the first five occurrences with an expand toggle for larger groups', () => {
+    const fixture = TestBed.createComponent(MutashabihatGroupsCardComponent);
+    const root = render(fixture, {
+      mutashabihat: buildLargeGroup(),
+      loadState: IDLE,
+    });
+
+    const group = root.querySelector('[data-testid="mutashabihat-group"]') as HTMLElement;
+    expect(group.querySelectorAll('[data-testid="mutashabihat-occurrence"]')).toHaveLength(5);
+
+    const expandToggle = group.querySelector('[data-testid="mutashabihat-expand-toggle"]') as HTMLButtonElement;
+    expect(expandToggle.getAttribute('aria-expanded')).toBe('false');
+    expect(expandToggle.textContent?.trim()).toBe('عرض الكل (2 آية أخرى)');
+
+    expandToggle.click();
+    fixture.detectChanges();
+
+    expect(expandToggle.getAttribute('aria-expanded')).toBe('true');
+    expect(group.querySelectorAll('[data-testid="mutashabihat-occurrence"]')).toHaveLength(7);
+    expect(expandToggle.textContent?.trim()).toBe('عرض أقل');
+
+    expandToggle.click();
+    fixture.detectChanges();
+
+    expect(expandToggle.getAttribute('aria-expanded')).toBe('false');
+    expect(group.querySelectorAll('[data-testid="mutashabihat-occurrence"]')).toHaveLength(5);
+  });
+
+  it('keeps the selected ayah occurrence visible in the collapsed preview when it is beyond the first five', () => {
+    const fixture = TestBed.createComponent(MutashabihatGroupsCardComponent);
+    const root = render(fixture, {
+      mutashabihat: buildLargeGroupWithLateSelectedAyah(),
+      loadState: IDLE,
+    });
+
+    const group = root.querySelector('[data-testid="mutashabihat-group"]') as HTMLElement;
+    expect(group.querySelectorAll('[data-testid="mutashabihat-occurrence"]')).toHaveLength(6);
+
+    const expandToggle = group.querySelector('[data-testid="mutashabihat-expand-toggle"]') as HTMLButtonElement;
+    expect(expandToggle.textContent?.trim()).toBe('عرض الكل (1 آية أخرى)');
+    expect(group.querySelector('[data-testid="mutashabihat-occurrence-selected-label"]')).toBeTruthy();
+  });
+
+  it('emits ayahNavigate when an occurrence text button is clicked', () => {
+    const fixture = TestBed.createComponent(MutashabihatGroupsCardComponent);
+    const ayahNavigate = vi.fn();
+    fixture.componentInstance.ayahNavigate.subscribe(ayahNavigate);
+
+    const root = render(fixture, {
+      mutashabihat: SAMPLE_MUTASHABIHAT,
+      loadState: IDLE,
+    });
+
+    const textButton = root.querySelector('[data-testid="mutashabihat-occurrence-text"]') as HTMLButtonElement;
+    textButton.click();
+
+    expect(ayahNavigate).toHaveBeenCalledWith({
+      verseKey: '2:25',
+      pageNumber: 5,
+    });
   });
 
   it('falls back to word-range labels when phrase text is unavailable', () => {
@@ -202,19 +334,14 @@ describe('MutashabihatGroupsCardComponent (US3)', () => {
               },
             ],
             occurrences: [
-              {
-                verseKey: '2:25',
-                surahNumber: 2,
-                surahNameArabic: 'البقرة',
-                ayahNumber: 25,
-                pageNumber: 5,
+              buildOccurrence('2:25', 25, {
                 wordFrom: 3,
                 wordTo: 5,
                 isSelectedAyah: true,
                 isRepresentative: true,
                 textUthmani: 'نص-آية-محددة',
                 phraseTextUthmani: null,
-              },
+              }),
             ],
           },
         ],

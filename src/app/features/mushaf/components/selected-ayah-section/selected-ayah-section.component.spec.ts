@@ -5,6 +5,7 @@ import { SelectedAyahSectionComponent } from './selected-ayah-section.component'
 import {
   AyahStudyTab,
   AyahStudyViewModel,
+  AyahMutashabihatDto,
   ResourceLoadState,
   SourceOption,
 } from '../../models/mushaf.models';
@@ -100,6 +101,48 @@ function buildAyahStudyViewModel(verseKey = '2:25'): AyahStudyViewModel {
   };
 }
 
+const SAMPLE_MUTASHABIHAT: AyahMutashabihatDto = {
+  verseKey: '2:25',
+  groupCount: 1,
+  groups: [
+    {
+      groupKey: 'mutashabihat:90001',
+      sourceGroupId: 90001,
+      representativeVerseKey: '2:25',
+      representativeWordFrom: 1,
+      representativeWordTo: 2,
+      phraseTextUthmani: 'عبارة-مجموعة-أولى',
+      occurrenceCount: 1,
+      distinctAyahCount: 1,
+      distinctSurahCount: 1,
+      selectedOccurrences: [
+        {
+          verseKey: '2:25',
+          wordFrom: 1,
+          wordTo: 2,
+          isRepresentative: true,
+          phraseTextUthmani: 'عبارة-مجموعة-أولى',
+        },
+      ],
+      occurrences: [
+        {
+          verseKey: '2:25',
+          surahNumber: 2,
+          surahNameArabic: 'البقرة',
+          ayahNumber: 25,
+          pageNumber: 5,
+          wordFrom: 1,
+          wordTo: 2,
+          isSelectedAyah: true,
+          isRepresentative: true,
+          textUthmani: 'نص-آية-25',
+          phraseTextUthmani: 'عبارة-مجموعة-أولى',
+        },
+      ],
+    },
+  ],
+};
+
 function setInputs(
   fixture: ComponentFixture<SelectedAyahSectionComponent>,
   inputs: {
@@ -111,6 +154,8 @@ function setInputs(
     translationOptions?: SourceOption[];
     fullI3rabOptions?: SourceOption[];
     embedded?: boolean;
+    mutashabihat?: AyahMutashabihatDto | null;
+    mutashabihatLoadState?: ResourceLoadState;
   },
 ): void {
   fixture.componentRef.setInput('study', inputs.study ?? null);
@@ -121,6 +166,11 @@ function setInputs(
   fixture.componentRef.setInput('translationOptions', inputs.translationOptions ?? translationOptions);
   fixture.componentRef.setInput('fullI3rabOptions', inputs.fullI3rabOptions ?? fullI3rabOptions);
   fixture.componentRef.setInput('embedded', inputs.embedded ?? false);
+  fixture.componentRef.setInput('mutashabihat', inputs.mutashabihat ?? null);
+  fixture.componentRef.setInput(
+    'mutashabihatLoadState',
+    inputs.mutashabihatLoadState ?? { isLoading: false, isEmpty: false, errorMessage: null },
+  );
   fixture.detectChanges();
 }
 
@@ -397,6 +447,31 @@ describe('SelectedAyahSectionComponent — ayah navigation', () => {
       '[data-testid="selected-ayah-section-ayah"]',
     );
     ayahButton?.click();
+
+    expect(ayahNavigate).toHaveBeenCalledWith({
+      verseKey: '2:25',
+      pageNumber: 5,
+    });
+  });
+
+  it('emits ayahNavigate when a mutashabihat occurrence text is clicked', () => {
+    const fixture = TestBed.createComponent(SelectedAyahSectionComponent);
+    const ayahNavigate = vi.fn();
+    fixture.componentInstance.ayahNavigate.subscribe(ayahNavigate);
+
+    setInputs(fixture, {
+      study: buildAyahStudyViewModel('2:25'),
+      loadState: IDLE,
+      selectedVerseKey: '2:25',
+      activeTab: 'mutashabihat',
+      mutashabihat: SAMPLE_MUTASHABIHAT,
+      mutashabihatLoadState: IDLE,
+    });
+
+    const textButton = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(
+      '[data-testid="mutashabihat-occurrence-text"]',
+    );
+    textButton?.click();
 
     expect(ayahNavigate).toHaveBeenCalledWith({
       verseKey: '2:25',
