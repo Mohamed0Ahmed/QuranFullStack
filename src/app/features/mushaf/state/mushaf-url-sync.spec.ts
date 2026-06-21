@@ -82,6 +82,31 @@ describe('mushaf-url-sync', () => {
     expect(snapshot.word).toBe('2:25:3');
   });
 
+  it.each(['similar-ayahs', 'mutashabihat'] as const)(
+    'does not correct valid ayahTab=%s in the URL',
+    (ayahTab) => {
+      const snapshot = parseMushafUrlParams(
+        convertToParamMap({
+          page: '5',
+          ayah: '2:25',
+          ayahTab,
+        }),
+      );
+
+      const corrections = buildUrlEnumCorrections(
+        convertToParamMap({
+          page: '5',
+          ayah: '2:25',
+          ayahTab,
+        }),
+        snapshot,
+      );
+
+      expect(corrections).toEqual({});
+      expect(snapshot.ayahTab).toBe(ayahTab);
+    },
+  );
+
   it('builds URL corrections when raw enum values are out of scope', () => {
     const snapshot = parseMushafUrlParams(
       convertToParamMap({

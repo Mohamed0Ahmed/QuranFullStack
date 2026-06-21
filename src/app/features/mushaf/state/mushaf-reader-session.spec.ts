@@ -82,6 +82,63 @@ describe('mushaf-reader-session', () => {
     expect(loadMushafReaderSession()).toEqual(sampleSnapshot);
   });
 
+  it('serializes widened similarity ayah tabs to query params', () => {
+    const similarAyahsSnapshot: MushafUrlSnapshot = {
+      pageNumber: 5,
+      ayah: '2:25',
+      word: null,
+      segment: null,
+      panel: 'ayah',
+      ayahTab: 'similar-ayahs',
+      wordTab: DEFAULT_MUSHAF_READER_STATE.wordTab,
+      sources: {
+        tafsirSource: null,
+        translationSource: null,
+        fullI3rabSource: null,
+      },
+    };
+    const mutashabihatSnapshot: MushafUrlSnapshot = {
+      ...similarAyahsSnapshot,
+      ayahTab: 'mutashabihat',
+    };
+
+    expect(mushafSnapshotToQueryParams(similarAyahsSnapshot)).toEqual({
+      page: 5,
+      ayah: '2:25',
+      panel: 'ayah',
+      ayahTab: 'similar-ayahs',
+    });
+    expect(mushafSnapshotToQueryParams(mutashabihatSnapshot)).toEqual({
+      page: 5,
+      ayah: '2:25',
+      panel: 'ayah',
+      ayahTab: 'mutashabihat',
+    });
+  });
+
+  it('round-trips widened similarity ayah tabs through sessionStorage', () => {
+    for (const ayahTab of ['similar-ayahs', 'mutashabihat'] as const) {
+      const snapshot: MushafUrlSnapshot = {
+        pageNumber: 5,
+        ayah: '2:25',
+        word: null,
+        segment: null,
+        panel: 'ayah',
+        ayahTab,
+        wordTab: DEFAULT_MUSHAF_READER_STATE.wordTab,
+        sources: {
+          tafsirSource: null,
+          translationSource: null,
+          fullI3rabSource: null,
+        },
+      };
+
+      saveMushafReaderSession(snapshot);
+      expect(loadMushafReaderSession()).toEqual(snapshot);
+      sessionStorage.clear();
+    }
+  });
+
   it('returns null for missing or invalid stored session payloads', () => {
     expect(loadMushafReaderSession()).toBeNull();
 
