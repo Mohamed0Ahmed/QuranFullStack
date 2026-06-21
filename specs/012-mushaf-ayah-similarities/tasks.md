@@ -91,32 +91,32 @@
 
 ### Tests for User Story 2
 
-- [ ] T026 [P] [US2] Add backend validation tests for malformed and unknown verse keys in `Backend/tests/QuranDashboard.Tests/Quran/MushafReader/SimilarAyahsValidationTests.cs`
-- [ ] T027 [P] [US2] Add backend read tests for outgoing, incoming, bidirectional deduplication, empty list, and canonical ayah text in `Backend/tests/QuranDashboard.Tests/Quran/MushafReader/SimilarAyahsReadTests.cs`
-- [ ] T028 [P] [US2] Add frontend API/facade lazy-loading tests for similar ayahs in `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader.facade.similar-ayahs.spec.ts`
-- [ ] T029 [P] [US2] Add flat similar ayahs component rendering tests in `Frontend/quran-dashboard-ui/src/app/features/mushaf/components/similar-ayahs-card/similar-ayahs-card.component.spec.ts`
+- [X] T026 [P] [US2] Add backend validation tests for malformed and unknown verse keys in `Backend/tests/QuranDashboard.Tests/Quran/MushafReader/SimilarAyahsValidationTests.cs`
+- [X] T027 [P] [US2] Add backend read tests for outgoing, incoming, bidirectional deduplication, empty list, and canonical ayah text in `Backend/tests/QuranDashboard.Tests/Quran/MushafReader/SimilarAyahsReadTests.cs`
+- [X] T028 [P] [US2] Add frontend API/facade lazy-loading tests for similar ayahs in `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader.facade.similar-ayahs.spec.ts`
+- [X] T029 [P] [US2] Add flat similar ayahs component rendering tests in `Frontend/quran-dashboard-ui/src/app/features/mushaf/components/similar-ayahs-card/similar-ayahs-card.component.spec.ts`
 
 ### Implementation for User Story 2
 
-- [ ] T030 [P] [US2] Create `SimilarAyahsResponse`, `SimilarAyahItemDto`, and relationship direction DTO types in `Backend/application/QuranDashboard.Application.Abstractions/Quran/MushafReader/Responses/AyahSimilaritiesResponse.cs`
-- [ ] T031 [P] [US2] Create `IAyahSimilaritiesReader` abstraction in `Backend/application/QuranDashboard.Application.Abstractions/Quran/MushafReader/IAyahSimilaritiesReader.cs`
-- [ ] T032 [US2] Create `GetSimilarAyahsQuery` with `VerseKey` in `Backend/application/QuranDashboard.Application/Quran/MushafReader/Queries/GetSimilarAyahs/GetSimilarAyahsQuery.cs`
-- [ ] T033 [US2] Create `GetSimilarAyahsOutcome` variants for success, invalid verse key, and not found in `Backend/application/QuranDashboard.Application/Quran/MushafReader/Queries/GetSimilarAyahs/GetSimilarAyahsOutcome.cs`
-- [ ] T034 [US2] Implement `GetSimilarAyahsHandler` with verse-key validation and reader call in `Backend/application/QuranDashboard.Application/Quran/MushafReader/Queries/GetSimilarAyahs/GetSimilarAyahsHandler.cs`
-- [ ] T035 [US2] Implement outgoing plus incoming similar link reads, bidirectional deduplication, canonical ayah joins, and sorting in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/MushafReader/EfAyahSimilaritiesReader.cs`
-- [ ] T036 [US2] Implement successful-read caching decorator for similar ayahs in `Backend/infrastructure/QuranDashboard.Infrastructure/Caching/Quran/MushafReader/CachedAyahSimilaritiesReader.cs`
-- [ ] T037 [US2] Register `GetSimilarAyahsHandler` in `Backend/application/QuranDashboard.Application/DependencyInjection.cs`
-- [ ] T038 [US2] Register `IAyahSimilaritiesReader`, `EfAyahSimilaritiesReader`, and cache decorator in `Backend/infrastructure/QuranDashboard.Infrastructure/DependencyInjection.cs`
-- [ ] T039 [US2] Add read-only controller action for `GET /api/mushaf/ayahs/{verseKey}/similar-ayahs` in `Backend/api/QuranDashboard.Api/Controllers/MushafReader/Ayahs/MushafAyahSimilaritiesController.cs`
-- [ ] T040 [US2] Add `SimilarAyahsDto`, `SimilarAyahItemDto`, and relationship direction frontend types in `Frontend/quran-dashboard-ui/src/app/features/mushaf/models/mushaf.models.ts`
-- [ ] T041 [US2] Create `MushafSimilarAyahsApi` that calls `/api/mushaf/ayahs/{verseKey}/similar-ayahs` in `Frontend/quran-dashboard-ui/src/app/features/mushaf/data-access/mushaf-similar-ayahs.api.ts`
-- [ ] T042 [US2] Add similar ayahs cache lookup, in-flight dedupe, and load state handling in `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader.facade.ts`
-- [ ] T043 [US2] Create similar ayahs component class with inputs for data/loading/error/empty state in `Frontend/quran-dashboard-ui/src/app/features/mushaf/components/similar-ayahs-card/similar-ayahs-card.component.ts`
-- [ ] T044 [US2] Create similar ayahs flat-list template and Arabic empty/loading states in `Frontend/quran-dashboard-ui/src/app/features/mushaf/components/similar-ayahs-card/similar-ayahs-card.component.html`
-- [ ] T045 [US2] Create similar ayahs component styles that preserve calm RTL card layout in `Frontend/quran-dashboard-ui/src/app/features/mushaf/components/similar-ayahs-card/similar-ayahs-card.component.scss`
-- [ ] T046 [US2] Render `qd-similar-ayahs-card` when `activeTab() === 'similar-ayahs'` in `Frontend/quran-dashboard-ui/src/app/features/mushaf/components/selected-ayah-section/selected-ayah-section.component.html`
-- [ ] T047 [US2] Add component imports and inputs/outputs needed for the similar ayahs card in `Frontend/quran-dashboard-ui/src/app/features/mushaf/components/selected-ayah-section/selected-ayah-section.component.ts`
-- [ ] T048 [US2] Run the US2 backend and frontend tests listed in `Backend/tests/QuranDashboard.Tests/Quran/MushafReader/SimilarAyahsValidationTests.cs`, `Backend/tests/QuranDashboard.Tests/Quran/MushafReader/SimilarAyahsReadTests.cs`, `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader.facade.similar-ayahs.spec.ts`, and `Frontend/quran-dashboard-ui/src/app/features/mushaf/components/similar-ayahs-card/similar-ayahs-card.component.spec.ts`
+- [X] T030 [P] [US2] Create `SimilarAyahsResponse`, `SimilarAyahItemDto`, and relationship direction DTO types in `Backend/application/QuranDashboard.Application.Abstractions/Quran/MushafReader/Responses/AyahSimilaritiesResponse.cs`
+- [X] T031 [P] [US2] Create `IAyahSimilaritiesReader` abstraction in `Backend/application/QuranDashboard.Application.Abstractions/Quran/MushafReader/IAyahSimilaritiesReader.cs`
+- [X] T032 [US2] Create `GetSimilarAyahsQuery` with `VerseKey` in `Backend/application/QuranDashboard.Application/Quran/MushafReader/Queries/GetSimilarAyahs/GetSimilarAyahsQuery.cs`
+- [X] T033 [US2] Create `GetSimilarAyahsOutcome` variants for success, invalid verse key, and not found in `Backend/application/QuranDashboard.Application/Quran/MushafReader/Queries/GetSimilarAyahs/GetSimilarAyahsOutcome.cs`
+- [X] T034 [US2] Implement `GetSimilarAyahsHandler` with verse-key validation and reader call in `Backend/application/QuranDashboard.Application/Quran/MushafReader/Queries/GetSimilarAyahs/GetSimilarAyahsHandler.cs`
+- [X] T035 [US2] Implement outgoing plus incoming similar link reads, bidirectional deduplication, canonical ayah joins, and sorting in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/MushafReader/EfAyahSimilaritiesReader.cs`
+- [X] T036 [US2] Implement successful-read caching decorator for similar ayahs in `Backend/infrastructure/QuranDashboard.Infrastructure/Caching/Quran/MushafReader/CachedAyahSimilaritiesReader.cs`
+- [X] T037 [US2] Register `GetSimilarAyahsHandler` in `Backend/application/QuranDashboard.Application/DependencyInjection.cs`
+- [X] T038 [US2] Register `IAyahSimilaritiesReader`, `EfAyahSimilaritiesReader`, and cache decorator in `Backend/infrastructure/QuranDashboard.Infrastructure/DependencyInjection.cs`
+- [X] T039 [US2] Add read-only controller action for `GET /api/mushaf/ayahs/{verseKey}/similar-ayahs` in `Backend/api/QuranDashboard.Api/Controllers/MushafReader/Ayahs/MushafAyahSimilaritiesController.cs`
+- [X] T040 [US2] Add `SimilarAyahsDto`, `SimilarAyahItemDto`, and relationship direction frontend types in `Frontend/quran-dashboard-ui/src/app/features/mushaf/models/mushaf.models.ts`
+- [X] T041 [US2] Create `MushafSimilarAyahsApi` that calls `/api/mushaf/ayahs/{verseKey}/similar-ayahs` in `Frontend/quran-dashboard-ui/src/app/features/mushaf/data-access/mushaf-similar-ayahs.api.ts`
+- [X] T042 [US2] Add similar ayahs cache lookup, in-flight dedupe, and load state handling in `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader.facade.ts`
+- [X] T043 [US2] Create similar ayahs component class with inputs for data/loading/error/empty state in `Frontend/quran-dashboard-ui/src/app/features/mushaf/components/similar-ayahs-card/similar-ayahs-card.component.ts`
+- [X] T044 [US2] Create similar ayahs flat-list template and Arabic empty/loading states in `Frontend/quran-dashboard-ui/src/app/features/mushaf/components/similar-ayahs-card/similar-ayahs-card.component.html`
+- [X] T045 [US2] Create similar ayahs component styles that preserve calm RTL card layout in `Frontend/quran-dashboard-ui/src/app/features/mushaf/components/similar-ayahs-card/similar-ayahs-card.component.scss`
+- [X] T046 [US2] Render `qd-similar-ayahs-card` when `activeTab() === 'similar-ayahs'` in `Frontend/quran-dashboard-ui/src/app/features/mushaf/components/selected-ayah-section/selected-ayah-section.component.html`
+- [X] T047 [US2] Add component imports and inputs/outputs needed for the similar ayahs card in `Frontend/quran-dashboard-ui/src/app/features/mushaf/components/selected-ayah-section/selected-ayah-section.component.ts`
+- [X] T048 [US2] Run the US2 backend and frontend tests listed in `Backend/tests/QuranDashboard.Tests/Quran/MushafReader/SimilarAyahsValidationTests.cs`, `Backend/tests/QuranDashboard.Tests/Quran/MushafReader/SimilarAyahsReadTests.cs`, `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader.facade.similar-ayahs.spec.ts`, and `Frontend/quran-dashboard-ui/src/app/features/mushaf/components/similar-ayahs-card/similar-ayahs-card.component.spec.ts`
 
 **Checkpoint**: User Story 2 is independently functional. Similar meaning ayahs load lazily and render as a flat deduplicated list.
 
