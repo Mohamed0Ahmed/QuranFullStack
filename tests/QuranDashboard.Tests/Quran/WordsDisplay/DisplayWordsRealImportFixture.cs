@@ -16,6 +16,8 @@ public sealed class DisplayWordsRealImportFixture : IAsyncLifetime
 
     public IReadOnlyList<SourceWordColumns> SourceWordsAfterImport { get; private set; } = [];
 
+    public string RebuildReportDir { get; private set; } = string.Empty;
+
     public async Task InitializeAsync()
     {
         if (CanonicalImportSourceTestGate.IsMissing)
@@ -34,6 +36,25 @@ public sealed class DisplayWordsRealImportFixture : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
+        if (!string.IsNullOrEmpty(RebuildReportDir))
+        {
+            try
+            {
+                if (Directory.Exists(RebuildReportDir))
+                {
+                    Directory.Delete(RebuildReportDir, recursive: true);
+                }
+            }
+            catch (IOException)
+            {
+                // Best-effort cleanup of test report artifacts; ignore leftover files.
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // Best-effort cleanup of test report artifacts; ignore permission issues.
+            }
+        }
+
         await postgresContainer.DisposeAsync();
     }
 
@@ -82,11 +103,12 @@ public sealed class DisplayWordsRealImportFixture : IAsyncLifetime
 
         SourceWordsAfterImport = await ReadSourceWordColumnsAsync();
 
+        RebuildReportDir = Path.Combine(Path.GetTempPath(), $"words-display-real-{Guid.NewGuid():N}");
         var rebuildHandler = CreateServiceProvider().GetRequiredService<RebuildDisplayWordsHandler>();
         var rebuildResult = await rebuildHandler.HandleAsync(
             new RebuildDisplayWordsCommand(
                 Force: true,
-                ReportOutDir: Path.Combine(Path.GetTempPath(), $"words-display-real-{Guid.NewGuid():N}"),
+                ReportOutDir: RebuildReportDir,
                 ExpectedReadableWords: DisplayWordsInvariants.ExpectedReadableWords),
             CancellationToken.None);
         rebuildResult.Succeeded.Should().BeTrue(rebuildResult.Message);

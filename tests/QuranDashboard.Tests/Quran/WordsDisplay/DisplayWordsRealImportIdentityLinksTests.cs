@@ -116,4 +116,65 @@ public sealed class DisplayWordsRealImportIdentityLinksTests
         var sourceWordsAfterRebuild = await fixture.ReadSourceWordColumnsAsync();
         sourceWordsAfterRebuild.Should().BeEquivalentTo(fixture.SourceWordsAfterImport);
     }
+
+    [CanonicalImportSourceFact]
+    public async Task CanonicalImportRebuild_AssignsDeterministicUniqueIdsEqualToFirstQuranWordId()
+    {
+        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+
+        var tashkeelViolations = await dbContext.QuranWordsUniqueTashkeel
+            .AsNoTracking()
+            .CountAsync(row => row.Id != row.FirstQuranWordId);
+        tashkeelViolations.Should().Be(0);
+
+        var simpleViolations = await dbContext.QuranWordsUniqueSimple
+            .AsNoTracking()
+            .CountAsync(row => row.Id != row.FirstQuranWordId);
+        simpleViolations.Should().Be(0);
+
+        var tashkeelRows = await dbContext.QuranWordsUniqueTashkeel.AsNoTracking().CountAsync();
+        var tashkeelDistinctIds = await dbContext.QuranWordsUniqueTashkeel
+            .AsNoTracking()
+            .Select(row => row.Id)
+            .Distinct()
+            .CountAsync();
+        tashkeelDistinctIds.Should().Be(tashkeelRows);
+
+        var simpleRows = await dbContext.QuranWordsUniqueSimple.AsNoTracking().CountAsync();
+        var simpleDistinctIds = await dbContext.QuranWordsUniqueSimple
+            .AsNoTracking()
+            .Select(row => row.Id)
+            .Distinct()
+            .CountAsync();
+        simpleDistinctIds.Should().Be(simpleRows);
+    }
+
+    [CanonicalImportSourceFact]
+    public async Task CanonicalImportRebuild_DoesNotEmitUniqueTashkeelInformationalWarning()
+    {
+        var reportPath = Path.Combine(fixture.RebuildReportDir, "words-display-report.json");
+        File.Exists(reportPath).Should().BeTrue();
+
+        await using var stream = File.OpenRead(reportPath);
+        using var report = await JsonDocument.ParseAsync(stream);
+        var root = report.RootElement;
+
+        var tashkeelCheck = root.GetProperty("checks")
+            .EnumerateArray()
+            .Single(check => check.GetProperty("id").GetString() == "UNQ-EXPECT-TASHKEEL");
+
+        tashkeelCheck.GetProperty("severity").GetString().Should().Be("warning");
+        tashkeelCheck.GetProperty("passed").GetBoolean().Should().BeTrue(
+            "the informational tashkeel expectation must match the canonical distinct count after reconciliation");
+        tashkeelCheck.GetProperty("observed").GetString()
+            .Should().Be(DisplayWordsInvariants.CanonicalUniqueTashkeel.ToString());
+        tashkeelCheck.GetProperty("expected").GetString()
+            .Should().Be(DisplayWordsInvariants.InformationalUniqueTashkeel.ToString());
+
+        root.GetProperty("warnings")
+            .EnumerateArray()
+            .Select(warning => warning.GetString())
+            .Should().NotContain(warning => warning!.Contains("UNQ-EXPECT-TASHKEEL", StringComparison.Ordinal));
+    }
 }

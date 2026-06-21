@@ -57,6 +57,15 @@ public sealed class DisplayWordsValidationSuccessReportTests
         hardChecks.Should().OnlyContain(check => check.Passed);
 
         report.Checks.Should().Contain(check =>
+            check.Id == "UNQ-ID-DETERMINISTIC"
+            && check.Severity == "hard"
+            && check.Passed);
+        report.Checks.Should().Contain(check =>
+            check.Id == "UNQ-ID-UNIQUE"
+            && check.Severity == "hard"
+            && check.Passed);
+
+        report.Checks.Should().Contain(check =>
             check.Id == "UNQ-EXPECT-TASHKEEL"
             && check.Severity == "warning"
             && check.Observed == DisplayWordsSyntheticSeed.UniqueTashkeelCount.ToString());
