@@ -168,23 +168,23 @@
 
 ### Tests for User Story 4
 
-- [ ] T076 [P] [US4] Add backend summary endpoint tests for valid ID, invalid kind, and unknown ID in `Backend/tests/QuranDashboard.Tests/Quran/Words/UniqueWordSummaryTests.cs`.
-- [ ] T077 [P] [US4] Add frontend URL sync tests for mode, search, sort, page, word, view, ayah page, modal close cleanup, and back/forward behavior in `Frontend/quran-dashboard-ui/src/app/features/words/state/unique-words-url-sync.spec.ts`.
-- [ ] T078 [P] [US4] Add frontend restored invalid state tests for unknown word ID and invalid drill-down view in `Frontend/quran-dashboard-ui/src/app/features/words/state/unique-words.facade.restore.spec.ts`.
+- [X] T076 [P] [US4] Add backend summary endpoint tests for valid ID, invalid kind, and unknown ID in `Backend/tests/QuranDashboard.Tests/Quran/Words/UniqueWordSummaryTests.cs`.
+- [X] T077 [P] [US4] Add frontend URL sync tests for mode, search, sort, page, word, view, ayah page, modal close cleanup, and back/forward behavior in `Frontend/quran-dashboard-ui/src/app/features/words/state/unique-words-url-sync.spec.ts`.
+- [X] T078 [P] [US4] Add frontend restored invalid state tests for unknown word ID and invalid drill-down view in `Frontend/quran-dashboard-ui/src/app/features/words/state/unique-words.facade.restore.spec.ts`.
 
 ### Backend Implementation for User Story 4
 
-- [ ] T079 [P] [US4] Create `GetUniqueWordSummaryQuery`, `GetUniqueWordSummaryOutcome`, and `GetUniqueWordSummaryHandler` in `Backend/application/QuranDashboard.Application/Quran/Words/Queries/GetUniqueWordSummary/GetUniqueWordSummaryQuery.cs`, `Backend/application/QuranDashboard.Application/Quran/Words/Queries/GetUniqueWordSummary/GetUniqueWordSummaryOutcome.cs`, and `Backend/application/QuranDashboard.Application/Quran/Words/Queries/GetUniqueWordSummary/GetUniqueWordSummaryHandler.cs`.
-- [ ] T080 [US4] Implement selected unique-word summary read method in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/EfUniqueWordsReader.cs`.
-- [ ] T081 [US4] Add endpoint `GET /api/words/unique/{kind}/{id}` in `Backend/api/QuranDashboard.Api/Controllers/Words/UniqueWordsController.cs`.
+- [X] T079 [P] [US4] Create `GetUniqueWordSummaryQuery`, `GetUniqueWordSummaryOutcome`, and `GetUniqueWordSummaryHandler` in `Backend/application/QuranDashboard.Application/Quran/Words/Queries/GetUniqueWordSummary/GetUniqueWordSummaryQuery.cs`, `Backend/application/QuranDashboard.Application/Quran/Words/Queries/GetUniqueWordSummary/GetUniqueWordSummaryOutcome.cs`, and `Backend/application/QuranDashboard.Application/Quran/Words/Queries/GetUniqueWordSummary/GetUniqueWordSummaryHandler.cs`.
+- [X] T080 [US4] Implement selected unique-word summary read method in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/EfUniqueWordsReader.cs`.
+- [X] T081 [US4] Add endpoint `GET /api/words/unique/{kind}/{id}` in `Backend/api/QuranDashboard.Api/Controllers/Words/UniqueWordsController.cs`.
 
 ### Frontend Implementation for User Story 4
 
-- [ ] T082 [US4] Add summary API method in `Frontend/quran-dashboard-ui/src/app/features/words/data-access/unique-words.api.ts`.
-- [ ] T083 [P] [US4] Implement pure query-param parse/build helpers for `search`, `sort`, `page`, `word`, `view`, and `ap` in `Frontend/quran-dashboard-ui/src/app/features/words/state/unique-words-url-sync.ts`.
-- [ ] T084 [US4] Integrate URL hydration, summary loading for restored modal state, invalid view normalization, and unknown word feedback in `Frontend/quran-dashboard-ui/src/app/features/words/state/unique-words.facade.ts`.
-- [ ] T085 [US4] Update modal close behavior to clear only `word`, `view`, and `ap` query params while preserving list context in `Frontend/quran-dashboard-ui/src/app/features/words/pages/unique-words-page/unique-words-page.component.ts`.
-- [ ] T086 [US4] Add controlled Arabic not-found and invalid-state messages to page/modal rendering in `Frontend/quran-dashboard-ui/src/app/features/words/pages/unique-words-page/unique-words-page.component.html`.
+- [X] T082 [US4] Add summary API method in `Frontend/quran-dashboard-ui/src/app/features/words/data-access/unique-words.api.ts`.
+- [X] T083 [P] [US4] Implement pure query-param parse/build helpers for `search`, `sort`, `page`, `word`, `view`, and `ap` in `Frontend/quran-dashboard-ui/src/app/features/words/state/unique-words-url-sync.ts`.
+- [X] T084 [US4] Integrate URL hydration, summary loading for restored modal state, invalid view normalization, and unknown word feedback in `Frontend/quran-dashboard-ui/src/app/features/words/state/unique-words.facade.ts`.
+- [X] T085 [US4] Update modal close behavior to clear only `word`, `view`, and `ap` query params while preserving list context in `Frontend/quran-dashboard-ui/src/app/features/words/pages/unique-words-page/unique-words-page.component.ts`.
+- [X] T086 [US4] Add controlled Arabic not-found and invalid-state messages to page/modal rendering in `Frontend/quran-dashboard-ui/src/app/features/words/pages/unique-words-page/unique-words-page.component.html`.
 
 **Checkpoint**: User Story 4 is independently testable by URL refresh/share and invalid restored-state scenarios.
 
@@ -194,16 +194,16 @@
 
 **Purpose**: Verify quality, accessibility, data safety, and documentation across all completed stories.
 
-- [ ] T087 [P] Add Swagger-visible summaries or XML comments for Words endpoints if the project uses them in `Backend/api/QuranDashboard.Api/Controllers/Words/UniqueWordsController.cs`.
-- [ ] T088 [P] Review Arabic backend messages for consistency and absence of invented Quranic content in `Backend/api/QuranDashboard.Api/Common/ApiMessages.cs`.
-- [ ] T089 [P] Review frontend Arabic labels for consistency and absence of invented Quranic content in `Frontend/quran-dashboard-ui/src/app/features/words/models/unique-words.labels.ts`.
-- [ ] T090 [P] Ensure component SCSS uses shared `qd-` classes/tokens and does not redefine cards/buttons/modals in `Frontend/quran-dashboard-ui/src/app/features/words/components/word-section-card/word-section-card.component.scss`, `Frontend/quran-dashboard-ui/src/app/features/words/components/unique-words-tabs/unique-words-tabs.component.scss`, `Frontend/quran-dashboard-ui/src/app/features/words/components/word-drilldown-modal/word-drilldown-modal.component.scss`, `Frontend/quran-dashboard-ui/src/app/features/words/pages/words-hub-page/words-hub-page.component.scss`, and `Frontend/quran-dashboard-ui/src/app/features/words/pages/unique-words-page/unique-words-page.component.scss`.
-- [ ] T091 Run backend tests for the Words feature using `dotnet test Backend/QuranDashboard.sln --filter Words` from `/projects/Dashboard/App`.
-- [ ] T092 Run frontend tests for the Words feature using `npm test` from `Frontend/quran-dashboard-ui/`, preserving the script's existing `VITEST_MIN_FORKS=1` and `VITEST_MAX_FORKS=2` limits in `Frontend/quran-dashboard-ui/package.json`.
-- [ ] T093 Run backend build using `dotnet build Backend/QuranDashboard.sln` from `/projects/Dashboard/App`.
-- [ ] T094 Run frontend build using `npm run build` from `Frontend/quran-dashboard-ui/`.
-- [ ] T095 Execute the browser/API smoke checks from `specs/014-words-hub-unique-words/quickstart.md` and note any deviations in `specs/014-words-hub-unique-words/quickstart.md`.
-- [ ] T096 Perform clean-code and test-code self-checks against `CODING_PRINCIPLES.md`, `.claude/skills/engineering-review/references/clean-code-guard/`, and `.claude/skills/test-guard/`.
+- [X] T087 [P] Add Swagger-visible summaries or XML comments for Words endpoints if the project uses them in `Backend/api/QuranDashboard.Api/Controllers/Words/UniqueWordsController.cs`.
+- [X] T088 [P] Review Arabic backend messages for consistency and absence of invented Quranic content in `Backend/api/QuranDashboard.Api/Common/ApiMessages.cs`.
+- [X] T089 [P] Review frontend Arabic labels for consistency and absence of invented Quranic content in `Frontend/quran-dashboard-ui/src/app/features/words/models/unique-words.labels.ts`.
+- [X] T090 [P] Ensure component SCSS uses shared `qd-` classes/tokens and does not redefine cards/buttons/modals in `Frontend/quran-dashboard-ui/src/app/features/words/components/word-section-card/word-section-card.component.scss`, `Frontend/quran-dashboard-ui/src/app/features/words/components/unique-words-tabs/unique-words-tabs.component.scss`, `Frontend/quran-dashboard-ui/src/app/features/words/components/word-drilldown-modal/word-drilldown-modal.component.scss`, `Frontend/quran-dashboard-ui/src/app/features/words/pages/words-hub-page/words-hub-page.component.scss`, and `Frontend/quran-dashboard-ui/src/app/features/words/pages/unique-words-page/unique-words-page.component.scss`.
+- [X] T091 Run backend tests for the Words feature using `dotnet test Backend/QuranDashboard.sln --filter Words` from `/projects/Dashboard/App`.
+- [X] T092 Run frontend tests for the Words feature using `npm test` from `Frontend/quran-dashboard-ui/`, preserving the script's existing `VITEST_MIN_FORKS=1` and `VITEST_MAX_FORKS=2` limits in `Frontend/quran-dashboard-ui/package.json`.
+- [X] T093 Run backend build using `dotnet build Backend/QuranDashboard.sln` from `/projects/Dashboard/App`.
+- [X] T094 Run frontend build using `npm run build` from `Frontend/quran-dashboard-ui/`.
+- [X] T095 Execute the browser/API smoke checks from `specs/014-words-hub-unique-words/quickstart.md` and note any deviations in `specs/014-words-hub-unique-words/quickstart.md`.
+- [X] T096 Perform clean-code and test-code self-checks against `CODING_PRINCIPLES.md`, `.claude/skills/engineering-review/references/clean-code-guard/`, and `.claude/skills/test-guard/`.
 
 ---
 
