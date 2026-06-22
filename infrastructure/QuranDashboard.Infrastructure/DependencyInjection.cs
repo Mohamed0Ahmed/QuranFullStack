@@ -22,6 +22,7 @@ using QuranDashboard.Infrastructure.Reports.Quran.DataPipelines.Navigation;
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.DisplayRebuilding;
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.MorphologyImporting;
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.SimpleI3rabGeneration;
+using QuranDashboard.Application.Abstractions.Quran.Words;
 using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Foundation;
 using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting;
 using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Mutashabihat;
@@ -40,6 +41,7 @@ using QuranDashboard.Infrastructure.Reports.Quran.DataPipelines.Mutashabihat;
 using QuranDashboard.Infrastructure.Reports.Quran.DataPipelines.Tafsirs;
 using QuranDashboard.Infrastructure.Reports.Quran.DataPipelines.FullI3rab;
 using QuranDashboard.Infrastructure.Reports.Quran.DataPipelines.Words.DisplayRebuilding;
+using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words;
 
 namespace QuranDashboard.Infrastructure;
 
@@ -56,6 +58,10 @@ public static class DependencyInjection
         });
 
         ConfigureMushafReader(services, configuration);
+
+        // Feature 014: Unique Words read boundary. List reads (US2) are paged
+        // and cheap; no cache decorator is added until a measured need appears.
+        services.AddScoped<IUniqueWordsReader, EfUniqueWordsReader>();
 
         services.AddSingleton<ManifestReader>();
         services.AddSingleton<JsonWordSourceReader>();

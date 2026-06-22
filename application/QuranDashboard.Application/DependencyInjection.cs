@@ -16,6 +16,11 @@ using QuranDashboard.Application.Quran.MushafReader.Queries.GetMushafStudySource
 using QuranDashboard.Application.Quran.MushafReader.Queries.GetAyahMutashabihat;
 using QuranDashboard.Application.Quran.MushafReader.Queries.GetSimilarAyahs;
 using QuranDashboard.Application.Quran.MushafReader.Queries.GetWordAnalysis;
+using QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordAyahs;
+using QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordMissingSurahs;
+using QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordSummary;
+using QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordSurahs;
+using QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordsPage;
 
 namespace QuranDashboard.Application;
 
@@ -41,6 +46,11 @@ public static class DependencyInjection
         services.AddScoped<GetWordAnalysisHandler>();
         services.AddScoped<GetSimilarAyahsHandler>();
         services.AddScoped<GetAyahMutashabihatHandler>();
+        services.AddScoped<GetUniqueWordsPageHandler>();
+        services.AddScoped<GetUniqueWordSummaryHandler>();
+        services.AddScoped<GetUniqueWordSurahsHandler>();
+        services.AddScoped<GetUniqueWordMissingSurahsHandler>();
+        services.AddScoped<GetUniqueWordAyahsHandler>();
 
         return services;
     }

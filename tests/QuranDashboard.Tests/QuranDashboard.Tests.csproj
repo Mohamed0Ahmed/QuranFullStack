@@ -31,6 +31,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Quran\MushafReader\mushaf-reader-seed.sql" />
+    <EmbeddedResource Include="Quran\Words\unique-words-seed.sql" />
   </ItemGroup>
 
 </Project>
