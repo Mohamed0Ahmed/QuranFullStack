@@ -49,6 +49,37 @@ public sealed class UniqueWordSummaryTests(UniqueWordsTestFixture fixture)
         summary.MissingSurahsCount.Should().Be(114 - summary.SurahsCount);
     }
 
+    [Fact]
+    public async Task GetSummary_exposes_raw_word_forms_for_both_modes()
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetUniqueWordSummaryHandler>();
+
+        var tashkeelOutcome = await handler.HandleAsync(
+            new GetUniqueWordSummaryQuery("tashkeel", 1002),
+            CancellationToken.None);
+
+        var tashkeel = tashkeelOutcome.Should().BeOfType<GetUniqueWordSummaryOutcome.Success>().Subject.Summary;
+        tashkeel.DisplayTextUthmani.Should().Be("ٱللَّهِ");
+        tashkeel.TextUthmani.Should().Be("ٱللَّهِ");
+        tashkeel.TextUthmaniSimple.Should().Be("الله");
+        tashkeel.TextImlaeiSimple.Should().Be("الله");
+        tashkeel.WordKeyImlaeiSimple.Should().BeNull();
+        tashkeel.QpcGlyph.Should().BeNull();
+
+        var simpleOutcome = await handler.HandleAsync(
+            new GetUniqueWordSummaryQuery("simple", 2003),
+            CancellationToken.None);
+
+        var simple = simpleOutcome.Should().BeOfType<GetUniqueWordSummaryOutcome.Success>().Subject.Summary;
+        simple.DisplayTextUthmani.Should().Be("ءَامَنُوا۟");
+        simple.TextUthmani.Should().Be("ءَامَنُوا۟");
+        simple.TextUthmaniSimple.Should().Be("ءامنوا");
+        simple.TextImlaeiSimple.Should().Be("آمنوا");
+        simple.WordKeyImlaeiSimple.Should().Be("امنوا");
+        simple.QpcGlyph.Should().Be("g2003");
+    }
+
     [Theory]
     [InlineData("not-a-kind")]
     [InlineData("")]

@@ -19,19 +19,19 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
     /// <summary>Total number of surahs in the Quran; used to derive missing-surah counts.</summary>
     private const int TotalSurahs = 114;
 
-    // Arabic symmetric fold. Both the stored column and the user query are
-    // folded through the same map so that, e.g., a stored madda alef `آمنوا`
-    // matches a plain-alef query `امنوا`, and tashkeel/hamza/ya/alef-maqsura
-    // variants fold together. Applied server-side via PostgreSQL translate()
-    // on the column and in C# via NormalizeArabicQuery on the query.
+    // Arabic symmetric fold. Both the stored no-tashkeel/search column and the
+    // user query are folded through the same map so that, e.g., a stored madda
+    // alef `آمنوا` matches a plain-alef query `امنوا`, and
+    // tashkeel/hamza/ya/alef-maqsura/wasla variants fold together. Applied
+    // server-side via PostgreSQL translate() on the column and in C# via
+    // NormalizeArabicQuery on the query.
     //
-    // Only the query side strips tashkeel/tatweel; the column side does not.
-    // This is correct because search runs against the imlaei-simple columns
-    // (text_imlaei_simple / word_key_imlaei_simple), which are diacritic-free
-    // by construction. Searching a column that carried tashkeel would break
-    // diacritic-insensitive matching.
-    private const string FoldFrom = "أإآؤئةىي";
-    private const string FoldTo = "اااواهيي";
+    // Only the query side strips tashkeel/tatweel/Quranic annotation marks; the
+    // column side does not. This is correct because search runs against
+    // no-tashkeel/search columns (text_uthmani_simple, text_imlaei_simple, and
+    // word_key_imlaei_simple). text_uthmani is display-only and is not searched.
+    private const string FoldFrom = "أإآٱؤئةىي";
+    private const string FoldTo = "ااااواهيي";
 
     private readonly QuranDashboardDbContext _db = db;
 
@@ -72,6 +72,11 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
                 r.Id,
                 kindKey,
                 r.DisplayTextUthmani,
+                r.TextUthmani,
+                r.TextUthmaniSimple,
+                r.TextImlaeiSimple,
+                r.WordKeyImlaeiSimple,
+                r.QpcGlyph,
                 r.OccurrencesCount,
                 r.AyahsCount,
                 r.SurahsCount,
@@ -96,6 +101,11 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
                 .Where(w => w.Id == id)
                 .Select(w => new UniqueWordSummaryRow(
                     w.TextUthmani,
+                    w.TextUthmani,
+                    w.TextUthmaniSimple,
+                    w.TextImlaeiSimple,
+                    null,
+                    null,
                     UniqueWordKindKeys.Tashkeel,
                     w.OccurrencesCount,
                     w.AyahsCount,
@@ -109,6 +119,11 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
                 .Where(w => w.Id == id)
                 .Select(w => new UniqueWordSummaryRow(
                     w.TextUthmani,
+                    w.TextUthmani,
+                    w.TextUthmaniSimple,
+                    w.TextImlaeiSimple,
+                    w.WordKeyImlaeiSimple,
+                    w.QpcGlyph,
                     UniqueWordKindKeys.Simple,
                     w.OccurrencesCount,
                     w.AyahsCount,
@@ -127,6 +142,11 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
             id,
             row.KindKey,
             row.DisplayTextUthmani,
+            row.TextUthmani,
+            row.TextUthmaniSimple,
+            row.TextImlaeiSimple,
+            row.WordKeyImlaeiSimple,
+            row.QpcGlyph,
             row.OccurrencesCount,
             row.AyahsCount,
             row.SurahsCount,
@@ -349,6 +369,11 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
             SELECT
                 id AS "{nameof(UniqueWordListRow.Id)}",
                 text_uthmani AS "{nameof(UniqueWordListRow.DisplayTextUthmani)}",
+                text_uthmani AS "{nameof(UniqueWordListRow.TextUthmani)}",
+                text_uthmani_simple AS "{nameof(UniqueWordListRow.TextUthmaniSimple)}",
+                text_imlaei_simple AS "{nameof(UniqueWordListRow.TextImlaeiSimple)}",
+                NULL::text AS "{nameof(UniqueWordListRow.WordKeyImlaeiSimple)}",
+                NULL::text AS "{nameof(UniqueWordListRow.QpcGlyph)}",
                 occurrences_count AS "{nameof(UniqueWordListRow.OccurrencesCount)}",
                 ayahs_count AS "{nameof(UniqueWordListRow.AyahsCount)}",
                 surahs_count AS "{nameof(UniqueWordListRow.SurahsCount)}",
@@ -363,7 +388,8 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
         if (!string.IsNullOrEmpty(normalizedSearch))
         {
             var pattern = $"%{EscapeLikePattern(normalizedSearch)}%";
-            sql += " WHERE translate(lower(text_imlaei_simple), @foldFrom, @foldTo) ILIKE @pattern";
+            sql += " WHERE translate(lower(text_uthmani_simple), @foldFrom, @foldTo) ILIKE @pattern"
+                + " OR translate(lower(text_imlaei_simple), @foldFrom, @foldTo) ILIKE @pattern";
             return _db.Database.SqlQueryRaw<UniqueWordListRow>(
                 sql,
                 new NpgsqlParameter("foldFrom", FoldFrom),
@@ -380,6 +406,11 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
             SELECT
                 id AS "{nameof(UniqueWordListRow.Id)}",
                 text_uthmani AS "{nameof(UniqueWordListRow.DisplayTextUthmani)}",
+                text_uthmani AS "{nameof(UniqueWordListRow.TextUthmani)}",
+                text_uthmani_simple AS "{nameof(UniqueWordListRow.TextUthmaniSimple)}",
+                text_imlaei_simple AS "{nameof(UniqueWordListRow.TextImlaeiSimple)}",
+                word_key_imlaei_simple AS "{nameof(UniqueWordListRow.WordKeyImlaeiSimple)}",
+                qpc_glyph AS "{nameof(UniqueWordListRow.QpcGlyph)}",
                 occurrences_count AS "{nameof(UniqueWordListRow.OccurrencesCount)}",
                 ayahs_count AS "{nameof(UniqueWordListRow.AyahsCount)}",
                 surahs_count AS "{nameof(UniqueWordListRow.SurahsCount)}",
@@ -394,7 +425,9 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
         if (!string.IsNullOrEmpty(normalizedSearch))
         {
             var pattern = $"%{EscapeLikePattern(normalizedSearch)}%";
-            sql += " WHERE translate(lower(word_key_imlaei_simple), @foldFrom, @foldTo) ILIKE @pattern";
+            sql += " WHERE translate(lower(text_uthmani_simple), @foldFrom, @foldTo) ILIKE @pattern"
+                + " OR translate(lower(text_imlaei_simple), @foldFrom, @foldTo) ILIKE @pattern"
+                + " OR translate(lower(word_key_imlaei_simple), @foldFrom, @foldTo) ILIKE @pattern";
             return _db.Database.SqlQueryRaw<UniqueWordListRow>(
                 sql,
                 new NpgsqlParameter("foldFrom", FoldFrom),
@@ -417,9 +450,9 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
     };
 
     /// <summary>
-    /// Folds an Arabic search query the same way the SQL <c>translate()</c>
-    /// folds the stored column: strip tashkeel/tatweel, then map the common
-    /// letter-form variants to their canonical base form. Returns
+    /// Normalizes Arabic search input for matching against no-tashkeel/search
+    /// columns: strip tashkeel, tatweel, and Quranic annotation marks, then map
+    /// common letter-form variants to their canonical base form. Returns
     /// <see langword="null"/> for blank input (meaning "no search filter").
     /// </summary>
     private static string? NormalizeArabicQuery(string? search)
@@ -432,9 +465,9 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
         var builder = new StringBuilder(search.Length);
         foreach (var ch in search)
         {
-            // Skip Arabic diacritics (tashkeel), the alef madda superscript
-            // alef (U+0670), and tatweel (U+0640) so diacritic-insensitive
-            // matching matches the unvoweled stored column.
+            // Skip Arabic diacritics, Quranic annotation marks, dagger alif,
+            // and tatweel so pasted visible Uthmani text can match the
+            // no-tashkeel stored search columns.
             if (IsSkippable(ch))
             {
                 continue;
@@ -449,9 +482,12 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
     }
 
     private static bool IsSkippable(char ch) =>
-        ch is
-            '\u064B' or '\u064C' or '\u064D' or '\u064E' or '\u064F' or
-            '\u0650' or '\u0651' or '\u0652' or '\u0670' or '\u0640';
+        ch == '\u0640' || // tatweel
+        ch is >= '\u0610' and <= '\u061A' || // Arabic/Quranic signs
+        ch is >= '\u064B' and <= '\u065F' || // Arabic tashkeel and combining marks
+        ch == '\u0670' || // dagger alif
+        ch is >= '\u06D6' and <= '\u06ED' || // Quranic annotation marks
+        ch is >= '\u08D3' and <= '\u08FF'; // Arabic extended combining marks
 
     private static char Fold(char ch)
     {
@@ -476,6 +512,11 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
     private sealed record UniqueWordListRow(
         int Id,
         string DisplayTextUthmani,
+        string TextUthmani,
+        string TextUthmaniSimple,
+        string TextImlaeiSimple,
+        string? WordKeyImlaeiSimple,
+        string? QpcGlyph,
         int OccurrencesCount,
         short AyahsCount,
         short SurahsCount,
@@ -493,6 +534,11 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
     /// </summary>
     private sealed record UniqueWordSummaryRow(
         string DisplayTextUthmani,
+        string TextUthmani,
+        string TextUthmaniSimple,
+        string TextImlaeiSimple,
+        string? WordKeyImlaeiSimple,
+        string? QpcGlyph,
         string KindKey,
         int OccurrencesCount,
         short AyahsCount,

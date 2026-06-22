@@ -47,18 +47,102 @@ public sealed class UniqueWordsSearchSortPagingTests(UniqueWordsTestFixture fixt
     }
 
     [Fact]
-    public async Task Search_works_in_simple_mode()
+    public async Task Search_tashkeel_matches_text_uthmani_simple()
     {
         await using var scope = fixture.CreateScope();
         var handler = scope.ServiceProvider.GetRequiredService<GetUniqueWordsPageHandler>();
 
         var outcome = await handler.HandleAsync(
-            new GetUniqueWordsPageQuery("simple", "الله", null, 1, 50),
+            new GetUniqueWordsPageQuery("tashkeel", "ءامنوا", null, 1, 50),
+            CancellationToken.None);
+
+        var page = outcome.Should().BeOfType<GetUniqueWordsPageOutcome.Success>().Subject.Page;
+        page.TotalCount.Should().Be(1);
+        page.Items.Should().ContainSingle(i => i.Id == 2003);
+    }
+
+    [Fact]
+    public async Task Search_simple_matches_text_uthmani_simple()
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetUniqueWordsPageHandler>();
+
+        var outcome = await handler.HandleAsync(
+            new GetUniqueWordsPageQuery("simple", "ءامنوا", null, 1, 50),
+            CancellationToken.None);
+
+        var page = outcome.Should().BeOfType<GetUniqueWordsPageOutcome.Success>().Subject.Page;
+        page.TotalCount.Should().Be(1);
+        page.Items.Should().ContainSingle(i => i.Id == 2003);
+    }
+
+    [Fact]
+    public async Task Search_simple_matches_text_imlaei_simple()
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetUniqueWordsPageHandler>();
+
+        var outcome = await handler.HandleAsync(
+            new GetUniqueWordsPageQuery("simple", "آمنوا", null, 1, 50),
+            CancellationToken.None);
+
+        var page = outcome.Should().BeOfType<GetUniqueWordsPageOutcome.Success>().Subject.Page;
+        page.TotalCount.Should().Be(1);
+        page.Items.Should().ContainSingle(i => i.Id == 2003);
+    }
+
+    [Fact]
+    public async Task Search_simple_matches_word_key_imlaei_simple()
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetUniqueWordsPageHandler>();
+
+        var outcome = await handler.HandleAsync(
+            new GetUniqueWordsPageQuery("simple", "امنوا", null, 1, 50),
+            CancellationToken.None);
+
+        var page = outcome.Should().BeOfType<GetUniqueWordsPageOutcome.Success>().Subject.Page;
+        page.TotalCount.Should().Be(1);
+        page.Items.Should().ContainSingle(i => i.Id == 2003);
+    }
+
+    [Theory]
+    [InlineData("tashkeel")]
+    [InlineData("simple")]
+    public async Task Search_normalizes_pasted_visible_uthmani_with_alef_wasla(string kind)
+    {
+        // Uses the seeded display text for الله. The query contains alef wasla
+        // and tashkeel, but search still matches through no-tashkeel columns.
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetUniqueWordsPageHandler>();
+
+        var outcome = await handler.HandleAsync(
+            new GetUniqueWordsPageQuery(kind, "ٱللَّهِ", null, 1, 50),
             CancellationToken.None);
 
         var page = outcome.Should().BeOfType<GetUniqueWordsPageOutcome.Success>().Subject.Page;
         page.TotalCount.Should().Be(1);
         page.Items.Should().ContainSingle(i => i.Id == 1002);
+    }
+
+    [Theory]
+    [InlineData("tashkeel")]
+    [InlineData("simple")]
+    public async Task Search_normalizes_pasted_visible_uthmani_with_final_quranic_mark(string kind)
+    {
+        // Uses the seeded display text for ءامنوا. The query contains ordinary
+        // tashkeel plus a final Quranic annotation mark, but search still
+        // matches through no-tashkeel columns.
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetUniqueWordsPageHandler>();
+
+        var outcome = await handler.HandleAsync(
+            new GetUniqueWordsPageQuery(kind, "ءَامَنُوا۟", null, 1, 50),
+            CancellationToken.None);
+
+        var page = outcome.Should().BeOfType<GetUniqueWordsPageOutcome.Success>().Subject.Page;
+        page.TotalCount.Should().Be(1);
+        page.Items.Should().ContainSingle(i => i.Id == 2003);
     }
 
     [Fact]

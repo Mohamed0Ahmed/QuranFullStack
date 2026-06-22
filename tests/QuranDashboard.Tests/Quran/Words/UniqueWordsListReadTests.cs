@@ -99,22 +99,38 @@ public sealed class UniqueWordsListReadTests(UniqueWordsTestFixture fixture)
     }
 
     [Fact]
-    public async Task GetUniqueWordsPage_simple_mode_returns_uthmani_display_text_not_raw_key()
+    public async Task GetUniqueWordsPage_exposes_raw_word_forms_and_preserves_display_text()
     {
-        // SC-005: the simple mode primary label must be readable Quran display
-        // text (Uthmani), never the raw imlaei identity key.
         await using var scope = fixture.CreateScope();
         var handler = scope.ServiceProvider.GetRequiredService<GetUniqueWordsPageHandler>();
 
-        var outcome = await handler.HandleAsync(
+        var tashkeelOutcome = await handler.HandleAsync(
+            new GetUniqueWordsPageQuery("tashkeel", null, null, 1, 50),
+            CancellationToken.None);
+
+        var tashkeelPage = tashkeelOutcome.Should().BeOfType<GetUniqueWordsPageOutcome.Success>().Subject.Page;
+
+        var allah = tashkeelPage.Items.Single(i => i.Id == 1002);
+        allah.DisplayTextUthmani.Should().Be("ٱللَّهِ");
+        allah.TextUthmani.Should().Be("ٱللَّهِ");
+        allah.TextUthmaniSimple.Should().Be("الله");
+        allah.TextImlaeiSimple.Should().Be("الله");
+        allah.WordKeyImlaeiSimple.Should().BeNull();
+        allah.QpcGlyph.Should().BeNull();
+
+        var simpleOutcome = await handler.HandleAsync(
             new GetUniqueWordsPageQuery("simple", null, null, 1, 50),
             CancellationToken.None);
-        var page = outcome.Should().BeOfType<GetUniqueWordsPageOutcome.Success>().Subject.Page;
+
+        var page = simpleOutcome.Should().BeOfType<GetUniqueWordsPageOutcome.Success>().Subject.Page;
 
         var amanu = page.Items.Single(i => i.Id == 2003);
         amanu.DisplayTextUthmani.Should().Be("ءَامَنُوا۟");
-        // The raw simple key must NOT be the user-facing label.
-        amanu.DisplayTextUthmani.Should().NotBe("امنوا");
+        amanu.TextUthmani.Should().Be("ءَامَنُوا۟");
+        amanu.TextUthmaniSimple.Should().Be("ءامنوا");
+        amanu.TextImlaeiSimple.Should().Be("آمنوا");
+        amanu.WordKeyImlaeiSimple.Should().Be("امنوا");
+        amanu.QpcGlyph.Should().Be("g2003");
     }
 
     [Fact]
