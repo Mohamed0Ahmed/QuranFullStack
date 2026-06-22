@@ -227,14 +227,20 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
 
         var totalCount = await matchedAyahIds.CountAsync(cancellationToken);
 
-        var pageAyahs = await _db.QuranAyahs
-            .AsNoTracking()
-            .Where(a => matchedAyahIds.Contains(a.Id))
-            .OrderBy(a => a.SurahNumber)
-            .ThenBy(a => a.AyahNumber)
+        var pageAyahs = await (
+            from ayah in _db.QuranAyahs.AsNoTracking()
+            join surah in _db.QuranSurahs.AsNoTracking()
+                on ayah.SurahNumber equals surah.SurahNumber
+            where matchedAyahIds.Contains(ayah.Id)
+            orderby ayah.SurahNumber, ayah.AyahNumber
+            select new AyahMetaRow(
+                ayah.Id,
+                ayah.VerseKey,
+                ayah.SurahNumber,
+                ayah.AyahNumber,
+                surah.NameArabic))
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(a => new DistinctAyahRow(a.Id, a.SurahNumber, a.AyahNumber))
             .ToListAsync(cancellationToken);
 
         if (pageAyahs.Count == 0)
@@ -252,19 +258,6 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
         var matchedIdsByAyah = matchedRows
             .GroupBy(r => r.AyahId)
             .ToDictionary(g => g.Key, g => (IReadOnlyList<int>)g.Select(x => x.Id).ToList());
-
-        var ayahMeta = await (
-            from ayah in _db.QuranAyahs.AsNoTracking()
-            join surah in _db.QuranSurahs.AsNoTracking()
-                on ayah.SurahNumber equals surah.SurahNumber
-            where ayahIds.Contains(ayah.Id)
-            select new AyahMetaRow(
-                ayah.Id,
-                ayah.VerseKey,
-                ayah.SurahNumber,
-                ayah.AyahNumber,
-                surah.NameArabic))
-            .ToDictionaryAsync(a => a.AyahId, cancellationToken);
 
         var wordsByAyah = await _db.QuranWords
             .AsNoTracking()
@@ -287,14 +280,13 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
         var items = pageAyahs
             .Select(ayah =>
             {
-                var meta = ayahMeta[ayah.AyahId];
                 var words = wordsGrouped.GetValueOrDefault(ayah.AyahId, []);
                 return new UniqueWordAyahMatchDto(
-                    meta.AyahId,
-                    meta.VerseKey,
-                    meta.SurahNumber,
-                    meta.SurahNameArabic,
-                    meta.AyahNumber,
+                    ayah.AyahId,
+                    ayah.VerseKey,
+                    ayah.SurahNumber,
+                    ayah.SurahNameArabic,
+                    ayah.AyahNumber,
                     matchedIdsByAyah.GetValueOrDefault(ayah.AyahId, []),
                     words.Select(w => new AyahWordForHighlightDto(
                         w.QuranWordId,
@@ -510,8 +502,6 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
         string FirstLocation);
 
     private sealed record SurahOccurrenceRow(short SurahNumber, int OccurrencesInSurah);
-
-    private sealed record DistinctAyahRow(int AyahId, short SurahNumber, short AyahNumber);
 
     private sealed record AyahMetaRow(
         int AyahId,
