@@ -20,6 +20,7 @@ function item(id: number, overrides: Partial<UniqueWordListItemDto> = {}): Uniqu
     id,
     kind: 'tashkeel',
     displayTextUthmani: `كلمة-تجريبية-${id}`,
+    textUthmaniSimple: `كلمة-بسيطة-${id}`,
     occurrencesCount: 1,
     ayahsCount: 1,
     surahsCount: 1,
@@ -30,11 +31,15 @@ function item(id: number, overrides: Partial<UniqueWordListItemDto> = {}): Uniqu
   };
 }
 
-function okResponse(items: UniqueWordListItemDto[], totalCount: number): ApiResponse<{ page: number; pageSize: number; totalCount: number; items: UniqueWordListItemDto[] }> {
+function okResponse(
+  items: UniqueWordListItemDto[],
+  totalCount: number,
+  page = 1,
+): ApiResponse<{ page: number; pageSize: number; totalCount: number; items: UniqueWordListItemDto[] }> {
   return {
     isSuccess: true,
     message: 'تم',
-    data: { page: 1, pageSize: DEFAULT_LIST_PAGE_SIZE, totalCount, items },
+    data: { page, pageSize: DEFAULT_LIST_PAGE_SIZE, totalCount, items },
   };
 }
 
@@ -160,13 +165,39 @@ describe('UniqueWordsFacade list state', () => {
   });
 
   it('reloads with the requested page on setPage', () => {
-    const getList = vi.fn(() => of(okResponse([item(1)], 100)));
+    const getList = vi
+      .fn()
+      .mockReturnValueOnce(of(okResponse([item(1)], 100, 1)))
+      .mockReturnValueOnce(of(okResponse([item(2)], 100, 2)))
+      .mockReturnValueOnce(of(okResponse([item(3)], 100, 3)));
     const facade = setup(getList);
     facade.loadList();
 
     facade.setPage(3);
 
     expect(getList).toHaveBeenLastCalledWith('tashkeel', '', 'mushaf-order', 3, DEFAULT_LIST_PAGE_SIZE);
+  });
+
+  it('accumulates later pages instead of replacing the loaded rows', () => {
+    const getList = vi
+      .fn()
+      .mockReturnValueOnce(of(okResponse([item(1)], 2, 1)))
+      .mockReturnValueOnce(of(okResponse([item(2)], 2, 2)));
+    const facade = setup(getList);
+
+    facade.loadList();
+    facade.setPage(2);
+
+    expect(facade.items().map((row) => row.id)).toEqual([1, 2]);
+  });
+
+  it('maps the simple mode display text from the simple field', () => {
+    const getList = vi.fn(() => of(okResponse([item(1)], 1)));
+    const facade = setup(getList);
+
+    facade.setMode('simple');
+
+    expect(facade.items()[0]?.displayText).toBe('كلمة-بسيطة-1');
   });
 });
 
@@ -179,7 +210,10 @@ describe('UniqueWordsFacade route binding', () => {
   }
 
   it('reads the mode from the :mode path segment and query state on bind', () => {
-    const getList = vi.fn(() => of(okResponse([item(1)], 1)));
+    const getList = vi
+      .fn()
+      .mockReturnValueOnce(of(okResponse([item(1)], 100, 1)))
+      .mockReturnValueOnce(of(okResponse([item(2)], 100, 2)));
     const facade = setup(getList);
 
     const paramMap = new BehaviorSubject<ParamMap>(convertToParamMap({ mode: 'simple' }));

@@ -27,6 +27,11 @@ export interface UniqueWordListItemDto {
   id: number;
   kind: UniqueWordKind;
   displayTextUthmani: string;
+  textUthmani?: string;
+  textUthmaniSimple?: string;
+  textImlaeiSimple?: string;
+  wordKeyImlaeiSimple?: string | null;
+  qpcGlyph?: string | null;
   occurrencesCount: number;
   ayahsCount: number;
   surahsCount: number;
@@ -41,6 +46,11 @@ export interface UniqueWordSummaryDto {
   id: number;
   kind: UniqueWordKind;
   displayTextUthmani: string;
+  textUthmani?: string;
+  textUthmaniSimple?: string;
+  textImlaeiSimple?: string;
+  wordKeyImlaeiSimple?: string | null;
+  qpcGlyph?: string | null;
   occurrencesCount: number;
   ayahsCount: number;
   surahsCount: number;
@@ -104,7 +114,8 @@ export type LoadStatus = 'idle' | 'loading' | 'success' | 'empty' | 'error' | 'n
 /** List explorer state consumed by the page component. */
 export interface UniqueWordsListState {
   status: LoadStatus;
-  items: UniqueWordListItemDto[];
+  isLoadingMore: boolean;
+  items: UniqueWordListItemViewModel[];
   page: number;
   pageSize: number;
   totalCount: number;
@@ -188,4 +199,9 @@ export interface ParsedUniqueWordsQuery {
   view: WordDrilldownView | null;
   /** Ayah-match page when `view === 'ayahs'`, otherwise `null`/default. */
   ayahPage: number | null;
+}
+
+/** View model with the mode-aware display text already resolved for the UI. */
+export interface UniqueWordListItemViewModel extends UniqueWordListItemDto {
+  displayText: string;
 }

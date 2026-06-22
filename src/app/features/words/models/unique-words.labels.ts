@@ -63,6 +63,8 @@ export const DRILLDOWN_EMPTY_SURAHS_LABEL = 'لا توجد سور';
 export const DRILLDOWN_EMPTY_MISSING_LABEL = 'لا توجد سور مفقودة';
 export const DRILLDOWN_EMPTY_AYAHS_LABEL = 'لا توجد آيات';
 export const DRILLDOWN_ERROR_LABEL = 'تعذّر تحميل التفاصيل';
+export const DRILLDOWN_PANEL_TITLE = 'تفاصيل الكلمة';
+export const DRILLDOWN_PANEL_EMPTY_LABEL = 'اختر كلمة لعرض تفاصيلها';
 
 /**
  * Controlled Arabic message shown when a shared/restored URL points at a word

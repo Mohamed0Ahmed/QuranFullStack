@@ -2,33 +2,35 @@
   display: block;
 }
 
-.unique-words-list {
+.unique-words-layout {
   display: grid;
-  gap: var(--qd-space-3);
+  gap: var(--qd-space-4);
   grid-template-columns: 1fr;
 }
 
-@media (min-width: 768px) {
-  .unique-words-list {
-    grid-template-columns: repeat(2, 1fr);
+.unique-words-layout__table {
+  min-width: 0;
+}
+
+.unique-words-layout__panel {
+  min-width: 0;
+}
+
+@media (min-width: 1024px) {
+  .unique-words-layout {
+    grid-template-columns: minmax(0, 1fr) 20rem;
+    align-items: start;
   }
 }
 
-@media (min-width: 1200px) {
-  .unique-words-list {
-    grid-template-columns: repeat(3, 1fr);
+@media (max-width: 1023px) {
+  .unique-words-layout__panel--desktop {
+    display: none;
   }
 }
 
-.unique-words-pagination {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--qd-space-3);
-  margin-top: var(--qd-space-4);
-}
-
-.unique-words-pagination__info {
-  min-width: 4rem;
-  text-align: center;
+@media (min-width: 1024px) {
+  .unique-words-page__mobile-modal {
+    display: none;
+  }
 }

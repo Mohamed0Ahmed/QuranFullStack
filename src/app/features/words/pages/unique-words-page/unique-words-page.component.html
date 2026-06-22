@@ -25,40 +25,29 @@
         <div class="qd-empty-state" data-testid="unique-words-empty">{{ emptyLabel }}</div>
       }
       @default {
-        @if (listState().items.length > 0) {
-          <section class="unique-words-list" aria-label="قائمة الكلمات الفريدة">
-            @for (word of listState().items; track word.id) {
-              <qd-unique-word-card
-                [word]="word"
-                (drilldownOpen)="onDrilldownOpen(word, $event)"
-              />
-            }
+        <div class="unique-words-layout">
+          <section class="unique-words-layout__table">
+            <qd-unique-words-table
+              [rows]="listState().items"
+              [selectedWordId]="drilldownState().selectedWordId"
+              [loadingMore]="listState().isLoadingMore"
+              [hasMore]="listState().items.length < listState().totalCount"
+              (rowSelected)="onRowSelected($event)"
+              (drilldownOpen)="onDrilldownOpen($event.word, $event.view)"
+              (loadMoreRequested)="onLoadMoreRequested()"
+            />
           </section>
 
-          <nav class="unique-words-pagination" aria-label="تصفّح النتائج">
-            <button
-              type="button"
-              class="qd-btn qd-btn-secondary"
-              data-testid="unique-words-prev-page"
-              [disabled]="listState().page <= 1"
-              (click)="onPrevPage()"
-            >
-              السابق
-            </button>
-            <span class="unique-words-pagination__info" data-testid="unique-words-page-info">
-              {{ listState().page }} / {{ lastPage() }}
-            </span>
-            <button
-              type="button"
-              class="qd-btn qd-btn-secondary"
-              data-testid="unique-words-next-page"
-              [disabled]="listState().page >= lastPage()"
-              (click)="onNextPage()"
-            >
-              التالي
-            </button>
-          </nav>
-        }
+          <aside class="unique-words-layout__panel unique-words-layout__panel--desktop" aria-label="التفاصيل">
+            <qd-word-drilldown-modal
+              [state]="drilldownState()"
+              [inline]="true"
+              (closeModal)="onDrilldownClose()"
+              (viewChange)="onDrilldownViewChange($event)"
+              (ayahPageChange)="onAyahPageChange($event)"
+            />
+          </aside>
+        </div>
       }
     }
 
@@ -90,7 +79,9 @@
   </div>
 
   <qd-word-drilldown-modal
+    class="unique-words-page__mobile-modal"
     [state]="drilldownState()"
+    [inline]="false"
     (closeModal)="onDrilldownClose()"
     (viewChange)="onDrilldownViewChange($event)"
     (ayahPageChange)="onAyahPageChange($event)"

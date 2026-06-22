@@ -27,7 +27,7 @@ import {
   UniqueWordAyahMatchDto,
   UniqueWordKind,
   UniqueWordListItemDto,
-  UniqueWordMissingSurahsDto,
+  UniqueWordListItemViewModel,
   UniqueWordSort,
   UniqueWordSummaryDto,
   UniqueWordSurahsDto,
@@ -35,6 +35,17 @@ import {
   WordDrilldownState,
   WordDrilldownView,
 } from '../models/unique-words.models';
+import { mapUniqueWordListItems } from '../utils/unique-words-display.mapper';
+import { buildMissingSurahsPayload } from '../utils/unique-words-surahs';
+import { mergeUniqueWordListItems, toUniqueWordSummary } from '../utils/unique-words-state.helpers';
+import {
+  buildAyahsDrilldownUpdate,
+  buildDrilldownErrorUpdate,
+  buildRestoredWordLoadError,
+  buildRestoredWordNotFound,
+  buildSurahsDrilldownUpdate,
+  extractDrilldownMessage,
+} from '../utils/unique-words-drilldown.state';
 import { parseUniqueWordsQueryParams } from './unique-words-url-sync';
 
 const CONNECTION_ERROR_MESSAGE = 'تعذّر تحميل الكلمات الفريدة. تحقّق من الاتصال ثم أعد المحاولة.';
@@ -63,7 +74,9 @@ export class UniqueWordsFacade {
   private readonly api = inject(UniqueWordsApi);
 
   private readonly _status = signal<LoadStatus>('idle');
-  private readonly _items = signal<readonly UniqueWordListItemDto[]>([]);
+  private readonly _items = signal<readonly UniqueWordListItemViewModel[]>([]);
+  private readonly _isLoadingMore = signal<boolean>(false);
+  private readonly _loadedPage = signal<number>(0);
   private readonly _page = signal<number>(DEFAULT_LIST_PAGE);
   private readonly _totalCount = signal<number>(0);
   private readonly _mode = signal<UniqueWordKind>(DEFAULT_UNIQUE_WORD_KIND);
@@ -86,6 +99,7 @@ export class UniqueWordsFacade {
   private manualLoadSub?: Subscription;
   private drilldownSub?: Subscription;
   private summarySub?: Subscription;
+  private lastFilterKey = '';
 
   /**
    * Modal state currently reflected by the URL or an in-app action. This tracks
@@ -97,6 +111,7 @@ export class UniqueWordsFacade {
   readonly listState = computed<UniqueWordsListState>(() => ({
     status: this._status(),
     items: [...this._items()],
+    isLoadingMore: this._isLoadingMore(),
     page: this._page(),
     pageSize: this._pageSize,
     totalCount: this._totalCount(),
@@ -110,6 +125,7 @@ export class UniqueWordsFacade {
 
   readonly status = this._status.asReadonly();
   readonly items = this._items.asReadonly();
+  readonly isLoadingMore = this._isLoadingMore.asReadonly();
   readonly mode = this._mode.asReadonly();
   readonly search = this._search.asReadonly();
   readonly sort = this._sort.asReadonly();
@@ -145,7 +161,7 @@ export class UniqueWordsFacade {
   }
 
   openDrilldown(word: UniqueWordListItemDto, view: WordDrilldownView): void {
-    const summary = this.toSummary(word);
+    const summary = toUniqueWordSummary(word);
     this.activeModalUrlState = {
       wordId: word.id,
       view,
@@ -215,11 +231,17 @@ export class UniqueWordsFacade {
 
   private applyRouteState(params: ParamMap, queryParams: ParamMap): void {
     const modeParam = params.get('mode');
-    this._mode.set(
-      modeParam === 'simple' || modeParam === 'tashkeel' ? modeParam : DEFAULT_UNIQUE_WORD_KIND,
-    );
+    const nextMode = modeParam === 'simple' || modeParam === 'tashkeel' ? modeParam : DEFAULT_UNIQUE_WORD_KIND;
 
     const parsed = parseUniqueWordsQueryParams(queryParams);
+    const nextFilterKey = [nextMode, parsed.search, parsed.sort].join('|');
+
+    if (this.lastFilterKey !== nextFilterKey) {
+      this.lastFilterKey = nextFilterKey;
+      this.resetAccumulatedList();
+    }
+
+    this._mode.set(nextMode);
     this._search.set(parsed.search);
     this._sort.set(parsed.sort);
     this._page.set(parsed.page);
@@ -227,13 +249,6 @@ export class UniqueWordsFacade {
     this.restoreModalFromUrl(parsed.wordId, parsed.view, parsed.ayahPage);
   }
 
-  /**
-   * Restores modal state from a shared URL. List-only query-param updates do not
-   * reload the modal, but same-word `view`/`ap` changes are reconciled for
-   * browser back/forward. An invalid `view` is normalized to the default
-   * `surahs`. An unknown word ID produces a controlled `notFound` status while
-   * keeping the list usable.
-   */
   private restoreModalFromUrl(
     wordId: number | null,
     view: WordDrilldownView | null,
@@ -341,21 +356,13 @@ export class UniqueWordsFacade {
     // the attempted state so a lingering bad `word` param is not re-fetched on
     // later list-only navigation. The page renders a controlled Arabic message;
     // no Quranic text is invented.
-    this._drilldown.set({
-      ...INITIAL_DRILLDOWN,
-      status: 'notFound',
-      errorMessage: message || RESTORED_WORD_NOT_FOUND_LABEL,
-    });
+    this._drilldown.set({ ...INITIAL_DRILLDOWN, ...buildRestoredWordNotFound(message) });
   }
 
   private handleRestoredWordLoadError(message: string): void {
     // Mirror not-found handling: keep `activeModalUrlState` so the failed
     // restore is not re-attempted on every later list-only navigation.
-    this._drilldown.set({
-      ...INITIAL_DRILLDOWN,
-      status: 'error',
-      errorMessage: message || RESTORED_WORD_LOAD_ERROR_LABEL,
-    });
+    this._drilldown.set({ ...INITIAL_DRILLDOWN, ...buildRestoredWordLoadError(message) });
   }
 
   private isSameModalUrlState(
@@ -370,22 +377,30 @@ export class UniqueWordsFacade {
     );
   }
 
-  /**
-   * The list-request identity: the inputs that actually change list results.
-   * Used to suppress redundant list reloads when only modal params change.
-   */
   private listRequestKey(): string {
     return [this._mode(), this._search(), this._sort(), this._page()].join('|');
   }
 
   private runListRequest(): Observable<void> {
-    this._status.set('loading');
+    const targetPage = this._page();
+
+    if (this._loadedPage() > targetPage) {
+      this.resetAccumulatedList();
+    }
+
+    if (this._loadedPage() === targetPage && this._items().length > 0) {
+      this._isLoadingMore.set(false);
+      return of(undefined);
+    }
+
+    this._status.set(this._loadedPage() === 0 ? 'loading' : 'success');
+    this._isLoadingMore.set(this._loadedPage() > 0);
     this._errorMessage.set('');
 
     return this.api
-      .getList(this._mode(), this._search(), this._sort(), this._page(), this._pageSize)
+      .getList(this._mode(), this._search(), this._sort(), this._loadedPage() + 1, this._pageSize)
       .pipe(
-        tap((response) => this.handleListResponse(response)),
+        tap((response) => this.handleListResponse(response, targetPage)),
         catchError((err) => {
           this.handleListError(err);
           return of(undefined);
@@ -417,10 +432,51 @@ export class UniqueWordsFacade {
     }
 
     if (view === 'missing') {
+      const current = this._drilldown();
+      if (current.missingSurahs !== null) {
+        const missingSurahs = current.missingSurahs;
+        this._drilldown.update((s) => ({
+          ...s,
+          missingSurahs,
+          status: missingSurahs.surahs.length === 0 ? 'empty' : 'success',
+          errorMessage: '',
+        }));
+        return;
+      }
+
+      if (current.surahs !== null) {
+        const surahs = current.surahs;
+        this._drilldown.update((s) => ({
+          ...s,
+          missingSurahs: buildMissingSurahsPayload(surahs),
+          status: surahs.surahs.length === 0 ? 'empty' : 'success',
+          errorMessage: '',
+        }));
+        return;
+      }
+
       this.drilldownSub = this.api
-        .getMissingSurahs(kind, wordId)
+        .getMentionedSurahs(kind, wordId)
         .pipe(
-          tap((response) => this.handleMissingSurahsResponse(response)),
+          tap((response) => {
+            if (!response.isSuccess || !response.data) {
+              this._drilldown.update((s) => ({
+                ...s,
+                status: 'error',
+                errorMessage: response.message ?? DRILLDOWN_ERROR_LABEL,
+              }));
+              return;
+            }
+
+            const missingSurahs = buildMissingSurahsPayload(response.data);
+
+            this._drilldown.update((s) => ({
+              ...s,
+              missingSurahs,
+              status: missingSurahs.surahs.length === 0 ? 'empty' : 'success',
+              errorMessage: '',
+            }));
+          }),
           catchError((err) => {
             this.handleDrilldownError(err);
             return of(undefined);
@@ -446,6 +502,7 @@ export class UniqueWordsFacade {
     if (mode !== this._mode()) {
       this._mode.set(mode);
       this._page.set(DEFAULT_LIST_PAGE);
+      this.resetAccumulatedList();
       this.loadList();
     }
   }
@@ -454,6 +511,7 @@ export class UniqueWordsFacade {
     if (search !== this._search()) {
       this._search.set(search);
       this._page.set(DEFAULT_LIST_PAGE);
+      this.resetAccumulatedList();
       this.loadList();
     }
   }
@@ -462,6 +520,7 @@ export class UniqueWordsFacade {
     if (sort !== this._sort()) {
       this._sort.set(sort);
       this._page.set(DEFAULT_LIST_PAGE);
+      this.resetAccumulatedList();
       this.loadList();
     }
   }
@@ -473,111 +532,64 @@ export class UniqueWordsFacade {
     }
   }
 
-  private handleListResponse(response: ApiResponse<PagedResultDto<UniqueWordListItemDto>>): void {
-    if (response.isSuccess && response.data) {
-      this._items.set(response.data.items);
-      this._totalCount.set(response.data.totalCount);
-      this._status.set(response.data.totalCount === 0 ? 'empty' : 'success');
-      this._errorMessage.set('');
+  private handleListResponse(
+    response: ApiResponse<PagedResultDto<UniqueWordListItemDto>>,
+    targetPage: number,
+  ): void {
+    if (!response.isSuccess || !response.data) {
+      this.resetAccumulatedList();
+      this._status.set('error');
+      this._errorMessage.set(response.message ?? EMPTY_LIST_LABEL);
       return;
     }
 
-    this._items.set([]);
-    this._totalCount.set(0);
-    this._status.set('error');
-    this._errorMessage.set(response.message ?? EMPTY_LIST_LABEL);
+    const data = response.data;
+    const nextRows = mapUniqueWordListItems(data.items, this._mode());
+    const mergedRows = mergeUniqueWordListItems(this._items(), nextRows);
+
+    this._items.set(mergedRows);
+    this._loadedPage.set(data.page);
+    this._totalCount.set(data.totalCount);
+    this._status.set(data.totalCount === 0 ? 'empty' : 'success');
+    this._errorMessage.set('');
+
+    if (data.totalCount > mergedRows.length && this._loadedPage() < targetPage) {
+      this._isLoadingMore.set(true);
+      this.loadList();
+      return;
+    }
+
+    this._isLoadingMore.set(false);
   }
 
   private handleListError(err: unknown): void {
-    this._items.set([]);
-    this._totalCount.set(0);
+    this.resetAccumulatedList();
     this._status.set('error');
     this._errorMessage.set(this.extractErrorMessage(err, CONNECTION_ERROR_MESSAGE));
   }
 
   private handleSurahsResponse(response: ApiResponse<UniqueWordSurahsDto>): void {
-    if (!response.isSuccess || !response.data) {
-      this._drilldown.update((s) => ({
-        ...s,
-        status: 'error',
-        errorMessage: response.message ?? DRILLDOWN_ERROR_LABEL,
-      }));
-      return;
-    }
-
-    this._drilldown.update((s) => ({
-      ...s,
-      surahs: response.data!,
-      status: response.data!.surahs.length === 0 ? 'empty' : 'success',
-      errorMessage: '',
-    }));
-  }
-
-  private handleMissingSurahsResponse(response: ApiResponse<UniqueWordMissingSurahsDto>): void {
-    if (!response.isSuccess || !response.data) {
-      this._drilldown.update((s) => ({
-        ...s,
-        status: 'error',
-        errorMessage: response.message ?? DRILLDOWN_ERROR_LABEL,
-      }));
-      return;
-    }
-
-    this._drilldown.update((s) => ({
-      ...s,
-      missingSurahs: response.data!,
-      status: response.data!.surahs.length === 0 ? 'empty' : 'success',
-      errorMessage: '',
-    }));
+    this._drilldown.update((s) => ({ ...s, ...buildSurahsDrilldownUpdate(response) }));
   }
 
   private handleAyahsResponse(response: ApiResponse<PagedResultDto<UniqueWordAyahMatchDto>>): void {
-    if (!response.isSuccess || !response.data) {
-      this._drilldown.update((s) => ({
-        ...s,
-        status: 'error',
-        errorMessage: response.message ?? DRILLDOWN_ERROR_LABEL,
-      }));
-      return;
-    }
-
-    const data = response.data!;
-    this._drilldown.update((s) => ({
-      ...s,
-      ayahs: data,
-      ayahPage: data.page,
-      status: data.totalCount === 0 ? 'empty' : 'success',
-      errorMessage: '',
-    }));
+    this._drilldown.update((s) => ({ ...s, ...buildAyahsDrilldownUpdate(response) }));
   }
 
   private handleDrilldownError(err: unknown): void {
-    this._drilldown.update((s) => ({
-      ...s,
-      status: 'error',
-      errorMessage: this.extractErrorMessage(err, DRILLDOWN_ERROR_LABEL),
-    }));
+    this._drilldown.update((s) => ({ ...s, ...buildDrilldownErrorUpdate(err, DRILLDOWN_ERROR_LABEL) }));
   }
 
   private extractErrorMessage(err: unknown, fallback: string): string {
-    if (err instanceof HttpErrorResponse) {
-      const body = err.error as ApiResponse<unknown> | null | undefined;
-      return typeof body?.message === 'string' && body.message.length > 0 ? body.message : fallback;
-    }
-    return fallback;
+    return extractDrilldownMessage(err, fallback);
   }
 
-  private toSummary(word: UniqueWordListItemDto): UniqueWordSummaryDto {
-    return {
-      id: word.id,
-      kind: word.kind,
-      displayTextUthmani: word.displayTextUthmani,
-      occurrencesCount: word.occurrencesCount,
-      ayahsCount: word.ayahsCount,
-      surahsCount: word.surahsCount,
-      missingSurahsCount: word.missingSurahsCount,
-      firstVerseKey: word.firstVerseKey,
-      firstLocation: word.firstLocation,
-    };
+  private resetAccumulatedList(): void {
+    this._items.set([]);
+    this._loadedPage.set(0);
+    this._totalCount.set(0);
+    this._status.set('idle');
+    this._errorMessage.set('');
+    this._isLoadingMore.set(false);
   }
 }

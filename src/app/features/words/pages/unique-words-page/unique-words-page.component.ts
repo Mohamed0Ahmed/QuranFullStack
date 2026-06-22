@@ -19,7 +19,7 @@ import {
 } from '../../state/unique-words-url-sync';
 import { UniqueWordsTabsComponent } from '../../components/unique-words-tabs/unique-words-tabs.component';
 import { UniqueWordsSearchBarComponent } from '../../components/unique-words-search-bar/unique-words-search-bar.component';
-import { UniqueWordCardComponent } from '../../components/unique-word-card/unique-word-card.component';
+import { UniqueWordsTableComponent } from '../../components/unique-words-table/unique-words-table.component';
 import { WordDrilldownModalComponent } from '../../components/word-drilldown-modal/word-drilldown-modal.component';
 import {
   EMPTY_LIST_LABEL,
@@ -28,11 +28,11 @@ import {
   UNIQUE_WORD_KIND_LABELS,
 } from '../../models/unique-words.labels';
 import {
-  DEFAULT_LIST_PAGE,
   UniqueWordKind,
   UniqueWordListItemDto,
   UniqueWordSort,
   WordDrilldownView,
+  UniqueWordListItemViewModel,
 } from '../../models/unique-words.models';
 
 /**
@@ -50,7 +50,7 @@ import {
   imports: [
     UniqueWordsTabsComponent,
     UniqueWordsSearchBarComponent,
-    UniqueWordCardComponent,
+    UniqueWordsTableComponent,
     WordDrilldownModalComponent,
   ],
   templateUrl: './unique-words-page.component.html',
@@ -79,19 +79,14 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
   /** Active mode label, derived from the facade's route-driven mode signal. */
   protected readonly modeLabel = computed(() => UNIQUE_WORD_KIND_LABELS[this.facade.mode()]);
 
-  /** Last reachable page based on the total count and page size. */
-  protected readonly lastPage = computed(() => {
-    const state = this.listState();
-    return Math.max(1, Math.ceil(state.totalCount / state.pageSize));
-  });
-
   constructor() {
     // Reseed the search box from the active search whenever the mode changes
-    // (including the initial load). `search` is read untracked so a user's
-    // in-progress typing — which only changes query params, not the mode — is
-    // never overwritten.
+    // (including the initial load or a browser back/forward restore). `search`
+    // is read untracked so a user's in-progress typing is never overwritten by
+    // the debounce-driven query-param sync.
     effect(() => {
       this.facade.mode();
+      this.facade.search();
       this.searchDraft.set(untracked(() => this.facade.search()));
     });
   }
@@ -118,21 +113,6 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
     this.updateQueryParams({ sort, page: null });
   }
 
-  protected onPrevPage(): void {
-    const current = this.listState().page;
-    if (current > DEFAULT_LIST_PAGE) {
-      this.updateQueryParams({ page: String(current - 1) });
-    }
-  }
-
-  protected onNextPage(): void {
-    const state = this.listState();
-    const lastPage = Math.max(1, Math.ceil(state.totalCount / state.pageSize));
-    if (state.page < lastPage) {
-      this.updateQueryParams({ page: String(state.page + 1) });
-    }
-  }
-
   protected onTabActivated(mode: UniqueWordKind): void {
     // Mode is a route segment; navigate to the mode route and reset list page.
     // Modal params are cleared too: a mode switch is a fresh exploration.
@@ -140,6 +120,11 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
       queryParams: { search: null, sort: null, page: null, word: null, view: null, ap: null },
       queryParamsHandling: 'merge',
     });
+  }
+
+  protected onRowSelected(word: UniqueWordListItemViewModel): void {
+    this.facade.openDrilldown(word, 'surahs');
+    this.updateQueryParams(buildUniqueWordsQueryParams({ wordId: word.id, view: 'surahs', ayahPage: null }));
   }
 
   protected onDrilldownOpen(word: UniqueWordListItemDto, view: WordDrilldownView): void {
@@ -164,6 +149,11 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
   protected onAyahPageChange(page: number): void {
     this.facade.setAyahPage(page);
     this.updateQueryParams(buildUniqueWordsQueryParams({ ayahPage: page }));
+  }
+
+  protected onLoadMoreRequested(): void {
+    const nextPage = this.listState().page + 1;
+    this.updateQueryParams(buildUniqueWordsQueryParams({ page: nextPage }));
   }
 
   /** Replaces the named query params, preserving the others. */

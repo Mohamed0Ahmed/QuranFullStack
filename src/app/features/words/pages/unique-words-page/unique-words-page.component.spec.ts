@@ -7,7 +7,7 @@ import { UniqueWordsPageComponent } from './unique-words-page.component';
 import { UniqueWordsFacade } from '../../state/unique-words.facade';
 import {
   UniqueWordKind,
-  UniqueWordListItemDto,
+  UniqueWordListItemViewModel,
   UniqueWordsListState,
   WordDrilldownState,
 } from '../../models/unique-words.models';
@@ -26,11 +26,12 @@ const CLOSED_DRILLDOWN: WordDrilldownState = {
 };
 
 /** Source-safe synthetic placeholder — not Quranic text. */
-function item(id: number): UniqueWordListItemDto {
+function item(id: number): UniqueWordListItemViewModel {
   return {
     id,
     kind: 'tashkeel',
     displayTextUthmani: `كلمة-تجريبية-${id}`,
+    displayText: `كلمة-تجريبية-${id}`,
     occurrencesCount: id,
     ayahsCount: id,
     surahsCount: 1,
@@ -43,6 +44,7 @@ function item(id: number): UniqueWordListItemDto {
 function stateFor(overrides: Partial<UniqueWordsListState>): UniqueWordsListState {
   return {
     status: 'success',
+    isLoadingMore: false,
     items: [item(1), item(2)],
     page: 1,
     pageSize: 50,
@@ -115,12 +117,12 @@ describe('UniqueWordsPageComponent', () => {
     expect(root.querySelector('[data-testid="unique-words-sort-select"]')).toBeTruthy();
   });
 
-  it('renders one card per list item with the Uthmani display text', async () => {
+  it('renders a virtualized table row per loaded item with the display text', async () => {
     const root = await render();
 
-    const cards = root.querySelectorAll('[data-testid="unique-word-card"]');
-    expect(cards).toHaveLength(2);
-    expect(root.querySelector('[data-testid="unique-word-card-text"]')?.textContent).toContain('كلمة-تجريبية-1');
+    const rows = root.querySelectorAll('[data-testid="unique-words-table-word-button"]');
+    expect(rows.length).toBeGreaterThanOrEqual(2);
+    expect(rows[0]?.textContent).toContain('كلمة-تجريبية-1');
   });
 
   it('shows the Arabic empty state when status is empty', async () => {
@@ -133,7 +135,7 @@ describe('UniqueWordsPageComponent', () => {
     // shared-fork component-definition cache — the hub-page spec notes the
     // same constraint.)
     expect(root.querySelector('[data-testid="unique-words-empty"]')).toBeTruthy();
-    expect(root.querySelector('[data-testid="unique-word-card"]')).toBeNull();
+    expect(root.querySelector('[data-testid="unique-words-loading"]')).toBeNull();
   });
 
   it('shows the error message when status is error', async () => {
@@ -148,22 +150,34 @@ describe('UniqueWordsPageComponent', () => {
     expect(root.querySelector('[data-testid="unique-words-loading"]')).toBeTruthy();
   });
 
-  it('disables the previous-page button on the first page', async () => {
-    const root = await render({ page: 1, totalCount: 100 });
+  it('marks the selected row when a drill-down is open', async () => {
+    stub.drilldownState.set({
+      ...CLOSED_DRILLDOWN,
+      isOpen: true,
+      selectedWordId: 1,
+      status: 'success',
+      summary: {
+        id: 1,
+        kind: 'tashkeel',
+        displayTextUthmani: 'كلمة-تجريبية-1',
+        occurrencesCount: 1,
+        ayahsCount: 1,
+        surahsCount: 1,
+        missingSurahsCount: 113,
+        firstVerseKey: '1:1',
+        firstLocation: '1:1:1',
+      },
+      surahs: null,
+    });
+    const root = await render();
 
-    const prev = root.querySelector<HTMLButtonElement>('[data-testid="unique-words-prev-page"]');
-    expect(prev?.disabled).toBe(true);
+    expect(root.querySelector('[aria-selected="true"]')).toBeTruthy();
   });
 
-  it('enables previous and disables next on the last page', async () => {
-    // totalCount 100 / pageSize 50 → lastPage = 2. On page 2 the previous
-    // button is enabled and the next button is disabled (no further page).
-    const root = await render({ page: 2, totalCount: 100 });
+  it('renders the desktop selection panel placeholder when no word is selected', async () => {
+    const root = await render();
 
-    const prev = root.querySelector<HTMLButtonElement>('[data-testid="unique-words-prev-page"]');
-    const next = root.querySelector<HTMLButtonElement>('[data-testid="unique-words-next-page"]');
-    expect(prev?.disabled).toBe(false);
-    expect(next?.disabled).toBe(true);
+    expect(root.textContent).toContain('اختر كلمة لعرض تفاصيلها');
   });
 
   it('seeds the search input from the active (facade) search term', async () => {
