@@ -22,4 +22,14 @@ public static class ApiMessages
     public const string MushafInvalidWordLocation = "موقع الكلمة غير صالح";
     public const string MushafWordNotAnalyzable = "هذه الكلمة غير قابلة للتحليل (علامة نهاية آية)";
     public const string MushafWordAnalysisIncomplete = "بيانات تحليل الكلمة غير مكتملة";
+
+    public const string UniqueWordsListLoaded = "تم تحميل الكلمات الفريدة";
+    public const string UniqueWordSummaryLoaded = "تم تحميل الكلمة الفريدة";
+    public const string UniqueWordSurahsLoaded = "تم تحميل السور التي وردت فيها الكلمة";
+    public const string UniqueWordMissingSurahsLoaded = "تم تحميل السور التي لم ترد فيها الكلمة";
+    public const string UniqueWordAyahsLoaded = "تم تحميل الآيات التي وردت فيها الكلمة";
+    public const string UniqueWordsInvalidKind = "نوع الكلمات غير صالح";
+    public const string UniqueWordsInvalidPaging = "معطيات التصفح غير صالحة";
+    public const string UniqueWordsInvalidSort = "خيار الترتيب غير صالح";
+    public const string UniqueWordNotFound = "الكلمة غير موجودة";
 }
