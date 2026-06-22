@@ -9,7 +9,21 @@ import {
   UniqueWordKind,
   UniqueWordListItemDto,
   UniqueWordsListState,
+  WordDrilldownState,
 } from '../../models/unique-words.models';
+
+const CLOSED_DRILLDOWN: WordDrilldownState = {
+  isOpen: false,
+  selectedWordId: null,
+  view: 'surahs',
+  summary: null,
+  surahs: null,
+  missingSurahs: null,
+  ayahs: null,
+  ayahPage: 1,
+  status: 'idle',
+  errorMessage: '',
+};
 
 /** Source-safe synthetic placeholder — not Quranic text. */
 function item(id: number): UniqueWordListItemDto {
@@ -43,10 +57,15 @@ function stateFor(overrides: Partial<UniqueWordsListState>): UniqueWordsListStat
 
 class StubFacade {
   readonly listState = signal<UniqueWordsListState>(stateFor({}));
+  readonly drilldownState = signal<WordDrilldownState>(CLOSED_DRILLDOWN);
   readonly mode = signal<UniqueWordKind>('tashkeel');
   readonly search = signal<string>('');
   readonly bindToRoute = vi.fn();
   readonly unbindFromRoute = vi.fn();
+  readonly openDrilldown = vi.fn();
+  readonly closeDrilldown = vi.fn();
+  readonly setDrilldownView = vi.fn();
+  readonly setAyahPage = vi.fn();
 }
 
 describe('UniqueWordsPageComponent', () => {

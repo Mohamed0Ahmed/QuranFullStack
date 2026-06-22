@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
-import { TestBed } from '@angular/core/testing';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { getTestBed, TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, ParamMap, convertToParamMap } from '@angular/router';
 import { BehaviorSubject, of, throwError } from 'rxjs';
@@ -46,6 +46,14 @@ function setup(getList = vi.fn()) {
 }
 
 describe('UniqueWordsFacade list state', () => {
+  beforeEach(() => {
+    getTestBed().resetTestingModule();
+  });
+
+  afterEach(() => {
+    getTestBed().resetTestingModule();
+  });
+
   it('transitions through loading then success with items and totalCount', () => {
     const getList = vi.fn(() => of(okResponse([item(1), item(2)], 2)));
     const facade = setup(getList);

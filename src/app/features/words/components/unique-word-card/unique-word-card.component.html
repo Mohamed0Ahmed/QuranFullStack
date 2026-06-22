@@ -17,21 +17,23 @@
         <qd-word-count-chip
           [label]="ayahsLabel"
           [count]="word().ayahsCount"
-          [disabled]="true"
+          [disabled]="word().ayahsCount === 0"
+          (chipClick)="drilldownOpen.emit('ayahs')"
         />
       </li>
       <li>
         <qd-word-count-chip
           [label]="surahsLabel"
           [count]="word().surahsCount"
-          [disabled]="true"
+          [disabled]="word().surahsCount === 0"
+          (chipClick)="drilldownOpen.emit('surahs')"
         />
       </li>
       <li>
         <qd-word-count-chip
           [label]="missingLabel"
           [count]="word().missingSurahsCount"
-          [disabled]="true"
+          (chipClick)="drilldownOpen.emit('missing')"
         />
       </li>
     </ul>

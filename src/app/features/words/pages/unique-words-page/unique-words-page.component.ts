@@ -16,6 +16,7 @@ import { UniqueWordsFacade } from '../../state/unique-words.facade';
 import { UniqueWordsTabsComponent } from '../../components/unique-words-tabs/unique-words-tabs.component';
 import { UniqueWordsSearchBarComponent } from '../../components/unique-words-search-bar/unique-words-search-bar.component';
 import { UniqueWordCardComponent } from '../../components/unique-word-card/unique-word-card.component';
+import { WordDrilldownModalComponent } from '../../components/word-drilldown-modal/word-drilldown-modal.component';
 import {
   EMPTY_LIST_LABEL,
   LOADING_LABEL,
@@ -24,7 +25,9 @@ import {
 import {
   DEFAULT_LIST_PAGE,
   UniqueWordKind,
+  UniqueWordListItemDto,
   UniqueWordSort,
+  WordDrilldownView,
 } from '../../models/unique-words.models';
 
 /**
@@ -43,6 +46,7 @@ import {
     UniqueWordsTabsComponent,
     UniqueWordsSearchBarComponent,
     UniqueWordCardComponent,
+    WordDrilldownModalComponent,
   ],
   templateUrl: './unique-words-page.component.html',
   styleUrl: './unique-words-page.component.scss',
@@ -57,6 +61,7 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
   private searchSub?: Subscription;
 
   protected readonly listState = this.facade.listState;
+  protected readonly drilldownState = this.facade.drilldownState;
   protected readonly emptyLabel = EMPTY_LIST_LABEL;
   protected readonly loadingLabel = LOADING_LABEL;
 
@@ -128,6 +133,22 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
       queryParams: { search: null, sort: null, page: null },
       queryParamsHandling: 'merge',
     });
+  }
+
+  protected onDrilldownOpen(word: UniqueWordListItemDto, view: WordDrilldownView): void {
+    this.facade.openDrilldown(word, view);
+  }
+
+  protected onDrilldownClose(): void {
+    this.facade.closeDrilldown();
+  }
+
+  protected onDrilldownViewChange(view: WordDrilldownView): void {
+    this.facade.setDrilldownView(view);
+  }
+
+  protected onAyahPageChange(page: number): void {
+    this.facade.setAyahPage(page);
   }
 
   /** Replaces the named query params, preserving the others. */

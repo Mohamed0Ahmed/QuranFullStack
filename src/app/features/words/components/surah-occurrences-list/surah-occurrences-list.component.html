@@ -1,0 +1,8 @@
+<ul class="surah-occurrences-list" data-testid="surah-occurrences-list">
+  @for (surah of surahs(); track surah.surahNumber) {
+    <li class="surah-occurrences-list__row">
+      <span class="surah-occurrences-list__name">{{ surah.nameArabic }}</span>
+      <span class="qd-badge">{{ surah.occurrencesInSurah }}</span>
+    </li>
+  }
+</ul>

@@ -28,7 +28,10 @@
         @if (listState().items.length > 0) {
           <section class="unique-words-list" aria-label="قائمة الكلمات الفريدة">
             @for (word of listState().items; track word.id) {
-              <qd-unique-word-card [word]="word" />
+              <qd-unique-word-card
+                [word]="word"
+                (drilldownOpen)="onDrilldownOpen(word, $event)"
+              />
             }
           </section>
 
@@ -59,4 +62,11 @@
       }
     }
   </div>
+
+  <qd-word-drilldown-modal
+    [state]="drilldownState()"
+    (closeModal)="onDrilldownClose()"
+    (viewChange)="onDrilldownViewChange($event)"
+    (ayahPageChange)="onAyahPageChange($event)"
+  />
 </div>

@@ -6,9 +6,12 @@ import { environment } from '../../../../environments/environment';
 import { ApiResponse } from '../../../core/data-access/api-response.model';
 import {
   PagedResultDto,
+  UniqueWordAyahMatchDto,
   UniqueWordKind,
   UniqueWordListItemDto,
+  UniqueWordMissingSurahsDto,
   UniqueWordSort,
+  UniqueWordSurahsDto,
 } from '../models/unique-words.models';
 
 /**
@@ -48,6 +51,37 @@ export class UniqueWordsApi {
 
     return this.http.get<ApiResponse<PagedResultDto<UniqueWordListItemDto>>>(
       `${this.baseUrl}/api/words/unique/${encodeURIComponent(kind)}`,
+      { params },
+    );
+  }
+
+  getMentionedSurahs(
+    kind: UniqueWordKind,
+    id: number,
+  ): Observable<ApiResponse<UniqueWordSurahsDto>> {
+    return this.http.get<ApiResponse<UniqueWordSurahsDto>>(
+      `${this.baseUrl}/api/words/unique/${encodeURIComponent(kind)}/${id}/surahs`,
+    );
+  }
+
+  getMissingSurahs(
+    kind: UniqueWordKind,
+    id: number,
+  ): Observable<ApiResponse<UniqueWordMissingSurahsDto>> {
+    return this.http.get<ApiResponse<UniqueWordMissingSurahsDto>>(
+      `${this.baseUrl}/api/words/unique/${encodeURIComponent(kind)}/${id}/missing-surahs`,
+    );
+  }
+
+  getAyahMatches(
+    kind: UniqueWordKind,
+    id: number,
+    page: number,
+    pageSize: number,
+  ): Observable<ApiResponse<PagedResultDto<UniqueWordAyahMatchDto>>> {
+    const params = new HttpParams().set('page', page).set('pageSize', pageSize);
+    return this.http.get<ApiResponse<PagedResultDto<UniqueWordAyahMatchDto>>>(
+      `${this.baseUrl}/api/words/unique/${encodeURIComponent(kind)}/${id}/ayahs`,
       { params },
     );
   }

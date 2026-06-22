@@ -1,0 +1,11 @@
+<p class="highlighted-ayah" data-testid="highlighted-ayah">
+  @for (word of words(); track word.quranWordId) {
+    <span
+      class="highlighted-ayah__word"
+      [class.highlighted-ayah__word--matched]="isHighlighted(word.quranWordId)"
+      [attr.aria-label]="ariaLabel(word)"
+    >
+      {{ word.textUthmani }}
+    </span>
+  }
+</p>

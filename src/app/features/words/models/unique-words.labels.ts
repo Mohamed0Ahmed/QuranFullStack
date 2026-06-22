@@ -59,3 +59,7 @@ export const SEARCH_PLACEHOLDER = 'ابحث في الكلمات…';
 export const SORT_LABEL = 'ترتيب';
 export const LOADING_LABEL = 'جارٍ التحميل...';
 export const CLOSE_LABEL = 'إغلاق';
+export const DRILLDOWN_EMPTY_SURAHS_LABEL = 'لا توجد سور';
+export const DRILLDOWN_EMPTY_MISSING_LABEL = 'لا توجد سور مفقودة';
+export const DRILLDOWN_EMPTY_AYAHS_LABEL = 'لا توجد آيات';
+export const DRILLDOWN_ERROR_LABEL = 'تعذّر تحميل التفاصيل';
