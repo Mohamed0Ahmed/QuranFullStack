@@ -13,6 +13,10 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription, debounceTime, Subject } from 'rxjs';
 
 import { UniqueWordsFacade } from '../../state/unique-words.facade';
+import {
+  buildModalCloseQueryParams,
+  buildUniqueWordsQueryParams,
+} from '../../state/unique-words-url-sync';
 import { UniqueWordsTabsComponent } from '../../components/unique-words-tabs/unique-words-tabs.component';
 import { UniqueWordsSearchBarComponent } from '../../components/unique-words-search-bar/unique-words-search-bar.component';
 import { UniqueWordCardComponent } from '../../components/unique-word-card/unique-word-card.component';
@@ -20,6 +24,7 @@ import { WordDrilldownModalComponent } from '../../components/word-drilldown-mod
 import {
   EMPTY_LIST_LABEL,
   LOADING_LABEL,
+  RESTORED_WORD_NOT_FOUND_LABEL,
   UNIQUE_WORD_KIND_LABELS,
 } from '../../models/unique-words.labels';
 import {
@@ -31,13 +36,13 @@ import {
 } from '../../models/unique-words.models';
 
 /**
- * Thin explorer shell for the Unique Words list (US2). Reads the active mode
- * from the route segment and list state (`search`/`sort`/`page`) from query
- * params via the facade, and pushes user-driven changes back through query
- * params so the state is refreshable/shareable. All data/state come from the
- * facade; this component never calls the API directly.
- *
- * Modal drill-down wiring and full URL restore are added in US3/US4.
+ * Thin explorer shell for the Unique Words list (US2) and modal drill-downs
+ * (US3), with full URL restore/share (US4). The active mode is read from the
+ * `:mode` route segment; list state (`search`/`sort`/`page`) and modal state
+ * (`word`/`view`/`ap`) live in query params. The page pushes user-driven changes
+ * back through query params so state is refreshable/shareable; the facade owns
+ * in-memory state and reads the URL on load to restore it. This component never
+ * calls the API directly.
  */
 @Component({
   selector: 'qd-unique-words-page',
@@ -64,6 +69,7 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
   protected readonly drilldownState = this.facade.drilldownState;
   protected readonly emptyLabel = EMPTY_LIST_LABEL;
   protected readonly loadingLabel = LOADING_LABEL;
+  protected readonly restoredNotFoundLabel = RESTORED_WORD_NOT_FOUND_LABEL;
 
   // Local draft for the search input so typing does not reload on every
   // keystroke; the facade reloads after the debounced emission. Seeded from the
@@ -129,26 +135,35 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
 
   protected onTabActivated(mode: UniqueWordKind): void {
     // Mode is a route segment; navigate to the mode route and reset list page.
+    // Modal params are cleared too: a mode switch is a fresh exploration.
     void this.router.navigate([`/dashboard/words/unique/${mode}`], {
-      queryParams: { search: null, sort: null, page: null },
+      queryParams: { search: null, sort: null, page: null, word: null, view: null, ap: null },
       queryParamsHandling: 'merge',
     });
   }
 
   protected onDrilldownOpen(word: UniqueWordListItemDto, view: WordDrilldownView): void {
+    // Open in memory immediately, then reflect modal state to the URL so the
+    // link is shareable. The facade's restore guard ignores the re-emit for the
+    // same word.
     this.facade.openDrilldown(word, view);
+    this.updateQueryParams(buildUniqueWordsQueryParams({ wordId: word.id, view, ayahPage: null }));
   }
 
   protected onDrilldownClose(): void {
+    // Close in memory and clear only the modal params, preserving list context.
     this.facade.closeDrilldown();
+    this.updateQueryParams(buildModalCloseQueryParams());
   }
 
   protected onDrilldownViewChange(view: WordDrilldownView): void {
     this.facade.setDrilldownView(view);
+    this.updateQueryParams(buildUniqueWordsQueryParams({ view }));
   }
 
   protected onAyahPageChange(page: number): void {
     this.facade.setAyahPage(page);
+    this.updateQueryParams(buildUniqueWordsQueryParams({ ayahPage: page }));
   }
 
   /** Replaces the named query params, preserving the others. */

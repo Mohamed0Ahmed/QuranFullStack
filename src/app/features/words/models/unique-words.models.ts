@@ -99,7 +99,7 @@ export interface UniqueWordAyahMatchDto {
 }
 
 /** Combined view-state status for facade-driven regions. */
-export type LoadStatus = 'idle' | 'loading' | 'success' | 'empty' | 'error';
+export type LoadStatus = 'idle' | 'loading' | 'success' | 'empty' | 'error' | 'notFound';
 
 /** List explorer state consumed by the page component. */
 export interface UniqueWordsListState {
@@ -151,4 +151,41 @@ export function isUniqueWordSort(value: unknown): value is UniqueWordSort {
 
 export function isWordDrilldownView(value: unknown): value is WordDrilldownView {
   return value === 'surahs' || value === 'missing' || value === 'ayahs';
+}
+
+/**
+ * Stable query-param keys for the explorer. List state (`search`/`sort`/`page`)
+ * and modal state (`word`/`view`/`ap`) live together on the mode route. Closing
+ * the modal clears only the modal keys.
+ */
+export const UNIQUE_WORDS_QUERY_KEYS = {
+  search: 'search',
+  sort: 'sort',
+  page: 'page',
+  word: 'word',
+  view: 'view',
+  ayahPage: 'ap',
+} as const;
+
+/** Modal-only query-param keys; cleared on modal close while list state is kept. */
+export const MODAL_QUERY_KEYS: readonly string[] = [
+  UNIQUE_WORDS_QUERY_KEYS.word,
+  UNIQUE_WORDS_QUERY_KEYS.view,
+  UNIQUE_WORDS_QUERY_KEYS.ayahPage,
+] as const;
+
+/**
+ * Parsed explorer query state. Modal fields are `null` when absent (vs. list
+ * fields which always resolve to their documented defaults).
+ */
+export interface ParsedUniqueWordsQuery {
+  search: string;
+  sort: UniqueWordSort;
+  page: number;
+  /** Stable unique-word ID when a modal is restored, otherwise `null`. */
+  wordId: number | null;
+  /** Active modal view when a modal is restored, otherwise `null`. */
+  view: WordDrilldownView | null;
+  /** Ayah-match page when `view === 'ayahs'`, otherwise `null`/default. */
+  ayahPage: number | null;
 }

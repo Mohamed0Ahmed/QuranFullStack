@@ -12,6 +12,7 @@ import {
   UniqueWordAyahMatchDto,
   UniqueWordListItemDto,
   UniqueWordMissingSurahsDto,
+  UniqueWordSummaryDto,
   UniqueWordSurahsDto,
 } from '../models/unique-words.models';
 
@@ -149,6 +150,31 @@ describe('UniqueWordsApi drill-down HTTP', () => {
 
     const promise = firstValueFrom(api.getMentionedSurahs('tashkeel', 1002));
     const req = httpMock.expectOne(`${environment.apiBaseUrl}/api/words/unique/tashkeel/1002/surahs`);
+    expect(req.request.method).toBe('GET');
+    req.flush(response);
+
+    await expect(promise).resolves.toEqual(response);
+  });
+
+  it('getSummary calls the summary endpoint (kind/id, no suffix)', async () => {
+    const response: ApiResponse<UniqueWordSummaryDto> = {
+      isSuccess: true,
+      message: 'تم تحميل الكلمة الفريدة',
+      data: {
+        id: 1002,
+        kind: 'tashkeel',
+        displayTextUthmani: 'كلمة-تجريبية',
+        occurrencesCount: 5,
+        ayahsCount: 5,
+        surahsCount: 5,
+        missingSurahsCount: 109,
+        firstVerseKey: '1:1',
+        firstLocation: '1:1:2',
+      },
+    };
+
+    const promise = firstValueFrom(api.getSummary('tashkeel', 1002));
+    const req = httpMock.expectOne(`${environment.apiBaseUrl}/api/words/unique/tashkeel/1002`);
     expect(req.request.method).toBe('GET');
     req.flush(response);
 

@@ -2,7 +2,7 @@ import { Injectable, inject, signal, computed } from '@angular/core';
 import { ActivatedRoute, ParamMap } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Observable, Subscription, combineLatest, of } from 'rxjs';
-import { catchError, map, switchMap, tap } from 'rxjs/operators';
+import { catchError, distinctUntilChanged, map, switchMap, tap } from 'rxjs/operators';
 
 import { ApiResponse } from '../../../core/data-access/api-response.model';
 import { UniqueWordsApi } from '../data-access/unique-words.api';
@@ -12,6 +12,8 @@ import {
   DRILLDOWN_EMPTY_SURAHS_LABEL,
   DRILLDOWN_ERROR_LABEL,
   EMPTY_LIST_LABEL,
+  RESTORED_WORD_LOAD_ERROR_LABEL,
+  RESTORED_WORD_NOT_FOUND_LABEL,
 } from '../models/unique-words.labels';
 import {
   DEFAULT_AYAH_PAGE,
@@ -33,8 +35,15 @@ import {
   WordDrilldownState,
   WordDrilldownView,
 } from '../models/unique-words.models';
+import { parseUniqueWordsQueryParams } from './unique-words-url-sync';
 
 const CONNECTION_ERROR_MESSAGE = 'تعذّر تحميل الكلمات الفريدة. تحقّق من الاتصال ثم أعد المحاولة.';
+
+interface ModalUrlState {
+  readonly wordId: number;
+  readonly view: WordDrilldownView;
+  readonly ayahPage: number;
+}
 
 const INITIAL_DRILLDOWN: WordDrilldownState = {
   isOpen: false,
@@ -64,10 +73,26 @@ export class UniqueWordsFacade {
 
   private readonly _drilldown = signal<WordDrilldownState>(INITIAL_DRILLDOWN);
 
-  private readonly _pageSize = DEFAULT_LIST_PAGE_SIZE;
+  // Read the default page size on access rather than caching it in a field
+  // initializer. The experimental @angular/build:unit-test SSR runner resolves
+  // a class field initializer's cross-module const read to `undefined` under
+  // the multi-entry test build (its export getter swallows the temporal-dead-
+  // zone access); a getter defers the read past module init, matching how the
+  // other defaults are read. Behavior is identical (production folds this to 50).
+  private get _pageSize(): number {
+    return DEFAULT_LIST_PAGE_SIZE;
+  }
   private routeSub?: Subscription;
   private manualLoadSub?: Subscription;
   private drilldownSub?: Subscription;
+  private summarySub?: Subscription;
+
+  /**
+   * Modal state currently reflected by the URL or an in-app action. This tracks
+   * the full modal tuple, not just the word ID, so browser back/forward can
+   * restore same-word `view` and `ap` changes.
+   */
+  private activeModalUrlState: ModalUrlState | null = null;
 
   readonly listState = computed<UniqueWordsListState>(() => ({
     status: this._status(),
@@ -98,6 +123,12 @@ export class UniqueWordsFacade {
     this.routeSub = combineLatest([route.paramMap, route.queryParamMap])
       .pipe(
         tap(([params, queryParams]) => this.applyRouteState(params, queryParams)),
+        // Reload the list only when a list-relevant input changes. Modal-only
+        // query params (word/view/ap) are still applied by applyRouteState
+        // above, but they must not re-run the list query or flash its loading
+        // state behind/around the open modal.
+        map(() => this.listRequestKey()),
+        distinctUntilChanged(),
         switchMap(() => this.runListRequest()),
       )
       .subscribe();
@@ -115,6 +146,11 @@ export class UniqueWordsFacade {
 
   openDrilldown(word: UniqueWordListItemDto, view: WordDrilldownView): void {
     const summary = this.toSummary(word);
+    this.activeModalUrlState = {
+      wordId: word.id,
+      view,
+      ayahPage: DEFAULT_AYAH_PAGE,
+    };
     this._drilldown.set({
       ...INITIAL_DRILLDOWN,
       isOpen: true,
@@ -137,12 +173,18 @@ export class UniqueWordsFacade {
       return;
     }
 
+    const nextAyahPage = view === 'ayahs' ? current.ayahPage : DEFAULT_AYAH_PAGE;
+    this.activeModalUrlState = {
+      wordId: current.selectedWordId,
+      view,
+      ayahPage: nextAyahPage,
+    };
     this._drilldown.update((s) => ({
       ...s,
       view,
       status: 'loading',
       errorMessage: '',
-      ayahPage: view === 'ayahs' ? s.ayahPage : DEFAULT_AYAH_PAGE,
+      ayahPage: nextAyahPage,
     }));
     this.loadDrilldownView(view, current.summary.kind, current.selectedWordId, this._drilldown().ayahPage);
   }
@@ -153,30 +195,187 @@ export class UniqueWordsFacade {
       return;
     }
 
+    this.activeModalUrlState = {
+      wordId: current.selectedWordId,
+      view: 'ayahs',
+      ayahPage: page,
+    };
     this._drilldown.update((s) => ({ ...s, ayahPage: page, status: 'loading', errorMessage: '' }));
     this.loadDrilldownView('ayahs', current.summary.kind, current.selectedWordId, page);
   }
 
   closeDrilldown(): void {
+    this.summarySub?.unsubscribe();
+    this.summarySub = undefined;
     this.drilldownSub?.unsubscribe();
     this.drilldownSub = undefined;
+    this.activeModalUrlState = null;
     this._drilldown.set(INITIAL_DRILLDOWN);
   }
 
   private applyRouteState(params: ParamMap, queryParams: ParamMap): void {
     const modeParam = params.get('mode');
-    this._mode.set(modeParam === 'simple' || modeParam === 'tashkeel' ? modeParam : DEFAULT_UNIQUE_WORD_KIND);
-
-    const sortParam = queryParams.get('sort');
-    const pageParam = Number.parseInt(queryParams.get('page') ?? '', 10);
-
-    this._search.set(queryParams.get('search') ?? '');
-    this._sort.set(
-      sortParam === 'occurrences' || sortParam === 'alpha' || sortParam === 'mushaf-order'
-        ? sortParam
-        : DEFAULT_UNIQUE_WORD_SORT,
+    this._mode.set(
+      modeParam === 'simple' || modeParam === 'tashkeel' ? modeParam : DEFAULT_UNIQUE_WORD_KIND,
     );
-    this._page.set(Number.isFinite(pageParam) && pageParam >= 1 ? pageParam : DEFAULT_LIST_PAGE);
+
+    const parsed = parseUniqueWordsQueryParams(queryParams);
+    this._search.set(parsed.search);
+    this._sort.set(parsed.sort);
+    this._page.set(parsed.page);
+
+    this.restoreModalFromUrl(parsed.wordId, parsed.view, parsed.ayahPage);
+  }
+
+  /**
+   * Restores modal state from a shared URL. List-only query-param updates do not
+   * reload the modal, but same-word `view`/`ap` changes are reconciled for
+   * browser back/forward. An invalid `view` is normalized to the default
+   * `surahs`. An unknown word ID produces a controlled `notFound` status while
+   * keeping the list usable.
+   */
+  private restoreModalFromUrl(
+    wordId: number | null,
+    view: WordDrilldownView | null,
+    ayahPage: number | null,
+  ): void {
+    // No modal requested.
+    if (wordId === null) {
+      this.closeDrilldown();
+      return;
+    }
+
+    const nextState: ModalUrlState = {
+      wordId,
+      view: view ?? 'surahs',
+      ayahPage: view === 'ayahs' ? ayahPage ?? DEFAULT_AYAH_PAGE : DEFAULT_AYAH_PAGE,
+    };
+
+    if (this.isSameModalUrlState(this.activeModalUrlState, nextState)) {
+      return;
+    }
+
+    this.activeModalUrlState = nextState;
+    this.restoreOrUpdateModal(nextState);
+  }
+
+  private restoreOrUpdateModal(nextState: ModalUrlState): void {
+    const current = this._drilldown();
+    if (
+      current.isOpen &&
+      current.selectedWordId === nextState.wordId &&
+      current.summary !== null
+    ) {
+      this._drilldown.update((s) => ({
+        ...s,
+        view: nextState.view,
+        ayahPage: nextState.ayahPage,
+        status: 'loading',
+        errorMessage: '',
+      }));
+      this.loadDrilldownView(
+        nextState.view,
+        current.summary.kind,
+        nextState.wordId,
+        nextState.ayahPage,
+      );
+      return;
+    }
+
+    this.loadSummaryAndRestore(nextState);
+  }
+
+  private loadSummaryAndRestore(nextState: ModalUrlState): void {
+    this.summarySub?.unsubscribe();
+    this._drilldown.set({
+      ...INITIAL_DRILLDOWN,
+      isOpen: true,
+      selectedWordId: nextState.wordId,
+      view: nextState.view,
+      ayahPage: nextState.ayahPage,
+      status: 'loading',
+    });
+
+    this.summarySub = this.api
+      .getSummary(this._mode(), nextState.wordId)
+      .pipe(
+        tap((response) => {
+          if (!response.isSuccess || !response.data) {
+            this.handleRestoredWordNotFound(response.message ?? '');
+            return;
+          }
+          this.openRestoredDrilldown(response.data, nextState);
+        }),
+        catchError((err) => {
+          if (err instanceof HttpErrorResponse && err.status === 404) {
+            const message = this.extractErrorMessage(err, RESTORED_WORD_NOT_FOUND_LABEL);
+            this.handleRestoredWordNotFound(message);
+            return of(undefined);
+          }
+
+          const message = this.extractErrorMessage(err, RESTORED_WORD_LOAD_ERROR_LABEL);
+          this.handleRestoredWordLoadError(message);
+          return of(undefined);
+        }),
+      )
+      .subscribe();
+  }
+
+  private openRestoredDrilldown(
+    summary: UniqueWordSummaryDto,
+    nextState: ModalUrlState,
+  ): void {
+    this._drilldown.update((s) => ({
+      ...s,
+      summary,
+      view: nextState.view,
+      ayahPage: nextState.ayahPage,
+      status: 'loading',
+    }));
+    this.loadDrilldownView(nextState.view, summary.kind, summary.id, nextState.ayahPage);
+  }
+
+  private handleRestoredWordNotFound(message: string): void {
+    // Controlled not-found: keep the modal surface closed, surface a not-found
+    // status, and keep the list fully usable. `activeModalUrlState` stays set to
+    // the attempted state so a lingering bad `word` param is not re-fetched on
+    // later list-only navigation. The page renders a controlled Arabic message;
+    // no Quranic text is invented.
+    this._drilldown.set({
+      ...INITIAL_DRILLDOWN,
+      status: 'notFound',
+      errorMessage: message || RESTORED_WORD_NOT_FOUND_LABEL,
+    });
+  }
+
+  private handleRestoredWordLoadError(message: string): void {
+    // Mirror not-found handling: keep `activeModalUrlState` so the failed
+    // restore is not re-attempted on every later list-only navigation.
+    this._drilldown.set({
+      ...INITIAL_DRILLDOWN,
+      status: 'error',
+      errorMessage: message || RESTORED_WORD_LOAD_ERROR_LABEL,
+    });
+  }
+
+  private isSameModalUrlState(
+    current: ModalUrlState | null,
+    next: ModalUrlState,
+  ): boolean {
+    return (
+      current !== null &&
+      current.wordId === next.wordId &&
+      current.view === next.view &&
+      current.ayahPage === next.ayahPage
+    );
+  }
+
+  /**
+   * The list-request identity: the inputs that actually change list results.
+   * Used to suppress redundant list reloads when only modal params change.
+   */
+  private listRequestKey(): string {
+    return [this._mode(), this._search(), this._sort(), this._page()].join('|');
   }
 
   private runListRequest(): Observable<void> {

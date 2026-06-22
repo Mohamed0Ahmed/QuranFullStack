@@ -11,6 +11,7 @@ import {
   UniqueWordListItemDto,
   UniqueWordMissingSurahsDto,
   UniqueWordSort,
+  UniqueWordSummaryDto,
   UniqueWordSurahsDto,
 } from '../models/unique-words.models';
 
@@ -61,6 +62,19 @@ export class UniqueWordsApi {
   ): Observable<ApiResponse<UniqueWordSurahsDto>> {
     return this.http.get<ApiResponse<UniqueWordSurahsDto>>(
       `${this.baseUrl}/api/words/unique/${encodeURIComponent(kind)}/${id}/surahs`,
+    );
+  }
+
+  /**
+   * Loads the summary of a selected unique word. Used to restore modal state
+   * from a shared URL before or alongside a drill-down read.
+   */
+  getSummary(
+    kind: UniqueWordKind,
+    id: number,
+  ): Observable<ApiResponse<UniqueWordSummaryDto>> {
+    return this.http.get<ApiResponse<UniqueWordSummaryDto>>(
+      `${this.baseUrl}/api/words/unique/${encodeURIComponent(kind)}/${id}`,
     );
   }
 

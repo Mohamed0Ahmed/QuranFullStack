@@ -63,3 +63,13 @@ export const DRILLDOWN_EMPTY_SURAHS_LABEL = 'لا توجد سور';
 export const DRILLDOWN_EMPTY_MISSING_LABEL = 'لا توجد سور مفقودة';
 export const DRILLDOWN_EMPTY_AYAHS_LABEL = 'لا توجد آيات';
 export const DRILLDOWN_ERROR_LABEL = 'تعذّر تحميل التفاصيل';
+
+/**
+ * Controlled Arabic message shown when a shared/restored URL points at a word
+ * ID that no longer exists. No invented Quranic content; generic, factual.
+ */
+export const RESTORED_WORD_NOT_FOUND_LABEL = 'الكلمة المحددة غير موجودة';
+
+/** Controlled Arabic message shown when a restored selected word cannot be loaded. */
+export const RESTORED_WORD_LOAD_ERROR_LABEL =
+  'تعذّر تحميل الكلمة المحددة. تحقّق من الاتصال ثم أعد المحاولة.';
