@@ -17,10 +17,10 @@
 
 **Purpose**: Create compile-safe feature-owned scaffolding files only where implementation files will be added, without changing behavior yet.
 
-- [ ] T001 Create backend Words application scaffolding files `Backend/application/QuranDashboard.Application.Abstractions/Quran/Words/IUniqueWordsReader.cs` and `Backend/application/QuranDashboard.Application/Quran/Words/Queries/GetUniqueWordsPage/GetUniqueWordsPageQuery.cs` with compile-safe namespaces only; implementation details are filled in T013 and T035.
-- [ ] T002 [P] Create backend Words infrastructure and API scaffolding files `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/EfUniqueWordsReader.cs` and `Backend/api/QuranDashboard.Api/Controllers/Words/UniqueWordsController.cs` with compile-safe empty class skeletons only.
-- [ ] T003 [P] Create backend Words test scaffolding file `Backend/tests/QuranDashboard.Tests/Quran/Words/UniqueWordsListReadTests.cs` with a compile-safe empty test class; concrete tests are filled in T029.
-- [ ] T004 [P] Create frontend Words route and model scaffolding files `Frontend/quran-dashboard-ui/src/app/features/words/words.routes.ts` and `Frontend/quran-dashboard-ui/src/app/features/words/models/unique-words.models.ts` with compile-safe exports only; implementation details are filled in T015 and T022.
+- [X] T001 Create backend Words application scaffolding files `Backend/application/QuranDashboard.Application.Abstractions/Quran/Words/IUniqueWordsReader.cs` and `Backend/application/QuranDashboard.Application/Quran/Words/Queries/GetUniqueWordsPage/GetUniqueWordsPageQuery.cs` with compile-safe namespaces only; implementation details are filled in T013 and T035.
+- [X] T002 [P] Create backend Words infrastructure and API scaffolding files `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/EfUniqueWordsReader.cs` and `Backend/api/QuranDashboard.Api/Controllers/Words/UniqueWordsController.cs` with compile-safe empty class skeletons only.
+- [X] T003 [P] Create backend Words test scaffolding file `Backend/tests/QuranDashboard.Tests/Quran/Words/UniqueWordsListReadTests.cs` with a compile-safe empty test class; concrete tests are filled in T029.
+- [X] T004 [P] Create frontend Words route and model scaffolding files `Frontend/quran-dashboard-ui/src/app/features/words/words.routes.ts` and `Frontend/quran-dashboard-ui/src/app/features/words/models/unique-words.models.ts` with compile-safe exports only; implementation details are filled in T015 and T022.
 
 ---
 
@@ -30,18 +30,18 @@
 
 **CRITICAL**: No user-story implementation should begin until this phase is complete.
 
-- [ ] T005 Create minimal `PagedResult<T>` response contract with `Page`, `PageSize`, `TotalCount`, and `Items` in `Backend/application/QuranDashboard.Application.Abstractions/Common/Paging/PagedResult.cs`.
-- [ ] T006 [P] Create `UniqueWordKind` enum plus `TryParse` helper for `tashkeel` and `simple` in `Backend/application/QuranDashboard.Application.Abstractions/Quran/Words/UniqueWordKind.cs`.
-- [ ] T007 [P] Create `UniqueWordSort` enum plus `TryParse` helper for `mushaf-order`, `occurrences`, and `alpha` in `Backend/application/QuranDashboard.Application.Abstractions/Quran/Words/UniqueWordSort.cs`.
-- [ ] T008 [P] Create `UniqueWordListItemDto` response record with all list fields from `data-model.md` in `Backend/application/QuranDashboard.Application.Abstractions/Quran/Words/Responses/UniqueWordListItemDto.cs`.
-- [ ] T009 [P] Create `UniqueWordSummaryDto` response record with all summary fields from `data-model.md` in `Backend/application/QuranDashboard.Application.Abstractions/Quran/Words/Responses/UniqueWordSummaryDto.cs`.
-- [ ] T010 [P] Create `UniqueWordSurahsResponse` and `UniqueWordSurahItemDto` records in `Backend/application/QuranDashboard.Application.Abstractions/Quran/Words/Responses/UniqueWordSurahsResponse.cs`.
-- [ ] T011 [P] Create `UniqueWordMissingSurahsResponse` and `MissingSurahItemDto` records in `Backend/application/QuranDashboard.Application.Abstractions/Quran/Words/Responses/UniqueWordMissingSurahsResponse.cs`.
-- [ ] T012 [P] Create `UniqueWordAyahMatchDto` and `AyahWordForHighlightDto` records in `Backend/application/QuranDashboard.Application.Abstractions/Quran/Words/Responses/UniqueWordAyahMatchDto.cs`.
-- [ ] T013 Complete `IUniqueWordsReader` with list, summary, mentioned-surahs, missing-surahs, and ayah-match method signatures from `contracts/backend-read-abstractions.md` in `Backend/application/QuranDashboard.Application.Abstractions/Quran/Words/IUniqueWordsReader.cs`.
-- [ ] T014 Add Arabic Words API message constants for list, summary, mentioned surahs, missing surahs, ayahs, invalid kind, invalid paging, and not found in `Backend/api/QuranDashboard.Api/Common/ApiMessages.cs`.
-- [ ] T015 Complete frontend unique-word DTOs, route key types, sort types, drill-down view types, and state interfaces in `Frontend/quran-dashboard-ui/src/app/features/words/models/unique-words.models.ts`.
-- [ ] T016 [P] Create frontend Arabic labels/constants for hub cards, tabs, chips, empty states, and drill-down labels in `Frontend/quran-dashboard-ui/src/app/features/words/models/unique-words.labels.ts`.
+- [X] T005 Create minimal `PagedResult<T>` response contract with `Page`, `PageSize`, `TotalCount`, and `Items` in `Backend/application/QuranDashboard.Application.Abstractions/Common/Paging/PagedResult.cs`.
+- [X] T006 [P] Create `UniqueWordKind` enum plus `TryParse` helper for `tashkeel` and `simple` in `Backend/application/QuranDashboard.Application.Abstractions/Quran/Words/UniqueWordKind.cs`.
+- [X] T007 [P] Create `UniqueWordSort` enum plus `TryParse` helper for `mushaf-order`, `occurrences`, and `alpha` in `Backend/application/QuranDashboard.Application.Abstractions/Quran/Words/UniqueWordSort.cs`.
+- [X] T008 [P] Create `UniqueWordListItemDto` response record with all list fields from `data-model.md` in `Backend/application/QuranDashboard.Application.Abstractions/Quran/Words/Responses/UniqueWordListItemDto.cs`.
+- [X] T009 [P] Create `UniqueWordSummaryDto` response record with all summary fields from `data-model.md` in `Backend/application/QuranDashboard.Application.Abstractions/Quran/Words/Responses/UniqueWordSummaryDto.cs`.
+- [X] T010 [P] Create `UniqueWordSurahsResponse` and `UniqueWordSurahItemDto` records in `Backend/application/QuranDashboard.Application.Abstractions/Quran/Words/Responses/UniqueWordSurahsResponse.cs`.
+- [X] T011 [P] Create `UniqueWordMissingSurahsResponse` and `MissingSurahItemDto` records in `Backend/application/QuranDashboard.Application.Abstractions/Quran/Words/Responses/UniqueWordMissingSurahsResponse.cs`.
+- [X] T012 [P] Create `UniqueWordAyahMatchDto` and `AyahWordForHighlightDto` records in `Backend/application/QuranDashboard.Application.Abstractions/Quran/Words/Responses/UniqueWordAyahMatchDto.cs`.
+- [X] T013 Complete `IUniqueWordsReader` with list, summary, mentioned-surahs, missing-surahs, and ayah-match method signatures from `contracts/backend-read-abstractions.md` in `Backend/application/QuranDashboard.Application.Abstractions/Quran/Words/IUniqueWordsReader.cs`.
+- [X] T014 Add Arabic Words API message constants for list, summary, mentioned surahs, missing surahs, ayahs, invalid kind, invalid paging, and not found in `Backend/api/QuranDashboard.Api/Common/ApiMessages.cs`.
+- [X] T015 Complete frontend unique-word DTOs, route key types, sort types, drill-down view types, and state interfaces in `Frontend/quran-dashboard-ui/src/app/features/words/models/unique-words.models.ts`.
+- [X] T016 [P] Create frontend Arabic labels/constants for hub cards, tabs, chips, empty states, and drill-down labels in `Frontend/quran-dashboard-ui/src/app/features/words/models/unique-words.labels.ts`.
 
 **Checkpoint**: Shared backend contracts and frontend types exist. User-story implementation can now begin.
 
@@ -55,21 +55,21 @@
 
 ### Tests for User Story 1
 
-- [ ] T017 [P] [US1] Add route and navigation tests for `/dashboard/words` and words fallback-route exclusion in `Frontend/quran-dashboard-ui/src/app/features/words/words.routes.spec.ts`.
-- [ ] T018 [P] [US1] Add hub page rendering tests for active and disabled cards in `Frontend/quran-dashboard-ui/src/app/features/words/pages/words-hub-page/words-hub-page.component.spec.ts`.
-- [ ] T019 [P] [US1] Add word section card accessibility tests for disabled/non-navigable future cards in `Frontend/quran-dashboard-ui/src/app/features/words/components/word-section-card/word-section-card.component.spec.ts`.
+- [X] T017 [P] [US1] Add route and navigation tests for `/dashboard/words` and words fallback-route exclusion in `Frontend/quran-dashboard-ui/src/app/features/words/words.routes.spec.ts`.
+- [X] T018 [P] [US1] Add hub page rendering tests for active and disabled cards in `Frontend/quran-dashboard-ui/src/app/features/words/pages/words-hub-page/words-hub-page.component.spec.ts`.
+- [X] T019 [P] [US1] Add word section card accessibility tests for disabled/non-navigable future cards in `Frontend/quran-dashboard-ui/src/app/features/words/components/word-section-card/word-section-card.component.spec.ts`.
 
 ### Implementation for User Story 1
 
-- [ ] T020 [US1] Update the `words` nav item route from `/words` to `/dashboard/words` in `Frontend/quran-dashboard-ui/src/app/core/navigation/nav-items.ts`.
-- [ ] T021 [US1] Add lazy route loading for `/dashboard/words` and exclude `words` from fallback routes in `Frontend/quran-dashboard-ui/src/app/app.routes.ts`.
-- [ ] T022 [US1] Create `WORDS_ROUTES` with `/dashboard/words` hub route and `/dashboard/words/unique` redirect scaffolding in `Frontend/quran-dashboard-ui/src/app/features/words/words.routes.ts`.
-- [ ] T023 [P] [US1] Implement `WordSectionCardComponent` inputs for label, description, active route, disabled state, and `قريبًا` badge in `Frontend/quran-dashboard-ui/src/app/features/words/components/word-section-card/word-section-card.component.ts`.
-- [ ] T024 [P] [US1] Implement `WordSectionCardComponent` template using `qd-card`, `qd-badge`, and accessible disabled behavior in `Frontend/quran-dashboard-ui/src/app/features/words/components/word-section-card/word-section-card.component.html`.
-- [ ] T025 [P] [US1] Implement small RTL card layout styles for `WordSectionCardComponent` without redefining global `qd-` primitives in `Frontend/quran-dashboard-ui/src/app/features/words/components/word-section-card/word-section-card.component.scss`.
-- [ ] T026 [US1] Implement `WordsHubPageComponent` TypeScript with one active card and four disabled card view models in `Frontend/quran-dashboard-ui/src/app/features/words/pages/words-hub-page/words-hub-page.component.ts`.
-- [ ] T027 [US1] Implement `WordsHubPageComponent` Arabic RTL template with `qd-page`, `qd-section-title`, and the card grid in `Frontend/quran-dashboard-ui/src/app/features/words/pages/words-hub-page/words-hub-page.component.html`.
-- [ ] T028 [P] [US1] Implement local responsive spacing for the hub card grid in `Frontend/quran-dashboard-ui/src/app/features/words/pages/words-hub-page/words-hub-page.component.scss`.
+- [X] T020 [US1] Update the `words` nav item route from `/words` to `/dashboard/words` in `Frontend/quran-dashboard-ui/src/app/core/navigation/nav-items.ts`.
+- [X] T021 [US1] Add lazy route loading for `/dashboard/words` and exclude `words` from fallback routes in `Frontend/quran-dashboard-ui/src/app/app.routes.ts`.
+- [X] T022 [US1] Create `WORDS_ROUTES` with `/dashboard/words` hub route and `/dashboard/words/unique` redirect scaffolding in `Frontend/quran-dashboard-ui/src/app/features/words/words.routes.ts`.
+- [X] T023 [P] [US1] Implement `WordSectionCardComponent` inputs for label, description, active route, disabled state, and `قريبًا` badge in `Frontend/quran-dashboard-ui/src/app/features/words/components/word-section-card/word-section-card.component.ts`.
+- [X] T024 [P] [US1] Implement `WordSectionCardComponent` template using `qd-card`, `qd-badge`, and accessible disabled behavior in `Frontend/quran-dashboard-ui/src/app/features/words/components/word-section-card/word-section-card.component.html`.
+- [X] T025 [P] [US1] Implement small RTL card layout styles for `WordSectionCardComponent` without redefining global `qd-` primitives in `Frontend/quran-dashboard-ui/src/app/features/words/components/word-section-card/word-section-card.component.scss`.
+- [X] T026 [US1] Implement `WordsHubPageComponent` TypeScript with one active card and four disabled card view models in `Frontend/quran-dashboard-ui/src/app/features/words/pages/words-hub-page/words-hub-page.component.ts`.
+- [X] T027 [US1] Implement `WordsHubPageComponent` Arabic RTL template with `qd-page`, `qd-section-title`, and the card grid in `Frontend/quran-dashboard-ui/src/app/features/words/pages/words-hub-page/words-hub-page.component.html`.
+- [X] T028 [P] [US1] Implement local responsive spacing for the hub card grid in `Frontend/quran-dashboard-ui/src/app/features/words/pages/words-hub-page/words-hub-page.component.scss`.
 
 **Checkpoint**: User Story 1 is functional without backend API work. `/dashboard/words` is a real hub and future cards are disabled.
 
@@ -83,38 +83,38 @@
 
 ### Tests for User Story 2
 
-- [ ] T029 [P] [US2] Add backend list read tests for default page, counts, `missingSurahsCount = 114 - surahsCount`, and simple-mode display label in `Backend/tests/QuranDashboard.Tests/Quran/Words/UniqueWordsListReadTests.cs`.
-- [ ] T030 [P] [US2] Add backend search, sort, paging bounds, and empty-result tests in `Backend/tests/QuranDashboard.Tests/Quran/Words/UniqueWordsSearchSortPagingTests.cs`.
-- [ ] T031 [P] [US2] Add backend validation tests for invalid kind, invalid sort, invalid page, and invalid page size in `Backend/tests/QuranDashboard.Tests/Quran/Words/UniqueWordsValidationTests.cs`.
-- [ ] T032 [P] [US2] Add frontend API service tests for list query params and `ApiResponse<T>` typing in `Frontend/quran-dashboard-ui/src/app/features/words/data-access/unique-words.api.spec.ts`.
-- [ ] T033 [P] [US2] Add frontend facade list-state tests for loading, empty, backend failure, transport failure, mode, search, sort, and page in `Frontend/quran-dashboard-ui/src/app/features/words/state/unique-words.facade.list.spec.ts`.
-- [ ] T034 [P] [US2] Add frontend list component tests for tabs, search input, sort control, cards, count chips, and pagination events in `Frontend/quran-dashboard-ui/src/app/features/words/pages/unique-words-page/unique-words-page.component.spec.ts`.
+- [X] T029 [P] [US2] Add backend list read tests for default page, counts, `missingSurahsCount = 114 - surahsCount`, and simple-mode display label in `Backend/tests/QuranDashboard.Tests/Quran/Words/UniqueWordsListReadTests.cs`.
+- [X] T030 [P] [US2] Add backend search, sort, paging bounds, and empty-result tests in `Backend/tests/QuranDashboard.Tests/Quran/Words/UniqueWordsSearchSortPagingTests.cs`.
+- [X] T031 [P] [US2] Add backend validation tests for invalid kind, invalid sort, invalid page, and invalid page size in `Backend/tests/QuranDashboard.Tests/Quran/Words/UniqueWordsValidationTests.cs`.
+- [X] T032 [P] [US2] Add frontend API service tests for list query params and `ApiResponse<T>` typing in `Frontend/quran-dashboard-ui/src/app/features/words/data-access/unique-words.api.spec.ts`.
+- [X] T033 [P] [US2] Add frontend facade list-state tests for loading, empty, backend failure, transport failure, mode, search, sort, and page in `Frontend/quran-dashboard-ui/src/app/features/words/state/unique-words.facade.list.spec.ts`.
+- [X] T034 [P] [US2] Add frontend list component tests for tabs, search input, sort control, cards, count chips, and pagination events in `Frontend/quran-dashboard-ui/src/app/features/words/pages/unique-words-page/unique-words-page.component.spec.ts`.
 
 ### Backend Implementation for User Story 2
 
-- [ ] T035 [P] [US2] Complete `GetUniqueWordsPageQuery` with `Kind`, `Search`, `Sort`, `Page`, and `PageSize` values in `Backend/application/QuranDashboard.Application/Quran/Words/Queries/GetUniqueWordsPage/GetUniqueWordsPageQuery.cs`.
-- [ ] T036 [P] [US2] Create `GetUniqueWordsPageOutcome` with success, validation failure, and failure message cases in `Backend/application/QuranDashboard.Application/Quran/Words/Queries/GetUniqueWordsPage/GetUniqueWordsPageOutcome.cs`.
-- [ ] T037 [US2] Implement `GetUniqueWordsPageHandler` validation and reader orchestration in `Backend/application/QuranDashboard.Application/Quran/Words/Queries/GetUniqueWordsPage/GetUniqueWordsPageHandler.cs`.
-- [ ] T038 [US2] Implement list read logic for `tashkeel` and `simple` using unique tables, precomputed counts, normalized contains search, and no `quran_words` per-card grouping in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/EfUniqueWordsReader.cs`.
-- [ ] T039 [US2] Register `IUniqueWordsReader` to `EfUniqueWordsReader` in `Backend/infrastructure/QuranDashboard.Infrastructure/DependencyInjection.cs`.
-- [ ] T040 [US2] Implement list endpoint `GET /api/words/unique/{kind}` in `Backend/api/QuranDashboard.Api/Controllers/Words/UniqueWordsController.cs`.
+- [X] T035 [P] [US2] Complete `GetUniqueWordsPageQuery` with `Kind`, `Search`, `Sort`, `Page`, and `PageSize` values in `Backend/application/QuranDashboard.Application/Quran/Words/Queries/GetUniqueWordsPage/GetUniqueWordsPageQuery.cs`.
+- [X] T036 [P] [US2] Create `GetUniqueWordsPageOutcome` with success, validation failure, and failure message cases in `Backend/application/QuranDashboard.Application/Quran/Words/Queries/GetUniqueWordsPage/GetUniqueWordsPageOutcome.cs`.
+- [X] T037 [US2] Implement `GetUniqueWordsPageHandler` validation and reader orchestration in `Backend/application/QuranDashboard.Application/Quran/Words/Queries/GetUniqueWordsPage/GetUniqueWordsPageHandler.cs`.
+- [X] T038 [US2] Implement list read logic for `tashkeel` and `simple` using unique tables, precomputed counts, normalized contains search, and no `quran_words` per-card grouping in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/EfUniqueWordsReader.cs`.
+- [X] T039 [US2] Register `IUniqueWordsReader` to `EfUniqueWordsReader` in `Backend/infrastructure/QuranDashboard.Infrastructure/DependencyInjection.cs`.
+- [X] T040 [US2] Implement list endpoint `GET /api/words/unique/{kind}` in `Backend/api/QuranDashboard.Api/Controllers/Words/UniqueWordsController.cs`.
 
 ### Frontend Implementation for User Story 2
 
-- [ ] T041 [US2] Add `/dashboard/words/unique`, `/dashboard/words/unique/tashkeel`, and `/dashboard/words/unique/simple` routes in `Frontend/quran-dashboard-ui/src/app/features/words/words.routes.ts`.
-- [ ] T042 [US2] Implement `UniqueWordsApi` list method returning `Observable<ApiResponse<PagedResultDto<UniqueWordListItemDto>>>` in `Frontend/quran-dashboard-ui/src/app/features/words/data-access/unique-words.api.ts`.
-- [ ] T043 [US2] Implement list state, route mode state, query param parsing for `search`, `sort`, and `page`, and `ApiResponse<T>` unwrapping in `Frontend/quran-dashboard-ui/src/app/features/words/state/unique-words.facade.ts`.
-- [ ] T044 [P] [US2] Implement `UniqueWordsTabsComponent` TypeScript for stable `tashkeel` and `simple` route links in `Frontend/quran-dashboard-ui/src/app/features/words/components/unique-words-tabs/unique-words-tabs.component.ts`.
-- [ ] T045 [P] [US2] Implement `UniqueWordsTabsComponent` template and RTL styles in `Frontend/quran-dashboard-ui/src/app/features/words/components/unique-words-tabs/unique-words-tabs.component.html` and `Frontend/quran-dashboard-ui/src/app/features/words/components/unique-words-tabs/unique-words-tabs.component.scss`.
-- [ ] T046 [P] [US2] Implement `UniqueWordsSearchBarComponent` TypeScript for search and sort outputs in `Frontend/quran-dashboard-ui/src/app/features/words/components/unique-words-search-bar/unique-words-search-bar.component.ts`.
-- [ ] T047 [P] [US2] Implement `UniqueWordsSearchBarComponent` template with `qd-input`, `qd-select`, Arabic labels, and submit/change events in `Frontend/quran-dashboard-ui/src/app/features/words/components/unique-words-search-bar/unique-words-search-bar.component.html`.
-- [ ] T048 [P] [US2] Implement `UniqueWordCardComponent` TypeScript inputs for display word, counts, first location, and disabled drill-down state before US3 in `Frontend/quran-dashboard-ui/src/app/features/words/components/unique-word-card/unique-word-card.component.ts`.
-- [ ] T049 [P] [US2] Implement `UniqueWordCardComponent` template using Amiri/Uthmani display text and four count chips in `Frontend/quran-dashboard-ui/src/app/features/words/components/unique-word-card/unique-word-card.component.html`.
-- [ ] T050 [P] [US2] Implement `WordCountChipComponent` TypeScript inputs and output event in `Frontend/quran-dashboard-ui/src/app/features/words/components/word-count-chip/word-count-chip.component.ts`.
-- [ ] T051 [P] [US2] Implement `WordCountChipComponent` template with real button semantics and `aria-label` text in `Frontend/quran-dashboard-ui/src/app/features/words/components/word-count-chip/word-count-chip.component.html`.
-- [ ] T052 [US2] Implement `UniqueWordsPageComponent` TypeScript shell that reads facade state and handles search, sort, page, and mode events in `Frontend/quran-dashboard-ui/src/app/features/words/pages/unique-words-page/unique-words-page.component.ts`.
-- [ ] T053 [US2] Implement `UniqueWordsPageComponent` template for tabs, toolbar, loading, empty, error, card list, and pagination in `Frontend/quran-dashboard-ui/src/app/features/words/pages/unique-words-page/unique-words-page.component.html`.
-- [ ] T054 [P] [US2] Implement local responsive layout styles for the explorer page without redefining shared primitives in `Frontend/quran-dashboard-ui/src/app/features/words/pages/unique-words-page/unique-words-page.component.scss`.
+- [X] T041 [US2] Add `/dashboard/words/unique`, `/dashboard/words/unique/tashkeel`, and `/dashboard/words/unique/simple` routes in `Frontend/quran-dashboard-ui/src/app/features/words/words.routes.ts`.
+- [X] T042 [US2] Implement `UniqueWordsApi` list method returning `Observable<ApiResponse<PagedResultDto<UniqueWordListItemDto>>>` in `Frontend/quran-dashboard-ui/src/app/features/words/data-access/unique-words.api.ts`.
+- [X] T043 [US2] Implement list state, route mode state, query param parsing for `search`, `sort`, and `page`, and `ApiResponse<T>` unwrapping in `Frontend/quran-dashboard-ui/src/app/features/words/state/unique-words.facade.ts`.
+- [X] T044 [P] [US2] Implement `UniqueWordsTabsComponent` TypeScript for stable `tashkeel` and `simple` route links in `Frontend/quran-dashboard-ui/src/app/features/words/components/unique-words-tabs/unique-words-tabs.component.ts`.
+- [X] T045 [P] [US2] Implement `UniqueWordsTabsComponent` template and RTL styles in `Frontend/quran-dashboard-ui/src/app/features/words/components/unique-words-tabs/unique-words-tabs.component.html` and `Frontend/quran-dashboard-ui/src/app/features/words/components/unique-words-tabs/unique-words-tabs.component.scss`.
+- [X] T046 [P] [US2] Implement `UniqueWordsSearchBarComponent` TypeScript for search and sort outputs in `Frontend/quran-dashboard-ui/src/app/features/words/components/unique-words-search-bar/unique-words-search-bar.component.ts`.
+- [X] T047 [P] [US2] Implement `UniqueWordsSearchBarComponent` template with `qd-input`, `qd-select`, Arabic labels, and submit/change events in `Frontend/quran-dashboard-ui/src/app/features/words/components/unique-words-search-bar/unique-words-search-bar.component.html`.
+- [X] T048 [P] [US2] Implement `UniqueWordCardComponent` TypeScript inputs for display word, counts, first location, and disabled drill-down state before US3 in `Frontend/quran-dashboard-ui/src/app/features/words/components/unique-word-card/unique-word-card.component.ts`.
+- [X] T049 [P] [US2] Implement `UniqueWordCardComponent` template using Amiri/Uthmani display text and four count chips in `Frontend/quran-dashboard-ui/src/app/features/words/components/unique-word-card/unique-word-card.component.html`.
+- [X] T050 [P] [US2] Implement `WordCountChipComponent` TypeScript inputs and output event in `Frontend/quran-dashboard-ui/src/app/features/words/components/word-count-chip/word-count-chip.component.ts`.
+- [X] T051 [P] [US2] Implement `WordCountChipComponent` template with real button semantics and `aria-label` text in `Frontend/quran-dashboard-ui/src/app/features/words/components/word-count-chip/word-count-chip.component.html`.
+- [X] T052 [US2] Implement `UniqueWordsPageComponent` TypeScript shell that reads facade state and handles search, sort, page, and mode events in `Frontend/quran-dashboard-ui/src/app/features/words/pages/unique-words-page/unique-words-page.component.ts`.
+- [X] T053 [US2] Implement `UniqueWordsPageComponent` template for tabs, toolbar, loading, empty, error, card list, and pagination in `Frontend/quran-dashboard-ui/src/app/features/words/pages/unique-words-page/unique-words-page.component.html`.
+- [X] T054 [P] [US2] Implement local responsive layout styles for the explorer page without redefining shared primitives in `Frontend/quran-dashboard-ui/src/app/features/words/pages/unique-words-page/unique-words-page.component.scss`.
 
 **Checkpoint**: User Story 2 is independently testable with only the list API and explorer page; drill-down clicks may be disabled or no-op until US3.
 
