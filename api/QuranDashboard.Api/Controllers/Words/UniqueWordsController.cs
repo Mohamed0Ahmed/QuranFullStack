@@ -5,6 +5,7 @@ using QuranDashboard.Application.Abstractions.Common.Paging;
 using QuranDashboard.Application.Abstractions.Quran.Words.Responses;
 using QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordAyahs;
 using QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordMissingSurahs;
+using QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordSummary;
 using QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordSurahs;
 using QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordsPage;
 
@@ -12,12 +13,13 @@ namespace QuranDashboard.Api.Controllers.Words;
 
 /// <summary>
 /// نقاط قراءة الكلمات الفريدة (الميزة 014). للقراءة فقط؛ لا تغيّر بيانات
-/// المصحف. نقطة الملخص تُضاف في T081.
+/// المصحف.
 /// </summary>
 [ApiController]
 [Route("api/words/unique")]
 public sealed class UniqueWordsController(
     GetUniqueWordsPageHandler listHandler,
+    GetUniqueWordSummaryHandler summaryHandler,
     GetUniqueWordSurahsHandler surahsHandler,
     GetUniqueWordMissingSurahsHandler missingSurahsHandler,
     GetUniqueWordAyahsHandler ayahsHandler) : ControllerBase
@@ -64,6 +66,34 @@ public sealed class UniqueWordsController(
             GetUniqueWordsPageOutcome.InvalidPaging =>
                 BadRequest(ApiResponse<PagedResult<UniqueWordListItemDto>>.Fail(ApiMessages.UniqueWordsInvalidPaging)),
             _ => throw new InvalidOperationException($"Unhandled {nameof(GetUniqueWordsPageOutcome)} variant."),
+        };
+    }
+
+    /// <summary>
+    /// يُرجع ملخّص الكلمة الفريدة المحددة. يُستخدم لاستعادة حالة النافذة
+    /// المنبثقة من رابط مشاركة قبل قراءة التفصيل أو معها.
+    /// </summary>
+    [HttpGet("{kind}/{id:int}")]
+    public async Task<ActionResult<ApiResponse<UniqueWordSummaryDto>>> GetSummary(
+        string kind,
+        int id,
+        CancellationToken cancellationToken)
+    {
+        var outcome = await summaryHandler.HandleAsync(
+            new GetUniqueWordSummaryQuery(kind, id),
+            cancellationToken);
+
+        return outcome switch
+        {
+            GetUniqueWordSummaryOutcome.Success success =>
+                Ok(ApiResponse<UniqueWordSummaryDto>.Ok(success.Summary, ApiMessages.UniqueWordSummaryLoaded)),
+            GetUniqueWordSummaryOutcome.InvalidKind =>
+                BadRequest(ApiResponse<UniqueWordSummaryDto>.Fail(ApiMessages.UniqueWordsInvalidKind)),
+            GetUniqueWordSummaryOutcome.InvalidId =>
+                BadRequest(ApiResponse<UniqueWordSummaryDto>.Fail(ApiMessages.UniqueWordsInvalidId)),
+            GetUniqueWordSummaryOutcome.NotFound =>
+                NotFound(ApiResponse<UniqueWordSummaryDto>.Fail(ApiMessages.UniqueWordNotFound)),
+            _ => throw new InvalidOperationException($"Unhandled {nameof(GetUniqueWordSummaryOutcome)} variant."),
         };
     }
 

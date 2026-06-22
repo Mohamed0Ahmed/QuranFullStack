@@ -84,9 +84,56 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
     }
 
     /// <inheritdoc />
-    public Task<UniqueWordSummaryDto?> GetUniqueWordSummaryAsync(
+    public async Task<UniqueWordSummaryDto?> GetUniqueWordSummaryAsync(
         UniqueWordKind kind, int id, CancellationToken cancellationToken)
-        => throw new NotImplementedException("Implemented in T080.");
+    {
+        // Same projection as the list read, but for a single row by stable ID.
+        // The unique-word tables already carry precomputed counts and first
+        // occurrence metadata, so the summary needs no per-ayah joins.
+        var row = kind == UniqueWordKind.Tashkeel
+            ? await _db.QuranWordsUniqueTashkeel
+                .AsNoTracking()
+                .Where(w => w.Id == id)
+                .Select(w => new UniqueWordSummaryRow(
+                    w.TextUthmani,
+                    UniqueWordKindKeys.Tashkeel,
+                    w.OccurrencesCount,
+                    w.AyahsCount,
+                    w.SurahsCount,
+                    w.FirstSurahNumber,
+                    w.FirstAyahNumber,
+                    w.FirstLocation))
+                .FirstOrDefaultAsync(cancellationToken)
+            : await _db.QuranWordsUniqueSimple
+                .AsNoTracking()
+                .Where(w => w.Id == id)
+                .Select(w => new UniqueWordSummaryRow(
+                    w.TextUthmani,
+                    UniqueWordKindKeys.Simple,
+                    w.OccurrencesCount,
+                    w.AyahsCount,
+                    w.SurahsCount,
+                    w.FirstSurahNumber,
+                    w.FirstAyahNumber,
+                    w.FirstLocation))
+                .FirstOrDefaultAsync(cancellationToken);
+
+        if (row is null)
+        {
+            return null;
+        }
+
+        return new UniqueWordSummaryDto(
+            id,
+            row.KindKey,
+            row.DisplayTextUthmani,
+            row.OccurrencesCount,
+            row.AyahsCount,
+            row.SurahsCount,
+            TotalSurahs - row.SurahsCount,
+            $"{row.FirstSurahNumber}:{row.FirstAyahNumber}",
+            row.FirstLocation);
+    }
 
     /// <inheritdoc />
     public async Task<UniqueWordSurahsResponse?> GetMentionedSurahsAsync(
@@ -447,6 +494,20 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
         string SearchText);
 
     private sealed record UniqueWordHeaderRow(string DisplayTextUthmani, string KindKey);
+
+    /// <summary>
+    /// Single-row projection for the summary read; carries only the columns the
+    /// summary DTO consumes. Shares shape with the list row but is read by ID.
+    /// </summary>
+    private sealed record UniqueWordSummaryRow(
+        string DisplayTextUthmani,
+        string KindKey,
+        int OccurrencesCount,
+        short AyahsCount,
+        short SurahsCount,
+        short FirstSurahNumber,
+        short FirstAyahNumber,
+        string FirstLocation);
 
     private sealed record SurahOccurrenceRow(short SurahNumber, int OccurrencesInSurah);
 
