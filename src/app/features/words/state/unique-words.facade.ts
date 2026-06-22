@@ -1,77 +1,37 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { ActivatedRoute, ParamMap } from '@angular/router';
-import { HttpErrorResponse } from '@angular/common/http';
 import { Observable, Subscription, combineLatest, of } from 'rxjs';
 import { catchError, distinctUntilChanged, map, switchMap, tap } from 'rxjs/operators';
 
 import { ApiResponse } from '../../../core/data-access/api-response.model';
 import { UniqueWordsApi } from '../data-access/unique-words.api';
+import { EMPTY_LIST_LABEL } from '../models/unique-words.labels';
 import {
-  DRILLDOWN_EMPTY_AYAHS_LABEL,
-  DRILLDOWN_EMPTY_MISSING_LABEL,
-  DRILLDOWN_EMPTY_SURAHS_LABEL,
-  DRILLDOWN_ERROR_LABEL,
-  EMPTY_LIST_LABEL,
-  RESTORED_WORD_LOAD_ERROR_LABEL,
-  RESTORED_WORD_NOT_FOUND_LABEL,
-} from '../models/unique-words.labels';
-import {
-  DEFAULT_AYAH_PAGE,
-  DEFAULT_AYAH_PAGE_SIZE,
   DEFAULT_LIST_PAGE,
   DEFAULT_LIST_PAGE_SIZE,
   DEFAULT_UNIQUE_WORD_KIND,
   DEFAULT_UNIQUE_WORD_SORT,
   LoadStatus,
   PagedResultDto,
-  UniqueWordAyahMatchDto,
   UniqueWordKind,
   UniqueWordListItemDto,
   UniqueWordListItemViewModel,
   UniqueWordSort,
-  UniqueWordSummaryDto,
-  UniqueWordSurahsDto,
   UniqueWordsListState,
-  WordDrilldownState,
   WordDrilldownView,
 } from '../models/unique-words.models';
 import { mapUniqueWordListItems } from '../utils/unique-words-display.mapper';
-import { buildMissingSurahsPayload } from '../utils/unique-words-surahs';
-import { mergeUniqueWordListItems, toUniqueWordSummary } from '../utils/unique-words-state.helpers';
-import {
-  buildAyahsDrilldownUpdate,
-  buildDrilldownErrorUpdate,
-  buildRestoredWordLoadError,
-  buildRestoredWordNotFound,
-  buildSurahsDrilldownUpdate,
-  extractDrilldownMessage,
-} from '../utils/unique-words-drilldown.state';
+import { mergeUniqueWordListItems } from '../utils/unique-words-state.helpers';
+import { extractDrilldownMessage } from '../utils/unique-words-drilldown.state';
 import { parseUniqueWordsQueryParams } from './unique-words-url-sync';
+import { UniqueWordsDrilldownFacade } from './unique-words-drilldown.facade';
 
 const CONNECTION_ERROR_MESSAGE = 'تعذّر تحميل الكلمات الفريدة. تحقّق من الاتصال ثم أعد المحاولة.';
-
-interface ModalUrlState {
-  readonly wordId: number;
-  readonly view: WordDrilldownView;
-  readonly ayahPage: number;
-}
-
-const INITIAL_DRILLDOWN: WordDrilldownState = {
-  isOpen: false,
-  selectedWordId: null,
-  view: 'surahs',
-  summary: null,
-  surahs: null,
-  missingSurahs: null,
-  ayahs: null,
-  ayahPage: DEFAULT_AYAH_PAGE,
-  status: 'idle',
-  errorMessage: '',
-};
 
 @Injectable({ providedIn: 'root' })
 export class UniqueWordsFacade {
   private readonly api = inject(UniqueWordsApi);
+  private readonly drilldown = inject(UniqueWordsDrilldownFacade);
 
   private readonly _status = signal<LoadStatus>('idle');
   private readonly _items = signal<readonly UniqueWordListItemViewModel[]>([]);
@@ -84,8 +44,6 @@ export class UniqueWordsFacade {
   private readonly _sort = signal<UniqueWordSort>(DEFAULT_UNIQUE_WORD_SORT);
   private readonly _errorMessage = signal<string>('');
 
-  private readonly _drilldown = signal<WordDrilldownState>(INITIAL_DRILLDOWN);
-
   // Read the default page size on access rather than caching it in a field
   // initializer. The experimental @angular/build:unit-test SSR runner resolves
   // a class field initializer's cross-module const read to `undefined` under
@@ -97,16 +55,7 @@ export class UniqueWordsFacade {
   }
   private routeSub?: Subscription;
   private manualLoadSub?: Subscription;
-  private drilldownSub?: Subscription;
-  private summarySub?: Subscription;
   private lastFilterKey = '';
-
-  /**
-   * Modal state currently reflected by the URL or an in-app action. This tracks
-   * the full modal tuple, not just the word ID, so browser back/forward can
-   * restore same-word `view` and `ap` changes.
-   */
-  private activeModalUrlState: ModalUrlState | null = null;
 
   readonly listState = computed<UniqueWordsListState>(() => ({
     status: this._status(),
@@ -121,7 +70,8 @@ export class UniqueWordsFacade {
     errorMessage: this._errorMessage(),
   }));
 
-  readonly drilldownState = computed(() => this._drilldown());
+  /** Drill-down/modal slice, owned by {@link UniqueWordsDrilldownFacade}. */
+  readonly drilldownState = this.drilldown.drilldownState;
 
   readonly status = this._status.asReadonly();
   readonly items = this._items.asReadonly();
@@ -160,73 +110,23 @@ export class UniqueWordsFacade {
     this.manualLoadSub = this.runListRequest().subscribe();
   }
 
+  // Drill-down/modal surface — delegated to UniqueWordsDrilldownFacade so the
+  // page keeps a single facade entry point while the two state slices stay
+  // separated.
   openDrilldown(word: UniqueWordListItemDto, view: WordDrilldownView): void {
-    const summary = toUniqueWordSummary(word);
-    this.activeModalUrlState = {
-      wordId: word.id,
-      view,
-      ayahPage: DEFAULT_AYAH_PAGE,
-    };
-    this._drilldown.set({
-      ...INITIAL_DRILLDOWN,
-      isOpen: true,
-      selectedWordId: word.id,
-      view,
-      summary,
-      ayahPage: DEFAULT_AYAH_PAGE,
-      status: 'loading',
-    });
-    this.loadDrilldownView(view, word.kind, word.id, DEFAULT_AYAH_PAGE);
+    this.drilldown.openDrilldown(word, view);
   }
 
   setDrilldownView(view: WordDrilldownView): void {
-    const current = this._drilldown();
-    if (!current.isOpen || current.selectedWordId === null || current.summary === null) {
-      return;
-    }
-
-    if (view === current.view) {
-      return;
-    }
-
-    const nextAyahPage = view === 'ayahs' ? current.ayahPage : DEFAULT_AYAH_PAGE;
-    this.activeModalUrlState = {
-      wordId: current.selectedWordId,
-      view,
-      ayahPage: nextAyahPage,
-    };
-    this._drilldown.update((s) => ({
-      ...s,
-      view,
-      status: 'loading',
-      errorMessage: '',
-      ayahPage: nextAyahPage,
-    }));
-    this.loadDrilldownView(view, current.summary.kind, current.selectedWordId, this._drilldown().ayahPage);
+    this.drilldown.setDrilldownView(view);
   }
 
   setAyahPage(page: number): void {
-    const current = this._drilldown();
-    if (!current.isOpen || current.selectedWordId === null || current.summary === null || page < 1) {
-      return;
-    }
-
-    this.activeModalUrlState = {
-      wordId: current.selectedWordId,
-      view: 'ayahs',
-      ayahPage: page,
-    };
-    this._drilldown.update((s) => ({ ...s, ayahPage: page, status: 'loading', errorMessage: '' }));
-    this.loadDrilldownView('ayahs', current.summary.kind, current.selectedWordId, page);
+    this.drilldown.setAyahPage(page);
   }
 
   closeDrilldown(): void {
-    this.summarySub?.unsubscribe();
-    this.summarySub = undefined;
-    this.drilldownSub?.unsubscribe();
-    this.drilldownSub = undefined;
-    this.activeModalUrlState = null;
-    this._drilldown.set(INITIAL_DRILLDOWN);
+    this.drilldown.closeDrilldown();
   }
 
   private applyRouteState(params: ParamMap, queryParams: ParamMap): void {
@@ -246,135 +146,7 @@ export class UniqueWordsFacade {
     this._sort.set(parsed.sort);
     this._page.set(parsed.page);
 
-    this.restoreModalFromUrl(parsed.wordId, parsed.view, parsed.ayahPage);
-  }
-
-  private restoreModalFromUrl(
-    wordId: number | null,
-    view: WordDrilldownView | null,
-    ayahPage: number | null,
-  ): void {
-    // No modal requested.
-    if (wordId === null) {
-      this.closeDrilldown();
-      return;
-    }
-
-    const nextState: ModalUrlState = {
-      wordId,
-      view: view ?? 'surahs',
-      ayahPage: view === 'ayahs' ? ayahPage ?? DEFAULT_AYAH_PAGE : DEFAULT_AYAH_PAGE,
-    };
-
-    if (this.isSameModalUrlState(this.activeModalUrlState, nextState)) {
-      return;
-    }
-
-    this.activeModalUrlState = nextState;
-    this.restoreOrUpdateModal(nextState);
-  }
-
-  private restoreOrUpdateModal(nextState: ModalUrlState): void {
-    const current = this._drilldown();
-    if (
-      current.isOpen &&
-      current.selectedWordId === nextState.wordId &&
-      current.summary !== null
-    ) {
-      this._drilldown.update((s) => ({
-        ...s,
-        view: nextState.view,
-        ayahPage: nextState.ayahPage,
-        status: 'loading',
-        errorMessage: '',
-      }));
-      this.loadDrilldownView(
-        nextState.view,
-        current.summary.kind,
-        nextState.wordId,
-        nextState.ayahPage,
-      );
-      return;
-    }
-
-    this.loadSummaryAndRestore(nextState);
-  }
-
-  private loadSummaryAndRestore(nextState: ModalUrlState): void {
-    this.summarySub?.unsubscribe();
-    this._drilldown.set({
-      ...INITIAL_DRILLDOWN,
-      isOpen: true,
-      selectedWordId: nextState.wordId,
-      view: nextState.view,
-      ayahPage: nextState.ayahPage,
-      status: 'loading',
-    });
-
-    this.summarySub = this.api
-      .getSummary(this._mode(), nextState.wordId)
-      .pipe(
-        tap((response) => {
-          if (!response.isSuccess || !response.data) {
-            this.handleRestoredWordNotFound(response.message ?? '');
-            return;
-          }
-          this.openRestoredDrilldown(response.data, nextState);
-        }),
-        catchError((err) => {
-          if (err instanceof HttpErrorResponse && err.status === 404) {
-            const message = this.extractErrorMessage(err, RESTORED_WORD_NOT_FOUND_LABEL);
-            this.handleRestoredWordNotFound(message);
-            return of(undefined);
-          }
-
-          const message = this.extractErrorMessage(err, RESTORED_WORD_LOAD_ERROR_LABEL);
-          this.handleRestoredWordLoadError(message);
-          return of(undefined);
-        }),
-      )
-      .subscribe();
-  }
-
-  private openRestoredDrilldown(
-    summary: UniqueWordSummaryDto,
-    nextState: ModalUrlState,
-  ): void {
-    this._drilldown.update((s) => ({
-      ...s,
-      summary,
-      view: nextState.view,
-      ayahPage: nextState.ayahPage,
-      status: 'loading',
-    }));
-    this.loadDrilldownView(nextState.view, summary.kind, summary.id, nextState.ayahPage);
-  }
-
-  private handleRestoredWordNotFound(message: string): void {
-    // Controlled not-found: keep the modal surface closed, surface a not-found
-    // status, and keep the list fully usable. `activeModalUrlState` stays set to
-    // the attempted state so a lingering bad `word` param is not re-fetched on
-    // later list-only navigation. The page renders a controlled Arabic message;
-    // no Quranic text is invented.
-    this._drilldown.set({ ...INITIAL_DRILLDOWN, ...buildRestoredWordNotFound(message) });
-  }
-
-  private handleRestoredWordLoadError(message: string): void {
-    // Mirror not-found handling: keep `activeModalUrlState` so the failed
-    // restore is not re-attempted on every later list-only navigation.
-    this._drilldown.set({ ...INITIAL_DRILLDOWN, ...buildRestoredWordLoadError(message) });
-  }
-
-  private isSameModalUrlState(
-    current: ModalUrlState | null,
-    next: ModalUrlState,
-  ): boolean {
-    return (
-      current !== null &&
-      current.wordId === next.wordId &&
-      current.view === next.view &&
-      current.ayahPage === next.ayahPage
-    );
+    this.drilldown.restoreFromUrl(nextMode, parsed.wordId, parsed.view, parsed.ayahPage);
   }
 
   private listRequestKey(): string {
@@ -407,129 +179,6 @@ export class UniqueWordsFacade {
         }),
         map(() => undefined),
       );
-  }
-
-  private loadDrilldownView(
-    view: WordDrilldownView,
-    kind: UniqueWordKind,
-    wordId: number,
-    ayahPage: number,
-  ): void {
-    this.drilldownSub?.unsubscribe();
-
-    if (view === 'surahs') {
-      this.drilldownSub = this.api
-        .getMentionedSurahs(kind, wordId)
-        .pipe(
-          tap((response) => this.handleSurahsResponse(response)),
-          catchError((err) => {
-            this.handleDrilldownError(err);
-            return of(undefined);
-          }),
-        )
-        .subscribe();
-      return;
-    }
-
-    if (view === 'missing') {
-      const current = this._drilldown();
-      if (current.missingSurahs !== null) {
-        const missingSurahs = current.missingSurahs;
-        this._drilldown.update((s) => ({
-          ...s,
-          missingSurahs,
-          status: missingSurahs.surahs.length === 0 ? 'empty' : 'success',
-          errorMessage: '',
-        }));
-        return;
-      }
-
-      if (current.surahs !== null) {
-        const surahs = current.surahs;
-        this._drilldown.update((s) => ({
-          ...s,
-          missingSurahs: buildMissingSurahsPayload(surahs),
-          status: surahs.surahs.length === 0 ? 'empty' : 'success',
-          errorMessage: '',
-        }));
-        return;
-      }
-
-      this.drilldownSub = this.api
-        .getMentionedSurahs(kind, wordId)
-        .pipe(
-          tap((response) => {
-            if (!response.isSuccess || !response.data) {
-              this._drilldown.update((s) => ({
-                ...s,
-                status: 'error',
-                errorMessage: response.message ?? DRILLDOWN_ERROR_LABEL,
-              }));
-              return;
-            }
-
-            const missingSurahs = buildMissingSurahsPayload(response.data);
-
-            this._drilldown.update((s) => ({
-              ...s,
-              missingSurahs,
-              status: missingSurahs.surahs.length === 0 ? 'empty' : 'success',
-              errorMessage: '',
-            }));
-          }),
-          catchError((err) => {
-            this.handleDrilldownError(err);
-            return of(undefined);
-          }),
-        )
-        .subscribe();
-      return;
-    }
-
-    this.drilldownSub = this.api
-      .getAyahMatches(kind, wordId, ayahPage, DEFAULT_AYAH_PAGE_SIZE)
-      .pipe(
-        tap((response) => this.handleAyahsResponse(response)),
-        catchError((err) => {
-          this.handleDrilldownError(err);
-          return of(undefined);
-        }),
-      )
-      .subscribe();
-  }
-
-  setMode(mode: UniqueWordKind): void {
-    if (mode !== this._mode()) {
-      this._mode.set(mode);
-      this._page.set(DEFAULT_LIST_PAGE);
-      this.resetAccumulatedList();
-      this.loadList();
-    }
-  }
-
-  setSearch(search: string): void {
-    if (search !== this._search()) {
-      this._search.set(search);
-      this._page.set(DEFAULT_LIST_PAGE);
-      this.resetAccumulatedList();
-      this.loadList();
-    }
-  }
-
-  setSort(sort: UniqueWordSort): void {
-    if (sort !== this._sort()) {
-      this._sort.set(sort);
-      this._page.set(DEFAULT_LIST_PAGE);
-      this.resetAccumulatedList();
-      this.loadList();
-    }
-  }
-
-  setPage(page: number): void {
-    if (page !== this._page() && page >= 1) {
-      this._page.set(page);
-      this.loadList();
-    }
   }
 
   private handleListResponse(
@@ -565,23 +214,7 @@ export class UniqueWordsFacade {
   private handleListError(err: unknown): void {
     this.resetAccumulatedList();
     this._status.set('error');
-    this._errorMessage.set(this.extractErrorMessage(err, CONNECTION_ERROR_MESSAGE));
-  }
-
-  private handleSurahsResponse(response: ApiResponse<UniqueWordSurahsDto>): void {
-    this._drilldown.update((s) => ({ ...s, ...buildSurahsDrilldownUpdate(response) }));
-  }
-
-  private handleAyahsResponse(response: ApiResponse<PagedResultDto<UniqueWordAyahMatchDto>>): void {
-    this._drilldown.update((s) => ({ ...s, ...buildAyahsDrilldownUpdate(response) }));
-  }
-
-  private handleDrilldownError(err: unknown): void {
-    this._drilldown.update((s) => ({ ...s, ...buildDrilldownErrorUpdate(err, DRILLDOWN_ERROR_LABEL) }));
-  }
-
-  private extractErrorMessage(err: unknown, fallback: string): string {
-    return extractDrilldownMessage(err, fallback);
+    this._errorMessage.set(extractDrilldownMessage(err, CONNECTION_ERROR_MESSAGE));
   }
 
   private resetAccumulatedList(): void {

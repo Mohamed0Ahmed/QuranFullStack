@@ -38,15 +38,17 @@
             />
           </section>
 
-          <aside class="unique-words-layout__panel unique-words-layout__panel--desktop" aria-label="التفاصيل">
-            <qd-word-drilldown-modal
-              [state]="drilldownState()"
-              [inline]="true"
-              (closeModal)="onDrilldownClose()"
-              (viewChange)="onDrilldownViewChange($event)"
-              (ayahPageChange)="onAyahPageChange($event)"
-            />
-          </aside>
+          @if (isDesktop()) {
+            <aside class="unique-words-layout__panel" aria-label="التفاصيل">
+              <qd-word-drilldown-modal
+                [state]="drilldownState()"
+                [inline]="true"
+                (closeModal)="onDrilldownClose()"
+                (viewChange)="onDrilldownViewChange($event)"
+                (ayahPageChange)="onAyahPageChange($event)"
+              />
+            </aside>
+          }
         </div>
       }
     }
@@ -78,12 +80,13 @@
     }
   </div>
 
-  <qd-word-drilldown-modal
-    class="unique-words-page__mobile-modal"
-    [state]="drilldownState()"
-    [inline]="false"
-    (closeModal)="onDrilldownClose()"
-    (viewChange)="onDrilldownViewChange($event)"
-    (ayahPageChange)="onAyahPageChange($event)"
-  />
+  @if (!isDesktop()) {
+    <qd-word-drilldown-modal
+      [state]="drilldownState()"
+      [inline]="false"
+      (closeModal)="onDrilldownClose()"
+      (viewChange)="onDrilldownViewChange($event)"
+      (ayahPageChange)="onAyahPageChange($event)"
+    />
+  }
 </div>

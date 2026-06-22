@@ -22,15 +22,3 @@
     align-items: start;
   }
 }
-
-@media (max-width: 1023px) {
-  .unique-words-layout__panel--desktop {
-    display: none;
-  }
-}
-
-@media (min-width: 1024px) {
-  .unique-words-page__mobile-modal {
-    display: none;
-  }
-}

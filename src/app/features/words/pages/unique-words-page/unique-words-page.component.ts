@@ -71,6 +71,16 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
   protected readonly loadingLabel = LOADING_LABEL;
   protected readonly restoredNotFoundLabel = RESTORED_WORD_NOT_FOUND_LABEL;
 
+  // Drives which single drill-down surface renders: the inline panel at desktop
+  // widths, the overlay modal below. Rendering exactly one avoids the previous
+  // dual-instance DOM (both surfaces rendered the full drill-down subtree, one
+  // hidden by CSS). Defaults to desktop so SSR / non-browser test environments
+  // without `matchMedia` render the inline panel. Breakpoint mirrors the SCSS.
+  protected readonly isDesktop = signal(true);
+  private desktopQuery?: MediaQueryList;
+  private readonly onDesktopChange = (event: MediaQueryListEvent): void =>
+    this.isDesktop.set(event.matches);
+
   // Local draft for the search input so typing does not reload on every
   // keystroke; the facade reloads after the debounced emission. Seeded from the
   // active (URL) search so a shared/restored link shows its term in the box.
@@ -97,11 +107,18 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
     this.searchSub = this.searchInput
       .pipe(debounceTime(300))
       .subscribe((value) => this.updateQueryParams({ search: value || null, page: null }));
+
+    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+      this.desktopQuery = window.matchMedia('(min-width: 1024px)');
+      this.isDesktop.set(this.desktopQuery.matches);
+      this.desktopQuery.addEventListener('change', this.onDesktopChange);
+    }
   }
 
   ngOnDestroy(): void {
     this.facade.unbindFromRoute();
     this.searchSub?.unsubscribe();
+    this.desktopQuery?.removeEventListener('change', this.onDesktopChange);
   }
 
   protected onSearchChange(value: string): void {

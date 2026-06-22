@@ -4,6 +4,7 @@ import {
   Component,
   effect,
   input,
+  OnDestroy,
   signal,
   ViewChild,
   output,
@@ -28,7 +29,7 @@ const LOAD_MORE_THRESHOLD_ROWS = 3;
   styleUrl: './unique-words-table.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class UniqueWordsTableComponent implements AfterViewInit {
+export class UniqueWordsTableComponent implements AfterViewInit, OnDestroy {
   readonly rows = input.required<readonly UniqueWordListItemViewModel[]>();
   readonly selectedWordId = input<number | null>(null);
   readonly loadingMore = input(false);
@@ -50,6 +51,7 @@ export class UniqueWordsTableComponent implements AfterViewInit {
 
   private lastObservedRowsLength = 0;
   private loadMoreEmittedForLength = -1;
+  private resizeObserver?: ResizeObserver;
 
   constructor() {
     effect(() => {
@@ -62,7 +64,40 @@ export class UniqueWordsTableComponent implements AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    this.useVirtualScroll.set((this.viewport?.elementRef.nativeElement.clientHeight ?? 0) > 0);
+    const element = this.viewport?.elementRef.nativeElement;
+    if (!element || this.activateVirtualScrollIfSized(element)) {
+      return;
+    }
+
+    // The viewport can report 0 height at init — mounted while its container is
+    // collapsed/`display:none`, behind a tab, or before layout settles. Without
+    // re-evaluation the flag would latch `false` and the non-virtual fallback
+    // would render every accumulated row. Re-check on resize so virtualization
+    // activates once the viewport gains height. (jsdom has no ResizeObserver, so
+    // the unit-test path stays on the deterministic non-virtual branch.)
+    if (typeof ResizeObserver === 'undefined') {
+      return;
+    }
+    this.resizeObserver = new ResizeObserver(() => {
+      if (this.activateVirtualScrollIfSized(element)) {
+        this.resizeObserver?.disconnect();
+        this.resizeObserver = undefined;
+      }
+    });
+    this.resizeObserver.observe(element);
+  }
+
+  ngOnDestroy(): void {
+    this.resizeObserver?.disconnect();
+  }
+
+  /** Turns on virtual scroll once the viewport has a measurable height. */
+  private activateVirtualScrollIfSized(element: HTMLElement): boolean {
+    const hasHeight = element.clientHeight > 0;
+    if (hasHeight) {
+      this.useVirtualScroll.set(true);
+    }
+    return hasHeight;
   }
 
   protected selectRow(row: UniqueWordListItemViewModel): void {

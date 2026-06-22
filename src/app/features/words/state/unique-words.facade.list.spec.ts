@@ -50,6 +50,28 @@ function setup(getList = vi.fn()) {
   return TestBed.inject(UniqueWordsFacade);
 }
 
+/**
+ * Mutable ActivatedRoute stub. The page drives list state (mode/search/sort/
+ * page) only through the URL, so these tests exercise the same route-binding
+ * path the page uses rather than imperative setters.
+ */
+function controllableRoute(
+  params: Record<string, string> = { mode: 'tashkeel' },
+  queryParams: Record<string, string> = {},
+): {
+  route: ActivatedRoute;
+  setParams: (next: Record<string, string>) => void;
+  setQueryParams: (next: Record<string, string>) => void;
+} {
+  const paramMap = new BehaviorSubject<ParamMap>(convertToParamMap(params));
+  const queryParamMap = new BehaviorSubject<ParamMap>(convertToParamMap(queryParams));
+  return {
+    route: { paramMap, queryParamMap } as unknown as ActivatedRoute,
+    setParams: (next) => paramMap.next(convertToParamMap(next)),
+    setQueryParams: (next) => queryParamMap.next(convertToParamMap(next)),
+  };
+}
+
 describe('UniqueWordsFacade list state', () => {
   beforeEach(() => {
     getTestBed().resetTestingModule();
@@ -133,49 +155,44 @@ describe('UniqueWordsFacade list state', () => {
     expect(facade.errorMessage().length).toBeGreaterThan(0);
   });
 
-  it('reloads with the new mode and resets to page 1 on setMode', () => {
+  it('reloads with the new search and resets to page 1 when the search query param changes', () => {
     const getList = vi.fn(() => of(okResponse([item(1)], 1)));
     const facade = setup(getList);
-    facade.loadList();
-    expect(getList).toHaveBeenLastCalledWith('tashkeel', '', 'mushaf-order', 1, DEFAULT_LIST_PAGE_SIZE);
+    const route = controllableRoute();
+    facade.bindToRoute(route.route);
 
-    facade.setMode('simple');
-
-    expect(getList).toHaveBeenLastCalledWith('simple', '', 'mushaf-order', 1, DEFAULT_LIST_PAGE_SIZE);
-  });
-
-  it('reloads with the new search and resets to page 1 on setSearch', () => {
-    const getList = vi.fn(() => of(okResponse([item(1)], 1)));
-    const facade = setup(getList);
-    facade.loadList();
-
-    facade.setSearch('اسم');
+    route.setQueryParams({ search: 'اسم' });
 
     expect(getList).toHaveBeenLastCalledWith('tashkeel', 'اسم', 'mushaf-order', 1, DEFAULT_LIST_PAGE_SIZE);
+    facade.unbindFromRoute();
   });
 
-  it('reloads with the new sort and resets to page 1 on setSort', () => {
+  it('reloads with the new sort and resets to page 1 when the sort query param changes', () => {
     const getList = vi.fn(() => of(okResponse([item(1)], 1)));
     const facade = setup(getList);
-    facade.loadList();
+    const route = controllableRoute();
+    facade.bindToRoute(route.route);
 
-    facade.setSort('occurrences');
+    route.setQueryParams({ sort: 'occurrences' });
 
     expect(getList).toHaveBeenLastCalledWith('tashkeel', '', 'occurrences', 1, DEFAULT_LIST_PAGE_SIZE);
+    facade.unbindFromRoute();
   });
 
-  it('reloads with the requested page on setPage', () => {
+  it('reloads with the requested page when the page query param changes', () => {
     const getList = vi
       .fn()
       .mockReturnValueOnce(of(okResponse([item(1)], 100, 1)))
       .mockReturnValueOnce(of(okResponse([item(2)], 100, 2)))
       .mockReturnValueOnce(of(okResponse([item(3)], 100, 3)));
     const facade = setup(getList);
-    facade.loadList();
+    const route = controllableRoute();
+    facade.bindToRoute(route.route);
 
-    facade.setPage(3);
+    route.setQueryParams({ page: '3' });
 
     expect(getList).toHaveBeenLastCalledWith('tashkeel', '', 'mushaf-order', 3, DEFAULT_LIST_PAGE_SIZE);
+    facade.unbindFromRoute();
   });
 
   it('accumulates later pages instead of replacing the loaded rows', () => {
@@ -184,20 +201,23 @@ describe('UniqueWordsFacade list state', () => {
       .mockReturnValueOnce(of(okResponse([item(1)], 2, 1)))
       .mockReturnValueOnce(of(okResponse([item(2)], 2, 2)));
     const facade = setup(getList);
+    const route = controllableRoute();
+    facade.bindToRoute(route.route);
 
-    facade.loadList();
-    facade.setPage(2);
+    route.setQueryParams({ page: '2' });
 
     expect(facade.items().map((row) => row.id)).toEqual([1, 2]);
+    facade.unbindFromRoute();
   });
 
   it('maps the simple mode display text from the simple field', () => {
     const getList = vi.fn(() => of(okResponse([item(1)], 1)));
     const facade = setup(getList);
-
-    facade.setMode('simple');
+    const route = controllableRoute({ mode: 'simple' });
+    facade.bindToRoute(route.route);
 
     expect(facade.items()[0]?.displayText).toBe('كلمة-بسيطة-1');
+    facade.unbindFromRoute();
   });
 });
 
