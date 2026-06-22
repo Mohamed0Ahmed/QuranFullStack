@@ -1,0 +1,8 @@
+<ul class="missing-surahs-list" data-testid="missing-surahs-list">
+  @for (surah of surahs(); track surah.surahNumber) {
+    <li class="missing-surahs-list__row">
+      <span>{{ surah.nameArabic }}</span>
+      <span class="qd-text-muted">{{ surah.surahNumber }}</span>
+    </li>
+  }
+</ul>

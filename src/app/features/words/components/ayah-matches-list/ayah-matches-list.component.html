@@ -1,0 +1,35 @@
+<div class="ayah-matches-list" data-testid="ayah-matches-list">
+  @for (match of page().items; track match.ayahId) {
+    <article class="qd-card ayah-matches-list__card">
+      <header class="ayah-matches-list__meta">
+        <span>{{ match.surahNameArabic }}</span>
+        <span class="qd-text-muted">{{ match.verseKey }}</span>
+      </header>
+      <qd-highlighted-ayah [words]="match.words" [matchedQuranWordIds]="match.matchedQuranWordIds" />
+    </article>
+  }
+
+  @if (page().totalCount > page().pageSize) {
+    <nav class="ayah-matches-list__pagination" aria-label="تصفّح الآيات">
+      <button
+        type="button"
+        class="qd-btn qd-btn-secondary"
+        data-testid="ayah-matches-prev"
+        [disabled]="currentPage() <= 1"
+        (click)="pageChange.emit(currentPage() - 1)"
+      >
+        السابق
+      </button>
+      <span>{{ currentPage() }} / {{ lastPage() }}</span>
+      <button
+        type="button"
+        class="qd-btn qd-btn-secondary"
+        data-testid="ayah-matches-next"
+        [disabled]="currentPage() >= lastPage()"
+        (click)="pageChange.emit(currentPage() + 1)"
+      >
+        التالي
+      </button>
+    </nav>
+  }
+</div>

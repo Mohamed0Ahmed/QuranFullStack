@@ -1,0 +1,24 @@
+:host {
+  display: block;
+}
+
+.words-hub-grid {
+  display: grid;
+  gap: var(--qd-space-4);
+  grid-template-columns: 1fr;
+}
+
+// Two columns on small tablets and up — the hub has a small fixed set of
+// cards, so a calm two-up grid keeps the page readable without crowding.
+@media (min-width: 640px) {
+  .words-hub-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+// Three columns on desktop so the five hub cards stay balanced and calm.
+@media (min-width: 1024px) {
+  .words-hub-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

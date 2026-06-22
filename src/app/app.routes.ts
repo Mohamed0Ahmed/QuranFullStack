@@ -7,9 +7,12 @@ const loadPlaceholderPage = () =>
   );
 
 const placeholderRoutes: Routes = NAV_ITEMS.filter(
-  (item) => item.key !== 'dashboard' && item.key !== 'mushaf',
+  (item) => item.key !== 'dashboard' && item.key !== 'mushaf' && item.key !== 'words',
 ).map(
   (item) => ({
+    // The words nav item now points at `/dashboard/words`, a real lazy
+    // feature area (see `dashboard/words` route below). It must never fall
+    // through to this placeholder fallback.
     path: item.route.replace(/^\//, ''),
     loadComponent: loadPlaceholderPage,
     data: { titleAr: item.labelAr },
@@ -33,6 +36,11 @@ export const routes: Routes = [
     path: 'dashboard/mushaf',
     loadChildren: () =>
       import('./features/mushaf/mushaf.routes').then((m) => m.MUSHAF_ROUTES),
+  },
+  {
+    path: 'dashboard/words',
+    loadChildren: () =>
+      import('./features/words/words.routes').then((m) => m.WORDS_ROUTES),
   },
   ...placeholderRoutes,
   {

@@ -9,7 +9,7 @@ export interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   { key: 'dashboard', labelAr: 'لوحة التحكم', labelEn: 'Dashboard', route: '/dashboard', group: 'primary' },
   { key: 'mushaf', labelAr: 'قارئ المصحف', labelEn: 'Mushaf Reader', route: '/dashboard/mushaf', group: 'primary' },
-  { key: 'words', labelAr: 'الكلمات والجذور', labelEn: 'Words & Roots', route: '/words', group: 'primary' },
+  { key: 'words', labelAr: 'الكلمات والجذور', labelEn: 'Words & Roots', route: '/dashboard/words', group: 'primary' },
   { key: 'tafsirs', labelAr: 'التفاسير', labelEn: 'Tafsirs', route: '/tafsirs', group: 'primary' },
   { key: 'gates', labelAr: 'الأبواب', labelEn: 'Gates', route: '/gates', group: 'primary' },
   { key: 'resources', labelAr: 'المصادر', labelEn: 'Resources', route: '/resources', group: 'primary' },

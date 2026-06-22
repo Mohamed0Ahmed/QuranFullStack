@@ -1,0 +1,30 @@
+<div class="qd-page">
+  <div class="qd-container">
+    <div class="qd-page-header">
+      <h1 class="qd-page-title" data-testid="words-hub-title">{{ title }}</h1>
+      <p class="qd-text-muted" data-testid="words-hub-subtitle">{{ subtitle }}</p>
+    </div>
+
+    <section class="words-hub-grid" aria-label="أقسام الكلمات">
+      <!-- Active v1 section -->
+      <qd-word-section-card
+        data-testid="words-hub-card--active"
+        [labelAr]="activeCard.labelAr"
+        [descriptionAr]="activeCard.descriptionAr"
+        [route]="activeCard.route"
+        [disabled]="activeCard.disabled"
+      />
+
+      <!-- Coming-soon sections -->
+      @for (card of comingSoonCards; track card.labelAr) {
+        <qd-word-section-card
+          data-testid="words-hub-card--disabled"
+          [labelAr]="card.labelAr"
+          [descriptionAr]="card.descriptionAr"
+          [disabled]="card.disabled"
+          [comingSoonLabel]="comingSoonBadge"
+        />
+      }
+    </section>
+  </div>
+</div>

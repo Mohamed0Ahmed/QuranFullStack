@@ -1,0 +1,88 @@
+@if (state().isOpen) {
+  <div
+    class="qd-modal-backdrop"
+    role="presentation"
+    data-testid="word-drilldown-backdrop"
+    (click)="onBackdropClick($event)"
+  >
+    <div
+      class="qd-modal word-drilldown-modal"
+      role="dialog"
+      aria-modal="true"
+      [attr.aria-label]="title()"
+      data-testid="word-drilldown-modal"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="word-drilldown-modal__header">
+        <h2 class="qd-card-title word-drilldown-modal__title" data-testid="word-drilldown-title">
+          {{ title() }}
+        </h2>
+        <button
+          type="button"
+          class="qd-btn qd-btn-ghost"
+          data-testid="word-drilldown-close"
+          (click)="closeModal.emit()"
+        >
+          {{ closeLabel }}
+        </button>
+      </header>
+
+      <nav class="word-drilldown-modal__views" aria-label="عرض التفاصيل">
+        @for (viewKey of drilldownViews; track viewKey) {
+          <button
+            type="button"
+            class="qd-btn qd-btn-secondary"
+            [class.qd-is-selected]="state().view === viewKey"
+            [attr.data-testid]="'word-drilldown-view-' + viewKey"
+            (click)="viewChange.emit(viewKey)"
+          >
+            {{ drilldownLabel(viewKey) }}
+          </button>
+        }
+      </nav>
+
+      <div class="word-drilldown-modal__body">
+        @switch (state().status) {
+          @case ('loading') {
+            <div class="qd-loading-state" data-testid="word-drilldown-loading">{{ loadingLabel }}</div>
+          }
+          @case ('error') {
+            <div class="qd-error-state" data-testid="word-drilldown-error">{{ state().errorMessage }}</div>
+          }
+          @case ('empty') {
+            <div class="qd-empty-state" data-testid="word-drilldown-empty">
+              @switch (state().view) {
+                @case ('surahs') { {{ emptySurahsLabel }} }
+                @case ('missing') { {{ emptyMissingLabel }} }
+                @default { {{ emptyAyahsLabel }} }
+              }
+            </div>
+          }
+          @default {
+            @switch (state().view) {
+              @case ('surahs') {
+                @if (state().surahs?.surahs; as surahItems) {
+                  <qd-surah-occurrences-list [surahs]="surahItems" />
+                }
+              }
+              @case ('missing') {
+                @if (state().missingSurahs?.surahs; as missingItems) {
+                  <qd-missing-surahs-list [surahs]="missingItems" />
+                }
+              }
+              @default {
+                @if (state().ayahs; as ayahs) {
+                  <qd-ayah-matches-list
+                    [page]="ayahs"
+                    [currentPage]="state().ayahPage"
+                    (pageChange)="ayahPageChange.emit($event)"
+                  />
+                }
+              }
+            }
+          }
+        }
+      </div>
+    </div>
+  </div>
+}

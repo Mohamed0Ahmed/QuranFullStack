@@ -180,6 +180,26 @@ button.qd-interactive-surface {
   color: var(--qd-danger);
 }
 
+.qd-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--qd-space-4);
+  background: rgb(0 0 0 / 0.45);
+}
+
+.qd-modal {
+  background: var(--qd-surface-elevated, var(--qd-surface));
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-lg);
+  box-shadow: var(--qd-shadow-lg);
+  padding: var(--qd-space-5);
+  width: min(100%, 36rem);
+}
+
 /*
  * Skeleton / shimmer / wave placeholders + content-level loading overlay.
  *

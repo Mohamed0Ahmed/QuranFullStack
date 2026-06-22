@@ -1,0 +1,32 @@
+:host {
+  display: block;
+}
+
+.unique-words-tabs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--qd-space-2);
+}
+
+.unique-words-tabs__tab {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--qd-space-2) var(--qd-space-4);
+  border-radius: var(--qd-radius-md);
+  border: 1px solid var(--qd-border);
+  background: var(--qd-surface);
+  color: inherit;
+  text-decoration: none;
+  font-size: 0.95rem;
+  transition: background var(--qd-t-fast) ease, border-color var(--qd-t-fast) ease;
+}
+
+.unique-words-tabs__tab:hover {
+  border-color: var(--qd-accent);
+}
+
+.unique-words-tabs__tab.qd-is-selected {
+  background: var(--qd-accent);
+  border-color: var(--qd-accent);
+  color: var(--qd-surface);
+}

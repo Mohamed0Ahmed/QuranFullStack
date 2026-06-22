@@ -1,0 +1,34 @@
+:host {
+  display: block;
+}
+
+.unique-words-list {
+  display: grid;
+  gap: var(--qd-space-3);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .unique-words-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1200px) {
+  .unique-words-list {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.unique-words-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--qd-space-3);
+  margin-top: var(--qd-space-4);
+}
+
+.unique-words-pagination__info {
+  min-width: 4rem;
+  text-align: center;
+}

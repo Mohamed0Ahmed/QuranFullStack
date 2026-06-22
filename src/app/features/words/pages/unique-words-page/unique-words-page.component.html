@@ -1,0 +1,98 @@
+<div class="qd-page">
+  <div class="qd-container">
+    <div class="qd-page-header">
+      <h1 class="qd-page-title" data-testid="unique-words-page-title">الكلمات الفريدة</h1>
+      <p class="qd-text-muted" data-testid="unique-words-page-mode">{{ modeLabel() }}</p>
+    </div>
+
+    <qd-unique-words-tabs [activeMode]="listState().mode" />
+
+    <qd-unique-words-search-bar
+      [search]="searchDraft()"
+      [sort]="listState().sort"
+      (searchChange)="onSearchChange($event)"
+      (sortChange)="onSortChange($event)"
+    />
+
+    @switch (listState().status) {
+      @case ('loading') {
+        <div class="qd-loading-state" data-testid="unique-words-loading">{{ loadingLabel }}</div>
+      }
+      @case ('error') {
+        <div class="qd-error-state" data-testid="unique-words-error">{{ listState().errorMessage }}</div>
+      }
+      @case ('empty') {
+        <div class="qd-empty-state" data-testid="unique-words-empty">{{ emptyLabel }}</div>
+      }
+      @default {
+        @if (listState().items.length > 0) {
+          <section class="unique-words-list" aria-label="قائمة الكلمات الفريدة">
+            @for (word of listState().items; track word.id) {
+              <qd-unique-word-card
+                [word]="word"
+                (drilldownOpen)="onDrilldownOpen(word, $event)"
+              />
+            }
+          </section>
+
+          <nav class="unique-words-pagination" aria-label="تصفّح النتائج">
+            <button
+              type="button"
+              class="qd-btn qd-btn-secondary"
+              data-testid="unique-words-prev-page"
+              [disabled]="listState().page <= 1"
+              (click)="onPrevPage()"
+            >
+              السابق
+            </button>
+            <span class="unique-words-pagination__info" data-testid="unique-words-page-info">
+              {{ listState().page }} / {{ lastPage() }}
+            </span>
+            <button
+              type="button"
+              class="qd-btn qd-btn-secondary"
+              data-testid="unique-words-next-page"
+              [disabled]="listState().page >= lastPage()"
+              (click)="onNextPage()"
+            >
+              التالي
+            </button>
+          </nav>
+        }
+      }
+    }
+
+    @if (drilldownState().status === 'notFound') {
+      <!--
+        Controlled Arabic message for a shared/restored URL whose word ID no
+        longer exists. Rendered alongside the list so the explorer stays usable;
+        the modal stays closed. No Quranic text is invented. Uses the shared
+        `qd-empty-state` block plus a local modifier (no primitive redefinition).
+      -->
+      <div
+        class="qd-empty-state unique-words-restored-not-found"
+        role="status"
+        data-testid="unique-words-restored-not-found"
+      >
+        {{ restoredNotFoundLabel }}
+      </div>
+    }
+
+    @if (drilldownState().status === 'error' && !drilldownState().isOpen) {
+      <div
+        class="qd-error-state unique-words-restored-error"
+        role="status"
+        data-testid="unique-words-restored-error"
+      >
+        {{ drilldownState().errorMessage }}
+      </div>
+    }
+  </div>
+
+  <qd-word-drilldown-modal
+    [state]="drilldownState()"
+    (closeModal)="onDrilldownClose()"
+    (viewChange)="onDrilldownViewChange($event)"
+    (ayahPageChange)="onAyahPageChange($event)"
+  />
+</div>
