@@ -29,6 +29,7 @@ public static class ApiMessages
     public const string UniqueWordMissingSurahsLoaded = "تم تحميل السور التي لم ترد فيها الكلمة";
     public const string UniqueWordAyahsLoaded = "تم تحميل الآيات التي وردت فيها الكلمة";
     public const string UniqueWordsInvalidKind = "نوع الكلمات غير صالح";
+    public const string UniqueWordsInvalidId = "معرّف الكلمة غير صالح";
     public const string UniqueWordsInvalidPaging = "معطيات التصفح غير صالحة";
     public const string UniqueWordsInvalidSort = "خيار الترتيب غير صالح";
     public const string UniqueWordNotFound = "الكلمة غير موجودة";

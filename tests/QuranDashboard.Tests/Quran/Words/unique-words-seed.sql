@@ -101,3 +101,61 @@ FROM (
     JOIN quran_words_unique_simple    s ON s.first_quran_word_id = w.id
 ) AS src
 WHERE quran_words.id = src.wid;
+
+-- ======================================================================
+-- US3 drill-down extension: 114-surah catalog + occurrence rows
+-- ======================================================================
+
+-- Catalog filler for surahs 3..113 (1, 2, 114 seeded above with the slice
+-- surahs the list tests reference). Drill-down partition tests need all 114
+-- rows but assert only surah_number / non-empty name_arabic. Non-asserted
+-- metadata below is obvious synthetic fixture data — NOT authoritative Quran
+-- catalog metadata.
+INSERT INTO quran_surahs
+  (surah_number, name_arabic, name_simple, name_transliteration, revelation_place, revelation_order, verses_count, bismillah_pre)
+SELECT
+  n,
+  'سورة-تجريبية-' || n::text,
+  'FIXTURE-SURAH-' || n::text,
+  'FIXTURE-SURAH-' || n::text,
+  'makkah',
+  n,
+  1,
+  FALSE
+FROM generate_series(3, 113) AS n
+ON CONFLICT (surah_number) DO NOTHING;
+
+-- Extra ayahs for multi-surah / multi-ayah drill-down rows ------------
+INSERT INTO quran_ayahs
+  (id, surah_number, ayah_number, verse_key, text_uthmani, words_count_source, words_count_real, page_from, page_to, juz_number, hizb_number, rub_number)
+VALUES
+  (31,  3, 1, '3:1',   'الٓمٓ', 1, 2, 50, 50, NULL, NULL, NULL),
+  (41,  4, 1, '4:1',   'يَٰٓأَيُّهَا ٱلنَّاسُ', 1, 2, 77, 77, NULL, NULL, NULL),
+  (51,  5, 1, '5:1',   'يَٰٓأَيُّهَا ٱلَّذِينَ ءَامَنُوٓا۟', 1, 2, 106, 106, NULL, NULL, NULL),
+  (12,  1, 2, '1:2',   'ٱلْحَمْدُ لِلَّهِ', 1, 2, 1, 1, NULL, NULL, NULL);
+
+INSERT INTO quran_mushaf_pages
+  (page_number, first_surah_number, first_ayah_number, last_surah_number, last_ayah_number, lines_count)
+VALUES
+  (50,  3, 1, 3, 1, 1),
+  (77,  4, 1, 4, 1, 1),
+  (106, 5, 1, 5, 1, 1)
+ON CONFLICT DO NOTHING;
+
+-- Extra readable occurrences (canonical Uthmani text) -------------------
+INSERT INTO quran_words
+  (id, location, ayah_id, surah_number, ayah_number, word_number, page_number, line_number, line_word_order, qpc_glyph, text_uthmani, text_uthmani_simple, text_imlaei_simple, word_key_imlaei_simple, is_ayah_marker, unique_tashkeel_word_id, unique_simple_word_id)
+VALUES
+  -- الله (1002) in five surahs for mentioned-surahs drill-down
+  (10021, '2:25:1',  25,  2, 25, 1, 5,   1, 1, 'g10021', 'ٱللَّهِ', 'الله', 'الله', 'الله', FALSE, 1002, 1002),
+  (10022, '3:1:1',   31,  3,  1, 1, 50,  1, 1, 'g10022', 'ٱللَّهِ', 'الله', 'الله', 'الله', FALSE, 1002, 1002),
+  (10023, '4:1:1',   41,  4,  1, 1, 77,  1, 1, 'g10023', 'ٱللَّهِ', 'الله', 'الله', 'الله', FALSE, 1002, 1002),
+  (10024, '5:1:1',   51,  5,  1, 1, 106, 1, 1, 'g10024', 'ٱللَّهِ', 'الله', 'الله', 'الله', FALSE, 1002, 1002),
+  -- بِسْمِ (1001) in three surahs
+  (10011, '2:25:2', 25, 2, 25, 2, 5, 1, 2, 'g10011', 'بِسْمِ', 'بسم', 'بسم', 'بسم', FALSE, 1001, 1001),
+  (10012, '3:1:2',  31, 3,  1, 2, 50, 1, 2, 'g10012', 'بِسْمِ', 'بسم', 'بسم', 'بسم', FALSE, 1001, 1001),
+  -- ءَامَنُوا۟ (2003) second ayah + duplicate in 2:25 + ayah marker
+  (20031, '1:2:1',  12, 1,  2, 1, 1, 1, 1, 'g20031', 'ءَامَنُوا۟', 'ءامنوا', 'آمنوا', 'امنوا', FALSE, 2003, 2003),
+  (20032, '2:25:5', 25, 2, 25, 5, 5, 1, 5, 'g20032', 'ءَامَنُوا۟', 'ءامنوا', 'آمنوا', 'امنوا', FALSE, 2003, 2003),
+  (25999, '2:25:99', 25, 2, 25, 99, 5, 1, 99, 'g25999', '۝', '۝', '۝', '۝', TRUE, NULL, NULL);
+
