@@ -14,7 +14,7 @@ Spec Kit is not needed if the work stays inside the existing `/dashboard/words` 
 
 Expected repo impact:
 
-- Backend: likely touched for additive read-contract fields and multi-form search behavior.
+- Backend: likely touched for additive read-contract fields and normalized no-tashkeel search behavior.
 - Frontend: definitely touched for DTO/model mapping, table UI, Angular CDK virtual scroll, selected-word context panel, and frontend missing-surah computation.
 - FullStack/App: touched only if implementation commits in child repos need submodule pointer tracking, or if implementation docs are updated in workspace docs.
 
@@ -67,7 +67,7 @@ Do not commit a FullStack/App submodule pointer that references uncommitted chil
 
 Suggested commit breakdown:
 
-1. Backend: `Add unique word display forms and multi-form search`
+1. Backend: `Add unique word display forms and normalized search`
 2. Frontend: `Map unique word display text by mode`
 3. Frontend: `Add virtualized unique words table`
 4. Frontend: `Add words explorer selection panel`
@@ -125,7 +125,7 @@ Review gate:
 
 Goal:
 
-- Add the read-contract data needed for correct display and multi-form search.
+- Add the read-contract data needed for correct display and normalized no-tashkeel search.
 - Keep changes additive and read-only.
 - Preserve existing endpoints and existing `displayTextUthmani` during transition.
 
@@ -154,11 +154,13 @@ Implementation details:
   - Backend-owned `displayText`, with `tashkeel -> textUthmani` and `simple -> textUthmaniSimple`.
   - Or raw fields only, with frontend mapper owning `displayText`.
 - Prefer backend-owned `displayText` only if API consumers benefit from one canonical display decision. Otherwise keep the display decision in frontend view-model mapping.
-- Expand search across safe normalized fields:
+- Search is normalized/no-tashkeel only. `text_uthmani` / Uthmani-with-tashkeel is display-only and must not be searched directly in this refactor.
+- User input may contain tashkeel, tatweel, Quranic annotation marks, small signs, dagger alif, or display-specific Arabic forms, but the query must be normalized/folded before matching safe no-tashkeel/search columns.
+- Expand search across safe normalized/search fields:
   - `text_uthmani_simple`
   - `text_imlaei_simple`
   - `word_key_imlaei_simple` for simple mode
-  - `text_uthmani` only if column-side diacritic stripping/folding is correctly implemented and tested.
+- Do not add `text_uthmani ILIKE`, `translate(text_uthmani, ...)`, or any other direct `text_uthmani` search condition.
 - Keep SQL parameterized.
 - Keep server-side search/sort.
 - Do not add indexes unless measured latency proves a need.
@@ -178,7 +180,9 @@ Acceptance checks:
 - Existing endpoints still return successful responses.
 - List and summary responses expose the added fields.
 - `displayTextUthmani` still exists.
-- Search matches across the intended simple/search forms.
+- Search matches across the intended simple/search forms after query-side normalization.
+- Pasted visible Uthmani input with tashkeel/Quranic marks matches through safe no-tashkeel/search columns.
+- SQL does not search `text_uthmani` directly.
 - Invalid kind, invalid sort, invalid page, and not-found behavior remain controlled.
 - Backend list `pageSize` max remains unchanged unless a deliberate decision and tests change it.
 
@@ -191,12 +195,15 @@ Suggested focused tests:
 - Simple search matches `text_uthmani_simple`.
 - Simple search matches `text_imlaei_simple`.
 - Simple search matches `word_key_imlaei_simple`.
+- Pasted visible-form query such as an existing fixture value with alef wasla/tashkeel normalizes and matches through `text_uthmani_simple` or `text_imlaei_simple`.
+- Pasted visible-form query such as an existing fixture value with a final Quranic annotation mark normalizes and matches through `text_uthmani_simple`, `text_imlaei_simple`, or `word_key_imlaei_simple`.
+- Tests should prove normalization behavior; they should not assert or require direct `text_uthmani` search.
 - Existing no-match search still returns success with `totalCount = 0`.
 
 Commit recommendation:
 
 - Commit as a single backend commit if the contract and search changes stay cohesive:
-  `Add unique word display forms and multi-form search`
+  `Add unique word display forms and normalized search`
 
 Review gate:
 
@@ -534,9 +541,10 @@ URL state regression:
 
 Search result count changes:
 
-- Expect result counts to change when search expands across more fields.
+- Expect result counts to change when search expands across safe no-tashkeel/search fields and when pasted visible-form input normalizes more completely.
 - Update tests to assert behavior and representative matches, not brittle totals unless the fixture is intentionally shaped for exact totals.
 - Keep empty-search and no-match behavior unchanged.
+- Treat Uthmani-with-tashkeel as display-only; do not resolve count changes by querying `text_uthmani` directly.
 
 Virtual scroll plus pagination race conditions:
 
@@ -581,7 +589,8 @@ Existing tests requiring updates:
 - Modal tests may become selection-panel tests.
 - URL sync tests should remain mostly stable.
 - Facade tests need new accumulated-page and selection behavior coverage.
-- Backend search tests need new representative multi-form cases.
+- Backend search tests need representative normalized no-tashkeel search-column cases.
+- Backend search tests need pasted visible-form normalization cases, but must keep search targets limited to no-tashkeel/search fields.
 
 ## 5. Testing Matrix
 
@@ -600,7 +609,8 @@ Backend assertions:
 - Additive fields exist and map to source columns.
 - Tashkeel display data remains canonical.
 - Simple display data uses Uthmani simple/no-tashkeel.
-- Search covers Uthmani simple, imlaei simple, and simple word key.
+- Search covers Uthmani simple, imlaei simple, and simple word key through normalized no-tashkeel matching.
+- Pasted visible Uthmani input is accepted by query normalization, not by direct `text_uthmani` search.
 - No endpoint removal.
 - No migrations generated.
 
@@ -638,7 +648,7 @@ Suggested manual or Playwright-assisted smoke:
 4. Confirm tashkeel mode displays Uthmani with tashkeel.
 5. Switch to `/dashboard/words/unique/simple`.
 6. Confirm simple mode displays Uthmani simple/no-tashkeel.
-7. Search with a query containing tashkeel.
+7. Search with a pasted visible-form query containing tashkeel/Quranic marks.
 8. Search with the same query without tashkeel.
 9. Scroll until the next page loads.
 10. Confirm DOM row count stays bounded.
