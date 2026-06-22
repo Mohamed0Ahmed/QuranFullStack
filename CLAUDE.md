@@ -1,13 +1,14 @@
 <!-- SPECKIT START -->
 
-Active feature: **Mushaf Reader Ayah Similarities** — branch `012-mushaf-reader-ayah-similarities`.
+Active feature: **Words Hub + Unique Words Explorer** — branch `014-words-hub-unique-words`.
 For technologies, project structure, shell commands, and design artifacts, read the current plan
 and its siblings:
 
-- `specs/012-mushaf-ayah-similarities/plan.md` — technical context, project structure, gates (full-stack: .NET read APIs + Angular Mushaf Reader extension; read-only similarity data)
-- `specs/012-mushaf-ayah-similarities/spec.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/`
-- `docs/feature-012-mushaf-reader-ayah-similarities/feature-012-mushaf-reader-ayah-similarities-planning-report.md` — locked planning report (scope + UX + API direction + lazy loading)
-- `docs/feature-011-mushaf-reader-study-context/feature-011-ayah-word-data-capability-report.md` — data-capability report (join paths + DTO field provenance)
+- `specs/014-words-hub-unique-words/plan.md` — technical context, project structure, gates (full-stack: .NET read APIs + Angular Words feature; read-only unique-word data)
+- `specs/014-words-hub-unique-words/spec.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/`
+- `docs/feature-014-words-hub-unique-words/feature-014-words-hub-unique-words-planning-report.md` — locked planning report (scope + UX + API direction + query/state decisions)
+- `docs/feature-013-words-roots-explorer/feature-013-unique-words-capability-report.md` and `docs/feature-013-words-roots-explorer/feature-013-deterministic-unique-word-ids-plan.md` — unique-word capability and deterministic ID context
+- `Backend/report/feature-013-deterministic-unique-word-ids/002-reset-reseed-acceptance-report.md` — deterministic ID acceptance report
 - `Backend/report/database/current-database-tables-and-relationships-report.md` — read-only database baseline
 
 <!-- SPECKIT END -->
