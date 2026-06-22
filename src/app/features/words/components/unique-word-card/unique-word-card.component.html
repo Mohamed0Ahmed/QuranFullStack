@@ -1,0 +1,39 @@
+<article class="qd-card unique-word-card" [attr.data-testid]="'unique-word-card'">
+  <div class="unique-word-card__body">
+    <p class="unique-word-card__text" data-testid="unique-word-card-text">{{ word().displayTextUthmani }}</p>
+    <p class="qd-text-muted unique-word-card__location" data-testid="unique-word-card-location">
+      {{ word().firstVerseKey }} · {{ word().firstLocation }}
+    </p>
+
+    <ul class="unique-word-card__counts" aria-label="توزيع الكلمة">
+      <li>
+        <qd-word-count-chip
+          [label]="occurrencesLabel"
+          [count]="word().occurrencesCount"
+          [disabled]="true"
+        />
+      </li>
+      <li>
+        <qd-word-count-chip
+          [label]="ayahsLabel"
+          [count]="word().ayahsCount"
+          [disabled]="true"
+        />
+      </li>
+      <li>
+        <qd-word-count-chip
+          [label]="surahsLabel"
+          [count]="word().surahsCount"
+          [disabled]="true"
+        />
+      </li>
+      <li>
+        <qd-word-count-chip
+          [label]="missingLabel"
+          [count]="word().missingSurahsCount"
+          [disabled]="true"
+        />
+      </li>
+    </ul>
+  </div>
+</article>
