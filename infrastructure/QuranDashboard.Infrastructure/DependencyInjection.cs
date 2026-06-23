@@ -11,6 +11,7 @@ public static class DependencyInjection
         services.AddPersistence(configuration);
         services.AddMushafReader(configuration);
         services.AddUniqueWords();
+        services.AddRoots();
         services.AddFoundationImport();
         services.AddMorphologyImport();
         services.AddMutashabihatImport();
