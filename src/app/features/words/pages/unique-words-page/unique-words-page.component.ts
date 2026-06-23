@@ -21,7 +21,7 @@ import {
 import { UniqueWordsTabsComponent } from '../../components/unique-words-tabs/unique-words-tabs.component';
 import { UniqueWordsSearchBarComponent } from '../../components/unique-words-search-bar/unique-words-search-bar.component';
 import { UniqueWordsTableComponent } from '../../components/unique-words-table/unique-words-table.component';
-import { UniqueWordsListPaginationComponent } from '../../components/unique-words-list-pagination/unique-words-list-pagination.component';
+import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
 import { WordDrilldownModalComponent } from '../../components/word-drilldown-modal/word-drilldown-modal.component';
 import {
   EMPTY_LIST_LABEL,
@@ -43,7 +43,7 @@ import {
     UniqueWordsTabsComponent,
     UniqueWordsSearchBarComponent,
     UniqueWordsTableComponent,
-    UniqueWordsListPaginationComponent,
+    PaginationComponent,
     WordDrilldownModalComponent,
   ],
   templateUrl: './unique-words-page.component.html',

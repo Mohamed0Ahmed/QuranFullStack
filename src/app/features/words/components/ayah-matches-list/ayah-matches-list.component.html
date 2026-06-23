@@ -19,32 +19,25 @@
             </span>
           </div>
         </header>
-        <qd-highlighted-ayah [words]="match.words" [matchedQuranWordIds]="match.matchedQuranWordIds" />
+        <a
+          class="ayah-matches-list__ayah-link qd-interactive-surface"
+          [attr.href]="mushafHref(match)"
+          [attr.aria-label]="openAyahInMushafLabel"
+          target="_blank"
+          rel="noopener"
+          data-testid="ayah-matches-open-mushaf"
+        >
+          <qd-highlighted-ayah [words]="match.words" [matchedQuranWordIds]="match.matchedQuranWordIds" />
+        </a>
       </article>
     }
   </div>
 
-  @if (page().totalCount > page().pageSize) {
-    <nav class="ayah-matches-list__pagination" aria-label="تصفّح الآيات">
-      <button
-        type="button"
-        class="qd-btn qd-btn-secondary"
-        data-testid="ayah-matches-prev"
-        [disabled]="currentPage() <= 1"
-        (click)="pageChange.emit(currentPage() - 1)"
-      >
-        السابق
-      </button>
-      <span data-testid="ayah-matches-pagination-label">{{ pageRangeLabel() }}</span>
-      <button
-        type="button"
-        class="qd-btn qd-btn-secondary"
-        data-testid="ayah-matches-next"
-        [disabled]="currentPage() >= lastPage()"
-        (click)="pageChange.emit(currentPage() + 1)"
-      >
-        التالي
-      </button>
-    </nav>
-  }
+  <qd-pagination
+    [currentPage]="currentPage()"
+    [pageSize]="page().pageSize"
+    [totalCount]="page().totalCount"
+    ariaLabel="تصفّح الآيات"
+    (pageChange)="pageChange.emit($event)"
+  />
 </div>

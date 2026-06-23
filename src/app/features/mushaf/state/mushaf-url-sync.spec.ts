@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { convertToParamMap } from '@angular/router';
 
 import {
+  buildMushafDeepLink,
   buildUrlEnumCorrections,
   clampMushafPageNumber,
   normalizeAyahTab,
@@ -133,6 +134,25 @@ describe('mushaf-url-sync', () => {
       panel: null,
       ayahTab: 'tafsir',
       wordTab: 'segments',
+    });
+  });
+
+  it('builds a deep link with page, verse key, focusAyah, and panel', () => {
+    expect(
+      buildMushafDeepLink({
+        pageNumber: 92,
+        ayah: '4:57',
+        focusAyah: '4:57',
+        panel: 'ayah',
+      }),
+    ).toEqual({
+      path: '/dashboard/mushaf',
+      queryParams: {
+        page: '92',
+        ayah: '4:57',
+        focusAyah: '4:57',
+        panel: 'ayah',
+      },
     });
   });
 });

@@ -37,9 +37,9 @@ function buildWordAnalysisViewModel(): WordAnalysisViewModel {
     identity: {
       orderedTashkeel: { occurrencesCount: 7, ayahsCount: 7, surahsCount: 3 },
       orderedSimple: { occurrencesCount: 9, ayahsCount: 9, surahsCount: 4 },
-      uniqueTashkeel: { id: 1, occurrencesCount: 7, ayahsCount: 7, surahsCount: 3 },
+      uniqueTashkeel: { id: 101, occurrencesCount: 7, ayahsCount: 7, surahsCount: 3 },
       uniqueSimple: {
-        id: 1,
+        id: 202,
         occurrencesCount: 9,
         ayahsCount: 9,
         surahsCount: 4,
@@ -222,6 +222,35 @@ describe('SelectedWordSectionComponent — stable loading (UI-001)', () => {
     expect(root.querySelector('qd-segment-rendered-word')).toBeTruthy();
     expect(root.querySelector('[data-testid="word-identity-summary"]')).toBeTruthy();
     expect(root.querySelectorAll('.qd-skeleton').length).toBe(0);
+  });
+
+  it('opens both unique-word identity rows in a new tab using their nested ids', () => {
+    const fixture = TestBed.createComponent(SelectedWordSectionComponent);
+    setInputs(fixture, {
+      analysis: buildWordAnalysisViewModel(),
+      loadState: IDLE,
+      selectedWordLocation: '2:25:3',
+    });
+
+    const root = fixture.nativeElement as HTMLElement;
+    const tashkeelLink = root.querySelector(
+      '[data-testid="word-identity-tashkeel-link"]',
+    ) as HTMLAnchorElement | null;
+    const simpleLink = root.querySelector(
+      '[data-testid="word-identity-simple-link"]',
+    ) as HTMLAnchorElement | null;
+
+    expect(tashkeelLink?.getAttribute('href')).toBe(
+      '/dashboard/words/unique/tashkeel?word=101&view=ayahs',
+    );
+    expect(tashkeelLink?.getAttribute('target')).toBe('_blank');
+    expect(tashkeelLink?.getAttribute('rel')).toBe('noopener');
+
+    expect(simpleLink?.getAttribute('href')).toBe(
+      '/dashboard/words/unique/simple?word=202&view=ayahs',
+    );
+    expect(simpleLink?.getAttribute('target')).toBe('_blank');
+    expect(simpleLink?.getAttribute('rel')).toBe('noopener');
   });
 
   it('renders the empty "select a word" state when no word is selected', () => {

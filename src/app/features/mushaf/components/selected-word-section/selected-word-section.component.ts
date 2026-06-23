@@ -1,7 +1,10 @@
 import { Component, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
+import { deepLinkToHref } from '../../../../shared/url/deep-link-href';
 import { ResourceLoadState, WordAnalysisViewModel } from '../../models/mushaf.models';
+import { UniqueWordKind } from '../../../words/models/unique-words.models';
+import { buildUniqueWordsDeepLink } from '../../../words/state/unique-words-url-sync';
 import { SegmentDataRowsComponent } from '../segment-data-rows/segment-data-rows.component';
 import { SegmentRenderedWordComponent } from '../segment-rendered-word/segment-rendered-word.component';
 import { WordMorphologySummaryComponent } from '../word-morphology-summary/word-morphology-summary.component';
@@ -30,4 +33,22 @@ export class SelectedWordSectionComponent {
   readonly sectionFocus = output<void>();
 
   protected readonly loadingSegmentPlaceholders = [0, 1, 2] as const;
+
+  protected uniqueWordIdentityHref(kind: UniqueWordKind): string {
+    const analysis = this.analysis();
+
+    if (!analysis) {
+      return '';
+    }
+
+    const wordId =
+      kind === 'tashkeel' ? analysis.identity.uniqueTashkeel.id : analysis.identity.uniqueSimple.id;
+
+    return deepLinkToHref(
+      buildUniqueWordsDeepLink(kind, {
+        wordId,
+        view: 'ayahs',
+      }),
+    );
+  }
 }

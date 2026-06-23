@@ -1,5 +1,7 @@
 import { ParamMap } from '@angular/router';
 
+import { MUSHAF_ROUTE_PATH } from '../../../core/navigation/route-paths';
+
 import {
   AyahStudyTab,
   DEFAULT_MUSHAF_READER_STATE,
@@ -124,4 +126,28 @@ export function buildUrlEnumCorrections(
   }
 
   return corrections;
+}
+
+export interface MushafDeepLinkOptions {
+  pageNumber: number;
+  ayah: string;
+  focusAyah: string;
+  panel: PanelMode;
+}
+
+export interface MushafDeepLinkTarget {
+  path: string;
+  queryParams: Record<string, string>;
+}
+
+export function buildMushafDeepLink(options: MushafDeepLinkOptions): MushafDeepLinkTarget {
+  return {
+    path: MUSHAF_ROUTE_PATH,
+    queryParams: {
+      [MUSHAF_URL_KEYS.page]: String(options.pageNumber),
+      [MUSHAF_URL_KEYS.ayah]: options.ayah,
+      [MUSHAF_URL_KEYS.focusAyah]: options.focusAyah,
+      [MUSHAF_URL_KEYS.panel]: options.panel,
+    },
+  };
 }

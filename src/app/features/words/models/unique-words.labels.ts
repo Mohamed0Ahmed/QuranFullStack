@@ -58,14 +58,9 @@ export const DRILLDOWN_ERROR_LABEL = 'تعذّر تحميل التفاصيل';
 export const DRILLDOWN_PANEL_TITLE = 'تفاصيل الكلمة';
 export const DRILLDOWN_PANEL_EMPTY_LABEL = 'اختر كلمة لعرض تفاصيلها';
 
+export const OPEN_AYAH_IN_MUSHAF_LABEL = 'فتح الآية في المصحف';
+
 export const RESTORED_WORD_NOT_FOUND_LABEL = 'الكلمة المحددة غير موجودة';
 
 export const RESTORED_WORD_LOAD_ERROR_LABEL =
   'تعذّر تحميل الكلمة المحددة. تحقّق من الاتصال ثم أعد المحاولة.';
-
-export const PAGINATION_RANGE_OF_CONNECTOR = 'من';
-export const PAGINATION_EMPTY_RANGE_LABEL = `0 ${PAGINATION_RANGE_OF_CONNECTOR} 0`;
-
-export function formatPaginationRangeLabel(start: number, end: number, totalCount: number): string {
-  return `${start}–${end} ${PAGINATION_RANGE_OF_CONNECTOR} ${totalCount}`;
-}

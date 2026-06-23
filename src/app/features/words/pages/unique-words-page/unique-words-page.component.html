@@ -58,11 +58,12 @@
               (rowSelected)="onRowSelected($event)"
               (drilldownOpen)="onDrilldownOpen($event.word, $event.view)"
             />
-            <qd-unique-words-list-pagination
+            <qd-pagination
               [currentPage]="listState().page"
               [pageSize]="listState().pageSize"
               [totalCount]="listState().totalCount"
               [disabled]="listState().status === 'loading'"
+              ariaLabel="تصفّح الكلمات"
               (pageChange)="onPaginationPageChange($event)"
             />
           </section>

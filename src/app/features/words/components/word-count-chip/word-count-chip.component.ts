@@ -4,6 +4,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
   selector: 'qd-word-count-chip',
   standalone: true,
   templateUrl: './word-count-chip.component.html',
+  styleUrl: './word-count-chip.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WordCountChipComponent {

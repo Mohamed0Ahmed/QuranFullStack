@@ -1,5 +1,7 @@
 import { Routes } from '@angular/router';
 
+import { WORDS_UNIQUE_MODE_SEGMENT } from '../../core/navigation/route-paths';
+
 const loadWordsHubPage = () =>
   import('./pages/words-hub-page/words-hub-page.component').then(
     (m) => m.WordsHubPageComponent,
@@ -16,7 +18,7 @@ export const WORDS_HUB_ROUTE = {
 } as const;
 
 export const WORDS_UNIQUE_MODE_ROUTE = {
-  path: 'unique/:mode',
+  path: WORDS_UNIQUE_MODE_SEGMENT,
   loadComponent: loadUniqueWordsPage,
 } as const;
 

@@ -34,7 +34,7 @@
   block-size: auto;
 }
 
-:host-context(.word-drilldown-panel) .ayah-matches-list__pagination {
+:host-context(.word-drilldown-panel) qd-pagination {
   flex-shrink: 0;
 }
 
@@ -47,6 +47,16 @@
   --highlighted-ayah-font-size: 1rem;
   --highlighted-ayah-line-height: 1.7;
   --highlighted-ayah-matched-border-width: 1px;
+}
+
+.ayah-matches-list__ayah-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  padding: var(--qd-space-1);
+  border: 1px solid transparent;
+  border-radius: var(--qd-radius-sm);
+  background: transparent;
 }
 
 .ayah-matches-list__card--alt {
@@ -94,9 +104,3 @@
   margin-inline-end: 0.15em;
 }
 
-.ayah-matches-list__pagination {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--qd-space-3);
-}

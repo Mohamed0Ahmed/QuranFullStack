@@ -188,7 +188,7 @@ describe('WordDrilldownModalComponent', () => {
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('[data-testid="ayah-matches-list"]')).toBeTruthy();
 
-    const next = root.querySelector('[data-testid="ayah-matches-next"]') as HTMLButtonElement;
+    const next = root.querySelector('[data-testid="qd-pagination-next"]') as HTMLButtonElement;
     next.click();
     fixture.detectChanges();
 

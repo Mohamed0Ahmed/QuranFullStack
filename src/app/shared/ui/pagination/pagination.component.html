@@ -1,0 +1,87 @@
+@if (showPagination()) {
+  <nav class="qd-pagination" [attr.aria-label]="ariaLabel()">
+    <div class="qd-pagination__controls">
+      <button
+        type="button"
+        class="qd-btn qd-btn-secondary qd-pagination__nav"
+        data-testid="qd-pagination-prev"
+        [disabled]="disabled() || currentPage() <= 1"
+        (click)="selectPage(currentPage() - 1)"
+      >
+        {{ prevLabel }}
+      </button>
+
+      <div class="qd-pagination__pages" role="group" [attr.aria-label]="pagesGroupLabel">
+        @for (page of visiblePages(); track page) {
+          <button
+            type="button"
+            class="qd-btn qd-pagination__page"
+            [class.qd-btn-soft]="page === currentPage()"
+            [class.qd-btn-ghost]="page !== currentPage()"
+            [attr.data-testid]="'qd-pagination-page-' + page"
+            [attr.aria-current]="page === currentPage() ? 'page' : null"
+            [disabled]="disabled()"
+            (click)="selectPage(page)"
+          >
+            {{ page }}
+          </button>
+        }
+
+        <form class="qd-pagination__jump" novalidate (submit)="submitJump($event)">
+          <label class="qd-sr-only" for="qd-pagination-jump-input">{{ jumpInputLabel }}</label>
+          <input
+            id="qd-pagination-jump-input"
+            class="qd-input qd-pagination__jump-input"
+            type="number"
+            inputmode="numeric"
+            data-testid="qd-pagination-jump-input"
+            [attr.placeholder]="jumpPlaceholder"
+            [min]="1"
+            [max]="lastPage()"
+            [value]="jumpValue()"
+            [disabled]="disabled()"
+            [attr.aria-invalid]="jumpError() ? true : null"
+            [attr.aria-describedby]="jumpError() ? 'qd-pagination-jump-error' : null"
+            (focus)="onJumpFocus()"
+            (blur)="onJumpBlur()"
+            (input)="onJumpInput($any($event.target).value)"
+            (keydown)="onJumpKeydown($event)"
+          />
+          @if (jumpActive()) {
+            <button
+              type="submit"
+              class="qd-btn qd-btn-secondary qd-pagination__jump-submit"
+              data-testid="qd-pagination-jump-submit"
+              [disabled]="disabled()"
+              (mousedown)="$event.preventDefault()"
+            >
+              {{ goLabel }}
+            </button>
+          }
+        </form>
+      </div>
+
+      <button
+        type="button"
+        class="qd-btn qd-btn-secondary qd-pagination__nav"
+        data-testid="qd-pagination-next"
+        [disabled]="disabled() || currentPage() >= lastPage()"
+        (click)="selectPage(currentPage() + 1)"
+      >
+        {{ nextLabel }}
+      </button>
+    </div>
+
+    @if (jumpError()) {
+      <p
+        id="qd-pagination-jump-error"
+        class="qd-pagination__jump-error"
+        role="status"
+        aria-live="polite"
+        data-testid="qd-pagination-jump-error"
+      >
+        {{ jumpError() }}
+      </p>
+    }
+  </nav>
+}

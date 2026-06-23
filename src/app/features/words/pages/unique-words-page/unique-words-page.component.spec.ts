@@ -196,12 +196,13 @@ describe('UniqueWordsPageComponent', () => {
   it('renders list pagination when totalCount exceeds pageSize', async () => {
     const root = await render({ totalCount: 120, page: 1 });
 
-    expect(root.querySelector('[data-testid="unique-words-pagination-label"]')?.textContent).toContain('1–50 من 120');
+    expect(root.querySelector('[data-testid="qd-pagination-prev"]')).toBeTruthy();
+    expect(root.querySelector('[data-testid="qd-pagination-jump-input"]')).toBeTruthy();
   });
 
   it('hides list pagination when totalCount fits in one page', async () => {
     const root = await render({ totalCount: 2, page: 1 });
 
-    expect(root.querySelector('[data-testid="unique-words-pagination-label"]')).toBeNull();
+    expect(root.querySelector('[data-testid="qd-pagination-prev"]')).toBeNull();
   });
 });

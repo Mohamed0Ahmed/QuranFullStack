@@ -3,6 +3,7 @@ import { convertToParamMap, ParamMap } from '@angular/router';
 
 import {
   buildModalCloseQueryParams,
+  buildUniqueWordsDeepLink,
   buildUniqueWordsQueryParams,
   parseUniqueWordsQueryParams,
 } from './unique-words-url-sync';
@@ -111,7 +112,7 @@ describe('buildUniqueWordsQueryParams', () => {
   });
 
   it('round-trips parse -> build for list and modal state', () => {
-    const original = params('search=اسم&sort=alpha&page=2&word=9&view=missing');
+    const original = params('search=اسم&sort=alpha&page=2&word=9&view=bogus');
     const parsed = parseUniqueWordsQueryParams(original);
 
     const rebuilt = buildUniqueWordsQueryParams({
@@ -127,7 +128,7 @@ describe('buildUniqueWordsQueryParams', () => {
     expect(rebuilt['sort']).toBe('alpha');
     expect(rebuilt['page']).toBe('2');
     expect(rebuilt['word']).toBe('9');
-    expect(rebuilt['view']).toBe('missing');
+    expect(rebuilt['view']).toBeNull();
     // ayahPage parsed as null for non-ayahs views; null clears the param.
     expect(rebuilt['ap']).toBeNull();
   });
@@ -143,5 +144,37 @@ describe('buildModalCloseQueryParams', () => {
       UNIQUE_WORDS_QUERY_KEYS.ayahPage,
     ]);
     expect(Object.values(cleared)).toEqual([null, null, null]);
+  });
+});
+
+describe('buildUniqueWordsDeepLink', () => {
+  it('builds a stable deep link from the words route and stable word id', () => {
+    expect(
+      buildUniqueWordsDeepLink('simple', {
+        search: 'اسم',
+        sort: 'alpha',
+        page: 3,
+        wordId: 42,
+        view: 'ayahs',
+        ayahPage: 2,
+      }),
+    ).toEqual({
+      path: '/dashboard/words/unique/simple',
+      queryParams: {
+        search: 'اسم',
+        sort: 'alpha',
+        page: '3',
+        word: '42',
+        view: 'ayahs',
+        ap: '2',
+      },
+    });
+  });
+
+  it('omits absent query params when only the route is needed', () => {
+    expect(buildUniqueWordsDeepLink('tashkeel')).toEqual({
+      path: '/dashboard/words/unique/tashkeel',
+      queryParams: {},
+    });
   });
 });

@@ -90,20 +90,32 @@
 
         <section class="selected-word-section__section" aria-label="تكرار الكلمة">
           <div class="selected-word-section__identity" data-testid="word-identity-summary" role="group" aria-label="تكرار الكلمة">
-            <button type="button" class="selected-word-section__identity-row qd-interactive-surface">
+            <a
+              class="selected-word-section__identity-row qd-interactive-surface"
+              [attr.href]="uniqueWordIdentityHref('tashkeel')"
+              target="_blank"
+              rel="noopener"
+              data-testid="word-identity-tashkeel-link"
+            >
               <span class="selected-word-section__identity-label">التكرار (بالتشكيل)</span>
               <span class="selected-word-section__identity-value">
                 {{ analysis()!.identity.orderedTashkeel.occurrencesCount }} مرة في
                 {{ analysis()!.identity.orderedTashkeel.surahsCount }} سورة
               </span>
-            </button>
-            <button type="button" class="selected-word-section__identity-row qd-interactive-surface">
+            </a>
+            <a
+              class="selected-word-section__identity-row qd-interactive-surface"
+              [attr.href]="uniqueWordIdentityHref('simple')"
+              target="_blank"
+              rel="noopener"
+              data-testid="word-identity-simple-link"
+            >
               <span class="selected-word-section__identity-label">التكرار (مبسّط)</span>
               <span class="selected-word-section__identity-value">
                 {{ analysis()!.identity.orderedSimple.occurrencesCount }} مرة في
                 {{ analysis()!.identity.orderedSimple.surahsCount }} سورة
               </span>
-            </button>
+            </a>
           </div>
         </section>
       }

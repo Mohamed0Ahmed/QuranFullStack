@@ -23,7 +23,7 @@ import {
 } from '../../models/unique-words.models';
 import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
 
-const ROW_HEIGHT = 60;
+const ROW_HEIGHT = 48;
 const HAS_RESIZE_OBSERVER = typeof ResizeObserver !== 'undefined';
 
 @Component({

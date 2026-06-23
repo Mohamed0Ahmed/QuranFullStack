@@ -1,5 +1,7 @@
 import { ParamMap } from '@angular/router';
 
+import { uniqueWordsRoutePath } from '../../../core/navigation/route-paths';
+
 import {
   DEFAULT_AYAH_PAGE,
   DEFAULT_LIST_PAGE,
@@ -7,6 +9,7 @@ import {
   MODAL_QUERY_KEYS,
   ParsedUniqueWordsQuery,
   UNIQUE_WORDS_QUERY_KEYS,
+  UniqueWordKind,
   UniqueWordSort,
   WordDrilldownView,
   isUniqueWordSort,
@@ -91,6 +94,58 @@ export function buildUniqueWordsQueryParams(
 
 export function buildModalCloseQueryParams(): Record<string, null> {
   return Object.fromEntries(MODAL_QUERY_KEYS.map((key) => [key, null] as const));
+}
+
+export interface UniqueWordsDeepLinkOptions {
+  search?: string;
+  sort?: UniqueWordSort;
+  page?: number;
+  wordId?: number;
+  view?: WordDrilldownView;
+  ayahPage?: number;
+}
+
+export interface UniqueWordsDeepLinkTarget {
+  path: string;
+  queryParams: Record<string, string | null>;
+}
+
+export function buildUniqueWordsDeepLink(
+  kind: UniqueWordKind,
+  options: UniqueWordsDeepLinkOptions = {},
+): UniqueWordsDeepLinkTarget {
+  const queryParams: Partial<{
+    search: string | null;
+    sort: UniqueWordSort | null;
+    page: number | null;
+    wordId: number | null;
+    view: WordDrilldownView | null;
+    ayahPage: number | null;
+  }> = {};
+
+  if (options.search !== undefined) {
+    queryParams.search = options.search;
+  }
+  if (options.sort !== undefined) {
+    queryParams.sort = options.sort;
+  }
+  if (options.page !== undefined) {
+    queryParams.page = options.page;
+  }
+  if (options.wordId !== undefined) {
+    queryParams.wordId = options.wordId;
+  }
+  if (options.view !== undefined) {
+    queryParams.view = options.view;
+  }
+  if (options.ayahPage !== undefined) {
+    queryParams.ayahPage = options.ayahPage;
+  }
+
+  return {
+    path: uniqueWordsRoutePath(kind),
+    queryParams: buildUniqueWordsQueryParams(queryParams),
+  };
 }
 
 function parsePositiveInt(value: string | null): number | null {

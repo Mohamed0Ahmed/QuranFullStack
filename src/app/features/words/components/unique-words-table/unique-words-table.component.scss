@@ -14,23 +14,20 @@
 
 .unique-words-table__header {
   min-block-size: var(--unique-words-table-header-height, 2.75rem);
-  overflow-y: scroll;
-  scrollbar-gutter: stable;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  overflow: hidden;
   background: var(--qd-surface);
   border-bottom: 1px solid var(--qd-border);
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
 }
 
 .unique-words-table__header-row,
 .unique-words-table__row {
   display: grid;
   grid-template-columns: minmax(2.5rem, 0.35fr) minmax(0, 2.4fr) repeat(4, minmax(5.5rem, 1fr));
-  align-items: stretch;
+  align-items: center;
+}
+
+.unique-words-table__header-row {
+  scrollbar-gutter: stable;
 }
 
 .unique-words-table__header-cell,
@@ -40,6 +37,9 @@
 
 .unique-words-table__header-cell--row-number,
 .unique-words-table__cell--row-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   text-align: center;
   font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
   font-size: 0.875rem;
@@ -71,7 +71,8 @@
 }
 
 .unique-words-table__row {
-  min-block-size: 60px;
+  block-size: var(--unique-words-table-row-height, 3rem);
+  min-block-size: var(--unique-words-table-row-height, 3rem);
   border-bottom: 1px solid var(--qd-border);
 }
 
@@ -85,8 +86,9 @@
 }
 
 .unique-words-table__loading-chip {
-  inline-size: 3.5rem;
-  block-size: 1.25rem;
+  inline-size: 3rem;
+  block-size: 1.125rem;
+  margin-inline: auto;
 }
 
 .unique-words-table__row.qd-is-selected {
@@ -107,11 +109,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-
-  .word-count-chip {
-    min-inline-size: 2.5rem;
-    justify-content: center;
-  }
 }
 
 .unique-words-table__word {
