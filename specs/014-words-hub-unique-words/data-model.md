@@ -130,6 +130,7 @@ Returned as `PagedResult<UniqueWordAyahMatchDto>` under `ApiResponse.data`.
 | `surahNumber` | int | Surah number. |
 | `surahNameArabic` | string | Canonical Arabic surah name. |
 | `ayahNumber` | int | Ayah number in surah. |
+| `pageNumber` | int | Mushaf page where the ayah starts (first readable word). |
 | `matchedQuranWordIds` | `int[]` | Exact readable word occurrence IDs matching the selected unique word in this ayah. |
 | `words` | `AyahWordForHighlightDto[]` | All words for the ayah needed for display/highlighting. |
 
