@@ -8,6 +8,7 @@ import {
   inject,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription, debounceTime, Subject } from 'rxjs';
@@ -20,6 +21,7 @@ import {
 import { UniqueWordsTabsComponent } from '../../components/unique-words-tabs/unique-words-tabs.component';
 import { UniqueWordsSearchBarComponent } from '../../components/unique-words-search-bar/unique-words-search-bar.component';
 import { UniqueWordsTableComponent } from '../../components/unique-words-table/unique-words-table.component';
+import { UniqueWordsListPaginationComponent } from '../../components/unique-words-list-pagination/unique-words-list-pagination.component';
 import { WordDrilldownModalComponent } from '../../components/word-drilldown-modal/word-drilldown-modal.component';
 import {
   EMPTY_LIST_LABEL,
@@ -51,6 +53,7 @@ import {
     UniqueWordsTabsComponent,
     UniqueWordsSearchBarComponent,
     UniqueWordsTableComponent,
+    UniqueWordsListPaginationComponent,
     WordDrilldownModalComponent,
   ],
   templateUrl: './unique-words-page.component.html',
@@ -86,6 +89,9 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
   // active (URL) search so a shared/restored link shows its term in the box.
   protected readonly searchDraft = signal('');
 
+  private readonly table = viewChild(UniqueWordsTableComponent);
+  private readonly pendingScrollPage = signal<number | null>(null);
+
   /** Active mode label, derived from the facade's route-driven mode signal. */
   protected readonly modeLabel = computed(() => UNIQUE_WORD_KIND_LABELS[this.facade.mode()]);
 
@@ -98,6 +104,29 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
       this.facade.mode();
       this.facade.search();
       this.searchDraft.set(untracked(() => this.facade.search()));
+    });
+
+    effect(() => {
+      const targetPage = this.pendingScrollPage();
+      if (targetPage === null) {
+        return;
+      }
+
+      const state = this.listState();
+      const table = this.table();
+      if (!table || state.isLoadingMore || state.page !== targetPage) {
+        return;
+      }
+
+      const requiredRows = (targetPage - 1) * state.pageSize;
+      if (state.items.length <= requiredRows && state.totalCount > requiredRows) {
+        return;
+      }
+
+      untracked(() => {
+        table.scrollToPage(targetPage, state.pageSize);
+        this.pendingScrollPage.set(null);
+      });
     });
   }
 
@@ -171,6 +200,15 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
   protected onLoadMoreRequested(): void {
     const nextPage = this.listState().page + 1;
     this.updateQueryParams(buildUniqueWordsQueryParams({ page: nextPage }));
+  }
+
+  protected onPaginationPageChange(page: number): void {
+    if (page === this.listState().page) {
+      return;
+    }
+
+    this.pendingScrollPage.set(page);
+    this.updateQueryParams(buildUniqueWordsQueryParams({ page }));
   }
 
   /** Replaces the named query params, preserving the others. */

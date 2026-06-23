@@ -190,4 +190,16 @@ describe('UniqueWordsPageComponent', () => {
     const input = root.querySelector<HTMLInputElement>('[data-testid="unique-words-search-input"]');
     expect(input?.value).toBe('اسم');
   });
+
+  it('renders list pagination when totalCount exceeds pageSize', async () => {
+    const root = await render({ totalCount: 120, page: 1 });
+
+    expect(root.querySelector('[data-testid="unique-words-pagination-label"]')?.textContent).toContain('1 / 3');
+  });
+
+  it('hides list pagination when totalCount fits in one page', async () => {
+    const root = await render({ totalCount: 2, page: 1 });
+
+    expect(root.querySelector('[data-testid="unique-words-pagination-label"]')).toBeNull();
+  });
 });

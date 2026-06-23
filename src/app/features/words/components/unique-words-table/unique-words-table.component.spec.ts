@@ -78,4 +78,24 @@ describe('UniqueWordsTableComponent', () => {
 
     expect(loadMoreRequested).toHaveBeenCalledTimes(1);
   });
+
+  it('renders count-only chips without repeating column labels in each row', () => {
+    const fixture = setup([row(1)]);
+    const root = fixture.nativeElement as HTMLElement;
+
+    expect(root.querySelectorAll('.word-count-chip__label')).toHaveLength(0);
+    expect(root.querySelectorAll('.word-count-chip__count').length).toBeGreaterThan(0);
+  });
+
+  it('scrolls to the first row of the requested page in the fallback body', () => {
+    const fixture = setup(Array.from({ length: 60 }, (_, index) => row(index + 1)));
+    const root = fixture.nativeElement as HTMLElement;
+    const rows = root.querySelectorAll('.unique-words-table__row');
+    const scrollIntoView = vi.fn();
+    rows.item(50).scrollIntoView = scrollIntoView;
+
+    fixture.componentInstance.scrollToPage(2, 50);
+
+    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
+  });
 });

@@ -17,6 +17,8 @@ export class WordCountChipComponent {
   readonly count = input.required<number>();
   /** When true the chip is non-interactive (no drill-down yet in US2). */
   readonly disabled = input<boolean>(false);
+  /** When false, only the count is shown; label remains in aria-label. */
+  readonly showLabel = input(true);
 
   readonly chipClick = output<void>();
 

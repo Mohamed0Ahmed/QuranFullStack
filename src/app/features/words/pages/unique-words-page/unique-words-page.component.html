@@ -24,33 +24,6 @@
       @case ('empty') {
         <div class="qd-empty-state" data-testid="unique-words-empty">{{ emptyLabel }}</div>
       }
-      @default {
-        <div class="unique-words-layout">
-          <section class="unique-words-layout__table">
-            <qd-unique-words-table
-              [rows]="listState().items"
-              [selectedWordId]="drilldownState().selectedWordId"
-              [loadingMore]="listState().isLoadingMore"
-              [hasMore]="listState().items.length < listState().totalCount"
-              (rowSelected)="onRowSelected($event)"
-              (drilldownOpen)="onDrilldownOpen($event.word, $event.view)"
-              (loadMoreRequested)="onLoadMoreRequested()"
-            />
-          </section>
-
-          @if (isDesktop()) {
-            <aside class="unique-words-layout__panel" aria-label="التفاصيل">
-              <qd-word-drilldown-modal
-                [state]="drilldownState()"
-                [inline]="true"
-                (closeModal)="onDrilldownClose()"
-                (viewChange)="onDrilldownViewChange($event)"
-                (ayahPageChange)="onAyahPageChange($event)"
-              />
-            </aside>
-          }
-        </div>
-      }
     }
 
     @if (drilldownState().status === 'notFound') {
@@ -79,6 +52,45 @@
       </div>
     }
   </div>
+
+  @switch (listState().status) {
+    @default {
+      <div class="unique-words-layout-shell">
+        <div class="unique-words-layout">
+          <section class="unique-words-layout__table">
+            <qd-unique-words-table
+              [rows]="listState().items"
+              [selectedWordId]="drilldownState().selectedWordId"
+              [loadingMore]="listState().isLoadingMore"
+              [hasMore]="listState().items.length < listState().totalCount"
+              (rowSelected)="onRowSelected($event)"
+              (drilldownOpen)="onDrilldownOpen($event.word, $event.view)"
+              (loadMoreRequested)="onLoadMoreRequested()"
+            />
+            <qd-unique-words-list-pagination
+              [currentPage]="listState().page"
+              [pageSize]="listState().pageSize"
+              [totalCount]="listState().totalCount"
+              [disabled]="listState().isLoadingMore"
+              (pageChange)="onPaginationPageChange($event)"
+            />
+          </section>
+
+          @if (isDesktop()) {
+            <aside class="unique-words-layout__panel" aria-label="التفاصيل">
+              <qd-word-drilldown-modal
+                [state]="drilldownState()"
+                [inline]="true"
+                (closeModal)="onDrilldownClose()"
+                (viewChange)="onDrilldownViewChange($event)"
+                (ayahPageChange)="onAyahPageChange($event)"
+              />
+            </aside>
+          }
+        </div>
+      </div>
+    }
+  }
 
   @if (!isDesktop()) {
     <qd-word-drilldown-modal

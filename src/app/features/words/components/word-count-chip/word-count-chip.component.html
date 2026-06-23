@@ -8,6 +8,8 @@
   [attr.data-testid]="'word-count-chip'"
   (click)="onClick()"
 >
-  <span class="word-count-chip__label">{{ label() }}</span>
+  @if (showLabel()) {
+    <span class="word-count-chip__label">{{ label() }}</span>
+  }
   <span class="word-count-chip__count">{{ count() }}</span>
 </button>

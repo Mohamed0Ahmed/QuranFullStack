@@ -2,6 +2,10 @@
   display: block;
 }
 
+.unique-words-layout-shell {
+  padding-inline: var(--qd-space-4);
+}
+
 .unique-words-layout {
   display: grid;
   gap: var(--qd-space-4);
@@ -17,8 +21,31 @@
 }
 
 @media (min-width: 1024px) {
+  .unique-words-layout-shell {
+    margin-inline: calc(-1 * var(--qd-space-4));
+    // Physical right in RTL (inline-start): gutter from viewport edge.
+    padding-inline-start: var(--qd-space-4);
+    // Physical left in RTL (inline-end): align panel with container left edge.
+    padding-inline-end: max(
+      var(--qd-space-4),
+      calc(var(--qd-space-4) + max((100vw - 72rem - 2 * var(--qd-space-4)) / 2, 0px))
+    );
+  }
+
   .unique-words-layout {
-    grid-template-columns: minmax(0, 1fr) 20rem;
+    direction: rtl;
+    grid-template-columns: minmax(0, 7fr) minmax(18rem, 3fr);
     align-items: start;
+  }
+
+  .unique-words-layout__table {
+    grid-column: 1;
+    min-width: 0;
+    overflow-x: auto;
+  }
+
+  .unique-words-layout__panel {
+    grid-column: 2;
+    min-width: 0;
   }
 }

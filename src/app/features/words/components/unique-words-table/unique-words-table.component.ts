@@ -3,6 +3,8 @@ import {
   ChangeDetectionStrategy,
   Component,
   effect,
+  ElementRef,
+  inject,
   input,
   OnDestroy,
   signal,
@@ -18,7 +20,7 @@ import {
   WordDrilldownView,
 } from '../../models/unique-words.models';
 
-const ROW_HEIGHT = 76;
+const ROW_HEIGHT = 60;
 const LOAD_MORE_THRESHOLD_ROWS = 3;
 
 @Component({
@@ -30,6 +32,8 @@ const LOAD_MORE_THRESHOLD_ROWS = 3;
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class UniqueWordsTableComponent implements AfterViewInit, OnDestroy {
+  private readonly host = inject(ElementRef<HTMLElement>);
+
   readonly rows = input.required<readonly UniqueWordListItemViewModel[]>();
   readonly selectedWordId = input<number | null>(null);
   readonly loadingMore = input(false);
@@ -137,5 +141,20 @@ export class UniqueWordsTableComponent implements AfterViewInit, OnDestroy {
 
     this.loadMoreEmittedForLength = this.rows().length;
     this.loadMoreRequested.emit();
+  }
+
+  /** Scrolls the table body to the first row of the requested 1-based page. */
+  scrollToPage(page: number, pageSize: number): void {
+    const index = Math.max(0, (page - 1) * pageSize);
+    const clampedIndex = Math.min(index, Math.max(0, this.rows().length - 1));
+
+    if (this.useVirtualScroll() && this.viewport) {
+      this.viewport.scrollToIndex(clampedIndex, 'smooth');
+      return;
+    }
+
+    const rows = this.host.nativeElement.querySelectorAll('.unique-words-table__row');
+    const row = rows.item(clampedIndex) as HTMLElement | null;
+    row?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 }

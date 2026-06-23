@@ -4,7 +4,8 @@
 
 .unique-words-table {
   width: 100%;
-  min-width: 56rem;
+  max-width: 100%;
+  min-width: 0;
   border: 1px solid var(--qd-border);
   border-radius: var(--qd-radius-md);
   overflow: hidden;
@@ -12,8 +13,16 @@
 }
 
 .unique-words-table__header {
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   background: var(--qd-surface);
   border-bottom: 1px solid var(--qd-border);
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 .unique-words-table__header-row,
@@ -23,8 +32,12 @@
   align-items: stretch;
 }
 
+.unique-words-table__header-cell,
+.unique-words-table__cell {
+  padding: var(--qd-space-2) var(--qd-space-3);
+}
+
 .unique-words-table__header-cell {
-  padding: var(--qd-space-3) var(--qd-space-4);
   text-align: start;
   font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
   font-size: 0.875rem;
@@ -32,14 +45,19 @@
   color: var(--qd-text-muted);
 }
 
+.unique-words-table__header-cell--numeric {
+  text-align: center;
+}
+
 .unique-words-table__body {
   block-size: min(72vh, 44rem);
   overflow: auto;
+  scrollbar-gutter: stable;
   background: var(--qd-surface);
 }
 
 .unique-words-table__row {
-  min-block-size: 76px;
+  min-block-size: 60px;
   border-bottom: 1px solid var(--qd-border);
 }
 
@@ -49,7 +67,6 @@
 
 .unique-words-table__cell {
   min-width: 0;
-  padding: var(--qd-space-3) var(--qd-space-4);
   overflow: hidden;
 }
 
@@ -62,14 +79,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
+
+  .word-count-chip {
+    min-inline-size: 2.5rem;
+    justify-content: center;
+  }
 }
 
 .unique-words-table__word {
-  display: flex;
-  flex-direction: column;
-  gap: var(--qd-space-1);
+  display: block;
   width: 100%;
-  padding: var(--qd-space-2);
+  padding: var(--qd-space-1);
   border: 1px solid transparent;
   border-radius: var(--qd-radius-sm);
   background: transparent;
@@ -79,15 +99,8 @@
 
 .unique-words-table__display {
   font-family: 'Amiri', 'IBM Plex Sans Arabic', serif;
-  font-size: 1.25rem;
-  line-height: 1.7;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.unique-words-table__location {
-  font-size: 0.8125rem;
+  font-size: 1.125rem;
+  line-height: 1.4;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

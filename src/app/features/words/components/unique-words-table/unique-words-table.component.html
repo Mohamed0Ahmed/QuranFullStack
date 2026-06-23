@@ -2,10 +2,10 @@
   <div class="unique-words-table__header" role="rowgroup">
     <div class="unique-words-table__header-row" role="row">
       <div class="unique-words-table__header-cell" role="columnheader">الكلمة</div>
-      <div class="unique-words-table__header-cell" role="columnheader">المواضع</div>
-      <div class="unique-words-table__header-cell" role="columnheader">الآيات</div>
-      <div class="unique-words-table__header-cell" role="columnheader">السور</div>
-      <div class="unique-words-table__header-cell" role="columnheader">لم يذكر في</div>
+      <div class="unique-words-table__header-cell unique-words-table__header-cell--numeric" role="columnheader">المواضع</div>
+      <div class="unique-words-table__header-cell unique-words-table__header-cell--numeric" role="columnheader">الآيات</div>
+      <div class="unique-words-table__header-cell unique-words-table__header-cell--numeric" role="columnheader">السور</div>
+      <div class="unique-words-table__header-cell unique-words-table__header-cell--numeric" role="columnheader">لم يذكر في</div>
     </div>
   </div>
 
@@ -34,19 +34,22 @@
               (click)="selectRow(row)"
             >
               <span class="unique-words-table__display">{{ row.displayText }}</span>
-              <span class="qd-text-muted unique-words-table__location">
-                {{ row.firstVerseKey }} · {{ row.firstLocation }}
-              </span>
             </button>
           </div>
 
           <div class="unique-words-table__cell unique-words-table__chip-cell" role="cell">
-            <qd-word-count-chip [label]="occurrencesLabel" [count]="row.occurrencesCount" [disabled]="true" />
+            <qd-word-count-chip
+              [label]="occurrencesLabel"
+              [count]="row.occurrencesCount"
+              [showLabel]="false"
+              [disabled]="true"
+            />
           </div>
           <div class="unique-words-table__cell unique-words-table__chip-cell" role="cell">
             <qd-word-count-chip
               [label]="ayahsLabel"
               [count]="row.ayahsCount"
+              [showLabel]="false"
               [disabled]="row.ayahsCount === 0"
               (chipClick)="openDrilldown(row, 'ayahs')"
             />
@@ -55,6 +58,7 @@
             <qd-word-count-chip
               [label]="surahsLabel"
               [count]="row.surahsCount"
+              [showLabel]="false"
               [disabled]="row.surahsCount === 0"
               (chipClick)="openDrilldown(row, 'surahs')"
             />
@@ -63,6 +67,7 @@
             <qd-word-count-chip
               [label]="missingLabel"
               [count]="row.missingSurahsCount"
+              [showLabel]="false"
               (chipClick)="openDrilldown(row, 'missing')"
             />
           </div>
@@ -86,19 +91,22 @@
               (click)="selectRow(row)"
             >
               <span class="unique-words-table__display">{{ row.displayText }}</span>
-              <span class="qd-text-muted unique-words-table__location">
-                {{ row.firstVerseKey }} · {{ row.firstLocation }}
-              </span>
             </button>
           </div>
 
           <div class="unique-words-table__cell unique-words-table__chip-cell" role="cell">
-            <qd-word-count-chip [label]="occurrencesLabel" [count]="row.occurrencesCount" [disabled]="true" />
+            <qd-word-count-chip
+              [label]="occurrencesLabel"
+              [count]="row.occurrencesCount"
+              [showLabel]="false"
+              [disabled]="true"
+            />
           </div>
           <div class="unique-words-table__cell unique-words-table__chip-cell" role="cell">
             <qd-word-count-chip
               [label]="ayahsLabel"
               [count]="row.ayahsCount"
+              [showLabel]="false"
               [disabled]="row.ayahsCount === 0"
               (chipClick)="openDrilldown(row, 'ayahs')"
             />
@@ -107,6 +115,7 @@
             <qd-word-count-chip
               [label]="surahsLabel"
               [count]="row.surahsCount"
+              [showLabel]="false"
               [disabled]="row.surahsCount === 0"
               (chipClick)="openDrilldown(row, 'surahs')"
             />
@@ -115,6 +124,7 @@
             <qd-word-count-chip
               [label]="missingLabel"
               [count]="row.missingSurahsCount"
+              [showLabel]="false"
               (chipClick)="openDrilldown(row, 'missing')"
             />
           </div>
