@@ -23,6 +23,7 @@ import {
 import { mapUniqueWordListItems } from '../utils/unique-words-display.mapper';
 import { extractDrilldownMessage } from '../utils/unique-words-drilldown.state';
 import { parseUniqueWordsQueryParams } from './unique-words-url-sync';
+import { UniqueWordsCache, UniqueWordsCacheKeys } from './unique-words-cache';
 import { UniqueWordsDrilldownFacade } from './unique-words-drilldown.facade';
 
 const CONNECTION_ERROR_MESSAGE = 'تعذّر تحميل الكلمات الفريدة. تحقّق من الاتصال ثم أعد المحاولة.';
@@ -30,6 +31,7 @@ const CONNECTION_ERROR_MESSAGE = 'تعذّر تحميل الكلمات الفر�
 @Injectable({ providedIn: 'root' })
 export class UniqueWordsFacade {
   private readonly api = inject(UniqueWordsApi);
+  private readonly cache = inject(UniqueWordsCache);
   private readonly drilldown = inject(UniqueWordsDrilldownFacade);
 
   private readonly _status = signal<LoadStatus>('idle');
@@ -150,16 +152,20 @@ export class UniqueWordsFacade {
 
   private runListRequest(): Observable<void> {
     const targetPage = this._page();
-
-    if (this._loadedPage() === targetPage && this._items().length > 0) {
-      return of(undefined);
-    }
+    const cacheKey = UniqueWordsCacheKeys.list(
+      this._mode(),
+      this._sort(),
+      this._search(),
+      targetPage,
+    );
 
     this._status.set('loading');
     this._errorMessage.set('');
 
-    return this.api
-      .getList(this._mode(), this._search(), this._sort(), targetPage, this._pageSize)
+    return this.cache
+      .getOrLoad(cacheKey, () =>
+        this.api.getList(this._mode(), this._search(), this._sort(), targetPage, this._pageSize),
+      )
       .pipe(
         tap((response) => this.handleListResponse(response)),
         catchError((err) => {

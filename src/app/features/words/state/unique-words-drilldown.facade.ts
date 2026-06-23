@@ -17,21 +17,23 @@ import {
   UniqueWordAyahMatchDto,
   UniqueWordKind,
   UniqueWordListItemDto,
+  UniqueWordMissingSurahsDto,
   UniqueWordSummaryDto,
   UniqueWordSurahsDto,
   WordDrilldownState,
   WordDrilldownView,
 } from '../models/unique-words.models';
-import { buildMissingSurahsPayload } from '../utils/unique-words-surahs';
 import { toUniqueWordSummary } from '../utils/unique-words-state.helpers';
 import {
   buildAyahsDrilldownUpdate,
   buildDrilldownErrorUpdate,
+  buildMissingSurahsDrilldownUpdate,
   buildRestoredWordLoadError,
   buildRestoredWordNotFound,
   buildSurahsDrilldownUpdate,
   extractDrilldownMessage,
 } from '../utils/unique-words-drilldown.state';
+import { UniqueWordsCache, UniqueWordsCacheKeys } from './unique-words-cache';
 
 interface ModalUrlState {
   readonly wordId: number;
@@ -55,6 +57,7 @@ const INITIAL_DRILLDOWN: WordDrilldownState = {
 @Injectable({ providedIn: 'root' })
 export class UniqueWordsDrilldownFacade {
   private readonly api = inject(UniqueWordsApi);
+  private readonly cache = inject(UniqueWordsCache);
 
   private readonly _drilldown = signal<WordDrilldownState>(INITIAL_DRILLDOWN);
 
@@ -197,8 +200,10 @@ export class UniqueWordsDrilldownFacade {
       status: 'loading',
     });
 
-    this.summarySub = this.api
-      .getSummary(mode, nextState.wordId)
+    this.summarySub = this.cache
+      .getOrLoad(UniqueWordsCacheKeys.summary(mode, nextState.wordId), () =>
+        this.api.getSummary(mode, nextState.wordId),
+      )
       .pipe(
         tap((response) => {
           if (!response.isSuccess || !response.data) {
@@ -272,8 +277,10 @@ export class UniqueWordsDrilldownFacade {
     this.drilldownSub?.unsubscribe();
 
     if (view === 'surahs') {
-      this.drilldownSub = this.api
-        .getMentionedSurahs(kind, wordId)
+      this.drilldownSub = this.cache
+        .getOrLoad(UniqueWordsCacheKeys.surahs(kind, wordId), () =>
+          this.api.getMentionedSurahs(kind, wordId),
+        )
         .pipe(
           tap((response) => this.handleSurahsResponse(response)),
           catchError((err) => {
@@ -298,39 +305,12 @@ export class UniqueWordsDrilldownFacade {
         return;
       }
 
-      if (current.surahs !== null) {
-        const surahs = current.surahs;
-        this._drilldown.update((s) => ({
-          ...s,
-          missingSurahs: buildMissingSurahsPayload(surahs),
-          status: surahs.surahs.length === 0 ? 'empty' : 'success',
-          errorMessage: '',
-        }));
-        return;
-      }
-
-      this.drilldownSub = this.api
-        .getMentionedSurahs(kind, wordId)
+      this.drilldownSub = this.cache
+        .getOrLoad(UniqueWordsCacheKeys.missing(kind, wordId), () =>
+          this.api.getMissingSurahs(kind, wordId),
+        )
         .pipe(
-          tap((response) => {
-            if (!response.isSuccess || !response.data) {
-              this._drilldown.update((s) => ({
-                ...s,
-                status: 'error',
-                errorMessage: response.message ?? DRILLDOWN_ERROR_LABEL,
-              }));
-              return;
-            }
-
-            const missingSurahs = buildMissingSurahsPayload(response.data);
-
-            this._drilldown.update((s) => ({
-              ...s,
-              missingSurahs,
-              status: missingSurahs.surahs.length === 0 ? 'empty' : 'success',
-              errorMessage: '',
-            }));
-          }),
+          tap((response) => this.handleMissingSurahsResponse(response)),
           catchError((err) => {
             this.handleDrilldownError(err);
             return of(undefined);
@@ -340,8 +320,10 @@ export class UniqueWordsDrilldownFacade {
       return;
     }
 
-    this.drilldownSub = this.api
-      .getAyahMatches(kind, wordId, ayahPage, UNIQUE_WORDS_PAGE_SIZE)
+    this.drilldownSub = this.cache
+      .getOrLoad(UniqueWordsCacheKeys.ayahs(kind, wordId, ayahPage), () =>
+        this.api.getAyahMatches(kind, wordId, ayahPage, UNIQUE_WORDS_PAGE_SIZE),
+      )
       .pipe(
         tap((response) => this.handleAyahsResponse(response)),
         catchError((err) => {
@@ -354,6 +336,10 @@ export class UniqueWordsDrilldownFacade {
 
   private handleSurahsResponse(response: ApiResponse<UniqueWordSurahsDto>): void {
     this._drilldown.update((s) => ({ ...s, ...buildSurahsDrilldownUpdate(response) }));
+  }
+
+  private handleMissingSurahsResponse(response: ApiResponse<UniqueWordMissingSurahsDto>): void {
+    this._drilldown.update((s) => ({ ...s, ...buildMissingSurahsDrilldownUpdate(response) }));
   }
 
   private handleAyahsResponse(response: ApiResponse<PagedResultDto<UniqueWordAyahMatchDto>>): void {

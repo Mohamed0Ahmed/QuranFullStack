@@ -8,6 +8,7 @@ import { UniqueWordsFacade } from './unique-words.facade';
 import {
   UniqueWordAyahMatchDto,
   UniqueWordListItemDto,
+  UniqueWordMissingSurahsDto,
   UniqueWordSurahsDto,
 } from '../models/unique-words.models';
 import { DRILLDOWN_EMPTY_AYAHS_LABEL, DRILLDOWN_ERROR_LABEL } from '../models/unique-words.labels';
@@ -80,6 +81,30 @@ describe('UniqueWordsFacade drill-down', () => {
     expect(getMentionedSurahs).toHaveBeenCalledWith('tashkeel', 1);
   });
 
+  it('reuses a cached drill-down response when the same word is reopened', () => {
+    const getMentionedSurahs = vi.fn(() =>
+      of({
+        isSuccess: true,
+        message: 'تم',
+        data: {
+          id: 1,
+          kind: 'tashkeel',
+          displayTextUthmani: 'كلمة-تجريبية-1',
+          surahsCount: 1,
+          surahs: [{ surahNumber: 1, nameArabic: 'سورة-تجريبية', occurrencesInSurah: 2 }],
+        },
+      } as ApiResponse<UniqueWordSurahsDto>),
+    );
+    const facade = setup({ getMentionedSurahs });
+
+    facade.openDrilldown(word(1), 'surahs');
+    facade.closeDrilldown();
+    facade.openDrilldown(word(1), 'surahs');
+
+    expect(getMentionedSurahs).toHaveBeenCalledTimes(1);
+    expect(facade.drilldownState().surahs?.surahs).toHaveLength(1);
+  });
+
   it('preserves list state when modal opens and closes', () => {
     const facade = setup({
       getList: vi.fn(() =>
@@ -108,7 +133,7 @@ describe('UniqueWordsFacade drill-down', () => {
 
   it('maps drill-down transport errors', () => {
     const facade = setup({
-      getMentionedSurahs: vi.fn(() => throwError(() => new Error('network'))),
+      getMissingSurahs: vi.fn(() => throwError(() => new Error('network'))),
     });
 
     facade.openDrilldown(word(1), 'missing');
@@ -129,7 +154,10 @@ describe('UniqueWordsFacade drill-down', () => {
         data: null,
       } as ApiResponse<{ page: number; pageSize: number; totalCount: number; items: UniqueWordAyahMatchDto[] }>),
     );
-    const facade = setup({ getMentionedSurahs, getAyahMatches });
+    const getMissingSurahs = vi.fn(() =>
+      of({ isSuccess: false, message: backendMessage, data: null } as ApiResponse<UniqueWordMissingSurahsDto>),
+    );
+    const facade = setup({ getMentionedSurahs, getMissingSurahs, getAyahMatches });
 
     facade.openDrilldown(word(1), 'surahs');
     expect(facade.drilldownState().status).toBe('error');
@@ -171,6 +199,19 @@ describe('UniqueWordsFacade drill-down', () => {
           },
         } as ApiResponse<UniqueWordSurahsDto>),
       );
+    const getMissingSurahs = vi.fn(() =>
+      of({
+        isSuccess: true,
+        message: 'تم',
+        data: {
+          id: 1,
+          kind: 'tashkeel',
+          displayTextUthmani: 'x',
+          missingSurahsCount: 0,
+          surahs: [],
+        },
+      } as ApiResponse<UniqueWordMissingSurahsDto>),
+    );
     const getAyahMatches = vi.fn(() =>
       of({
         isSuccess: true,
@@ -178,7 +219,7 @@ describe('UniqueWordsFacade drill-down', () => {
         data: { page: 1, pageSize: 1000, totalCount: 0, items: [] },
       }),
     );
-    const facade = setup({ getMentionedSurahs, getAyahMatches });
+    const facade = setup({ getMentionedSurahs, getMissingSurahs, getAyahMatches });
 
     facade.openDrilldown(word(1), 'surahs');
     expect(facade.drilldownState().status).toBe('empty');
@@ -240,7 +281,23 @@ describe('UniqueWordsFacade drill-down', () => {
         },
       }),
     );
-    const facade = setup({ getMentionedSurahs, getAyahMatches });
+    const getMissingSurahs = vi.fn(() =>
+      of({
+        isSuccess: true,
+        message: 'تم',
+        data: {
+          id: 1,
+          kind: 'tashkeel' as const,
+          displayTextUthmani: 'x',
+          missingSurahsCount: 113,
+          surahs: Array.from({ length: 113 }, (_, index) => ({
+            surahNumber: index + 2,
+            nameArabic: `سورة-${index + 2}`,
+          })),
+        },
+      } as ApiResponse<UniqueWordMissingSurahsDto>),
+    );
+    const facade = setup({ getMentionedSurahs, getMissingSurahs, getAyahMatches });
 
     facade.openDrilldown(word(1), 'surahs');
     expect(facade.drilldownState().view).toBe('surahs');
@@ -249,6 +306,7 @@ describe('UniqueWordsFacade drill-down', () => {
     facade.setDrilldownView('missing');
     expect(facade.drilldownState().view).toBe('missing');
     expect(getMentionedSurahs).toHaveBeenCalledTimes(1);
+    expect(getMissingSurahs).toHaveBeenCalledTimes(1);
     expect(facade.drilldownState().missingSurahs?.surahs).toHaveLength(113);
     expect(facade.drilldownState().status).toBe('success');
 

@@ -1,7 +1,6 @@
 import { Injectable } from '@angular/core';
-import { Observable, finalize, shareReplay, tap } from 'rxjs';
 
-import { ApiResponse } from '../../../core/data-access/api-response.model';
+import { ApiResponseCache } from '../../../core/caching/api-response-cache';
 import { AyahStudySourceParams } from '../data-access/mushaf-ayah-study.api';
 
 export const MushafReaderCacheKeys = {
@@ -29,68 +28,5 @@ export const MushafReaderCacheKeys = {
   },
 } as const;
 
-const DEFAULT_MAX_ENTRIES = 48;
-
 @Injectable({ providedIn: 'root' })
-export class MushafReaderCache {
-  private readonly maxEntries = DEFAULT_MAX_ENTRIES;
-  private readonly cache = new Map<string, ApiResponse<unknown>>();
-  private readonly inFlight = new Map<string, Observable<ApiResponse<unknown>>>();
-
-  getOrLoad<T>(key: string, loader: () => Observable<ApiResponse<T>>): Observable<ApiResponse<T>> {
-    const cached = this.cache.get(key);
-    if (cached) {
-      return new Observable((subscriber) => {
-        subscriber.next(cached as ApiResponse<T>);
-        subscriber.complete();
-      });
-    }
-
-    const pending = this.inFlight.get(key);
-    if (pending) {
-      return pending as Observable<ApiResponse<T>>;
-    }
-
-    const request$ = loader().pipe(
-      tap((response) => {
-        if (response.isSuccess && response.data != null) {
-          this.store(key, response);
-        }
-      }),
-      shareReplay({ bufferSize: 1, refCount: false }),
-      finalize(() => this.inFlight.delete(key)),
-    );
-
-    this.inFlight.set(key, request$ as Observable<ApiResponse<unknown>>);
-    return request$;
-  }
-
-  // Returns cached data synchronously; in-flight-only requests count as a miss.
-  peek<T>(key: string): T | null {
-    const cached = this.cache.get(key);
-    if (cached?.isSuccess && cached.data != null) {
-      return cached.data as T;
-    }
-
-    return null;
-  }
-
-  prefetch<T>(key: string, loader: () => Observable<ApiResponse<T>>): void {
-    if (this.cache.has(key) || this.inFlight.has(key)) {
-      return;
-    }
-
-    this.getOrLoad(key, loader).subscribe({ error: () => undefined });
-  }
-
-  private store<T>(key: string, response: ApiResponse<T>): void {
-    if (this.cache.size >= this.maxEntries && !this.cache.has(key)) {
-      const oldestKey = this.cache.keys().next().value;
-      if (oldestKey !== undefined) {
-        this.cache.delete(oldestKey);
-      }
-    }
-
-    this.cache.set(key, response as ApiResponse<unknown>);
-  }
-}
+export class MushafReaderCache extends ApiResponseCache {}

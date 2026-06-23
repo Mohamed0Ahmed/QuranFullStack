@@ -98,6 +98,17 @@ describe('UniqueWordsFacade list state', () => {
     expect(state.sort).toBe('mushaf-order');
   });
 
+  it('reuses a cached list page instead of re-calling the API', () => {
+    const getList = vi.fn(() => of(okResponse([item(1)], 1)));
+    const facade = setup(getList);
+
+    facade.loadList();
+    facade.loadList();
+
+    expect(getList).toHaveBeenCalledTimes(1);
+    expect(facade.items().map((row) => row.id)).toEqual([1]);
+  });
+
   it('maps a zero-total-count success into the empty status', () => {
     const getList = vi.fn(() => of(okResponse([], 0)));
     const facade = setup(getList);
