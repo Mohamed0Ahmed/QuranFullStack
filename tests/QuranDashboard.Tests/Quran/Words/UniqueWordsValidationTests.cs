@@ -1,3 +1,4 @@
+using QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordAyahs;
 using QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordsPage;
 
 namespace QuranDashboard.Tests.Quran.Words;
@@ -78,8 +79,7 @@ public sealed class UniqueWordsValidationTests(UniqueWordsTestFixture fixture)
     [Theory]
     [InlineData(0)]
     [InlineData(-5)]
-    [InlineData(201)]   // above MaxPageSize (200)
-    [InlineData(1000)]
+    [InlineData(1001)]   // above MaxPageSize (1000)
     public async Task Invalid_page_size_returns_invalid_paging(int pageSize)
     {
         await using var scope = fixture.CreateScope();
@@ -95,14 +95,40 @@ public sealed class UniqueWordsValidationTests(UniqueWordsTestFixture fixture)
     [Fact]
     public async Task Max_page_size_boundary_is_accepted()
     {
-        // pageSize == MaxPageSize (200) is the inclusive upper bound and must pass.
+        // pageSize == MaxPageSize (1000) is the inclusive upper bound and must pass.
         await using var scope = fixture.CreateScope();
         var handler = scope.ServiceProvider.GetRequiredService<GetUniqueWordsPageHandler>();
 
         var outcome = await handler.HandleAsync(
-            new GetUniqueWordsPageQuery("tashkeel", null, null, 1, 200),
+            new GetUniqueWordsPageQuery("tashkeel", null, null, 1, 1000),
             CancellationToken.None);
 
         outcome.Should().BeOfType<GetUniqueWordsPageOutcome.Success>();
+    }
+
+    [Fact]
+    public async Task Ayah_max_page_size_boundary_is_accepted()
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetUniqueWordAyahsHandler>();
+
+        var outcome = await handler.HandleAsync(
+            new GetUniqueWordAyahsQuery("tashkeel", 2003, 1, 1000),
+            CancellationToken.None);
+
+        outcome.Should().BeOfType<GetUniqueWordAyahsOutcome.Success>();
+    }
+
+    [Fact]
+    public async Task Ayah_page_size_above_max_returns_invalid_paging()
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetUniqueWordAyahsHandler>();
+
+        var outcome = await handler.HandleAsync(
+            new GetUniqueWordAyahsQuery("tashkeel", 2003, 1, 1001),
+            CancellationToken.None);
+
+        outcome.Should().BeOfType<GetUniqueWordAyahsOutcome.InvalidPaging>();
     }
 }

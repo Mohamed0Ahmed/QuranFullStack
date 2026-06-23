@@ -21,8 +21,8 @@ public sealed class UniqueWordsController(
     GetUniqueWordAyahsHandler ayahsHandler) : ControllerBase
 {
     private const int DefaultPage = 1;
-    private const int DefaultListPageSize = 50;
-    private const int DefaultAyahPageSize = 20;
+    private const int DefaultListPageSize = 1000;
+    private const int DefaultAyahPageSize = 1000;
 
     /// <summary>
     /// يُرجع صفحة واحدة من الكلمات الفريدة للنوع المحدد (<c>tashkeel</c> أو

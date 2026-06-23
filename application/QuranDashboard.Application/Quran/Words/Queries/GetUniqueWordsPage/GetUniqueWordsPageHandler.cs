@@ -8,9 +8,9 @@ public sealed class GetUniqueWordsPageHandler(IUniqueWordsReader reader)
     public const int MinPageSize = 1;
 
     /// <remarks>
-    /// Bounds unbounded client input; the list UI default is 50.
+    /// Bounds unbounded client input; the list UI default is 1000.
     /// </remarks>
-    public const int MaxPageSize = 200;
+    public const int MaxPageSize = 1000;
 
     private const string DefaultSortKey = "mushaf-order";
 

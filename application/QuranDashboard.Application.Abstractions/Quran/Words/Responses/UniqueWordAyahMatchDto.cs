@@ -7,6 +7,7 @@ public sealed record UniqueWordAyahMatchDto(
     int SurahNumber,
     string SurahNameArabic,
     int AyahNumber,
+    short PageNumber,
     IReadOnlyList<int> MatchedQuranWordIds,
     IReadOnlyList<AyahWordForHighlightDto> Words);
 

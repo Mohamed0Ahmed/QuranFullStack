@@ -279,6 +279,7 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
                 w.AyahId,
                 w.Id,
                 w.WordNumber,
+                w.PageNumber,
                 w.TextUthmani,
                 w.IsAyahMarker))
             .ToListAsync(cancellationToken);
@@ -297,6 +298,7 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
                     ayah.SurahNumber,
                     ayah.SurahNameArabic,
                     ayah.AyahNumber,
+                    ResolveAyahPageNumber(words),
                     matchedIdsByAyah.GetValueOrDefault(ayah.AyahId, []),
                     words.Select(w => new AyahWordForHighlightDto(
                         w.QuranWordId,
@@ -307,6 +309,21 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
             .ToList();
 
         return new PagedResult<UniqueWordAyahMatchDto>(page, pageSize, totalCount, items);
+    }
+
+    private static short ResolveAyahPageNumber(IReadOnlyList<AyahWordRow> words)
+    {
+        var firstReadable = words
+            .Where(w => !w.IsAyahMarker)
+            .OrderBy(w => w.WordNumber)
+            .FirstOrDefault();
+
+        if (firstReadable is not null)
+        {
+            return firstReadable.PageNumber;
+        }
+
+        return words.FirstOrDefault()?.PageNumber ?? 0;
     }
 
     private IQueryable<QuranWord> ReadableMatchesQuery(UniqueWordKind kind, int id) =>
@@ -529,6 +546,7 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
         int AyahId,
         int QuranWordId,
         short WordNumber,
+        short PageNumber,
         string TextUthmani,
         bool IsAyahMarker);
 }
