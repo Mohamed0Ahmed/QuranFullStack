@@ -7,7 +7,7 @@ All responses use the existing `ApiResponse<T>` envelope with English property n
 - `kind` (path, required): `tashkeel` or `simple`.
 - `id` (path, required where present): stable unique-word ID.
 - `page` (query, optional): 1-based page number.
-- `pageSize` (query, optional): bounded page size.
+- `pageSize` (query, optional): bounded page size; maximum `1000`.
 
 Invalid `kind` returns `400 Bad Request`. Unknown `id` returns `404 Not Found`.
 
@@ -22,7 +22,7 @@ GET /api/words/unique/{kind}?search=&sort=&page=&pageSize=
 - `search` optional: Arabic query; normalized contains matching.
 - `sort` optional: `mushaf-order` (default), `occurrences`, or `alpha`.
 - `page` optional: default `1`.
-- `pageSize` optional: default `50`.
+- `pageSize` optional: default `1000`.
 
 ### Behavior
 
@@ -42,7 +42,7 @@ GET /api/words/unique/{kind}?search=&sort=&page=&pageSize=
   "message": "تم تحميل الكلمات الفريدة",
   "data": {
     "page": 1,
-    "pageSize": 50,
+    "pageSize": 1000,
     "totalCount": 21294,
     "items": [
       {
@@ -171,7 +171,7 @@ GET /api/words/unique/{kind}/{id}/ayahs?page=&pageSize=
 ### Request
 
 - `page` optional: default `1`.
-- `pageSize` optional: default `20`.
+- `pageSize` optional: default `1000`.
 
 ### Behavior
 
@@ -191,7 +191,7 @@ GET /api/words/unique/{kind}/{id}/ayahs?page=&pageSize=
   "message": "تم تحميل الآيات التي وردت فيها الكلمة",
   "data": {
     "page": 1,
-    "pageSize": 20,
+    "pageSize": 1000,
     "totalCount": 3,
     "items": [
       {
@@ -200,6 +200,7 @@ GET /api/words/unique/{kind}/{id}/ayahs?page=&pageSize=
         "surahNumber": 1,
         "surahNameArabic": "الفاتحة",
         "ayahNumber": 1,
+        "pageNumber": 1,
         "matchedQuranWordIds": [1],
         "words": [
           {
