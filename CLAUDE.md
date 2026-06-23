@@ -1,15 +1,16 @@
 <!-- SPECKIT START -->
 
-Active feature: **Words Hub + Unique Words Explorer** — branch `014-words-hub-unique-words`.
-For technologies, project structure, shell commands, and design artifacts, read the current plan
+Active feature: **Quran Roots Explorer** — branch `015-roots-explorer` (full-stack: .NET read-only Roots APIs + Angular Words/Roots split-screen page; sibling of Feature 014 Unique Words Explorer).
+For technologies, project structure, shell commands, gates, and design artifacts, read the current plan
 and its siblings:
 
-- `specs/014-words-hub-unique-words/plan.md` — technical context, project structure, gates (full-stack: .NET read APIs + Angular Words feature; read-only unique-word data)
-- `specs/014-words-hub-unique-words/spec.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/`
-- `docs/feature-014-words-hub-unique-words/feature-014-words-hub-unique-words-planning-report.md` — locked planning report (scope + UX + API direction + query/state decisions)
-- `docs/feature-013-words-roots-explorer/feature-013-unique-words-capability-report.md` and `docs/feature-013-words-roots-explorer/feature-013-deterministic-unique-word-ids-plan.md` — unique-word capability and deterministic ID context
-- `Backend/report/feature-013-deterministic-unique-word-ids/002-reset-reseed-acceptance-report.md` — deterministic ID acceptance report
+- `specs/015-roots-explorer/plan.md` — technical context, project structure, constitution gates
+- `specs/015-roots-explorer/spec.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/` (`roots-api.md`, `backend-read-abstractions.md`, `frontend-routing-state.md`)
+- `docs/feature-015-roots-explorer/feature-015-roots-explorer-combined-implementation-plan.md` — fuller combined backend+frontend design, phased plan, milestone test checkpoints
+- `Backend/report/feature-015-roots-explorer/roots-explorer-capability-analysis-report.md` and `roots-explorer-readonly-verification-report.md` — capability + verified data facts (lemmas = morphology co-occurrence; no migration/index)
+- `Frontend/report/feature-015-roots-explorer/roots-explorer-frontend-ux-contract-report.md` — frontend UX + API contract alignment
 - `Backend/report/database/current-database-tables-and-relationships-report.md` — read-only database baseline
+- Feature 014 (`specs/014-words-hub-unique-words/`) — the reuse template for backend read-model/cache/logging and the frontend Words feature
 
 <!-- SPECKIT END -->
 
