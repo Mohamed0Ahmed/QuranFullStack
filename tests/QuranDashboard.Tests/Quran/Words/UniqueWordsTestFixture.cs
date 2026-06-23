@@ -1,4 +1,6 @@
+using Microsoft.Extensions.Logging;
 using QuranDashboard.Infrastructure.Persistence;
+using QuranDashboard.Tests.TestSupport.Logging;
 
 namespace QuranDashboard.Tests.Quran.Words;
 
@@ -25,6 +27,8 @@ public sealed class UniqueWordsTestFixture : IAsyncLifetime
 
     private readonly PostgreSqlContainer? _container;
     private ServiceProvider? _rootProvider;
+
+    public RecordingLoggerProvider LoggingProvider { get; } = new();
 
     public UniqueWordsTestFixture()
     {
@@ -118,6 +122,8 @@ public sealed class UniqueWordsTestFixture : IAsyncLifetime
 
         return new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
+            .AddSingleton<ILoggerProvider>(LoggingProvider)
+            .AddLogging()
             .AddApplication()
             .AddInfrastructure(configuration)
             .BuildServiceProvider();

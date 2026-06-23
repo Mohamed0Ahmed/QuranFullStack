@@ -22,6 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\api\QuranDashboard.Api\QuranDashboard.Api.csproj" />
     <ProjectReference Include="..\..\domain\QuranDashboard.Domain\QuranDashboard.Domain.csproj" />
     <ProjectReference Include="..\..\application\QuranDashboard.Application\QuranDashboard.Application.csproj" />
     <ProjectReference Include="..\..\application\QuranDashboard.Application.Abstractions\QuranDashboard.Application.Abstractions.csproj" />

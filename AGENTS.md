@@ -9,6 +9,10 @@ Before adding or changing API endpoints, controllers, request/response contracts
 
 - `.architecture/API_GUIDELINES.md`
 
+Before adding or changing logging, exception handling, diagnostics, DataPipelines/importer run summaries, CLI console output, or other observability-related behavior, read and follow:
+
+- `.architecture/LOGGING_GUIDELINES.md`
+
 ## Backend Reports and Import Sources
 
 Backend report outputs belong under:
