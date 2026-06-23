@@ -1,0 +1,50 @@
+:host {
+  display: block;
+}
+
+.roots-explorer-frame {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qd-space-4);
+}
+
+// Desktop split-screen: table on the inline-start side, panel on the
+// inline-end side. Each region scrolls independently. Narrow-screen drawer
+// behavior is polished in T069.
+.roots-explorer-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: var(--qd-space-4);
+  align-items: start;
+}
+
+.roots-explorer-layout__table,
+.roots-explorer-layout__panel {
+  min-width: 0;
+}
+
+.roots-explorer-layout__panel {
+  // Constrain the panel so its inner scroll container can scroll
+  // independently of the page/table.
+  position: sticky;
+  top: var(--qd-space-4);
+  max-block-size: calc(100vh - 8rem);
+}
+
+.roots-explorer__placeholder {
+  block-size: 12rem;
+  border: 1px dashed var(--qd-border);
+  border-radius: var(--qd-radius-md);
+  background: var(--qd-surface);
+}
+
+@media (max-width: 1023px) {
+  .roots-explorer-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .roots-explorer-layout__panel {
+    position: static;
+    max-block-size: none;
+  }
+}

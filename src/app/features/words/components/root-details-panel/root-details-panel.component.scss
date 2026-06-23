@@ -1,0 +1,48 @@
+:host {
+  display: block;
+}
+
+.root-details-panel {
+  display: flex;
+  flex-direction: column;
+  block-size: 100%;
+  min-block-size: 0;
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-md);
+  background: var(--qd-surface);
+  overflow: hidden;
+}
+
+.root-details-panel__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--qd-space-6);
+  block-size: 100%;
+}
+
+.root-details-panel__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--qd-space-1);
+  padding: var(--qd-space-2);
+  border-block-end: 1px solid var(--qd-border);
+  background: var(--qd-surface);
+}
+
+.root-details-panel__tab {
+  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  font-size: 0.875rem;
+}
+
+// Panel surface: the independent scroll container. The table and panel must
+// scroll separately, so this constrains the height and scrolls its content.
+.root-details-panel__surface {
+  flex: 1 1 auto;
+  min-block-size: 0;
+  block-size: 100%;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  padding: var(--qd-space-3);
+}

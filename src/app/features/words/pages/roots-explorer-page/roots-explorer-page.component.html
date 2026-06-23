@@ -1,0 +1,24 @@
+<div class="qd-page">
+  <div class="qd-container roots-explorer-frame">
+    <div class="qd-page-header">
+      <h1 class="qd-page-title" data-testid="roots-explorer-page-title">{{ pageTitle }}</h1>
+    </div>
+
+    <div class="roots-explorer-layout">
+      <!-- Left/table region: filled by US1 (T030) — roots search bar + sort +
+           roots-table + shared qd-pagination. Placeholder for now. -->
+      <section class="roots-explorer-layout__table" aria-label="جدول الجذور">
+        <div class="roots-explorer__placeholder" data-testid="roots-explorer-table-placeholder"></div>
+      </section>
+
+      <!-- Right/panel region: persistent detail panel shell (T020). Shows the
+           empty-selection state until a root is selected (US1). -->
+      <aside class="roots-explorer-layout__panel">
+        <qd-root-details-panel
+          [view]="activeView()"
+          [emptySelection]="emptySelection()"
+        />
+      </aside>
+    </div>
+  </div>
+</div>

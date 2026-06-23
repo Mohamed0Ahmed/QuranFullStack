@@ -1,0 +1,43 @@
+<section class="root-details-panel" [attr.aria-label]="panelLabel">
+  @if (emptySelection()) {
+    <!-- Empty-selection state: nothing selected yet. -->
+    <div class="root-details-panel__empty" data-testid="root-details-empty-selection">
+      <p class="qd-text-muted">{{ emptySelectionLabel }}</p>
+    </div>
+  } @else {
+    <!-- Tab strip: exactly 5 tabs, NO overview (نظرة عامة) tab. -->
+    <div
+      class="root-details-panel__tabs"
+      role="tablist"
+      [attr.aria-label]="panelLabel"
+      #tabList
+    >
+      @for (tab of tabs; track tab.key) {
+        <button
+          type="button"
+          class="qd-btn qd-btn-ghost root-details-panel__tab"
+          role="tab"
+          [attr.data-root-tab]="tab.key"
+          [attr.data-testid]="'root-details-tab-' + tab.key"
+          [attr.aria-selected]="isActive(tab.key)"
+          [attr.tabindex]="isActive(tab.key) ? 0 : -1"
+          (click)="selectView(tab.key)"
+          (keydown)="onTabKeydown($event, tab.key)"
+        >
+          {{ tab.label }}
+        </button>
+      }
+    </div>
+
+    <!-- Panel surface: own scroll container (scrolls independently). View
+         content is projected by the owning story phase via ng-content. -->
+    <div
+      class="root-details-panel__surface"
+      role="tabpanel"
+      [attr.aria-busy]="loading() ? true : null"
+      data-testid="root-details-panel-surface"
+    >
+      <ng-content />
+    </div>
+  }
+</section>
