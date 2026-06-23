@@ -25,7 +25,6 @@ import { UniqueWordsListPaginationComponent } from '../../components/unique-word
 import { WordDrilldownModalComponent } from '../../components/word-drilldown-modal/word-drilldown-modal.component';
 import {
   EMPTY_LIST_LABEL,
-  LOADING_LABEL,
   RESTORED_WORD_NOT_FOUND_LABEL,
   UNIQUE_WORD_KIND_LABELS,
 } from '../../models/unique-words.labels';
@@ -62,7 +61,6 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
   protected readonly listState = this.facade.listState;
   protected readonly drilldownState = this.facade.drilldownState;
   protected readonly emptyLabel = EMPTY_LIST_LABEL;
-  protected readonly loadingLabel = LOADING_LABEL;
   protected readonly restoredNotFoundLabel = RESTORED_WORD_NOT_FOUND_LABEL;
 
   // Drives which single drill-down surface renders: the inline panel at desktop

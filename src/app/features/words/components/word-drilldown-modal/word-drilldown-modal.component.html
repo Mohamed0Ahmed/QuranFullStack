@@ -1,3 +1,19 @@
+<ng-template #loadingSkeleton>
+  <div
+    class="word-drilldown-modal__loading qd-skeleton-group"
+    aria-busy="true"
+    data-testid="word-drilldown-loading"
+  >
+    <p class="qd-sr-only" role="status" aria-live="polite">{{ loadingLabel }}</p>
+    <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-50" aria-hidden="true"></span>
+    <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-75" aria-hidden="true"></span>
+    <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-90" aria-hidden="true"></span>
+    <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-75" aria-hidden="true"></span>
+    <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-50" aria-hidden="true"></span>
+    <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-90" aria-hidden="true"></span>
+  </div>
+</ng-template>
+
 @if (inline()) {
   <section class="qd-card word-drilldown-panel" [attr.aria-label]="title()">
     <header class="word-drilldown-modal__header">
@@ -39,7 +55,7 @@
       } @else {
         @switch (state().status) {
           @case ('loading') {
-            <div class="qd-loading-state" data-testid="word-drilldown-loading">{{ loadingLabel }}</div>
+            <ng-container *ngTemplateOutlet="loadingSkeleton"></ng-container>
           }
           @case ('error') {
             <div class="qd-error-state" data-testid="word-drilldown-error">{{ state().errorMessage }}</div>
@@ -128,7 +144,7 @@
       <div class="word-drilldown-modal__body" cdkScrollable>
         @switch (state().status) {
           @case ('loading') {
-            <div class="qd-loading-state" data-testid="word-drilldown-loading">{{ loadingLabel }}</div>
+            <ng-container *ngTemplateOutlet="loadingSkeleton"></ng-container>
           }
           @case ('error') {
             <div class="qd-error-state" data-testid="word-drilldown-error">{{ state().errorMessage }}</div>

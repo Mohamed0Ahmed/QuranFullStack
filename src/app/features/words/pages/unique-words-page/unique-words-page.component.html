@@ -15,9 +15,6 @@
     />
 
     @switch (listState().status) {
-      @case ('loading') {
-        <div class="qd-loading-state" data-testid="unique-words-loading">{{ loadingLabel }}</div>
-      }
       @case ('error') {
         <div class="qd-error-state" data-testid="unique-words-error">{{ listState().errorMessage }}</div>
       }
@@ -54,6 +51,7 @@
           <section class="unique-words-layout__table">
             <qd-unique-words-table
               [rows]="listState().items"
+              [loading]="listState().status === 'loading'"
               [selectedWordId]="drilldownState().selectedWordId"
               [currentPage]="listState().page"
               [pageSize]="listState().pageSize"

@@ -98,7 +98,12 @@ describe('WordDrilldownModalComponent', () => {
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('[data-testid="word-drilldown-modal"]')).toBeTruthy();
     expect(root.querySelector('[data-testid="word-drilldown-title"]')?.textContent).toContain('كلمة-تجريبية');
-    expect(root.querySelector('[data-testid="word-drilldown-loading"]')).toBeTruthy();
+    const loading = root.querySelector('[data-testid="word-drilldown-loading"]');
+
+    expect(loading).toBeTruthy();
+    expect(loading?.getAttribute('aria-busy')).toBe('true');
+    expect(loading?.classList.contains('qd-skeleton-group')).toBe(true);
+    expect(loading?.querySelectorAll('.qd-skeleton--text')).toHaveLength(6);
   });
 
   it('renders surah list in success state', async () => {

@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { A11yModule } from '@angular/cdk/a11y';
 import { ScrollingModule } from '@angular/cdk/scrolling';
@@ -22,6 +23,7 @@ import { mapUniqueWordSummaryDisplayText } from '../../utils/unique-words-displa
   selector: 'qd-word-drilldown-modal',
   standalone: true,
   imports: [
+    NgTemplateOutlet,
     A11yModule,
     ScrollingModule,
     SurahOccurrencesListComponent,

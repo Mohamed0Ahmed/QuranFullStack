@@ -15,7 +15,40 @@
     </div>
   </div>
 
-  @if (useVirtualScroll()) {
+  @if (loading()) {
+    <div
+      class="unique-words-table__body unique-words-table__body--loading"
+      role="rowgroup"
+      aria-label="قائمة الكلمات الفريدة"
+      aria-busy="true"
+      data-testid="unique-words-loading"
+    >
+      <p class="qd-sr-only" role="status" aria-live="polite">{{ loadingLabel }}</p>
+
+      @for (_ of loadingRowPlaceholders; track $index) {
+        <div class="unique-words-table__row" role="row" aria-hidden="true">
+          <div class="unique-words-table__cell unique-words-table__cell--row-number" role="cell">
+            <span class="qd-skeleton qd-skeleton--text unique-words-table__loading-number"></span>
+          </div>
+          <div class="unique-words-table__cell unique-words-table__word-cell" role="cell">
+            <span class="qd-skeleton qd-skeleton--text unique-words-table__loading-word"></span>
+          </div>
+          <div class="unique-words-table__cell unique-words-table__chip-cell" role="cell">
+            <span class="qd-skeleton qd-skeleton--rounded-md unique-words-table__loading-chip"></span>
+          </div>
+          <div class="unique-words-table__cell unique-words-table__chip-cell" role="cell">
+            <span class="qd-skeleton qd-skeleton--rounded-md unique-words-table__loading-chip"></span>
+          </div>
+          <div class="unique-words-table__cell unique-words-table__chip-cell" role="cell">
+            <span class="qd-skeleton qd-skeleton--rounded-md unique-words-table__loading-chip"></span>
+          </div>
+          <div class="unique-words-table__cell unique-words-table__chip-cell" role="cell">
+            <span class="qd-skeleton qd-skeleton--rounded-md unique-words-table__loading-chip"></span>
+          </div>
+        </div>
+      }
+    </div>
+  } @else if (useVirtualScroll()) {
     <cdk-virtual-scroll-viewport
       class="unique-words-table__body"
       [itemSize]="rowHeight"

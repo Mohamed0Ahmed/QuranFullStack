@@ -66,9 +66,27 @@
   background: var(--qd-surface);
 }
 
+.unique-words-table__body--loading {
+  overflow: auto;
+}
+
 .unique-words-table__row {
   min-block-size: 60px;
   border-bottom: 1px solid var(--qd-border);
+}
+
+.unique-words-table__loading-number {
+  inline-size: 1.75rem;
+  margin-inline: auto;
+}
+
+.unique-words-table__loading-word {
+  inline-size: min(100%, 12rem);
+}
+
+.unique-words-table__loading-chip {
+  inline-size: 3.5rem;
+  block-size: 1.25rem;
 }
 
 .unique-words-table__row.qd-is-selected {

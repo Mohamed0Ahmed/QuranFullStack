@@ -145,8 +145,11 @@ describe('UniqueWordsPageComponent', () => {
 
   it('shows the loading state when status is loading', async () => {
     const root = await render({ status: 'loading', items: [] });
+    const loading = root.querySelector('[data-testid="unique-words-loading"]');
 
-    expect(root.querySelector('[data-testid="unique-words-loading"]')).toBeTruthy();
+    expect(loading).toBeTruthy();
+    expect(loading?.querySelectorAll('.unique-words-table__row')).toHaveLength(12);
+    expect(root.querySelector('[data-testid="unique-words-table-word-button"]')).toBeNull();
   });
 
   it('marks the selected row when a drill-down is open', async () => {
