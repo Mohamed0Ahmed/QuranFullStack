@@ -28,6 +28,25 @@ public sealed class UniqueWordAyahMatchesTests(UniqueWordsTestFixture fixture)
         page.Items.Should().HaveCount(2);
         page.Items.Should().OnlyContain(i => i.Words.Count > 0);
         page.Items.Should().OnlyContain(i => i.MatchedQuranWordIds.Count > 0);
+        page.Items.Should().OnlyContain(i => i.PageNumber > 0);
+    }
+
+    [Fact]
+    public async Task GetAyahMatches_returns_mushaf_page_from_first_readable_word()
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetUniqueWordAyahsHandler>();
+
+        var outcome = await handler.HandleAsync(
+            new GetUniqueWordAyahsQuery("tashkeel", 2003, 1, 20),
+            CancellationToken.None);
+
+        var page = outcome.Should().BeOfType<GetUniqueWordAyahsOutcome.Success>().Subject.Page;
+        var ayah225 = page.Items.Single(i => i.VerseKey == "2:25");
+        var ayah12 = page.Items.Single(i => i.VerseKey == "1:2");
+
+        ayah225.PageNumber.Should().Be(5);
+        ayah12.PageNumber.Should().Be(1);
     }
 
     [Fact]

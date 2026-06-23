@@ -6,9 +6,6 @@ using QuranDashboard.Application.Quran.MushafReader.Queries.GetSimilarAyahs;
 
 namespace QuranDashboard.Api.Controllers.MushafReader.Ayahs;
 
-/// <summary>
-/// آيات قريبة في المعنى لآية محددة: قائمة مسطّحة ومُزالة التكرار.
-/// </summary>
 [ApiController]
 [Route("api/mushaf/ayahs")]
 public sealed class MushafAyahSimilaritiesController(GetSimilarAyahsHandler handler) : ControllerBase

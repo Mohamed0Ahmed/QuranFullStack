@@ -2,9 +2,6 @@ using QuranDashboard.Application.Abstractions.Quran.Words.Responses;
 
 namespace QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordMissingSurahs;
 
-/// <summary>
-/// Discriminated outcome for missing-surahs drill-down.
-/// </summary>
 public abstract record GetUniqueWordMissingSurahsOutcome
 {
     private GetUniqueWordMissingSurahsOutcome() { }

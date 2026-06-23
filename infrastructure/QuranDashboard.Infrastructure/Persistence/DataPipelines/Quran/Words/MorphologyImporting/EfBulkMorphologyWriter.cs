@@ -75,8 +75,8 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
             // Resolve POS coverage before any COPY (in-memory, the single source of truth — mirrors
             // MORPH-SEG-CHARSET): head_pos and segment pos carry FKs to quran_pos_tags.code, so an
             // unknown code would crash the binary COPY with a raw FK violation. Failing
-            // MORPH-POS-RESOLVES here keeps the import fail-closed *with a report* (research R6 /
-            // FR-024 / FR-030) instead of throwing past the report writer.
+            // MORPH-POS-RESOLVES here keeps the import fail-closed with a report instead of
+            // throwing past the report writer.
             var posResolvesCheck = MorphologyValidationRunner.BuildPosResolvesCheck(source);
             if (!posResolvesCheck.Passed)
             {

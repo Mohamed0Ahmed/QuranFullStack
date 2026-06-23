@@ -6,9 +6,6 @@ using QuranDashboard.Application.Quran.MushafReader.Queries.GetAyahMutashabihat;
 
 namespace QuranDashboard.Api.Controllers.MushafReader.Ayahs;
 
-/// <summary>
-/// المتشابهات اللفظية لآية محددة: مجموعات عبارات/نطاقات كلمات.
-/// </summary>
 [ApiController]
 [Route("api/mushaf/ayahs")]
 public sealed class MushafAyahMutashabihatController(GetAyahMutashabihatHandler handler) : ControllerBase

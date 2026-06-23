@@ -2,15 +2,11 @@ using QuranDashboard.Application.Abstractions.Quran.Words;
 
 namespace QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordAyahs;
 
-/// <summary>
-/// Validates the ayah-match request and delegates to
-/// <see cref="IUniqueWordsReader"/>.
-/// </summary>
 public sealed class GetUniqueWordAyahsHandler(IUniqueWordsReader reader)
 {
     public const int MinPage = 1;
     public const int MinPageSize = 1;
-    public const int MaxPageSize = 100;
+    public const int MaxPageSize = 1000;
 
     public async Task<GetUniqueWordAyahsOutcome> HandleAsync(
         GetUniqueWordAyahsQuery query,

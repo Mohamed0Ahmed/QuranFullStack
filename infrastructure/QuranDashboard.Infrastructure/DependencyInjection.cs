@@ -27,6 +27,7 @@ using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Foundation;
 using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting;
 using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Mutashabihat;
 using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Tafsirs;
+using QuranDashboard.Infrastructure.Caching.Quran.Words;
 using QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Foundation;
 using QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Words.MorphologyImporting;
 using QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Mutashabihat;
@@ -59,9 +60,10 @@ public static class DependencyInjection
 
         ConfigureMushafReader(services, configuration);
 
-        // Feature 014: Unique Words read boundary. List reads (US2) are paged
-        // and cheap; no cache decorator is added until a measured need appears.
-        services.AddScoped<IUniqueWordsReader, EfUniqueWordsReader>();
+        services.AddScoped<EfUniqueWordsReader>();
+        services.AddScoped<IUniqueWordsReader>(sp => new CachedUniqueWordsReader(
+            sp.GetRequiredService<EfUniqueWordsReader>(),
+            sp.GetRequiredService<IMemoryCache>()));
 
         services.AddSingleton<ManifestReader>();
         services.AddSingleton<JsonWordSourceReader>();
@@ -143,18 +145,9 @@ public static class DependencyInjection
         return services;
     }
 
-    /// <summary>
-    /// Wires the Mushaf reader feature. Reader/handler registrations are added by
-    /// their own stories (T020–T041); this only binds the configured default
-    /// source keys so handlers can resolve <see cref="MushafReaderOptions"/>.
-    /// </summary>
-    /// <remarks>
-    /// Cache policy: <see cref="Microsoft.Extensions.Caching.Memory.IMemoryCache"/> is
-    /// registered with no size limit and every reader decorator caches successful
-    /// responses without expiration (cache-forever). This relies on the operating
-    /// assumption that the API host is restarted after any import; see
-    /// <see cref="MushafReaderCacheKeys"/> for the full rationale.
-    /// </remarks>
+    // Cache policy: IMemoryCache has no size limit; reader decorators cache successful
+    // responses without expiration until the API host restarts after import.
+    // See MushafReaderCacheKeys for the full rationale.
     private static void ConfigureMushafReader(IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<MushafReaderOptions>(configuration.GetSection("MushafReader"));
