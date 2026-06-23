@@ -6,6 +6,7 @@ import { ApiResponse } from '../../../core/data-access/api-response.model';
 import { UniqueWordsApi } from '../data-access/unique-words.api';
 import { UniqueWordsFacade } from './unique-words.facade';
 import {
+  DEFAULT_AYAH_PAGE_SIZE,
   UniqueWordAyahMatchDto,
   UniqueWordListItemDto,
   UniqueWordMissingSurahsDto,
@@ -216,7 +217,7 @@ describe('UniqueWordsFacade drill-down', () => {
       of({
         isSuccess: true,
         message: 'تم',
-        data: { page: 1, pageSize: 1000, totalCount: 0, items: [] },
+        data: { page: 1, pageSize: DEFAULT_AYAH_PAGE_SIZE, totalCount: 0, items: [] },
       }),
     );
     const facade = setup({ getMentionedSurahs, getMissingSurahs, getAyahMatches });
@@ -264,7 +265,7 @@ describe('UniqueWordsFacade drill-down', () => {
         message: 'تم',
         data: {
           page: 1,
-          pageSize: 1000,
+          pageSize: DEFAULT_AYAH_PAGE_SIZE,
           totalCount: 1,
           items: [
             {
@@ -312,7 +313,7 @@ describe('UniqueWordsFacade drill-down', () => {
 
     facade.setDrilldownView('ayahs');
     expect(facade.drilldownState().view).toBe('ayahs');
-    expect(getAyahMatches).toHaveBeenCalledWith('tashkeel', 1, 1, 1000);
+    expect(getAyahMatches).toHaveBeenCalledWith('tashkeel', 1, 1, DEFAULT_AYAH_PAGE_SIZE);
     expect(facade.drilldownState().status).toBe('success');
   });
 
@@ -321,7 +322,7 @@ describe('UniqueWordsFacade drill-down', () => {
       of({
         isSuccess: true,
         message: 'تم',
-        data: { page: 2, pageSize: 1000, totalCount: 3, items: [] },
+        data: { page: 2, pageSize: DEFAULT_AYAH_PAGE_SIZE, totalCount: 3, items: [] },
       }),
     );
     const facade = setup({ getAyahMatches });
@@ -329,7 +330,7 @@ describe('UniqueWordsFacade drill-down', () => {
     facade.openDrilldown(word(1), 'ayahs');
     facade.setAyahPage(2);
 
-    expect(getAyahMatches).toHaveBeenLastCalledWith('tashkeel', 1, 2, 1000);
+    expect(getAyahMatches).toHaveBeenLastCalledWith('tashkeel', 1, 2, DEFAULT_AYAH_PAGE_SIZE);
     expect(facade.drilldownState().ayahPage).toBe(2);
   });
 
@@ -339,7 +340,7 @@ describe('UniqueWordsFacade drill-down', () => {
         of({
           isSuccess: true,
           message: 'تم',
-          data: { page: 1, pageSize: 1000, totalCount: 0, items: [] },
+          data: { page: 1, pageSize: DEFAULT_AYAH_PAGE_SIZE, totalCount: 0, items: [] },
         }),
       ),
     });

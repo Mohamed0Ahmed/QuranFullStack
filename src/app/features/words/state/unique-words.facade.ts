@@ -59,7 +59,7 @@ export class UniqueWordsFacade {
 
   readonly listState = computed<UniqueWordsListState>(() => ({
     status: this._status(),
-    items: [...this._items()],
+    items: this._items(),
     page: this._page(),
     pageSize: this._pageSize,
     totalCount: this._totalCount(),

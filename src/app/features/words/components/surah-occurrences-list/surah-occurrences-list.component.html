@@ -5,11 +5,8 @@
     <span class="surah-occurrences-list__header-count">{{ occurrencesCountHeader }}</span>
   </header>
 
-  <cdk-virtual-scroll-viewport
+  <div
     class="surah-occurrences-list"
-    [itemSize]="rowHeight"
-    [minBufferPx]="rowHeight * 4"
-    [maxBufferPx]="rowHeight * 8"
     data-testid="surah-occurrences-list"
   >
     @for (surah of surahs(); track surah.surahNumber; let index = $index) {
@@ -19,5 +16,5 @@
         <span class="qd-badge">{{ surah.occurrencesInSurah }}</span>
       </div>
     }
-  </cdk-virtual-scroll-viewport>
+  </div>
 </div>

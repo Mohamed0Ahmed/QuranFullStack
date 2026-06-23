@@ -12,7 +12,7 @@ import {
 } from '../models/unique-words.labels';
 import {
   DEFAULT_AYAH_PAGE,
-  UNIQUE_WORDS_PAGE_SIZE,
+  DEFAULT_AYAH_PAGE_SIZE,
   PagedResultDto,
   UniqueWordAyahMatchDto,
   UniqueWordKind,
@@ -322,7 +322,7 @@ export class UniqueWordsDrilldownFacade {
 
     this.drilldownSub = this.cache
       .getOrLoad(UniqueWordsCacheKeys.ayahs(kind, wordId, ayahPage), () =>
-        this.api.getAyahMatches(kind, wordId, ayahPage, UNIQUE_WORDS_PAGE_SIZE),
+        this.api.getAyahMatches(kind, wordId, ayahPage, DEFAULT_AYAH_PAGE_SIZE),
       )
       .pipe(
         tap((response) => this.handleAyahsResponse(response)),

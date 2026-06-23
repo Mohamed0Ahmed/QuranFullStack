@@ -4,11 +4,8 @@
     <span class="missing-surahs-list__header-name">{{ surahNameHeader }}</span>
   </header>
 
-  <cdk-virtual-scroll-viewport
+  <div
     class="missing-surahs-list"
-    [itemSize]="rowHeight"
-    [minBufferPx]="rowHeight * 4"
-    [maxBufferPx]="rowHeight * 8"
     data-testid="missing-surahs-list"
   >
     @for (surah of surahs(); track surah.surahNumber; let index = $index) {
@@ -17,5 +14,5 @@
         <span class="missing-surahs-list__name">{{ surah.nameArabic }}</span>
       </div>
     }
-  </cdk-virtual-scroll-viewport>
+  </div>
 </div>

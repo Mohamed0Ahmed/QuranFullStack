@@ -96,7 +96,7 @@ export type LoadStatus = 'idle' | 'loading' | 'success' | 'empty' | 'error' | 'n
 
 export interface UniqueWordsListState {
   status: LoadStatus;
-  items: UniqueWordListItemViewModel[];
+  items: readonly UniqueWordListItemViewModel[];
   page: number;
   pageSize: number;
   totalCount: number;
@@ -129,6 +129,7 @@ export const DEFAULT_LIST_PAGE = 1;
 export const UNIQUE_WORDS_PAGE_SIZE = 1000;
 export const DEFAULT_LIST_PAGE_SIZE = UNIQUE_WORDS_PAGE_SIZE;
 export const DEFAULT_AYAH_PAGE = 1;
+export const DEFAULT_AYAH_PAGE_SIZE = 100;
 export const TOTAL_SURAHS = 114;
 
 export function isUniqueWordKind(value: unknown): value is UniqueWordKind {

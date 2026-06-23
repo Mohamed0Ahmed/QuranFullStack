@@ -4,8 +4,6 @@ import {
   ElementRef,
   inject,
   input,
-  OnDestroy,
-  signal,
   ViewChild,
   output,
 } from '@angular/core';
@@ -26,6 +24,7 @@ import {
 import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
 
 const ROW_HEIGHT = 60;
+const HAS_RESIZE_OBSERVER = typeof ResizeObserver !== 'undefined';
 
 @Component({
   selector: 'qd-unique-words-table',
@@ -35,7 +34,7 @@ const ROW_HEIGHT = 60;
   styleUrl: './unique-words-table.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class UniqueWordsTableComponent implements OnDestroy {
+export class UniqueWordsTableComponent {
   private readonly host = inject(ElementRef<HTMLElement>);
 
   readonly rows = input.required<readonly UniqueWordListItemViewModel[]>();
@@ -55,63 +54,9 @@ export class UniqueWordsTableComponent implements OnDestroy {
   protected readonly loadingLabel = LOADING_LABEL;
   protected readonly loadingRowPlaceholders = Array.from({ length: 12 });
   protected readonly rowHeight = ROW_HEIGHT;
-  protected readonly useVirtualScroll = signal(false);
+  protected readonly useVirtualScroll = HAS_RESIZE_OBSERVER;
 
-  @ViewChild(CdkVirtualScrollViewport) set viewportRef(viewport: CdkVirtualScrollViewport | undefined) {
-    if (this.viewport === viewport) {
-      return;
-    }
-
-    this.resizeObserver?.disconnect();
-    this.resizeObserver = undefined;
-    this.viewport = viewport;
-
-    if (!viewport) {
-      return;
-    }
-
-    this.initializeVirtualScroll(viewport.elementRef.nativeElement);
-  }
-
-  private viewport?: CdkVirtualScrollViewport;
-
-  private resizeObserver?: ResizeObserver;
-
-  // The viewport can report 0 height while its container is collapsed,
-  // behind a tab, or before layout settles. Without re-evaluation the flag
-  // would latch `false` and the non-virtual fallback would render every
-  // accumulated row. Re-check on resize so virtualization activates once the
-  // viewport gains height. (jsdom has no ResizeObserver, so the unit-test path
-  // stays on the deterministic non-virtual branch.)
-  private initializeVirtualScroll(element: HTMLElement): void {
-    if (this.activateVirtualScrollIfSized(element)) {
-      return;
-    }
-
-    if (typeof ResizeObserver === 'undefined') {
-      return;
-    }
-
-    this.resizeObserver = new ResizeObserver(() => {
-      if (this.activateVirtualScrollIfSized(element)) {
-        this.resizeObserver?.disconnect();
-        this.resizeObserver = undefined;
-      }
-    });
-    this.resizeObserver.observe(element);
-  }
-
-  ngOnDestroy(): void {
-    this.resizeObserver?.disconnect();
-  }
-
-  private activateVirtualScrollIfSized(element: HTMLElement): boolean {
-    const hasHeight = element.clientHeight > 0;
-    if (hasHeight) {
-      this.useVirtualScroll.set(true);
-    }
-    return hasHeight;
-  }
+  @ViewChild(CdkVirtualScrollViewport) private viewport?: CdkVirtualScrollViewport;
 
   protected selectRow(row: UniqueWordListItemViewModel): void {
     this.rowSelected.emit(row);
@@ -129,8 +74,12 @@ export class UniqueWordsTableComponent implements OnDestroy {
     return pageRelativeRowNumber(this.currentPage(), this.pageSize(), index);
   }
 
+  protected trackRowById(_index: number, row: UniqueWordListItemViewModel): number {
+    return row.id;
+  }
+
   scrollToTop(): void {
-    if (this.useVirtualScroll() && this.viewport) {
+    if (this.useVirtualScroll && this.viewport) {
       this.viewport.scrollToIndex(0, 'auto');
       return;
     }
