@@ -2,10 +2,6 @@ using QuranDashboard.Application.Abstractions.Quran.Words;
 
 namespace QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordSurahs;
 
-/// <summary>
-/// Validates the mentioned-surahs request and delegates to
-/// <see cref="IUniqueWordsReader"/>.
-/// </summary>
 public sealed class GetUniqueWordSurahsHandler(IUniqueWordsReader reader)
 {
     public async Task<GetUniqueWordSurahsOutcome> HandleAsync(

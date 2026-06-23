@@ -2,9 +2,6 @@ using QuranDashboard.Application.Abstractions.Quran.Words.Responses;
 
 namespace QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordSummary;
 
-/// <summary>
-/// Discriminated outcome for selected unique-word summary.
-/// </summary>
 public abstract record GetUniqueWordSummaryOutcome
 {
     private GetUniqueWordSummaryOutcome() { }

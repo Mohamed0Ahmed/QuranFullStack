@@ -11,10 +11,6 @@ using QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordsPage;
 
 namespace QuranDashboard.Api.Controllers.Words;
 
-/// <summary>
-/// نقاط قراءة الكلمات الفريدة (الميزة 014). للقراءة فقط؛ لا تغيّر بيانات
-/// المصحف.
-/// </summary>
 [ApiController]
 [Route("api/words/unique")]
 public sealed class UniqueWordsController(
@@ -24,13 +20,8 @@ public sealed class UniqueWordsController(
     GetUniqueWordMissingSurahsHandler missingSurahsHandler,
     GetUniqueWordAyahsHandler ayahsHandler) : ControllerBase
 {
-    /// <summary>القيمة الافتراضية لرقم الصفحة (1-based).</summary>
     private const int DefaultPage = 1;
-
-    /// <summary>حجم الصفحة الافتراضي لقائمة الكلمات الفريدة.</summary>
     private const int DefaultListPageSize = 50;
-
-    /// <summary>حجم الصفحة الافتراضي لآيات التفصيل.</summary>
     private const int DefaultAyahPageSize = 20;
 
     /// <summary>

@@ -7,9 +7,6 @@ using QuranDashboard.Application.Quran.MushafReader.Queries.GetMushafPage;
 
 namespace QuranDashboard.Api.Controllers.MushafReader.Pages;
 
-/// <summary>
-/// قراءة صفحة مصحف واحدة (أسطر وكلمات وعلامات تنقل) دون بيانات دراسة.
-/// </summary>
 [ApiController]
 [Route("api/mushaf/pages")]
 public sealed class MushafPagesController(GetMushafPageHandler handler) : ControllerBase

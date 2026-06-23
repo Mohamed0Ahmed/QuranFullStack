@@ -3,9 +3,8 @@ using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyIm
 
 namespace QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Words.MorphologyImporting;
 
-// Evaluates every hard validation gate (US1 structural checks, US3 rendering/dimension checks, and the
-// memory-determined POS-resolves check) over the freshly COPYed rows inside the import transaction, and
-// produces the MorphologyCheckResult list that decides commit vs. rollback.
+// Evaluates every hard validation gate over the freshly COPYed rows inside the import
+// transaction and produces the MorphologyCheckResult list that decides commit vs. rollback.
 internal static class MorphologyValidationRunner
 {
     private const string HardSeverity = MorphologyImportConstants.HardSeverity;

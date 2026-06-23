@@ -2,10 +2,6 @@ using QuranDashboard.Application.Abstractions.Quran.Words;
 
 namespace QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordMissingSurahs;
 
-/// <summary>
-/// Validates the missing-surahs request and delegates to
-/// <see cref="IUniqueWordsReader"/>.
-/// </summary>
 public sealed class GetUniqueWordMissingSurahsHandler(IUniqueWordsReader reader)
 {
     public async Task<GetUniqueWordMissingSurahsOutcome> HandleAsync(

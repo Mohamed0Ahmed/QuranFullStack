@@ -6,9 +6,6 @@ using QuranDashboard.Application.Quran.MushafReader.Queries.GetAyahStudy;
 
 namespace QuranDashboard.Api.Controllers.MushafReader.Ayahs;
 
-/// <summary>
-/// دراسة آية محددة: الهوية الأساسية مع التفسير والترجمة والإعراب الكامل معاً.
-/// </summary>
 [ApiController]
 [Route("api/mushaf/ayahs")]
 public sealed class MushafAyahStudyController(GetAyahStudyHandler handler) : ControllerBase

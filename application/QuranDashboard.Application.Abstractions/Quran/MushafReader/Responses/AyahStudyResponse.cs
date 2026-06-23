@@ -1,11 +1,9 @@
 namespace QuranDashboard.Application.Abstractions.Quran.MushafReader.Responses;
 
-/// <summary>
-/// Ayah study read model (data-model.md §B2): the core ayah identity plus the
-/// three selected sources (tafsir, translation, full i3rab) loaded TOGETHER in
-/// v1. A source kind whose key resolved to null is represented by a null block
-/// and a per-kind empty state (never a silent substitution).
-/// </summary>
+/// <remarks>
+/// Loads tafsir, translation, and full i3rab together. A source whose key
+/// resolved to null is represented by a null block and a per-kind empty state.
+/// </remarks>
 public sealed record AyahStudyResponse(
     AyahCoreDto Ayah,
     SelectedSourcesDto SelectedSources,

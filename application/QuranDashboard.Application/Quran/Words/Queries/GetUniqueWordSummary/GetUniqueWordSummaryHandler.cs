@@ -2,11 +2,6 @@ using QuranDashboard.Application.Abstractions.Quran.Words;
 
 namespace QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordSummary;
 
-/// <summary>
-/// Validates the selected unique-word summary request and delegates to
-/// <see cref="IUniqueWordsReader"/>. Mirrors the established handler shape:
-/// parse kind → validate ID bounds → read → map to a discriminated outcome.
-/// </summary>
 public sealed class GetUniqueWordSummaryHandler(IUniqueWordsReader reader)
 {
     public async Task<GetUniqueWordSummaryOutcome> HandleAsync(

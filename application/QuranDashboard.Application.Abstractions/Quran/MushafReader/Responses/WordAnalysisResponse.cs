@@ -2,12 +2,10 @@ using System.Text.Json;
 
 namespace QuranDashboard.Application.Abstractions.Quran.MushafReader.Responses;
 
-/// <summary>
-/// Word-analysis read model (data-model.md §B3): occurrence identity, ordered
-/// / unique identity counts, head morphology, and the ordered, color-linked
-/// segments. The backend emits a stable <see cref="RenderedSegmentDto.SegmentColorSlot"/>
-/// (visual-linking only); the frontend maps the slot to a palette color.
-/// </summary>
+/// <remarks>
+/// The backend emits a stable <see cref="RenderedSegmentDto.SegmentColorSlot"/>
+/// for visual linking; the frontend maps the slot to a palette color.
+/// </remarks>
 public sealed record WordAnalysisResponse(
     WordOccurrenceDto Word,
     WordIdentityDto Identity,
@@ -64,10 +62,6 @@ public sealed record WordMorphologyDto(
     string? VerbVoice,
     string? CaseFeature);
 
-/// <summary>
-/// A localized POS/feature label. Shared by the word-morphology and rendered-
-/// segment shapes.
-/// </summary>
 public sealed record LocalizedLabel(
     string Ar,
     string En);
@@ -83,11 +77,10 @@ public sealed record WordMorphologyLemma(
 public sealed record WordMorphologyStem(
     string? Text);
 
-/// <summary>
-/// Pass-through container for a segment's raw feature string and its parsed
-/// JSON features array. The <see cref="Json"/> list mirrors the frontend
-/// <c>object[]</c> shape (data-model.md §B3): one entry per parsed feature.
-/// </summary>
+/// <remarks>
+/// <see cref="Json"/> mirrors the frontend <c>object[]</c> shape: one entry per
+/// parsed feature.
+/// </remarks>
 public sealed record SegmentFeaturesDto(
     string? Raw,
     IReadOnlyList<JsonElement> Json);

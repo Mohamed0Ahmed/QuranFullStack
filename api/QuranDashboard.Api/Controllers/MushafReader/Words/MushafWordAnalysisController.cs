@@ -6,9 +6,6 @@ using QuranDashboard.Application.Quran.MushafReader.Queries.GetWordAnalysis;
 
 namespace QuranDashboard.Api.Controllers.MushafReader.Words;
 
-/// <summary>
-/// تحليل كلمة واحدة: الهوية والصرف والمقاطع الملونة المرتبطة.
-/// </summary>
 [ApiController]
 [Route("api/mushaf/words")]
 public sealed class MushafWordAnalysisController(GetWordAnalysisHandler handler) : ControllerBase

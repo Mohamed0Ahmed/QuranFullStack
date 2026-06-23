@@ -1,22 +1,12 @@
-using System.Text;
-using Microsoft.EntityFrameworkCore;
-using Npgsql;
 using QuranDashboard.Application.Abstractions.Common.Paging;
 using QuranDashboard.Application.Abstractions.Quran.Words;
 using QuranDashboard.Application.Abstractions.Quran.Words.Responses;
 using QuranDashboard.Domain.Quran.Words;
-using QuranDashboard.Infrastructure.Persistence;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words;
 
-/// <summary>
-/// EF Core implementation of the Unique Words read boundary (Feature 014).
-/// Reads are no-tracking and read-only; ayah markers are excluded from
-/// occurrence/highlight data. List read (US2); drill-down reads (US3); summary read (US4).
-/// </summary>
 public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWordsReader
 {
-    /// <summary>Total number of surahs in the Quran; used to derive missing-surah counts.</summary>
     private const int TotalSurahs = 114;
 
     // Arabic symmetric fold. Both the stored no-tashkeel/search column and the
@@ -449,12 +439,6 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
         _ => rows.OrderBy(r => r.FirstWordOrderInMushaf),
     };
 
-    /// <summary>
-    /// Normalizes Arabic search input for matching against no-tashkeel/search
-    /// columns: strip tashkeel, tatweel, and Quranic annotation marks, then map
-    /// common letter-form variants to their canonical base form. Returns
-    /// <see langword="null"/> for blank input (meaning "no search filter").
-    /// </summary>
     private static string? NormalizeArabicQuery(string? search)
     {
         if (string.IsNullOrWhiteSpace(search))
@@ -495,20 +479,9 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
         return index >= 0 ? FoldTo[index] : ch;
     }
 
-    /// <summary>
-    /// Escapes the ILIKE wildcard characters (<c>%</c>, <c>_</c>) and the
-    /// default escape character <c>\</c> in the user query so they match
-    /// literally. The folded query may legitimately contain <c>_</c> (no
-    /// Arabic letter maps to it, but guard regardless).
-    /// </summary>
     private static string EscapeLikePattern(string value) =>
         value.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_");
 
-    /// <summary>
-    /// Projected row carrying only the columns the list DTO consumes, plus a
-    /// <see cref="SearchText"/> column used for alpha sort. Avoids materializing
-    /// the full entity graph.
-    /// </summary>
     private sealed record UniqueWordListRow(
         int Id,
         string DisplayTextUthmani,
@@ -528,10 +501,6 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
 
     private sealed record UniqueWordHeaderRow(string DisplayTextUthmani, string KindKey);
 
-    /// <summary>
-    /// Single-row projection for the summary read; carries only the columns the
-    /// summary DTO consumes. Shares shape with the list row but is read by ID.
-    /// </summary>
     private sealed record UniqueWordSummaryRow(
         string DisplayTextUthmani,
         string TextUthmani,
