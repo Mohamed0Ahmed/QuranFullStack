@@ -27,6 +27,7 @@ using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Foundation;
 using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting;
 using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Mutashabihat;
 using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Tafsirs;
+using QuranDashboard.Infrastructure.Caching.Quran.Words;
 using QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Foundation;
 using QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Words.MorphologyImporting;
 using QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Mutashabihat;
@@ -59,8 +60,10 @@ public static class DependencyInjection
 
         ConfigureMushafReader(services, configuration);
 
-        // No cache decorator on unique-word reads until a measured need appears.
-        services.AddScoped<IUniqueWordsReader, EfUniqueWordsReader>();
+        services.AddScoped<EfUniqueWordsReader>();
+        services.AddScoped<IUniqueWordsReader>(sp => new CachedUniqueWordsReader(
+            sp.GetRequiredService<EfUniqueWordsReader>(),
+            sp.GetRequiredService<IMemoryCache>()));
 
         services.AddSingleton<ManifestReader>();
         services.AddSingleton<JsonWordSourceReader>();
