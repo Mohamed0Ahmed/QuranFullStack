@@ -1,23 +1,3 @@
-/**
- * Mushaf Reader study-context models.
- *
- * Mirrors the v1 backend contracts in
- * `specs/011-mushaf-reader-study-context/data-model.md` (sections B and C) and
- * the URL-key/enum scope locked there. DTOs match the JSON shapes returned by
- * the backend; view models are the page-ready forms the facade emits to
- * components.
- *
- * Locked reader enum scope:
- *   panel   in { 'ayah' | 'word' | 'none' }
- *   ayahTab in { 'tafsir' | 'translation' | 'full-i3rab' | 'similar-ayahs' | 'mutashabihat' }
- *   wordTab in { 'morphology' | 'segments' | 'i3rab' | 'identity' }
- * `panel=sources` and unrelated ayah-link tabs are out of scope.
- */
-
-/* ============================================================================
- * B1. Mushaf page DTO (lean: no tafsir / translation / i3rab / morphology)
- * ========================================================================== */
-
 export interface SurahOnPageDto {
   surahNumber: number;
   nameArabic: string;
@@ -100,10 +80,6 @@ export interface MushafStudySourceCatalogDto {
   translationSources: StudySourceCatalogItemDto[];
   fullI3rabSources: StudySourceCatalogItemDto[];
 }
-
-/* ============================================================================
- * B2. Ayah study DTO (three sources together)
- * ========================================================================== */
 
 export interface SajdaDto {
   sajdahNumber: number;
@@ -202,7 +178,6 @@ export interface SimilarAyahsDto {
   items: SimilarAyahItemDto[];
 }
 
-/** Target for in-reader navigation to an ayah on a specific Mushaf page. */
 export interface AyahNavigationTarget {
   verseKey: string;
   pageNumber: number;
@@ -268,10 +243,6 @@ export interface AyahStudyDto {
   fullI3rab: FullI3rabEntryDto | null;
   similaritySummary: AyahSimilaritySummaryDto;
 }
-
-/* ============================================================================
- * B3. Word analysis DTO
- * ========================================================================== */
 
 export interface WordOccurrenceDto {
   quranWordId: number;
@@ -353,10 +324,6 @@ export interface WordAnalysisDto {
   renderedWordSegments: RenderedSegmentDto[];
 }
 
-/* ============================================================================
- * C. View models (UI-ready) + reader state + URL keys
- * ========================================================================== */
-
 export type PanelMode = 'ayah' | 'word' | 'none';
 export type AyahStudyTab = 'tafsir' | 'translation' | 'full-i3rab' | 'similar-ayahs' | 'mutashabihat';
 export type WordAnalysisTab = 'morphology' | 'segments' | 'i3rab' | 'identity';
@@ -369,7 +336,6 @@ export const AYAH_STUDY_TAB_LABELS: Record<AyahStudyTab, { full: string; short: 
   mutashabihat: { full: 'المتشابهات اللفظية للحفظ', short: 'المتشابهات' },
 };
 
-/** A selectable source entry for the ayah-study source selectors. */
 export interface SourceOption {
   key: string;
   label: string;
@@ -377,11 +343,6 @@ export interface SourceOption {
   languageNameAr?: string | null;
 }
 
-/**
- * A segment enriched for rendering: the backend `segmentColorSlot` mapped to a
- * concrete color, plus an `isMissing` flag derived from `displayTextStatus`.
- * Colors are visual-linking only (slot -> palette), never POS-semantic.
- */
 export interface RenderedSegmentViewModel {
   segmentLocation: string;
   segmentNumber: number;
@@ -423,7 +384,6 @@ export interface MushafPageViewModel {
   markers: PageMarkerDto[];
 }
 
-/** Per-resource loading primitives consumed by `qd-` state components. */
 export interface ResourceLoadState {
   isLoading: boolean;
   isEmpty: boolean;
@@ -436,10 +396,6 @@ export interface MushafReaderSources {
   fullI3rabSource: string | null;
 }
 
-/**
- * The full reader view state. URL <-> state synchronization is owned by the
- * facade; this shape is what the shell + child components render from.
- */
 export interface MushafReaderState {
   pageNumber: number;
   selectedAyahKey: string | null;
@@ -456,7 +412,6 @@ export interface MushafReaderState {
   mutashabihat: ResourceLoadState;
 }
 
-/** Stable, natural Quran keys used in the URL query params. */
 export const MUSHAF_URL_KEYS = {
   page: 'page',
   ayah: 'ayah',
@@ -471,7 +426,6 @@ export const MUSHAF_URL_KEYS = {
   fullI3rabSource: 'fullI3rabSource',
 } as const;
 
-/** Default reader state used to seed the facade before the URL is hydrated. */
 export const DEFAULT_MUSHAF_READER_STATE: MushafReaderState = {
   pageNumber: 1,
   selectedAyahKey: null,

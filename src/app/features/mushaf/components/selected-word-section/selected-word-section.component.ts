@@ -29,10 +29,5 @@ export class SelectedWordSectionComponent {
 
   readonly sectionFocus = output<void>();
 
-  /**
-   * Fixed-count placeholders for the segment area while loading. The real
-   * segment count is dynamic, so an approximate fixed set keeps the layout
-   * stable without trying to predict the eventual count (UI-001 refinement).
-   */
   protected readonly loadingSegmentPlaceholders = [0, 1, 2] as const;
 }

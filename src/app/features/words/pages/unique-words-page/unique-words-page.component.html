@@ -1,5 +1,5 @@
 <div class="qd-page">
-  <div class="qd-container">
+  <div class="qd-container unique-words-page-frame unique-words-page-frame--wide">
     <div class="qd-page-header">
       <h1 class="qd-page-title" data-testid="unique-words-page-title">الكلمات الفريدة</h1>
       <p class="qd-text-muted" data-testid="unique-words-page-mode">{{ modeLabel() }}</p>
@@ -15,60 +15,15 @@
     />
 
     @switch (listState().status) {
-      @case ('loading') {
-        <div class="qd-loading-state" data-testid="unique-words-loading">{{ loadingLabel }}</div>
-      }
       @case ('error') {
         <div class="qd-error-state" data-testid="unique-words-error">{{ listState().errorMessage }}</div>
       }
       @case ('empty') {
         <div class="qd-empty-state" data-testid="unique-words-empty">{{ emptyLabel }}</div>
       }
-      @default {
-        @if (listState().items.length > 0) {
-          <section class="unique-words-list" aria-label="قائمة الكلمات الفريدة">
-            @for (word of listState().items; track word.id) {
-              <qd-unique-word-card
-                [word]="word"
-                (drilldownOpen)="onDrilldownOpen(word, $event)"
-              />
-            }
-          </section>
-
-          <nav class="unique-words-pagination" aria-label="تصفّح النتائج">
-            <button
-              type="button"
-              class="qd-btn qd-btn-secondary"
-              data-testid="unique-words-prev-page"
-              [disabled]="listState().page <= 1"
-              (click)="onPrevPage()"
-            >
-              السابق
-            </button>
-            <span class="unique-words-pagination__info" data-testid="unique-words-page-info">
-              {{ listState().page }} / {{ lastPage() }}
-            </span>
-            <button
-              type="button"
-              class="qd-btn qd-btn-secondary"
-              data-testid="unique-words-next-page"
-              [disabled]="listState().page >= lastPage()"
-              (click)="onNextPage()"
-            >
-              التالي
-            </button>
-          </nav>
-        }
-      }
     }
 
     @if (drilldownState().status === 'notFound') {
-      <!--
-        Controlled Arabic message for a shared/restored URL whose word ID no
-        longer exists. Rendered alongside the list so the explorer stays usable;
-        the modal stays closed. No Quranic text is invented. Uses the shared
-        `qd-empty-state` block plus a local modifier (no primitive redefinition).
-      -->
       <div
         class="qd-empty-state unique-words-restored-not-found"
         role="status"
@@ -89,10 +44,52 @@
     }
   </div>
 
-  <qd-word-drilldown-modal
-    [state]="drilldownState()"
-    (closeModal)="onDrilldownClose()"
-    (viewChange)="onDrilldownViewChange($event)"
-    (ayahPageChange)="onAyahPageChange($event)"
-  />
+  @switch (listState().status) {
+    @default {
+      <div class="unique-words-layout-shell">
+        <div class="unique-words-layout">
+          <section class="unique-words-layout__table">
+            <qd-unique-words-table
+              [rows]="listState().items"
+              [loading]="listState().status === 'loading'"
+              [selectedWordId]="drilldownState().selectedWordId"
+              [currentPage]="listState().page"
+              [pageSize]="listState().pageSize"
+              (rowSelected)="onRowSelected($event)"
+              (drilldownOpen)="onDrilldownOpen($event.word, $event.view)"
+            />
+            <qd-unique-words-list-pagination
+              [currentPage]="listState().page"
+              [pageSize]="listState().pageSize"
+              [totalCount]="listState().totalCount"
+              [disabled]="listState().status === 'loading'"
+              (pageChange)="onPaginationPageChange($event)"
+            />
+          </section>
+
+          @if (isDesktop()) {
+            <aside class="unique-words-layout__panel" aria-label="التفاصيل">
+              <qd-word-drilldown-modal
+                [state]="drilldownState()"
+                [inline]="true"
+                (closeModal)="onDrilldownClose()"
+                (viewChange)="onDrilldownViewChange($event)"
+                (ayahPageChange)="onAyahPageChange($event)"
+              />
+            </aside>
+          }
+        </div>
+      </div>
+    }
+  }
+
+  @if (!isDesktop()) {
+    <qd-word-drilldown-modal
+      [state]="drilldownState()"
+      [inline]="false"
+      (closeModal)="onDrilldownClose()"
+      (viewChange)="onDrilldownViewChange($event)"
+      (ayahPageChange)="onAyahPageChange($event)"
+    />
+  }
 </div>

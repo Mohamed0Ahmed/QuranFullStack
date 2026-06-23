@@ -6,6 +6,7 @@ import { ApiResponse } from '../../../core/data-access/api-response.model';
 import { UniqueWordsApi } from '../data-access/unique-words.api';
 import { UniqueWordsFacade } from './unique-words.facade';
 import {
+  DEFAULT_AYAH_PAGE_SIZE,
   UniqueWordAyahMatchDto,
   UniqueWordListItemDto,
   UniqueWordMissingSurahsDto,
@@ -81,13 +82,37 @@ describe('UniqueWordsFacade drill-down', () => {
     expect(getMentionedSurahs).toHaveBeenCalledWith('tashkeel', 1);
   });
 
+  it('reuses a cached drill-down response when the same word is reopened', () => {
+    const getMentionedSurahs = vi.fn(() =>
+      of({
+        isSuccess: true,
+        message: 'تم',
+        data: {
+          id: 1,
+          kind: 'tashkeel',
+          displayTextUthmani: 'كلمة-تجريبية-1',
+          surahsCount: 1,
+          surahs: [{ surahNumber: 1, nameArabic: 'سورة-تجريبية', occurrencesInSurah: 2 }],
+        },
+      } as ApiResponse<UniqueWordSurahsDto>),
+    );
+    const facade = setup({ getMentionedSurahs });
+
+    facade.openDrilldown(word(1), 'surahs');
+    facade.closeDrilldown();
+    facade.openDrilldown(word(1), 'surahs');
+
+    expect(getMentionedSurahs).toHaveBeenCalledTimes(1);
+    expect(facade.drilldownState().surahs?.surahs).toHaveLength(1);
+  });
+
   it('preserves list state when modal opens and closes', () => {
     const facade = setup({
       getList: vi.fn(() =>
         of({
           isSuccess: true,
           message: 'تم',
-          data: { page: 1, pageSize: 50, totalCount: 1, items: [word(1)] },
+          data: { page: 1, pageSize: 1000, totalCount: 1, items: [word(1)] },
         }),
       ),
       getMentionedSurahs: vi.fn(() =>
@@ -123,15 +148,15 @@ describe('UniqueWordsFacade drill-down', () => {
     const getMentionedSurahs = vi.fn(() =>
       of({ isSuccess: false, message: backendMessage, data: null } as ApiResponse<UniqueWordSurahsDto>),
     );
-    const getMissingSurahs = vi.fn(() =>
-      of({ isSuccess: false, message: backendMessage, data: null } as ApiResponse<UniqueWordMissingSurahsDto>),
-    );
     const getAyahMatches = vi.fn(() =>
       of({
         isSuccess: false,
         message: backendMessage,
         data: null,
       } as ApiResponse<{ page: number; pageSize: number; totalCount: number; items: UniqueWordAyahMatchDto[] }>),
+    );
+    const getMissingSurahs = vi.fn(() =>
+      of({ isSuccess: false, message: backendMessage, data: null } as ApiResponse<UniqueWordMissingSurahsDto>),
     );
     const facade = setup({ getMentionedSurahs, getMissingSurahs, getAyahMatches });
 
@@ -149,25 +174,50 @@ describe('UniqueWordsFacade drill-down', () => {
   });
 
   it('maps empty surahs, missing surahs, and ayah payloads to empty status', () => {
-    const getMentionedSurahs = vi.fn(() =>
-      of({
-        isSuccess: true,
-        message: 'تم',
-        data: { id: 1, kind: 'tashkeel' as const, displayTextUthmani: 'x', surahsCount: 0, surahs: [] },
-      } as ApiResponse<UniqueWordSurahsDto>),
-    );
+    const getMentionedSurahs = vi
+      .fn()
+      .mockReturnValueOnce(
+        of({
+          isSuccess: true,
+          message: 'تم',
+          data: { id: 1, kind: 'tashkeel' as const, displayTextUthmani: 'x', surahsCount: 0, surahs: [] },
+        } as ApiResponse<UniqueWordSurahsDto>),
+      )
+      .mockReturnValueOnce(
+        of({
+          isSuccess: true,
+          message: 'تم',
+          data: {
+            id: 1,
+            kind: 'tashkeel' as const,
+            displayTextUthmani: 'x',
+            surahsCount: 114,
+            surahs: Array.from({ length: 114 }, (_, index) => ({
+              surahNumber: index + 1,
+              nameArabic: `سورة-${index + 1}`,
+              occurrencesInSurah: 1,
+            })),
+          },
+        } as ApiResponse<UniqueWordSurahsDto>),
+      );
     const getMissingSurahs = vi.fn(() =>
       of({
         isSuccess: true,
         message: 'تم',
-        data: { id: 1, kind: 'tashkeel' as const, displayTextUthmani: 'x', missingSurahsCount: 0, surahs: [] },
+        data: {
+          id: 1,
+          kind: 'tashkeel',
+          displayTextUthmani: 'x',
+          missingSurahsCount: 0,
+          surahs: [],
+        },
       } as ApiResponse<UniqueWordMissingSurahsDto>),
     );
     const getAyahMatches = vi.fn(() =>
       of({
         isSuccess: true,
         message: 'تم',
-        data: { page: 1, pageSize: 20, totalCount: 0, items: [] },
+        data: { page: 1, pageSize: DEFAULT_AYAH_PAGE_SIZE, totalCount: 0, items: [] },
       }),
     );
     const facade = setup({ getMentionedSurahs, getMissingSurahs, getAyahMatches });
@@ -209,26 +259,13 @@ describe('UniqueWordsFacade drill-down', () => {
         },
       } as ApiResponse<UniqueWordSurahsDto>),
     );
-    const getMissingSurahs = vi.fn(() =>
-      of({
-        isSuccess: true,
-        message: 'تم',
-        data: {
-          id: 1,
-          kind: 'tashkeel' as const,
-          displayTextUthmani: 'x',
-          missingSurahsCount: 1,
-          surahs: [{ surahNumber: 2, nameArabic: 'سورة-تجريبية-٢' }],
-        },
-      } as ApiResponse<UniqueWordMissingSurahsDto>),
-    );
     const getAyahMatches = vi.fn(() =>
       of({
         isSuccess: true,
         message: 'تم',
         data: {
           page: 1,
-          pageSize: 20,
+          pageSize: DEFAULT_AYAH_PAGE_SIZE,
           totalCount: 1,
           items: [
             {
@@ -237,12 +274,29 @@ describe('UniqueWordsFacade drill-down', () => {
               surahNumber: 1,
               surahNameArabic: 'سورة-تجريبية',
               ayahNumber: 1,
+              pageNumber: 1,
               matchedQuranWordIds: [1001],
               words: [{ quranWordId: 1001, wordNumber: 1, textUthmani: 'كلمة-تجريبية', isAyahMarker: false }],
             },
           ],
         },
       }),
+    );
+    const getMissingSurahs = vi.fn(() =>
+      of({
+        isSuccess: true,
+        message: 'تم',
+        data: {
+          id: 1,
+          kind: 'tashkeel' as const,
+          displayTextUthmani: 'x',
+          missingSurahsCount: 113,
+          surahs: Array.from({ length: 113 }, (_, index) => ({
+            surahNumber: index + 2,
+            nameArabic: `سورة-${index + 2}`,
+          })),
+        },
+      } as ApiResponse<UniqueWordMissingSurahsDto>),
     );
     const facade = setup({ getMentionedSurahs, getMissingSurahs, getAyahMatches });
 
@@ -252,12 +306,14 @@ describe('UniqueWordsFacade drill-down', () => {
 
     facade.setDrilldownView('missing');
     expect(facade.drilldownState().view).toBe('missing');
-    expect(getMissingSurahs).toHaveBeenCalledWith('tashkeel', 1);
+    expect(getMentionedSurahs).toHaveBeenCalledTimes(1);
+    expect(getMissingSurahs).toHaveBeenCalledTimes(1);
+    expect(facade.drilldownState().missingSurahs?.surahs).toHaveLength(113);
     expect(facade.drilldownState().status).toBe('success');
 
     facade.setDrilldownView('ayahs');
     expect(facade.drilldownState().view).toBe('ayahs');
-    expect(getAyahMatches).toHaveBeenCalledWith('tashkeel', 1, 1, 20);
+    expect(getAyahMatches).toHaveBeenCalledWith('tashkeel', 1, 1, DEFAULT_AYAH_PAGE_SIZE);
     expect(facade.drilldownState().status).toBe('success');
   });
 
@@ -266,7 +322,7 @@ describe('UniqueWordsFacade drill-down', () => {
       of({
         isSuccess: true,
         message: 'تم',
-        data: { page: 2, pageSize: 20, totalCount: 3, items: [] },
+        data: { page: 2, pageSize: DEFAULT_AYAH_PAGE_SIZE, totalCount: 3, items: [] },
       }),
     );
     const facade = setup({ getAyahMatches });
@@ -274,7 +330,7 @@ describe('UniqueWordsFacade drill-down', () => {
     facade.openDrilldown(word(1), 'ayahs');
     facade.setAyahPage(2);
 
-    expect(getAyahMatches).toHaveBeenLastCalledWith('tashkeel', 1, 2, 20);
+    expect(getAyahMatches).toHaveBeenLastCalledWith('tashkeel', 1, 2, DEFAULT_AYAH_PAGE_SIZE);
     expect(facade.drilldownState().ayahPage).toBe(2);
   });
 
@@ -284,7 +340,7 @@ describe('UniqueWordsFacade drill-down', () => {
         of({
           isSuccess: true,
           message: 'تم',
-          data: { page: 1, pageSize: 20, totalCount: 0, items: [] },
+          data: { page: 1, pageSize: DEFAULT_AYAH_PAGE_SIZE, totalCount: 0, items: [] },
         }),
       ),
     });

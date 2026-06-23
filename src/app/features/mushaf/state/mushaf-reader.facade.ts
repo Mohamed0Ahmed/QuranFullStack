@@ -57,12 +57,6 @@ import { WordAnalysisLoadRunner } from './mushaf-word-analysis-load.runner';
 
 const PEEK_FLASH_CLEAR_MS = 3000;
 
-/**
- * Mushaf reader page-state facade.
- *
- * Owns all reader view state (selections, sources, tabs, per-resource
- * loading/empty/error primitives) and URL ↔ state synchronization.
- */
 @Injectable({ providedIn: 'root' })
 export class MushafReaderFacade {
   private readonly pagesApi = inject(MushafPagesApi);
@@ -204,7 +198,6 @@ export class MushafReaderFacade {
     mutashabihat: this._mutashabihatLoadState(),
   }));
 
-  /** Subscribes to query params and hydrates state for deep links (page → ayah → word). */
   bindToRoute(route: ActivatedRoute): void {
     this.activeRoute = route;
     this.routeSubscription?.unsubscribe();
@@ -235,7 +228,6 @@ export class MushafReaderFacade {
     });
   }
 
-  /** Cancels peek timers and route subscription when the reader page is destroyed. */
   unbindFromRoute(): void {
     this.cancelPeekFlashClearTimer();
     this.wordAnalysisLoadRunner.clearPending();
@@ -492,7 +484,6 @@ export class MushafReaderFacade {
     });
   }
 
-  /** Applies an authoritative URL snapshot (used by route hydration and tests). */
   applyUrlState(
     snapshot: Pick<
       MushafUrlSnapshot,

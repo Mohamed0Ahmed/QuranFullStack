@@ -6,7 +6,6 @@
     </div>
 
     <section class="words-hub-grid" aria-label="أقسام الكلمات">
-      <!-- Active v1 section -->
       <qd-word-section-card
         data-testid="words-hub-card--active"
         [labelAr]="activeCard.labelAr"
@@ -15,7 +14,6 @@
         [disabled]="activeCard.disabled"
       />
 
-      <!-- Coming-soon sections -->
       @for (card of comingSoonCards; track card.labelAr) {
         <qd-word-section-card
           data-testid="words-hub-card--disabled"

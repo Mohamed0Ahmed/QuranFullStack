@@ -1,0 +1,67 @@
+:host {
+  display: block;
+}
+
+.missing-surahs-list-shell {
+  display: flex;
+  flex-direction: column;
+}
+
+.missing-surahs-list__header {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr);
+  align-items: center;
+  gap: var(--qd-space-3);
+  padding: var(--qd-space-2) var(--qd-space-3);
+  border-block-end: 1px solid var(--qd-border);
+  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--qd-text-muted);
+}
+
+.missing-surahs-list__header-row-number,
+.missing-surahs-list__row-number {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.missing-surahs-list {
+  display: block;
+  block-size: min(60vh, 28rem);
+  overflow: auto;
+  scrollbar-gutter: stable;
+}
+
+:host-context(.word-drilldown-panel) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+
+:host-context(.word-drilldown-panel) .missing-surahs-list-shell {
+  flex: 1;
+  min-height: 0;
+}
+
+:host-context(.word-drilldown-panel) .missing-surahs-list {
+  flex: 1;
+  min-height: 0;
+  block-size: auto;
+}
+
+.missing-surahs-list__row {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr);
+  align-items: center;
+  gap: var(--qd-space-3);
+  min-block-size: 44px;
+  padding: var(--qd-space-2) var(--qd-space-3);
+  border-block-end: 1px solid var(--qd-border);
+}
+
+.missing-surahs-list__name {
+  min-width: 0;
+}

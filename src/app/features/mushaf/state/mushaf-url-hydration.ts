@@ -9,7 +9,6 @@ import { MushafUrlSnapshot } from './mushaf-url-sync';
 export interface MushafUrlHydrationCurrent {
   selectedAyahKey: string | null;
   selectedWordLocation: string | null;
-  /** Source keys explicitly present in the URL (null = use backend defaults). */
   urlExplicitSources: MushafReaderSources;
 }
 

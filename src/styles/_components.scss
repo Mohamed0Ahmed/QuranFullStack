@@ -209,7 +209,7 @@ button.qd-interactive-surface {
  * - `.qd-skeleton*` — sized placeholder bars for genuinely empty regions.
  * - `.qd-loading-overlay` — an absolutely-positioned overlay layered over a
  *   data *body* region only. Used when we keep the previous content mounted to
- *   hold the card's box height during a debounced load (UI-001 refinement);
+ *   hold the card's box height during a debounced load;
  *   the opaque tint + shimmer + "loading" label mask the retained content so it
  *   is not read as current data. The covered body is `inert` / pointer-disabled
  *   by the host component (see `.qd-loading-region`).

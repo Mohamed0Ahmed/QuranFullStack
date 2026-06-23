@@ -2,33 +2,76 @@
   display: block;
 }
 
-.unique-words-list {
+.unique-words-page-frame {
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+  padding-inline: var(--qd-space-4);
+  box-sizing: border-box;
+}
+
+.unique-words-page-frame .qd-page-header {
+  margin-block-end: var(--qd-space-4);
+}
+
+.unique-words-layout-shell {
+  padding-inline: 0;
+}
+
+.unique-words-layout {
   display: grid;
-  gap: var(--qd-space-3);
+  gap: var(--qd-space-4);
   grid-template-columns: 1fr;
 }
 
-@media (min-width: 768px) {
-  .unique-words-list {
-    grid-template-columns: repeat(2, 1fr);
+.unique-words-layout__table {
+  min-width: 0;
+}
+
+.unique-words-layout__panel {
+  min-width: 0;
+}
+
+@media (min-width: 1024px) {
+  .unique-words-layout {
+    /* Navbar + page header + tabs/search above the grid (~14rem). */
+    --unique-words-layout-chrome-block-size: 14rem;
+    --unique-words-table-body-height: min(
+      calc(100dvh - var(--unique-words-layout-chrome-block-size)),
+      58rem
+    );
+    --unique-words-table-header-height: 2.75rem;
+    --unique-words-table-card-height: calc(
+      var(--unique-words-table-header-height) + var(--unique-words-table-body-height)
+    );
+    gap: var(--qd-space-5);
+    direction: rtl;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+
+  .unique-words-layout__table {
+    grid-column: 1;
+    min-width: 0;
+    overflow-x: auto;
+  }
+
+  .unique-words-layout__panel {
+    grid-column: 2;
+    min-width: 0;
+    block-size: var(--unique-words-table-card-height);
   }
 }
 
-@media (min-width: 1200px) {
-  .unique-words-list {
-    grid-template-columns: repeat(3, 1fr);
+@media (min-width: 1440px) {
+  .unique-words-layout {
+    --unique-words-layout-chrome-block-size: 12rem;
+    --unique-words-table-body-height: min(
+      calc(100dvh - var(--unique-words-layout-chrome-block-size)),
+      64rem
+    );
+    --unique-words-table-card-height: calc(
+      var(--unique-words-table-header-height) + var(--unique-words-table-body-height)
+    );
   }
-}
-
-.unique-words-pagination {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--qd-space-3);
-  margin-top: var(--qd-space-4);
-}
-
-.unique-words-pagination__info {
-  min-width: 4rem;
-  text-align: center;
 }

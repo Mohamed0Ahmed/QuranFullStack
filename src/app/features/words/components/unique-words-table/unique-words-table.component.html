@@ -1,0 +1,178 @@
+<div class="unique-words-table" role="table" aria-label="جدول الكلمات الفريدة">
+  <div class="unique-words-table__header" role="rowgroup">
+    <div class="unique-words-table__header-row" role="row">
+      <div
+        class="unique-words-table__header-cell unique-words-table__header-cell--numeric unique-words-table__header-cell--row-number"
+        role="columnheader"
+      >
+        {{ rowNumberHeader }}
+      </div>
+      <div class="unique-words-table__header-cell" role="columnheader">الكلمة</div>
+      <div class="unique-words-table__header-cell unique-words-table__header-cell--numeric" role="columnheader">المواضع</div>
+      <div class="unique-words-table__header-cell unique-words-table__header-cell--numeric" role="columnheader">الآيات</div>
+      <div class="unique-words-table__header-cell unique-words-table__header-cell--numeric" role="columnheader">السور</div>
+      <div class="unique-words-table__header-cell unique-words-table__header-cell--numeric" role="columnheader">لم يذكر في</div>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div
+      class="unique-words-table__body unique-words-table__body--loading"
+      role="rowgroup"
+      aria-label="قائمة الكلمات الفريدة"
+      aria-busy="true"
+      data-testid="unique-words-loading"
+    >
+      <p class="qd-sr-only" role="status" aria-live="polite">{{ loadingLabel }}</p>
+
+      @for (_ of loadingRowPlaceholders; track $index) {
+        <div class="unique-words-table__row" role="row" aria-hidden="true">
+          <div class="unique-words-table__cell unique-words-table__cell--row-number" role="cell">
+            <span class="qd-skeleton qd-skeleton--text unique-words-table__loading-number"></span>
+          </div>
+          <div class="unique-words-table__cell unique-words-table__word-cell" role="cell">
+            <span class="qd-skeleton qd-skeleton--text unique-words-table__loading-word"></span>
+          </div>
+          <div class="unique-words-table__cell unique-words-table__chip-cell" role="cell">
+            <span class="qd-skeleton qd-skeleton--rounded-md unique-words-table__loading-chip"></span>
+          </div>
+          <div class="unique-words-table__cell unique-words-table__chip-cell" role="cell">
+            <span class="qd-skeleton qd-skeleton--rounded-md unique-words-table__loading-chip"></span>
+          </div>
+          <div class="unique-words-table__cell unique-words-table__chip-cell" role="cell">
+            <span class="qd-skeleton qd-skeleton--rounded-md unique-words-table__loading-chip"></span>
+          </div>
+          <div class="unique-words-table__cell unique-words-table__chip-cell" role="cell">
+            <span class="qd-skeleton qd-skeleton--rounded-md unique-words-table__loading-chip"></span>
+          </div>
+        </div>
+      }
+    </div>
+  } @else if (useVirtualScroll) {
+    <cdk-virtual-scroll-viewport
+      class="unique-words-table__body"
+      [itemSize]="rowHeight"
+      [minBufferPx]="rowHeight * 4"
+      [maxBufferPx]="rowHeight * 8"
+      role="rowgroup"
+      aria-label="قائمة الكلمات الفريدة"
+    >
+      <div
+        *cdkVirtualFor="let row of rows(); let index = index; trackBy: trackRowById"
+        class="unique-words-table__row"
+        role="row"
+        [class.qd-is-selected]="isSelected(row)"
+        [attr.aria-selected]="isSelected(row)"
+      >
+        <div class="unique-words-table__cell unique-words-table__cell--row-number" role="cell">
+          {{ rowNumber(index) }}
+        </div>
+        <div class="unique-words-table__cell unique-words-table__word-cell" role="cell">
+          <button
+            type="button"
+            class="unique-words-table__word qd-interactive-surface"
+            data-testid="unique-words-table-word-button"
+            (click)="selectRow(row)"
+          >
+            <span class="unique-words-table__display">{{ row.displayText }}</span>
+          </button>
+        </div>
+
+        <div class="unique-words-table__cell unique-words-table__chip-cell" role="cell">
+          <qd-word-count-chip
+            [label]="occurrencesLabel"
+            [count]="row.occurrencesCount"
+            [showLabel]="false"
+            [disabled]="true"
+          />
+        </div>
+        <div class="unique-words-table__cell unique-words-table__chip-cell" role="cell">
+          <qd-word-count-chip
+            [label]="ayahsLabel"
+            [count]="row.ayahsCount"
+            [showLabel]="false"
+            [disabled]="row.ayahsCount === 0"
+            (chipClick)="openDrilldown(row, 'ayahs')"
+          />
+        </div>
+        <div class="unique-words-table__cell unique-words-table__chip-cell" role="cell">
+          <qd-word-count-chip
+            [label]="surahsLabel"
+            [count]="row.surahsCount"
+            [showLabel]="false"
+            [disabled]="row.surahsCount === 0"
+            (chipClick)="openDrilldown(row, 'surahs')"
+          />
+        </div>
+        <div class="unique-words-table__cell unique-words-table__chip-cell" role="cell">
+          <qd-word-count-chip
+            [label]="missingLabel"
+            [count]="row.missingSurahsCount"
+            [showLabel]="false"
+            (chipClick)="openDrilldown(row, 'missing')"
+          />
+        </div>
+      </div>
+    </cdk-virtual-scroll-viewport>
+  } @else {
+    <div class="unique-words-table__body" role="rowgroup" aria-label="قائمة الكلمات الفريدة">
+      @for (row of rows(); track row.id; let index = $index) {
+        <div
+          class="unique-words-table__row"
+          role="row"
+          [class.qd-is-selected]="isSelected(row)"
+          [attr.aria-selected]="isSelected(row)"
+        >
+          <div class="unique-words-table__cell unique-words-table__cell--row-number" role="cell">
+            {{ rowNumber(index) }}
+          </div>
+          <div class="unique-words-table__cell unique-words-table__word-cell" role="cell">
+            <button
+              type="button"
+              class="unique-words-table__word qd-interactive-surface"
+              data-testid="unique-words-table-word-button"
+              (click)="selectRow(row)"
+            >
+              <span class="unique-words-table__display">{{ row.displayText }}</span>
+            </button>
+          </div>
+
+          <div class="unique-words-table__cell unique-words-table__chip-cell" role="cell">
+            <qd-word-count-chip
+              [label]="occurrencesLabel"
+              [count]="row.occurrencesCount"
+              [showLabel]="false"
+              [disabled]="true"
+            />
+          </div>
+          <div class="unique-words-table__cell unique-words-table__chip-cell" role="cell">
+            <qd-word-count-chip
+              [label]="ayahsLabel"
+              [count]="row.ayahsCount"
+              [showLabel]="false"
+              [disabled]="row.ayahsCount === 0"
+              (chipClick)="openDrilldown(row, 'ayahs')"
+            />
+          </div>
+          <div class="unique-words-table__cell unique-words-table__chip-cell" role="cell">
+            <qd-word-count-chip
+              [label]="surahsLabel"
+              [count]="row.surahsCount"
+              [showLabel]="false"
+              [disabled]="row.surahsCount === 0"
+              (chipClick)="openDrilldown(row, 'surahs')"
+            />
+          </div>
+          <div class="unique-words-table__cell unique-words-table__chip-cell" role="cell">
+            <qd-word-count-chip
+              [label]="missingLabel"
+              [count]="row.missingSurahsCount"
+              [showLabel]="false"
+              (chipClick)="openDrilldown(row, 'missing')"
+            />
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

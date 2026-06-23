@@ -1,0 +1,135 @@
+:host {
+  display: block;
+}
+
+.unique-words-table {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-md);
+  overflow: hidden;
+  background: var(--qd-surface);
+}
+
+.unique-words-table__header {
+  min-block-size: var(--unique-words-table-header-height, 2.75rem);
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  background: var(--qd-surface);
+  border-bottom: 1px solid var(--qd-border);
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.unique-words-table__header-row,
+.unique-words-table__row {
+  display: grid;
+  grid-template-columns: minmax(2.5rem, 0.35fr) minmax(0, 2.4fr) repeat(4, minmax(5.5rem, 1fr));
+  align-items: stretch;
+}
+
+.unique-words-table__header-cell,
+.unique-words-table__cell {
+  padding: var(--qd-space-2) var(--qd-space-3);
+}
+
+.unique-words-table__header-cell--row-number,
+.unique-words-table__cell--row-number {
+  text-align: center;
+  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--qd-text-muted);
+}
+
+.unique-words-table__header-cell {
+  text-align: start;
+  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--qd-text-muted);
+}
+
+.unique-words-table__header-cell--numeric {
+  text-align: center;
+}
+
+.unique-words-table__body {
+  block-size: var(--unique-words-table-body-height, min(72vh, 44rem));
+  overflow: auto;
+  scrollbar-gutter: stable;
+  background: var(--qd-surface);
+}
+
+.unique-words-table__body--loading {
+  overflow: auto;
+}
+
+.unique-words-table__row {
+  min-block-size: 60px;
+  border-bottom: 1px solid var(--qd-border);
+}
+
+.unique-words-table__loading-number {
+  inline-size: 1.75rem;
+  margin-inline: auto;
+}
+
+.unique-words-table__loading-word {
+  inline-size: min(100%, 12rem);
+}
+
+.unique-words-table__loading-chip {
+  inline-size: 3.5rem;
+  block-size: 1.25rem;
+}
+
+.unique-words-table__row.qd-is-selected {
+  background: var(--qd-accent-tint);
+}
+
+.unique-words-table__cell {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.unique-words-table__word-cell {
+  display: flex;
+  align-items: center;
+}
+
+.unique-words-table__chip-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .word-count-chip {
+    min-inline-size: 2.5rem;
+    justify-content: center;
+  }
+}
+
+.unique-words-table__word {
+  display: block;
+  width: 100%;
+  padding: var(--qd-space-1);
+  border: 1px solid transparent;
+  border-radius: var(--qd-radius-sm);
+  background: transparent;
+  text-align: start;
+  overflow: hidden;
+}
+
+.unique-words-table__display {
+  font-family: 'Amiri', 'IBM Plex Sans Arabic', serif;
+  font-size: 1.125rem;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

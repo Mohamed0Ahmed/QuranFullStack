@@ -8,6 +8,7 @@ import {
   inject,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription, debounceTime, Subject } from 'rxjs';
@@ -19,38 +20,30 @@ import {
 } from '../../state/unique-words-url-sync';
 import { UniqueWordsTabsComponent } from '../../components/unique-words-tabs/unique-words-tabs.component';
 import { UniqueWordsSearchBarComponent } from '../../components/unique-words-search-bar/unique-words-search-bar.component';
-import { UniqueWordCardComponent } from '../../components/unique-word-card/unique-word-card.component';
+import { UniqueWordsTableComponent } from '../../components/unique-words-table/unique-words-table.component';
+import { UniqueWordsListPaginationComponent } from '../../components/unique-words-list-pagination/unique-words-list-pagination.component';
 import { WordDrilldownModalComponent } from '../../components/word-drilldown-modal/word-drilldown-modal.component';
 import {
   EMPTY_LIST_LABEL,
-  LOADING_LABEL,
   RESTORED_WORD_NOT_FOUND_LABEL,
   UNIQUE_WORD_KIND_LABELS,
 } from '../../models/unique-words.labels';
 import {
-  DEFAULT_LIST_PAGE,
   UniqueWordKind,
   UniqueWordListItemDto,
   UniqueWordSort,
   WordDrilldownView,
+  UniqueWordListItemViewModel,
 } from '../../models/unique-words.models';
 
-/**
- * Thin explorer shell for the Unique Words list (US2) and modal drill-downs
- * (US3), with full URL restore/share (US4). The active mode is read from the
- * `:mode` route segment; list state (`search`/`sort`/`page`) and modal state
- * (`word`/`view`/`ap`) live in query params. The page pushes user-driven changes
- * back through query params so state is refreshable/shareable; the facade owns
- * in-memory state and reads the URL on load to restore it. This component never
- * calls the API directly.
- */
 @Component({
   selector: 'qd-unique-words-page',
   standalone: true,
   imports: [
     UniqueWordsTabsComponent,
     UniqueWordsSearchBarComponent,
-    UniqueWordCardComponent,
+    UniqueWordsTableComponent,
+    UniqueWordsListPaginationComponent,
     WordDrilldownModalComponent,
   ],
   templateUrl: './unique-words-page.component.html',
@@ -68,31 +61,55 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
   protected readonly listState = this.facade.listState;
   protected readonly drilldownState = this.facade.drilldownState;
   protected readonly emptyLabel = EMPTY_LIST_LABEL;
-  protected readonly loadingLabel = LOADING_LABEL;
   protected readonly restoredNotFoundLabel = RESTORED_WORD_NOT_FOUND_LABEL;
+
+  // Drives which single drill-down surface renders: the inline panel at desktop
+  // widths, the overlay modal below. Rendering exactly one avoids the previous
+  // dual-instance DOM (both surfaces rendered the full drill-down subtree, one
+  // hidden by CSS). Defaults to desktop so SSR / non-browser test environments
+  // without `matchMedia` render the inline panel. Breakpoint mirrors the SCSS.
+  protected readonly isDesktop = signal(true);
+  private desktopQuery?: MediaQueryList;
+  private readonly onDesktopChange = (event: MediaQueryListEvent): void =>
+    this.isDesktop.set(event.matches);
 
   // Local draft for the search input so typing does not reload on every
   // keystroke; the facade reloads after the debounced emission. Seeded from the
   // active (URL) search so a shared/restored link shows its term in the box.
   protected readonly searchDraft = signal('');
 
-  /** Active mode label, derived from the facade's route-driven mode signal. */
-  protected readonly modeLabel = computed(() => UNIQUE_WORD_KIND_LABELS[this.facade.mode()]);
+  private readonly table = viewChild(UniqueWordsTableComponent);
+  private lastScrolledListPage = 0;
 
-  /** Last reachable page based on the total count and page size. */
-  protected readonly lastPage = computed(() => {
-    const state = this.listState();
-    return Math.max(1, Math.ceil(state.totalCount / state.pageSize));
-  });
+  protected readonly modeLabel = computed(() => UNIQUE_WORD_KIND_LABELS[this.facade.mode()]);
 
   constructor() {
     // Reseed the search box from the active search whenever the mode changes
-    // (including the initial load). `search` is read untracked so a user's
-    // in-progress typing — which only changes query params, not the mode — is
-    // never overwritten.
+    // (including the initial load or a browser back/forward restore). `search`
+    // is read untracked so a user's in-progress typing is never overwritten by
+    // the debounce-driven query-param sync.
     effect(() => {
       this.facade.mode();
+      this.facade.search();
       this.searchDraft.set(untracked(() => this.facade.search()));
+    });
+
+    effect(() => {
+      const state = this.listState();
+      const table = this.table();
+      if (
+        !table ||
+        state.status === 'loading' ||
+        state.page === this.lastScrolledListPage ||
+        (state.status !== 'success' && state.status !== 'empty')
+      ) {
+        return;
+      }
+
+      untracked(() => {
+        table.scrollToTop();
+        this.lastScrolledListPage = state.page;
+      });
     });
   }
 
@@ -102,11 +119,18 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
     this.searchSub = this.searchInput
       .pipe(debounceTime(300))
       .subscribe((value) => this.updateQueryParams({ search: value || null, page: null }));
+
+    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+      this.desktopQuery = window.matchMedia('(min-width: 1024px)');
+      this.isDesktop.set(this.desktopQuery.matches);
+      this.desktopQuery.addEventListener('change', this.onDesktopChange);
+    }
   }
 
   ngOnDestroy(): void {
     this.facade.unbindFromRoute();
     this.searchSub?.unsubscribe();
+    this.desktopQuery?.removeEventListener('change', this.onDesktopChange);
   }
 
   protected onSearchChange(value: string): void {
@@ -118,21 +142,6 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
     this.updateQueryParams({ sort, page: null });
   }
 
-  protected onPrevPage(): void {
-    const current = this.listState().page;
-    if (current > DEFAULT_LIST_PAGE) {
-      this.updateQueryParams({ page: String(current - 1) });
-    }
-  }
-
-  protected onNextPage(): void {
-    const state = this.listState();
-    const lastPage = Math.max(1, Math.ceil(state.totalCount / state.pageSize));
-    if (state.page < lastPage) {
-      this.updateQueryParams({ page: String(state.page + 1) });
-    }
-  }
-
   protected onTabActivated(mode: UniqueWordKind): void {
     // Mode is a route segment; navigate to the mode route and reset list page.
     // Modal params are cleared too: a mode switch is a fresh exploration.
@@ -140,6 +149,11 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
       queryParams: { search: null, sort: null, page: null, word: null, view: null, ap: null },
       queryParamsHandling: 'merge',
     });
+  }
+
+  protected onRowSelected(word: UniqueWordListItemViewModel): void {
+    this.facade.openDrilldown(word, 'surahs');
+    this.updateQueryParams(buildUniqueWordsQueryParams({ wordId: word.id, view: 'surahs', ayahPage: null }));
   }
 
   protected onDrilldownOpen(word: UniqueWordListItemDto, view: WordDrilldownView): void {
@@ -166,7 +180,14 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
     this.updateQueryParams(buildUniqueWordsQueryParams({ ayahPage: page }));
   }
 
-  /** Replaces the named query params, preserving the others. */
+  protected onPaginationPageChange(page: number): void {
+    if (page === this.listState().page) {
+      return;
+    }
+
+    this.updateQueryParams(buildUniqueWordsQueryParams({ page }));
+  }
+
   private updateQueryParams(changes: Record<string, string | null>): void {
     void this.router.navigate([], {
       relativeTo: this.route,

@@ -1,0 +1,92 @@
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  inject,
+  input,
+  ViewChild,
+  output,
+} from '@angular/core';
+import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
+
+import { WordCountChipComponent } from '../word-count-chip/word-count-chip.component';
+import {
+  LOADING_LABEL,
+  OCCURRENCES_CHIP_LABEL,
+  ROW_NUMBER_HEADER,
+  WORD_DRILLDOWN_VIEW_LABELS,
+} from '../../models/unique-words.labels';
+import {
+  UNIQUE_WORDS_PAGE_SIZE,
+  UniqueWordListItemViewModel,
+  WordDrilldownView,
+} from '../../models/unique-words.models';
+import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
+
+const ROW_HEIGHT = 60;
+const HAS_RESIZE_OBSERVER = typeof ResizeObserver !== 'undefined';
+
+@Component({
+  selector: 'qd-unique-words-table',
+  standalone: true,
+  imports: [ScrollingModule, WordCountChipComponent],
+  templateUrl: './unique-words-table.component.html',
+  styleUrl: './unique-words-table.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class UniqueWordsTableComponent {
+  private readonly host = inject(ElementRef<HTMLElement>);
+
+  readonly rows = input.required<readonly UniqueWordListItemViewModel[]>();
+  readonly loading = input(false);
+  readonly selectedWordId = input<number | null>(null);
+  readonly currentPage = input(1);
+  readonly pageSize = input(UNIQUE_WORDS_PAGE_SIZE);
+
+  readonly rowSelected = output<UniqueWordListItemViewModel>();
+  readonly drilldownOpen = output<{ word: UniqueWordListItemViewModel; view: WordDrilldownView }>();
+
+  protected readonly rowNumberHeader = ROW_NUMBER_HEADER;
+  protected readonly occurrencesLabel = OCCURRENCES_CHIP_LABEL;
+  protected readonly ayahsLabel = WORD_DRILLDOWN_VIEW_LABELS.ayahs;
+  protected readonly surahsLabel = WORD_DRILLDOWN_VIEW_LABELS.surahs;
+  protected readonly missingLabel = WORD_DRILLDOWN_VIEW_LABELS.missing;
+  protected readonly loadingLabel = LOADING_LABEL;
+  protected readonly loadingRowPlaceholders = Array.from({ length: 12 });
+  protected readonly rowHeight = ROW_HEIGHT;
+  protected readonly useVirtualScroll = HAS_RESIZE_OBSERVER;
+
+  @ViewChild(CdkVirtualScrollViewport) private viewport?: CdkVirtualScrollViewport;
+
+  protected selectRow(row: UniqueWordListItemViewModel): void {
+    this.rowSelected.emit(row);
+  }
+
+  protected openDrilldown(row: UniqueWordListItemViewModel, view: WordDrilldownView): void {
+    this.drilldownOpen.emit({ word: row, view });
+  }
+
+  protected isSelected(row: UniqueWordListItemViewModel): boolean {
+    return this.selectedWordId() === row.id;
+  }
+
+  protected rowNumber(index: number): number {
+    return pageRelativeRowNumber(this.currentPage(), this.pageSize(), index);
+  }
+
+  protected trackRowById(_index: number, row: UniqueWordListItemViewModel): number {
+    return row.id;
+  }
+
+  scrollToTop(): void {
+    if (this.useVirtualScroll && this.viewport) {
+      this.viewport.scrollToIndex(0, 'auto');
+      return;
+    }
+
+    const body = this.host.nativeElement.querySelector('.unique-words-table__body') as HTMLElement | null;
+    if (body) {
+      body.scrollTop = 0;
+    }
+  }
+}

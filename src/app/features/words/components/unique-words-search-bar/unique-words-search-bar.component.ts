@@ -16,11 +16,6 @@ interface SortOptionViewModel {
   labelAr: string;
 }
 
-/**
- * Search + sort toolbar. Emits change events; the page owns debouncing and URL
- * sync. Uses native controls styled with the shared `qd-input` / `qd-select`
- * primitives.
- */
 @Component({
   selector: 'qd-unique-words-search-bar',
   standalone: true,

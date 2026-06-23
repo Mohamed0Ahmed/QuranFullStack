@@ -15,7 +15,7 @@
   flex-direction: column;
   gap: var(--qd-space-3);
   // Stable floor so the card shell does not collapse to one line while the
-  // word analysis loads (UI-001); inner regions skeletonize instead. The
+  // word analysis loads; inner regions skeletonize instead. The
   // scrolling content region below keeps its own min-height: 0 so it can
   // shrink/scroll within this floor.
   min-height: 14rem;
@@ -49,7 +49,7 @@
     // Reserve the same visual mass as the real rendered word, whose line box is
     // font-size 1.5rem × line-height 1.8 ≈ 2.7rem (the parent override above),
     // so the header placeholder does not look smaller than the loaded word
-    // (UI-001 parity).
+    //.
     width: 11rem;
     height: 2.7rem;
     border-radius: var(--qd-radius-md);
@@ -106,7 +106,7 @@
   }
 
   // Mirror the three real segment rows' line heights so the loading card does
-  // not come up shorter than the loaded card (UI-001 parity). The meta/i3rab
+  // not come up shorter than the loaded card. The meta/i3rab
   // lines are centered like their real counterparts.
   &__segment-skeleton-form {
     order: 1;
@@ -222,7 +222,7 @@
   }
 
   // While loading, reserve the real value line box inside each identity card so
-  // the card keeps the same height as the loaded state (UI-001 parity); only
+  // the card keeps the same height as the loaded state; only
   // the value shimmers, the label above it stays static.
   &__identity--loading &__identity-row dd {
     display: flex;

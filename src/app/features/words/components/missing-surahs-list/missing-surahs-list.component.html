@@ -1,8 +1,18 @@
-<ul class="missing-surahs-list" data-testid="missing-surahs-list">
-  @for (surah of surahs(); track surah.surahNumber) {
-    <li class="missing-surahs-list__row">
-      <span>{{ surah.nameArabic }}</span>
-      <span class="qd-text-muted">{{ surah.surahNumber }}</span>
-    </li>
-  }
-</ul>
+<div class="missing-surahs-list-shell">
+  <header class="missing-surahs-list__header">
+    <span class="missing-surahs-list__header-row-number">{{ rowNumberHeader }}</span>
+    <span class="missing-surahs-list__header-name">{{ surahNameHeader }}</span>
+  </header>
+
+  <div
+    class="missing-surahs-list"
+    data-testid="missing-surahs-list"
+  >
+    @for (surah of surahs(); track surah.surahNumber; let index = $index) {
+      <div class="missing-surahs-list__row">
+        <span class="missing-surahs-list__row-number">{{ index + 1 }}</span>
+        <span class="missing-surahs-list__name">{{ surah.nameArabic }}</span>
+      </div>
+    }
+  </div>
+</div>

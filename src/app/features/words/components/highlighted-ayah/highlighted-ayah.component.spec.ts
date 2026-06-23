@@ -8,6 +8,7 @@ const words: AyahWordForHighlightDto[] = [
   { quranWordId: 10, wordNumber: 1, textUthmani: 'ألف', isAyahMarker: false },
   { quranWordId: 11, wordNumber: 2, textUthmani: 'باء', isAyahMarker: false },
   { quranWordId: 12, wordNumber: 3, textUthmani: 'جيم', isAyahMarker: false },
+  { quranWordId: 13, wordNumber: 4, textUthmani: '٣', isAyahMarker: true },
 ];
 
 describe('HighlightedAyahComponent', () => {
@@ -27,5 +28,19 @@ describe('HighlightedAyahComponent', () => {
     expect(tokens[0].classList.contains('highlighted-ayah__word--matched')).toBe(false);
     expect(tokens[1].classList.contains('highlighted-ayah__word--matched')).toBe(true);
     expect(tokens[2].classList.contains('highlighted-ayah__word--matched')).toBe(false);
+  });
+
+  it('omits ayah marker words', async () => {
+    await TestBed.configureTestingModule({
+      imports: [HighlightedAyahComponent],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(HighlightedAyahComponent);
+    fixture.componentRef.setInput('words', words);
+    fixture.componentRef.setInput('matchedQuranWordIds', [11]);
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.textContent).not.toContain('٣');
   });
 });

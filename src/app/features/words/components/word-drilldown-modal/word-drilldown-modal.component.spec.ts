@@ -52,6 +52,7 @@ function ayahPage(overrides: Partial<PagedResultDto<UniqueWordAyahMatchDto>> = {
         surahNumber: 1,
         surahNameArabic: 'سورة-تجريبية',
         ayahNumber: 1,
+        pageNumber: 1,
         matchedQuranWordIds: [1001],
         words: [{ quranWordId: 1001, wordNumber: 1, textUthmani: 'كلمة-تجريبية', isAyahMarker: false }],
       },
@@ -73,6 +74,15 @@ async function createFixture(initialState: WordDrilldownState) {
   return fixture;
 }
 
+async function createInlineFixture(initialState: WordDrilldownState) {
+  const fixture = await createFixture(initialState);
+  fixture.componentRef.setInput('inline', true);
+  fixture.detectChanges();
+  await fixture.whenStable();
+  fixture.detectChanges();
+  return fixture;
+}
+
 describe('WordDrilldownModalComponent', () => {
   beforeEach(() => {
     getTestBed().resetTestingModule();
@@ -88,7 +98,12 @@ describe('WordDrilldownModalComponent', () => {
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('[data-testid="word-drilldown-modal"]')).toBeTruthy();
     expect(root.querySelector('[data-testid="word-drilldown-title"]')?.textContent).toContain('كلمة-تجريبية');
-    expect(root.querySelector('[data-testid="word-drilldown-loading"]')).toBeTruthy();
+    const loading = root.querySelector('[data-testid="word-drilldown-loading"]');
+
+    expect(loading).toBeTruthy();
+    expect(loading?.getAttribute('aria-busy')).toBe('true');
+    expect(loading?.classList.contains('qd-skeleton-group')).toBe(true);
+    expect(loading?.querySelectorAll('.qd-skeleton--text')).toHaveLength(6);
   });
 
   it('renders surah list in success state', async () => {
@@ -96,6 +111,28 @@ describe('WordDrilldownModalComponent', () => {
 
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('[data-testid="surah-occurrences-list"]')).toBeTruthy();
+  });
+
+  it('uses the simple display text in the title when the selected word is simple mode', async () => {
+    const fixture = await createFixture(
+      state({
+        summary: {
+          id: 1,
+          kind: 'simple',
+          displayTextUthmani: 'كلمة-مشكولة',
+          textUthmaniSimple: 'كلمة-بسيطة',
+          occurrencesCount: 1,
+          ayahsCount: 1,
+          surahsCount: 1,
+          missingSurahsCount: 113,
+          firstVerseKey: '1:1',
+          firstLocation: '1:1:1',
+        },
+      }),
+    );
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('[data-testid="word-drilldown-title"]')?.textContent).toContain('كلمة-بسيطة');
   });
 
   it('renders missing-surahs list in success state', async () => {
@@ -202,5 +239,13 @@ describe('WordDrilldownModalComponent', () => {
     const fixture = await createFixture(state({ isOpen: false }));
 
     expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="word-drilldown-modal"]')).toBeNull();
+  });
+
+  it('renders the inline panel prompt when no word is selected', async () => {
+    const fixture = await createInlineFixture(state({ isOpen: false }));
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('[data-testid="word-drilldown-empty"]')?.textContent).toContain('اختر كلمة لعرض تفاصيلها');
+    expect(root.querySelector('[data-testid="word-drilldown-modal"]')).toBeNull();
   });
 });

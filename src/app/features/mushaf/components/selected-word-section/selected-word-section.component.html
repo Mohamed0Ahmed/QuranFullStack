@@ -20,11 +20,6 @@
 
     <header class="selected-word-section__header">
       @if (loadState().isLoading) {
-        <!--
-          UI-001 refinement: while loading, the header never shows the previous
-          word glyph as current data — it renders a neutral wave/shimmer
-          placeholder of the same height instead, masking the retained word.
-        -->
         <span
           class="qd-skeleton qd-skeleton--rounded-md selected-word-section__word-skeleton"
           aria-hidden="true"
@@ -40,11 +35,6 @@
 
     <div class="selected-word-section__content">
       @if (loadState().isLoading) {
-        <!--
-          Structured, label-preserving loading: the static labels and grid stay
-          visible; only the values under them shimmer. The segment area (whose
-          count is dynamic) shows a small fixed set of segment-card placeholders.
-        -->
         <section class="selected-word-section__section" aria-label="قطع الكلمة والإعراب" aria-busy="true">
           <div class="selected-word-section__segments-block">
             <div class="selected-word-section__segment-skeletons" data-testid="segment-skeletons" aria-hidden="true">
