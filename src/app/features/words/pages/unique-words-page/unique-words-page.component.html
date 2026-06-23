@@ -1,5 +1,5 @@
 <div class="qd-page">
-  <div class="qd-container">
+  <div class="qd-container unique-words-page-frame unique-words-page-frame--wide">
     <div class="qd-page-header">
       <h1 class="qd-page-title" data-testid="unique-words-page-title">الكلمات الفريدة</h1>
       <p class="qd-text-muted" data-testid="unique-words-page-mode">{{ modeLabel() }}</p>
@@ -55,17 +55,16 @@
             <qd-unique-words-table
               [rows]="listState().items"
               [selectedWordId]="drilldownState().selectedWordId"
-              [loadingMore]="listState().isLoadingMore"
-              [hasMore]="listState().items.length < listState().totalCount"
+              [currentPage]="listState().page"
+              [pageSize]="listState().pageSize"
               (rowSelected)="onRowSelected($event)"
               (drilldownOpen)="onDrilldownOpen($event.word, $event.view)"
-              (loadMoreRequested)="onLoadMoreRequested()"
             />
             <qd-unique-words-list-pagination
               [currentPage]="listState().page"
               [pageSize]="listState().pageSize"
               [totalCount]="listState().totalCount"
-              [disabled]="listState().isLoadingMore"
+              [disabled]="listState().status === 'loading'"
               (pageChange)="onPaginationPageChange($event)"
             />
           </section>

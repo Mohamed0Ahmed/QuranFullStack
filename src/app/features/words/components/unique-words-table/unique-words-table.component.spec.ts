@@ -66,19 +66,6 @@ describe('UniqueWordsTableComponent', () => {
     expect(selected).toHaveBeenCalledTimes(1);
   });
 
-  it('requests another page near the loaded boundary', () => {
-    const fixture = setup(Array.from({ length: 20 }, (_, index) => row(index + 1)), {
-      hasMore: true,
-      loadingMore: false,
-    });
-    const loadMoreRequested = vi.fn();
-    fixture.componentInstance.loadMoreRequested.subscribe(loadMoreRequested);
-
-    fixture.componentInstance.onScrolledIndexChange(18);
-
-    expect(loadMoreRequested).toHaveBeenCalledTimes(1);
-  });
-
   it('renders count-only chips without repeating column labels in each row', () => {
     const fixture = setup([row(1)]);
     const root = fixture.nativeElement as HTMLElement;
@@ -87,15 +74,14 @@ describe('UniqueWordsTableComponent', () => {
     expect(root.querySelectorAll('.word-count-chip__count').length).toBeGreaterThan(0);
   });
 
-  it('scrolls to the first row of the requested page in the fallback body', () => {
+  it('scrolls the fallback body back to the top', () => {
     const fixture = setup(Array.from({ length: 60 }, (_, index) => row(index + 1)));
     const root = fixture.nativeElement as HTMLElement;
-    const rows = root.querySelectorAll('.unique-words-table__row');
-    const scrollIntoView = vi.fn();
-    rows.item(50).scrollIntoView = scrollIntoView;
+    const body = root.querySelector('.unique-words-table__body') as HTMLElement;
+    body.scrollTop = 120;
 
-    fixture.componentInstance.scrollToPage(2, 50);
+    fixture.componentInstance.scrollToTop();
 
-    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
+    expect(body.scrollTop).toBe(0);
   });
 });

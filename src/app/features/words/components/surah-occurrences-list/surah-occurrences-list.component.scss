@@ -1,0 +1,75 @@
+:host {
+  display: block;
+}
+
+.surah-occurrences-list-shell {
+  display: flex;
+  flex-direction: column;
+}
+
+.surah-occurrences-list__header {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--qd-space-3);
+  padding: var(--qd-space-2) var(--qd-space-3);
+  border-block-end: 1px solid var(--qd-border);
+  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--qd-text-muted);
+}
+
+.surah-occurrences-list__header-row-number,
+.surah-occurrences-list__row-number {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.surah-occurrences-list__header-name {
+  min-width: 0;
+}
+
+.surah-occurrences-list__header-count {
+  flex-shrink: 0;
+}
+
+.surah-occurrences-list {
+  display: block;
+  block-size: min(60vh, 28rem);
+  overflow: auto;
+  scrollbar-gutter: stable;
+}
+
+:host-context(.word-drilldown-panel) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+
+:host-context(.word-drilldown-panel) .surah-occurrences-list-shell {
+  flex: 1;
+  min-height: 0;
+}
+
+:host-context(.word-drilldown-panel) .surah-occurrences-list {
+  flex: 1;
+  min-height: 0;
+  block-size: auto;
+}
+
+.surah-occurrences-list__row {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--qd-space-3);
+  min-block-size: 44px;
+  padding: var(--qd-space-2) var(--qd-space-3);
+  border-block-end: 1px solid var(--qd-border);
+}
+
+.surah-occurrences-list__name {
+  min-width: 0;
+}

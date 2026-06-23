@@ -1,5 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 
+import {
+  formatPageRowRangeLabel,
+  pageRowRange,
+} from '../../utils/unique-words-pagination-display';
+
 @Component({
   selector: 'qd-unique-words-list-pagination',
   standalone: true,
@@ -19,5 +24,12 @@ export class UniqueWordsListPaginationComponent {
 
   protected readonly lastPage = computed(() =>
     Math.max(1, Math.ceil(this.totalCount() / this.pageSize())),
+  );
+
+  protected readonly pageRangeLabel = computed(() =>
+    formatPageRowRangeLabel(
+      pageRowRange(this.currentPage(), this.pageSize(), this.totalCount()),
+      this.totalCount(),
+    ),
   );
 }

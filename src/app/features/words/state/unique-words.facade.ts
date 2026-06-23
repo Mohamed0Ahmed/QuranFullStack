@@ -21,7 +21,6 @@ import {
   WordDrilldownView,
 } from '../models/unique-words.models';
 import { mapUniqueWordListItems } from '../utils/unique-words-display.mapper';
-import { mergeUniqueWordListItems } from '../utils/unique-words-state.helpers';
 import { extractDrilldownMessage } from '../utils/unique-words-drilldown.state';
 import { parseUniqueWordsQueryParams } from './unique-words-url-sync';
 import { UniqueWordsDrilldownFacade } from './unique-words-drilldown.facade';
@@ -35,7 +34,6 @@ export class UniqueWordsFacade {
 
   private readonly _status = signal<LoadStatus>('idle');
   private readonly _items = signal<readonly UniqueWordListItemViewModel[]>([]);
-  private readonly _isLoadingMore = signal<boolean>(false);
   private readonly _loadedPage = signal<number>(0);
   private readonly _page = signal<number>(DEFAULT_LIST_PAGE);
   private readonly _totalCount = signal<number>(0);
@@ -49,7 +47,7 @@ export class UniqueWordsFacade {
   // a class field initializer's cross-module const read to `undefined` under
   // the multi-entry test build (its export getter swallows the temporal-dead-
   // zone access); a getter defers the read past module init, matching how the
-  // other defaults are read. Behavior is identical (production folds this to 50).
+  // other defaults are read. Behavior is identical (production folds this to 1000).
   private get _pageSize(): number {
     return DEFAULT_LIST_PAGE_SIZE;
   }
@@ -60,7 +58,6 @@ export class UniqueWordsFacade {
   readonly listState = computed<UniqueWordsListState>(() => ({
     status: this._status(),
     items: [...this._items()],
-    isLoadingMore: this._isLoadingMore(),
     page: this._page(),
     pageSize: this._pageSize,
     totalCount: this._totalCount(),
@@ -74,7 +71,6 @@ export class UniqueWordsFacade {
 
   readonly status = this._status.asReadonly();
   readonly items = this._items.asReadonly();
-  readonly isLoadingMore = this._isLoadingMore.asReadonly();
   readonly mode = this._mode.asReadonly();
   readonly search = this._search.asReadonly();
   readonly sort = this._sort.asReadonly();
@@ -155,23 +151,17 @@ export class UniqueWordsFacade {
   private runListRequest(): Observable<void> {
     const targetPage = this._page();
 
-    if (this._loadedPage() > targetPage) {
-      this.resetAccumulatedList();
-    }
-
     if (this._loadedPage() === targetPage && this._items().length > 0) {
-      this._isLoadingMore.set(false);
       return of(undefined);
     }
 
-    this._status.set(this._loadedPage() === 0 ? 'loading' : 'success');
-    this._isLoadingMore.set(this._loadedPage() > 0);
+    this._status.set('loading');
     this._errorMessage.set('');
 
     return this.api
-      .getList(this._mode(), this._search(), this._sort(), this._loadedPage() + 1, this._pageSize)
+      .getList(this._mode(), this._search(), this._sort(), targetPage, this._pageSize)
       .pipe(
-        tap((response) => this.handleListResponse(response, targetPage)),
+        tap((response) => this.handleListResponse(response)),
         catchError((err) => {
           this.handleListError(err);
           return of(undefined);
@@ -180,10 +170,7 @@ export class UniqueWordsFacade {
       );
   }
 
-  private handleListResponse(
-    response: ApiResponse<PagedResultDto<UniqueWordListItemDto>>,
-    targetPage: number,
-  ): void {
+  private handleListResponse(response: ApiResponse<PagedResultDto<UniqueWordListItemDto>>): void {
     if (!response.isSuccess || !response.data) {
       this.resetAccumulatedList();
       this._status.set('error');
@@ -193,21 +180,12 @@ export class UniqueWordsFacade {
 
     const data = response.data;
     const nextRows = mapUniqueWordListItems(data.items, this._mode());
-    const mergedRows = mergeUniqueWordListItems(this._items(), nextRows);
 
-    this._items.set(mergedRows);
+    this._items.set(nextRows);
     this._loadedPage.set(data.page);
     this._totalCount.set(data.totalCount);
     this._status.set(data.totalCount === 0 ? 'empty' : 'success');
     this._errorMessage.set('');
-
-    if (data.totalCount > mergedRows.length && this._loadedPage() < targetPage) {
-      this._isLoadingMore.set(true);
-      this.loadList();
-      return;
-    }
-
-    this._isLoadingMore.set(false);
   }
 
   private handleListError(err: unknown): void {
@@ -222,6 +200,5 @@ export class UniqueWordsFacade {
     this._totalCount.set(0);
     this._status.set('idle');
     this._errorMessage.set('');
-    this._isLoadingMore.set(false);
   }
 }

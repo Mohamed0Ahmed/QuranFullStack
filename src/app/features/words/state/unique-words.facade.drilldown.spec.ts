@@ -86,7 +86,7 @@ describe('UniqueWordsFacade drill-down', () => {
         of({
           isSuccess: true,
           message: 'تم',
-          data: { page: 1, pageSize: 50, totalCount: 1, items: [word(1)] },
+          data: { page: 1, pageSize: 1000, totalCount: 1, items: [word(1)] },
         }),
       ),
       getMentionedSurahs: vi.fn(() =>
@@ -175,7 +175,7 @@ describe('UniqueWordsFacade drill-down', () => {
       of({
         isSuccess: true,
         message: 'تم',
-        data: { page: 1, pageSize: 20, totalCount: 0, items: [] },
+        data: { page: 1, pageSize: 1000, totalCount: 0, items: [] },
       }),
     );
     const facade = setup({ getMentionedSurahs, getAyahMatches });
@@ -223,7 +223,7 @@ describe('UniqueWordsFacade drill-down', () => {
         message: 'تم',
         data: {
           page: 1,
-          pageSize: 20,
+          pageSize: 1000,
           totalCount: 1,
           items: [
             {
@@ -232,6 +232,7 @@ describe('UniqueWordsFacade drill-down', () => {
               surahNumber: 1,
               surahNameArabic: 'سورة-تجريبية',
               ayahNumber: 1,
+              pageNumber: 1,
               matchedQuranWordIds: [1001],
               words: [{ quranWordId: 1001, wordNumber: 1, textUthmani: 'كلمة-تجريبية', isAyahMarker: false }],
             },
@@ -253,7 +254,7 @@ describe('UniqueWordsFacade drill-down', () => {
 
     facade.setDrilldownView('ayahs');
     expect(facade.drilldownState().view).toBe('ayahs');
-    expect(getAyahMatches).toHaveBeenCalledWith('tashkeel', 1, 1, 20);
+    expect(getAyahMatches).toHaveBeenCalledWith('tashkeel', 1, 1, 1000);
     expect(facade.drilldownState().status).toBe('success');
   });
 
@@ -262,7 +263,7 @@ describe('UniqueWordsFacade drill-down', () => {
       of({
         isSuccess: true,
         message: 'تم',
-        data: { page: 2, pageSize: 20, totalCount: 3, items: [] },
+        data: { page: 2, pageSize: 1000, totalCount: 3, items: [] },
       }),
     );
     const facade = setup({ getAyahMatches });
@@ -270,7 +271,7 @@ describe('UniqueWordsFacade drill-down', () => {
     facade.openDrilldown(word(1), 'ayahs');
     facade.setAyahPage(2);
 
-    expect(getAyahMatches).toHaveBeenLastCalledWith('tashkeel', 1, 2, 20);
+    expect(getAyahMatches).toHaveBeenLastCalledWith('tashkeel', 1, 2, 1000);
     expect(facade.drilldownState().ayahPage).toBe(2);
   });
 
@@ -280,7 +281,7 @@ describe('UniqueWordsFacade drill-down', () => {
         of({
           isSuccess: true,
           message: 'تم',
-          data: { page: 1, pageSize: 20, totalCount: 0, items: [] },
+          data: { page: 1, pageSize: 1000, totalCount: 0, items: [] },
         }),
       ),
     });

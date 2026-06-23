@@ -39,6 +39,11 @@ export const WORD_DRILLDOWN_VIEW_LABELS: Record<WordDrilldownView, string> = {
 };
 
 export const OCCURRENCES_CHIP_LABEL = 'المواضع';
+export const SURAH_OCCURRENCES_COUNT_HEADER = 'عدد مرات الظهور';
+export const ROW_NUMBER_HEADER = 'م';
+export const SURAH_NAME_HEADER = 'السورة';
+export const AYAH_REF_LABEL = 'آية';
+export const MUSHAF_PAGE_REF_LABEL = 'ص';
 
 export const EMPTY_LIST_LABEL = 'لا توجد نتائج';
 export const SEARCH_LABEL = 'بحث';
@@ -57,3 +62,10 @@ export const RESTORED_WORD_NOT_FOUND_LABEL = 'الكلمة المحددة غير
 
 export const RESTORED_WORD_LOAD_ERROR_LABEL =
   'تعذّر تحميل الكلمة المحددة. تحقّق من الاتصال ثم أعد المحاولة.';
+
+export const PAGINATION_RANGE_OF_CONNECTOR = 'من';
+export const PAGINATION_EMPTY_RANGE_LABEL = `0 ${PAGINATION_RANGE_OF_CONNECTOR} 0`;
+
+export function formatPaginationRangeLabel(start: number, end: number, totalCount: number): string {
+  return `${start}–${end} ${PAGINATION_RANGE_OF_CONNECTOR} ${totalCount}`;
+}

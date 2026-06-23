@@ -86,6 +86,7 @@ export interface UniqueWordAyahMatchDto {
   surahNumber: number;
   surahNameArabic: string;
   ayahNumber: number;
+  pageNumber: number;
   /** Exact quran_words.id values; only these are highlighted. */
   matchedQuranWordIds: number[];
   words: AyahWordForHighlightDto[];
@@ -95,7 +96,6 @@ export type LoadStatus = 'idle' | 'loading' | 'success' | 'empty' | 'error' | 'n
 
 export interface UniqueWordsListState {
   status: LoadStatus;
-  isLoadingMore: boolean;
   items: UniqueWordListItemViewModel[];
   page: number;
   pageSize: number;
@@ -126,9 +126,9 @@ export const WORD_DRILLDOWN_VIEW_KEYS = ['surahs', 'missing', 'ayahs'] as const 
 export const DEFAULT_UNIQUE_WORD_KIND: UniqueWordKind = 'tashkeel';
 export const DEFAULT_UNIQUE_WORD_SORT: UniqueWordSort = 'mushaf-order';
 export const DEFAULT_LIST_PAGE = 1;
-export const DEFAULT_LIST_PAGE_SIZE = 50;
+export const UNIQUE_WORDS_PAGE_SIZE = 1000;
+export const DEFAULT_LIST_PAGE_SIZE = UNIQUE_WORDS_PAGE_SIZE;
 export const DEFAULT_AYAH_PAGE = 1;
-export const DEFAULT_AYAH_PAGE_SIZE = 20;
 export const TOTAL_SURAHS = 114;
 
 export function isUniqueWordKind(value: unknown): value is UniqueWordKind {

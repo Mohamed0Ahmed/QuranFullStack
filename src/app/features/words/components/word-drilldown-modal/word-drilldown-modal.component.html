@@ -31,12 +31,12 @@
       }
     </div>
 
-      <div class="word-drilldown-modal__body">
-        @if (!state().isOpen) {
-          <div class="qd-empty-state" data-testid="word-drilldown-empty">
-            {{ panelEmptyLabel || 'اختر كلمة لعرض تفاصيلها' }}
-          </div>
-        } @else {
+    <div class="word-drilldown-modal__body" cdkScrollable>
+      @if (!state().isOpen) {
+        <div class="qd-empty-state" data-testid="word-drilldown-empty">
+          {{ panelEmptyLabel || 'اختر كلمة لعرض تفاصيلها' }}
+        </div>
+      } @else {
         @switch (state().status) {
           @case ('loading') {
             <div class="qd-loading-state" data-testid="word-drilldown-loading">{{ loadingLabel }}</div>
@@ -91,6 +91,8 @@
       class="qd-modal word-drilldown-modal"
       role="dialog"
       aria-modal="true"
+      cdkTrapFocus
+      cdkTrapFocusAutoCapture
       [attr.aria-label]="title()"
       data-testid="word-drilldown-modal"
       (click)="$event.stopPropagation()"
@@ -123,7 +125,7 @@
         }
       </nav>
 
-      <div class="word-drilldown-modal__body">
+      <div class="word-drilldown-modal__body" cdkScrollable>
         @switch (state().status) {
           @case ('loading') {
             <div class="qd-loading-state" data-testid="word-drilldown-loading">{{ loadingLabel }}</div>

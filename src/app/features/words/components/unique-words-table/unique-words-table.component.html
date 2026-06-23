@@ -1,6 +1,12 @@
 <div class="unique-words-table" role="table" aria-label="جدول الكلمات الفريدة">
   <div class="unique-words-table__header" role="rowgroup">
     <div class="unique-words-table__header-row" role="row">
+      <div
+        class="unique-words-table__header-cell unique-words-table__header-cell--numeric unique-words-table__header-cell--row-number"
+        role="columnheader"
+      >
+        {{ rowNumberHeader }}
+      </div>
       <div class="unique-words-table__header-cell" role="columnheader">الكلمة</div>
       <div class="unique-words-table__header-cell unique-words-table__header-cell--numeric" role="columnheader">المواضع</div>
       <div class="unique-words-table__header-cell unique-words-table__header-cell--numeric" role="columnheader">الآيات</div>
@@ -17,15 +23,17 @@
       [maxBufferPx]="rowHeight * 8"
       role="rowgroup"
       aria-label="قائمة الكلمات الفريدة"
-      (scrolledIndexChange)="onScrolledIndexChange($event)"
     >
-      @for (row of rows(); track row.id) {
+      @for (row of rows(); track row.id; let index = $index) {
         <div
           class="unique-words-table__row"
           role="row"
           [class.qd-is-selected]="isSelected(row)"
           [attr.aria-selected]="isSelected(row)"
         >
+          <div class="unique-words-table__cell unique-words-table__cell--row-number" role="cell">
+            {{ rowNumber(index) }}
+          </div>
           <div class="unique-words-table__cell unique-words-table__word-cell" role="cell">
             <button
               type="button"
@@ -76,13 +84,16 @@
     </cdk-virtual-scroll-viewport>
   } @else {
     <div class="unique-words-table__body" role="rowgroup" aria-label="قائمة الكلمات الفريدة">
-      @for (row of rows(); track row.id) {
+      @for (row of rows(); track row.id; let index = $index) {
         <div
           class="unique-words-table__row"
           role="row"
           [class.qd-is-selected]="isSelected(row)"
           [attr.aria-selected]="isSelected(row)"
         >
+          <div class="unique-words-table__cell unique-words-table__cell--row-number" role="cell">
+            {{ rowNumber(index) }}
+          </div>
           <div class="unique-words-table__cell unique-words-table__word-cell" role="cell">
             <button
               type="button"
@@ -133,9 +144,3 @@
     </div>
   }
 </div>
-
-@if (loadingMore()) {
-  <div class="qd-loading-state unique-words-table__loading-more" aria-live="polite">
-    {{ loadingLabel }}
-  </div>
-}

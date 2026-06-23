@@ -94,7 +94,7 @@ function setup(api: Partial<UniqueWordsApi> = {}): UniqueWordsFacade {
             of({
               isSuccess: true,
               message: 'تم',
-              data: { page: 1, pageSize: 50, totalCount: 0, items: [] },
+              data: { page: 1, pageSize: 1000, totalCount: 0, items: [] },
             }),
           ),
           getSummary: vi.fn(),
@@ -179,7 +179,7 @@ describe('UniqueWordsFacade URL restore (US4)', () => {
       of({
         isSuccess: true,
         message: 'تم',
-        data: { page: 2, pageSize: 20, totalCount: 0, items: [] as UniqueWordAyahMatchDto[] },
+        data: { page: 2, pageSize: 1000, totalCount: 0, items: [] as UniqueWordAyahMatchDto[] },
       }),
     );
     const facade = setup({ getSummary, getAyahMatches });
@@ -188,7 +188,7 @@ describe('UniqueWordsFacade URL restore (US4)', () => {
 
     expect(facade.drilldownState().view).toBe('ayahs');
     expect(facade.drilldownState().ayahPage).toBe(2);
-    expect(getAyahMatches).toHaveBeenCalledWith('tashkeel', 42, 2, 20);
+    expect(getAyahMatches).toHaveBeenCalledWith('tashkeel', 42, 2, 1000);
   });
 
   it('reconciles same-word view and ayah-page changes from URL navigation', () => {
@@ -206,7 +206,7 @@ describe('UniqueWordsFacade URL restore (US4)', () => {
       of({
         isSuccess: true,
         message: 'تم',
-        data: { page: 3, pageSize: 20, totalCount: 0, items: [] as UniqueWordAyahMatchDto[] },
+        data: { page: 3, pageSize: 1000, totalCount: 0, items: [] as UniqueWordAyahMatchDto[] },
       }),
     );
     const facade = setup({ getSummary, getMentionedSurahs, getAyahMatches });
@@ -218,7 +218,7 @@ describe('UniqueWordsFacade URL restore (US4)', () => {
     expect(facade.drilldownState().view).toBe('ayahs');
     expect(facade.drilldownState().ayahPage).toBe(3);
     expect(getSummary).toHaveBeenCalledTimes(1);
-    expect(getAyahMatches).toHaveBeenCalledWith('tashkeel', 42, 3, 20);
+    expect(getAyahMatches).toHaveBeenCalledWith('tashkeel', 42, 3, 1000);
   });
 
   it('closes restored modal state when browser navigation removes the word param', () => {
@@ -359,7 +359,7 @@ describe('UniqueWordsFacade URL restore (US4)', () => {
       of({
         isSuccess: true,
         message: 'تم',
-        data: { page: 1, pageSize: 50, totalCount: 0, items: [] },
+        data: { page: 1, pageSize: 1000, totalCount: 0, items: [] },
       }),
     );
     const getSummary = vi.fn(() =>

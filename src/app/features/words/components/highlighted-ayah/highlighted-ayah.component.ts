@@ -14,6 +14,7 @@ export class HighlightedAyahComponent {
   readonly matchedQuranWordIds = input.required<readonly number[]>();
 
   private readonly matchedSet = computed(() => new Set(this.matchedQuranWordIds()));
+  protected readonly visibleWords = computed(() => this.words().filter((word) => !word.isAyahMarker));
 
   protected isHighlighted(wordId: number): boolean {
     return this.matchedSet().has(wordId);

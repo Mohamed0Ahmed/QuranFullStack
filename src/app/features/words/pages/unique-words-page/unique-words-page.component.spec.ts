@@ -44,7 +44,6 @@ function item(id: number): UniqueWordListItemViewModel {
 function stateFor(overrides: Partial<UniqueWordsListState>): UniqueWordsListState {
   return {
     status: 'success',
-    isLoadingMore: false,
     items: [item(1), item(2)],
     page: 1,
     pageSize: 50,
@@ -194,7 +193,7 @@ describe('UniqueWordsPageComponent', () => {
   it('renders list pagination when totalCount exceeds pageSize', async () => {
     const root = await render({ totalCount: 120, page: 1 });
 
-    expect(root.querySelector('[data-testid="unique-words-pagination-label"]')?.textContent).toContain('1 / 3');
+    expect(root.querySelector('[data-testid="unique-words-pagination-label"]')?.textContent).toContain('1–50 من 120');
   });
 
   it('hides list pagination when totalCount fits in one page', async () => {

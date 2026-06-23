@@ -35,7 +35,7 @@ describe('UniqueWordsListPaginationComponent', () => {
     const fixture = setup({ currentPage: 2, totalCount: 120 });
     const root = fixture.nativeElement as HTMLElement;
 
-    expect(root.querySelector('[data-testid="unique-words-pagination-label"]')?.textContent).toContain('2 / 3');
+    expect(root.querySelector('[data-testid="unique-words-pagination-label"]')?.textContent).toContain('51–100 من 120');
   });
 
   it('disables previous on the first page', () => {

@@ -81,7 +81,7 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
   protected readonly searchDraft = signal('');
 
   private readonly table = viewChild(UniqueWordsTableComponent);
-  private readonly pendingScrollPage = signal<number | null>(null);
+  private lastScrolledListPage = 0;
 
   protected readonly modeLabel = computed(() => UNIQUE_WORD_KIND_LABELS[this.facade.mode()]);
 
@@ -97,25 +97,20 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
     });
 
     effect(() => {
-      const targetPage = this.pendingScrollPage();
-      if (targetPage === null) {
-        return;
-      }
-
       const state = this.listState();
       const table = this.table();
-      if (!table || state.isLoadingMore || state.page !== targetPage) {
-        return;
-      }
-
-      const requiredRows = (targetPage - 1) * state.pageSize;
-      if (state.items.length <= requiredRows && state.totalCount > requiredRows) {
+      if (
+        !table ||
+        state.status === 'loading' ||
+        state.page === this.lastScrolledListPage ||
+        (state.status !== 'success' && state.status !== 'empty')
+      ) {
         return;
       }
 
       untracked(() => {
-        table.scrollToPage(targetPage, state.pageSize);
-        this.pendingScrollPage.set(null);
+        table.scrollToTop();
+        this.lastScrolledListPage = state.page;
       });
     });
   }
@@ -187,17 +182,11 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
     this.updateQueryParams(buildUniqueWordsQueryParams({ ayahPage: page }));
   }
 
-  protected onLoadMoreRequested(): void {
-    const nextPage = this.listState().page + 1;
-    this.updateQueryParams(buildUniqueWordsQueryParams({ page: nextPage }));
-  }
-
   protected onPaginationPageChange(page: number): void {
     if (page === this.listState().page) {
       return;
     }
 
-    this.pendingScrollPage.set(page);
     this.updateQueryParams(buildUniqueWordsQueryParams({ page }));
   }
 

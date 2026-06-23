@@ -52,6 +52,7 @@ function ayahPage(overrides: Partial<PagedResultDto<UniqueWordAyahMatchDto>> = {
         surahNumber: 1,
         surahNameArabic: 'سورة-تجريبية',
         ayahNumber: 1,
+        pageNumber: 1,
         matchedQuranWordIds: [1001],
         words: [{ quranWordId: 1001, wordNumber: 1, textUthmani: 'كلمة-تجريبية', isAyahMarker: false }],
       },

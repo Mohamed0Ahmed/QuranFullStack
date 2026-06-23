@@ -2,7 +2,6 @@ import {
   AfterViewInit,
   ChangeDetectionStrategy,
   Component,
-  effect,
   ElementRef,
   inject,
   input,
@@ -14,14 +13,15 @@ import {
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
 
 import { WordCountChipComponent } from '../word-count-chip/word-count-chip.component';
-import { LOADING_LABEL, OCCURRENCES_CHIP_LABEL, WORD_DRILLDOWN_VIEW_LABELS } from '../../models/unique-words.labels';
+import { OCCURRENCES_CHIP_LABEL, ROW_NUMBER_HEADER, WORD_DRILLDOWN_VIEW_LABELS } from '../../models/unique-words.labels';
 import {
+  UNIQUE_WORDS_PAGE_SIZE,
   UniqueWordListItemViewModel,
   WordDrilldownView,
 } from '../../models/unique-words.models';
+import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
 
 const ROW_HEIGHT = 60;
-const LOAD_MORE_THRESHOLD_ROWS = 3;
 
 @Component({
   selector: 'qd-unique-words-table',
@@ -36,14 +36,13 @@ export class UniqueWordsTableComponent implements AfterViewInit, OnDestroy {
 
   readonly rows = input.required<readonly UniqueWordListItemViewModel[]>();
   readonly selectedWordId = input<number | null>(null);
-  readonly loadingMore = input(false);
-  readonly hasMore = input(false);
+  readonly currentPage = input(1);
+  readonly pageSize = input(UNIQUE_WORDS_PAGE_SIZE);
 
   readonly rowSelected = output<UniqueWordListItemViewModel>();
   readonly drilldownOpen = output<{ word: UniqueWordListItemViewModel; view: WordDrilldownView }>();
-  readonly loadMoreRequested = output<void>();
 
-  protected readonly loadingLabel = LOADING_LABEL;
+  protected readonly rowNumberHeader = ROW_NUMBER_HEADER;
   protected readonly occurrencesLabel = OCCURRENCES_CHIP_LABEL;
   protected readonly ayahsLabel = WORD_DRILLDOWN_VIEW_LABELS.ayahs;
   protected readonly surahsLabel = WORD_DRILLDOWN_VIEW_LABELS.surahs;
@@ -53,19 +52,7 @@ export class UniqueWordsTableComponent implements AfterViewInit, OnDestroy {
 
   @ViewChild(CdkVirtualScrollViewport) private viewport?: CdkVirtualScrollViewport;
 
-  private lastObservedRowsLength = 0;
-  private loadMoreEmittedForLength = -1;
   private resizeObserver?: ResizeObserver;
-
-  constructor() {
-    effect(() => {
-      const length = this.rows().length;
-      if (length !== this.lastObservedRowsLength) {
-        this.lastObservedRowsLength = length;
-        this.loadMoreEmittedForLength = -1;
-      }
-    });
-  }
 
   ngAfterViewInit(): void {
     const element = this.viewport?.elementRef.nativeElement;
@@ -115,44 +102,19 @@ export class UniqueWordsTableComponent implements AfterViewInit, OnDestroy {
     return this.selectedWordId() === row.id;
   }
 
-  protected trackById(_: number, row: UniqueWordListItemViewModel): number {
-    return row.id;
+  protected rowNumber(index: number): number {
+    return pageRelativeRowNumber(this.currentPage(), this.pageSize(), index);
   }
 
-  onScrolledIndexChange(index: number): void {
-    if (!this.hasMore() || this.loadingMore()) {
-      return;
-    }
-
-    if (this.rows().length === 0) {
-      return;
-    }
-
-    const thresholdIndex = Math.max(0, this.rows().length - LOAD_MORE_THRESHOLD_ROWS);
-
-    if (index < thresholdIndex) {
-      return;
-    }
-
-    if (this.loadMoreEmittedForLength === this.rows().length) {
-      return;
-    }
-
-    this.loadMoreEmittedForLength = this.rows().length;
-    this.loadMoreRequested.emit();
-  }
-
-  scrollToPage(page: number, pageSize: number): void {
-    const index = Math.max(0, (page - 1) * pageSize);
-    const clampedIndex = Math.min(index, Math.max(0, this.rows().length - 1));
-
+  scrollToTop(): void {
     if (this.useVirtualScroll() && this.viewport) {
-      this.viewport.scrollToIndex(clampedIndex, 'smooth');
+      this.viewport.scrollToIndex(0, 'auto');
       return;
     }
 
-    const rows = this.host.nativeElement.querySelectorAll('.unique-words-table__row');
-    const row = rows.item(clampedIndex) as HTMLElement | null;
-    row?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const body = this.host.nativeElement.querySelector('.unique-words-table__body') as HTMLElement | null;
+    if (body) {
+      body.scrollTop = 0;
+    }
   }
 }

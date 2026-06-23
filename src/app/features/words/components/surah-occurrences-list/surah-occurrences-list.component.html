@@ -1,8 +1,23 @@
-<ul class="surah-occurrences-list" data-testid="surah-occurrences-list">
-  @for (surah of surahs(); track surah.surahNumber) {
-    <li class="surah-occurrences-list__row">
-      <span class="surah-occurrences-list__name">{{ surah.nameArabic }}</span>
-      <span class="qd-badge">{{ surah.occurrencesInSurah }}</span>
-    </li>
-  }
-</ul>
+<div class="surah-occurrences-list-shell">
+  <header class="surah-occurrences-list__header">
+    <span class="surah-occurrences-list__header-row-number">{{ rowNumberHeader }}</span>
+    <span class="surah-occurrences-list__header-name">السورة</span>
+    <span class="surah-occurrences-list__header-count">{{ occurrencesCountHeader }}</span>
+  </header>
+
+  <cdk-virtual-scroll-viewport
+    class="surah-occurrences-list"
+    [itemSize]="rowHeight"
+    [minBufferPx]="rowHeight * 4"
+    [maxBufferPx]="rowHeight * 8"
+    data-testid="surah-occurrences-list"
+  >
+    @for (surah of surahs(); track surah.surahNumber; let index = $index) {
+      <div class="surah-occurrences-list__row">
+        <span class="surah-occurrences-list__row-number">{{ index + 1 }}</span>
+        <span class="surah-occurrences-list__name">{{ surah.nameArabic }}</span>
+        <span class="qd-badge">{{ surah.occurrencesInSurah }}</span>
+      </div>
+    }
+  </cdk-virtual-scroll-viewport>
+</div>

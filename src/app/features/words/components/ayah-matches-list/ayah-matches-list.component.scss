@@ -1,0 +1,102 @@
+:host {
+  display: block;
+}
+
+.ayah-matches-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qd-space-3);
+}
+
+.ayah-matches-list__viewport {
+  block-size: min(58vh, 30rem);
+  overflow: auto;
+  scrollbar-gutter: stable;
+}
+
+:host-context(.word-drilldown-panel) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+
+:host-context(.word-drilldown-panel) .ayah-matches-list {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+
+:host-context(.word-drilldown-panel) .ayah-matches-list__viewport {
+  flex: 1;
+  min-height: 0;
+  block-size: auto;
+}
+
+:host-context(.word-drilldown-panel) .ayah-matches-list__pagination {
+  flex-shrink: 0;
+}
+
+.ayah-matches-list__card {
+  display: grid;
+  gap: var(--qd-space-1);
+  margin-block-end: var(--qd-space-2);
+  padding: var(--qd-space-2);
+  background: var(--qd-surface);
+  --highlighted-ayah-font-size: 1rem;
+  --highlighted-ayah-line-height: 1.7;
+  --highlighted-ayah-matched-border-width: 1px;
+}
+
+.ayah-matches-list__card--alt {
+  background: color-mix(in oklch, var(--qd-surface) 97%, var(--qd-border));
+}
+
+.ayah-matches-list__meta-row {
+  display: flex;
+  align-items: center;
+  gap: var(--qd-space-2);
+}
+
+.ayah-matches-list__row-number {
+  flex-shrink: 0;
+  inline-size: 1.75rem;
+  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--qd-text-muted);
+}
+
+.ayah-matches-list__meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: var(--qd-space-2);
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.ayah-matches-list__surah-name {
+  color: var(--qd-text);
+  font-weight: 600;
+}
+
+.ayah-matches-list__ref {
+  color: var(--qd-text-muted);
+}
+
+.ayah-matches-list__ref-label {
+  margin-inline-end: 0.15em;
+}
+
+.ayah-matches-list__pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--qd-space-3);
+}

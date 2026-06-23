@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { A11yModule } from '@angular/cdk/a11y';
+import { ScrollingModule } from '@angular/cdk/scrolling';
 
 import { SurahOccurrencesListComponent } from '../surah-occurrences-list/surah-occurrences-list.component';
 import { MissingSurahsListComponent } from '../missing-surahs-list/missing-surahs-list.component';
@@ -19,7 +21,13 @@ import { mapUniqueWordSummaryDisplayText } from '../../utils/unique-words-displa
 @Component({
   selector: 'qd-word-drilldown-modal',
   standalone: true,
-  imports: [SurahOccurrencesListComponent, MissingSurahsListComponent, AyahMatchesListComponent],
+  imports: [
+    A11yModule,
+    ScrollingModule,
+    SurahOccurrencesListComponent,
+    MissingSurahsListComponent,
+    AyahMatchesListComponent,
+  ],
   templateUrl: './word-drilldown-modal.component.html',
   styleUrl: './word-drilldown-modal.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

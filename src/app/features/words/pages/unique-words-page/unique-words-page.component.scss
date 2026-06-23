@@ -2,8 +2,20 @@
   display: block;
 }
 
-.unique-words-layout-shell {
+.unique-words-page-frame {
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
   padding-inline: var(--qd-space-4);
+  box-sizing: border-box;
+}
+
+.unique-words-page-frame .qd-page-header {
+  margin-block-end: var(--qd-space-4);
+}
+
+.unique-words-layout-shell {
+  padding-inline: 0;
 }
 
 .unique-words-layout {
@@ -21,20 +33,20 @@
 }
 
 @media (min-width: 1024px) {
-  .unique-words-layout-shell {
-    margin-inline: calc(-1 * var(--qd-space-4));
-    // Physical right in RTL (inline-start): gutter from viewport edge.
-    padding-inline-start: var(--qd-space-4);
-    // Physical left in RTL (inline-end): align panel with container left edge.
-    padding-inline-end: max(
-      var(--qd-space-4),
-      calc(var(--qd-space-4) + max((100vw - 72rem - 2 * var(--qd-space-4)) / 2, 0px))
-    );
-  }
-
   .unique-words-layout {
+    /* Navbar + page header + tabs/search above the grid (~14rem). */
+    --unique-words-layout-chrome-block-size: 14rem;
+    --unique-words-table-body-height: min(
+      calc(100dvh - var(--unique-words-layout-chrome-block-size)),
+      58rem
+    );
+    --unique-words-table-header-height: 2.75rem;
+    --unique-words-table-card-height: calc(
+      var(--unique-words-table-header-height) + var(--unique-words-table-body-height)
+    );
+    gap: var(--qd-space-5);
     direction: rtl;
-    grid-template-columns: minmax(0, 7fr) minmax(18rem, 3fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: start;
   }
 
@@ -47,5 +59,19 @@
   .unique-words-layout__panel {
     grid-column: 2;
     min-width: 0;
+    block-size: var(--unique-words-table-card-height);
+  }
+}
+
+@media (min-width: 1440px) {
+  .unique-words-layout {
+    --unique-words-layout-chrome-block-size: 12rem;
+    --unique-words-table-body-height: min(
+      calc(100dvh - var(--unique-words-layout-chrome-block-size)),
+      64rem
+    );
+    --unique-words-table-card-height: calc(
+      var(--unique-words-table-header-height) + var(--unique-words-table-body-height)
+    );
   }
 }

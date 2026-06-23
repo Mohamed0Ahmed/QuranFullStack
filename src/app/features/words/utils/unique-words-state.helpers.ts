@@ -1,12 +1,4 @@
-import { UniqueWordListItemDto, UniqueWordListItemViewModel, UniqueWordSummaryDto } from '../models/unique-words.models';
-
-export function mergeUniqueWordListItems(
-  existing: readonly UniqueWordListItemViewModel[],
-  next: readonly UniqueWordListItemViewModel[],
-): UniqueWordListItemViewModel[] {
-  const seen = new Set(existing.map((item) => item.id));
-  return [...existing, ...next.filter((item) => !seen.has(item.id))];
-}
+import { UniqueWordListItemDto, UniqueWordSummaryDto } from '../models/unique-words.models';
 
 export function toUniqueWordSummary(word: UniqueWordListItemDto): UniqueWordSummaryDto {
   return {

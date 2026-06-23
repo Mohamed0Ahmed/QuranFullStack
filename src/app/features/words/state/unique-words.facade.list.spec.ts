@@ -195,7 +195,7 @@ describe('UniqueWordsFacade list state', () => {
     facade.unbindFromRoute();
   });
 
-  it('accumulates later pages instead of replacing the loaded rows', () => {
+  it('replaces the loaded rows when the page query param changes', () => {
     const getList = vi
       .fn()
       .mockReturnValueOnce(of(okResponse([item(1)], 2, 1)))
@@ -206,7 +206,9 @@ describe('UniqueWordsFacade list state', () => {
 
     route.setQueryParams({ page: '2' });
 
-    expect(facade.items().map((row) => row.id)).toEqual([1, 2]);
+    expect(getList).toHaveBeenCalledTimes(2);
+    expect(getList).toHaveBeenLastCalledWith('tashkeel', '', 'mushaf-order', 2, DEFAULT_LIST_PAGE_SIZE);
+    expect(facade.items().map((row) => row.id)).toEqual([2]);
     facade.unbindFromRoute();
   });
 
