@@ -19,12 +19,10 @@ type MushafQueryParams = Partial<
   Record<(typeof MUSHAF_URL_KEYS)[keyof typeof MUSHAF_URL_KEYS], string | number | null>
 >;
 
-/** True when the reader route has no query string (navbar return without deep-link params). */
 export function isBareMushafEntry(params: ParamMap): boolean {
   return params.keys.length === 0;
 }
 
-/** Maps a normalized reader snapshot to URL query params, omitting v1 defaults. */
 export function mushafSnapshotToQueryParams(snapshot: MushafUrlSnapshot): MushafQueryParams {
   const params: MushafQueryParams = {};
 

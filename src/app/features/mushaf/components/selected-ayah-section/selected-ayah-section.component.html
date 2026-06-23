@@ -21,11 +21,6 @@
     @if (activeTab() === 'tafsir' || activeTab() === 'translation' || activeTab() === 'full-i3rab') {
       <div class="selected-ayah-section__source">
         @if (loadState().isLoading) {
-          <!--
-            UI-001 parity: keep the static source label visible (it does not depend
-            on the loaded study) and shimmer only the value, mirroring the
-            source-selector's label + trigger layout instead of one bare block.
-          -->
           <div class="selected-ayah-section__source-loading" aria-busy="true">
             <span class="selected-ayah-section__source-loading-label">
               @switch (activeTab()) {
@@ -139,11 +134,6 @@
       [class.selected-ayah-section__content--flow]="activeTab() === 'mutashabihat'"
     >
       @if (loadState().isLoading) {
-        <!--
-          Structured loading: an ayah-text placeholder line plus several stacked
-          shimmer lines that read as loading tafsir/translation/i‘rab text —
-          not one giant block over the whole area.
-        -->
         <p class="selected-ayah-section__ayah selected-ayah-section__ayah--skeleton" dir="rtl" aria-hidden="true">
           <span class="qd-skeleton qd-skeleton--rounded-md selected-ayah-section__ayah-skeleton"></span>
         </p>

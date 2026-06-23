@@ -37,15 +37,6 @@ import {
   UniqueWordListItemViewModel,
 } from '../../models/unique-words.models';
 
-/**
- * Thin explorer shell for the Unique Words list (US2) and modal drill-downs
- * (US3), with full URL restore/share (US4). The active mode is read from the
- * `:mode` route segment; list state (`search`/`sort`/`page`) and modal state
- * (`word`/`view`/`ap`) live in query params. The page pushes user-driven changes
- * back through query params so state is refreshable/shareable; the facade owns
- * in-memory state and reads the URL on load to restore it. This component never
- * calls the API directly.
- */
 @Component({
   selector: 'qd-unique-words-page',
   standalone: true,
@@ -92,7 +83,6 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
   private readonly table = viewChild(UniqueWordsTableComponent);
   private readonly pendingScrollPage = signal<number | null>(null);
 
-  /** Active mode label, derived from the facade's route-driven mode signal. */
   protected readonly modeLabel = computed(() => UNIQUE_WORD_KIND_LABELS[this.facade.mode()]);
 
   constructor() {
@@ -211,7 +201,6 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
     this.updateQueryParams(buildUniqueWordsQueryParams({ page }));
   }
 
-  /** Replaces the named query params, preserving the others. */
   private updateQueryParams(changes: Record<string, string | null>): void {
     void this.router.navigate([], {
       relativeTo: this.route,

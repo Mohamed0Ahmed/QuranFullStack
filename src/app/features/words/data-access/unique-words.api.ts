@@ -15,25 +15,11 @@ import {
   UniqueWordSurahsDto,
 } from '../models/unique-words.models';
 
-/**
- * Data-access service for the Unique Words explorer. Returns the existing
- * `ApiResponse<T>` envelope without unwrapping it — the facade owns state
- * mapping and error handling. Child components never call this directly.
- */
 @Injectable({ providedIn: 'root' })
 export class UniqueWordsApi {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = environment.apiBaseUrl;
 
-  /**
-   * Loads one bounded page of unique words for the given mode.
-   *
-   * @param kind Stable mode route key (`tashkeel` or `simple`).
-   * @param search Arabic contains query; omitted from the request when blank.
-   * @param sort Sort option (`mushaf-order` | `occurrences` | `alpha`).
-   * @param page 1-based page number.
-   * @param pageSize Bounded page size.
-   */
   getList(
     kind: UniqueWordKind,
     search: string,
@@ -65,10 +51,6 @@ export class UniqueWordsApi {
     );
   }
 
-  /**
-   * Loads the summary of a selected unique word. Used to restore modal state
-   * from a shared URL before or alongside a drill-down read.
-   */
   getSummary(
     kind: UniqueWordKind,
     id: number,

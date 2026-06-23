@@ -4,7 +4,6 @@ import { Observable, finalize, shareReplay, tap } from 'rxjs';
 import { ApiResponse } from '../../../core/data-access/api-response.model';
 import { AyahStudySourceParams } from '../data-access/mushaf-ayah-study.api';
 
-/** Logical cache keys aligned with data-model §E. */
 export const MushafReaderCacheKeys = {
   page(pageNumber: number): string {
     return `mushaf:page:${pageNumber}`;
@@ -32,10 +31,6 @@ export const MushafReaderCacheKeys = {
 
 const DEFAULT_MAX_ENTRIES = 48;
 
-/**
- * Bounded in-memory cache for successful Mushaf reader API responses.
- * Deduplicates concurrent identical requests via shared in-flight observables.
- */
 @Injectable({ providedIn: 'root' })
 export class MushafReaderCache {
   private readonly maxEntries = DEFAULT_MAX_ENTRIES;
@@ -70,12 +65,7 @@ export class MushafReaderCache {
     return request$;
   }
 
-  /**
-   * Synchronously returns already-cached successful data for a key, or null when
-   * the key is not cached (an in-flight-only request is treated as a miss). Lets
-   * callers resolve a cache hit immediately without scheduling a debounced load
-   * or surfacing a loading state.
-   */
+  // Returns cached data synchronously; in-flight-only requests count as a miss.
   peek<T>(key: string): T | null {
     const cached = this.cache.get(key);
     if (cached?.isSuccess && cached.data != null) {
@@ -85,7 +75,6 @@ export class MushafReaderCache {
     return null;
   }
 
-  /** Warms the cache without surfacing errors to the caller. */
   prefetch<T>(key: string, loader: () => Observable<ApiResponse<T>>): void {
     if (this.cache.has(key) || this.inFlight.has(key)) {
       return;

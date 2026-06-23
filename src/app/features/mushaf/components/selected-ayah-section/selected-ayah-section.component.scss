@@ -15,7 +15,7 @@
   flex-direction: column;
   gap: var(--qd-space-3);
   // Stable floor so the card shell does not collapse to one line while the
-  // ayah study loads (UI-001); inner regions skeletonize instead. The
+  // ayah study loads; inner regions skeletonize instead. The
   // scrolling content region below keeps its own min-height: 0 so it can
   // shrink/scroll within this floor.
   min-height: 18rem;
@@ -43,7 +43,7 @@
   }
 
   // Mirror source-selector's column layout (label above value) so the static
-  // label stays put and only the value shimmers (UI-001 parity).
+  // label stays put and only the value shimmers.
   &__source-loading {
     display: flex;
     flex-direction: column;
@@ -100,7 +100,7 @@
       font-weight: 600;
     }
 
-    // Actions may be disabled while loading (UI-001) but must not disappear.
+    // Actions may be disabled while loading but must not disappear.
     &:disabled {
       opacity: 0.55;
       cursor: not-allowed;
@@ -201,7 +201,7 @@
     }
 
     // While loading, reserve a stable body height for the stacked shimmer lines
-    // so the content region does not look collapsed (UI-001 refinement).
+    // so the content region does not look collapsed.
     &--loading {
       min-height: 10rem;
     }

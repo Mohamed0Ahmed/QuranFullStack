@@ -95,7 +95,6 @@ export class UniqueWordsTableComponent implements AfterViewInit, OnDestroy {
     this.resizeObserver?.disconnect();
   }
 
-  /** Turns on virtual scroll once the viewport has a measurable height. */
   private activateVirtualScrollIfSized(element: HTMLElement): boolean {
     const hasHeight = element.clientHeight > 0;
     if (hasHeight) {
@@ -143,7 +142,6 @@ export class UniqueWordsTableComponent implements AfterViewInit, OnDestroy {
     this.loadMoreRequested.emit();
   }
 
-  /** Scrolls the table body to the first row of the requested 1-based page. */
   scrollToPage(page: number, pageSize: number): void {
     const index = Math.max(0, (page - 1) * pageSize);
     const clampedIndex = Math.min(index, Math.max(0, this.rows().length - 1));

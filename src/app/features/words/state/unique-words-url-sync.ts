@@ -14,26 +14,14 @@ import {
 } from '../models/unique-words.models';
 
 /**
- * Pure query-param <-> explorer-state helpers for US4 URL restore/share.
- *
- * These functions own the only non-trivial parsing/normalization rules for the
- * explorer query params so the facade can stay thin (see plan.md watch item on
- * `unique-words.facade.ts`). They are framework-light: `ParamMap` is the only
- * Angular type used, and only as an input shape — there are no DI or zone
- * dependencies, so the module is unit-testable in isolation.
- *
- * Parsing rules (see `contracts/frontend-routing-state.md`):
+ * Parsing rules for explorer query params:
  * - `search` defaults to empty.
- * - `sort` defaults to `mushaf-order`; an unsupported value falls back to the
- *   default rather than failing, because a shared URL with a typo should still
- *   restore the list.
- * - `page` defaults to 1; a non-positive or non-numeric value falls back to 1.
- * - `word` is `null` when absent or non-numeric; a non-positive value is `null`.
+ * - `sort` defaults to `mushaf-order`; unsupported values fall back to the default.
+ * - `page` defaults to 1; non-positive or non-numeric values fall back to 1.
+ * - `word` is `null` when absent or non-numeric; non-positive values are `null`.
  * - `view` is `null` when absent or unsupported; only valid when a `word` is set.
  * - `ap` is `null` when absent; defaults to 1 when the modal ayahs view is open.
  */
-
-/** Parses explorer query params into typed state with documented defaults. */
 export function parseUniqueWordsQueryParams(queryParams: ParamMap): ParsedUniqueWordsQuery {
   const sortRaw = queryParams.get(UNIQUE_WORDS_QUERY_KEYS.sort);
   const sort: UniqueWordSort =
@@ -65,14 +53,6 @@ export function parseUniqueWordsQueryParams(queryParams: ParamMap): ParsedUnique
   };
 }
 
-/**
- * Builds query-param changes for `router.navigate([], { queryParams })` from a
- * partial state. Omitted fields are not included so `queryParamsHandling:
- * 'merge'` preserves them. Pass `null` to explicitly remove a param.
- *
- * Field types intentionally include `undefined` because the input is a `Partial`
- * of optional fields; `undefined` values are skipped (treated as "not provided").
- */
 export function buildUniqueWordsQueryParams(
   changes: Partial<{
     search: string | null;
@@ -109,15 +89,10 @@ export function buildUniqueWordsQueryParams(
   return params;
 }
 
-/**
- * Builds the query-param changes that close the modal while preserving the
- * list context (`search`/`sort`/`page` and the route mode are untouched).
- */
 export function buildModalCloseQueryParams(): Record<string, null> {
   return Object.fromEntries(MODAL_QUERY_KEYS.map((key) => [key, null] as const));
 }
 
-/** Parses a string to a positive integer, returning `null` when invalid. */
 function parsePositiveInt(value: string | null): number | null {
   if (value === null) {
     return null;

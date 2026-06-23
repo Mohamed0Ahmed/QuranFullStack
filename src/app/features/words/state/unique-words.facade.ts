@@ -70,7 +70,6 @@ export class UniqueWordsFacade {
     errorMessage: this._errorMessage(),
   }));
 
-  /** Drill-down/modal slice, owned by {@link UniqueWordsDrilldownFacade}. */
   readonly drilldownState = this.drilldown.drilldownState;
 
   readonly status = this._status.asReadonly();

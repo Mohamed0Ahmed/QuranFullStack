@@ -27,12 +27,6 @@
     }
 
     @if (drilldownState().status === 'notFound') {
-      <!--
-        Controlled Arabic message for a shared/restored URL whose word ID no
-        longer exists. Rendered alongside the list so the explorer stays usable;
-        the modal stays closed. No Quranic text is invented. Uses the shared
-        `qd-empty-state` block plus a local modifier (no primitive redefinition).
-      -->
       <div
         class="qd-empty-state unique-words-restored-not-found"
         role="status"

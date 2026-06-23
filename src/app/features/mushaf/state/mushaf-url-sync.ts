@@ -20,7 +20,6 @@ const VALID_AYAH_TABS: ReadonlySet<string> = new Set([
 ]);
 const VALID_WORD_TABS: ReadonlySet<string> = new Set(['morphology', 'segments', 'i3rab', 'identity']);
 
-/** Parsed, normalized Mushaf reader URL snapshot (natural Quran keys). */
 export interface MushafUrlSnapshot {
   pageNumber: number;
   ayah: string | null;
@@ -33,7 +32,7 @@ export interface MushafUrlSnapshot {
   sources: MushafReaderSources;
 }
 
-/** Wide-desktop breakpoint (px). Below this, `panel` selects the active study section. */
+// Below this width, `panel` selects the active study section.
 export const MUSHAF_WIDE_DESKTOP_MIN_PX = 1024;
 
 export function clampMushafPageNumber(raw: string | null): number {
@@ -44,7 +43,7 @@ export function clampMushafPageNumber(raw: string | null): number {
   return Math.min(604, Math.max(1, parsed));
 }
 
-/** Normalizes out-of-scope v1 values (e.g. `panel=sources`, `ayahTab=links`). */
+// Drops unsupported enum values (e.g. `panel=sources`, `ayahTab=links`).
 export function normalizePanelMode(value: string | null): PanelMode {
   if (value && VALID_PANELS.has(value)) {
     return value as PanelMode;

@@ -4,7 +4,6 @@ import { Observable } from 'rxjs';
 import { ApiResponse } from '../../../core/data-access/api-response.model';
 import { ResourceLoadState } from '../models/mushaf.models';
 
-/** Maps transport failures and HTTP 4xx/5xx bodies into page-ready load state. */
 export function mapApiFailureToLoadState(
   err: unknown,
   options: { notFoundMessage: string; connectionMessage: string },

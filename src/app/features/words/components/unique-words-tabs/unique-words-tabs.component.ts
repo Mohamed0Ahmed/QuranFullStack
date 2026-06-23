@@ -10,11 +10,6 @@ interface UniqueWordsTabViewModel {
   route: string;
 }
 
-/**
- * Stable mode tabs (`tashkeel` / `simple`) as router links. Tabs are real
- * navigable links so refresh/share and `routerLinkActive` styling work without
- * bespoke state. Labels come from the labels module; route keys stay stable.
- */
 @Component({
   selector: 'qd-unique-words-tabs',
   standalone: true,

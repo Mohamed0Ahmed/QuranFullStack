@@ -52,13 +52,6 @@ const INITIAL_DRILLDOWN: WordDrilldownState = {
   errorMessage: '',
 };
 
-/**
- * Owns the selected-word drill-down/modal slice: open/close, view switching,
- * ayah pagination, and URL restore (US3 + the modal half of US4). Split out of
- * {@link UniqueWordsFacade} so the list facade stays focused on list loading and
- * paging; {@link UniqueWordsFacade} delegates the drill-down surface to this
- * service and feeds it URL changes via {@link restoreFromUrl}.
- */
 @Injectable({ providedIn: 'root' })
 export class UniqueWordsDrilldownFacade {
   private readonly api = inject(UniqueWordsApi);
@@ -68,11 +61,7 @@ export class UniqueWordsDrilldownFacade {
   private drilldownSub?: Subscription;
   private summarySub?: Subscription;
 
-  /**
-   * Modal state currently reflected by the URL or an in-app action. This tracks
-   * the full modal tuple, not just the word ID, so browser back/forward can
-   * restore same-word `view` and `ap` changes.
-   */
+  // Tracks the full modal tuple so browser back/forward can restore view/ap changes.
   private activeModalUrlState: ModalUrlState | null = null;
 
   readonly drilldownState = computed(() => this._drilldown());
@@ -146,11 +135,6 @@ export class UniqueWordsDrilldownFacade {
     this._drilldown.set(INITIAL_DRILLDOWN);
   }
 
-  /**
-   * Reconciles the drill-down/modal slice with the `word`/`view`/`ap` URL state.
-   * `mode` is the active list kind, used only to fetch the summary for a freshly
-   * restored word. A null `wordId` closes the modal.
-   */
   restoreFromUrl(
     mode: UniqueWordKind,
     wordId: number | null,
