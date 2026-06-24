@@ -2,10 +2,6 @@ using QuranDashboard.Application.Abstractions.Quran.MushafReader.Responses;
 
 namespace QuranDashboard.Application.Quran.MushafReader.Queries.GetWordAnalysis;
 
-/// <summary>
-/// Discriminated handler outcome so the controller maps to 200 / 400 / 404
-/// without exceptions for expected cases.
-/// </summary>
 public abstract record GetWordAnalysisOutcome
 {
     private GetWordAnalysisOutcome() { }

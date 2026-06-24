@@ -3,9 +3,6 @@ using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyIm
 
 namespace QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Words.MorphologyImporting;
 
-// Builds the per-run totals, warnings, and refusal/attempted-import result objects that feed the
-// morphology import report. Pure summarisation over the committed/attempted rows and the assembled
-// source — it never decides the verdict (that is the validation runner's job).
 internal static class MorphologyImportReportBuilder
 {
     private const string FailVerdict = MorphologyImportConstants.FailVerdict;

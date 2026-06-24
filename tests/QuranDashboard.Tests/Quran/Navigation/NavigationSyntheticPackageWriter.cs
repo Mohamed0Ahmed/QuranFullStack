@@ -3,9 +3,6 @@ using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Navigation;
 
 namespace QuranDashboard.Tests.Quran.Navigation;
 
-/// <summary>
-/// Writes synthetic navigation source packages for unit/integration tests without PostgreSQL.
-/// </summary>
 internal static class NavigationSyntheticPackageWriter
 {
     public static async Task<string> WritePackageAsync(
@@ -127,9 +124,6 @@ internal static class NavigationSyntheticPackageWriter
     }
 }
 
-/// <summary>
-/// Deletes temp package directories created during a unit test.
-/// </summary>
 internal sealed class NavigationTempPackageScope : IAsyncDisposable
 {
     private readonly List<string> tempDirs = new();

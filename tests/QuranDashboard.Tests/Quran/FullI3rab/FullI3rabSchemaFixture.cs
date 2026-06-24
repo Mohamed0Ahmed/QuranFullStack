@@ -6,14 +6,6 @@ using Testcontainers.PostgreSql;
 
 namespace QuranDashboard.Tests.Quran.FullI3rab;
 
-/// <summary>
-/// Minimal Phase-1 fixture for Feature 010 (Quran Full I'rab Foundation): starts a PostgreSQL
-/// container via Testcontainers, registers the infrastructure services, and applies the EF migrations.
-/// <para>
-/// Source-reader, assembler, writer, report-builder, and import-run helpers are intentionally absent
-/// here; they are introduced in later phases. Phase 1 only needs the schema to exist.
-/// </para>
-/// </summary>
 public sealed class FullI3rabSchemaFixture : IAsyncLifetime
 {
     private readonly PostgreSqlContainer postgresContainer = new PostgreSqlBuilder()

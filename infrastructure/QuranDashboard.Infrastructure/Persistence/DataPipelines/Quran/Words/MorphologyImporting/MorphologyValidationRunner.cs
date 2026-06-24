@@ -3,17 +3,10 @@ using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyIm
 
 namespace QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Words.MorphologyImporting;
 
-// Evaluates every hard validation gate over the freshly COPYed rows inside the import
-// transaction and produces the MorphologyCheckResult list that decides commit vs. rollback.
 internal static class MorphologyValidationRunner
 {
     private const string HardSeverity = MorphologyImportConstants.HardSeverity;
 
-    // MORPH-POS-RESOLVES is determined in memory from the source vs. the controlled vocabulary
-    // (PosTagSeed), the same way MORPH-SEG-CHARSET is determined from CharsetWarnings. This is the
-    // single source of truth and is evaluated before the COPY (see EfBulkMorphologyWriter.ImportAsync)
-    // so an unknown code fails closed with a report rather than tripping the quran_pos_tags foreign key
-    // mid-COPY.
     public static MorphologyCheckResult BuildPosResolvesCheck(MorphologySourceData source)
     {
         var unknownCount = source.UnknownPosCodes.Count;

@@ -33,4 +33,18 @@ public static class ApiMessages
     public const string UniqueWordsInvalidPaging = "معطيات التصفح غير صالحة";
     public const string UniqueWordsInvalidSort = "خيار الترتيب غير صالح";
     public const string UniqueWordNotFound = "الكلمة غير موجودة";
+
+    public const string RootsListLoaded = "تم تحميل الجذور";
+    public const string RootSummaryLoaded = "تم تحميل الجذر";
+    public const string RootWordsLoaded = "تم تحميل كلمات الجذر";
+    public const string RootAyahsLoaded = "تم تحميل الآيات التي ورد فيها الجذر";
+    public const string RootSurahsLoaded = "تم تحميل السور التي ورد فيها الجذر";
+    public const string RootMissingSurahsLoaded = "تم تحميل السور التي لم يرد فيها الجذر";
+    public const string RootLemmasLoaded = "تم تحميل الصيغ المعجمية للجذر";
+    public const string RootStemsLoaded = "تم تحميل الأصول الصرفية للجذر";
+    public const string RootsInvalidSort = "خيار الترتيب غير صالح";
+    public const string RootsInvalidKind = "نوع الكلمات غير صالح";
+    public const string RootsInvalidId = "معرّف الجذر غير صالح";
+    public const string RootsInvalidPaging = "معطيات التصفح غير صالحة";
+    public const string RootNotFound = "الجذر غير موجود";
 }

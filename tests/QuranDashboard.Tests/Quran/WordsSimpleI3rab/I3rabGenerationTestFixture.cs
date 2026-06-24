@@ -11,13 +11,11 @@ namespace QuranDashboard.Tests.Quran.WordsSimpleI3rab;
 
 public sealed class I3rabGenerationTestFixture : IAsyncLifetime
 {
-    /// <summary>Counts of the <see cref="ResetToPartialMorphologyAsync"/> fixture (6 segments / 5 readable words / 0 null forms).</summary>
+
     public static I3rabExpectedCounts PartialMorphologyCounts { get; } = new(SegmentCount: 6, ReadableWordCount: 5, NullFormCount: 0);
 
-    /// <summary>Counts of the <see cref="ResetToCompleteMorphologyAsync"/> fixture (6 segments / 5 readable words / 1 null form).</summary>
     public static I3rabExpectedCounts CompleteMorphologyCounts { get; } = new(SegmentCount: 6, ReadableWordCount: 5, NullFormCount: 1);
 
-    /// <summary>Counts of the <see cref="ResetToBihamdikaWordCompositionAsync"/> fixture (3 segments / 1 readable word / 0 null forms).</summary>
     public static I3rabExpectedCounts BihamdikaWordCompositionCounts { get; } = new(SegmentCount: 3, ReadableWordCount: 1, NullFormCount: 0);
 
     private readonly PostgreSqlContainer postgresContainer = new PostgreSqlBuilder()
@@ -54,8 +52,6 @@ public sealed class I3rabGenerationTestFixture : IAsyncLifetime
             .AddApplication()
             .AddInfrastructure(configuration);
 
-        // Override the locked production invariants so the gate can run against a small fixture.
-        // Last registration wins, so the production default from AddInfrastructure is replaced.
         if (expectedCounts is not null)
         {
             services.AddSingleton(expectedCounts);
@@ -184,11 +180,6 @@ public sealed class I3rabGenerationTestFixture : IAsyncLifetime
         await dbContext.SaveChangesAsync();
     }
 
-    /// <summary>
-    /// Seeds a representative fixture where every segment maps to an approved catalogue signature and
-    /// every readable word is fully displayable — so a real run reaches a committed PASS. Includes a
-    /// two-segment word and one NULL-form segment to exercise the displayability and null-form invariants.
-    /// </summary>
     public async Task ResetToCompleteMorphologyAsync()
     {
         await ResetToWordsOnlyAsync();
@@ -204,20 +195,16 @@ public sealed class I3rabGenerationTestFixture : IAsyncLifetime
             CreateMorphology(5, "1:2:2", "N", 1));
 
         dbContext.WordMorphologySegments.AddRange(
-            CreateSegment(1, 1, "1:1:1", 1, "STEM", "N", "GEN", lemma: "rab~"),                 // STEM:N:GEN
-            CreateSegment(2, 2, "1:1:2", 1, "STEM", "PN", "GEN", lemma: "{ll~ah"),              // STEM:PN:ALLAH:GEN
-            CreateSegment(3, 3, "1:2:1", 1, "STEM", "V", "PERF|ACT|3MS", lemma: "qAl"),         // STEM:V:PERF:ACT:3MS
-            CreateSegment(4, 4, "1:1:3", 1, "PREFIX", "P", "P", lemma: null),                   // PREFIX:P
-            CreateSegment(5, 4, "1:1:3", 2, "STEM", "N", "GEN", lemma: "Hamd"),                 // STEM:N:GEN
-            CreateSegment(6, 5, "1:2:2", 1, "STEM", "N", "NOM", lemma: "nAs", formArabicNormalized: null)); // STEM:N:NOM, null form
+            CreateSegment(1, 1, "1:1:1", 1, "STEM", "N", "GEN", lemma: "rab~"),
+            CreateSegment(2, 2, "1:1:2", 1, "STEM", "PN", "GEN", lemma: "{ll~ah"),
+            CreateSegment(3, 3, "1:2:1", 1, "STEM", "V", "PERF|ACT|3MS", lemma: "qAl"),
+            CreateSegment(4, 4, "1:1:3", 1, "PREFIX", "P", "P", lemma: null),
+            CreateSegment(5, 4, "1:1:3", 2, "STEM", "N", "GEN", lemma: "Hamd"),
+            CreateSegment(6, 5, "1:2:2", 1, "STEM", "N", "NOM", lemma: "nAs", formArabicNormalized: null));
 
         await dbContext.SaveChangesAsync();
     }
 
-    /// <summary>
-    /// Seeds a single three-segment word at <c>2:30:20</c> matching the بِحَمْدِكَ morphology pattern
-    /// (PREFIX P + STEM N GEN + SUFFIX PRON 2MS) so read-time <c>string_agg</c> composition can be verified.
-    /// </summary>
     public async Task ResetToBihamdikaWordCompositionAsync()
     {
         await using var scope = CreateServiceProvider().CreateAsyncScope();

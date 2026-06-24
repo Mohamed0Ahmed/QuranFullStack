@@ -55,9 +55,7 @@ public sealed class TafsirImportReportBuilder : ITafsirImportReportBuilder
         IReadOnlyList<TafsirCheckResult> postCopyChecks,
         TafsirExpectedCounts expected)
     {
-        // Reaching acceptance means LoadAsync already enforced every load-time hard check
-        // (fail-fast: it throws on the first failure). Record those verified outcomes so the
-        // successful audit report enumerates the full hard-check set, not only post-copy checks.
+
         var allChecks = BuildPassedLoadChecks(source, expected)
             .Concat(postCopyChecks)
             .ToList();

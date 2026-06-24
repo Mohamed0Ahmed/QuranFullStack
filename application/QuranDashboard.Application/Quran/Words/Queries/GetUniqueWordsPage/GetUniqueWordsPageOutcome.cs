@@ -3,7 +3,6 @@ using QuranDashboard.Application.Abstractions.Quran.Words.Responses;
 
 namespace QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordsPage;
 
-
 public abstract record GetUniqueWordsPageOutcome
 {
     private GetUniqueWordsPageOutcome() { }

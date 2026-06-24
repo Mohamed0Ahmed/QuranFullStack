@@ -6,9 +6,6 @@ public sealed class MorphologyAssembler
 {
     private static readonly string[] VerbTenseMarkers = ["PERF", "IMPF", "IMPV"];
 
-    // The controlled POS vocabulary that head_pos / segment pos reference via FK. Resolving POS codes
-    // in memory (before the COPY) lets an unknown code fail the MORPH-POS-RESOLVES gate with a report
-    // instead of crashing the binary COPY on the quran_pos_tags foreign key.
     private static readonly HashSet<string> KnownPosCodes =
         PosTagSeed.GetAll().Select(tag => tag.Code).ToHashSet(StringComparer.Ordinal);
 
@@ -128,7 +125,6 @@ public sealed class MorphologyAssembler
                     lemmaSet.Add(qulLemma);
                 }
 
-                // Link the lemma to its dominant (earliest, by mushaf order) co-occurring root.
                 if (rootId.HasValue &&
                     (!lemmaRootLinks.TryGetValue(qulLemma, out var existingLink) || wordId < existingLink.WordOrder))
                 {
@@ -371,10 +367,6 @@ public sealed class MorphologyAssembler
             return [];
         }
 
-        // The real QAC corpus delimits feature tokens with '|' (e.g. "STEM|POS:V|IMPF|ROOT:Ebd");
-        // the synthetic fixtures use spaces. Split on both so the bare grammatical flags
-        // (PERF/IMPF/IMPV, PASS, NOM/ACC/GEN) resolve regardless of source format. Prefixed tokens
-        // such as "POS:V"/"ROOT:Ebd" simply don't match the bare flags and are ignored.
         return featuresRaw
             .Split(['|', ' '], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .ToHashSet(StringComparer.Ordinal);

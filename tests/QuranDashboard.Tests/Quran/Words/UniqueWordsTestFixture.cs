@@ -4,22 +4,6 @@ using QuranDashboard.Tests.TestSupport.Logging;
 
 namespace QuranDashboard.Tests.Quran.Words;
 
-/// <summary>
-/// Integration-test fixture for the Unique Words explorer feature.
-/// </summary>
-/// <para>
-/// Seeding strategy (pinned, matches the Mushaf reader fixture): a
-/// <b>representative content slice</b> is loaded from a committed, embedded SQL
-/// script (<c>unique-words-seed.sql</c>) — NOT the full DB and NOT the
-/// developer's local DB — covering exactly the unique-word rows (tashkeel +
-/// simple) and supporting surah/ayah rows the list/search/sort/paging tests
-/// assert on. Canonical Quranic Uthmani text is used verbatim.
-/// </para>
-/// <para>
-/// Real-run escape hatch: set <c>UNIQUE_WORDS_REAL_DB_CONNECTION</c> to a live
-/// connection string to run the tests against a fully-seeded local database
-/// (no container, no slice seeding).
-/// </para>
 public sealed class UniqueWordsTestFixture : IAsyncLifetime
 {
     private const string RealDbConnectionEnvKey = "UNIQUE_WORDS_REAL_DB_CONNECTION";
@@ -58,8 +42,6 @@ public sealed class UniqueWordsTestFixture : IAsyncLifetime
             ConnectionString = _container.GetConnectionString();
         }
 
-        // Single owned root provider for the whole fixture; disposed in
-        // DisposeAsync so neither providers nor scopes leak across tests.
         _rootProvider = BuildServiceProvider();
 
         await using var scope = _rootProvider.CreateAsyncScope();
@@ -67,13 +49,10 @@ public sealed class UniqueWordsTestFixture : IAsyncLifetime
 
         if (IsRealDb)
         {
-            // The real database is the source of truth in real-run mode: do not
-            // migrate or seed the slice. Tests assert against the live data.
+
             return;
         }
 
-        // EnsureCreated builds the current EF model snapshot. See the Mushaf
-        // reader fixture for why MigrateAsync is not used here.
         await dbContext.Database.EnsureCreatedAsync();
         await SeedSliceAsync(dbContext);
     }
@@ -92,10 +71,6 @@ public sealed class UniqueWordsTestFixture : IAsyncLifetime
         }
     }
 
-    /// <summary>
-    /// Opens a new DI scope from the fixture's root provider for a single test.
-    /// The caller MUST dispose the returned scope (e.g. <c>await using var</c>).
-    /// </summary>
     public AsyncServiceScope CreateScope()
     {
         if (_rootProvider is null)
@@ -107,10 +82,6 @@ public sealed class UniqueWordsTestFixture : IAsyncLifetime
         return _rootProvider.CreateAsyncScope();
     }
 
-    /// <summary>
-    /// Builds the root service provider with Application + Infrastructure
-    /// registered against the container (or real) connection string.
-    /// </summary>
     private ServiceProvider BuildServiceProvider()
     {
         var configuration = new ConfigurationBuilder()

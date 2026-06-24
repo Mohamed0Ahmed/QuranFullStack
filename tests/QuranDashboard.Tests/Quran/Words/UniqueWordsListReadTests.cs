@@ -5,11 +5,6 @@ using QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordsPage;
 
 namespace QuranDashboard.Tests.Quran.Words;
 
-/// <summary>
-/// US2 default-list read behavior: page metadata, total count, the four
-/// distribution counts, <c>missingSurahsCount = 114 - surahsCount</c>,
-/// simple-mode Uthmani display label, and <c>firstVerseKey</c> derivation.
-/// </summary>
 [Collection(nameof(UniqueWordsCollection))]
 public sealed class UniqueWordsListReadTests(UniqueWordsTestFixture fixture)
 {
@@ -44,8 +39,6 @@ public sealed class UniqueWordsListReadTests(UniqueWordsTestFixture fixture)
 
         var page = outcome.Should().BeOfType<GetUniqueWordsPageOutcome.Success>().Subject.Page;
 
-        // Every card must show occurrences/ayahs/surahs counts and the derived
-        // missing-surahs invariant (SC-004): 114 - surahsCount.
         foreach (var item in page.Items)
         {
             item.OccurrencesCount.Should().BeGreaterThan(0);
@@ -54,8 +47,6 @@ public sealed class UniqueWordsListReadTests(UniqueWordsTestFixture fixture)
             item.MissingSurahsCount.Should().Be(114 - item.SurahsCount);
         }
 
-        // The seeded high-occurrence word (الله) pins the invariant at a
-        // surahsCount of 5 → missingSurahsCount 109.
         var allah = page.Items.Single(i => i.Id == 1002);
         allah.OccurrencesCount.Should().Be(5);
         allah.AyahsCount.Should().Be(5);

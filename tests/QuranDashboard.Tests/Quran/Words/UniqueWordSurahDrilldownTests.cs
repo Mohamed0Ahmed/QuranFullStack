@@ -4,10 +4,6 @@ using QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordSurahs;
 
 namespace QuranDashboard.Tests.Quran.Words;
 
-/// <summary>
-/// US3 mentioned-surahs and missing-surahs drill-down reads, including the
-/// 114-surah disjoint-union invariant.
-/// </summary>
 [Collection(nameof(UniqueWordsCollection))]
 public sealed class UniqueWordSurahDrilldownTests(UniqueWordsTestFixture fixture)
 {

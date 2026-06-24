@@ -1,27 +1,5 @@
 namespace QuranDashboard.Tests.Quran.MushafReader;
 
-/// <summary>
-/// Integration-test fixture for the Mushaf reader feature.
-/// </summary>
-/// <para>
-/// Seeding strategy (pinned, G2): a <b>representative content slice</b> is loaded
-/// from a committed, embedded SQL script (<c>mushaf-reader-seed.sql</c>) — NOT the
-/// full DB and NOT the developer's local DB — covering exactly the pages / ayah /
-/// word / sources the Mushaf reader tests assert on:
-/// </para>
-/// <list type="bullet">
-/// <item>Pages 1, 5, 604 (lines + words, ordered).</item>
-/// <item>Ayah <c>2:25</c> with tafsir <c>ar-muyassar</c> (grouped over 2:25–2:26),
-/// translation <c>en-sahih-international</c>, and full i3rab <c>muyassar</c>.</item>
-/// <item>Word <c>2:25:3</c> with head morphology, two ordered segments (one with an
-/// empty segment form for the fallback test), and ordered/unique identity rows;
-/// plus an ayah-end marker word for the marker-rejection test.</item>
-/// </list>
-/// <para>
-/// Real-run escape hatch: set <c>MUSHAF_READER_REAL_DB_CONNECTION</c> to a live
-/// connection string to run the reader tests against a fully-seeded local database
-/// (no container, no slice seeding) — gated like Feature 009's real-run mode.
-/// </para>
 public sealed class MushafReaderTestFixture : IAsyncLifetime
 {
     private const string RealDbConnectionEnvKey = "MUSHAF_READER_REAL_DB_CONNECTION";
@@ -58,8 +36,6 @@ public sealed class MushafReaderTestFixture : IAsyncLifetime
             ConnectionString = _container.GetConnectionString();
         }
 
-        // Single owned root provider for the whole fixture; disposed in
-        // DisposeAsync so neither providers nor scopes leak across tests.
         _rootProvider = BuildServiceProvider();
 
         await using var scope = _rootProvider.CreateAsyncScope();
@@ -67,14 +43,10 @@ public sealed class MushafReaderTestFixture : IAsyncLifetime
 
         if (IsRealDb)
         {
-            // The real database is the source of truth in real-run mode: do not
-            // migrate or seed the slice. Reader tests assert against the live data.
+
             return;
         }
 
-        // EnsureCreated builds the current EF model (snapshot includes navigation
-        // tables the single migration file does not). MigrateAsync would leave the
-        // seed without quran_juzs/hizbs/rubs and other reader tables.
         await dbContext.Database.EnsureCreatedAsync();
         await SeedSliceAsync(dbContext);
     }
@@ -93,11 +65,6 @@ public sealed class MushafReaderTestFixture : IAsyncLifetime
         }
     }
 
-    /// <summary>
-    /// Opens a new DI scope from the fixture's root provider for a single test.
-    /// The caller MUST dispose the returned scope (e.g. <c>await using var</c>).
-    /// Reader/handler registrations are added by their stories (T020–T041).
-    /// </summary>
     public AsyncServiceScope CreateScope()
     {
         if (_rootProvider is null)
@@ -109,10 +76,6 @@ public sealed class MushafReaderTestFixture : IAsyncLifetime
         return _rootProvider.CreateAsyncScope();
     }
 
-    /// <summary>
-    /// Builds the root service provider with Application + Infrastructure registered
-    /// and the MushafReader options bound from configuration.
-    /// </summary>
     private ServiceProvider BuildServiceProvider()
     {
         var configuration = new ConfigurationBuilder()

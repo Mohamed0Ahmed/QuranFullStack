@@ -26,11 +26,7 @@ public sealed class AyahStudyMissingSourceTests(MushafReaderTestFixture fixture)
     [Fact]
     public async Task GetAyahStudy_existing_source_without_ayah_content_echoes_resolved_key_with_null_block()
     {
-        // Ayah 1:1 exists but the fixture seeds no tafsir/translation/full-i3rab
-        // content for it, while all three sources exist. selectedSources must
-        // still echo the resolved keys (the source is "used"), with null blocks.
-        // This guards against silently conflating "source missing" with
-        // "source present but no content for this ayah" (ayah-study.api.md:23).
+
         await using var scope = fixture.CreateScope();
         var handler = scope.ServiceProvider.GetRequiredService<GetAyahStudyHandler>();
 

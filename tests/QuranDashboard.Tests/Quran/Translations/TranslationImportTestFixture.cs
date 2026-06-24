@@ -7,20 +7,6 @@ using QuranDashboard.Domain.Quran.Surahs;
 
 namespace QuranDashboard.Tests.Quran.Translations;
 
-/// <summary>
-/// Shared, source-safe test fixture for Feature 008 (Quran Translations Foundation).
-/// <para>
-/// Provides the PostgreSQL/Testcontainers lifecycle, a configured service provider, synthetic
-/// <c>quran_ayahs</c> seeding for verse-key resolution, and a synthetic translation source-package writer.
-/// </para>
-/// <para>
-/// Source safety: all translation text is clearly synthetic and every verse key lives in the non-existent
-/// surah <c>901</c>. No real Quran ayah text and no real translation content is used here.
-/// </para>
-/// <para>
-/// Import-run helpers (handler invocation) are introduced in Phase 3 story tests on top of this fixture.
-/// </para>
-/// </summary>
 public sealed class TranslationImportTestFixture : IAsyncLifetime
 {
     private const int SyntheticSurahNumber = TranslationSyntheticSeed.SyntheticSurahNumber;
@@ -75,10 +61,6 @@ public sealed class TranslationImportTestFixture : IAsyncLifetime
         return services.BuildServiceProvider();
     }
 
-    /// <summary>
-    /// Seeds synthetic ayahs into <c>quran_ayahs</c> so translation verse keys can resolve to ayah ids.
-    /// Existing foundation rows are cleared first.
-    /// </summary>
     public async Task SeedSyntheticAyahsAsync(params (int Id, string VerseKey)[] ayahs)
     {
         await TruncateFoundationAsync();
@@ -167,9 +149,6 @@ public sealed class TranslationImportTestFixture : IAsyncLifetime
             """);
     }
 
-    /// <summary>
-    /// Writes a synthetic translation source package to a fresh temp directory and returns its path.
-    /// </summary>
     public async Task<string> WriteSyntheticPackageAsync(
         IReadOnlyList<SyntheticTranslationSourceSpec>? sources = null,
         IReadOnlyList<string>? excludedSourceKeys = null,
@@ -422,9 +401,6 @@ internal static class TranslationSyntheticSeed
         return ayahs;
     }
 
-    /// <summary>
-    /// Default valid synthetic source with the full 6,236-key set required by schema and import checks.
-    /// </summary>
     public static IReadOnlyList<SyntheticTranslationSourceSpec> DefaultSources =>
     [
         CreateSourceSpec(
@@ -433,9 +409,6 @@ internal static class TranslationSyntheticSeed
             ayahCount: TranslationInvariants.ExpectedAyahsPerSource)
     ];
 
-    /// <summary>
-    /// Small three-ayah package for fast negative/minimal reader tests. Not schema-valid for persistence.
-    /// </summary>
     public static IReadOnlyList<SyntheticTranslationSourceSpec> MinimalSources =>
     [
         CreateSourceSpec(

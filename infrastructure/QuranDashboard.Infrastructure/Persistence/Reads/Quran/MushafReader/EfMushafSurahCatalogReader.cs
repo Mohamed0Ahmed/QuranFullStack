@@ -4,11 +4,6 @@ using QuranDashboard.Infrastructure.Persistence;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.MushafReader;
 
-/// <summary>
-/// Resolves each surah's Mushaf start page from the first ayah's <c>page_from</c>,
-/// falling back to the minimum <c>page_from</c> for that surah when ayah 1 is absent
-/// in the current database slice.
-/// </summary>
 public sealed class EfMushafSurahCatalogReader(QuranDashboardDbContext db) : IMushafSurahCatalogReader
 {
     public async Task<MushafSurahCatalogResponse> GetCatalogAsync(CancellationToken ct)
@@ -23,10 +18,6 @@ public sealed class EfMushafSurahCatalogReader(QuranDashboardDbContext db) : IMu
             .Where(a => a.AyahNumber == 1)
             .ToDictionaryAsync(a => a.SurahNumber, a => (int)a.PageFrom, ct);
 
-        // The min-page GROUP-BY fallback only matters for surahs whose ayah 1 is
-        // missing from the current slice. In a complete DB that set is empty, so the
-        // aggregate is only run for the (typically empty) gap rather than for every
-        // surah on every catalog call.
         var surahNumbersMissingAyahOne = surahs
             .Select(s => s.SurahNumber)
             .Where(surahNumber => !firstAyahPages.ContainsKey(surahNumber))

@@ -6,9 +6,6 @@ public sealed class JsonWordSourceReaderTests
 {
     private readonly JsonWordSourceReader reader = new();
 
-    // The shared word reader serves all four word sources; only the enriched
-    // imlaei-simple file carries "text_clean", so the field must bind when present
-    // and stay null when absent (uthmani / uthmani-simple / glyph).
     [Theory]
     [InlineData(true, "CLEAN_KEY_PLACEHOLDER")]
     [InlineData(false, null)]

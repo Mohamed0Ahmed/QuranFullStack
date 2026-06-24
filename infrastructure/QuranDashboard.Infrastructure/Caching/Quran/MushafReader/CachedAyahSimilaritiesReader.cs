@@ -4,9 +4,6 @@ using QuranDashboard.Application.Abstractions.Quran.MushafReader.Responses;
 
 namespace QuranDashboard.Infrastructure.Caching.Quran.MushafReader;
 
-/// <summary>
-/// Caches successful, non-null similar ayahs reads keyed by verse.
-/// </summary>
 public sealed class CachedAyahSimilaritiesReader(IAyahSimilaritiesReader inner, IMemoryCache cache)
     : IAyahSimilaritiesReader
 {

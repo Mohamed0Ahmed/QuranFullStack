@@ -14,10 +14,6 @@ using QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Navigation;
 
 namespace QuranDashboard.Tests.Quran.Navigation;
 
-/// <summary>
-/// Shared test fixture for Feature 009 (Quran Navigation Metadata Foundation).
-/// Uses synthetic surah 901 and clearly synthetic navigation metadata only.
-/// </summary>
 public sealed class NavigationImportTestFixture : IAsyncLifetime
 {
     private const int SyntheticSurahNumber = NavigationSyntheticSeed.SyntheticSurahNumber;

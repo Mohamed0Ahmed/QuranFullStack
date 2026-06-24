@@ -64,7 +64,6 @@ public sealed class TafsirJsonReportShapeTests(TafsirImportTestFixture fixture)
 
         root.GetProperty("checks").EnumerateArray().Should().NotBeEmpty();
 
-        // US4 AS1 / FR-027: a passing report must enumerate every hard check, all passed.
         var hardChecks = root.GetProperty("checks").EnumerateArray()
             .Where(check => check.GetProperty("severity").GetString() == TafsirImportConstants.HardSeverity)
             .ToList();

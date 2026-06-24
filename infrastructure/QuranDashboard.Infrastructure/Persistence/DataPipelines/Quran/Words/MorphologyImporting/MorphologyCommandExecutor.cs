@@ -1,9 +1,6 @@
 
 namespace QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Words.MorphologyImporting;
 
-// Thin Npgsql command helpers shared by the morphology import write/validation/totals paths. Kept in
-// one place so the long-running CommandTimeout and scalar/non-query plumbing are not duplicated across
-// the extracted helpers.
 internal static class MorphologyCommandExecutor
 {
     public const int CommandTimeoutSeconds = 600;

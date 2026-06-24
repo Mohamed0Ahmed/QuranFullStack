@@ -1,6 +1,5 @@
 namespace QuranDashboard.Application.Abstractions.Quran.Words.Responses;
 
-
 public sealed record UniqueWordAyahMatchDto(
     int AyahId,
     string VerseKey,
@@ -10,7 +9,6 @@ public sealed record UniqueWordAyahMatchDto(
     short PageNumber,
     IReadOnlyList<int> MatchedQuranWordIds,
     IReadOnlyList<AyahWordForHighlightDto> Words);
-
 
 public sealed record AyahWordForHighlightDto(
     int QuranWordId,

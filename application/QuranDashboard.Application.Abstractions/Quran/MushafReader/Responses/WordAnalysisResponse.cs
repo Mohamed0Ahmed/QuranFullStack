@@ -2,10 +2,6 @@ using System.Text.Json;
 
 namespace QuranDashboard.Application.Abstractions.Quran.MushafReader.Responses;
 
-/// <remarks>
-/// The backend emits a stable <see cref="RenderedSegmentDto.SegmentColorSlot"/>
-/// for visual linking; the frontend maps the slot to a palette color.
-/// </remarks>
 public sealed record WordAnalysisResponse(
     WordOccurrenceDto Word,
     WordIdentityDto Identity,
@@ -67,6 +63,7 @@ public sealed record LocalizedLabel(
     string En);
 
 public sealed record WordMorphologyRoot(
+    int Id,
     string? Text,
     string? Buckwalter);
 
@@ -77,10 +74,6 @@ public sealed record WordMorphologyLemma(
 public sealed record WordMorphologyStem(
     string? Text);
 
-/// <remarks>
-/// <see cref="Json"/> mirrors the frontend <c>object[]</c> shape: one entry per
-/// parsed feature.
-/// </remarks>
 public sealed record SegmentFeaturesDto(
     string? Raw,
     IReadOnlyList<JsonElement> Json);

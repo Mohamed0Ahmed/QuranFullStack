@@ -3,10 +3,6 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace QuranDashboard.Tests.Quran.Words;
 
-/// <summary>
-/// Counts EF Core database commands for integration tests that assert bounded
-/// query shapes (e.g. batched ayah reads vs per-ayah N+1).
-/// </summary>
 public sealed class SqlCommandCountInterceptor : DbCommandInterceptor
 {
     private int _commandCount;

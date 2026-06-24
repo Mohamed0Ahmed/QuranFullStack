@@ -1,9 +1,5 @@
 namespace QuranDashboard.Application.Abstractions.Quran.MushafReader.Responses;
 
-/// <remarks>
-/// Lean page view only: lines, words, navigation context, and division/sajda
-/// markers. Excludes tafsir, translation, full-i3rab, and word morphology.
-/// </remarks>
 public sealed record MushafPageResponse(
     int PageNumber,
     int? PreviousPageNumber,

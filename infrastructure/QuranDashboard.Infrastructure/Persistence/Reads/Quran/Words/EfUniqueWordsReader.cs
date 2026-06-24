@@ -9,23 +9,11 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
 {
     private const int TotalSurahs = 114;
 
-    // Arabic symmetric fold. Both the stored no-tashkeel/search column and the
-    // user query are folded through the same map so that, e.g., a stored madda
-    // alef `آمنوا` matches a plain-alef query `امنوا`, and
-    // tashkeel/hamza/ya/alef-maqsura/wasla variants fold together. Applied
-    // server-side via PostgreSQL translate() on the column and in C# via
-    // NormalizeArabicQuery on the query.
-    //
-    // Only the query side strips tashkeel/tatweel/Quranic annotation marks; the
-    // column side does not. This is correct because search runs against
-    // no-tashkeel/search columns (text_uthmani_simple, text_imlaei_simple, and
-    // word_key_imlaei_simple). text_uthmani is display-only and is not searched.
     private const string FoldFrom = "أإآٱؤئةىي";
     private const string FoldTo = "ااااواهيي";
 
     private readonly QuranDashboardDbContext _db = db;
 
-    /// <inheritdoc />
     public async Task<PagedResult<UniqueWordListItemDto>> GetUniqueWordsPageAsync(
         UniqueWordKind kind,
         string? search,
@@ -39,11 +27,6 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
             ? UniqueWordKindKeys.Tashkeel
             : UniqueWordKindKeys.Simple;
 
-        // Build a keyless SqlQueryRaw source, then compose CountAsync /
-        // OrderBy / Skip / Take in LINQ so EF/Npgsql wraps it into one
-        // parameterized statement with server-side paging. The SQL is fixed
-        // (column aliases come from nameof, never user input); only the folded
-        // search pattern and the fold map are bound as NpgsqlParameters.
         IQueryable<UniqueWordListRow> rows = kind == UniqueWordKind.Tashkeel
             ? BuildTashkeelQuery(normalizedSearch)
             : BuildSimpleQuery(normalizedSearch);
@@ -78,13 +61,10 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
         return new PagedResult<UniqueWordListItemDto>(page, pageSize, totalCount, items);
     }
 
-    /// <inheritdoc />
     public async Task<UniqueWordSummaryDto?> GetUniqueWordSummaryAsync(
         UniqueWordKind kind, int id, CancellationToken cancellationToken)
     {
-        // Same projection as the list read, but for a single row by stable ID.
-        // The unique-word tables already carry precomputed counts and first
-        // occurrence metadata, so the summary needs no per-ayah joins.
+
         var row = kind == UniqueWordKind.Tashkeel
             ? await _db.QuranWordsUniqueTashkeel
                 .AsNoTracking()
@@ -145,7 +125,6 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
             row.FirstLocation);
     }
 
-    /// <inheritdoc />
     public async Task<UniqueWordSurahsResponse?> GetMentionedSurahsAsync(
         UniqueWordKind kind, int id, CancellationToken cancellationToken)
     {
@@ -193,7 +172,6 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
             surahs);
     }
 
-    /// <inheritdoc />
     public async Task<UniqueWordMissingSurahsResponse?> GetMissingSurahsAsync(
         UniqueWordKind kind, int id, CancellationToken cancellationToken)
     {
@@ -223,7 +201,6 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
             missingSurahs);
     }
 
-    /// <inheritdoc />
     public async Task<PagedResult<UniqueWordAyahMatchDto>?> GetAyahMatchesAsync(
         UniqueWordKind kind, int id, int page, int pageSize, CancellationToken cancellationToken)
     {
@@ -364,14 +341,7 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
 
     private IQueryable<UniqueWordListRow> BuildTashkeelQuery(string? normalizedSearch)
     {
-        // translate() folds the stored text the same way NormalizeArabicQuery
-        // folds the user query, so matching is symmetric. ilike gives
-        // case-insensitive contains. The search pattern is parameterized; the
-        // fold map is a fixed literal.
-        //
-        // Column aliases are double-quoted so PostgreSQL preserves the exact
-        // PascalCase casing that EF Core maps against the UniqueWordListRow
-        // properties. Unquoted aliases would be lowercased and fail to bind.
+
         var sql = $"""
             SELECT
                 id AS "{nameof(UniqueWordListRow.Id)}",
@@ -466,9 +436,7 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
         var builder = new StringBuilder(search.Length);
         foreach (var ch in search)
         {
-            // Skip Arabic diacritics, Quranic annotation marks, dagger alif,
-            // and tatweel so pasted visible Uthmani text can match the
-            // no-tashkeel stored search columns.
+
             if (IsSkippable(ch))
             {
                 continue;
@@ -483,12 +451,12 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
     }
 
     private static bool IsSkippable(char ch) =>
-        ch == '\u0640' || // tatweel
-        ch is >= '\u0610' and <= '\u061A' || // Arabic/Quranic signs
-        ch is >= '\u064B' and <= '\u065F' || // Arabic tashkeel and combining marks
-        ch == '\u0670' || // dagger alif
-        ch is >= '\u06D6' and <= '\u06ED' || // Quranic annotation marks
-        ch is >= '\u08D3' and <= '\u08FF'; // Arabic extended combining marks
+        ch == '\u0640' ||
+        ch is >= '\u0610' and <= '\u061A' ||
+        ch is >= '\u064B' and <= '\u065F' ||
+        ch == '\u0670' ||
+        ch is >= '\u06D6' and <= '\u06ED' ||
+        ch is >= '\u08D3' and <= '\u08FF';
 
     private static char Fold(char ch)
     {

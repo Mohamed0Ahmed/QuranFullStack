@@ -6,10 +6,6 @@ using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words;
 
 namespace QuranDashboard.Tests.Quran.Words;
 
-/// <summary>
-/// US3 ayah-match drill-down: paged distinct ayahs, exact matched IDs,
-/// multiple matches per ayah, marker exclusion, and batched read shape.
-/// </summary>
 [Collection(nameof(UniqueWordsCollection))]
 public sealed class UniqueWordAyahMatchesTests(UniqueWordsTestFixture fixture)
 {

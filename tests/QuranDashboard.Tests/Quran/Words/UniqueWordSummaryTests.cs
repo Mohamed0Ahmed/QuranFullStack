@@ -3,11 +3,6 @@ using QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordSummary;
 
 namespace QuranDashboard.Tests.Quran.Words;
 
-/// <summary>
-/// US4 selected unique-word summary read: used to restore modal state from a
-/// shared URL. Asserts the summary shape, the missing-surah invariant, both
-/// modes, invalid kind, and unknown ID.
-/// </summary>
 [Collection(nameof(UniqueWordsCollection))]
 public sealed class UniqueWordSummaryTests(UniqueWordsTestFixture fixture)
 {

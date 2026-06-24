@@ -3,11 +3,6 @@ using QuranDashboard.Application.Abstractions.Quran.DataPipelines.FullI3rab;
 
 namespace QuranDashboard.Tests.Quran.FullI3rab;
 
-/// <summary>
-/// Filesystem-only synthetic full-i'rab package writer for Phase-2 unit tests. No database is used.
-/// All i'rab text is clearly synthetic and every verse key lives in the non-existent surah 900.
-/// Implements <see cref="IDisposable"/> so test classes can clean up temp directories.
-/// </summary>
 public sealed class FullI3rabSyntheticPackage : IDisposable
 {
     private readonly List<string> tempDirs = [];
@@ -164,10 +159,6 @@ internal static class FullI3rabSyntheticSeed
     public static string SyntheticHtml(string verseKey) =>
         $"<div class=\"ar\"><p>نص إعراب اختباري مُصطنع للمفتاح {verseKey}.</p></div>";
 
-    /// <summary>
-    /// One synthetic source exercising the three value kinds: a grouped leader (900:1 covering
-    /// 900:1 and 900:2), a member pointer (900:2 -&gt; 900:1), and a flat entry (900:3).
-    /// </summary>
     public static IReadOnlyList<SyntheticFullI3rabSourceSpec> DefaultSources =>
     [
         new SyntheticFullI3rabSourceSpec(

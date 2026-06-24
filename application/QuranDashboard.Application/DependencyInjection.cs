@@ -21,6 +21,14 @@ using QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordMissingSurahs;
 using QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordSummary;
 using QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordSurahs;
 using QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordsPage;
+using QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootAyahs;
+using QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootLemmas;
+using QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootMentionedSurahs;
+using QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootMissingSurahs;
+using QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootsPage;
+using QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootStems;
+using QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootSummary;
+using QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootWords;
 
 namespace QuranDashboard.Application;
 
@@ -51,6 +59,14 @@ public static class DependencyInjection
         services.AddScoped<GetUniqueWordSurahsHandler>();
         services.AddScoped<GetUniqueWordMissingSurahsHandler>();
         services.AddScoped<GetUniqueWordAyahsHandler>();
+        services.AddScoped<GetRootsPageHandler>();
+        services.AddScoped<GetRootSummaryHandler>();
+        services.AddScoped<GetRootAyahsHandler>();
+        services.AddScoped<GetRootWordsHandler>();
+        services.AddScoped<GetRootMentionedSurahsHandler>();
+        services.AddScoped<GetRootMissingSurahsHandler>();
+        services.AddScoped<GetRootLemmasHandler>();
+        services.AddScoped<GetRootStemsHandler>();
 
         return services;
     }

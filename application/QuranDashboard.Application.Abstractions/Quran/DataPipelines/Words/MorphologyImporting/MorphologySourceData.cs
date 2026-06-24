@@ -12,11 +12,6 @@ public sealed record MorphologySourceData(
     IReadOnlyList<string> UnknownPosCodes,
     MorphologyRenderStats RenderStats);
 
-/// <summary>
-/// Informational rendering statistics gathered during assembly, surfaced as report warnings
-/// (FR-029): the whole-word transliteration-vs-Uthmani agreement rate and the review/multiword/
-/// empty-form lists for manual sign-off. None of these change the import verdict.
-/// </summary>
 public sealed record MorphologyRenderStats(
     int WholeWordAgreementMatches,
     int WholeWordAgreementTotal,

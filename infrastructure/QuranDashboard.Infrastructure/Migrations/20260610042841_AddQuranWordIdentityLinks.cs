@@ -4,10 +4,10 @@
 
 namespace QuranDashboard.Infrastructure.Migrations
 {
-    /// <inheritdoc />
+
     public partial class AddQuranWordIdentityLinks : Migration
     {
-        /// <inheritdoc />
+
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<int>(
@@ -35,7 +35,6 @@ namespace QuranDashboard.Infrastructure.Migrations
                 filter: "is_ayah_marker = false AND unique_tashkeel_word_id IS NOT NULL");
         }
 
-        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropIndex(

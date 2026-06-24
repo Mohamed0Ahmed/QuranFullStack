@@ -9,15 +9,6 @@ using QuranDashboard.Infrastructure;
 
 namespace QuranDashboard.DataImporter;
 
-/// <summary>
-/// Thin entry point: parses the leading verb token and dispatches to the matching
-/// verb runner in <see cref="Import.VerbRunners"/>. No business logic lives here.
-/// </summary>
-/// <remarks>
-/// The DI host is built lazily (via the <c>createHost</c> delegate) only when a runner
-/// reaches the point at which the pre-split code built it — i.e. only after argument
-/// parsing has succeeded — preserving the original control flow and exit behavior.
-/// </remarks>
 internal static class Program
 {
     internal static async Task<int> Main(string[] args)
@@ -31,8 +22,6 @@ internal static class Program
         var verb = args[0];
         var verbArgs = args[1..];
 
-        // Built lazily by each runner, only after its argument parse succeeds,
-        // exactly mirroring the pre-split per-verb control flow.
         Func<IHost> createHost = () => CreateHost(args);
 
         return verb switch

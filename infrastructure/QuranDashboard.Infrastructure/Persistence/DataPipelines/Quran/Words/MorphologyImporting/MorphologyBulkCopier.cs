@@ -3,9 +3,6 @@ using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyIm
 
 namespace QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Words.MorphologyImporting;
 
-// Owns the FK-safe binary COPY write path: POS controlled vocabulary first, then the deduped
-// dimensions, then morphology, then segments. Each method streams the assembled in-memory graph into
-// Postgres via the Npgsql binary importer using the connection's ambient transaction.
 internal static class MorphologyBulkCopier
 {
     public static async Task CopyPosTagsAsync(NpgsqlConnection connection, CancellationToken ct)

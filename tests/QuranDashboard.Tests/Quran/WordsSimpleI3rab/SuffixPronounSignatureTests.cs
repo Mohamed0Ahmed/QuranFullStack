@@ -3,14 +3,9 @@ using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.SimpleI3rabG
 
 namespace QuranDashboard.Tests.Quran.WordsSimpleI3rab;
 
-// Regression coverage for the attached-pronoun (ضمير متصل) encoding gap: the corpus glues the
-// person into the POS token for affixes (e.g. "SUFFIX|PRON:3MP"), unlike stems which carry the
-// person as a standalone token ("STEM|POS:PRON|3MS"). The earlier fixture used the standalone form
-// for suffixes, so the bare-"SUFFIX:PRON" miss against the catalogue went undetected.
 public sealed class SuffixPronounSignatureTests
 {
-    // All 16 person variants the catalogue carries as SUFFIX:PRON:* keys, expressed in the real
-    // corpus affix encoding "SUFFIX|PRON:<person>".
+
     public static TheoryData<string, string> SuffixPronounCases => new()
     {
         { "SUFFIX|PRON:3MP", "SUFFIX:PRON:3MP" },
@@ -31,7 +26,6 @@ public sealed class SuffixPronounSignatureTests
         { "SUFFIX|PRON:2FD", "SUFFIX:PRON:2FD" }
     };
 
-    // Stem pronouns must keep working: they carry the person as a standalone token.
     public static TheoryData<string, string> StemPronounCases => new()
     {
         { "STEM|POS:PRON|3MS", "STEM:PRON:3MS" },

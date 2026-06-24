@@ -1,10 +1,5 @@
 namespace QuranDashboard.DataImporter.Import.DefaultPaths;
 
-/// <summary>
-/// Resolves the default source-package and report-output directories for each
-/// DataImporter verb. All defaults are rooted at the repository root (located by
-/// <see cref="ResolveRepositoryRoot"/>) and are identical to the pre-split behavior.
-/// </summary>
 internal static class DataImporterDefaults
 {
     internal static string ResolveDefaultMutashabihatSourcePath() =>
@@ -53,11 +48,6 @@ internal static class DataImporterDefaults
             "report",
             "feature-009-quran-navigation-metadata-foundation"));
 
-    /// <summary>
-    /// Walks up from the application base directory until it finds the folder that
-    /// contains both <c>resources</c> and <c>Backend</c>, which identifies the
-    /// workspace root.
-    /// </summary>
     internal static string ResolveRepositoryRoot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);

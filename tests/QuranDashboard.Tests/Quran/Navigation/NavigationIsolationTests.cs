@@ -35,8 +35,6 @@ public sealed class NavigationIsolationTests(NavigationImportTestFixture fixture
         afterImport.MutashabihatGroups.Should().BeEquivalentTo(baseline.MutashabihatGroups);
         afterImport.MutashabihatOccurrences.Should().BeEquivalentTo(baseline.MutashabihatOccurrences);
 
-        // Morphology/i3rab rows are not seeded here; count invariance plus NavigationMetadataWriteIsolationTests
-        // cover the "no other tables touched" guarantee for those domains.
         afterImport.WordMorphologyRows.Should().Be(baseline.WordMorphologyRows);
         afterImport.WordMorphologySegmentRows.Should().Be(baseline.WordMorphologySegmentRows);
         afterImport.RootRows.Should().Be(baseline.RootRows);

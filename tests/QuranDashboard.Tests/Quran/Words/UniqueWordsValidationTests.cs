@@ -3,11 +3,6 @@ using QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordsPage;
 
 namespace QuranDashboard.Tests.Quran.Words;
 
-/// <summary>
-/// US2 validation: invalid kind, invalid sort, and out-of-range paging all map
-/// to controlled validation outcomes — never exceptions — so the controller
-/// can return Arabic 400 responses.
-/// </summary>
 [Collection(nameof(UniqueWordsCollection))]
 public sealed class UniqueWordsValidationTests(UniqueWordsTestFixture fixture)
 {
@@ -45,8 +40,7 @@ public sealed class UniqueWordsValidationTests(UniqueWordsTestFixture fixture)
     [Fact]
     public async Task Empty_or_null_sort_defaults_to_mushaf_order()
     {
-        // Null/empty sort is the documented default; it must NOT be a validation
-        // failure.
+
         await using var scope = fixture.CreateScope();
         var handler = scope.ServiceProvider.GetRequiredService<GetUniqueWordsPageHandler>();
 
@@ -79,7 +73,7 @@ public sealed class UniqueWordsValidationTests(UniqueWordsTestFixture fixture)
     [Theory]
     [InlineData(0)]
     [InlineData(-5)]
-    [InlineData(1001)]   // above MaxPageSize (1000)
+    [InlineData(1001)]
     public async Task Invalid_page_size_returns_invalid_paging(int pageSize)
     {
         await using var scope = fixture.CreateScope();
@@ -95,7 +89,7 @@ public sealed class UniqueWordsValidationTests(UniqueWordsTestFixture fixture)
     [Fact]
     public async Task Max_page_size_boundary_is_accepted()
     {
-        // pageSize == MaxPageSize (1000) is the inclusive upper bound and must pass.
+
         await using var scope = fixture.CreateScope();
         var handler = scope.ServiceProvider.GetRequiredService<GetUniqueWordsPageHandler>();
 

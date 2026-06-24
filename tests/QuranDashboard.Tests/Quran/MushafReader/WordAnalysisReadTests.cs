@@ -26,6 +26,10 @@ public sealed class WordAnalysisReadTests(MushafReaderTestFixture fixture)
         response.Morphology.HeadPosLabel.Ar.Should().Be("فعل");
         response.Morphology.IsVerb.Should().BeTrue();
 
+        response.Morphology.Root.Should().NotBeNull();
+        response.Morphology.Root!.Id.Should().Be(9001);
+        response.Morphology.Root.Text.Should().NotBeNullOrWhiteSpace();
+
         response.Identity.OrderedTashkeel.OccurrencesCount.Should().BeGreaterThan(0);
         response.Identity.UniqueTashkeel.Id.Should().BeGreaterThan(0);
         response.Identity.UniqueSimple.WordKeyImlaeiSimple.Should().NotBeNullOrWhiteSpace();

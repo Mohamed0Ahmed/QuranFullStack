@@ -7,23 +7,6 @@ using QuranDashboard.Domain.Quran.Surahs;
 
 namespace QuranDashboard.Tests.Quran.Tafsirs;
 
-/// <summary>
-/// Shared, source-safe test fixture for Feature 007 (Quran Tafsir Foundation).
-/// <para>
-/// Provides the PostgreSQL/Testcontainers lifecycle, a configured service provider, synthetic
-/// <c>quran_ayahs</c> seeding for verse-key resolution, and a synthetic tafsir source-package writer.
-/// </para>
-/// <para>
-/// Source safety: all tafsir text is clearly synthetic and all verse keys live in the non-existent
-/// surah <c>900</c>. No real Quran ayah text and no real tafsir content is used here. A real source
-/// excerpt may only be added later if it is copied with traceable provenance.
-/// </para>
-/// <para>
-/// Import-run helpers (loading the source, invoking the writer/handler) are intentionally not present
-/// yet: the tafsir abstractions, handler, and DI registrations are introduced in Phase 2 / Phase 3 and
-/// the story-specific test files will build their run helpers on top of this fixture then.
-/// </para>
-/// </summary>
 public sealed class TafsirImportTestFixture : IAsyncLifetime
 {
     private readonly List<string> tempDirs = new();
@@ -76,10 +59,6 @@ public sealed class TafsirImportTestFixture : IAsyncLifetime
         return services.BuildServiceProvider();
     }
 
-    /// <summary>
-    /// Seeds synthetic ayahs into <c>quran_ayahs</c> (with a synthetic surah and mushaf page) so tafsir
-    /// verse keys can be resolved to ayah ids. Existing foundation rows are cleared first.
-    /// </summary>
     public async Task SeedSyntheticAyahsAsync(params (int Id, string VerseKey)[] ayahs)
     {
         await TruncateFoundationAsync();
@@ -246,11 +225,6 @@ public sealed class TafsirImportTestFixture : IAsyncLifetime
             """);
     }
 
-    /// <summary>
-    /// Writes a synthetic tafsir source package (README, manifest, package-report, and one JSON file per
-    /// source under <c>sources/</c>) to a fresh temp directory and returns its path. The manifest mirrors
-    /// the final package shape with synthetic, source-safe content and self-consistent size/sha256 values.
-    /// </summary>
     public async Task<string> WriteSyntheticPackageAsync(
         IReadOnlyList<SyntheticTafsirSourceSpec>? sources = null,
         IReadOnlyList<string>? excludedSourceKeys = null,
@@ -294,10 +268,6 @@ public sealed class TafsirImportTestFixture : IAsyncLifetime
         return packageDir;
     }
 
-    /// <summary>
-    /// Recomputes every approved source file's size and sha256 and rewrites them into the manifest. Use
-    /// after a test mutates a source file but wants the manifest to still match (or vice versa).
-    /// </summary>
     public async Task RefreshManifestChecksumsAsync(string packageDir)
     {
         var manifestPath = Path.Combine(packageDir, "manifest.json");
@@ -457,11 +427,6 @@ public sealed class TafsirImportTestFixture : IAsyncLifetime
     };
 }
 
-/// <summary>
-/// Synthetic specification for a single tafsir source file. <paramref name="Entries"/> maps a verse key to
-/// either an object value (<c>{ text, ayah_keys? }</c>) for a text-owning entry, or a string value pointing
-/// at a leader verse key for a grouped member.
-/// </summary>
 public sealed record SyntheticTafsirSourceSpec(
     string SourceKey,
     string LanguageCode,
@@ -477,10 +442,6 @@ public sealed record TafsirTableSnapshot(int SourceRows, int EntryRows, int Ayah
 
 public sealed record QuranFoundationSnapshot(int SurahRows, int AyahRows, string AyahTextFingerprint);
 
-/// <summary>
-/// Source-safe synthetic seed values for tafsir tests. All tafsir text is clearly synthetic and every verse
-/// key lives in the non-existent surah <c>900</c>.
-/// </summary>
 internal static class TafsirSyntheticSeed
 {
     public const string ManifestType = "quran-tafsir-import-source-package";
@@ -491,11 +452,6 @@ internal static class TafsirSyntheticSeed
     public static string SyntheticTextForSource(string sourceKey, string verseKey) =>
         $"<p>نص تفسير اختباري {sourceKey} للمفتاح {verseKey}.</p>";
 
-    /// <summary>
-    /// A single synthetic Arabic source exercising the three source shapes: a grouped leader
-    /// (<c>900:1</c> covering <c>900:1</c> and <c>900:2</c>), a member pointer (<c>900:2</c> -&gt;
-    /// <c>900:1</c>), and a flat entry (<c>900:3</c>).
-    /// </summary>
     public static IReadOnlyList<SyntheticTafsirSourceSpec> DefaultSources =>
     [
         new SyntheticTafsirSourceSpec(
@@ -519,7 +475,6 @@ internal static class TafsirSyntheticSeed
             })
     ];
 
-    /// <summary>Synthetic ayahs matching <see cref="DefaultSources"/> for verse-key resolution.</summary>
     public static (int Id, string VerseKey)[] DefaultAyahs =>
     [
         (1, "900:1"),
@@ -527,7 +482,6 @@ internal static class TafsirSyntheticSeed
         (3, "900:3")
     ];
 
-    /// <summary>Expected counts for <see cref="DefaultSources"/> integration runs.</summary>
     public static TafsirExpectedCounts DefaultTestExpectedCounts => new(
         ApprovedSources: 1,
         ExcludedSources: 0,
@@ -537,19 +491,11 @@ internal static class TafsirSyntheticSeed
         AyahsPerSource: 3,
         SourceAyahMappings: 3);
 
-    /// <summary>
-    /// Same as <see cref="DefaultSources"/> but with manifest/content coverage set to 6,236 for the DB check
-    /// constraint while the JSON still contains only the three synthetic ayah keys.
-    /// </summary>
     public static IReadOnlyList<SyntheticTafsirSourceSpec> IntegrationSources =>
     [
         DefaultSources[0] with { ContentCoverageCount = TafsirInvariants.ExpectedAyahsPerSource }
     ];
 
-    /// <summary>
-    /// Two approved sources that share verse key <c>900:1</c> but store different synthetic text per source.
-    /// Exercises post-copy <c>TAFSIR-TEXT-UNCHANGED</c> keyed by (source, entry).
-    /// </summary>
     public static IReadOnlyList<SyntheticTafsirSourceSpec> TwoSourceIntegrationSources =>
     [
         BuildSharedVerseKeySource(

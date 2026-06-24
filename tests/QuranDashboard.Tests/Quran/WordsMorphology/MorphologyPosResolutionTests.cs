@@ -181,8 +181,6 @@ public sealed class MorphologyPosResolutionTests(MorphologyImportTestFixture fix
         var sourcePath = await fixture.WriteSyntheticSourceFolderAsync();
         var readableCount = fixture.GetReadableWordCount();
 
-        // Inject a POS code that is absent from the controlled vocabulary (PosTagSeed) so the import
-        // must fail closed rather than silently accept or crash on the quran_pos_tags foreign key.
         var unknownPosSegments = new List<object>
         {
             new { segmentNumber = 1, kind = "STEM", pos = "ZZZ", form = "l~Ahi", features = "GEN", root = "Alh", lemma = "ilAh" }
@@ -226,9 +224,6 @@ public sealed class MorphologyPosResolutionTests(MorphologyImportTestFixture fix
     {
         var seedCodes = PosTagSeed.GetAll().Select(t => t.Code).ToHashSet();
 
-        // The full distinct set of segment POS codes the real QAC/QPC-aligned corpus emits (observed
-        // from the packaged source). The fail-closed MORPH-POS-RESOLVES gate refuses the import unless
-        // every one of these resolves to a quran_pos_tags.code.
         var corpusPosCodes = new[]
         {
             "ACC", "ADJ", "AMD", "ANS", "AVR", "CAUS", "CERT", "CIRC", "COM", "COND", "CONJ", "DEM",

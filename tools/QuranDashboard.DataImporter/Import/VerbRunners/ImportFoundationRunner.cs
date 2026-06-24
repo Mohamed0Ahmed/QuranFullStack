@@ -5,10 +5,6 @@ using QuranDashboard.DataImporter.Import.ArgumentParsing;
 
 namespace QuranDashboard.DataImporter.Import.VerbRunners;
 
-/// <summary>
-/// Runs the <c>import-foundation</c> verb. <c>--source</c> is required and must
-/// point to an existing directory.
-/// </summary>
 internal static class ImportFoundationRunner
 {
     internal static async Task<int> RunAsync(string[] args, Func<IHost> createHost, Action printUsage)

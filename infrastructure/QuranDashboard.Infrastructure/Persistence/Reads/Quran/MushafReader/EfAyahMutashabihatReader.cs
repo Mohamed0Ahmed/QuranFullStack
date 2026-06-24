@@ -6,10 +6,6 @@ using QuranDashboard.Infrastructure.Persistence;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.MushafReader;
 
-/// <summary>
-/// EF read implementation for grouped mutashabihat: selected-ayah occurrences,
-/// sibling occurrences per group, canonical ayah joins, and word-span phrase derivation.
-/// </summary>
 public sealed class EfAyahMutashabihatReader(QuranDashboardDbContext db) : IAyahMutashabihatReader
 {
     public async Task<AyahMutashabihatResponse?> GetAyahMutashabihatAsync(string verseKey, CancellationToken ct)
@@ -80,9 +76,7 @@ public sealed class EfAyahMutashabihatReader(QuranDashboardDbContext db) : IAyah
         IReadOnlyList<int> ayahIds,
         CancellationToken ct)
     {
-        // Project only the word fields used for phrase derivation (WordNumber +
-        // TextUthmani), instead of materializing full QuranWord rows for every
-        // ayah across the matched groups.
+
         var words = await db.QuranWords
             .AsNoTracking()
             .Where(word => ayahIds.Contains(word.AyahId) && !word.IsAyahMarker)
@@ -192,10 +186,6 @@ public sealed class EfAyahMutashabihatReader(QuranDashboardDbContext db) : IAyah
         return string.Join(' ', selectedWords.Select(word => word.TextUthmani));
     }
 
-    /// <summary>
-    /// Lean projected row carrying only the word fields used for mutashabihat
-    /// phrase derivation (avoiding full QuranWord materialization per ayah).
-    /// </summary>
     private sealed record MutashabihatWordRow(
         int AyahId,
         int WordNumber,

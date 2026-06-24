@@ -2,7 +2,6 @@ using QuranDashboard.Application.Abstractions.Common.Paging;
 
 namespace QuranDashboard.Application.Abstractions.Quran.Words.Responses;
 
-
 public sealed record UniqueWordListItemDto(
     int Id,
     string Kind,

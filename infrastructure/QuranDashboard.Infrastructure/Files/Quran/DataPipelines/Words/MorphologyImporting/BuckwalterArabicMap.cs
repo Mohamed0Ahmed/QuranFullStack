@@ -43,74 +43,70 @@ public sealed class BuckwalterArabicMap
     {
         var entries = new Dictionary<char, string>(61);
 
-        // Consonants (36)
-        entries['\''] = "\u0621"; // ء  HAMZA
-        entries['|']  = "\u0622"; // آ  ALEF WITH MADDA ABOVE
-        entries['>']  = "\u0623"; // أ  ALEF WITH HAMZA ABOVE
-        entries['&']  = "\u0624"; // ؤ  WAW WITH HAMZA ABOVE
-        entries['<']  = "\u0625"; // إ  ALEF WITH HAMZA BELOW
-        entries['}']  = "\u0626"; // ئ  YEH WITH HAMZA ABOVE
-        entries['A']  = "\u0627"; // ا  ALEF
-        entries['b']  = "\u0628"; // ب  BEH
-        entries['p']  = "\u0629"; // ة  TEH MARBUTA
-        entries['t']  = "\u062A"; // ت  TEH
-        entries['v']  = "\u062B"; // ث  THEH
-        entries['j']  = "\u062C"; // ج  JEEM
-        entries['H']  = "\u062D"; // ح  HAH
-        entries['x']  = "\u062E"; // خ  KHAH
-        entries['d']  = "\u062F"; // د  DAL
-        entries['*']  = "\u0630"; // ذ  THAL
-        entries['r']  = "\u0631"; // ر  REH
-        entries['z']  = "\u0632"; // ز  ZAIN
-        entries['s']  = "\u0633"; // س  SEEN
-        entries['$']  = "\u0634"; // ش  SHEEN
-        entries['S']  = "\u0635"; // ص  SAD
-        entries['D']  = "\u0636"; // ض  DAD
-        entries['T']  = "\u0637"; // ط  TAH
-        entries['Z']  = "\u0638"; // ظ  ZAH
-        entries['E']  = "\u0639"; // ع  AIN
-        entries['g']  = "\u063A"; // غ  GHAIN
-        entries['f']  = "\u0641"; // ف  FEH
-        entries['q']  = "\u0642"; // ق  QAF
-        entries['k']  = "\u0643"; // ك  KAF
-        entries['l']  = "\u0644"; // ل  LAM
-        entries['m']  = "\u0645"; // م  MEEM
-        entries['n']  = "\u0646"; // ن  NOON
-        entries['h']  = "\u0647"; // ه  HEH
-        entries['w']  = "\u0648"; // و  WAW
-        entries['Y']  = "\u0649"; // ى  ALEF MAKSURA
-        entries['y']  = "\u064A"; // ي  YEH
+        entries['\''] = "\u0621";
+        entries['|']  = "\u0622";
+        entries['>']  = "\u0623";
+        entries['&']  = "\u0624";
+        entries['<']  = "\u0625";
+        entries['}']  = "\u0626";
+        entries['A']  = "\u0627";
+        entries['b']  = "\u0628";
+        entries['p']  = "\u0629";
+        entries['t']  = "\u062A";
+        entries['v']  = "\u062B";
+        entries['j']  = "\u062C";
+        entries['H']  = "\u062D";
+        entries['x']  = "\u062E";
+        entries['d']  = "\u062F";
+        entries['*']  = "\u0630";
+        entries['r']  = "\u0631";
+        entries['z']  = "\u0632";
+        entries['s']  = "\u0633";
+        entries['$']  = "\u0634";
+        entries['S']  = "\u0635";
+        entries['D']  = "\u0636";
+        entries['T']  = "\u0637";
+        entries['Z']  = "\u0638";
+        entries['E']  = "\u0639";
+        entries['g']  = "\u063A";
+        entries['f']  = "\u0641";
+        entries['q']  = "\u0642";
+        entries['k']  = "\u0643";
+        entries['l']  = "\u0644";
+        entries['m']  = "\u0645";
+        entries['n']  = "\u0646";
+        entries['h']  = "\u0647";
+        entries['w']  = "\u0648";
+        entries['Y']  = "\u0649";
+        entries['y']  = "\u064A";
 
-        // Harakat / Tanwin / Shadda / Sukun (8)
-        entries['a']  = "\u064E"; // َ  FATHAH
-        entries['u']  = "\u064F"; // ُ  DAMMAH
-        entries['i']  = "\u0650"; // ِ  KASRAH
-        entries['F']  = "\u064B"; // ً  FATHATAN
-        entries['N']  = "\u064C"; // ٌ  DAMMATAN
-        entries['K']  = "\u064D"; // ٍ  KASRATAN
-        entries['~']  = "\u0651"; // ّ  SHADDA
-        entries['o']  = "\u0652"; // ْ  SUKUN
+        entries['a']  = "\u064E";
+        entries['u']  = "\u064F";
+        entries['i']  = "\u0650";
+        entries['F']  = "\u064B";
+        entries['N']  = "\u064C";
+        entries['K']  = "\u064D";
+        entries['~']  = "\u0651";
+        entries['o']  = "\u0652";
 
-        // Quranic letter specials (5)
-        entries['{']  = "\u0671"; // ٱ  ALEF WASLA
-        entries['`']  = "\u0670"; // ٰ  SUPERSCRIPT ALEF
-        entries['_']  = "\u0640"; // ـ  TATWEEL
-        entries['^']  = "\u0653"; // ٓ  MADDAH ABOVE
-        entries['#']  = "\u0654"; // ٔ  HAMZA ABOVE
+        entries['{']  = "\u0671";
+        entries['`']  = "\u0670";
+        entries['_']  = "\u0640";
+        entries['^']  = "\u0653";
+        entries['#']  = "\u0654";
 
-        // Quranic annotation marks (12)
-        entries['@']  = "\u06DF"; // ۟  SMALL HIGH ROUNDED ZERO
-        entries[',']  = "\u06E5"; // ۥ  SMALL WAW
-        entries['.']  = "\u06E6"; // ۦ  SMALL YEH
-        entries['[']  = "\u06E2"; // ۢ  SMALL HIGH MEEM
-        entries[']']  = "\u06ED"; // ۭ  SMALL LOW MEEM
-        entries['"']  = "\u06E0"; // ۠  SMALL HIGH UPRIGHT ZERO
-        entries[':']  = "\u06DC"; // ۜ  SMALL HIGH SEEN
-        entries[';']  = "\u06E3"; // ۣ  SMALL LOW SEEN
-        entries['+']  = "\u06EB"; // ۫  SMALL HIGH STOP
-        entries['!']  = "\u06E8"; // ۨ  SMALL HIGH NOON
-        entries['%']  = "\u06EC"; // ۬  ROUNDED HIGH STOP
-        entries['-']  = "\u06EA"; // ۪  LOW STOP
+        entries['@']  = "\u06DF";
+        entries[',']  = "\u06E5";
+        entries['.']  = "\u06E6";
+        entries['[']  = "\u06E2";
+        entries[']']  = "\u06ED";
+        entries['"']  = "\u06E0";
+        entries[':']  = "\u06DC";
+        entries[';']  = "\u06E3";
+        entries['+']  = "\u06EB";
+        entries['!']  = "\u06E8";
+        entries['%']  = "\u06EC";
+        entries['-']  = "\u06EA";
 
         return entries.ToFrozenDictionary();
     }
