@@ -46,10 +46,13 @@ Example URLs:
 /dashboard/words/roots?root=55&view=surahs&surahView=missing
 ```
 
+Row-select default (when `root` is set without an explicit `view`): `view=words&wordView=simple`.
+
 ## Table columns & count-click mapping
 
-Columns: الجذر · المواضع · الآيات · السور · كلمات بدون تشكيل · كلمات بالتشكيل · الصيغ المعجمية · الأصول الصرفية.
-Show summary numbers only; UI row numbers; no backend ids. Column 6 is `كلمات بالتشكيل` (never `الصيغ بالتشكيل`).
+Grid header labels (short, for scanability): الجذر · المواضع · الآيات · السور · بدون تشكيل · بالتشكيل · الصيغ · الأصول.
+Semantic column meaning (counts / aria): الجذر · المواضع · الآيات · السور · كلمات بدون تشكيل · كلمات بالتشكيل · الصيغ المعجمية · الأصول الصرفية.
+Show summary numbers only; UI row numbers; no backend ids. Tashkeel column semantics are `كلمات بالتشكيل` (never `الصيغ بالتشكيل`).
 
 | Count cell | Opens |
 |---|---|
@@ -60,7 +63,7 @@ Show summary numbers only; UI row numbers; no backend ids. Column 6 is `كلما
 | كلمات بالتشكيل | `view=words&wordView=tashkeel` |
 | الصيغ المعجمية | `view=lemmas` |
 | الأصول الصرفية | `view=stems` |
-| (row select) | `view=ayahs` (default) |
+| (row select) | `view=words&wordView=simple` (default) |
 
 Each count cell is a real keyboard-operable button (reuse `word-count-chip`). Zero-count cells remain clickable and open an empty-state view.
 

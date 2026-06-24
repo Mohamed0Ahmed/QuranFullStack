@@ -49,8 +49,9 @@ the state (so a refresh restores it).
 
 ### User Story 2 - Inspect the verses where a root appears, with the root's words highlighted (Priority: P2)
 
-The admin selects a root (or clicks its المواضع/الآيات count) and the details panel opens on the
-الآيات tab, listing the verses where the root appears. In each verse, the words derived from that
+The admin clicks a root's المواضع or الآيات count and the details panel opens on the الآيات tab,
+listing the verses where the root appears. (Row select alone opens الكلمات per FR-014; count cells
+open their mapped tab.) In each verse, the words derived from that
 root are visually highlighted. The list is paginated because some roots appear in many verses.
 
 **Why this priority**: Seeing a root in context across the Quran, with its words highlighted, is the
@@ -169,7 +170,7 @@ that do nothing) while still retaining identity for future linking.
 
 #### Roots table
 
-- **FR-006**: The table MUST display, for each root, these columns in this order: الجذر, المواضع, الآيات, السور, كلمات بدون تشكيل, كلمات بالتشكيل, الصيغ المعجمية, الأصول الصرفية.
+- **FR-006**: The table MUST display, for each root, these eight columns in this order (semantic meaning): الجذر, المواضع, الآيات, السور, كلمات بدون تشكيل, كلمات بالتشكيل, الصيغ المعجمية, الأصول الصرفية. The visible grid header row MAY use shortened labels for scanability (`بدون تشكيل`, `بالتشكيل`, `الصيغ`, `الأصول` for the last four columns); full semantic meaning MUST remain available via context, `aria-label`, tooltips, or detail-panel labels where applicable.
 - **FR-007**: The table MUST show summary numbers only; it MUST NOT load or display any per-root detail data (word lists, verse lists, surah lists, lemma lists, stem lists) as part of listing the roots.
 - **FR-008**: The system MUST NOT display backend technical identifiers (root ID, word ID, lemma ID, stem ID, etc.) anywhere in the visible UI. UI row numbers MAY be used to identify rows.
 - **FR-009**: The system MUST let the admin search roots by Arabic root text using diacritic-insensitive "contains" matching; a search with no matches MUST show a clear no-results state.
@@ -177,7 +178,7 @@ that do nothing) while still retaining identity for future linking.
 - **FR-011**: The system MUST paginate the roots list using the shared pagination component/pattern already used elsewhere in the app (it MUST NOT reintroduce a roots-only or words-only pagination control).
 - **FR-012**: Each numeric count cell in the table MUST be an actual interactive control (keyboard-operable button), not an inert element.
 - **FR-013**: Clicking a count cell MUST open the details panel on the matching tab/sub-view per this mapping: المواضع → الآيات; الآيات → الآيات; السور → السور / ورد فيها; كلمات بدون تشكيل → الكلمات / بدون تشكيل; كلمات بالتشكيل → الكلمات / بالتشكيل; الصيغ المعجمية → الصيغ المعجمية; الأصول الصرفية → الأصول الصرفية.
-- **FR-014**: Selecting a root row (other than via a specific count) MUST open the details panel on the default view الآيات.
+- **FR-014**: Selecting a root row (other than via a specific count) MUST open the details panel on the الكلمات tab, defaulting to `view=words&wordView=simple` (بدون تشكيل sub-view).
 
 #### Meaning of the counts (data rules — must be testable)
 

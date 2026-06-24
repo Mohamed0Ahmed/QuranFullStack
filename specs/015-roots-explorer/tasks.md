@@ -49,7 +49,7 @@ description: "Task list for Quran Roots Explorer (Feature 015)"
 9. Logs carry IDs/counts/`hasSearch`/elapsed only — **never** Quran/root/word/raw-search text.
 10. Frontend tests MUST keep the worker cap: `VITEST_MAX_FORKS=2 npm test …` (the runner OOMs the machine otherwise). Guard `matchMedia`/`ResizeObserver` absence (jsdom) and default desktop.
 
-**Exact Arabic labels (use verbatim):** columns `الجذر · المواضع · الآيات · السور · كلمات بدون تشكيل · كلمات بالتشكيل · الصيغ المعجمية · الأصول الصرفية`; tabs `الكلمات (بدون تشكيل / بالتشكيل) · الآيات · السور (ورد فيها / لم يذكر فيها) · الصيغ المعجمية · الأصول الصرفية`; empty-selection `اختر جذرًا لعرض تفاصيله`. Column 6 is `كلمات بالتشكيل` — never `الصيغ بالتشكيل`.
+**Arabic labels:** table grid headers use shortened scanability labels (`الجذر · المواضع · الآيات · السور · بدون تشكيل · بالتشكيل · الصيغ · الأصول`); panel tabs and sub-views use full labels verbatim (`الكلمات (بدون تشكيل / بالتشكيل) · الآيات · السور (ورد فيها / لم يذكر فيها) · الصيغ المعجمية · الأصول الصرفية`); empty-selection `اختر جذرًا لعرض تفاصيله`. Count-column semantics remain كلمات بدون تشكيل / كلمات بالتشكيل / الصيغ المعجمية / الأصول الصرفية — never `الصيغ بالتشكيل` for the tashkeel column.
 
 ---
 
@@ -87,7 +87,7 @@ description: "Task list for Quran Roots Explorer (Feature 015)"
 
 ### Frontend foundations (folder: `Frontend/quran-dashboard-ui/src/app/features/words/`)
 
-- [x] T014 [P] Create `models/roots.models.ts` — DTO interfaces (mirror `contracts/roots-api.md`), view models, `LoadStatus`, list + panel state interfaces, query-key constants (`search`, `sort`, `page`, `root`, `view`, `wordView`, `surahView`, `detailPage`), defaults (`sort=mushaf-order`, default `view=ayahs`, `wordView=simple`, `surahView=mentioned`, fixed page sizes), and type guards. Model on `models/unique-words.models.ts`.
+- [x] T014 [P] Create `models/roots.models.ts` — DTO interfaces (mirror `contracts/roots-api.md`), view models, `LoadStatus`, list + panel state interfaces, query-key constants (`search`, `sort`, `page`, `root`, `view`, `wordView`, `surahView`, `detailPage`), defaults (`sort=mushaf-order`, default `view=words`, `wordView=simple`, `surahView=mentioned`, fixed page sizes), and type guards. Model on `models/unique-words.models.ts`.
 - [x] T015 [P] Create `state/roots-url-sync.ts` — `parseRootsQueryParams` / `buildRootsQueryParams` per `contracts/frontend-routing-state.md` (sub-views valid only under their parent view; `detailPage` only for `ayahs`/`words`; clearing the selection clears `root`/`view`/`wordView`/`surahView`/`detailPage` while preserving `search`/`sort`/`page`). Model on `state/unique-words-url-sync.ts` (depends on T014).
 - [x] T016 [P] Create `data-access/roots.api.ts` — all 8 `GET` methods returning `Observable<ApiResponse<T>>`, using `HttpParams` and `encodeURIComponent` on segments. Model on `data-access/unique-words.api.ts` (depends on T014).
 - [x] T017 [P] Create `state/roots-cache.ts` — `RootsCache extends ApiResponseCache` + a `RootsCacheKeys` object mirroring the backend `roots:` keys. Model on `state/unique-words-cache.ts` (depends on T014).
@@ -117,8 +117,8 @@ description: "Task list for Quran Roots Explorer (Feature 015)"
 
 ### Frontend — table + list state
 
-- [x] T028 [US1] Implement list logic in `state/roots-explorer.facade.ts`: load list via `roots.api.ts` + `RootsCache`, map `ApiResponse` → page-ready state (loading/empty/no-results/error), expose search/sort/page actions, a `selectRoot` that sets `root` + default `view=ayahs`, and a `clearSelection` that clears `root`/`view`/sub-views/`detailPage` while preserving `search`/`sort`/`page`; coordinate URL via `roots-url-sync.ts` (depends on T019, T016).
-- [x] T029 [US1] Create `components/roots-table/` — a `role="table"` div-grid (rows/cells with ARIA), the 8 columns with the exact Arabic headers, UI row numbers (page-relative), each count cell a `<qd-word-count-chip>` button that emits its target view, row-select output, CDK virtual scroll with the `ResizeObserver`-absent fallback. Model on `components/unique-words-table/` (depends on T014).
+- [x] T028 [US1] Implement list logic in `state/roots-explorer.facade.ts`: load list via `roots.api.ts` + `RootsCache`, map `ApiResponse` → page-ready state (loading/empty/no-results/error), expose search/sort/page actions, a `selectRoot` that sets `root` + default `view=words&wordView=simple`, and a `clearSelection` that clears `root`/`view`/sub-views/`detailPage` while preserving `search`/`sort`/`page`; coordinate URL via `roots-url-sync.ts` (depends on T019, T016).
+- [x] T029 [US1] Create `components/roots-table/` — a `role="table"` div-grid (rows/cells with ARIA), the 8 columns with shortened grid headers (full semantics via aria/context), UI row numbers (page-relative), each count cell a `<qd-word-count-chip>` button that emits its target view, row-select output, CDK virtual scroll with the `ResizeObserver`-absent fallback. Model on `components/unique-words-table/` (depends on T014).
 - [x] T030 [US1] Compose `roots-explorer-page`: add a roots search bar + sort control + the shared `<qd-pagination>`, render `roots-table`, and wire everything to `roots-explorer.facade`; render loading / empty / no-results states using shared `qd-*` state primitives (depends on T028, T029).
 - [x] T031 [US1] Activate the `الجذور` card in the Words hub to link to `/dashboard/words/roots` in `pages/words-hub-page/words-hub-page.component.*` (satisfies **FR-047**) (depends on T018).
 - [x] T032 [US1] Wire count-cell clicks and row-select in `roots-explorer-page` to update the URL (`root`, `view`, and sub-views) per the count-click mapping in `contracts/frontend-routing-state.md` (depends on T028, T029).
@@ -126,7 +126,7 @@ description: "Task list for Quran Roots Explorer (Feature 015)"
 ### Tests for User Story 1 (checkpoint CP-1)
 
 - [x] T033 [P] [US1] Backend tests in `Backend/tests/QuranDashboard.Tests/Quran/WordsRoots/`: list returns all 8 counts for seeded roots; `occurrences == words_count`; **lemmas co-occurrence** (assert on the divergent seeded root that the count uses co-occurrence, not ownership); search + each sort + paging; cache-once (via `SqlCommandCountInterceptor`: a second identical read issues no new DB commands); invalid sort/paging → 400; logging emits required fields and contains no Quran/root/search text (`RecordingLoggerProvider`) (depends on T025, T027, T013).
-- [x] T034 [P] [US1] Frontend tests for `components/roots-table` + page: renders 8 counts and UI row numbers (no ids); each count-click produces the correct `view`/sub-view URL; row-select defaults to `view=ayahs`; **clearing the selection preserves `search`/`sort`/`page` and clears only `root`/`view`/sub-views/`detailPage`**; list URL state restores on reload; **assert the API service is NOT called for any detail endpoint on table render** (depends on T029, T032).
+- [x] T034 [P] [US1] Frontend tests for `components/roots-table` + page: renders 8 counts and UI row numbers (no ids); each count-click produces the correct `view`/sub-view URL; row-select defaults to `view=words&wordView=simple`; **clearing the selection preserves `search`/`sort`/`page` and clears only `root`/`view`/sub-views/`detailPage`**; list URL state restores on reload; **assert the API service is NOT called for any detail endpoint on table render** (depends on T029, T032).
 
 **Checkpoint**: US1 is a fully functional, independently testable MVP.
 

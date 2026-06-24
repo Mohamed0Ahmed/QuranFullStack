@@ -50,7 +50,7 @@ VITEST_MAX_FORKS=2 npm test -- --run src/app/features/words
 ## Definition of done (high level)
 
 - Roots list shows all 8 counts; search/sort/page work and survive refresh/back-forward; no detail calls on list render.
-- Selecting a root opens the persistent side panel (default `ayahs`); panel scrolls independently; drawer on narrow screens.
+- Selecting a root row opens the persistent side panel on الكلمات (default `view=words&wordView=simple`); count cells open their mapped tab; panel scrolls independently; drawer on narrow screens.
 - Verse matches highlight exactly the root's words by id (no string replace); paginated.
 - Words sub-views deep-link into the existing Unique Words simple/tashkeel detail.
 - Surahs (mentioned/missing) load whole and sum to 114.
