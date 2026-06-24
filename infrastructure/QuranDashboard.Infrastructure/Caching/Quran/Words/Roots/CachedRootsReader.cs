@@ -47,12 +47,27 @@ public sealed class CachedRootsReader(EfRootsReader efReader, IMemoryCache cache
         => _ef.GetRootWordsAsync(id, wordKind, page, pageSize, cancellationToken);
 
     /// <inheritdoc />
-    public Task<PagedResult<RootAyahMatchDto>?> GetRootAyahMatchesAsync(
+    public async Task<PagedResult<RootAyahMatchDto>?> GetRootAyahMatchesAsync(
         int id,
         int page,
         int pageSize,
         CancellationToken cancellationToken)
-        => _ef.GetRootAyahMatchesAsync(id, page, pageSize, cancellationToken);
+    {
+        var key = RootsCacheKeys.Ayahs(id, page, pageSize);
+
+        if (_cache.TryGetValue(key, out PagedResult<RootAyahMatchDto>? cached))
+        {
+            return cached;
+        }
+
+        var ayahs = await _ef.GetRootAyahMatchesAsync(id, page, pageSize, cancellationToken);
+        if (ayahs is not null)
+        {
+            _cache.Set(key, ayahs);
+        }
+
+        return ayahs;
+    }
 
     /// <inheritdoc />
     public Task<RootSurahsResponse?> GetRootMentionedSurahsAsync(int id, CancellationToken cancellationToken)
