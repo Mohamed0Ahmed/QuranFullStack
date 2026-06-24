@@ -1,0 +1,41 @@
+:host {
+  display: block;
+}
+
+.root-stems-list__header,
+.root-stems-list__row {
+  display: grid;
+  grid-template-columns: 2rem 1fr auto;
+  align-items: center;
+  gap: var(--qd-space-2);
+}
+
+.root-stems-list__header {
+  font-size: 0.75rem;
+  color: var(--qd-text-muted);
+  padding-inline: var(--qd-space-1);
+  margin-block-end: var(--qd-space-2);
+}
+
+.root-stems-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qd-space-1);
+}
+
+.root-stems-list__row {
+  padding: var(--qd-space-2);
+  border-radius: var(--qd-radius-sm);
+  border: 1px solid var(--qd-border);
+  background: var(--qd-surface);
+}
+
+.root-stems-list__row-number {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  color: var(--qd-text-muted);
+}
+
+.root-stems-list__text {
+  font-family: var(--qd-font-quran, inherit);
+}

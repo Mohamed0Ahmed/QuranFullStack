@@ -12,6 +12,11 @@ import { Subscription, Subject, debounceTime } from 'rxjs';
 
 import { RootDetailsPanelComponent } from '../../components/root-details-panel/root-details-panel.component';
 import { AyahMatchesListComponent } from '../../components/ayah-matches-list/ayah-matches-list.component';
+import { MissingSurahsListComponent } from '../../components/missing-surahs-list/missing-surahs-list.component';
+import { RootLemmasListComponent } from '../../components/root-lemmas-list/root-lemmas-list.component';
+import { RootStemsListComponent } from '../../components/root-stems-list/root-stems-list.component';
+import { RootWordsListComponent } from '../../components/root-words-list/root-words-list.component';
+import { SurahOccurrencesListComponent } from '../../components/surah-occurrences-list/surah-occurrences-list.component';
 import {
   RootCountOpenedEvent,
   RootsTableComponent,
@@ -27,12 +32,17 @@ import {
   ROOTS_SEARCH_LABEL,
   ROOTS_SEARCH_PLACEHOLDER,
   ROOTS_SORT_LABELS,
+  ROOTS_SURAHS_VIEW_LABELS,
+  ROOTS_WORD_VIEW_LABELS,
 } from '../../models/roots.labels';
 import {
   DEFAULT_ROOT_VIEW,
   RootListItemViewModel,
   RootSort,
+  RootSurahView,
   RootView,
+  RootWordView,
+  toRootSummary,
 } from '../../models/roots.models';
 import { RootsDetailFacade } from '../../state/roots-detail.facade';
 import { RootsExplorerFacade } from '../../state/roots-explorer.facade';
@@ -52,7 +62,17 @@ import {
 @Component({
   selector: 'qd-roots-explorer-page',
   standalone: true,
-  imports: [AyahMatchesListComponent, RootDetailsPanelComponent, RootsTableComponent, PaginationComponent],
+  imports: [
+    AyahMatchesListComponent,
+    MissingSurahsListComponent,
+    RootDetailsPanelComponent,
+    RootLemmasListComponent,
+    RootStemsListComponent,
+    RootWordsListComponent,
+    RootsTableComponent,
+    SurahOccurrencesListComponent,
+    PaginationComponent,
+  ],
   templateUrl: './roots-explorer-page.component.html',
   styleUrl: './roots-explorer-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -82,6 +102,16 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly panelState = this.detailFacade.panelState;
 
   protected readonly sortOptions: readonly RootSort[] = ['mushaf-order', 'occurrences', 'alpha'];
+  protected readonly wordViewOptions: readonly RootWordView[] = ['simple', 'tashkeel'];
+  protected readonly surahViewOptions: readonly RootSurahView[] = ['mentioned', 'missing'];
+
+  protected get wordViewLabels() {
+    return ROOTS_WORD_VIEW_LABELS;
+  }
+
+  protected get surahViewLabels() {
+    return ROOTS_SURAHS_VIEW_LABELS;
+  }
 
   // Local draft for the search input so typing does not reload on every
   // keystroke; the facade reloads after the debounced emission. Seeded from the
@@ -130,21 +160,7 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
 
   /** Row select → default view=ayahs + root selected. */
   protected onRowSelected(root: RootListItemViewModel): void {
-    this.detailFacade.selectRoot(
-      {
-        id: root.id,
-        rootText: root.rootText,
-        occurrencesCount: root.occurrencesCount,
-        ayahsCount: root.ayahsCount,
-        surahsCount: root.surahsCount,
-        simpleWordsCount: root.simpleWordsCount,
-        tashkeelWordsCount: root.tashkeelWordsCount,
-        lemmasCount: root.lemmasCount,
-        stemsCount: root.stemsCount,
-        firstVerseKey: root.firstVerseKey,
-      },
-      DEFAULT_ROOT_VIEW,
-    );
+    this.detailFacade.selectRoot(toRootSummary(root), DEFAULT_ROOT_VIEW);
     this.updateQueryParams(
       buildRootsQueryParams({ rootId: root.id, view: DEFAULT_ROOT_VIEW, detailPage: null }),
     );
@@ -156,23 +172,7 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
     const wordView = view === 'words' ? (event.wordView ?? 'simple') : undefined;
     const surahView = view === 'surahs' ? (event.surahView ?? 'mentioned') : undefined;
 
-    this.detailFacade.selectRootWithPanel(
-      {
-        id: root.id,
-        rootText: root.rootText,
-        occurrencesCount: root.occurrencesCount,
-        ayahsCount: root.ayahsCount,
-        surahsCount: root.surahsCount,
-        simpleWordsCount: root.simpleWordsCount,
-        tashkeelWordsCount: root.tashkeelWordsCount,
-        lemmasCount: root.lemmasCount,
-        stemsCount: root.stemsCount,
-        firstVerseKey: root.firstVerseKey,
-      },
-      view,
-      wordView,
-      surahView,
-    );
+    this.detailFacade.selectRootWithPanel(toRootSummary(root), view, wordView, surahView);
 
     const params = buildRootsQueryParams({
       rootId: root.id,
@@ -198,6 +198,27 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
         detailPage: null,
         wordView: view === 'words' ? 'simple' : null,
         surahView: view === 'surahs' ? 'mentioned' : null,
+      }),
+    );
+  }
+
+  protected onWordViewChange(wordView: RootWordView): void {
+    this.detailFacade.setWordView(wordView);
+    this.updateQueryParams(
+      buildRootsQueryParams({
+        view: 'words',
+        wordView,
+        detailPage: null,
+      }),
+    );
+  }
+
+  protected onSurahViewChange(surahView: RootSurahView): void {
+    this.detailFacade.setSurahView(surahView);
+    this.updateQueryParams(
+      buildRootsQueryParams({
+        view: 'surahs',
+        surahView,
       }),
     );
   }

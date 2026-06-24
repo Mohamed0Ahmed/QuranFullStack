@@ -84,7 +84,14 @@ describe('RootsExplorerPageComponent US2', () => {
           errors: null,
         }),
       ),
-      getRootWords: vi.fn(),
+      getRootWords: vi.fn().mockReturnValue(
+        of<ApiResponse<{ page: number; pageSize: number; totalCount: number; items: unknown[] }>>({
+          isSuccess: true,
+          data: { page: 1, pageSize: 100, totalCount: 0, items: [] },
+          message: null,
+          errors: null,
+        }),
+      ),
       getRootAyahMatches: vi.fn().mockReturnValue(
         of<ApiResponse<{ page: number; pageSize: number; totalCount: number; items: RootAyahMatchDto[] }>>({
           isSuccess: true,
@@ -302,5 +309,392 @@ describe('RootsExplorerPageComponent US2', () => {
     expect(listFacade.search()).toBe('رحم');
     expect(listFacade.sort()).toBe('alpha');
     expect(listFacade.page()).toBe(2);
+  });
+});
+
+describe('RootsExplorerPageComponent US3', () => {
+  let router: Router;
+  let rootsApi: {
+    getRootsList: ReturnType<typeof vi.fn>;
+    getRootSummary: ReturnType<typeof vi.fn>;
+    getRootWords: ReturnType<typeof vi.fn>;
+    getRootAyahMatches: ReturnType<typeof vi.fn>;
+    getRootMentionedSurahs: ReturnType<typeof vi.fn>;
+    getRootMissingSurahs: ReturnType<typeof vi.fn>;
+    getRootLemmas: ReturnType<typeof vi.fn>;
+    getRootStems: ReturnType<typeof vi.fn>;
+  };
+
+  const queryParamMap$ = new BehaviorSubject(convertToParamMap({}));
+
+  beforeEach(async () => {
+    getTestBed().resetTestingModule();
+
+    rootsApi = {
+      getRootsList: vi.fn().mockImplementation(successListResponse),
+      getRootSummary: vi.fn().mockReturnValue(
+        of<ApiResponse<RootListItemViewModel>>({
+          isSuccess: true,
+          data: listRow(10),
+          message: null,
+          errors: null,
+        }),
+      ),
+      getRootWords: vi.fn().mockReturnValue(
+        of<ApiResponse<{ page: number; pageSize: number; totalCount: number; items: unknown[] }>>({
+          isSuccess: true,
+          data: { page: 1, pageSize: 100, totalCount: 1, items: [] },
+          message: null,
+          errors: null,
+        }),
+      ),
+      getRootAyahMatches: vi.fn(),
+      getRootMentionedSurahs: vi.fn(),
+      getRootMissingSurahs: vi.fn(),
+      getRootLemmas: vi.fn(),
+      getRootStems: vi.fn(),
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [RootsExplorerPageComponent],
+      providers: [
+        provideRouter([{ path: 'roots', component: RootsExplorerPageComponent }]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: RootsApi, useValue: rootsApi },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            paramMap: of(convertToParamMap({})),
+            queryParamMap: queryParamMap$.asObservable(),
+          },
+        },
+      ],
+      teardown: { destroyAfterEach: true },
+    }).compileComponents();
+
+    router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    queryParamMap$.next(convertToParamMap({}));
+  });
+
+  async function initLifecycle(): Promise<ReturnType<typeof TestBed.createComponent<RootsExplorerPageComponent>>> {
+    const fixture = TestBed.createComponent(RootsExplorerPageComponent);
+    fixture.componentInstance.ngOnInit();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  it('loads words only when the words tab and sub-view are active', async () => {
+    queryParamMap$.next(convertToParamMap({ root: '10', view: 'words', wordView: 'simple' }));
+    await initLifecycle();
+
+    expect(rootsApi.getRootWords).toHaveBeenCalledWith(10, 'simple', 1, 100);
+    expect(rootsApi.getRootAyahMatches).not.toHaveBeenCalled();
+  });
+
+  it('routes word sub-view changes through the URL', async () => {
+    const fixture = TestBed.createComponent(RootsExplorerPageComponent);
+    const component = fixture.componentInstance;
+    component.ngOnInit();
+
+    component['onWordViewChange']('tashkeel');
+
+    expect(router.navigate).toHaveBeenCalledWith([], {
+      relativeTo: expect.anything(),
+      queryParams: expect.objectContaining({
+        [ROOTS_QUERY_KEYS.view]: 'words',
+        [ROOTS_QUERY_KEYS.wordView]: 'tashkeel',
+        [ROOTS_QUERY_KEYS.detailPage]: null,
+      }),
+      queryParamsHandling: 'merge',
+    });
+  });
+});
+
+describe('RootsExplorerPageComponent US4', () => {
+  let router: Router;
+  let rootsApi: {
+    getRootsList: ReturnType<typeof vi.fn>;
+    getRootSummary: ReturnType<typeof vi.fn>;
+    getRootWords: ReturnType<typeof vi.fn>;
+    getRootAyahMatches: ReturnType<typeof vi.fn>;
+    getRootMentionedSurahs: ReturnType<typeof vi.fn>;
+    getRootMissingSurahs: ReturnType<typeof vi.fn>;
+    getRootLemmas: ReturnType<typeof vi.fn>;
+    getRootStems: ReturnType<typeof vi.fn>;
+  };
+
+  const queryParamMap$ = new BehaviorSubject(convertToParamMap({}));
+
+  beforeEach(async () => {
+    getTestBed().resetTestingModule();
+
+    rootsApi = {
+      getRootsList: vi.fn().mockImplementation(successListResponse),
+      getRootSummary: vi.fn().mockReturnValue(
+        of<ApiResponse<RootListItemViewModel>>({
+          isSuccess: true,
+          data: listRow(10),
+          message: null,
+          errors: null,
+        }),
+      ),
+      getRootWords: vi.fn(),
+      getRootAyahMatches: vi.fn(),
+      getRootMentionedSurahs: vi.fn().mockReturnValue(
+        of<ApiResponse<{ id: number; rootText: string; surahsCount: number; surahs: unknown[] }>>({
+          isSuccess: true,
+          data: { id: 10, rootText: 'جذر-10', surahsCount: 1, surahs: [{ surahNumber: 1, nameArabic: 'سورة-اختبار', occurrencesInSurah: 2 }] },
+          message: null,
+          errors: null,
+        }),
+      ),
+      getRootMissingSurahs: vi.fn().mockReturnValue(
+        of<ApiResponse<{ id: number; rootText: string; missingSurahsCount: number; surahs: unknown[] }>>({
+          isSuccess: true,
+          data: { id: 10, rootText: 'جذر-10', missingSurahsCount: 0, surahs: [] },
+          message: null,
+          errors: null,
+        }),
+      ),
+      getRootLemmas: vi.fn(),
+      getRootStems: vi.fn(),
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [RootsExplorerPageComponent],
+      providers: [
+        provideRouter([{ path: 'roots', component: RootsExplorerPageComponent }]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: RootsApi, useValue: rootsApi },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            paramMap: of(convertToParamMap({})),
+            queryParamMap: queryParamMap$.asObservable(),
+          },
+        },
+      ],
+      teardown: { destroyAfterEach: true },
+    }).compileComponents();
+
+    router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    queryParamMap$.next(convertToParamMap({}));
+  });
+
+  async function initLifecycle(): Promise<ReturnType<typeof TestBed.createComponent<RootsExplorerPageComponent>>> {
+    const fixture = TestBed.createComponent(RootsExplorerPageComponent);
+    fixture.componentInstance.ngOnInit();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  it('loads mentioned surahs whole when surahView=mentioned', async () => {
+    queryParamMap$.next(convertToParamMap({ root: '10', view: 'surahs', surahView: 'mentioned' }));
+    const fixture = await initLifecycle();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(rootsApi.getRootMentionedSurahs).toHaveBeenCalledWith(10);
+    expect(fixture.nativeElement.querySelector('[data-testid="roots-mentioned-surahs-view"]')).toBeTruthy();
+  });
+
+  it('routes surah sub-view changes through the URL and loads missing whole', async () => {
+    queryParamMap$.next(convertToParamMap({ root: '10', view: 'surahs', surahView: 'missing' }));
+    await initLifecycle();
+
+    expect(rootsApi.getRootMissingSurahs).toHaveBeenCalledWith(10);
+
+    const fixture = TestBed.createComponent(RootsExplorerPageComponent);
+    const component = fixture.componentInstance;
+    component.ngOnInit();
+    component['onSurahViewChange']('mentioned');
+
+    expect(router.navigate).toHaveBeenCalledWith([], {
+      relativeTo: expect.anything(),
+      queryParams: expect.objectContaining({
+        [ROOTS_QUERY_KEYS.view]: 'surahs',
+        [ROOTS_QUERY_KEYS.surahView]: 'mentioned',
+      }),
+      queryParamsHandling: 'merge',
+    });
+  });
+
+  it('renders empty missing-surahs state cleanly', async () => {
+    queryParamMap$.next(convertToParamMap({ root: '10', view: 'surahs', surahView: 'missing' }));
+    const fixture = await initLifecycle();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const detailFacade = TestBed.inject(RootsDetailFacade);
+    expect(detailFacade.status()).toBe('empty');
+    expect(fixture.nativeElement.querySelector('[data-testid="roots-panel-empty"]')).toBeTruthy();
+  });
+});
+
+describe('RootsExplorerPageComponent US5', () => {
+  let rootsApi: {
+    getRootsList: ReturnType<typeof vi.fn>;
+    getRootSummary: ReturnType<typeof vi.fn>;
+    getRootWords: ReturnType<typeof vi.fn>;
+    getRootAyahMatches: ReturnType<typeof vi.fn>;
+    getRootMentionedSurahs: ReturnType<typeof vi.fn>;
+    getRootMissingSurahs: ReturnType<typeof vi.fn>;
+    getRootLemmas: ReturnType<typeof vi.fn>;
+    getRootStems: ReturnType<typeof vi.fn>;
+  };
+
+  const queryParamMap$ = new BehaviorSubject(convertToParamMap({}));
+
+  beforeEach(async () => {
+    getTestBed().resetTestingModule();
+
+    rootsApi = {
+      getRootsList: vi.fn().mockImplementation(successListResponse),
+      getRootSummary: vi.fn().mockReturnValue(
+        of<ApiResponse<RootListItemViewModel>>({
+          isSuccess: true,
+          data: listRow(10),
+          message: null,
+          errors: null,
+        }),
+      ),
+      getRootWords: vi.fn(),
+      getRootAyahMatches: vi.fn(),
+      getRootMentionedSurahs: vi.fn(),
+      getRootMissingSurahs: vi.fn(),
+      getRootLemmas: vi.fn().mockReturnValue(
+        of<ApiResponse<{ id: number; rootText: string; lemmasCount: number; lemmas: unknown[] }>>({
+          isSuccess: true,
+          data: {
+            id: 10,
+            rootText: 'جذر-10',
+            lemmasCount: 1,
+            lemmas: [{ lemmaId: 100, lemmaText: 'صيغة-اختبار', occurrencesCount: 2 }],
+          },
+          message: null,
+          errors: null,
+        }),
+      ),
+      getRootStems: vi.fn().mockReturnValue(
+        of<ApiResponse<{ id: number; rootText: string; stemsCount: number; stems: unknown[] }>>({
+          isSuccess: true,
+          data: {
+            id: 10,
+            rootText: 'جذر-10',
+            stemsCount: 1,
+            stems: [{ stemId: 200, stemText: 'أصل-اختبار', occurrencesCount: 1 }],
+          },
+          message: null,
+          errors: null,
+        }),
+      ),
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [RootsExplorerPageComponent],
+      providers: [
+        provideRouter([{ path: 'roots', component: RootsExplorerPageComponent }]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: RootsApi, useValue: rootsApi },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            paramMap: of(convertToParamMap({})),
+            queryParamMap: queryParamMap$.asObservable(),
+          },
+        },
+      ],
+      teardown: { destroyAfterEach: true },
+    }).compileComponents();
+
+    queryParamMap$.next(convertToParamMap({}));
+  });
+
+  async function initLifecycle(): Promise<ReturnType<typeof TestBed.createComponent<RootsExplorerPageComponent>>> {
+    const fixture = TestBed.createComponent(RootsExplorerPageComponent);
+    fixture.componentInstance.ngOnInit();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  it('renders lemmas and stems as non-interactive lists with counts', async () => {
+    queryParamMap$.next(convertToParamMap({ root: '10', view: 'lemmas' }));
+    const lemmasFixture = await initLifecycle();
+    await lemmasFixture.whenStable();
+    lemmasFixture.detectChanges();
+
+    const lemmasRoot = lemmasFixture.nativeElement as HTMLElement;
+    expect(lemmasRoot.querySelector('[data-testid="roots-lemmas-view"]')).toBeTruthy();
+    expect(lemmasRoot.querySelector('[data-testid="root-lemma-item"]')).toBeTruthy();
+    expect(lemmasRoot.querySelector('[data-testid="roots-lemmas-view"] button')).toBeNull();
+
+    getTestBed().resetTestingModule();
+    queryParamMap$.next(convertToParamMap({ root: '10', view: 'stems' }));
+
+    rootsApi = {
+      getRootsList: vi.fn().mockImplementation(successListResponse),
+      getRootSummary: vi.fn().mockReturnValue(
+        of<ApiResponse<RootListItemViewModel>>({
+          isSuccess: true,
+          data: listRow(10),
+          message: null,
+          errors: null,
+        }),
+      ),
+      getRootWords: vi.fn(),
+      getRootAyahMatches: vi.fn(),
+      getRootMentionedSurahs: vi.fn(),
+      getRootMissingSurahs: vi.fn(),
+      getRootLemmas: vi.fn(),
+      getRootStems: vi.fn().mockReturnValue(
+        of<ApiResponse<{ id: number; rootText: string; stemsCount: number; stems: unknown[] }>>({
+          isSuccess: true,
+          data: {
+            id: 10,
+            rootText: 'جذر-10',
+            stemsCount: 1,
+            stems: [{ stemId: 200, stemText: 'أصل-اختبار', occurrencesCount: 1 }],
+          },
+          message: null,
+          errors: null,
+        }),
+      ),
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [RootsExplorerPageComponent],
+      providers: [
+        provideRouter([{ path: 'roots', component: RootsExplorerPageComponent }]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: RootsApi, useValue: rootsApi },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            paramMap: of(convertToParamMap({})),
+            queryParamMap: queryParamMap$.asObservable(),
+          },
+        },
+      ],
+      teardown: { destroyAfterEach: true },
+    }).compileComponents();
+
+    const stemsFixture = TestBed.createComponent(RootsExplorerPageComponent);
+    stemsFixture.componentInstance.ngOnInit();
+    await stemsFixture.whenStable();
+    stemsFixture.detectChanges();
+
+    const stemsRoot = stemsFixture.nativeElement as HTMLElement;
+    expect(stemsRoot.querySelector('[data-testid="roots-stems-view"]')).toBeTruthy();
+    expect(stemsRoot.querySelector('[data-testid="root-stem-item"]')).toBeTruthy();
+    expect(stemsRoot.querySelector('[data-testid="roots-stems-view"] a')).toBeNull();
   });
 });

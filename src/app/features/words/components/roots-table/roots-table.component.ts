@@ -61,7 +61,11 @@ export class RootsTableComponent {
   /** A count cell clicked → its target panel view and optional sub-view. */
   readonly countOpened = output<RootCountOpenedEvent>();
 
-  protected readonly headers = ROOTS_COLUMN_HEADERS;
+  // Getter mirrors the page/facade workaround so the experimental unit-test
+  // SSR runner resolves the cross-module const correctly.
+  protected get headers() {
+    return ROOTS_COLUMN_HEADERS;
+  }
   protected readonly loadingLabel = ROOTS_LOADING_LABEL;
   protected readonly loadingRowPlaceholders = Array.from({ length: 12 });
   protected readonly rowHeight = ROW_HEIGHT;

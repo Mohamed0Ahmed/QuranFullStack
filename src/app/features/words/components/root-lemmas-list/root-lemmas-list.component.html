@@ -1,0 +1,17 @@
+<div class="root-lemmas-list-shell">
+  <header class="root-lemmas-list__header">
+    <span class="root-lemmas-list__header-row-number">{{ rowNumberHeader }}</span>
+    <span class="root-lemmas-list__header-text">{{ lemmaTextHeader }}</span>
+    <span class="root-lemmas-list__header-count">{{ occurrencesHeader }}</span>
+  </header>
+
+  <div class="root-lemmas-list" data-testid="root-lemmas-list" role="list">
+    @for (lemma of lemmas(); track lemma.lemmaId; let index = $index) {
+      <div class="root-lemmas-list__row" role="listitem" data-testid="root-lemma-item">
+        <span class="root-lemmas-list__row-number" aria-hidden="true">{{ index + 1 }}</span>
+        <span class="root-lemmas-list__text">{{ lemma.lemmaText }}</span>
+        <span class="qd-badge">{{ lemma.occurrencesCount }}</span>
+      </div>
+    }
+  </div>
+</div>

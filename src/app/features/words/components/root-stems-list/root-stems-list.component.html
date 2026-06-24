@@ -1,0 +1,17 @@
+<div class="root-stems-list-shell">
+  <header class="root-stems-list__header">
+    <span class="root-stems-list__header-row-number">{{ rowNumberHeader }}</span>
+    <span class="root-stems-list__header-text">{{ stemTextHeader }}</span>
+    <span class="root-stems-list__header-count">{{ occurrencesHeader }}</span>
+  </header>
+
+  <div class="root-stems-list" data-testid="root-stems-list" role="list">
+    @for (stem of stems(); track stem.stemId; let index = $index) {
+      <div class="root-stems-list__row" role="listitem" data-testid="root-stem-item">
+        <span class="root-stems-list__row-number" aria-hidden="true">{{ index + 1 }}</span>
+        <span class="root-stems-list__text">{{ stem.stemText }}</span>
+        <span class="qd-badge">{{ stem.occurrencesCount }}</span>
+      </div>
+    }
+  </div>
+</div>

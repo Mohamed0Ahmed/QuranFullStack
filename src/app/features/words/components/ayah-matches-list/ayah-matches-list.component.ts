@@ -26,9 +26,17 @@ export class AyahMatchesListComponent {
 
   readonly pageChange = output<number>();
 
-  protected readonly ayahRefLabel = AYAH_REF_LABEL;
-  protected readonly mushafPageRefLabel = MUSHAF_PAGE_REF_LABEL;
-  protected readonly openAyahInMushafLabel = OPEN_AYAH_IN_MUSHAF_LABEL;
+  protected get ayahRefLabel() {
+    return AYAH_REF_LABEL;
+  }
+
+  protected get mushafPageRefLabel() {
+    return MUSHAF_PAGE_REF_LABEL;
+  }
+
+  protected get openAyahInMushafLabel() {
+    return OPEN_AYAH_IN_MUSHAF_LABEL;
+  }
 
   protected rowNumber(index: number): number {
     return pageRelativeRowNumber(this.currentPage(), this.page().pageSize, index);

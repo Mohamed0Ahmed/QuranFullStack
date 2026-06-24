@@ -29,6 +29,17 @@
   font-size: 1.125rem;
 }
 
+.roots-explorer__sub-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--qd-space-1);
+  margin-block-end: var(--qd-space-3);
+}
+
+.roots-explorer__sub-tab[aria-selected='true'] {
+  font-weight: 600;
+}
+
 // Desktop split-screen: table on the inline-start side, panel on the
 // inline-end side. Each region scrolls independently. Narrow-screen drawer
 // behavior is polished in T069.

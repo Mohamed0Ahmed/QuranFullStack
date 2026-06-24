@@ -59,6 +59,12 @@ export const ROOTS_ERROR_LABEL = 'تعذّر تحميل تفاصيل الجذر.
 export const ROOTS_LIST_ERROR_LABEL = 'تعذّر تحميل الجذور. تحقّق من الاتصال ثم أعد المحاولة.';
 export const ROOTS_NO_RESULTS_LABEL = 'لا توجد جذور مطابقة لبحثك';
 
+export const ROOTS_WORD_OCCURRENCES_HEADER = 'عدد مرات الظهور في الجذر';
+export const ROOTS_WORD_DISPLAY_HEADER = 'الكلمة';
+export const ROOTS_LEMMA_TEXT_HEADER = 'الصيغة المعجمية';
+export const ROOTS_STEM_TEXT_HEADER = 'الأصل الصرفي';
+export const ROOTS_OPEN_UNIQUE_WORD_LABEL = 'فتح تفاصيل الكلمة في مستكشف الكلمات الفريدة';
+
 // Sort control labels.
 export const ROOTS_SORT_LABELS = {
   label: 'الترتيب',

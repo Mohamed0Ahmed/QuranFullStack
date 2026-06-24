@@ -108,13 +108,76 @@
                       data-testid="roots-ayahs-view"
                       (pageChange)="onDetailPageChange($event)"
                     />
-                  } @else {
-                    <p
-                      class="qd-text-muted roots-explorer__panel-summary"
-                      data-testid="roots-panel-summary"
+                  } @else if (activeView() === 'words') {
+                    <nav
+                      class="roots-explorer__sub-tabs"
+                      role="tablist"
+                      aria-label="أنماط كلمات الجذر"
+                      data-testid="roots-word-view-tabs"
                     >
-                      {{ panelState().summary?.rootText }}
-                    </p>
+                      @for (option of wordViewOptions; track option) {
+                        <button
+                          type="button"
+                          class="qd-btn qd-btn-ghost roots-explorer__sub-tab"
+                          role="tab"
+                          [attr.data-testid]="'roots-word-view-' + option"
+                          [attr.aria-selected]="panelState().wordView === option"
+                          (click)="onWordViewChange(option)"
+                        >
+                          {{ wordViewLabels[option] }}
+                        </button>
+                      }
+                    </nav>
+                    @if (panelState().words; as wordsPage) {
+                      <qd-root-words-list
+                        [page]="wordsPage"
+                        [currentPage]="panelState().detailPage"
+                        [wordView]="panelState().wordView"
+                        data-testid="roots-words-view"
+                        (pageChange)="onDetailPageChange($event)"
+                      />
+                    }
+                  } @else if (activeView() === 'surahs') {
+                    <nav
+                      class="roots-explorer__sub-tabs"
+                      role="tablist"
+                      aria-label="عرض سور الجذر"
+                      data-testid="roots-surah-view-tabs"
+                    >
+                      @for (option of surahViewOptions; track option) {
+                        <button
+                          type="button"
+                          class="qd-btn qd-btn-ghost roots-explorer__sub-tab"
+                          role="tab"
+                          [attr.data-testid]="'roots-surah-view-' + option"
+                          [attr.aria-selected]="panelState().surahView === option"
+                          (click)="onSurahViewChange(option)"
+                        >
+                          {{ surahViewLabels[option] }}
+                        </button>
+                      }
+                    </nav>
+                    @if (panelState().surahView === 'mentioned' && panelState().mentionedSurahs; as surahs) {
+                      <qd-surah-occurrences-list
+                        [surahs]="surahs.surahs"
+                        data-testid="roots-mentioned-surahs-view"
+                      />
+                    } @else if (panelState().surahView === 'missing' && panelState().missingSurahs; as missing) {
+                      <qd-missing-surahs-list
+                        [surahs]="missing.surahs"
+                        data-testid="roots-missing-surahs-view"
+                      />
+                    }
+                  } @else if (activeView() === 'lemmas' && panelState().lemmas; as lemmas) {
+                    <qd-root-lemmas-list
+                      [lemmas]="lemmas.lemmas"
+                      data-testid="roots-lemmas-view"
+                    />
+                  } @else if (activeView() === 'stems' && panelState().stems; as stems) {
+                    <qd-root-stems-list
+                      [stems]="stems.stems"
+                      data-testid="roots-stems-view"
+                    />
                   }
                 }
               }

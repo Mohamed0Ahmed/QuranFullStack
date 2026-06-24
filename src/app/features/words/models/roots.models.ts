@@ -120,9 +120,6 @@ export interface RootStemsDto {
 
 export type LoadStatus = 'idle' | 'loading' | 'success' | 'empty' | 'error' | 'notFound';
 
-/** Count-cell → target panel view/sub-view mapping (FR count-click rules). */
-export type RootCountTarget = RootView;
-
 export interface RootsListState {
   status: LoadStatus;
   items: readonly RootListItemViewModel[];
@@ -142,6 +139,11 @@ export interface RootsPanelState {
   surahView: RootSurahView;
   detailPage: number;
   ayahs: PagedResultDto<RootAyahMatchDto> | null;
+  words: PagedResultDto<RootWordItemDto> | null;
+  mentionedSurahs: RootSurahsDto | null;
+  missingSurahs: RootMissingSurahsDto | null;
+  lemmas: RootLemmasDto | null;
+  stems: RootStemsDto | null;
   status: LoadStatus;
   errorMessage: string;
 }
@@ -149,6 +151,22 @@ export interface RootsPanelState {
 export interface RootListItemViewModel extends RootListItemDto {
   /** Display label for the root text (same as rootText today; explicit for the view). */
   displayText: string;
+}
+
+/** Maps a list row to the summary shape used by the detail panel and URL restore. */
+export function toRootSummary(root: RootListItemDto): RootSummaryDto {
+  return {
+    id: root.id,
+    rootText: root.rootText,
+    occurrencesCount: root.occurrencesCount,
+    ayahsCount: root.ayahsCount,
+    surahsCount: root.surahsCount,
+    simpleWordsCount: root.simpleWordsCount,
+    tashkeelWordsCount: root.tashkeelWordsCount,
+    lemmasCount: root.lemmasCount,
+    stemsCount: root.stemsCount,
+    firstVerseKey: root.firstVerseKey,
+  };
 }
 
 // --- Query-param keys (stable route keys, not translated labels) ---

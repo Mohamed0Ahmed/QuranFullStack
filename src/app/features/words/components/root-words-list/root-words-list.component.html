@@ -1,0 +1,30 @@
+<div class="root-words-list" data-testid="root-words-list">
+  <header class="root-words-list__header">
+    <span class="root-words-list__header-row-number">{{ rowNumberHeader }}</span>
+    <span class="root-words-list__header-text">{{ displayHeader }}</span>
+    <span class="root-words-list__header-count">{{ occurrencesHeader }}</span>
+  </header>
+
+  <div class="root-words-list__viewport">
+    @for (item of page().items; track item.uniqueWordId; let i = $index) {
+      <a
+        class="root-words-list__row qd-interactive-surface"
+        [attr.href]="uniqueWordHref(item)"
+        [attr.aria-label]="openUniqueWordLabel"
+        data-testid="root-word-link"
+      >
+        <span class="root-words-list__row-number" aria-hidden="true">{{ rowNumber(i) }}</span>
+        <span class="root-words-list__text">{{ item.displayTextUthmani }}</span>
+        <span class="qd-badge">{{ item.occurrencesCount }}</span>
+      </a>
+    }
+  </div>
+
+  <qd-pagination
+    [currentPage]="currentPage()"
+    [pageSize]="page().pageSize"
+    [totalCount]="page().totalCount"
+    ariaLabel="تصفّح كلمات الجذر"
+    (pageChange)="pageChange.emit($event)"
+  />
+</div>
