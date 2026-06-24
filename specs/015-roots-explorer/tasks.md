@@ -246,13 +246,13 @@ description: "Task list for Quran Roots Explorer (Feature 015)"
 
 **Purpose**: Hardening that spans all stories. Run after the stories you intend to ship are complete.
 
-- [ ] T069 [P] Frontend: drawer behavior polish in `components/root-details-panel/` (narrow screens → dismissible drawer built on the foundational shell scaffold: focus-trap, `Esc` to close, focus returns to the originating control) and verify RTL via CSS logical properties.
-- [ ] T070 [P] Frontend: accessibility pass across `roots-table` + `root-details-panel` — `role="tablist"/tab/tabpanel`, `aria-selected`, roving `tabindex`, RTL-aware arrow keys; selected row `aria-current`; panel load status via `role="status" aria-live="polite"`; confirm count cells + word links are keyboard-operable and lemmas/stems are non-interactive.
-- [ ] T071 [P] Backend: logging completeness + redaction audit across all 8 handlers using `RecordingLoggerProvider` (required fields present; NO Quran/root/word/raw-search text).
-- [ ] T072 [P] Backend: cache-hit verification across all detail endpoints via `SqlCommandCountInterceptor` (repeat reads issue no new DB commands); confirm no global cache reconfiguration was introduced.
-- [ ] T073 [P] Frontend: empty / error / not-found / no-results state matrix across all tabs; invalid `root` in the URL → controlled not-found while the table stays usable.
-- [ ] T074 Run `quickstart.md` validation: backend `dotnet test --filter FullyQualifiedName~Quran.WordsRoots`; frontend `VITEST_MAX_FORKS=2 npm test -- --run src/app/features/words`; confirm the Definition-of-Done checklist in `quickstart.md`.
-- [ ] T075 [P] Clean-code + `test-guard` self-check on all changed files; confirm file-size thresholds (`FRONTEND_STRUCTURE.md`); confirm no backend IDs are rendered anywhere in the UI.
+- [x] T069 [P] Frontend: drawer behavior polish in `components/root-details-panel/` (narrow screens → dismissible drawer built on the foundational shell scaffold: focus-trap, `Esc` to close, focus returns to the originating control) and verify RTL via CSS logical properties.
+- [x] T070 [P] Frontend: accessibility pass across `roots-table` + `root-details-panel` — `role="tablist"/tab/tabpanel`, `aria-selected`, roving `tabindex`, RTL-aware arrow keys; selected row `aria-current`; panel load status via `role="status" aria-live="polite"`; confirm count cells + word links are keyboard-operable and lemmas/stems are non-interactive.
+- [x] T071 [P] Backend: logging completeness + redaction audit across all 8 handlers using `RecordingLoggerProvider` (required fields present; NO Quran/root/word/raw-search text).
+- [x] T072 [P] Backend: cache-hit verification across all detail endpoints via `SqlCommandCountInterceptor` (repeat reads issue no new DB commands); confirm no global cache reconfiguration was introduced.
+- [x] T073 [P] Frontend: empty / error / not-found / no-results state matrix across all tabs; invalid `root` in the URL → controlled not-found while the table stays usable.
+- [x] T074 Run `quickstart.md` validation: backend `dotnet test --filter FullyQualifiedName~Quran.WordsRoots`; frontend `VITEST_MAX_FORKS=2 npm test -- --run src/app/features/words`; confirm the Definition-of-Done checklist in `quickstart.md`.
+- [x] T075 [P] Clean-code + `test-guard` self-check on all changed files; confirm file-size thresholds (`FRONTEND_STRUCTURE.md`); confirm no backend IDs are rendered anywhere in the UI.
 
 ---
 
