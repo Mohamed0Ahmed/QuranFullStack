@@ -4,10 +4,6 @@ using QuranDashboard.Application.Abstractions.Quran.MushafReader.Responses;
 
 namespace QuranDashboard.Infrastructure.Caching.Quran.MushafReader;
 
-/// <summary>
-/// Caches successful word-analysis reads only. Never caches not-found,
-/// not-analyzable, or incomplete-data outcomes.
-/// </summary>
 public sealed class CachedWordAnalysisReader(IWordAnalysisReader inner, IMemoryCache cache) : IWordAnalysisReader
 {
     public async Task<WordAnalysisOutcome> GetWordAnalysisAsync(string wordLocation, CancellationToken ct)

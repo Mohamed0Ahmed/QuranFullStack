@@ -131,11 +131,6 @@ internal static class I3rabSql
           ) < morphology.segment_count
         """;
 
-    // Counts how many authoritative rule-layer label corrections are present after a run
-    // (the catalogue owns these labels instead of reusing quran_pos_tags.arabic_label).
-    // The corrected signatures are passed as a text[] parameter so the set stays single-sourced in
-    // I3rabSeedLabelCorrections; matching by exact signature avoids the earlier ':'-part heuristic that
-    // missed multi-part corrections such as STEM:N:GEN:1S.
     internal const string CountLabelCorrectionsPresent = """
         SELECT COUNT(*)::int
         FROM quran_i3rab_rules

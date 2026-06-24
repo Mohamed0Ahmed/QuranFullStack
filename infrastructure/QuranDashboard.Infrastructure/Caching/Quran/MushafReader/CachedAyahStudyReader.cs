@@ -4,9 +4,6 @@ using QuranDashboard.Application.Abstractions.Quran.MushafReader.Responses;
 
 namespace QuranDashboard.Infrastructure.Caching.Quran.MushafReader;
 
-/// <summary>
-/// Caches successful, non-null ayah study reads keyed by verse and resolved sources.
-/// </summary>
 public sealed class CachedAyahStudyReader(IAyahStudyReader inner, IMemoryCache cache) : IAyahStudyReader
 {
     public async Task<AyahStudyResponse?> GetAyahStudyAsync(

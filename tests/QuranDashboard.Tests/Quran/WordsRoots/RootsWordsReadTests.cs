@@ -3,10 +3,6 @@ using QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootWords;
 
 namespace QuranDashboard.Tests.Quran.WordsRoots;
 
-/// <summary>
-/// US3 (T051): Root words — correct unique word ids and in-context occurrence
-/// counts for both kinds; pagination.
-/// </summary>
 [Collection(nameof(RootsExplorerCollection))]
 public sealed class RootsWordsReadTests(RootsExplorerTestFixture fixture)
 {

@@ -6,11 +6,6 @@ using QuranDashboard.Infrastructure.Persistence;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.MushafReader;
 
-/// <summary>
-/// EF read implementation for a single Mushaf page. Mushaf text always comes
-/// from <c>quran_words.text_uthmani</c>; division/sajda markers use the
-/// first-line rule (<c>MIN(line_number)</c> per ayah on the page).
-/// </summary>
 public sealed class EfMushafPageReader(QuranDashboardDbContext db) : IMushafPageReader
 {
     public async Task<MushafPageResponse?> GetPageAsync(int pageNumber, CancellationToken ct)
@@ -35,8 +30,6 @@ public sealed class EfMushafPageReader(QuranDashboardDbContext db) : IMushafPage
             return null;
         }
 
-        // Project only the word + ayah fields the page view consumes, instead of
-        // materializing the full QuranWord + Ayah graphs via Include(.Ayah).
         var words = await db.QuranWords
             .AsNoTracking()
             .Where(w => w.PageNumber == pageNumber)
@@ -209,10 +202,6 @@ public sealed class EfMushafPageReader(QuranDashboardDbContext db) : IMushafPage
         _ => "required",
     };
 
-    /// <summary>
-    /// Lean projected row carrying only the word and ayah fields the page view
-    /// consumes (avoiding full QuranWord + Ayah graph materialization).
-    /// </summary>
     private sealed record PageWordRow(
         string Location,
         int AyahId,

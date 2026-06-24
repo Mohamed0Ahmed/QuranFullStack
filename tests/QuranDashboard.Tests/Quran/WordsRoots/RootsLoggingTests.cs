@@ -12,19 +12,12 @@ using QuranDashboard.Tests.TestSupport.Logging;
 
 namespace QuranDashboard.Tests.Quran.WordsRoots;
 
-/// <summary>
-/// US-cross-cutting (T071): logging completeness + redaction audit across all
-/// eight Roots handlers. Asserts the structured fields each handler emits and,
-/// critically, that NO Quran/root/word text or raw search text ever appears in a
-/// log entry (message or field values). Mirrors Feature 014
-/// <c>UniqueWordsLoggingTests</c>.
-/// </summary>
 [Collection(nameof(RootsExplorerCollection))]
 public sealed class RootsLoggingTests(RootsExplorerTestFixture fixture)
 {
-    private const int RootId = 10;          // 'ر ح م' — present across all views in the seed.
+    private const int RootId = 10;
     private const int UnknownRootId = 999_999;
-    private const string SearchText = "رحم"; // matches root 10 once normalized.
+    private const string SearchText = "رحم";
 
     [Fact]
     public async Task GetRootsPage_logs_success_with_safe_fields_only()

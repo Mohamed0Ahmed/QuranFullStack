@@ -25,11 +25,6 @@ internal static class FullI3rabValidationChecks
         }
     }
 
-    /// <summary>
-    /// Evaluates the i'rab HTML tag/class vocabulary against the observed allowlist. This is a
-    /// <strong>non-blocking warning</strong>: a new benign tag/class is recorded but never hard-fails,
-    /// so a future tightening can promote it to hard if needed.
-    /// </summary>
     public static FullI3rabCheckResult EvaluateHtmlAllowlist(string i3rabHtml)
     {
         var tags = new HashSet<string>(StringComparer.Ordinal);

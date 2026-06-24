@@ -13,18 +13,11 @@ using QuranDashboard.Tests.TestSupport.Logging;
 
 namespace QuranDashboard.Tests.Quran.WordsRoots;
 
-/// <summary>
-/// US1 (T033): Roots list read behavior — the eight counts, the
-/// <c>occurrences == words_count</c> invariant, the **lemma co-occurrence**
-/// rule (assert on the divergent seeded root where co-occurrence ≠ ownership),
-/// search, each sort, paging, cache-once, and logging.
-/// </summary>
 [Collection(nameof(RootsExplorerCollection))]
 public sealed class RootsListReadTests(RootsExplorerTestFixture fixture)
 {
     private const int SeededRootCount = 3;
-    // R10 'ر ح م' is the divergent root: lemma L100 co-occurs under it but is
-    // owned by R20 in quran_lemmas.root_id.
+
     private const int DivergentRootId = 10;
 
     [Fact]
@@ -80,8 +73,6 @@ public sealed class RootsListReadTests(RootsExplorerTestFixture fixture)
             CancellationToken.None);
         var page = outcome.Should().BeOfType<GetRootsPageOutcome.Success>().Subject.Page;
 
-        // occurrences == quran_roots.words_count, which the seed reconciled to the
-        // morphology readable-word COUNT(*) per root. R10 has 5 morphology rows.
         var r10 = page.Items.Single(i => i.Id == DivergentRootId);
         r10.OccurrencesCount.Should().Be(5);
         r10.RootText.Should().Be("ر ح م");
@@ -98,9 +89,6 @@ public sealed class RootsListReadTests(RootsExplorerTestFixture fixture)
             CancellationToken.None);
         var page = outcome.Should().BeOfType<GetRootsPageOutcome.Success>().Subject.Page;
 
-        // R10's morphology rows carry lemmas {L100, L101} → co-occurrence count 2,
-        // even though quran_lemmas.root_id for L100 is R20 (ownership would give 1
-        // for L101-only under a naive COUNT(quran_lemmas WHERE root_id=10)).
         var r10 = page.Items.Single(i => i.Id == DivergentRootId);
         r10.LemmasCount.Should().Be(2);
     }
@@ -162,7 +150,6 @@ public sealed class RootsListReadTests(RootsExplorerTestFixture fixture)
             CancellationToken.None);
         var page = outcome.Should().BeOfType<GetRootsPageOutcome.Success>().Subject.Page;
 
-        // R30 has 9 occurrences (highest); R10 has 5; R20 has 2.
         page.Items.Select(i => i.Id).Should().Equal(30, 10, 20);
     }
 
@@ -177,7 +164,6 @@ public sealed class RootsListReadTests(RootsExplorerTestFixture fixture)
             CancellationToken.None);
         var page = outcome.Should().BeOfType<GetRootsPageOutcome.Success>().Subject.Page;
 
-        // first_word_order_in_mushaf: R10=1003, R30=2001, R20=5010 — not root id order.
         page.Items.Select(i => i.Id).Should().Equal(10, 30, 20);
     }
 
@@ -204,12 +190,7 @@ public sealed class RootsListReadTests(RootsExplorerTestFixture fixture)
     [Fact]
     public async Task GetRootsPage_repeated_read_issues_no_new_db_commands_after_cache()
     {
-        // The cached decorator stores the whole summary once under
-        // roots:summary:all; subsequent reads (even with different sort/page)
-        // derive in memory and must not re-query. We wire the interceptor onto a
-        // dedicated DbContext + EfRootsReader + CachedRootsReader (mirroring the
-        // F014 cache/N+1 test pattern), since the shared DI reader is not
-        // interceptable per-test.
+
         var interceptor = new SqlCommandCountInterceptor();
         var options = new DbContextOptionsBuilder<QuranDashboardDbContext>()
             .UseNpgsql(fixture.ConnectionString)
@@ -221,7 +202,6 @@ public sealed class RootsListReadTests(RootsExplorerTestFixture fixture)
         var cache = new MemoryCache(new MemoryCacheOptions());
         var reader = new CachedRootsReader(inner, cache);
 
-        // First read: warms the whole-summary cache and issues DB commands.
         await reader.GetRootsPageAsync(null, RootSort.MushafOrder, 1, 50, CancellationToken.None);
 
         interceptor.Reset();
@@ -237,8 +217,6 @@ public sealed class RootsListReadTests(RootsExplorerTestFixture fixture)
         await using var scope = fixture.CreateScope();
         var handler = scope.ServiceProvider.GetRequiredService<GetRootsPageHandler>();
 
-        // An explicit unsupported sort is a 400; empty falls back to the default
-        // (success), so only the unsupported value asserts InvalidSort.
         var outcome = await handler.HandleAsync(
             new GetRootsPageQuery(null, sort, 1, 50),
             CancellationToken.None);
@@ -296,7 +274,6 @@ public sealed class RootsListReadTests(RootsExplorerTestFixture fixture)
             "feature", "operation", "sort", "pageNumber", "pageSize", "totalCount", "itemCount", "hasSearch",
         });
 
-        // No root text or raw search text may leak into the log.
         completed.Message.Should().NotContain("ر ح م");
         completed.Message.Should().NotContain("رحم");
         completed.Message.Should().NotContain("رَحْم");

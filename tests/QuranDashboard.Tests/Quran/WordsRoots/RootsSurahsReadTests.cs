@@ -3,10 +3,6 @@ using QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootMissingSurahs;
 
 namespace QuranDashboard.Tests.Quran.WordsRoots;
 
-/// <summary>
-/// US4 (T059): Root surahs — mentioned + missing sum to 114; per-surah counts;
-/// near-all-surahs root yields a near-empty missing list.
-/// </summary>
 [Collection(nameof(RootsExplorerCollection))]
 public sealed class RootsSurahsReadTests(RootsExplorerTestFixture fixture)
 {

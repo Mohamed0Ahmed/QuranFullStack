@@ -3,12 +3,6 @@ using QuranDashboard.Application.Abstractions.Quran.Words.Roots;
 
 namespace QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootSummary;
 
-/// <summary>
-/// Validates and serves a single-root summary (US1, T026). Validates the id is
-/// positive, maps a <c>null</c> reader result to a controlled not-found, and
-/// logs counts only — never root text. Mirrors
-/// <c>GetUniqueWordSummaryHandler</c>.
-/// </summary>
 public sealed class GetRootSummaryHandler(
     ILogger<GetRootSummaryHandler> logger,
     IRootsReader reader)

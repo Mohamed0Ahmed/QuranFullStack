@@ -91,7 +91,6 @@ public sealed class I3rabGenerationTests(I3rabGenerationTestFixture fixture)
             .ToListAsync();
         segments.Should().OnlyContain(segment => ruleIds.Contains(segment.I3rabRuleId!.Value));
 
-        // Spot-check that the divine name and a case label resolved to their catalogue Arabic.
         var allahSegment = segments.Single(segment => segment.QuranWordId == 2);
         allahSegment.I3rabArabic.Should().Be("لفظ الجلالة مجرور");
     }

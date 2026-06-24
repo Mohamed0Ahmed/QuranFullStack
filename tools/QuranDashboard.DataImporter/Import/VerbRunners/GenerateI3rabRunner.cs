@@ -5,11 +5,6 @@ using QuranDashboard.DataImporter.Import.ArgumentParsing;
 
 namespace QuranDashboard.DataImporter.Import.VerbRunners;
 
-/// <summary>
-/// Runs the <c>generate-i3rab</c> verb. Accepts only <c>--report-out</c> and
-/// <c>--force</c>. The handler may throw <see cref="InvalidOperationException"/> when
-/// the morphology prerequisite is not met; that is surfaced to stderr as a failure.
-/// </summary>
 internal static class GenerateI3rabRunner
 {
     internal static async Task<int> RunAsync(string[] args, Func<IHost> createHost, Action printUsage)

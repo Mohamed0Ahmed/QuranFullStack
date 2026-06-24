@@ -1,6 +1,5 @@
 namespace QuranDashboard.Application.Abstractions.Quran.Words.Responses;
 
-
 public sealed record UniqueWordSummaryDto(
     int Id,
     string Kind,

@@ -4,9 +4,6 @@ using QuranDashboard.Application.Abstractions.Quran.Words.Roots;
 
 namespace QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootMentionedSurahs;
 
-/// <summary>
-/// Validates and serves a root's mentioned surahs (US4, T055).
-/// </summary>
 public sealed class GetRootMentionedSurahsHandler(
     ILogger<GetRootMentionedSurahsHandler> logger,
     IRootsReader reader)

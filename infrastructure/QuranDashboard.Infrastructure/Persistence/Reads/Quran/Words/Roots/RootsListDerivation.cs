@@ -4,18 +4,8 @@ using QuranDashboard.Application.Abstractions.Quran.Words.Roots.Responses;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Roots;
 
-/// <summary>
-/// Applies search, sort, and paging over the compute-once whole roots summary
-/// (research D2). Shared by <see cref="EfRootsReader"/> and
-/// <see cref="CachedRootsReader"/>.
-/// </summary>
 internal static class RootsListDerivation
 {
-    /// <summary>
-    /// Arabic symmetric fold map (mirrors Feature 014). Shared by the SQL
-    /// <c>translate()</c> normalization and the C# query-side fold so search
-    /// stays symmetric.
-    /// </summary>
     internal const string ArabicFoldFrom = "أإآٱؤئةىي";
 
     internal const string ArabicFoldTo = "ااااواهيي";

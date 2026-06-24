@@ -33,11 +33,11 @@ public sealed class DisplayWordsDeterministicIdTests : IDisposable
             }
             catch (IOException)
             {
-                // Best-effort cleanup of test report artifacts; ignore leftover files.
+
             }
             catch (UnauthorizedAccessException)
             {
-                // Best-effort cleanup of test report artifacts; ignore permission issues.
+
             }
         }
     }

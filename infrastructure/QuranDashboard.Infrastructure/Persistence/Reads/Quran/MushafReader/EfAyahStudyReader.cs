@@ -7,11 +7,6 @@ using QuranDashboard.Infrastructure.Persistence;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.MushafReader;
 
-/// <summary>
-/// EF read implementation for one ayah's study context: core identity plus the
-/// three selected source kinds loaded together. HTML is returned unmodified;
-/// sanitization happens on the frontend at render time.
-/// </summary>
 public sealed class EfAyahStudyReader(QuranDashboardDbContext db) : IAyahStudyReader
 {
     private static readonly JsonSerializerOptions CoveredKeysJsonOptions = new()
@@ -42,14 +37,6 @@ public sealed class EfAyahStudyReader(QuranDashboardDbContext db) : IAyahStudyRe
 
         var ayahCore = MapAyahCore(ayah, sajda);
 
-        // Each Load* method resolves the source row itself, so the source kind's
-        // existence check and the row fetch share a single round-trip (previously
-        // the existence was verified twice: once by Resolve*SourceKeyAsync and
-        // again when Load* re-fetched the same row). Load* returns the resolved
-        // source key separately from the (nullable) content block: the key is
-        // echoed in selectedSources whenever the source exists, independent of
-        // whether this ayah has content in it (ayah-study.api.md: "selectedSources
-        // echoes the resolved key actually used per kind").
         var tafsir = tafsirSourceKey is not null
             ? await LoadTafsirAsync(ayah.Id, tafsirSourceKey, ct)
             : ResolvedSource<TafsirEntryDto>.NoSource;
@@ -262,11 +249,6 @@ public sealed class EfAyahStudyReader(QuranDashboardDbContext db) : IAyahStudyRe
         return new ResolvedSource<FullI3rabEntryDto>(source.SourceKey, dto);
     }
 
-    /// <summary>
-    /// Pairs a resolved source key with the (nullable) content block for that kind.
-    /// <see cref="ResolvedKey"/> is non-null when the source exists — independent
-    /// of whether this ayah has content — so it can be echoed in selectedSources.
-    /// </summary>
     private sealed record ResolvedSource<T>(string? ResolvedKey, T? Entry)
     {
         public static ResolvedSource<T> NoSource => new(null, default);

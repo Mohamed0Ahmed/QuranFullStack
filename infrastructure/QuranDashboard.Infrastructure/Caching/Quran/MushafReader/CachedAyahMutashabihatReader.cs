@@ -4,9 +4,6 @@ using QuranDashboard.Application.Abstractions.Quran.MushafReader.Responses;
 
 namespace QuranDashboard.Infrastructure.Caching.Quran.MushafReader;
 
-/// <summary>
-/// Caches successful, non-null mutashabihat reads keyed by verse.
-/// </summary>
 public sealed class CachedAyahMutashabihatReader(IAyahMutashabihatReader inner, IMemoryCache cache)
     : IAyahMutashabihatReader
 {

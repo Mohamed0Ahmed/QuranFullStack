@@ -1,9 +1,5 @@
 namespace QuranDashboard.Application.Abstractions.Quran.MushafReader.Responses;
 
-/// <remarks>
-/// Loads tafsir, translation, and full i3rab together. A source whose key
-/// resolved to null is represented by a null block and a per-kind empty state.
-/// </remarks>
 public sealed record AyahStudyResponse(
     AyahCoreDto Ayah,
     SelectedSourcesDto SelectedSources,

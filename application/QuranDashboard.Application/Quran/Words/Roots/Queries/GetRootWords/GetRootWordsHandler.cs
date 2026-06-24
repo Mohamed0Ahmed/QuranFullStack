@@ -4,9 +4,6 @@ using QuranDashboard.Application.Abstractions.Quran.Words.Roots;
 
 namespace QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootWords;
 
-/// <summary>
-/// Validates and serves a root's distinct simple/tashkeel words (US3, T046).
-/// </summary>
 public sealed class GetRootWordsHandler(
     ILogger<GetRootWordsHandler> logger,
     IRootsReader reader)

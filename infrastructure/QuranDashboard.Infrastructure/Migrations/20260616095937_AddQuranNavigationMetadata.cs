@@ -4,10 +4,10 @@
 
 namespace QuranDashboard.Infrastructure.Migrations
 {
-    /// <inheritdoc />
+
     public partial class AddQuranNavigationMetadata : Migration
     {
-        /// <inheritdoc />
+
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<short>(
@@ -232,7 +232,6 @@ namespace QuranDashboard.Infrastructure.Migrations
                 onDelete: ReferentialAction.Restrict);
         }
 
-        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropForeignKey(

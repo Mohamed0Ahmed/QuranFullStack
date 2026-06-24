@@ -5,10 +5,6 @@ using QuranDashboard.Infrastructure.Persistence;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.MushafReader;
 
-/// <summary>
-/// EF read implementation for flat similar-meaning ayah links: outgoing and
-/// incoming directed links merged into one deduplicated list with canonical ayah text.
-/// </summary>
 public sealed class EfAyahSimilaritiesReader(QuranDashboardDbContext db) : IAyahSimilaritiesReader
 {
     public async Task<SimilarAyahsResponse?> GetSimilarAyahsAsync(string verseKey, CancellationToken ct)

@@ -5,10 +5,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace QuranDashboard.Infrastructure.Migrations
 {
-    /// <inheritdoc />
+
     public partial class QuranFoundationSchema : Migration
     {
-        /// <inheritdoc />
+
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
@@ -214,7 +214,6 @@ namespace QuranDashboard.Infrastructure.Migrations
                 columns: new[] { "surah_number", "ayah_number", "word_number" });
         }
 
-        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(

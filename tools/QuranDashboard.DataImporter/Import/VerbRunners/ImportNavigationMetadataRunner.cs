@@ -7,12 +7,6 @@ using QuranDashboard.DataImporter.Import.DefaultPaths;
 
 namespace QuranDashboard.DataImporter.Import.VerbRunners;
 
-/// <summary>
-/// Runs the <c>import-navigation-metadata</c> verb. <c>--source</c> is optional and is
-/// <strong>not</strong> existence-validated at parse time (the navigation source is
-/// validated by the handler against the package contract). Both source and report-out
-/// fall back to staged defaults when omitted.
-/// </summary>
 internal static class ImportNavigationMetadataRunner
 {
     internal static async Task<int> RunAsync(string[] args, Func<IHost> createHost, Action printUsage)

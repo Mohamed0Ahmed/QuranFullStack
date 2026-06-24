@@ -47,11 +47,11 @@ public sealed class DisplayWordsRealImportFixture : IAsyncLifetime
             }
             catch (IOException)
             {
-                // Best-effort cleanup of test report artifacts; ignore leftover files.
+
             }
             catch (UnauthorizedAccessException)
             {
-                // Best-effort cleanup of test report artifacts; ignore permission issues.
+
             }
         }
 

@@ -4,9 +4,6 @@ using QuranDashboard.Application.Abstractions.Quran.Words.Roots;
 
 namespace QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootMissingSurahs;
 
-/// <summary>
-/// Validates and serves a root's missing surahs (US4, T055).
-/// </summary>
 public sealed class GetRootMissingSurahsHandler(
     ILogger<GetRootMissingSurahsHandler> logger,
     IRootsReader reader)

@@ -5,10 +5,6 @@ using QuranDashboard.Application.Abstractions.Quran.Words.Responses;
 
 namespace QuranDashboard.Infrastructure.Caching.Quran.Words;
 
-/// <summary>
-/// Caches immutable unique-word reads. Search-filtered list reads bypass the cache
-/// to avoid unbounded free-text keys.
-/// </summary>
 public sealed class CachedUniqueWordsReader(IUniqueWordsReader inner, IMemoryCache cache) : IUniqueWordsReader
 {
     public async Task<PagedResult<UniqueWordListItemDto>> GetUniqueWordsPageAsync(

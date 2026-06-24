@@ -7,10 +7,6 @@ using QuranDashboard.DataImporter.Import.DefaultPaths;
 
 namespace QuranDashboard.DataImporter.Import.VerbRunners;
 
-/// <summary>
-/// Runs the <c>import-tafsirs</c> verb. <c>--source</c> is optional (validated if
-/// supplied); both source and report-out fall back to staged defaults when omitted.
-/// </summary>
 internal static class ImportTafsirsRunner
 {
     internal static async Task<int> RunAsync(string[] args, Func<IHost> createHost, Action printUsage)

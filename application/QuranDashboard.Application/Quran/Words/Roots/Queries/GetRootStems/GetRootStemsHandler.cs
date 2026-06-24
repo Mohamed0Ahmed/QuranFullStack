@@ -4,9 +4,6 @@ using QuranDashboard.Application.Abstractions.Quran.Words.Roots;
 
 namespace QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootStems;
 
-/// <summary>
-/// Validates and serves a root's morphology stems (US5, T063).
-/// </summary>
 public sealed class GetRootStemsHandler(
     ILogger<GetRootStemsHandler> logger,
     IRootsReader reader)

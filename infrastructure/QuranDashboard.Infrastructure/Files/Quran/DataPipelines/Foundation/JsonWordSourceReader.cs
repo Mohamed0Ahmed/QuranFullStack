@@ -77,8 +77,6 @@ public sealed class JsonWordSourceReader
         return property.GetString() ?? throw new InvalidDataException($"Property '{propertyName}' is empty.");
     }
 
-    // Optional because only the enriched imlaei-simple source carries 'text_clean';
-    // the other word sources (glyph, uthmani, uthmani-simple) do not.
     private static string? ReadOptionalString(JsonElement element, string propertyName)
     {
         if (!element.TryGetProperty(propertyName, out var property) || property.ValueKind != JsonValueKind.String)

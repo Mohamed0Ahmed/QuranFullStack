@@ -2,12 +2,6 @@ using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyIm
 
 namespace QuranDashboard.Tests.Quran.WordsMorphology;
 
-/// <summary>
-/// Pure unit tests for <see cref="MorphologyAssembler"/> dimension resolution and segment
-/// rendering — no database. These exercise edge cases the integration fixtures cannot reach
-/// (multi-digit locations where ordinal order differs from mushaf/id order, exact occurrence
-/// counts, lemma→root co-occurrence links, and non-clean render tiers).
-/// </summary>
 public sealed class MorphologyAssemblerTests
 {
     private static MorphologyAssembler CreateAssembler() =>
@@ -43,8 +37,7 @@ public sealed class MorphologyAssemblerTests
     [Fact]
     public void First_word_order_is_the_minimum_mushaf_id_not_iteration_order()
     {
-        // Ordinal location order ("1:1:10" < "1:1:2") differs from mushaf/id order (9 > 1).
-        // first_word_order_in_mushaf must be the minimum id (1), independent of iteration order.
+
         var corpus = new List<AlignedCorpusWord>
         {
             StemWord("1:1:10", "X10", "kataba", root: "ktb"),
@@ -89,7 +82,7 @@ public sealed class MorphologyAssemblerTests
             StemWord("1:1:1", "X1", "kataba", root: "ktb", lemma: "katab"),
         };
         var ids = new Dictionary<string, int> { ["1:1:1"] = 1 };
-        // QUL has no Arabic root/lemma/stem for this location.
+
         var empty = new Dictionary<string, string>();
 
         var result = CreateAssembler().Assemble(corpus, ids, empty, empty, empty);
@@ -109,8 +102,8 @@ public sealed class MorphologyAssemblerTests
         var matchUthmani = new BuckwalterArabicMap().Transliterate("kataba").Arabic;
         var corpus = new List<AlignedCorpusWord>
         {
-            StemWord("1:1:1", matchUthmani, "kataba"), // render equals qpcUthmani → match
-            StemWord("1:1:2", "MISMATCH", "kitAbi"),   // render differs → no match
+            StemWord("1:1:1", matchUthmani, "kataba"),
+            StemWord("1:1:2", "MISMATCH", "kitAbi"),
         };
         var ids = new Dictionary<string, int> { ["1:1:1"] = 1, ["1:1:2"] = 2 };
         var empty = new Dictionary<string, string>();
@@ -146,10 +139,10 @@ public sealed class MorphologyAssemblerTests
 
     [Theory]
     [InlineData("kataba", "clean")]
-    [InlineData("ya`^", "clean")]      // dagger alef + maddah are still clean (T1b)
-    [InlineData(">an[bi", "quranic_marks")] // contains '[' annotation mark
-    [InlineData(">an_#bi", "review")]  // contains tatweel '_' / kashida-hamza '#'
-    [InlineData("<ilo yaAsiyna", "multiword")] // contains a space
+    [InlineData("ya`^", "clean")]
+    [InlineData(">an[bi", "quranic_marks")]
+    [InlineData(">an_#bi", "review")]
+    [InlineData("<ilo yaAsiyna", "multiword")]
     public void Segment_render_tier_is_classified_correctly(string form, string expectedTier)
     {
         var corpus = new List<AlignedCorpusWord> { StemWord("1:1:1", "X1", form) };
@@ -166,10 +159,9 @@ public sealed class MorphologyAssemblerTests
     {
         var corpus = new List<AlignedCorpusWord>
         {
-            // "<ilo yaAsiyna" (إل ياسين) is the single multiword form; the space is its word
-            // separator (renderer classifies it as the 'multiword' tier), not an unmapped glyph.
+
             StemWord("1:1:1", "X1", "<ilo yaAsiyna"),
-            // '€' is genuinely outside the Buckwalter map and must still be reported.
+
             StemWord("1:1:2", "X2", "ba€b"),
         };
         var ids = new Dictionary<string, int> { ["1:1:1"] = 1, ["1:1:2"] = 2 };
@@ -186,14 +178,12 @@ public sealed class MorphologyAssemblerTests
     }
 
     [Theory]
-    // The real QAC corpus encodes STEM features as pipe-delimited, prefixed tokens
-    // (e.g. "POS:V", "LEM:..", "ROOT:..") rather than the space-separated bare tokens the
-    // synthetic fixtures use. Verb tense/voice and grammatical case must still resolve.
+
     [InlineData("V", "STEM|POS:V|PERF|LEM:kataba|ROOT:ktb", "past", "active", null)]
-    [InlineData("V", "STEM|POS:V|IMPF|LEM:Eabada|ROOT:Ebd|1P", "present", "active", null)] // observed 1:5:2
+    [InlineData("V", "STEM|POS:V|IMPF|LEM:Eabada|ROOT:Ebd|1P", "present", "active", null)]
     [InlineData("V", "STEM|POS:V|IMPV|LEM:hadaY|ROOT:hdy", "imperative", "active", null)]
     [InlineData("V", "STEM|POS:V|PERF|PASS|LEM:xuliqa|ROOT:xlq", "past", "passive", null)]
-    [InlineData("N", "STEM|POS:N|LEM:{som|ROOT:smw|M|GEN", null, null, "genitive")]         // observed 1:1:1:2
+    [InlineData("N", "STEM|POS:N|LEM:{som|ROOT:smw|M|GEN", null, null, "genitive")]
     [InlineData("N", "STEM|POS:N|ROOT:rbb|NOM", null, null, "nominative")]
     [InlineData("N", "STEM|POS:N|ROOT:Hkm|ACC", null, null, "accusative")]
     public void Verb_and_case_features_parse_from_pipe_delimited_corpus_format(

@@ -4,10 +4,6 @@ using QuranDashboard.Infrastructure.Persistence;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.MushafReader;
 
-/// <summary>
-/// Loads all study-source dimension rows for the ayah-study selectors.
-/// Ordering matches <c>mushaf-study-sources.api.md</c>.
-/// </summary>
 public sealed class EfMushafStudySourceCatalogReader(QuranDashboardDbContext db) : IMushafStudySourceCatalogReader
 {
     public async Task<MushafStudySourceCatalogResponse> GetCatalogAsync(CancellationToken ct)

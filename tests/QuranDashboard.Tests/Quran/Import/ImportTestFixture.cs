@@ -26,9 +26,6 @@ public sealed class ImportTestFixture : IAsyncLifetime
             throw new DirectoryNotFoundException($"Import source staging tree was not found: {SourceRoot}");
         }
 
-        // Single owned root provider for the whole fixture; disposed in
-        // DisposeAsync so neither providers nor scopes leak across tests or
-        // per-call rebuilds. Mirrors MushafReaderTestFixture's provider strategy.
         _rootProvider = BuildServiceProvider();
 
         await using var scope = _rootProvider.CreateAsyncScope();
@@ -47,11 +44,6 @@ public sealed class ImportTestFixture : IAsyncLifetime
         await postgresContainer.DisposeAsync();
     }
 
-    /// <summary>
-    /// Returns the fixture's single shared root service provider. Callers should
-    /// resolve scoped services through <c>CreateAsyncScope()</c> and dispose that
-    /// scope (the root provider is owned and disposed by the fixture).
-    /// </summary>
     public ServiceProvider CreateServiceProvider()
     {
         if (_rootProvider is null)

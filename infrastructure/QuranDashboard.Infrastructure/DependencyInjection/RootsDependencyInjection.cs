@@ -8,12 +8,6 @@ namespace QuranDashboard.Infrastructure.ServiceRegistration;
 
 internal static class RootsDependencyInjection
 {
-    /// <summary>
-    /// Registers the Roots Explorer read service: the EF reader as a concrete
-    /// scoped service, then the caching decorator as <see cref="IRootsReader"/>.
-    /// Mirrors <c>UniqueWordsDependencyInjection</c>. Uses the already-registered
-    /// shared <see cref="IMemoryCache"/>; no global cache reconfiguration.
-    /// </summary>
     public static IServiceCollection AddRoots(this IServiceCollection services)
     {
         services.AddScoped<EfRootsReader>();

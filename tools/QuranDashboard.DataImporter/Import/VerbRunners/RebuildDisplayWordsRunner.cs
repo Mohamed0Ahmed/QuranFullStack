@@ -5,10 +5,6 @@ using QuranDashboard.DataImporter.Import.ArgumentParsing;
 
 namespace QuranDashboard.DataImporter.Import.VerbRunners;
 
-/// <summary>
-/// Runs the <c>rebuild-words</c> verb. Accepts only <c>--report-out</c> and
-/// <c>--force</c> (no <c>--source</c>).
-/// </summary>
 internal static class RebuildDisplayWordsRunner
 {
     internal static async Task<int> RunAsync(string[] args, Func<IHost> createHost, Action printUsage)

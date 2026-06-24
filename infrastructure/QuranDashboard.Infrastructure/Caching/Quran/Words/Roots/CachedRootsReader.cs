@@ -6,20 +6,11 @@ using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Roots;
 
 namespace QuranDashboard.Infrastructure.Caching.Quran.Words.Roots;
 
-/// <summary>
-/// Decorates <see cref="EfRootsReader"/> with <c>IMemoryCache</c> caching using
-/// the <c>roots:</c> namespace. The whole summary is computed once under
-/// <c>roots:summary:all</c>; search, sort, and paging are derived in memory
-/// (research D2). Per-root detail reads (ayahs, words, surahs, lemmas, stems)
-/// are cached under the <c>roots:</c> namespace. Mirrors
-/// Feature 014 <c>CachedUniqueWordsReader</c> conventions where applicable.
-/// </summary>
 public sealed class CachedRootsReader(EfRootsReader efReader, IMemoryCache cache) : IRootsReader
 {
     private readonly EfRootsReader _ef = efReader;
     private readonly IMemoryCache _cache = cache;
 
-    /// <inheritdoc />
     public async Task<PagedResult<RootListItemDto>> GetRootsPageAsync(
         string? search,
         RootSort sort,
@@ -31,14 +22,12 @@ public sealed class CachedRootsReader(EfRootsReader efReader, IMemoryCache cache
         return RootsListDerivation.ToPage(all, search, sort, page, pageSize);
     }
 
-    /// <inheritdoc />
     public async Task<RootSummaryDto?> GetRootSummaryAsync(int id, CancellationToken cancellationToken)
     {
         var all = await GetOrLoadWholeSummaryAsync(cancellationToken);
         return RootsListDerivation.ToSummary(all, id);
     }
 
-    /// <inheritdoc />
     public async Task<PagedResult<RootWordItemDto>?> GetRootWordsAsync(
         int id,
         RootWordKind wordKind,
@@ -46,23 +35,12 @@ public sealed class CachedRootsReader(EfRootsReader efReader, IMemoryCache cache
         int pageSize,
         CancellationToken cancellationToken)
     {
-        var key = RootsCacheKeys.Words(id, wordKind, page, pageSize);
-
-        if (_cache.TryGetValue(key, out PagedResult<RootWordItemDto>? cached))
-        {
-            return cached;
-        }
-
-        var words = await _ef.GetRootWordsAsync(id, wordKind, page, pageSize, cancellationToken);
-        if (words is not null)
-        {
-            _cache.Set(key, words);
-        }
-
-        return words;
+        var grouped = await GetOrLoadGroupedWordsAsync(id, wordKind, cancellationToken);
+        return grouped is null
+            ? null
+            : RootsWordsDerivation.ToPage(grouped, page, pageSize);
     }
 
-    /// <inheritdoc />
     public async Task<PagedResult<RootAyahMatchDto>?> GetRootAyahMatchesAsync(
         int id,
         int page,
@@ -79,13 +57,12 @@ public sealed class CachedRootsReader(EfRootsReader efReader, IMemoryCache cache
         var ayahs = await _ef.GetRootAyahMatchesAsync(id, page, pageSize, cancellationToken);
         if (ayahs is not null)
         {
-            _cache.Set(key, ayahs);
+            _cache.Set(key, ayahs, RootsCacheEntryOptions.PagedDetail());
         }
 
         return ayahs;
     }
 
-    /// <inheritdoc />
     public async Task<RootSurahsResponse?> GetRootMentionedSurahsAsync(int id, CancellationToken cancellationToken)
     {
         var key = RootsCacheKeys.Surahs(id);
@@ -98,13 +75,12 @@ public sealed class CachedRootsReader(EfRootsReader efReader, IMemoryCache cache
         var surahs = await _ef.GetRootMentionedSurahsAsync(id, cancellationToken);
         if (surahs is not null)
         {
-            _cache.Set(key, surahs);
+            _cache.Set(key, surahs, RootsCacheEntryOptions.WholeDetail());
         }
 
         return surahs;
     }
 
-    /// <inheritdoc />
     public async Task<RootMissingSurahsResponse?> GetRootMissingSurahsAsync(int id, CancellationToken cancellationToken)
     {
         var key = RootsCacheKeys.Missing(id);
@@ -117,13 +93,12 @@ public sealed class CachedRootsReader(EfRootsReader efReader, IMemoryCache cache
         var missing = await _ef.GetRootMissingSurahsAsync(id, cancellationToken);
         if (missing is not null)
         {
-            _cache.Set(key, missing);
+            _cache.Set(key, missing, RootsCacheEntryOptions.WholeDetail());
         }
 
         return missing;
     }
 
-    /// <inheritdoc />
     public async Task<RootLemmasResponse?> GetRootLemmasAsync(int id, CancellationToken cancellationToken)
     {
         var key = RootsCacheKeys.Lemmas(id);
@@ -136,13 +111,12 @@ public sealed class CachedRootsReader(EfRootsReader efReader, IMemoryCache cache
         var lemmas = await _ef.GetRootLemmasAsync(id, cancellationToken);
         if (lemmas is not null)
         {
-            _cache.Set(key, lemmas);
+            _cache.Set(key, lemmas, RootsCacheEntryOptions.WholeDetail());
         }
 
         return lemmas;
     }
 
-    /// <inheritdoc />
     public async Task<RootStemsResponse?> GetRootStemsAsync(int id, CancellationToken cancellationToken)
     {
         var key = RootsCacheKeys.Stems(id);
@@ -155,10 +129,31 @@ public sealed class CachedRootsReader(EfRootsReader efReader, IMemoryCache cache
         var stems = await _ef.GetRootStemsAsync(id, cancellationToken);
         if (stems is not null)
         {
-            _cache.Set(key, stems);
+            _cache.Set(key, stems, RootsCacheEntryOptions.WholeDetail());
         }
 
         return stems;
+    }
+
+    private async Task<IReadOnlyList<RootWordItemDto>?> GetOrLoadGroupedWordsAsync(
+        int id,
+        RootWordKind wordKind,
+        CancellationToken cancellationToken)
+    {
+        var key = RootsCacheKeys.WordsAll(id, wordKind);
+
+        if (_cache.TryGetValue(key, out IReadOnlyList<RootWordItemDto>? cached))
+        {
+            return cached;
+        }
+
+        var grouped = await _ef.LoadGroupedRootWordsAsync(id, wordKind, cancellationToken);
+        if (grouped is not null)
+        {
+            _cache.Set(key, grouped, RootsCacheEntryOptions.GroupedWords());
+        }
+
+        return grouped;
     }
 
     private async Task<IReadOnlyList<RootSummaryRow>> GetOrLoadWholeSummaryAsync(CancellationToken cancellationToken)
@@ -169,7 +164,7 @@ public sealed class CachedRootsReader(EfRootsReader efReader, IMemoryCache cache
         }
 
         var rows = await _ef.LoadWholeSummaryAsync(cancellationToken);
-        _cache.Set(RootsCacheKeys.SummaryAll, rows);
+        _cache.Set(RootsCacheKeys.SummaryAll, rows, RootsCacheEntryOptions.SummaryAll());
         return rows;
     }
 }

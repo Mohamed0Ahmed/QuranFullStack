@@ -9,14 +9,10 @@ using QuranDashboard.Tests.Quran.Words;
 
 namespace QuranDashboard.Tests.Quran.WordsRoots;
 
-/// <summary>
-/// US2 (T042): Roots ayah matches — exact <c>MatchedQuranWordIds</c>, bounded
-/// query count (no N+1), pagination, and unknown-root not-found.
-/// </summary>
 [Collection(nameof(RootsExplorerCollection))]
 public sealed class RootsAyahsReadTests(RootsExplorerTestFixture fixture)
 {
-    // R10 'ر ح م' — high-frequency root with ayahs 1:1, 1:3, 2:25 in the seed.
+
     private const int HighFrequencyRootId = 10;
 
     [Fact]

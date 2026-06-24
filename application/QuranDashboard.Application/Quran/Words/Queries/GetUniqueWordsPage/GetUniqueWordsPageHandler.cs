@@ -10,9 +10,6 @@ public sealed class GetUniqueWordsPageHandler(
     public const int MinPage = 1;
     public const int MinPageSize = 1;
 
-    /// <remarks>
-    /// Bounds unbounded client input; the list UI default is 1000.
-    /// </remarks>
     public const int MaxPageSize = 1000;
 
     private const string FeatureName = "Words";
@@ -39,8 +36,6 @@ public sealed class GetUniqueWordsPageHandler(
             return new GetUniqueWordsPageOutcome.InvalidKind();
         }
 
-        // Null/empty sort is the documented default; an explicit unsupported
-        // value is a controlled validation failure.
         var sortValue = string.IsNullOrWhiteSpace(query.Sort) ? DefaultSortKey : query.Sort;
         if (!UniqueWordSortParser.TryParse(sortValue, out var sort))
         {

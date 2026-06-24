@@ -6,10 +6,6 @@ using QuranDashboard.DataImporter.Import.DefaultPaths;
 
 namespace QuranDashboard.DataImporter.Import.VerbRunners;
 
-/// <summary>
-/// Runs the <c>import-morphology</c> verb. <c>--source</c> is optional and, when
-/// supplied, must exist; a missing source falls back to the staged morphology package.
-/// </summary>
 internal static class ImportMorphologyRunner
 {
     internal static async Task<int> RunAsync(string[] args, Func<IHost> createHost, Action printUsage)

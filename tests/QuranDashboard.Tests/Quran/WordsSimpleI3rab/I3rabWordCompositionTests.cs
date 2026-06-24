@@ -6,8 +6,7 @@ namespace QuranDashboard.Tests.Quran.WordsSimpleI3rab;
 [Collection(nameof(I3rabGenerationTestCollection))]
 public sealed class I3rabWordCompositionTests(I3rabGenerationTestFixture fixture)
 {
-    // Catalogue labels for PREFIX:P + STEM:N:GEN + SUFFIX:PRON:2MS (the بِحَمْدِكَ segment pattern).
-    // v1 stores per-signature labels and composes by join; «محل …» role refinements are read-layer (data-model §8).
+
     private const string BihamdikaLocation = "2:30:20";
     private const string ExpectedJoinedLabels = "حرف جر، اسم مجرور، ضمير متصل للمخاطب";
 

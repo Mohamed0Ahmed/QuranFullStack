@@ -14,16 +14,6 @@ using Testcontainers.PostgreSql;
 
 namespace QuranDashboard.Tests.Quran.FullI3rab;
 
-/// <summary>
-/// Shared, source-safe test fixture for Feature 010 (Quran Full I'rab Foundation) import tests.
-/// Provides the PostgreSQL/Testcontainers lifecycle, a configured service provider with Application +
-/// Infrastructure services, synthetic <c>quran_ayahs</c> seeding for verse-key resolution, and an
-/// import-run helper.
-/// <para>
-/// Source safety: all i'rab HTML is clearly synthetic and all verse keys live in the non-existent
-/// surah <c>900</c>. No real Quran ayah text and no real i'rab content is used here.
-/// </para>
-/// </summary>
 public sealed class FullI3rabImportTestFixture : IAsyncLifetime
 {
     private readonly List<string> tempDirs = [];

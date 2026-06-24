@@ -7,10 +7,6 @@ using QuranDashboard.DataImporter.Import.DefaultPaths;
 
 namespace QuranDashboard.DataImporter.Import.VerbRunners;
 
-/// <summary>
-/// Runs the <c>import-mutashabihat</c> verb. <c>--source</c> is optional and, when
-/// supplied, must exist; a missing source falls back to the staged mutashabihat package.
-/// </summary>
 internal static class ImportMutashabihatRunner
 {
     internal static async Task<int> RunAsync(string[] args, Func<IHost> createHost, Action printUsage)

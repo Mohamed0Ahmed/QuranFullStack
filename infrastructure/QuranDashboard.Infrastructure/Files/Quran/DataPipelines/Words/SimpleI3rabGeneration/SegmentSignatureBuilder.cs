@@ -4,8 +4,7 @@ namespace QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.SimpleI3
 
 public static class SegmentSignatureBuilder
 {
-    // Attached pronouns (ضمير متصل) glue the person onto the POS token, e.g. "SUFFIX|PRON:3MP",
-    // unlike stems which carry the person as its own token, e.g. "STEM|POS:PRON|3MS".
+
     private const string GluedPronounPrefix = "PRON:";
     private static readonly string[] VerbTenseMarkers = ["PERF", "IMPF", "IMPV"];
     private static readonly string[] PersonTokens =
@@ -134,8 +133,6 @@ public static class SegmentSignatureBuilder
             return standalonePerson;
         }
 
-        // Recover the person from an attached-pronoun token such as "PRON:3MP" that the feature
-        // tokenizer keeps intact (it splits on '|' and ' ', not ':').
         foreach (var token in features)
         {
             if (token.StartsWith(GluedPronounPrefix, StringComparison.Ordinal))

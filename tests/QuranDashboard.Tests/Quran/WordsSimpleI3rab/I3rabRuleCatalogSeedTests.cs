@@ -8,8 +8,6 @@ public sealed class I3rabRuleCatalogSeedTests
 {
     private readonly IReadOnlyList<I3rabRuleSeedRow> rows = new I3rabRuleCatalogSeed().Rows();
 
-    // Independent oracle: the FR-011 seed-label corrections, transcribed from coverage report §7 /
-    // tasks.md T025 — NOT imported from production code, so a regression in the catalogue is caught.
     public static TheoryData<string, string> CorrectedLabels => new()
     {
         { "STEM:T", "ظرف زمان" },

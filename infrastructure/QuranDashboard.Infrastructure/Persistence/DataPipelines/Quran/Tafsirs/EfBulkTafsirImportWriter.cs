@@ -34,7 +34,6 @@ public sealed class EfBulkTafsirImportWriter : ITafsirImportWriter
         ArgumentNullException.ThrowIfNull(sourceUnchangedCheck);
         ArgumentNullException.ThrowIfNull(acceptanceReportWrite);
 
-        // Safety net when the writer is invoked directly; the handler performs the same check first.
         if (!force && await AnyTargetTableHasDataAsync(ct))
         {
             throw new InvalidOperationException(TafsirInvariants.TargetsNotEmpty);

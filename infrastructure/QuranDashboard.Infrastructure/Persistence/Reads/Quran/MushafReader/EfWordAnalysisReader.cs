@@ -5,12 +5,6 @@ using QuranDashboard.Infrastructure.Persistence;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.MushafReader;
 
-/// <summary>
-/// EF read implementation for one word's analysis: occurrence identity,
-/// ordered/unique counts, head morphology, and ordered color-linked segments.
-/// Ayah-end markers are rejected as not analyzable; empty segment forms return
-/// <c>displayTextStatus:"missing"</c> without invented text.
-/// </summary>
 public sealed class EfWordAnalysisReader(QuranDashboardDbContext db) : IWordAnalysisReader
 {
     private static readonly JsonSerializerOptions FeaturesJsonOptions = new()

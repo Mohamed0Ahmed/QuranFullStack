@@ -70,12 +70,10 @@ public sealed class MorphologyDimensionTests(MorphologyImportTestFixture fixture
         var roots = await dbContext.QuranRoots.AsNoTracking().ToListAsync();
         roots.Should().OnlyContain(r => r.FirstWordOrderInMushaf > 0);
 
-        // ك ت ب occurs in 1:2:1 and 1:2:2 (two words, two distinct lemmas).
         var sharedRoot = roots.Single(r => r.RootText == MorphologySyntheticSeed.RootValue3);
         sharedRoot.WordsCount.Should().Be(2);
         sharedRoot.DistinctLemmasCount.Should().Be(2);
 
-        // ر ب ب occurs in exactly one word (1:1:3).
         var singleRoot = roots.Single(r => r.RootText == MorphologySyntheticSeed.RootValue2);
         singleRoot.WordsCount.Should().Be(1);
     }
@@ -97,7 +95,6 @@ public sealed class MorphologyDimensionTests(MorphologyImportTestFixture fixture
         var sharedRoot = await dbContext.QuranRoots.AsNoTracking()
             .FirstAsync(r => r.RootText == MorphologySyntheticSeed.RootValue3);
 
-        // Lemmas كَتَبَ (1:2:1) and كِتَاب (1:2:2) both co-occur with root ك ت ب.
         var sharedRootLemmas = await dbContext.QuranLemmas.AsNoTracking()
             .Where(l => l.RootId == sharedRoot.Id)
             .ToListAsync();

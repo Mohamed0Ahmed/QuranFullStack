@@ -12,7 +12,6 @@ public sealed class WordAnalysisIncompleteDataTests(MushafReaderTestFixture fixt
         await using var scope = fixture.CreateScope();
         var handler = scope.ServiceProvider.GetRequiredService<GetWordAnalysisHandler>();
 
-        // Page-5 slice has morphology/identity only for 2:25:3; 2:25:1 is readable but incomplete.
         var outcome = await handler.HandleAsync(
             new GetWordAnalysisQuery("2:25:1"),
             CancellationToken.None);

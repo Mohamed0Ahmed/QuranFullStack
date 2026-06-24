@@ -2,17 +2,14 @@ using QuranDashboard.Application.Abstractions.Quran.Words.Roots;
 
 namespace QuranDashboard.Infrastructure.Caching.Quran.Words.Roots;
 
-/// <summary>
-/// Cache keys for the Roots Explorer over the shared <c>IMemoryCache</c>, using
-/// a dedicated <c>roots:</c> namespace. Mirrors Feature 014
-/// <c>UniqueWordsCacheKeys</c>.
-/// </summary>
 public static class RootsCacheKeys
 {
-    /// <summary>The compute-once whole summary the list page is derived from.</summary>
     public static string SummaryAll => "roots:summary:all";
 
     public static string Summary(int id) => $"roots:{id}:summary";
+
+    public static string WordsAll(int id, RootWordKind kind) =>
+        $"roots:{id}:words:{KindKey(kind)}:all";
 
     public static string Words(int id, RootWordKind kind, int page, int pageSize) =>
         $"roots:{id}:words:{KindKey(kind)}:p{page}:s{pageSize}";

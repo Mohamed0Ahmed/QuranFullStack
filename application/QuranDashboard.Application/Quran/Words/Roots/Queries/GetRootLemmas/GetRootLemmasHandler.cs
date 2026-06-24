@@ -4,9 +4,6 @@ using QuranDashboard.Application.Abstractions.Quran.Words.Roots;
 
 namespace QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootLemmas;
 
-/// <summary>
-/// Validates and serves a root's co-occurrence lemmas (US5, T063).
-/// </summary>
 public sealed class GetRootLemmasHandler(
     ILogger<GetRootLemmasHandler> logger,
     IRootsReader reader)

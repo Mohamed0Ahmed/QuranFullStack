@@ -7,36 +7,10 @@ using QuranDashboard.Infrastructure.Persistence;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Roots;
 
-/// <summary>
-/// EF Core read service for the Roots Explorer (Feature 015). Read-only:
-/// <c>AsNoTracking</c>, no writes, no migrations. Mirrors Feature 014
-/// <c>EfUniqueWordsReader</c>.
-/// </summary>
-/// <remarks>
-/// <para>
-/// List + summary (US1, T022/T023) compute the eight aggregate counts from ONE
-/// grouped aggregation over <c>quran_word_morphology</c> (the driving relation)
-/// joined to <c>quran_words</c>. <c>quran_word_morphology</c> is one row per
-/// readable word, so ayah markers never enter the set. The whole summary is the
-/// source of truth for the list; search/sort/page are applied in memory by
-/// <see cref="RootsListDerivation"/> over the cached whole.
-/// </para>
-/// <para>
-/// <b>Lemmas use co-occurrence</b> (<c>COUNT(DISTINCT lemma_id)</c> via
-/// morphology where <c>root_id = X</c>), NOT <c>quran_lemmas.root_id</c>
-/// ownership. <c>occurrences</c> = <c>quran_roots.words_count</c>. Both are
-/// pinned in the seed so the invariants hold.
-/// </para>
-/// <para>
-/// Per-root detail reads (ayahs, words, surahs, lemmas, stems) are implemented
-/// here as bounded read-only queries over morphology and related tables.
-/// </para>
-/// </remarks>
 public sealed class EfRootsReader(QuranDashboardDbContext db) : IRootsReader
 {
     private readonly QuranDashboardDbContext _db = db;
 
-    /// <inheritdoc />
     public async Task<PagedResult<RootListItemDto>> GetRootsPageAsync(
         string? search,
         RootSort sort,
@@ -48,19 +22,28 @@ public sealed class EfRootsReader(QuranDashboardDbContext db) : IRootsReader
         return RootsListDerivation.ToPage(all, search, sort, page, pageSize);
     }
 
-    /// <inheritdoc />
     public async Task<RootSummaryDto?> GetRootSummaryAsync(int id, CancellationToken cancellationToken)
     {
         var all = await LoadWholeSummaryAsync(cancellationToken);
         return RootsListDerivation.ToSummary(all, id);
     }
 
-    /// <inheritdoc />
     public async Task<PagedResult<RootWordItemDto>?> GetRootWordsAsync(
         int id,
         RootWordKind wordKind,
         int page,
         int pageSize,
+        CancellationToken cancellationToken)
+    {
+        var grouped = await LoadGroupedRootWordsAsync(id, wordKind, cancellationToken);
+        return grouped is null
+            ? null
+            : RootsWordsDerivation.ToPage(grouped, page, pageSize);
+    }
+
+    internal async Task<IReadOnlyList<RootWordItemDto>?> LoadGroupedRootWordsAsync(
+        int id,
+        RootWordKind wordKind,
         CancellationToken cancellationToken)
     {
         var rootExists = await _db.QuranRoots
@@ -87,7 +70,7 @@ public sealed class EfRootsReader(QuranDashboardDbContext db) : IRootsReader
             ? RootWordKindKeys.Simple
             : RootWordKindKeys.Tashkeel;
 
-        var grouped = rows
+        return rows
             .Where(r => r.UniqueWordId.HasValue)
             .GroupBy(r => r.UniqueWordId!.Value)
             .Select(g =>
@@ -97,34 +80,26 @@ public sealed class EfRootsReader(QuranDashboardDbContext db) : IRootsReader
                     .ThenBy(x => x.AyahNumber)
                     .ThenBy(x => x.WordNumber)
                     .First();
-                return new
-                {
-                    UniqueWordId = g.Key,
-                    OccurrencesCount = g.Count(),
-                    First = first,
-                };
+                return new GroupedRootWordRow(
+                    g.Key,
+                    g.Count(),
+                    first.SurahNumber,
+                    first.AyahNumber,
+                    first.WordNumber,
+                    first.TextUthmani);
             })
-            .OrderBy(x => x.First.SurahNumber)
-            .ThenBy(x => x.First.AyahNumber)
-            .ThenBy(x => x.First.WordNumber)
-            .ToList();
-
-        var totalCount = grouped.Count;
-        var items = grouped
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
+            .OrderBy(x => x.SurahNumber)
+            .ThenBy(x => x.AyahNumber)
+            .ThenBy(x => x.WordNumber)
             .Select(x => new RootWordItemDto(
                 x.UniqueWordId,
                 kindKey,
-                x.First.TextUthmani,
+                x.TextUthmani,
                 x.OccurrencesCount,
-                $"{x.First.SurahNumber}:{x.First.AyahNumber}"))
+                $"{x.SurahNumber}:{x.AyahNumber}"))
             .ToList();
-
-        return new PagedResult<RootWordItemDto>(page, pageSize, totalCount, items);
     }
 
-    /// <inheritdoc />
     public async Task<PagedResult<RootAyahMatchDto>?> GetRootAyahMatchesAsync(
         int id,
         int page,
@@ -227,7 +202,6 @@ public sealed class EfRootsReader(QuranDashboardDbContext db) : IRootsReader
         return new PagedResult<RootAyahMatchDto>(page, pageSize, totalCount, items);
     }
 
-    /// <inheritdoc />
     public async Task<RootSurahsResponse?> GetRootMentionedSurahsAsync(int id, CancellationToken cancellationToken)
     {
         var root = await _db.QuranRoots
@@ -267,7 +241,6 @@ public sealed class EfRootsReader(QuranDashboardDbContext db) : IRootsReader
         return new RootSurahsResponse(id, root.RootText, surahs.Count, surahs);
     }
 
-    /// <inheritdoc />
     public async Task<RootMissingSurahsResponse?> GetRootMissingSurahsAsync(int id, CancellationToken cancellationToken)
     {
         var root = await _db.QuranRoots
@@ -298,7 +271,6 @@ public sealed class EfRootsReader(QuranDashboardDbContext db) : IRootsReader
         return new RootMissingSurahsResponse(id, root.RootText, missingSurahs.Count, missingSurahs);
     }
 
-    /// <inheritdoc />
     public async Task<RootLemmasResponse?> GetRootLemmasAsync(int id, CancellationToken cancellationToken)
     {
         var root = await _db.QuranRoots
@@ -336,7 +308,6 @@ public sealed class EfRootsReader(QuranDashboardDbContext db) : IRootsReader
         return new RootLemmasResponse(id, root.RootText, lemmas.Count, lemmas);
     }
 
-    /// <inheritdoc />
     public async Task<RootStemsResponse?> GetRootStemsAsync(int id, CancellationToken cancellationToken)
     {
         var root = await _db.QuranRoots
@@ -374,31 +345,12 @@ public sealed class EfRootsReader(QuranDashboardDbContext db) : IRootsReader
         return new RootStemsResponse(id, root.RootText, stems.Count, stems);
     }
 
-    /// <summary>
-    /// Computes the whole roots summary once: one grouped aggregation over
-    /// <c>quran_word_morphology</c> joined to <c>quran_words</c>, joined to
-    /// <c>quran_roots</c> for occurrences + first-occurrence metadata. Produces
-    /// all eight counts per root. The cache decorator caches this whole under
-    /// <c>roots:summary:all</c> and the list/summary reads derive from it.
-    /// </summary>
     internal async Task<IReadOnlyList<RootSummaryRow>> LoadWholeSummaryAsync(CancellationToken cancellationToken)
     {
-        // One grouped aggregation over quran_word_morphology (the driving
-        // relation) joined to quran_words, then joined to quran_roots for the
-        // occurrences (words_count) + first-occurrence metadata. Column aliases
-        // are double-quoted so PostgreSQL preserves the exact PascalCase casing
-        // EF Core maps against RootSummaryRow. The fold map is a fixed literal
-        // bound as a parameter; only it is parameterized (never user input).
-        //
-        // Lemmas use CO-OCCURRENCE (COUNT(DISTINCT lemma_id) via morphology),
-        // never quran_lemmas.root_id ownership; distinct_lemmas_count mirrors it
-        // via COALESCE so the column and the lemmas-tab count always agree.
         var sql = $"""
             SELECT
                 r.id AS "{nameof(RootSummaryRow.Id)}",
                 r.root_text AS "{nameof(RootSummaryRow.RootText)}",
-                -- Root text is stored with inter-letter spaces (e.g. "ر ح م"); strip
-                -- spaces so a query typed as "رحم" matches. Fold applied for symmetry.
                 replace(translate(lower(r.root_text), @foldFrom, @foldTo), ' ', '') AS "{nameof(RootSummaryRow.NormalizedRootText)}",
                 r.words_count AS "{nameof(RootSummaryRow.OccurrencesCount)}",
                 agg.ayahs_count AS "{nameof(RootSummaryRow.AyahsCount)}",
@@ -424,14 +376,15 @@ public sealed class EfRootsReader(QuranDashboardDbContext db) : IRootsReader
                 WHERE m.root_id IS NOT NULL
                 GROUP BY m.root_id
             ) agg ON agg.rid = r.id
-            LEFT JOIN quran_words w_first
-                ON w_first.id = (
-                    SELECT m2.quran_word_id
-                    FROM quran_word_morphology m2
-                    WHERE m2.root_id = r.id
-                    ORDER BY m2.quran_word_id
-                    LIMIT 1
-                )
+            LEFT JOIN (
+                SELECT DISTINCT ON (root_id)
+                    root_id,
+                    quran_word_id
+                FROM quran_word_morphology
+                WHERE root_id IS NOT NULL
+                ORDER BY root_id, quran_word_id
+            ) first_m ON first_m.root_id = r.id
+            LEFT JOIN quran_words w_first ON w_first.id = first_m.quran_word_id
             LEFT JOIN quran_ayahs a_first ON a_first.id = w_first.ayah_id
             """;
 
@@ -473,6 +426,14 @@ public sealed class EfRootsReader(QuranDashboardDbContext db) : IRootsReader
         short PageNumber,
         string TextUthmani,
         bool IsAyahMarker);
+
+    private sealed record GroupedRootWordRow(
+        int UniqueWordId,
+        int OccurrencesCount,
+        short SurahNumber,
+        short AyahNumber,
+        short WordNumber,
+        string TextUthmani);
 
     private sealed record RootWordOccurrenceRow(
         int? UniqueWordId,

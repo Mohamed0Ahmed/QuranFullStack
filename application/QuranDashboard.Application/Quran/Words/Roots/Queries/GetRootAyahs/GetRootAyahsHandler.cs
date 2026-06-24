@@ -4,11 +4,6 @@ using QuranDashboard.Application.Abstractions.Quran.Words.Roots;
 
 namespace QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootAyahs;
 
-/// <summary>
-/// Validates and serves a root's ayah matches (US2, T037). Validates id + paging,
-/// maps a <c>null</c> reader result to not-found, and logs counts only — never
-/// Quran/root text. Mirrors <c>GetUniqueWordAyahsHandler</c>.
-/// </summary>
 public sealed class GetRootAyahsHandler(
     ILogger<GetRootAyahsHandler> logger,
     IRootsReader reader)

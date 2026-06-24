@@ -7,11 +7,6 @@ using QuranDashboard.DataImporter.Import.DefaultPaths;
 
 namespace QuranDashboard.DataImporter.Import.VerbRunners;
 
-/// <summary>
-/// Runs the <c>import-translations</c> verb. <c>--source</c> is optional (validated if
-/// supplied); both source and report-out fall back to staged defaults when omitted.
-/// Emits the extra <c>forced=true ...</c> notice on a forced run.
-/// </summary>
 internal static class ImportTranslationsRunner
 {
     internal static async Task<int> RunAsync(string[] args, Func<IHost> createHost, Action printUsage)

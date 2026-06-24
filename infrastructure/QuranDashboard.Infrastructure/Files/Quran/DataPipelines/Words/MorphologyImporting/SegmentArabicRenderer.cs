@@ -35,9 +35,6 @@ public sealed class SegmentArabicRenderer
             return [];
         }
 
-        // A space is the legitimate word separator in a multiword-tier form (e.g. "<ilo yaAsiyna"
-        // → إل ياسين), not an unmapped glyph. Allow it ONLY when the renderer classifies the form as
-        // multiword; every other out-of-map character is still reported, in every tier.
         var spaceIsSeparator =
             string.Equals(ClassifyTier(formBuckwalter), "multiword", StringComparison.Ordinal);
 

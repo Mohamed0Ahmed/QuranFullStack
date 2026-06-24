@@ -1,6 +1,5 @@
 namespace QuranDashboard.Infrastructure.Caching.Quran.MushafReader;
 
-
 public static class MushafReaderCacheKeys
 {
     public static string Page(int pageNumber) => $"mushaf:page:{pageNumber}";

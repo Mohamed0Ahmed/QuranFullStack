@@ -201,8 +201,7 @@ public sealed class ImportTafsirsHandler
 
     private static string ResolveReportOutDir(ImportTafsirsCommand command)
     {
-        // The default report directory is a host concern; the console composition root resolves it
-        // and supplies it on the command. The Application layer does not probe the filesystem layout.
+
         if (string.IsNullOrWhiteSpace(command.ReportOutDir))
         {
             throw new InvalidOperationException(

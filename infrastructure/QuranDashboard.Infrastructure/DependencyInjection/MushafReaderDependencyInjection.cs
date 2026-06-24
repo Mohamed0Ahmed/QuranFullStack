@@ -9,9 +9,6 @@ namespace QuranDashboard.Infrastructure.ServiceRegistration;
 
 internal static class MushafReaderDependencyInjection
 {
-    // Cache policy: IMemoryCache has no size limit; reader decorators cache successful
-    // responses without expiration until the API host restarts after import.
-    // See MushafReaderCacheKeys for the full rationale.
     public static IServiceCollection AddMushafReader(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<MushafReaderOptions>(configuration.GetSection("MushafReader"));

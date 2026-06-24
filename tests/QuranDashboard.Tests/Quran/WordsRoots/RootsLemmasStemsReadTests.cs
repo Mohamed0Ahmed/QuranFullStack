@@ -4,10 +4,6 @@ using QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootsPage;
 
 namespace QuranDashboard.Tests.Quran.WordsRoots;
 
-/// <summary>
-/// US5 (T067): Root lemmas/stems — lemmas count equals list column (co-occurrence
-/// on the divergent seeded root); stems aggregation correct; whole lists.
-/// </summary>
 [Collection(nameof(RootsExplorerCollection))]
 public sealed class RootsLemmasStemsReadTests(RootsExplorerTestFixture fixture)
 {

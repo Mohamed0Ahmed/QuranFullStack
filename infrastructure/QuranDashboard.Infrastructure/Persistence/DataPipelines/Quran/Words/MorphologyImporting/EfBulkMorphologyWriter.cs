@@ -3,11 +3,6 @@ using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyIm
 
 namespace QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Words.MorphologyImporting;
 
-// Orchestrates the one-transaction morphology load: refuse-unless-empty/force gate, FK-safe COPY of the
-// assembled graph (delegated to MorphologyBulkCopier), the hard-check gate (MorphologyValidationRunner),
-// totals/warnings (MorphologyImportReportBuilder), and commit-only-if-every-hard-check-passes. The COPY,
-// validation, and reporting responsibilities live in their own files so this writer stays focused on the
-// transaction/commit/rollback flow.
 public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
 {
     private const string PassVerdict = MorphologyImportConstants.PassVerdict;
@@ -72,11 +67,6 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
                     npgsqlConnection, transaction, MorphologySql.TruncateMorphologyTables, ct);
             }
 
-            // Resolve POS coverage before any COPY (in-memory, the single source of truth — mirrors
-            // MORPH-SEG-CHARSET): head_pos and segment pos carry FKs to quran_pos_tags.code, so an
-            // unknown code would crash the binary COPY with a raw FK violation. Failing
-            // MORPH-POS-RESOLVES here keeps the import fail-closed with a report instead of
-            // throwing past the report writer.
             var posResolvesCheck = MorphologyValidationRunner.BuildPosResolvesCheck(source);
             if (!posResolvesCheck.Passed)
             {

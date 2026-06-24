@@ -8,8 +8,6 @@ public sealed class ImlaeiCleanKeyBindingTests
 {
     private readonly QuranImportValidator validator = new();
 
-    // The raw imlaei text must always survive into TextImlaeiSimple, while the clean
-    // identity key is bound from the source's text_clean (or empty when the source omits it).
     [Theory]
     [InlineData("i2_clean", "i2_clean")]
     [InlineData(null, "")]

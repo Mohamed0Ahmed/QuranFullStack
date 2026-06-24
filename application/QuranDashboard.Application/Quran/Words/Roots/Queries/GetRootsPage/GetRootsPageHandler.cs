@@ -3,12 +3,6 @@ using QuranDashboard.Application.Abstractions.Quran.Words.Roots;
 
 namespace QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootsPage;
 
-/// <summary>
-/// Validates and serves the Roots list page (US1, T025). Validates sort + paging,
-/// delegates the read to <see cref="IRootsReader"/>, and emits a structured log
-/// carrying IDs/counts/<c>hasSearch</c> only — never root/search text. Mirrors
-/// <c>GetUniqueWordsPageHandler</c>.
-/// </summary>
 public sealed class GetRootsPageHandler(
     ILogger<GetRootsPageHandler> logger,
     IRootsReader reader)
@@ -16,7 +10,6 @@ public sealed class GetRootsPageHandler(
     public const int MinPage = 1;
     public const int MinPageSize = 1;
 
-    /// <remarks>Bounds unbounded client input; the list UI default is 1000.</remarks>
     public const int MaxPageSize = 1000;
 
     private const string FeatureName = "Roots";
@@ -29,8 +22,6 @@ public sealed class GetRootsPageHandler(
     {
         ArgumentNullException.ThrowIfNull(query);
 
-        // Null/empty sort is the documented default; an explicit unsupported
-        // value is a controlled validation failure.
         var sortValue = string.IsNullOrWhiteSpace(query.Sort) ? DefaultSortKey : query.Sort;
         if (!RootSortParser.TryParse(sortValue, out var sort))
         {
