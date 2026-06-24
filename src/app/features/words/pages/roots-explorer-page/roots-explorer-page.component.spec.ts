@@ -3,7 +3,7 @@ import { getTestBed, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
-import { BehaviorSubject, of } from 'rxjs';
+import { BehaviorSubject, of, Subject } from 'rxjs';
 
 import { ApiResponse } from '../../../../core/data-access/api-response.model';
 import { ROOTS_PANEL_TAB_LABELS } from '../../models/roots.labels';
@@ -200,6 +200,19 @@ describe('RootsExplorerPageComponent US2', () => {
   });
 
   it('panel scroll container is independent from the table region', async () => {
+    rootsApi.getRootAyahMatches.mockReturnValue(
+      of<ApiResponse<{ page: number; pageSize: number; totalCount: number; items: RootAyahMatchDto[] }>>({
+        isSuccess: true,
+        data: {
+          page: 1,
+          pageSize: 100,
+          totalCount: 1,
+          items: [ayahMatch('1:1', [11])],
+        },
+        message: null,
+        errors: null,
+      }),
+    );
     queryParamMap$.next(convertToParamMap({ root: '10', view: 'ayahs' }));
     const fixture = await initLifecycle();
     await fixture.whenStable();
@@ -207,11 +220,16 @@ describe('RootsExplorerPageComponent US2', () => {
 
     const root = fixture.nativeElement as HTMLElement;
 
-    const panelSurface = root.querySelector('[data-testid="root-details-panel-surface"]') as HTMLElement | null;
-    expect(panelSurface).toBeTruthy();
+    expect(root.querySelector('[data-testid="roots-ayahs-view"]')).toBeTruthy();
 
-    const panelStyles = getComputedStyle(panelSurface!);
-    expect(panelStyles.overflowY).toBe('auto');
+    const panelSurface = root.querySelector('[data-testid="root-details-panel-surface"]') as HTMLElement | null;
+    const listViewport = root.querySelector('.ayah-matches-list__viewport') as HTMLElement | null;
+    const tableBody = root.querySelector('.roots-table__body') as HTMLElement | null;
+
+    expect(panelSurface).toBeTruthy();
+    expect(listViewport).toBeTruthy();
+    expect(tableBody).toBeTruthy();
+    expect(tableBody!.contains(listViewport!)).toBe(false);
   });
 
   it('maps occurrences count-click to ayahs view and triggers ayah load', async () => {
@@ -817,5 +835,108 @@ describe('RootsExplorerPageComponent state matrix (T073)', () => {
 
     expect(TestBed.inject(RootsExplorerFacade).status()).toBe('empty');
     expect(fixture.nativeElement.querySelector('[data-testid="roots-list-no-results"]')).toBeTruthy();
+  });
+});
+
+describe('RootsExplorerPageComponent static tabs during loading', () => {
+  let rootsApi: {
+    getRootsList: ReturnType<typeof vi.fn>;
+    getRootSummary: ReturnType<typeof vi.fn>;
+    getRootWords: ReturnType<typeof vi.fn>;
+    getRootAyahMatches: ReturnType<typeof vi.fn>;
+    getRootMentionedSurahs: ReturnType<typeof vi.fn>;
+    getRootMissingSurahs: ReturnType<typeof vi.fn>;
+    getRootLemmas: ReturnType<typeof vi.fn>;
+    getRootStems: ReturnType<typeof vi.fn>;
+  };
+
+  const queryParamMap$ = new BehaviorSubject(convertToParamMap({}));
+
+  beforeEach(async () => {
+    getTestBed().resetTestingModule();
+
+    rootsApi = {
+      getRootsList: vi.fn().mockImplementation(successListResponse),
+      getRootSummary: vi.fn().mockReturnValue(
+        of<ApiResponse<RootListItemViewModel>>({
+          isSuccess: true,
+          data: listRow(10),
+          message: null,
+          errors: null,
+        }),
+      ),
+      getRootWords: vi.fn(),
+      getRootAyahMatches: vi.fn(),
+      getRootMentionedSurahs: vi.fn(),
+      getRootMissingSurahs: vi.fn(),
+      getRootLemmas: vi.fn(),
+      getRootStems: vi.fn(),
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [RootsExplorerPageComponent],
+      providers: [
+        provideRouter([{ path: 'roots', component: RootsExplorerPageComponent }]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: RootsApi, useValue: rootsApi },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            paramMap: of(convertToParamMap({})),
+            queryParamMap: queryParamMap$.asObservable(),
+          },
+        },
+      ],
+      teardown: { destroyAfterEach: true },
+    }).compileComponents();
+
+    vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    queryParamMap$.next(convertToParamMap({}));
+  });
+
+  async function initWhileLoading(): Promise<ReturnType<typeof TestBed.createComponent<RootsExplorerPageComponent>>> {
+    const fixture = TestBed.createComponent(RootsExplorerPageComponent);
+    fixture.componentInstance.ngOnInit();
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  it('keeps the five main panel tabs visible while words detail is loading', async () => {
+    const pendingWords$ = new Subject<
+      ApiResponse<{ page: number; pageSize: number; totalCount: number; items: unknown[] }>
+    >();
+    rootsApi.getRootWords.mockReturnValue(pendingWords$.asObservable());
+
+    queryParamMap$.next(convertToParamMap({ root: '10', view: 'words', wordView: 'simple' }));
+    const fixture = await initWhileLoading();
+
+    expect(TestBed.inject(RootsDetailFacade).status()).toBe('loading');
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelectorAll('[data-root-tab]')).toHaveLength(5);
+    expect(root.querySelector('[data-testid="roots-word-view-tabs"]')).toBeTruthy();
+    expect(root.querySelector('[data-testid="root-words-list-loading"]')).toBeTruthy();
+    expect(root.querySelector('.root-words-list__header')).toBeTruthy();
+    expect(root.querySelector('[data-testid="explorer-panel-skeleton"]')).toBeNull();
+  });
+
+  it('keeps surah sub-tabs and column headers visible while mentioned surahs load', async () => {
+    const pendingSurahs$ = new Subject<
+      ApiResponse<{ id: number; rootText: string; surahsCount: number; surahs: unknown[] }>
+    >();
+    rootsApi.getRootMentionedSurahs.mockReturnValue(pendingSurahs$.asObservable());
+
+    queryParamMap$.next(convertToParamMap({ root: '10', view: 'surahs', surahView: 'mentioned' }));
+    const fixture = await initWhileLoading();
+
+    expect(TestBed.inject(RootsDetailFacade).status()).toBe('loading');
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelectorAll('[data-root-tab]')).toHaveLength(5);
+    expect(root.querySelector('[data-testid="roots-surah-view-tabs"]')).toBeTruthy();
+    expect(root.querySelector('[data-testid="surah-occurrences-list-loading"]')).toBeTruthy();
+    expect(root.querySelector('.surah-occurrences-list__header')).toBeTruthy();
+    expect(root.querySelector('[data-testid="explorer-panel-skeleton"]')).toBeNull();
   });
 });

@@ -21,7 +21,7 @@ describe('parseRootsQueryParams', () => {
     expect(parsed.sort).toBe('mushaf-order');
     expect(parsed.page).toBe(1);
     expect(parsed.rootId).toBeNull();
-    expect(parsed.view).toBe('ayahs');
+    expect(parsed.view).toBe('words');
     expect(parsed.wordView).toBe('simple');
     expect(parsed.surahView).toBe('mentioned');
     expect(parsed.detailPage).toBe(1);
@@ -56,14 +56,14 @@ describe('parseRootsQueryParams', () => {
     const parsed = parseRootsQueryParams(params('view=surahs'));
 
     expect(parsed.rootId).toBeNull();
-    expect(parsed.view).toBe('ayahs');
+    expect(parsed.view).toBe('words');
   });
 
   it('normalizes an unsupported view to the default while keeping the root', () => {
     const parsed = parseRootsQueryParams(params('root=55&view=bogus'));
 
     expect(parsed.rootId).toBe(55);
-    expect(parsed.view).toBe('ayahs');
+    expect(parsed.view).toBe('words');
   });
 
   it('normalizes a non-positive root id to null', () => {
@@ -216,6 +216,13 @@ describe('buildRootsDeepLink', () => {
     expect(buildRootsDeepLink()).toEqual({
       path: '/dashboard/words/roots',
       queryParams: {},
+    });
+  });
+
+  it('builds a root-only selection deep link', () => {
+    expect(buildRootsDeepLink({ rootId: 42 })).toEqual({
+      path: '/dashboard/words/roots',
+      queryParams: { root: '42' },
     });
   });
 });

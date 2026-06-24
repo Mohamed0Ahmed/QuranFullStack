@@ -1,18 +1,32 @@
 <div class="word-morphology-summary" data-testid="word-morphology-summary" role="group" aria-label="ملخص الصرف">
-  <button type="button" class="word-morphology-summary__column qd-interactive-surface">
+  <div class="word-morphology-summary__column" role="group" aria-label="نوع الكلمة">
     <span class="word-morphology-summary__label">نوع الكلمة</span>
     <span class="word-morphology-summary__value">{{ morphologyTextOrDash(morphology().headPosLabel.ar) }}</span>
-  </button>
-  <button type="button" class="word-morphology-summary__column qd-interactive-surface">
-    <span class="word-morphology-summary__label">الجذر</span>
-    <span class="word-morphology-summary__value">{{ morphologyTextOrDash(morphology().root?.text) }}</span>
-  </button>
-  <button type="button" class="word-morphology-summary__column qd-interactive-surface">
+  </div>
+  @if (rootExplorerHref()) {
+    <a
+      class="word-morphology-summary__column word-morphology-summary__column--link qd-interactive-surface"
+      [href]="rootExplorerHref()"
+      target="_blank"
+      rel="noopener"
+      aria-label="افتح الجذر في مستكشف الجذور"
+      data-testid="word-morphology-root-link"
+    >
+      <span class="word-morphology-summary__label">الجذر</span>
+      <span class="word-morphology-summary__value">{{ morphologyTextOrDash(morphology().root?.text) }}</span>
+    </a>
+  } @else {
+    <div class="word-morphology-summary__column" role="group" aria-label="الجذر">
+      <span class="word-morphology-summary__label">الجذر</span>
+      <span class="word-morphology-summary__value">{{ morphologyTextOrDash(morphology().root?.text) }}</span>
+    </div>
+  }
+  <div class="word-morphology-summary__column" role="group" aria-label="الصيغة المعجمية">
     <span class="word-morphology-summary__label">الصيغة المعجمية</span>
     <span class="word-morphology-summary__value">{{ morphologyTextOrDash(morphology().lemma?.text) }}</span>
-  </button>
-  <button type="button" class="word-morphology-summary__column qd-interactive-surface">
+  </div>
+  <div class="word-morphology-summary__column" role="group" aria-label="الأصل الصرفي">
     <span class="word-morphology-summary__label">الأصل الصرفي</span>
     <span class="word-morphology-summary__value">{{ morphologyTextOrDash(morphology().stem?.text) }}</span>
-  </button>
+  </div>
 </div>

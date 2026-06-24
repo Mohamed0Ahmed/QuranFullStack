@@ -1,18 +1,33 @@
 import { RootView, RootWordView, RootSurahView } from './roots.models';
+import { ROW_NUMBER_HEADER } from './unique-words.labels';
 
 /**
- * Roots Explorer (Feature 015) Arabic labels — verbatim from the spec.
- * Centralized here so templates stay clean and labels stay consistent.
+ * Roots Explorer (Feature 015) Arabic labels.
+ * Table column headers are shortened for scanability; panel tab labels stay
+ * verbatim per spec.
  */
 
-// Page header + table column headers (exact wording per spec).
+// Page header + table column headers (short labels for the grid header row).
 export const ROOTS_PAGE_TITLE = 'الجذور';
 export const ROOTS_SEARCH_LABEL = 'بحث في الجذور';
 export const ROOTS_SEARCH_PLACEHOLDER = 'اكتب جذرًا…';
 
 export const ROOTS_COLUMN_HEADERS = {
-  rowNumber: '#',
+  rowNumber: ROW_NUMBER_HEADER,
   root: 'الجذر',
+  occurrences: 'المواضع',
+  ayahs: 'الآيات',
+  surahs: 'السور',
+  simpleWords: 'بدون تشكيل',
+  tashkeelWords: 'بالتشكيل',
+  lemmas: 'الصيغ',
+  stems: 'الأصول',
+} as const;
+
+// Full semantic column labels (verbatim per spec). The grid header row shows the
+// shortened labels above; these full labels are the accessible names for the
+// count chips so screen readers keep the unambiguous meaning (FR-006).
+export const ROOTS_COLUMN_COUNT_LABELS = {
   occurrences: 'المواضع',
   ayahs: 'الآيات',
   surahs: 'السور',

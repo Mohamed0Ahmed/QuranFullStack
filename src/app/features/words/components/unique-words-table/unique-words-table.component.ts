@@ -1,10 +1,12 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
+  ViewChild,
+  afterNextRender,
   inject,
   input,
-  ViewChild,
   output,
 } from '@angular/core';
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
@@ -22,6 +24,7 @@ import {
   WordDrilldownView,
 } from '../../models/unique-words.models';
 import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
+import { syncTableScrollbarGutter } from '../../utils/table-scrollbar-gutter-sync';
 
 const ROW_HEIGHT = 48;
 const HAS_RESIZE_OBSERVER = typeof ResizeObserver !== 'undefined';
@@ -36,6 +39,7 @@ const HAS_RESIZE_OBSERVER = typeof ResizeObserver !== 'undefined';
 })
 export class UniqueWordsTableComponent {
   private readonly host = inject(ElementRef<HTMLElement>);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly rows = input.required<readonly UniqueWordListItemViewModel[]>();
   readonly loading = input(false);
@@ -57,6 +61,18 @@ export class UniqueWordsTableComponent {
   protected readonly useVirtualScroll = HAS_RESIZE_OBSERVER;
 
   @ViewChild(CdkVirtualScrollViewport) private viewport?: CdkVirtualScrollViewport;
+
+  constructor() {
+    afterNextRender(() => {
+      const disconnect = syncTableScrollbarGutter(
+        this.host.nativeElement,
+        '--unique-words-table-scrollbar-gutter',
+        '.unique-words-table__body',
+        '.unique-words-table',
+      );
+      this.destroyRef.onDestroy(disconnect);
+    });
+  }
 
   protected selectRow(row: UniqueWordListItemViewModel): void {
     this.rowSelected.emit(row);

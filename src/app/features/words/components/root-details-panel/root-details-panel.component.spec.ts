@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { TestBed } from '@angular/core/testing';
+import { describe, expect, it, beforeEach, afterEach } from 'vitest';
+import { getTestBed, TestBed } from '@angular/core/testing';
 
 import { RootDetailsPanelComponent } from './root-details-panel.component';
 import { ROOT_VIEW_KEYS, RootView } from '../../models/roots.models';
@@ -10,8 +10,15 @@ import { ROOT_VIEW_KEYS, RootView } from '../../models/roots.models';
  * linkage, and RTL-aware arrow-key navigation.
  */
 describe('RootDetailsPanelComponent a11y (T070)', () => {
+  afterEach(() => {
+    getTestBed().resetTestingModule();
+  });
+
   function createPanel(view: RootView = 'ayahs') {
-    TestBed.configureTestingModule({ imports: [RootDetailsPanelComponent] });
+    TestBed.configureTestingModule({
+      imports: [RootDetailsPanelComponent],
+      teardown: { destroyAfterEach: true },
+    });
     const fixture = TestBed.createComponent(RootDetailsPanelComponent);
     fixture.componentRef.setInput('view', view);
     fixture.componentRef.setInput('emptySelection', false);
@@ -69,15 +76,39 @@ describe('RootDetailsPanelComponent a11y (T070)', () => {
     expect(emitted).toBe('surahs');
   });
 
-  it('renders the empty-selection state without a tablist', () => {
-    TestBed.configureTestingModule({ imports: [RootDetailsPanelComponent] });
+  it('renders the tabpanel surface as a flex column for nested list viewports', () => {
+    const fixture = createPanel('ayahs');
+    const surface = fixture.nativeElement.querySelector(
+      '[data-testid="root-details-panel-surface"]',
+    ) as HTMLElement;
+
+    const styles = getComputedStyle(surface);
+    expect(styles.display).toBe('flex');
+    expect(styles.flexDirection).toBe('column');
+  });
+
+  it('renders the empty-selection state with header, disabled tabs, and empty message', () => {
+    TestBed.configureTestingModule({
+      imports: [RootDetailsPanelComponent],
+      teardown: { destroyAfterEach: true },
+    });
     const fixture = TestBed.createComponent(RootDetailsPanelComponent);
     fixture.componentRef.setInput('view', 'ayahs');
     fixture.componentRef.setInput('emptySelection', true);
     fixture.detectChanges();
 
     const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelector('[data-testid="root-details-panel-label"]')?.textContent?.trim()).toBe(
+      'تفاصيل الجذر',
+    );
     expect(host.querySelector('[data-testid="root-details-empty-selection"]')).toBeTruthy();
-    expect(host.querySelector('[role="tablist"]')).toBeNull();
+    expect(host.querySelectorAll('[role="tab"]')).toHaveLength(5);
+    expect(host.querySelector('[role="tablist"]')).toBeTruthy();
+
+    const tabs = host.querySelectorAll('[role="tab"]');
+    for (const tab of Array.from(tabs)) {
+      expect((tab as HTMLButtonElement).disabled).toBe(true);
+      expect(tab.getAttribute('aria-selected')).toBe('false');
+    }
   });
 });

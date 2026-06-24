@@ -6,13 +6,28 @@
 
   <div
     class="missing-surahs-list"
-    data-testid="missing-surahs-list"
+    [attr.aria-busy]="loading() ? true : null"
+    [attr.data-testid]="loading() ? 'missing-surahs-list-loading' : 'missing-surahs-list'"
   >
-    @for (surah of surahs(); track surah.surahNumber; let index = $index) {
-      <div class="missing-surahs-list__row">
-        <span class="missing-surahs-list__row-number">{{ index + 1 }}</span>
-        <span class="missing-surahs-list__name">{{ surah.nameArabic }}</span>
-      </div>
+    @if (loading()) {
+      <p class="qd-sr-only" role="status" aria-live="polite">{{ loadingLabel }}</p>
+      @for (_ of loadingRowPlaceholders; track $index) {
+        <div class="missing-surahs-list__row missing-surahs-list__row--loading" aria-hidden="true">
+          <span class="missing-surahs-list__row-number">
+            <span class="qd-skeleton qd-skeleton--text missing-surahs-list__loading-number"></span>
+          </span>
+          <span class="missing-surahs-list__name">
+            <span class="qd-skeleton qd-skeleton--text missing-surahs-list__loading-name"></span>
+          </span>
+        </div>
+      }
+    } @else {
+      @for (surah of surahs(); track surah.surahNumber; let index = $index) {
+        <div class="missing-surahs-list__row">
+          <span class="missing-surahs-list__row-number">{{ index + 1 }}</span>
+          <span class="missing-surahs-list__name">{{ surah.nameArabic }}</span>
+        </div>
+      }
     }
   </div>
 </div>

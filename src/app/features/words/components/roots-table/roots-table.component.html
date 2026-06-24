@@ -13,6 +13,7 @@
       <div class="roots-table__header-cell roots-table__header-cell--numeric" role="columnheader">{{ headers.lemmas }}</div>
       <div class="roots-table__header-cell roots-table__header-cell--numeric" role="columnheader">{{ headers.stems }}</div>
     </div>
+    <div class="roots-table__header-gutter" aria-hidden="true"></div>
   </div>
 
   @if (loading()) {
@@ -73,14 +74,14 @@
         <!-- المواضع → view=ayahs -->
         <div class="roots-table__cell roots-table__chip-cell" role="cell">
           <qd-word-count-chip
-            [label]="headers.occurrences" [count]="row.occurrencesCount" [showLabel]="false"
+            [label]="countLabels.occurrences" [count]="row.occurrencesCount" [showLabel]="false"
             (chipClick)="openCount(row, 'ayahs')"
           />
         </div>
         <!-- الآيات → view=ayahs -->
         <div class="roots-table__cell roots-table__chip-cell" role="cell">
           <qd-word-count-chip
-            [label]="headers.ayahs" [count]="row.ayahsCount" [showLabel]="false"
+            [label]="countLabels.ayahs" [count]="row.ayahsCount" [showLabel]="false"
             [disabled]="row.ayahsCount === 0"
             (chipClick)="openCount(row, 'ayahs')"
           />
@@ -88,7 +89,7 @@
         <!-- السور → view=surahs (mentioned) -->
         <div class="roots-table__cell roots-table__chip-cell" role="cell">
           <qd-word-count-chip
-            [label]="headers.surahs" [count]="row.surahsCount" [showLabel]="false"
+            [label]="countLabels.surahs" [count]="row.surahsCount" [showLabel]="false"
             [disabled]="row.surahsCount === 0"
             (chipClick)="openCount(row, 'surahs', { surahView: 'mentioned' })"
           />
@@ -96,7 +97,7 @@
         <!-- كلمات بدون تشكيل → view=words (simple) -->
         <div class="roots-table__cell roots-table__chip-cell" role="cell">
           <qd-word-count-chip
-            [label]="headers.simpleWords" [count]="row.simpleWordsCount" [showLabel]="false"
+            [label]="countLabels.simpleWords" [count]="row.simpleWordsCount" [showLabel]="false"
             [disabled]="row.simpleWordsCount === 0"
             (chipClick)="openCount(row, 'words', { wordView: 'simple' })"
           />
@@ -104,7 +105,7 @@
         <!-- كلمات بالتشكيل → view=words (tashkeel) -->
         <div class="roots-table__cell roots-table__chip-cell" role="cell">
           <qd-word-count-chip
-            [label]="headers.tashkeelWords" [count]="row.tashkeelWordsCount" [showLabel]="false"
+            [label]="countLabels.tashkeelWords" [count]="row.tashkeelWordsCount" [showLabel]="false"
             [disabled]="row.tashkeelWordsCount === 0"
             (chipClick)="openCount(row, 'words', { wordView: 'tashkeel' })"
           />
@@ -112,7 +113,7 @@
         <!-- الصيغ المعجمية → view=lemmas -->
         <div class="roots-table__cell roots-table__chip-cell" role="cell">
           <qd-word-count-chip
-            [label]="headers.lemmas" [count]="row.lemmasCount" [showLabel]="false"
+            [label]="countLabels.lemmas" [count]="row.lemmasCount" [showLabel]="false"
             [disabled]="row.lemmasCount === 0"
             (chipClick)="openCount(row, 'lemmas')"
           />
@@ -120,7 +121,7 @@
         <!-- الأصول الصرفية → view=stems -->
         <div class="roots-table__cell roots-table__chip-cell" role="cell">
           <qd-word-count-chip
-            [label]="headers.stems" [count]="row.stemsCount" [showLabel]="false"
+            [label]="countLabels.stems" [count]="row.stemsCount" [showLabel]="false"
             [disabled]="row.stemsCount === 0"
             (chipClick)="openCount(row, 'stems')"
           />
@@ -152,48 +153,48 @@
 
           <div class="roots-table__cell roots-table__chip-cell" role="cell">
             <qd-word-count-chip
-              [label]="headers.occurrences" [count]="row.occurrencesCount" [showLabel]="false"
+              [label]="countLabels.occurrences" [count]="row.occurrencesCount" [showLabel]="false"
               (chipClick)="openCount(row, 'ayahs')"
             />
           </div>
           <div class="roots-table__cell roots-table__chip-cell" role="cell">
             <qd-word-count-chip
-              [label]="headers.ayahs" [count]="row.ayahsCount" [showLabel]="false"
+              [label]="countLabels.ayahs" [count]="row.ayahsCount" [showLabel]="false"
               [disabled]="row.ayahsCount === 0"
               (chipClick)="openCount(row, 'ayahs')"
             />
           </div>
           <div class="roots-table__cell roots-table__chip-cell" role="cell">
             <qd-word-count-chip
-              [label]="headers.surahs" [count]="row.surahsCount" [showLabel]="false"
+              [label]="countLabels.surahs" [count]="row.surahsCount" [showLabel]="false"
               [disabled]="row.surahsCount === 0"
               (chipClick)="openCount(row, 'surahs', { surahView: 'mentioned' })"
             />
           </div>
           <div class="roots-table__cell roots-table__chip-cell" role="cell">
             <qd-word-count-chip
-              [label]="headers.simpleWords" [count]="row.simpleWordsCount" [showLabel]="false"
+              [label]="countLabels.simpleWords" [count]="row.simpleWordsCount" [showLabel]="false"
               [disabled]="row.simpleWordsCount === 0"
               (chipClick)="openCount(row, 'words', { wordView: 'simple' })"
             />
           </div>
           <div class="roots-table__cell roots-table__chip-cell" role="cell">
             <qd-word-count-chip
-              [label]="headers.tashkeelWords" [count]="row.tashkeelWordsCount" [showLabel]="false"
+              [label]="countLabels.tashkeelWords" [count]="row.tashkeelWordsCount" [showLabel]="false"
               [disabled]="row.tashkeelWordsCount === 0"
               (chipClick)="openCount(row, 'words', { wordView: 'tashkeel' })"
             />
           </div>
           <div class="roots-table__cell roots-table__chip-cell" role="cell">
             <qd-word-count-chip
-              [label]="headers.lemmas" [count]="row.lemmasCount" [showLabel]="false"
+              [label]="countLabels.lemmas" [count]="row.lemmasCount" [showLabel]="false"
               [disabled]="row.lemmasCount === 0"
               (chipClick)="openCount(row, 'lemmas')"
             />
           </div>
           <div class="roots-table__cell roots-table__chip-cell" role="cell">
             <qd-word-count-chip
-              [label]="headers.stems" [count]="row.stemsCount" [showLabel]="false"
+              [label]="countLabels.stems" [count]="row.stemsCount" [showLabel]="false"
               [disabled]="row.stemsCount === 0"
               (chipClick)="openCount(row, 'stems')"
             />

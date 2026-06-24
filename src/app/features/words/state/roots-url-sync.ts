@@ -30,7 +30,7 @@ import {
  * - `search` defaults to empty.
  * - `sort` defaults to `mushaf-order`; unsupported values fall back to default.
  * - `page` defaults to 1; non-positive/non-numeric → default.
- * - `view` defaults to `ayahs`; ignored unless `root` is a valid positive int.
+ * - `view` defaults to `words`; ignored unless `root` is a valid positive int.
  *   Sub-views (`wordView`, `surahView`) are ignored unless their parent view is
  *   active; `detailPage` is ignored outside the paginated views (`ayahs`,
  *   `words`). Default values are still emitted when the parent is active but the

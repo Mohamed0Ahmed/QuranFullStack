@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 import { deepLinkToHref } from '../../../../shared/url/deep-link-href';
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
 import {
+  ROOTS_LOADING_LABEL,
   ROOTS_OPEN_UNIQUE_WORD_LABEL,
   ROOTS_WORD_DISPLAY_HEADER,
   ROOTS_WORD_OCCURRENCES_HEADER,
@@ -24,13 +25,17 @@ export class RootWordsListComponent {
   readonly page = input.required<PagedResultDto<RootWordItemDto>>();
   readonly currentPage = input.required<number>();
   readonly wordView = input.required<RootWordView>();
+  readonly loading = input(false);
 
   readonly pageChange = output<number>();
+
+  protected readonly loadingRowPlaceholders = Array.from({ length: 8 });
 
   protected readonly rowNumberHeader = ROW_NUMBER_HEADER;
   protected readonly displayHeader = ROOTS_WORD_DISPLAY_HEADER;
   protected readonly occurrencesHeader = ROOTS_WORD_OCCURRENCES_HEADER;
   protected readonly openUniqueWordLabel = ROOTS_OPEN_UNIQUE_WORD_LABEL;
+  protected readonly loadingLabel = ROOTS_LOADING_LABEL;
 
   protected rowNumber(index: number): number {
     return pageRelativeRowNumber(this.currentPage(), this.page().pageSize, index);

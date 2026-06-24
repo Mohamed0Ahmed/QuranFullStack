@@ -14,13 +14,12 @@ import {
 import { FocusTrap, FocusTrapFactory } from '@angular/cdk/a11y';
 
 import {
-  ROOTS_CLOSE_PANEL_LABEL,
   ROOTS_EMPTY_SELECTION_LABEL,
-  ROOTS_LOADING_LABEL,
   ROOTS_PANEL_LABEL,
   ROOTS_PANEL_TAB_ARIA,
   ROOTS_PANEL_TAB_LABELS,
 } from '../../models/roots.labels';
+import { CLOSE_LABEL } from '../../models/unique-words.labels';
 import { ROOT_VIEW_KEYS, RootView } from '../../models/roots.models';
 
 /** Viewport width below which the panel becomes a dismissible drawer. */
@@ -58,6 +57,9 @@ export class RootDetailsPanelComponent {
   /** True when no root is selected → render the empty-selection state. */
   readonly emptySelection = input(false);
 
+  /** Selected root display text for the panel header center. */
+  readonly selectionTitle = input('');
+
   /** Optional loading flag for the panel surface (drives `aria-busy`). */
   readonly loading = input(false);
 
@@ -69,10 +71,18 @@ export class RootDetailsPanelComponent {
   /** Drawer dismissed (narrow screens): the page clears the selection. */
   readonly close = output<void>();
 
-  protected readonly panelLabel = ROOTS_PANEL_LABEL;
-  protected readonly closeLabel = ROOTS_CLOSE_PANEL_LABEL;
-  protected readonly emptySelectionLabel = ROOTS_EMPTY_SELECTION_LABEL;
-  protected readonly loadingLabel = ROOTS_LOADING_LABEL;
+  // Getters defer label resolution past module init (Vitest SSR / cross-module const TDZ).
+  protected get rootsPanelLabel() {
+    return ROOTS_PANEL_LABEL;
+  }
+
+  protected get closeLabel() {
+    return CLOSE_LABEL;
+  }
+
+  protected get emptySelectionLabel() {
+    return ROOTS_EMPTY_SELECTION_LABEL;
+  }
 
   /** Stable DOM id for the single tabpanel surface (aria-controls target). */
   protected readonly surfaceDomId = 'root-details-panel-surface';
@@ -116,14 +126,14 @@ export class RootDetailsPanelComponent {
   }
 
   protected selectView(key: RootView): void {
-    if (key === this.view()) {
+    if (this.emptySelection() || key === this.view()) {
       return;
     }
     this.viewChange.emit(key);
   }
 
   protected onEscape(): void {
-    if (this.drawerMode()) {
+    if (this.drawerMode() || this.hasSelection()) {
       this.close.emit();
     }
   }

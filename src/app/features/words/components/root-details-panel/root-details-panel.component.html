@@ -12,19 +12,16 @@
   class="root-details-panel"
   #panelRoot
   [class.root-details-panel--drawer]="drawerMode()"
-  [attr.aria-label]="panelLabel"
+  [attr.aria-label]="rootsPanelLabel"
   [attr.role]="drawerMode() ? 'dialog' : null"
   [attr.aria-modal]="drawerMode() ? true : null"
   (keydown.escape)="onEscape()"
 >
-  @if (emptySelection()) {
-    <!-- Empty-selection state: nothing selected yet. -->
-    <div class="root-details-panel__empty" data-testid="root-details-empty-selection">
-      <p class="qd-text-muted">{{ emptySelectionLabel }}</p>
-    </div>
-  } @else {
-    @if (drawerMode()) {
-      <div class="root-details-panel__drawer-header">
+  <header class="explorer-panel-header root-details-panel__header">
+    <h2 class="explorer-panel-header__label" data-testid="root-details-panel-label">{{ rootsPanelLabel }}</h2>
+    <span class="explorer-panel-header__entity" data-testid="root-details-panel-entity">{{ selectionTitle() }}</span>
+    <div class="explorer-panel-header__end">
+      @if (hasSelection()) {
         <button
           type="button"
           class="qd-btn qd-btn-ghost root-details-panel__close"
@@ -33,49 +30,56 @@
         >
           {{ closeLabel }}
         </button>
-      </div>
-    }
-
-    <!-- Tab strip: exactly 5 tabs, NO overview (نظرة عامة) tab. -->
-    <div
-      class="root-details-panel__tabs"
-      role="tablist"
-      [attr.aria-label]="panelLabel"
-      #tabList
-    >
-      @for (tab of tabs; track tab.key) {
-        <button
-          type="button"
-          class="qd-btn qd-btn-ghost root-details-panel__tab"
-          role="tab"
-          [id]="tabDomId(tab.key)"
-          [attr.data-root-tab]="tab.key"
-          [attr.data-testid]="'root-details-tab-' + tab.key"
-          [attr.aria-controls]="surfaceDomId"
-          [attr.aria-selected]="isActive(tab.key)"
-          [attr.aria-label]="tab.aria"
-          [attr.tabindex]="isActive(tab.key) ? 0 : -1"
-          (click)="selectView(tab.key)"
-          (keydown)="onTabKeydown($event, tab.key)"
-        >
-          {{ tab.label }}
-        </button>
       }
     </div>
+  </header>
 
-    <!-- Panel surface: own scroll container (scrolls independently). View
-         content is projected by the owning story phase via ng-content. It is
-         focusable so keyboard users can reach and scroll the panel. -->
-    <div
-      class="root-details-panel__surface"
-      role="tabpanel"
-      [id]="surfaceDomId"
-      [attr.aria-labelledby]="tabDomId(view())"
-      [attr.aria-busy]="loading() ? true : null"
-      tabindex="0"
-      data-testid="root-details-panel-surface"
-    >
+  <!-- Tab strip: exactly 5 tabs, NO overview (نظرة عامة) tab. -->
+  <div
+    class="root-details-panel__tabs"
+    role="tablist"
+    [attr.aria-label]="rootsPanelLabel"
+    #tabList
+  >
+    @for (tab of tabs; track tab.key) {
+      <button
+        type="button"
+        class="qd-btn qd-btn-secondary root-details-panel__tab"
+        role="tab"
+        [id]="tabDomId(tab.key)"
+        [attr.data-root-tab]="tab.key"
+        [attr.data-testid]="'root-details-tab-' + tab.key"
+        [attr.aria-controls]="surfaceDomId"
+        [attr.aria-selected]="isActive(tab.key) && hasSelection()"
+        [attr.aria-label]="tab.aria"
+        [attr.tabindex]="isActive(tab.key) && hasSelection() ? 0 : -1"
+        [class.qd-is-selected]="isActive(tab.key) && hasSelection()"
+        [disabled]="emptySelection()"
+        (click)="selectView(tab.key)"
+        (keydown)="onTabKeydown($event, tab.key)"
+      >
+        {{ tab.label }}
+      </button>
+    }
+  </div>
+
+  <!-- Panel surface: own scroll container (scrolls independently). View
+       content is projected by the owning page when a root is selected. -->
+  <div
+    class="root-details-panel__surface"
+    role="tabpanel"
+    [id]="surfaceDomId"
+    [attr.aria-labelledby]="tabDomId(view())"
+    [attr.aria-busy]="loading() ? true : null"
+    tabindex="0"
+    data-testid="root-details-panel-surface"
+  >
+    @if (emptySelection()) {
+      <div class="qd-empty-state" data-testid="root-details-empty-selection">
+        {{ emptySelectionLabel }}
+      </div>
+    } @else {
       <ng-content />
-    </div>
-  }
+    }
+  </div>
 </section>

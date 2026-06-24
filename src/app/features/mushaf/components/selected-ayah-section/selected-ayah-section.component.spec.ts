@@ -188,7 +188,7 @@ describe('SelectedAyahSectionComponent — stable loading (UI-001)', () => {
     expect(root.querySelector('.qd-loading-state')).toBeNull();
     expect(root.querySelector('[data-testid="ayah-study-loading"]')).toBeTruthy();
 
-    // Static structure mounted: source slot, tabs, content region.
+    // Static structure mounted: tabs, source slot, content region.
     expect(root.querySelector('.selected-ayah-section__source')).toBeTruthy();
     expect(root.querySelector('.selected-ayah-section__tabs')).toBeTruthy();
     expect(root.querySelectorAll('.selected-ayah-section__tab')).toHaveLength(5);
@@ -303,6 +303,24 @@ describe('SelectedAyahSectionComponent — stable loading (UI-001)', () => {
     // Tabs are interactive again once loaded.
     const tabs = Array.from(root.querySelectorAll<HTMLButtonElement>('.selected-ayah-section__tab'));
     expect(tabs.every((tab) => !tab.disabled)).toBe(true);
+  });
+
+  it('renders tabs above the source selector for source-backed tabs', () => {
+    const fixture = TestBed.createComponent(SelectedAyahSectionComponent);
+    setInputs(fixture, {
+      study: buildAyahStudyViewModel(),
+      loadState: IDLE,
+      selectedVerseKey: '2:25',
+      activeTab: 'full-i3rab',
+    });
+
+    const root = fixture.nativeElement as HTMLElement;
+    const tabs = root.querySelector('.selected-ayah-section__tabs');
+    const source = root.querySelector('.selected-ayah-section__source');
+
+    expect(tabs).toBeTruthy();
+    expect(source).toBeTruthy();
+    expect(tabs!.compareDocumentPosition(source!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('renders the empty "select an ayah" state when no verse is selected', () => {

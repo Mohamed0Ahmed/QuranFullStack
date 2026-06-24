@@ -47,21 +47,22 @@ describe('RootsTableComponent', () => {
     return fixture;
   }
 
-  it('renders the eight column headers verbatim', () => {
+  it('renders the column headers', () => {
     const fixture = setup([], { loading: false });
     const root = fixture.nativeElement as HTMLElement;
 
     const headers = Array.from(root.querySelectorAll('[role="columnheader"]')).map((h) =>
       h.textContent?.trim() ?? '',
     );
+    expect(headers).toContain('م');
     expect(headers).toContain('الجذر');
     expect(headers).toContain('المواضع');
     expect(headers).toContain('الآيات');
     expect(headers).toContain('السور');
-    expect(headers).toContain('كلمات بدون تشكيل');
-    expect(headers).toContain('كلمات بالتشكيل');
-    expect(headers).toContain('الصيغ المعجمية');
-    expect(headers).toContain('الأصول الصرفية');
+    expect(headers).toContain('بدون تشكيل');
+    expect(headers).toContain('بالتشكيل');
+    expect(headers).toContain('الصيغ');
+    expect(headers).toContain('الأصول');
   });
 
   it('renders the eight counts and UI row numbers, never backend ids', () => {
@@ -82,6 +83,28 @@ describe('RootsTableComponent', () => {
     // button, not a chip; the row-number column has neither. So 7 × 2 rows = 14.
     expect(root.textContent).not.toContain('id-');
     expect(root.querySelectorAll('qd-word-count-chip')).toHaveLength(14);
+  });
+
+  it('gives count chips full semantic accessible names while the grid headers stay short', () => {
+    const fixture = setup([row(1)]);
+    const root = fixture.nativeElement as HTMLElement;
+
+    // Chip order: occurrences, ayahs, surahs, simpleWords, tashkeelWords,
+    // lemmas, stems. The shortened header labels must NOT leak into the chips'
+    // accessible names (FR-006: full meaning stays available via aria-label).
+    const chipLabels = Array.from(root.querySelectorAll('qd-word-count-chip button')).map(
+      (btn) => btn.getAttribute('aria-label') ?? '',
+    );
+    expect(chipLabels[3]).toContain('كلمات بدون تشكيل');
+    expect(chipLabels[4]).toContain('كلمات بالتشكيل');
+    expect(chipLabels[5]).toContain('الصيغ المعجمية');
+    expect(chipLabels[6]).toContain('الأصول الصرفية');
+
+    const headers = Array.from(root.querySelectorAll('[role="columnheader"]')).map(
+      (h) => h.textContent?.trim() ?? '',
+    );
+    expect(headers).toContain('الصيغ');
+    expect(headers).not.toContain('الصيغ المعجمية');
   });
 
   it('emits rowSelected with the row when the root cell is clicked', () => {

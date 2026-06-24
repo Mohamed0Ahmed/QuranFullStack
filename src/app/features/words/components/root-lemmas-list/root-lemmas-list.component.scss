@@ -2,6 +2,11 @@
   display: block;
 }
 
+.root-lemmas-list-shell {
+  display: flex;
+  flex-direction: column;
+}
+
 .root-lemmas-list__header,
 .root-lemmas-list__row {
   display: grid;
@@ -38,4 +43,52 @@
 
 .root-lemmas-list__text {
   font-family: var(--qd-font-quran, inherit);
+}
+
+.root-lemmas-list__row--loading {
+  pointer-events: none;
+}
+
+.root-lemmas-list__loading-number {
+  inline-size: 1.25rem;
+  block-size: 0.875rem;
+  margin-inline: auto;
+}
+
+.root-lemmas-list__loading-text {
+  inline-size: 55%;
+  block-size: 1rem;
+}
+
+.root-lemmas-list__loading-badge {
+  inline-size: 2rem;
+  block-size: 1.25rem;
+}
+
+:host-context(.word-drilldown-panel),
+:host-context(.root-details-panel__surface) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+
+:host-context(.word-drilldown-panel) .root-lemmas-list-shell,
+:host-context(.root-details-panel__surface) .root-lemmas-list-shell {
+  flex: 1;
+  min-height: 0;
+}
+
+:host-context(.word-drilldown-panel) .root-lemmas-list__header,
+:host-context(.root-details-panel__surface) .root-lemmas-list__header {
+  flex-shrink: 0;
+}
+
+:host-context(.word-drilldown-panel) .root-lemmas-list,
+:host-context(.root-details-panel__surface) .root-lemmas-list {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  scrollbar-gutter: stable;
 }

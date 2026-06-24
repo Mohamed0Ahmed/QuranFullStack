@@ -6,6 +6,7 @@
   width: 100%;
   max-width: 100%;
   min-width: 0;
+  --roots-table-scrollbar-gutter: 0px;
   border: 1px solid var(--qd-border);
   border-radius: var(--qd-radius-md);
   overflow: hidden;
@@ -13,6 +14,8 @@
 }
 
 .roots-table__header {
+  display: flex;
+  align-items: stretch;
   min-block-size: var(--roots-table-header-height, 2.75rem);
   overflow: hidden;
   background: var(--qd-surface);
@@ -28,7 +31,14 @@
 }
 
 .roots-table__header-row {
-  scrollbar-gutter: stable;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.roots-table__header-gutter {
+  flex: 0 0 var(--roots-table-scrollbar-gutter);
+  inline-size: var(--roots-table-scrollbar-gutter);
+  flex-shrink: 0;
 }
 
 .roots-table__header-cell,
@@ -81,6 +91,10 @@
   background: var(--qd-accent-tint);
 }
 
+.roots-table__row:hover:not(.qd-is-selected) {
+  background: var(--qd-section-bg);
+}
+
 .roots-table__cell {
   min-width: 0;
   overflow: hidden;
@@ -130,4 +144,30 @@
   inline-size: 2.5rem;
   block-size: 1.125rem;
   margin-inline: auto;
+}
+
+// Roots explorer page: lock the table card to the same height as the detail
+// panel so their bottom borders align (pagination stays below the table).
+:host-context(.roots-explorer-layout__table) {
+  display: block;
+  block-size: 100%;
+}
+
+:host-context(.roots-explorer-layout__table) .roots-table {
+  display: flex;
+  flex-direction: column;
+  block-size: 100%;
+  box-sizing: border-box;
+}
+
+:host-context(.roots-explorer-layout__table) .roots-table__header {
+  flex-shrink: 0;
+  block-size: var(--roots-table-header-height, 2.75rem);
+  min-block-size: unset;
+}
+
+:host-context(.roots-explorer-layout__table) .roots-table__body {
+  flex: 1 1 auto;
+  min-block-size: 0;
+  block-size: auto;
 }

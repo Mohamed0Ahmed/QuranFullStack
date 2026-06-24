@@ -25,7 +25,6 @@ import { PaginationComponent } from '../../../../shared/ui/pagination/pagination
 import {
   ROOTS_EMPTY_SELECTION_LABEL,
   ROOTS_EMPTY_VIEW_LABEL,
-  ROOTS_LOADING_LABEL,
   ROOTS_NO_RESULTS_LABEL,
   ROOTS_NOT_FOUND_LABEL,
   ROOTS_PAGE_TITLE,
@@ -37,7 +36,11 @@ import {
 } from '../../models/roots.labels';
 import {
   DEFAULT_ROOT_VIEW,
+  PagedResultDto,
+  RootAyahMatchDto,
   RootListItemViewModel,
+  RootWordItemDto,
+  ROOT_DETAIL_PAGE_SIZE,
   RootSort,
   RootSurahView,
   RootView,
@@ -86,7 +89,6 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly pageTitle = ROOTS_PAGE_TITLE;
   protected readonly emptySelectionLabel = ROOTS_EMPTY_SELECTION_LABEL;
   protected readonly emptyViewLabel = ROOTS_EMPTY_VIEW_LABEL;
-  protected readonly loadingLabel = ROOTS_LOADING_LABEL;
   protected readonly notFoundLabel = ROOTS_NOT_FOUND_LABEL;
   protected readonly noResultsLabel = ROOTS_NO_RESULTS_LABEL;
   protected readonly searchLabel = ROOTS_SEARCH_LABEL;
@@ -104,6 +106,21 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly sortOptions: readonly RootSort[] = ['mushaf-order', 'occurrences', 'alpha'];
   protected readonly wordViewOptions: readonly RootWordView[] = ['simple', 'tashkeel'];
   protected readonly surahViewOptions: readonly RootSurahView[] = ['mentioned', 'missing'];
+
+  /** Empty paginated stubs passed to list components while detail data is loading. */
+  protected readonly emptyAyahsPage: PagedResultDto<RootAyahMatchDto> = {
+    page: 1,
+    pageSize: ROOT_DETAIL_PAGE_SIZE,
+    totalCount: 0,
+    items: [],
+  };
+
+  protected readonly emptyWordsPage: PagedResultDto<RootWordItemDto> = {
+    page: 1,
+    pageSize: ROOT_DETAIL_PAGE_SIZE,
+    totalCount: 0,
+    items: [],
+  };
 
   protected get wordViewLabels() {
     return ROOTS_WORD_VIEW_LABELS;
@@ -158,11 +175,17 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
     this.updateQueryParams(buildRootsQueryParams({ page }));
   }
 
-  /** Row select → default view=ayahs + root selected. */
+  /** Row select → default view=words (simple) + root selected. */
   protected onRowSelected(root: RootListItemViewModel): void {
     this.detailFacade.selectRoot(toRootSummary(root), DEFAULT_ROOT_VIEW);
     this.updateQueryParams(
-      buildRootsQueryParams({ rootId: root.id, view: DEFAULT_ROOT_VIEW, detailPage: null }),
+      buildRootsQueryParams({
+        rootId: root.id,
+        view: DEFAULT_ROOT_VIEW,
+        wordView: 'simple',
+        surahView: null,
+        detailPage: null,
+      }),
     );
   }
 

@@ -159,6 +159,46 @@ button.qd-interactive-surface {
   color: var(--qd-accent-text);
 }
 
+/* Shared explorer detail panel header: label (inline-start) | entity (center) | actions (inline-end). */
+.explorer-panel-header {
+  display: grid;
+  grid-template-columns: 1fr minmax(0, auto) 1fr;
+  align-items: center;
+  gap: var(--qd-space-3);
+  padding-block-end: var(--qd-space-2);
+  border-block-end: 1px solid var(--qd-border);
+  flex-shrink: 0;
+}
+
+.explorer-panel-header__label {
+  margin: 0;
+  justify-self: start;
+  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--qd-text);
+}
+
+.explorer-panel-header__entity {
+  justify-self: center;
+  text-align: center;
+  font-family: 'Amiri', 'IBM Plex Sans Arabic', serif;
+  font-size: 1.125rem;
+  line-height: 1.4;
+  color: var(--qd-text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.explorer-panel-header__end {
+  display: flex;
+  justify-content: flex-end;
+  justify-self: end;
+  min-width: 0;
+}
+
 .qd-empty-state,
 .qd-loading-state,
 .qd-error-state {

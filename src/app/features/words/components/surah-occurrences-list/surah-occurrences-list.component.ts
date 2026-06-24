@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
+import { ROOTS_LOADING_LABEL } from '../../models/roots.labels';
 import { UniqueWordSurahItemDto } from '../../models/unique-words.models';
 import { ROW_NUMBER_HEADER, SURAH_OCCURRENCES_COUNT_HEADER } from '../../models/unique-words.labels';
 
@@ -12,7 +13,11 @@ import { ROW_NUMBER_HEADER, SURAH_OCCURRENCES_COUNT_HEADER } from '../../models/
 })
 export class SurahOccurrencesListComponent {
   readonly surahs = input.required<readonly UniqueWordSurahItemDto[]>();
+  readonly loading = input(false);
+
+  protected readonly loadingRowPlaceholders = Array.from({ length: 8 });
 
   protected readonly rowNumberHeader = ROW_NUMBER_HEADER;
   protected readonly occurrencesCountHeader = SURAH_OCCURRENCES_COUNT_HEADER;
+  protected readonly loadingLabel = ROOTS_LOADING_LABEL;
 }

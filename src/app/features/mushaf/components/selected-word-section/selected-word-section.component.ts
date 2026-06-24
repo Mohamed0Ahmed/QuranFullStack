@@ -5,6 +5,7 @@ import { deepLinkToHref } from '../../../../shared/url/deep-link-href';
 import { ResourceLoadState, WordAnalysisViewModel } from '../../models/mushaf.models';
 import { UniqueWordKind } from '../../../words/models/unique-words.models';
 import { buildUniqueWordsDeepLink } from '../../../words/state/unique-words-url-sync';
+import { buildRootsDeepLink } from '../../../words/state/roots-url-sync';
 import { SegmentDataRowsComponent } from '../segment-data-rows/segment-data-rows.component';
 import { SegmentRenderedWordComponent } from '../segment-rendered-word/segment-rendered-word.component';
 import { WordMorphologySummaryComponent } from '../word-morphology-summary/word-morphology-summary.component';
@@ -50,5 +51,15 @@ export class SelectedWordSectionComponent {
         view: 'ayahs',
       }),
     );
+  }
+
+  protected rootExplorerHref(): string {
+    const rootId = this.analysis()?.morphology.root?.id;
+
+    if (!rootId) {
+      return '';
+    }
+
+    return deepLinkToHref(buildRootsDeepLink({ rootId }));
   }
 }

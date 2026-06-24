@@ -5,26 +5,49 @@
     <span class="root-words-list__header-count">{{ occurrencesHeader }}</span>
   </header>
 
-  <div class="root-words-list__viewport">
-    @for (item of page().items; track item.uniqueWordId; let i = $index) {
-      <a
-        class="root-words-list__row qd-interactive-surface"
-        [attr.href]="uniqueWordHref(item)"
-        [attr.aria-label]="openUniqueWordLabel"
-        data-testid="root-word-link"
-      >
-        <span class="root-words-list__row-number" aria-hidden="true">{{ rowNumber(i) }}</span>
-        <span class="root-words-list__text">{{ item.displayTextUthmani }}</span>
-        <span class="qd-badge">{{ item.occurrencesCount }}</span>
-      </a>
+  <div
+    class="root-words-list__viewport"
+    [attr.aria-busy]="loading() ? true : null"
+    [attr.data-testid]="loading() ? 'root-words-list-loading' : null"
+  >
+    @if (loading()) {
+      <p class="qd-sr-only" role="status" aria-live="polite">{{ loadingLabel }}</p>
+      @for (_ of loadingRowPlaceholders; track $index) {
+        <div class="root-words-list__row root-words-list__row--loading" aria-hidden="true">
+          <span class="root-words-list__row-number">
+            <span class="qd-skeleton qd-skeleton--text root-words-list__loading-number"></span>
+          </span>
+          <span class="root-words-list__text">
+            <span class="qd-skeleton qd-skeleton--text root-words-list__loading-word"></span>
+          </span>
+          <span class="qd-skeleton qd-skeleton--rounded-md root-words-list__loading-badge"></span>
+        </div>
+      }
+    } @else {
+      @for (item of page().items; track item.uniqueWordId; let i = $index) {
+        <a
+          class="root-words-list__row qd-interactive-surface"
+          [attr.href]="uniqueWordHref(item)"
+          [attr.aria-label]="openUniqueWordLabel"
+          target="_blank"
+          rel="noopener"
+          data-testid="root-word-link"
+        >
+          <span class="root-words-list__row-number" aria-hidden="true">{{ rowNumber(i) }}</span>
+          <span class="root-words-list__text">{{ item.displayTextUthmani }}</span>
+          <span class="qd-badge">{{ item.occurrencesCount }}</span>
+        </a>
+      }
     }
   </div>
 
-  <qd-pagination
-    [currentPage]="currentPage()"
-    [pageSize]="page().pageSize"
-    [totalCount]="page().totalCount"
-    ariaLabel="تصفّح كلمات الجذر"
-    (pageChange)="pageChange.emit($event)"
-  />
+  @if (!loading()) {
+    <qd-pagination
+      [currentPage]="currentPage()"
+      [pageSize]="page().pageSize"
+      [totalCount]="page().totalCount"
+      ariaLabel="تصفّح كلمات الجذر"
+      (pageChange)="pageChange.emit($event)"
+    />
+  }
 </div>

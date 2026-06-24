@@ -224,6 +224,41 @@ describe('SelectedWordSectionComponent — stable loading (UI-001)', () => {
     expect(root.querySelectorAll('.qd-skeleton').length).toBe(0);
   });
 
+  it('opens the root explorer in a new tab when morphology includes a root id', () => {
+    const fixture = TestBed.createComponent(SelectedWordSectionComponent);
+    const analysis = buildWordAnalysisViewModel();
+    analysis.morphology = {
+      ...analysis.morphology,
+      root: { id: 999, text: 'جذر-تجريبي', buckwalter: 'jhr-test' },
+    };
+    setInputs(fixture, {
+      analysis,
+      loadState: IDLE,
+      selectedWordLocation: '2:25:3',
+    });
+
+    const root = fixture.nativeElement as HTMLElement;
+    const rootLink = root.querySelector(
+      '[data-testid="word-morphology-root-link"]',
+    ) as HTMLAnchorElement | null;
+
+    expect(rootLink?.getAttribute('href')).toBe('/dashboard/words/roots?root=999');
+    expect(rootLink?.getAttribute('target')).toBe('_blank');
+    expect(rootLink?.getAttribute('rel')).toBe('noopener');
+  });
+
+  it('does not render a root explorer link when morphology has no root id', () => {
+    const fixture = TestBed.createComponent(SelectedWordSectionComponent);
+    setInputs(fixture, {
+      analysis: buildWordAnalysisViewModel(),
+      loadState: IDLE,
+      selectedWordLocation: '2:25:3',
+    });
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('[data-testid="word-morphology-root-link"]')).toBeNull();
+  });
+
   it('opens both unique-word identity rows in a new tab using their nested ids', () => {
     const fixture = TestBed.createComponent(SelectedWordSectionComponent);
     setInputs(fixture, {

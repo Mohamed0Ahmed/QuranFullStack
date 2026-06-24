@@ -192,7 +192,7 @@ export const ROOTS_SELECTION_QUERY_KEYS: readonly string[] = [
 
 // --- Defaults (mirrors contracts; pageSize/detailPageSize are fixed) ---
 export const DEFAULT_ROOT_SORT: RootSort = 'mushaf-order';
-export const DEFAULT_ROOT_VIEW: RootView = 'ayahs';
+export const DEFAULT_ROOT_VIEW: RootView = 'words';
 export const DEFAULT_ROOT_WORD_VIEW: RootWordView = 'simple';
 export const DEFAULT_ROOT_SURAHS_VIEW: RootSurahView = 'mentioned';
 export const DEFAULT_ROOTS_LIST_PAGE = 1;

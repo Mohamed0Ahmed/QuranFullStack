@@ -39,5 +39,26 @@ describe('RootWordsListComponent US3', () => {
     expect(link.getAttribute('href')).toContain(`/dashboard/words/unique/${wordView}`);
     expect(link.getAttribute('href')).toContain(`word=${uniqueWordId}`);
     expect(link.getAttribute('href')).toContain('view=ayahs');
+    expect(link.getAttribute('target')).toBe('_blank');
+    expect(link.getAttribute('rel')).toBe('noopener');
+  });
+
+  it('keeps column headers and renders skeleton rows while loading', async () => {
+    await TestBed.configureTestingModule({
+      imports: [RootWordsListComponent],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(RootWordsListComponent);
+    fixture.componentRef.setInput('loading', true);
+    fixture.componentRef.setInput('page', { page: 1, pageSize: 100, totalCount: 0, items: [] });
+    fixture.componentRef.setInput('currentPage', 1);
+    fixture.componentRef.setInput('wordView', 'simple');
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('.root-words-list__header')).toBeTruthy();
+    expect(root.querySelector('[data-testid="root-words-list-loading"]')).toBeTruthy();
+    expect(root.querySelectorAll('.root-words-list__row--loading').length).toBeGreaterThan(0);
+    expect(root.querySelector('qd-pagination')).toBeNull();
   });
 });

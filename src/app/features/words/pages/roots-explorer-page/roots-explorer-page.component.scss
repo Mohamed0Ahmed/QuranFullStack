@@ -32,20 +32,17 @@
 .roots-explorer__sub-tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--qd-space-1);
+  gap: var(--qd-space-2);
   margin-block-end: var(--qd-space-3);
-}
-
-.roots-explorer__sub-tab[aria-selected='true'] {
-  font-weight: 600;
+  flex-shrink: 0;
 }
 
 // Desktop split-screen: table on the inline-start side, panel on the
-// inline-end side. Each region scrolls independently. Narrow-screen drawer
-// behavior is polished in T069.
+// inline-end side (~56/44). Each region scrolls independently. Narrow-screen
+// drawer behavior is polished in T069.
 .roots-explorer-layout {
   display: grid;
-  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  grid-template-columns: minmax(0, 5fr) minmax(0, 4fr);
   gap: var(--qd-space-4);
   align-items: start;
   padding: 0 var(--qd-space-4);
@@ -56,19 +53,46 @@
   min-width: 0;
 }
 
-.roots-explorer-layout__panel {
-  position: sticky;
-  top: var(--qd-space-4);
-  max-block-size: calc(100vh - 8rem);
+@media (min-width: 1024px) {
+  .roots-explorer-layout {
+    /* Navbar + page header + search/sort above the grid (~14rem). */
+    --roots-layout-chrome-block-size: 14rem;
+    --roots-table-body-height: min(
+      calc(100dvh - var(--roots-layout-chrome-block-size)),
+      58rem
+    );
+    --roots-table-header-height: 2.75rem;
+    --roots-table-card-height: calc(
+      var(--roots-table-header-height) + var(--roots-table-body-height)
+    );
+  }
+
+  .roots-explorer-layout__table > qd-roots-table,
+  .roots-explorer-layout__panel {
+    block-size: var(--roots-table-card-height);
+  }
+
+  .roots-explorer-layout__panel {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+@media (min-width: 1440px) {
+  .roots-explorer-layout {
+    --roots-layout-chrome-block-size: 12rem;
+    --roots-table-body-height: min(
+      calc(100dvh - var(--roots-layout-chrome-block-size)),
+      64rem
+    );
+    --roots-table-card-height: calc(
+      var(--roots-table-header-height) + var(--roots-table-body-height)
+    );
+  }
 }
 
 @media (max-width: 1023px) {
   .roots-explorer-layout {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  .roots-explorer-layout__panel {
-    position: static;
-    max-block-size: none;
   }
 }

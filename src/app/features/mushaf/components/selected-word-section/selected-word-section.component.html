@@ -84,7 +84,10 @@
         <section class="selected-word-section__section" aria-label="قطع الكلمة والإعراب">
           <div class="selected-word-section__segments-block">
             <qd-segment-data-rows [segments]="analysis()!.segments" />
-            <qd-word-morphology-summary [morphology]="analysis()!.morphology" />
+            <qd-word-morphology-summary
+              [morphology]="analysis()!.morphology"
+              [rootExplorerHref]="rootExplorerHref()"
+            />
           </div>
         </section>
 

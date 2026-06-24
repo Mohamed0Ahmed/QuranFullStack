@@ -18,56 +18,6 @@
       </p>
     }
 
-    @if (activeTab() === 'tafsir' || activeTab() === 'translation' || activeTab() === 'full-i3rab') {
-      <div class="selected-ayah-section__source">
-        @if (loadState().isLoading) {
-          <div class="selected-ayah-section__source-loading" aria-busy="true">
-            <span class="selected-ayah-section__source-loading-label">
-              @switch (activeTab()) {
-                @case ('tafsir') { مصدر التفسير }
-                @case ('translation') { مصدر الترجمة }
-                @case ('full-i3rab') { مصدر الإعراب }
-              }
-            </span>
-            <span
-              class="qd-skeleton qd-skeleton--rounded-md selected-ayah-section__source-skeleton"
-              aria-hidden="true"
-            ></span>
-          </div>
-        } @else {
-          @switch (activeTab()) {
-            @case ('tafsir') {
-              <qd-source-selector
-                label="مصدر التفسير"
-                pickerMode="languageFirst"
-                [selectedKey]="study()!.selectedSources.tafsirSource"
-                [options]="tafsirOptions()"
-                (sourceChange)="tafsirSourceChange.emit($event)"
-              />
-            }
-            @case ('translation') {
-              <qd-source-selector
-                label="مصدر الترجمة"
-                pickerMode="languageFirst"
-                [selectedKey]="study()!.selectedSources.translationSource"
-                [options]="translationOptions()"
-                (sourceChange)="translationSourceChange.emit($event)"
-              />
-            }
-            @case ('full-i3rab') {
-              <qd-source-selector
-                label="مصدر الإعراب"
-                pickerMode="flat"
-                [selectedKey]="study()!.selectedSources.fullI3rabSource"
-                [options]="fullI3rabOptions()"
-                (sourceChange)="fullI3rabSourceChange.emit($event)"
-              />
-            }
-          }
-        }
-      </div>
-    }
-
     <nav class="selected-ayah-section__tabs" aria-label="تبويبات دراسة الآية">
       <button
         type="button"
@@ -127,6 +77,56 @@
         }
       </button>
     </nav>
+
+    @if (activeTab() === 'tafsir' || activeTab() === 'translation' || activeTab() === 'full-i3rab') {
+      <div class="selected-ayah-section__source">
+        @if (loadState().isLoading) {
+          <div class="selected-ayah-section__source-loading" aria-busy="true">
+            <span class="selected-ayah-section__source-loading-label">
+              @switch (activeTab()) {
+                @case ('tafsir') { مصدر التفسير }
+                @case ('translation') { مصدر الترجمة }
+                @case ('full-i3rab') { مصدر الإعراب }
+              }
+            </span>
+            <span
+              class="qd-skeleton qd-skeleton--rounded-md selected-ayah-section__source-skeleton"
+              aria-hidden="true"
+            ></span>
+          </div>
+        } @else {
+          @switch (activeTab()) {
+            @case ('tafsir') {
+              <qd-source-selector
+                label="مصدر التفسير"
+                pickerMode="languageFirst"
+                [selectedKey]="study()!.selectedSources.tafsirSource"
+                [options]="tafsirOptions()"
+                (sourceChange)="tafsirSourceChange.emit($event)"
+              />
+            }
+            @case ('translation') {
+              <qd-source-selector
+                label="مصدر الترجمة"
+                pickerMode="languageFirst"
+                [selectedKey]="study()!.selectedSources.translationSource"
+                [options]="translationOptions()"
+                (sourceChange)="translationSourceChange.emit($event)"
+              />
+            }
+            @case ('full-i3rab') {
+              <qd-source-selector
+                label="مصدر الإعراب"
+                pickerMode="flat"
+                [selectedKey]="study()!.selectedSources.fullI3rabSource"
+                [options]="fullI3rabOptions()"
+                (sourceChange)="fullI3rabSourceChange.emit($event)"
+              />
+            }
+          }
+        }
+      </div>
+    }
 
     <div
       class="selected-ayah-section__content"

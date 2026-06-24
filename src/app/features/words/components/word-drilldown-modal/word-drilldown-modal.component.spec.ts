@@ -62,8 +62,10 @@ function ayahPage(overrides: Partial<PagedResultDto<UniqueWordAyahMatchDto>> = {
 }
 
 async function createFixture(initialState: WordDrilldownState) {
+  getTestBed().resetTestingModule();
   await TestBed.configureTestingModule({
     imports: [WordDrilldownModalComponent],
+    teardown: { destroyAfterEach: true },
   }).compileComponents();
 
   const fixture = TestBed.createComponent(WordDrilldownModalComponent);
@@ -84,10 +86,6 @@ async function createInlineFixture(initialState: WordDrilldownState) {
 }
 
 describe('WordDrilldownModalComponent', () => {
-  beforeEach(() => {
-    getTestBed().resetTestingModule();
-  });
-
   afterEach(() => {
     getTestBed().resetTestingModule();
   });
@@ -97,8 +95,9 @@ describe('WordDrilldownModalComponent', () => {
 
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('[data-testid="word-drilldown-modal"]')).toBeTruthy();
-    expect(root.querySelector('[data-testid="word-drilldown-title"]')?.textContent).toContain('كلمة-تجريبية');
-    const loading = root.querySelector('[data-testid="word-drilldown-loading"]');
+    expect(root.querySelector('[data-testid="word-drilldown-panel-label"]')?.textContent).toContain('تفاصيل الكلمة');
+    expect(root.querySelector('[data-testid="word-drilldown-entity"]')?.textContent).toContain('كلمة-تجريبية');
+    const loading = root.querySelector('[data-testid="explorer-panel-skeleton"]');
 
     expect(loading).toBeTruthy();
     expect(loading?.getAttribute('aria-busy')).toBe('true');
@@ -132,7 +131,8 @@ describe('WordDrilldownModalComponent', () => {
     );
 
     const root = fixture.nativeElement as HTMLElement;
-    expect(root.querySelector('[data-testid="word-drilldown-title"]')?.textContent).toContain('كلمة-بسيطة');
+    expect(root.querySelector('[data-testid="word-drilldown-panel-label"]')?.textContent).toContain('تفاصيل الكلمة');
+    expect(root.querySelector('[data-testid="word-drilldown-entity"]')?.textContent).toContain('كلمة-بسيطة');
   });
 
   it('renders missing-surahs list in success state', async () => {
@@ -245,6 +245,7 @@ describe('WordDrilldownModalComponent', () => {
     const fixture = await createInlineFixture(state({ isOpen: false }));
 
     const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('[data-testid="word-drilldown-panel-label"]')?.textContent).toContain('تفاصيل الكلمة');
     expect(root.querySelector('[data-testid="word-drilldown-empty"]')?.textContent).toContain('اختر كلمة لعرض تفاصيلها');
     expect(root.querySelector('[data-testid="word-drilldown-modal"]')).toBeNull();
   });
