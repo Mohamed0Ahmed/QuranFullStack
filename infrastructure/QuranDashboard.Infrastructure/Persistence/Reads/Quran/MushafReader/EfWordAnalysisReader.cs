@@ -190,7 +190,7 @@ public sealed class EfWordAnalysisReader(QuranDashboardDbContext db) : IWordAnal
                 headPosTag?.EnglishLabel ?? morphology.HeadPos),
             root is null
                 ? null
-                : new WordMorphologyRoot(root.RootText, root.RootBuckwalter),
+                : new WordMorphologyRoot(root.Id, root.RootText, root.RootBuckwalter),
             lemma is null
                 ? null
                 : new WordMorphologyLemma(lemma.LemmaText, lemma.LemmaBuckwalter),

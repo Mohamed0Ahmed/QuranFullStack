@@ -67,6 +67,7 @@ public sealed record LocalizedLabel(
     string En);
 
 public sealed record WordMorphologyRoot(
+    int Id,
     string? Text,
     string? Buckwalter);
 

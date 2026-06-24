@@ -190,11 +190,16 @@ VALUES
   ('PRON', 'ضمير',        'Pronoun',      'pronoun',  30, 'Pronoun');
 
 -- Head morphology for word 2:25:3 ---------------------------------------
+INSERT INTO quran_roots
+  (id, root_text, root_buckwalter, words_count, distinct_lemmas_count, first_word_order_in_mushaf)
+VALUES
+  (9001, 'أ م ن', 'Amn', 1, 0, 2003);
+
 INSERT INTO quran_word_morphology
   (quran_word_id, location, head_pos, segment_count, root_id, lemma_id, stem_id,
    is_verb, verb_tense, verb_voice, case_feature, head_features_json)
 VALUES
-  (2003, '2:25:3', 'V', 2, NULL, NULL, NULL,
+  (2003, '2:25:3', 'V', 2, 9001, NULL, NULL,
    TRUE, 'perfect', 'active', NULL, NULL);
 
 -- Two ordered segments; segment 2 has empty form_arabic_normalized (fallback) --
