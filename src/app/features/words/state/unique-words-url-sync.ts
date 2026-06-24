@@ -16,15 +16,6 @@ import {
   isWordDrilldownView,
 } from '../models/unique-words.models';
 
-/**
- * Parsing rules for explorer query params:
- * - `search` defaults to empty.
- * - `sort` defaults to `mushaf-order`; unsupported values fall back to the default.
- * - `page` defaults to 1; non-positive or non-numeric values fall back to 1.
- * - `word` is `null` when absent or non-numeric; non-positive values are `null`.
- * - `view` is `null` when absent or unsupported; only valid when a `word` is set.
- * - `ap` is `null` when absent; defaults to 1 when the modal ayahs view is open.
- */
 export function parseUniqueWordsQueryParams(queryParams: ParamMap): ParsedUniqueWordsQuery {
   const sortRaw = queryParams.get(UNIQUE_WORDS_QUERY_KEYS.sort);
   const sort: UniqueWordSort =
@@ -35,12 +26,10 @@ export function parseUniqueWordsQueryParams(queryParams: ParamMap): ParsedUnique
   const wordRaw = queryParams.get(UNIQUE_WORDS_QUERY_KEYS.word);
   const wordId = wordRaw === null ? null : parsePositiveInt(wordRaw);
 
-  // `view` only makes sense alongside a `word`; ignore it otherwise.
   const viewRaw = wordId !== null ? queryParams.get(UNIQUE_WORDS_QUERY_KEYS.view) : null;
   const view: WordDrilldownView | null =
     viewRaw !== null && isWordDrilldownView(viewRaw) ? viewRaw : null;
 
-  // `ap` only applies to the ayahs view; otherwise leave it null.
   const ayahPage =
     view === 'ayahs'
       ? parsePositiveInt(queryParams.get(UNIQUE_WORDS_QUERY_KEYS.ayahPage)) ?? DEFAULT_AYAH_PAGE

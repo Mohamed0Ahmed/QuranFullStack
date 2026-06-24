@@ -3,10 +3,6 @@ import { Injectable } from '@angular/core';
 import { ApiResponseCache } from '../../../core/caching/api-response-cache';
 import { RootSort, RootWordView } from '../models/roots.models';
 
-/**
- * Roots Explorer (Feature 015) cache keys over the shared `ApiResponseCache`,
- * mirroring the backend `roots:` keys. Modeled on `UniqueWordsCacheKeys`.
- */
 export const RootsCacheKeys = {
   list(search: string, sort: RootSort, page: number): string {
     return `roots:list:${sort}:${search}:p${page}`;

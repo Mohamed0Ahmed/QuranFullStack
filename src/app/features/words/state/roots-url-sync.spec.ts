@@ -77,7 +77,6 @@ describe('parseRootsQueryParams', () => {
       'tashkeel',
     );
 
-    // wordView ignored when the parent view is not `words`.
     expect(parseRootsQueryParams(params('root=1&view=ayahs&wordView=tashkeel')).wordView).toBe(
       'simple',
     );
@@ -103,7 +102,6 @@ describe('parseRootsQueryParams', () => {
     expect(parseRootsQueryParams(params('root=1&view=ayahs&detailPage=4')).detailPage).toBe(4);
     expect(parseRootsQueryParams(params('root=1&view=words&detailPage=2')).detailPage).toBe(2);
 
-    // detailPage ignored for whole-list views.
     expect(parseRootsQueryParams(params('root=1&view=surahs&detailPage=9')).detailPage).toBe(1);
     expect(parseRootsQueryParams(params('root=1&view=lemmas&detailPage=9')).detailPage).toBe(1);
   });
@@ -181,7 +179,6 @@ describe('buildClearSelectionQueryParams', () => {
     );
     expect(Object.values(cleared)).toEqual([null, null, null, null, null]);
 
-    // The list-context keys must NOT be among the cleared set.
     expect(cleared).not.toHaveProperty(ROOTS_QUERY_KEYS.search);
     expect(cleared).not.toHaveProperty(ROOTS_QUERY_KEYS.sort);
     expect(cleared).not.toHaveProperty(ROOTS_QUERY_KEYS.page);

@@ -54,14 +54,6 @@ import {
   buildRootsQueryParams,
 } from '../../state/roots-url-sync';
 
-/**
- * Roots Explorer routeable smart page (Feature 015, US1 T030/T032). Route:
- * `/dashboard/words/roots`. Composes the roots table + search + sort + shared
- * pagination on the inline-start side and the persistent detail panel shell on
- * the inline-end side. Wires list state to the URL (search/sort/page) and
- * selection/panel state (root/view/...). Count-cell clicks and row-select drive
- * the URL; the panel renders the empty-selection state until a root is selected.
- */
 @Component({
   selector: 'qd-roots-explorer-page',
   standalone: true,
@@ -94,8 +86,6 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly searchLabel = ROOTS_SEARCH_LABEL;
   protected readonly searchPlaceholder = ROOTS_SEARCH_PLACEHOLDER;
 
-  // Getter mirrors the UniqueWordsFacade workaround so the experimental unit-test
-  // SSR runner resolves the cross-module const correctly.
   protected get sortLabels() {
     return ROOTS_SORT_LABELS;
   }
@@ -107,7 +97,6 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly wordViewOptions: readonly RootWordView[] = ['simple', 'tashkeel'];
   protected readonly surahViewOptions: readonly RootSurahView[] = ['mentioned', 'missing'];
 
-  /** Empty paginated stubs passed to list components while detail data is loading. */
   protected readonly emptyAyahsPage: PagedResultDto<RootAyahMatchDto> = {
     page: 1,
     pageSize: ROOT_DETAIL_PAGE_SIZE,
@@ -130,9 +119,6 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
     return ROOTS_SURAHS_VIEW_LABELS;
   }
 
-  // Local draft for the search input so typing does not reload on every
-  // keystroke; the facade reloads after the debounced emission. Seeded from the
-  // active (URL) search so a restored link shows its term in the box.
   protected readonly searchDraft = signal('');
 
   private readonly searchInput = new Subject<string>();
@@ -175,7 +161,6 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
     this.updateQueryParams(buildRootsQueryParams({ page }));
   }
 
-  /** Row select → default view=words (simple) + root selected. */
   protected onRowSelected(root: RootListItemViewModel): void {
     this.detailFacade.selectRoot(toRootSummary(root), DEFAULT_ROOT_VIEW);
     this.updateQueryParams(
@@ -189,7 +174,6 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
     );
   }
 
-  /** Count-cell click → target view + sub-view (URL reflects the mapping). */
   protected onCountOpened(event: RootCountOpenedEvent): void {
     const { root, view } = event;
     const wordView = view === 'words' ? (event.wordView ?? 'simple') : undefined;

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 
 import { deepLinkToHref } from '../../../../shared/url/deep-link-href';
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
@@ -12,6 +12,11 @@ import {
 import { AyahMatchDto, PagedResultDto } from '../../models/unique-words.models';
 import { buildMushafDeepLink } from '../../../mushaf/state/mushaf-url-sync';
 import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
+
+interface AyahMatchRowViewModel {
+  match: AyahMatchDto;
+  mushafHref: string;
+}
 
 @Component({
   selector: 'qd-ayah-matches-list',
@@ -30,10 +35,20 @@ export class AyahMatchesListComponent {
 
   protected readonly loadingCardPlaceholders = Array.from({ length: 4 });
 
-  // Getters defer label resolution past module init — these cross-module consts
-  // can be in the TDZ at field-init time in the Vitest SSR bundle (the labels
-  // module is still wiring its routing dependency), which would leave the
-  // template bindings undefined.
+  protected readonly rows = computed((): readonly AyahMatchRowViewModel[] =>
+    this.page().items.map((match) => ({
+      match,
+      mushafHref: deepLinkToHref(
+        buildMushafDeepLink({
+          pageNumber: match.pageNumber,
+          ayah: match.verseKey,
+          focusAyah: match.verseKey,
+          panel: 'ayah',
+        }),
+      ),
+    })),
+  );
+
   protected get ayahRefLabel() {
     return AYAH_REF_LABEL;
   }
@@ -52,16 +67,5 @@ export class AyahMatchesListComponent {
 
   protected rowNumber(index: number): number {
     return pageRelativeRowNumber(this.currentPage(), this.page().pageSize, index);
-  }
-
-  protected mushafHref(match: AyahMatchDto): string {
-    return deepLinkToHref(
-      buildMushafDeepLink({
-        pageNumber: match.pageNumber,
-        ayah: match.verseKey,
-        focusAyah: match.verseKey,
-        panel: 'ayah',
-      }),
-    );
   }
 }

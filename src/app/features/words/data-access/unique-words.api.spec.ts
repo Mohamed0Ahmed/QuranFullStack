@@ -16,12 +16,10 @@ import {
   UniqueWordSurahsDto,
 } from '../models/unique-words.models';
 
-/** Match the list request URL by path + params, independent of the configured base URL. */
 function matchUniqueWords(kind: string): RegExp {
   return new RegExp(`/api/words/unique/${kind}(\\?.*)?$`);
 }
 
-/** Source-safe synthetic placeholder — not Quranic text. */
 const SAMPLE_ITEM: UniqueWordListItemDto = {
   id: 1,
   kind: 'tashkeel',

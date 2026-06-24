@@ -7,16 +7,6 @@ import { Component } from '@angular/core';
 import { WORDS_ROUTES } from './words.routes';
 import { NAV_ITEMS } from '../../core/navigation/nav-items';
 
-/**
- * Routes test for the Words feature.
- *
- * The app mounts `WORDS_ROUTES` under `/dashboard/words`. Rather than drive
- * real navigation through `RouterTestingHarness` (which creates a persistent
- * root outlet that can leak into sibling specs sharing the test fork), we
- * render a tiny host with `RouterOutlet` and assert on the resolved route
- * component plus the route configuration. Each test resets the shared
- * injector and tears down after itself.
- */
 @Component({
   selector: 'qd-test-host',
   standalone: true,
@@ -56,7 +46,7 @@ describe('WORDS_ROUTES hub route', () => {
   });
 
   it('does not register a wildcard route that could swallow the words area', () => {
-    // The words area must own its own routes; no catch-all lives inside it.
+
     const wildcard = WORDS_ROUTES.find((r) => r.path === '**');
     expect(wildcard).toBeUndefined();
   });
@@ -81,10 +71,6 @@ describe('WORDS_ROUTES unique mode segment', () => {
     });
   }
 
-  // Regression: the explorer reads the active mode from `paramMap.get('mode')`,
-  // so the route must expose a `:mode` segment. Literal `unique/tashkeel` /
-  // `unique/simple` routes would leave `mode` null and silently fall back to
-  // tashkeel, making the simple mode unreachable.
   it('resolves mode="tashkeel" for /dashboard/words/unique/tashkeel', async () => {
     mountForNavigation();
     const router = TestBed.inject(Router);
@@ -108,9 +94,7 @@ describe('WORDS_ROUTES unique mode segment', () => {
 
 describe('words fallback-route exclusion', () => {
   it('excludes the words nav item from placeholder fallback routes', () => {
-    // The placeholder fallback is generated for nav items that are neither
-    // dashboard, mushaf, nor words. After this feature, `words` is a real
-    // routeable area and must never fall through to the placeholder page.
+
     const placeholderKeys = NAV_ITEMS.filter(
       (item) => item.key !== 'dashboard' && item.key !== 'mushaf' && item.key !== 'words',
     ).map((item) => item.key);

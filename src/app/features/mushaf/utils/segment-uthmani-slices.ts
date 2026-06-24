@@ -5,9 +5,9 @@ export interface UthmaniSegmentSlice {
   color: string;
   segmentColorSlot: number;
   isMissing: boolean;
-  /** UTF-16 offset in fullWordText; -1 when the slice is a missing placeholder. */
+
   rangeStart: number;
-  /** UTF-16 offset in fullWordText (exclusive); -1 when the slice is a missing placeholder. */
+
   rangeEnd: number;
 }
 

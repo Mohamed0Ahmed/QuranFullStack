@@ -38,7 +38,6 @@ export class WordsHubPageComponent {
     disabled: false,
   };
 
-  // Feature 015 (Roots Explorer, FR-047): active section cards with routes.
   protected readonly additionalActiveCards: readonly WordSectionCardViewModel[] =
     ADDITIONAL_ACTIVE_HUB_SECTIONS.map((section) => ({
       labelAr: section.labelAr,

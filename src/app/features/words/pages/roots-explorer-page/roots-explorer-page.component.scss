@@ -37,9 +37,6 @@
   flex-shrink: 0;
 }
 
-// Desktop split-screen: table on the inline-start side, panel on the
-// inline-end side (~56/44). Each region scrolls independently. Narrow-screen
-// drawer behavior is polished in T069.
 .roots-explorer-layout {
   display: grid;
   grid-template-columns: minmax(0, 5fr) minmax(0, 4fr);
@@ -55,7 +52,7 @@
 
 @media (min-width: 1024px) {
   .roots-explorer-layout {
-    /* Navbar + page header + search/sort above the grid (~14rem). */
+
     --roots-layout-chrome-block-size: 14rem;
     --roots-table-body-height: min(
       calc(100dvh - var(--roots-layout-chrome-block-size)),

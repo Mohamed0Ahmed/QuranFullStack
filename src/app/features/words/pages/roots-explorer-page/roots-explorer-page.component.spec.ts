@@ -812,7 +812,7 @@ describe('RootsExplorerPageComponent state matrix (T073)', () => {
     const host = fixture.nativeElement as HTMLElement;
     expect(TestBed.inject(RootsDetailFacade).status()).toBe('notFound');
     expect(host.querySelector('[data-testid="roots-restored-not-found"]')).toBeTruthy();
-    // The table remains rendered and usable alongside the not-found message.
+
     expect(host.querySelector('qd-roots-table')).toBeTruthy();
     expect(host.querySelector('[data-testid="roots-table-root-button"]')).toBeTruthy();
   });

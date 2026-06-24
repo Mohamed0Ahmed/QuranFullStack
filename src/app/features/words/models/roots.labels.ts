@@ -1,13 +1,6 @@
 import { RootView, RootWordView, RootSurahView } from './roots.models';
 import { ROW_NUMBER_HEADER } from './unique-words.labels';
 
-/**
- * Roots Explorer (Feature 015) Arabic labels.
- * Table column headers are shortened for scanability; panel tab labels stay
- * verbatim per spec.
- */
-
-// Page header + table column headers (short labels for the grid header row).
 export const ROOTS_PAGE_TITLE = 'الجذور';
 export const ROOTS_SEARCH_LABEL = 'بحث في الجذور';
 export const ROOTS_SEARCH_PLACEHOLDER = 'اكتب جذرًا…';
@@ -24,9 +17,6 @@ export const ROOTS_COLUMN_HEADERS = {
   stems: 'الأصول',
 } as const;
 
-// Full semantic column labels (verbatim per spec). The grid header row shows the
-// shortened labels above; these full labels are the accessible names for the
-// count chips so screen readers keep the unambiguous meaning (FR-006).
 export const ROOTS_COLUMN_COUNT_LABELS = {
   occurrences: 'المواضع',
   ayahs: 'الآيات',
@@ -37,7 +27,6 @@ export const ROOTS_COLUMN_COUNT_LABELS = {
   stems: 'الأصول الصرفية',
 } as const;
 
-// Panel tab labels — exactly 5 tabs, NO overview (نظرة عامة) tab.
 export const ROOTS_PANEL_TAB_LABELS: Record<RootView, string> = {
   words: 'الكلمات',
   ayahs: 'الآيات',
@@ -64,7 +53,6 @@ export const ROOTS_SURAHS_VIEW_LABELS: Record<RootSurahView, string> = {
   missing: 'لم يذكر فيها',
 };
 
-// Panel states.
 export const ROOTS_EMPTY_SELECTION_LABEL = 'اختر جذرًا لعرض تفاصيله';
 export const ROOTS_PANEL_LABEL = 'تفاصيل الجذر';
 export const ROOTS_CLOSE_PANEL_LABEL = 'إغلاق لوحة التفاصيل';
@@ -81,7 +69,6 @@ export const ROOTS_LEMMA_TEXT_HEADER = 'الصيغة المعجمية';
 export const ROOTS_STEM_TEXT_HEADER = 'الأصل الصرفي';
 export const ROOTS_OPEN_UNIQUE_WORD_LABEL = 'فتح تفاصيل الكلمة في مستكشف الكلمات الفريدة';
 
-// Sort control labels.
 export const ROOTS_SORT_LABELS = {
   label: 'الترتيب',
   'mushaf-order': 'ترتيب المصحف',

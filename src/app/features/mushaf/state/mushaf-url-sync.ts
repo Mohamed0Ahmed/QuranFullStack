@@ -34,7 +34,6 @@ export interface MushafUrlSnapshot {
   sources: MushafReaderSources;
 }
 
-// Below this width, `panel` selects the active study section.
 export const MUSHAF_WIDE_DESKTOP_MIN_PX = 1024;
 
 export function clampMushafPageNumber(raw: string | null): number {
@@ -45,7 +44,6 @@ export function clampMushafPageNumber(raw: string | null): number {
   return Math.min(604, Math.max(1, parsed));
 }
 
-// Drops unsupported enum values (e.g. `panel=sources`, `ayahTab=links`).
 export function normalizePanelMode(value: string | null): PanelMode {
   if (value && VALID_PANELS.has(value)) {
     return value as PanelMode;
@@ -89,10 +87,6 @@ export function parseMushafUrlParams(params: ParamMap): MushafUrlSnapshot {
   };
 }
 
-/**
- * Returns query-param corrections when raw URL values were normalized away.
- * Used to silently fix shareable URLs that contain out-of-scope enum values.
- */
 export function buildUrlEnumCorrections(
   raw: ParamMap,
   snapshot: MushafUrlSnapshot,

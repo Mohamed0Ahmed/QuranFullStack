@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 
 import { toMushafWordDisplayText } from './mushaf-word-display-text';
 
-/** Source-safe synthetic placeholders — not Quranic text. */
 const SYNTHETIC_WORD = 'كلمة-تجريبية-١';
 const WAQF_THREE_DOTS = '\u06DB';
 const WAQF_HIGH_JEEM = '\u06DA';

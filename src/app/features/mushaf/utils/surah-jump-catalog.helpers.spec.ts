@@ -6,7 +6,6 @@ import {
   filterUniqueSurahs,
 } from './surah-jump-catalog.helpers';
 
-/** Source-safe synthetic placeholders — not Quranic text. */
 const catalogFixture: readonly MushafSurahJuzGroupDto[] = [
   {
     juzNumber: 1,

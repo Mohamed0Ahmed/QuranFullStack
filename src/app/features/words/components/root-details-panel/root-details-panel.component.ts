@@ -22,27 +22,8 @@ import {
 import { CLOSE_LABEL } from '../../models/unique-words.labels';
 import { ROOT_VIEW_KEYS, RootView } from '../../models/roots.models';
 
-/** Viewport width below which the panel becomes a dismissible drawer. */
 const NARROW_VIEWPORT_QUERY = '(max-width: 60rem)';
 
-/**
- * Roots Explorer persistent detail panel shell (Feature 015, T020 + T069/T070).
- *
- * Shell only: no view content, no data calls. It renders its own independent
- * scroll container, a `role="tablist"` strip with EXACTLY the 5 named tabs (no
- * "نظرة عامة" tab), and the empty-selection state.
- *
- * Accessibility (T070): roving `tabindex` + RTL-aware arrow keys on the tablist;
- * each tab is linked to the single `role="tabpanel"` surface via
- * `aria-controls`/`aria-labelledby`; the surface is focusable so keyboard users
- * can scroll it; load status is announced by the page via `role="status"`.
- *
- * Drawer (T069): on narrow viewports a selected root opens as a dismissible
- * drawer — focus is trapped inside it, `Esc` and a backdrop click close it, and
- * focus returns to the control that opened it. Desktop renders the panel inline.
- * Viewport detection is `matchMedia`-guarded and defaults to desktop where it is
- * unavailable (SSR / the jsdom test runner).
- */
 @Component({
   selector: 'qd-root-details-panel',
   standalone: true,
@@ -51,27 +32,20 @@ const NARROW_VIEWPORT_QUERY = '(max-width: 60rem)';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RootDetailsPanelComponent {
-  /** Active panel view (drives `aria-selected`/roving tabindex). */
   readonly view = input.required<RootView>();
 
-  /** True when no root is selected → render the empty-selection state. */
   readonly emptySelection = input(false);
 
-  /** Selected root display text for the panel header center. */
   readonly selectionTitle = input('');
 
-  /** Optional loading flag for the panel surface (drives `aria-busy`). */
   readonly loading = input(false);
 
-  /** A selected root may be missing/invalid → controlled not-found flag. */
   readonly notFound = input(false);
 
   readonly viewChange = output<RootView>();
 
-  /** Drawer dismissed (narrow screens): the page clears the selection. */
   readonly close = output<void>();
 
-  // Getters defer label resolution past module init (Vitest SSR / cross-module const TDZ).
   protected get rootsPanelLabel() {
     return ROOTS_PANEL_LABEL;
   }
@@ -84,10 +58,8 @@ export class RootDetailsPanelComponent {
     return ROOTS_EMPTY_SELECTION_LABEL;
   }
 
-  /** Stable DOM id for the single tabpanel surface (aria-controls target). */
   protected readonly surfaceDomId = 'root-details-panel-surface';
 
-  /** Ordered, stable tab definitions (exactly 5; no overview tab). */
   protected readonly tabs = ROOT_VIEW_KEYS.map((key) => ({
     key,
     label: ROOTS_PANEL_TAB_LABELS[key],
@@ -97,10 +69,8 @@ export class RootDetailsPanelComponent {
   private readonly panelRoot = viewChild<ElementRef<HTMLElement>>('panelRoot');
   private readonly tabList = viewChild<ElementRef<HTMLElement>>('tabList');
 
-  /** Whether a root is selected (panel surface shown vs empty state). */
   protected readonly hasSelection = computed(() => !this.emptySelection());
 
-  /** Narrow viewport → the panel renders as a dismissible drawer. */
   private readonly isNarrow = signal(false);
   protected readonly drawerMode = computed(() => this.isNarrow() && this.hasSelection());
 
@@ -111,12 +81,10 @@ export class RootDetailsPanelComponent {
 
   constructor() {
     this.observeViewport();
-    // Trap focus while the drawer is open; restore it to the opener on close.
     effect(() => (this.drawerMode() ? this.enterDrawer() : this.exitDrawer()));
     this.destroyRef.onDestroy(() => this.exitDrawer());
   }
 
-  /** DOM id for a tab button (aria-labelledby target for the tabpanel). */
   protected tabDomId(key: RootView): string {
     return `root-details-tabbtn-${key}`;
   }
@@ -138,11 +106,6 @@ export class RootDetailsPanelComponent {
     }
   }
 
-  /**
-   * RTL-aware roving-tabindex arrow navigation for the tablist. The DOM order is
-   * already RTL (Arabic-first), so ArrowLeft moves forward and ArrowRight moves
-   * backward in reading order, mirroring the visual order.
-   */
   protected onTabKeydown(event: KeyboardEvent, currentKey: RootView): void {
     const order = ROOT_VIEW_KEYS;
     const index = order.indexOf(currentKey);
@@ -182,7 +145,6 @@ export class RootDetailsPanelComponent {
   }
 
   private observeViewport(): void {
-    // jsdom (test runner) and SSR lack matchMedia → stay on the desktop layout.
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
       return;
     }

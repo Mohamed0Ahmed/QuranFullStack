@@ -62,10 +62,6 @@ interface PanelUrlState {
   readonly detailPage: number;
 }
 
-/**
- * Roots Explorer (Feature 015) persistent detail-panel facade. Selection and
- * URL sync live here; per-view loading is delegated to {@link RootsDetailViewLoader}.
- */
 @Injectable({ providedIn: 'root' })
 export class RootsDetailFacade {
   private readonly api = inject(RootsApi);

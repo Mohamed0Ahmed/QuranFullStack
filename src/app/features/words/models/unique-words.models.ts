@@ -23,7 +23,6 @@ export interface UniqueWordListItemDto {
   occurrencesCount: number;
   ayahsCount: number;
   surahsCount: number;
-  /** Derived as 114 - surahsCount. */
   missingSurahsCount: number;
   firstVerseKey: string;
   firstLocation: string;
@@ -80,11 +79,6 @@ export interface AyahWordForHighlightDto {
   isAyahMarker: boolean;
 }
 
-/**
- * Shared ayah-match row contract for list + highlight components. Feature 014
- * (`UniqueWordAyahMatchDto`) and Feature 015 (`RootAyahMatchDto`) both extend
- * this shape so reused UI cannot drift silently.
- */
 export interface AyahMatchDto {
   ayahId: number;
   verseKey: string;
@@ -92,7 +86,6 @@ export interface AyahMatchDto {
   surahNameArabic: string;
   ayahNumber: number;
   pageNumber: number;
-  /** Exact quran_words.id values; only these are highlighted. */
   matchedQuranWordIds: number[];
   words: AyahWordForHighlightDto[];
 }

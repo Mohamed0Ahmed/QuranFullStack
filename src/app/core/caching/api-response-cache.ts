@@ -38,7 +38,6 @@ export class ApiResponseCache {
     return request$;
   }
 
-  // Returns cached data synchronously; in-flight-only requests count as a miss.
   peek<T>(key: string): T | null {
     const cached = this.cache.get(key);
     if (cached?.isSuccess && cached.data != null) {

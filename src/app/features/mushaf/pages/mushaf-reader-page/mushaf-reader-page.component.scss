@@ -7,9 +7,7 @@
 
 .mushaf-reader {
   display: grid;
-  // dir="rtl" places the first grid column on the RIGHT, so the first DOM
-  // child (the Mushaf page) lands right ~40% and the second child (the study
-  // area) lands left ~60%.
+
   grid-template-columns: minmax(0, 40%) minmax(0, 60%);
   gap: 1rem;
   height: 100%;
@@ -39,7 +37,6 @@
   }
 }
 
-// Desktop: page scroll + sticky Mushaf column (header + page text stay visible).
 @media (min-width: 1024px) {
   :host {
     height: auto;
@@ -74,7 +71,6 @@
   }
 }
 
-// Tablet: stack Mushaf above study.
 @media (max-width: 1023px) and (min-width: 768px) {
   .mushaf-reader {
     grid-template-columns: minmax(0, 1fr);
@@ -91,7 +87,6 @@
   }
 }
 
-// Mobile: bottom study drawer.
 @media (max-width: 767px) {
   .mushaf-reader {
     grid-template-columns: minmax(0, 1fr);

@@ -21,11 +21,6 @@ const pageDto = {
   markers: [],
 };
 
-/*
- * Source-safe synthetic word-analysis stub (not Quranic text). Used only by the
- * same-ayah no-reload regression test below so the word-analysis path resolves
- * without error while we assert the ayah study is NOT refetched.
- */
 const wordAnalysisStub: WordAnalysisDto = {
   word: {
     quranWordId: 2003,
@@ -149,7 +144,7 @@ describe('MushafReaderFacade.loadPage', () => {
 
     const facade = TestBed.inject(MushafReaderFacade);
     facade.loadPage(5);
-    // Initial load plus optional adjacent-page prefetch (pages 4 and 6).
+
     expect(getPage).toHaveBeenCalledTimes(3);
     expect(facade.pageLoadState().isLoading).toBe(false);
 
@@ -310,11 +305,7 @@ describe('MushafReaderFacade.applyUrlState', () => {
   });
 
   it('does not reload ayah study when selecting a different word in the same ayah (UI-001 regression)', () => {
-    // Locks in the calm same-ayah behavior: `selectWord` writes the word's own
-    // verse-key into the `ayah` URL param, and hydration only reloads the ayah
-    // when `ayahChanged || sourcesChanged`. Selecting another word in the SAME
-    // ayah must therefore NOT set the ayah load state to loading and must NOT
-    // re-fetch the ayah study. The word analysis load is independent.
+
     const getAyahStudy = vi.fn(() => of({ isSuccess: true, message: 'تم', data: ayahStudyDto }));
     const getWordAnalysis = vi.fn(() =>
       of({ isSuccess: true, message: 'تم', data: { ...wordAnalysisStub, word: { ...wordAnalysisStub.word, wordLocation: '2:25:4' } } }),
@@ -334,7 +325,6 @@ describe('MushafReaderFacade.applyUrlState', () => {
 
     const facade = TestBed.inject(MushafReaderFacade);
 
-    // First: select a word in ayah 2:25 — this hydrates the ayah once.
     facade.applyUrlState({
       panel: 'word',
       ayah: '2:25',
@@ -347,7 +337,6 @@ describe('MushafReaderFacade.applyUrlState', () => {
     const ayahCallsAfterFirstWord = getAyahStudy.mock.calls.length;
     expect(ayahCallsAfterFirstWord).toBeGreaterThanOrEqual(1);
 
-    // Then: select a DIFFERENT word in the SAME ayah (2:25:4).
     facade.applyUrlState({
       panel: 'word',
       ayah: '2:25',
@@ -358,9 +347,8 @@ describe('MushafReaderFacade.applyUrlState', () => {
       wordTab: 'segments',
     });
 
-    // The ayah study must NOT have been fetched again for the same ayah.
     expect(getAyahStudy.mock.calls.length).toBe(ayahCallsAfterFirstWord);
-    // And the ayah load state must not have flipped to loading.
+
     expect(facade.ayahStudyLoadState().isLoading).toBe(false);
   });
 });

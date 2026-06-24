@@ -1,10 +1,6 @@
 import { Pipe, PipeTransform, SecurityContext, inject } from '@angular/core';
 import { DomSanitizer } from '@angular/platform-browser';
 
-/**
- * Sanitizes HTML through Angular's built-in sanitizer for safe [innerHTML]
- * binding. Never uses bypassSecurityTrustHtml.
- */
 @Pipe({
   name: 'safeHtml',
   standalone: true,

@@ -22,7 +22,6 @@
   border-bottom: 1px solid var(--qd-border);
 }
 
-// 9 columns: row-number · root · 7 count columns.
 .roots-table__header-row,
 .roots-table__row {
   display: grid;
@@ -146,8 +145,6 @@
   margin-inline: auto;
 }
 
-// Roots explorer page: lock the table card to the same height as the detail
-// panel so their bottom borders align (pagination stays below the table).
 :host-context(.roots-explorer-layout__table) {
   display: block;
   block-size: 100%;

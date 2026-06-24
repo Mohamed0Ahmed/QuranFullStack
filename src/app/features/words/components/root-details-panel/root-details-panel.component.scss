@@ -36,8 +36,6 @@
   font-size: 0.875rem;
 }
 
-// Panel surface: flex column that distributes height to view lists. Each list
-// view owns its scroll viewport (like the roots table body), not this surface.
 .root-details-panel__surface {
   display: flex;
   flex-direction: column;
@@ -47,11 +45,8 @@
   padding: var(--qd-space-2);
 }
 
-// Drawer (T069): on narrow screens the selected-root panel floats over the
-// table as a dismissible drawer pinned to the inline-end edge. All offsets use
-// CSS logical properties so the layout mirrors correctly under RTL.
 .root-details-panel__backdrop {
-  // Reuses .qd-modal-backdrop (fixed, inset:0, dim); nothing extra needed here.
+
   z-index: 50;
 }
 

@@ -6,7 +6,6 @@
   box-shadow: var(--qd-shadow-sm);
 }
 
-/* Interactive lift — add this class to clickable cards */
 .qd-card--hover,
 .qd-interactive-surface {
   cursor: pointer;
@@ -32,24 +31,20 @@ button.qd-interactive-surface {
   text-align: inherit;
 }
 
-/* Quiet/recessed card: no shadow, warm tone */
 .qd-card--quiet {
   background: var(--qd-section-bg);
   border-color: transparent;
   box-shadow: none;
 }
 
-/* Border-only card: no shadow */
 .qd-card--bordered { box-shadow: none; }
 
-/* Feature card: larger radius/padding; deepen shadow on hover, NO translate */
 .qd-card--feature {
   border-radius: var(--qd-radius-lg);
   padding: var(--qd-space-5);
 }
 .qd-card--feature.qd-card--hover:hover { transform: none; box-shadow: var(--qd-shadow); }
 
-/* Mini card: smaller lift, accent-soft hover border */
 .qd-card--mini { padding: var(--qd-space-3); }
 .qd-card--mini.qd-card--hover:hover {
   border-color: var(--qd-accent-soft);
@@ -159,7 +154,6 @@ button.qd-interactive-surface {
   color: var(--qd-accent-text);
 }
 
-/* Shared explorer detail panel header: label (inline-start) | entity (center) | actions (inline-end). */
 .explorer-panel-header {
   display: grid;
   grid-template-columns: 1fr minmax(0, auto) 1fr;
@@ -240,26 +234,6 @@ button.qd-interactive-surface {
   width: min(100%, 36rem);
 }
 
-/*
- * Skeleton / shimmer / wave placeholders + content-level loading overlay.
- *
- * Two complementary loading affordances, both built only from existing design
- * tokens (no new palette):
- *
- * - `.qd-skeleton*` — sized placeholder bars for genuinely empty regions.
- * - `.qd-loading-overlay` — an absolutely-positioned overlay layered over a
- *   data *body* region only. Used when we keep the previous content mounted to
- *   hold the card's box height during a debounced load;
- *   the opaque tint + shimmer + "loading" label mask the retained content so it
- *   is not read as current data. The covered body is `inert` / pointer-disabled
- *   by the host component (see `.qd-loading-region`).
- *
- * Light-mode contrast: the original base tint was `--qd-surface-elevated`, which
- * is *lighter* than `--qd-surface` in light mode and thus invisible. The base is
- * now a darker token-based mix (`surface` toward `border`) so placeholders and
- * the overlay read against near-white surfaces. Animation respects
- * prefers-reduced-motion by falling back to a static tinted block.
- */
 .qd-skeleton {
   display: block;
   background: color-mix(in oklch, var(--qd-surface) 78%, var(--qd-border));
@@ -267,8 +241,6 @@ button.qd-interactive-surface {
   position: relative;
   overflow: hidden;
 
-  // Stable baseline height so a row of skeleton lines reserves space even
-  // before layout settles; modifiers below override as needed.
   min-height: 0.75rem;
 }
 
@@ -277,8 +249,6 @@ button.qd-interactive-surface {
   width: 100%;
 }
 
-// Constrain width so skeleton text lines read like natural prose rather than
-// full-width bars. Usage: <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-75">
 .qd-skeleton--w-25 { width: 25%; }
 .qd-skeleton--w-50 { width: 50%; }
 .qd-skeleton--w-75 { width: 75%; }
@@ -294,7 +264,6 @@ button.qd-interactive-surface {
   border-radius: var(--qd-radius-md);
 }
 
-// Container for stacked skeleton lines; mirrors a paragraph / list block.
 .qd-skeleton-group {
   display: flex;
   flex-direction: column;
@@ -302,10 +271,6 @@ button.qd-interactive-surface {
   width: 100%;
 }
 
-// Wave/shimmer overlay. Implemented as a moving gradient sweep over the base
-// tint so the base color (and thus the box size) stays stable. The sweep is
-// mixed toward `--qd-text` so there is a real luminance delta even over a
-// near-white light-mode surface.
 .qd-skeleton::after {
   content: '';
   position: absolute;
@@ -344,8 +309,6 @@ button.qd-interactive-surface {
   }
   .qd-btn:active { transform: none; }
 
-  // Reduced-motion users get a static, sufficiently-visible tint with no
-  // moving sweep, so the box still reads as "loading" without animation.
   .qd-skeleton::after {
     animation: none;
     background: color-mix(in oklch, var(--qd-surface) 50%, var(--qd-text) 16%);

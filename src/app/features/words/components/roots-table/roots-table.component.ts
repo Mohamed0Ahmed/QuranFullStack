@@ -30,17 +30,6 @@ import { syncTableScrollbarGutter } from '../../utils/table-scrollbar-gutter-syn
 const ROW_HEIGHT = 48;
 const HAS_RESIZE_OBSERVER = typeof ResizeObserver !== 'undefined';
 
-/**
- * Roots table (US1, T029): a `role="table"` div-grid with the eight summary
- * columns (exact Arabic headers), UI row numbers (page-relative), and each count
- * cell rendered as a `qd-word-count-chip` button that emits its target panel
- * view per the count-click mapping. Row-select defaults the panel to
- * count cells open their mapped view; row select defaults to `view=words`.
- * Backend ids are never rendered. CDK virtual scroll is used
- * when a ResizeObserver is available, with a plain fallback otherwise (jsdom
- * lacks ResizeObserver). Modeled on `UniqueWordsTableComponent`.
- */
-
 export interface RootCountOpenedEvent {
   root: RootListItemViewModel;
   view: RootView;
@@ -65,19 +54,12 @@ export class RootsTableComponent {
   readonly currentPage = input(1);
   readonly pageSize = input(ROOTS_LIST_PAGE_SIZE);
 
-  /** A row select (default → words / simple sub-view). */
   readonly rowSelected = output<RootListItemViewModel>();
-  /** A count cell clicked → its target panel view and optional sub-view. */
   readonly countOpened = output<RootCountOpenedEvent>();
 
-  // Getter mirrors the page/facade workaround so the experimental unit-test
-  // SSR runner resolves the cross-module const correctly.
   protected get headers() {
     return ROOTS_COLUMN_HEADERS;
   }
-  // Full semantic labels for the count chips' accessible names (the visible
-  // grid headers above stay shortened). Getter mirrors `headers` for the same
-  // cross-module const-resolution reason.
   protected get countLabels() {
     return ROOTS_COLUMN_COUNT_LABELS;
   }

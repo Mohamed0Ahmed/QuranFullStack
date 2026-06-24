@@ -4,8 +4,6 @@ import { provideRouter } from '@angular/router';
 
 import { WordSectionCardComponent } from './word-section-card.component';
 
-/** Mirrors `COMING_SOON_BADGE` from the labels module; inlined here to keep this
- *  spec independent of cross-spec label-module caching in the test runner. */
 const COMING_SOON_BADGE = 'قريبًا';
 
 interface CardInputs {
@@ -17,8 +15,7 @@ interface CardInputs {
 
 describe('WordSectionCardComponent', () => {
   beforeEach(() => {
-    // Reset the shared test injector before each test so this spec does not
-    // leak router/component state into sibling specs sharing the test fork.
+
     getTestBed().resetTestingModule();
     TestBed.configureTestingModule({
       providers: [provideRouter([])],
@@ -50,7 +47,7 @@ describe('WordSectionCardComponent', () => {
 
     const link = root.querySelector('a[data-testid="word-section-card"]');
     expect(link).toBeTruthy();
-    // The active card must not show a coming-soon badge.
+
     expect(root.querySelector('[data-testid="word-section-coming-soon"]')).toBeNull();
   });
 
@@ -85,7 +82,7 @@ describe('WordSectionCardComponent', () => {
 
     const card = root.querySelector('[data-testid="word-section-card"]') as HTMLElement;
     expect(card.getAttribute('aria-disabled')).toBe('true');
-    // No interactive control inside a disabled card should hold a real href.
+
     expect(root.querySelector<HTMLAnchorElement>('a[href]')).toBeNull();
   });
 });

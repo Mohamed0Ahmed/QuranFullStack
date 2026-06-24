@@ -24,18 +24,18 @@
         </div>
       }
     } @else {
-      @for (item of page().items; track item.uniqueWordId; let i = $index) {
+      @for (row of rows(); track row.item.uniqueWordId; let i = $index) {
         <a
           class="root-words-list__row qd-interactive-surface"
-          [attr.href]="uniqueWordHref(item)"
+          [attr.href]="row.uniqueWordHref"
           [attr.aria-label]="openUniqueWordLabel"
           target="_blank"
           rel="noopener"
           data-testid="root-word-link"
         >
           <span class="root-words-list__row-number" aria-hidden="true">{{ rowNumber(i) }}</span>
-          <span class="root-words-list__text">{{ item.displayTextUthmani }}</span>
-          <span class="qd-badge">{{ item.occurrencesCount }}</span>
+          <span class="root-words-list__text">{{ row.item.displayTextUthmani }}</span>
+          <span class="qd-badge">{{ row.item.occurrencesCount }}</span>
         </a>
       }
     }

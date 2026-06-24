@@ -11,11 +11,6 @@ export const ACTIVE_HUB_SECTION: WordSectionCardLabel = {
   descriptionAr: 'استعراض الكلمات القرآنية الفريدة وتوزيعها',
 };
 
-/**
- * Additional active Words-hub sections that have landed routes. Feature 015
- * (Roots Explorer, FR-047) promotes الجذور from coming-soon to active.
- * Each entry carries its stable route (a route key, not a translated label).
- */
 export interface ActiveHubSection extends WordSectionCardLabel {
   route: string;
 }

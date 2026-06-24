@@ -4,11 +4,6 @@ import { getTestBed, TestBed } from '@angular/core/testing';
 import { RootDetailsPanelComponent } from './root-details-panel.component';
 import { ROOT_VIEW_KEYS, RootView } from '../../models/roots.models';
 
-/**
- * US-cross-cutting (T070): accessibility wiring of the persistent detail panel —
- * tablist/tab/tabpanel roles, roving tabindex, `aria-controls`/`aria-labelledby`
- * linkage, and RTL-aware arrow-key navigation.
- */
 describe('RootDetailsPanelComponent a11y (T070)', () => {
   afterEach(() => {
     getTestBed().resetTestingModule();
@@ -38,7 +33,7 @@ describe('RootDetailsPanelComponent a11y (T070)', () => {
 
     const panel = host.querySelector('[role="tabpanel"]') as HTMLElement;
     expect(panel.id).toBe('root-details-panel-surface');
-    // The panel surface is focusable so keyboard users can scroll it.
+
     expect(panel.getAttribute('tabindex')).toBe('0');
 
     for (const tab of Array.from(tabs)) {
@@ -71,8 +66,6 @@ describe('RootDetailsPanelComponent a11y (T070)', () => {
     const activeTab = host.querySelector('[data-root-tab="ayahs"]') as HTMLElement;
     activeTab.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
 
-    // DOM order is ['words','ayahs','surahs','lemmas','stems']; forward from
-    // 'ayahs' is 'surahs'.
     expect(emitted).toBe('surahs');
   });
 

@@ -1,41 +1,34 @@
 [data-theme='dark'] {
-  /* Surfaces */
+
   --qd-bg: oklch(0.189 0.032 266.8);
   --qd-surface: oklch(0.228 0.037 265.3);
   --qd-section-bg: oklch(0.265 0.039 262.7);
   --qd-surface-recessed: oklch(0.302 0.045 264.3);
   --qd-surface-elevated: var(--qd-section-bg);
 
-  /* Text */
   --qd-text: oklch(0.935 0.007 277.2);
   --qd-text-muted: oklch(0.706 0.032 269.0);
 
-  /* Borders (solid in dark) */
   --qd-border: oklch(0.319 0.045 266.5);
   --qd-border-strong: oklch(0.403 0.062 268.0);
 
-  /* Primary == gold in dark */
   --qd-primary: oklch(0.772 0.098 82.0);
   --qd-primary-fg: oklch(0.189 0.032 266.8);
   --qd-primary-hover: var(--qd-accent-hover);
 
-  /* Accent + layers */
   --qd-accent: oklch(0.772 0.098 82.0);
   --qd-accent-hover: oklch(0.817 0.093 82.6);
   --qd-accent-soft: oklch(0.323 0.030 88.2);
   --qd-accent-tint: oklch(0.250 0.030 281.2);
   --qd-accent-text: var(--qd-accent);
 
-  /* Status */
   --qd-danger: oklch(0.682 0.116 20.5);
   --qd-warning: oklch(0.75 0.14 75);
   --qd-success: oklch(0.761 0.072 152.1);
 
-  /* Focus */
   --qd-focus-ring: oklch(0.78 0.10 82);
   --qd-ring: 0 0 0 4px oklch(0.772 0.098 82 / 0.22);
 
-  /* Footer (deeper navy in dark) */
   --qd-footer-bg: oklch(0.161 0.029 266.8);
   --qd-footer-bg-2: oklch(0.202 0.034 265.5);
   --qd-footer-text: oklch(0.935 0.007 277.2);
@@ -44,10 +37,8 @@
   --qd-footer-accent-hover: oklch(0.817 0.093 82.6);
   --qd-footer-border: oklch(1 0 0 / 0.06);
 
-  /* Chrome (translucent dark surface) */
   --qd-chrome-bg: oklch(0.228 0.037 265.3 / 0.82);
 
-  /* Shadows (heavier, tinted near-black) */
   --qd-shadow-sm: 0 1px 2px oklch(0.10 0.02 265 / 0.40), 0 1px 1px oklch(0.10 0.02 265 / 0.30);
   --qd-shadow: 0 4px 16px oklch(0.10 0.02 265 / 0.35), 0 2px 6px oklch(0.10 0.02 265 / 0.25);
   --qd-floating-shadow: 0 28px 70px oklch(0.10 0.02 265 / 0.55), 0 6px 18px oklch(0.10 0.02 265 / 0.35);

@@ -11,16 +11,7 @@ import {
 } from '../../models/unique-words.labels';
 
 describe('WordsHubPageComponent', () => {
-  // The hub page renders WordSectionCardComponent which uses RouterLink, so the
-  // router must be available even though this page makes no API calls.
-  //
-  // Assertion strategy: the experimental @angular/build:unit-test runner caches
-  // component definitions across sibling specs sharing a test fork, which makes
-  // INTERPOLATED text ({{ ... }}) render intermittently empty depending on fork
-  // composition (the unique-words-page spec documents the same limitation).
-  // Element presence, counts, and data-testid hooks render reliably, so these
-  // tests assert on structure and verify the exact spec-locked Arabic wording
-  // against the label constants directly — never via interpolated text.
+
   beforeEach(async () => {
     getTestBed().resetTestingModule();
     await TestBed.configureTestingModule({
@@ -48,8 +39,7 @@ describe('WordsHubPageComponent', () => {
 
     const disabledCards = root.querySelectorAll('[data-testid="words-hub-card--disabled"]');
     expect(disabledCards).toHaveLength(COMING_SOON_HUB_SECTIONS.length);
-    // Feature 015 (FR-047) promoted الجذور from coming-soon to active, so the
-    // coming-soon set shrank from four to three.
+
     expect(COMING_SOON_HUB_SECTIONS.length).toBe(3);
     expect(COMING_SOON_HUB_SECTIONS.map((s) => s.labelAr)).not.toContain('الجذور');
   });
@@ -57,7 +47,6 @@ describe('WordsHubPageComponent', () => {
   it('links the Roots Explorer card to the roots route (FR-047)', async () => {
     const root = await createComponent();
 
-    // الجذور is now an additional ACTIVE card linking to /dashboard/words/roots.
     expect(ADDITIONAL_ACTIVE_HUB_SECTIONS.map((s) => s.labelAr)).toContain('الجذور');
     const rootsCard = root.querySelector('[data-testid="words-hub-card--الجذور"]');
     expect(rootsCard).toBeTruthy();
@@ -78,8 +67,7 @@ describe('WordsHubPageComponent', () => {
   });
 
   it('uses the spec-locked Arabic hub labels', () => {
-    // Guards the locked decisions in spec.md (FR-002 / FR-003) and the routing
-    // contract: the active section and coming-soon badge wording must not drift.
+
     expect(ACTIVE_HUB_SECTION.labelAr).toBe('الكلمات الفريدة');
     expect(COMING_SOON_BADGE).toBe('قريبًا');
   });

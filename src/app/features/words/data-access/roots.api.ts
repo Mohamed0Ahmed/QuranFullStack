@@ -18,11 +18,6 @@ import {
   RootWordView,
 } from '../models/roots.models';
 
-/**
- * Roots Explorer (Feature 015) data-access service. Read-only `GET` endpoints
- * under `api/words/roots`, mirroring Feature 014 `UniqueWordsApi`. Returns
- * `Observable<ApiResponse<T>>`; the facade unwraps and maps to page-ready state.
- */
 @Injectable({ providedIn: 'root' })
 export class RootsApi {
   private readonly http = inject(HttpClient);

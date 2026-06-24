@@ -10,7 +10,7 @@ const placeholderRoutes: Routes = NAV_ITEMS.filter(
   (item) => item.key !== 'dashboard' && item.key !== 'mushaf' && item.key !== 'words',
 ).map(
   (item) => ({
-    path: item.route.replace(/^\//, ''),
+    path: item.route.replace(/^\
     loadComponent: loadPlaceholderPage,
     data: { titleAr: item.labelAr },
   }),

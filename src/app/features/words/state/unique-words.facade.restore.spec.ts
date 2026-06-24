@@ -47,10 +47,6 @@ function summary(id: number): UniqueWordSummaryDto {
   };
 }
 
-/**
- * Builds an ActivatedRoute stub whose paramMap/queryParamMap emit the provided
- * snapshots. The facade subscribes to `combineLatest([paramMap, queryParamMap])`.
- */
 function activateRouteWith(
   params: Record<string, string>,
   queryParams: Record<string, string>,
@@ -263,7 +259,7 @@ describe('UniqueWordsFacade URL restore (US4)', () => {
     expect(facade.drilldownState().status).toBe('notFound');
     expect(facade.drilldownState().isOpen).toBe(false);
     expect(facade.drilldownState().errorMessage).toBe(backendMessage);
-    // The list stays usable: list status is not degraded by the restore failure.
+
     expect(facade.listState().status).not.toBe('error');
   });
 
@@ -323,8 +319,6 @@ describe('UniqueWordsFacade URL restore (US4)', () => {
     facade.bindToRoute(activateRouteWith({ mode: 'tashkeel' }, { word: '42', view: 'surahs' }));
     const callsAfterOpen = getSummary.mock.calls.length;
 
-    // The restore guard tracks the active modal tuple; opening the same word via
-    // the in-app click path should not cause a second getSummary for the same id.
     facade.openDrilldown(word(42), 'surahs');
     expect(getSummary.mock.calls.length).toBe(callsAfterOpen);
   });
@@ -346,8 +340,6 @@ describe('UniqueWordsFacade URL restore (US4)', () => {
     facade.bindToRoute(route.route);
     expect(getSummary).toHaveBeenCalledTimes(1);
 
-    // A list-only change (search) keeps the same word/view; the modal must stay
-    // open without re-fetching its summary.
     route.setQueryParams({ search: 'اسم', word: '42', view: 'surahs' });
 
     expect(getSummary).toHaveBeenCalledTimes(1);
@@ -379,7 +371,6 @@ describe('UniqueWordsFacade URL restore (US4)', () => {
     facade.bindToRoute(route.route);
     expect(getList).toHaveBeenCalledTimes(1);
 
-    // Opening a modal only adds word/view; the list must not refetch.
     route.setQueryParams({ word: '42', view: 'surahs' });
 
     expect(getList).toHaveBeenCalledTimes(1);
@@ -400,8 +391,6 @@ describe('UniqueWordsFacade URL restore (US4)', () => {
     expect(getSummary).toHaveBeenCalledTimes(1);
     expect(facade.drilldownState().status).toBe('notFound');
 
-    // The bad `word` param lingers in the URL; a list-only change must not retry
-    // the known-bad summary, and the not-found state must persist.
     route.setQueryParams({ search: 'اسم', word: '999999' });
 
     expect(getSummary).toHaveBeenCalledTimes(1);

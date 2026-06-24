@@ -72,15 +72,11 @@ describe('RootsTableComponent', () => {
     const rows = root.querySelectorAll('[role="row"]:not(.roots-table__header-row)');
     expect(rows).toHaveLength(2);
 
-    // Row numbers are page-relative (1-based), not backend ids.
     const rowNumbers = Array.from(
       root.querySelectorAll('.roots-table__cell--row-number'),
     ).map((c) => c.textContent?.trim() ?? '');
     expect(rowNumbers).toEqual(['1', '2']);
 
-    // The seven count columns render chips (occurrences, ayahs, surahs,
-    // simpleWords, tashkeelWords, lemmas, stems). The الجذر column is a text
-    // button, not a chip; the row-number column has neither. So 7 × 2 rows = 14.
     expect(root.textContent).not.toContain('id-');
     expect(root.querySelectorAll('qd-word-count-chip')).toHaveLength(14);
   });
@@ -89,9 +85,6 @@ describe('RootsTableComponent', () => {
     const fixture = setup([row(1)]);
     const root = fixture.nativeElement as HTMLElement;
 
-    // Chip order: occurrences, ayahs, surahs, simpleWords, tashkeelWords,
-    // lemmas, stems. The shortened header labels must NOT leak into the chips'
-    // accessible names (FR-006: full meaning stays available via aria-label).
     const chipLabels = Array.from(root.querySelectorAll('qd-word-count-chip button')).map(
       (btn) => btn.getAttribute('aria-label') ?? '',
     );
@@ -144,8 +137,6 @@ describe('RootsTableComponent', () => {
       'qd-word-count-chip',
     ) as NodeListOf<HTMLElement>;
 
-    // Column order: occurrences, ayahs, surahs, simpleWords, tashkeelWords,
-    // lemmas, stems → expected views + sub-views.
     const expected = [
       { view: 'ayahs' },
       { view: 'ayahs' },

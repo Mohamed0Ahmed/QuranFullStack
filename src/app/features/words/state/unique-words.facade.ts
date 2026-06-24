@@ -44,12 +44,6 @@ export class UniqueWordsFacade {
   private readonly _sort = signal<UniqueWordSort>(DEFAULT_UNIQUE_WORD_SORT);
   private readonly _errorMessage = signal<string>('');
 
-  // Read the default page size on access rather than caching it in a field
-  // initializer. The experimental @angular/build:unit-test SSR runner resolves
-  // a class field initializer's cross-module const read to `undefined` under
-  // the multi-entry test build (its export getter swallows the temporal-dead-
-  // zone access); a getter defers the read past module init, matching how the
-  // other defaults are read. Behavior is identical (production folds this to 1000).
   private get _pageSize(): number {
     return DEFAULT_LIST_PAGE_SIZE;
   }
@@ -86,10 +80,7 @@ export class UniqueWordsFacade {
     this.routeSub = combineLatest([route.paramMap, route.queryParamMap])
       .pipe(
         tap(([params, queryParams]) => this.applyRouteState(params, queryParams)),
-        // Reload the list only when a list-relevant input changes. Modal-only
-        // query params (word/view/ap) are still applied by applyRouteState
-        // above, but they must not re-run the list query or flash its loading
-        // state behind/around the open modal.
+
         map(() => this.listRequestKey()),
         distinctUntilChanged(),
         switchMap(() => this.runListRequest()),
@@ -107,9 +98,6 @@ export class UniqueWordsFacade {
     this.manualLoadSub = this.runListRequest().subscribe();
   }
 
-  // Drill-down/modal surface — delegated to UniqueWordsDrilldownFacade so the
-  // page keeps a single facade entry point while the two state slices stay
-  // separated.
   openDrilldown(word: UniqueWordListItemDto, view: WordDrilldownView): void {
     this.drilldown.openDrilldown(word, view);
   }

@@ -71,14 +71,12 @@
           </button>
         </div>
 
-        <!-- المواضع → view=ayahs -->
         <div class="roots-table__cell roots-table__chip-cell" role="cell">
           <qd-word-count-chip
             [label]="countLabels.occurrences" [count]="row.occurrencesCount" [showLabel]="false"
             (chipClick)="openCount(row, 'ayahs')"
           />
         </div>
-        <!-- الآيات → view=ayahs -->
         <div class="roots-table__cell roots-table__chip-cell" role="cell">
           <qd-word-count-chip
             [label]="countLabels.ayahs" [count]="row.ayahsCount" [showLabel]="false"
@@ -86,7 +84,6 @@
             (chipClick)="openCount(row, 'ayahs')"
           />
         </div>
-        <!-- السور → view=surahs (mentioned) -->
         <div class="roots-table__cell roots-table__chip-cell" role="cell">
           <qd-word-count-chip
             [label]="countLabels.surahs" [count]="row.surahsCount" [showLabel]="false"
@@ -94,7 +91,6 @@
             (chipClick)="openCount(row, 'surahs', { surahView: 'mentioned' })"
           />
         </div>
-        <!-- كلمات بدون تشكيل → view=words (simple) -->
         <div class="roots-table__cell roots-table__chip-cell" role="cell">
           <qd-word-count-chip
             [label]="countLabels.simpleWords" [count]="row.simpleWordsCount" [showLabel]="false"
@@ -102,7 +98,6 @@
             (chipClick)="openCount(row, 'words', { wordView: 'simple' })"
           />
         </div>
-        <!-- كلمات بالتشكيل → view=words (tashkeel) -->
         <div class="roots-table__cell roots-table__chip-cell" role="cell">
           <qd-word-count-chip
             [label]="countLabels.tashkeelWords" [count]="row.tashkeelWordsCount" [showLabel]="false"
@@ -110,7 +105,6 @@
             (chipClick)="openCount(row, 'words', { wordView: 'tashkeel' })"
           />
         </div>
-        <!-- الصيغ المعجمية → view=lemmas -->
         <div class="roots-table__cell roots-table__chip-cell" role="cell">
           <qd-word-count-chip
             [label]="countLabels.lemmas" [count]="row.lemmasCount" [showLabel]="false"
@@ -118,7 +112,6 @@
             (chipClick)="openCount(row, 'lemmas')"
           />
         </div>
-        <!-- الأصول الصرفية → view=stems -->
         <div class="roots-table__cell roots-table__chip-cell" role="cell">
           <qd-word-count-chip
             [label]="countLabels.stems" [count]="row.stemsCount" [showLabel]="false"

@@ -1,9 +1,8 @@
-import { Component, input, output } from '@angular/core';
+import { Component, computed, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 import { deepLinkToHref } from '../../../../shared/url/deep-link-href';
 import { ResourceLoadState, WordAnalysisViewModel } from '../../models/mushaf.models';
-import { UniqueWordKind } from '../../../words/models/unique-words.models';
 import { buildUniqueWordsDeepLink } from '../../../words/state/unique-words-url-sync';
 import { buildRootsDeepLink } from '../../../words/state/roots-url-sync';
 import { SegmentDataRowsComponent } from '../segment-data-rows/segment-data-rows.component';
@@ -35,25 +34,7 @@ export class SelectedWordSectionComponent {
 
   protected readonly loadingSegmentPlaceholders = [0, 1, 2] as const;
 
-  protected uniqueWordIdentityHref(kind: UniqueWordKind): string {
-    const analysis = this.analysis();
-
-    if (!analysis) {
-      return '';
-    }
-
-    const wordId =
-      kind === 'tashkeel' ? analysis.identity.uniqueTashkeel.id : analysis.identity.uniqueSimple.id;
-
-    return deepLinkToHref(
-      buildUniqueWordsDeepLink(kind, {
-        wordId,
-        view: 'ayahs',
-      }),
-    );
-  }
-
-  protected rootExplorerHref(): string {
+  protected readonly rootExplorerHref = computed(() => {
     const rootId = this.analysis()?.morphology.root?.id;
 
     if (!rootId) {
@@ -61,5 +42,35 @@ export class SelectedWordSectionComponent {
     }
 
     return deepLinkToHref(buildRootsDeepLink({ rootId }));
-  }
+  });
+
+  protected readonly tashkeelIdentityHref = computed(() => {
+    const analysis = this.analysis();
+
+    if (!analysis) {
+      return '';
+    }
+
+    return deepLinkToHref(
+      buildUniqueWordsDeepLink('tashkeel', {
+        wordId: analysis.identity.uniqueTashkeel.id,
+        view: 'ayahs',
+      }),
+    );
+  });
+
+  protected readonly simpleIdentityHref = computed(() => {
+    const analysis = this.analysis();
+
+    if (!analysis) {
+      return '';
+    }
+
+    return deepLinkToHref(
+      buildUniqueWordsDeepLink('simple', {
+        wordId: analysis.identity.uniqueSimple.id,
+        view: 'ayahs',
+      }),
+    );
+  });
 }

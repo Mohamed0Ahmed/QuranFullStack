@@ -20,7 +20,7 @@
         </article>
       }
     } @else {
-      @for (match of page().items; track match.ayahId; let i = $index) {
+      @for (row of rows(); track row.match.ayahId; let i = $index) {
         <article
           class="qd-card ayah-matches-list__card"
           [class.ayah-matches-list__card--alt]="i % 2 === 1"
@@ -28,26 +28,26 @@
           <header class="ayah-matches-list__meta-row">
             <span class="ayah-matches-list__row-number" aria-hidden="true">{{ rowNumber(i) }}</span>
             <div class="ayah-matches-list__meta">
-              <span class="ayah-matches-list__surah-name">{{ match.surahNameArabic }}</span>
+              <span class="ayah-matches-list__surah-name">{{ row.match.surahNameArabic }}</span>
               <span class="ayah-matches-list__ref">
                 <span class="ayah-matches-list__ref-label">{{ ayahRefLabel }}</span>
-                {{ match.ayahNumber }}
+                {{ row.match.ayahNumber }}
               </span>
               <span class="ayah-matches-list__ref ayah-matches-list__ref--page">
                 <span class="ayah-matches-list__ref-label">{{ mushafPageRefLabel }}</span>
-                {{ match.pageNumber }}
+                {{ row.match.pageNumber }}
               </span>
             </div>
           </header>
           <a
             class="ayah-matches-list__ayah-link qd-interactive-surface"
-            [attr.href]="mushafHref(match)"
+            [attr.href]="row.mushafHref"
             [attr.aria-label]="openAyahInMushafLabel"
             target="_blank"
             rel="noopener"
             data-testid="ayah-matches-open-mushaf"
           >
-            <qd-highlighted-ayah [words]="match.words" [matchedQuranWordIds]="match.matchedQuranWordIds" />
+            <qd-highlighted-ayah [words]="row.match.words" [matchedQuranWordIds]="row.match.matchedQuranWordIds" />
           </a>
         </article>
       }

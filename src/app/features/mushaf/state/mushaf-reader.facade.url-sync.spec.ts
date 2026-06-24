@@ -235,21 +235,15 @@ describe('MushafReaderFacade URL sync', () => {
       });
 
       facade.bindToRoute(route);
-      // Initial hydration loads ayah 2:25 immediately.
+
       expect(getAyahStudy).toHaveBeenCalledTimes(1);
       const previousAyahStudy = facade.ayahStudy();
       expect(previousAyahStudy).not.toBeNull();
 
-      // Switching the ayah key while one is already selected is debounced.
       queryParamMap$.next(convertToParamMap({ page: '5', ayah: '2:26', word: '2:26:1', panel: 'word' }));
 
-      // No fetch yet — the debounce window has not elapsed.
       expect(getAyahStudy).toHaveBeenCalledTimes(1);
 
-      // UI-001 refinement: the panel must read as "loading" for the WHOLE
-      // debounce window. The previous ayah's view model is intentionally KEPT
-      // mounted (it holds the box height) and a content-level overlay masks it
-      // rather than clearing it to null.
       expect(facade.ayahStudyLoadState().isLoading).toBe(true);
       expect(facade.ayahStudy()).toBe(previousAyahStudy);
 
@@ -258,7 +252,7 @@ describe('MushafReaderFacade URL sync', () => {
       expect(facade.ayahStudyLoadState().isLoading).toBe(true);
 
       vi.advanceTimersByTime(1);
-      // 700 ms elapsed → the debounced ayah-study fetch fires.
+
       expect(getAyahStudy).toHaveBeenCalledTimes(2);
       expect(getAyahStudy).toHaveBeenLastCalledWith('2:26', expect.anything());
     } finally {
@@ -282,13 +276,8 @@ describe('MushafReaderFacade URL sync', () => {
       const previousWordAnalysis = facade.wordAnalysis();
       expect(previousWordAnalysis).not.toBeNull();
 
-      // Switching the word while one is already selected is debounced.
       queryParamMap$.next(convertToParamMap({ page: '5', ayah: '2:25', word: '2:25:4', panel: 'word' }));
 
-      // UI-001 refinement: the panel must read as "loading" immediately. The
-      // previous word's view model is intentionally KEPT mounted (it holds the
-      // box height) and a content-level overlay masks it rather than clearing
-      // it to null.
       expect(facade.wordAnalysisLoadState().isLoading).toBe(true);
       expect(facade.wordAnalysis()).toBe(previousWordAnalysis);
       expect(getWordAnalysis).toHaveBeenCalledTimes(1);
@@ -319,15 +308,11 @@ describe('MushafReaderFacade URL sync', () => {
       facade.bindToRoute(route);
       expect(getAyahStudy).toHaveBeenCalledTimes(1);
 
-      // Trigger a debounced ayah switch to 2:26.
       queryParamMap$.next(convertToParamMap({ page: '5', ayah: '2:26', word: '2:26:1', panel: 'word' }));
       expect(getAyahStudy).toHaveBeenCalledTimes(1);
 
-      // Clear the ayah param before the debounce fires.
       queryParamMap$.next(convertToParamMap({ page: '5', panel: 'none' }));
 
-      // Let the original debounce window fully elapse — no fetch should fire,
-      // and the ayah load state must not be left loading.
       vi.advanceTimersByTime(1000);
       expect(getAyahStudy).toHaveBeenCalledTimes(1);
       expect(facade.ayahStudyLoadState().isLoading).toBe(false);
@@ -351,12 +336,9 @@ describe('MushafReaderFacade URL sync', () => {
       facade.bindToRoute(route);
       expect(getAyahStudy).toHaveBeenCalledTimes(1);
 
-      // Start a debounced switch to 2:26.
       queryParamMap$.next(convertToParamMap({ page: '5', ayah: '2:26', word: '2:26:1', panel: 'word' }));
       expect(getAyahStudy).toHaveBeenCalledTimes(1);
 
-      // Switch again to 2:27 before the first debounce fires — should reset the
-      // window and only ever fetch the latest (2:27).
       queryParamMap$.next(convertToParamMap({ page: '5', ayah: '2:27', word: '2:27:1', panel: 'word' }));
 
       vi.advanceTimersByTime(699);
@@ -385,8 +367,6 @@ describe('MushafReaderFacade URL sync', () => {
       facade.bindToRoute(route);
       expect(getAyahStudy).toHaveBeenCalledTimes(1);
 
-      // Same ayah key, only the translation source changes → must reload
-      // immediately (source selector stays responsive), not be debounced.
       queryParamMap$.next(
         convertToParamMap({
           page: '5',
@@ -419,25 +399,20 @@ describe('MushafReaderFacade URL sync', () => {
       });
 
       facade.bindToRoute(route);
-      // Hydration loads + caches ayah 2:25.
+
       expect(getAyahStudy).toHaveBeenCalledTimes(1);
 
-      // Switch to an UNCACHED ayah 2:26: loading shows immediately (overlay path),
-      // and the fetch is debounced.
       queryParamMap$.next(convertToParamMap({ page: '5', ayah: '2:26', word: '2:26:1', panel: 'word' }));
       expect(facade.ayahStudyLoadState().isLoading).toBe(true);
       expect(getAyahStudy).toHaveBeenCalledTimes(1);
       vi.advanceTimersByTime(700);
-      expect(getAyahStudy).toHaveBeenCalledTimes(2); // 2:26 now cached
+      expect(getAyahStudy).toHaveBeenCalledTimes(2);
 
-      // Switch BACK to the already-cached ayah 2:25: applied immediately with no
-      // debounce and no loading overlay (isLoading stays false, no new fetch).
       queryParamMap$.next(convertToParamMap({ page: '5', ayah: '2:25', word: '2:25:3', panel: 'word' }));
       expect(facade.ayahStudyLoadState().isLoading).toBe(false);
       expect(facade.ayahStudy()?.ayah.verseKey).toBe('2:25');
       expect(getAyahStudy).toHaveBeenCalledTimes(2);
 
-      // No debounced fetch was scheduled for the cache hit.
       vi.advanceTimersByTime(700);
       expect(getAyahStudy).toHaveBeenCalledTimes(2);
     } finally {
@@ -457,19 +432,15 @@ describe('MushafReaderFacade URL sync', () => {
       });
 
       facade.bindToRoute(route);
-      // Hydration loads + caches word 2:25:3.
+
       expect(getWordAnalysis).toHaveBeenCalledTimes(1);
 
-      // Switch to an UNCACHED word in the same ayah: loading shows immediately and
-      // the fetch is debounced.
       queryParamMap$.next(convertToParamMap({ page: '5', ayah: '2:25', word: '2:25:5', panel: 'word' }));
       expect(facade.wordAnalysisLoadState().isLoading).toBe(true);
       expect(getWordAnalysis).toHaveBeenCalledTimes(1);
       vi.advanceTimersByTime(700);
-      expect(getWordAnalysis).toHaveBeenCalledTimes(2); // 2:25:5 now cached
+      expect(getWordAnalysis).toHaveBeenCalledTimes(2);
 
-      // Switch BACK to the already-cached word 2:25:3: applied immediately, no
-      // debounce, no loading overlay.
       queryParamMap$.next(convertToParamMap({ page: '5', ayah: '2:25', word: '2:25:3', panel: 'word' }));
       expect(facade.wordAnalysisLoadState().isLoading).toBe(false);
       expect(facade.wordAnalysis()).not.toBeNull();

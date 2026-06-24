@@ -42,8 +42,6 @@ export class WordDrilldownModalComponent {
   readonly viewChange = output<WordDrilldownView>();
   readonly ayahPageChange = output<number>();
 
-  // Getters defer label resolution past module init — the Vitest SSR bundle can
-  // hit TDZ when `unique-words.labels` is still wiring `rootsRoutePath`.
   protected get closeLabel() {
     return CLOSE_LABEL;
   }

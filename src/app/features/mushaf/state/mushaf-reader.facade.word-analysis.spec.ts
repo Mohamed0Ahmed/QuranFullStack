@@ -13,7 +13,6 @@ import { MushafReaderFacade } from './mushaf-reader.facade';
 import { mushafAyahMutashabihatApiProvider, mushafSimilarAyahsApiProvider, mushafStudySourceCatalogApiProvider } from './mushaf-study-source-catalog.api.mock';
 import { segmentSlotToColor } from './segment-color-palette';
 
-/** Source-safe synthetic placeholders — not Quranic text. */
 const WORD_TEXT_PLACEHOLDER = 'كلمة-تجريبية-١';
 const WORD_SIMPLE_PLACEHOLDER = 'كلمة-مبسطة-١';
 const SEGMENT_TEXT_PLACEHOLDER = 'قطعة-تجريبية-١';

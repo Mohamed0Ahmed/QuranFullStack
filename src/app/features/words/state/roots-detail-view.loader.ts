@@ -38,10 +38,6 @@ export interface RootsDetailLoadContext {
   readonly cachedMissingSurahs: RootMissingSurahsDto | null;
 }
 
-/**
- * Per-view data loading for the roots detail panel. Isolates cache + API calls
- * from selection/URL orchestration in {@link RootsDetailFacade}.
- */
 @Injectable({ providedIn: 'root' })
 export class RootsDetailViewLoader {
   private readonly api = inject(RootsApi);

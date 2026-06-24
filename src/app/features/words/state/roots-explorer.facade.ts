@@ -26,17 +26,6 @@ function toRootListItemViewModel(item: RootListItemDto): RootListItemViewModel {
   return { ...item, displayText: item.rootText };
 }
 
-/**
- * Roots Explorer (Feature 015) list-state facade (US1, T028). Owns the roots
- * list state signals, loads the list via `RootsApi` + the shared `RootsCache`,
- * maps `ApiResponse` → page-ready state, exposes search/sort/page actions, and
- * reflects list state in the URL. The persistent detail/panel surface is a
- * separate facade; this one does NOT load any detail endpoint (no detail API
- * calls fire on table render).
- *
- * Modeled on `UniqueWordsFacade`, but the detail surface is a persistent
- * panel, not a modal here.
- */
 @Injectable({ providedIn: 'root' })
 export class RootsExplorerFacade {
   private readonly api = inject(RootsApi);
@@ -50,9 +39,6 @@ export class RootsExplorerFacade {
   private readonly _sort = signal<RootSort>(DEFAULT_ROOT_SORT);
   private readonly _errorMessage = signal<string>('');
 
-  // Read the fixed page size via a getter rather than a class-field initializer
-  // so the experimental @angular/build:unit-test SSR runner resolves the
-  // cross-module const correctly (mirrors the UniqueWordsFacade workaround).
   private get pageSize(): number {
     return ROOTS_LIST_PAGE_SIZE;
   }
@@ -79,16 +65,12 @@ export class RootsExplorerFacade {
   readonly totalCount = this._totalCount.asReadonly();
   readonly errorMessage = this._errorMessage.asReadonly();
 
-  /** Binds list state to the route; reloads only when list-relevant inputs change. */
   bindToRoute(route: ActivatedRoute): void {
     this.unbindFromRoute();
 
     this.routeSub = combineLatest([route.paramMap, route.queryParamMap])
       .pipe(
         tap(([, queryParams]) => this.applyRouteState(queryParams)),
-        // Reload the list only when a list-relevant input changes. Selection/
-        // panel params (root/view/wordView/surahView/detailPage) must NOT re-run
-        // the list query or flash its loading state behind the panel.
         map(() => this.listRequestKey()),
         distinctUntilChanged(),
         switchMap(() => this.runListRequest()),
@@ -101,7 +83,6 @@ export class RootsExplorerFacade {
     this.routeSub = undefined;
   }
 
-  /** Imperative list reload. */
   loadList(): void {
     this.manualLoadSub?.unsubscribe();
     this.manualLoadSub = this.runListRequest().subscribe();
@@ -112,7 +93,6 @@ export class RootsExplorerFacade {
     this._search.set(parsed.search);
     this._sort.set(parsed.sort);
     this._page.set(parsed.page);
-    // The detail facade (US2+) owns selection/panel restore from the same URL.
   }
 
   private listRequestKey(): string {
@@ -153,8 +133,6 @@ export class RootsExplorerFacade {
     this._items.set(data.items.map(toRootListItemViewModel));
     this._totalCount.set(data.totalCount);
 
-    // 'empty' = no results at all (e.g. an unmatched search); a successful page
-    // is distinct from empty so the UI renders the right state.
     this._status.set(data.totalCount === 0 ? 'empty' : 'success');
     this._errorMessage.set('');
   }

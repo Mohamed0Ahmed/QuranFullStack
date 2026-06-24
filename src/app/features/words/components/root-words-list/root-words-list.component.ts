@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 
 import { deepLinkToHref } from '../../../../shared/url/deep-link-href';
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
@@ -12,6 +12,11 @@ import { PagedResultDto, RootWordItemDto, RootWordView } from '../../models/root
 import { ROW_NUMBER_HEADER } from '../../models/unique-words.labels';
 import { buildUniqueWordsDeepLink } from '../../state/unique-words-url-sync';
 import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
+
+interface RootWordRowViewModel {
+  item: RootWordItemDto;
+  uniqueWordHref: string;
+}
 
 @Component({
   selector: 'qd-root-words-list',
@@ -37,16 +42,20 @@ export class RootWordsListComponent {
   protected readonly openUniqueWordLabel = ROOTS_OPEN_UNIQUE_WORD_LABEL;
   protected readonly loadingLabel = ROOTS_LOADING_LABEL;
 
+  protected readonly rows = computed((): readonly RootWordRowViewModel[] => {
+    const wordView = this.wordView();
+    return this.page().items.map((item) => ({
+      item,
+      uniqueWordHref: deepLinkToHref(
+        buildUniqueWordsDeepLink(wordView, {
+          wordId: item.uniqueWordId,
+          view: 'ayahs',
+        }),
+      ),
+    }));
+  });
+
   protected rowNumber(index: number): number {
     return pageRelativeRowNumber(this.currentPage(), this.page().pageSize, index);
-  }
-
-  protected uniqueWordHref(item: RootWordItemDto): string {
-    return deepLinkToHref(
-      buildUniqueWordsDeepLink(this.wordView(), {
-        wordId: item.uniqueWordId,
-        view: 'ayahs',
-      }),
-    );
   }
 }

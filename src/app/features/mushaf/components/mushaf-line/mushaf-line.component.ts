@@ -39,7 +39,6 @@ export class MushafLineComponent {
     return mushafSurahNameLigature(surahNumber) ?? '';
   }
 
-  /** Presentation-only: juz/rub/hizb/sajda hidden until marker UI is redesigned. */
   readonly lineMarkers = computed(() =>
     this.markers()
       .filter((marker) => marker.lineNumber === this.line().lineNumber)

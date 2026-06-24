@@ -1,4 +1,4 @@
-/** Visual-linking palette for segment color slots (not POS-semantic). */
+
 export const SEGMENT_COLOR_PALETTE = [
   'var(--qd-segment-cat-1)',
   'var(--qd-segment-cat-2)',

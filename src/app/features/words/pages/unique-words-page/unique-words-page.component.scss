@@ -34,7 +34,7 @@
 
 @media (min-width: 1024px) {
   .unique-words-layout {
-    /* Navbar + page header + tabs/search above the grid (~14rem). */
+
     --unique-words-layout-chrome-block-size: 14rem;
     --unique-words-table-body-height: min(
       calc(100dvh - var(--unique-words-layout-chrome-block-size)),

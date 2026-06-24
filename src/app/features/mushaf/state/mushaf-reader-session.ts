@@ -76,7 +76,7 @@ export function saveMushafReaderSession(snapshot: MushafUrlSnapshot): void {
       JSON.stringify({ ...snapshot, focusAyah: null }),
     );
   } catch {
-    // Storage may be unavailable in restricted browser contexts.
+
   }
 }
 

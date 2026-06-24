@@ -7,7 +7,6 @@ import { mushafCommonLigature } from './mushaf-common-ligature';
 import { mushafSurahNameLigature } from './mushaf-surah-name-ligature';
 import { MushafLineDto, PageMarkerDto } from '../../models/mushaf.models';
 
-/** Source-safe synthetic placeholders — not Quranic text. */
 const SYNTHETIC_WORD = 'كلمة-تجريبية-١';
 
 function buildLine(overrides: Partial<MushafLineDto> = {}): MushafLineDto {
