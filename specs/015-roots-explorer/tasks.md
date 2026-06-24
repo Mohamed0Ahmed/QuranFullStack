@@ -168,21 +168,21 @@ description: "Task list for Quran Roots Explorer (Feature 015)"
 
 ### Backend — root words
 
-- [ ] T044 [US3] Implement `EfRootsReader.GetRootWordsAsync(kind)`: distinct `unique_simple_word_id` / `unique_tashkeel_word_id` for the root with in-context occurrence count + display text, ordered by first occurrence, server-paged (depends on T008).
-- [ ] T045 [US3] Add caching `roots:{id}:words:{kind}:p{page}:s{size}` in `CachedRootsReader` (depends on T044).
-- [ ] T046 [US3] Create `GetRootWords` query + handler + outcome in `…/Queries/GetRootWords/`: validate kind + id + paging, not-found, log (`subView=kind`) (depends on T044).
-- [ ] T047 [US3] Wire `RootsController` `GET /api/words/roots/{id}/words/{wordKind}` → T046 (depends on T046).
+- [x] T044 [US3] Implement `EfRootsReader.GetRootWordsAsync(kind)`: distinct `unique_simple_word_id` / `unique_tashkeel_word_id` for the root with in-context occurrence count + display text, ordered by first occurrence, server-paged (depends on T008).
+- [x] T045 [US3] Add caching `roots:{id}:words:{kind}:p{page}:s{size}` in `CachedRootsReader` (depends on T044).
+- [x] T046 [US3] Create `GetRootWords` query + handler + outcome in `…/Queries/GetRootWords/`: validate kind + id + paging, not-found, log (`subView=kind`) (depends on T044).
+- [x] T047 [US3] Wire `RootsController` `GET /api/words/roots/{id}/words/{wordKind}` → T046 (depends on T046).
 
 ### Frontend — words list + deep links
 
-- [ ] T048 [US3] Create `components/root-words-list/` — paginated word rows showing display text + per-root count, each row a button that deep-links via `buildUniqueWordsDeepLink(kind, { wordId })`; supports the simple and tashkeel sub-views; renders inside the panel shell (depends on T020).
-- [ ] T049 [US3] Add words loading to `state/roots-detail.facade.ts` (both sub-views, lazy, cached, `detailPage`); render the nested sub-view tablist and wire `<qd-pagination>` (depends on T039, T048).
-- [ ] T050 [US3] Wire URL (`view=words`, `wordView`, `detailPage`) and the count-cell mapping for كلمات بدون تشكيل / كلمات بالتشكيل (depends on T049, T032).
+- [x] T048 [US3] Create `components/root-words-list/` — paginated word rows showing display text + per-root count, each row a button that deep-links via `buildUniqueWordsDeepLink(kind, { wordId })`; supports the simple and tashkeel sub-views; renders inside the panel shell (depends on T020).
+- [x] T049 [US3] Add words loading to `state/roots-detail.facade.ts` (both sub-views, lazy, cached, `detailPage`); render the nested sub-view tablist and wire `<qd-pagination>` (depends on T039, T048).
+- [x] T050 [US3] Wire URL (`view=words`, `wordView`, `detailPage`) and the count-cell mapping for كلمات بدون تشكيل / كلمات بالتشكيل (depends on T049, T032).
 
 ### Tests for User Story 3 (checkpoint CP-3)
 
-- [ ] T051 [P] [US3] Backend tests: word items carry the correct unique word ids and in-context occurrence counts for both kinds; pagination correct (depends on T046, T013).
-- [ ] T052 [P] [US3] Frontend tests: a word click builds the correct deep link (`kind` + `wordId`); sub-view URL routing; pagination (depends on T048, T050).
+- [x] T051 [P] [US3] Backend tests: word items carry the correct unique word ids and in-context occurrence counts for both kinds; pagination correct (depends on T046, T013).
+- [x] T052 [P] [US3] Frontend tests: a word click builds the correct deep link (`kind` + `wordId`); sub-view URL routing; pagination (depends on T048, T050).
 
 **Checkpoint**: US1–US3 work independently.
 
@@ -196,20 +196,20 @@ description: "Task list for Quran Roots Explorer (Feature 015)"
 
 ### Backend — surahs
 
-- [ ] T053 [US4] Implement `EfRootsReader.GetRootMentionedSurahsAsync` (distinct surahs + per-surah occurrence counts + Arabic names, whole) and `GetRootMissingSurahsAsync` (114 − mentioned, whole) in `EfRootsReader.cs`. Model on F014 surahs/missing reads (depends on T008).
-- [ ] T054 [US4] Add caching `roots:{id}:surahs` and `roots:{id}:missing` in `CachedRootsReader` (depends on T053).
-- [ ] T055 [US4] Create `GetRootMentionedSurahs` and `GetRootMissingSurahs` queries + handlers + outcomes in `…/Queries/GetRootMentionedSurahs/` and `…/Queries/GetRootMissingSurahs/`: validate id, not-found, log (depends on T053).
-- [ ] T056 [US4] Wire `RootsController` `GET /api/words/roots/{id}/surahs` and `GET /api/words/roots/{id}/missing-surahs` (depends on T055).
+- [x] T053 [US4] Implement `EfRootsReader.GetRootMentionedSurahsAsync` (distinct surahs + per-surah occurrence counts + Arabic names, whole) and `GetRootMissingSurahsAsync` (114 − mentioned, whole) in `EfRootsReader.cs`. Model on F014 surahs/missing reads (depends on T008).
+- [x] T054 [US4] Add caching `roots:{id}:surahs` and `roots:{id}:missing` in `CachedRootsReader` (depends on T053).
+- [x] T055 [US4] Create `GetRootMentionedSurahs` and `GetRootMissingSurahs` queries + handlers + outcomes in `…/Queries/GetRootMentionedSurahs/` and `…/Queries/GetRootMissingSurahs/`: validate id, not-found, log (depends on T053).
+- [x] T056 [US4] Wire `RootsController` `GET /api/words/roots/{id}/surahs` and `GET /api/words/roots/{id}/missing-surahs` (depends on T055).
 
 ### Frontend — surahs view
 
-- [ ] T057 [US4] In the السور view, **reuse** `surah-occurrences-list` (ورد فيها) and `missing-surahs-list` (لم يذكر فيها) with a nested sub-view tablist; whole load (no pagination); renders inside the panel shell (depends on T020).
-- [ ] T058 [US4] Add surahs loading to `state/roots-detail.facade.ts` (mentioned/missing, lazy, cached, reuse already-loaded); wire URL (`view=surahs`, `surahView`) and the السور → mentioned count-cell mapping (depends on T039, T057, T032).
+- [x] T057 [US4] In the السور view, **reuse** `surah-occurrences-list` (ورد فيها) and `missing-surahs-list` (لم يذكر فيها) with a nested sub-view tablist; whole load (no pagination); renders inside the panel shell (depends on T020).
+- [x] T058 [US4] Add surahs loading to `state/roots-detail.facade.ts` (mentioned/missing, lazy, cached, reuse already-loaded); wire URL (`view=surahs`, `surahView`) and the السور → mentioned count-cell mapping (depends on T039, T057, T032).
 
 ### Tests for User Story 4 (checkpoint CP-4)
 
-- [ ] T059 [P] [US4] Backend tests: mentioned + missing counts sum to 114; per-surah counts correct; the seeded near-all-surahs root yields an empty/near-empty missing list (depends on T055, T013).
-- [ ] T060 [P] [US4] Frontend tests: surah sub-view URL routing; whole load; empty missing-surahs state renders cleanly (depends on T057, T058).
+- [x] T059 [P] [US4] Backend tests: mentioned + missing counts sum to 114; per-surah counts correct; the seeded near-all-surahs root yields an empty/near-empty missing list (depends on T055, T013).
+- [x] T060 [P] [US4] Frontend tests: surah sub-view URL routing; whole load; empty missing-surahs state renders cleanly (depends on T057, T058).
 
 **Checkpoint**: US1–US4 work independently.
 
@@ -223,20 +223,20 @@ description: "Task list for Quran Roots Explorer (Feature 015)"
 
 ### Backend — lemmas + stems
 
-- [ ] T061 [US5] Implement `EfRootsReader.GetRootLemmasAsync` (**`DISTINCT lemma_id` co-occurrence** + lemma text + in-root count, whole) and `GetRootStemsAsync` (`DISTINCT stem_id` via morphology + stem text + in-root count, whole) in `EfRootsReader.cs` (depends on T008).
-- [ ] T062 [US5] Add caching `roots:{id}:lemmas` and `roots:{id}:stems` in `CachedRootsReader` (depends on T061).
-- [ ] T063 [US5] Create `GetRootLemmas` and `GetRootStems` queries + handlers + outcomes in `…/Queries/GetRootLemmas/` and `…/Queries/GetRootStems/`: validate id, not-found, log (depends on T061).
-- [ ] T064 [US5] Wire `RootsController` `GET /api/words/roots/{id}/lemmas` and `GET /api/words/roots/{id}/stems` (depends on T063).
+- [x] T061 [US5] Implement `EfRootsReader.GetRootLemmasAsync` (**`DISTINCT lemma_id` co-occurrence** + lemma text + in-root count, whole) and `GetRootStemsAsync` (`DISTINCT stem_id` via morphology + stem text + in-root count, whole) in `EfRootsReader.cs` (depends on T008).
+- [x] T062 [US5] Add caching `roots:{id}:lemmas` and `roots:{id}:stems` in `CachedRootsReader` (depends on T061).
+- [x] T063 [US5] Create `GetRootLemmas` and `GetRootStems` queries + handlers + outcomes in `…/Queries/GetRootLemmas/` and `…/Queries/GetRootStems/`: validate id, not-found, log (depends on T061).
+- [x] T064 [US5] Wire `RootsController` `GET /api/words/roots/{id}/lemmas` and `GET /api/words/roots/{id}/stems` (depends on T063).
 
 ### Frontend — lemmas/stems views
 
-- [ ] T065 [US5] Create `components/root-lemmas-list/` and `components/root-stems-list/` — **static, non-interactive** list items (text + per-root count); render inside the panel shell. Keep the id in the model for future linking but DO NOT render buttons/links (no fake interactive elements) (depends on T020).
-- [ ] T066 [US5] Add lemmas/stems loading to `state/roots-detail.facade.ts` (lazy, whole, cached); wire URL (`view=lemmas` / `view=stems`) and the count-cell mappings (depends on T039, T065, T032).
+- [x] T065 [US5] Create `components/root-lemmas-list/` and `components/root-stems-list/` — **static, non-interactive** list items (text + per-root count); render inside the panel shell. Keep the id in the model for future linking but DO NOT render buttons/links (no fake interactive elements) (depends on T020).
+- [x] T066 [US5] Add lemmas/stems loading to `state/roots-detail.facade.ts` (lazy, whole, cached); wire URL (`view=lemmas` / `view=stems`) and the count-cell mappings (depends on T039, T065, T032).
 
 ### Tests for User Story 5 (checkpoint CP-5)
 
-- [ ] T067 [P] [US5] Backend tests: the lemmas count from `GetRootLemmasAsync` equals `RootListItemDto.LemmasCount` for the same root (assert on the divergent seeded root — locks co-occurrence == column, covering SC-003); stems aggregation correct; both lists bounded/whole (depends on T063, T013).
-- [ ] T068 [P] [US5] Frontend tests: lemmas/stems render as non-interactive items (no buttons/links); counts shown (depends on T065, T066).
+- [x] T067 [P] [US5] Backend tests: the lemmas count from `GetRootLemmasAsync` equals `RootListItemDto.LemmasCount` for the same root (assert on the divergent seeded root — locks co-occurrence == column, covering SC-003); stems aggregation correct; both lists bounded/whole (depends on T063, T013).
+- [x] T068 [P] [US5] Frontend tests: lemmas/stems render as non-interactive items (no buttons/links); counts shown (depends on T065, T066).
 
 **Checkpoint**: All five user stories are independently functional.
 
