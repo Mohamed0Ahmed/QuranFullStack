@@ -39,7 +39,7 @@ public static class ApiMessages
     public const string RootWordsLoaded = "تم تحميل كلمات الجذر";
     public const string RootAyahsLoaded = "تم تحميل الآيات التي ورد فيها الجذر";
     public const string RootSurahsLoaded = "تم تحميل السور التي ورد فيها الجذر";
-    public const string RootMissingSurahsLoaded = "تم تحميل السور التي لم ترد فيها الجذر";
+    public const string RootMissingSurahsLoaded = "تم تحميل السور التي لم يرد فيها الجذر";
     public const string RootLemmasLoaded = "تم تحميل الصيغ المعجمية للجذر";
     public const string RootStemsLoaded = "تم تحميل الأصول الصرفية للجذر";
     public const string RootsInvalidSort = "خيار الترتيب غير صالح";

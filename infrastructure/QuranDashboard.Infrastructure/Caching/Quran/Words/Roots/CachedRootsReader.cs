@@ -10,7 +10,8 @@ namespace QuranDashboard.Infrastructure.Caching.Quran.Words.Roots;
 /// Decorates <see cref="EfRootsReader"/> with <c>IMemoryCache</c> caching using
 /// the <c>roots:</c> namespace. The whole summary is computed once under
 /// <c>roots:summary:all</c>; search, sort, and paging are derived in memory
-/// (research D2). Per-root detail caching lands in later user stories. Mirrors
+/// (research D2). Per-root detail reads (ayahs, words, surahs, lemmas, stems)
+/// are cached under the <c>roots:</c> namespace. Mirrors
 /// Feature 014 <c>CachedUniqueWordsReader</c> conventions where applicable.
 /// </summary>
 public sealed class CachedRootsReader(EfRootsReader efReader, IMemoryCache cache) : IRootsReader
@@ -38,13 +39,28 @@ public sealed class CachedRootsReader(EfRootsReader efReader, IMemoryCache cache
     }
 
     /// <inheritdoc />
-    public Task<PagedResult<RootWordItemDto>?> GetRootWordsAsync(
+    public async Task<PagedResult<RootWordItemDto>?> GetRootWordsAsync(
         int id,
         RootWordKind wordKind,
         int page,
         int pageSize,
         CancellationToken cancellationToken)
-        => _ef.GetRootWordsAsync(id, wordKind, page, pageSize, cancellationToken);
+    {
+        var key = RootsCacheKeys.Words(id, wordKind, page, pageSize);
+
+        if (_cache.TryGetValue(key, out PagedResult<RootWordItemDto>? cached))
+        {
+            return cached;
+        }
+
+        var words = await _ef.GetRootWordsAsync(id, wordKind, page, pageSize, cancellationToken);
+        if (words is not null)
+        {
+            _cache.Set(key, words);
+        }
+
+        return words;
+    }
 
     /// <inheritdoc />
     public async Task<PagedResult<RootAyahMatchDto>?> GetRootAyahMatchesAsync(
@@ -70,20 +86,80 @@ public sealed class CachedRootsReader(EfRootsReader efReader, IMemoryCache cache
     }
 
     /// <inheritdoc />
-    public Task<RootSurahsResponse?> GetRootMentionedSurahsAsync(int id, CancellationToken cancellationToken)
-        => _ef.GetRootMentionedSurahsAsync(id, cancellationToken);
+    public async Task<RootSurahsResponse?> GetRootMentionedSurahsAsync(int id, CancellationToken cancellationToken)
+    {
+        var key = RootsCacheKeys.Surahs(id);
+
+        if (_cache.TryGetValue(key, out RootSurahsResponse? cached))
+        {
+            return cached;
+        }
+
+        var surahs = await _ef.GetRootMentionedSurahsAsync(id, cancellationToken);
+        if (surahs is not null)
+        {
+            _cache.Set(key, surahs);
+        }
+
+        return surahs;
+    }
 
     /// <inheritdoc />
-    public Task<RootMissingSurahsResponse?> GetRootMissingSurahsAsync(int id, CancellationToken cancellationToken)
-        => _ef.GetRootMissingSurahsAsync(id, cancellationToken);
+    public async Task<RootMissingSurahsResponse?> GetRootMissingSurahsAsync(int id, CancellationToken cancellationToken)
+    {
+        var key = RootsCacheKeys.Missing(id);
+
+        if (_cache.TryGetValue(key, out RootMissingSurahsResponse? cached))
+        {
+            return cached;
+        }
+
+        var missing = await _ef.GetRootMissingSurahsAsync(id, cancellationToken);
+        if (missing is not null)
+        {
+            _cache.Set(key, missing);
+        }
+
+        return missing;
+    }
 
     /// <inheritdoc />
-    public Task<RootLemmasResponse?> GetRootLemmasAsync(int id, CancellationToken cancellationToken)
-        => _ef.GetRootLemmasAsync(id, cancellationToken);
+    public async Task<RootLemmasResponse?> GetRootLemmasAsync(int id, CancellationToken cancellationToken)
+    {
+        var key = RootsCacheKeys.Lemmas(id);
+
+        if (_cache.TryGetValue(key, out RootLemmasResponse? cached))
+        {
+            return cached;
+        }
+
+        var lemmas = await _ef.GetRootLemmasAsync(id, cancellationToken);
+        if (lemmas is not null)
+        {
+            _cache.Set(key, lemmas);
+        }
+
+        return lemmas;
+    }
 
     /// <inheritdoc />
-    public Task<RootStemsResponse?> GetRootStemsAsync(int id, CancellationToken cancellationToken)
-        => _ef.GetRootStemsAsync(id, cancellationToken);
+    public async Task<RootStemsResponse?> GetRootStemsAsync(int id, CancellationToken cancellationToken)
+    {
+        var key = RootsCacheKeys.Stems(id);
+
+        if (_cache.TryGetValue(key, out RootStemsResponse? cached))
+        {
+            return cached;
+        }
+
+        var stems = await _ef.GetRootStemsAsync(id, cancellationToken);
+        if (stems is not null)
+        {
+            _cache.Set(key, stems);
+        }
+
+        return stems;
+    }
 
     private async Task<IReadOnlyList<RootSummaryRow>> GetOrLoadWholeSummaryAsync(CancellationToken cancellationToken)
     {

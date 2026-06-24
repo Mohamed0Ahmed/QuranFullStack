@@ -28,8 +28,8 @@ namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Roots;
 /// pinned in the seed so the invariants hold.
 /// </para>
 /// <para>
-/// Per-root detail reads (ayahs T035, words T044, surahs T053, lemmas/stems
-/// T061) are filled in by their owning user stories; they still throw here.
+/// Per-root detail reads (ayahs, words, surahs, lemmas, stems) are implemented
+/// here as bounded read-only queries over morphology and related tables.
 /// </para>
 /// </remarks>
 public sealed class EfRootsReader(QuranDashboardDbContext db) : IRootsReader
@@ -56,14 +56,72 @@ public sealed class EfRootsReader(QuranDashboardDbContext db) : IRootsReader
     }
 
     /// <inheritdoc />
-    public Task<PagedResult<RootWordItemDto>?> GetRootWordsAsync(
+    public async Task<PagedResult<RootWordItemDto>?> GetRootWordsAsync(
         int id,
         RootWordKind wordKind,
         int page,
         int pageSize,
         CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        var rootExists = await _db.QuranRoots
+            .AsNoTracking()
+            .AnyAsync(r => r.Id == id, cancellationToken);
+        if (!rootExists)
+        {
+            return null;
+        }
+
+        var rows = await (
+            from m in _db.WordMorphologies.AsNoTracking()
+            join w in _db.QuranWords.AsNoTracking() on m.QuranWordId equals w.Id
+            where m.RootId == id
+            select new RootWordOccurrenceRow(
+                wordKind == RootWordKind.Simple ? w.UniqueSimpleWordId : w.UniqueTashkeelWordId,
+                w.SurahNumber,
+                w.AyahNumber,
+                w.WordNumber,
+                w.TextUthmani))
+            .ToListAsync(cancellationToken);
+
+        var kindKey = wordKind == RootWordKind.Simple
+            ? RootWordKindKeys.Simple
+            : RootWordKindKeys.Tashkeel;
+
+        var grouped = rows
+            .Where(r => r.UniqueWordId.HasValue)
+            .GroupBy(r => r.UniqueWordId!.Value)
+            .Select(g =>
+            {
+                var first = g
+                    .OrderBy(x => x.SurahNumber)
+                    .ThenBy(x => x.AyahNumber)
+                    .ThenBy(x => x.WordNumber)
+                    .First();
+                return new
+                {
+                    UniqueWordId = g.Key,
+                    OccurrencesCount = g.Count(),
+                    First = first,
+                };
+            })
+            .OrderBy(x => x.First.SurahNumber)
+            .ThenBy(x => x.First.AyahNumber)
+            .ThenBy(x => x.First.WordNumber)
+            .ToList();
+
+        var totalCount = grouped.Count;
+        var items = grouped
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(x => new RootWordItemDto(
+                x.UniqueWordId,
+                kindKey,
+                x.First.TextUthmani,
+                x.OccurrencesCount,
+                $"{x.First.SurahNumber}:{x.First.AyahNumber}"))
+            .ToList();
+
+        return new PagedResult<RootWordItemDto>(page, pageSize, totalCount, items);
     }
 
     /// <inheritdoc />
@@ -170,27 +228,150 @@ public sealed class EfRootsReader(QuranDashboardDbContext db) : IRootsReader
     }
 
     /// <inheritdoc />
-    public Task<RootSurahsResponse?> GetRootMentionedSurahsAsync(int id, CancellationToken cancellationToken)
+    public async Task<RootSurahsResponse?> GetRootMentionedSurahsAsync(int id, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        var root = await _db.QuranRoots
+            .AsNoTracking()
+            .Where(r => r.Id == id)
+            .Select(r => new { r.Id, r.RootText })
+            .FirstOrDefaultAsync(cancellationToken);
+        if (root is null)
+        {
+            return null;
+        }
+
+        var surahGroups = await (
+            from m in _db.WordMorphologies.AsNoTracking()
+            join w in _db.QuranWords.AsNoTracking() on m.QuranWordId equals w.Id
+            where m.RootId == id
+            group w by w.SurahNumber into g
+            orderby g.Key
+            select new SurahOccurrenceRow(g.Key, g.Count()))
+            .ToListAsync(cancellationToken);
+
+        if (surahGroups.Count == 0)
+        {
+            return new RootSurahsResponse(id, root.RootText, 0, []);
+        }
+
+        var surahNumbers = surahGroups.Select(r => r.SurahNumber).ToList();
+        var surahNames = await _db.QuranSurahs
+            .AsNoTracking()
+            .Where(s => surahNumbers.Contains(s.SurahNumber))
+            .ToDictionaryAsync(s => s.SurahNumber, s => s.NameArabic, cancellationToken);
+
+        var surahs = surahGroups
+            .Select(r => new RootSurahItemDto(r.SurahNumber, surahNames[r.SurahNumber], r.OccurrencesInSurah))
+            .ToList();
+
+        return new RootSurahsResponse(id, root.RootText, surahs.Count, surahs);
     }
 
     /// <inheritdoc />
-    public Task<RootMissingSurahsResponse?> GetRootMissingSurahsAsync(int id, CancellationToken cancellationToken)
+    public async Task<RootMissingSurahsResponse?> GetRootMissingSurahsAsync(int id, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        var root = await _db.QuranRoots
+            .AsNoTracking()
+            .Where(r => r.Id == id)
+            .Select(r => new { r.Id, r.RootText })
+            .FirstOrDefaultAsync(cancellationToken);
+        if (root is null)
+        {
+            return null;
+        }
+
+        var mentionedSurahNumbers = await (
+            from m in _db.WordMorphologies.AsNoTracking()
+            join w in _db.QuranWords.AsNoTracking() on m.QuranWordId equals w.Id
+            where m.RootId == id
+            select w.SurahNumber)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        var missingSurahs = await _db.QuranSurahs
+            .AsNoTracking()
+            .Where(s => !mentionedSurahNumbers.Contains(s.SurahNumber))
+            .OrderBy(s => s.SurahNumber)
+            .Select(s => new MissingSurahItemDto(s.SurahNumber, s.NameArabic))
+            .ToListAsync(cancellationToken);
+
+        return new RootMissingSurahsResponse(id, root.RootText, missingSurahs.Count, missingSurahs);
     }
 
     /// <inheritdoc />
-    public Task<RootLemmasResponse?> GetRootLemmasAsync(int id, CancellationToken cancellationToken)
+    public async Task<RootLemmasResponse?> GetRootLemmasAsync(int id, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        var root = await _db.QuranRoots
+            .AsNoTracking()
+            .Where(r => r.Id == id)
+            .Select(r => new { r.Id, r.RootText })
+            .FirstOrDefaultAsync(cancellationToken);
+        if (root is null)
+        {
+            return null;
+        }
+
+        var rows = await (
+            from m in _db.WordMorphologies.AsNoTracking()
+            join l in _db.QuranLemmas.AsNoTracking() on m.LemmaId equals l.Id
+            where m.RootId == id && m.LemmaId != null
+            select new { m.LemmaId, l.LemmaText, m.QuranWordId })
+            .ToListAsync(cancellationToken);
+
+        var lemmas = rows
+            .GroupBy(r => r.LemmaId!.Value)
+            .Select(g =>
+            {
+                var first = g.OrderBy(x => x.QuranWordId).First();
+                return new
+                {
+                    Item = new RootLemmaItemDto(g.Key, first.LemmaText, g.Count()),
+                    first.QuranWordId,
+                };
+            })
+            .OrderBy(x => x.QuranWordId)
+            .Select(x => x.Item)
+            .ToList();
+
+        return new RootLemmasResponse(id, root.RootText, lemmas.Count, lemmas);
     }
 
     /// <inheritdoc />
-    public Task<RootStemsResponse?> GetRootStemsAsync(int id, CancellationToken cancellationToken)
+    public async Task<RootStemsResponse?> GetRootStemsAsync(int id, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        var root = await _db.QuranRoots
+            .AsNoTracking()
+            .Where(r => r.Id == id)
+            .Select(r => new { r.Id, r.RootText })
+            .FirstOrDefaultAsync(cancellationToken);
+        if (root is null)
+        {
+            return null;
+        }
+
+        var rows = await (
+            from m in _db.WordMorphologies.AsNoTracking()
+            join s in _db.QuranStems.AsNoTracking() on m.StemId equals s.Id
+            where m.RootId == id && m.StemId != null
+            select new { m.StemId, s.StemText, m.QuranWordId })
+            .ToListAsync(cancellationToken);
+
+        var stems = rows
+            .GroupBy(r => r.StemId!.Value)
+            .Select(g =>
+            {
+                var first = g.OrderBy(x => x.QuranWordId).First();
+                return new
+                {
+                    Item = new RootStemItemDto(g.Key, first.StemText, g.Count()),
+                    first.QuranWordId,
+                };
+            })
+            .OrderBy(x => x.QuranWordId)
+            .Select(x => x.Item)
+            .ToList();
+
+        return new RootStemsResponse(id, root.RootText, stems.Count, stems);
     }
 
     /// <summary>
@@ -292,4 +473,13 @@ public sealed class EfRootsReader(QuranDashboardDbContext db) : IRootsReader
         short PageNumber,
         string TextUthmani,
         bool IsAyahMarker);
+
+    private sealed record RootWordOccurrenceRow(
+        int? UniqueWordId,
+        short SurahNumber,
+        short AyahNumber,
+        short WordNumber,
+        string TextUthmani);
+
+    private sealed record SurahOccurrenceRow(short SurahNumber, int OccurrencesInSurah);
 }
