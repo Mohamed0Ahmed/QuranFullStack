@@ -41,7 +41,7 @@ GET /api/mushaf/words/{wordLocation}/analysis
     },
     "morphology": {
       "headPos": "V", "headPosLabel": { "ar": "فعل", "en": "Verb" },
-      "root": { "text": "...", "buckwalter": "Amn" }, "lemma": { "text": "...", "buckwalter": "'aAmana" }, "stem": { "text": "..." },
+      "root": { "id": 42, "text": "...", "buckwalter": "Amn" }, "lemma": { "text": "...", "buckwalter": "'aAmana" }, "stem": { "text": "..." },
       "isVerb": true, "verbTense": "past", "verbVoice": "active", "caseFeature": null
     },
     "renderedWordSegments": [

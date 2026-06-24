@@ -74,7 +74,7 @@ All endpoints return `ApiResponse<T>` (existing `IsSuccess`/`Message`/`Data`/`Er
 
 - `WordOccurrenceDto`: `quranWordId:int`, `wordLocation`, `verseKey`, `surahNumber:int`, `ayahNumber:int`, `wordNumber:int`, `pageNumber:int`, `lineNumber:int`, `lineWordOrder:int`, `textUthmani`, `textUthmaniSimple?`, `textImlaeiSimple?`, `qpcGlyph?`.
 - `WordIdentityDto`: `orderedTashkeel`, `orderedSimple`, `uniqueTashkeel`, `uniqueSimple` — each `{ occurrencesCount:int, ayahsCount:int, surahsCount:int }` (unique entries also `id:int`, `uniqueSimple` adds `wordKeyImlaeiSimple:string`).
-- `WordMorphologyDto`: `headPos:string`, `headPosLabel:{ar:string,en:string}`, `root:{text:string?,buckwalter:string?}?`, `lemma:{text:string?,buckwalter:string?}?`, `stem:{text:string?}?`, `isVerb:bool`, `verbTense:string?`, `verbVoice:string?`, `caseFeature:string?`.
+- `WordMorphologyDto`: `headPos:string`, `headPosLabel:{ar:string,en:string}`, `root:{id:int,text:string?,buckwalter:string?}?`, `lemma:{text:string?,buckwalter:string?}?`, `stem:{text:string?}?`, `isVerb:bool`, `verbTense:string?`, `verbVoice:string?`, `caseFeature:string?`.
 - `RenderedSegmentDto`: `segmentLocation:string`, `segmentNumber:int`, `segmentColorSlot:int`, `segmentKind:string?`, `segmentDisplayText:string?`, `displayTextStatus:string` (`available`|`missing`), `segmentPos:string?`, `segmentPosLabel:{ar,en}?`, `segmentI3rabArabic:string?`, `i3rabRuleId:int?`, `i3rabRuleSignature:string?`, `i3rabRuleFamily:string?`, `i3rabStatus:string?`, `segmentFeatures:{raw:string?,json:object[]}?`.
 
 ---
