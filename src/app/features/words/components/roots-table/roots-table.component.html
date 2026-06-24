@@ -55,6 +55,7 @@
         role="row"
         [class.qd-is-selected]="isSelected(row)"
         [attr.aria-selected]="isSelected(row)"
+        [attr.aria-current]="isSelected(row) ? 'true' : null"
       >
         <div class="roots-table__cell roots-table__cell--row-number" role="cell">{{ rowNumber(index) }}</div>
 
@@ -134,6 +135,7 @@
           role="row"
           [class.qd-is-selected]="isSelected(row)"
           [attr.aria-selected]="isSelected(row)"
+          [attr.aria-current]="isSelected(row) ? 'true' : null"
         >
           <div class="roots-table__cell roots-table__cell--row-number" role="cell">{{ rowNumber(index) }}</div>
 

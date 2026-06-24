@@ -698,3 +698,124 @@ describe('RootsExplorerPageComponent US5', () => {
     expect(stemsRoot.querySelector('[data-testid="roots-stems-view"] a')).toBeNull();
   });
 });
+
+describe('RootsExplorerPageComponent state matrix (T073)', () => {
+  let rootsApi: {
+    getRootsList: ReturnType<typeof vi.fn>;
+    getRootSummary: ReturnType<typeof vi.fn>;
+    getRootWords: ReturnType<typeof vi.fn>;
+    getRootAyahMatches: ReturnType<typeof vi.fn>;
+    getRootMentionedSurahs: ReturnType<typeof vi.fn>;
+    getRootMissingSurahs: ReturnType<typeof vi.fn>;
+    getRootLemmas: ReturnType<typeof vi.fn>;
+    getRootStems: ReturnType<typeof vi.fn>;
+  };
+
+  const queryParamMap$ = new BehaviorSubject(convertToParamMap({}));
+
+  function configure(): void {
+    getTestBed().resetTestingModule();
+    TestBed.configureTestingModule({
+      imports: [RootsExplorerPageComponent],
+      providers: [
+        provideRouter([{ path: 'roots', component: RootsExplorerPageComponent }]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: RootsApi, useValue: rootsApi },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            paramMap: of(convertToParamMap({})),
+            queryParamMap: queryParamMap$.asObservable(),
+          },
+        },
+      ],
+      teardown: { destroyAfterEach: true },
+    });
+    const router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
+  }
+
+  async function initLifecycle(): Promise<ReturnType<typeof TestBed.createComponent<RootsExplorerPageComponent>>> {
+    const fixture = TestBed.createComponent(RootsExplorerPageComponent);
+    fixture.componentInstance.ngOnInit();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  beforeEach(() => {
+    rootsApi = {
+      getRootsList: vi.fn().mockImplementation(successListResponse),
+      getRootSummary: vi.fn().mockReturnValue(
+        of<ApiResponse<RootListItemViewModel>>({ isSuccess: true, data: listRow(10), message: null, errors: null }),
+      ),
+      getRootWords: vi.fn(),
+      getRootAyahMatches: vi.fn(),
+      getRootMentionedSurahs: vi.fn(),
+      getRootMissingSurahs: vi.fn(),
+      getRootLemmas: vi.fn(),
+      getRootStems: vi.fn(),
+    };
+    queryParamMap$.next(convertToParamMap({}));
+  });
+
+  it('renders the panel error state when a detail load fails', async () => {
+    rootsApi.getRootAyahMatches.mockReturnValue(
+      of<ApiResponse<unknown>>({ isSuccess: false, data: null, message: 'تعذّر تحميل التفاصيل', errors: null }),
+    );
+    configure();
+
+    queryParamMap$.next(convertToParamMap({ root: '10', view: 'ayahs' }));
+    const fixture = await initLifecycle();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(TestBed.inject(RootsDetailFacade).status()).toBe('error');
+    expect(fixture.nativeElement.querySelector('[data-testid="roots-panel-error"]')).toBeTruthy();
+  });
+
+  it('shows controlled not-found for an unknown root while the table stays usable', async () => {
+    rootsApi.getRootSummary.mockReturnValue(
+      of<ApiResponse<RootListItemViewModel | null>>({
+        isSuccess: false,
+        data: null,
+        message: 'الجذر غير موجود',
+        errors: null,
+      }),
+    );
+    configure();
+
+    queryParamMap$.next(convertToParamMap({ root: '999', view: 'ayahs' }));
+    const fixture = await initLifecycle();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    expect(TestBed.inject(RootsDetailFacade).status()).toBe('notFound');
+    expect(host.querySelector('[data-testid="roots-restored-not-found"]')).toBeTruthy();
+    // The table remains rendered and usable alongside the not-found message.
+    expect(host.querySelector('qd-roots-table')).toBeTruthy();
+    expect(host.querySelector('[data-testid="roots-table-root-button"]')).toBeTruthy();
+  });
+
+  it('shows the no-results list state for an unmatched search', async () => {
+    rootsApi.getRootsList.mockReturnValue(
+      of<ApiResponse<{ page: number; pageSize: number; totalCount: number; items: RootListItemViewModel[] }>>({
+        isSuccess: true,
+        data: { page: 1, pageSize: 1000, totalCount: 0, items: [] },
+        message: null,
+        errors: null,
+      }),
+    );
+    configure();
+
+    queryParamMap$.next(convertToParamMap({ search: 'لا-تطابق' }));
+    const fixture = await initLifecycle();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(TestBed.inject(RootsExplorerFacade).status()).toBe('empty');
+    expect(fixture.nativeElement.querySelector('[data-testid="roots-list-no-results"]')).toBeTruthy();
+  });
+});

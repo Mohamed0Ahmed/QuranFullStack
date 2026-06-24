@@ -84,6 +84,7 @@
             [loading]="panelState().status === 'loading'"
             [notFound]="panelState().status === 'notFound'"
             (viewChange)="onPanelViewChange($event)"
+            (close)="onClearSelection()"
           >
             @if (!emptySelection()) {
               @switch (panelState().status) {

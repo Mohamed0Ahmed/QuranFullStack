@@ -1,10 +1,41 @@
-<section class="root-details-panel" [attr.aria-label]="panelLabel">
+@if (drawerMode()) {
+  <!-- Narrow screens: dim the page behind the dismissible drawer. -->
+  <div
+    class="qd-modal-backdrop root-details-panel__backdrop"
+    role="presentation"
+    data-testid="root-details-panel-backdrop"
+    (click)="close.emit()"
+  ></div>
+}
+
+<section
+  class="root-details-panel"
+  #panelRoot
+  [class.root-details-panel--drawer]="drawerMode()"
+  [attr.aria-label]="panelLabel"
+  [attr.role]="drawerMode() ? 'dialog' : null"
+  [attr.aria-modal]="drawerMode() ? true : null"
+  (keydown.escape)="onEscape()"
+>
   @if (emptySelection()) {
     <!-- Empty-selection state: nothing selected yet. -->
     <div class="root-details-panel__empty" data-testid="root-details-empty-selection">
       <p class="qd-text-muted">{{ emptySelectionLabel }}</p>
     </div>
   } @else {
+    @if (drawerMode()) {
+      <div class="root-details-panel__drawer-header">
+        <button
+          type="button"
+          class="qd-btn qd-btn-ghost root-details-panel__close"
+          data-testid="root-details-panel-close"
+          (click)="close.emit()"
+        >
+          {{ closeLabel }}
+        </button>
+      </div>
+    }
+
     <!-- Tab strip: exactly 5 tabs, NO overview (نظرة عامة) tab. -->
     <div
       class="root-details-panel__tabs"
@@ -17,9 +48,12 @@
           type="button"
           class="qd-btn qd-btn-ghost root-details-panel__tab"
           role="tab"
+          [id]="tabDomId(tab.key)"
           [attr.data-root-tab]="tab.key"
           [attr.data-testid]="'root-details-tab-' + tab.key"
+          [attr.aria-controls]="surfaceDomId"
           [attr.aria-selected]="isActive(tab.key)"
+          [attr.aria-label]="tab.aria"
           [attr.tabindex]="isActive(tab.key) ? 0 : -1"
           (click)="selectView(tab.key)"
           (keydown)="onTabKeydown($event, tab.key)"
@@ -30,11 +64,15 @@
     </div>
 
     <!-- Panel surface: own scroll container (scrolls independently). View
-         content is projected by the owning story phase via ng-content. -->
+         content is projected by the owning story phase via ng-content. It is
+         focusable so keyboard users can reach and scroll the panel. -->
     <div
       class="root-details-panel__surface"
       role="tabpanel"
+      [id]="surfaceDomId"
+      [attr.aria-labelledby]="tabDomId(view())"
       [attr.aria-busy]="loading() ? true : null"
+      tabindex="0"
       data-testid="root-details-panel-surface"
     >
       <ng-content />

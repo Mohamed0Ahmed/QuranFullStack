@@ -52,6 +52,7 @@ export const ROOTS_SURAHS_VIEW_LABELS: Record<RootSurahView, string> = {
 // Panel states.
 export const ROOTS_EMPTY_SELECTION_LABEL = 'اختر جذرًا لعرض تفاصيله';
 export const ROOTS_PANEL_LABEL = 'تفاصيل الجذر';
+export const ROOTS_CLOSE_PANEL_LABEL = 'إغلاق لوحة التفاصيل';
 export const ROOTS_LOADING_LABEL = 'جارٍ التحميل…';
 export const ROOTS_EMPTY_VIEW_LABEL = 'لا توجد نتائج';
 export const ROOTS_NOT_FOUND_LABEL = 'الجذر غير موجود';

@@ -46,3 +46,30 @@
   scrollbar-gutter: stable;
   padding: var(--qd-space-3);
 }
+
+// Drawer (T069): on narrow screens the selected-root panel floats over the
+// table as a dismissible drawer pinned to the inline-end edge. All offsets use
+// CSS logical properties so the layout mirrors correctly under RTL.
+.root-details-panel__backdrop {
+  // Reuses .qd-modal-backdrop (fixed, inset:0, dim); nothing extra needed here.
+  z-index: 50;
+}
+
+.root-details-panel--drawer {
+  position: fixed;
+  inset-block: 0;
+  inset-inline-end: 0;
+  inline-size: min(92vw, 30rem);
+  z-index: 51;
+  border-radius: 0;
+  border-block: none;
+  border-inline-end: none;
+  box-shadow: var(--qd-shadow-lg);
+}
+
+.root-details-panel__drawer-header {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--qd-space-2);
+  border-block-end: 1px solid var(--qd-border);
+}
