@@ -14,7 +14,8 @@
   scrollbar-gutter: stable;
 }
 
-:host-context(.word-drilldown-panel) {
+:host-context(.word-drilldown-panel),
+:host-context(.root-details-panel__surface) {
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -22,19 +23,24 @@
   height: 100%;
 }
 
-:host-context(.word-drilldown-panel) .ayah-matches-list {
+:host-context(.word-drilldown-panel) .ayah-matches-list,
+:host-context(.root-details-panel__surface) .ayah-matches-list {
   flex: 1;
   min-height: 0;
   height: 100%;
 }
 
-:host-context(.word-drilldown-panel) .ayah-matches-list__viewport {
+:host-context(.word-drilldown-panel) .ayah-matches-list__viewport,
+:host-context(.root-details-panel__surface) .ayah-matches-list__viewport {
   flex: 1;
   min-height: 0;
   block-size: auto;
+  overflow: auto;
+  scrollbar-gutter: stable;
 }
 
-:host-context(.word-drilldown-panel) qd-pagination {
+:host-context(.word-drilldown-panel) qd-pagination,
+:host-context(.root-details-panel__surface) qd-pagination {
   flex-shrink: 0;
 }
 
@@ -42,7 +48,7 @@
   display: grid;
   gap: var(--qd-space-1);
   margin-block-end: var(--qd-space-2);
-  padding: var(--qd-space-2);
+  padding: var(--qd-space-1);
   background: var(--qd-surface);
   --highlighted-ayah-font-size: 1rem;
   --highlighted-ayah-line-height: 1.7;
@@ -53,10 +59,21 @@
   display: block;
   text-decoration: none;
   color: inherit;
-  padding: var(--qd-space-1);
+  padding: 0;
   border: 1px solid transparent;
   border-radius: var(--qd-radius-sm);
   background: transparent;
+}
+
+.ayah-matches-list__ayah-link.qd-interactive-surface {
+  transition: background-color var(--qd-t-fast);
+
+  &:hover {
+    transform: none;
+    box-shadow: none;
+    background: var(--qd-section-bg);
+    border-color: transparent;
+  }
 }
 
 .ayah-matches-list__card--alt {
@@ -104,3 +121,23 @@
   margin-inline-end: 0.15em;
 }
 
+.ayah-matches-list__card--loading {
+  pointer-events: none;
+}
+
+.ayah-matches-list__loading-number {
+  inline-size: 1.25rem;
+  block-size: 0.875rem;
+}
+
+.ayah-matches-list__loading-meta {
+  inline-size: 8rem;
+  block-size: 0.875rem;
+}
+
+.ayah-matches-list__loading-ayah {
+  display: block;
+  inline-size: 100%;
+  block-size: 2.5rem;
+  margin-block-start: var(--qd-space-2);
+}

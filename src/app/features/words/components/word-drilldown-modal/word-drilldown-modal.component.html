@@ -1,35 +1,20 @@
-<ng-template #loadingSkeleton>
-  <div
-    class="word-drilldown-modal__loading qd-skeleton-group"
-    aria-busy="true"
-    data-testid="word-drilldown-loading"
-  >
-    <p class="qd-sr-only" role="status" aria-live="polite">{{ loadingLabel }}</p>
-    <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-50" aria-hidden="true"></span>
-    <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-75" aria-hidden="true"></span>
-    <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-90" aria-hidden="true"></span>
-    <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-75" aria-hidden="true"></span>
-    <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-50" aria-hidden="true"></span>
-    <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-90" aria-hidden="true"></span>
-  </div>
-</ng-template>
-
 @if (inline()) {
-  <section class="qd-card word-drilldown-panel" [attr.aria-label]="title()">
-    <header class="word-drilldown-modal__header">
-      <h2 class="qd-card-title word-drilldown-modal__title" data-testid="word-drilldown-title">
-        {{ title() }}
-      </h2>
-      @if (state().isOpen) {
-        <button
-          type="button"
-          class="qd-btn qd-btn-ghost"
-          data-testid="word-drilldown-close"
-          (click)="closeModal.emit()"
-        >
-          {{ closeLabel }}
-        </button>
-      }
+  <section class="qd-card word-drilldown-panel" [attr.aria-label]="drilldownPanelTitle">
+    <header class="explorer-panel-header word-drilldown-modal__header">
+      <h2 class="explorer-panel-header__label" data-testid="word-drilldown-panel-label">{{ drilldownPanelTitle }}</h2>
+      <span class="explorer-panel-header__entity" data-testid="word-drilldown-entity">{{ entityTitle() }}</span>
+      <div class="explorer-panel-header__end">
+        @if (state().isOpen) {
+          <button
+            type="button"
+            class="qd-btn qd-btn-ghost"
+            data-testid="word-drilldown-close"
+            (click)="closeModal.emit()"
+          >
+            {{ closeLabel }}
+          </button>
+        }
+      </div>
     </header>
 
     <div class="word-drilldown-modal__views" aria-label="عرض التفاصيل">
@@ -55,7 +40,7 @@
       } @else {
         @switch (state().status) {
           @case ('loading') {
-            <ng-container *ngTemplateOutlet="loadingSkeleton"></ng-container>
+            <qd-explorer-panel-skeleton [loadingLabel]="loadingLabel" data-testid="word-drilldown-loading" />
           }
           @case ('error') {
             <div class="qd-error-state" data-testid="word-drilldown-error">{{ state().errorMessage }}</div>
@@ -109,22 +94,23 @@
       aria-modal="true"
       cdkTrapFocus
       cdkTrapFocusAutoCapture
-      [attr.aria-label]="title()"
+      [attr.aria-label]="drilldownPanelTitle"
       data-testid="word-drilldown-modal"
       (click)="$event.stopPropagation()"
     >
-      <header class="word-drilldown-modal__header">
-        <h2 class="qd-card-title word-drilldown-modal__title" data-testid="word-drilldown-title">
-          {{ title() }}
-        </h2>
-        <button
-          type="button"
-          class="qd-btn qd-btn-ghost"
-          data-testid="word-drilldown-close"
-          (click)="closeModal.emit()"
-        >
-          {{ closeLabel }}
-        </button>
+      <header class="explorer-panel-header word-drilldown-modal__header">
+        <h2 class="explorer-panel-header__label" data-testid="word-drilldown-panel-label">{{ drilldownPanelTitle }}</h2>
+        <span class="explorer-panel-header__entity" data-testid="word-drilldown-entity">{{ entityTitle() }}</span>
+        <div class="explorer-panel-header__end">
+          <button
+            type="button"
+            class="qd-btn qd-btn-ghost"
+            data-testid="word-drilldown-close"
+            (click)="closeModal.emit()"
+          >
+            {{ closeLabel }}
+          </button>
+        </div>
       </header>
 
       <nav class="word-drilldown-modal__views" aria-label="عرض التفاصيل">
@@ -144,7 +130,7 @@
       <div class="word-drilldown-modal__body" cdkScrollable>
         @switch (state().status) {
           @case ('loading') {
-            <ng-container *ngTemplateOutlet="loadingSkeleton"></ng-container>
+            <qd-explorer-panel-skeleton [loadingLabel]="loadingLabel" data-testid="word-drilldown-loading" />
           }
           @case ('error') {
             <div class="qd-error-state" data-testid="word-drilldown-error">{{ state().errorMessage }}</div>

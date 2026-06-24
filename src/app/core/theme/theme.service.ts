@@ -60,7 +60,7 @@ export class ThemeService {
     try {
       localStorage.setItem(STORAGE_KEY, theme);
     } catch {
-      // Storage may be unavailable in restricted browser contexts; theme still applies in memory.
+
     }
   }
 }

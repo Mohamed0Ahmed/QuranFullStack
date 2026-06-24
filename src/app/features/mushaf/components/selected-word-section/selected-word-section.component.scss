@@ -14,10 +14,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--qd-space-3);
-  // Stable floor so the card shell does not collapse to one line while the
-  // word analysis loads; inner regions skeletonize instead. The
-  // scrolling content region below keeps its own min-height: 0 so it can
-  // shrink/scroll within this floor.
+
   min-height: 14rem;
   height: 100%;
   padding: var(--qd-space-3);
@@ -46,10 +43,7 @@
   }
 
   &__word-skeleton {
-    // Reserve the same visual mass as the real rendered word, whose line box is
-    // font-size 1.5rem × line-height 1.8 ≈ 2.7rem (the parent override above),
-    // so the header placeholder does not look smaller than the loaded word
-    //.
+
     width: 11rem;
     height: 2.7rem;
     border-radius: var(--qd-radius-md);
@@ -82,8 +76,6 @@
     }
   }
 
-  // Segment-card placeholders (the segment count is dynamic). Mirrors the real
-  // segment cards' wrap layout + card chrome so loading reads as structured.
   &__segment-skeletons {
     display: flex;
     flex-direction: row;
@@ -105,9 +97,6 @@
     background: var(--qd-section-bg);
   }
 
-  // Mirror the three real segment rows' line heights so the loading card does
-  // not come up shorter than the loaded card. The meta/i3rab
-  // lines are centered like their real counterparts.
   &__segment-skeleton-form {
     order: 1;
     height: 1.37rem;
@@ -127,9 +116,6 @@
     width: 75%;
   }
 
-  // Morphology label cards: static labels stay; only the value shimmers.
-  // Mirrors qd-word-morphology-summary's row-of-cards layout so the transition
-  // from loading to loaded does not shift.
   &__morphology-skeleton {
     display: flex;
     flex-direction: row;
@@ -165,8 +151,7 @@
       align-items: center;
       justify-content: center;
       margin: 0;
-      // Reserve the real value line box (font 0.8975rem × line-height 1.45 ≈
-      // 1.3rem) so the loading card does not shrink versus the loaded card.
+
       min-height: 1.3rem;
       width: 100%;
     }
@@ -223,9 +208,6 @@
     width: 100%;
   }
 
-  // While loading, reserve the real value line box inside each identity card so
-  // the card keeps the same height as the loaded state; only
-  // the value shimmers, the label above it stays static.
   &__identity--loading &__identity-row dd {
     display: flex;
     align-items: center;

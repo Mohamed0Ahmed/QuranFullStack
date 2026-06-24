@@ -14,6 +14,16 @@
         [disabled]="activeCard.disabled"
       />
 
+      @for (card of additionalActiveCards; track card.labelAr) {
+        <qd-word-section-card
+          [attr.data-testid]="'words-hub-card--' + card.labelAr"
+          [labelAr]="card.labelAr"
+          [descriptionAr]="card.descriptionAr"
+          [route]="card.route"
+          [disabled]="card.disabled"
+        />
+      }
+
       @for (card of comingSoonCards; track card.labelAr) {
         <qd-word-section-card
           data-testid="words-hub-card--disabled"

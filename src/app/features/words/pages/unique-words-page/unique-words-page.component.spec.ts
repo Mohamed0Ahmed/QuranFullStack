@@ -25,7 +25,6 @@ const CLOSED_DRILLDOWN: WordDrilldownState = {
   errorMessage: '',
 };
 
-/** Source-safe synthetic placeholder — not Quranic text. */
 function item(id: number): UniqueWordListItemViewModel {
   return {
     id,
@@ -127,12 +126,6 @@ describe('UniqueWordsPageComponent', () => {
   it('shows the Arabic empty state when status is empty', async () => {
     const root = await render({ status: 'empty', items: [], totalCount: 0 });
 
-    // The empty-state region renders and no list cards are present. The exact
-    // label text is asserted in the facade/models specs; here we verify the
-    // empty branch is taken (status-driven `@switch`) and the card list is
-    // absent. (Interpolated label constants are unreliable in this runner's
-    // shared-fork component-definition cache — the hub-page spec notes the
-    // same constraint.)
     expect(root.querySelector('[data-testid="unique-words-empty"]')).toBeTruthy();
     expect(root.querySelector('[data-testid="unique-words-loading"]')).toBeNull();
   });
@@ -183,9 +176,7 @@ describe('UniqueWordsPageComponent', () => {
   });
 
   it('seeds the search input from the active (facade) search term', async () => {
-    // A shared/restored link carries `?search=اسم`; the facade exposes it via
-    // `search()`, and the page must show it in the input rather than an empty
-    // box. Dynamic runtime value (not a label constant), so it is reliable here.
+
     stub.search.set('اسم');
     const root = await render();
 

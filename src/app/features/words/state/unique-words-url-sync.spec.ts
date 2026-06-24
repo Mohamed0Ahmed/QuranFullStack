@@ -129,7 +129,7 @@ describe('buildUniqueWordsQueryParams', () => {
     expect(rebuilt['page']).toBe('2');
     expect(rebuilt['word']).toBe('9');
     expect(rebuilt['view']).toBeNull();
-    // ayahPage parsed as null for non-ayahs views; null clears the param.
+
     expect(rebuilt['ap']).toBeNull();
   });
 });

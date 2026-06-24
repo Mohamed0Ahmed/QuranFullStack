@@ -11,10 +11,15 @@ function navRoute(key: string): string {
 export const MUSHAF_ROUTE_PATH = navRoute('mushaf');
 export const WORDS_ROUTE_PATH = navRoute('words');
 
-/** Relative segment under `WORDS_ROUTE_PATH`; must stay aligned with `WORDS_UNIQUE_MODE_ROUTE`. */
 export const WORDS_UNIQUE_MODE_SEGMENT = 'unique/:mode' as const;
 
 export function uniqueWordsRoutePath(kind: string): string {
   const modeSegment = WORDS_UNIQUE_MODE_SEGMENT.replace(':mode', encodeURIComponent(kind));
   return `${WORDS_ROUTE_PATH}/${modeSegment}`;
+}
+
+export const WORDS_ROOTS_SEGMENT = 'roots' as const;
+
+export function rootsRoutePath(): string {
+  return `${WORDS_ROUTE_PATH}/${WORDS_ROOTS_SEGMENT}`;
 }

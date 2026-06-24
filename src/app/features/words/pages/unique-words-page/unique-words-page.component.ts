@@ -63,19 +63,11 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
   protected readonly emptyLabel = EMPTY_LIST_LABEL;
   protected readonly restoredNotFoundLabel = RESTORED_WORD_NOT_FOUND_LABEL;
 
-  // Drives which single drill-down surface renders: the inline panel at desktop
-  // widths, the overlay modal below. Rendering exactly one avoids the previous
-  // dual-instance DOM (both surfaces rendered the full drill-down subtree, one
-  // hidden by CSS). Defaults to desktop so SSR / non-browser test environments
-  // without `matchMedia` render the inline panel. Breakpoint mirrors the SCSS.
   protected readonly isDesktop = signal(true);
   private desktopQuery?: MediaQueryList;
   private readonly onDesktopChange = (event: MediaQueryListEvent): void =>
     this.isDesktop.set(event.matches);
 
-  // Local draft for the search input so typing does not reload on every
-  // keystroke; the facade reloads after the debounced emission. Seeded from the
-  // active (URL) search so a shared/restored link shows its term in the box.
   protected readonly searchDraft = signal('');
 
   private readonly table = viewChild(UniqueWordsTableComponent);
@@ -84,10 +76,7 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
   protected readonly modeLabel = computed(() => UNIQUE_WORD_KIND_LABELS[this.facade.mode()]);
 
   constructor() {
-    // Reseed the search box from the active search whenever the mode changes
-    // (including the initial load or a browser back/forward restore). `search`
-    // is read untracked so a user's in-progress typing is never overwritten by
-    // the debounce-driven query-param sync.
+
     effect(() => {
       this.facade.mode();
       this.facade.search();
@@ -143,8 +132,7 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
   }
 
   protected onTabActivated(mode: UniqueWordKind): void {
-    // Mode is a route segment; navigate to the mode route and reset list page.
-    // Modal params are cleared too: a mode switch is a fresh exploration.
+
     void this.router.navigate([`/dashboard/words/unique/${mode}`], {
       queryParams: { search: null, sort: null, page: null, word: null, view: null, ap: null },
       queryParamsHandling: 'merge',
@@ -157,15 +145,13 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
   }
 
   protected onDrilldownOpen(word: UniqueWordListItemDto, view: WordDrilldownView): void {
-    // Open in memory immediately, then reflect modal state to the URL so the
-    // link is shareable. The facade's restore guard ignores the re-emit for the
-    // same word.
+
     this.facade.openDrilldown(word, view);
     this.updateQueryParams(buildUniqueWordsQueryParams({ wordId: word.id, view, ayahPage: null }));
   }
 
   protected onDrilldownClose(): void {
-    // Close in memory and clear only the modal params, preserving list context.
+
     this.facade.closeDrilldown();
     this.updateQueryParams(buildModalCloseQueryParams());
   }

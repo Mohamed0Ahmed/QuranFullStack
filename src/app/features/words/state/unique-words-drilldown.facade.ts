@@ -64,7 +64,6 @@ export class UniqueWordsDrilldownFacade {
   private drilldownSub?: Subscription;
   private summarySub?: Subscription;
 
-  // Tracks the full modal tuple so browser back/forward can restore view/ap changes.
   private activeModalUrlState: ModalUrlState | null = null;
 
   readonly drilldownState = computed(() => this._drilldown());
@@ -242,17 +241,12 @@ export class UniqueWordsDrilldownFacade {
   }
 
   private handleRestoredWordNotFound(message: string): void {
-    // Controlled not-found: keep the modal surface closed, surface a not-found
-    // status, and keep the list fully usable. `activeModalUrlState` stays set to
-    // the attempted state so a lingering bad `word` param is not re-fetched on
-    // later list-only navigation. The page renders a controlled Arabic message;
-    // no Quranic text is invented.
+
     this._drilldown.set({ ...INITIAL_DRILLDOWN, ...buildRestoredWordNotFound(message) });
   }
 
   private handleRestoredWordLoadError(message: string): void {
-    // Mirror not-found handling: keep `activeModalUrlState` so the failed
-    // restore is not re-attempted on every later list-only navigation.
+
     this._drilldown.set({ ...INITIAL_DRILLDOWN, ...buildRestoredWordLoadError(message) });
   }
 

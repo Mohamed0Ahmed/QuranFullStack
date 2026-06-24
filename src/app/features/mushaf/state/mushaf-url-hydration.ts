@@ -31,10 +31,6 @@ type AuthoritativeUrlSlice = Pick<
   'panel' | 'ayah' | 'word' | 'segment' | 'ayahTab' | 'wordTab' | 'sources'
 >;
 
-/**
- * Applies a URL snapshot as the sole source of truth for selection/UI state.
- * Omitted query params clear their corresponding state (no carry-over).
- */
 export function applyAuthoritativeUrlSnapshot(
   snapshot: AuthoritativeUrlSlice,
   current: MushafUrlHydrationCurrent,

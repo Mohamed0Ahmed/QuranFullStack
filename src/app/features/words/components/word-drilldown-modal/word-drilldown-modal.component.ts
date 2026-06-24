@@ -1,8 +1,8 @@
-import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { A11yModule } from '@angular/cdk/a11y';
 import { ScrollingModule } from '@angular/cdk/scrolling';
 
+import { ExplorerPanelSkeletonComponent } from '../../../../shared/ui/explorer-panel-skeleton/explorer-panel-skeleton.component';
 import { SurahOccurrencesListComponent } from '../surah-occurrences-list/surah-occurrences-list.component';
 import { MissingSurahsListComponent } from '../missing-surahs-list/missing-surahs-list.component';
 import { AyahMatchesListComponent } from '../ayah-matches-list/ayah-matches-list.component';
@@ -23,9 +23,9 @@ import { mapUniqueWordSummaryDisplayText } from '../../utils/unique-words-displa
   selector: 'qd-word-drilldown-modal',
   standalone: true,
   imports: [
-    NgTemplateOutlet,
     A11yModule,
     ScrollingModule,
+    ExplorerPanelSkeletonComponent,
     SurahOccurrencesListComponent,
     MissingSurahsListComponent,
     AyahMatchesListComponent,
@@ -42,17 +42,40 @@ export class WordDrilldownModalComponent {
   readonly viewChange = output<WordDrilldownView>();
   readonly ayahPageChange = output<number>();
 
-  protected readonly closeLabel = CLOSE_LABEL;
-  protected readonly loadingLabel = LOADING_LABEL;
-  protected readonly emptySurahsLabel = DRILLDOWN_EMPTY_SURAHS_LABEL;
-  protected readonly emptyMissingLabel = DRILLDOWN_EMPTY_MISSING_LABEL;
-  protected readonly emptyAyahsLabel = DRILLDOWN_EMPTY_AYAHS_LABEL;
-  protected readonly panelTitle = DRILLDOWN_PANEL_TITLE;
-  protected readonly panelEmptyLabel = DRILLDOWN_PANEL_EMPTY_LABEL;
+  protected get closeLabel() {
+    return CLOSE_LABEL;
+  }
 
-  protected readonly title = computed(() => {
+  protected get loadingLabel() {
+    return LOADING_LABEL;
+  }
+
+  protected get emptySurahsLabel() {
+    return DRILLDOWN_EMPTY_SURAHS_LABEL;
+  }
+
+  protected get emptyMissingLabel() {
+    return DRILLDOWN_EMPTY_MISSING_LABEL;
+  }
+
+  protected get emptyAyahsLabel() {
+    return DRILLDOWN_EMPTY_AYAHS_LABEL;
+  }
+
+  protected get drilldownPanelTitle() {
+    return DRILLDOWN_PANEL_TITLE;
+  }
+
+  protected get panelEmptyLabel() {
+    return DRILLDOWN_PANEL_EMPTY_LABEL;
+  }
+
+  protected readonly entityTitle = computed(() => {
+    if (!this.state().isOpen) {
+      return '';
+    }
     const summary = this.state().summary;
-    return summary ? mapUniqueWordSummaryDisplayText(summary).displayText : this.panelTitle;
+    return summary ? mapUniqueWordSummaryDisplayText(summary).displayText : '';
   });
 
   protected readonly drilldownViews: readonly WordDrilldownView[] = ['surahs', 'missing', 'ayahs'];

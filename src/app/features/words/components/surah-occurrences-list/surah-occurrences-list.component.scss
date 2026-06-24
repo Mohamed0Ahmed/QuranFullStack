@@ -41,7 +41,8 @@
   scrollbar-gutter: stable;
 }
 
-:host-context(.word-drilldown-panel) {
+:host-context(.word-drilldown-panel),
+:host-context(.root-details-panel__surface) {
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -49,12 +50,14 @@
   height: 100%;
 }
 
-:host-context(.word-drilldown-panel) .surah-occurrences-list-shell {
+:host-context(.word-drilldown-panel) .surah-occurrences-list-shell,
+:host-context(.root-details-panel__surface) .surah-occurrences-list-shell {
   flex: 1;
   min-height: 0;
 }
 
-:host-context(.word-drilldown-panel) .surah-occurrences-list {
+:host-context(.word-drilldown-panel) .surah-occurrences-list,
+:host-context(.root-details-panel__surface) .surah-occurrences-list {
   flex: 1;
   min-height: 0;
   block-size: auto;
@@ -72,4 +75,24 @@
 
 .surah-occurrences-list__name {
   min-width: 0;
+}
+
+.surah-occurrences-list__row--loading {
+  pointer-events: none;
+}
+
+.surah-occurrences-list__loading-number {
+  inline-size: 1.25rem;
+  block-size: 0.875rem;
+  margin-inline: auto;
+}
+
+.surah-occurrences-list__loading-name {
+  inline-size: 50%;
+  block-size: 1rem;
+}
+
+.surah-occurrences-list__loading-badge {
+  inline-size: 2rem;
+  block-size: 1.25rem;
 }

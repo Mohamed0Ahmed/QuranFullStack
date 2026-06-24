@@ -1,43 +1,66 @@
 <div class="ayah-matches-list" data-testid="ayah-matches-list">
-  <div class="ayah-matches-list__viewport">
-    @for (match of page().items; track match.ayahId; let i = $index) {
-      <article
-        class="qd-card ayah-matches-list__card"
-        [class.ayah-matches-list__card--alt]="i % 2 === 1"
-      >
-        <header class="ayah-matches-list__meta-row">
-          <span class="ayah-matches-list__row-number" aria-hidden="true">{{ rowNumber(i) }}</span>
-          <div class="ayah-matches-list__meta">
-            <span class="ayah-matches-list__surah-name">{{ match.surahNameArabic }}</span>
-            <span class="ayah-matches-list__ref">
-              <span class="ayah-matches-list__ref-label">{{ ayahRefLabel }}</span>
-              {{ match.ayahNumber }}
+  <div
+    class="ayah-matches-list__viewport"
+    [attr.aria-busy]="loading() ? true : null"
+    [attr.data-testid]="loading() ? 'ayah-matches-list-loading' : null"
+  >
+    @if (loading()) {
+      <p class="qd-sr-only" role="status" aria-live="polite">{{ loadingLabel }}</p>
+      @for (_ of loadingCardPlaceholders; track $index) {
+        <article class="qd-card ayah-matches-list__card ayah-matches-list__card--loading" aria-hidden="true">
+          <header class="ayah-matches-list__meta-row">
+            <span class="ayah-matches-list__row-number">
+              <span class="qd-skeleton qd-skeleton--text ayah-matches-list__loading-number"></span>
             </span>
-            <span class="ayah-matches-list__ref ayah-matches-list__ref--page">
-              <span class="ayah-matches-list__ref-label">{{ mushafPageRefLabel }}</span>
-              {{ match.pageNumber }}
-            </span>
-          </div>
-        </header>
-        <a
-          class="ayah-matches-list__ayah-link qd-interactive-surface"
-          [attr.href]="mushafHref(match)"
-          [attr.aria-label]="openAyahInMushafLabel"
-          target="_blank"
-          rel="noopener"
-          data-testid="ayah-matches-open-mushaf"
+            <div class="ayah-matches-list__meta">
+              <span class="qd-skeleton qd-skeleton--text ayah-matches-list__loading-meta"></span>
+            </div>
+          </header>
+          <span class="qd-skeleton qd-skeleton--text ayah-matches-list__loading-ayah"></span>
+        </article>
+      }
+    } @else {
+      @for (row of rows(); track row.match.ayahId; let i = $index) {
+        <article
+          class="qd-card ayah-matches-list__card"
+          [class.ayah-matches-list__card--alt]="i % 2 === 1"
         >
-          <qd-highlighted-ayah [words]="match.words" [matchedQuranWordIds]="match.matchedQuranWordIds" />
-        </a>
-      </article>
+          <header class="ayah-matches-list__meta-row">
+            <span class="ayah-matches-list__row-number" aria-hidden="true">{{ rowNumber(i) }}</span>
+            <div class="ayah-matches-list__meta">
+              <span class="ayah-matches-list__surah-name">{{ row.match.surahNameArabic }}</span>
+              <span class="ayah-matches-list__ref">
+                <span class="ayah-matches-list__ref-label">{{ ayahRefLabel }}</span>
+                {{ row.match.ayahNumber }}
+              </span>
+              <span class="ayah-matches-list__ref ayah-matches-list__ref--page">
+                <span class="ayah-matches-list__ref-label">{{ mushafPageRefLabel }}</span>
+                {{ row.match.pageNumber }}
+              </span>
+            </div>
+          </header>
+          <a
+            class="ayah-matches-list__ayah-link qd-interactive-surface"
+            [attr.href]="row.mushafHref"
+            [attr.aria-label]="openAyahInMushafLabel"
+            target="_blank"
+            rel="noopener"
+            data-testid="ayah-matches-open-mushaf"
+          >
+            <qd-highlighted-ayah [words]="row.match.words" [matchedQuranWordIds]="row.match.matchedQuranWordIds" />
+          </a>
+        </article>
+      }
     }
   </div>
 
-  <qd-pagination
-    [currentPage]="currentPage()"
-    [pageSize]="page().pageSize"
-    [totalCount]="page().totalCount"
-    ariaLabel="تصفّح الآيات"
-    (pageChange)="pageChange.emit($event)"
-  />
+  @if (!loading()) {
+    <qd-pagination
+      [currentPage]="currentPage()"
+      [pageSize]="page().pageSize"
+      [totalCount]="page().totalCount"
+      ariaLabel="تصفّح الآيات"
+      (pageChange)="pageChange.emit($event)"
+    />
+  }
 </div>

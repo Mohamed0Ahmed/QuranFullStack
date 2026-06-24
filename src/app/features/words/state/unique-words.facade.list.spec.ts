@@ -14,7 +14,6 @@ import {
   UniqueWordListItemDto,
 } from '../models/unique-words.models';
 
-/** Source-safe synthetic placeholder — not Quranic text. */
 function item(id: number, overrides: Partial<UniqueWordListItemDto> = {}): UniqueWordListItemDto {
   return {
     id,
@@ -50,11 +49,6 @@ function setup(getList = vi.fn()) {
   return TestBed.inject(UniqueWordsFacade);
 }
 
-/**
- * Mutable ActivatedRoute stub. The page drives list state (mode/search/sort/
- * page) only through the URL, so these tests exercise the same route-binding
- * path the page uses rather than imperative setters.
- */
 function controllableRoute(
   params: Record<string, string> = { mode: 'tashkeel' },
   queryParams: Record<string, string> = {},
@@ -260,9 +254,7 @@ describe('UniqueWordsFacade route binding', () => {
   });
 
   it('reloads with the new mode when only the :mode path segment changes', () => {
-    // Regression: a pure mode switch (query params unchanged) must reload. The
-    // mode lives in the path segment, so reload cannot depend on a query-param
-    // change emitting.
+
     const getList = vi.fn(() => of(okResponse([item(1)], 1)));
     const facade = setup(getList);
 

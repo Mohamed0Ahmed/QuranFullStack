@@ -10,10 +10,6 @@ import {
   SourceOption,
 } from '../../models/mushaf.models';
 
-/*
- * Source-safe synthetic placeholders — not Quranic text. Mirrors the
- * placeholders used in mushaf-reader.facade.ayah-study.spec.ts.
- */
 const AYAH_TEXT_PLACEHOLDER = 'نص تجريبي للآية';
 
 const ZERO_SIMILARITY_SUMMARY = {
@@ -188,19 +184,16 @@ describe('SelectedAyahSectionComponent — stable loading (UI-001)', () => {
     expect(root.querySelector('.qd-loading-state')).toBeNull();
     expect(root.querySelector('[data-testid="ayah-study-loading"]')).toBeTruthy();
 
-    // Static structure mounted: source slot, tabs, content region.
     expect(root.querySelector('.selected-ayah-section__source')).toBeTruthy();
     expect(root.querySelector('.selected-ayah-section__tabs')).toBeTruthy();
     expect(root.querySelectorAll('.selected-ayah-section__tab')).toHaveLength(5);
     expect(root.querySelector('.selected-ayah-section__content')).toBeTruthy();
 
-    // Loading content is several stacked shimmer lines, not one giant block.
     const contentSkeleton = root.querySelector('[data-testid="ayah-content-skeleton"]');
     expect(contentSkeleton).toBeTruthy();
     expect(contentSkeleton?.querySelectorAll('.qd-skeleton--text').length).toBeGreaterThanOrEqual(3);
     expect(root.querySelector('.qd-loading-overlay')).toBeNull();
 
-    // No real study content while loading.
     expect(root.querySelector('qd-tafsir-card')).toBeNull();
     expect(root.querySelector('[data-testid="selected-ayah-section-ayah"]')).toBeNull();
   });
@@ -215,20 +208,16 @@ describe('SelectedAyahSectionComponent — stable loading (UI-001)', () => {
 
     const root = fixture.nativeElement as HTMLElement;
 
-    // No single covering overlay block; structured stacked lines instead.
     expect(root.querySelector('.qd-loading-overlay')).toBeNull();
     expect(root.querySelector('[data-testid="ayah-content-skeleton"]')).toBeTruthy();
 
-    // The real study content is not mounted during loading.
     expect(root.querySelector('qd-tafsir-card')).toBeNull();
     expect(root.querySelector('[data-testid="selected-ayah-section-ayah"]')).toBeNull();
 
-    // Tabs stay mounted and disabled while loading.
     const tabs = Array.from(root.querySelectorAll<HTMLButtonElement>('.selected-ayah-section__tab'));
     expect(tabs).toHaveLength(5);
     expect(tabs.every((tab) => tab.disabled)).toBe(true);
 
-    // Source slot shows a skeleton placeholder (not the live selector).
     expect(root.querySelector('.selected-ayah-section__source-skeleton')).toBeTruthy();
     expect(root.querySelector('qd-source-selector')).toBeNull();
   });
@@ -244,11 +233,9 @@ describe('SelectedAyahSectionComponent — stable loading (UI-001)', () => {
 
     const root = fixture.nativeElement as HTMLElement;
 
-    // Static label stays (it does not depend on the loaded study).
     const label = root.querySelector('.selected-ayah-section__source-loading-label');
     expect(label?.textContent?.trim()).toBe('مصدر التفسير');
 
-    // Only the value shimmers; the live selector is not mounted.
     expect(root.querySelector('.selected-ayah-section__source-skeleton')).toBeTruthy();
     expect(root.querySelector('qd-source-selector')).toBeNull();
   });
@@ -281,7 +268,7 @@ describe('SelectedAyahSectionComponent — stable loading (UI-001)', () => {
 
     const root = fixture.nativeElement as HTMLElement;
     const tabs = Array.from(root.querySelectorAll<HTMLButtonElement>('.selected-ayah-section__tab'));
-    // Actions may be disabled while loading but must not disappear.
+
     expect(tabs).toHaveLength(5);
     expect(tabs.every((tab) => tab.disabled)).toBe(true);
   });
@@ -300,9 +287,27 @@ describe('SelectedAyahSectionComponent — stable loading (UI-001)', () => {
     expect(root.querySelector('[data-testid="selected-ayah-section-ayah"]')).toBeTruthy();
     expect(root.querySelector('qd-tafsir-card')).toBeTruthy();
     expect(root.querySelectorAll('.qd-skeleton').length).toBe(0);
-    // Tabs are interactive again once loaded.
+
     const tabs = Array.from(root.querySelectorAll<HTMLButtonElement>('.selected-ayah-section__tab'));
     expect(tabs.every((tab) => !tab.disabled)).toBe(true);
+  });
+
+  it('renders tabs above the source selector for source-backed tabs', () => {
+    const fixture = TestBed.createComponent(SelectedAyahSectionComponent);
+    setInputs(fixture, {
+      study: buildAyahStudyViewModel(),
+      loadState: IDLE,
+      selectedVerseKey: '2:25',
+      activeTab: 'full-i3rab',
+    });
+
+    const root = fixture.nativeElement as HTMLElement;
+    const tabs = root.querySelector('.selected-ayah-section__tabs');
+    const source = root.querySelector('.selected-ayah-section__source');
+
+    expect(tabs).toBeTruthy();
+    expect(source).toBeTruthy();
+    expect(tabs!.compareDocumentPosition(source!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('renders the empty "select an ayah" state when no verse is selected', () => {

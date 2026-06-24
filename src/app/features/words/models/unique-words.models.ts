@@ -23,7 +23,6 @@ export interface UniqueWordListItemDto {
   occurrencesCount: number;
   ayahsCount: number;
   surahsCount: number;
-  /** Derived as 114 - surahsCount. */
   missingSurahsCount: number;
   firstVerseKey: string;
   firstLocation: string;
@@ -80,17 +79,18 @@ export interface AyahWordForHighlightDto {
   isAyahMarker: boolean;
 }
 
-export interface UniqueWordAyahMatchDto {
+export interface AyahMatchDto {
   ayahId: number;
   verseKey: string;
   surahNumber: number;
   surahNameArabic: string;
   ayahNumber: number;
   pageNumber: number;
-  /** Exact quran_words.id values; only these are highlighted. */
   matchedQuranWordIds: number[];
   words: AyahWordForHighlightDto[];
 }
+
+export interface UniqueWordAyahMatchDto extends AyahMatchDto {}
 
 export type LoadStatus = 'idle' | 'loading' | 'success' | 'empty' | 'error' | 'notFound';
 

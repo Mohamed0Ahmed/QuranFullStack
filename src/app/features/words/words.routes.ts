@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 
-import { WORDS_UNIQUE_MODE_SEGMENT } from '../../core/navigation/route-paths';
+import { WORDS_ROOTS_SEGMENT, WORDS_UNIQUE_MODE_SEGMENT } from '../../core/navigation/route-paths';
 
 const loadWordsHubPage = () =>
   import('./pages/words-hub-page/words-hub-page.component').then(
@@ -10,6 +10,11 @@ const loadWordsHubPage = () =>
 const loadUniqueWordsPage = () =>
   import('./pages/unique-words-page/unique-words-page.component').then(
     (m) => m.UniqueWordsPageComponent,
+  );
+
+const loadRootsExplorerPage = () =>
+  import('./pages/roots-explorer-page/roots-explorer-page.component').then(
+    (m) => m.RootsExplorerPageComponent,
   );
 
 export const WORDS_HUB_ROUTE = {
@@ -22,6 +27,11 @@ export const WORDS_UNIQUE_MODE_ROUTE = {
   loadComponent: loadUniqueWordsPage,
 } as const;
 
+export const WORDS_ROOTS_ROUTE = {
+  path: WORDS_ROOTS_SEGMENT,
+  loadComponent: loadRootsExplorerPage,
+} as const;
+
 export const WORDS_ROUTES: Routes = [
   WORDS_HUB_ROUTE,
   {
@@ -30,4 +40,5 @@ export const WORDS_ROUTES: Routes = [
     pathMatch: 'full',
   },
   WORDS_UNIQUE_MODE_ROUTE,
+  WORDS_ROOTS_ROUTE,
 ];

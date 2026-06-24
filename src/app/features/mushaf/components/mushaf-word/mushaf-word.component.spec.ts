@@ -4,7 +4,6 @@ import { TestBed } from '@angular/core/testing';
 import { MushafWordComponent } from './mushaf-word.component';
 import { MushafWordDto } from '../../models/mushaf.models';
 
-/** Source-safe synthetic placeholders — not Quranic text. */
 const SYNTHETIC_WORD = 'كلمة-تجريبية-١';
 const MARKER_TEXT_PLACEHOLDER = 'علامة-تجريبية';
 const SYNTHETIC_AYAH_DIGIT = '٧';

@@ -24,8 +24,6 @@
   flex-wrap: wrap;
 }
 
-// Coming-soon titles stay readable but de-emphasized so the badge carries the
-// disabled signal alongside (not by color alone).
 .word-section-card__title--disabled {
   opacity: 0.7;
 }

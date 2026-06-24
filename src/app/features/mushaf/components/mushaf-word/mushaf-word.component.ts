@@ -18,7 +18,6 @@ export class MushafWordComponent {
   readonly ayahSelect = output<string>();
   readonly wordSelect = output<string>();
 
-  /** Presentation-only; raw `word().textUthmani` stays authoritative in state. */
   protected readonly displayText = computed(() => toMushafWordDisplayText(this.word().textUthmani));
 
   protected readonly isHighlightedAyahWord = computed(() => {

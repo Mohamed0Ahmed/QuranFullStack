@@ -4,7 +4,6 @@ import { TestBed } from '@angular/core/testing';
 import { MushafSurahJuzGroupDto } from '../../models/mushaf.models';
 import { SurahJumpPickerComponent } from './surah-jump-picker.component';
 
-/** Source-safe synthetic placeholders — not Quranic text. */
 const catalogFixture: readonly MushafSurahJuzGroupDto[] = [
   {
     juzNumber: 30,

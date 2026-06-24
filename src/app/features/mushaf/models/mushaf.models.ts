@@ -289,7 +289,7 @@ export interface LocalizedLabel {
 export interface WordMorphologyDto {
   headPos: string;
   headPosLabel: LocalizedLabel;
-  root: { text: string | null; buckwalter: string | null } | null;
+  root: { id: number; text: string | null; buckwalter: string | null } | null;
   lemma: { text: string | null; buckwalter: string | null } | null;
   stem: { text: string | null } | null;
   isVerb: boolean;

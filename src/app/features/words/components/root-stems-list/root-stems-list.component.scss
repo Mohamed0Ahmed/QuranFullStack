@@ -1,0 +1,94 @@
+:host {
+  display: block;
+}
+
+.root-stems-list-shell {
+  display: flex;
+  flex-direction: column;
+}
+
+.root-stems-list__header,
+.root-stems-list__row {
+  display: grid;
+  grid-template-columns: 2rem 1fr auto;
+  align-items: center;
+  gap: var(--qd-space-2);
+}
+
+.root-stems-list__header {
+  font-size: 0.75rem;
+  color: var(--qd-text-muted);
+  padding-inline: var(--qd-space-1);
+  margin-block-end: var(--qd-space-2);
+}
+
+.root-stems-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qd-space-1);
+}
+
+.root-stems-list__row {
+  padding: var(--qd-space-2);
+  border-radius: var(--qd-radius-sm);
+  border: 1px solid var(--qd-border);
+  background: var(--qd-surface);
+}
+
+.root-stems-list__row-number {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  color: var(--qd-text-muted);
+}
+
+.root-stems-list__text {
+  font-family: var(--qd-font-quran, inherit);
+}
+
+.root-stems-list__row--loading {
+  pointer-events: none;
+}
+
+.root-stems-list__loading-number {
+  inline-size: 1.25rem;
+  block-size: 0.875rem;
+  margin-inline: auto;
+}
+
+.root-stems-list__loading-text {
+  inline-size: 55%;
+  block-size: 1rem;
+}
+
+.root-stems-list__loading-badge {
+  inline-size: 2rem;
+  block-size: 1.25rem;
+}
+
+:host-context(.word-drilldown-panel),
+:host-context(.root-details-panel__surface) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+
+:host-context(.word-drilldown-panel) .root-stems-list-shell,
+:host-context(.root-details-panel__surface) .root-stems-list-shell {
+  flex: 1;
+  min-height: 0;
+}
+
+:host-context(.word-drilldown-panel) .root-stems-list__header,
+:host-context(.root-details-panel__surface) .root-stems-list__header {
+  flex-shrink: 0;
+}
+
+:host-context(.word-drilldown-panel) .root-stems-list,
+:host-context(.root-details-panel__surface) .root-stems-list {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  scrollbar-gutter: stable;
+}

@@ -1,6 +1,5 @@
 import { PageMarkerDto } from '../../models/mushaf.models';
 
-/** Temporary presentation filter until division-marker UI is redesigned. */
 export const HIDDEN_MUSHAF_PAGE_MARKER_TYPES = new Set<PageMarkerDto['markerType']>([
   'juz',
   'hizb',

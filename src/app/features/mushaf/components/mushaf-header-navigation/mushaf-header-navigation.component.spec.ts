@@ -13,7 +13,7 @@ const surahCatalogByJuzFixture: readonly MushafSurahJuzGroupDto[] = [
     ],
   },
 ];
-/** Source-safe synthetic placeholders — not Quranic text. */
+
 const pageFixture: MushafPageViewModel = {
   pageNumber: 6,
   previousPageNumber: 5,

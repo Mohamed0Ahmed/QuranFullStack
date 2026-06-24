@@ -13,6 +13,7 @@ import { morphologyTextOrDash } from '../../utils/morphology-display.labels';
 })
 export class WordMorphologySummaryComponent {
   readonly morphology = input.required<WordMorphologyDto>();
+  readonly rootExplorerHref = input('');
 
   protected readonly morphologyTextOrDash = morphologyTextOrDash;
 }
