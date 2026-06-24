@@ -5,7 +5,28 @@
 .roots-explorer-frame {
   display: flex;
   flex-direction: column;
-  gap: var(--qd-space-4);
+  gap: var(--qd-space-3);
+}
+
+.roots-explorer__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--qd-space-2);
+  align-items: center;
+}
+
+.roots-explorer__search {
+  flex: 1 1 18rem;
+  min-width: 0;
+}
+
+.roots-explorer__sort {
+  flex: 0 0 auto;
+}
+
+.roots-explorer__panel-summary {
+  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  font-size: 1.125rem;
 }
 
 // Desktop split-screen: table on the inline-start side, panel on the
@@ -16,6 +37,7 @@
   grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
   gap: var(--qd-space-4);
   align-items: start;
+  padding: 0 var(--qd-space-4);
 }
 
 .roots-explorer-layout__table,
@@ -24,18 +46,9 @@
 }
 
 .roots-explorer-layout__panel {
-  // Constrain the panel so its inner scroll container can scroll
-  // independently of the page/table.
   position: sticky;
   top: var(--qd-space-4);
   max-block-size: calc(100vh - 8rem);
-}
-
-.roots-explorer__placeholder {
-  block-size: 12rem;
-  border: 1px dashed var(--qd-border);
-  border-radius: var(--qd-radius-md);
-  background: var(--qd-surface);
 }
 
 @media (max-width: 1023px) {

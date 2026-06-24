@@ -4,21 +4,85 @@
       <h1 class="qd-page-title" data-testid="roots-explorer-page-title">{{ pageTitle }}</h1>
     </div>
 
-    <div class="roots-explorer-layout">
-      <!-- Left/table region: filled by US1 (T030) — roots search bar + sort +
-           roots-table + shared qd-pagination. Placeholder for now. -->
-      <section class="roots-explorer-layout__table" aria-label="جدول الجذور">
-        <div class="roots-explorer__placeholder" data-testid="roots-explorer-table-placeholder"></div>
-      </section>
+    <!-- List controls: search + sort. -->
+    <div class="roots-explorer__controls">
+      <label class="qd-sr-only" for="roots-search">{{ searchLabel }}</label>
+      <input
+        id="roots-search"
+        class="qd-input roots-explorer__search"
+        type="search"
+        inputmode="search"
+        [attr.placeholder]="searchPlaceholder"
+        [value]="searchDraft()"
+        data-testid="roots-search-input"
+        (input)="onSearchInput($any($event.target).value)"
+      />
 
-      <!-- Right/panel region: persistent detail panel shell (T020). Shows the
-           empty-selection state until a root is selected (US1). -->
-      <aside class="roots-explorer-layout__panel">
-        <qd-root-details-panel
-          [view]="activeView()"
-          [emptySelection]="emptySelection()"
-        />
-      </aside>
+      <label class="qd-sr-only" for="roots-sort">{{ sortLabels.label }}</label>
+      <select
+        id="roots-sort"
+        class="qd-select roots-explorer__sort"
+        data-testid="roots-sort-select"
+        [value]="listState().sort"
+        (change)="onSortChange($any($event.target).value)"
+      >
+        @for (option of sortOptions; track option) {
+          <option [value]="option">{{ sortLabels[option] }}</option>
+        }
+      </select>
     </div>
+
+    @switch (listState().status) {
+      @case ('error') {
+        <div class="qd-error-state" role="alert" data-testid="roots-list-error">
+          {{ listState().errorMessage }}
+        </div>
+      }
+      @case ('empty') {
+        <div class="qd-empty-state" data-testid="roots-list-no-results">{{ noResultsLabel }}</div>
+      }
+    }
   </div>
+
+  @switch (listState().status) {
+    @default {
+      <div class="roots-explorer-layout">
+        <section class="roots-explorer-layout__table" aria-label="جدول الجذور">
+          <qd-roots-table
+            [rows]="listState().items"
+            [loading]="listState().status === 'loading'"
+            [selectedRootId]="panelState().selectedRootId"
+            [currentPage]="listState().page"
+            [pageSize]="listState().pageSize"
+            (rowSelected)="onRowSelected($event)"
+            (countOpened)="onCountOpened($event)"
+          />
+          <qd-pagination
+            [currentPage]="listState().page"
+            [pageSize]="listState().pageSize"
+            [totalCount]="listState().totalCount"
+            [disabled]="listState().status === 'loading'"
+            ariaLabel="تصفّح الجذور"
+            (pageChange)="onPageChange($event)"
+          />
+        </section>
+
+        <aside class="roots-explorer-layout__panel">
+          <qd-root-details-panel
+            [view]="activeView()"
+            [emptySelection]="emptySelection()"
+            (viewChange)="onPanelViewChange($event)"
+          >
+            @if (!emptySelection()) {
+              <!-- US1: no view content yet (story phases plug it in). The
+                   summary header is shown as a calm placeholder. -->
+              <p class="qd-text-muted roots-explorer__panel-summary" data-testid="roots-panel-summary">
+                {{ panelState().summary?.rootText }}
+              </p>
+            }
+          </qd-root-details-panel>
+        </aside>
+      </div>
+    }
+  }
 </div>

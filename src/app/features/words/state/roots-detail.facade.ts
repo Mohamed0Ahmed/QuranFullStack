@@ -46,12 +46,26 @@ export class RootsDetailFacade {
 
   // --- Selection + URL restore (US1/US2) ---
 
-  /** Selects a root, setting the default view (ayahs). Implemented across stories. */
-  selectRoot(_summary: RootSummaryDto, _view: RootView = DEFAULT_ROOT_VIEW): void {
-    // US1/T039: set selection + default view, load the active view.
+  /**
+   * Selects a root from an in-memory summary (US1: the summary is built from the
+   * list item, so NO detail API call fires). Sets the requested view (default
+   * ayahs). Per-view data loading is added by US2+.
+   */
+  selectRoot(summary: RootSummaryDto, view: RootView = DEFAULT_ROOT_VIEW): void {
+    this._panel.set({
+      ...INITIAL_PANEL,
+      selectedRootId: summary.id,
+      summary,
+      view,
+      status: 'success',
+    });
   }
 
-  /** Restores panel state from parsed URL params. Implemented across stories. */
+  /**
+   * Restores panel state from parsed URL params. US1 leaves the summary null
+   * (the panel shows the empty-selection state on a hard reload until a row is
+   * re-selected); US2 (T039) implements full summary + active-view restore.
+   */
   restoreFromUrl(
     _rootId: number | null,
     _view: RootView,
@@ -59,7 +73,7 @@ export class RootsDetailFacade {
     _surahView: RootSurahView,
     _detailPage: number,
   ): void {
-    // US1/T039: load summary + active view from URL.
+    // US2/T039: load summary + active view from URL.
   }
 
   /** Clears the selection, returning to the empty-selection state. */
@@ -67,8 +81,11 @@ export class RootsDetailFacade {
     this._panel.set(INITIAL_PANEL);
   }
 
-  /** Sets the active panel tab. Implemented across stories. */
-  setView(_view: RootView): void {
-    // US2+: switch view + lazy-load.
+  /**
+   * Sets the active panel tab. US1 updates the view only (no per-view data yet);
+   * US2+ adds lazy-load.
+   */
+  setView(view: RootView): void {
+    this._panel.update((s) => ({ ...s, view }));
   }
 }

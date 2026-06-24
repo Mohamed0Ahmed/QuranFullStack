@@ -1,4 +1,5 @@
 import { UniqueWordKind, UniqueWordSort, WordDrilldownView } from './unique-words.models';
+import { rootsRoutePath } from '../../../core/navigation/route-paths';
 
 export interface WordSectionCardLabel {
   labelAr: string;
@@ -10,8 +11,20 @@ export const ACTIVE_HUB_SECTION: WordSectionCardLabel = {
   descriptionAr: 'استعراض الكلمات القرآنية الفريدة وتوزيعها',
 };
 
+/**
+ * Additional active Words-hub sections that have landed routes. Feature 015
+ * (Roots Explorer, FR-047) promotes الجذور from coming-soon to active.
+ * Each entry carries its stable route (a route key, not a translated label).
+ */
+export interface ActiveHubSection extends WordSectionCardLabel {
+  route: string;
+}
+
+export const ADDITIONAL_ACTIVE_HUB_SECTIONS: readonly ActiveHubSection[] = [
+  { labelAr: 'الجذور', descriptionAr: 'استكشاف جذور الكلمات القرآنية', route: rootsRoutePath() },
+];
+
 export const COMING_SOON_HUB_SECTIONS: readonly WordSectionCardLabel[] = [
-  { labelAr: 'الجذور', descriptionAr: 'استكشاف جذور الكلمات القرآنية' },
   { labelAr: 'الصيغة المعجمية', descriptionAr: 'استكشاف الصيغ المعجمية للكلمات' },
   { labelAr: 'الأصل الصرفي', descriptionAr: 'استكشاف الأصول الصرفية للكلمات' },
   { labelAr: 'أنواع الكلمة', descriptionAr: 'استكشاف أنواع الكلمات من حيث الاسم والفعل والحرف' },

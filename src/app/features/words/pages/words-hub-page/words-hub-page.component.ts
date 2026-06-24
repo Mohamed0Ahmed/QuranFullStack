@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { WordSectionCardComponent } from '../../components/word-section-card/word-section-card.component';
 import {
   ACTIVE_HUB_SECTION,
+  ADDITIONAL_ACTIVE_HUB_SECTIONS,
   COMING_SOON_BADGE,
   COMING_SOON_HUB_SECTIONS,
   WORDS_HUB_SUBTITLE,
@@ -36,6 +37,15 @@ export class WordsHubPageComponent {
     route: '/dashboard/words/unique',
     disabled: false,
   };
+
+  // Feature 015 (Roots Explorer, FR-047): active section cards with routes.
+  protected readonly additionalActiveCards: readonly WordSectionCardViewModel[] =
+    ADDITIONAL_ACTIVE_HUB_SECTIONS.map((section) => ({
+      labelAr: section.labelAr,
+      descriptionAr: section.descriptionAr,
+      route: section.route,
+      disabled: false,
+    }));
 
   protected readonly comingSoonCards: readonly WordSectionCardViewModel[] =
     COMING_SOON_HUB_SECTIONS.map((section: WordSectionCardLabel) => ({

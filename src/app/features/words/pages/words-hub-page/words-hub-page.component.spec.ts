@@ -5,6 +5,7 @@ import { provideRouter } from '@angular/router';
 import { WordsHubPageComponent } from './words-hub-page.component';
 import {
   ACTIVE_HUB_SECTION,
+  ADDITIONAL_ACTIVE_HUB_SECTIONS,
   COMING_SOON_BADGE,
   COMING_SOON_HUB_SECTIONS,
 } from '../../models/unique-words.labels';
@@ -42,12 +43,24 @@ describe('WordsHubPageComponent', () => {
     expect(root.querySelectorAll('[data-testid="words-hub-card--active"]')).toHaveLength(1);
   });
 
-  it('renders four disabled coming-soon section cards', async () => {
+  it('renders the disabled coming-soon section cards', async () => {
     const root = await createComponent();
 
     const disabledCards = root.querySelectorAll('[data-testid="words-hub-card--disabled"]');
     expect(disabledCards).toHaveLength(COMING_SOON_HUB_SECTIONS.length);
-    expect(COMING_SOON_HUB_SECTIONS.length).toBe(4);
+    // Feature 015 (FR-047) promoted الجذور from coming-soon to active, so the
+    // coming-soon set shrank from four to three.
+    expect(COMING_SOON_HUB_SECTIONS.length).toBe(3);
+    expect(COMING_SOON_HUB_SECTIONS.map((s) => s.labelAr)).not.toContain('الجذور');
+  });
+
+  it('links the Roots Explorer card to the roots route (FR-047)', async () => {
+    const root = await createComponent();
+
+    // الجذور is now an additional ACTIVE card linking to /dashboard/words/roots.
+    expect(ADDITIONAL_ACTIVE_HUB_SECTIONS.map((s) => s.labelAr)).toContain('الجذور');
+    const rootsCard = root.querySelector('[data-testid="words-hub-card--الجذور"]');
+    expect(rootsCard).toBeTruthy();
   });
 
   it('marks every disabled card with a coming-soon badge element', async () => {
