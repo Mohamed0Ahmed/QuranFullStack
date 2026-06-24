@@ -69,6 +69,7 @@ INSERT INTO quran_mushaf_pages
 VALUES
   (1,   1,   1, 1,   2,  2),
   (2,   2,   1, 2,   3,  2),
+  (5,   2,  25, 2,  26,  2),
   (50,  3,   1, 3,   1,  1),
   (77,  4,   1, 4,   1,  1),
   (106, 5,   1, 5,   1,  1),
@@ -173,6 +174,17 @@ VALUES
   (2007, '7:1:1',  71,  7, 1, 1, 150, 1, 1, 'g2007', 'كَلِمَة',     'كلمة',     'كلمة',     'كلمة',     FALSE, NULL, NULL),
   (2008, '8:1:2',  81,  8, 1, 2, 175, 1, 2, 'g2008', 'كَلَّمَ',      'كلم',      'كلم',      'كلم',      FALSE, NULL, NULL),
   (2009, '114:1:3',1141,114,1, 3, 604,1, 3, 'g2009','كَلِمَة',      'كلمة',     'كلمة',     'كلمة',     FALSE, NULL, NULL);
+
+-- ----------------------------------------------------------------------
+-- Part-of-speech tags referenced by quran_word_morphology.head_pos (FK).
+-- Authentic labels from PosTagSeed (only the codes the slice morphology uses).
+-- ----------------------------------------------------------------------
+INSERT INTO quran_pos_tags
+  (code, arabic_label, english_label, category, sort_order)
+VALUES
+  ('N',   'اسم', 'Noun',      'noun', 1),
+  ('V',   'فعل', 'Verb',      'verb', 2),
+  ('ADJ', 'صفة', 'Adjective', 'noun', 4);
 
 -- ----------------------------------------------------------------------
 -- Word morphology — the driving relation. Each row binds a readable word to a

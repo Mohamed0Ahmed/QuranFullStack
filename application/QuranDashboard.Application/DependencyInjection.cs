@@ -21,6 +21,8 @@ using QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordMissingSurahs;
 using QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordSummary;
 using QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordSurahs;
 using QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordsPage;
+using QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootsPage;
+using QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootSummary;
 
 namespace QuranDashboard.Application;
 
@@ -51,6 +53,8 @@ public static class DependencyInjection
         services.AddScoped<GetUniqueWordSurahsHandler>();
         services.AddScoped<GetUniqueWordMissingSurahsHandler>();
         services.AddScoped<GetUniqueWordAyahsHandler>();
+        services.AddScoped<GetRootsPageHandler>();
+        services.AddScoped<GetRootSummaryHandler>();
 
         return services;
     }
