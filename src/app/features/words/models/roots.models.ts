@@ -6,6 +6,8 @@
  * selection, the `root=` URL param, and deep-links only.
  */
 
+import { AyahMatchDto } from './unique-words.models';
+
 export type RootSort = 'mushaf-order' | 'occurrences' | 'alpha';
 
 /** Sub-view of the الكلمات tab: without/with tashkeel. */
@@ -61,24 +63,7 @@ export interface RootWordItemDto {
   firstVerseKey: string;
 }
 
-export interface AyahWordForHighlightDto {
-  quranWordId: number;
-  wordNumber: number;
-  textUthmani: string;
-  isAyahMarker: boolean;
-}
-
-export interface RootAyahMatchDto {
-  ayahId: number;
-  verseKey: string;
-  surahNumber: number;
-  surahNameArabic: string;
-  ayahNumber: number;
-  pageNumber: number;
-  /** Exact quran_words.id values; only these are highlighted. */
-  matchedQuranWordIds: number[];
-  words: AyahWordForHighlightDto[];
-}
+export interface RootAyahMatchDto extends AyahMatchDto {}
 
 export interface RootSurahItemDto {
   surahNumber: number;
@@ -156,6 +141,7 @@ export interface RootsPanelState {
   wordView: RootWordView;
   surahView: RootSurahView;
   detailPage: number;
+  ayahs: PagedResultDto<RootAyahMatchDto> | null;
   status: LoadStatus;
   errorMessage: string;
 }

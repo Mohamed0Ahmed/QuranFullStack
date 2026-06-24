@@ -80,7 +80,12 @@ export interface AyahWordForHighlightDto {
   isAyahMarker: boolean;
 }
 
-export interface UniqueWordAyahMatchDto {
+/**
+ * Shared ayah-match row contract for list + highlight components. Feature 014
+ * (`UniqueWordAyahMatchDto`) and Feature 015 (`RootAyahMatchDto`) both extend
+ * this shape so reused UI cannot drift silently.
+ */
+export interface AyahMatchDto {
   ayahId: number;
   verseKey: string;
   surahNumber: number;
@@ -91,6 +96,8 @@ export interface UniqueWordAyahMatchDto {
   matchedQuranWordIds: number[];
   words: AyahWordForHighlightDto[];
 }
+
+export interface UniqueWordAyahMatchDto extends AyahMatchDto {}
 
 export type LoadStatus = 'idle' | 'loading' | 'success' | 'empty' | 'error' | 'notFound';
 

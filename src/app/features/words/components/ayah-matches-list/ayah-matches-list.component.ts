@@ -8,7 +8,7 @@ import {
   MUSHAF_PAGE_REF_LABEL,
   OPEN_AYAH_IN_MUSHAF_LABEL,
 } from '../../models/unique-words.labels';
-import { PagedResultDto, UniqueWordAyahMatchDto } from '../../models/unique-words.models';
+import { AyahMatchDto, PagedResultDto } from '../../models/unique-words.models';
 import { buildMushafDeepLink } from '../../../mushaf/state/mushaf-url-sync';
 import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
 
@@ -21,7 +21,7 @@ import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-displ
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AyahMatchesListComponent {
-  readonly page = input.required<PagedResultDto<UniqueWordAyahMatchDto>>();
+  readonly page = input.required<PagedResultDto<AyahMatchDto>>();
   readonly currentPage = input.required<number>();
 
   readonly pageChange = output<number>();
@@ -34,7 +34,7 @@ export class AyahMatchesListComponent {
     return pageRelativeRowNumber(this.currentPage(), this.page().pageSize, index);
   }
 
-  protected mushafHref(match: UniqueWordAyahMatchDto): string {
+  protected mushafHref(match: AyahMatchDto): string {
     return deepLinkToHref(
       buildMushafDeepLink({
         pageNumber: match.pageNumber,

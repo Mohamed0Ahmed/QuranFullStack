@@ -42,6 +42,16 @@
         <div class="qd-empty-state" data-testid="roots-list-no-results">{{ noResultsLabel }}</div>
       }
     }
+
+    @if (panelState().status === 'notFound') {
+      <div
+        class="qd-empty-state roots-explorer__restored-not-found"
+        role="status"
+        data-testid="roots-restored-not-found"
+      >
+        {{ panelState().errorMessage || notFoundLabel }}
+      </div>
+    }
   </div>
 
   @switch (listState().status) {
@@ -71,14 +81,43 @@
           <qd-root-details-panel
             [view]="activeView()"
             [emptySelection]="emptySelection()"
+            [loading]="panelState().status === 'loading'"
+            [notFound]="panelState().status === 'notFound'"
             (viewChange)="onPanelViewChange($event)"
           >
             @if (!emptySelection()) {
-              <!-- US1: no view content yet (story phases plug it in). The
-                   summary header is shown as a calm placeholder. -->
-              <p class="qd-text-muted roots-explorer__panel-summary" data-testid="roots-panel-summary">
-                {{ panelState().summary?.rootText }}
-              </p>
+              @switch (panelState().status) {
+                @case ('loading') {
+                  <p class="qd-text-muted" role="status" aria-live="polite" data-testid="roots-panel-loading">
+                    {{ loadingLabel }}
+                  </p>
+                }
+                @case ('error') {
+                  <div class="qd-error-state" role="alert" data-testid="roots-panel-error">
+                    {{ panelState().errorMessage }}
+                  </div>
+                }
+                @case ('empty') {
+                  <div class="qd-empty-state" data-testid="roots-panel-empty">{{ emptyViewLabel }}</div>
+                }
+                @case ('success') {
+                  @if (activeView() === 'ayahs' && panelState().ayahs; as ayahsPage) {
+                    <qd-ayah-matches-list
+                      [page]="ayahsPage"
+                      [currentPage]="panelState().detailPage"
+                      data-testid="roots-ayahs-view"
+                      (pageChange)="onDetailPageChange($event)"
+                    />
+                  } @else {
+                    <p
+                      class="qd-text-muted roots-explorer__panel-summary"
+                      data-testid="roots-panel-summary"
+                    >
+                      {{ panelState().summary?.rootText }}
+                    </p>
+                  }
+                }
+              }
             }
           </qd-root-details-panel>
         </aside>

@@ -11,6 +11,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription, Subject, debounceTime } from 'rxjs';
 
 import { RootDetailsPanelComponent } from '../../components/root-details-panel/root-details-panel.component';
+import { AyahMatchesListComponent } from '../../components/ayah-matches-list/ayah-matches-list.component';
 import {
   RootCountOpenedEvent,
   RootsTableComponent,
@@ -18,7 +19,10 @@ import {
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
 import {
   ROOTS_EMPTY_SELECTION_LABEL,
+  ROOTS_EMPTY_VIEW_LABEL,
+  ROOTS_LOADING_LABEL,
   ROOTS_NO_RESULTS_LABEL,
+  ROOTS_NOT_FOUND_LABEL,
   ROOTS_PAGE_TITLE,
   ROOTS_SEARCH_LABEL,
   ROOTS_SEARCH_PLACEHOLDER,
@@ -48,7 +52,7 @@ import {
 @Component({
   selector: 'qd-roots-explorer-page',
   standalone: true,
-  imports: [RootDetailsPanelComponent, RootsTableComponent, PaginationComponent],
+  imports: [AyahMatchesListComponent, RootDetailsPanelComponent, RootsTableComponent, PaginationComponent],
   templateUrl: './roots-explorer-page.component.html',
   styleUrl: './roots-explorer-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -61,10 +65,18 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
 
   protected readonly pageTitle = ROOTS_PAGE_TITLE;
   protected readonly emptySelectionLabel = ROOTS_EMPTY_SELECTION_LABEL;
+  protected readonly emptyViewLabel = ROOTS_EMPTY_VIEW_LABEL;
+  protected readonly loadingLabel = ROOTS_LOADING_LABEL;
+  protected readonly notFoundLabel = ROOTS_NOT_FOUND_LABEL;
   protected readonly noResultsLabel = ROOTS_NO_RESULTS_LABEL;
   protected readonly searchLabel = ROOTS_SEARCH_LABEL;
   protected readonly searchPlaceholder = ROOTS_SEARCH_PLACEHOLDER;
-  protected readonly sortLabels = ROOTS_SORT_LABELS;
+
+  // Getter mirrors the UniqueWordsFacade workaround so the experimental unit-test
+  // SSR runner resolves the cross-module const correctly.
+  protected get sortLabels() {
+    return ROOTS_SORT_LABELS;
+  }
 
   protected readonly listState = this.listFacade.listState;
   protected readonly panelState = this.detailFacade.panelState;
@@ -87,6 +99,7 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.listFacade.bindToRoute(this.route);
+    this.detailFacade.bindToRoute(this.route);
 
     this.searchSub = this.searchInput
       .pipe(debounceTime(300))
@@ -95,6 +108,7 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.listFacade.unbindFromRoute();
+    this.detailFacade.unbindFromRoute();
     this.searchSub?.unsubscribe();
   }
 
@@ -139,6 +153,27 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
   /** Count-cell click → target view + sub-view (URL reflects the mapping). */
   protected onCountOpened(event: RootCountOpenedEvent): void {
     const { root, view } = event;
+    const wordView = view === 'words' ? (event.wordView ?? 'simple') : undefined;
+    const surahView = view === 'surahs' ? (event.surahView ?? 'mentioned') : undefined;
+
+    this.detailFacade.selectRootWithPanel(
+      {
+        id: root.id,
+        rootText: root.rootText,
+        occurrencesCount: root.occurrencesCount,
+        ayahsCount: root.ayahsCount,
+        surahsCount: root.surahsCount,
+        simpleWordsCount: root.simpleWordsCount,
+        tashkeelWordsCount: root.tashkeelWordsCount,
+        lemmasCount: root.lemmasCount,
+        stemsCount: root.stemsCount,
+        firstVerseKey: root.firstVerseKey,
+      },
+      view,
+      wordView,
+      surahView,
+    );
+
     const params = buildRootsQueryParams({
       rootId: root.id,
       view,
@@ -150,9 +185,21 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
     this.updateQueryParams(params);
   }
 
+  protected onDetailPageChange(page: number): void {
+    this.detailFacade.setDetailPage(page);
+    this.updateQueryParams(buildRootsQueryParams({ detailPage: page }));
+  }
+
   protected onPanelViewChange(view: RootView): void {
     this.detailFacade.setView(view);
-    this.updateQueryParams(buildRootsQueryParams({ view }));
+    this.updateQueryParams(
+      buildRootsQueryParams({
+        view,
+        detailPage: null,
+        wordView: view === 'words' ? 'simple' : null,
+        surahView: view === 'surahs' ? 'mentioned' : null,
+      }),
+    );
   }
 
   protected onClearSelection(): void {
