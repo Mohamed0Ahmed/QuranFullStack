@@ -140,21 +140,21 @@ description: "Task list for Quran Roots Explorer (Feature 015)"
 
 ### Backend — ayah matches
 
-- [ ] T035 [US2] Implement `EfRootsReader.GetRootAyahMatchesAsync`: page the distinct matched ayah ids, batch-load the page's ayah words (NO per-ayah N+1), build `MatchedQuranWordIds` from the root's `quran_words.id` set, reuse `AyahWordForHighlightDto`. Model on `EfUniqueWordsReader.GetAyahMatchesAsync` (depends on T008).
-- [ ] T036 [US2] Add caching `roots:{id}:ayahs:p{page}:s{size}` in `CachedRootsReader` (depends on T035).
-- [ ] T037 [US2] Create `GetRootAyahs` query + handler + outcome in `…/Queries/GetRootAyahs/`: validate id + paging, map `null` → not-found, log (`view="ayahs"`, page/pageSize/totalCount/elapsed) (depends on T035).
-- [ ] T038 [US2] Wire `RootsController` `GET /api/words/roots/{id}/ayahs` → T037; map 200/400/404 (depends on T037).
+- [x] T035 [US2] Implement `EfRootsReader.GetRootAyahMatchesAsync`: page the distinct matched ayah ids, batch-load the page's ayah words (NO per-ayah N+1), build `MatchedQuranWordIds` from the root's `quran_words.id` set, reuse `AyahWordForHighlightDto`. Model on `EfUniqueWordsReader.GetAyahMatchesAsync` (depends on T008).
+- [x] T036 [US2] Add caching `roots:{id}:ayahs:p{page}:s{size}` in `CachedRootsReader` (depends on T035).
+- [x] T037 [US2] Create `GetRootAyahs` query + handler + outcome in `…/Queries/GetRootAyahs/`: validate id + paging, map `null` → not-found, log (`view="ayahs"`, page/pageSize/totalCount/elapsed) (depends on T035).
+- [x] T038 [US2] Wire `RootsController` `GET /api/words/roots/{id}/ayahs` → T037; map 200/400/404 (depends on T037).
 
 ### Frontend — ayahs view (plugs into the foundational panel shell)
 
-- [ ] T039 [US2] Implement ayahs loading in `state/roots-detail.facade.ts`: lazy-load on activation, cache via `RootsCache`, restore-from-URL, and controlled not-found/error handling. Model on the F014 drilldown facade's ayah path (depends on T019, T016, T017).
-- [ ] T040 [US2] Render the الآيات view inside the `root-details-panel` shell (T020): **reuse** `highlighted-ayah` + `ayah-matches-list`, wire the shared `<qd-pagination>` to `detailPage`, and render loading/empty/error states (depends on T020, T039).
-- [ ] T041 [US2] Integrate `root-details-panel` into the `roots-explorer-page` split layout; wire selection + URL (`root`, `view=ayahs`, `detailPage`) restoration end-to-end (depends on T020, T028).
+- [x] T039 [US2] Implement ayahs loading in `state/roots-detail.facade.ts`: lazy-load on activation, cache via `RootsCache`, restore-from-URL, and controlled not-found/error handling. Model on the F014 drilldown facade's ayah path (depends on T019, T016, T017).
+- [x] T040 [US2] Render the الآيات view inside the `root-details-panel` shell (T020): **reuse** `highlighted-ayah` + `ayah-matches-list`, wire the shared `<qd-pagination>` to `detailPage`, and render loading/empty/error states (depends on T020, T039).
+- [x] T041 [US2] Integrate `root-details-panel` into the `roots-explorer-page` split layout; wire selection + URL (`root`, `view=ayahs`, `detailPage`) restoration end-to-end (depends on T020, T028).
 
 ### Tests for User Story 2 (checkpoint CP-2)
 
-- [ ] T042 [P] [US2] Backend tests: ayah matches return exact `MatchedQuranWordIds` for a seeded root; **bounded query count (no N+1)** via `SqlCommandCountInterceptor`; pagination correct; unknown root → 404 (depends on T037, T013).
-- [ ] T043 [P] [US2] Frontend tests: the panel tab strip renders **exactly the 5 named tabs and no "نظرة عامة" tab** (covers FR-005); `highlighted-ayah` marks only matched ids; panel opens and restores from URL; ayahs load only when the tab is activated; panel scroll container is independent (depends on T040, T041).
+- [x] T042 [P] [US2] Backend tests: ayah matches return exact `MatchedQuranWordIds` for a seeded root; **bounded query count (no N+1)** via `SqlCommandCountInterceptor`; pagination correct; unknown root → 404 (depends on T037, T013).
+- [x] T043 [P] [US2] Frontend tests: the panel tab strip renders **exactly the 5 named tabs and no "نظرة عامة" tab** (covers FR-005); `highlighted-ayah` marks only matched ids; panel opens and restores from URL; ayahs load only when the tab is activated; panel scroll container is independent (depends on T040, T041).
 
 **Checkpoint**: US1 + US2 both work independently.
 
