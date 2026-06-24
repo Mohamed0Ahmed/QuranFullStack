@@ -1,9 +1,14 @@
+import { isPlatformBrowser } from '@angular/common';
 import {
+  afterNextRender,
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
+  inject,
   input,
   output,
+  PLATFORM_ID,
   signal,
 } from '@angular/core';
 
@@ -16,7 +21,13 @@ import {
   PAGINATION_PREV_LABEL,
 } from './pagination.labels';
 import { lastPageNumber } from './pagination-range';
-import { buildPaginationWindow } from './pagination-window';
+import {
+  buildPaginationWindow,
+  DEFAULT_PAGINATION_WINDOW_SIZE,
+  MOBILE_PAGINATION_WINDOW_SIZE,
+} from './pagination-window';
+
+import { QD_BP_PHONE_MAX_QUERY } from '../../layout/breakpoints';
 
 @Component({
   selector: 'qd-pagination',
@@ -26,6 +37,10 @@ import { buildPaginationWindow } from './pagination-window';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PaginationComponent {
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isCompactLayout = signal(false);
+
   readonly currentPage = input.required<number>();
   readonly pageSize = input.required<number>();
   readonly totalCount = input.required<number>();
@@ -51,8 +66,30 @@ export class PaginationComponent {
   protected readonly lastPage = computed(() => lastPageNumber(this.pageSize(), this.totalCount()));
 
   protected readonly visiblePages = computed(() =>
-    buildPaginationWindow(this.currentPage(), this.lastPage()),
+    buildPaginationWindow(
+      this.currentPage(),
+      this.lastPage(),
+      this.isCompactLayout() ? MOBILE_PAGINATION_WINDOW_SIZE : DEFAULT_PAGINATION_WINDOW_SIZE,
+    ),
   );
+
+  constructor() {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    afterNextRender(() => {
+      if (typeof window.matchMedia !== 'function') {
+        return;
+      }
+
+      const query = window.matchMedia(QD_BP_PHONE_MAX_QUERY);
+      const sync = () => this.isCompactLayout.set(query.matches);
+      sync();
+      query.addEventListener('change', sync);
+      this.destroyRef.onDestroy(() => query.removeEventListener('change', sync));
+    });
+  }
 
   protected selectPage(page: number): void {
     if (this.disabled() || page === this.currentPage() || page < 1 || page > this.lastPage()) {

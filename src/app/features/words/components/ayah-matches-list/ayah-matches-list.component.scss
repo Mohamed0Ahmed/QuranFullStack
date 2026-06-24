@@ -14,36 +14,6 @@
   scrollbar-gutter: stable;
 }
 
-:host-context(.word-drilldown-panel),
-:host-context(.root-details-panel__surface) {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  height: 100%;
-}
-
-:host-context(.word-drilldown-panel) .ayah-matches-list,
-:host-context(.root-details-panel__surface) .ayah-matches-list {
-  flex: 1;
-  min-height: 0;
-  height: 100%;
-}
-
-:host-context(.word-drilldown-panel) .ayah-matches-list__viewport,
-:host-context(.root-details-panel__surface) .ayah-matches-list__viewport {
-  flex: 1;
-  min-height: 0;
-  block-size: auto;
-  overflow: auto;
-  scrollbar-gutter: stable;
-}
-
-:host-context(.word-drilldown-panel) qd-pagination,
-:host-context(.root-details-panel__surface) qd-pagination {
-  flex-shrink: 0;
-}
-
 .ayah-matches-list__card {
   display: grid;
   gap: var(--qd-space-1);

@@ -44,3 +44,16 @@
     text-decoration: none;
   }
 }
+
+@media (max-width: 767px) {
+  .word-morphology-summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow-x: visible;
+
+    &__column {
+      flex: unset;
+      min-width: 0;
+    }
+  }
+}

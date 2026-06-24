@@ -1,17 +1,16 @@
+import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
-  DestroyRef,
   ElementRef,
   computed,
-  effect,
-  inject,
   input,
   output,
-  signal,
   viewChild,
 } from '@angular/core';
-import { FocusTrap, FocusTrapFactory } from '@angular/cdk/a11y';
+import { A11yModule } from '@angular/cdk/a11y';
+
+import { ModalScrollLockDirective } from '../../../../shared/ui/modal-scroll-lock/modal-scroll-lock.directive';
 
 import {
   ROOTS_EMPTY_SELECTION_LABEL,
@@ -22,28 +21,23 @@ import {
 import { CLOSE_LABEL } from '../../models/unique-words.labels';
 import { ROOT_VIEW_KEYS, RootView } from '../../models/roots.models';
 
-const NARROW_VIEWPORT_QUERY = '(max-width: 60rem)';
-
 @Component({
   selector: 'qd-root-details-panel',
   standalone: true,
+  imports: [A11yModule, ModalScrollLockDirective, NgTemplateOutlet],
   templateUrl: './root-details-panel.component.html',
   styleUrl: './root-details-panel.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RootDetailsPanelComponent {
   readonly view = input.required<RootView>();
-
+  readonly inline = input(true);
   readonly emptySelection = input(false);
-
   readonly selectionTitle = input('');
-
   readonly loading = input(false);
-
   readonly notFound = input(false);
 
   readonly viewChange = output<RootView>();
-
   readonly close = output<void>();
 
   protected get rootsPanelLabel() {
@@ -66,24 +60,9 @@ export class RootDetailsPanelComponent {
     aria: ROOTS_PANEL_TAB_ARIA[key],
   }));
 
-  private readonly panelRoot = viewChild<ElementRef<HTMLElement>>('panelRoot');
   private readonly tabList = viewChild<ElementRef<HTMLElement>>('tabList');
 
   protected readonly hasSelection = computed(() => !this.emptySelection());
-
-  private readonly isNarrow = signal(false);
-  protected readonly drawerMode = computed(() => this.isNarrow() && this.hasSelection());
-
-  private readonly focusTrapFactory = inject(FocusTrapFactory);
-  private readonly destroyRef = inject(DestroyRef);
-  private focusTrap?: FocusTrap;
-  private previouslyFocused: HTMLElement | null = null;
-
-  constructor() {
-    this.observeViewport();
-    effect(() => (this.drawerMode() ? this.enterDrawer() : this.exitDrawer()));
-    this.destroyRef.onDestroy(() => this.exitDrawer());
-  }
 
   protected tabDomId(key: RootView): string {
     return `root-details-tabbtn-${key}`;
@@ -101,7 +80,13 @@ export class RootDetailsPanelComponent {
   }
 
   protected onEscape(): void {
-    if (this.drawerMode() || this.hasSelection()) {
+    if (!this.inline() || this.hasSelection()) {
+      this.close.emit();
+    }
+  }
+
+  protected onBackdropClick(event: MouseEvent): void {
+    if (event.target === event.currentTarget) {
       this.close.emit();
     }
   }
@@ -142,41 +127,5 @@ export class RootDetailsPanelComponent {
     const list = this.tabList()?.nativeElement;
     const tab = list?.querySelector<HTMLElement>(`[data-root-tab="${key}"]`);
     tab?.focus();
-  }
-
-  private observeViewport(): void {
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
-      return;
-    }
-
-    const query = window.matchMedia(NARROW_VIEWPORT_QUERY);
-    this.isNarrow.set(query.matches);
-
-    const onChange = (event: MediaQueryListEvent) => this.isNarrow.set(event.matches);
-    query.addEventListener('change', onChange);
-    this.destroyRef.onDestroy(() => query.removeEventListener('change', onChange));
-  }
-
-  private enterDrawer(): void {
-    if (this.focusTrap || typeof document === 'undefined') {
-      return;
-    }
-    const root = this.panelRoot()?.nativeElement;
-    if (!root) {
-      return;
-    }
-    this.previouslyFocused = document.activeElement as HTMLElement | null;
-    this.focusTrap = this.focusTrapFactory.create(root);
-    void this.focusTrap.focusInitialElementWhenReady();
-  }
-
-  private exitDrawer(): void {
-    if (!this.focusTrap) {
-      return;
-    }
-    this.focusTrap.destroy();
-    this.focusTrap = undefined;
-    this.previouslyFocused?.focus?.();
-    this.previouslyFocused = null;
   }
 }

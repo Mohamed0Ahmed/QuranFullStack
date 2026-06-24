@@ -1,6 +1,9 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { A11yModule } from '@angular/cdk/a11y';
 import { ScrollingModule } from '@angular/cdk/scrolling';
+
+import { ModalScrollLockDirective } from '../../../../shared/ui/modal-scroll-lock/modal-scroll-lock.directive';
 
 import { ExplorerPanelSkeletonComponent } from '../../../../shared/ui/explorer-panel-skeleton/explorer-panel-skeleton.component';
 import { SurahOccurrencesListComponent } from '../surah-occurrences-list/surah-occurrences-list.component';
@@ -24,6 +27,8 @@ import { mapUniqueWordSummaryDisplayText } from '../../utils/unique-words-displa
   standalone: true,
   imports: [
     A11yModule,
+    ModalScrollLockDirective,
+    NgTemplateOutlet,
     ScrollingModule,
     ExplorerPanelSkeletonComponent,
     SurahOccurrencesListComponent,

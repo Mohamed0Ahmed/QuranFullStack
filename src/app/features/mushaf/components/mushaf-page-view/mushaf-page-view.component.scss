@@ -124,3 +124,17 @@
     }
   }
 }
+
+@media (max-width: 1023px) {
+  :host {
+    flex: none;
+    height: auto;
+    min-height: auto;
+  }
+
+  .mushaf-page-view {
+    flex: none;
+    min-height: auto;
+    overflow-y: visible;
+  }
+}

@@ -41,28 +41,6 @@
   scrollbar-gutter: stable;
 }
 
-:host-context(.word-drilldown-panel),
-:host-context(.root-details-panel__surface) {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  height: 100%;
-}
-
-:host-context(.word-drilldown-panel) .surah-occurrences-list-shell,
-:host-context(.root-details-panel__surface) .surah-occurrences-list-shell {
-  flex: 1;
-  min-height: 0;
-}
-
-:host-context(.word-drilldown-panel) .surah-occurrences-list,
-:host-context(.root-details-panel__surface) .surah-occurrences-list {
-  flex: 1;
-  min-height: 0;
-  block-size: auto;
-}
-
 .surah-occurrences-list__row {
   display: grid;
   grid-template-columns: 2.5rem minmax(0, 1fr) auto;

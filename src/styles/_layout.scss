@@ -18,13 +18,9 @@
 .qd-shell-viewport main.qd-shell-main--page-scroll {
   display: flex;
   flex-direction: column;
-}
-
-@media (min-width: 1024px) {
-  .qd-shell-viewport main.qd-shell-main--page-scroll {
-    flex: none;
-    min-height: auto;
-  }
+  flex: none;
+  min-height: auto;
+  overflow: visible;
 }
 
 .qd-navbar {

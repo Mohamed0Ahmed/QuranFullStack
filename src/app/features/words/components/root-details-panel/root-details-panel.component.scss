@@ -3,61 +3,15 @@
   height: 100%;
 }
 
-.root-details-panel {
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-  block-size: 100%;
-  min-block-size: 0;
-  border: 1px solid var(--qd-border);
-  border-radius: var(--qd-radius-md);
-  background: var(--qd-surface);
-  overflow: hidden;
-  padding: var(--qd-space-4);
-  gap: var(--qd-space-3);
-}
-
-.root-details-panel__header {
-  margin: 0;
-}
-
-.root-details-panel__tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--qd-space-2);
-  padding-block-end: var(--qd-space-2);
-  border-block-end: 1px solid var(--qd-border);
-  background: var(--qd-surface);
-  flex-shrink: 0;
-}
-
-.root-details-panel__tab {
-  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
-  font-size: 0.875rem;
-}
-
-.root-details-panel__surface {
+:host .explorer-detail-panel__body {
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
   min-block-size: 0;
   overflow: hidden;
-  padding: var(--qd-space-2);
 }
 
-.root-details-panel__backdrop {
-
-  z-index: 50;
-}
-
-.root-details-panel--drawer {
-  position: fixed;
-  inset-block: 0;
-  inset-inline-end: 0;
-  inline-size: min(92vw, 30rem);
-  z-index: 51;
-  border-radius: 0;
-  border-block: none;
-  border-inline-end: none;
-  box-shadow: var(--qd-shadow-lg);
+.root-details-panel__tab {
+  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  font-size: 0.875rem;
 }

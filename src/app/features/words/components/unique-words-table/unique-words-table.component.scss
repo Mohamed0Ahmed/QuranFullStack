@@ -1,3 +1,5 @@
+@use '../../../../../styles/breakpoints' as bp;
+
 :host {
   display: block;
 }
@@ -101,6 +103,11 @@
   margin-inline: auto;
 }
 
+.unique-words-table__loading-mobile-badge {
+  block-size: 1.25rem;
+  min-inline-size: 0;
+}
+
 .unique-words-table__row.qd-is-selected {
   background: var(--qd-accent-tint);
 }
@@ -143,4 +150,56 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+@media (max-width: bp.$qd-bp-phone-max) {
+  .unique-words-table__header,
+  .unique-words-table__header-gutter {
+    display: none;
+  }
+
+  .unique-words-table__body {
+    block-size: min(70vh, 40rem);
+  }
+
+  .unique-words-table__row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    gap: var(--qd-space-1) var(--qd-space-2);
+    align-items: center;
+    padding: var(--qd-space-2);
+    block-size: auto;
+    min-block-size: var(--unique-words-table-row-height, 4.25rem);
+  }
+
+  .unique-words-table__cell--row-number {
+    grid-column: 1;
+    grid-row: 1;
+    padding: 0;
+    align-self: center;
+    justify-self: start;
+  }
+
+  .unique-words-table__word-cell {
+    grid-column: 2;
+    grid-row: 1;
+    padding: 0;
+    justify-content: center;
+    min-width: 0;
+  }
+
+  .unique-words-table__chip-cell {
+    display: none;
+  }
+
+  .unique-words-table__word {
+    padding: 0;
+    width: 100%;
+    text-align: center;
+  }
+
+  .unique-words-table__display {
+    text-align: center;
+  }
 }

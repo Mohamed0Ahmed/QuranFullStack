@@ -1,21 +1,4 @@
-@if (drawerMode()) {
-  <div
-    class="qd-modal-backdrop root-details-panel__backdrop"
-    role="presentation"
-    data-testid="root-details-panel-backdrop"
-    (click)="close.emit()"
-  ></div>
-}
-
-<section
-  class="root-details-panel"
-  #panelRoot
-  [class.root-details-panel--drawer]="drawerMode()"
-  [attr.aria-label]="rootsPanelLabel"
-  [attr.role]="drawerMode() ? 'dialog' : null"
-  [attr.aria-modal]="drawerMode() ? true : null"
-  (keydown.escape)="onEscape()"
->
+<ng-template #panelChrome>
   <header class="explorer-panel-header root-details-panel__header">
     <h2 class="explorer-panel-header__label" data-testid="root-details-panel-label">{{ rootsPanelLabel }}</h2>
     <span class="explorer-panel-header__entity" data-testid="root-details-panel-entity">{{ selectionTitle() }}</span>
@@ -34,7 +17,7 @@
   </header>
 
   <div
-    class="root-details-panel__tabs"
+    class="explorer-detail-panel__toolbar explorer-detail-panel__toolbar--grid-5 root-details-panel__tabs"
     role="tablist"
     [attr.aria-label]="rootsPanelLabel"
     #tabList
@@ -62,7 +45,7 @@
   </div>
 
   <div
-    class="root-details-panel__surface"
+    class="explorer-detail-panel__body root-details-panel__surface"
     role="tabpanel"
     [id]="surfaceDomId"
     [attr.aria-labelledby]="tabDomId(view())"
@@ -78,4 +61,37 @@
       <ng-content />
     }
   </div>
-</section>
+</ng-template>
+
+@if (inline()) {
+  <section
+    class="qd-card explorer-detail-panel root-details-panel"
+    [attr.aria-label]="rootsPanelLabel"
+    (keydown.escape)="onEscape()"
+  >
+    <ng-container *ngTemplateOutlet="panelChrome" />
+  </section>
+} @else if (hasSelection()) {
+  <div
+    class="qd-modal-backdrop"
+    role="presentation"
+    data-testid="root-details-panel-backdrop"
+    qdModalScrollLock
+    (click)="onBackdropClick($event)"
+  >
+    <div
+      class="qd-modal explorer-detail-modal root-details-modal"
+      #panelRoot
+      role="dialog"
+      aria-modal="true"
+      cdkTrapFocus
+      cdkTrapFocusAutoCapture
+      [attr.aria-label]="rootsPanelLabel"
+      data-testid="root-details-modal"
+      (click)="$event.stopPropagation()"
+      (keydown.escape)="onEscape()"
+    >
+      <ng-container *ngTemplateOutlet="panelChrome" />
+    </div>
+  </div>
+}

@@ -1,17 +1,25 @@
+@use '../../../../../styles/breakpoints' as bp;
+
 :host {
   display: block;
 }
 
 .roots-explorer-frame {
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+  padding-inline: var(--qd-space-4);
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: var(--qd-space-3);
+  gap: 0;
+  padding-block-end: calc(var(--qd-space-5) + (var(--qd-space-4) * 1.55));
 }
 
 .roots-explorer__controls {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--qd-space-2);
+  gap: var(--qd-space-3);
   align-items: center;
 }
 
@@ -42,7 +50,7 @@
   grid-template-columns: minmax(0, 5fr) minmax(0, 4fr);
   gap: var(--qd-space-4);
   align-items: start;
-  padding: 0 var(--qd-space-4);
+  padding-inline: 0;
 }
 
 .roots-explorer-layout__table,
@@ -50,9 +58,8 @@
   min-width: 0;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: bp.$qd-bp-desktop-min) {
   .roots-explorer-layout {
-
     --roots-layout-chrome-block-size: 14rem;
     --roots-table-body-height: min(
       calc(100dvh - var(--roots-layout-chrome-block-size)),
@@ -75,7 +82,7 @@
   }
 }
 
-@media (min-width: 1440px) {
+@media (min-width: bp.$qd-bp-wide-desktop-min) {
   .roots-explorer-layout {
     --roots-layout-chrome-block-size: 12rem;
     --roots-table-body-height: min(
@@ -88,8 +95,10 @@
   }
 }
 
-@media (max-width: 1023px) {
+@media (max-width: bp.$qd-bp-tablet-max) {
   .roots-explorer-layout {
     grid-template-columns: minmax(0, 1fr);
+    padding-inline: var(--qd-space-4);
+    gap: var(--qd-space-3);
   }
 }

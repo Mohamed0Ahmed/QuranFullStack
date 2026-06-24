@@ -1,0 +1,128 @@
+.explorer-detail-panel__body,
+.explorer-detail-modal {
+  qd-ayah-matches-list,
+  qd-missing-surahs-list,
+  qd-surah-occurrences-list,
+  qd-root-words-list,
+  qd-root-lemmas-list,
+  qd-root-stems-list {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+  }
+}
+
+.explorer-detail-panel__body {
+  .ayah-matches-list,
+  .root-words-list {
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+  }
+
+  .ayah-matches-list__viewport,
+  .root-words-list__viewport {
+    flex: 1;
+    min-height: 0;
+    block-size: auto;
+    overflow: auto;
+    scrollbar-gutter: stable;
+  }
+
+  .missing-surahs-list-shell,
+  .surah-occurrences-list-shell,
+  .root-lemmas-list-shell,
+  .root-stems-list-shell {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .missing-surahs-list,
+  .surah-occurrences-list,
+  .root-lemmas-list,
+  .root-stems-list {
+    flex: 1;
+    min-height: 0;
+    block-size: auto;
+    overflow: auto;
+    scrollbar-gutter: stable;
+  }
+
+  .root-words-list__header,
+  .root-lemmas-list__header {
+    flex-shrink: 0;
+  }
+
+  .ayah-matches-list__card {
+    background: var(--qd-explorer-detail-card);
+    border-color: var(--qd-explorer-detail-border);
+  }
+
+  .ayah-matches-list__card--alt {
+    background: color-mix(in oklch, var(--qd-explorer-detail-card) 88%, var(--qd-explorer-detail-surface));
+  }
+
+  .root-words-list__row,
+  .root-lemmas-list__row,
+  .root-stems-list__row {
+    background: var(--qd-explorer-detail-card);
+    border-color: var(--qd-explorer-detail-border);
+  }
+
+  .missing-surahs-list__header,
+  .missing-surahs-list__row,
+  .surah-occurrences-list__header,
+  .surah-occurrences-list__row {
+    border-block-end-color: var(--qd-explorer-detail-border);
+  }
+
+  qd-pagination {
+    flex-shrink: 0;
+  }
+}
+
+.explorer-detail-modal {
+  .ayah-matches-list {
+    gap: 0;
+  }
+
+  .ayah-matches-list__viewport {
+    flex: 1;
+    min-height: 0;
+    block-size: auto;
+    overflow: auto;
+    scrollbar-gutter: stable;
+  }
+
+  .ayah-matches-list__card.qd-card {
+    margin-block-end: 0;
+    padding: var(--qd-space-1) var(--qd-space-2);
+    border-radius: 0;
+    border-inline-width: 0;
+    box-shadow: none;
+    border-block-end: 1px solid var(--qd-explorer-detail-border);
+    background: var(--qd-explorer-detail-card);
+    --highlighted-ayah-font-size: 0.9375rem;
+    --highlighted-ayah-line-height: 1.65;
+  }
+
+  .ayah-matches-list__card.qd-card:last-child {
+    border-block-end: none;
+  }
+
+  .ayah-matches-list__card--alt {
+    background: color-mix(in oklch, var(--qd-explorer-detail-card) 88%, var(--qd-explorer-detail-surface));
+  }
+
+  .ayah-matches-list__meta-row,
+  .ayah-matches-list__meta {
+    gap: var(--qd-space-1);
+  }
+
+  qd-pagination {
+    flex-shrink: 0;
+    padding-inline: var(--qd-space-3);
+  }
+}

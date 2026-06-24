@@ -1,3 +1,5 @@
+@use '../../../../../styles/breakpoints' as bp;
+
 :host {
   display: block;
 }
@@ -145,26 +147,85 @@
   margin-inline: auto;
 }
 
-:host-context(.roots-explorer-layout__table) {
-  display: block;
-  block-size: 100%;
+.roots-table__loading-mobile-badge {
+  block-size: 1.25rem;
+  min-inline-size: 0;
 }
 
-:host-context(.roots-explorer-layout__table) .roots-table {
-  display: flex;
-  flex-direction: column;
-  block-size: 100%;
-  box-sizing: border-box;
+@media (min-width: bp.$qd-bp-desktop-min) {
+  :host-context(.roots-explorer-layout__table) {
+    display: block;
+    block-size: 100%;
+  }
+
+  :host-context(.roots-explorer-layout__table) .roots-table {
+    display: flex;
+    flex-direction: column;
+    block-size: 100%;
+    box-sizing: border-box;
+  }
+
+  :host-context(.roots-explorer-layout__table) .roots-table__header {
+    flex-shrink: 0;
+    block-size: var(--roots-table-header-height, 2.75rem);
+    min-block-size: unset;
+  }
+
+  :host-context(.roots-explorer-layout__table) .roots-table__body {
+    flex: 1 1 auto;
+    min-block-size: 0;
+    block-size: auto;
+  }
 }
 
-:host-context(.roots-explorer-layout__table) .roots-table__header {
-  flex-shrink: 0;
-  block-size: var(--roots-table-header-height, 2.75rem);
-  min-block-size: unset;
-}
+@media (max-width: bp.$qd-bp-tablet-max) {
+  .roots-table__header,
+  .roots-table__header-gutter {
+    display: none;
+  }
 
-:host-context(.roots-explorer-layout__table) .roots-table__body {
-  flex: 1 1 auto;
-  min-block-size: 0;
-  block-size: auto;
+  .roots-table__body {
+    block-size: min(70vh, 40rem);
+  }
+
+  .roots-table__row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    gap: var(--qd-space-1) var(--qd-space-2);
+    align-items: center;
+    padding: var(--qd-space-2);
+    block-size: auto;
+    min-block-size: var(--roots-table-row-height, 5.5rem);
+  }
+
+  .roots-table__cell--row-number {
+    grid-column: 1;
+    grid-row: 1;
+    padding: 0;
+    align-self: center;
+    justify-self: start;
+  }
+
+  .roots-table__word-cell {
+    grid-column: 2;
+    grid-row: 1;
+    padding: 0;
+    justify-content: center;
+    min-width: 0;
+  }
+
+  .roots-table__chip-cell {
+    display: none;
+  }
+
+  .roots-table__word {
+    padding: 0;
+    width: 100%;
+    text-align: center;
+  }
+
+  .roots-table__display {
+    text-align: center;
+  }
 }

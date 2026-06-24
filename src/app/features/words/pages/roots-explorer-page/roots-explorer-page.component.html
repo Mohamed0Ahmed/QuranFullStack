@@ -1,34 +1,38 @@
 <div class="qd-page">
   <div class="qd-container roots-explorer-frame">
-    <div class="qd-page-header">
-      <h1 class="qd-page-title" data-testid="roots-explorer-page-title">{{ pageTitle }}</h1>
+    <div class="uw-intro-band">
+      <div class="qd-page-header">
+        <h1 class="qd-page-title" data-testid="roots-explorer-page-title">{{ pageTitle }}</h1>
+      </div>
     </div>
 
-    <div class="roots-explorer__controls">
-      <label class="qd-sr-only" for="roots-search">{{ searchLabel }}</label>
-      <input
-        id="roots-search"
-        class="qd-input roots-explorer__search"
-        type="search"
-        inputmode="search"
-        [attr.placeholder]="searchPlaceholder"
-        [value]="searchDraft()"
-        data-testid="roots-search-input"
-        (input)="onSearchInput($any($event.target).value)"
-      />
+    <div class="uw-toolbar-recess">
+      <div class="roots-explorer__controls">
+        <label class="qd-sr-only" for="roots-search">{{ searchLabel }}</label>
+        <input
+          id="roots-search"
+          class="qd-input roots-explorer__search"
+          type="search"
+          inputmode="search"
+          [attr.placeholder]="searchPlaceholder"
+          [value]="searchDraft()"
+          data-testid="roots-search-input"
+          (input)="onSearchInput($any($event.target).value)"
+        />
 
-      <label class="qd-sr-only" for="roots-sort">{{ sortLabels.label }}</label>
-      <select
-        id="roots-sort"
-        class="qd-select roots-explorer__sort"
-        data-testid="roots-sort-select"
-        [value]="listState().sort"
-        (change)="onSortChange($any($event.target).value)"
-      >
-        @for (option of sortOptions; track option) {
-          <option [value]="option">{{ sortLabels[option] }}</option>
-        }
-      </select>
+        <label class="qd-sr-only" for="roots-sort">{{ sortLabels.label }}</label>
+        <select
+          id="roots-sort"
+          class="qd-select roots-explorer__sort"
+          data-testid="roots-sort-select"
+          [value]="listState().sort"
+          (change)="onSortChange($any($event.target).value)"
+        >
+          @for (option of sortOptions; track option) {
+            <option [value]="option">{{ sortLabels[option] }}</option>
+          }
+        </select>
+      </div>
     </div>
 
     @switch (listState().status) {
@@ -76,155 +80,177 @@
           />
         </section>
 
-        <aside class="roots-explorer-layout__panel">
-          <qd-root-details-panel
-            [view]="activeView()"
-            [emptySelection]="emptySelection()"
-            [selectionTitle]="panelState().summary?.rootText ?? ''"
-            [loading]="panelState().status === 'loading'"
-            [notFound]="panelState().status === 'notFound'"
-            (viewChange)="onPanelViewChange($event)"
-            (close)="onClearSelection()"
-          >
-            @if (!emptySelection()) {
-              @if (activeView() === 'words') {
-                <nav
-                  class="roots-explorer__sub-tabs"
-                  role="tablist"
-                  aria-label="أنماط كلمات الجذر"
-                  data-testid="roots-word-view-tabs"
-                >
-                  @for (option of wordViewOptions; track option) {
-                    <button
-                      type="button"
-                      class="qd-btn qd-btn-secondary roots-explorer__sub-tab"
-                      role="tab"
-                      [attr.data-testid]="'roots-word-view-' + option"
-                      [attr.aria-selected]="panelState().wordView === option"
-                      [class.qd-is-selected]="panelState().wordView === option"
-                      (click)="onWordViewChange(option)"
-                    >
-                      {{ wordViewLabels[option] }}
-                    </button>
-                  }
-                </nav>
-              } @else if (activeView() === 'surahs') {
-                <nav
-                  class="roots-explorer__sub-tabs"
-                  role="tablist"
-                  aria-label="عرض سور الجذر"
-                  data-testid="roots-surah-view-tabs"
-                >
-                  @for (option of surahViewOptions; track option) {
-                    <button
-                      type="button"
-                      class="qd-btn qd-btn-secondary roots-explorer__sub-tab"
-                      role="tab"
-                      [attr.data-testid]="'roots-surah-view-' + option"
-                      [attr.aria-selected]="panelState().surahView === option"
-                      [class.qd-is-selected]="panelState().surahView === option"
-                      (click)="onSurahViewChange(option)"
-                    >
-                      {{ surahViewLabels[option] }}
-                    </button>
-                  }
-                </nav>
-              }
-
-              @switch (panelState().status) {
-                @case ('loading') {
-                  @if (activeView() === 'ayahs') {
-                    <qd-ayah-matches-list
-                      [loading]="true"
-                      [page]="emptyAyahsPage"
-                      [currentPage]="panelState().detailPage"
-                      data-testid="roots-ayahs-view"
-                    />
-                  } @else if (activeView() === 'words') {
-                    <qd-root-words-list
-                      [loading]="true"
-                      [page]="emptyWordsPage"
-                      [currentPage]="panelState().detailPage"
-                      [wordView]="panelState().wordView"
-                      data-testid="roots-words-view"
-                    />
-                  } @else if (activeView() === 'surahs' && panelState().surahView === 'mentioned') {
-                    <qd-surah-occurrences-list
-                      [loading]="true"
-                      [surahs]="[]"
-                      data-testid="roots-mentioned-surahs-view"
-                    />
-                  } @else if (activeView() === 'surahs' && panelState().surahView === 'missing') {
-                    <qd-missing-surahs-list
-                      [loading]="true"
-                      [surahs]="[]"
-                      data-testid="roots-missing-surahs-view"
-                    />
-                  } @else if (activeView() === 'lemmas') {
-                    <qd-root-lemmas-list
-                      [loading]="true"
-                      [lemmas]="[]"
-                      data-testid="roots-lemmas-view"
-                    />
-                  } @else if (activeView() === 'stems') {
-                    <qd-root-stems-list
-                      [loading]="true"
-                      [stems]="[]"
-                      data-testid="roots-stems-view"
-                    />
-                  }
-                }
-                @case ('error') {
-                  <div class="qd-error-state" role="alert" data-testid="roots-panel-error">
-                    {{ panelState().errorMessage }}
-                  </div>
-                }
-                @case ('empty') {
-                  <div class="qd-empty-state" data-testid="roots-panel-empty">{{ emptyViewLabel }}</div>
-                }
-                @case ('success') {
-                  @if (activeView() === 'ayahs' && panelState().ayahs; as ayahsPage) {
-                    <qd-ayah-matches-list
-                      [page]="ayahsPage"
-                      [currentPage]="panelState().detailPage"
-                      data-testid="roots-ayahs-view"
-                      (pageChange)="onDetailPageChange($event)"
-                    />
-                  } @else if (activeView() === 'words' && panelState().words; as wordsPage) {
-                    <qd-root-words-list
-                      [page]="wordsPage"
-                      [currentPage]="panelState().detailPage"
-                      [wordView]="panelState().wordView"
-                      data-testid="roots-words-view"
-                      (pageChange)="onDetailPageChange($event)"
-                    />
-                  } @else if (activeView() === 'surahs' && panelState().surahView === 'mentioned' && panelState().mentionedSurahs; as surahs) {
-                    <qd-surah-occurrences-list
-                      [surahs]="surahs.surahs"
-                      data-testid="roots-mentioned-surahs-view"
-                    />
-                  } @else if (activeView() === 'surahs' && panelState().surahView === 'missing' && panelState().missingSurahs; as missing) {
-                    <qd-missing-surahs-list
-                      [surahs]="missing.surahs"
-                      data-testid="roots-missing-surahs-view"
-                    />
-                  } @else if (activeView() === 'lemmas' && panelState().lemmas; as lemmas) {
-                    <qd-root-lemmas-list
-                      [lemmas]="lemmas.lemmas"
-                      data-testid="roots-lemmas-view"
-                    />
-                  } @else if (activeView() === 'stems' && panelState().stems; as stems) {
-                    <qd-root-stems-list
-                      [stems]="stems.stems"
-                      data-testid="roots-stems-view"
-                    />
-                  }
-                }
-              }
-            }
-          </qd-root-details-panel>
-        </aside>
+        @if (isDesktop()) {
+          <aside class="roots-explorer-layout__panel" aria-label="تفاصيل الجذر">
+            <qd-root-details-panel
+              [inline]="true"
+              [view]="activeView()"
+              [emptySelection]="emptySelection()"
+              [selectionTitle]="panelState().summary?.rootText ?? ''"
+              [loading]="panelState().status === 'loading'"
+              [notFound]="panelState().status === 'notFound'"
+              (viewChange)="onPanelViewChange($event)"
+              (close)="onClearSelection()"
+            >
+              <ng-container *ngTemplateOutlet="rootsPanelContent" />
+            </qd-root-details-panel>
+          </aside>
+        }
       </div>
+
+      @if (!isDesktop() && !emptySelection()) {
+        <qd-root-details-panel
+          [inline]="false"
+          [view]="activeView()"
+          [emptySelection]="emptySelection()"
+          [selectionTitle]="panelState().summary?.rootText ?? ''"
+          [loading]="panelState().status === 'loading'"
+          [notFound]="panelState().status === 'notFound'"
+          (viewChange)="onPanelViewChange($event)"
+          (close)="onClearSelection()"
+        >
+          <ng-container *ngTemplateOutlet="rootsPanelContent" />
+        </qd-root-details-panel>
+      }
     }
   }
+
+  <ng-template #rootsPanelContent>
+  @if (!emptySelection()) {
+    @if (activeView() === 'words') {
+      <nav
+        class="roots-explorer__sub-tabs"
+        role="tablist"
+        aria-label="أنماط كلمات الجذر"
+        data-testid="roots-word-view-tabs"
+      >
+        @for (option of wordViewOptions; track option) {
+          <button
+            type="button"
+            class="qd-btn qd-btn-secondary roots-explorer__sub-tab"
+            role="tab"
+            [attr.data-testid]="'roots-word-view-' + option"
+            [attr.aria-selected]="panelState().wordView === option"
+            [class.qd-is-selected]="panelState().wordView === option"
+            (click)="onWordViewChange(option)"
+          >
+            {{ wordViewLabels[option] }}
+          </button>
+        }
+      </nav>
+    } @else if (activeView() === 'surahs') {
+      <nav
+        class="roots-explorer__sub-tabs"
+        role="tablist"
+        aria-label="عرض سور الجذر"
+        data-testid="roots-surah-view-tabs"
+      >
+        @for (option of surahViewOptions; track option) {
+          <button
+            type="button"
+            class="qd-btn qd-btn-secondary roots-explorer__sub-tab"
+            role="tab"
+            [attr.data-testid]="'roots-surah-view-' + option"
+            [attr.aria-selected]="panelState().surahView === option"
+            [class.qd-is-selected]="panelState().surahView === option"
+            (click)="onSurahViewChange(option)"
+          >
+            {{ surahViewLabels[option] }}
+          </button>
+        }
+      </nav>
+    }
+
+    @switch (panelState().status) {
+      @case ('loading') {
+        @if (activeView() === 'ayahs') {
+          <qd-ayah-matches-list
+            [loading]="true"
+            [page]="emptyAyahsPage"
+            [currentPage]="panelState().detailPage"
+            data-testid="roots-ayahs-view"
+          />
+        } @else if (activeView() === 'words') {
+          <qd-root-words-list
+            [loading]="true"
+            [page]="emptyWordsPage"
+            [currentPage]="panelState().detailPage"
+            [wordView]="panelState().wordView"
+            data-testid="roots-words-view"
+          />
+        } @else if (activeView() === 'surahs' && panelState().surahView === 'mentioned') {
+          <qd-surah-occurrences-list
+            [loading]="true"
+            [surahs]="[]"
+            data-testid="roots-mentioned-surahs-view"
+          />
+        } @else if (activeView() === 'surahs' && panelState().surahView === 'missing') {
+          <qd-missing-surahs-list
+            [loading]="true"
+            [surahs]="[]"
+            data-testid="roots-missing-surahs-view"
+          />
+        } @else if (activeView() === 'lemmas') {
+          <qd-root-lemmas-list
+            [loading]="true"
+            [lemmas]="[]"
+            data-testid="roots-lemmas-view"
+          />
+        } @else if (activeView() === 'stems') {
+          <qd-root-stems-list
+            [loading]="true"
+            [stems]="[]"
+            data-testid="roots-stems-view"
+          />
+        }
+      }
+      @case ('error') {
+        <div class="qd-error-state" role="alert" data-testid="roots-panel-error">
+          {{ panelState().errorMessage }}
+        </div>
+      }
+      @case ('empty') {
+        <div class="qd-empty-state" data-testid="roots-panel-empty">{{ emptyViewLabel }}</div>
+      }
+      @case ('success') {
+        @if (activeView() === 'ayahs' && panelState().ayahs; as ayahsPage) {
+          <qd-ayah-matches-list
+            [page]="ayahsPage"
+            [currentPage]="panelState().detailPage"
+            data-testid="roots-ayahs-view"
+            (pageChange)="onDetailPageChange($event)"
+          />
+        } @else if (activeView() === 'words' && panelState().words; as wordsPage) {
+          <qd-root-words-list
+            [page]="wordsPage"
+            [currentPage]="panelState().detailPage"
+            [wordView]="panelState().wordView"
+            data-testid="roots-words-view"
+            (pageChange)="onDetailPageChange($event)"
+          />
+        } @else if (activeView() === 'surahs' && panelState().surahView === 'mentioned' && panelState().mentionedSurahs; as surahs) {
+          <qd-surah-occurrences-list
+            [surahs]="surahs.surahs"
+            data-testid="roots-mentioned-surahs-view"
+          />
+        } @else if (activeView() === 'surahs' && panelState().surahView === 'missing' && panelState().missingSurahs; as missing) {
+          <qd-missing-surahs-list
+            [surahs]="missing.surahs"
+            data-testid="roots-missing-surahs-view"
+          />
+        } @else if (activeView() === 'lemmas' && panelState().lemmas; as lemmas) {
+          <qd-root-lemmas-list
+            [lemmas]="lemmas.lemmas"
+            data-testid="roots-lemmas-view"
+          />
+        } @else if (activeView() === 'stems' && panelState().stems; as stems) {
+          <qd-root-stems-list
+            [stems]="stems.stems"
+            data-testid="roots-stems-view"
+          />
+        }
+      }
+    }
+  }
+</ng-template>
 </div>

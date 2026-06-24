@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -53,6 +54,7 @@ import {
   buildClearSelectionQueryParams,
   buildRootsQueryParams,
 } from '../../state/roots-url-sync';
+import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
 
 @Component({
   selector: 'qd-roots-explorer-page',
@@ -60,6 +62,7 @@ import {
   imports: [
     AyahMatchesListComponent,
     MissingSurahsListComponent,
+    NgTemplateOutlet,
     RootDetailsPanelComponent,
     RootLemmasListComponent,
     RootStemsListComponent,
@@ -120,9 +123,13 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
   }
 
   protected readonly searchDraft = signal('');
+  protected readonly isDesktop = signal(true);
 
   private readonly searchInput = new Subject<string>();
   private searchSub?: Subscription;
+  private desktopQuery?: MediaQueryList;
+  private readonly onDesktopChange = (event: MediaQueryListEvent): void =>
+    this.isDesktop.set(event.matches);
 
   protected readonly activeView = computed(() => this.panelState().view);
   protected readonly emptySelection = computed(
@@ -137,12 +144,19 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
     this.searchSub = this.searchInput
       .pipe(debounceTime(300))
       .subscribe((value) => this.updateQueryParams({ search: value || null, page: null }));
+
+    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+      this.desktopQuery = window.matchMedia(QD_BP_DESKTOP_MIN_QUERY);
+      this.isDesktop.set(this.desktopQuery.matches);
+      this.desktopQuery.addEventListener('change', this.onDesktopChange);
+    }
   }
 
   ngOnDestroy(): void {
     this.listFacade.unbindFromRoute();
     this.detailFacade.unbindFromRoute();
     this.searchSub?.unsubscribe();
+    this.desktopQuery?.removeEventListener('change', this.onDesktopChange);
   }
 
   protected onSearchInput(value: string): void {

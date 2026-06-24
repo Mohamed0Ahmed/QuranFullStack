@@ -1,18 +1,22 @@
 <div class="qd-page">
   <div class="qd-container unique-words-page-frame unique-words-page-frame--wide">
-    <div class="qd-page-header">
-      <h1 class="qd-page-title" data-testid="unique-words-page-title">الكلمات الفريدة</h1>
-      <p class="qd-text-muted" data-testid="unique-words-page-mode">{{ modeLabel() }}</p>
+    <div class="uw-intro-band">
+      <div class="qd-page-header">
+        <h1 class="qd-page-title" data-testid="unique-words-page-title">الكلمات الفريدة</h1>
+        <p class="qd-text-muted" data-testid="unique-words-page-mode">{{ modeLabel() }}</p>
+      </div>
     </div>
 
-    <qd-unique-words-tabs [activeMode]="listState().mode" />
+    <div class="uw-toolbar-recess uw-toolbar-recess--stacked">
+      <qd-unique-words-tabs [activeMode]="listState().mode" />
 
-    <qd-unique-words-search-bar
-      [search]="searchDraft()"
-      [sort]="listState().sort"
-      (searchChange)="onSearchChange($event)"
-      (sortChange)="onSortChange($event)"
-    />
+      <qd-unique-words-search-bar
+        [search]="searchDraft()"
+        [sort]="listState().sort"
+        (searchChange)="onSearchChange($event)"
+        (sortChange)="onSortChange($event)"
+      />
+    </div>
 
     @switch (listState().status) {
       @case ('error') {

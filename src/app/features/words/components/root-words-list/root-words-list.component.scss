@@ -66,37 +66,3 @@
   inline-size: 2rem;
   block-size: 1.25rem;
 }
-
-:host-context(.word-drilldown-panel),
-:host-context(.root-details-panel__surface) {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  height: 100%;
-}
-
-:host-context(.word-drilldown-panel) .root-words-list,
-:host-context(.root-details-panel__surface) .root-words-list {
-  flex: 1;
-  min-height: 0;
-  height: 100%;
-}
-
-:host-context(.word-drilldown-panel) .root-words-list__header,
-:host-context(.root-details-panel__surface) .root-words-list__header {
-  flex-shrink: 0;
-}
-
-:host-context(.word-drilldown-panel) .root-words-list__viewport,
-:host-context(.root-details-panel__surface) .root-words-list__viewport {
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
-  scrollbar-gutter: stable;
-}
-
-:host-context(.word-drilldown-panel) qd-pagination,
-:host-context(.root-details-panel__surface) qd-pagination {
-  flex-shrink: 0;
-}

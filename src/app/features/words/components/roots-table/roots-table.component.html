@@ -38,15 +38,20 @@
               <span class="qd-skeleton qd-skeleton--rounded-md roots-table__loading-chip"></span>
             </div>
           }
+          <div class="qd-explorer-table-mobile-stats qd-explorer-table-mobile-stats--grid-12" role="cell" aria-hidden="true">
+            @for (i of [0,1,2,3,4,5,6]; track i) {
+              <span class="qd-skeleton qd-skeleton--rounded-md roots-table__loading-mobile-badge"></span>
+            }
+          </div>
         </div>
       }
     </div>
   } @else if (useVirtualScroll) {
     <cdk-virtual-scroll-viewport
       class="roots-table__body"
-      [itemSize]="rowHeight"
-      [minBufferPx]="rowHeight * 4"
-      [maxBufferPx]="rowHeight * 8"
+      [itemSize]="rowHeight()"
+      [minBufferPx]="rowHeight() * 4"
+      [maxBufferPx]="rowHeight() * 8"
       role="rowgroup"
       aria-label="قائمة الجذور"
     >
@@ -119,6 +124,7 @@
             (chipClick)="openCount(row, 'stems')"
           />
         </div>
+        <ng-container *ngTemplateOutlet="mobileStats; context: { row: row }" />
       </div>
     </cdk-virtual-scroll-viewport>
   } @else {
@@ -192,8 +198,83 @@
               (chipClick)="openCount(row, 'stems')"
             />
           </div>
+          <ng-container *ngTemplateOutlet="mobileStats; context: { row: row }" />
         </div>
       }
     </div>
   }
+
+  <ng-template #mobileStats let-row="row">
+    <div class="qd-explorer-table-mobile-stats qd-explorer-table-mobile-stats--grid-12" role="cell">
+      <button
+        type="button"
+        class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--occurrences"
+        data-testid="roots-table-mobile-occurrences"
+        [attr.aria-label]="row.occurrencesCount + ' ' + countLabels.occurrences"
+        (click)="openCount(row, 'ayahs')"
+      >
+        {{ row.occurrencesCount }} {{ headers.occurrences }}
+      </button>
+      <button
+        type="button"
+        class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action"
+        data-testid="roots-table-mobile-ayahs"
+        [attr.aria-label]="row.ayahsCount + ' ' + countLabels.ayahs"
+        [disabled]="row.ayahsCount === 0"
+        (click)="openCount(row, 'ayahs')"
+      >
+        {{ row.ayahsCount }} {{ headers.ayahs }}
+      </button>
+      <button
+        type="button"
+        class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action"
+        data-testid="roots-table-mobile-surahs"
+        [attr.aria-label]="row.surahsCount + ' ' + countLabels.surahs"
+        [disabled]="row.surahsCount === 0"
+        (click)="openCount(row, 'surahs', { surahView: 'mentioned' })"
+      >
+        {{ row.surahsCount }} {{ headers.surahs }}
+      </button>
+      <button
+        type="button"
+        class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action"
+        data-testid="roots-table-mobile-simple-words"
+        [attr.aria-label]="row.simpleWordsCount + ' ' + countLabels.simpleWords"
+        [disabled]="row.simpleWordsCount === 0"
+        (click)="openCount(row, 'words', { wordView: 'simple' })"
+      >
+        {{ row.simpleWordsCount }} {{ headers.simpleWords }}
+      </button>
+      <button
+        type="button"
+        class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action"
+        data-testid="roots-table-mobile-tashkeel-words"
+        [attr.aria-label]="row.tashkeelWordsCount + ' ' + countLabels.tashkeelWords"
+        [disabled]="row.tashkeelWordsCount === 0"
+        (click)="openCount(row, 'words', { wordView: 'tashkeel' })"
+      >
+        {{ row.tashkeelWordsCount }} {{ headers.tashkeelWords }}
+      </button>
+      <button
+        type="button"
+        class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action"
+        data-testid="roots-table-mobile-lemmas"
+        [attr.aria-label]="row.lemmasCount + ' ' + countLabels.lemmas"
+        [disabled]="row.lemmasCount === 0"
+        (click)="openCount(row, 'lemmas')"
+      >
+        {{ row.lemmasCount }} {{ headers.lemmas }}
+      </button>
+      <button
+        type="button"
+        class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action"
+        data-testid="roots-table-mobile-stems"
+        [attr.aria-label]="row.stemsCount + ' ' + countLabels.stems"
+        [disabled]="row.stemsCount === 0"
+        (click)="openCount(row, 'stems')"
+      >
+        {{ row.stemsCount }} {{ headers.stems }}
+      </button>
+    </div>
+  </ng-template>
 </div>

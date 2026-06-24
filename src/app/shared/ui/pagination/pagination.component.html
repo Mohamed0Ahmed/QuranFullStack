@@ -3,12 +3,30 @@
     <div class="qd-pagination__controls">
       <button
         type="button"
-        class="qd-btn qd-btn-secondary qd-pagination__nav"
+        class="qd-btn qd-btn-secondary qd-pagination__nav qd-pagination__nav--prev"
         data-testid="qd-pagination-prev"
+        [attr.aria-label]="prevLabel"
         [disabled]="disabled() || currentPage() <= 1"
         (click)="selectPage(currentPage() - 1)"
       >
-        {{ prevLabel }}
+        <svg
+          class="qd-pagination__nav-icon"
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          fill="none"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <path
+            d="M6 4L10 8L6 12"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        <span class="qd-pagination__nav-text">{{ prevLabel }}</span>
       </button>
 
       <div class="qd-pagination__pages" role="group" [attr.aria-label]="pagesGroupLabel">
@@ -63,12 +81,30 @@
 
       <button
         type="button"
-        class="qd-btn qd-btn-secondary qd-pagination__nav"
+        class="qd-btn qd-btn-secondary qd-pagination__nav qd-pagination__nav--next"
         data-testid="qd-pagination-next"
+        [attr.aria-label]="nextLabel"
         [disabled]="disabled() || currentPage() >= lastPage()"
         (click)="selectPage(currentPage() + 1)"
       >
-        {{ nextLabel }}
+        <svg
+          class="qd-pagination__nav-icon"
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          fill="none"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <path
+            d="M10 4L6 8L10 12"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        <span class="qd-pagination__nav-text">{{ nextLabel }}</span>
       </button>
     </div>
 

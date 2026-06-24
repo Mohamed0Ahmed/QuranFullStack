@@ -21,8 +21,9 @@ import {
 import { UniqueWordsTabsComponent } from '../../components/unique-words-tabs/unique-words-tabs.component';
 import { UniqueWordsSearchBarComponent } from '../../components/unique-words-search-bar/unique-words-search-bar.component';
 import { UniqueWordsTableComponent } from '../../components/unique-words-table/unique-words-table.component';
-import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
 import { WordDrilldownModalComponent } from '../../components/word-drilldown-modal/word-drilldown-modal.component';
+import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
+import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
 import {
   EMPTY_LIST_LABEL,
   RESTORED_WORD_NOT_FOUND_LABEL,
@@ -110,7 +111,7 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
       .subscribe((value) => this.updateQueryParams({ search: value || null, page: null }));
 
     if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
-      this.desktopQuery = window.matchMedia('(min-width: 1024px)');
+      this.desktopQuery = window.matchMedia(QD_BP_DESKTOP_MIN_QUERY);
       this.isDesktop.set(this.desktopQuery.matches);
       this.desktopQuery.addEventListener('change', this.onDesktopChange);
     }

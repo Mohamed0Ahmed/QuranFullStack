@@ -26,6 +26,20 @@
   }
 }
 
+@media (max-width: 1023px) {
+  :host {
+    flex: none;
+    min-height: auto;
+  }
+
+  .study-context-section {
+    flex: none;
+    min-height: auto;
+    overflow-y: visible;
+    overflow-x: visible;
+  }
+}
+
 @media (min-width: 1024px) {
   :host {
     align-self: stretch;

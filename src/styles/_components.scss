@@ -1,3 +1,5 @@
+@use 'breakpoints' as bp;
+
 .qd-card {
   background: var(--qd-surface);
   border: 1px solid var(--qd-border);
@@ -193,6 +195,145 @@ button.qd-interactive-surface {
   min-width: 0;
 }
 
+.explorer-detail-panel {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  gap: 0;
+  padding: 0;
+  box-sizing: border-box;
+  background: var(--qd-explorer-detail-bg);
+  border-color: var(--qd-explorer-detail-border);
+}
+
+.explorer-detail-panel .explorer-panel-header {
+  background: var(--qd-explorer-detail-header-bg);
+  margin: 0;
+  padding: var(--qd-space-4) var(--qd-space-5) var(--qd-space-2);
+  border-block-end-color: var(--qd-explorer-detail-border);
+}
+
+.explorer-detail-panel__toolbar {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--qd-space-2);
+  padding: 0 var(--qd-space-5) var(--qd-space-2);
+  border-block-end: 1px solid var(--qd-explorer-detail-border);
+  background: var(--qd-explorer-detail-header-bg);
+  flex-shrink: 0;
+}
+
+.explorer-detail-panel__toolbar--grid-5 {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.explorer-detail-panel__toolbar .qd-btn {
+  width: 100%;
+  min-width: 0;
+  padding-inline: var(--qd-space-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.explorer-detail-panel__body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: var(--qd-explorer-detail-surface);
+  padding: var(--qd-space-2) var(--qd-space-5) var(--qd-space-5);
+}
+
+.explorer-detail-panel .explorer-panel-header,
+.explorer-detail-panel .explorer-detail-panel__toolbar {
+  flex-shrink: 0;
+}
+
+.qd-modal.explorer-detail-modal {
+  width: min(100%, 42rem);
+  max-height: min(90vh, 36rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+  background: var(--qd-explorer-detail-bg);
+  border-color: var(--qd-explorer-detail-border);
+}
+
+.explorer-detail-modal .explorer-panel-header {
+  flex-shrink: 0;
+  margin: 0;
+  background: var(--qd-explorer-detail-header-bg);
+  padding: var(--qd-space-4) var(--qd-space-5) var(--qd-space-2);
+  border-block-end-color: var(--qd-explorer-detail-border);
+}
+
+.explorer-detail-modal .explorer-detail-panel__toolbar {
+  flex-shrink: 0;
+  padding: 0 var(--qd-space-5) var(--qd-space-2);
+  background: var(--qd-explorer-detail-header-bg);
+  border-block-end-color: var(--qd-explorer-detail-border);
+}
+
+.explorer-detail-modal .explorer-detail-panel__body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: var(--qd-explorer-detail-surface);
+  padding: var(--qd-space-2) 0 var(--qd-space-2);
+}
+
+@media (max-width: bp.$qd-bp-tablet-max) {
+  .explorer-detail-panel__toolbar--grid-5 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .qd-modal.explorer-detail-modal {
+    --explorer-detail-modal-block-size: min(88dvh, 42rem);
+    height: var(--explorer-detail-modal-block-size);
+    min-height: var(--explorer-detail-modal-block-size);
+    max-height: var(--explorer-detail-modal-block-size);
+    gap: 0;
+    padding-block: 0;
+    padding-inline: 0;
+  }
+
+  .explorer-detail-modal .explorer-panel-header,
+  .explorer-detail-modal .explorer-detail-panel__toolbar {
+    flex-shrink: 0;
+    padding-inline: var(--qd-space-3);
+  }
+
+  .explorer-detail-modal .explorer-detail-panel__toolbar {
+    padding-block-end: var(--qd-space-1);
+  }
+
+  .explorer-detail-modal .explorer-detail-panel__toolbar .qd-btn,
+  .explorer-detail-panel .explorer-detail-panel__toolbar .qd-btn {
+    font-size: 0.8125rem;
+  }
+
+  .explorer-detail-modal .explorer-detail-panel__body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding-block: 0 var(--qd-space-2);
+    padding-inline: 0;
+  }
+
+  .explorer-detail-modal .explorer-detail-panel__body > :only-child {
+    flex: 1;
+    min-height: 0;
+  }
+}
+
 .qd-empty-state,
 .qd-loading-state,
 .qd-error-state {
@@ -222,7 +363,7 @@ button.qd-interactive-surface {
   align-items: center;
   justify-content: center;
   padding: var(--qd-space-4);
-  background: rgb(0 0 0 / 0.45);
+  background: var(--qd-overlay);
 }
 
 .qd-modal {

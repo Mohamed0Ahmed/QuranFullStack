@@ -33,28 +33,6 @@
   scrollbar-gutter: stable;
 }
 
-:host-context(.word-drilldown-panel),
-:host-context(.root-details-panel__surface) {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  height: 100%;
-}
-
-:host-context(.word-drilldown-panel) .missing-surahs-list-shell,
-:host-context(.root-details-panel__surface) .missing-surahs-list-shell {
-  flex: 1;
-  min-height: 0;
-}
-
-:host-context(.word-drilldown-panel) .missing-surahs-list,
-:host-context(.root-details-panel__surface) .missing-surahs-list {
-  flex: 1;
-  min-height: 0;
-  block-size: auto;
-}
-
 .missing-surahs-list__row {
   display: grid;
   grid-template-columns: 2.5rem minmax(0, 1fr);

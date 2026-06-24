@@ -1,4 +1,5 @@
 export const DEFAULT_PAGINATION_WINDOW_SIZE = 5;
+export const MOBILE_PAGINATION_WINDOW_SIZE = 3;
 
 export function buildPaginationWindow(
   currentPage: number,

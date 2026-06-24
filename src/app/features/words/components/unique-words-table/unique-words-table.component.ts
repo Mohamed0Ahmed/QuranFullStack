@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -8,6 +9,7 @@ import {
   inject,
   input,
   output,
+  signal,
 } from '@angular/core';
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
 
@@ -26,13 +28,16 @@ import {
 import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
 import { syncTableScrollbarGutter } from '../../utils/table-scrollbar-gutter-sync';
 
-const ROW_HEIGHT = 48;
+import { QD_BP_PHONE_MAX_QUERY } from '../../../../shared/layout/breakpoints';
+
+const ROW_HEIGHT_DESKTOP = 48;
+const ROW_HEIGHT_MOBILE = 72;
 const HAS_RESIZE_OBSERVER = typeof ResizeObserver !== 'undefined';
 
 @Component({
   selector: 'qd-unique-words-table',
   standalone: true,
-  imports: [ScrollingModule, WordCountChipComponent],
+  imports: [NgTemplateOutlet, ScrollingModule, WordCountChipComponent],
   templateUrl: './unique-words-table.component.html',
   styleUrl: './unique-words-table.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -57,13 +62,25 @@ export class UniqueWordsTableComponent {
   protected readonly missingLabel = WORD_DRILLDOWN_VIEW_LABELS.missing;
   protected readonly loadingLabel = LOADING_LABEL;
   protected readonly loadingRowPlaceholders = Array.from({ length: 12 });
-  protected readonly rowHeight = ROW_HEIGHT;
+  protected readonly rowHeight = signal(ROW_HEIGHT_DESKTOP);
   protected readonly useVirtualScroll = HAS_RESIZE_OBSERVER;
 
   @ViewChild(CdkVirtualScrollViewport) private viewport?: CdkVirtualScrollViewport;
 
   constructor() {
     afterNextRender(() => {
+      if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+        const mobileMq = window.matchMedia(QD_BP_PHONE_MAX_QUERY);
+        const syncRowHeight = () => {
+          this.rowHeight.set(mobileMq.matches ? ROW_HEIGHT_MOBILE : ROW_HEIGHT_DESKTOP);
+        };
+        syncRowHeight();
+        if (typeof mobileMq.addEventListener === 'function') {
+          mobileMq.addEventListener('change', syncRowHeight);
+          this.destroyRef.onDestroy(() => mobileMq.removeEventListener('change', syncRowHeight));
+        }
+      }
+
       const disconnect = syncTableScrollbarGutter(
         this.host.nativeElement,
         '--unique-words-table-scrollbar-gutter',

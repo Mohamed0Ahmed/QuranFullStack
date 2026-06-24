@@ -6,6 +6,12 @@
   --qd-surface-recessed: oklch(0.921 0.025 75.3);
   --qd-surface-elevated: var(--qd-section-bg);
 
+  --qd-explorer-detail-bg: oklch(0.938 0.022 78);
+  --qd-explorer-detail-header-bg: oklch(0.952 0.018 84);
+  --qd-explorer-detail-surface: oklch(0.972 0.012 90);
+  --qd-explorer-detail-card: oklch(0.978 0.010 88);
+  --qd-explorer-detail-border: oklch(0.42 0.045 72 / 0.16);
+
   --qd-text: oklch(0.278 0.030 256.8);
   --qd-text-muted: oklch(0.544 0.035 265.1);
 
@@ -41,7 +47,10 @@
 
   --qd-shadow-sm: 0 1px 2px oklch(0.263 0.046 250 / 0.04), 0 1px 1px oklch(0.263 0.046 250 / 0.03);
   --qd-shadow: 0 6px 20px oklch(0.263 0.046 250 / 0.07), 0 2px 6px oklch(0.263 0.046 250 / 0.04);
+  --qd-shadow-lg: 0 12px 32px oklch(0.263 0.046 250 / 0.12), 0 4px 12px oklch(0.263 0.046 250 / 0.08);
   --qd-floating-shadow: 0 30px 70px oklch(0.263 0.046 250 / 0.14), 0 8px 22px oklch(0.263 0.046 250 / 0.07);
+
+  /* Breakpoints: phone ≤767px, tablet ≤1023px, desktop ≥1024px (see styles/_breakpoints.scss). */
 
   --qd-overlay: oklch(0.236 0.044 255 / 0.30);
 

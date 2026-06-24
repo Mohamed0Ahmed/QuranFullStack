@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -7,6 +8,7 @@ import {
   inject,
   input,
   output,
+  signal,
   viewChild,
 } from '@angular/core';
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
@@ -27,7 +29,10 @@ import {
 import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
 import { syncTableScrollbarGutter } from '../../utils/table-scrollbar-gutter-sync';
 
-const ROW_HEIGHT = 48;
+import { QD_BP_TABLET_MAX_QUERY } from '../../../../shared/layout/breakpoints';
+
+const ROW_HEIGHT_DESKTOP = 48;
+const ROW_HEIGHT_MOBILE = 88;
 const HAS_RESIZE_OBSERVER = typeof ResizeObserver !== 'undefined';
 
 export interface RootCountOpenedEvent {
@@ -39,7 +44,7 @@ export interface RootCountOpenedEvent {
 @Component({
   selector: 'qd-roots-table',
   standalone: true,
-  imports: [ScrollingModule, WordCountChipComponent],
+  imports: [NgTemplateOutlet, ScrollingModule, WordCountChipComponent],
   templateUrl: './roots-table.component.html',
   styleUrl: './roots-table.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -65,13 +70,25 @@ export class RootsTableComponent {
   }
   protected readonly loadingLabel = ROOTS_LOADING_LABEL;
   protected readonly loadingRowPlaceholders = Array.from({ length: 12 });
-  protected readonly rowHeight = ROW_HEIGHT;
+  protected readonly rowHeight = signal(ROW_HEIGHT_DESKTOP);
   protected readonly useVirtualScroll = HAS_RESIZE_OBSERVER;
 
   private readonly viewport = viewChild(CdkVirtualScrollViewport);
 
   constructor() {
     afterNextRender(() => {
+      if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+        const mobileMq = window.matchMedia(QD_BP_TABLET_MAX_QUERY);
+        const syncRowHeight = () => {
+          this.rowHeight.set(mobileMq.matches ? ROW_HEIGHT_MOBILE : ROW_HEIGHT_DESKTOP);
+        };
+        syncRowHeight();
+        if (typeof mobileMq.addEventListener === 'function') {
+          mobileMq.addEventListener('change', syncRowHeight);
+          this.destroyRef.onDestroy(() => mobileMq.removeEventListener('change', syncRowHeight));
+        }
+      }
+
       const disconnect = syncTableScrollbarGutter(
         this.host.nativeElement,
         '--roots-table-scrollbar-gutter',

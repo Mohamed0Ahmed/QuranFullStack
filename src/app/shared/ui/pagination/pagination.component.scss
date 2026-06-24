@@ -22,7 +22,16 @@
 }
 
 .qd-pagination__nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--qd-space-1);
   min-inline-size: 5.5rem;
+}
+
+.qd-pagination__nav-icon {
+  display: none;
+  flex-shrink: 0;
 }
 
 .qd-pagination__page {
@@ -68,6 +77,62 @@
   font-size: 0.75rem;
   color: var(--qd-danger);
   text-align: center;
+}
+
+@media (max-width: 767px) {
+  .qd-pagination {
+    margin-top: var(--qd-space-2);
+    gap: var(--qd-space-1);
+  }
+
+  .qd-pagination__controls {
+    flex-wrap: nowrap;
+    gap: var(--qd-space-1);
+    inline-size: 100%;
+  }
+
+  .qd-pagination__pages {
+    flex-wrap: nowrap;
+    gap: 0.125rem;
+    min-width: 0;
+  }
+
+  .qd-pagination__nav {
+    min-inline-size: 2rem;
+    padding-inline: var(--qd-space-1);
+  }
+
+  .qd-pagination__nav-text {
+    display: none;
+  }
+
+  .qd-pagination__nav-icon {
+    display: block;
+  }
+
+  .qd-pagination__page {
+    min-inline-size: 1.75rem;
+    padding-inline: var(--qd-space-1);
+    font-size: 0.8125rem;
+  }
+
+  .qd-pagination__jump-input {
+    inline-size: 1.75rem;
+    min-inline-size: 1.75rem;
+    block-size: 1.75rem;
+    padding-inline: 0.125rem;
+    font-size: 0.8125rem;
+  }
+
+  .qd-pagination__jump-input:focus {
+    inline-size: 3.25rem;
+    min-inline-size: 3.25rem;
+  }
+
+  .qd-pagination__jump-submit {
+    padding-inline: var(--qd-space-1);
+    font-size: 0.8125rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
