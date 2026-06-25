@@ -149,11 +149,74 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
         return new PagedResult<LemmaAyahMatchDto>(page, pageSize, totalCount, items);
     }
 
-    public Task<LemmaSurahsResponse?> GetLemmaMentionedSurahsAsync(int id, CancellationToken cancellationToken)
-        => throw new NotImplementedException();
+    public async Task<LemmaSurahsResponse?> GetLemmaMentionedSurahsAsync(int id, CancellationToken cancellationToken)
+    {
+        var lemma = await _db.QuranLemmas
+            .AsNoTracking()
+            .Where(l => l.Id == id)
+            .Select(l => new { l.Id, l.LemmaText })
+            .FirstOrDefaultAsync(cancellationToken);
+        if (lemma is null)
+        {
+            return null;
+        }
 
-    public Task<LemmaMissingSurahsResponse?> GetLemmaMissingSurahsAsync(int id, CancellationToken cancellationToken)
-        => throw new NotImplementedException();
+        var surahGroups = await (
+            from m in _db.WordMorphologies.AsNoTracking()
+            join w in _db.QuranWords.AsNoTracking() on m.QuranWordId equals w.Id
+            where m.LemmaId == id
+            group w by w.SurahNumber into g
+            orderby g.Key
+            select new SurahOccurrenceRow(g.Key, g.Count()))
+            .ToListAsync(cancellationToken);
+
+        if (surahGroups.Count == 0)
+        {
+            return new LemmaSurahsResponse(id, lemma.LemmaText, 0, []);
+        }
+
+        var surahNumbers = surahGroups.Select(r => r.SurahNumber).ToList();
+        var surahNames = await _db.QuranSurahs
+            .AsNoTracking()
+            .Where(s => surahNumbers.Contains(s.SurahNumber))
+            .ToDictionaryAsync(s => s.SurahNumber, s => s.NameArabic, cancellationToken);
+
+        var surahs = surahGroups
+            .Select(r => new LemmaSurahItemDto(r.SurahNumber, surahNames[r.SurahNumber], r.OccurrencesInSurah))
+            .ToList();
+
+        return new LemmaSurahsResponse(id, lemma.LemmaText, surahs.Count, surahs);
+    }
+
+    public async Task<LemmaMissingSurahsResponse?> GetLemmaMissingSurahsAsync(int id, CancellationToken cancellationToken)
+    {
+        var lemma = await _db.QuranLemmas
+            .AsNoTracking()
+            .Where(l => l.Id == id)
+            .Select(l => new { l.Id, l.LemmaText })
+            .FirstOrDefaultAsync(cancellationToken);
+        if (lemma is null)
+        {
+            return null;
+        }
+
+        var mentionedSurahNumbers = await (
+            from m in _db.WordMorphologies.AsNoTracking()
+            join w in _db.QuranWords.AsNoTracking() on m.QuranWordId equals w.Id
+            where m.LemmaId == id
+            select w.SurahNumber)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        var missingSurahs = await _db.QuranSurahs
+            .AsNoTracking()
+            .Where(s => !mentionedSurahNumbers.Contains(s.SurahNumber))
+            .OrderBy(s => s.SurahNumber)
+            .Select(s => new MissingSurahItemDto(s.SurahNumber, s.NameArabic))
+            .ToListAsync(cancellationToken);
+
+        return new LemmaMissingSurahsResponse(id, lemma.LemmaText, missingSurahs.Count, missingSurahs);
+    }
 
     public Task<LemmaStemsResponse?> GetLemmaStemsAsync(int id, CancellationToken cancellationToken)
         => throw new NotImplementedException();
@@ -461,6 +524,8 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
         int FirstSurahNumber,
         int FirstAyahNumber,
         int FirstWordNumber);
+
+    private sealed record SurahOccurrenceRow(short SurahNumber, int OccurrencesInSurah);
 
     private static short ResolveAyahPageNumber(IReadOnlyList<AyahWordRow> words)
     {

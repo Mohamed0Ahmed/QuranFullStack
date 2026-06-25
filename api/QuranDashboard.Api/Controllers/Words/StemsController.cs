@@ -4,6 +4,8 @@ using QuranDashboard.Api.Contracts;
 using QuranDashboard.Application.Abstractions.Common.Paging;
 using QuranDashboard.Application.Abstractions.Quran.Words.Stems.Responses;
 using QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemAyahs;
+using QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemMissingSurahs;
+using QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemMentionedSurahs;
 using QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemWords;
 using QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemSummary;
 using QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemsPage;
@@ -23,6 +25,8 @@ public sealed class StemsController(
     GetStemsPageHandler listHandler,
     GetStemAyahsHandler ayahsHandler,
     GetStemWordsHandler wordsHandler,
+    GetStemMentionedSurahsHandler mentionedSurahsHandler,
+    GetStemMissingSurahsHandler missingSurahsHandler,
     GetStemSummaryHandler summaryHandler) : ControllerBase
 {
     private const int DefaultPage = 1;
@@ -150,6 +154,55 @@ public sealed class StemsController(
             GetStemAyahsOutcome.NotFound =>
                 NotFound(ApiResponse<PagedResult<StemAyahMatchDto>>.Fail(ApiMessages.StemNotFound)),
             _ => throw new InvalidOperationException($"Unhandled {nameof(GetStemAyahsOutcome)} variant."),
+        };
+    }
+
+    /// <summary>
+    /// يُرجع السور التي ورد فيها الأصل الصرفي المحدد مع عدد مرات الظهور في
+    /// كل سورة.
+    /// </summary>
+    [HttpGet("{id:int}/surahs")]
+    public async Task<ActionResult<ApiResponse<StemSurahsResponse>>> GetSurahs(
+        int id,
+        CancellationToken cancellationToken)
+    {
+        var outcome = await mentionedSurahsHandler.HandleAsync(
+            new GetStemMentionedSurahsQuery(id),
+            cancellationToken);
+
+        return outcome switch
+        {
+            GetStemMentionedSurahsOutcome.Success success =>
+                Ok(ApiResponse<StemSurahsResponse>.Ok(success.Surahs, ApiMessages.StemSurahsLoaded)),
+            GetStemMentionedSurahsOutcome.InvalidId =>
+                BadRequest(ApiResponse<StemSurahsResponse>.Fail(ApiMessages.StemsInvalidId)),
+            GetStemMentionedSurahsOutcome.NotFound =>
+                NotFound(ApiResponse<StemSurahsResponse>.Fail(ApiMessages.StemNotFound)),
+            _ => throw new InvalidOperationException($"Unhandled {nameof(GetStemMentionedSurahsOutcome)} variant."),
+        };
+    }
+
+    /// <summary>
+    /// يُرجع السور التي لم ترد فيها الأصل الصرفي المحدد.
+    /// </summary>
+    [HttpGet("{id:int}/missing-surahs")]
+    public async Task<ActionResult<ApiResponse<StemMissingSurahsResponse>>> GetMissingSurahs(
+        int id,
+        CancellationToken cancellationToken)
+    {
+        var outcome = await missingSurahsHandler.HandleAsync(
+            new GetStemMissingSurahsQuery(id),
+            cancellationToken);
+
+        return outcome switch
+        {
+            GetStemMissingSurahsOutcome.Success success =>
+                Ok(ApiResponse<StemMissingSurahsResponse>.Ok(success.MissingSurahs, ApiMessages.StemMissingSurahsLoaded)),
+            GetStemMissingSurahsOutcome.InvalidId =>
+                BadRequest(ApiResponse<StemMissingSurahsResponse>.Fail(ApiMessages.StemsInvalidId)),
+            GetStemMissingSurahsOutcome.NotFound =>
+                NotFound(ApiResponse<StemMissingSurahsResponse>.Fail(ApiMessages.StemNotFound)),
+            _ => throw new InvalidOperationException($"Unhandled {nameof(GetStemMissingSurahsOutcome)} variant."),
         };
     }
 }

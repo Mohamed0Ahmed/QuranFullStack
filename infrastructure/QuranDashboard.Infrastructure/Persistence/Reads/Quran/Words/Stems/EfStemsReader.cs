@@ -147,15 +147,78 @@ public sealed class EfStemsReader(QuranDashboardDbContext db) : IStemsReader
         return new PagedResult<StemAyahMatchDto>(page, pageSize, totalCount, items);
     }
 
-    public Task<StemSurahsResponse?> GetStemMentionedSurahsAsync(
+    public async Task<StemSurahsResponse?> GetStemMentionedSurahsAsync(
         int id,
         CancellationToken cancellationToken)
-        => throw new NotImplementedException();
+    {
+        var stem = await _db.QuranStems
+            .AsNoTracking()
+            .Where(s => s.Id == id)
+            .Select(s => new { s.Id, s.StemText })
+            .FirstOrDefaultAsync(cancellationToken);
+        if (stem is null)
+        {
+            return null;
+        }
 
-    public Task<StemMissingSurahsResponse?> GetStemMissingSurahsAsync(
+        var surahGroups = await (
+            from m in _db.WordMorphologies.AsNoTracking()
+            join w in _db.QuranWords.AsNoTracking() on m.QuranWordId equals w.Id
+            where m.StemId == id
+            group w by w.SurahNumber into g
+            orderby g.Key
+            select new SurahOccurrenceRow(g.Key, g.Count()))
+            .ToListAsync(cancellationToken);
+
+        if (surahGroups.Count == 0)
+        {
+            return new StemSurahsResponse(id, stem.StemText, 0, []);
+        }
+
+        var surahNumbers = surahGroups.Select(r => r.SurahNumber).ToList();
+        var surahNames = await _db.QuranSurahs
+            .AsNoTracking()
+            .Where(s => surahNumbers.Contains(s.SurahNumber))
+            .ToDictionaryAsync(s => s.SurahNumber, s => s.NameArabic, cancellationToken);
+
+        var surahs = surahGroups
+            .Select(r => new StemSurahItemDto(r.SurahNumber, surahNames[r.SurahNumber], r.OccurrencesInSurah))
+            .ToList();
+
+        return new StemSurahsResponse(id, stem.StemText, surahs.Count, surahs);
+    }
+
+    public async Task<StemMissingSurahsResponse?> GetStemMissingSurahsAsync(
         int id,
         CancellationToken cancellationToken)
-        => throw new NotImplementedException();
+    {
+        var stem = await _db.QuranStems
+            .AsNoTracking()
+            .Where(s => s.Id == id)
+            .Select(s => new { s.Id, s.StemText })
+            .FirstOrDefaultAsync(cancellationToken);
+        if (stem is null)
+        {
+            return null;
+        }
+
+        var mentionedSurahNumbers = await (
+            from m in _db.WordMorphologies.AsNoTracking()
+            join w in _db.QuranWords.AsNoTracking() on m.QuranWordId equals w.Id
+            where m.StemId == id
+            select w.SurahNumber)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        var missingSurahs = await _db.QuranSurahs
+            .AsNoTracking()
+            .Where(s => !mentionedSurahNumbers.Contains(s.SurahNumber))
+            .OrderBy(s => s.SurahNumber)
+            .Select(s => new MissingSurahItemDto(s.SurahNumber, s.NameArabic))
+            .ToListAsync(cancellationToken);
+
+        return new StemMissingSurahsResponse(id, stem.StemText, missingSurahs.Count, missingSurahs);
+    }
 
     public Task<StemLemmasResponse?> GetStemLemmasAsync(
         int id,
@@ -530,6 +593,8 @@ public sealed class EfStemsReader(QuranDashboardDbContext db) : IStemsReader
         int FirstSurahNumber,
         int FirstAyahNumber,
         int FirstWordNumber);
+
+    private sealed record SurahOccurrenceRow(short SurahNumber, int OccurrencesInSurah);
 
     private static short ResolveAyahPageNumber(IReadOnlyList<AyahWordRow> words)
     {

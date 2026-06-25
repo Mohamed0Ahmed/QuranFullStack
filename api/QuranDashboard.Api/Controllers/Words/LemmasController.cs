@@ -4,6 +4,8 @@ using QuranDashboard.Api.Contracts;
 using QuranDashboard.Application.Abstractions.Common.Paging;
 using QuranDashboard.Application.Abstractions.Quran.Words.Lemmas.Responses;
 using QuranDashboard.Application.Quran.Words.Lemmas.Queries.GetLemmaAyahs;
+using QuranDashboard.Application.Quran.Words.Lemmas.Queries.GetLemmaMissingSurahs;
+using QuranDashboard.Application.Quran.Words.Lemmas.Queries.GetLemmaMentionedSurahs;
 using QuranDashboard.Application.Quran.Words.Lemmas.Queries.GetLemmaWords;
 using QuranDashboard.Application.Quran.Words.Lemmas.Queries.GetLemmasPage;
 using QuranDashboard.Application.Quran.Words.Lemmas.Queries.GetLemmaSummary;
@@ -22,6 +24,8 @@ public sealed class LemmasController(
     GetLemmasPageHandler listHandler,
     GetLemmaAyahsHandler ayahsHandler,
     GetLemmaWordsHandler wordsHandler,
+    GetLemmaMentionedSurahsHandler mentionedSurahsHandler,
+    GetLemmaMissingSurahsHandler missingSurahsHandler,
     GetLemmaSummaryHandler summaryHandler) : ControllerBase
 {
     private const int DefaultPage = 1;
@@ -150,6 +154,55 @@ public sealed class LemmasController(
             GetLemmaAyahsOutcome.NotFound =>
                 NotFound(ApiResponse<PagedResult<LemmaAyahMatchDto>>.Fail(ApiMessages.LemmaNotFound)),
             _ => throw new InvalidOperationException($"Unhandled {nameof(GetLemmaAyahsOutcome)} variant."),
+        };
+    }
+
+    /// <summary>
+    /// يُرجع السور التي وردت فيها الصيغة المعجمية المحددة مع عدد مرات الظهور
+    /// في كل سورة.
+    /// </summary>
+    [HttpGet("{id:int}/surahs")]
+    public async Task<ActionResult<ApiResponse<LemmaSurahsResponse>>> GetSurahs(
+        int id,
+        CancellationToken cancellationToken)
+    {
+        var outcome = await mentionedSurahsHandler.HandleAsync(
+            new GetLemmaMentionedSurahsQuery(id),
+            cancellationToken);
+
+        return outcome switch
+        {
+            GetLemmaMentionedSurahsOutcome.Success success =>
+                Ok(ApiResponse<LemmaSurahsResponse>.Ok(success.Surahs, ApiMessages.LemmaSurahsLoaded)),
+            GetLemmaMentionedSurahsOutcome.InvalidId =>
+                BadRequest(ApiResponse<LemmaSurahsResponse>.Fail(ApiMessages.LemmasInvalidId)),
+            GetLemmaMentionedSurahsOutcome.NotFound =>
+                NotFound(ApiResponse<LemmaSurahsResponse>.Fail(ApiMessages.LemmaNotFound)),
+            _ => throw new InvalidOperationException($"Unhandled {nameof(GetLemmaMentionedSurahsOutcome)} variant."),
+        };
+    }
+
+    /// <summary>
+    /// يُرجع السور التي لم ترد فيها الصيغة المعجمية المحددة.
+    /// </summary>
+    [HttpGet("{id:int}/missing-surahs")]
+    public async Task<ActionResult<ApiResponse<LemmaMissingSurahsResponse>>> GetMissingSurahs(
+        int id,
+        CancellationToken cancellationToken)
+    {
+        var outcome = await missingSurahsHandler.HandleAsync(
+            new GetLemmaMissingSurahsQuery(id),
+            cancellationToken);
+
+        return outcome switch
+        {
+            GetLemmaMissingSurahsOutcome.Success success =>
+                Ok(ApiResponse<LemmaMissingSurahsResponse>.Ok(success.MissingSurahs, ApiMessages.LemmaMissingSurahsLoaded)),
+            GetLemmaMissingSurahsOutcome.InvalidId =>
+                BadRequest(ApiResponse<LemmaMissingSurahsResponse>.Fail(ApiMessages.LemmasInvalidId)),
+            GetLemmaMissingSurahsOutcome.NotFound =>
+                NotFound(ApiResponse<LemmaMissingSurahsResponse>.Fail(ApiMessages.LemmaNotFound)),
+            _ => throw new InvalidOperationException($"Unhandled {nameof(GetLemmaMissingSurahsOutcome)} variant."),
         };
     }
 }

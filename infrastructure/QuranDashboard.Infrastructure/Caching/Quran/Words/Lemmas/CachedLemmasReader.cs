@@ -74,12 +74,30 @@ public sealed class CachedLemmasReader(EfLemmasReader efReader, IMemoryCache cac
     public Task<LemmaSurahsResponse?> GetLemmaMentionedSurahsAsync(
         int id,
         CancellationToken cancellationToken)
-        => _ef.GetLemmaMentionedSurahsAsync(id, cancellationToken);
+    {
+        var key = LemmasCacheKeys.Surahs(id);
+
+        if (_cache.TryGetValue(key, out LemmaSurahsResponse? cached))
+        {
+            return Task.FromResult<LemmaSurahsResponse?>(cached);
+        }
+
+        return GetAndCacheMentionedSurahsAsync(id, cancellationToken, key);
+    }
 
     public Task<LemmaMissingSurahsResponse?> GetLemmaMissingSurahsAsync(
         int id,
         CancellationToken cancellationToken)
-        => _ef.GetLemmaMissingSurahsAsync(id, cancellationToken);
+    {
+        var key = LemmasCacheKeys.Missing(id);
+
+        if (_cache.TryGetValue(key, out LemmaMissingSurahsResponse? cached))
+        {
+            return Task.FromResult<LemmaMissingSurahsResponse?>(cached);
+        }
+
+        return GetAndCacheMissingSurahsAsync(id, cancellationToken, key);
+    }
 
     public Task<LemmaStemsResponse?> GetLemmaStemsAsync(
         int id,
@@ -129,5 +147,33 @@ public sealed class CachedLemmasReader(EfLemmasReader efReader, IMemoryCache cac
         }
 
         return words;
+    }
+
+    private async Task<LemmaSurahsResponse?> GetAndCacheMentionedSurahsAsync(
+        int id,
+        CancellationToken cancellationToken,
+        string key)
+    {
+        var surahs = await _ef.GetLemmaMentionedSurahsAsync(id, cancellationToken);
+        if (surahs is not null)
+        {
+            _cache.Set(key, surahs, LemmasCacheEntryOptions.WholeDetail());
+        }
+
+        return surahs;
+    }
+
+    private async Task<LemmaMissingSurahsResponse?> GetAndCacheMissingSurahsAsync(
+        int id,
+        CancellationToken cancellationToken,
+        string key)
+    {
+        var missing = await _ef.GetLemmaMissingSurahsAsync(id, cancellationToken);
+        if (missing is not null)
+        {
+            _cache.Set(key, missing, LemmasCacheEntryOptions.WholeDetail());
+        }
+
+        return missing;
     }
 }

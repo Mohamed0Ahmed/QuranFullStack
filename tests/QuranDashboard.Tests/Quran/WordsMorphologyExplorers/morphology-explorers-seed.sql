@@ -33,7 +33,8 @@
 --   (g) Simple/tashkeel identities       → 7 distinct display forms each linked to
 --                                            a tashkeel + simple unique identity.
 --   (h) Mentioned/missing surahs         → L500/S600 in surahs {1,2,3}; missing =
---                                            {4..114} (111 surahs).
+--                                            {4..114} (111 surahs); mentioned+missing
+--                                            disjoint union = 114 (all surahs).
 --   (i) Related stems/lemmas             → L500 related stems = {S600}; S602
 --                                            related lemmas = {L502, L504}.
 --
@@ -60,7 +61,7 @@ VALUES
   (3,   'آل عمران', 'Aal-E-Imran','Aal-E-Imran','madinah', 89, 200, TRUE);
 
 -- Catalog filler for the missing-surahs edge: L500/S600 are seeded into
--- surahs 1,2,3, so 4..113 must exist as missing candidates.
+-- surahs 1,2,3, so 4..114 must exist as missing candidates.
 INSERT INTO quran_surahs
   (surah_number, name_arabic, name_simple, name_transliteration, revelation_place, revelation_order, verses_count, bismillah_pre)
 SELECT
@@ -72,7 +73,7 @@ SELECT
   n,
   1,
   FALSE
-FROM generate_series(4, 113) AS n
+FROM generate_series(4, 114) AS n
 ON CONFLICT (surah_number) DO NOTHING;
 
 -- ----------------------------------------------------------------------

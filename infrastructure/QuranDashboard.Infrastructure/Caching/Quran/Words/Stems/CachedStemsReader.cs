@@ -85,12 +85,30 @@ public sealed class CachedStemsReader(EfStemsReader efReader, IMemoryCache cache
     public Task<StemSurahsResponse?> GetStemMentionedSurahsAsync(
         int id,
         CancellationToken cancellationToken)
-        => _ef.GetStemMentionedSurahsAsync(id, cancellationToken);
+    {
+        var key = StemsCacheKeys.Surahs(id);
+
+        if (_cache.TryGetValue(key, out StemSurahsResponse? cached))
+        {
+            return Task.FromResult<StemSurahsResponse?>(cached);
+        }
+
+        return GetAndCacheMentionedSurahsAsync(id, cancellationToken, key);
+    }
 
     public Task<StemMissingSurahsResponse?> GetStemMissingSurahsAsync(
         int id,
         CancellationToken cancellationToken)
-        => _ef.GetStemMissingSurahsAsync(id, cancellationToken);
+    {
+        var key = StemsCacheKeys.Missing(id);
+
+        if (_cache.TryGetValue(key, out StemMissingSurahsResponse? cached))
+        {
+            return Task.FromResult<StemMissingSurahsResponse?>(cached);
+        }
+
+        return GetAndCacheMissingSurahsAsync(id, cancellationToken, key);
+    }
 
     public Task<StemLemmasResponse?> GetStemLemmasAsync(
         int id,
@@ -140,5 +158,33 @@ public sealed class CachedStemsReader(EfStemsReader efReader, IMemoryCache cache
         }
 
         return words;
+    }
+
+    private async Task<StemSurahsResponse?> GetAndCacheMentionedSurahsAsync(
+        int id,
+        CancellationToken cancellationToken,
+        string key)
+    {
+        var surahs = await _ef.GetStemMentionedSurahsAsync(id, cancellationToken);
+        if (surahs is not null)
+        {
+            _cache.Set(key, surahs, StemsCacheEntryOptions.WholeDetail());
+        }
+
+        return surahs;
+    }
+
+    private async Task<StemMissingSurahsResponse?> GetAndCacheMissingSurahsAsync(
+        int id,
+        CancellationToken cancellationToken,
+        string key)
+    {
+        var missing = await _ef.GetStemMissingSurahsAsync(id, cancellationToken);
+        if (missing is not null)
+        {
+            _cache.Set(key, missing, StemsCacheEntryOptions.WholeDetail());
+        }
+
+        return missing;
     }
 }
