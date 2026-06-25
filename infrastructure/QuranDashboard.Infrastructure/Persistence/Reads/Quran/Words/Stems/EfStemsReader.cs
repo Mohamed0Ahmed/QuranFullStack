@@ -12,8 +12,8 @@ namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Stems;
 /// EF Core read model for the Stems Explorer (Feature 016). All queries are
 /// read-only and <c>AsNoTracking</c>. The catalogue/summary methods are loaded
 /// in one bounded whole-summary aggregation and the later detail methods remain
-/// stubbed for subsequent phases. Ayah detail is implemented in the Feature 016
-/// ayah phase.
+/// stubbed for subsequent phases. Ayah and words detail are implemented in the
+/// corresponding Feature 016 story phases.
 /// </summary>
 public sealed class EfStemsReader(QuranDashboardDbContext db) : IStemsReader
 {
@@ -42,7 +42,7 @@ public sealed class EfStemsReader(QuranDashboardDbContext db) : IStemsReader
         int page,
         int pageSize,
         CancellationToken cancellationToken)
-        => throw new NotImplementedException();
+        => GetStemWordsPageAsync(id, wordKind, page, pageSize, cancellationToken);
 
     public async Task<PagedResult<StemAyahMatchDto>?> GetStemAyahMatchesAsync(
         int id,
@@ -370,6 +370,97 @@ public sealed class EfStemsReader(QuranDashboardDbContext db) : IStemsReader
             ? $"{firstSurahNumber}:{firstAyahNumber}"
             : string.Empty;
 
+    private async Task<PagedResult<StemWordItemDto>?> GetStemWordsPageAsync(
+        int id,
+        StemWordKind wordKind,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken)
+    {
+        var stemExists = await _db.QuranStems
+            .AsNoTracking()
+            .AnyAsync(s => s.Id == id, cancellationToken);
+        if (!stemExists)
+        {
+            return null;
+        }
+
+        var rows = wordKind == StemWordKind.Simple
+            ? await LoadStemWordRowsAsync(id, useSimpleWordIds: true, cancellationToken)
+            : await LoadStemWordRowsAsync(id, useSimpleWordIds: false, cancellationToken);
+
+        var grouped = rows
+            .Where(r => r.UniqueWordId.HasValue)
+            .GroupBy(r => r.UniqueWordId!.Value)
+            .Select(g =>
+            {
+                var first = g
+                    .OrderBy(x => x.SurahNumber)
+                    .ThenBy(x => x.AyahNumber)
+                    .ThenBy(x => x.WordNumber)
+                    .ThenBy(x => x.QuranWordId)
+                    .First();
+
+                return new StemWordGroupRow(
+                    g.Key,
+                    first.DisplayTextUthmani,
+                    g.Count(),
+                    first.SurahNumber,
+                    first.AyahNumber,
+                    first.WordNumber);
+            })
+            .OrderBy(x => x.FirstSurahNumber)
+            .ThenBy(x => x.FirstAyahNumber)
+            .ThenBy(x => x.FirstWordNumber)
+            .ThenBy(x => x.UniqueWordId)
+            .ToList();
+
+        var items = grouped
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(row => new StemWordItemDto(
+                row.UniqueWordId,
+                wordKind == StemWordKind.Simple ? StemWordKindKeys.Simple : StemWordKindKeys.Tashkeel,
+                row.DisplayTextUthmani,
+                row.OccurrencesCount,
+                BuildFirstVerseKey(row.FirstSurahNumber, row.FirstAyahNumber)))
+            .ToList();
+
+        return new PagedResult<StemWordItemDto>(page, pageSize, grouped.Count, items);
+    }
+
+    private async Task<IReadOnlyList<StemWordOccurrenceRow>> LoadStemWordRowsAsync(
+        int id,
+        bool useSimpleWordIds,
+        CancellationToken cancellationToken)
+    {
+        return useSimpleWordIds
+            ? await (
+                from m in _db.WordMorphologies.AsNoTracking()
+                join w in _db.QuranWords.AsNoTracking() on m.QuranWordId equals w.Id
+                where m.StemId == id
+                select new StemWordOccurrenceRow(
+                    w.UniqueSimpleWordId,
+                    w.TextUthmani,
+                    w.SurahNumber,
+                    w.AyahNumber,
+                    w.WordNumber,
+                    w.Id))
+                .ToListAsync(cancellationToken)
+            : await (
+                from m in _db.WordMorphologies.AsNoTracking()
+                join w in _db.QuranWords.AsNoTracking() on m.QuranWordId equals w.Id
+                where m.StemId == id
+                select new StemWordOccurrenceRow(
+                    w.UniqueTashkeelWordId,
+                    w.TextUthmani,
+                    w.SurahNumber,
+                    w.AyahNumber,
+                    w.WordNumber,
+                    w.Id))
+                .ToListAsync(cancellationToken);
+    }
+
     private sealed record StemAggregationRow(
         int Id,
         string StemText,
@@ -423,6 +514,22 @@ public sealed class EfStemsReader(QuranDashboardDbContext db) : IStemsReader
         short PageNumber,
         string TextUthmani,
         bool IsAyahMarker);
+
+    private sealed record StemWordOccurrenceRow(
+        int? UniqueWordId,
+        string DisplayTextUthmani,
+        int SurahNumber,
+        int AyahNumber,
+        int WordNumber,
+        int QuranWordId);
+
+    private sealed record StemWordGroupRow(
+        int UniqueWordId,
+        string DisplayTextUthmani,
+        int OccurrencesCount,
+        int FirstSurahNumber,
+        int FirstAyahNumber,
+        int FirstWordNumber);
 
     private static short ResolveAyahPageNumber(IReadOnlyList<AyahWordRow> words)
     {

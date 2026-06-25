@@ -14,8 +14,8 @@ namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Lemmas;
 /// implemented in T032/T033 as a single bounded whole-summary aggregation with
 /// owned-root (<c>quran_lemmas.root_id</c>) semantics, ordered type distribution,
 /// normalized Arabic contains search, deterministic sort, and in-memory paging.
-/// Ayah detail is implemented in the Feature 016 ayah phase; the remaining detail
-/// methods stay stubbed for later story phases.
+/// Ayah and words detail are implemented in the corresponding Feature 016 story
+/// phases; the remaining detail methods stay stubbed for later story phases.
 /// </summary>
 public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
 {
@@ -44,7 +44,7 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
         int page,
         int pageSize,
         CancellationToken cancellationToken)
-        => throw new NotImplementedException();
+        => GetLemmaWordsPageAsync(id, wordKind, page, pageSize, cancellationToken);
 
     public async Task<PagedResult<LemmaAyahMatchDto>?> GetLemmaAyahMatchesAsync(
         int id,
@@ -311,6 +311,97 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
             ? $"{firstSurahNumber}:{firstAyahNumber}"
             : string.Empty;
 
+    private async Task<PagedResult<LemmaWordItemDto>?> GetLemmaWordsPageAsync(
+        int id,
+        LemmaWordKind wordKind,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken)
+    {
+        var lemmaExists = await _db.QuranLemmas
+            .AsNoTracking()
+            .AnyAsync(l => l.Id == id, cancellationToken);
+        if (!lemmaExists)
+        {
+            return null;
+        }
+
+        var rows = wordKind == LemmaWordKind.Simple
+            ? await LoadLemmaWordRowsAsync(id, useSimpleWordIds: true, cancellationToken)
+            : await LoadLemmaWordRowsAsync(id, useSimpleWordIds: false, cancellationToken);
+
+        var grouped = rows
+            .Where(r => r.UniqueWordId.HasValue)
+            .GroupBy(r => r.UniqueWordId!.Value)
+            .Select(g =>
+            {
+                var first = g
+                    .OrderBy(x => x.SurahNumber)
+                    .ThenBy(x => x.AyahNumber)
+                    .ThenBy(x => x.WordNumber)
+                    .ThenBy(x => x.QuranWordId)
+                    .First();
+
+                return new LemmaWordGroupRow(
+                    g.Key,
+                    first.DisplayTextUthmani,
+                    g.Count(),
+                    first.SurahNumber,
+                    first.AyahNumber,
+                    first.WordNumber);
+            })
+            .OrderBy(x => x.FirstSurahNumber)
+            .ThenBy(x => x.FirstAyahNumber)
+            .ThenBy(x => x.FirstWordNumber)
+            .ThenBy(x => x.UniqueWordId)
+            .ToList();
+
+        var items = grouped
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(row => new LemmaWordItemDto(
+                row.UniqueWordId,
+                wordKind == LemmaWordKind.Simple ? LemmaWordKindKeys.Simple : LemmaWordKindKeys.Tashkeel,
+                row.DisplayTextUthmani,
+                row.OccurrencesCount,
+                BuildFirstVerseKey(row.FirstSurahNumber, row.FirstAyahNumber)))
+            .ToList();
+
+        return new PagedResult<LemmaWordItemDto>(page, pageSize, grouped.Count, items);
+    }
+
+    private async Task<IReadOnlyList<LemmaWordOccurrenceRow>> LoadLemmaWordRowsAsync(
+        int id,
+        bool useSimpleWordIds,
+        CancellationToken cancellationToken)
+    {
+        return useSimpleWordIds
+            ? await (
+                from m in _db.WordMorphologies.AsNoTracking()
+                join w in _db.QuranWords.AsNoTracking() on m.QuranWordId equals w.Id
+                where m.LemmaId == id
+                select new LemmaWordOccurrenceRow(
+                    w.UniqueSimpleWordId,
+                    w.TextUthmani,
+                    w.SurahNumber,
+                    w.AyahNumber,
+                    w.WordNumber,
+                    w.Id))
+                .ToListAsync(cancellationToken)
+            : await (
+                from m in _db.WordMorphologies.AsNoTracking()
+                join w in _db.QuranWords.AsNoTracking() on m.QuranWordId equals w.Id
+                where m.LemmaId == id
+                select new LemmaWordOccurrenceRow(
+                    w.UniqueTashkeelWordId,
+                    w.TextUthmani,
+                    w.SurahNumber,
+                    w.AyahNumber,
+                    w.WordNumber,
+                    w.Id))
+                .ToListAsync(cancellationToken);
+    }
+
     private sealed record LemmaAggregationRow(
         int Id,
         string LemmaText,
@@ -354,6 +445,22 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
         short PageNumber,
         string TextUthmani,
         bool IsAyahMarker);
+
+    private sealed record LemmaWordOccurrenceRow(
+        int? UniqueWordId,
+        string DisplayTextUthmani,
+        int SurahNumber,
+        int AyahNumber,
+        int WordNumber,
+        int QuranWordId);
+
+    private sealed record LemmaWordGroupRow(
+        int UniqueWordId,
+        string DisplayTextUthmani,
+        int OccurrencesCount,
+        int FirstSurahNumber,
+        int FirstAyahNumber,
+        int FirstWordNumber);
 
     private static short ResolveAyahPageNumber(IReadOnlyList<AyahWordRow> words)
     {

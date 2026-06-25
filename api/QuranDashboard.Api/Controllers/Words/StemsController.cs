@@ -4,6 +4,7 @@ using QuranDashboard.Api.Contracts;
 using QuranDashboard.Application.Abstractions.Common.Paging;
 using QuranDashboard.Application.Abstractions.Quran.Words.Stems.Responses;
 using QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemAyahs;
+using QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemWords;
 using QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemSummary;
 using QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemsPage;
 
@@ -13,14 +14,15 @@ namespace QuranDashboard.Api.Controllers.Words;
 /// Stems Explorer (Feature 016) read-only endpoints under the existing Words
 /// area. Route base: <c>api/words/stems</c>. Sibling of Feature 015
 /// <c>RootsController</c>. Story-phase actions are added incrementally; this
-/// phase adds the catalogue, summary, and ayah endpoints while later phases add
-/// the remaining detail actions.
+/// phase adds the catalogue, summary, ayah, and words endpoints while later
+/// phases add the remaining detail actions.
 /// </summary>
 [ApiController]
 [Route("api/words/stems")]
 public sealed class StemsController(
     GetStemsPageHandler listHandler,
     GetStemAyahsHandler ayahsHandler,
+    GetStemWordsHandler wordsHandler,
     GetStemSummaryHandler summaryHandler) : ControllerBase
 {
     private const int DefaultPage = 1;
@@ -80,6 +82,42 @@ public sealed class StemsController(
             GetStemSummaryOutcome.NotFound =>
                 NotFound(ApiResponse<StemSummaryDto>.Fail(ApiMessages.StemNotFound)),
             _ => throw new InvalidOperationException($"Unhandled {nameof(GetStemSummaryOutcome)} variant."),
+        };
+    }
+
+    /// <summary>
+    /// يُرجع صفحة من الكلمات المرتبطة بالأصل الصرفي المحدد بحسب نوعها (بسيطة
+    /// أو بالتشكيل)، مع عدد مرات الظهور في سياق هذا الأصل.
+    /// </summary>
+    [HttpGet("{id:int}/words/{wordKind}")]
+    public async Task<ActionResult<ApiResponse<PagedResult<StemWordItemDto>>>> GetWords(
+        int id,
+        string wordKind,
+        [FromQuery] int? page,
+        [FromQuery] int? pageSize,
+        CancellationToken cancellationToken)
+    {
+        var outcome = await wordsHandler.HandleAsync(
+            new GetStemWordsQuery(
+                id,
+                wordKind,
+                page ?? DefaultPage,
+                pageSize ?? DefaultDetailPageSize),
+            cancellationToken);
+
+        return outcome switch
+        {
+            GetStemWordsOutcome.Success success =>
+                Ok(ApiResponse<PagedResult<StemWordItemDto>>.Ok(success.Page, ApiMessages.StemWordsLoaded)),
+            GetStemWordsOutcome.InvalidId =>
+                BadRequest(ApiResponse<PagedResult<StemWordItemDto>>.Fail(ApiMessages.StemsInvalidId)),
+            GetStemWordsOutcome.InvalidKind =>
+                BadRequest(ApiResponse<PagedResult<StemWordItemDto>>.Fail(ApiMessages.StemsInvalidKind)),
+            GetStemWordsOutcome.InvalidPaging =>
+                BadRequest(ApiResponse<PagedResult<StemWordItemDto>>.Fail(ApiMessages.StemsInvalidPaging)),
+            GetStemWordsOutcome.NotFound =>
+                NotFound(ApiResponse<PagedResult<StemWordItemDto>>.Fail(ApiMessages.StemNotFound)),
+            _ => throw new InvalidOperationException($"Unhandled {nameof(GetStemWordsOutcome)} variant."),
         };
     }
 
