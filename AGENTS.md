@@ -1,16 +1,16 @@
 <!-- SPECKIT START -->
 
-Active feature: **Quran Roots Explorer** — branch `015-roots-explorer` (full-stack: .NET read-only Roots APIs + Angular Words/Roots split-screen page; sibling of Feature 014 Unique Words Explorer).
+Active feature: **Quran Lemmas & Stems Explorer** — branch `016-lemmas-stems-explorer` (full-stack: explicit .NET read-only Lemmas/Stems APIs + two Angular Words split-screen pages; sibling of Feature 015 Roots Explorer).
 For technologies, project structure, shell commands, gates, and design artifacts, read the current plan
 and its siblings:
 
-- `specs/015-roots-explorer/plan.md` — technical context, project structure, constitution gates
-- `specs/015-roots-explorer/spec.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/` (`roots-api.md`, `backend-read-abstractions.md`, `frontend-routing-state.md`)
-- `docs/feature-015-roots-explorer/feature-015-roots-explorer-combined-implementation-plan.md` — fuller combined backend+frontend design, phased plan, milestone test checkpoints
-- `Backend/report/feature-015-roots-explorer/roots-explorer-capability-analysis-report.md` and `roots-explorer-readonly-verification-report.md` — capability + verified data facts (lemmas = morphology co-occurrence; no migration/index)
-- `Frontend/report/feature-015-roots-explorer/roots-explorer-frontend-ux-contract-report.md` — frontend UX + API contract alignment
+- `specs/016-lemmas-stems-explorer/plan.md` — technical context, project structure, governing gates
+- `specs/016-lemmas-stems-explorer/spec.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/` (`morphology-explorer-api.md`, `backend-read-abstractions.md`, `frontend-routing-state.md`)
+- `docs/feature-016-lemmas-stems-explorer/feature-016-lemmas-stems-explorer-combined-implementation-plan.md` — fuller combined backend+frontend design, phased plan, milestone test checkpoints
+- `docs/feature-016-lemmas-stems-explorer/feature-016-lemmas-stems-explorer-capability-linking-report.md` — verified data/linking facts (4,793 lemmas; 12,108 stems; numeric identities; no migration/index)
 - `Backend/report/database/current-database-tables-and-relationships-report.md` — read-only database baseline
-- Feature 014 (`specs/014-words-hub-unique-words/`) — the reuse template for backend read-model/cache/logging and the frontend Words feature
+- Feature 015 (`specs/015-roots-explorer/`) — primary reuse template for backend read-model/cache/logging and frontend split-view/URL state
+- Feature 014 (`specs/014-words-hub-unique-words/`) — Unique Words destination and shared Words feature patterns
 
 <!-- SPECKIT END -->
 
