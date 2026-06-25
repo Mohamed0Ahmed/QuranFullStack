@@ -3,7 +3,7 @@ import { getTestBed, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
-import { BehaviorSubject, of } from 'rxjs';
+import { BehaviorSubject, of, Subject } from 'rxjs';
 
 import { ApiResponse } from '../../../../core/data-access/api-response.model';
 import { LEMMAS_COLUMN_HEADERS } from '../../models/lemmas.labels';
@@ -13,7 +13,9 @@ import {
   LemmaAyahMatchDto,
   LemmaListItemViewModel,
   LemmaWordItemDto,
+  LemmaMissingSurahsDto,
   LemmaSummaryDto,
+  LemmaSurahsDto,
   LemmaWordView,
   PagedResultDto,
 } from '../../models/lemmas.models';
@@ -386,5 +388,174 @@ describe('LemmasExplorerPageComponent US1', () => {
     vi.mocked(router.navigate).mockClear();
     const emptyFixture = await initLifecycle();
     expect(emptyFixture.nativeElement.querySelector('[data-testid="lemmas-list-no-results"]')).toBeTruthy();
+  });
+});
+
+describe('LemmasExplorerPageComponent US5', () => {
+  let router: Router;
+  let lemmasApi: {
+    getLemmasList: ReturnType<typeof vi.fn>;
+    getLemmaSummary: ReturnType<typeof vi.fn>;
+    getLemmaWords: ReturnType<typeof vi.fn>;
+    getLemmaAyahMatches: ReturnType<typeof vi.fn>;
+    getLemmaMentionedSurahs: ReturnType<typeof vi.fn>;
+    getLemmaMissingSurahs: ReturnType<typeof vi.fn>;
+    getLemmaStems: ReturnType<typeof vi.fn>;
+  };
+
+  const queryParamMap$ = new BehaviorSubject(convertToParamMap({}));
+
+  beforeEach(async () => {
+    getTestBed().resetTestingModule();
+
+    lemmasApi = {
+      getLemmasList: vi.fn().mockImplementation(successListResponse),
+      getLemmaSummary: vi.fn().mockReturnValue(
+        of<ApiResponse<LemmaSummaryDto>>({
+          isSuccess: true,
+          data: { ...listRow(500), typeDistribution: [listRow(500).dominantType] },
+          message: null,
+          errors: null,
+        }),
+      ),
+      getLemmaWords: vi.fn(),
+      getLemmaAyahMatches: vi.fn(),
+      getLemmaMentionedSurahs: vi.fn().mockReturnValue(
+        of<ApiResponse<LemmaSurahsDto>>({
+          isSuccess: true,
+          data: {
+            id: 500,
+            lemmaText: 'صيغة-500',
+            surahsCount: 1,
+            surahs: [{ surahNumber: 1, nameArabic: 'سورة-اختبار', occurrencesInSurah: 2 }],
+          },
+          message: null,
+          errors: null,
+        }),
+      ),
+      getLemmaMissingSurahs: vi.fn().mockReturnValue(
+        of<ApiResponse<LemmaMissingSurahsDto>>({
+          isSuccess: true,
+          data: { id: 500, lemmaText: 'صيغة-500', missingSurahsCount: 0, surahs: [] },
+          message: null,
+          errors: null,
+        }),
+      ),
+      getLemmaStems: vi.fn(),
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [LemmasExplorerPageComponent],
+      providers: [
+        provideRouter([{ path: 'lemmas', component: LemmasExplorerPageComponent }]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: LemmasApi, useValue: lemmasApi },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            paramMap: of(convertToParamMap({})),
+            queryParamMap: queryParamMap$.asObservable(),
+          },
+        },
+      ],
+      teardown: { destroyAfterEach: true },
+    }).compileComponents();
+
+    router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    queryParamMap$.next(convertToParamMap({}));
+  });
+
+  async function initLifecycle(): Promise<ReturnType<typeof TestBed.createComponent<LemmasExplorerPageComponent>>> {
+    const fixture = TestBed.createComponent(LemmasExplorerPageComponent);
+    fixture.componentInstance.ngOnInit();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  it('loads mentioned surahs whole (no paging) and maps the row count when surahView=mentioned', async () => {
+    queryParamMap$.next(convertToParamMap({ lemma: '500', view: 'surahs', surahView: 'mentioned' }));
+    const fixture = await initLifecycle();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(lemmasApi.getLemmaMentionedSurahs).toHaveBeenCalledWith(500);
+    expect(lemmasApi.getLemmaMissingSurahs).not.toHaveBeenCalled();
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('[data-testid="lemmas-mentioned-surahs-view"]')).toBeTruthy();
+    expect(root.querySelector('qd-surah-occurrences-list')).toBeTruthy();
+    expect(root.querySelectorAll('.surah-occurrences-list__row:not(.surah-occurrences-list__row--loading)')).toHaveLength(1);
+  });
+
+  it('routes surah sub-view changes through the URL and loads missing whole when surahView=missing', async () => {
+    queryParamMap$.next(convertToParamMap({ lemma: '500', view: 'surahs', surahView: 'missing' }));
+    await initLifecycle();
+
+    expect(lemmasApi.getLemmaMissingSurahs).toHaveBeenCalledWith(500);
+    expect(lemmasApi.getLemmaMentionedSurahs).not.toHaveBeenCalled();
+
+    const fixture = TestBed.createComponent(LemmasExplorerPageComponent);
+    const component = fixture.componentInstance;
+    component.ngOnInit();
+    component['onSurahViewChange']('mentioned');
+
+    expect(router.navigate).toHaveBeenCalledWith([], {
+      relativeTo: expect.anything(),
+      queryParams: expect.objectContaining({
+        [LEMMAS_QUERY_KEYS.view]: 'surahs',
+        [LEMMAS_QUERY_KEYS.surahView]: 'mentioned',
+      }),
+      queryParamsHandling: 'merge',
+    });
+  });
+
+  it('renders empty missing-surahs state cleanly when the missing list is empty', async () => {
+    queryParamMap$.next(convertToParamMap({ lemma: '500', view: 'surahs', surahView: 'missing' }));
+    const fixture = await initLifecycle();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const detailFacade = TestBed.inject(LemmasDetailFacade);
+    expect(detailFacade.status()).toBe('empty');
+    expect(fixture.nativeElement.querySelector('[data-testid="lemmas-panel-empty"]')).toBeTruthy();
+  });
+
+  it('maps a surahs count-click to the mentioned surah view URL params', async () => {
+    const fixture = TestBed.createComponent(LemmasExplorerPageComponent);
+    const component = fixture.componentInstance;
+
+    component['onCountOpened']({ lemma: listRow(500), view: 'surahs', surahView: 'mentioned' });
+
+    expect(router.navigate).toHaveBeenCalledWith([], {
+      relativeTo: expect.anything(),
+      queryParams: expect.objectContaining({
+        [LEMMAS_QUERY_KEYS.lemma]: '500',
+        [LEMMAS_QUERY_KEYS.view]: 'surahs',
+        [LEMMAS_QUERY_KEYS.surahView]: 'mentioned',
+        [LEMMAS_QUERY_KEYS.detailPage]: null,
+      }),
+      queryParamsHandling: 'merge',
+    });
+  });
+
+  it('keeps the four detail tabs and surah sub-tabs visible while mentioned surahs load', async () => {
+    const pendingSurahs$ = new Subject<ApiResponse<LemmaSurahsDto>>();
+    lemmasApi.getLemmaMentionedSurahs.mockReturnValue(pendingSurahs$.asObservable());
+
+    queryParamMap$.next(convertToParamMap({ lemma: '500', view: 'surahs', surahView: 'mentioned' }));
+    const fixture = TestBed.createComponent(LemmasExplorerPageComponent);
+    fixture.componentInstance.ngOnInit();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(TestBed.inject(LemmasDetailFacade).status()).toBe('loading');
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelectorAll('[data-lemma-tab]')).toHaveLength(4);
+    expect(root.querySelector('[data-testid="lemmas-surah-view-tabs"]')).toBeTruthy();
+    expect(root.querySelector('[data-testid="surah-occurrences-list-loading"]')).toBeTruthy();
   });
 });

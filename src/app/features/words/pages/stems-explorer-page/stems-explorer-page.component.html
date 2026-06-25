@@ -117,6 +117,50 @@
 
   <ng-template #stemsPanelContent>
     @if (!emptySelection()) {
+      @if (activeView() === 'words') {
+        <nav
+          class="stems-explorer__sub-tabs"
+          role="tablist"
+          aria-label="أنماط كلمات الأصل الصرفي"
+          data-testid="stems-word-view-tabs"
+        >
+          @for (option of wordViewOptions; track option) {
+            <button
+              type="button"
+              class="qd-btn qd-btn-secondary stems-explorer__sub-tab"
+              role="tab"
+              [attr.data-testid]="'stems-word-view-' + option"
+              [attr.aria-selected]="panelState().wordView === option"
+              [class.qd-is-selected]="panelState().wordView === option"
+              (click)="onWordViewChange(option)"
+            >
+              {{ wordViewLabels[option] }}
+            </button>
+          }
+        </nav>
+      } @else if (activeView() === 'surahs') {
+        <nav
+          class="stems-explorer__sub-tabs"
+          role="tablist"
+          aria-label="عرض سور الأصل الصرفي"
+          data-testid="stems-surah-view-tabs"
+        >
+          @for (option of surahViewOptions; track option) {
+            <button
+              type="button"
+              class="qd-btn qd-btn-secondary stems-explorer__sub-tab"
+              role="tab"
+              [attr.data-testid]="'stems-surah-view-' + option"
+              [attr.aria-selected]="panelState().surahView === option"
+              [class.qd-is-selected]="panelState().surahView === option"
+              (click)="onSurahViewChange(option)"
+            >
+              {{ surahViewLabels[option] }}
+            </button>
+          }
+        </nav>
+      }
+
       @switch (panelState().status) {
         @case ('loading') {
           @if (activeView() === 'words') {
@@ -136,6 +180,18 @@
               [currentPage]="panelState().detailPage"
               data-testid="stems-ayahs-view"
             />
+          } @else if (activeView() === 'surahs' && panelState().surahView === 'mentioned') {
+            <qd-surah-occurrences-list
+              [loading]="true"
+              [surahs]="[]"
+              data-testid="stems-mentioned-surahs-view"
+            />
+          } @else if (activeView() === 'surahs' && panelState().surahView === 'missing') {
+            <qd-missing-surahs-list
+              [loading]="true"
+              [surahs]="[]"
+              data-testid="stems-missing-surahs-view"
+            />
           } @else {
             <p class="qd-sr-only" role="status" aria-live="polite" data-testid="stems-panel-loading">
               {{ panelLoadingLabel }}
@@ -151,27 +207,32 @@
           <div class="qd-empty-state" data-testid="stems-panel-empty">{{ emptyViewLabel }}</div>
         }
         @case ('success') {
-          @if (activeView() === 'words') {
-            @if (panelState().words; as wordsPage) {
-              <qd-stem-words-list
-                [page]="wordsPage"
-                [currentPage]="panelState().detailPage"
-                [wordView]="panelState().wordView"
-                data-testid="stems-words-view"
-                (pageChange)="onDetailPageChange($event)"
-                (wordViewChange)="onWordViewChange($event)"
-              />
-            }
-          }
-          @if (activeView() === 'ayahs') {
-            @if (panelState().ayahs; as ayahsPage) {
-              <qd-ayah-matches-list
-                [page]="ayahsPage"
-                [currentPage]="panelState().detailPage"
-                data-testid="stems-ayahs-view"
-                (pageChange)="onDetailPageChange($event)"
-              />
-            }
+          @if (activeView() === 'words' && panelState().words; as wordsPage) {
+            <qd-stem-words-list
+              [page]="wordsPage"
+              [currentPage]="panelState().detailPage"
+              [wordView]="panelState().wordView"
+              data-testid="stems-words-view"
+              (pageChange)="onDetailPageChange($event)"
+              (wordViewChange)="onWordViewChange($event)"
+            />
+          } @else if (activeView() === 'ayahs' && panelState().ayahs; as ayahsPage) {
+            <qd-ayah-matches-list
+              [page]="ayahsPage"
+              [currentPage]="panelState().detailPage"
+              data-testid="stems-ayahs-view"
+              (pageChange)="onDetailPageChange($event)"
+            />
+          } @else if (activeView() === 'surahs' && panelState().surahView === 'mentioned' && panelState().mentionedSurahs; as surahs) {
+            <qd-surah-occurrences-list
+              [surahs]="surahs.surahs"
+              data-testid="stems-mentioned-surahs-view"
+            />
+          } @else if (activeView() === 'surahs' && panelState().surahView === 'missing' && panelState().missingSurahs; as missing) {
+            <qd-missing-surahs-list
+              [surahs]="missing.surahs"
+              data-testid="stems-missing-surahs-view"
+            />
           }
         }
       }

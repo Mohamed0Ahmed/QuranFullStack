@@ -14,6 +14,8 @@ import { Subscription, Subject, debounceTime } from 'rxjs';
 import { AyahMatchesListComponent } from '../../components/ayah-matches-list/ayah-matches-list.component';
 import { LemmaDetailsPanelComponent } from '../../components/lemma-details-panel/lemma-details-panel.component';
 import { LemmaWordsListComponent } from '../../components/lemma-words-list/lemma-words-list.component';
+import { MissingSurahsListComponent } from '../../components/missing-surahs-list/missing-surahs-list.component';
+import { SurahOccurrencesListComponent } from '../../components/surah-occurrences-list/surah-occurrences-list.component';
 import {
   LemmaCountOpenedEvent,
   LemmasTableComponent,
@@ -29,6 +31,8 @@ import {
   LEMMAS_SEARCH_LABEL,
   LEMMAS_SEARCH_PLACEHOLDER,
   LEMMAS_SORT_LABELS,
+  LEMMAS_SURAHS_VIEW_LABELS,
+  LEMMAS_WORD_VIEW_LABELS,
 } from '../../models/lemmas.labels';
 import {
   DEFAULT_LEMMA_VIEW,
@@ -61,7 +65,9 @@ import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
     LemmaDetailsPanelComponent,
     LemmaWordsListComponent,
     LemmasTableComponent,
+    MissingSurahsListComponent,
     PaginationComponent,
+    SurahOccurrencesListComponent,
   ],
   templateUrl: './lemmas-explorer-page.component.html',
   styleUrl: './lemmas-explorer-page.component.scss',
@@ -90,6 +96,16 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly panelState = this.detailFacade.panelState;
 
   protected readonly sortOptions: readonly LemmaSort[] = ['mushaf-order', 'occurrences', 'alpha'];
+  protected readonly wordViewOptions: readonly LemmaWordView[] = ['simple', 'tashkeel'];
+  protected readonly surahViewOptions: readonly LemmaSurahView[] = ['mentioned', 'missing'];
+
+  protected get wordViewLabels() {
+    return LEMMAS_WORD_VIEW_LABELS;
+  }
+
+  protected get surahViewLabels() {
+    return LEMMAS_SURAHS_VIEW_LABELS;
+  }
 
   protected readonly emptyAyahsPage: PagedResultDto<LemmaAyahMatchDto> = {
     page: 1,
@@ -224,6 +240,16 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
   protected onWordViewChange(wordView: LemmaWordView): void {
     this.detailFacade.setWordView(wordView);
     this.updateQueryParams(buildLemmasQueryParams({ view: 'words', wordView, detailPage: null }));
+  }
+
+  protected onSurahViewChange(surahView: LemmaSurahView): void {
+    this.detailFacade.setSurahView(surahView);
+    this.updateQueryParams(
+      buildLemmasQueryParams({
+        view: 'surahs',
+        surahView,
+      }),
+    );
   }
 
   protected onClearSelection(): void {

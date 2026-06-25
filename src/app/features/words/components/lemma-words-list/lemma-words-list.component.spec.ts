@@ -65,19 +65,36 @@ describe('LemmaWordsListComponent', () => {
     expect(emitted).toEqual(['tashkeel']);
   });
 
-  it('keeps the pagination out of the loading state', async () => {
+  it('renders scoped counts, exact unique-word anchors, and pagination changes', async () => {
     await TestBed.configureTestingModule({
       imports: [LemmaWordsListComponent],
     }).compileComponents();
 
     const fixture = TestBed.createComponent(LemmaWordsListComponent);
-    fixture.componentRef.setInput('loading', true);
-    fixture.componentRef.setInput('page', { page: 1, pageSize: 100, totalCount: 0, items: [] });
+    fixture.componentRef.setInput('page', {
+      page: 1,
+      pageSize: 1,
+      totalCount: 2,
+      items: [wordItem(1003, 'simple')],
+    });
     fixture.componentRef.setInput('currentPage', 1);
     fixture.componentRef.setInput('wordView', 'simple');
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('[data-testid="lemma-words-list-loading"]')).toBeTruthy();
-    expect(fixture.nativeElement.querySelector('qd-pagination')).toBeNull();
+    const link = fixture.nativeElement.querySelector('[data-testid="lemma-word-link"]') as HTMLAnchorElement;
+    expect(link.getAttribute('href')).toContain('/dashboard/words/unique/simple');
+    expect(link.getAttribute('href')).toContain('word=1003');
+    expect(link.getAttribute('href')).not.toContain('كلمة');
+    expect(link.getAttribute('target')).toBe('_blank');
+    expect(link.getAttribute('rel')).toBe('noopener noreferrer');
+    expect(fixture.nativeElement.querySelector('.qd-badge')?.textContent?.trim()).toBe('2');
+
+    const emitted: number[] = [];
+    fixture.componentInstance.pageChange.subscribe((value) => emitted.push(value));
+
+    const nextButton = fixture.nativeElement.querySelector('[data-testid="qd-pagination-next"]') as HTMLButtonElement;
+    nextButton?.click();
+
+    expect(emitted).toEqual([2]);
   });
 });

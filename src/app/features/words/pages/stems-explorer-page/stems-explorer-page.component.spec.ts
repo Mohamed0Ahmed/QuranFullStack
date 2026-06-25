@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { getTestBed, TestBed } from '@angular/core/testing';
 import { provideRouter, ActivatedRoute, convertToParamMap, Router } from '@angular/router';
-import { BehaviorSubject, of } from 'rxjs';
+import { BehaviorSubject, of, Subject } from 'rxjs';
 
 import { ApiResponse } from '../../../../core/data-access/api-response.model';
 import { STEMS_COLUMN_HEADERS } from '../../models/stems.labels';
@@ -13,6 +13,8 @@ import {
   StemWordItemDto,
   StemWordView,
   StemSummaryDto,
+  StemMissingSurahsDto,
+  StemSurahsDto,
   PagedResultDto,
 } from '../../models/stems.models';
 import { StemsApi } from '../../data-access/stems.api';
@@ -372,5 +374,172 @@ describe('StemsExplorerPageComponent US2', () => {
     vi.mocked(router.navigate).mockClear();
     const emptyFixture = await initLifecycle();
     expect(emptyFixture.nativeElement.querySelector('[data-testid="stems-list-no-results"]')).toBeTruthy();
+  });
+});
+
+describe('StemsExplorerPageComponent US5', () => {
+  let router: Router;
+  let stemsApi: {
+    getStemsList: ReturnType<typeof vi.fn>;
+    getStemSummary: ReturnType<typeof vi.fn>;
+    getStemWords: ReturnType<typeof vi.fn>;
+    getStemAyahMatches: ReturnType<typeof vi.fn>;
+    getStemMentionedSurahs: ReturnType<typeof vi.fn>;
+    getStemMissingSurahs: ReturnType<typeof vi.fn>;
+    getStemLemmas: ReturnType<typeof vi.fn>;
+  };
+
+  const queryParamMap$ = new BehaviorSubject(convertToParamMap({}));
+
+  beforeEach(async () => {
+    getTestBed().resetTestingModule();
+
+    stemsApi = {
+      getStemsList: vi.fn().mockImplementation(successListResponse),
+      getStemSummary: vi.fn().mockReturnValue(
+        of<ApiResponse<StemSummaryDto>>({
+          isSuccess: true,
+          data: { ...listRow(500), typeDistribution: [listRow(500).dominantType] },
+          message: null,
+          errors: null,
+        }),
+      ),
+      getStemWords: vi.fn(),
+      getStemAyahMatches: vi.fn(),
+      getStemMentionedSurahs: vi.fn().mockReturnValue(
+        of<ApiResponse<StemSurahsDto>>({
+          isSuccess: true,
+          data: {
+            id: 500,
+            stemText: 'أصل-500',
+            surahsCount: 1,
+            surahs: [{ surahNumber: 1, nameArabic: 'سورة-اختبار', occurrencesInSurah: 2 }],
+          },
+          message: null,
+          errors: null,
+        }),
+      ),
+      getStemMissingSurahs: vi.fn().mockReturnValue(
+        of<ApiResponse<StemMissingSurahsDto>>({
+          isSuccess: true,
+          data: { id: 500, stemText: 'أصل-500', missingSurahsCount: 0, surahs: [] },
+          message: null,
+          errors: null,
+        }),
+      ),
+      getStemLemmas: vi.fn(),
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [StemsExplorerPageComponent],
+      providers: [
+        provideRouter([{ path: 'stems', component: StemsExplorerPageComponent }]),
+        { provide: StemsApi, useValue: stemsApi },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            paramMap: of(convertToParamMap({})),
+            queryParamMap: queryParamMap$.asObservable(),
+          },
+        },
+      ],
+      teardown: { destroyAfterEach: true },
+    }).compileComponents();
+
+    router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    queryParamMap$.next(convertToParamMap({}));
+  });
+
+  async function initLifecycle(): Promise<ReturnType<typeof TestBed.createComponent<StemsExplorerPageComponent>>> {
+    const fixture = TestBed.createComponent(StemsExplorerPageComponent);
+    fixture.componentInstance.ngOnInit();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  it('loads mentioned surahs whole (no paging) and maps the row count when surahView=mentioned', async () => {
+    queryParamMap$.next(convertToParamMap({ stem: '500', view: 'surahs', surahView: 'mentioned' }));
+    const fixture = await initLifecycle();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(stemsApi.getStemMentionedSurahs).toHaveBeenCalledWith(500);
+    expect(stemsApi.getStemMissingSurahs).not.toHaveBeenCalled();
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('[data-testid="stems-mentioned-surahs-view"]')).toBeTruthy();
+    expect(root.querySelector('qd-surah-occurrences-list')).toBeTruthy();
+    expect(root.querySelectorAll('.surah-occurrences-list__row:not(.surah-occurrences-list__row--loading)')).toHaveLength(1);
+  });
+
+  it('routes surah sub-view changes through the URL and loads missing whole when surahView=missing', async () => {
+    queryParamMap$.next(convertToParamMap({ stem: '500', view: 'surahs', surahView: 'missing' }));
+    await initLifecycle();
+
+    expect(stemsApi.getStemMissingSurahs).toHaveBeenCalledWith(500);
+    expect(stemsApi.getStemMentionedSurahs).not.toHaveBeenCalled();
+
+    const fixture = TestBed.createComponent(StemsExplorerPageComponent);
+    const component = fixture.componentInstance;
+    component.ngOnInit();
+    component['onSurahViewChange']('mentioned');
+
+    expect(router.navigate).toHaveBeenCalledWith([], {
+      relativeTo: expect.anything(),
+      queryParams: expect.objectContaining({
+        [STEMS_QUERY_KEYS.view]: 'surahs',
+        [STEMS_QUERY_KEYS.surahView]: 'mentioned',
+      }),
+      queryParamsHandling: 'merge',
+    });
+  });
+
+  it('renders empty missing-surahs state cleanly when the missing list is empty', async () => {
+    queryParamMap$.next(convertToParamMap({ stem: '500', view: 'surahs', surahView: 'missing' }));
+    const fixture = await initLifecycle();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const detailFacade = TestBed.inject(StemsDetailFacade);
+    expect(detailFacade.status()).toBe('empty');
+    expect(fixture.nativeElement.querySelector('[data-testid="stems-panel-empty"]')).toBeTruthy();
+  });
+
+  it('maps a surahs count-click to the mentioned surah view URL params', async () => {
+    const fixture = TestBed.createComponent(StemsExplorerPageComponent);
+    const component = fixture.componentInstance;
+
+    component['onCountOpened']({ stem: listRow(500), view: 'surahs', surahView: 'mentioned' });
+
+    expect(router.navigate).toHaveBeenCalledWith([], {
+      relativeTo: expect.anything(),
+      queryParams: expect.objectContaining({
+        [STEMS_QUERY_KEYS.stem]: '500',
+        [STEMS_QUERY_KEYS.view]: 'surahs',
+        [STEMS_QUERY_KEYS.surahView]: 'mentioned',
+        [STEMS_QUERY_KEYS.detailPage]: null,
+      }),
+      queryParamsHandling: 'merge',
+    });
+  });
+
+  it('keeps the four detail tabs and surah sub-tabs visible while mentioned surahs load', async () => {
+    const pendingSurahs$ = new Subject<ApiResponse<StemSurahsDto>>();
+    stemsApi.getStemMentionedSurahs.mockReturnValue(pendingSurahs$.asObservable());
+
+    queryParamMap$.next(convertToParamMap({ stem: '500', view: 'surahs', surahView: 'mentioned' }));
+    const fixture = TestBed.createComponent(StemsExplorerPageComponent);
+    fixture.componentInstance.ngOnInit();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(TestBed.inject(StemsDetailFacade).status()).toBe('loading');
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelectorAll('[data-stem-tab]')).toHaveLength(4);
+    expect(root.querySelector('[data-testid="stems-surah-view-tabs"]')).toBeTruthy();
+    expect(root.querySelector('[data-testid="surah-occurrences-list-loading"]')).toBeTruthy();
   });
 });

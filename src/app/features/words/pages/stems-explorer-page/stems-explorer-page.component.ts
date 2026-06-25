@@ -13,7 +13,9 @@ import { Subscription, Subject, debounceTime } from 'rxjs';
 
 import { AyahMatchesListComponent } from '../../components/ayah-matches-list/ayah-matches-list.component';
 import { StemDetailsPanelComponent } from '../../components/stem-details-panel/stem-details-panel.component';
+import { MissingSurahsListComponent } from '../../components/missing-surahs-list/missing-surahs-list.component';
 import { StemWordsListComponent } from '../../components/stem-words-list/stem-words-list.component';
+import { SurahOccurrencesListComponent } from '../../components/surah-occurrences-list/surah-occurrences-list.component';
 import { StemCountOpenedEvent, StemsTableComponent } from '../../components/stems-table/stems-table.component';
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
 import {
@@ -26,6 +28,8 @@ import {
   STEMS_SEARCH_LABEL,
   STEMS_SEARCH_PLACEHOLDER,
   STEMS_SORT_LABELS,
+  STEMS_SURAHS_VIEW_LABELS,
+  STEMS_WORD_VIEW_LABELS,
 } from '../../models/stems.labels';
 import {
   DEFAULT_STEM_VIEW,
@@ -35,6 +39,7 @@ import {
   StemListItemViewModel,
   StemWordItemDto,
   StemSort,
+  StemSurahView,
   StemView,
   StemWordView,
   STEMS_QUERY_KEYS,
@@ -50,11 +55,13 @@ import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
   standalone: true,
   imports: [
     AyahMatchesListComponent,
+    MissingSurahsListComponent,
     NgTemplateOutlet,
     PaginationComponent,
     StemDetailsPanelComponent,
     StemWordsListComponent,
     StemsTableComponent,
+    SurahOccurrencesListComponent,
   ],
   templateUrl: './stems-explorer-page.component.html',
   styleUrl: './stems-explorer-page.component.scss',
@@ -83,6 +90,16 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly panelState = this.detailFacade.panelState;
 
   protected readonly sortOptions: readonly StemSort[] = ['mushaf-order', 'occurrences', 'alpha'];
+  protected readonly wordViewOptions: readonly StemWordView[] = ['simple', 'tashkeel'];
+  protected readonly surahViewOptions: readonly StemSurahView[] = ['mentioned', 'missing'];
+
+  protected get wordViewLabels() {
+    return STEMS_WORD_VIEW_LABELS;
+  }
+
+  protected get surahViewLabels() {
+    return STEMS_SURAHS_VIEW_LABELS;
+  }
 
   protected readonly emptyAyahsPage: PagedResultDto<StemAyahMatchDto> = {
     page: 1,
@@ -209,6 +226,16 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
   protected onWordViewChange(wordView: StemWordView): void {
     this.detailFacade.setWordView(wordView);
     this.updateQueryParams(buildStemsQueryParams({ view: 'words', wordView, detailPage: null }));
+  }
+
+  protected onSurahViewChange(surahView: StemSurahView): void {
+    this.detailFacade.setSurahView(surahView);
+    this.updateQueryParams(
+      buildStemsQueryParams({
+        view: 'surahs',
+        surahView,
+      }),
+    );
   }
 
   protected onClearSelection(): void {

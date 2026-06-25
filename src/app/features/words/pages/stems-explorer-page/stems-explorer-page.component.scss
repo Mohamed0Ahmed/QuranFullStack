@@ -32,6 +32,14 @@
   flex: 0 0 auto;
 }
 
+.stems-explorer__sub-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--qd-space-2);
+  margin-block-end: var(--qd-space-3);
+  flex-shrink: 0;
+}
+
 .stems-explorer-layout {
   display: grid;
   grid-template-columns: minmax(0, 5fr) minmax(0, 4fr);
