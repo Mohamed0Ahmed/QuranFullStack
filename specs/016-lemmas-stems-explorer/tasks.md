@@ -81,8 +81,8 @@ Non-negotiable implementation rules:
 
 **Purpose**: Establish a known green baseline and repository state before Feature 016 files are added.
 
-- [ ] T001 Confirm the workspace is on `016-lemmas-stems-explorer` and inspect branch/status in `Backend/` and `Frontend/quran-dashboard-ui/` without switching, staging, committing, or discarding existing changes; report any branch mismatch before editing
-- [ ] T002 Run the baseline commands from `specs/016-lemmas-stems-explorer/quickstart.md`: `dotnet build Backend/QuranDashboard.sln` and `npm run build --prefix Frontend/quran-dashboard-ui`; record any pre-existing failure before changing source files
+- [x] T001 Confirm the workspace is on `016-lemmas-stems-explorer` and inspect branch/status in `Backend/` and `Frontend/quran-dashboard-ui/` without switching, staging, committing, or discarding existing changes; report any branch mismatch before editing
+- [x] T002 Run the baseline commands from `specs/016-lemmas-stems-explorer/quickstart.md`: `dotnet build Backend/QuranDashboard.sln` and `npm run build --prefix Frontend/quran-dashboard-ui`; record any pre-existing failure before changing source files
 
 **Checkpoint**: Baseline state is known; later failures can be attributed to Feature 016.
 
