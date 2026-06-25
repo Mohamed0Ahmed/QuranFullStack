@@ -1,5 +1,5 @@
 import { UniqueWordKind, UniqueWordSort, WordDrilldownView } from './unique-words.models';
-import { rootsRoutePath } from '../../../core/navigation/route-paths';
+import { lemmasRoutePath, rootsRoutePath } from '../../../core/navigation/route-paths';
 
 export interface WordSectionCardLabel {
   labelAr: string;
@@ -17,10 +17,14 @@ export interface ActiveHubSection extends WordSectionCardLabel {
 
 export const ADDITIONAL_ACTIVE_HUB_SECTIONS: readonly ActiveHubSection[] = [
   { labelAr: 'الجذور', descriptionAr: 'استكشاف جذور الكلمات القرآنية', route: rootsRoutePath() },
+  {
+    labelAr: 'الصيغ المعجمية',
+    descriptionAr: 'استكشاف الصيغ المعجمية للكلمات',
+    route: lemmasRoutePath(),
+  },
 ];
 
 export const COMING_SOON_HUB_SECTIONS: readonly WordSectionCardLabel[] = [
-  { labelAr: 'الصيغة المعجمية', descriptionAr: 'استكشاف الصيغ المعجمية للكلمات' },
   { labelAr: 'الأصل الصرفي', descriptionAr: 'استكشاف الأصول الصرفية للكلمات' },
   { labelAr: 'أنواع الكلمة', descriptionAr: 'استكشاف أنواع الكلمات من حيث الاسم والفعل والحرف' },
 ];

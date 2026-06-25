@@ -40,8 +40,9 @@ describe('WordsHubPageComponent', () => {
     const disabledCards = root.querySelectorAll('[data-testid="words-hub-card--disabled"]');
     expect(disabledCards).toHaveLength(COMING_SOON_HUB_SECTIONS.length);
 
-    expect(COMING_SOON_HUB_SECTIONS.length).toBe(3);
+    expect(COMING_SOON_HUB_SECTIONS.length).toBe(2);
     expect(COMING_SOON_HUB_SECTIONS.map((s) => s.labelAr)).not.toContain('الجذور');
+    expect(COMING_SOON_HUB_SECTIONS.map((s) => s.labelAr)).not.toContain('الصيغ المعجمية');
   });
 
   it('links the Roots Explorer card to the roots route (FR-047)', async () => {
@@ -50,6 +51,14 @@ describe('WordsHubPageComponent', () => {
     expect(ADDITIONAL_ACTIVE_HUB_SECTIONS.map((s) => s.labelAr)).toContain('الجذور');
     const rootsCard = root.querySelector('[data-testid="words-hub-card--الجذور"]');
     expect(rootsCard).toBeTruthy();
+  });
+
+  it('links the Lemmas Explorer card to the lemmas route', async () => {
+    const root = await createComponent();
+
+    expect(ADDITIONAL_ACTIVE_HUB_SECTIONS.map((s) => s.labelAr)).toContain('الصيغ المعجمية');
+    const lemmasCard = root.querySelector('[data-testid="words-hub-card--الصيغ المعجمية"]');
+    expect(lemmasCard).toBeTruthy();
   });
 
   it('marks every disabled card with a coming-soon badge element', async () => {

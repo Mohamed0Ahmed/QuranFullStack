@@ -66,6 +66,12 @@ export const LEMMAS_WORD_DISPLAY_HEADER = 'الكلمة';
 export const LEMMAS_STEM_TEXT_HEADER = 'الأصل الصرفي';
 export const LEMMAS_OPEN_UNIQUE_WORD_LABEL = 'فتح تفاصيل الكلمة في مستكشف الكلمات الفريدة';
 
+export const LEMMAS_ROOT_MISSING_LABEL = '—';
+
+export function lemmasAdditionalTypesAria(count: number): string {
+  return count === 1 ? 'نوع إضافي واحد' : `${count} أنواع إضافية`;
+}
+
 export const LEMMAS_SORT_LABELS = {
   label: 'الترتيب',
   'mushaf-order': 'ترتيب المصحف',
