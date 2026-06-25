@@ -248,19 +248,19 @@ counts, page changes, and destination `kind + wordId + view=ayahs`.
 
 ### Backend word reads
 
-- [ ] T066 [P] [US4] Implement `EfLemmasReader.GetLemmaWordsAsync` for simple/tashkeel unique identities, stored display text, scoped count, first occurrence, and server paging in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/Lemmas/EfLemmasReader.cs`
-- [ ] T067 [P] [US4] Implement `EfStemsReader.GetStemWordsAsync` with equivalent semantics in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/Stems/EfStemsReader.cs`
-- [ ] T068 [P] [US4] Add bounded `{resource}:{id}:words:{kind}:p{page}:s{size}` caching to both cache decorators in `Backend/infrastructure/QuranDashboard.Infrastructure/Caching/Quran/Words/Lemmas/CachedLemmasReader.cs` and `Caching/Quran/Words/Stems/CachedStemsReader.cs`
-- [ ] T069 [P] [US4] Create `GetLemmaWords` and `GetStemWords` query, handler, and outcome files validating ID, kind, and paging in `Backend/application/QuranDashboard.Application/Quran/Words/Lemmas/Queries/GetLemmaWords/` and `Quran/Words/Stems/Queries/GetStemWords/`
-- [ ] T070 [US4] Add both `/words/{wordKind}` controller actions and outcome mappings in `Backend/api/QuranDashboard.Api/Controllers/Words/LemmasController.cs` and `StemsController.cs`
+- [X] T066 [P] [US4] Implement `EfLemmasReader.GetLemmaWordsAsync` for simple/tashkeel unique identities, stored display text, scoped count, first occurrence, and server paging in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/Lemmas/EfLemmasReader.cs`
+- [X] T067 [P] [US4] Implement `EfStemsReader.GetStemWordsAsync` with equivalent semantics in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/Stems/EfStemsReader.cs`
+- [X] T068 [P] [US4] Add bounded `{resource}:{id}:words:{kind}:p{page}:s{size}` caching to both cache decorators in `Backend/infrastructure/QuranDashboard.Infrastructure/Caching/Quran/Words/Lemmas/CachedLemmasReader.cs` and `Caching/Quran/Words/Stems/CachedStemsReader.cs`
+- [X] T069 [P] [US4] Create `GetLemmaWords` and `GetStemWords` query, handler, and outcome files validating ID, kind, and paging in `Backend/application/QuranDashboard.Application/Quran/Words/Lemmas/Queries/GetLemmaWords/` and `Quran/Words/Stems/Queries/GetStemWords/`
+- [X] T070 [US4] Add both `/words/{wordKind}` controller actions and outcome mappings in `Backend/api/QuranDashboard.Api/Controllers/Words/LemmasController.cs` and `StemsController.cs`
 
 ### Frontend word views
 
-- [ ] T071 [P] [US4] Create paginated lemma word rows with stored display text, scoped count, and `buildUniqueWordsDeepLink(kind, { wordId, view: 'ayahs' })` anchors in `Frontend/quran-dashboard-ui/src/app/features/words/components/lemma-words-list/lemma-words-list.component.ts`, `.html`, and `.scss`
-- [ ] T072 [P] [US4] Create the equivalent stem word list in `Frontend/quran-dashboard-ui/src/app/features/words/components/stem-words-list/stem-words-list.component.ts`, `.html`, and `.scss`
-- [ ] T073 [P] [US4] Add lazy simple/tashkeel word loading, page cache, and URL updates in `Frontend/quran-dashboard-ui/src/app/features/words/state/lemmas-detail.facade.ts` and `lemmas-detail-view.loader.ts`
-- [ ] T074 [P] [US4] Add the equivalent stem word loading in `Frontend/quran-dashboard-ui/src/app/features/words/state/stems-detail.facade.ts` and `stems-detail-view.loader.ts`
-- [ ] T075 [US4] Render nested word sub-tabs and shared pagination, then wire simple/tashkeel count mappings in `Frontend/quran-dashboard-ui/src/app/features/words/components/lemma-details-panel/`, `stem-details-panel/`, and both explorer page folders
+- [X] T071 [P] [US4] Create paginated lemma word rows with stored display text, scoped count, and `buildUniqueWordsDeepLink(kind, { wordId, view: 'ayahs' })` anchors in `Frontend/quran-dashboard-ui/src/app/features/words/components/lemma-words-list/lemma-words-list.component.ts`, `.html`, and `.scss`
+- [X] T072 [P] [US4] Create the equivalent stem word list in `Frontend/quran-dashboard-ui/src/app/features/words/components/stem-words-list/stem-words-list.component.ts`, `.html`, and `.scss`
+- [X] T073 [P] [US4] Add lazy simple/tashkeel word loading, page cache, and URL updates in `Frontend/quran-dashboard-ui/src/app/features/words/state/lemmas-detail.facade.ts` and `lemmas-detail-view.loader.ts`
+- [X] T074 [P] [US4] Add the equivalent stem word loading in `Frontend/quran-dashboard-ui/src/app/features/words/state/stems-detail.facade.ts` and `stems-detail-view.loader.ts`
+- [X] T075 [US4] Render nested word sub-tabs and shared pagination, then wire simple/tashkeel count mappings in `Frontend/quran-dashboard-ui/src/app/features/words/components/lemma-details-panel/`, `stem-details-panel/`, and both explorer page folders
 
 ### US4 checkpoint tests
 
