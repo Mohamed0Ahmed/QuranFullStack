@@ -11,6 +11,7 @@ import {
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription, Subject, debounceTime } from 'rxjs';
 
+import { AyahMatchesListComponent } from '../../components/ayah-matches-list/ayah-matches-list.component';
 import { LemmaDetailsPanelComponent } from '../../components/lemma-details-panel/lemma-details-panel.component';
 import {
   LemmaCountOpenedEvent,
@@ -30,11 +31,14 @@ import {
 } from '../../models/lemmas.labels';
 import {
   DEFAULT_LEMMA_VIEW,
+  LEMMA_DETAIL_PAGE_SIZE,
+  LemmaAyahMatchDto,
   LemmaListItemViewModel,
   LemmaSort,
   LemmaSurahView,
   LemmaView,
   LemmaWordView,
+  PagedResultDto,
   toLemmaSummary,
 } from '../../models/lemmas.models';
 import { LemmasDetailFacade } from '../../state/lemmas-detail.facade';
@@ -50,6 +54,7 @@ import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
   standalone: true,
   imports: [
     NgTemplateOutlet,
+    AyahMatchesListComponent,
     LemmaDetailsPanelComponent,
     LemmasTableComponent,
     PaginationComponent,
@@ -81,6 +86,13 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly panelState = this.detailFacade.panelState;
 
   protected readonly sortOptions: readonly LemmaSort[] = ['mushaf-order', 'occurrences', 'alpha'];
+
+  protected readonly emptyAyahsPage: PagedResultDto<LemmaAyahMatchDto> = {
+    page: 1,
+    pageSize: LEMMA_DETAIL_PAGE_SIZE,
+    totalCount: 0,
+    items: [],
+  };
 
   protected readonly searchDraft = signal('');
   protected readonly isDesktop = signal(true);
@@ -133,6 +145,15 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
       return;
     }
     this.updateQueryParams(buildLemmasQueryParams({ page }));
+  }
+
+  protected onDetailPageChange(page: number): void {
+    if (page === this.panelState().detailPage) {
+      return;
+    }
+
+    this.detailFacade.setDetailPage(page);
+    this.updateQueryParams(buildLemmasQueryParams({ detailPage: page }));
   }
 
   protected onRowSelected(lemma: LemmaListItemViewModel): void {

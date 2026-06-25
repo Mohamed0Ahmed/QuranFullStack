@@ -53,7 +53,7 @@ describe('AyahMatchesListComponent', () => {
     );
     expect(actionLink?.getAttribute('aria-label')).toBe('فتح الآية في المصحف');
     expect(actionLink?.getAttribute('target')).toBe('_blank');
-    expect(actionLink?.getAttribute('rel')).toBe('noopener');
+    expect(actionLink?.getAttribute('rel')).toBe('noopener noreferrer');
     expect(actionLink?.querySelector('[data-testid="highlighted-ayah"]')).not.toBeNull();
   });
 });

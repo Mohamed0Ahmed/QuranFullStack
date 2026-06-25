@@ -7,7 +7,14 @@ import { BehaviorSubject, of } from 'rxjs';
 
 import { ApiResponse } from '../../../../core/data-access/api-response.model';
 import { LEMMAS_COLUMN_HEADERS } from '../../models/lemmas.labels';
-import { LEMMAS_QUERY_KEYS, LemmaListItemViewModel, LemmaSummaryDto } from '../../models/lemmas.models';
+import {
+  LEMMA_DETAIL_PAGE_SIZE,
+  LEMMAS_QUERY_KEYS,
+  LemmaAyahMatchDto,
+  LemmaListItemViewModel,
+  LemmaSummaryDto,
+  PagedResultDto,
+} from '../../models/lemmas.models';
 import { LemmasApi } from '../../data-access/lemmas.api';
 import { LemmasDetailFacade } from '../../state/lemmas-detail.facade';
 import { LemmasExplorerFacade } from '../../state/lemmas-explorer.facade';
@@ -47,6 +54,40 @@ function successListResponse() {
   return of<ApiResponse<{ page: number; pageSize: number; totalCount: number; items: LemmaListItemViewModel[] }>>({
     isSuccess: true,
     data: { page: 1, pageSize: 1000, totalCount: 1, items: [listRow(500)] },
+    message: null,
+    errors: null,
+  });
+}
+
+function ayahMatch(): LemmaAyahMatchDto {
+  return {
+    ayahId: 7001,
+    verseKey: '4:57',
+    surahNumber: 4,
+    surahNameArabic: 'النساء',
+    ayahNumber: 57,
+    pageNumber: 92,
+    matchedQuranWordIds: [9001],
+    words: [
+      {
+        quranWordId: 9001,
+        wordNumber: 1,
+        textUthmani: 'كلمة-تجريبية-١',
+        isAyahMarker: false,
+      },
+    ],
+  };
+}
+
+function successAyahsResponse() {
+  return of<ApiResponse<PagedResultDto<LemmaAyahMatchDto>>>({
+    isSuccess: true,
+    data: {
+      page: 1,
+      pageSize: LEMMA_DETAIL_PAGE_SIZE,
+      totalCount: 1,
+      items: [ayahMatch()],
+    },
     message: null,
     errors: null,
   });
@@ -154,6 +195,25 @@ describe('LemmasExplorerPageComponent US1', () => {
     expect(lemmasApi.getLemmaMentionedSurahs).not.toHaveBeenCalled();
     expect(lemmasApi.getLemmaMissingSurahs).not.toHaveBeenCalled();
     expect(lemmasApi.getLemmaStems).not.toHaveBeenCalled();
+  });
+
+  it('loads only the ayah detail endpoint and renders the ayah list when view=ayahs', async () => {
+    lemmasApi.getLemmaAyahMatches.mockReturnValue(successAyahsResponse());
+    queryParamMap$.next(convertToParamMap({ lemma: '500', view: 'ayahs', detailPage: '1' }));
+
+    const fixture = await initLifecycle();
+    const root = fixture.nativeElement as HTMLElement;
+
+    expect(lemmasApi.getLemmaSummary).toHaveBeenCalledWith(500);
+    expect(lemmasApi.getLemmaAyahMatches).toHaveBeenCalledWith(500, 1, LEMMA_DETAIL_PAGE_SIZE);
+    expect(lemmasApi.getLemmaWords).not.toHaveBeenCalled();
+    expect(lemmasApi.getLemmaMentionedSurahs).not.toHaveBeenCalled();
+    expect(lemmasApi.getLemmaMissingSurahs).not.toHaveBeenCalled();
+    expect(lemmasApi.getLemmaStems).not.toHaveBeenCalled();
+
+    expect(root.querySelector('qd-ayah-matches-list')).toBeTruthy();
+    expect(root.querySelector('[data-testid="lemmas-ayahs-view"]')).toBeTruthy();
+    expect(root.querySelectorAll('.ayah-matches-list__card')).toHaveLength(1);
   });
 
   it('maps row selection to the default words/simple detail state', async () => {

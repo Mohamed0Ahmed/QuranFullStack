@@ -5,7 +5,14 @@ import { BehaviorSubject, of } from 'rxjs';
 
 import { ApiResponse } from '../../../../core/data-access/api-response.model';
 import { STEMS_COLUMN_HEADERS } from '../../models/stems.labels';
-import { STEMS_QUERY_KEYS, StemListItemViewModel, StemSummaryDto } from '../../models/stems.models';
+import {
+  STEM_DETAIL_PAGE_SIZE,
+  STEMS_QUERY_KEYS,
+  StemAyahMatchDto,
+  StemListItemViewModel,
+  StemSummaryDto,
+  PagedResultDto,
+} from '../../models/stems.models';
 import { StemsApi } from '../../data-access/stems.api';
 import { StemsDetailFacade } from '../../state/stems-detail.facade';
 import { StemsExplorerFacade } from '../../state/stems-explorer.facade';
@@ -46,6 +53,40 @@ function successListResponse() {
   return of<ApiResponse<{ page: number; pageSize: number; totalCount: number; items: StemListItemViewModel[] }>>({
     isSuccess: true,
     data: { page: 1, pageSize: 1000, totalCount: 1, items: [listRow(500)] },
+    message: null,
+    errors: null,
+  });
+}
+
+function ayahMatch(): StemAyahMatchDto {
+  return {
+    ayahId: 7001,
+    verseKey: '4:57',
+    surahNumber: 4,
+    surahNameArabic: 'النساء',
+    ayahNumber: 57,
+    pageNumber: 92,
+    matchedQuranWordIds: [9001],
+    words: [
+      {
+        quranWordId: 9001,
+        wordNumber: 1,
+        textUthmani: 'كلمة-تجريبية-١',
+        isAyahMarker: false,
+      },
+    ],
+  };
+}
+
+function successAyahsResponse() {
+  return of<ApiResponse<PagedResultDto<StemAyahMatchDto>>>({
+    isSuccess: true,
+    data: {
+      page: 1,
+      pageSize: STEM_DETAIL_PAGE_SIZE,
+      totalCount: 1,
+      items: [ayahMatch()],
+    },
     message: null,
     errors: null,
   });
@@ -151,6 +192,25 @@ describe('StemsExplorerPageComponent US2', () => {
     expect(stemsApi.getStemMentionedSurahs).not.toHaveBeenCalled();
     expect(stemsApi.getStemMissingSurahs).not.toHaveBeenCalled();
     expect(stemsApi.getStemLemmas).not.toHaveBeenCalled();
+  });
+
+  it('loads only the ayah detail endpoint and renders the ayah list when view=ayahs', async () => {
+    stemsApi.getStemAyahMatches.mockReturnValue(successAyahsResponse());
+    queryParamMap$.next(convertToParamMap({ stem: '500', view: 'ayahs', detailPage: '1' }));
+
+    const fixture = await initLifecycle();
+    const root = fixture.nativeElement as HTMLElement;
+
+    expect(stemsApi.getStemSummary).toHaveBeenCalledWith(500);
+    expect(stemsApi.getStemAyahMatches).toHaveBeenCalledWith(500, 1, STEM_DETAIL_PAGE_SIZE);
+    expect(stemsApi.getStemWords).not.toHaveBeenCalled();
+    expect(stemsApi.getStemMentionedSurahs).not.toHaveBeenCalled();
+    expect(stemsApi.getStemMissingSurahs).not.toHaveBeenCalled();
+    expect(stemsApi.getStemLemmas).not.toHaveBeenCalled();
+
+    expect(root.querySelector('qd-ayah-matches-list')).toBeTruthy();
+    expect(root.querySelector('[data-testid="stems-ayahs-view"]')).toBeTruthy();
+    expect(root.querySelectorAll('.ayah-matches-list__card')).toHaveLength(1);
   });
 
   it('maps row selection to the default words/simple detail state', async () => {

@@ -119,9 +119,18 @@
     @if (!emptySelection()) {
       @switch (panelState().status) {
         @case ('loading') {
-          <p class="qd-sr-only" role="status" aria-live="polite" data-testid="lemmas-panel-loading">
-            {{ panelLoadingLabel }}
-          </p>
+          @if (activeView() === 'ayahs') {
+            <qd-ayah-matches-list
+              [loading]="true"
+              [page]="emptyAyahsPage"
+              [currentPage]="panelState().detailPage"
+              data-testid="lemmas-ayahs-view"
+            />
+          } @else {
+            <p class="qd-sr-only" role="status" aria-live="polite" data-testid="lemmas-panel-loading">
+              {{ panelLoadingLabel }}
+            </p>
+          }
         }
         @case ('error') {
           <div class="qd-error-state" role="alert" data-testid="lemmas-panel-error">
@@ -130,6 +139,16 @@
         }
         @case ('empty') {
           <div class="qd-empty-state" data-testid="lemmas-panel-empty">{{ emptyViewLabel }}</div>
+        }
+        @case ('success') {
+          @if (activeView() === 'ayahs' && panelState().ayahs; as ayahsPage) {
+            <qd-ayah-matches-list
+              [page]="ayahsPage"
+              [currentPage]="panelState().detailPage"
+              data-testid="lemmas-ayahs-view"
+              (pageChange)="onDetailPageChange($event)"
+            />
+          }
         }
       }
     }

@@ -11,6 +11,7 @@ import {
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription, Subject, debounceTime } from 'rxjs';
 
+import { AyahMatchesListComponent } from '../../components/ayah-matches-list/ayah-matches-list.component';
 import { StemDetailsPanelComponent } from '../../components/stem-details-panel/stem-details-panel.component';
 import { StemCountOpenedEvent, StemsTableComponent } from '../../components/stems-table/stems-table.component';
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
@@ -27,6 +28,9 @@ import {
 } from '../../models/stems.labels';
 import {
   DEFAULT_STEM_VIEW,
+  PagedResultDto,
+  STEM_DETAIL_PAGE_SIZE,
+  StemAyahMatchDto,
   StemListItemViewModel,
   StemSort,
   StemView,
@@ -41,7 +45,13 @@ import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
 @Component({
   selector: 'qd-stems-explorer-page',
   standalone: true,
-  imports: [NgTemplateOutlet, PaginationComponent, StemDetailsPanelComponent, StemsTableComponent],
+  imports: [
+    AyahMatchesListComponent,
+    NgTemplateOutlet,
+    PaginationComponent,
+    StemDetailsPanelComponent,
+    StemsTableComponent,
+  ],
   templateUrl: './stems-explorer-page.component.html',
   styleUrl: './stems-explorer-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -69,6 +79,13 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly panelState = this.detailFacade.panelState;
 
   protected readonly sortOptions: readonly StemSort[] = ['mushaf-order', 'occurrences', 'alpha'];
+
+  protected readonly emptyAyahsPage: PagedResultDto<StemAyahMatchDto> = {
+    page: 1,
+    pageSize: STEM_DETAIL_PAGE_SIZE,
+    totalCount: 0,
+    items: [],
+  };
 
   protected readonly searchDraft = signal('');
   protected readonly isDesktop = signal(true);
@@ -124,6 +141,15 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
       return;
     }
     this.updateQueryParams(buildStemsQueryParams({ page }));
+  }
+
+  protected onDetailPageChange(page: number): void {
+    if (page === this.panelState().detailPage) {
+      return;
+    }
+
+    this.detailFacade.setDetailPage(page);
+    this.updateQueryParams(buildStemsQueryParams({ detailPage: page }));
   }
 
   protected onRowSelected(stem: StemListItemViewModel): void {
