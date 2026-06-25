@@ -10,25 +10,33 @@ namespace QuranDashboard.Infrastructure.Caching.Quran.Words.Lemmas;
 /// Bounded cache decorator over <see cref="EfLemmasReader"/> for the Lemmas
 /// Explorer (Feature 016). Decorates the concrete EF reader and uses the existing
 /// shared <see cref="IMemoryCache"/>; no global cache configuration is applied.
-/// Caching behaviour for each read is layered in by the lemma story phases
-/// (T034/T056/T068/T080/T090). This Phase 2 skeleton delegates straight through
-/// to the EF reader so DI wiring and the test fixture can compile.
+/// The lemma catalogue caches the whole summary list
+/// (<see cref="LemmasCacheKeys.SummaryAll"/>) once; search/sort/paging are
+/// applied in memory so sort/page changes issue no new SQL commands. Detail
+/// caches (ayahs/words/surahs/relationships) are layered in by later story
+/// phases (T056/T068/T080/T090).
 /// </summary>
 public sealed class CachedLemmasReader(EfLemmasReader efReader, IMemoryCache cache) : ILemmasReader
 {
     private readonly EfLemmasReader _ef = efReader;
     private readonly IMemoryCache _cache = cache;
 
-    public Task<PagedResult<LemmaListItemDto>> GetLemmasPageAsync(
+    public async Task<PagedResult<LemmaListItemDto>> GetLemmasPageAsync(
         string? search,
         LemmaSort sort,
         int page,
         int pageSize,
         CancellationToken cancellationToken)
-        => _ef.GetLemmasPageAsync(search, sort, page, pageSize, cancellationToken);
+    {
+        var all = await GetOrLoadWholeSummaryAsync(cancellationToken);
+        return LemmasListDerivation.ToPage(all, search, sort, page, pageSize);
+    }
 
-    public Task<LemmaSummaryDto?> GetLemmaSummaryAsync(int id, CancellationToken cancellationToken)
-        => _ef.GetLemmaSummaryAsync(id, cancellationToken);
+    public async Task<LemmaSummaryDto?> GetLemmaSummaryAsync(int id, CancellationToken cancellationToken)
+    {
+        var all = await GetOrLoadWholeSummaryAsync(cancellationToken);
+        return LemmasListDerivation.ToSummary(all, id);
+    }
 
     public Task<PagedResult<LemmaWordItemDto>?> GetLemmaWordsAsync(
         int id,
@@ -59,4 +67,16 @@ public sealed class CachedLemmasReader(EfLemmasReader efReader, IMemoryCache cac
         int id,
         CancellationToken cancellationToken)
         => _ef.GetLemmaStemsAsync(id, cancellationToken);
+
+    private async Task<IReadOnlyList<LemmaSummaryRow>> GetOrLoadWholeSummaryAsync(CancellationToken cancellationToken)
+    {
+        if (_cache.TryGetValue(LemmasCacheKeys.SummaryAll, out IReadOnlyList<LemmaSummaryRow>? cached))
+        {
+            return cached!;
+        }
+
+        var rows = await _ef.LoadWholeSummaryAsync(cancellationToken);
+        _cache.Set(LemmasCacheKeys.SummaryAll, rows, LemmasCacheEntryOptions.SummaryAll());
+        return rows;
+    }
 }

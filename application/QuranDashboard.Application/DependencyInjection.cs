@@ -29,6 +29,8 @@ using QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootsPage;
 using QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootStems;
 using QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootSummary;
 using QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootWords;
+using QuranDashboard.Application.Quran.Words.Lemmas.Queries.GetLemmaSummary;
+using QuranDashboard.Application.Quran.Words.Lemmas.Queries.GetLemmasPage;
 
 namespace QuranDashboard.Application;
 
@@ -67,6 +69,8 @@ public static class DependencyInjection
         services.AddScoped<GetRootMissingSurahsHandler>();
         services.AddScoped<GetRootLemmasHandler>();
         services.AddScoped<GetRootStemsHandler>();
+        services.AddScoped<GetLemmasPageHandler>();
+        services.AddScoped<GetLemmaSummaryHandler>();
 
         return services;
     }
