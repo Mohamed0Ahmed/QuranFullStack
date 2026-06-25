@@ -1,0 +1,14 @@
+:host {
+  display: block;
+}
+
+.lemmas-explorer-frame {
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+  padding-inline: var(--qd-space-4);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}

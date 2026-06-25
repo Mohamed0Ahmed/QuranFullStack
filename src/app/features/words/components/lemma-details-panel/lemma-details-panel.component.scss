@@ -1,0 +1,17 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+:host .explorer-detail-panel__body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-block-size: 0;
+  overflow: hidden;
+}
+
+.lemma-details-panel__tab {
+  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  font-size: 0.875rem;
+}

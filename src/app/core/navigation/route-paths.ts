@@ -23,3 +23,15 @@ export const WORDS_ROOTS_SEGMENT = 'roots' as const;
 export function rootsRoutePath(): string {
   return `${WORDS_ROUTE_PATH}/${WORDS_ROOTS_SEGMENT}`;
 }
+
+export const WORDS_LEMMAS_SEGMENT = 'lemmas' as const;
+
+export function lemmasRoutePath(): string {
+  return `${WORDS_ROUTE_PATH}/${WORDS_LEMMAS_SEGMENT}`;
+}
+
+export const WORDS_STEMS_SEGMENT = 'stems' as const;
+
+export function stemsRoutePath(): string {
+  return `${WORDS_ROUTE_PATH}/${WORDS_STEMS_SEGMENT}`;
+}
