@@ -36,6 +36,7 @@ logs/
 ## Local configuration, secrets and environment files
 appsettings.*.local.json
 appsettings.Local.json
+appsettings.Production.json
 secrets.json
 *.env
 .env

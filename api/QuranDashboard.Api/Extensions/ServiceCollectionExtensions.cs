@@ -37,6 +37,7 @@ public static class ServiceCollectionExtensions
             options.AddPolicy("AngularDev", policy =>
             {
                 var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+                var vercelPreviewHostPrefix = configuration["Cors:VercelPreviewHostPrefix"];
 
                 if (allowedOrigins.Length == 0)
                 {
@@ -45,6 +46,7 @@ public static class ServiceCollectionExtensions
 
                 policy
                     .WithOrigins(allowedOrigins)
+                    .SetIsOriginAllowed(origin => IsAllowedCorsOrigin(origin, allowedOrigins, vercelPreviewHostPrefix))
                     .AllowAnyHeader()
                     .AllowAnyMethod()
                     .AllowCredentials();
@@ -52,5 +54,26 @@ public static class ServiceCollectionExtensions
         });
 
         return services;
+    }
+
+    private static bool IsAllowedCorsOrigin(
+        string origin,
+        string[] allowedOrigins,
+        string? vercelPreviewHostPrefix)
+    {
+        if (allowedOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (string.IsNullOrWhiteSpace(vercelPreviewHostPrefix)
+            || !Uri.TryCreate(origin, UriKind.Absolute, out var uri))
+        {
+            return false;
+        }
+
+        return uri.Scheme == Uri.UriSchemeHttps
+            && uri.Host.EndsWith(".vercel.app", StringComparison.OrdinalIgnoreCase)
+            && uri.Host.StartsWith(vercelPreviewHostPrefix, StringComparison.OrdinalIgnoreCase);
     }
 }
