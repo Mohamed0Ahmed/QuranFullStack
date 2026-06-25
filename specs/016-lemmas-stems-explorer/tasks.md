@@ -264,8 +264,8 @@ counts, page changes, and destination `kind + wordId + view=ayahs`.
 
 ### US4 checkpoint tests
 
-- [ ] T076 [P] [US4] Add backend word tests for both resources and both kinds: correct unique IDs, stored display text, selection-scoped counts, paging, invalid kind, not-found, and cache hit in `Backend/tests/QuranDashboard.Tests/Quran/WordsMorphologyExplorers/LemmasWordsReadTests.cs` and `StemsWordsReadTests.cs`
-- [ ] T077 [P] [US4] Add frontend word tests for sub-tab URL mapping, pagination, scoped count display, exact Unique Words href, `target="_blank"`, `rel="noopener noreferrer"`, and no text-derived ID in `Frontend/quran-dashboard-ui/src/app/features/words/components/lemma-words-list/lemma-words-list.component.spec.ts` and `stem-words-list.component.spec.ts`
+- [X] T076 [P] [US4] Add backend word tests for both resources and both kinds: correct unique IDs, stored display text, selection-scoped counts, paging, invalid kind, not-found, and cache hit in `Backend/tests/QuranDashboard.Tests/Quran/WordsMorphologyExplorers/LemmasWordsReadTests.cs` and `StemsWordsReadTests.cs`
+- [X] T077 [P] [US4] Add frontend word tests for sub-tab URL mapping, pagination, scoped count display, exact Unique Words href, `target="_blank"`, `rel="noopener noreferrer"`, and no text-derived ID in `Frontend/quran-dashboard-ui/src/app/features/words/components/lemma-words-list/lemma-words-list.component.spec.ts` and `stem-words-list.component.spec.ts`
 
 **Checkpoint CP-3**: Word study works independently for both resources.
 
@@ -280,22 +280,22 @@ per-surah counts, empty missing state, no pagination, and total 114.
 
 ### Backend surah reads
 
-- [ ] T078 [P] [US5] Implement lemma mentioned and missing surah reads with whole-list ordering and 114-surah complement in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/Lemmas/EfLemmasReader.cs`
-- [ ] T079 [P] [US5] Implement equivalent stem mentioned and missing surah reads in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/Stems/EfStemsReader.cs`
-- [ ] T080 [P] [US5] Add bounded surah/missing cache entries to both decorators in `Backend/infrastructure/QuranDashboard.Infrastructure/Caching/Quran/Words/Lemmas/CachedLemmasReader.cs` and `Caching/Quran/Words/Stems/CachedStemsReader.cs`
-- [ ] T081 [P] [US5] Create four query/handler/outcome groups under `Backend/application/QuranDashboard.Application/Quran/Words/Lemmas/Queries/GetLemmaMentionedSurahs/`, `GetLemmaMissingSurahs/`, `Quran/Words/Stems/Queries/GetStemMentionedSurahs/`, and `GetStemMissingSurahs/`
-- [ ] T082 [US5] Add `/surahs` and `/missing-surahs` actions to both controllers in `Backend/api/QuranDashboard.Api/Controllers/Words/LemmasController.cs` and `StemsController.cs`
+- [X] T078 [P] [US5] Implement lemma mentioned and missing surah reads with whole-list ordering and 114-surah complement in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/Lemmas/EfLemmasReader.cs`
+- [X] T079 [P] [US5] Implement equivalent stem mentioned and missing surah reads in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/Stems/EfStemsReader.cs`
+- [X] T080 [P] [US5] Add bounded surah/missing cache entries to both decorators in `Backend/infrastructure/QuranDashboard.Infrastructure/Caching/Quran/Words/Lemmas/CachedLemmasReader.cs` and `Caching/Quran/Words/Stems/CachedStemsReader.cs`
+- [X] T081 [P] [US5] Create four query/handler/outcome groups under `Backend/application/QuranDashboard.Application/Quran/Words/Lemmas/Queries/GetLemmaMentionedSurahs/`, `GetLemmaMissingSurahs/`, `Quran/Words/Stems/Queries/GetStemMentionedSurahs/`, and `GetStemMissingSurahs/`
+- [X] T082 [US5] Add `/surahs` and `/missing-surahs` actions to both controllers in `Backend/api/QuranDashboard.Api/Controllers/Words/LemmasController.cs` and `StemsController.cs`
 
 ### Frontend surah views
 
-- [ ] T083 [P] [US5] Add lazy mentioned/missing loading and same-selection reuse in `Frontend/quran-dashboard-ui/src/app/features/words/state/lemmas-detail.facade.ts` and `lemmas-detail-view.loader.ts`
-- [ ] T084 [P] [US5] Add equivalent stem surah loading in `Frontend/quran-dashboard-ui/src/app/features/words/state/stems-detail.facade.ts` and `stems-detail-view.loader.ts`
-- [ ] T085 [US5] Reuse `surah-occurrences-list` and `missing-surahs-list`, render nested surah tabs without pagination, and wire `surahView` in `Frontend/quran-dashboard-ui/src/app/features/words/components/lemma-details-panel/lemma-details-panel.component.ts`, `Frontend/quran-dashboard-ui/src/app/features/words/components/lemma-details-panel/lemma-details-panel.component.html`, `Frontend/quran-dashboard-ui/src/app/features/words/components/stem-details-panel/stem-details-panel.component.ts`, and `Frontend/quran-dashboard-ui/src/app/features/words/components/stem-details-panel/stem-details-panel.component.html`
+- [X] T083 [P] [US5] Add lazy mentioned/missing loading and same-selection reuse in `Frontend/quran-dashboard-ui/src/app/features/words/state/lemmas-detail.facade.ts` and `lemmas-detail-view.loader.ts`
+- [X] T084 [P] [US5] Add equivalent stem surah loading in `Frontend/quran-dashboard-ui/src/app/features/words/state/stems-detail.facade.ts` and `stems-detail-view.loader.ts`
+- [X] T085 [US5] Reuse `surah-occurrences-list` and `missing-surahs-list`, render nested surah tabs without pagination, and wire `surahView` in `Frontend/quran-dashboard-ui/src/app/features/words/components/lemma-details-panel/lemma-details-panel.component.ts`, `Frontend/quran-dashboard-ui/src/app/features/words/components/lemma-details-panel/lemma-details-panel.component.html`, `Frontend/quran-dashboard-ui/src/app/features/words/components/stem-details-panel/stem-details-panel.component.ts`, and `Frontend/quran-dashboard-ui/src/app/features/words/components/stem-details-panel/stem-details-panel.component.html`
 
 ### US5 checkpoint tests
 
-- [ ] T086 [P] [US5] Add backend tests that mentioned and missing sets are disjoint, union to 114, preserve Arabic names, have correct scoped counts, support empty missing results, and cache correctly in `Backend/tests/QuranDashboard.Tests/Quran/WordsMorphologyExplorers/LemmasSurahsReadTests.cs` and `StemsSurahsReadTests.cs`
-- [ ] T087 [P] [US5] Add frontend tests for surah count mapping, mentioned/missing URL state, whole-list loading, no detail pagination, and clear empty missing state in `Frontend/quran-dashboard-ui/src/app/features/words/components/lemma-details-panel/lemma-details-panel.component.spec.ts` and `Frontend/quran-dashboard-ui/src/app/features/words/components/stem-details-panel/stem-details-panel.component.spec.ts`
+- [X] T086 [P] [US5] Add backend tests that mentioned and missing sets are disjoint, union to 114, preserve Arabic names, have correct scoped counts, support empty missing results, and cache correctly in `Backend/tests/QuranDashboard.Tests/Quran/WordsMorphologyExplorers/LemmasSurahsReadTests.cs` and `StemsSurahsReadTests.cs`
+- [X] T087 [P] [US5] Add frontend tests for surah count mapping, mentioned/missing URL state, whole-list loading, no detail pagination, and clear empty missing state in `Frontend/quran-dashboard-ui/src/app/features/words/components/lemma-details-panel/lemma-details-panel.component.spec.ts` and `Frontend/quran-dashboard-ui/src/app/features/words/components/stem-details-panel/stem-details-panel.component.spec.ts`
 
 **Checkpoint CP-4**: Surah distribution works independently for both resources.
 
