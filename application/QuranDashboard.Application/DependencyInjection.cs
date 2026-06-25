@@ -31,6 +31,8 @@ using QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootSummary;
 using QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootWords;
 using QuranDashboard.Application.Quran.Words.Lemmas.Queries.GetLemmaSummary;
 using QuranDashboard.Application.Quran.Words.Lemmas.Queries.GetLemmasPage;
+using QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemSummary;
+using QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemsPage;
 
 namespace QuranDashboard.Application;
 
@@ -71,6 +73,8 @@ public static class DependencyInjection
         services.AddScoped<GetRootStemsHandler>();
         services.AddScoped<GetLemmasPageHandler>();
         services.AddScoped<GetLemmaSummaryHandler>();
+        services.AddScoped<GetStemsPageHandler>();
+        services.AddScoped<GetStemSummaryHandler>();
 
         return services;
     }

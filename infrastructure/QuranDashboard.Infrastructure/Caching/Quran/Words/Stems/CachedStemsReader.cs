@@ -10,25 +10,44 @@ namespace QuranDashboard.Infrastructure.Caching.Quran.Words.Stems;
 /// Bounded cache decorator over <see cref="EfStemsReader"/> for the Stems
 /// Explorer (Feature 016). Decorates the concrete EF reader and uses the existing
 /// shared <see cref="IMemoryCache"/>; no global cache configuration is applied.
-/// Caching behaviour for each read is layered in by the stem story phases
-/// (T045/T056/T068/T080/T090). This Phase 2 skeleton delegates straight through
-/// to the EF reader so DI wiring and the test fixture can compile.
+/// The whole summary list is cached once and reused for both catalogue search/
+/// paging and selected-stem summary reads. Detail methods are still delegated to
+/// later story phases.
 /// </summary>
 public sealed class CachedStemsReader(EfStemsReader efReader, IMemoryCache cache) : IStemsReader
 {
     private readonly EfStemsReader _ef = efReader;
     private readonly IMemoryCache _cache = cache;
 
-    public Task<PagedResult<StemListItemDto>> GetStemsPageAsync(
+    public async Task<PagedResult<StemListItemDto>> GetStemsPageAsync(
         string? search,
         StemSort sort,
         int page,
         int pageSize,
         CancellationToken cancellationToken)
-        => _ef.GetStemsPageAsync(search, sort, page, pageSize, cancellationToken);
+    {
+        var all = await GetOrLoadWholeSummaryAsync(cancellationToken);
+        return StemsListDerivation.ToPage(all, search, sort, page, pageSize);
+    }
 
-    public Task<StemSummaryDto?> GetStemSummaryAsync(int id, CancellationToken cancellationToken)
-        => _ef.GetStemSummaryAsync(id, cancellationToken);
+    public async Task<StemSummaryDto?> GetStemSummaryAsync(int id, CancellationToken cancellationToken)
+    {
+        var key = StemsCacheKeys.Summary(id);
+
+        if (_cache.TryGetValue(key, out StemSummaryDto? cached))
+        {
+            return cached;
+        }
+
+        var all = await GetOrLoadWholeSummaryAsync(cancellationToken);
+        var summary = StemsListDerivation.ToSummary(all, id);
+        if (summary is not null)
+        {
+            _cache.Set(key, summary, StemsCacheEntryOptions.WholeDetail());
+        }
+
+        return summary;
+    }
 
     public Task<PagedResult<StemWordItemDto>?> GetStemWordsAsync(
         int id,
@@ -59,4 +78,16 @@ public sealed class CachedStemsReader(EfStemsReader efReader, IMemoryCache cache
         int id,
         CancellationToken cancellationToken)
         => _ef.GetStemLemmasAsync(id, cancellationToken);
+
+    private async Task<IReadOnlyList<StemSummaryRow>> GetOrLoadWholeSummaryAsync(CancellationToken cancellationToken)
+    {
+        if (_cache.TryGetValue(StemsCacheKeys.SummaryAll, out IReadOnlyList<StemSummaryRow>? cached))
+        {
+            return cached!;
+        }
+
+        var rows = await _ef.LoadWholeSummaryAsync(cancellationToken);
+        _cache.Set(StemsCacheKeys.SummaryAll, rows, StemsCacheEntryOptions.SummaryAll());
+        return rows;
+    }
 }
