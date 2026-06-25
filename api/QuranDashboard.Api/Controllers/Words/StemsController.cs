@@ -3,6 +3,7 @@ using QuranDashboard.Api.Common;
 using QuranDashboard.Api.Contracts;
 using QuranDashboard.Application.Abstractions.Common.Paging;
 using QuranDashboard.Application.Abstractions.Quran.Words.Stems.Responses;
+using QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemAyahs;
 using QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemSummary;
 using QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemsPage;
 
@@ -12,17 +13,19 @@ namespace QuranDashboard.Api.Controllers.Words;
 /// Stems Explorer (Feature 016) read-only endpoints under the existing Words
 /// area. Route base: <c>api/words/stems</c>. Sibling of Feature 015
 /// <c>RootsController</c>. Story-phase actions are added incrementally; this
-/// phase adds the catalogue and summary endpoints while later phases add the
-/// detail actions.
+/// phase adds the catalogue, summary, and ayah endpoints while later phases add
+/// the remaining detail actions.
 /// </summary>
 [ApiController]
 [Route("api/words/stems")]
 public sealed class StemsController(
     GetStemsPageHandler listHandler,
+    GetStemAyahsHandler ayahsHandler,
     GetStemSummaryHandler summaryHandler) : ControllerBase
 {
     private const int DefaultPage = 1;
     private const int DefaultListPageSize = 1000;
+    private const int DefaultDetailPageSize = 100;
 
     /// <summary>
     /// يُرجع صفحة واحدة من الأصول الصرفية مع بحث عربي مُطبّع (contains) وخيارات
@@ -77,6 +80,38 @@ public sealed class StemsController(
             GetStemSummaryOutcome.NotFound =>
                 NotFound(ApiResponse<StemSummaryDto>.Fail(ApiMessages.StemNotFound)),
             _ => throw new InvalidOperationException($"Unhandled {nameof(GetStemSummaryOutcome)} variant."),
+        };
+    }
+
+    /// <summary>
+    /// يُرجع صفحة من الآيات التي ورد فيها الأصل الصرفي المحدد، مع معرّفات
+    /// الكلمات المطابقة للتمييز البصري.
+    /// </summary>
+    [HttpGet("{id:int}/ayahs")]
+    public async Task<ActionResult<ApiResponse<PagedResult<StemAyahMatchDto>>>> GetAyahs(
+        int id,
+        [FromQuery] int? page,
+        [FromQuery] int? pageSize,
+        CancellationToken cancellationToken)
+    {
+        var outcome = await ayahsHandler.HandleAsync(
+            new GetStemAyahsQuery(
+                id,
+                page ?? DefaultPage,
+                pageSize ?? DefaultDetailPageSize),
+            cancellationToken);
+
+        return outcome switch
+        {
+            GetStemAyahsOutcome.Success success =>
+                Ok(ApiResponse<PagedResult<StemAyahMatchDto>>.Ok(success.Page, ApiMessages.StemAyahsLoaded)),
+            GetStemAyahsOutcome.InvalidId =>
+                BadRequest(ApiResponse<PagedResult<StemAyahMatchDto>>.Fail(ApiMessages.StemsInvalidId)),
+            GetStemAyahsOutcome.InvalidPaging =>
+                BadRequest(ApiResponse<PagedResult<StemAyahMatchDto>>.Fail(ApiMessages.StemsInvalidPaging)),
+            GetStemAyahsOutcome.NotFound =>
+                NotFound(ApiResponse<PagedResult<StemAyahMatchDto>>.Fail(ApiMessages.StemNotFound)),
+            _ => throw new InvalidOperationException($"Unhandled {nameof(GetStemAyahsOutcome)} variant."),
         };
     }
 }

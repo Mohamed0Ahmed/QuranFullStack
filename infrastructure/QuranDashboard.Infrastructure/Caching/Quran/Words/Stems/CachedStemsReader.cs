@@ -62,7 +62,16 @@ public sealed class CachedStemsReader(EfStemsReader efReader, IMemoryCache cache
         int page,
         int pageSize,
         CancellationToken cancellationToken)
-        => _ef.GetStemAyahMatchesAsync(id, page, pageSize, cancellationToken);
+    {
+        var key = StemsCacheKeys.Ayahs(id, page, pageSize);
+
+        if (_cache.TryGetValue(key, out PagedResult<StemAyahMatchDto>? cached))
+        {
+            return Task.FromResult<PagedResult<StemAyahMatchDto>?>(cached);
+        }
+
+        return GetAndCacheAyahsAsync(id, page, pageSize, cancellationToken, key);
+    }
 
     public Task<StemSurahsResponse?> GetStemMentionedSurahsAsync(
         int id,
@@ -89,5 +98,21 @@ public sealed class CachedStemsReader(EfStemsReader efReader, IMemoryCache cache
         var rows = await _ef.LoadWholeSummaryAsync(cancellationToken);
         _cache.Set(StemsCacheKeys.SummaryAll, rows, StemsCacheEntryOptions.SummaryAll());
         return rows;
+    }
+
+    private async Task<PagedResult<StemAyahMatchDto>?> GetAndCacheAyahsAsync(
+        int id,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken,
+        string key)
+    {
+        var ayahs = await _ef.GetStemAyahMatchesAsync(id, page, pageSize, cancellationToken);
+        if (ayahs is not null)
+        {
+            _cache.Set(key, ayahs, StemsCacheEntryOptions.PagedDetail());
+        }
+
+        return ayahs;
     }
 }

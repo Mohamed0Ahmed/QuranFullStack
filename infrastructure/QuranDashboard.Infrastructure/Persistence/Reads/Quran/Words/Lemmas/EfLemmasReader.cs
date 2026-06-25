@@ -3,6 +3,7 @@ using Npgsql;
 using QuranDashboard.Application.Abstractions.Common.Paging;
 using QuranDashboard.Application.Abstractions.Quran.Words.Lemmas;
 using QuranDashboard.Application.Abstractions.Quran.Words.Lemmas.Responses;
+using QuranDashboard.Application.Abstractions.Quran.Words.Responses;
 using QuranDashboard.Infrastructure.Persistence;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Lemmas;
@@ -13,8 +14,8 @@ namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Lemmas;
 /// implemented in T032/T033 as a single bounded whole-summary aggregation with
 /// owned-root (<c>quran_lemmas.root_id</c>) semantics, ordered type distribution,
 /// normalized Arabic contains search, deterministic sort, and in-memory paging.
-/// Detail methods (words/ayahs/surahs/relationships) are implemented in the
-/// later lemma story phases.
+/// Ayah detail is implemented in the Feature 016 ayah phase; the remaining detail
+/// methods stay stubbed for later story phases.
 /// </summary>
 public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
 {
@@ -45,12 +46,108 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
         CancellationToken cancellationToken)
         => throw new NotImplementedException();
 
-    public Task<PagedResult<LemmaAyahMatchDto>?> GetLemmaAyahMatchesAsync(
+    public async Task<PagedResult<LemmaAyahMatchDto>?> GetLemmaAyahMatchesAsync(
         int id,
         int page,
         int pageSize,
         CancellationToken cancellationToken)
-        => throw new NotImplementedException();
+    {
+        var lemmaExists = await _db.QuranLemmas
+            .AsNoTracking()
+            .AnyAsync(l => l.Id == id, cancellationToken);
+        if (!lemmaExists)
+        {
+            return null;
+        }
+
+        var matchedAyahIds = _db.WordMorphologies
+            .AsNoTracking()
+            .Where(m => m.LemmaId == id)
+            .Join(
+                _db.QuranWords.AsNoTracking(),
+                m => m.QuranWordId,
+                w => w.Id,
+                (_, w) => w.AyahId)
+            .Distinct();
+
+        var totalCount = await matchedAyahIds.CountAsync(cancellationToken);
+
+        var pageAyahs = await (
+            from ayah in _db.QuranAyahs.AsNoTracking()
+            join surah in _db.QuranSurahs.AsNoTracking()
+                on ayah.SurahNumber equals surah.SurahNumber
+            where matchedAyahIds.Contains(ayah.Id)
+            orderby ayah.SurahNumber, ayah.AyahNumber
+            select new AyahMetaRow(
+                ayah.Id,
+                ayah.VerseKey,
+                ayah.SurahNumber,
+                ayah.AyahNumber,
+                surah.NameArabic))
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        if (pageAyahs.Count == 0)
+        {
+            return new PagedResult<LemmaAyahMatchDto>(page, pageSize, totalCount, []);
+        }
+
+        var ayahIds = pageAyahs.Select(a => a.AyahId).ToList();
+
+        var matchedRows = await (
+            from m in _db.WordMorphologies.AsNoTracking()
+            join w in _db.QuranWords.AsNoTracking() on m.QuranWordId equals w.Id
+            where m.LemmaId == id && ayahIds.Contains(w.AyahId)
+            orderby w.SurahNumber, w.AyahNumber, w.WordNumber, w.Id
+            select new { w.AyahId, w.Id })
+            .ToListAsync(cancellationToken);
+
+        var matchedIdsByAyah = matchedRows
+            .GroupBy(r => r.AyahId)
+            .ToDictionary(g => g.Key, g => (IReadOnlyList<int>)g.Select(x => x.Id).Distinct().ToList());
+
+        var wordsByAyah = await _db.QuranWords
+            .AsNoTracking()
+            .Where(w => ayahIds.Contains(w.AyahId))
+            .OrderBy(w => w.SurahNumber)
+            .ThenBy(w => w.AyahNumber)
+            .ThenBy(w => w.WordNumber)
+            .Select(w => new AyahWordRow(
+                w.AyahId,
+                w.Id,
+                w.WordNumber,
+                w.PageNumber,
+                w.TextUthmani,
+                w.IsAyahMarker))
+            .ToListAsync(cancellationToken);
+
+        var wordsGrouped = wordsByAyah
+            .GroupBy(w => w.AyahId)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        var items = pageAyahs
+            .Select(ayah =>
+            {
+                var words = wordsGrouped.GetValueOrDefault(ayah.AyahId, []);
+                return new LemmaAyahMatchDto(
+                    ayah.AyahId,
+                    ayah.VerseKey,
+                    ayah.SurahNumber,
+                    ayah.SurahNameArabic,
+                    ayah.AyahNumber,
+                    ResolveAyahPageNumber(words),
+                    matchedIdsByAyah.GetValueOrDefault(ayah.AyahId, []),
+                    words.Select(w => new AyahWordForHighlightDto(
+                        w.QuranWordId,
+                        w.WordNumber,
+                        w.TextUthmani,
+                        w.IsAyahMarker)).ToList());
+            })
+            .ToList();
+
+        return new PagedResult<LemmaAyahMatchDto>(page, pageSize, totalCount, items);
+    }
 
     public Task<LemmaSurahsResponse?> GetLemmaMentionedSurahsAsync(int id, CancellationToken cancellationToken)
         => throw new NotImplementedException();
@@ -242,4 +339,30 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
         int SurahNumber,
         int AyahNumber,
         int WordNumber);
+
+    private sealed record AyahMetaRow(
+        int AyahId,
+        string VerseKey,
+        int SurahNumber,
+        int AyahNumber,
+        string SurahNameArabic);
+
+    private sealed record AyahWordRow(
+        int AyahId,
+        int QuranWordId,
+        int WordNumber,
+        short PageNumber,
+        string TextUthmani,
+        bool IsAyahMarker);
+
+    private static short ResolveAyahPageNumber(IReadOnlyList<AyahWordRow> words)
+    {
+        var firstReadableWord = words.FirstOrDefault(w => !w.IsAyahMarker);
+        if (firstReadableWord is not null)
+        {
+            return firstReadableWord.PageNumber;
+        }
+
+        return words.FirstOrDefault()?.PageNumber ?? 0;
+    }
 }

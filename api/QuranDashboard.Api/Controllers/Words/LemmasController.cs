@@ -3,6 +3,7 @@ using QuranDashboard.Api.Common;
 using QuranDashboard.Api.Contracts;
 using QuranDashboard.Application.Abstractions.Common.Paging;
 using QuranDashboard.Application.Abstractions.Quran.Words.Lemmas.Responses;
+using QuranDashboard.Application.Quran.Words.Lemmas.Queries.GetLemmaAyahs;
 using QuranDashboard.Application.Quran.Words.Lemmas.Queries.GetLemmasPage;
 using QuranDashboard.Application.Quran.Words.Lemmas.Queries.GetLemmaSummary;
 
@@ -18,10 +19,12 @@ namespace QuranDashboard.Api.Controllers.Words;
 [Route("api/words/lemmas")]
 public sealed class LemmasController(
     GetLemmasPageHandler listHandler,
+    GetLemmaAyahsHandler ayahsHandler,
     GetLemmaSummaryHandler summaryHandler) : ControllerBase
 {
     private const int DefaultPage = 1;
     private const int DefaultListPageSize = 1000;
+    private const int DefaultDetailPageSize = 100;
 
     /// <summary>
     /// يُرجع صفحة واحدة من الصيغ المعجمية مع بحث عربي مُطبّع (contains) وخيارات
@@ -77,6 +80,38 @@ public sealed class LemmasController(
             GetLemmaSummaryOutcome.NotFound =>
                 NotFound(ApiResponse<LemmaSummaryDto>.Fail(ApiMessages.LemmaNotFound)),
             _ => throw new InvalidOperationException($"Unhandled {nameof(GetLemmaSummaryOutcome)} variant."),
+        };
+    }
+
+    /// <summary>
+    /// يُرجع صفحة من الآيات التي وردت فيها الصيغة المعجمية المحددة، مع معرّفات
+    /// الكلمات المطابقة للتمييز البصري.
+    /// </summary>
+    [HttpGet("{id:int}/ayahs")]
+    public async Task<ActionResult<ApiResponse<PagedResult<LemmaAyahMatchDto>>>> GetAyahs(
+        int id,
+        [FromQuery] int? page,
+        [FromQuery] int? pageSize,
+        CancellationToken cancellationToken)
+    {
+        var outcome = await ayahsHandler.HandleAsync(
+            new GetLemmaAyahsQuery(
+                id,
+                page ?? DefaultPage,
+                pageSize ?? DefaultDetailPageSize),
+            cancellationToken);
+
+        return outcome switch
+        {
+            GetLemmaAyahsOutcome.Success success =>
+                Ok(ApiResponse<PagedResult<LemmaAyahMatchDto>>.Ok(success.Page, ApiMessages.LemmaAyahsLoaded)),
+            GetLemmaAyahsOutcome.InvalidId =>
+                BadRequest(ApiResponse<PagedResult<LemmaAyahMatchDto>>.Fail(ApiMessages.LemmasInvalidId)),
+            GetLemmaAyahsOutcome.InvalidPaging =>
+                BadRequest(ApiResponse<PagedResult<LemmaAyahMatchDto>>.Fail(ApiMessages.LemmasInvalidPaging)),
+            GetLemmaAyahsOutcome.NotFound =>
+                NotFound(ApiResponse<PagedResult<LemmaAyahMatchDto>>.Fail(ApiMessages.LemmaNotFound)),
+            _ => throw new InvalidOperationException($"Unhandled {nameof(GetLemmaAyahsOutcome)} variant."),
         };
     }
 }

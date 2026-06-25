@@ -3,6 +3,7 @@ using Npgsql;
 using QuranDashboard.Application.Abstractions.Common.Paging;
 using QuranDashboard.Application.Abstractions.Quran.Words.Stems;
 using QuranDashboard.Application.Abstractions.Quran.Words.Stems.Responses;
+using QuranDashboard.Application.Abstractions.Quran.Words.Responses;
 using QuranDashboard.Infrastructure.Persistence;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Stems;
@@ -11,7 +12,8 @@ namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Stems;
 /// EF Core read model for the Stems Explorer (Feature 016). All queries are
 /// read-only and <c>AsNoTracking</c>. The catalogue/summary methods are loaded
 /// in one bounded whole-summary aggregation and the later detail methods remain
-/// stubbed for subsequent phases.
+/// stubbed for subsequent phases. Ayah detail is implemented in the Feature 016
+/// ayah phase.
 /// </summary>
 public sealed class EfStemsReader(QuranDashboardDbContext db) : IStemsReader
 {
@@ -42,12 +44,108 @@ public sealed class EfStemsReader(QuranDashboardDbContext db) : IStemsReader
         CancellationToken cancellationToken)
         => throw new NotImplementedException();
 
-    public Task<PagedResult<StemAyahMatchDto>?> GetStemAyahMatchesAsync(
+    public async Task<PagedResult<StemAyahMatchDto>?> GetStemAyahMatchesAsync(
         int id,
         int page,
         int pageSize,
         CancellationToken cancellationToken)
-        => throw new NotImplementedException();
+    {
+        var stemExists = await _db.QuranStems
+            .AsNoTracking()
+            .AnyAsync(s => s.Id == id, cancellationToken);
+        if (!stemExists)
+        {
+            return null;
+        }
+
+        var matchedAyahIds = _db.WordMorphologies
+            .AsNoTracking()
+            .Where(m => m.StemId == id)
+            .Join(
+                _db.QuranWords.AsNoTracking(),
+                m => m.QuranWordId,
+                w => w.Id,
+                (_, w) => w.AyahId)
+            .Distinct();
+
+        var totalCount = await matchedAyahIds.CountAsync(cancellationToken);
+
+        var pageAyahs = await (
+            from ayah in _db.QuranAyahs.AsNoTracking()
+            join surah in _db.QuranSurahs.AsNoTracking()
+                on ayah.SurahNumber equals surah.SurahNumber
+            where matchedAyahIds.Contains(ayah.Id)
+            orderby ayah.SurahNumber, ayah.AyahNumber
+            select new AyahMetaRow(
+                ayah.Id,
+                ayah.VerseKey,
+                ayah.SurahNumber,
+                ayah.AyahNumber,
+                surah.NameArabic))
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        if (pageAyahs.Count == 0)
+        {
+            return new PagedResult<StemAyahMatchDto>(page, pageSize, totalCount, []);
+        }
+
+        var ayahIds = pageAyahs.Select(a => a.AyahId).ToList();
+
+        var matchedRows = await (
+            from m in _db.WordMorphologies.AsNoTracking()
+            join w in _db.QuranWords.AsNoTracking() on m.QuranWordId equals w.Id
+            where m.StemId == id && ayahIds.Contains(w.AyahId)
+            orderby w.SurahNumber, w.AyahNumber, w.WordNumber, w.Id
+            select new { w.AyahId, w.Id })
+            .ToListAsync(cancellationToken);
+
+        var matchedIdsByAyah = matchedRows
+            .GroupBy(r => r.AyahId)
+            .ToDictionary(g => g.Key, g => (IReadOnlyList<int>)g.Select(x => x.Id).Distinct().ToList());
+
+        var wordsByAyah = await _db.QuranWords
+            .AsNoTracking()
+            .Where(w => ayahIds.Contains(w.AyahId))
+            .OrderBy(w => w.SurahNumber)
+            .ThenBy(w => w.AyahNumber)
+            .ThenBy(w => w.WordNumber)
+            .Select(w => new AyahWordRow(
+                w.AyahId,
+                w.Id,
+                w.WordNumber,
+                w.PageNumber,
+                w.TextUthmani,
+                w.IsAyahMarker))
+            .ToListAsync(cancellationToken);
+
+        var wordsGrouped = wordsByAyah
+            .GroupBy(w => w.AyahId)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        var items = pageAyahs
+            .Select(ayah =>
+            {
+                var words = wordsGrouped.GetValueOrDefault(ayah.AyahId, []);
+                return new StemAyahMatchDto(
+                    ayah.AyahId,
+                    ayah.VerseKey,
+                    ayah.SurahNumber,
+                    ayah.SurahNameArabic,
+                    ayah.AyahNumber,
+                    ResolveAyahPageNumber(words),
+                    matchedIdsByAyah.GetValueOrDefault(ayah.AyahId, []),
+                    words.Select(w => new AyahWordForHighlightDto(
+                        w.QuranWordId,
+                        w.WordNumber,
+                        w.TextUthmani,
+                        w.IsAyahMarker)).ToList());
+            })
+            .ToList();
+
+        return new PagedResult<StemAyahMatchDto>(page, pageSize, totalCount, items);
+    }
 
     public Task<StemSurahsResponse?> GetStemMentionedSurahsAsync(
         int id,
@@ -310,4 +408,30 @@ public sealed class EfStemsReader(QuranDashboardDbContext db) : IStemsReader
         int FirstSurahNumber,
         int FirstAyahNumber,
         int FirstWordNumber);
+
+    private sealed record AyahMetaRow(
+        int AyahId,
+        string VerseKey,
+        int SurahNumber,
+        int AyahNumber,
+        string SurahNameArabic);
+
+    private sealed record AyahWordRow(
+        int AyahId,
+        int QuranWordId,
+        int WordNumber,
+        short PageNumber,
+        string TextUthmani,
+        bool IsAyahMarker);
+
+    private static short ResolveAyahPageNumber(IReadOnlyList<AyahWordRow> words)
+    {
+        var firstReadableWord = words.FirstOrDefault(w => !w.IsAyahMarker);
+        if (firstReadableWord is not null)
+        {
+            return firstReadableWord.PageNumber;
+        }
+
+        return words.FirstOrDefault()?.PageNumber ?? 0;
+    }
 }
