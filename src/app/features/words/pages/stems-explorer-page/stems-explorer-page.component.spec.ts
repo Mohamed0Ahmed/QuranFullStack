@@ -10,6 +10,8 @@ import {
   STEMS_QUERY_KEYS,
   StemAyahMatchDto,
   StemListItemViewModel,
+  StemWordItemDto,
+  StemWordView,
   StemSummaryDto,
   PagedResultDto,
 } from '../../models/stems.models';
@@ -86,6 +88,30 @@ function successAyahsResponse() {
       pageSize: STEM_DETAIL_PAGE_SIZE,
       totalCount: 1,
       items: [ayahMatch()],
+    },
+    message: null,
+    errors: null,
+  });
+}
+
+function wordItem(uniqueWordId: number, kind: StemWordView): StemWordItemDto {
+  return {
+    uniqueWordId,
+    kind,
+    displayTextUthmani: `كلمة-${uniqueWordId}`,
+    occurrencesCount: 2,
+    firstVerseKey: '1:1',
+  };
+}
+
+function successWordsResponse(kind: StemWordView) {
+  return of<ApiResponse<PagedResultDto<StemWordItemDto>>>({
+    isSuccess: true,
+    data: {
+      page: 1,
+      pageSize: STEM_DETAIL_PAGE_SIZE,
+      totalCount: 1,
+      items: [wordItem(9001, kind)],
     },
     message: null,
     errors: null,
@@ -213,6 +239,25 @@ describe('StemsExplorerPageComponent US2', () => {
     expect(root.querySelectorAll('.ayah-matches-list__card')).toHaveLength(1);
   });
 
+  it('loads only the word detail endpoint and renders the simple/tashkeel list when view=words', async () => {
+    stemsApi.getStemWords.mockReturnValue(successWordsResponse('simple'));
+    queryParamMap$.next(convertToParamMap({ stem: '500', view: 'words', wordView: 'simple', detailPage: '1' }));
+
+    const fixture = await initLifecycle();
+    const root = fixture.nativeElement as HTMLElement;
+
+    expect(stemsApi.getStemSummary).toHaveBeenCalledWith(500);
+    expect(stemsApi.getStemWords).toHaveBeenCalledWith(500, 'simple', 1, STEM_DETAIL_PAGE_SIZE);
+    expect(stemsApi.getStemAyahMatches).not.toHaveBeenCalled();
+    expect(stemsApi.getStemMentionedSurahs).not.toHaveBeenCalled();
+    expect(stemsApi.getStemMissingSurahs).not.toHaveBeenCalled();
+    expect(stemsApi.getStemLemmas).not.toHaveBeenCalled();
+
+    expect(root.querySelector('qd-stem-words-list')).toBeTruthy();
+    expect(root.querySelector('[data-testid="stems-words-view"]')).toBeTruthy();
+    expect(root.querySelectorAll('[data-testid="stem-word-link"]')).toHaveLength(1);
+  });
+
   it('maps row selection to the default words/simple detail state', async () => {
     const fixture = TestBed.createComponent(StemsExplorerPageComponent);
     const component = fixture.componentInstance;
@@ -260,6 +305,23 @@ describe('StemsExplorerPageComponent US2', () => {
       queryParams: Record<string, string | null>;
     };
     expect(lastNavigateArgs.queryParams[STEMS_QUERY_KEYS.stem] ?? undefined).toBeUndefined();
+  });
+
+  it('maps word-view sub-tab changes to the words URL params and resets detail page', async () => {
+    const fixture = TestBed.createComponent(StemsExplorerPageComponent);
+    const component = fixture.componentInstance;
+
+    component['onWordViewChange']('tashkeel');
+
+    expect(router.navigate).toHaveBeenCalledWith([], {
+      relativeTo: expect.anything(),
+      queryParams: expect.objectContaining({
+        [STEMS_QUERY_KEYS.view]: 'words',
+        [STEMS_QUERY_KEYS.wordView]: 'tashkeel',
+        [STEMS_QUERY_KEYS.detailPage]: null,
+      }),
+      queryParamsHandling: 'merge',
+    });
   });
 
   it('page changes update the catalogue page without clearing selection state', async () => {

@@ -1,0 +1,78 @@
+:host {
+  display: block;
+}
+
+.stem-words-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qd-space-3);
+}
+
+.stem-words-list__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--qd-space-2);
+}
+
+.stem-words-list__tab {
+  font-size: 0.875rem;
+}
+
+.stem-words-list__header,
+.stem-words-list__row {
+  display: grid;
+  grid-template-columns: 2rem 1fr auto;
+  align-items: center;
+  gap: var(--qd-space-2);
+}
+
+.stem-words-list__header {
+  font-size: 0.75rem;
+  color: var(--qd-text-muted);
+  padding-inline: var(--qd-space-1);
+}
+
+.stem-words-list__viewport {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qd-space-1);
+}
+
+.stem-words-list__row {
+  padding: var(--qd-space-2);
+  border-radius: var(--qd-radius-sm);
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid var(--qd-border);
+  background: var(--qd-surface);
+}
+
+.stem-words-list__row-number {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  color: var(--qd-text-muted);
+}
+
+.stem-words-list__text {
+  font-family: var(--qd-font-quran, inherit);
+}
+
+.stem-words-list__row--loading {
+  pointer-events: none;
+}
+
+.stem-words-list__loading-number {
+  inline-size: 1.25rem;
+  block-size: 0.875rem;
+  margin-inline: auto;
+}
+
+.stem-words-list__loading-word {
+  inline-size: 60%;
+  block-size: 1rem;
+}
+
+.stem-words-list__loading-badge {
+  inline-size: 2rem;
+  block-size: 1.25rem;
+}

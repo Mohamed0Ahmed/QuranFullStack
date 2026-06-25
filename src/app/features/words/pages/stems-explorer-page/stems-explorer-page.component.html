@@ -119,7 +119,17 @@
     @if (!emptySelection()) {
       @switch (panelState().status) {
         @case ('loading') {
-          @if (activeView() === 'ayahs') {
+          @if (activeView() === 'words') {
+            <qd-stem-words-list
+              [loading]="true"
+              [page]="emptyWordsPage"
+              [currentPage]="panelState().detailPage"
+              [wordView]="panelState().wordView"
+              data-testid="stems-words-view"
+              (pageChange)="onDetailPageChange($event)"
+              (wordViewChange)="onWordViewChange($event)"
+            />
+          } @else if (activeView() === 'ayahs') {
             <qd-ayah-matches-list
               [loading]="true"
               [page]="emptyAyahsPage"
@@ -141,13 +151,27 @@
           <div class="qd-empty-state" data-testid="stems-panel-empty">{{ emptyViewLabel }}</div>
         }
         @case ('success') {
-          @if (activeView() === 'ayahs' && panelState().ayahs; as ayahsPage) {
-            <qd-ayah-matches-list
-              [page]="ayahsPage"
-              [currentPage]="panelState().detailPage"
-              data-testid="stems-ayahs-view"
-              (pageChange)="onDetailPageChange($event)"
-            />
+          @if (activeView() === 'words') {
+            @if (panelState().words; as wordsPage) {
+              <qd-stem-words-list
+                [page]="wordsPage"
+                [currentPage]="panelState().detailPage"
+                [wordView]="panelState().wordView"
+                data-testid="stems-words-view"
+                (pageChange)="onDetailPageChange($event)"
+                (wordViewChange)="onWordViewChange($event)"
+              />
+            }
+          }
+          @if (activeView() === 'ayahs') {
+            @if (panelState().ayahs; as ayahsPage) {
+              <qd-ayah-matches-list
+                [page]="ayahsPage"
+                [currentPage]="panelState().detailPage"
+                data-testid="stems-ayahs-view"
+                (pageChange)="onDetailPageChange($event)"
+              />
+            }
           }
         }
       }

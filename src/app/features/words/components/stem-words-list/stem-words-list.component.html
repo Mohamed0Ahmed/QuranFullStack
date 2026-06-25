@@ -1,0 +1,79 @@
+<div class="stem-words-list" data-testid="stem-words-list">
+  <div
+    class="explorer-detail-panel__toolbar explorer-detail-panel__toolbar--grid-2 stem-words-list__tabs"
+    role="tablist"
+    aria-label="عرض الكلمات"
+    #tabList
+  >
+    @for (tab of tabs; track tab.key) {
+      <button
+        type="button"
+        class="qd-btn qd-btn-secondary stem-words-list__tab"
+        role="tab"
+        [attr.data-stem-word-tab]="tab.key"
+        [attr.data-testid]="'stem-words-tab-' + tab.key"
+        [attr.aria-selected]="isActive(tab.key)"
+        [attr.aria-label]="tab.label"
+        [attr.tabindex]="isActive(tab.key) ? 0 : -1"
+        [class.qd-is-selected]="isActive(tab.key)"
+        [disabled]="loading()"
+        (click)="selectWordView(tab.key)"
+        (keydown)="onTabKeydown($event, tab.key)"
+      >
+        {{ tab.label }}
+      </button>
+    }
+  </div>
+
+  <header class="stem-words-list__header" aria-hidden="true">
+    <span class="stem-words-list__header-row-number">{{ rowNumberHeader }}</span>
+    <span class="stem-words-list__header-text">{{ wordHeader }}</span>
+    <span class="stem-words-list__header-count">{{ occurrencesHeader }}</span>
+  </header>
+
+  <div
+    class="stem-words-list__viewport"
+    [attr.aria-busy]="loading() ? true : null"
+    [attr.data-testid]="loading() ? 'stem-words-list-loading' : null"
+  >
+    @if (loading()) {
+      <p class="qd-sr-only" role="status" aria-live="polite">{{ loadingLabel }}</p>
+      @for (_ of loadingRowPlaceholders; track $index) {
+        <div class="stem-words-list__row stem-words-list__row--loading" aria-hidden="true">
+          <span class="stem-words-list__row-number">
+            <span class="qd-skeleton qd-skeleton--text stem-words-list__loading-number"></span>
+          </span>
+          <span class="stem-words-list__text">
+            <span class="qd-skeleton qd-skeleton--text stem-words-list__loading-word"></span>
+          </span>
+          <span class="qd-skeleton qd-skeleton--rounded-md stem-words-list__loading-badge"></span>
+        </div>
+      }
+    } @else {
+      @for (row of rows(); track row.item.uniqueWordId; let i = $index) {
+        <a
+          class="stem-words-list__row qd-interactive-surface"
+          [attr.href]="row.uniqueWordHref"
+          [attr.aria-label]="uniqueWordLabel(row.item.displayTextUthmani)"
+          target="_blank"
+          rel="noopener noreferrer"
+          data-testid="stem-word-link"
+        >
+          <span class="stem-words-list__row-number" aria-hidden="true">{{ rowNumber(i) }}</span>
+          <span class="stem-words-list__text">{{ row.item.displayTextUthmani }}</span>
+          <span class="qd-badge">{{ row.item.occurrencesCount }}</span>
+        </a>
+      }
+    }
+  </div>
+
+  @if (!loading()) {
+    <qd-pagination
+      [currentPage]="currentPage()"
+      [pageSize]="page().pageSize"
+      [totalCount]="page().totalCount"
+      ariaLabel="تصفّح كلمات الأصل الصرفي"
+      (pageChange)="pageChange.emit($event)"
+    />
+  }
+</div>

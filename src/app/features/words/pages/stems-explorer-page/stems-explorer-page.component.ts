@@ -13,6 +13,7 @@ import { Subscription, Subject, debounceTime } from 'rxjs';
 
 import { AyahMatchesListComponent } from '../../components/ayah-matches-list/ayah-matches-list.component';
 import { StemDetailsPanelComponent } from '../../components/stem-details-panel/stem-details-panel.component';
+import { StemWordsListComponent } from '../../components/stem-words-list/stem-words-list.component';
 import { StemCountOpenedEvent, StemsTableComponent } from '../../components/stems-table/stems-table.component';
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
 import {
@@ -32,8 +33,10 @@ import {
   STEM_DETAIL_PAGE_SIZE,
   StemAyahMatchDto,
   StemListItemViewModel,
+  StemWordItemDto,
   StemSort,
   StemView,
+  StemWordView,
   STEMS_QUERY_KEYS,
   toStemSummary,
 } from '../../models/stems.models';
@@ -50,6 +53,7 @@ import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
     NgTemplateOutlet,
     PaginationComponent,
     StemDetailsPanelComponent,
+    StemWordsListComponent,
     StemsTableComponent,
   ],
   templateUrl: './stems-explorer-page.component.html',
@@ -81,6 +85,13 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly sortOptions: readonly StemSort[] = ['mushaf-order', 'occurrences', 'alpha'];
 
   protected readonly emptyAyahsPage: PagedResultDto<StemAyahMatchDto> = {
+    page: 1,
+    pageSize: STEM_DETAIL_PAGE_SIZE,
+    totalCount: 0,
+    items: [],
+  };
+
+  protected readonly emptyWordsPage: PagedResultDto<StemWordItemDto> = {
     page: 1,
     pageSize: STEM_DETAIL_PAGE_SIZE,
     totalCount: 0,
@@ -193,6 +204,11 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
         surahView: view === 'surahs' ? 'mentioned' : null,
       }),
     );
+  }
+
+  protected onWordViewChange(wordView: StemWordView): void {
+    this.detailFacade.setWordView(wordView);
+    this.updateQueryParams(buildStemsQueryParams({ view: 'words', wordView, detailPage: null }));
   }
 
   protected onClearSelection(): void {

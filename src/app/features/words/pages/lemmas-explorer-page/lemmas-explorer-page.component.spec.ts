@@ -12,7 +12,9 @@ import {
   LEMMAS_QUERY_KEYS,
   LemmaAyahMatchDto,
   LemmaListItemViewModel,
+  LemmaWordItemDto,
   LemmaSummaryDto,
+  LemmaWordView,
   PagedResultDto,
 } from '../../models/lemmas.models';
 import { LemmasApi } from '../../data-access/lemmas.api';
@@ -87,6 +89,30 @@ function successAyahsResponse() {
       pageSize: LEMMA_DETAIL_PAGE_SIZE,
       totalCount: 1,
       items: [ayahMatch()],
+    },
+    message: null,
+    errors: null,
+  });
+}
+
+function wordItem(uniqueWordId: number, kind: LemmaWordView): LemmaWordItemDto {
+  return {
+    uniqueWordId,
+    kind,
+    displayTextUthmani: `كلمة-${uniqueWordId}`,
+    occurrencesCount: 2,
+    firstVerseKey: '1:1',
+  };
+}
+
+function successWordsResponse(kind: LemmaWordView) {
+  return of<ApiResponse<PagedResultDto<LemmaWordItemDto>>>({
+    isSuccess: true,
+    data: {
+      page: 1,
+      pageSize: LEMMA_DETAIL_PAGE_SIZE,
+      totalCount: 1,
+      items: [wordItem(9001, kind)],
     },
     message: null,
     errors: null,
@@ -216,6 +242,25 @@ describe('LemmasExplorerPageComponent US1', () => {
     expect(root.querySelectorAll('.ayah-matches-list__card')).toHaveLength(1);
   });
 
+  it('loads only the word detail endpoint and renders the simple/tashkeel list when view=words', async () => {
+    lemmasApi.getLemmaWords.mockReturnValue(successWordsResponse('tashkeel'));
+    queryParamMap$.next(convertToParamMap({ lemma: '500', view: 'words', wordView: 'tashkeel', detailPage: '1' }));
+
+    const fixture = await initLifecycle();
+    const root = fixture.nativeElement as HTMLElement;
+
+    expect(lemmasApi.getLemmaSummary).toHaveBeenCalledWith(500);
+    expect(lemmasApi.getLemmaWords).toHaveBeenCalledWith(500, 'tashkeel', 1, LEMMA_DETAIL_PAGE_SIZE);
+    expect(lemmasApi.getLemmaAyahMatches).not.toHaveBeenCalled();
+    expect(lemmasApi.getLemmaMentionedSurahs).not.toHaveBeenCalled();
+    expect(lemmasApi.getLemmaMissingSurahs).not.toHaveBeenCalled();
+    expect(lemmasApi.getLemmaStems).not.toHaveBeenCalled();
+
+    expect(root.querySelector('qd-lemma-words-list')).toBeTruthy();
+    expect(root.querySelector('[data-testid="lemmas-words-view"]')).toBeTruthy();
+    expect(root.querySelectorAll('[data-testid="lemma-word-link"]')).toHaveLength(1);
+  });
+
   it('maps row selection to the default words/simple detail state', async () => {
     const fixture = TestBed.createComponent(LemmasExplorerPageComponent);
     const component = fixture.componentInstance;
@@ -244,6 +289,23 @@ describe('LemmasExplorerPageComponent US1', () => {
       relativeTo: expect.anything(),
       queryParams: expect.objectContaining({
         [LEMMAS_QUERY_KEYS.lemma]: '500',
+        [LEMMAS_QUERY_KEYS.view]: 'words',
+        [LEMMAS_QUERY_KEYS.wordView]: 'tashkeel',
+        [LEMMAS_QUERY_KEYS.detailPage]: null,
+      }),
+      queryParamsHandling: 'merge',
+    });
+  });
+
+  it('maps word-view sub-tab changes to the words URL params and resets detail page', async () => {
+    const fixture = TestBed.createComponent(LemmasExplorerPageComponent);
+    const component = fixture.componentInstance;
+
+    component['onWordViewChange']('tashkeel');
+
+    expect(router.navigate).toHaveBeenCalledWith([], {
+      relativeTo: expect.anything(),
+      queryParams: expect.objectContaining({
         [LEMMAS_QUERY_KEYS.view]: 'words',
         [LEMMAS_QUERY_KEYS.wordView]: 'tashkeel',
         [LEMMAS_QUERY_KEYS.detailPage]: null,

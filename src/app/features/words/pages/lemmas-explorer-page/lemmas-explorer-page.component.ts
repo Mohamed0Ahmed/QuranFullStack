@@ -13,6 +13,7 @@ import { Subscription, Subject, debounceTime } from 'rxjs';
 
 import { AyahMatchesListComponent } from '../../components/ayah-matches-list/ayah-matches-list.component';
 import { LemmaDetailsPanelComponent } from '../../components/lemma-details-panel/lemma-details-panel.component';
+import { LemmaWordsListComponent } from '../../components/lemma-words-list/lemma-words-list.component';
 import {
   LemmaCountOpenedEvent,
   LemmasTableComponent,
@@ -34,11 +35,13 @@ import {
   LEMMA_DETAIL_PAGE_SIZE,
   LemmaAyahMatchDto,
   LemmaListItemViewModel,
+  LemmaWordItemDto,
   LemmaSort,
   LemmaSurahView,
   LemmaView,
   LemmaWordView,
   PagedResultDto,
+  LEMMAS_QUERY_KEYS,
   toLemmaSummary,
 } from '../../models/lemmas.models';
 import { LemmasDetailFacade } from '../../state/lemmas-detail.facade';
@@ -56,6 +59,7 @@ import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
     NgTemplateOutlet,
     AyahMatchesListComponent,
     LemmaDetailsPanelComponent,
+    LemmaWordsListComponent,
     LemmasTableComponent,
     PaginationComponent,
   ],
@@ -94,11 +98,19 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
     items: [],
   };
 
+  protected readonly emptyWordsPage: PagedResultDto<LemmaWordItemDto> = {
+    page: 1,
+    pageSize: LEMMA_DETAIL_PAGE_SIZE,
+    totalCount: 0,
+    items: [],
+  };
+
   protected readonly searchDraft = signal('');
   protected readonly isDesktop = signal(true);
 
   private readonly searchInput = new Subject<string>();
   private searchSub?: Subscription;
+  private searchSyncSub?: Subscription;
   private desktopQuery?: MediaQueryList;
   private readonly onDesktopChange = (event: MediaQueryListEvent): void =>
     this.isDesktop.set(event.matches);
@@ -112,6 +124,10 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.listFacade.bindToRoute(this.route);
     this.detailFacade.bindToRoute(this.route);
+
+    this.searchSyncSub = this.route.queryParamMap.subscribe((params) => {
+      this.searchDraft.set(params.get(LEMMAS_QUERY_KEYS.search) ?? '');
+    });
 
     this.searchSub = this.searchInput
       .pipe(debounceTime(300))
@@ -128,6 +144,7 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
     this.listFacade.unbindFromRoute();
     this.detailFacade.unbindFromRoute();
     this.searchSub?.unsubscribe();
+    this.searchSyncSub?.unsubscribe();
     this.desktopQuery?.removeEventListener('change', this.onDesktopChange);
   }
 
@@ -202,6 +219,11 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
         surahView: view === 'surahs' ? 'mentioned' : null,
       }),
     );
+  }
+
+  protected onWordViewChange(wordView: LemmaWordView): void {
+    this.detailFacade.setWordView(wordView);
+    this.updateQueryParams(buildLemmasQueryParams({ view: 'words', wordView, detailPage: null }));
   }
 
   protected onClearSelection(): void {
