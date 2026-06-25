@@ -65,9 +65,18 @@ export const STEMS_WORD_DISPLAY_HEADER = 'الكلمة';
 export const STEMS_LEMMA_TEXT_HEADER = 'الصيغة المعجمية';
 export const STEMS_OPEN_UNIQUE_WORD_LABEL = 'فتح تفاصيل الكلمة في مستكشف الكلمات الفريدة';
 
+export const STEMS_LEMMA_MISSING_LABEL = '—';
+export const STEMS_LEMMA_MISSING_ARIA = 'لا توجد صيغة معجمية مرتبطة';
+export const STEMS_ROOT_MISSING_LABEL = '—';
+export const STEMS_ROOT_MISSING_ARIA = 'لا يوجد جذر مرتبط';
+
 export const STEMS_SORT_LABELS = {
   label: 'الترتيب',
   'mushaf-order': 'ترتيب المصحف',
   occurrences: 'الأكثر ورودًا',
   alpha: 'أبجدي',
 } as const;
+
+export function stemsAdditionalTypesAria(count: number): string {
+  return count === 1 ? 'نوع إضافي واحد' : `${count} أنواع إضافية`;
+}

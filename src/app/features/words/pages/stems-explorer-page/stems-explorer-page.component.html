@@ -1,5 +1,137 @@
 <div class="qd-page">
   <div class="qd-container stems-explorer-frame">
-    <h1 class="qd-page-title" data-testid="stems-explorer-page-title">{{ pageTitle }}</h1>
+    <div class="uw-intro-band">
+      <div class="qd-page-header">
+        <h1 class="qd-page-title" data-testid="stems-explorer-page-title">{{ pageTitle }}</h1>
+      </div>
+    </div>
+
+    <div class="uw-toolbar-recess">
+      <div class="stems-explorer__controls">
+        <label class="qd-sr-only" for="stems-search">{{ searchLabel }}</label>
+        <input
+          id="stems-search"
+          class="qd-input stems-explorer__search"
+          type="search"
+          inputmode="search"
+          [attr.placeholder]="searchPlaceholder"
+          [value]="searchDraft()"
+          data-testid="stems-search-input"
+          (input)="onSearchInput($any($event.target).value)"
+        />
+
+        <label class="qd-sr-only" for="stems-sort">{{ sortLabels.label }}</label>
+        <select
+          id="stems-sort"
+          class="qd-select stems-explorer__sort"
+          data-testid="stems-sort-select"
+          [value]="listState().sort"
+          (change)="onSortChange($any($event.target).value)"
+        >
+          @for (option of sortOptions; track option) {
+            <option [value]="option">{{ sortLabels[option] }}</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    @switch (listState().status) {
+      @case ('error') {
+        <div class="qd-error-state" role="alert" data-testid="stems-list-error">
+          {{ listState().errorMessage }}
+        </div>
+      }
+      @case ('empty') {
+        <div class="qd-empty-state" data-testid="stems-list-no-results">{{ noResultsLabel }}</div>
+      }
+    }
+
+    @if (panelState().status === 'notFound') {
+      <div
+        class="qd-empty-state stems-explorer__restored-not-found"
+        role="status"
+        data-testid="stems-restored-not-found"
+      >
+        {{ panelState().errorMessage || notFoundLabel }}
+      </div>
+    }
   </div>
+
+  @switch (listState().status) {
+    @default {
+      <div class="stems-explorer-layout">
+        <section class="stems-explorer-layout__table" aria-label="جدول الأصول الصرفية">
+          <qd-stems-table
+            [rows]="listState().items"
+            [loading]="listState().status === 'loading'"
+            [selectedStemId]="panelState().selectedStemId"
+            [currentPage]="listState().page"
+            [pageSize]="listState().pageSize"
+            (rowSelected)="onRowSelected($event)"
+            (countOpened)="onCountOpened($event)"
+          />
+          <qd-pagination
+            [currentPage]="listState().page"
+            [pageSize]="listState().pageSize"
+            [totalCount]="listState().totalCount"
+            [disabled]="listState().status === 'loading'"
+            ariaLabel="تصفّح الأصول الصرفية"
+            (pageChange)="onPageChange($event)"
+          />
+        </section>
+
+        @if (isDesktop()) {
+          <aside class="stems-explorer-layout__panel" aria-label="تفاصيل الأصل الصرفي">
+            <qd-stem-details-panel
+              [inline]="true"
+              [view]="activeView()"
+              [emptySelection]="emptySelection()"
+              [selectionTitle]="panelState().summary?.stemText ?? ''"
+              [loading]="panelState().status === 'loading'"
+              [notFound]="panelState().status === 'notFound'"
+              (viewChange)="onPanelViewChange($event)"
+              (close)="onClearSelection()"
+            >
+              <ng-container *ngTemplateOutlet="stemsPanelContent" />
+            </qd-stem-details-panel>
+          </aside>
+        }
+      </div>
+
+      @if (!isDesktop() && !emptySelection()) {
+        <qd-stem-details-panel
+          [inline]="false"
+          [view]="activeView()"
+          [emptySelection]="emptySelection()"
+          [selectionTitle]="panelState().summary?.stemText ?? ''"
+          [loading]="panelState().status === 'loading'"
+          [notFound]="panelState().status === 'notFound'"
+          (viewChange)="onPanelViewChange($event)"
+          (close)="onClearSelection()"
+        >
+          <ng-container *ngTemplateOutlet="stemsPanelContent" />
+        </qd-stem-details-panel>
+      }
+    }
+  }
+
+  <ng-template #stemsPanelContent>
+    @if (!emptySelection()) {
+      @switch (panelState().status) {
+        @case ('loading') {
+          <p class="qd-sr-only" role="status" aria-live="polite" data-testid="stems-panel-loading">
+            {{ panelLoadingLabel }}
+          </p>
+        }
+        @case ('error') {
+          <div class="qd-error-state" role="alert" data-testid="stems-panel-error">
+            {{ panelState().errorMessage }}
+          </div>
+        }
+        @case ('empty') {
+          <div class="qd-empty-state" data-testid="stems-panel-empty">{{ emptyViewLabel }}</div>
+        }
+      }
+    }
+  </ng-template>
 </div>

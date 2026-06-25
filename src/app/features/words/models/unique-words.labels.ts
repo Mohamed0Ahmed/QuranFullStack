@@ -1,5 +1,5 @@
 import { UniqueWordKind, UniqueWordSort, WordDrilldownView } from './unique-words.models';
-import { lemmasRoutePath, rootsRoutePath } from '../../../core/navigation/route-paths';
+import { lemmasRoutePath, rootsRoutePath, stemsRoutePath } from '../../../core/navigation/route-paths';
 
 export interface WordSectionCardLabel {
   labelAr: string;
@@ -22,10 +22,14 @@ export const ADDITIONAL_ACTIVE_HUB_SECTIONS: readonly ActiveHubSection[] = [
     descriptionAr: 'استكشاف الصيغ المعجمية للكلمات',
     route: lemmasRoutePath(),
   },
+  {
+    labelAr: 'الأصول الصرفية',
+    descriptionAr: 'استكشاف الأصول الصرفية للكلمات',
+    route: stemsRoutePath(),
+  },
 ];
 
 export const COMING_SOON_HUB_SECTIONS: readonly WordSectionCardLabel[] = [
-  { labelAr: 'الأصل الصرفي', descriptionAr: 'استكشاف الأصول الصرفية للكلمات' },
   { labelAr: 'أنواع الكلمة', descriptionAr: 'استكشاف أنواع الكلمات من حيث الاسم والفعل والحرف' },
 ];
 

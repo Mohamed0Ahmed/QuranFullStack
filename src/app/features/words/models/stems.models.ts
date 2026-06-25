@@ -141,8 +141,10 @@ export interface StemListItemViewModel extends StemListItemDto {
   displayText: string;
 }
 
-export function toStemSummary(stem: StemSummaryDto): StemSummaryDto {
-  return { ...stem };
+export function toStemSummary(stem: StemListItemDto | StemSummaryDto): StemSummaryDto {
+  return 'typeDistribution' in stem
+    ? { ...stem, typeDistribution: [...stem.typeDistribution] }
+    : { ...stem, typeDistribution: [stem.dominantType] };
 }
 
 export const STEMS_QUERY_KEYS = {

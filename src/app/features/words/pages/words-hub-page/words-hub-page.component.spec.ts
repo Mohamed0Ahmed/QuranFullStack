@@ -3,6 +3,7 @@ import { getTestBed, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
 import { WordsHubPageComponent } from './words-hub-page.component';
+import { stemsRoutePath } from '../../../../core/navigation/route-paths';
 import {
   ACTIVE_HUB_SECTION,
   ADDITIONAL_ACTIVE_HUB_SECTIONS,
@@ -40,9 +41,10 @@ describe('WordsHubPageComponent', () => {
     const disabledCards = root.querySelectorAll('[data-testid="words-hub-card--disabled"]');
     expect(disabledCards).toHaveLength(COMING_SOON_HUB_SECTIONS.length);
 
-    expect(COMING_SOON_HUB_SECTIONS.length).toBe(2);
+    expect(COMING_SOON_HUB_SECTIONS.length).toBe(1);
     expect(COMING_SOON_HUB_SECTIONS.map((s) => s.labelAr)).not.toContain('الجذور');
     expect(COMING_SOON_HUB_SECTIONS.map((s) => s.labelAr)).not.toContain('الصيغ المعجمية');
+    expect(COMING_SOON_HUB_SECTIONS.map((s) => s.labelAr)).not.toContain('الأصول الصرفية');
   });
 
   it('links the Roots Explorer card to the roots route (FR-047)', async () => {
@@ -59,6 +61,17 @@ describe('WordsHubPageComponent', () => {
     expect(ADDITIONAL_ACTIVE_HUB_SECTIONS.map((s) => s.labelAr)).toContain('الصيغ المعجمية');
     const lemmasCard = root.querySelector('[data-testid="words-hub-card--الصيغ المعجمية"]');
     expect(lemmasCard).toBeTruthy();
+  });
+
+  it('links the Stems Explorer card to the stems route', async () => {
+    const root = await createComponent();
+
+    expect(ADDITIONAL_ACTIVE_HUB_SECTIONS.map((s) => s.labelAr)).toContain('الأصول الصرفية');
+    expect(
+      ADDITIONAL_ACTIVE_HUB_SECTIONS.find((s) => s.labelAr === 'الأصول الصرفية')?.route,
+    ).toBe(stemsRoutePath());
+    const stemsCard = root.querySelector('[data-testid="words-hub-card--الأصول الصرفية"]');
+    expect(stemsCard).toBeTruthy();
   });
 
   it('marks every disabled card with a coming-soon badge element', async () => {

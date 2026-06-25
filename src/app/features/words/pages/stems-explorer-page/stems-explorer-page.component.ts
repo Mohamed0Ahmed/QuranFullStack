@@ -1,19 +1,184 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnDestroy,
+  OnInit,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { Subscription, Subject, debounceTime } from 'rxjs';
 
-import { STEMS_PAGE_TITLE } from '../../models/stems.labels';
+import { StemDetailsPanelComponent } from '../../components/stem-details-panel/stem-details-panel.component';
+import { StemCountOpenedEvent, StemsTableComponent } from '../../components/stems-table/stems-table.component';
+import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
+import {
+  STEMS_EMPTY_SELECTION_LABEL,
+  STEMS_EMPTY_VIEW_LABEL,
+  STEMS_LOADING_LABEL,
+  STEMS_NO_RESULTS_LABEL,
+  STEMS_NOT_FOUND_LABEL,
+  STEMS_PAGE_TITLE,
+  STEMS_SEARCH_LABEL,
+  STEMS_SEARCH_PLACEHOLDER,
+  STEMS_SORT_LABELS,
+} from '../../models/stems.labels';
+import {
+  DEFAULT_STEM_VIEW,
+  StemListItemViewModel,
+  StemSort,
+  StemView,
+  STEMS_QUERY_KEYS,
+  toStemSummary,
+} from '../../models/stems.models';
+import { StemsDetailFacade } from '../../state/stems-detail.facade';
+import { StemsExplorerFacade } from '../../state/stems-explorer.facade';
+import { buildClearSelectionQueryParams, buildStemsQueryParams } from '../../state/stems-url-sync';
+import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
 
-/**
- * Stems Explorer page shell (Feature 016). Thin routeable shell that resolves
- * `/dashboard/words/stems`. Search/sort/list/table/panel composition lands in
- * T048–T050 (US2); this Phase 2 shell guarantees the route resolves for CP-0.
- */
 @Component({
   selector: 'qd-stems-explorer-page',
   standalone: true,
+  imports: [NgTemplateOutlet, PaginationComponent, StemDetailsPanelComponent, StemsTableComponent],
   templateUrl: './stems-explorer-page.component.html',
   styleUrl: './stems-explorer-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class StemsExplorerPageComponent {
+export class StemsExplorerPageComponent implements OnInit, OnDestroy {
+  private readonly listFacade = inject(StemsExplorerFacade);
+  private readonly detailFacade = inject(StemsDetailFacade);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+
   protected readonly pageTitle = STEMS_PAGE_TITLE;
+  protected readonly emptySelectionLabel = STEMS_EMPTY_SELECTION_LABEL;
+  protected readonly emptyViewLabel = STEMS_EMPTY_VIEW_LABEL;
+  protected readonly notFoundLabel = STEMS_NOT_FOUND_LABEL;
+  protected readonly noResultsLabel = STEMS_NO_RESULTS_LABEL;
+  protected readonly searchLabel = STEMS_SEARCH_LABEL;
+  protected readonly searchPlaceholder = STEMS_SEARCH_PLACEHOLDER;
+  protected readonly panelLoadingLabel = STEMS_LOADING_LABEL;
+
+  protected get sortLabels() {
+    return STEMS_SORT_LABELS;
+  }
+
+  protected readonly listState = this.listFacade.listState;
+  protected readonly panelState = this.detailFacade.panelState;
+
+  protected readonly sortOptions: readonly StemSort[] = ['mushaf-order', 'occurrences', 'alpha'];
+
+  protected readonly searchDraft = signal('');
+  protected readonly isDesktop = signal(true);
+
+  private readonly searchInput = new Subject<string>();
+  private searchSub?: Subscription;
+  private searchSyncSub?: Subscription;
+  private desktopQuery?: MediaQueryList;
+  private readonly onDesktopChange = (event: MediaQueryListEvent): void => this.isDesktop.set(event.matches);
+
+  protected readonly activeView = computed(() => this.panelState().view);
+  protected readonly emptySelection = computed(() => this.panelState().selectedStemId === null);
+  protected readonly defaultView: StemView = DEFAULT_STEM_VIEW;
+
+  ngOnInit(): void {
+    this.listFacade.bindToRoute(this.route);
+    this.detailFacade.bindToRoute(this.route);
+
+    this.searchSyncSub = this.route.queryParamMap.subscribe((params) => {
+      this.searchDraft.set(params.get(STEMS_QUERY_KEYS.search) ?? '');
+    });
+
+    this.searchSub = this.searchInput
+      .pipe(debounceTime(300))
+      .subscribe((value) => this.updateQueryParams({ search: value || null, page: null }));
+
+    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+      this.desktopQuery = window.matchMedia(QD_BP_DESKTOP_MIN_QUERY);
+      this.isDesktop.set(this.desktopQuery.matches);
+      this.desktopQuery.addEventListener('change', this.onDesktopChange);
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.listFacade.unbindFromRoute();
+    this.detailFacade.unbindFromRoute();
+    this.searchSub?.unsubscribe();
+    this.searchSyncSub?.unsubscribe();
+    this.desktopQuery?.removeEventListener('change', this.onDesktopChange);
+  }
+
+  protected onSearchInput(value: string): void {
+    this.searchDraft.set(value);
+    this.searchInput.next(value);
+  }
+
+  protected onSortChange(sort: StemSort): void {
+    this.updateQueryParams({ sort, page: null });
+  }
+
+  protected onPageChange(page: number): void {
+    if (page === this.listState().page) {
+      return;
+    }
+    this.updateQueryParams(buildStemsQueryParams({ page }));
+  }
+
+  protected onRowSelected(stem: StemListItemViewModel): void {
+    this.detailFacade.selectStem(toStemSummary(stem), DEFAULT_STEM_VIEW);
+    this.updateQueryParams(
+      buildStemsQueryParams({
+        stemId: stem.id,
+        view: DEFAULT_STEM_VIEW,
+        wordView: 'simple',
+        surahView: null,
+        detailPage: null,
+      }),
+    );
+  }
+
+  protected onCountOpened(event: StemCountOpenedEvent): void {
+    const { stem, view } = event;
+    const wordView = view === 'words' ? (event.wordView ?? 'simple') : undefined;
+    const surahView = view === 'surahs' ? (event.surahView ?? 'mentioned') : undefined;
+
+    this.detailFacade.selectStemWithPanel(toStemSummary(stem), view, wordView, surahView);
+
+    this.updateQueryParams(
+      buildStemsQueryParams({
+        stemId: stem.id,
+        view,
+        detailPage: null,
+        wordView: view === 'words' ? (event.wordView ?? 'simple') : null,
+        surahView: view === 'surahs' ? (event.surahView ?? 'mentioned') : null,
+      }),
+    );
+  }
+
+  protected onPanelViewChange(view: StemView): void {
+    this.detailFacade.setView(view);
+    this.updateQueryParams(
+      buildStemsQueryParams({
+        view,
+        detailPage: null,
+        wordView: view === 'words' ? 'simple' : null,
+        surahView: view === 'surahs' ? 'mentioned' : null,
+      }),
+    );
+  }
+
+  protected onClearSelection(): void {
+    this.detailFacade.clearSelection();
+    this.updateQueryParams(buildClearSelectionQueryParams());
+  }
+
+  private updateQueryParams(changes: Record<string, string | null>): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: changes,
+      queryParamsHandling: 'merge',
+    });
+  }
 }
