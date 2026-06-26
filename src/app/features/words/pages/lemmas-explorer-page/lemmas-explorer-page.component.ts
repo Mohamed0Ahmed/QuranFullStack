@@ -13,8 +13,10 @@ import { Subscription, Subject, debounceTime } from 'rxjs';
 
 import { AyahMatchesListComponent } from '../../components/ayah-matches-list/ayah-matches-list.component';
 import { LemmaDetailsPanelComponent } from '../../components/lemma-details-panel/lemma-details-panel.component';
+import { LemmaStemsListComponent } from '../../components/lemma-stems-list/lemma-stems-list.component';
 import { LemmaWordsListComponent } from '../../components/lemma-words-list/lemma-words-list.component';
 import { MissingSurahsListComponent } from '../../components/missing-surahs-list/missing-surahs-list.component';
+import { TypeDistributionListComponent } from '../../components/type-distribution-list/type-distribution-list.component';
 import { SurahOccurrencesListComponent } from '../../components/surah-occurrences-list/surah-occurrences-list.component';
 import {
   LemmaCountOpenedEvent,
@@ -63,10 +65,12 @@ import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
     NgTemplateOutlet,
     AyahMatchesListComponent,
     LemmaDetailsPanelComponent,
+    LemmaStemsListComponent,
     LemmaWordsListComponent,
     LemmasTableComponent,
     MissingSurahsListComponent,
     PaginationComponent,
+    TypeDistributionListComponent,
     SurahOccurrencesListComponent,
   ],
   templateUrl: './lemmas-explorer-page.component.html',

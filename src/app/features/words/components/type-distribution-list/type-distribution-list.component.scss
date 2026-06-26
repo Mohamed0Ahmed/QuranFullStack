@@ -1,0 +1,70 @@
+:host {
+  display: block;
+}
+
+.type-distribution-list-shell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qd-space-1);
+  margin-block-end: var(--qd-space-3);
+}
+
+.type-distribution-list__header,
+.type-distribution-list__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--qd-space-2);
+}
+
+.type-distribution-list__header {
+  padding-inline: var(--qd-space-1);
+  font-size: 0.75rem;
+  color: var(--qd-text-muted);
+}
+
+.type-distribution-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qd-space-1);
+}
+
+.type-distribution-list__row {
+  padding: var(--qd-space-2);
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-sm);
+  background: var(--qd-surface);
+}
+
+.type-distribution-list__type {
+  min-width: 0;
+  font-family: var(--qd-font-quran, inherit);
+}
+
+.type-distribution-list__count,
+.type-distribution-list__dominant {
+  justify-self: end;
+}
+
+.type-distribution-list__row--loading {
+  pointer-events: none;
+}
+
+.type-distribution-list__loading-type {
+  inline-size: 55%;
+  block-size: 1rem;
+}
+
+.type-distribution-list__loading-count {
+  inline-size: 2.25rem;
+  block-size: 1.25rem;
+}
+
+.type-distribution-list__loading-dominant {
+  inline-size: 2.75rem;
+  block-size: 1.25rem;
+}
+
+.type-distribution-list__empty {
+  padding: var(--qd-space-2);
+}

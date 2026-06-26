@@ -6,12 +6,14 @@ import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angul
 import { BehaviorSubject, of, Subject } from 'rxjs';
 
 import { ApiResponse } from '../../../../core/data-access/api-response.model';
+import { deepLinkToHref } from '../../../../shared/url/deep-link-href';
 import { LEMMAS_COLUMN_HEADERS } from '../../models/lemmas.labels';
 import {
   LEMMA_DETAIL_PAGE_SIZE,
   LEMMAS_QUERY_KEYS,
   LemmaAyahMatchDto,
   LemmaListItemViewModel,
+  LemmaStemsDto,
   LemmaWordItemDto,
   LemmaMissingSurahsDto,
   LemmaSummaryDto,
@@ -22,6 +24,7 @@ import {
 import { LemmasApi } from '../../data-access/lemmas.api';
 import { LemmasDetailFacade } from '../../state/lemmas-detail.facade';
 import { LemmasExplorerFacade } from '../../state/lemmas-explorer.facade';
+import { buildStemsDeepLink } from '../../state/stems-url-sync';
 import { LemmasExplorerPageComponent } from './lemmas-explorer-page.component';
 
 function listRow(id: number, overrides: Partial<LemmaListItemViewModel> = {}): LemmaListItemViewModel {
@@ -119,6 +122,23 @@ function successWordsResponse(kind: LemmaWordView) {
     message: null,
     errors: null,
   });
+}
+
+function relatedStemsResponse(): ApiResponse<LemmaStemsDto> {
+  return {
+    isSuccess: true,
+    data: {
+      id: 500,
+      lemmaText: 'صيغة-500',
+      stemsCount: 2,
+      stems: [
+        { stemId: 600, stemText: 'كَلَّمَ', occurrencesCount: 11 },
+        { stemId: 602, stemText: 'عَلِمَ', occurrencesCount: 3 },
+      ],
+    },
+    message: null,
+    errors: null,
+  };
 }
 
 describe('LemmasExplorerPageComponent US1', () => {
@@ -261,6 +281,42 @@ describe('LemmasExplorerPageComponent US1', () => {
     expect(root.querySelector('qd-lemma-words-list')).toBeTruthy();
     expect(root.querySelector('[data-testid="lemmas-words-view"]')).toBeTruthy();
     expect(root.querySelectorAll('[data-testid="lemma-word-link"]')).toHaveLength(1);
+  });
+
+  it('loads related stems for view=stems and keeps the type distribution visible while the related list loads', async () => {
+    const pendingStems$ = new Subject<ApiResponse<LemmaStemsDto>>();
+    lemmasApi.getLemmaStems.mockReturnValue(pendingStems$.asObservable());
+    queryParamMap$.next(convertToParamMap({ lemma: '500', view: 'stems' }));
+
+    const fixture = await initLifecycle();
+    const root = fixture.nativeElement as HTMLElement;
+
+    expect(lemmasApi.getLemmaSummary).toHaveBeenCalledWith(500);
+    expect(lemmasApi.getLemmaStems).toHaveBeenCalledWith(500);
+    expect(TestBed.inject(LemmasDetailFacade).status()).toBe('loading');
+    expect(root.querySelector('[data-testid="type-distribution-dominant"]')).toBeTruthy();
+    expect(root.querySelectorAll('.type-distribution-list__row--loading')).toHaveLength(0);
+    expect(root.querySelector('[data-testid="lemma-stems-list-loading"]')).toBeTruthy();
+
+    pendingStems$.next(relatedStemsResponse());
+    pendingStems$.complete();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const links = root.querySelectorAll('[data-testid="lemma-stems-list-link"]');
+    expect(links).toHaveLength(2);
+    expect((links[0] as HTMLAnchorElement).getAttribute('href')).toBe(
+      deepLinkToHref(buildStemsDeepLink({ stemId: 600, view: 'words', wordView: 'simple' })),
+    );
+    expect((links[0] as HTMLAnchorElement).target).toBe('_blank');
+    expect((links[0] as HTMLAnchorElement).rel).toBe('noopener noreferrer');
+    expect((links[1] as HTMLAnchorElement).getAttribute('href')).toBe(
+      deepLinkToHref(buildStemsDeepLink({ stemId: 602, view: 'words', wordView: 'simple' })),
+    );
+    expect(Array.from(root.querySelectorAll('.lemma-stems-list__count')).map((el) => el.textContent?.trim())).toEqual([
+      '11',
+      '3',
+    ]);
   });
 
   it('maps row selection to the default words/simple detail state', async () => {

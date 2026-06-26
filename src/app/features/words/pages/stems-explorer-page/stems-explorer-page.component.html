@@ -117,6 +117,13 @@
 
   <ng-template #stemsPanelContent>
     @if (!emptySelection()) {
+      @if (panelState().summary || panelState().status === 'loading') {
+        <qd-type-distribution-list
+          [items]="panelState().summary?.typeDistribution ?? []"
+          [loading]="panelState().status === 'loading' && !panelState().summary"
+        />
+      }
+
       @if (activeView() === 'words') {
         <nav
           class="stems-explorer__sub-tabs"
@@ -159,6 +166,12 @@
             </button>
           }
         </nav>
+      } @else if (activeView() === 'lemmas' && panelState().status !== 'error' && panelState().status !== 'notFound') {
+        <qd-stem-lemmas-list
+          [loading]="panelState().status === 'loading'"
+          [lemmas]="panelState().lemmas?.lemmas ?? []"
+          data-testid="stems-lemmas-view"
+        />
       }
 
       @switch (panelState().status) {
@@ -202,7 +215,9 @@
           </div>
         }
         @case ('empty') {
-          <div class="qd-empty-state" data-testid="stems-panel-empty">{{ emptyViewLabel }}</div>
+          @if (activeView() !== 'lemmas') {
+            <div class="qd-empty-state" data-testid="stems-panel-empty">{{ emptyViewLabel }}</div>
+          }
         }
         @case ('success') {
           @if (activeView() === 'words' && panelState().words; as wordsPage) {

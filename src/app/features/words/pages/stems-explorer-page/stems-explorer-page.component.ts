@@ -13,8 +13,10 @@ import { Subscription, Subject, debounceTime } from 'rxjs';
 
 import { AyahMatchesListComponent } from '../../components/ayah-matches-list/ayah-matches-list.component';
 import { StemDetailsPanelComponent } from '../../components/stem-details-panel/stem-details-panel.component';
+import { StemLemmasListComponent } from '../../components/stem-lemmas-list/stem-lemmas-list.component';
 import { MissingSurahsListComponent } from '../../components/missing-surahs-list/missing-surahs-list.component';
 import { StemWordsListComponent } from '../../components/stem-words-list/stem-words-list.component';
+import { TypeDistributionListComponent } from '../../components/type-distribution-list/type-distribution-list.component';
 import { SurahOccurrencesListComponent } from '../../components/surah-occurrences-list/surah-occurrences-list.component';
 import { StemCountOpenedEvent, StemsTableComponent } from '../../components/stems-table/stems-table.component';
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
@@ -59,8 +61,10 @@ import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
     NgTemplateOutlet,
     PaginationComponent,
     StemDetailsPanelComponent,
+    StemLemmasListComponent,
     StemWordsListComponent,
     StemsTableComponent,
+    TypeDistributionListComponent,
     SurahOccurrencesListComponent,
   ],
   templateUrl: './stems-explorer-page.component.html',
