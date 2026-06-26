@@ -144,7 +144,7 @@ public sealed class CachedStemsReader(EfStemsReader efReader, IMemoryCache cache
         string key)
     {
         var ayahs = await _ef.GetStemAyahMatchesAsync(id, page, pageSize, cancellationToken);
-        if (ayahs is not null)
+        if (ayahs is { Items.Count: > 0 })
         {
             _cache.Set(key, ayahs, StemsCacheEntryOptions.PagedDetail());
         }
@@ -161,7 +161,7 @@ public sealed class CachedStemsReader(EfStemsReader efReader, IMemoryCache cache
         string key)
     {
         var words = await _ef.GetStemWordsAsync(id, wordKind, page, pageSize, cancellationToken);
-        if (words is not null)
+        if (words is { Items.Count: > 0 })
         {
             _cache.Set(key, words, StemsCacheEntryOptions.PagedWords());
         }

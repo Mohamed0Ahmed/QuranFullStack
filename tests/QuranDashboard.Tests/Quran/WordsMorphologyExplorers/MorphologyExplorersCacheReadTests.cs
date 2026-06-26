@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using QuranDashboard.Application.Abstractions.Common.Paging;
 using QuranDashboard.Application.Abstractions.Quran.Words.Lemmas;
 using QuranDashboard.Application.Abstractions.Quran.Words.Stems;
 using QuranDashboard.Infrastructure.Caching.Quran.Words.Lemmas;
@@ -43,6 +44,18 @@ public sealed class MorphologyExplorersCacheReadTests(MorphologyExplorersTestFix
     [InlineData(LemmaWordKind.Tashkeel)]
     public Task Lemma_words_repeat_read_hits_cache(LemmaWordKind kind) =>
         AssertSecondReadHitsCache((reader, ct) => reader.GetLemmaWordsAsync(LemmaId, kind, 1, 50, ct));
+
+    [Fact]
+    public Task Lemma_words_out_of_range_pages_are_not_cached() =>
+        AssertSecondOutOfRangePageStillQueriesDb(
+            (db, cache, ct) => new CachedLemmasReader(new EfLemmasReader(db), cache)
+                .GetLemmaWordsAsync(LemmaId, LemmaWordKind.Simple, 999, 50, ct));
+
+    [Fact]
+    public Task Lemma_ayahs_out_of_range_pages_are_not_cached() =>
+        AssertSecondOutOfRangePageStillQueriesDb(
+            (db, cache, ct) => new CachedLemmasReader(new EfLemmasReader(db), cache)
+                .GetLemmaAyahMatchesAsync(LemmaId, 999, 50, ct));
 
     [Fact]
     public Task Lemma_mentioned_surahs_repeat_read_hits_cache() =>
@@ -90,6 +103,18 @@ public sealed class MorphologyExplorersCacheReadTests(MorphologyExplorersTestFix
     [InlineData(StemWordKind.Tashkeel)]
     public Task Stem_words_repeat_read_hits_cache(StemWordKind kind) =>
         AssertSecondReadHitsCache((reader, ct) => reader.GetStemWordsAsync(StemId, kind, 1, 50, ct));
+
+    [Fact]
+    public Task Stem_words_out_of_range_pages_are_not_cached() =>
+        AssertSecondOutOfRangePageStillQueriesDb(
+            (db, cache, ct) => new CachedStemsReader(new EfStemsReader(db), cache)
+                .GetStemWordsAsync(StemId, StemWordKind.Simple, 999, 50, ct));
+
+    [Fact]
+    public Task Stem_ayahs_out_of_range_pages_are_not_cached() =>
+        AssertSecondOutOfRangePageStillQueriesDb(
+            (db, cache, ct) => new CachedStemsReader(new EfStemsReader(db), cache)
+                .GetStemAyahMatchesAsync(StemId, 999, 50, ct));
 
     [Fact]
     public Task Stem_mentioned_surahs_repeat_read_hits_cache() =>
@@ -275,5 +300,32 @@ public sealed class MorphologyExplorersCacheReadTests(MorphologyExplorersTestFix
         await secondPageRead(reader, CancellationToken.None);
         interceptor.CommandCount.Should().BeGreaterThan(0,
             "a cache miss for a different page must reach the database (paged detail cache)");
+    }
+
+    private async Task AssertSecondOutOfRangePageStillQueriesDb<TItem>(
+        Func<QuranDashboardDbContext, IMemoryCache, CancellationToken, Task<PagedResult<TItem>?>> read)
+    {
+        var interceptor = new SqlCommandCountInterceptor();
+        var options = new DbContextOptionsBuilder<QuranDashboardDbContext>()
+            .UseNpgsql(fixture.ConnectionString)
+            .AddInterceptors(interceptor)
+            .Options;
+
+        await using var dbContext = new QuranDashboardDbContext(options);
+        using var cache = new MemoryCache(new MemoryCacheOptions());
+
+        var first = await read(dbContext, cache, CancellationToken.None);
+        first.Should().NotBeNull();
+        first!.Items.Should().BeEmpty();
+        interceptor.CommandCount.Should().BeGreaterThan(0,
+            "the first out-of-range page must still reach the database");
+
+        interceptor.Reset();
+
+        var second = await read(dbContext, cache, CancellationToken.None);
+        second.Should().NotBeNull();
+        second!.Items.Should().BeEmpty();
+        interceptor.CommandCount.Should().BeGreaterThan(0,
+            "empty paged detail results must not be cached");
     }
 }

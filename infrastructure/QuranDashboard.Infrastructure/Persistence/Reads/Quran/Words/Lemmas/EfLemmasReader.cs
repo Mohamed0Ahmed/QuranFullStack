@@ -308,8 +308,6 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
             return [];
         }
 
-        var lemmaIds = aggregates.Select(a => a.Id).ToList();
-
         // Load raw occurrence rows and aggregate in C# so the per-type "first
         // occurrence" is the coordinate tuple of the earliest matching word
         // (ordered by quran_word_id, the monotonic mushaf key), not three
@@ -333,7 +331,6 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
             .ToListAsync(cancellationToken);
 
         var occurrenceRows = rawRows
-            .Where(r => lemmaIds.Contains(r.LemmaId))
             .Select(r => new LemmaTypeOccurrenceRow(
                 r.LemmaId,
                 r.QuranWordId,

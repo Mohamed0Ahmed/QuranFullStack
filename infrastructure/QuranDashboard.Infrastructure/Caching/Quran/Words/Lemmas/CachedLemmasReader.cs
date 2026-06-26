@@ -133,7 +133,7 @@ public sealed class CachedLemmasReader(EfLemmasReader efReader, IMemoryCache cac
         string key)
     {
         var ayahs = await _ef.GetLemmaAyahMatchesAsync(id, page, pageSize, cancellationToken);
-        if (ayahs is not null)
+        if (ayahs is { Items.Count: > 0 })
         {
             _cache.Set(key, ayahs, LemmasCacheEntryOptions.PagedDetail());
         }
@@ -150,7 +150,7 @@ public sealed class CachedLemmasReader(EfLemmasReader efReader, IMemoryCache cac
         string key)
     {
         var words = await _ef.GetLemmaWordsAsync(id, wordKind, page, pageSize, cancellationToken);
-        if (words is not null)
+        if (words is { Items.Count: > 0 })
         {
             _cache.Set(key, words, LemmasCacheEntryOptions.PagedWords());
         }
