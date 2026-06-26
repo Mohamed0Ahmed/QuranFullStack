@@ -68,10 +68,12 @@ public sealed record WordMorphologyRoot(
     string? Buckwalter);
 
 public sealed record WordMorphologyLemma(
+    int Id,
     string? Text,
     string? Buckwalter);
 
 public sealed record WordMorphologyStem(
+    int Id,
     string? Text);
 
 public sealed record SegmentFeaturesDto(

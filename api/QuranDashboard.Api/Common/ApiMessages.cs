@@ -47,4 +47,30 @@ public static class ApiMessages
     public const string RootsInvalidId = "معرّف الجذر غير صالح";
     public const string RootsInvalidPaging = "معطيات التصفح غير صالحة";
     public const string RootNotFound = "الجذر غير موجود";
+
+    public const string LemmasListLoaded = "تم تحميل الصيغ المعجمية";
+    public const string LemmaSummaryLoaded = "تم تحميل الصيغة المعجمية";
+    public const string LemmaWordsLoaded = "تم تحميل كلمات الصيغة المعجمية";
+    public const string LemmaAyahsLoaded = "تم تحميل الآيات التي ورد فيها الصيغة المعجمية";
+    public const string LemmaSurahsLoaded = "تم تحميل السور التي ورد فيها الصيغة المعجمية";
+    public const string LemmaMissingSurahsLoaded = "تم تحميل السور التي لم ترد فيها الصيغة المعجمية";
+    public const string LemmaStemsLoaded = "تم تحميل الأصول الصرفية للصيغة المعجمية";
+    public const string LemmasInvalidSort = "خيار الترتيب غير صالح";
+    public const string LemmasInvalidKind = "نوع الكلمات غير صالح";
+    public const string LemmasInvalidId = "معرّف الصيغة المعجمية غير صالح";
+    public const string LemmasInvalidPaging = "معطيات التصفح غير صالحة";
+    public const string LemmaNotFound = "الصيغة المعجمية غير موجودة";
+
+    public const string StemsListLoaded = "تم تحميل الأصول الصرفية";
+    public const string StemSummaryLoaded = "تم تحميل الأصل الصرفي";
+    public const string StemWordsLoaded = "تم تحميل كلمات الأصل الصرفي";
+    public const string StemAyahsLoaded = "تم تحميل الآيات التي ورد فيها الأصل الصرفي";
+    public const string StemSurahsLoaded = "تم تحميل السور التي ورد فيها الأصل الصرفي";
+    public const string StemMissingSurahsLoaded = "تم تحميل السور التي لم ترد فيها الأصل الصرفي";
+    public const string StemLemmasLoaded = "تم تحميل الصيغ المعجمية للأصل الصرفي";
+    public const string StemsInvalidSort = "خيار الترتيب غير صالح";
+    public const string StemsInvalidKind = "نوع الكلمات غير صالح";
+    public const string StemsInvalidId = "معرّف الأصل الصرفي غير صالح";
+    public const string StemsInvalidPaging = "معطيات التصفح غير صالحة";
+    public const string StemNotFound = "الأصل الصرفي غير موجود";
 }

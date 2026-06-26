@@ -29,6 +29,8 @@ public sealed class WordAnalysisReadTests(MushafReaderTestFixture fixture)
         response.Morphology.Root.Should().NotBeNull();
         response.Morphology.Root!.Id.Should().Be(9001);
         response.Morphology.Root.Text.Should().NotBeNullOrWhiteSpace();
+        response.Morphology.Lemma.Should().BeNull();
+        response.Morphology.Stem.Should().BeNull();
 
         response.Identity.OrderedTashkeel.OccurrencesCount.Should().BeGreaterThan(0);
         response.Identity.UniqueTashkeel.Id.Should().BeGreaterThan(0);
