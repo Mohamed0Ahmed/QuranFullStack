@@ -243,6 +243,22 @@ public sealed class LemmasListReadTests(MorphologyExplorersTestFixture fixture)
     }
 
     [Fact]
+    public async Task GetLemmasPage_huge_positive_page_returns_empty_without_skip_overflow()
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetLemmasPageHandler>();
+
+        var outcome = await handler.HandleAsync(
+            new GetLemmasPageQuery(null, null, int.MaxValue, 1000),
+            CancellationToken.None);
+        var page = outcome.Should().BeOfType<GetLemmasPageOutcome.Success>().Subject.Page;
+
+        page.Page.Should().Be(int.MaxValue);
+        page.TotalCount.Should().Be(SeededLemmaCount);
+        page.Items.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task GetLemmaSummary_returns_full_distribution_for_known_lemma()
     {
         await using var scope = fixture.CreateScope();

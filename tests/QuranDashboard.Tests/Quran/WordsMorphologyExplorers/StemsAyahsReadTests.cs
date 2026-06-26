@@ -70,6 +70,22 @@ public sealed class StemsAyahsReadTests(MorphologyExplorersTestFixture fixture)
     }
 
     [Fact]
+    public async Task GetStemAyahs_huge_positive_page_returns_empty_without_skip_overflow()
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetStemAyahsHandler>();
+
+        var outcome = await handler.HandleAsync(
+            new GetStemAyahsQuery(ExactTieStemId, int.MaxValue, 1000),
+            CancellationToken.None);
+        var page = outcome.Should().BeOfType<GetStemAyahsOutcome.Success>().Subject.Page;
+
+        page.Page.Should().Be(int.MaxValue);
+        page.TotalCount.Should().Be(2);
+        page.Items.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task GetStemAyahs_unknown_id_returns_not_found()
     {
         await using var scope = fixture.CreateScope();

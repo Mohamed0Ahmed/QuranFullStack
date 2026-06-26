@@ -71,6 +71,22 @@ public sealed class LemmasAyahsReadTests(MorphologyExplorersTestFixture fixture)
     }
 
     [Fact]
+    public async Task GetLemmaAyahs_huge_positive_page_returns_empty_without_skip_overflow()
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetLemmaAyahsHandler>();
+
+        var outcome = await handler.HandleAsync(
+            new GetLemmaAyahsQuery(HighFrequencyLemmaId, int.MaxValue, 1000),
+            CancellationToken.None);
+        var page = outcome.Should().BeOfType<GetLemmaAyahsOutcome.Success>().Subject.Page;
+
+        page.Page.Should().Be(int.MaxValue);
+        page.TotalCount.Should().Be(7);
+        page.Items.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task GetLemmaAyahs_unknown_id_returns_not_found()
     {
         await using var scope = fixture.CreateScope();

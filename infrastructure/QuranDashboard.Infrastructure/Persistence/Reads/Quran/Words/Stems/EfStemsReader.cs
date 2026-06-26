@@ -69,6 +69,11 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
             .Distinct();
 
         var totalCount = await matchedAyahIds.CountAsync(cancellationToken);
+        var skip = ReadPaging.CalculateSafeSkip(page, pageSize, totalCount);
+        if (skip is null)
+        {
+            return new PagedResult<StemAyahMatchDto>(page, pageSize, totalCount, []);
+        }
 
         var pageAyahs = await (
             from ayah in _db.QuranAyahs.AsNoTracking()
@@ -82,7 +87,7 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
                 ayah.SurahNumber,
                 ayah.AyahNumber,
                 surah.NameArabic))
-            .Skip((page - 1) * pageSize)
+            .Skip(skip.Value)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
 
@@ -387,8 +392,14 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
             .ThenBy(x => x.UniqueWordId)
             .ToList();
 
+        var skip = ReadPaging.CalculateSafeSkip(page, pageSize, grouped.Count);
+        if (skip is null)
+        {
+            return new PagedResult<StemWordItemDto>(page, pageSize, grouped.Count, []);
+        }
+
         var items = grouped
-            .Skip((page - 1) * pageSize)
+            .Skip(skip.Value)
             .Take(pageSize)
             .Select(row => new StemWordItemDto(
                 row.UniqueWordId,

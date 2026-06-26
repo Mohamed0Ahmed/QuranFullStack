@@ -247,6 +247,22 @@ public sealed class StemsListReadTests(MorphologyExplorersTestFixture fixture)
     }
 
     [Fact]
+    public async Task GetStemsPage_huge_positive_page_returns_empty_without_skip_overflow()
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetStemsPageHandler>();
+
+        var outcome = await handler.HandleAsync(
+            new GetStemsPageQuery(null, null, int.MaxValue, 1000),
+            CancellationToken.None);
+        var page = outcome.Should().BeOfType<GetStemsPageOutcome.Success>().Subject.Page;
+
+        page.Page.Should().Be(int.MaxValue);
+        page.TotalCount.Should().Be(SeededStemCount);
+        page.Items.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task GetStemSummary_returns_full_distribution_for_known_stem()
     {
         await using var scope = fixture.CreateScope();

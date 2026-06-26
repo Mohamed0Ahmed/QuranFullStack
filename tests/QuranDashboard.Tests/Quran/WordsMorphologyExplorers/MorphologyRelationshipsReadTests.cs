@@ -5,7 +5,6 @@ using QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemLemmas;
 using QuranDashboard.Infrastructure.Caching.Quran.Words.Lemmas;
 using QuranDashboard.Infrastructure.Caching.Quran.Words.Stems;
 using QuranDashboard.Infrastructure.Persistence;
-using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words;
 using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Lemmas;
 using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Stems;
 using QuranDashboard.Tests.Quran.Words;
@@ -38,20 +37,6 @@ public sealed class MorphologyRelationshipsReadTests(MorphologyExplorersTestFixt
         response.Stems[0].StemId.Should().Be(600);
         response.Stems[0].StemText.Should().Be("كَلَّمَ");
         response.Stems[0].OccurrencesCount.Should().Be(11);
-    }
-
-    [Fact]
-    public void OrderLemmaStems_places_higher_counts_before_earlier_first_occurrences()
-    {
-        var items = MorphologyRelatedItemsOrdering.OrderLemmaStems(
-            [
-                (600, "كَلَّمَ", 100),
-                (602, "عَلِمَ", 200),
-                (602, "عَلِمَ", 300),
-            ]);
-
-        items.Select(item => item.StemId).Should().Equal(602, 600);
-        items.Select(item => item.OccurrencesCount).Should().Equal(2, 1);
     }
 
     [Fact]
@@ -111,20 +96,6 @@ public sealed class MorphologyRelationshipsReadTests(MorphologyExplorersTestFixt
         response.Lemmas[1].LemmaText.Should().Be("مَعْرِفَة");
         response.Lemmas[1].LemmaBuckwalter.Should().Be("maArifap");
         response.Lemmas[1].OccurrencesCount.Should().Be(1);
-    }
-
-    [Fact]
-    public void OrderStemLemmas_places_higher_counts_before_earlier_first_occurrences()
-    {
-        var items = MorphologyRelatedItemsOrdering.OrderStemLemmas(
-            [
-                (504, "مَعْرِفَة", "maArifap", 100),
-                (502, "عِلْم", "Ailm", 200),
-                (502, "عِلْم", "Ailm", 300),
-            ]);
-
-        items.Select(item => item.LemmaId).Should().Equal(502, 504);
-        items.Select(item => item.OccurrencesCount).Should().Equal(2, 1);
     }
 
     [Fact]

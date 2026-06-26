@@ -75,6 +75,24 @@ public sealed class LemmasWordsReadTests(MorphologyExplorersTestFixture fixture)
         secondPage.Items.Should().ContainSingle(i => i.UniqueWordId == secondUniqueWordId);
     }
 
+    [Theory]
+    [InlineData(LemmaWordKindKeys.Simple)]
+    [InlineData(LemmaWordKindKeys.Tashkeel)]
+    public async Task GetLemmaWords_huge_positive_page_returns_empty_without_skip_overflow(string kind)
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetLemmaWordsHandler>();
+
+        var outcome = await handler.HandleAsync(
+            new GetLemmaWordsQuery(HighFrequencyLemmaId, kind, int.MaxValue, 1000),
+            CancellationToken.None);
+        var page = outcome.Should().BeOfType<GetLemmaWordsOutcome.Success>().Subject.Page;
+
+        page.Page.Should().Be(int.MaxValue);
+        page.TotalCount.Should().Be(2);
+        page.Items.Should().BeEmpty();
+    }
+
     [Fact]
     public async Task GetLemmaWords_invalid_kind_returns_invalid_kind()
     {

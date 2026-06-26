@@ -75,6 +75,24 @@ public sealed class StemsWordsReadTests(MorphologyExplorersTestFixture fixture)
         secondPage.Items.Should().ContainSingle(i => i.UniqueWordId == secondUniqueWordId);
     }
 
+    [Theory]
+    [InlineData(StemWordKindKeys.Simple)]
+    [InlineData(StemWordKindKeys.Tashkeel)]
+    public async Task GetStemWords_huge_positive_page_returns_empty_without_skip_overflow(string kind)
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetStemWordsHandler>();
+
+        var outcome = await handler.HandleAsync(
+            new GetStemWordsQuery(HighFrequencyStemId, kind, int.MaxValue, 1000),
+            CancellationToken.None);
+        var page = outcome.Should().BeOfType<GetStemWordsOutcome.Success>().Subject.Page;
+
+        page.Page.Should().Be(int.MaxValue);
+        page.TotalCount.Should().Be(2);
+        page.Items.Should().BeEmpty();
+    }
+
     [Fact]
     public async Task GetStemWords_invalid_kind_returns_invalid_kind()
     {

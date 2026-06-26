@@ -2,6 +2,7 @@ using QuranDashboard.Application.Abstractions.Common.Paging;
 using QuranDashboard.Application.Abstractions.Quran.Words.Lemmas;
 using QuranDashboard.Application.Abstractions.Quran.Words.Lemmas.Responses;
 using QuranDashboard.Application.Abstractions.Quran.Words.Morphology.Responses;
+using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Lemmas;
 
@@ -35,8 +36,14 @@ internal static class LemmasListDerivation
         var rows = FilterAndSort(all, search, sort);
         var materialized = rows.ToList();
         var totalCount = materialized.Count;
+        var skip = ReadPaging.CalculateSafeSkip(page, pageSize, totalCount);
+        if (skip is null)
+        {
+            return new PagedResult<LemmaListItemDto>(page, pageSize, totalCount, []);
+        }
+
         var pageRows = materialized
-            .Skip((page - 1) * pageSize)
+            .Skip(skip.Value)
             .Take(pageSize)
             .ToList();
 
