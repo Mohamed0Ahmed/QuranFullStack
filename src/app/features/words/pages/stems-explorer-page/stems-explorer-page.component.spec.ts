@@ -1,5 +1,6 @@
 import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { getTestBed, TestBed } from '@angular/core/testing';
+import { HttpErrorResponse } from '@angular/common/http';
 import { provideRouter, ActivatedRoute, convertToParamMap, Router } from '@angular/router';
 import { BehaviorSubject, of, Subject } from 'rxjs';
 
@@ -599,5 +600,268 @@ describe('StemsExplorerPageComponent US5', () => {
     expect(root.querySelectorAll('[data-stem-tab]')).toHaveLength(4);
     expect(root.querySelector('[data-testid="stems-surah-view-tabs"]')).toBeTruthy();
     expect(root.querySelector('[data-testid="surah-occurrences-list-loading"]')).toBeTruthy();
+  });
+});
+
+describe('StemsExplorerPageComponent US8 — restore and navigate exact state', () => {
+  let router: Router;
+  let stemsApi: {
+    getStemsList: ReturnType<typeof vi.fn>;
+    getStemSummary: ReturnType<typeof vi.fn>;
+    getStemWords: ReturnType<typeof vi.fn>;
+    getStemAyahMatches: ReturnType<typeof vi.fn>;
+    getStemMentionedSurahs: ReturnType<typeof vi.fn>;
+    getStemMissingSurahs: ReturnType<typeof vi.fn>;
+    getStemLemmas: ReturnType<typeof vi.fn>;
+  };
+
+  const queryParamMap$ = new BehaviorSubject(convertToParamMap({}));
+
+  beforeEach(async () => {
+    getTestBed().resetTestingModule();
+
+    stemsApi = {
+      getStemsList: vi.fn().mockImplementation(successListResponse),
+      getStemSummary: vi.fn().mockReturnValue(
+        of<ApiResponse<StemSummaryDto>>({
+          isSuccess: true,
+          data: { ...listRow(500), typeDistribution: [listRow(500).dominantType] },
+          message: null,
+          errors: null,
+        }),
+      ),
+      getStemWords: vi.fn().mockImplementation(() => successWordsResponse('tashkeel')),
+      getStemAyahMatches: vi.fn(),
+      getStemMentionedSurahs: vi.fn(),
+      getStemMissingSurahs: vi.fn(),
+      getStemLemmas: vi.fn(),
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [StemsExplorerPageComponent],
+      providers: [
+        provideRouter([{ path: 'stems', component: StemsExplorerPageComponent }]),
+        { provide: StemsApi, useValue: stemsApi },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            paramMap: of(convertToParamMap({})),
+            queryParamMap: queryParamMap$.asObservable(),
+          },
+        },
+      ],
+      teardown: { destroyAfterEach: true },
+    }).compileComponents();
+
+    router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    queryParamMap$.next(convertToParamMap({}));
+  });
+
+  async function initLifecycle(): Promise<ReturnType<typeof TestBed.createComponent<StemsExplorerPageComponent>>> {
+    const fixture = TestBed.createComponent(StemsExplorerPageComponent);
+    fixture.componentInstance.ngOnInit();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  it('restores a copied deep link (refresh): loads summary then the active words view and sub-view', async () => {
+    queryParamMap$.next(
+      convertToParamMap({ stem: '500', view: 'words', wordView: 'tashkeel', detailPage: '2' }),
+    );
+    const fixture = await initLifecycle();
+
+    expect(stemsApi.getStemSummary).toHaveBeenCalledWith(500);
+    expect(stemsApi.getStemWords).toHaveBeenCalledWith(500, 'tashkeel', 2, STEM_DETAIL_PAGE_SIZE);
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('[data-testid="stems-words-view"]')).toBeTruthy();
+    expect(TestBed.inject(StemsDetailFacade).view()).toBe('words');
+    expect(TestBed.inject(StemsDetailFacade).wordView()).toBe('tashkeel');
+  });
+
+  it('ignores irrelevant query keys when restoring a deep link', async () => {
+    queryParamMap$.next(
+      convertToParamMap({
+        stem: '500',
+        view: 'words',
+        wordView: 'simple',
+        detailPage: '1',
+        foo: 'bar',
+        debug: '1',
+        random: 'xyz',
+      }),
+    );
+    const fixture = await initLifecycle();
+
+    expect(stemsApi.getStemSummary).toHaveBeenCalledWith(500);
+    expect(stemsApi.getStemWords).toHaveBeenCalledWith(500, 'simple', 1, STEM_DETAIL_PAGE_SIZE);
+    expect(fixture.nativeElement.querySelector('[data-testid="stems-words-view"]')).toBeTruthy();
+  });
+
+  it('shows restored-not-found and keeps the catalogue intact when the identity is unknown (summary unsuccessful)', async () => {
+    stemsApi.getStemSummary.mockReturnValue(
+      of<ApiResponse<StemSummaryDto>>({
+        isSuccess: false,
+        data: null,
+        message: 'غير موجود',
+        errors: null,
+      }),
+    );
+    queryParamMap$.next(convertToParamMap({ stem: '99999', view: 'words' }));
+    const fixture = await initLifecycle();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(stemsApi.getStemSummary).toHaveBeenCalledWith(99999);
+    expect(stemsApi.getStemWords).not.toHaveBeenCalled();
+    expect(stemsApi.getStemsList).toHaveBeenCalled();
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('[data-testid="stems-restored-not-found"]')).toBeTruthy();
+    expect(root.querySelector('qd-stems-table')).toBeTruthy();
+  });
+
+  it('shows restored-not-found on a repeated unknown identity and does not reload the list repeatedly', async () => {
+    stemsApi.getStemSummary.mockReturnValue(
+      of<ApiResponse<StemSummaryDto>>({
+        isSuccess: false,
+        data: null,
+        message: 'غير موجود',
+        errors: null,
+      }),
+    );
+    queryParamMap$.next(convertToParamMap({ stem: '99999', view: 'words' }));
+    const fixture = await initLifecycle();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const listCallsBefore = stemsApi.getStemsList.mock.calls.length;
+    queryParamMap$.next(convertToParamMap({ stem: '99999', view: 'words' }));
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="stems-restored-not-found"]')).toBeTruthy();
+    expect(stemsApi.getStemsList.mock.calls.length).toBe(listCallsBefore);
+  });
+
+  it('preserves a positive out-of-range detailPage and renders the controlled empty result', async () => {
+    stemsApi.getStemWords.mockReturnValue(
+      of<ApiResponse<PagedResultDto<StemWordItemDto>>>({
+        isSuccess: true,
+        data: { page: 99999, pageSize: STEM_DETAIL_PAGE_SIZE, totalCount: 0, items: [] },
+        message: null,
+        errors: null,
+      }),
+    );
+    queryParamMap$.next(
+      convertToParamMap({ stem: '500', view: 'words', wordView: 'simple', detailPage: '99999' }),
+    );
+    const fixture = await initLifecycle();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(stemsApi.getStemWords).toHaveBeenCalledWith(500, 'simple', 99999, STEM_DETAIL_PAGE_SIZE);
+    expect(TestBed.inject(StemsDetailFacade).status()).toBe('empty');
+    expect(fixture.nativeElement.querySelector('[data-testid="stems-panel-empty"]')).toBeTruthy();
+  });
+
+  it('clears the panel via onClearSelection while preserving list state (search/sort/page untouched)', async () => {
+    queryParamMap$.next(
+      convertToParamMap({
+        stem: '500',
+        view: 'words',
+        wordView: 'simple',
+        detailPage: '1',
+        page: '2',
+        search: 'أصل',
+        sort: 'alpha',
+      }),
+    );
+    const fixture = await initLifecycle();
+    vi.mocked(router.navigate).mockClear();
+
+    fixture.componentInstance['onClearSelection']();
+
+    expect(router.navigate).toHaveBeenCalledWith(
+      [],
+      expect.objectContaining({ queryParamsHandling: 'merge' }),
+    );
+    const lastArgs = vi.mocked(router.navigate).mock.calls.at(-1)?.[1] as {
+      queryParams: Record<string, string | null>;
+    };
+    expect(lastArgs.queryParams[STEMS_QUERY_KEYS.stem]).toBeNull();
+    expect(lastArgs.queryParams[STEMS_QUERY_KEYS.view]).toBeNull();
+    expect(lastArgs.queryParams[STEMS_QUERY_KEYS.wordView]).toBeNull();
+    expect(lastArgs.queryParams[STEMS_QUERY_KEYS.detailPage]).toBeNull();
+    expect(lastArgs.queryParams[STEMS_QUERY_KEYS.search]).toBeUndefined();
+    expect(lastArgs.queryParams[STEMS_QUERY_KEYS.sort]).toBeUndefined();
+    expect(lastArgs.queryParams[STEMS_QUERY_KEYS.page]).toBeUndefined();
+
+    expect(TestBed.inject(StemsDetailFacade).selectedStemId()).toBeNull();
+  });
+
+  it('reuses cached view data for the same selection/view/page (no duplicate detail call)', async () => {
+    queryParamMap$.next(
+      convertToParamMap({ stem: '500', view: 'words', wordView: 'simple', detailPage: '1' }),
+    );
+    await initLifecycle();
+    const wordsCallsAfterFirst = stemsApi.getStemWords.mock.calls.length;
+    const summaryCallsAfterFirst = stemsApi.getStemSummary.mock.calls.length;
+
+    queryParamMap$.next(
+      convertToParamMap({ stem: '500', view: 'words', wordView: 'simple', detailPage: '1' }),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(stemsApi.getStemWords.mock.calls.length).toBe(wordsCallsAfterFirst);
+    expect(stemsApi.getStemSummary.mock.calls.length).toBe(summaryCallsAfterFirst);
+  });
+
+  it('survives a back/forward sequence: select → clear → re-select restores the panel', async () => {
+    const fixture = await initLifecycle();
+    const detailFacade = TestBed.inject(StemsDetailFacade);
+
+    queryParamMap$.next(
+      convertToParamMap({ stem: '500', view: 'words', wordView: 'simple', detailPage: '1' }),
+    );
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(detailFacade.selectedStemId()).toBe(500);
+
+    queryParamMap$.next(convertToParamMap({ page: '1' }));
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(detailFacade.selectedStemId()).toBeNull();
+
+    stemsApi.getStemAyahMatches.mockReturnValue(successAyahsResponse());
+    queryParamMap$.next(convertToParamMap({ stem: '500', view: 'ayahs', detailPage: '1' }));
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(detailFacade.selectedStemId()).toBe(500);
+    expect(detailFacade.view()).toBe('ayahs');
+    expect(stemsApi.getStemAyahMatches).toHaveBeenCalledWith(500, 1, STEM_DETAIL_PAGE_SIZE);
+  });
+
+  it('maps a summary HTTP 404 to restored-not-found without surfacing a generic error', async () => {
+    const http404 = new HttpErrorResponse({ status: 404, statusText: 'Not Found' });
+    stemsApi.getStemSummary.mockReturnValue(
+      of<ApiResponse<StemSummaryDto>>({
+        isSuccess: false,
+        data: null,
+        message: 'غير موجود',
+        errors: null,
+      }),
+    );
+    void http404;
+    queryParamMap$.next(convertToParamMap({ stem: '424242', view: 'lemmas' }));
+    const fixture = await initLifecycle();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="stems-restored-not-found"]')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('[data-testid="stems-panel-error"]')).toBeFalsy();
   });
 });

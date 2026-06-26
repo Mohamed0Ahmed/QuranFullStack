@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { getTestBed, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
 import { BehaviorSubject, of, Subject } from 'rxjs';
@@ -613,5 +613,270 @@ describe('LemmasExplorerPageComponent US5', () => {
     expect(root.querySelectorAll('[data-lemma-tab]')).toHaveLength(4);
     expect(root.querySelector('[data-testid="lemmas-surah-view-tabs"]')).toBeTruthy();
     expect(root.querySelector('[data-testid="surah-occurrences-list-loading"]')).toBeTruthy();
+  });
+});
+
+describe('LemmasExplorerPageComponent US8 — restore and navigate exact state', () => {
+  let router: Router;
+  let lemmasApi: {
+    getLemmasList: ReturnType<typeof vi.fn>;
+    getLemmaSummary: ReturnType<typeof vi.fn>;
+    getLemmaWords: ReturnType<typeof vi.fn>;
+    getLemmaAyahMatches: ReturnType<typeof vi.fn>;
+    getLemmaMentionedSurahs: ReturnType<typeof vi.fn>;
+    getLemmaMissingSurahs: ReturnType<typeof vi.fn>;
+    getLemmaStems: ReturnType<typeof vi.fn>;
+  };
+
+  const queryParamMap$ = new BehaviorSubject(convertToParamMap({}));
+
+  beforeEach(async () => {
+    getTestBed().resetTestingModule();
+
+    lemmasApi = {
+      getLemmasList: vi.fn().mockImplementation(successListResponse),
+      getLemmaSummary: vi.fn().mockReturnValue(
+        of<ApiResponse<LemmaSummaryDto>>({
+          isSuccess: true,
+          data: { ...listRow(500), typeDistribution: [listRow(500).dominantType] },
+          message: null,
+          errors: null,
+        }),
+      ),
+      getLemmaWords: vi.fn().mockImplementation(() => successWordsResponse('tashkeel')),
+      getLemmaAyahMatches: vi.fn(),
+      getLemmaMentionedSurahs: vi.fn(),
+      getLemmaMissingSurahs: vi.fn(),
+      getLemmaStems: vi.fn(),
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [LemmasExplorerPageComponent],
+      providers: [
+        provideRouter([{ path: 'lemmas', component: LemmasExplorerPageComponent }]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: LemmasApi, useValue: lemmasApi },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            paramMap: of(convertToParamMap({})),
+            queryParamMap: queryParamMap$.asObservable(),
+          },
+        },
+      ],
+      teardown: { destroyAfterEach: true },
+    }).compileComponents();
+
+    router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    queryParamMap$.next(convertToParamMap({}));
+  });
+
+  async function initLifecycle(): Promise<ReturnType<typeof TestBed.createComponent<LemmasExplorerPageComponent>>> {
+    const fixture = TestBed.createComponent(LemmasExplorerPageComponent);
+    fixture.componentInstance.ngOnInit();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  it('restores a copied deep link (refresh): loads summary then the active words view and sub-view', async () => {
+    queryParamMap$.next(
+      convertToParamMap({ lemma: '500', view: 'words', wordView: 'tashkeel', detailPage: '2' }),
+    );
+    const fixture = await initLifecycle();
+
+    expect(lemmasApi.getLemmaSummary).toHaveBeenCalledWith(500);
+    expect(lemmasApi.getLemmaWords).toHaveBeenCalledWith(500, 'tashkeel', 2, LEMMA_DETAIL_PAGE_SIZE);
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('[data-testid="lemmas-words-view"]')).toBeTruthy();
+    expect(TestBed.inject(LemmasDetailFacade).view()).toBe('words');
+    expect(TestBed.inject(LemmasDetailFacade).wordView()).toBe('tashkeel');
+  });
+
+  it('ignores irrelevant query keys when restoring a deep link', async () => {
+    queryParamMap$.next(
+      convertToParamMap({
+        lemma: '500',
+        view: 'words',
+        wordView: 'simple',
+        detailPage: '1',
+        foo: 'bar',
+        debug: '1',
+        random: 'xyz',
+      }),
+    );
+    const fixture = await initLifecycle();
+
+    expect(lemmasApi.getLemmaSummary).toHaveBeenCalledWith(500);
+    expect(lemmasApi.getLemmaWords).toHaveBeenCalledWith(500, 'simple', 1, LEMMA_DETAIL_PAGE_SIZE);
+    expect(fixture.nativeElement.querySelector('[data-testid="lemmas-words-view"]')).toBeTruthy();
+  });
+
+  it('shows restored-not-found and keeps the catalogue intact when the identity is unknown (summary unsuccessful)', async () => {
+    lemmasApi.getLemmaSummary.mockReturnValue(
+      of<ApiResponse<LemmaSummaryDto>>({
+        isSuccess: false,
+        data: null,
+        message: 'غير موجود',
+        errors: null,
+      }),
+    );
+    queryParamMap$.next(convertToParamMap({ lemma: '99999', view: 'words' }));
+    const fixture = await initLifecycle();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(lemmasApi.getLemmaSummary).toHaveBeenCalledWith(99999);
+    expect(lemmasApi.getLemmaWords).not.toHaveBeenCalled();
+    expect(lemmasApi.getLemmasList).toHaveBeenCalled();
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('[data-testid="lemmas-restored-not-found"]')).toBeTruthy();
+    expect(root.querySelector('qd-lemmas-table')).toBeTruthy();
+  });
+
+  it('shows restored-not-found on a 404 summary error and does not reload the list repeatedly', async () => {
+    lemmasApi.getLemmaSummary.mockReturnValue(
+      of<ApiResponse<LemmaSummaryDto>>({
+        isSuccess: false,
+        data: null,
+        message: 'غير موجود',
+        errors: null,
+      }),
+    );
+    queryParamMap$.next(convertToParamMap({ lemma: '99999', view: 'words' }));
+    const fixture = await initLifecycle();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const listCallsBefore = lemmasApi.getLemmasList.mock.calls.length;
+    queryParamMap$.next(convertToParamMap({ lemma: '99999', view: 'words' }));
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="lemmas-restored-not-found"]')).toBeTruthy();
+    expect(lemmasApi.getLemmasList.mock.calls.length).toBe(listCallsBefore);
+  });
+
+  it('preserves a positive out-of-range detailPage and renders the controlled empty result', async () => {
+    lemmasApi.getLemmaWords.mockReturnValue(
+      of<ApiResponse<PagedResultDto<LemmaWordItemDto>>>({
+        isSuccess: true,
+        data: { page: 99999, pageSize: LEMMA_DETAIL_PAGE_SIZE, totalCount: 0, items: [] },
+        message: null,
+        errors: null,
+      }),
+    );
+    queryParamMap$.next(
+      convertToParamMap({ lemma: '500', view: 'words', wordView: 'simple', detailPage: '99999' }),
+    );
+    const fixture = await initLifecycle();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(lemmasApi.getLemmaWords).toHaveBeenCalledWith(500, 'simple', 99999, LEMMA_DETAIL_PAGE_SIZE);
+    expect(TestBed.inject(LemmasDetailFacade).status()).toBe('empty');
+    expect(fixture.nativeElement.querySelector('[data-testid="lemmas-panel-empty"]')).toBeTruthy();
+  });
+
+  it('clears the panel via onClearSelection while preserving list state (search/sort/page untouched)', async () => {
+    queryParamMap$.next(
+      convertToParamMap({
+        lemma: '500',
+        view: 'words',
+        wordView: 'simple',
+        detailPage: '1',
+        page: '2',
+        search: 'صيغة',
+        sort: 'alpha',
+      }),
+    );
+    const fixture = await initLifecycle();
+    vi.mocked(router.navigate).mockClear();
+
+    fixture.componentInstance['onClearSelection']();
+
+    expect(router.navigate).toHaveBeenCalledWith(
+      [],
+      expect.objectContaining({ queryParamsHandling: 'merge' }),
+    );
+    const lastArgs = vi.mocked(router.navigate).mock.calls.at(-1)?.[1] as {
+      queryParams: Record<string, string | null>;
+    };
+    expect(lastArgs.queryParams[LEMMAS_QUERY_KEYS.lemma]).toBeNull();
+    expect(lastArgs.queryParams[LEMMAS_QUERY_KEYS.view]).toBeNull();
+    expect(lastArgs.queryParams[LEMMAS_QUERY_KEYS.wordView]).toBeNull();
+    expect(lastArgs.queryParams[LEMMAS_QUERY_KEYS.detailPage]).toBeNull();
+    expect(lastArgs.queryParams[LEMMAS_QUERY_KEYS.search]).toBeUndefined();
+    expect(lastArgs.queryParams[LEMMAS_QUERY_KEYS.sort]).toBeUndefined();
+    expect(lastArgs.queryParams[LEMMAS_QUERY_KEYS.page]).toBeUndefined();
+
+    expect(TestBed.inject(LemmasDetailFacade).selectedLemmaId()).toBeNull();
+  });
+
+  it('reuses cached view data for the same selection/view/page (no duplicate detail call)', async () => {
+    queryParamMap$.next(
+      convertToParamMap({ lemma: '500', view: 'words', wordView: 'simple', detailPage: '1' }),
+    );
+    await initLifecycle();
+    const wordsCallsAfterFirst = lemmasApi.getLemmaWords.mock.calls.length;
+    const summaryCallsAfterFirst = lemmasApi.getLemmaSummary.mock.calls.length;
+
+    queryParamMap$.next(
+      convertToParamMap({ lemma: '500', view: 'words', wordView: 'simple', detailPage: '1' }),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(lemmasApi.getLemmaWords.mock.calls.length).toBe(wordsCallsAfterFirst);
+    expect(lemmasApi.getLemmaSummary.mock.calls.length).toBe(summaryCallsAfterFirst);
+  });
+
+  it('survives a back/forward sequence: select → clear → re-select restores the panel', async () => {
+    const fixture = await initLifecycle();
+    const detailFacade = TestBed.inject(LemmasDetailFacade);
+
+    queryParamMap$.next(
+      convertToParamMap({ lemma: '500', view: 'words', wordView: 'simple', detailPage: '1' }),
+    );
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(detailFacade.selectedLemmaId()).toBe(500);
+
+    queryParamMap$.next(convertToParamMap({ page: '1' }));
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(detailFacade.selectedLemmaId()).toBeNull();
+
+    lemmasApi.getLemmaAyahMatches.mockReturnValue(successAyahsResponse());
+    queryParamMap$.next(convertToParamMap({ lemma: '500', view: 'ayahs', detailPage: '1' }));
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(detailFacade.selectedLemmaId()).toBe(500);
+    expect(detailFacade.view()).toBe('ayahs');
+    expect(lemmasApi.getLemmaAyahMatches).toHaveBeenCalledWith(500, 1, LEMMA_DETAIL_PAGE_SIZE);
+  });
+
+  it('maps a summary HTTP 404 to restored-not-found without surfacing a generic error', async () => {
+    const http404 = new HttpErrorResponse({ status: 404, statusText: 'Not Found' });
+    lemmasApi.getLemmaSummary.mockReturnValue(
+      of<ApiResponse<LemmaSummaryDto>>({
+        isSuccess: false,
+        data: null,
+        message: 'غير موجود',
+        errors: null,
+      }),
+    );
+    void http404;
+    queryParamMap$.next(convertToParamMap({ lemma: '424242', view: 'stems' }));
+    const fixture = await initLifecycle();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="lemmas-restored-not-found"]')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('[data-testid="lemmas-panel-error"]')).toBeFalsy();
   });
 });
