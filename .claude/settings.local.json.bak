@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(.specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks)",
+      "Bash(VITEST_MIN_FORKS=1 VITEST_MAX_FORKS=2 npx ng test --include=\"src/app/features/words/**/*.spec.ts\")",
+      "Bash(VITEST_MIN_FORKS=1 VITEST_MAX_FORKS=1 npx ng test --include=\"src/app/features/words/pages/words-hub-page/**/*.spec.ts\")",
+      "Bash(dotnet build *)",
+      "Bash(dotnet test *)"
+    ]
+  }
+}

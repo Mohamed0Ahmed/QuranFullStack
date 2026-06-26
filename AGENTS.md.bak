@@ -18,15 +18,15 @@ and its siblings:
 
 This repository is a FullStack workspace.
 
-The root `CLAUDE.md` contains general instructions that apply to the whole workspace.
+The root `AGENTS.md` contains general instructions that apply to the whole workspace.
 
 When working on the Backend project, also read and follow:
 
-- `Backend/CLAUDE.md`
+- `Backend/AGENTS.md`
 
 When working on the Frontend project, also read and follow:
 
-- `Frontend/quran-dashboard-ui/CLAUDE.md`
+- `Frontend/quran-dashboard-ui/AGENTS.md`
 
 If a task touches both Backend and Frontend, read all relevant instruction files before making changes.
 
@@ -108,12 +108,3 @@ long focus,
 trustworthy structure, genuinely Arabic-first, earned familiarity. Avoid generic
 SaaS templates, kitschy religious decor, gamified/consumer UI, and dense
 enterprise greige.
-
-<!-- lean-ctx -->
-
-## lean-ctx
-
-lean-ctx is active — the MCP tools replace native equivalents.
-Full rules: LEAN-CTX.md (open on demand — do not auto-load).
-
-<!-- /lean-ctx -->
