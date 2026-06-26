@@ -146,6 +146,27 @@ VITEST_MIN_FORKS=1 VITEST_MAX_FORKS=2
 
 ### SC-002 — Catalogue First-Render Timing
 
+> **T122 — Manual measurement required.** This check cannot be satisfied from a headless agent
+> shell; it requires a real browser against the running stack. The automated Phase 11 work
+> (logging/cache/SQL audits, accessibility/state matrix, builds, full targeted tests) is complete,
+> but the 40 timings below must be captured by a human run before this check is marked passed.
+
+Manual run procedure:
+
+1. Build production artifacts: `dotnet build Backend/QuranDashboard.sln` and
+   `npm run build --prefix Frontend/quran-dashboard-ui`.
+2. Start the local API (`dotnet run --project Backend/api/QuranDashboard.Api`) and serve the
+   production frontend bundle (`npm start --prefix Frontend/quran-dashboard-ui`).
+3. Open Chrome/Edge DevTools → Performance (or Lighthouse → Navigate), enable "Disable cache"
+   **unchecked** (we want warm cache), and disable any CPU/network throttling.
+4. For each route (`/dashboard/words/lemmas` and `/dashboard/words/stems`):
+   - Pre-warm the app once so JS bundles, API auth, and the catalogue summary cache are hot.
+   - Then record 20 fresh in-app navigations from `performance.timing.navigationStart` (or the
+     `navigation` entry's `startTime`) until the first paint of the catalogue table rows
+     (e.g. first `[data-testid^="lemmas-table"]` / `[data-testid^="stems-table"]` row visible).
+   - Log each of the 20 timings in milliseconds.
+5. Requirement: at least 19 of 20 timings per route must be ≤ 1,000 ms.
+
 Use production frontend/backend builds, the local API, warm application/cache state, and no browser
 throttling. Measure 20 fresh route openings for each explorer from navigation start until the first
 successful catalogue-table render. At least 19 of 20 timings for each route must be at or below
@@ -155,13 +176,44 @@ Record the implementation-time environment and all 40 timings below. Do not mark
 without measured evidence.
 
 ```text
-Environment: pending
+Environment: pending (OS / browser / CPU / app commit / cache state)
 Lemmas timings (ms): pending
 Lemmas passing openings: pending/20
 Stems timings (ms): pending
 Stems passing openings: pending/20
 SC-002 result: pending
 ```
+
+### Phase 11 Completion Evidence (T115–T121, T123)
+
+- **T115** — `Backend/tests/QuranDashboard.Tests/Quran/WordsMorphologyExplorers/MorphologyExplorersLoggingTests.cs`
+  audits all fourteen handlers for required structured fields and forbidden text. Redundant
+  `LemmasLoggingTests.cs` / `StemsLoggingTests.cs` removed in favour of the consolidated file.
+- **T116** — `Backend/tests/QuranDashboard.Tests/Quran/WordsMorphologyExplorers/MorphologyExplorersCacheReadTests.cs`
+  audits every bounded cache entry (lemma + stem, all detail methods), confirms catalogue
+  search/sort/page changes reuse the cached whole summary, reflects that no cache-key method
+  accepts raw search, and asserts `AddLemmas`/`AddStems` register no global `IMemoryCache` /
+  `MemoryCacheOptions`.
+- **T117** — Frontend panels already ship responsive drawer (`inline` input + `cdkTrapFocus` +
+  `cdkTrapFocusAutoCapture`), Escape/backdrop close, RTL logical properties, and guarded
+  `matchMedia`. Updated stale doc comments to record the completed behaviour and added
+  `:focus-visible` outlines to the lemma/stem panel surfaces.
+- **T118** — Added modal-mode coverage (dialog role, `aria-modal`, backdrop click, inner-click
+  suppression, Escape, close button, empty-selection renders no chrome) to the lemma and stem
+  panel specs and tightened the Words hub spec to assert the lemma card route.
+- **T119** — `dotnet test Backend/QuranDashboard.sln --filter "FullyQualifiedName~WordsMorphologyExplorers|FullyQualifiedName~WordAnalysisMorphologyIdentity"`
+  → **Passed: 159, Failed: 0, Skipped: 0**.
+- **T120** — Affected frontend specs
+  (`lemma-details-panel`, `stem-details-panel`, `words-hub-page`) → **30 passed / 30**.
+- **T121** — `dotnet build Backend/QuranDashboard.sln` → **0 errors / 0 warnings**;
+  `npm run build --prefix Frontend/quran-dashboard-ui` → succeeded (only pre-existing SCSS budget
+  warnings, unrelated to Feature 016). `git ls-files --others --exclude-standard` shows no new
+  migration, package, lockfile, design-token, or build-config files.
+- **T123** — Clean-code and test-code self-checks run against the changed files; no findings
+  requiring changes. New backend test files reuse the existing `RecordingLoggerProvider`,
+  `SqlCommandCountInterceptor`, real `QuranDashboardDbContext`, and the Feature 016 Testcontainers
+  fixture (no new mocks of real boundaries). Frontend additions reuse the existing Angular
+  `TestBed` pattern and assert observable DOM behaviour, not implementation details.
 
 ## Definition of Done
 
