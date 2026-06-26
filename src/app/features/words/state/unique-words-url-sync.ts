@@ -138,9 +138,9 @@ export function buildUniqueWordsDeepLink(
 }
 
 function parsePositiveInt(value: string | null): number | null {
-  if (value === null) {
+  if (value === null || !/^[1-9]\d*$/.test(value)) {
     return null;
   }
   const parsed = Number.parseInt(value, 10);
-  return Number.isFinite(parsed) && parsed >= 1 ? parsed : null;
+  return parsed;
 }

@@ -1,30 +1,4 @@
 <div class="lemma-words-list" data-testid="lemma-words-list">
-  <div
-    class="explorer-detail-panel__toolbar explorer-detail-panel__toolbar--grid-2 lemma-words-list__tabs"
-    role="tablist"
-    aria-label="عرض الكلمات"
-    #tabList
-  >
-    @for (tab of tabs; track tab.key) {
-      <button
-        type="button"
-        class="qd-btn qd-btn-secondary lemma-words-list__tab"
-        role="tab"
-        [attr.data-lemma-word-tab]="tab.key"
-        [attr.data-testid]="'lemma-words-tab-' + tab.key"
-        [attr.aria-selected]="isActive(tab.key)"
-        [attr.aria-label]="tab.label"
-        [attr.tabindex]="isActive(tab.key) ? 0 : -1"
-        [class.qd-is-selected]="isActive(tab.key)"
-        [disabled]="loading()"
-        (click)="selectWordView(tab.key)"
-        (keydown)="onTabKeydown($event, tab.key)"
-      >
-        {{ tab.label }}
-      </button>
-    }
-  </div>
-
   <header class="lemma-words-list__header" aria-hidden="true">
     <span class="lemma-words-list__header-row-number">{{ rowNumberHeader }}</span>
     <span class="lemma-words-list__header-text">{{ wordHeader }}</span>

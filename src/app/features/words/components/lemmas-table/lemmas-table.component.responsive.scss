@@ -1,0 +1,27 @@
+@use '../../../../../styles/breakpoints' as bp;
+
+@media (min-width: bp.$qd-bp-desktop-min) {
+  :host-context(.lemmas-explorer-layout__table) {
+    display: block;
+    block-size: 100%;
+  }
+
+  :host-context(.lemmas-explorer-layout__table) .lemmas-table {
+    display: flex;
+    flex-direction: column;
+    block-size: 100%;
+    box-sizing: border-box;
+  }
+
+  :host-context(.lemmas-explorer-layout__table) .lemmas-table__header {
+    flex-shrink: 0;
+    block-size: var(--lemmas-table-header-height, 2.75rem);
+    min-block-size: unset;
+  }
+
+  :host-context(.lemmas-explorer-layout__table) .lemmas-table__body {
+    flex: 1 1 auto;
+    min-block-size: 0;
+    block-size: auto;
+  }
+}

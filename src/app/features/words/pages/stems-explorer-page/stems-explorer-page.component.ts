@@ -188,7 +188,7 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
         view: DEFAULT_STEM_VIEW,
         wordView: 'simple',
         surahView: null,
-        detailPage: null,
+        detailPage: 1,
       }),
     );
   }
@@ -204,7 +204,7 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
       buildStemsQueryParams({
         stemId: stem.id,
         view,
-        detailPage: null,
+        detailPage: this.detailPageForView(view),
         wordView: view === 'words' ? (event.wordView ?? 'simple') : null,
         surahView: view === 'surahs' ? (event.surahView ?? 'mentioned') : null,
       }),
@@ -216,7 +216,7 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
     this.updateQueryParams(
       buildStemsQueryParams({
         view,
-        detailPage: null,
+        detailPage: this.detailPageForView(view),
         wordView: view === 'words' ? 'simple' : null,
         surahView: view === 'surahs' ? 'mentioned' : null,
       }),
@@ -225,7 +225,7 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
 
   protected onWordViewChange(wordView: StemWordView): void {
     this.detailFacade.setWordView(wordView);
-    this.updateQueryParams(buildStemsQueryParams({ view: 'words', wordView, detailPage: null }));
+    this.updateQueryParams(buildStemsQueryParams({ view: 'words', wordView, detailPage: 1 }));
   }
 
   protected onSurahViewChange(surahView: StemSurahView): void {
@@ -234,6 +234,7 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
       buildStemsQueryParams({
         view: 'surahs',
         surahView,
+        detailPage: null,
       }),
     );
   }
@@ -249,5 +250,9 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
       queryParams: changes,
       queryParamsHandling: 'merge',
     });
+  }
+
+  private detailPageForView(view: StemView): number | null {
+    return view === 'words' || view === 'ayahs' ? 1 : null;
   }
 }

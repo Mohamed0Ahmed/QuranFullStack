@@ -43,6 +43,7 @@ describe('parseUniqueWordsQueryParams', () => {
     expect(parseUniqueWordsQueryParams(params('page=0')).page).toBe(1);
     expect(parseUniqueWordsQueryParams(params('page=-2')).page).toBe(1);
     expect(parseUniqueWordsQueryParams(params('page=abc')).page).toBe(1);
+    expect(parseUniqueWordsQueryParams(params('page=12abc')).page).toBe(1);
   });
 
   it('reads modal state (word/view/ap) when word is present', () => {
@@ -72,6 +73,7 @@ describe('parseUniqueWordsQueryParams', () => {
     expect(parseUniqueWordsQueryParams(params('word=0')).wordId).toBeNull();
     expect(parseUniqueWordsQueryParams(params('word=-5')).wordId).toBeNull();
     expect(parseUniqueWordsQueryParams(params('word=abc')).wordId).toBeNull();
+    expect(parseUniqueWordsQueryParams(params('word=12abc')).wordId).toBeNull();
   });
 
   it('defaults ayahPage to 1 when view is ayahs but ap is missing', () => {

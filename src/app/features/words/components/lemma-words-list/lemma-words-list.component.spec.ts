@@ -31,7 +31,6 @@ describe('LemmaWordsListComponent', () => {
       items: [wordItem(uniqueWordId, wordView)],
     });
     fixture.componentRef.setInput('currentPage', 1);
-    fixture.componentRef.setInput('wordView', wordView);
     fixture.detectChanges();
 
     const link = fixture.nativeElement.querySelector('[data-testid="lemma-word-link"]') as HTMLAnchorElement;
@@ -43,26 +42,22 @@ describe('LemmaWordsListComponent', () => {
     expect(link.getAttribute('rel')).toBe('noopener noreferrer');
   });
 
-  it('emits word-view changes from the nested tabs', async () => {
+  it('renders without a nested tablist', async () => {
     await TestBed.configureTestingModule({
       imports: [LemmaWordsListComponent],
     }).compileComponents();
 
     const fixture = TestBed.createComponent(LemmaWordsListComponent);
-    fixture.componentRef.setInput('page', { page: 1, pageSize: 100, totalCount: 1, items: [wordItem(1, 'simple')] });
+    fixture.componentRef.setInput('page', {
+      page: 1,
+      pageSize: 100,
+      totalCount: 1,
+      items: [wordItem(1, 'simple')],
+    });
     fixture.componentRef.setInput('currentPage', 1);
-    fixture.componentRef.setInput('wordView', 'simple');
     fixture.detectChanges();
 
-    const emitted: string[] = [];
-    fixture.componentInstance.wordViewChange.subscribe((value) => emitted.push(value));
-
-    const tashkeelTab = fixture.nativeElement.querySelector(
-      '[data-testid="lemma-words-tab-tashkeel"]',
-    ) as HTMLButtonElement | null;
-    tashkeelTab?.click();
-
-    expect(emitted).toEqual(['tashkeel']);
+    expect(fixture.nativeElement.querySelector('[role="tablist"]')).toBeNull();
   });
 
   it('renders scoped counts, exact unique-word anchors, and pagination changes', async () => {
@@ -78,7 +73,6 @@ describe('LemmaWordsListComponent', () => {
       items: [wordItem(1003, 'simple')],
     });
     fixture.componentRef.setInput('currentPage', 1);
-    fixture.componentRef.setInput('wordView', 'simple');
     fixture.detectChanges();
 
     const link = fixture.nativeElement.querySelector('[data-testid="lemma-word-link"]') as HTMLAnchorElement;

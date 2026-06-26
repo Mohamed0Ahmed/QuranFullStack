@@ -43,6 +43,7 @@ describe('parseRootsQueryParams', () => {
     expect(parseRootsQueryParams(params('page=0')).page).toBe(1);
     expect(parseRootsQueryParams(params('page=-2')).page).toBe(1);
     expect(parseRootsQueryParams(params('page=abc')).page).toBe(1);
+    expect(parseRootsQueryParams(params('page=12abc')).page).toBe(1);
   });
 
   it('reads selection state (root/view) when root is a valid positive int', () => {
@@ -70,6 +71,7 @@ describe('parseRootsQueryParams', () => {
     expect(parseRootsQueryParams(params('root=0')).rootId).toBeNull();
     expect(parseRootsQueryParams(params('root=-5')).rootId).toBeNull();
     expect(parseRootsQueryParams(params('root=abc')).rootId).toBeNull();
+    expect(parseRootsQueryParams(params('root=12abc')).rootId).toBeNull();
   });
 
   it('honors wordView only when view=words', () => {

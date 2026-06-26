@@ -293,7 +293,7 @@ describe('LemmasExplorerPageComponent US1', () => {
         [LEMMAS_QUERY_KEYS.lemma]: '500',
         [LEMMAS_QUERY_KEYS.view]: 'words',
         [LEMMAS_QUERY_KEYS.wordView]: 'tashkeel',
-        [LEMMAS_QUERY_KEYS.detailPage]: null,
+        [LEMMAS_QUERY_KEYS.detailPage]: '1',
       }),
       queryParamsHandling: 'merge',
     });
@@ -310,7 +310,7 @@ describe('LemmasExplorerPageComponent US1', () => {
       queryParams: expect.objectContaining({
         [LEMMAS_QUERY_KEYS.view]: 'words',
         [LEMMAS_QUERY_KEYS.wordView]: 'tashkeel',
-        [LEMMAS_QUERY_KEYS.detailPage]: null,
+        [LEMMAS_QUERY_KEYS.detailPage]: '1',
       }),
       queryParamsHandling: 'merge',
     });

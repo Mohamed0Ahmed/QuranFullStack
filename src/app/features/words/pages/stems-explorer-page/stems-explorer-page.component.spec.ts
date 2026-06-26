@@ -320,7 +320,7 @@ describe('StemsExplorerPageComponent US2', () => {
       queryParams: expect.objectContaining({
         [STEMS_QUERY_KEYS.view]: 'words',
         [STEMS_QUERY_KEYS.wordView]: 'tashkeel',
-        [STEMS_QUERY_KEYS.detailPage]: null,
+        [STEMS_QUERY_KEYS.detailPage]: '1',
       }),
       queryParamsHandling: 'merge',
     });

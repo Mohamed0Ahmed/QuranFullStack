@@ -168,10 +168,8 @@
               [loading]="true"
               [page]="emptyWordsPage"
               [currentPage]="panelState().detailPage"
-              [wordView]="panelState().wordView"
               data-testid="stems-words-view"
               (pageChange)="onDetailPageChange($event)"
-              (wordViewChange)="onWordViewChange($event)"
             />
           } @else if (activeView() === 'ayahs') {
             <qd-ayah-matches-list
@@ -211,10 +209,8 @@
             <qd-stem-words-list
               [page]="wordsPage"
               [currentPage]="panelState().detailPage"
-              [wordView]="panelState().wordView"
               data-testid="stems-words-view"
               (pageChange)="onDetailPageChange($event)"
-              (wordViewChange)="onWordViewChange($event)"
             />
           } @else if (activeView() === 'ayahs' && panelState().ayahs; as ayahsPage) {
             <qd-ayah-matches-list

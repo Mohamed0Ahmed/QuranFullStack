@@ -197,7 +197,7 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
         view: DEFAULT_LEMMA_VIEW,
         wordView: 'simple',
         surahView: null,
-        detailPage: null,
+        detailPage: 1,
       }),
     );
   }
@@ -218,7 +218,7 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
       buildLemmasQueryParams({
         lemmaId: lemma.id,
         view,
-        detailPage: null,
+        detailPage: this.detailPageForView(view),
         wordView: view === 'words' ? (event.wordView ?? 'simple') : null,
         surahView: view === 'surahs' ? (event.surahView ?? 'mentioned') : null,
       }),
@@ -230,7 +230,7 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
     this.updateQueryParams(
       buildLemmasQueryParams({
         view,
-        detailPage: null,
+        detailPage: this.detailPageForView(view),
         wordView: view === 'words' ? 'simple' : null,
         surahView: view === 'surahs' ? 'mentioned' : null,
       }),
@@ -239,7 +239,7 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
 
   protected onWordViewChange(wordView: LemmaWordView): void {
     this.detailFacade.setWordView(wordView);
-    this.updateQueryParams(buildLemmasQueryParams({ view: 'words', wordView, detailPage: null }));
+    this.updateQueryParams(buildLemmasQueryParams({ view: 'words', wordView, detailPage: 1 }));
   }
 
   protected onSurahViewChange(surahView: LemmaSurahView): void {
@@ -248,6 +248,7 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
       buildLemmasQueryParams({
         view: 'surahs',
         surahView,
+        detailPage: null,
       }),
     );
   }
@@ -263,5 +264,9 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
       queryParams: changes,
       queryParamsHandling: 'merge',
     });
+  }
+
+  private detailPageForView(view: LemmaView): number | null {
+    return view === 'words' || view === 'ayahs' ? 1 : null;
   }
 }
