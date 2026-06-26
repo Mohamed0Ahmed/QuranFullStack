@@ -193,7 +193,17 @@ VALUES
 INSERT INTO quran_roots
   (id, root_text, root_buckwalter, words_count, distinct_lemmas_count, first_word_order_in_mushaf)
 VALUES
-  (9001, 'أ م ن', 'Amn', 1, 0, 2003);
+  (9001, 'أ م ن', 'Amn', 1, 1, 2003);
+
+INSERT INTO quran_lemmas
+  (id, lemma_text, lemma_buckwalter, root_id, words_count, first_word_order_in_mushaf)
+VALUES
+  (9101, 'لِمَة-تجريبية', 'lemma-test', 9001, 1, 2006);
+
+INSERT INTO quran_stems
+  (id, stem_text, words_count, first_word_order_in_mushaf)
+VALUES
+  (9201, 'سِتَم-تجريبي', 1, 2006);
 
 INSERT INTO quran_word_morphology
   (quran_word_id, location, head_pos, segment_count, root_id, lemma_id, stem_id,
@@ -201,6 +211,13 @@ INSERT INTO quran_word_morphology
 VALUES
   (2003, '2:25:3', 'V', 2, 9001, NULL, NULL,
    TRUE, 'perfect', 'active', NULL, NULL);
+
+INSERT INTO quran_word_morphology
+  (quran_word_id, location, head_pos, segment_count, root_id, lemma_id, stem_id,
+   is_verb, verb_tense, verb_voice, case_feature, head_features_json)
+VALUES
+  (2006, '2:26:1', 'N', 1, 9001, 9101, 9201,
+   FALSE, NULL, NULL, NULL, NULL);
 
 -- Two ordered segments; segment 2 has empty form_arabic_normalized (fallback) --
 INSERT INTO quran_word_morphology_segments
@@ -217,6 +234,17 @@ VALUES
    'hum', NULL, NULL, 'derived',
    NULL, NULL, 'POS=PRON', '[]'::jsonb,
    NULL, NULL, 'unsupported', NULL);
+
+INSERT INTO quran_word_morphology_segments
+  (quran_word_id, segment_location, segment_number, kind, pos,
+   form_buckwalter, form_arabic_normalized, arabic_render_tier, arabic_render_source,
+   root_buckwalter, lemma_buckwalter, features_raw, features_json,
+   i3rab_arabic, i3rab_rule_id, i3rab_status, i3rab_review_reason)
+VALUES
+  (2006, '2:26:1:1', 1, 'STEM', 'N',
+   'ALLAH', 'ٱللَّهُ', 'primary', 'derived',
+   NULL, NULL, 'POS=N', '[]'::jsonb,
+   'اسم', NULL, 'approved', NULL);
 
 -- Ordered identity rows (tashkeel + simple) -----------------------------
 INSERT INTO quran_words_ordered_tashkeel
@@ -237,6 +265,24 @@ VALUES
   (2003, 2003, '2:25:3', '2:25', 2, 25, 5, 1, 3, 3,
    'امنوا', 'ءامنوا', 'آمنوا', 1, 1, 1);
 
+INSERT INTO quran_words_ordered_tashkeel
+  (word_order_in_mushaf, quran_word_id, location, verse_key, surah_number, ayah_number,
+   page_number, line_number, word_order_in_ayah, word_order_in_surah,
+   text_uthmani, text_uthmani_simple, text_imlaei_simple,
+   occurrences_count, ayahs_count, surahs_count)
+VALUES
+  (2006, 2006, '2:26:1', '2:26', 2, 26, 5, 2, 1, 6,
+   'ٱللَّهُ', 'الله', 'الله', 1, 1, 1);
+
+INSERT INTO quran_words_ordered_simple
+  (word_order_in_mushaf, quran_word_id, location, verse_key, surah_number, ayah_number,
+   page_number, line_number, word_order_in_ayah, word_order_in_surah,
+   word_key_imlaei_simple, text_uthmani_simple, text_imlaei_simple,
+   occurrences_count, ayahs_count, surahs_count)
+VALUES
+  (2006, 2006, '2:26:1', '2:26', 2, 26, 5, 2, 1, 6,
+   'الله', 'الله', 'الله', 1, 1, 1);
+
 -- Unique identity rows (deterministic id := first_quran_word_id) ---------
 INSERT INTO quran_words_unique_tashkeel
   (id, text_uthmani, text_uthmani_simple, text_imlaei_simple,
@@ -256,6 +302,24 @@ VALUES
   (2003, 'امنوا', 'ءَامَنُوا۟', 'ءامنوا', 'آمنوا', 'g2003',
    1, 1, 1, 2003, '2:25:3', 2, 25, 2003, 5, 1);
 
+INSERT INTO quran_words_unique_tashkeel
+  (id, text_uthmani, text_uthmani_simple, text_imlaei_simple,
+   occurrences_count, ayahs_count, surahs_count,
+   first_quran_word_id, first_location, first_surah_number, first_ayah_number,
+   first_word_order_in_mushaf, first_page_number, first_line_number)
+VALUES
+  (2006, 'ٱللَّهُ', 'الله', 'الله', 1, 1, 1,
+   2006, '2:26:1', 2, 26, 2006, 5, 2);
+
+INSERT INTO quran_words_unique_simple
+  (id, word_key_imlaei_simple, text_uthmani, text_uthmani_simple, text_imlaei_simple, qpc_glyph,
+   occurrences_count, ayahs_count, surahs_count,
+   first_quran_word_id, first_location, first_surah_number, first_ayah_number,
+   first_word_order_in_mushaf, first_page_number, first_line_number)
+VALUES
+  (2006, 'الله', 'ٱللَّهُ', 'الله', 'الله', 'g2006',
+   1, 1, 1, 2006, '2:26:1', 2, 26, 2006, 5, 2);
+
 -- Link the source word to its unique identity rows ----------------------
 UPDATE quran_words
 SET unique_tashkeel_word_id =
@@ -263,6 +327,13 @@ SET unique_tashkeel_word_id =
     unique_simple_word_id =
       (SELECT id FROM quran_words_unique_simple WHERE first_word_order_in_mushaf = 2003)
 WHERE id = 2003;
+
+UPDATE quran_words
+SET unique_tashkeel_word_id =
+      (SELECT id FROM quran_words_unique_tashkeel WHERE first_word_order_in_mushaf = 2006),
+    unique_simple_word_id =
+      (SELECT id FROM quran_words_unique_simple WHERE first_word_order_in_mushaf = 2006)
+WHERE id = 2006;
 
 -- ======================================================================
 -- Ayah similarity summary slice (Feature 012 US1)

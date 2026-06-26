@@ -187,10 +187,10 @@ public sealed class EfWordAnalysisReader(QuranDashboardDbContext db) : IWordAnal
                 : new WordMorphologyRoot(root.Id, root.RootText, root.RootBuckwalter),
             lemma is null
                 ? null
-                : new WordMorphologyLemma(lemma.LemmaText, lemma.LemmaBuckwalter),
+                : new WordMorphologyLemma(lemma.Id, lemma.LemmaText, lemma.LemmaBuckwalter),
             stem is null
                 ? null
-                : new WordMorphologyStem(stem.StemText),
+                : new WordMorphologyStem(stem.Id, stem.StemText),
             morphology.IsVerb,
             morphology.VerbTense,
             morphology.VerbVoice,
