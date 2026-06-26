@@ -105,6 +105,10 @@ export class RootsDetailFacade {
   unbindFromRoute(): void {
     this.routeSub?.unsubscribe();
     this.routeSub = undefined;
+    this.summarySub?.unsubscribe();
+    this.detailSub?.unsubscribe();
+    this.summarySub = undefined;
+    this.detailSub = undefined;
   }
 
   selectRoot(summary: RootSummaryDto, view: RootView = DEFAULT_ROOT_VIEW): void {

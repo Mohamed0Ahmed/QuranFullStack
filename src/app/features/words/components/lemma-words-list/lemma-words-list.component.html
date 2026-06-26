@@ -1,0 +1,53 @@
+<div class="lemma-words-list" data-testid="lemma-words-list">
+  <header class="lemma-words-list__header" aria-hidden="true">
+    <span class="lemma-words-list__header-row-number">{{ rowNumberHeader }}</span>
+    <span class="lemma-words-list__header-text">{{ wordHeader }}</span>
+    <span class="lemma-words-list__header-count">{{ occurrencesHeader }}</span>
+  </header>
+
+  <div
+    class="lemma-words-list__viewport"
+    [attr.aria-busy]="loading() ? true : null"
+    [attr.data-testid]="loading() ? 'lemma-words-list-loading' : null"
+  >
+    @if (loading()) {
+      <p class="qd-sr-only" role="status" aria-live="polite">{{ loadingLabel }}</p>
+      @for (_ of loadingRowPlaceholders; track $index) {
+        <div class="lemma-words-list__row lemma-words-list__row--loading" aria-hidden="true">
+          <span class="lemma-words-list__row-number">
+            <span class="qd-skeleton qd-skeleton--text lemma-words-list__loading-number"></span>
+          </span>
+          <span class="lemma-words-list__text">
+            <span class="qd-skeleton qd-skeleton--text lemma-words-list__loading-word"></span>
+          </span>
+          <span class="qd-skeleton qd-skeleton--rounded-md lemma-words-list__loading-badge"></span>
+        </div>
+      }
+    } @else {
+      @for (row of rows(); track row.item.uniqueWordId; let i = $index) {
+        <a
+          class="lemma-words-list__row qd-interactive-surface"
+          [attr.href]="row.uniqueWordHref"
+          [attr.aria-label]="uniqueWordLabel(row.item.displayTextUthmani)"
+          target="_blank"
+          rel="noopener noreferrer"
+          data-testid="lemma-word-link"
+        >
+          <span class="lemma-words-list__row-number" aria-hidden="true">{{ rowNumber(i) }}</span>
+          <span class="lemma-words-list__text">{{ row.item.displayTextUthmani }}</span>
+          <span class="qd-badge">{{ row.item.occurrencesCount }}</span>
+        </a>
+      }
+    }
+  </div>
+
+  @if (!loading()) {
+    <qd-pagination
+      [currentPage]="currentPage()"
+      [pageSize]="page().pageSize"
+      [totalCount]="page().totalCount"
+      ariaLabel="تصفّح كلمات الصيغة المعجمية"
+      (pageChange)="pageChange.emit($event)"
+    />
+  }
+</div>

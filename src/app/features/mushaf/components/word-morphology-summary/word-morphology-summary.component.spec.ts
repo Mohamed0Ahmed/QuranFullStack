@@ -22,10 +22,17 @@ function buildMorphology(root: WordMorphologyDto['root']): WordMorphologyDto {
 
 function setInputs(
   fixture: ComponentFixture<WordMorphologySummaryComponent>,
-  inputs: { morphology: WordMorphologyDto; rootExplorerHref?: string },
+  inputs: {
+    morphology: WordMorphologyDto;
+    rootExplorerHref?: string;
+    lemmaExplorerHref?: string;
+    stemExplorerHref?: string;
+  },
 ): void {
   fixture.componentRef.setInput('morphology', inputs.morphology);
   fixture.componentRef.setInput('rootExplorerHref', inputs.rootExplorerHref ?? '');
+  fixture.componentRef.setInput('lemmaExplorerHref', inputs.lemmaExplorerHref ?? '');
+  fixture.componentRef.setInput('stemExplorerHref', inputs.stemExplorerHref ?? '');
   fixture.detectChanges();
 }
 
@@ -49,22 +56,60 @@ describe('WordMorphologySummaryComponent', () => {
     expect(link).toBeTruthy();
     expect(link?.getAttribute('href')).toBe('/dashboard/words/roots?root=999');
     expect(link?.getAttribute('target')).toBe('_blank');
-    expect(link?.getAttribute('rel')).toBe('noopener');
+    expect(link?.getAttribute('rel')).toBe('noopener noreferrer');
     expect(link?.getAttribute('aria-label')).toBe('افتح الجذر في مستكشف الجذور');
   });
 
-  it('renders a static root column when rootExplorerHref is absent', () => {
+  it('renders link columns for root, lemma, and stem when hrefs are provided', () => {
     const fixture = TestBed.createComponent(WordMorphologySummaryComponent);
     setInputs(fixture, {
-      morphology: buildMorphology({
-        id: 999,
-        text: ROOT_TEXT_PLACEHOLDER,
-        buckwalter: 'jhr-test',
-      }),
+      morphology: {
+        ...buildMorphology({
+          id: 999,
+          text: ROOT_TEXT_PLACEHOLDER,
+          buckwalter: 'jhr-test',
+        }),
+        lemma: { id: 555, text: 'لِمَة-تجريبية', buckwalter: 'lemma-test' },
+        stem: { id: 777, text: 'سِتَم-تجريبي' },
+      },
+      rootExplorerHref: '/dashboard/words/roots?root=999',
+      lemmaExplorerHref: '/dashboard/words/lemmas?lemma=555&view=words&wordView=simple',
+      stemExplorerHref: '/dashboard/words/stems?stem=777&view=words&wordView=simple',
+    });
+
+    const root = fixture.nativeElement as HTMLElement;
+    const lemmaLink = root.querySelector('[data-testid="word-morphology-lemma-link"]') as HTMLAnchorElement | null;
+    const stemLink = root.querySelector('[data-testid="word-morphology-stem-link"]') as HTMLAnchorElement | null;
+
+    expect(lemmaLink?.getAttribute('href')).toBe('/dashboard/words/lemmas?lemma=555&view=words&wordView=simple');
+    expect(lemmaLink?.getAttribute('target')).toBe('_blank');
+    expect(lemmaLink?.getAttribute('rel')).toBe('noopener noreferrer');
+    expect(stemLink?.getAttribute('href')).toBe('/dashboard/words/stems?stem=777&view=words&wordView=simple');
+    expect(stemLink?.getAttribute('target')).toBe('_blank');
+    expect(stemLink?.getAttribute('rel')).toBe('noopener noreferrer');
+  });
+
+  it('renders static root, lemma, and stem columns when hrefs are absent', () => {
+    const fixture = TestBed.createComponent(WordMorphologySummaryComponent);
+    setInputs(fixture, {
+      morphology: {
+        ...buildMorphology({
+          id: 999,
+          text: ROOT_TEXT_PLACEHOLDER,
+          buckwalter: 'jhr-test',
+        }),
+        lemma: { id: 555, text: 'لِمَة-تجريبية', buckwalter: 'lemma-test' },
+        stem: { id: 777, text: 'سِتَم-تجريبي' },
+      },
     });
 
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('[data-testid="word-morphology-root-link"]')).toBeNull();
+    expect(root.querySelector('[data-testid="word-morphology-lemma-link"]')).toBeNull();
+    expect(root.querySelector('[data-testid="word-morphology-stem-link"]')).toBeNull();
     expect(root.textContent).toContain(ROOT_TEXT_PLACEHOLDER);
+    expect(root.textContent).toContain('لِمَة-تجريبية');
+    expect(root.textContent).toContain('سِتَم-تجريبي');
   });
+
 });

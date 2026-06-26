@@ -1,0 +1,49 @@
+<div class="type-distribution-list-shell">
+  <header class="type-distribution-list__header" aria-hidden="true">
+    <span class="type-distribution-list__header-type">{{ typeHeader }}</span>
+    <span class="type-distribution-list__header-count">{{ countHeader }}</span>
+    <span class="type-distribution-list__header-dominant">{{ dominantHeader }}</span>
+  </header>
+
+  <div
+    class="type-distribution-list"
+    role="list"
+    [attr.aria-label]="sectionLabel"
+    [attr.aria-busy]="loading() ? true : null"
+    data-testid="type-distribution-list"
+  >
+    @if (loading()) {
+      <p class="qd-sr-only" role="status" aria-live="polite">{{ loadingLabel }}</p>
+      @for (_ of [0, 1, 2, 3]; track $index) {
+        <div class="type-distribution-list__row type-distribution-list__row--loading" aria-hidden="true">
+          <span class="type-distribution-list__type">
+            <span class="qd-skeleton qd-skeleton--text type-distribution-list__loading-type"></span>
+          </span>
+          <span class="qd-skeleton qd-skeleton--rounded-md type-distribution-list__loading-count"></span>
+          <span class="qd-skeleton qd-skeleton--rounded-md type-distribution-list__loading-dominant"></span>
+        </div>
+      }
+    } @else if (rows().length === 0) {
+      <div class="qd-empty-state type-distribution-list__empty" data-testid="type-distribution-list-empty">
+        {{ emptyLabel }}
+      </div>
+    } @else {
+      @for (row of rows(); track row.code) {
+        <div
+          class="type-distribution-list__row"
+          role="listitem"
+          [class.qd-is-selected]="row.dominant"
+          [attr.aria-current]="row.dominant ? 'true' : null"
+          [attr.data-testid]="row.dominant ? 'type-distribution-dominant' : 'type-distribution-item'"
+          [attr.title]="row.englishLabel"
+        >
+          <span class="type-distribution-list__type">{{ row.arabicLabel }}</span>
+          <span class="qd-badge type-distribution-list__count">{{ row.occurrencesCount }}</span>
+          @if (row.dominant) {
+            <span class="qd-badge type-distribution-list__dominant">{{ dominantHeader }}</span>
+          }
+        </div>
+      }
+    }
+  </div>
+</div>

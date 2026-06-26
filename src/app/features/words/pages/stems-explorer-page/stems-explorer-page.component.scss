@@ -1,0 +1,99 @@
+@use '../../../../../styles/breakpoints' as bp;
+
+:host {
+  display: block;
+}
+
+.stems-explorer-frame {
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+  padding-inline: var(--qd-space-4);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding-block-end: calc(var(--qd-space-5) + (var(--qd-space-4) * 1.55));
+}
+
+.stems-explorer__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--qd-space-3);
+  align-items: center;
+}
+
+.stems-explorer__search {
+  flex: 1 1 18rem;
+  min-width: 0;
+}
+
+.stems-explorer__sort {
+  flex: 0 0 auto;
+}
+
+.stems-explorer__sub-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--qd-space-2);
+  margin-block-end: var(--qd-space-3);
+  flex-shrink: 0;
+}
+
+.stems-explorer-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 4fr);
+  gap: var(--qd-space-4);
+  align-items: start;
+  padding-inline: 0;
+}
+
+.stems-explorer-layout__table,
+.stems-explorer-layout__panel {
+  min-width: 0;
+}
+
+@media (min-width: bp.$qd-bp-desktop-min) {
+  .stems-explorer-layout {
+    --stems-layout-chrome-block-size: 14rem;
+    --stems-table-body-height: min(
+      calc(100dvh - var(--stems-layout-chrome-block-size)),
+      58rem
+    );
+    --stems-table-header-height: 2.75rem;
+    --stems-table-card-height: calc(
+      var(--stems-table-header-height) + var(--stems-table-body-height)
+    );
+  }
+
+  .stems-explorer-layout__table > qd-stems-table,
+  .stems-explorer-layout__panel {
+    block-size: var(--stems-table-card-height);
+  }
+
+  .stems-explorer-layout__panel {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+@media (min-width: bp.$qd-bp-wide-desktop-min) {
+  .stems-explorer-layout {
+    --stems-layout-chrome-block-size: 12rem;
+    --stems-table-body-height: min(
+      calc(100dvh - var(--stems-layout-chrome-block-size)),
+      64rem
+    );
+    --stems-table-card-height: calc(
+      var(--stems-table-header-height) + var(--stems-table-body-height)
+    );
+  }
+}
+
+@media (max-width: bp.$qd-bp-tablet-max) {
+  .stems-explorer-layout {
+    grid-template-columns: minmax(0, 1fr);
+    padding-inline: var(--qd-space-4);
+    gap: var(--qd-space-3);
+  }
+}

@@ -50,6 +50,11 @@ describe('WORDS_ROUTES hub route', () => {
     const wildcard = WORDS_ROUTES.find((r) => r.path === '**');
     expect(wildcard).toBeUndefined();
   });
+
+  it('registers the lemmas and stems explorer child routes', () => {
+    expect(WORDS_ROUTES.some((r) => r.path === 'lemmas')).toBe(true);
+    expect(WORDS_ROUTES.some((r) => r.path === 'stems')).toBe(true);
+  });
 });
 
 describe('WORDS_ROUTES unique mode segment', () => {

@@ -3,7 +3,9 @@ import { CommonModule } from '@angular/common';
 
 import { deepLinkToHref } from '../../../../shared/url/deep-link-href';
 import { ResourceLoadState, WordAnalysisViewModel } from '../../models/mushaf.models';
+import { buildLemmasDeepLink } from '../../../words/state/lemmas-url-sync';
 import { buildUniqueWordsDeepLink } from '../../../words/state/unique-words-url-sync';
+import { buildStemsDeepLink } from '../../../words/state/stems-url-sync';
 import { buildRootsDeepLink } from '../../../words/state/roots-url-sync';
 import { SegmentDataRowsComponent } from '../segment-data-rows/segment-data-rows.component';
 import { SegmentRenderedWordComponent } from '../segment-rendered-word/segment-rendered-word.component';
@@ -42,6 +44,26 @@ export class SelectedWordSectionComponent {
     }
 
     return deepLinkToHref(buildRootsDeepLink({ rootId }));
+  });
+
+  protected readonly lemmaExplorerHref = computed(() => {
+    const lemmaId = this.analysis()?.morphology.lemma?.id;
+
+    if (!lemmaId) {
+      return '';
+    }
+
+    return deepLinkToHref(buildLemmasDeepLink({ lemmaId, view: 'words', wordView: 'simple' }));
+  });
+
+  protected readonly stemExplorerHref = computed(() => {
+    const stemId = this.analysis()?.morphology.stem?.id;
+
+    if (!stemId) {
+      return '';
+    }
+
+    return deepLinkToHref(buildStemsDeepLink({ stemId, view: 'words', wordView: 'simple' }));
   });
 
   protected readonly tashkeelIdentityHref = computed(() => {

@@ -290,8 +290,8 @@ export interface WordMorphologyDto {
   headPos: string;
   headPosLabel: LocalizedLabel;
   root: { id: number; text: string | null; buckwalter: string | null } | null;
-  lemma: { text: string | null; buckwalter: string | null } | null;
-  stem: { text: string | null } | null;
+  lemma: { id: number; text: string | null; buckwalter: string | null } | null;
+  stem: { id: number; text: string | null } | null;
   isVerb: boolean;
   verbTense: string | null;
   verbVoice: string | null;

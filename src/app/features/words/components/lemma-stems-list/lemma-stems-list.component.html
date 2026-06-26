@@ -1,0 +1,50 @@
+<div class="lemma-stems-list-shell">
+  <header class="lemma-stems-list__header" aria-hidden="true">
+    <span class="lemma-stems-list__header-row-number">{{ rowNumberHeader }}</span>
+    <span class="lemma-stems-list__header-text">{{ stemTextHeader }}</span>
+    <span class="lemma-stems-list__header-count">{{ occurrencesHeader }}</span>
+  </header>
+
+  <div
+    class="lemma-stems-list"
+    role="list"
+    aria-label="الأصول الصرفية المرتبطة"
+    [attr.aria-busy]="loading() ? true : null"
+    [attr.data-testid]="loading() ? 'lemma-stems-list-loading' : 'lemma-stems-list'"
+  >
+    @if (loading()) {
+      <p class="qd-sr-only" role="status" aria-live="polite">{{ loadingLabel }}</p>
+      @for (_ of [0, 1, 2, 3]; track $index) {
+        <div class="lemma-stems-list__row lemma-stems-list__row--loading" aria-hidden="true">
+          <span class="lemma-stems-list__row-number">
+            <span class="qd-skeleton qd-skeleton--text lemma-stems-list__loading-number"></span>
+          </span>
+          <span class="lemma-stems-list__text">
+            <span class="qd-skeleton qd-skeleton--text lemma-stems-list__loading-text"></span>
+          </span>
+          <span class="qd-skeleton qd-skeleton--rounded-md lemma-stems-list__loading-badge"></span>
+        </div>
+      }
+    } @else if (rows().length === 0) {
+      <div class="qd-empty-state lemma-stems-list__empty" data-testid="lemma-stems-list-empty">
+        {{ emptyLabel }}
+      </div>
+    } @else {
+      @for (row of rows(); track row.stem.stemId; let index = $index) {
+        <a
+          class="lemma-stems-list__row qd-interactive-surface"
+          role="listitem"
+          data-testid="lemma-stems-list-link"
+          [href]="row.href"
+          target="_blank"
+          rel="noopener noreferrer"
+          [attr.aria-label]="'الأصل الصرفي: ' + row.stem.stemText"
+        >
+          <span class="lemma-stems-list__row-number" aria-hidden="true">{{ index + 1 }}</span>
+          <span class="lemma-stems-list__text">{{ row.stem.stemText }}</span>
+          <span class="qd-badge lemma-stems-list__count">{{ row.stem.occurrencesCount }}</span>
+        </a>
+      }
+    }
+  </div>
+</div>
