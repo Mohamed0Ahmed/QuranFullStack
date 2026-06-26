@@ -109,6 +109,10 @@ export class LemmasDetailFacade {
   unbindFromRoute(): void {
     this.routeSub?.unsubscribe();
     this.routeSub = undefined;
+    this.summarySub?.unsubscribe();
+    this.detailSub?.unsubscribe();
+    this.summarySub = undefined;
+    this.detailSub = undefined;
   }
 
   selectLemma(summary: LemmaSummaryDto, view: LemmaView = DEFAULT_LEMMA_VIEW): void {

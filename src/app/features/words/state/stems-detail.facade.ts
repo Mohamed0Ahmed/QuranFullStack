@@ -109,6 +109,10 @@ export class StemsDetailFacade {
   unbindFromRoute(): void {
     this.routeSub?.unsubscribe();
     this.routeSub = undefined;
+    this.summarySub?.unsubscribe();
+    this.detailSub?.unsubscribe();
+    this.summarySub = undefined;
+    this.detailSub = undefined;
   }
 
   selectStem(summary: StemSummaryDto, view: StemView = DEFAULT_STEM_VIEW): void {
