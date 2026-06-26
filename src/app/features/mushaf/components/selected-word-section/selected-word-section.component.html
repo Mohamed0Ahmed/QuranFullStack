@@ -87,6 +87,8 @@
             <qd-word-morphology-summary
               [morphology]="analysis()!.morphology"
               [rootExplorerHref]="rootExplorerHref()"
+              [lemmaExplorerHref]="lemmaExplorerHref()"
+              [stemExplorerHref]="stemExplorerHref()"
             />
           </div>
         </section>
@@ -97,7 +99,7 @@
               class="selected-word-section__identity-row qd-interactive-surface"
               [attr.href]="tashkeelIdentityHref()"
               target="_blank"
-              rel="noopener"
+              rel="noopener noreferrer"
               data-testid="word-identity-tashkeel-link"
             >
               <span class="selected-word-section__identity-label">التكرار (بالتشكيل)</span>
@@ -110,7 +112,7 @@
               class="selected-word-section__identity-row qd-interactive-surface"
               [attr.href]="simpleIdentityHref()"
               target="_blank"
-              rel="noopener"
+              rel="noopener noreferrer"
               data-testid="word-identity-simple-link"
             >
               <span class="selected-word-section__identity-label">التكرار (مبسّط)</span>

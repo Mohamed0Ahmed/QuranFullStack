@@ -225,7 +225,40 @@ describe('SelectedWordSectionComponent — stable loading (UI-001)', () => {
 
     expect(rootLink?.getAttribute('href')).toBe('/dashboard/words/roots?root=999');
     expect(rootLink?.getAttribute('target')).toBe('_blank');
-    expect(rootLink?.getAttribute('rel')).toBe('noopener');
+    expect(rootLink?.getAttribute('rel')).toBe('noopener noreferrer');
+  });
+
+  it('opens the root, lemma, and stem explorers in new tabs when morphology includes ids', () => {
+    const fixture = TestBed.createComponent(SelectedWordSectionComponent);
+    const analysis = buildWordAnalysisViewModel();
+    analysis.morphology = {
+      ...analysis.morphology,
+      root: { id: 999, text: 'جذر-تجريبي', buckwalter: 'jhr-test' },
+      lemma: { id: 555, text: 'لِمَة-تجريبية', buckwalter: 'lemma-test' },
+      stem: { id: 777, text: 'سِتَم-تجريبي' },
+    };
+    setInputs(fixture, {
+      analysis,
+      loadState: IDLE,
+      selectedWordLocation: '2:25:3',
+    });
+
+    const root = fixture.nativeElement as HTMLElement;
+    const rootLink = root.querySelector('[data-testid="word-morphology-root-link"]') as HTMLAnchorElement | null;
+    const lemmaLink = root.querySelector('[data-testid="word-morphology-lemma-link"]') as HTMLAnchorElement | null;
+    const stemLink = root.querySelector('[data-testid="word-morphology-stem-link"]') as HTMLAnchorElement | null;
+
+    expect(rootLink?.getAttribute('href')).toBe('/dashboard/words/roots?root=999');
+    expect(rootLink?.getAttribute('target')).toBe('_blank');
+    expect(rootLink?.getAttribute('rel')).toBe('noopener noreferrer');
+
+    expect(lemmaLink?.getAttribute('href')).toBe('/dashboard/words/lemmas?lemma=555&view=words&wordView=simple');
+    expect(lemmaLink?.getAttribute('target')).toBe('_blank');
+    expect(lemmaLink?.getAttribute('rel')).toBe('noopener noreferrer');
+
+    expect(stemLink?.getAttribute('href')).toBe('/dashboard/words/stems?stem=777&view=words&wordView=simple');
+    expect(stemLink?.getAttribute('target')).toBe('_blank');
+    expect(stemLink?.getAttribute('rel')).toBe('noopener noreferrer');
   });
 
   it('does not render a root explorer link when morphology has no root id', () => {
@@ -260,13 +293,13 @@ describe('SelectedWordSectionComponent — stable loading (UI-001)', () => {
       '/dashboard/words/unique/tashkeel?word=101&view=ayahs',
     );
     expect(tashkeelLink?.getAttribute('target')).toBe('_blank');
-    expect(tashkeelLink?.getAttribute('rel')).toBe('noopener');
+    expect(tashkeelLink?.getAttribute('rel')).toBe('noopener noreferrer');
 
     expect(simpleLink?.getAttribute('href')).toBe(
       '/dashboard/words/unique/simple?word=202&view=ayahs',
     );
     expect(simpleLink?.getAttribute('target')).toBe('_blank');
-    expect(simpleLink?.getAttribute('rel')).toBe('noopener');
+    expect(simpleLink?.getAttribute('rel')).toBe('noopener noreferrer');
   });
 
   it('renders the empty "select a word" state when no word is selected', () => {

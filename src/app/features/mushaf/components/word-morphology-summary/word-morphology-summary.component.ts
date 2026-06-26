@@ -14,6 +14,8 @@ import { morphologyTextOrDash } from '../../utils/morphology-display.labels';
 export class WordMorphologySummaryComponent {
   readonly morphology = input.required<WordMorphologyDto>();
   readonly rootExplorerHref = input('');
+  readonly lemmaExplorerHref = input('');
+  readonly stemExplorerHref = input('');
 
   protected readonly morphologyTextOrDash = morphologyTextOrDash;
 }
