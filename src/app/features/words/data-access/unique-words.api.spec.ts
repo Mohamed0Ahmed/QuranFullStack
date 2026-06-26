@@ -23,13 +23,15 @@ function matchUniqueWords(kind: string): RegExp {
 const SAMPLE_ITEM: UniqueWordListItemDto = {
   id: 1,
   kind: 'tashkeel',
-  displayTextUthmani: 'كلمة-تجريبية',
+  displayText: 'كلمة-تجريبية',
   occurrencesCount: 3,
   ayahsCount: 3,
   surahsCount: 3,
   missingSurahsCount: 111,
-  firstVerseKey: '1:1',
-  firstLocation: '1:1:1',
+  primaryWordTypeCode: 'N',
+  primaryWordTypeBroadArabicLabel: 'اسم',
+  rootId: 5001,
+  rootText: 'ك ل م',
 };
 
 function page(items: UniqueWordListItemDto[], totalCount: number): PagedResultDto<UniqueWordListItemDto> {
@@ -138,10 +140,6 @@ describe('UniqueWordsApi drill-down HTTP', () => {
       isSuccess: true,
       message: 'تم',
       data: {
-        id: 1002,
-        kind: 'tashkeel',
-        displayTextUthmani: 'كلمة-تجريبية',
-        surahsCount: 0,
         surahs: [],
       },
     };
@@ -161,13 +159,11 @@ describe('UniqueWordsApi drill-down HTTP', () => {
       data: {
         id: 1002,
         kind: 'tashkeel',
-        displayTextUthmani: 'كلمة-تجريبية',
+        displayText: 'كلمة-تجريبية',
         occurrencesCount: 5,
         ayahsCount: 5,
         surahsCount: 5,
         missingSurahsCount: 109,
-        firstVerseKey: '1:1',
-        firstLocation: '1:1:2',
       },
     };
 
@@ -184,10 +180,6 @@ describe('UniqueWordsApi drill-down HTTP', () => {
       isSuccess: true,
       message: 'تم',
       data: {
-        id: 1002,
-        kind: 'tashkeel',
-        displayTextUthmani: 'كلمة-تجريبية',
-        missingSurahsCount: 0,
         surahs: [],
       },
     };

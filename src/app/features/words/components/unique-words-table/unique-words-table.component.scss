@@ -27,7 +27,7 @@
 .unique-words-table__header-row,
 .unique-words-table__row {
   display: grid;
-  grid-template-columns: minmax(2.5rem, 0.35fr) minmax(0, 2.4fr) repeat(4, minmax(5.5rem, 1fr));
+  grid-template-columns: minmax(2.5rem, 0.35fr) minmax(0, 1.8fr) minmax(5rem, 0.9fr) minmax(5rem, 0.9fr) repeat(4, minmax(5.5rem, 1fr));
   align-items: center;
 }
 
@@ -101,6 +101,30 @@
   inline-size: 3rem;
   block-size: 1.125rem;
   margin-inline: auto;
+}
+
+.unique-words-table__loading-text {
+  inline-size: min(100%, 4.5rem);
+}
+
+.unique-words-table__text-cell {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.unique-words-table__text {
+  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  font-size: 0.9375rem;
+  color: var(--qd-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.unique-words-table__root-link {
+  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  font-size: 0.9375rem;
 }
 
 .unique-words-table__loading-mobile-badge {
@@ -189,7 +213,8 @@
     min-width: 0;
   }
 
-  .unique-words-table__chip-cell {
+  .unique-words-table__chip-cell,
+  .unique-words-table__text-cell {
     display: none;
   }
 

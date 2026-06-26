@@ -54,6 +54,11 @@ export const WORD_DRILLDOWN_VIEW_LABELS: Record<WordDrilldownView, string> = {
   ayahs: 'الآيات',
 };
 
+export const UNIQUE_WORD_WORD_HEADER = 'الكلمة';
+export const UNIQUE_WORD_TYPE_HEADER = 'نوع الكلمة';
+export const UNIQUE_WORD_ROOT_HEADER = 'الجذر';
+export const UNIQUE_WORD_NULL_PLACEHOLDER = '—';
+
 export const OCCURRENCES_CHIP_LABEL = 'المواضع';
 export const SURAH_OCCURRENCES_COUNT_HEADER = 'عدد مرات الظهور';
 export const ROW_NUMBER_HEADER = 'م';

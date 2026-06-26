@@ -18,6 +18,10 @@ import {
   LOADING_LABEL,
   OCCURRENCES_CHIP_LABEL,
   ROW_NUMBER_HEADER,
+  UNIQUE_WORD_NULL_PLACEHOLDER,
+  UNIQUE_WORD_ROOT_HEADER,
+  UNIQUE_WORD_TYPE_HEADER,
+  UNIQUE_WORD_WORD_HEADER,
   WORD_DRILLDOWN_VIEW_LABELS,
 } from '../../models/unique-words.labels';
 import {
@@ -27,6 +31,8 @@ import {
 } from '../../models/unique-words.models';
 import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
 import { syncTableScrollbarGutter } from '../../utils/table-scrollbar-gutter-sync';
+import { buildRootsDeepLink } from '../../state/roots-url-sync';
+import { deepLinkToHref } from '../../../../shared/url/deep-link-href';
 
 import { QD_BP_PHONE_MAX_QUERY } from '../../../../shared/layout/breakpoints';
 
@@ -56,6 +62,10 @@ export class UniqueWordsTableComponent {
   readonly drilldownOpen = output<{ word: UniqueWordListItemViewModel; view: WordDrilldownView }>();
 
   protected readonly rowNumberHeader = ROW_NUMBER_HEADER;
+  protected readonly wordHeader = UNIQUE_WORD_WORD_HEADER;
+  protected readonly typeHeader = UNIQUE_WORD_TYPE_HEADER;
+  protected readonly rootHeader = UNIQUE_WORD_ROOT_HEADER;
+  protected readonly nullPlaceholder = UNIQUE_WORD_NULL_PLACEHOLDER;
   protected readonly occurrencesLabel = OCCURRENCES_CHIP_LABEL;
   protected readonly ayahsLabel = WORD_DRILLDOWN_VIEW_LABELS.ayahs;
   protected readonly surahsLabel = WORD_DRILLDOWN_VIEW_LABELS.surahs;
@@ -89,6 +99,24 @@ export class UniqueWordsTableComponent {
       );
       this.destroyRef.onDestroy(disconnect);
     });
+  }
+
+  protected wordTypeLabel(row: UniqueWordListItemViewModel): string {
+    return row.primaryWordTypeBroadArabicLabel ?? this.nullPlaceholder;
+  }
+
+  protected hasRoot(row: UniqueWordListItemViewModel): boolean {
+    return row.rootId !== null && Boolean(row.rootText);
+  }
+
+  protected rootHref(row: UniqueWordListItemViewModel): string {
+    return deepLinkToHref(
+      buildRootsDeepLink({
+        rootId: row.rootId ?? undefined,
+        view: 'words',
+        wordView: 'simple',
+      }),
+    );
   }
 
   protected selectRow(row: UniqueWordListItemViewModel): void {

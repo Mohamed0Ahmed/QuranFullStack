@@ -18,14 +18,15 @@ function item(id: number, overrides: Partial<UniqueWordListItemDto> = {}): Uniqu
   return {
     id,
     kind: 'tashkeel',
-    displayTextUthmani: `كلمة-تجريبية-${id}`,
-    textUthmaniSimple: `كلمة-بسيطة-${id}`,
+    displayText: `كلمة-تجريبية-${id}`,
     occurrencesCount: 1,
     ayahsCount: 1,
     surahsCount: 1,
     missingSurahsCount: 113,
-    firstVerseKey: '1:1',
-    firstLocation: '1:1:1',
+    primaryWordTypeCode: null,
+    primaryWordTypeBroadArabicLabel: null,
+    rootId: null,
+    rootText: null,
     ...overrides,
   };
 }
@@ -217,8 +218,8 @@ describe('UniqueWordsFacade list state', () => {
     facade.unbindFromRoute();
   });
 
-  it('maps the simple mode display text from the simple field', () => {
-    const getList = vi.fn(() => of(okResponse([item(1)], 1)));
+  it('passes the backend displayText through unchanged', () => {
+    const getList = vi.fn(() => of(okResponse([item(1, { displayText: 'كلمة-بسيطة-1' })], 1)));
     const facade = setup(getList);
     const route = controllableRoute({ mode: 'simple' });
     facade.bindToRoute(route.route);

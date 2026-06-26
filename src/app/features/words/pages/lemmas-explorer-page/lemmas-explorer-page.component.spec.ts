@@ -70,7 +70,6 @@ function ayahMatch(): LemmaAyahMatchDto {
   return {
     ayahId: 7001,
     verseKey: '4:57',
-    surahNumber: 4,
     surahNameArabic: 'النساء',
     ayahNumber: 57,
     pageNumber: 92,
@@ -78,7 +77,6 @@ function ayahMatch(): LemmaAyahMatchDto {
     words: [
       {
         quranWordId: 9001,
-        wordNumber: 1,
         textUthmani: 'كلمة-تجريبية-١',
         isAyahMarker: false,
       },

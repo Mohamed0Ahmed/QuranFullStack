@@ -14,35 +14,25 @@ export interface PagedResultDto<T> {
 export interface UniqueWordListItemDto {
   id: number;
   kind: UniqueWordKind;
-  displayTextUthmani: string;
-  textUthmani?: string;
-  textUthmaniSimple?: string;
-  textImlaeiSimple?: string;
-  wordKeyImlaeiSimple?: string | null;
-  qpcGlyph?: string | null;
+  displayText: string;
   occurrencesCount: number;
   ayahsCount: number;
   surahsCount: number;
   missingSurahsCount: number;
-  firstVerseKey: string;
-  firstLocation: string;
+  primaryWordTypeCode: string | null;
+  primaryWordTypeBroadArabicLabel: string | null;
+  rootId: number | null;
+  rootText: string | null;
 }
 
 export interface UniqueWordSummaryDto {
   id: number;
   kind: UniqueWordKind;
-  displayTextUthmani: string;
-  textUthmani?: string;
-  textUthmaniSimple?: string;
-  textImlaeiSimple?: string;
-  wordKeyImlaeiSimple?: string | null;
-  qpcGlyph?: string | null;
+  displayText: string;
   occurrencesCount: number;
   ayahsCount: number;
   surahsCount: number;
   missingSurahsCount: number;
-  firstVerseKey: string;
-  firstLocation: string;
 }
 
 export interface UniqueWordSurahItemDto {
@@ -52,10 +42,6 @@ export interface UniqueWordSurahItemDto {
 }
 
 export interface UniqueWordSurahsDto {
-  id: number;
-  kind: UniqueWordKind;
-  displayTextUthmani: string;
-  surahsCount: number;
   surahs: UniqueWordSurahItemDto[];
 }
 
@@ -65,16 +51,11 @@ export interface MissingSurahItemDto {
 }
 
 export interface UniqueWordMissingSurahsDto {
-  id: number;
-  kind: UniqueWordKind;
-  displayTextUthmani: string;
-  missingSurahsCount: number;
   surahs: MissingSurahItemDto[];
 }
 
 export interface AyahWordForHighlightDto {
   quranWordId: number;
-  wordNumber: number;
   textUthmani: string;
   isAyahMarker: boolean;
 }
@@ -82,7 +63,6 @@ export interface AyahWordForHighlightDto {
 export interface AyahMatchDto {
   ayahId: number;
   verseKey: string;
-  surahNumber: number;
   surahNameArabic: string;
   ayahNumber: number;
   pageNumber: number;
@@ -168,6 +148,4 @@ export interface ParsedUniqueWordsQuery {
   ayahPage: number | null;
 }
 
-export interface UniqueWordListItemViewModel extends UniqueWordListItemDto {
-  displayText: string;
-}
+export type UniqueWordListItemViewModel = UniqueWordListItemDto;

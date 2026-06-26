@@ -34,15 +34,14 @@ function ayahMatch(verseKey: string, matchedIds: number[]): RootAyahMatchDto {
   return {
     ayahId: verseKey === '1:1' ? 11 : 13,
     verseKey,
-    surahNumber: 1,
     surahNameArabic: 'الفاتحة',
     ayahNumber: verseKey === '1:1' ? 1 : 3,
     pageNumber: 1,
     matchedQuranWordIds: matchedIds,
     words: [
-      { quranWordId: 10, wordNumber: 1, textUthmani: 'ألف', isAyahMarker: false },
-      { quranWordId: 11, wordNumber: 2, textUthmani: 'باء', isAyahMarker: false },
-      { quranWordId: 12, wordNumber: 3, textUthmani: 'جيم', isAyahMarker: false },
+      { quranWordId: 10, textUthmani: 'ألف', isAyahMarker: false },
+      { quranWordId: 11, textUthmani: 'باء', isAyahMarker: false },
+      { quranWordId: 12, textUthmani: 'جيم', isAyahMarker: false },
     ],
   };
 }

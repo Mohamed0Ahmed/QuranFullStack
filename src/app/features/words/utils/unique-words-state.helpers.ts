@@ -4,17 +4,10 @@ export function toUniqueWordSummary(word: UniqueWordListItemDto): UniqueWordSumm
   return {
     id: word.id,
     kind: word.kind,
-    displayTextUthmani: word.displayTextUthmani,
-    textUthmani: word.textUthmani,
-    textUthmaniSimple: word.textUthmaniSimple,
-    textImlaeiSimple: word.textImlaeiSimple,
-    wordKeyImlaeiSimple: word.wordKeyImlaeiSimple,
-    qpcGlyph: word.qpcGlyph,
+    displayText: word.displayText,
     occurrencesCount: word.occurrencesCount,
     ayahsCount: word.ayahsCount,
     surahsCount: word.surahsCount,
     missingSurahsCount: word.missingSurahsCount,
-    firstVerseKey: word.firstVerseKey,
-    firstLocation: word.firstLocation,
   };
 }

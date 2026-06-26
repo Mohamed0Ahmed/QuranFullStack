@@ -8,14 +8,15 @@ function row(id: number, overrides: Partial<UniqueWordListItemViewModel> = {}): 
   return {
     id,
     kind: 'tashkeel',
-    displayTextUthmani: `كلمة-تجريبية-${id}`,
     displayText: `كلمة-تجريبية-${id}`,
     occurrencesCount: id,
     ayahsCount: id,
     surahsCount: id,
     missingSurahsCount: 114 - id,
-    firstVerseKey: '1:1',
-    firstLocation: '1:1:1',
+    primaryWordTypeCode: null,
+    primaryWordTypeBroadArabicLabel: null,
+    rootId: null,
+    rootText: null,
     ...overrides,
   };
 }
@@ -53,6 +54,64 @@ describe('UniqueWordsTableComponent', () => {
     expect(root.querySelector('[aria-selected="true"]')).toBeTruthy();
   });
 
+  it('renders the type and root column headers', () => {
+    const fixture = setup([row(1)]);
+    const root = fixture.nativeElement as HTMLElement;
+    const headers = Array.from(root.querySelectorAll('[role="columnheader"]')).map((h) => h.textContent?.trim());
+
+    expect(headers).toContain('نوع الكلمة');
+    expect(headers).toContain('الجذر');
+  });
+
+  it('renders the primary type label and the root deep link when morphology is present', () => {
+    const fixture = setup([
+      row(1, {
+        primaryWordTypeCode: 'PN',
+        primaryWordTypeBroadArabicLabel: 'اسم',
+        rootId: 5001,
+        rootText: 'أ ل ه',
+      }),
+    ]);
+    const root = fixture.nativeElement as HTMLElement;
+
+    expect(root.querySelector('[data-word-type-code="PN"]')?.textContent).toContain('اسم');
+    const link = root.querySelector('[data-testid="unique-words-table-root-link"]') as HTMLAnchorElement | null;
+    expect(link).toBeTruthy();
+    expect(link?.textContent).toContain('أ ل ه');
+    expect(link?.getAttribute('target')).toBe('_blank');
+    expect(link?.getAttribute('rel')).toBe('noopener noreferrer');
+    expect(link?.getAttribute('href')).toContain('/dashboard/words/roots');
+  });
+
+  it('renders broad labels for verb, particle, and initials rows', () => {
+    const fixture = setup([
+      row(1, { primaryWordTypeCode: 'V', primaryWordTypeBroadArabicLabel: 'فعل' }),
+      row(2, { primaryWordTypeCode: 'P', primaryWordTypeBroadArabicLabel: 'حرف' }),
+      row(3, { primaryWordTypeCode: 'INL', primaryWordTypeBroadArabicLabel: 'حروف مقطّعة' }),
+    ]);
+    const root = fixture.nativeElement as HTMLElement;
+
+    expect(root.querySelector('[data-word-type-code="V"]')?.textContent).toContain('فعل');
+    expect(root.querySelector('[data-word-type-code="P"]')?.textContent).toContain('حرف');
+    expect(root.querySelector('[data-word-type-code="INL"]')?.textContent).toContain('حروف مقطّعة');
+  });
+
+  it('renders the placeholder and no root link when type and root are absent', () => {
+    const fixture = setup([row(1)]);
+    const root = fixture.nativeElement as HTMLElement;
+
+    expect(root.querySelector('[data-testid="unique-words-table-root-link"]')).toBeNull();
+    // Two placeholder em-dashes: type cell + root cell.
+    expect(root.querySelectorAll('.unique-words-table__text')).toHaveLength(2);
+  });
+
+  it('does not render a +N counter for the word type', () => {
+    const fixture = setup([row(1, { primaryWordTypeBroadArabicLabel: 'اسم' })]);
+    const root = fixture.nativeElement as HTMLElement;
+
+    expect(root.querySelector('.unique-words-table__type-more')).toBeNull();
+  });
+
   it('emits row selection when the word button is clicked', () => {
     const fixture = setup([row(1)]);
     const selected = vi.fn();
@@ -82,7 +141,7 @@ describe('UniqueWordsTableComponent', () => {
     expect(loading).toBeTruthy();
     expect(loading?.getAttribute('aria-busy')).toBe('true');
     expect(loading?.querySelectorAll('.unique-words-table__row')).toHaveLength(12);
-    expect(loading?.querySelectorAll('.qd-skeleton--text')).toHaveLength(24);
+    expect(loading?.querySelectorAll('.qd-skeleton--text')).toHaveLength(48);
     expect(root.querySelector('[data-testid="unique-words-table-word-button"]')).toBeNull();
   });
 

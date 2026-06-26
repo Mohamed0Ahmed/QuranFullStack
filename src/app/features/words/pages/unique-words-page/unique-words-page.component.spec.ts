@@ -29,14 +29,15 @@ function item(id: number): UniqueWordListItemViewModel {
   return {
     id,
     kind: 'tashkeel',
-    displayTextUthmani: `كلمة-تجريبية-${id}`,
     displayText: `كلمة-تجريبية-${id}`,
     occurrencesCount: id,
     ayahsCount: id,
     surahsCount: 1,
     missingSurahsCount: 113,
-    firstVerseKey: '1:1',
-    firstLocation: '1:1:1',
+    primaryWordTypeCode: null,
+    primaryWordTypeBroadArabicLabel: null,
+    rootId: null,
+    rootText: null,
   };
 }
 
@@ -154,13 +155,11 @@ describe('UniqueWordsPageComponent', () => {
       summary: {
         id: 1,
         kind: 'tashkeel',
-        displayTextUthmani: 'كلمة-تجريبية-1',
+        displayText: 'كلمة-تجريبية-1',
         occurrencesCount: 1,
         ayahsCount: 1,
         surahsCount: 1,
         missingSurahsCount: 113,
-        firstVerseKey: '1:1',
-        firstLocation: '1:1:1',
       },
       surahs: null,
     });
