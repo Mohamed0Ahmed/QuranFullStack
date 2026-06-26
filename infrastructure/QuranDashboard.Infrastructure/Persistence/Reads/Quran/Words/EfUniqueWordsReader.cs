@@ -40,22 +40,28 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
             .Take(pageSize)
             .ToListAsync(cancellationToken);
 
+        var uniqueWordIds = pageRows.Select(r => (int?)r.Id).ToList();
+        var primaryTypes = await LoadPrimaryWordTypesAsync(kind, uniqueWordIds, cancellationToken);
+        var primaryRoots = await LoadPrimaryRootsAsync(kind, uniqueWordIds, cancellationToken);
+
         var items = pageRows
-            .Select(r => new UniqueWordListItemDto(
-                r.Id,
-                kindKey,
-                r.DisplayTextUthmani,
-                r.TextUthmani,
-                r.TextUthmaniSimple,
-                r.TextImlaeiSimple,
-                r.WordKeyImlaeiSimple,
-                r.QpcGlyph,
-                r.OccurrencesCount,
-                r.AyahsCount,
-                r.SurahsCount,
-                TotalSurahs - r.SurahsCount,
-                $"{r.FirstSurahNumber}:{r.FirstAyahNumber}",
-                r.FirstLocation))
+            .Select(r =>
+            {
+                var type = primaryTypes.GetValueOrDefault(r.Id);
+                var root = primaryRoots.GetValueOrDefault(r.Id);
+                return new UniqueWordListItemDto(
+                    r.Id,
+                    kindKey,
+                    r.DisplayText,
+                    r.OccurrencesCount,
+                    r.AyahsCount,
+                    r.SurahsCount,
+                    TotalSurahs - r.SurahsCount,
+                    type?.Code,
+                    type?.BroadArabicLabel,
+                    root?.RootId,
+                    root?.RootText);
+            })
             .ToList();
 
         return new PagedResult<UniqueWordListItemDto>(page, pageSize, totalCount, items);
@@ -64,43 +70,26 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
     public async Task<UniqueWordSummaryDto?> GetUniqueWordSummaryAsync(
         UniqueWordKind kind, int id, CancellationToken cancellationToken)
     {
-
         var row = kind == UniqueWordKind.Tashkeel
             ? await _db.QuranWordsUniqueTashkeel
                 .AsNoTracking()
                 .Where(w => w.Id == id)
                 .Select(w => new UniqueWordSummaryRow(
-                    w.TextUthmani,
-                    w.TextUthmani,
-                    w.TextUthmaniSimple,
-                    w.TextImlaeiSimple,
-                    null,
-                    null,
                     UniqueWordKindKeys.Tashkeel,
+                    w.TextUthmani,
                     w.OccurrencesCount,
                     w.AyahsCount,
-                    w.SurahsCount,
-                    w.FirstSurahNumber,
-                    w.FirstAyahNumber,
-                    w.FirstLocation))
+                    w.SurahsCount))
                 .FirstOrDefaultAsync(cancellationToken)
             : await _db.QuranWordsUniqueSimple
                 .AsNoTracking()
                 .Where(w => w.Id == id)
                 .Select(w => new UniqueWordSummaryRow(
-                    w.TextUthmani,
-                    w.TextUthmani,
-                    w.TextUthmaniSimple,
-                    w.TextImlaeiSimple,
-                    w.WordKeyImlaeiSimple,
-                    w.QpcGlyph,
                     UniqueWordKindKeys.Simple,
+                    w.TextUthmaniSimple,
                     w.OccurrencesCount,
                     w.AyahsCount,
-                    w.SurahsCount,
-                    w.FirstSurahNumber,
-                    w.FirstAyahNumber,
-                    w.FirstLocation))
+                    w.SurahsCount))
                 .FirstOrDefaultAsync(cancellationToken);
 
         if (row is null)
@@ -111,25 +100,17 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
         return new UniqueWordSummaryDto(
             id,
             row.KindKey,
-            row.DisplayTextUthmani,
-            row.TextUthmani,
-            row.TextUthmaniSimple,
-            row.TextImlaeiSimple,
-            row.WordKeyImlaeiSimple,
-            row.QpcGlyph,
+            row.DisplayText,
             row.OccurrencesCount,
             row.AyahsCount,
             row.SurahsCount,
-            TotalSurahs - row.SurahsCount,
-            $"{row.FirstSurahNumber}:{row.FirstAyahNumber}",
-            row.FirstLocation);
+            TotalSurahs - row.SurahsCount);
     }
 
     public async Task<UniqueWordSurahsResponse?> GetMentionedSurahsAsync(
         UniqueWordKind kind, int id, CancellationToken cancellationToken)
     {
-        var header = await LoadUniqueWordHeaderAsync(kind, id, cancellationToken);
-        if (header is null)
+        if (!await UniqueWordExistsAsync(kind, id, cancellationToken))
         {
             return null;
         }
@@ -139,16 +120,9 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
             .Select(g => new SurahOccurrenceRow(g.Key, g.Count()))
             .ToListAsync(cancellationToken);
 
-        surahGroups = surahGroups.OrderBy(r => r.SurahNumber).ToList();
-
         if (surahGroups.Count == 0)
         {
-            return new UniqueWordSurahsResponse(
-                id,
-                header.KindKey,
-                header.DisplayTextUthmani,
-                0,
-                []);
+            return new UniqueWordSurahsResponse([]);
         }
 
         var surahNumbers = surahGroups.Select(r => r.SurahNumber).ToList();
@@ -158,25 +132,20 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
             .ToDictionaryAsync(s => s.SurahNumber, s => s.NameArabic, cancellationToken);
 
         var surahs = surahGroups
+            .OrderBy(r => r.SurahNumber)
             .Select(r => new UniqueWordSurahItemDto(
                 r.SurahNumber,
                 surahNames[r.SurahNumber],
                 r.OccurrencesInSurah))
             .ToList();
 
-        return new UniqueWordSurahsResponse(
-            id,
-            header.KindKey,
-            header.DisplayTextUthmani,
-            surahs.Count,
-            surahs);
+        return new UniqueWordSurahsResponse(surahs);
     }
 
     public async Task<UniqueWordMissingSurahsResponse?> GetMissingSurahsAsync(
         UniqueWordKind kind, int id, CancellationToken cancellationToken)
     {
-        var header = await LoadUniqueWordHeaderAsync(kind, id, cancellationToken);
-        if (header is null)
+        if (!await UniqueWordExistsAsync(kind, id, cancellationToken))
         {
             return null;
         }
@@ -193,19 +162,13 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
             .Select(s => new MissingSurahItemDto(s.SurahNumber, s.NameArabic))
             .ToListAsync(cancellationToken);
 
-        return new UniqueWordMissingSurahsResponse(
-            id,
-            header.KindKey,
-            header.DisplayTextUthmani,
-            missingSurahs.Count,
-            missingSurahs);
+        return new UniqueWordMissingSurahsResponse(missingSurahs);
     }
 
     public async Task<PagedResult<UniqueWordAyahMatchDto>?> GetAyahMatchesAsync(
         UniqueWordKind kind, int id, int page, int pageSize, CancellationToken cancellationToken)
     {
-        var header = await LoadUniqueWordHeaderAsync(kind, id, cancellationToken);
-        if (header is null)
+        if (!await UniqueWordExistsAsync(kind, id, cancellationToken))
         {
             return null;
         }
@@ -223,7 +186,6 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
             select new AyahMetaRow(
                 ayah.Id,
                 ayah.VerseKey,
-                ayah.SurahNumber,
                 ayah.AyahNumber,
                 surah.NameArabic))
             .Skip((page - 1) * pageSize)
@@ -272,16 +234,16 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
                 return new UniqueWordAyahMatchDto(
                     ayah.AyahId,
                     ayah.VerseKey,
-                    ayah.SurahNumber,
                     ayah.SurahNameArabic,
                     ayah.AyahNumber,
                     ResolveAyahPageNumber(words),
                     matchedIdsByAyah.GetValueOrDefault(ayah.AyahId, []),
-                    words.Select(w => new AyahWordForHighlightDto(
-                        w.QuranWordId,
-                        w.WordNumber,
-                        w.TextUthmani,
-                        w.IsAyahMarker)).ToList());
+                    words
+                        .OrderBy(w => w.WordNumber)
+                        .Select(w => new AyahWordForHighlightDto(
+                            w.QuranWordId,
+                            w.TextUthmani,
+                            w.IsAyahMarker)).ToList());
             })
             .ToList();
 
@@ -310,53 +272,113 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
             : _db.QuranWords.AsNoTracking()
                 .Where(w => !w.IsAyahMarker && w.UniqueSimpleWordId == id);
 
-    private async Task<UniqueWordHeaderRow?> LoadUniqueWordHeaderAsync(
-        UniqueWordKind kind,
-        int id,
-        CancellationToken cancellationToken)
-    {
-        if (kind == UniqueWordKind.Tashkeel)
-        {
-            var row = await _db.QuranWordsUniqueTashkeel
-                .AsNoTracking()
-                .Where(w => w.Id == id)
-                .Select(w => new UniqueWordHeaderRow(
-                    w.TextUthmani,
-                    UniqueWordKindKeys.Tashkeel))
-                .FirstOrDefaultAsync(cancellationToken);
+    private async Task<bool> UniqueWordExistsAsync(
+        UniqueWordKind kind, int id, CancellationToken cancellationToken) =>
+        kind == UniqueWordKind.Tashkeel
+            ? await _db.QuranWordsUniqueTashkeel.AsNoTracking().AnyAsync(w => w.Id == id, cancellationToken)
+            : await _db.QuranWordsUniqueSimple.AsNoTracking().AnyAsync(w => w.Id == id, cancellationToken);
 
-            return row;
+    private async Task<IReadOnlyDictionary<int, PrimaryWordTypeRow>> LoadPrimaryWordTypesAsync(
+        UniqueWordKind kind, IReadOnlyList<int?> uniqueWordIds, CancellationToken cancellationToken)
+    {
+        if (uniqueWordIds.Count == 0)
+        {
+            return new Dictionary<int, PrimaryWordTypeRow>();
         }
 
-        var simpleRow = await _db.QuranWordsUniqueSimple
-            .AsNoTracking()
-            .Where(w => w.Id == id)
-            .Select(w => new UniqueWordHeaderRow(
-                w.TextUthmani,
-                UniqueWordKindKeys.Simple))
-            .FirstOrDefaultAsync(cancellationToken);
+        var candidates = kind == UniqueWordKind.Tashkeel
+            ? await (from qw in _db.QuranWords.AsNoTracking()
+                     join m in _db.WordMorphologies on qw.Id equals m.QuranWordId
+                     join pt in _db.PosTags on m.HeadPos equals pt.Code
+                     where qw.UniqueTashkeelWordId != null && uniqueWordIds.Contains(qw.UniqueTashkeelWordId)
+                     group new { qw.Id } by new { UniqueId = qw.UniqueTashkeelWordId!.Value, pt.Code, pt.Category } into g
+                     select new PrimaryTypeCandidateRow(
+                         g.Key.UniqueId,
+                         g.Key.Code,
+                         g.Key.Category,
+                         g.Count(),
+                         g.Min(x => x.Id)))
+                     .ToListAsync(cancellationToken)
+            : await (from qw in _db.QuranWords.AsNoTracking()
+                     join m in _db.WordMorphologies on qw.Id equals m.QuranWordId
+                     join pt in _db.PosTags on m.HeadPos equals pt.Code
+                     where qw.UniqueSimpleWordId != null && uniqueWordIds.Contains(qw.UniqueSimpleWordId)
+                     group new { qw.Id } by new { UniqueId = qw.UniqueSimpleWordId!.Value, pt.Code, pt.Category } into g
+                     select new PrimaryTypeCandidateRow(
+                         g.Key.UniqueId,
+                         g.Key.Code,
+                         g.Key.Category,
+                         g.Count(),
+                         g.Min(x => x.Id)))
+                     .ToListAsync(cancellationToken);
 
-        return simpleRow;
+        return candidates
+            .GroupBy(c => c.UniqueId)
+            .ToDictionary(
+                g => g.Key,
+                g => g
+                    .OrderByDescending(c => c.OccurrenceCount)
+                    .ThenBy(c => c.EarliestQuranWordId)
+                    .ThenBy(c => c.Code, StringComparer.Ordinal)
+                    .Select(c => new PrimaryWordTypeRow(c.Code, ResolvePrimaryWordTypeBroadLabel(c.Code, c.Category)))
+                    .First());
+    }
+
+    private async Task<IReadOnlyDictionary<int, PrimaryRootRow>> LoadPrimaryRootsAsync(
+        UniqueWordKind kind, IReadOnlyList<int?> uniqueWordIds, CancellationToken cancellationToken)
+    {
+        if (uniqueWordIds.Count == 0)
+        {
+            return new Dictionary<int, PrimaryRootRow>();
+        }
+
+        var candidates = kind == UniqueWordKind.Tashkeel
+            ? await (from qw in _db.QuranWords.AsNoTracking()
+                     join m in _db.WordMorphologies on qw.Id equals m.QuranWordId
+                     join root in _db.QuranRoots on m.RootId equals root.Id
+                     where qw.UniqueTashkeelWordId != null && uniqueWordIds.Contains(qw.UniqueTashkeelWordId)
+                     group new { qw.Id } by new { UniqueId = qw.UniqueTashkeelWordId!.Value, RootId = root.Id, root.RootText } into g
+                     select new PrimaryRootCandidateRow(
+                         g.Key.UniqueId,
+                         g.Key.RootId,
+                         g.Key.RootText,
+                         g.Count(),
+                         g.Min(x => x.Id)))
+                     .ToListAsync(cancellationToken)
+            : await (from qw in _db.QuranWords.AsNoTracking()
+                     join m in _db.WordMorphologies on qw.Id equals m.QuranWordId
+                     join root in _db.QuranRoots on m.RootId equals root.Id
+                     where qw.UniqueSimpleWordId != null && uniqueWordIds.Contains(qw.UniqueSimpleWordId)
+                     group new { qw.Id } by new { UniqueId = qw.UniqueSimpleWordId!.Value, RootId = root.Id, root.RootText } into g
+                     select new PrimaryRootCandidateRow(
+                         g.Key.UniqueId,
+                         g.Key.RootId,
+                         g.Key.RootText,
+                         g.Count(),
+                         g.Min(x => x.Id)))
+                     .ToListAsync(cancellationToken);
+
+        return candidates
+            .GroupBy(c => c.UniqueId)
+            .ToDictionary(
+                g => g.Key,
+                g => g
+                    .OrderByDescending(c => c.OccurrenceCount)
+                    .ThenBy(c => c.EarliestQuranWordId)
+                    .ThenBy(c => c.RootId)
+                    .Select(c => new PrimaryRootRow(c.RootId, c.RootText))
+                    .First());
     }
 
     private IQueryable<UniqueWordListRow> BuildTashkeelQuery(string? normalizedSearch)
     {
-
         var sql = $"""
             SELECT
                 id AS "{nameof(UniqueWordListRow.Id)}",
-                text_uthmani AS "{nameof(UniqueWordListRow.DisplayTextUthmani)}",
-                text_uthmani AS "{nameof(UniqueWordListRow.TextUthmani)}",
-                text_uthmani_simple AS "{nameof(UniqueWordListRow.TextUthmaniSimple)}",
-                text_imlaei_simple AS "{nameof(UniqueWordListRow.TextImlaeiSimple)}",
-                NULL::text AS "{nameof(UniqueWordListRow.WordKeyImlaeiSimple)}",
-                NULL::text AS "{nameof(UniqueWordListRow.QpcGlyph)}",
+                text_uthmani AS "{nameof(UniqueWordListRow.DisplayText)}",
                 occurrences_count AS "{nameof(UniqueWordListRow.OccurrencesCount)}",
                 ayahs_count AS "{nameof(UniqueWordListRow.AyahsCount)}",
                 surahs_count AS "{nameof(UniqueWordListRow.SurahsCount)}",
-                first_surah_number AS "{nameof(UniqueWordListRow.FirstSurahNumber)}",
-                first_ayah_number AS "{nameof(UniqueWordListRow.FirstAyahNumber)}",
-                first_location AS "{nameof(UniqueWordListRow.FirstLocation)}",
                 first_word_order_in_mushaf AS "{nameof(UniqueWordListRow.FirstWordOrderInMushaf)}",
                 text_imlaei_simple AS "{nameof(UniqueWordListRow.SearchText)}"
             FROM quran_words_unique_tashkeel
@@ -382,18 +404,10 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
         var sql = $"""
             SELECT
                 id AS "{nameof(UniqueWordListRow.Id)}",
-                text_uthmani AS "{nameof(UniqueWordListRow.DisplayTextUthmani)}",
-                text_uthmani AS "{nameof(UniqueWordListRow.TextUthmani)}",
-                text_uthmani_simple AS "{nameof(UniqueWordListRow.TextUthmaniSimple)}",
-                text_imlaei_simple AS "{nameof(UniqueWordListRow.TextImlaeiSimple)}",
-                word_key_imlaei_simple AS "{nameof(UniqueWordListRow.WordKeyImlaeiSimple)}",
-                qpc_glyph AS "{nameof(UniqueWordListRow.QpcGlyph)}",
+                text_uthmani_simple AS "{nameof(UniqueWordListRow.DisplayText)}",
                 occurrences_count AS "{nameof(UniqueWordListRow.OccurrencesCount)}",
                 ayahs_count AS "{nameof(UniqueWordListRow.AyahsCount)}",
                 surahs_count AS "{nameof(UniqueWordListRow.SurahsCount)}",
-                first_surah_number AS "{nameof(UniqueWordListRow.FirstSurahNumber)}",
-                first_ayah_number AS "{nameof(UniqueWordListRow.FirstAyahNumber)}",
-                first_location AS "{nameof(UniqueWordListRow.FirstLocation)}",
                 first_word_order_in_mushaf AS "{nameof(UniqueWordListRow.FirstWordOrderInMushaf)}",
                 word_key_imlaei_simple AS "{nameof(UniqueWordListRow.SearchText)}"
             FROM quran_words_unique_simple
@@ -467,46 +481,39 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
     private static string EscapeLikePattern(string value) =>
         value.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_");
 
+    private static string? ResolvePrimaryWordTypeBroadLabel(string code, string? category) => code switch
+    {
+        "INL" => "حروف مقطّعة",
+        _ => category switch
+        {
+            "noun" => "اسم",
+            "verb" => "فعل",
+            "particle" => "حرف",
+            _ => null,
+        },
+    };
+
     private sealed record UniqueWordListRow(
         int Id,
-        string DisplayTextUthmani,
-        string TextUthmani,
-        string TextUthmaniSimple,
-        string TextImlaeiSimple,
-        string? WordKeyImlaeiSimple,
-        string? QpcGlyph,
+        string DisplayText,
         int OccurrencesCount,
         short AyahsCount,
         short SurahsCount,
-        short FirstSurahNumber,
-        short FirstAyahNumber,
-        string FirstLocation,
         int FirstWordOrderInMushaf,
         string SearchText);
 
-    private sealed record UniqueWordHeaderRow(string DisplayTextUthmani, string KindKey);
-
     private sealed record UniqueWordSummaryRow(
-        string DisplayTextUthmani,
-        string TextUthmani,
-        string TextUthmaniSimple,
-        string TextImlaeiSimple,
-        string? WordKeyImlaeiSimple,
-        string? QpcGlyph,
         string KindKey,
+        string DisplayText,
         int OccurrencesCount,
         short AyahsCount,
-        short SurahsCount,
-        short FirstSurahNumber,
-        short FirstAyahNumber,
-        string FirstLocation);
+        short SurahsCount);
 
     private sealed record SurahOccurrenceRow(short SurahNumber, int OccurrencesInSurah);
 
     private sealed record AyahMetaRow(
         int AyahId,
         string VerseKey,
-        short SurahNumber,
         short AyahNumber,
         string SurahNameArabic);
 
@@ -517,4 +524,22 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
         short PageNumber,
         string TextUthmani,
         bool IsAyahMarker);
+
+    private sealed record PrimaryTypeCandidateRow(
+        int UniqueId,
+        string Code,
+        string? Category,
+        int OccurrenceCount,
+        int EarliestQuranWordId);
+
+    private sealed record PrimaryWordTypeRow(string Code, string? BroadArabicLabel);
+
+    private sealed record PrimaryRootCandidateRow(
+        int UniqueId,
+        int RootId,
+        string RootText,
+        int OccurrenceCount,
+        int EarliestQuranWordId);
+
+    private sealed record PrimaryRootRow(int RootId, string RootText);
 }

@@ -193,7 +193,6 @@ public sealed class EfRootsReader(QuranDashboardDbContext db) : IRootsReader
                     matchedIdsByAyah.GetValueOrDefault(ayah.AyahId, []),
                     words.Select(w => new AyahWordForHighlightDto(
                         w.QuranWordId,
-                        w.WordNumber,
                         w.TextUthmani,
                         w.IsAyahMarker)).ToList());
             })

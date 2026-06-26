@@ -143,7 +143,6 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
                     matchedIdsByAyah.GetValueOrDefault(ayah.AyahId, []),
                     words.Select(w => new AyahWordForHighlightDto(
                         w.QuranWordId,
-                        w.WordNumber,
                         w.TextUthmani,
                         w.IsAyahMarker)).ToList());
             })

@@ -146,7 +146,6 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
                     matchedIdsByAyah.GetValueOrDefault(ayah.AyahId, []),
                     words.Select(w => new AyahWordForHighlightDto(
                         w.QuranWordId,
-                        w.WordNumber,
                         w.TextUthmani,
                         w.IsAyahMarker)).ToList());
             })
