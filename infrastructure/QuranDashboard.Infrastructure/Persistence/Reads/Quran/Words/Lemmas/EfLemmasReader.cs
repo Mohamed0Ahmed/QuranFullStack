@@ -5,6 +5,7 @@ using QuranDashboard.Application.Abstractions.Quran.Words.Lemmas;
 using QuranDashboard.Application.Abstractions.Quran.Words.Lemmas.Responses;
 using QuranDashboard.Application.Abstractions.Quran.Words.Responses;
 using QuranDashboard.Infrastructure.Persistence;
+using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Lemmas;
 
@@ -218,8 +219,30 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
         return new LemmaMissingSurahsResponse(id, lemma.LemmaText, missingSurahs.Count, missingSurahs);
     }
 
-    public Task<LemmaStemsResponse?> GetLemmaStemsAsync(int id, CancellationToken cancellationToken)
-        => throw new NotImplementedException();
+    public async Task<LemmaStemsResponse?> GetLemmaStemsAsync(int id, CancellationToken cancellationToken)
+    {
+        var lemma = await _db.QuranLemmas
+            .AsNoTracking()
+            .Where(l => l.Id == id)
+            .Select(l => new { l.Id, l.LemmaText })
+            .FirstOrDefaultAsync(cancellationToken);
+        if (lemma is null)
+        {
+            return null;
+        }
+
+        var rows = await (
+            from m in _db.WordMorphologies.AsNoTracking()
+            join s in _db.QuranStems.AsNoTracking() on m.StemId equals s.Id
+            where m.LemmaId == id && m.StemId != null
+            select new { m.StemId, s.StemText, m.QuranWordId })
+            .ToListAsync(cancellationToken);
+
+        var stems = MorphologyRelatedItemsOrdering.OrderLemmaStems(
+            rows.Select(r => (r.StemId!.Value, r.StemText, r.QuranWordId)));
+
+        return new LemmaStemsResponse(id, lemma.LemmaText, stems.Count, stems);
+    }
 
     /// <summary>
     /// Loads the complete lemma summary list in a bounded aggregation: identity,

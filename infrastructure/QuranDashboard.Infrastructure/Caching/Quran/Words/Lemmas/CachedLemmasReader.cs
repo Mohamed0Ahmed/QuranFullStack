@@ -102,7 +102,16 @@ public sealed class CachedLemmasReader(EfLemmasReader efReader, IMemoryCache cac
     public Task<LemmaStemsResponse?> GetLemmaStemsAsync(
         int id,
         CancellationToken cancellationToken)
-        => _ef.GetLemmaStemsAsync(id, cancellationToken);
+    {
+        var key = LemmasCacheKeys.Stems(id);
+
+        if (_cache.TryGetValue(key, out LemmaStemsResponse? cached))
+        {
+            return Task.FromResult<LemmaStemsResponse?>(cached);
+        }
+
+        return GetAndCacheStemsAsync(id, cancellationToken, key);
+    }
 
     private async Task<IReadOnlyList<LemmaSummaryRow>> GetOrLoadWholeSummaryAsync(CancellationToken cancellationToken)
     {
@@ -175,5 +184,19 @@ public sealed class CachedLemmasReader(EfLemmasReader efReader, IMemoryCache cac
         }
 
         return missing;
+    }
+
+    private async Task<LemmaStemsResponse?> GetAndCacheStemsAsync(
+        int id,
+        CancellationToken cancellationToken,
+        string key)
+    {
+        var stems = await _ef.GetLemmaStemsAsync(id, cancellationToken);
+        if (stems is not null)
+        {
+            _cache.Set(key, stems, LemmasCacheEntryOptions.WholeDetail());
+        }
+
+        return stems;
     }
 }

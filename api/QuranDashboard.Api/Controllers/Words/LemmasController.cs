@@ -6,6 +6,7 @@ using QuranDashboard.Application.Abstractions.Quran.Words.Lemmas.Responses;
 using QuranDashboard.Application.Quran.Words.Lemmas.Queries.GetLemmaAyahs;
 using QuranDashboard.Application.Quran.Words.Lemmas.Queries.GetLemmaMissingSurahs;
 using QuranDashboard.Application.Quran.Words.Lemmas.Queries.GetLemmaMentionedSurahs;
+using QuranDashboard.Application.Quran.Words.Lemmas.Queries.GetLemmaStems;
 using QuranDashboard.Application.Quran.Words.Lemmas.Queries.GetLemmaWords;
 using QuranDashboard.Application.Quran.Words.Lemmas.Queries.GetLemmasPage;
 using QuranDashboard.Application.Quran.Words.Lemmas.Queries.GetLemmaSummary;
@@ -26,6 +27,7 @@ public sealed class LemmasController(
     GetLemmaWordsHandler wordsHandler,
     GetLemmaMentionedSurahsHandler mentionedSurahsHandler,
     GetLemmaMissingSurahsHandler missingSurahsHandler,
+    GetLemmaStemsHandler stemsHandler,
     GetLemmaSummaryHandler summaryHandler) : ControllerBase
 {
     private const int DefaultPage = 1;
@@ -203,6 +205,31 @@ public sealed class LemmasController(
             GetLemmaMissingSurahsOutcome.NotFound =>
                 NotFound(ApiResponse<LemmaMissingSurahsResponse>.Fail(ApiMessages.LemmaNotFound)),
             _ => throw new InvalidOperationException($"Unhandled {nameof(GetLemmaMissingSurahsOutcome)} variant."),
+        };
+    }
+
+    /// <summary>
+    /// يُرجع الأصول الصرفية التي وردت فيها الصيغة المعجمية المحددة مع عدد
+    /// مرات الظهور في سياق كل أصل.
+    /// </summary>
+    [HttpGet("{id:int}/stems")]
+    public async Task<ActionResult<ApiResponse<LemmaStemsResponse>>> GetStems(
+        int id,
+        CancellationToken cancellationToken)
+    {
+        var outcome = await stemsHandler.HandleAsync(
+            new GetLemmaStemsQuery(id),
+            cancellationToken);
+
+        return outcome switch
+        {
+            GetLemmaStemsOutcome.Success success =>
+                Ok(ApiResponse<LemmaStemsResponse>.Ok(success.Stems, ApiMessages.LemmaStemsLoaded)),
+            GetLemmaStemsOutcome.InvalidId =>
+                BadRequest(ApiResponse<LemmaStemsResponse>.Fail(ApiMessages.LemmasInvalidId)),
+            GetLemmaStemsOutcome.NotFound =>
+                NotFound(ApiResponse<LemmaStemsResponse>.Fail(ApiMessages.LemmaNotFound)),
+            _ => throw new InvalidOperationException($"Unhandled {nameof(GetLemmaStemsOutcome)} variant."),
         };
     }
 }

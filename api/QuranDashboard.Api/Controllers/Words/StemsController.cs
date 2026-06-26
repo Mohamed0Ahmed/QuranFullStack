@@ -6,6 +6,7 @@ using QuranDashboard.Application.Abstractions.Quran.Words.Stems.Responses;
 using QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemAyahs;
 using QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemMissingSurahs;
 using QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemMentionedSurahs;
+using QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemLemmas;
 using QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemWords;
 using QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemSummary;
 using QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemsPage;
@@ -27,6 +28,7 @@ public sealed class StemsController(
     GetStemWordsHandler wordsHandler,
     GetStemMentionedSurahsHandler mentionedSurahsHandler,
     GetStemMissingSurahsHandler missingSurahsHandler,
+    GetStemLemmasHandler lemmasHandler,
     GetStemSummaryHandler summaryHandler) : ControllerBase
 {
     private const int DefaultPage = 1;
@@ -203,6 +205,31 @@ public sealed class StemsController(
             GetStemMissingSurahsOutcome.NotFound =>
                 NotFound(ApiResponse<StemMissingSurahsResponse>.Fail(ApiMessages.StemNotFound)),
             _ => throw new InvalidOperationException($"Unhandled {nameof(GetStemMissingSurahsOutcome)} variant."),
+        };
+    }
+
+    /// <summary>
+    /// يُرجع الصيغ المعجمية التي ورد فيها الأصل الصرفي المحدد مع عدد مرات
+    /// الظهور في سياق كل صيغة.
+    /// </summary>
+    [HttpGet("{id:int}/lemmas")]
+    public async Task<ActionResult<ApiResponse<StemLemmasResponse>>> GetLemmas(
+        int id,
+        CancellationToken cancellationToken)
+    {
+        var outcome = await lemmasHandler.HandleAsync(
+            new GetStemLemmasQuery(id),
+            cancellationToken);
+
+        return outcome switch
+        {
+            GetStemLemmasOutcome.Success success =>
+                Ok(ApiResponse<StemLemmasResponse>.Ok(success.Lemmas, ApiMessages.StemLemmasLoaded)),
+            GetStemLemmasOutcome.InvalidId =>
+                BadRequest(ApiResponse<StemLemmasResponse>.Fail(ApiMessages.StemsInvalidId)),
+            GetStemLemmasOutcome.NotFound =>
+                NotFound(ApiResponse<StemLemmasResponse>.Fail(ApiMessages.StemNotFound)),
+            _ => throw new InvalidOperationException($"Unhandled {nameof(GetStemLemmasOutcome)} variant."),
         };
     }
 }
