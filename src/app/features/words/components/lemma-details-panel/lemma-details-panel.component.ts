@@ -14,6 +14,7 @@ import { ModalScrollLockDirective } from '../../../../shared/ui/modal-scroll-loc
 
 import {
   LEMMAS_EMPTY_SELECTION_LABEL,
+  LEMMAS_NOT_FOUND_LABEL,
   LEMMAS_PANEL_LABEL,
   LEMMAS_PANEL_TAB_ARIA,
   LEMMAS_PANEL_TAB_LABELS,
@@ -65,6 +66,10 @@ export class LemmaDetailsPanelComponent {
 
   protected get emptySelectionLabel() {
     return LEMMAS_EMPTY_SELECTION_LABEL;
+  }
+
+  protected get notFoundLabel() {
+    return LEMMAS_NOT_FOUND_LABEL;
   }
 
   protected readonly surfaceDomId = 'lemma-details-panel-surface';

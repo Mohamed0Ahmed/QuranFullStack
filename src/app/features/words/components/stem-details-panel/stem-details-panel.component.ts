@@ -14,6 +14,7 @@ import { ModalScrollLockDirective } from '../../../../shared/ui/modal-scroll-loc
 
 import {
   STEMS_EMPTY_SELECTION_LABEL,
+  STEMS_NOT_FOUND_LABEL,
   STEMS_PANEL_LABEL,
   STEMS_PANEL_TAB_ARIA,
   STEMS_PANEL_TAB_LABELS,
@@ -65,6 +66,10 @@ export class StemDetailsPanelComponent {
 
   protected get emptySelectionLabel() {
     return STEMS_EMPTY_SELECTION_LABEL;
+  }
+
+  protected get notFoundLabel() {
+    return STEMS_NOT_FOUND_LABEL;
   }
 
   protected readonly surfaceDomId = 'stem-details-panel-surface';

@@ -45,7 +45,6 @@ import {
   StemView,
   StemWordView,
   STEMS_QUERY_KEYS,
-  toStemSummary,
 } from '../../models/stems.models';
 import { StemsDetailFacade } from '../../state/stems-detail.facade';
 import { StemsExplorerFacade } from '../../state/stems-explorer.facade';
@@ -185,7 +184,6 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
   }
 
   protected onRowSelected(stem: StemListItemViewModel): void {
-    this.detailFacade.selectStem(toStemSummary(stem), DEFAULT_STEM_VIEW);
     this.updateQueryParams(
       buildStemsQueryParams({
         stemId: stem.id,
@@ -202,15 +200,13 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
     const wordView = view === 'words' ? (event.wordView ?? 'simple') : undefined;
     const surahView = view === 'surahs' ? (event.surahView ?? 'mentioned') : undefined;
 
-    this.detailFacade.selectStemWithPanel(toStemSummary(stem), view, wordView, surahView);
-
     this.updateQueryParams(
       buildStemsQueryParams({
         stemId: stem.id,
         view,
         detailPage: this.detailPageForView(view),
-        wordView: view === 'words' ? (event.wordView ?? 'simple') : null,
-        surahView: view === 'surahs' ? (event.surahView ?? 'mentioned') : null,
+        wordView: wordView ?? null,
+        surahView: surahView ?? null,
       }),
     );
   }

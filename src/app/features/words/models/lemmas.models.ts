@@ -139,13 +139,6 @@ export interface LemmaListItemViewModel extends LemmaListItemDto {
   displayText: string;
 }
 
-export function toLemmaSummary(lemma: LemmaListItemDto): LemmaSummaryDto {
-  return {
-    ...lemma,
-    typeDistribution: [lemma.dominantType],
-  };
-}
-
 export const LEMMAS_QUERY_KEYS = {
   search: 'search',
   sort: 'sort',

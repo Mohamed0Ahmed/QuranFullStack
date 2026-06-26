@@ -105,6 +105,17 @@ describe('LemmaDetailsPanelComponent a11y (T087)', () => {
       expect(tab.getAttribute('aria-selected')).toBe('false');
     }
   });
+
+  it('renders controlled not-found content without detail tabs', () => {
+    const fixture = createPanel('words');
+    fixture.componentRef.setInput('notFound', true);
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelector('[data-testid="lemma-details-not-found"]')).toBeTruthy();
+    expect(host.querySelector('[role="tablist"]')).toBeNull();
+    expect(host.querySelectorAll('[role="tab"]')).toHaveLength(0);
+  });
 });
 
 describe('LemmaDetailsPanelComponent modal drawer mode (T118)', () => {

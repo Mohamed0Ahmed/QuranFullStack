@@ -3,7 +3,7 @@ import { getTestBed, TestBed } from '@angular/core/testing';
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
-import { BehaviorSubject, of, Subject } from 'rxjs';
+import { BehaviorSubject, of, Subject, throwError } from 'rxjs';
 
 import { ApiResponse } from '../../../../core/data-access/api-response.model';
 import { deepLinkToHref } from '../../../../shared/url/deep-link-href';
@@ -334,7 +334,7 @@ describe('LemmasExplorerPageComponent US1', () => {
       }),
       queryParamsHandling: 'merge',
     });
-    expect(TestBed.inject(LemmasDetailFacade).view()).toBe('words');
+    expect(TestBed.inject(LemmasDetailFacade).selectedLemmaId()).toBeNull();
   });
 
   it('maps count-click to the correct view and sub-view URL params', async () => {
@@ -353,6 +353,7 @@ describe('LemmasExplorerPageComponent US1', () => {
       }),
       queryParamsHandling: 'merge',
     });
+    expect(TestBed.inject(LemmasDetailFacade).selectedLemmaId()).toBeNull();
   });
 
   it('maps word-view sub-tab changes to the words URL params and resets detail page', async () => {
@@ -735,10 +736,12 @@ describe('LemmasExplorerPageComponent US8 — restore and navigate exact state',
 
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('[data-testid="lemmas-restored-not-found"]')).toBeTruthy();
+    expect(root.querySelector('[data-testid="lemma-details-not-found"]')).toBeTruthy();
+    expect(root.querySelectorAll('[data-lemma-tab]')).toHaveLength(0);
     expect(root.querySelector('qd-lemmas-table')).toBeTruthy();
   });
 
-  it('shows restored-not-found on a 404 summary error and does not reload the list repeatedly', async () => {
+  it('shows restored-not-found on a repeated unknown identity and does not reload the list repeatedly', async () => {
     lemmasApi.getLemmaSummary.mockReturnValue(
       of<ApiResponse<LemmaSummaryDto>>({
         isSuccess: false,
@@ -862,21 +865,14 @@ describe('LemmasExplorerPageComponent US8 — restore and navigate exact state',
 
   it('maps a summary HTTP 404 to restored-not-found without surfacing a generic error', async () => {
     const http404 = new HttpErrorResponse({ status: 404, statusText: 'Not Found' });
-    lemmasApi.getLemmaSummary.mockReturnValue(
-      of<ApiResponse<LemmaSummaryDto>>({
-        isSuccess: false,
-        data: null,
-        message: 'غير موجود',
-        errors: null,
-      }),
-    );
-    void http404;
+    lemmasApi.getLemmaSummary.mockReturnValue(throwError(() => http404));
     queryParamMap$.next(convertToParamMap({ lemma: '424242', view: 'stems' }));
     const fixture = await initLifecycle();
     await fixture.whenStable();
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector('[data-testid="lemmas-restored-not-found"]')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('[data-testid="lemma-details-not-found"]')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('[data-testid="lemmas-panel-error"]')).toBeFalsy();
   });
 });

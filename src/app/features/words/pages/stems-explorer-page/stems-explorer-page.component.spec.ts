@@ -2,7 +2,7 @@ import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { getTestBed, TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { provideRouter, ActivatedRoute, convertToParamMap, Router } from '@angular/router';
-import { BehaviorSubject, of, Subject } from 'rxjs';
+import { BehaviorSubject, of, Subject, throwError } from 'rxjs';
 
 import { ApiResponse } from '../../../../core/data-access/api-response.model';
 import { deepLinkToHref } from '../../../../shared/url/deep-link-href';
@@ -334,7 +334,7 @@ describe('StemsExplorerPageComponent US2', () => {
       }),
       queryParamsHandling: 'merge',
     });
-    expect(TestBed.inject(StemsDetailFacade).view()).toBe('words');
+    expect(TestBed.inject(StemsDetailFacade).selectedStemId()).toBeNull();
   });
 
   it('search and sort changes reset only the list page while preserving selection', async () => {
@@ -582,6 +582,7 @@ describe('StemsExplorerPageComponent US5', () => {
       }),
       queryParamsHandling: 'merge',
     });
+    expect(TestBed.inject(StemsDetailFacade).selectedStemId()).toBeNull();
   });
 
   it('keeps the four detail tabs and surah sub-tabs visible while mentioned surahs load', async () => {
@@ -720,6 +721,8 @@ describe('StemsExplorerPageComponent US8 — restore and navigate exact state', 
 
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('[data-testid="stems-restored-not-found"]')).toBeTruthy();
+    expect(root.querySelector('[data-testid="stem-details-not-found"]')).toBeTruthy();
+    expect(root.querySelectorAll('[data-stem-tab]')).toHaveLength(0);
     expect(root.querySelector('qd-stems-table')).toBeTruthy();
   });
 
@@ -847,21 +850,14 @@ describe('StemsExplorerPageComponent US8 — restore and navigate exact state', 
 
   it('maps a summary HTTP 404 to restored-not-found without surfacing a generic error', async () => {
     const http404 = new HttpErrorResponse({ status: 404, statusText: 'Not Found' });
-    stemsApi.getStemSummary.mockReturnValue(
-      of<ApiResponse<StemSummaryDto>>({
-        isSuccess: false,
-        data: null,
-        message: 'غير موجود',
-        errors: null,
-      }),
-    );
-    void http404;
+    stemsApi.getStemSummary.mockReturnValue(throwError(() => http404));
     queryParamMap$.next(convertToParamMap({ stem: '424242', view: 'lemmas' }));
     const fixture = await initLifecycle();
     await fixture.whenStable();
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector('[data-testid="stems-restored-not-found"]')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('[data-testid="stem-details-not-found"]')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('[data-testid="stems-panel-error"]')).toBeFalsy();
   });
 });

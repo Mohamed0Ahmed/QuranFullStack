@@ -48,7 +48,6 @@ import {
   LemmaWordView,
   PagedResultDto,
   LEMMAS_QUERY_KEYS,
-  toLemmaSummary,
 } from '../../models/lemmas.models';
 import { LemmasDetailFacade } from '../../state/lemmas-detail.facade';
 import { LemmasExplorerFacade } from '../../state/lemmas-explorer.facade';
@@ -194,7 +193,6 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
   }
 
   protected onRowSelected(lemma: LemmaListItemViewModel): void {
-    this.detailFacade.selectLemma(toLemmaSummary(lemma), DEFAULT_LEMMA_VIEW);
     this.updateQueryParams(
       buildLemmasQueryParams({
         lemmaId: lemma.id,
@@ -211,20 +209,13 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
     const wordView = view === 'words' ? (event.wordView ?? 'simple') : undefined;
     const surahView = view === 'surahs' ? (event.surahView ?? 'mentioned') : undefined;
 
-    this.detailFacade.selectLemmaWithPanel(
-      toLemmaSummary(lemma),
-      view,
-      wordView,
-      surahView,
-    );
-
     this.updateQueryParams(
       buildLemmasQueryParams({
         lemmaId: lemma.id,
         view,
         detailPage: this.detailPageForView(view),
-        wordView: view === 'words' ? (event.wordView ?? 'simple') : null,
-        surahView: view === 'surahs' ? (event.surahView ?? 'mentioned') : null,
+        wordView: wordView ?? null,
+        surahView: surahView ?? null,
       }),
     );
   }
