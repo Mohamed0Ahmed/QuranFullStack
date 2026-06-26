@@ -68,13 +68,14 @@ All custom skills live under `.claude/skills/`. There are also **14 `speckit-*` 
 | `engineering-review` | ✅ Yes | ❌ No (unless explicitly asked) | **Primary holistic post-implementation review** | — (it is the hub) |
 | `test-guard` | Review **and** write-time guard | ✅ Authors/guards test code | **Test-code quality only** | Called *by* engineering-review for the test-file portion of a diff |
 | `backend-structure-review` | ✅ Yes | ❌ No (unless explicitly asked) | **Backend structure / layering / placement** | A focused subset, not a replacement |
-| `commit-workflow` | Planning + safe execution | Runs git (no destructive cmds) | **Commit ordering & safe staging** | Independent (runs after review) |
+| `commit-workflow` | Planning + safe execution | Runs git (no destructive cmds) | **Git tracking, commit ordering & safe staging** | Independent (runs after review) |
 | `clean-code-guard` | _Not a skill_ — reference pack | n/a | Deep clean-code references | Lives **inside** engineering-review |
 
 ### 2.1 `engineering-review` — the primary holistic review skill
 
 - **Purpose:** the single, holistic **post-implementation** code review for the workspace (.NET backend + Angular frontend). Covers Clean Code, SOLID, DRY/KISS/YAGNI, separation of concerns, backend/frontend architecture, file-size/responsibility thresholds, routeable components & URL state, API integration & `ApiResponse<T>` handling, the UI style system, strong typing, focused scope, error handling, **Quranic Data Safety**, and build/test verification. When the change came from Spec Kit, it **also** applies phase/task/contract compliance.
-- **Best used when:** reviewing a change, diff, PR, branch, or a completed Spec Kit phase; deciding whether something is ready to merge.
+- **Best used when:** reviewing a change, diff, PR, branch, or a completed Spec Kit phase; deciding whether implementation quality is engineering-ready.
+- **Boundary:** it does **not** judge Git staging, commit ordering, push readiness, or untracked-file risk. It reviews implementation content, including untracked files when they are part of the requested scope, but Git tracking/staging state never affects findings, notes, Test Guard verdict, or final verdict.
 - **Do not use when:** you only need a narrow structure question answered (use `backend-structure-review`), only test files changed (use `test-guard`), or you want fixes implemented (review is findings-only).
 - **Reads / references (path-based, only what changed):**
   - Always: `CODING_PRINCIPLES.md`.
@@ -122,7 +123,7 @@ All custom skills live under `.claude/skills/`. There are also **14 `speckit-*` 
 
 ### 2.4 `commit-workflow` — safe Git commits across the three repos
 
-- **Purpose:** plan and safely execute commits across the workspace + two submodules. Inspects status per repo, plans explicit staging, enforces **child-repos-first then workspace-last** order, suggests concise messages, and warns about submodule-pointer and unrelated-file risks.
+- **Purpose:** plan and safely execute commits across the workspace + two submodules. Owns Git tracking/staging concerns, including git status, untracked files, explicit staging, commit omission risk, commit ordering, submodule pointer safety, and push readiness. Inspects status per repo, plans explicit staging, enforces **child-repos-first then workspace-last** order, suggests concise messages, and warns about submodule-pointer and unrelated-file risks.
 - **Best used when:** committing/staging/pushing, deciding commit order, or working across more than one repo.
 - **Do not use when:** you want destructive Git operations (it never runs `reset`/`clean`/`rebase`) — those are out of scope.
 - **Reads / references:** live `git status` of all three repos.
@@ -146,7 +147,7 @@ and what is **reference-only**. Use this to know when each item actually comes i
 | `DESIGN.md` | Conditional architecture doc | **Conditional** | Only for UI / visual work | Anyone doing UI work | Design direction (seed). For concrete tokens/classes use `UI_STYLE_SYSTEM.md`. **Not for backend-only work** unless user-facing. |
 | Backend `.architecture/*` (`BACKEND_STRUCTURE.md`, `CLEAN_ARCHITECTURE.md`, `API_GUIDELINES.md`) | Conditional architecture doc | **Conditional** | When backend files in the relevant area change | `engineering-review`, `backend-structure-review` (path-based) | **Not read on every command** — read only when the touched area matches. |
 | Frontend `.architecture/*` (`FRONTEND_STRUCTURE.md`, `UI_STYLE_SYSTEM.md`, `API_INTEGRATION_GUIDELINES.md`) | Conditional architecture doc | **Conditional** | When frontend files in the relevant area change | `engineering-review` (path-based) | **Not read on every command** — read only when the touched area matches. |
-| `engineering-review` | Manually invoked skill | **Manual** | Post-implementation review; "is this ready to merge?" | Invoked on request | **Normally manually requested.** Primary holistic review; review-only. |
+| `engineering-review` | Manually invoked skill | **Manual** | Post-implementation review; "is implementation quality engineering-ready?" | Invoked on request | **Normally manually requested.** Primary holistic review; review-only; does not judge Git staging or untracked-file risk. |
 | `SPEC_KIT_IMPLEMENTATION_REVIEW.md` | Conditional skill add-on | **Conditional** (inside engineering-review) | When the change came from Spec Kit (Phase / US / task IDs / `specs/<feature>/`) | Read by `engineering-review` | Extends engineering-review; **not standalone.** |
 | `references/clean-code-guard/*` | Reference-only pack | **Never invoked** (read on demand) | During deep clean-code review or the clean-code self-check | `engineering-review`; the clean-code self-check | **Never a skill** — no triggers. Reference material only. |
 | `test-guard` | Manually invoked skill (also applied by engineering-review) | **Manual** for test-only; **Conditional** within engineering-review | Write/add/edit tests, or test-only review; engineering-review applies it **only when a mixed diff contains test files** | Invoked on request; referenced by `engineering-review` | **Explicitly requested** for test-only reviews. Test-code quality only. |
@@ -239,6 +240,7 @@ Location: `Frontend/quran-dashboard-ui/.architecture/`. Canonical frontend rules
 - Use `commit-workflow`.
 - **Backend, then Frontend, then FullStack** (workspace commits last to update submodule pointers).
 - Stage **explicit paths**; avoid broad `git add .`/`-A` unless explicitly safe.
+- Treat untracked files and commit omission risk as commit-workflow concerns, not engineering-review findings.
 - Never commit build outputs, `node_modules`, `bin`/`obj`, `.angular/cache`, or secrets.
 
 ---

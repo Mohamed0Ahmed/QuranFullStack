@@ -3,15 +3,16 @@ name: engineering-review
 description: >-
   Review-only engineering/code review for the Quran Dashboard FullStack workspace
   (.NET backend + Angular frontend). Use this skill whenever the user asks to review
-  code, a diff, a PR, a branch, or a change; asks whether a change is ready to merge,
-  follows the coding principles, or respects the architecture; or shares freshly
-  implemented backend or frontend code for a quality or architecture check — even if
-  they don't say the word "review". Also use it when the change came from Spec Kit
-  (the request mentions a Phase, a User Story/US, task IDs like T013–T018,
-  specs/<feature>/, spec.md, plan.md, tasks.md, contracts/, or quickstart.md) and
-  should be checked against its spec, scope, and contracts. This is a review-only
-  skill: it produces findings and a verdict and does not implement fixes unless the
-  user explicitly asks.
+  code, a diff, a PR, a branch, or a change; asks whether implementation quality is
+  engineering-ready, follows the coding principles, or respects the architecture; or
+  shares freshly implemented backend or frontend code for a quality or architecture
+  check — even if they don't say the word "review". This skill does not judge Git
+  staging, commit ordering, push readiness, or untracked-file risk; those belong to
+  commit-workflow. Also use it when the change came from Spec Kit (the request
+  mentions a Phase, a User Story/US, task IDs like T013–T018, specs/<feature>/,
+  spec.md, plan.md, tasks.md, contracts/, or quickstart.md) and should be checked
+  against its spec, scope, and contracts. This is a review-only skill: it produces
+  findings and a verdict and does not implement fixes unless the user explicitly asks.
 ---
 
 # Engineering Review Skill
@@ -27,6 +28,15 @@ This skill is for review only.
 - It must **not** refactor code.
 - It must **not** create files unless the user explicitly asks.
 - It produces findings, risks, and recommendations only.
+- It must review implementation content, including untracked files, when those files
+  are part of the requested scope.
+- It must not treat Git tracking/staging state as an engineering-quality issue.
+- Untracked files must never be Findings, Notes, blockers, severity items, Test Guard
+  issues, final verdict inputs, or reasons for `CHANGES REQUESTED`.
+- If untracked files are noticed, mention them only in a separate optional section
+  named `Commit workflow reminder`; that section is outside the engineering verdict.
+- `commit-workflow` owns git status, untracked files, explicit staging, commit
+  omission risk, commit ordering, submodule pointer safety, and push readiness.
 
 If the user wants fixes after the review, that is a separate, explicitly requested
 task.
@@ -72,9 +82,11 @@ its result. Consult:
 - `.claude/skills/test-guard/references/jest.md` — for frontend Angular/TypeScript tests.
 
 Recognize test files by pattern: `*Tests.cs`, `*Test.cs`, `*.spec.ts`, `*.test.ts`, and
-files under `tests/` or `__tests__/`. Test-code findings still use the same severity
-levels as every other finding and **must influence the final verdict** — they fold into
-the **Findings** section below and drive the dedicated **Test Guard Review** section.
+files under `tests/` or `__tests__/`. Test-code quality findings still use the same
+severity levels as every other engineering finding and **must influence the final
+verdict** — they fold into the **Findings** section below and drive the dedicated
+**Test Guard Review** section. Git tracking/staging status is not test-code quality
+and must not fold into Findings or verdict.
 
 **If Backend changed, also read:**
 
@@ -338,28 +350,15 @@ is **not** satisfied by listing `test-guard` under "Docs read". Evaluate, at min
 - synthetic/test data safety (no real or fabricated Quranic source data).
 - whether tests compare only counts or samples when full projections or checksums are
   needed to prove correctness.
-- whether a required test file is genuinely missing from the working tree — i.e. a test
-  the task requires does not exist on disk at all. A file that exists but is merely
-  untracked or unstaged is **present**; review it normally. Git staging state is not a
-  verdict driver here (see the note below).
 - whether the tests can pass while the target behavior is broken.
 
 **Severity guidance for test-code findings:**
 
 - A test that can pass while the required behavior is broken is **at least MAJOR**.
 - Weak or missing test coverage that affects contract-critical behavior is **BLOCKING**.
-- A required test file that is genuinely absent from the working tree (does not exist on
-  disk) is treated as missing coverage per the line above; rate it by the impact of the
-  behavior left unverified.
-
-**Git staging state is not a verdict driver.** Review the working tree as it is. A file
-that is untracked or unstaged is **not** a finding, must **not** downgrade the verdict,
-and must **not** trigger a request to stage or commit files — staging is owned by the
-commit workflow (`commit-workflow`, and the Spec Kit `speckit-git-commit` hook, which
-stages all changes automatically). You **may** add a one-line informational note about
-git state (e.g. "new test files are still untracked"), but it carries no severity and
-does not affect the verdict. The only time git/commit state legitimately enters the
-verdict is when the user **explicitly** asks for a commit-readiness or staged-diff review.
+- Git tracking/staging state is not a severity item. Untracked files must never be
+  Findings, Notes, blockers, severity items, Test Guard issues, final verdict inputs,
+  or reasons for `CHANGES REQUESTED`.
 
 Keep this distinct from build/test verification below:
 
@@ -473,13 +472,20 @@ changed, omit it. When present, report:
   projections/checksums where comparing only counts or samples is insufficient.
 - **Fixture/data safety** — synthetic test data only; no real or fabricated Quranic
   source data.
-- **Test isolation** — fixture isolation and cleanup; no leaked shared state between
-  tests.
+- **Test isolation** — fixture isolation and cleanup; no leaked shared state.
 - **Test Guard verdict:** PASS / PASS WITH NOTES / CHANGES REQUESTED / BLOCKED.
 
 ## 9. Verification Check
 
 Report build/test evidence if provided. If no build/test was run, say so clearly.
+
+## Commit workflow reminder
+
+Include this optional section only if Git tracking/staging concerns were noticed. This
+section is outside the engineering verdict and must not affect Findings, Notes, Test
+Guard verdict, or final Verdict. Direct the user to `commit-workflow` for git status,
+untracked files, explicit staging, commit omission risk, commit ordering, submodule
+pointer safety, and push readiness.
 
 ## 10. Final Recommendation
 
@@ -490,12 +496,10 @@ Short, direct next step consistent with the verdict.
 - Be direct and practical.
 - Do not invent facts; if the diff or file tree is unavailable, request it.
 - If build/test status is unknown, say unknown.
-- Git staging state is not a verdict driver: do not mark CHANGES REQUESTED, downgrade
-  the verdict, or ask the implementer to stage/commit because a file is untracked or
-  unstaged. Review the working tree as-is; mention git state only as a non-blocking
-  note. Staging is owned by the commit workflow. (A required file genuinely missing from
-  the working tree, a failing build, or failing tests remain real findings; honor an
-  explicit commit-readiness/staged-diff request.)
+- Git tracking/staging state is not a verdict driver: do not mark CHANGES REQUESTED,
+  downgrade the verdict, add Findings/Notes, or ask the implementer to stage/commit
+  because a file is untracked or unstaged. Review implementation content as-is; if Git
+  concerns are noticed, use only the optional `Commit workflow reminder` section.
 - Separate findings by severity; do not inflate severity.
 - Do not request broad refactors unless necessary.
 - Do not implement fixes unless explicitly asked.
