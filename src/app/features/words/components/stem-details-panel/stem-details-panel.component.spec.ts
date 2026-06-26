@@ -106,3 +106,105 @@ describe('StemDetailsPanelComponent a11y (T087)', () => {
     }
   });
 });
+
+describe('StemDetailsPanelComponent modal drawer mode (T118)', () => {
+  afterEach(() => {
+    getTestBed().resetTestingModule();
+  });
+
+  function createModalPanel() {
+    TestBed.configureTestingModule({
+      imports: [StemDetailsPanelComponent],
+      teardown: { destroyAfterEach: true },
+    });
+
+    const fixture = TestBed.createComponent(StemDetailsPanelComponent);
+    fixture.componentRef.setInput('view', 'surahs');
+    fixture.componentRef.setInput('inline', false);
+    fixture.componentRef.setInput('emptySelection', false);
+    fixture.componentRef.setInput('selectionTitle', 'عَلِمَ');
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  it('renders a modal dialog with backdrop, role=dialog, and aria-modal when inline=false', () => {
+    const fixture = createModalPanel();
+    const host = fixture.nativeElement as HTMLElement;
+
+    expect(host.querySelector('[data-testid="stem-details-panel-backdrop"]')).toBeTruthy();
+    const dialog = host.querySelector('[data-testid="stem-details-modal"]') as HTMLElement;
+    expect(dialog).toBeTruthy();
+    expect(dialog.getAttribute('role')).toBe('dialog');
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
+    expect(dialog.getAttribute('aria-label')).toBe('تفاصيل الأصل الصرفي');
+  });
+
+  it('emits close when the backdrop is clicked directly', () => {
+    const fixture = createModalPanel();
+    const host = fixture.nativeElement as HTMLElement;
+
+    let closed = false;
+    fixture.componentInstance.close.subscribe(() => (closed = true));
+
+    const backdrop = host.querySelector('[data-testid="stem-details-panel-backdrop"]') as HTMLElement;
+    backdrop.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    expect(closed).toBe(true);
+  });
+
+  it('does not emit close when a click inside the modal bubbles to the backdrop', () => {
+    const fixture = createModalPanel();
+    const host = fixture.nativeElement as HTMLElement;
+
+    let closed = false;
+    fixture.componentInstance.close.subscribe(() => (closed = true));
+
+    const dialog = host.querySelector('[data-testid="stem-details-modal"]') as HTMLElement;
+    dialog.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    expect(closed).toBe(false);
+  });
+
+  it('emits close on Escape key from inside the modal', () => {
+    const fixture = createModalPanel();
+    const host = fixture.nativeElement as HTMLElement;
+
+    let closed = false;
+    fixture.componentInstance.close.subscribe(() => (closed = true));
+
+    const dialog = host.querySelector('[data-testid="stem-details-modal"]') as HTMLElement;
+    dialog.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+
+    expect(closed).toBe(true);
+  });
+
+  it('emits close from the header close button', () => {
+    const fixture = createModalPanel();
+    const host = fixture.nativeElement as HTMLElement;
+
+    let closed = false;
+    fixture.componentInstance.close.subscribe(() => (closed = true));
+
+    const closeBtn = host.querySelector('[data-testid="stem-details-panel-close"]') as HTMLButtonElement;
+    closeBtn.click();
+
+    expect(closed).toBe(true);
+  });
+
+  it('renders no modal chrome when empty selection even in modal mode', () => {
+    TestBed.configureTestingModule({
+      imports: [StemDetailsPanelComponent],
+      teardown: { destroyAfterEach: true },
+    });
+
+    const fixture = TestBed.createComponent(StemDetailsPanelComponent);
+    fixture.componentRef.setInput('view', 'surahs');
+    fixture.componentRef.setInput('inline', false);
+    fixture.componentRef.setInput('emptySelection', true);
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelector('[data-testid="stem-details-modal"]')).toBeNull();
+    expect(host.querySelector('[data-testid="stem-details-panel-backdrop"]')).toBeNull();
+  });
+});

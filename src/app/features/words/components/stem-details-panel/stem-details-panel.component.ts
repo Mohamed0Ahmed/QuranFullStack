@@ -26,8 +26,15 @@ import { STEM_VIEW_KEYS, StemView } from '../../models/stems.models';
  * `RootDetailsPanelComponent`. Renders exactly four tabs — الكلمات / الآيات /
  * السور / الصيغ المعجمية — with no overview tab. Pure chrome: receives the
  * active view and emits `viewChange`; the active view content is projected via
- * `<ng-content />` by the explorer page. Full responsive drawer / focus trap /
- * RTL behaviour is completed in T117.
+ * `<ng-content />` by the explorer page.
+ *
+ * Responsive drawer + focus handling (T117): on desktop the page renders the
+ * panel inline via `inline=true`; below the desktop breakpoint the page renders
+ * the panel as a modal drawer (`inline=false`) with `cdkTrapFocus` +
+ * `cdkTrapFocusAutoCapture`, `role="dialog"`, `aria-modal="true"`, an explicit
+ * backdrop click handler, and Escape-to-close. RTL is honoured through logical
+ * CSS properties (padding-inline/padding-block/border-block-end) and the
+ * tablist arrow keys (ArrowLeft moves forward in Arabic reading order).
  */
 @Component({
   selector: 'qd-stem-details-panel',

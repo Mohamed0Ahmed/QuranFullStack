@@ -3,7 +3,7 @@ import { getTestBed, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
 import { WordsHubPageComponent } from './words-hub-page.component';
-import { stemsRoutePath } from '../../../../core/navigation/route-paths';
+import { lemmasRoutePath, stemsRoutePath } from '../../../../core/navigation/route-paths';
 import {
   ACTIVE_HUB_SECTION,
   ADDITIONAL_ACTIVE_HUB_SECTIONS,
@@ -59,6 +59,9 @@ describe('WordsHubPageComponent', () => {
     const root = await createComponent();
 
     expect(ADDITIONAL_ACTIVE_HUB_SECTIONS.map((s) => s.labelAr)).toContain('الصيغ المعجمية');
+    expect(
+      ADDITIONAL_ACTIVE_HUB_SECTIONS.find((s) => s.labelAr === 'الصيغ المعجمية')?.route,
+    ).toBe(lemmasRoutePath());
     const lemmasCard = root.querySelector('[data-testid="words-hub-card--الصيغ المعجمية"]');
     expect(lemmasCard).toBeTruthy();
   });
