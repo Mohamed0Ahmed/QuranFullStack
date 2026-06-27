@@ -1,0 +1,522 @@
+[
+  {
+    "location": "10:61:26",
+    "currentWord": "مِّثْقَالِ",
+    "corpusBw": [
+      "mivoqaAl"
+    ],
+    "ambiguous": [
+      {
+        "total": 5,
+        "candidates": {
+          "مِثْقَال": 4,
+          "كَانَ": 1
+        }
+      }
+    ]
+  },
+  {
+    "location": "10:71:14",
+    "currentWord": "وَتَذْكِيرِى",
+    "corpusBw": [
+      "ta*okiyr"
+    ],
+    "ambiguous": []
+  },
+  {
+    "location": "11:8:15",
+    "currentWord": "مَصْرُوفًا",
+    "corpusBw": [
+      "maSoruwf"
+    ],
+    "ambiguous": []
+  },
+  {
+    "location": "16:69:17",
+    "currentWord": "شِفَآءٌۭ",
+    "corpusBw": [
+      "$ifaA^'"
+    ],
+    "ambiguous": [
+      {
+        "total": 3,
+        "candidates": {
+          "شِفَآء": 2,
+          "ءَامَنَ": 1
+        }
+      }
+    ]
+  },
+  {
+    "location": "17:7:20",
+    "currentWord": "وَلِيُتَبِّرُوا۟",
+    "corpusBw": [
+      "tab~aro"
+    ],
+    "ambiguous": []
+  },
+  {
+    "location": "18:18:13",
+    "currentWord": "بِٱلْوَصِيدِ ۚ",
+    "corpusBw": [
+      "waSiyd"
+    ],
+    "ambiguous": []
+  },
+  {
+    "location": "18:49:23",
+    "currentWord": "حَاضِرًۭا ۗ",
+    "corpusBw": [
+      "HaADir"
+    ],
+    "ambiguous": []
+  },
+  {
+    "location": "18:5:8",
+    "currentWord": "كَبُرَتْ",
+    "corpusBw": [
+      "kabura"
+    ],
+    "ambiguous": [
+      {
+        "total": 4,
+        "candidates": {
+          "كَبُرَ": 3,
+          "كَانَ": 1
+        }
+      }
+    ]
+  },
+  {
+    "location": "20:21:6",
+    "currentWord": "سِيرَتَهَا",
+    "corpusBw": [
+      "siyrat"
+    ],
+    "ambiguous": []
+  },
+  {
+    "location": "22:1:6",
+    "currentWord": "زَلْزَلَةَ",
+    "corpusBw": [
+      "zalozalap"
+    ],
+    "ambiguous": []
+  },
+  {
+    "location": "22:40:20",
+    "currentWord": "وَبِيَعٌۭ",
+    "corpusBw": [
+      "biyaE"
+    ],
+    "ambiguous": []
+  },
+  {
+    "location": "24:43:35",
+    "currentWord": "سَنَا",
+    "corpusBw": [
+      "sanaA"
+    ],
+    "ambiguous": []
+  },
+  {
+    "location": "25:39:6",
+    "currentWord": "تَبَّرْنَا",
+    "corpusBw": [
+      "tab~aro"
+    ],
+    "ambiguous": []
+  },
+  {
+    "location": "28:12:3",
+    "currentWord": "ٱلْمَرَاضِعَ",
+    "corpusBw": [
+      "maraADiE"
+    ],
+    "ambiguous": []
+  },
+  {
+    "location": "29:64:12",
+    "currentWord": "ٱلْحَيَوَانُ ۚ",
+    "corpusBw": [
+      "HayawaAn"
+    ],
+    "ambiguous": []
+  },
+  {
+    "location": "2:144:12",
+    "currentWord": "شَطْرَ",
+    "corpusBw": [
+      "$aTor"
+    ],
+    "ambiguous": [
+      {
+        "total": 3,
+        "candidates": {
+          "شَطْر": 2,
+          "كَانَ": 1
+        }
+      }
+    ]
+  },
+  {
+    "location": "2:150:14",
+    "currentWord": "شَطْرَهُۥ",
+    "corpusBw": [
+      "$aTor"
+    ],
+    "ambiguous": [
+      {
+        "total": 3,
+        "candidates": {
+          "شَطْر": 2,
+          "كَانَ": 1
+        }
+      }
+    ]
+  },
+  {
+    "location": "2:20:11",
+    "currentWord": "أَظْلَمَ",
+    "corpusBw": [
+      ">aZolama"
+    ],
+    "ambiguous": []
+  },
+  {
+    "location": "2:223:14",
+    "currentWord": "مُّلَـٰقُوهُ ۗ",
+    "corpusBw": [
+      "m~ula`quwA"
+    ],
+    "ambiguous": [
+      {
+        "total": 2,
+        "candidates": {
+          "ءَامَنَ": 1,
+          "مُّلَٰقُوا": 1
+        }
+      }
+    ]
+  },
+  {
+    "location": "2:249:47",
+    "currentWord": "مُّلَـٰقُوا۟",
+    "corpusBw": [
+      "m~ula`quwA"
+    ],
+    "ambiguous": [
+      {
+        "total": 2,
+        "candidates": {
+          "ءَامَنَ": 1,
+          "مُّلَٰقُوا": 1
+        }
+      }
+    ]
+  },
+  {
+    "location": "2:60:2",
+    "currentWord": "ٱسْتَسْقَىٰ",
+    "corpusBw": [
+      "{sotasoqaY`"
+    ],
+    "ambiguous": []
+  },
+  {
+    "location": "2:68:18",
+    "currentWord": "عَوَانٌۢ",
+    "corpusBw": [
+      "EawaAn"
+    ],
+    "ambiguous": []
+  },
+  {
+    "location": "33:5:23",
+    "currentWord": "تَعَمَّدَتْ",
+    "corpusBw": [
+      "taEam~adato"
+    ],
+    "ambiguous": []
+  },
+  {
+    "location": "34:22:10",
+    "currentWord": "مِثْقَالَ",
+    "corpusBw": [
+      "mivoqaAl"
+    ],
+    "ambiguous": [
+      {
+        "total": 5,
+        "candidates": {
+          "مِثْقَال": 4,
+          "كَانَ": 1
+        }
+      }
+    ]
+  },
+  {
+    "location": "34:3:16",
+    "currentWord": "مِثْقَالُ",
+    "corpusBw": [
+      "mivoqaAl"
+    ],
+    "ambiguous": [
+      {
+        "total": 5,
+        "candidates": {
+          "مِثْقَال": 4,
+          "كَانَ": 1
+        }
+      }
+    ]
+  },
+  {
+    "location": "3:49:24",
+    "currentWord": "وَأُبْرِئُ",
+    "corpusBw": [
+      "tubori}u"
+    ],
+    "ambiguous": []
+  },
+  {
+    "location": "40:35:9",
+    "currentWord": "كَبُرَ",
+    "corpusBw": [
+      "kabura"
+    ],
+    "ambiguous": [
+      {
+        "total": 4,
+        "candidates": {
+          "كَبُرَ": 3,
+          "كَانَ": 1
+        }
+      }
+    ]
+  },
+  {
+    "location": "42:13:24",
+    "currentWord": "كَبُرَ",
+    "corpusBw": [
+      "kabura"
+    ],
+    "ambiguous": [
+      {
+        "total": 4,
+        "candidates": {
+          "كَبُرَ": 3,
+          "كَانَ": 1
+        }
+      }
+    ]
+  },
+  {
+    "location": "47:20:21",
+    "currentWord": "نَظَرَ",
+    "corpusBw": [
+      "naZar"
+    ],
+    "ambiguous": []
+  },
+  {
+    "location": "48:25:24",
+    "currentWord": "مَّعَرَّةٌۢ",
+    "corpusBw": [
+      "m~aEar~ap"
+    ],
+    "ambiguous": []
+  },
+  {
+    "location": "48:25:34",
+    "currentWord": "تَزَيَّلُوا۟",
+    "corpusBw": [
+      "tazay~alu"
+    ],
+    "ambiguous": []
+  },
+  {
+    "location": "4:162:17",
+    "currentWord": "وَٱلْمُؤْتُونَ",
+    "corpusBw": [
+      "mu&otuwn"
+    ],
+    "ambiguous": []
+  },
+  {
+    "location": "4:6:19",
+    "currentWord": "يَكْبَرُوا۟ ۚ",
+    "corpusBw": [
+      "kabura"
+    ],
+    "ambiguous": [
+      {
+        "total": 4,
+        "candidates": {
+          "كَبُرَ": 3,
+          "كَانَ": 1
+        }
+      }
+    ]
+  },
+  {
+    "location": "4:91:26",
+    "currentWord": "ثَقِفْتُمُوهُمْ ۚ",
+    "corpusBw": [
+      "vuqifu"
+    ],
+    "ambiguous": [
+      {
+        "total": 5,
+        "candidates": {
+          "ثُقِفُ": 4,
+          "أَيْن": 1
+        }
+      }
+    ]
+  },
+  {
+    "location": "5:110:39",
+    "currentWord": "وَتُبْرِئُ",
+    "corpusBw": [
+      "tubori}u"
+    ],
+    "ambiguous": []
+  },
+  {
+    "location": "5:4:12",
+    "currentWord": "ٱلْجَوَارِحِ",
+    "corpusBw": [
+      "jawaAriH"
+    ],
+    "ambiguous": []
+  },
+  {
+    "location": "5:5:12",
+    "currentWord": "حِلٌّۭ",
+    "corpusBw": [
+      "Hil~"
+    ],
+    "ambiguous": [
+      {
+        "total": 2,
+        "candidates": {
+          "كَانَ": 1,
+          "حِلّ": 1
+        }
+      }
+    ]
+  },
+  {
+    "location": "5:5:9",
+    "currentWord": "حِلٌّۭ",
+    "corpusBw": [
+      "Hil~"
+    ],
+    "ambiguous": [
+      {
+        "total": 2,
+        "candidates": {
+          "كَانَ": 1,
+          "حِلّ": 1
+        }
+      }
+    ]
+  },
+  {
+    "location": "5:66:19",
+    "currentWord": "مُّقْتَصِدَةٌۭ ۖ",
+    "corpusBw": [
+      "m~uqotaSidap"
+    ],
+    "ambiguous": []
+  },
+  {
+    "location": "60:10:21",
+    "currentWord": "حِلٌّۭ",
+    "corpusBw": [
+      "Hil~"
+    ],
+    "ambiguous": [
+      {
+        "total": 2,
+        "candidates": {
+          "كَانَ": 1,
+          "حِلّ": 1
+        }
+      }
+    ]
+  },
+  {
+    "location": "6:76:11",
+    "currentWord": "أَفَلَ",
+    "corpusBw": [
+      ">afala"
+    ],
+    "ambiguous": []
+  },
+  {
+    "location": "6:77:9",
+    "currentWord": "أَفَلَ",
+    "corpusBw": [
+      ">afala"
+    ],
+    "ambiguous": []
+  },
+  {
+    "location": "6:78:11",
+    "currentWord": "أَفَلَتْ",
+    "corpusBw": [
+      ">afala"
+    ],
+    "ambiguous": []
+  },
+  {
+    "location": "7:160:10",
+    "currentWord": "ٱسْتَسْقَىٰهُ",
+    "corpusBw": [
+      "{sotasoqaY`"
+    ],
+    "ambiguous": []
+  },
+  {
+    "location": "83:26:5",
+    "currentWord": "فَلْيَتَنَافَسِ",
+    "corpusBw": [
+      "yatanaAfasi"
+    ],
+    "ambiguous": []
+  },
+  {
+    "location": "8:24:16",
+    "currentWord": "ٱلْمَرْءِ",
+    "corpusBw": [
+      "maro'"
+    ],
+    "ambiguous": [
+      {
+        "total": 3,
+        "candidates": {
+          "مَرْء": 2,
+          "فَرَّقُ": 1
+        }
+      }
+    ]
+  },
+  {
+    "location": "9:19:3",
+    "currentWord": "ٱلْحَآجِّ",
+    "corpusBw": [
+      "HaA^j~"
+    ],
+    "ambiguous": []
+  },
+  {
+    "location": "9:2:13",
+    "currentWord": "مُخْزِى",
+    "corpusBw": [
+      "muxoziY"
+    ],
+    "ambiguous": []
+  }
+]

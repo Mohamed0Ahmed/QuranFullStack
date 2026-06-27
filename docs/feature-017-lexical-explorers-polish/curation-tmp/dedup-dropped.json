@@ -1,0 +1,1098 @@
+[
+  [
+    "3:116:15",
+    "shift-59",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "replace"
+  ],
+  [
+    "3:33:7",
+    "shift-59",
+    "add",
+    "dropped; existing",
+    "shift-63-replace",
+    "replace"
+  ],
+  [
+    "4:54:12",
+    "shift-59",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "replace"
+  ],
+  [
+    "58:17:12",
+    "shift-59",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "replace"
+  ],
+  [
+    "5:41:13",
+    "shift-59",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "replace"
+  ],
+  [
+    "7:134:17",
+    "shift-59",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "replace"
+  ],
+  [
+    "10:13:12",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "10:71:10",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "11:17:17",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "11:8:20",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "12:111:19",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "12:17:14",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "12:24:4",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "12:38:8",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "12:64:14",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "14:11:18",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "16:111:7",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "16:118:13",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "16:60:9",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "17:100:12",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "17:110:9",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "17:11:6",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "17:12:17",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "17:33:14",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "17:66:12",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "19:79:5",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "20:101:3",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "21:47:11",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "21:51:2",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "21:51:7",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "21:73:13",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "24:2:17",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "24:55:29",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "25:15:10",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "25:58:9",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "25:59:15",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "25:6:10",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "26:111:2",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "28:50:10",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "28:57:10",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "28:58:14",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "28:79:11",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "29:26:1",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "29:47:8",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "29:53:9",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "29:8:7",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "2:114:16",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "2:126:22",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "2:216:10",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "2:228:7",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "2:247:13",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "2:44:5",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "2:75:3",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "30:55:11",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "33:24:14",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "33:43:11",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "34:39:15",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "34:3:11",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "35:6:8",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "36:30:9",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "38:76:7",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "39:8:16",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "3:116:14",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "3:154:15",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "3:178:14",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "3:33:6",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "3:49:12",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "3:93:3",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "40:12:9",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "41:15:18",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "41:21:12",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "41:31:12",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "42:9:8",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "45:10:16",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "46:8:12",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "49:11:24",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "4:101:20",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "4:106:5",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "4:129:12",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "4:12:8",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "4:23:52",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "4:28:6",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "4:36:4",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "4:45:6",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "4:50:7",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "4:54:11",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "4:59:20",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "53:26:8",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "57:15:11",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "57:8:7",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "58:17:11",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "59:22:8",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "59:9:27",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "5:106:37",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "5:116:19",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "5:41:12",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "62:8:12",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "64:16:12",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "6:101:11",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "6:101:9",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "6:111:14",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "6:136:16",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "6:158:25",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "6:20:10",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "6:5:10",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "6:92:17",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "70:19:2",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "7:12:14",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "7:134:16",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "7:157:32",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "7:47:5",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "7:86:17",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "7:89:16",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "7:92:11",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "89:23:5",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "8:41:17",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "9:105:10",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "9:111:5",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "9:122:2",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "9:124:14",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "9:17:16",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "9:37:6",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "9:55:15",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "9:61:14",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-59",
+    "add"
+  ],
+  [
+    "9:85:14",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "9:94:10",
+    "missing-recovery",
+    "add",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "5:5:10",
+    "uncertain",
+    "_keep",
+    "dropped; existing",
+    "shift-63",
+    "remove"
+  ],
+  [
+    "5:5:13",
+    "uncertain",
+    "_keep",
+    "dropped; existing",
+    "shift-63",
+    "remove"
+  ],
+  [
+    "5:5:12",
+    "uncertain",
+    "_keep",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "5:5:9",
+    "uncertain",
+    "_keep",
+    "dropped; existing",
+    "shift-63",
+    "add"
+  ],
+  [
+    "11:14:5",
+    "multi-stem",
+    "_exception",
+    "dropped; existing",
+    "multi-stem",
+    "_exception"
+  ],
+  [
+    "18:110:8",
+    "multi-stem",
+    "_exception",
+    "dropped; existing",
+    "multi-stem",
+    "_exception"
+  ],
+  [
+    "21:108:5",
+    "multi-stem",
+    "_exception",
+    "dropped; existing",
+    "multi-stem",
+    "_exception"
+  ],
+  [
+    "38:70:5",
+    "multi-stem",
+    "_exception",
+    "dropped; existing",
+    "multi-stem",
+    "_exception"
+  ],
+  [
+    "41:6:8",
+    "multi-stem",
+    "_exception",
+    "dropped; existing",
+    "multi-stem",
+    "_exception"
+  ],
+  [
+    "8:28:2",
+    "multi-stem",
+    "_exception",
+    "dropped; existing",
+    "multi-stem",
+    "_exception"
+  ],
+  [
+    "8:73:6",
+    "multi-stem",
+    "_exception",
+    "dropped; existing",
+    "multi-stem",
+    "_exception"
+  ]
+]

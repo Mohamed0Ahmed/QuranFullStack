@@ -1,0 +1,1908 @@
+[
+  {
+    "location": "10:13:13",
+    "currentWord": "لِيُؤْمِنُوا۟ ۚ",
+    "rawQulLemma": "كَانَ",
+    "ownCorpusBw": [
+      "'aAmana"
+    ],
+    "ownArabicCandidate": "ءَامَنَ",
+    "prevLocation": "10:13:12",
+    "prevWord": "كَانُوا۟",
+    "prevCorpusBw": [
+      "kaAna"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "10:71:11",
+    "currentWord": "كَبُرَ",
+    "rawQulLemma": "كَانَ",
+    "ownCorpusBw": [
+      "kabura"
+    ],
+    "ownArabicCandidate": null,
+    "prevLocation": "10:71:10",
+    "prevWord": "كَانَ",
+    "prevCorpusBw": [
+      "kaAna"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "11:17:18",
+    "currentWord": "بِهِۦ ۚ",
+    "rawQulLemma": "ءَامَنَ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "11:17:17",
+    "prevWord": "يُؤْمِنُونَ",
+    "prevCorpusBw": [
+      "'aAmana"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "11:8:21",
+    "currentWord": "بِهِۦ",
+    "rawQulLemma": "كَانَ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "11:8:20",
+    "prevWord": "كَانُوا۟",
+    "prevCorpusBw": [
+      "kaAna"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "12:111:20",
+    "currentWord": "وَهُدًۭى",
+    "rawQulLemma": "شَىْء",
+    "ownCorpusBw": [
+      "hudFY"
+    ],
+    "ownArabicCandidate": "هُدًى",
+    "prevLocation": "12:111:19",
+    "prevWord": "شَىْءٍۢ",
+    "prevCorpusBw": [
+      "$aYo'"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "12:17:15",
+    "currentWord": "لَّنَا",
+    "rawQulLemma": "مُؤْمِن",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "12:17:14",
+    "prevWord": "بِمُؤْمِنٍۢ",
+    "prevCorpusBw": [
+      "mu&omin"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "12:24:5",
+    "currentWord": "بِهَا",
+    "rawQulLemma": "هَمَّ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "12:24:4",
+    "prevWord": "وَهَمَّ",
+    "prevCorpusBw": [
+      "ham~a"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "12:38:9",
+    "currentWord": "لَنَآ",
+    "rawQulLemma": "كَانَ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "12:38:8",
+    "prevWord": "كَانَ",
+    "prevCorpusBw": [
+      "kaAna"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "12:64:15",
+    "currentWord": "وَهُوَ",
+    "rawQulLemma": "حَٰفِظ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "12:64:14",
+    "prevWord": "حَـٰفِظًۭا ۖ",
+    "prevCorpusBw": [
+      "Ha`fiZ"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "14:11:19",
+    "currentWord": "لَنَآ",
+    "rawQulLemma": "كَانَ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "14:11:18",
+    "prevWord": "كَانَ",
+    "prevCorpusBw": [
+      "kaAna"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "16:111:8",
+    "currentWord": "وَتُوَفَّىٰ",
+    "rawQulLemma": "نَفْس",
+    "ownCorpusBw": [
+      "waf~aY`^"
+    ],
+    "ownArabicCandidate": "وَفَّىٰٓ",
+    "prevLocation": "16:111:7",
+    "prevWord": "نَّفْسِهَا",
+    "prevCorpusBw": [
+      "nafos"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "16:118:14",
+    "currentWord": "أَنفُسَهُمْ",
+    "rawQulLemma": "كَانَ",
+    "ownCorpusBw": [
+      "nafos"
+    ],
+    "ownArabicCandidate": "نَفْس",
+    "prevLocation": "16:118:13",
+    "prevWord": "كَانُوٓا۟",
+    "prevCorpusBw": [
+      "kaAna"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "16:60:10",
+    "currentWord": "وَهُوَ",
+    "rawQulLemma": "أَعْلَىٰ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "16:60:9",
+    "prevWord": "ٱلْأَعْلَىٰ ۚ",
+    "prevCorpusBw": [
+      ">aEolaY`"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "17:100:13",
+    "currentWord": "ٱلْإِنسَـٰنُ",
+    "rawQulLemma": "كَانَ",
+    "ownCorpusBw": [
+      "<insa`n"
+    ],
+    "ownArabicCandidate": "إِنسَٰن",
+    "prevLocation": "17:100:12",
+    "prevWord": "وَكَانَ",
+    "prevCorpusBw": [
+      "kaAna"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "17:110:10",
+    "currentWord": "فَلَهُ",
+    "rawQulLemma": "دَعَا",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "17:110:9",
+    "prevWord": "تَدْعُوا۟",
+    "prevCorpusBw": [
+      "daEaA"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "17:11:7",
+    "currentWord": "ٱلْإِنسَـٰنُ",
+    "rawQulLemma": "كَانَ",
+    "ownCorpusBw": [
+      "<insa`n"
+    ],
+    "ownArabicCandidate": "إِنسَٰن",
+    "prevLocation": "17:11:6",
+    "prevWord": "وَكَانَ",
+    "prevCorpusBw": [
+      "kaAna"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "17:12:18",
+    "currentWord": "ٱلسِّنِينَ",
+    "rawQulLemma": "عَدَد",
+    "ownCorpusBw": [
+      "siniyn"
+    ],
+    "ownArabicCandidate": "سِنِين",
+    "prevLocation": "17:12:17",
+    "prevWord": "عَدَدَ",
+    "prevCorpusBw": [
+      "Eadad"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "17:33:15",
+    "currentWord": "سُلْطَـٰنًۭا",
+    "rawQulLemma": "وَلِىّ",
+    "ownCorpusBw": [
+      "suloTa`n"
+    ],
+    "ownArabicCandidate": "سُلْطَٰن",
+    "prevLocation": "17:33:14",
+    "prevWord": "لِوَلِيِّهِۦ",
+    "prevCorpusBw": [
+      "waliY~"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "17:66:13",
+    "currentWord": "بِكُمْ",
+    "rawQulLemma": "كَانَ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "17:66:12",
+    "prevWord": "كَانَ",
+    "prevCorpusBw": [
+      "kaAna"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "19:79:6",
+    "currentWord": "لَهُۥ",
+    "rawQulLemma": "مَدَّ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "19:79:5",
+    "prevWord": "وَنَمُدُّ",
+    "prevCorpusBw": [
+      "mad~a"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "20:101:4",
+    "currentWord": "لَهُمْ",
+    "rawQulLemma": "سَآءَ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "20:101:3",
+    "prevWord": "وَسَآءَ",
+    "prevCorpusBw": [
+      "saA^'a"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "21:47:12",
+    "currentWord": "مِثْقَالَ",
+    "rawQulLemma": "كَانَ",
+    "ownCorpusBw": [
+      "mivoqaAl"
+    ],
+    "ownArabicCandidate": null,
+    "prevLocation": "21:47:11",
+    "prevWord": "كَانَ",
+    "prevCorpusBw": [
+      "kaAna"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "21:51:3",
+    "currentWord": "إِبْرَٰهِيمَ",
+    "rawQulLemma": "آتَى",
+    "ownCorpusBw": [
+      "<iboraAhiym"
+    ],
+    "ownArabicCandidate": "إِبْرَاهِيم",
+    "prevLocation": "21:51:2",
+    "prevWord": "ءَاتَيْنَآ",
+    "prevCorpusBw": [
+      "A^taY"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "21:51:8",
+    "currentWord": "بِهِۦ",
+    "rawQulLemma": "كَانَ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "21:51:7",
+    "prevWord": "وَكُنَّا",
+    "prevCorpusBw": [
+      "kaAna"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "21:73:14",
+    "currentWord": "لَنَا",
+    "rawQulLemma": "كَانَ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "21:73:13",
+    "prevWord": "وَكَانُوا۟",
+    "prevCorpusBw": [
+      "kaAna"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "24:2:18",
+    "currentWord": "تُؤْمِنُونَ",
+    "rawQulLemma": "كَانَ",
+    "ownCorpusBw": [
+      "'aAmana"
+    ],
+    "ownArabicCandidate": "ءَامَنَ",
+    "prevLocation": "24:2:17",
+    "prevWord": "كُنتُمْ",
+    "prevCorpusBw": [
+      "kaAna"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "24:55:30",
+    "currentWord": "بِى",
+    "rawQulLemma": "أَشْرَكَ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "24:55:29",
+    "prevWord": "يُشْرِكُونَ",
+    "prevCorpusBw": [
+      ">a$oraka"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "25:15:11",
+    "currentWord": "لَهُمْ",
+    "rawQulLemma": "كَانَ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "25:15:10",
+    "prevWord": "كَانَتْ",
+    "prevCorpusBw": [
+      "kaAna"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "25:58:10",
+    "currentWord": "بِهِۦ",
+    "rawQulLemma": "كَفَىٰ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "25:58:9",
+    "prevWord": "وَكَفَىٰ",
+    "prevCorpusBw": [
+      "kafaY`"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "25:59:16",
+    "currentWord": "بِهِۦ",
+    "rawQulLemma": "سَأَلَ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "25:59:15",
+    "prevWord": "فَسْـَٔلْ",
+    "prevCorpusBw": [
+      "sa>ala"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "25:6:11",
+    "currentWord": "غَفُورًۭا",
+    "rawQulLemma": "كَانَ",
+    "ownCorpusBw": [
+      "gafuwr"
+    ],
+    "ownArabicCandidate": "غَفُور",
+    "prevLocation": "25:6:10",
+    "prevWord": "كَانَ",
+    "prevCorpusBw": [
+      "kaAna"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "26:111:3",
+    "currentWord": "لَكَ",
+    "rawQulLemma": "ءَامَنَ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "26:111:2",
+    "prevWord": "أَنُؤْمِنُ",
+    "prevCorpusBw": [
+      "'aAmana"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "28:50:11",
+    "currentWord": "مِمَّنِ",
+    "rawQulLemma": "أَضَلّ",
+    "ownCorpusBw": [
+      "min",
+      "man"
+    ],
+    "ownArabicCandidate": "مِن",
+    "prevLocation": "28:50:10",
+    "prevWord": "أَضَلُّ",
+    "prevCorpusBw": [
+      ">aDal~"
+    ],
+    "isMultiStem": true,
+    "inKnown63": true
+  },
+  {
+    "location": "28:57:11",
+    "currentWord": "لَّهُمْ",
+    "rawQulLemma": "مَكَّ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "28:57:10",
+    "prevWord": "نُمَكِّن",
+    "prevCorpusBw": [
+      "mak~a"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "28:58:15",
+    "currentWord": "وَكُنَّا",
+    "rawQulLemma": "قَلِيل",
+    "ownCorpusBw": [
+      "kaAna"
+    ],
+    "ownArabicCandidate": "كَانَ",
+    "prevLocation": "28:58:14",
+    "prevWord": "قَلِيلًۭا ۖ",
+    "prevCorpusBw": [
+      "qaliyl"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "28:79:12",
+    "currentWord": "لَنَا",
+    "rawQulLemma": "لَيْت",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "28:79:11",
+    "prevWord": "يَـٰلَيْتَ",
+    "prevCorpusBw": [
+      "layot"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "29:26:2",
+    "currentWord": "لَهُۥ",
+    "rawQulLemma": "ءَامَنَ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "29:26:1",
+    "prevWord": "۞ فَـَٔامَنَ",
+    "prevCorpusBw": [
+      "'aAmana"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "29:47:9",
+    "currentWord": "بِهِۦ ۖ",
+    "rawQulLemma": "ءَامَنَ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "29:47:8",
+    "prevWord": "يُؤْمِنُونَ",
+    "prevCorpusBw": [
+      "'aAmana"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "29:53:10",
+    "currentWord": "وَهُمْ",
+    "rawQulLemma": "بَغْتَة",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "29:53:9",
+    "prevWord": "بَغْتَةًۭ",
+    "prevCorpusBw": [
+      "bagotap"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "29:8:8",
+    "currentWord": "بِى",
+    "rawQulLemma": "أَشْرَكَ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "29:8:7",
+    "prevWord": "لِتُشْرِكَ",
+    "prevCorpusBw": [
+      ">a$oraka"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "2:114:17",
+    "currentWord": "لَهُمْ",
+    "rawQulLemma": "كَانَ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "2:114:16",
+    "prevWord": "كَانَ",
+    "prevCorpusBw": [
+      "kaAna"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "2:126:23",
+    "currentWord": "قَلِيلًۭا",
+    "rawQulLemma": "مَّتَّعْ",
+    "ownCorpusBw": [
+      "qaliyl"
+    ],
+    "ownArabicCandidate": "قَلِيل",
+    "prevLocation": "2:126:22",
+    "prevWord": "فَأُمَتِّعُهُۥ",
+    "prevCorpusBw": [
+      "m~at~aEo"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "2:216:11",
+    "currentWord": "وَهُوَ",
+    "rawQulLemma": "شَىْء",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "2:216:10",
+    "prevWord": "شَيْـًۭٔا",
+    "prevCorpusBw": [
+      "$aYo'"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "2:228:8",
+    "currentWord": "لَهُنَّ",
+    "rawQulLemma": "حَلَلْ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "2:228:7",
+    "prevWord": "يَحِلُّ",
+    "prevCorpusBw": [
+      "Halalo"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "2:247:14",
+    "currentWord": "لَهُ",
+    "rawQulLemma": "كَانَ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "2:247:13",
+    "prevWord": "يَكُونُ",
+    "prevCorpusBw": [
+      "kaAna"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "2:44:6",
+    "currentWord": "وَأَنتُمْ",
+    "rawQulLemma": "نَفْس",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "2:44:5",
+    "prevWord": "أَنفُسَكُمْ",
+    "prevCorpusBw": [
+      "nafos"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "2:75:4",
+    "currentWord": "لَكُمْ",
+    "rawQulLemma": "ءَامَنَ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "2:75:3",
+    "prevWord": "يُؤْمِنُوا۟",
+    "prevCorpusBw": [
+      "'aAmana"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "30:55:12",
+    "currentWord": "يُؤْفَكُونَ",
+    "rawQulLemma": "كَانَ",
+    "ownCorpusBw": [
+      ">ufika"
+    ],
+    "ownArabicCandidate": "أُفِكَ",
+    "prevLocation": "30:55:11",
+    "prevWord": "كَانُوا۟",
+    "prevCorpusBw": [
+      "kaAna"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "33:24:15",
+    "currentWord": "غَفُورًۭا",
+    "rawQulLemma": "كَانَ",
+    "ownCorpusBw": [
+      "gafuwr"
+    ],
+    "ownArabicCandidate": "غَفُور",
+    "prevLocation": "33:24:14",
+    "prevWord": "كَانَ",
+    "prevCorpusBw": [
+      "kaAna"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "33:43:12",
+    "currentWord": "بِٱلْمُؤْمِنِينَ",
+    "rawQulLemma": "كَانَ",
+    "ownCorpusBw": [
+      "mu&omin"
+    ],
+    "ownArabicCandidate": "مُؤْمِن",
+    "prevLocation": "33:43:11",
+    "prevWord": "وَكَانَ",
+    "prevCorpusBw": [
+      "kaAna"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "33:61:3",
+    "currentWord": "ثُقِفُوٓا۟",
+    "rawQulLemma": "أَيْن",
+    "ownCorpusBw": [
+      "vuqifu"
+    ],
+    "ownArabicCandidate": null,
+    "prevLocation": "33:61:2",
+    "prevWord": "أَيْنَمَا",
+    "prevCorpusBw": [
+      ">ayon",
+      "maA"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "34:39:16",
+    "currentWord": "فَهُوَ",
+    "rawQulLemma": "شَىْء",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "34:39:15",
+    "prevWord": "شَىْءٍۢ",
+    "prevCorpusBw": [
+      "$aYo'"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "34:3:12",
+    "currentWord": "ٱلْغَيْبِ ۖ",
+    "rawQulLemma": "عَٰلِم",
+    "ownCorpusBw": [
+      "gayob"
+    ],
+    "ownArabicCandidate": "غَيْب",
+    "prevLocation": "34:3:11",
+    "prevWord": "عَـٰلِمِ",
+    "prevCorpusBw": [
+      "Ea`lim"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "35:6:9",
+    "currentWord": "حِزْبَهُۥ",
+    "rawQulLemma": "دَعَا",
+    "ownCorpusBw": [
+      "Hizob"
+    ],
+    "ownArabicCandidate": "حِزْب",
+    "prevLocation": "35:6:8",
+    "prevWord": "يَدْعُوا۟",
+    "prevCorpusBw": [
+      "daEaA"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "36:30:10",
+    "currentWord": "بِهِۦ",
+    "rawQulLemma": "كَانَ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "36:30:9",
+    "prevWord": "كَانُوا۟",
+    "prevCorpusBw": [
+      "kaAna"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "38:76:8",
+    "currentWord": "وَخَلَقْتَهُۥ",
+    "rawQulLemma": "نَار",
+    "ownCorpusBw": [
+      "xalaqa"
+    ],
+    "ownArabicCandidate": "خَلَقَ",
+    "prevLocation": "38:76:7",
+    "prevWord": "نَّارٍۢ",
+    "prevCorpusBw": [
+      "naAr"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "39:8:17",
+    "currentWord": "يَدْعُوٓا۟",
+    "rawQulLemma": "كَانَ",
+    "ownCorpusBw": [
+      "daEaA"
+    ],
+    "ownArabicCandidate": "دَعَا",
+    "prevLocation": "39:8:16",
+    "prevWord": "كَانَ",
+    "prevCorpusBw": [
+      "kaAna"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "3:116:15",
+    "currentWord": "ٱلنَّارِ ۚ",
+    "rawQulLemma": "أَصْحَٰب",
+    "ownCorpusBw": [
+      "naAr"
+    ],
+    "ownArabicCandidate": "نَار",
+    "prevLocation": "3:116:14",
+    "prevWord": "أَصْحَـٰبُ",
+    "prevCorpusBw": [
+      ">aSoHa`b"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "3:116:16",
+    "currentWord": "هُمْ",
+    "rawQulLemma": "نَار",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "3:116:15",
+    "prevWord": "ٱلنَّارِ ۚ",
+    "prevCorpusBw": [
+      "naAr"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "3:154:16",
+    "currentWord": "يَظُنُّونَ",
+    "rawQulLemma": "نَفْس",
+    "ownCorpusBw": [
+      "Zan~a"
+    ],
+    "ownArabicCandidate": "ظَنَّ",
+    "prevLocation": "3:154:15",
+    "prevWord": "أَنفُسُهُمْ",
+    "prevCorpusBw": [
+      "nafos"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "3:178:15",
+    "currentWord": "وَلَهُمْ",
+    "rawQulLemma": "إِثْم",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "3:178:14",
+    "prevWord": "إِثْمًۭا ۚ",
+    "prevCorpusBw": [
+      "<ivom"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "3:33:7",
+    "currentWord": "إِبْرَٰهِيمَ",
+    "rawQulLemma": "ءَال",
+    "ownCorpusBw": [
+      "<iboraAhiym"
+    ],
+    "ownArabicCandidate": "إِبْرَاهِيم",
+    "prevLocation": "3:33:6",
+    "prevWord": "وَءَالَ",
+    "prevCorpusBw": [
+      "'aAl"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "3:33:8",
+    "currentWord": "وَءَالَ",
+    "rawQulLemma": "إِبْرَاهِيم",
+    "ownCorpusBw": [
+      "'aAl"
+    ],
+    "ownArabicCandidate": "ءَال",
+    "prevLocation": "3:33:7",
+    "prevWord": "إِبْرَٰهِيمَ",
+    "prevCorpusBw": [
+      "<iboraAhiym"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "3:49:13",
+    "currentWord": "لَكُم",
+    "rawQulLemma": "خَلَقَ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "3:49:12",
+    "prevWord": "أَخْلُقُ",
+    "prevCorpusBw": [
+      "xalaqa"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "3:93:4",
+    "currentWord": "حِلًّۭا",
+    "rawQulLemma": "كَانَ",
+    "ownCorpusBw": [
+      "Hil~"
+    ],
+    "ownArabicCandidate": null,
+    "prevLocation": "3:93:3",
+    "prevWord": "كَانَ",
+    "prevCorpusBw": [
+      "kaAna"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "40:12:10",
+    "currentWord": "بِهِۦ",
+    "rawQulLemma": "أَشْرَكَ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "40:12:9",
+    "prevWord": "يُشْرَكْ",
+    "prevCorpusBw": [
+      ">a$oraka"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "41:15:19",
+    "currentWord": "هُوَ",
+    "rawQulLemma": "خَلَقَ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "41:15:18",
+    "prevWord": "خَلَقَهُمْ",
+    "prevCorpusBw": [
+      "xalaqa"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "41:21:13",
+    "currentWord": "وَهُوَ",
+    "rawQulLemma": "شَىْء",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "41:21:12",
+    "prevWord": "شَىْءٍۢ",
+    "prevCorpusBw": [
+      "$aYo'"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "41:31:13",
+    "currentWord": "وَلَكُمْ",
+    "rawQulLemma": "نَفْس",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "41:31:12",
+    "prevWord": "أَنفُسُكُمْ",
+    "prevCorpusBw": [
+      "nafos"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "42:9:9",
+    "currentWord": "وَهُوَ",
+    "rawQulLemma": "وَلِىّ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "42:9:8",
+    "prevWord": "ٱلْوَلِىُّ",
+    "prevCorpusBw": [
+      "waliY~"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "45:10:17",
+    "currentWord": "وَلَهُمْ",
+    "rawQulLemma": "وَلِىّ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "45:10:16",
+    "prevWord": "أَوْلِيَآءَ ۖ",
+    "prevCorpusBw": [
+      "waliY~"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "46:8:13",
+    "currentWord": "هُوَ",
+    "rawQulLemma": "شَىْء",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "46:8:12",
+    "prevWord": "شَيْـًٔا ۖ",
+    "prevCorpusBw": [
+      "$aYo'"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "49:11:25",
+    "currentWord": "أَنفُسَكُمْ",
+    "rawQulLemma": "يَلْمِزُ",
+    "ownCorpusBw": [
+      "nafos"
+    ],
+    "ownArabicCandidate": "نَفْس",
+    "prevLocation": "49:11:24",
+    "prevWord": "تَلْمِزُوٓا۟",
+    "prevCorpusBw": [
+      "yalomizu"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "4:101:21",
+    "currentWord": "لَكُمْ",
+    "rawQulLemma": "كَانَ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "4:101:20",
+    "prevWord": "كَانُوا۟",
+    "prevCorpusBw": [
+      "kaAna"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "4:106:6",
+    "currentWord": "غَفُورًۭا",
+    "rawQulLemma": "كَانَ",
+    "ownCorpusBw": [
+      "gafuwr"
+    ],
+    "ownArabicCandidate": "غَفُور",
+    "prevLocation": "4:106:5",
+    "prevWord": "كَانَ",
+    "prevCorpusBw": [
+      "kaAna"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "4:129:13",
+    "currentWord": "فَتَذَرُوهَا",
+    "rawQulLemma": "مَيْل",
+    "ownCorpusBw": [
+      "ya*ara"
+    ],
+    "ownArabicCandidate": "يَذَرَ",
+    "prevLocation": "4:129:12",
+    "prevWord": "ٱلْمَيْلِ",
+    "prevCorpusBw": [
+      "mayol"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "4:12:9",
+    "currentWord": "لَّهُنَّ",
+    "rawQulLemma": "كَانَ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "4:12:8",
+    "prevWord": "يَكُن",
+    "prevCorpusBw": [
+      "kaAna"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "4:23:53",
+    "currentWord": "غَفُورًۭا",
+    "rawQulLemma": "كَانَ",
+    "ownCorpusBw": [
+      "gafuwr"
+    ],
+    "ownArabicCandidate": "غَفُور",
+    "prevLocation": "4:23:52",
+    "prevWord": "كَانَ",
+    "prevCorpusBw": [
+      "kaAna"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "4:28:7",
+    "currentWord": "ٱلْإِنسَـٰنُ",
+    "rawQulLemma": "خَلَقَ",
+    "ownCorpusBw": [
+      "<insa`n"
+    ],
+    "ownArabicCandidate": "إِنسَٰن",
+    "prevLocation": "4:28:6",
+    "prevWord": "وَخُلِقَ",
+    "prevCorpusBw": [
+      "xalaqa"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "4:36:5",
+    "currentWord": "بِهِۦ",
+    "rawQulLemma": "أَشْرَكَ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "4:36:4",
+    "prevWord": "تُشْرِكُوا۟",
+    "prevCorpusBw": [
+      ">a$oraka"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "4:45:7",
+    "currentWord": "وَكَفَىٰ",
+    "rawQulLemma": "وَلِىّ",
+    "ownCorpusBw": [
+      "kafaY`"
+    ],
+    "ownArabicCandidate": "كَفَىٰ",
+    "prevLocation": "4:45:6",
+    "prevWord": "وَلِيًّۭا",
+    "prevCorpusBw": [
+      "waliY~"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "4:50:8",
+    "currentWord": "بِهِۦٓ",
+    "rawQulLemma": "كَفَىٰ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "4:50:7",
+    "prevWord": "وَكَفَىٰ",
+    "prevCorpusBw": [
+      "kafaY`"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "4:54:12",
+    "currentWord": "ءَالَ",
+    "rawQulLemma": "آتَى",
+    "ownCorpusBw": [
+      "'aAl"
+    ],
+    "ownArabicCandidate": "ءَال",
+    "prevLocation": "4:54:11",
+    "prevWord": "ءَاتَيْنَآ",
+    "prevCorpusBw": [
+      "A^taY"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "4:54:13",
+    "currentWord": "إِبْرَٰهِيمَ",
+    "rawQulLemma": "ءَال",
+    "ownCorpusBw": [
+      "<iboraAhiym"
+    ],
+    "ownArabicCandidate": "إِبْرَاهِيم",
+    "prevLocation": "4:54:12",
+    "prevWord": "ءَالَ",
+    "prevCorpusBw": [
+      "'aAl"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "4:59:21",
+    "currentWord": "تُؤْمِنُونَ",
+    "rawQulLemma": "كَانَ",
+    "ownCorpusBw": [
+      "'aAmana"
+    ],
+    "ownArabicCandidate": "ءَامَنَ",
+    "prevLocation": "4:59:20",
+    "prevWord": "كُنتُمْ",
+    "prevCorpusBw": [
+      "kaAna"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "53:26:9",
+    "currentWord": "شَيْـًٔا",
+    "rawQulLemma": "شَفَٰعَة",
+    "ownCorpusBw": [
+      "$aYo'"
+    ],
+    "ownArabicCandidate": "شَىْء",
+    "prevLocation": "53:26:8",
+    "prevWord": "شَفَـٰعَتُهُمْ",
+    "prevCorpusBw": [
+      "$afa`Eap"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "57:15:12",
+    "currentWord": "هِىَ",
+    "rawQulLemma": "نَار",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "57:15:11",
+    "prevWord": "ٱلنَّارُ ۖ",
+    "prevCorpusBw": [
+      "naAr"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "57:8:8",
+    "currentWord": "لِتُؤْمِنُوا۟",
+    "rawQulLemma": "دَعَا",
+    "ownCorpusBw": [
+      "'aAmana"
+    ],
+    "ownArabicCandidate": "ءَامَنَ",
+    "prevLocation": "57:8:7",
+    "prevWord": "يَدْعُوكُمْ",
+    "prevCorpusBw": [
+      "daEaA"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "58:17:12",
+    "currentWord": "ٱلنَّارِ ۖ",
+    "rawQulLemma": "أَصْحَٰب",
+    "ownCorpusBw": [
+      "naAr"
+    ],
+    "ownArabicCandidate": "نَار",
+    "prevLocation": "58:17:11",
+    "prevWord": "أَصْحَـٰبُ",
+    "prevCorpusBw": [
+      ">aSoHa`b"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "58:17:13",
+    "currentWord": "هُمْ",
+    "rawQulLemma": "نَار",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "58:17:12",
+    "prevWord": "ٱلنَّارِ ۖ",
+    "prevCorpusBw": [
+      "naAr"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "59:22:9",
+    "currentWord": "ٱلْغَيْبِ",
+    "rawQulLemma": "عَٰلِم",
+    "ownCorpusBw": [
+      "gayob"
+    ],
+    "ownArabicCandidate": "غَيْب",
+    "prevLocation": "59:22:8",
+    "prevWord": "عَـٰلِمُ",
+    "prevCorpusBw": [
+      "Ea`lim"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "59:9:28",
+    "currentWord": "نَفْسِهِۦ",
+    "rawQulLemma": "شُحّ",
+    "ownCorpusBw": [
+      "nafos"
+    ],
+    "ownArabicCandidate": "نَفْس",
+    "prevLocation": "59:9:27",
+    "prevWord": "شُحَّ",
+    "prevCorpusBw": [
+      "$uH~"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "5:106:38",
+    "currentWord": "بِهِۦ",
+    "rawQulLemma": "اشْتَرَىٰ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "5:106:37",
+    "prevWord": "نَشْتَرِى",
+    "prevCorpusBw": [
+      "{$otaraY`"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "5:116:20",
+    "currentWord": "لِىٓ",
+    "rawQulLemma": "كَانَ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "5:116:19",
+    "prevWord": "يَكُونُ",
+    "prevCorpusBw": [
+      "kaAna"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "5:41:13",
+    "currentWord": "بِأَفْوَٰهِهِمْ",
+    "rawQulLemma": "ءَامَنَ",
+    "ownCorpusBw": [
+      ">afowa`h"
+    ],
+    "ownArabicCandidate": "أَفْوَٰه",
+    "prevLocation": "5:41:12",
+    "prevWord": "ءَامَنَّا",
+    "prevCorpusBw": [
+      "'aAmana"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "5:41:14",
+    "currentWord": "وَلَمْ",
+    "rawQulLemma": "أَفْوَٰه",
+    "ownCorpusBw": [
+      "lam"
+    ],
+    "ownArabicCandidate": "لَم",
+    "prevLocation": "5:41:13",
+    "prevWord": "بِأَفْوَٰهِهِمْ",
+    "prevCorpusBw": [
+      ">afowa`h"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "62:8:13",
+    "currentWord": "ٱلْغَيْبِ",
+    "rawQulLemma": "عَٰلِم",
+    "ownCorpusBw": [
+      "gayob"
+    ],
+    "ownArabicCandidate": "غَيْب",
+    "prevLocation": "62:8:12",
+    "prevWord": "عَـٰلِمِ",
+    "prevCorpusBw": [
+      "Ea`lim"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "64:16:13",
+    "currentWord": "نَفْسِهِۦ",
+    "rawQulLemma": "شُحّ",
+    "ownCorpusBw": [
+      "nafos"
+    ],
+    "ownArabicCandidate": "نَفْس",
+    "prevLocation": "64:16:12",
+    "prevWord": "شُحَّ",
+    "prevCorpusBw": [
+      "$uH~"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "6:101:10",
+    "currentWord": "لَّهُۥ",
+    "rawQulLemma": "كَانَ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "6:101:9",
+    "prevWord": "تَكُن",
+    "prevCorpusBw": [
+      "kaAna"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "6:101:12",
+    "currentWord": "وَخَلَقَ",
+    "rawQulLemma": "صَٰحِبَة",
+    "ownCorpusBw": [
+      "xalaqa"
+    ],
+    "ownArabicCandidate": "خَلَقَ",
+    "prevLocation": "6:101:11",
+    "prevWord": "صَـٰحِبَةٌۭ ۖ",
+    "prevCorpusBw": [
+      "Sa`Hibap"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "6:111:15",
+    "currentWord": "لِيُؤْمِنُوٓا۟",
+    "rawQulLemma": "كَانَ",
+    "ownCorpusBw": [
+      "'aAmana"
+    ],
+    "ownArabicCandidate": "ءَامَنَ",
+    "prevLocation": "6:111:14",
+    "prevWord": "كَانُوا۟",
+    "prevCorpusBw": [
+      "kaAna"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "6:136:17",
+    "currentWord": "لِشُرَكَآئِهِمْ",
+    "rawQulLemma": "كَانَ",
+    "ownCorpusBw": [
+      "$ariyk"
+    ],
+    "ownArabicCandidate": "شَرِيك",
+    "prevLocation": "6:136:16",
+    "prevWord": "كَانَ",
+    "prevCorpusBw": [
+      "kaAna"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "6:158:26",
+    "currentWord": "ءَامَنَتْ",
+    "rawQulLemma": "كَانَ",
+    "ownCorpusBw": [
+      "'aAmana"
+    ],
+    "ownArabicCandidate": "ءَامَنَ",
+    "prevLocation": "6:158:25",
+    "prevWord": "تَكُنْ",
+    "prevCorpusBw": [
+      "kaAna"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "6:20:11",
+    "currentWord": "فَهُمْ",
+    "rawQulLemma": "نَفْس",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "6:20:10",
+    "prevWord": "أَنفُسَهُمْ",
+    "prevCorpusBw": [
+      "nafos"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "6:5:11",
+    "currentWord": "بِهِۦ",
+    "rawQulLemma": "كَانَ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "6:5:10",
+    "prevWord": "كَانُوا۟",
+    "prevCorpusBw": [
+      "kaAna"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "6:92:18",
+    "currentWord": "بِهِۦ ۖ",
+    "rawQulLemma": "ءَامَنَ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "6:92:17",
+    "prevWord": "يُؤْمِنُونَ",
+    "prevCorpusBw": [
+      "'aAmana"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "70:19:3",
+    "currentWord": "خُلِقَ",
+    "rawQulLemma": "إِنسَٰن",
+    "ownCorpusBw": [
+      "xalaqa"
+    ],
+    "ownArabicCandidate": "خَلَقَ",
+    "prevLocation": "70:19:2",
+    "prevWord": "ٱلْإِنسَـٰنَ",
+    "prevCorpusBw": [
+      "<insa`n"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "7:12:15",
+    "currentWord": "وَخَلَقْتَهُۥ",
+    "rawQulLemma": "نَار",
+    "ownCorpusBw": [
+      "xalaqa"
+    ],
+    "ownArabicCandidate": "خَلَقَ",
+    "prevLocation": "7:12:14",
+    "prevWord": "نَّارٍۢ",
+    "prevCorpusBw": [
+      "naAr"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "7:134:17",
+    "currentWord": "لَنُؤْمِنَنَّ",
+    "rawQulLemma": "رِجْز",
+    "ownCorpusBw": [
+      "'aAmana"
+    ],
+    "ownArabicCandidate": "ءَامَنَ",
+    "prevLocation": "7:134:16",
+    "prevWord": "ٱلرِّجْزَ",
+    "prevCorpusBw": [
+      "rijoz"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "7:134:18",
+    "currentWord": "لَكَ",
+    "rawQulLemma": "ءَامَنَ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "7:134:17",
+    "prevWord": "لَنُؤْمِنَنَّ",
+    "prevCorpusBw": [
+      "'aAmana"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "7:157:33",
+    "currentWord": "بِهِۦ",
+    "rawQulLemma": "ءَامَنَ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "7:157:32",
+    "prevWord": "ءَامَنُوا۟",
+    "prevCorpusBw": [
+      "'aAmana"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "7:47:6",
+    "currentWord": "ٱلنَّارِ",
+    "rawQulLemma": "أَصْحَٰب",
+    "ownCorpusBw": [
+      "naAr"
+    ],
+    "ownArabicCandidate": "نَار",
+    "prevLocation": "7:47:5",
+    "prevWord": "أَصْحَـٰبِ",
+    "prevCorpusBw": [
+      ">aSoHa`b"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "7:86:18",
+    "currentWord": "قَلِيلًۭا",
+    "rawQulLemma": "كَانَ",
+    "ownCorpusBw": [
+      "qaliyl"
+    ],
+    "ownArabicCandidate": "قَلِيل",
+    "prevLocation": "7:86:17",
+    "prevWord": "كُنتُمْ",
+    "prevCorpusBw": [
+      "kaAna"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "7:89:17",
+    "currentWord": "لَنَآ",
+    "rawQulLemma": "كَانَ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "7:89:16",
+    "prevWord": "يَكُونُ",
+    "prevCorpusBw": [
+      "kaAna"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "7:92:12",
+    "currentWord": "هُمُ",
+    "rawQulLemma": "كَانَ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "7:92:11",
+    "prevWord": "كَانُوا۟",
+    "prevCorpusBw": [
+      "kaAna"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "89:23:6",
+    "currentWord": "ٱلْإِنسَـٰنُ",
+    "rawQulLemma": "تَذَكَّرَ",
+    "ownCorpusBw": [
+      "<insa`n"
+    ],
+    "ownArabicCandidate": "إِنسَٰن",
+    "prevLocation": "89:23:5",
+    "prevWord": "يَتَذَكَّرُ",
+    "prevCorpusBw": [
+      "ta*ak~ara"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "8:41:18",
+    "currentWord": "ءَامَنتُم",
+    "rawQulLemma": "كَانَ",
+    "ownCorpusBw": [
+      "'aAmana"
+    ],
+    "ownArabicCandidate": "ءَامَنَ",
+    "prevLocation": "8:41:17",
+    "prevWord": "كُنتُمْ",
+    "prevCorpusBw": [
+      "kaAna"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "9:105:11",
+    "currentWord": "ٱلْغَيْبِ",
+    "rawQulLemma": "عَٰلِم",
+    "ownCorpusBw": [
+      "gayob"
+    ],
+    "ownArabicCandidate": "غَيْب",
+    "prevLocation": "9:105:10",
+    "prevWord": "عَـٰلِمِ",
+    "prevCorpusBw": [
+      "Ea`lim"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "9:111:6",
+    "currentWord": "أَنفُسَهُمْ",
+    "rawQulLemma": "مُؤْمِن",
+    "ownCorpusBw": [
+      "nafos"
+    ],
+    "ownArabicCandidate": "نَفْس",
+    "prevLocation": "9:111:5",
+    "prevWord": "ٱلْمُؤْمِنِينَ",
+    "prevCorpusBw": [
+      "mu&omin"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "9:122:3",
+    "currentWord": "ٱلْمُؤْمِنُونَ",
+    "rawQulLemma": "كَانَ",
+    "ownCorpusBw": [
+      "mu&omin"
+    ],
+    "ownArabicCandidate": "مُؤْمِن",
+    "prevLocation": "9:122:2",
+    "prevWord": "كَانَ",
+    "prevCorpusBw": [
+      "kaAna"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "9:124:15",
+    "currentWord": "فَزَادَتْهُمْ",
+    "rawQulLemma": "ءَامَنَ",
+    "ownCorpusBw": [
+      "zaAda"
+    ],
+    "ownArabicCandidate": "زَادَ",
+    "prevLocation": "9:124:14",
+    "prevWord": "ءَامَنُوا۟",
+    "prevCorpusBw": [
+      "'aAmana"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "9:17:17",
+    "currentWord": "هُمْ",
+    "rawQulLemma": "نَار",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "9:17:16",
+    "prevWord": "ٱلنَّارِ",
+    "prevCorpusBw": [
+      "naAr"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "9:37:7",
+    "currentWord": "بِهِ",
+    "rawQulLemma": "ضَلَّ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "9:37:6",
+    "prevWord": "يُضَلُّ",
+    "prevCorpusBw": [
+      "Dal~a"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "9:55:16",
+    "currentWord": "وَهُمْ",
+    "rawQulLemma": "نَفْس",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "9:55:15",
+    "prevWord": "أَنفُسُهُمْ",
+    "prevCorpusBw": [
+      "nafos"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "9:61:15",
+    "currentWord": "لِلْمُؤْمِنِينَ",
+    "rawQulLemma": "ءَامَنَ",
+    "ownCorpusBw": [
+      "mu&omin"
+    ],
+    "ownArabicCandidate": "مُؤْمِن",
+    "prevLocation": "9:61:14",
+    "prevWord": "وَيُؤْمِنُ",
+    "prevCorpusBw": [
+      "'aAmana"
+    ],
+    "isMultiStem": false,
+    "inKnown63": false
+  },
+  {
+    "location": "9:85:15",
+    "currentWord": "وَهُمْ",
+    "rawQulLemma": "نَفْس",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "9:85:14",
+    "prevWord": "أَنفُسُهُمْ",
+    "prevCorpusBw": [
+      "nafos"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  },
+  {
+    "location": "9:94:11",
+    "currentWord": "لَكُمْ",
+    "rawQulLemma": "ءَامَنَ",
+    "ownCorpusBw": [],
+    "ownArabicCandidate": null,
+    "prevLocation": "9:94:10",
+    "prevWord": "نُّؤْمِنَ",
+    "prevCorpusBw": [
+      "'aAmana"
+    ],
+    "isMultiStem": false,
+    "inKnown63": true
+  }
+]

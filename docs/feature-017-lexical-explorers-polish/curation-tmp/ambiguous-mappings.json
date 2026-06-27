@@ -1,0 +1,65 @@
+{
+  "$ifaA^'": {
+    "total": 3,
+    "candidates": {
+      "شِفَآء": 2,
+      "ءَامَنَ": 1
+    }
+  },
+  "kabura": {
+    "total": 4,
+    "candidates": {
+      "كَبُرَ": 3,
+      "كَانَ": 1
+    }
+  },
+  "m~ula`quwA": {
+    "total": 2,
+    "candidates": {
+      "ءَامَنَ": 1,
+      "مُّلَٰقُوا": 1
+    }
+  },
+  "'aA*an": {
+    "total": 2,
+    "candidates": {
+      "ءَاذَن": 1,
+      "أَيْن": 1
+    }
+  },
+  "mivoqaAl": {
+    "total": 5,
+    "candidates": {
+      "مِثْقَال": 4,
+      "كَانَ": 1
+    }
+  },
+  "maro'": {
+    "total": 3,
+    "candidates": {
+      "مَرْء": 2,
+      "فَرَّقُ": 1
+    }
+  },
+  "$aTor": {
+    "total": 3,
+    "candidates": {
+      "شَطْر": 2,
+      "كَانَ": 1
+    }
+  },
+  "vuqifu": {
+    "total": 5,
+    "candidates": {
+      "ثُقِفُ": 4,
+      "أَيْن": 1
+    }
+  },
+  "Hil~": {
+    "total": 2,
+    "candidates": {
+      "كَانَ": 1,
+      "حِلّ": 1
+    }
+  }
+}
