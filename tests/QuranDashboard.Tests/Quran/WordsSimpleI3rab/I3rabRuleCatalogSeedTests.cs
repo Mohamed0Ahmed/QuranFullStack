@@ -10,11 +10,13 @@ public sealed class I3rabRuleCatalogSeedTests
 
     public static TheoryData<string, string> CorrectedLabels => new()
     {
+        { "STEM:ACC", "حرف نصب" },
         { "STEM:T", "ظرف زمان" },
         { "STEM:SUB", "حرف مصدري" },
         { "STEM:RES", "أداة حصر" },
         { "STEM:INTG", "اسم استفهام" },
         { "PREFIX:INTG", "همزة استفهام" },
+        { "STEM:PRO", "لا الناهية" },
         { "STEM:AMD", "حرف استدراك" },
         { "STEM:SUP", "حرف زائد" },
         { "STEM:PREV", "ما الكافّة" },
@@ -68,5 +70,31 @@ public sealed class I3rabRuleCatalogSeedTests
         new I3rabRuleCatalogSeed().TryGet(signatureKey, out var row).Should().BeTrue(
             $"signature '{signatureKey}' must exist in the catalogue");
         row.I3rabArabic.Should().Be(expectedArabic);
+    }
+
+    [Fact]
+    public void Catalogue_uses_approved_simplified_particle_labels()
+    {
+        var catalog = new I3rabRuleCatalogSeed();
+
+        catalog.TryGet("STEM:PRO", out var proRow).Should().BeTrue();
+        proRow.I3rabArabic.Should().Be("لا الناهية");
+        proRow.I3rabArabic.Should().NotBe("ضمير منفصل");
+
+        catalog.TryGet("STEM:ACC", out var accRow).Should().BeTrue();
+        accRow.I3rabArabic.Should().Be("حرف نصب");
+        accRow.I3rabArabic.Should().NotContain("أخوات إنّ/النواصب");
+    }
+
+    [Fact]
+    public void Catalogue_keeps_stem_and_suffix_pronoun_labels_unchanged()
+    {
+        var catalog = new I3rabRuleCatalogSeed();
+
+        catalog.TryGet("STEM:PRON:3MS", out var stemRow).Should().BeTrue();
+        stemRow.I3rabArabic.Should().Be("ضمير للغائب");
+
+        catalog.TryGet("SUFFIX:PRON:3MS", out var suffixRow).Should().BeTrue();
+        suffixRow.I3rabArabic.Should().Be("ضمير متصل للغائب");
     }
 }

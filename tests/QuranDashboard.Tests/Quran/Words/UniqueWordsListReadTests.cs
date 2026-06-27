@@ -133,6 +133,28 @@ public sealed class UniqueWordsListReadTests(UniqueWordsTestFixture fixture)
     }
 
     [Fact]
+    public async Task GetUniqueWordsPage_resolves_prohibition_particle_as_particle_broad_label()
+    {
+        await using var scope = fixture.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+        await using var transaction = await dbContext.Database.BeginTransactionAsync();
+
+        await SeedProhibitionParticleUniqueWordAsync(dbContext);
+
+        var handler = scope.ServiceProvider.GetRequiredService<GetUniqueWordsPageHandler>();
+        var outcome = await handler.HandleAsync(
+            new GetUniqueWordsPageQuery("tashkeel", "لا", null, 1, 50),
+            CancellationToken.None);
+
+        var page = outcome.Should().BeOfType<GetUniqueWordsPageOutcome.Success>().Subject.Page;
+        var prohibitionParticle = page.Items.Single(i => i.Id == 2007);
+
+        prohibitionParticle.PrimaryWordTypeCode.Should().Be("PRO");
+        prohibitionParticle.PrimaryWordTypeBroadArabicLabel.Should().Be("حرف");
+        prohibitionParticle.PrimaryWordTypeBroadArabicLabel.Should().NotBe("اسم");
+    }
+
+    [Fact]
     public async Task GetUniqueWordsPage_returns_null_type_and_root_when_morphology_absent()
     {
         await using var scope = fixture.CreateScope();
@@ -162,5 +184,55 @@ public sealed class UniqueWordsListReadTests(UniqueWordsTestFixture fixture)
         var page = outcome.Should().BeOfType<GetUniqueWordsPageOutcome.Success>().Subject.Page;
 
         page.Items.Select(i => i.Id).Should().BeInAscendingOrder();
+    }
+
+    private static async Task SeedProhibitionParticleUniqueWordAsync(QuranDashboardDbContext dbContext)
+    {
+        await dbContext.Database.ExecuteSqlRawAsync(
+            """
+            INSERT INTO quran_ayahs
+              (id, surah_number, ayah_number, verse_key, text_uthmani, words_count_source, words_count_real, page_from, page_to, juz_number, hizb_number, rub_number)
+            VALUES
+              (26, 2, 26, '2:26', 'ٱللَّهُ لَا إِلَٰهَ إِلَّا هُوَ ٱلْحَىُّ ٱلْقَيُّومُ', 4, 5, 5, 5, NULL, NULL, NULL)
+            ON CONFLICT (id) DO NOTHING;
+
+            INSERT INTO quran_words
+              (id, location, ayah_id, surah_number, ayah_number, word_number, page_number, line_number, line_word_order, qpc_glyph,
+               text_uthmani, text_uthmani_simple, text_imlaei_simple, word_key_imlaei_simple,
+               is_ayah_marker, unique_tashkeel_word_id, unique_simple_word_id)
+            VALUES
+              (2007, '2:26:2', 26, 2, 26, 2, 5, 2, 2, 'g2007', 'لَا', 'لا', 'لا', 'لا', FALSE, NULL, NULL);
+
+            INSERT INTO quran_words_unique_tashkeel
+              (id, text_uthmani, text_uthmani_simple, text_imlaei_simple,
+               occurrences_count, ayahs_count, surahs_count,
+               first_quran_word_id, first_location, first_surah_number, first_ayah_number,
+               first_word_order_in_mushaf, first_page_number, first_line_number)
+            VALUES
+              (2007, 'لَا', 'لا', 'لا', 1, 1, 1, 2007, '2:26:2', 2, 26, 2007, 5, 2);
+
+            INSERT INTO quran_words_unique_simple
+              (id, word_key_imlaei_simple, text_uthmani, text_uthmani_simple, text_imlaei_simple, qpc_glyph,
+               occurrences_count, ayahs_count, surahs_count,
+               first_quran_word_id, first_location, first_surah_number, first_ayah_number,
+               first_word_order_in_mushaf, first_page_number, first_line_number)
+            VALUES
+              (2007, 'لا', 'لَا', 'لا', 'لا', 'g2007', 1, 1, 1, 2007, '2:26:2', 2, 26, 2007, 5, 2);
+
+            UPDATE quran_words
+            SET unique_tashkeel_word_id = 2007,
+                unique_simple_word_id = 2007
+            WHERE id = 2007;
+
+            INSERT INTO quran_pos_tags
+              (code, arabic_label, english_label, category, sort_order, description)
+            VALUES
+              ('PRO', 'حرف نهي', 'Prohibition Particle', 'particle', 20, NULL);
+
+            INSERT INTO quran_word_morphology
+              (quran_word_id, location, head_pos, segment_count, root_id, lemma_id, stem_id, is_verb, verb_tense, verb_voice, case_feature, head_features_json)
+            VALUES
+              (2007, '2:26:2', 'PRO', 1, NULL, NULL, NULL, FALSE, NULL, NULL, NULL, NULL);
+            """);
     }
 }

@@ -94,4 +94,26 @@ public sealed class I3rabGenerationTests(I3rabGenerationTestFixture fixture)
         var allahSegment = segments.Single(segment => segment.QuranWordId == 2);
         allahSegment.I3rabArabic.Should().Be("لفظ الجلالة مجرور");
     }
+
+    [Fact]
+    public async Task Generates_approved_labels_for_simplified_particle_corrections()
+    {
+        await fixture.ResetToParticleLabelMorphologyAsync();
+
+        var result = await fixture.RunGenerationAsync(I3rabGenerationTestFixture.ParticleLabelCounts);
+
+        result.Succeeded.Should().BeTrue(result.Message);
+
+        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+
+        var labelsByPos = await dbContext.WordMorphologySegments.AsNoTracking()
+            .Select(segment => new { segment.Pos, segment.I3rabArabic })
+            .ToDictionaryAsync(segment => segment.Pos, segment => segment.I3rabArabic);
+
+        labelsByPos["PRO"].Should().Be("لا الناهية");
+        labelsByPos["PRO"].Should().NotBe("ضمير منفصل");
+        labelsByPos["ACC"].Should().Be("حرف نصب");
+        labelsByPos["ACC"].Should().NotContain("أخوات إنّ/النواصب");
+    }
 }
