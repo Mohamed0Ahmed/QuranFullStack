@@ -28,7 +28,6 @@ export class TypeDistributionListComponent {
   protected readonly sectionLabel = 'توزيع الأنواع';
   protected readonly typeHeader = 'النوع';
   protected readonly countHeader = 'عدد مرات الظهور';
-  protected readonly dominantHeader = 'السائد';
   protected readonly loadingLabel = 'جارٍ تحميل توزيع الأنواع…';
   protected readonly emptyLabel = 'لا توجد أنواع';
 

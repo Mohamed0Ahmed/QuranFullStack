@@ -9,7 +9,6 @@ export const LEMMAS_COLUMN_HEADERS = {
   rowNumber: ROW_NUMBER_HEADER,
   lemma: 'الصيغة المعجمية',
   root: 'الجذر',
-  type: 'النوع',
   occurrences: 'المواضع',
   ayahs: 'الآيات',
   surahs: 'السور',
@@ -67,10 +66,6 @@ export const LEMMAS_STEM_TEXT_HEADER = 'الأصل الصرفي';
 export const LEMMAS_OPEN_UNIQUE_WORD_LABEL = 'فتح تفاصيل الكلمة في مستكشف الكلمات الفريدة';
 
 export const LEMMAS_ROOT_MISSING_LABEL = '—';
-
-export function lemmasAdditionalTypesAria(count: number): string {
-  return count === 1 ? 'نوع إضافي واحد' : `${count} أنواع إضافية`;
-}
 
 export const LEMMAS_SORT_LABELS = {
   label: 'الترتيب',

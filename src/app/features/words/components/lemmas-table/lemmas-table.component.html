@@ -6,7 +6,6 @@
       </div>
       <div class="lemmas-table__header-cell" role="columnheader">{{ headers.lemma }}</div>
       <div class="lemmas-table__header-cell" role="columnheader">{{ headers.root }}</div>
-      <div class="lemmas-table__header-cell" role="columnheader">{{ headers.type }}</div>
       <div class="lemmas-table__header-cell lemmas-table__header-cell--numeric" role="columnheader">{{ headers.occurrences }}</div>
       <div class="lemmas-table__header-cell lemmas-table__header-cell--numeric" role="columnheader">{{ headers.ayahs }}</div>
       <div class="lemmas-table__header-cell lemmas-table__header-cell--numeric" role="columnheader">{{ headers.surahs }}</div>
@@ -36,9 +35,6 @@
           </div>
           <div class="lemmas-table__cell lemmas-table__root-cell" role="cell">
             <span class="qd-skeleton qd-skeleton--text lemmas-table__loading-root"></span>
-          </div>
-          <div class="lemmas-table__cell lemmas-table__type-cell" role="cell">
-            <span class="qd-skeleton qd-skeleton--text lemmas-table__loading-type"></span>
           </div>
           @for (i of [0,1,2,3,4,5]; track i) {
             <div class="lemmas-table__cell lemmas-table__chip-cell" role="cell">
@@ -102,17 +98,12 @@
         <span class="lemmas-table__display">{{ row.displayText }}</span>
       </button>
       <div class="lemmas-table__mobile-meta" aria-hidden="true">
-        <ng-container *ngTemplateOutlet="typeCell; context: { row: row }" />
         <ng-container *ngTemplateOutlet="rootCell; context: { row: row }" />
       </div>
     </div>
 
     <div class="lemmas-table__cell lemmas-table__root-cell lemmas-table__root-cell--desktop" role="cell">
       <ng-container *ngTemplateOutlet="rootCell; context: { row: row }" />
-    </div>
-
-    <div class="lemmas-table__cell lemmas-table__type-cell lemmas-table__type-cell--desktop" role="cell">
-      <ng-container *ngTemplateOutlet="typeCell; context: { row: row }" />
     </div>
 
     <div class="lemmas-table__cell lemmas-table__chip-cell" role="cell">
@@ -171,20 +162,6 @@
       <span class="lemmas-table__root-missing" data-testid="lemmas-table-root-missing" aria-hidden="true">{{ rootMissingLabel }}</span>
       <span class="qd-sr-only">لا يوجد جذر مرتبط</span>
     }
-  </ng-template>
-
-  <ng-template #typeCell let-row="row">
-    <div class="lemmas-table__type" data-testid="lemmas-table-type">
-      <span class="lemmas-table__type-label">{{ row.dominantType.arabicLabel }}</span>
-      @if (row.otherTypesCount > 0) {
-        <span
-          class="lemmas-table__type-more qd-badge"
-          data-testid="lemmas-table-additional-types"
-          [attr.aria-label]="additionalTypesAria(row.otherTypesCount)"
-          title="+{{ row.otherTypesCount }}"
-        >+{{ row.otherTypesCount }}</span>
-      }
-    </div>
   </ng-template>
 
   <ng-template #mobileStats let-row="row">

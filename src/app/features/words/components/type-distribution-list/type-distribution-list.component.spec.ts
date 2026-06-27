@@ -47,5 +47,6 @@ describe('TypeDistributionListComponent US6', () => {
     expect(root.textContent).toContain('10');
     expect(root.textContent).toContain('فعل');
     expect(root.textContent).toContain('1');
+    expect(root.textContent).not.toContain('السائد');
   });
 });

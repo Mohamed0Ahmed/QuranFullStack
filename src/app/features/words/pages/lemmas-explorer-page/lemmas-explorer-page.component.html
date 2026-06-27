@@ -177,20 +177,21 @@
       @switch (panelState().status) {
         @case ('loading') {
           @if (activeView() === 'words') {
-            <qd-lemma-words-list
-              [loading]="true"
-              [page]="emptyWordsPage"
-              [currentPage]="panelState().detailPage"
-              data-testid="lemmas-words-view"
-              (pageChange)="onDetailPageChange($event)"
-            />
-          } @else if (activeView() === 'ayahs') {
-            <qd-ayah-matches-list
-              [loading]="true"
-              [page]="emptyAyahsPage"
-              [currentPage]="panelState().detailPage"
-              data-testid="lemmas-ayahs-view"
-            />
+          <qd-lemma-words-list
+            [loading]="true"
+            [page]="emptyWordsPage"
+            [currentPage]="panelState().detailPage"
+            [kind]="panelState().wordView"
+            data-testid="lemmas-words-view"
+            (pageChange)="onDetailPageChange($event)"
+          />
+        } @else if (activeView() === 'ayahs') {
+          <qd-ayah-matches-list
+            [loading]="true"
+            [page]="ayahsPageForView()"
+            [currentPage]="panelState().detailPage"
+            data-testid="lemmas-ayahs-view"
+          />
           } @else if (activeView() === 'surahs' && panelState().surahView === 'mentioned') {
             <qd-surah-occurrences-list
               [loading]="true"
@@ -224,12 +225,13 @@
             <qd-lemma-words-list
               [page]="wordsPage"
               [currentPage]="panelState().detailPage"
+              [kind]="panelState().wordView"
               data-testid="lemmas-words-view"
               (pageChange)="onDetailPageChange($event)"
             />
-          } @else if (activeView() === 'ayahs' && panelState().ayahs; as ayahsPage) {
+          } @else if (activeView() === 'ayahs' && panelState().ayahs) {
             <qd-ayah-matches-list
-              [page]="ayahsPage"
+              [page]="ayahsPageForView()"
               [currentPage]="panelState().detailPage"
               data-testid="lemmas-ayahs-view"
               (pageChange)="onDetailPageChange($event)"

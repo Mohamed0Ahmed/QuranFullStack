@@ -12,7 +12,7 @@
 .type-distribution-list__header,
 .type-distribution-list__row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--qd-space-2);
 }
@@ -41,8 +41,7 @@
   font-family: var(--qd-font-quran, inherit);
 }
 
-.type-distribution-list__count,
-.type-distribution-list__dominant {
+.type-distribution-list__count {
   justify-self: end;
 }
 
@@ -57,11 +56,6 @@
 
 .type-distribution-list__loading-count {
   inline-size: 2.25rem;
-  block-size: 1.25rem;
-}
-
-.type-distribution-list__loading-dominant {
-  inline-size: 2.75rem;
   block-size: 1.25rem;
 }
 

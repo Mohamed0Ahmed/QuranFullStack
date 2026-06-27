@@ -32,7 +32,6 @@
     minmax(2.5rem, 0.28fr)
     minmax(0, 1.35fr)
     minmax(0, 0.9fr)
-    minmax(0, 0.85fr)
     repeat(6, minmax(4.25rem, 0.9fr));
   align-items: center;
 }
@@ -118,8 +117,7 @@
   display: none;
 }
 
-.lemmas-table__root-cell,
-.lemmas-table__type-cell {
+.lemmas-table__root-cell {
   display: flex;
   align-items: center;
   min-width: 0;
@@ -168,27 +166,6 @@
   font-size: 1rem;
 }
 
-.lemmas-table__type {
-  display: flex;
-  align-items: center;
-  gap: var(--qd-space-1);
-  min-width: 0;
-}
-
-.lemmas-table__type-label {
-  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
-  font-size: 0.9375rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.lemmas-table__type-more {
-  flex-shrink: 0;
-  font-size: 0.75rem;
-  font-variant-numeric: tabular-nums;
-}
-
 .lemmas-table__loading-number {
   inline-size: 1.75rem;
   margin-inline: auto;
@@ -198,8 +175,7 @@
   inline-size: min(100%, 8rem);
 }
 
-.lemmas-table__loading-root,
-.lemmas-table__loading-type {
+.lemmas-table__loading-root {
   inline-size: min(100%, 4.5rem);
 }
 
@@ -217,8 +193,7 @@
 @media (max-width: bp.$qd-bp-tablet-max) {
   .lemmas-table__header,
   .lemmas-table__header-gutter,
-  .lemmas-table__root-cell--desktop,
-  .lemmas-table__type-cell--desktop {
+  .lemmas-table__root-cell--desktop {
     display: none;
   }
 

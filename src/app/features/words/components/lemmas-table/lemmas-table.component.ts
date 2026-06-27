@@ -31,7 +31,6 @@ import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-displ
 import { syncTableScrollbarGutter } from '../../utils/table-scrollbar-gutter-sync';
 import { deepLinkToHref } from '../../../../shared/url/deep-link-href';
 import { buildRootsDeepLink } from '../../state/roots-url-sync';
-import { lemmasAdditionalTypesAria } from '../../models/lemmas.labels';
 
 import { QD_BP_TABLET_MAX_QUERY } from '../../../../shared/layout/breakpoints';
 
@@ -49,8 +48,8 @@ export interface LemmaCountOpenedEvent {
 /**
  * Lemmas Explorer nine-column catalogue grid (Feature 016, US1). Sibling of
  * `RootsTableComponent`. Columns: row number, lemma text, owned root (safe
- * new-tab anchor or a non-interactive dash when `rootId` is null), dominant type
- * (controlled POS label with an additional-type indicator), and six count chips.
+ * new-tab anchor or a non-interactive dash when `rootId` is null), and six count
+ * chips.
  *
  * Technical lemma/root IDs are navigation fields and are never rendered as
  * visible labels. The owned-root anchor opens the Roots Explorer in a new tab
@@ -148,10 +147,6 @@ export class LemmasTableComponent {
     return deepLinkToHref(
       buildRootsDeepLink({ rootId, view: 'words', wordView: 'simple' }),
     );
-  }
-
-  protected additionalTypesAria(count: number): string {
-    return lemmasAdditionalTypesAria(count);
   }
 
   scrollToTop(): void {

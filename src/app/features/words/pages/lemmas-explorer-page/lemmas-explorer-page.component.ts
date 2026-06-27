@@ -39,7 +39,6 @@ import {
 import {
   DEFAULT_LEMMA_VIEW,
   LEMMA_DETAIL_PAGE_SIZE,
-  LemmaAyahMatchDto,
   LemmaListItemViewModel,
   LemmaWordItemDto,
   LemmaSort,
@@ -49,6 +48,7 @@ import {
   PagedResultDto,
   LEMMAS_QUERY_KEYS,
 } from '../../models/lemmas.models';
+import { AyahMatchDto, PagedResultDto as SharedPagedResultDto } from '../../models/unique-words.models';
 import { LemmasDetailFacade } from '../../state/lemmas-detail.facade';
 import { LemmasExplorerFacade } from '../../state/lemmas-explorer.facade';
 import {
@@ -56,6 +56,7 @@ import {
   buildLemmasQueryParams,
 } from '../../state/lemmas-url-sync';
 import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
+import { mapLemmaAyahMatchToShared } from '../../utils/lemma-ayah-match.mapper';
 
 @Component({
   selector: 'qd-lemmas-explorer-page',
@@ -110,7 +111,7 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
     return LEMMAS_SURAHS_VIEW_LABELS;
   }
 
-  protected readonly emptyAyahsPage: PagedResultDto<LemmaAyahMatchDto> = {
+  protected readonly emptyAyahsPage: SharedPagedResultDto<AyahMatchDto> = {
     page: 1,
     pageSize: LEMMA_DETAIL_PAGE_SIZE,
     totalCount: 0,
@@ -139,6 +140,18 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
     () => this.panelState().selectedLemmaId === null,
   );
   protected readonly defaultView: LemmaView = DEFAULT_LEMMA_VIEW;
+  protected readonly ayahsPageForView = computed((): SharedPagedResultDto<AyahMatchDto> => {
+    const page = this.panelState().ayahs;
+
+    if (!page) {
+      return this.emptyAyahsPage;
+    }
+
+    return {
+      ...page,
+      items: page.items.map(mapLemmaAyahMatchToShared),
+    };
+  });
 
   ngOnInit(): void {
     this.listFacade.bindToRoute(this.route);

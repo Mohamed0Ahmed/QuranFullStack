@@ -1,5 +1,3 @@
-import { AyahMatchDto } from './unique-words.models';
-
 /**
  * Lemmas Explorer (Feature 016) view models, DTOs, and URL-state primitives.
  * Sibling of `roots.models.ts`. Lemma views are `words | ayahs | surahs | stems`
@@ -39,9 +37,6 @@ export interface LemmaSurahItemDto {
 }
 
 export interface LemmaSurahsDto {
-  id: number;
-  lemmaText: string;
-  surahsCount: number;
   surahs: LemmaSurahItemDto[];
 }
 
@@ -51,9 +46,6 @@ export interface MissingSurahItemDto {
 }
 
 export interface LemmaMissingSurahsDto {
-  id: number;
-  lemmaText: string;
-  missingSurahsCount: number;
   surahs: MissingSurahItemDto[];
 }
 
@@ -64,21 +56,27 @@ export interface LemmaStemItemDto {
 }
 
 export interface LemmaStemsDto {
-  id: number;
-  lemmaText: string;
-  stemsCount: number;
   stems: LemmaStemItemDto[];
 }
 
 export interface LemmaWordItemDto {
   uniqueWordId: number;
-  kind: LemmaWordView;
-  displayTextUthmani: string;
+  displayText: string;
   occurrencesCount: number;
-  firstVerseKey: string;
 }
 
-export interface LemmaAyahMatchDto extends AyahMatchDto {}
+export interface LemmaAyahWordDto {
+  textUthmani: string;
+  isMatched: boolean;
+}
+
+export interface LemmaAyahMatchDto {
+  ayahId: number;
+  verseKey: string;
+  surahNameArabic: string;
+  pageNumber: number;
+  words: LemmaAyahWordDto[];
+}
 
 /**
  * Lemma catalogue row. Root fields come from the lemma's owned root
@@ -87,19 +85,14 @@ export interface LemmaAyahMatchDto extends AyahMatchDto {}
 export interface LemmaListItemDto {
   id: number;
   lemmaText: string;
-  lemmaBuckwalter: string | null;
   rootId: number | null;
   rootText: string | null;
-  rootBuckwalter: string | null;
-  dominantType: TypeSummaryDto;
-  otherTypesCount: number;
   occurrencesCount: number;
   ayahsCount: number;
   surahsCount: number;
   simpleWordsCount: number;
   tashkeelWordsCount: number;
   stemsCount: number;
-  firstVerseKey: string;
 }
 
 export interface LemmaSummaryDto extends LemmaListItemDto {

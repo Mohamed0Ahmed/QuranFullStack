@@ -3,38 +3,20 @@ import { getTestBed, TestBed } from '@angular/core/testing';
 
 import { LemmasTableComponent } from './lemmas-table.component';
 import { LemmaListItemViewModel } from '../../models/lemmas.models';
-import { TypeSummaryDto } from '../../models/lemmas.models';
-
-function typeSummary(code: string, label: string, count: number): TypeSummaryDto {
-  return {
-    code,
-    arabicLabel: label,
-    englishLabel: code,
-    occurrencesCount: count,
-    firstSurahNumber: 1,
-    firstAyahNumber: 1,
-    firstWordNumber: 1,
-  };
-}
 
 function row(id: number, overrides: Partial<LemmaListItemViewModel> = {}): LemmaListItemViewModel {
   return {
     id,
     lemmaText: `صيغة-${id}`,
     displayText: `صيغة-${id}`,
-    lemmaBuckwalter: null,
     rootId: id === 501 ? null : 700,
     rootText: id === 501 ? null : 'ك ل م',
-    rootBuckwalter: null,
-    dominantType: typeSummary('N', 'اسم', id * 10),
-    otherTypesCount: id === 500 ? 1 : 0,
     occurrencesCount: id * 10,
     ayahsCount: id * 2,
     surahsCount: id,
     simpleWordsCount: id + 1,
     tashkeelWordsCount: id + 2,
     stemsCount: id + 3,
-    firstVerseKey: '1:1',
     ...overrides,
   };
 }
@@ -65,7 +47,7 @@ describe('LemmasTableComponent', () => {
     return fixture;
   }
 
-  it('renders the nine semantic column headers', () => {
+  it('renders the lemma headers without type column', () => {
     const fixture = setup([], { loading: false });
     const root = fixture.nativeElement as HTMLElement;
 
@@ -75,7 +57,6 @@ describe('LemmasTableComponent', () => {
     expect(headers).toContain('م');
     expect(headers).toContain('الصيغة المعجمية');
     expect(headers).toContain('الجذر');
-    expect(headers).toContain('النوع');
     expect(headers).toContain('المواضع');
     expect(headers).toContain('الآيات');
     expect(headers).toContain('السور');
@@ -115,14 +96,11 @@ describe('LemmasTableComponent', () => {
     expect(link?.getAttribute('href')).toContain('root=700');
   });
 
-  it('shows dominant type and an additional-types indicator when otherTypesCount is positive', () => {
+  it('does not render a type column', () => {
     const fixture = setup([row(500)]);
     const root = fixture.nativeElement as HTMLElement;
 
-    expect(root.querySelector('[data-testid="lemmas-table-type"]')?.textContent).toContain('اسم');
-    const indicator = root.querySelector('[data-testid="lemmas-table-additional-types"]');
-    expect(indicator).toBeTruthy();
-    expect(indicator?.getAttribute('aria-label')).toContain('نوع إضافي');
+    expect(root.querySelector('[data-testid="lemmas-table-type"]')).toBeNull();
   });
 
   it('emits rowSelected when the lemma cell is clicked', () => {
