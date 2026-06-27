@@ -117,10 +117,12 @@
 
   <ng-template #lemmasPanelContent>
     @if (!emptySelection()) {
-      @if (panelState().summary || panelState().status === 'loading') {
-        <qd-type-distribution-list
+      @if (activeView() === 'ayahs' && (panelState().summary || panelState().status === 'loading')) {
+        <qd-lemma-ayah-type-filters
           [items]="panelState().summary?.typeDistribution ?? []"
+          [selectedTypeCode]="panelState().ayahTypeCode"
           [loading]="panelState().status === 'loading' && !panelState().summary"
+          (typeCodeChange)="onAyahTypeChange($event)"
         />
       }
 

@@ -230,17 +230,59 @@ describe('LemmasExplorerPageComponent US1', () => {
     const root = fixture.nativeElement as HTMLElement;
 
     expect(lemmasApi.getLemmaSummary).toHaveBeenCalledWith(500);
-    expect(lemmasApi.getLemmaAyahMatches).toHaveBeenCalledWith(500, 1, LEMMA_DETAIL_PAGE_SIZE);
+    expect(lemmasApi.getLemmaAyahMatches).toHaveBeenCalledWith(500, 1, LEMMA_DETAIL_PAGE_SIZE, null);
     expect(lemmasApi.getLemmaWords).not.toHaveBeenCalled();
     expect(lemmasApi.getLemmaMentionedSurahs).not.toHaveBeenCalled();
     expect(lemmasApi.getLemmaMissingSurahs).not.toHaveBeenCalled();
     expect(lemmasApi.getLemmaStems).not.toHaveBeenCalled();
 
+    expect(root.querySelector('[data-testid="lemma-ayah-type-filters"]')).toBeTruthy();
+    expect(root.querySelector('[data-testid="lemma-ayah-type-filter-all"]')?.getAttribute('aria-pressed')).toBe('true');
     expect(root.querySelector('qd-ayah-matches-list')).toBeTruthy();
     expect(root.querySelector('[data-testid="lemmas-ayahs-view"]')).toBeTruthy();
     expect(root.querySelectorAll('.ayah-matches-list__card')).toHaveLength(1);
     expect(root.querySelectorAll('.highlighted-ayah__word--matched')).toHaveLength(1);
     expect((root.querySelector('[data-testid="ayah-matches-open-mushaf"]') as HTMLAnchorElement).getAttribute('href')).toContain('page=92');
+  });
+
+  it('updates URL with typeCode and resets detail page when a type filter is selected', async () => {
+    lemmasApi.getLemmaAyahMatches.mockReturnValue(successAyahsResponse());
+    queryParamMap$.next(convertToParamMap({ lemma: '500', view: 'ayahs', detailPage: '1' }));
+
+    const fixture = await initLifecycle();
+    vi.mocked(router.navigate).mockClear();
+
+    (fixture.nativeElement.querySelector('[data-testid="lemma-ayah-type-filter-N"]') as HTMLButtonElement).click();
+
+    expect(router.navigate).toHaveBeenCalledWith([], {
+      relativeTo: expect.anything(),
+      queryParams: expect.objectContaining({
+        [LEMMAS_QUERY_KEYS.view]: 'ayahs',
+        [LEMMAS_QUERY_KEYS.detailPage]: '1',
+        [LEMMAS_QUERY_KEYS.typeCode]: 'N',
+      }),
+      queryParamsHandling: 'merge',
+    });
+  });
+
+  it('clears typeCode when عرض الكل is selected', async () => {
+    lemmasApi.getLemmaAyahMatches.mockReturnValue(successAyahsResponse());
+    queryParamMap$.next(convertToParamMap({ lemma: '500', view: 'ayahs', detailPage: '1', typeCode: 'N' }));
+
+    const fixture = await initLifecycle();
+    vi.mocked(router.navigate).mockClear();
+
+    (fixture.nativeElement.querySelector('[data-testid="lemma-ayah-type-filter-all"]') as HTMLButtonElement).click();
+
+    expect(router.navigate).toHaveBeenCalledWith([], {
+      relativeTo: expect.anything(),
+      queryParams: expect.objectContaining({
+        [LEMMAS_QUERY_KEYS.view]: 'ayahs',
+        [LEMMAS_QUERY_KEYS.detailPage]: '1',
+        [LEMMAS_QUERY_KEYS.typeCode]: null,
+      }),
+      queryParamsHandling: 'merge',
+    });
   });
 
   it('loads only the word detail endpoint and renders the simple/tashkeel list when view=words', async () => {
@@ -262,7 +304,7 @@ describe('LemmasExplorerPageComponent US1', () => {
     expect(root.querySelectorAll('[data-testid="lemma-word-link"]')).toHaveLength(1);
   });
 
-  it('loads related stems for view=stems and keeps the type distribution visible while the related list loads', async () => {
+  it('loads related stems for view=stems without rendering Lemmas ayah type filters', async () => {
     const pendingStems$ = new Subject<ApiResponse<LemmaStemsDto>>();
     lemmasApi.getLemmaStems.mockReturnValue(pendingStems$.asObservable());
     queryParamMap$.next(convertToParamMap({ lemma: '500', view: 'stems' }));
@@ -273,8 +315,8 @@ describe('LemmasExplorerPageComponent US1', () => {
     expect(lemmasApi.getLemmaSummary).toHaveBeenCalledWith(500);
     expect(lemmasApi.getLemmaStems).toHaveBeenCalledWith(500);
     expect(TestBed.inject(LemmasDetailFacade).status()).toBe('loading');
-    expect(root.querySelector('[data-testid="type-distribution-dominant"]')).toBeTruthy();
-    expect(root.querySelectorAll('.type-distribution-list__row--loading')).toHaveLength(0);
+    expect(root.querySelector('[data-testid="lemma-ayah-type-filters"]')).toBeNull();
+    expect(root.querySelector('[data-testid="type-distribution-list"]')).toBeNull();
     expect(root.querySelector('[data-testid="lemma-stems-list-loading"]')).toBeTruthy();
   });
 
@@ -816,7 +858,35 @@ describe('LemmasExplorerPageComponent US8 — restore and navigate exact state',
 
     expect(detailFacade.selectedLemmaId()).toBe(500);
     expect(detailFacade.view()).toBe('ayahs');
-    expect(lemmasApi.getLemmaAyahMatches).toHaveBeenCalledWith(500, 1, LEMMA_DETAIL_PAGE_SIZE);
+    expect(lemmasApi.getLemmaAyahMatches).toHaveBeenCalledWith(500, 1, LEMMA_DETAIL_PAGE_SIZE, null);
+  });
+
+  it('clears stale typeCode after summary loads', async () => {
+    lemmasApi.getLemmaSummary.mockReturnValue(
+      of<ApiResponse<LemmaSummaryDto>>({
+        isSuccess: true,
+        data: { ...listRow(500), typeDistribution: [typeSummary()] },
+        message: null,
+        errors: null,
+      }),
+    );
+    lemmasApi.getLemmaAyahMatches.mockReturnValue(successAyahsResponse());
+
+    queryParamMap$.next(convertToParamMap({ lemma: '500', view: 'ayahs', typeCode: 'V', detailPage: '1' }));
+    const fixture = await initLifecycle();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(TestBed.inject(LemmasDetailFacade).panelState().ayahTypeCode).toBeNull();
+    expect(router.navigate).toHaveBeenCalledWith([], {
+      relativeTo: expect.anything(),
+      queryParams: expect.objectContaining({
+        [LEMMAS_QUERY_KEYS.typeCode]: null,
+        [LEMMAS_QUERY_KEYS.detailPage]: '1',
+      }),
+      queryParamsHandling: 'merge',
+    });
+    expect(fixture.nativeElement.querySelector('[data-testid="lemma-ayah-type-filter-all"]')?.getAttribute('aria-pressed')).toBe('true');
   });
 
   it('maps a summary HTTP 404 to restored-not-found without surfacing a generic error', async () => {

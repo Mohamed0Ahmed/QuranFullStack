@@ -118,6 +118,7 @@ export interface LemmasPanelState {
   view: LemmaView;
   wordView: LemmaWordView;
   surahView: LemmaSurahView;
+  ayahTypeCode: string | null;
   detailPage: number;
   ayahs: PagedResultDto<LemmaAyahMatchDto> | null;
   words: PagedResultDto<LemmaWordItemDto> | null;
@@ -141,6 +142,7 @@ export const LEMMAS_QUERY_KEYS = {
   wordView: 'wordView',
   surahView: 'surahView',
   detailPage: 'detailPage',
+  typeCode: 'typeCode',
 } as const;
 
 export const LEMMAS_SELECTION_QUERY_KEYS: readonly string[] = [
@@ -149,6 +151,7 @@ export const LEMMAS_SELECTION_QUERY_KEYS: readonly string[] = [
   LEMMAS_QUERY_KEYS.wordView,
   LEMMAS_QUERY_KEYS.surahView,
   LEMMAS_QUERY_KEYS.detailPage,
+  LEMMAS_QUERY_KEYS.typeCode,
 ] as const;
 
 export const DEFAULT_LEMMA_SORT: LemmaSort = 'mushaf-order';
@@ -196,4 +199,5 @@ export interface ParsedLemmasQuery {
   wordView: LemmaWordView;
   surahView: LemmaSurahView;
   detailPage: number;
+  typeCode: string | null;
 }

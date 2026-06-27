@@ -16,8 +16,9 @@ export const LemmasCacheKeys = {
     return `lemmas:${lemmaId}:words:${wordView}:p${page}`;
   },
 
-  ayahs(lemmaId: number, page: number): string {
-    return `lemmas:${lemmaId}:ayahs:p${page}`;
+  ayahs(lemmaId: number, page: number, pageSize: number, typeCode: string | null): string {
+    const normalizedTypeCode = typeCode && typeCode.trim().length > 0 ? typeCode.trim() : 'all';
+    return `lemmas:${lemmaId}:ayahs:${normalizedTypeCode}:p${page}:s${pageSize}`;
   },
 
   surahs(lemmaId: number): string {

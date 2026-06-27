@@ -49,6 +49,9 @@ export function parseLemmasQueryParams(queryParams: ParamMap): ParsedLemmasQuery
     ? parsePositiveInt(queryParams.get(LEMMAS_QUERY_KEYS.detailPage)) ?? DEFAULT_LEMMA_DETAIL_PAGE
     : DEFAULT_LEMMA_DETAIL_PAGE;
 
+  const typeCodeRaw = view === 'ayahs' ? queryParams.get(LEMMAS_QUERY_KEYS.typeCode) : null;
+  const typeCode = normalizeOptionalText(typeCodeRaw);
+
   return {
     search: queryParams.get(LEMMAS_QUERY_KEYS.search) ?? '',
     sort,
@@ -58,6 +61,7 @@ export function parseLemmasQueryParams(queryParams: ParamMap): ParsedLemmasQuery
     wordView,
     surahView,
     detailPage,
+    typeCode,
   };
 }
 
@@ -70,6 +74,7 @@ export type LemmasQueryChange = Partial<{
   wordView: LemmaWordView | null;
   surahView: LemmaSurahView | null;
   detailPage: number | null;
+  typeCode: string | null;
 }>;
 
 export function buildLemmasQueryParams(changes: LemmasQueryChange): Record<string, string | null> {
@@ -100,6 +105,9 @@ export function buildLemmasQueryParams(changes: LemmasQueryChange): Record<strin
     params[LEMMAS_QUERY_KEYS.detailPage] =
       changes.detailPage === null ? null : String(changes.detailPage);
   }
+  if (changes.typeCode !== undefined) {
+    params[LEMMAS_QUERY_KEYS.typeCode] = normalizeOptionalText(changes.typeCode);
+  }
 
   return params;
 }
@@ -126,4 +134,13 @@ function parsePositiveInt(value: string | null): number | null {
   }
   const parsed = Number.parseInt(value, 10);
   return parsed;
+}
+
+function normalizeOptionalText(value: string | null): string | null {
+  if (value === null) {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length === 0 ? null : trimmed;
 }

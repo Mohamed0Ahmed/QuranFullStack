@@ -32,6 +32,7 @@ export interface LemmasDetailLoadContext {
   readonly view: LemmaView;
   readonly wordView: LemmaWordView;
   readonly surahView: LemmaSurahView;
+  readonly ayahTypeCode: string | null;
   readonly detailPage: number;
   readonly cachedMissingSurahs: LemmaMissingSurahsDto | null;
 }
@@ -54,8 +55,20 @@ export class LemmasDetailViewLoader {
     switch (context.view) {
       case 'ayahs':
         return this.subscribe(
-          this.cache.getOrLoad(LemmasCacheKeys.ayahs(context.lemmaId, context.detailPage), () =>
-            this.api.getLemmaAyahMatches(context.lemmaId, context.detailPage, LEMMA_DETAIL_PAGE_SIZE),
+          this.cache.getOrLoad(
+            LemmasCacheKeys.ayahs(
+              context.lemmaId,
+              context.detailPage,
+              LEMMA_DETAIL_PAGE_SIZE,
+              context.ayahTypeCode,
+            ),
+            () =>
+              this.api.getLemmaAyahMatches(
+                context.lemmaId,
+                context.detailPage,
+                LEMMA_DETAIL_PAGE_SIZE,
+                context.ayahTypeCode,
+              ),
           ),
           handlers.onAyahs,
           handlers.onError,

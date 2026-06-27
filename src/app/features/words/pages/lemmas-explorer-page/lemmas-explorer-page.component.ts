@@ -4,6 +4,7 @@ import {
   Component,
   OnDestroy,
   OnInit,
+  effect,
   computed,
   inject,
   signal,
@@ -12,11 +13,11 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription, Subject, debounceTime } from 'rxjs';
 
 import { AyahMatchesListComponent } from '../../components/ayah-matches-list/ayah-matches-list.component';
+import { LemmaAyahTypeFiltersComponent } from '../../components/lemma-ayah-type-filters/lemma-ayah-type-filters.component';
 import { LemmaDetailsPanelComponent } from '../../components/lemma-details-panel/lemma-details-panel.component';
 import { LemmaStemsListComponent } from '../../components/lemma-stems-list/lemma-stems-list.component';
 import { LemmaWordsListComponent } from '../../components/lemma-words-list/lemma-words-list.component';
 import { MissingSurahsListComponent } from '../../components/missing-surahs-list/missing-surahs-list.component';
-import { TypeDistributionListComponent } from '../../components/type-distribution-list/type-distribution-list.component';
 import { SurahOccurrencesListComponent } from '../../components/surah-occurrences-list/surah-occurrences-list.component';
 import {
   LemmaCountOpenedEvent,
@@ -64,13 +65,13 @@ import { mapLemmaAyahMatchToShared } from '../../utils/lemma-ayah-match.mapper';
   imports: [
     NgTemplateOutlet,
     AyahMatchesListComponent,
+    LemmaAyahTypeFiltersComponent,
     LemmaDetailsPanelComponent,
     LemmaStemsListComponent,
     LemmaWordsListComponent,
     LemmasTableComponent,
     MissingSurahsListComponent,
     PaginationComponent,
-    TypeDistributionListComponent,
     SurahOccurrencesListComponent,
   ],
   templateUrl: './lemmas-explorer-page.component.html',
@@ -140,6 +141,26 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
     () => this.panelState().selectedLemmaId === null,
   );
   protected readonly defaultView: LemmaView = DEFAULT_LEMMA_VIEW;
+
+  constructor() {
+    effect(() => {
+      const state = this.panelState();
+      const typeCode = state.ayahTypeCode;
+      const summary = state.summary;
+
+      if (state.selectedLemmaId === null || state.view !== 'ayahs' || typeCode === null || summary === null) {
+        return;
+      }
+
+      if (summary.typeDistribution.some((item) => item.code === typeCode)) {
+        return;
+      }
+
+      this.detailFacade.setAyahTypeCode(null);
+      this.updateQueryParams(buildLemmasQueryParams({ typeCode: null, detailPage: 1 }));
+    });
+  }
+
   protected readonly ayahsPageForView = computed((): SharedPagedResultDto<AyahMatchDto> => {
     const page = this.panelState().ayahs;
 
@@ -213,6 +234,7 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
         wordView: 'simple',
         surahView: null,
         detailPage: 1,
+        typeCode: null,
       }),
     );
   }
@@ -229,6 +251,7 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
         detailPage: this.detailPageForView(view),
         wordView: wordView ?? null,
         surahView: surahView ?? null,
+        typeCode: null,
       }),
     );
   }
@@ -241,6 +264,27 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
         detailPage: this.detailPageForView(view),
         wordView: view === 'words' ? 'simple' : null,
         surahView: view === 'surahs' ? 'mentioned' : null,
+        typeCode: null,
+      }),
+    );
+  }
+
+  protected onAyahTypeChange(typeCode: string | null): void {
+    const current = this.panelState();
+    if (current.selectedLemmaId === null || current.view !== 'ayahs') {
+      return;
+    }
+
+    if (current.ayahTypeCode === typeCode && current.detailPage === 1) {
+      return;
+    }
+
+    this.detailFacade.setAyahTypeCode(typeCode);
+    this.updateQueryParams(
+      buildLemmasQueryParams({
+        view: 'ayahs',
+        detailPage: 1,
+        typeCode,
       }),
     );
   }

@@ -59,6 +59,8 @@ export const LEMMAS_NOT_FOUND_LABEL = 'الصيغة المعجمية غير مو
 export const LEMMAS_ERROR_LABEL = 'تعذّر تحميل تفاصيل الصيغة المعجمية. تحقّق من الاتصال ثم أعد المحاولة.';
 export const LEMMAS_LIST_ERROR_LABEL = 'تعذّر تحميل الصيغ المعجمية. تحقّق من الاتصال ثم أعد المحاولة.';
 export const LEMMAS_NO_RESULTS_LABEL = 'لا توجد صيغ معجمية مطابقة لبحثك';
+export const LEMMAS_AYAH_TYPE_FILTERS_LABEL = 'تصفية الأنواع في الآيات';
+export const LEMMAS_AYAH_TYPE_ALL_LABEL = 'عرض الكل';
 
 export const LEMMAS_WORD_OCCURRENCES_HEADER = 'عدد مرات الظهور في الصيغة المعجمية';
 export const LEMMAS_WORD_DISPLAY_HEADER = 'الكلمة';

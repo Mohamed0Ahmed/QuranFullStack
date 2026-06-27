@@ -6,10 +6,7 @@ import { catchError, distinctUntilChanged, map, switchMap, tap } from 'rxjs/oper
 
 import { ApiResponse } from '../../../core/data-access/api-response.model';
 import { LemmasApi } from '../data-access/lemmas.api';
-import {
-  LEMMAS_ERROR_LABEL,
-  LEMMAS_NOT_FOUND_LABEL,
-} from '../models/lemmas.labels';
+import { LEMMAS_ERROR_LABEL, LEMMAS_NOT_FOUND_LABEL } from '../models/lemmas.labels';
 import {
   DEFAULT_LEMMA_DETAIL_PAGE,
   DEFAULT_LEMMA_SURAHS_VIEW,
@@ -42,6 +39,7 @@ const INITIAL_PANEL: LemmasPanelState = {
   view: DEFAULT_LEMMA_VIEW,
   wordView: DEFAULT_LEMMA_WORD_VIEW,
   surahView: DEFAULT_LEMMA_SURAHS_VIEW,
+  ayahTypeCode: null,
   detailPage: DEFAULT_LEMMA_DETAIL_PAGE,
   ayahs: null,
   words: null,
@@ -58,6 +56,7 @@ interface PanelUrlState {
   readonly wordView: LemmaWordView;
   readonly surahView: LemmaSurahView;
   readonly detailPage: number;
+  readonly typeCode: string | null;
 }
 
 /**
@@ -122,6 +121,7 @@ export class LemmasDetailFacade {
       wordView: DEFAULT_LEMMA_WORD_VIEW,
       surahView: DEFAULT_LEMMA_SURAHS_VIEW,
       detailPage: DEFAULT_LEMMA_DETAIL_PAGE,
+      typeCode: null,
     };
     this._panel.set({
       ...INITIAL_PANEL,
@@ -130,7 +130,14 @@ export class LemmasDetailFacade {
       view,
       status: 'loading',
     });
-    this.loadActiveView(summary.id, view, DEFAULT_LEMMA_WORD_VIEW, DEFAULT_LEMMA_SURAHS_VIEW, DEFAULT_LEMMA_DETAIL_PAGE);
+    this.loadActiveView(
+      summary.id,
+      view,
+      DEFAULT_LEMMA_WORD_VIEW,
+      DEFAULT_LEMMA_SURAHS_VIEW,
+      DEFAULT_LEMMA_DETAIL_PAGE,
+      null,
+    );
   }
 
   selectLemmaWithPanel(
@@ -139,8 +146,9 @@ export class LemmasDetailFacade {
     wordView: LemmaWordView = DEFAULT_LEMMA_WORD_VIEW,
     surahView: LemmaSurahView = DEFAULT_LEMMA_SURAHS_VIEW,
     detailPage: number = DEFAULT_LEMMA_DETAIL_PAGE,
+    ayahTypeCode: string | null = null,
   ): void {
-    this.activeUrlState = { lemmaId: summary.id, view, wordView, surahView, detailPage };
+    this.activeUrlState = { lemmaId: summary.id, view, wordView, surahView, detailPage, typeCode: ayahTypeCode };
     this._panel.set({
       ...INITIAL_PANEL,
       selectedLemmaId: summary.id,
@@ -148,10 +156,11 @@ export class LemmasDetailFacade {
       view,
       wordView,
       surahView,
+      ayahTypeCode,
       detailPage,
       status: 'loading',
     });
-    this.loadActiveView(summary.id, view, wordView, surahView, detailPage);
+    this.loadActiveView(summary.id, view, wordView, surahView, detailPage, ayahTypeCode);
   }
 
   clearSelection(): void {
@@ -161,6 +170,42 @@ export class LemmasDetailFacade {
     this.detailSub = undefined;
     this.activeUrlState = null;
     this._panel.set(INITIAL_PANEL);
+  }
+
+  setAyahTypeCode(typeCode: string | null): void {
+    const current = this._panel();
+    if (current.selectedLemmaId === null || current.summary === null || current.view !== 'ayahs') {
+      return;
+    }
+
+    const normalizedTypeCode = this.normalizeTypeCode(typeCode);
+    if (normalizedTypeCode === current.ayahTypeCode && current.detailPage === DEFAULT_LEMMA_DETAIL_PAGE) {
+      return;
+    }
+
+    this.activeUrlState = {
+      lemmaId: current.selectedLemmaId,
+      view: 'ayahs',
+      wordView: current.wordView,
+      surahView: current.surahView,
+      detailPage: DEFAULT_LEMMA_DETAIL_PAGE,
+      typeCode: normalizedTypeCode,
+    };
+    this._panel.update((s) => ({
+      ...s,
+      ayahTypeCode: normalizedTypeCode,
+      detailPage: DEFAULT_LEMMA_DETAIL_PAGE,
+      status: 'loading',
+      errorMessage: '',
+    }));
+    this.loadActiveView(
+      current.selectedLemmaId,
+      'ayahs',
+      current.wordView,
+      current.surahView,
+      DEFAULT_LEMMA_DETAIL_PAGE,
+      normalizedTypeCode,
+    );
   }
 
   setView(view: LemmaView): void {
@@ -179,17 +224,19 @@ export class LemmasDetailFacade {
       wordView,
       surahView,
       detailPage,
+      typeCode: null,
     };
     this._panel.update((s) => ({
       ...s,
       view,
       wordView,
       surahView,
+      ayahTypeCode: null,
       detailPage,
       status: 'loading',
       errorMessage: '',
     }));
-    this.loadActiveView(current.selectedLemmaId, view, wordView, surahView, detailPage);
+    this.loadActiveView(current.selectedLemmaId, view, wordView, surahView, detailPage, null);
   }
 
   setWordView(wordView: LemmaWordView): void {
@@ -209,6 +256,7 @@ export class LemmasDetailFacade {
       wordView,
       surahView: current.surahView,
       detailPage: DEFAULT_LEMMA_DETAIL_PAGE,
+      typeCode: null,
     };
     this._panel.update((s) => ({
       ...s,
@@ -217,7 +265,7 @@ export class LemmasDetailFacade {
       status: 'loading',
       errorMessage: '',
     }));
-    this.loadActiveView(current.selectedLemmaId, 'words', wordView, current.surahView, DEFAULT_LEMMA_DETAIL_PAGE);
+    this.loadActiveView(current.selectedLemmaId, 'words', wordView, current.surahView, DEFAULT_LEMMA_DETAIL_PAGE, null);
   }
 
   setSurahView(surahView: LemmaSurahView): void {
@@ -237,6 +285,7 @@ export class LemmasDetailFacade {
       wordView: current.wordView,
       surahView,
       detailPage: current.detailPage,
+      typeCode: null,
     };
     this._panel.update((s) => ({
       ...s,
@@ -244,7 +293,7 @@ export class LemmasDetailFacade {
       status: 'loading',
       errorMessage: '',
     }));
-    this.loadActiveView(current.selectedLemmaId, 'surahs', current.wordView, surahView, current.detailPage);
+    this.loadActiveView(current.selectedLemmaId, 'surahs', current.wordView, surahView, current.detailPage, null);
   }
 
   setDetailPage(page: number): void {
@@ -263,6 +312,7 @@ export class LemmasDetailFacade {
       wordView: current.wordView,
       surahView: current.surahView,
       detailPage: page,
+      typeCode: current.view === 'ayahs' ? current.ayahTypeCode : null,
     };
     this._panel.update((s) => ({
       ...s,
@@ -276,6 +326,7 @@ export class LemmasDetailFacade {
       current.wordView,
       current.surahView,
       page,
+      current.view === 'ayahs' ? current.ayahTypeCode : null,
     );
   }
 
@@ -291,6 +342,7 @@ export class LemmasDetailFacade {
       wordView: parsed.wordView,
       surahView: parsed.surahView,
       detailPage: parsed.detailPage,
+      typeCode: parsed.typeCode,
     };
   }
 
@@ -313,11 +365,19 @@ export class LemmasDetailFacade {
         view: state.view,
         wordView: state.wordView,
         surahView: state.surahView,
+        ayahTypeCode: state.typeCode,
         detailPage: state.detailPage,
         status: 'loading',
         errorMessage: '',
       }));
-      this.loadActiveView(state.lemmaId, state.view, state.wordView, state.surahView, state.detailPage);
+      this.loadActiveView(
+        state.lemmaId,
+        state.view,
+        state.wordView,
+        state.surahView,
+        state.detailPage,
+        state.typeCode,
+      );
       return of(undefined);
     }
 
@@ -332,14 +392,13 @@ export class LemmasDetailFacade {
       view: state.view,
       wordView: state.wordView,
       surahView: state.surahView,
+      ayahTypeCode: state.typeCode,
       detailPage: state.detailPage,
       status: 'loading',
     });
 
     return this.cache
-      .getOrLoad(LemmasCacheKeys.summary(state.lemmaId), () =>
-        this.api.getLemmaSummary(state.lemmaId),
-      )
+      .getOrLoad(LemmasCacheKeys.summary(state.lemmaId), () => this.api.getLemmaSummary(state.lemmaId))
       .pipe(
         tap((response) => {
           if (!response.isSuccess || !response.data) {
@@ -351,6 +410,7 @@ export class LemmasDetailFacade {
           this._panel.update((s) => ({
             ...s,
             summary,
+            ayahTypeCode: state.typeCode,
             status: 'loading',
           }));
           this.loadActiveView(
@@ -359,6 +419,7 @@ export class LemmasDetailFacade {
             state.wordView,
             state.surahView,
             state.detailPage,
+            state.typeCode,
           );
         }),
         catchError((err) => {
@@ -380,6 +441,7 @@ export class LemmasDetailFacade {
     wordView: LemmaWordView,
     surahView: LemmaSurahView,
     detailPage: number,
+    ayahTypeCode: string | null,
   ): void {
     this.detailSub?.unsubscribe();
 
@@ -390,6 +452,7 @@ export class LemmasDetailFacade {
         view,
         wordView,
         surahView,
+        ayahTypeCode,
         detailPage,
         cachedMissingSurahs: current.missingSurahs,
       },
@@ -426,10 +489,7 @@ export class LemmasDetailFacade {
     return extractPanelErrorMessage(err, fallback);
   }
 
-  private isSamePanelUrlState(
-    current: PanelUrlState | null,
-    next: PanelUrlState | null,
-  ): boolean {
+  private isSamePanelUrlState(current: PanelUrlState | null, next: PanelUrlState | null): boolean {
     if (current === null || next === null) {
       return current === next;
     }
@@ -439,7 +499,12 @@ export class LemmasDetailFacade {
       current.view === next.view &&
       current.wordView === next.wordView &&
       current.surahView === next.surahView &&
-      current.detailPage === next.detailPage
+      current.detailPage === next.detailPage &&
+      current.typeCode === next.typeCode
     );
+  }
+
+  private normalizeTypeCode(typeCode: string | null): string | null {
+    return typeCode === null || typeCode.trim().length === 0 ? null : typeCode.trim();
   }
 }

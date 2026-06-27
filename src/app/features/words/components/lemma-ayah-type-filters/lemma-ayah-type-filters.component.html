@@ -1,0 +1,33 @@
+<section class="lemma-ayah-type-filters" data-testid="lemma-ayah-type-filters" [attr.aria-label]="sectionLabel">
+  @if (loading()) {
+    <p class="qd-sr-only" role="status" aria-live="polite">{{ loadingLabel }}</p>
+  }
+
+  <div class="lemma-ayah-type-filters__grid" role="group" [attr.aria-busy]="loading() ? true : null">
+    <button
+      type="button"
+      class="qd-btn qd-btn-secondary lemma-ayah-type-filters__chip"
+      [class.qd-is-selected]="isAllSelected()"
+      [attr.aria-pressed]="isAllSelected()"
+      data-testid="lemma-ayah-type-filter-all"
+      (click)="selectTypeCode(null)"
+    >
+      <span class="lemma-ayah-type-filters__label">{{ allLabel }}</span>
+    </button>
+
+    @for (item of items(); track item.code) {
+      <button
+        type="button"
+        class="qd-btn qd-btn-secondary lemma-ayah-type-filters__chip"
+        [class.qd-is-selected]="isSelected(item.code)"
+        [attr.aria-pressed]="isSelected(item.code)"
+        [attr.title]="item.englishLabel"
+        [attr.data-testid]="'lemma-ayah-type-filter-' + item.code"
+        (click)="selectTypeCode(item.code)"
+      >
+        <span class="lemma-ayah-type-filters__label">{{ item.arabicLabel }}</span>
+        <span class="lemma-ayah-type-filters__count">{{ item.occurrencesCount }} مرة</span>
+      </button>
+    }
+  </div>
+</section>
