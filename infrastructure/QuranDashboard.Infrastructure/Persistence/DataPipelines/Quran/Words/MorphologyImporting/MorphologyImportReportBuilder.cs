@@ -90,6 +90,13 @@ internal static class MorphologyImportReportBuilder
                 $"({stats.WholeWordAgreementMatches}/{stats.WholeWordAgreementTotal}); baseline ≈ 79.83% (informational).");
         }
 
+        warnings.Add(FormatListWarning(
+            "MORPH-SEG-DIM-ISSUES",
+            "segment dimension resolver issue(s)",
+            source.SegmentDimensionIssues
+                .Select(issue => $"{issue.SegmentLocation} [{issue.CheckId}] {issue.Message}")
+                .ToList()));
+
         warnings.Add(FormatListWarning("MORPH-SEG-REVIEW-LIST", "review-tier form(s)", stats.ReviewTierForms));
         warnings.Add(FormatListWarning("MORPH-SEG-MULTIWORD-LIST", "multiword form(s)", stats.MultiwordForms));
         warnings.Add(FormatListWarning("MORPH-SEG-EMPTY-LIST", "empty-form segment(s) → NULL", stats.EmptyFormLocations));

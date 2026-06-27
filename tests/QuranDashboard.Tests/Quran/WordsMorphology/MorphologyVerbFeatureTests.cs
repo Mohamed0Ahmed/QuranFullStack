@@ -103,8 +103,8 @@ public sealed class MorphologyVerbFeatureTests(MorphologyImportTestFixture fixtu
                     kind = "STEM",
                     pos = "V",
                     form = "bi}osa",
-                    features = "STEM|POS:V|PERF|LEM:bi}osa|ROOT:bAs|3MS",
-                    root = "bAs",
+                    features = "STEM|POS:V|PERF|LEM:bi}osa|ROOT:ktb|3MS",
+                    root = "ktb",
                     lemma = "bi}osa"
                 },
                 new
@@ -112,10 +112,10 @@ public sealed class MorphologyVerbFeatureTests(MorphologyImportTestFixture fixtu
                     segmentNumber = (short)2,
                     kind = "STEM",
                     pos = "REL",
-                    form = "maA",
-                    features = "STEM|POS:REL|LEM:maA",
+                    form = "kitAbi",
+                    features = "STEM|POS:REL|LEM:kitAb",
                     root = (string?)null,
-                    lemma = "maA"
+                    lemma = "kitAb"
                 }
             ]);
 
@@ -162,10 +162,10 @@ public sealed class MorphologyVerbFeatureTests(MorphologyImportTestFixture fixtu
                     segmentNumber = (short)2,
                     kind = "STEM",
                     pos = "REL",
-                    form = "m~aA",
-                    features = "STEM|POS:REL|LEM:maA",
+                    form = "kataba",
+                    features = "STEM|POS:REL|LEM:katab",
                     root = (string?)null,
-                    lemma = "maA"
+                    lemma = "katab"
                 }
             ]);
 

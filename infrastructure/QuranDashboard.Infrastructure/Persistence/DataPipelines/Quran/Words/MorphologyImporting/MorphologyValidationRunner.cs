@@ -32,6 +32,7 @@ internal static class MorphologyValidationRunner
 
         await AddUs1ChecksAsync(checks, connection, transaction, expectedReadableWords, ct);
         await AddUs3ChecksAsync(checks, connection, transaction, source, renderer, ct);
+        await AddSegmentDimensionChecksAsync(checks, connection, transaction, source, ct);
 
         return checks;
     }
@@ -172,6 +173,107 @@ internal static class MorphologyValidationRunner
             danglingRoots == 0 && danglingLemmas == 0 && danglingStems == 0));
     }
 
+    private static async Task AddSegmentDimensionChecksAsync(
+        List<MorphologyCheckResult> checks,
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        MorphologySourceData source,
+        CancellationToken ct)
+    {
+        var nonStemLemmaIds = await ExecuteScalarIntAsync(
+            connection, transaction, MorphologySql.CheckSegLemmaStemOnly, ct);
+        checks.Add(new MorphologyCheckResult(
+            MorphologyInvariants.CheckSegLemmaStemOnly,
+            HardSeverity,
+            "lemma_id appears only on STEM segments",
+            nonStemLemmaIds == 0 ? "0 violations" : $"{FormatInt(nonStemLemmaIds)} violation(s)",
+            nonStemLemmaIds == 0));
+
+        var singleStemMismatches = await ExecuteScalarIntAsync(
+            connection, transaction, MorphologySql.CheckSegLemmaSingleStemHeadConsistent, ct);
+        checks.Add(new MorphologyCheckResult(
+            MorphologyInvariants.CheckSegLemmaSingleStemHeadConsistent,
+            HardSeverity,
+            "single-STEM segment lemma_id equals quran_word_morphology.lemma_id",
+            singleStemMismatches == 0 ? "0 violations" : $"{FormatInt(singleStemMismatches)} violation(s)",
+            singleStemMismatches == 0));
+
+        var fanoutViolations = await ExecuteScalarIntAsync(
+            connection, transaction, MorphologySql.CheckSegLemmaNoFanout, ct);
+        var fanoutIssues = CountIssues(source, MorphologyInvariants.CheckSegLemmaNoFanout);
+        var totalFanoutViolations = fanoutViolations + fanoutIssues;
+        checks.Add(new MorphologyCheckResult(
+            MorphologyInvariants.CheckSegLemmaNoFanout,
+            HardSeverity,
+            "one segment never maps to multiple candidate lemmas",
+            totalFanoutViolations == 0
+                ? "0 violations"
+                : $"schema_violations={FormatInt(fanoutViolations)}, resolver_issues={FormatInt(fanoutIssues)}",
+            totalFanoutViolations == 0));
+
+        var multiStemMissing = await ExecuteScalarIntAsync(
+            connection, transaction, MorphologySql.CheckSegLemmaMultiStemResolves, ct);
+        var multiStemIssues = CountIssues(source, MorphologyInvariants.CheckSegLemmaMultiStemResolves);
+        var multiStemViolations = multiStemMissing + multiStemIssues;
+        checks.Add(new MorphologyCheckResult(
+            MorphologyInvariants.CheckSegLemmaMultiStemResolves,
+            HardSeverity,
+            "multi-STEM lemma-bearing segments resolve to exactly one lemma",
+            multiStemViolations == 0
+                ? "0 violations"
+                : $"missing={FormatInt(multiStemMissing)}, resolver_issues={FormatInt(multiStemIssues)}",
+            multiStemViolations == 0));
+
+        var missingStemLemmaIds = await ExecuteScalarIntAsync(
+            connection, transaction, MorphologySql.CheckSegLemmaRequiredForStem, ct);
+        checks.Add(new MorphologyCheckResult(
+            MorphologyInvariants.CheckSegLemmaRequiredForStem,
+            HardSeverity,
+            "every STEM segment with lemma_buckwalter has lemma_id when the word head lemma_id is set",
+            missingStemLemmaIds == 0 ? "0 violations" : $"{FormatInt(missingStemLemmaIds)} violation(s)",
+            missingStemLemmaIds == 0));
+
+        var unresolvedRoots = await ExecuteScalarIntAsync(
+            connection, transaction, MorphologySql.CheckSegRootResolves, ct);
+        var rootIssues = CountIssues(source, MorphologyInvariants.CheckSegRootResolves);
+        var rootViolations = unresolvedRoots + rootIssues;
+        checks.Add(new MorphologyCheckResult(
+            MorphologyInvariants.CheckSegRootResolves,
+            HardSeverity,
+            "every non-empty root_buckwalter has root_id",
+            rootViolations == 0
+                ? "0 violations"
+                : $"missing={FormatInt(unresolvedRoots)}, resolver_issues={FormatInt(rootIssues)}",
+            rootViolations == 0));
+
+        var rootMismatches = await ExecuteScalarIntAsync(
+            connection, transaction, MorphologySql.CheckSegRootConsistent, ct);
+        checks.Add(new MorphologyCheckResult(
+            MorphologyInvariants.CheckSegRootConsistent,
+            HardSeverity,
+            "segment root_id references a root row with matching root_buckwalter",
+            rootMismatches == 0 ? "0 violations" : $"{FormatInt(rootMismatches)} violation(s)",
+            rootMismatches == 0));
+
+        var nullSafetyViolations = await ExecuteScalarIntAsync(
+            connection, transaction, MorphologySql.CheckSegDimNullSafe, ct);
+        checks.Add(new MorphologyCheckResult(
+            MorphologyInvariants.CheckSegDimNullSafe,
+            HardSeverity,
+            "null source values remain null IDs and non-STEM lemma_id remains null",
+            nullSafetyViolations == 0 ? "0 violations" : $"{FormatInt(nullSafetyViolations)} violation(s)",
+            nullSafetyViolations == 0));
+
+        var stemIdColumns = await ExecuteScalarIntAsync(
+            connection, transaction, MorphologySql.CheckSegStemIdAbsent, ct);
+        checks.Add(new MorphologyCheckResult(
+            MorphologyInvariants.CheckSegStemIdAbsent,
+            HardSeverity,
+            "quran_word_morphology_segments has no stem_id column",
+            stemIdColumns == 0 ? "absent" : $"{FormatInt(stemIdColumns)} column(s)",
+            stemIdColumns == 0));
+    }
+
     private static async Task<RenderProvenanceCounts> CheckRenderProvenanceAsync(
         NpgsqlConnection connection,
         NpgsqlTransaction transaction,
@@ -241,6 +343,10 @@ internal static class MorphologyValidationRunner
         string sql,
         CancellationToken ct) =>
         MorphologyCommandExecutor.ExecuteScalarIntAsync(connection, transaction, sql, ct);
+
+    private static int CountIssues(MorphologySourceData source, string checkId) =>
+        source.SegmentDimensionIssues.Count(issue =>
+            string.Equals(issue.CheckId, checkId, StringComparison.Ordinal));
 
     private static string FormatInt(int value) =>
         value.ToString(CultureInfo.InvariantCulture);

@@ -16,4 +16,13 @@ public static class MorphologyInvariants
 
     public const string CheckSourceUnchanged = "MORPH-SOURCE-UNCHANGED";
     public const string CheckDimCounts = "MORPH-DIM-COUNTS";
+    public const string CheckSegLemmaStemOnly = "SEG-LEMMA-ID-STEM-ONLY";
+    public const string CheckSegLemmaRequiredForStem = "SEG-LEMMA-ID-REQUIRED-FOR-STEM";
+    public const string CheckSegLemmaSingleStemHeadConsistent = "SEG-LEMMA-ID-SINGLE-STEM-HEAD-CONSISTENT";
+    public const string CheckSegLemmaMultiStemResolves = "SEG-LEMMA-ID-MULTI-STEM-RESOLVES";
+    public const string CheckSegLemmaNoFanout = "SEG-LEMMA-ID-NO-FANOUT";
+    public const string CheckSegRootResolves = "SEG-ROOT-ID-RESOLVES";
+    public const string CheckSegRootConsistent = "SEG-ROOT-ID-CONSISTENT";
+    public const string CheckSegDimNullSafe = "SEG-DIM-NULL-SAFE";
+    public const string CheckSegStemIdAbsent = "SEG-STEM-ID-ABSENT";
 }

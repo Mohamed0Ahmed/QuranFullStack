@@ -101,10 +101,10 @@ public sealed class MorphologyUs1GateTests(MorphologyImportTestFixture fixture)
                     segmentNumber = (short)2,
                     kind = "STEM",
                     pos = "REL",
-                    form = "m~aA",
-                    features = "STEM|POS:REL|LEM:maA",
+                    form = "kataba",
+                    features = "STEM|POS:REL|LEM:katab",
                     root = (string?)null,
-                    lemma = "maA"
+                    lemma = "katab"
                 }
             ]);
 

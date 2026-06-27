@@ -269,6 +269,22 @@ public sealed class MorphologyImportTestFixture : IAsyncLifetime
         await RefreshManifestChecksumsAsync(sourcePath);
     }
 
+    public async Task PatchQulRootMapAsync(
+        string sourcePath,
+        IReadOnlyDictionary<string, string> roots)
+    {
+        await WriteJsonAsync(Path.Combine(sourcePath, "qul", "word-root.json"), roots);
+        await RefreshManifestChecksumsAsync(sourcePath);
+    }
+
+    public async Task PatchQulLemmaMapAsync(
+        string sourcePath,
+        IReadOnlyDictionary<string, string> lemmas)
+    {
+        await WriteJsonAsync(Path.Combine(sourcePath, "qul", "word-lemma.json"), lemmas);
+        await RefreshManifestChecksumsAsync(sourcePath);
+    }
+
     public async Task<string> WriteSourceFolderWithExtraCorpusLocationAsync()
     {
         var tempDir = await WriteSyntheticSourceFolderAsync();
@@ -726,11 +742,11 @@ internal static class MorphologySyntheticSeed
         "1:1:1" =>
         [
             new { segmentNumber = 1, kind = "PREFIX", pos = "P", form = "bi", features = "PREFIX", root = (string?)null, lemma = (string?)null },
-            new { segmentNumber = 2, kind = "STEM", pos = "N", form = "somi", features = "NOM", root = "smw", lemma = "ism" }
+            new { segmentNumber = 2, kind = "STEM", pos = "N", form = "somi", features = "NOM", root = (string?)null, lemma = (string?)null }
         ],
         "1:1:2" =>
         [
-            new { segmentNumber = 1, kind = "STEM", pos = "N", form = "l~Ahi", features = "GEN", root = "Alh", lemma = "ilAh" }
+            new { segmentNumber = 1, kind = "STEM", pos = "N", form = "l~Ahi", features = "GEN", root = (string?)null, lemma = (string?)null }
         ],
         "1:1:3" =>
         [

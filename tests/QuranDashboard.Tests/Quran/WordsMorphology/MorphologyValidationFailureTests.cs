@@ -75,6 +75,223 @@ public sealed class MorphologyValidationFailureTests(MorphologyImportTestFixture
     }
 
     [Fact]
+    public async Task Import_fails_when_multi_stem_lemma_is_unresolved()
+    {
+        await fixture.SeedSyntheticWordsAsync();
+        var sourcePath = await fixture.WriteSyntheticSourceFolderAsync();
+        await fixture.PatchCorpusSegmentsAsync(
+            sourcePath,
+            "1:1:3",
+            [
+                new
+                {
+                    segmentNumber = (short)1,
+                    kind = "STEM",
+                    pos = "PN",
+                    form = "raboni",
+                    features = "GEN",
+                    root = "rbb",
+                    lemma = "rabb"
+                },
+                new
+                {
+                    segmentNumber = (short)2,
+                    kind = "STEM",
+                    pos = "NEG",
+                    form = "laA",
+                    features = "STEM|POS:NEG",
+                    root = (string?)null,
+                    lemma = "missing"
+                }
+            ]);
+
+        var result = await fixture.RunImportAsync(
+            sourcePath,
+            expectedReadableWords: fixture.GetReadableWordCount());
+
+        result.ExitCode.Should().Be(ImportMorphologyResult.FailureExitCode);
+        result.Message.Should().Contain(MorphologyInvariants.CheckSegLemmaMultiStemResolves);
+
+        var snapshot = await fixture.CaptureTableSnapshotAsync();
+        snapshot.MorphologyRows.Should().Be(0);
+        snapshot.SegmentRows.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Import_fails_when_duplicate_multi_stem_lemma_has_no_safe_form_match()
+    {
+        await fixture.SeedSyntheticWordsAsync();
+        var sourcePath = await fixture.WriteSyntheticSourceFolderAsync();
+        await fixture.PatchQulLemmaMapAsync(
+            sourcePath,
+            new Dictionary<string, string>
+            {
+                ["1:1:1"] = "SYNTHETIC_DUP_A",
+                ["1:1:2"] = "SYNTHETIC_DUP_B",
+                ["1:1:3"] = MorphologySyntheticSeed.LemmaValue2,
+                ["1:2:1"] = MorphologySyntheticSeed.LemmaValue3,
+                ["1:2:2"] = "كِتَاب"
+            });
+        await fixture.PatchCorpusSegmentsAsync(
+            sourcePath,
+            "1:1:1",
+            [
+                new
+                {
+                    segmentNumber = (short)1,
+                    kind = "STEM",
+                    pos = "N",
+                    form = "kataba",
+                    features = "NOM",
+                    root = (string?)null,
+                    lemma = "dup"
+                }
+            ]);
+        await fixture.PatchCorpusSegmentsAsync(
+            sourcePath,
+            "1:1:2",
+            [
+                new
+                {
+                    segmentNumber = (short)1,
+                    kind = "STEM",
+                    pos = "N",
+                    form = "kitAbi",
+                    features = "GEN",
+                    root = (string?)null,
+                    lemma = "dup"
+                }
+            ]);
+        await fixture.PatchCorpusSegmentsAsync(
+            sourcePath,
+            "1:1:3",
+            [
+                new
+                {
+                    segmentNumber = (short)1,
+                    kind = "STEM",
+                    pos = "PN",
+                    form = "raboni",
+                    features = "GEN",
+                    root = "rbb",
+                    lemma = "rabb"
+                },
+                new
+                {
+                    segmentNumber = (short)2,
+                    kind = "STEM",
+                    pos = "N",
+                    form = "somi",
+                    features = "NOM",
+                    root = (string?)null,
+                    lemma = "dup"
+                }
+            ]);
+
+        var result = await fixture.RunImportAsync(
+            sourcePath,
+            expectedReadableWords: fixture.GetReadableWordCount());
+
+        result.ExitCode.Should().Be(ImportMorphologyResult.FailureExitCode);
+        result.Message.Should().Contain(MorphologyInvariants.CheckSegLemmaNoFanout);
+
+        var snapshot = await fixture.CaptureTableSnapshotAsync();
+        snapshot.MorphologyRows.Should().Be(0);
+        snapshot.SegmentRows.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Import_fails_when_segment_root_is_unresolved()
+    {
+        await fixture.SeedSyntheticWordsAsync();
+        var sourcePath = await fixture.WriteSyntheticSourceFolderAsync();
+        await fixture.PatchCorpusSegmentsAsync(
+            sourcePath,
+            "1:1:2",
+            [
+                new
+                {
+                    segmentNumber = (short)1,
+                    kind = "STEM",
+                    pos = "N",
+                    form = "l~Ahi",
+                    features = "GEN",
+                    root = "missing",
+                    lemma = (string?)null
+                }
+            ]);
+
+        var result = await fixture.RunImportAsync(
+            sourcePath,
+            expectedReadableWords: fixture.GetReadableWordCount());
+
+        result.ExitCode.Should().Be(ImportMorphologyResult.FailureExitCode);
+        result.Message.Should().Contain(MorphologyInvariants.CheckSegRootResolves);
+
+        var snapshot = await fixture.CaptureTableSnapshotAsync();
+        snapshot.MorphologyRows.Should().Be(0);
+        snapshot.SegmentRows.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Import_fails_when_segment_root_is_ambiguous()
+    {
+        await fixture.SeedSyntheticWordsAsync();
+        var sourcePath = await fixture.WriteSyntheticSourceFolderAsync();
+        await fixture.PatchQulRootMapAsync(
+            sourcePath,
+            new Dictionary<string, string>
+            {
+                ["1:1:1"] = "SYNTHETIC_ROOT_A",
+                ["1:1:2"] = "SYNTHETIC_ROOT_B",
+                ["1:1:3"] = MorphologySyntheticSeed.RootValue2,
+                ["1:2:1"] = MorphologySyntheticSeed.RootValue3,
+                ["1:2:2"] = MorphologySyntheticSeed.RootValue3
+            });
+        await fixture.PatchCorpusSegmentsAsync(
+            sourcePath,
+            "1:1:1",
+            [
+                new
+                {
+                    segmentNumber = (short)1,
+                    kind = "STEM",
+                    pos = "N",
+                    form = "kataba",
+                    features = "NOM",
+                    root = "dup",
+                    lemma = (string?)null
+                }
+            ]);
+        await fixture.PatchCorpusSegmentsAsync(
+            sourcePath,
+            "1:1:2",
+            [
+                new
+                {
+                    segmentNumber = (short)1,
+                    kind = "STEM",
+                    pos = "N",
+                    form = "kitAbi",
+                    features = "GEN",
+                    root = "dup",
+                    lemma = (string?)null
+                }
+            ]);
+
+        var result = await fixture.RunImportAsync(
+            sourcePath,
+            expectedReadableWords: fixture.GetReadableWordCount());
+
+        result.ExitCode.Should().Be(ImportMorphologyResult.FailureExitCode);
+        result.Message.Should().Contain(MorphologyInvariants.CheckSegRootResolves);
+
+        var snapshot = await fixture.CaptureTableSnapshotAsync();
+        snapshot.MorphologyRows.Should().Be(0);
+        snapshot.SegmentRows.Should().Be(0);
+    }
+
+    [Fact]
     public async Task Forced_Run_Over_Populated_Tables_With_Validation_Failure_Preserves_Previous()
     {
         await fixture.SeedSyntheticWordsAsync();
