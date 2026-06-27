@@ -39,6 +39,62 @@ public sealed class LemmasAyahsReadTests(MorphologyExplorersTestFixture fixture)
     }
 
     [Fact]
+    public async Task GetLemmaAyahs_type_code_filters_ayahs_and_highlights_selected_type_words()
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetLemmaAyahsHandler>();
+
+        var outcome = await handler.HandleAsync(
+            new GetLemmaAyahsQuery(HighFrequencyLemmaId, 1, 50, "V"),
+            CancellationToken.None);
+
+        var page = outcome.Should().BeOfType<GetLemmaAyahsOutcome.Success>().Subject.Page;
+        page.TotalCount.Should().Be(1);
+        page.Items.Should().ContainSingle();
+
+        var ayah = page.Items.Single();
+        ayah.VerseKey.Should().Be("1:2");
+        ayah.Words.Should().Contain(w => w.IsMatched);
+        ayah.Words.Should().Contain(w => !w.IsMatched);
+        ayah.Words.Select(w => w.TextUthmani).Should().NotContain("ۚ");
+    }
+
+    [Fact]
+    public async Task GetLemmaAyahs_type_code_pages_filtered_results()
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetLemmaAyahsHandler>();
+
+        var first = await handler.HandleAsync(
+            new GetLemmaAyahsQuery(HighFrequencyLemmaId, 1, 2, "N"),
+            CancellationToken.None);
+        var firstPage = first.Should().BeOfType<GetLemmaAyahsOutcome.Success>().Subject.Page;
+        firstPage.TotalCount.Should().Be(6);
+        firstPage.Items.Select(i => i.VerseKey).Should().Equal("1:1", "1:3");
+
+        var second = await handler.HandleAsync(
+            new GetLemmaAyahsQuery(HighFrequencyLemmaId, 2, 2, "N"),
+            CancellationToken.None);
+        var secondPage = second.Should().BeOfType<GetLemmaAyahsOutcome.Success>().Subject.Page;
+        secondPage.Items.Select(i => i.VerseKey).Should().Equal("2:1", "2:25");
+    }
+
+    [Fact]
+    public async Task GetLemmaAyahs_unknown_type_code_returns_successful_empty_page()
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetLemmaAyahsHandler>();
+
+        var outcome = await handler.HandleAsync(
+            new GetLemmaAyahsQuery(HighFrequencyLemmaId, 1, 50, "ZZZ"),
+            CancellationToken.None);
+        var page = outcome.Should().BeOfType<GetLemmaAyahsOutcome.Success>().Subject.Page;
+
+        page.TotalCount.Should().Be(0);
+        page.Items.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task GetLemmaAyahs_pages_the_results()
     {
         await using var scope = fixture.CreateScope();
@@ -143,7 +199,7 @@ public sealed class LemmasAyahsReadTests(MorphologyExplorersTestFixture fixture)
         await using var dbContext = new QuranDashboardDbContext(options);
         var reader = new EfLemmasReader(dbContext);
 
-        var page = await reader.GetLemmaAyahMatchesAsync(HighFrequencyLemmaId, 1, 2, CancellationToken.None);
+        var page = await reader.GetLemmaAyahMatchesAsync(HighFrequencyLemmaId, 1, 2, null, CancellationToken.None);
 
         page.Should().NotBeNull();
         page!.Items.Should().HaveCount(2);
@@ -164,10 +220,10 @@ public sealed class LemmasAyahsReadTests(MorphologyExplorersTestFixture fixture)
         using var cache = new MemoryCache(new MemoryCacheOptions());
         var reader = new CachedLemmasReader(inner, cache);
 
-        await reader.GetLemmaAyahMatchesAsync(HighFrequencyLemmaId, 1, 50, CancellationToken.None);
+        await reader.GetLemmaAyahMatchesAsync(HighFrequencyLemmaId, 1, 50, null, CancellationToken.None);
 
         interceptor.Reset();
-        await reader.GetLemmaAyahMatchesAsync(HighFrequencyLemmaId, 1, 50, CancellationToken.None);
+        await reader.GetLemmaAyahMatchesAsync(HighFrequencyLemmaId, 1, 50, null, CancellationToken.None);
         interceptor.CommandCount.Should().Be(0);
     }
 }

@@ -19,8 +19,8 @@ public static class LemmasCacheKeys
     public static string Words(int id, LemmaWordKind kind, int page, int pageSize) =>
         $"lemmas:{id}:words:{KindKey(kind)}:p{page}:s{pageSize}";
 
-    public static string Ayahs(int id, int page, int pageSize) =>
-        $"lemmas:{id}:ayahs:p{page}:s{pageSize}";
+    public static string Ayahs(int id, int page, int pageSize, string? typeCode) =>
+        $"lemmas:{id}:ayahs:{NormalizeTypeCode(typeCode)}:p{page}:s{pageSize}";
 
     public static string Surahs(int id) => $"lemmas:{id}:surahs";
 
@@ -34,4 +34,7 @@ public static class LemmasCacheKeys
         LemmaWordKind.Tashkeel => LemmaWordKindKeys.Tashkeel,
         _ => kind.ToString(),
     };
+
+    private static string NormalizeTypeCode(string? typeCode) =>
+        string.IsNullOrWhiteSpace(typeCode) ? "all" : typeCode.Trim();
 }

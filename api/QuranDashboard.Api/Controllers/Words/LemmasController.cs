@@ -136,13 +136,15 @@ public sealed class LemmasController(
         int id,
         [FromQuery] int? page,
         [FromQuery] int? pageSize,
+        [FromQuery] string? typeCode,
         CancellationToken cancellationToken)
     {
         var outcome = await ayahsHandler.HandleAsync(
             new GetLemmaAyahsQuery(
                 id,
                 page ?? DefaultPage,
-                pageSize ?? DefaultDetailPageSize),
+                pageSize ?? DefaultDetailPageSize,
+                NormalizeTypeCode(typeCode)),
             cancellationToken);
 
         return outcome switch
@@ -158,6 +160,9 @@ public sealed class LemmasController(
             _ => throw new InvalidOperationException($"Unhandled {nameof(GetLemmaAyahsOutcome)} variant."),
         };
     }
+
+    private static string? NormalizeTypeCode(string? typeCode) =>
+        string.IsNullOrWhiteSpace(typeCode) ? null : typeCode.Trim();
 
     /// <summary>
     /// يُرجع السور التي وردت فيها الصيغة المعجمية المحددة مع عدد مرات الظهور

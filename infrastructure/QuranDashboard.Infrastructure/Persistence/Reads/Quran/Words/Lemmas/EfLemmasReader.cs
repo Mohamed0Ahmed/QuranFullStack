@@ -51,8 +51,11 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
         int id,
         int page,
         int pageSize,
+        string? typeCode,
         CancellationToken cancellationToken)
     {
+        var normalizedTypeCode = NormalizeTypeCode(typeCode);
+
         var lemmaExists = await _db.QuranLemmas
             .AsNoTracking()
             .AnyAsync(l => l.Id == id, cancellationToken);
@@ -63,7 +66,7 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
 
         var matchedAyahIds = _db.WordMorphologies
             .AsNoTracking()
-            .Where(m => m.LemmaId == id)
+            .Where(m => m.LemmaId == id && (normalizedTypeCode == null || m.HeadPos == normalizedTypeCode))
             .Join(
                 _db.QuranWords.AsNoTracking(),
                 m => m.QuranWordId,
@@ -104,7 +107,9 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
         var matchedRows = await (
             from m in _db.WordMorphologies.AsNoTracking()
             join w in _db.QuranWords.AsNoTracking() on m.QuranWordId equals w.Id
-            where m.LemmaId == id && ayahIds.Contains(w.AyahId)
+            where m.LemmaId == id
+                && ayahIds.Contains(w.AyahId)
+                && (normalizedTypeCode == null || m.HeadPos == normalizedTypeCode)
             orderby w.SurahNumber, w.AyahNumber, w.WordNumber, w.Id
             select new { w.AyahId, w.Id })
             .ToListAsync(cancellationToken);
@@ -562,4 +567,7 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
 
         return words.FirstOrDefault()?.PageNumber ?? 0;
     }
+
+    private static string? NormalizeTypeCode(string? typeCode) =>
+        string.IsNullOrWhiteSpace(typeCode) ? null : typeCode.Trim();
 }

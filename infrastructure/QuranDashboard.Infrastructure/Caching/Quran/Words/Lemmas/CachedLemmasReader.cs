@@ -59,16 +59,17 @@ public sealed class CachedLemmasReader(EfLemmasReader efReader, IMemoryCache cac
         int id,
         int page,
         int pageSize,
+        string? typeCode,
         CancellationToken cancellationToken)
     {
-        var key = LemmasCacheKeys.Ayahs(id, page, pageSize);
+        var key = LemmasCacheKeys.Ayahs(id, page, pageSize, typeCode);
 
         if (_cache.TryGetValue(key, out PagedResult<LemmaAyahMatchDto>? cached))
         {
             return Task.FromResult<PagedResult<LemmaAyahMatchDto>?>(cached);
         }
 
-        return GetAndCacheAyahsAsync(id, page, pageSize, cancellationToken, key);
+        return GetAndCacheAyahsAsync(id, page, pageSize, typeCode, cancellationToken, key);
     }
 
     public Task<LemmaSurahsResponse?> GetLemmaMentionedSurahsAsync(
@@ -129,10 +130,11 @@ public sealed class CachedLemmasReader(EfLemmasReader efReader, IMemoryCache cac
         int id,
         int page,
         int pageSize,
+        string? typeCode,
         CancellationToken cancellationToken,
         string key)
     {
-        var ayahs = await _ef.GetLemmaAyahMatchesAsync(id, page, pageSize, cancellationToken);
+        var ayahs = await _ef.GetLemmaAyahMatchesAsync(id, page, pageSize, typeCode, cancellationToken);
         if (ayahs is { Items.Count: > 0 })
         {
             _cache.Set(key, ayahs, LemmasCacheEntryOptions.PagedDetail());
