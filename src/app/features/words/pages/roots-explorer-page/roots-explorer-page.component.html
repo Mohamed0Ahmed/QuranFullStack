@@ -60,7 +60,7 @@
   @switch (listState().status) {
     @default {
       <div class="roots-explorer-layout">
-        <section class="roots-explorer-layout__table" aria-label="جدول الجذور">
+        <section class="roots-explorer-layout__table" [attr.aria-label]="rootsTableLabel">
           <qd-roots-table
             [rows]="listState().items"
             [loading]="listState().status === 'loading'"
@@ -70,18 +70,18 @@
             (rowSelected)="onRowSelected($event)"
             (countOpened)="onCountOpened($event)"
           />
-          <qd-pagination
-            [currentPage]="listState().page"
-            [pageSize]="listState().pageSize"
-            [totalCount]="listState().totalCount"
-            [disabled]="listState().status === 'loading'"
-            ariaLabel="تصفّح الجذور"
-            (pageChange)="onPageChange($event)"
-          />
+        <qd-pagination
+          [currentPage]="listState().page"
+          [pageSize]="listState().pageSize"
+          [totalCount]="listState().totalCount"
+          [disabled]="listState().status === 'loading'"
+          [ariaLabel]="listPaginationLabel"
+          (pageChange)="onPageChange($event)"
+        />
         </section>
 
         @if (isDesktop()) {
-          <aside class="roots-explorer-layout__panel" aria-label="تفاصيل الجذر">
+          <aside class="roots-explorer-layout__panel" [attr.aria-label]="panelLabel">
             <qd-root-details-panel
               [inline]="true"
               [view]="activeView()"
@@ -121,7 +121,7 @@
       <nav
         class="roots-explorer__sub-tabs"
         role="tablist"
-        aria-label="أنماط كلمات الجذر"
+        [attr.aria-label]="wordsTablistLabel"
         data-testid="roots-word-view-tabs"
       >
         @for (option of wordViewOptions; track option) {
@@ -142,7 +142,7 @@
       <nav
         class="roots-explorer__sub-tabs"
         role="tablist"
-        aria-label="عرض سور الجذر"
+        [attr.aria-label]="surahsTablistLabel"
         data-testid="roots-surah-view-tabs"
       >
         @for (option of surahViewOptions; track option) {
@@ -166,7 +166,7 @@
         @if (activeView() === 'ayahs') {
           <qd-ayah-matches-list
             [loading]="true"
-            [page]="emptyAyahsPage"
+            [page]="ayahsPageForView()"
             [currentPage]="panelState().detailPage"
             data-testid="roots-ayahs-view"
           />
@@ -213,9 +213,9 @@
         <div class="qd-empty-state" data-testid="roots-panel-empty">{{ emptyViewLabel }}</div>
       }
       @case ('success') {
-        @if (activeView() === 'ayahs' && panelState().ayahs; as ayahsPage) {
+        @if (activeView() === 'ayahs') {
           <qd-ayah-matches-list
-            [page]="ayahsPage"
+            [page]="ayahsPageForView()"
             [currentPage]="panelState().detailPage"
             data-testid="roots-ayahs-view"
             (pageChange)="onDetailPageChange($event)"

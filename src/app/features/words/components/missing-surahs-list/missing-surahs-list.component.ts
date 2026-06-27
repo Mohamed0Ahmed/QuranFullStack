@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
-import { ROOTS_LOADING_LABEL } from '../../models/roots.labels';
+import { WORDS_LOADING_LABEL } from '../../models/words.labels';
 import { MissingSurahItemDto } from '../../models/unique-words.models';
 import { ROW_NUMBER_HEADER, SURAH_NAME_HEADER } from '../../models/unique-words.labels';
 
@@ -19,5 +19,5 @@ export class MissingSurahsListComponent {
 
   protected readonly rowNumberHeader = ROW_NUMBER_HEADER;
   protected readonly surahNameHeader = SURAH_NAME_HEADER;
-  protected readonly loadingLabel = ROOTS_LOADING_LABEL;
+  protected readonly loadingLabel = WORDS_LOADING_LABEL;
 }

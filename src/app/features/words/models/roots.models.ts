@@ -1,5 +1,3 @@
-import { AyahMatchDto } from './unique-words.models';
-
 export type RootSort = 'mushaf-order' | 'occurrences' | 'alpha';
 
 export type RootWordView = 'simple' | 'tashkeel';
@@ -25,7 +23,6 @@ export interface RootListItemDto {
   tashkeelWordsCount: number;
   lemmasCount: number;
   stemsCount: number;
-  firstVerseKey: string;
 }
 
 export interface RootSummaryDto {
@@ -38,18 +35,27 @@ export interface RootSummaryDto {
   tashkeelWordsCount: number;
   lemmasCount: number;
   stemsCount: number;
-  firstVerseKey: string;
 }
 
 export interface RootWordItemDto {
   uniqueWordId: number;
   kind: RootWordView;
-  displayTextUthmani: string;
+  displayText: string;
   occurrencesCount: number;
-  firstVerseKey: string;
 }
 
-export interface RootAyahMatchDto extends AyahMatchDto {}
+export interface RootAyahWordDto {
+  textUthmani: string;
+  isMatched: boolean;
+}
+
+export interface RootAyahMatchDto {
+  ayahId: number;
+  verseKey: string;
+  surahNameArabic: string;
+  pageNumber: number;
+  words: RootAyahWordDto[];
+}
 
 export interface RootSurahItemDto {
   surahNumber: number;
@@ -58,9 +64,6 @@ export interface RootSurahItemDto {
 }
 
 export interface RootSurahsDto {
-  id: number;
-  rootText: string;
-  surahsCount: number;
   surahs: RootSurahItemDto[];
 }
 
@@ -70,9 +73,6 @@ export interface MissingSurahItemDto {
 }
 
 export interface RootMissingSurahsDto {
-  id: number;
-  rootText: string;
-  missingSurahsCount: number;
   surahs: MissingSurahItemDto[];
 }
 
@@ -83,9 +83,6 @@ export interface RootLemmaItemDto {
 }
 
 export interface RootLemmasDto {
-  id: number;
-  rootText: string;
-  lemmasCount: number;
   lemmas: RootLemmaItemDto[];
 }
 
@@ -96,9 +93,6 @@ export interface RootStemItemDto {
 }
 
 export interface RootStemsDto {
-  id: number;
-  rootText: string;
-  stemsCount: number;
   stems: RootStemItemDto[];
 }
 
@@ -147,7 +141,6 @@ export function toRootSummary(root: RootListItemDto): RootSummaryDto {
     tashkeelWordsCount: root.tashkeelWordsCount,
     lemmasCount: root.lemmasCount,
     stemsCount: root.stemsCount,
-    firstVerseKey: root.firstVerseKey,
   };
 }
 

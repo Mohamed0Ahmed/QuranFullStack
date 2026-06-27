@@ -16,7 +16,6 @@ function row(id: number, overrides: Partial<RootListItemViewModel> = {}): RootLi
     tashkeelWordsCount: id + 2,
     lemmasCount: id + 3,
     stemsCount: id + 4,
-    firstVerseKey: '1:1',
     ...overrides,
   };
 }

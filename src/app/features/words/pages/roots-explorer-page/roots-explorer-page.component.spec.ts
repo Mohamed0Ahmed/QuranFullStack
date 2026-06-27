@@ -7,7 +7,11 @@ import { BehaviorSubject, of, Subject } from 'rxjs';
 
 import { ApiResponse } from '../../../../core/data-access/api-response.model';
 import { ROOTS_PANEL_TAB_LABELS } from '../../models/roots.labels';
-import { ROOT_VIEW_KEYS, RootAyahMatchDto, RootListItemViewModel } from '../../models/roots.models';
+import {
+  ROOT_VIEW_KEYS,
+  RootAyahMatchDto,
+  RootListItemViewModel,
+} from '../../models/roots.models';
 import { RootsApi } from '../../data-access/roots.api';
 import { ROOTS_QUERY_KEYS } from '../../models/roots.models';
 import { RootsDetailFacade } from '../../state/roots-detail.facade';
@@ -26,22 +30,19 @@ function listRow(id: number): RootListItemViewModel {
     tashkeelWordsCount: 2,
     lemmasCount: 2,
     stemsCount: 1,
-    firstVerseKey: '1:1',
   };
 }
 
-function ayahMatch(verseKey: string, matchedIds: number[]): RootAyahMatchDto {
+function ayahMatch(verseKey: string, matchedIndices: number[] = [1]): RootAyahMatchDto {
   return {
     ayahId: verseKey === '1:1' ? 11 : 13,
     verseKey,
     surahNameArabic: 'الفاتحة',
-    ayahNumber: verseKey === '1:1' ? 1 : 3,
     pageNumber: 1,
-    matchedQuranWordIds: matchedIds,
     words: [
-      { quranWordId: 10, textUthmani: 'ألف', isAyahMarker: false },
-      { quranWordId: 11, textUthmani: 'باء', isAyahMarker: false },
-      { quranWordId: 12, textUthmani: 'جيم', isAyahMarker: false },
+      { textUthmani: 'ألف', isMatched: matchedIndices.includes(0) },
+      { textUthmani: 'باء', isMatched: matchedIndices.includes(1) },
+      { textUthmani: 'جيم', isMatched: matchedIndices.includes(2) },
     ],
   };
 }
@@ -178,7 +179,7 @@ describe('RootsExplorerPageComponent US2', () => {
           page: 1,
           pageSize: 100,
           totalCount: 1,
-          items: [ayahMatch('1:1', [11])],
+          items: [ayahMatch('1:1', [1])],
         },
         message: null,
         errors: null,
@@ -206,7 +207,7 @@ describe('RootsExplorerPageComponent US2', () => {
           page: 1,
           pageSize: 100,
           totalCount: 1,
-          items: [ayahMatch('1:1', [11])],
+          items: [ayahMatch('1:1', [1])],
         },
         message: null,
         errors: null,
@@ -461,17 +462,17 @@ describe('RootsExplorerPageComponent US4', () => {
       getRootWords: vi.fn(),
       getRootAyahMatches: vi.fn(),
       getRootMentionedSurahs: vi.fn().mockReturnValue(
-        of<ApiResponse<{ id: number; rootText: string; surahsCount: number; surahs: unknown[] }>>({
+        of<ApiResponse<{ surahs: unknown[] }>>({
           isSuccess: true,
-          data: { id: 10, rootText: 'جذر-10', surahsCount: 1, surahs: [{ surahNumber: 1, nameArabic: 'سورة-اختبار', occurrencesInSurah: 2 }] },
+          data: { surahs: [{ surahNumber: 1, nameArabic: 'سورة-اختبار', occurrencesInSurah: 2 }] },
           message: null,
           errors: null,
         }),
       ),
       getRootMissingSurahs: vi.fn().mockReturnValue(
-        of<ApiResponse<{ id: number; rootText: string; missingSurahsCount: number; surahs: unknown[] }>>({
+        of<ApiResponse<{ surahs: unknown[] }>>({
           isSuccess: true,
-          data: { id: 10, rootText: 'جذر-10', missingSurahsCount: 0, surahs: [] },
+          data: { surahs: [] },
           message: null,
           errors: null,
         }),
@@ -586,12 +587,9 @@ describe('RootsExplorerPageComponent US5', () => {
       getRootMentionedSurahs: vi.fn(),
       getRootMissingSurahs: vi.fn(),
       getRootLemmas: vi.fn().mockReturnValue(
-        of<ApiResponse<{ id: number; rootText: string; lemmasCount: number; lemmas: unknown[] }>>({
+        of<ApiResponse<{ lemmas: unknown[] }>>({
           isSuccess: true,
           data: {
-            id: 10,
-            rootText: 'جذر-10',
-            lemmasCount: 1,
             lemmas: [{ lemmaId: 100, lemmaText: 'صيغة-اختبار', occurrencesCount: 2 }],
           },
           message: null,
@@ -599,12 +597,9 @@ describe('RootsExplorerPageComponent US5', () => {
         }),
       ),
       getRootStems: vi.fn().mockReturnValue(
-        of<ApiResponse<{ id: number; rootText: string; stemsCount: number; stems: unknown[] }>>({
+        of<ApiResponse<{ stems: unknown[] }>>({
           isSuccess: true,
           data: {
-            id: 10,
-            rootText: 'جذر-10',
-            stemsCount: 1,
             stems: [{ stemId: 200, stemText: 'أصل-اختبار', occurrencesCount: 1 }],
           },
           message: null,
@@ -642,7 +637,7 @@ describe('RootsExplorerPageComponent US5', () => {
     return fixture;
   }
 
-  it('renders lemmas and stems as non-interactive lists with counts', async () => {
+  it('renders lemmas and stems as anchors with counts', async () => {
     queryParamMap$.next(convertToParamMap({ root: '10', view: 'lemmas' }));
     const lemmasFixture = await initLifecycle();
     await lemmasFixture.whenStable();
@@ -651,6 +646,7 @@ describe('RootsExplorerPageComponent US5', () => {
     const lemmasRoot = lemmasFixture.nativeElement as HTMLElement;
     expect(lemmasRoot.querySelector('[data-testid="roots-lemmas-view"]')).toBeTruthy();
     expect(lemmasRoot.querySelector('[data-testid="root-lemma-item"]')).toBeTruthy();
+    expect(lemmasRoot.querySelector('[data-testid="roots-lemmas-view"] a')).toBeTruthy();
     expect(lemmasRoot.querySelector('[data-testid="roots-lemmas-view"] button')).toBeNull();
 
     getTestBed().resetTestingModule();
@@ -672,12 +668,9 @@ describe('RootsExplorerPageComponent US5', () => {
       getRootMissingSurahs: vi.fn(),
       getRootLemmas: vi.fn(),
       getRootStems: vi.fn().mockReturnValue(
-        of<ApiResponse<{ id: number; rootText: string; stemsCount: number; stems: unknown[] }>>({
+        of<ApiResponse<{ stems: unknown[] }>>({
           isSuccess: true,
           data: {
-            id: 10,
-            rootText: 'جذر-10',
-            stemsCount: 1,
             stems: [{ stemId: 200, stemText: 'أصل-اختبار', occurrencesCount: 1 }],
           },
           message: null,
@@ -712,7 +705,8 @@ describe('RootsExplorerPageComponent US5', () => {
     const stemsRoot = stemsFixture.nativeElement as HTMLElement;
     expect(stemsRoot.querySelector('[data-testid="roots-stems-view"]')).toBeTruthy();
     expect(stemsRoot.querySelector('[data-testid="root-stem-item"]')).toBeTruthy();
-    expect(stemsRoot.querySelector('[data-testid="roots-stems-view"] a')).toBeNull();
+    expect(stemsRoot.querySelector('[data-testid="roots-stems-view"] a')).toBeTruthy();
+    expect(stemsRoot.querySelector('[data-testid="roots-stems-view"] button')).toBeNull();
   });
 });
 
@@ -921,9 +915,7 @@ describe('RootsExplorerPageComponent static tabs during loading', () => {
   });
 
   it('keeps surah sub-tabs and column headers visible while mentioned surahs load', async () => {
-    const pendingSurahs$ = new Subject<
-      ApiResponse<{ id: number; rootText: string; surahsCount: number; surahs: unknown[] }>
-    >();
+    const pendingSurahs$ = new Subject<ApiResponse<{ surahs: unknown[] }>>();
     rootsApi.getRootMentionedSurahs.mockReturnValue(pendingSurahs$.asObservable());
 
     queryParamMap$.next(convertToParamMap({ root: '10', view: 'surahs', surahView: 'mentioned' }));

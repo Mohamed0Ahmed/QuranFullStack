@@ -17,7 +17,8 @@ import { WordCountChipComponent } from '../word-count-chip/word-count-chip.compo
 import {
   ROOTS_COLUMN_COUNT_LABELS,
   ROOTS_COLUMN_HEADERS,
-  ROOTS_LOADING_LABEL,
+  ROOTS_TABLE_BODY_LABEL,
+  ROOTS_TABLE_LABEL,
 } from '../../models/roots.labels';
 import {
   ROOTS_LIST_PAGE_SIZE,
@@ -26,6 +27,7 @@ import {
   RootView,
   RootWordView,
 } from '../../models/roots.models';
+import { WORDS_LOADING_LABEL } from '../../models/words.labels';
 import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
 import { syncTableScrollbarGutter } from '../../utils/table-scrollbar-gutter-sync';
 
@@ -68,7 +70,9 @@ export class RootsTableComponent {
   protected get countLabels() {
     return ROOTS_COLUMN_COUNT_LABELS;
   }
-  protected readonly loadingLabel = ROOTS_LOADING_LABEL;
+  protected readonly tableLabel = ROOTS_TABLE_LABEL;
+  protected readonly tableBodyLabel = ROOTS_TABLE_BODY_LABEL;
+  protected readonly loadingLabel = WORDS_LOADING_LABEL;
   protected readonly loadingRowPlaceholders = Array.from({ length: 12 });
   protected readonly rowHeight = signal(ROW_HEIGHT_DESKTOP);
   protected readonly useVirtualScroll = HAS_RESIZE_OBSERVER;

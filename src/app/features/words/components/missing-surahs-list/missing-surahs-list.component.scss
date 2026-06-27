@@ -17,7 +17,8 @@
   font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--qd-text-muted);
+  background: var(--qd-explorer-table-header-bg);
+  color: var(--qd-explorer-table-header-fg);
 }
 
 .missing-surahs-list__header-row-number,

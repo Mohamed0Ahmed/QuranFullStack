@@ -1,4 +1,4 @@
-<div class="roots-table" role="table" aria-label="جدول الجذور">
+<div class="roots-table" role="table" [attr.aria-label]="tableLabel">
   <div class="roots-table__header" role="rowgroup">
     <div class="roots-table__header-row" role="row">
       <div class="roots-table__header-cell roots-table__header-cell--row-number" role="columnheader">
@@ -20,7 +20,7 @@
     <div
       class="roots-table__body roots-table__body--loading"
       role="rowgroup"
-      aria-label="قائمة الجذور"
+      [attr.aria-label]="tableBodyLabel"
       aria-busy="true"
       data-testid="roots-table-loading"
     >
@@ -53,7 +53,7 @@
       [minBufferPx]="rowHeight() * 4"
       [maxBufferPx]="rowHeight() * 8"
       role="rowgroup"
-      aria-label="قائمة الجذور"
+      [attr.aria-label]="tableBodyLabel"
     >
       <div
         *cdkVirtualFor="let row of rows(); let index = index; trackBy: trackRowById"
@@ -128,7 +128,7 @@
       </div>
     </cdk-virtual-scroll-viewport>
   } @else {
-    <div class="roots-table__body" role="rowgroup" aria-label="قائمة الجذور">
+    <div class="roots-table__body" role="rowgroup" [attr.aria-label]="tableBodyLabel">
       @for (row of rows(); track row.id; let index = $index) {
         <div
           class="roots-table__row"

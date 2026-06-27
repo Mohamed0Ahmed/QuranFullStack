@@ -34,7 +34,7 @@
           data-testid="root-word-link"
         >
           <span class="root-words-list__row-number" aria-hidden="true">{{ rowNumber(i) }}</span>
-          <span class="root-words-list__text">{{ row.item.displayTextUthmani }}</span>
+          <span class="root-words-list__text">{{ row.item.displayText }}</span>
           <span class="qd-badge">{{ row.item.occurrencesCount }}</span>
         </a>
       }
@@ -46,7 +46,7 @@
       [currentPage]="currentPage()"
       [pageSize]="page().pageSize"
       [totalCount]="page().totalCount"
-      ariaLabel="تصفّح كلمات الجذر"
+      [ariaLabel]="paginationLabel"
       (pageChange)="pageChange.emit($event)"
     />
   }

@@ -17,7 +17,8 @@
 
 .root-lemmas-list__header {
   font-size: 0.75rem;
-  color: var(--qd-text-muted);
+  background: var(--qd-explorer-table-header-bg);
+  color: var(--qd-explorer-table-header-fg);
   padding-inline: var(--qd-space-1);
   margin-block-end: var(--qd-space-2);
 }
@@ -33,6 +34,8 @@
   border-radius: var(--qd-radius-sm);
   border: 1px solid var(--qd-border);
   background: var(--qd-surface);
+  text-decoration: none;
+  color: inherit;
 }
 
 .root-lemmas-list__row-number {

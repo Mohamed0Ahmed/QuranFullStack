@@ -3,12 +3,13 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import { deepLinkToHref } from '../../../../shared/url/deep-link-href';
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
 import {
-  ROOTS_LOADING_LABEL,
   ROOTS_OPEN_UNIQUE_WORD_LABEL,
   ROOTS_WORD_DISPLAY_HEADER,
   ROOTS_WORD_OCCURRENCES_HEADER,
+  ROOTS_WORDS_PAGINATION_LABEL,
 } from '../../models/roots.labels';
 import { PagedResultDto, RootWordItemDto, RootWordView } from '../../models/roots.models';
+import { WORDS_LOADING_LABEL } from '../../models/words.labels';
 import { ROW_NUMBER_HEADER } from '../../models/unique-words.labels';
 import { buildUniqueWordsDeepLink } from '../../state/unique-words-url-sync';
 import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
@@ -40,7 +41,8 @@ export class RootWordsListComponent {
   protected readonly displayHeader = ROOTS_WORD_DISPLAY_HEADER;
   protected readonly occurrencesHeader = ROOTS_WORD_OCCURRENCES_HEADER;
   protected readonly openUniqueWordLabel = ROOTS_OPEN_UNIQUE_WORD_LABEL;
-  protected readonly loadingLabel = ROOTS_LOADING_LABEL;
+  protected readonly loadingLabel = WORDS_LOADING_LABEL;
+  protected readonly paginationLabel = ROOTS_WORDS_PAGINATION_LABEL;
 
   protected readonly rows = computed((): readonly RootWordRowViewModel[] => {
     const wordView = this.wordView();

@@ -28,17 +28,21 @@ import {
   ROOTS_EMPTY_VIEW_LABEL,
   ROOTS_NO_RESULTS_LABEL,
   ROOTS_NOT_FOUND_LABEL,
+  ROOTS_PANEL_LABEL,
+  ROOTS_LIST_PAGINATION_LABEL,
   ROOTS_PAGE_TITLE,
   ROOTS_SEARCH_LABEL,
   ROOTS_SEARCH_PLACEHOLDER,
   ROOTS_SORT_LABELS,
   ROOTS_SURAHS_VIEW_LABELS,
+  ROOTS_SURAHS_TABLIST_LABEL,
+  ROOTS_TABLE_LABEL,
+  ROOTS_WORDS_TABLIST_LABEL,
   ROOTS_WORD_VIEW_LABELS,
 } from '../../models/roots.labels';
 import {
   DEFAULT_ROOT_VIEW,
   PagedResultDto,
-  RootAyahMatchDto,
   RootListItemViewModel,
   RootWordItemDto,
   ROOT_DETAIL_PAGE_SIZE,
@@ -55,6 +59,8 @@ import {
   buildRootsQueryParams,
 } from '../../state/roots-url-sync';
 import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
+import { AyahMatchDto } from '../../models/unique-words.models';
+import { mapRootAyahMatchToShared } from '../../utils/root-ayah-match.mapper';
 
 @Component({
   selector: 'qd-roots-explorer-page',
@@ -100,7 +106,7 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly wordViewOptions: readonly RootWordView[] = ['simple', 'tashkeel'];
   protected readonly surahViewOptions: readonly RootSurahView[] = ['mentioned', 'missing'];
 
-  protected readonly emptyAyahsPage: PagedResultDto<RootAyahMatchDto> = {
+  protected readonly emptyAyahsPage: PagedResultDto<AyahMatchDto> = {
     page: 1,
     pageSize: ROOT_DETAIL_PAGE_SIZE,
     totalCount: 0,
@@ -122,6 +128,12 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
     return ROOTS_SURAHS_VIEW_LABELS;
   }
 
+  protected readonly listPaginationLabel = ROOTS_LIST_PAGINATION_LABEL;
+  protected readonly panelLabel = ROOTS_PANEL_LABEL;
+  protected readonly rootsTableLabel = ROOTS_TABLE_LABEL;
+  protected readonly wordsTablistLabel = ROOTS_WORDS_TABLIST_LABEL;
+  protected readonly surahsTablistLabel = ROOTS_SURAHS_TABLIST_LABEL;
+
   protected readonly searchDraft = signal('');
   protected readonly isDesktop = signal(true);
 
@@ -136,6 +148,18 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
     () => this.panelState().selectedRootId === null,
   );
   protected readonly defaultView: RootView = DEFAULT_ROOT_VIEW;
+  protected readonly ayahsPageForView = computed((): PagedResultDto<AyahMatchDto> => {
+    const page = this.panelState().ayahs;
+
+    if (!page) {
+      return this.emptyAyahsPage;
+    }
+
+    return {
+      ...page,
+      items: page.items.map(mapRootAyahMatchToShared),
+    };
+  });
 
   ngOnInit(): void {
     this.listFacade.bindToRoute(this.route);

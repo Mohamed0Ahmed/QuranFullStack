@@ -56,18 +56,25 @@ export const ROOTS_SURAHS_VIEW_LABELS: Record<RootSurahView, string> = {
 export const ROOTS_EMPTY_SELECTION_LABEL = 'اختر جذرًا لعرض تفاصيله';
 export const ROOTS_PANEL_LABEL = 'تفاصيل الجذر';
 export const ROOTS_CLOSE_PANEL_LABEL = 'إغلاق لوحة التفاصيل';
-export const ROOTS_LOADING_LABEL = 'جارٍ التحميل…';
 export const ROOTS_EMPTY_VIEW_LABEL = 'لا توجد نتائج';
 export const ROOTS_NOT_FOUND_LABEL = 'الجذر غير موجود';
 export const ROOTS_ERROR_LABEL = 'تعذّر تحميل تفاصيل الجذر. تحقّق من الاتصال ثم أعد المحاولة.';
 export const ROOTS_LIST_ERROR_LABEL = 'تعذّر تحميل الجذور. تحقّق من الاتصال ثم أعد المحاولة.';
 export const ROOTS_NO_RESULTS_LABEL = 'لا توجد جذور مطابقة لبحثك';
+export const ROOTS_TABLE_LABEL = 'جدول الجذور';
+export const ROOTS_TABLE_BODY_LABEL = 'قائمة الجذور';
 
 export const ROOTS_WORD_OCCURRENCES_HEADER = 'عدد مرات الظهور في الجذر';
 export const ROOTS_WORD_DISPLAY_HEADER = 'الكلمة';
 export const ROOTS_LEMMA_TEXT_HEADER = 'الصيغة المعجمية';
 export const ROOTS_STEM_TEXT_HEADER = 'الأصل الصرفي';
 export const ROOTS_OPEN_UNIQUE_WORD_LABEL = 'فتح تفاصيل الكلمة في مستكشف الكلمات الفريدة';
+export const ROOTS_OPEN_LEMMA_LABEL = 'فتح الصيغة المعجمية في مستكشف الصيغ المعجمية';
+export const ROOTS_OPEN_STEM_LABEL = 'فتح الأصل الصرفي في مستكشف الأصول الصرفية';
+export const ROOTS_LIST_PAGINATION_LABEL = 'تصفّح الجذور';
+export const ROOTS_WORDS_TABLIST_LABEL = 'أنماط كلمات الجذر';
+export const ROOTS_SURAHS_TABLIST_LABEL = 'عرض سور الجذر';
+export const ROOTS_WORDS_PAGINATION_LABEL = 'تصفّح كلمات الجذر';
 
 export const ROOTS_SORT_LABELS = {
   label: 'الترتيب',

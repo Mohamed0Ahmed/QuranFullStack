@@ -21,7 +21,7 @@
   align-items: stretch;
   min-block-size: var(--lemmas-table-header-height, 2.75rem);
   overflow: hidden;
-  background: var(--qd-surface);
+  background: var(--qd-explorer-table-header-bg);
   border-bottom: 1px solid var(--qd-border);
 }
 
@@ -62,7 +62,7 @@
   font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
   font-size: 0.875rem;
   font-variant-numeric: tabular-nums;
-  color: var(--qd-text-muted);
+  color: var(--qd-explorer-table-header-fg);
 }
 
 .lemmas-table__header-cell {
@@ -70,7 +70,7 @@
   font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
   font-size: 0.8125rem;
   font-weight: 600;
-  color: var(--qd-text-muted);
+  color: var(--qd-explorer-table-header-fg);
 }
 
 .lemmas-table__header-cell--numeric {

@@ -18,7 +18,8 @@
 
 .root-words-list__header {
   font-size: 0.75rem;
-  color: var(--qd-text-muted);
+  background: var(--qd-explorer-table-header-bg);
+  color: var(--qd-explorer-table-header-fg);
   padding-inline: var(--qd-space-1);
 }
 

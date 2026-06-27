@@ -11,6 +11,8 @@
   --qd-explorer-detail-surface: oklch(0.972 0.012 90);
   --qd-explorer-detail-card: oklch(0.978 0.010 88);
   --qd-explorer-detail-border: oklch(0.42 0.045 72 / 0.16);
+  --qd-explorer-table-header-bg: color-mix(in oklch, var(--qd-primary) 6%, var(--qd-surface-elevated));
+  --qd-explorer-table-header-fg: var(--qd-text);
 
   --qd-text: oklch(0.278 0.030 256.8);
   --qd-text-muted: oklch(0.544 0.035 265.1);
