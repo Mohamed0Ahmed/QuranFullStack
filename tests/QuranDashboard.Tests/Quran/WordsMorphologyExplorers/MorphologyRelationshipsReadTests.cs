@@ -30,9 +30,6 @@ public sealed class MorphologyRelationshipsReadTests(MorphologyExplorersTestFixt
             CancellationToken.None);
 
         var response = outcome.Should().BeOfType<GetLemmaStemsOutcome.Success>().Subject.Stems;
-        response.Id.Should().Be(HighFrequencyLemmaId);
-        response.LemmaText.Should().Be("كَلِمَة");
-        response.StemsCount.Should().Be(1);
         response.Stems.Should().ContainSingle();
         response.Stems[0].StemId.Should().Be(600);
         response.Stems[0].StemText.Should().Be("كَلَّمَ");

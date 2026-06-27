@@ -29,9 +29,13 @@ public sealed class LemmasAyahsReadTests(MorphologyExplorersTestFixture fixture)
         page.Items.Should().HaveCount(7);
 
         var byVerse = page.Items.ToDictionary(i => i.VerseKey);
-        byVerse["1:1"].MatchedQuranWordIds.Should().BeEquivalentTo([3001, 3002, 3010, 3011]);
-        byVerse["1:1"].Words.Select(w => w.QuranWordId).Should().BeEquivalentTo([3001, 3002, 3010, 3011]);
-        byVerse["3:8"].MatchedQuranWordIds.Should().BeEquivalentTo([3008, 3009]);
+        byVerse["1:1"].Words.Should().HaveCount(4);
+        byVerse["1:1"].Words.Should().OnlyContain(w => w.IsMatched);
+        byVerse["1:1"].Words.Select(w => w.TextUthmani).Should().Contain("كَلِمَة");
+        byVerse["1:1"].Words.Select(w => w.TextUthmani).Should().NotContain("ۚ");
+        byVerse["3:8"].Words.Should().HaveCount(3);
+        byVerse["3:8"].Words.Should().ContainSingle(w => !w.IsMatched);
+        byVerse["3:8"].Words.Should().Contain(w => w.TextUthmani == "عَلِمَ" && !w.IsMatched);
     }
 
     [Fact]

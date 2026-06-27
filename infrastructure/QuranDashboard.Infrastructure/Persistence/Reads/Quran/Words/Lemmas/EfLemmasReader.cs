@@ -111,11 +111,11 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
 
         var matchedIdsByAyah = matchedRows
             .GroupBy(r => r.AyahId)
-            .ToDictionary(g => g.Key, g => (IReadOnlyList<int>)g.Select(x => x.Id).Distinct().ToList());
+            .ToDictionary(g => g.Key, g => g.Select(x => x.Id).ToHashSet());
 
         var wordsByAyah = await _db.QuranWords
             .AsNoTracking()
-            .Where(w => ayahIds.Contains(w.AyahId))
+            .Where(w => ayahIds.Contains(w.AyahId) && !w.IsAyahMarker)
             .OrderBy(w => w.SurahNumber)
             .ThenBy(w => w.AyahNumber)
             .ThenBy(w => w.WordNumber)
@@ -136,18 +136,15 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
             .Select(ayah =>
             {
                 var words = wordsGrouped.GetValueOrDefault(ayah.AyahId, []);
+                var matchedSet = matchedIdsByAyah.GetValueOrDefault(ayah.AyahId, []);
                 return new LemmaAyahMatchDto(
                     ayah.AyahId,
                     ayah.VerseKey,
-                    ayah.SurahNumber,
                     ayah.SurahNameArabic,
-                    ayah.AyahNumber,
                     ResolveAyahPageNumber(words),
-                    matchedIdsByAyah.GetValueOrDefault(ayah.AyahId, []),
-                    words.Select(w => new AyahWordForHighlightDto(
-                        w.QuranWordId,
+                    words.Select(w => new LemmaAyahWordDto(
                         w.TextUthmani,
-                        w.IsAyahMarker)).ToList());
+                        matchedSet.Contains(w.QuranWordId))).ToList());
             })
             .ToList();
 
@@ -177,7 +174,7 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
 
         if (surahGroups.Count == 0)
         {
-            return new LemmaSurahsResponse(id, lemma.LemmaText, 0, []);
+            return new LemmaSurahsResponse([]);
         }
 
         var surahNumbers = surahGroups.Select(r => r.SurahNumber).ToList();
@@ -190,7 +187,7 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
             .Select(r => new LemmaSurahItemDto(r.SurahNumber, surahNames[r.SurahNumber], r.OccurrencesInSurah))
             .ToList();
 
-        return new LemmaSurahsResponse(id, lemma.LemmaText, surahs.Count, surahs);
+        return new LemmaSurahsResponse(surahs);
     }
 
     public async Task<LemmaMissingSurahsResponse?> GetLemmaMissingSurahsAsync(int id, CancellationToken cancellationToken)
@@ -220,7 +217,7 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
             .Select(s => new MissingSurahItemDto(s.SurahNumber, s.NameArabic))
             .ToListAsync(cancellationToken);
 
-        return new LemmaMissingSurahsResponse(id, lemma.LemmaText, missingSurahs.Count, missingSurahs);
+        return new LemmaMissingSurahsResponse(missingSurahs);
     }
 
     public async Task<LemmaStemsResponse?> GetLemmaStemsAsync(int id, CancellationToken cancellationToken)
@@ -245,7 +242,7 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
         var stems = MorphologyRelatedItemsOrdering.OrderLemmaStems(
             rows.Select(r => (r.StemId!.Value, r.StemText, r.QuranWordId)));
 
-        return new LemmaStemsResponse(id, lemma.LemmaText, stems.Count, stems);
+        return new LemmaStemsResponse(stems);
     }
 
     /// <summary>
@@ -454,10 +451,8 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
             .Take(pageSize)
             .Select(row => new LemmaWordItemDto(
                 row.UniqueWordId,
-                wordKind == LemmaWordKind.Simple ? LemmaWordKindKeys.Simple : LemmaWordKindKeys.Tashkeel,
                 row.DisplayTextUthmani,
-                row.OccurrencesCount,
-                BuildFirstVerseKey(row.FirstSurahNumber, row.FirstAyahNumber)))
+                row.OccurrencesCount))
             .ToList();
 
         return new PagedResult<LemmaWordItemDto>(page, pageSize, grouped.Count, items);
@@ -475,7 +470,7 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
                 where m.LemmaId == id
                 select new LemmaWordOccurrenceRow(
                     w.UniqueSimpleWordId,
-                    w.TextUthmani,
+                    w.TextUthmaniSimple,
                     w.SurahNumber,
                     w.AyahNumber,
                     w.WordNumber,

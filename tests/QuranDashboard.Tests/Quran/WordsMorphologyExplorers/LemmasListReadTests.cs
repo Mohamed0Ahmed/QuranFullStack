@@ -40,7 +40,7 @@ public sealed class LemmasListReadTests(MorphologyExplorersTestFixture fixture)
     }
 
     [Fact]
-    public async Task GetLemmasPage_carries_all_counts_and_dominant_type_for_every_lemma()
+    public async Task GetLemmasPage_carries_all_counts_for_every_lemma()
     {
         await using var scope = fixture.CreateScope();
         var handler = scope.ServiceProvider.GetRequiredService<GetLemmasPageHandler>();
@@ -59,8 +59,6 @@ public sealed class LemmasListReadTests(MorphologyExplorersTestFixture fixture)
             item.SimpleWordsCount.Should().BeGreaterThanOrEqualTo(1);
             item.TashkeelWordsCount.Should().BeGreaterThanOrEqualTo(1);
             item.StemsCount.Should().BeGreaterThanOrEqualTo(1);
-            item.DominantType.ArabicLabel.Should().NotBeNullOrWhiteSpace();
-            item.FirstVerseKey.Should().NotBeNullOrWhiteSpace();
         }
     }
 
@@ -94,7 +92,6 @@ public sealed class LemmasListReadTests(MorphologyExplorersTestFixture fixture)
         var l501 = page.Items.Single(i => i.Id == NullRootLemmaId);
         l501.RootId.Should().BeNull();
         l501.RootText.Should().BeNull();
-        l501.RootBuckwalter.Should().BeNull();
     }
 
     [Fact]
@@ -109,9 +106,6 @@ public sealed class LemmasListReadTests(MorphologyExplorersTestFixture fixture)
         var page = outcome.Should().BeOfType<GetLemmasPageOutcome.Success>().Subject.Page;
 
         var l503 = page.Items.Single(i => i.Id == MultiTypeLemmaId);
-        l503.DominantType.Code.Should().Be("N");
-        l503.DominantType.ArabicLabel.Should().Be("اسم");
-        l503.OtherTypesCount.Should().Be(1);
         l503.OccurrencesCount.Should().Be(4);
     }
 
@@ -127,8 +121,6 @@ public sealed class LemmasListReadTests(MorphologyExplorersTestFixture fixture)
         var page = outcome.Should().BeOfType<GetLemmasPageOutcome.Success>().Subject.Page;
 
         var l500 = page.Items.Single(i => i.Id == HighFrequencyLemmaId);
-        l500.DominantType.Code.Should().Be("N");
-        l500.OtherTypesCount.Should().Be(1);
         l500.OccurrencesCount.Should().Be(11);
     }
 
@@ -272,7 +264,7 @@ public sealed class LemmasListReadTests(MorphologyExplorersTestFixture fixture)
         summary.Id.Should().Be(MultiTypeLemmaId);
         summary.TypeDistribution.Should().HaveCount(2);
         summary.TypeDistribution.Sum(t => t.OccurrencesCount).Should().Be(summary.OccurrencesCount);
-        summary.DominantType.Code.Should().Be("N");
+        summary.TypeDistribution.First().Code.Should().Be("N");
     }
 
     [Fact]

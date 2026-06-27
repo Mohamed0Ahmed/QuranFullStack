@@ -16,7 +16,7 @@ public sealed class LemmasWordsReadTests(MorphologyExplorersTestFixture fixture)
     private const int UnknownLemmaId = 999_999;
 
     [Theory]
-    [InlineData(LemmaWordKindKeys.Simple, 32001, "كَلِمَة", 10, 32002, "كَلَّمَ", 1)]
+    [InlineData(LemmaWordKindKeys.Simple, 32001, "كلمة", 10, 32002, "كلم", 1)]
     [InlineData(LemmaWordKindKeys.Tashkeel, 31001, "كَلِمَة", 10, 31002, "كَلَّمَ", 1)]
     public async Task GetLemmaWords_returns_correct_unique_ids_display_text_and_counts_for_each_kind(
         string kind,
@@ -39,13 +39,11 @@ public sealed class LemmasWordsReadTests(MorphologyExplorersTestFixture fixture)
         page.Items.Select(i => i.UniqueWordId).Should().Equal(firstUniqueWordId, secondUniqueWordId);
 
         var first = page.Items[0];
-        first.Kind.Should().Be(kind);
-        first.DisplayTextUthmani.Should().Be(firstDisplayText);
+        first.DisplayText.Should().Be(firstDisplayText);
         first.OccurrencesCount.Should().Be(firstOccurrencesCount);
 
         var second = page.Items[1];
-        second.Kind.Should().Be(kind);
-        second.DisplayTextUthmani.Should().Be(secondDisplayText);
+        second.DisplayText.Should().Be(secondDisplayText);
         second.OccurrencesCount.Should().Be(secondOccurrencesCount);
     }
 

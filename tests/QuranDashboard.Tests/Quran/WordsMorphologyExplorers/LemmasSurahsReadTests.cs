@@ -26,9 +26,6 @@ public sealed class LemmasSurahsReadTests(MorphologyExplorersTestFixture fixture
             CancellationToken.None);
 
         var response = outcome.Should().BeOfType<GetLemmaMentionedSurahsOutcome.Success>().Subject.Surahs;
-        response.Id.Should().Be(HighFrequencyLemmaId);
-        response.LemmaText.Should().Be("كَلِمَة");
-        response.SurahsCount.Should().Be(3);
         response.Surahs.Should().HaveCount(3);
 
         var byNumber = response.Surahs.ToDictionary(s => s.SurahNumber);
@@ -76,9 +73,7 @@ public sealed class LemmasSurahsReadTests(MorphologyExplorersTestFixture fixture
         var missingNumbers = missingResponse.Surahs.Select(s => s.SurahNumber).ToList();
 
         mentionedNumbers.Should().NotIntersectWith(missingNumbers);
-        (mentionedResponse.SurahsCount + missingResponse.MissingSurahsCount).Should().Be(114);
-        missingResponse.Id.Should().Be(HighFrequencyLemmaId);
-        missingResponse.LemmaText.Should().Be("كَلِمَة");
+        (mentionedResponse.Surahs.Count + missingResponse.Surahs.Count).Should().Be(114);
     }
 
     [Fact]
@@ -92,7 +87,6 @@ public sealed class LemmasSurahsReadTests(MorphologyExplorersTestFixture fixture
             CancellationToken.None);
 
         var response = outcome.Should().BeOfType<GetLemmaMissingSurahsOutcome.Success>().Subject.MissingSurahs;
-        response.MissingSurahsCount.Should().Be(111);
         response.Surahs.Should().HaveCount(111);
         response.Surahs.Select(s => s.SurahNumber).Should().BeInAscendingOrder();
         response.Surahs.Select(s => s.SurahNumber).Should().NotContain([1, 2, 3]);
