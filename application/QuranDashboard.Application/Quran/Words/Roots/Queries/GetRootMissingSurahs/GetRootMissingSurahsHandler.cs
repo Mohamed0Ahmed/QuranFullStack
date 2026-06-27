@@ -58,7 +58,7 @@ public sealed class GetRootMissingSurahsHandler(
             ViewName,
             SubViewName,
             query.Id,
-            missing.MissingSurahsCount,
+            missing.Surahs.Count,
             missing.Surahs.Count,
             stopwatch.ElapsedMilliseconds);
 

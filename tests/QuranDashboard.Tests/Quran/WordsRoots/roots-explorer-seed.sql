@@ -150,7 +150,8 @@ VALUES
 INSERT INTO quran_words
   (id, location, ayah_id, surah_number, ayah_number, word_number, page_number, line_number, line_word_order, qpc_glyph, text_uthmani, text_uthmani_simple, text_imlaei_simple, word_key_imlaei_simple, is_ayah_marker, unique_tashkeel_word_id, unique_simple_word_id)
 VALUES
-  -- 1:1 four words — بِسْمِ / ٱللَّهِ / ٱلرَّحْمَٰنِ / ٱلرَّحِيمِ
+  -- 1:1 marker + four readable words — marker sits first so page-number fallback is testable
+  (1000, '1:1:0', 11,   1, 1, 0, 604, 1, 0, 'g1000', '۞',           '۞',        '۞',        '۞',        TRUE,  NULL, NULL),
   (1001, '1:1:1', 11,   1, 1, 1, 1,   1, 1, 'g1001', 'بِسْمِ',       'بسم',      'بسم',      'بسم',      FALSE, NULL, NULL),
   (1002, '1:1:2', 11,   1, 1, 2, 1,   1, 2, 'g1002', 'ٱللَّهِ',       'الله',     'الله',     'الله',     FALSE, NULL, NULL),
   (1003, '1:1:3', 11,   1, 1, 3, 1,   1, 3, 'g1003', 'ٱلرَّحْمَٰنِ',    'الرحمن',   'الرحمن',   'الرحمن',   FALSE, NULL, NULL),

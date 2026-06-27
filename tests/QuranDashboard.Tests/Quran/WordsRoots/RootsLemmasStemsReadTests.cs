@@ -28,9 +28,8 @@ public sealed class RootsLemmasStemsReadTests(RootsExplorerTestFixture fixture)
             CancellationToken.None);
         var lemmas = lemmasOutcome.Should().BeOfType<GetRootLemmasOutcome.Success>().Subject.Lemmas;
 
-        lemmas.LemmasCount.Should().Be(listItem.LemmasCount);
         lemmas.Lemmas.Should().HaveCount(listItem.LemmasCount);
-        lemmas.LemmasCount.Should().Be(2);
+        lemmas.Lemmas.Should().HaveCount(2);
 
         var byId = lemmas.Lemmas.ToDictionary(l => l.LemmaId);
         byId[100].OccurrencesCount.Should().Be(2);
@@ -48,7 +47,6 @@ public sealed class RootsLemmasStemsReadTests(RootsExplorerTestFixture fixture)
             CancellationToken.None);
 
         var stems = outcome.Should().BeOfType<GetRootStemsOutcome.Success>().Subject.Stems;
-        stems.StemsCount.Should().Be(2);
         stems.Stems.Should().HaveCount(2);
         stems.Stems.Select(s => s.StemId).Should().BeEquivalentTo([200, 201]);
         stems.Stems.Should().OnlyContain(s => s.OccurrencesCount == 1);
@@ -78,9 +76,7 @@ public sealed class RootsLemmasStemsReadTests(RootsExplorerTestFixture fixture)
         var lemmas = lemmasOutcome.Should().BeOfType<GetRootLemmasOutcome.Success>().Subject.Lemmas;
         var stems = stemsOutcome.Should().BeOfType<GetRootStemsOutcome.Success>().Subject.Stems;
 
-        lemmas.LemmasCount.Should().Be(listItem.LemmasCount);
         lemmas.Lemmas.Should().HaveCount(listItem.LemmasCount);
-        stems.StemsCount.Should().Be(listItem.StemsCount);
         stems.Stems.Should().HaveCount(listItem.StemsCount);
     }
 }

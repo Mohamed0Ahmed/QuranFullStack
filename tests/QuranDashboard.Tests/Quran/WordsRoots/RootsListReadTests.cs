@@ -58,7 +58,6 @@ public sealed class RootsListReadTests(RootsExplorerTestFixture fixture)
             item.TashkeelWordsCount.Should().BeGreaterThanOrEqualTo(1);
             item.LemmasCount.Should().BeGreaterThanOrEqualTo(1);
             item.StemsCount.Should().BeGreaterThanOrEqualTo(1);
-            item.FirstVerseKey.Should().NotBeNullOrWhiteSpace();
         }
     }
 

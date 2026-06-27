@@ -11,5 +11,4 @@ internal sealed record RootSummaryRow(
     int TashkeelWordsCount,
     int LemmasCount,
     int StemsCount,
-    string FirstVerseKey,
     int FirstWordOrderInMushaf);

@@ -9,5 +9,4 @@ public sealed record RootListItemDto(
     int SimpleWordsCount,
     int TashkeelWordsCount,
     int LemmasCount,
-    int StemsCount,
-    string FirstVerseKey);
+    int StemsCount);
