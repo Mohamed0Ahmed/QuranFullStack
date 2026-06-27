@@ -1,7 +1,7 @@
 # Lemma Ayah Type Filter Report
 
-**Feature:** 017 Lexical Explorers Polish  
-**Scope:** Lemmas Explorer only, route `/dashboard/words/lemmas`  
+**Feature:** 017 Lexical Explorers Polish
+**Scope:** Lemmas Explorer only, route `/dashboard/words/lemmas`
 **Type:** inspection + report only
 
 ## 1. Verdict

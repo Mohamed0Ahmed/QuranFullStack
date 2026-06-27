@@ -1,7 +1,7 @@
 # Lemma Ayah Type Filter Implementation Plan
 
-**Feature:** 017 Lexical Explorers Polish  
-**Scope:** Lemmas Explorer only, route `/dashboard/words/lemmas`  
+**Feature:** 017 Lexical Explorers Polish
+**Scope:** Lemmas Explorer only, route `/dashboard/words/lemmas`
 **Source:** `docs/feature-017-lexical-explorers-polish/lemma-ayah-type-filter-focused-report.md`
 
 ## 11. Verdict
