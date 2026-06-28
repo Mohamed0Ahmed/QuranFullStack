@@ -18,6 +18,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Files\Quran\DataPipelines\Words\MorphologyImporting\Corrections\word-lemma-normalization.json" />
+    <EmbeddedResource Include="Files\Quran\DataPipelines\Words\MorphologyImporting\Corrections\word-lemma-mapping-evidence.json" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\application\QuranDashboard.Application.Abstractions\QuranDashboard.Application.Abstractions.csproj" />
     <ProjectReference Include="..\..\domain\QuranDashboard.Domain\QuranDashboard.Domain.csproj" />
     <ProjectReference Include="..\..\shared\QuranDashboard.Shared\QuranDashboard.Shared.csproj" />
