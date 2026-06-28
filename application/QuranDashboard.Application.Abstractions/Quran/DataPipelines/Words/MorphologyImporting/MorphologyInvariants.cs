@@ -15,6 +15,11 @@ public static class MorphologyInvariants
         "Quran foundation data (quran_words) is missing or empty. Run import-foundation first.";
 
     public const string CheckSourceUnchanged = "MORPH-SOURCE-UNCHANGED";
+    public const string CheckWordLemmaNormalizationApplied = "MORPH-WORD-LEMMA-NORMALIZATION-APPLIED";
+    public const string CheckWordLemmaShiftClean = "MORPH-WORD-LEMMA-SHIFT-CLEAN";
+    public const string CheckWordLemmaReplaceValid = "MORPH-WORD-LEMMA-REPLACE-VALID";
+    public const string CheckWordLemmaMissingRecoveryClean = "MORPH-WORD-LEMMA-MISSING-RECOVERY-CLEAN";
+    public const string CheckWordLemmaUncertainZero = "MORPH-WORD-LEMMA-UNCERTAIN-ZERO";
     public const string CheckDimCounts = "MORPH-DIM-COUNTS";
     public const string CheckSegLemmaStemOnly = "SEG-LEMMA-ID-STEM-ONLY";
     public const string CheckSegLemmaRequiredForStem = "SEG-LEMMA-ID-REQUIRED-FOR-STEM";

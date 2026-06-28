@@ -1,5 +1,6 @@
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.MorphologyImporting;
 using QuranDashboard.Application.Quran.DataPipelines.Words.MorphologyImporting;
+using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting.Corrections;
 
 namespace QuranDashboard.Tests.Quran.WordsMorphology;
 
@@ -138,6 +139,126 @@ public sealed class MorphologyImportTests(MorphologyImportTestFixture fixture)
         checks.Should().Contain(check => check.Id == MorphologyInvariants.CheckSegRootConsistent && check.Passed);
         checks.Should().Contain(check => check.Id == MorphologyInvariants.CheckSegDimNullSafe && check.Passed);
         checks.Should().Contain(check => check.Id == MorphologyInvariants.CheckSegStemIdAbsent && check.Passed);
+        checks.Should().Contain(check => check.Id == MorphologyInvariants.CheckWordLemmaNormalizationApplied && check.Passed);
+        checks.Should().Contain(check => check.Id == MorphologyInvariants.CheckWordLemmaShiftClean && check.Passed);
+        checks.Should().Contain(check => check.Id == MorphologyInvariants.CheckWordLemmaReplaceValid && check.Passed);
+        checks.Should().Contain(check => check.Id == MorphologyInvariants.CheckWordLemmaMissingRecoveryClean && check.Passed);
+        checks.Should().Contain(check => check.Id == MorphologyInvariants.CheckWordLemmaUncertainZero && check.Passed);
+        checks.Should().Contain(check => check.Id == MorphologyInvariants.CheckSourceUnchanged && check.Passed);
+    }
+
+    [Fact]
+    public async Task Import_report_includes_normalization_summary_and_spot_checks()
+    {
+        await fixture.SeedSyntheticWordsAsync();
+        var sourcePath = await fixture.WriteSyntheticSourceFolderAsync();
+        var reportDir = Path.Combine(Path.GetTempPath(), $"morph-report-summary-{Guid.NewGuid():N}");
+        var expectedReadableCount = fixture.GetReadableWordCount();
+
+        try
+        {
+            await using var scope = fixture.CreateServiceProvider(services =>
+            {
+                services.AddSingleton<IWordLemmaNormalizationReader>(new ReportingWordLemmaNormalizationReader());
+            }).CreateAsyncScope();
+
+            var handler = scope.ServiceProvider.GetRequiredService<ImportMorphologyHandler>();
+            var result = await handler.HandleAsync(
+                new ImportMorphologyCommand(sourcePath, false, expectedReadableCount, reportDir),
+                CancellationToken.None);
+
+            result.Succeeded.Should().BeTrue();
+
+            var jsonPath = Path.Combine(reportDir, "morphology-import-report.json");
+            await using var reportStream = File.OpenRead(jsonPath);
+            var report = await JsonSerializer.DeserializeAsync<JsonElement>(reportStream);
+
+            var summary = report.GetProperty("correctionSummary");
+            summary.GetProperty("artifactSha256").GetString().Should().MatchRegex("^[0-9a-f]{64}$");
+            summary.GetProperty("rawLemmasSha256").GetString().Should().MatchRegex("^[0-9a-f]{64}$");
+            summary.GetProperty("totalEntries").GetInt32().Should().Be(2);
+            summary.GetProperty("appliedAdd").GetInt32().Should().Be(1);
+            summary.GetProperty("problemClassCounts").GetProperty("shift-63").GetInt32().Should().Be(1);
+            summary.GetProperty("problemClassCounts").GetProperty("shift-59").GetInt32().Should().Be(2);
+
+            var spotChecks = summary.GetProperty("spotChecks").EnumerateArray().ToList();
+            spotChecks.Should().Contain(check =>
+                check.GetProperty("location").GetString() == "3:33:7"
+                && check.GetProperty("operationKind").GetString() == "replace"
+                && check.GetProperty("appliedLemmaArabic").GetString() == "إِبْرَاهِيم");
+            spotChecks.Should().Contain(check =>
+                check.GetProperty("location").GetString() == "28:50:10"
+                && check.GetProperty("operationKind").GetString() == "add"
+                && check.GetProperty("appliedLemmaArabic").GetString() == "أَضَلّ");
+
+            var markdown = await File.ReadAllTextAsync(Path.Combine(reportDir, "morphology-import-report.md"));
+            markdown.Should().Contain("Source unchanged: yes");
+            markdown.Should().Contain("Remaining unapproved shift count: 0");
+            markdown.Should().Contain("| original-63 | 2 |");
+        }
+        finally
+        {
+            if (Directory.Exists(reportDir))
+            {
+                Directory.Delete(reportDir, true);
+            }
+        }
+    }
+}
+
+internal sealed class ReportingWordLemmaNormalizationReader : IWordLemmaNormalizationReader
+{
+    public WordLemmaNormalizationLoaded Load() => new(
+        new WordLemmaNormalizationArtifact
+        {
+            SchemaVersion = WordLemmaNormalizationArtifact.SupportedSchemaVersion,
+            ArtifactId = "reporting-normalization-artifact",
+            Entries = []
+        },
+        [],
+        "2".PadRight(64, '0'),
+        new WordLemmaNormalizationCounts(0, 0, 0, 0, 0, 0, 0, 0, 0));
+
+    public WordLemmaNormalizationResult Apply(
+        IReadOnlyDictionary<string, string> rawLemmas,
+        WordLemmaNormalizationLoaded loaded,
+        IReadOnlySet<string>? readableWordLocations = null,
+        string? rawLemmasSha256 = null)
+    {
+        var corrected = new Dictionary<string, string>(rawLemmas, StringComparer.Ordinal)
+        {
+            ["3:33:7"] = "إِبْرَاهِيم",
+            ["28:50:10"] = "أَضَلّ",
+        };
+
+        var summary = new WordLemmaCorrectionSummary(
+            ArtifactSha256: loaded.ArtifactSha256,
+            RawLemmasSha256: rawLemmasSha256,
+            TotalEntries: 2,
+            AppliedAdd: 1,
+            AppliedRemove: 0,
+            AppliedReplace: 1,
+            ReviewedKeep: 0,
+            ReviewedException: 0,
+            FailedOrSkipped: 0,
+            SpotChecks: new[]
+            {
+                new WordLemmaNormalizationSpotCheck("3:33:7", "replace", "إِبْرَاهِيم"),
+                new WordLemmaNormalizationSpotCheck("28:50:10", "add", "أَضَلّ"),
+            })
+        {
+            ProblemClassCounts = new Dictionary<string, int>(StringComparer.Ordinal)
+            {
+                ["shift-63"] = 1,
+                ["shift-63-replace"] = 1,
+                ["shift-59"] = 2,
+                ["missing-recovery"] = 1,
+                ["uncertain"] = 1,
+                ["multi-stem"] = 1,
+            },
+        };
+
+        return new WordLemmaNormalizationResult(corrected, summary);
     }
 }
 

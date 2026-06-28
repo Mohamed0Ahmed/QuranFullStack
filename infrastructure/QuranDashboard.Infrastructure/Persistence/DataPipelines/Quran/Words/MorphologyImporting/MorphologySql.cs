@@ -287,6 +287,52 @@ internal static class MorphologySql
            OR form_arabic_normalized IS NOT NULL
         """;
 
+    internal const string SelectMorphologyLemmaObservations = """
+        SELECT m.location, l.lemma_text
+        FROM quran_word_morphology m
+        LEFT JOIN quran_lemmas l ON l.id = m.lemma_id
+        """;
+
+    internal const string SelectStrictWordLemmaShiftLocations = """
+        WITH ordered_words AS (
+          SELECT
+            w.id,
+            w.location,
+            w.ayah_id,
+            LAG(w.id) OVER (PARTITION BY w.ayah_id ORDER BY w.word_number, w.id) AS prev_word_id
+          FROM quran_words w
+          WHERE w.is_ayah_marker = false
+        ),
+        current_heads AS (
+          SELECT
+            m.quran_word_id,
+            m.location,
+            l.lemma_buckwalter,
+            ow.prev_word_id
+          FROM quran_word_morphology m
+          JOIN ordered_words ow ON ow.id = m.quran_word_id
+          JOIN quran_lemmas l ON l.id = m.lemma_id
+          WHERE m.lemma_id IS NOT NULL
+            AND m.root_id IS NULL
+            AND NOT EXISTS (
+              SELECT 1
+              FROM quran_word_morphology_segments s
+              WHERE s.quran_word_id = m.quran_word_id
+                AND s.root_id IS NOT NULL
+            )
+        )
+        SELECT ch.location
+        FROM current_heads ch
+        WHERE EXISTS (
+            SELECT 1
+            FROM quran_word_morphology_segments ps
+            WHERE ps.quran_word_id = ch.prev_word_id
+              -- Match on buckwalter, not lemma_id: a shifted-from word loses its word-level
+              -- lemma_id but keeps the Corpus buckwalter on its segment.
+              AND ps.lemma_buckwalter = ch.lemma_buckwalter
+          )
+        """;
+
     internal const string CountMorphologyRows = "SELECT count(*)::int FROM quran_word_morphology";
     internal const string CountSegmentRows = "SELECT count(*)::int FROM quran_word_morphology_segments";
     internal const string CountRootRows = "SELECT count(*)::int FROM quran_roots";

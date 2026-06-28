@@ -130,8 +130,8 @@ public sealed class MorphologyImportTestFixture : IAsyncLifetime
             CreateWord(1, 1, 1, 1, 1, MorphologySyntheticSeed.TokenGlyph1, MorphologySyntheticSeed.TokenUthmani1),
             CreateWord(2, 1, 1, 1, 2, MorphologySyntheticSeed.TokenGlyph2, MorphologySyntheticSeed.TokenUthmani2),
             CreateWord(3, 1, 1, 1, 3, MorphologySyntheticSeed.TokenGlyph3, MorphologySyntheticSeed.TokenUthmani3),
-            CreateWord(4, 1, 1, 2, 1, MorphologySyntheticSeed.TokenGlyph4, MorphologySyntheticSeed.TokenUthmani4),
-            CreateWord(5, 1, 1, 2, 2, MorphologySyntheticSeed.TokenGlyph5, MorphologySyntheticSeed.TokenUthmani5)
+            CreateWord(4, 2, 1, 2, 1, MorphologySyntheticSeed.TokenGlyph4, MorphologySyntheticSeed.TokenUthmani4),
+            CreateWord(5, 2, 1, 2, 2, MorphologySyntheticSeed.TokenGlyph5, MorphologySyntheticSeed.TokenUthmani5)
         };
 
         var markerWord = CreateWord(99, 1, 1, 1, 99, "GLYPH-MARKER", "اختبار-علامة", isAyahMarker: true);

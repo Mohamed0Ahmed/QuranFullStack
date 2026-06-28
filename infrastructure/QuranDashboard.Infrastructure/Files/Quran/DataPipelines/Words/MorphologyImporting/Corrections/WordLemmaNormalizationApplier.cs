@@ -126,9 +126,31 @@ internal static class WordLemmaNormalizationApplier
             ReviewedKeep: keep,
             ReviewedException: exception,
             FailedOrSkipped: failed,
-            SpotChecks: spotChecks);
+            SpotChecks: spotChecks)
+        {
+            ProblemClassCounts = BuildProblemClassCounts(artifact.Entries),
+        };
 
         return new WordLemmaNormalizationResult(corrected, summary);
+    }
+
+    private static IReadOnlyDictionary<string, int> BuildProblemClassCounts(
+        IReadOnlyList<WordLemmaNormalizationEntry> entries)
+    {
+        var counts = new Dictionary<string, int>(StringComparer.Ordinal);
+
+        foreach (var entry in entries)
+        {
+            if (string.IsNullOrWhiteSpace(entry.ProblemClass))
+            {
+                continue;
+            }
+
+            counts.TryGetValue(entry.ProblemClass, out var count);
+            counts[entry.ProblemClass] = count + 1;
+        }
+
+        return counts;
     }
 
     private static void FailWhen(bool condition, string message) => Fail(condition, message);

@@ -7,7 +7,7 @@ namespace QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.Morpholo
 // mapping-evidence artifact, computes a SHA-256 over the raw artifact bytes, parses both into typed
 // records, and validates + applies the artifact to an in-memory raw QUL lemma map.
 //
-// Phase 1 scope: load + schema-validate + apply in-memory. Not yet wired into MorphologyImportSource.
+// Load + schema-validate + apply in-memory. Wired into MorphologyImportSource for normalization.
 public sealed class WordLemmaNormalizationReader : IWordLemmaNormalizationReader
 {
     internal const string ArtifactResourceName =

@@ -9,7 +9,8 @@ public sealed record MorphologyImportResult(
     IReadOnlyList<MorphologyCheckResult> Checks,
     IReadOnlyList<string> Warnings,
     IReadOnlyList<string> Errors,
-    IReadOnlyList<string> InfoNotes);
+    IReadOnlyList<string> InfoNotes,
+    WordLemmaCorrectionSummary? CorrectionSummary = null);
 
 public sealed record MorphologyImportTotals(
     int MorphologyRows,

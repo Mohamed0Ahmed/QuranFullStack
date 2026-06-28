@@ -1,5 +1,6 @@
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.MorphologyImporting;
 using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting;
+using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting.Corrections;
 
 namespace QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Words.MorphologyImporting;
 
@@ -11,11 +12,16 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
 
     private readonly QuranDashboardDbContext dbContext;
     private readonly SegmentArabicRenderer renderer;
+    private readonly IWordLemmaNormalizationReader normalizationReader;
 
-    public EfBulkMorphologyWriter(QuranDashboardDbContext dbContext, SegmentArabicRenderer renderer)
+    public EfBulkMorphologyWriter(
+        QuranDashboardDbContext dbContext,
+        SegmentArabicRenderer renderer,
+        IWordLemmaNormalizationReader normalizationReader)
     {
         this.dbContext = dbContext;
         this.renderer = renderer;
+        this.normalizationReader = normalizationReader;
     }
 
     public async Task<bool> AnyTargetTableHasDataAsync(CancellationToken ct)
@@ -57,6 +63,8 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
             throw new InvalidOperationException("Expected an Npgsql connection for morphology import.");
         }
 
+        var normalization = normalizationReader.Load();
+
         await using var transaction = await npgsqlConnection.BeginTransactionAsync(ct);
 
         try
@@ -87,6 +95,7 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
                 transaction,
                 expectedReadableWords,
                 source,
+                normalization,
                 renderer,
                 ct);
             checks.Add(posResolvesCheck);
@@ -117,7 +126,8 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
                     checks,
                     warnings,
                     Errors: [],
-                    InfoNotes: ["Morphology import committed; all hard checks passed."]);
+                    InfoNotes: ["Morphology import committed; all hard checks passed."],
+                    source.CorrectionSummary);
             }
 
             await transaction.RollbackAsync(ct);
@@ -136,7 +146,8 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
                 checks,
                 warnings,
                 errors,
-                InfoNotes: ["Totals reflect the attempted import before rollback; no morphology rows were persisted."]);
+                InfoNotes: ["Totals reflect the attempted import before rollback; no morphology rows were persisted."],
+                source.CorrectionSummary);
         }
         catch
         {

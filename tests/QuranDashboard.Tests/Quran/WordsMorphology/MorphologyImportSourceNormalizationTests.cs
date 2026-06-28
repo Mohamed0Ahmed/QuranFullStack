@@ -34,6 +34,7 @@ public sealed class MorphologyImportSourceNormalizationTests(MorphologyImportTes
 
         source.CorrectionSummary.Should().NotBeNull();
         source.CorrectionSummary!.ArtifactSha256.Should().Be("f".PadRight(64, '0'));
+        source.CorrectionSummary.RawLemmasSha256.Should().MatchRegex("^[0-9a-f]{64}$");
         source.CorrectionSummary.TotalEntries.Should().Be(2);
         source.CorrectionSummary.AppliedAdd.Should().Be(1);
         source.CorrectionSummary.AppliedReplace.Should().Be(1);

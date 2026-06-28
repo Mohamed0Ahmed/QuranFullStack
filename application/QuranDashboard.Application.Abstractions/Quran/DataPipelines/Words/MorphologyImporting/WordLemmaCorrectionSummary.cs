@@ -21,4 +21,7 @@ public sealed record WordLemmaCorrectionSummary(
 {
     public int AppliedMutating => AppliedAdd + AppliedRemove + AppliedReplace;
     public int ReviewedNonMutating => ReviewedKeep + ReviewedException;
+
+    public IReadOnlyDictionary<string, int> ProblemClassCounts { get; init; } =
+        new Dictionary<string, int>(StringComparer.Ordinal);
 }

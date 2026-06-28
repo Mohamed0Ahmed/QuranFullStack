@@ -53,7 +53,8 @@ public sealed class MarkdownJsonMorphologyReportWriter : IMorphologyReportWriter
                 .ToList(),
             result.Warnings.ToList(),
             result.Errors.ToList(),
-            result.InfoNotes.ToList());
+            result.InfoNotes.ToList(),
+            result.CorrectionSummary);
 
         await using (var jsonStream = File.Create(jsonPath))
         {
@@ -95,6 +96,57 @@ public sealed class MarkdownJsonMorphologyReportWriter : IMorphologyReportWriter
         builder.AppendLine($"| multiword | {report.Totals.MultiwordCount:N0} |");
         builder.AppendLine();
         builder.AppendLine($"(empty-form renders → NULL: {report.Totals.EmptyFormRenders})");
+
+        if (report.CorrectionSummary is not null)
+        {
+            var summary = report.CorrectionSummary;
+            var sourceUnchanged = report.Checks.FirstOrDefault(check => check.Id == MorphologyInvariants.CheckSourceUnchanged);
+            var shiftClean = report.Checks.FirstOrDefault(check => check.Id == MorphologyInvariants.CheckWordLemmaShiftClean);
+            builder.AppendLine();
+            builder.AppendLine("## Lemma normalization");
+            builder.AppendLine();
+            builder.AppendLine("- Artifact: `word-lemma-normalization.json`");
+            builder.AppendLine($"- Artifact SHA-256: `{summary.ArtifactSha256}`");
+            builder.AppendLine($"- Raw QUL lemma SHA-256: `{summary.RawLemmasSha256 ?? string.Empty}`");
+            builder.AppendLine($"- Total entries: {summary.TotalEntries:N0}");
+            builder.AppendLine($"- Applied add/remove/replace: {summary.AppliedAdd:N0} / {summary.AppliedRemove:N0} / {summary.AppliedReplace:N0}");
+            builder.AppendLine($"- Reviewed keep/exception: {summary.ReviewedKeep:N0} / {summary.ReviewedException:N0}");
+            builder.AppendLine($"- Failed or skipped: {summary.FailedOrSkipped:N0}");
+            builder.AppendLine($"- Remaining unapproved shift count: {ExtractLeadingCount(shiftClean?.Observed) ?? "unknown"}");
+            builder.AppendLine($"- Source unchanged: {(sourceUnchanged?.Passed == true ? "yes" : "no")}");
+
+            var original63 = GetProblemClassCount(summary.ProblemClassCounts, "shift-63")
+                + GetProblemClassCount(summary.ProblemClassCounts, "shift-63-replace");
+            var candidate59 = GetProblemClassCount(summary.ProblemClassCounts, "shift-59");
+            var missingRecovery = GetProblemClassCount(summary.ProblemClassCounts, "missing-recovery");
+            var uncertain = GetProblemClassCount(summary.ProblemClassCounts, "uncertain");
+            var multiStem = GetProblemClassCount(summary.ProblemClassCounts, "multi-stem");
+
+            builder.AppendLine();
+            builder.AppendLine("### Problem classes");
+            builder.AppendLine();
+            builder.AppendLine("| Class | Count |");
+            builder.AppendLine("|---|---:|");
+            builder.AppendLine($"| original-63 | {original63:N0} |");
+            builder.AppendLine($"| 59-candidate | {candidate59:N0} |");
+            builder.AppendLine($"| missing-recovery | {missingRecovery:N0} |");
+            builder.AppendLine($"| uncertain | {uncertain:N0} |");
+            builder.AppendLine($"| multi-stem | {multiStem:N0} |");
+
+            if (summary.SpotChecks.Count > 0)
+            {
+                builder.AppendLine();
+                builder.AppendLine("| Spot check | Operation | Applied lemma |");
+                builder.AppendLine("|---|---|---|");
+
+                foreach (var spotCheck in summary.SpotChecks)
+                {
+                    builder.AppendLine(
+                        $"| {spotCheck.Location} | {spotCheck.OperationKind} | {spotCheck.AppliedLemmaArabic ?? string.Empty} |");
+                }
+            }
+        }
+
         builder.AppendLine();
         builder.AppendLine("## Checks");
         builder.AppendLine();
@@ -163,7 +215,8 @@ public sealed class MarkdownJsonMorphologyReportWriter : IMorphologyReportWriter
         IReadOnlyList<ReportCheck> Checks,
         IReadOnlyList<string> Warnings,
         IReadOnlyList<string> Errors,
-        IReadOnlyList<string> InfoNotes);
+        IReadOnlyList<string> InfoNotes,
+        WordLemmaCorrectionSummary? CorrectionSummary);
 
     private sealed record ReportTotals(
         int MorphologyRows,
@@ -185,4 +238,20 @@ public sealed class MarkdownJsonMorphologyReportWriter : IMorphologyReportWriter
         string Expected,
         string Observed,
         bool Passed);
+
+    private static int GetProblemClassCount(IReadOnlyDictionary<string, int> counts, string key) =>
+        counts.TryGetValue(key, out var value) ? value : 0;
+
+    private static string? ExtractLeadingCount(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return null;
+        }
+
+        var token = text.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .FirstOrDefault();
+
+        return string.IsNullOrWhiteSpace(token) ? null : token;
+    }
 }

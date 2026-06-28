@@ -1,5 +1,6 @@
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.MorphologyImporting;
 using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting;
+using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting.Corrections;
 
 namespace QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Words.MorphologyImporting;
 
@@ -25,6 +26,7 @@ internal static class MorphologyValidationRunner
         NpgsqlTransaction transaction,
         int expectedReadableWords,
         MorphologySourceData source,
+        WordLemmaNormalizationLoaded normalization,
         SegmentArabicRenderer renderer,
         CancellationToken ct)
     {
@@ -33,6 +35,7 @@ internal static class MorphologyValidationRunner
         await AddUs1ChecksAsync(checks, connection, transaction, expectedReadableWords, ct);
         await AddUs3ChecksAsync(checks, connection, transaction, source, renderer, ct);
         await AddSegmentDimensionChecksAsync(checks, connection, transaction, source, ct);
+        await AddWordLemmaNormalizationChecksAsync(checks, connection, transaction, normalization, ct);
 
         return checks;
     }
@@ -274,6 +277,85 @@ internal static class MorphologyValidationRunner
             stemIdColumns == 0));
     }
 
+    private static async Task AddWordLemmaNormalizationChecksAsync(
+        List<MorphologyCheckResult> checks,
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        WordLemmaNormalizationLoaded normalization,
+        CancellationToken ct)
+    {
+        var observed = await ReadPersistedLemmaTextsAsync(connection, transaction, ct);
+        var approvedMutatingEntries = normalization.Artifact.Entries
+            .Where(IsApprovedMutatingEntry)
+            .ToList();
+
+        var appliedMismatches = CountEntryMismatches(approvedMutatingEntries, observed);
+        checks.Add(new MorphologyCheckResult(
+            MorphologyInvariants.CheckWordLemmaNormalizationApplied,
+            HardSeverity,
+            "every approved mutating normalization entry persists corrected lemma text",
+            appliedMismatches == 0
+                ? $"0 mismatches across {FormatInt(approvedMutatingEntries.Count)} approved mutating entries"
+                : $"{FormatInt(appliedMismatches)} mismatch(es) across {FormatInt(approvedMutatingEntries.Count)} approved mutating entries",
+            appliedMismatches == 0));
+
+        var strictShiftLocations = await ReadStrictShiftLocationsAsync(connection, transaction, ct);
+        var allowedShiftLocations = normalization.Artifact.Entries
+            .Where(entry => entry.DecisionStatus is WordLemmaNormalizationDecisionStatus.Approved
+                or WordLemmaNormalizationDecisionStatus.AcceptedException)
+            .Select(entry => entry.Location)
+            .ToHashSet(StringComparer.Ordinal);
+        var remainingShiftLocations = strictShiftLocations
+            .Where(location => !allowedShiftLocations.Contains(location))
+            .ToList();
+        checks.Add(new MorphologyCheckResult(
+            MorphologyInvariants.CheckWordLemmaShiftClean,
+            HardSeverity,
+            "no unapproved strict previous-word shift rows remain",
+            remainingShiftLocations.Count == 0
+                ? "0 unapproved strict shifts"
+                : $"{FormatInt(remainingShiftLocations.Count)} unapproved strict shift(s): {string.Join(", ", remainingShiftLocations.Take(10))}",
+            remainingShiftLocations.Count == 0));
+
+        var replaceEntries = normalization.Artifact.Entries
+            .Where(entry => entry.DecisionStatus == WordLemmaNormalizationDecisionStatus.Approved
+                && entry.OperationKind == WordLemmaNormalizationOperationKind.Replace)
+            .ToList();
+        var replaceMismatches = CountEntryMismatches(replaceEntries, observed);
+        checks.Add(new MorphologyCheckResult(
+            MorphologyInvariants.CheckWordLemmaReplaceValid,
+            HardSeverity,
+            "approved replace locations persist with corrected lemma text",
+            replaceMismatches == 0
+                ? $"0 mismatches across {FormatInt(replaceEntries.Count)} replace entries"
+                : $"{FormatInt(replaceMismatches)} mismatch(es) across {FormatInt(replaceEntries.Count)} replace entries",
+            replaceMismatches == 0));
+
+        var missingRecoveryEntries = normalization.Artifact.Entries
+            .Where(entry => entry.DecisionStatus == WordLemmaNormalizationDecisionStatus.Approved
+                && entry.OperationKind == WordLemmaNormalizationOperationKind.Add
+                && string.Equals(entry.ProblemClass, "missing-recovery", StringComparison.Ordinal))
+            .ToList();
+        var missingRecoveryMismatches = CountEntryMismatches(missingRecoveryEntries, observed);
+        checks.Add(new MorphologyCheckResult(
+            MorphologyInvariants.CheckWordLemmaMissingRecoveryClean,
+            HardSeverity,
+            "approved missing-recovery add locations persist with corrected lemma text",
+            missingRecoveryMismatches == 0
+                ? $"0 mismatches across {FormatInt(missingRecoveryEntries.Count)} missing-recovery entries"
+                : $"{FormatInt(missingRecoveryMismatches)} mismatch(es) across {FormatInt(missingRecoveryEntries.Count)} missing-recovery entries",
+            missingRecoveryMismatches == 0));
+
+        checks.Add(new MorphologyCheckResult(
+            MorphologyInvariants.CheckWordLemmaUncertainZero,
+            HardSeverity,
+            "active normalization artifact has 0 candidate / needs-review entries",
+            normalization.Counts.CandidateOrNeedsReview == 0
+                ? "0 pending entries"
+                : $"{FormatInt(normalization.Counts.CandidateOrNeedsReview)} pending entries",
+            normalization.Counts.CandidateOrNeedsReview == 0));
+    }
+
     private static async Task<RenderProvenanceCounts> CheckRenderProvenanceAsync(
         NpgsqlConnection connection,
         NpgsqlTransaction transaction,
@@ -343,6 +425,80 @@ internal static class MorphologyValidationRunner
         string sql,
         CancellationToken ct) =>
         MorphologyCommandExecutor.ExecuteScalarIntAsync(connection, transaction, sql, ct);
+
+    private static async Task<List<string>> ReadStrictShiftLocationsAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        CancellationToken ct)
+    {
+        var locations = new List<string>();
+
+        await using var command = new NpgsqlCommand(
+            MorphologySql.SelectStrictWordLemmaShiftLocations,
+            connection,
+            transaction)
+        {
+            CommandTimeout = MorphologyCommandExecutor.CommandTimeoutSeconds
+        };
+
+        await using var reader = await command.ExecuteReaderAsync(ct);
+        while (await reader.ReadAsync(ct))
+        {
+            locations.Add(reader.GetString(0));
+        }
+
+        return locations;
+    }
+
+    private static async Task<Dictionary<string, string?>> ReadPersistedLemmaTextsAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        CancellationToken ct)
+    {
+        var observations = new Dictionary<string, string?>(StringComparer.Ordinal);
+
+        await using var command = new NpgsqlCommand(
+            MorphologySql.SelectMorphologyLemmaObservations,
+            connection,
+            transaction)
+        {
+            CommandTimeout = MorphologyCommandExecutor.CommandTimeoutSeconds
+        };
+
+        await using var reader = await command.ExecuteReaderAsync(ct);
+        while (await reader.ReadAsync(ct))
+        {
+            var location = reader.GetString(0);
+            var lemmaText = reader.IsDBNull(1) ? null : reader.GetString(1);
+            observations[location] = lemmaText;
+        }
+
+        return observations;
+    }
+
+    private static int CountEntryMismatches(
+        IReadOnlyList<WordLemmaNormalizationEntry> entries,
+        IReadOnlyDictionary<string, string?> observed)
+    {
+        var mismatches = 0;
+
+        foreach (var entry in entries)
+        {
+            if (!observed.TryGetValue(entry.Location, out var observedLemma)
+                || !string.Equals(entry.CorrectedLemmaArabic, observedLemma, StringComparison.Ordinal))
+            {
+                mismatches++;
+            }
+        }
+
+        return mismatches;
+    }
+
+    private static bool IsApprovedMutatingEntry(WordLemmaNormalizationEntry entry) =>
+        entry.DecisionStatus == WordLemmaNormalizationDecisionStatus.Approved
+        && entry.OperationKind is WordLemmaNormalizationOperationKind.Add
+            or WordLemmaNormalizationOperationKind.Remove
+            or WordLemmaNormalizationOperationKind.Replace;
 
     private static int CountIssues(MorphologySourceData source, string checkId) =>
         source.SegmentDimensionIssues.Count(issue =>

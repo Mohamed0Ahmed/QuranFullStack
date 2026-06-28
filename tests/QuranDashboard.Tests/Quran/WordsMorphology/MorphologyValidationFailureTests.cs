@@ -1,6 +1,9 @@
+using System.Data;
+using System.Reflection;
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.MorphologyImporting;
 using QuranDashboard.Application.Quran.DataPipelines.Words.MorphologyImporting;
 using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting;
+using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting.Corrections;
 
 namespace QuranDashboard.Tests.Quran.WordsMorphology;
 
@@ -384,6 +387,187 @@ public sealed class MorphologyValidationFailureTests(MorphologyImportTestFixture
     }
 
     [Fact]
+    public async Task Import_fails_when_active_artifact_has_pending_entries()
+    {
+        await fixture.SeedSyntheticWordsAsync();
+        var sourcePath = await fixture.WriteSyntheticSourceFolderAsync();
+        var reportDir = Path.Combine(Path.GetTempPath(), $"morph-report-pending-{Guid.NewGuid():N}");
+        var readableCount = fixture.GetReadableWordCount();
+
+        try
+        {
+            await using var scope = fixture.CreateServiceProvider(services =>
+            {
+                services.AddSingleton<IWordLemmaNormalizationReader>(new PendingWordLemmaNormalizationReader());
+            }).CreateAsyncScope();
+
+            var handler = scope.ServiceProvider.GetRequiredService<ImportMorphologyHandler>();
+            var result = await handler.HandleAsync(
+                new ImportMorphologyCommand(sourcePath, false, readableCount, reportDir),
+                CancellationToken.None);
+
+            result.Succeeded.Should().BeFalse();
+            result.ExitCode.Should().Be(ImportMorphologyResult.FailureExitCode);
+            result.ReportOutDir.Should().Be(reportDir);
+
+            var jsonPath = Path.Combine(reportDir, "morphology-import-report.json");
+            File.Exists(jsonPath).Should().BeTrue();
+
+            await using var jsonStream = File.OpenRead(jsonPath);
+            var report = await JsonSerializer.DeserializeAsync<JsonElement>(jsonStream);
+            var check = report.GetProperty("checks").EnumerateArray()
+                .Single(item => item.GetProperty("id").GetString() == MorphologyInvariants.CheckWordLemmaUncertainZero);
+
+            check.GetProperty("passed").GetBoolean().Should().BeFalse();
+            check.GetProperty("severity").GetString().Should().Be("hard");
+        }
+        finally
+        {
+            if (Directory.Exists(reportDir))
+            {
+                Directory.Delete(reportDir, true);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task Import_fails_when_normalization_summary_lies_about_applied_entries()
+    {
+        await fixture.SeedSyntheticWordsAsync();
+        var sourcePath = await fixture.WriteSyntheticSourceFolderAsync();
+        var reportDir = Path.Combine(Path.GetTempPath(), $"morph-report-applied-{Guid.NewGuid():N}");
+        var readableCount = fixture.GetReadableWordCount();
+
+        try
+        {
+            await using var scope = fixture.CreateServiceProvider(services =>
+            {
+                services.AddSingleton<IWordLemmaNormalizationReader>(new BrokenSummaryWordLemmaNormalizationReader());
+            }).CreateAsyncScope();
+
+            var handler = scope.ServiceProvider.GetRequiredService<ImportMorphologyHandler>();
+            var result = await handler.HandleAsync(
+                new ImportMorphologyCommand(sourcePath, false, readableCount, reportDir),
+                CancellationToken.None);
+
+            result.Succeeded.Should().BeFalse();
+            result.ExitCode.Should().Be(ImportMorphologyResult.FailureExitCode);
+
+            var jsonPath = Path.Combine(reportDir, "morphology-import-report.json");
+            await using var jsonStream = File.OpenRead(jsonPath);
+            var report = await JsonSerializer.DeserializeAsync<JsonElement>(jsonStream);
+
+            var checks = report.GetProperty("checks").EnumerateArray().ToList();
+            checks.Should().Contain(check =>
+                check.GetProperty("id").GetString() == MorphologyInvariants.CheckWordLemmaNormalizationApplied
+                && !check.GetProperty("passed").GetBoolean());
+            checks.Should().Contain(check =>
+                check.GetProperty("id").GetString() == MorphologyInvariants.CheckWordLemmaReplaceValid
+                && !check.GetProperty("passed").GetBoolean());
+            checks.Should().Contain(check =>
+                check.GetProperty("id").GetString() == MorphologyInvariants.CheckWordLemmaMissingRecoveryClean
+                && !check.GetProperty("passed").GetBoolean());
+        }
+        finally
+        {
+            if (Directory.Exists(reportDir))
+            {
+                Directory.Delete(reportDir, true);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task Strict_shift_check_fails_when_unapproved_shift_row_exists()
+    {
+        await fixture.SeedSyntheticWordsAsync();
+        var sourcePath = await fixture.WriteSyntheticSourceFolderAsync();
+        await fixture.RunImportAsync(sourcePath, expectedReadableWords: fixture.GetReadableWordCount());
+
+        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboard.Infrastructure.Persistence.QuranDashboardDbContext>();
+        var importSource = scope.ServiceProvider.GetRequiredService<IMorphologyImportSource>();
+        var renderer = scope.ServiceProvider.GetRequiredService<QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting.SegmentArabicRenderer>();
+
+        var source = await importSource.LoadAsync(sourcePath, CancellationToken.None);
+        var normalization = new WordLemmaNormalizationLoaded(
+            new WordLemmaNormalizationArtifact
+            {
+                SchemaVersion = WordLemmaNormalizationArtifact.SupportedSchemaVersion,
+                ArtifactId = "empty-normalization",
+                Entries = []
+            },
+            [],
+            "0".PadRight(64, '0'),
+            new WordLemmaNormalizationCounts(0, 0, 0, 0, 0, 0, 0, 0, 0));
+
+        var rabbLemmaId = await dbContext.QuranLemmas
+            .AsNoTracking()
+            .Where(lemma => lemma.LemmaText == MorphologySyntheticSeed.LemmaValue2)
+            .Select(lemma => lemma.Id)
+            .SingleAsync();
+
+        var connection = dbContext.Database.GetDbConnection();
+        if (connection.State != ConnectionState.Open)
+        {
+            await connection.OpenAsync();
+        }
+
+        await using var transaction = await connection.BeginTransactionAsync();
+        dbContext.Database.UseTransaction(transaction);
+
+        try
+        {
+            await dbContext.Database.ExecuteSqlRawAsync(
+                """
+                UPDATE quran_word_morphology
+                SET lemma_id = {0}
+                WHERE location = '1:1:2'
+                """,
+                rabbLemmaId);
+
+            await dbContext.Database.ExecuteSqlRawAsync(
+                """
+                UPDATE quran_word_morphology_segments
+                SET lemma_buckwalter = {0}
+                WHERE segment_location = '1:1:1:2'
+                """,
+                "rabb");
+
+            await dbContext.Database.ExecuteSqlRawAsync(
+                """
+                UPDATE quran_word_morphology_segments
+                SET lemma_id = {0}
+                WHERE segment_location = '1:1:2:1'
+                """,
+                rabbLemmaId);
+
+            var runnerType = typeof(MorphologyImportSource).Assembly
+                .GetType("QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Words.MorphologyImporting.MorphologyValidationRunner");
+            runnerType.Should().NotBeNull();
+
+            var runMethod = runnerType!.GetMethod(
+                "RunAllHardChecksAsync",
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)
+                ;
+            runMethod.Should().NotBeNull();
+
+            var task = (Task<List<MorphologyCheckResult>>)runMethod!.Invoke(
+                null,
+                [connection, transaction, fixture.GetReadableWordCount(), source, normalization, renderer, CancellationToken.None])!;
+
+            var checks = await task;
+            checks.Should().Contain(check =>
+                check.Id == MorphologyInvariants.CheckWordLemmaShiftClean
+                && !check.Passed);
+        }
+        finally
+        {
+            await transaction.RollbackAsync();
+        }
+    }
+
+    [Fact]
     public async Task Forced_Run_With_Source_Failure_Leaves_Previous_Unchanged()
     {
         await fixture.SeedSyntheticWordsAsync();
@@ -431,4 +615,115 @@ internal sealed class SourceChangedAfterLoadMorphologyImportSource : IMorphology
 
     public Task<bool> SourceUnchangedAsync(string sourcePath, CancellationToken ct) =>
         Task.FromResult(false);
+}
+
+internal sealed class PendingWordLemmaNormalizationReader : IWordLemmaNormalizationReader
+{
+    public WordLemmaNormalizationLoaded Load() => new(
+        new WordLemmaNormalizationArtifact
+        {
+            SchemaVersion = WordLemmaNormalizationArtifact.SupportedSchemaVersion,
+            ArtifactId = "pending-normalization-artifact",
+            Entries = []
+        },
+        [],
+        "1".PadRight(64, '0'),
+        new WordLemmaNormalizationCounts(1, 0, 0, 0, 0, 0, 0, 0, 1));
+
+    public WordLemmaNormalizationResult Apply(
+        IReadOnlyDictionary<string, string> rawLemmas,
+        WordLemmaNormalizationLoaded loaded,
+        IReadOnlySet<string>? readableWordLocations = null,
+        string? rawLemmasSha256 = null)
+    {
+        var summary = new WordLemmaCorrectionSummary(
+            ArtifactSha256: loaded.ArtifactSha256,
+            RawLemmasSha256: rawLemmasSha256,
+            TotalEntries: 0,
+            AppliedAdd: 0,
+            AppliedRemove: 0,
+            AppliedReplace: 0,
+            ReviewedKeep: 0,
+            ReviewedException: 0,
+            FailedOrSkipped: 0,
+            SpotChecks: []);
+
+        return new WordLemmaNormalizationResult(new Dictionary<string, string>(rawLemmas, StringComparer.Ordinal), summary);
+    }
+}
+
+internal sealed class BrokenSummaryWordLemmaNormalizationReader : IWordLemmaNormalizationReader
+{
+    public WordLemmaNormalizationLoaded Load() => new(
+        new WordLemmaNormalizationArtifact
+        {
+            SchemaVersion = WordLemmaNormalizationArtifact.SupportedSchemaVersion,
+            ArtifactId = "broken-summary-normalization-artifact",
+            Entries =
+            [
+                new WordLemmaNormalizationEntry
+                {
+                    Id = "WLN-BROKEN-ADD",
+                    Location = "1:1:2",
+                    OperationKind = WordLemmaNormalizationOperationKind.Add,
+                    CorrectedLemmaArabic = "جَدِيد",
+                    DecisionStatus = WordLemmaNormalizationDecisionStatus.Approved,
+                    ProblemClass = "missing-recovery",
+                    Reason = "test"
+                },
+                new WordLemmaNormalizationEntry
+                {
+                    Id = "WLN-BROKEN-REMOVE",
+                    Location = "1:1:3",
+                    OperationKind = WordLemmaNormalizationOperationKind.Remove,
+                    ExpectedCurrentLemmaArabic = MorphologySyntheticSeed.LemmaValue2,
+                    DecisionStatus = WordLemmaNormalizationDecisionStatus.Approved,
+                    ProblemClass = "shift-63",
+                    Reason = "test"
+                },
+                new WordLemmaNormalizationEntry
+                {
+                    Id = "WLN-BROKEN-REPLACE",
+                    Location = "1:2:2",
+                    OperationKind = WordLemmaNormalizationOperationKind.Replace,
+                    ExpectedCurrentLemmaArabic = "كِتَاب",
+                    CorrectedLemmaArabic = "كِتَابٌ",
+                    DecisionStatus = WordLemmaNormalizationDecisionStatus.Approved,
+                    ProblemClass = "shift-63-replace",
+                    Reason = "test"
+                }
+            ]
+        },
+        [],
+        "3".PadRight(64, '0'),
+        new WordLemmaNormalizationCounts(3, 1, 1, 1, 0, 0, 3, 0, 0));
+
+    public WordLemmaNormalizationResult Apply(
+        IReadOnlyDictionary<string, string> rawLemmas,
+        WordLemmaNormalizationLoaded loaded,
+        IReadOnlySet<string>? readableWordLocations = null,
+        string? rawLemmasSha256 = null)
+    {
+        var summary = new WordLemmaCorrectionSummary(
+            ArtifactSha256: loaded.ArtifactSha256,
+            RawLemmasSha256: rawLemmasSha256,
+            TotalEntries: 3,
+            AppliedAdd: 1,
+            AppliedRemove: 1,
+            AppliedReplace: 1,
+            ReviewedKeep: 0,
+            ReviewedException: 0,
+            FailedOrSkipped: 0,
+            SpotChecks: [])
+        {
+            ProblemClassCounts = new Dictionary<string, int>(StringComparer.Ordinal)
+            {
+                ["shift-63"] = 1,
+                ["shift-63-replace"] = 1,
+                ["missing-recovery"] = 1,
+            },
+        };
+
+        return new WordLemmaNormalizationResult(new Dictionary<string, string>(rawLemmas, StringComparer.Ordinal), summary);
+    }
 }
