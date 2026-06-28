@@ -330,6 +330,13 @@ internal static class MorphologySql
               -- Match on buckwalter, not lemma_id: a shifted-from word loses its word-level
               -- lemma_id but keeps the Corpus buckwalter on its segment.
               AND ps.lemma_buckwalter = ch.lemma_buckwalter
+           )
+          AND NOT EXISTS (
+            SELECT 1
+            FROM quran_word_morphology_segments cs
+            WHERE cs.quran_word_id = ch.quran_word_id
+              AND cs.kind = 'STEM'
+              AND cs.lemma_buckwalter = ch.lemma_buckwalter
           )
         """;
 

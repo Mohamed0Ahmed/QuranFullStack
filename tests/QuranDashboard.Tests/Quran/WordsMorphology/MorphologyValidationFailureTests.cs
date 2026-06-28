@@ -1,5 +1,3 @@
-using System.Data;
-using System.Reflection;
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.MorphologyImporting;
 using QuranDashboard.Application.Quran.DataPipelines.Words.MorphologyImporting;
 using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting;
@@ -482,90 +480,66 @@ public sealed class MorphologyValidationFailureTests(MorphologyImportTestFixture
     {
         await fixture.SeedSyntheticWordsAsync();
         var sourcePath = await fixture.WriteSyntheticSourceFolderAsync();
-        await fixture.RunImportAsync(sourcePath, expectedReadableWords: fixture.GetReadableWordCount());
+        await fixture.PatchQulLemmaMapAsync(sourcePath, CreateLemmaMapWithRepeatedRabb());
+        await fixture.PatchCorpusSegmentsAsync(sourcePath, "1:1:1", PreviousWordSegmentsWithRabbLemma());
+        await fixture.PatchCorpusSegmentsAsync(sourcePath, "1:1:2", CurrentWordSegmentsWithoutLemmaEvidence());
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboard.Infrastructure.Persistence.QuranDashboardDbContext>();
-        var importSource = scope.ServiceProvider.GetRequiredService<IMorphologyImportSource>();
-        var renderer = scope.ServiceProvider.GetRequiredService<QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting.SegmentArabicRenderer>();
+        var result = await fixture.RunImportAsync(
+            sourcePath,
+            expectedReadableWords: fixture.GetReadableWordCount());
 
-        var source = await importSource.LoadAsync(sourcePath, CancellationToken.None);
-        var normalization = new WordLemmaNormalizationLoaded(
-            new WordLemmaNormalizationArtifact
-            {
-                SchemaVersion = WordLemmaNormalizationArtifact.SupportedSchemaVersion,
-                ArtifactId = "empty-normalization",
-                Entries = []
-            },
-            [],
-            "0".PadRight(64, '0'),
-            new WordLemmaNormalizationCounts(0, 0, 0, 0, 0, 0, 0, 0, 0));
+        result.Succeeded.Should().BeFalse();
+        result.Message.Should().Contain(MorphologyInvariants.CheckWordLemmaShiftClean);
 
-        var rabbLemmaId = await dbContext.QuranLemmas
-            .AsNoTracking()
-            .Where(lemma => lemma.LemmaText == MorphologySyntheticSeed.LemmaValue2)
-            .Select(lemma => lemma.Id)
-            .SingleAsync();
-
-        var connection = dbContext.Database.GetDbConnection();
-        if (connection.State != ConnectionState.Open)
-        {
-            await connection.OpenAsync();
-        }
-
-        await using var transaction = await connection.BeginTransactionAsync();
-        dbContext.Database.UseTransaction(transaction);
-
-        try
-        {
-            await dbContext.Database.ExecuteSqlRawAsync(
-                """
-                UPDATE quran_word_morphology
-                SET lemma_id = {0}
-                WHERE location = '1:1:2'
-                """,
-                rabbLemmaId);
-
-            await dbContext.Database.ExecuteSqlRawAsync(
-                """
-                UPDATE quran_word_morphology_segments
-                SET lemma_buckwalter = {0}
-                WHERE segment_location = '1:1:1:2'
-                """,
-                "rabb");
-
-            await dbContext.Database.ExecuteSqlRawAsync(
-                """
-                UPDATE quran_word_morphology_segments
-                SET lemma_id = {0}
-                WHERE segment_location = '1:1:2:1'
-                """,
-                rabbLemmaId);
-
-            var runnerType = typeof(MorphologyImportSource).Assembly
-                .GetType("QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Words.MorphologyImporting.MorphologyValidationRunner");
-            runnerType.Should().NotBeNull();
-
-            var runMethod = runnerType!.GetMethod(
-                "RunAllHardChecksAsync",
-                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)
-                ;
-            runMethod.Should().NotBeNull();
-
-            var task = (Task<List<MorphologyCheckResult>>)runMethod!.Invoke(
-                null,
-                [connection, transaction, fixture.GetReadableWordCount(), source, normalization, renderer, CancellationToken.None])!;
-
-            var checks = await task;
-            checks.Should().Contain(check =>
-                check.Id == MorphologyInvariants.CheckWordLemmaShiftClean
-                && !check.Passed);
-        }
-        finally
-        {
-            await transaction.RollbackAsync();
-        }
+        var snapshot = await fixture.CaptureTableSnapshotAsync();
+        snapshot.MorphologyRows.Should().Be(0);
+        snapshot.SegmentRows.Should().Be(0);
+        snapshot.LemmaRows.Should().Be(0);
     }
+
+    [Fact]
+    public async Task Strict_shift_check_allows_adjacent_repeated_lemma_with_current_stem_evidence()
+    {
+        await fixture.SeedSyntheticWordsAsync();
+        var sourcePath = await fixture.WriteSyntheticSourceFolderAsync();
+        await fixture.PatchQulLemmaMapAsync(sourcePath, CreateLemmaMapWithRepeatedRabb());
+        await fixture.PatchCorpusSegmentsAsync(sourcePath, "1:1:1", PreviousWordSegmentsWithRabbLemma());
+        await fixture.PatchCorpusSegmentsAsync(sourcePath, "1:1:2", CurrentWordSegmentsWithRabbLemma());
+
+        var result = await fixture.RunImportAsync(
+            sourcePath,
+            expectedReadableWords: fixture.GetReadableWordCount());
+
+        result.Succeeded.Should().BeTrue();
+
+        var snapshot = await fixture.CaptureTableSnapshotAsync();
+        snapshot.MorphologyRows.Should().Be(fixture.GetReadableWordCount());
+    }
+
+    private static Dictionary<string, string> CreateLemmaMapWithRepeatedRabb()
+    {
+        var lemmas = MorphologySyntheticSeed.GetLemmaMap();
+        lemmas["1:1:1"] = MorphologySyntheticSeed.LemmaValue2;
+        lemmas["1:1:2"] = MorphologySyntheticSeed.LemmaValue2;
+        return lemmas;
+    }
+
+    private static IReadOnlyList<object> PreviousWordSegmentsWithRabbLemma() =>
+    [
+        new { segmentNumber = (short)1, kind = "PREFIX", pos = "P", form = "bi", features = "PREFIX", root = (string?)null, lemma = (string?)null },
+        new { segmentNumber = (short)2, kind = "STEM", pos = "N", form = "raboni", features = "NOM", root = (string?)null, lemma = "rabb" }
+    ];
+
+    private static IReadOnlyList<object> CurrentWordSegmentsWithoutLemmaEvidence() =>
+    [
+        new { segmentNumber = (short)1, kind = "STEM", pos = "N", form = "l~Ahi", features = "GEN", root = (string?)null, lemma = (string?)null },
+        new { segmentNumber = (short)2, kind = "STEM", pos = "N", form = "somi", features = "GEN", root = (string?)null, lemma = (string?)null }
+    ];
+
+    private static IReadOnlyList<object> CurrentWordSegmentsWithRabbLemma() =>
+    [
+        new { segmentNumber = (short)1, kind = "STEM", pos = "N", form = "raboni", features = "GEN", root = (string?)null, lemma = "rabb" }
+    ];
 
     [Fact]
     public async Task Forced_Run_With_Source_Failure_Leaves_Previous_Unchanged()
