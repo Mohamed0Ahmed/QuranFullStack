@@ -2,7 +2,6 @@
   <header class="type-distribution-list__header" aria-hidden="true">
     <span class="type-distribution-list__header-type">{{ typeHeader }}</span>
     <span class="type-distribution-list__header-count">{{ countHeader }}</span>
-    <span class="type-distribution-list__header-dominant">{{ dominantHeader }}</span>
   </header>
 
   <div
@@ -20,7 +19,6 @@
             <span class="qd-skeleton qd-skeleton--text type-distribution-list__loading-type"></span>
           </span>
           <span class="qd-skeleton qd-skeleton--rounded-md type-distribution-list__loading-count"></span>
-          <span class="qd-skeleton qd-skeleton--rounded-md type-distribution-list__loading-dominant"></span>
         </div>
       }
     } @else if (rows().length === 0) {
@@ -39,9 +37,6 @@
         >
           <span class="type-distribution-list__type">{{ row.arabicLabel }}</span>
           <span class="qd-badge type-distribution-list__count">{{ row.occurrencesCount }}</span>
-          @if (row.dominant) {
-            <span class="qd-badge type-distribution-list__dominant">{{ dominantHeader }}</span>
-          }
         </div>
       }
     }

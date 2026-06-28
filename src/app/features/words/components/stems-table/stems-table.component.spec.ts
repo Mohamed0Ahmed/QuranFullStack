@@ -77,8 +77,8 @@ describe('StemsTableComponent', () => {
     expect(headers).toContain('المواضع');
     expect(headers).toContain('الآيات');
     expect(headers).toContain('السور');
-    expect(headers).toContain('كلمات بدون تشكيل');
-    expect(headers).toContain('كلمات بالتشكيل');
+    expect(headers).toContain('بدون تشكيل');
+    expect(headers).toContain('بالتشكيل');
   });
 
   it('renders counts and row numbers without exposing backend ids', () => {

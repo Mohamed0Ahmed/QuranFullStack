@@ -235,9 +235,10 @@ describe('buildClearSelectionQueryParams', () => {
         LEMMAS_QUERY_KEYS.wordView,
         LEMMAS_QUERY_KEYS.surahView,
         LEMMAS_QUERY_KEYS.detailPage,
+        LEMMAS_QUERY_KEYS.typeCode,
       ].sort(),
     );
-    expect(Object.values(cleared)).toEqual([null, null, null, null, null]);
+    expect(Object.values(cleared)).toEqual([null, null, null, null, null, null]);
 
     expect(cleared).not.toHaveProperty(LEMMAS_QUERY_KEYS.search);
     expect(cleared).not.toHaveProperty(LEMMAS_QUERY_KEYS.sort);

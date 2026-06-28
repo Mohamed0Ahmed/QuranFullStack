@@ -9,7 +9,7 @@
   <div
     class="stem-lemmas-list"
     role="list"
-    aria-label="الصيغ المعجمية المرتبطة"
+    [attr.aria-label]="listLabel"
     [attr.aria-busy]="loading() ? true : null"
     [attr.data-testid]="loading() ? 'stem-lemmas-list-loading' : 'stem-lemmas-list'"
   >

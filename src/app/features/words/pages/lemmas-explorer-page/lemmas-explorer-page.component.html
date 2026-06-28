@@ -60,7 +60,7 @@
   @switch (listState().status) {
     @default {
       <div class="lemmas-explorer-layout">
-        <section class="lemmas-explorer-layout__table" aria-label="جدول الصيغ المعجمية">
+        <section class="lemmas-explorer-layout__table" [attr.aria-label]="tableSectionLabel">
           <qd-lemmas-table
             [rows]="listState().items"
             [loading]="listState().status === 'loading'"
@@ -75,13 +75,13 @@
             [pageSize]="listState().pageSize"
             [totalCount]="listState().totalCount"
             [disabled]="listState().status === 'loading'"
-            ariaLabel="تصفّح الصيغ المعجمية"
+            [ariaLabel]="listPaginationLabel"
             (pageChange)="onPageChange($event)"
           />
         </section>
 
         @if (isDesktop()) {
-          <aside class="lemmas-explorer-layout__panel" aria-label="تفاصيل الصيغة المعجمية">
+          <aside class="lemmas-explorer-layout__panel" [attr.aria-label]="panelSurfaceLabel">
             <qd-lemma-details-panel
               [inline]="true"
               [view]="activeView()"
@@ -117,10 +117,12 @@
 
   <ng-template #lemmasPanelContent>
     @if (!emptySelection()) {
-      @if (panelState().summary || panelState().status === 'loading') {
-        <qd-type-distribution-list
+      @if (activeView() === 'ayahs' && (panelState().summary || panelState().status === 'loading')) {
+        <qd-lemma-ayah-type-filters
           [items]="panelState().summary?.typeDistribution ?? []"
+          [selectedTypeCode]="panelState().ayahTypeCode"
           [loading]="panelState().status === 'loading' && !panelState().summary"
+          (typeCodeChange)="onAyahTypeChange($event)"
         />
       }
 
@@ -128,7 +130,7 @@
         <nav
           class="lemmas-explorer__sub-tabs"
           role="tablist"
-          aria-label="أنماط كلمات الصيغة المعجمية"
+          [attr.aria-label]="wordsTablistLabel"
           data-testid="lemmas-word-view-tabs"
         >
           @for (option of wordViewOptions; track option) {
@@ -149,7 +151,7 @@
         <nav
           class="lemmas-explorer__sub-tabs"
           role="tablist"
-          aria-label="عرض سور الصيغة المعجمية"
+          [attr.aria-label]="surahsTablistLabel"
           data-testid="lemmas-surah-view-tabs"
         >
           @for (option of surahViewOptions; track option) {
@@ -177,20 +179,21 @@
       @switch (panelState().status) {
         @case ('loading') {
           @if (activeView() === 'words') {
-            <qd-lemma-words-list
-              [loading]="true"
-              [page]="emptyWordsPage"
-              [currentPage]="panelState().detailPage"
-              data-testid="lemmas-words-view"
-              (pageChange)="onDetailPageChange($event)"
-            />
-          } @else if (activeView() === 'ayahs') {
-            <qd-ayah-matches-list
-              [loading]="true"
-              [page]="emptyAyahsPage"
-              [currentPage]="panelState().detailPage"
-              data-testid="lemmas-ayahs-view"
-            />
+          <qd-lemma-words-list
+            [loading]="true"
+            [page]="emptyWordsPage"
+            [currentPage]="panelState().detailPage"
+            [kind]="panelState().wordView"
+            data-testid="lemmas-words-view"
+            (pageChange)="onDetailPageChange($event)"
+          />
+        } @else if (activeView() === 'ayahs') {
+          <qd-ayah-matches-list
+            [loading]="true"
+            [page]="ayahsPageForView()"
+            [currentPage]="panelState().detailPage"
+            data-testid="lemmas-ayahs-view"
+          />
           } @else if (activeView() === 'surahs' && panelState().surahView === 'mentioned') {
             <qd-surah-occurrences-list
               [loading]="true"
@@ -224,12 +227,13 @@
             <qd-lemma-words-list
               [page]="wordsPage"
               [currentPage]="panelState().detailPage"
+              [kind]="panelState().wordView"
               data-testid="lemmas-words-view"
               (pageChange)="onDetailPageChange($event)"
             />
-          } @else if (activeView() === 'ayahs' && panelState().ayahs; as ayahsPage) {
+          } @else if (activeView() === 'ayahs' && panelState().ayahs) {
             <qd-ayah-matches-list
-              [page]="ayahsPage"
+              [page]="ayahsPageForView()"
               [currentPage]="panelState().detailPage"
               data-testid="lemmas-ayahs-view"
               (pageChange)="onDetailPageChange($event)"

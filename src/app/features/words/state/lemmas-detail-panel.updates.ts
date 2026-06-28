@@ -145,6 +145,7 @@ export function restoredLemmaNotFoundUpdate(
     view: DEFAULT_LEMMA_VIEW,
     wordView: DEFAULT_LEMMA_WORD_VIEW,
     surahView: DEFAULT_LEMMA_SURAHS_VIEW,
+    ayahTypeCode: null,
     detailPage: DEFAULT_LEMMA_DETAIL_PAGE,
     ayahs: null,
     words: null,

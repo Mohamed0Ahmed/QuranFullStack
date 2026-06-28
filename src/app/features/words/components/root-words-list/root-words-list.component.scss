@@ -1,3 +1,5 @@
+@use '../../../../../styles/explorer-detail-lists' as edl;
+
 :host {
   display: block;
 }
@@ -17,9 +19,9 @@
 }
 
 .root-words-list__header {
-  font-size: 0.75rem;
-  color: var(--qd-text-muted);
-  padding-inline: var(--qd-space-1);
+  @include edl.explorer-detail-list-header;
+  grid-template-columns: 2.5rem 1fr auto;
+  gap: var(--qd-space-3);
 }
 
 .root-words-list__viewport {

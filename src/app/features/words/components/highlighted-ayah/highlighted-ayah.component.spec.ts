@@ -5,10 +5,10 @@ import { HighlightedAyahComponent } from './highlighted-ayah.component';
 import { AyahWordForHighlightDto } from '../../models/unique-words.models';
 
 const words: AyahWordForHighlightDto[] = [
-  { quranWordId: 10, wordNumber: 1, textUthmani: 'ألف', isAyahMarker: false },
-  { quranWordId: 11, wordNumber: 2, textUthmani: 'باء', isAyahMarker: false },
-  { quranWordId: 12, wordNumber: 3, textUthmani: 'جيم', isAyahMarker: false },
-  { quranWordId: 13, wordNumber: 4, textUthmani: '٣', isAyahMarker: true },
+  { quranWordId: 10, textUthmani: 'ألف', isAyahMarker: false },
+  { quranWordId: 11, textUthmani: 'باء', isAyahMarker: false },
+  { quranWordId: 12, textUthmani: 'جيم', isAyahMarker: false },
+  { quranWordId: 13, textUthmani: '٣', isAyahMarker: true },
 ];
 
 describe('HighlightedAyahComponent', () => {

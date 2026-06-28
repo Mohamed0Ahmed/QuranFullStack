@@ -8,9 +8,8 @@ function wordItem(uniqueWordId: number, kind: RootWordView): RootWordItemDto {
   return {
     uniqueWordId,
     kind,
-    displayTextUthmani: `كلمة-${uniqueWordId}`,
+    displayText: `كلمة-${uniqueWordId}`,
     occurrencesCount: 2,
-    firstVerseKey: '1:1',
   };
 }
 

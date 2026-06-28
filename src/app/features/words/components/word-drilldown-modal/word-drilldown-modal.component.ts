@@ -16,6 +16,7 @@ import {
   DRILLDOWN_EMPTY_SURAHS_LABEL,
   DRILLDOWN_PANEL_EMPTY_LABEL,
   DRILLDOWN_PANEL_TITLE,
+  DRILLDOWN_VIEW_TABLIST_LABEL,
   LOADING_LABEL,
   WORD_DRILLDOWN_VIEW_LABELS,
 } from '../../models/unique-words.labels';
@@ -69,6 +70,10 @@ export class WordDrilldownModalComponent {
 
   protected get drilldownPanelTitle() {
     return DRILLDOWN_PANEL_TITLE;
+  }
+
+  protected get drilldownViewTablistLabel() {
+    return DRILLDOWN_VIEW_TABLIST_LABEL;
   }
 
   protected get panelEmptyLabel() {

@@ -23,13 +23,15 @@ function word(id: number): UniqueWordListItemDto {
   return {
     id,
     kind: 'tashkeel',
-    displayTextUthmani: `كلمة-تجريبية-${id}`,
+    displayText: `كلمة-تجريبية-${id}`,
     occurrencesCount: 3,
     ayahsCount: 2,
     surahsCount: 2,
     missingSurahsCount: 112,
-    firstVerseKey: '1:1',
-    firstLocation: '1:1:1',
+    primaryWordTypeCode: null,
+    primaryWordTypeBroadArabicLabel: null,
+    rootId: null,
+    rootText: null,
   };
 }
 
@@ -37,13 +39,11 @@ function summary(id: number): UniqueWordSummaryDto {
   return {
     id,
     kind: 'tashkeel',
-    displayTextUthmani: `كلمة-تجريبية-${id}`,
+    displayText: `كلمة-تجريبية-${id}`,
     occurrencesCount: 3,
     ayahsCount: 2,
     surahsCount: 2,
     missingSurahsCount: 112,
-    firstVerseKey: '1:1',
-    firstLocation: '1:1:1',
   };
 }
 
@@ -128,10 +128,6 @@ describe('UniqueWordsFacade URL restore (US4)', () => {
         isSuccess: true,
         message: 'تم',
         data: {
-          id: 42,
-          kind: 'tashkeel',
-          displayTextUthmani: 'كلمة-تجريبية-42',
-          surahsCount: 0,
           surahs: [],
         },
       } as ApiResponse<UniqueWordSurahsDto>),
@@ -157,7 +153,7 @@ describe('UniqueWordsFacade URL restore (US4)', () => {
       of({
         isSuccess: true,
         message: 'تم',
-        data: { id: 42, kind: 'tashkeel', displayTextUthmani: 'x', surahsCount: 0, surahs: [] },
+        data: { surahs: [] },
       } as ApiResponse<UniqueWordSurahsDto>),
     );
     const facade = setup({ getSummary, getMentionedSurahs });
@@ -196,7 +192,7 @@ describe('UniqueWordsFacade URL restore (US4)', () => {
       of({
         isSuccess: true,
         message: 'تم',
-        data: { id: 42, kind: 'tashkeel', displayTextUthmani: 'x', surahsCount: 0, surahs: [] },
+        data: { surahs: [] },
       } as ApiResponse<UniqueWordSurahsDto>),
     );
     const getAyahMatches = vi.fn(() =>
@@ -226,7 +222,7 @@ describe('UniqueWordsFacade URL restore (US4)', () => {
       of({
         isSuccess: true,
         message: 'تم',
-        data: { id: 42, kind: 'tashkeel', displayTextUthmani: 'x', surahsCount: 0, surahs: [] },
+        data: { surahs: [] },
       } as ApiResponse<UniqueWordSurahsDto>),
     );
     const facade = setup({ getSummary, getMentionedSurahs });
@@ -311,7 +307,7 @@ describe('UniqueWordsFacade URL restore (US4)', () => {
       of({
         isSuccess: true,
         message: 'تم',
-        data: { id: 42, kind: 'tashkeel', displayTextUthmani: 'x', surahsCount: 0, surahs: [] },
+        data: { surahs: [] },
       } as ApiResponse<UniqueWordSurahsDto>),
     );
     const facade = setup({ getSummary, getMentionedSurahs });
@@ -331,7 +327,7 @@ describe('UniqueWordsFacade URL restore (US4)', () => {
       of({
         isSuccess: true,
         message: 'تم',
-        data: { id: 42, kind: 'tashkeel', displayTextUthmani: 'x', surahsCount: 0, surahs: [] },
+        data: { surahs: [] },
       } as ApiResponse<UniqueWordSurahsDto>),
     );
     const facade = setup({ getSummary, getMentionedSurahs });
@@ -362,7 +358,7 @@ describe('UniqueWordsFacade URL restore (US4)', () => {
       of({
         isSuccess: true,
         message: 'تم',
-        data: { id: 42, kind: 'tashkeel', displayTextUthmani: 'x', surahsCount: 0, surahs: [] },
+        data: { surahs: [] },
       } as ApiResponse<UniqueWordSurahsDto>),
     );
     const facade = setup({ getList, getSummary, getMentionedSurahs });

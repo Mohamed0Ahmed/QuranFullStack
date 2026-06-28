@@ -9,7 +9,6 @@
     class="root-stems-list"
     [attr.aria-busy]="loading() ? true : null"
     [attr.data-testid]="loading() ? 'root-stems-list-loading' : 'root-stems-list'"
-    [attr.role]="loading() ? null : 'list'"
   >
     @if (loading()) {
       <p class="qd-sr-only" role="status" aria-live="polite">{{ loadingLabel }}</p>
@@ -25,12 +24,19 @@
         </div>
       }
     } @else {
-      @for (stem of stems(); track stem.stemId; let index = $index) {
-        <div class="root-stems-list__row" role="listitem" data-testid="root-stem-item">
+      @for (row of rows(); track row.item.stemId; let index = $index) {
+        <a
+          class="root-stems-list__row qd-interactive-surface"
+          [attr.href]="row.href"
+          [attr.aria-label]="openStemLabel"
+          target="_blank"
+          rel="noopener noreferrer"
+          data-testid="root-stem-item"
+        >
           <span class="root-stems-list__row-number" aria-hidden="true">{{ index + 1 }}</span>
-          <span class="root-stems-list__text">{{ stem.stemText }}</span>
-          <span class="qd-badge">{{ stem.occurrencesCount }}</span>
-        </div>
+          <span class="root-stems-list__text">{{ row.item.stemText }}</span>
+          <span class="qd-badge">{{ row.item.occurrencesCount }}</span>
+        </a>
       }
     }
   </div>

@@ -1,5 +1,3 @@
-import { AyahMatchDto } from './unique-words.models';
-
 /**
  * Lemmas Explorer (Feature 016) view models, DTOs, and URL-state primitives.
  * Sibling of `roots.models.ts`. Lemma views are `words | ayahs | surahs | stems`
@@ -39,9 +37,6 @@ export interface LemmaSurahItemDto {
 }
 
 export interface LemmaSurahsDto {
-  id: number;
-  lemmaText: string;
-  surahsCount: number;
   surahs: LemmaSurahItemDto[];
 }
 
@@ -51,9 +46,6 @@ export interface MissingSurahItemDto {
 }
 
 export interface LemmaMissingSurahsDto {
-  id: number;
-  lemmaText: string;
-  missingSurahsCount: number;
   surahs: MissingSurahItemDto[];
 }
 
@@ -64,21 +56,27 @@ export interface LemmaStemItemDto {
 }
 
 export interface LemmaStemsDto {
-  id: number;
-  lemmaText: string;
-  stemsCount: number;
   stems: LemmaStemItemDto[];
 }
 
 export interface LemmaWordItemDto {
   uniqueWordId: number;
-  kind: LemmaWordView;
-  displayTextUthmani: string;
+  displayText: string;
   occurrencesCount: number;
-  firstVerseKey: string;
 }
 
-export interface LemmaAyahMatchDto extends AyahMatchDto {}
+export interface LemmaAyahWordDto {
+  textUthmani: string;
+  isMatched: boolean;
+}
+
+export interface LemmaAyahMatchDto {
+  ayahId: number;
+  verseKey: string;
+  surahNameArabic: string;
+  pageNumber: number;
+  words: LemmaAyahWordDto[];
+}
 
 /**
  * Lemma catalogue row. Root fields come from the lemma's owned root
@@ -87,19 +85,14 @@ export interface LemmaAyahMatchDto extends AyahMatchDto {}
 export interface LemmaListItemDto {
   id: number;
   lemmaText: string;
-  lemmaBuckwalter: string | null;
   rootId: number | null;
   rootText: string | null;
-  rootBuckwalter: string | null;
-  dominantType: TypeSummaryDto;
-  otherTypesCount: number;
   occurrencesCount: number;
   ayahsCount: number;
   surahsCount: number;
   simpleWordsCount: number;
   tashkeelWordsCount: number;
   stemsCount: number;
-  firstVerseKey: string;
 }
 
 export interface LemmaSummaryDto extends LemmaListItemDto {
@@ -125,6 +118,7 @@ export interface LemmasPanelState {
   view: LemmaView;
   wordView: LemmaWordView;
   surahView: LemmaSurahView;
+  ayahTypeCode: string | null;
   detailPage: number;
   ayahs: PagedResultDto<LemmaAyahMatchDto> | null;
   words: PagedResultDto<LemmaWordItemDto> | null;
@@ -148,6 +142,7 @@ export const LEMMAS_QUERY_KEYS = {
   wordView: 'wordView',
   surahView: 'surahView',
   detailPage: 'detailPage',
+  typeCode: 'typeCode',
 } as const;
 
 export const LEMMAS_SELECTION_QUERY_KEYS: readonly string[] = [
@@ -156,6 +151,7 @@ export const LEMMAS_SELECTION_QUERY_KEYS: readonly string[] = [
   LEMMAS_QUERY_KEYS.wordView,
   LEMMAS_QUERY_KEYS.surahView,
   LEMMAS_QUERY_KEYS.detailPage,
+  LEMMAS_QUERY_KEYS.typeCode,
 ] as const;
 
 export const DEFAULT_LEMMA_SORT: LemmaSort = 'mushaf-order';
@@ -203,4 +199,5 @@ export interface ParsedLemmasQuery {
   wordView: LemmaWordView;
   surahView: LemmaSurahView;
   detailPage: number;
+  typeCode: string | null;
 }

@@ -4,13 +4,11 @@ import { TestBed } from '@angular/core/testing';
 import { LemmaWordsListComponent } from './lemma-words-list.component';
 import { LemmaWordItemDto } from '../../models/lemmas.models';
 
-function wordItem(uniqueWordId: number, kind: 'simple' | 'tashkeel'): LemmaWordItemDto {
+function wordItem(uniqueWordId: number): LemmaWordItemDto {
   return {
     uniqueWordId,
-    kind,
-    displayTextUthmani: `كلمة-${uniqueWordId}`,
+    displayText: `كلمة-${uniqueWordId}`,
     occurrencesCount: 2,
-    firstVerseKey: '1:1',
   };
 }
 
@@ -28,9 +26,10 @@ describe('LemmaWordsListComponent', () => {
       page: 1,
       pageSize: 100,
       totalCount: 1,
-      items: [wordItem(uniqueWordId, wordView)],
+      items: [wordItem(uniqueWordId)],
     });
     fixture.componentRef.setInput('currentPage', 1);
+    fixture.componentRef.setInput('kind', wordView);
     fixture.detectChanges();
 
     const link = fixture.nativeElement.querySelector('[data-testid="lemma-word-link"]') as HTMLAnchorElement;
@@ -52,9 +51,10 @@ describe('LemmaWordsListComponent', () => {
       page: 1,
       pageSize: 100,
       totalCount: 1,
-      items: [wordItem(1, 'simple')],
+      items: [wordItem(1)],
     });
     fixture.componentRef.setInput('currentPage', 1);
+    fixture.componentRef.setInput('kind', 'simple');
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector('[role="tablist"]')).toBeNull();
@@ -70,9 +70,10 @@ describe('LemmaWordsListComponent', () => {
       page: 1,
       pageSize: 1,
       totalCount: 2,
-      items: [wordItem(1003, 'simple')],
+      items: [wordItem(1003)],
     });
     fixture.componentRef.setInput('currentPage', 1);
+    fixture.componentRef.setInput('kind', 'simple');
     fixture.detectChanges();
 
     const link = fixture.nativeElement.querySelector('[data-testid="lemma-word-link"]') as HTMLAnchorElement;

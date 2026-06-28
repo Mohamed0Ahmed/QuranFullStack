@@ -12,7 +12,6 @@ const PAGE: PagedResultDto<UniqueWordAyahMatchDto> = {
     {
       ayahId: 7001,
       verseKey: '4:57',
-      surahNumber: 4,
       surahNameArabic: 'النساء',
       ayahNumber: 57,
       pageNumber: 92,
@@ -20,7 +19,6 @@ const PAGE: PagedResultDto<UniqueWordAyahMatchDto> = {
       words: [
         {
           quranWordId: 9001,
-          wordNumber: 1,
           textUthmani: 'كلمة-تجريبية-١',
           isAyahMarker: false,
         },

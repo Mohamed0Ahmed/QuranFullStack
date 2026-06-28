@@ -18,7 +18,11 @@ import {
   LEMMAS_COLUMN_COUNT_LABELS,
   LEMMAS_COLUMN_HEADERS,
   LEMMAS_LOADING_LABEL,
+  LEMMAS_ROOT_MISSING_ARIA,
   LEMMAS_ROOT_MISSING_LABEL,
+  LEMMAS_ROOT_LINK_PREFIX,
+  LEMMAS_TABLE_BODY_LABEL,
+  LEMMAS_TABLE_LABEL,
 } from '../../models/lemmas.labels';
 import {
   LEMMAS_LIST_PAGE_SIZE,
@@ -31,7 +35,6 @@ import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-displ
 import { syncTableScrollbarGutter } from '../../utils/table-scrollbar-gutter-sync';
 import { deepLinkToHref } from '../../../../shared/url/deep-link-href';
 import { buildRootsDeepLink } from '../../state/roots-url-sync';
-import { lemmasAdditionalTypesAria } from '../../models/lemmas.labels';
 
 import { QD_BP_TABLET_MAX_QUERY } from '../../../../shared/layout/breakpoints';
 
@@ -49,8 +52,8 @@ export interface LemmaCountOpenedEvent {
 /**
  * Lemmas Explorer nine-column catalogue grid (Feature 016, US1). Sibling of
  * `RootsTableComponent`. Columns: row number, lemma text, owned root (safe
- * new-tab anchor or a non-interactive dash when `rootId` is null), dominant type
- * (controlled POS label with an additional-type indicator), and six count chips.
+ * new-tab anchor or a non-interactive dash when `rootId` is null), and six count
+ * chips.
  *
  * Technical lemma/root IDs are navigation fields and are never rendered as
  * visible labels. The owned-root anchor opens the Roots Explorer in a new tab
@@ -85,6 +88,10 @@ export class LemmasTableComponent {
     return LEMMAS_COLUMN_COUNT_LABELS;
   }
   protected readonly loadingLabel = LEMMAS_LOADING_LABEL;
+  protected readonly tableLabel = LEMMAS_TABLE_LABEL;
+  protected readonly tableBodyLabel = LEMMAS_TABLE_BODY_LABEL;
+  protected readonly rootLinkPrefix = LEMMAS_ROOT_LINK_PREFIX;
+  protected readonly rootMissingAria = LEMMAS_ROOT_MISSING_ARIA;
   protected readonly rootMissingLabel = LEMMAS_ROOT_MISSING_LABEL;
   protected readonly loadingRowPlaceholders = Array.from({ length: 12 });
   protected readonly rowHeight = signal(ROW_HEIGHT_DESKTOP);
@@ -148,10 +155,6 @@ export class LemmasTableComponent {
     return deepLinkToHref(
       buildRootsDeepLink({ rootId, view: 'words', wordView: 'simple' }),
     );
-  }
-
-  protected additionalTypesAria(count: number): string {
-    return lemmasAdditionalTypesAria(count);
   }
 
   scrollToTop(): void {

@@ -4,7 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { RootStemsListComponent } from './root-stems-list.component';
 
 describe('RootStemsListComponent US5', () => {
-  it('renders stems as non-interactive items with counts', async () => {
+  it('renders stems as anchors with counts', async () => {
     await TestBed.configureTestingModule({
       imports: [RootStemsListComponent],
     }).compileComponents();
@@ -16,9 +16,12 @@ describe('RootStemsListComponent US5', () => {
     fixture.detectChanges();
 
     const root = fixture.nativeElement as HTMLElement;
-    expect(root.querySelector('[data-testid="root-stem-item"]')).toBeTruthy();
-    expect(root.querySelector('button')).toBeNull();
-    expect(root.querySelector('a')).toBeNull();
+    const link = root.querySelector('[data-testid="root-stem-item"]') as HTMLAnchorElement | null;
+    expect(link).toBeTruthy();
+    expect(link?.tagName).toBe('A');
+    expect(link?.getAttribute('href')).toContain('/dashboard/words/stems?stem=200');
+    expect(link?.getAttribute('target')).toBe('_blank');
+    expect(link?.getAttribute('rel')).toBe('noopener noreferrer');
     expect(root.textContent).toContain('2');
   });
 });

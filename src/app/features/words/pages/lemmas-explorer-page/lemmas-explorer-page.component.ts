@@ -4,6 +4,7 @@ import {
   Component,
   OnDestroy,
   OnInit,
+  effect,
   computed,
   inject,
   signal,
@@ -12,11 +13,11 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription, Subject, debounceTime } from 'rxjs';
 
 import { AyahMatchesListComponent } from '../../components/ayah-matches-list/ayah-matches-list.component';
+import { LemmaAyahTypeFiltersComponent } from '../../components/lemma-ayah-type-filters/lemma-ayah-type-filters.component';
 import { LemmaDetailsPanelComponent } from '../../components/lemma-details-panel/lemma-details-panel.component';
 import { LemmaStemsListComponent } from '../../components/lemma-stems-list/lemma-stems-list.component';
 import { LemmaWordsListComponent } from '../../components/lemma-words-list/lemma-words-list.component';
 import { MissingSurahsListComponent } from '../../components/missing-surahs-list/missing-surahs-list.component';
-import { TypeDistributionListComponent } from '../../components/type-distribution-list/type-distribution-list.component';
 import { SurahOccurrencesListComponent } from '../../components/surah-occurrences-list/surah-occurrences-list.component';
 import {
   LemmaCountOpenedEvent,
@@ -30,16 +31,20 @@ import {
   LEMMAS_NO_RESULTS_LABEL,
   LEMMAS_NOT_FOUND_LABEL,
   LEMMAS_PAGE_TITLE,
+  LEMMAS_LIST_PAGINATION_LABEL,
+  LEMMAS_PANEL_SURFACE_LABEL,
   LEMMAS_SEARCH_LABEL,
   LEMMAS_SEARCH_PLACEHOLDER,
   LEMMAS_SORT_LABELS,
+  LEMMAS_SURAHS_TABLIST_LABEL,
   LEMMAS_SURAHS_VIEW_LABELS,
+  LEMMAS_TABLE_LABEL,
+  LEMMAS_WORDS_TABLIST_LABEL,
   LEMMAS_WORD_VIEW_LABELS,
 } from '../../models/lemmas.labels';
 import {
   DEFAULT_LEMMA_VIEW,
   LEMMA_DETAIL_PAGE_SIZE,
-  LemmaAyahMatchDto,
   LemmaListItemViewModel,
   LemmaWordItemDto,
   LemmaSort,
@@ -49,6 +54,7 @@ import {
   PagedResultDto,
   LEMMAS_QUERY_KEYS,
 } from '../../models/lemmas.models';
+import { AyahMatchDto, PagedResultDto as SharedPagedResultDto } from '../../models/unique-words.models';
 import { LemmasDetailFacade } from '../../state/lemmas-detail.facade';
 import { LemmasExplorerFacade } from '../../state/lemmas-explorer.facade';
 import {
@@ -56,6 +62,7 @@ import {
   buildLemmasQueryParams,
 } from '../../state/lemmas-url-sync';
 import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
+import { mapLemmaAyahMatchToShared } from '../../utils/lemma-ayah-match.mapper';
 
 @Component({
   selector: 'qd-lemmas-explorer-page',
@@ -63,13 +70,13 @@ import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
   imports: [
     NgTemplateOutlet,
     AyahMatchesListComponent,
+    LemmaAyahTypeFiltersComponent,
     LemmaDetailsPanelComponent,
     LemmaStemsListComponent,
     LemmaWordsListComponent,
     LemmasTableComponent,
     MissingSurahsListComponent,
     PaginationComponent,
-    TypeDistributionListComponent,
     SurahOccurrencesListComponent,
   ],
   templateUrl: './lemmas-explorer-page.component.html',
@@ -90,6 +97,11 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly searchLabel = LEMMAS_SEARCH_LABEL;
   protected readonly searchPlaceholder = LEMMAS_SEARCH_PLACEHOLDER;
   protected readonly panelLoadingLabel = LEMMAS_LOADING_LABEL;
+  protected readonly tableSectionLabel = LEMMAS_TABLE_LABEL;
+  protected readonly listPaginationLabel = LEMMAS_LIST_PAGINATION_LABEL;
+  protected readonly panelSurfaceLabel = LEMMAS_PANEL_SURFACE_LABEL;
+  protected readonly wordsTablistLabel = LEMMAS_WORDS_TABLIST_LABEL;
+  protected readonly surahsTablistLabel = LEMMAS_SURAHS_TABLIST_LABEL;
 
   protected get sortLabels() {
     return LEMMAS_SORT_LABELS;
@@ -110,7 +122,7 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
     return LEMMAS_SURAHS_VIEW_LABELS;
   }
 
-  protected readonly emptyAyahsPage: PagedResultDto<LemmaAyahMatchDto> = {
+  protected readonly emptyAyahsPage: SharedPagedResultDto<AyahMatchDto> = {
     page: 1,
     pageSize: LEMMA_DETAIL_PAGE_SIZE,
     totalCount: 0,
@@ -139,6 +151,38 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
     () => this.panelState().selectedLemmaId === null,
   );
   protected readonly defaultView: LemmaView = DEFAULT_LEMMA_VIEW;
+
+  constructor() {
+    effect(() => {
+      const state = this.panelState();
+      const typeCode = state.ayahTypeCode;
+      const summary = state.summary;
+
+      if (state.selectedLemmaId === null || state.view !== 'ayahs' || typeCode === null || summary === null) {
+        return;
+      }
+
+      if (summary.typeDistribution.some((item) => item.code === typeCode)) {
+        return;
+      }
+
+      this.detailFacade.setAyahTypeCode(null);
+      this.updateQueryParams(buildLemmasQueryParams({ typeCode: null, detailPage: 1 }));
+    });
+  }
+
+  protected readonly ayahsPageForView = computed((): SharedPagedResultDto<AyahMatchDto> => {
+    const page = this.panelState().ayahs;
+
+    if (!page) {
+      return this.emptyAyahsPage;
+    }
+
+    return {
+      ...page,
+      items: page.items.map(mapLemmaAyahMatchToShared),
+    };
+  });
 
   ngOnInit(): void {
     this.listFacade.bindToRoute(this.route);
@@ -200,6 +244,7 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
         wordView: 'simple',
         surahView: null,
         detailPage: 1,
+        typeCode: null,
       }),
     );
   }
@@ -216,6 +261,7 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
         detailPage: this.detailPageForView(view),
         wordView: wordView ?? null,
         surahView: surahView ?? null,
+        typeCode: null,
       }),
     );
   }
@@ -228,6 +274,27 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
         detailPage: this.detailPageForView(view),
         wordView: view === 'words' ? 'simple' : null,
         surahView: view === 'surahs' ? 'mentioned' : null,
+        typeCode: null,
+      }),
+    );
+  }
+
+  protected onAyahTypeChange(typeCode: string | null): void {
+    const current = this.panelState();
+    if (current.selectedLemmaId === null || current.view !== 'ayahs') {
+      return;
+    }
+
+    if (current.ayahTypeCode === typeCode && current.detailPage === 1) {
+      return;
+    }
+
+    this.detailFacade.setAyahTypeCode(typeCode);
+    this.updateQueryParams(
+      buildLemmasQueryParams({
+        view: 'ayahs',
+        detailPage: 1,
+        typeCode,
       }),
     );
   }

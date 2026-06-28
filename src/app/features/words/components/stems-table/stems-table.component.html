@@ -1,4 +1,4 @@
-<div class="stems-table" role="table" aria-label="جدول الأصول الصرفية">
+<div class="stems-table" role="table" [attr.aria-label]="tableLabel">
   <div class="stems-table__header" role="rowgroup">
     <div class="stems-table__header-row" role="row">
       <div class="stems-table__header-cell stems-table__header-cell--row-number" role="columnheader">
@@ -31,7 +31,7 @@
     <div
       class="stems-table__body stems-table__body--loading"
       role="rowgroup"
-      aria-label="قائمة الأصول الصرفية"
+      [attr.aria-label]="tableBodyLabel"
       aria-busy="true"
       data-testid="stems-table-loading"
     >
@@ -73,7 +73,7 @@
       [minBufferPx]="rowHeight() * 4"
       [maxBufferPx]="rowHeight() * 8"
       role="rowgroup"
-      aria-label="قائمة الأصول الصرفية"
+      [attr.aria-label]="tableBodyLabel"
     >
       <div
         *cdkVirtualFor="let row of rows(); let index = index; trackBy: trackRowById"
@@ -87,7 +87,7 @@
       </div>
     </cdk-virtual-scroll-viewport>
   } @else {
-    <div class="stems-table__body" role="rowgroup" aria-label="قائمة الأصول الصرفية">
+    <div class="stems-table__body" role="rowgroup" [attr.aria-label]="tableBodyLabel">
       @for (row of rows(); track row.id; let index = $index) {
         <div
           class="stems-table__row"
@@ -185,7 +185,7 @@
         [href]="lemmaHref(row.lemmaId)"
         target="_blank"
         rel="noopener noreferrer"
-        [attr.aria-label]="'الصيغة المعجمية: ' + row.lemmaText"
+        [attr.aria-label]="lemmaLinkPrefix + ' ' + row.lemmaText"
       >
         <span class="stems-table__relation-text">{{ row.lemmaText }}</span>
       </a>
@@ -205,7 +205,7 @@
         [href]="rootHref(row.rootId)"
         target="_blank"
         rel="noopener noreferrer"
-        [attr.aria-label]="'الجذر: ' + row.rootText"
+        [attr.aria-label]="rootLinkPrefix + ' ' + row.rootText"
       >
         <span class="stems-table__relation-text">{{ row.rootText }}</span>
       </a>

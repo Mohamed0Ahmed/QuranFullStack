@@ -6,7 +6,6 @@ import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angul
 import { BehaviorSubject, of, Subject, throwError } from 'rxjs';
 
 import { ApiResponse } from '../../../../core/data-access/api-response.model';
-import { deepLinkToHref } from '../../../../shared/url/deep-link-href';
 import { LEMMAS_COLUMN_HEADERS } from '../../models/lemmas.labels';
 import {
   LEMMA_DETAIL_PAGE_SIZE,
@@ -24,7 +23,6 @@ import {
 import { LemmasApi } from '../../data-access/lemmas.api';
 import { LemmasDetailFacade } from '../../state/lemmas-detail.facade';
 import { LemmasExplorerFacade } from '../../state/lemmas-explorer.facade';
-import { buildStemsDeepLink } from '../../state/stems-url-sync';
 import { LemmasExplorerPageComponent } from './lemmas-explorer-page.component';
 
 function listRow(id: number, overrides: Partial<LemmaListItemViewModel> = {}): LemmaListItemViewModel {
@@ -32,29 +30,43 @@ function listRow(id: number, overrides: Partial<LemmaListItemViewModel> = {}): L
     id,
     lemmaText: `صيغة-${id}`,
     displayText: `صيغة-${id}`,
-    lemmaBuckwalter: null,
     rootId: 700,
     rootText: 'ك ل م',
-    rootBuckwalter: null,
-    dominantType: {
-      code: 'N',
-      arabicLabel: 'اسم',
-      englishLabel: 'Noun',
-      occurrencesCount: 5,
-      firstSurahNumber: 1,
-      firstAyahNumber: 1,
-      firstWordNumber: 1,
-    },
-    otherTypesCount: 0,
     occurrencesCount: 5,
     ayahsCount: 3,
     surahsCount: 2,
     simpleWordsCount: 2,
     tashkeelWordsCount: 2,
     stemsCount: 1,
-    firstVerseKey: '1:1',
     ...overrides,
   };
+}
+
+function typeSummary() {
+  return {
+    code: 'N',
+    arabicLabel: 'اسم',
+    englishLabel: 'Noun',
+    occurrencesCount: 5,
+    firstSurahNumber: 1,
+    firstAyahNumber: 1,
+    firstWordNumber: 1,
+  };
+}
+
+function multiTypeSummary() {
+  return [
+    typeSummary(),
+    {
+      code: 'V',
+      arabicLabel: 'فعل',
+      englishLabel: 'Verb',
+      occurrencesCount: 2,
+      firstSurahNumber: 1,
+      firstAyahNumber: 2,
+      firstWordNumber: 1,
+    },
+  ];
 }
 
 function successListResponse() {
@@ -70,17 +82,16 @@ function ayahMatch(): LemmaAyahMatchDto {
   return {
     ayahId: 7001,
     verseKey: '4:57',
-    surahNumber: 4,
     surahNameArabic: 'النساء',
-    ayahNumber: 57,
     pageNumber: 92,
-    matchedQuranWordIds: [9001],
     words: [
       {
-        quranWordId: 9001,
-        wordNumber: 1,
         textUthmani: 'كلمة-تجريبية-١',
-        isAyahMarker: false,
+        isMatched: true,
+      },
+      {
+        textUthmani: 'كلمة-تجريبية-٢',
+        isMatched: false,
       },
     ],
   };
@@ -103,10 +114,8 @@ function successAyahsResponse() {
 function wordItem(uniqueWordId: number, kind: LemmaWordView): LemmaWordItemDto {
   return {
     uniqueWordId,
-    kind,
-    displayTextUthmani: `كلمة-${uniqueWordId}`,
+    displayText: `كلمة-${uniqueWordId}`,
     occurrencesCount: 2,
-    firstVerseKey: '1:1',
   };
 }
 
@@ -122,23 +131,6 @@ function successWordsResponse(kind: LemmaWordView) {
     message: null,
     errors: null,
   });
-}
-
-function relatedStemsResponse(): ApiResponse<LemmaStemsDto> {
-  return {
-    isSuccess: true,
-    data: {
-      id: 500,
-      lemmaText: 'صيغة-500',
-      stemsCount: 2,
-      stems: [
-        { stemId: 600, stemText: 'كَلَّمَ', occurrencesCount: 11 },
-        { stemId: 602, stemText: 'عَلِمَ', occurrencesCount: 3 },
-      ],
-    },
-    message: null,
-    errors: null,
-  };
 }
 
 describe('LemmasExplorerPageComponent US1', () => {
@@ -163,7 +155,7 @@ describe('LemmasExplorerPageComponent US1', () => {
       getLemmaSummary: vi.fn().mockReturnValue(
         of<ApiResponse<LemmaSummaryDto>>({
           isSuccess: true,
-          data: { ...listRow(500), typeDistribution: [listRow(500).dominantType] },
+          data: { ...listRow(500), typeDistribution: [typeSummary()] },
           message: null,
           errors: null,
         }),
@@ -229,7 +221,7 @@ describe('LemmasExplorerPageComponent US1', () => {
     );
     expect(headers).toContain(LEMMAS_COLUMN_HEADERS.lemma);
     expect(headers).toContain(LEMMAS_COLUMN_HEADERS.root);
-    expect(headers).toContain(LEMMAS_COLUMN_HEADERS.type);
+    expect(headers).toContain(LEMMAS_COLUMN_HEADERS.occurrences);
     expect(headers).toContain(LEMMAS_COLUMN_HEADERS.stems);
   });
 
@@ -253,15 +245,68 @@ describe('LemmasExplorerPageComponent US1', () => {
     const root = fixture.nativeElement as HTMLElement;
 
     expect(lemmasApi.getLemmaSummary).toHaveBeenCalledWith(500);
-    expect(lemmasApi.getLemmaAyahMatches).toHaveBeenCalledWith(500, 1, LEMMA_DETAIL_PAGE_SIZE);
+    expect(lemmasApi.getLemmaAyahMatches).toHaveBeenCalledWith(500, 1, LEMMA_DETAIL_PAGE_SIZE, null);
     expect(lemmasApi.getLemmaWords).not.toHaveBeenCalled();
     expect(lemmasApi.getLemmaMentionedSurahs).not.toHaveBeenCalled();
     expect(lemmasApi.getLemmaMissingSurahs).not.toHaveBeenCalled();
     expect(lemmasApi.getLemmaStems).not.toHaveBeenCalled();
 
+    expect(root.querySelector('[data-testid="lemma-ayah-type-filters"]')).toBeTruthy();
+    expect(root.querySelector('[data-testid="lemma-ayah-type-filter-all"]')).toBeNull();
+    expect(root.querySelector('[data-testid="lemma-ayah-type-filter-N"]')?.getAttribute('aria-pressed')).toBe('true');
     expect(root.querySelector('qd-ayah-matches-list')).toBeTruthy();
     expect(root.querySelector('[data-testid="lemmas-ayahs-view"]')).toBeTruthy();
     expect(root.querySelectorAll('.ayah-matches-list__card')).toHaveLength(1);
+    expect(root.querySelectorAll('.highlighted-ayah__word--matched')).toHaveLength(1);
+    expect((root.querySelector('[data-testid="ayah-matches-open-mushaf"]') as HTMLAnchorElement).getAttribute('href')).toContain('page=92');
+  });
+
+  it('updates URL with typeCode and resets detail page when a type filter is selected', async () => {
+    lemmasApi.getLemmaAyahMatches.mockReturnValue(successAyahsResponse());
+    queryParamMap$.next(convertToParamMap({ lemma: '500', view: 'ayahs', detailPage: '1' }));
+
+    const fixture = await initLifecycle();
+    vi.mocked(router.navigate).mockClear();
+
+    (fixture.nativeElement.querySelector('[data-testid="lemma-ayah-type-filter-N"]') as HTMLButtonElement).click();
+
+    expect(router.navigate).toHaveBeenCalledWith([], {
+      relativeTo: expect.anything(),
+      queryParams: expect.objectContaining({
+        [LEMMAS_QUERY_KEYS.view]: 'ayahs',
+        [LEMMAS_QUERY_KEYS.detailPage]: '1',
+        [LEMMAS_QUERY_KEYS.typeCode]: 'N',
+      }),
+      queryParamsHandling: 'merge',
+    });
+  });
+
+  it('clears typeCode when عرض الكل is selected', async () => {
+    lemmasApi.getLemmaSummary.mockReturnValue(
+      of<ApiResponse<LemmaSummaryDto>>({
+        isSuccess: true,
+        data: { ...listRow(500), typeDistribution: multiTypeSummary() },
+        message: null,
+        errors: null,
+      }),
+    );
+    lemmasApi.getLemmaAyahMatches.mockReturnValue(successAyahsResponse());
+    queryParamMap$.next(convertToParamMap({ lemma: '500', view: 'ayahs', detailPage: '1', typeCode: 'N' }));
+
+    const fixture = await initLifecycle();
+    vi.mocked(router.navigate).mockClear();
+
+    (fixture.nativeElement.querySelector('[data-testid="lemma-ayah-type-filter-all"]') as HTMLButtonElement).click();
+
+    expect(router.navigate).toHaveBeenCalledWith([], {
+      relativeTo: expect.anything(),
+      queryParams: expect.objectContaining({
+        [LEMMAS_QUERY_KEYS.view]: 'ayahs',
+        [LEMMAS_QUERY_KEYS.detailPage]: '1',
+        [LEMMAS_QUERY_KEYS.typeCode]: null,
+      }),
+      queryParamsHandling: 'merge',
+    });
   });
 
   it('loads only the word detail endpoint and renders the simple/tashkeel list when view=words', async () => {
@@ -283,7 +328,7 @@ describe('LemmasExplorerPageComponent US1', () => {
     expect(root.querySelectorAll('[data-testid="lemma-word-link"]')).toHaveLength(1);
   });
 
-  it('loads related stems for view=stems and keeps the type distribution visible while the related list loads', async () => {
+  it('loads related stems for view=stems without rendering Lemmas ayah type filters', async () => {
     const pendingStems$ = new Subject<ApiResponse<LemmaStemsDto>>();
     lemmasApi.getLemmaStems.mockReturnValue(pendingStems$.asObservable());
     queryParamMap$.next(convertToParamMap({ lemma: '500', view: 'stems' }));
@@ -294,29 +339,9 @@ describe('LemmasExplorerPageComponent US1', () => {
     expect(lemmasApi.getLemmaSummary).toHaveBeenCalledWith(500);
     expect(lemmasApi.getLemmaStems).toHaveBeenCalledWith(500);
     expect(TestBed.inject(LemmasDetailFacade).status()).toBe('loading');
-    expect(root.querySelector('[data-testid="type-distribution-dominant"]')).toBeTruthy();
-    expect(root.querySelectorAll('.type-distribution-list__row--loading')).toHaveLength(0);
+    expect(root.querySelector('[data-testid="lemma-ayah-type-filters"]')).toBeNull();
+    expect(root.querySelector('[data-testid="type-distribution-list"]')).toBeNull();
     expect(root.querySelector('[data-testid="lemma-stems-list-loading"]')).toBeTruthy();
-
-    pendingStems$.next(relatedStemsResponse());
-    pendingStems$.complete();
-    await fixture.whenStable();
-    fixture.detectChanges();
-
-    const links = root.querySelectorAll('[data-testid="lemma-stems-list-link"]');
-    expect(links).toHaveLength(2);
-    expect((links[0] as HTMLAnchorElement).getAttribute('href')).toBe(
-      deepLinkToHref(buildStemsDeepLink({ stemId: 600, view: 'words', wordView: 'simple' })),
-    );
-    expect((links[0] as HTMLAnchorElement).target).toBe('_blank');
-    expect((links[0] as HTMLAnchorElement).rel).toBe('noopener noreferrer');
-    expect((links[1] as HTMLAnchorElement).getAttribute('href')).toBe(
-      deepLinkToHref(buildStemsDeepLink({ stemId: 602, view: 'words', wordView: 'simple' })),
-    );
-    expect(Array.from(root.querySelectorAll('.lemma-stems-list__count')).map((el) => el.textContent?.trim())).toEqual([
-      '11',
-      '3',
-    ]);
   });
 
   it('maps row selection to the default words/simple detail state', async () => {
@@ -470,7 +495,7 @@ describe('LemmasExplorerPageComponent US5', () => {
       getLemmaSummary: vi.fn().mockReturnValue(
         of<ApiResponse<LemmaSummaryDto>>({
           isSuccess: true,
-          data: { ...listRow(500), typeDistribution: [listRow(500).dominantType] },
+          data: { ...listRow(500), typeDistribution: [typeSummary()] },
           message: null,
           errors: null,
         }),
@@ -481,9 +506,6 @@ describe('LemmasExplorerPageComponent US5', () => {
         of<ApiResponse<LemmaSurahsDto>>({
           isSuccess: true,
           data: {
-            id: 500,
-            lemmaText: 'صيغة-500',
-            surahsCount: 1,
             surahs: [{ surahNumber: 1, nameArabic: 'سورة-اختبار', occurrencesInSurah: 2 }],
           },
           message: null,
@@ -493,7 +515,7 @@ describe('LemmasExplorerPageComponent US5', () => {
       getLemmaMissingSurahs: vi.fn().mockReturnValue(
         of<ApiResponse<LemmaMissingSurahsDto>>({
           isSuccess: true,
-          data: { id: 500, lemmaText: 'صيغة-500', missingSurahsCount: 0, surahs: [] },
+          data: { surahs: [] },
           message: null,
           errors: null,
         }),
@@ -639,7 +661,7 @@ describe('LemmasExplorerPageComponent US8 — restore and navigate exact state',
       getLemmaSummary: vi.fn().mockReturnValue(
         of<ApiResponse<LemmaSummaryDto>>({
           isSuccess: true,
-          data: { ...listRow(500), typeDistribution: [listRow(500).dominantType] },
+          data: { ...listRow(500), typeDistribution: [typeSummary()] },
           message: null,
           errors: null,
         }),
@@ -860,7 +882,36 @@ describe('LemmasExplorerPageComponent US8 — restore and navigate exact state',
 
     expect(detailFacade.selectedLemmaId()).toBe(500);
     expect(detailFacade.view()).toBe('ayahs');
-    expect(lemmasApi.getLemmaAyahMatches).toHaveBeenCalledWith(500, 1, LEMMA_DETAIL_PAGE_SIZE);
+    expect(lemmasApi.getLemmaAyahMatches).toHaveBeenCalledWith(500, 1, LEMMA_DETAIL_PAGE_SIZE, null);
+  });
+
+  it('clears stale typeCode after summary loads', async () => {
+    lemmasApi.getLemmaSummary.mockReturnValue(
+      of<ApiResponse<LemmaSummaryDto>>({
+        isSuccess: true,
+        data: { ...listRow(500), typeDistribution: [typeSummary()] },
+        message: null,
+        errors: null,
+      }),
+    );
+    lemmasApi.getLemmaAyahMatches.mockReturnValue(successAyahsResponse());
+
+    queryParamMap$.next(convertToParamMap({ lemma: '500', view: 'ayahs', typeCode: 'V', detailPage: '1' }));
+    const fixture = await initLifecycle();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(TestBed.inject(LemmasDetailFacade).panelState().ayahTypeCode).toBeNull();
+    expect(router.navigate).toHaveBeenCalledWith([], {
+      relativeTo: expect.anything(),
+      queryParams: expect.objectContaining({
+        [LEMMAS_QUERY_KEYS.typeCode]: null,
+        [LEMMAS_QUERY_KEYS.detailPage]: '1',
+      }),
+      queryParamsHandling: 'merge',
+    });
+    expect(fixture.nativeElement.querySelector('[data-testid="lemma-ayah-type-filter-all"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="lemma-ayah-type-filter-N"]')?.getAttribute('aria-pressed')).toBe('true');
   });
 
   it('maps a summary HTTP 404 to restored-not-found without surfacing a generic error', async () => {

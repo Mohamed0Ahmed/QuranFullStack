@@ -173,7 +173,7 @@ export class UniqueWordsFacade {
     }
 
     const data = response.data;
-    const nextRows = mapUniqueWordListItems(data.items, this._mode());
+    const nextRows = mapUniqueWordListItems(data.items);
 
     this._items.set(nextRows);
     this._loadedPage.set(data.page);

@@ -3,6 +3,13 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 import { deepLinkToHref } from '../../../../shared/url/deep-link-href';
 import { buildStemsDeepLink } from '../../state/stems-url-sync';
 import { LemmaStemItemDto } from '../../models/lemmas.models';
+import {
+  LEMMAS_STEMS_LIST_EMPTY_LABEL,
+  LEMMAS_STEMS_LIST_LABEL,
+  LEMMAS_STEMS_LIST_LOADING_LABEL,
+  LEMMAS_STEM_TEXT_HEADER,
+  LEMMAS_WORD_OCCURRENCES_HEADER,
+} from '../../models/lemmas.labels';
 import { ROW_NUMBER_HEADER } from '../../models/unique-words.labels';
 
 interface LemmaStemRow {
@@ -22,10 +29,11 @@ export class LemmaStemsListComponent {
   readonly loading = input(false);
 
   protected readonly rowNumberHeader = ROW_NUMBER_HEADER;
-  protected readonly stemTextHeader = 'الأصل الصرفي';
-  protected readonly occurrencesHeader = 'عدد مرات الظهور';
-  protected readonly loadingLabel = 'جارٍ تحميل الأصول الصرفية المرتبطة…';
-  protected readonly emptyLabel = 'لا توجد أصول صرفية مرتبطة';
+  protected readonly stemTextHeader = LEMMAS_STEM_TEXT_HEADER;
+  protected readonly occurrencesHeader = LEMMAS_WORD_OCCURRENCES_HEADER;
+  protected readonly listLabel = LEMMAS_STEMS_LIST_LABEL;
+  protected readonly loadingLabel = LEMMAS_STEMS_LIST_LOADING_LABEL;
+  protected readonly emptyLabel = LEMMAS_STEMS_LIST_EMPTY_LABEL;
 
   protected readonly rows = computed<readonly LemmaStemRow[]>(() =>
     this.stems().map((stem) => ({

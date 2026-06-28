@@ -16,7 +16,6 @@ function row(id: number, overrides: Partial<RootListItemViewModel> = {}): RootLi
     tashkeelWordsCount: id + 2,
     lemmasCount: id + 3,
     stemsCount: id + 4,
-    firstVerseKey: '1:1',
     ...overrides,
   };
 }
@@ -81,7 +80,7 @@ describe('RootsTableComponent', () => {
     expect(root.querySelectorAll('qd-word-count-chip')).toHaveLength(14);
   });
 
-  it('gives count chips full semantic accessible names while the grid headers stay short', () => {
+  it('keeps count chip aria names semantic while grid headers stay compact', () => {
     const fixture = setup([row(1)]);
     const root = fixture.nativeElement as HTMLElement;
 

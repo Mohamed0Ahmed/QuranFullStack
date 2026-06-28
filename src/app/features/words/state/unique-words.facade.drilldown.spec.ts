@@ -18,13 +18,15 @@ function word(id: number, overrides: Partial<UniqueWordListItemDto> = {}): Uniqu
   return {
     id,
     kind: 'tashkeel',
-    displayTextUthmani: `كلمة-تجريبية-${id}`,
+    displayText: `كلمة-تجريبية-${id}`,
     occurrencesCount: 3,
     ayahsCount: 2,
     surahsCount: 2,
     missingSurahsCount: 112,
-    firstVerseKey: '1:1',
-    firstLocation: '1:1:1',
+    primaryWordTypeCode: null,
+    primaryWordTypeBroadArabicLabel: null,
+    rootId: null,
+    rootText: null,
     ...overrides,
   };
 }
@@ -63,10 +65,6 @@ describe('UniqueWordsFacade drill-down', () => {
         isSuccess: true,
         message: 'تم',
         data: {
-          id: 1,
-          kind: 'tashkeel',
-          displayTextUthmani: 'كلمة-تجريبية-1',
-          surahsCount: 1,
           surahs: [{ surahNumber: 1, nameArabic: 'سورة-تجريبية', occurrencesInSurah: 2 }],
         },
       } as ApiResponse<UniqueWordSurahsDto>),
@@ -88,10 +86,6 @@ describe('UniqueWordsFacade drill-down', () => {
         isSuccess: true,
         message: 'تم',
         data: {
-          id: 1,
-          kind: 'tashkeel',
-          displayTextUthmani: 'كلمة-تجريبية-1',
-          surahsCount: 1,
           surahs: [{ surahNumber: 1, nameArabic: 'سورة-تجريبية', occurrencesInSurah: 2 }],
         },
       } as ApiResponse<UniqueWordSurahsDto>),
@@ -119,7 +113,7 @@ describe('UniqueWordsFacade drill-down', () => {
         of({
           isSuccess: true,
           message: 'تم',
-          data: { id: 1, kind: 'tashkeel' as const, displayTextUthmani: 'x', surahsCount: 0, surahs: [] },
+          data: { surahs: [] },
         }),
       ),
     });
@@ -180,7 +174,7 @@ describe('UniqueWordsFacade drill-down', () => {
         of({
           isSuccess: true,
           message: 'تم',
-          data: { id: 1, kind: 'tashkeel' as const, displayTextUthmani: 'x', surahsCount: 0, surahs: [] },
+          data: { surahs: [] },
         } as ApiResponse<UniqueWordSurahsDto>),
       )
       .mockReturnValueOnce(
@@ -188,10 +182,6 @@ describe('UniqueWordsFacade drill-down', () => {
           isSuccess: true,
           message: 'تم',
           data: {
-            id: 1,
-            kind: 'tashkeel' as const,
-            displayTextUthmani: 'x',
-            surahsCount: 114,
             surahs: Array.from({ length: 114 }, (_, index) => ({
               surahNumber: index + 1,
               nameArabic: `سورة-${index + 1}`,
@@ -205,10 +195,6 @@ describe('UniqueWordsFacade drill-down', () => {
         isSuccess: true,
         message: 'تم',
         data: {
-          id: 1,
-          kind: 'tashkeel',
-          displayTextUthmani: 'x',
-          missingSurahsCount: 0,
           surahs: [],
         },
       } as ApiResponse<UniqueWordMissingSurahsDto>),
@@ -251,10 +237,6 @@ describe('UniqueWordsFacade drill-down', () => {
         isSuccess: true,
         message: 'تم',
         data: {
-          id: 1,
-          kind: 'tashkeel' as const,
-          displayTextUthmani: 'x',
-          surahsCount: 1,
           surahs: [{ surahNumber: 1, nameArabic: 'سورة-تجريبية', occurrencesInSurah: 1 }],
         },
       } as ApiResponse<UniqueWordSurahsDto>),
@@ -271,12 +253,11 @@ describe('UniqueWordsFacade drill-down', () => {
             {
               ayahId: 11,
               verseKey: '1:1',
-              surahNumber: 1,
               surahNameArabic: 'سورة-تجريبية',
               ayahNumber: 1,
               pageNumber: 1,
               matchedQuranWordIds: [1001],
-              words: [{ quranWordId: 1001, wordNumber: 1, textUthmani: 'كلمة-تجريبية', isAyahMarker: false }],
+              words: [{ quranWordId: 1001, textUthmani: 'كلمة-تجريبية', isAyahMarker: false }],
             },
           ],
         },
@@ -287,10 +268,6 @@ describe('UniqueWordsFacade drill-down', () => {
         isSuccess: true,
         message: 'تم',
         data: {
-          id: 1,
-          kind: 'tashkeel' as const,
-          displayTextUthmani: 'x',
-          missingSurahsCount: 113,
           surahs: Array.from({ length: 113 }, (_, index) => ({
             surahNumber: index + 2,
             nameArabic: `سورة-${index + 2}`,

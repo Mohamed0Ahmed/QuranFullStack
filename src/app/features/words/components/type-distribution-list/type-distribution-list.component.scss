@@ -1,3 +1,5 @@
+@use '../../../../../styles/explorer-detail-lists' as edl;
+
 :host {
   display: block;
 }
@@ -12,15 +14,15 @@
 .type-distribution-list__header,
 .type-distribution-list__row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--qd-space-2);
 }
 
 .type-distribution-list__header {
-  padding-inline: var(--qd-space-1);
-  font-size: 0.75rem;
-  color: var(--qd-text-muted);
+  @include edl.explorer-detail-list-header;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--qd-space-3);
 }
 
 .type-distribution-list {
@@ -41,8 +43,7 @@
   font-family: var(--qd-font-quran, inherit);
 }
 
-.type-distribution-list__count,
-.type-distribution-list__dominant {
+.type-distribution-list__count {
   justify-self: end;
 }
 
@@ -57,11 +58,6 @@
 
 .type-distribution-list__loading-count {
   inline-size: 2.25rem;
-  block-size: 1.25rem;
-}
-
-.type-distribution-list__loading-dominant {
-  inline-size: 2.75rem;
   block-size: 1.25rem;
 }
 

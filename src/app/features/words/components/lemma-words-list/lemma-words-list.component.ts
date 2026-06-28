@@ -7,8 +7,9 @@ import {
   LEMMAS_OPEN_UNIQUE_WORD_LABEL,
   LEMMAS_WORD_DISPLAY_HEADER,
   LEMMAS_WORD_OCCURRENCES_HEADER,
+  LEMMAS_WORDS_PAGINATION_LABEL,
 } from '../../models/lemmas.labels';
-import { LemmaWordItemDto, PagedResultDto } from '../../models/lemmas.models';
+import { LemmaWordItemDto, LemmaWordView, PagedResultDto } from '../../models/lemmas.models';
 import { ROW_NUMBER_HEADER } from '../../models/unique-words.labels';
 import { buildUniqueWordsDeepLink } from '../../state/unique-words-url-sync';
 import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
@@ -29,6 +30,7 @@ interface LemmaWordRowViewModel {
 export class LemmaWordsListComponent {
   readonly page = input.required<PagedResultDto<LemmaWordItemDto>>();
   readonly currentPage = input.required<number>();
+  readonly kind = input.required<LemmaWordView>();
   readonly loading = input(false);
 
   readonly pageChange = output<number>();
@@ -38,13 +40,14 @@ export class LemmaWordsListComponent {
   protected readonly occurrencesHeader = LEMMAS_WORD_OCCURRENCES_HEADER;
   protected readonly loadingLabel = LEMMAS_LOADING_LABEL;
   protected readonly openUniqueWordLabel = LEMMAS_OPEN_UNIQUE_WORD_LABEL;
+  protected readonly paginationLabel = LEMMAS_WORDS_PAGINATION_LABEL;
   protected readonly loadingRowPlaceholders = Array.from({ length: 8 });
 
   protected readonly rows = computed((): readonly LemmaWordRowViewModel[] =>
     this.page().items.map((item) => ({
       item,
       uniqueWordHref: deepLinkToHref(
-        buildUniqueWordsDeepLink(item.kind, {
+        buildUniqueWordsDeepLink(this.kind(), {
           wordId: item.uniqueWordId,
           view: 'ayahs',
         }),

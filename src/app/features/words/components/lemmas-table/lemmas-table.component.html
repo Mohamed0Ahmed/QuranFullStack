@@ -1,4 +1,4 @@
-<div class="lemmas-table" role="table" aria-label="جدول الصيغ المعجمية">
+<div class="lemmas-table" role="table" [attr.aria-label]="tableLabel">
   <div class="lemmas-table__header" role="rowgroup">
     <div class="lemmas-table__header-row" role="row">
       <div class="lemmas-table__header-cell lemmas-table__header-cell--row-number" role="columnheader">
@@ -6,7 +6,6 @@
       </div>
       <div class="lemmas-table__header-cell" role="columnheader">{{ headers.lemma }}</div>
       <div class="lemmas-table__header-cell" role="columnheader">{{ headers.root }}</div>
-      <div class="lemmas-table__header-cell" role="columnheader">{{ headers.type }}</div>
       <div class="lemmas-table__header-cell lemmas-table__header-cell--numeric" role="columnheader">{{ headers.occurrences }}</div>
       <div class="lemmas-table__header-cell lemmas-table__header-cell--numeric" role="columnheader">{{ headers.ayahs }}</div>
       <div class="lemmas-table__header-cell lemmas-table__header-cell--numeric" role="columnheader">{{ headers.surahs }}</div>
@@ -21,7 +20,7 @@
     <div
       class="lemmas-table__body lemmas-table__body--loading"
       role="rowgroup"
-      aria-label="قائمة الصيغ المعجمية"
+      [attr.aria-label]="tableBodyLabel"
       aria-busy="true"
       data-testid="lemmas-table-loading"
     >
@@ -36,9 +35,6 @@
           </div>
           <div class="lemmas-table__cell lemmas-table__root-cell" role="cell">
             <span class="qd-skeleton qd-skeleton--text lemmas-table__loading-root"></span>
-          </div>
-          <div class="lemmas-table__cell lemmas-table__type-cell" role="cell">
-            <span class="qd-skeleton qd-skeleton--text lemmas-table__loading-type"></span>
           </div>
           @for (i of [0,1,2,3,4,5]; track i) {
             <div class="lemmas-table__cell lemmas-table__chip-cell" role="cell">
@@ -60,7 +56,7 @@
       [minBufferPx]="rowHeight() * 4"
       [maxBufferPx]="rowHeight() * 8"
       role="rowgroup"
-      aria-label="قائمة الصيغ المعجمية"
+      [attr.aria-label]="tableBodyLabel"
     >
       <div
         *cdkVirtualFor="let row of rows(); let index = index; trackBy: trackRowById"
@@ -74,7 +70,7 @@
       </div>
     </cdk-virtual-scroll-viewport>
   } @else {
-    <div class="lemmas-table__body" role="rowgroup" aria-label="قائمة الصيغ المعجمية">
+    <div class="lemmas-table__body" role="rowgroup" [attr.aria-label]="tableBodyLabel">
       @for (row of rows(); track row.id; let index = $index) {
         <div
           class="lemmas-table__row"
@@ -102,17 +98,12 @@
         <span class="lemmas-table__display">{{ row.displayText }}</span>
       </button>
       <div class="lemmas-table__mobile-meta" aria-hidden="true">
-        <ng-container *ngTemplateOutlet="typeCell; context: { row: row }" />
         <ng-container *ngTemplateOutlet="rootCell; context: { row: row }" />
       </div>
     </div>
 
     <div class="lemmas-table__cell lemmas-table__root-cell lemmas-table__root-cell--desktop" role="cell">
       <ng-container *ngTemplateOutlet="rootCell; context: { row: row }" />
-    </div>
-
-    <div class="lemmas-table__cell lemmas-table__type-cell lemmas-table__type-cell--desktop" role="cell">
-      <ng-container *ngTemplateOutlet="typeCell; context: { row: row }" />
     </div>
 
     <div class="lemmas-table__cell lemmas-table__chip-cell" role="cell">
@@ -163,28 +154,14 @@
         [href]="rootHref(row.rootId)"
         target="_blank"
         rel="noopener noreferrer"
-        [attr.aria-label]="'الجذر: ' + row.rootText"
+        [attr.aria-label]="rootLinkPrefix + ' ' + row.rootText"
       >
         <span class="lemmas-table__root-text">{{ row.rootText }}</span>
       </a>
     } @else {
       <span class="lemmas-table__root-missing" data-testid="lemmas-table-root-missing" aria-hidden="true">{{ rootMissingLabel }}</span>
-      <span class="qd-sr-only">لا يوجد جذر مرتبط</span>
+      <span class="qd-sr-only">{{ rootMissingAria }}</span>
     }
-  </ng-template>
-
-  <ng-template #typeCell let-row="row">
-    <div class="lemmas-table__type" data-testid="lemmas-table-type">
-      <span class="lemmas-table__type-label">{{ row.dominantType.arabicLabel }}</span>
-      @if (row.otherTypesCount > 0) {
-        <span
-          class="lemmas-table__type-more qd-badge"
-          data-testid="lemmas-table-additional-types"
-          [attr.aria-label]="additionalTypesAria(row.otherTypesCount)"
-          title="+{{ row.otherTypesCount }}"
-        >+{{ row.otherTypesCount }}</span>
-      }
-    </div>
   </ng-template>
 
   <ng-template #mobileStats let-row="row">

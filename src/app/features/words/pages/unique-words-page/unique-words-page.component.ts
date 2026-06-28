@@ -25,9 +25,12 @@ import { WordDrilldownModalComponent } from '../../components/word-drilldown-mod
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
 import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
 import {
+  ACTIVE_HUB_SECTION,
   EMPTY_LIST_LABEL,
   RESTORED_WORD_NOT_FOUND_LABEL,
   UNIQUE_WORD_KIND_LABELS,
+  UNIQUE_WORD_LIST_PAGINATION_LABEL,
+  UNIQUE_WORD_PANEL_SURFACE_LABEL,
 } from '../../models/unique-words.labels';
 import {
   UniqueWordKind,
@@ -63,6 +66,9 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
   protected readonly drilldownState = this.facade.drilldownState;
   protected readonly emptyLabel = EMPTY_LIST_LABEL;
   protected readonly restoredNotFoundLabel = RESTORED_WORD_NOT_FOUND_LABEL;
+  protected readonly pageTitle = ACTIVE_HUB_SECTION.labelAr;
+  protected readonly listPaginationLabel = UNIQUE_WORD_LIST_PAGINATION_LABEL;
+  protected readonly panelSurfaceLabel = UNIQUE_WORD_PANEL_SURFACE_LABEL;
 
   protected readonly isDesktop = signal(true);
   private desktopQuery?: MediaQueryList;

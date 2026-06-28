@@ -7,6 +7,7 @@ import {
   STEMS_OPEN_UNIQUE_WORD_LABEL,
   STEMS_WORD_DISPLAY_HEADER,
   STEMS_WORD_OCCURRENCES_HEADER,
+  STEMS_WORDS_PAGINATION_LABEL,
 } from '../../models/stems.labels';
 import { StemWordItemDto, PagedResultDto } from '../../models/stems.models';
 import { ROW_NUMBER_HEADER } from '../../models/unique-words.labels';
@@ -38,6 +39,7 @@ export class StemWordsListComponent {
   protected readonly occurrencesHeader = STEMS_WORD_OCCURRENCES_HEADER;
   protected readonly loadingLabel = STEMS_LOADING_LABEL;
   protected readonly openUniqueWordLabel = STEMS_OPEN_UNIQUE_WORD_LABEL;
+  protected readonly paginationLabel = STEMS_WORDS_PAGINATION_LABEL;
   protected readonly loadingRowPlaceholders = Array.from({ length: 8 });
 
   protected readonly rows = computed((): readonly StemWordRowViewModel[] =>

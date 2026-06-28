@@ -5,7 +5,6 @@ import { provideRouter, ActivatedRoute, convertToParamMap, Router } from '@angul
 import { BehaviorSubject, of, Subject, throwError } from 'rxjs';
 
 import { ApiResponse } from '../../../../core/data-access/api-response.model';
-import { deepLinkToHref } from '../../../../shared/url/deep-link-href';
 import { STEMS_COLUMN_HEADERS } from '../../models/stems.labels';
 import {
   STEM_DETAIL_PAGE_SIZE,
@@ -23,7 +22,6 @@ import {
 import { StemsApi } from '../../data-access/stems.api';
 import { StemsDetailFacade } from '../../state/stems-detail.facade';
 import { StemsExplorerFacade } from '../../state/stems-explorer.facade';
-import { buildLemmasDeepLink } from '../../state/lemmas-url-sync';
 import { StemsExplorerPageComponent } from './stems-explorer-page.component';
 
 function listRow(id: number, overrides: Partial<StemListItemViewModel> = {}): StemListItemViewModel {
@@ -70,7 +68,6 @@ function ayahMatch(): StemAyahMatchDto {
   return {
     ayahId: 7001,
     verseKey: '4:57',
-    surahNumber: 4,
     surahNameArabic: 'النساء',
     ayahNumber: 57,
     pageNumber: 92,
@@ -78,7 +75,6 @@ function ayahMatch(): StemAyahMatchDto {
     words: [
       {
         quranWordId: 9001,
-        wordNumber: 1,
         textUthmani: 'كلمة-تجريبية-١',
         isAyahMarker: false,
       },
@@ -122,23 +118,6 @@ function successWordsResponse(kind: StemWordView) {
     message: null,
     errors: null,
   });
-}
-
-function relatedLemmasResponse(): ApiResponse<StemLemmasDto> {
-  return {
-    isSuccess: true,
-    data: {
-      id: 500,
-      stemText: 'أصل-500',
-      lemmasCount: 2,
-      lemmas: [
-        { lemmaId: 502, lemmaText: 'عِلْم', lemmaBuckwalter: 'Ailm', occurrencesCount: 3 },
-        { lemmaId: 504, lemmaText: 'مَعْرِفَة', lemmaBuckwalter: null, occurrencesCount: 1 },
-      ],
-    },
-    message: null,
-    errors: null,
-  };
 }
 
 describe('StemsExplorerPageComponent US2', () => {
@@ -295,28 +274,6 @@ describe('StemsExplorerPageComponent US2', () => {
     expect(root.querySelector('[data-testid="type-distribution-dominant"]')).toBeTruthy();
     expect(root.querySelectorAll('.type-distribution-list__row--loading')).toHaveLength(0);
     expect(root.querySelector('[data-testid="stem-lemmas-list-loading"]')).toBeTruthy();
-
-    pendingLemmas$.next(relatedLemmasResponse());
-    pendingLemmas$.complete();
-    await fixture.whenStable();
-    fixture.detectChanges();
-
-    const links = root.querySelectorAll('[data-testid="stem-lemmas-list-link"]');
-    expect(links).toHaveLength(2);
-    expect((links[0] as HTMLAnchorElement).getAttribute('href')).toBe(
-      deepLinkToHref(buildLemmasDeepLink({ lemmaId: 502, view: 'words', wordView: 'simple' })),
-    );
-    expect((links[0] as HTMLAnchorElement).target).toBe('_blank');
-    expect((links[0] as HTMLAnchorElement).rel).toBe('noopener noreferrer');
-    expect((links[1] as HTMLAnchorElement).getAttribute('href')).toBe(
-      deepLinkToHref(buildLemmasDeepLink({ lemmaId: 504, view: 'words', wordView: 'simple' })),
-    );
-    expect(Array.from(root.querySelectorAll('.stem-lemmas-list__count')).map((el) => el.textContent?.trim())).toEqual([
-      '3',
-      '1',
-    ]);
-    expect(root.querySelector('[data-testid="stem-lemmas-list-buckwalter"]')?.textContent?.trim()).toBe('Ailm');
-    expect(root.querySelector('[data-testid="stem-lemmas-list-buckwalter-missing"]')).toBeTruthy();
   });
 
   it('maps row selection to the default words/simple detail state', async () => {

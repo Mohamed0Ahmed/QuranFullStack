@@ -1,3 +1,5 @@
+@use '../../../../../styles/explorer-detail-lists' as edl;
+
 :host {
   display: block;
 }
@@ -8,16 +10,11 @@
 }
 
 .surah-occurrences-list__header {
+  @include edl.explorer-detail-list-header;
   display: grid;
   grid-template-columns: 2.5rem minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--qd-space-3);
-  padding: var(--qd-space-2) var(--qd-space-3);
-  border-block-end: 1px solid var(--qd-border);
-  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--qd-text-muted);
 }
 
 .surah-occurrences-list__header-row-number,

@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import { deepLinkToHref } from '../../../../shared/url/deep-link-href';
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
 import { HighlightedAyahComponent } from '../highlighted-ayah/highlighted-ayah.component';
-import { ROOTS_LOADING_LABEL } from '../../models/roots.labels';
+import { WORDS_AYAHS_PAGINATION_LABEL, WORDS_LOADING_LABEL } from '../../models/words.labels';
 import {
   AYAH_REF_LABEL,
   MUSHAF_PAGE_REF_LABEL,
@@ -62,7 +62,11 @@ export class AyahMatchesListComponent {
   }
 
   protected get loadingLabel() {
-    return ROOTS_LOADING_LABEL;
+    return WORDS_LOADING_LABEL;
+  }
+
+  protected get paginationLabel() {
+    return WORDS_AYAHS_PAGINATION_LABEL;
   }
 
   protected rowNumber(index: number): number {

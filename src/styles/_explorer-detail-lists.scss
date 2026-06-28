@@ -1,3 +1,14 @@
+@mixin explorer-detail-list-header {
+  padding: var(--qd-space-2) var(--qd-space-3);
+  border-block-end: 1px solid var(--qd-border);
+  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: var(--qd-explorer-table-header-bg);
+  color: var(--qd-explorer-table-header-fg);
+  flex-shrink: 0;
+}
+
 .explorer-detail-panel__body,
 .explorer-detail-modal {
   qd-ayah-matches-list,
@@ -5,7 +16,8 @@
   qd-surah-occurrences-list,
   qd-root-words-list,
   qd-root-lemmas-list,
-  qd-root-stems-list {
+  qd-root-stems-list,
+  qd-lemma-words-list {
     display: flex;
     flex-direction: column;
     flex: 1;
@@ -16,14 +28,16 @@
 
 .explorer-detail-panel__body {
   .ayah-matches-list,
-  .root-words-list {
+  .root-words-list,
+  .lemma-words-list {
     flex: 1;
     min-height: 0;
     height: 100%;
   }
 
   .ayah-matches-list__viewport,
-  .root-words-list__viewport {
+  .root-words-list__viewport,
+  .lemma-words-list__viewport {
     flex: 1;
     min-height: 0;
     block-size: auto;
@@ -51,7 +65,8 @@
   }
 
   .root-words-list__header,
-  .root-lemmas-list__header {
+  .root-lemmas-list__header,
+  .lemma-words-list__header {
     flex-shrink: 0;
   }
 
@@ -66,13 +81,22 @@
 
   .root-words-list__row,
   .root-lemmas-list__row,
-  .root-stems-list__row {
+  .root-stems-list__row,
+  .lemma-words-list__row {
     background: var(--qd-explorer-detail-card);
     border-color: var(--qd-explorer-detail-border);
   }
 
   .missing-surahs-list__header,
   .missing-surahs-list__row,
+  .root-lemmas-list__header,
+  .root-stems-list__header,
+  .root-words-list__header,
+  .lemma-stems-list__header,
+  .lemma-words-list__header,
+  .stem-lemmas-list__header,
+  .stem-words-list__header,
+  .type-distribution-list__header,
   .surah-occurrences-list__header,
   .surah-occurrences-list__row {
     border-block-end-color: var(--qd-explorer-detail-border);

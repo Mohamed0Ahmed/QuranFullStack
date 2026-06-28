@@ -1,5 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
+import {
+  STEMS_TYPE_DISTRIBUTION_EMPTY_LABEL,
+  STEMS_TYPE_DISTRIBUTION_LABEL,
+  STEMS_TYPE_DISTRIBUTION_LOADING_LABEL,
+} from '../../models/stems.labels';
+import { WORDS_SHARED_HEADERS, WORDS_SHARED_LIST_HEADERS } from '../../models/words-shared.labels';
+
 export interface TypeDistributionItem {
   code: string;
   arabicLabel: string;
@@ -25,12 +32,11 @@ export class TypeDistributionListComponent {
   readonly items = input.required<readonly TypeDistributionItem[]>();
   readonly loading = input(false);
 
-  protected readonly sectionLabel = 'توزيع الأنواع';
-  protected readonly typeHeader = 'النوع';
-  protected readonly countHeader = 'عدد مرات الظهور';
-  protected readonly dominantHeader = 'السائد';
-  protected readonly loadingLabel = 'جارٍ تحميل توزيع الأنواع…';
-  protected readonly emptyLabel = 'لا توجد أنواع';
+  protected readonly sectionLabel = STEMS_TYPE_DISTRIBUTION_LABEL;
+  protected readonly typeHeader = WORDS_SHARED_HEADERS.type;
+  protected readonly countHeader = WORDS_SHARED_LIST_HEADERS.occurrences;
+  protected readonly loadingLabel = STEMS_TYPE_DISTRIBUTION_LOADING_LABEL;
+  protected readonly emptyLabel = STEMS_TYPE_DISTRIBUTION_EMPTY_LABEL;
 
   protected readonly rows = computed<readonly TypeDistributionRow[]>(() =>
     this.items().map((item, index) => ({

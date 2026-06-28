@@ -18,6 +18,12 @@ import {
   LOADING_LABEL,
   OCCURRENCES_CHIP_LABEL,
   ROW_NUMBER_HEADER,
+  UNIQUE_WORD_NULL_PLACEHOLDER,
+  UNIQUE_WORD_ROOT_HEADER,
+  UNIQUE_WORD_TABLE_BODY_LABEL,
+  UNIQUE_WORD_TABLE_LABEL,
+  UNIQUE_WORD_TYPE_HEADER,
+  UNIQUE_WORD_WORD_HEADER,
   WORD_DRILLDOWN_VIEW_LABELS,
 } from '../../models/unique-words.labels';
 import {
@@ -27,6 +33,8 @@ import {
 } from '../../models/unique-words.models';
 import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
 import { syncTableScrollbarGutter } from '../../utils/table-scrollbar-gutter-sync';
+import { buildRootsDeepLink } from '../../state/roots-url-sync';
+import { deepLinkToHref } from '../../../../shared/url/deep-link-href';
 
 import { QD_BP_PHONE_MAX_QUERY } from '../../../../shared/layout/breakpoints';
 
@@ -55,12 +63,6 @@ export class UniqueWordsTableComponent {
   readonly rowSelected = output<UniqueWordListItemViewModel>();
   readonly drilldownOpen = output<{ word: UniqueWordListItemViewModel; view: WordDrilldownView }>();
 
-  protected readonly rowNumberHeader = ROW_NUMBER_HEADER;
-  protected readonly occurrencesLabel = OCCURRENCES_CHIP_LABEL;
-  protected readonly ayahsLabel = WORD_DRILLDOWN_VIEW_LABELS.ayahs;
-  protected readonly surahsLabel = WORD_DRILLDOWN_VIEW_LABELS.surahs;
-  protected readonly missingLabel = WORD_DRILLDOWN_VIEW_LABELS.missing;
-  protected readonly loadingLabel = LOADING_LABEL;
   protected readonly loadingRowPlaceholders = Array.from({ length: 12 });
   protected readonly rowHeight = signal(ROW_HEIGHT_DESKTOP);
   protected readonly useVirtualScroll = HAS_RESIZE_OBSERVER;
@@ -89,6 +91,72 @@ export class UniqueWordsTableComponent {
       );
       this.destroyRef.onDestroy(disconnect);
     });
+  }
+
+  protected get rowNumberHeader(): string {
+    return ROW_NUMBER_HEADER;
+  }
+
+  protected get wordHeader(): string {
+    return UNIQUE_WORD_WORD_HEADER;
+  }
+
+  protected get typeHeader(): string {
+    return UNIQUE_WORD_TYPE_HEADER;
+  }
+
+  protected get rootHeader(): string {
+    return UNIQUE_WORD_ROOT_HEADER;
+  }
+
+  protected get nullPlaceholder(): string {
+    return UNIQUE_WORD_NULL_PLACEHOLDER;
+  }
+
+  protected get occurrencesLabel(): string {
+    return OCCURRENCES_CHIP_LABEL;
+  }
+
+  protected get ayahsLabel(): string {
+    return WORD_DRILLDOWN_VIEW_LABELS.ayahs;
+  }
+
+  protected get surahsLabel(): string {
+    return WORD_DRILLDOWN_VIEW_LABELS.surahs;
+  }
+
+  protected get missingLabel(): string {
+    return WORD_DRILLDOWN_VIEW_LABELS.missing;
+  }
+
+  protected get loadingLabel(): string {
+    return LOADING_LABEL;
+  }
+
+  protected get tableLabel(): string {
+    return UNIQUE_WORD_TABLE_LABEL;
+  }
+
+  protected get tableBodyLabel(): string {
+    return UNIQUE_WORD_TABLE_BODY_LABEL;
+  }
+
+  protected wordTypeLabel(row: UniqueWordListItemViewModel): string {
+    return row.primaryWordTypeBroadArabicLabel ?? this.nullPlaceholder;
+  }
+
+  protected hasRoot(row: UniqueWordListItemViewModel): boolean {
+    return row.rootId !== null && Boolean(row.rootText);
+  }
+
+  protected rootHref(row: UniqueWordListItemViewModel): string {
+    return deepLinkToHref(
+      buildRootsDeepLink({
+        rootId: row.rootId ?? undefined,
+        view: 'words',
+        wordView: 'simple',
+      }),
+    );
   }
 
   protected selectRow(row: UniqueWordListItemViewModel): void {

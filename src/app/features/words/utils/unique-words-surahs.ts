@@ -2,7 +2,6 @@ import { MUSHAF_SURAH_JUZ_GROUPS } from '../../mushaf/data/mushaf-surah-juz-cata
 import { dedupeSurahCatalogItems } from '../../mushaf/utils/surah-jump-catalog.helpers';
 import {
   MissingSurahItemDto,
-  TOTAL_SURAHS,
   UniqueWordMissingSurahsDto,
   UniqueWordSurahsDto,
 } from '../models/unique-words.models';
@@ -31,10 +30,6 @@ export function buildMissingSurahsPayload(
   mentionedSurahs: UniqueWordSurahsDto,
 ): UniqueWordMissingSurahsDto {
   return {
-    id: mentionedSurahs.id,
-    kind: mentionedSurahs.kind,
-    displayTextUthmani: mentionedSurahs.displayTextUthmani,
-    missingSurahsCount: TOTAL_SURAHS - mentionedSurahs.surahsCount,
     surahs: computeMissingSurahs(mentionedSurahs.surahs.map((surah) => surah.surahNumber)),
   };
 }

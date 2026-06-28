@@ -17,11 +17,15 @@ import { WordCountChipComponent } from '../word-count-chip/word-count-chip.compo
 import {
   STEMS_COLUMN_COUNT_LABELS,
   STEMS_COLUMN_HEADERS,
-  STEMS_LOADING_LABEL,
+  STEMS_LEMMA_LINK_PREFIX,
   STEMS_LEMMA_MISSING_ARIA,
   STEMS_LEMMA_MISSING_LABEL,
+  STEMS_LOADING_LABEL,
+  STEMS_ROOT_LINK_PREFIX,
   STEMS_ROOT_MISSING_ARIA,
   STEMS_ROOT_MISSING_LABEL,
+  STEMS_TABLE_BODY_LABEL,
+  STEMS_TABLE_LABEL,
   stemsAdditionalTypesAria,
 } from '../../models/stems.labels';
 import {
@@ -80,6 +84,10 @@ export class StemsTableComponent {
   }
 
   protected readonly loadingLabel = STEMS_LOADING_LABEL;
+  protected readonly tableLabel = STEMS_TABLE_LABEL;
+  protected readonly tableBodyLabel = STEMS_TABLE_BODY_LABEL;
+  protected readonly lemmaLinkPrefix = STEMS_LEMMA_LINK_PREFIX;
+  protected readonly rootLinkPrefix = STEMS_ROOT_LINK_PREFIX;
   protected readonly loadingRowPlaceholders = Array.from({ length: 12 });
   protected readonly rowHeight = signal(ROW_HEIGHT_DESKTOP);
   protected readonly useVirtualScroll = HAS_RESIZE_OBSERVER;
