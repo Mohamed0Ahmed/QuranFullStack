@@ -11,7 +11,8 @@ public sealed record MorphologySourceData(
     IReadOnlyList<string> CharsetWarnings,
     IReadOnlyList<string> UnknownPosCodes,
     MorphologyRenderStats RenderStats,
-    IReadOnlyList<SegmentDimensionIssue> SegmentDimensionIssues);
+    IReadOnlyList<SegmentDimensionIssue> SegmentDimensionIssues,
+    WordLemmaCorrectionSummary? CorrectionSummary = null);
 
 public sealed record MorphologyRenderStats(
     int WholeWordAgreementMatches,

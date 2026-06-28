@@ -8,7 +8,7 @@ namespace QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.Morpholo
 // records, and validates + applies the artifact to an in-memory raw QUL lemma map.
 //
 // Phase 1 scope: load + schema-validate + apply in-memory. Not yet wired into MorphologyImportSource.
-public sealed class WordLemmaNormalizationReader
+public sealed class WordLemmaNormalizationReader : IWordLemmaNormalizationReader
 {
     internal const string ArtifactResourceName =
         "QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting.Corrections.word-lemma-normalization.json";

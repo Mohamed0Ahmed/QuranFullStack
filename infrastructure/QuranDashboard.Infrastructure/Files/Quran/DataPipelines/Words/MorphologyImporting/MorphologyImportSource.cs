@@ -1,10 +1,12 @@
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.MorphologyImporting;
+using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting.Corrections;
 using QuranDashboard.Infrastructure.Persistence;
 
 namespace QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting;
 
 public sealed class MorphologyImportSource : IMorphologyImportSource
 {
+    private readonly IWordLemmaNormalizationReader normalizationReader;
     private readonly MorphologyManifestReader manifestReader;
     private readonly JsonAlignedCorpusReader corpusReader;
     private readonly JsonQulRootReader rootReader;
@@ -16,6 +18,7 @@ public sealed class MorphologyImportSource : IMorphologyImportSource
     private MorphologyFileDigests? capturedDigests;
 
     public MorphologyImportSource(
+        IWordLemmaNormalizationReader normalizationReader,
         MorphologyManifestReader manifestReader,
         JsonAlignedCorpusReader corpusReader,
         JsonQulRootReader rootReader,
@@ -24,6 +27,7 @@ public sealed class MorphologyImportSource : IMorphologyImportSource
         MorphologyAssembler assembler,
         QuranDashboardDbContext dbContext)
     {
+        this.normalizationReader = normalizationReader;
         this.manifestReader = manifestReader;
         this.corpusReader = corpusReader;
         this.rootReader = rootReader;
@@ -56,7 +60,19 @@ public sealed class MorphologyImportSource : IMorphologyImportSource
         var stems = await stemReader.ReadAsync(
             GetManifestPath(manifest, "qul/word-stem-corrected-arabic.json"), ct);
 
-        return assembler.Assemble(corpusWords, readableWordIdsByLocation, roots, lemmas, stems);
+        var normalized = normalizationReader.Apply(
+            lemmas,
+            normalizationReader.Load(),
+            new HashSet<string>(readableWordIdsByLocation.Keys, StringComparer.Ordinal));
+
+        var source = assembler.Assemble(
+            corpusWords,
+            readableWordIdsByLocation,
+            roots,
+            normalized.CorrectedLemmas,
+            stems);
+
+        return source with { CorrectionSummary = normalized.Summary };
     }
 
     public async Task<bool> SourceUnchangedAsync(string sourcePath, CancellationToken ct)
