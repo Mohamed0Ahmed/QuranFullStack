@@ -1,5 +1,7 @@
 namespace QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting.Corrections;
 
+using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.MorphologyImporting;
+
 // Applies a validated word-level lemma normalization artifact to a copy of the raw QUL word-level
 // lemma map. Never mutates the input map; every approved mutating op must apply or the apply fails.
 internal static class WordLemmaNormalizationApplier
@@ -13,7 +15,6 @@ internal static class WordLemmaNormalizationApplier
     public static WordLemmaNormalizationResult Apply(
         IReadOnlyDictionary<string, string> rawLemmas,
         WordLemmaNormalizationArtifact artifact,
-        IReadOnlyList<WordLemmaMappingEvidenceEntry> evidence,
         IReadOnlySet<string>? readableWordLocations,
         string? rawLemmasSha256)
     {
@@ -111,7 +112,7 @@ internal static class WordLemmaNormalizationApplier
             {
                 var applied = corrected.TryGetValue(entry.Location, out var after) ? after : null;
                 spotChecks.Add(new WordLemmaNormalizationSpotCheck(
-                    entry.Location, entry.OperationKind, applied));
+                    entry.Location, entry.OperationKind.ToString().ToLowerInvariant(), applied));
             }
         }
 

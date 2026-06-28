@@ -1,5 +1,7 @@
 namespace QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting.Corrections;
 
+using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.MorphologyImporting;
+
 using System.Text.Json.Serialization;
 
 // Operation kinds supported by the word-level lemma normalization artifact.
@@ -68,8 +70,8 @@ public sealed record WordLemmaNormalizationArtifact
 }
 
 // One Buckwalter→Arabic lemma mapping evidence row from word-lemma-mapping-evidence.json.
-// `AllowAutoAddReplace` gates auto-reliable mappings; below-threshold curated mappings set this to
-// false and mark themselves `QulConsistent` via the `AmbiguityStatus`/`Basis` fields.
+// Provenance fields stay for traceability; validator only requires a matching curated row for the
+// (buckwalter, arabicLemma) pair and does not enforce the evidence metadata fields.
 public sealed record WordLemmaMappingEvidenceEntry
 {
     public required string Buckwalter { get; init; }
@@ -94,30 +96,6 @@ public sealed record WordLemmaNormalizationCounts(
     int Approved,
     int AcceptedException,
     int CandidateOrNeedsReview);
-
-// Spot-check row recorded in the correction summary for the well-known correction locations.
-public sealed record WordLemmaNormalizationSpotCheck(
-    string Location,
-    WordLemmaNormalizationOperationKind OperationKind,
-    string? AppliedLemmaArabic);
-
-// Summary of applying the artifact to an in-memory raw QUL lemma map. Returned alongside the
-// corrected map; reported by the importer in Phase 2.
-public sealed record WordLemmaCorrectionSummary(
-    string ArtifactSha256,
-    string? RawLemmasSha256,
-    int TotalEntries,
-    int AppliedAdd,
-    int AppliedRemove,
-    int AppliedReplace,
-    int ReviewedKeep,
-    int ReviewedException,
-    int FailedOrSkipped,
-    IReadOnlyList<WordLemmaNormalizationSpotCheck> SpotChecks)
-{
-    public int AppliedMutating => AppliedAdd + AppliedRemove + AppliedReplace;
-    public int ReviewedNonMutating => ReviewedKeep + ReviewedException;
-}
 
 // Output of applying the artifact to an in-memory raw QUL lemma map.
 public sealed record WordLemmaNormalizationResult(

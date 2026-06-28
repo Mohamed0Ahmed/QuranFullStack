@@ -4,7 +4,7 @@
   "sourcePackage": "resources/import-sources/quran-morphology",
   "sourceAudit": "docs/feature-017-lexical-explorers-polish/full-word-level-lemma-alignment-audit-report.md",
   "implementationReady": true,
-  "implementationReadyReason": "Phase 0F complete + 33:61:3 & 4:91:26 micro-checks: 0 blockers; 28 replace, 1659 add, 92 keep, 8 exception. Validator GREEN.",
+  "implementationReadyReason": "Phase 0F complete + 33:61:3 & 4:91:26 micro-checks: 0 blockers; 1659 add, 69 remove, 90 replace, 92 keep, 8 exception. Validator GREEN.",
   "generatedFromReports": [
     "docs/feature-017-lexical-explorers-polish/full-word-level-lemma-alignment-audit-report.md",
     "docs/feature-017-lexical-explorers-polish/word-level-lemma-alignment-correction-curation-report.md"

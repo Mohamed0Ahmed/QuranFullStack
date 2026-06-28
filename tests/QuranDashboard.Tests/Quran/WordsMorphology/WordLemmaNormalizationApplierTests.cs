@@ -190,7 +190,7 @@ public sealed class WordLemmaNormalizationApplierTests
         IReadOnlySet<string>? readable = null)
     {
         var loaded = Loaded(new[] { entry });
-        return WordLemmaNormalizationApplier.Apply(raw, loaded.Artifact, loaded.Evidence, readable, rawLemmasSha256: null);
+        return WordLemmaNormalizationApplier.Apply(raw, loaded.Artifact, readable, rawLemmasSha256: null);
     }
 
     private static Dictionary<string, string> EmptyMap() => new(StringComparer.Ordinal);

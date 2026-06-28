@@ -119,15 +119,9 @@ internal static class WordLemmaNormalizationValidator
             $"{where}: add/replace must include arabicMappingEvidence.");
     }
 
-    // Accepts an add/replace corrected Arabic lemma when it is backed by an explicit mapping-evidence
-    // row matching (buckwalter, arabicLemma). Two evidence tiers are both acceptable:
-    //   1. auto-reliable mapping (AllowAutoAddReplace = true); OR
-    //   2. explicit curated below-threshold mapping (AllowAutoAddReplace = false) — these are the
-    //      legitimate curated corrections such as `Hil~ -> حِلّ` and `vuqifu -> ثُقِفُ`.
-    //
-    // What must FAIL is a corrected lemma with NO matching evidence row at all (a below-threshold
-    // mapping that was never curated). The validator never weakens globally: every add/replace must
-    // resolve to a listed evidence row keyed by its buckwalter.
+    // Accepts an add/replace corrected Arabic lemma only when a curated evidence row matches the
+    // (buckwalter, arabicLemma) pair. The evidence file carries extra provenance metadata, but this
+    // validator treats row membership as the gate.
     private static void RequireMappingEvidence(
         WordLemmaNormalizationEntry entry,
         IReadOnlyList<WordLemmaMappingEvidenceEntry> evidence,
@@ -154,7 +148,7 @@ internal static class WordLemmaNormalizationValidator
 
         throw new InvalidDataException(
             $"{where}: corrected lemma '{corrected}' (buckwalter '{buckwalter}') has no curated "
-            + "mapping evidence — needs an auto-reliable OR curated below-threshold evidence row.");
+            + "mapping evidence row.");
     }
 
     private static void FailWhen(bool condition, string message) => Fail(condition, message);

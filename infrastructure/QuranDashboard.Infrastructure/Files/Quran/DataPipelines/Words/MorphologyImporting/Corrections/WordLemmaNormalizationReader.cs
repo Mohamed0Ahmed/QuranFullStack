@@ -67,7 +67,7 @@ public sealed class WordLemmaNormalizationReader
         WordLemmaNormalizationValidator.ValidateSchema(loaded);
 
         var result = WordLemmaNormalizationApplier.Apply(
-            rawLemmas, loaded.Artifact, loaded.Evidence, readableWordLocations, rawLemmasSha256);
+            rawLemmas, loaded.Artifact, readableWordLocations, rawLemmasSha256);
 
         // Stamp the summary with the artifact hash now that apply succeeded.
         return result with
