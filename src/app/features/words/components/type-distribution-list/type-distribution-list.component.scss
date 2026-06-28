@@ -1,3 +1,5 @@
+@use '../../../../../styles/explorer-detail-lists' as edl;
+
 :host {
   display: block;
 }
@@ -18,9 +20,9 @@
 }
 
 .type-distribution-list__header {
-  padding-inline: var(--qd-space-1);
-  font-size: 0.75rem;
-  color: var(--qd-text-muted);
+  @include edl.explorer-detail-list-header;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--qd-space-3);
 }
 
 .type-distribution-list {

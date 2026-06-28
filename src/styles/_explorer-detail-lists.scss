@@ -1,3 +1,14 @@
+@mixin explorer-detail-list-header {
+  padding: var(--qd-space-2) var(--qd-space-3);
+  border-block-end: 1px solid var(--qd-border);
+  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: var(--qd-explorer-table-header-bg);
+  color: var(--qd-explorer-table-header-fg);
+  flex-shrink: 0;
+}
+
 .explorer-detail-panel__body,
 .explorer-detail-modal {
   qd-ayah-matches-list,
@@ -78,6 +89,14 @@
 
   .missing-surahs-list__header,
   .missing-surahs-list__row,
+  .root-lemmas-list__header,
+  .root-stems-list__header,
+  .root-words-list__header,
+  .lemma-stems-list__header,
+  .lemma-words-list__header,
+  .stem-lemmas-list__header,
+  .stem-words-list__header,
+  .type-distribution-list__header,
   .surah-occurrences-list__header,
   .surah-occurrences-list__row {
     border-block-end-color: var(--qd-explorer-detail-border);

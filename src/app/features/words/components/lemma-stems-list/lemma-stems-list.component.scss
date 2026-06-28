@@ -1,3 +1,5 @@
+@use '../../../../../styles/explorer-detail-lists' as edl;
+
 :host {
   display: block;
 }
@@ -17,10 +19,9 @@
 }
 
 .lemma-stems-list__header {
-  margin-block-end: var(--qd-space-2);
-  padding-inline: var(--qd-space-1);
-  color: var(--qd-text-muted);
-  font-size: 0.75rem;
+  @include edl.explorer-detail-list-header;
+  grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+  gap: var(--qd-space-3);
 }
 
 .lemma-stems-list {
