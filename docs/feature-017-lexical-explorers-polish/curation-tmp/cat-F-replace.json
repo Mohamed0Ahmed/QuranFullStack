@@ -1,0 +1,30 @@
+[
+  {
+    "location": "3:33:7",
+    "currentWord": "إِبْرَٰهِيمَ",
+    "rawQulLemma": "ءَال",
+    "corpusBw": [
+      "<iboraAhiym"
+    ],
+    "ownArabic": "إِبْرَاهِيم"
+  },
+  {
+    "location": "21:51:3",
+    "currentWord": "إِبْرَٰهِيمَ",
+    "rawQulLemma": "آتَى",
+    "corpusBw": [
+      "<iboraAhiym"
+    ],
+    "ownArabic": "إِبْرَاهِيم"
+  },
+  {
+    "location": "28:50:11",
+    "currentWord": "مِمَّنِ",
+    "rawQulLemma": "أَضَلّ",
+    "corpusBw": [
+      "min",
+      "man"
+    ],
+    "ownArabic": "مِن"
+  }
+]

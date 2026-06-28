@@ -1,0 +1,62 @@
+{
+  "byProblemClass": {
+    "add": 1785,
+    "shift-63": 63,
+    "remove": 70,
+    "replace": 62,
+    "shift-63-replace": 3,
+    "shift-59": 66,
+    "missing-recovery": 1656,
+    "keep": 95,
+    "exception": 14,
+    "uncertain-multistem": 7,
+    "blocker": 29
+  },
+  "byOperationKind": {
+    "add": 1658,
+    "remove": 70,
+    "replace": 62,
+    "keep": 91,
+    "exception": 7,
+    "candidate_blocker": 30
+  },
+  "byDecision": {
+    "approved": 1790,
+    "accepted-exception": 98,
+    "candidate_blocker": 30
+  },
+  "blockers": [
+    "33:61:2",
+    "12:53:7",
+    "17:7:22",
+    "18:57:26",
+    "18:96:16",
+    "20:123:16",
+    "20:40:29",
+    "24:61:63",
+    "2:144:23",
+    "2:148:9",
+    "2:187:19",
+    "2:203:16",
+    "2:221:19",
+    "33:5:25",
+    "33:6:25",
+    "35:18:24",
+    "35:41:13",
+    "3:161:16",
+    "4:116:1",
+    "4:162:19",
+    "58:22:44",
+    "5:44:29",
+    "60:10:45",
+    "6:101:14",
+    "6:151:11",
+    "6:94:25",
+    "74:31:27",
+    "7:38:32",
+    "7:38:34",
+    "9:93:10"
+  ],
+  "totalEntries": 1918,
+  "mappingEvidenceRecords": 155
+}

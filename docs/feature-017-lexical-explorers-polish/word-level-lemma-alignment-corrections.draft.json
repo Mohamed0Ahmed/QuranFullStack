@@ -1,0 +1,2289 @@
+{
+  "schemaVersion": 1,
+  "sourceAudit": "docs/feature-017-lexical-explorers-polish/word-level-lemma-alignment-audit-report.md",
+  "sourcePackage": "resources/import-sources/quran-morphology",
+  "entries": [
+    {
+      "id": "WLA-0718",
+      "reviewStatus": "approved",
+      "verseKey": "2:44",
+      "shiftedLemmaArabic": "نَفْس",
+      "shiftedLemmaBuckwalter": "nafos",
+      "targetLocation": "2:44:5",
+      "targetCorpusLemmaBuckwalter": "nafos",
+      "targetLocationCorpusRootBuckwalter": "nfs",
+      "removeLocation": "2:44:6",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 2:44:5=null and 2:44:6=نَفْس",
+        "Corpus 2:44:5 STEM lemma is nafos with root nfs",
+        "Corpus 2:44:6 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "2:44:5",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "نَفْس",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "nafos"
+          ]
+        },
+        {
+          "location": "2:44:6",
+          "expectedCurrentLemmaArabic": "نَفْس",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-1281",
+      "reviewStatus": "approved",
+      "verseKey": "2:75",
+      "shiftedLemmaArabic": "ءَامَنَ",
+      "shiftedLemmaBuckwalter": "'aAmana",
+      "targetLocation": "2:75:3",
+      "targetCorpusLemmaBuckwalter": "'aAmana",
+      "targetLocationCorpusRootBuckwalter": "Amn",
+      "removeLocation": "2:75:4",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 2:75:3=null and 2:75:4=ءَامَنَ",
+        "Corpus 2:75:3 STEM lemma is 'aAmana with root Amn",
+        "Corpus 2:75:4 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "2:75:3",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "ءَامَنَ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "'aAmana"
+          ]
+        },
+        {
+          "location": "2:75:4",
+          "expectedCurrentLemmaArabic": "ءَامَنَ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-2146",
+      "reviewStatus": "approved",
+      "verseKey": "2:114",
+      "shiftedLemmaArabic": "كَانَ",
+      "shiftedLemmaBuckwalter": "kaAna",
+      "targetLocation": "2:114:16",
+      "targetCorpusLemmaBuckwalter": "kaAna",
+      "targetLocationCorpusRootBuckwalter": "kwn",
+      "removeLocation": "2:114:17",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 2:114:16=null and 2:114:17=كَانَ",
+        "Corpus 2:114:16 STEM lemma is kaAna with root kwn",
+        "Corpus 2:114:17 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "2:114:16",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "كَانَ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "kaAna"
+          ]
+        },
+        {
+          "location": "2:114:17",
+          "expectedCurrentLemmaArabic": "كَانَ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-4310",
+      "reviewStatus": "approved",
+      "verseKey": "2:216",
+      "shiftedLemmaArabic": "شَىْء",
+      "shiftedLemmaBuckwalter": "$aYo'",
+      "targetLocation": "2:216:10",
+      "targetCorpusLemmaBuckwalter": "$aYo'",
+      "targetLocationCorpusRootBuckwalter": "$yA",
+      "removeLocation": "2:216:11",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 2:216:10=null and 2:216:11=شَىْء",
+        "Corpus 2:216:10 STEM lemma is $aYo' with root $yA",
+        "Corpus 2:216:11 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "2:216:10",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "شَىْء",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "$aYo'"
+          ]
+        },
+        {
+          "location": "2:216:11",
+          "expectedCurrentLemmaArabic": "شَىْء",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-4599",
+      "reviewStatus": "approved",
+      "verseKey": "2:228",
+      "shiftedLemmaArabic": "حَلَلْ",
+      "shiftedLemmaBuckwalter": "Halalo",
+      "targetLocation": "2:228:7",
+      "targetCorpusLemmaBuckwalter": "Halalo",
+      "targetLocationCorpusRootBuckwalter": "Hll",
+      "removeLocation": "2:228:8",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 2:228:7=null and 2:228:8=حَلَلْ",
+        "Corpus 2:228:7 STEM lemma is Halalo with root Hll",
+        "Corpus 2:228:8 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "2:228:7",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "حَلَلْ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "Halalo"
+          ]
+        },
+        {
+          "location": "2:228:8",
+          "expectedCurrentLemmaArabic": "حَلَلْ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-5184",
+      "reviewStatus": "approved",
+      "verseKey": "2:247",
+      "shiftedLemmaArabic": "كَانَ",
+      "shiftedLemmaBuckwalter": "kaAna",
+      "targetLocation": "2:247:13",
+      "targetCorpusLemmaBuckwalter": "kaAna",
+      "targetLocationCorpusRootBuckwalter": "kwn",
+      "removeLocation": "2:247:14",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 2:247:13=null and 2:247:14=كَانَ",
+        "Corpus 2:247:13 STEM lemma is kaAna with root kwn",
+        "Corpus 2:247:14 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "2:247:13",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "كَانَ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "kaAna"
+          ]
+        },
+        {
+          "location": "2:247:14",
+          "expectedCurrentLemmaArabic": "كَانَ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-7041",
+      "reviewStatus": "approved",
+      "verseKey": "3:33",
+      "shiftedLemmaArabic": "ءَال",
+      "shiftedLemmaBuckwalter": "'aAl",
+      "targetLocation": "3:33:6",
+      "targetCorpusLemmaBuckwalter": "'aAl",
+      "targetLocationCorpusRootBuckwalter": "Awl",
+      "removeLocation": "3:33:7",
+      "removeLocationCorpusLemmaBuckwalters": [
+        "<iboraAhiym"
+      ],
+      "evidence": [
+        "QUL word-lemma has 3:33:6=null and 3:33:7=ءَال",
+        "Corpus 3:33:6 STEM lemma is 'aAl with root Awl",
+        "Corpus 3:33:7 segments are [<iboraAhiym]"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "3:33:6",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "ءَال",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "'aAl"
+          ]
+        },
+        {
+          "location": "3:33:7",
+          "expectedCurrentLemmaArabic": "ءَال",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "<iboraAhiym"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "WLA-9666",
+      "reviewStatus": "approved",
+      "verseKey": "3:178",
+      "shiftedLemmaArabic": "إِثْم",
+      "shiftedLemmaBuckwalter": "<ivom",
+      "targetLocation": "3:178:14",
+      "targetCorpusLemmaBuckwalter": "<ivom",
+      "targetLocationCorpusRootBuckwalter": "Avm",
+      "removeLocation": "3:178:15",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 3:178:14=null and 3:178:15=إِثْم",
+        "Corpus 3:178:14 STEM lemma is <ivom with root Avm",
+        "Corpus 3:178:15 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "3:178:14",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "إِثْم",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "<ivom"
+          ]
+        },
+        {
+          "location": "3:178:15",
+          "expectedCurrentLemmaArabic": "إِثْم",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-10410",
+      "reviewStatus": "approved",
+      "verseKey": "4:12",
+      "shiftedLemmaArabic": "كَانَ",
+      "shiftedLemmaBuckwalter": "kaAna",
+      "targetLocation": "4:12:8",
+      "targetCorpusLemmaBuckwalter": "kaAna",
+      "targetLocationCorpusRootBuckwalter": "kwn",
+      "removeLocation": "4:12:9",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 4:12:8=null and 4:12:9=كَانَ",
+        "Corpus 4:12:8 STEM lemma is kaAna with root kwn",
+        "Corpus 4:12:9 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "4:12:8",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "كَانَ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "kaAna"
+          ]
+        },
+        {
+          "location": "4:12:9",
+          "expectedCurrentLemmaArabic": "كَانَ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-11053",
+      "reviewStatus": "approved",
+      "verseKey": "4:36",
+      "shiftedLemmaArabic": "أَشْرَكَ",
+      "shiftedLemmaBuckwalter": ">a$oraka",
+      "targetLocation": "4:36:4",
+      "targetCorpusLemmaBuckwalter": ">a$oraka",
+      "targetLocationCorpusRootBuckwalter": "$rk",
+      "removeLocation": "4:36:5",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 4:36:4=null and 4:36:5=أَشْرَكَ",
+        "Corpus 4:36:4 STEM lemma is >a$oraka with root $rk",
+        "Corpus 4:36:5 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "4:36:4",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "أَشْرَكَ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            ">a$oraka"
+          ]
+        },
+        {
+          "location": "4:36:5",
+          "expectedCurrentLemmaArabic": "أَشْرَكَ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-11362",
+      "reviewStatus": "approved",
+      "verseKey": "4:50",
+      "shiftedLemmaArabic": "كَفَىٰ",
+      "shiftedLemmaBuckwalter": "kafaY`",
+      "targetLocation": "4:50:7",
+      "targetCorpusLemmaBuckwalter": "kafaY`",
+      "targetLocationCorpusRootBuckwalter": "kfy",
+      "removeLocation": "4:50:8",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 4:50:7=null and 4:50:8=كَفَىٰ",
+        "Corpus 4:50:7 STEM lemma is kafaY` with root kfy",
+        "Corpus 4:50:8 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "4:50:7",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "كَفَىٰ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "kafaY`"
+          ]
+        },
+        {
+          "location": "4:50:8",
+          "expectedCurrentLemmaArabic": "كَفَىٰ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-12507",
+      "reviewStatus": "approved",
+      "verseKey": "4:101",
+      "shiftedLemmaArabic": "كَانَ",
+      "shiftedLemmaBuckwalter": "kaAna",
+      "targetLocation": "4:101:20",
+      "targetCorpusLemmaBuckwalter": "kaAna",
+      "targetLocationCorpusRootBuckwalter": "kwn",
+      "removeLocation": "4:101:21",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 4:101:20=null and 4:101:21=كَانَ",
+        "Corpus 4:101:20 STEM lemma is kaAna with root kwn",
+        "Corpus 4:101:21 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "4:101:20",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "كَانَ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "kaAna"
+          ]
+        },
+        {
+          "location": "4:101:21",
+          "expectedCurrentLemmaArabic": "كَانَ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-14224",
+      "reviewStatus": "approved",
+      "verseKey": "5:5",
+      "shiftedLemmaArabic": "حِلّ",
+      "shiftedLemmaBuckwalter": "Hil~",
+      "targetLocation": "5:5:9",
+      "targetCorpusLemmaBuckwalter": "Hil~",
+      "targetLocationCorpusRootBuckwalter": "Hll",
+      "removeLocation": "5:5:10",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 5:5:9=null and 5:5:10=حِلّ",
+        "Corpus 5:5:9 STEM lemma is Hil~ with root Hll",
+        "Corpus 5:5:10 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "5:5:9",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "حِلّ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "Hil~"
+          ]
+        },
+        {
+          "location": "5:5:10",
+          "expectedCurrentLemmaArabic": "حِلّ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-14227",
+      "reviewStatus": "approved",
+      "verseKey": "5:5",
+      "shiftedLemmaArabic": "حِلّ",
+      "shiftedLemmaBuckwalter": "Hil~",
+      "targetLocation": "5:5:12",
+      "targetCorpusLemmaBuckwalter": "Hil~",
+      "targetLocationCorpusRootBuckwalter": "Hll",
+      "removeLocation": "5:5:13",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 5:5:12=null and 5:5:13=حِلّ",
+        "Corpus 5:5:12 STEM lemma is Hil~ with root Hll",
+        "Corpus 5:5:13 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "5:5:12",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "حِلّ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "Hil~"
+          ]
+        },
+        {
+          "location": "5:5:13",
+          "expectedCurrentLemmaArabic": "حِلّ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-16606",
+      "reviewStatus": "approved",
+      "verseKey": "5:106",
+      "shiftedLemmaArabic": "اشْتَرَىٰ",
+      "shiftedLemmaBuckwalter": "{$otaraY`",
+      "targetLocation": "5:106:37",
+      "targetCorpusLemmaBuckwalter": "{$otaraY`",
+      "targetLocationCorpusRootBuckwalter": "$ry",
+      "removeLocation": "5:106:38",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 5:106:37=null and 5:106:38=اشْتَرَىٰ",
+        "Corpus 5:106:37 STEM lemma is {$otaraY` with root $ry",
+        "Corpus 5:106:38 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "5:106:37",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "اشْتَرَىٰ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "{$otaraY`"
+          ]
+        },
+        {
+          "location": "5:106:38",
+          "expectedCurrentLemmaArabic": "اشْتَرَىٰ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-16863",
+      "reviewStatus": "approved",
+      "verseKey": "5:116",
+      "shiftedLemmaArabic": "كَانَ",
+      "shiftedLemmaBuckwalter": "kaAna",
+      "targetLocation": "5:116:19",
+      "targetCorpusLemmaBuckwalter": "kaAna",
+      "targetLocationCorpusRootBuckwalter": "kwn",
+      "removeLocation": "5:116:20",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 5:116:19=null and 5:116:20=كَانَ",
+        "Corpus 5:116:19 STEM lemma is kaAna with root kwn",
+        "Corpus 5:116:20 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "5:116:19",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "كَانَ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "kaAna"
+          ]
+        },
+        {
+          "location": "5:116:20",
+          "expectedCurrentLemmaArabic": "كَانَ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-17033",
+      "reviewStatus": "approved",
+      "verseKey": "6:5",
+      "shiftedLemmaArabic": "كَانَ",
+      "shiftedLemmaBuckwalter": "kaAna",
+      "targetLocation": "6:5:10",
+      "targetCorpusLemmaBuckwalter": "kaAna",
+      "targetLocationCorpusRootBuckwalter": "kwn",
+      "removeLocation": "6:5:11",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 6:5:10=null and 6:5:11=كَانَ",
+        "Corpus 6:5:10 STEM lemma is kaAna with root kwn",
+        "Corpus 6:5:11 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "6:5:10",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "كَانَ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "kaAna"
+          ]
+        },
+        {
+          "location": "6:5:11",
+          "expectedCurrentLemmaArabic": "كَانَ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-17289",
+      "reviewStatus": "approved",
+      "verseKey": "6:20",
+      "shiftedLemmaArabic": "نَفْس",
+      "shiftedLemmaBuckwalter": "nafos",
+      "targetLocation": "6:20:10",
+      "targetCorpusLemmaBuckwalter": "nafos",
+      "targetLocationCorpusRootBuckwalter": "nfs",
+      "removeLocation": "6:20:11",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 6:20:10=null and 6:20:11=نَفْس",
+        "Corpus 6:20:10 STEM lemma is nafos with root nfs",
+        "Corpus 6:20:11 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "6:20:10",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "نَفْس",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "nafos"
+          ]
+        },
+        {
+          "location": "6:20:11",
+          "expectedCurrentLemmaArabic": "نَفْس",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-18615",
+      "reviewStatus": "approved",
+      "verseKey": "6:92",
+      "shiftedLemmaArabic": "ءَامَنَ",
+      "shiftedLemmaBuckwalter": "'aAmana",
+      "targetLocation": "6:92:17",
+      "targetCorpusLemmaBuckwalter": "'aAmana",
+      "targetLocationCorpusRootBuckwalter": "Amn",
+      "removeLocation": "6:92:18",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 6:92:17=null and 6:92:18=ءَامَنَ",
+        "Corpus 6:92:17 STEM lemma is 'aAmana with root Amn",
+        "Corpus 6:92:18 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "6:92:17",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "ءَامَنَ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "'aAmana"
+          ]
+        },
+        {
+          "location": "6:92:18",
+          "expectedCurrentLemmaArabic": "ءَامَنَ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-18833",
+      "reviewStatus": "approved",
+      "verseKey": "6:101",
+      "shiftedLemmaArabic": "كَانَ",
+      "shiftedLemmaBuckwalter": "kaAna",
+      "targetLocation": "6:101:9",
+      "targetCorpusLemmaBuckwalter": "kaAna",
+      "targetLocationCorpusRootBuckwalter": "kwn",
+      "removeLocation": "6:101:10",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 6:101:9=null and 6:101:10=كَانَ",
+        "Corpus 6:101:9 STEM lemma is kaAna with root kwn",
+        "Corpus 6:101:10 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "6:101:9",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "كَانَ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "kaAna"
+          ]
+        },
+        {
+          "location": "6:101:10",
+          "expectedCurrentLemmaArabic": "كَانَ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-21731",
+      "reviewStatus": "approved",
+      "verseKey": "7:89",
+      "shiftedLemmaArabic": "كَانَ",
+      "shiftedLemmaBuckwalter": "kaAna",
+      "targetLocation": "7:89:16",
+      "targetCorpusLemmaBuckwalter": "kaAna",
+      "targetLocationCorpusRootBuckwalter": "kwn",
+      "removeLocation": "7:89:17",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 7:89:16=null and 7:89:17=كَانَ",
+        "Corpus 7:89:16 STEM lemma is kaAna with root kwn",
+        "Corpus 7:89:17 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "7:89:16",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "كَانَ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "kaAna"
+          ]
+        },
+        {
+          "location": "7:89:17",
+          "expectedCurrentLemmaArabic": "كَانَ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-21789",
+      "reviewStatus": "approved",
+      "verseKey": "7:92",
+      "shiftedLemmaArabic": "كَانَ",
+      "shiftedLemmaBuckwalter": "kaAna",
+      "targetLocation": "7:92:11",
+      "targetCorpusLemmaBuckwalter": "kaAna",
+      "targetLocationCorpusRootBuckwalter": "kwn",
+      "removeLocation": "7:92:12",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 7:92:11=null and 7:92:12=كَانَ",
+        "Corpus 7:92:11 STEM lemma is kaAna with root kwn",
+        "Corpus 7:92:12 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "7:92:11",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "كَانَ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "kaAna"
+          ]
+        },
+        {
+          "location": "7:92:12",
+          "expectedCurrentLemmaArabic": "كَانَ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-22840",
+      "reviewStatus": "approved",
+      "verseKey": "7:157",
+      "shiftedLemmaArabic": "ءَامَنَ",
+      "shiftedLemmaBuckwalter": "'aAmana",
+      "targetLocation": "7:157:32",
+      "targetCorpusLemmaBuckwalter": "'aAmana",
+      "targetLocationCorpusRootBuckwalter": "Amn",
+      "removeLocation": "7:157:33",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 7:157:32=null and 7:157:33=ءَامَنَ",
+        "Corpus 7:157:32 STEM lemma is 'aAmana with root Amn",
+        "Corpus 7:157:33 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "7:157:32",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "ءَامَنَ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "'aAmana"
+          ]
+        },
+        {
+          "location": "7:157:33",
+          "expectedCurrentLemmaArabic": "ءَامَنَ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-25330",
+      "reviewStatus": "approved",
+      "verseKey": "9:17",
+      "shiftedLemmaArabic": "نَار",
+      "shiftedLemmaBuckwalter": "naAr",
+      "targetLocation": "9:17:16",
+      "targetCorpusLemmaBuckwalter": "naAr",
+      "targetLocationCorpusRootBuckwalter": "nwr",
+      "removeLocation": "9:17:17",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 9:17:16=null and 9:17:17=نَار",
+        "Corpus 9:17:16 STEM lemma is naAr with root nwr",
+        "Corpus 9:17:17 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "9:17:16",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "نَار",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "naAr"
+          ]
+        },
+        {
+          "location": "9:17:17",
+          "expectedCurrentLemmaArabic": "نَار",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-25758",
+      "reviewStatus": "approved",
+      "verseKey": "9:37",
+      "shiftedLemmaArabic": "ضَلَّ",
+      "shiftedLemmaBuckwalter": "Dal~a",
+      "targetLocation": "9:37:6",
+      "targetCorpusLemmaBuckwalter": "Dal~a",
+      "targetLocationCorpusRootBuckwalter": "Dll",
+      "removeLocation": "9:37:7",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 9:37:6=null and 9:37:7=ضَلَّ",
+        "Corpus 9:37:6 STEM lemma is Dal~a with root Dll",
+        "Corpus 9:37:7 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "9:37:6",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "ضَلَّ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "Dal~a"
+          ]
+        },
+        {
+          "location": "9:37:7",
+          "expectedCurrentLemmaArabic": "ضَلَّ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-26131",
+      "reviewStatus": "approved",
+      "verseKey": "9:55",
+      "shiftedLemmaArabic": "نَفْس",
+      "shiftedLemmaBuckwalter": "nafos",
+      "targetLocation": "9:55:15",
+      "targetCorpusLemmaBuckwalter": "nafos",
+      "targetLocationCorpusRootBuckwalter": "nfs",
+      "removeLocation": "9:55:16",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 9:55:15=null and 9:55:16=نَفْس",
+        "Corpus 9:55:15 STEM lemma is nafos with root nfs",
+        "Corpus 9:55:16 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "9:55:15",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "نَفْس",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "nafos"
+          ]
+        },
+        {
+          "location": "9:55:16",
+          "expectedCurrentLemmaArabic": "نَفْس",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-26723",
+      "reviewStatus": "approved",
+      "verseKey": "9:85",
+      "shiftedLemmaArabic": "نَفْس",
+      "shiftedLemmaBuckwalter": "nafos",
+      "targetLocation": "9:85:14",
+      "targetCorpusLemmaBuckwalter": "nafos",
+      "targetLocationCorpusRootBuckwalter": "nfs",
+      "removeLocation": "9:85:15",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 9:85:14=null and 9:85:15=نَفْس",
+        "Corpus 9:85:14 STEM lemma is nafos with root nfs",
+        "Corpus 9:85:15 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "9:85:14",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "نَفْس",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "nafos"
+          ]
+        },
+        {
+          "location": "9:85:15",
+          "expectedCurrentLemmaArabic": "نَفْس",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-26885",
+      "reviewStatus": "approved",
+      "verseKey": "9:94",
+      "shiftedLemmaArabic": "ءَامَنَ",
+      "shiftedLemmaBuckwalter": "'aAmana",
+      "targetLocation": "9:94:10",
+      "targetCorpusLemmaBuckwalter": "'aAmana",
+      "targetLocationCorpusRootBuckwalter": "Amn",
+      "removeLocation": "9:94:11",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 9:94:10=null and 9:94:11=ءَامَنَ",
+        "Corpus 9:94:10 STEM lemma is 'aAmana with root Amn",
+        "Corpus 9:94:11 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "9:94:10",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "ءَامَنَ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "'aAmana"
+          ]
+        },
+        {
+          "location": "9:94:11",
+          "expectedCurrentLemmaArabic": "ءَامَنَ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-29732",
+      "reviewStatus": "approved",
+      "verseKey": "11:8",
+      "shiftedLemmaArabic": "كَانَ",
+      "shiftedLemmaBuckwalter": "kaAna",
+      "targetLocation": "11:8:20",
+      "targetCorpusLemmaBuckwalter": "kaAna",
+      "targetLocationCorpusRootBuckwalter": "kwn",
+      "removeLocation": "11:8:21",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 11:8:20=null and 11:8:21=كَانَ",
+        "Corpus 11:8:20 STEM lemma is kaAna with root kwn",
+        "Corpus 11:8:21 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "11:8:20",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "كَانَ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "kaAna"
+          ]
+        },
+        {
+          "location": "11:8:21",
+          "expectedCurrentLemmaArabic": "كَانَ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-29885",
+      "reviewStatus": "approved",
+      "verseKey": "11:17",
+      "shiftedLemmaArabic": "ءَامَنَ",
+      "shiftedLemmaBuckwalter": "'aAmana",
+      "targetLocation": "11:17:17",
+      "targetCorpusLemmaBuckwalter": "'aAmana",
+      "targetLocationCorpusRootBuckwalter": "Amn",
+      "removeLocation": "11:17:18",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 11:17:17=null and 11:17:18=ءَامَنَ",
+        "Corpus 11:17:17 STEM lemma is 'aAmana with root Amn",
+        "Corpus 11:17:18 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "11:17:17",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "ءَامَنَ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "'aAmana"
+          ]
+        },
+        {
+          "location": "11:17:18",
+          "expectedCurrentLemmaArabic": "ءَامَنَ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-31853",
+      "reviewStatus": "approved",
+      "verseKey": "12:17",
+      "shiftedLemmaArabic": "مُؤْمِن",
+      "shiftedLemmaBuckwalter": "mu&omin",
+      "targetLocation": "12:17:14",
+      "targetCorpusLemmaBuckwalter": "mu&omin",
+      "targetLocationCorpusRootBuckwalter": "Amn",
+      "removeLocation": "12:17:15",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 12:17:14=null and 12:17:15=مُؤْمِن",
+        "Corpus 12:17:14 STEM lemma is mu&omin with root Amn",
+        "Corpus 12:17:15 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "12:17:14",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "مُؤْمِن",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "mu&omin"
+          ]
+        },
+        {
+          "location": "12:17:15",
+          "expectedCurrentLemmaArabic": "مُؤْمِن",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-31975",
+      "reviewStatus": "approved",
+      "verseKey": "12:24",
+      "shiftedLemmaArabic": "هَمَّ",
+      "shiftedLemmaBuckwalter": "ham~a",
+      "targetLocation": "12:24:4",
+      "targetCorpusLemmaBuckwalter": "ham~a",
+      "targetLocationCorpusRootBuckwalter": "hmm",
+      "removeLocation": "12:24:5",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 12:24:4=null and 12:24:5=هَمَّ",
+        "Corpus 12:24:4 STEM lemma is ham~a with root hmm",
+        "Corpus 12:24:5 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "12:24:4",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "هَمَّ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "ham~a"
+          ]
+        },
+        {
+          "location": "12:24:5",
+          "expectedCurrentLemmaArabic": "هَمَّ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-32247",
+      "reviewStatus": "approved",
+      "verseKey": "12:38",
+      "shiftedLemmaArabic": "كَانَ",
+      "shiftedLemmaBuckwalter": "kaAna",
+      "targetLocation": "12:38:8",
+      "targetCorpusLemmaBuckwalter": "kaAna",
+      "targetLocationCorpusRootBuckwalter": "kwn",
+      "removeLocation": "12:38:9",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 12:38:8=null and 12:38:9=كَانَ",
+        "Corpus 12:38:8 STEM lemma is kaAna with root kwn",
+        "Corpus 12:38:9 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "12:38:8",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "كَانَ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "kaAna"
+          ]
+        },
+        {
+          "location": "12:38:9",
+          "expectedCurrentLemmaArabic": "كَانَ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-32684",
+      "reviewStatus": "approved",
+      "verseKey": "12:64",
+      "shiftedLemmaArabic": "حَٰفِظ",
+      "shiftedLemmaBuckwalter": "Ha`fiZ",
+      "targetLocation": "12:64:14",
+      "targetCorpusLemmaBuckwalter": "Ha`fiZ",
+      "targetLocationCorpusRootBuckwalter": "HfZ",
+      "removeLocation": "12:64:15",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 12:64:14=null and 12:64:15=حَٰفِظ",
+        "Corpus 12:64:14 STEM lemma is Ha`fiZ with root HfZ",
+        "Corpus 12:64:15 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "12:64:14",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "حَٰفِظ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "Ha`fiZ"
+          ]
+        },
+        {
+          "location": "12:64:15",
+          "expectedCurrentLemmaArabic": "حَٰفِظ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-34646",
+      "reviewStatus": "approved",
+      "verseKey": "14:11",
+      "shiftedLemmaArabic": "كَانَ",
+      "shiftedLemmaBuckwalter": "kaAna",
+      "targetLocation": "14:11:18",
+      "targetCorpusLemmaBuckwalter": "kaAna",
+      "targetLocationCorpusRootBuckwalter": "kwn",
+      "removeLocation": "14:11:19",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 14:11:18=null and 14:11:19=كَانَ",
+        "Corpus 14:11:18 STEM lemma is kaAna with root kwn",
+        "Corpus 14:11:19 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "14:11:18",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "كَانَ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "kaAna"
+          ]
+        },
+        {
+          "location": "14:11:19",
+          "expectedCurrentLemmaArabic": "كَانَ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-36865",
+      "reviewStatus": "approved",
+      "verseKey": "16:60",
+      "shiftedLemmaArabic": "أَعْلَىٰ",
+      "shiftedLemmaBuckwalter": ">aEolaY`",
+      "targetLocation": "16:60:9",
+      "targetCorpusLemmaBuckwalter": ">aEolaY`",
+      "targetLocationCorpusRootBuckwalter": "Elw",
+      "removeLocation": "16:60:10",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 16:60:9=null and 16:60:10=أَعْلَىٰ",
+        "Corpus 16:60:9 STEM lemma is >aEolaY` with root Elw",
+        "Corpus 16:60:10 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "16:60:9",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "أَعْلَىٰ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            ">aEolaY`"
+          ]
+        },
+        {
+          "location": "16:60:10",
+          "expectedCurrentLemmaArabic": "أَعْلَىٰ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-39004",
+      "reviewStatus": "approved",
+      "verseKey": "17:66",
+      "shiftedLemmaArabic": "كَانَ",
+      "shiftedLemmaBuckwalter": "kaAna",
+      "targetLocation": "17:66:12",
+      "targetCorpusLemmaBuckwalter": "kaAna",
+      "targetLocationCorpusRootBuckwalter": "kwn",
+      "removeLocation": "17:66:13",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 17:66:12=null and 17:66:13=كَانَ",
+        "Corpus 17:66:12 STEM lemma is kaAna with root kwn",
+        "Corpus 17:66:13 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "17:66:12",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "كَانَ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "kaAna"
+          ]
+        },
+        {
+          "location": "17:66:13",
+          "expectedCurrentLemmaArabic": "كَانَ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-39651",
+      "reviewStatus": "approved",
+      "verseKey": "17:110",
+      "shiftedLemmaArabic": "دَعَا",
+      "shiftedLemmaBuckwalter": "daEaA",
+      "targetLocation": "17:110:9",
+      "targetCorpusLemmaBuckwalter": "daEaA",
+      "targetLocationCorpusRootBuckwalter": "dEw",
+      "removeLocation": "17:110:10",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 17:110:9=null and 17:110:10=دَعَا",
+        "Corpus 17:110:9 STEM lemma is daEaA with root dEw",
+        "Corpus 17:110:10 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "17:110:9",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "دَعَا",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "daEaA"
+          ]
+        },
+        {
+          "location": "17:110:10",
+          "expectedCurrentLemmaArabic": "دَعَا",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-42277",
+      "reviewStatus": "approved",
+      "verseKey": "19:79",
+      "shiftedLemmaArabic": "مَدَّ",
+      "shiftedLemmaBuckwalter": "mad~a",
+      "targetLocation": "19:79:5",
+      "targetCorpusLemmaBuckwalter": "mad~a",
+      "targetLocationCorpusRootBuckwalter": "mdd",
+      "removeLocation": "19:79:6",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 19:79:5=null and 19:79:6=مَدَّ",
+        "Corpus 19:79:5 STEM lemma is mad~a with root mdd",
+        "Corpus 19:79:6 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "19:79:5",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "مَدَّ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "mad~a"
+          ]
+        },
+        {
+          "location": "19:79:6",
+          "expectedCurrentLemmaArabic": "مَدَّ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-43482",
+      "reviewStatus": "approved",
+      "verseKey": "20:101",
+      "shiftedLemmaArabic": "سَآءَ",
+      "shiftedLemmaBuckwalter": "saA^'a",
+      "targetLocation": "20:101:3",
+      "targetCorpusLemmaBuckwalter": "saA^'a",
+      "targetLocationCorpusRootBuckwalter": "swA",
+      "removeLocation": "20:101:4",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 20:101:3=null and 20:101:4=سَآءَ",
+        "Corpus 20:101:3 STEM lemma is saA^'a with root swA",
+        "Corpus 20:101:4 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "20:101:3",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "سَآءَ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "saA^'a"
+          ]
+        },
+        {
+          "location": "20:101:4",
+          "expectedCurrentLemmaArabic": "سَآءَ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-44506",
+      "reviewStatus": "approved",
+      "verseKey": "21:51",
+      "shiftedLemmaArabic": "آتَى",
+      "shiftedLemmaBuckwalter": "A^taY",
+      "targetLocation": "21:51:2",
+      "targetCorpusLemmaBuckwalter": "A^taY",
+      "targetLocationCorpusRootBuckwalter": "Aty",
+      "removeLocation": "21:51:3",
+      "removeLocationCorpusLemmaBuckwalters": [
+        "<iboraAhiym"
+      ],
+      "evidence": [
+        "QUL word-lemma has 21:51:2=null and 21:51:3=آتَى",
+        "Corpus 21:51:2 STEM lemma is A^taY with root Aty",
+        "Corpus 21:51:3 segments are [<iboraAhiym]"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "21:51:2",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "آتَى",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "A^taY"
+          ]
+        },
+        {
+          "location": "21:51:3",
+          "expectedCurrentLemmaArabic": "آتَى",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "<iboraAhiym"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "WLA-44511",
+      "reviewStatus": "approved",
+      "verseKey": "21:51",
+      "shiftedLemmaArabic": "كَانَ",
+      "shiftedLemmaBuckwalter": "kaAna",
+      "targetLocation": "21:51:7",
+      "targetCorpusLemmaBuckwalter": "kaAna",
+      "targetLocationCorpusRootBuckwalter": "kwn",
+      "removeLocation": "21:51:8",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 21:51:7=null and 21:51:8=كَانَ",
+        "Corpus 21:51:7 STEM lemma is kaAna with root kwn",
+        "Corpus 21:51:8 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "21:51:7",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "كَانَ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "kaAna"
+          ]
+        },
+        {
+          "location": "21:51:8",
+          "expectedCurrentLemmaArabic": "كَانَ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-44716",
+      "reviewStatus": "approved",
+      "verseKey": "21:73",
+      "shiftedLemmaArabic": "كَانَ",
+      "shiftedLemmaBuckwalter": "kaAna",
+      "targetLocation": "21:73:13",
+      "targetCorpusLemmaBuckwalter": "kaAna",
+      "targetLocationCorpusRootBuckwalter": "kwn",
+      "removeLocation": "21:73:14",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 21:73:13=null and 21:73:14=كَانَ",
+        "Corpus 21:73:13 STEM lemma is kaAna with root kwn",
+        "Corpus 21:73:14 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "21:73:13",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "كَانَ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "kaAna"
+          ]
+        },
+        {
+          "location": "21:73:14",
+          "expectedCurrentLemmaArabic": "كَانَ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-48793",
+      "reviewStatus": "approved",
+      "verseKey": "24:55",
+      "shiftedLemmaArabic": "أَشْرَكَ",
+      "shiftedLemmaBuckwalter": ">a$oraka",
+      "targetLocation": "24:55:29",
+      "targetCorpusLemmaBuckwalter": ">a$oraka",
+      "targetLocationCorpusRootBuckwalter": "$rk",
+      "removeLocation": "24:55:30",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 24:55:29=null and 24:55:30=أَشْرَكَ",
+        "Corpus 24:55:29 STEM lemma is >a$oraka with root $rk",
+        "Corpus 24:55:30 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "24:55:29",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "أَشْرَكَ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            ">a$oraka"
+          ]
+        },
+        {
+          "location": "24:55:30",
+          "expectedCurrentLemmaArabic": "أَشْرَكَ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-49290",
+      "reviewStatus": "approved",
+      "verseKey": "25:15",
+      "shiftedLemmaArabic": "كَانَ",
+      "shiftedLemmaBuckwalter": "kaAna",
+      "targetLocation": "25:15:10",
+      "targetCorpusLemmaBuckwalter": "kaAna",
+      "targetLocationCorpusRootBuckwalter": "kwn",
+      "removeLocation": "25:15:11",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 25:15:10=null and 25:15:11=كَانَ",
+        "Corpus 25:15:10 STEM lemma is kaAna with root kwn",
+        "Corpus 25:15:11 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "25:15:10",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "كَانَ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "kaAna"
+          ]
+        },
+        {
+          "location": "25:15:11",
+          "expectedCurrentLemmaArabic": "كَانَ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-49822",
+      "reviewStatus": "approved",
+      "verseKey": "25:58",
+      "shiftedLemmaArabic": "كَفَىٰ",
+      "shiftedLemmaBuckwalter": "kafaY`",
+      "targetLocation": "25:58:9",
+      "targetCorpusLemmaBuckwalter": "kafaY`",
+      "targetLocationCorpusRootBuckwalter": "kfy",
+      "removeLocation": "25:58:10",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 25:58:9=null and 25:58:10=كَفَىٰ",
+        "Corpus 25:58:9 STEM lemma is kafaY` with root kfy",
+        "Corpus 25:58:10 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "25:58:9",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "كَفَىٰ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "kafaY`"
+          ]
+        },
+        {
+          "location": "25:58:10",
+          "expectedCurrentLemmaArabic": "كَفَىٰ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-49842",
+      "reviewStatus": "approved",
+      "verseKey": "25:59",
+      "shiftedLemmaArabic": "سَأَلَ",
+      "shiftedLemmaBuckwalter": "sa>ala",
+      "targetLocation": "25:59:15",
+      "targetCorpusLemmaBuckwalter": "sa>ala",
+      "targetLocationCorpusRootBuckwalter": "sAl",
+      "removeLocation": "25:59:16",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 25:59:15=null and 25:59:16=سَأَلَ",
+        "Corpus 25:59:15 STEM lemma is sa>ala with root sAl",
+        "Corpus 25:59:16 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "25:59:15",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "سَأَلَ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "sa>ala"
+          ]
+        },
+        {
+          "location": "25:59:16",
+          "expectedCurrentLemmaArabic": "سَأَلَ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-50830",
+      "reviewStatus": "approved",
+      "verseKey": "26:111",
+      "shiftedLemmaArabic": "ءَامَنَ",
+      "shiftedLemmaBuckwalter": "'aAmana",
+      "targetLocation": "26:111:2",
+      "targetCorpusLemmaBuckwalter": "'aAmana",
+      "targetLocationCorpusRootBuckwalter": "Amn",
+      "removeLocation": "26:111:3",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 26:111:2=null and 26:111:3=ءَامَنَ",
+        "Corpus 26:111:2 STEM lemma is 'aAmana with root Amn",
+        "Corpus 26:111:3 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "26:111:2",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "ءَامَنَ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "'aAmana"
+          ]
+        },
+        {
+          "location": "26:111:3",
+          "expectedCurrentLemmaArabic": "ءَامَنَ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-53708",
+      "reviewStatus": "approved",
+      "verseKey": "28:50",
+      "shiftedLemmaArabic": "أَضَلّ",
+      "shiftedLemmaBuckwalter": ">aDal~",
+      "targetLocation": "28:50:10",
+      "targetCorpusLemmaBuckwalter": ">aDal~",
+      "targetLocationCorpusRootBuckwalter": "Dll",
+      "removeLocation": "28:50:11",
+      "removeLocationCorpusLemmaBuckwalters": [
+        "min",
+        "man"
+      ],
+      "evidence": [
+        "QUL word-lemma has 28:50:10=null and 28:50:11=أَضَلّ",
+        "Corpus 28:50:10 STEM lemma is >aDal~ with root Dll",
+        "Corpus 28:50:11 segments are [min, man]"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "28:50:10",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "أَضَلّ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            ">aDal~"
+          ]
+        },
+        {
+          "location": "28:50:11",
+          "expectedCurrentLemmaArabic": "أَضَلّ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "min",
+            "man"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "WLA-53807",
+      "reviewStatus": "approved",
+      "verseKey": "28:57",
+      "shiftedLemmaArabic": "مَكَّ",
+      "shiftedLemmaBuckwalter": "mak~a",
+      "targetLocation": "28:57:10",
+      "targetCorpusLemmaBuckwalter": "mak~a",
+      "targetLocationCorpusRootBuckwalter": "mkn",
+      "removeLocation": "28:57:11",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 28:57:10=null and 28:57:11=مَكَّ",
+        "Corpus 28:57:10 STEM lemma is mak~a with root mkn",
+        "Corpus 28:57:11 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "28:57:10",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "مَكَّ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "mak~a"
+          ]
+        },
+        {
+          "location": "28:57:11",
+          "expectedCurrentLemmaArabic": "مَكَّ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-54443",
+      "reviewStatus": "approved",
+      "verseKey": "29:8",
+      "shiftedLemmaArabic": "أَشْرَكَ",
+      "shiftedLemmaBuckwalter": ">a$oraka",
+      "targetLocation": "29:8:7",
+      "targetCorpusLemmaBuckwalter": ">a$oraka",
+      "targetLocationCorpusRootBuckwalter": "$rk",
+      "removeLocation": "29:8:8",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 29:8:7=null and 29:8:8=أَشْرَكَ",
+        "Corpus 29:8:7 STEM lemma is >a$oraka with root $rk",
+        "Corpus 29:8:8 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "29:8:7",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "أَشْرَكَ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            ">a$oraka"
+          ]
+        },
+        {
+          "location": "29:8:8",
+          "expectedCurrentLemmaArabic": "أَشْرَكَ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-54741",
+      "reviewStatus": "approved",
+      "verseKey": "29:26",
+      "shiftedLemmaArabic": "ءَامَنَ",
+      "shiftedLemmaBuckwalter": "'aAmana",
+      "targetLocation": "29:26:1",
+      "targetCorpusLemmaBuckwalter": "'aAmana",
+      "targetLocationCorpusRootBuckwalter": "Amn",
+      "removeLocation": "29:26:2",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 29:26:1=null and 29:26:2=ءَامَنَ",
+        "Corpus 29:26:1 STEM lemma is 'aAmana with root Amn",
+        "Corpus 29:26:2 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "29:26:1",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "ءَامَنَ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "'aAmana"
+          ]
+        },
+        {
+          "location": "29:26:2",
+          "expectedCurrentLemmaArabic": "ءَامَنَ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-55090",
+      "reviewStatus": "approved",
+      "verseKey": "29:47",
+      "shiftedLemmaArabic": "ءَامَنَ",
+      "shiftedLemmaBuckwalter": "'aAmana",
+      "targetLocation": "29:47:8",
+      "targetCorpusLemmaBuckwalter": "'aAmana",
+      "targetLocationCorpusRootBuckwalter": "Amn",
+      "removeLocation": "29:47:9",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 29:47:8=null and 29:47:9=ءَامَنَ",
+        "Corpus 29:47:8 STEM lemma is 'aAmana with root Amn",
+        "Corpus 29:47:9 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "29:47:8",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "ءَامَنَ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "'aAmana"
+          ]
+        },
+        {
+          "location": "29:47:9",
+          "expectedCurrentLemmaArabic": "ءَامَنَ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-55193",
+      "reviewStatus": "approved",
+      "verseKey": "29:53",
+      "shiftedLemmaArabic": "بَغْتَة",
+      "shiftedLemmaBuckwalter": "bagotap",
+      "targetLocation": "29:53:9",
+      "targetCorpusLemmaBuckwalter": "bagotap",
+      "targetLocationCorpusRootBuckwalter": "bgt",
+      "removeLocation": "29:53:10",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 29:53:9=null and 29:53:10=بَغْتَة",
+        "Corpus 29:53:9 STEM lemma is bagotap with root bgt",
+        "Corpus 29:53:10 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "29:53:9",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "بَغْتَة",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "bagotap"
+          ]
+        },
+        {
+          "location": "29:53:10",
+          "expectedCurrentLemmaArabic": "بَغْتَة",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-59327",
+      "reviewStatus": "approved",
+      "verseKey": "34:39",
+      "shiftedLemmaArabic": "شَىْء",
+      "shiftedLemmaBuckwalter": "$aYo'",
+      "targetLocation": "34:39:15",
+      "targetCorpusLemmaBuckwalter": "$aYo'",
+      "targetLocationCorpusRootBuckwalter": "$yA",
+      "removeLocation": "34:39:16",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 34:39:15=null and 34:39:16=شَىْء",
+        "Corpus 34:39:15 STEM lemma is $aYo' with root $yA",
+        "Corpus 34:39:16 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "34:39:15",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "شَىْء",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "$aYo'"
+          ]
+        },
+        {
+          "location": "34:39:16",
+          "expectedCurrentLemmaArabic": "شَىْء",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-60655",
+      "reviewStatus": "approved",
+      "verseKey": "36:30",
+      "shiftedLemmaArabic": "كَانَ",
+      "shiftedLemmaBuckwalter": "kaAna",
+      "targetLocation": "36:30:9",
+      "targetCorpusLemmaBuckwalter": "kaAna",
+      "targetLocationCorpusRootBuckwalter": "kwn",
+      "removeLocation": "36:30:10",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 36:30:9=null and 36:30:10=كَانَ",
+        "Corpus 36:30:9 STEM lemma is kaAna with root kwn",
+        "Corpus 36:30:10 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "36:30:9",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "كَانَ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "kaAna"
+          ]
+        },
+        {
+          "location": "36:30:10",
+          "expectedCurrentLemmaArabic": "كَانَ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-64470",
+      "reviewStatus": "approved",
+      "verseKey": "40:12",
+      "shiftedLemmaArabic": "أَشْرَكَ",
+      "shiftedLemmaBuckwalter": ">a$oraka",
+      "targetLocation": "40:12:9",
+      "targetCorpusLemmaBuckwalter": ">a$oraka",
+      "targetLocationCorpusRootBuckwalter": "$rk",
+      "removeLocation": "40:12:10",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 40:12:9=null and 40:12:10=أَشْرَكَ",
+        "Corpus 40:12:9 STEM lemma is >a$oraka with root $rk",
+        "Corpus 40:12:10 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "40:12:9",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "أَشْرَكَ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            ">a$oraka"
+          ]
+        },
+        {
+          "location": "40:12:10",
+          "expectedCurrentLemmaArabic": "أَشْرَكَ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-65886",
+      "reviewStatus": "approved",
+      "verseKey": "41:21",
+      "shiftedLemmaArabic": "شَىْء",
+      "shiftedLemmaBuckwalter": "$aYo'",
+      "targetLocation": "41:21:12",
+      "targetCorpusLemmaBuckwalter": "$aYo'",
+      "targetLocationCorpusRootBuckwalter": "$yA",
+      "removeLocation": "41:21:13",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 41:21:12=null and 41:21:13=شَىْء",
+        "Corpus 41:21:12 STEM lemma is $aYo' with root $yA",
+        "Corpus 41:21:13 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "41:21:12",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "شَىْء",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "$aYo'"
+          ]
+        },
+        {
+          "location": "41:21:13",
+          "expectedCurrentLemmaArabic": "شَىْء",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-66049",
+      "reviewStatus": "approved",
+      "verseKey": "41:31",
+      "shiftedLemmaArabic": "نَفْس",
+      "shiftedLemmaBuckwalter": "nafos",
+      "targetLocation": "41:31:12",
+      "targetCorpusLemmaBuckwalter": "nafos",
+      "targetLocationCorpusRootBuckwalter": "nfs",
+      "removeLocation": "41:31:13",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 41:31:12=null and 41:31:13=نَفْس",
+        "Corpus 41:31:12 STEM lemma is nafos with root nfs",
+        "Corpus 41:31:13 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "41:31:12",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "نَفْس",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "nafos"
+          ]
+        },
+        {
+          "location": "41:31:13",
+          "expectedCurrentLemmaArabic": "نَفْس",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-66564",
+      "reviewStatus": "approved",
+      "verseKey": "42:9",
+      "shiftedLemmaArabic": "وَلِىّ",
+      "shiftedLemmaBuckwalter": "waliY~",
+      "targetLocation": "42:9:8",
+      "targetCorpusLemmaBuckwalter": "waliY~",
+      "targetLocationCorpusRootBuckwalter": "wly",
+      "removeLocation": "42:9:9",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 42:9:8=null and 42:9:9=وَلِىّ",
+        "Corpus 42:9:8 STEM lemma is waliY~ with root wly",
+        "Corpus 42:9:9 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "42:9:8",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "وَلِىّ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "waliY~"
+          ]
+        },
+        {
+          "location": "42:9:9",
+          "expectedCurrentLemmaArabic": "وَلِىّ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-68799",
+      "reviewStatus": "approved",
+      "verseKey": "45:10",
+      "shiftedLemmaArabic": "وَلِىّ",
+      "shiftedLemmaBuckwalter": "waliY~",
+      "targetLocation": "45:10:16",
+      "targetCorpusLemmaBuckwalter": "waliY~",
+      "targetLocationCorpusRootBuckwalter": "wly",
+      "removeLocation": "45:10:17",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 45:10:16=null and 45:10:17=وَلِىّ",
+        "Corpus 45:10:16 STEM lemma is waliY~ with root wly",
+        "Corpus 45:10:17 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "45:10:16",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "وَلِىّ",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "waliY~"
+          ]
+        },
+        {
+          "location": "45:10:17",
+          "expectedCurrentLemmaArabic": "وَلِىّ",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-69327",
+      "reviewStatus": "approved",
+      "verseKey": "46:8",
+      "shiftedLemmaArabic": "شَىْء",
+      "shiftedLemmaBuckwalter": "$aYo'",
+      "targetLocation": "46:8:12",
+      "targetCorpusLemmaBuckwalter": "$aYo'",
+      "targetLocationCorpusRootBuckwalter": "$yA",
+      "removeLocation": "46:8:13",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 46:8:12=null and 46:8:13=شَىْء",
+        "Corpus 46:8:12 STEM lemma is $aYo' with root $yA",
+        "Corpus 46:8:13 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "46:8:12",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "شَىْء",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "$aYo'"
+          ]
+        },
+        {
+          "location": "46:8:13",
+          "expectedCurrentLemmaArabic": "شَىْء",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    },
+    {
+      "id": "WLA-74622",
+      "reviewStatus": "approved",
+      "verseKey": "57:15",
+      "shiftedLemmaArabic": "نَار",
+      "shiftedLemmaBuckwalter": "naAr",
+      "targetLocation": "57:15:11",
+      "targetCorpusLemmaBuckwalter": "naAr",
+      "targetLocationCorpusRootBuckwalter": "nwr",
+      "removeLocation": "57:15:12",
+      "removeLocationCorpusLemmaBuckwalters": [],
+      "evidence": [
+        "QUL word-lemma has 57:15:11=null and 57:15:12=نَار",
+        "Corpus 57:15:11 STEM lemma is naAr with root nwr",
+        "Corpus 57:15:12 segments are []"
+      ],
+      "reason": "QUL word-level lemma is shifted one word forward from the content word to the following particle/pronoun word.",
+      "operations": [
+        {
+          "location": "57:15:11",
+          "expectedCurrentLemmaArabic": null,
+          "correctedLemmaArabic": "نَار",
+          "operationKind": "add",
+          "currentLocationCorpusLemmaBuckwalters": [
+            "naAr"
+          ]
+        },
+        {
+          "location": "57:15:12",
+          "expectedCurrentLemmaArabic": "نَار",
+          "correctedLemmaArabic": null,
+          "operationKind": "remove",
+          "currentLocationCorpusLemmaBuckwalters": []
+        }
+      ]
+    }
+  ]
+}
