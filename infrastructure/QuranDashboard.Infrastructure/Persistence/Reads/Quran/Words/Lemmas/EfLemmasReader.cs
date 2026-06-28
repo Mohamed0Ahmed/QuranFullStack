@@ -64,12 +64,12 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
             return null;
         }
 
-        var matchedAyahIds = _db.WordMorphologies
+        var matchedAyahIds = _db.WordMorphologySegments
             .AsNoTracking()
-            .Where(m => m.LemmaId == id && (normalizedTypeCode == null || m.HeadPos == normalizedTypeCode))
+            .Where(s => s.LemmaId == id && (normalizedTypeCode == null || s.Pos == normalizedTypeCode))
             .Join(
                 _db.QuranWords.AsNoTracking(),
-                m => m.QuranWordId,
+                s => s.QuranWordId,
                 w => w.Id,
                 (_, w) => w.AyahId)
             .Distinct();
@@ -105,13 +105,14 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
         var ayahIds = pageAyahs.Select(a => a.AyahId).ToList();
 
         var matchedRows = await (
-            from m in _db.WordMorphologies.AsNoTracking()
-            join w in _db.QuranWords.AsNoTracking() on m.QuranWordId equals w.Id
-            where m.LemmaId == id
+            from s in _db.WordMorphologySegments.AsNoTracking()
+            join w in _db.QuranWords.AsNoTracking() on s.QuranWordId equals w.Id
+            where s.LemmaId == id
                 && ayahIds.Contains(w.AyahId)
-                && (normalizedTypeCode == null || m.HeadPos == normalizedTypeCode)
+                && (normalizedTypeCode == null || s.Pos == normalizedTypeCode)
             orderby w.SurahNumber, w.AyahNumber, w.WordNumber, w.Id
             select new { w.AyahId, w.Id })
+            .Distinct()
             .ToListAsync(cancellationToken);
 
         var matchedIdsByAyah = matchedRows
@@ -252,7 +253,8 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
 
     /// <summary>
     /// Loads the complete lemma summary list in a bounded aggregation: identity,
-    /// owned root, derived counts, first verse key, and the ordered per-lemma POS
+    /// owned root, segment-matched occurrence/ayah/surah counts, morphology-backed
+    /// simple/tashkeel/stem counts, first verse key, and the ordered per-lemma POS
     /// distribution. Type ordering (count desc, earliest Mushaf occurrence asc)
     /// is finalized in C# so the dominant type is always the first entry.
     /// </summary>
@@ -267,35 +269,43 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
                 l.root_id AS "{nameof(LemmaAggregationRow.RootId)}",
                 r.root_text AS "{nameof(LemmaAggregationRow.RootText)}",
                 r.root_buckwalter AS "{nameof(LemmaAggregationRow.RootBuckwalter)}",
-                COALESCE(agg.occurrences_count, 0) AS "{nameof(LemmaAggregationRow.OccurrencesCount)}",
-                COALESCE(agg.ayahs_count, 0) AS "{nameof(LemmaAggregationRow.AyahsCount)}",
-                COALESCE(agg.surahs_count, 0) AS "{nameof(LemmaAggregationRow.SurahsCount)}",
-                COALESCE(agg.simple_words_count, 0) AS "{nameof(LemmaAggregationRow.SimpleWordsCount)}",
-                COALESCE(agg.tashkeel_words_count, 0) AS "{nameof(LemmaAggregationRow.TashkeelWordsCount)}",
-                COALESCE(agg.stems_count, 0) AS "{nameof(LemmaAggregationRow.StemsCount)}",
-                agg.first_surah_number AS "{nameof(LemmaAggregationRow.FirstSurahNumber)}",
-                agg.first_ayah_number AS "{nameof(LemmaAggregationRow.FirstAyahNumber)}",
-                agg.first_word_number AS "{nameof(LemmaAggregationRow.FirstWordNumber)}",
+                COALESCE(seg_agg.occurrences_count, 0) AS "{nameof(LemmaAggregationRow.OccurrencesCount)}",
+                COALESCE(seg_agg.ayahs_count, 0) AS "{nameof(LemmaAggregationRow.AyahsCount)}",
+                COALESCE(seg_agg.surahs_count, 0) AS "{nameof(LemmaAggregationRow.SurahsCount)}",
+                COALESCE(morph_agg.simple_words_count, 0) AS "{nameof(LemmaAggregationRow.SimpleWordsCount)}",
+                COALESCE(morph_agg.tashkeel_words_count, 0) AS "{nameof(LemmaAggregationRow.TashkeelWordsCount)}",
+                COALESCE(morph_agg.stems_count, 0) AS "{nameof(LemmaAggregationRow.StemsCount)}",
+                seg_agg.first_surah_number AS "{nameof(LemmaAggregationRow.FirstSurahNumber)}",
+                seg_agg.first_ayah_number AS "{nameof(LemmaAggregationRow.FirstAyahNumber)}",
+                seg_agg.first_word_number AS "{nameof(LemmaAggregationRow.FirstWordNumber)}",
                 l.first_word_order_in_mushaf AS "{nameof(LemmaAggregationRow.FirstWordOrderInMushaf)}"
             FROM quran_lemmas l
             LEFT JOIN quran_roots r ON r.id = l.root_id
             LEFT JOIN (
                 SELECT
-                    m.lemma_id AS lid,
+                    s.lemma_id AS lid,
                     COUNT(*) AS occurrences_count,
                     COUNT(DISTINCT w.ayah_id) AS ayahs_count,
                     COUNT(DISTINCT w.surah_number) AS surahs_count,
+                    (ARRAY_AGG(w.surah_number ORDER BY s.quran_word_id))[1] AS first_surah_number,
+                    (ARRAY_AGG(w.ayah_number ORDER BY s.quran_word_id))[1] AS first_ayah_number,
+                    (ARRAY_AGG(w.word_number ORDER BY s.quran_word_id))[1] AS first_word_number
+                FROM quran_word_morphology_segments s
+                JOIN quran_words w ON w.id = s.quran_word_id
+                WHERE s.lemma_id IS NOT NULL
+                GROUP BY s.lemma_id
+            ) seg_agg ON seg_agg.lid = l.id
+            LEFT JOIN (
+                SELECT
+                    m.lemma_id AS lid,
                     COUNT(DISTINCT w.unique_simple_word_id) AS simple_words_count,
                     COUNT(DISTINCT w.unique_tashkeel_word_id) AS tashkeel_words_count,
-                    COUNT(DISTINCT m.stem_id) AS stems_count,
-                    (ARRAY_AGG(w.surah_number ORDER BY m.quran_word_id))[1] AS first_surah_number,
-                    (ARRAY_AGG(w.ayah_number ORDER BY m.quran_word_id))[1] AS first_ayah_number,
-                    (ARRAY_AGG(w.word_number ORDER BY m.quran_word_id))[1] AS first_word_number
+                    COUNT(DISTINCT m.stem_id) AS stems_count
                 FROM quran_word_morphology m
                 JOIN quran_words w ON w.id = m.quran_word_id
                 WHERE m.lemma_id IS NOT NULL
                 GROUP BY m.lemma_id
-            ) agg ON agg.lid = l.id
+            ) morph_agg ON morph_agg.lid = l.id
             """;
 
         var aggregates = await _db.Database.SqlQueryRaw<LemmaAggregationRow>(
@@ -314,14 +324,14 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
         // (ordered by quran_word_id, the monotonic mushaf key), not three
         // independent minimums that could form a non-existent coordinate.
         var rawRows = await (
-            from m in _db.WordMorphologies.AsNoTracking()
-            join w in _db.QuranWords.AsNoTracking() on m.QuranWordId equals w.Id
-            join t in _db.PosTags.AsNoTracking() on m.HeadPos equals t.Code
-            where m.LemmaId != null
+            from s in _db.WordMorphologySegments.AsNoTracking()
+            join w in _db.QuranWords.AsNoTracking() on s.QuranWordId equals w.Id
+            join t in _db.PosTags.AsNoTracking() on s.Pos equals t.Code
+            where s.LemmaId != null
             select new
             {
-                LemmaId = m.LemmaId!.Value,
-                m.QuranWordId,
+                LemmaId = s.LemmaId!.Value,
+                s.QuranWordId,
                 t.Code,
                 t.ArabicLabel,
                 t.EnglishLabel,

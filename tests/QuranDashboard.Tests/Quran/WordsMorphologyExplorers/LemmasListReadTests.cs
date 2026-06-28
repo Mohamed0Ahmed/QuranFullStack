@@ -16,11 +16,15 @@ namespace QuranDashboard.Tests.Quran.WordsMorphologyExplorers;
 [Collection(nameof(MorphologyExplorersCollection))]
 public sealed class LemmasListReadTests(MorphologyExplorersTestFixture fixture)
 {
-    private const int SeededLemmaCount = 5;
+    private const int SeededLemmaCount = 8;
     private const int HighFrequencyLemmaId = 500;
     private const int NullRootLemmaId = 501;
     private const int MultiTypeLemmaId = 503;
     private const int UnknownLemmaId = 999_999;
+
+    private const int CompoundLemmaLaId = 506;
+    private const int CompoundLemmaAnId = 507;
+    private const int SameLemmaFanoutLemmaId = 508;
 
     [Fact]
     public async Task GetLemmasPage_returns_default_page_with_all_seeded_lemmas()
@@ -50,15 +54,22 @@ public sealed class LemmasListReadTests(MorphologyExplorersTestFixture fixture)
             CancellationToken.None);
         var page = outcome.Should().BeOfType<GetLemmasPageOutcome.Success>().Subject.Page;
 
-        foreach (var item in page.Items)
+        foreach (var item in page.Items.Where(i => i.OccurrencesCount > 0))
         {
             item.LemmaText.Should().NotBeNullOrWhiteSpace();
             item.OccurrencesCount.Should().BeGreaterThan(0);
             item.AyahsCount.Should().BeGreaterThanOrEqualTo(1);
             item.SurahsCount.Should().BeInRange(1, 114);
-            item.SimpleWordsCount.Should().BeGreaterThanOrEqualTo(1);
-            item.TashkeelWordsCount.Should().BeGreaterThanOrEqualTo(1);
-            item.StemsCount.Should().BeGreaterThanOrEqualTo(1);
+            if (item.Id != CompoundLemmaAnId)
+            {
+                item.SimpleWordsCount.Should().BeGreaterThanOrEqualTo(1);
+                item.TashkeelWordsCount.Should().BeGreaterThanOrEqualTo(1);
+            }
+
+            if (item.Id is not CompoundLemmaLaId and not CompoundLemmaAnId and not SameLemmaFanoutLemmaId)
+            {
+                item.StemsCount.Should().BeGreaterThanOrEqualTo(1);
+            }
         }
     }
 
@@ -181,7 +192,7 @@ public sealed class LemmasListReadTests(MorphologyExplorersTestFixture fixture)
             CancellationToken.None);
         var page = outcome.Should().BeOfType<GetLemmasPageOutcome.Success>().Subject.Page;
 
-        page.Items.Select(i => i.Id).Should().Equal(500, 503, 502, 501, 504);
+        page.Items.Select(i => i.Id).Should().Equal(500, 503, 502, 501, 506, 508, 504, 507);
     }
 
     [Fact]
@@ -195,7 +206,7 @@ public sealed class LemmasListReadTests(MorphologyExplorersTestFixture fixture)
             CancellationToken.None);
         var page = outcome.Should().BeOfType<GetLemmasPageOutcome.Success>().Subject.Page;
 
-        page.Items.Select(i => i.Id).Should().Equal(500, 501, 503, 502, 504);
+        page.Items.Select(i => i.Id).Should().Equal(500, 501, 503, 502, 504, 506, 507, 508);
     }
 
     [Fact]
@@ -265,6 +276,114 @@ public sealed class LemmasListReadTests(MorphologyExplorersTestFixture fixture)
         summary.TypeDistribution.Should().HaveCount(2);
         summary.TypeDistribution.Sum(t => t.OccurrencesCount).Should().Be(summary.OccurrencesCount);
         summary.TypeDistribution.First().Code.Should().Be("N");
+    }
+
+    [Fact]
+    public async Task GetLemmaSummary_compound_la_type_distribution_uses_segment_pos_not_word_head_pos()
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetLemmaSummaryHandler>();
+
+        var outcome = await handler.HandleAsync(
+            new GetLemmaSummaryQuery(CompoundLemmaLaId),
+            CancellationToken.None);
+        var summary = outcome.Should().BeOfType<GetLemmaSummaryOutcome.Success>().Subject.Summary;
+
+        summary.OccurrencesCount.Should().Be(2);
+        summary.AyahsCount.Should().Be(2);
+        summary.SurahsCount.Should().Be(2);
+        summary.TypeDistribution.Should().ContainSingle();
+        summary.TypeDistribution.Single().Code.Should().Be("NEG");
+        summary.TypeDistribution.Single().OccurrencesCount.Should().Be(2);
+        summary.TypeDistribution.Select(t => t.Code).Should().NotContain("SUB");
+    }
+
+    [Fact]
+    public async Task GetLemmaSummary_compound_an_type_distribution_includes_segment_only_occurrence()
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetLemmaSummaryHandler>();
+
+        var outcome = await handler.HandleAsync(
+            new GetLemmaSummaryQuery(CompoundLemmaAnId),
+            CancellationToken.None);
+        var summary = outcome.Should().BeOfType<GetLemmaSummaryOutcome.Success>().Subject.Summary;
+
+        summary.OccurrencesCount.Should().Be(1);
+        summary.AyahsCount.Should().Be(1);
+        summary.SurahsCount.Should().Be(1);
+        summary.TypeDistribution.Should().ContainSingle();
+        summary.TypeDistribution.Single().Code.Should().Be("SUB");
+        summary.TypeDistribution.Single().OccurrencesCount.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task GetLemmaSummary_same_lemma_segment_fanout_counts_segment_occurrences()
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetLemmaSummaryHandler>();
+
+        var outcome = await handler.HandleAsync(
+            new GetLemmaSummaryQuery(SameLemmaFanoutLemmaId),
+            CancellationToken.None);
+        var summary = outcome.Should().BeOfType<GetLemmaSummaryOutcome.Success>().Subject.Summary;
+
+        summary.OccurrencesCount.Should().Be(2);
+        summary.AyahsCount.Should().Be(1);
+        summary.SurahsCount.Should().Be(1);
+        summary.TypeDistribution.Should().ContainSingle();
+        summary.TypeDistribution.Single().Code.Should().Be("N");
+        summary.TypeDistribution.Sum(t => t.OccurrencesCount).Should().Be(summary.OccurrencesCount);
+    }
+
+    [Fact]
+    public async Task GetLemmasPage_compound_fixture_segment_counts_match_summary()
+    {
+        await using var scope = fixture.CreateScope();
+        var pageHandler = scope.ServiceProvider.GetRequiredService<GetLemmasPageHandler>();
+        var summaryHandler = scope.ServiceProvider.GetRequiredService<GetLemmaSummaryHandler>();
+
+        var pageOutcome = await pageHandler.HandleAsync(
+            new GetLemmasPageQuery(null, null, 1, 50),
+            CancellationToken.None);
+        var page = pageOutcome.Should().BeOfType<GetLemmasPageOutcome.Success>().Subject.Page;
+
+        var laList = page.Items.Single(i => i.Id == CompoundLemmaLaId);
+        var anList = page.Items.Single(i => i.Id == CompoundLemmaAnId);
+        var fanoutList = page.Items.Single(i => i.Id == SameLemmaFanoutLemmaId);
+
+        anList.OccurrencesCount.Should().Be(1);
+        anList.AyahsCount.Should().Be(1);
+        anList.SurahsCount.Should().Be(1);
+
+        laList.OccurrencesCount.Should().Be(2);
+        laList.AyahsCount.Should().Be(2);
+        laList.SurahsCount.Should().Be(2);
+
+        fanoutList.OccurrencesCount.Should().Be(2);
+        fanoutList.AyahsCount.Should().Be(1);
+        fanoutList.SurahsCount.Should().Be(1);
+
+        var laSummary = (await summaryHandler.HandleAsync(
+            new GetLemmaSummaryQuery(CompoundLemmaLaId),
+            CancellationToken.None)).Should().BeOfType<GetLemmaSummaryOutcome.Success>().Subject.Summary;
+        laSummary.OccurrencesCount.Should().Be(laList.OccurrencesCount);
+        laSummary.AyahsCount.Should().Be(laList.AyahsCount);
+        laSummary.SurahsCount.Should().Be(laList.SurahsCount);
+
+        var anSummary = (await summaryHandler.HandleAsync(
+            new GetLemmaSummaryQuery(CompoundLemmaAnId),
+            CancellationToken.None)).Should().BeOfType<GetLemmaSummaryOutcome.Success>().Subject.Summary;
+        anSummary.OccurrencesCount.Should().Be(anList.OccurrencesCount);
+        anSummary.AyahsCount.Should().Be(anList.AyahsCount);
+        anSummary.SurahsCount.Should().Be(anList.SurahsCount);
+
+        var fanoutSummary = (await summaryHandler.HandleAsync(
+            new GetLemmaSummaryQuery(SameLemmaFanoutLemmaId),
+            CancellationToken.None)).Should().BeOfType<GetLemmaSummaryOutcome.Success>().Subject.Summary;
+        fanoutSummary.OccurrencesCount.Should().Be(fanoutList.OccurrencesCount);
+        fanoutSummary.AyahsCount.Should().Be(fanoutList.AyahsCount);
+        fanoutSummary.SurahsCount.Should().Be(fanoutList.SurahsCount);
     }
 
     [Fact]
