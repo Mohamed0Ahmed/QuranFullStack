@@ -60,9 +60,9 @@ describe('LemmasTableComponent', () => {
     expect(headers).toContain('المواضع');
     expect(headers).toContain('الآيات');
     expect(headers).toContain('السور');
-    expect(headers).toContain('كلمات بدون تشكيل');
-    expect(headers).toContain('كلمات بالتشكيل');
-    expect(headers).toContain('الأصول الصرفية');
+    expect(headers).toContain('بدون تشكيل');
+    expect(headers).toContain('بالتشكيل');
+    expect(headers).toContain('الأصول');
   });
 
   it('renders counts and UI row numbers, never backend ids', () => {

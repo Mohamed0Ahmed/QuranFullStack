@@ -3,6 +3,13 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 import { deepLinkToHref } from '../../../../shared/url/deep-link-href';
 import { buildLemmasDeepLink } from '../../state/lemmas-url-sync';
 import { StemLemmaItemDto } from '../../models/stems.models';
+import {
+  STEMS_LEMMAS_LIST_EMPTY_LABEL,
+  STEMS_LEMMAS_LIST_LABEL,
+  STEMS_LEMMAS_LIST_LOADING_LABEL,
+  STEMS_LEMMA_TEXT_HEADER,
+  STEMS_WORD_OCCURRENCES_HEADER,
+} from '../../models/stems.labels';
 import { ROW_NUMBER_HEADER } from '../../models/unique-words.labels';
 
 interface StemLemmaRow {
@@ -22,11 +29,12 @@ export class StemLemmasListComponent {
   readonly loading = input(false);
 
   protected readonly rowNumberHeader = ROW_NUMBER_HEADER;
-  protected readonly lemmaTextHeader = 'الصيغة المعجمية';
+  protected readonly lemmaTextHeader = STEMS_LEMMA_TEXT_HEADER;
   protected readonly buckwalterHeader = 'Buckwalter';
-  protected readonly occurrencesHeader = 'عدد مرات الظهور';
-  protected readonly loadingLabel = 'جارٍ تحميل الصيغ المعجمية المرتبطة…';
-  protected readonly emptyLabel = 'لا توجد صيغ معجمية مرتبطة';
+  protected readonly occurrencesHeader = STEMS_WORD_OCCURRENCES_HEADER;
+  protected readonly listLabel = STEMS_LEMMAS_LIST_LABEL;
+  protected readonly loadingLabel = STEMS_LEMMAS_LIST_LOADING_LABEL;
+  protected readonly emptyLabel = STEMS_LEMMAS_LIST_EMPTY_LABEL;
   protected readonly missingBuckwalterLabel = '—';
 
   protected readonly rows = computed<readonly StemLemmaRow[]>(() =>

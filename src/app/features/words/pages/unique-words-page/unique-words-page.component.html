@@ -2,7 +2,7 @@
   <div class="qd-container unique-words-page-frame unique-words-page-frame--wide">
     <div class="uw-intro-band">
       <div class="qd-page-header">
-        <h1 class="qd-page-title" data-testid="unique-words-page-title">الكلمات الفريدة</h1>
+        <h1 class="qd-page-title" data-testid="unique-words-page-title">{{ pageTitle }}</h1>
         <p class="qd-text-muted" data-testid="unique-words-page-mode">{{ modeLabel() }}</p>
       </div>
     </div>
@@ -67,13 +67,13 @@
               [pageSize]="listState().pageSize"
               [totalCount]="listState().totalCount"
               [disabled]="listState().status === 'loading'"
-              ariaLabel="تصفّح الكلمات"
+              [ariaLabel]="listPaginationLabel"
               (pageChange)="onPaginationPageChange($event)"
             />
           </section>
 
           @if (isDesktop()) {
-            <aside class="unique-words-layout__panel" aria-label="التفاصيل">
+            <aside class="unique-words-layout__panel" [attr.aria-label]="panelSurfaceLabel">
               <qd-word-drilldown-modal
                 [state]="drilldownState()"
                 [inline]="true"

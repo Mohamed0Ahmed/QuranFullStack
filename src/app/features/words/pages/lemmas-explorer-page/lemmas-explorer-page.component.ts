@@ -31,10 +31,15 @@ import {
   LEMMAS_NO_RESULTS_LABEL,
   LEMMAS_NOT_FOUND_LABEL,
   LEMMAS_PAGE_TITLE,
+  LEMMAS_LIST_PAGINATION_LABEL,
+  LEMMAS_PANEL_SURFACE_LABEL,
   LEMMAS_SEARCH_LABEL,
   LEMMAS_SEARCH_PLACEHOLDER,
   LEMMAS_SORT_LABELS,
+  LEMMAS_SURAHS_TABLIST_LABEL,
   LEMMAS_SURAHS_VIEW_LABELS,
+  LEMMAS_TABLE_LABEL,
+  LEMMAS_WORDS_TABLIST_LABEL,
   LEMMAS_WORD_VIEW_LABELS,
 } from '../../models/lemmas.labels';
 import {
@@ -92,6 +97,11 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly searchLabel = LEMMAS_SEARCH_LABEL;
   protected readonly searchPlaceholder = LEMMAS_SEARCH_PLACEHOLDER;
   protected readonly panelLoadingLabel = LEMMAS_LOADING_LABEL;
+  protected readonly tableSectionLabel = LEMMAS_TABLE_LABEL;
+  protected readonly listPaginationLabel = LEMMAS_LIST_PAGINATION_LABEL;
+  protected readonly panelSurfaceLabel = LEMMAS_PANEL_SURFACE_LABEL;
+  protected readonly wordsTablistLabel = LEMMAS_WORDS_TABLIST_LABEL;
+  protected readonly surahsTablistLabel = LEMMAS_SURAHS_TABLIST_LABEL;
 
   protected get sortLabels() {
     return LEMMAS_SORT_LABELS;

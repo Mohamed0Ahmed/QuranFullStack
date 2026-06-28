@@ -54,6 +54,21 @@ function typeSummary() {
   };
 }
 
+function multiTypeSummary() {
+  return [
+    typeSummary(),
+    {
+      code: 'V',
+      arabicLabel: 'فعل',
+      englishLabel: 'Verb',
+      occurrencesCount: 2,
+      firstSurahNumber: 1,
+      firstAyahNumber: 2,
+      firstWordNumber: 1,
+    },
+  ];
+}
+
 function successListResponse() {
   return of<ApiResponse<{ page: number; pageSize: number; totalCount: number; items: LemmaListItemViewModel[] }>>({
     isSuccess: true,
@@ -237,7 +252,8 @@ describe('LemmasExplorerPageComponent US1', () => {
     expect(lemmasApi.getLemmaStems).not.toHaveBeenCalled();
 
     expect(root.querySelector('[data-testid="lemma-ayah-type-filters"]')).toBeTruthy();
-    expect(root.querySelector('[data-testid="lemma-ayah-type-filter-all"]')?.getAttribute('aria-pressed')).toBe('true');
+    expect(root.querySelector('[data-testid="lemma-ayah-type-filter-all"]')).toBeNull();
+    expect(root.querySelector('[data-testid="lemma-ayah-type-filter-N"]')?.getAttribute('aria-pressed')).toBe('true');
     expect(root.querySelector('qd-ayah-matches-list')).toBeTruthy();
     expect(root.querySelector('[data-testid="lemmas-ayahs-view"]')).toBeTruthy();
     expect(root.querySelectorAll('.ayah-matches-list__card')).toHaveLength(1);
@@ -266,6 +282,14 @@ describe('LemmasExplorerPageComponent US1', () => {
   });
 
   it('clears typeCode when عرض الكل is selected', async () => {
+    lemmasApi.getLemmaSummary.mockReturnValue(
+      of<ApiResponse<LemmaSummaryDto>>({
+        isSuccess: true,
+        data: { ...listRow(500), typeDistribution: multiTypeSummary() },
+        message: null,
+        errors: null,
+      }),
+    );
     lemmasApi.getLemmaAyahMatches.mockReturnValue(successAyahsResponse());
     queryParamMap$.next(convertToParamMap({ lemma: '500', view: 'ayahs', detailPage: '1', typeCode: 'N' }));
 
@@ -886,7 +910,8 @@ describe('LemmasExplorerPageComponent US8 — restore and navigate exact state',
       }),
       queryParamsHandling: 'merge',
     });
-    expect(fixture.nativeElement.querySelector('[data-testid="lemma-ayah-type-filter-all"]')?.getAttribute('aria-pressed')).toBe('true');
+    expect(fixture.nativeElement.querySelector('[data-testid="lemma-ayah-type-filter-all"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="lemma-ayah-type-filter-N"]')?.getAttribute('aria-pressed')).toBe('true');
   });
 
   it('maps a summary HTTP 404 to restored-not-found without surfacing a generic error', async () => {

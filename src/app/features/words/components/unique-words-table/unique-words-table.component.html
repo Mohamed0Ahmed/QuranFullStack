@@ -1,4 +1,4 @@
-<div class="unique-words-table" role="table" aria-label="جدول الكلمات الفريدة">
+<div class="unique-words-table" role="table" [attr.aria-label]="tableLabel">
   <div class="unique-words-table__header" role="rowgroup">
     <div class="unique-words-table__header-row" role="row">
       <div
@@ -10,10 +10,10 @@
       <div class="unique-words-table__header-cell" role="columnheader">{{ wordHeader }}</div>
       <div class="unique-words-table__header-cell unique-words-table__header-cell--type" role="columnheader">{{ typeHeader }}</div>
       <div class="unique-words-table__header-cell unique-words-table__header-cell--root" role="columnheader">{{ rootHeader }}</div>
-      <div class="unique-words-table__header-cell unique-words-table__header-cell--numeric" role="columnheader">المواضع</div>
-      <div class="unique-words-table__header-cell unique-words-table__header-cell--numeric" role="columnheader">الآيات</div>
-      <div class="unique-words-table__header-cell unique-words-table__header-cell--numeric" role="columnheader">السور</div>
-      <div class="unique-words-table__header-cell unique-words-table__header-cell--numeric" role="columnheader">لم يذكر في</div>
+      <div class="unique-words-table__header-cell unique-words-table__header-cell--numeric" role="columnheader">{{ occurrencesLabel }}</div>
+      <div class="unique-words-table__header-cell unique-words-table__header-cell--numeric" role="columnheader">{{ ayahsLabel }}</div>
+      <div class="unique-words-table__header-cell unique-words-table__header-cell--numeric" role="columnheader">{{ surahsLabel }}</div>
+      <div class="unique-words-table__header-cell unique-words-table__header-cell--numeric" role="columnheader">{{ missingLabel }}</div>
     </div>
     <div class="unique-words-table__header-gutter" aria-hidden="true"></div>
   </div>
@@ -22,7 +22,7 @@
     <div
       class="unique-words-table__body unique-words-table__body--loading"
       role="rowgroup"
-      aria-label="قائمة الكلمات الفريدة"
+      [attr.aria-label]="tableBodyLabel"
       aria-busy="true"
       data-testid="unique-words-loading"
     >
@@ -70,7 +70,7 @@
       [minBufferPx]="rowHeight() * 4"
       [maxBufferPx]="rowHeight() * 8"
       role="rowgroup"
-      aria-label="قائمة الكلمات الفريدة"
+      [attr.aria-label]="tableBodyLabel"
     >
       <div
         *cdkVirtualFor="let row of rows(); let index = index; trackBy: trackRowById"
@@ -150,7 +150,7 @@
       </div>
     </cdk-virtual-scroll-viewport>
   } @else {
-    <div class="unique-words-table__body" role="rowgroup" aria-label="قائمة الكلمات الفريدة">
+    <div class="unique-words-table__body" role="rowgroup" [attr.aria-label]="tableBodyLabel">
       @for (row of rows(); track row.id; let index = $index) {
         <div
           class="unique-words-table__row"

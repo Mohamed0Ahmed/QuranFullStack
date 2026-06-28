@@ -8,7 +8,7 @@
   <div
     class="lemma-stems-list"
     role="list"
-    aria-label="الأصول الصرفية المرتبطة"
+    [attr.aria-label]="listLabel"
     [attr.aria-busy]="loading() ? true : null"
     [attr.data-testid]="loading() ? 'lemma-stems-list-loading' : 'lemma-stems-list'"
   >

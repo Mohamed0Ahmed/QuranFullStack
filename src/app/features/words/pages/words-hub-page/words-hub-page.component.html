@@ -5,7 +5,7 @@
       <p class="qd-text-muted" data-testid="words-hub-subtitle">{{ subtitle }}</p>
     </div>
 
-    <section class="words-hub-grid" aria-label="أقسام الكلمات">
+    <section class="words-hub-grid" [attr.aria-label]="sectionsLabel">
       <qd-word-section-card
         data-testid="words-hub-card--active"
         [labelAr]="activeCard.labelAr"

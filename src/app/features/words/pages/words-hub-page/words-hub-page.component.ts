@@ -6,6 +6,7 @@ import {
   ADDITIONAL_ACTIVE_HUB_SECTIONS,
   COMING_SOON_BADGE,
   COMING_SOON_HUB_SECTIONS,
+  WORDS_HUB_SECTIONS_LABEL,
   WORDS_HUB_SUBTITLE,
   WORDS_HUB_TITLE,
   WordSectionCardLabel,
@@ -29,6 +30,7 @@ interface WordSectionCardViewModel {
 export class WordsHubPageComponent {
   protected readonly title = WORDS_HUB_TITLE;
   protected readonly subtitle = WORDS_HUB_SUBTITLE;
+  protected readonly sectionsLabel = WORDS_HUB_SECTIONS_LABEL;
   protected readonly comingSoonBadge = COMING_SOON_BADGE;
 
   protected readonly activeCard: WordSectionCardViewModel = {

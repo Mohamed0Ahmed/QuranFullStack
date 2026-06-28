@@ -1,40 +1,44 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { getTestBed, TestBed } from '@angular/core/testing';
 
 import { LemmaAyahTypeFiltersComponent } from './lemma-ayah-type-filters.component';
 
+const nounType = {
+  code: 'N',
+  arabicLabel: 'اسم',
+  englishLabel: 'Noun',
+  occurrencesCount: 10,
+  firstSurahNumber: 1,
+  firstAyahNumber: 1,
+  firstWordNumber: 1,
+};
+
+const verbType = {
+  code: 'V',
+  arabicLabel: 'فعل',
+  englishLabel: 'Verb',
+  occurrencesCount: 1,
+  firstSurahNumber: 1,
+  firstAyahNumber: 2,
+  firstWordNumber: 1,
+};
+
 describe('LemmaAyahTypeFiltersComponent', () => {
+  beforeEach(() => {
+    getTestBed().resetTestingModule();
+    TestBed.configureTestingModule({
+      imports: [LemmaAyahTypeFiltersComponent],
+      teardown: { destroyAfterEach: true },
+    });
+  });
+
   afterEach(() => {
     getTestBed().resetTestingModule();
   });
 
-  it('renders all filter selected by default and emits typeCode changes', async () => {
-    await TestBed.configureTestingModule({
-      imports: [LemmaAyahTypeFiltersComponent],
-      teardown: { destroyAfterEach: true },
-    }).compileComponents();
-
+  it('renders all filter selected by default and emits typeCode changes', () => {
     const fixture = TestBed.createComponent(LemmaAyahTypeFiltersComponent);
-    fixture.componentRef.setInput('items', [
-      {
-        code: 'N',
-        arabicLabel: 'اسم',
-        englishLabel: 'Noun',
-        occurrencesCount: 10,
-        firstSurahNumber: 1,
-        firstAyahNumber: 1,
-        firstWordNumber: 1,
-      },
-      {
-        code: 'V',
-        arabicLabel: 'فعل',
-        englishLabel: 'Verb',
-        occurrencesCount: 1,
-        firstSurahNumber: 1,
-        firstAyahNumber: 2,
-        firstWordNumber: 1,
-      },
-    ]);
+    fixture.componentRef.setInput('items', [nounType, verbType]);
     fixture.detectChanges();
 
     const root = fixture.nativeElement as HTMLElement;
@@ -50,17 +54,26 @@ describe('LemmaAyahTypeFiltersComponent', () => {
     expect(emitted).toBe('N');
   });
 
-  it('shows loading status when chips are not yet ready', async () => {
-    await TestBed.configureTestingModule({
-      imports: [LemmaAyahTypeFiltersComponent],
-      teardown: { destroyAfterEach: true },
-    }).compileComponents();
+  it('hides عرض الكل and selects the only type when a single type is available', () => {
+    const fixture = TestBed.createComponent(LemmaAyahTypeFiltersComponent);
+    fixture.componentRef.setInput('items', [nounType]);
+    fixture.detectChanges();
 
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('[data-testid="lemma-ayah-type-filter-all"]')).toBeNull();
+    expect(root.querySelector('[data-testid="lemma-ayah-type-filter-N"]')?.getAttribute('aria-pressed')).toBe('true');
+    expect(root.textContent).not.toContain('عرض الكل');
+  });
+
+  it('shows skeleton chips while loading', () => {
     const fixture = TestBed.createComponent(LemmaAyahTypeFiltersComponent);
     fixture.componentRef.setInput('items', []);
     fixture.componentRef.setInput('loading', true);
     fixture.detectChanges();
 
-    expect((fixture.nativeElement as HTMLElement).querySelector('[role="status"]')).toBeTruthy();
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('[role="status"]')).toBeTruthy();
+    expect(root.querySelectorAll('[data-testid="lemma-ayah-type-filter-loading-chip"]')).toHaveLength(4);
+    expect(root.querySelector('[data-testid="lemma-ayah-type-filter-all"]')).toBeNull();
   });
 });

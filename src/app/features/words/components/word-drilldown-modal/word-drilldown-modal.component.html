@@ -16,7 +16,7 @@
     </div>
   </header>
 
-  <nav class="explorer-detail-panel__toolbar word-drilldown-modal__views" aria-label="عرض التفاصيل">
+  <nav class="explorer-detail-panel__toolbar word-drilldown-modal__views" [attr.aria-label]="drilldownViewTablistLabel">
     @for (viewKey of drilldownViews; track viewKey) {
       <button
         type="button"

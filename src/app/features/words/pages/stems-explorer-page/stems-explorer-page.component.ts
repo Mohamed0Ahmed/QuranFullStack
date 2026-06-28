@@ -27,10 +27,15 @@ import {
   STEMS_NO_RESULTS_LABEL,
   STEMS_NOT_FOUND_LABEL,
   STEMS_PAGE_TITLE,
+  STEMS_LIST_PAGINATION_LABEL,
+  STEMS_PANEL_SURFACE_LABEL,
   STEMS_SEARCH_LABEL,
   STEMS_SEARCH_PLACEHOLDER,
   STEMS_SORT_LABELS,
+  STEMS_SURAHS_TABLIST_LABEL,
   STEMS_SURAHS_VIEW_LABELS,
+  STEMS_TABLE_LABEL,
+  STEMS_WORDS_TABLIST_LABEL,
   STEMS_WORD_VIEW_LABELS,
 } from '../../models/stems.labels';
 import {
@@ -84,6 +89,11 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly searchLabel = STEMS_SEARCH_LABEL;
   protected readonly searchPlaceholder = STEMS_SEARCH_PLACEHOLDER;
   protected readonly panelLoadingLabel = STEMS_LOADING_LABEL;
+  protected readonly tableSectionLabel = STEMS_TABLE_LABEL;
+  protected readonly listPaginationLabel = STEMS_LIST_PAGINATION_LABEL;
+  protected readonly panelSurfaceLabel = STEMS_PANEL_SURFACE_LABEL;
+  protected readonly wordsTablistLabel = STEMS_WORDS_TABLIST_LABEL;
+  protected readonly surahsTablistLabel = STEMS_SURAHS_TABLIST_LABEL;
 
   protected get sortLabels() {
     return STEMS_SORT_LABELS;

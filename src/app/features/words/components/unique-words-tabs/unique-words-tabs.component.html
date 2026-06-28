@@ -1,4 +1,4 @@
-<nav class="unique-words-tabs" role="tablist" aria-label="أنماط الكلمات الفريدة">
+<nav class="unique-words-tabs" role="tablist" [attr.aria-label]="tabsLabel">
   @for (tab of tabs; track tab.key) {
     <a
       class="qd-interactive-surface unique-words-tabs__tab"

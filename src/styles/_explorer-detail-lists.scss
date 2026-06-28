@@ -5,7 +5,8 @@
   qd-surah-occurrences-list,
   qd-root-words-list,
   qd-root-lemmas-list,
-  qd-root-stems-list {
+  qd-root-stems-list,
+  qd-lemma-words-list {
     display: flex;
     flex-direction: column;
     flex: 1;
@@ -16,14 +17,16 @@
 
 .explorer-detail-panel__body {
   .ayah-matches-list,
-  .root-words-list {
+  .root-words-list,
+  .lemma-words-list {
     flex: 1;
     min-height: 0;
     height: 100%;
   }
 
   .ayah-matches-list__viewport,
-  .root-words-list__viewport {
+  .root-words-list__viewport,
+  .lemma-words-list__viewport {
     flex: 1;
     min-height: 0;
     block-size: auto;
@@ -51,7 +54,8 @@
   }
 
   .root-words-list__header,
-  .root-lemmas-list__header {
+  .root-lemmas-list__header,
+  .lemma-words-list__header {
     flex-shrink: 0;
   }
 
@@ -66,7 +70,8 @@
 
   .root-words-list__row,
   .root-lemmas-list__row,
-  .root-stems-list__row {
+  .root-stems-list__row,
+  .lemma-words-list__row {
     background: var(--qd-explorer-detail-card);
     border-color: var(--qd-explorer-detail-border);
   }

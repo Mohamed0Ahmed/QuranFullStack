@@ -18,7 +18,11 @@ import {
   LEMMAS_COLUMN_COUNT_LABELS,
   LEMMAS_COLUMN_HEADERS,
   LEMMAS_LOADING_LABEL,
+  LEMMAS_ROOT_MISSING_ARIA,
   LEMMAS_ROOT_MISSING_LABEL,
+  LEMMAS_ROOT_LINK_PREFIX,
+  LEMMAS_TABLE_BODY_LABEL,
+  LEMMAS_TABLE_LABEL,
 } from '../../models/lemmas.labels';
 import {
   LEMMAS_LIST_PAGE_SIZE,
@@ -84,6 +88,10 @@ export class LemmasTableComponent {
     return LEMMAS_COLUMN_COUNT_LABELS;
   }
   protected readonly loadingLabel = LEMMAS_LOADING_LABEL;
+  protected readonly tableLabel = LEMMAS_TABLE_LABEL;
+  protected readonly tableBodyLabel = LEMMAS_TABLE_BODY_LABEL;
+  protected readonly rootLinkPrefix = LEMMAS_ROOT_LINK_PREFIX;
+  protected readonly rootMissingAria = LEMMAS_ROOT_MISSING_ARIA;
   protected readonly rootMissingLabel = LEMMAS_ROOT_MISSING_LABEL;
   protected readonly loadingRowPlaceholders = Array.from({ length: 12 });
   protected readonly rowHeight = signal(ROW_HEIGHT_DESKTOP);

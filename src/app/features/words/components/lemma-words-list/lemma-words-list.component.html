@@ -46,7 +46,7 @@
       [currentPage]="currentPage()"
       [pageSize]="page().pageSize"
       [totalCount]="page().totalCount"
-      ariaLabel="تصفّح كلمات الصيغة المعجمية"
+      [ariaLabel]="paginationLabel"
       (pageChange)="pageChange.emit($event)"
     />
   }

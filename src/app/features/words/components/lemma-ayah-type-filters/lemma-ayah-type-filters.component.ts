@@ -22,16 +22,25 @@ export class LemmaAyahTypeFiltersComponent {
   readonly typeCodeChange = output<string | null>();
 
   protected readonly sectionLabel = LEMMAS_AYAH_TYPE_FILTERS_LABEL;
-  protected readonly allLabel = LEMMAS_AYAH_TYPE_ALL_LABEL;
   protected readonly loadingLabel = LEMMAS_LOADING_LABEL;
 
   protected readonly isAllSelected = computed(() => this.selectedTypeCode() === null);
+
+  protected readonly loadingChipPlaceholders = [0, 1, 2, 3] as const;
 
   protected selectTypeCode(typeCode: string | null): void {
     this.typeCodeChange.emit(typeCode);
   }
 
+  protected allFilterLabel(): string {
+    return LEMMAS_AYAH_TYPE_ALL_LABEL;
+  }
+
   protected isSelected(code: string): boolean {
-    return this.selectedTypeCode() === code;
+    if (this.selectedTypeCode() === code) {
+      return true;
+    }
+
+    return this.items().length === 1 && this.selectedTypeCode() === null && this.items()[0]?.code === code;
   }
 }

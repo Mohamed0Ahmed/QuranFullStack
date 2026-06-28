@@ -7,6 +7,7 @@ import {
   LEMMAS_OPEN_UNIQUE_WORD_LABEL,
   LEMMAS_WORD_DISPLAY_HEADER,
   LEMMAS_WORD_OCCURRENCES_HEADER,
+  LEMMAS_WORDS_PAGINATION_LABEL,
 } from '../../models/lemmas.labels';
 import { LemmaWordItemDto, LemmaWordView, PagedResultDto } from '../../models/lemmas.models';
 import { ROW_NUMBER_HEADER } from '../../models/unique-words.labels';
@@ -39,6 +40,7 @@ export class LemmaWordsListComponent {
   protected readonly occurrencesHeader = LEMMAS_WORD_OCCURRENCES_HEADER;
   protected readonly loadingLabel = LEMMAS_LOADING_LABEL;
   protected readonly openUniqueWordLabel = LEMMAS_OPEN_UNIQUE_WORD_LABEL;
+  protected readonly paginationLabel = LEMMAS_WORDS_PAGINATION_LABEL;
   protected readonly loadingRowPlaceholders = Array.from({ length: 8 });
 
   protected readonly rows = computed((): readonly LemmaWordRowViewModel[] =>
