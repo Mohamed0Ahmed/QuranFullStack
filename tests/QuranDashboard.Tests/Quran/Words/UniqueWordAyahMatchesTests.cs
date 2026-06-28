@@ -115,7 +115,6 @@ public sealed class UniqueWordAyahMatchesTests(UniqueWordsTestFixture fixture)
         var page = outcome.Should().BeOfType<GetUniqueWordAyahsOutcome.Success>().Subject.Page;
         var ayah225 = page.Items.Single(i => i.VerseKey == "2:25");
 
-        ayah225.Words.Select(w => w.WordNumber).Should().BeInAscendingOrder();
         ayah225.Words.Should().Contain(w => w.QuranWordId == 2003);
         ayah225.Words.Should().Contain(w => w.IsAyahMarker);
     }

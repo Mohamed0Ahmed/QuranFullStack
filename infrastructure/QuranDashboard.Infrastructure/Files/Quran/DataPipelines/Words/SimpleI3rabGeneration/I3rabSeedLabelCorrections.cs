@@ -4,11 +4,13 @@ internal static class I3rabSeedLabelCorrections
 {
     internal static IReadOnlyList<string> Signatures { get; } =
     [
+        "STEM:ACC",
         "STEM:T",
         "STEM:SUB",
         "STEM:RES",
         "STEM:INTG",
         "PREFIX:INTG",
+        "STEM:PRO",
         "STEM:AMD",
         "STEM:SUP",
         "STEM:PREV",

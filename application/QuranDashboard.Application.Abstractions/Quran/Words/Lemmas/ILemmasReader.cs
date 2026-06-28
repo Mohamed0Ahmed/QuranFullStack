@@ -34,6 +34,7 @@ public interface ILemmasReader
         int id,
         int page,
         int pageSize,
+        string? typeCode,
         CancellationToken cancellationToken);
 
     Task<LemmaSurahsResponse?> GetLemmaMentionedSurahsAsync(

@@ -58,7 +58,7 @@ public sealed class GetLemmaMentionedSurahsHandler(
             ViewName,
             SubViewName,
             query.Id,
-            surahs.SurahsCount,
+            surahs.Surahs.Count,
             surahs.Surahs.Count,
             stopwatch.ElapsedMilliseconds);
 

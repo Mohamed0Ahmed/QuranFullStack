@@ -59,8 +59,8 @@ public sealed class GetUniqueWordMissingSurahsHandler(
             FeatureName,
             OperationName,
             GetKindKey(kind),
-            response.Id,
-            response.MissingSurahsCount,
+            query.Id,
+            response.Surahs.Count,
             response.Surahs.Count);
 
         return new GetUniqueWordMissingSurahsOutcome.Success(response);

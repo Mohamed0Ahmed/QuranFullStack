@@ -40,6 +40,7 @@ public sealed class I3rabAssemblerTests
         labels[1].I3rabArabic.Should().Be("اسم مجرور");
         labels[2].SignatureKey.Should().Be("SUFFIX:PRON:2MS");
         labels[2].I3rabArabic.Should().Be("ضمير متصل للمخاطب");
+        labels.Select(label => label.I3rabArabic).Should().NotContain("جار ومجرور");
     }
 
     private sealed class InMemoryCatalog(IReadOnlyList<I3rabRuleSeedRow> rows) : II3rabRuleCatalog

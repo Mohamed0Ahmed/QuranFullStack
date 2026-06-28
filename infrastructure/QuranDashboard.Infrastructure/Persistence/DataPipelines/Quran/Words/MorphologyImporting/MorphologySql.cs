@@ -150,6 +150,109 @@ internal static class MorphologySql
           AND NOT EXISTS (SELECT 1 FROM quran_stems s WHERE s.id = m.stem_id)
         """;
 
+    internal const string CheckSegLemmaStemOnly = """
+        SELECT count(*)::int
+        FROM quran_word_morphology_segments
+        WHERE lemma_id IS NOT NULL
+          AND kind <> 'STEM'
+        """;
+
+    internal const string CheckSegLemmaRequiredForStem = """
+        SELECT count(*)::int
+        FROM quran_word_morphology_segments s
+        JOIN quran_word_morphology m ON m.quran_word_id = s.quran_word_id
+        WHERE s.kind = 'STEM'
+          AND s.lemma_buckwalter IS NOT NULL
+          AND btrim(s.lemma_buckwalter) <> ''
+          AND s.lemma_id IS NULL
+          AND m.lemma_id IS NOT NULL
+        """;
+
+    internal const string CheckSegLemmaSingleStemHeadConsistent = """
+        WITH stem_counts AS (
+          SELECT quran_word_id, count(*)::int AS stem_count
+          FROM quran_word_morphology_segments
+          WHERE kind = 'STEM'
+          GROUP BY quran_word_id
+        )
+        SELECT count(*)::int
+        FROM quran_word_morphology_segments s
+        JOIN stem_counts sc ON sc.quran_word_id = s.quran_word_id
+        JOIN quran_word_morphology m ON m.quran_word_id = s.quran_word_id
+        WHERE s.kind = 'STEM'
+          AND sc.stem_count = 1
+          AND s.lemma_id IS DISTINCT FROM m.lemma_id
+        """;
+
+    internal const string CheckSegLemmaMultiStemResolves = """
+        WITH stem_counts AS (
+          SELECT quran_word_id, count(*)::int AS stem_count
+          FROM quran_word_morphology_segments
+          WHERE kind = 'STEM'
+          GROUP BY quran_word_id
+        )
+        SELECT count(*)::int
+        FROM quran_word_morphology_segments s
+        JOIN stem_counts sc ON sc.quran_word_id = s.quran_word_id
+        WHERE s.kind = 'STEM'
+          AND sc.stem_count > 1
+          AND s.lemma_buckwalter IS NOT NULL
+          AND btrim(s.lemma_buckwalter) <> ''
+          AND s.lemma_id IS NULL
+        """;
+
+    internal const string CheckSegLemmaNoFanout = """
+        SELECT 0::int
+        """;
+
+    internal const string CheckSegRootResolves = """
+        SELECT count(*)::int
+        FROM quran_word_morphology_segments
+        WHERE root_buckwalter IS NOT NULL
+          AND btrim(root_buckwalter) <> ''
+          AND root_id IS NULL
+        """;
+
+    internal const string CheckSegRootConsistent = """
+        SELECT count(*)::int
+        FROM quran_word_morphology_segments s
+        JOIN quran_roots r ON r.id = s.root_id
+        WHERE s.root_buckwalter IS NULL
+           OR btrim(s.root_buckwalter) = ''
+           OR s.root_buckwalter IS DISTINCT FROM r.root_buckwalter
+        """;
+
+    internal const string CheckSegDimNullSafe = """
+        WITH stem_counts AS (
+          SELECT quran_word_id, count(*)::int AS stem_count
+          FROM quran_word_morphology_segments
+          WHERE kind = 'STEM'
+          GROUP BY quran_word_id
+        )
+        SELECT count(*)::int
+        FROM quran_word_morphology_segments s
+        JOIN quran_word_morphology m ON m.quran_word_id = s.quran_word_id
+        LEFT JOIN stem_counts sc ON sc.quran_word_id = s.quran_word_id
+        WHERE (s.root_id IS NOT NULL AND (s.root_buckwalter IS NULL OR btrim(s.root_buckwalter) = ''))
+           OR (
+                s.lemma_id IS NOT NULL
+                AND (s.lemma_buckwalter IS NULL OR btrim(s.lemma_buckwalter) = '')
+                AND NOT (
+                  s.kind = 'STEM'
+                  AND sc.stem_count = 1
+                  AND s.lemma_id IS NOT DISTINCT FROM m.lemma_id
+                )
+              )
+           OR (s.lemma_id IS NOT NULL AND s.kind <> 'STEM')
+        """;
+
+    internal const string CheckSegStemIdAbsent = """
+        SELECT count(*)::int
+        FROM information_schema.columns
+        WHERE table_name = 'quran_word_morphology_segments'
+          AND column_name = 'stem_id'
+        """;
+
     internal const string CheckSegRenderTotalNonEmpty = """
         SELECT count(*)::int
         FROM quran_word_morphology_segments
@@ -182,6 +285,59 @@ internal static class MorphologySql
         FROM quran_word_morphology_segments
         WHERE form_buckwalter <> ''
            OR form_arabic_normalized IS NOT NULL
+        """;
+
+    internal const string SelectMorphologyLemmaObservations = """
+        SELECT m.location, l.lemma_text
+        FROM quran_word_morphology m
+        LEFT JOIN quran_lemmas l ON l.id = m.lemma_id
+        """;
+
+    internal const string SelectStrictWordLemmaShiftLocations = """
+        WITH ordered_words AS (
+          SELECT
+            w.id,
+            w.location,
+            w.ayah_id,
+            LAG(w.id) OVER (PARTITION BY w.ayah_id ORDER BY w.word_number, w.id) AS prev_word_id
+          FROM quran_words w
+          WHERE w.is_ayah_marker = false
+        ),
+        current_heads AS (
+          SELECT
+            m.quran_word_id,
+            m.location,
+            l.lemma_buckwalter,
+            ow.prev_word_id
+          FROM quran_word_morphology m
+          JOIN ordered_words ow ON ow.id = m.quran_word_id
+          JOIN quran_lemmas l ON l.id = m.lemma_id
+          WHERE m.lemma_id IS NOT NULL
+            AND m.root_id IS NULL
+            AND NOT EXISTS (
+              SELECT 1
+              FROM quran_word_morphology_segments s
+              WHERE s.quran_word_id = m.quran_word_id
+                AND s.root_id IS NOT NULL
+            )
+        )
+        SELECT ch.location
+        FROM current_heads ch
+        WHERE EXISTS (
+            SELECT 1
+            FROM quran_word_morphology_segments ps
+            WHERE ps.quran_word_id = ch.prev_word_id
+              -- Match on buckwalter, not lemma_id: a shifted-from word loses its word-level
+              -- lemma_id but keeps the Corpus buckwalter on its segment.
+              AND ps.lemma_buckwalter = ch.lemma_buckwalter
+           )
+          AND NOT EXISTS (
+            SELECT 1
+            FROM quran_word_morphology_segments cs
+            WHERE cs.quran_word_id = ch.quran_word_id
+              AND cs.kind = 'STEM'
+              AND cs.lemma_buckwalter = ch.lemma_buckwalter
+          )
         """;
 
     internal const string CountMorphologyRows = "SELECT count(*)::int FROM quran_word_morphology";

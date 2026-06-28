@@ -31,13 +31,38 @@ public sealed class MorphologyExplorersCacheReadTests(MorphologyExplorersTestFix
 
     [Fact]
     public Task Lemma_ayahs_repeat_read_hits_cache() =>
-        AssertSecondReadHitsCache((reader, ct) => reader.GetLemmaAyahMatchesAsync(LemmaId, 1, 50, ct));
+        AssertSecondReadHitsCache((reader, ct) => reader.GetLemmaAyahMatchesAsync(LemmaId, 1, 50, null, ct));
+
+    [Fact]
+    public async Task Lemma_ayahs_type_filter_uses_separate_cache_entry()
+    {
+        var interceptor = new SqlCommandCountInterceptor();
+        var options = new DbContextOptionsBuilder<QuranDashboardDbContext>()
+            .UseNpgsql(fixture.ConnectionString)
+            .AddInterceptors(interceptor)
+            .Options;
+
+        await using var dbContext = new QuranDashboardDbContext(options);
+        using var cache = new MemoryCache(new MemoryCacheOptions());
+        var reader = new CachedLemmasReader(new EfLemmasReader(dbContext), cache);
+
+        await reader.GetLemmaAyahMatchesAsync(LemmaId, 1, 50, "N", CancellationToken.None);
+        interceptor.CommandCount.Should().BeGreaterThan(0, "the first filtered read must reach the database");
+
+        interceptor.Reset();
+        await reader.GetLemmaAyahMatchesAsync(LemmaId, 1, 50, "N", CancellationToken.None);
+        interceptor.CommandCount.Should().Be(0, "the repeat filtered read must be served entirely from cache");
+
+        interceptor.Reset();
+        await reader.GetLemmaAyahMatchesAsync(LemmaId, 1, 50, null, CancellationToken.None);
+        interceptor.CommandCount.Should().BeGreaterThan(0, "all-filter and type-filter cache entries must stay separate");
+    }
 
     [Fact]
     public Task Lemma_ayahs_distinct_pages_cache_independently() =>
         AssertSecondDistinctPageStillQueriesDb(
-            (reader, ct) => reader.GetLemmaAyahMatchesAsync(LemmaId, 1, 50, ct),
-            (reader, ct) => reader.GetLemmaAyahMatchesAsync(LemmaId, 2, 50, ct));
+            (reader, ct) => reader.GetLemmaAyahMatchesAsync(LemmaId, 1, 50, null, ct),
+            (reader, ct) => reader.GetLemmaAyahMatchesAsync(LemmaId, 2, 50, null, ct));
 
     [Theory]
     [InlineData(LemmaWordKind.Simple)]
@@ -55,7 +80,7 @@ public sealed class MorphologyExplorersCacheReadTests(MorphologyExplorersTestFix
     public Task Lemma_ayahs_out_of_range_pages_are_not_cached() =>
         AssertSecondOutOfRangePageStillQueriesDb(
             (db, cache, ct) => new CachedLemmasReader(new EfLemmasReader(db), cache)
-                .GetLemmaAyahMatchesAsync(LemmaId, 999, 50, ct));
+                .GetLemmaAyahMatchesAsync(LemmaId, 999, 50, null, ct));
 
     [Fact]
     public Task Lemma_mentioned_surahs_repeat_read_hits_cache() =>
@@ -209,7 +234,7 @@ public sealed class MorphologyExplorersCacheReadTests(MorphologyExplorersTestFix
             LemmasCacheKeys.Summary(id),
             LemmasCacheKeys.WordsAll(id, LemmaWordKind.Simple),
             LemmasCacheKeys.Words(id, LemmaWordKind.Tashkeel, 2, 25),
-            LemmasCacheKeys.Ayahs(id, 1, 50),
+            LemmasCacheKeys.Ayahs(id, 1, 50, null),
             LemmasCacheKeys.Surahs(id),
             LemmasCacheKeys.Missing(id),
             LemmasCacheKeys.Stems(id),

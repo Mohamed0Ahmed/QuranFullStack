@@ -16,6 +16,8 @@ public sealed class WordMorphologySegment
     public string ArabicRenderSource { get; set; } = string.Empty;
     public string? RootBuckwalter { get; set; }
     public string? LemmaBuckwalter { get; set; }
+    public int? RootId { get; set; }
+    public int? LemmaId { get; set; }
     public string FeaturesRaw { get; set; } = string.Empty;
     public string? FeaturesJson { get; set; }
     public string? I3rabArabic { get; set; }
@@ -24,5 +26,7 @@ public sealed class WordMorphologySegment
     public string? I3rabReviewReason { get; set; }
 
     public Words.QuranWord QuranWord { get; set; } = null!;
+    public QuranRoot? Root { get; set; }
+    public QuranLemma? Lemma { get; set; }
     public QuranI3rabRule? I3rabRule { get; set; }
 }

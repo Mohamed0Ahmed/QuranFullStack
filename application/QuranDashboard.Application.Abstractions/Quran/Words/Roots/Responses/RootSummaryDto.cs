@@ -9,5 +9,4 @@ public sealed record RootSummaryDto(
     int SimpleWordsCount,
     int TashkeelWordsCount,
     int LemmasCount,
-    int StemsCount,
-    string FirstVerseKey);
+    int StemsCount);

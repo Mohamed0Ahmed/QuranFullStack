@@ -11,8 +11,7 @@ namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Lemmas;
 /// <c>RootsListDerivation</c>: normalized Arabic contains search, deterministic
 /// sort, and paging over the cached whole-summary list. The type distribution
 /// loaded per lemma is already ordered count descending then earliest Mushaf
-/// occurrence ascending; the dominant type is the first entry and the remaining
-/// count is <c>TypeDistribution.Count - 1</c>.
+/// occurrence ascending.
 /// </summary>
 internal static class LemmasListDerivation
 {
@@ -21,7 +20,7 @@ internal static class LemmasListDerivation
     internal const string ArabicFoldTo = "ااااواهيي";
 
     /// <summary>
-    /// Placeholder dominant type when a lemma has no morphology rows. Labels are
+    /// Placeholder type summary when a lemma has no morphology rows. Labels are
     /// controlled values; counts are zero so the distribution total is zero.
     /// </summary>
     internal static readonly TypeSummaryDto NoType = new(string.Empty, "غير محدَّد", "Unspecified", 0, 0, 0, 0);
@@ -91,19 +90,14 @@ internal static class LemmasListDerivation
         new(
             row.Id,
             row.LemmaText,
-            row.LemmaBuckwalter,
             row.RootId,
             row.RootText,
-            row.RootBuckwalter,
-            DominantType(row.TypeDistribution),
-            OtherTypesCount(row.TypeDistribution),
             row.OccurrencesCount,
             row.AyahsCount,
             row.SurahsCount,
             row.SimpleWordsCount,
             row.TashkeelWordsCount,
-            row.StemsCount,
-            row.FirstVerseKey);
+            row.StemsCount);
 
     private static LemmaSummaryDto ToSummaryDto(LemmaSummaryRow row)
     {
@@ -114,27 +108,16 @@ internal static class LemmasListDerivation
         return new LemmaSummaryDto(
             row.Id,
             row.LemmaText,
-            row.LemmaBuckwalter,
             row.RootId,
             row.RootText,
-            row.RootBuckwalter,
-            DominantType(row.TypeDistribution),
-            OtherTypesCount(row.TypeDistribution),
             row.OccurrencesCount,
             row.AyahsCount,
             row.SurahsCount,
             row.SimpleWordsCount,
             row.TashkeelWordsCount,
             row.StemsCount,
-            row.FirstVerseKey,
             distribution);
     }
-
-    private static TypeSummaryDto DominantType(IReadOnlyList<LemmaTypeDistributionRow> distribution) =>
-        distribution is { Count: > 0 } ? ToTypeSummary(distribution[0]) : NoType;
-
-    private static int OtherTypesCount(IReadOnlyList<LemmaTypeDistributionRow> distribution) =>
-        distribution is null || distribution.Count <= 1 ? 0 : distribution.Count - 1;
 
     private static TypeSummaryDto ToTypeSummary(LemmaTypeDistributionRow row) =>
         new(

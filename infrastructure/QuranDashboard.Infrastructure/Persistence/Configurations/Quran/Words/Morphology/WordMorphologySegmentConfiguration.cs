@@ -59,6 +59,12 @@ public sealed class WordMorphologySegmentConfiguration : IEntityTypeConfiguratio
         builder.Property(s => s.LemmaBuckwalter)
             .HasColumnName("lemma_buckwalter");
 
+        builder.Property(s => s.RootId)
+            .HasColumnName("root_id");
+
+        builder.Property(s => s.LemmaId)
+            .HasColumnName("lemma_id");
+
         builder.Property(s => s.FeaturesRaw)
             .IsRequired()
             .HasColumnName("features_raw");
@@ -87,10 +93,24 @@ public sealed class WordMorphologySegmentConfiguration : IEntityTypeConfiguratio
             .HasDatabaseName("IX_quran_word_morphology_segments_stem")
             .HasFilter("kind = 'STEM'");
         builder.HasIndex(s => s.ArabicRenderTier);
+        builder.HasIndex(s => s.RootId)
+            .HasDatabaseName("IX_quran_word_morphology_segments_root_id");
+        builder.HasIndex(s => s.LemmaId)
+            .HasDatabaseName("IX_quran_word_morphology_segments_lemma_id");
 
         builder.HasOne(s => s.QuranWord)
             .WithMany()
             .HasForeignKey(s => s.QuranWordId);
+
+        builder.HasOne(s => s.Root)
+            .WithMany()
+            .HasForeignKey(s => s.RootId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(s => s.Lemma)
+            .WithMany()
+            .HasForeignKey(s => s.LemmaId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne<PosTag>()
             .WithMany()

@@ -35,8 +35,8 @@ public sealed class LemmasController(
     private const int DefaultDetailPageSize = 100;
 
     /// <summary>
-    /// يُرجع صفحة واحدة من الصيغ المعجمية مع بحث عربي مُطبّع (contains) وخيارات
-    /// ترتيب وتصفّح، وكل الأعداد لكل صيغة والنوع الغالب ومعرّف الجذر المملوك.
+/// يُرجع صفحة واحدة من الصيغ المعجمية مع بحث عربي مُطبّع (contains) وخيارات
+/// ترتيب وتصفّح، وكل الأعداد لكل صيغة ومعرّف الجذر المملوك.
     /// </summary>
     [HttpGet]
     public async Task<ActionResult<ApiResponse<PagedResult<LemmaListItemDto>>>> Get(
@@ -67,8 +67,8 @@ public sealed class LemmasController(
     }
 
     /// <summary>
-    /// يُرجع ملخّص الصيغة المعجمية المحددة (أعدادها، نوعها الغالب، وتوزيع الأنواع
-    /// الكامل). يُستخدم لاستعادة حالة لوحة التفاصيل من رابط المشاركة.
+    /// يُرجع ملخّص الصيغة المعجمية المحددة (أعدادها وتوزيع الأنواع الكامل).
+    /// يُستخدم لاستعادة حالة لوحة التفاصيل من رابط المشاركة.
     /// </summary>
     [HttpGet("{id:int}")]
     public async Task<ActionResult<ApiResponse<LemmaSummaryDto>>> GetSummary(
@@ -136,13 +136,15 @@ public sealed class LemmasController(
         int id,
         [FromQuery] int? page,
         [FromQuery] int? pageSize,
+        [FromQuery] string? typeCode,
         CancellationToken cancellationToken)
     {
         var outcome = await ayahsHandler.HandleAsync(
             new GetLemmaAyahsQuery(
                 id,
                 page ?? DefaultPage,
-                pageSize ?? DefaultDetailPageSize),
+                pageSize ?? DefaultDetailPageSize,
+                NormalizeTypeCode(typeCode)),
             cancellationToken);
 
         return outcome switch
@@ -158,6 +160,9 @@ public sealed class LemmasController(
             _ => throw new InvalidOperationException($"Unhandled {nameof(GetLemmaAyahsOutcome)} variant."),
         };
     }
+
+    private static string? NormalizeTypeCode(string? typeCode) =>
+        string.IsNullOrWhiteSpace(typeCode) ? null : typeCode.Trim();
 
     /// <summary>
     /// يُرجع السور التي وردت فيها الصيغة المعجمية المحددة مع عدد مرات الظهور

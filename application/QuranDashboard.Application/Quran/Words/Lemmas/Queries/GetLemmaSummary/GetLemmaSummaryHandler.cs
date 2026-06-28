@@ -41,12 +41,11 @@ public sealed class GetLemmaSummaryHandler(
         }
 
         logger.LogInformation(
-            "Completed {feature} {operation} {lemmaId} {dominantTypeCode} {otherTypesCount} {occurrencesCount} {ayahsCount} {surahsCount} {stemsCount}",
+            "Completed {feature} {operation} {lemmaId} {typeDistributionCount} {occurrencesCount} {ayahsCount} {surahsCount} {stemsCount}",
             FeatureName,
             OperationName,
             summary.Id,
-            summary.DominantType.Code,
-            summary.OtherTypesCount,
+            summary.TypeDistribution.Count,
             summary.OccurrencesCount,
             summary.AyahsCount,
             summary.SurahsCount,

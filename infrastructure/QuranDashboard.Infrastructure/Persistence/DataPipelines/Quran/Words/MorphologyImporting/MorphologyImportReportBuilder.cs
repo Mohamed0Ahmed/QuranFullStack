@@ -62,7 +62,8 @@ internal static class MorphologyImportReportBuilder
             [posCheck],
             Warnings: [],
             Errors: [$"MORPH-POS-RESOLVES: source contains POS codes absent from the controlled vocabulary: {unknownList}."],
-            InfoNotes: ["Import refused before any write: unknown POS codes would violate the quran_pos_tags foreign keys; no morphology rows were written."]);
+            InfoNotes: ["Import refused before any write: unknown POS codes would violate the quran_pos_tags foreign keys; no morphology rows were written."],
+            source.CorrectionSummary);
     }
 
     public static List<string> BuildWarnings(MorphologyImportTotals totals, MorphologySourceData source)
@@ -89,6 +90,13 @@ internal static class MorphologyImportReportBuilder
                 $"MORPH-SEG-WORD-AGREEMENT: whole-word agreement = {rate.ToString("P2", CultureInfo.InvariantCulture)} " +
                 $"({stats.WholeWordAgreementMatches}/{stats.WholeWordAgreementTotal}); baseline ≈ 79.83% (informational).");
         }
+
+        warnings.Add(FormatListWarning(
+            "MORPH-SEG-DIM-ISSUES",
+            "segment dimension resolver issue(s)",
+            source.SegmentDimensionIssues
+                .Select(issue => $"{issue.SegmentLocation} [{issue.CheckId}] {issue.Message}")
+                .ToList()));
 
         warnings.Add(FormatListWarning("MORPH-SEG-REVIEW-LIST", "review-tier form(s)", stats.ReviewTierForms));
         warnings.Add(FormatListWarning("MORPH-SEG-MULTIWORD-LIST", "multiword form(s)", stats.MultiwordForms));

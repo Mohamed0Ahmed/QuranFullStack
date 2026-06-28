@@ -10,7 +10,9 @@ public sealed record MorphologySourceData(
     IReadOnlyList<ResolvedStemDto> ResolvedStems,
     IReadOnlyList<string> CharsetWarnings,
     IReadOnlyList<string> UnknownPosCodes,
-    MorphologyRenderStats RenderStats);
+    MorphologyRenderStats RenderStats,
+    IReadOnlyList<SegmentDimensionIssue> SegmentDimensionIssues,
+    WordLemmaCorrectionSummary? CorrectionSummary = null);
 
 public sealed record MorphologyRenderStats(
     int WholeWordAgreementMatches,
@@ -42,8 +44,15 @@ public sealed record AlignedSegmentDto(
     string RenderSource,
     string? RootBuckwalter,
     string? LemmaBuckwalter,
+    int? RootId,
+    int? LemmaId,
     string FeaturesRaw,
     string? FeaturesJson);
+
+public sealed record SegmentDimensionIssue(
+    string CheckId,
+    string SegmentLocation,
+    string Message);
 
 public sealed record ResolvedRootDto(
     int AssignedId,

@@ -54,7 +54,7 @@ public sealed class GetRootStemsHandler(
             OperationName,
             ViewName,
             query.Id,
-            stems.StemsCount,
+            stems.Stems.Count,
             stems.Stems.Count,
             stopwatch.ElapsedMilliseconds);
 

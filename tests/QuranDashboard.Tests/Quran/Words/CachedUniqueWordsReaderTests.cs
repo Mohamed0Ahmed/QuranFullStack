@@ -81,21 +81,14 @@ public sealed class CachedUniqueWordsReaderTests
         public int PageCalls { get; private set; }
         public int SummaryCalls { get; private set; }
 
-        public UniqueWordSummaryDto? SummaryResult { get; init; } = new(
-            1,
-            UniqueWordKindKeys.Tashkeel,
-            "synthetic-display",
-            "synthetic-uthmani",
-            "synthetic-simple",
-            "synthetic-imlaei",
-            null,
-            null,
-            1,
-            1,
-            1,
-            113,
-            "1:1",
-            "1:1:1");
+    public UniqueWordSummaryDto? SummaryResult { get; init; } = new(
+        1,
+        UniqueWordKindKeys.Tashkeel,
+        "synthetic-display",
+        1,
+        1,
+        1,
+        113);
 
         public Task<PagedResult<UniqueWordListItemDto>> GetUniqueWordsPageAsync(
             UniqueWordKind kind,

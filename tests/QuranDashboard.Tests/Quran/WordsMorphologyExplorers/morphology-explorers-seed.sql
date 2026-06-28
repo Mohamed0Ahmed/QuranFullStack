@@ -37,10 +37,14 @@
 --                                            disjoint union = 114 (all surahs).
 --   (i) Related stems/lemmas             → L500 related stems = {S600}; S602
 --                                            related lemmas = {L502, L504}.
+--   (j) Matched ayah marker exclusion    → L509 has one real synthetic word plus
+--                                            one synthetic ayah-marker segment;
+--                                            visible word counts/rows exclude marker.
 --
 -- Driving relation reminder:
---   Lemmas:  quran_word_morphology m (m.lemma_id = X) JOIN quran_words w
---   Stems:   quran_word_morphology m (m.stem_id  = X) JOIN quran_words w
+--   Lemmas:  quran_word_morphology_segments s (s.lemma_id = X) JOIN quran_words w
+--   Stems:   quran_word_morphology m (m.stem_id = X) JOIN quran_words w
+--   Word-level morphology may still supply data such as stem_id where no segment-level stem_id exists.
 --   Lemma owned root = quran_lemmas.root_id (NOT morphology co-occurrence).
 --
 -- Deterministic ids (3001+ for words, 4000s lemmas, 600s stems, 700s roots)
@@ -123,7 +127,10 @@ VALUES
 --   L502 'عِلْم'   — owned root R701; dominant related lemma of S602.
 --   L503 'حُكْم'   — NULL owned root; multi-type exact tie (coverage c).
 --   L504 'مَعْرِفَة'— owned root R701; secondary related lemma of S602.
--- words_count is reconciled below to the morphology row count per lemma.
+--   L508 'لَفْظٌ-تَجْرِيبِيّ' — synthetic same-lemma segment fan-out regression.
+--   L509 'وَسْم-مُؤَشِّر-تَجْرِيبِيّ' — synthetic matched-marker exclusion regression.
+-- words_count is reconciled below for word-level lemma rows; segment-only synthetic
+-- lemmas keep explicit fixture counts.
 -- ----------------------------------------------------------------------
 INSERT INTO quran_lemmas
   (id, lemma_text, lemma_buckwalter, root_id, words_count, first_word_order_in_mushaf)
@@ -132,7 +139,11 @@ VALUES
   (501, 'نِعْمَة',    'niEomap',  NULL, 2,  4001),
   (502, 'عِلْم',     'Ailm',     701,  3,  7001),
   (503, 'حُكْم',     'Hukom',    NULL, 4,  5001),
-  (504, 'مَعْرِفَة',  'maArifap', 701,  1,  7004);
+  (504, 'مَعْرِفَة',  'maArifap', 701,  1,  7004),
+  (506, 'لَا',       'lA',       NULL, 2,  8001),
+  (507, 'أَن',      '>an',      NULL, 0,  8003),
+  (508, 'لَفْظٌ-تَجْرِيبِيّ', 'fixture', NULL, 1, 8101),
+  (509, 'وَسْم-مُؤَشِّر-تَجْرِيبِيّ', 'marker-fixture', NULL, 2, 8201);
 
 -- ----------------------------------------------------------------------
 -- Stems.
@@ -143,6 +154,7 @@ VALUES
 --                     (R701×3,R702×1) candidates (coverage d,i).
 --   S604 'حَكَمَ'   — multi-type exact tie with L503 (coverage c).
 --   S605 'نِعْمَة'  — L501's stem.
+--   S606 'سَاق-تَجْرِيبِيّ' — synthetic stem for segment-matched related-stem coverage.
 -- ----------------------------------------------------------------------
 INSERT INTO quran_stems
   (id, stem_text, words_count, first_word_order_in_mushaf)
@@ -151,11 +163,12 @@ VALUES
   (601, 'مَجْهُول',  2,  6001),
   (602, 'عَلِمَ',    4,  7001),
   (604, 'حَكَمَ',    4,  5001),
-  (605, 'نِعْمَة',   2,  4001);
+  (605, 'نِعْمَة',   2,  4001),
+  (606, 'سَاق-تَجْرِيبِيّ', 1, 8101);
 
 -- ----------------------------------------------------------------------
--- Quran words (canonical ayah text reused; per-word display forms are real
--- Arabic words used as morphology display text). unique_*_word_id set later.
+-- Quran words (canonical ayah text reused for source rows; synthetic regression
+-- rows are explicitly marked). unique_*_word_id set later.
 -- ----------------------------------------------------------------------
 INSERT INTO quran_words
   (id, location, ayah_id, surah_number, ayah_number, word_number, page_number, line_number, line_word_order, qpc_glyph, text_uthmani, text_uthmani_simple, text_imlaei_simple, word_key_imlaei_simple, is_ayah_marker, unique_tashkeel_word_id, unique_simple_word_id)
@@ -165,6 +178,7 @@ VALUES
   (3002, '1:1:2',  11, 1, 1,  2, 1,  1, 2, 'g3002', 'كَلِمَة', 'كلمة', 'كلمة', 'كلمة', FALSE, NULL, NULL),
   (3010, '1:1:3',  11, 1, 1,  3, 1,  1, 3, 'g3010', 'كَلِمَة', 'كلمة', 'كلمة', 'كلمة', FALSE, NULL, NULL),
   (3011, '1:1:4',  11, 1, 1,  4, 1,  1, 4, 'g3011', 'كَلِمَة', 'كلمة', 'كلمة', 'كلمة', FALSE, NULL, NULL),
+  (3012, '1:1:5',  11, 1, 1,  5, 1,  1, 5, 'g3012', 'ۚ',      'ۚ',     'ۚ',     'ۚ',     TRUE,  NULL, NULL),
   (3003, '1:2:1',  12, 1, 2,  1, 1,  1, 1, 'g3003', 'كَلَّمَ',  'كلم',  'كلم',  'كلم',  FALSE, NULL, NULL),
   (3004, '1:3:1',  13, 1, 3,  1, 1,  1, 1, 'g3004', 'كَلِمَة', 'كلمة', 'كلمة', 'كلمة', FALSE, NULL, NULL),
   (3005, '2:1:1',  21, 2, 1,  1, 2,  1, 1, 'g3005', 'كَلِمَة', 'كلمة', 'كلمة', 'كلمة', FALSE, NULL, NULL),
@@ -187,7 +201,16 @@ VALUES
   (7001, '2:1:3',  21, 2, 1,  3, 2,  1, 3, 'g7001', 'عَلِمَ',  'علم',  'علم',  'علم',  FALSE, NULL, NULL),
   (7002, '2:25:3', 25, 2, 25, 3, 5,  1, 3, 'g7002', 'عَلِمَ',  'علم',  'علم',  'علم',  FALSE, NULL, NULL),
   (7003, '3:1:4',  31, 3, 1,  4, 50, 1, 4, 'g7003', 'عَلِمَ',  'علم',  'علم',  'علم',  FALSE, NULL, NULL),
-  (7004, '3:8:3',  32, 3, 8,  3, 50, 1, 3, 'g7004', 'عَلِمَ',  'علم',  'علم',  'علم',  FALSE, NULL, NULL);
+  (7004, '3:8:3',  32, 3, 8,  3, 50, 1, 3, 'g7004', 'عَلِمَ',  'علم',  'علم',  'علم',  FALSE, NULL, NULL),
+  -- L506/L507 compound-word slice (أَلَّا = أَن + لَا): word-level lemma لَا + head_pos SUB,
+  -- but segment POS is SUB for أَن and NEG for لَا (coverage j).
+  (8001, '2:25:6', 25, 2, 25, 6, 5,  1, 6, 'g8001', 'أَلَّا',  'الا',  'الا',  'الا',  FALSE, NULL, NULL),
+  (8002, '3:1:5',  31, 3, 1,  5, 50, 1, 5, 'g8002', 'لَا',     'لا',   'لا',   'لا',   FALSE, NULL, NULL),
+  -- Synthetic non-source word used only to regress same-lemma segment fan-out.
+  (8101, '2:1:4',  21, 2, 1,  4, 2,  1, 4, 'g8101', 'لَفْظٌ-تَجْرِيبِيّ', 'لفظ-تجريبي', 'لفظ-تجريبي', 'لفظ-تجريبي', FALSE, NULL, NULL),
+  -- Synthetic non-source pair used only to regress matched ayah-marker exclusion.
+  (8201, '2:1:5',  21, 2, 1,  5, 2,  1, 5, 'g8201', 'وَسْم-تَجْرِيبِيّ', 'وسم-تجريبي', 'وسم-تجريبي', 'وسم-تجريبي', FALSE, NULL, NULL),
+  (8202, '2:1:6',  21, 2, 1,  6, 2,  1, 6, 'g8202', 'MARKER_FIXTURE', 'MARKER_FIXTURE', 'MARKER_FIXTURE', 'MARKER_FIXTURE', TRUE, NULL, NULL);
 
 -- ----------------------------------------------------------------------
 -- Part-of-speech tags referenced by quran_word_morphology.head_pos (FK).
@@ -198,12 +221,15 @@ INSERT INTO quran_pos_tags
 VALUES
   ('N',   'اسم', 'Noun',      'noun', 1),
   ('V',   'فعل', 'Verb',      'verb', 2),
-  ('ADJ', 'صفة', 'Adjective', 'noun', 4);
+  ('ADJ', 'صفة', 'Adjective', 'noun', 4),
+  ('SUB', 'حرف', 'Subordinator', 'particle', 5),
+  ('NEG', 'نفي', 'Negation',  'particle', 6);
 
 -- ----------------------------------------------------------------------
--- Word morphology — the driving relation. Each row binds a readable word to a
--- lemma/stem (and co-occurring root). Lemma counts use m.lemma_id; stem counts
--- use m.stem_id. The lemma owned root is quran_lemmas.root_id (table above).
+-- Word morphology. Each row binds a readable word to word-level morphology data.
+-- Lemma reads are segment-driven via quran_word_morphology_segments. Word-level
+-- morphology may still supply stem_id/root_id for related reads where segments
+-- do not carry stem_id. The lemma owned root is quran_lemmas.root_id (table above).
 -- ----------------------------------------------------------------------
 INSERT INTO quran_word_morphology
   (quran_word_id, location, head_pos, segment_count, root_id, lemma_id, stem_id, is_verb, verb_tense, verb_voice, case_feature, head_features_json)
@@ -236,7 +262,47 @@ VALUES
   (7001, '2:1:3',  'V', 1, 701, 502, 602, TRUE, 'perfect', 'active', NULL, NULL),
   (7002, '2:25:3', 'V', 1, 701, 502, 602, TRUE, 'perfect', 'active', NULL, NULL),
   (7003, '3:1:4',  'V', 1, 701, 502, 602, TRUE, 'perfect', 'active', NULL, NULL),
-  (7004, '3:8:3',  'V', 1, 702, 504, 602, TRUE, 'perfect', 'active', NULL, NULL);
+  (7004, '3:8:3',  'V', 1, 702, 504, 602, TRUE, 'perfect', 'active', NULL, NULL),
+  -- L506: compound أَلَّا (word-level lemma لَا, head_pos SUB) + standalone لَا (NEG).
+  (8001, '2:25:6', 'SUB', 2, NULL, 506, NULL, FALSE, NULL, NULL, NULL, NULL),
+  (8002, '3:1:5',  'NEG', 1, NULL, 506, NULL, FALSE, NULL, NULL, NULL, NULL),
+  -- Synthetic word-level row intentionally has no lemma; segment rows below supply L508.
+  (8101, '2:1:4',  'N',   2, NULL, NULL, 606, FALSE, NULL, NULL, NULL, NULL),
+  -- Synthetic marker-exclusion rows intentionally have no word-level lemma; segment rows below supply L509.
+  (8201, '2:1:5',  'N',   1, NULL, NULL, NULL, FALSE, NULL, NULL, NULL, NULL),
+  (8202, '2:1:6',  'N',   1, NULL, NULL, NULL, FALSE, NULL, NULL, NULL, NULL);
+
+-- Segment rows drive lemma occurrence counts, type distribution, and ayah type
+-- filters. For simple words, one segment mirrors morphology head_pos + lemma_id.
+-- Compound أَلَّا carries two segments with distinct lemma_id + pos (coverage j).
+INSERT INTO quran_word_morphology_segments
+  (quran_word_id, segment_location, segment_number, kind, pos,
+   form_buckwalter, arabic_render_source, features_raw, lemma_id, root_id)
+SELECT
+  m.quran_word_id,
+  m.location || ':1',
+  1::smallint,
+  'STEM',
+  m.head_pos,
+  'fixture',
+  'fixture',
+  'POS=' || m.head_pos,
+  m.lemma_id,
+  m.root_id
+FROM quran_word_morphology m
+WHERE m.lemma_id IS NOT NULL
+  AND m.quran_word_id NOT IN (8001, 8101);
+
+INSERT INTO quran_word_morphology_segments
+  (quran_word_id, segment_location, segment_number, kind, pos,
+   form_buckwalter, arabic_render_source, features_raw, lemma_id, root_id)
+VALUES
+  (8001, '2:25:6:1', 1, 'STEM', 'SUB', '>an',  'fixture', 'POS=SUB', 507, NULL),
+  (8001, '2:25:6:2', 2, 'STEM', 'NEG', 'lA',   'fixture', 'POS=NEG', 506, NULL),
+  (8101, '2:1:4:1', 1, 'STEM', 'N', 'fixture', 'fixture', 'POS=N;fixture=same-lemma-fanout', 508, NULL),
+  (8101, '2:1:4:2', 2, 'STEM', 'N', 'fixture', 'fixture', 'POS=N;fixture=same-lemma-fanout', 508, NULL),
+  (8201, '2:1:5:1', 1, 'STEM', 'N', 'fixture', 'fixture', 'POS=N;fixture=marker-exclusion-real-word', 509, NULL),
+  (8202, '2:1:6:1', 1, 'STEM', 'N', 'fixture', 'fixture', 'POS=N;fixture=marker-exclusion-ayah-marker', 509, NULL);
 
 -- ----------------------------------------------------------------------
 -- Unique word identities for the words sub-views (simple + tashkeel). One row
@@ -254,7 +320,12 @@ VALUES
   (31004, 'حُكْم',   'حكم',   'حكم',   2,  2, 1, 5001, '1:2:2',  1, 2,  5001, 1,  1),
   (31005, 'حَكِيم',  'حكيم',  'حكيم',  2,  2, 1, 5003, '1:2:3',  1, 2,  5003, 1,  1),
   (31006, 'مَجْهُول', 'مجهول', 'مجهول', 2,  2, 2, 6001, '2:25:2', 2, 25, 6001, 5,  1),
-  (31007, 'عَلِمَ',  'علم',   'علم',   4,  4, 3, 7001, '2:1:3',  2, 1,  7001, 2,  1);
+  (31007, 'عَلِمَ',  'علم',   'علم',   4,  4, 3, 7001, '2:1:3',  2, 1,  7001, 2,  1),
+  (31008, 'أَلَّا',  'الا',   'الا',   1,  1, 1, 8001, '2:25:6', 2, 25, 8001, 5,  1),
+  (31009, 'لَا',     'لا',    'لا',    1,  1, 1, 8002, '3:1:5',  3, 1,  8002, 50, 1),
+  (31010, 'لَفْظٌ-تَجْرِيبِيّ', 'لفظ-تجريبي', 'لفظ-تجريبي', 1, 1, 1, 8101, '2:1:4', 2, 1, 8101, 2, 1),
+  (31011, 'وَسْم-تَجْرِيبِيّ', 'وسم-تجريبي', 'وسم-تجريبي', 1, 1, 1, 8201, '2:1:5', 2, 1, 8201, 2, 1),
+  (31012, 'MARKER_FIXTURE', 'MARKER_FIXTURE', 'MARKER_FIXTURE', 1, 1, 1, 8202, '2:1:6', 2, 1, 8202, 2, 1);
 
 INSERT INTO quran_words_unique_simple
   (id, word_key_imlaei_simple, text_uthmani, text_uthmani_simple, text_imlaei_simple, qpc_glyph,
@@ -268,7 +339,12 @@ VALUES
   (32004, 'حكم',   'حُكْم',   'حكم',   'حكم',   'g5001', 2,  2, 1, 5001, '1:2:2',  1, 2,  5001, 1,  1),
   (32005, 'حكيم',  'حَكِيم',  'حكيم',  'حكيم',  'g5003', 2,  2, 1, 5003, '1:2:3',  1, 2,  5003, 1,  1),
   (32006, 'مجهول', 'مَجْهُول', 'مجهول', 'مجهول', 'g6001', 2,  2, 2, 6001, '2:25:2', 2, 25, 6001, 5,  1),
-  (32007, 'علم',   'عَلِمَ',  'علم',   'علم',   'g7001', 4,  4, 3, 7001, '2:1:3',  2, 1,  7001, 2,  1);
+  (32007, 'علم',   'عَلِمَ',  'علم',   'علم',   'g7001', 4,  4, 3, 7001, '2:1:3',  2, 1,  7001, 2,  1),
+  (32008, 'الا',   'أَلَّا',  'الا',   'الا',   'g8001', 1,  1, 1, 8001, '2:25:6', 2, 25, 8001, 5,  1),
+  (32009, 'لا',    'لَا',     'لا',    'لا',    'g8002', 1,  1, 1, 8002, '3:1:5',  3, 1,  8002, 50, 1),
+  (32010, 'لفظ-تجريبي', 'لَفْظٌ-تَجْرِيبِيّ', 'لفظ-تجريبي', 'لفظ-تجريبي', 'g8101', 1, 1, 1, 8101, '2:1:4', 2, 1, 8101, 2, 1),
+  (32011, 'وسم-تجريبي', 'وَسْم-تَجْرِيبِيّ', 'وسم-تجريبي', 'وسم-تجريبي', 'g8201', 1, 1, 1, 8201, '2:1:5', 2, 1, 8201, 2, 1),
+  (32012, 'MARKER_FIXTURE', 'MARKER_FIXTURE', 'MARKER_FIXTURE', 'MARKER_FIXTURE', 'g8202', 1, 1, 1, 8202, '2:1:6', 2, 1, 8202, 2, 1);
 
 -- Link each readable word to its tashkeel + simple unique identity by display form.
 UPDATE quran_words SET
@@ -284,6 +360,11 @@ FROM (
              WHEN 'حَكِيم'   THEN 31005
              WHEN 'مَجْهُول'  THEN 31006
              WHEN 'عَلِمَ'   THEN 31007
+             WHEN 'أَلَّا'   THEN 31008
+             WHEN 'لَا'      THEN 31009
+             WHEN 'لَفْظٌ-تَجْرِيبِيّ' THEN 31010
+             WHEN 'وَسْم-تَجْرِيبِيّ' THEN 31011
+             WHEN 'MARKER_FIXTURE' THEN 31012
            END AS tid,
            CASE w.text_uthmani
              WHEN 'كَلِمَة'   THEN 32001
@@ -293,11 +374,16 @@ FROM (
              WHEN 'حَكِيم'   THEN 32005
              WHEN 'مَجْهُول'  THEN 32006
              WHEN 'عَلِمَ'   THEN 32007
+             WHEN 'أَلَّا'   THEN 32008
+             WHEN 'لَا'      THEN 32009
+             WHEN 'لَفْظٌ-تَجْرِيبِيّ' THEN 32010
+             WHEN 'وَسْم-تَجْرِيبِيّ' THEN 32011
+             WHEN 'MARKER_FIXTURE' THEN 32012
            END AS sid
     FROM quran_words w
     WHERE w.id IN (3001,3002,3003,3004,3005,3006,3007,3008,3009,3010,3011,
                    4001,4002,5001,5002,5003,5004,6001,6002,
-                   7001,7002,7003,7004)
+                   7001,7002,7003,7004,8001,8002,8101,8201,8202)
 ) AS src
 WHERE quran_words.id = src.wid;
 
@@ -317,6 +403,15 @@ WHERE quran_words.id = src.wid;
 --   ADJ=2 (earliest 5003@1:2:3) → EXACT TIE, dominant N by earliest occurrence;
 --   owned root NULL; related stems={604}.
 --
+-- L508 'لَفْظٌ-تَجْرِيبِيّ' (id=508): synthetic same-lemma segment fan-out;
+--   one word carries two N segments for the same lemma, so segment occurrences=2
+--   while ayah/surah counts remain 1; its word-level morphology row keeps lemma_id NULL
+--   to prove segment-only matched words can still contribute unique words and stems.
+--
+-- L509 'وَسْم-مُؤَشِّر-تَجْرِيبِيّ' (id=509): synthetic matched-marker regression;
+--   one real word and one ayah marker carry matching segments. Occurrences remain segment-based,
+--   while simple/tashkeel word counts and words rows must include only the real word.
+--
 -- S600 'كَلَّمَ' (id=600): occurrences=11; dominant lemma L500 (11×, sole),
 --   dominant root R700 (11×, sole); same type distribution as L500.
 --
@@ -328,11 +423,13 @@ WHERE quran_words.id = src.wid;
 --   carry one each.
 --
 -- S604 'حَكَمَ' (id=604): occurrences=4; same multi-type tie as L503.
+--
+-- S606 'سَاق-تَجْرِيبِيّ' (id=606): synthetic related-stem fixture for L508.
 -- ======================================================================
 
--- Reconcile words_count to the morphology readable-word count per resource,
--- so occurrences == COUNT(*) (the verified invariant). Keeps the slice
--- self-consistent regardless of hand-counted values above.
+-- Reconcile catalog words_count to the word-level morphology readable-word count
+-- where the resource is still word-level driven. Segment-driven lemma reads use
+-- quran_word_morphology_segments; segment-only synthetic lemmas keep explicit counts.
 UPDATE quran_lemmas l
 SET words_count = sub.cnt
 FROM (

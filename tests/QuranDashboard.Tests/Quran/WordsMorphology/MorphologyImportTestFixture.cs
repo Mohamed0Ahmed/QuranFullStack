@@ -130,8 +130,8 @@ public sealed class MorphologyImportTestFixture : IAsyncLifetime
             CreateWord(1, 1, 1, 1, 1, MorphologySyntheticSeed.TokenGlyph1, MorphologySyntheticSeed.TokenUthmani1),
             CreateWord(2, 1, 1, 1, 2, MorphologySyntheticSeed.TokenGlyph2, MorphologySyntheticSeed.TokenUthmani2),
             CreateWord(3, 1, 1, 1, 3, MorphologySyntheticSeed.TokenGlyph3, MorphologySyntheticSeed.TokenUthmani3),
-            CreateWord(4, 1, 1, 2, 1, MorphologySyntheticSeed.TokenGlyph4, MorphologySyntheticSeed.TokenUthmani4),
-            CreateWord(5, 1, 1, 2, 2, MorphologySyntheticSeed.TokenGlyph5, MorphologySyntheticSeed.TokenUthmani5)
+            CreateWord(4, 2, 1, 2, 1, MorphologySyntheticSeed.TokenGlyph4, MorphologySyntheticSeed.TokenUthmani4),
+            CreateWord(5, 2, 1, 2, 2, MorphologySyntheticSeed.TokenGlyph5, MorphologySyntheticSeed.TokenUthmani5)
         };
 
         var markerWord = CreateWord(99, 1, 1, 1, 99, "GLYPH-MARKER", "اختبار-علامة", isAyahMarker: true);
@@ -266,6 +266,22 @@ public sealed class MorphologyImportTestFixture : IAsyncLifetime
         }
 
         await WriteJsonAsync(corpusPath, corpusObject);
+        await RefreshManifestChecksumsAsync(sourcePath);
+    }
+
+    public async Task PatchQulRootMapAsync(
+        string sourcePath,
+        IReadOnlyDictionary<string, string> roots)
+    {
+        await WriteJsonAsync(Path.Combine(sourcePath, "qul", "word-root.json"), roots);
+        await RefreshManifestChecksumsAsync(sourcePath);
+    }
+
+    public async Task PatchQulLemmaMapAsync(
+        string sourcePath,
+        IReadOnlyDictionary<string, string> lemmas)
+    {
+        await WriteJsonAsync(Path.Combine(sourcePath, "qul", "word-lemma.json"), lemmas);
         await RefreshManifestChecksumsAsync(sourcePath);
     }
 
@@ -726,11 +742,11 @@ internal static class MorphologySyntheticSeed
         "1:1:1" =>
         [
             new { segmentNumber = 1, kind = "PREFIX", pos = "P", form = "bi", features = "PREFIX", root = (string?)null, lemma = (string?)null },
-            new { segmentNumber = 2, kind = "STEM", pos = "N", form = "somi", features = "NOM", root = "smw", lemma = "ism" }
+            new { segmentNumber = 2, kind = "STEM", pos = "N", form = "somi", features = "NOM", root = (string?)null, lemma = (string?)null }
         ],
         "1:1:2" =>
         [
-            new { segmentNumber = 1, kind = "STEM", pos = "N", form = "l~Ahi", features = "GEN", root = "Alh", lemma = "ilAh" }
+            new { segmentNumber = 1, kind = "STEM", pos = "N", form = "l~Ahi", features = "GEN", root = (string?)null, lemma = (string?)null }
         ],
         "1:1:3" =>
         [

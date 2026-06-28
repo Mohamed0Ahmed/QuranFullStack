@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.MorphologyImporting;
 using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting;
+using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting.Corrections;
 using QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Words.MorphologyImporting;
 using QuranDashboard.Infrastructure.Reports.Quran.DataPipelines.Words.MorphologyImporting;
 
@@ -17,6 +18,7 @@ internal static class MorphologyImportDependencyInjection
         services.AddSingleton<JsonQulRootReader>();
         services.AddSingleton<JsonQulLemmaReader>();
         services.AddSingleton<JsonQulStemReader>();
+        services.AddSingleton<IWordLemmaNormalizationReader, WordLemmaNormalizationReader>();
         services.AddSingleton<MorphologyAssembler>();
         services.AddScoped<IMorphologyImportSource, MorphologyImportSource>();
         services.AddScoped<IMorphologyImportWriter, EfBulkMorphologyWriter>();

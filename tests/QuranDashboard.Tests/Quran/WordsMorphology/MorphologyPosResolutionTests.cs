@@ -220,6 +220,21 @@ public sealed class MorphologyPosResolutionTests(MorphologyImportTestFixture fix
     }
 
     [Fact]
+    public void PosTagSeed_uses_approved_labels_for_polished_segment_types()
+    {
+        var tags = PosTagSeed.GetAll().ToDictionary(t => t.Code);
+
+        tags["PRO"].ArabicLabel.Should().Be("حرف نهي");
+        tags["PRO"].ArabicLabel.Should().NotBe("ضمير منفصل");
+        tags["PRO"].EnglishLabel.Should().Be("Prohibition Particle");
+        tags["PRO"].Category.Should().Be("particle");
+
+        tags["CAUS"].ArabicLabel.Should().Be("حرف سببية");
+        tags["CIRC"].ArabicLabel.Should().Be("حرف حال");
+        tags["EXP"].ArabicLabel.Should().Be("أداة استثناء");
+    }
+
+    [Fact]
     public void PosTagSeed_covers_all_observed_corpus_pos_codes()
     {
         var seedCodes = PosTagSeed.GetAll().Select(t => t.Code).ToHashSet();

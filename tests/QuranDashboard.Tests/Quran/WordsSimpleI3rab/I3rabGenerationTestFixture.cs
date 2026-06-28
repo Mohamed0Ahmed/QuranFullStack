@@ -16,6 +16,8 @@ public sealed class I3rabGenerationTestFixture : IAsyncLifetime
 
     public static I3rabExpectedCounts CompleteMorphologyCounts { get; } = new(SegmentCount: 6, ReadableWordCount: 5, NullFormCount: 1);
 
+    public static I3rabExpectedCounts ParticleLabelCounts { get; } = new(SegmentCount: 2, ReadableWordCount: 2, NullFormCount: 0);
+
     public static I3rabExpectedCounts BihamdikaWordCompositionCounts { get; } = new(SegmentCount: 3, ReadableWordCount: 1, NullFormCount: 0);
 
     private readonly PostgreSqlContainer postgresContainer = new PostgreSqlBuilder()
@@ -229,6 +231,29 @@ public sealed class I3rabGenerationTestFixture : IAsyncLifetime
         await dbContext.SaveChangesAsync();
     }
 
+    public async Task ResetToParticleLabelMorphologyAsync()
+    {
+        await ResetToWordsOnlyAsync();
+
+        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+
+        await dbContext.QuranWords.ExecuteDeleteAsync();
+        dbContext.QuranWords.AddRange(
+            CreateWord(1, 1, 1, 1, 1, "GLYPH-PARTICLE-1", "اختبار-حرف-١"),
+            CreateWord(2, 1, 1, 1, 2, "GLYPH-PARTICLE-2", "اختبار-حرف-٢"));
+
+        dbContext.WordMorphologies.AddRange(
+            CreateMorphology(1, "1:1:1", "PRO", 1),
+            CreateMorphology(2, "1:1:2", "ACC", 1));
+
+        dbContext.WordMorphologySegments.AddRange(
+            CreateSegment(1, 1, "1:1:1", 1, "STEM", "PRO", string.Empty, lemma: null),
+            CreateSegment(2, 2, "1:1:2", 1, "STEM", "ACC", string.Empty, lemma: null));
+
+        await dbContext.SaveChangesAsync();
+    }
+
     private static async Task ClearMorphologyDataAsync(QuranDashboardDbContext dbContext)
     {
         await dbContext.WordMorphologySegments.ExecuteDeleteAsync();
@@ -374,7 +399,9 @@ public sealed class I3rabGenerationTestFixture : IAsyncLifetime
             CreatePosTag("PN", "اسم علم", "proper noun", "noun", 2),
             CreatePosTag("N", "اسم", "noun", "noun", 3),
             CreatePosTag("V", "فعل", "verb", "verb", 4),
-            CreatePosTag("PRON", "ضمير", "pronoun", "pronoun", 5));
+            CreatePosTag("PRON", "ضمير", "pronoun", "pronoun", 5),
+            CreatePosTag("PRO", "حرف نهي", "prohibition particle", "particle", 6),
+            CreatePosTag("ACC", "حرف نصب", "accusative particle", "particle", 7));
 
         await dbContext.SaveChangesAsync();
     }

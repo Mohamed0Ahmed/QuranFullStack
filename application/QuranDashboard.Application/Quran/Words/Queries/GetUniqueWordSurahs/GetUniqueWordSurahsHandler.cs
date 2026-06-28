@@ -59,8 +59,8 @@ public sealed class GetUniqueWordSurahsHandler(
             FeatureName,
             OperationName,
             GetKindKey(kind),
-            response.Id,
-            response.SurahsCount,
+            query.Id,
+            response.Surahs.Count,
             response.Surahs.Count);
 
         return new GetUniqueWordSurahsOutcome.Success(response);

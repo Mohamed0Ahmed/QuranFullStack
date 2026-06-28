@@ -18,10 +18,6 @@ public sealed class UniqueWordSurahDrilldownTests(UniqueWordsTestFixture fixture
             CancellationToken.None);
 
         var response = outcome.Should().BeOfType<GetUniqueWordSurahsOutcome.Success>().Subject.Response;
-        response.Id.Should().Be(1002);
-        response.Kind.Should().Be(UniqueWordKindKeys.Tashkeel);
-        response.DisplayTextUthmani.Should().Be("ٱللَّهِ");
-        response.SurahsCount.Should().Be(5);
         response.Surahs.Should().HaveCount(5);
         response.Surahs.Select(s => s.SurahNumber).Should().BeInAscendingOrder();
         response.Surahs.Should().OnlyContain(s => s.OccurrencesInSurah > 0 && !string.IsNullOrWhiteSpace(s.NameArabic));
@@ -44,8 +40,7 @@ public sealed class UniqueWordSurahDrilldownTests(UniqueWordsTestFixture fixture
             CancellationToken.None);
         var missing = missingOutcome.Should().BeOfType<GetUniqueWordMissingSurahsOutcome.Success>().Subject.Response;
 
-        missing.MissingSurahsCount.Should().Be(114 - mentioned.SurahsCount);
-        missing.Surahs.Should().HaveCount(114 - mentioned.SurahsCount);
+        missing.Surahs.Should().HaveCount(114 - mentioned.Surahs.Count);
 
         var mentionedNumbers = mentioned.Surahs.Select(s => s.SurahNumber).ToHashSet();
         var missingNumbers = missing.Surahs.Select(s => s.SurahNumber).ToHashSet();
@@ -66,8 +61,7 @@ public sealed class UniqueWordSurahDrilldownTests(UniqueWordsTestFixture fixture
             CancellationToken.None);
 
         var response = outcome.Should().BeOfType<GetUniqueWordSurahsOutcome.Success>().Subject.Response;
-        response.Kind.Should().Be(UniqueWordKindKeys.Simple);
-        response.SurahsCount.Should().Be(3);
+        response.Surahs.Should().HaveCount(3);
     }
 
     [Fact]

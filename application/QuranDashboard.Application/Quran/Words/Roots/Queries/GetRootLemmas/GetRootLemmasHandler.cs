@@ -54,7 +54,7 @@ public sealed class GetRootLemmasHandler(
             OperationName,
             ViewName,
             query.Id,
-            lemmas.LemmasCount,
+            lemmas.Lemmas.Count,
             lemmas.Lemmas.Count,
             stopwatch.ElapsedMilliseconds);
 

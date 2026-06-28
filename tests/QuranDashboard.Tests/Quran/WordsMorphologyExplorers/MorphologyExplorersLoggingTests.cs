@@ -102,8 +102,9 @@ public sealed class MorphologyExplorersLoggingTests(MorphologyExplorersTestFixtu
 
         var entry = SingleEntryFor<GetLemmaSummaryHandler>(LogLevel.Information);
         entry.FieldNames().Should().BeEquivalentTo(
-            ["feature", "operation", "lemmaId", "dominantTypeCode", "otherTypesCount", "occurrencesCount", "ayahsCount", "surahsCount", "stemsCount"]);
+            ["feature", "operation", "lemmaId", "typeDistributionCount", "occurrencesCount", "ayahsCount", "surahsCount", "stemsCount"]);
         entry.GetValue<int>("lemmaId").Should().Be(LemmaId);
+        entry.GetValue<int>("typeDistributionCount").Should().Be(summary.TypeDistribution.Count);
         entry.GetValue<int>("occurrencesCount").Should().Be(summary.OccurrencesCount);
         entry.GetValue<int>("stemsCount").Should().Be(summary.StemsCount);
         AssertNoText(entry, summary.LemmaText);

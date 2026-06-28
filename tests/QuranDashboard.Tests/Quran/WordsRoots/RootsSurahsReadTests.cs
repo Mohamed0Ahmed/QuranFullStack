@@ -20,7 +20,6 @@ public sealed class RootsSurahsReadTests(RootsExplorerTestFixture fixture)
             CancellationToken.None);
 
         var response = outcome.Should().BeOfType<GetRootMentionedSurahsOutcome.Success>().Subject.Surahs;
-        response.SurahsCount.Should().Be(2);
         response.Surahs.Should().HaveCount(2);
 
         var byNumber = response.Surahs.ToDictionary(s => s.SurahNumber);
@@ -46,7 +45,7 @@ public sealed class RootsSurahsReadTests(RootsExplorerTestFixture fixture)
         var mentionedResponse = mentioned.Should().BeOfType<GetRootMentionedSurahsOutcome.Success>().Subject.Surahs;
         var missingResponse = missing.Should().BeOfType<GetRootMissingSurahsOutcome.Success>().Subject.MissingSurahs;
 
-        (mentionedResponse.SurahsCount + missingResponse.MissingSurahsCount).Should().Be(114);
+        (mentionedResponse.Surahs.Count + missingResponse.Surahs.Count).Should().Be(114);
     }
 
     [Fact]
@@ -66,8 +65,8 @@ public sealed class RootsSurahsReadTests(RootsExplorerTestFixture fixture)
         var mentionedResponse = mentioned.Should().BeOfType<GetRootMentionedSurahsOutcome.Success>().Subject.Surahs;
         var missingResponse = missing.Should().BeOfType<GetRootMissingSurahsOutcome.Success>().Subject.MissingSurahs;
 
-        mentionedResponse.SurahsCount.Should().Be(9);
-        missingResponse.MissingSurahsCount.Should().Be(105);
+        mentionedResponse.Surahs.Count.Should().Be(9);
+        missingResponse.Surahs.Count.Should().Be(105);
         missingResponse.Surahs.Should().HaveCount(105);
     }
 }

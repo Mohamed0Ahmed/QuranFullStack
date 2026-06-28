@@ -9,6 +9,21 @@ public sealed class MorphologyAssembler
     private static readonly HashSet<string> KnownPosCodes =
         PosTagSeed.GetAll().Select(tag => tag.Code).ToHashSet(StringComparer.Ordinal);
 
+    // Curated, source-traceable disambiguation for the handful of multi-STEM segments whose Buckwalter
+    // lemma key is a genuine homograph shared by two lemma rows, where the rendered segment form cannot
+    // be matched to a single lemma text by normalization alone. Each entry resolves a (segment POS,
+    // segment lemma_buckwalter) pair to the one linguistically-correct lemma text. Anything not listed
+    // here still fails closed via SEG-LEMMA-ID-NO-FANOUT (no silent lowest-id guessing).
+    //
+    // ('ACC', '>an~') -> 'أَنّ': the 10 affected segments are the accusative particle أَنَّ (fatha) in
+    // أَنَّمَا/أَلَّا compounds; Buckwalter '>an~' is shared with إِنَّ (kasra), but the ACC form here is
+    // always أَنَّ. See docs/feature-017-lexical-explorers-polish/segment-dimension-ids-implementation-plan.md.
+    private static readonly IReadOnlyDictionary<(string Pos, string Buckwalter), string> CuratedLemmaDisambiguation =
+        new Dictionary<(string Pos, string Buckwalter), string>
+        {
+            [("ACC", ">an~")] = "أَنّ",
+        };
+
     private readonly SegmentArabicRenderer renderer;
 
     public MorphologyAssembler(SegmentArabicRenderer renderer)
@@ -161,9 +176,10 @@ public sealed class MorphologyAssembler
         var resolvedRoots = BuildResolvedRoots(rootIndex, rootLemmaMap);
         var resolvedLemmas = BuildResolvedLemmas(lemmaIndex, lemmaRootLinks);
         var resolvedStems = BuildResolvedStems(stemIndex);
+        var segmentDimensionResult = ResolveSegmentDimensions(alignedWords, resolvedRoots, resolvedLemmas);
 
         return new MorphologySourceData(
-            alignedWords,
+            segmentDimensionResult.Words,
             roots,
             lemmas,
             stems,
@@ -177,7 +193,8 @@ public sealed class MorphologyAssembler
                 alignedWords.Count,
                 reviewForms.OrderBy(form => form, StringComparer.Ordinal).ToList(),
                 multiwordForms.OrderBy(form => form, StringComparer.Ordinal).ToList(),
-                emptyFormLocations));
+                emptyFormLocations),
+            segmentDimensionResult.Issues);
     }
 
     private List<AlignedSegmentDto> BuildAlignedSegments(
@@ -210,12 +227,231 @@ public sealed class MorphologyAssembler
                 MorphologyInvariants.RenderSource,
                 segment.Root,
                 segment.Lemma,
+                null,
+                null,
                 segment.Features,
                 BuildFeaturesJson(segment.Features)));
         }
 
         return segments;
     }
+
+    private static SegmentDimensionResolutionResult ResolveSegmentDimensions(
+        IReadOnlyList<AlignedWordDto> words,
+        IReadOnlyList<ResolvedRootDto> roots,
+        IReadOnlyList<ResolvedLemmaDto> lemmas)
+    {
+        var issues = new List<SegmentDimensionIssue>();
+        var rootLookup = roots
+            .Where(root => !string.IsNullOrWhiteSpace(root.RootBuckwalter))
+            .GroupBy(root => root.RootBuckwalter!, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.ToList(), StringComparer.Ordinal);
+        var lemmaById = lemmas.ToDictionary(lemma => lemma.AssignedId);
+        var lemmaLookup = BuildLemmaBuckwalterLookup(words, lemmas, lemmaById);
+        var resolvedWords = new List<AlignedWordDto>(words.Count);
+
+        foreach (var word in words)
+        {
+            var stemSegments = word.Segments
+                .Where(segment => string.Equals(segment.Kind, "STEM", StringComparison.Ordinal))
+                .ToList();
+            var isSingleStemWord = stemSegments.Count == 1;
+            var headLemmaBuckwalter = word.LemmaId.HasValue && lemmaById.TryGetValue(word.LemmaId.Value, out var headLemma)
+                ? headLemma.LemmaBuckwalter
+                : null;
+            var resolvedSegments = new List<AlignedSegmentDto>(word.Segments.Count);
+
+            foreach (var segment in word.Segments)
+            {
+                var segmentLocation = $"{word.Location}:{segment.SegmentNumber}";
+                var rootId = ResolveRootId(segment, rootLookup, issues, segmentLocation);
+                var lemmaId = ResolveLemmaId(
+                    segment,
+                    word.LemmaId,
+                    headLemmaBuckwalter,
+                    isSingleStemWord,
+                    lemmaLookup,
+                    lemmas,
+                    issues,
+                    segmentLocation);
+
+                resolvedSegments.Add(segment with { RootId = rootId, LemmaId = lemmaId });
+            }
+
+            resolvedWords.Add(word with { Segments = resolvedSegments });
+        }
+
+        return new SegmentDimensionResolutionResult(resolvedWords, issues);
+    }
+
+    private static Dictionary<string, List<ResolvedLemmaDto>> BuildLemmaBuckwalterLookup(
+        IReadOnlyList<AlignedWordDto> words,
+        IReadOnlyList<ResolvedLemmaDto> lemmas,
+        IReadOnlyDictionary<int, ResolvedLemmaDto> lemmaById)
+    {
+        var lookup = lemmas
+            .Where(lemma => !string.IsNullOrWhiteSpace(lemma.LemmaBuckwalter))
+            .GroupBy(lemma => lemma.LemmaBuckwalter!, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.ToList(), StringComparer.Ordinal);
+
+        foreach (var word in words)
+        {
+            var stemSegments = word.Segments
+                .Where(segment => string.Equals(segment.Kind, "STEM", StringComparison.Ordinal))
+                .ToList();
+            if (stemSegments.Count != 1 || !word.LemmaId.HasValue)
+            {
+                continue;
+            }
+
+            if (!lemmaById.TryGetValue(word.LemmaId.Value, out var headLemma))
+            {
+                continue;
+            }
+
+            var stemLemmaBuckwalter = stemSegments[0].LemmaBuckwalter;
+            if (string.IsNullOrWhiteSpace(stemLemmaBuckwalter))
+            {
+                continue;
+            }
+
+            if (!lookup.TryGetValue(stemLemmaBuckwalter, out var existing))
+            {
+                lookup[stemLemmaBuckwalter] = [headLemma];
+                continue;
+            }
+
+            if (existing.All(candidate => candidate.AssignedId != headLemma.AssignedId))
+            {
+                existing.Add(headLemma);
+            }
+        }
+
+        return lookup;
+    }
+
+    private static int? ResolveRootId(
+        AlignedSegmentDto segment,
+        IReadOnlyDictionary<string, List<ResolvedRootDto>> rootsByBuckwalter,
+        List<SegmentDimensionIssue> issues,
+        string segmentLocation)
+    {
+        if (string.IsNullOrWhiteSpace(segment.RootBuckwalter))
+        {
+            return null;
+        }
+
+        if (!rootsByBuckwalter.TryGetValue(segment.RootBuckwalter, out var candidates))
+        {
+            issues.Add(new SegmentDimensionIssue(
+                MorphologyInvariants.CheckSegRootResolves,
+                segmentLocation,
+                $"root_buckwalter '{segment.RootBuckwalter}' does not resolve to quran_roots"));
+            return null;
+        }
+
+        if (candidates.Count != 1)
+        {
+            issues.Add(new SegmentDimensionIssue(
+                MorphologyInvariants.CheckSegRootResolves,
+                segmentLocation,
+                $"root_buckwalter '{segment.RootBuckwalter}' resolves to {candidates.Count} roots"));
+            return null;
+        }
+
+        return candidates[0].AssignedId;
+    }
+
+    private static int? ResolveLemmaId(
+        AlignedSegmentDto segment,
+        int? wordHeadLemmaId,
+        string? wordHeadLemmaBuckwalter,
+        bool isSingleStemWord,
+        IReadOnlyDictionary<string, List<ResolvedLemmaDto>> lemmasByBuckwalter,
+        IReadOnlyList<ResolvedLemmaDto> lemmas,
+        List<SegmentDimensionIssue> issues,
+        string segmentLocation)
+    {
+        if (!string.Equals(segment.Kind, "STEM", StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        if (isSingleStemWord)
+        {
+            return wordHeadLemmaId;
+        }
+
+        if (string.IsNullOrWhiteSpace(segment.LemmaBuckwalter))
+        {
+            return null;
+        }
+
+        if (wordHeadLemmaId.HasValue
+            && string.Equals(segment.LemmaBuckwalter, wordHeadLemmaBuckwalter, StringComparison.Ordinal))
+        {
+            return wordHeadLemmaId;
+        }
+
+        if (!lemmasByBuckwalter.TryGetValue(segment.LemmaBuckwalter, out var candidates))
+        {
+            var formMatches = lemmas
+                .Where(lemma => SegmentFormMatchesLemmaText(segment, lemma))
+                .ToList();
+            if (formMatches.Count == 1)
+            {
+                return formMatches[0].AssignedId;
+            }
+
+            issues.Add(new SegmentDimensionIssue(
+                MorphologyInvariants.CheckSegLemmaMultiStemResolves,
+                segmentLocation,
+                formMatches.Count > 1
+                    ? $"lemma_buckwalter '{segment.LemmaBuckwalter}' does not resolve and segment form matches {formMatches.Count} lemmas"
+                    : $"lemma_buckwalter '{segment.LemmaBuckwalter}' does not resolve to quran_lemmas"));
+            return null;
+        }
+
+        if (candidates.Count == 1)
+        {
+            return candidates[0].AssignedId;
+        }
+
+        var safeMatches = candidates
+            .Where(candidate => SegmentFormMatchesLemmaText(segment, candidate))
+            .ToList();
+        if (safeMatches.Count == 1)
+        {
+            return safeMatches[0].AssignedId;
+        }
+
+        if (CuratedLemmaDisambiguation.TryGetValue((segment.Pos, segment.LemmaBuckwalter), out var curatedLemmaText))
+        {
+            var curatedMatches = candidates
+                .Where(candidate => string.Equals(candidate.LemmaText, curatedLemmaText, StringComparison.Ordinal))
+                .ToList();
+            if (curatedMatches.Count == 1)
+            {
+                return curatedMatches[0].AssignedId;
+            }
+        }
+
+        issues.Add(new SegmentDimensionIssue(
+            MorphologyInvariants.CheckSegLemmaNoFanout,
+            segmentLocation,
+            $"lemma_buckwalter '{segment.LemmaBuckwalter}' resolves to {candidates.Count} lemmas without a safe form match"));
+        return null;
+    }
+
+    private static bool SegmentFormMatchesLemmaText(AlignedSegmentDto segment, ResolvedLemmaDto lemma) =>
+        !string.IsNullOrWhiteSpace(segment.FormArabicNormalized)
+        && string.Equals(
+            NormalizeArabicForDimensionMatch(segment.FormArabicNormalized),
+            NormalizeArabicForDimensionMatch(lemma.LemmaText),
+            StringComparison.Ordinal);
+
+    private static string NormalizeArabicForDimensionMatch(string value) =>
+        value.Replace("ـ", string.Empty, StringComparison.Ordinal).Trim();
 
     private static void CollectUnknownPosCodes(
         IReadOnlyList<AlignedSegmentDto> segments, SortedSet<string> unknownPosCodes)
@@ -401,4 +637,8 @@ public sealed class MorphologyAssembler
             Buckwalter ??= buckwalter;
         }
     }
+
+    private sealed record SegmentDimensionResolutionResult(
+        IReadOnlyList<AlignedWordDto> Words,
+        IReadOnlyList<SegmentDimensionIssue> Issues);
 }

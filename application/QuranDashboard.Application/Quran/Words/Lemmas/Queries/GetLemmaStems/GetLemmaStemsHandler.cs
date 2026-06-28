@@ -50,7 +50,7 @@ public sealed class GetLemmaStemsHandler(
             FeatureName,
             OperationName,
             query.Id,
-            stems.StemsCount,
+            stems.Stems.Count,
             stems.Stems.Count,
             stopwatch.ElapsedMilliseconds);
 

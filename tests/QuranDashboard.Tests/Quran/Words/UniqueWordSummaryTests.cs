@@ -19,13 +19,11 @@ public sealed class UniqueWordSummaryTests(UniqueWordsTestFixture fixture)
         var summary = outcome.Should().BeOfType<GetUniqueWordSummaryOutcome.Success>().Subject.Summary;
         summary.Id.Should().Be(1002);
         summary.Kind.Should().Be(UniqueWordKindKeys.Tashkeel);
-        summary.DisplayTextUthmani.Should().Be("ٱللَّهِ");
+        summary.DisplayText.Should().Be("ٱللَّهِ");
         summary.OccurrencesCount.Should().Be(5);
         summary.AyahsCount.Should().Be(5);
         summary.SurahsCount.Should().Be(5);
         summary.MissingSurahsCount.Should().Be(114 - summary.SurahsCount);
-        summary.FirstVerseKey.Should().Be("1:1");
-        summary.FirstLocation.Should().Be("1:1:2");
     }
 
     [Fact]
@@ -40,12 +38,12 @@ public sealed class UniqueWordSummaryTests(UniqueWordsTestFixture fixture)
 
         var summary = outcome.Should().BeOfType<GetUniqueWordSummaryOutcome.Success>().Subject.Summary;
         summary.Kind.Should().Be(UniqueWordKindKeys.Simple);
-        summary.DisplayTextUthmani.Should().Be("بِسْمِ");
+        summary.DisplayText.Should().Be("بسم");
         summary.MissingSurahsCount.Should().Be(114 - summary.SurahsCount);
     }
 
     [Fact]
-    public async Task GetSummary_exposes_raw_word_forms_for_both_modes()
+    public async Task GetSummary_returns_display_text_for_each_kind_mode()
     {
         await using var scope = fixture.CreateScope();
         var handler = scope.ServiceProvider.GetRequiredService<GetUniqueWordSummaryHandler>();
@@ -53,26 +51,14 @@ public sealed class UniqueWordSummaryTests(UniqueWordsTestFixture fixture)
         var tashkeelOutcome = await handler.HandleAsync(
             new GetUniqueWordSummaryQuery("tashkeel", 1002),
             CancellationToken.None);
-
         var tashkeel = tashkeelOutcome.Should().BeOfType<GetUniqueWordSummaryOutcome.Success>().Subject.Summary;
-        tashkeel.DisplayTextUthmani.Should().Be("ٱللَّهِ");
-        tashkeel.TextUthmani.Should().Be("ٱللَّهِ");
-        tashkeel.TextUthmaniSimple.Should().Be("الله");
-        tashkeel.TextImlaeiSimple.Should().Be("الله");
-        tashkeel.WordKeyImlaeiSimple.Should().BeNull();
-        tashkeel.QpcGlyph.Should().BeNull();
+        tashkeel.DisplayText.Should().Be("ٱللَّهِ");
 
         var simpleOutcome = await handler.HandleAsync(
             new GetUniqueWordSummaryQuery("simple", 2003),
             CancellationToken.None);
-
         var simple = simpleOutcome.Should().BeOfType<GetUniqueWordSummaryOutcome.Success>().Subject.Summary;
-        simple.DisplayTextUthmani.Should().Be("ءَامَنُوا۟");
-        simple.TextUthmani.Should().Be("ءَامَنُوا۟");
-        simple.TextUthmaniSimple.Should().Be("ءامنوا");
-        simple.TextImlaeiSimple.Should().Be("آمنوا");
-        simple.WordKeyImlaeiSimple.Should().Be("امنوا");
-        simple.QpcGlyph.Should().Be("g2003");
+        simple.DisplayText.Should().Be("ءامنوا");
     }
 
     [Theory]

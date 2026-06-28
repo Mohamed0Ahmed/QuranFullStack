@@ -16,7 +16,7 @@ public sealed class RootsAyahsReadTests(RootsExplorerTestFixture fixture)
     private const int HighFrequencyRootId = 10;
 
     [Fact]
-    public async Task GetRootAyahs_returns_exact_matched_quran_word_ids_for_seeded_root()
+    public async Task GetRootAyahs_excludes_ayah_markers_and_keeps_page_number()
     {
         await using var scope = fixture.CreateScope();
         var handler = scope.ServiceProvider.GetRequiredService<GetRootAyahsHandler>();
@@ -31,15 +31,21 @@ public sealed class RootsAyahsReadTests(RootsExplorerTestFixture fixture)
 
         var byVerse = page.Items.ToDictionary(i => i.VerseKey);
 
-        byVerse["1:1"].MatchedQuranWordIds.Should().BeEquivalentTo([1003, 1004]);
-        byVerse["1:3"].MatchedQuranWordIds.Should().BeEquivalentTo([1006, 1007]);
-        byVerse["2:25"].MatchedQuranWordIds.Should().BeEquivalentTo([1008]);
+        byVerse["1:1"].PageNumber.Should().Be(1);
+        byVerse["1:1"].Words.Should().HaveCount(4);
+        byVerse["1:1"].Words.Count(w => w.IsMatched).Should().Be(2);
+        byVerse["1:1"].Words.Should().OnlyContain(w => w.TextUthmani != "۞");
+
+        byVerse["1:3"].Words.Should().HaveCount(2);
+        byVerse["1:3"].Words.Count(w => w.IsMatched).Should().Be(2);
+
+        byVerse["2:25"].Words.Should().HaveCount(1);
+        byVerse["2:25"].Words.Count(w => w.IsMatched).Should().Be(1);
 
         foreach (var item in page.Items)
         {
             item.Words.Should().NotBeEmpty();
-            item.MatchedQuranWordIds.Should().OnlyContain(id =>
-                item.Words.Any(w => w.QuranWordId == id));
+            item.Words.Should().OnlyContain(w => !string.IsNullOrWhiteSpace(w.TextUthmani));
         }
     }
 

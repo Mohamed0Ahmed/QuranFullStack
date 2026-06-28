@@ -25,7 +25,7 @@ public sealed class MorphologyDimensionTests(MorphologyImportTestFixture fixture
     }
 
     [Fact]
-    public async Task Buckwalter_only_word_has_null_dimension_links()
+    public async Task Null_segment_buckwalter_values_have_null_segment_dimension_links()
     {
         await fixture.SeedSyntheticWordsAsync();
         var sourcePath = await fixture.WriteSyntheticSourceFolderAsync();
@@ -49,8 +49,10 @@ public sealed class MorphologyDimensionTests(MorphologyImportTestFixture fixture
             .AsNoTracking()
             .FirstAsync(s => s.QuranWordId == row12.QuranWordId && s.Kind == "STEM");
 
-        segment.RootBuckwalter.Should().NotBeNull("Buckwalter root retained at segment level");
-        segment.LemmaBuckwalter.Should().NotBeNull("Buckwalter lemma retained at segment level");
+        segment.RootBuckwalter.Should().BeNull();
+        segment.LemmaBuckwalter.Should().BeNull();
+        segment.RootId.Should().BeNull();
+        segment.LemmaId.Should().BeNull();
     }
 
     [Fact]
@@ -144,6 +146,72 @@ public sealed class MorphologyDimensionTests(MorphologyImportTestFixture fixture
         danglingRoots.Should().Be(0);
         danglingLemmas.Should().Be(0);
         danglingStems.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Segment_dimension_ids_resolve_without_dangling_references()
+    {
+        await fixture.SeedSyntheticWordsAsync();
+        var sourcePath = await fixture.WriteSyntheticSourceFolderAsync();
+        var readableCount = fixture.GetReadableWordCount();
+
+        var result = await fixture.RunImportAsync(sourcePath, expectedReadableWords: readableCount);
+
+        result.ExitCode.Should().Be(ImportMorphologyResult.SuccessExitCode);
+
+        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+
+        var danglingSegmentRoots = await dbContext.Database.SqlQueryRaw<int>(
+            """
+            SELECT count(*)::int AS "Value"
+            FROM quran_word_morphology_segments s
+            WHERE s.root_id IS NOT NULL
+              AND NOT EXISTS (SELECT 1 FROM quran_roots r WHERE r.id = s.root_id)
+            """).FirstAsync();
+
+        var danglingSegmentLemmas = await dbContext.Database.SqlQueryRaw<int>(
+            """
+            SELECT count(*)::int AS "Value"
+            FROM quran_word_morphology_segments s
+            WHERE s.lemma_id IS NOT NULL
+              AND NOT EXISTS (SELECT 1 FROM quran_lemmas l WHERE l.id = s.lemma_id)
+            """).FirstAsync();
+
+        danglingSegmentRoots.Should().Be(0);
+        danglingSegmentLemmas.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Segment_dimension_ids_follow_source_policy()
+    {
+        await fixture.SeedSyntheticWordsAsync();
+        var sourcePath = await fixture.WriteSyntheticSourceFolderAsync();
+        var readableCount = fixture.GetReadableWordCount();
+
+        var result = await fixture.RunImportAsync(sourcePath, expectedReadableWords: readableCount);
+
+        result.ExitCode.Should().Be(ImportMorphologyResult.SuccessExitCode);
+
+        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+
+        var nonStemLemmaIds = await dbContext.WordMorphologySegments
+            .AsNoTracking()
+            .CountAsync(segment => segment.Kind != "STEM" && segment.LemmaId != null);
+        var unresolvedRoots = await dbContext.WordMorphologySegments
+            .AsNoTracking()
+            .CountAsync(segment => segment.RootBuckwalter != null && segment.RootId == null);
+        var unresolvedStemLemmas = await dbContext.WordMorphologySegments
+            .AsNoTracking()
+            .CountAsync(segment =>
+                segment.Kind == "STEM"
+                && segment.LemmaBuckwalter != null
+                && segment.LemmaId == null);
+
+        nonStemLemmaIds.Should().Be(0);
+        unresolvedRoots.Should().Be(0);
+        unresolvedStemLemmas.Should().Be(0);
     }
 
     [Fact]

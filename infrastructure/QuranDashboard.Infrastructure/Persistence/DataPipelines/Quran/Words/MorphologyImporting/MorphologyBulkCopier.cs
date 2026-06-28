@@ -149,7 +149,7 @@ internal static class MorphologyBulkCopier
             COPY quran_word_morphology_segments (
                 quran_word_id, segment_location, segment_number, kind, pos,
                 form_buckwalter, form_arabic_normalized, arabic_render_tier, arabic_render_source,
-                root_buckwalter, lemma_buckwalter, features_raw, features_json)
+                root_buckwalter, lemma_buckwalter, root_id, lemma_id, features_raw, features_json)
             FROM STDIN (FORMAT BINARY)
             """;
 
@@ -178,6 +178,8 @@ internal static class MorphologyBulkCopier
                 await importer.WriteAsync(segment.RenderSource, ct);
                 await importer.WriteAsync(segment.RootBuckwalter, NpgsqlDbType.Text, ct);
                 await importer.WriteAsync(segment.LemmaBuckwalter, NpgsqlDbType.Text, ct);
+                await importer.WriteAsync(segment.RootId, NpgsqlDbType.Integer, ct);
+                await importer.WriteAsync(segment.LemmaId, NpgsqlDbType.Integer, ct);
                 await importer.WriteAsync(segment.FeaturesRaw, ct);
                 await importer.WriteAsync(segment.FeaturesJson, NpgsqlDbType.Jsonb, ct);
             }

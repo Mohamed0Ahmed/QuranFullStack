@@ -3,15 +3,8 @@ namespace QuranDashboard.Application.Abstractions.Quran.Words.Responses;
 public sealed record UniqueWordSummaryDto(
     int Id,
     string Kind,
-    string DisplayTextUthmani,
-    string TextUthmani,
-    string TextUthmaniSimple,
-    string TextImlaeiSimple,
-    string? WordKeyImlaeiSimple,
-    string? QpcGlyph,
+    string DisplayText,
     int OccurrencesCount,
     int AyahsCount,
     int SurahsCount,
-    int MissingSurahsCount,
-    string FirstVerseKey,
-    string FirstLocation);
+    int MissingSurahsCount);

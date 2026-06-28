@@ -75,8 +75,7 @@ internal static class RootsListDerivation
             row.SimpleWordsCount,
             row.TashkeelWordsCount,
             row.LemmasCount,
-            row.StemsCount,
-            row.FirstVerseKey);
+            row.StemsCount);
 
     private static RootSummaryDto ToSummaryDto(RootSummaryRow row) =>
         new(
@@ -88,8 +87,7 @@ internal static class RootsListDerivation
             row.SimpleWordsCount,
             row.TashkeelWordsCount,
             row.LemmasCount,
-            row.StemsCount,
-            row.FirstVerseKey);
+            row.StemsCount);
 
     private static string? NormalizeArabicQuery(string? search)
     {

@@ -25,8 +25,9 @@ public sealed class RootsWordsReadTests(RootsExplorerTestFixture fixture)
         var byId = page.Items.ToDictionary(i => i.UniqueWordId);
         byId[1003].OccurrencesCount.Should().Be(2);
         byId[1003].Kind.Should().Be(RootWordKindKeys.Simple);
+        byId[1003].DisplayText.Should().Be("الرحمن");
         byId[1004].OccurrencesCount.Should().Be(3);
-        byId[1004].DisplayTextUthmani.Should().NotBeNullOrWhiteSpace();
+        byId[1004].DisplayText.Should().Be("الرحيم");
     }
 
     [Fact]
@@ -43,6 +44,8 @@ public sealed class RootsWordsReadTests(RootsExplorerTestFixture fixture)
         page.TotalCount.Should().Be(2);
         page.Items.Should().HaveCount(2);
         page.Items.Should().OnlyContain(i => i.Kind == RootWordKindKeys.Tashkeel);
+        page.Items.Should().ContainSingle(i => i.DisplayText == "ٱلرَّحْمَٰنِ");
+        page.Items.Should().ContainSingle(i => i.DisplayText == "ٱلرَّحِيمِ");
     }
 
     [Fact]

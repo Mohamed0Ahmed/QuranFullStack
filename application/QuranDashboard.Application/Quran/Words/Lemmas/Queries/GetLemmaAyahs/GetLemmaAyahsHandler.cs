@@ -59,6 +59,7 @@ public sealed class GetLemmaAyahsHandler(
             query.Id,
             query.Page,
             query.PageSize,
+            NormalizeTypeCode(query.TypeCode),
             cancellationToken);
         stopwatch.Stop();
 
@@ -91,4 +92,7 @@ public sealed class GetLemmaAyahsHandler(
 
         return new GetLemmaAyahsOutcome.Success(page);
     }
+
+    private static string? NormalizeTypeCode(string? typeCode) =>
+        string.IsNullOrWhiteSpace(typeCode) ? null : typeCode.Trim();
 }
