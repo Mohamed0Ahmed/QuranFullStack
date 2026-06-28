@@ -15,6 +15,7 @@ namespace QuranDashboard.Tests.Quran.WordsMorphologyExplorers;
 public sealed class MorphologyRelationshipsReadTests(MorphologyExplorersTestFixture fixture)
 {
     private const int HighFrequencyLemmaId = 500;
+    private const int SameLemmaFanoutLemmaId = 508;
     private const int MultiCandidateStemId = 602;
     private const int UnknownLemmaId = 999_999;
     private const int UnknownStemId = 999_999;
@@ -34,6 +35,23 @@ public sealed class MorphologyRelationshipsReadTests(MorphologyExplorersTestFixt
         response.Stems[0].StemId.Should().Be(600);
         response.Stems[0].StemText.Should().Be("كَلَّمَ");
         response.Stems[0].OccurrencesCount.Should().Be(11);
+    }
+
+    [Fact]
+    public async Task GetLemmaStems_segment_only_lemma_uses_matched_words_word_level_stem()
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetLemmaStemsHandler>();
+
+        var outcome = await handler.HandleAsync(
+            new GetLemmaStemsQuery(SameLemmaFanoutLemmaId),
+            CancellationToken.None);
+
+        var response = outcome.Should().BeOfType<GetLemmaStemsOutcome.Success>().Subject.Stems;
+        response.Stems.Should().ContainSingle();
+        response.Stems[0].StemId.Should().Be(606);
+        response.Stems[0].StemText.Should().Be("سَاق-تَجْرِيبِيّ");
+        response.Stems[0].OccurrencesCount.Should().Be(1);
     }
 
     [Fact]

@@ -13,6 +13,8 @@ namespace QuranDashboard.Tests.Quran.WordsMorphologyExplorers;
 public sealed class LemmasSurahsReadTests(MorphologyExplorersTestFixture fixture)
 {
     private const int HighFrequencyLemmaId = 500;
+    private const int CompoundLemmaAnId = 507;
+    private const int SameLemmaFanoutLemmaId = 508;
     private const int UnknownLemmaId = 999_999;
 
     [Fact]
@@ -36,6 +38,54 @@ public sealed class LemmasSurahsReadTests(MorphologyExplorersTestFixture fixture
         byNumber[1].NameArabic.Should().Be("الفاتحة");
         byNumber[2].NameArabic.Should().Be("البقرة");
         byNumber[3].NameArabic.Should().Be("آل عمران");
+    }
+
+    [Fact]
+    public async Task GetLemmaSurahs_compound_segment_only_lemma_uses_segment_matched_membership()
+    {
+        await using var scope = fixture.CreateScope();
+        var mentionedHandler = scope.ServiceProvider.GetRequiredService<GetLemmaMentionedSurahsHandler>();
+        var missingHandler = scope.ServiceProvider.GetRequiredService<GetLemmaMissingSurahsHandler>();
+
+        var mentioned = await mentionedHandler.HandleAsync(
+            new GetLemmaMentionedSurahsQuery(CompoundLemmaAnId),
+            CancellationToken.None);
+        var missing = await missingHandler.HandleAsync(
+            new GetLemmaMissingSurahsQuery(CompoundLemmaAnId),
+            CancellationToken.None);
+
+        var mentionedResponse = mentioned.Should().BeOfType<GetLemmaMentionedSurahsOutcome.Success>().Subject.Surahs;
+        mentionedResponse.Surahs.Should().ContainSingle();
+        mentionedResponse.Surahs[0].SurahNumber.Should().Be(2);
+        mentionedResponse.Surahs[0].OccurrencesInSurah.Should().Be(1);
+
+        var missingResponse = missing.Should().BeOfType<GetLemmaMissingSurahsOutcome.Success>().Subject.MissingSurahs;
+        missingResponse.Surahs.Should().HaveCount(113);
+        missingResponse.Surahs.Select(s => s.SurahNumber).Should().NotContain(2);
+    }
+
+    [Fact]
+    public async Task GetLemmaSurahs_same_lemma_segment_fanout_counts_matching_segments()
+    {
+        await using var scope = fixture.CreateScope();
+        var mentionedHandler = scope.ServiceProvider.GetRequiredService<GetLemmaMentionedSurahsHandler>();
+        var missingHandler = scope.ServiceProvider.GetRequiredService<GetLemmaMissingSurahsHandler>();
+
+        var mentioned = await mentionedHandler.HandleAsync(
+            new GetLemmaMentionedSurahsQuery(SameLemmaFanoutLemmaId),
+            CancellationToken.None);
+        var missing = await missingHandler.HandleAsync(
+            new GetLemmaMissingSurahsQuery(SameLemmaFanoutLemmaId),
+            CancellationToken.None);
+
+        var mentionedResponse = mentioned.Should().BeOfType<GetLemmaMentionedSurahsOutcome.Success>().Subject.Surahs;
+        mentionedResponse.Surahs.Should().ContainSingle();
+        mentionedResponse.Surahs[0].SurahNumber.Should().Be(2);
+        mentionedResponse.Surahs[0].OccurrencesInSurah.Should().Be(2);
+
+        var missingResponse = missing.Should().BeOfType<GetLemmaMissingSurahsOutcome.Success>().Subject.MissingSurahs;
+        missingResponse.Surahs.Should().HaveCount(113);
+        missingResponse.Surahs.Select(s => s.SurahNumber).Should().NotContain(2);
     }
 
     [Fact]

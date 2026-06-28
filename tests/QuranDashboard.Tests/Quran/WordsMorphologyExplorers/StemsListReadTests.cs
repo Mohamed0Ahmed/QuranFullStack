@@ -11,7 +11,7 @@ namespace QuranDashboard.Tests.Quran.WordsMorphologyExplorers;
 [Collection(nameof(MorphologyExplorersCollection))]
 public sealed class StemsListReadTests(MorphologyExplorersTestFixture fixture)
 {
-    private const int SeededStemCount = 5;
+    private const int SeededStemCount = 6;
     private const int HighFrequencyStemId = 600;
     private const int NullRelationStemId = 601;
     private const int MultiCandidateStemId = 602;
@@ -179,7 +179,7 @@ public sealed class StemsListReadTests(MorphologyExplorersTestFixture fixture)
             CancellationToken.None);
         var page = outcome.Should().BeOfType<GetStemsPageOutcome.Success>().Subject.Page;
 
-        page.Items.Select(i => i.Id).Should().Equal(600, 604, 602, 605, 601);
+        page.Items.Select(i => i.Id).Should().Equal(600, 604, 602, 605, 601, 606);
     }
 
     [Fact]
@@ -193,7 +193,7 @@ public sealed class StemsListReadTests(MorphologyExplorersTestFixture fixture)
             CancellationToken.None);
         var page = outcome.Should().BeOfType<GetStemsPageOutcome.Success>().Subject.Page;
 
-        page.Items.Select(i => i.Id).Should().Equal(604, 602, 600, 601, 605);
+        page.Items.Select(i => i.Id).Should().Equal(604, 606, 602, 600, 601, 605);
     }
 
     [Fact]
@@ -207,7 +207,7 @@ public sealed class StemsListReadTests(MorphologyExplorersTestFixture fixture)
             CancellationToken.None);
         var page = outcome.Should().BeOfType<GetStemsPageOutcome.Success>().Subject.Page;
 
-        page.Items.Select(i => i.Id).Should().Equal(600, 605, 604, 601, 602);
+        page.Items.Select(i => i.Id).Should().Equal(600, 605, 604, 601, 602, 606);
     }
 
     [Fact]

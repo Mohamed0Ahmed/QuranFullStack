@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using QuranDashboard.Application.Abstractions.Quran.Words.Lemmas;
+using QuranDashboard.Application.Quran.Words.Lemmas.Queries.GetLemmaSummary;
 using QuranDashboard.Application.Quran.Words.Lemmas.Queries.GetLemmaWords;
 using QuranDashboard.Infrastructure.Caching.Quran.Words.Lemmas;
 using QuranDashboard.Infrastructure.Persistence;
@@ -13,6 +14,9 @@ namespace QuranDashboard.Tests.Quran.WordsMorphologyExplorers;
 public sealed class LemmasWordsReadTests(MorphologyExplorersTestFixture fixture)
 {
     private const int HighFrequencyLemmaId = 500;
+    private const int CompoundLemmaAnId = 507;
+    private const int SameLemmaFanoutLemmaId = 508;
+    private const int MarkerRegressionLemmaId = 509;
     private const int UnknownLemmaId = 999_999;
 
     [Theory]
@@ -45,6 +49,83 @@ public sealed class LemmasWordsReadTests(MorphologyExplorersTestFixture fixture)
         var second = page.Items[1];
         second.DisplayText.Should().Be(secondDisplayText);
         second.OccurrencesCount.Should().Be(secondOccurrencesCount);
+    }
+
+    [Theory]
+    [InlineData(LemmaWordKindKeys.Simple, 32008, "الا")]
+    [InlineData(LemmaWordKindKeys.Tashkeel, 31008, "أَلَّا")]
+    public async Task GetLemmaWords_compound_segment_only_lemma_includes_matched_word(
+        string kind,
+        int uniqueWordId,
+        string displayText)
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetLemmaWordsHandler>();
+
+        var outcome = await handler.HandleAsync(
+            new GetLemmaWordsQuery(CompoundLemmaAnId, kind, 1, 50),
+            CancellationToken.None);
+
+        var page = outcome.Should().BeOfType<GetLemmaWordsOutcome.Success>().Subject.Page;
+        page.TotalCount.Should().Be(1);
+        page.Items.Should().ContainSingle();
+        page.Items[0].UniqueWordId.Should().Be(uniqueWordId);
+        page.Items[0].DisplayText.Should().Be(displayText);
+        page.Items[0].OccurrencesCount.Should().Be(1);
+    }
+
+    [Theory]
+    [InlineData(LemmaWordKindKeys.Simple, 32010, "لفظ-تجريبي")]
+    [InlineData(LemmaWordKindKeys.Tashkeel, 31010, "لَفْظٌ-تَجْرِيبِيّ")]
+    public async Task GetLemmaWords_same_lemma_segment_fanout_groups_unique_word_once_and_counts_segments(
+        string kind,
+        int uniqueWordId,
+        string displayText)
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetLemmaWordsHandler>();
+        var summaryHandler = scope.ServiceProvider.GetRequiredService<GetLemmaSummaryHandler>();
+
+        var outcome = await handler.HandleAsync(
+            new GetLemmaWordsQuery(SameLemmaFanoutLemmaId, kind, 1, 50),
+            CancellationToken.None);
+
+        var page = outcome.Should().BeOfType<GetLemmaWordsOutcome.Success>().Subject.Page;
+        page.TotalCount.Should().Be(1);
+        page.Items.Should().ContainSingle();
+        page.Items[0].UniqueWordId.Should().Be(uniqueWordId);
+        page.Items[0].DisplayText.Should().Be(displayText);
+        page.Items[0].OccurrencesCount.Should().Be(2);
+
+        var summary = (await summaryHandler.HandleAsync(
+            new GetLemmaSummaryQuery(SameLemmaFanoutLemmaId),
+            CancellationToken.None)).Should().BeOfType<GetLemmaSummaryOutcome.Success>().Subject.Summary;
+        page.Items.Sum(i => i.OccurrencesCount).Should().Be(summary.OccurrencesCount);
+    }
+
+    [Theory]
+    [InlineData(LemmaWordKindKeys.Simple, 32011, "وسم-تجريبي", 32012)]
+    [InlineData(LemmaWordKindKeys.Tashkeel, 31011, "وَسْم-تَجْرِيبِيّ", 31012)]
+    public async Task GetLemmaWords_matched_ayah_marker_returns_only_real_word(
+        string kind,
+        int realUniqueWordId,
+        string realDisplayText,
+        int markerUniqueWordId)
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetLemmaWordsHandler>();
+
+        var outcome = await handler.HandleAsync(
+            new GetLemmaWordsQuery(MarkerRegressionLemmaId, kind, 1, 50),
+            CancellationToken.None);
+
+        var page = outcome.Should().BeOfType<GetLemmaWordsOutcome.Success>().Subject.Page;
+        page.TotalCount.Should().Be(1);
+        page.Items.Should().ContainSingle();
+        page.Items[0].UniqueWordId.Should().Be(realUniqueWordId);
+        page.Items[0].DisplayText.Should().Be(realDisplayText);
+        page.Items[0].OccurrencesCount.Should().Be(1);
+        page.Items.Select(i => i.UniqueWordId).Should().NotContain(markerUniqueWordId);
     }
 
     [Theory]
