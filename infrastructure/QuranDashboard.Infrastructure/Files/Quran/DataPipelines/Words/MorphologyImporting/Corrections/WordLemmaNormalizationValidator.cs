@@ -110,6 +110,13 @@ internal static class WordLemmaNormalizationValidator
                 break;
         }
 
+        // problemClass, when present, must be a recognized label so a relabeled artifact fails
+        // closed here instead of silently emptying a problemClass-scoped hard check downstream
+        // (e.g. MORPH-WORD-LEMMA-MISSING-RECOVERY-CLEAN).
+        FailWhen(!string.IsNullOrWhiteSpace(entry.ProblemClass)
+                && !WordLemmaProblemClasses.Known.Contains(entry.ProblemClass),
+            $"{where}: unknown problemClass '{entry.ProblemClass}'.");
+
         // Every entry must carry a human reason + arabicMappingEvidence where applicable.
         FailWhen(string.IsNullOrWhiteSpace(entry.Reason),
             $"{where}: missing reason/evidence.");

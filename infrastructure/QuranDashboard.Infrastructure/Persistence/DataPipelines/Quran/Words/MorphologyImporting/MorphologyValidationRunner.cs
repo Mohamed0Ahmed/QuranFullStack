@@ -334,7 +334,7 @@ internal static class MorphologyValidationRunner
         var missingRecoveryEntries = normalization.Artifact.Entries
             .Where(entry => entry.DecisionStatus == WordLemmaNormalizationDecisionStatus.Approved
                 && entry.OperationKind == WordLemmaNormalizationOperationKind.Add
-                && string.Equals(entry.ProblemClass, "missing-recovery", StringComparison.Ordinal))
+                && string.Equals(entry.ProblemClass, WordLemmaProblemClasses.MissingRecovery, StringComparison.Ordinal))
             .ToList();
         var missingRecoveryMismatches = CountEntryMismatches(missingRecoveryEntries, observed);
         checks.Add(new MorphologyCheckResult(
