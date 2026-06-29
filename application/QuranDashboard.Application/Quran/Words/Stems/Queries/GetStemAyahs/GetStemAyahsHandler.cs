@@ -59,7 +59,7 @@ public sealed class GetStemAyahsHandler(
             query.Id,
             query.Page,
             query.PageSize,
-            query.Type,
+            query.TypeCode,
             cancellationToken);
         stopwatch.Stop();
 

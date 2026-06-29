@@ -128,15 +128,15 @@ public sealed class StemsController(
     }
 
     /// <summary>
-    /// يُرجع صفحة من الآيات التي ورد فيها الأصل الصرفي المحدد، مع معرّفات
-    /// الكلمات المطابقة للتمييز البصري.
+    /// يُرجع صفحة من الآيات التي ورد فيها الأصل الصرفي المحدد، مع وسم التطابق
+    /// على مستوى الكلمات.
     /// </summary>
     [HttpGet("{id:int}/ayahs")]
     public async Task<ActionResult<ApiResponse<PagedResult<StemAyahMatchDto>>>> GetAyahs(
         int id,
         [FromQuery] int? page,
         [FromQuery] int? pageSize,
-        [FromQuery] string? type,
+        [FromQuery(Name = "typeCode")] string? typeCode,
         CancellationToken cancellationToken)
     {
         var outcome = await ayahsHandler.HandleAsync(
@@ -144,7 +144,7 @@ public sealed class StemsController(
                 id,
                 page ?? DefaultPage,
                 pageSize ?? DefaultDetailPageSize,
-                type),
+                typeCode),
             cancellationToken);
 
         return outcome switch

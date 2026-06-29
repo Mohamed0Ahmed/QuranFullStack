@@ -18,7 +18,7 @@ internal static class StemsListDerivation
 
     internal const string ArabicFoldTo = "ااااواهيي";
 
-    internal static readonly TypeSummaryDto NoType = new(string.Empty, "غير محدَّد", "Unspecified", 0, 0, 0, 0);
+    internal static readonly TypeSummaryDto NoType = new(string.Empty, "غير محدَّد", 0);
 
     public static PagedResult<StemListItemDto> ToPage(
         IReadOnlyList<StemSummaryRow> all,
@@ -87,18 +87,13 @@ internal static class StemsListDerivation
             row.StemText,
             row.DominantLemmaId,
             row.DominantLemmaText,
-            row.DominantLemmaBuckwalter,
             row.DominantRootId,
             row.DominantRootText,
-            row.DominantRootBuckwalter,
-            DominantType(row.TypeDistribution),
-            OtherTypesCount(row.TypeDistribution),
             row.OccurrencesCount,
             row.AyahsCount,
             row.SurahsCount,
             row.SimpleWordsCount,
-            row.TashkeelWordsCount,
-            row.FirstVerseKey);
+            row.TashkeelWordsCount);
 
     private static StemSummaryDto ToSummaryDto(StemSummaryRow row)
     {
@@ -111,36 +106,18 @@ internal static class StemsListDerivation
             row.StemText,
             row.DominantLemmaId,
             row.DominantLemmaText,
-            row.DominantLemmaBuckwalter,
             row.DominantRootId,
             row.DominantRootText,
-            row.DominantRootBuckwalter,
-            DominantType(row.TypeDistribution),
-            OtherTypesCount(row.TypeDistribution),
             row.OccurrencesCount,
             row.AyahsCount,
             row.SurahsCount,
             row.SimpleWordsCount,
             row.TashkeelWordsCount,
-            row.FirstVerseKey,
             distribution);
     }
 
-    private static TypeSummaryDto DominantType(IReadOnlyList<StemTypeDistributionRow> distribution) =>
-        distribution is { Count: > 0 } ? ToTypeSummary(distribution[0]) : NoType;
-
-    private static int OtherTypesCount(IReadOnlyList<StemTypeDistributionRow> distribution) =>
-        distribution is null || distribution.Count <= 1 ? 0 : distribution.Count - 1;
-
     private static TypeSummaryDto ToTypeSummary(StemTypeDistributionRow row) =>
-        new(
-            row.Code,
-            row.ArabicLabel,
-            row.EnglishLabel,
-            row.OccurrencesCount,
-            row.FirstSurahNumber,
-            row.FirstAyahNumber,
-            row.FirstWordNumber);
+        new(row.Code, row.ArabicLabel, row.OccurrencesCount);
 
     internal static string? NormalizeArabicQuery(string? search)
     {

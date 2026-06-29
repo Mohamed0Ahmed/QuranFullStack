@@ -101,15 +101,11 @@ public sealed class MorphologyRelationshipsReadTests(MorphologyExplorersTestFixt
             CancellationToken.None);
 
         var response = outcome.Should().BeOfType<GetStemLemmasOutcome.Success>().Subject.Lemmas;
-        response.Id.Should().Be(MultiCandidateStemId);
-        response.StemText.Should().Be("عَلِمَ");
-        response.LemmasCount.Should().Be(2);
+        response.Lemmas.Should().HaveCount(2);
         response.Lemmas.Select(l => l.LemmaId).Should().Equal(502, 504);
         response.Lemmas[0].LemmaText.Should().Be("عِلْم");
-        response.Lemmas[0].LemmaBuckwalter.Should().Be("Ailm");
         response.Lemmas[0].OccurrencesCount.Should().Be(3);
         response.Lemmas[1].LemmaText.Should().Be("مَعْرِفَة");
-        response.Lemmas[1].LemmaBuckwalter.Should().Be("maArifap");
         response.Lemmas[1].OccurrencesCount.Should().Be(1);
     }
 

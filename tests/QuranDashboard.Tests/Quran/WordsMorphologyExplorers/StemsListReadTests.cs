@@ -56,8 +56,6 @@ public sealed class StemsListReadTests(MorphologyExplorersTestFixture fixture)
             item.SurahsCount.Should().BeInRange(1, 114);
             item.SimpleWordsCount.Should().BeGreaterThanOrEqualTo(1);
             item.TashkeelWordsCount.Should().BeGreaterThanOrEqualTo(1);
-            item.DominantType.ArabicLabel.Should().NotBeNullOrWhiteSpace();
-            item.FirstVerseKey.Should().NotBeNullOrWhiteSpace();
         }
     }
 
@@ -77,8 +75,6 @@ public sealed class StemsListReadTests(MorphologyExplorersTestFixture fixture)
         stem.RootId.Should().Be(700);
         stem.LemmaText.Should().Be("كَلِمَة");
         stem.RootText.Should().Be("ك ل م");
-        stem.DominantType.Code.Should().Be("N");
-        stem.OtherTypesCount.Should().Be(1);
         stem.OccurrencesCount.Should().Be(11);
     }
 
@@ -98,7 +94,6 @@ public sealed class StemsListReadTests(MorphologyExplorersTestFixture fixture)
         stem.RootId.Should().Be(701);
         stem.LemmaText.Should().Be("عِلْم");
         stem.RootText.Should().Be("ع ل م");
-        stem.RootBuckwalter.Should().Be("Alm");
         stem.OccurrencesCount.Should().Be(4);
     }
 
@@ -116,17 +111,13 @@ public sealed class StemsListReadTests(MorphologyExplorersTestFixture fixture)
         var stem = page.Items.Single(i => i.Id == NullRelationStemId);
         stem.LemmaId.Should().BeNull();
         stem.LemmaText.Should().BeNull();
-        stem.LemmaBuckwalter.Should().BeNull();
         stem.RootId.Should().BeNull();
         stem.RootText.Should().BeNull();
-        stem.RootBuckwalter.Should().BeNull();
         stem.OccurrencesCount.Should().Be(1);
         stem.AyahsCount.Should().Be(1);
         stem.SurahsCount.Should().Be(1);
         stem.SimpleWordsCount.Should().Be(1);
         stem.TashkeelWordsCount.Should().Be(1);
-        stem.DominantType.Code.Should().Be("N");
-        stem.FirstVerseKey.Should().Be("2:25");
     }
 
     [Fact]
@@ -141,9 +132,6 @@ public sealed class StemsListReadTests(MorphologyExplorersTestFixture fixture)
         var page = outcome.Should().BeOfType<GetStemsPageOutcome.Success>().Subject.Page;
 
         var stem = page.Items.Single(i => i.Id == ExactTieStemId);
-        stem.DominantType.Code.Should().Be("N");
-        stem.DominantType.OccurrencesCount.Should().Be(2);
-        stem.OtherTypesCount.Should().Be(1);
     }
 
     [Fact]
@@ -285,7 +273,7 @@ public sealed class StemsListReadTests(MorphologyExplorersTestFixture fixture)
         summary.Id.Should().Be(ExactTieStemId);
         summary.TypeDistribution.Should().HaveCount(2);
         summary.TypeDistribution.Sum(t => t.OccurrencesCount).Should().Be(summary.OccurrencesCount);
-        summary.DominantType.Code.Should().Be("N");
+        summary.TypeDistribution[0].Code.Should().Be("N");
         summary.RootId.Should().BeNull();
     }
 
@@ -306,12 +294,8 @@ public sealed class StemsListReadTests(MorphologyExplorersTestFixture fixture)
         summary.SurahsCount.Should().Be(2);
         summary.SimpleWordsCount.Should().Be(3);
         summary.TashkeelWordsCount.Should().Be(3);
-        summary.DominantType.Code.Should().Be("N");
-        summary.DominantType.OccurrencesCount.Should().Be(2);
-        summary.OtherTypesCount.Should().Be(2);
         summary.TypeDistribution.Select(t => t.Code).Should().Equal("N", "SUB", "NEG");
         summary.TypeDistribution.Select(t => t.OccurrencesCount).Should().Equal(2, 1, 1);
-        summary.FirstVerseKey.Should().Be("2:1");
     }
 
     [Fact]
@@ -327,10 +311,8 @@ public sealed class StemsListReadTests(MorphologyExplorersTestFixture fixture)
 
         summary.LemmaId.Should().BeNull();
         summary.LemmaText.Should().BeNull();
-        summary.LemmaBuckwalter.Should().BeNull();
         summary.RootId.Should().BeNull();
         summary.RootText.Should().BeNull();
-        summary.RootBuckwalter.Should().BeNull();
     }
 
     [Fact]

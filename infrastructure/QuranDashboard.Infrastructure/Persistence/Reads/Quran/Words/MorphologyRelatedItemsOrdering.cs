@@ -28,7 +28,7 @@ internal static class MorphologyRelatedItemsOrdering
     }
 
     internal static IReadOnlyList<StemLemmaItemDto> OrderStemLemmas(
-        IEnumerable<(int LemmaId, string LemmaText, string? LemmaBuckwalter, int QuranWordId)> rows)
+        IEnumerable<(int LemmaId, string LemmaText, int QuranWordId)> rows)
     {
         return rows
             .GroupBy(row => row.LemmaId)
@@ -38,7 +38,7 @@ internal static class MorphologyRelatedItemsOrdering
                 return new
                 {
                     LemmaId = group.Key,
-                    Item = new StemLemmaItemDto(group.Key, first.LemmaText, first.LemmaBuckwalter, group.Count()),
+                    Item = new StemLemmaItemDto(group.Key, first.LemmaText, group.Count()),
                     FirstQuranWordId = first.QuranWordId,
                 };
             })

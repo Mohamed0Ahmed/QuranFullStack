@@ -30,8 +30,10 @@ public sealed class StemsAyahsReadTests(MorphologyExplorersTestFixture fixture)
         page.Items.Should().HaveCount(2);
 
         var byVerse = page.Items.ToDictionary(i => i.VerseKey);
-        byVerse["1:2"].MatchedQuranWordIds.Should().BeEquivalentTo([5001, 5003]);
-        byVerse["1:3"].MatchedQuranWordIds.Should().BeEquivalentTo([5002, 5004]);
+        byVerse["1:2"].Words.Should().Contain(w => w.IsMatched);
+        byVerse["1:2"].Words.Should().NotContain(w => w.TextUthmani == "MARKER_FIXTURE");
+        byVerse["1:3"].Words.Should().Contain(w => w.IsMatched);
+        byVerse["1:3"].Words.Should().NotContain(w => w.TextUthmani == "MARKER_FIXTURE");
     }
 
     [Fact]
@@ -128,13 +130,12 @@ public sealed class StemsAyahsReadTests(MorphologyExplorersTestFixture fixture)
     }
 
     [Theory]
-    [InlineData("N", "2:1", 8101)]
-    [InlineData("SUB", "2:25", 8001)]
-    [InlineData("NEG", "3:1", 8002)]
+    [InlineData("N", "2:1")]
+    [InlineData("SUB", "2:25")]
+    [InlineData("NEG", "3:1")]
     public async Task GetStemAyahs_filters_by_segment_pos_without_affecting_other_ayahs(
         string typeCode,
-        string expectedVerseKey,
-        int expectedWordId)
+        string expectedVerseKey)
     {
         await using var scope = fixture.CreateScope();
         var handler = scope.ServiceProvider.GetRequiredService<GetStemAyahsHandler>();
@@ -147,12 +148,8 @@ public sealed class StemsAyahsReadTests(MorphologyExplorersTestFixture fixture)
         page.TotalCount.Should().Be(1);
         page.Items.Should().ContainSingle();
         page.Items[0].VerseKey.Should().Be(expectedVerseKey);
-        page.Items[0].MatchedQuranWordIds.Should().BeEquivalentTo([expectedWordId]);
-
-        if (typeCode == "N")
-        {
-            page.Items[0].Words.Should().ContainSingle(w => w.QuranWordId == 8202 && w.IsAyahMarker);
-        }
+        page.Items[0].Words.Should().Contain(w => w.IsMatched);
+        page.Items[0].Words.Should().NotContain(w => w.TextUthmani == "MARKER_FIXTURE");
     }
 
     [Fact]

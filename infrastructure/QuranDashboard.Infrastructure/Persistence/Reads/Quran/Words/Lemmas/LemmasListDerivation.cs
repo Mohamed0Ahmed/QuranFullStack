@@ -23,7 +23,7 @@ internal static class LemmasListDerivation
     /// Placeholder type summary when a lemma has no morphology rows. Labels are
     /// controlled values; counts are zero so the distribution total is zero.
     /// </summary>
-    internal static readonly TypeSummaryDto NoType = new(string.Empty, "غير محدَّد", "Unspecified", 0, 0, 0, 0);
+    internal static readonly TypeSummaryDto NoType = new(string.Empty, "غير محدَّد", 0);
 
     public static PagedResult<LemmaListItemDto> ToPage(
         IReadOnlyList<LemmaSummaryRow> all,
@@ -120,14 +120,7 @@ internal static class LemmasListDerivation
     }
 
     private static TypeSummaryDto ToTypeSummary(LemmaTypeDistributionRow row) =>
-        new(
-            row.Code,
-            row.ArabicLabel,
-            row.EnglishLabel,
-            row.OccurrencesCount,
-            row.FirstSurahNumber,
-            row.FirstAyahNumber,
-            row.FirstWordNumber);
+        new(row.Code, row.ArabicLabel, row.OccurrencesCount);
 
     internal static string? NormalizeArabicQuery(string? search)
     {

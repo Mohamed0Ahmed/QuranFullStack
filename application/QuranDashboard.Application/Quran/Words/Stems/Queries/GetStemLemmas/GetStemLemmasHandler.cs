@@ -50,7 +50,7 @@ public sealed class GetStemLemmasHandler(
             FeatureName,
             OperationName,
             query.Id,
-            lemmas.LemmasCount,
+            lemmas.Lemmas.Count,
             lemmas.Lemmas.Count,
             stopwatch.ElapsedMilliseconds);
 

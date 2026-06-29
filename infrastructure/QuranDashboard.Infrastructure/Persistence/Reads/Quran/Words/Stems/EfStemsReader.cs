@@ -119,11 +119,12 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
 
         var matchedIdsByAyah = matchedRows
             .GroupBy(r => r.AyahId)
-            .ToDictionary(g => g.Key, g => (IReadOnlyList<int>)g.Select(x => x.Id).Distinct().ToList());
+            .ToDictionary(g => g.Key, g => g.Select(x => x.Id).ToHashSet());
 
         var wordsByAyah = await _db.QuranWords
             .AsNoTracking()
             .Where(w => ayahIds.Contains(w.AyahId))
+            .Where(w => !w.IsAyahMarker)
             .OrderBy(w => w.SurahNumber)
             .ThenBy(w => w.AyahNumber)
             .ThenBy(w => w.WordNumber)
@@ -144,18 +145,15 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
             .Select(ayah =>
             {
                 var words = wordsGrouped.GetValueOrDefault(ayah.AyahId, []);
+                var matchedSet = matchedIdsByAyah.GetValueOrDefault(ayah.AyahId) ?? [];
                 return new StemAyahMatchDto(
                     ayah.AyahId,
                     ayah.VerseKey,
-                    ayah.SurahNumber,
                     ayah.SurahNameArabic,
-                    ayah.AyahNumber,
                     ResolveAyahPageNumber(words),
-                    matchedIdsByAyah.GetValueOrDefault(ayah.AyahId, []),
-                    words.Select(w => new AyahWordForHighlightDto(
-                        w.QuranWordId,
+                    words.Select(w => new StemAyahWordDto(
                         w.TextUthmani,
-                        w.IsAyahMarker)).ToList());
+                        matchedSet.Contains(w.QuranWordId))).ToList());
             })
             .ToList();
 
@@ -166,12 +164,10 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
         int id,
         CancellationToken cancellationToken)
     {
-        var stem = await _db.QuranStems
+        var stemExists = await _db.QuranStems
             .AsNoTracking()
-            .Where(s => s.Id == id)
-            .Select(s => new { s.Id, s.StemText })
-            .FirstOrDefaultAsync(cancellationToken);
-        if (stem is null)
+            .AnyAsync(s => s.Id == id, cancellationToken);
+        if (!stemExists)
         {
             return null;
         }
@@ -187,7 +183,7 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
 
         if (surahGroups.Count == 0)
         {
-            return new StemSurahsResponse(id, stem.StemText, 0, []);
+            return new StemSurahsResponse([]);
         }
 
         var surahNumbers = surahGroups.Select(r => r.SurahNumber).ToList();
@@ -200,19 +196,17 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
             .Select(r => new StemSurahItemDto(r.SurahNumber, surahNames[r.SurahNumber], r.OccurrencesInSurah))
             .ToList();
 
-        return new StemSurahsResponse(id, stem.StemText, surahs.Count, surahs);
+        return new StemSurahsResponse(surahs);
     }
 
     public async Task<StemMissingSurahsResponse?> GetStemMissingSurahsAsync(
         int id,
         CancellationToken cancellationToken)
     {
-        var stem = await _db.QuranStems
+        var stemExists = await _db.QuranStems
             .AsNoTracking()
-            .Where(s => s.Id == id)
-            .Select(s => new { s.Id, s.StemText })
-            .FirstOrDefaultAsync(cancellationToken);
-        if (stem is null)
+            .AnyAsync(s => s.Id == id, cancellationToken);
+        if (!stemExists)
         {
             return null;
         }
@@ -232,17 +226,15 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
             .Select(s => new MissingSurahItemDto(s.SurahNumber, s.NameArabic))
             .ToListAsync(cancellationToken);
 
-        return new StemMissingSurahsResponse(id, stem.StemText, missingSurahs.Count, missingSurahs);
+        return new StemMissingSurahsResponse(missingSurahs);
     }
 
     public async Task<StemLemmasResponse?> GetStemLemmasAsync(int id, CancellationToken cancellationToken)
     {
-        var stem = await _db.QuranStems
+        var stemExists = await _db.QuranStems
             .AsNoTracking()
-            .Where(s => s.Id == id)
-            .Select(s => new { s.Id, s.StemText })
-            .FirstOrDefaultAsync(cancellationToken);
-        if (stem is null)
+            .AnyAsync(s => s.Id == id, cancellationToken);
+        if (!stemExists)
         {
             return null;
         }
@@ -252,13 +244,13 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
             join w in _db.QuranWords.AsNoTracking() on s.QuranWordId equals w.Id
             join l in _db.QuranLemmas.AsNoTracking() on s.LemmaId equals l.Id
             where s.Kind == "STEM" && s.StemId == id && s.LemmaId != null && !w.IsAyahMarker
-            select new { s.LemmaId, l.LemmaText, l.LemmaBuckwalter, s.QuranWordId })
+            select new { s.LemmaId, l.LemmaText, s.QuranWordId })
             .ToListAsync(cancellationToken);
 
         var lemmas = MorphologyRelatedItemsOrdering.OrderStemLemmas(
-            rows.Select(r => (r.LemmaId!.Value, r.LemmaText, (string?)r.LemmaBuckwalter, r.QuranWordId)));
+            rows.Select(r => (r.LemmaId!.Value, r.LemmaText, r.QuranWordId)));
 
-        return new StemLemmasResponse(id, stem.StemText, lemmas.Count, lemmas);
+        return new StemLemmasResponse(lemmas);
     }
 
     private static StemRelationRow? BuildDominantLemma(IReadOnlyList<StemTypeOccurrenceRow> rows)
@@ -391,7 +383,7 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
 
                 return new StemWordGroupRow(
                     g.Key,
-                    first.DisplayTextUthmani,
+                    first.DisplayText,
                     g.Count(),
                     first.SurahNumber,
                     first.AyahNumber,
@@ -414,10 +406,8 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
             .Take(pageSize)
             .Select(row => new StemWordItemDto(
                 row.UniqueWordId,
-                wordKind == StemWordKind.Simple ? StemWordKindKeys.Simple : StemWordKindKeys.Tashkeel,
-                row.DisplayTextUthmani,
-                row.OccurrencesCount,
-                BuildFirstVerseKey(row.FirstSurahNumber, row.FirstAyahNumber)))
+                row.DisplayText,
+                row.OccurrencesCount))
             .ToList();
 
         return new PagedResult<StemWordItemDto>(page, pageSize, grouped.Count, items);
@@ -435,7 +425,7 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
                 where s.Kind == "STEM" && s.StemId == id && !w.IsAyahMarker
                 select new StemWordOccurrenceRow(
                     w.UniqueSimpleWordId,
-                    w.TextUthmani,
+                    w.TextUthmaniSimple,
                     w.SurahNumber,
                     w.AyahNumber,
                     w.WordNumber,
@@ -511,7 +501,7 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
 
     private sealed record StemWordOccurrenceRow(
         int? UniqueWordId,
-        string DisplayTextUthmani,
+        string DisplayText,
         int SurahNumber,
         int AyahNumber,
         int WordNumber,
@@ -519,7 +509,7 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
 
     private sealed record StemWordGroupRow(
         int UniqueWordId,
-        string DisplayTextUthmani,
+        string DisplayText,
         int OccurrencesCount,
         int FirstSurahNumber,
         int FirstAyahNumber,

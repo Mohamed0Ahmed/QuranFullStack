@@ -17,7 +17,7 @@ public sealed class StemsWordsReadTests(MorphologyExplorersTestFixture fixture)
     private const int UnknownStemId = 999_999;
 
     [Theory]
-    [InlineData(StemWordKindKeys.Simple, 32001, "كَلِمَة", 10, 32002, "كَلَّمَ", 1)]
+    [InlineData(StemWordKindKeys.Simple, 32001, "كلمة", 10, 32002, "كلم", 1)]
     [InlineData(StemWordKindKeys.Tashkeel, 31001, "كَلِمَة", 10, 31002, "كَلَّمَ", 1)]
     public async Task GetStemWords_returns_correct_unique_ids_display_text_and_counts_for_each_kind(
         string kind,
@@ -40,18 +40,16 @@ public sealed class StemsWordsReadTests(MorphologyExplorersTestFixture fixture)
         page.Items.Select(i => i.UniqueWordId).Should().Equal(firstUniqueWordId, secondUniqueWordId);
 
         var first = page.Items[0];
-        first.Kind.Should().Be(kind);
-        first.DisplayTextUthmani.Should().Be(firstDisplayText);
+        first.DisplayText.Should().Be(firstDisplayText);
         first.OccurrencesCount.Should().Be(firstOccurrencesCount);
 
         var second = page.Items[1];
-        second.Kind.Should().Be(kind);
-        second.DisplayTextUthmani.Should().Be(secondDisplayText);
+        second.DisplayText.Should().Be(secondDisplayText);
         second.OccurrencesCount.Should().Be(secondOccurrencesCount);
     }
 
     [Theory]
-    [InlineData(StemWordKindKeys.Simple, 32010, "لَفْظٌ-تَجْرِيبِيّ", 2, 32008, "أَلَّا", 1, 32009, "لَا", 1)]
+    [InlineData(StemWordKindKeys.Simple, 32010, "لفظ-تجريبي", 2, 32008, "الا", 1, 32009, "لا", 1)]
     [InlineData(StemWordKindKeys.Tashkeel, 31010, "لَفْظٌ-تَجْرِيبِيّ", 2, 31008, "أَلَّا", 1, 31009, "لَا", 1)]
     public async Task GetStemWords_counts_segment_fanout_and_secondary_membership_by_unique_word(
         string kind,
@@ -76,13 +74,13 @@ public sealed class StemsWordsReadTests(MorphologyExplorersTestFixture fixture)
         page.TotalCount.Should().Be(3);
         page.Items.Select(i => i.UniqueWordId).Should().Equal(firstUniqueWordId, secondUniqueWordId, thirdUniqueWordId);
 
-        page.Items[0].DisplayTextUthmani.Should().Be(firstDisplayText);
+        page.Items[0].DisplayText.Should().Be(firstDisplayText);
         page.Items[0].OccurrencesCount.Should().Be(firstOccurrencesCount);
 
-        page.Items[1].DisplayTextUthmani.Should().Be(secondDisplayText);
+        page.Items[1].DisplayText.Should().Be(secondDisplayText);
         page.Items[1].OccurrencesCount.Should().Be(secondOccurrencesCount);
 
-        page.Items[2].DisplayTextUthmani.Should().Be(thirdDisplayText);
+        page.Items[2].DisplayText.Should().Be(thirdDisplayText);
         page.Items[2].OccurrencesCount.Should().Be(thirdOccurrencesCount);
     }
 

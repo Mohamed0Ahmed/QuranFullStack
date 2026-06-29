@@ -40,6 +40,8 @@ public sealed class GetStemSummaryHandler(
             return new GetStemSummaryOutcome.NotFound();
         }
 
+        var dominantType = summary.TypeDistribution.FirstOrDefault();
+
         logger.LogInformation(
             "Completed {feature} {operation} {stemId} {dominantLemmaId} {dominantRootId} {dominantTypeCode} {otherTypesCount} {occurrencesCount} {ayahsCount} {surahsCount} {simpleWordsCount} {tashkeelWordsCount}",
             FeatureName,
@@ -47,8 +49,8 @@ public sealed class GetStemSummaryHandler(
             summary.Id,
             summary.LemmaId,
             summary.RootId,
-            summary.DominantType.Code,
-            summary.OtherTypesCount,
+            dominantType?.Code,
+            summary.TypeDistribution.Count > 0 ? summary.TypeDistribution.Count - 1 : 0,
             summary.OccurrencesCount,
             summary.AyahsCount,
             summary.SurahsCount,

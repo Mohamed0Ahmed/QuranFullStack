@@ -27,9 +27,6 @@ public sealed class StemsSurahsReadTests(MorphologyExplorersTestFixture fixture)
             CancellationToken.None);
 
         var response = outcome.Should().BeOfType<GetStemMentionedSurahsOutcome.Success>().Subject.Surahs;
-        response.Id.Should().Be(HighFrequencyStemId);
-        response.StemText.Should().Be("كَلَّمَ");
-        response.SurahsCount.Should().Be(3);
         response.Surahs.Should().HaveCount(3);
 
         var byNumber = response.Surahs.ToDictionary(s => s.SurahNumber);
@@ -53,7 +50,7 @@ public sealed class StemsSurahsReadTests(MorphologyExplorersTestFixture fixture)
             CancellationToken.None);
 
         var response = outcome.Should().BeOfType<GetStemMentionedSurahsOutcome.Success>().Subject.Surahs;
-        response.SurahsCount.Should().Be(2);
+        response.Surahs.Should().HaveCount(2);
 
         var byNumber = response.Surahs.ToDictionary(s => s.SurahNumber);
         byNumber[2].OccurrencesInSurah.Should().Be(3);
@@ -97,9 +94,7 @@ public sealed class StemsSurahsReadTests(MorphologyExplorersTestFixture fixture)
         var missingNumbers = missingResponse.Surahs.Select(s => s.SurahNumber).ToList();
 
         mentionedNumbers.Should().NotIntersectWith(missingNumbers);
-        (mentionedResponse.SurahsCount + missingResponse.MissingSurahsCount).Should().Be(114);
-        missingResponse.Id.Should().Be(HighFrequencyStemId);
-        missingResponse.StemText.Should().Be("كَلَّمَ");
+        (mentionedResponse.Surahs.Count + missingResponse.Surahs.Count).Should().Be(114);
     }
 
     [Fact]
@@ -113,7 +108,6 @@ public sealed class StemsSurahsReadTests(MorphologyExplorersTestFixture fixture)
             CancellationToken.None);
 
         var response = outcome.Should().BeOfType<GetStemMissingSurahsOutcome.Success>().Subject.MissingSurahs;
-        response.MissingSurahsCount.Should().Be(111);
         response.Surahs.Should().HaveCount(111);
         response.Surahs.Select(s => s.SurahNumber).Should().BeInAscendingOrder();
         response.Surahs.Select(s => s.SurahNumber).Should().NotContain([1, 2, 3]);
