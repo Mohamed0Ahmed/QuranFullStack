@@ -40,7 +40,6 @@
           class="qd-btn qd-btn-secondary lemma-ayah-type-filters__chip"
           [class.qd-is-selected]="isSelected(item.code)"
           [attr.aria-pressed]="isSelected(item.code)"
-          [attr.title]="item.englishLabel"
           [attr.data-testid]="'lemma-ayah-type-filter-' + item.code"
           (click)="selectTypeCode(item.code)"
         >

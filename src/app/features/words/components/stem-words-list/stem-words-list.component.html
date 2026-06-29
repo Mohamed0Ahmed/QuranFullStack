@@ -28,13 +28,13 @@
         <a
           class="stem-words-list__row qd-interactive-surface"
           [attr.href]="row.uniqueWordHref"
-          [attr.aria-label]="uniqueWordLabel(row.item.displayTextUthmani)"
+          [attr.aria-label]="uniqueWordLabel(row.item.displayText)"
           target="_blank"
           rel="noopener noreferrer"
           data-testid="stem-word-link"
         >
           <span class="stem-words-list__row-number" aria-hidden="true">{{ rowNumber(i) }}</span>
-          <span class="stem-words-list__text">{{ row.item.displayTextUthmani }}</span>
+          <span class="stem-words-list__text">{{ row.item.displayText }}</span>
           <span class="qd-badge">{{ row.item.occurrencesCount }}</span>
         </a>
       }

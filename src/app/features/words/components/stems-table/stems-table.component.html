@@ -7,7 +7,6 @@
       <div class="stems-table__header-cell" role="columnheader">{{ headers.stem }}</div>
       <div class="stems-table__header-cell" role="columnheader">{{ headers.lemma }}</div>
       <div class="stems-table__header-cell" role="columnheader">{{ headers.root }}</div>
-      <div class="stems-table__header-cell" role="columnheader">{{ headers.type }}</div>
       <div class="stems-table__header-cell stems-table__header-cell--numeric" role="columnheader">
         {{ headers.occurrences }}
       </div>
@@ -49,9 +48,6 @@
           </div>
           <div class="stems-table__cell stems-table__root-cell" role="cell">
             <span class="qd-skeleton qd-skeleton--text stems-table__loading-root"></span>
-          </div>
-          <div class="stems-table__cell stems-table__type-cell" role="cell">
-            <span class="qd-skeleton qd-skeleton--text stems-table__loading-type"></span>
           </div>
           @for (i of [0,1,2,3,4]; track i) {
             <div class="stems-table__cell stems-table__chip-cell" role="cell">
@@ -105,7 +101,7 @@
   <ng-template #stemRowCells let-row="row" let-index="index">
     <div class="stems-table__cell stems-table__cell--row-number" role="cell">{{ rowNumber(index) }}</div>
 
-    <div class="stems-table__cell stems-table__stem-cell" role="cell">
+      <div class="stems-table__cell stems-table__stem-cell" role="cell">
       <button
         type="button"
         class="stems-table__stem qd-interactive-surface"
@@ -117,7 +113,6 @@
       <div class="stems-table__mobile-meta">
         <ng-container *ngTemplateOutlet="lemmaCell; context: { row: row }" />
         <ng-container *ngTemplateOutlet="rootCell; context: { row: row }" />
-        <ng-container *ngTemplateOutlet="typeCell; context: { row: row }" />
       </div>
     </div>
 
@@ -127,10 +122,6 @@
 
     <div class="stems-table__cell stems-table__root-cell stems-table__root-cell--desktop" role="cell">
       <ng-container *ngTemplateOutlet="rootCell; context: { row: row }" />
-    </div>
-
-    <div class="stems-table__cell stems-table__type-cell stems-table__type-cell--desktop" role="cell">
-      <ng-container *ngTemplateOutlet="typeCell; context: { row: row }" />
     </div>
 
     <div class="stems-table__cell stems-table__chip-cell" role="cell">
@@ -215,20 +206,6 @@
       </span>
       <span class="qd-sr-only">{{ rootMissingAria() }}</span>
     }
-  </ng-template>
-
-  <ng-template #typeCell let-row="row">
-    <div class="stems-table__type" data-testid="stems-table-type">
-      <span class="stems-table__type-label">{{ row.dominantType.arabicLabel }}</span>
-      @if (row.otherTypesCount > 0) {
-        <span
-          class="stems-table__type-more qd-badge"
-          data-testid="stems-table-additional-types"
-          [attr.aria-label]="additionalTypesAria(row.otherTypesCount)"
-          title="+{{ row.otherTypesCount }}"
-        >+{{ row.otherTypesCount }}</span>
-      }
-    </div>
   </ng-template>
 
   <ng-template #mobileStats let-row="row">

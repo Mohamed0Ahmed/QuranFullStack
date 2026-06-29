@@ -14,7 +14,6 @@ import {
   TypeSummaryDto,
   StemWordItemDto,
   StemLemmasDto,
-  StemWordView,
   StemSummaryDto,
   StemMissingSurahsDto,
   StemSurahsDto,
@@ -32,26 +31,13 @@ function listRow(id: number, overrides: Partial<StemListItemViewModel> = {}): St
     displayText: `أصل-${id}`,
     lemmaId: 700,
     lemmaText: 'صيغة-700',
-    lemmaBuckwalter: null,
     rootId: 800,
     rootText: 'جذر-800',
-    rootBuckwalter: null,
-    dominantType: {
-      code: 'N',
-      arabicLabel: 'اسم',
-      englishLabel: 'Noun',
-      occurrencesCount: 5,
-      firstSurahNumber: 1,
-      firstAyahNumber: 1,
-      firstWordNumber: 1,
-    },
-    otherTypesCount: 0,
     occurrencesCount: 5,
     ayahsCount: 3,
     surahsCount: 2,
     simpleWordsCount: 2,
     tashkeelWordsCount: 2,
-    firstVerseKey: '1:1',
     ...overrides,
   };
 }
@@ -70,14 +56,11 @@ function ayahMatch(): StemAyahMatchDto {
     ayahId: 7001,
     verseKey: '4:57',
     surahNameArabic: 'النساء',
-    ayahNumber: 57,
     pageNumber: 92,
-    matchedQuranWordIds: [9001],
     words: [
       {
-        quranWordId: 9001,
         textUthmani: 'كلمة-تجريبية-١',
-        isAyahMarker: false,
+        isMatched: true,
       },
     ],
   };
@@ -97,24 +80,22 @@ function successAyahsResponse() {
   });
 }
 
-function wordItem(uniqueWordId: number, kind: StemWordView): StemWordItemDto {
+function wordItem(uniqueWordId: number): StemWordItemDto {
   return {
     uniqueWordId,
-    kind,
-    displayTextUthmani: `كلمة-${uniqueWordId}`,
+    displayText: `كلمة-${uniqueWordId}`,
     occurrencesCount: 2,
-    firstVerseKey: '1:1',
   };
 }
 
-function successWordsResponse(kind: StemWordView) {
+function successWordsResponse() {
   return of<ApiResponse<PagedResultDto<StemWordItemDto>>>({
     isSuccess: true,
     data: {
       page: 1,
       pageSize: STEM_DETAIL_PAGE_SIZE,
       totalCount: 1,
-      items: [wordItem(9001, kind)],
+      items: [wordItem(9001)],
     },
     message: null,
     errors: null,
@@ -125,11 +106,7 @@ function typeSummary(code: string, arabicLabel: string, occurrencesCount: number
   return {
     code,
     arabicLabel,
-    englishLabel: arabicLabel,
     occurrencesCount,
-    firstSurahNumber: 1,
-    firstAyahNumber: 1,
-    firstWordNumber: 1,
   };
 }
 
@@ -159,7 +136,7 @@ describe('StemsExplorerPageComponent US2', () => {
       getStemSummary: vi.fn().mockReturnValue(
         of<ApiResponse<StemSummaryDto>>({
           isSuccess: true,
-          data: { ...listRow(500), typeDistribution: [listRow(500).dominantType] },
+          data: { ...listRow(500), typeDistribution: [typeSummary('N', 'اسم', 5)] },
           message: null,
           errors: null,
         }),
@@ -224,7 +201,6 @@ describe('StemsExplorerPageComponent US2', () => {
     expect(headers).toContain(STEMS_COLUMN_HEADERS.stem);
     expect(headers).toContain(STEMS_COLUMN_HEADERS.lemma);
     expect(headers).toContain(STEMS_COLUMN_HEADERS.root);
-    expect(headers).toContain(STEMS_COLUMN_HEADERS.type);
   });
 
   it('does not call detail APIs on catalogue render without a selected stem', async () => {
@@ -259,7 +235,7 @@ describe('StemsExplorerPageComponent US2', () => {
   });
 
   it('loads only the word detail endpoint and renders the simple/tashkeel list when view=words', async () => {
-    stemsApi.getStemWords.mockReturnValue(successWordsResponse('simple'));
+    stemsApi.getStemWords.mockReturnValue(successWordsResponse());
     queryParamMap$.next(convertToParamMap({ stem: '500', view: 'words', wordView: 'simple', detailPage: '1' }));
 
     const fixture = await initLifecycle();
@@ -535,7 +511,7 @@ describe('StemsExplorerPageComponent US5', () => {
       getStemSummary: vi.fn().mockReturnValue(
         of<ApiResponse<StemSummaryDto>>({
           isSuccess: true,
-          data: { ...listRow(500), typeDistribution: [listRow(500).dominantType] },
+          data: { ...listRow(500), typeDistribution: [typeSummary('N', 'اسم', 5)] },
           message: null,
           errors: null,
         }),
@@ -545,12 +521,7 @@ describe('StemsExplorerPageComponent US5', () => {
       getStemMentionedSurahs: vi.fn().mockReturnValue(
         of<ApiResponse<StemSurahsDto>>({
           isSuccess: true,
-          data: {
-            id: 500,
-            stemText: 'أصل-500',
-            surahsCount: 1,
-            surahs: [{ surahNumber: 1, nameArabic: 'سورة-اختبار', occurrencesInSurah: 2 }],
-          },
+          data: { surahs: [{ surahNumber: 1, nameArabic: 'سورة-اختبار', occurrencesInSurah: 2 }] },
           message: null,
           errors: null,
         }),
@@ -558,7 +529,7 @@ describe('StemsExplorerPageComponent US5', () => {
       getStemMissingSurahs: vi.fn().mockReturnValue(
         of<ApiResponse<StemMissingSurahsDto>>({
           isSuccess: true,
-          data: { id: 500, stemText: 'أصل-500', missingSurahsCount: 0, surahs: [] },
+          data: { surahs: [] },
           message: null,
           errors: null,
         }),
@@ -705,12 +676,12 @@ describe('StemsExplorerPageComponent US8 — restore and navigate exact state', 
       getStemSummary: vi.fn().mockReturnValue(
         of<ApiResponse<StemSummaryDto>>({
           isSuccess: true,
-          data: { ...listRow(500), typeDistribution: [listRow(500).dominantType] },
+          data: { ...listRow(500), typeDistribution: [typeSummary('N', 'اسم', 5)] },
           message: null,
           errors: null,
         }),
       ),
-      getStemWords: vi.fn().mockImplementation(() => successWordsResponse('tashkeel')),
+      getStemWords: vi.fn().mockImplementation(() => successWordsResponse()),
       getStemAyahMatches: vi.fn(),
       getStemMentionedSurahs: vi.fn(),
       getStemMissingSurahs: vi.fn(),

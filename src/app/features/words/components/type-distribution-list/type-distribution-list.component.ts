@@ -10,11 +10,7 @@ import { WORDS_SHARED_HEADERS, WORDS_SHARED_LIST_HEADERS } from '../../models/wo
 export interface TypeDistributionItem {
   code: string;
   arabicLabel: string;
-  englishLabel: string;
   occurrencesCount: number;
-  firstSurahNumber: number;
-  firstAyahNumber: number;
-  firstWordNumber: number;
 }
 
 interface TypeDistributionRow extends TypeDistributionItem {

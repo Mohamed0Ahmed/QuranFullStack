@@ -8,7 +8,7 @@ describe('StemLemmasListComponent US6', () => {
     getTestBed().resetTestingModule();
   });
 
-  it('renders safe new-tab anchors, buckwalter text, and a missing fallback', async () => {
+  it('renders safe new-tab anchors and lemma text', async () => {
     await TestBed.configureTestingModule({
       imports: [StemLemmasListComponent],
       teardown: { destroyAfterEach: true },
@@ -16,8 +16,8 @@ describe('StemLemmasListComponent US6', () => {
 
     const fixture = TestBed.createComponent(StemLemmasListComponent);
     fixture.componentRef.setInput('lemmas', [
-      { lemmaId: 502, lemmaText: 'عِلْم', lemmaBuckwalter: 'Ailm', occurrencesCount: 3 },
-      { lemmaId: 504, lemmaText: 'مَعْرِفَة', lemmaBuckwalter: null, occurrencesCount: 1 },
+      { lemmaId: 502, lemmaText: 'عِلْم', occurrencesCount: 3 },
+      { lemmaId: 504, lemmaText: 'مَعْرِفَة', occurrencesCount: 1 },
     ]);
     fixture.detectChanges();
 
@@ -28,8 +28,8 @@ describe('StemLemmasListComponent US6', () => {
     expect(links[0].getAttribute('href')).toBe('/dashboard/words/lemmas?lemma=502&view=words&wordView=simple');
     expect(links[0].getAttribute('target')).toBe('_blank');
     expect(links[0].getAttribute('rel')).toBe('noopener noreferrer');
-    expect(root.querySelector('[data-testid="stem-lemmas-list-buckwalter"]')?.textContent).toContain('Ailm');
-    expect(root.querySelector('[data-testid="stem-lemmas-list-buckwalter-missing"]')?.textContent).toContain('—');
+    expect(root.textContent).toContain('عِلْم');
+    expect(root.textContent).toContain('مَعْرِفَة');
     expect(root.textContent).toContain('3');
     expect(root.textContent).toContain('1');
   });

@@ -2,42 +2,25 @@ import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 import { getTestBed, TestBed } from '@angular/core/testing';
 
 import { StemsTableComponent } from './stems-table.component';
-import { StemListItemViewModel, TypeSummaryDto } from '../../models/stems.models';
-
-function typeSummary(code: string, label: string, count: number): TypeSummaryDto {
-  return {
-    code,
-    arabicLabel: label,
-    englishLabel: code,
-    occurrencesCount: count,
-    firstSurahNumber: 1,
-    firstAyahNumber: 1,
-    firstWordNumber: 1,
-  };
-}
+import { StemListItemViewModel } from '../../models/stems.models';
 
 function row(id: number, overrides: Partial<StemListItemViewModel> = {}): StemListItemViewModel {
-  return {
-    id,
-    stemText: `أصل-${id}`,
-    displayText: `أصل-${id}`,
-    lemmaId: id === 601 ? null : 700,
-    lemmaText: id === 601 ? null : 'صيغة-700',
-    lemmaBuckwalter: null,
-    rootId: id === 602 ? null : 800,
-    rootText: id === 602 ? null : 'جذر-800',
-    rootBuckwalter: null,
-    dominantType: typeSummary('N', 'اسم', id * 10),
-    otherTypesCount: id === 600 ? 1 : 0,
-    occurrencesCount: id * 10,
-    ayahsCount: id * 2,
-    surahsCount: id,
-    simpleWordsCount: id + 1,
-    tashkeelWordsCount: id + 2,
-    firstVerseKey: '1:1',
-    ...overrides,
-  };
-}
+    return {
+      id,
+      stemText: `أصل-${id}`,
+      displayText: `أصل-${id}`,
+      lemmaId: id === 601 ? null : 700,
+      lemmaText: id === 601 ? null : 'صيغة-700',
+      rootId: id === 602 ? null : 800,
+      rootText: id === 602 ? null : 'جذر-800',
+      occurrencesCount: id * 10,
+      ayahsCount: id * 2,
+      surahsCount: id,
+      simpleWordsCount: id + 1,
+      tashkeelWordsCount: id + 2,
+      ...overrides,
+    };
+  }
 
 describe('StemsTableComponent', () => {
   beforeEach(() => {
@@ -73,7 +56,6 @@ describe('StemsTableComponent', () => {
     expect(headers).toContain('الأصل الصرفي');
     expect(headers).toContain('الصيغ');
     expect(headers).toContain('الجذور');
-    expect(headers).toContain('النوع');
     expect(headers).toContain('المواضع');
     expect(headers).toContain('الآيات');
     expect(headers).toContain('السور');
@@ -114,16 +96,6 @@ describe('StemsTableComponent', () => {
     expect(rootLink?.getAttribute('rel')).toBe('noopener noreferrer');
     expect(rootLink?.getAttribute('href')).toContain('/dashboard/words/roots');
     expect(rootLink?.getAttribute('href')).toContain('root=800');
-  });
-
-  it('shows dominant type and an additional-types indicator when more types exist', () => {
-    const fixture = setup([row(600)]);
-    const root = fixture.nativeElement as HTMLElement;
-
-    expect(root.querySelector('[data-testid="stems-table-type"]')?.textContent).toContain('اسم');
-    const indicator = root.querySelector('[data-testid="stems-table-additional-types"]');
-    expect(indicator).toBeTruthy();
-    expect(indicator?.getAttribute('aria-label')).toContain('نوع إضافي');
   });
 
   it('emits rowSelected when the stem button is clicked', () => {

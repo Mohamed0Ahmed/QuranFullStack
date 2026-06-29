@@ -30,6 +30,7 @@ interface StemWordRowViewModel {
 export class StemWordsListComponent {
   readonly page = input.required<PagedResultDto<StemWordItemDto>>();
   readonly currentPage = input.required<number>();
+  readonly wordView = input<'simple' | 'tashkeel'>('simple');
   readonly loading = input(false);
 
   readonly pageChange = output<number>();
@@ -46,7 +47,7 @@ export class StemWordsListComponent {
     this.page().items.map((item) => ({
       item,
       uniqueWordHref: deepLinkToHref(
-        buildUniqueWordsDeepLink(item.kind, {
+        buildUniqueWordsDeepLink(this.wordView(), {
           wordId: item.uniqueWordId,
           view: 'ayahs',
         }),

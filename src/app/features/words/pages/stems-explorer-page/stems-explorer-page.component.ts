@@ -43,7 +43,6 @@ import {
   DEFAULT_STEM_VIEW,
   PagedResultDto,
   STEM_DETAIL_PAGE_SIZE,
-  StemAyahMatchDto,
   StemListItemViewModel,
   StemWordItemDto,
   StemSort,
@@ -52,9 +51,11 @@ import {
   StemWordView,
   STEMS_QUERY_KEYS,
 } from '../../models/stems.models';
+import { AyahMatchDto, PagedResultDto as SharedPagedResultDto } from '../../models/unique-words.models';
 import { StemsDetailFacade } from '../../state/stems-detail.facade';
 import { StemsExplorerFacade } from '../../state/stems-explorer.facade';
 import { buildClearSelectionQueryParams, buildStemsQueryParams } from '../../state/stems-url-sync';
+import { mapStemAyahMatchToShared } from '../../utils/stem-ayah-match.mapper';
 import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
 
 @Component({
@@ -115,7 +116,7 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
     return STEMS_SURAHS_VIEW_LABELS;
   }
 
-  protected readonly emptyAyahsPage: PagedResultDto<StemAyahMatchDto> = {
+  protected readonly emptyAyahsPage: SharedPagedResultDto<AyahMatchDto> = {
     page: 1,
     pageSize: STEM_DETAIL_PAGE_SIZE,
     totalCount: 0,
@@ -128,6 +129,19 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
     totalCount: 0,
     items: [],
   };
+
+  protected readonly ayahsPageForView = computed((): SharedPagedResultDto<AyahMatchDto> => {
+    const page = this.panelState().ayahs;
+
+    if (!page) {
+      return this.emptyAyahsPage;
+    }
+
+    return {
+      ...page,
+      items: page.items.map(mapStemAyahMatchToShared),
+    };
+  });
 
   protected readonly searchDraft = signal('');
   protected readonly isDesktop = signal(true);

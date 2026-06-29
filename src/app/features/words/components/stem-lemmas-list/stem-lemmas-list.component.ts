@@ -30,12 +30,10 @@ export class StemLemmasListComponent {
 
   protected readonly rowNumberHeader = ROW_NUMBER_HEADER;
   protected readonly lemmaTextHeader = STEMS_LEMMA_TEXT_HEADER;
-  protected readonly buckwalterHeader = 'Buckwalter';
   protected readonly occurrencesHeader = STEMS_WORD_OCCURRENCES_HEADER;
   protected readonly listLabel = STEMS_LEMMAS_LIST_LABEL;
   protected readonly loadingLabel = STEMS_LEMMAS_LIST_LOADING_LABEL;
   protected readonly emptyLabel = STEMS_LEMMAS_LIST_EMPTY_LABEL;
-  protected readonly missingBuckwalterLabel = '—';
 
   protected readonly rows = computed<readonly StemLemmaRow[]>(() =>
     this.lemmas().map((lemma) => ({

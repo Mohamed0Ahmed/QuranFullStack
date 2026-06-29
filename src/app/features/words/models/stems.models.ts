@@ -1,5 +1,3 @@
-import { AyahMatchDto } from './unique-words.models';
-
 /**
  * Stems Explorer (Feature 016) view models, DTOs, and URL-state primitives.
  * Sibling of `roots.models.ts` / `lemmas.models.ts`. Stem views are
@@ -25,11 +23,7 @@ export interface PagedResultDto<T> {
 export interface TypeSummaryDto {
   code: string;
   arabicLabel: string;
-  englishLabel: string;
   occurrencesCount: number;
-  firstSurahNumber: number;
-  firstAyahNumber: number;
-  firstWordNumber: number;
 }
 
 export interface StemSurahItemDto {
@@ -39,9 +33,6 @@ export interface StemSurahItemDto {
 }
 
 export interface StemSurahsDto {
-  id: number;
-  stemText: string;
-  surahsCount: number;
   surahs: StemSurahItemDto[];
 }
 
@@ -51,35 +42,37 @@ export interface MissingSurahItemDto {
 }
 
 export interface StemMissingSurahsDto {
-  id: number;
-  stemText: string;
-  missingSurahsCount: number;
   surahs: MissingSurahItemDto[];
 }
 
 export interface StemLemmaItemDto {
   lemmaId: number;
   lemmaText: string;
-  lemmaBuckwalter: string | null;
   occurrencesCount: number;
 }
 
 export interface StemLemmasDto {
-  id: number;
-  stemText: string;
-  lemmasCount: number;
   lemmas: StemLemmaItemDto[];
 }
 
 export interface StemWordItemDto {
   uniqueWordId: number;
-  kind: StemWordView;
-  displayTextUthmani: string;
+  displayText: string;
   occurrencesCount: number;
-  firstVerseKey: string;
 }
 
-export interface StemAyahMatchDto extends AyahMatchDto {}
+export interface StemAyahWordDto {
+  textUthmani: string;
+  isMatched: boolean;
+}
+
+export interface StemAyahMatchDto {
+  ayahId: number;
+  verseKey: string;
+  surahNameArabic: string;
+  pageNumber: number;
+  words: StemAyahWordDto[];
+}
 
 /**
  * Stem catalogue row. Dominant lemma and dominant root are independent
@@ -90,18 +83,13 @@ export interface StemListItemDto {
   stemText: string;
   lemmaId: number | null;
   lemmaText: string | null;
-  lemmaBuckwalter: string | null;
   rootId: number | null;
   rootText: string | null;
-  rootBuckwalter: string | null;
-  dominantType: TypeSummaryDto;
-  otherTypesCount: number;
   occurrencesCount: number;
   ayahsCount: number;
   surahsCount: number;
   simpleWordsCount: number;
   tashkeelWordsCount: number;
-  firstVerseKey: string;
 }
 
 export interface StemSummaryDto extends StemListItemDto {

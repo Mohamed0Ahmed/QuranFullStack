@@ -76,7 +76,7 @@ export class StemsApi {
   ): Observable<ApiResponse<PagedResultDto<StemAyahMatchDto>>> {
     let params = new HttpParams().set('page', page).set('pageSize', pageSize);
     if (typeCode !== null && typeCode.trim().length > 0) {
-      params = params.set('type', typeCode.trim());
+      params = params.set('typeCode', typeCode.trim());
     }
     return this.http.get<ApiResponse<PagedResultDto<StemAyahMatchDto>>>(
       `${this.baseUrl}/api/words/stems/${id}/ayahs`,

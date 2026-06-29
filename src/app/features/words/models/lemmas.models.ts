@@ -22,11 +22,7 @@ export interface PagedResultDto<T> {
 export interface TypeSummaryDto {
   code: string;
   arabicLabel: string;
-  englishLabel: string;
   occurrencesCount: number;
-  firstSurahNumber: number;
-  firstAyahNumber: number;
-  firstWordNumber: number;
 }
 
 /** Controlled POS summary used by both the Lemmas and Stems explorers. */

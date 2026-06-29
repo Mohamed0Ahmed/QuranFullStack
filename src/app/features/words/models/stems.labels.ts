@@ -31,7 +31,6 @@ export const STEMS_COLUMN_HEADERS = {
   stem: WORDS_SHARED_HEADERS.stem,
   lemma: WORDS_SHARED_HEADERS.lemmas,
   root: 'الجذور',
-  type: WORDS_SHARED_HEADERS.type,
   occurrences: WORDS_SHARED_HEADERS.occurrences,
   ayahs: WORDS_SHARED_HEADERS.ayahs,
   surahs: WORDS_SHARED_HEADERS.surahs,

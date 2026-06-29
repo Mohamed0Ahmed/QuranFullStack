@@ -26,7 +26,6 @@ import {
   STEMS_ROOT_MISSING_LABEL,
   STEMS_TABLE_BODY_LABEL,
   STEMS_TABLE_LABEL,
-  stemsAdditionalTypesAria,
 } from '../../models/stems.labels';
 import {
   STEMS_LIST_PAGE_SIZE,
@@ -148,10 +147,6 @@ export class StemsTableComponent {
 
   protected rootHref(rootId: number): string {
     return deepLinkToHref(buildRootsDeepLink({ rootId, view: 'words', wordView: 'simple' }));
-  }
-
-  protected additionalTypesAria(count: number): string {
-    return stemsAdditionalTypesAria(count);
   }
 
   scrollToTop(): void {

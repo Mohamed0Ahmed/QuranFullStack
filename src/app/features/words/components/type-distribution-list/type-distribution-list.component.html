@@ -33,7 +33,6 @@
           [class.qd-is-selected]="row.dominant"
           [attr.aria-current]="row.dominant ? 'true' : null"
           [attr.data-testid]="row.dominant ? 'type-distribution-dominant' : 'type-distribution-item'"
-          [attr.title]="row.englishLabel"
         >
           <span class="type-distribution-list__type">{{ row.arabicLabel }}</span>
           <span class="qd-badge type-distribution-list__count">{{ row.occurrencesCount }}</span>

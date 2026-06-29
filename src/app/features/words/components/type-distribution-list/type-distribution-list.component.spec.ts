@@ -19,20 +19,12 @@ describe('TypeDistributionListComponent US6', () => {
       {
         code: 'N',
         arabicLabel: 'اسم',
-        englishLabel: 'Noun',
         occurrencesCount: 10,
-        firstSurahNumber: 1,
-        firstAyahNumber: 1,
-        firstWordNumber: 1,
       },
       {
         code: 'V',
         arabicLabel: 'فعل',
-        englishLabel: 'Verb',
         occurrencesCount: 1,
-        firstSurahNumber: 1,
-        firstAyahNumber: 2,
-        firstWordNumber: 1,
       },
     ]);
     fixture.detectChanges();

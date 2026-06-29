@@ -6,21 +6,13 @@ import { StemAyahTypeFiltersComponent } from './stem-ayah-type-filters.component
 const nounType = {
   code: 'N',
   arabicLabel: 'اسم',
-  englishLabel: 'Noun',
   occurrencesCount: 10,
-  firstSurahNumber: 1,
-  firstAyahNumber: 1,
-  firstWordNumber: 1,
 };
 
 const verbType = {
   code: 'V',
   arabicLabel: 'فعل',
-  englishLabel: 'Verb',
   occurrencesCount: 1,
-  firstSurahNumber: 1,
-  firstAyahNumber: 2,
-  firstWordNumber: 1,
 };
 
 describe('StemAyahTypeFiltersComponent', () => {

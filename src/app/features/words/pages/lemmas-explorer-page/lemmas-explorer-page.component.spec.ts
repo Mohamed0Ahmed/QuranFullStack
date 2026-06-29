@@ -17,7 +17,6 @@ import {
   LemmaMissingSurahsDto,
   LemmaSummaryDto,
   LemmaSurahsDto,
-  LemmaWordView,
   PagedResultDto,
 } from '../../models/lemmas.models';
 import { LemmasApi } from '../../data-access/lemmas.api';
@@ -46,27 +45,19 @@ function typeSummary() {
   return {
     code: 'N',
     arabicLabel: 'اسم',
-    englishLabel: 'Noun',
     occurrencesCount: 5,
-    firstSurahNumber: 1,
-    firstAyahNumber: 1,
-    firstWordNumber: 1,
   };
 }
 
 function multiTypeSummary() {
-  return [
-    typeSummary(),
-    {
-      code: 'V',
-      arabicLabel: 'فعل',
-      englishLabel: 'Verb',
-      occurrencesCount: 2,
-      firstSurahNumber: 1,
-      firstAyahNumber: 2,
-      firstWordNumber: 1,
-    },
-  ];
+    return [
+      typeSummary(),
+      {
+        code: 'V',
+        arabicLabel: 'فعل',
+        occurrencesCount: 2,
+      },
+    ];
 }
 
 function successListResponse() {
@@ -111,7 +102,7 @@ function successAyahsResponse() {
   });
 }
 
-function wordItem(uniqueWordId: number, kind: LemmaWordView): LemmaWordItemDto {
+function wordItem(uniqueWordId: number): LemmaWordItemDto {
   return {
     uniqueWordId,
     displayText: `كلمة-${uniqueWordId}`,
@@ -119,14 +110,14 @@ function wordItem(uniqueWordId: number, kind: LemmaWordView): LemmaWordItemDto {
   };
 }
 
-function successWordsResponse(kind: LemmaWordView) {
+function successWordsResponse() {
   return of<ApiResponse<PagedResultDto<LemmaWordItemDto>>>({
     isSuccess: true,
     data: {
       page: 1,
       pageSize: LEMMA_DETAIL_PAGE_SIZE,
       totalCount: 1,
-      items: [wordItem(9001, kind)],
+      items: [wordItem(9001)],
     },
     message: null,
     errors: null,
@@ -310,7 +301,7 @@ describe('LemmasExplorerPageComponent US1', () => {
   });
 
   it('loads only the word detail endpoint and renders the simple/tashkeel list when view=words', async () => {
-    lemmasApi.getLemmaWords.mockReturnValue(successWordsResponse('tashkeel'));
+    lemmasApi.getLemmaWords.mockReturnValue(successWordsResponse());
     queryParamMap$.next(convertToParamMap({ lemma: '500', view: 'words', wordView: 'tashkeel', detailPage: '1' }));
 
     const fixture = await initLifecycle();
@@ -666,7 +657,7 @@ describe('LemmasExplorerPageComponent US8 — restore and navigate exact state',
           errors: null,
         }),
       ),
-      getLemmaWords: vi.fn().mockImplementation(() => successWordsResponse('tashkeel')),
+      getLemmaWords: vi.fn().mockImplementation(() => successWordsResponse()),
       getLemmaAyahMatches: vi.fn(),
       getLemmaMentionedSurahs: vi.fn(),
       getLemmaMissingSurahs: vi.fn(),

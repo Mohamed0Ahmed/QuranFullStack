@@ -182,6 +182,7 @@
             <qd-stem-words-list
               [loading]="true"
               [page]="emptyWordsPage"
+              [wordView]="panelState().wordView"
               [currentPage]="panelState().detailPage"
               data-testid="stems-words-view"
               (pageChange)="onDetailPageChange($event)"
@@ -225,13 +226,14 @@
           @if (activeView() === 'words' && panelState().words; as wordsPage) {
             <qd-stem-words-list
               [page]="wordsPage"
+              [wordView]="panelState().wordView"
               [currentPage]="panelState().detailPage"
               data-testid="stems-words-view"
               (pageChange)="onDetailPageChange($event)"
             />
-          } @else if (activeView() === 'ayahs' && panelState().ayahs; as ayahsPage) {
+          } @else if (activeView() === 'ayahs' && panelState().ayahs) {
             <qd-ayah-matches-list
-              [page]="ayahsPage"
+              [page]="ayahsPageForView()"
               [currentPage]="panelState().detailPage"
               data-testid="stems-ayahs-view"
               (pageChange)="onDetailPageChange($event)"

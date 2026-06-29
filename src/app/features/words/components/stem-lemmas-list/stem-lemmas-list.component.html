@@ -2,7 +2,6 @@
   <header class="stem-lemmas-list__header" aria-hidden="true">
     <span class="stem-lemmas-list__header-row-number">{{ rowNumberHeader }}</span>
     <span class="stem-lemmas-list__header-text">{{ lemmaTextHeader }}</span>
-    <span class="stem-lemmas-list__header-meta">{{ buckwalterHeader }}</span>
     <span class="stem-lemmas-list__header-count">{{ occurrencesHeader }}</span>
   </header>
 
@@ -42,26 +41,10 @@
           [href]="row.href"
           target="_blank"
           rel="noopener noreferrer"
-          [attr.aria-label]="
-            'الصيغة المعجمية: ' + row.lemma.lemmaText + (row.lemma.lemmaBuckwalter ? ' (' + row.lemma.lemmaBuckwalter + ')' : '')
-          "
+          [attr.aria-label]="'الصيغة المعجمية: ' + row.lemma.lemmaText"
         >
           <span class="stem-lemmas-list__row-number" aria-hidden="true">{{ index + 1 }}</span>
           <span class="stem-lemmas-list__text">{{ row.lemma.lemmaText }}</span>
-          @if (row.lemma.lemmaBuckwalter) {
-            <span class="stem-lemmas-list__meta" data-testid="stem-lemmas-list-buckwalter">
-              {{ row.lemma.lemmaBuckwalter }}
-            </span>
-          } @else {
-            <span
-              class="stem-lemmas-list__meta stem-lemmas-list__meta--missing"
-              data-testid="stem-lemmas-list-buckwalter-missing"
-              aria-hidden="true"
-            >
-              {{ missingBuckwalterLabel }}
-            </span>
-            <span class="qd-sr-only">لا توجد صيغة Buckwalter مرتبطة</span>
-          }
           <span class="qd-badge stem-lemmas-list__count">{{ row.lemma.occurrencesCount }}</span>
         </a>
       }
