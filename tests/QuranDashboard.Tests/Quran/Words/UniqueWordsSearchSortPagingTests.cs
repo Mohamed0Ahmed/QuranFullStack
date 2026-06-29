@@ -160,7 +160,7 @@ public sealed class UniqueWordsSearchSortPagingTests(UniqueWordsTestFixture fixt
             CancellationToken.None);
         var page = outcome.Should().BeOfType<GetUniqueWordsPageOutcome.Success>().Subject.Page;
 
-        page.Items.Select(i => i.Id).Should().Equal([2003, 1003, 1004, 1002, 1001, 60041]);
+        page.Items.Select(i => i.Id).Should().Equal([2003, 1003, 1004, 1002, 31001, 1001, 60041, 1202]);
     }
 
     [Fact]
@@ -174,7 +174,7 @@ public sealed class UniqueWordsSearchSortPagingTests(UniqueWordsTestFixture fixt
             new GetUniqueWordsPageQuery("tashkeel", null, null, 1, 2),
             CancellationToken.None);
         var firstPage = first.Should().BeOfType<GetUniqueWordsPageOutcome.Success>().Subject.Page;
-        firstPage.TotalCount.Should().Be(6);
+        firstPage.TotalCount.Should().Be(8);
         firstPage.Items.Should().HaveCount(2);
         firstPage.Items.Select(i => i.Id).Should().Equal([1001, 1002]);
 
@@ -182,7 +182,7 @@ public sealed class UniqueWordsSearchSortPagingTests(UniqueWordsTestFixture fixt
             new GetUniqueWordsPageQuery("tashkeel", null, null, 2, 2),
             CancellationToken.None);
         var secondPage = second.Should().BeOfType<GetUniqueWordsPageOutcome.Success>().Subject.Page;
-        secondPage.TotalCount.Should().Be(6);
+        secondPage.TotalCount.Should().Be(8);
         secondPage.Items.Should().HaveCount(2);
         secondPage.Items.Select(i => i.Id).Should().Equal([1003, 1004]);
     }
@@ -198,7 +198,7 @@ public sealed class UniqueWordsSearchSortPagingTests(UniqueWordsTestFixture fixt
             CancellationToken.None);
         var page = outcome.Should().BeOfType<GetUniqueWordsPageOutcome.Success>().Subject.Page;
 
-        page.TotalCount.Should().Be(6);
+        page.TotalCount.Should().Be(8);
         page.Items.Should().BeEmpty();
     }
 
