@@ -1,5 +1,6 @@
 import { resolveAdjacentColumn } from './explorer-table-column-nav';
 import { resolveAdjacentRow } from './explorer-row-keydown';
+import { ExplorerRowNavDirection } from './explorer-table-scroll';
 
 export type ExplorerInteractionSource = 'immediate' | 'keyboard';
 export type ExplorerTableNavDirection = 'left' | 'right' | 'up' | 'down';
@@ -12,7 +13,7 @@ export interface ExplorerTableKeydownOptions<Row extends { id: number }, Column 
   columnOrder: readonly Column[];
   isColumnEnabled: (row: Row, column: Column) => boolean;
   emitColumnTarget: (row: Row, column: Column, source: ExplorerInteractionSource) => void;
-  scrollToRow: (index: number) => void;
+  scrollToRow: (index: number, direction: ExplorerRowNavDirection) => void;
 }
 
 export function handleExplorerTableKeydown<Row extends { id: number }, Column extends string>(
@@ -62,7 +63,7 @@ export function handleExplorerTableKeydown<Row extends { id: number }, Column ex
   }
 
   options.event.preventDefault();
-  options.scrollToRow(adjacentRow.index);
+  options.scrollToRow(adjacentRow.index, direction);
   options.emitColumnTarget(adjacentRow.row, currentColumn, 'keyboard');
   return true;
 }

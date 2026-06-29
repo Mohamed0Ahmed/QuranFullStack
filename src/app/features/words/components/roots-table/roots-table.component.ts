@@ -37,6 +37,10 @@ import {
   ExplorerInteractionSource,
   handleExplorerTableKeydown,
 } from '../../utils/explorer-table-keydown';
+import {
+  ExplorerRowNavDirection,
+  scrollExplorerRowIntoView,
+} from '../../utils/explorer-table-scroll';
 import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
 import { syncTableScrollbarGutter } from '../../utils/table-scrollbar-gutter-sync';
 
@@ -186,7 +190,7 @@ export class RootsTableComponent {
       columnOrder: ROOT_TABLE_COLUMN_ORDER,
       isColumnEnabled: (row, column) => this.isColumnEnabled(row, column),
       emitColumnTarget: (row, column, source) => this.emitColumnTarget(row, column, source),
-      scrollToRow: (index) => this.scrollToRow(index),
+      scrollToRow: (index, direction) => this.scrollToRow(index, direction),
     });
   }
 
@@ -259,17 +263,24 @@ export class RootsTableComponent {
     });
   }
 
-  private scrollToRow(index: number): void {
+  private scrollToRow(index: number, direction: ExplorerRowNavDirection): void {
     const viewport = this.viewport();
     if (this.useVirtualScroll && viewport) {
-      viewport.scrollToIndex(index, 'auto');
+      scrollExplorerRowIntoView({
+        targetIndex: index,
+        direction,
+        itemSize: this.rowHeight(),
+        viewport,
+      });
       return;
     }
 
     const body = this.host.nativeElement.querySelector('.roots-table__body') as HTMLElement | null;
-    const row = body?.querySelectorAll<HTMLElement>('.roots-table__row')[index];
-    if (row && typeof row.scrollIntoView === 'function') {
-      row.scrollIntoView({ block: 'nearest' });
-    }
+    scrollExplorerRowIntoView({
+      targetIndex: index,
+      direction,
+      itemSize: this.rowHeight(),
+      container: body,
+    });
   }
 }

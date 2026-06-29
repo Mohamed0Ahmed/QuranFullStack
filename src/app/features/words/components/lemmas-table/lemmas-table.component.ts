@@ -7,6 +7,7 @@ import { LEMMAS_COLUMN_COUNT_LABELS, LEMMAS_COLUMN_HEADERS, LEMMAS_LOADING_LABEL
 import { LEMMAS_LIST_PAGE_SIZE, LemmaListItemViewModel, LemmaSurahView, LemmaView, LemmaWordView } from '../../models/lemmas.models';
 import { isMorphologyCountActive, MorphologyColumnKey, resolveMorphologyActiveColumn } from '../../utils/explorer-count-active';
 import { ExplorerInteractionSource, handleExplorerTableKeydown } from '../../utils/explorer-table-keydown';
+import { ExplorerRowNavDirection, scrollExplorerRowIntoView } from '../../utils/explorer-table-scroll';
 import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
 import { syncTableScrollbarGutter } from '../../utils/table-scrollbar-gutter-sync';
 import { deepLinkToHref } from '../../../../shared/url/deep-link-href';
@@ -178,7 +179,7 @@ export class LemmasTableComponent {
       columnOrder: LEMMA_TABLE_COLUMN_ORDER,
       isColumnEnabled: (row, column) => this.isColumnEnabled(row, column),
       emitColumnTarget: (row, column, source) => this.emitColumnTarget(row, column, source),
-      scrollToRow: (index) => this.scrollToRow(index),
+      scrollToRow: (index, direction) => this.scrollToRow(index, direction),
     });
   }
 
@@ -248,17 +249,24 @@ export class LemmasTableComponent {
     return column === 'lemmas' ? null : column;
   }
 
-  private scrollToRow(index: number): void {
+  private scrollToRow(index: number, direction: ExplorerRowNavDirection): void {
     const viewport = this.viewport();
     if (this.useVirtualScroll && viewport) {
-      viewport.scrollToIndex(index, 'auto');
+      scrollExplorerRowIntoView({
+        targetIndex: index,
+        direction,
+        itemSize: this.rowHeight(),
+        viewport,
+      });
       return;
     }
 
     const body = this.host.nativeElement.querySelector('.lemmas-table__body') as HTMLElement | null;
-    const row = body?.querySelectorAll<HTMLElement>('.lemmas-table__row')[index];
-    if (row && typeof row.scrollIntoView === 'function') {
-      row.scrollIntoView({ block: 'nearest' });
-    }
+    scrollExplorerRowIntoView({
+      targetIndex: index,
+      direction,
+      itemSize: this.rowHeight(),
+      container: body,
+    });
   }
 }

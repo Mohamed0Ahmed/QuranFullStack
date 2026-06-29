@@ -22,10 +22,10 @@
   }
 
   &.qd-is-selected:not(:disabled) {
-    background: var(--qd-accent-tint);
-    border-color: color-mix(in oklch, var(--qd-accent) 36%, var(--qd-border));
-    color: var(--qd-accent-text);
-    box-shadow: 0 0 0 1px color-mix(in oklch, var(--qd-accent) 18%, transparent);
+    background: var(--qd-accent);
+    border-color: var(--qd-accent);
+    color: var(--qd-primary);
+    box-shadow: 0 0 0 1px color-mix(in oklch, var(--qd-accent) 28%, transparent);
   }
 
   &:focus-visible {
