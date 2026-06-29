@@ -1,4 +1,10 @@
-<div class="roots-table" role="table" [attr.aria-label]="tableLabel">
+<div
+  class="roots-table"
+  role="table"
+  [attr.aria-label]="tableLabel"
+  tabindex="0"
+  (keydown)="onTableKeydown($event)"
+>
   <div class="roots-table__header" role="rowgroup">
     <div class="roots-table__header-row" role="row">
       <div class="roots-table__header-cell roots-table__header-cell--row-number" role="columnheader">
@@ -62,6 +68,7 @@
         [class.qd-is-selected]="isSelected(row)"
         [attr.aria-selected]="isSelected(row)"
         [attr.aria-current]="isSelected(row) ? 'true' : null"
+        [attr.data-row-id]="row.id"
       >
         <div class="roots-table__cell roots-table__cell--row-number" role="cell">{{ rowNumber(index) }}</div>
 
@@ -79,49 +86,57 @@
         <div class="roots-table__cell roots-table__chip-cell" role="cell">
           <qd-word-count-chip
             [label]="countLabels.occurrences" [count]="row.occurrencesCount" [showLabel]="false"
-            (chipClick)="openCount(row, 'ayahs')"
+            [disabled]="row.occurrencesCount === 0"
+            [selected]="isCountActive(row, 'occurrences', row.occurrencesCount)"
+            (chipClick)="openCount(row, 'occurrences', 'ayahs')"
           />
         </div>
         <div class="roots-table__cell roots-table__chip-cell" role="cell">
           <qd-word-count-chip
             [label]="countLabels.ayahs" [count]="row.ayahsCount" [showLabel]="false"
             [disabled]="row.ayahsCount === 0"
-            (chipClick)="openCount(row, 'ayahs')"
+            [selected]="isCountActive(row, 'ayahs', row.ayahsCount)"
+            (chipClick)="openCount(row, 'ayahs', 'ayahs')"
           />
         </div>
         <div class="roots-table__cell roots-table__chip-cell" role="cell">
           <qd-word-count-chip
             [label]="countLabels.surahs" [count]="row.surahsCount" [showLabel]="false"
             [disabled]="row.surahsCount === 0"
-            (chipClick)="openCount(row, 'surahs', { surahView: 'mentioned' })"
+            [selected]="isCountActive(row, 'surahs', row.surahsCount)"
+            (chipClick)="openCount(row, 'surahs', 'surahs', { surahView: 'mentioned' })"
           />
         </div>
         <div class="roots-table__cell roots-table__chip-cell" role="cell">
           <qd-word-count-chip
             [label]="countLabels.simpleWords" [count]="row.simpleWordsCount" [showLabel]="false"
             [disabled]="row.simpleWordsCount === 0"
-            (chipClick)="openCount(row, 'words', { wordView: 'simple' })"
+            [selected]="isCountActive(row, 'simple', row.simpleWordsCount)"
+            (chipClick)="openCount(row, 'simple', 'words', { wordView: 'simple' })"
           />
         </div>
         <div class="roots-table__cell roots-table__chip-cell" role="cell">
           <qd-word-count-chip
             [label]="countLabels.tashkeelWords" [count]="row.tashkeelWordsCount" [showLabel]="false"
             [disabled]="row.tashkeelWordsCount === 0"
-            (chipClick)="openCount(row, 'words', { wordView: 'tashkeel' })"
+            [selected]="isCountActive(row, 'tashkeel', row.tashkeelWordsCount)"
+            (chipClick)="openCount(row, 'tashkeel', 'words', { wordView: 'tashkeel' })"
           />
         </div>
         <div class="roots-table__cell roots-table__chip-cell" role="cell">
           <qd-word-count-chip
             [label]="countLabels.lemmas" [count]="row.lemmasCount" [showLabel]="false"
             [disabled]="row.lemmasCount === 0"
-            (chipClick)="openCount(row, 'lemmas')"
+            [selected]="isCountActive(row, 'lemmas', row.lemmasCount)"
+            (chipClick)="openCount(row, 'lemmas', 'lemmas')"
           />
         </div>
         <div class="roots-table__cell roots-table__chip-cell" role="cell">
           <qd-word-count-chip
             [label]="countLabels.stems" [count]="row.stemsCount" [showLabel]="false"
             [disabled]="row.stemsCount === 0"
-            (chipClick)="openCount(row, 'stems')"
+            [selected]="isCountActive(row, 'stems', row.stemsCount)"
+            (chipClick)="openCount(row, 'stems', 'stems')"
           />
         </div>
         <ng-container *ngTemplateOutlet="mobileStats; context: { row: row }" />
@@ -136,6 +151,7 @@
           [class.qd-is-selected]="isSelected(row)"
           [attr.aria-selected]="isSelected(row)"
           [attr.aria-current]="isSelected(row) ? 'true' : null"
+          [attr.data-row-id]="row.id"
         >
           <div class="roots-table__cell roots-table__cell--row-number" role="cell">{{ rowNumber(index) }}</div>
 
@@ -153,49 +169,57 @@
           <div class="roots-table__cell roots-table__chip-cell" role="cell">
             <qd-word-count-chip
               [label]="countLabels.occurrences" [count]="row.occurrencesCount" [showLabel]="false"
-              (chipClick)="openCount(row, 'ayahs')"
+              [disabled]="row.occurrencesCount === 0"
+              [selected]="isCountActive(row, 'occurrences', row.occurrencesCount)"
+              (chipClick)="openCount(row, 'occurrences', 'ayahs')"
             />
           </div>
           <div class="roots-table__cell roots-table__chip-cell" role="cell">
             <qd-word-count-chip
               [label]="countLabels.ayahs" [count]="row.ayahsCount" [showLabel]="false"
               [disabled]="row.ayahsCount === 0"
-              (chipClick)="openCount(row, 'ayahs')"
+              [selected]="isCountActive(row, 'ayahs', row.ayahsCount)"
+              (chipClick)="openCount(row, 'ayahs', 'ayahs')"
             />
           </div>
           <div class="roots-table__cell roots-table__chip-cell" role="cell">
             <qd-word-count-chip
               [label]="countLabels.surahs" [count]="row.surahsCount" [showLabel]="false"
               [disabled]="row.surahsCount === 0"
-              (chipClick)="openCount(row, 'surahs', { surahView: 'mentioned' })"
+              [selected]="isCountActive(row, 'surahs', row.surahsCount)"
+              (chipClick)="openCount(row, 'surahs', 'surahs', { surahView: 'mentioned' })"
             />
           </div>
           <div class="roots-table__cell roots-table__chip-cell" role="cell">
             <qd-word-count-chip
               [label]="countLabels.simpleWords" [count]="row.simpleWordsCount" [showLabel]="false"
               [disabled]="row.simpleWordsCount === 0"
-              (chipClick)="openCount(row, 'words', { wordView: 'simple' })"
+              [selected]="isCountActive(row, 'simple', row.simpleWordsCount)"
+              (chipClick)="openCount(row, 'simple', 'words', { wordView: 'simple' })"
             />
           </div>
           <div class="roots-table__cell roots-table__chip-cell" role="cell">
             <qd-word-count-chip
               [label]="countLabels.tashkeelWords" [count]="row.tashkeelWordsCount" [showLabel]="false"
               [disabled]="row.tashkeelWordsCount === 0"
-              (chipClick)="openCount(row, 'words', { wordView: 'tashkeel' })"
+              [selected]="isCountActive(row, 'tashkeel', row.tashkeelWordsCount)"
+              (chipClick)="openCount(row, 'tashkeel', 'words', { wordView: 'tashkeel' })"
             />
           </div>
           <div class="roots-table__cell roots-table__chip-cell" role="cell">
             <qd-word-count-chip
               [label]="countLabels.lemmas" [count]="row.lemmasCount" [showLabel]="false"
               [disabled]="row.lemmasCount === 0"
-              (chipClick)="openCount(row, 'lemmas')"
+              [selected]="isCountActive(row, 'lemmas', row.lemmasCount)"
+              (chipClick)="openCount(row, 'lemmas', 'lemmas')"
             />
           </div>
           <div class="roots-table__cell roots-table__chip-cell" role="cell">
             <qd-word-count-chip
               [label]="countLabels.stems" [count]="row.stemsCount" [showLabel]="false"
               [disabled]="row.stemsCount === 0"
-              (chipClick)="openCount(row, 'stems')"
+              [selected]="isCountActive(row, 'stems', row.stemsCount)"
+              (chipClick)="openCount(row, 'stems', 'stems')"
             />
           </div>
           <ng-container *ngTemplateOutlet="mobileStats; context: { row: row }" />
@@ -209,69 +233,77 @@
       <button
         type="button"
         class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--occurrences"
+        [class.qd-is-selected]="isCountActive(row, 'occurrences', row.occurrencesCount)"
         data-testid="roots-table-mobile-occurrences"
         [attr.aria-label]="row.occurrencesCount + ' ' + countLabels.occurrences"
-        (click)="openCount(row, 'ayahs')"
+        [disabled]="row.occurrencesCount === 0"
+        (click)="openCount(row, 'occurrences', 'ayahs')"
       >
         {{ row.occurrencesCount }} {{ headers.occurrences }}
       </button>
       <button
         type="button"
         class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action"
+        [class.qd-is-selected]="isCountActive(row, 'ayahs', row.ayahsCount)"
         data-testid="roots-table-mobile-ayahs"
         [attr.aria-label]="row.ayahsCount + ' ' + countLabels.ayahs"
         [disabled]="row.ayahsCount === 0"
-        (click)="openCount(row, 'ayahs')"
+        (click)="openCount(row, 'ayahs', 'ayahs')"
       >
         {{ row.ayahsCount }} {{ headers.ayahs }}
       </button>
       <button
         type="button"
         class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action"
+        [class.qd-is-selected]="isCountActive(row, 'surahs', row.surahsCount)"
         data-testid="roots-table-mobile-surahs"
         [attr.aria-label]="row.surahsCount + ' ' + countLabels.surahs"
         [disabled]="row.surahsCount === 0"
-        (click)="openCount(row, 'surahs', { surahView: 'mentioned' })"
+        (click)="openCount(row, 'surahs', 'surahs', { surahView: 'mentioned' })"
       >
         {{ row.surahsCount }} {{ headers.surahs }}
       </button>
       <button
         type="button"
         class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action"
+        [class.qd-is-selected]="isCountActive(row, 'simple', row.simpleWordsCount)"
         data-testid="roots-table-mobile-simple-words"
         [attr.aria-label]="row.simpleWordsCount + ' ' + countLabels.simpleWords"
         [disabled]="row.simpleWordsCount === 0"
-        (click)="openCount(row, 'words', { wordView: 'simple' })"
+        (click)="openCount(row, 'simple', 'words', { wordView: 'simple' })"
       >
         {{ row.simpleWordsCount }} {{ headers.simpleWords }}
       </button>
       <button
         type="button"
         class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action"
+        [class.qd-is-selected]="isCountActive(row, 'tashkeel', row.tashkeelWordsCount)"
         data-testid="roots-table-mobile-tashkeel-words"
         [attr.aria-label]="row.tashkeelWordsCount + ' ' + countLabels.tashkeelWords"
         [disabled]="row.tashkeelWordsCount === 0"
-        (click)="openCount(row, 'words', { wordView: 'tashkeel' })"
+        (click)="openCount(row, 'tashkeel', 'words', { wordView: 'tashkeel' })"
       >
         {{ row.tashkeelWordsCount }} {{ headers.tashkeelWords }}
       </button>
       <button
         type="button"
         class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action"
+        [class.qd-is-selected]="isCountActive(row, 'lemmas', row.lemmasCount)"
         data-testid="roots-table-mobile-lemmas"
         [attr.aria-label]="row.lemmasCount + ' ' + countLabels.lemmas"
         [disabled]="row.lemmasCount === 0"
-        (click)="openCount(row, 'lemmas')"
+        (click)="openCount(row, 'lemmas', 'lemmas')"
       >
         {{ row.lemmasCount }} {{ headers.lemmas }}
       </button>
       <button
         type="button"
         class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action"
+        [class.qd-is-selected]="isCountActive(row, 'stems', row.stemsCount)"
         data-testid="roots-table-mobile-stems"
         [attr.aria-label]="row.stemsCount + ' ' + countLabels.stems"
         [disabled]="row.stemsCount === 0"
-        (click)="openCount(row, 'stems')"
+        (click)="openCount(row, 'stems', 'stems')"
       >
         {{ row.stemsCount }} {{ headers.stems }}
       </button>

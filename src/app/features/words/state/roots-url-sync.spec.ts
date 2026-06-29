@@ -22,6 +22,7 @@ describe('parseRootsQueryParams', () => {
     expect(parsed.page).toBe(1);
     expect(parsed.rootId).toBeNull();
     expect(parsed.view).toBe('words');
+    expect(parsed.column).toBeNull();
     expect(parsed.wordView).toBe('simple');
     expect(parsed.surahView).toBe('mentioned');
     expect(parsed.detailPage).toBe(1);
@@ -51,6 +52,11 @@ describe('parseRootsQueryParams', () => {
 
     expect(parsed.rootId).toBe(55);
     expect(parsed.view).toBe('lemmas');
+    expect(parsed.column).toBeNull();
+  });
+
+  it('preserves a valid explicit active column for ayahs restore', () => {
+    expect(parseRootsQueryParams(params('root=55&view=ayahs&column=ayahs')).column).toBe('ayahs');
   });
 
   it('ignores view when no root is present (keeps the default view)', () => {
@@ -126,8 +132,9 @@ describe('buildRootsQueryParams', () => {
         rootId: 7,
         detailPage: 4,
         view: 'ayahs',
+        column: 'ayahs',
       }),
-    ).toEqual({ page: '2', root: '7', detailPage: '4', view: 'ayahs' });
+    ).toEqual({ page: '2', root: '7', detailPage: '4', view: 'ayahs', column: 'ayahs' });
 
     expect(buildRootsQueryParams({ search: null, page: null })).toEqual({
       search: null,
@@ -151,6 +158,7 @@ describe('buildRootsQueryParams', () => {
       page: parsed.page,
       rootId: parsed.rootId,
       view: parsed.view,
+      column: parsed.column,
       wordView: parsed.wordView,
       surahView: parsed.surahView,
       detailPage: parsed.detailPage,
@@ -161,6 +169,7 @@ describe('buildRootsQueryParams', () => {
     expect(rebuilt['page']).toBe('2');
     expect(rebuilt['root']).toBe('9');
     expect(rebuilt['view']).toBe('words');
+    expect(rebuilt['column']).toBeNull();
     expect(rebuilt['wordView']).toBe('tashkeel');
     expect(rebuilt['detailPage']).toBe('3');
   });
@@ -174,12 +183,13 @@ describe('buildClearSelectionQueryParams', () => {
       [
         ROOTS_QUERY_KEYS.root,
         ROOTS_QUERY_KEYS.view,
+        ROOTS_QUERY_KEYS.column,
         ROOTS_QUERY_KEYS.wordView,
         ROOTS_QUERY_KEYS.surahView,
         ROOTS_QUERY_KEYS.detailPage,
       ].sort(),
     );
-    expect(Object.values(cleared)).toEqual([null, null, null, null, null]);
+    expect(Object.values(cleared)).toEqual([null, null, null, null, null, null]);
 
     expect(cleared).not.toHaveProperty(ROOTS_QUERY_KEYS.search);
     expect(cleared).not.toHaveProperty(ROOTS_QUERY_KEYS.sort);

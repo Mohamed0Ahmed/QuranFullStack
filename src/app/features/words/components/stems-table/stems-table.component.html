@@ -1,4 +1,10 @@
-<div class="stems-table" role="table" [attr.aria-label]="tableLabel">
+<div
+  class="stems-table"
+  role="table"
+  [attr.aria-label]="tableLabel"
+  tabindex="0"
+  (keydown)="onTableKeydown($event)"
+>
   <div class="stems-table__header" role="rowgroup">
     <div class="stems-table__header-row" role="row">
       <div class="stems-table__header-cell stems-table__header-cell--row-number" role="columnheader">
@@ -78,6 +84,7 @@
         [class.qd-is-selected]="isSelected(row)"
         [attr.aria-selected]="isSelected(row)"
         [attr.aria-current]="isSelected(row) ? 'true' : null"
+        [attr.data-row-id]="row.id"
       >
         <ng-container *ngTemplateOutlet="stemRowCells; context: { row: row, index: index }" />
       </div>
@@ -91,6 +98,7 @@
           [class.qd-is-selected]="isSelected(row)"
           [attr.aria-selected]="isSelected(row)"
           [attr.aria-current]="isSelected(row) ? 'true' : null"
+          [attr.data-row-id]="row.id"
         >
           <ng-container *ngTemplateOutlet="stemRowCells; context: { row: row, index: index }" />
         </div>
@@ -129,7 +137,9 @@
         [label]="countLabels.occurrences"
         [count]="row.occurrencesCount"
         [showLabel]="false"
-        (chipClick)="openCount(row, 'ayahs')"
+        [disabled]="row.occurrencesCount === 0"
+        [selected]="isCountActive(row, 'occurrences', row.occurrencesCount)"
+        (chipClick)="openCount(row, 'occurrences', 'ayahs')"
       />
     </div>
     <div class="stems-table__cell stems-table__chip-cell" role="cell">
@@ -137,7 +147,9 @@
         [label]="countLabels.ayahs"
         [count]="row.ayahsCount"
         [showLabel]="false"
-        (chipClick)="openCount(row, 'ayahs')"
+        [disabled]="row.ayahsCount === 0"
+        [selected]="isCountActive(row, 'ayahs', row.ayahsCount)"
+        (chipClick)="openCount(row, 'ayahs', 'ayahs')"
       />
     </div>
     <div class="stems-table__cell stems-table__chip-cell" role="cell">
@@ -145,7 +157,9 @@
         [label]="countLabels.surahs"
         [count]="row.surahsCount"
         [showLabel]="false"
-        (chipClick)="openCount(row, 'surahs', { surahView: 'mentioned' })"
+        [disabled]="row.surahsCount === 0"
+        [selected]="isCountActive(row, 'surahs', row.surahsCount)"
+        (chipClick)="openCount(row, 'surahs', 'surahs', { surahView: 'mentioned' })"
       />
     </div>
     <div class="stems-table__cell stems-table__chip-cell" role="cell">
@@ -153,7 +167,9 @@
         [label]="countLabels.simpleWords"
         [count]="row.simpleWordsCount"
         [showLabel]="false"
-        (chipClick)="openCount(row, 'words', { wordView: 'simple' })"
+        [disabled]="row.simpleWordsCount === 0"
+        [selected]="isCountActive(row, 'simple', row.simpleWordsCount)"
+        (chipClick)="openCount(row, 'simple', 'words', { wordView: 'simple' })"
       />
     </div>
     <div class="stems-table__cell stems-table__chip-cell" role="cell">
@@ -161,7 +177,9 @@
         [label]="countLabels.tashkeelWords"
         [count]="row.tashkeelWordsCount"
         [showLabel]="false"
-        (chipClick)="openCount(row, 'words', { wordView: 'tashkeel' })"
+        [disabled]="row.tashkeelWordsCount === 0"
+        [selected]="isCountActive(row, 'tashkeel', row.tashkeelWordsCount)"
+        (chipClick)="openCount(row, 'tashkeel', 'words', { wordView: 'tashkeel' })"
       />
     </div>
 
@@ -213,45 +231,55 @@
       <button
         type="button"
         class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--occurrences"
+        [class.qd-is-selected]="isCountActive(row, 'occurrences', row.occurrencesCount)"
         data-testid="stems-table-mobile-occurrences"
         [attr.aria-label]="row.occurrencesCount + ' ' + countLabels.occurrences"
-        (click)="openCount(row, 'ayahs')"
+        [disabled]="row.occurrencesCount === 0"
+        (click)="openCount(row, 'occurrences', 'ayahs')"
       >
         {{ row.occurrencesCount }} {{ headers.occurrences }}
       </button>
       <button
         type="button"
         class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action"
+        [class.qd-is-selected]="isCountActive(row, 'ayahs', row.ayahsCount)"
         data-testid="stems-table-mobile-ayahs"
         [attr.aria-label]="row.ayahsCount + ' ' + countLabels.ayahs"
-        (click)="openCount(row, 'ayahs')"
+        [disabled]="row.ayahsCount === 0"
+        (click)="openCount(row, 'ayahs', 'ayahs')"
       >
         {{ row.ayahsCount }} {{ headers.ayahs }}
       </button>
       <button
         type="button"
         class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action"
+        [class.qd-is-selected]="isCountActive(row, 'surahs', row.surahsCount)"
         data-testid="stems-table-mobile-surahs"
         [attr.aria-label]="row.surahsCount + ' ' + countLabels.surahs"
-        (click)="openCount(row, 'surahs', { surahView: 'mentioned' })"
+        [disabled]="row.surahsCount === 0"
+        (click)="openCount(row, 'surahs', 'surahs', { surahView: 'mentioned' })"
       >
         {{ row.surahsCount }} {{ headers.surahs }}
       </button>
       <button
         type="button"
         class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action"
+        [class.qd-is-selected]="isCountActive(row, 'simple', row.simpleWordsCount)"
         data-testid="stems-table-mobile-simple-words"
         [attr.aria-label]="row.simpleWordsCount + ' ' + countLabels.simpleWords"
-        (click)="openCount(row, 'words', { wordView: 'simple' })"
+        [disabled]="row.simpleWordsCount === 0"
+        (click)="openCount(row, 'simple', 'words', { wordView: 'simple' })"
       >
         {{ row.simpleWordsCount }} {{ headers.simpleWords }}
       </button>
       <button
         type="button"
         class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action"
+        [class.qd-is-selected]="isCountActive(row, 'tashkeel', row.tashkeelWordsCount)"
         data-testid="stems-table-mobile-tashkeel-words"
         [attr.aria-label]="row.tashkeelWordsCount + ' ' + countLabels.tashkeelWords"
-        (click)="openCount(row, 'words', { wordView: 'tashkeel' })"
+        [disabled]="row.tashkeelWordsCount === 0"
+        (click)="openCount(row, 'tashkeel', 'words', { wordView: 'tashkeel' })"
       >
         {{ row.tashkeelWordsCount }} {{ headers.tashkeelWords }}
       </button>

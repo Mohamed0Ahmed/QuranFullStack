@@ -125,8 +125,8 @@ describe('LemmasTableComponent', () => {
     expect(root.querySelector('[aria-selected="true"]')).toBeTruthy();
   });
 
-  it('emits countOpened with the mapped view and sub-view; zero counts stay enabled', () => {
-    const fixture = setup([row(1, { ayahsCount: 0, simpleWordsCount: 0 })]);
+  it('emits countOpened with the mapped view and sub-view', () => {
+    const fixture = setup([row(1)]);
     const emitted: {
       lemma: LemmaListItemViewModel;
       view: string;
@@ -150,7 +150,6 @@ describe('LemmasTableComponent', () => {
 
     chips.forEach((chip) => {
       const btn = chip.querySelector('button');
-      expect(btn?.hasAttribute('disabled')).toBe(false);
       btn?.click();
       fixture.detectChanges();
     });
@@ -162,5 +161,16 @@ describe('LemmasTableComponent', () => {
     expect(emitted.map((e) => e.surahView ?? null)).toEqual(
       expected.map((e) => e.surahView ?? null),
     );
+  });
+
+  it('disables zero-count chips', () => {
+    const fixture = setup([row(1, { ayahsCount: 0, simpleWordsCount: 0, stemsCount: 0 })]);
+    const buttons = Array.from(
+      fixture.nativeElement.querySelectorAll('qd-word-count-chip button'),
+    ) as HTMLButtonElement[];
+
+    expect(buttons[1]?.hasAttribute('disabled')).toBe(true);
+    expect(buttons[3]?.hasAttribute('disabled')).toBe(true);
+    expect(buttons[5]?.hasAttribute('disabled')).toBe(true);
   });
 });

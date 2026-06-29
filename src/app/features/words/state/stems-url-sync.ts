@@ -58,6 +58,7 @@ export function parseStemsQueryParams(queryParams: ParamMap): ParsedStemsQuery {
     page,
     stemId,
     view,
+    column: queryParams.get(STEMS_QUERY_KEYS.column),
     wordView,
     surahView,
     detailPage,
@@ -71,6 +72,7 @@ export type StemsQueryChange = Partial<{
   page: number | null;
   stemId: number | null;
   view: StemView | null;
+  column: string | null;
   wordView: StemWordView | null;
   surahView: StemSurahView | null;
   detailPage: number | null;
@@ -94,6 +96,9 @@ export function buildStemsQueryParams(changes: StemsQueryChange): Record<string,
   }
   if (changes.view !== undefined) {
     params[STEMS_QUERY_KEYS.view] = changes.view ?? null;
+  }
+  if (changes.column !== undefined) {
+    params[STEMS_QUERY_KEYS.column] = changes.column ?? null;
   }
   if (changes.wordView !== undefined) {
     params[STEMS_QUERY_KEYS.wordView] = changes.wordView ?? null;

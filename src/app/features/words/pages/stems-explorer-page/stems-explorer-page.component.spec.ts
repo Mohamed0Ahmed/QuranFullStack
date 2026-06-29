@@ -846,6 +846,7 @@ describe('StemsExplorerPageComponent US8 — restore and navigate exact state', 
     };
     expect(lastArgs.queryParams[STEMS_QUERY_KEYS.stem]).toBeNull();
     expect(lastArgs.queryParams[STEMS_QUERY_KEYS.view]).toBeNull();
+    expect(lastArgs.queryParams[STEMS_QUERY_KEYS.column]).toBeNull();
     expect(lastArgs.queryParams[STEMS_QUERY_KEYS.wordView]).toBeNull();
     expect(lastArgs.queryParams[STEMS_QUERY_KEYS.detailPage]).toBeNull();
     expect(lastArgs.queryParams[STEMS_QUERY_KEYS.typeCode]).toBeNull();

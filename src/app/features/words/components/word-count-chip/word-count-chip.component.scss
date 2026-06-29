@@ -21,6 +21,13 @@
     box-shadow: 0 0 0 1px color-mix(in oklch, var(--qd-accent) 24%, transparent);
   }
 
+  &.qd-is-selected:not(:disabled) {
+    background: var(--qd-accent-tint);
+    border-color: color-mix(in oklch, var(--qd-accent) 36%, var(--qd-border));
+    color: var(--qd-accent-text);
+    box-shadow: 0 0 0 1px color-mix(in oklch, var(--qd-accent) 18%, transparent);
+  }
+
   &:focus-visible {
     outline: 2px solid var(--qd-focus-ring);
     outline-offset: 2px;

@@ -1,84 +1,36 @@
 import { NgTemplateOutlet } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  OnDestroy,
-  OnInit,
-  effect,
-  computed,
-  inject,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subscription, Subject, debounceTime } from 'rxjs';
+import { Subject, Subscription, debounceTime } from 'rxjs';
 
+import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
+import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
 import { AyahMatchesListComponent } from '../../components/ayah-matches-list/ayah-matches-list.component';
 import { LemmaAyahTypeFiltersComponent } from '../../components/lemma-ayah-type-filters/lemma-ayah-type-filters.component';
 import { LemmaDetailsPanelComponent } from '../../components/lemma-details-panel/lemma-details-panel.component';
 import { LemmaStemsListComponent } from '../../components/lemma-stems-list/lemma-stems-list.component';
 import { LemmaWordsListComponent } from '../../components/lemma-words-list/lemma-words-list.component';
+import { LemmaCountOpenedEvent, LemmasTableComponent } from '../../components/lemmas-table/lemmas-table.component';
 import { MissingSurahsListComponent } from '../../components/missing-surahs-list/missing-surahs-list.component';
 import { SurahOccurrencesListComponent } from '../../components/surah-occurrences-list/surah-occurrences-list.component';
-import {
-  LemmaCountOpenedEvent,
-  LemmasTableComponent,
-} from '../../components/lemmas-table/lemmas-table.component';
-import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
-import {
-  LEMMAS_EMPTY_SELECTION_LABEL,
-  LEMMAS_EMPTY_VIEW_LABEL,
-  LEMMAS_LOADING_LABEL,
-  LEMMAS_NO_RESULTS_LABEL,
-  LEMMAS_NOT_FOUND_LABEL,
-  LEMMAS_PAGE_TITLE,
-  LEMMAS_LIST_PAGINATION_LABEL,
-  LEMMAS_PANEL_SURFACE_LABEL,
-  LEMMAS_SEARCH_LABEL,
-  LEMMAS_SEARCH_PLACEHOLDER,
-  LEMMAS_SORT_LABELS,
-  LEMMAS_SURAHS_TABLIST_LABEL,
-  LEMMAS_SURAHS_VIEW_LABELS,
-  LEMMAS_TABLE_LABEL,
-  LEMMAS_WORDS_TABLIST_LABEL,
-  LEMMAS_WORD_VIEW_LABELS,
-} from '../../models/lemmas.labels';
-import {
-  DEFAULT_LEMMA_VIEW,
-  LEMMA_DETAIL_PAGE_SIZE,
-  LemmaListItemViewModel,
-  LemmaWordItemDto,
-  LemmaSort,
-  LemmaSurahView,
-  LemmaView,
-  LemmaWordView,
-  PagedResultDto,
-  LEMMAS_QUERY_KEYS,
-} from '../../models/lemmas.models';
+import { LEMMAS_EMPTY_SELECTION_LABEL, LEMMAS_EMPTY_VIEW_LABEL, LEMMAS_LIST_PAGINATION_LABEL, LEMMAS_LOADING_LABEL, LEMMAS_NO_RESULTS_LABEL, LEMMAS_NOT_FOUND_LABEL, LEMMAS_PAGE_TITLE, LEMMAS_PANEL_SURFACE_LABEL, LEMMAS_SEARCH_LABEL, LEMMAS_SEARCH_PLACEHOLDER, LEMMAS_SORT_LABELS, LEMMAS_SURAHS_TABLIST_LABEL, LEMMAS_SURAHS_VIEW_LABELS, LEMMAS_TABLE_LABEL, LEMMAS_WORDS_TABLIST_LABEL, LEMMAS_WORD_VIEW_LABELS } from '../../models/lemmas.labels';
+import { DEFAULT_LEMMA_VIEW, LEMMA_DETAIL_PAGE_SIZE, LemmaListItemViewModel, LemmaSort, LemmaSurahView, LemmaView, LemmaWordItemDto, LemmaWordView, PagedResultDto } from '../../models/lemmas.models';
 import { AyahMatchDto, PagedResultDto as SharedPagedResultDto } from '../../models/unique-words.models';
 import { LemmasDetailFacade } from '../../state/lemmas-detail.facade';
 import { LemmasExplorerFacade } from '../../state/lemmas-explorer.facade';
-import {
-  buildClearSelectionQueryParams,
-  buildLemmasQueryParams,
-} from '../../state/lemmas-url-sync';
-import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
+import { buildClearSelectionQueryParams, buildLemmasQueryParams, parseLemmasQueryParams } from '../../state/lemmas-url-sync';
+import { MorphologyColumnKey, parseMorphologyColumnKey, resolveMorphologyActiveColumn } from '../../utils/explorer-count-active';
+import { ExplorerTableFocusController } from '../../utils/explorer-table-focus-controller';
 import { mapLemmaAyahMatchToShared } from '../../utils/lemma-ayah-match.mapper';
+
+type LemmaTableColumnKey = Exclude<MorphologyColumnKey, 'lemmas'>;
+type LemmaPanelState = ReturnType<LemmasDetailFacade['panelState']>;
+type LemmaCountTarget = LemmaCountOpenedEvent & { column: LemmaTableColumnKey };
 
 @Component({
   selector: 'qd-lemmas-explorer-page',
   standalone: true,
-  imports: [
-    NgTemplateOutlet,
-    AyahMatchesListComponent,
-    LemmaAyahTypeFiltersComponent,
-    LemmaDetailsPanelComponent,
-    LemmaStemsListComponent,
-    LemmaWordsListComponent,
-    LemmasTableComponent,
-    MissingSurahsListComponent,
-    PaginationComponent,
-    SurahOccurrencesListComponent,
-  ],
+  imports: [NgTemplateOutlet, AyahMatchesListComponent, LemmaAyahTypeFiltersComponent, LemmaDetailsPanelComponent, LemmaStemsListComponent, LemmaWordsListComponent, LemmasTableComponent, MissingSurahsListComponent, PaginationComponent, SurahOccurrencesListComponent],
   templateUrl: './lemmas-explorer-page.component.html',
   styleUrl: './lemmas-explorer-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -88,6 +40,24 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
   private readonly detailFacade = inject(LemmasDetailFacade);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly restoredColumn = signal<LemmaTableColumnKey | null>(null);
+  private readonly searchInput = new Subject<string>();
+  private searchSub?: Subscription;
+  private searchSyncSub?: Subscription;
+  private desktopQuery?: MediaQueryList;
+  private readonly onDesktopChange = (event: MediaQueryListEvent): void => this.isDesktop.set(event.matches);
+  protected readonly listState = this.listFacade.listState;
+  protected readonly panelState = this.detailFacade.panelState;
+  private readonly tableFocus = new ExplorerTableFocusController<LemmaPanelState, LemmaCountTarget, LemmaTableColumnKey, LemmaView, LemmaWordView, LemmaSurahView>({
+    panelState: this.detailFacade.panelState,
+    getSelectedRowId: (state) => state.selectedLemmaId,
+    getView: (state) => state.view,
+    getWordView: (state) => state.wordView,
+    getSurahView: (state) => state.surahView,
+    getFallbackColumn: (state) => resolveMorphologyActiveColumn({ view: state.view, wordView: state.wordView, surahView: state.surahView, activeColumn: this.restoredColumn() }) as LemmaTableColumnKey | null,
+    eventToFocus: (event) => ({ rowId: event.lemma.id, column: event.column, view: event.view, wordView: event.wordView, surahView: event.surahView }),
+    commitDeferred: (event) => this.commitCountOpened(event),
+  });
 
   protected readonly pageTitle = LEMMAS_PAGE_TITLE;
   protected readonly emptySelectionLabel = LEMMAS_EMPTY_SELECTION_LABEL;
@@ -102,100 +72,48 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly panelSurfaceLabel = LEMMAS_PANEL_SURFACE_LABEL;
   protected readonly wordsTablistLabel = LEMMAS_WORDS_TABLIST_LABEL;
   protected readonly surahsTablistLabel = LEMMAS_SURAHS_TABLIST_LABEL;
-
-  protected get sortLabels() {
-    return LEMMAS_SORT_LABELS;
-  }
-
-  protected readonly listState = this.listFacade.listState;
-  protected readonly panelState = this.detailFacade.panelState;
-
   protected readonly sortOptions: readonly LemmaSort[] = ['mushaf-order', 'occurrences', 'alpha'];
   protected readonly wordViewOptions: readonly LemmaWordView[] = ['simple', 'tashkeel'];
   protected readonly surahViewOptions: readonly LemmaSurahView[] = ['mentioned', 'missing'];
-
-  protected get wordViewLabels() {
-    return LEMMAS_WORD_VIEW_LABELS;
-  }
-
-  protected get surahViewLabels() {
-    return LEMMAS_SURAHS_VIEW_LABELS;
-  }
-
-  protected readonly emptyAyahsPage: SharedPagedResultDto<AyahMatchDto> = {
-    page: 1,
-    pageSize: LEMMA_DETAIL_PAGE_SIZE,
-    totalCount: 0,
-    items: [],
-  };
-
-  protected readonly emptyWordsPage: PagedResultDto<LemmaWordItemDto> = {
-    page: 1,
-    pageSize: LEMMA_DETAIL_PAGE_SIZE,
-    totalCount: 0,
-    items: [],
-  };
-
+  protected readonly emptyAyahsPage: SharedPagedResultDto<AyahMatchDto> = { page: 1, pageSize: LEMMA_DETAIL_PAGE_SIZE, totalCount: 0, items: [] };
+  protected readonly emptyWordsPage: PagedResultDto<LemmaWordItemDto> = { page: 1, pageSize: LEMMA_DETAIL_PAGE_SIZE, totalCount: 0, items: [] };
   protected readonly searchDraft = signal('');
   protected readonly isDesktop = signal(true);
-
-  private readonly searchInput = new Subject<string>();
-  private searchSub?: Subscription;
-  private searchSyncSub?: Subscription;
-  private desktopQuery?: MediaQueryList;
-  private readonly onDesktopChange = (event: MediaQueryListEvent): void =>
-    this.isDesktop.set(event.matches);
-
-  protected readonly activeView = computed(() => this.panelState().view);
-  protected readonly emptySelection = computed(
-    () => this.panelState().selectedLemmaId === null,
-  );
+  protected readonly selectedLemmaId = this.tableFocus.selectedRowId;
+  protected readonly activeView = computed(() => this.tableFocus.activeView() ?? DEFAULT_LEMMA_VIEW);
+  protected readonly activeWordView = computed(() => this.tableFocus.activeWordView() ?? this.panelState().wordView);
+  protected readonly activeSurahView = computed(() => this.tableFocus.activeSurahView() ?? this.panelState().surahView);
+  protected readonly activeColumn = this.tableFocus.activeColumn;
+  protected readonly emptySelection = computed(() => this.panelState().selectedLemmaId === null);
   protected readonly defaultView: LemmaView = DEFAULT_LEMMA_VIEW;
+  protected readonly ayahsPageForView = computed(() => {
+    const page = this.panelState().ayahs;
+    return page ? { ...page, items: page.items.map(mapLemmaAyahMatchToShared) } : this.emptyAyahsPage;
+  });
+
+  protected get sortLabels() { return LEMMAS_SORT_LABELS; }
+  protected get wordViewLabels() { return LEMMAS_WORD_VIEW_LABELS; }
+  protected get surahViewLabels() { return LEMMAS_SURAHS_VIEW_LABELS; }
 
   constructor() {
     effect(() => {
       const state = this.panelState();
-      const typeCode = state.ayahTypeCode;
-      const summary = state.summary;
-
-      if (state.selectedLemmaId === null || state.view !== 'ayahs' || typeCode === null || summary === null) {
-        return;
-      }
-
-      if (summary.typeDistribution.some((item) => item.code === typeCode)) {
-        return;
-      }
-
+      if (state.selectedLemmaId === null || state.view !== 'ayahs' || state.ayahTypeCode === null || state.summary === null) return;
+      if (state.summary.typeDistribution.some((item) => item.code === state.ayahTypeCode)) return;
       this.detailFacade.setAyahTypeCode(null);
       this.updateQueryParams(buildLemmasQueryParams({ typeCode: null, detailPage: 1 }));
     });
   }
 
-  protected readonly ayahsPageForView = computed((): SharedPagedResultDto<AyahMatchDto> => {
-    const page = this.panelState().ayahs;
-
-    if (!page) {
-      return this.emptyAyahsPage;
-    }
-
-    return {
-      ...page,
-      items: page.items.map(mapLemmaAyahMatchToShared),
-    };
-  });
-
   ngOnInit(): void {
     this.listFacade.bindToRoute(this.route);
     this.detailFacade.bindToRoute(this.route);
-
     this.searchSyncSub = this.route.queryParamMap.subscribe((params) => {
-      this.searchDraft.set(params.get(LEMMAS_QUERY_KEYS.search) ?? '');
+      const parsed = parseLemmasQueryParams(params);
+      this.searchDraft.set(parsed.search);
+      this.restoredColumn.set(parseMorphologyColumnKey(parsed.column) as LemmaTableColumnKey | null);
     });
-
-    this.searchSub = this.searchInput
-      .pipe(debounceTime(300))
-      .subscribe((value) => this.updateQueryParams({ search: value || null, page: null }));
-
+    this.searchSub = this.searchInput.pipe(debounceTime(300)).subscribe((value) => this.updateQueryParams({ search: value || null, page: null }));
     if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
       this.desktopQuery = window.matchMedia(QD_BP_DESKTOP_MIN_QUERY);
       this.isDesktop.set(this.desktopQuery.matches);
@@ -209,126 +127,83 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
     this.searchSub?.unsubscribe();
     this.searchSyncSub?.unsubscribe();
     this.desktopQuery?.removeEventListener('change', this.onDesktopChange);
+    this.tableFocus.destroy();
   }
 
-  protected onSearchInput(value: string): void {
-    this.searchDraft.set(value);
-    this.searchInput.next(value);
-  }
-
-  protected onSortChange(sort: LemmaSort): void {
-    this.updateQueryParams({ sort, page: null });
-  }
-
-  protected onPageChange(page: number): void {
-    if (page === this.listState().page) {
-      return;
-    }
-    this.updateQueryParams(buildLemmasQueryParams({ page }));
-  }
-
-  protected onDetailPageChange(page: number): void {
-    if (page === this.panelState().detailPage) {
-      return;
-    }
-
-    this.detailFacade.setDetailPage(page);
-    this.updateQueryParams(buildLemmasQueryParams({ detailPage: page }));
-  }
+  protected onSearchInput(value: string): void { this.clearTableFocus(); this.searchDraft.set(value); this.searchInput.next(value); }
+  protected onSortChange(sort: LemmaSort): void { this.clearTableFocus(); this.updateQueryParams({ sort, page: null }); }
+  protected onPageChange(page: number): void { if (page !== this.listState().page) { this.clearTableFocus(); this.updateQueryParams(buildLemmasQueryParams({ page })); } }
+  protected onDetailPageChange(page: number): void { if (page !== this.panelState().detailPage) { this.tableFocus.cancel(); this.detailFacade.setDetailPage(page); this.updateQueryParams(buildLemmasQueryParams({ detailPage: page })); } }
 
   protected onRowSelected(lemma: LemmaListItemViewModel): void {
-    this.updateQueryParams(
-      buildLemmasQueryParams({
-        lemmaId: lemma.id,
-        view: DEFAULT_LEMMA_VIEW,
-        wordView: 'simple',
-        surahView: null,
-        detailPage: 1,
-        typeCode: null,
-      }),
-    );
+    this.tableFocus.setFocus({ rowId: lemma.id, column: 'simple', view: DEFAULT_LEMMA_VIEW, wordView: 'simple' });
+    this.updateQueryParams(buildLemmasQueryParams({ lemmaId: lemma.id, view: DEFAULT_LEMMA_VIEW, column: 'simple', wordView: 'simple', surahView: null, detailPage: 1, typeCode: null }));
   }
 
   protected onCountOpened(event: LemmaCountOpenedEvent): void {
-    const { lemma, view } = event;
-    const wordView = view === 'words' ? (event.wordView ?? 'simple') : undefined;
-    const surahView = view === 'surahs' ? (event.surahView ?? 'mentioned') : undefined;
-
-    this.updateQueryParams(
-      buildLemmasQueryParams({
-        lemmaId: lemma.id,
-        view,
-        detailPage: this.detailPageForView(view),
-        wordView: wordView ?? null,
-        surahView: surahView ?? null,
-        typeCode: null,
-      }),
-    );
+    const target: LemmaCountTarget = { ...event, column: event.column ?? this.defaultColumnForEvent(event.view, event.wordView) };
+    this.tableFocus.handleEvent(target, target.source ?? 'immediate');
   }
 
   protected onPanelViewChange(view: LemmaView): void {
+    this.syncTableFocusToPanelView(view);
     this.detailFacade.setView(view);
-    this.updateQueryParams(
-      buildLemmasQueryParams({
-        view,
-        detailPage: this.detailPageForView(view),
-        wordView: view === 'words' ? 'simple' : null,
-        surahView: view === 'surahs' ? 'mentioned' : null,
-        typeCode: null,
-      }),
-    );
+    this.updateQueryParams(buildLemmasQueryParams({ view, column: this.defaultColumnForView(view, 'simple'), detailPage: this.detailPageForView(view), wordView: view === 'words' ? 'simple' : null, surahView: view === 'surahs' ? 'mentioned' : null, typeCode: null }));
   }
 
   protected onAyahTypeChange(typeCode: string | null): void {
     const current = this.panelState();
-    if (current.selectedLemmaId === null || current.view !== 'ayahs') {
-      return;
-    }
-
-    if (current.ayahTypeCode === typeCode && current.detailPage === 1) {
-      return;
-    }
-
+    if (current.selectedLemmaId === null || current.view !== 'ayahs') return;
+    if (current.ayahTypeCode === typeCode && current.detailPage === 1) return;
+    this.tableFocus.cancel();
     this.detailFacade.setAyahTypeCode(typeCode);
-    this.updateQueryParams(
-      buildLemmasQueryParams({
-        view: 'ayahs',
-        detailPage: 1,
-        typeCode,
-      }),
-    );
+    this.updateQueryParams(buildLemmasQueryParams({ view: 'ayahs', column: this.activeColumn() ?? 'occurrences', detailPage: 1, typeCode }));
   }
 
   protected onWordViewChange(wordView: LemmaWordView): void {
+    this.syncTableFocusToPanelView('words', wordView);
     this.detailFacade.setWordView(wordView);
-    this.updateQueryParams(buildLemmasQueryParams({ view: 'words', wordView, detailPage: 1 }));
+    this.updateQueryParams(buildLemmasQueryParams({ view: 'words', column: wordView === 'tashkeel' ? 'tashkeel' : 'simple', wordView, detailPage: 1, typeCode: null }));
   }
 
   protected onSurahViewChange(surahView: LemmaSurahView): void {
+    this.syncTableFocusToPanelView('surahs', undefined, surahView);
     this.detailFacade.setSurahView(surahView);
-    this.updateQueryParams(
-      buildLemmasQueryParams({
-        view: 'surahs',
-        surahView,
-        detailPage: null,
-      }),
-    );
+    this.updateQueryParams(buildLemmasQueryParams({ view: 'surahs', column: 'surahs', surahView, detailPage: null, typeCode: null }));
   }
 
-  protected onClearSelection(): void {
-    this.detailFacade.clearSelection();
-    this.updateQueryParams(buildClearSelectionQueryParams());
-  }
+  protected onClearSelection(): void { this.clearTableFocus(); this.detailFacade.clearSelection(); this.updateQueryParams(buildClearSelectionQueryParams()); }
 
   private updateQueryParams(changes: Record<string, string | null>): void {
-    void this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: changes,
-      queryParamsHandling: 'merge',
-    });
+    void this.router.navigate([], { relativeTo: this.route, queryParams: changes, queryParamsHandling: 'merge' });
   }
 
-  private detailPageForView(view: LemmaView): number | null {
-    return view === 'words' || view === 'ayahs' ? 1 : null;
+  private commitCountOpened(event: LemmaCountTarget): void {
+    const { lemma, view, column } = event;
+    const wordView = view === 'words' ? (event.wordView ?? 'simple') : null;
+    const surahView = view === 'surahs' ? (event.surahView ?? 'mentioned') : null;
+    this.updateQueryParams(buildLemmasQueryParams({ lemmaId: lemma.id, view, column, detailPage: this.detailPageForView(view), wordView, surahView, typeCode: null }));
+  }
+
+  private detailPageForView(view: LemmaView): number | null { return view === 'words' || view === 'ayahs' ? 1 : null; }
+  private clearTableFocus(): void { this.tableFocus.clear(); }
+
+  private syncTableFocusToPanelView(view: LemmaView, wordView: LemmaWordView = this.panelState().wordView, surahView: LemmaSurahView = this.panelState().surahView): void {
+    const selectedLemmaId = this.panelState().selectedLemmaId;
+    this.tableFocus.setFocus(selectedLemmaId === null ? null : { rowId: selectedLemmaId, column: this.defaultColumnForView(view, wordView), view, wordView: view === 'words' ? wordView : undefined, surahView: view === 'surahs' ? surahView : undefined });
+  }
+
+  private defaultColumnForView(view: LemmaView, wordView: LemmaWordView = this.panelState().wordView): LemmaTableColumnKey {
+    switch (view) {
+      case 'words': return wordView === 'tashkeel' ? 'tashkeel' : 'simple';
+      case 'surahs': return 'surahs';
+      case 'stems': return 'stems';
+      case 'ayahs':
+      default: return 'occurrences';
+    }
+  }
+
+  private defaultColumnForEvent(view: LemmaView, wordView: LemmaWordView | undefined): LemmaTableColumnKey {
+    return this.defaultColumnForView(view, wordView ?? 'simple');
   }
 }

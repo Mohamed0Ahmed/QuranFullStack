@@ -18,6 +18,13 @@
   font-weight: 500;
   text-align: center;
   min-inline-size: 0;
+
+  &.qd-is-selected:not(:disabled) {
+    background: var(--qd-accent-tint);
+    border-color: color-mix(in oklch, var(--qd-accent) 36%, var(--qd-border));
+    color: var(--qd-accent-text);
+    box-shadow: 0 0 0 1px color-mix(in oklch, var(--qd-accent) 18%, transparent);
+  }
 }
 
 .qd-explorer-mobile-stat--occurrences {
@@ -62,6 +69,13 @@
     background: var(--qd-accent-soft);
     border-color: color-mix(in oklch, var(--qd-accent) 40%, var(--qd-border));
     color: var(--qd-primary);
+    box-shadow: 0 0 0 1px color-mix(in oklch, var(--qd-accent) 18%, transparent);
+  }
+
+  &.qd-is-selected:not(:disabled):hover {
+    background: var(--qd-accent-tint);
+    border-color: color-mix(in oklch, var(--qd-accent) 36%, var(--qd-border));
+    color: var(--qd-accent-text);
     box-shadow: 0 0 0 1px color-mix(in oklch, var(--qd-accent) 18%, transparent);
   }
 

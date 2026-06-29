@@ -824,6 +824,7 @@ describe('LemmasExplorerPageComponent US8 — restore and navigate exact state',
     };
     expect(lastArgs.queryParams[LEMMAS_QUERY_KEYS.lemma]).toBeNull();
     expect(lastArgs.queryParams[LEMMAS_QUERY_KEYS.view]).toBeNull();
+    expect(lastArgs.queryParams[LEMMAS_QUERY_KEYS.column]).toBeNull();
     expect(lastArgs.queryParams[LEMMAS_QUERY_KEYS.wordView]).toBeNull();
     expect(lastArgs.queryParams[LEMMAS_QUERY_KEYS.detailPage]).toBeNull();
     expect(lastArgs.queryParams[LEMMAS_QUERY_KEYS.search]).toBeUndefined();

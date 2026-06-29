@@ -56,11 +56,13 @@
             <qd-unique-words-table
               [rows]="listState().items"
               [loading]="listState().status === 'loading'"
-              [selectedWordId]="drilldownState().selectedWordId"
+              [selectedWordId]="selectedWordId()"
               [currentPage]="listState().page"
               [pageSize]="listState().pageSize"
+              [drilldownIsOpen]="drilldownIsOpen()"
+              [activeColumn]="activeColumn()"
               (rowSelected)="onRowSelected($event)"
-              (drilldownOpen)="onDrilldownOpen($event.word, $event.view)"
+              (drilldownOpen)="onDrilldownOpen($event)"
             />
             <qd-pagination
               [currentPage]="listState().page"

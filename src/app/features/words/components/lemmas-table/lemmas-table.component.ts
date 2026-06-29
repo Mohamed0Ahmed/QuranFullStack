@@ -1,36 +1,12 @@
 import { NgTemplateOutlet } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  DestroyRef,
-  ElementRef,
-  afterNextRender,
-  inject,
-  input,
-  output,
-  signal,
-  viewChild,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, inject, input, output, signal, viewChild } from '@angular/core';
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
 
 import { WordCountChipComponent } from '../word-count-chip/word-count-chip.component';
-import {
-  LEMMAS_COLUMN_COUNT_LABELS,
-  LEMMAS_COLUMN_HEADERS,
-  LEMMAS_LOADING_LABEL,
-  LEMMAS_ROOT_MISSING_ARIA,
-  LEMMAS_ROOT_MISSING_LABEL,
-  LEMMAS_ROOT_LINK_PREFIX,
-  LEMMAS_TABLE_BODY_LABEL,
-  LEMMAS_TABLE_LABEL,
-} from '../../models/lemmas.labels';
-import {
-  LEMMAS_LIST_PAGE_SIZE,
-  LemmaListItemViewModel,
-  LemmaSurahView,
-  LemmaView,
-  LemmaWordView,
-} from '../../models/lemmas.models';
+import { LEMMAS_COLUMN_COUNT_LABELS, LEMMAS_COLUMN_HEADERS, LEMMAS_LOADING_LABEL, LEMMAS_ROOT_MISSING_ARIA, LEMMAS_ROOT_MISSING_LABEL, LEMMAS_ROOT_LINK_PREFIX, LEMMAS_TABLE_BODY_LABEL, LEMMAS_TABLE_LABEL } from '../../models/lemmas.labels';
+import { LEMMAS_LIST_PAGE_SIZE, LemmaListItemViewModel, LemmaSurahView, LemmaView, LemmaWordView } from '../../models/lemmas.models';
+import { isMorphologyCountActive, MorphologyColumnKey, resolveMorphologyActiveColumn } from '../../utils/explorer-count-active';
+import { ExplorerInteractionSource, handleExplorerTableKeydown } from '../../utils/explorer-table-keydown';
 import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
 import { syncTableScrollbarGutter } from '../../utils/table-scrollbar-gutter-sync';
 import { deepLinkToHref } from '../../../../shared/url/deep-link-href';
@@ -41,12 +17,24 @@ import { QD_BP_TABLET_MAX_QUERY } from '../../../../shared/layout/breakpoints';
 const ROW_HEIGHT_DESKTOP = 48;
 const ROW_HEIGHT_MOBILE = 88;
 const HAS_RESIZE_OBSERVER = typeof ResizeObserver !== 'undefined';
+type LemmaTableColumnKey = Exclude<MorphologyColumnKey, 'lemmas'>;
+
+const LEMMA_TABLE_COLUMN_ORDER = [
+  'stems',
+  'tashkeel',
+  'simple',
+  'surahs',
+  'ayahs',
+  'occurrences',
+] as const satisfies readonly LemmaTableColumnKey[];
 
 export interface LemmaCountOpenedEvent {
   lemma: LemmaListItemViewModel;
+  column?: LemmaTableColumnKey;
   view: LemmaView;
   wordView?: LemmaWordView;
   surahView?: LemmaSurahView;
+  source?: ExplorerInteractionSource;
 }
 
 /**
@@ -77,16 +65,16 @@ export class LemmasTableComponent {
   readonly selectedLemmaId = input<number | null>(null);
   readonly currentPage = input(1);
   readonly pageSize = input(LEMMAS_LIST_PAGE_SIZE);
+  readonly activeView = input<LemmaView | null>(null);
+  readonly activeWordView = input<LemmaWordView | null>(null);
+  readonly activeSurahView = input<LemmaSurahView | null>(null);
+  readonly activeColumn = input<LemmaTableColumnKey | null>(null);
 
   readonly rowSelected = output<LemmaListItemViewModel>();
   readonly countOpened = output<LemmaCountOpenedEvent>();
 
-  protected get headers() {
-    return LEMMAS_COLUMN_HEADERS;
-  }
-  protected get countLabels() {
-    return LEMMAS_COLUMN_COUNT_LABELS;
-  }
+  protected get headers() { return LEMMAS_COLUMN_HEADERS; }
+  protected get countLabels() { return LEMMAS_COLUMN_COUNT_LABELS; }
   protected readonly loadingLabel = LEMMAS_LOADING_LABEL;
   protected readonly tableLabel = LEMMAS_TABLE_LABEL;
   protected readonly tableBodyLabel = LEMMAS_TABLE_BODY_LABEL;
@@ -129,10 +117,12 @@ export class LemmasTableComponent {
 
   protected openCount(
     lemma: LemmaListItemViewModel,
+    column: LemmaTableColumnKey,
     view: LemmaView,
     options: { wordView?: LemmaWordView; surahView?: LemmaSurahView } = {},
+    source: ExplorerInteractionSource = 'immediate',
   ): void {
-    this.countOpened.emit({ lemma, view, ...options });
+    this.countOpened.emit({ lemma, column, view, source, ...options });
   }
 
   protected isSelected(lemma: LemmaListItemViewModel): boolean {
@@ -147,6 +137,25 @@ export class LemmasTableComponent {
     return lemma.id;
   }
 
+  protected isCountActive(
+    lemma: LemmaListItemViewModel,
+    column: LemmaTableColumnKey,
+    count: number,
+  ): boolean {
+    return isMorphologyCountActive({
+      rowId: lemma.id,
+      selectedRowId: this.selectedLemmaId(),
+      column,
+      activeColumn: resolveMorphologyActiveColumn({
+        view: this.activeView(),
+        wordView: this.activeWordView(),
+        surahView: this.activeSurahView(),
+        activeColumn: this.activeColumn(),
+      }),
+      disabled: count === 0,
+    });
+  }
+
   /**
    * Owned-root deep link into the Roots Explorer. Only rendered when the lemma
    * has a non-null owned `rootId`; uses numeric identity, never text lookup.
@@ -155,6 +164,22 @@ export class LemmasTableComponent {
     return deepLinkToHref(
       buildRootsDeepLink({ rootId, view: 'words', wordView: 'simple' }),
     );
+  }
+
+  protected onTableKeydown(event: KeyboardEvent): void {
+    if (this.loading()) {
+      return;
+    }
+    handleExplorerTableKeydown({
+      event,
+      rows: this.rows(),
+      selectedRowId: this.selectedLemmaId(),
+      currentColumn: this.currentColumn(),
+      columnOrder: LEMMA_TABLE_COLUMN_ORDER,
+      isColumnEnabled: (row, column) => this.isColumnEnabled(row, column),
+      emitColumnTarget: (row, column, source) => this.emitColumnTarget(row, column, source),
+      scrollToRow: (index) => this.scrollToRow(index),
+    });
   }
 
   scrollToTop(): void {
@@ -167,6 +192,73 @@ export class LemmasTableComponent {
     const body = this.host.nativeElement.querySelector('.lemmas-table__body') as HTMLElement | null;
     if (body) {
       body.scrollTop = 0;
+    }
+  }
+
+  private emitColumnTarget(
+    lemma: LemmaListItemViewModel,
+    column: LemmaTableColumnKey,
+    source: ExplorerInteractionSource,
+  ): void {
+    switch (column) {
+      case 'occurrences':
+      case 'ayahs':
+        this.openCount(lemma, column, 'ayahs', {}, source);
+        return;
+      case 'surahs':
+        this.openCount(lemma, column, 'surahs', { surahView: 'mentioned' }, source);
+        return;
+      case 'simple':
+        this.openCount(lemma, column, 'words', { wordView: 'simple' }, source);
+        return;
+      case 'tashkeel':
+        this.openCount(lemma, column, 'words', { wordView: 'tashkeel' }, source);
+        return;
+      case 'stems':
+        this.openCount(lemma, column, 'stems', {}, source);
+        return;
+    }
+  }
+
+  private isColumnEnabled(lemma: LemmaListItemViewModel, column: LemmaTableColumnKey): boolean {
+    switch (column) {
+      case 'occurrences':
+        return lemma.occurrencesCount > 0;
+      case 'ayahs':
+        return lemma.ayahsCount > 0;
+      case 'surahs':
+        return lemma.surahsCount > 0;
+      case 'simple':
+        return lemma.simpleWordsCount > 0;
+      case 'tashkeel':
+        return lemma.tashkeelWordsCount > 0;
+      case 'stems':
+        return lemma.stemsCount > 0;
+    }
+  }
+
+  private currentColumn(): LemmaTableColumnKey | null {
+    const column = resolveMorphologyActiveColumn({
+      view: this.activeView(),
+      wordView: this.activeWordView(),
+      surahView: this.activeSurahView(),
+      activeColumn: this.activeColumn(),
+    });
+
+    return column === 'lemmas' ? null : column;
+  }
+
+  private scrollToRow(index: number): void {
+    const viewport = this.viewport();
+    if (this.useVirtualScroll && viewport) {
+      viewport.scrollToIndex(index, 'auto');
+      return;
+    }
+
+    const body = this.host.nativeElement.querySelector('.lemmas-table__body') as HTMLElement | null;
+    const row = body?.querySelectorAll<HTMLElement>('.lemmas-table__row')[index];
+    if (row && typeof row.scrollIntoView === 'function') {
+      row.scrollIntoView({ block: 'nearest' });
     }
   }
 }

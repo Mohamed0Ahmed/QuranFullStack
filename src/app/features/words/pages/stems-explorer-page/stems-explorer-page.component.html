@@ -64,9 +64,13 @@
           <qd-stems-table
             [rows]="listState().items"
             [loading]="listState().status === 'loading'"
-            [selectedStemId]="panelState().selectedStemId"
+            [selectedStemId]="selectedStemId()"
             [currentPage]="listState().page"
             [pageSize]="listState().pageSize"
+            [activeView]="activeView()"
+            [activeWordView]="activeWordView()"
+            [activeSurahView]="activeSurahView()"
+            [activeColumn]="activeColumn()"
             (rowSelected)="onRowSelected($event)"
             (countOpened)="onCountOpened($event)"
           />

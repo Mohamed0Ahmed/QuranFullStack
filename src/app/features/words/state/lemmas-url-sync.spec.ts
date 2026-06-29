@@ -22,6 +22,7 @@ describe('parseLemmasQueryParams', () => {
     expect(parsed.page).toBe(1);
     expect(parsed.lemmaId).toBeNull();
     expect(parsed.view).toBe('words');
+    expect(parsed.column).toBeNull();
     expect(parsed.wordView).toBe('simple');
     expect(parsed.surahView).toBe('mentioned');
     expect(parsed.detailPage).toBe(1);
@@ -85,6 +86,11 @@ describe('parseLemmasQueryParams', () => {
       const parsed = parseLemmasQueryParams(params('lemma=500&view=ayahs'));
       expect(parsed.lemmaId).toBe(500);
       expect(parsed.view).toBe('ayahs');
+      expect(parsed.column).toBeNull();
+    });
+
+    it('preserves a valid explicit active column for ayahs restore', () => {
+      expect(parseLemmasQueryParams(params('lemma=500&view=ayahs&column=ayahs')).column).toBe('ayahs');
     });
 
     it('ignores view when no lemma is present (keeps the default view, no panel renders)', () => {
@@ -190,8 +196,9 @@ describe('buildLemmasQueryParams', () => {
         lemmaId: 7,
         detailPage: 4,
         view: 'ayahs',
+        column: 'ayahs',
       }),
-    ).toEqual({ page: '2', lemma: '7', detailPage: '4', view: 'ayahs' });
+    ).toEqual({ page: '2', lemma: '7', detailPage: '4', view: 'ayahs', column: 'ayahs' });
 
     expect(buildLemmasQueryParams({ search: null, page: null })).toEqual({
       search: null,
@@ -209,6 +216,7 @@ describe('buildLemmasQueryParams', () => {
       page: parsed.page,
       lemmaId: parsed.lemmaId,
       view: parsed.view,
+      column: parsed.column,
       wordView: parsed.wordView,
       surahView: parsed.surahView,
       detailPage: parsed.detailPage,
@@ -219,6 +227,7 @@ describe('buildLemmasQueryParams', () => {
     expect(rebuilt['page']).toBe('2');
     expect(rebuilt['lemma']).toBe('9');
     expect(rebuilt['view']).toBe('words');
+    expect(rebuilt['column']).toBeNull();
     expect(rebuilt['wordView']).toBe('tashkeel');
     expect(rebuilt['detailPage']).toBe('3');
   });
@@ -232,13 +241,14 @@ describe('buildClearSelectionQueryParams', () => {
       [
         LEMMAS_QUERY_KEYS.lemma,
         LEMMAS_QUERY_KEYS.view,
+        LEMMAS_QUERY_KEYS.column,
         LEMMAS_QUERY_KEYS.wordView,
         LEMMAS_QUERY_KEYS.surahView,
         LEMMAS_QUERY_KEYS.detailPage,
         LEMMAS_QUERY_KEYS.typeCode,
       ].sort(),
     );
-    expect(Object.values(cleared)).toEqual([null, null, null, null, null, null]);
+    expect(Object.values(cleared)).toEqual([null, null, null, null, null, null, null]);
 
     expect(cleared).not.toHaveProperty(LEMMAS_QUERY_KEYS.search);
     expect(cleared).not.toHaveProperty(LEMMAS_QUERY_KEYS.sort);

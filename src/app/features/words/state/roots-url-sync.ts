@@ -55,6 +55,7 @@ export function parseRootsQueryParams(queryParams: ParamMap): ParsedRootsQuery {
     page,
     rootId,
     view,
+    column: queryParams.get(ROOTS_QUERY_KEYS.column),
     wordView,
     surahView,
     detailPage,
@@ -67,6 +68,7 @@ export type RootsQueryChange = Partial<{
   page: number | null;
   rootId: number | null;
   view: RootView | null;
+  column: string | null;
   wordView: RootWordView | null;
   surahView: RootSurahView | null;
   detailPage: number | null;
@@ -89,6 +91,9 @@ export function buildRootsQueryParams(changes: RootsQueryChange): Record<string,
   }
   if (changes.view !== undefined) {
     params[ROOTS_QUERY_KEYS.view] = changes.view ?? null;
+  }
+  if (changes.column !== undefined) {
+    params[ROOTS_QUERY_KEYS.column] = changes.column ?? null;
   }
   if (changes.wordView !== undefined) {
     params[ROOTS_QUERY_KEYS.wordView] = changes.wordView ?? null;

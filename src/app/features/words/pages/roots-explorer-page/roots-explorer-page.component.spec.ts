@@ -309,6 +309,7 @@ describe('RootsExplorerPageComponent US2', () => {
       queryParams: {
         [ROOTS_QUERY_KEYS.root]: null,
         [ROOTS_QUERY_KEYS.view]: null,
+        [ROOTS_QUERY_KEYS.column]: null,
         [ROOTS_QUERY_KEYS.wordView]: null,
         [ROOTS_QUERY_KEYS.surahView]: null,
         [ROOTS_QUERY_KEYS.detailPage]: null,
@@ -929,5 +930,109 @@ describe('RootsExplorerPageComponent static tabs during loading', () => {
     expect(root.querySelector('[data-testid="surah-occurrences-list-loading"]')).toBeTruthy();
     expect(root.querySelector('.surah-occurrences-list__header')).toBeTruthy();
     expect(root.querySelector('[data-testid="explorer-panel-skeleton"]')).toBeNull();
+  });
+});
+
+describe('RootsExplorerPageComponent keyboard navigation debounce', () => {
+  let router: Router;
+  const queryParamMap$ = new BehaviorSubject(convertToParamMap({}));
+
+  beforeEach(async () => {
+    vi.useFakeTimers();
+    getTestBed().resetTestingModule();
+
+    const rootsApi = {
+      getRootsList: vi.fn().mockImplementation(successListResponse),
+      getRootSummary: vi.fn().mockReturnValue(
+        of<ApiResponse<RootListItemViewModel>>({
+          isSuccess: true,
+          data: listRow(10),
+          message: null,
+          errors: null,
+        }),
+      ),
+      getRootWords: vi.fn().mockReturnValue(
+        of<ApiResponse<{ page: number; pageSize: number; totalCount: number; items: unknown[] }>>({
+          isSuccess: true,
+          data: { page: 1, pageSize: 100, totalCount: 0, items: [] },
+          message: null,
+          errors: null,
+        }),
+      ),
+      getRootAyahMatches: vi.fn().mockReturnValue(
+        of<ApiResponse<{ page: number; pageSize: number; totalCount: number; items: RootAyahMatchDto[] }>>({
+          isSuccess: true,
+          data: { page: 1, pageSize: 100, totalCount: 0, items: [] },
+          message: null,
+          errors: null,
+        }),
+      ),
+      getRootMentionedSurahs: vi.fn(),
+      getRootMissingSurahs: vi.fn(),
+      getRootLemmas: vi.fn(),
+      getRootStems: vi.fn(),
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [RootsExplorerPageComponent],
+      providers: [
+        provideRouter([{ path: 'roots', component: RootsExplorerPageComponent }]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: RootsApi, useValue: rootsApi },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            paramMap: of(convertToParamMap({})),
+            queryParamMap: queryParamMap$.asObservable(),
+          },
+        },
+      ],
+      teardown: { destroyAfterEach: true },
+    }).compileComponents();
+
+    router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    queryParamMap$.next(convertToParamMap({}));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('debounces keyboard table navigation and keeps only the final target', async () => {
+    const fixture = TestBed.createComponent(RootsExplorerPageComponent);
+    fixture.componentInstance.ngOnInit();
+    await fixture.whenStable();
+
+    fixture.componentInstance['onCountOpened']({
+      root: listRow(10),
+      column: 'surahs',
+      view: 'surahs',
+      surahView: 'mentioned',
+      source: 'keyboard',
+    });
+    fixture.componentInstance['onCountOpened']({
+      root: listRow(10),
+      column: 'ayahs',
+      view: 'ayahs',
+      source: 'keyboard',
+    });
+
+    expect(router.navigate).not.toHaveBeenCalled();
+
+    vi.advanceTimersByTime(499);
+    expect(router.navigate).not.toHaveBeenCalled();
+
+    vi.advanceTimersByTime(1);
+    expect(router.navigate).toHaveBeenCalledTimes(1);
+    expect(router.navigate).toHaveBeenCalledWith([], {
+      relativeTo: expect.anything(),
+      queryParams: expect.objectContaining({
+        [ROOTS_QUERY_KEYS.root]: '10',
+        [ROOTS_QUERY_KEYS.view]: 'ayahs',
+      }),
+      queryParamsHandling: 'merge',
+    });
   });
 });

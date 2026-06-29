@@ -1,39 +1,12 @@
 import { NgTemplateOutlet } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  DestroyRef,
-  ElementRef,
-  afterNextRender,
-  inject,
-  input,
-  output,
-  signal,
-  viewChild,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, inject, input, output, signal, viewChild } from '@angular/core';
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
 
 import { WordCountChipComponent } from '../word-count-chip/word-count-chip.component';
-import {
-  STEMS_COLUMN_COUNT_LABELS,
-  STEMS_COLUMN_HEADERS,
-  STEMS_LEMMA_LINK_PREFIX,
-  STEMS_LEMMA_MISSING_ARIA,
-  STEMS_LEMMA_MISSING_LABEL,
-  STEMS_LOADING_LABEL,
-  STEMS_ROOT_LINK_PREFIX,
-  STEMS_ROOT_MISSING_ARIA,
-  STEMS_ROOT_MISSING_LABEL,
-  STEMS_TABLE_BODY_LABEL,
-  STEMS_TABLE_LABEL,
-} from '../../models/stems.labels';
-import {
-  STEMS_LIST_PAGE_SIZE,
-  StemListItemViewModel,
-  StemSurahView,
-  StemView,
-  StemWordView,
-} from '../../models/stems.models';
+import { STEMS_COLUMN_COUNT_LABELS, STEMS_COLUMN_HEADERS, STEMS_LEMMA_LINK_PREFIX, STEMS_LEMMA_MISSING_ARIA, STEMS_LEMMA_MISSING_LABEL, STEMS_LOADING_LABEL, STEMS_ROOT_LINK_PREFIX, STEMS_ROOT_MISSING_ARIA, STEMS_ROOT_MISSING_LABEL, STEMS_TABLE_BODY_LABEL, STEMS_TABLE_LABEL } from '../../models/stems.labels';
+import { STEMS_LIST_PAGE_SIZE, StemListItemViewModel, StemSurahView, StemView, StemWordView } from '../../models/stems.models';
+import { isMorphologyCountActive, MorphologyColumnKey, resolveMorphologyActiveColumn } from '../../utils/explorer-count-active';
+import { ExplorerInteractionSource, handleExplorerTableKeydown } from '../../utils/explorer-table-keydown';
 import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
 import { syncTableScrollbarGutter } from '../../utils/table-scrollbar-gutter-sync';
 import { deepLinkToHref } from '../../../../shared/url/deep-link-href';
@@ -45,12 +18,24 @@ import { QD_BP_TABLET_MAX_QUERY } from '../../../../shared/layout/breakpoints';
 const ROW_HEIGHT_DESKTOP = 48;
 const ROW_HEIGHT_MOBILE = 92;
 const HAS_RESIZE_OBSERVER = typeof ResizeObserver !== 'undefined';
+type StemTableColumnKey = Exclude<MorphologyColumnKey, 'stems'>;
+
+const STEM_TABLE_COLUMN_ORDER = [
+  'tashkeel',
+  'simple',
+  'surahs',
+  'ayahs',
+  'occurrences',
+  'lemmas',
+] as const satisfies readonly StemTableColumnKey[];
 
 export interface StemCountOpenedEvent {
   stem: StemListItemViewModel;
+  column?: StemTableColumnKey;
   view: StemView;
   wordView?: StemWordView;
   surahView?: StemSurahView;
+  source?: ExplorerInteractionSource;
 }
 
 @Component({
@@ -70,17 +55,16 @@ export class StemsTableComponent {
   readonly selectedStemId = input<number | null>(null);
   readonly currentPage = input(1);
   readonly pageSize = input(STEMS_LIST_PAGE_SIZE);
+  readonly activeView = input<StemView | null>(null);
+  readonly activeWordView = input<StemWordView | null>(null);
+  readonly activeSurahView = input<StemSurahView | null>(null);
+  readonly activeColumn = input<StemTableColumnKey | null>(null);
 
   readonly rowSelected = output<StemListItemViewModel>();
   readonly countOpened = output<StemCountOpenedEvent>();
 
-  protected get headers() {
-    return STEMS_COLUMN_HEADERS;
-  }
-
-  protected get countLabels() {
-    return STEMS_COLUMN_COUNT_LABELS;
-  }
+  protected get headers() { return STEMS_COLUMN_HEADERS; }
+  protected get countLabels() { return STEMS_COLUMN_COUNT_LABELS; }
 
   protected readonly loadingLabel = STEMS_LOADING_LABEL;
   protected readonly tableLabel = STEMS_TABLE_LABEL;
@@ -123,10 +107,12 @@ export class StemsTableComponent {
 
   protected openCount(
     stem: StemListItemViewModel,
+    column: StemTableColumnKey,
     view: StemView,
     options: { wordView?: StemWordView; surahView?: StemSurahView } = {},
+    source: ExplorerInteractionSource = 'immediate',
   ): void {
-    this.countOpened.emit({ stem, view, ...options });
+    this.countOpened.emit({ stem, column, view, source, ...options });
   }
 
   protected isSelected(stem: StemListItemViewModel): boolean {
@@ -141,12 +127,47 @@ export class StemsTableComponent {
     return stem.id;
   }
 
+  protected isCountActive(
+    stem: StemListItemViewModel,
+    column: StemTableColumnKey,
+    count: number,
+  ): boolean {
+    return isMorphologyCountActive({
+      rowId: stem.id,
+      selectedRowId: this.selectedStemId(),
+      column,
+      activeColumn: resolveMorphologyActiveColumn({
+        view: this.activeView(),
+        wordView: this.activeWordView(),
+        surahView: this.activeSurahView(),
+        activeColumn: this.activeColumn(),
+      }),
+      disabled: count === 0,
+    });
+  }
+
   protected lemmaHref(lemmaId: number): string {
     return deepLinkToHref(buildLemmasDeepLink({ lemmaId, view: 'words', wordView: 'simple' }));
   }
 
   protected rootHref(rootId: number): string {
     return deepLinkToHref(buildRootsDeepLink({ rootId, view: 'words', wordView: 'simple' }));
+  }
+
+  protected onTableKeydown(event: KeyboardEvent): void {
+    if (this.loading()) {
+      return;
+    }
+    handleExplorerTableKeydown({
+      event,
+      rows: this.rows(),
+      selectedRowId: this.selectedStemId(),
+      currentColumn: this.currentColumn(),
+      columnOrder: STEM_TABLE_COLUMN_ORDER,
+      isColumnEnabled: (row, column) => this.isColumnEnabled(row, column),
+      emitColumnTarget: (row, column, source) => this.emitColumnTarget(row, column, source),
+      scrollToRow: (index) => this.scrollToRow(index),
+    });
   }
 
   scrollToTop(): void {
@@ -176,5 +197,72 @@ export class StemsTableComponent {
 
   protected rootMissingAria(): string {
     return STEMS_ROOT_MISSING_ARIA;
+  }
+
+  private emitColumnTarget(
+    stem: StemListItemViewModel,
+    column: StemTableColumnKey,
+    source: ExplorerInteractionSource,
+  ): void {
+    switch (column) {
+      case 'occurrences':
+      case 'ayahs':
+        this.openCount(stem, column, 'ayahs', {}, source);
+        return;
+      case 'surahs':
+        this.openCount(stem, column, 'surahs', { surahView: 'mentioned' }, source);
+        return;
+      case 'simple':
+        this.openCount(stem, column, 'words', { wordView: 'simple' }, source);
+        return;
+      case 'tashkeel':
+        this.openCount(stem, column, 'words', { wordView: 'tashkeel' }, source);
+        return;
+      case 'lemmas':
+        this.openCount(stem, column, 'lemmas', {}, source);
+        return;
+    }
+  }
+
+  private isColumnEnabled(stem: StemListItemViewModel, column: StemTableColumnKey): boolean {
+    switch (column) {
+      case 'occurrences':
+        return stem.occurrencesCount > 0;
+      case 'ayahs':
+        return stem.ayahsCount > 0;
+      case 'surahs':
+        return stem.surahsCount > 0;
+      case 'simple':
+        return stem.simpleWordsCount > 0;
+      case 'tashkeel':
+        return stem.tashkeelWordsCount > 0;
+      case 'lemmas':
+        return stem.lemmaId !== null;
+    }
+  }
+
+  private currentColumn(): StemTableColumnKey | null {
+    const column = resolveMorphologyActiveColumn({
+      view: this.activeView(),
+      wordView: this.activeWordView(),
+      surahView: this.activeSurahView(),
+      activeColumn: this.activeColumn(),
+    });
+
+    return column === 'stems' ? null : column;
+  }
+
+  private scrollToRow(index: number): void {
+    const viewport = this.viewport();
+    if (this.useVirtualScroll && viewport) {
+      viewport.scrollToIndex(index, 'auto');
+      return;
+    }
+
+    const body = this.host.nativeElement.querySelector('.stems-table__body') as HTMLElement | null;
+    const row = body?.querySelectorAll<HTMLElement>('.stems-table__row')[index];
+    if (row && typeof row.scrollIntoView === 'function') {
+      row.scrollIntoView({ block: 'nearest' });
+    }
   }
 }

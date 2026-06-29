@@ -28,6 +28,15 @@ import {
   RootWordView,
 } from '../../models/roots.models';
 import { WORDS_LOADING_LABEL } from '../../models/words.labels';
+import {
+  isMorphologyCountActive,
+  MorphologyColumnKey,
+  resolveMorphologyActiveColumn,
+} from '../../utils/explorer-count-active';
+import {
+  ExplorerInteractionSource,
+  handleExplorerTableKeydown,
+} from '../../utils/explorer-table-keydown';
 import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
 import { syncTableScrollbarGutter } from '../../utils/table-scrollbar-gutter-sync';
 
@@ -36,12 +45,25 @@ import { QD_BP_TABLET_MAX_QUERY } from '../../../../shared/layout/breakpoints';
 const ROW_HEIGHT_DESKTOP = 48;
 const ROW_HEIGHT_MOBILE = 88;
 const HAS_RESIZE_OBSERVER = typeof ResizeObserver !== 'undefined';
+type RootTableColumnKey = MorphologyColumnKey;
+
+const ROOT_TABLE_COLUMN_ORDER = [
+  'stems',
+  'lemmas',
+  'tashkeel',
+  'simple',
+  'surahs',
+  'ayahs',
+  'occurrences',
+] as const satisfies readonly RootTableColumnKey[];
 
 export interface RootCountOpenedEvent {
   root: RootListItemViewModel;
+  column?: RootTableColumnKey;
   view: RootView;
   wordView?: RootWordView;
   surahView?: RootSurahView;
+  source?: ExplorerInteractionSource;
 }
 @Component({
   selector: 'qd-roots-table',
@@ -60,6 +82,10 @@ export class RootsTableComponent {
   readonly selectedRootId = input<number | null>(null);
   readonly currentPage = input(1);
   readonly pageSize = input(ROOTS_LIST_PAGE_SIZE);
+  readonly activeView = input<RootView | null>(null);
+  readonly activeWordView = input<RootWordView | null>(null);
+  readonly activeSurahView = input<RootSurahView | null>(null);
+  readonly activeColumn = input<RootTableColumnKey | null>(null);
 
   readonly rowSelected = output<RootListItemViewModel>();
   readonly countOpened = output<RootCountOpenedEvent>();
@@ -109,10 +135,12 @@ export class RootsTableComponent {
 
   protected openCount(
     root: RootListItemViewModel,
+    column: RootTableColumnKey,
     view: RootView,
     options: { wordView?: RootWordView; surahView?: RootSurahView } = {},
+    source: ExplorerInteractionSource = 'immediate',
   ): void {
-    this.countOpened.emit({ root, view, ...options });
+    this.countOpened.emit({ root, column, view, source, ...options });
   }
 
   protected isSelected(root: RootListItemViewModel): boolean {
@@ -127,6 +155,41 @@ export class RootsTableComponent {
     return root.id;
   }
 
+  protected isCountActive(
+    root: RootListItemViewModel,
+    column: RootTableColumnKey,
+    count: number,
+  ): boolean {
+    return isMorphologyCountActive({
+      rowId: root.id,
+      selectedRowId: this.selectedRootId(),
+      column,
+      activeColumn: resolveMorphologyActiveColumn({
+        view: this.activeView(),
+        wordView: this.activeWordView(),
+        surahView: this.activeSurahView(),
+        activeColumn: this.activeColumn(),
+      }),
+      disabled: count === 0,
+    });
+  }
+
+  protected onTableKeydown(event: KeyboardEvent): void {
+    if (this.loading()) {
+      return;
+    }
+    handleExplorerTableKeydown({
+      event,
+      rows: this.rows(),
+      selectedRowId: this.selectedRootId(),
+      currentColumn: this.currentColumn(),
+      columnOrder: ROOT_TABLE_COLUMN_ORDER,
+      isColumnEnabled: (row, column) => this.isColumnEnabled(row, column),
+      emitColumnTarget: (row, column, source) => this.emitColumnTarget(row, column, source),
+      scrollToRow: (index) => this.scrollToRow(index),
+    });
+  }
+
   scrollToTop(): void {
     const viewport = this.viewport();
     if (this.useVirtualScroll && viewport) {
@@ -137,6 +200,76 @@ export class RootsTableComponent {
     const body = this.host.nativeElement.querySelector('.roots-table__body') as HTMLElement | null;
     if (body) {
       body.scrollTop = 0;
+    }
+  }
+
+  private emitColumnTarget(
+    root: RootListItemViewModel,
+    column: RootTableColumnKey,
+    source: ExplorerInteractionSource,
+  ): void {
+    switch (column) {
+      case 'occurrences':
+      case 'ayahs':
+        this.openCount(root, column, 'ayahs', {}, source);
+        return;
+      case 'surahs':
+        this.openCount(root, column, 'surahs', { surahView: 'mentioned' }, source);
+        return;
+      case 'simple':
+        this.openCount(root, column, 'words', { wordView: 'simple' }, source);
+        return;
+      case 'tashkeel':
+        this.openCount(root, column, 'words', { wordView: 'tashkeel' }, source);
+        return;
+      case 'lemmas':
+        this.openCount(root, column, 'lemmas', {}, source);
+        return;
+      case 'stems':
+        this.openCount(root, column, 'stems', {}, source);
+        return;
+    }
+  }
+
+  private isColumnEnabled(root: RootListItemViewModel, column: RootTableColumnKey): boolean {
+    switch (column) {
+      case 'occurrences':
+        return root.occurrencesCount > 0;
+      case 'ayahs':
+        return root.ayahsCount > 0;
+      case 'surahs':
+        return root.surahsCount > 0;
+      case 'simple':
+        return root.simpleWordsCount > 0;
+      case 'tashkeel':
+        return root.tashkeelWordsCount > 0;
+      case 'lemmas':
+        return root.lemmasCount > 0;
+      case 'stems':
+        return root.stemsCount > 0;
+    }
+  }
+
+  private currentColumn(): RootTableColumnKey | null {
+    return resolveMorphologyActiveColumn({
+      view: this.activeView(),
+      wordView: this.activeWordView(),
+      surahView: this.activeSurahView(),
+      activeColumn: this.activeColumn(),
+    });
+  }
+
+  private scrollToRow(index: number): void {
+    const viewport = this.viewport();
+    if (this.useVirtualScroll && viewport) {
+      viewport.scrollToIndex(index, 'auto');
+      return;
+    }
+
+    const body = this.host.nativeElement.querySelector('.roots-table__body') as HTMLElement | null;
+    const row = body?.querySelectorAll<HTMLElement>('.roots-table__row')[index];
+    if (row && typeof row.scrollIntoView === 'function') {
+      row.scrollIntoView({ block: 'nearest' });
     }
   }
 }

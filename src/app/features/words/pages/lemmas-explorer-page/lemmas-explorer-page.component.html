@@ -64,9 +64,13 @@
           <qd-lemmas-table
             [rows]="listState().items"
             [loading]="listState().status === 'loading'"
-            [selectedLemmaId]="panelState().selectedLemmaId"
+            [selectedLemmaId]="selectedLemmaId()"
             [currentPage]="listState().page"
             [pageSize]="listState().pageSize"
+            [activeView]="activeView()"
+            [activeWordView]="activeWordView()"
+            [activeSurahView]="activeSurahView()"
+            [activeColumn]="activeColumn()"
             (rowSelected)="onRowSelected($event)"
             (countOpened)="onCountOpened($event)"
           />

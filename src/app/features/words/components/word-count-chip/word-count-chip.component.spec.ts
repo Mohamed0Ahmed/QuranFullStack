@@ -40,4 +40,20 @@ describe('WordCountChipComponent', () => {
     expect(root.querySelector('.word-count-chip__count')?.textContent).toContain('12');
     expect(button.getAttribute('aria-label')).toBe('الآيات: 12');
   });
+
+  it('marks the selected state with aria-pressed and the shared selected class', () => {
+    const fixture = setup({ selected: true });
+    const button = fixture.nativeElement.querySelector('[data-testid="word-count-chip"]') as HTMLButtonElement;
+
+    expect(button.getAttribute('aria-pressed')).toBe('true');
+    expect(button.classList.contains('qd-is-selected')).toBe(true);
+  });
+
+  it('never exposes selected state on disabled chips', () => {
+    const fixture = setup({ selected: true, disabled: true });
+    const button = fixture.nativeElement.querySelector('[data-testid="word-count-chip"]') as HTMLButtonElement;
+
+    expect(button.getAttribute('aria-pressed')).toBe('false');
+    expect(button.classList.contains('qd-is-selected')).toBe(false);
+  });
 });

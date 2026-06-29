@@ -58,6 +58,7 @@ export function parseLemmasQueryParams(queryParams: ParamMap): ParsedLemmasQuery
     page,
     lemmaId,
     view,
+    column: queryParams.get(LEMMAS_QUERY_KEYS.column),
     wordView,
     surahView,
     detailPage,
@@ -71,6 +72,7 @@ export type LemmasQueryChange = Partial<{
   page: number | null;
   lemmaId: number | null;
   view: LemmaView | null;
+  column: string | null;
   wordView: LemmaWordView | null;
   surahView: LemmaSurahView | null;
   detailPage: number | null;
@@ -94,6 +96,9 @@ export function buildLemmasQueryParams(changes: LemmasQueryChange): Record<strin
   }
   if (changes.view !== undefined) {
     params[LEMMAS_QUERY_KEYS.view] = changes.view ?? null;
+  }
+  if (changes.column !== undefined) {
+    params[LEMMAS_QUERY_KEYS.column] = changes.column ?? null;
   }
   if (changes.wordView !== undefined) {
     params[LEMMAS_QUERY_KEYS.wordView] = changes.wordView ?? null;

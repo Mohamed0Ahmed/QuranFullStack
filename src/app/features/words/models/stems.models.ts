@@ -136,6 +136,7 @@ export const STEMS_QUERY_KEYS = {
   page: 'page',
   stem: 'stem',
   view: 'view',
+  column: 'column',
   wordView: 'wordView',
   surahView: 'surahView',
   detailPage: 'detailPage',
@@ -145,6 +146,7 @@ export const STEMS_QUERY_KEYS = {
 export const STEMS_SELECTION_QUERY_KEYS: readonly string[] = [
   STEMS_QUERY_KEYS.stem,
   STEMS_QUERY_KEYS.view,
+  STEMS_QUERY_KEYS.column,
   STEMS_QUERY_KEYS.wordView,
   STEMS_QUERY_KEYS.surahView,
   STEMS_QUERY_KEYS.detailPage,
@@ -193,6 +195,7 @@ export interface ParsedStemsQuery {
   page: number;
   stemId: number | null;
   view: StemView;
+  column: string | null;
   wordView: StemWordView;
   surahView: StemSurahView;
   detailPage: number;

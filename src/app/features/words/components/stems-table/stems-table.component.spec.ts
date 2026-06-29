@@ -120,8 +120,8 @@ describe('StemsTableComponent', () => {
     expect(root.querySelector('[aria-selected="true"]')).toBeTruthy();
   });
 
-  it('keeps zero-count controls enabled and maps them to the expected detail event', () => {
-    const fixture = setup([row(1, { occurrencesCount: 0, ayahsCount: 0, simpleWordsCount: 0 })]);
+  it('maps count chips to the expected detail event', () => {
+    const fixture = setup([row(1)]);
     const emitted: {
       stem: StemListItemViewModel;
       view: string;
@@ -141,7 +141,6 @@ describe('StemsTableComponent', () => {
 
     chips.forEach((chip) => {
       const btn = chip.querySelector('button');
-      expect(btn?.hasAttribute('disabled')).toBe(false);
       btn?.click();
       fixture.detectChanges();
     });
@@ -149,5 +148,16 @@ describe('StemsTableComponent', () => {
     expect(emitted.map((e) => e.view)).toEqual(expected.map((e) => e.view));
     expect(emitted.map((e) => e.wordView ?? null)).toEqual(expected.map((e) => e.wordView ?? null));
     expect(emitted.map((e) => e.surahView ?? null)).toEqual(expected.map((e) => e.surahView ?? null));
+  });
+
+  it('disables zero-count chips', () => {
+    const fixture = setup([row(1, { occurrencesCount: 0, ayahsCount: 0, simpleWordsCount: 0 })]);
+    const buttons = Array.from(
+      fixture.nativeElement.querySelectorAll('qd-word-count-chip button'),
+    ) as HTMLButtonElement[];
+
+    expect(buttons[0]?.hasAttribute('disabled')).toBe(true);
+    expect(buttons[1]?.hasAttribute('disabled')).toBe(true);
+    expect(buttons[3]?.hasAttribute('disabled')).toBe(true);
   });
 });

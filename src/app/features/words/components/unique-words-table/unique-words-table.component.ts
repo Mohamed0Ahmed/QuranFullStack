@@ -4,12 +4,12 @@ import {
   Component,
   DestroyRef,
   ElementRef,
-  ViewChild,
   afterNextRender,
   inject,
   input,
   output,
   signal,
+  viewChild,
 } from '@angular/core';
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
 
@@ -31,6 +31,14 @@ import {
   UniqueWordListItemViewModel,
   WordDrilldownView,
 } from '../../models/unique-words.models';
+import {
+  isUniqueWordCountActive,
+  UniqueWordsColumnKey,
+} from '../../utils/explorer-count-active';
+import {
+  ExplorerInteractionSource,
+  handleExplorerTableKeydown,
+} from '../../utils/explorer-table-keydown';
 import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
 import { syncTableScrollbarGutter } from '../../utils/table-scrollbar-gutter-sync';
 import { buildRootsDeepLink } from '../../state/roots-url-sync';
@@ -41,6 +49,19 @@ import { QD_BP_PHONE_MAX_QUERY } from '../../../../shared/layout/breakpoints';
 const ROW_HEIGHT_DESKTOP = 48;
 const ROW_HEIGHT_MOBILE = 72;
 const HAS_RESIZE_OBSERVER = typeof ResizeObserver !== 'undefined';
+
+const UNIQUE_WORDS_COLUMN_ORDER = [
+  'missing',
+  'surahs',
+  'ayahs',
+] as const satisfies readonly UniqueWordsColumnKey[];
+
+export interface UniqueWordsDrilldownOpenEvent {
+  word: UniqueWordListItemViewModel;
+  column: UniqueWordsColumnKey;
+  view: WordDrilldownView;
+  source?: ExplorerInteractionSource;
+}
 
 @Component({
   selector: 'qd-unique-words-table',
@@ -59,15 +80,17 @@ export class UniqueWordsTableComponent {
   readonly selectedWordId = input<number | null>(null);
   readonly currentPage = input(1);
   readonly pageSize = input(UNIQUE_WORDS_PAGE_SIZE);
+  readonly drilldownIsOpen = input(false);
+  readonly activeColumn = input<UniqueWordsColumnKey | null>(null);
 
   readonly rowSelected = output<UniqueWordListItemViewModel>();
-  readonly drilldownOpen = output<{ word: UniqueWordListItemViewModel; view: WordDrilldownView }>();
+  readonly drilldownOpen = output<UniqueWordsDrilldownOpenEvent>();
 
   protected readonly loadingRowPlaceholders = Array.from({ length: 12 });
   protected readonly rowHeight = signal(ROW_HEIGHT_DESKTOP);
   protected readonly useVirtualScroll = HAS_RESIZE_OBSERVER;
 
-  @ViewChild(CdkVirtualScrollViewport) private viewport?: CdkVirtualScrollViewport;
+  private readonly viewport = viewChild(CdkVirtualScrollViewport);
 
   constructor() {
     afterNextRender(() => {
@@ -163,8 +186,13 @@ export class UniqueWordsTableComponent {
     this.rowSelected.emit(row);
   }
 
-  protected openDrilldown(row: UniqueWordListItemViewModel, view: WordDrilldownView): void {
-    this.drilldownOpen.emit({ word: row, view });
+  protected openDrilldown(
+    row: UniqueWordListItemViewModel,
+    column: UniqueWordsColumnKey,
+    view: WordDrilldownView,
+    source: ExplorerInteractionSource = 'immediate',
+  ): void {
+    this.drilldownOpen.emit({ word: row, column, view, source });
   }
 
   protected isSelected(row: UniqueWordListItemViewModel): boolean {
@@ -179,15 +207,80 @@ export class UniqueWordsTableComponent {
     return row.id;
   }
 
+  protected isCountActive(
+    row: UniqueWordListItemViewModel,
+    column: UniqueWordsColumnKey,
+    count: number,
+  ): boolean {
+    return isUniqueWordCountActive({
+      rowId: row.id,
+      selectedWordId: this.selectedWordId(),
+      column,
+      activeColumn: this.activeColumn(),
+      drilldownOpen: this.drilldownIsOpen(),
+      disabled: count === 0,
+    });
+  }
+
+  protected onTableKeydown(event: KeyboardEvent): void {
+    if (this.loading()) {
+      return;
+    }
+    handleExplorerTableKeydown({
+      event,
+      rows: this.rows(),
+      selectedRowId: this.selectedWordId(),
+      currentColumn: this.activeColumn(),
+      columnOrder: UNIQUE_WORDS_COLUMN_ORDER,
+      isColumnEnabled: (row, column) => this.isColumnEnabled(row, column),
+      emitColumnTarget: (row, column, source) => this.emitColumnTarget(row, column, source),
+      scrollToRow: (index) => this.scrollToRow(index),
+    });
+  }
+
   scrollToTop(): void {
-    if (this.useVirtualScroll && this.viewport) {
-      this.viewport.scrollToIndex(0, 'auto');
+    const viewport = this.viewport();
+    if (this.useVirtualScroll && viewport) {
+      viewport.scrollToIndex(0, 'auto');
       return;
     }
 
     const body = this.host.nativeElement.querySelector('.unique-words-table__body') as HTMLElement | null;
     if (body) {
       body.scrollTop = 0;
+    }
+  }
+
+  private emitColumnTarget(
+    row: UniqueWordListItemViewModel,
+    column: UniqueWordsColumnKey,
+    source: ExplorerInteractionSource,
+  ): void {
+    this.openDrilldown(row, column, column, source);
+  }
+
+  private isColumnEnabled(row: UniqueWordListItemViewModel, column: UniqueWordsColumnKey): boolean {
+    switch (column) {
+      case 'ayahs':
+        return row.ayahsCount > 0;
+      case 'surahs':
+        return row.surahsCount > 0;
+      case 'missing':
+        return row.missingSurahsCount > 0;
+    }
+  }
+
+  private scrollToRow(index: number): void {
+    const viewport = this.viewport();
+    if (this.useVirtualScroll && viewport) {
+      viewport.scrollToIndex(index, 'auto');
+      return;
+    }
+
+    const body = this.host.nativeElement.querySelector('.unique-words-table__body') as HTMLElement | null;
+    const row = body?.querySelectorAll<HTMLElement>('.unique-words-table__row')[index];
+    if (row && typeof row.scrollIntoView === 'function') {
+      row.scrollIntoView({ block: 'nearest' });
     }
   }
 }

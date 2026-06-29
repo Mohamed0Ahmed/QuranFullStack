@@ -22,6 +22,7 @@ describe('parseStemsQueryParams', () => {
     expect(parsed.page).toBe(1);
     expect(parsed.stemId).toBeNull();
     expect(parsed.view).toBe('words');
+    expect(parsed.column).toBeNull();
     expect(parsed.wordView).toBe('simple');
     expect(parsed.surahView).toBe('mentioned');
     expect(parsed.detailPage).toBe(1);
@@ -86,6 +87,7 @@ describe('parseStemsQueryParams', () => {
       const parsed = parseStemsQueryParams(params('stem=600&view=ayahs'));
       expect(parsed.stemId).toBe(600);
       expect(parsed.view).toBe('ayahs');
+      expect(parsed.column).toBeNull();
     });
 
     it('ignores view when no stem is present (keeps the default view, no panel renders)', () => {
@@ -117,6 +119,10 @@ describe('parseStemsQueryParams', () => {
         expect(parsed.view).toBe('words');
       });
     });
+  });
+
+  it('preserves a valid explicit active column for ayahs restore', () => {
+    expect(parseStemsQueryParams(params('stem=600&view=ayahs&column=ayahs')).column).toBe('ayahs');
   });
 
   describe('sub-view scope rules (wordView / surahView)', () => {
@@ -201,8 +207,9 @@ describe('buildStemsQueryParams', () => {
         stemId: 7,
         detailPage: 4,
         view: 'ayahs',
+        column: 'ayahs',
       }),
-    ).toEqual({ page: '2', stem: '7', detailPage: '4', view: 'ayahs' });
+    ).toEqual({ page: '2', stem: '7', detailPage: '4', view: 'ayahs', column: 'ayahs' });
 
     expect(buildStemsQueryParams({ search: null, page: null })).toEqual({
       search: null,
@@ -222,6 +229,7 @@ describe('buildStemsQueryParams', () => {
       page: parsed.page,
       stemId: parsed.stemId,
       view: parsed.view,
+      column: parsed.column,
       wordView: parsed.wordView,
       surahView: parsed.surahView,
       detailPage: parsed.detailPage,
@@ -233,6 +241,7 @@ describe('buildStemsQueryParams', () => {
     expect(rebuilt['page']).toBe('2');
     expect(rebuilt['stem']).toBe('9');
     expect(rebuilt['view']).toBe('ayahs');
+    expect(rebuilt['column']).toBeNull();
     expect(rebuilt['typeCode']).toBe('N');
     expect(rebuilt['detailPage']).toBe('3');
   });
@@ -246,13 +255,14 @@ describe('buildClearSelectionQueryParams', () => {
       [
         STEMS_QUERY_KEYS.stem,
         STEMS_QUERY_KEYS.view,
+        STEMS_QUERY_KEYS.column,
         STEMS_QUERY_KEYS.wordView,
         STEMS_QUERY_KEYS.surahView,
         STEMS_QUERY_KEYS.detailPage,
         STEMS_QUERY_KEYS.typeCode,
       ].sort(),
     );
-    expect(Object.values(cleared)).toEqual([null, null, null, null, null, null]);
+    expect(Object.values(cleared)).toEqual([null, null, null, null, null, null, null]);
 
     expect(cleared).not.toHaveProperty(STEMS_QUERY_KEYS.search);
     expect(cleared).not.toHaveProperty(STEMS_QUERY_KEYS.sort);

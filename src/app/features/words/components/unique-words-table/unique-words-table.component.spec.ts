@@ -155,4 +155,35 @@ describe('UniqueWordsTableComponent', () => {
 
     expect(body.scrollTop).toBe(0);
   });
+
+  it('marks the active drilldown chip for the selected row', () => {
+    const fixture = setup([row(1)], { selectedWordId: 1, drilldownIsOpen: true, activeColumn: 'surahs' });
+    const buttons = Array.from(fixture.nativeElement.querySelectorAll('qd-word-count-chip button')) as HTMLButtonElement[];
+
+    expect(buttons[2]?.classList.contains('qd-is-selected')).toBe(true);
+    expect(buttons[1]?.classList.contains('qd-is-selected')).toBe(false);
+  });
+
+  it('moves between drilldown columns and rows with keyboard navigation events', () => {
+    const fixture = setup([row(1), row(2, { surahsCount: 0 })], {
+      selectedWordId: 1,
+      drilldownIsOpen: true,
+      activeColumn: 'surahs',
+    });
+    const emitted: { word: UniqueWordListItemViewModel; column: string; view: string; source?: string }[] = [];
+    fixture.componentInstance.drilldownOpen.subscribe((event) => emitted.push(event));
+
+    const table = fixture.nativeElement.querySelector('.unique-words-table') as HTMLElement;
+    table.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+    fixture.detectChanges();
+
+    fixture.componentRef.setInput('activeColumn', 'missing');
+    fixture.detectChanges();
+
+    table.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    fixture.detectChanges();
+
+    expect(emitted[0]).toMatchObject({ word: row(1), column: 'missing', view: 'missing', source: 'keyboard' });
+    expect(emitted[1]).toMatchObject({ word: row(2, { surahsCount: 0 }), column: 'missing', view: 'missing', source: 'keyboard' });
+  });
 });

@@ -150,6 +150,7 @@ export const ROOTS_QUERY_KEYS = {
   page: 'page',
   root: 'root',
   view: 'view',
+  column: 'column',
   wordView: 'wordView',
   surahView: 'surahView',
   detailPage: 'detailPage',
@@ -158,6 +159,7 @@ export const ROOTS_QUERY_KEYS = {
 export const ROOTS_SELECTION_QUERY_KEYS: readonly string[] = [
   ROOTS_QUERY_KEYS.root,
   ROOTS_QUERY_KEYS.view,
+  ROOTS_QUERY_KEYS.column,
   ROOTS_QUERY_KEYS.wordView,
   ROOTS_QUERY_KEYS.surahView,
   ROOTS_QUERY_KEYS.detailPage,
@@ -205,6 +207,7 @@ export interface ParsedRootsQuery {
   page: number;
   rootId: number | null;
   view: RootView;
+  column: string | null;
   wordView: RootWordView;
   surahView: RootSurahView;
   detailPage: number;

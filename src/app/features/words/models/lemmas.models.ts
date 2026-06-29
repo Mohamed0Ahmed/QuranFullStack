@@ -135,6 +135,7 @@ export const LEMMAS_QUERY_KEYS = {
   page: 'page',
   lemma: 'lemma',
   view: 'view',
+  column: 'column',
   wordView: 'wordView',
   surahView: 'surahView',
   detailPage: 'detailPage',
@@ -144,6 +145,7 @@ export const LEMMAS_QUERY_KEYS = {
 export const LEMMAS_SELECTION_QUERY_KEYS: readonly string[] = [
   LEMMAS_QUERY_KEYS.lemma,
   LEMMAS_QUERY_KEYS.view,
+  LEMMAS_QUERY_KEYS.column,
   LEMMAS_QUERY_KEYS.wordView,
   LEMMAS_QUERY_KEYS.surahView,
   LEMMAS_QUERY_KEYS.detailPage,
@@ -192,6 +194,7 @@ export interface ParsedLemmasQuery {
   page: number;
   lemmaId: number | null;
   view: LemmaView;
+  column: string | null;
   wordView: LemmaWordView;
   surahView: LemmaSurahView;
   detailPage: number;

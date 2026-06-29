@@ -11,11 +11,15 @@ export class WordCountChipComponent {
   readonly label = input.required<string>();
   readonly count = input.required<number>();
   readonly disabled = input<boolean>(false);
+  readonly selected = input(false);
   readonly showLabel = input(true);
 
   readonly chipClick = output<void>();
 
   protected readonly ariaLabel = computed(() => `${this.label()}: ${this.count()}`);
+  protected readonly ariaPressed = computed(() =>
+    !this.disabled() && this.selected() ? 'true' : 'false',
+  );
 
   onClick(): void {
     if (!this.disabled()) {

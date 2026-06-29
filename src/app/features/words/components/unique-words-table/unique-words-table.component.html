@@ -1,4 +1,10 @@
-<div class="unique-words-table" role="table" [attr.aria-label]="tableLabel">
+<div
+  class="unique-words-table"
+  role="table"
+  [attr.aria-label]="tableLabel"
+  tabindex="0"
+  (keydown)="onTableKeydown($event)"
+>
   <div class="unique-words-table__header" role="rowgroup">
     <div class="unique-words-table__header-row" role="row">
       <div
@@ -78,6 +84,7 @@
         role="row"
         [class.qd-is-selected]="isSelected(row)"
         [attr.aria-selected]="isSelected(row)"
+        [attr.data-row-id]="row.id"
       >
         <div class="unique-words-table__cell unique-words-table__cell--row-number" role="cell">
           {{ rowNumber(index) }}
@@ -126,7 +133,8 @@
             [count]="row.ayahsCount"
             [showLabel]="false"
             [disabled]="row.ayahsCount === 0"
-            (chipClick)="openDrilldown(row, 'ayahs')"
+            [selected]="isCountActive(row, 'ayahs', row.ayahsCount)"
+            (chipClick)="openDrilldown(row, 'ayahs', 'ayahs')"
           />
         </div>
         <div class="unique-words-table__cell unique-words-table__chip-cell" role="cell">
@@ -135,7 +143,8 @@
             [count]="row.surahsCount"
             [showLabel]="false"
             [disabled]="row.surahsCount === 0"
-            (chipClick)="openDrilldown(row, 'surahs')"
+            [selected]="isCountActive(row, 'surahs', row.surahsCount)"
+            (chipClick)="openDrilldown(row, 'surahs', 'surahs')"
           />
         </div>
         <div class="unique-words-table__cell unique-words-table__chip-cell" role="cell">
@@ -143,7 +152,9 @@
             [label]="missingLabel"
             [count]="row.missingSurahsCount"
             [showLabel]="false"
-            (chipClick)="openDrilldown(row, 'missing')"
+            [disabled]="row.missingSurahsCount === 0"
+            [selected]="isCountActive(row, 'missing', row.missingSurahsCount)"
+            (chipClick)="openDrilldown(row, 'missing', 'missing')"
           />
         </div>
         <ng-container *ngTemplateOutlet="mobileStats; context: { row: row }" />
@@ -157,6 +168,7 @@
           role="row"
           [class.qd-is-selected]="isSelected(row)"
           [attr.aria-selected]="isSelected(row)"
+          [attr.data-row-id]="row.id"
         >
           <div class="unique-words-table__cell unique-words-table__cell--row-number" role="cell">
             {{ rowNumber(index) }}
@@ -205,7 +217,8 @@
               [count]="row.ayahsCount"
               [showLabel]="false"
               [disabled]="row.ayahsCount === 0"
-              (chipClick)="openDrilldown(row, 'ayahs')"
+              [selected]="isCountActive(row, 'ayahs', row.ayahsCount)"
+              (chipClick)="openDrilldown(row, 'ayahs', 'ayahs')"
             />
           </div>
           <div class="unique-words-table__cell unique-words-table__chip-cell" role="cell">
@@ -214,7 +227,8 @@
               [count]="row.surahsCount"
               [showLabel]="false"
               [disabled]="row.surahsCount === 0"
-              (chipClick)="openDrilldown(row, 'surahs')"
+              [selected]="isCountActive(row, 'surahs', row.surahsCount)"
+              (chipClick)="openDrilldown(row, 'surahs', 'surahs')"
             />
           </div>
           <div class="unique-words-table__cell unique-words-table__chip-cell" role="cell">
@@ -222,7 +236,9 @@
               [label]="missingLabel"
               [count]="row.missingSurahsCount"
               [showLabel]="false"
-              (chipClick)="openDrilldown(row, 'missing')"
+              [disabled]="row.missingSurahsCount === 0"
+              [selected]="isCountActive(row, 'missing', row.missingSurahsCount)"
+              (chipClick)="openDrilldown(row, 'missing', 'missing')"
             />
           </div>
           <ng-container *ngTemplateOutlet="mobileStats; context: { row: row }" />
@@ -259,29 +275,33 @@
       <button
         type="button"
         class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action"
+        [class.qd-is-selected]="isCountActive(row, 'ayahs', row.ayahsCount)"
         data-testid="unique-words-table-mobile-ayahs"
         [attr.aria-label]="row.ayahsCount + ' ' + ayahsLabel"
         [disabled]="row.ayahsCount === 0"
-        (click)="openDrilldown(row, 'ayahs')"
+        (click)="openDrilldown(row, 'ayahs', 'ayahs')"
       >
         {{ row.ayahsCount }} {{ ayahsLabel }}
       </button>
       <button
         type="button"
         class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action"
+        [class.qd-is-selected]="isCountActive(row, 'surahs', row.surahsCount)"
         data-testid="unique-words-table-mobile-surahs"
         [attr.aria-label]="row.surahsCount + ' ' + surahsLabel"
         [disabled]="row.surahsCount === 0"
-        (click)="openDrilldown(row, 'surahs')"
+        (click)="openDrilldown(row, 'surahs', 'surahs')"
       >
         {{ row.surahsCount }} {{ surahsLabel }}
       </button>
       <button
         type="button"
         class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action"
+        [class.qd-is-selected]="isCountActive(row, 'missing', row.missingSurahsCount)"
         data-testid="unique-words-table-mobile-missing"
         [attr.aria-label]="row.missingSurahsCount + ' ' + missingLabel"
-        (click)="openDrilldown(row, 'missing')"
+        [disabled]="row.missingSurahsCount === 0"
+        (click)="openDrilldown(row, 'missing', 'missing')"
       >
         {{ row.missingSurahsCount }} {{ missingLabel }}
       </button>
