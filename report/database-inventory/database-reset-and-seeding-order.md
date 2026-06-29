@@ -1,10 +1,11 @@
 # Database Reset & Seeding Order (Dev Runbook)
 
-**Date:** 2026-06-17 *(revised for Feature 010; prior revision 2026-06-16 for Feature 009; original 2026-06-14)*
+**Date:** 2026-06-29 *(revised for Feature 018; prior revisions: 2026-06-17 Feature 010, 2026-06-16 Feature 009; original 2026-06-14)*
 **Scope:** Documentation only. Records the canonical local-dev order to reset, migrate, and seed the
-`quran_dashboard` PostgreSQL database across Features 002–010. No command was run to produce this
-report; commands below are the documented/intended sequence — confirm flags against each feature’s
-quickstart before running.
+`quran_dashboard` PostgreSQL database across Features 002–018. Commands below are the documented/intended
+sequence — confirm flags against each feature’s quickstart before running. Per-feature real-run
+verifications (008–010, 018) are recorded in §4; no single end-to-end reset→reseed of the whole chain
+has been captured in one report.
 
 **Companion:** [`current-database-inventory.md`](./current-database-inventory.md) (live catalog
 snapshot). The reset/reseed workflow itself is verified end-to-end in
@@ -40,6 +41,14 @@ rebuild-words step).
 | 10 | `20260615112132_AddQuranTranslations` | 008 |
 | 11 | `20260616095937_AddQuranNavigationMetadata` | 009 |
 | 12 | `20260617104912_AddQuranFullI3rab` | 010 |
+| 13 | `20260621181644_DeterministicUniqueWordIds` | 013 |
+| 14 | `20260627144247_AddSegmentDimensionIds` | 017 |
+| 15 | `20260628233646_AddSegmentStemId` | 018 |
+
+> Features 011, 012, 014, 015, and 016 add **no migration** — they are read-only API/frontend features
+> (mushaf reader/study context, ayah similarities, Words Hub, Roots Explorer, Lemmas/Stems Explorer).
+> #13 changes only the unique-word id generation strategy (see §5); #14/#15 add nullable segment
+> dimension ids (`root_id`/`lemma_id`/`stem_id`) populated in place by `import-morphology` (§3).
 
 ## 3. Seeding order (by data dependency)
 
@@ -76,6 +85,20 @@ the exact ones verified in the Phase 7 report; the remaining verbs are shown in 
 > `quran_ayahs` only. It does **not** depend on words, morphology, simple i3rab (005), mutashabihat,
 > tafsirs, translations, or navigation metadata, so it may be run any time after `import-foundation`
 > (order 1). It is listed at order 9 for consistency with the feature sequence.
+
+> **No new seeding step for Features 011–018.** The verb list is unchanged from Feature 010; the chain
+> is still orders 1–9 above. The schema/importer changes since 010 ride existing verbs:
+>
+> - **Order-2 (`rebuild-words`) — Feature 013:** now assigns `quran_words_unique_*`.`id`
+>   deterministically (migration `DeterministicUniqueWordIds` drops `IDENTITY`), so unique-word ids are
+>   stable across reseeds. Resolves the §5 caveat.
+> - **Order-3 (`import-morphology`) — Features 017–018:** now also populates segment-level dimension ids
+>   on `quran_word_morphology_segments` — `root_id`/`lemma_id` (017, `AddSegmentDimensionIds`) and
+>   `stem_id` (018, `AddSegmentStemId`). The verb, source package, and command are unchanged. The
+>   two-STEM secondary `stem_id` cases are resolved from a **curated correction artifact embedded in the
+>   Infrastructure assembly** (`infrastructure/QuranDashboard.Infrastructure/Files/Quran/DataPipelines/Words/MorphologyImporting/Corrections/segment-stem-corrected-arabic.json`),
+>   not a new `--source` file. Hard checks enforce the curation totals (483 two-STEM secondary
+>   candidates = 479 curated `stem_id` + 4 intentionally null). Verified end-to-end 2026-06-29 — see §4.
 
 ## 4. What is documented vs. inferred
 
@@ -119,10 +142,29 @@ the exact ones verified in the Phase 7 report; the remaining verbs are shown in 
   `report/feature-010-quran-full-i3rab-foundation/full-i3rab-import-report.{md,json}`.
   Note: same caveat as 008/009 — migration + import on an existing foundation-seeded DB, not a full
   reset→reseed of the whole chain.
+- **Feature 013 (deterministic unique word ids):** migration `20260621181644_DeterministicUniqueWordIds`
+  drops the `IDENTITY` strategy on `quran_words_unique_simple.id` / `quran_words_unique_tashkeel.id`;
+  `rebuild-words` (order 2) now assigns these ids deterministically, so they are stable across reseeds.
+  This is the stable-id strategy anticipated in §5.
+- **Feature 017 (segment root_id / lemma_id):** migration `20260627144247_AddSegmentDimensionIds` adds
+  nullable `root_id` / `lemma_id` (+ FKs to `quran_roots` / `quran_lemmas`, lookup indexes) to
+  `quran_word_morphology_segments`, populated in place by `import-morphology` (order 3).
+- **Documented & verified (Feature 018, real run 2026-06-29):** migration
+  `20260628233646_AddSegmentStemId` applied via `dotnet ef database update` (Api startup project), then
+  `import-morphology --force` reseeded morphology. Console summary:
+  `morphology=77432, segments=128219, roots=1642, lemmas=4790, stems=12108, pos_tags=49`. Post-run DB
+  checks on `quran_word_morphology_segments`: **483** two-STEM secondary segments, **479** with a curated
+  `stem_id`, **4** intentionally null (`78:1:1:2`, `86:5:3:2`, `72:16:1:3`, `20:94:2:3`), **0** non-STEM
+  segments carrying a `stem_id`, **0** dangling stem FKs, **0** single/primary-STEM head mismatches. All
+  `SEG-STEM-ID-*` hard checks green. Note: same caveat as 008/009/010 — migration + import on an existing
+  foundation-seeded DB, not a full reset→reseed of the whole chain.
 
-## 5. Production note (not blocking dev)
+## 5. Production note (largely resolved by Feature 013)
 
-Per the Feature 003 plan (§12) and the Phase 7 report: before any user/gate data depends on
-`unique_*_word_id` values, adopt a stable-id strategy (natural key alongside id, remap step, or upsert
-without `RESTART IDENTITY`). Identity ids assigned by a dev reseed are not guaranteed stable across runs.
+Per the Feature 003 plan (§12) and the Phase 7 report, a stable-id strategy was required before any
+user/gate data depends on `unique_*_word_id` values. **Feature 013 implemented this** (migration
+`20260621181644_DeterministicUniqueWordIds`): the unique-word tables no longer use `IDENTITY`, and
+`rebuild-words` assigns ids deterministically, so they are stable across dev reseeds. Re-confirm
+determinism after any change to the unique-word derivation in `DisplayWordsSql` before relying on these
+ids in production.
 </content>

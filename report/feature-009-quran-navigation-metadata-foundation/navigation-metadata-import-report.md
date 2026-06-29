@@ -2,7 +2,7 @@
 
 Verdict: **accepted**
 Persisted: true
-Forced: false
+Forced: true
 Source path: `/projects/Dashboard/App/resources/import-sources/quran-navigation-metadata`
 
 ## Totals
@@ -44,6 +44,6 @@ Complete: True
 - `NAV-SOURCE-UNCHANGED`: PASS (expected package files unchanged before acceptance; observed unchanged)
 - `NAV-REPORT-WRITTEN`: PASS (expected required Markdown and JSON reports written; observed written)
 - `NAV-ROLLBACK-ON-FAIL`: PASS (expected full rollback on hard failure; observed not needed)
-- `NAV-RERUN-GUARD`: PASS (expected empty navigation targets; observed passed)
+- `NAV-RERUN-GUARD`: PASS (expected force rebuild allowed; observed passed)
 
 No Quran ayah text was read or stored by this import.

@@ -239,6 +239,48 @@ public sealed class MorphologyDimensionTests(MorphologyImportTestFixture fixture
     }
 
     [Fact]
+    public async Task Segment_stem_ids_follow_source_policy()
+    {
+        await fixture.SeedSyntheticWordsAsync();
+        var sourcePath = await fixture.WriteSyntheticSourceFolderAsync();
+        var readableCount = fixture.GetReadableWordCount();
+
+        var result = await fixture.RunImportAsync(sourcePath, expectedReadableWords: readableCount);
+
+        result.ExitCode.Should().Be(ImportMorphologyResult.SuccessExitCode);
+
+        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+
+        var nonStemWithStemId = await dbContext.WordMorphologySegments
+            .AsNoTracking()
+            .CountAsync(segment => segment.Kind != "STEM" && segment.StemId != null);
+        nonStemWithStemId.Should().Be(0, "non-STEM segments never carry stem_id");
+
+        var stemSegments = await dbContext.WordMorphologySegments
+            .AsNoTracking()
+            .Where(segment => segment.Kind == "STEM")
+            .ToListAsync();
+        var headStemByWord = await dbContext.WordMorphologies
+            .AsNoTracking()
+            .ToDictionaryAsync(m => m.QuranWordId, m => m.StemId);
+
+        stemSegments.Should().NotBeEmpty();
+        stemSegments.Should().OnlyContain(segment => segment.StemId != null,
+            "the synthetic source is all single-STEM words, which reuse the word head stem");
+        stemSegments.Should().OnlyContain(segment => segment.StemId == headStemByWord[segment.QuranWordId]);
+
+        var danglingSegmentStems = await dbContext.Database.SqlQueryRaw<int>(
+            """
+            SELECT count(*)::int AS "Value"
+            FROM quran_word_morphology_segments s
+            WHERE s.stem_id IS NOT NULL
+              AND NOT EXISTS (SELECT 1 FROM quran_stems st WHERE st.id = s.stem_id)
+            """).FirstAsync();
+        danglingSegmentStems.Should().Be(0);
+    }
+
+    [Fact]
     public async Task Dimension_resolves_check_passes()
     {
         await fixture.SeedSyntheticWordsAsync();

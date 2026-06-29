@@ -46,6 +46,7 @@ public sealed record AlignedSegmentDto(
     string? LemmaBuckwalter,
     int? RootId,
     int? LemmaId,
+    int? StemId,
     string FeaturesRaw,
     string? FeaturesJson);
 

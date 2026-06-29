@@ -1,8 +1,8 @@
 {
-  "runAtUtc": "2026-06-20T10:03:53.5458902+00:00",
+  "runAtUtc": "2026-06-29T05:25:12.2649691+00:00",
   "verdict": "pass",
   "persisted": true,
-  "forced": false,
+  "forced": true,
   "sourcePath": "/projects/Dashboard/App/resources/import-sources/quran-translations",
   "totals": {
     "sourceRows": 167,
@@ -2617,7 +2617,7 @@
       "id": "TR-RERUN-GUARD",
       "severity": "hard",
       "expected": "normal re-run refuses non-empty targets; forced replacement revalidates before replacing",
-      "observed": "no existing translation data",
+      "observed": "forced replacement with pre-validation",
       "passed": true
     }
   ],

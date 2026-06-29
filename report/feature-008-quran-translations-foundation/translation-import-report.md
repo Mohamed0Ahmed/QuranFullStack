@@ -1,9 +1,9 @@
 ﻿# Quran Translation Import Report
 
-- Run (UTC): 2026-06-20 10:03:53Z
+- Run (UTC): 2026-06-29 05:25:12Z
 - Verdict: PASS
 - Persisted: true
-- Forced: false
+- Forced: true
 - Source path: /projects/Dashboard/App/resources/import-sources/quran-translations
 
 ## Totals
@@ -44,7 +44,7 @@
 | TR-SOURCE-UNCHANGED | package files (manifest, display metadata, approved sources) unchanged before acceptance | unchanged | yes |
 | TR-REPORT-WRITTEN | required Markdown and JSON reports written | written | yes |
 | TR-ROLLBACK-ON-FAIL | failed hard checks leave no accepted partial import | no partial import persisted | yes |
-| TR-RERUN-GUARD | normal re-run refuses non-empty targets; forced replacement revalidates before replacing | no existing translation data | yes |
+| TR-RERUN-GUARD | normal re-run refuses non-empty targets; forced replacement revalidates before replacing | forced replacement with pre-validation | yes |
 
 ## Warnings
 

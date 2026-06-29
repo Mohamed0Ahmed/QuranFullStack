@@ -27,6 +27,7 @@ internal static class MorphologyValidationRunner
         int expectedReadableWords,
         MorphologySourceData source,
         WordLemmaNormalizationLoaded normalization,
+        SegmentStemCorrectionLoaded segmentStemCorrection,
         SegmentArabicRenderer renderer,
         CancellationToken ct)
     {
@@ -35,6 +36,7 @@ internal static class MorphologyValidationRunner
         await AddUs1ChecksAsync(checks, connection, transaction, expectedReadableWords, ct);
         await AddUs3ChecksAsync(checks, connection, transaction, source, renderer, ct);
         await AddSegmentDimensionChecksAsync(checks, connection, transaction, source, ct);
+        await AddSegmentStemChecksAsync(checks, connection, transaction, segmentStemCorrection, ct);
         await AddWordLemmaNormalizationChecksAsync(checks, connection, transaction, normalization, ct);
 
         return checks;
@@ -266,15 +268,134 @@ internal static class MorphologyValidationRunner
             "null source values remain null IDs and non-STEM lemma_id remains null",
             nullSafetyViolations == 0 ? "0 violations" : $"{FormatInt(nullSafetyViolations)} violation(s)",
             nullSafetyViolations == 0));
+    }
 
-        var stemIdColumns = await ExecuteScalarIntAsync(
-            connection, transaction, MorphologySql.CheckSegStemIdAbsent, ct);
+    private static async Task AddSegmentStemChecksAsync(
+        List<MorphologyCheckResult> checks,
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        SegmentStemCorrectionLoaded segmentStemCorrection,
+        CancellationToken ct)
+    {
+        var nonStemStemIds = await ExecuteScalarIntAsync(
+            connection, transaction, MorphologySql.CheckSegStemStemOnly, ct);
         checks.Add(new MorphologyCheckResult(
-            MorphologyInvariants.CheckSegStemIdAbsent,
+            MorphologyInvariants.CheckSegStemStemOnly,
             HardSeverity,
-            "quran_word_morphology_segments has no stem_id column",
-            stemIdColumns == 0 ? "absent" : $"{FormatInt(stemIdColumns)} column(s)",
-            stemIdColumns == 0));
+            "stem_id appears only on STEM segments",
+            nonStemStemIds == 0 ? "0 violations" : $"{FormatInt(nonStemStemIds)} violation(s)",
+            nonStemStemIds == 0));
+
+        var missingStemIds = await ExecuteScalarIntAsync(
+            connection, transaction, MorphologySql.CheckSegStemRequiredForStem, ct);
+        checks.Add(new MorphologyCheckResult(
+            MorphologyInvariants.CheckSegStemRequiredForStem,
+            HardSeverity,
+            "every STEM segment has stem_id except the 4 documented unresolved secondary exceptions",
+            missingStemIds == 0 ? "0 violations" : $"{FormatInt(missingStemIds)} violation(s)",
+            missingStemIds == 0));
+
+        var headMismatches = await ExecuteScalarIntAsync(
+            connection, transaction, MorphologySql.CheckSegStemHeadConsistent, ct);
+        checks.Add(new MorphologyCheckResult(
+            MorphologyInvariants.CheckSegStemHeadConsistent,
+            HardSeverity,
+            "single-STEM and two-STEM primary segments reuse the word head stem_id",
+            headMismatches == 0 ? "0 violations" : $"{FormatInt(headMismatches)} violation(s)",
+            headMismatches == 0));
+
+        var danglingStemIds = await ExecuteScalarIntAsync(
+            connection, transaction, MorphologySql.CheckSegStemResolves, ct);
+        checks.Add(new MorphologyCheckResult(
+            MorphologyInvariants.CheckSegStemResolves,
+            HardSeverity,
+            "every segment stem_id references a real quran_stems row",
+            danglingStemIds == 0 ? "0 violations" : $"{FormatInt(danglingStemIds)} violation(s)",
+            danglingStemIds == 0));
+
+        var curated = await CheckSecondaryStemCurationAsync(
+            connection, transaction, segmentStemCorrection, ct);
+        checks.Add(new MorphologyCheckResult(
+            MorphologyInvariants.CheckSegStemMultiStemCurated,
+            HardSeverity,
+            "every secondary STEM segment present is covered by the curated artifact (approved => stem_id set; unresolved => null)",
+            curated.Violations == 0
+                ? $"0 violations ({FormatInt(curated.ApprovedApplied)} approved applied, {FormatInt(curated.UnresolvedNull)} unresolved null of {FormatInt(curated.SecondaryPresent)} present)"
+                : $"{FormatInt(curated.Violations)} violation(s) (uncovered={FormatInt(curated.Uncovered)}, approved_not_applied={FormatInt(curated.ApprovedNotApplied)}, unresolved_set={FormatInt(curated.UnresolvedSet)})",
+            curated.Violations == 0));
+
+        var shape = segmentStemCorrection.Counts;
+        var unresolvedMatches = segmentStemCorrection.UnresolvedLocations.Count == MorphologyInvariants.UnresolvedSecondaryStemLocations.Count
+            && MorphologyInvariants.UnresolvedSecondaryStemLocations.All(segmentStemCorrection.UnresolvedLocations.Contains);
+        var shapePassed = shape.Total == MorphologyInvariants.ExpectedSecondaryStemCandidates
+            && shape.Approved == MorphologyInvariants.ExpectedApprovedSecondaryStems
+            && shape.UnresolvedExceptions == MorphologyInvariants.ExpectedUnresolvedSecondaryStems
+            && unresolvedMatches;
+        checks.Add(new MorphologyCheckResult(
+            MorphologyInvariants.CheckSegStemArtifactShape,
+            HardSeverity,
+            $"curated artifact has {MorphologyInvariants.ExpectedSecondaryStemCandidates} mappings "
+            + $"({MorphologyInvariants.ExpectedApprovedSecondaryStems} approved + {MorphologyInvariants.ExpectedUnresolvedSecondaryStems} unresolved at the 4 named locations)",
+            $"total={FormatInt(shape.Total)}, approved={FormatInt(shape.Approved)}, unresolved={FormatInt(shape.UnresolvedExceptions)}, named_unresolved_match={unresolvedMatches}",
+            shapePassed));
+    }
+
+    private static async Task<SecondaryStemCurationCounts> CheckSecondaryStemCurationAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        SegmentStemCorrectionLoaded segmentStemCorrection,
+        CancellationToken ct)
+    {
+        var secondaryPresent = 0;
+        var approvedApplied = 0;
+        var unresolvedNull = 0;
+        var uncovered = 0;
+        var approvedNotApplied = 0;
+        var unresolvedSet = 0;
+
+        await using var command = new NpgsqlCommand(
+            MorphologySql.SelectSecondaryStemSegments,
+            connection,
+            transaction)
+        {
+            CommandTimeout = MorphologyCommandExecutor.CommandTimeoutSeconds
+        };
+
+        await using var reader = await command.ExecuteReaderAsync(ct);
+        while (await reader.ReadAsync(ct))
+        {
+            secondaryPresent++;
+            var location = reader.GetString(0);
+            var hasStemId = !reader.IsDBNull(1);
+            var isApproved = segmentStemCorrection.ApprovedStemTextByLocation.ContainsKey(location);
+            var isUnresolved = segmentStemCorrection.UnresolvedLocations.Contains(location);
+
+            if (!isApproved && !isUnresolved)
+            {
+                uncovered++;
+            }
+            else if (isApproved && !hasStemId)
+            {
+                approvedNotApplied++;
+            }
+            else if (isUnresolved && hasStemId)
+            {
+                unresolvedSet++;
+            }
+
+            if (isApproved && hasStemId)
+            {
+                approvedApplied++;
+            }
+
+            if (isUnresolved && !hasStemId)
+            {
+                unresolvedNull++;
+            }
+        }
+
+        return new SecondaryStemCurationCounts(
+            secondaryPresent, approvedApplied, unresolvedNull, uncovered, approvedNotApplied, unresolvedSet);
     }
 
     private static async Task AddWordLemmaNormalizationChecksAsync(
@@ -518,5 +639,23 @@ internal static class MorphologyValidationRunner
             && SourceViolations == 0
             && RenderMismatches == 0
             && TierMismatches == 0;
+    }
+
+    private sealed record SecondaryStemCurationCounts(
+        int SecondaryPresent,
+        int ApprovedApplied,
+        int UnresolvedNull,
+        int Uncovered,
+        int ApprovedNotApplied,
+        int UnresolvedSet)
+    {
+        // Secondary segments whose location is covered by the curated artifact (approved or unresolved).
+        private int CoveredPresent => ApprovedApplied + ApprovedNotApplied + UnresolvedNull + UnresolvedSet;
+
+        // Approved-but-null and unresolved-but-set are always violations. An uncovered secondary is a
+        // violation only once the artifact actually applies to this dataset (>=1 covered secondary) —
+        // that is the real Quran import; synthetic test data with no artifact locations is tolerated.
+        public int Violations =>
+            ApprovedNotApplied + UnresolvedSet + (CoveredPresent > 0 ? Uncovered : 0);
     }
 }

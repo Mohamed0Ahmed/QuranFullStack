@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore.Metadata;
 using QuranDashboard.Domain.Quran.Words.Morphology;
 
 namespace QuranDashboard.Tests.Quran.WordsMorphology;
@@ -7,7 +6,7 @@ namespace QuranDashboard.Tests.Quran.WordsMorphology;
 public sealed class MorphologySegmentModelTests(MorphologyImportTestFixture fixture)
 {
     [Fact]
-    public void Segment_dimension_columns_are_nullable_and_indexed_without_stem_id()
+    public void Segment_dimension_columns_are_nullable_and_indexed_including_stem_id()
     {
         using var scope = fixture.CreateServiceProvider().CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
@@ -16,25 +15,31 @@ public sealed class MorphologySegmentModelTests(MorphologyImportTestFixture fixt
         entity.Should().NotBeNull();
         var lemmaProperty = entity!.FindProperty(nameof(WordMorphologySegment.LemmaId));
         var rootProperty = entity.FindProperty(nameof(WordMorphologySegment.RootId));
+        var stemProperty = entity.FindProperty(nameof(WordMorphologySegment.StemId));
 
         lemmaProperty.Should().NotBeNull();
         rootProperty.Should().NotBeNull();
+        stemProperty.Should().NotBeNull();
         lemmaProperty!.GetColumnName().Should().Be("lemma_id");
         rootProperty!.GetColumnName().Should().Be("root_id");
+        stemProperty!.GetColumnName().Should().Be("stem_id");
         lemmaProperty.IsNullable.Should().BeTrue();
         rootProperty.IsNullable.Should().BeTrue();
+        stemProperty.IsNullable.Should().BeTrue();
 
-        entity.FindProperty("StemId").Should().BeNull();
         entity.GetIndexes().Should().Contain(index =>
             index.GetDatabaseName() == "IX_quran_word_morphology_segments_lemma_id"
             && index.Properties.Single().Name == nameof(WordMorphologySegment.LemmaId));
         entity.GetIndexes().Should().Contain(index =>
             index.GetDatabaseName() == "IX_quran_word_morphology_segments_root_id"
             && index.Properties.Single().Name == nameof(WordMorphologySegment.RootId));
+        entity.GetIndexes().Should().Contain(index =>
+            index.GetDatabaseName() == "IX_quran_word_morphology_segments_stem_id"
+            && index.Properties.Single().Name == nameof(WordMorphologySegment.StemId));
     }
 
     [Fact]
-    public void Segment_dimension_foreign_keys_target_lemmas_and_roots_with_restrict_delete()
+    public void Segment_dimension_foreign_keys_target_lemmas_roots_and_stems_with_restrict_delete()
     {
         using var scope = fixture.CreateServiceProvider().CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
@@ -45,10 +50,14 @@ public sealed class MorphologySegmentModelTests(MorphologyImportTestFixture fixt
             fk.Properties.Single().Name == nameof(WordMorphologySegment.LemmaId));
         var rootForeignKey = entity.GetForeignKeys().Single(fk =>
             fk.Properties.Single().Name == nameof(WordMorphologySegment.RootId));
+        var stemForeignKey = entity.GetForeignKeys().Single(fk =>
+            fk.Properties.Single().Name == nameof(WordMorphologySegment.StemId));
 
         lemmaForeignKey.PrincipalEntityType.ClrType.Should().Be(typeof(QuranLemma));
         rootForeignKey.PrincipalEntityType.ClrType.Should().Be(typeof(QuranRoot));
+        stemForeignKey.PrincipalEntityType.ClrType.Should().Be(typeof(QuranStem));
         lemmaForeignKey.DeleteBehavior.Should().Be(DeleteBehavior.Restrict);
         rootForeignKey.DeleteBehavior.Should().Be(DeleteBehavior.Restrict);
+        stemForeignKey.DeleteBehavior.Should().Be(DeleteBehavior.Restrict);
     }
 }

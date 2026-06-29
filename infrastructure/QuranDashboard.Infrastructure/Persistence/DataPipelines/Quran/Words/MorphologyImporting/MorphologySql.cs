@@ -246,11 +246,72 @@ internal static class MorphologySql
            OR (s.lemma_id IS NOT NULL AND s.kind <> 'STEM')
         """;
 
-    internal const string CheckSegStemIdAbsent = """
+    internal const string CheckSegStemStemOnly = """
         SELECT count(*)::int
-        FROM information_schema.columns
-        WHERE table_name = 'quran_word_morphology_segments'
-          AND column_name = 'stem_id'
+        FROM quran_word_morphology_segments
+        WHERE stem_id IS NOT NULL
+          AND kind <> 'STEM'
+        """;
+
+    // Single-STEM segments, and the primary (first-by-segment_number) STEM of a multi-STEM word, must
+    // always carry stem_id (they reuse the word head stem). Secondary STEM segments are curation-gated
+    // and may be null (the 4 documented unresolved exceptions); their coverage is asserted separately
+    // by SEG-STEM-ID-MULTI-STEM-CURATED.
+    internal const string CheckSegStemRequiredForStem = """
+        WITH stem_segs AS (
+          SELECT
+            s.stem_id,
+            count(*) OVER (PARTITION BY s.quran_word_id) AS stem_count,
+            row_number() OVER (PARTITION BY s.quran_word_id ORDER BY s.segment_number) AS stem_rank
+          FROM quran_word_morphology_segments s
+          WHERE s.kind = 'STEM'
+        )
+        SELECT count(*)::int
+        FROM stem_segs
+        WHERE stem_id IS NULL
+          AND (stem_count = 1 OR stem_rank = 1)
+        """;
+
+    // Single-STEM words, and the primary (first-by-segment_number) STEM of a two-STEM word, must reuse
+    // the word's head stem_id. The head/word-level stem is unchanged by this feature.
+    internal const string CheckSegStemHeadConsistent = """
+        WITH stem_segs AS (
+          SELECT
+            s.quran_word_id,
+            s.stem_id,
+            count(*) OVER (PARTITION BY s.quran_word_id) AS stem_count,
+            row_number() OVER (PARTITION BY s.quran_word_id ORDER BY s.segment_number) AS stem_rank
+          FROM quran_word_morphology_segments s
+          WHERE s.kind = 'STEM'
+        )
+        SELECT count(*)::int
+        FROM stem_segs ss
+        JOIN quran_word_morphology m ON m.quran_word_id = ss.quran_word_id
+        WHERE (ss.stem_count = 1 OR (ss.stem_count = 2 AND ss.stem_rank = 1))
+          AND ss.stem_id IS DISTINCT FROM m.stem_id
+        """;
+
+    internal const string CheckSegStemResolves = """
+        SELECT count(*)::int
+        FROM quran_word_morphology_segments s
+        WHERE s.stem_id IS NOT NULL
+          AND NOT EXISTS (SELECT 1 FROM quran_stems st WHERE st.id = s.stem_id)
+        """;
+
+    // Secondary (second-by-segment_number) STEM segments of two-STEM words, for artifact-vs-DB coverage.
+    internal const string SelectSecondaryStemSegments = """
+        WITH stem_segs AS (
+          SELECT
+            s.segment_location,
+            s.stem_id,
+            count(*) OVER (PARTITION BY s.quran_word_id) AS stem_count,
+            row_number() OVER (PARTITION BY s.quran_word_id ORDER BY s.segment_number) AS stem_rank
+          FROM quran_word_morphology_segments s
+          WHERE s.kind = 'STEM'
+        )
+        SELECT segment_location, stem_id
+        FROM stem_segs
+        WHERE stem_count = 2 AND stem_rank = 2
         """;
 
     internal const string CheckSegRenderTotalNonEmpty = """

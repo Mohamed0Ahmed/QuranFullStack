@@ -1,52 +1,84 @@
 # Current Local PostgreSQL Database Inventory
 
-Date: 2026-06-13  
-Database: `quran_dashboard` on `localhost:5432`  
-Scope: read-only PostgreSQL catalog/data inventory plus EF mapping inspection.  
-Password handling: commands below are shown with `PGPASSWORD=***`; no password was written to this report.
+Date: 2026-06-29 *(full live-catalog regeneration through Feature 018; prior snapshot 2026-06-13 was Feature 005-era / 17 tables)*
+Database: `quran_dashboard` on `localhost:5432`
+Scope: read-only PostgreSQL catalog/data inventory plus EF mapping inspection, covering Features 002–018.
+Password handling: connection password was supplied to `psql` via the `PGPASSWORD` environment variable and is **not** written to this report.
 
 ## 1. Executive summary
 
 | Metric | Count | Notes |
 |---|---:|---|
 | Application schemas currently used | 1 | Only `public` for application tables. |
-| Tables | 17 | 16 Quran/domain tables + EF `__EFMigrationsHistory`. |
-| Columns | 172 | Includes EF migration history columns. |
-| Indexes | 69 | Includes PK-backed indexes and 8 partial indexes. |
-| Foreign keys | 20 | All are within `public`. |
+| Tables | 32 | 31 Quran/domain tables + EF `__EFMigrationsHistory`. |
+| Columns | 329 | Includes EF migration history columns. |
+| Indexes | 130 | Includes PK-backed indexes and 7 partial indexes. |
+| Foreign keys | 52 | All are within `public`. |
 | Unique constraints | 0 | Uniqueness is enforced through unique indexes, not separate `UNIQUE` table constraints. |
-| Check constraints | 149 | Mostly PostgreSQL/EF-reported `NOT NULL`; explicit domain checks are `quran_i3rab_rules.default_status` and `quran_word_morphology_segments.i3rab_status`. |
+| Check constraints (explicit) | 27 | Domain/value checks on i3rab status, source enums, coverage counts, non-empty text, and the self-link guard. |
+| Check constraints (information_schema, incl. `NOT NULL`) | 320 | Mostly PostgreSQL/EF-reported `NOT NULL`; the 27 above are the explicit domain checks. |
+| EF migrations applied | 15 | Rows in `__EFMigrationsHistory`; see `database-reset-and-seeding-order.md` §2. |
+
+Growth since the 2026-06-13 snapshot (17 → 32 tables): mutashabihat (006), tafsir (007), translations (008),
+navigation divisions + ayah nav columns (009), full-i3rab (010), ayah-similarities (012), and segment
+`root_id`/`lemma_id`/`stem_id` columns (017–018).
 
 Very large / high-volume tables by exact row count:
 
+- `quran_translation_ayah_entries`: 1,041,412 rows.
+- `quran_tafsir_ayah_entries`: 523,824 rows.
+- `quran_tafsir_entries`: 382,704 rows.
 - `quran_word_morphology_segments`: 128,219 rows.
 - `quran_words`: 83,668 rows.
 - `quran_word_morphology`, `quran_words_ordered_simple`, `quran_words_ordered_tashkeel`: 77,432 rows each.
+- `quran_full_i3rab_ayah_entries`: 24,944 rows; `quran_words_unique_tashkeel`: 21,294 rows.
 
-Obvious naming inconsistencies to review later, not necessarily defects:
+Naming / structural observations (not necessarily defects):
 
-- All domain tables are in `public` and carry a `quran_` prefix; if future schemas are introduced, the prefix may become partially redundant.
+- All domain tables are in `public` and carry a `quran_` prefix.
+- Three content families share the same `*_sources` → `*_entries` → `*_ayah_entries` shape: tafsir (007),
+  full-i3rab (010), and translations (008, two-table variant `*_sources` → `*_ayah_entries`). They repeat
+  columns such as `source_key`, `direction`, `content_coverage_count` (`= 6236` check), `sha256`,
+  `provenance_status`, `source_shape`, `source_value_kind`.
+- Navigation divisions are four sibling tables keyed by their own number: `quran_juzs`, `quran_hizbs`,
+  `quran_rubs`, `quran_sajdas`; `quran_ayahs` gained nullable `juz_number`/`hizb_number`/`rub_number` tags.
 - Mixed transliteration conventions appear in column names: `i3rab`, `imlaei`, `uthmani`, `qpc`, `buckwalter`.
-- Count naming varies by concept: `words_count_*`, `verses_count`, `lines_count`, `occurrences_count`, `ayahs_count`, `surahs_count`.
-- `head_pos` in `quran_word_morphology` and `pos` in `quran_word_morphology_segments` are closely related but named differently because one is word-level and the other is segment-level.
-- EF infrastructure table `__EFMigrationsHistory` uses PascalCase columns (`MigrationId`, `ProductVersion`) while app tables use snake_case.
+- `head_pos` (`quran_word_morphology`) vs `pos` (`quran_word_morphology_segments`) — word-level vs segment-level.
+- The morphology dimension ids now exist at two grains: word-level on `quran_word_morphology`
+  (`root_id`/`lemma_id`/`stem_id`) and segment-level on `quran_word_morphology_segments` (same three, added 017–018).
+- EF infrastructure table `__EFMigrationsHistory` uses PascalCase columns while app tables use snake_case.
 
 ## 2. Tables inventory
 
 | Schema | Table | Rows | Primary key | Columns | Short inferred purpose |
 |---|---|---:|---|---:|---|
-| public | `__EFMigrationsHistory` | 7 | `MigrationId` | 2 | EF Core migration tracking table. |
-| public | `quran_ayahs` | 6,236 | `id` | 9 | Canonical ayah metadata/text and page span. |
+| public | `__EFMigrationsHistory` | 15 | `MigrationId` | 2 | EF Core migration tracking table. |
+| public | `quran_ayahs` | 6,236 | `id` | 12 | Canonical ayah metadata/text, page span, and juz/hizb/rub tags. |
+| public | `quran_full_i3rab_ayah_entries` | 24,944 | `id` | 9 | Ayah→full-i3rab-entry junction per source. |
+| public | `quran_full_i3rab_entries` | 14,513 | `id` | 9 | Distinct full-i3rab HTML entries (grouped-leader or flat). |
+| public | `quran_full_i3rab_sources` | 4 | `id` | 23 | Full-i3rab source catalogue + provenance. |
+| public | `quran_hizbs` | 60 | `hizb_number` | 7 | Hizb division ranges. |
 | public | `quran_i3rab_rules` | 142 | `id` | 7 | Rule catalogue for generated simple i'rab labels. |
-| public | `quran_lemmas` | 4,793 | `id` | 6 | Morphology lemma dimension, optionally linked to roots. |
+| public | `quran_juzs` | 30 | `juz_number` | 6 | Juz division ranges. |
+| public | `quran_lemmas` | 4,790 | `id` | 6 | Morphology lemma dimension, optionally linked to roots. |
 | public | `quran_mushaf_lines` | 9,046 | `id` | 9 | Mushaf page-line layout and word range anchors. |
 | public | `quran_mushaf_pages` | 604 | `page_number` | 6 | Mushaf page ranges and line counts. |
+| public | `quran_mutashabihat_groups` | 814 | `id` | 9 | Similar-passage (mutashabihat) groups + representative span. |
+| public | `quran_mutashabihat_occurrences` | 3,557 | `id` | 6 | Per-group occurrence spans. |
 | public | `quran_pos_tags` | 49 | `code` | 6 | Controlled POS vocabulary and labels. |
 | public | `quran_roots` | 1,642 | `id` | 6 | Morphology root dimension and usage stats. |
+| public | `quran_rubs` | 240 | `rub_number` | 7 | Rub' division ranges. |
+| public | `quran_sajdas` | 15 | `sajdah_number` | 4 | Sajda ayah markers (obligatory/recommended). |
+| public | `quran_similar_ayah_links` | 3,552 | `id` | 7 | Directed ayah-similarity links + score/coverage. |
 | public | `quran_stems` | 12,108 | `id` | 4 | Morphology stem dimension and usage stats. |
 | public | `quran_surahs` | 114 | `surah_number` | 8 | Canonical surah metadata. |
+| public | `quran_tafsir_ayah_entries` | 523,824 | `id` | 9 | Ayah→tafsir-entry junction per source. |
+| public | `quran_tafsir_entries` | 382,704 | `id` | 9 | Distinct tafsir text entries (grouped-leader or flat). |
+| public | `quran_tafsir_sources` | 84 | `id` | 25 | Tafsir source catalogue + provenance. |
+| public | `quran_translation_ayah_entries` | 1,041,412 | `id` | 5 | Per-source ayah translation text. |
+| public | `quran_translation_sources` | 167 | `id` | 16 | Translation source catalogue. |
 | public | `quran_word_morphology` | 77,432 | `quran_word_id` | 12 | One morphology summary row per readable Quran word. |
-| public | `quran_word_morphology_segments` | 128,219 | `id` | 18 | Segment-level morphology, render provenance, and generated i'rab. |
+| public | `quran_word_morphology_segments` | 128,219 | `id` | 21 | Segment-level morphology, render provenance, generated i'rab, and segment dimension ids. |
 | public | `quran_words` | 83,668 | `id` | 17 | Canonical word/token stream, including ayah markers. |
 | public | `quran_words_ordered_simple` | 77,432 | `word_order_in_mushaf` | 16 | Derived readable word ordering grouped by simple/imlaei key. |
 | public | `quran_words_ordered_tashkeel` | 77,432 | `word_order_in_mushaf` | 16 | Derived readable word ordering grouped by tashkeel/Uthmani text. |
@@ -55,499 +87,760 @@ Obvious naming inconsistencies to review later, not necessarily defects:
 
 ## 3. Columns inventory
 
-Legend for `Role`: `PK` = primary key, `FK` = foreign key, `IDX` = indexed. Category values are inferred and should be validated with feature owners before cleanup.
+Legend for `Role`: `PK` = primary key, `FK` = foreign key, `IDX` = covered by a non-PK index.
+(The prior revision's speculative per-column "category" tags were dropped in favor of factual role flags.)
 
 ### `public.__EFMigrationsHistory`
 
-| Column | Type | Nullability | Default | Role | Category |
-|---|---|---|---|---|---|
-| `MigrationId` | `varchar(150)` | NOT NULL | — | PK/IDX | import/audit |
-| `ProductVersion` | `varchar(32)` | NOT NULL | — | — | import/audit |
+| Column | Type | Nullability | Default | Role |
+|---|---|---|---|---|
+| `MigrationId` | `varchar(150)` | NOT NULL | — | PK |
+| `ProductVersion` | `varchar(32)` | NOT NULL | — | — |
 
 ### `public.quran_ayahs`
 
-| Column | Type | Nullability | Default | Role | Category |
-|---|---|---|---|---|---|
-| `id` | `integer` | NOT NULL | — | PK/IDX | source/canonical |
-| `surah_number` | `smallint` | NOT NULL | — | FK/IDX | relationship/FK |
-| `ayah_number` | `smallint` | NOT NULL | — | IDX | source/canonical |
-| `verse_key` | `text` | NOT NULL | — | IDX | source/canonical |
-| `text_uthmani` | `text` | NOT NULL | — | — | source/canonical |
-| `words_count_source` | `smallint` | NOT NULL | — | — | import/audit |
-| `words_count_real` | `smallint` | NOT NULL | — | — | derived/search |
-| `page_from` | `smallint` | NOT NULL | — | — | derived/search |
-| `page_to` | `smallint` | NOT NULL | — | — | derived/search |
+| Column | Type | Nullability | Default | Role |
+|---|---|---|---|---|
+| `id` | `integer` | NOT NULL | — | PK |
+| `surah_number` | `smallint` | NOT NULL | — | FK, IDX |
+| `ayah_number` | `smallint` | NOT NULL | — | IDX |
+| `verse_key` | `text` | NOT NULL | — | IDX |
+| `text_uthmani` | `text` | NOT NULL | — | — |
+| `words_count_source` | `smallint` | NOT NULL | — | — |
+| `words_count_real` | `smallint` | NOT NULL | — | — |
+| `page_from` | `smallint` | NOT NULL | — | — |
+| `page_to` | `smallint` | NOT NULL | — | — |
+| `hizb_number` | `smallint` | NULL | — | FK, IDX |
+| `juz_number` | `smallint` | NULL | — | FK, IDX |
+| `rub_number` | `smallint` | NULL | — | FK, IDX |
+
+### `public.quran_full_i3rab_ayah_entries`
+
+| Column | Type | Nullability | Default | Role |
+|---|---|---|---|---|
+| `id` | `bigint` | NOT NULL | — | PK |
+| `source_id` | `integer` | NOT NULL | — | FK, IDX |
+| `ayah_id` | `integer` | NOT NULL | — | FK, IDX |
+| `entry_id` | `bigint` | NOT NULL | — | FK, IDX |
+| `verse_key` | `text` | NOT NULL | — | IDX |
+| `source_value_kind` | `text` | NOT NULL | — | — |
+| `source_leader_verse_key` | `text` | NOT NULL | — | — |
+| `is_group_leader` | `boolean` | NOT NULL | — | — |
+| `sort_order` | `integer` | NOT NULL | — | — |
+
+### `public.quran_full_i3rab_entries`
+
+| Column | Type | Nullability | Default | Role |
+|---|---|---|---|---|
+| `id` | `bigint` | NOT NULL | — | PK |
+| `source_id` | `integer` | NOT NULL | — | FK, IDX |
+| `source_entry_key` | `text` | NOT NULL | — | IDX |
+| `leader_ayah_id` | `integer` | NOT NULL | — | FK, IDX |
+| `i3rab_html` | `text` | NOT NULL | — | — |
+| `covered_ayah_count` | `smallint` | NOT NULL | — | — |
+| `covered_ayah_keys` | `jsonb` | NOT NULL | — | — |
+| `source_shape` | `text` | NOT NULL | — | — |
+| `text_hash` | `text` | NOT NULL | — | — |
+
+### `public.quran_full_i3rab_sources`
+
+| Column | Type | Nullability | Default | Role |
+|---|---|---|---|---|
+| `id` | `integer` | NOT NULL | — | PK |
+| `source_key` | `text` | NOT NULL | — | IDX |
+| `display_name_ar` | `text` | NOT NULL | — | — |
+| `short_name_ar` | `text` | NOT NULL | — | — |
+| `display_name_en` | `text` | NOT NULL | — | — |
+| `short_name_en` | `text` | NOT NULL | — | — |
+| `language_code` | `text` | NOT NULL | — | — |
+| `direction` | `text` | NOT NULL | — | — |
+| `contributor_name_ar` | `text` | NULL | — | — |
+| `contributor_name_en` | `text` | NULL | — | — |
+| `resource_kind` | `text` | NOT NULL | — | — |
+| `markup_format` | `text` | NOT NULL | — | — |
+| `has_quran_quotation_markup` | `boolean` | NOT NULL | — | — |
+| `content_coverage_count` | `smallint` | NOT NULL | — | — |
+| `package_file` | `text` | NOT NULL | — | IDX |
+| `source_file_original` | `text` | NOT NULL | — | — |
+| `sha256` | `text` | NOT NULL | — | — |
+| `file_size_bytes` | `bigint` | NOT NULL | — | — |
+| `license_status` | `text` | NOT NULL | — | — |
+| `provenance_status` | `text` | NOT NULL | — | — |
+| `usage_scope` | `text` | NOT NULL | — | — |
+| `manifest_metadata` | `jsonb` | NULL | — | — |
+| `imported_at_utc` | `timestamptz` | NOT NULL | — | — |
+
+### `public.quran_hizbs`
+
+| Column | Type | Nullability | Default | Role |
+|---|---|---|---|---|
+| `hizb_number` | `smallint` | NOT NULL | — | PK |
+| `juz_number` | `smallint` | NOT NULL | — | FK, IDX |
+| `verses_count` | `smallint` | NOT NULL | — | — |
+| `first_ayah_id` | `integer` | NOT NULL | — | FK, IDX |
+| `last_ayah_id` | `integer` | NOT NULL | — | FK, IDX |
+| `first_verse_key` | `text` | NOT NULL | — | — |
+| `last_verse_key` | `text` | NOT NULL | — | — |
 
 ### `public.quran_i3rab_rules`
 
-| Column | Type | Nullability | Default | Role | Category |
-|---|---|---|---|---|---|
-| `id` | `integer` | NOT NULL | — | PK/IDX | source/canonical |
-| `signature_key` | `text` | NOT NULL | — | IDX | source/canonical |
-| `rule_family` | `text` | NOT NULL | — | IDX | source/canonical |
-| `i3rab_arabic` | `text` | NOT NULL | — | — | source/canonical |
-| `default_status` | `text` | NOT NULL | — | — | import/audit |
-| `description` | `text` | NULL | — | — | unclear |
-| `sort_order` | `smallint` | NOT NULL | — | — | UI/cache/stat |
+| Column | Type | Nullability | Default | Role |
+|---|---|---|---|---|
+| `id` | `integer` | NOT NULL | — | PK |
+| `signature_key` | `text` | NOT NULL | — | IDX |
+| `rule_family` | `text` | NOT NULL | — | IDX |
+| `i3rab_arabic` | `text` | NOT NULL | — | — |
+| `default_status` | `text` | NOT NULL | — | — |
+| `description` | `text` | NULL | — | — |
+| `sort_order` | `smallint` | NOT NULL | — | — |
+
+### `public.quran_juzs`
+
+| Column | Type | Nullability | Default | Role |
+|---|---|---|---|---|
+| `juz_number` | `smallint` | NOT NULL | — | PK |
+| `verses_count` | `smallint` | NOT NULL | — | — |
+| `first_ayah_id` | `integer` | NOT NULL | — | FK, IDX |
+| `last_ayah_id` | `integer` | NOT NULL | — | FK, IDX |
+| `first_verse_key` | `text` | NOT NULL | — | — |
+| `last_verse_key` | `text` | NOT NULL | — | — |
 
 ### `public.quran_lemmas`
 
-| Column | Type | Nullability | Default | Role | Category |
-|---|---|---|---|---|---|
-| `id` | `integer` | NOT NULL | — | PK/IDX | source/canonical |
-| `lemma_text` | `text` | NOT NULL | — | IDX | source/canonical |
-| `lemma_buckwalter` | `text` | NULL | — | — | source/canonical |
-| `root_id` | `integer` | NULL | — | FK/IDX | relationship/FK |
-| `words_count` | `integer` | NOT NULL | — | — | UI/cache/stat |
-| `first_word_order_in_mushaf` | `integer` | NOT NULL | — | IDX | derived/search |
+| Column | Type | Nullability | Default | Role |
+|---|---|---|---|---|
+| `id` | `integer` | NOT NULL | — | PK |
+| `lemma_text` | `text` | NOT NULL | — | IDX |
+| `lemma_buckwalter` | `text` | NULL | — | — |
+| `root_id` | `integer` | NULL | — | FK, IDX |
+| `words_count` | `integer` | NOT NULL | — | — |
+| `first_word_order_in_mushaf` | `integer` | NOT NULL | — | IDX |
 
 ### `public.quran_mushaf_lines`
 
-| Column | Type | Nullability | Default | Role | Category |
-|---|---|---|---|---|---|
-| `id` | `integer` | NOT NULL | — | PK/IDX | source/canonical |
-| `page_number` | `smallint` | NOT NULL | — | FK/IDX | relationship/FK |
-| `line_number` | `smallint` | NOT NULL | — | IDX | source/canonical |
-| `line_type` | `text` | NOT NULL | — | — | source/canonical |
-| `is_centered` | `boolean` | NOT NULL | — | — | UI/cache/stat |
-| `surah_number` | `smallint` | NULL | — | FK/IDX | relationship/FK |
-| `first_word_id` | `integer` | NULL | — | FK/IDX | relationship/FK |
-| `last_word_id` | `integer` | NULL | — | FK/IDX | relationship/FK |
-| `words_count` | `smallint` | NOT NULL | — | — | UI/cache/stat |
+| Column | Type | Nullability | Default | Role |
+|---|---|---|---|---|
+| `id` | `integer` | NOT NULL | — | PK |
+| `page_number` | `smallint` | NOT NULL | — | FK, IDX |
+| `line_number` | `smallint` | NOT NULL | — | IDX |
+| `line_type` | `text` | NOT NULL | — | — |
+| `is_centered` | `boolean` | NOT NULL | — | — |
+| `surah_number` | `smallint` | NULL | — | FK, IDX |
+| `first_word_id` | `integer` | NULL | — | FK, IDX |
+| `last_word_id` | `integer` | NULL | — | FK, IDX |
+| `words_count` | `smallint` | NOT NULL | — | — |
 
 ### `public.quran_mushaf_pages`
 
-| Column | Type | Nullability | Default | Role | Category |
-|---|---|---|---|---|---|
-| `page_number` | `smallint` | NOT NULL | — | PK/IDX | source/canonical |
-| `first_surah_number` | `smallint` | NOT NULL | — | derived/search |
-| `first_ayah_number` | `smallint` | NOT NULL | — | — | derived/search |
-| `last_surah_number` | `smallint` | NOT NULL | — | — | derived/search |
-| `last_ayah_number` | `smallint` | NOT NULL | — | — | derived/search |
-| `lines_count` | `smallint` | NOT NULL | — | — | UI/cache/stat |
+| Column | Type | Nullability | Default | Role |
+|---|---|---|---|---|
+| `page_number` | `smallint` | NOT NULL | — | PK |
+| `first_surah_number` | `smallint` | NOT NULL | — | — |
+| `first_ayah_number` | `smallint` | NOT NULL | — | — |
+| `last_surah_number` | `smallint` | NOT NULL | — | — |
+| `last_ayah_number` | `smallint` | NOT NULL | — | — |
+| `lines_count` | `smallint` | NOT NULL | — | — |
+
+### `public.quran_mutashabihat_groups`
+
+| Column | Type | Nullability | Default | Role |
+|---|---|---|---|---|
+| `id` | `integer` | NOT NULL | — | PK |
+| `source_group_id` | `integer` | NOT NULL | — | IDX |
+| `representative_ayah_id` | `integer` | NOT NULL | — | FK, IDX |
+| `representative_word_from` | `smallint` | NOT NULL | — | — |
+| `representative_word_to` | `smallint` | NOT NULL | — | — |
+| `occurrence_count` | `smallint` | NOT NULL | — | — |
+| `distinct_ayah_count` | `smallint` | NOT NULL | — | — |
+| `distinct_surah_count` | `smallint` | NOT NULL | — | — |
+| `raw_source_counts` | `jsonb` | NULL | — | — |
+
+### `public.quran_mutashabihat_occurrences`
+
+| Column | Type | Nullability | Default | Role |
+|---|---|---|---|---|
+| `id` | `integer` | NOT NULL | — | PK |
+| `group_id` | `integer` | NOT NULL | — | FK, IDX |
+| `ayah_id` | `integer` | NOT NULL | — | FK, IDX |
+| `word_from` | `smallint` | NOT NULL | — | IDX |
+| `word_to` | `smallint` | NOT NULL | — | IDX |
+| `is_representative` | `boolean` | NOT NULL | `false` | — |
 
 ### `public.quran_pos_tags`
 
-| Column | Type | Nullability | Default | Role | Category |
-|---|---|---|---|---|---|
-| `code` | `text` | NOT NULL | — | PK/IDX | source/canonical |
-| `arabic_label` | `text` | NOT NULL | — | — | source/canonical |
-| `english_label` | `text` | NOT NULL | — | — | source/canonical |
-| `category` | `text` | NOT NULL | — | IDX | source/canonical |
-| `sort_order` | `smallint` | NOT NULL | — | IDX | UI/cache/stat |
-| `description` | `text` | NULL | — | — | unclear |
+| Column | Type | Nullability | Default | Role |
+|---|---|---|---|---|
+| `code` | `text` | NOT NULL | — | PK |
+| `arabic_label` | `text` | NOT NULL | — | — |
+| `english_label` | `text` | NOT NULL | — | — |
+| `category` | `text` | NOT NULL | — | IDX |
+| `sort_order` | `smallint` | NOT NULL | — | IDX |
+| `description` | `text` | NULL | — | — |
 
 ### `public.quran_roots`
 
-| Column | Type | Nullability | Default | Role | Category |
-|---|---|---|---|---|---|
-| `id` | `integer` | NOT NULL | — | PK/IDX | source/canonical |
-| `root_text` | `text` | NOT NULL | — | IDX | source/canonical |
-| `root_buckwalter` | `text` | NULL | — | — | source/canonical |
-| `words_count` | `integer` | NOT NULL | — | IDX | UI/cache/stat |
-| `distinct_lemmas_count` | `smallint` | NOT NULL | — | — | UI/cache/stat |
-| `first_word_order_in_mushaf` | `integer` | NOT NULL | — | IDX | derived/search |
+| Column | Type | Nullability | Default | Role |
+|---|---|---|---|---|
+| `id` | `integer` | NOT NULL | — | PK |
+| `root_text` | `text` | NOT NULL | — | IDX |
+| `root_buckwalter` | `text` | NULL | — | — |
+| `words_count` | `integer` | NOT NULL | — | IDX |
+| `distinct_lemmas_count` | `smallint` | NOT NULL | — | — |
+| `first_word_order_in_mushaf` | `integer` | NOT NULL | — | IDX |
+
+### `public.quran_rubs`
+
+| Column | Type | Nullability | Default | Role |
+|---|---|---|---|---|
+| `rub_number` | `smallint` | NOT NULL | — | PK |
+| `hizb_number` | `smallint` | NOT NULL | — | FK, IDX |
+| `verses_count` | `smallint` | NOT NULL | — | — |
+| `first_ayah_id` | `integer` | NOT NULL | — | FK, IDX |
+| `last_ayah_id` | `integer` | NOT NULL | — | FK, IDX |
+| `first_verse_key` | `text` | NOT NULL | — | — |
+| `last_verse_key` | `text` | NOT NULL | — | — |
+
+### `public.quran_sajdas`
+
+| Column | Type | Nullability | Default | Role |
+|---|---|---|---|---|
+| `sajdah_number` | `smallint` | NOT NULL | — | PK |
+| `ayah_id` | `integer` | NOT NULL | — | FK, IDX |
+| `verse_key` | `text` | NOT NULL | — | — |
+| `sajdah_type` | `text` | NOT NULL | — | — |
+
+### `public.quran_similar_ayah_links`
+
+| Column | Type | Nullability | Default | Role |
+|---|---|---|---|---|
+| `id` | `integer` | NOT NULL | — | PK |
+| `source_ayah_id` | `integer` | NOT NULL | — | FK, IDX |
+| `target_ayah_id` | `integer` | NOT NULL | — | FK, IDX |
+| `score` | `smallint` | NOT NULL | — | — |
+| `coverage` | `smallint` | NOT NULL | — | — |
+| `matched_words_count` | `smallint` | NOT NULL | — | — |
+| `match_words` | `jsonb` | NOT NULL | — | — |
 
 ### `public.quran_stems`
 
-| Column | Type | Nullability | Default | Role | Category |
-|---|---|---|---|---|---|
-| `id` | `integer` | NOT NULL | — | PK/IDX | source/canonical |
-| `stem_text` | `text` | NOT NULL | — | IDX | source/canonical |
-| `words_count` | `integer` | NOT NULL | — | — | UI/cache/stat |
-| `first_word_order_in_mushaf` | `integer` | NOT NULL | — | IDX | derived/search |
+| Column | Type | Nullability | Default | Role |
+|---|---|---|---|---|
+| `id` | `integer` | NOT NULL | — | PK |
+| `stem_text` | `text` | NOT NULL | — | IDX |
+| `words_count` | `integer` | NOT NULL | — | — |
+| `first_word_order_in_mushaf` | `integer` | NOT NULL | — | IDX |
 
 ### `public.quran_surahs`
 
-| Column | Type | Nullability | Default | Role | Category |
-|---|---|---|---|---|---|
-| `surah_number` | `smallint` | NOT NULL | — | PK/IDX | source/canonical |
-| `name_arabic` | `text` | NOT NULL | — | IDX | source/canonical |
-| `name_simple` | `text` | NOT NULL | — | — | derived/search |
-| `name_transliteration` | `text` | NOT NULL | — | — | source/canonical |
-| `revelation_place` | `text` | NOT NULL | — | — | source/canonical |
-| `revelation_order` | `smallint` | NOT NULL | — | — | source/canonical |
-| `verses_count` | `smallint` | NOT NULL | — | — | UI/cache/stat |
-| `bismillah_pre` | `boolean` | NOT NULL | — | — | source/canonical |
+| Column | Type | Nullability | Default | Role |
+|---|---|---|---|---|
+| `surah_number` | `smallint` | NOT NULL | — | PK |
+| `name_arabic` | `text` | NOT NULL | — | IDX |
+| `name_simple` | `text` | NOT NULL | — | — |
+| `name_transliteration` | `text` | NOT NULL | — | — |
+| `revelation_place` | `text` | NOT NULL | — | — |
+| `revelation_order` | `smallint` | NOT NULL | — | — |
+| `verses_count` | `smallint` | NOT NULL | — | — |
+| `bismillah_pre` | `boolean` | NOT NULL | — | — |
+
+### `public.quran_tafsir_ayah_entries`
+
+| Column | Type | Nullability | Default | Role |
+|---|---|---|---|---|
+| `id` | `bigint` | NOT NULL | — | PK |
+| `source_id` | `integer` | NOT NULL | — | FK, IDX |
+| `ayah_id` | `integer` | NOT NULL | — | FK, IDX |
+| `tafsir_entry_id` | `bigint` | NOT NULL | — | FK, IDX |
+| `verse_key` | `text` | NOT NULL | — | IDX |
+| `source_value_kind` | `text` | NOT NULL | — | — |
+| `source_leader_verse_key` | `text` | NOT NULL | — | — |
+| `is_group_leader` | `boolean` | NOT NULL | — | — |
+| `sort_order` | `integer` | NOT NULL | — | — |
+
+### `public.quran_tafsir_entries`
+
+| Column | Type | Nullability | Default | Role |
+|---|---|---|---|---|
+| `id` | `bigint` | NOT NULL | — | PK |
+| `source_id` | `integer` | NOT NULL | — | FK, IDX |
+| `source_entry_key` | `text` | NOT NULL | — | IDX |
+| `leader_ayah_id` | `integer` | NOT NULL | — | FK, IDX |
+| `tafsir_text` | `text` | NOT NULL | — | — |
+| `covered_ayah_count` | `smallint` | NOT NULL | — | — |
+| `covered_ayah_keys` | `jsonb` | NOT NULL | — | — |
+| `source_shape` | `text` | NOT NULL | — | — |
+| `text_hash` | `text` | NOT NULL | — | — |
+
+### `public.quran_tafsir_sources`
+
+| Column | Type | Nullability | Default | Role |
+|---|---|---|---|---|
+| `id` | `integer` | NOT NULL | — | PK |
+| `source_key` | `text` | NOT NULL | — | IDX |
+| `language_code` | `text` | NOT NULL | — | IDX |
+| `language_name_ar` | `text` | NOT NULL | — | — |
+| `language_name_en` | `text` | NOT NULL | — | — |
+| `direction` | `text` | NOT NULL | — | — |
+| `display_name_ar` | `text` | NOT NULL | — | — |
+| `short_name_ar` | `text` | NOT NULL | — | — |
+| `display_name_en` | `text` | NOT NULL | — | — |
+| `short_name_en` | `text` | NOT NULL | — | — |
+| `contributor_key` | `text` | NULL | — | — |
+| `contributor_name_ar` | `text` | NULL | — | — |
+| `contributor_name_en` | `text` | NULL | — | — |
+| `contributor_type` | `text` | NOT NULL | — | — |
+| `resource_kind` | `text` | NOT NULL | — | — |
+| `tafsir_kind` | `text` | NOT NULL | — | IDX |
+| `content_coverage_count` | `smallint` | NOT NULL | — | — |
+| `package_file` | `text` | NOT NULL | — | IDX |
+| `source_file_original` | `text` | NOT NULL | — | — |
+| `sha256` | `text` | NOT NULL | — | — |
+| `file_size_bytes` | `bigint` | NOT NULL | — | — |
+| `license_status` | `text` | NOT NULL | — | — |
+| `provenance_status` | `text` | NOT NULL | — | — |
+| `manifest_metadata` | `jsonb` | NULL | — | — |
+| `imported_at_utc` | `timestamptz` | NOT NULL | — | — |
+
+### `public.quran_translation_ayah_entries`
+
+| Column | Type | Nullability | Default | Role |
+|---|---|---|---|---|
+| `id` | `bigint` | NOT NULL | — | PK |
+| `source_id` | `integer` | NOT NULL | — | FK, IDX |
+| `ayah_id` | `integer` | NOT NULL | — | FK, IDX |
+| `verse_key` | `text` | NULL | — | — |
+| `text` | `text` | NOT NULL | — | — |
+
+### `public.quran_translation_sources`
+
+| Column | Type | Nullability | Default | Role |
+|---|---|---|---|---|
+| `id` | `integer` | NOT NULL | — | PK |
+| `source_key` | `text` | NOT NULL | — | IDX |
+| `language_code` | `text` | NOT NULL | — | IDX |
+| `language_name_en` | `text` | NOT NULL | — | — |
+| `language_name_ar` | `text` | NOT NULL | — | — |
+| `native_name` | `text` | NULL | — | — |
+| `direction` | `text` | NOT NULL | — | — |
+| `translation_type` | `text` | NOT NULL | — | IDX |
+| `display_name_en` | `text` | NOT NULL | — | — |
+| `display_name_ar` | `text` | NOT NULL | — | — |
+| `translator_key` | `text` | NULL | — | — |
+| `translator_name_en` | `text` | NULL | — | — |
+| `translator_name_ar` | `text` | NULL | — | — |
+| `contains_inline_footnotes` | `boolean` | NOT NULL | — | — |
+| `contains_html_markup` | `boolean` | NOT NULL | — | — |
+| `content_coverage_count` | `smallint` | NOT NULL | — | — |
 
 ### `public.quran_word_morphology`
 
-| Column | Type | Nullability | Default | Role | Category |
-|---|---|---|---|---|---|
-| `quran_word_id` | `integer` | NOT NULL | — | PK/FK/IDX | relationship/FK |
-| `location` | `text` | NOT NULL | — | — | source/canonical |
-| `head_pos` | `text` | NOT NULL | — | FK/IDX | relationship/FK |
-| `segment_count` | `smallint` | NOT NULL | — | — | UI/cache/stat |
-| `root_id` | `integer` | NULL | — | FK/IDX | relationship/FK |
-| `lemma_id` | `integer` | NULL | — | FK/IDX | relationship/FK |
-| `stem_id` | `integer` | NULL | — | FK/IDX | relationship/FK |
-| `is_verb` | `boolean` | NOT NULL | — | — | derived/search |
-| `verb_tense` | `text` | NULL | — | IDX | derived/search |
-| `verb_voice` | `text` | NULL | — | IDX | derived/search |
-| `case_feature` | `text` | NULL | — | IDX | derived/search |
-| `head_features_json` | `jsonb` | NULL | — | — | derived/search |
+| Column | Type | Nullability | Default | Role |
+|---|---|---|---|---|
+| `quran_word_id` | `integer` | NOT NULL | — | PK, FK |
+| `location` | `text` | NOT NULL | — | — |
+| `head_pos` | `text` | NOT NULL | — | FK, IDX |
+| `segment_count` | `smallint` | NOT NULL | — | — |
+| `root_id` | `integer` | NULL | — | FK, IDX |
+| `lemma_id` | `integer` | NULL | — | FK, IDX |
+| `stem_id` | `integer` | NULL | — | FK, IDX |
+| `is_verb` | `boolean` | NOT NULL | — | — |
+| `verb_tense` | `text` | NULL | — | IDX (partial: where `is_verb`) |
+| `verb_voice` | `text` | NULL | — | IDX (partial: where `is_verb`) |
+| `case_feature` | `text` | NULL | — | IDX |
+| `head_features_json` | `jsonb` | NULL | — | — |
 
 ### `public.quran_word_morphology_segments`
 
-| Column | Type | Nullability | Default | Role | Category |
-|---|---|---|---|---|---|
-| `id` | `integer` | NOT NULL | — | PK/IDX | source/canonical |
-| `quran_word_id` | `integer` | NOT NULL | — | FK/IDX | relationship/FK |
-| `segment_location` | `text` | NOT NULL | — | — | source/canonical |
-| `segment_number` | `smallint` | NOT NULL | — | IDX | source/canonical |
-| `kind` | `text` | NOT NULL | — | — | source/canonical |
-| `pos` | `text` | NOT NULL | — | FK/IDX | relationship/FK |
-| `form_buckwalter` | `text` | NOT NULL | — | — | source/canonical |
-| `form_arabic_normalized` | `text` | NULL | — | — | derived/search |
-| `arabic_render_tier` | `text` | NULL | — | IDX | import/audit |
-| `arabic_render_source` | `text` | NOT NULL | — | — | import/audit |
-| `root_buckwalter` | `text` | NULL | — | — | source/canonical |
-| `lemma_buckwalter` | `text` | NULL | — | — | source/canonical |
-| `features_raw` | `text` | NOT NULL | — | — | source/canonical |
-| `features_json` | `jsonb` | NULL | — | — | derived/search |
-| `i3rab_arabic` | `text` | NULL | — | — | derived/search |
-| `i3rab_review_reason` | `text` | NULL | — | — | import/audit |
-| `i3rab_rule_id` | `integer` | NULL | — | FK/IDX | relationship/FK |
-| `i3rab_status` | `text` | NOT NULL | `'unsupported'::text` | — | import/audit |
+| Column | Type | Nullability | Default | Role |
+|---|---|---|---|---|
+| `id` | `integer` | NOT NULL | — | PK |
+| `quran_word_id` | `integer` | NOT NULL | — | FK, IDX |
+| `segment_location` | `text` | NOT NULL | — | — |
+| `segment_number` | `smallint` | NOT NULL | — | IDX |
+| `kind` | `text` | NOT NULL | — | IDX (partial: where `kind = 'STEM'`) |
+| `pos` | `text` | NOT NULL | — | FK, IDX |
+| `form_buckwalter` | `text` | NOT NULL | — | — |
+| `form_arabic_normalized` | `text` | NULL | — | — |
+| `arabic_render_tier` | `text` | NULL | — | IDX |
+| `arabic_render_source` | `text` | NOT NULL | — | — |
+| `root_buckwalter` | `text` | NULL | — | — |
+| `lemma_buckwalter` | `text` | NULL | — | — |
+| `features_raw` | `text` | NOT NULL | — | — |
+| `features_json` | `jsonb` | NULL | — | — |
+| `i3rab_arabic` | `text` | NULL | — | — |
+| `i3rab_review_reason` | `text` | NULL | — | — |
+| `i3rab_rule_id` | `integer` | NULL | — | FK, IDX |
+| `i3rab_status` | `text` | NOT NULL | `'unsupported'::text` | — |
+| `lemma_id` | `integer` | NULL | — | FK, IDX |
+| `root_id` | `integer` | NULL | — | FK, IDX |
+| `stem_id` | `integer` | NULL | — | FK, IDX |
 
 ### `public.quran_words`
 
-| Column | Type | Nullability | Default | Role | Category |
-|---|---|---|---|---|---|
-| `id` | `integer` | NOT NULL | — | PK/IDX | source/canonical |
-| `location` | `text` | NOT NULL | — | IDX | source/canonical |
-| `ayah_id` | `integer` | NOT NULL | — | FK/IDX | relationship/FK |
-| `surah_number` | `smallint` | NOT NULL | — | IDX | source/canonical |
-| `ayah_number` | `smallint` | NOT NULL | — | IDX | source/canonical |
-| `word_number` | `smallint` | NOT NULL | — | IDX | source/canonical |
-| `page_number` | `smallint` | NOT NULL | — | FK/IDX | relationship/FK |
-| `line_number` | `smallint` | NOT NULL | — | IDX | source/canonical |
-| `line_word_order` | `smallint` | NOT NULL | — | IDX | source/canonical |
-| `qpc_glyph` | `text` | NOT NULL | — | — | source/canonical |
-| `text_uthmani` | `text` | NOT NULL | — | — | source/canonical |
-| `text_uthmani_simple` | `text` | NOT NULL | — | — | derived/search |
-| `text_imlaei_simple` | `text` | NOT NULL | — | — | derived/search |
-| `is_ayah_marker` | `boolean` | NOT NULL | — | — | source/canonical |
-| `word_key_imlaei_simple` | `text` | NOT NULL | `''::text` | IDX | derived/search |
-| `unique_simple_word_id` | `integer` | NULL | — | IDX | relationship/FK |
-| `unique_tashkeel_word_id` | `integer` | NULL | — | IDX | relationship/FK |
+| Column | Type | Nullability | Default | Role |
+|---|---|---|---|---|
+| `id` | `integer` | NOT NULL | — | PK |
+| `location` | `text` | NOT NULL | — | IDX |
+| `ayah_id` | `integer` | NOT NULL | — | FK, IDX |
+| `surah_number` | `smallint` | NOT NULL | — | IDX |
+| `ayah_number` | `smallint` | NOT NULL | — | IDX |
+| `word_number` | `smallint` | NOT NULL | — | IDX |
+| `page_number` | `smallint` | NOT NULL | — | FK, IDX |
+| `line_number` | `smallint` | NOT NULL | — | IDX |
+| `line_word_order` | `smallint` | NOT NULL | — | IDX |
+| `qpc_glyph` | `text` | NOT NULL | — | — |
+| `text_uthmani` | `text` | NOT NULL | — | — |
+| `text_uthmani_simple` | `text` | NOT NULL | — | — |
+| `text_imlaei_simple` | `text` | NOT NULL | — | — |
+| `is_ayah_marker` | `boolean` | NOT NULL | — | — |
+| `word_key_imlaei_simple` | `text` | NOT NULL | `''::text` | IDX (partial: where not marker) |
+| `unique_simple_word_id` | `integer` | NULL | — | IDX (partial) |
+| `unique_tashkeel_word_id` | `integer` | NULL | — | IDX (partial) |
 
 ### `public.quran_words_ordered_simple`
 
-| Column | Type | Nullability | Default | Role | Category |
-|---|---|---|---|---|---|
-| `word_order_in_mushaf` | `integer` | NOT NULL | — | PK/IDX | derived/search |
-| `quran_word_id` | `integer` | NOT NULL | — | FK/IDX | relationship/FK |
-| `location` | `text` | NOT NULL | — | — | derived/search |
-| `verse_key` | `text` | NOT NULL | — | — | derived/search |
-| `surah_number` | `smallint` | NOT NULL | — | IDX | derived/search |
-| `ayah_number` | `smallint` | NOT NULL | — | IDX | derived/search |
-| `page_number` | `smallint` | NOT NULL | — | — | derived/search |
-| `line_number` | `smallint` | NOT NULL | — | — | derived/search |
-| `word_order_in_ayah` | `smallint` | NOT NULL | — | IDX | derived/search |
-| `word_order_in_surah` | `smallint` | NOT NULL | — | IDX | derived/search |
-| `text_uthmani_simple` | `text` | NOT NULL | — | — | derived/search |
-| `text_imlaei_simple` | `text` | NOT NULL | — | — | derived/search |
-| `occurrences_count` | `integer` | NOT NULL | — | — | UI/cache/stat |
-| `ayahs_count` | `smallint` | NOT NULL | — | — | UI/cache/stat |
-| `surahs_count` | `smallint` | NOT NULL | — | — | UI/cache/stat |
-| `word_key_imlaei_simple` | `text` | NOT NULL | `''::text` | — | derived/search |
+| Column | Type | Nullability | Default | Role |
+|---|---|---|---|---|
+| `word_order_in_mushaf` | `integer` | NOT NULL | — | PK |
+| `quran_word_id` | `integer` | NOT NULL | — | FK, IDX |
+| `location` | `text` | NOT NULL | — | — |
+| `verse_key` | `text` | NOT NULL | — | — |
+| `surah_number` | `smallint` | NOT NULL | — | IDX |
+| `ayah_number` | `smallint` | NOT NULL | — | IDX |
+| `page_number` | `smallint` | NOT NULL | — | — |
+| `line_number` | `smallint` | NOT NULL | — | — |
+| `word_order_in_ayah` | `smallint` | NOT NULL | — | IDX |
+| `word_order_in_surah` | `smallint` | NOT NULL | — | IDX |
+| `text_uthmani_simple` | `text` | NOT NULL | — | — |
+| `text_imlaei_simple` | `text` | NOT NULL | — | — |
+| `occurrences_count` | `integer` | NOT NULL | — | — |
+| `ayahs_count` | `smallint` | NOT NULL | — | — |
+| `surahs_count` | `smallint` | NOT NULL | — | — |
+| `word_key_imlaei_simple` | `text` | NOT NULL | `''::text` | — |
 
 ### `public.quran_words_ordered_tashkeel`
 
-| Column | Type | Nullability | Default | Role | Category |
-|---|---|---|---|---|---|
-| `word_order_in_mushaf` | `integer` | NOT NULL | — | PK/IDX | derived/search |
-| `quran_word_id` | `integer` | NOT NULL | — | FK/IDX | relationship/FK |
-| `location` | `text` | NOT NULL | — | — | derived/search |
-| `verse_key` | `text` | NOT NULL | — | — | derived/search |
-| `surah_number` | `smallint` | NOT NULL | — | IDX | derived/search |
-| `ayah_number` | `smallint` | NOT NULL | — | IDX | derived/search |
-| `page_number` | `smallint` | NOT NULL | — | — | derived/search |
-| `line_number` | `smallint` | NOT NULL | — | — | derived/search |
-| `word_order_in_ayah` | `smallint` | NOT NULL | — | IDX | derived/search |
-| `word_order_in_surah` | `smallint` | NOT NULL | — | IDX | derived/search |
-| `text_uthmani` | `text` | NOT NULL | — | — | source/canonical |
-| `text_uthmani_simple` | `text` | NOT NULL | — | — | derived/search |
-| `text_imlaei_simple` | `text` | NOT NULL | — | — | derived/search |
-| `occurrences_count` | `integer` | NOT NULL | — | — | UI/cache/stat |
-| `ayahs_count` | `smallint` | NOT NULL | — | — | UI/cache/stat |
-| `surahs_count` | `smallint` | NOT NULL | — | — | UI/cache/stat |
+| Column | Type | Nullability | Default | Role |
+|---|---|---|---|---|
+| `word_order_in_mushaf` | `integer` | NOT NULL | — | PK |
+| `quran_word_id` | `integer` | NOT NULL | — | FK, IDX |
+| `location` | `text` | NOT NULL | — | — |
+| `verse_key` | `text` | NOT NULL | — | — |
+| `surah_number` | `smallint` | NOT NULL | — | IDX |
+| `ayah_number` | `smallint` | NOT NULL | — | IDX |
+| `page_number` | `smallint` | NOT NULL | — | — |
+| `line_number` | `smallint` | NOT NULL | — | — |
+| `word_order_in_ayah` | `smallint` | NOT NULL | — | IDX |
+| `word_order_in_surah` | `smallint` | NOT NULL | — | IDX |
+| `text_uthmani` | `text` | NOT NULL | — | — |
+| `text_uthmani_simple` | `text` | NOT NULL | — | — |
+| `text_imlaei_simple` | `text` | NOT NULL | — | — |
+| `occurrences_count` | `integer` | NOT NULL | — | — |
+| `ayahs_count` | `smallint` | NOT NULL | — | — |
+| `surahs_count` | `smallint` | NOT NULL | — | — |
 
 ### `public.quran_words_unique_simple`
 
-| Column | Type | Nullability | Default | Role | Category |
-|---|---|---|---|---|---|
-| `id` | `integer` | NOT NULL | — | PK/IDX | source/canonical |
-| `text_uthmani_simple` | `text` | NOT NULL | — | — | derived/search |
-| `text_imlaei_simple` | `text` | NOT NULL | — | — | derived/search |
-| `occurrences_count` | `integer` | NOT NULL | — | — | UI/cache/stat |
-| `ayahs_count` | `smallint` | NOT NULL | — | — | UI/cache/stat |
-| `surahs_count` | `smallint` | NOT NULL | — | — | UI/cache/stat |
-| `first_quran_word_id` | `integer` | NOT NULL | — | FK/IDX | relationship/FK |
-| `first_location` | `text` | NOT NULL | — | — | derived/search |
-| `first_surah_number` | `smallint` | NOT NULL | — | — | derived/search |
-| `first_ayah_number` | `smallint` | NOT NULL | — | — | derived/search |
-| `first_word_order_in_mushaf` | `integer` | NOT NULL | — | IDX | derived/search |
-| `first_page_number` | `smallint` | NOT NULL | — | — | derived/search |
-| `first_line_number` | `smallint` | NOT NULL | — | — | derived/search |
-| `qpc_glyph` | `text` | NOT NULL | `''::text` | — | source/canonical |
-| `text_uthmani` | `text` | NOT NULL | `''::text` | — | source/canonical |
-| `word_key_imlaei_simple` | `text` | NOT NULL | `''::text` | IDX | derived/search |
+| Column | Type | Nullability | Default | Role |
+|---|---|---|---|---|
+| `id` | `integer` | NOT NULL | — | PK |
+| `text_uthmani_simple` | `text` | NOT NULL | — | — |
+| `text_imlaei_simple` | `text` | NOT NULL | — | — |
+| `occurrences_count` | `integer` | NOT NULL | — | — |
+| `ayahs_count` | `smallint` | NOT NULL | — | — |
+| `surahs_count` | `smallint` | NOT NULL | — | — |
+| `first_quran_word_id` | `integer` | NOT NULL | — | FK, IDX |
+| `first_location` | `text` | NOT NULL | — | — |
+| `first_surah_number` | `smallint` | NOT NULL | — | — |
+| `first_ayah_number` | `smallint` | NOT NULL | — | — |
+| `first_word_order_in_mushaf` | `integer` | NOT NULL | — | IDX |
+| `first_page_number` | `smallint` | NOT NULL | — | — |
+| `first_line_number` | `smallint` | NOT NULL | — | — |
+| `qpc_glyph` | `text` | NOT NULL | `''::text` | — |
+| `text_uthmani` | `text` | NOT NULL | `''::text` | — |
+| `word_key_imlaei_simple` | `text` | NOT NULL | `''::text` | IDX |
 
 ### `public.quran_words_unique_tashkeel`
 
-| Column | Type | Nullability | Default | Role | Category |
-|---|---|---|---|---|---|
-| `id` | `integer` | NOT NULL | — | PK/IDX | source/canonical |
-| `text_uthmani` | `text` | NOT NULL | — | IDX | source/canonical |
-| `text_uthmani_simple` | `text` | NOT NULL | — | — | derived/search |
-| `text_imlaei_simple` | `text` | NOT NULL | — | — | derived/search |
-| `occurrences_count` | `integer` | NOT NULL | — | — | UI/cache/stat |
-| `ayahs_count` | `smallint` | NOT NULL | — | — | UI/cache/stat |
-| `surahs_count` | `smallint` | NOT NULL | — | — | UI/cache/stat |
-| `first_quran_word_id` | `integer` | NOT NULL | — | FK/IDX | relationship/FK |
-| `first_location` | `text` | NOT NULL | — | — | derived/search |
-| `first_surah_number` | `smallint` | NOT NULL | — | — | derived/search |
-| `first_ayah_number` | `smallint` | NOT NULL | — | — | derived/search |
-| `first_word_order_in_mushaf` | `integer` | NOT NULL | — | IDX | derived/search |
-| `first_page_number` | `smallint` | NOT NULL | — | — | derived/search |
-| `first_line_number` | `smallint` | NOT NULL | — | — | derived/search |
+| Column | Type | Nullability | Default | Role |
+|---|---|---|---|---|
+| `id` | `integer` | NOT NULL | — | PK |
+| `text_uthmani` | `text` | NOT NULL | — | IDX |
+| `text_uthmani_simple` | `text` | NOT NULL | — | — |
+| `text_imlaei_simple` | `text` | NOT NULL | — | — |
+| `occurrences_count` | `integer` | NOT NULL | — | — |
+| `ayahs_count` | `smallint` | NOT NULL | — | — |
+| `surahs_count` | `smallint` | NOT NULL | — | — |
+| `first_quran_word_id` | `integer` | NOT NULL | — | FK, IDX |
+| `first_location` | `text` | NOT NULL | — | — |
+| `first_surah_number` | `smallint` | NOT NULL | — | — |
+| `first_ayah_number` | `smallint` | NOT NULL | — | — |
+| `first_word_order_in_mushaf` | `integer` | NOT NULL | — | IDX |
+| `first_page_number` | `smallint` | NOT NULL | — | — |
+| `first_line_number` | `smallint` | NOT NULL | — | — |
 
 ## 4. Constraints and indexes
 
-Note: `NOT NULL` is represented in the column inventory. PostgreSQL catalog output included many `NOT NULL` entries as check-like constraints; below lists primary keys, foreign keys, explicit domain checks, and indexes.
+`NOT NULL` is represented in the column inventory (§3). Below: primary keys, foreign keys (with on-delete
+action), explicit domain checks, and indexes (unique/partial noted). 130 indexes total; 7 are partial.
 
 ### `__EFMigrationsHistory`
-- PK: `PK___EFMigrationsHistory` on `MigrationId`.
-- FKs: none.
-- Unique constraints: none.
-- Explicit checks: none.
-- Indexes: `PK___EFMigrationsHistory` unique btree (`MigrationId`).
+- PK: `MigrationId`. FKs: none. Checks: none. Indexes: PK only.
 
 ### `quran_ayahs`
-- PK: `PK_quran_ayahs` on `id`.
-- FKs: `surah_number -> quran_surahs(surah_number)` with cascade delete.
-- Unique constraints: none.
-- Explicit checks: none.
-- Indexes: `PK_quran_ayahs` unique (`id`); `IX_quran_ayahs_surah_number_ayah_number` unique (`surah_number`, `ayah_number`); `IX_quran_ayahs_verse_key` unique (`verse_key`).
+- PK: `id`.
+- FKs: `surah_number → quran_surahs` (cascade); `juz_number → quran_juzs` (restrict); `hizb_number → quran_hizbs` (restrict); `rub_number → quran_rubs` (restrict).
+- Checks: none.
+- Indexes: PK; unique (`surah_number`,`ayah_number`); unique (`verse_key`); (`juz_number`); (`hizb_number`); (`rub_number`).
+
+### `quran_full_i3rab_ayah_entries`
+- PK: `id`.
+- FKs: `source_id → quran_full_i3rab_sources` (cascade); `ayah_id → quran_ayahs` (cascade); `entry_id → quran_full_i3rab_entries` (cascade).
+- Checks: `source_value_kind ∈ {leader, member_pointer, flat}`.
+- Indexes: PK; (`ayah_id`,`source_id`); (`entry_id`); unique (`source_id`,`ayah_id`); unique (`source_id`,`verse_key`).
+
+### `quran_full_i3rab_entries`
+- PK: `id`.
+- FKs: `source_id → quran_full_i3rab_sources` (cascade); `leader_ayah_id → quran_ayahs` (cascade).
+- Checks: `covered_ayah_count ≥ 1`; `i3rab_html <> ''`; `source_shape ∈ {grouped_leader, flat}`.
+- Indexes: PK; (`leader_ayah_id`); (`source_id`,`leader_ayah_id`); unique (`source_id`,`source_entry_key`).
+
+### `quran_full_i3rab_sources`
+- PK: `id`.
+- FKs: none.
+- Checks: `content_coverage_count = 6236`; `direction ∈ {rtl, ltr}`; `language_code = 'ar'`; `license_status = 'unknown'`; `markup_format = 'html'`; `provenance_status = 'unknown'`; `resource_kind = 'full_i3rab'`; `usage_scope = 'internal-only-until-cleared'`.
+- Indexes: PK; unique (`package_file`); unique (`source_key`).
+
+### `quran_hizbs`
+- PK: `hizb_number`.
+- FKs: `juz_number → quran_juzs` (restrict); `first_ayah_id → quran_ayahs` (restrict); `last_ayah_id → quran_ayahs` (restrict).
+- Checks: none.
+- Indexes: PK; (`first_ayah_id`); (`juz_number`); (`last_ayah_id`).
 
 ### `quran_i3rab_rules`
-- PK: `PK_quran_i3rab_rules` on `id`.
+- PK: `id`.
 - FKs: none.
-- Unique constraints: none.
-- Explicit checks: `CK_quran_i3rab_rules_default_status` allows `approved`, `needs_review`, `unsupported`.
-- Indexes: `PK_quran_i3rab_rules` unique (`id`); `IX_quran_i3rab_rules_signature_key` unique (`signature_key`); `IX_quran_i3rab_rules_rule_family` (`rule_family`).
+- Checks: `default_status ∈ {approved, needs_review, unsupported}`.
+- Indexes: PK; unique (`signature_key`); (`rule_family`).
+
+### `quran_juzs`
+- PK: `juz_number`.
+- FKs: `first_ayah_id → quran_ayahs` (restrict); `last_ayah_id → quran_ayahs` (restrict).
+- Checks: none.
+- Indexes: PK; (`first_ayah_id`); (`last_ayah_id`).
 
 ### `quran_lemmas`
-- PK: `PK_quran_lemmas` on `id`.
-- FKs: `root_id -> quran_roots(id)`.
-- Unique constraints: none.
-- Explicit checks: none.
-- Indexes: `PK_quran_lemmas` unique (`id`); `IX_quran_lemmas_lemma_text` unique (`lemma_text`); `IX_quran_lemmas_first_word_order_in_mushaf` unique (`first_word_order_in_mushaf`); `IX_quran_lemmas_root_id` (`root_id`).
+- PK: `id`.
+- FKs: `root_id → quran_roots` (no action).
+- Checks: none.
+- Indexes: PK; unique (`lemma_text`); unique (`first_word_order_in_mushaf`); (`root_id`).
 
 ### `quran_mushaf_lines`
-- PK: `PK_quran_mushaf_lines` on `id`.
-- FKs: `page_number -> quran_mushaf_pages(page_number)` cascade; `surah_number -> quran_surahs(surah_number)`; `first_word_id -> quran_words(id)`; `last_word_id -> quran_words(id)`.
-- Unique constraints: none.
-- Explicit checks: none.
-- Indexes: `PK_quran_mushaf_lines` unique (`id`); `IX_quran_mushaf_lines_page_number_line_number` unique (`page_number`, `line_number`); `IX_quran_mushaf_lines_first_word_id`; `IX_quran_mushaf_lines_last_word_id`; `IX_quran_mushaf_lines_surah_number`.
+- PK: `id`.
+- FKs: `page_number → quran_mushaf_pages` (cascade); `surah_number → quran_surahs` (no action); `first_word_id → quran_words` (no action); `last_word_id → quran_words` (no action).
+- Checks: none.
+- Indexes: PK; unique (`page_number`,`line_number`); (`first_word_id`); (`last_word_id`); (`surah_number`).
 
 ### `quran_mushaf_pages`
-- PK: `PK_quran_mushaf_pages` on `page_number`.
-- FKs: none.
-- Unique constraints: none.
-- Explicit checks: none.
-- Indexes: `PK_quran_mushaf_pages` unique (`page_number`).
+- PK: `page_number`. FKs: none. Checks: none. Indexes: PK only.
+
+### `quran_mutashabihat_groups`
+- PK: `id`.
+- FKs: `representative_ayah_id → quran_ayahs` (cascade).
+- Checks: none.
+- Indexes: PK; (`representative_ayah_id`); unique (`source_group_id`).
+
+### `quran_mutashabihat_occurrences`
+- PK: `id`.
+- FKs: `group_id → quran_mutashabihat_groups` (cascade); `ayah_id → quran_ayahs` (cascade).
+- Checks: none.
+- Indexes: PK; (`ayah_id`); unique (`group_id`,`ayah_id`,`word_from`,`word_to`).
 
 ### `quran_pos_tags`
-- PK: `PK_quran_pos_tags` on `code`.
-- FKs: none.
-- Unique constraints: none.
-- Explicit checks: none.
-- Indexes: `PK_quran_pos_tags` unique (`code`); `IX_quran_pos_tags_category`; `IX_quran_pos_tags_sort_order`.
+- PK: `code`. FKs: none. Checks: none. Indexes: PK; (`category`); (`sort_order`).
 
 ### `quran_roots`
-- PK: `PK_quran_roots` on `id`.
-- FKs: none.
-- Unique constraints: none.
-- Explicit checks: none.
-- Indexes: `PK_quran_roots` unique (`id`); `IX_quran_roots_root_text` unique (`root_text`); `IX_quran_roots_first_word_order_in_mushaf` unique (`first_word_order_in_mushaf`); `IX_quran_roots_words_count`.
+- PK: `id`. FKs: none. Checks: none.
+- Indexes: PK; unique (`root_text`); unique (`first_word_order_in_mushaf`); (`words_count`).
+
+### `quran_rubs`
+- PK: `rub_number`.
+- FKs: `hizb_number → quran_hizbs` (restrict); `first_ayah_id → quran_ayahs` (restrict); `last_ayah_id → quran_ayahs` (restrict).
+- Checks: none.
+- Indexes: PK; (`first_ayah_id`); (`hizb_number`); (`last_ayah_id`).
+
+### `quran_sajdas`
+- PK: `sajdah_number`.
+- FKs: `ayah_id → quran_ayahs` (restrict).
+- Checks: none.
+- Indexes: PK; unique (`ayah_id`).
+
+### `quran_similar_ayah_links`
+- PK: `id`.
+- FKs: `source_ayah_id → quran_ayahs` (cascade); `target_ayah_id → quran_ayahs` (cascade).
+- Checks: `source_ayah_id <> target_ayah_id` (no self-link).
+- Indexes: PK; unique (`source_ayah_id`,`target_ayah_id`); (`target_ayah_id`).
 
 ### `quran_stems`
-- PK: `PK_quran_stems` on `id`.
-- FKs: none.
-- Unique constraints: none.
-- Explicit checks: none.
-- Indexes: `PK_quran_stems` unique (`id`); `IX_quran_stems_stem_text` unique (`stem_text`); `IX_quran_stems_first_word_order_in_mushaf` unique (`first_word_order_in_mushaf`).
+- PK: `id`. FKs: none. Checks: none.
+- Indexes: PK; unique (`stem_text`); unique (`first_word_order_in_mushaf`).
 
 ### `quran_surahs`
-- PK: `PK_quran_surahs` on `surah_number`.
+- PK: `surah_number`. FKs: none. Checks: none. Indexes: PK; unique (`name_arabic`).
+
+### `quran_tafsir_ayah_entries`
+- PK: `id`.
+- FKs: `source_id → quran_tafsir_sources` (cascade); `ayah_id → quran_ayahs` (cascade); `tafsir_entry_id → quran_tafsir_entries` (cascade).
+- Checks: `source_value_kind ∈ {leader, member_pointer, flat}`.
+- Indexes: PK; (`ayah_id`,`source_id`); unique (`source_id`,`ayah_id`); unique (`source_id`,`verse_key`); (`tafsir_entry_id`).
+
+### `quran_tafsir_entries`
+- PK: `id`.
+- FKs: `source_id → quran_tafsir_sources` (cascade); `leader_ayah_id → quran_ayahs` (cascade).
+- Checks: `covered_ayah_count ≥ 1`; `source_shape ∈ {grouped_leader, flat}`; `tafsir_text <> ''`.
+- Indexes: PK; (`leader_ayah_id`); (`source_id`,`leader_ayah_id`); unique (`source_id`,`source_entry_key`).
+
+### `quran_tafsir_sources`
+- PK: `id`.
 - FKs: none.
-- Unique constraints: none.
-- Explicit checks: none.
-- Indexes: `PK_quran_surahs` unique (`surah_number`); `IX_quran_surahs_name_arabic` unique (`name_arabic`).
+- Checks: `content_coverage_count = 6236`; `direction ∈ {rtl, ltr}`; `resource_kind = 'tafsir'`.
+- Indexes: PK; (`language_code`); (`language_code`,`tafsir_kind`); unique (`package_file`); unique (`source_key`).
+
+### `quran_translation_ayah_entries`
+- PK: `id`.
+- FKs: `source_id → quran_translation_sources` (cascade); `ayah_id → quran_ayahs` (cascade).
+- Checks: `text <> ''`.
+- Indexes: PK; (`ayah_id`,`source_id`); unique (`source_id`,`ayah_id`).
+
+### `quran_translation_sources`
+- PK: `id`.
+- FKs: none.
+- Checks: `content_coverage_count = 6236`; `direction ∈ {rtl, ltr}`; `translation_type ∈ {simple, with_footnotes}`; required-fields non-empty (`source_key`, `language_code`, `language_name_en/ar`, `direction`, `translation_type`, `display_name_en/ar`).
+- Indexes: PK; (`language_code`); (`language_code`,`translation_type`); unique (`source_key`).
 
 ### `quran_word_morphology`
-- PK: `PK_quran_word_morphology` on `quran_word_id`.
-- FKs: `quran_word_id -> quran_words(id)` cascade; `head_pos -> quran_pos_tags(code)` restrict; `root_id -> quran_roots(id)`; `lemma_id -> quran_lemmas(id)`; `stem_id -> quran_stems(id)`.
-- Unique constraints: none.
-- Explicit checks: none.
-- Indexes: `PK_quran_word_morphology` unique (`quran_word_id`); `IX_quran_word_morphology_quran_word_id` unique (`quran_word_id`); `IX_quran_word_morphology_head_pos`; `IX_quran_word_morphology_root_id`; `IX_quran_word_morphology_lemma_id`; `IX_quran_word_morphology_stem_id`; `IX_quran_word_morphology_case_feature`; partial `IX_quran_word_morphology_verb_tense` (`verb_tense`) where `is_verb`; partial `IX_quran_word_morphology_verb_voice` (`verb_voice`) where `is_verb`.
+- PK: `quran_word_id`.
+- FKs: `quran_word_id → quran_words` (cascade); `head_pos → quran_pos_tags` (restrict); `root_id → quran_roots` (no action); `lemma_id → quran_lemmas` (no action); `stem_id → quran_stems` (no action).
+- Checks: none.
+- Indexes: PK / unique (`quran_word_id`); (`head_pos`); (`root_id`); (`lemma_id`); (`stem_id`); (`case_feature`); partial (`verb_tense`) where `is_verb`; partial (`verb_voice`) where `is_verb`.
 
 ### `quran_word_morphology_segments`
-- PK: `PK_quran_word_morphology_segments` on `id`.
-- FKs: `quran_word_id -> quran_words(id)` cascade; `pos -> quran_pos_tags(code)` restrict; `i3rab_rule_id -> quran_i3rab_rules(id)` restrict.
-- Unique constraints: none.
-- Explicit checks: `CK_quran_word_morphology_segments_i3rab_status` allows `approved`, `needs_review`, `unsupported`.
-- Indexes: `PK_quran_word_morphology_segments` unique (`id`); `IX_quran_word_morphology_segments_quran_word_id_segment_number` unique (`quran_word_id`, `segment_number`); `IX_quran_word_morphology_segments_pos`; `IX_quran_word_morphology_segments_i3rab_rule_id`; `IX_quran_word_morphology_segments_arabic_render_tier`; partial `IX_quran_word_morphology_segments_stem` (`quran_word_id`) where `kind = 'STEM'`.
+- PK: `id`.
+- FKs: `quran_word_id → quran_words` (cascade); `pos → quran_pos_tags` (restrict); `i3rab_rule_id → quran_i3rab_rules` (restrict); `root_id → quran_roots` (restrict); `lemma_id → quran_lemmas` (restrict); `stem_id → quran_stems` (restrict).
+- Checks: `i3rab_status ∈ {approved, needs_review, unsupported}`.
+- Indexes: PK; unique (`quran_word_id`,`segment_number`); (`pos`); (`i3rab_rule_id`); (`arabic_render_tier`); (`root_id`); (`lemma_id`); (`stem_id`); partial (`quran_word_id`) where `kind = 'STEM'`.
 
 ### `quran_words`
-- PK: `PK_quran_words` on `id`.
-- FKs: `ayah_id -> quran_ayahs(id)` cascade; `page_number -> quran_mushaf_pages(page_number)` cascade.
-- Unique constraints: none.
-- Explicit checks: none.
-- Indexes: `PK_quran_words` unique (`id`); `IX_quran_words_location` unique (`location`); `IX_quran_words_ayah_id`; `IX_quran_words_page_number_line_number_line_word_order`; `IX_quran_words_surah_ayah_word`; partial `IX_quran_words_readable_surah_ayah_word` where `is_ayah_marker = false`; partial `IX_quran_words_word_key_imlaei_simple` where `is_ayah_marker = false`; partial `IX_quran_words_unique_simple_word_id` where readable and non-null; partial `IX_quran_words_unique_tashkeel_word_id` where readable and non-null.
+- PK: `id`.
+- FKs: `ayah_id → quran_ayahs` (cascade); `page_number → quran_mushaf_pages` (cascade).
+- Checks: none.
+- Indexes: PK; unique (`location`); (`ayah_id`); (`page_number`,`line_number`,`line_word_order`); (`surah_number`,`ayah_number`,`word_number`); partial readable (`surah_number`,`ayah_number`,`word_number`) where not marker; partial (`word_key_imlaei_simple`) where not marker; partial (`unique_simple_word_id`) where readable & non-null; partial (`unique_tashkeel_word_id`) where readable & non-null.
 
 ### `quran_words_ordered_simple`
-- PK: `PK_quran_words_ordered_simple` on `word_order_in_mushaf`.
-- FKs: `quran_word_id -> quran_words(id)` cascade.
-- Unique constraints: none.
-- Explicit checks: none.
-- Indexes: `PK_quran_words_ordered_simple` unique (`word_order_in_mushaf`); `IX_quran_words_ordered_simple_quran_word_id` unique (`quran_word_id`); `IX_quran_words_ordered_simple_surah_number_ayah_number_word_or~` (`surah_number`, `ayah_number`, `word_order_in_ayah`); `IX_quran_words_ordered_simple_surah_number_word_order_in_surah` (`surah_number`, `word_order_in_surah`).
+- PK: `word_order_in_mushaf`.
+- FKs: `quran_word_id → quran_words` (cascade).
+- Checks: none.
+- Indexes: PK; unique (`quran_word_id`); (`surah_number`,`ayah_number`,`word_order_in_ayah`); (`surah_number`,`word_order_in_surah`).
 
 ### `quran_words_ordered_tashkeel`
-- PK: `PK_quran_words_ordered_tashkeel` on `word_order_in_mushaf`.
-- FKs: `quran_word_id -> quran_words(id)` cascade.
-- Unique constraints: none.
-- Explicit checks: none.
-- Indexes: `PK_quran_words_ordered_tashkeel` unique (`word_order_in_mushaf`); `IX_quran_words_ordered_tashkeel_quran_word_id` unique (`quran_word_id`); `IX_quran_words_ordered_tashkeel_surah_number_ayah_number_word_~` (`surah_number`, `ayah_number`, `word_order_in_ayah`); `IX_quran_words_ordered_tashkeel_surah_number_word_order_in_sur~` (`surah_number`, `word_order_in_surah`).
+- PK: `word_order_in_mushaf`.
+- FKs: `quran_word_id → quran_words` (cascade).
+- Checks: none.
+- Indexes: PK; unique (`quran_word_id`); (`surah_number`,`ayah_number`,`word_order_in_ayah`); (`surah_number`,`word_order_in_surah`).
 
 ### `quran_words_unique_simple`
-- PK: `PK_quran_words_unique_simple` on `id`.
-- FKs: `first_quran_word_id -> quran_words(id)` cascade.
-- Unique constraints: none.
-- Explicit checks: none.
-- Indexes: `PK_quran_words_unique_simple` unique (`id`); `IX_quran_words_unique_simple_word_key_imlaei_simple` unique (`word_key_imlaei_simple`); `IX_quran_words_unique_simple_first_word_order_in_mushaf` unique (`first_word_order_in_mushaf`); `IX_quran_words_unique_simple_first_quran_word_id`.
+- PK: `id`.
+- FKs: `first_quran_word_id → quran_words` (cascade).
+- Checks: none.
+- Indexes: PK; unique (`word_key_imlaei_simple`); unique (`first_word_order_in_mushaf`); (`first_quran_word_id`).
 
 ### `quran_words_unique_tashkeel`
-- PK: `PK_quran_words_unique_tashkeel` on `id`.
-- FKs: `first_quran_word_id -> quran_words(id)` cascade.
-- Unique constraints: none.
-- Explicit checks: none.
-- Indexes: `PK_quran_words_unique_tashkeel` unique (`id`); `IX_quran_words_unique_tashkeel_text_uthmani` unique (`text_uthmani`); `IX_quran_words_unique_tashkeel_first_word_order_in_mushaf` unique (`first_word_order_in_mushaf`); `IX_quran_words_unique_tashkeel_first_quran_word_id`.
+- PK: `id`.
+- FKs: `first_quran_word_id → quran_words` (cascade).
+- Checks: none.
+- Indexes: PK; unique (`text_uthmani`); unique (`first_word_order_in_mushaf`); (`first_quran_word_id`).
 
 ## 5. EF mapping cross-check
 
-Inspected EF files:
-
-- `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/QuranDashboardDbContext.cs`
-- `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Configurations/Quran/**`
-- Latest `QuranDashboardDbContextModelSnapshot.cs`
-- Raw SQL files under `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Repositories/Quran/**`
-
-Findings:
-
-| Check | Result |
-|---|---|
-| Tables configured in EF but missing in DB | None found. The 16 app tables configured with `ToTable(...)` are present. |
-| DB tables not mapped in EF | `__EFMigrationsHistory` is not a domain `DbSet`, expected for EF infrastructure. No unmapped app table found. |
-| Columns configured in EF but missing in DB | None found by comparing configuration column names with `information_schema.columns`. |
-| DB columns not mapped in EF | None found for app tables. `__EFMigrationsHistory.ProductVersion` is EF infrastructure, not app mapping. |
-| Schema mapping | EF `ToTable(...)` calls do not specify schema; tables resolve to `public`. |
-
-Raw SQL dependencies identified:
-
-- Foundation import writes `quran_surahs`, `quran_ayahs`, `quran_mushaf_pages`, `quran_words`, `quran_mushaf_lines` via binary `COPY`, and can `TRUNCATE` the foundation set (`EfBulkQuranImportWriter.cs`).
-- Display word rebuild derives and writes `quran_words_ordered_*`, `quran_words_unique_*`, and updates `quran_words.unique_*_word_id` (`DisplayWordsSql.cs`).
-- Morphology import writes `quran_pos_tags`, `quran_roots`, `quran_lemmas`, `quran_stems`, `quran_word_morphology`, `quran_word_morphology_segments`, and can `TRUNCATE` the morphology set (`MorphologyBulkCopier.cs`, `MorphologySql.cs`).
-- I'rab generation upserts `quran_i3rab_rules`, stages segment results in a temp table, updates `quran_word_morphology_segments.i3rab_*`, and validates/report-reads several morphology/i'rab columns (`I3rabSql.cs`, `I3rabValidationRunner.cs`, `EfI3rabGenerationWriter.cs`).
+- All 31 application tables resolve to the `public` schema (EF `ToTable(...)` calls do not specify a schema);
+  `__EFMigrationsHistory` is EF infrastructure, not a domain `DbSet`.
+- `__EFMigrationsHistory` holds **15** rows — one per applied migration (`QuranFoundationSchema` … `AddSegmentStemId`).
+  See `database-reset-and-seeding-order.md` §2 for the ordered migration list and feature attribution.
+- Raw SQL ownership by importer pipeline (unchanged verb set; see the seeding runbook §3):
+  - Foundation import writes `quran_surahs`, `quran_ayahs`, `quran_mushaf_pages`, `quran_words`, `quran_mushaf_lines`.
+  - Display word rebuild derives `quran_words_ordered_*`, `quran_words_unique_*`, and updates `quran_words.unique_*_word_id` (Feature 013 assigns the unique ids deterministically — no `IDENTITY`).
+  - Morphology import writes `quran_pos_tags`, `quran_roots`, `quran_lemmas`, `quran_stems`, `quran_word_morphology`, `quran_word_morphology_segments`, including the segment `root_id`/`lemma_id` (017) and `stem_id` (018) dimension ids.
+  - I'rab generation upserts `quran_i3rab_rules` and updates `quran_word_morphology_segments.i3rab_*`.
+  - Mutashabihat (006), tafsir (007), translations (008), navigation divisions (009), full-i3rab (010), and ayah similarities (012) each own their `quran_*` table family.
 
 ## 6. Potential cleanup candidates
 
-No deletion is recommended from this inventory alone. The entries below are candidates for deeper review only.
+No deletion is recommended from this inventory alone. This pass refreshed the structural catalog
+(tables/columns/indexes/FKs/checks) but did **not** re-run per-column null-distribution profiling for the
+new (006–018) tables; candidates that depend on value distribution are carried forward from the
+2026-06-13 revision and must be re-profiled before any action.
 
-| Candidate | Why it may be unnecessary | Evidence | Risk | Must verify before deleting |
-|---|---|---|---|---|
-| `quran_word_morphology_segments.i3rab_review_reason` | Currently carries no data in this local DB. | Read-only profile: 128,219 total rows, 0 non-null, 128,219 null. Raw SQL writes it only when staged i'rab review reasons exist. | Medium | Confirm workflow will never persist `needs_review`/`unsupported` explanations; check reports/tests depending on validation messages. |
-| `quran_word_morphology_segments.arabic_render_source` | Current values are uniform, so it may be provenance metadata rather than query data. | Distribution: 128,219 rows all `buckwalter-transliteration`. `MorphologySql.CheckSegSourceValid` validates this exact value. | High | Confirm no future render source will be introduced; replace validation/report provenance if removed. |
-| `quran_ayahs.words_count_source` and `quran_ayahs.words_count_real` | These look like source-vs-derived audit counts and may duplicate computable data from `quran_words`. | Code search found configuration/import references; no obvious query usage outside import/model files during this pass. | Medium | Verify import validation/reporting requirements and whether historical source discrepancies must remain inspectable. |
-| `quran_ayahs.page_from` and `quran_ayahs.page_to` | Page span is derivable from word/page layout. | Code search found configuration/import references; no obvious read usage outside import/model files during this pass. | Medium | Verify UI/API page navigation needs and source reconciliation needs. |
-| `quran_word_morphology.location` | Duplicates `quran_words.location` via `quran_word_id`. | `MorphologySql.CheckLocationIdMismatch` exists specifically to validate equality with `quran_words.location`. | High | Confirm importer validation and human-readable diagnostics do not need direct morphology location; update mismatch checks if removed. |
-| `quran_words_ordered_*` placement/text/count columns | Many columns duplicate `quran_words`/`quran_ayahs` plus computed counts. | `DisplayWordsSql` derives these tables from `quran_words` and `quran_ayahs`. They are optimized read models. | High | Identify frontend/API read paths, expected query latency, rebuild cost, and whether a view/materialized view is preferable. |
-| `quran_words_unique_*` first occurrence columns | First occurrence metadata can be recomputed from `quran_words_ordered_*`/`quran_words`. | `DisplayWordsSql` derives all unique-word first occurrence fields. | High | Verify lookup/search UX and indexing needs; measure recompute/query cost. |
-| `quran_words.unique_simple_word_id` and `quran_words.unique_tashkeel_word_id` | They are link-cache columns to derived unique-word tables and are null for ayah markers. | Profile: 83,668 rows total, 77,432 non-null, 6,236 null; non-null count equals readable word count. `DisplayWordsSql` updates these after rebuilding unique tables. | High | Confirm no read path needs O(1) jump from canonical word to unique identity; evaluate join alternatives. |
+| Candidate | Why it may be unnecessary | Risk | Must verify before deleting |
+|---|---|---|---|
+| `quran_word_morphology_segments.i3rab_review_reason` | Carried no data in the prior profile. | Medium | Re-profile null distribution; confirm `needs_review`/`unsupported` explanations are never persisted. |
+| `quran_word_morphology_segments.arabic_render_source` | Prior profile uniform (`buckwalter-transliteration`); `MorphologySql.CheckSegSourceValid` validates the exact value. | High | Confirm no future render source; update validation if removed. |
+| `quran_ayahs.words_count_source` / `words_count_real` | Look like source-vs-derived audit counts. | Medium | Verify import validation/reporting needs. |
+| `quran_ayahs.page_from` / `page_to` | Page span derivable from layout. | Medium | Verify UI/API page-navigation and reconciliation needs. |
+| `quran_word_morphology.location` | Duplicates `quran_words.location` via `quran_word_id`; `MorphologySql.CheckLocationIdMismatch` validates equality. | High | Confirm importer diagnostics do not need it; update mismatch check if removed. |
+| `quran_words_ordered_*` / `quran_words_unique_*` denormalized columns | Read-model duplication of `quran_words`/`quran_ayahs` plus computed counts. | High | Identify read-path latency/rebuild-cost needs before touching. |
+| `quran_words.unique_simple_word_id` / `unique_tashkeel_word_id` | Link-cache columns to derived unique tables; null for ayah markers (6,236 of 83,668). | High | Confirm no O(1) canonical→unique jump is needed. |
 
-Zero-row tables: none. Exact counts show `quran_pos_tags` has 49 rows and `__EFMigrationsHistory` has 7 rows; earlier approximate `pg_class.reltuples` estimates for these tables were stale.
+Zero-row tables: none. Smallest populated tables are `quran_full_i3rab_sources` (4) and `quran_sajdas` (15).
 
 ## 7. Potential schema split proposal
 
-This is a future organization proposal only. Do not implement without a migration plan, EF schema mapping plan, and raw SQL rewrite plan.
+Future organization proposal only — do not implement without a migration plan, EF schema-mapping plan, and
+raw-SQL rewrite plan. Now that the content families have grown, candidate schemas are clearer:
 
-| Proposed schema | Current tables that might belong there | Why | Migration risk | Raw SQL / EF impact |
-|---|---|---|---|---|
-| `quran_core` | `quran_surahs`, `quran_ayahs`, `quran_mushaf_pages`, `quran_mushaf_lines`, `quran_words` | Canonical Quran structure, tokens, and layout. | High because many FKs and imports depend on these tables. | EF `ToTable` schemas; all import/display/morphology/i'rab SQL table references need schema qualification. |
-| `quran_words` | `quran_words_ordered_simple`, `quran_words_ordered_tashkeel`, `quran_words_unique_simple`, `quran_words_unique_tashkeel` | Derived/read-model word identity and ordering tables. | Medium/high because rebuild SQL truncates/inserts/updates across these and `quran_core.quran_words`. | `DisplayWordsSql` is heavily impacted; FK cross-schema references must be explicit. |
-| `quran_morphology` | `quran_pos_tags`, `quran_roots`, `quran_lemmas`, `quran_stems`, `quran_word_morphology`, `quran_word_morphology_segments` | Morphology dimensions and segment-level source/derived data. | High due to bulk `COPY`, validation SQL, and cross-links to `quran_words`. | Morphology `COPY`, validation, EF configurations, and tests need schema-qualified references. |
-| `quran_i3rab` | `quran_i3rab_rules`; optionally i'rab columns could stay on `quran_morphology.quran_word_morphology_segments` or move to a separate result table later. | Separates generated i'rab rule catalogue from raw morphology. | Medium if only rules move; high if segment i'rab columns are normalized out. | `I3rabSql` upsert/update/report SQL and FK from segments require updates. |
-| `importing` | No current permanent app table beyond EF history; future import runs/reports could live here. | Keeps operational import metadata separate if persisted later. | Low for future-only, high if repurposing current audit columns. | Additive if future-only; otherwise changes import/report code. |
-| `admin` / `content` | No current tables in this DB snapshot. | Useful if non-Quran admin/content publishing tables are introduced. | Low if future-only. | No current impact. |
+| Proposed schema | Tables | Why |
+|---|---|---|
+| `quran_core` | `quran_surahs`, `quran_ayahs`, `quran_mushaf_pages`, `quran_mushaf_lines`, `quran_words` | Canonical structure, tokens, layout. |
+| `quran_navigation` | `quran_juzs`, `quran_hizbs`, `quran_rubs`, `quran_sajdas` | Division metadata referencing `quran_ayahs`. |
+| `quran_word_models` | `quran_words_ordered_*`, `quran_words_unique_*` | Derived read-model word identity/ordering. |
+| `quran_morphology` | `quran_pos_tags`, `quran_roots`, `quran_lemmas`, `quran_stems`, `quran_word_morphology`, `quran_word_morphology_segments` | Morphology dimensions + segment data. |
+| `quran_i3rab` | `quran_i3rab_rules`, `quran_full_i3rab_sources`, `quran_full_i3rab_entries`, `quran_full_i3rab_ayah_entries` | Generated-rule catalogue + full-i'rab content. |
+| `quran_content` | `quran_tafsir_*`, `quran_translation_*`, `quran_mutashabihat_*`, `quran_similar_ayah_links` | Per-ayah scholarly/derived content families. |
+
+Risk is high across the board because bulk `COPY`, validation SQL, and EF configurations embed bare table
+names; cross-schema FKs to `quran_ayahs`/`quran_words` would all need qualification.
 
 ## 8. Final recommendation
 
-- Physical schema splitting: **later, not now**. The current database is cohesive and small enough operationally; the larger risk is raw SQL and EF mapping churn. Split schemas when stable module boundaries and read/write ownership are clearer, especially after the Word Simple I'rab Foundation feature stabilizes.
-- Obvious safe column deletions now: **none**. Several columns are denormalized or all-null/all-same in this local DB, but they are tied to imports, validation, reports, or read-model performance.
-- Areas needing deeper review before cleanup:
-  - Display/read-model tables (`quran_words_ordered_*`, `quran_words_unique_*`) and their latency requirements.
-  - I'rab workflow status/review columns, especially whether `needs_review`/`unsupported` states will be retained.
-  - Import/audit columns on `quran_ayahs` and morphology render provenance columns.
-  - Raw SQL contract surface before any schema split; table names are embedded in multiple SQL constants.
+- Physical schema splitting: **later, not now.** The DB is cohesive; the dominant risk remains raw-SQL and EF
+  mapping churn. Revisit once module read/write ownership is stable.
+- Obvious safe column deletions now: **none.** Several columns are denormalized or (in the prior profile)
+  all-null/uniform, but they are tied to imports, validation, reports, or read-model performance.
+- Next deeper-review items: re-profile null/value distributions for the 006–018 tables; confirm the
+  `content_coverage_count = 6236` invariant across all three content families; review render-provenance and
+  i'rab review columns before any cleanup; map the raw-SQL table-name surface before any schema split.
 
 ## Verification
 
 ### Commands used
 
-All database commands were read-only catalog/data reads (`SELECT` only):
+All database commands were read-only catalog/data reads (`SELECT` only); the password was passed via the
+`PGPASSWORD` environment variable, not embedded in any command or written to this report:
 
 ```bash
-PGPASSWORD=*** psql -h localhost -p 5432 -U postgres -d quran_dashboard -v ON_ERROR_STOP=1 -A -t -c "SELECT jsonb_pretty(... schemas/tables from pg_class/information_schema ...);"
-PGPASSWORD=*** psql -h localhost -p 5432 -U postgres -d quran_dashboard -v ON_ERROR_STOP=1 -A -t -c "SELECT jsonb_pretty(... columns from information_schema/pg_attribute ...);"
-PGPASSWORD=*** psql -h localhost -p 5432 -U postgres -d quran_dashboard -v ON_ERROR_STOP=1 -A -t -c "SELECT jsonb_pretty(... constraints and indexes from pg_constraint/pg_indexes ...);"
-PGPASSWORD=*** psql -h localhost -p 5432 -U postgres -d quran_dashboard -v ON_ERROR_STOP=1 -A -F '|' -c "SELECT ... inventory totals ...;"
-PGPASSWORD=*** psql -h localhost -p 5432 -U postgres -d quran_dashboard -v ON_ERROR_STOP=1 -A -F '|' -c "SELECT ... exact count(*) by table ...;"
-PGPASSWORD=*** psql -h localhost -p 5432 -U postgres -d quran_dashboard -v ON_ERROR_STOP=1 -A -F '|' -c "SELECT ... table summaries with PK/columns ...;"
-PGPASSWORD=*** psql -h localhost -p 5432 -U postgres -d quran_dashboard -v ON_ERROR_STOP=1 -A -F '|' -c "SELECT ... compact constraints and indexes ...;"
-PGPASSWORD=*** psql -h localhost -p 5432 -U postgres -d quran_dashboard -v ON_ERROR_STOP=1 -A -F '|' -c "SELECT ... nullable-column profiles ...;"
-PGPASSWORD=*** psql -h localhost -p 5432 -U postgres -d quran_dashboard -v ON_ERROR_STOP=1 -A -F '|' -c "SELECT ... empty/default-valued profiles ...;"
-PGPASSWORD=*** psql -h localhost -p 5432 -U postgres -d quran_dashboard -v ON_ERROR_STOP=1 -A -F '|' -c "SELECT ... categorical morphology status profiles ...;"
+PGPASSWORD=[REDACTED] psql -h localhost -p 5432 -U postgres -d quran_dashboard -A -F '|' -t -c "SELECT ... base tables + pk + column counts ..."
+PGPASSWORD=[REDACTED] psql -h localhost -p 5432 -U postgres -d quran_dashboard -A -F '|' -t -c "SELECT count(*) ... exact per-table row counts (UNION ALL) ..."
+PGPASSWORD=[REDACTED] psql -h localhost -p 5432 -U postgres -d quran_dashboard -A -F '|' -t -c "SELECT ... summary metrics: tables/columns/indexes/fk/unique/checks/partial ..."
+PGPASSWORD=[REDACTED] psql -h localhost -p 5432 -U postgres -d quran_dashboard -A -F '|' -t -c "SELECT ... explicit CHECK constraint defs + all FK defs (pg_get_constraintdef) ..."
+PGPASSWORD=[REDACTED] psql -h localhost -p 5432 -U postgres -d quran_dashboard -A -F '|' -t -c "SELECT ... per-column type/nullability/default (pg_attribute/format_type) ..."
+PGPASSWORD=[REDACTED] psql -h localhost -p 5432 -U postgres -d quran_dashboard -A -F '|' -t -c "SELECT ... all index definitions (pg_indexes) ..."
 ```
 
-Repository/file inspection commands and tools used:
-
-```bash
-git status --short
-git status --short   # from Backend repo
-```
-
-Specialized read/search tools were used to inspect `AGENTS.md`, `Backend/AGENTS.md`, `CODING_PRINCIPLES.md`, EF configurations, model snapshot, and raw SQL files. No source files were edited.
-
-### Final git status
-
-Workspace repo (`/projects/Dashboard/App`):
-
-```text
- ? Backend
-```
-
-Backend repo (`/projects/Dashboard/App/Backend`):
-
-```text
-?? report/database-inventory/
-```
+EF inspection used read/search tools over `Migrations/`, `Program.cs`, and EF configurations. No source files
+were edited during this inventory.
 
 ### Safety confirmation
 
-- Database data changed: **No**. Only read-only `SELECT` SQL was executed.
-- Migrations created or modified: **No**.
-- Source code changed: **No**.
+- Database data changed: **No.** Only read-only `SELECT` catalog/data reads were executed.
+- Migrations created or modified: **No.**
+- Source code changed: **No.**
 - Files intentionally created/updated: `Backend/report/database-inventory/current-database-inventory.md` only.

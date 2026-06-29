@@ -24,6 +24,9 @@ public sealed class MorphologyAssembler
             [("ACC", ">an~")] = "أَنّ",
         };
 
+    private static readonly IReadOnlyDictionary<string, string> EmptyStemCorrections =
+        new Dictionary<string, string>(StringComparer.Ordinal);
+
     private readonly SegmentArabicRenderer renderer;
 
     public MorphologyAssembler(SegmentArabicRenderer renderer)
@@ -36,7 +39,8 @@ public sealed class MorphologyAssembler
         IReadOnlyDictionary<string, int> readableWordIdsByLocation,
         IReadOnlyDictionary<string, string> roots,
         IReadOnlyDictionary<string, string> lemmas,
-        IReadOnlyDictionary<string, string> stems)
+        IReadOnlyDictionary<string, string> stems,
+        IReadOnlyDictionary<string, string>? secondaryStemCorrections = null)
     {
         ArgumentNullException.ThrowIfNull(corpusWords);
         ArgumentNullException.ThrowIfNull(readableWordIdsByLocation);
@@ -176,7 +180,12 @@ public sealed class MorphologyAssembler
         var resolvedRoots = BuildResolvedRoots(rootIndex, rootLemmaMap);
         var resolvedLemmas = BuildResolvedLemmas(lemmaIndex, lemmaRootLinks);
         var resolvedStems = BuildResolvedStems(stemIndex);
-        var segmentDimensionResult = ResolveSegmentDimensions(alignedWords, resolvedRoots, resolvedLemmas);
+        var segmentDimensionResult = ResolveSegmentDimensions(
+            alignedWords,
+            resolvedRoots,
+            resolvedLemmas,
+            resolvedStems,
+            secondaryStemCorrections ?? EmptyStemCorrections);
 
         return new MorphologySourceData(
             segmentDimensionResult.Words,
@@ -229,6 +238,7 @@ public sealed class MorphologyAssembler
                 segment.Lemma,
                 null,
                 null,
+                null,
                 segment.Features,
                 BuildFeaturesJson(segment.Features)));
         }
@@ -239,7 +249,9 @@ public sealed class MorphologyAssembler
     private static SegmentDimensionResolutionResult ResolveSegmentDimensions(
         IReadOnlyList<AlignedWordDto> words,
         IReadOnlyList<ResolvedRootDto> roots,
-        IReadOnlyList<ResolvedLemmaDto> lemmas)
+        IReadOnlyList<ResolvedLemmaDto> lemmas,
+        IReadOnlyList<ResolvedStemDto> stems,
+        IReadOnlyDictionary<string, string> secondaryStemCorrections)
     {
         var issues = new List<SegmentDimensionIssue>();
         var rootLookup = roots
@@ -248,6 +260,7 @@ public sealed class MorphologyAssembler
             .ToDictionary(group => group.Key, group => group.ToList(), StringComparer.Ordinal);
         var lemmaById = lemmas.ToDictionary(lemma => lemma.AssignedId);
         var lemmaLookup = BuildLemmaBuckwalterLookup(words, lemmas, lemmaById);
+        var stemTextToId = stems.ToDictionary(stem => stem.StemText, stem => stem.AssignedId, StringComparer.Ordinal);
         var resolvedWords = new List<AlignedWordDto>(words.Count);
 
         foreach (var word in words)
@@ -256,6 +269,9 @@ public sealed class MorphologyAssembler
                 .Where(segment => string.Equals(segment.Kind, "STEM", StringComparison.Ordinal))
                 .ToList();
             var isSingleStemWord = stemSegments.Count == 1;
+            var primaryStemNumber = stemSegments.Count > 0
+                ? stemSegments.Min(segment => segment.SegmentNumber)
+                : (short)0;
             var headLemmaBuckwalter = word.LemmaId.HasValue && lemmaById.TryGetValue(word.LemmaId.Value, out var headLemma)
                 ? headLemma.LemmaBuckwalter
                 : null;
@@ -274,14 +290,55 @@ public sealed class MorphologyAssembler
                     lemmas,
                     issues,
                     segmentLocation);
+                var stemId = ResolveStemId(
+                    segment,
+                    word.StemId,
+                    isSingleStemWord,
+                    primaryStemNumber,
+                    stemTextToId,
+                    secondaryStemCorrections,
+                    segmentLocation);
 
-                resolvedSegments.Add(segment with { RootId = rootId, LemmaId = lemmaId });
+                resolvedSegments.Add(segment with { RootId = rootId, LemmaId = lemmaId, StemId = stemId });
             }
 
             resolvedWords.Add(word with { Segments = resolvedSegments });
         }
 
         return new SegmentDimensionResolutionResult(resolvedWords, issues);
+    }
+
+    // Per-segment stem identity. Non-STEM => null. Single-STEM word, or the primary/head STEM of a
+    // two-STEM word => the word's head stem id (the QUL whole-word stem; head stays unchanged). The
+    // secondary STEM of a two-STEM word => the curated artifact's clean stem (bound by stem text), or
+    // null when the artifact left it as an intentional unresolved exception (and when not covered at
+    // all — coverage is enforced by the SEG-STEM-ID-* hard checks, not guessed here).
+    private static int? ResolveStemId(
+        AlignedSegmentDto segment,
+        int? wordHeadStemId,
+        bool isSingleStemWord,
+        short primaryStemNumber,
+        IReadOnlyDictionary<string, int> stemTextToId,
+        IReadOnlyDictionary<string, string> secondaryStemCorrections,
+        string segmentLocation)
+    {
+        if (!string.Equals(segment.Kind, "STEM", StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        if (isSingleStemWord || segment.SegmentNumber == primaryStemNumber)
+        {
+            return wordHeadStemId;
+        }
+
+        if (secondaryStemCorrections.TryGetValue(segmentLocation, out var reviewedStemText)
+            && stemTextToId.TryGetValue(reviewedStemText, out var stemId))
+        {
+            return stemId;
+        }
+
+        return null;
     }
 
     private static Dictionary<string, List<ResolvedLemmaDto>> BuildLemmaBuckwalterLookup(

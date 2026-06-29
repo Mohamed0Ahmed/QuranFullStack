@@ -13,15 +13,18 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
     private readonly QuranDashboardDbContext dbContext;
     private readonly SegmentArabicRenderer renderer;
     private readonly IWordLemmaNormalizationReader normalizationReader;
+    private readonly ISegmentStemCorrectionReader segmentStemCorrectionReader;
 
     public EfBulkMorphologyWriter(
         QuranDashboardDbContext dbContext,
         SegmentArabicRenderer renderer,
-        IWordLemmaNormalizationReader normalizationReader)
+        IWordLemmaNormalizationReader normalizationReader,
+        ISegmentStemCorrectionReader segmentStemCorrectionReader)
     {
         this.dbContext = dbContext;
         this.renderer = renderer;
         this.normalizationReader = normalizationReader;
+        this.segmentStemCorrectionReader = segmentStemCorrectionReader;
     }
 
     public async Task<bool> AnyTargetTableHasDataAsync(CancellationToken ct)
@@ -64,6 +67,7 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
         }
 
         var normalization = normalizationReader.Load();
+        var segmentStemCorrection = segmentStemCorrectionReader.Load();
 
         await using var transaction = await npgsqlConnection.BeginTransactionAsync(ct);
 
@@ -96,6 +100,7 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
                 expectedReadableWords,
                 source,
                 normalization,
+                segmentStemCorrection,
                 renderer,
                 ct);
             checks.Add(posResolvesCheck);

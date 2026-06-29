@@ -8,6 +8,7 @@ namespace QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.Morpholo
 public sealed class MorphologyImportSource : IMorphologyImportSource
 {
     private readonly IWordLemmaNormalizationReader normalizationReader;
+    private readonly ISegmentStemCorrectionReader segmentStemCorrectionReader;
     private readonly MorphologyManifestReader manifestReader;
     private readonly JsonAlignedCorpusReader corpusReader;
     private readonly JsonQulRootReader rootReader;
@@ -20,6 +21,7 @@ public sealed class MorphologyImportSource : IMorphologyImportSource
 
     public MorphologyImportSource(
         IWordLemmaNormalizationReader normalizationReader,
+        ISegmentStemCorrectionReader segmentStemCorrectionReader,
         MorphologyManifestReader manifestReader,
         JsonAlignedCorpusReader corpusReader,
         JsonQulRootReader rootReader,
@@ -29,6 +31,7 @@ public sealed class MorphologyImportSource : IMorphologyImportSource
         QuranDashboardDbContext dbContext)
     {
         this.normalizationReader = normalizationReader;
+        this.segmentStemCorrectionReader = segmentStemCorrectionReader;
         this.manifestReader = manifestReader;
         this.corpusReader = corpusReader;
         this.rootReader = rootReader;
@@ -71,12 +74,15 @@ public sealed class MorphologyImportSource : IMorphologyImportSource
             Summary = normalized.Summary with { RawLemmasSha256 = rawLemmaSha256 },
         };
 
+        var segmentStemCorrections = segmentStemCorrectionReader.Load();
+
         var source = assembler.Assemble(
             corpusWords,
             readableWordIdsByLocation,
             roots,
             normalized.CorrectedLemmas,
-            stems);
+            stems,
+            segmentStemCorrections.ApprovedStemTextByLocation);
 
         return source with { CorrectionSummary = normalized.Summary };
     }

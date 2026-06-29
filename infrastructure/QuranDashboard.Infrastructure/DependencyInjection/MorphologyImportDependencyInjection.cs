@@ -19,6 +19,7 @@ internal static class MorphologyImportDependencyInjection
         services.AddSingleton<JsonQulLemmaReader>();
         services.AddSingleton<JsonQulStemReader>();
         services.AddSingleton<IWordLemmaNormalizationReader, WordLemmaNormalizationReader>();
+        services.AddSingleton<ISegmentStemCorrectionReader, SegmentStemCorrectionReader>();
         services.AddSingleton<MorphologyAssembler>();
         services.AddScoped<IMorphologyImportSource, MorphologyImportSource>();
         services.AddScoped<IMorphologyImportWriter, EfBulkMorphologyWriter>();

@@ -70,7 +70,7 @@ public sealed class MorphologyImportTests(MorphologyImportTestFixture fixture)
               AND column_name = 'stem_id'
             """).FirstAsync();
 
-        segmentStemIdColumns.Should().Be(0);
+        segmentStemIdColumns.Should().Be(1);
     }
 
     [Fact]
@@ -138,7 +138,12 @@ public sealed class MorphologyImportTests(MorphologyImportTestFixture fixture)
         checks.Should().Contain(check => check.Id == MorphologyInvariants.CheckSegRootResolves && check.Passed);
         checks.Should().Contain(check => check.Id == MorphologyInvariants.CheckSegRootConsistent && check.Passed);
         checks.Should().Contain(check => check.Id == MorphologyInvariants.CheckSegDimNullSafe && check.Passed);
-        checks.Should().Contain(check => check.Id == MorphologyInvariants.CheckSegStemIdAbsent && check.Passed);
+        checks.Should().Contain(check => check.Id == MorphologyInvariants.CheckSegStemStemOnly && check.Passed);
+        checks.Should().Contain(check => check.Id == MorphologyInvariants.CheckSegStemRequiredForStem && check.Passed);
+        checks.Should().Contain(check => check.Id == MorphologyInvariants.CheckSegStemHeadConsistent && check.Passed);
+        checks.Should().Contain(check => check.Id == MorphologyInvariants.CheckSegStemMultiStemCurated && check.Passed);
+        checks.Should().Contain(check => check.Id == MorphologyInvariants.CheckSegStemResolves && check.Passed);
+        checks.Should().Contain(check => check.Id == MorphologyInvariants.CheckSegStemArtifactShape && check.Passed);
         checks.Should().Contain(check => check.Id == MorphologyInvariants.CheckWordLemmaNormalizationApplied && check.Passed);
         checks.Should().Contain(check => check.Id == MorphologyInvariants.CheckWordLemmaShiftClean && check.Passed);
         checks.Should().Contain(check => check.Id == MorphologyInvariants.CheckWordLemmaReplaceValid && check.Passed);

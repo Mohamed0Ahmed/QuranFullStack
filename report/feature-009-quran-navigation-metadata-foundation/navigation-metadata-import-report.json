@@ -2,8 +2,8 @@
   "feature": "009-quran-navigation-metadata-foundation",
   "verdict": "accepted",
   "persisted": true,
-  "forced": false,
-  "runAtUtc": "2026-06-20T10:04:30.0632658+00:00",
+  "forced": true,
+  "runAtUtc": "2026-06-29T05:26:00.2846528+00:00",
   "sourcePath": "/projects/Dashboard/App/resources/import-sources/quran-navigation-metadata",
   "manifest": {
     "packageType": "quran-navigation-metadata-import-source-package",
@@ -160,7 +160,7 @@
     {
       "id": "NAV-RERUN-GUARD",
       "severity": "hard",
-      "expected": "empty navigation targets",
+      "expected": "force rebuild allowed",
       "observed": "passed",
       "passed": true
     }
