@@ -34,6 +34,7 @@ public interface IStemsReader
         int id,
         int page,
         int pageSize,
+        string? typeCode,
         CancellationToken cancellationToken);
 
     Task<StemSurahsResponse?> GetStemMentionedSurahsAsync(

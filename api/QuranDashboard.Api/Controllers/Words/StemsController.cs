@@ -136,13 +136,15 @@ public sealed class StemsController(
         int id,
         [FromQuery] int? page,
         [FromQuery] int? pageSize,
+        [FromQuery] string? type,
         CancellationToken cancellationToken)
     {
         var outcome = await ayahsHandler.HandleAsync(
             new GetStemAyahsQuery(
                 id,
                 page ?? DefaultPage,
-                pageSize ?? DefaultDetailPageSize),
+                pageSize ?? DefaultDetailPageSize,
+                type),
             cancellationToken);
 
         return outcome switch

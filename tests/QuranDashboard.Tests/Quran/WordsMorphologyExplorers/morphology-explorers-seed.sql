@@ -202,8 +202,8 @@ VALUES
   (7002, '2:25:3', 25, 2, 25, 3, 5,  1, 3, 'g7002', 'عَلِمَ',  'علم',  'علم',  'علم',  FALSE, NULL, NULL),
   (7003, '3:1:4',  31, 3, 1,  4, 50, 1, 4, 'g7003', 'عَلِمَ',  'علم',  'علم',  'علم',  FALSE, NULL, NULL),
   (7004, '3:8:3',  32, 3, 8,  3, 50, 1, 3, 'g7004', 'عَلِمَ',  'علم',  'علم',  'علم',  FALSE, NULL, NULL),
-  -- L506/L507 compound-word slice (أَلَّا = أَن + لَا): word-level lemma لَا + head_pos SUB,
-  -- but segment POS is SUB for أَن and NEG for لَا (coverage j).
+-- L506/L507 compound-word slice (أَلَّا = أَن + لَا): word-level head_pos is N,
+-- but the 606-mapped segment is SUB and the 605-mapped segment is NEG (coverage j).
   (8001, '2:25:6', 25, 2, 25, 6, 5,  1, 6, 'g8001', 'أَلَّا',  'الا',  'الا',  'الا',  FALSE, NULL, NULL),
   (8002, '3:1:5',  31, 3, 1,  5, 50, 1, 5, 'g8002', 'لَا',     'لا',   'لا',   'لا',   FALSE, NULL, NULL),
   -- Synthetic non-source word used only to regress same-lemma segment fan-out.
@@ -254,7 +254,8 @@ VALUES
   (5002, '1:3:2',  'N',   1, NULL, 503, 604, FALSE, NULL, NULL, NULL, NULL),
   (5003, '1:2:3',  'ADJ', 1, NULL, 503, 604, FALSE, NULL, NULL, NULL, NULL),
   (5004, '1:3:3',  'ADJ', 1, NULL, 503, 604, FALSE, NULL, NULL, NULL, NULL),
-  -- S601 (NULL lemma AND NULL root).
+-- S601 (NULL lemma AND NULL root): one real segment row proves null relations
+--   do not imply zero segment counts.
   (6001, '2:25:2', 'N', 1, NULL, NULL, 601, FALSE, NULL, NULL, NULL, NULL),
   (6002, '3:1:3',  'N', 1, NULL, NULL, 601, FALSE, NULL, NULL, NULL, NULL),
   -- S602 multiple candidates: lemma L502×3 (7001-7003), L504×1 (7004);
@@ -263,8 +264,8 @@ VALUES
   (7002, '2:25:3', 'V', 1, 701, 502, 602, TRUE, 'perfect', 'active', NULL, NULL),
   (7003, '3:1:4',  'V', 1, 701, 502, 602, TRUE, 'perfect', 'active', NULL, NULL),
   (7004, '3:8:3',  'V', 1, 702, 504, 602, TRUE, 'perfect', 'active', NULL, NULL),
-  -- L506: compound أَلَّا (word-level lemma لَا, head_pos SUB) + standalone لَا (NEG).
-  (8001, '2:25:6', 'SUB', 2, NULL, 506, NULL, FALSE, NULL, NULL, NULL, NULL),
+-- L506: compound أَلَّا (word-level lemma لَا, head_pos N) + standalone لَا (NEG).
+  (8001, '2:25:6', 'N',   2, NULL, 506, NULL, FALSE, NULL, NULL, NULL, NULL),
   (8002, '3:1:5',  'NEG', 1, NULL, 506, NULL, FALSE, NULL, NULL, NULL, NULL),
   -- Synthetic word-level row intentionally has no lemma; segment rows below supply L508.
   (8101, '2:1:4',  'N',   2, NULL, NULL, 606, FALSE, NULL, NULL, NULL, NULL),
@@ -272,12 +273,13 @@ VALUES
   (8201, '2:1:5',  'N',   1, NULL, NULL, NULL, FALSE, NULL, NULL, NULL, NULL),
   (8202, '2:1:6',  'N',   1, NULL, NULL, NULL, FALSE, NULL, NULL, NULL, NULL);
 
--- Segment rows drive lemma occurrence counts, type distribution, and ayah type
--- filters. For simple words, one segment mirrors morphology head_pos + lemma_id.
--- Compound أَلَّا carries two segments with distinct lemma_id + pos (coverage j).
+-- Segment rows drive lemma occurrence counts, type distribution, ayah type
+-- filters, and Stems membership. For simple words, one segment mirrors
+-- morphology head_pos + lemma_id + stem_id. Compound أَلَّا carries two
+-- segments with distinct lemma_id + pos (coverage j).
 INSERT INTO quran_word_morphology_segments
   (quran_word_id, segment_location, segment_number, kind, pos,
-   form_buckwalter, arabic_render_source, features_raw, lemma_id, root_id)
+   form_buckwalter, arabic_render_source, features_raw, lemma_id, root_id, stem_id)
 SELECT
   m.quran_word_id,
   m.location || ':1',
@@ -288,21 +290,26 @@ SELECT
   'fixture',
   'POS=' || m.head_pos,
   m.lemma_id,
-  m.root_id
+  m.root_id,
+  CASE
+    WHEN m.quran_word_id = 8002 THEN 606
+    ELSE m.stem_id
+  END
 FROM quran_word_morphology m
 WHERE m.lemma_id IS NOT NULL
   AND m.quran_word_id NOT IN (8001, 8101);
 
 INSERT INTO quran_word_morphology_segments
   (quran_word_id, segment_location, segment_number, kind, pos,
-   form_buckwalter, arabic_render_source, features_raw, lemma_id, root_id)
+   form_buckwalter, arabic_render_source, features_raw, lemma_id, root_id, stem_id)
 VALUES
-  (8001, '2:25:6:1', 1, 'STEM', 'SUB', '>an',  'fixture', 'POS=SUB', 507, NULL),
-  (8001, '2:25:6:2', 2, 'STEM', 'NEG', 'lA',   'fixture', 'POS=NEG', 506, NULL),
-  (8101, '2:1:4:1', 1, 'STEM', 'N', 'fixture', 'fixture', 'POS=N;fixture=same-lemma-fanout', 508, NULL),
-  (8101, '2:1:4:2', 2, 'STEM', 'N', 'fixture', 'fixture', 'POS=N;fixture=same-lemma-fanout', 508, NULL),
-  (8201, '2:1:5:1', 1, 'STEM', 'N', 'fixture', 'fixture', 'POS=N;fixture=marker-exclusion-real-word', 509, NULL),
-  (8202, '2:1:6:1', 1, 'STEM', 'N', 'fixture', 'fixture', 'POS=N;fixture=marker-exclusion-ayah-marker', 509, NULL);
+  (6001, '2:25:2:1', 1, 'STEM', 'N', 'fixture', 'fixture', 'POS=N;fixture=null-lemma-stem', NULL, NULL, 601),
+  (8001, '2:25:6:1', 1, 'STEM', 'SUB', '>an',  'fixture', 'POS=SUB', 507, NULL, 606),
+  (8001, '2:25:6:2', 2, 'STEM', 'NEG', 'lA',   'fixture', 'POS=NEG', 506, NULL, 605),
+  (8101, '2:1:4:1', 1, 'STEM', 'N', 'fixture', 'fixture', 'POS=N;fixture=same-lemma-fanout', 508, NULL, 606),
+  (8101, '2:1:4:2', 2, 'STEM', 'N', 'fixture', 'fixture', 'POS=N;fixture=same-lemma-fanout', 508, NULL, 606),
+  (8201, '2:1:5:1', 1, 'STEM', 'N', 'fixture', 'fixture', 'POS=N;fixture=marker-exclusion-real-word', 509, NULL, NULL),
+  (8202, '2:1:6:1', 1, 'STEM', 'N', 'fixture', 'fixture', 'POS=N;fixture=marker-exclusion-ayah-marker', 509, NULL, 606);
 
 -- ----------------------------------------------------------------------
 -- Unique word identities for the words sub-views (simple + tashkeel). One row
@@ -424,7 +431,12 @@ WHERE quran_words.id = src.wid;
 --
 -- S604 'حَكَمَ' (id=604): occurrences=4; same multi-type tie as L503.
 --
--- S606 'سَاق-تَجْرِيبِيّ' (id=606): synthetic related-stem fixture for L508.
+-- S605 'نِعْمَة' (id=605): segment-level count includes 8001 NEG as a secondary
+--   stem member; type distribution stays N-dominant.
+-- S601 'مَجْهُول' (id=601): one null-lemma segment proves nonzero counts with
+--   null lemma/root relations.
+-- S606 'سَاق-تَجْرِيبِيّ' (id=606): segment-level fixture spanning 8001/8002/8101
+--   and marker 8202; marker stays in context, not membership.
 -- ======================================================================
 
 -- Reconcile catalog words_count to the word-level morphology readable-word count

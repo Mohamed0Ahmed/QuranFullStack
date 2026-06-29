@@ -28,6 +28,7 @@ public sealed class MorphologyExplorersCacheReadTests(MorphologyExplorersTestFix
 {
     private const int LemmaId = 500;
     private const int StemId = 602;
+    private const int SegmentFanoutStemId = 606;
 
     [Fact]
     public Task Lemma_ayahs_repeat_read_hits_cache() =>
@@ -121,7 +122,53 @@ public sealed class MorphologyExplorersCacheReadTests(MorphologyExplorersTestFix
 
     [Fact]
     public Task Stem_ayahs_repeat_read_hits_cache() =>
-        AssertSecondReadHitsCache((reader, ct) => reader.GetStemAyahMatchesAsync(StemId, 1, 50, ct));
+        AssertSecondReadHitsCache((reader, ct) => reader.GetStemAyahMatchesAsync(StemId, 1, 50, null, ct));
+
+    [Fact]
+    public async Task Stem_ayahs_type_filter_uses_separate_cache_entry()
+    {
+        var interceptor = new SqlCommandCountInterceptor();
+        var options = new DbContextOptionsBuilder<QuranDashboardDbContext>()
+            .UseNpgsql(fixture.ConnectionString)
+            .AddInterceptors(interceptor)
+            .Options;
+
+        await using var dbContext = new QuranDashboardDbContext(options);
+        using var cache = new MemoryCache(new MemoryCacheOptions());
+        var reader = new CachedStemsReader(new EfStemsReader(dbContext), cache);
+
+        await reader.GetStemAyahMatchesAsync(SegmentFanoutStemId, 1, 50, "SUB", CancellationToken.None);
+        interceptor.CommandCount.Should().BeGreaterThan(0, "the first filtered read must reach the database");
+
+        interceptor.Reset();
+        await reader.GetStemAyahMatchesAsync(SegmentFanoutStemId, 1, 50, "SUB", CancellationToken.None);
+        interceptor.CommandCount.Should().Be(0, "the repeat filtered read must be served entirely from cache");
+
+        interceptor.Reset();
+        await reader.GetStemAyahMatchesAsync(SegmentFanoutStemId, 1, 50, null, CancellationToken.None);
+        interceptor.CommandCount.Should().BeGreaterThan(0, "all-filter and type-filter cache entries must stay separate");
+    }
+
+    [Fact]
+    public async Task Stem_ayahs_blank_type_uses_same_cache_entry_as_null_type()
+    {
+        var interceptor = new SqlCommandCountInterceptor();
+        var options = new DbContextOptionsBuilder<QuranDashboardDbContext>()
+            .UseNpgsql(fixture.ConnectionString)
+            .AddInterceptors(interceptor)
+            .Options;
+
+        await using var dbContext = new QuranDashboardDbContext(options);
+        using var cache = new MemoryCache(new MemoryCacheOptions());
+        var reader = new CachedStemsReader(new EfStemsReader(dbContext), cache);
+
+        await reader.GetStemAyahMatchesAsync(SegmentFanoutStemId, 1, 50, "   ", CancellationToken.None);
+        interceptor.CommandCount.Should().BeGreaterThan(0, "the first blank filtered read must reach the database");
+
+        interceptor.Reset();
+        await reader.GetStemAyahMatchesAsync(SegmentFanoutStemId, 1, 50, null, CancellationToken.None);
+        interceptor.CommandCount.Should().Be(0, "blank and null type codes must share the same cache entry");
+    }
 
     [Theory]
     [InlineData(StemWordKind.Simple)]
@@ -139,7 +186,7 @@ public sealed class MorphologyExplorersCacheReadTests(MorphologyExplorersTestFix
     public Task Stem_ayahs_out_of_range_pages_are_not_cached() =>
         AssertSecondOutOfRangePageStillQueriesDb(
             (db, cache, ct) => new CachedStemsReader(new EfStemsReader(db), cache)
-                .GetStemAyahMatchesAsync(StemId, 999, 50, ct));
+                .GetStemAyahMatchesAsync(StemId, 999, 50, null, ct));
 
     [Fact]
     public Task Stem_mentioned_surahs_repeat_read_hits_cache() =>
@@ -242,7 +289,8 @@ public sealed class MorphologyExplorersCacheReadTests(MorphologyExplorersTestFix
             StemsCacheKeys.Summary(id),
             StemsCacheKeys.WordsAll(id, StemWordKind.Simple),
             StemsCacheKeys.Words(id, StemWordKind.Tashkeel, 2, 25),
-            StemsCacheKeys.Ayahs(id, 1, 50),
+            StemsCacheKeys.Ayahs(id, 1, 50, null),
+            StemsCacheKeys.Ayahs(id, 1, 50, "SUB"),
             StemsCacheKeys.Surahs(id),
             StemsCacheKeys.Missing(id),
             StemsCacheKeys.Lemmas(id),

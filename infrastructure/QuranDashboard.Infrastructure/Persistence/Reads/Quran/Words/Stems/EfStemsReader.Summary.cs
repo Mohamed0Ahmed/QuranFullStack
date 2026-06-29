@@ -30,19 +30,21 @@ public sealed partial class EfStemsReader
             FROM quran_stems s
             LEFT JOIN (
                 SELECT
-                    m.stem_id AS sid,
+                    seg.stem_id AS sid,
                     COUNT(*) AS occurrences_count,
                     COUNT(DISTINCT w.ayah_id) AS ayahs_count,
                     COUNT(DISTINCT w.surah_number) AS surahs_count,
                     COUNT(DISTINCT w.unique_simple_word_id) AS simple_words_count,
                     COUNT(DISTINCT w.unique_tashkeel_word_id) AS tashkeel_words_count,
-                    (ARRAY_AGG(w.surah_number ORDER BY w.surah_number, w.ayah_number, w.word_number))[1] AS first_surah_number,
-                    (ARRAY_AGG(w.ayah_number ORDER BY w.surah_number, w.ayah_number, w.word_number))[1] AS first_ayah_number,
-                    (ARRAY_AGG(w.word_number ORDER BY w.surah_number, w.ayah_number, w.word_number))[1] AS first_word_number
-                FROM quran_word_morphology m
-                JOIN quran_words w ON w.id = m.quran_word_id
-                WHERE m.stem_id IS NOT NULL
-                GROUP BY m.stem_id
+                    (ARRAY_AGG(w.surah_number ORDER BY w.surah_number, w.ayah_number, w.word_number, seg.segment_number, seg.id))[1] AS first_surah_number,
+                    (ARRAY_AGG(w.ayah_number ORDER BY w.surah_number, w.ayah_number, w.word_number, seg.segment_number, seg.id))[1] AS first_ayah_number,
+                    (ARRAY_AGG(w.word_number ORDER BY w.surah_number, w.ayah_number, w.word_number, seg.segment_number, seg.id))[1] AS first_word_number
+                FROM quran_word_morphology_segments seg
+                JOIN quran_words w ON w.id = seg.quran_word_id
+                WHERE seg.kind = 'STEM'
+                  AND seg.stem_id IS NOT NULL
+                  AND NOT w.is_ayah_marker
+                GROUP BY seg.stem_id
             ) agg ON agg.sid = s.id
             """;
 
@@ -58,21 +60,21 @@ public sealed partial class EfStemsReader
         }
 
         var occurrenceRows = await (
-            from m in _db.WordMorphologies.AsNoTracking()
-            join w in _db.QuranWords.AsNoTracking() on m.QuranWordId equals w.Id
-            join t in _db.PosTags.AsNoTracking() on m.HeadPos equals t.Code
-            join l in _db.QuranLemmas.AsNoTracking() on m.LemmaId equals l.Id into lemmaJoin
+            from s in _db.WordMorphologySegments.AsNoTracking()
+            join w in _db.QuranWords.AsNoTracking() on s.QuranWordId equals w.Id
+            join t in _db.PosTags.AsNoTracking() on s.Pos equals t.Code
+            join l in _db.QuranLemmas.AsNoTracking() on s.LemmaId equals l.Id into lemmaJoin
             from l in lemmaJoin.DefaultIfEmpty()
-            join r in _db.QuranRoots.AsNoTracking() on m.RootId equals r.Id into rootJoin
+            join r in _db.QuranRoots.AsNoTracking() on s.RootId equals r.Id into rootJoin
             from r in rootJoin.DefaultIfEmpty()
-            where m.StemId != null
+            where s.Kind == "STEM" && s.StemId != null && !w.IsAyahMarker
             select new StemTypeOccurrenceRow(
-                m.StemId!.Value,
-                m.QuranWordId,
-                m.LemmaId,
+                s.StemId!.Value,
+                s.QuranWordId,
+                s.LemmaId,
                 l == null ? null : l.LemmaText,
                 l == null ? null : l.LemmaBuckwalter,
-                m.RootId,
+                s.RootId,
                 r == null ? null : r.RootText,
                 r == null ? null : r.RootBuckwalter,
                 t.Code,

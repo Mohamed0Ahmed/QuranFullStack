@@ -16,6 +16,7 @@ public sealed class StemsListReadTests(MorphologyExplorersTestFixture fixture)
     private const int NullRelationStemId = 601;
     private const int MultiCandidateStemId = 602;
     private const int ExactTieStemId = 604;
+    private const int SegmentFanoutStemId = 606;
     private const int UnknownStemId = 999_999;
 
     [Fact]
@@ -49,6 +50,7 @@ public sealed class StemsListReadTests(MorphologyExplorersTestFixture fixture)
         foreach (var item in page.Items)
         {
             item.StemText.Should().NotBeNullOrWhiteSpace();
+
             item.OccurrencesCount.Should().BeGreaterThan(0);
             item.AyahsCount.Should().BeGreaterThanOrEqualTo(1);
             item.SurahsCount.Should().BeInRange(1, 114);
@@ -118,6 +120,13 @@ public sealed class StemsListReadTests(MorphologyExplorersTestFixture fixture)
         stem.RootId.Should().BeNull();
         stem.RootText.Should().BeNull();
         stem.RootBuckwalter.Should().BeNull();
+        stem.OccurrencesCount.Should().Be(1);
+        stem.AyahsCount.Should().Be(1);
+        stem.SurahsCount.Should().Be(1);
+        stem.SimpleWordsCount.Should().Be(1);
+        stem.TashkeelWordsCount.Should().Be(1);
+        stem.DominantType.Code.Should().Be("N");
+        stem.FirstVerseKey.Should().Be("2:25");
     }
 
     [Fact]
@@ -179,7 +188,7 @@ public sealed class StemsListReadTests(MorphologyExplorersTestFixture fixture)
             CancellationToken.None);
         var page = outcome.Should().BeOfType<GetStemsPageOutcome.Success>().Subject.Page;
 
-        page.Items.Select(i => i.Id).Should().Equal(600, 604, 602, 605, 601, 606);
+        page.Items.Select(i => i.Id).Should().Equal(600, 604, 602, 606, 605, 601);
     }
 
     [Fact]
@@ -278,6 +287,31 @@ public sealed class StemsListReadTests(MorphologyExplorersTestFixture fixture)
         summary.TypeDistribution.Sum(t => t.OccurrencesCount).Should().Be(summary.OccurrencesCount);
         summary.DominantType.Code.Should().Be("N");
         summary.RootId.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetStemSummary_segment_fanout_stem_counts_segment_membership_and_type_distribution()
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetStemSummaryHandler>();
+
+        var outcome = await handler.HandleAsync(
+            new GetStemSummaryQuery(SegmentFanoutStemId),
+            CancellationToken.None);
+        var summary = outcome.Should().BeOfType<GetStemSummaryOutcome.Success>().Subject.Summary;
+
+        summary.Id.Should().Be(SegmentFanoutStemId);
+        summary.OccurrencesCount.Should().Be(4);
+        summary.AyahsCount.Should().Be(3);
+        summary.SurahsCount.Should().Be(2);
+        summary.SimpleWordsCount.Should().Be(3);
+        summary.TashkeelWordsCount.Should().Be(3);
+        summary.DominantType.Code.Should().Be("N");
+        summary.DominantType.OccurrencesCount.Should().Be(2);
+        summary.OtherTypesCount.Should().Be(2);
+        summary.TypeDistribution.Select(t => t.Code).Should().Equal("N", "SUB", "NEG");
+        summary.TypeDistribution.Select(t => t.OccurrencesCount).Should().Equal(2, 1, 1);
+        summary.FirstVerseKey.Should().Be("2:1");
     }
 
     [Fact]

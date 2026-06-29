@@ -13,6 +13,7 @@ namespace QuranDashboard.Tests.Quran.WordsMorphologyExplorers;
 public sealed class StemsWordsReadTests(MorphologyExplorersTestFixture fixture)
 {
     private const int HighFrequencyStemId = 600;
+    private const int SegmentFanoutStemId = 606;
     private const int UnknownStemId = 999_999;
 
     [Theory]
@@ -47,6 +48,42 @@ public sealed class StemsWordsReadTests(MorphologyExplorersTestFixture fixture)
         second.Kind.Should().Be(kind);
         second.DisplayTextUthmani.Should().Be(secondDisplayText);
         second.OccurrencesCount.Should().Be(secondOccurrencesCount);
+    }
+
+    [Theory]
+    [InlineData(StemWordKindKeys.Simple, 32010, "لَفْظٌ-تَجْرِيبِيّ", 2, 32008, "أَلَّا", 1, 32009, "لَا", 1)]
+    [InlineData(StemWordKindKeys.Tashkeel, 31010, "لَفْظٌ-تَجْرِيبِيّ", 2, 31008, "أَلَّا", 1, 31009, "لَا", 1)]
+    public async Task GetStemWords_counts_segment_fanout_and_secondary_membership_by_unique_word(
+        string kind,
+        int firstUniqueWordId,
+        string firstDisplayText,
+        int firstOccurrencesCount,
+        int secondUniqueWordId,
+        string secondDisplayText,
+        int secondOccurrencesCount,
+        int thirdUniqueWordId,
+        string thirdDisplayText,
+        int thirdOccurrencesCount)
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetStemWordsHandler>();
+
+        var outcome = await handler.HandleAsync(
+            new GetStemWordsQuery(SegmentFanoutStemId, kind, 1, 50),
+            CancellationToken.None);
+
+        var page = outcome.Should().BeOfType<GetStemWordsOutcome.Success>().Subject.Page;
+        page.TotalCount.Should().Be(3);
+        page.Items.Select(i => i.UniqueWordId).Should().Equal(firstUniqueWordId, secondUniqueWordId, thirdUniqueWordId);
+
+        page.Items[0].DisplayTextUthmani.Should().Be(firstDisplayText);
+        page.Items[0].OccurrencesCount.Should().Be(firstOccurrencesCount);
+
+        page.Items[1].DisplayTextUthmani.Should().Be(secondDisplayText);
+        page.Items[1].OccurrencesCount.Should().Be(secondOccurrencesCount);
+
+        page.Items[2].DisplayTextUthmani.Should().Be(thirdDisplayText);
+        page.Items[2].OccurrencesCount.Should().Be(thirdOccurrencesCount);
     }
 
     [Theory]

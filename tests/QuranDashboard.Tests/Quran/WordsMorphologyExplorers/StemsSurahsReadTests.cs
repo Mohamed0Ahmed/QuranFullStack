@@ -13,6 +13,7 @@ namespace QuranDashboard.Tests.Quran.WordsMorphologyExplorers;
 public sealed class StemsSurahsReadTests(MorphologyExplorersTestFixture fixture)
 {
     private const int HighFrequencyStemId = 600;
+    private const int SegmentFanoutStemId = 606;
     private const int UnknownStemId = 999_999;
 
     [Fact]
@@ -37,6 +38,26 @@ public sealed class StemsSurahsReadTests(MorphologyExplorersTestFixture fixture)
         byNumber[2].OccurrencesInSurah.Should().Be(2);
         byNumber[3].OccurrencesInSurah.Should().Be(3);
         byNumber[1].NameArabic.Should().Be("الفاتحة");
+        byNumber[2].NameArabic.Should().Be("البقرة");
+        byNumber[3].NameArabic.Should().Be("آل عمران");
+    }
+
+    [Fact]
+    public async Task GetStemMentionedSurahs_counts_segment_membership_for_secondary_and_fanout_rows()
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetStemMentionedSurahsHandler>();
+
+        var outcome = await handler.HandleAsync(
+            new GetStemMentionedSurahsQuery(SegmentFanoutStemId),
+            CancellationToken.None);
+
+        var response = outcome.Should().BeOfType<GetStemMentionedSurahsOutcome.Success>().Subject.Surahs;
+        response.SurahsCount.Should().Be(2);
+
+        var byNumber = response.Surahs.ToDictionary(s => s.SurahNumber);
+        byNumber[2].OccurrencesInSurah.Should().Be(3);
+        byNumber[3].OccurrencesInSurah.Should().Be(1);
         byNumber[2].NameArabic.Should().Be("البقرة");
         byNumber[3].NameArabic.Should().Be("آل عمران");
     }

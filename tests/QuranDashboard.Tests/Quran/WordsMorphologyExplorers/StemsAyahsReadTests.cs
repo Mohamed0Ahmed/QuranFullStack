@@ -12,6 +12,7 @@ namespace QuranDashboard.Tests.Quran.WordsMorphologyExplorers;
 public sealed class StemsAyahsReadTests(MorphologyExplorersTestFixture fixture)
 {
     private const int ExactTieStemId = 604;
+    private const int SegmentFanoutStemId = 606;
     private const int UnknownStemId = 999_999;
 
     [Fact]
@@ -21,7 +22,7 @@ public sealed class StemsAyahsReadTests(MorphologyExplorersTestFixture fixture)
         var handler = scope.ServiceProvider.GetRequiredService<GetStemAyahsHandler>();
 
         var outcome = await handler.HandleAsync(
-            new GetStemAyahsQuery(ExactTieStemId, 1, 50),
+            new GetStemAyahsQuery(ExactTieStemId, 1, 50, null),
             CancellationToken.None);
 
         var page = outcome.Should().BeOfType<GetStemAyahsOutcome.Success>().Subject.Page;
@@ -40,14 +41,14 @@ public sealed class StemsAyahsReadTests(MorphologyExplorersTestFixture fixture)
         var handler = scope.ServiceProvider.GetRequiredService<GetStemAyahsHandler>();
 
         var first = await handler.HandleAsync(
-            new GetStemAyahsQuery(ExactTieStemId, 1, 1),
+            new GetStemAyahsQuery(ExactTieStemId, 1, 1, null),
             CancellationToken.None);
         var firstPage = first.Should().BeOfType<GetStemAyahsOutcome.Success>().Subject.Page;
         firstPage.TotalCount.Should().Be(2);
         firstPage.Items.Select(i => i.VerseKey).Should().Equal("1:2");
 
         var second = await handler.HandleAsync(
-            new GetStemAyahsQuery(ExactTieStemId, 2, 1),
+            new GetStemAyahsQuery(ExactTieStemId, 2, 1, null),
             CancellationToken.None);
         var secondPage = second.Should().BeOfType<GetStemAyahsOutcome.Success>().Subject.Page;
         secondPage.Items.Select(i => i.VerseKey).Should().Equal("1:3");
@@ -60,7 +61,7 @@ public sealed class StemsAyahsReadTests(MorphologyExplorersTestFixture fixture)
         var handler = scope.ServiceProvider.GetRequiredService<GetStemAyahsHandler>();
 
         var outcome = await handler.HandleAsync(
-            new GetStemAyahsQuery(ExactTieStemId, 99, 50),
+            new GetStemAyahsQuery(ExactTieStemId, 99, 50, null),
             CancellationToken.None);
         var page = outcome.Should().BeOfType<GetStemAyahsOutcome.Success>().Subject.Page;
 
@@ -76,7 +77,7 @@ public sealed class StemsAyahsReadTests(MorphologyExplorersTestFixture fixture)
         var handler = scope.ServiceProvider.GetRequiredService<GetStemAyahsHandler>();
 
         var outcome = await handler.HandleAsync(
-            new GetStemAyahsQuery(ExactTieStemId, int.MaxValue, 1000),
+            new GetStemAyahsQuery(ExactTieStemId, int.MaxValue, 1000, null),
             CancellationToken.None);
         var page = outcome.Should().BeOfType<GetStemAyahsOutcome.Success>().Subject.Page;
 
@@ -92,7 +93,7 @@ public sealed class StemsAyahsReadTests(MorphologyExplorersTestFixture fixture)
         var handler = scope.ServiceProvider.GetRequiredService<GetStemAyahsHandler>();
 
         var outcome = await handler.HandleAsync(
-            new GetStemAyahsQuery(UnknownStemId, 1, 50),
+            new GetStemAyahsQuery(UnknownStemId, 1, 50, null),
             CancellationToken.None);
 
         outcome.Should().BeOfType<GetStemAyahsOutcome.NotFound>();
@@ -105,7 +106,7 @@ public sealed class StemsAyahsReadTests(MorphologyExplorersTestFixture fixture)
         var handler = scope.ServiceProvider.GetRequiredService<GetStemAyahsHandler>();
 
         var outcome = await handler.HandleAsync(
-            new GetStemAyahsQuery(0, 1, 50),
+            new GetStemAyahsQuery(0, 1, 50, null),
             CancellationToken.None);
 
         outcome.Should().BeOfType<GetStemAyahsOutcome.InvalidId>();
@@ -120,10 +121,53 @@ public sealed class StemsAyahsReadTests(MorphologyExplorersTestFixture fixture)
         var handler = scope.ServiceProvider.GetRequiredService<GetStemAyahsHandler>();
 
         var outcome = await handler.HandleAsync(
-            new GetStemAyahsQuery(ExactTieStemId, page, pageSize),
+            new GetStemAyahsQuery(ExactTieStemId, page, pageSize, null),
             CancellationToken.None);
 
         outcome.Should().BeOfType<GetStemAyahsOutcome.InvalidPaging>();
+    }
+
+    [Theory]
+    [InlineData("N", "2:1", 8101)]
+    [InlineData("SUB", "2:25", 8001)]
+    [InlineData("NEG", "3:1", 8002)]
+    public async Task GetStemAyahs_filters_by_segment_pos_without_affecting_other_ayahs(
+        string typeCode,
+        string expectedVerseKey,
+        int expectedWordId)
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetStemAyahsHandler>();
+
+        var outcome = await handler.HandleAsync(
+            new GetStemAyahsQuery(SegmentFanoutStemId, 1, 50, typeCode),
+            CancellationToken.None);
+
+        var page = outcome.Should().BeOfType<GetStemAyahsOutcome.Success>().Subject.Page;
+        page.TotalCount.Should().Be(1);
+        page.Items.Should().ContainSingle();
+        page.Items[0].VerseKey.Should().Be(expectedVerseKey);
+        page.Items[0].MatchedQuranWordIds.Should().BeEquivalentTo([expectedWordId]);
+
+        if (typeCode == "N")
+        {
+            page.Items[0].Words.Should().ContainSingle(w => w.QuranWordId == 8202 && w.IsAyahMarker);
+        }
+    }
+
+    [Fact]
+    public async Task GetStemAyahs_unknown_type_returns_successful_empty_page()
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetStemAyahsHandler>();
+
+        var outcome = await handler.HandleAsync(
+            new GetStemAyahsQuery(SegmentFanoutStemId, 1, 50, "XYZ"),
+            CancellationToken.None);
+
+        var page = outcome.Should().BeOfType<GetStemAyahsOutcome.Success>().Subject.Page;
+        page.TotalCount.Should().Be(0);
+        page.Items.Should().BeEmpty();
     }
 
     [Fact]
@@ -138,7 +182,7 @@ public sealed class StemsAyahsReadTests(MorphologyExplorersTestFixture fixture)
         await using var dbContext = new QuranDashboardDbContext(options);
         var reader = new EfStemsReader(dbContext);
 
-        var page = await reader.GetStemAyahMatchesAsync(ExactTieStemId, 1, 1, CancellationToken.None);
+        var page = await reader.GetStemAyahMatchesAsync(ExactTieStemId, 1, 1, null, CancellationToken.None);
 
         page.Should().NotBeNull();
         page!.Items.Should().HaveCount(1);
@@ -159,10 +203,10 @@ public sealed class StemsAyahsReadTests(MorphologyExplorersTestFixture fixture)
         using var cache = new MemoryCache(new MemoryCacheOptions());
         var reader = new CachedStemsReader(inner, cache);
 
-        await reader.GetStemAyahMatchesAsync(ExactTieStemId, 1, 50, CancellationToken.None);
+        await reader.GetStemAyahMatchesAsync(ExactTieStemId, 1, 50, null, CancellationToken.None);
 
         interceptor.Reset();
-        await reader.GetStemAyahMatchesAsync(ExactTieStemId, 1, 50, CancellationToken.None);
+        await reader.GetStemAyahMatchesAsync(ExactTieStemId, 1, 50, null, CancellationToken.None);
         interceptor.CommandCount.Should().Be(0);
     }
 }

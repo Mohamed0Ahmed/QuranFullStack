@@ -348,7 +348,7 @@ public sealed class MorphologyExplorersLoggingTests(MorphologyExplorersTestFixtu
         await using var scope = fixture.CreateScope();
         var handler = scope.ServiceProvider.GetRequiredService<GetStemAyahsHandler>();
 
-        await handler.HandleAsync(new GetStemAyahsQuery(StemId, 1, 50), CancellationToken.None);
+        await handler.HandleAsync(new GetStemAyahsQuery(StemId, 1, 50, null), CancellationToken.None);
 
         var entry = SingleEntryFor<GetStemAyahsHandler>(LogLevel.Information);
         entry.FieldNames().Should().BeEquivalentTo(
@@ -496,7 +496,7 @@ public sealed class MorphologyExplorersLoggingTests(MorphologyExplorersTestFixtu
         await sp.GetRequiredService<GetLemmaStemsHandler>()
             .HandleAsync(new GetLemmaStemsQuery(LemmaId), CancellationToken.None);
         await sp.GetRequiredService<GetStemAyahsHandler>()
-            .HandleAsync(new GetStemAyahsQuery(StemId, 1, 50), CancellationToken.None);
+            .HandleAsync(new GetStemAyahsQuery(StemId, 1, 50, null), CancellationToken.None);
         await sp.GetRequiredService<GetStemWordsHandler>()
             .HandleAsync(new GetStemWordsQuery(StemId, StemWordKindKeys.Tashkeel, 1, 50), CancellationToken.None);
         await sp.GetRequiredService<GetStemMentionedSurahsHandler>()
@@ -571,15 +571,15 @@ public sealed class MorphologyExplorersLoggingTests(MorphologyExplorersTestFixtu
     public static TheoryData<GetStemAyahsQuery, string?, string[]> StemAyahsWarningCases => new()
     {
         {
-            new GetStemAyahsQuery(0, 1, 50), "invalidId",
+            new GetStemAyahsQuery(0, 1, 50, null), "invalidId",
             ["feature", "operation", "reason", "view", "stemId", "pageNumber", "pageSize"]
         },
         {
-            new GetStemAyahsQuery(StemId, 0, 50), "invalidPaging",
+            new GetStemAyahsQuery(StemId, 0, 50, null), "invalidPaging",
             ["feature", "operation", "reason", "view", "stemId", "pageNumber", "pageSize"]
         },
         {
-            new GetStemAyahsQuery(UnknownId, 1, 50), null,
+            new GetStemAyahsQuery(UnknownId, 1, 50, null), null,
             ["feature", "operation", "view", "stemId", "pageNumber", "pageSize", "elapsedMs"]
         },
     };

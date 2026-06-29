@@ -1,4 +1,5 @@
 using QuranDashboard.Application.Abstractions.Quran.Words.Stems;
+using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Stems;
 
 namespace QuranDashboard.Infrastructure.Caching.Quran.Words.Stems;
 
@@ -19,8 +20,8 @@ public static class StemsCacheKeys
     public static string Words(int id, StemWordKind kind, int page, int pageSize) =>
         $"stems:{id}:words:{KindKey(kind)}:p{page}:s{pageSize}";
 
-    public static string Ayahs(int id, int page, int pageSize) =>
-        $"stems:{id}:ayahs:p{page}:s{pageSize}";
+    public static string Ayahs(int id, int page, int pageSize, string? typeCode) =>
+        $"stems:{id}:ayahs:{StemsAyahTypeCode.CacheKeyPart(typeCode)}:p{page}:s{pageSize}";
 
     public static string Surahs(int id) => $"stems:{id}:surahs";
 

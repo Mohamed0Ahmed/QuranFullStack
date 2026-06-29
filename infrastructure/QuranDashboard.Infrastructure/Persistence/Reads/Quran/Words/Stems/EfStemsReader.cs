@@ -48,8 +48,11 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
         int id,
         int page,
         int pageSize,
+        string? typeCode,
         CancellationToken cancellationToken)
     {
+        var normalizedTypeCode = StemsAyahTypeCode.Normalize(typeCode);
+
         var stemExists = await _db.QuranStems
             .AsNoTracking()
             .AnyAsync(s => s.Id == id, cancellationToken);
@@ -58,14 +61,18 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
             return null;
         }
 
-        var matchedAyahIds = _db.WordMorphologies
+        var matchedAyahIds = _db.WordMorphologySegments
             .AsNoTracking()
-            .Where(m => m.StemId == id)
+            .Where(s => s.Kind == "STEM"
+                && s.StemId == id
+                && (normalizedTypeCode == null || s.Pos == normalizedTypeCode))
             .Join(
                 _db.QuranWords.AsNoTracking(),
-                m => m.QuranWordId,
+                s => s.QuranWordId,
                 w => w.Id,
-                (_, w) => w.AyahId)
+                (_, w) => new { w.AyahId, w.IsAyahMarker })
+            .Where(x => !x.IsAyahMarker)
+            .Select(x => x.AyahId)
             .Distinct();
 
         var totalCount = await matchedAyahIds.CountAsync(cancellationToken);
@@ -99,9 +106,13 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
         var ayahIds = pageAyahs.Select(a => a.AyahId).ToList();
 
         var matchedRows = await (
-            from m in _db.WordMorphologies.AsNoTracking()
-            join w in _db.QuranWords.AsNoTracking() on m.QuranWordId equals w.Id
-            where m.StemId == id && ayahIds.Contains(w.AyahId)
+            from s in _db.WordMorphologySegments.AsNoTracking()
+            join w in _db.QuranWords.AsNoTracking() on s.QuranWordId equals w.Id
+            where s.Kind == "STEM"
+                && s.StemId == id
+                && ayahIds.Contains(w.AyahId)
+                && (normalizedTypeCode == null || s.Pos == normalizedTypeCode)
+                && !w.IsAyahMarker
             orderby w.SurahNumber, w.AyahNumber, w.WordNumber, w.Id
             select new { w.AyahId, w.Id })
             .ToListAsync(cancellationToken);
@@ -166,9 +177,9 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
         }
 
         var surahGroups = await (
-            from m in _db.WordMorphologies.AsNoTracking()
-            join w in _db.QuranWords.AsNoTracking() on m.QuranWordId equals w.Id
-            where m.StemId == id
+            from s in _db.WordMorphologySegments.AsNoTracking()
+            join w in _db.QuranWords.AsNoTracking() on s.QuranWordId equals w.Id
+            where s.Kind == "STEM" && s.StemId == id && !w.IsAyahMarker
             group w by w.SurahNumber into g
             orderby g.Key
             select new SurahOccurrenceRow(g.Key, g.Count()))
@@ -207,9 +218,9 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
         }
 
         var mentionedSurahNumbers = await (
-            from m in _db.WordMorphologies.AsNoTracking()
-            join w in _db.QuranWords.AsNoTracking() on m.QuranWordId equals w.Id
-            where m.StemId == id
+            from s in _db.WordMorphologySegments.AsNoTracking()
+            join w in _db.QuranWords.AsNoTracking() on s.QuranWordId equals w.Id
+            where s.Kind == "STEM" && s.StemId == id && !w.IsAyahMarker
             select w.SurahNumber)
             .Distinct()
             .ToListAsync(cancellationToken);
@@ -237,10 +248,11 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
         }
 
         var rows = await (
-            from m in _db.WordMorphologies.AsNoTracking()
-            join l in _db.QuranLemmas.AsNoTracking() on m.LemmaId equals l.Id
-            where m.StemId == id && m.LemmaId != null
-            select new { m.LemmaId, l.LemmaText, l.LemmaBuckwalter, m.QuranWordId })
+            from s in _db.WordMorphologySegments.AsNoTracking()
+            join w in _db.QuranWords.AsNoTracking() on s.QuranWordId equals w.Id
+            join l in _db.QuranLemmas.AsNoTracking() on s.LemmaId equals l.Id
+            where s.Kind == "STEM" && s.StemId == id && s.LemmaId != null && !w.IsAyahMarker
+            select new { s.LemmaId, l.LemmaText, l.LemmaBuckwalter, s.QuranWordId })
             .ToListAsync(cancellationToken);
 
         var lemmas = MorphologyRelatedItemsOrdering.OrderStemLemmas(
@@ -418,9 +430,9 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
     {
         return useSimpleWordIds
             ? await (
-                from m in _db.WordMorphologies.AsNoTracking()
-                join w in _db.QuranWords.AsNoTracking() on m.QuranWordId equals w.Id
-                where m.StemId == id
+                from s in _db.WordMorphologySegments.AsNoTracking()
+                join w in _db.QuranWords.AsNoTracking() on s.QuranWordId equals w.Id
+                where s.Kind == "STEM" && s.StemId == id && !w.IsAyahMarker
                 select new StemWordOccurrenceRow(
                     w.UniqueSimpleWordId,
                     w.TextUthmani,
@@ -430,9 +442,9 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
                     w.Id))
                 .ToListAsync(cancellationToken)
             : await (
-                from m in _db.WordMorphologies.AsNoTracking()
-                join w in _db.QuranWords.AsNoTracking() on m.QuranWordId equals w.Id
-                where m.StemId == id
+                from s in _db.WordMorphologySegments.AsNoTracking()
+                join w in _db.QuranWords.AsNoTracking() on s.QuranWordId equals w.Id
+                where s.Kind == "STEM" && s.StemId == id && !w.IsAyahMarker
                 select new StemWordOccurrenceRow(
                     w.UniqueTashkeelWordId,
                     w.TextUthmani,
