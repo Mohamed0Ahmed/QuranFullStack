@@ -32,6 +32,7 @@ export interface StemsDetailLoadContext {
   readonly view: StemView;
   readonly wordView: StemWordView;
   readonly surahView: StemSurahView;
+  readonly ayahTypeCode: string | null;
   readonly detailPage: number;
   readonly cachedMissingSurahs: StemMissingSurahsDto | null;
 }
@@ -54,8 +55,20 @@ export class StemsDetailViewLoader {
     switch (context.view) {
       case 'ayahs':
         return this.subscribe(
-          this.cache.getOrLoad(StemsCacheKeys.ayahs(context.stemId, context.detailPage), () =>
-            this.api.getStemAyahMatches(context.stemId, context.detailPage, STEM_DETAIL_PAGE_SIZE),
+          this.cache.getOrLoad(
+            StemsCacheKeys.ayahs(
+              context.stemId,
+              context.detailPage,
+              STEM_DETAIL_PAGE_SIZE,
+              context.ayahTypeCode,
+            ),
+            () =>
+              this.api.getStemAyahMatches(
+                context.stemId,
+                context.detailPage,
+                STEM_DETAIL_PAGE_SIZE,
+                context.ayahTypeCode,
+              ),
           ),
           handlers.onAyahs,
           handlers.onError,

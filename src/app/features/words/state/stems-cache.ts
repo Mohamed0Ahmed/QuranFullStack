@@ -16,8 +16,9 @@ export const StemsCacheKeys = {
     return `stems:${stemId}:words:${wordView}:p${page}`;
   },
 
-  ayahs(stemId: number, page: number): string {
-    return `stems:${stemId}:ayahs:p${page}`;
+  ayahs(stemId: number, page: number, pageSize: number, typeCode: string | null): string {
+    const normalizedTypeCode = typeCode && typeCode.trim().length > 0 ? typeCode.trim() : 'all';
+    return `stems:${stemId}:ayahs:${normalizedTypeCode}:p${page}:s${pageSize}`;
   },
 
   surahs(stemId: number): string {

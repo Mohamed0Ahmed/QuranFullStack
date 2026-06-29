@@ -25,6 +25,7 @@ describe('parseStemsQueryParams', () => {
     expect(parsed.wordView).toBe('simple');
     expect(parsed.surahView).toBe('mentioned');
     expect(parsed.detailPage).toBe(1);
+    expect(parsed.typeCode).toBeNull();
   });
 
   it('reads list state (search/sort/page) verbatim when valid', () => {
@@ -160,6 +161,16 @@ describe('parseStemsQueryParams', () => {
     });
   });
 
+  describe('typeCode scope rules', () => {
+    it('honors typeCode only for view=ayahs and trims it', () => {
+      expect(parseStemsQueryParams(params('stem=600&view=ayahs&typeCode=N')).typeCode).toBe('N');
+      expect(parseStemsQueryParams(params('stem=600&view=ayahs&typeCode=%20N%20')).typeCode).toBe('N');
+      expect(parseStemsQueryParams(params('stem=600&view=words&typeCode=N')).typeCode).toBeNull();
+      expect(parseStemsQueryParams(params('stem=600&view=surahs&typeCode=N')).typeCode).toBeNull();
+      expect(parseStemsQueryParams(params('stem=600&view=ayahs&typeCode=%20%20')).typeCode).toBeNull();
+    });
+  });
+
   it('ignores irrelevant query keys without breaking normalization', () => {
     const parsed = parseStemsQueryParams(
       params('foo=bar&debug=1&stem=600&view=words&wordView=simple&detailPage=2&random=xyz'),
@@ -197,10 +208,12 @@ describe('buildStemsQueryParams', () => {
       search: null,
       page: null,
     });
+
+    expect(buildStemsQueryParams({ typeCode: ' N ' })).toEqual({ typeCode: 'N' });
   });
 
   it('round-trips parse -> build for list + selection + sub-view state', () => {
-    const original = params('search=علم&sort=alpha&page=2&stem=9&view=words&wordView=tashkeel&detailPage=3');
+    const original = params('search=علم&sort=alpha&page=2&stem=9&view=ayahs&typeCode=N&detailPage=3');
     const parsed = parseStemsQueryParams(original);
 
     const rebuilt = buildStemsQueryParams({
@@ -212,14 +225,15 @@ describe('buildStemsQueryParams', () => {
       wordView: parsed.wordView,
       surahView: parsed.surahView,
       detailPage: parsed.detailPage,
+      typeCode: parsed.typeCode,
     });
 
     expect(rebuilt['search']).toBe('علم');
     expect(rebuilt['sort']).toBe('alpha');
     expect(rebuilt['page']).toBe('2');
     expect(rebuilt['stem']).toBe('9');
-    expect(rebuilt['view']).toBe('words');
-    expect(rebuilt['wordView']).toBe('tashkeel');
+    expect(rebuilt['view']).toBe('ayahs');
+    expect(rebuilt['typeCode']).toBe('N');
     expect(rebuilt['detailPage']).toBe('3');
   });
 });
@@ -235,9 +249,10 @@ describe('buildClearSelectionQueryParams', () => {
         STEMS_QUERY_KEYS.wordView,
         STEMS_QUERY_KEYS.surahView,
         STEMS_QUERY_KEYS.detailPage,
+        STEMS_QUERY_KEYS.typeCode,
       ].sort(),
     );
-    expect(Object.values(cleared)).toEqual([null, null, null, null, null]);
+    expect(Object.values(cleared)).toEqual([null, null, null, null, null, null]);
 
     expect(cleared).not.toHaveProperty(STEMS_QUERY_KEYS.search);
     expect(cleared).not.toHaveProperty(STEMS_QUERY_KEYS.sort);
@@ -254,6 +269,7 @@ describe('buildStemsDeepLink', () => {
         page: 3,
         stemId: 55,
         view: 'ayahs',
+        typeCode: 'N',
         detailPage: 2,
       }),
     ).toEqual({
@@ -264,6 +280,7 @@ describe('buildStemsDeepLink', () => {
         page: '3',
         stem: '55',
         view: 'ayahs',
+        typeCode: 'N',
         detailPage: '2',
       },
     });

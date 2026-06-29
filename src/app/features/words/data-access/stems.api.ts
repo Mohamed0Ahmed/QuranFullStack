@@ -72,8 +72,12 @@ export class StemsApi {
     id: number,
     page: number,
     pageSize: number,
+    typeCode: string | null = null,
   ): Observable<ApiResponse<PagedResultDto<StemAyahMatchDto>>> {
-    const params = new HttpParams().set('page', page).set('pageSize', pageSize);
+    let params = new HttpParams().set('page', page).set('pageSize', pageSize);
+    if (typeCode !== null && typeCode.trim().length > 0) {
+      params = params.set('type', typeCode.trim());
+    }
     return this.http.get<ApiResponse<PagedResultDto<StemAyahMatchDto>>>(
       `${this.baseUrl}/api/words/stems/${id}/ayahs`,
       { params },

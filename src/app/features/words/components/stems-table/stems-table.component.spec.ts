@@ -71,8 +71,8 @@ describe('StemsTableComponent', () => {
     );
     expect(headers).toContain('م');
     expect(headers).toContain('الأصل الصرفي');
-    expect(headers).toContain('الصيغة المعجمية');
-    expect(headers).toContain('الجذر');
+    expect(headers).toContain('الصيغ');
+    expect(headers).toContain('الجذور');
     expect(headers).toContain('النوع');
     expect(headers).toContain('المواضع');
     expect(headers).toContain('الآيات');

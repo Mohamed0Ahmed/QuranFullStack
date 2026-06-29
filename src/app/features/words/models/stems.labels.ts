@@ -29,8 +29,8 @@ export const STEMS_ROOT_LINK_PREFIX = 'الجذر:';
 export const STEMS_COLUMN_HEADERS = {
   rowNumber: ROW_NUMBER_HEADER,
   stem: WORDS_SHARED_HEADERS.stem,
-  lemma: WORDS_SHARED_HEADERS.lemma,
-  root: WORDS_SHARED_HEADERS.root,
+  lemma: WORDS_SHARED_HEADERS.lemmas,
+  root: 'الجذور',
   type: WORDS_SHARED_HEADERS.type,
   occurrences: WORDS_SHARED_HEADERS.occurrences,
   ayahs: WORDS_SHARED_HEADERS.ayahs,
@@ -94,6 +94,8 @@ export const STEMS_ROOT_MISSING_ARIA = 'لا يوجد جذر مرتبط';
 export const STEMS_TYPE_DISTRIBUTION_LABEL = 'توزيع الأنواع';
 export const STEMS_TYPE_DISTRIBUTION_LOADING_LABEL = 'جارٍ تحميل توزيع الأنواع…';
 export const STEMS_TYPE_DISTRIBUTION_EMPTY_LABEL = 'لا توجد أنواع';
+export const STEMS_AYAH_TYPE_FILTERS_LABEL = 'تصفية الأنواع في الآيات';
+export const STEMS_AYAH_TYPE_ALL_LABEL = 'عرض الكل';
 
 export const STEMS_SORT_LABELS = {
   label: 'الترتيب',

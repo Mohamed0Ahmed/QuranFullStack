@@ -5,6 +5,7 @@ import {
   OnDestroy,
   OnInit,
   computed,
+  effect,
   inject,
   signal,
 } from '@angular/core';
@@ -13,10 +14,10 @@ import { Subscription, Subject, debounceTime } from 'rxjs';
 
 import { AyahMatchesListComponent } from '../../components/ayah-matches-list/ayah-matches-list.component';
 import { StemDetailsPanelComponent } from '../../components/stem-details-panel/stem-details-panel.component';
+import { StemAyahTypeFiltersComponent } from '../../components/stem-ayah-type-filters/stem-ayah-type-filters.component';
 import { StemLemmasListComponent } from '../../components/stem-lemmas-list/stem-lemmas-list.component';
 import { MissingSurahsListComponent } from '../../components/missing-surahs-list/missing-surahs-list.component';
 import { StemWordsListComponent } from '../../components/stem-words-list/stem-words-list.component';
-import { TypeDistributionListComponent } from '../../components/type-distribution-list/type-distribution-list.component';
 import { SurahOccurrencesListComponent } from '../../components/surah-occurrences-list/surah-occurrences-list.component';
 import { StemCountOpenedEvent, StemsTableComponent } from '../../components/stems-table/stems-table.component';
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
@@ -65,10 +66,10 @@ import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
     NgTemplateOutlet,
     PaginationComponent,
     StemDetailsPanelComponent,
+    StemAyahTypeFiltersComponent,
     StemLemmasListComponent,
     StemWordsListComponent,
     StemsTableComponent,
-    TypeDistributionListComponent,
     SurahOccurrencesListComponent,
   ],
   templateUrl: './stems-explorer-page.component.html',
@@ -141,6 +142,25 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly emptySelection = computed(() => this.panelState().selectedStemId === null);
   protected readonly defaultView: StemView = DEFAULT_STEM_VIEW;
 
+  constructor() {
+    effect(() => {
+      const state = this.panelState();
+      const typeCode = state.ayahTypeCode;
+      const summary = state.summary;
+
+      if (state.selectedStemId === null || state.view !== 'ayahs' || typeCode === null || summary === null) {
+        return;
+      }
+
+      if (summary.typeDistribution.some((item) => item.code === typeCode)) {
+        return;
+      }
+
+      this.detailFacade.setAyahTypeCode(null);
+      this.updateQueryParams(buildStemsQueryParams({ typeCode: null, detailPage: 1 }));
+    });
+  }
+
   ngOnInit(): void {
     this.listFacade.bindToRoute(this.route);
     this.detailFacade.bindToRoute(this.route);
@@ -201,6 +221,7 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
         wordView: 'simple',
         surahView: null,
         detailPage: 1,
+        typeCode: null,
       }),
     );
   }
@@ -217,6 +238,7 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
         detailPage: this.detailPageForView(view),
         wordView: wordView ?? null,
         surahView: surahView ?? null,
+        typeCode: null,
       }),
     );
   }
@@ -229,13 +251,36 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
         detailPage: this.detailPageForView(view),
         wordView: view === 'words' ? 'simple' : null,
         surahView: view === 'surahs' ? 'mentioned' : null,
+        typeCode: null,
+      }),
+    );
+  }
+
+  protected onAyahTypeChange(typeCode: string | null): void {
+    const current = this.panelState();
+    if (current.selectedStemId === null || current.view !== 'ayahs') {
+      return;
+    }
+
+    if (current.ayahTypeCode === typeCode && current.detailPage === 1) {
+      return;
+    }
+
+    this.detailFacade.setAyahTypeCode(typeCode);
+    this.updateQueryParams(
+      buildStemsQueryParams({
+        view: 'ayahs',
+        detailPage: 1,
+        typeCode,
       }),
     );
   }
 
   protected onWordViewChange(wordView: StemWordView): void {
     this.detailFacade.setWordView(wordView);
-    this.updateQueryParams(buildStemsQueryParams({ view: 'words', wordView, detailPage: 1 }));
+    this.updateQueryParams(
+      buildStemsQueryParams({ view: 'words', wordView, detailPage: 1, typeCode: null }),
+    );
   }
 
   protected onSurahViewChange(surahView: StemSurahView): void {
@@ -245,6 +290,7 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
         view: 'surahs',
         surahView,
         detailPage: null,
+        typeCode: null,
       }),
     );
   }

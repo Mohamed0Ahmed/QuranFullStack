@@ -127,6 +127,7 @@ export interface StemsPanelState {
   view: StemView;
   wordView: StemWordView;
   surahView: StemSurahView;
+  ayahTypeCode: string | null;
   detailPage: number;
   ayahs: PagedResultDto<StemAyahMatchDto> | null;
   words: PagedResultDto<StemWordItemDto> | null;
@@ -150,6 +151,7 @@ export const STEMS_QUERY_KEYS = {
   wordView: 'wordView',
   surahView: 'surahView',
   detailPage: 'detailPage',
+  typeCode: 'typeCode',
 } as const;
 
 export const STEMS_SELECTION_QUERY_KEYS: readonly string[] = [
@@ -158,6 +160,7 @@ export const STEMS_SELECTION_QUERY_KEYS: readonly string[] = [
   STEMS_QUERY_KEYS.wordView,
   STEMS_QUERY_KEYS.surahView,
   STEMS_QUERY_KEYS.detailPage,
+  STEMS_QUERY_KEYS.typeCode,
 ] as const;
 
 export const DEFAULT_STEM_SORT: StemSort = 'mushaf-order';
@@ -205,4 +208,5 @@ export interface ParsedStemsQuery {
   wordView: StemWordView;
   surahView: StemSurahView;
   detailPage: number;
+  typeCode: string | null;
 }

@@ -42,6 +42,7 @@ const INITIAL_PANEL: StemsPanelState = {
   view: DEFAULT_STEM_VIEW,
   wordView: DEFAULT_STEM_WORD_VIEW,
   surahView: DEFAULT_STEM_SURAHS_VIEW,
+  ayahTypeCode: null,
   detailPage: DEFAULT_STEM_DETAIL_PAGE,
   ayahs: null,
   words: null,
@@ -58,6 +59,7 @@ interface PanelUrlState {
   readonly wordView: StemWordView;
   readonly surahView: StemSurahView;
   readonly detailPage: number;
+  readonly typeCode: string | null;
 }
 
 /**
@@ -122,6 +124,7 @@ export class StemsDetailFacade {
       wordView: DEFAULT_STEM_WORD_VIEW,
       surahView: DEFAULT_STEM_SURAHS_VIEW,
       detailPage: DEFAULT_STEM_DETAIL_PAGE,
+      typeCode: null,
     };
     this._panel.set({
       ...INITIAL_PANEL,
@@ -130,7 +133,14 @@ export class StemsDetailFacade {
       view,
       status: 'loading',
     });
-    this.loadActiveView(summary.id, view, DEFAULT_STEM_WORD_VIEW, DEFAULT_STEM_SURAHS_VIEW, DEFAULT_STEM_DETAIL_PAGE);
+    this.loadActiveView(
+      summary.id,
+      view,
+      DEFAULT_STEM_WORD_VIEW,
+      DEFAULT_STEM_SURAHS_VIEW,
+      DEFAULT_STEM_DETAIL_PAGE,
+      null,
+    );
   }
 
   selectStemWithPanel(
@@ -140,7 +150,7 @@ export class StemsDetailFacade {
     surahView: StemSurahView = DEFAULT_STEM_SURAHS_VIEW,
     detailPage: number = DEFAULT_STEM_DETAIL_PAGE,
   ): void {
-    this.activeUrlState = { stemId: summary.id, view, wordView, surahView, detailPage };
+    this.activeUrlState = { stemId: summary.id, view, wordView, surahView, detailPage, typeCode: null };
     this._panel.set({
       ...INITIAL_PANEL,
       selectedStemId: summary.id,
@@ -151,7 +161,7 @@ export class StemsDetailFacade {
       detailPage,
       status: 'loading',
     });
-    this.loadActiveView(summary.id, view, wordView, surahView, detailPage);
+    this.loadActiveView(summary.id, view, wordView, surahView, detailPage, null);
   }
 
   clearSelection(): void {
@@ -179,17 +189,19 @@ export class StemsDetailFacade {
       wordView,
       surahView,
       detailPage,
+      typeCode: null,
     };
     this._panel.update((s) => ({
       ...s,
       view,
       wordView,
       surahView,
+      ayahTypeCode: null,
       detailPage,
       status: 'loading',
       errorMessage: '',
     }));
-    this.loadActiveView(current.selectedStemId, view, wordView, surahView, detailPage);
+    this.loadActiveView(current.selectedStemId, view, wordView, surahView, detailPage, null);
   }
 
   setWordView(wordView: StemWordView): void {
@@ -209,15 +221,17 @@ export class StemsDetailFacade {
       wordView,
       surahView: current.surahView,
       detailPage: DEFAULT_STEM_DETAIL_PAGE,
+      typeCode: null,
     };
     this._panel.update((s) => ({
       ...s,
       wordView,
       detailPage: DEFAULT_STEM_DETAIL_PAGE,
+      ayahTypeCode: null,
       status: 'loading',
       errorMessage: '',
     }));
-    this.loadActiveView(current.selectedStemId, 'words', wordView, current.surahView, DEFAULT_STEM_DETAIL_PAGE);
+    this.loadActiveView(current.selectedStemId, 'words', wordView, current.surahView, DEFAULT_STEM_DETAIL_PAGE, null);
   }
 
   setSurahView(surahView: StemSurahView): void {
@@ -237,14 +251,16 @@ export class StemsDetailFacade {
       wordView: current.wordView,
       surahView,
       detailPage: current.detailPage,
+      typeCode: null,
     };
     this._panel.update((s) => ({
       ...s,
       surahView,
+      ayahTypeCode: null,
       status: 'loading',
       errorMessage: '',
     }));
-    this.loadActiveView(current.selectedStemId, 'surahs', current.wordView, surahView, current.detailPage);
+    this.loadActiveView(current.selectedStemId, 'surahs', current.wordView, surahView, current.detailPage, null);
   }
 
   setDetailPage(page: number): void {
@@ -263,6 +279,7 @@ export class StemsDetailFacade {
       wordView: current.wordView,
       surahView: current.surahView,
       detailPage: page,
+      typeCode: current.view === 'ayahs' ? current.ayahTypeCode : null,
     };
     this._panel.update((s) => ({
       ...s,
@@ -276,6 +293,43 @@ export class StemsDetailFacade {
       current.wordView,
       current.surahView,
       page,
+      current.view === 'ayahs' ? current.ayahTypeCode : null,
+    );
+  }
+
+  setAyahTypeCode(typeCode: string | null): void {
+    const current = this._panel();
+    if (current.selectedStemId === null || current.summary === null || current.view !== 'ayahs') {
+      return;
+    }
+
+    const normalizedTypeCode = this.normalizeTypeCode(typeCode);
+    if (normalizedTypeCode === current.ayahTypeCode && current.detailPage === DEFAULT_STEM_DETAIL_PAGE) {
+      return;
+    }
+
+    this.activeUrlState = {
+      stemId: current.selectedStemId,
+      view: 'ayahs',
+      wordView: current.wordView,
+      surahView: current.surahView,
+      detailPage: DEFAULT_STEM_DETAIL_PAGE,
+      typeCode: normalizedTypeCode,
+    };
+    this._panel.update((s) => ({
+      ...s,
+      ayahTypeCode: normalizedTypeCode,
+      detailPage: DEFAULT_STEM_DETAIL_PAGE,
+      status: 'loading',
+      errorMessage: '',
+    }));
+    this.loadActiveView(
+      current.selectedStemId,
+      'ayahs',
+      current.wordView,
+      current.surahView,
+      DEFAULT_STEM_DETAIL_PAGE,
+      normalizedTypeCode,
     );
   }
 
@@ -291,6 +345,7 @@ export class StemsDetailFacade {
       wordView: parsed.wordView,
       surahView: parsed.surahView,
       detailPage: parsed.detailPage,
+      typeCode: parsed.typeCode,
     };
   }
 
@@ -313,11 +368,19 @@ export class StemsDetailFacade {
         view: state.view,
         wordView: state.wordView,
         surahView: state.surahView,
+        ayahTypeCode: state.typeCode,
         detailPage: state.detailPage,
         status: 'loading',
         errorMessage: '',
       }));
-      this.loadActiveView(state.stemId, state.view, state.wordView, state.surahView, state.detailPage);
+      this.loadActiveView(
+        state.stemId,
+        state.view,
+        state.wordView,
+        state.surahView,
+        state.detailPage,
+        state.typeCode,
+      );
       return of(undefined);
     }
 
@@ -332,6 +395,7 @@ export class StemsDetailFacade {
       view: state.view,
       wordView: state.wordView,
       surahView: state.surahView,
+      ayahTypeCode: state.typeCode,
       detailPage: state.detailPage,
       status: 'loading',
     });
@@ -351,6 +415,7 @@ export class StemsDetailFacade {
           this._panel.update((s) => ({
             ...s,
             summary,
+            ayahTypeCode: state.typeCode,
             status: 'loading',
           }));
           this.loadActiveView(
@@ -359,6 +424,7 @@ export class StemsDetailFacade {
             state.wordView,
             state.surahView,
             state.detailPage,
+            state.typeCode,
           );
         }),
         catchError((err) => {
@@ -380,6 +446,7 @@ export class StemsDetailFacade {
     wordView: StemWordView,
     surahView: StemSurahView,
     detailPage: number,
+    ayahTypeCode: string | null,
   ): void {
     this.detailSub?.unsubscribe();
 
@@ -390,6 +457,7 @@ export class StemsDetailFacade {
         view,
         wordView,
         surahView,
+        ayahTypeCode,
         detailPage,
         cachedMissingSurahs: current.missingSurahs,
       },
@@ -439,7 +507,12 @@ export class StemsDetailFacade {
       current.view === next.view &&
       current.wordView === next.wordView &&
       current.surahView === next.surahView &&
-      current.detailPage === next.detailPage
+      current.detailPage === next.detailPage &&
+      current.typeCode === next.typeCode
     );
+  }
+
+  private normalizeTypeCode(typeCode: string | null): string | null {
+    return typeCode === null || typeCode.trim().length === 0 ? null : typeCode.trim();
   }
 }

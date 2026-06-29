@@ -145,6 +145,7 @@ export function restoredStemNotFoundUpdate(
     view: DEFAULT_STEM_VIEW,
     wordView: DEFAULT_STEM_WORD_VIEW,
     surahView: DEFAULT_STEM_SURAHS_VIEW,
+    ayahTypeCode: null,
     detailPage: DEFAULT_STEM_DETAIL_PAGE,
     ayahs: null,
     words: null,

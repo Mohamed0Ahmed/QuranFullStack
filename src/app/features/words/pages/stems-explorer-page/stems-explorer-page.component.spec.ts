@@ -11,6 +11,7 @@ import {
   STEMS_QUERY_KEYS,
   StemAyahMatchDto,
   StemListItemViewModel,
+  TypeSummaryDto,
   StemWordItemDto,
   StemLemmasDto,
   StemWordView,
@@ -118,6 +119,22 @@ function successWordsResponse(kind: StemWordView) {
     message: null,
     errors: null,
   });
+}
+
+function typeSummary(code: string, arabicLabel: string, occurrencesCount: number): TypeSummaryDto {
+  return {
+    code,
+    arabicLabel,
+    englishLabel: arabicLabel,
+    occurrencesCount,
+    firstSurahNumber: 1,
+    firstAyahNumber: 1,
+    firstWordNumber: 1,
+  };
+}
+
+function multiTypeSummary(): TypeSummaryDto[] {
+  return [typeSummary('N', 'اسم', 10), typeSummary('V', 'فعل', 1)];
 }
 
 describe('StemsExplorerPageComponent US2', () => {
@@ -230,7 +247,7 @@ describe('StemsExplorerPageComponent US2', () => {
     const root = fixture.nativeElement as HTMLElement;
 
     expect(stemsApi.getStemSummary).toHaveBeenCalledWith(500);
-    expect(stemsApi.getStemAyahMatches).toHaveBeenCalledWith(500, 1, STEM_DETAIL_PAGE_SIZE);
+    expect(stemsApi.getStemAyahMatches).toHaveBeenCalledWith(500, 1, STEM_DETAIL_PAGE_SIZE, null);
     expect(stemsApi.getStemWords).not.toHaveBeenCalled();
     expect(stemsApi.getStemMentionedSurahs).not.toHaveBeenCalled();
     expect(stemsApi.getStemMissingSurahs).not.toHaveBeenCalled();
@@ -260,7 +277,7 @@ describe('StemsExplorerPageComponent US2', () => {
     expect(root.querySelectorAll('[data-testid="stem-word-link"]')).toHaveLength(1);
   });
 
-  it('loads related lemmas for view=lemmas and keeps the type distribution visible while the related list loads', async () => {
+  it('loads related lemmas for view=lemmas without rendering ayah type filters', async () => {
     const pendingLemmas$ = new Subject<ApiResponse<StemLemmasDto>>();
     stemsApi.getStemLemmas.mockReturnValue(pendingLemmas$.asObservable());
     queryParamMap$.next(convertToParamMap({ stem: '500', view: 'lemmas' }));
@@ -271,9 +288,110 @@ describe('StemsExplorerPageComponent US2', () => {
     expect(stemsApi.getStemSummary).toHaveBeenCalledWith(500);
     expect(stemsApi.getStemLemmas).toHaveBeenCalledWith(500);
     expect(TestBed.inject(StemsDetailFacade).status()).toBe('loading');
-    expect(root.querySelector('[data-testid="type-distribution-dominant"]')).toBeTruthy();
-    expect(root.querySelectorAll('.type-distribution-list__row--loading')).toHaveLength(0);
+    expect(root.querySelector('[data-testid="stem-ayah-type-filters"]')).toBeNull();
     expect(root.querySelector('[data-testid="stem-lemmas-list-loading"]')).toBeTruthy();
+  });
+
+  it('loads ayah filters and passes typeCode to the ayah endpoint when view=ayahs', async () => {
+    stemsApi.getStemAyahMatches.mockReturnValue(successAyahsResponse());
+    queryParamMap$.next(convertToParamMap({ stem: '500', view: 'ayahs', detailPage: '1', typeCode: 'N' }));
+
+    const fixture = await initLifecycle();
+    const root = fixture.nativeElement as HTMLElement;
+
+    expect(stemsApi.getStemSummary).toHaveBeenCalledWith(500);
+    expect(stemsApi.getStemAyahMatches).toHaveBeenCalledWith(500, 1, STEM_DETAIL_PAGE_SIZE, 'N');
+    expect(root.querySelector('[data-testid="stem-ayah-type-filters"]')).toBeTruthy();
+    expect(root.querySelector('[data-testid="stem-ayah-type-filter-all"]')).toBeNull();
+    expect(root.querySelector('[data-testid="stem-ayah-type-filter-N"]')?.getAttribute('aria-pressed')).toBe('true');
+    expect(root.querySelector('qd-ayah-matches-list')).toBeTruthy();
+    expect(root.querySelector('[data-testid="stems-ayahs-view"]')).toBeTruthy();
+    expect(root.querySelectorAll('.ayah-matches-list__card')).toHaveLength(1);
+  });
+
+  it('updates URL with typeCode and resets detail page when a type filter is selected', async () => {
+    stemsApi.getStemSummary.mockReturnValue(
+      of<ApiResponse<StemSummaryDto>>({
+        isSuccess: true,
+        data: { ...listRow(500), typeDistribution: multiTypeSummary() },
+        message: null,
+        errors: null,
+      }),
+    );
+    stemsApi.getStemAyahMatches.mockReturnValue(successAyahsResponse());
+    queryParamMap$.next(convertToParamMap({ stem: '500', view: 'ayahs', detailPage: '1' }));
+
+    const fixture = await initLifecycle();
+    vi.mocked(router.navigate).mockClear();
+
+    (fixture.nativeElement.querySelector('[data-testid="stem-ayah-type-filter-N"]') as HTMLButtonElement).click();
+
+    expect(router.navigate).toHaveBeenCalledWith([], {
+      relativeTo: expect.anything(),
+      queryParams: expect.objectContaining({
+        [STEMS_QUERY_KEYS.view]: 'ayahs',
+        [STEMS_QUERY_KEYS.detailPage]: '1',
+        [STEMS_QUERY_KEYS.typeCode]: 'N',
+      }),
+      queryParamsHandling: 'merge',
+    });
+  });
+
+  it('clears typeCode when عرض الكل is selected', async () => {
+    stemsApi.getStemSummary.mockReturnValue(
+      of<ApiResponse<StemSummaryDto>>({
+        isSuccess: true,
+        data: { ...listRow(500), typeDistribution: multiTypeSummary() },
+        message: null,
+        errors: null,
+      }),
+    );
+    stemsApi.getStemAyahMatches.mockReturnValue(successAyahsResponse());
+    queryParamMap$.next(convertToParamMap({ stem: '500', view: 'ayahs', detailPage: '1', typeCode: 'N' }));
+
+    const fixture = await initLifecycle();
+    vi.mocked(router.navigate).mockClear();
+
+    (fixture.nativeElement.querySelector('[data-testid="stem-ayah-type-filter-all"]') as HTMLButtonElement).click();
+
+    expect(router.navigate).toHaveBeenCalledWith([], {
+      relativeTo: expect.anything(),
+      queryParams: expect.objectContaining({
+        [STEMS_QUERY_KEYS.view]: 'ayahs',
+        [STEMS_QUERY_KEYS.detailPage]: '1',
+        [STEMS_QUERY_KEYS.typeCode]: null,
+      }),
+      queryParamsHandling: 'merge',
+    });
+  });
+
+  it('clears stale typeCode after summary loads', async () => {
+    stemsApi.getStemSummary.mockReturnValue(
+      of<ApiResponse<StemSummaryDto>>({
+        isSuccess: true,
+        data: { ...listRow(500), typeDistribution: [typeSummary('N', 'اسم', 10)] },
+        message: null,
+        errors: null,
+      }),
+    );
+    stemsApi.getStemAyahMatches.mockReturnValue(successAyahsResponse());
+
+    queryParamMap$.next(convertToParamMap({ stem: '500', view: 'ayahs', typeCode: 'V', detailPage: '1' }));
+    const fixture = await initLifecycle();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(TestBed.inject(StemsDetailFacade).panelState().ayahTypeCode).toBeNull();
+    expect(router.navigate).toHaveBeenCalledWith([], {
+      relativeTo: expect.anything(),
+      queryParams: expect.objectContaining({
+        [STEMS_QUERY_KEYS.typeCode]: null,
+        [STEMS_QUERY_KEYS.detailPage]: '1',
+      }),
+      queryParamsHandling: 'merge',
+    });
+    expect(fixture.nativeElement.querySelector('[data-testid="stem-ayah-type-filter-all"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="stem-ayah-type-filter-N"]')?.getAttribute('aria-pressed')).toBe('true');
   });
 
   it('maps row selection to the default words/simple detail state', async () => {
@@ -288,6 +406,7 @@ describe('StemsExplorerPageComponent US2', () => {
         [STEMS_QUERY_KEYS.stem]: '500',
         [STEMS_QUERY_KEYS.view]: 'words',
         [STEMS_QUERY_KEYS.wordView]: 'simple',
+        [STEMS_QUERY_KEYS.typeCode]: null,
       }),
       queryParamsHandling: 'merge',
     });
@@ -337,6 +456,7 @@ describe('StemsExplorerPageComponent US2', () => {
         [STEMS_QUERY_KEYS.view]: 'words',
         [STEMS_QUERY_KEYS.wordView]: 'tashkeel',
         [STEMS_QUERY_KEYS.detailPage]: '1',
+        [STEMS_QUERY_KEYS.typeCode]: null,
       }),
       queryParamsHandling: 'merge',
     });
@@ -507,6 +627,7 @@ describe('StemsExplorerPageComponent US5', () => {
       queryParams: expect.objectContaining({
         [STEMS_QUERY_KEYS.view]: 'surahs',
         [STEMS_QUERY_KEYS.surahView]: 'mentioned',
+        [STEMS_QUERY_KEYS.typeCode]: null,
       }),
       queryParamsHandling: 'merge',
     });
@@ -536,6 +657,7 @@ describe('StemsExplorerPageComponent US5', () => {
         [STEMS_QUERY_KEYS.view]: 'surahs',
         [STEMS_QUERY_KEYS.surahView]: 'mentioned',
         [STEMS_QUERY_KEYS.detailPage]: null,
+        [STEMS_QUERY_KEYS.typeCode]: null,
       }),
       queryParamsHandling: 'merge',
     });
@@ -755,6 +877,7 @@ describe('StemsExplorerPageComponent US8 — restore and navigate exact state', 
     expect(lastArgs.queryParams[STEMS_QUERY_KEYS.view]).toBeNull();
     expect(lastArgs.queryParams[STEMS_QUERY_KEYS.wordView]).toBeNull();
     expect(lastArgs.queryParams[STEMS_QUERY_KEYS.detailPage]).toBeNull();
+    expect(lastArgs.queryParams[STEMS_QUERY_KEYS.typeCode]).toBeNull();
     expect(lastArgs.queryParams[STEMS_QUERY_KEYS.search]).toBeUndefined();
     expect(lastArgs.queryParams[STEMS_QUERY_KEYS.sort]).toBeUndefined();
     expect(lastArgs.queryParams[STEMS_QUERY_KEYS.page]).toBeUndefined();
@@ -802,7 +925,7 @@ describe('StemsExplorerPageComponent US8 — restore and navigate exact state', 
 
     expect(detailFacade.selectedStemId()).toBe(500);
     expect(detailFacade.view()).toBe('ayahs');
-    expect(stemsApi.getStemAyahMatches).toHaveBeenCalledWith(500, 1, STEM_DETAIL_PAGE_SIZE);
+    expect(stemsApi.getStemAyahMatches).toHaveBeenCalledWith(500, 1, STEM_DETAIL_PAGE_SIZE, null);
   });
 
   it('maps a summary HTTP 404 to restored-not-found without surfacing a generic error', async () => {
