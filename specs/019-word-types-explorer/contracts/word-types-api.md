@@ -188,7 +188,11 @@ other explorers.
       "surahNumber": 2,
       "ayahNumber": 255,
       "ayahText": "…",
-      "matchedWordPositions": [3]      // only positions in THIS row context
+      "matchedWordPositions": [3],
+      "matchedWordIds": [12345],
+      "words": [
+        { "quranWordId": 12340, "textUthmani": "…", "isAyahMarker": false }
+      ]
     }
   ]
 }
@@ -207,8 +211,8 @@ Surah distribution + missing surahs for the exact row context. Mirror the existi
 
 ```jsonc
 {
-  "surahs": [ { "surahNumber": 2, "occurrencesCount": 0 } ],
-  "missingSurahs": [ 1, 9, 112 ]
+  "surahs": [ { "surahNumber": 2, "nameArabic": "البقرة", "occurrencesCount": 0 } ],
+  "missingSurahs": [ { "surahNumber": 1, "nameArabic": "الفاتحة" } ]
 }
 ```
 
