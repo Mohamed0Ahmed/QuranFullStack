@@ -44,12 +44,25 @@
 
 .word-types-table__row.qd-is-selected {
   background: var(--qd-accent-tint);
+  box-shadow: inset 0 0 0 2px var(--qd-accent);
+  font-weight: 600;
 }
 
 .word-types-table__word {
   font-family: var(--qd-font-quran, inherit);
   font-size: 1.05rem;
   line-height: 1.9;
+}
+
+.word-types-table__row:focus-visible {
+  outline: 2px solid var(--qd-focus-ring);
+  outline-offset: -2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .word-types-table__row {
+    transition: none;
+  }
 }
 
 .word-types-table__placeholder {

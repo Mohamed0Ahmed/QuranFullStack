@@ -2,6 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { getTestBed, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
+import { By } from '@angular/platform-browser';
 import { BehaviorSubject, of } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -10,6 +11,7 @@ import { WordTypesApi } from '../../data-access/word-types.api';
 import { ADDITIONAL_ACTIVE_HUB_SECTIONS } from '../../models/unique-words.labels';
 import { WORD_TYPE_SORT_OPTIONS, WORD_TYPES_SORT_LABEL } from '../../models/word-types.labels';
 import { PagedResultDto, WordTypeAyahMatchDto, WordTypeRowDto, WordTypeTreeDto } from '../../models/word-types.models';
+import { WordTypesTableComponent } from '../../components/word-types-table/word-types-table.component';
 import { WordTypesDetailFacade } from '../../state/word-types-detail.facade';
 import { WordTypesExplorerFacade } from '../../state/word-types-explorer.facade';
 import { WordTypesExplorerPageComponent } from './word-types-explorer-page.component';
@@ -332,6 +334,26 @@ describe('WordTypesExplorerPageComponent', () => {
       }),
       queryParamsHandling: 'merge',
     }));
+  });
+
+  it('returns focus to selected row after selection clears', async () => {
+    queryParamMap$.next(convertToParamMap({
+      type: 'noun',
+      page: '1',
+      word: '191001',
+      contextCode: 'N',
+      view: 'ayahs',
+    }));
+
+    const fixture = await createPage();
+    const table = fixture.debugElement.query(By.directive(WordTypesTableComponent)).componentInstance as WordTypesTableComponent;
+    const focusSpy = vi.spyOn(table, 'focusRow');
+
+    const closeButton = fixture.nativeElement.querySelector('[data-testid="word-type-details-panel-close"]') as HTMLButtonElement;
+
+    closeButton.click();
+
+    expect(focusSpy).toHaveBeenCalledWith(row);
   });
 
   it('renders a controlled not-found panel for missing restored rows while leaving the table active', async () => {

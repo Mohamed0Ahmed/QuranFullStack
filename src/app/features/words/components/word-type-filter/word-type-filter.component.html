@@ -9,6 +9,7 @@
               class="word-type-filter__button qd-interactive-surface"
               [class.qd-is-selected]="isSelected(node) && selectedChildCode() === null"
               [attr.aria-current]="isSelected(node) && selectedChildCode() === null ? 'true' : null"
+              [attr.aria-selected]="isSelected(node) && selectedChildCode() === null"
               [disabled]="loading()"
               (click)="selectType(node)"
             >
@@ -39,6 +40,7 @@
                     class="word-type-filter__child-button qd-interactive-surface"
                     [class.qd-is-selected]="isChildSelected(child)"
                     [attr.aria-current]="isChildSelected(child) ? 'true' : null"
+                    [attr.aria-selected]="isChildSelected(child)"
                     [disabled]="loading()"
                     (click)="selectChild(child)"
                   >

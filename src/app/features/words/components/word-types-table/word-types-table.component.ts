@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, inject, input, output } from '@angular/core';
 
 import { WordCountChipComponent } from '../word-count-chip/word-count-chip.component';
 import { WORD_TYPES_NULL_PLACEHOLDER, WORD_TYPES_TABLE_HEADERS, WORD_TYPES_TABLE_LABEL } from '../../models/word-types.labels';
@@ -21,6 +21,8 @@ export interface WordTypeCountOpenedEvent {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WordTypesTableComponent {
+  private readonly host = inject(ElementRef<HTMLElement>);
+
   readonly rows = input<PagedResultDto<WordTypeRowDto> | null>(null);
   readonly loading = input(false);
   readonly selectedRow = input<WordTypeRowDto | null>(null);
@@ -48,5 +50,21 @@ export class WordTypesTableComponent {
   protected openCount(row: WordTypeRowDto, column: WordTypeCountColumn): void {
     const view: WordTypeDetailView = column === 'surahs' ? 'surahs' : 'ayahs';
     this.countOpened.emit({ row, column, view });
+  }
+
+  focusRow(row: WordTypeRowDto | null): void {
+    if (!row) {
+      return;
+    }
+
+    const host = this.host.nativeElement as HTMLElement;
+    const button = host.querySelector<HTMLButtonElement>(
+      `[data-word-types-row="${this.rowDomId(row)}"]`,
+    );
+    button?.focus();
+  }
+
+  private rowDomId(row: WordTypeRowDto): string {
+    return [row.tashkeelWordId, row.contextCode, row.case, row.tense, row.voice].join(':');
   }
 }

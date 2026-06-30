@@ -39,6 +39,7 @@
   border-color: var(--qd-accent);
   background: var(--qd-accent-tint);
   color: var(--qd-accent-text, var(--qd-text));
+  box-shadow: inset 0 0 0 2px var(--qd-accent);
 }
 
 .word-type-filter__button:disabled {
@@ -60,6 +61,14 @@
 .word-type-filter__expand:disabled {
   cursor: wait;
   opacity: 0.72;
+}
+
+.word-type-filter__button:focus-visible,
+.word-type-filter__expand:focus-visible,
+.word-type-filter__child-button:focus-visible,
+.word-type-filter__secondary-field select:focus-visible {
+  outline: 2px solid var(--qd-focus-ring);
+  outline-offset: 2px;
 }
 
 .word-type-filter__children {
@@ -92,6 +101,7 @@
   border-color: var(--qd-accent);
   background: var(--qd-accent-tint);
   color: var(--qd-accent-text, var(--qd-text));
+  box-shadow: inset 0 0 0 2px var(--qd-accent);
 }
 
 .word-type-filter__child-button:disabled {
@@ -150,5 +160,14 @@
   select:disabled {
     cursor: wait;
     opacity: 0.72;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .word-type-filter__button,
+  .word-type-filter__expand,
+  .word-type-filter__child-button,
+  .word-type-filter__secondary-field select {
+    transition: none;
   }
 }

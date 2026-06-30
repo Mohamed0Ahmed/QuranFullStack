@@ -101,7 +101,20 @@ describe('WordTypeFilterComponent', () => {
 
     const selectedChild = fixture.nativeElement.querySelector('.word-type-filter__child-button[aria-current="true"]') as HTMLButtonElement;
     expect(selectedChild).not.toBeNull();
+    expect(selectedChild.getAttribute('aria-selected')).toBe('true');
     expect(selectedChild.textContent).toContain('اسم علم');
+  });
+
+  it('focuses the active type button for focus return', () => {
+    const fixture = TestBed.createComponent(WordTypeFilterComponent);
+    fixture.componentRef.setInput('tree', tree);
+    fixture.componentRef.setInput('selectedType', 'verb');
+    fixture.detectChanges();
+
+    fixture.componentInstance.focusSelectedType();
+
+    const selected = fixture.nativeElement.querySelector('.word-type-filter__button[aria-current="true"]') as HTMLButtonElement;
+    expect(document.activeElement).toBe(selected);
   });
 
   it('toggles expand state via the expand affordance and exposes aria-expanded', () => {

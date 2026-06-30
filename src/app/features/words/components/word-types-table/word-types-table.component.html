@@ -18,8 +18,10 @@
             type="button"
             class="word-types-table__row qd-interactive-surface"
             role="row"
+            [attr.data-word-types-row]="row.tashkeelWordId + ':' + row.contextCode + ':' + row.case + ':' + row.tense + ':' + row.voice"
             [class.qd-is-selected]="isSelected(row)"
             [attr.aria-current]="isSelected(row) ? 'true' : null"
+            [attr.aria-selected]="isSelected(row)"
             (click)="selectRow(row)"
           >
             <span class="word-types-table__word" role="cell">{{ row.displayText }}</span>

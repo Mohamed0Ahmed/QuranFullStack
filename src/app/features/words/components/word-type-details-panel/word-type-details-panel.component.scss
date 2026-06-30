@@ -17,7 +17,20 @@
   border-radius: var(--qd-radius-sm);
 }
 
+.word-type-details-panel__close:focus-visible,
+.word-type-details-panel__tab:focus-visible {
+  outline: 2px solid var(--qd-focus-ring);
+  outline-offset: 2px;
+}
+
 .word-type-details-panel__tab {
   font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
   font-size: 0.875rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .word-type-details-panel__tab,
+  .word-type-details-panel__close {
+    transition: none;
+  }
 }

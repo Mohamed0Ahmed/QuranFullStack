@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, inject, signal, viewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
@@ -71,6 +71,8 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly listState = this.explorerFacade.listState;
   protected readonly panelState = this.detailFacade.panelState;
   protected readonly isDesktop = signal(true);
+  private readonly filter = viewChild(WordTypeFilterComponent);
+  private readonly table = viewChild(WordTypesTableComponent);
 
   protected readonly selectedRow = computed(() => {
     const state = this.listState();
@@ -217,8 +219,16 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
   }
 
   protected clearSelection(): void {
+    const selectedRow = this.selectedRow();
     this.detailFacade.clearSelection();
     this.updateQueryParams(clearWordTypesSelection());
+
+    if (selectedRow) {
+      this.table()?.focusRow(selectedRow);
+      return;
+    }
+
+    this.filter()?.focusSelectedType();
   }
 
   protected changeSort(event: Event): void {

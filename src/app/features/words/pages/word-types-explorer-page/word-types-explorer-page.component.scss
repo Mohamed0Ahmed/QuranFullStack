@@ -3,7 +3,8 @@
 }
 
 .word-types-page {
-  padding: clamp(1rem, 2vw, 2rem);
+  padding-block: clamp(1rem, 2vw, 2rem);
+  padding-inline: clamp(1rem, 2vw, 2rem);
 }
 
 .word-types-page__header h1 {
@@ -42,9 +43,20 @@
   padding: 0.45rem 0.65rem;
 }
 
+.word-types-page__sort select:focus-visible {
+  outline: 2px solid var(--qd-focus-ring);
+  outline-offset: 2px;
+}
+
 @media (min-width: 64rem) {
   .word-types-page__layout {
     grid-template-columns: minmax(12rem, 16rem) minmax(0, 1fr) minmax(16rem, 22rem);
     align-items: start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .word-types-page__sort select {
+    transition: none;
   }
 }

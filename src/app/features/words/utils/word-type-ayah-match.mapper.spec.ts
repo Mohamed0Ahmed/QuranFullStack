@@ -23,6 +23,7 @@ describe('mapWordTypeAyahMatchToShared', () => {
       surahNameArabic: '',
       ayahNumber: 1,
       pageNumber: 1,
+      analysisLocation: '1:1:2',
       matchedQuranWordIds: [1],
       words: [
         { quranWordId: 0, textUthmani: 'أول', isAyahMarker: false },

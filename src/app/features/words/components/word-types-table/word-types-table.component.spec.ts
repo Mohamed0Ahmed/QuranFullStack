@@ -64,8 +64,19 @@ describe('WordTypesTableComponent', () => {
 
     const button = fixture.nativeElement.querySelector('.word-types-table__row') as HTMLButtonElement;
     expect(button.getAttribute('aria-current')).toBe('true');
+    expect(button.getAttribute('aria-selected')).toBe('true');
     button.click();
 
     expect(emitted[0].contextCode).toBe('PN');
+  });
+
+  it('focuses a row by identity for focus return', () => {
+    const fixture = TestBed.createComponent(WordTypesTableComponent);
+    fixture.componentRef.setInput('rows', page);
+    fixture.detectChanges();
+
+    fixture.componentInstance.focusRow(row());
+
+    expect(document.activeElement).toBe(fixture.nativeElement.querySelector('.word-types-table__row'));
   });
 });

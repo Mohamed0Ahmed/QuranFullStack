@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, input, output } from '@angular/core';
 
 import { WORD_TYPES_CASE_FILTER_LABEL, WORD_TYPES_COLLAPSE_LABEL, WORD_TYPES_EXPAND_LABEL, WORD_TYPES_FILTER_LABEL, WORD_TYPES_TENSE_FILTER_LABEL, WORD_TYPES_VOICE_FILTER_LABEL, WORD_TYPE_CASE_LABELS, WORD_TYPE_TENSE_LABELS, WORD_TYPE_VOICE_LABELS } from '../../models/word-types.labels';
 import {
@@ -23,6 +23,8 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WordTypeFilterComponent {
+  private readonly host = inject(ElementRef<HTMLElement>);
+
   readonly tree = input<WordTypeTreeDto | null>(null);
   readonly selectedType = input<WordTypeMainType>('noun');
   readonly selectedChildCode = input<string | null>(null);
@@ -170,5 +172,12 @@ export class WordTypeFilterComponent {
 
   protected voiceOptionLabel(option: WordTypeVoice): string {
     return WORD_TYPE_VOICE_LABELS[option];
+  }
+
+  focusSelectedType(): void {
+    const host = this.host.nativeElement as HTMLElement;
+    const selected = host.querySelector<HTMLButtonElement>('[aria-current="true"]');
+    const fallback = host.querySelector<HTMLButtonElement>('.word-type-filter__button');
+    (selected ?? fallback)?.focus();
   }
 }

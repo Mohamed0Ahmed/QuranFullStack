@@ -19,7 +19,7 @@
       (voiceSelected)="selectVoice($event)"
     />
 
-    <main class="word-types-page__main">
+    <main class="word-types-page__main" [attr.aria-busy]="listState().status === 'loading' ? true : null">
       <div class="word-types-page__toolbar">
         <label class="word-types-page__sort">
           <span>{{ sortLabel }}</span>

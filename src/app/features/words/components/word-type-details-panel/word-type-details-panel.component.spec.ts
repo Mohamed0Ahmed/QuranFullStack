@@ -47,4 +47,20 @@ describe('WordTypeDetailsPanelComponent', () => {
 
     expect((fixture.nativeElement as HTMLElement).querySelector('[role="tablist"]')).toBeNull();
   });
+
+  it('renders drawer chrome and emits close on Escape outside inline mode', () => {
+    const fixture = createPanel('ayahs');
+    let closed = 0;
+    fixture.componentRef.setInput('inline', false);
+    fixture.componentInstance.close.subscribe(() => closed += 1);
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelector('[data-testid="word-type-details-panel-backdrop"]')).not.toBeNull();
+
+    const modal = host.querySelector('[data-testid="word-type-details-modal"]') as HTMLElement;
+    modal.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+
+    expect(closed).toBe(1);
+  });
 });
