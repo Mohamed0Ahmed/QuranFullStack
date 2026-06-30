@@ -25,11 +25,38 @@ public sealed class EfWordTypesReader(QuranDashboardDbContext dbContext) : IWord
         var counts = await _dbContext.Database.SqlQueryRaw<TreeCountRow>(TreeCountsSql())
             .ToDictionaryAsync(row => row.Type, row => row.Count, cancellationToken);
 
+        var childCounts = await _dbContext.Database.SqlQueryRaw<TreeChildCountRow>(TreeChildCountsSql())
+            .ToListAsync(cancellationToken);
+
+        var nounChildCounts = childCounts
+            .Where(row => row.Type == NounType)
+            .ToDictionary(row => row.ChildCode, row => row.Count);
+        var verbChildCounts = childCounts
+            .Where(row => row.Type == VerbType)
+            .ToDictionary(row => row.ChildCode, row => row.Count);
+
+        // Catalogue-driven noun children: every noun-category POS code ordered by SortOrder,
+        // each carrying its distinct word-context row count (0 when no rows exist).
+        var nounCatalogue = await _dbContext.PosTags.AsNoTracking()
+            .Where(pos => pos.Category == NounType)
+            .OrderBy(pos => pos.SortOrder)
+            .Select(pos => new PosCatalogueRow(pos.Code, pos.ArabicLabel))
+            .ToListAsync(cancellationToken);
+
+        var nounChildren = nounCatalogue
+            .Select(pos => ChildNode(pos.Code, pos.ArabicLabel, nounChildCounts.GetValueOrDefault(pos.Code)))
+            .ToList();
+
+        // Verb tense children are a fixed v1 set; counts come from the grouped base rows.
+        var verbChildren = VerbTenseChildren
+            .Select(tense => ChildNode(tense.ChildCode, tense.Label, verbChildCounts.GetValueOrDefault(tense.ChildCode)))
+            .ToList();
+
         return new WordTypeTreeDto([
-            MainNode(NounType, "اسم", counts.GetValueOrDefault(NounType), "case"),
-            MainNode(VerbType, "فعل", counts.GetValueOrDefault(VerbType), "tense+voice"),
-            MainNode(ParticleType, "حرف وأداة", counts.GetValueOrDefault(ParticleType), "none"),
-            MainNode(InlType, "حروف مقطّعة", counts.GetValueOrDefault(InlType), "none"),
+            MainNode(NounType, "اسم", counts.GetValueOrDefault(NounType), "case", nounChildren),
+            MainNode(VerbType, "فعل", counts.GetValueOrDefault(VerbType), "tense+voice", verbChildren),
+            MainNode(ParticleType, "حرف وأداة", counts.GetValueOrDefault(ParticleType), "none", []),
+            MainNode(InlType, "حروف مقطّعة", counts.GetValueOrDefault(InlType), "none", []),
         ]);
     }
 
@@ -41,17 +68,20 @@ public sealed class EfWordTypesReader(QuranDashboardDbContext dbContext) : IWord
         CancellationToken cancellationToken)
     {
         var type = NormalizeType(filter.Type);
-        var totalCount = await CountRowsAsync(type, cancellationToken);
+        var childCode = NormalizeChildCode(filter.ChildCode);
+        var context = new WordTypeReadContext(type, childCode);
+        var totalCount = await CountRowsAsync(context, cancellationToken);
         var skip = ReadPaging.CalculateSafeSkip(page, pageSize, totalCount);
         if (skip is null)
         {
             return new PagedResult<WordTypeRowDto>(page, pageSize, totalCount, []);
         }
 
+        var parameters = BuildRowsParameters(context, skip.Value, pageSize);
+
         var rows = await _dbContext.Database.SqlQueryRaw<WordTypeRowSqlResult>(
-            RowsSql(type, sort),
-            new NpgsqlParameter<int>("skip", skip.Value),
-            new NpgsqlParameter<int>("take", pageSize))
+            RowsSql(context, sort),
+            parameters)
             .ToListAsync(cancellationToken);
 
         return new PagedResult<WordTypeRowDto>(
@@ -313,17 +343,21 @@ public sealed class EfWordTypesReader(QuranDashboardDbContext dbContext) : IWord
                 || morphology.VerbVoice == identity.Voice)
         select morphology;
 
-    private async Task<int> CountRowsAsync(string type, CancellationToken cancellationToken)
+    private async Task<int> CountRowsAsync(WordTypeReadContext context, CancellationToken cancellationToken)
     {
-        var result = await _dbContext.Database.SqlQueryRaw<CountRow>(RowsCountSql(type))
+        var parameters = BuildCountParameters(context);
+        var result = await _dbContext.Database.SqlQueryRaw<CountRow>(RowsCountSql(context), parameters)
             .SingleAsync(cancellationToken);
 
         return result.Count;
     }
 
-    private static string TreeCountsSql() => $"""
+    private static string TreeCountsSql()
+    {
+        var unscoped = WordTypeReadContext.Unscoped;
+        return $"""
         WITH base AS (
-            {BaseRowsSql(null)}
+            {BaseRowsSql(unscoped)}
         ), grouped AS (
             SELECT '{NounType}' AS type, tashkeel_word_id, head_pos AS context_code
             FROM base
@@ -355,46 +389,74 @@ public sealed class EfWordTypesReader(QuranDashboardDbContext dbContext) : IWord
         FROM grouped
         GROUP BY type
         """;
+    }
 
-    private static string RowsCountSql(string type) => $"""
+    private static string TreeChildCountsSql()
+    {
+        var unscoped = WordTypeReadContext.Unscoped;
+        return $"""
         WITH base AS (
-            {BaseRowsSql(type)}
-        ), grouped AS (
-            SELECT tashkeel_word_id, {ContextExpression(type)} AS context_code
+            {BaseRowsSql(unscoped)}
+        ), noun_children AS (
+            SELECT '{NounType}' AS type, head_pos AS child_code, tashkeel_word_id
             FROM base
-            GROUP BY tashkeel_word_id, {ContextExpression(type)}
+            WHERE pos_category = '{NounType}'
+            GROUP BY head_pos, tashkeel_word_id
+        ), verb_children AS (
+            SELECT '{VerbType}' AS type, COALESCE(verb_tense, '{UnspecifiedContext}') AS child_code, tashkeel_word_id
+            FROM base
+            WHERE is_verb
+            GROUP BY COALESCE(verb_tense, '{UnspecifiedContext}'), tashkeel_word_id
+        ), all_children AS (
+            SELECT * FROM noun_children
+            UNION ALL
+            SELECT * FROM verb_children
+        )
+        SELECT type AS "{nameof(TreeChildCountRow.Type)}", child_code AS "{nameof(TreeChildCountRow.ChildCode)}", COUNT(*)::int AS "{nameof(TreeChildCountRow.Count)}"
+        FROM all_children
+        GROUP BY type, child_code
+        """;
+    }
+
+    private static string RowsCountSql(WordTypeReadContext context) => $"""
+        WITH base AS (
+            {BaseRowsSql(context)}
+        ), grouped AS (
+            SELECT tashkeel_word_id, {ContextExpression(context)} AS context_code
+            FROM base
+            GROUP BY tashkeel_word_id, {ContextExpression(context)}
         )
         SELECT COUNT(*)::int AS "{nameof(CountRow.Count)}"
         FROM grouped
         """;
 
-    private static string RowsSql(string type, WordTypeSort sort) => $"""
+    private static string RowsSql(WordTypeReadContext context, WordTypeSort sort) => $"""
         WITH base AS (
-            {BaseRowsSql(type)}
+            {BaseRowsSql(context)}
         ), grouped AS (
             SELECT
                 tashkeel_word_id,
-                {ContextExpression(type)} AS context_code,
+                {ContextExpression(context)} AS context_code,
                 MIN(display_text) AS display_text,
-                {TypeCodeExpression(type)} AS type_code,
-                MIN({TypeLabelExpression(type)}) AS type_label,
+                {TypeCodeExpression(context)} AS type_code,
+                MIN({TypeLabelExpression(context)}) AS type_label,
                 MIN(quran_word_id) AS first_word_order_in_mushaf,
                 COUNT(*)::int AS occurrences_count,
                 COUNT(DISTINCT ayah_id)::int AS ayahs_count,
                 COUNT(DISTINCT surah_number)::int AS surahs_count
             FROM base
-            GROUP BY tashkeel_word_id, {ContextExpression(type)}, {TypeCodeExpression(type)}
+            GROUP BY tashkeel_word_id, {ContextExpression(context)}, {TypeCodeExpression(context)}
         ), root_candidates AS (
             SELECT
                 tashkeel_word_id,
-                {ContextExpression(type)} AS context_code,
+                {ContextExpression(context)} AS context_code,
                 root_id,
                 MIN(root_text) AS root_text,
                 COUNT(*) AS occurrence_count,
                 MIN(quran_word_id) AS first_word_order
             FROM base
             WHERE root_id IS NOT NULL
-            GROUP BY tashkeel_word_id, {ContextExpression(type)}, root_id
+            GROUP BY tashkeel_word_id, {ContextExpression(context)}, root_id
         ), root_winners AS (
             SELECT DISTINCT ON (tashkeel_word_id, context_code)
                 tashkeel_word_id,
@@ -405,14 +467,14 @@ public sealed class EfWordTypesReader(QuranDashboardDbContext dbContext) : IWord
         ), lemma_candidates AS (
             SELECT
                 tashkeel_word_id,
-                {ContextExpression(type)} AS context_code,
+                {ContextExpression(context)} AS context_code,
                 lemma_id,
                 MIN(lemma_text) AS lemma_text,
                 COUNT(*) AS occurrence_count,
                 MIN(quran_word_id) AS first_word_order
             FROM base
             WHERE lemma_id IS NOT NULL
-            GROUP BY tashkeel_word_id, {ContextExpression(type)}, lemma_id
+            GROUP BY tashkeel_word_id, {ContextExpression(context)}, lemma_id
         ), lemma_winners AS (
             SELECT DISTINCT ON (tashkeel_word_id, context_code)
                 tashkeel_word_id,
@@ -423,14 +485,14 @@ public sealed class EfWordTypesReader(QuranDashboardDbContext dbContext) : IWord
         ), stem_candidates AS (
             SELECT
                 tashkeel_word_id,
-                {ContextExpression(type)} AS context_code,
+                {ContextExpression(context)} AS context_code,
                 stem_id,
                 MIN(stem_text) AS stem_text,
                 COUNT(*) AS occurrence_count,
                 MIN(quran_word_id) AS first_word_order
             FROM base
             WHERE stem_id IS NOT NULL
-            GROUP BY tashkeel_word_id, {ContextExpression(type)}, stem_id
+            GROUP BY tashkeel_word_id, {ContextExpression(context)}, stem_id
         ), stem_winners AS (
             SELECT DISTINCT ON (tashkeel_word_id, context_code)
                 tashkeel_word_id,
@@ -445,8 +507,8 @@ public sealed class EfWordTypesReader(QuranDashboardDbContext dbContext) : IWord
             g.display_text AS "{nameof(WordTypeRowSqlResult.DisplayText)}",
             g.type_code AS "{nameof(WordTypeRowSqlResult.TypeCode)}",
             g.type_label AS "{nameof(WordTypeRowSqlResult.TypeLabel)}",
-            '{ResolveBroadLabel(type)}' AS "{nameof(WordTypeRowSqlResult.BroadLabel)}",
-            {CaseOrFeatureSelect(type)} AS "{nameof(WordTypeRowSqlResult.CaseOrFeature)}",
+            '{ResolveBroadLabel(context.Type)}' AS "{nameof(WordTypeRowSqlResult.BroadLabel)}",
+            {CaseOrFeatureSelect(context)} AS "{nameof(WordTypeRowSqlResult.CaseOrFeature)}",
             root_winners.root_text AS "{nameof(WordTypeRowSqlResult.RootText)}",
             lemma_winners.lemma_text AS "{nameof(WordTypeRowSqlResult.LemmaText)}",
             stem_winners.stem_text AS "{nameof(WordTypeRowSqlResult.StemText)}",
@@ -462,7 +524,7 @@ public sealed class EfWordTypesReader(QuranDashboardDbContext dbContext) : IWord
         OFFSET @skip LIMIT @take
         """;
 
-    private static string BaseRowsSql(string? type) => $"""
+    private static string BaseRowsSql(WordTypeReadContext context) => $"""
         SELECT
             w.id AS quran_word_id,
             w.ayah_id,
@@ -493,31 +555,72 @@ public sealed class EfWordTypesReader(QuranDashboardDbContext dbContext) : IWord
         LEFT JOIN quran_stems stem ON stem.id = m.stem_id
         WHERE NOT w.is_ayah_marker
             AND w.unique_tashkeel_word_id IS NOT NULL
-            {TypePredicate(type)}
+            {TypePredicate(context)}
         """;
 
-    private static string TypePredicate(string? type) => type switch
+    private static string TypePredicate(WordTypeReadContext context)
     {
-        NounType => $"AND pos.category = '{NounType}'",
-        VerbType => "AND m.is_verb",
-        ParticleType => $"AND pos.category = '{ParticleType}' AND m.head_pos <> '{InlPos}'",
-        InlType => $"AND m.head_pos = '{InlPos}'",
-        _ => string.Empty,
+        var typePredicate = context.Type switch
+        {
+            NounType => $"AND pos.category = '{NounType}'",
+            VerbType => "AND m.is_verb",
+            ParticleType => $"AND pos.category = '{ParticleType}' AND m.head_pos <> '{InlPos}'",
+            InlType => $"AND m.head_pos = '{InlPos}'",
+            _ => string.Empty,
+        };
+
+        return context.HasChildCode
+            ? $"{typePredicate} AND {ChildCodePredicate(context)}"
+            : typePredicate;
+    }
+
+    private static string ChildCodePredicate(WordTypeReadContext context) => context.Type switch
+    {
+        // Noun children pin the head POS; verb children pin the tense.
+        NounType => "m.head_pos = @childCode",
+        VerbType => $"COALESCE(m.verb_tense, '{UnspecifiedContext}') = @childCode",
+        _ => "FALSE",
     };
 
-    private static string ContextExpression(string type) => type == VerbType
+    private static object[] BuildRowsParameters(WordTypeReadContext context, int skip, int take)
+    {
+        var parameters = new List<object>
+        {
+            new NpgsqlParameter<int>("skip", skip),
+            new NpgsqlParameter<int>("take", take),
+        };
+        AddChildCodeParameter(context, parameters);
+        return [.. parameters];
+    }
+
+    private static object[] BuildCountParameters(WordTypeReadContext context)
+    {
+        var parameters = new List<object>();
+        AddChildCodeParameter(context, parameters);
+        return [.. parameters];
+    }
+
+    private static void AddChildCodeParameter(WordTypeReadContext context, List<object> parameters)
+    {
+        if (context.HasChildCode)
+        {
+            parameters.Add(new NpgsqlParameter<string>("childCode", context.ChildCode!));
+        }
+    }
+
+    private static string ContextExpression(WordTypeReadContext context) => context.Type == VerbType
         ? $"COALESCE(verb_tense, '{UnspecifiedContext}')"
         : "head_pos";
 
-    private static string TypeCodeExpression(string type) => type == VerbType
+    private static string TypeCodeExpression(WordTypeReadContext context) => context.Type == VerbType
         ? $"COALESCE(verb_tense, '{UnspecifiedContext}')"
         : "head_pos";
 
-    private static string TypeLabelExpression(string type) => type == VerbType
+    private static string TypeLabelExpression(WordTypeReadContext context) => context.Type == VerbType
         ? $"CASE verb_tense WHEN 'past' THEN 'ماض' WHEN 'present' THEN 'مضارع' WHEN 'imperative' THEN 'أمر' ELSE pos_label END"
         : "pos_label";
 
-    private static string CaseOrFeatureSelect(string type) => type == VerbType
+    private static string CaseOrFeatureSelect(WordTypeReadContext context) => context.Type == VerbType
         ? "g.context_code"
         : "NULL::text";
 
@@ -530,13 +633,21 @@ public sealed class EfWordTypesReader(QuranDashboardDbContext dbContext) : IWord
         _ => "g.occurrences_count DESC, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
     };
 
-    private static WordTypeTreeNodeDto MainNode(string code, string label, int count, string secondaryKind) =>
+    private static WordTypeTreeNodeDto MainNode(
+        string code,
+        string label,
+        int count,
+        string secondaryKind,
+        IReadOnlyList<WordTypeChildNodeDto> children) =>
         new(
             code,
             new WordTypeLabelDto(label),
             count,
             new WordTypeSecondaryFilterDto(secondaryKind, SecondaryOptions(secondaryKind), VoiceOptions(secondaryKind)),
-            []);
+            children);
+
+    private static WordTypeChildNodeDto ChildNode(string code, string label, int count) =>
+        new(code, code, new WordTypeLabelDto(label), count);
 
     private static IReadOnlyList<WordTypeFilterOptionDto> SecondaryOptions(string secondaryKind) => secondaryKind switch
     {
@@ -607,6 +718,11 @@ public sealed class EfWordTypesReader(QuranDashboardDbContext dbContext) : IWord
 
     private static string NormalizeType(string? type) => string.IsNullOrWhiteSpace(type) ? NounType : type.Trim().ToLowerInvariant();
 
+    // Noun child codes are POS codes (uppercase); verb child codes are tense literals (lowercase).
+    // Preserve the raw value rather than lower-casing so noun POS codes like "PN" survive.
+    private static string? NormalizeChildCode(string? childCode) =>
+        string.IsNullOrWhiteSpace(childCode) ? null : childCode.Trim();
+
     private static string ResolveBroadLabel(string type) => type switch
     {
         VerbType => "فعل",
@@ -641,6 +757,30 @@ public sealed class EfWordTypesReader(QuranDashboardDbContext dbContext) : IWord
     private sealed record SurahOccurrenceRow(short SurahNumber, int OccurrencesCount);
 
     private sealed record TreeCountRow(string Type, int Count);
+
+    private sealed record TreeChildCountRow(string Type, string ChildCode, int Count);
+
+    private sealed record PosCatalogueRow(string Code, string ArabicLabel);
+
+    /// <summary>
+    /// Bundles the normalized main type with the optional selected child code so the
+    /// row/tree SQL builders thread both dimensions consistently. <see cref="Unscoped"/>
+    /// is the no-child baseline used by the tree reads.
+    /// </summary>
+    private sealed record WordTypeReadContext(string Type, string? ChildCode)
+    {
+        public static WordTypeReadContext Unscoped { get; } = new(string.Empty, null);
+
+        public bool HasChildCode => !string.IsNullOrWhiteSpace(ChildCode);
+    }
+
+    // Verb tense child nodes are a fixed v1 set (noun children are catalogue-driven).
+    private static readonly (string ChildCode, string Label)[] VerbTenseChildren =
+    [
+        ("past", "ماض"),
+        ("present", "مضارع"),
+        ("imperative", "أمر"),
+    ];
 
     private sealed record CountRow(int Count);
 
