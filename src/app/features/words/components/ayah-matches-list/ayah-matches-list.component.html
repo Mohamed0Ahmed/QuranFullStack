@@ -49,6 +49,16 @@
           >
             <qd-highlighted-ayah [words]="row.match.words" [matchedQuranWordIds]="row.match.matchedQuranWordIds" />
           </a>
+          @if (showAnalysisAction() && row.match.analysisLocation) {
+            <button
+              type="button"
+              class="ayah-matches-list__analysis-action qd-interactive-surface"
+              data-testid="ayah-match-analysis"
+              (click)="requestAnalysis(row.match.analysisLocation)"
+            >
+              {{ analysisActionLabel() }}
+            </button>
+          }
         </article>
       }
     }

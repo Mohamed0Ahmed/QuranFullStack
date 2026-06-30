@@ -3,7 +3,7 @@ import { getTestBed, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
 import { WordsHubPageComponent } from './words-hub-page.component';
-import { lemmasRoutePath, stemsRoutePath } from '../../../../core/navigation/route-paths';
+import { lemmasRoutePath, stemsRoutePath, wordTypesRoutePath } from '../../../../core/navigation/route-paths';
 import {
   ACTIVE_HUB_SECTION,
   ADDITIONAL_ACTIVE_HUB_SECTIONS,
@@ -35,13 +35,17 @@ describe('WordsHubPageComponent', () => {
     expect(root.querySelectorAll('[data-testid="words-hub-card--active"]')).toHaveLength(1);
   });
 
-  it('renders the disabled coming-soon section cards', async () => {
+  it('renders the active Word Types card and no coming-soon cards', async () => {
     const root = await createComponent();
 
-    const disabledCards = root.querySelectorAll('[data-testid="words-hub-card--disabled"]');
-    expect(disabledCards).toHaveLength(COMING_SOON_HUB_SECTIONS.length);
+    expect(ADDITIONAL_ACTIVE_HUB_SECTIONS.map((s) => s.labelAr)).toContain('أنواع الكلمات');
+    expect(ADDITIONAL_ACTIVE_HUB_SECTIONS.find((s) => s.labelAr === 'أنواع الكلمات')?.route).toBe(wordTypesRoutePath());
+    expect(root.querySelector('[data-testid="words-hub-card--أنواع الكلمات"]')).toBeTruthy();
 
-    expect(COMING_SOON_HUB_SECTIONS.length).toBe(1);
+    const disabledCards = root.querySelectorAll('[data-testid="words-hub-card--disabled"]');
+    expect(COMING_SOON_HUB_SECTIONS).toHaveLength(0);
+    expect(disabledCards).toHaveLength(0);
+
     expect(COMING_SOON_HUB_SECTIONS.map((s) => s.labelAr)).not.toContain('الجذور');
     expect(COMING_SOON_HUB_SECTIONS.map((s) => s.labelAr)).not.toContain('الصيغ المعجمية');
     expect(COMING_SOON_HUB_SECTIONS.map((s) => s.labelAr)).not.toContain('الأصول الصرفية');

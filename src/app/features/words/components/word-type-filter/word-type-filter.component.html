@@ -1,0 +1,94 @@
+<section class="word-type-filter" [attr.aria-label]="filterLabel">
+  @if (tree(); as currentTree) {
+    <div class="word-type-filter__list" role="list">
+      @for (node of currentTree.mainTypes; track node.code) {
+        <div class="word-type-filter__item" role="listitem">
+          <div class="word-type-filter__row">
+            <button
+              type="button"
+              class="word-type-filter__button qd-interactive-surface"
+              [class.qd-is-selected]="isSelected(node) && selectedChildCode() === null"
+              [attr.aria-current]="isSelected(node) && selectedChildCode() === null ? 'true' : null"
+              [attr.aria-selected]="isSelected(node) && selectedChildCode() === null"
+              [disabled]="loading()"
+              (click)="selectType(node)"
+            >
+              <span class="word-type-filter__label">{{ node.label.ar }}</span>
+              <span class="word-type-filter__count">{{ node.count }}</span>
+            </button>
+
+            @if (node.children.length > 0) {
+              <button
+                type="button"
+                class="word-type-filter__expand qd-interactive-surface"
+                [attr.aria-expanded]="isExpanded(node)"
+                [attr.aria-label]="expandAriaLabel(node)"
+                [disabled]="loading()"
+                (click)="toggleExpand(node, $event)"
+              >
+                <span aria-hidden="true">{{ isExpanded(node) ? '−' : '+' }}</span>
+              </button>
+            }
+          </div>
+
+          @if (isExpanded(node) && node.children.length > 0) {
+            <ul class="word-type-filter__children" role="list">
+              @for (child of node.children; track child.childCode) {
+                <li class="word-type-filter__child" role="listitem">
+                  <button
+                    type="button"
+                    class="word-type-filter__child-button qd-interactive-surface"
+                    [class.qd-is-selected]="isChildSelected(child)"
+                    [attr.aria-current]="isChildSelected(child) ? 'true' : null"
+                    [attr.aria-selected]="isChildSelected(child)"
+                    [disabled]="loading()"
+                    (click)="selectChild(child)"
+                  >
+                    <span class="word-type-filter__child-label">{{ child.label.ar }}</span>
+                    <span class="word-type-filter__count">{{ child.count }}</span>
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      }
+    </div>
+
+    @if (showCaseControls()) {
+      <div class="word-type-filter__secondary" data-testid="word-type-case-filter">
+        <label class="word-type-filter__secondary-field">
+          <span>{{ caseFilterLabel }}</span>
+          <select [value]="selectedCase()" [disabled]="loading()" (change)="changeCase($event)">
+            @for (option of caseOptions; track option) {
+              <option [value]="option">{{ caseOptionLabel(option) }}</option>
+            }
+          </select>
+        </label>
+      </div>
+    }
+
+    @if (showVerbControls()) {
+      <div class="word-type-filter__secondary" data-testid="word-type-verb-filter">
+        <label class="word-type-filter__secondary-field">
+          <span>{{ tenseFilterLabel }}</span>
+          <select [value]="selectedTense()" [disabled]="loading()" (change)="changeTense($event)">
+            @for (option of tenseOptions; track option) {
+              <option [value]="option">{{ tenseOptionLabel(option) }}</option>
+            }
+          </select>
+        </label>
+        <label class="word-type-filter__secondary-field">
+          <span>{{ voiceFilterLabel }}</span>
+          <select [value]="selectedVoice()" [disabled]="loading()" (change)="changeVoice($event)">
+            @for (option of voiceOptions; track option) {
+              <option [value]="option">{{ voiceOptionLabel(option) }}</option>
+            }
+          </select>
+        </label>
+      </div>
+    }
+  } @else {
+    <p class="word-type-filter__placeholder">{{ filterLabel }}</p>
+  }
+</section>

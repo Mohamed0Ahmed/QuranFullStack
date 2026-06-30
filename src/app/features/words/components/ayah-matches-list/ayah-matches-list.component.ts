@@ -30,8 +30,11 @@ export class AyahMatchesListComponent {
   readonly page = input.required<PagedResultDto<AyahMatchDto>>();
   readonly currentPage = input.required<number>();
   readonly loading = input(false);
+  readonly showAnalysisAction = input(false);
+  readonly analysisActionLabel = input('');
 
   readonly pageChange = output<number>();
+  readonly analysisRequested = output<string>();
 
   protected readonly loadingCardPlaceholders = Array.from({ length: 4 });
 
@@ -71,5 +74,11 @@ export class AyahMatchesListComponent {
 
   protected rowNumber(index: number): number {
     return pageRelativeRowNumber(this.currentPage(), this.page().pageSize, index);
+  }
+
+  protected requestAnalysis(location: string | null | undefined): void {
+    if (location) {
+      this.analysisRequested.emit(location);
+    }
   }
 }

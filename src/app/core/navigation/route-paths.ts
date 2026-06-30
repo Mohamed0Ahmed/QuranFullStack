@@ -35,3 +35,9 @@ export const WORDS_STEMS_SEGMENT = 'stems' as const;
 export function stemsRoutePath(): string {
   return `${WORDS_ROUTE_PATH}/${WORDS_STEMS_SEGMENT}`;
 }
+
+export const WORDS_TYPES_SEGMENT = 'types' as const;
+
+export function wordTypesRoutePath(): string {
+  return `${WORDS_ROUTE_PATH}/${WORDS_TYPES_SEGMENT}`;
+}

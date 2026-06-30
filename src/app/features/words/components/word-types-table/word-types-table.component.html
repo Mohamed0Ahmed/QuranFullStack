@@ -1,0 +1,63 @@
+<section class="word-types-table" [attr.aria-label]="tableLabel">
+  @if (rows(); as page) {
+    <div class="word-types-table__scroll" role="table" [attr.aria-rowcount]="page.totalCount">
+      <div class="word-types-table__header" role="row">
+        <span role="columnheader">{{ headers.word }}</span>
+        <span role="columnheader">{{ headers.type }}</span>
+        <span role="columnheader">{{ headers.root }}</span>
+        <span role="columnheader">{{ headers.stem }}</span>
+        <span role="columnheader">{{ headers.lemma }}</span>
+        <span role="columnheader">{{ headers.occurrences }}</span>
+        <span role="columnheader">{{ headers.ayahs }}</span>
+        <span role="columnheader">{{ headers.surahs }}</span>
+      </div>
+
+      <div role="rowgroup">
+        @for (row of page.items; track row.tashkeelWordId + ':' + row.contextCode) {
+          <button
+            type="button"
+            class="word-types-table__row qd-interactive-surface"
+            role="row"
+            [attr.data-word-types-row]="row.tashkeelWordId + ':' + row.contextCode + ':' + row.case + ':' + row.tense + ':' + row.voice"
+            [class.qd-is-selected]="isSelected(row)"
+            [attr.aria-current]="isSelected(row) ? 'true' : null"
+            [attr.aria-selected]="isSelected(row)"
+            (click)="selectRow(row)"
+          >
+            <span class="word-types-table__word" role="cell">{{ row.displayText }}</span>
+            <span role="cell">{{ row.typeLabel.ar }}</span>
+            <span role="cell">{{ row.rootText || placeholder }}</span>
+            <span role="cell">{{ row.stemText || placeholder }}</span>
+            <span role="cell">{{ row.lemmaText || placeholder }}</span>
+            <span role="cell">
+              <qd-word-count-chip
+                [label]="headers.occurrences"
+                [count]="row.occurrencesCount"
+                [showLabel]="false"
+                (chipClick)="openCount(row, 'occurrences')"
+              />
+            </span>
+            <span role="cell">
+              <qd-word-count-chip
+                [label]="headers.ayahs"
+                [count]="row.ayahsCount"
+                [showLabel]="false"
+                (chipClick)="openCount(row, 'ayahs')"
+              />
+            </span>
+            <span role="cell">
+              <qd-word-count-chip
+                [label]="headers.surahs"
+                [count]="row.surahsCount"
+                [showLabel]="false"
+                (chipClick)="openCount(row, 'surahs')"
+              />
+            </span>
+          </button>
+        }
+      </div>
+    </div>
+  } @else {
+    <p class="word-types-table__placeholder">{{ tableLabel }}</p>
+  }
+</section>

@@ -30,3 +30,14 @@ For product and visual context, also read:
 
 - `../../PRODUCT.md`
 - `../../DESIGN.md`
+
+<!-- lean-ctx -->
+
+## lean-ctx
+
+lean-ctx is active — the MCP tools replace native equivalents.
+Full rules: LEAN-CTX.md (open on demand — do not auto-load).
+
+Use LeanCTX by default for reads/searches and shell-output compression. If LeanCTX blocks a specific command, run only that command outside LeanCTX with normal shell/Bash when available, then continue using LeanCTX.
+
+<!-- /lean-ctx -->

@@ -67,6 +67,7 @@ export interface AyahMatchDto {
   ayahNumber: number;
   pageNumber: number;
   matchedQuranWordIds: number[];
+  analysisLocation?: string | null;
   words: AyahWordForHighlightDto[];
 }
 

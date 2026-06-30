@@ -2,6 +2,7 @@
 
 # Compiled output
 /dist
+/build
 /tmp
 /out-tsc
 /bazel-out
@@ -11,6 +12,7 @@
 npm-debug.log
 yarn-error.log
 pnpm-debug.log
+*.log
 .npm/
 .pnpm-store/
 
@@ -51,6 +53,8 @@ localhost-key.pem
 # System files
 .DS_Store
 Thumbs.db
+*.tmp
+*.swp
 
 # Impeccable live mode (local config, server runtime, session journals)
 .impeccable/
