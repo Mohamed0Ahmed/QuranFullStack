@@ -193,19 +193,19 @@ Non-negotiable rules:
 
 ### Backend secondary filters
 
-- [ ] T059 [US4] Implement case, tense, and voice predicates in row and selected-row queries, including null case as `غير محدد`, in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/WordTypes/EfWordTypesReader.cs` and `WordTypeGrouping.cs`
-- [ ] T060 [US4] Enforce filter validity rules: case only for noun, tense/voice only for verb, no secondary filters for particle or INL, and INL rejects child nodes in `Backend/application/QuranDashboard.Application/Quran/Words/WordTypes/Queries/GetWordTypeRows/GetWordTypeRowsHandler.cs` and selected-row handlers under `Backend/application/QuranDashboard.Application/Quran/Words/WordTypes/Queries/`
-- [ ] T061 [US4] Ensure cache keys include secondary filters through the filter/identity hash and never reuse unfiltered row/detail data for filtered requests in `Backend/infrastructure/QuranDashboard.Infrastructure/Caching/Quran/Words/WordTypes/WordTypesCacheKeys.cs`
+- [X] T059 [US4] Implement case, tense, and voice predicates in row and selected-row queries, including null case as `غير محدد`, in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/WordTypes/EfWordTypesReader.cs` and `WordTypeGrouping.cs`
+- [X] T060 [US4] Enforce filter validity rules: case only for noun, tense/voice only for verb, no secondary filters for particle or INL, and INL rejects child nodes in `Backend/application/QuranDashboard.Application/Quran/Words/WordTypes/Queries/GetWordTypeRows/GetWordTypeRowsHandler.cs` and selected-row handlers under `Backend/application/QuranDashboard.Application/Quran/Words/WordTypes/Queries/`
+- [X] T061 [US4] Ensure cache keys include secondary filters through the filter/identity hash and never reuse unfiltered row/detail data for filtered requests in `Backend/infrastructure/QuranDashboard.Infrastructure/Caching/Quran/Words/WordTypes/WordTypesCacheKeys.cs`
 
 ### Frontend secondary filters
 
-- [ ] T062 [US4] Render nominal case controls, verb tense/voice controls, and no controls for particle/INL in `Frontend/quran-dashboard-ui/src/app/features/words/components/word-type-filter/word-type-filter.component.ts`, `.html`, and `.scss`
-- [ ] T063 [US4] Normalize secondary query params, ignore irrelevant filters, reset page to `1`, clear selected row, reload rows, update table `totalCount` and active UI count chips only, and do not request scoped tree counts on secondary filter changes in `Frontend/quran-dashboard-ui/src/app/features/words/state/word-types-url-sync.ts` and `word-types-explorer.facade.ts`
+- [X] T062 [US4] Render nominal case controls, verb tense/voice controls, and no controls for particle/INL in `Frontend/quran-dashboard-ui/src/app/features/words/components/word-type-filter/word-type-filter.component.ts`, `.html`, and `.scss`
+- [X] T063 [US4] Normalize secondary query params, ignore irrelevant filters, reset page to `1`, clear selected row, reload rows, update table `totalCount` and active UI count chips only, and do not request scoped tree counts on secondary filter changes in `Frontend/quran-dashboard-ui/src/app/features/words/state/word-types-url-sync.ts` and `word-types-explorer.facade.ts`
 
 ### US4 checkpoint tests
 
-- [ ] T064 [P] [US4] Add backend tests for nominal case filter, `null` case filter, verb tense filter, verb voice filter, tense+voice combination, cross-type rejection, particle/INL rejection, context-scoped detail identity under secondary filters, and no E1 tree-count equality expectation while secondary filters are active in `Backend/tests/QuranDashboard.Tests/Quran/WordsWordTypes/WordTypesSecondaryFilterReadTests.cs`
-- [ ] T065 [P] [US4] Add frontend tests for secondary filter visibility, URL normalization, filter changes clearing selection/page, ignored irrelevant filters, filtered row reloads, active UI count-chip updates, and no scoped tree-count request on secondary filter changes in `Frontend/quran-dashboard-ui/src/app/features/words/components/word-type-filter/word-type-filter.component.spec.ts`, `state/word-types-url-sync.spec.ts`, and `pages/word-types-explorer-page/word-types-explorer-page.component.spec.ts`
+- [X] T064 [P] [US4] Add backend tests for nominal case filter, `null` case filter, verb tense filter, verb voice filter, tense+voice combination, cross-type rejection, particle/INL rejection, context-scoped detail identity under secondary filters, and no E1 tree-count equality expectation while secondary filters are active in `Backend/tests/QuranDashboard.Tests/Quran/WordsWordTypes/WordTypesSecondaryFilterReadTests.cs`
+- [X] T065 [P] [US4] Add frontend tests for secondary filter visibility, URL normalization, filter changes clearing selection/page, ignored irrelevant filters, filtered row reloads, active UI count-chip updates, and no scoped tree-count request on secondary filter changes in `Frontend/quran-dashboard-ui/src/app/features/words/components/word-type-filter/word-type-filter.component.spec.ts`, `state/word-types-url-sync.spec.ts`, and `pages/word-types-explorer-page/word-types-explorer-page.component.spec.ts`
 
 **Checkpoint CP-4**: Secondary filters work independently on top of US1.
 
