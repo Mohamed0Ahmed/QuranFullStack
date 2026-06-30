@@ -117,4 +117,6 @@ enterprise greige.
 lean-ctx is active — the MCP tools replace native equivalents.
 Full rules: LEAN-CTX.md (open on demand — do not auto-load).
 
+If LeanCTX blocks a command, run it outside LeanCTX with normal shell/Bash when available instead of retrying through LeanCTX.
+
 <!-- /lean-ctx -->
