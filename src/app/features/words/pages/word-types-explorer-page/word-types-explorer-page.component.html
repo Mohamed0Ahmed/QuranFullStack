@@ -8,9 +8,15 @@
       [tree]="listState().tree"
       [selectedType]="listState().query.type"
       [selectedChildCode]="listState().query.childCode"
+      [selectedCase]="listState().query.case"
+      [selectedTense]="listState().query.tense"
+      [selectedVoice]="listState().query.voice"
       [loading]="listState().status === 'loading'"
       (typeSelected)="selectType($event)"
       (childSelected)="selectChild($event)"
+      (caseSelected)="selectCase($event)"
+      (tenseSelected)="selectTense($event)"
+      (voiceSelected)="selectVoice($event)"
     />
 
     <main class="word-types-page__main">

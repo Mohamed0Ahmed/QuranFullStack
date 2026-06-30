@@ -26,10 +26,13 @@ import {
   DEFAULT_WORD_TYPES_DETAIL_VIEW,
   WORD_TYPES_DETAIL_PAGE_SIZE,
   WORD_TYPES_PAGE_SIZE,
+  WordTypeCase,
   WordTypeDetailView,
   WordTypeMainType,
   WordTypeRowDto,
   WordTypeSort,
+  WordTypeTense,
+  WordTypeVoice,
 } from '../../models/word-types.models';
 import { AyahMatchDto, PagedResultDto as SharedPagedResultDto } from '../../models/unique-words.models';
 import { WordTypesDetailFacade } from '../../state/word-types-detail.facade';
@@ -148,6 +151,18 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
 
   protected selectChild(childCode: string | null): void {
     this.explorerFacade.selectChild(childCode);
+  }
+
+  protected selectCase(caseValue: WordTypeCase): void {
+    this.explorerFacade.selectCase(caseValue);
+  }
+
+  protected selectTense(tense: WordTypeTense): void {
+    this.explorerFacade.selectTense(tense);
+  }
+
+  protected selectVoice(voice: WordTypeVoice): void {
+    this.explorerFacade.selectVoice(voice);
   }
 
   protected selectRow(row: WordTypeRowDto): void {

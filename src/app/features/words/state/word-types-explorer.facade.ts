@@ -18,9 +18,12 @@ import {
   ParsedWordTypesQuery,
   PagedResultDto,
   WORD_TYPES_PAGE_SIZE,
+  WordTypeCase,
   WordTypeMainType,
   WordTypeRowIdentity,
   WordTypeSort,
+  WordTypeTense,
+  WordTypeVoice,
   WordTypeRowDto,
   WordTypeTreeDto,
   WordTypesListState,
@@ -96,8 +99,18 @@ export class WordTypesExplorerFacade {
   }
 
   selectType(type: WordTypeMainType): void {
+    // Switching the main type resets the child selection AND every secondary filter: case belongs to
+    // nouns only and tense/voice to verbs only, so carrying them across types would produce stale,
+    // type-invalid filters. The URL normalizer redrops invalid values defensively as well.
     this.navigate({
-      ...buildWordTypesQueryParams({ type, childCode: null, page: DEFAULT_WORD_TYPES_PAGE }),
+      ...buildWordTypesQueryParams({
+        type,
+        childCode: null,
+        case: DEFAULT_WORD_TYPE_CASE,
+        tense: DEFAULT_WORD_TYPE_TENSE,
+        voice: DEFAULT_WORD_TYPE_VOICE,
+        page: DEFAULT_WORD_TYPES_PAGE,
+      }),
       ...clearWordTypesSelection(),
     });
   }
@@ -107,6 +120,30 @@ export class WordTypesExplorerFacade {
   selectChild(childCode: string | null): void {
     this.navigate({
       ...buildWordTypesQueryParams({ childCode, page: DEFAULT_WORD_TYPES_PAGE }),
+      ...clearWordTypesSelection(),
+    });
+  }
+
+  // A secondary filter narrows the rows without crossing type boundaries. It resets the page, clears
+  // any selected row (the row may no longer exist under the narrowed context), and reloads rows. It
+  // never requests scoped tree counts — E1 counts stay unscoped by design.
+  selectCase(caseValue: WordTypeCase): void {
+    this.navigate({
+      ...buildWordTypesQueryParams({ case: caseValue, page: DEFAULT_WORD_TYPES_PAGE }),
+      ...clearWordTypesSelection(),
+    });
+  }
+
+  selectTense(tense: WordTypeTense): void {
+    this.navigate({
+      ...buildWordTypesQueryParams({ tense, page: DEFAULT_WORD_TYPES_PAGE }),
+      ...clearWordTypesSelection(),
+    });
+  }
+
+  selectVoice(voice: WordTypeVoice): void {
+    this.navigate({
+      ...buildWordTypesQueryParams({ voice, page: DEFAULT_WORD_TYPES_PAGE }),
       ...clearWordTypesSelection(),
     });
   }

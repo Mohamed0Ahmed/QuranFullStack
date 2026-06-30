@@ -121,4 +121,101 @@ describe('WordTypeFilterComponent', () => {
     expect(verbExpand.getAttribute('aria-expanded')).toBe('true');
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('ماض');
   });
+
+  describe('secondary filter visibility', () => {
+    it('renders case controls only for the noun type', () => {
+      const fixture = TestBed.createComponent(WordTypeFilterComponent);
+      fixture.componentRef.setInput('tree', tree);
+      fixture.componentRef.setInput('selectedType', 'noun');
+      fixture.detectChanges();
+
+      const root = fixture.nativeElement as HTMLElement;
+      expect(root.querySelector('[data-testid="word-type-case-filter"]')).not.toBeNull();
+      expect(root.querySelector('[data-testid="word-type-verb-filter"]')).toBeNull();
+    });
+
+    it('renders tense/voice controls only for the verb type', () => {
+      const fixture = TestBed.createComponent(WordTypeFilterComponent);
+      fixture.componentRef.setInput('tree', tree);
+      fixture.componentRef.setInput('selectedType', 'verb');
+      fixture.detectChanges();
+
+      const root = fixture.nativeElement as HTMLElement;
+      expect(root.querySelector('[data-testid="word-type-verb-filter"]')).not.toBeNull();
+      expect(root.querySelector('[data-testid="word-type-case-filter"]')).toBeNull();
+    });
+
+    it('renders no secondary controls for particle or inl', () => {
+      const particleFixture = TestBed.createComponent(WordTypeFilterComponent);
+      particleFixture.componentRef.setInput('tree', tree);
+      particleFixture.componentRef.setInput('selectedType', 'particle');
+      particleFixture.detectChanges();
+
+      const particleRoot = particleFixture.nativeElement as HTMLElement;
+      expect(particleRoot.querySelector('[data-testid="word-type-case-filter"]')).toBeNull();
+      expect(particleRoot.querySelector('[data-testid="word-type-verb-filter"]')).toBeNull();
+
+      const inlFixture = TestBed.createComponent(WordTypeFilterComponent);
+      inlFixture.componentRef.setInput('tree', tree);
+      inlFixture.componentRef.setInput('selectedType', 'inl');
+      inlFixture.detectChanges();
+
+      const inlRoot = inlFixture.nativeElement as HTMLElement;
+      expect(inlRoot.querySelector('[data-testid="word-type-case-filter"]')).toBeNull();
+      expect(inlRoot.querySelector('[data-testid="word-type-verb-filter"]')).toBeNull();
+    });
+  });
+
+  describe('secondary filter emission', () => {
+    it('emits the selected case when the noun case select changes', () => {
+      const fixture = TestBed.createComponent(WordTypeFilterComponent);
+      const emitted: string[] = [];
+      fixture.componentRef.setInput('tree', tree);
+      fixture.componentRef.setInput('selectedType', 'noun');
+      fixture.componentInstance.caseSelected.subscribe((value) => emitted.push(value));
+      fixture.detectChanges();
+
+      const select = fixture.nativeElement.querySelector(
+        '[data-testid="word-type-case-filter"] select',
+      ) as HTMLSelectElement;
+      select.value = 'genitive';
+      select.dispatchEvent(new Event('change'));
+
+      expect(emitted).toEqual(['genitive']);
+    });
+
+    it('emits the selected tense when the verb tense select changes', () => {
+      const fixture = TestBed.createComponent(WordTypeFilterComponent);
+      const emitted: string[] = [];
+      fixture.componentRef.setInput('tree', tree);
+      fixture.componentRef.setInput('selectedType', 'verb');
+      fixture.componentInstance.tenseSelected.subscribe((value) => emitted.push(value));
+      fixture.detectChanges();
+
+      const tenseSelect = (fixture.nativeElement.querySelectorAll(
+        '[data-testid="word-type-verb-filter"] select',
+      )[0]) as HTMLSelectElement;
+      tenseSelect.value = 'past';
+      tenseSelect.dispatchEvent(new Event('change'));
+
+      expect(emitted).toEqual(['past']);
+    });
+
+    it('emits the selected voice when the verb voice select changes', () => {
+      const fixture = TestBed.createComponent(WordTypeFilterComponent);
+      const emitted: string[] = [];
+      fixture.componentRef.setInput('tree', tree);
+      fixture.componentRef.setInput('selectedType', 'verb');
+      fixture.componentInstance.voiceSelected.subscribe((value) => emitted.push(value));
+      fixture.detectChanges();
+
+      const voiceSelect = (fixture.nativeElement.querySelectorAll(
+        '[data-testid="word-type-verb-filter"] select',
+      )[1]) as HTMLSelectElement;
+      voiceSelect.value = 'passive';
+      voiceSelect.dispatchEvent(new Event('change'));
+
+      expect(emitted).toEqual(['passive']);
+    });
+  });
 });

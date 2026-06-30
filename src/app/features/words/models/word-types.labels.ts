@@ -12,6 +12,9 @@ export const WORD_TYPES_EMPTY_LABEL = 'لا توجد نتائج لهذا الن�
 export const WORD_TYPES_ERROR_LABEL = 'تعذّر تحميل أنواع الكلمات. تحقّق من الاتصال ثم أعد المحاولة.';
 export const WORD_TYPES_NOT_FOUND_LABEL = 'الكلمة المحددة غير موجودة';
 export const WORD_TYPES_NULL_PLACEHOLDER = '—';
+export const WORD_TYPES_CASE_FILTER_LABEL = 'الحالة';
+export const WORD_TYPES_TENSE_FILTER_LABEL = 'الزمن';
+export const WORD_TYPES_VOICE_FILTER_LABEL = 'الصيغة';
 
 export const WORD_TYPE_MAIN_LABELS: Record<WordTypeMainType, string> = {
   noun: 'اسم',

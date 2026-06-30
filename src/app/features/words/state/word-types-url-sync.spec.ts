@@ -93,3 +93,74 @@ describe('buildWordTypesDeepLink', () => {
     expect(link.queryParams[WORD_TYPES_QUERY_KEYS.childCode]).toBe('PN');
   });
 });
+
+describe('parseWordTypesQueryParams — secondary filters', () => {
+  it('keeps a valid noun case filter', () => {
+    const parsed = parseWordTypesQueryParams(params('type=noun&case=genitive'));
+
+    expect(parsed.case).toBe('genitive');
+  });
+
+  it('keeps a valid verb tense and voice filter', () => {
+    const parsed = parseWordTypesQueryParams(params('type=verb&tense=present&voice=passive'));
+
+    expect(parsed.tense).toBe('present');
+    expect(parsed.voice).toBe('passive');
+  });
+
+  it('keeps the null case filter value meaning غير محدد', () => {
+    const parsed = parseWordTypesQueryParams(params('type=noun&case=null'));
+
+    expect(parsed.case).toBe('null');
+  });
+
+  it('ignores a case filter when the type is not noun (cross-type normalization)', () => {
+    const parsed = parseWordTypesQueryParams(params('type=verb&case=genitive'));
+
+    expect(parsed.case).toBe('all');
+  });
+
+  it('ignores tense/voice filters when the type is not verb', () => {
+    const parsed = parseWordTypesQueryParams(params('type=noun&tense=past&voice=active'));
+
+    expect(parsed.tense).toBe('all');
+    expect(parsed.voice).toBe('all');
+  });
+
+  it('drops particle and inl secondary filters entirely', () => {
+    const particleParsed = parseWordTypesQueryParams(params('type=particle&case=genitive&tense=past'));
+    const inlParsed = parseWordTypesQueryParams(params('type=inl&voice=active'));
+
+    expect(particleParsed.case).toBe('all');
+    expect(particleParsed.tense).toBe('all');
+    expect(inlParsed.voice).toBe('all');
+  });
+
+  it('clears an unknown case value to the default', () => {
+    const parsed = parseWordTypesQueryParams(params('type=noun&case=bogus'));
+
+    expect(parsed.case).toBe('all');
+  });
+
+  it('defaults every secondary filter to all when missing', () => {
+    const parsed = parseWordTypesQueryParams(params('type=verb'));
+
+    expect(parsed.case).toBe('all');
+    expect(parsed.tense).toBe('all');
+    expect(parsed.voice).toBe('all');
+  });
+});
+
+describe('buildWordTypesQueryParams — secondary filters', () => {
+  it('emits a concrete case value', () => {
+    const built = buildWordTypesQueryParams({ case: 'nominative' });
+
+    expect(built[WORD_TYPES_QUERY_KEYS.case]).toBe('nominative');
+  });
+
+  it('emits null when resetting a secondary filter to all', () => {
+    const built = buildWordTypesQueryParams({ tense: null });
+
+    expect(built[WORD_TYPES_QUERY_KEYS.tense]).toBeNull();
+  });
+});

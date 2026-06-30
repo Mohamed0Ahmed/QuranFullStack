@@ -117,3 +117,38 @@
 .word-type-filter__placeholder {
   margin: 0;
 }
+
+.word-type-filter__secondary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-block-start: 0.75rem;
+  padding-block-start: 0.75rem;
+  border-block-start: 1px solid var(--qd-border);
+}
+
+.word-type-filter__secondary-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+  min-inline-size: 7rem;
+
+  span {
+    font-size: 0.85rem;
+    color: var(--qd-text-muted, var(--qd-text));
+  }
+
+  select {
+    border: 1px solid var(--qd-border);
+    border-radius: var(--qd-radius-sm);
+    background: var(--qd-surface);
+    color: var(--qd-text);
+    padding: 0.4rem 0.55rem;
+  }
+
+  select:disabled {
+    cursor: wait;
+    opacity: 0.72;
+  }
+}

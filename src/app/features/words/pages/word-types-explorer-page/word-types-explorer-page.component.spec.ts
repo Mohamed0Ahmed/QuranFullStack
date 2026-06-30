@@ -101,7 +101,8 @@ describe('WordTypesExplorerPageComponent', () => {
   it('renders sort label and options from centralized labels', async () => {
     const fixture = await createPage();
     const root = fixture.nativeElement as HTMLElement;
-    const optionLabels = Array.from(root.querySelectorAll('select option')).map((option) => option.textContent?.trim());
+    const sortSelect = root.querySelector('.word-types-page__sort select') as HTMLSelectElement;
+    const optionLabels = Array.from(sortSelect.querySelectorAll('option')).map((option) => option.textContent?.trim());
 
     expect(root.textContent).toContain(WORD_TYPES_SORT_LABEL);
     expect(optionLabels).toEqual(WORD_TYPE_SORT_OPTIONS.map((option) => option.label));
@@ -117,6 +118,29 @@ describe('WordTypesExplorerPageComponent', () => {
       queryParams: expect.objectContaining({ type: 'verb', page: '1', word: null, contextCode: null }),
       queryParamsHandling: 'merge',
     }));
+  });
+
+  it('routes case filter selection and resets the page while clearing the selected row', async () => {
+    const fixture = await createPage();
+    const caseSelect = fixture.nativeElement.querySelector(
+      'qd-word-type-filter [data-testid="word-type-case-filter"] select',
+    ) as HTMLSelectElement;
+
+    caseSelect.value = 'genitive';
+    caseSelect.dispatchEvent(new Event('change'));
+
+    expect(router.navigate).toHaveBeenCalledWith([], expect.objectContaining({
+      queryParams: expect.objectContaining({ case: 'genitive', page: '1', word: null, contextCode: null }),
+      queryParamsHandling: 'merge',
+    }));
+  });
+
+  it('renders the noun case controls but not the verb controls by default', async () => {
+    const fixture = await createPage();
+    const root = fixture.nativeElement as HTMLElement;
+
+    expect(root.querySelector('qd-word-type-filter [data-testid="word-type-case-filter"]')).not.toBeNull();
+    expect(root.querySelector('qd-word-type-filter [data-testid="word-type-verb-filter"]')).toBeNull();
   });
 
   it('renders empty and error states without adding a simple-text toggle', async () => {

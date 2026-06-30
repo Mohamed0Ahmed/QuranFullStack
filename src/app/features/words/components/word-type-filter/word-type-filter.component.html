@@ -52,6 +52,40 @@
         </div>
       }
     </div>
+
+    @if (showCaseControls()) {
+      <div class="word-type-filter__secondary" data-testid="word-type-case-filter">
+        <label class="word-type-filter__secondary-field">
+          <span>{{ caseFilterLabel }}</span>
+          <select [value]="selectedCase()" [disabled]="loading()" (change)="changeCase($event)">
+            @for (option of caseOptions; track option) {
+              <option [value]="option">{{ caseOptionLabel(option) }}</option>
+            }
+          </select>
+        </label>
+      </div>
+    }
+
+    @if (showVerbControls()) {
+      <div class="word-type-filter__secondary" data-testid="word-type-verb-filter">
+        <label class="word-type-filter__secondary-field">
+          <span>{{ tenseFilterLabel }}</span>
+          <select [value]="selectedTense()" [disabled]="loading()" (change)="changeTense($event)">
+            @for (option of tenseOptions; track option) {
+              <option [value]="option">{{ tenseOptionLabel(option) }}</option>
+            }
+          </select>
+        </label>
+        <label class="word-type-filter__secondary-field">
+          <span>{{ voiceFilterLabel }}</span>
+          <select [value]="selectedVoice()" [disabled]="loading()" (change)="changeVoice($event)">
+            @for (option of voiceOptions; track option) {
+              <option [value]="option">{{ voiceOptionLabel(option) }}</option>
+            }
+          </select>
+        </label>
+      </div>
+    }
   } @else {
     <p class="word-type-filter__placeholder">{{ filterLabel }}</p>
   }
