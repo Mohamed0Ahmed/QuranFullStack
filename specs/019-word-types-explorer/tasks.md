@@ -167,19 +167,19 @@ Non-negotiable rules:
 
 ### Backend subtype reads
 
-- [ ] T052 [US3] Implement E1 child nodes: all noun-category POS children from `quran_pos_tags` ordered by `SortOrder`, verb tense children `past`, `present`, `imperative`, no particle children in v1, and INL as leaf in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/WordTypes/EfWordTypesReader.cs`
-- [ ] T053 [US3] Implement E2 `childCode` filtering and grouping for noun POS children and verb tense children while preserving no-mixed-row behavior in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/WordTypes/EfWordTypesReader.cs` and `WordTypeGrouping.cs`
-- [ ] T054 [US3] Add child-code validation, invalid-child outcomes, and safe logs to `Backend/application/QuranDashboard.Application/Quran/Words/WordTypes/Queries/GetWordTypeRows/GetWordTypeRowsHandler.cs` and `GetWordTypeTree/GetWordTypeTreeHandler.cs`
+- [X] T052 [US3] Implement E1 child nodes: all noun-category POS children from `quran_pos_tags` ordered by `SortOrder`, verb tense children `past`, `present`, `imperative`, no particle children in v1, and INL as leaf in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/WordTypes/EfWordTypesReader.cs`
+- [X] T053 [US3] Implement E2 `childCode` filtering and grouping for noun POS children and verb tense children while preserving no-mixed-row behavior in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/WordTypes/EfWordTypesReader.cs` and `WordTypeGrouping.cs`
+- [X] T054 [US3] Add child-code validation, invalid-child outcomes, and safe logs to `Backend/application/QuranDashboard.Application/Quran/Words/WordTypes/Queries/GetWordTypeRows/GetWordTypeRowsHandler.cs` and `GetWordTypeTree/GetWordTypeTreeHandler.cs`
 
 ### Frontend subtype browse
 
-- [ ] T055 [US3] Implement expand arrow behavior, child-node rendering, parent label selection, child selection, `aria-expanded`, and keyboard navigation in `Frontend/quran-dashboard-ui/src/app/features/words/components/word-type-filter/word-type-filter.component.ts`, `.html`, and `.scss`
-- [ ] T056 [US3] Persist `childCode` in URL state, clear invalid child codes during normalization, reset page to `1`, and clear selected row when subtype changes in `Frontend/quran-dashboard-ui/src/app/features/words/state/word-types-url-sync.ts` and `word-types-explorer.facade.ts`
+- [X] T055 [US3] Implement expand arrow behavior, child-node rendering, parent label selection, child selection, `aria-expanded`, and keyboard navigation in `Frontend/quran-dashboard-ui/src/app/features/words/components/word-type-filter/word-type-filter.component.ts`, `.html`, and `.scss`
+- [X] T056 [US3] Persist `childCode` in URL state, clear invalid child codes during normalization, reset page to `1`, and clear selected row when subtype changes in `Frontend/quran-dashboard-ui/src/app/features/words/state/word-types-url-sync.ts` and `word-types-explorer.facade.ts`
 
 ### US3 checkpoint tests
 
-- [ ] T057 [P] [US3] Add backend tests for noun catalogue children, verb tense children, no particle children, INL leaf behavior, child count equals table `TotalCount`, child subset of parent, invalid child rejection, and exact `typeLabel` values from POS catalogue in `Backend/tests/QuranDashboard.Tests/Quran/WordsWordTypes/WordTypesSubtypeReadTests.cs`
-- [ ] T058 [P] [US3] Add frontend tests for expand/collapse, parent-vs-child click behavior, child count display, child selection URL state, invalid child cleanup, and table reload on child changes in `Frontend/quran-dashboard-ui/src/app/features/words/components/word-type-filter/word-type-filter.component.spec.ts` and `state/word-types-url-sync.spec.ts`
+- [X] T057 [P] [US3] Add backend tests for noun catalogue children, verb tense children, no particle children, INL leaf behavior, child count equals table `TotalCount`, child subset of parent, invalid child rejection, and exact `typeLabel` values from POS catalogue in `Backend/tests/QuranDashboard.Tests/Quran/WordsWordTypes/WordTypesSubtypeReadTests.cs`
+- [X] T058 [P] [US3] Add frontend tests for expand/collapse, parent-vs-child click behavior, child count display, child selection URL state, invalid child cleanup, and table reload on child changes in `Frontend/quran-dashboard-ui/src/app/features/words/components/word-type-filter/word-type-filter.component.spec.ts` and `state/word-types-url-sync.spec.ts`
 
 **Checkpoint CP-3**: Subtype browse works independently on top of US1.
 
