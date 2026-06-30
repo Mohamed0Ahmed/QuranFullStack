@@ -1,15 +1,16 @@
 <!-- SPECKIT START -->
 
-Active feature: **Quran Lemmas & Stems Explorer** — branch `016-lemmas-stems-explorer` (full-stack: explicit .NET read-only Lemmas/Stems APIs + two Angular Words split-screen pages; sibling of Feature 015 Roots Explorer).
+Active feature: **Word Types Explorer (أنواع الكلمات)** — branch `019-word-types-explorer` (full-stack: explicit .NET read-only Word Types APIs + one Angular Words table-first split-screen page; sibling of Features 015/016).
 For technologies, project structure, shell commands, gates, and design artifacts, read the current plan
 and its siblings:
 
-- `specs/016-lemmas-stems-explorer/plan.md` — technical context, project structure, governing gates
-- `specs/016-lemmas-stems-explorer/spec.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/` (`morphology-explorer-api.md`, `backend-read-abstractions.md`, `frontend-routing-state.md`)
-- `docs/feature-016-lemmas-stems-explorer/feature-016-lemmas-stems-explorer-combined-implementation-plan.md` — fuller combined backend+frontend design, phased plan, milestone test checkpoints
-- `docs/feature-016-lemmas-stems-explorer/feature-016-lemmas-stems-explorer-capability-linking-report.md` — verified data/linking facts (4,793 lemmas; 12,108 stems; numeric identities; no migration/index)
+- `specs/019-word-types-explorer/plan.md` — technical context, project structure, governing gates
+- `specs/019-word-types-explorer/spec.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/` (`word-types-api.md`, `backend-read-abstractions.md`, `frontend-routing-state.md`)
+- `docs/feature-019-word-types-explorer/word-types-explorer-pre-spec-plan.md` — locked product decisions and recommended technical strategy
+- `docs/feature-019-word-types-explorer/word-types-explorer-capability-and-ui-report.md` — verified data/UI capability facts (`quran_word_morphology` word-level source; `PRO` seed correction caveat; no segment counts)
 - `Backend/report/database/current-database-tables-and-relationships-report.md` — read-only database baseline
 - Feature 015 (`specs/015-roots-explorer/`) — primary reuse template for backend read-model/cache/logging and frontend split-view/URL state
+- Feature 016 (`specs/016-lemmas-stems-explorer/`) — primary reuse template for explicit morphology explorer APIs and Angular Words split-view state
 - Feature 014 (`specs/014-words-hub-unique-words/`) — Unique Words destination and shared Words feature patterns
 
 <!-- SPECKIT END -->
@@ -115,5 +116,7 @@ enterprise greige.
 
 lean-ctx is active — the MCP tools replace native equivalents.
 Full rules: LEAN-CTX.md (open on demand — do not auto-load).
+
+Use LeanCTX by default for reads/searches and shell-output compression. If LeanCTX blocks a specific command, run only that command outside LeanCTX with normal shell/Bash when available, then continue using LeanCTX.
 
 <!-- /lean-ctx -->
