@@ -2,8 +2,13 @@ namespace QuranDashboard.Application.Abstractions.Quran.Words.WordTypes.Response
 
 public sealed record WordTypeSurahsResponse(
     IReadOnlyList<WordTypeSurahOccurrenceDto> Surahs,
-    IReadOnlyList<int> MissingSurahs);
+    IReadOnlyList<WordTypeMissingSurahDto> MissingSurahs);
 
 public sealed record WordTypeSurahOccurrenceDto(
     int SurahNumber,
+    string NameArabic,
     int OccurrencesCount);
+
+public sealed record WordTypeMissingSurahDto(
+    int SurahNumber,
+    string NameArabic);

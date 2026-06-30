@@ -17,15 +17,15 @@ public sealed class WordTypesMainReadTests(WordTypesTestFixture fixture)
         var tree = await reader.GetTreeAsync(CancellationToken.None);
 
         tree.MainTypes.Select(node => node.Code).Should().Equal("noun", "verb", "particle", "inl");
-        Count(tree, "noun").Should().Be(3);
-        Count(tree, "verb").Should().Be(3);
+        Count(tree, "noun").Should().Be(4);
+        Count(tree, "verb").Should().Be(4);
         Count(tree, "particle").Should().Be(1);
         Count(tree, "inl").Should().Be(1);
     }
 
     [Theory]
-    [InlineData("noun", 3)]
-    [InlineData("verb", 3)]
+    [InlineData("noun", 4)]
+    [InlineData("verb", 4)]
     [InlineData("particle", 1)]
     [InlineData("inl", 1)]
     public async Task Rows_TotalCount_EqualsTreeCount_ForMainTypes(string type, int expectedCount)
@@ -108,7 +108,7 @@ public sealed class WordTypesMainReadTests(WordTypesTestFixture fixture)
             25,
             CancellationToken.None);
 
-        rows.Items.Select(row => row.ContextCode).Should().Equal("past", "present", "imperative");
+        rows.Items.Select(row => row.ContextCode).Should().Equal("unspecified", "past", "present", "imperative");
         rows.Items.Should().OnlyContain(row => row.OccurrencesCount == 1 && row.AyahsCount == 1 && row.SurahsCount == 1);
     }
 
@@ -125,7 +125,7 @@ public sealed class WordTypesMainReadTests(WordTypesTestFixture fixture)
             25,
             CancellationToken.None);
 
-        rows.Items.Select(row => row.ContextCode).Should().Equal("past", "present", "imperative");
+        rows.Items.Select(row => row.ContextCode).Should().Equal("unspecified", "past", "present", "imperative");
     }
 
     [Theory]
