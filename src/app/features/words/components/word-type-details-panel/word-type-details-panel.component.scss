@@ -1,14 +1,23 @@
 :host {
   display: block;
+  height: 100%;
 }
 
-.word-type-details-panel {
-  border: 1px solid var(--qd-border);
-  border-radius: var(--qd-radius-lg);
-  padding: 1rem;
+:host .explorer-detail-panel__body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-block-size: 0;
+  overflow: hidden;
 }
 
-.word-type-details-panel__context,
-.word-type-details-panel__placeholder {
-  margin: 0;
+.word-type-details-panel__surface:focus-visible {
+  outline: 2px solid var(--qd-focus-ring);
+  outline-offset: -2px;
+  border-radius: var(--qd-radius-sm);
+}
+
+.word-type-details-panel__tab {
+  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  font-size: 0.875rem;
 }

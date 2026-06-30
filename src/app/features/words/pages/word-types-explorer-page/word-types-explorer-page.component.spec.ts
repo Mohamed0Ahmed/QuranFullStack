@@ -1,3 +1,5 @@
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { getTestBed, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
 import { BehaviorSubject, of } from 'rxjs';
@@ -61,6 +63,8 @@ describe('WordTypesExplorerPageComponent', () => {
       imports: [WordTypesExplorerPageComponent],
       providers: [
         provideRouter([{ path: 'types', component: WordTypesExplorerPageComponent }]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: WordTypesApi, useValue: api },
         {
           provide: ActivatedRoute,
@@ -127,6 +131,8 @@ describe('WordTypesExplorerPageComponent', () => {
       imports: [WordTypesExplorerPageComponent],
       providers: [
         provideRouter([{ path: 'types', component: WordTypesExplorerPageComponent }]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
         {
           provide: WordTypesApi,
           useValue: {
@@ -146,6 +152,36 @@ describe('WordTypesExplorerPageComponent', () => {
     errorFixture.detectChanges();
 
     expect((errorFixture.nativeElement as HTMLElement).textContent).toContain('تعذّر تحميل أنواع الكلمات');
+  });
+
+  it('does not call detail APIs until a row is selected', async () => {
+    const detailApi = {
+      getSummary: vi.fn(),
+      getAyahMatches: vi.fn(),
+      getSurahs: vi.fn(),
+    };
+
+    getTestBed().resetTestingModule();
+    await TestBed.configureTestingModule({
+      imports: [WordTypesExplorerPageComponent],
+      providers: [
+        provideRouter([{ path: 'types', component: WordTypesExplorerPageComponent }]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: WordTypesApi, useValue: { ...api, ...detailApi } },
+        { provide: ActivatedRoute, useValue: { queryParamMap: queryParamMap$.asObservable() } },
+      ],
+      teardown: { destroyAfterEach: true },
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(WordTypesExplorerPageComponent);
+    fixture.componentInstance.ngOnInit();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(detailApi.getSummary).not.toHaveBeenCalled();
+    expect(detailApi.getAyahMatches).not.toHaveBeenCalled();
+    expect(detailApi.getSurahs).not.toHaveBeenCalled();
   });
 
   it('exposes the Words hub access route for Word Types', () => {

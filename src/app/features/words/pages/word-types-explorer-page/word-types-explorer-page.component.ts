@@ -1,31 +1,73 @@
-import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, inject } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
+import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
+import { AyahMatchesListComponent } from '../../components/ayah-matches-list/ayah-matches-list.component';
+import { MissingSurahsListComponent } from '../../components/missing-surahs-list/missing-surahs-list.component';
+import { SurahOccurrencesListComponent } from '../../components/surah-occurrences-list/surah-occurrences-list.component';
 import { WordTypeDetailsPanelComponent } from '../../components/word-type-details-panel/word-type-details-panel.component';
 import { WordTypeFilterComponent } from '../../components/word-type-filter/word-type-filter.component';
-import { WordTypesTableComponent } from '../../components/word-types-table/word-types-table.component';
-import { WORD_TYPE_SORT_OPTIONS, WORD_TYPES_EMPTY_LABEL, WORD_TYPES_ERROR_LABEL, WORD_TYPES_LOADING_LABEL, WORD_TYPES_PAGE_TITLE, WORD_TYPES_SORT_LABEL, WORD_TYPES_TABLE_LABEL } from '../../models/word-types.labels';
-import { WORD_TYPES_PAGE_SIZE, WordTypeMainType, WordTypeRowDto, WordTypeSort } from '../../models/word-types.models';
+import { WordTypeCountOpenedEvent, WordTypesTableComponent } from '../../components/word-types-table/word-types-table.component';
+import { SelectedWordSectionComponent } from '../../../mushaf/components/selected-word-section/selected-word-section.component';
+import { ResourceLoadState } from '../../../mushaf/models/mushaf.models';
+import {
+  WORD_TYPE_SORT_OPTIONS,
+  WORD_TYPES_EMPTY_LABEL,
+  WORD_TYPES_ERROR_LABEL,
+  WORD_TYPES_LOADING_LABEL,
+  WORD_TYPES_NULL_PLACEHOLDER,
+  WORD_TYPES_PAGE_TITLE,
+  WORD_TYPES_SORT_LABEL,
+  WORD_TYPES_TABLE_LABEL,
+} from '../../models/word-types.labels';
+import {
+  DEFAULT_WORD_TYPES_DETAIL_PAGE,
+  DEFAULT_WORD_TYPES_DETAIL_VIEW,
+  WORD_TYPES_DETAIL_PAGE_SIZE,
+  WORD_TYPES_PAGE_SIZE,
+  WordTypeDetailView,
+  WordTypeMainType,
+  WordTypeRowDto,
+  WordTypeSort,
+} from '../../models/word-types.models';
+import { AyahMatchDto, PagedResultDto as SharedPagedResultDto } from '../../models/unique-words.models';
 import { WordTypesDetailFacade } from '../../state/word-types-detail.facade';
 import { WordTypesExplorerFacade } from '../../state/word-types-explorer.facade';
+import { buildWordTypesQueryParams, clearWordTypesSelection } from '../../state/word-types-url-sync';
+import { mapWordTypeAyahMatchToShared } from '../../utils/word-type-ayah-match.mapper';
 
 @Component({
   selector: 'qd-word-types-explorer-page',
   standalone: true,
-  imports: [PaginationComponent, WordTypeDetailsPanelComponent, WordTypeFilterComponent, WordTypesTableComponent],
+  imports: [
+    AyahMatchesListComponent,
+    MissingSurahsListComponent,
+    PaginationComponent,
+    SelectedWordSectionComponent,
+    SurahOccurrencesListComponent,
+    WordTypeDetailsPanelComponent,
+    WordTypeFilterComponent,
+    WordTypesTableComponent,
+  ],
   templateUrl: './word-types-explorer-page.component.html',
   styleUrl: './word-types-explorer-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly explorerFacade = inject(WordTypesExplorerFacade);
   private readonly detailFacade = inject(WordTypesDetailFacade);
+
+  private desktopQuery?: MediaQueryList;
+  private readonly onDesktopChange = (event: MediaQueryListEvent): void => this.isDesktop.set(event.matches);
 
   protected readonly pageSize = WORD_TYPES_PAGE_SIZE;
   protected readonly listState = this.explorerFacade.listState;
   protected readonly panelState = this.detailFacade.panelState;
+  protected readonly isDesktop = signal(true);
+
   protected readonly selectedRow = computed(() => {
     const state = this.listState();
     const selectedId = state.query.word;
@@ -33,7 +75,45 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
       return null;
     }
 
-    return state.rows.items.find((row) => row.tashkeelWordId === selectedId && row.contextCode === state.query.contextCode) ?? null;
+    return (
+      state.rows.items.find(
+        (row) => row.tashkeelWordId === selectedId && row.contextCode === state.query.contextCode,
+      ) ?? null
+    );
+  });
+
+  protected readonly emptySelection = computed(() => this.panelState().selectedRow === null);
+  protected readonly emptyAyahsPage: SharedPagedResultDto<AyahMatchDto> = {
+    page: 1,
+    pageSize: WORD_TYPES_DETAIL_PAGE_SIZE,
+    totalCount: 0,
+    items: [],
+  };
+
+  protected readonly ayahsPageForView = computed(() => {
+    const page = this.panelState().ayahs;
+    return page ? { ...page, items: page.items.map(mapWordTypeAyahMatchToShared) } : this.emptyAyahsPage;
+  });
+
+  protected readonly analysisLoadState = computed((): ResourceLoadState => {
+    const state = this.panelState();
+    if (state.view !== 'analysis') {
+      return { isLoading: false, isEmpty: false, errorMessage: null };
+    }
+
+    if (state.status === 'loading') {
+      return { isLoading: true, isEmpty: false, errorMessage: null };
+    }
+
+    if (state.status === 'error') {
+      return { isLoading: false, isEmpty: false, errorMessage: state.errorMessage || this.errorLabel };
+    }
+
+    if (!state.location) {
+      return { isLoading: false, isEmpty: true, errorMessage: null };
+    }
+
+    return { isLoading: false, isEmpty: false, errorMessage: null };
   });
 
   protected get pageTitle() { return WORD_TYPES_PAGE_TITLE; }
@@ -43,15 +123,23 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
   protected get tableLabel() { return WORD_TYPES_TABLE_LABEL; }
   protected get sortLabel() { return WORD_TYPES_SORT_LABEL; }
   protected get sortOptions() { return WORD_TYPE_SORT_OPTIONS; }
+  protected get placeholder() { return WORD_TYPES_NULL_PLACEHOLDER; }
 
   ngOnInit(): void {
     this.explorerFacade.bindToRoute(this.route);
     this.detailFacade.bindToRoute(this.route);
+
+    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+      this.desktopQuery = window.matchMedia(QD_BP_DESKTOP_MIN_QUERY);
+      this.isDesktop.set(this.desktopQuery.matches);
+      this.desktopQuery.addEventListener('change', this.onDesktopChange);
+    }
   }
 
   ngOnDestroy(): void {
     this.explorerFacade.unbindFromRoute();
     this.detailFacade.unbindFromRoute();
+    this.desktopQuery?.removeEventListener('change', this.onDesktopChange);
   }
 
   protected selectType(type: WordTypeMainType): void {
@@ -59,7 +147,44 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
   }
 
   protected selectRow(row: WordTypeRowDto): void {
-    this.explorerFacade.selectRow(row);
+    this.updateQueryParams(
+      buildWordTypesQueryParams({
+        word: row.tashkeelWordId,
+        contextCode: row.contextCode,
+        view: DEFAULT_WORD_TYPES_DETAIL_VIEW,
+        detailPage: DEFAULT_WORD_TYPES_DETAIL_PAGE,
+        location: null,
+        column: null,
+      }),
+    );
+  }
+
+  protected onCountOpened(event: WordTypeCountOpenedEvent): void {
+    this.updateQueryParams(
+      buildWordTypesQueryParams({
+        word: event.row.tashkeelWordId,
+        contextCode: event.row.contextCode,
+        view: event.view,
+        detailPage: DEFAULT_WORD_TYPES_DETAIL_PAGE,
+        location: null,
+        column: event.column,
+      }),
+    );
+  }
+
+  protected onPanelViewChange(view: WordTypeDetailView): void {
+    this.detailFacade.setView(view);
+    this.updateQueryParams(buildWordTypesQueryParams({ view, detailPage: DEFAULT_WORD_TYPES_DETAIL_PAGE, location: null }));
+  }
+
+  protected onDetailPageChange(page: number): void {
+    this.detailFacade.setDetailPage(page);
+    this.updateQueryParams(buildWordTypesQueryParams({ detailPage: page }));
+  }
+
+  protected clearSelection(): void {
+    this.detailFacade.clearSelection();
+    this.updateQueryParams(clearWordTypesSelection());
   }
 
   protected changeSort(event: Event): void {
@@ -68,5 +193,35 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
 
   protected changePage(page: number): void {
     this.explorerFacade.changePage(page);
+  }
+
+  protected selectionTitle(): string {
+    return this.panelState().summary?.displayText ?? '';
+  }
+
+  protected mentionedSurahs() {
+    const surahs = this.panelState().surahs?.surahs ?? [];
+    return surahs.map((surah) => ({
+      surahNumber: surah.surahNumber,
+      nameArabic: surah.nameArabic,
+      occurrencesInSurah: surah.occurrencesCount,
+    }));
+  }
+
+  protected missingSurahs() {
+    const surahs = this.panelState().surahs?.missingSurahs ?? [];
+    return surahs.map((surah) => ({
+      surahNumber: surah.surahNumber,
+      nameArabic: surah.nameArabic,
+    }));
+  }
+
+  private updateQueryParams(queryParams: Record<string, string | null>): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams,
+      queryParamsHandling: 'merge',
+      replaceUrl: false,
+    });
   }
 }

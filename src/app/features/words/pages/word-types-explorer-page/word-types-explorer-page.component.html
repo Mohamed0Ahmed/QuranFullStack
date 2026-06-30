@@ -38,6 +38,7 @@
         [loading]="listState().status === 'loading'"
         [selectedRow]="selectedRow()"
         (rowSelected)="selectRow($event)"
+        (countOpened)="onCountOpened($event)"
       />
 
       @if (listState().rows; as page) {
@@ -52,6 +53,72 @@
       }
     </main>
 
-    <qd-word-type-details-panel [state]="panelState()" />
+    <qd-word-type-details-panel
+      [inline]="isDesktop()"
+      [view]="panelState().view"
+      [emptySelection]="emptySelection()"
+      [selectionTitle]="selectionTitle()"
+      [loading]="panelState().status === 'loading'"
+      [notFound]="panelState().status === 'notFound'"
+      (viewChange)="onPanelViewChange($event)"
+      (close)="clearSelection()"
+    >
+      @if (panelState().summary; as summary) {
+        <section class="word-types-summary" data-testid="word-type-summary">
+          <p class="word-types-summary__word">{{ summary.displayText }}</p>
+          <dl class="word-types-summary__meta">
+            <div><dt>النوع</dt><dd>{{ summary.typeLabel.ar }}</dd></div>
+            <div><dt>الجذر</dt><dd>{{ summary.rootText || placeholder }}</dd></div>
+            <div><dt>الأصل</dt><dd>{{ summary.lemmaText || placeholder }}</dd></div>
+            <div><dt>الصيغة</dt><dd>{{ summary.stemText || placeholder }}</dd></div>
+            <div><dt>المواضع</dt><dd>{{ summary.occurrencesCount }}</dd></div>
+            <div><dt>الآيات</dt><dd>{{ summary.ayahsCount }}</dd></div>
+            <div><dt>السور</dt><dd>{{ summary.surahsCount }}</dd></div>
+          </dl>
+        </section>
+
+        @switch (panelState().status) {
+          @case ('loading') {
+            <p class="qd-loading-state" role="status" aria-live="polite">{{ loadingLabel }}</p>
+          }
+          @case ('error') {
+            <p class="qd-error-state">{{ panelState().errorMessage || errorLabel }}</p>
+          }
+          @case ('empty') {
+            <p class="qd-empty-state">{{ emptyLabel }}</p>
+          }
+          @default {
+            @if (panelState().view === 'ayahs' && panelState().ayahs; as ayahsPage) {
+              <qd-ayah-matches-list
+                [page]="ayahsPageForView()"
+                [currentPage]="panelState().detailPage"
+                [loading]="panelState().status === 'loading'"
+                (pageChange)="onDetailPageChange($event)"
+              />
+            }
+
+            @if (panelState().view === 'surahs' && panelState().surahs) {
+              <qd-surah-occurrences-list
+                [surahs]="mentionedSurahs()"
+                [loading]="panelState().status === 'loading'"
+              />
+              <qd-missing-surahs-list
+                [surahs]="missingSurahs()"
+                [loading]="panelState().status === 'loading'"
+              />
+            }
+
+            @if (panelState().view === 'analysis') {
+              <qd-selected-word-section
+                [analysis]="panelState().analysis"
+                [loadState]="analysisLoadState()"
+                [selectedWordLocation]="panelState().location"
+                [embedded]="true"
+              />
+            }
+          }
+        }
+      }
+    </qd-word-type-details-panel>
   </div>
 </section>

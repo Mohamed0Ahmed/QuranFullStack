@@ -2,7 +2,15 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 
 import { WordCountChipComponent } from '../word-count-chip/word-count-chip.component';
 import { WORD_TYPES_NULL_PLACEHOLDER, WORD_TYPES_TABLE_HEADERS, WORD_TYPES_TABLE_LABEL } from '../../models/word-types.labels';
-import { PagedResultDto, WordTypeRowDto } from '../../models/word-types.models';
+import { PagedResultDto, WordTypeDetailView, WordTypeRowDto } from '../../models/word-types.models';
+
+export type WordTypeCountColumn = 'occurrences' | 'ayahs' | 'surahs';
+
+export interface WordTypeCountOpenedEvent {
+  row: WordTypeRowDto;
+  column: WordTypeCountColumn;
+  view: WordTypeDetailView;
+}
 
 @Component({
   selector: 'qd-word-types-table',
@@ -17,6 +25,7 @@ export class WordTypesTableComponent {
   readonly loading = input(false);
   readonly selectedRow = input<WordTypeRowDto | null>(null);
   readonly rowSelected = output<WordTypeRowDto>();
+  readonly countOpened = output<WordTypeCountOpenedEvent>();
 
   protected readonly tableLabel = WORD_TYPES_TABLE_LABEL;
 
@@ -30,5 +39,10 @@ export class WordTypesTableComponent {
   protected isSelected(row: WordTypeRowDto): boolean {
     const selected = this.selectedRow();
     return selected?.tashkeelWordId === row.tashkeelWordId && selected.contextCode === row.contextCode;
+  }
+
+  protected openCount(row: WordTypeRowDto, column: WordTypeCountColumn): void {
+    const view: WordTypeDetailView = column === 'surahs' ? 'surahs' : 'ayahs';
+    this.countOpened.emit({ row, column, view });
   }
 }

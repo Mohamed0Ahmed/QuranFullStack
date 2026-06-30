@@ -58,6 +58,14 @@ export const WORD_TYPE_DETAIL_TAB_LABELS: Record<WordTypeDetailView, string> = {
   analysis: 'التحليل',
 };
 
+export const WORD_TYPE_DETAIL_TAB_ARIA: Record<WordTypeDetailView, string> = {
+  ayahs: 'الآيات الخاصة بالكلمة المحددة',
+  surahs: 'توزيع السور للكلمة المحددة',
+  analysis: 'التحليل النحوي لموضع محدد',
+};
+
+export const WORD_TYPES_EMPTY_SELECTION_LABEL = 'اختر صفًا من الجدول لعرض تفاصيل الكلمة.';
+
 export const WORD_TYPES_TABLE_HEADERS = {
   word: 'الكلمة',
   type: 'النوع',
