@@ -63,3 +63,15 @@ Essential reminders:
 - Do not scatter hardcoded user-facing messages; centralize them close to the
   owning feature.
 - Do not invent Quranic/religious content while writing messages.
+
+
+<!-- lean-ctx -->
+
+## lean-ctx
+
+lean-ctx is active — the MCP tools replace native equivalents.
+Full rules: LEAN-CTX.md (open on demand — do not auto-load).
+
+If LeanCTX blocks a command, run it outside LeanCTX with normal shell/Bash when available instead of retrying through LeanCTX.
+
+<!-- /lean-ctx -->
