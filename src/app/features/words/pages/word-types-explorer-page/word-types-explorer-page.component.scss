@@ -11,6 +11,10 @@
   margin: 0 0 1rem;
 }
 
+.word-types-page__filter {
+  margin-block-end: 1rem;
+}
+
 .word-types-page__layout {
   display: grid;
   gap: 1rem;
@@ -50,7 +54,7 @@
 
 @media (min-width: 64rem) {
   .word-types-page__layout {
-    grid-template-columns: minmax(12rem, 16rem) minmax(0, 1fr) minmax(16rem, 22rem);
+    grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
     align-items: start;
   }
 }

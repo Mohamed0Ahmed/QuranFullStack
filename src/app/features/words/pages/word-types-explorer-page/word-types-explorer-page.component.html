@@ -3,7 +3,7 @@
     <h1>{{ pageTitle }}</h1>
   </header>
 
-  <div class="word-types-page__layout">
+  <div class="word-types-page__filter">
     <qd-word-type-filter
       [tree]="listState().tree"
       [selectedType]="listState().query.type"
@@ -18,6 +18,9 @@
       (tenseSelected)="selectTense($event)"
       (voiceSelected)="selectVoice($event)"
     />
+  </div>
+
+  <div class="word-types-page__layout">
 
     <main class="word-types-page__main" [attr.aria-busy]="listState().status === 'loading' ? true : null">
       <div class="word-types-page__toolbar">

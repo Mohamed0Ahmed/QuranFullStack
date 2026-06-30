@@ -3,25 +3,27 @@
 }
 
 .word-type-filter {
-  border: 1px solid var(--qd-border);
-  border-radius: var(--qd-radius-lg);
-  background: var(--qd-surface);
-  padding: 1rem;
-}
-
-.word-type-filter__list {
   display: grid;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
 
-.word-type-filter__row {
+.word-type-filter__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+.word-type-filter__trigger {
   display: flex;
   align-items: stretch;
-  gap: 0.4rem;
+  flex: 1 1 16rem;
+  min-inline-size: 0;
+  gap: 0.35rem;
 }
 
 .word-type-filter__button {
-  flex: 1;
+  flex: 1 1 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -48,7 +50,8 @@
 }
 
 .word-type-filter__expand {
-  inline-size: 2.4rem;
+  inline-size: 2.7rem;
+  flex: 0 0 auto;
   border: 1px solid var(--qd-border);
   border-radius: var(--qd-radius-md);
   background: var(--qd-surface);
@@ -63,6 +66,12 @@
   opacity: 0.72;
 }
 
+.word-type-filter__expand.qd-is-selected {
+  border-color: var(--qd-accent);
+  background: var(--qd-accent-tint);
+  color: var(--qd-accent-text, var(--qd-text));
+}
+
 .word-type-filter__button:focus-visible,
 .word-type-filter__expand:focus-visible,
 .word-type-filter__child-button:focus-visible,
@@ -74,12 +83,10 @@
 .word-type-filter__children {
   list-style: none;
   margin: 0;
-  margin-inline-start: 0.75rem;
   padding: 0;
-  padding-block-start: 0.35rem;
   display: grid;
-  gap: 0.3rem;
-  border-inline-start: 2px solid var(--qd-border);
+  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
 }
 
 .word-type-filter__child-button {
@@ -124,6 +131,18 @@
   font-variant-numeric: tabular-nums;
 }
 
+.word-type-filter__panel {
+  display: grid;
+  gap: 0.85rem;
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-lg);
+  background: var(--qd-surface-elevated);
+  box-shadow: var(--qd-shadow-lg);
+  padding: 1rem;
+  max-block-size: min(34rem, 70vh);
+  overflow: auto;
+}
+
 .word-type-filter__placeholder {
   margin: 0;
 }
@@ -132,7 +151,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem;
-  margin-block-start: 0.75rem;
   padding-block-start: 0.75rem;
   border-block-start: 1px solid var(--qd-border);
 }

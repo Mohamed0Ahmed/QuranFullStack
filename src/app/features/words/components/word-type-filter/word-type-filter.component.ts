@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed, inject, input, output, signal } from '@angular/core';
 
 import { WORD_TYPES_CASE_FILTER_LABEL, WORD_TYPES_COLLAPSE_LABEL, WORD_TYPES_EXPAND_LABEL, WORD_TYPES_FILTER_LABEL, WORD_TYPES_TENSE_FILTER_LABEL, WORD_TYPES_VOICE_FILTER_LABEL, WORD_TYPE_CASE_LABELS, WORD_TYPE_TENSE_LABELS, WORD_TYPE_VOICE_LABELS } from '../../models/word-types.labels';
 import {
@@ -37,6 +37,7 @@ export class WordTypeFilterComponent {
   readonly caseSelected = output<WordTypeCase>();
   readonly tenseSelected = output<WordTypeTense>();
   readonly voiceSelected = output<WordTypeVoice>();
+  protected readonly openPanelType = signal<WordTypeMainType | null>(null);
 
   protected get filterLabel() {
     return WORD_TYPES_FILTER_LABEL;
@@ -66,26 +67,22 @@ export class WordTypeFilterComponent {
     return WORD_TYPE_VOICES;
   }
 
-  // The active parent node drives secondary-filter visibility. particle and inl expose kind="none"
+  // Open panel drives secondary-filter visibility. particle and inl expose kind="none"
   // and render no controls; noun renders case; verb renders tense + voice.
-  protected readonly activeNode = computed<WordTypeTreeNodeDto | null>(() => {
+  protected readonly openNode = computed<WordTypeTreeNodeDto | null>(() => {
     const currentTree = this.tree();
     if (!currentTree) {
       return null;
     }
-    return currentTree.mainTypes.find((node) => node.code === this.selectedType()) ?? null;
+    return currentTree.mainTypes.find((node) => node.code === this.openPanelType()) ?? null;
   });
 
   protected readonly secondaryFilter = computed<WordTypeSecondaryFilterDto | null>(
-    () => this.activeNode()?.secondaryFilter ?? null,
+    () => this.openNode()?.secondaryFilter ?? null,
   );
 
   protected readonly showCaseControls = computed(() => this.secondaryFilter()?.kind === 'case');
   protected readonly showVerbControls = computed(() => this.secondaryFilter()?.kind === 'tense+voice');
-
-  // Track which parents are expanded so the user can browse child nodes. A parent is considered
-  // expanded when it is the active type OR has been toggled open by the expand affordance.
-  private readonly expandedTypes = new Set<WordTypeMainType>();
 
   protected selectType(node: WordTypeTreeNodeDto): void {
     if (this.loading()) {
@@ -101,6 +98,7 @@ export class WordTypeFilterComponent {
     }
 
     this.childSelected.emit(child.childCode);
+    this.closePanel(this.openPanelType());
   }
 
   protected changeCase(event: Event): void {
@@ -130,19 +128,16 @@ export class WordTypeFilterComponent {
       return;
     }
 
-    if (this.expandedTypes.has(node.code)) {
-      this.expandedTypes.delete(node.code);
-    } else {
-      this.expandedTypes.add(node.code);
+    if (this.openPanelType() === node.code) {
+      this.closePanel(node.code);
+      return;
     }
+
+    this.openPanelType.set(node.code);
   }
 
-  protected isExpanded(node: WordTypeTreeNodeDto): boolean {
-    // The active parent stays expanded so its selected child stays visible; other parents
-    // expand only when explicitly toggled.
-    return node.children.length === 0
-      ? false
-      : this.expandedTypes.has(node.code) || this.isSelected(node);
+  protected isPanelOpen(node: WordTypeTreeNodeDto): boolean {
+    return node.children.length > 0 && this.openPanelType() === node.code;
   }
 
   protected isSelected(node: WordTypeTreeNodeDto): boolean {
@@ -158,7 +153,7 @@ export class WordTypeFilterComponent {
       return '';
     }
 
-    const action = this.isExpanded(node) ? WORD_TYPES_COLLAPSE_LABEL : WORD_TYPES_EXPAND_LABEL;
+    const action = this.isPanelOpen(node) ? WORD_TYPES_COLLAPSE_LABEL : WORD_TYPES_EXPAND_LABEL;
     return `${action} ${node.label.ar}`;
   }
 
@@ -174,9 +169,54 @@ export class WordTypeFilterComponent {
     return WORD_TYPE_VOICE_LABELS[option];
   }
 
+  protected panelRegionLabel(node: WordTypeTreeNodeDto): string {
+    return node.label.ar;
+  }
+
+  private closePanel(focusType: WordTypeMainType | null): void {
+    this.openPanelType.set(null);
+    this.restorePanelFocus(focusType);
+  }
+
+  private restorePanelFocus(focusType: WordTypeMainType | null): void {
+    if (!focusType) {
+      return;
+    }
+
+    const host = this.host.nativeElement as HTMLElement;
+    const trigger = host.querySelector<HTMLButtonElement>(`button.word-type-filter__expand[data-word-type-code="${focusType}"]`)
+      ?? host.querySelector<HTMLButtonElement>(`button.word-type-filter__button[data-word-type-code="${focusType}"]`);
+    trigger?.focus();
+  }
+
+  @HostListener('document:click', ['$event'])
+  protected onDocumentClick(event: MouseEvent): void {
+    const target = event.target;
+    if (!(target instanceof Node)) {
+      return;
+    }
+
+    if (this.host.nativeElement.contains(target)) {
+      return;
+    }
+
+    this.closePanel(this.openPanelType());
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  protected onDocumentKeydown(event: KeyboardEvent): void {
+    if (event.key !== 'Escape' || this.openPanelType() === null) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    this.closePanel(this.openPanelType());
+  }
+
   focusSelectedType(): void {
     const host = this.host.nativeElement as HTMLElement;
-    const selected = host.querySelector<HTMLButtonElement>('[aria-current="true"]');
+    const selected = host.querySelector<HTMLButtonElement>('.word-type-filter__button[aria-current="true"]');
     const fallback = host.querySelector<HTMLButtonElement>('.word-type-filter__button');
     (selected ?? fallback)?.focus();
   }

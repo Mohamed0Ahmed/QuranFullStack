@@ -20,8 +20,16 @@ const queryParamMap$ = new BehaviorSubject(convertToParamMap({}));
 
 const tree: WordTypeTreeDto = {
   mainTypes: [
-    { code: 'noun', label: { ar: 'اسم' }, count: 1, secondaryFilter: { kind: 'case', options: [], voiceOptions: [] }, children: [] },
-    { code: 'verb', label: { ar: 'فعل' }, count: 1, secondaryFilter: { kind: 'tense+voice', options: [], voiceOptions: [] }, children: [] },
+    {
+      code: 'noun', label: { ar: 'اسم' }, count: 1,
+      secondaryFilter: { kind: 'case', options: [], voiceOptions: [] },
+      children: [{ code: 'N', childCode: 'N', label: { ar: 'اسم' }, count: 1 }],
+    },
+    {
+      code: 'verb', label: { ar: 'فعل' }, count: 1,
+      secondaryFilter: { kind: 'tense+voice', options: [], voiceOptions: [] },
+      children: [{ code: 'past', childCode: 'past', label: { ar: 'ماض' }, count: 1 }],
+    },
     { code: 'particle', label: { ar: 'حرف وأداة' }, count: 1, secondaryFilter: { kind: 'none', options: [], voiceOptions: [] }, children: [] },
     { code: 'inl', label: { ar: 'حروف مقطّعة' }, count: 1, secondaryFilter: { kind: 'none', options: [], voiceOptions: [] }, children: [] },
   ],
@@ -142,7 +150,7 @@ describe('WordTypesExplorerPageComponent', () => {
 
   it('routes main type selection and clears selected row state', async () => {
     const fixture = await createPage();
-    const buttons = fixture.nativeElement.querySelectorAll('qd-word-type-filter button') as NodeListOf<HTMLButtonElement>;
+    const buttons = fixture.nativeElement.querySelectorAll('qd-word-type-filter .word-type-filter__button') as NodeListOf<HTMLButtonElement>;
 
     buttons[1].click();
 
@@ -154,6 +162,12 @@ describe('WordTypesExplorerPageComponent', () => {
 
   it('routes case filter selection and resets the page while clearing the selected row', async () => {
     const fixture = await createPage();
+    const nounExpand = fixture.nativeElement.querySelector(
+      'qd-word-type-filter .word-type-filter__expand[data-word-type-code="noun"]',
+    ) as HTMLButtonElement;
+    nounExpand.click();
+    fixture.detectChanges();
+
     const caseSelect = fixture.nativeElement.querySelector(
       'qd-word-type-filter [data-testid="word-type-case-filter"] select',
     ) as HTMLSelectElement;
@@ -169,6 +183,12 @@ describe('WordTypesExplorerPageComponent', () => {
 
   it('renders the noun case controls but not the verb controls by default', async () => {
     const fixture = await createPage();
+    const nounExpand = fixture.nativeElement.querySelector(
+      'qd-word-type-filter .word-type-filter__expand[data-word-type-code="noun"]',
+    ) as HTMLButtonElement;
+    nounExpand.click();
+    fixture.detectChanges();
+
     const root = fixture.nativeElement as HTMLElement;
 
     expect(root.querySelector('qd-word-type-filter [data-testid="word-type-case-filter"]')).not.toBeNull();
