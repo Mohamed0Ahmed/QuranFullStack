@@ -30,7 +30,7 @@ import {
 export function parseWordTypesQueryParams(queryParams: ParamMap): ParsedWordTypesQuery {
   const typeRaw = queryParams.get(WORD_TYPES_QUERY_KEYS.type);
   const type: WordTypeMainType = typeRaw !== null && isWordTypeMainType(typeRaw) ? typeRaw : DEFAULT_WORD_TYPE;
-  const childCode = type === 'inl' ? null : normalizeOptionalText(queryParams.get(WORD_TYPES_QUERY_KEYS.childCode));
+  const childCode = normalizeChildCode(type, queryParams.get(WORD_TYPES_QUERY_KEYS.childCode));
   const word = parsePositiveInt(queryParams.get(WORD_TYPES_QUERY_KEYS.word));
   const contextCode = word === null ? '' : normalizeOptionalText(queryParams.get(WORD_TYPES_QUERY_KEYS.contextCode)) ?? '';
 
@@ -87,6 +87,27 @@ export interface WordTypesDeepLinkTarget {
 
 export function buildWordTypesDeepLink(options: WordTypesQueryChange = {}): WordTypesDeepLinkTarget {
   return { path: wordTypesRoutePath(), queryParams: buildWordTypesQueryParams(options) };
+}
+
+function normalizeChildCode(type: WordTypeMainType, value: string | null): string | null {
+  const raw = normalizeOptionalText(value);
+  if (raw === null) {
+    return null;
+  }
+
+  // particle and inl expose no child nodes in v1, so any child code is invalid and dropped.
+  // Verb children are the fixed tense set and are validated here. Noun children are catalogue POS
+  // codes the parser cannot enumerate, so it passes them through; the backend validates them and
+  // rejects an unrecognized noun code with 400 (surfaced as the list error state).
+  if (type === 'particle' || type === 'inl') {
+    return null;
+  }
+
+  if (type === 'verb') {
+    return isWordTypeTense(raw) ? raw : null;
+  }
+
+  return raw;
 }
 
 function normalizeCase(type: WordTypeMainType, value: string | null): WordTypeCase {

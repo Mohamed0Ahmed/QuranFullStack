@@ -102,6 +102,15 @@ export class WordTypesExplorerFacade {
     });
   }
 
+  // Selecting a child node narrows rows to that subtype, resets the page, and clears any selected
+  // row so the detail panel never lingers on a row from a different context.
+  selectChild(childCode: string | null): void {
+    this.navigate({
+      ...buildWordTypesQueryParams({ childCode, page: DEFAULT_WORD_TYPES_PAGE }),
+      ...clearWordTypesSelection(),
+    });
+  }
+
   changeSort(sort: WordTypeSort): void {
     this.navigate({
       ...buildWordTypesQueryParams({ sort, page: DEFAULT_WORD_TYPES_PAGE }),

@@ -7,8 +7,10 @@
     <qd-word-type-filter
       [tree]="listState().tree"
       [selectedType]="listState().query.type"
+      [selectedChildCode]="listState().query.childCode"
       [loading]="listState().status === 'loading'"
       (typeSelected)="selectType($event)"
+      (childSelected)="selectChild($event)"
     />
 
     <main class="word-types-page__main">

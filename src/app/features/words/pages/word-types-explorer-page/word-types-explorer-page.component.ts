@@ -146,6 +146,10 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
     this.explorerFacade.selectType(type);
   }
 
+  protected selectChild(childCode: string | null): void {
+    this.explorerFacade.selectChild(childCode);
+  }
+
   protected selectRow(row: WordTypeRowDto): void {
     this.updateQueryParams(
       buildWordTypesQueryParams({
