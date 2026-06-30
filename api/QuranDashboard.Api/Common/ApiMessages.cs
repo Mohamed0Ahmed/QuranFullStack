@@ -73,4 +73,15 @@ public static class ApiMessages
     public const string StemsInvalidId = "معرّف الأصل الصرفي غير صالح";
     public const string StemsInvalidPaging = "معطيات التصفح غير صالحة";
     public const string StemNotFound = "الأصل الصرفي غير موجود";
+
+    public const string WordTypesTreeLoaded = "تم تحميل أنواع الكلمات";
+    public const string WordTypesRowsLoaded = "تم تحميل كلمات النوع";
+    public const string WordTypeSummaryLoaded = "تم تحميل ملخص الكلمة";
+    public const string WordTypeAyahsLoaded = "تم تحميل الآيات الخاصة بالكلمة";
+    public const string WordTypeSurahsLoaded = "تم تحميل سور الكلمة";
+    public const string WordTypesInvalidFilter = "مرشح نوع الكلمة غير صالح";
+    public const string WordTypesInvalidIdentity = "هوية الكلمة غير صالحة";
+    public const string WordTypesInvalidSort = "خيار الترتيب غير صالح";
+    public const string WordTypesInvalidPaging = "معطيات التصفح غير صالحة";
+    public const string WordTypeNotFound = "الكلمة المحددة غير موجودة";
 }

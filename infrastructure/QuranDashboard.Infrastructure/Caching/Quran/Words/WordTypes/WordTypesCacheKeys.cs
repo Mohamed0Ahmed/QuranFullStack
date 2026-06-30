@@ -1,0 +1,53 @@
+using System.Security.Cryptography;
+using System.Text;
+using QuranDashboard.Application.Abstractions.Quran.Words.WordTypes;
+
+namespace QuranDashboard.Infrastructure.Caching.Quran.Words.WordTypes;
+
+public static class WordTypesCacheKeys
+{
+    public const string Tree = "wordtypes:tree";
+
+    public static string Rows(WordTypeFilter filter, WordTypeSort sort, int page, int pageSize) =>
+        $"wordtypes:rows:{HashFilter(filter)}:sort:{SortKey(sort)}:p{page}:s{pageSize}";
+
+    public static string Summary(WordTypeRowIdentity identity) =>
+        $"wordtypes:summary:{HashIdentity(identity)}";
+
+    public static string Ayahs(WordTypeRowIdentity identity, int page, int pageSize) =>
+        $"wordtypes:ayahs:{HashIdentity(identity)}:p{page}:s{pageSize}";
+
+    public static string Surahs(WordTypeRowIdentity identity) =>
+        $"wordtypes:surahs:{HashIdentity(identity)}";
+
+    private static string HashFilter(WordTypeFilter filter) => HashParts(
+        filter.Type,
+        filter.ChildCode,
+        filter.Case,
+        filter.Tense,
+        filter.Voice);
+
+    private static string HashIdentity(WordTypeRowIdentity identity) => HashParts(
+        identity.TashkeelWordId.ToString(CultureInfo.InvariantCulture),
+        identity.ContextCode,
+        identity.Case,
+        identity.Tense,
+        identity.Voice);
+
+    private static string HashParts(params string?[] parts)
+    {
+        var normalized = string.Join('|', parts.Select(part => string.IsNullOrWhiteSpace(part) ? "_" : part.Trim()));
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(normalized));
+        return Convert.ToHexString(bytes[..8]).ToLowerInvariant();
+    }
+
+    private static string SortKey(WordTypeSort sort) => sort switch
+    {
+        WordTypeSort.Occurrences => WordTypeSortKeys.Occurrences,
+        WordTypeSort.Ayahs => WordTypeSortKeys.Ayahs,
+        WordTypeSort.Surahs => WordTypeSortKeys.Surahs,
+        WordTypeSort.MushafOrder => WordTypeSortKeys.MushafOrder,
+        WordTypeSort.Alpha => WordTypeSortKeys.Alpha,
+        _ => sort.ToString(),
+    };
+}

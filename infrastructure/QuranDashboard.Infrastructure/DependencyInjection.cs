@@ -14,6 +14,7 @@ public static class DependencyInjection
         services.AddRoots();
         services.AddLemmas();
         services.AddStems();
+        services.AddWordTypes();
         services.AddFoundationImport();
         services.AddMorphologyImport();
         services.AddMutashabihatImport();
