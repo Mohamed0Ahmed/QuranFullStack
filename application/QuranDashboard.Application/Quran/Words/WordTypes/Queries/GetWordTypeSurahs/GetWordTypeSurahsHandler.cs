@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using QuranDashboard.Application.Abstractions.Quran.Words.WordTypes;
+using QuranDashboard.Application.Quran.Words.WordTypes.Queries;
 
 namespace QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeSurahs;
 
@@ -15,7 +16,7 @@ public sealed class GetWordTypeSurahsHandler(
         ArgumentNullException.ThrowIfNull(query);
         var identity = ToIdentity(query.TashkeelWordId, query.ContextCode, query.Case, query.Tense, query.Voice);
 
-        if (!identity.IsValid)
+        if (!identity.IsValid || !WordTypesHandlerValidation.IsValidIdentitySecondaryValues(query.Case, query.Tense, query.Voice))
         {
             logger.LogWarning("Rejected {feature} {operation} {reason} {tashkeelWordId} {contextCode}", FeatureName, OperationName, "invalidIdentity", query.TashkeelWordId, query.ContextCode);
             return new GetWordTypeSurahsOutcome.InvalidIdentity();
