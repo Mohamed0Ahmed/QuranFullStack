@@ -4,6 +4,7 @@ import {
   WORDS_LEMMAS_SEGMENT,
   WORDS_ROOTS_SEGMENT,
   WORDS_STEMS_SEGMENT,
+  WORDS_TYPES_SEGMENT,
   WORDS_UNIQUE_MODE_SEGMENT,
 } from '../../core/navigation/route-paths';
 
@@ -32,6 +33,11 @@ const loadStemsExplorerPage = () =>
     (m) => m.StemsExplorerPageComponent,
   );
 
+const loadWordTypesExplorerPage = () =>
+  import('./pages/word-types-explorer-page/word-types-explorer-page.component').then(
+    (m) => m.WordTypesExplorerPageComponent,
+  );
+
 export const WORDS_HUB_ROUTE = {
   path: '',
   loadComponent: loadWordsHubPage,
@@ -57,6 +63,11 @@ export const WORDS_STEMS_ROUTE = {
   loadComponent: loadStemsExplorerPage,
 } as const;
 
+export const WORDS_TYPES_ROUTE = {
+  path: WORDS_TYPES_SEGMENT,
+  loadComponent: loadWordTypesExplorerPage,
+} as const;
+
 export const WORDS_ROUTES: Routes = [
   WORDS_HUB_ROUTE,
   {
@@ -68,4 +79,5 @@ export const WORDS_ROUTES: Routes = [
   WORDS_ROOTS_ROUTE,
   WORDS_LEMMAS_ROUTE,
   WORDS_STEMS_ROUTE,
+  WORDS_TYPES_ROUTE,
 ];

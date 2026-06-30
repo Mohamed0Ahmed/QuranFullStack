@@ -1,0 +1,7 @@
+<section class="word-types-table" [attr.aria-label]="tableLabel">
+  @if (rows(); as page) {
+    <p class="word-types-table__count">{{ page.totalCount }}</p>
+  } @else {
+    <p class="word-types-table__placeholder">{{ tableLabel }}</p>
+  }
+</section>

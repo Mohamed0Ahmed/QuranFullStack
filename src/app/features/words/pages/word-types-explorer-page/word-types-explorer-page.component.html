@@ -1,0 +1,11 @@
+<section class="word-types-page" dir="rtl">
+  <header class="word-types-page__header">
+    <h1>{{ pageTitle }}</h1>
+  </header>
+
+  <div class="word-types-page__layout">
+    <qd-word-type-filter [tree]="listState().tree" />
+    <qd-word-types-table [rows]="listState().rows" />
+    <qd-word-type-details-panel [state]="panelState()" />
+  </div>
+</section>

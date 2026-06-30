@@ -1,5 +1,5 @@
 import { UniqueWordKind, UniqueWordSort, WordDrilldownView } from './unique-words.models';
-import { lemmasRoutePath, rootsRoutePath, stemsRoutePath } from '../../../core/navigation/route-paths';
+import { lemmasRoutePath, rootsRoutePath, stemsRoutePath, wordTypesRoutePath } from '../../../core/navigation/route-paths';
 import {
   ROW_NUMBER_HEADER,
   WORDS_SHARED_HEADERS,
@@ -34,11 +34,14 @@ export const ADDITIONAL_ACTIVE_HUB_SECTIONS: readonly ActiveHubSection[] = [
     descriptionAr: 'استكشاف الأصول الصرفية للكلمات',
     route: stemsRoutePath(),
   },
+  {
+    labelAr: 'أنواع الكلمات',
+    descriptionAr: 'استكشاف أنواع الكلمات من حيث الاسم والفعل والحرف',
+    route: wordTypesRoutePath(),
+  },
 ];
 
-export const COMING_SOON_HUB_SECTIONS: readonly WordSectionCardLabel[] = [
-  { labelAr: 'أنواع الكلمة', descriptionAr: 'استكشاف أنواع الكلمات من حيث الاسم والفعل والحرف' },
-];
+export const COMING_SOON_HUB_SECTIONS: readonly WordSectionCardLabel[] = [];
 
 export const COMING_SOON_BADGE = 'قريبًا';
 export const WORDS_HUB_TITLE = 'الكلمات';

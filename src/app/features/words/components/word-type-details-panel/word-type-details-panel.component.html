@@ -1,0 +1,7 @@
+<aside class="word-type-details-panel" [attr.aria-label]="panelLabel">
+  @if (state()?.selectedRow; as row) {
+    <p class="word-type-details-panel__context">{{ row.contextCode }}</p>
+  } @else {
+    <p class="word-type-details-panel__placeholder">{{ panelLabel }}</p>
+  }
+</aside>

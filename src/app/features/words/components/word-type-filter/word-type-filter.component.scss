@@ -1,0 +1,14 @@
+:host {
+  display: block;
+}
+
+.word-type-filter {
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-lg);
+  padding: 1rem;
+}
+
+.word-type-filter__count,
+.word-type-filter__placeholder {
+  margin: 0;
+}

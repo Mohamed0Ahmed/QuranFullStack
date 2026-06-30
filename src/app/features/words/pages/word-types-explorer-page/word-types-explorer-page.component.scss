@@ -1,0 +1,23 @@
+:host {
+  display: block;
+}
+
+.word-types-page {
+  padding: clamp(1rem, 2vw, 2rem);
+}
+
+.word-types-page__header h1 {
+  margin: 0 0 1rem;
+}
+
+.word-types-page__layout {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 64rem) {
+  .word-types-page__layout {
+    grid-template-columns: minmax(12rem, 16rem) minmax(0, 1fr) minmax(16rem, 22rem);
+    align-items: start;
+  }
+}
