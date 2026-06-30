@@ -43,6 +43,11 @@ using QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemLemmas;
 using QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemWords;
 using QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemSummary;
 using QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemsPage;
+using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeAyahs;
+using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeRows;
+using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeSummary;
+using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeSurahs;
+using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeTree;
 
 namespace QuranDashboard.Application;
 
@@ -95,6 +100,11 @@ public static class DependencyInjection
         services.AddScoped<GetStemMentionedSurahsHandler>();
         services.AddScoped<GetStemMissingSurahsHandler>();
         services.AddScoped<GetStemLemmasHandler>();
+        services.AddScoped<GetWordTypeTreeHandler>();
+        services.AddScoped<GetWordTypeRowsHandler>();
+        services.AddScoped<GetWordTypeSummaryHandler>();
+        services.AddScoped<GetWordTypeAyahsHandler>();
+        services.AddScoped<GetWordTypeSurahsHandler>();
 
         return services;
     }
