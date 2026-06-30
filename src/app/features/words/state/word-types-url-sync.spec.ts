@@ -74,6 +74,46 @@ describe('buildWordTypesQueryParams — child selection', () => {
   });
 });
 
+describe('buildWordTypesQueryParams — canonical ordering', () => {
+  it('emits list and detail keys in stable route order', () => {
+    const built = buildWordTypesQueryParams({
+      type: 'verb',
+      childCode: 'present',
+      case: 'all',
+      tense: 'present',
+      voice: 'passive',
+      sort: 'ayahs',
+      page: 3,
+      word: 191004,
+      contextCode: 'present',
+      view: 'analysis',
+      detailPage: 2,
+      location: '2:25:2',
+      column: 'analysis',
+    });
+
+    expect(Object.keys(built)).toEqual([
+      WORD_TYPES_QUERY_KEYS.type,
+      WORD_TYPES_QUERY_KEYS.childCode,
+      WORD_TYPES_QUERY_KEYS.case,
+      WORD_TYPES_QUERY_KEYS.tense,
+      WORD_TYPES_QUERY_KEYS.voice,
+      WORD_TYPES_QUERY_KEYS.sort,
+      WORD_TYPES_QUERY_KEYS.page,
+      WORD_TYPES_QUERY_KEYS.word,
+      WORD_TYPES_QUERY_KEYS.contextCode,
+      WORD_TYPES_QUERY_KEYS.view,
+      WORD_TYPES_QUERY_KEYS.detailPage,
+      WORD_TYPES_QUERY_KEYS.location,
+      WORD_TYPES_QUERY_KEYS.column,
+    ]);
+    expect(built[WORD_TYPES_QUERY_KEYS.view]).toBe('analysis');
+    expect(built[WORD_TYPES_QUERY_KEYS.detailPage]).toBe('2');
+    expect(built[WORD_TYPES_QUERY_KEYS.location]).toBe('2:25:2');
+    expect(built[WORD_TYPES_QUERY_KEYS.column]).toBe('analysis');
+  });
+});
+
 describe('clearWordTypesSelection', () => {
   it('clears selection params but preserves list filter params', () => {
     const cleared = clearWordTypesSelection();
@@ -81,16 +121,35 @@ describe('clearWordTypesSelection', () => {
     expect(cleared[WORD_TYPES_QUERY_KEYS.word]).toBeNull();
     expect(cleared[WORD_TYPES_QUERY_KEYS.contextCode]).toBeNull();
     expect(cleared[WORD_TYPES_QUERY_KEYS.view]).toBeNull();
+    expect(cleared[WORD_TYPES_QUERY_KEYS.detailPage]).toBeNull();
+    expect(cleared[WORD_TYPES_QUERY_KEYS.location]).toBeNull();
+    expect(cleared[WORD_TYPES_QUERY_KEYS.column]).toBeNull();
     expect(cleared[WORD_TYPES_QUERY_KEYS.childCode]).toBeUndefined();
   });
 });
 
 describe('buildWordTypesDeepLink', () => {
-  it('targets the word types route with a child-scoped query', () => {
-    const link = buildWordTypesDeepLink({ type: 'noun', childCode: 'PN', page: 1 });
+  it('targets the word types route with a full selected-row query', () => {
+    const link = buildWordTypesDeepLink({
+      type: 'noun',
+      childCode: 'PN',
+      page: 1,
+      word: 191001,
+      contextCode: 'PN',
+      view: 'analysis',
+      detailPage: 2,
+      location: '1:1:2',
+      column: 'analysis',
+    });
 
     expect(link.path).toContain('types');
     expect(link.queryParams[WORD_TYPES_QUERY_KEYS.childCode]).toBe('PN');
+    expect(link.queryParams[WORD_TYPES_QUERY_KEYS.word]).toBe('191001');
+    expect(link.queryParams[WORD_TYPES_QUERY_KEYS.contextCode]).toBe('PN');
+    expect(link.queryParams[WORD_TYPES_QUERY_KEYS.view]).toBe('analysis');
+    expect(link.queryParams[WORD_TYPES_QUERY_KEYS.detailPage]).toBe('2');
+    expect(link.queryParams[WORD_TYPES_QUERY_KEYS.location]).toBe('1:1:2');
+    expect(link.queryParams[WORD_TYPES_QUERY_KEYS.column]).toBe('analysis');
   });
 });
 

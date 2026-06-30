@@ -218,9 +218,7 @@ export class WordTypesDetailFacade {
 
     this.activeUrlState = state;
     const current = this._panel();
-    const sameRow =
-      current.selectedRow?.tashkeelWordId === state.identity.tashkeelWordId
-      && current.selectedRow.contextCode === state.identity.contextCode;
+    const sameRow = this.isSameIdentity(current.selectedRow, state.identity);
 
     if (sameRow && current.summary !== null) {
       this._panel.update((panel) => ({
@@ -361,15 +359,19 @@ export class WordTypesDetailFacade {
     }
 
     return (
-      current.identity.tashkeelWordId === next.identity.tashkeelWordId
-      && current.identity.contextCode === next.identity.contextCode
-      && current.identity.case === next.identity.case
-      && current.identity.tense === next.identity.tense
-      && current.identity.voice === next.identity.voice
+      this.isSameIdentity(current.identity, next.identity)
       && current.view === next.view
       && current.detailPage === next.detailPage
       && current.location === next.location
     );
+  }
+
+  private isSameIdentity(current: WordTypeRowIdentity | null, next: WordTypeRowIdentity): boolean {
+    return current?.tashkeelWordId === next.tashkeelWordId
+      && current.contextCode === next.contextCode
+      && current.case === next.case
+      && current.tense === next.tense
+      && current.voice === next.voice;
   }
 }
 

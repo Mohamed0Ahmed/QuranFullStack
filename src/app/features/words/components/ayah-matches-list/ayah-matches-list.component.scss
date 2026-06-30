@@ -46,6 +46,16 @@
   }
 }
 
+.ayah-matches-list__analysis-action {
+  justify-self: start;
+  padding: var(--qd-space-1) var(--qd-space-2);
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-sm);
+  background: var(--qd-surface);
+  color: var(--qd-text);
+  font: inherit;
+}
+
 .ayah-matches-list__card--alt {
   background: color-mix(in oklch, var(--qd-surface) 97%, var(--qd-border));
 }

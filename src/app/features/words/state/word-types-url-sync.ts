@@ -12,7 +12,6 @@ import {
   DEFAULT_WORD_TYPES_PAGE,
   ParsedWordTypesQuery,
   WORD_TYPES_QUERY_KEYS,
-  WORD_TYPES_SELECTION_QUERY_KEYS,
   WordTypeCase,
   WordTypeDetailView,
   WordTypeMainType,
@@ -68,16 +67,48 @@ export type WordTypesQueryChange = Partial<{
   column: string | null;
 }>;
 
+const WORD_TYPES_QUERY_ORDER = [
+  'type',
+  'childCode',
+  'case',
+  'tense',
+  'voice',
+  'sort',
+  'page',
+  'word',
+  'contextCode',
+  'view',
+  'detailPage',
+  'location',
+  'column',
+] as const satisfies readonly (keyof WordTypesQueryChange)[];
+
 export function buildWordTypesQueryParams(changes: WordTypesQueryChange): Record<string, string | null> {
   const params: Record<string, string | null> = {};
-  for (const [key, value] of Object.entries(changes)) {
-    params[WORD_TYPES_QUERY_KEYS[key as keyof typeof WORD_TYPES_QUERY_KEYS]] = value === null ? null : String(value);
+  for (const key of WORD_TYPES_QUERY_ORDER) {
+    if (!Object.prototype.hasOwnProperty.call(changes, key)) {
+      continue;
+    }
+
+    const value = changes[key];
+    if (value === undefined) {
+      continue;
+    }
+
+    params[WORD_TYPES_QUERY_KEYS[key]] = value === null ? null : String(value);
   }
   return params;
 }
 
-export function clearWordTypesSelection(): Record<string, null> {
-  return Object.fromEntries(WORD_TYPES_SELECTION_QUERY_KEYS.map((key) => [key, null] as const));
+export function clearWordTypesSelection(): Record<string, string | null> {
+  return buildWordTypesQueryParams({
+    word: null,
+    contextCode: null,
+    view: null,
+    detailPage: null,
+    location: null,
+    column: null,
+  });
 }
 
 export interface WordTypesDeepLinkTarget {

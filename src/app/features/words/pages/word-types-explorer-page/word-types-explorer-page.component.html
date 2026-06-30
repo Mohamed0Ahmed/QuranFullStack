@@ -101,7 +101,10 @@
                 [page]="ayahsPageForView()"
                 [currentPage]="panelState().detailPage"
                 [loading]="panelState().status === 'loading'"
+                [showAnalysisAction]="true"
+                [analysisActionLabel]="analysisActionLabel"
                 (pageChange)="onDetailPageChange($event)"
+                (analysisRequested)="onAnalysisLocationRequested($event)"
               />
             }
 

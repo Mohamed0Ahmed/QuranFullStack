@@ -20,6 +20,7 @@ import {
   WORD_TYPES_PAGE_TITLE,
   WORD_TYPES_SORT_LABEL,
   WORD_TYPES_TABLE_LABEL,
+  WORD_TYPES_ANALYSIS_ACTION_LABEL,
 } from '../../models/word-types.labels';
 import {
   DEFAULT_WORD_TYPES_DETAIL_PAGE,
@@ -80,7 +81,11 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
 
     return (
       state.rows.items.find(
-        (row) => row.tashkeelWordId === selectedId && row.contextCode === state.query.contextCode,
+        (row) => row.tashkeelWordId === selectedId
+          && row.contextCode === state.query.contextCode
+          && row.case === state.query.case
+          && row.tense === state.query.tense
+          && row.voice === state.query.voice,
       ) ?? null
     );
   });
@@ -127,6 +132,7 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
   protected get sortLabel() { return WORD_TYPES_SORT_LABEL; }
   protected get sortOptions() { return WORD_TYPE_SORT_OPTIONS; }
   protected get placeholder() { return WORD_TYPES_NULL_PLACEHOLDER; }
+  protected get analysisActionLabel() { return WORD_TYPES_ANALYSIS_ACTION_LABEL; }
 
   ngOnInit(): void {
     this.explorerFacade.bindToRoute(this.route);
@@ -199,6 +205,15 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
   protected onDetailPageChange(page: number): void {
     this.detailFacade.setDetailPage(page);
     this.updateQueryParams(buildWordTypesQueryParams({ detailPage: page }));
+  }
+
+  protected onAnalysisLocationRequested(location: string): void {
+    this.updateQueryParams(buildWordTypesQueryParams({
+      view: 'analysis',
+      detailPage: DEFAULT_WORD_TYPES_DETAIL_PAGE,
+      location,
+      column: 'analysis',
+    }));
   }
 
   protected clearSelection(): void {

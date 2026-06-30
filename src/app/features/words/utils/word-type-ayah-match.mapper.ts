@@ -6,6 +6,7 @@ export function mapWordTypeAyahMatchToShared(match: WordTypeAyahMatchDto): AyahM
   const { ayahNumber } = parseVerseKey(match.verseKey);
   const matchedSet = new Set(match.matchedWordIds);
   const visibleWords = match.words.filter((word) => !word.isAyahMarker);
+  const firstMatchedPosition = match.matchedWordPositions[0];
 
   return {
     ayahId: 0,
@@ -13,6 +14,7 @@ export function mapWordTypeAyahMatchToShared(match: WordTypeAyahMatchDto): AyahM
     surahNameArabic: '',
     ayahNumber,
     pageNumber: 1,
+    analysisLocation: firstMatchedPosition ? `${match.verseKey}:${firstMatchedPosition}` : null,
     matchedQuranWordIds: visibleWords.reduce<number[]>((ids, word, index) => {
       if (matchedSet.has(word.quranWordId)) {
         ids.push(index);

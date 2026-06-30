@@ -9,7 +9,7 @@ import { ApiResponse } from '../../../../core/data-access/api-response.model';
 import { WordTypesApi } from '../../data-access/word-types.api';
 import { ADDITIONAL_ACTIVE_HUB_SECTIONS } from '../../models/unique-words.labels';
 import { WORD_TYPE_SORT_OPTIONS, WORD_TYPES_SORT_LABEL } from '../../models/word-types.labels';
-import { PagedResultDto, WordTypeRowDto, WordTypeTreeDto } from '../../models/word-types.models';
+import { PagedResultDto, WordTypeAyahMatchDto, WordTypeRowDto, WordTypeTreeDto } from '../../models/word-types.models';
 import { WordTypesDetailFacade } from '../../state/word-types-detail.facade';
 import { WordTypesExplorerFacade } from '../../state/word-types-explorer.facade';
 import { WordTypesExplorerPageComponent } from './word-types-explorer-page.component';
@@ -44,12 +44,39 @@ const row: WordTypeRowDto = {
   surahsCount: 1,
 };
 
+const properRow: WordTypeRowDto = {
+  ...row,
+  contextCode: 'PN',
+  typeCode: 'PN',
+  typeLabel: { ar: 'اسم علم' },
+  broadLabel: { ar: 'اسم' },
+};
+
+const ayahMatch: WordTypeAyahMatchDto = {
+  verseKey: '1:1',
+  surahNumber: 1,
+  ayahNumber: 1,
+  ayahText: 'AYAH_TEXT_PLACEHOLDER',
+  matchedWordPositions: [2],
+  matchedWordIds: [1903002],
+  words: [
+    { quranWordId: 1903001, textUthmani: 'SYNTH_WORD_1', isAyahMarker: false },
+    { quranWordId: 1903002, textUthmani: 'SYNTH_WORD_2', isAyahMarker: false },
+  ],
+};
+
 function ok<T>(data: T): ApiResponse<T> {
   return { isSuccess: true, data, message: null, errors: null };
 }
 
 describe('WordTypesExplorerPageComponent', () => {
-  let api: { getTree: ReturnType<typeof vi.fn>; getRows: ReturnType<typeof vi.fn> };
+  let api: {
+    getTree: ReturnType<typeof vi.fn>;
+    getRows: ReturnType<typeof vi.fn>;
+    getSummary: ReturnType<typeof vi.fn>;
+    getAyahMatches: ReturnType<typeof vi.fn>;
+    getSurahs: ReturnType<typeof vi.fn>;
+  };
   let router: Router;
 
   beforeEach(async () => {
@@ -57,6 +84,9 @@ describe('WordTypesExplorerPageComponent', () => {
     api = {
       getTree: vi.fn().mockReturnValue(of(ok(tree))),
       getRows: vi.fn().mockReturnValue(of(ok<PagedResultDto<WordTypeRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [row] }))),
+      getSummary: vi.fn().mockReturnValue(of(ok(properRow))),
+      getAyahMatches: vi.fn(),
+      getSurahs: vi.fn().mockReturnValue(of(ok({ surahs: [{ surahNumber: 1, nameArabic: 'الفاتحة', occurrencesCount: 1 }], missingSurahs: [] }))),
     };
 
     await TestBed.configureTestingModule({
@@ -206,6 +236,123 @@ describe('WordTypesExplorerPageComponent', () => {
     expect(detailApi.getSummary).not.toHaveBeenCalled();
     expect(detailApi.getAyahMatches).not.toHaveBeenCalled();
     expect(detailApi.getSurahs).not.toHaveBeenCalled();
+  });
+
+  it('restores exact row context and view from route state, then clears on back navigation', async () => {
+    api.getRows.mockReturnValueOnce(of(ok<PagedResultDto<WordTypeRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [properRow] })));
+    queryParamMap$.next(convertToParamMap({
+      type: 'noun',
+      page: '1',
+      word: '191001',
+      contextCode: 'PN',
+      view: 'surahs',
+      detailPage: '1',
+      column: 'analysis',
+    }));
+
+    const fixture = await createPage();
+    const detailFacade = TestBed.inject(WordTypesDetailFacade);
+    const explorerFacade = TestBed.inject(WordTypesExplorerFacade);
+
+    expect(api.getSummary).toHaveBeenCalledWith(expect.objectContaining({
+      tashkeelWordId: 191001,
+      contextCode: 'PN',
+      case: 'all',
+      tense: 'all',
+      voice: 'all',
+    }));
+    expect(detailFacade.panelState().selectedRow?.contextCode).toBe('PN');
+    expect(detailFacade.panelState().view).toBe('surahs');
+    expect(detailFacade.panelState().surahs?.surahs).toHaveLength(1);
+    expect(explorerFacade.listState().query.word).toBe(191001);
+    expect(explorerFacade.listState().query.contextCode).toBe('PN');
+
+    queryParamMap$.next(convertToParamMap({ type: 'noun', page: '1' }));
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(detailFacade.panelState().selectedRow).toBeNull();
+    expect(detailFacade.panelState().status).toBe('idle');
+    expect(explorerFacade.listState().status).toBe('success');
+  });
+
+  it('reloads summary when active feature changes for the same restored word context', async () => {
+    api.getRows.mockReturnValue(of(ok<PagedResultDto<WordTypeRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [properRow] })));
+    queryParamMap$.next(convertToParamMap({
+      type: 'noun',
+      case: 'genitive',
+      page: '1',
+      word: '191001',
+      contextCode: 'PN',
+      view: 'surahs',
+    }));
+
+    const fixture = await createPage();
+
+    expect(api.getSummary).toHaveBeenLastCalledWith(expect.objectContaining({ case: 'genitive' }));
+
+    queryParamMap$.next(convertToParamMap({
+      type: 'noun',
+      case: 'nominative',
+      page: '1',
+      word: '191001',
+      contextCode: 'PN',
+      view: 'surahs',
+    }));
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(api.getSummary).toHaveBeenCalledTimes(2);
+    expect(api.getSummary).toHaveBeenLastCalledWith(expect.objectContaining({ case: 'nominative' }));
+  });
+
+  it('routes a matched ayah occurrence to the analysis view with its exact location', async () => {
+    api.getRows.mockReturnValueOnce(of(ok<PagedResultDto<WordTypeRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [properRow] })));
+    api.getAyahMatches.mockReturnValueOnce(of(ok<PagedResultDto<WordTypeAyahMatchDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [ayahMatch] })));
+    queryParamMap$.next(convertToParamMap({
+      type: 'noun',
+      page: '1',
+      word: '191001',
+      contextCode: 'PN',
+      view: 'ayahs',
+      detailPage: '1',
+    }));
+
+    const fixture = await createPage();
+    const analysisButton = fixture.nativeElement.querySelector('[data-testid="ayah-match-analysis"]') as HTMLButtonElement;
+
+    analysisButton.click();
+
+    expect(router.navigate).toHaveBeenCalledWith([], expect.objectContaining({
+      queryParams: expect.objectContaining({
+        view: 'analysis',
+        detailPage: '1',
+        location: '1:1:2',
+        column: 'analysis',
+      }),
+      queryParamsHandling: 'merge',
+    }));
+  });
+
+  it('renders a controlled not-found panel for missing restored rows while leaving the table active', async () => {
+    api.getSummary.mockReturnValueOnce(of({ isSuccess: false, data: null, message: 'غير موجود', errors: null }));
+    queryParamMap$.next(convertToParamMap({
+      type: 'noun',
+      page: '1',
+      word: '999999',
+      contextCode: 'PN',
+      view: 'ayahs',
+      detailPage: '1',
+    }));
+
+    const fixture = await createPage();
+    const detailFacade = TestBed.inject(WordTypesDetailFacade);
+    const explorerFacade = TestBed.inject(WordTypesExplorerFacade);
+
+    expect(detailFacade.panelState().status).toBe('notFound');
+    expect(detailFacade.panelState().selectedRow?.tashkeelWordId).toBe(999999);
+    expect(explorerFacade.listState().status).toBe('success');
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('كَلِمَة');
   });
 
   it('exposes the Words hub access route for Word Types', () => {

@@ -38,7 +38,11 @@ export class WordTypesTableComponent {
 
   protected isSelected(row: WordTypeRowDto): boolean {
     const selected = this.selectedRow();
-    return selected?.tashkeelWordId === row.tashkeelWordId && selected.contextCode === row.contextCode;
+    return selected?.tashkeelWordId === row.tashkeelWordId
+      && selected.contextCode === row.contextCode
+      && selected.case === row.case
+      && selected.tense === row.tense
+      && selected.voice === row.voice;
   }
 
   protected openCount(row: WordTypeRowDto, column: WordTypeCountColumn): void {
