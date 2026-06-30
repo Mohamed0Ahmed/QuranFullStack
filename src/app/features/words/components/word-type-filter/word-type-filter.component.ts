@@ -1,7 +1,7 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 
 import { WORD_TYPES_FILTER_LABEL } from '../../models/word-types.labels';
-import { WordTypeTreeDto } from '../../models/word-types.models';
+import { WordTypeMainType, WordTypeTreeDto, WordTypeTreeNodeDto } from '../../models/word-types.models';
 
 @Component({
   selector: 'qd-word-type-filter',
@@ -12,5 +12,21 @@ import { WordTypeTreeDto } from '../../models/word-types.models';
 })
 export class WordTypeFilterComponent {
   readonly tree = input<WordTypeTreeDto | null>(null);
+  readonly selectedType = input<WordTypeMainType>('noun');
+  readonly loading = input(false);
+  readonly typeSelected = output<WordTypeMainType>();
+
   protected readonly filterLabel = WORD_TYPES_FILTER_LABEL;
+
+  protected selectType(node: WordTypeTreeNodeDto): void {
+    if (this.loading()) {
+      return;
+    }
+
+    this.typeSelected.emit(node.code);
+  }
+
+  protected isSelected(node: WordTypeTreeNodeDto): boolean {
+    return node.code === this.selectedType();
+  }
 }

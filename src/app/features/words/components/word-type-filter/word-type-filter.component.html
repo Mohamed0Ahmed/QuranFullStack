@@ -1,6 +1,22 @@
 <section class="word-type-filter" [attr.aria-label]="filterLabel">
   @if (tree(); as currentTree) {
-    <p class="word-type-filter__count">{{ currentTree.mainTypes.length }}</p>
+    <div class="word-type-filter__list" role="list">
+      @for (node of currentTree.mainTypes; track node.code) {
+        <div class="word-type-filter__item" role="listitem">
+          <button
+            type="button"
+            class="word-type-filter__button qd-interactive-surface"
+            [class.qd-is-selected]="isSelected(node)"
+            [attr.aria-current]="isSelected(node) ? 'true' : null"
+            [disabled]="loading()"
+            (click)="selectType(node)"
+          >
+            <span class="word-type-filter__label">{{ node.label.ar }}</span>
+            <span class="word-type-filter__count">{{ node.count }}</span>
+          </button>
+        </div>
+      }
+    </div>
   } @else {
     <p class="word-type-filter__placeholder">{{ filterLabel }}</p>
   }

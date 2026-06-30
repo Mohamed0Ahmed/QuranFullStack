@@ -15,6 +15,33 @@
   gap: 1rem;
 }
 
+.word-types-page__main {
+  display: grid;
+  gap: 1rem;
+  min-inline-size: 0;
+}
+
+.word-types-page__toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.word-types-page__sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--qd-text-muted);
+  font-size: 0.9rem;
+}
+
+.word-types-page__sort select {
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-md);
+  background: var(--qd-surface);
+  color: var(--qd-text);
+  padding: 0.45rem 0.65rem;
+}
+
 @media (min-width: 64rem) {
   .word-types-page__layout {
     grid-template-columns: minmax(12rem, 16rem) minmax(0, 1fr) minmax(16rem, 22rem);

@@ -5,10 +5,52 @@
 .word-type-filter {
   border: 1px solid var(--qd-border);
   border-radius: var(--qd-radius-lg);
+  background: var(--qd-surface);
   padding: 1rem;
 }
 
-.word-type-filter__count,
+.word-type-filter__list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.word-type-filter__button {
+  display: flex;
+  inline-size: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-md);
+  background: var(--qd-surface);
+  color: var(--qd-text);
+  padding: 0.7rem 0.85rem;
+  text-align: start;
+  cursor: pointer;
+}
+
+.word-type-filter__button.qd-is-selected {
+  border-color: var(--qd-accent);
+  background: var(--qd-accent-tint);
+  color: var(--qd-accent-text, var(--qd-text));
+}
+
+.word-type-filter__button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.word-type-filter__label {
+  font-weight: 600;
+}
+
+.word-type-filter__count {
+  border-radius: 999px;
+  background: var(--qd-surface-recessed, var(--qd-bg));
+  padding: 0.1rem 0.55rem;
+  font-variant-numeric: tabular-nums;
+}
+
 .word-type-filter__placeholder {
   margin: 0;
 }

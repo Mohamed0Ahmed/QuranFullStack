@@ -1,9 +1,10 @@
-import { WordTypeCase, WordTypeDetailView, WordTypeMainType, WordTypeSort, WordTypeTense, WordTypeVoice } from './word-types.models';
+import { WORD_TYPE_SORTS, WordTypeCase, WordTypeDetailView, WordTypeMainType, WordTypeSort, WordTypeTense, WordTypeVoice } from './word-types.models';
 
 export const WORD_TYPES_PAGE_TITLE = 'أنواع الكلمات';
 export const WORD_TYPES_TABLE_LABEL = 'جدول كلمات النوع';
 export const WORD_TYPES_FILTER_LABEL = 'تصفية أنواع الكلمات';
 export const WORD_TYPES_DETAILS_PANEL_LABEL = 'تفاصيل كلمة النوع';
+export const WORD_TYPES_SORT_LABEL = 'ترتيب';
 export const WORD_TYPES_LOADING_LABEL = 'جارٍ التحميل…';
 export const WORD_TYPES_EMPTY_LABEL = 'لا توجد نتائج لهذا النوع';
 export const WORD_TYPES_ERROR_LABEL = 'تعذّر تحميل أنواع الكلمات. تحقّق من الاتصال ثم أعد المحاولة.';
@@ -45,6 +46,11 @@ export const WORD_TYPE_SORT_LABELS: Record<WordTypeSort, string> = {
   'mushaf-order': 'ترتيب المصحف',
   alpha: 'أبجدي',
 };
+
+export const WORD_TYPE_SORT_OPTIONS = WORD_TYPE_SORTS.map((value) => ({
+  value,
+  label: WORD_TYPE_SORT_LABELS[value],
+}));
 
 export const WORD_TYPE_DETAIL_TAB_LABELS: Record<WordTypeDetailView, string> = {
   ayahs: 'الآيات الخاصة بالكلمة',
