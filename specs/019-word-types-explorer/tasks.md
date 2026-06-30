@@ -219,14 +219,14 @@ Non-negotiable rules:
 
 ### Exact URL restoration
 
-- [ ] T066 [US5] Finalize selected-row identity handling so `tashkeelWordId`, `contextCode`, and active `case`/`tense`/`voice` reproduce the same E2 row in E3-E5 in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/WordTypes/EfWordTypesReader.cs`
-- [ ] T067 [US5] Finalize `buildWordTypesDeepLink`, clear-selection behavior, canonical query param ordering, `view`, `detailPage`, `location`, and `column` handling in `Frontend/quran-dashboard-ui/src/app/features/words/state/word-types-url-sync.ts`
-- [ ] T068 [US5] Implement route hydration, reload restoration, browser back/forward handling, selected-row cache reuse, and controlled not-found panel state in `Frontend/quran-dashboard-ui/src/app/features/words/state/word-types-explorer.facade.ts` and `word-types-detail.facade.ts`
+- [X] T066 [US5] Finalize selected-row identity handling so `tashkeelWordId`, `contextCode`, and active `case`/`tense`/`voice` reproduce the same E2 row in E3-E5 in `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/WordTypes/EfWordTypesReader.cs`
+- [X] T067 [US5] Finalize `buildWordTypesDeepLink`, clear-selection behavior, canonical query param ordering, `view`, `detailPage`, `location`, and `column` handling in `Frontend/quran-dashboard-ui/src/app/features/words/state/word-types-url-sync.ts`
+- [X] T068 [US5] Implement route hydration, reload restoration, browser back/forward handling, selected-row cache reuse, and controlled not-found panel state in `Frontend/quran-dashboard-ui/src/app/features/words/state/word-types-explorer.facade.ts` and `word-types-detail.facade.ts`
 
 ### US5 checkpoint tests
 
-- [ ] T069 [P] [US5] Add backend identity tests proving same-tashkeel different-context rows restore separately and never widen selected-row reads to all usages in `Backend/tests/QuranDashboard.Tests/Quran/WordsWordTypes/WordTypesRowIdentityTests.cs`
-- [ ] T070 [P] [US5] Add frontend data-driven URL tests for defaults, invalid values, filter changes, clear selection, deep-link output, `word + contextCode`, active tab, detail page, analysis location, and exact restore in `Frontend/quran-dashboard-ui/src/app/features/words/state/word-types-url-sync.spec.ts` and `pages/word-types-explorer-page/word-types-explorer-page.component.spec.ts`
+- [X] T069 [P] [US5] Add backend identity tests proving same-tashkeel different-context rows restore separately and never widen selected-row reads to all usages in `Backend/tests/QuranDashboard.Tests/Quran/WordsWordTypes/WordTypesRowIdentityTests.cs`
+- [X] T070 [P] [US5] Add frontend data-driven URL tests for defaults, invalid values, filter changes, clear selection, deep-link output, `word + contextCode`, active tab, detail page, analysis location, and exact restore in `Frontend/quran-dashboard-ui/src/app/features/words/state/word-types-url-sync.spec.ts` and `pages/word-types-explorer-page/word-types-explorer-page.component.spec.ts`
 
 **Checkpoint CP-5**: All meaningful Word Types Explorer state is shareable and restorable.
 
