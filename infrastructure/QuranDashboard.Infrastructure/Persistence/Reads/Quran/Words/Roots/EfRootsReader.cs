@@ -3,7 +3,6 @@ using QuranDashboard.Application.Abstractions.Common.Paging;
 using QuranDashboard.Application.Abstractions.Quran.Words.Responses;
 using QuranDashboard.Application.Abstractions.Quran.Words.Roots;
 using QuranDashboard.Application.Abstractions.Quran.Words.Roots.Responses;
-using QuranDashboard.Infrastructure.Persistence;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Roots;
 

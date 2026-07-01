@@ -1,6 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Translations;
 
 namespace QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Translations;

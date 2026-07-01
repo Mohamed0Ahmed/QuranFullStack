@@ -1,10 +1,14 @@
 global using Microsoft.EntityFrameworkCore;
 global using Microsoft.EntityFrameworkCore.Metadata.Builders;
+global using Microsoft.Extensions.Caching.Memory;
+global using Microsoft.Extensions.DependencyInjection;
 global using Npgsql;
 global using NpgsqlTypes;
+global using QuranDashboard.Infrastructure.Persistence;
 global using System.Data;
 global using System.Globalization;
 global using System.Security.Cryptography;
 global using System.Text;
 global using System.Text.Json;
 global using System.Text.Json.Serialization;
+global using System.Text.RegularExpressions;

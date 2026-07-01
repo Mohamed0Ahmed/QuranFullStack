@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Navigation;
 
 namespace QuranDashboard.Tests.Quran.Navigation;

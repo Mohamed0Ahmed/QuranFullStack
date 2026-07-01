@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Text.RegularExpressions;
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.FullI3rab;
 
 namespace QuranDashboard.Infrastructure.Files.Quran.DataPipelines.FullI3rab;

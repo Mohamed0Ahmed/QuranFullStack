@@ -1,6 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Logging;
 using QuranDashboard.Application.Abstractions.Quran.Words.Lemmas;
 using QuranDashboard.Application.Abstractions.Quran.Words.Lemmas.Responses;
 using QuranDashboard.Application.Quran.Words.Lemmas.Queries.GetLemmaSummary;
@@ -9,7 +7,6 @@ using QuranDashboard.Infrastructure.Caching.Quran.Words.Lemmas;
 using QuranDashboard.Infrastructure.Persistence;
 using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Lemmas;
 using QuranDashboard.Tests.Quran.Words;
-using QuranDashboard.Tests.TestSupport.Logging;
 
 namespace QuranDashboard.Tests.Quran.WordsMorphologyExplorers;
 

@@ -1,9 +1,7 @@
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
-using FluentAssertions;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging;
 using QuranDashboard.Api.Common;
 using QuranDashboard.Api.Middleware;
 

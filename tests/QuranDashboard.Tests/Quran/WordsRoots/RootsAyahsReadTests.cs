@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 using QuranDashboard.Application.Abstractions.Quran.Words.Roots.Responses;
 using QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootAyahs;
 using QuranDashboard.Infrastructure.Caching.Quran.Words.Roots;

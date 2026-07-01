@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 using QuranDashboard.Application.Quran.Words.Lemmas.Queries.GetLemmaMentionedSurahs;
 using QuranDashboard.Application.Quran.Words.Lemmas.Queries.GetLemmaMissingSurahs;
 using QuranDashboard.Infrastructure.Caching.Quran.Words.Lemmas;

@@ -1,6 +1,3 @@
-using Microsoft.AspNetCore.Mvc;
-using QuranDashboard.Api.Common;
-using QuranDashboard.Api.Contracts;
 using QuranDashboard.Application.Abstractions.Common.Paging;
 using QuranDashboard.Application.Abstractions.Quran.Words.Roots.Responses;
 using QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootAyahs;

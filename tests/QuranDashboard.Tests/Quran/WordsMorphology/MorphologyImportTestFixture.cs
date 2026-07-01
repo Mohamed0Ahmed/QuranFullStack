@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.MorphologyImporting;
 using QuranDashboard.Application.Quran.DataPipelines.Words.MorphologyImporting;
 using QuranDashboard.Domain.Quran.Ayahs;

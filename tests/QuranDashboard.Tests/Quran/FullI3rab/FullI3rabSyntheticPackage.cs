@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.FullI3rab;
 
 namespace QuranDashboard.Tests.Quran.FullI3rab;

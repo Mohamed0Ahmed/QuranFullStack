@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 using QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemAyahs;
 using QuranDashboard.Infrastructure.Caching.Quran.Words.Stems;
 using QuranDashboard.Infrastructure.Persistence;

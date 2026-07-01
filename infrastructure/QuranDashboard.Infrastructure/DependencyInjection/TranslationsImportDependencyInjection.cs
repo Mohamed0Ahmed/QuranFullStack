@@ -1,4 +1,3 @@
-using Microsoft.Extensions.DependencyInjection;
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Translations;
 using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Translations;
 using QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Translations;

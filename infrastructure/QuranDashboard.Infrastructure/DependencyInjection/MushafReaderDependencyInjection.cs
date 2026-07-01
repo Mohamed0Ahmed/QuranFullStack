@@ -1,6 +1,4 @@
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Caching.Memory;
 using QuranDashboard.Application.Abstractions.Quran.MushafReader;
 using QuranDashboard.Infrastructure.Caching.Quran.MushafReader;
 using QuranDashboard.Infrastructure.Persistence.Reads.Quran.MushafReader;

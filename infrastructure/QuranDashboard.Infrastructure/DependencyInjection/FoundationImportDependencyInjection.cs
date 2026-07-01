@@ -1,4 +1,3 @@
-using Microsoft.Extensions.DependencyInjection;
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Foundation;
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.DisplayRebuilding;
 using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Foundation;

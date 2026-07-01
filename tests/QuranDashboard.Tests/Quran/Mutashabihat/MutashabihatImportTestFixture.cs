@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Mutashabihat;
 using QuranDashboard.Application.Quran.DataPipelines.Mutashabihat;
 using QuranDashboard.Domain.Quran.Ayahs;

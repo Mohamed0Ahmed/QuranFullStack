@@ -1,5 +1,3 @@
-using FluentAssertions;
-using Microsoft.Extensions.Caching.Memory;
 using QuranDashboard.Application.Abstractions.Quran.MushafReader;
 using QuranDashboard.Application.Abstractions.Quran.MushafReader.Responses;
 using QuranDashboard.Infrastructure.Caching.Quran.MushafReader;

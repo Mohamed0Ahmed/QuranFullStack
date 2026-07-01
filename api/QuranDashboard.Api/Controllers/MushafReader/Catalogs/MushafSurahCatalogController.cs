@@ -1,6 +1,3 @@
-using Microsoft.AspNetCore.Mvc;
-using QuranDashboard.Api.Common;
-using QuranDashboard.Api.Contracts;
 using QuranDashboard.Application.Abstractions.Quran.MushafReader.Responses;
 using QuranDashboard.Application.Quran.MushafReader.Queries.GetMushafSurahCatalog;
 

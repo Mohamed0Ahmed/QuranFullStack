@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Mutashabihat;
 
 namespace QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Mutashabihat;

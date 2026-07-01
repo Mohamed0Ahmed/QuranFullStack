@@ -1,5 +1,4 @@
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.SimpleI3rabGeneration;
-using QuranDashboard.Infrastructure.Persistence;
 using QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Words.SimpleI3rabGeneration;
 
 namespace QuranDashboard.Infrastructure.Reports.Quran.DataPipelines.Words.SimpleI3rabGeneration;

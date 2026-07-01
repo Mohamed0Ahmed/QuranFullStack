@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Caching.Memory;
 using QuranDashboard.Application.Abstractions.Quran.Words.Roots;
 using QuranDashboard.Infrastructure.Caching.Quran.Words.Roots;
 using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Roots;

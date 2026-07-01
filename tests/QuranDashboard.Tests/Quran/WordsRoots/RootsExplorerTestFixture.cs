@@ -1,6 +1,4 @@
-using Microsoft.Extensions.Logging;
 using QuranDashboard.Infrastructure.Persistence;
-using QuranDashboard.Tests.TestSupport.Logging;
 
 namespace QuranDashboard.Tests.Quran.WordsRoots;
 

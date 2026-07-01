@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using QuranDashboard.Infrastructure.ServiceRegistration;
 
 namespace QuranDashboard.Infrastructure;

@@ -1,5 +1,3 @@
-using FluentAssertions;
-using Microsoft.Extensions.Logging;
 using QuranDashboard.Application.Abstractions.Quran.Words;
 using QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordAyahs;
 using QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordMissingSurahs;
@@ -7,7 +5,6 @@ using QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordSummary;
 using QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordSurahs;
 using QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordsPage;
 using QuranDashboard.Infrastructure.Caching.Quran.Words;
-using QuranDashboard.Tests.TestSupport.Logging;
 
 namespace QuranDashboard.Tests.Quran.Words;
 

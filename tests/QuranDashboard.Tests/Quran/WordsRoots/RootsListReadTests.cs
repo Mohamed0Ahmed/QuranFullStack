@@ -1,6 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Logging;
 using QuranDashboard.Application.Abstractions.Common.Paging;
 using QuranDashboard.Application.Abstractions.Quran.Words.Roots;
 using QuranDashboard.Application.Abstractions.Quran.Words.Roots.Responses;
@@ -9,7 +7,6 @@ using QuranDashboard.Infrastructure.Caching.Quran.Words.Roots;
 using QuranDashboard.Tests.Quran.Words;
 using QuranDashboard.Infrastructure.Persistence;
 using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Roots;
-using QuranDashboard.Tests.TestSupport.Logging;
 
 namespace QuranDashboard.Tests.Quran.WordsRoots;
 

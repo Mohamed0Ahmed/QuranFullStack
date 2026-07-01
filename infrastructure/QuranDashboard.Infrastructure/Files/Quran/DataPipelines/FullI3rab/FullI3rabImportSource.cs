@@ -1,5 +1,4 @@
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.FullI3rab;
-using QuranDashboard.Infrastructure.Persistence;
 
 namespace QuranDashboard.Infrastructure.Files.Quran.DataPipelines.FullI3rab;
 

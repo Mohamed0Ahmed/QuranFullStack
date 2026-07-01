@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Security.Cryptography;
 using System.Text;
 using QuranDashboard.Application.Quran.DataPipelines.Words.DisplayRebuilding;
 

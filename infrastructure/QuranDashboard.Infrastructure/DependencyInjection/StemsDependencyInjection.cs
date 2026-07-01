@@ -1,5 +1,3 @@
-using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.DependencyInjection;
 using QuranDashboard.Application.Abstractions.Quran.Words.Stems;
 using QuranDashboard.Infrastructure.Caching.Quran.Words.Stems;
 using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Stems;

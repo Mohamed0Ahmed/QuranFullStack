@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Caching.Memory;
 using QuranDashboard.Application.Abstractions.Common.Paging;
 using QuranDashboard.Application.Abstractions.Quran.Words.Lemmas;
 using QuranDashboard.Application.Abstractions.Quran.Words.Lemmas.Responses;

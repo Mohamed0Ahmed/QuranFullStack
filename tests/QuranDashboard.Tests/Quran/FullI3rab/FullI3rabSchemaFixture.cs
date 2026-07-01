@@ -2,7 +2,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using QuranDashboard.Infrastructure;
 using QuranDashboard.Infrastructure.Persistence;
-using Testcontainers.PostgreSql;
 
 namespace QuranDashboard.Tests.Quran.FullI3rab;
 

@@ -1,4 +1,3 @@
-using FluentAssertions;
 using QuranDashboard.Application.Abstractions.Quran.MushafReader;
 using QuranDashboard.Application.Quran.MushafReader.Queries.GetMushafPage;
 

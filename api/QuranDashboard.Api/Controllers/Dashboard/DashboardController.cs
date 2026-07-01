@@ -1,7 +1,4 @@
 using System.Reflection;
-using Microsoft.AspNetCore.Mvc;
-using QuranDashboard.Api.Common;
-using QuranDashboard.Api.Contracts;
 
 namespace QuranDashboard.Api.Controllers.Dashboard;
 

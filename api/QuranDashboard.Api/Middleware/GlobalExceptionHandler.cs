@@ -1,6 +1,4 @@
 using Microsoft.AspNetCore.Diagnostics;
-using QuranDashboard.Api.Common;
-using QuranDashboard.Api.Contracts;
 using System.Diagnostics;
 
 namespace QuranDashboard.Api.Middleware;

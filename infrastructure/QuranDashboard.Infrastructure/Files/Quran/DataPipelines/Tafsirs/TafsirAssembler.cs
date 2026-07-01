@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Tafsirs;
 
 namespace QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Tafsirs;

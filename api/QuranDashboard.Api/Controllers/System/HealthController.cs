@@ -1,7 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using QuranDashboard.Api.Common;
-using QuranDashboard.Api.Contracts;
 
 namespace QuranDashboard.Api.Controllers.System;
 

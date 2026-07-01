@@ -1,10 +1,8 @@
-using Microsoft.Extensions.Logging;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeAyahs;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeRows;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeSummary;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeSurahs;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeTree;
-using QuranDashboard.Tests.TestSupport.Logging;
 
 namespace QuranDashboard.Tests.Quran.WordsWordTypes;
 

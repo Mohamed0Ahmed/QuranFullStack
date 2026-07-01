@@ -1,4 +1,3 @@
-using FluentAssertions;
 using QuranDashboard.Application.Quran.MushafReader.Queries.GetAyahStudy;
 
 namespace QuranDashboard.Tests.Quran.MushafReader;

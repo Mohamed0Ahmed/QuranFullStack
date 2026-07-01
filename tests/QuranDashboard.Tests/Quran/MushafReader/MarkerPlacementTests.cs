@@ -1,4 +1,3 @@
-using FluentAssertions;
 using QuranDashboard.Application.Abstractions.Quran.MushafReader;
 
 namespace QuranDashboard.Tests.Quran.MushafReader;

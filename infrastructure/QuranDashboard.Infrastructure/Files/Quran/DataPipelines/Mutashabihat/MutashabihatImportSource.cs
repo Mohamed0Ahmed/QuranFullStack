@@ -1,5 +1,4 @@
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Mutashabihat;
-using QuranDashboard.Infrastructure.Persistence;
 using QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Mutashabihat;
 
 namespace QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Mutashabihat;

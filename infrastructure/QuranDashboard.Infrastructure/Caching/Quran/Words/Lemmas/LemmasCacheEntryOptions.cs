@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Caching.Memory;
 
 namespace QuranDashboard.Infrastructure.Caching.Quran.Words.Lemmas;
 

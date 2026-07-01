@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 using QuranDashboard.Application.Quran.Words.Lemmas.Queries.GetLemmaStems;
 using QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemLemmas;
 using QuranDashboard.Infrastructure.Caching.Quran.Words.Lemmas;

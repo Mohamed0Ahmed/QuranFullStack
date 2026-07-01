@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Caching.Memory;
 using QuranDashboard.Application.Abstractions.Quran.Words.Stems;
 using QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemSummary;
 using QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemsPage;

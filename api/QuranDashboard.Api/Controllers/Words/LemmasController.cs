@@ -1,6 +1,3 @@
-using Microsoft.AspNetCore.Mvc;
-using QuranDashboard.Api.Common;
-using QuranDashboard.Api.Contracts;
 using QuranDashboard.Application.Abstractions.Common.Paging;
 using QuranDashboard.Application.Abstractions.Quran.Words.Lemmas.Responses;
 using QuranDashboard.Application.Quran.Words.Lemmas.Queries.GetLemmaAyahs;

@@ -1,5 +1,4 @@
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Tafsirs;
-using QuranDashboard.Infrastructure.Persistence;
 
 namespace QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Tafsirs;
 

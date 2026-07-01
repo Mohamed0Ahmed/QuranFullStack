@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using QuranDashboard.Application.Abstractions.Quran.Words.Lemmas;
 using QuranDashboard.Application.Abstractions.Quran.Words.Stems;
 using QuranDashboard.Application.Quran.Words.Lemmas.Queries.GetLemmaAyahs;
@@ -15,7 +14,6 @@ using QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemMissingSurahs;
 using QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemSummary;
 using QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemWords;
 using QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemsPage;
-using QuranDashboard.Tests.TestSupport.Logging;
 
 namespace QuranDashboard.Tests.Quran.WordsMorphologyExplorers;
 

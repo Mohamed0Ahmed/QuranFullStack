@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using QuranDashboard.Application.Abstractions.Quran.Words.Roots;
 using QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootAyahs;
 using QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootLemmas;
@@ -8,7 +7,6 @@ using QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootStems;
 using QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootSummary;
 using QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootWords;
 using QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootsPage;
-using QuranDashboard.Tests.TestSupport.Logging;
 
 namespace QuranDashboard.Tests.Quran.WordsRoots;
 
