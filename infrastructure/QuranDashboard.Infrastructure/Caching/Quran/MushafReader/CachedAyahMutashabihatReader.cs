@@ -19,7 +19,7 @@ public sealed class CachedAyahMutashabihatReader(IAyahMutashabihatReader inner, 
 
         if (response is not null)
         {
-            cache.Set(key, response);
+            cache.Set(key, response, MushafReaderCacheEntryOptions.Detail());
         }
 
         return response;

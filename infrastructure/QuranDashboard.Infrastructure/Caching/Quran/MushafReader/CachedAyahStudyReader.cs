@@ -32,7 +32,7 @@ public sealed class CachedAyahStudyReader(IAyahStudyReader inner, IMemoryCache c
 
         if (study is not null)
         {
-            cache.Set(key, study);
+            cache.Set(key, study, MushafReaderCacheEntryOptions.Detail());
         }
 
         return study;

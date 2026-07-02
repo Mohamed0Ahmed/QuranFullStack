@@ -107,7 +107,7 @@ public sealed class UniqueWordsValidationTests(UniqueWordsTestFixture fixture)
         var handler = scope.ServiceProvider.GetRequiredService<GetUniqueWordAyahsHandler>();
 
         var outcome = await handler.HandleAsync(
-            new GetUniqueWordAyahsQuery("tashkeel", 2003, 1, 1000),
+            new GetUniqueWordAyahsQuery("tashkeel", 2003, 1, 100),
             CancellationToken.None);
 
         outcome.Should().BeOfType<GetUniqueWordAyahsOutcome.Success>();
@@ -120,7 +120,7 @@ public sealed class UniqueWordsValidationTests(UniqueWordsTestFixture fixture)
         var handler = scope.ServiceProvider.GetRequiredService<GetUniqueWordAyahsHandler>();
 
         var outcome = await handler.HandleAsync(
-            new GetUniqueWordAyahsQuery("tashkeel", 2003, 1, 1001),
+            new GetUniqueWordAyahsQuery("tashkeel", 2003, 1, 101),
             CancellationToken.None);
 
         outcome.Should().BeOfType<GetUniqueWordAyahsOutcome.InvalidPaging>();

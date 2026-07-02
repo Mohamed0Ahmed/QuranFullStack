@@ -16,7 +16,7 @@ public sealed class CachedMushafStudySourceCatalogReader(IMushafStudySourceCatal
         }
 
         var response = await inner.GetCatalogAsync(ct);
-        cache.Set(key, response);
+        cache.Set(key, response, MushafReaderCacheEntryOptions.Catalog());
 
         return response;
     }

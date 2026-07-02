@@ -17,7 +17,7 @@ public sealed class CachedMushafPageReader(IMushafPageReader inner, IMemoryCache
         var page = await inner.GetPageAsync(pageNumber, ct);
         if (page is not null)
         {
-            cache.Set(key, page);
+            cache.Set(key, page, MushafReaderCacheEntryOptions.Detail());
         }
 
         return page;

@@ -9,7 +9,7 @@ public sealed class GetUniqueWordAyahsHandler(
 {
     public const int MinPage = 1;
     public const int MinPageSize = 1;
-    public const int MaxPageSize = 1000;
+    public const int MaxPageSize = 100;
 
     private const string FeatureName = "Words";
     private const string OperationName = "GetUniqueWordAyahs";

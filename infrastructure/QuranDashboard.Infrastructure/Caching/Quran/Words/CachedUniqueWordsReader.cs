@@ -27,7 +27,7 @@ public sealed class CachedUniqueWordsReader(IUniqueWordsReader inner, IMemoryCac
         }
 
         var result = await inner.GetUniqueWordsPageAsync(kind, search, sort, page, pageSize, cancellationToken);
-        cache.Set(key, result);
+        cache.Set(key, result, UniqueWordsCacheEntryOptions.List());
 
         return result;
     }
@@ -47,7 +47,7 @@ public sealed class CachedUniqueWordsReader(IUniqueWordsReader inner, IMemoryCac
         var summary = await inner.GetUniqueWordSummaryAsync(kind, id, cancellationToken);
         if (summary is not null)
         {
-            cache.Set(key, summary);
+            cache.Set(key, summary, UniqueWordsCacheEntryOptions.Detail());
         }
 
         return summary;
@@ -68,7 +68,7 @@ public sealed class CachedUniqueWordsReader(IUniqueWordsReader inner, IMemoryCac
         var surahs = await inner.GetMentionedSurahsAsync(kind, id, cancellationToken);
         if (surahs is not null)
         {
-            cache.Set(key, surahs);
+            cache.Set(key, surahs, UniqueWordsCacheEntryOptions.Detail());
         }
 
         return surahs;
@@ -89,7 +89,7 @@ public sealed class CachedUniqueWordsReader(IUniqueWordsReader inner, IMemoryCac
         var missing = await inner.GetMissingSurahsAsync(kind, id, cancellationToken);
         if (missing is not null)
         {
-            cache.Set(key, missing);
+            cache.Set(key, missing, UniqueWordsCacheEntryOptions.Detail());
         }
 
         return missing;
@@ -112,7 +112,7 @@ public sealed class CachedUniqueWordsReader(IUniqueWordsReader inner, IMemoryCac
         var ayahs = await inner.GetAyahMatchesAsync(kind, id, page, pageSize, cancellationToken);
         if (ayahs is not null)
         {
-            cache.Set(key, ayahs);
+            cache.Set(key, ayahs, UniqueWordsCacheEntryOptions.Detail());
         }
 
         return ayahs;

@@ -387,12 +387,9 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
         if (!string.IsNullOrEmpty(normalizedSearch))
         {
             var pattern = $"%{EscapeLikePattern(normalizedSearch)}%";
-            sql += " WHERE translate(lower(text_uthmani_simple), @foldFrom, @foldTo) ILIKE @pattern"
-                + " OR translate(lower(text_imlaei_simple), @foldFrom, @foldTo) ILIKE @pattern";
+            sql += " WHERE search_text_normalized ILIKE @pattern";
             return _db.Database.SqlQueryRaw<UniqueWordListRow>(
                 sql,
-                new NpgsqlParameter("foldFrom", FoldFrom),
-                new NpgsqlParameter("foldTo", FoldTo),
                 new NpgsqlParameter("pattern", pattern));
         }
 
@@ -416,13 +413,9 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
         if (!string.IsNullOrEmpty(normalizedSearch))
         {
             var pattern = $"%{EscapeLikePattern(normalizedSearch)}%";
-            sql += " WHERE translate(lower(text_uthmani_simple), @foldFrom, @foldTo) ILIKE @pattern"
-                + " OR translate(lower(text_imlaei_simple), @foldFrom, @foldTo) ILIKE @pattern"
-                + " OR translate(lower(word_key_imlaei_simple), @foldFrom, @foldTo) ILIKE @pattern";
+            sql += " WHERE search_text_normalized ILIKE @pattern";
             return _db.Database.SqlQueryRaw<UniqueWordListRow>(
                 sql,
-                new NpgsqlParameter("foldFrom", FoldFrom),
-                new NpgsqlParameter("foldTo", FoldTo),
                 new NpgsqlParameter("pattern", pattern));
         }
 

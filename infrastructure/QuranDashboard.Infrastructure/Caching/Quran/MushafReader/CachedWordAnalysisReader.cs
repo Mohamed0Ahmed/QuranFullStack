@@ -18,7 +18,7 @@ public sealed class CachedWordAnalysisReader(IWordAnalysisReader inner, IMemoryC
 
         if (outcome is WordAnalysisOutcome.Found)
         {
-            cache.Set(key, outcome);
+            cache.Set(key, outcome, MushafReaderCacheEntryOptions.Detail());
         }
 
         return outcome;

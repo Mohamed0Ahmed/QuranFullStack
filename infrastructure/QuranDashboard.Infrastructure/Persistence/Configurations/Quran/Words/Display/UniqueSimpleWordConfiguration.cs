@@ -30,6 +30,10 @@ public sealed class UniqueSimpleWordConfiguration : IEntityTypeConfiguration<Uni
             .IsRequired()
             .HasColumnName("text_imlaei_simple");
 
+        builder.Property<string>("SearchTextNormalized")
+            .HasColumnName("search_text_normalized")
+            .HasComputedColumnSql("translate(lower(text_uthmani_simple || ' ' || text_imlaei_simple || ' ' || word_key_imlaei_simple), 'أإآٱؤئةىي', 'ااااواهيي')", stored: true);
+
         builder.Property(x => x.QpcGlyph)
             .IsRequired()
             .HasColumnName("qpc_glyph");
@@ -83,6 +87,11 @@ public sealed class UniqueSimpleWordConfiguration : IEntityTypeConfiguration<Uni
         builder.HasIndex(x => x.WordKeyImlaeiSimple).IsUnique();
 
         builder.HasIndex(x => x.FirstWordOrderInMushaf).IsUnique();
+
+        builder.HasIndex("SearchTextNormalized")
+            .HasDatabaseName("IX_quran_words_unique_simple_search_text_normalized")
+            .HasMethod("gin")
+            .HasOperators("gin_trgm_ops");
 
         builder.HasOne<QuranWord>()
             .WithMany()

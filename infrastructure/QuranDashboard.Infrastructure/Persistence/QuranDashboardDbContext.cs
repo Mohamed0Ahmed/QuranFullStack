@@ -49,6 +49,7 @@ public sealed class QuranDashboardDbContext(DbContextOptions<QuranDashboardDbCon
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.HasPostgresExtension("pg_trgm");
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(QuranDashboardDbContext).Assembly);
     }
 }
