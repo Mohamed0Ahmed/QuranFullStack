@@ -32,14 +32,11 @@
     border-radius: var(--qd-radius-md);
     background: var(--qd-section-bg);
     color: var(--qd-text);
-    font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
     font-size: 0.9375rem;
     font-weight: 600;
     line-height: 1.5;
     text-align: start;
     cursor: pointer;
-    transition: background-color var(--qd-t-fast), border-color var(--qd-t-fast);
-
     &:hover {
       background: var(--qd-surface-recessed);
     }
@@ -118,7 +115,6 @@
     border-radius: var(--qd-radius-sm);
     background: transparent;
     color: var(--qd-text-muted);
-    font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
     font-size: 0.8125rem;
     text-align: start;
     cursor: pointer;
@@ -164,13 +160,10 @@
     border-radius: var(--qd-radius-sm);
     background: transparent;
     color: var(--qd-text);
-    font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
     font-size: 0.875rem;
     line-height: 1.5;
     text-align: start;
     cursor: pointer;
-    transition: background-color var(--qd-t-fast), border-color var(--qd-t-fast);
-
     &:hover {
       background: var(--qd-section-bg);
     }

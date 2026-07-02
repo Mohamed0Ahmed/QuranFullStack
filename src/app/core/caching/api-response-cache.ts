@@ -30,8 +30,8 @@ export class ApiResponseCache {
           this.store(key, response);
         }
       }),
-      shareReplay({ bufferSize: 1, refCount: false }),
       finalize(() => this.inFlight.delete(key)),
+      shareReplay({ bufferSize: 1, refCount: true }),
     );
 
     this.inFlight.set(key, request$ as Observable<ApiResponse<unknown>>);

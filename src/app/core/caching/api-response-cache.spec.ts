@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { firstValueFrom, of, Subject } from 'rxjs';
+import { firstValueFrom, Observable, of, Subject } from 'rxjs';
 
 import { ApiResponse } from '../data-access/api-response.model';
 import { ApiResponseCache } from './api-response-cache';
@@ -33,6 +33,42 @@ describe('ApiResponseCache', () => {
 
     expect(loader).toHaveBeenCalledTimes(1);
     expect(values).toEqual([7, 7]);
+  });
+
+  it('keeps an in-flight read shared when one subscriber unsubscribes', () => {
+    const cache = new ApiResponseCache();
+    const response$ = new Subject<ApiResponse<number>>();
+    const loader = vi.fn(() => response$.asObservable());
+    const values: number[] = [];
+
+    const first = cache
+      .getOrLoad('key', loader)
+      .subscribe((response) => values.push(response.data ?? 0));
+    cache
+      .getOrLoad('key', loader)
+      .subscribe((response) => values.push(response.data ?? 0));
+    first.unsubscribe();
+    cache
+      .getOrLoad('key', loader)
+      .subscribe((response) => values.push(response.data ?? 0));
+    response$.next(success(9));
+    response$.complete();
+
+    expect(loader).toHaveBeenCalledTimes(1);
+    expect(values).toEqual([9, 9]);
+  });
+
+  it('cancels in-flight reads when all subscribers unsubscribe before completion', () => {
+    const cache = new ApiResponseCache();
+    const unsubscribeSpy = vi.fn();
+    const loader = vi.fn(() => new Observable<ApiResponse<number>>(() => unsubscribeSpy));
+
+    const subscription = cache.getOrLoad('key', loader).subscribe();
+    subscription.unsubscribe();
+    cache.getOrLoad('key', loader).subscribe().unsubscribe();
+
+    expect(loader).toHaveBeenCalledTimes(2);
+    expect(unsubscribeSpy).toHaveBeenCalledTimes(2);
   });
 
   it('evicts the least recently used entry when the cache grows past 48 entries', async () => {

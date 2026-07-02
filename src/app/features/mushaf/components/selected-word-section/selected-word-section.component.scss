@@ -215,39 +215,3 @@
     min-height: 1.3rem;
   }
 }
-
-@media (max-width: 1023px) {
-  :host.qd-selected-word-section--embedded {
-    height: auto;
-    min-height: auto;
-  }
-
-  .selected-word-section {
-    :host.qd-selected-word-section--embedded & {
-      min-height: auto;
-    }
-
-    &__content {
-      :host.qd-selected-word-section--embedded .selected-word-section & {
-        flex: none;
-        min-height: auto;
-        overflow: visible;
-      }
-    }
-  }
-}
-
-@media (max-width: 767px) {
-  .selected-word-section {
-    &__morphology-skeleton {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      overflow-x: visible;
-    }
-
-    &__morphology-skeleton-cell {
-      flex: unset;
-      min-width: 0;
-    }
-  }
-}

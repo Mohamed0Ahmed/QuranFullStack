@@ -106,23 +106,6 @@
     text-overflow: ellipsis;
   }
 
-  &__tab-count {
-    flex-shrink: 0;
-    min-width: 1.25rem;
-    padding: 0 calc(var(--qd-space-1) * 0.75);
-    border-radius: var(--qd-radius-pill, 999px);
-    background: var(--qd-surface-recessed);
-    color: var(--qd-text-muted);
-    font-size: 0.75rem;
-    font-weight: 600;
-    line-height: 1.4;
-
-    .selected-ayah-section__tab--active & {
-      background: var(--qd-surface);
-      color: var(--qd-accent-text);
-    }
-  }
-
   &__ayah {
     margin: 0;
     padding: var(--qd-space-3) var(--qd-space-4);
@@ -146,10 +129,6 @@
         var(--qd-shadow-sm),
         inset 0 0 0 1px color-mix(in oklch, var(--qd-accent) 12%, transparent);
       cursor: pointer;
-      transition:
-        color 120ms ease,
-        border-color 120ms ease;
-
       &:hover {
         color: var(--qd-accent);
         border-color: color-mix(in oklch, var(--qd-accent) 75%, var(--qd-border));
@@ -212,54 +191,5 @@
         min-height: auto;
       }
     }
-  }
-}
-
-@media (max-width: 1023px) {
-  :host.qd-selected-ayah-section--embedded {
-    --qd-ayah-study-min-height: min(50vh, 30rem);
-    --qd-ayah-content-min-height: min(42vh, 22rem);
-    --qd-ayah-content-min-height-loading: min(48vh, 24rem);
-    flex: none;
-    min-height: var(--qd-ayah-study-min-height);
-    height: auto;
-  }
-
-  .selected-ayah-section {
-    :host.qd-selected-ayah-section--embedded & {
-      flex: none;
-      min-height: var(--qd-ayah-study-min-height);
-    }
-
-    &__tabs {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      overflow-x: visible;
-    }
-
-    &__content {
-      :host.qd-selected-ayah-section--embedded .selected-ayah-section & {
-        flex: none;
-        min-height: var(--qd-ayah-content-min-height);
-        margin-block-end: var(--qd-space-2);
-        overflow: visible;
-
-        &--loading {
-          min-height: var(--qd-ayah-content-min-height-loading);
-        }
-
-        &--flow {
-          overflow: visible;
-          min-height: var(--qd-ayah-content-min-height);
-        }
-      }
-    }
-  }
-}
-
-@media (max-width: 767px) {
-  :host.qd-selected-ayah-section--embedded {
-    --qd-ayah-study-min-height: min(55vh, 26rem);
-    --qd-ayah-content-min-height: min(48vh, 20rem);
-    --qd-ayah-content-min-height-loading: min(52vh, 22rem);
   }
 }

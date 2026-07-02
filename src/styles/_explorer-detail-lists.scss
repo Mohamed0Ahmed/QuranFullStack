@@ -9,6 +9,343 @@
   flex-shrink: 0;
 }
 
+qd-root-words-list,
+qd-root-lemmas-list,
+qd-root-stems-list,
+qd-lemma-words-list,
+qd-lemma-stems-list,
+qd-stem-words-list,
+qd-stem-lemmas-list,
+qd-missing-surahs-list,
+qd-surah-occurrences-list,
+qd-type-distribution-list {
+  display: block;
+}
+
+.root-words-list,
+.lemma-words-list,
+.stem-words-list,
+.root-lemmas-list,
+.root-stems-list,
+.lemma-stems-list,
+.stem-lemmas-list,
+.type-distribution-list,
+.root-lemmas-list-shell,
+.root-stems-list-shell,
+.lemma-stems-list-shell,
+.stem-lemmas-list-shell,
+.missing-surahs-list-shell,
+.surah-occurrences-list-shell,
+.type-distribution-list-shell,
+.root-words-list__viewport,
+.lemma-words-list__viewport,
+.stem-words-list__viewport {
+  display: flex;
+  flex-direction: column;
+}
+
+.root-words-list,
+.lemma-words-list,
+.stem-words-list {
+  gap: var(--qd-space-3);
+}
+
+.root-lemmas-list,
+.root-stems-list,
+.lemma-stems-list,
+.stem-lemmas-list,
+.type-distribution-list,
+.lemma-stems-list-shell,
+.stem-lemmas-list-shell,
+.type-distribution-list-shell,
+.root-words-list__viewport,
+.lemma-words-list__viewport,
+.stem-words-list__viewport {
+  gap: var(--qd-space-1);
+}
+
+.type-distribution-list-shell {
+  margin-block-end: var(--qd-space-3);
+}
+
+.lemma-words-list__tabs,
+.stem-words-list__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--qd-space-2);
+}
+
+.lemma-words-list__tab,
+.stem-words-list__tab {
+  font-size: 0.875rem;
+}
+
+.root-words-list__header,
+.root-words-list__row,
+.root-lemmas-list__header,
+.root-lemmas-list__row,
+.root-stems-list__header,
+.root-stems-list__row,
+.lemma-words-list__header,
+.lemma-words-list__row,
+.stem-words-list__header,
+.stem-words-list__row {
+  display: grid;
+  grid-template-columns: 2rem 1fr auto;
+  align-items: center;
+  gap: var(--qd-space-2);
+}
+
+.root-words-list__header,
+.root-lemmas-list__header,
+.root-stems-list__header,
+.lemma-words-list__header,
+.stem-words-list__header {
+  @include explorer-detail-list-header;
+  grid-template-columns: 2.5rem 1fr auto;
+  gap: var(--qd-space-3);
+}
+
+.lemma-stems-list__header,
+.lemma-stems-list__row {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--qd-space-2);
+}
+
+.lemma-stems-list__header {
+  @include explorer-detail-list-header;
+  grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+  gap: var(--qd-space-3);
+}
+
+.stem-lemmas-list__header,
+.stem-lemmas-list__row {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) minmax(0, 8rem) auto;
+  align-items: center;
+  gap: var(--qd-space-2);
+}
+
+.stem-lemmas-list__header {
+  @include explorer-detail-list-header;
+  grid-template-columns: 2.5rem minmax(0, 1fr) minmax(0, 8rem) auto;
+  gap: var(--qd-space-3);
+}
+
+.missing-surahs-list__header,
+.surah-occurrences-list__header,
+.missing-surahs-list__row,
+.surah-occurrences-list__row {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr);
+  align-items: center;
+  gap: var(--qd-space-3);
+}
+
+.surah-occurrences-list__header,
+.surah-occurrences-list__row {
+  grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+}
+
+.missing-surahs-list__header,
+.surah-occurrences-list__header {
+  @include explorer-detail-list-header;
+}
+
+.type-distribution-list__header,
+.type-distribution-list__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--qd-space-2);
+}
+
+.type-distribution-list__header {
+  @include explorer-detail-list-header;
+  gap: var(--qd-space-3);
+}
+
+.root-words-list__row,
+.root-lemmas-list__row,
+.root-stems-list__row,
+.lemma-words-list__row,
+.lemma-stems-list__row,
+.stem-words-list__row,
+.stem-lemmas-list__row,
+.type-distribution-list__row {
+  padding: var(--qd-space-2);
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-sm);
+  background: var(--qd-surface);
+  color: inherit;
+  text-decoration: none;
+}
+
+.missing-surahs-list,
+.surah-occurrences-list {
+  display: block;
+  block-size: min(60vh, 28rem);
+  overflow: auto;
+  scrollbar-gutter: stable;
+}
+
+.stem-words-list__viewport {
+  block-size: min(58vh, 30rem);
+  overflow: auto;
+  scrollbar-gutter: stable;
+}
+
+.missing-surahs-list__row,
+.surah-occurrences-list__row {
+  min-block-size: 44px;
+  padding: var(--qd-space-2) var(--qd-space-3);
+  border-block-end: 1px solid var(--qd-border);
+}
+
+.root-words-list__row-number,
+.root-lemmas-list__row-number,
+.root-stems-list__row-number,
+.lemma-words-list__row-number,
+.lemma-stems-list__row-number,
+.stem-words-list__row-number,
+.stem-lemmas-list__row-number,
+.missing-surahs-list__header-row-number,
+.missing-surahs-list__row-number,
+.surah-occurrences-list__header-row-number,
+.surah-occurrences-list__row-number {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.root-words-list__row-number,
+.root-lemmas-list__row-number,
+.root-stems-list__row-number,
+.lemma-words-list__row-number,
+.lemma-stems-list__row-number,
+.stem-words-list__row-number,
+.stem-lemmas-list__row-number {
+  color: var(--qd-text-muted);
+}
+
+.root-words-list__text,
+.root-lemmas-list__text,
+.root-stems-list__text,
+.lemma-words-list__text,
+.lemma-stems-list__text,
+.stem-words-list__text,
+.stem-lemmas-list__text,
+.type-distribution-list__type {
+  font-family: var(--qd-font-quran, inherit);
+}
+
+.lemma-stems-list__text,
+.stem-lemmas-list__text,
+.type-distribution-list__type,
+.missing-surahs-list__name,
+.surah-occurrences-list__name,
+.surah-occurrences-list__header-name {
+  min-width: 0;
+}
+
+.lemma-stems-list__count,
+.stem-lemmas-list__count,
+.type-distribution-list__count {
+  justify-self: end;
+}
+
+.stem-lemmas-list__meta {
+  color: var(--qd-text-muted);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.stem-lemmas-list__meta--missing {
+  letter-spacing: 0.1em;
+}
+
+.surah-occurrences-list__header-count {
+  flex-shrink: 0;
+}
+
+.root-words-list__row--loading,
+.root-lemmas-list__row--loading,
+.root-stems-list__row--loading,
+.lemma-words-list__row--loading,
+.lemma-stems-list__row--loading,
+.stem-words-list__row--loading,
+.stem-lemmas-list__row--loading,
+.missing-surahs-list__row--loading,
+.surah-occurrences-list__row--loading,
+.type-distribution-list__row--loading {
+  pointer-events: none;
+}
+
+.root-words-list__loading-number,
+.root-lemmas-list__loading-number,
+.root-stems-list__loading-number,
+.lemma-words-list__loading-number,
+.lemma-stems-list__loading-number,
+.stem-words-list__loading-number,
+.stem-lemmas-list__loading-number,
+.missing-surahs-list__loading-number,
+.surah-occurrences-list__loading-number {
+  inline-size: 1.25rem;
+  block-size: 0.875rem;
+  margin-inline: auto;
+}
+
+.root-words-list__loading-word,
+.lemma-words-list__loading-word,
+.stem-words-list__loading-word {
+  inline-size: 60%;
+  block-size: 1rem;
+}
+
+.root-lemmas-list__loading-text,
+.root-stems-list__loading-text,
+.lemma-stems-list__loading-text,
+.stem-lemmas-list__loading-text,
+.type-distribution-list__loading-type {
+  inline-size: 55%;
+  block-size: 1rem;
+}
+
+.missing-surahs-list__loading-name,
+.surah-occurrences-list__loading-name {
+  inline-size: 50%;
+  block-size: 1rem;
+}
+
+.root-words-list__loading-badge,
+.root-lemmas-list__loading-badge,
+.root-stems-list__loading-badge,
+.lemma-words-list__loading-badge,
+.lemma-stems-list__loading-badge,
+.stem-words-list__loading-badge,
+.stem-lemmas-list__loading-badge,
+.surah-occurrences-list__loading-badge {
+  inline-size: 2rem;
+  block-size: 1.25rem;
+}
+
+.stem-lemmas-list__loading-meta {
+  inline-size: 38%;
+  block-size: 0.875rem;
+}
+
+.type-distribution-list__loading-count {
+  inline-size: 2.25rem;
+  block-size: 1.25rem;
+}
+
+.lemma-stems-list__empty,
+.stem-lemmas-list__empty,
+.type-distribution-list__empty {
+  padding: var(--qd-space-2);
+}
+
 .explorer-detail-panel__body,
 .explorer-detail-modal {
   qd-ayah-matches-list,

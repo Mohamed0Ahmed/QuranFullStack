@@ -95,6 +95,66 @@
 }
 
 @media (max-width: bp.$qd-bp-tablet-max) {
+  .lemmas-table__header,
+  .lemmas-table__header-gutter,
+  .lemmas-table__root-cell--desktop {
+    display: none;
+  }
+
+  .lemmas-table__body {
+    block-size: min(70vh, 40rem);
+  }
+
+  .lemmas-table__row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    gap: var(--qd-space-1) var(--qd-space-2);
+    align-items: center;
+    padding: var(--qd-space-2);
+    block-size: auto;
+    min-block-size: var(--lemmas-table-row-height, 6.5rem);
+  }
+
+  .lemmas-table__cell--row-number {
+    grid-column: 1;
+    grid-row: 1;
+    padding: 0;
+    align-self: center;
+    justify-self: start;
+  }
+
+  .lemmas-table__word-cell {
+    grid-column: 2;
+    grid-row: 1;
+    padding: 0;
+    align-items: center;
+    min-width: 0;
+  }
+
+  .lemmas-table__mobile-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: var(--qd-space-2);
+    width: 100%;
+  }
+
+  .lemmas-table__chip-cell {
+    display: none;
+  }
+
+  .lemmas-table__word {
+    padding: 0;
+    width: 100%;
+    text-align: center;
+  }
+
+  .lemmas-table__display {
+    text-align: center;
+  }
+
   .qd-explorer-table-mobile-stats--grid-12 {
     display: grid;
     grid-template-columns: repeat(12, 1fr);
@@ -118,6 +178,57 @@
 }
 
 @media (max-width: bp.$qd-bp-phone-max) {
+  .unique-words-table__header,
+  .unique-words-table__header-gutter {
+    display: none;
+  }
+
+  .unique-words-table__body {
+    block-size: min(70vh, 40rem);
+  }
+
+  .unique-words-table__row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    gap: var(--qd-space-1) var(--qd-space-2);
+    align-items: center;
+    padding: var(--qd-space-2);
+    block-size: auto;
+    min-block-size: var(--unique-words-table-row-height, 4.25rem);
+  }
+
+  .unique-words-table__cell--row-number {
+    grid-column: 1;
+    grid-row: 1;
+    padding: 0;
+    align-self: center;
+    justify-self: start;
+  }
+
+  .unique-words-table__word-cell {
+    grid-column: 2;
+    grid-row: 1;
+    padding: 0;
+    justify-content: center;
+    min-width: 0;
+  }
+
+  .unique-words-table__chip-cell,
+  .unique-words-table__text-cell {
+    display: none;
+  }
+
+  .unique-words-table__word {
+    padding: 0;
+    width: 100%;
+    text-align: center;
+  }
+
+  .unique-words-table__display {
+    text-align: center;
+  }
+
   .qd-explorer-table-mobile-stats--flex {
     display: flex;
     flex-direction: row;
