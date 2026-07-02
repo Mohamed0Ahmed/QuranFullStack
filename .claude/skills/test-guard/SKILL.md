@@ -113,6 +113,7 @@ Not all violations are equal. Use judgment:
 
 - [references/dotnet.md](references/dotnet.md) — .NET/C# patterns: xUnit `[Theory]`, `WebApplicationFactory`, EF Core + PostgreSQL via Testcontainers, `ApiResponse` envelope, real entities/DTOs, Quranic data safety
 - [references/jest.md](references/jest.md) — Jest/Vitest/Angular TS patterns: `test.each`, module mocks, msw, snapshot discipline, Testing Library queries
+- [references/frontend-test-harness-constraints.md](references/frontend-test-harness-constraints.md) — this project's Angular/Vitest/jsdom harness: focused-run command + fork cap, the `--run` caveat, jsdom's missing browser APIs (matchMedia/ResizeObserver/layout/CDK virtual scroll), and safe patterns to preserve (words-labels TDZ getters)
 - [references/llm-app-testing.md](references/llm-app-testing.md) — three extra rules for LLM applications: prompt contracts, observability wiring, agent-flow transitions
 
 ## What this skill does NOT do

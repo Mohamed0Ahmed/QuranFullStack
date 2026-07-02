@@ -85,8 +85,10 @@ configuration, but do not drift into auditing untouched subsystems.
 ## Quranic data safety overrides speed (hard constraint)
 
 This product curates Quran source data. **Correctness, atomicity, and provenance always
-win over speed.** A performance recommendation that weakens any of the following is itself
-the defect — never propose it, and flag it if the diff already does it:
+win over speed.** The general Quran data-safety rules apply in full — see the shared
+reference: `.claude/skills/engineering-review/references/quran-data-safety.md`. In a
+backend performance context specifically, a recommendation that weakens any of the
+following is itself the defect — never propose it, and flag it if the diff already does it:
 
 - Quran text integrity (ayah / word / root / morphology / tafsir / translation text).
 - Source hashes, manifest checks, and **source-unchanged** checks.

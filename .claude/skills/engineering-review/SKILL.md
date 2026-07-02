@@ -80,6 +80,9 @@ its result. Consult:
 - `.claude/skills/test-guard/references/dotnet.md` — for backend tests (xUnit,
   `WebApplicationFactory`, EF Core + PostgreSQL via Testcontainers, `ApiResponse`).
 - `.claude/skills/test-guard/references/jest.md` — for frontend Angular/TypeScript tests.
+- `.claude/skills/test-guard/references/frontend-test-harness-constraints.md` — how
+  Angular specs run in this project (Vitest fork cap, jsdom missing browser APIs, safe
+  patterns); consult when a frontend test finding depends on how the harness behaves.
 
 Recognize test files by pattern: `*Tests.cs`, `*Test.cs`, `*.spec.ts`, `*.test.ts`, and
 files under `tests/` or `__tests__/`. Test-code quality findings still use the same
@@ -313,15 +316,14 @@ store**. Do not use "God service".
 
 ## Quranic Data Safety
 
-Source-sensitive data is the highest-priority safety area. Review whether the
-change:
+Source-sensitive data is the highest-priority safety area. The full rules live in the
+shared reference — apply them in full:
 
-- invents Quranic text, ayah text, word text, roots, tafsir, translations, i3rab,
-  or gates.
-- silently corrects Quranic data in frontend or backend without traceability.
-- hides missing data instead of showing controlled states.
-- removes source/traceability metadata for imported/generated data.
-- changes Quranic display in a way that may affect meaning or readability.
+- `.claude/skills/engineering-review/references/quran-data-safety.md`
+
+In short, review whether the change invents Quran data, silently corrects it, hides
+missing/unknown data, drops traceability/provenance/source checks, harms Quran
+readability or RTL semantics, or guesses instead of reporting uncertainty.
 
 Any such issue is high priority (treat as BLOCKING or MAJOR depending on impact).
 
