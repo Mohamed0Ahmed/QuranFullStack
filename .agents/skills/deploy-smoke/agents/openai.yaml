@@ -1,0 +1,4 @@
+interface:
+  display_name: "Deploy Smoke"
+  short_description: "Local build/migration/runtime smoke check"
+  default_prompt: "Use $deploy-smoke to build, verify the local DB target, and smoke-test the app before review or commit."

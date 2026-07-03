@@ -122,9 +122,10 @@ derives from it instead of hardcoding a parallel copy that can drift.
 
 ## Quranic Data Safety Still Applies
 
-Spec Kit review does **not** relax the Quranic data safety checks in `SKILL.md`. Specs
-explicitly forbid fabricated stats, ayah text, or counts (e.g. overview cards with no
-invented numbers); treat any fabricated or silently "corrected" source-sensitive data
+Spec Kit review does **not** relax the Quranic data safety checks in `SKILL.md` and the
+shared reference (`.claude/skills/engineering-review/references/quran-data-safety.md`).
+Specs explicitly forbid fabricated stats, ayah text, or counts (e.g. overview cards with
+no invented numbers); treat any fabricated or silently "corrected" source-sensitive data
 as BLOCKING/MAJOR exactly as the main skill requires.
 
 ## How This Feeds the Output

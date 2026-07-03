@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dependency Audit"
+  short_description: "Audit NuGet/npm deps for vulnerabilities"
+  default_prompt: "Use $dependency-audit to scan backend NuGet and frontend npm dependencies and propose the smallest safe fixes."

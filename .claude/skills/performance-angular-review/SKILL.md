@@ -102,9 +102,11 @@ and the template it renders — but do not drift into auditing untouched feature
 ## Quran rendering safety overrides micro-optimization (hard constraint)
 
 This is an Arabic-first (RTL) product that renders Quran text. **Readability, accuracy, and
-correct semantics always win over a render or visual micro-optimization.** A performance
-recommendation that does any of the following is itself the defect — never propose it, and
-flag it if the diff already does it:
+correct semantics always win over a render or visual micro-optimization.** The general Quran
+data-safety rules apply in full — see the shared reference:
+`.claude/skills/engineering-review/references/quran-data-safety.md`. In a frontend
+performance context specifically, a recommendation that does any of the following is itself
+the defect — never propose it, and flag it if the diff already does it:
 
 - Animates or transitions Quran glyphs/text, or applies motion to Quran content.
 - Reduces Quran text readability, contrast, or sizing.
@@ -129,6 +131,10 @@ there. "Slower but correct and readable" is the right answer for Quran content.
   `VITEST_MIN_FORKS=1 VITEST_MAX_FORKS=2`. That worker cap is **deliberate** (the suite OOMs
   / freezes the machine without it). Do not recommend raising it to "speed up" tests, and
   treat the Angular-builder Vitest setup (no standalone `vitest.config.ts`) as the baseline.
+- `.claude/skills/test-guard/references/frontend-test-harness-constraints.md` — how Angular
+  specs run here (focused-run command, the fork cap, jsdom's missing browser APIs, and the
+  test-env-vs-real-browser distinction). Consult it before treating a jsdom limitation as a
+  runtime/performance problem, or a harness timeout as a test failure.
 
 If a referenced document is missing, say so rather than inventing its contents.
 
