@@ -1,29 +1,20 @@
-# Backend Planning & Design Docs
+# docs/ — workspace planning & pre-Spec Kit documents
 
-This folder holds **planning and design documents** for the Quran Dashboard / المنهج القرآني
-backend: foundation plans, design documents, and implementation plans (the *intended HOW*,
-authored before or alongside Spec Kit specs). Post-work **audits/verification reports** live
-separately under [`Backend/report/`](../Backend/report/README.md).
+This folder is for **forward-looking workspace planning**: pre-Spec Kit reports, capability
+studies, and decision addendums authored before or alongside a feature's specs. It is **not**
+the current-truth layer.
 
-Documents are grouped into one subfolder per feature/scope.
+Where things live now:
 
-## Layout
+- **Current truth of a code area** → the local `README.md` nearest that code
+  (e.g. `Backend/README.md`, `Backend/infrastructure/.../MorphologyImporting/README.md`,
+  `Frontend/quran-dashboard-ui/src/app/features/words/README.md`). Read the nearest one before
+  changing an area.
+- **Feature plans / contracts** → `specs/<feature>/` (unchanged; specs are authoritative
+  planning artifacts).
+- **How to work / how to write code** → `AGENTS.md` / `CLAUDE.md` / `.architecture/*`.
+- **Evidence / reference** (audits, imports, diagnostics, DB inventory) → `Backend/report/`.
 
-| Folder | Scope |
-| --- | --- |
-| `feature-001-layout-foundation/` | Phase 0 layout & foundation plan (before the first real Quran data feature). |
-| `feature-002-quran-foundation/` | Quran Mushaf Words & Layout Data Foundation import plan (`002-mushaf-words-foundation`). |
-| `feature-003-word-display-tables/` | Quran Words Display Tables Foundation plan (`003-words-display-tables`). |
-| `feature-003-word-identity-links/` | Word identity links restructure — implementation plan + dev reset/reseed quickstart (unique-simple by clean imlaei key + `quran_words` link columns). |
-
-## Contents
-
-- `feature-001-layout-foundation/`
-  - `manhaj-qurani-layout-foundation-plan.md`
-- `feature-002-quran-foundation/`
-  - `manhaj-qurani-mushaf-words-layout-data-foundation-plan.md`
-- `feature-003-word-display-tables/`
-  - `manhaj-qurani-quran-words-display-tables-foundation-plan.md`
-- `feature-003-word-identity-links/`
-  - `feature-003-word-identity-links-implementation-plan.md`
-  - `quickstart.md` — dev reset → migrate → import → rebuild → verify
+Prior per-feature planning docs were consolidated into the above and removed. Add a new
+`docs/feature-XXX-<name>/` folder only for genuinely new pre-spec planning; do not recreate
+the old feature-report indexes here.
