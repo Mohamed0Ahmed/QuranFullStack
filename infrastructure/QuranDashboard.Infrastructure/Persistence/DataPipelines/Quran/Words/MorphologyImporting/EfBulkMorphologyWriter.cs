@@ -66,8 +66,9 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
             throw new InvalidOperationException("Expected an Npgsql connection for morphology import.");
         }
 
-        var normalization = normalizationReader.Load();
-        var segmentStemCorrection = segmentStemCorrectionReader.Load();
+        var isLegacySource = source.SourceKind == MorphologyImportSourceKind.Legacy;
+        var normalization = isLegacySource ? normalizationReader.Load() : null;
+        var segmentStemCorrection = isLegacySource ? segmentStemCorrectionReader.Load() : null;
 
         await using var transaction = await npgsqlConnection.BeginTransactionAsync(ct);
 

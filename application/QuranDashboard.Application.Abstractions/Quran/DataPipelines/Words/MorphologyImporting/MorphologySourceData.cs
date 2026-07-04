@@ -12,7 +12,14 @@ public sealed record MorphologySourceData(
     IReadOnlyList<string> UnknownPosCodes,
     MorphologyRenderStats RenderStats,
     IReadOnlyList<SegmentDimensionIssue> SegmentDimensionIssues,
-    WordLemmaCorrectionSummary? CorrectionSummary = null);
+    WordLemmaCorrectionSummary? CorrectionSummary = null,
+    MorphologyImportSourceKind SourceKind = MorphologyImportSourceKind.Legacy);
+
+public enum MorphologyImportSourceKind
+{
+    Legacy,
+    Enriched
+}
 
 public sealed record MorphologyRenderStats(
     int WholeWordAgreementMatches,

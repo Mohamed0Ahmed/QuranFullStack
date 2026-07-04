@@ -5,6 +5,7 @@ public static class MorphologyInvariants
     public const int ExpectedReadableWords = 77_432;
     public const int ExpectedEmptyForms = 208;
     public const string RenderSource = "buckwalter-transliteration";
+    public const string EnrichedRenderSource = "corpus_enriched_bridge";
     public const double InformationalWholeWordAgreement = 0.7983;
 
     public const string TargetsNotEmpty =

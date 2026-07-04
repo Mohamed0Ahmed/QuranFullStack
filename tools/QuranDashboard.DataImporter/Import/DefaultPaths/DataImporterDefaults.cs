@@ -26,6 +26,12 @@ internal static class DataImporterDefaults
         Path.GetFullPath(Path.Combine(
             ResolveRepositoryRoot(), "resources", "import-sources", "quran-morphology"));
 
+    // Enriched (Corpus value-based) morphology source (Feature 020). Distinct folder so the legacy
+    // multi-file manifest stays runnable for parity/diff until the Phase 2 cleanup.
+    internal static string ResolveDefaultEnrichedMorphologySourcePath() =>
+        Path.GetFullPath(Path.Combine(
+            ResolveRepositoryRoot(), "resources", "import-sources", "quran-enriched-morphology"));
+
     internal static string ResolveDefaultFullI3rabSourcePath() =>
         Path.GetFullPath(Path.Combine(
             ResolveRepositoryRoot(), "resources", "import-sources", "quran-full-i3rab"));

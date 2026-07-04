@@ -29,6 +29,7 @@ internal static class Program
             "import-foundation" => await ImportFoundationRunner.RunAsync(verbArgs, createHost, PrintUsage),
             "rebuild-words" => await RebuildDisplayWordsRunner.RunAsync(verbArgs, createHost, PrintUsage),
             "import-morphology" => await ImportMorphologyRunner.RunAsync(verbArgs, createHost, PrintUsage),
+            "validate-enriched-morphology" => await ValidateEnrichedMorphologyRunner.RunAsync(verbArgs, createHost, PrintUsage),
             "import-mutashabihat" => await ImportMutashabihatRunner.RunAsync(verbArgs, createHost, PrintUsage),
             "import-tafsirs" => await ImportTafsirsRunner.RunAsync(verbArgs, createHost, PrintUsage),
             "import-translations" => await ImportTranslationsRunner.RunAsync(verbArgs, createHost, PrintUsage),
@@ -76,7 +77,9 @@ internal static class Program
         Console.Error.WriteLine(
             "  QuranDashboard.DataImporter rebuild-words [--report-out <path>] [--force]");
         Console.Error.WriteLine(
-            "  QuranDashboard.DataImporter import-morphology [--source <path>] [--report-out <path>] [--force]");
+            "  QuranDashboard.DataImporter import-morphology [--source <path>] [--report-out <path>] [--force] [--enriched]");
+        Console.Error.WriteLine(
+            "  QuranDashboard.DataImporter validate-enriched-morphology [--source <path>] [--report-out <path>]");
         Console.Error.WriteLine(
             "  QuranDashboard.DataImporter import-mutashabihat [--source <path>] [--report-out <path>] [--force]");
         Console.Error.WriteLine(

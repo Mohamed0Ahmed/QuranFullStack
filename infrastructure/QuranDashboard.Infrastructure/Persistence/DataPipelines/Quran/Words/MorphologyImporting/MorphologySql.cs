@@ -334,13 +334,6 @@ internal static class MorphologySql
                OR arabic_render_tier NOT IN ('clean', 'quranic_marks', 'review', 'multiword'))
         """;
 
-    internal const string CheckSegSourceValid = """
-        SELECT count(*)::int
-        FROM quran_word_morphology_segments
-        WHERE form_buckwalter <> ''
-          AND arabic_render_source IS DISTINCT FROM 'buckwalter-transliteration'
-        """;
-
     internal const string SelectSegmentsForRenderProvenance = """
         SELECT id, form_buckwalter, form_arabic_normalized, arabic_render_tier, arabic_render_source
         FROM quran_word_morphology_segments

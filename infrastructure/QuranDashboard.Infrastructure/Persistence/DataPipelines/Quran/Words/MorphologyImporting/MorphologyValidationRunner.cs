@@ -26,8 +26,8 @@ internal static class MorphologyValidationRunner
         NpgsqlTransaction transaction,
         int expectedReadableWords,
         MorphologySourceData source,
-        WordLemmaNormalizationLoaded normalization,
-        SegmentStemCorrectionLoaded segmentStemCorrection,
+        WordLemmaNormalizationLoaded? normalization,
+        SegmentStemCorrectionLoaded? segmentStemCorrection,
         SegmentArabicRenderer renderer,
         CancellationToken ct)
     {
@@ -37,7 +37,10 @@ internal static class MorphologyValidationRunner
         await AddUs3ChecksAsync(checks, connection, transaction, source, renderer, ct);
         await AddSegmentDimensionChecksAsync(checks, connection, transaction, source, ct);
         await AddSegmentStemChecksAsync(checks, connection, transaction, segmentStemCorrection, ct);
-        await AddWordLemmaNormalizationChecksAsync(checks, connection, transaction, normalization, ct);
+        if (normalization is not null)
+        {
+            await AddWordLemmaNormalizationChecksAsync(checks, connection, transaction, normalization, ct);
+        }
 
         return checks;
     }
@@ -144,20 +147,25 @@ internal static class MorphologyValidationRunner
 
         var tierViolations = await ExecuteScalarIntAsync(
             connection, transaction, MorphologySql.CheckSegTierValid, ct);
-        var sourceViolations = await ExecuteScalarIntAsync(
-            connection, transaction, MorphologySql.CheckSegSourceValid, ct);
+        var expectedRenderSource = ResolveExpectedRenderSource(source);
+        var sourceViolations = await CountRenderSourceViolationsAsync(
+            connection, transaction, expectedRenderSource, ct);
         checks.Add(new MorphologyCheckResult(
             "MORPH-SEG-TIER-VALID",
             HardSeverity,
-            "valid tier + correct source on all rendered rows",
+            $"valid tier + source = {expectedRenderSource} on all rendered rows",
             $"tier_violations={FormatInt(tierViolations)}, source_violations={FormatInt(sourceViolations)}",
             tierViolations == 0 && sourceViolations == 0));
 
-        var provenance = await CheckRenderProvenanceAsync(connection, transaction, renderer, ct);
+        var provenance = source.SourceKind == MorphologyImportSourceKind.Enriched
+            ? await CheckEnrichedRenderProvenanceAsync(connection, transaction, source, ct)
+            : await CheckLegacyRenderProvenanceAsync(connection, transaction, renderer, ct);
         checks.Add(new MorphologyCheckResult(
             "MORPH-SEG-RENDER-PROVENANCE",
             HardSeverity,
-            "rendered rows retain non-empty form_buckwalter; source = buckwalter-transliteration; Arabic and tier recompute from each row's own form_buckwalter; deterministic Uthmani/QPC equality is allowed",
+            source.SourceKind == MorphologyImportSourceKind.Enriched
+                ? "rendered rows match enriched source Arabic/tier/source values and retain non-empty form_buckwalter"
+                : "rendered rows retain non-empty form_buckwalter; source = buckwalter-transliteration; Arabic and tier recompute from each row's own form_buckwalter; deterministic Uthmani/QPC equality is allowed",
             $"missing_buckwalter={FormatInt(provenance.MissingBuckwalter)}, " +
             $"source_violations={FormatInt(provenance.SourceViolations)}, " +
             $"render_mismatches={FormatInt(provenance.RenderMismatches)}, " +
@@ -274,7 +282,7 @@ internal static class MorphologyValidationRunner
         List<MorphologyCheckResult> checks,
         NpgsqlConnection connection,
         NpgsqlTransaction transaction,
-        SegmentStemCorrectionLoaded segmentStemCorrection,
+        SegmentStemCorrectionLoaded? segmentStemCorrection,
         CancellationToken ct)
     {
         var nonStemStemIds = await ExecuteScalarIntAsync(
@@ -312,6 +320,11 @@ internal static class MorphologyValidationRunner
             "every segment stem_id references a real quran_stems row",
             danglingStemIds == 0 ? "0 violations" : $"{FormatInt(danglingStemIds)} violation(s)",
             danglingStemIds == 0));
+
+        if (segmentStemCorrection is null)
+        {
+            return;
+        }
 
         var curated = await CheckSecondaryStemCurationAsync(
             connection, transaction, segmentStemCorrection, ct);
@@ -477,7 +490,38 @@ internal static class MorphologyValidationRunner
             normalization.Counts.CandidateOrNeedsReview == 0));
     }
 
-    private static async Task<RenderProvenanceCounts> CheckRenderProvenanceAsync(
+    private static async Task<int> CountRenderSourceViolationsAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        string expectedRenderSource,
+        CancellationToken ct)
+    {
+        await using var command = new NpgsqlCommand(
+            """
+            SELECT count(*)::int
+            FROM quran_word_morphology_segments
+            WHERE form_buckwalter <> ''
+              AND arabic_render_source IS DISTINCT FROM @expectedRenderSource
+            """,
+            connection,
+            transaction)
+        {
+            CommandTimeout = MorphologyCommandExecutor.CommandTimeoutSeconds
+        };
+        command.Parameters.AddWithValue("expectedRenderSource", expectedRenderSource);
+
+        var result = await command.ExecuteScalarAsync(ct);
+        return Convert.ToInt32(result, CultureInfo.InvariantCulture);
+    }
+
+    private static string ResolveExpectedRenderSource(MorphologySourceData source)
+    {
+        return source.SourceKind == MorphologyImportSourceKind.Enriched
+            ? MorphologyInvariants.EnrichedRenderSource
+            : MorphologyInvariants.RenderSource;
+    }
+
+    private static async Task<RenderProvenanceCounts> CheckLegacyRenderProvenanceAsync(
         NpgsqlConnection connection,
         NpgsqlTransaction transaction,
         SegmentArabicRenderer renderer,
@@ -528,6 +572,82 @@ internal static class MorphologyValidationRunner
             }
 
             if (!string.Equals(arabicRenderTier, expectedTier, StringComparison.Ordinal))
+            {
+                tierMismatches++;
+            }
+        }
+
+        return new RenderProvenanceCounts(
+            missingBuckwalter,
+            sourceViolations,
+            renderMismatches,
+            tierMismatches);
+    }
+
+    private static async Task<RenderProvenanceCounts> CheckEnrichedRenderProvenanceAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        MorphologySourceData source,
+        CancellationToken ct)
+    {
+        var expectedBySegmentLocation = source.Words
+            .SelectMany(word => word.Segments.Select(segment => new
+            {
+                SegmentLocation = $"{word.Location}:{segment.SegmentNumber}",
+                Segment = segment
+            }))
+            .ToDictionary(item => item.SegmentLocation, item => item.Segment, StringComparer.Ordinal);
+
+        var missingBuckwalter = 0;
+        var sourceViolations = 0;
+        var renderMismatches = 0;
+        var tierMismatches = 0;
+
+        await using var command = new NpgsqlCommand(
+            """
+            SELECT segment_location, form_buckwalter, form_arabic_normalized, arabic_render_tier, arabic_render_source
+            FROM quran_word_morphology_segments
+            WHERE form_buckwalter <> ''
+               OR form_arabic_normalized IS NOT NULL
+            """,
+            connection,
+            transaction)
+        {
+            CommandTimeout = MorphologyCommandExecutor.CommandTimeoutSeconds
+        };
+
+        await using var reader = await command.ExecuteReaderAsync(ct);
+        while (await reader.ReadAsync(ct))
+        {
+            var segmentLocation = reader.GetString(0);
+            var formBuckwalter = reader.IsDBNull(1) ? null : reader.GetString(1);
+            var formArabicNormalized = reader.IsDBNull(2) ? null : reader.GetString(2);
+            var arabicRenderTier = reader.IsDBNull(3) ? null : reader.GetString(3);
+            var arabicRenderSource = reader.IsDBNull(4) ? null : reader.GetString(4);
+
+            if (formArabicNormalized is not null && string.IsNullOrWhiteSpace(formBuckwalter))
+            {
+                missingBuckwalter++;
+                continue;
+            }
+
+            if (!expectedBySegmentLocation.TryGetValue(segmentLocation, out var expected))
+            {
+                renderMismatches++;
+                continue;
+            }
+
+            if (!string.Equals(arabicRenderSource, expected.RenderSource, StringComparison.Ordinal))
+            {
+                sourceViolations++;
+            }
+
+            if (!string.Equals(formArabicNormalized, expected.FormArabicNormalized, StringComparison.Ordinal))
+            {
+                renderMismatches++;
+            }
+
+            if (!string.Equals(arabicRenderTier, expected.RenderTier, StringComparison.Ordinal))
             {
                 tierMismatches++;
             }
