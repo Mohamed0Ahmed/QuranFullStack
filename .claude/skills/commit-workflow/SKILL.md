@@ -38,6 +38,10 @@ asked for.
 **Hard rule:** never run **section 7 (post-PR sync to main)** before the user says
 the PR was accepted/merged. Opening a PR is not enough — the merge must be done.
 
+> Phase B tip: this skill commits and pushes; it does not write the PR body. For a
+> Backend or Frontend PR, run the **`pr-context-prep`** skill first to produce the
+> PR title/description, scope, invariants, and CodeRabbit focus.
+
 During feature work, do **not** pull `main` into child repos or “sync pointers to
 main” unless the user explicitly asks for that outside the post-merge flow.
 
