@@ -18,6 +18,7 @@ internal static class MorphologyImportReportBuilder
         var segmentRows = await ExecuteScalarIntAsync(connection, transaction, MorphologySql.CountSegmentRows, ct);
         var rootRows = await ExecuteScalarIntAsync(connection, transaction, MorphologySql.CountRootRows, ct);
         var lemmaRows = await ExecuteScalarIntAsync(connection, transaction, MorphologySql.CountLemmaRows, ct);
+        var lemmaAnalysisRows = await ExecuteScalarIntAsync(connection, transaction, MorphologySql.CountLemmaAnalysisRows, ct);
         var stemRows = await ExecuteScalarIntAsync(connection, transaction, MorphologySql.CountStemRows, ct);
         var posTagRows = await ExecuteScalarIntAsync(connection, transaction, MorphologySql.CountPosTagRows, ct);
         var readableWords = await ExecuteScalarIntAsync(connection, transaction, MorphologySql.CheckReadableWordsCount, ct);
@@ -41,6 +42,7 @@ internal static class MorphologyImportReportBuilder
             segmentRows,
             rootRows,
             lemmaRows,
+            lemmaAnalysisRows,
             stemRows,
             posTagRows,
             readableWords,
@@ -71,7 +73,8 @@ internal static class MorphologyImportReportBuilder
         var stats = source.RenderStats;
         var warnings = new List<string>
         {
-            $"{MorphologyInvariants.CheckDimCounts}: roots={totals.RootRows}, lemmas={totals.LemmaRows}, stems={totals.StemRows}."
+            $"{MorphologyInvariants.CheckDimCounts}: roots={totals.RootRows}, lemmas={totals.LemmaRows}, "
+            + $"lemma_analyses={totals.LemmaAnalysisRows}, stems={totals.StemRows}."
         };
 
         var totalRendered = totals.SegmentRows - totals.EmptyFormRenders;
@@ -141,6 +144,7 @@ internal static class MorphologyImportReportBuilder
             segments.Count,
             source.ResolvedRoots.Count,
             source.ResolvedLemmas.Count,
+            source.LemmaAnalyses?.Count ?? 0,
             source.ResolvedStems.Count,
             PosTagSeed.GetAll().Count,
             source.Words.Count,

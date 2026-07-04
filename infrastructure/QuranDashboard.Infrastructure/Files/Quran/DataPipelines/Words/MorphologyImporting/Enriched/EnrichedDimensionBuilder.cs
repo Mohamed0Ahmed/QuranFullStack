@@ -22,6 +22,8 @@ namespace QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.Morpholo
 // Buckwalter + bridge Arabic already merged into each enriched record upstream in SourceAudit.
 public sealed class EnrichedDimensionBuilder
 {
+    private const string QuranicSmallYeh = "ۦ";
+
     private static readonly HashSet<string> KnownPosCodes =
         PosTagSeed.GetAll().Select(tag => tag.Code).ToHashSet(StringComparer.Ordinal);
 
@@ -68,14 +70,21 @@ public sealed class EnrichedDimensionBuilder
         private readonly SortedSet<string> unknownPosCodes = new(StringComparer.Ordinal);
         private readonly List<string> emptyFormLocations = [];
         private readonly Dictionary<string, RootDimensionEntry> rootIndex = new(StringComparer.Ordinal);
-        private readonly Dictionary<string, LemmaDimensionEntry> lemmaIndex = new(StringComparer.Ordinal);
+        // Display lemma dimension keyed by Arabic lemma_text: numeric-suffix buckwalter homographs that
+        // render to the same text collapse to ONE row here (honours UNIQUE(lemma_text)).
+        private readonly Dictionary<string, LemmaDimensionEntry> lemmaTextIndex = new(StringComparer.Ordinal);
+        // Per-buckwalter analytical breakdown keyed by lemma_buckwalter: preserves each Corpus variant's
+        // root/POS/first-occurrence under its display lemma.
+        private readonly Dictionary<string, LemmaAnalysisEntry> lemmaAnalysisIndex = new(StringComparer.Ordinal);
         private readonly Dictionary<string, DimensionEntry> stemIndex = new(StringComparer.Ordinal);
         private readonly Dictionary<string, HashSet<string>> rootLemmaMap = new(StringComparer.Ordinal);
+        // Representative root per display lemma_text (the root at the lemma's first occurrence).
         private readonly Dictionary<string, (int RootId, int WordOrder)> lemmaRootLinks = new(StringComparer.Ordinal);
         private readonly List<EnrichedAlignedWordProjection> alignedWords;
 
         private int agreementMatches;
         private int nextDimId = 1;
+        private int nextAnalysisId = 1;
 
         public BuildState(int expectedRecordCount)
         {
@@ -118,57 +127,28 @@ public sealed class EnrichedDimensionBuilder
                 : projectedSegments.First(segment => segment.SegmentNumber == headStemSegmentNumber).Pos;
             var isVerb = string.Equals(headPos, "V", StringComparison.Ordinal);
 
-            // Resolve per-segment dimension ids, value-based from each segment's own buckwalter. This is the
-            // SINGLE resolution pass — the word-level head ids are derived from the head STEM segment's
-            // resolved ids below, so dimensions are not counted twice.
-            var resolvedSegments = new List<AlignedSegmentDto>(projectedSegments.Count);
-            foreach (var projected in projectedSegments)
-            {
-                var sourceSegment = (record.Segments ?? [])
-                    .FirstOrDefault(segment => segment.SegmentNumber == projected.SegmentNumber);
-
-                int? segRootId = null;
-                int? segLemmaId = null;
-                int? segStemId = null;
-
-                if (sourceSegment is not null && IsStem(projected))
-                {
-                    segRootId = ResolveOrCreateRoot(
-                        sourceSegment, wordOrder, rootIndex, rootLemmaMap, ref nextDimId);
-                    segLemmaId = ResolveOrCreateLemma(
-                        sourceSegment, wordOrder, segRootId, lemmaIndex, lemmaRootLinks, rootLemmaMap, ref nextDimId);
-                    segStemId = ResolveOrCreateStem(sourceSegment, wordOrder, stemIndex, ref nextDimId);
-                }
-                else if (sourceSegment is not null && !IsStem(projected))
-                {
-                    // Non-STEM segments reference an already-created root dimension (shared with the head
-                    // STEM of the same word). No new id is minted for non-STEM segments; if none exists yet
-                    // the segment row stays null rather than guessing. The enriched artifact does not attach
-                    // roots/lemmas to non-STEM segments, so this branch is normally a no-op.
-                    segRootId = ResolveNonStemRoot(sourceSegment, rootIndex);
-                }
-
-                resolvedSegments.Add(projected with
-                {
-                    RootId = segRootId,
-                    LemmaId = segLemmaId,
-                    StemId = segStemId,
-                });
-            }
-
-            // Word-level head dimensions = the head STEM segment's resolved ids (single source of truth,
-            // no double-count). When there is no STEM segment, the word carries no head dimension.
+            // PHASE 1 (mint): ONLY the head STEM segment mints new root/lemma/stem dimensions. Each word
+            // therefore mints at most one new row per dimension, stamped with this word's unique order as
+            // FirstWordOrder — so no two rows ever share a FirstWordOrder (the UNIQUE index on
+            // quran_{roots,lemmas,stems}.first_word_order_in_mushaf; this is the Phase 2A duplicate-key
+            // defect fixed). Segment-level ids are filled later by ResolveSegmentDimensions, once every
+            // word's head has minted, so a secondary STEM can reference a dimension whose head occurs later
+            // in word order.
             int? wordRootId = null;
             int? wordLemmaId = null;
             int? wordStemId = null;
-            if (headStemSegmentNumber is not null)
+            if (headStemSource is not null)
             {
-                var headResolved = resolvedSegments.First(segment => segment.SegmentNumber == headStemSegmentNumber);
-                wordRootId = headResolved.RootId;
-                wordLemmaId = headResolved.LemmaId;
-                wordStemId = headResolved.StemId;
+                wordRootId = ResolveOrCreateRoot(
+                    headStemSource, wordOrder, rootIndex, rootLemmaMap, ref nextDimId);
+                wordLemmaId = ResolveOrCreateLemma(
+                    headStemSource, wordOrder, location, headPos, wordRootId,
+                    lemmaTextIndex, lemmaAnalysisIndex, lemmaRootLinks, rootLemmaMap,
+                    ref nextDimId, ref nextAnalysisId);
+                wordStemId = ResolveOrCreateStem(headStemSource, wordOrder, stemIndex, ref nextDimId);
             }
 
+            // Segments are stored with null dimension ids here; ResolveSegmentDimensions fills them in phase 2.
             alignedWords.Add(new EnrichedAlignedWordProjection(
                 new AlignedWordDto(
                     location,
@@ -178,7 +158,7 @@ public sealed class EnrichedDimensionBuilder
                     isVerb ? MapVerbVoice(headFeatures) : null,
                     MapCaseFeature(headFeatures),
                     BuildFeaturesJson(headStemSource?.FeaturesRaw),
-                    resolvedSegments,
+                    projectedSegments,
                     wordRootId,
                     wordLemmaId,
                     wordStemId),
@@ -187,19 +167,79 @@ public sealed class EnrichedDimensionBuilder
 
         public EnrichedDimensionBuildResult ToResult()
         {
+            var resolvedWords = ResolveSegmentDimensions();
             var resolvedRoots = BuildResolvedRoots(rootIndex, rootLemmaMap);
-            var resolvedLemmas = BuildResolvedLemmas(lemmaIndex, lemmaRootLinks);
+            var resolvedLemmas = BuildResolvedLemmas(lemmaTextIndex, lemmaRootLinks);
+            var resolvedLemmaAnalyses = BuildResolvedLemmaAnalyses(lemmaAnalysisIndex);
             var resolvedStems = BuildResolvedStems(stemIndex);
 
             return new EnrichedDimensionBuildResult(
-                alignedWords,
+                resolvedWords,
                 resolvedRoots,
                 resolvedLemmas,
                 resolvedStems,
+                resolvedLemmaAnalyses,
                 charsetWarnings,
                 unknownPosCodes.ToList(),
                 agreementMatches,
                 emptyFormLocations);
+        }
+
+        // PHASE 2 (resolve): every word's head has now minted, so the root/lemma/stem indices are complete.
+        // Fill each segment's dimension ids by value-based lookup against those indices — STEM segments
+        // resolve root+lemma+stem, non-STEM segments resolve only a shared root (lemma/stem stay null so the
+        // STEM-only invariants hold). NOTHING is minted here, so the UNIQUE FirstWordOrder guarantee from
+        // phase 1 is preserved; a secondary STEM resolves to a dimension even when that dimension's head
+        // occurs later in word order. A value with no minted dimension (a buckwalter/stem_text that is never
+        // any word's head) stays null rather than fabricating a FirstWordOrder.
+        private List<EnrichedAlignedWordProjection> ResolveSegmentDimensions()
+        {
+            var resolved = new List<EnrichedAlignedWordProjection>(alignedWords.Count);
+            foreach (var projection in alignedWords)
+            {
+                var word = projection.Word;
+                var segments = new List<AlignedSegmentDto>(word.Segments.Count);
+                foreach (var segment in word.Segments)
+                {
+                    var isStem = IsStem(segment);
+                    segments.Add(segment with
+                    {
+                        RootId = LookupId(rootIndex, segment.RootBuckwalter),
+                        // Resolve to the collapsed display lemma via the segment's own buckwalter's analysis
+                        // (a buckwalter maps to exactly one display lemma).
+                        LemmaId = isStem ? LookupLemmaId(segment.LemmaBuckwalter) : null,
+                        StemId = isStem ? LookupId(stemIndex, NormalizeStemIdentity(segment.FormArabicNormalized)) : null,
+                    });
+                }
+
+                resolved.Add(projection with { Word = word with { Segments = segments } });
+            }
+
+            return resolved;
+        }
+
+        private static int? LookupId<TEntry>(Dictionary<string, TEntry> index, string? key)
+            where TEntry : DimensionEntry
+        {
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                return null;
+            }
+
+            return index.TryGetValue(key, out var entry) ? entry.Id : null;
+        }
+
+        // Resolves a segment's lemma_buckwalter to the id of its COLLAPSED display lemma (quran_lemmas.id).
+        // The buckwalter's analysis carries the display lemma link; a buckwalter that was never any word's
+        // head has no analysis and stays null (mirrors the existing null-safe lemma rule).
+        private int? LookupLemmaId(string? lemmaBuckwalter)
+        {
+            if (string.IsNullOrWhiteSpace(lemmaBuckwalter))
+            {
+                return null;
+            }
+
+            return lemmaAnalysisIndex.TryGetValue(lemmaBuckwalter, out var analysis) ? analysis.LemmaId : null;
         }
     }
 
@@ -279,31 +319,23 @@ public sealed class EnrichedDimensionBuilder
         return entry.Id;
     }
 
-    // Non-STEM segments sometimes carry a root in the enriched artifact. When they do, they reference an
-    // already-created root dimension (shared with the head STEM of the same word). We do NOT mint a new id
-    // for a non-STEM segment; if no STEM has introduced the root yet, the segment row stays null rather
-    // than guessing. The enriched artifact does not attach roots to non-STEM segments in practice.
-    private static int? ResolveNonStemRoot(
-        EnrichedMorphologySegment segment,
-        Dictionary<string, RootDimensionEntry> rootIndex)
-    {
-        var rootBuckwalter = segment.RootBuckwalter;
-        if (string.IsNullOrWhiteSpace(rootBuckwalter))
-        {
-            return null;
-        }
-
-        return rootIndex.TryGetValue(rootBuckwalter, out var entry) ? entry.Id : null;
-    }
-
+    // Word-level lemma identity is the Arabic lemma_text (UNIQUE in quran_lemmas): numeric-suffix
+    // buckwalter homographs that render to the SAME text collapse to ONE display lemma, so no second
+    // quran_lemmas row can violate the unique index. Each distinct buckwalter still mints its own analysis
+    // row (quran_lemma_analyses) carrying its first-occurrence root/POS/location, so the Corpus
+    // distinctions are preserved rather than lost in the collapse.
     private static int? ResolveOrCreateLemma(
         EnrichedMorphologySegment segment,
         int wordOrder,
+        string location,
+        string headPos,
         int? rootId,
-        Dictionary<string, LemmaDimensionEntry> lemmaIndex,
+        Dictionary<string, LemmaDimensionEntry> lemmaTextIndex,
+        Dictionary<string, LemmaAnalysisEntry> lemmaAnalysisIndex,
         Dictionary<string, (int RootId, int WordOrder)> lemmaRootLinks,
         Dictionary<string, HashSet<string>> rootLemmaMap,
-        ref int nextDimId)
+        ref int nextDimId,
+        ref int nextAnalysisId)
     {
         var lemmaBuckwalter = segment.LemmaBuckwalter;
         if (string.IsNullOrWhiteSpace(lemmaBuckwalter))
@@ -311,43 +343,62 @@ public sealed class EnrichedDimensionBuilder
             return null;
         }
 
-        if (!lemmaIndex.TryGetValue(lemmaBuckwalter, out var entry))
+        // Fall back to the buckwalter as the display key only when the artifact carries no Arabic text
+        // (a buckwalter never collides with a real lemma_text).
+        var lemmaText = string.IsNullOrWhiteSpace(segment.LemmaArabic) ? lemmaBuckwalter : segment.LemmaArabic;
+        var normalizedHeadPos = string.IsNullOrEmpty(headPos) ? null : headPos;
+
+        if (!lemmaTextIndex.TryGetValue(lemmaText, out var lemmaEntry))
         {
-            entry = new LemmaDimensionEntry(nextDimId++, wordOrder, segment.LemmaArabic);
-            lemmaIndex[lemmaBuckwalter] = entry;
+            lemmaEntry = new LemmaDimensionEntry(nextDimId++, wordOrder, lemmaText, lemmaBuckwalter);
+            lemmaTextIndex[lemmaText] = lemmaEntry;
         }
 
-        entry.AddWord(wordOrder);
+        lemmaEntry.AddWord(wordOrder);
+        lemmaEntry.ConsiderRepresentative(wordOrder, lemmaBuckwalter);
 
         if (rootId.HasValue)
         {
-            if (!lemmaRootLinks.TryGetValue(lemmaBuckwalter, out var existing) || wordOrder < existing.WordOrder)
+            // Representative root of the display lemma = the root at its earliest occurrence; per-variant
+            // roots (which may differ, e.g. عَصَا) are preserved on the analysis rows below.
+            if (!lemmaRootLinks.TryGetValue(lemmaText, out var existing) || wordOrder < existing.WordOrder)
             {
-                lemmaRootLinks[lemmaBuckwalter] = (rootId.Value, wordOrder);
+                lemmaRootLinks[lemmaText] = (rootId.Value, wordOrder);
             }
 
+            // distinct_lemmas_count fans out on DISPLAY lemmas (text), so collapsed homographs count once.
             if (!string.IsNullOrWhiteSpace(segment.RootBuckwalter)
                 && rootLemmaMap.TryGetValue(segment.RootBuckwalter, out var lemmaSet))
             {
-                lemmaSet.Add(lemmaBuckwalter);
+                lemmaSet.Add(lemmaText);
             }
         }
 
-        return entry.Id;
+        if (!lemmaAnalysisIndex.TryGetValue(lemmaBuckwalter, out var analysis))
+        {
+            analysis = new LemmaAnalysisEntry(
+                nextAnalysisId++, lemmaEntry.Id, lemmaBuckwalter, wordOrder, location, rootId, normalizedHeadPos);
+            lemmaAnalysisIndex[lemmaBuckwalter] = analysis;
+        }
+
+        analysis.Observe(wordOrder, location, rootId, normalizedHeadPos);
+
+        return lemmaEntry.Id;
     }
 
     // Stem identity is the persisted schema rule ONLY: normalized stem_text (the STEM segment's formArabic
     // under the enriched artifact). stemBuckwalter is audit-only and never mints a separate row —
     // vocalization-distinct stems sharing stem_text collapse to one quran_stems row by design (no
-    // stem_buckwalter column exists). See plan §4.
+    // stem_buckwalter column exists). See plan §4. Quranic small yeh is render/provenance, not stem
+    // identity, so it is removed only for quran_stems keys/text; segment form_arabic_normalized keeps it.
     private static int? ResolveOrCreateStem(
         EnrichedMorphologySegment segment,
         int wordOrder,
         Dictionary<string, DimensionEntry> stemIndex,
         ref int nextDimId)
     {
-        var stemText = segment.FormArabic;
-        if (string.IsNullOrWhiteSpace(stemText))
+        var stemText = NormalizeStemIdentity(segment.FormArabic);
+        if (stemText is null)
         {
             return null;
         }
@@ -360,6 +411,17 @@ public sealed class EnrichedDimensionBuilder
 
         entry.AddWord(wordOrder);
         return entry.Id;
+    }
+
+    private static string? NormalizeStemIdentity(string? stemText)
+    {
+        if (string.IsNullOrWhiteSpace(stemText))
+        {
+            return null;
+        }
+
+        var normalized = stemText.Replace(QuranicSmallYeh, string.Empty, StringComparison.Ordinal);
+        return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
     }
 
     // --- resolved dimension lists --------------------------------------------------------
@@ -387,21 +449,42 @@ public sealed class EnrichedDimensionBuilder
     }
 
     private static List<ResolvedLemmaDto> BuildResolvedLemmas(
-        Dictionary<string, LemmaDimensionEntry> lemmaIndex,
+        Dictionary<string, LemmaDimensionEntry> lemmaTextIndex,
         Dictionary<string, (int RootId, int WordOrder)> lemmaRootLinks)
     {
-        var result = new List<ResolvedLemmaDto>(lemmaIndex.Count);
-        foreach (var (lemmaBuckwalter, entry) in lemmaIndex.OrderBy(entry => entry.Value.FirstWordOrder))
+        var result = new List<ResolvedLemmaDto>(lemmaTextIndex.Count);
+        foreach (var (lemmaText, entry) in lemmaTextIndex.OrderBy(entry => entry.Value.FirstWordOrder))
         {
-            int? rootId = lemmaRootLinks.TryGetValue(lemmaBuckwalter, out var link) ? link.RootId : null;
-            // Lemma text is the primary lemmaArabic; lemma_buckwalter keeps the Corpus key.
+            int? rootId = lemmaRootLinks.TryGetValue(lemmaText, out var link) ? link.RootId : null;
+            // lemma_text is the display key; lemma_buckwalter stores the representative variant's Corpus key
+            // (earliest occurrence). The full set of buckwalter variants lives in quran_lemma_analyses.
             result.Add(new ResolvedLemmaDto(
                 entry.Id,
-                entry.LemmaArabic ?? lemmaBuckwalter,
-                lemmaBuckwalter,
+                entry.LemmaArabic ?? lemmaText,
+                entry.RepresentativeBuckwalter,
                 rootId,
                 entry.WordsCount,
                 entry.FirstWordOrder));
+        }
+
+        return result;
+    }
+
+    private static List<ResolvedLemmaAnalysisDto> BuildResolvedLemmaAnalyses(
+        Dictionary<string, LemmaAnalysisEntry> lemmaAnalysisIndex)
+    {
+        var result = new List<ResolvedLemmaAnalysisDto>(lemmaAnalysisIndex.Count);
+        foreach (var (_, entry) in lemmaAnalysisIndex.OrderBy(entry => entry.Value.FirstWordOrder))
+        {
+            result.Add(new ResolvedLemmaAnalysisDto(
+                entry.Id,
+                entry.LemmaId,
+                entry.LemmaBuckwalter,
+                entry.RootId,
+                entry.HeadPos,
+                entry.WordsCount,
+                entry.FirstWordOrder,
+                entry.FirstLocation));
         }
 
         return result;
@@ -533,10 +616,72 @@ public sealed class EnrichedDimensionBuilder
         public string? RootArabic { get; } = rootArabic;
     }
 
-    private sealed class LemmaDimensionEntry(int id, int firstWordOrder, string? lemmaArabic)
-        : DimensionEntry(id, firstWordOrder)
+    private sealed class LemmaDimensionEntry : DimensionEntry
     {
-        public string? LemmaArabic { get; } = lemmaArabic;
+        private int representativeWordOrder;
+
+        public LemmaDimensionEntry(int id, int firstWordOrder, string? lemmaArabic, string representativeBuckwalter)
+            : base(id, firstWordOrder)
+        {
+            LemmaArabic = lemmaArabic;
+            RepresentativeBuckwalter = representativeBuckwalter;
+            representativeWordOrder = firstWordOrder;
+        }
+
+        public string? LemmaArabic { get; }
+
+        // quran_lemmas.lemma_buckwalter for the collapsed display lemma = the buckwalter of its earliest
+        // occurrence (matches how first_word_order is chosen); deterministic under collapse.
+        public string RepresentativeBuckwalter { get; private set; }
+
+        public void ConsiderRepresentative(int wordOrder, string buckwalter)
+        {
+            if (wordOrder < representativeWordOrder)
+            {
+                representativeWordOrder = wordOrder;
+                RepresentativeBuckwalter = buckwalter;
+            }
+        }
+    }
+
+    // One per distinct Corpus lemma_buckwalter. Links to its collapsed display lemma (LemmaId) and keeps
+    // the variant's first-occurrence root/POS/location/count so different-root or different-POS homographs
+    // are never analytically merged.
+    private sealed class LemmaAnalysisEntry
+    {
+        public LemmaAnalysisEntry(
+            int id, int lemmaId, string lemmaBuckwalter, int firstWordOrder, string firstLocation,
+            int? rootId, string? headPos)
+        {
+            Id = id;
+            LemmaId = lemmaId;
+            LemmaBuckwalter = lemmaBuckwalter;
+            FirstWordOrder = firstWordOrder;
+            FirstLocation = firstLocation;
+            RootId = rootId;
+            HeadPos = headPos;
+        }
+
+        public int Id { get; }
+        public int LemmaId { get; }
+        public string LemmaBuckwalter { get; }
+        public int WordsCount { get; private set; }
+        public int FirstWordOrder { get; private set; }
+        public string FirstLocation { get; private set; }
+        public int? RootId { get; private set; }
+        public string? HeadPos { get; private set; }
+
+        public void Observe(int wordOrder, string location, int? rootId, string? headPos)
+        {
+            WordsCount++;
+            if (wordOrder < FirstWordOrder)
+            {
+                FirstWordOrder = wordOrder;
+                FirstLocation = location;
+                RootId = rootId;
+                HeadPos = headPos;
+            }
+        }
     }
 }
 
@@ -545,6 +690,7 @@ public sealed record EnrichedDimensionBuildResult(
     IReadOnlyList<ResolvedRootDto> ResolvedRoots,
     IReadOnlyList<ResolvedLemmaDto> ResolvedLemmas,
     IReadOnlyList<ResolvedStemDto> ResolvedStems,
+    IReadOnlyList<ResolvedLemmaAnalysisDto> ResolvedLemmaAnalyses,
     IReadOnlyList<string> CharsetWarnings,
     IReadOnlyList<string> UnknownPosCodes,
     int WholeWordAgreementMatches,

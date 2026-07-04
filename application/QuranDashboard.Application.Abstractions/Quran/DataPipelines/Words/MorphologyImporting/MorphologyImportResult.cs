@@ -17,6 +17,7 @@ public sealed record MorphologyImportTotals(
     int SegmentRows,
     int RootRows,
     int LemmaRows,
+    int LemmaAnalysisRows,
     int StemRows,
     int PosTagRows,
     int ReadableWords,

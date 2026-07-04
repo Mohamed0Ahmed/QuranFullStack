@@ -28,6 +28,7 @@ public sealed class QuranDashboardDbContext(DbContextOptions<QuranDashboardDbCon
     public DbSet<WordMorphologySegment> WordMorphologySegments => Set<WordMorphologySegment>();
     public DbSet<QuranRoot> QuranRoots => Set<QuranRoot>();
     public DbSet<QuranLemma> QuranLemmas => Set<QuranLemma>();
+    public DbSet<QuranLemmaAnalysis> QuranLemmaAnalyses => Set<QuranLemmaAnalysis>();
     public DbSet<QuranStem> QuranStems => Set<QuranStem>();
     public DbSet<PosTag> PosTags => Set<PosTag>();
     public DbSet<QuranI3rabRule> QuranI3rabRules => Set<QuranI3rabRule>();

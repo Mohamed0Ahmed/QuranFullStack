@@ -398,6 +398,7 @@ internal static class MorphologySql
     internal const string CountSegmentRows = "SELECT count(*)::int FROM quran_word_morphology_segments";
     internal const string CountRootRows = "SELECT count(*)::int FROM quran_roots";
     internal const string CountLemmaRows = "SELECT count(*)::int FROM quran_lemmas";
+    internal const string CountLemmaAnalysisRows = "SELECT count(*)::int FROM quran_lemma_analyses";
     internal const string CountStemRows = "SELECT count(*)::int FROM quran_stems";
     internal const string CountPosTagRows = "SELECT count(*)::int FROM quran_pos_tags";
     internal const string CountEmptyFormRenders = """
@@ -434,6 +435,7 @@ internal static class MorphologySql
         TRUNCATE
             quran_word_morphology_segments,
             quran_word_morphology,
+            quran_lemma_analyses,
             quran_lemmas,
             quran_roots,
             quran_stems,

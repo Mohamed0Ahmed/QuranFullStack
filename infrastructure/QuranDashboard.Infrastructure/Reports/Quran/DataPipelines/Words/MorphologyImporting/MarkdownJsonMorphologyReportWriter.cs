@@ -35,6 +35,7 @@ public sealed class MarkdownJsonMorphologyReportWriter : IMorphologyReportWriter
                 result.Totals.SegmentRows,
                 result.Totals.RootRows,
                 result.Totals.LemmaRows,
+                result.Totals.LemmaAnalysisRows,
                 result.Totals.StemRows,
                 result.Totals.PosTagRows,
                 result.Totals.ReadableWords,
@@ -82,6 +83,7 @@ public sealed class MarkdownJsonMorphologyReportWriter : IMorphologyReportWriter
         builder.AppendLine($"| quran_word_morphology_segments | {report.Totals.SegmentRows:N0} |");
         builder.AppendLine($"| quran_roots | {report.Totals.RootRows:N0} |");
         builder.AppendLine($"| quran_lemmas | {report.Totals.LemmaRows:N0} |");
+        builder.AppendLine($"| quran_lemma_analyses | {report.Totals.LemmaAnalysisRows:N0} |");
         builder.AppendLine($"| quran_stems | {report.Totals.StemRows:N0} |");
         builder.AppendLine($"| quran_pos_tags | {report.Totals.PosTagRows:N0} |");
         builder.AppendLine($"| readable words (source) | {report.Totals.ReadableWords:N0} |");
@@ -223,6 +225,7 @@ public sealed class MarkdownJsonMorphologyReportWriter : IMorphologyReportWriter
         int SegmentRows,
         int RootRows,
         int LemmaRows,
+        int LemmaAnalysisRows,
         int StemRows,
         int PosTagRows,
         int ReadableWords,

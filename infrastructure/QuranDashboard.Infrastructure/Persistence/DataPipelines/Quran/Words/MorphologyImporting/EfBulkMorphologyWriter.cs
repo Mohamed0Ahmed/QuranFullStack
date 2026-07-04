@@ -33,6 +33,7 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
             || await dbContext.WordMorphologySegments.AnyAsync(ct)
             || await dbContext.QuranRoots.AnyAsync(ct)
             || await dbContext.QuranLemmas.AnyAsync(ct)
+            || await dbContext.QuranLemmaAnalyses.AnyAsync(ct)
             || await dbContext.QuranStems.AnyAsync(ct)
             || await dbContext.PosTags.AnyAsync(ct);
     }
@@ -90,6 +91,8 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
             await MorphologyBulkCopier.CopyPosTagsAsync(npgsqlConnection, ct);
             await MorphologyBulkCopier.CopyRootsAsync(npgsqlConnection, source, ct);
             await MorphologyBulkCopier.CopyLemmasAsync(npgsqlConnection, source, ct);
+            // After lemmas + roots (FK targets): per-buckwalter analytical breakdown under each display lemma.
+            await MorphologyBulkCopier.CopyLemmaAnalysesAsync(npgsqlConnection, source, ct);
             await MorphologyBulkCopier.CopyStemsAsync(npgsqlConnection, source, ct);
             await MorphologyBulkCopier.CopyMorphologyAsync(npgsqlConnection, source, wordIdsByLocation, ct);
             await MorphologyBulkCopier.CopySegmentsAsync(npgsqlConnection, source, wordIdsByLocation, ct);

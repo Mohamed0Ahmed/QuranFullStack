@@ -76,6 +76,38 @@ internal static class MorphologyBulkCopier
         await importer.CompleteAsync(ct);
     }
 
+    public static async Task CopyLemmaAnalysesAsync(
+        NpgsqlConnection connection, MorphologySourceData source, CancellationToken ct)
+    {
+        var analyses = source.LemmaAnalyses;
+        if (analyses is null || analyses.Count == 0)
+        {
+            return;
+        }
+
+        const string copyCommand = """
+            COPY quran_lemma_analyses (id, lemma_id, lemma_buckwalter, root_id, head_pos, words_count, first_word_order_in_mushaf, first_location)
+            FROM STDIN (FORMAT BINARY)
+            """;
+
+        await using var importer = await connection.BeginBinaryImportAsync(copyCommand, ct);
+
+        foreach (var analysis in analyses)
+        {
+            await importer.StartRowAsync(ct);
+            await importer.WriteAsync(analysis.AssignedId, ct);
+            await importer.WriteAsync(analysis.LemmaId, ct);
+            await importer.WriteAsync(analysis.LemmaBuckwalter, ct);
+            await importer.WriteAsync(analysis.RootId, NpgsqlDbType.Integer, ct);
+            await importer.WriteAsync(analysis.HeadPos, NpgsqlDbType.Text, ct);
+            await importer.WriteAsync(analysis.WordsCount, ct);
+            await importer.WriteAsync(analysis.FirstWordOrderInMushaf, ct);
+            await importer.WriteAsync(analysis.FirstLocation, ct);
+        }
+
+        await importer.CompleteAsync(ct);
+    }
+
     public static async Task CopyStemsAsync(
         NpgsqlConnection connection, MorphologySourceData source, CancellationToken ct)
     {

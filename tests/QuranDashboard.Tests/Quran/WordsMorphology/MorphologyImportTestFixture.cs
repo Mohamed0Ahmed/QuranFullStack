@@ -458,6 +458,7 @@ public sealed class MorphologyImportTestFixture : IAsyncLifetime
             TRUNCATE
                 quran_word_morphology_segments,
                 quran_word_morphology,
+                quran_lemma_analyses,
                 quran_lemmas,
                 quran_roots,
                 quran_stems,
@@ -475,6 +476,7 @@ public sealed class MorphologyImportTestFixture : IAsyncLifetime
             TRUNCATE
                 quran_word_morphology_segments,
                 quran_word_morphology,
+                quran_lemma_analyses,
                 quran_lemmas,
                 quran_roots,
                 quran_stems,
@@ -513,6 +515,8 @@ public sealed class MorphologyImportTestFixture : IAsyncLifetime
                 """SELECT count(*)::int AS "Value" FROM quran_roots""").FirstAsync(),
             LemmaRows: await dbContext.Database.SqlQueryRaw<int>(
                 """SELECT count(*)::int AS "Value" FROM quran_lemmas""").FirstAsync(),
+            LemmaAnalysisRows: await dbContext.Database.SqlQueryRaw<int>(
+                """SELECT count(*)::int AS "Value" FROM quran_lemma_analyses""").FirstAsync(),
             StemRows: await dbContext.Database.SqlQueryRaw<int>(
                 """SELECT count(*)::int AS "Value" FROM quran_stems""").FirstAsync(),
             PosTagRows: await dbContext.Database.SqlQueryRaw<int>(
@@ -567,6 +571,63 @@ public sealed class MorphologyImportTestFixture : IAsyncLifetime
                     'empty') AS "Value"
                 FROM quran_pos_tags t
                 """));
+    }
+
+    public async Task<IReadOnlyList<LemmaAnalysisRow>> QueryLemmaAnalysesByTextAsync(string lemmaText)
+    {
+        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+
+        return await dbContext.Database.SqlQueryRaw<LemmaAnalysisRow>(
+            """
+            SELECT a.lemma_buckwalter AS "Buckwalter", a.root_id AS "RootId", a.head_pos AS "HeadPos",
+                   a.words_count AS "WordsCount", a.first_location AS "FirstLocation"
+            FROM quran_lemma_analyses a
+            JOIN quran_lemmas l ON l.id = a.lemma_id
+            WHERE l.lemma_text = {0}
+            ORDER BY a.first_word_order_in_mushaf
+            """,
+            lemmaText).ToListAsync();
+    }
+
+    public async Task<SmallYehStemIdentitySnapshot> QuerySmallYehStemIdentityRowsAsync()
+    {
+        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+
+        var stems = await dbContext.Database.SqlQueryRaw<string>(
+            """
+            SELECT stem_text AS "Value"
+            FROM quran_stems
+            ORDER BY id
+            """).ToListAsync();
+
+        var suffix = await dbContext.Database.SqlQueryRaw<SmallYehSuffixRow>(
+            """
+            SELECT form_buckwalter AS "FormBuckwalter",
+                   form_arabic_normalized AS "FormArabicNormalized",
+                   pos AS "Pos",
+                   kind AS "Kind",
+                   stem_id AS "StemId"
+            FROM quran_word_morphology_segments
+            WHERE segment_location = '1:1:3:2'
+            """).SingleAsync();
+
+        var headRows = await dbContext.Database.SqlQueryRaw<SmallYehHeadStemRow>(
+            """
+            SELECT s.segment_location AS "SegmentLocation",
+                   s.form_arabic_normalized AS "FormArabicNormalized",
+                   st.stem_text AS "StemText"
+            FROM quran_word_morphology_segments s
+            JOIN quran_stems st ON st.id = s.stem_id
+            WHERE s.segment_location IN ('1:1:1:1', '1:1:2:1')
+            ORDER BY s.segment_location
+            """).ToListAsync();
+
+        return new SmallYehStemIdentitySnapshot(
+            stems,
+            (suffix.FormBuckwalter, suffix.FormArabicNormalized, suffix.Pos, suffix.Kind, suffix.StemId),
+            headRows);
     }
 
     public async Task<bool> AreSourceFilesUnchangedAsync(string sourcePath, MorphologyFileDigests before)
@@ -684,11 +745,36 @@ public sealed class MorphologyImportTestFixture : IAsyncLifetime
     };
 }
 
+public sealed record LemmaAnalysisRow(
+    string Buckwalter,
+    int? RootId,
+    string? HeadPos,
+    int WordsCount,
+    string FirstLocation);
+
+public sealed record SmallYehStemIdentitySnapshot(
+    IReadOnlyList<string> Stems,
+    (string? FormBuckwalter, string? FormArabicNormalized, string? Pos, string? Kind, int? StemId) SuffixRender,
+    IReadOnlyList<SmallYehHeadStemRow> HeadStemRenderAndIdentity);
+
+public sealed record SmallYehSuffixRow(
+    string? FormBuckwalter,
+    string? FormArabicNormalized,
+    string? Pos,
+    string? Kind,
+    int? StemId);
+
+public sealed record SmallYehHeadStemRow(
+    string SegmentLocation,
+    string? FormArabicNormalized,
+    string? StemText);
+
 public sealed record TableSnapshot(
     int MorphologyRows,
     int SegmentRows,
     int RootRows,
     int LemmaRows,
+    int LemmaAnalysisRows,
     int StemRows,
     int PosTagRows,
     int QuranWordRows,

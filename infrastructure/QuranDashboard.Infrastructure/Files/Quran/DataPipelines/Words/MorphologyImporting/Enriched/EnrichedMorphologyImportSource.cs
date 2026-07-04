@@ -87,7 +87,9 @@ public sealed class EnrichedMorphologyImportSource : IMorphologyImportSource
             // No legacy word-lemma correction summary: the enriched pathway does not run
             // WordLemmaNormalization. The report writer only renders that section when non-null.
             CorrectionSummary: null,
-            SourceKind: MorphologyImportSourceKind.Enriched);
+            SourceKind: MorphologyImportSourceKind.Enriched,
+            // Per-buckwalter analytical breakdown under each collapsed display lemma (Feature 020).
+            LemmaAnalyses: build.ResolvedLemmaAnalyses);
     }
 
     public async Task<bool> SourceUnchangedAsync(string sourcePath, CancellationToken ct)

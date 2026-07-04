@@ -1,0 +1,690 @@
+{
+  "artifact": "/projects/Dashboard/App/resources/import-sources/quran-enriched-morphology/corpus-based-enriched-morphology.dashboard-ready.json",
+  "artifact_records": 77432,
+  "distinct_head_lemma_buckwalters": 4832,
+  "distinct_head_lemma_texts": 4817,
+  "lemma_text_collisions": 15,
+  "collisions_numeric_only_tag": 15,
+  "collisions_different_root": 4,
+  "collisions_different_pos": 11,
+  "recommendation_counts": {
+    "MANUAL_REVIEW_REQUIRED": 13,
+    "COLLAPSE_SAFE_WITH_NOTES": 1,
+    "COLLAPSE_SAFE": 1
+  },
+  "verdict": "MANUAL_REVIEW_REQUIRED",
+  "collisions": [
+    {
+      "lemma_text": "مَٰلِك",
+      "variant_count": 2,
+      "buckwalters": [
+        "ma`lik",
+        "ma`lik2"
+      ],
+      "numeric_only_disambiguation": true,
+      "different_root": false,
+      "different_pos": true,
+      "recommendation": "MANUAL_REVIEW_REQUIRED",
+      "reason": "variants carry DIFFERENT POS (e.g. proper-vs-common or verb-vs-nominal) — likely distinct lemmas",
+      "variants": [
+        {
+          "lemma_buckwalter": "ma`lik",
+          "buckwalter_base": "ma`lik",
+          "copy_row": 8,
+          "first_word_order": 14,
+          "first_location": "1:4:1",
+          "head_occurrences": 3,
+          "stem_segment_occurrences": 3,
+          "head_pos": [
+            "N"
+          ],
+          "roots": [
+            "mlk|م ل ك"
+          ]
+        },
+        {
+          "lemma_buckwalter": "ma`lik2",
+          "buckwalter_base": "ma`lik",
+          "copy_row": 4063,
+          "first_word_order": 68161,
+          "first_location": "43:77:2",
+          "head_occurrences": 1,
+          "stem_segment_occurrences": 1,
+          "head_pos": [
+            "PN"
+          ],
+          "roots": [
+            "mlk|م ل ك"
+          ]
+        }
+      ]
+    },
+    {
+      "lemma_text": "إِذَا",
+      "variant_count": 2,
+      "buckwalters": [
+        "<i*aA",
+        "<i*aA2"
+      ],
+      "numeric_only_disambiguation": true,
+      "different_root": false,
+      "different_pos": true,
+      "recommendation": "MANUAL_REVIEW_REQUIRED",
+      "reason": "variants carry DIFFERENT POS (e.g. proper-vs-common or verb-vs-nominal) — likely distinct lemmas",
+      "variants": [
+        {
+          "lemma_buckwalter": "<i*aA",
+          "buckwalter_base": "<i*aA",
+          "copy_row": 72,
+          "first_word_order": 139,
+          "first_location": "2:11:1",
+          "head_occurrences": 409,
+          "stem_segment_occurrences": 409,
+          "head_pos": [
+            "COND",
+            "SUR",
+            "T"
+          ],
+          "roots": []
+        },
+        {
+          "lemma_buckwalter": "<i*aA2",
+          "buckwalter_base": "<i*aA",
+          "copy_row": 1583,
+          "first_word_order": 11868,
+          "first_location": "4:77:17",
+          "head_occurrences": 14,
+          "stem_segment_occurrences": 14,
+          "head_pos": [
+            "SUR"
+          ],
+          "roots": []
+        }
+      ]
+    },
+    {
+      "lemma_text": "مَع",
+      "variant_count": 2,
+      "buckwalters": [
+        "maE",
+        "maE2"
+      ],
+      "numeric_only_disambiguation": true,
+      "different_root": false,
+      "different_pos": true,
+      "recommendation": "MANUAL_REVIEW_REQUIRED",
+      "reason": "variants carry DIFFERENT POS (e.g. proper-vs-common or verb-vs-nominal) — likely distinct lemmas",
+      "variants": [
+        {
+          "lemma_buckwalter": "maE",
+          "buckwalter_base": "maE",
+          "copy_row": 84,
+          "first_word_order": 191,
+          "first_location": "2:14:13",
+          "head_occurrences": 159,
+          "stem_segment_occurrences": 159,
+          "head_pos": [
+            "LOC"
+          ],
+          "roots": []
+        },
+        {
+          "lemma_buckwalter": "maE2",
+          "buckwalter_base": "maE",
+          "copy_row": 258,
+          "first_word_order": 682,
+          "first_location": "2:41:6",
+          "head_occurrences": 5,
+          "stem_segment_occurrences": 5,
+          "head_pos": [
+            "P"
+          ],
+          "roots": []
+        }
+      ]
+    },
+    {
+      "lemma_text": "حَيْث",
+      "variant_count": 2,
+      "buckwalters": [
+        "Hayov",
+        "Hayov2"
+      ],
+      "numeric_only_disambiguation": true,
+      "different_root": false,
+      "different_pos": true,
+      "recommendation": "MANUAL_REVIEW_REQUIRED",
+      "reason": "variants carry DIFFERENT POS (e.g. proper-vs-common or verb-vs-nominal) — likely distinct lemmas",
+      "variants": [
+        {
+          "lemma_buckwalter": "Hayov",
+          "buckwalter_base": "Hayov",
+          "copy_row": 228,
+          "first_word_order": 592,
+          "first_location": "2:35:10",
+          "head_occurrences": 29,
+          "stem_segment_occurrences": 29,
+          "head_pos": [
+            "LOC",
+            "N"
+          ],
+          "roots": [
+            "Hyv|ح   ي   ث"
+          ]
+        },
+        {
+          "lemma_buckwalter": "Hayov2",
+          "buckwalter_base": "Hayov",
+          "copy_row": 645,
+          "first_word_order": 2753,
+          "first_location": "2:144:15",
+          "head_occurrences": 2,
+          "stem_segment_occurrences": 2,
+          "head_pos": [
+            "COND"
+          ],
+          "roots": [
+            "Hyv|ح   ي   ث"
+          ]
+        }
+      ]
+    },
+    {
+      "lemma_text": "أَوْفَىٰ",
+      "variant_count": 2,
+      "buckwalters": [
+        ">awofaY`",
+        ">awofaY`2"
+      ],
+      "numeric_only_disambiguation": true,
+      "different_root": false,
+      "different_pos": true,
+      "recommendation": "MANUAL_REVIEW_REQUIRED",
+      "reason": "variants carry DIFFERENT POS (e.g. proper-vs-common or verb-vs-nominal) — likely distinct lemmas",
+      "variants": [
+        {
+          "lemma_buckwalter": ">awofaY`",
+          "buckwalter_base": ">awofaY`",
+          "copy_row": 255,
+          "first_word_order": 670,
+          "first_location": "2:40:8",
+          "head_occurrences": 18,
+          "stem_segment_occurrences": 18,
+          "head_pos": [
+            "V"
+          ],
+          "roots": [
+            "wfy|و   ف   ي"
+          ]
+        },
+        {
+          "lemma_buckwalter": ">awofaY`2",
+          "buckwalter_base": ">awofaY`",
+          "copy_row": 2422,
+          "first_word_order": 27250,
+          "first_location": "9:111:25",
+          "head_occurrences": 2,
+          "stem_segment_occurrences": 2,
+          "head_pos": [
+            "ADJ",
+            "N"
+          ],
+          "roots": [
+            "wfy|و   ف   ي"
+          ]
+        }
+      ]
+    },
+    {
+      "lemma_text": "عَصَا",
+      "variant_count": 2,
+      "buckwalters": [
+        "EaSaA2",
+        "EaSaA"
+      ],
+      "numeric_only_disambiguation": true,
+      "different_root": true,
+      "different_pos": true,
+      "recommendation": "MANUAL_REVIEW_REQUIRED",
+      "reason": "variants carry DIFFERENT roots — distinct lemmas that share only display text",
+      "variants": [
+        {
+          "lemma_buckwalter": "EaSaA2",
+          "buckwalter_base": "EaSaA",
+          "copy_row": 339,
+          "first_word_order": 949,
+          "first_location": "2:60:7",
+          "head_occurrences": 10,
+          "stem_segment_occurrences": 10,
+          "head_pos": [
+            "N"
+          ],
+          "roots": [
+            "ESw|ع   ص   و"
+          ]
+        },
+        {
+          "lemma_buckwalter": "EaSaA",
+          "buckwalter_base": "EaSaA",
+          "copy_row": 368,
+          "first_word_order": 1028,
+          "first_location": "2:61:57",
+          "head_occurrences": 27,
+          "stem_segment_occurrences": 27,
+          "head_pos": [
+            "V"
+          ],
+          "roots": [
+            "ESy|ع   ص   ي"
+          ]
+        }
+      ]
+    },
+    {
+      "lemma_text": "صَٰلِح",
+      "variant_count": 2,
+      "buckwalters": [
+        "Sa`liH",
+        "Sa`liH2"
+      ],
+      "numeric_only_disambiguation": true,
+      "different_root": false,
+      "different_pos": true,
+      "recommendation": "MANUAL_REVIEW_REQUIRED",
+      "reason": "variants carry DIFFERENT POS (e.g. proper-vs-common or verb-vs-nominal) — likely distinct lemmas",
+      "variants": [
+        {
+          "lemma_buckwalter": "Sa`liH",
+          "buckwalter_base": "Sa`liH",
+          "copy_row": 373,
+          "first_word_order": 1045,
+          "first_location": "2:62:14",
+          "head_occurrences": 65,
+          "stem_segment_occurrences": 65,
+          "head_pos": [
+            "ADJ",
+            "N"
+          ],
+          "roots": [
+            "SlH|ص ل ح"
+          ]
+        },
+        {
+          "lemma_buckwalter": "Sa`liH2",
+          "buckwalter_base": "Sa`liH",
+          "copy_row": 2112,
+          "first_word_order": 21424,
+          "first_location": "7:73:4",
+          "head_occurrences": 9,
+          "stem_segment_occurrences": 9,
+          "head_pos": [
+            "PN"
+          ],
+          "roots": [
+            "SlH|ص ل ح"
+          ]
+        }
+      ]
+    },
+    {
+      "lemma_text": "هُود",
+      "variant_count": 2,
+      "buckwalters": [
+        "huwd2",
+        "huwd"
+      ],
+      "numeric_only_disambiguation": true,
+      "different_root": false,
+      "different_pos": false,
+      "recommendation": "COLLAPSE_SAFE_WITH_NOTES",
+      "reason": "same root + proper-noun POS; the numeric tag may still separate distinct named referents — confirm referent identity before collapse",
+      "variants": [
+        {
+          "lemma_buckwalter": "huwd2",
+          "buckwalter_base": "huwd",
+          "copy_row": 549,
+          "first_word_order": 2068,
+          "first_location": "2:111:8",
+          "head_occurrences": 3,
+          "stem_segment_occurrences": 3,
+          "head_pos": [
+            "PN"
+          ],
+          "roots": [
+            "hwd|ه   و   د"
+          ]
+        },
+        {
+          "lemma_buckwalter": "huwd",
+          "buckwalter_base": "huwd",
+          "copy_row": 2106,
+          "first_word_order": 21288,
+          "first_location": "7:65:4",
+          "head_occurrences": 7,
+          "stem_segment_occurrences": 7,
+          "head_pos": [
+            "PN"
+          ],
+          "roots": [
+            "hwd|ه   و   د"
+          ]
+        }
+      ]
+    },
+    {
+      "lemma_text": "عَاد",
+      "variant_count": 2,
+      "buckwalters": [
+        "EaAd",
+        "EaAd2"
+      ],
+      "numeric_only_disambiguation": true,
+      "different_root": true,
+      "different_pos": true,
+      "recommendation": "MANUAL_REVIEW_REQUIRED",
+      "reason": "variants carry DIFFERENT roots — distinct lemmas that share only display text",
+      "variants": [
+        {
+          "lemma_buckwalter": "EaAd",
+          "buckwalter_base": "EaAd",
+          "copy_row": 711,
+          "first_word_order": 3292,
+          "first_location": "2:173:18",
+          "head_occurrences": 6,
+          "stem_segment_occurrences": 6,
+          "head_pos": [
+            "N"
+          ],
+          "roots": [
+            "Edw|ع   د   و"
+          ]
+        },
+        {
+          "lemma_buckwalter": "EaAd2",
+          "buckwalter_base": "EaAd",
+          "copy_row": 2105,
+          "first_word_order": 21286,
+          "first_location": "7:65:2",
+          "head_occurrences": 24,
+          "stem_segment_occurrences": 24,
+          "head_pos": [
+            "PN"
+          ],
+          "roots": [
+            "Ewd|ع   و   د"
+          ]
+        }
+      ]
+    },
+    {
+      "lemma_text": "بَعْل",
+      "variant_count": 2,
+      "buckwalters": [
+        "baEol",
+        "baEol2"
+      ],
+      "numeric_only_disambiguation": true,
+      "different_root": false,
+      "different_pos": true,
+      "recommendation": "MANUAL_REVIEW_REQUIRED",
+      "reason": "variants carry DIFFERENT POS (e.g. proper-vs-common or verb-vs-nominal) — likely distinct lemmas",
+      "variants": [
+        {
+          "lemma_buckwalter": "baEol",
+          "buckwalter_base": "baEol",
+          "copy_row": 909,
+          "first_word_order": 4613,
+          "first_location": "2:228:22",
+          "head_occurrences": 6,
+          "stem_segment_occurrences": 6,
+          "head_pos": [
+            "N"
+          ],
+          "roots": [
+            "bEl|ب ع ل"
+          ]
+        },
+        {
+          "lemma_buckwalter": "baEol2",
+          "buckwalter_base": "baEol",
+          "copy_row": 3915,
+          "first_word_order": 61931,
+          "first_location": "37:125:2",
+          "head_occurrences": 1,
+          "stem_segment_occurrences": 1,
+          "head_pos": [
+            "PN"
+          ],
+          "roots": [
+            "bEl|ب ع ل"
+          ]
+        }
+      ]
+    },
+    {
+      "lemma_text": "جَٰهِلِيَّة",
+      "variant_count": 2,
+      "buckwalters": [
+        "ja`hiliy~ap",
+        "ja`hiliy~ap2"
+      ],
+      "numeric_only_disambiguation": true,
+      "different_root": false,
+      "different_pos": true,
+      "recommendation": "MANUAL_REVIEW_REQUIRED",
+      "reason": "variants carry DIFFERENT POS (e.g. proper-vs-common or verb-vs-nominal) — likely distinct lemmas",
+      "variants": [
+        {
+          "lemma_buckwalter": "ja`hiliy~ap",
+          "buckwalter_base": "ja`hiliy~ap",
+          "copy_row": 1372,
+          "first_word_order": 9167,
+          "first_location": "3:154:21",
+          "head_occurrences": 1,
+          "stem_segment_occurrences": 1,
+          "head_pos": [
+            "N"
+          ],
+          "roots": [
+            "jhl|ج ه ل"
+          ]
+        },
+        {
+          "lemma_buckwalter": "ja`hiliy~ap2",
+          "buckwalter_base": "ja`hiliy~ap",
+          "copy_row": 1776,
+          "first_word_order": 15385,
+          "first_location": "5:50:2",
+          "head_occurrences": 3,
+          "stem_segment_occurrences": 3,
+          "head_pos": [
+            "PN"
+          ],
+          "roots": [
+            "jhl|ج ه ل"
+          ]
+        }
+      ]
+    },
+    {
+      "lemma_text": "جَوَاب",
+      "variant_count": 2,
+      "buckwalters": [
+        "jawaAb",
+        "jawaAb2"
+      ],
+      "numeric_only_disambiguation": true,
+      "different_root": true,
+      "different_pos": false,
+      "recommendation": "MANUAL_REVIEW_REQUIRED",
+      "reason": "variants carry DIFFERENT roots — distinct lemmas that share only display text",
+      "variants": [
+        {
+          "lemma_buckwalter": "jawaAb",
+          "buckwalter_base": "jawaAb",
+          "copy_row": 2125,
+          "first_word_order": 21581,
+          "first_location": "7:82:3",
+          "head_occurrences": 4,
+          "stem_segment_occurrences": 4,
+          "head_pos": [
+            "N"
+          ],
+          "roots": [
+            "jwb|ج   و   ب"
+          ]
+        },
+        {
+          "lemma_buckwalter": "jawaAb2",
+          "buckwalter_base": "jawaAb",
+          "copy_row": 3817,
+          "first_word_order": 58863,
+          "first_location": "34:13:9",
+          "head_occurrences": 1,
+          "stem_segment_occurrences": 1,
+          "head_pos": [
+            "N"
+          ],
+          "roots": [
+            "jby|ج   ب   ي"
+          ]
+        }
+      ]
+    },
+    {
+      "lemma_text": "يُغَاثُ",
+      "variant_count": 2,
+      "buckwalters": [
+        "yugaAvu2",
+        "yugaAvu"
+      ],
+      "numeric_only_disambiguation": true,
+      "different_root": true,
+      "different_pos": false,
+      "recommendation": "MANUAL_REVIEW_REQUIRED",
+      "reason": "variants carry DIFFERENT roots — distinct lemmas that share only display text",
+      "variants": [
+        {
+          "lemma_buckwalter": "yugaAvu2",
+          "buckwalter_base": "yugaAvu",
+          "copy_row": 2682,
+          "first_word_order": 32455,
+          "first_location": "12:49:8",
+          "head_occurrences": 1,
+          "stem_segment_occurrences": 1,
+          "head_pos": [
+            "V"
+          ],
+          "roots": [
+            "gyv|غ ي ث"
+          ]
+        },
+        {
+          "lemma_buckwalter": "yugaAvu",
+          "buckwalter_base": "yugaAvu",
+          "copy_row": 3071,
+          "first_word_order": 40194,
+          "first_location": "18:29:20",
+          "head_occurrences": 1,
+          "stem_segment_occurrences": 1,
+          "head_pos": [
+            "V"
+          ],
+          "roots": [
+            "gwv|غ   و   ث"
+          ]
+        }
+      ]
+    },
+    {
+      "lemma_text": "أَحْصَىٰ",
+      "variant_count": 2,
+      "buckwalters": [
+        ">aHoSaY`",
+        ">aHoSaY`2"
+      ],
+      "numeric_only_disambiguation": true,
+      "different_root": false,
+      "different_pos": true,
+      "recommendation": "MANUAL_REVIEW_REQUIRED",
+      "reason": "variants carry DIFFERENT POS (e.g. proper-vs-common or verb-vs-nominal) — likely distinct lemmas",
+      "variants": [
+        {
+          "lemma_buckwalter": ">aHoSaY`",
+          "buckwalter_base": ">aHoSaY`",
+          "copy_row": 2796,
+          "first_word_order": 35038,
+          "first_location": "14:34:11",
+          "head_occurrences": 10,
+          "stem_segment_occurrences": 10,
+          "head_pos": [
+            "V"
+          ],
+          "roots": [
+            "HSy|ح   ص   ي"
+          ]
+        },
+        {
+          "lemma_buckwalter": ">aHoSaY`2",
+          "buckwalter_base": ">aHoSaY`",
+          "copy_row": 3041,
+          "first_word_order": 39815,
+          "first_location": "18:12:6",
+          "head_occurrences": 1,
+          "stem_segment_occurrences": 1,
+          "head_pos": [
+            "N"
+          ],
+          "roots": [
+            "HSy|ح   ص   ي"
+          ]
+        }
+      ]
+    },
+    {
+      "lemma_text": "عَصْف",
+      "variant_count": 2,
+      "buckwalters": [
+        "EaSof",
+        "EaSof2"
+      ],
+      "numeric_only_disambiguation": true,
+      "different_root": false,
+      "different_pos": false,
+      "recommendation": "COLLAPSE_SAFE",
+      "reason": "same root + same POS + numeric-only tag — appears to be a spurious source duplicate of one lemma",
+      "variants": [
+        {
+          "lemma_buckwalter": "EaSof",
+          "buckwalter_base": "EaSof",
+          "copy_row": 4264,
+          "first_word_order": 73491,
+          "first_location": "55:12:3",
+          "head_occurrences": 2,
+          "stem_segment_occurrences": 2,
+          "head_pos": [
+            "N"
+          ],
+          "roots": [
+            "ESf|ع ص ف"
+          ]
+        },
+        {
+          "lemma_buckwalter": "EaSof2",
+          "buckwalter_base": "EaSof",
+          "copy_row": 4584,
+          "first_word_order": 80570,
+          "first_location": "77:2:2",
+          "head_occurrences": 1,
+          "stem_segment_occurrences": 1,
+          "head_pos": [
+            "N"
+          ],
+          "roots": [
+            "ESf|ع ص ف"
+          ]
+        }
+      ]
+    }
+  ]
+}
