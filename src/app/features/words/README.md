@@ -1,0 +1,46 @@
+# Words feature (الكلمات) — explorers
+
+**HOW rules:** `.architecture/FRONTEND_STRUCTURE.md`, `.architecture/API_INTEGRATION_GUIDELINES.md`
+(project root). This file is the WHAT (current truth + shared pattern).
+
+## What this feature does
+
+Five read-only explorers over the Quran word data — **Roots, Lemmas, Stems, WordTypes,
+Unique Words** — plus the Words hub. Each is a table-first split-screen page: a paginated
+table on one side, a detail panel (summary + related lists + ayah matches) on the other,
+with all selection/filter/paging state reflected in the URL.
+
+## Shared pattern (each explorer repeats it)
+
+Per explorer `X` in {roots, lemmas, stems, word-types, unique-words}:
+
+- `pages/X-explorer-page/` — routed smart component (unique-words: `unique-words-page`).
+- `state/X-explorer.facade.ts` (+ `X-detail.facade.ts`) — orchestrates load/select.
+- `state/X-cache.ts` — client cache of fetched pages/details.
+- `state/X-url-sync.ts` — URL ⇄ state (the URL-state contract; keep params stable).
+- `state/X-detail-view.loader.ts` — loads the detail panel for a selection.
+- `data-access/X.api.ts` — `ApiResponse<T>` calls.
+- `models/X.models.ts` + `models/X.labels.ts` — view models + Arabic labels.
+- `utils/X-ayah-match.mapper.ts` — maps API ayah matches to view rows.
+
+Shared across explorers: `utils/explorer-table-*` (focus/keyboard-nav/scroll/column-nav),
+`utils/explorer-keyboard-nav.scheduler.ts`, `utils/verse-key.ts`, and the
+`components/` table + list + panel set.
+
+## Gotchas / invariants (read before changing)
+
+- **Labels use the TDZ getter pattern.** Read `*.labels.ts` consts via **getters**, not
+  `readonly` fields — otherwise they resolve to `undefined` (temporal dead zone) in the
+  test bundle. **Do not revert the getters.**
+- **URL-state is a contract.** `*-url-sync.ts` param names/shape are user-facing (shareable
+  links) and spec'd; changing them is a contract change — update the spec and tests too.
+- **Identity is clean imlaei-simple** (display Uthmani) — mirrors the backend read models.
+- Tests: obey the repo test-command rule (see `../../../../README.md`) — the vitest worker
+  cap and jsdom observer guards apply here.
+
+## Related
+
+- Backend read models: `Backend/.../Persistence/Reads/Quran/Words/README.md`.
+- Specs: `specs/015-roots-explorer/`, `016-lemmas-stems-explorer/`, `019-word-types-explorer/`,
+  `014-words-hub-unique-words/`.
+  (Prior frontend/docs evidence reports were purged — recover from git history if needed.)

@@ -17,6 +17,17 @@ read and follow:
 
 - `.architecture/FRONTEND_STRUCTURE.md`
 
+## Frontend Local READMEs
+
+- Before touching a frontend feature, read the nearest `README.md`
+  (`src/app/features/words/README.md`, `src/app/features/mushaf/README.md`,
+  `src/app/core/README.md`) before the `.architecture/*` HOW docs.
+- If you change routes, URL-state contracts, facade/cache patterns, render/font
+  invariants, or the test-command rules a README documents, update that README in the
+  same change.
+- Do not create standalone frontend feature reports by default; reserve reports for
+  audits, UX contracts, diagnostics, and acceptance evidence.
+
 ## API Integration
 
 Before adding or changing frontend API services, data-access files, facade/store

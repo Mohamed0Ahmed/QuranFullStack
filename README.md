@@ -1,59 +1,45 @@
-# QuranDashboardUi
+# Quran Dashboard UI
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.3.27.
+Angular 20 (standalone components + Signals) frontend for the Quran Dashboard
+(المنهج القرآني) — an **Arabic-first (RTL)**, scholarly/calm admin dashboard.
 
-## Development server
+> HOW to work here (rules): `.architecture/FRONTEND_STRUCTURE.md`,
+> `.architecture/UI_STYLE_SYSTEM.md`, `.architecture/API_INTEGRATION_GUIDELINES.md`, plus
+> `../../PRODUCT.md` and `../../DESIGN.md`. This file is the WHAT (current truth + map).
 
-To start a local development server, run:
+## Feature map
 
-```bash
-ng serve
+```text
+src/app/core       app-wide: ApiResponse, interceptors, cache, layout shell, routes, theme  → core/README.md
+src/app/features
+  words            Roots/Lemmas/Stems/WordTypes/Unique-Words explorers                       → words/README.md
+  mushaf           page-by-page Mushaf reader + ayah/word study context                      → mushaf/README.md
+  dashboard        home
+src/app/shared     pagination, skeletons, safe-html, deep-link, breakpoints
+src/styles         SCSS tokens/themes/components (see UI_STYLE_SYSTEM.md)
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Run / build
 
 ```bash
-ng generate component component-name
+npm install
+npm run start:https      # or scripts/qd-ui — dev server at https://localhost:4200
+ng build                 # production build → dist/
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+Local HTTPS needs `mkcert localhost` in the project root (see `Backend/scripts/README.md`).
 
-```bash
-ng generate --help
-```
+## Testing (read before running tests)
 
-## Building
+- **Keep the `VITEST_MAX_FORKS` cap on `npm test`** — without it the run OOMs/freezes the
+  machine. **`vitest.config.ts` is ignored by the Angular unit-test builder**, so the cap
+  must be set the way `package.json` already sets it; do not "clean it up".
+- **jsdom lacks `matchMedia` / `ResizeObserver`** under the builder — guard them in
+  components and default to desktop.
 
-To build the project run:
+## Invariants
 
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+- **Mushaf font is Amiri**, not `UthmanicHafs_V22` (which mis-renders U+06DF) — see
+  `src/app/features/mushaf/README.md`.
+- **Word identity is clean imlaei-simple** (display Uthmani) — mirrors the backend.
+- URL-state in explorers/reader is a shareable contract; keep params stable.
