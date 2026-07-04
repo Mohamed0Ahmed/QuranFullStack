@@ -13,6 +13,20 @@ Before adding or changing logging, exception handling, diagnostics, DataPipeline
 
 - `.architecture/LOGGING_GUIDELINES.md`
 
+## Backend Local READMEs
+
+- Before touching a backend area, read the nearest `README.md` (e.g.
+  `infrastructure/QuranDashboard.Infrastructure/Files/Quran/DataPipelines/Words/MorphologyImporting/README.md`,
+  `infrastructure/QuranDashboard.Infrastructure/Persistence/DataPipelines/Quran/README.md`,
+  `infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/README.md`,
+  `tools/QuranDashboard.DataImporter/README.md`) before the `.architecture/*` HOW docs.
+- If you change pipeline behavior, import commands/verbs, read-model derivation,
+  identity/ordering invariants, source-safety handling, or an API contract that a
+  README documents, update that README in the same change.
+- Reports (`Backend/report/…`) stay evidence-only; do not spawn a new feature report
+  for routine work. Migrations, EF snapshots, and source packages are not documented
+  by README and must not be hand-edited.
+
 ## Backend Reports and Import Sources
 
 Backend report outputs belong under:
