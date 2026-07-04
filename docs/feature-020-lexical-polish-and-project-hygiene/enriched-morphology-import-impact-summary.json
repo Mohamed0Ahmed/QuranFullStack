@@ -1,0 +1,69 @@
+{
+  "report": "Feature 020 — Enriched Morphology Import Impact & Mapping Report",
+  "date": "2026-07-04",
+  "branch": "020-lexical-polish-and-project-hygiene",
+  "scope": "read-only impact analysis; no copy, import, migration, DB change, importer code, or commit",
+  "verdict": "IMPORT_IMPACT_NEEDS_DECISION",
+  "open_decisions": [
+    "fallback convention for 2:181:14 / 8:6:12 / 13:37:20 (enriched FALLBACK_QUL vs Dashboard aligned-corpus real segments — recommend keep aligned)",
+    "dimension-id rederivation & stability when moving from QUL-link+corrections to Corpus-truth lemma"
+  ],
+  "motivating_defect": {
+    "description": "current DB word-level lemma still QUL-shifted (wrong)",
+    "examples": {
+      "41:44:16": {"current": "ءَامَنَ", "correct": "شفاء", "root_ok": "ش ف ي"},
+      "11:29:17": {"current": "ءَامَنَ", "correct": "لاقى/ملاقو", "root_ok": "ل ق ي"},
+      "2:102:41": {"current": "فَرَّقُ", "correct": "مرء", "root_ok": "م ر ا"},
+      "2:144:20": {"current": "كَانَ", "correct": "شطر", "root_ok": "ش ط ر"}
+    },
+    "root_cause": "MorphologyAssembler takes word-level lemma_id from QUL location link; WordLemmaNormalization correction artifact does not cover these"
+  },
+  "current_pipeline": {
+    "source_folder": "resources/import-sources/quran-morphology/ (multi-file manifest: qpc-aligned corpus + 3 QUL files + curation artifacts)",
+    "corpus_is_qpc_aligned": true,
+    "uses_qul_location_index_join_everywhere_incl_boundary": true,
+    "db_counts": {"quran_word_morphology": 77432, "segments": 128219, "roots": 1642, "lemmas": 4790, "stems": 12108, "pos_tags": 49},
+    "three_missing_words_have_real_aligned_segments": {"3487": "عَلِيمٌ", "23788": "يَنظُرُ+ونَ", "34313": "وَاقٍ"}
+  },
+  "decisions": {
+    "resource_location": "NEW resources/import-sources/quran-enriched-morphology/ (single merged per-word file, keep old importer runnable, stage with manifest+sha256; do NOT copy now)",
+    "import_strategy": "NEW enriched IMorphologyImportSource pathway, parallel parity check, deprecate old after cut-over (avoid in-place rewrite of dimension-id logic)",
+    "schema_new_columns": {
+      "quran_word_morphology": ["corpus_present bool", "provenance text null"],
+      "quran_word_morphology_segments": ["lemma_arabic_mapping_status", "root_arabic_mapping_status", "stem_arabic_mapping_status", "lemma_arabic_qul_canonical", "stem_arabic_qul_canonical", "stem_buckwalter"],
+      "not_a_column": "quranWordIdVerifiedAgainstDashboard -> import provenance/manifest"
+    },
+    "no_new_table_required": true
+  },
+  "segment_count_caveat": "128,219 (aligned corpus, keep real segments for the 3 words) vs 128,222 (raw+3 fallback); depends on fallback decision",
+  "boundary_ayahs": {"ayahs": ["2:181", "2:282", "8:6", "13:37"], "rule": "corpus-only morphology; value-based QUL confirmation only; no location index-join; current importer must change to honor this"},
+  "ui_api_surface": {
+    "changes": ["api/words/lemmas (corrected lemmas + possible id renumber)", "api/words/roots", "api/words/stems", "api/words/word-types (if lemma-derived)", "api/mushaf/words/{loc}/analysis"],
+    "unchanged": ["foundation word text/layout", "i3rab rules", "POS-derived typing"],
+    "hard_rule": "Buckwalter never displayed in UI; stored internal/audit only",
+    "top_risk": "dimension-id stability (root/lemma/stem ids FK'd + in explorer routes)"
+  },
+  "validation_gates": [
+    "77432 word rows", "0 markers", "all quranWordId match quran_words.id", "no dup word/segment rows",
+    "segment count 128219 or 128222 per fallback decision", "3 fallback words per chosen convention",
+    "corpus-present words have corpus segments", "mapping statuses in allowed vocab",
+    "0 unresolved roots for corpus root-bearing segments", "no Buckwalter leakage to UI Arabic fields",
+    "word-level lemma never from QUL location link", "boundary ayahs no QUL index-join", "dimension-id stability preserved or remapped"
+  ],
+  "docs_hygiene": {
+    "canonical_new": ["docs/feature-020-lexical-polish-and-project-hygiene/enriched-morphology-import-impact-report.md"],
+    "reference_only_sourceaudit_evidence": [
+      "corpus-based-enriched-json-alignment-gate.md",
+      "corpus-enriched-full-generation-readiness-report.md",
+      "dashboard-qpc-word-id-provenance-check.md",
+      "corpus-based-enriched-morphology-full-generation-report.md"
+    ],
+    "obsolete_assumptions_must_not_return": [
+      "QUL word-level lemma link as lemma truth",
+      "per-word QUL lemma correction artifacts (WordLemmaNormalization*, word-level-lemma-alignment-corrections*)",
+      "arabic_render_tier treated as QUL-confirmation signal",
+      "importer index-joining QUL by location for dimension identity"
+    ]
+  },
+  "not_imported": "SourceAudit 96MB artifact stays external; not copied, not a Dashboard package"
+}

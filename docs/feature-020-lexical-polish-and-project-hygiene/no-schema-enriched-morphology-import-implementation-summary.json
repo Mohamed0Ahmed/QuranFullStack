@@ -1,0 +1,72 @@
+{
+  "plan": "Feature 020 — No-Schema Enriched Morphology Import Implementation Plan",
+  "date": "2026-07-04",
+  "branch": "020-lexical-polish-and-project-hygiene",
+  "scope": "plan only; no code, no JSON copy, no migration created/run, no importer run, no DB reset/drop/update, no DB data change, no commit",
+  "verdict": "NO_SCHEMA_IMPORT_PLAN_READY",
+  "signed_off_decisions": {
+    "artifact": "corpus-based-enriched-morphology.dashboard-ready.json (77432 records, 128219 segments, 0 fallback, all corpusPresent:true, boundary rebuilt from aligned corpus, quranWordIdVerifiedAgainstDashboard:true)",
+    "reset_later": true,
+    "preserve_old_dimension_ids": false,
+    "new_columns": false,
+    "new_migration": false,
+    "current_schema_sufficient": true,
+    "buckwalter": "internal/audit-only in existing columns; never UI",
+    "extra_fields": "source/report-only; not stored"
+  },
+  "no_column_mechanism": "reuse MorphologySourceData DTO + EfBulkMorphologyWriter unchanged; AlignedWordDto/AlignedSegmentDto/Resolved*Dto have no members for corpusPresent/provenance/*MappingStatus/*QulCanonical/stemBuckwalter, so audit fields cannot reach the DB",
+  "counts": { "word_rows": 77432, "segment_rows": 128219, "fallback": 0, "pos_tags_seed": 49 },
+  "resource_staging": {
+    "target_folder": "resources/import-sources/quran-enriched-morphology/",
+    "copy_in_scope_now": false,
+    "manifest_fields": ["relativePath", "sha256", "sizeBytes(96051070)", "recordCount(77432)", "segmentCount(128219)", "sourceArtifact/provenance", "quranWordIdVerifiedAgainstDashboard(provenance-only)"],
+    "sha256": "computed on load; mismatch -> refuse (MorphologyInvariants.SourceMismatch); SourceUnchangedAsync re-verifies"
+  },
+  "import_pathway": {
+    "strategy": "new IMorphologyImportSource implementation returning existing MorphologySourceData; reuse writer/handler/report; do not rewrite old assembler in place",
+    "add": ["EnrichedMorphologyImportSource : IMorphologyImportSource", "EnrichedMorphologyReader (streaming)", "EnrichedDimensionBuilder (value-based, no QUL location link)", "EnrichedMorphologyManifestReader (or generalize MorphologyManifestReader)"],
+    "reuse_unchanged": ["MorphologySourceData", "IMorphologyImportWriter/EfBulkMorphologyWriter", "IMorphologyReportWriter/MarkdownJsonMorphologyReportWriter", "ImportMorphologyHandler", "ImportMorphologyCommand", "MorphologyInvariants", "PosTagSeed", "MapVerbTense/Voice/CaseFeature + BuildFeaturesJson helpers"],
+    "replace_or_bypass": ["MorphologyImportSource(old)", "JsonAlignedCorpusReader", "JsonQulRootReader/LemmaReader/StemReader", "Corrections/* package", "QUL-link+CuratedLemmaDisambiguation path in MorphologyAssembler"],
+    "transition": "old pathway stays runnable for parallel parity; enriched becomes sole truth after import against reset DB; DI selector (flag or verb) picks source",
+    "cli": "import-morphology (tools/QuranDashboard.DataImporter); generate-i3rab runs after"
+  },
+  "schema_mapping": {
+    "quran_word_morphology": "quran_word_id, location, head_pos(head STEM), segment_count, root_id/lemma_id/stem_id(head, value-based), is_verb/verb_tense/verb_voice/case_feature/head_features_json(head features)",
+    "quran_word_morphology_segments": "segment_number, segment_location(composed), kind, pos, form_buckwalter(audit), form_arabic_normalized, arabic_render_tier/source(importer constant), root_buckwalter/lemma_buckwalter(audit), root_id/lemma_id/stem_id, features_raw, features_json, i3rab_*(filled later by generate-i3rab)",
+    "quran_roots": "root_text<-rootArabic, root_buckwalter<-rootBuckwalter, counts computed",
+    "quran_lemmas": "lemma_text<-primary lemmaArabic, lemma_buckwalter<-lemmaBuckwalter, root_id link, counts computed",
+    "quran_stems": "stem_text<-stemArabic (no buckwalter column), counts computed",
+    "quran_pos_tags": "PosTagSeed.GetAll() unchanged (49)"
+  },
+  "ignored_report_only": ["corpusPresent", "provenance", "lemmaArabicMappingStatus", "rootArabicMappingStatus", "stemArabicMappingStatus", "lemmaArabicQulCanonical", "stemArabicQulCanonical", "stemBuckwalter", "quranWordIdVerifiedAgainstDashboard", "quranWordIdSource", "boundaryAyah", "boundaryHandling", "textUthmani/textImlaei/textUthmaniSimple(foundation-owned)"],
+  "dimension_identity": {
+    "root": "rootBuckwalter + rootArabic (both columns exist)",
+    "lemma": "lemmaBuckwalter + primary lemmaArabic (both columns exist); fixes QUL-shift defect",
+    "stem": "existing stem_text rule (no stem_buckwalter column; stemBuckwalter optional in-memory grouping only)",
+    "never": "QUL word-level location links for lemma/root/stem identity",
+    "old_ids": "not preserved; fresh ids by first_word_order_in_mushaf; ship old->new diff report"
+  },
+  "boundary": {
+    "ayahs": ["2:181", "2:282", "8:6", "13:37"],
+    "rule": "import exactly as in dashboard-ready artifact; 0 fallback rows; no QUL location index-join; 8:6:12 = 2 segments"
+  },
+  "retire_after_cutover": ["WordLemmaNormalizationReader/Applier/Validator/Models/ProblemClasses", "word-lemma-normalization.json", "word-lemma-mapping-evidence.json", "SegmentStemCorrectionReader/Models + segment-stem-corrected-arabic.json (confirm no residual-only fix first)", "CuratedLemmaDisambiguation + QUL word-link path in MorphologyAssembler", "JsonQul*Reader, JsonAlignedCorpusReader, old MorphologyImportSource", "qul/*.json word-link files"],
+  "must_not_return": ["QUL word-level lemma link as truth", "per-word QUL lemma correction artifacts", "arabic_render_tier as QUL-confirmation signal", "importer index-joining QUL by location for dimension identity"],
+  "validation_gates": [
+    "77432 word rows", "128219 segment rows", "0 ayah-marker rows", "every quran_word_id matches quran_words.id",
+    "no duplicate word rows", "no duplicate (quran_word_id, segment_number)", "no fallback/provenance in DB",
+    "no QUL word-level lemma truth", "0 unresolved roots for corpus root-bearing segments",
+    "boundary ayahs exact from artifact (8:6:12=2 segs)",
+    "41:44:16 lemma != ءَامَنَ (expect شفاء)", "11:29:17 lemma != ءَامَنَ (expect ملاقوا/لاقى)",
+    "2:102:41 lemma != فَرَّقُ (expect مرء)", "2:144:20 lemma != كَانَ (expect شطر)",
+    "Buckwalter never in UI-facing responses", "every pos resolves against PosTagSeed"
+  ],
+  "testing": ["reader unit tests (incl 8:6:12 two-seg)", "dimension-builder tests (4 corrected lemmas, 0-unresolved roots, no QUL link consulted)", "integration on real Postgres (counts/uniqueness/FK)", "full-artifact dry-run validation + old->new id diff report", "API smoke: lemmas/roots/stems/word-types/mushaf analysis", "frontend full suite not required here"],
+  "rollout_order": ["stage source", "implement importer path", "run tests", "reset DB", "import foundation + rebuild-words + import-morphology(enriched) + generate-i3rab", "validate reports/gates", "smoke affected APIs/UI"],
+  "risks": ["stem homographs merge (no stem_buckwalter col)", "bridge lemma vocalization artifacts (dedupe on lemma_buckwalter)", "root_text irregular whitespace (normalize at display)", "arabic_render_tier vs mapping-status conflation", "dimension-id renumber (full reset makes safe; ship diff)", "96MB single file -> stream parse", "boundary ayahs depend on aligned corpus source"],
+  "deliverables": {
+    "plan_md": "docs/feature-020-lexical-polish-and-project-hygiene/no-schema-enriched-morphology-import-implementation-plan.md",
+    "summary_json": "docs/feature-020-lexical-polish-and-project-hygiene/no-schema-enriched-morphology-import-implementation-summary.json"
+  },
+  "not_implemented": "no importer code written; no JSON copied into Dashboard; no migration; no DB change; no commit"
+}
