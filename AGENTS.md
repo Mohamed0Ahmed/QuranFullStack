@@ -46,6 +46,21 @@ Canonical workspace paths:
 - Backend implementation, import, engineering review, real-run, validation, and completion reports live under `Backend/report/feature-XXX-feature-name/`.
 - Frontend report conventions are not established yet; do not invent frontend report folders unless the task explicitly asks for that decision.
 
+## Local README Context (read before you change a folder)
+
+- Before modifying any folder, look for `README.md` in that folder and in the nearest
+  relevant parent folders, and read the nearest relevant README FIRST. It states the
+  current truth, boundaries, and invariants of that area.
+- Local `README.md` = WHAT an area does now and what must not break.
+  `AGENTS.md` / `CLAUDE.md` / `.architecture/*` = HOW to work and how to write code.
+  `specs/` = feature plans/contracts. Reports = evidence only.
+- If your change alters behavior, commands, boundaries, routes, data invariants,
+  import behavior, API contracts, URL state, or tests described in a README, UPDATE
+  that README in the SAME change.
+- Do NOT create long-lived feature reports by default. Reserve reports for audits,
+  reviews, acceptance evidence, data imports, diagnostics, and one-off investigations.
+- Specs remain planning/contract artifacts; README files do not replace them.
+
 ## Coding Principles
 
 Before any implementation work, read and follow:
