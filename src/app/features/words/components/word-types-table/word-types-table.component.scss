@@ -120,7 +120,9 @@
   cursor: pointer;
 }
 
-.word-types-table__row:hover:not(.qd-is-selected) {
+// Hover is background-only, matching the sibling explorer tables. Skeleton rows are excluded here
+// rather than overridden below: a `--loading:hover` override loses on specificity to this selector.
+.word-types-table__row:hover:not(.qd-is-selected, .word-types-table__row--loading) {
   background: var(--qd-section-bg);
 }
 
@@ -142,10 +144,6 @@
 
 .word-types-table__row--loading {
   cursor: default;
-}
-
-.word-types-table__row--loading:hover {
-  background: transparent;
 }
 
 .word-types-table__word {
@@ -189,12 +187,6 @@
 .word-types-table__row:focus-visible {
   outline: 2px solid var(--qd-focus-ring);
   outline-offset: -2px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .word-types-table__row {
-    transition: none;
-  }
 }
 
 .word-types-table__placeholder {
