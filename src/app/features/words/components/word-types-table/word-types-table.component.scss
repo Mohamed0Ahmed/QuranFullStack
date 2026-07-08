@@ -66,10 +66,6 @@
   transition: opacity var(--qd-t-fast);
 }
 
-.word-types-table__body--busy {
-  opacity: 0.68;
-}
-
 .word-types-table__body--loading {
   overflow: hidden auto;
 }

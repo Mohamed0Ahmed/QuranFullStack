@@ -72,7 +72,7 @@ describe('WordTypesTableComponent', () => {
     expect(emitted[0].contextCode).toBe('PN');
   });
 
-  it('renders a skeleton body before rows exist, then marks existing rows busy during refresh', () => {
+  it('renders a skeleton body while loading, even when prior rows exist, matching the other word tables', () => {
     const loadingFixture = TestBed.createComponent(WordTypesTableComponent);
     loadingFixture.componentRef.setInput('loading', true);
     loadingFixture.detectChanges();
@@ -81,17 +81,14 @@ describe('WordTypesTableComponent', () => {
     expect(loadingRoot.querySelector('[data-testid="word-types-table-loading"]')).not.toBeNull();
     expect(loadingRoot.querySelector('.word-types-table__row--loading')).not.toBeNull();
 
-    const busyFixture = TestBed.createComponent(WordTypesTableComponent);
-    busyFixture.componentRef.setInput('rows', page);
-    busyFixture.componentRef.setInput('loading', true);
-    busyFixture.detectChanges();
+    const refreshFixture = TestBed.createComponent(WordTypesTableComponent);
+    refreshFixture.componentRef.setInput('rows', page);
+    refreshFixture.componentRef.setInput('loading', true);
+    refreshFixture.detectChanges();
 
-    const busyRoot = busyFixture.nativeElement as HTMLElement;
-    const body = busyRoot.querySelector('.word-types-table__body') as HTMLElement;
-
-    expect(body.getAttribute('aria-busy')).toBe('true');
-    expect(body.classList.contains('word-types-table__body--busy')).toBe(true);
-    expect(busyRoot.querySelector('[data-word-types-row]')).not.toBeNull();
+    const refreshRoot = refreshFixture.nativeElement as HTMLElement;
+    expect(refreshRoot.querySelector('[data-testid="word-types-table-loading"]')).not.toBeNull();
+    expect(refreshRoot.querySelector('[data-word-types-row]')).toBeNull();
   });
 
   it('focuses a row by identity for focus return', () => {

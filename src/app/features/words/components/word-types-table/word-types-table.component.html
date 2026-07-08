@@ -19,7 +19,7 @@
       <div class="word-types-table__header-gutter" aria-hidden="true"></div>
     </div>
 
-    @if (loading() && !rows()) {
+    @if (loading()) {
       <div
         class="word-types-table__body word-types-table__body--loading"
         role="rowgroup"
@@ -46,7 +46,7 @@
         }
       </div>
     } @else if (rows(); as page) {
-      <div class="word-types-table__body" role="rowgroup" [class.word-types-table__body--busy]="loading()" [attr.aria-busy]="loading() ? true : null">
+      <div class="word-types-table__body" role="rowgroup">
         @for (row of page.items; track row.tashkeelWordId + ':' + row.contextCode) {
           <button
             type="button"
