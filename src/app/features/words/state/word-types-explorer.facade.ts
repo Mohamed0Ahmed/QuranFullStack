@@ -101,9 +101,11 @@ export class WordTypesExplorerFacade {
   selectType(type: WordTypeMainType): void {
     // Switching the main type resets the child selection AND every secondary filter: case belongs to
     // nouns only and tense/voice to verbs only, so carrying them across types would produce stale,
-    // type-invalid filters. The URL normalizer redrops invalid values defensively as well.
-    this.navigate({
-      ...buildWordTypesQueryParams({
+    // type-invalid filters. The URL normalizer redrops invalid values defensively as well. The detail
+    // panel selection is intentionally left alone: it stays open across type switches instead of
+    // clearing, since the selected row's own identity does not depend on the current list filter.
+    this.navigate(
+      buildWordTypesQueryParams({
         type,
         childCode: null,
         case: DEFAULT_WORD_TYPE_CASE,
@@ -111,8 +113,7 @@ export class WordTypesExplorerFacade {
         voice: DEFAULT_WORD_TYPE_VOICE,
         page: DEFAULT_WORD_TYPES_PAGE,
       }),
-      ...clearWordTypesSelection(),
-    });
+    );
   }
 
   // Selecting a child node narrows rows to that subtype, resets the page, and clears any selected

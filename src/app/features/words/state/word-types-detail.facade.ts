@@ -99,10 +99,11 @@ export class WordTypesDetailFacade {
     this._panel.set({
       ...INITIAL_PANEL,
       selectedRow: identity,
+      summary: row,
       view,
       status: 'loading',
     });
-    this.loadSummaryAndActiveView(identity, view, DEFAULT_WORD_TYPES_DETAIL_PAGE);
+    this.loadActiveView(identity, view, DEFAULT_WORD_TYPES_DETAIL_PAGE);
   }
 
   clearSelection(): void {
@@ -251,36 +252,6 @@ export class WordTypesDetailFacade {
         }),
         map(() => undefined),
       );
-  }
-
-  private loadSummaryAndActiveView(
-    identity: WordTypeRowIdentity,
-    view: WordTypeDetailView,
-    detailPage: number,
-  ): void {
-    this.summarySub?.unsubscribe();
-    this.summarySub = this.cache
-      .getOrLoad(WordTypesCacheKeys.summary(identity), () => this.api.getSummary(identity))
-      .subscribe({
-        next: (response) => {
-          if (!response.isSuccess || !response.data) {
-            this.handleRestoredRowNotFound(response.message ?? '');
-            return;
-          }
-
-          this._panel.update((panel) => ({
-            ...panel,
-            ...buildSummaryPanelUpdate(response),
-          }));
-          this.loadActiveView(identity, view, detailPage);
-        },
-        error: (err) => {
-          this._panel.update((panel) => ({
-            ...panel,
-            ...buildDetailErrorUpdate(err, WORD_TYPES_ERROR_LABEL),
-          }));
-        },
-      });
   }
 
   private loadActiveView(

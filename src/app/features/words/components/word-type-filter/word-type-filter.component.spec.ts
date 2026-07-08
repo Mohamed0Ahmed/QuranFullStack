@@ -97,7 +97,7 @@ describe('WordTypeFilterComponent', () => {
     expect(root.textContent).toContain('حرف نهي');
   });
 
-  it('opens a panel from the arrow and emits the selected child code', () => {
+  it('opens a panel from the arrow, emits the selected child code, and keeps the panel open', () => {
     const fixture = TestBed.createComponent(WordTypeFilterComponent);
     const emitted: (string | null)[] = [];
     fixture.componentRef.setInput('tree', tree);
@@ -120,7 +120,7 @@ describe('WordTypeFilterComponent', () => {
     fixture.detectChanges();
 
     expect(emitted).toEqual(['PN']);
-    expect(root.querySelector('.word-type-filter__panel')).toBeNull();
+    expect(root.querySelector('.word-type-filter__panel')).not.toBeNull();
   });
 
   it('marks the selected child with aria-current and styled state', () => {
@@ -295,7 +295,7 @@ describe('WordTypeFilterComponent', () => {
   });
 
   describe('panel closing', () => {
-    it('closes the panel on Escape and outside click', () => {
+    it('stays open on Escape and outside click, and only closes via the expand toggle', () => {
       const fixture = TestBed.createComponent(WordTypeFilterComponent);
       fixture.componentRef.setInput('tree', tree);
       fixture.detectChanges();
@@ -307,18 +307,18 @@ describe('WordTypeFilterComponent', () => {
 
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
       fixture.detectChanges();
-      expect(fixture.nativeElement.querySelector('.word-type-filter__panel')).toBeNull();
-
-      nounExpand.click();
-      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.word-type-filter__panel')).not.toBeNull();
 
       const outside = document.createElement('button');
       document.body.appendChild(outside);
       outside.click();
       fixture.detectChanges();
-
-      expect(fixture.nativeElement.querySelector('.word-type-filter__panel')).toBeNull();
+      expect(fixture.nativeElement.querySelector('.word-type-filter__panel')).not.toBeNull();
       outside.remove();
+
+      nounExpand.click();
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.word-type-filter__panel')).toBeNull();
     });
   });
 });

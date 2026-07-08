@@ -176,7 +176,7 @@ describe('WordTypesExplorerPageComponent', () => {
     fixture.detectChanges();
 
     expect(router.navigate).toHaveBeenCalledWith([], expect.objectContaining({
-      queryParams: expect.objectContaining({ type: 'verb', childCode: null, page: '1', word: null, contextCode: null }),
+      queryParams: expect.objectContaining({ type: 'verb', childCode: null, page: '1' }),
       queryParamsHandling: 'merge',
     }));
 
@@ -243,14 +243,14 @@ describe('WordTypesExplorerPageComponent', () => {
     expect(root.querySelector('.word-types-details__scroll')).not.toBeNull();
   });
 
-  it('routes main type selection and clears selected row state', async () => {
+  it('routes main type selection and keeps the selected row state', async () => {
     const fixture = await createPage();
     const buttons = fixture.nativeElement.querySelectorAll('qd-word-type-filter .word-type-filter__button') as NodeListOf<HTMLButtonElement>;
 
     buttons[1].click();
 
     expect(router.navigate).toHaveBeenCalledWith([], expect.objectContaining({
-      queryParams: expect.objectContaining({ type: 'verb', page: '1', word: null, contextCode: null }),
+      queryParams: expect.objectContaining({ type: 'verb', page: '1' }),
       queryParamsHandling: 'merge',
     }));
   });

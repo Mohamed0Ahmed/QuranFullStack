@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, input, output, signal } from '@angular/core';
 
 import { WORD_TYPES_CASE_FILTER_LABEL, WORD_TYPES_COLLAPSE_LABEL, WORD_TYPES_CURRENT_FILTER_LABEL, WORD_TYPES_EXPAND_LABEL, WORD_TYPES_FILTER_LABEL, WORD_TYPES_SUBTYPE_GROUP_LABEL, WORD_TYPES_TENSE_FILTER_LABEL, WORD_TYPES_VOICE_FILTER_LABEL, WORD_TYPE_CASE_LABELS, WORD_TYPE_TENSE_LABELS, WORD_TYPE_VOICE_LABELS } from '../../models/word-types.labels';
 import {
@@ -107,7 +107,6 @@ export class WordTypeFilterComponent {
     }
 
     this.childSelected.emit(child.childCode);
-    this.closePanel(this.openPanelType());
   }
 
   protected changeCase(event: Event): void {
@@ -196,31 +195,6 @@ export class WordTypeFilterComponent {
     const trigger = host.querySelector<HTMLButtonElement>(`button.word-type-filter__expand[data-word-type-code="${focusType}"]`)
       ?? host.querySelector<HTMLButtonElement>(`button.word-type-filter__button[data-word-type-code="${focusType}"]`);
     trigger?.focus();
-  }
-
-  @HostListener('document:click', ['$event'])
-  protected onDocumentClick(event: MouseEvent): void {
-    const target = event.target;
-    if (!(target instanceof Node)) {
-      return;
-    }
-
-    if (this.host.nativeElement.contains(target)) {
-      return;
-    }
-
-    this.closePanel(this.openPanelType());
-  }
-
-  @HostListener('document:keydown', ['$event'])
-  protected onDocumentKeydown(event: KeyboardEvent): void {
-    if (event.key !== 'Escape' || this.openPanelType() === null) {
-      return;
-    }
-
-    event.preventDefault();
-    event.stopPropagation();
-    this.closePanel(this.openPanelType());
   }
 
   focusSelectedType(): void {

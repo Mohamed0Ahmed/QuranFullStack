@@ -13,8 +13,6 @@ import {
   WORD_TYPE_SORT_OPTIONS,
   WORD_TYPES_EMPTY_LABEL,
   WORD_TYPES_ERROR_LABEL,
-  WORD_TYPES_LOADING_LABEL,
-  WORD_TYPES_NULL_PLACEHOLDER,
   WORD_TYPES_PAGE_TITLE,
   WORD_TYPES_SELECT_SUBTYPE_LABEL,
   WORD_TYPES_SORT_LABEL,
@@ -103,14 +101,12 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
   });
 
   protected get pageTitle() { return WORD_TYPES_PAGE_TITLE; }
-  protected get loadingLabel() { return WORD_TYPES_LOADING_LABEL; }
   protected get emptyLabel() { return WORD_TYPES_EMPTY_LABEL; }
   protected get selectSubtypeLabel() { return WORD_TYPES_SELECT_SUBTYPE_LABEL; }
   protected get errorLabel() { return WORD_TYPES_ERROR_LABEL; }
   protected get tableLabel() { return WORD_TYPES_TABLE_LABEL; }
   protected get sortLabel() { return WORD_TYPES_SORT_LABEL; }
   protected get sortOptions() { return WORD_TYPE_SORT_OPTIONS; }
-  protected get placeholder() { return WORD_TYPES_NULL_PLACEHOLDER; }
 
   ngOnInit(): void {
     this.explorerFacade.bindToRoute(this.route);
@@ -150,23 +146,27 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
   }
 
   protected selectRow(row: WordTypeRowDto): void {
+    this.detailFacade.selectRow(row, DEFAULT_WORD_TYPES_DETAIL_VIEW);
     this.updateQueryParams(
       buildWordTypesQueryParams({
         word: row.tashkeelWordId,
         contextCode: row.contextCode,
         view: DEFAULT_WORD_TYPES_DETAIL_VIEW,
         detailPage: DEFAULT_WORD_TYPES_DETAIL_PAGE,
+        location: null,
       }),
     );
   }
 
   protected onCountOpened(event: WordTypeCountOpenedEvent): void {
+    this.detailFacade.selectRow(event.row, event.view);
     this.updateQueryParams(
       buildWordTypesQueryParams({
         word: event.row.tashkeelWordId,
         contextCode: event.row.contextCode,
         view: event.view,
         detailPage: DEFAULT_WORD_TYPES_DETAIL_PAGE,
+        location: null,
       }),
     );
   }
