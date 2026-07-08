@@ -101,9 +101,11 @@ export class WordTypesExplorerFacade {
   selectType(type: WordTypeMainType): void {
     // Switching the main type resets the child selection AND every secondary filter: case belongs to
     // nouns only and tense/voice to verbs only, so carrying them across types would produce stale,
-    // type-invalid filters. The URL normalizer redrops invalid values defensively as well.
-    this.navigate({
-      ...buildWordTypesQueryParams({
+    // type-invalid filters. The URL normalizer redrops invalid values defensively as well. The detail
+    // panel selection is intentionally left alone: it stays open across type switches instead of
+    // clearing, since the selected row's own identity does not depend on the current list filter.
+    this.navigate(
+      buildWordTypesQueryParams({
         type,
         childCode: null,
         case: DEFAULT_WORD_TYPE_CASE,
@@ -111,8 +113,7 @@ export class WordTypesExplorerFacade {
         voice: DEFAULT_WORD_TYPE_VOICE,
         page: DEFAULT_WORD_TYPES_PAGE,
       }),
-      ...clearWordTypesSelection(),
-    });
+    );
   }
 
   // Selecting a child node narrows rows to that subtype, resets the page, and clears any selected
@@ -161,10 +162,31 @@ export class WordTypesExplorerFacade {
 
   private loadList() {
     const query = this.state().query;
+    const tree$ = this.cache.getOrLoad(WordTypesCacheKeys.tree, () => this.api.getTree());
+
     this.state.update((current) => ({ ...current, status: 'loading', errorMessage: '' }));
 
+    const leafSelected = query.childCode !== null || query.type === 'inl';
+
+    if (!leafSelected) {
+      return tree$.pipe(
+        tap((tree) => this.handleTreeOnlyResponse(tree)),
+        catchError(() => {
+          this.state.update((current) => ({
+            ...current,
+            status: 'error',
+            tree: null,
+            rows: null,
+            errorMessage: WORD_TYPES_ERROR_LABEL,
+          }));
+          return of(undefined);
+        }),
+        map(() => undefined),
+      );
+    }
+
     return forkJoin({
-      tree: this.cache.getOrLoad(WordTypesCacheKeys.tree, () => this.api.getTree()),
+      tree: tree$,
       rows: this.cache.getOrLoad(
         WordTypesCacheKeys.rows(query, query.sort, query.page),
         () => this.api.getRows({ ...query, pageSize: WORD_TYPES_PAGE_SIZE }),
@@ -183,6 +205,29 @@ export class WordTypesExplorerFacade {
       }),
       map(() => undefined),
     );
+  }
+
+  private handleTreeOnlyResponse(tree: ApiResponse<WordTypeTreeDto>): void {
+    const treeData = tree.data;
+
+    if (!tree.isSuccess || !treeData) {
+      this.state.update((current) => ({
+        ...current,
+        status: 'error',
+        tree: treeData ?? null,
+        rows: null,
+        errorMessage: tree.message ?? WORD_TYPES_ERROR_LABEL,
+      }));
+      return;
+    }
+
+    this.state.update((current) => ({
+      ...current,
+      status: current.rows === null ? 'selectPrompt' : current.rows.totalCount === 0 ? 'empty' : 'success',
+      tree: treeData,
+      rows: current.rows,
+      errorMessage: '',
+    }));
   }
 
   private handleListResponse(

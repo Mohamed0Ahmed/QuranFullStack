@@ -9,13 +9,15 @@ export const WORD_TYPES_DETAILS_PANEL_LABEL = 'تفاصيل كلمة النوع'
 export const WORD_TYPES_SORT_LABEL = 'ترتيب';
 export const WORD_TYPES_LOADING_LABEL = 'جارٍ التحميل…';
 export const WORD_TYPES_EMPTY_LABEL = 'لا توجد نتائج لهذا النوع';
+export const WORD_TYPES_SELECT_SUBTYPE_LABEL = 'اختر نوعًا فرعيًا لعرض الكلمات.';
 export const WORD_TYPES_ERROR_LABEL = 'تعذّر تحميل أنواع الكلمات. تحقّق من الاتصال ثم أعد المحاولة.';
 export const WORD_TYPES_NOT_FOUND_LABEL = 'الكلمة المحددة غير موجودة';
 export const WORD_TYPES_NULL_PLACEHOLDER = '—';
 export const WORD_TYPES_CASE_FILTER_LABEL = 'الحالة';
 export const WORD_TYPES_TENSE_FILTER_LABEL = 'الزمن';
 export const WORD_TYPES_VOICE_FILTER_LABEL = 'الصيغة';
-export const WORD_TYPES_ANALYSIS_ACTION_LABEL = 'عرض التحليل';
+export const WORD_TYPES_SUBTYPE_GROUP_LABEL = 'الأنواع الفرعية';
+export const WORD_TYPES_CURRENT_FILTER_LABEL = 'الحالي';
 
 export const WORD_TYPE_MAIN_LABELS: Record<WordTypeMainType, string> = {
   noun: 'اسم',
@@ -61,13 +63,11 @@ export const WORD_TYPE_SORT_OPTIONS = WORD_TYPE_SORTS.map((value) => ({
 export const WORD_TYPE_DETAIL_TAB_LABELS: Record<WordTypeDetailView, string> = {
   ayahs: 'الآيات الخاصة بالكلمة',
   surahs: 'السور',
-  analysis: 'التحليل',
 };
 
 export const WORD_TYPE_DETAIL_TAB_ARIA: Record<WordTypeDetailView, string> = {
   ayahs: 'الآيات الخاصة بالكلمة المحددة',
   surahs: 'توزيع السور للكلمة المحددة',
-  analysis: 'التحليل النحوي لموضع محدد',
 };
 
 export const WORD_TYPES_EMPTY_SELECTION_LABEL = 'اختر صفًا من الجدول لعرض تفاصيل الكلمة.';

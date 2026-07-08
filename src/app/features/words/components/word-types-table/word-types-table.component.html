@@ -1,18 +1,52 @@
-<section class="word-types-table" [attr.aria-label]="tableLabel">
-  @if (rows(); as page) {
-    <div class="word-types-table__scroll" role="table" [attr.aria-rowcount]="page.totalCount">
-      <div class="word-types-table__header" role="row">
-        <span role="columnheader">{{ headers.word }}</span>
-        <span role="columnheader">{{ headers.type }}</span>
-        <span role="columnheader">{{ headers.root }}</span>
-        <span role="columnheader">{{ headers.stem }}</span>
-        <span role="columnheader">{{ headers.lemma }}</span>
-        <span role="columnheader">{{ headers.occurrences }}</span>
-        <span role="columnheader">{{ headers.ayahs }}</span>
-        <span role="columnheader">{{ headers.surahs }}</span>
+<section
+  class="word-types-table"
+  role="table"
+  [attr.aria-label]="tableLabel"
+  [attr.aria-rowcount]="rows()?.totalCount ?? null"
+>
+  @if (rows() || loading()) {
+    <div class="word-types-table__header" role="rowgroup">
+      <div class="word-types-table__header-row" role="row">
+        <span class="word-types-table__header-cell word-types-table__header-cell--word" role="columnheader">{{ headers.word }}</span>
+        <span class="word-types-table__header-cell word-types-table__header-cell--meta" role="columnheader">{{ headers.type }}</span>
+        <span class="word-types-table__header-cell word-types-table__header-cell--meta" role="columnheader">{{ headers.root }}</span>
+        <span class="word-types-table__header-cell word-types-table__header-cell--meta" role="columnheader">{{ headers.stem }}</span>
+        <span class="word-types-table__header-cell word-types-table__header-cell--meta" role="columnheader">{{ headers.lemma }}</span>
+        <span class="word-types-table__header-cell word-types-table__header-cell--count" role="columnheader">{{ headers.occurrences }}</span>
+        <span class="word-types-table__header-cell word-types-table__header-cell--count" role="columnheader">{{ headers.ayahs }}</span>
+        <span class="word-types-table__header-cell word-types-table__header-cell--count" role="columnheader">{{ headers.surahs }}</span>
       </div>
+      <div class="word-types-table__header-gutter" aria-hidden="true"></div>
+    </div>
 
-      <div role="rowgroup">
+    @if (loading()) {
+      <div
+        class="word-types-table__body word-types-table__body--loading"
+        role="rowgroup"
+        aria-busy="true"
+        data-testid="word-types-table-loading"
+      >
+        <p class="qd-sr-only" role="status" aria-live="polite">{{ loadingLabel }}</p>
+        @for (placeholderRow of loadingRowPlaceholders; track placeholderRow) {
+          <div class="word-types-table__row word-types-table__row--loading" role="row" aria-hidden="true">
+            <span class="word-types-table__cell word-types-table__cell--word" role="cell">
+              <span class="qd-skeleton qd-skeleton--text word-types-table__loading-word"></span>
+            </span>
+            @for (placeholderMeta of [0, 1, 2, 3]; track placeholderMeta) {
+              <span class="word-types-table__cell word-types-table__cell--meta" role="cell">
+                <span class="qd-skeleton qd-skeleton--text word-types-table__loading-meta"></span>
+              </span>
+            }
+            @for (placeholderCount of [0, 1, 2]; track placeholderCount) {
+              <span class="word-types-table__cell word-types-table__cell--count" role="cell">
+                <span class="qd-skeleton qd-skeleton--rounded-md word-types-table__loading-count"></span>
+              </span>
+            }
+          </div>
+        }
+      </div>
+    } @else if (rows(); as page) {
+      <div class="word-types-table__body" role="rowgroup">
         @for (row of page.items; track row.tashkeelWordId + ':' + row.contextCode) {
           <button
             type="button"
@@ -24,39 +58,55 @@
             [attr.aria-selected]="isSelected(row)"
             (click)="selectRow(row)"
           >
-            <span class="word-types-table__word" role="cell">{{ row.displayText }}</span>
-            <span role="cell">{{ row.typeLabel.ar }}</span>
-            <span role="cell">{{ row.rootText || placeholder }}</span>
-            <span role="cell">{{ row.stemText || placeholder }}</span>
-            <span role="cell">{{ row.lemmaText || placeholder }}</span>
-            <span role="cell">
-              <qd-word-count-chip
-                [label]="headers.occurrences"
-                [count]="row.occurrencesCount"
-                [showLabel]="false"
-                (chipClick)="openCount(row, 'occurrences')"
-              />
+            <span class="word-types-table__cell word-types-table__cell--word" role="cell">
+              <span class="word-types-table__word">{{ row.displayText }}</span>
             </span>
-            <span role="cell">
-              <qd-word-count-chip
-                [label]="headers.ayahs"
-                [count]="row.ayahsCount"
-                [showLabel]="false"
-                (chipClick)="openCount(row, 'ayahs')"
-              />
+            <span class="word-types-table__cell word-types-table__cell--meta" role="cell" [attr.data-label]="headers.type">
+              <span class="word-types-table__meta-text">{{ row.typeLabel.ar }}</span>
             </span>
-            <span role="cell">
-              <qd-word-count-chip
-                [label]="headers.surahs"
-                [count]="row.surahsCount"
-                [showLabel]="false"
-                (chipClick)="openCount(row, 'surahs')"
-              />
+            <span class="word-types-table__cell word-types-table__cell--meta" role="cell" [attr.data-label]="headers.root">
+              <span class="word-types-table__meta-text">{{ row.rootText || placeholder }}</span>
+            </span>
+            <span class="word-types-table__cell word-types-table__cell--meta" role="cell" [attr.data-label]="headers.stem">
+              <span class="word-types-table__meta-text">{{ row.stemText || placeholder }}</span>
+            </span>
+            <span class="word-types-table__cell word-types-table__cell--meta" role="cell" [attr.data-label]="headers.lemma">
+              <span class="word-types-table__meta-text">{{ row.lemmaText || placeholder }}</span>
+            </span>
+            <span class="word-types-table__cell word-types-table__cell--count" role="cell" [attr.data-label]="headers.occurrences">
+              <span class="word-types-table__count-chip">
+                <qd-word-count-chip
+                  [label]="headers.occurrences"
+                  [count]="row.occurrencesCount"
+                  [showLabel]="false"
+                  (chipClick)="openCount(row, 'occurrences')"
+                />
+              </span>
+            </span>
+            <span class="word-types-table__cell word-types-table__cell--count" role="cell" [attr.data-label]="headers.ayahs">
+              <span class="word-types-table__count-chip">
+                <qd-word-count-chip
+                  [label]="headers.ayahs"
+                  [count]="row.ayahsCount"
+                  [showLabel]="false"
+                  (chipClick)="openCount(row, 'ayahs')"
+                />
+              </span>
+            </span>
+            <span class="word-types-table__cell word-types-table__cell--count" role="cell" [attr.data-label]="headers.surahs">
+              <span class="word-types-table__count-chip">
+                <qd-word-count-chip
+                  [label]="headers.surahs"
+                  [count]="row.surahsCount"
+                  [showLabel]="false"
+                  (chipClick)="openCount(row, 'surahs')"
+                />
+              </span>
             </span>
           </button>
         }
       </div>
-    </div>
+    }
   } @else {
     <p class="word-types-table__placeholder">{{ tableLabel }}</p>
   }

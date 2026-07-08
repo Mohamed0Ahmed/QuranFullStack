@@ -17,9 +17,6 @@ export const WordTypesCacheKeys = {
   surahs(identity: WordTypesCacheIdentity): string {
     return `wordtypes:surahs:${identity.tashkeelWordId}:${identity.contextCode}:${identity.case}:${identity.tense}:${identity.voice}`;
   },
-  analysis(location: string): string {
-    return `wordtypes:analysis:${location}`;
-  },
 } as const;
 
 export interface WordTypesCacheFilter {

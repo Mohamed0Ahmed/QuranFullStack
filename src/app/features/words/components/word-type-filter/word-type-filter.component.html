@@ -2,10 +2,15 @@
   @if (tree(); as currentTree) {
     <div class="word-type-filter__toolbar" role="toolbar" (click)="$event.stopPropagation()">
       @for (node of currentTree.mainTypes; track node.code) {
-        <div class="word-type-filter__trigger">
+        <div
+          class="word-type-filter__trigger"
+          [class.qd-is-selected]="isSelected(node) && selectedChildCode() === null"
+          [class.word-type-filter__trigger--expanded]="isPanelOpen(node)"
+          [class.word-type-filter__trigger--disabled]="loading()"
+        >
           <button
             type="button"
-            class="word-type-filter__button qd-interactive-surface"
+            class="word-type-filter__button"
             [class.qd-is-selected]="isSelected(node) && selectedChildCode() === null"
             [attr.aria-current]="isSelected(node) && selectedChildCode() === null ? 'true' : null"
             [attr.aria-selected]="isSelected(node) && selectedChildCode() === null"
@@ -13,14 +18,21 @@
             [disabled]="loading()"
             (click)="selectType(node)"
           >
-            <span class="word-type-filter__label">{{ node.label.ar }}</span>
-            <span class="word-type-filter__count">{{ node.count }}</span>
+            <span class="word-type-filter__button-content">
+              <span class="word-type-filter__label-row">
+                <span class="word-type-filter__label">{{ node.label.ar }}</span>
+                @if (isSelected(node) && selectedChildCode() === null) {
+                  <span class="word-type-filter__state qd-badge qd-badge--accent">{{ currentFilterLabel }}</span>
+                }
+              </span>
+            </span>
+            <span class="word-type-filter__count qd-badge">{{ node.count }}</span>
           </button>
 
           @if (node.children.length > 0) {
             <button
               type="button"
-              class="word-type-filter__expand qd-interactive-surface"
+              class="word-type-filter__expand"
               [class.qd-is-selected]="isPanelOpen(node)"
               [attr.aria-expanded]="isPanelOpen(node)"
               [attr.aria-controls]="'word-type-filter-panel-' + node.code"
@@ -29,7 +41,7 @@
               [disabled]="loading()"
               (click)="toggleExpand(node, $event)"
             >
-              <span aria-hidden="true">{{ isPanelOpen(node) ? '−' : '+' }}</span>
+              <span class="word-type-filter__expand-icon" aria-hidden="true">{{ isPanelOpen(node) ? '−' : '+' }}</span>
             </button>
           }
         </div>
@@ -39,24 +51,31 @@
     @if (openNode(); as panelNode) {
       <div class="word-type-filter__panel qd-surface-elevated" [id]="'word-type-filter-panel-' + panelNode.code" role="region" [attr.aria-label]="panelRegionLabel(panelNode)">
         @if (panelNode.children.length > 0) {
-          <ul class="word-type-filter__children" role="list">
-            @for (child of panelNode.children; track child.childCode) {
-              <li class="word-type-filter__child" role="listitem">
-                <button
-                  type="button"
-                  class="word-type-filter__child-button qd-interactive-surface"
-                  [class.qd-is-selected]="isChildSelected(child)"
-                  [attr.aria-current]="isChildSelected(child) ? 'true' : null"
-                  [attr.aria-selected]="isChildSelected(child)"
-                  [disabled]="loading()"
-                  (click)="selectChild(child)"
-                >
-                  <span class="word-type-filter__child-label">{{ child.label.ar }}</span>
-                  <span class="word-type-filter__count">{{ child.count }}</span>
-                </button>
-              </li>
-            }
-          </ul>
+          <section class="word-type-filter__children-section" role="group" [attr.aria-labelledby]="'word-type-filter-children-heading-' + panelNode.code">
+            <div class="word-type-filter__children-header">
+              <p class="word-type-filter__children-eyebrow">{{ panelNode.label.ar }}</p>
+              <h2 class="word-type-filter__children-title" [id]="'word-type-filter-children-heading-' + panelNode.code">{{ subtypeGroupLabel }}</h2>
+            </div>
+
+            <ul class="word-type-filter__children" role="list">
+              @for (child of panelNode.children; track child.childCode) {
+                <li class="word-type-filter__child" role="listitem">
+                  <button
+                    type="button"
+                    class="word-type-filter__child-button"
+                    [class.qd-is-selected]="isChildSelected(child)"
+                    [attr.aria-current]="isChildSelected(child) ? 'true' : null"
+                    [attr.aria-selected]="isChildSelected(child)"
+                    [disabled]="loading()"
+                    (click)="selectChild(child)"
+                  >
+                    <span class="word-type-filter__child-label">{{ child.label.ar }}</span>
+                    <span class="word-type-filter__count qd-badge">{{ child.count }}</span>
+                  </button>
+                </li>
+              }
+            </ul>
+          </section>
         }
 
         @if (showCaseControls()) {

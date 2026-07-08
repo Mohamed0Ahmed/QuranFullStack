@@ -52,6 +52,7 @@ describe('WordTypesTableComponent', () => {
     expect(root.textContent).toContain('كَلِمَة');
     expect(root.textContent).toContain('—');
     expect(root.textContent).not.toContain('191001');
+    expect(root.querySelector('.word-types-table__header-gutter')).not.toBeNull();
   });
 
   it('emits selected row and marks active row beyond color', () => {
@@ -65,9 +66,29 @@ describe('WordTypesTableComponent', () => {
     const button = fixture.nativeElement.querySelector('.word-types-table__row') as HTMLButtonElement;
     expect(button.getAttribute('aria-current')).toBe('true');
     expect(button.getAttribute('aria-selected')).toBe('true');
+    expect(button.classList.contains('qd-is-selected')).toBe(true);
     button.click();
 
     expect(emitted[0].contextCode).toBe('PN');
+  });
+
+  it('renders a skeleton body while loading, even when prior rows exist, matching the other word tables', () => {
+    const loadingFixture = TestBed.createComponent(WordTypesTableComponent);
+    loadingFixture.componentRef.setInput('loading', true);
+    loadingFixture.detectChanges();
+
+    const loadingRoot = loadingFixture.nativeElement as HTMLElement;
+    expect(loadingRoot.querySelector('[data-testid="word-types-table-loading"]')).not.toBeNull();
+    expect(loadingRoot.querySelector('.word-types-table__row--loading')).not.toBeNull();
+
+    const refreshFixture = TestBed.createComponent(WordTypesTableComponent);
+    refreshFixture.componentRef.setInput('rows', page);
+    refreshFixture.componentRef.setInput('loading', true);
+    refreshFixture.detectChanges();
+
+    const refreshRoot = refreshFixture.nativeElement as HTMLElement;
+    expect(refreshRoot.querySelector('[data-testid="word-types-table-loading"]')).not.toBeNull();
+    expect(refreshRoot.querySelector('[data-word-types-row]')).toBeNull();
   });
 
   it('focuses a row by identity for focus return', () => {

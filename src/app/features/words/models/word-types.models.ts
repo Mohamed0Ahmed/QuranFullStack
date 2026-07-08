@@ -1,12 +1,10 @@
-import { WordAnalysisViewModel } from '../../mushaf/models/mushaf.models';
-
 export type WordTypeMainType = 'noun' | 'verb' | 'particle' | 'inl';
 export type WordTypeCase = 'all' | 'nominative' | 'accusative' | 'genitive' | 'null';
 export type WordTypeTense = 'all' | 'past' | 'present' | 'imperative';
 export type WordTypeVoice = 'all' | 'active' | 'passive';
 export type WordTypeSort = 'occurrences' | 'ayahs' | 'surahs' | 'mushaf-order' | 'alpha';
-export type WordTypeDetailView = 'ayahs' | 'surahs' | 'analysis';
-export type WordTypesLoadStatus = 'idle' | 'loading' | 'success' | 'empty' | 'error' | 'notFound';
+export type WordTypeDetailView = 'ayahs' | 'surahs';
+export type WordTypesLoadStatus = 'idle' | 'loading' | 'selectPrompt' | 'success' | 'empty' | 'error' | 'notFound';
 
 export interface PagedResultDto<T> {
   page: number;
@@ -73,7 +71,7 @@ export interface WordTypeAyahMatchDto {
   verseKey: string;
   surahNumber: number;
   ayahNumber: number;
-  ayahText: string;
+  pageNumber: number;
   matchedWordPositions: number[];
   matchedWordIds: number[];
   words: AyahWordForHighlightDto[];
@@ -130,7 +128,6 @@ export interface WordTypesDetailState {
   summary: WordTypeSummaryDto | null;
   ayahs: PagedResultDto<WordTypeAyahMatchDto> | null;
   surahs: WordTypeSurahsResponseDto | null;
-  analysis: WordAnalysisViewModel | null;
   errorMessage: string;
 }
 
@@ -164,7 +161,7 @@ export const WORD_TYPE_CASES = ['all', 'nominative', 'accusative', 'genitive', '
 export const WORD_TYPE_TENSES = ['all', 'past', 'present', 'imperative'] as const satisfies readonly WordTypeTense[];
 export const WORD_TYPE_VOICES = ['all', 'active', 'passive'] as const satisfies readonly WordTypeVoice[];
 export const WORD_TYPE_SORTS = ['occurrences', 'ayahs', 'surahs', 'mushaf-order', 'alpha'] as const satisfies readonly WordTypeSort[];
-export const WORD_TYPE_DETAIL_VIEW_KEYS = ['ayahs', 'surahs', 'analysis'] as const satisfies readonly WordTypeDetailView[];
+export const WORD_TYPE_DETAIL_VIEW_KEYS = ['ayahs', 'surahs'] as const satisfies readonly WordTypeDetailView[];
 export const WORD_TYPE_DETAIL_VIEWS = WORD_TYPE_DETAIL_VIEW_KEYS;
 
 export const DEFAULT_WORD_TYPE: WordTypeMainType = 'noun';

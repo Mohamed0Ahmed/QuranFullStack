@@ -21,12 +21,13 @@ describe('WordTypeDetailsPanelComponent', () => {
     return fixture;
   }
 
-  it('renders three tabs linked to a single tabpanel', () => {
+  it('renders only ayahs and surahs tabs linked to a single tabpanel', () => {
     const fixture = createPanel('ayahs');
     const host = fixture.nativeElement as HTMLElement;
 
-    expect(host.querySelectorAll('[role="tab"]')).toHaveLength(3);
+    expect(host.querySelectorAll('[role="tab"]')).toHaveLength(2);
     expect(host.querySelector('[role="tabpanel"]')?.id).toBe('word-type-details-panel-surface');
+    expect(host.querySelector('[data-word-type-tab="analysis"]')).toBeNull();
   });
 
   it('marks the active tab selected with roving tabindex', () => {

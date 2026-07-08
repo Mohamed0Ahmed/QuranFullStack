@@ -13,7 +13,7 @@ export function mapWordTypeAyahMatchToShared(match: WordTypeAyahMatchDto): AyahM
     verseKey: match.verseKey,
     surahNameArabic: '',
     ayahNumber,
-    pageNumber: 1,
+    pageNumber: match.pageNumber,
     analysisLocation: firstMatchedPosition ? `${match.verseKey}:${firstMatchedPosition}` : null,
     matchedQuranWordIds: visibleWords.reduce<number[]>((ids, word, index) => {
       if (matchedSet.has(word.quranWordId)) {
