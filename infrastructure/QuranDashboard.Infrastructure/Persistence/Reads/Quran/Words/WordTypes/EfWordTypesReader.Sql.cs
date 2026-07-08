@@ -199,10 +199,9 @@ public sealed partial class EfWordTypesReader
 
     private static string ChildCodePredicate(WordTypeReadContext context) => context.Type switch
     {
-        // Noun children pin the head POS; verb children pin the tense.
-        NounType => "m.head_pos = @childCode",
+        // Noun and particle children pin the head POS; verb children pin the tense.
+        NounType or ParticleType => "m.head_pos = @childCode",
         VerbType => $"COALESCE(m.verb_tense, '{UnspecifiedContext}') = @childCode",
-        ParticleType => "m.head_pos = @childCode",
         _ => "FALSE",
     };
 
