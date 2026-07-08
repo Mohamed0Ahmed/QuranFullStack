@@ -208,8 +208,7 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
                     ayah.Id,
                     ayah.VerseKey,
                     ayah.SurahNumber,
-                    ayah.AyahNumber,
-                    ayah.TextUthmani))
+                    ayah.AyahNumber))
             .Skip(skip.Value)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
@@ -249,6 +248,7 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
                 word.AyahId,
                 word.Id,
                 word.WordNumber,
+                word.PageNumber,
                 word.TextUthmani,
                 word.IsAyahMarker))
             .ToListAsync(cancellationToken);
@@ -268,7 +268,7 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
                     ayah.VerseKey,
                     ayah.SurahNumber,
                     ayah.AyahNumber,
-                    ayah.AyahText,
+                    ResolveAyahPageNumber(words),
                     matchedPositions,
                     matched.Select(row => row.QuranWordId).ToList(),
                     words.Select(word => new AyahWordForHighlightDto(
@@ -471,11 +471,22 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
         int? LemmaId,
         int? StemId);
 
-    private sealed record AyahMetaRow(int AyahId, string VerseKey, int SurahNumber, int AyahNumber, string AyahText);
+    private sealed record AyahMetaRow(int AyahId, string VerseKey, int SurahNumber, int AyahNumber);
 
     private sealed record MatchedWordRow(int AyahId, int QuranWordId, int WordNumber);
 
-    private sealed record AyahWordRow(int AyahId, int QuranWordId, int WordNumber, string TextUthmani, bool IsAyahMarker);
+    private sealed record AyahWordRow(int AyahId, int QuranWordId, int WordNumber, short PageNumber, string TextUthmani, bool IsAyahMarker);
+
+    private static short ResolveAyahPageNumber(IReadOnlyList<AyahWordRow> words)
+    {
+        var firstReadableWord = words.FirstOrDefault(word => !word.IsAyahMarker);
+        if (firstReadableWord is not null)
+        {
+            return firstReadableWord.PageNumber;
+        }
+
+        return words.FirstOrDefault()?.PageNumber ?? 0;
+    }
 
     private sealed record SurahOccurrenceRow(short SurahNumber, int OccurrencesCount);
 
