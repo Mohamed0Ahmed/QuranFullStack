@@ -92,50 +92,52 @@
           </dl>
         </section>
 
-        @switch (panelState().status) {
-          @case ('loading') {
-            <p class="qd-loading-state" role="status" aria-live="polite">{{ loadingLabel }}</p>
-          }
-          @case ('error') {
-            <p class="qd-error-state">{{ panelState().errorMessage || errorLabel }}</p>
-          }
-          @case ('empty') {
-            <p class="qd-empty-state">{{ emptyLabel }}</p>
-          }
-          @default {
-            @if (panelState().view === 'ayahs' && panelState().ayahs; as ayahsPage) {
-              <qd-ayah-matches-list
-                [page]="ayahsPageForView()"
-                [currentPage]="panelState().detailPage"
-                [loading]="panelState().status === 'loading'"
-                [showAnalysisAction]="true"
-                [analysisActionLabel]="analysisActionLabel"
-                (pageChange)="onDetailPageChange($event)"
-                (analysisRequested)="onAnalysisLocationRequested($event)"
-              />
+        <div class="word-types-details__scroll">
+          @switch (panelState().status) {
+            @case ('loading') {
+              <p class="qd-loading-state" role="status" aria-live="polite">{{ loadingLabel }}</p>
             }
+            @case ('error') {
+              <p class="qd-error-state">{{ panelState().errorMessage || errorLabel }}</p>
+            }
+            @case ('empty') {
+              <p class="qd-empty-state">{{ emptyLabel }}</p>
+            }
+            @default {
+              @if (panelState().view === 'ayahs' && panelState().ayahs; as ayahsPage) {
+                <qd-ayah-matches-list
+                  [page]="ayahsPageForView()"
+                  [currentPage]="panelState().detailPage"
+                  [loading]="panelState().status === 'loading'"
+                  [showAnalysisAction]="true"
+                  [analysisActionLabel]="analysisActionLabel"
+                  (pageChange)="onDetailPageChange($event)"
+                  (analysisRequested)="onAnalysisLocationRequested($event)"
+                />
+              }
 
-            @if (panelState().view === 'surahs' && panelState().surahs) {
-              <qd-surah-occurrences-list
-                [surahs]="mentionedSurahs()"
-                [loading]="panelState().status === 'loading'"
-              />
-              <qd-missing-surahs-list
-                [surahs]="missingSurahs()"
-                [loading]="panelState().status === 'loading'"
-              />
-            }
+              @if (panelState().view === 'surahs' && panelState().surahs) {
+                <qd-surah-occurrences-list
+                  [surahs]="mentionedSurahs()"
+                  [loading]="panelState().status === 'loading'"
+                />
+                <qd-missing-surahs-list
+                  [surahs]="missingSurahs()"
+                  [loading]="panelState().status === 'loading'"
+                />
+              }
 
-            @if (panelState().view === 'analysis') {
-              <qd-selected-word-section
-                [analysis]="panelState().analysis"
-                [loadState]="analysisLoadState()"
-                [selectedWordLocation]="panelState().location"
-                [embedded]="true"
-              />
+              @if (panelState().view === 'analysis') {
+                <qd-selected-word-section
+                  [analysis]="panelState().analysis"
+                  [loadState]="analysisLoadState()"
+                  [selectedWordLocation]="panelState().location"
+                  [embedded]="true"
+                />
+              }
             }
           }
-        }
+        </div>
       }
     </qd-word-type-details-panel>
   </div>

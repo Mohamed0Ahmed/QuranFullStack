@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, ElementRef, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, inject, input, output } from '@angular/core';
 
 import { WordCountChipComponent } from '../word-count-chip/word-count-chip.component';
 import { WORD_TYPES_NULL_PLACEHOLDER, WORD_TYPES_TABLE_HEADERS, WORD_TYPES_TABLE_LABEL } from '../../models/word-types.labels';
 import { PagedResultDto, WordTypeDetailView, WordTypeRowDto } from '../../models/word-types.models';
+import { syncTableScrollbarGutter } from '../../utils/table-scrollbar-gutter-sync';
 
 export type WordTypeCountColumn = 'occurrences' | 'ayahs' | 'surahs';
 
@@ -22,6 +23,7 @@ export interface WordTypeCountOpenedEvent {
 })
 export class WordTypesTableComponent {
   private readonly host = inject(ElementRef<HTMLElement>);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly rows = input<PagedResultDto<WordTypeRowDto> | null>(null);
   readonly loading = input(false);
@@ -30,6 +32,18 @@ export class WordTypesTableComponent {
   readonly countOpened = output<WordTypeCountOpenedEvent>();
 
   protected readonly tableLabel = WORD_TYPES_TABLE_LABEL;
+
+  constructor() {
+    afterNextRender(() => {
+      const disconnect = syncTableScrollbarGutter(
+        this.host.nativeElement,
+        '--word-types-table-scrollbar-gutter',
+        '.word-types-table__body',
+        '.word-types-table',
+      );
+      this.destroyRef.onDestroy(disconnect);
+    });
+  }
 
   protected get headers() { return WORD_TYPES_TABLE_HEADERS; }
   protected get placeholder() { return WORD_TYPES_NULL_PLACEHOLDER; }

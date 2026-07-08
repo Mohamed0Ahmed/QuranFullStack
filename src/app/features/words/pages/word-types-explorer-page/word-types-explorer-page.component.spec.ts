@@ -225,6 +225,23 @@ describe('WordTypesExplorerPageComponent', () => {
     expect((fixture.nativeElement as HTMLElement).querySelector('qd-word-types-table')).not.toBeNull();
   });
 
+  it('renders independent table and details scroll containers for restored row views', async () => {
+    queryParamMap$.next(convertToParamMap({
+      type: 'noun',
+      childCode: 'PN',
+      page: '1',
+      word: '191001',
+      contextCode: 'PN',
+      view: 'surahs',
+    }));
+
+    const fixture = await createPage();
+    const root = fixture.nativeElement as HTMLElement;
+
+    expect(root.querySelector('.word-types-table__body')).not.toBeNull();
+    expect(root.querySelector('.word-types-details__scroll')).not.toBeNull();
+  });
+
   it('routes main type selection and clears selected row state', async () => {
     const fixture = await createPage();
     const buttons = fixture.nativeElement.querySelectorAll('qd-word-type-filter .word-type-filter__button') as NodeListOf<HTMLButtonElement>;

@@ -52,6 +52,7 @@ describe('WordTypesTableComponent', () => {
     expect(root.textContent).toContain('كَلِمَة');
     expect(root.textContent).toContain('—');
     expect(root.textContent).not.toContain('191001');
+    expect(root.querySelector('.word-types-table__header-gutter')).not.toBeNull();
   });
 
   it('emits selected row and marks active row beyond color', () => {
