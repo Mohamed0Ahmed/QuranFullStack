@@ -16,14 +16,15 @@ public sealed class WordTypesSubtypeReadTests(WordTypesTestFixture fixture)
         var tree = await reader.GetTreeAsync(CancellationToken.None);
 
         var noun = tree.MainTypes.Single(node => node.Code == "noun");
-        // Seed POS catalogue has three noun-category codes: N, PN, ADJ (sort_order 1, 2, 3).
+        // Seed POS catalogue also has TIM, but the tree hides it because the count is zero.
         noun.Children.Select(child => child.Code).Should().Equal("N", "PN", "ADJ");
+        noun.Children.Should().NotContain(child => child.ChildCode == "TIM");
         noun.Children.Should().OnlyContain(child => child.Code == child.ChildCode);
         noun.Children.Should().OnlyContain(child => child.Label.Ar.Length > 0);
     }
 
     [Fact]
-    public async Task Tree_ReturnsFixedVerbTenseChildren_AndNoParticleOrInlChildren()
+    public async Task Tree_ReturnsFixedVerbTenseChildren_AndCatalogueDrivenParticleChildren()
     {
         await using var scope = fixture.CreateScope();
         var reader = scope.ServiceProvider.GetRequiredService<IWordTypesReader>();
@@ -34,7 +35,9 @@ public sealed class WordTypesSubtypeReadTests(WordTypesTestFixture fixture)
         verb.Children.Select(child => child.ChildCode).Should().Equal("past", "present", "imperative");
         verb.Children.Select(child => child.Label.Ar).Should().Equal("ماض", "مضارع", "أمر");
 
-        tree.MainTypes.Single(node => node.Code == "particle").Children.Should().BeEmpty();
+        tree.MainTypes.Single(node => node.Code == "particle").Children.Select(child => child.ChildCode).Should().Equal("PRO");
+        tree.MainTypes.Single(node => node.Code == "particle").Children.Select(child => child.Label.Ar).Should().Equal("حرف نهي");
+        tree.MainTypes.Single(node => node.Code == "particle").Children.Should().OnlyContain(child => child.Code != "INL");
         tree.MainTypes.Single(node => node.Code == "inl").Children.Should().BeEmpty();
     }
 
@@ -138,7 +141,7 @@ public sealed class WordTypesSubtypeReadTests(WordTypesTestFixture fixture)
     [InlineData("noun", "INL", typeof(GetWordTypeRowsOutcome.InvalidFilter))]
     [InlineData("verb", "future", typeof(GetWordTypeRowsOutcome.InvalidFilter))]
     [InlineData("verb", "N", typeof(GetWordTypeRowsOutcome.InvalidFilter))]
-    [InlineData("particle", "P", typeof(GetWordTypeRowsOutcome.InvalidFilter))]
+    [InlineData("particle", "INL", typeof(GetWordTypeRowsOutcome.InvalidFilter))]
     [InlineData("inl", "INL", typeof(GetWordTypeRowsOutcome.InvalidFilter))]
     public async Task Handler_RejectsInvalidChildCode_ForType(
         string type,
@@ -153,6 +156,29 @@ public sealed class WordTypesSubtypeReadTests(WordTypesTestFixture fixture)
             CancellationToken.None);
 
         outcome.GetType().Should().Be(expectedOutcome);
+    }
+
+    [Theory]
+    [InlineData("PRO", 1)]
+    [InlineData("P", 0)]
+    public async Task Handler_AcceptsParticleChildCodes_AndReturnsExpectedRowTotals(string childCode, int expectedTotalCount)
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetWordTypeRowsHandler>();
+
+        var outcome = await handler.HandleAsync(
+            new GetWordTypeRowsQuery("particle", childCode, null, null, null, "occurrences", 1, 25),
+            CancellationToken.None);
+
+        outcome.Should().BeOfType<GetWordTypeRowsOutcome.Success>();
+        var page = ((GetWordTypeRowsOutcome.Success)outcome).Page;
+
+        page.TotalCount.Should().Be(expectedTotalCount);
+        page.Items.Should().HaveCount(expectedTotalCount);
+        if (expectedTotalCount > 0)
+        {
+            page.Items.Should().OnlyContain(row => row.ContextCode == childCode);
+        }
     }
 
     [Fact]

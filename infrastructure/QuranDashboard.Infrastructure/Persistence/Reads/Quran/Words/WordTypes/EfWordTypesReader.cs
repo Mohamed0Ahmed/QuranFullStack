@@ -20,9 +20,6 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
 
     public async Task<WordTypeTreeDto> GetTreeAsync(CancellationToken cancellationToken)
     {
-        var counts = await _dbContext.Database.SqlQueryRaw<TreeCountRow>(TreeCountsSql())
-            .ToDictionaryAsync(row => row.Type, row => row.Count, cancellationToken);
-
         var childCounts = await _dbContext.Database.SqlQueryRaw<TreeChildCountRow>(TreeChildCountsSql())
             .ToListAsync(cancellationToken);
 
@@ -31,6 +28,9 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
             .ToDictionary(row => row.ChildCode, row => row.Count);
         var verbChildCounts = childCounts
             .Where(row => row.Type == VerbType)
+            .ToDictionary(row => row.ChildCode, row => row.Count);
+        var particleChildCounts = childCounts
+            .Where(row => row.Type == ParticleType)
             .ToDictionary(row => row.ChildCode, row => row.Count);
 
         // Catalogue-driven noun children: every noun-category POS code ordered by SortOrder,
@@ -43,18 +43,32 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
 
         var nounChildren = nounCatalogue
             .Select(pos => ChildNode(pos.Code, pos.ArabicLabel, nounChildCounts.GetValueOrDefault(pos.Code)))
+            .Where(child => child.Count > 0)
             .ToList();
 
         // Verb tense children are a fixed v1 set; counts come from the grouped base rows.
         var verbChildren = VerbTenseChildren
             .Select(tense => ChildNode(tense.ChildCode, tense.Label, verbChildCounts.GetValueOrDefault(tense.ChildCode)))
+            .Where(child => child.Count > 0)
+            .ToList();
+
+        // Particle children are catalogue-driven too; INL stays split into its own main type.
+        var particleCatalogue = await _dbContext.PosTags.AsNoTracking()
+            .Where(pos => pos.Category == ParticleType && pos.Code != InlPos)
+            .OrderBy(pos => pos.SortOrder)
+            .Select(pos => new PosCatalogueRow(pos.Code, pos.ArabicLabel))
+            .ToListAsync(cancellationToken);
+
+        var particleChildren = particleCatalogue
+            .Select(pos => ChildNode(pos.Code, pos.ArabicLabel, particleChildCounts.GetValueOrDefault(pos.Code)))
+            .Where(child => child.Count > 0)
             .ToList();
 
         return new WordTypeTreeDto([
-            MainNode(NounType, "اسم", counts.GetValueOrDefault(NounType), "case", nounChildren),
-            MainNode(VerbType, "فعل", counts.GetValueOrDefault(VerbType), "tense+voice", verbChildren),
-            MainNode(ParticleType, "حرف وأداة", counts.GetValueOrDefault(ParticleType), "none", []),
-            MainNode(InlType, "حروف مقطّعة", counts.GetValueOrDefault(InlType), "none", []),
+            MainNode(NounType, "اسم", nounChildren.Count, "case", nounChildren),
+            MainNode(VerbType, "فعل", verbChildren.Count, "tense+voice", verbChildren),
+            MainNode(ParticleType, "حرف وأداة", particleChildren.Count, "none", particleChildren),
+            MainNode(InlType, "حروف مقطّعة", 1, "none", []),
         ]);
     }
 
@@ -194,8 +208,7 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
                     ayah.Id,
                     ayah.VerseKey,
                     ayah.SurahNumber,
-                    ayah.AyahNumber,
-                    ayah.TextUthmani))
+                    ayah.AyahNumber))
             .Skip(skip.Value)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
@@ -235,6 +248,7 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
                 word.AyahId,
                 word.Id,
                 word.WordNumber,
+                word.PageNumber,
                 word.TextUthmani,
                 word.IsAyahMarker))
             .ToListAsync(cancellationToken);
@@ -254,7 +268,7 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
                     ayah.VerseKey,
                     ayah.SurahNumber,
                     ayah.AyahNumber,
-                    ayah.AyahText,
+                    ResolveAyahPageNumber(words),
                     matchedPositions,
                     matched.Select(row => row.QuranWordId).ToList(),
                     words.Select(word => new AyahWordForHighlightDto(
@@ -457,11 +471,22 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
         int? LemmaId,
         int? StemId);
 
-    private sealed record AyahMetaRow(int AyahId, string VerseKey, int SurahNumber, int AyahNumber, string AyahText);
+    private sealed record AyahMetaRow(int AyahId, string VerseKey, int SurahNumber, int AyahNumber);
 
     private sealed record MatchedWordRow(int AyahId, int QuranWordId, int WordNumber);
 
-    private sealed record AyahWordRow(int AyahId, int QuranWordId, int WordNumber, string TextUthmani, bool IsAyahMarker);
+    private sealed record AyahWordRow(int AyahId, int QuranWordId, int WordNumber, short PageNumber, string TextUthmani, bool IsAyahMarker);
+
+    private static short ResolveAyahPageNumber(IReadOnlyList<AyahWordRow> words)
+    {
+        var firstReadableWord = words.FirstOrDefault(word => !word.IsAyahMarker);
+        if (firstReadableWord is not null)
+        {
+            return firstReadableWord.PageNumber;
+        }
+
+        return words.FirstOrDefault()?.PageNumber ?? 0;
+    }
 
     private sealed record SurahOccurrenceRow(short SurahNumber, int OccurrencesCount);
 

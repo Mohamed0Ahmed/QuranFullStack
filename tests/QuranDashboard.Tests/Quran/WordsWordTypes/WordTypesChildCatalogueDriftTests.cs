@@ -24,4 +24,19 @@ public sealed class WordTypesChildCatalogueDriftTests
             code => WordTypesHandlerValidation.IsValidChildCode("noun", code),
             "every noun-category POS code is rendered as a selectable tree child, so noun child-code validation must accept it");
     }
+
+    [Fact]
+    public void Validation_Accepts_EveryParticleCategoryCode_ExceptInl()
+    {
+        var particleCatalogueCodes = PosTagSeed.GetAll()
+            .Where(pos => pos.Category == "particle" && pos.Code != "INL")
+            .Select(pos => pos.Code)
+            .ToList();
+
+        particleCatalogueCodes.Should().NotBeEmpty();
+        particleCatalogueCodes.Should().OnlyContain(
+            code => WordTypesHandlerValidation.IsValidChildCode("particle", code),
+            "every non-INL particle-category POS code is rendered as a selectable tree child, so particle child-code validation must accept it");
+        WordTypesHandlerValidation.IsValidChildCode("particle", "INL").Should().BeFalse();
+    }
 }

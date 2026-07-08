@@ -1,51 +1,11 @@
 using Npgsql;
 using QuranDashboard.Application.Abstractions.Quran.Words.WordTypes;
 using QuranDashboard.Application.Abstractions.Quran.Words.WordTypes.Responses;
-using QuranDashboard.Application.Abstractions.Quran.Words.Responses;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.WordTypes;
 
 public sealed partial class EfWordTypesReader
 {
-    private static string TreeCountsSql()
-    {
-        var unscoped = WordTypeReadContext.Unscoped;
-        return $"""
-        WITH base AS (
-            {BaseRowsSql(unscoped)}
-        ), grouped AS (
-            SELECT '{NounType}' AS type, tashkeel_word_id, head_pos AS context_code
-            FROM base
-            WHERE pos_category = '{NounType}'
-            GROUP BY tashkeel_word_id, head_pos
-
-            UNION ALL
-
-            SELECT '{VerbType}' AS type, tashkeel_word_id, COALESCE(verb_tense, '{UnspecifiedContext}') AS context_code
-            FROM base
-            WHERE is_verb
-            GROUP BY tashkeel_word_id, COALESCE(verb_tense, '{UnspecifiedContext}')
-
-            UNION ALL
-
-            SELECT '{ParticleType}' AS type, tashkeel_word_id, head_pos AS context_code
-            FROM base
-            WHERE pos_category = '{ParticleType}' AND head_pos <> '{InlPos}'
-            GROUP BY tashkeel_word_id, head_pos
-
-            UNION ALL
-
-            SELECT '{InlType}' AS type, tashkeel_word_id, head_pos AS context_code
-            FROM base
-            WHERE head_pos = '{InlPos}'
-            GROUP BY tashkeel_word_id, head_pos
-        )
-        SELECT type AS "{nameof(TreeCountRow.Type)}", COUNT(*)::int AS "{nameof(TreeCountRow.Count)}"
-        FROM grouped
-        GROUP BY type
-        """;
-    }
-
     private static string TreeChildCountsSql()
     {
         var unscoped = WordTypeReadContext.Unscoped;
@@ -62,10 +22,17 @@ public sealed partial class EfWordTypesReader
             FROM base
             WHERE is_verb
             GROUP BY COALESCE(verb_tense, '{UnspecifiedContext}'), tashkeel_word_id
+        ), particle_children AS (
+            SELECT '{ParticleType}' AS type, head_pos AS child_code, tashkeel_word_id
+            FROM base
+            WHERE pos_category = '{ParticleType}' AND head_pos <> '{InlPos}'
+            GROUP BY head_pos, tashkeel_word_id
         ), all_children AS (
             SELECT * FROM noun_children
             UNION ALL
             SELECT * FROM verb_children
+            UNION ALL
+            SELECT * FROM particle_children
         )
         SELECT type AS "{nameof(TreeChildCountRow.Type)}", child_code AS "{nameof(TreeChildCountRow.ChildCode)}", COUNT(*)::int AS "{nameof(TreeChildCountRow.Count)}"
         FROM all_children
@@ -232,8 +199,8 @@ public sealed partial class EfWordTypesReader
 
     private static string ChildCodePredicate(WordTypeReadContext context) => context.Type switch
     {
-        // Noun children pin the head POS; verb children pin the tense.
-        NounType => "m.head_pos = @childCode",
+        // Noun and particle children pin the head POS; verb children pin the tense.
+        NounType or ParticleType => "m.head_pos = @childCode",
         VerbType => $"COALESCE(m.verb_tense, '{UnspecifiedContext}') = @childCode",
         _ => "FALSE",
     };
@@ -379,8 +346,6 @@ public sealed partial class EfWordTypesReader
         public bool HasTenseFilter => !string.IsNullOrWhiteSpace(Tense) && Tense != "all";
         public bool HasVoiceFilter => !string.IsNullOrWhiteSpace(Voice) && Voice != "all";
     }
-
-    private sealed record TreeCountRow(string Type, int Count);
 
     private sealed record TreeChildCountRow(string Type, string ChildCode, int Count);
 

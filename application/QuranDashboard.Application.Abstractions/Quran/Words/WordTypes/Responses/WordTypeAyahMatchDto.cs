@@ -6,7 +6,7 @@ public sealed record WordTypeAyahMatchDto(
     string VerseKey,
     int SurahNumber,
     int AyahNumber,
-    string AyahText,
+    short PageNumber,
     IReadOnlyList<int> MatchedWordPositions,
     IReadOnlyList<int> MatchedWordIds,
     IReadOnlyList<AyahWordForHighlightDto> Words);
