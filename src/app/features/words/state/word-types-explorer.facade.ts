@@ -163,7 +163,7 @@ export class WordTypesExplorerFacade {
     const query = this.state().query;
     const tree$ = this.cache.getOrLoad(WordTypesCacheKeys.tree, () => this.api.getTree());
 
-    this.state.update((current) => ({ ...current, status: 'loading', rows: null, errorMessage: '' }));
+    this.state.update((current) => ({ ...current, status: 'loading', errorMessage: '' }));
 
     const leafSelected = query.childCode !== null || query.type === 'inl';
 
@@ -222,9 +222,9 @@ export class WordTypesExplorerFacade {
 
     this.state.update((current) => ({
       ...current,
-      status: 'selectPrompt',
+      status: current.rows === null ? 'selectPrompt' : current.rows.totalCount === 0 ? 'empty' : 'success',
       tree: treeData,
-      rows: null,
+      rows: current.rows,
       errorMessage: '',
     }));
   }

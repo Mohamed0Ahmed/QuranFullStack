@@ -9,8 +9,6 @@ import { SurahOccurrencesListComponent } from '../../components/surah-occurrence
 import { WordTypeDetailsPanelComponent } from '../../components/word-type-details-panel/word-type-details-panel.component';
 import { WordTypeFilterComponent } from '../../components/word-type-filter/word-type-filter.component';
 import { WordTypeCountOpenedEvent, WordTypesTableComponent } from '../../components/word-types-table/word-types-table.component';
-import { SelectedWordSectionComponent } from '../../../mushaf/components/selected-word-section/selected-word-section.component';
-import { ResourceLoadState } from '../../../mushaf/models/mushaf.models';
 import {
   WORD_TYPE_SORT_OPTIONS,
   WORD_TYPES_EMPTY_LABEL,
@@ -21,7 +19,6 @@ import {
   WORD_TYPES_SELECT_SUBTYPE_LABEL,
   WORD_TYPES_SORT_LABEL,
   WORD_TYPES_TABLE_LABEL,
-  WORD_TYPES_ANALYSIS_ACTION_LABEL,
 } from '../../models/word-types.labels';
 import {
   DEFAULT_WORD_TYPES_DETAIL_PAGE,
@@ -49,7 +46,6 @@ import { mapWordTypeAyahMatchToShared } from '../../utils/word-type-ayah-match.m
     AyahMatchesListComponent,
     MissingSurahsListComponent,
     PaginationComponent,
-    SelectedWordSectionComponent,
     SurahOccurrencesListComponent,
     WordTypeDetailsPanelComponent,
     WordTypeFilterComponent,
@@ -106,27 +102,6 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
     return page ? { ...page, items: page.items.map(mapWordTypeAyahMatchToShared) } : this.emptyAyahsPage;
   });
 
-  protected readonly analysisLoadState = computed((): ResourceLoadState => {
-    const state = this.panelState();
-    if (state.view !== 'analysis') {
-      return { isLoading: false, isEmpty: false, errorMessage: null };
-    }
-
-    if (state.status === 'loading') {
-      return { isLoading: true, isEmpty: false, errorMessage: null };
-    }
-
-    if (state.status === 'error') {
-      return { isLoading: false, isEmpty: false, errorMessage: state.errorMessage || this.errorLabel };
-    }
-
-    if (!state.location) {
-      return { isLoading: false, isEmpty: true, errorMessage: null };
-    }
-
-    return { isLoading: false, isEmpty: false, errorMessage: null };
-  });
-
   protected get pageTitle() { return WORD_TYPES_PAGE_TITLE; }
   protected get loadingLabel() { return WORD_TYPES_LOADING_LABEL; }
   protected get emptyLabel() { return WORD_TYPES_EMPTY_LABEL; }
@@ -136,7 +111,6 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
   protected get sortLabel() { return WORD_TYPES_SORT_LABEL; }
   protected get sortOptions() { return WORD_TYPE_SORT_OPTIONS; }
   protected get placeholder() { return WORD_TYPES_NULL_PLACEHOLDER; }
-  protected get analysisActionLabel() { return WORD_TYPES_ANALYSIS_ACTION_LABEL; }
 
   ngOnInit(): void {
     this.explorerFacade.bindToRoute(this.route);
@@ -182,8 +156,6 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
         contextCode: row.contextCode,
         view: DEFAULT_WORD_TYPES_DETAIL_VIEW,
         detailPage: DEFAULT_WORD_TYPES_DETAIL_PAGE,
-        location: null,
-        column: null,
       }),
     );
   }
@@ -195,29 +167,18 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
         contextCode: event.row.contextCode,
         view: event.view,
         detailPage: DEFAULT_WORD_TYPES_DETAIL_PAGE,
-        location: null,
-        column: event.column,
       }),
     );
   }
 
   protected onPanelViewChange(view: WordTypeDetailView): void {
     this.detailFacade.setView(view);
-    this.updateQueryParams(buildWordTypesQueryParams({ view, detailPage: DEFAULT_WORD_TYPES_DETAIL_PAGE, location: null }));
+    this.updateQueryParams(buildWordTypesQueryParams({ view, detailPage: DEFAULT_WORD_TYPES_DETAIL_PAGE }));
   }
 
   protected onDetailPageChange(page: number): void {
     this.detailFacade.setDetailPage(page);
     this.updateQueryParams(buildWordTypesQueryParams({ detailPage: page }));
-  }
-
-  protected onAnalysisLocationRequested(location: string): void {
-    this.updateQueryParams(buildWordTypesQueryParams({
-      view: 'analysis',
-      detailPage: DEFAULT_WORD_TYPES_DETAIL_PAGE,
-      location,
-      column: 'analysis',
-    }));
   }
 
   protected clearSelection(): void {

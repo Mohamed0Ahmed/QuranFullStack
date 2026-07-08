@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed, inject, input, output, signal } from '@angular/core';
 
-import { WORD_TYPES_CASE_FILTER_LABEL, WORD_TYPES_COLLAPSE_LABEL, WORD_TYPES_EXPAND_LABEL, WORD_TYPES_FILTER_LABEL, WORD_TYPES_TENSE_FILTER_LABEL, WORD_TYPES_VOICE_FILTER_LABEL, WORD_TYPE_CASE_LABELS, WORD_TYPE_TENSE_LABELS, WORD_TYPE_VOICE_LABELS } from '../../models/word-types.labels';
+import { WORD_TYPES_CASE_FILTER_LABEL, WORD_TYPES_COLLAPSE_LABEL, WORD_TYPES_CURRENT_FILTER_LABEL, WORD_TYPES_EXPAND_LABEL, WORD_TYPES_FILTER_LABEL, WORD_TYPES_SUBTYPE_GROUP_LABEL, WORD_TYPES_TENSE_FILTER_LABEL, WORD_TYPES_VOICE_FILTER_LABEL, WORD_TYPE_CASE_LABELS, WORD_TYPE_TENSE_LABELS, WORD_TYPE_VOICE_LABELS } from '../../models/word-types.labels';
 import {
   WORD_TYPE_CASES,
   WORD_TYPE_TENSES,
@@ -53,6 +53,14 @@ export class WordTypeFilterComponent {
 
   protected get voiceFilterLabel() {
     return WORD_TYPES_VOICE_FILTER_LABEL;
+  }
+
+  protected get subtypeGroupLabel() {
+    return WORD_TYPES_SUBTYPE_GROUP_LABEL;
+  }
+
+  protected get currentFilterLabel() {
+    return WORD_TYPES_CURRENT_FILTER_LABEL;
   }
 
   protected get caseOptions() {

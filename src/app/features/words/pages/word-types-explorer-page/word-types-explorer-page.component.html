@@ -34,19 +34,15 @@
         </label>
       </div>
 
-      @if (listState().status === 'loading') {
-        <p class="qd-loading-state" role="status" aria-live="polite">{{ loadingLabel }}</p>
-      }
-
       @if (listState().status === 'error') {
         <p class="qd-error-state">{{ listState().errorMessage || errorLabel }}</p>
-      } @else if (listState().status === 'selectPrompt') {
+      } @else if (listState().status === 'selectPrompt' && !listState().rows) {
         <p class="qd-empty-state" data-testid="word-types-select-subtype">{{ selectSubtypeLabel }}</p>
       } @else if (listState().status === 'empty') {
         <p class="qd-empty-state">{{ emptyLabel }}</p>
       }
 
-      @if (listState().status !== 'selectPrompt') {
+      @if (listState().rows || listState().status === 'loading') {
         <qd-word-types-table
           [rows]="listState().rows"
           [loading]="listState().status === 'loading'"
@@ -109,10 +105,7 @@
                   [page]="ayahsPageForView()"
                   [currentPage]="panelState().detailPage"
                   [loading]="panelState().status === 'loading'"
-                  [showAnalysisAction]="true"
-                  [analysisActionLabel]="analysisActionLabel"
                   (pageChange)="onDetailPageChange($event)"
-                  (analysisRequested)="onAnalysisLocationRequested($event)"
                 />
               }
 
@@ -124,15 +117,6 @@
                 <qd-missing-surahs-list
                   [surahs]="missingSurahs()"
                   [loading]="panelState().status === 'loading'"
-                />
-              }
-
-              @if (panelState().view === 'analysis') {
-                <qd-selected-word-section
-                  [analysis]="panelState().analysis"
-                  [loadState]="analysisLoadState()"
-                  [selectedWordLocation]="panelState().location"
-                  [embedded]="true"
                 />
               }
             }

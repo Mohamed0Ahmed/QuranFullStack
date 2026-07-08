@@ -86,7 +86,7 @@ describe('buildWordTypesQueryParams — canonical ordering', () => {
       page: 3,
       word: 191004,
       contextCode: 'present',
-      view: 'analysis',
+      view: 'surahs',
       detailPage: 2,
       location: '2:25:2',
       column: 'analysis',
@@ -107,10 +107,20 @@ describe('buildWordTypesQueryParams — canonical ordering', () => {
       WORD_TYPES_QUERY_KEYS.location,
       WORD_TYPES_QUERY_KEYS.column,
     ]);
-    expect(built[WORD_TYPES_QUERY_KEYS.view]).toBe('analysis');
+    expect(built[WORD_TYPES_QUERY_KEYS.view]).toBe('surahs');
     expect(built[WORD_TYPES_QUERY_KEYS.detailPage]).toBe('2');
     expect(built[WORD_TYPES_QUERY_KEYS.location]).toBe('2:25:2');
     expect(built[WORD_TYPES_QUERY_KEYS.column]).toBe('analysis');
+  });
+});
+
+describe('parseWordTypesQueryParams — stale deep-link tolerance', () => {
+  it('falls back stale analysis view to ayahs while keeping tolerated location params', () => {
+    const parsed = parseWordTypesQueryParams(params('view=analysis&location=1:1:2&column=analysis'));
+
+    expect(parsed.view).toBe('ayahs');
+    expect(parsed.location).toBe('1:1:2');
+    expect(parsed.column).toBe('analysis');
   });
 });
 
@@ -136,7 +146,7 @@ describe('buildWordTypesDeepLink', () => {
       page: 1,
       word: 191001,
       contextCode: 'PN',
-      view: 'analysis',
+      view: 'surahs',
       detailPage: 2,
       location: '1:1:2',
       column: 'analysis',
@@ -146,7 +156,7 @@ describe('buildWordTypesDeepLink', () => {
     expect(link.queryParams[WORD_TYPES_QUERY_KEYS.childCode]).toBe('PN');
     expect(link.queryParams[WORD_TYPES_QUERY_KEYS.word]).toBe('191001');
     expect(link.queryParams[WORD_TYPES_QUERY_KEYS.contextCode]).toBe('PN');
-    expect(link.queryParams[WORD_TYPES_QUERY_KEYS.view]).toBe('analysis');
+    expect(link.queryParams[WORD_TYPES_QUERY_KEYS.view]).toBe('surahs');
     expect(link.queryParams[WORD_TYPES_QUERY_KEYS.detailPage]).toBe('2');
     expect(link.queryParams[WORD_TYPES_QUERY_KEYS.location]).toBe('1:1:2');
     expect(link.queryParams[WORD_TYPES_QUERY_KEYS.column]).toBe('analysis');

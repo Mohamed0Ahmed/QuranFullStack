@@ -163,31 +163,32 @@ describe('WordTypesExplorerPageComponent', () => {
     expect(optionLabels).toEqual(WORD_TYPE_SORT_OPTIONS.map((option) => option.label));
   });
 
-  it('keeps rows unloaded when a parent is selected and shows the select prompt', async () => {
+  it('keeps prior rows visible when switching to a different parent until a new subtype is chosen', async () => {
     queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'PN' }));
     const fixture = await createPage();
 
     expect(api.getRows).toHaveBeenCalledTimes(1);
 
-    const nounButton = fixture.nativeElement.querySelector(
-      'qd-word-type-filter .word-type-filter__button[data-word-type-code="noun"]',
+    const verbButton = fixture.nativeElement.querySelector(
+      'qd-word-type-filter .word-type-filter__button[data-word-type-code="verb"]',
     ) as HTMLButtonElement;
-    nounButton.click();
+    verbButton.click();
     fixture.detectChanges();
 
     expect(router.navigate).toHaveBeenCalledWith([], expect.objectContaining({
-      queryParams: expect.objectContaining({ type: 'noun', childCode: null, page: '1', word: null, contextCode: null }),
+      queryParams: expect.objectContaining({ type: 'verb', childCode: null, page: '1', word: null, contextCode: null }),
       queryParamsHandling: 'merge',
     }));
 
-    queryParamMap$.next(convertToParamMap({ type: 'noun' }));
+    queryParamMap$.next(convertToParamMap({ type: 'verb' }));
     await fixture.whenStable();
     fixture.detectChanges();
 
     expect(api.getRows).toHaveBeenCalledTimes(1);
     const root = fixture.nativeElement as HTMLElement;
-    expect(root.querySelector('[data-testid="word-types-select-subtype"]')).not.toBeNull();
-    expect(root.querySelector('qd-word-types-table')).toBeNull();
+    expect(root.querySelector('[data-testid="word-types-select-subtype"]')).toBeNull();
+    expect(root.querySelector('qd-word-types-table')).not.toBeNull();
+    expect(root.textContent).toContain('ماض');
   });
 
   it('loads rows when a subtype is selected', async () => {
@@ -425,7 +426,7 @@ describe('WordTypesExplorerPageComponent', () => {
     expect(api.getSummary).toHaveBeenLastCalledWith(expect.objectContaining({ case: 'nominative' }));
   });
 
-  it('routes a matched ayah occurrence to the analysis view with its exact location', async () => {
+  it('falls back stale analysis deep-links to ayahs and removes the analysis action from the DOM', async () => {
     api.getRows.mockReturnValueOnce(of(ok<PagedResultDto<WordTypeRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [properRow] })));
     api.getAyahMatches.mockReturnValueOnce(of(ok<PagedResultDto<WordTypeAyahMatchDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [ayahMatch] })));
     queryParamMap$.next(convertToParamMap({
@@ -434,24 +435,18 @@ describe('WordTypesExplorerPageComponent', () => {
       page: '1',
       word: '191001',
       contextCode: 'PN',
-      view: 'ayahs',
+      view: 'analysis',
       detailPage: '1',
+      location: '1:1:2',
+      column: 'analysis',
     }));
 
     const fixture = await createPage();
-    const analysisButton = fixture.nativeElement.querySelector('[data-testid="ayah-match-analysis"]') as HTMLButtonElement;
+    const root = fixture.nativeElement as HTMLElement;
 
-    analysisButton.click();
-
-    expect(router.navigate).toHaveBeenCalledWith([], expect.objectContaining({
-      queryParams: expect.objectContaining({
-        view: 'analysis',
-        detailPage: '1',
-        location: '1:1:2',
-        column: 'analysis',
-      }),
-      queryParamsHandling: 'merge',
-    }));
+    expect(TestBed.inject(WordTypesDetailFacade).panelState().view).toBe('ayahs');
+    expect(root.querySelector('[data-testid="word-type-details-tab-analysis"]')).toBeNull();
+    expect(root.querySelector('[data-testid="ayah-match-analysis"]')).toBeNull();
   });
 
   it('returns focus to selected row after selection clears', async () => {

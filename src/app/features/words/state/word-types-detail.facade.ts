@@ -5,8 +5,6 @@ import { Observable, Subscription, of } from 'rxjs';
 import { catchError, distinctUntilChanged, map, switchMap, tap } from 'rxjs/operators';
 
 import { ApiResponse } from '../../../core/data-access/api-response.model';
-import { WordAnalysisViewModel } from '../../mushaf/models/mushaf.models';
-import { toWordAnalysisViewModel } from '../../mushaf/state/mushaf-reader-view-mappers';
 import { WordTypesApi } from '../data-access/word-types.api';
 import { WORD_TYPES_ERROR_LABEL, WORD_TYPES_NOT_FOUND_LABEL } from '../models/word-types.labels';
 import {
@@ -42,7 +40,6 @@ const INITIAL_PANEL: WordTypesDetailState = {
   summary: null,
   ayahs: null,
   surahs: null,
-  analysis: null,
   status: 'idle',
   errorMessage: '',
 };
@@ -105,7 +102,7 @@ export class WordTypesDetailFacade {
       view,
       status: 'loading',
     });
-    this.loadSummaryAndActiveView(identity, view, DEFAULT_WORD_TYPES_DETAIL_PAGE, null);
+    this.loadSummaryAndActiveView(identity, view, DEFAULT_WORD_TYPES_DETAIL_PAGE);
   }
 
   clearSelection(): void {
@@ -128,7 +125,7 @@ export class WordTypesDetailFacade {
       identity: current.selectedRow,
       view,
       detailPage,
-      location: view === 'analysis' ? current.location : null,
+      location: null,
     };
     this._panel.update((state) => ({
       ...state,
@@ -137,7 +134,7 @@ export class WordTypesDetailFacade {
       status: 'loading',
       errorMessage: '',
     }));
-    this.loadActiveView(current.selectedRow, view, detailPage, this.activeUrlState.location);
+    this.loadActiveView(current.selectedRow, view, detailPage);
   }
 
   setDetailPage(page: number): void {
@@ -158,32 +155,7 @@ export class WordTypesDetailFacade {
       status: 'loading',
       errorMessage: '',
     }));
-    this.loadActiveView(current.selectedRow, current.view, page, current.location);
-  }
-
-  setAnalysisLocation(location: string | null): void {
-    const current = this._panel();
-    if (current.selectedRow === null || current.summary === null || current.view !== 'analysis') {
-      return;
-    }
-
-    this.activeUrlState = {
-      identity: current.selectedRow,
-      view: 'analysis',
-      detailPage: current.detailPage,
-      location,
-    };
-    this._panel.update((state) => ({
-      ...state,
-      location,
-      status: location ? 'loading' : 'success',
-      analysis: null,
-      errorMessage: '',
-    }));
-
-    if (location) {
-      this.loadActiveView(current.selectedRow, 'analysis', current.detailPage, location);
-    }
+    this.loadActiveView(current.selectedRow, current.view, page);
   }
 
   private toPanelUrlState(params: ParamMap): PanelUrlState | null {
@@ -230,7 +202,7 @@ export class WordTypesDetailFacade {
         status: 'loading',
         errorMessage: '',
       }));
-      this.loadActiveView(state.identity, state.view, state.detailPage, state.location);
+      this.loadActiveView(state.identity, state.view, state.detailPage);
       return of(undefined);
     }
 
@@ -261,7 +233,7 @@ export class WordTypesDetailFacade {
             ...panel,
             ...buildSummaryPanelUpdate(response),
           }));
-          this.loadActiveView(state.identity, state.view, state.detailPage, state.location);
+          this.loadActiveView(state.identity, state.view, state.detailPage);
         }),
         catchError((err) => {
           if (err instanceof HttpErrorResponse && err.status === 404) {
@@ -285,7 +257,6 @@ export class WordTypesDetailFacade {
     identity: WordTypeRowIdentity,
     view: WordTypeDetailView,
     detailPage: number,
-    location: string | null,
   ): void {
     this.summarySub?.unsubscribe();
     this.summarySub = this.cache
@@ -301,7 +272,7 @@ export class WordTypesDetailFacade {
             ...panel,
             ...buildSummaryPanelUpdate(response),
           }));
-          this.loadActiveView(identity, view, detailPage, location);
+          this.loadActiveView(identity, view, detailPage);
         },
         error: (err) => {
           this._panel.update((panel) => ({
@@ -316,31 +287,14 @@ export class WordTypesDetailFacade {
     identity: WordTypeRowIdentity,
     view: WordTypeDetailView,
     detailPage: number,
-    location: string | null,
   ): void {
     this.detailSub?.unsubscribe();
 
-    if (view === 'analysis' && !location) {
-      this._panel.update((panel) => ({
-        ...panel,
-        analysis: null,
-        status: 'empty',
-        errorMessage: '',
-      }));
-      return;
-    }
-
     this.detailSub = this.viewLoader.loadActiveView(
-      { identity, view, detailPage, location },
+      { identity, view, detailPage },
       {
         onAyahs: (response) => this._panel.update((panel) => ({ ...panel, ...buildAyahsPanelUpdate(response) })),
         onSurahs: (response) => this._panel.update((panel) => ({ ...panel, ...buildSurahsPanelUpdate(response) })),
-        onAnalysis: (response) => this._panel.update((panel) => ({
-          ...panel,
-          analysis: response.isSuccess && response.data ? toWordAnalysisViewModel(response.data) : null,
-          status: response.isSuccess && response.data ? 'success' : 'error',
-          errorMessage: response.isSuccess ? '' : response.message ?? WORD_TYPES_ERROR_LABEL,
-        })),
         onError: (err) => this._panel.update((panel) => ({
           ...panel,
           ...buildDetailErrorUpdate(err, WORD_TYPES_ERROR_LABEL),

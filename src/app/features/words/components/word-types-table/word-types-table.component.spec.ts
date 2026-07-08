@@ -66,9 +66,32 @@ describe('WordTypesTableComponent', () => {
     const button = fixture.nativeElement.querySelector('.word-types-table__row') as HTMLButtonElement;
     expect(button.getAttribute('aria-current')).toBe('true');
     expect(button.getAttribute('aria-selected')).toBe('true');
+    expect(button.classList.contains('qd-is-selected')).toBe(true);
     button.click();
 
     expect(emitted[0].contextCode).toBe('PN');
+  });
+
+  it('renders a skeleton body before rows exist, then marks existing rows busy during refresh', () => {
+    const loadingFixture = TestBed.createComponent(WordTypesTableComponent);
+    loadingFixture.componentRef.setInput('loading', true);
+    loadingFixture.detectChanges();
+
+    const loadingRoot = loadingFixture.nativeElement as HTMLElement;
+    expect(loadingRoot.querySelector('[data-testid="word-types-table-loading"]')).not.toBeNull();
+    expect(loadingRoot.querySelector('.word-types-table__row--loading')).not.toBeNull();
+
+    const busyFixture = TestBed.createComponent(WordTypesTableComponent);
+    busyFixture.componentRef.setInput('rows', page);
+    busyFixture.componentRef.setInput('loading', true);
+    busyFixture.detectChanges();
+
+    const busyRoot = busyFixture.nativeElement as HTMLElement;
+    const body = busyRoot.querySelector('.word-types-table__body') as HTMLElement;
+
+    expect(body.getAttribute('aria-busy')).toBe('true');
+    expect(body.classList.contains('word-types-table__body--busy')).toBe(true);
+    expect(busyRoot.querySelector('[data-word-types-row]')).not.toBeNull();
   });
 
   it('focuses a row by identity for focus return', () => {

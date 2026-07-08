@@ -76,7 +76,6 @@ export function restoredRowNotFoundUpdate(
     summary: null,
     ayahs: null,
     surahs: null,
-    analysis: null,
     detailPage: 1,
     location: null,
     errorMessage: message || fallback,
