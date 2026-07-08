@@ -18,15 +18,26 @@
   color: inherit;
   text-decoration: none;
   font-size: 0.95rem;
-  transition: background var(--qd-t-fast) ease, border-color var(--qd-t-fast) ease;
+  transition:
+    background-color var(--qd-t-fast),
+    border-color var(--qd-t-fast),
+    color var(--qd-t-fast);
 }
 
 .unique-words-tabs__tab:hover {
-  border-color: var(--qd-accent);
+  background: var(--qd-section-bg);
+  border-color: var(--qd-border-strong);
+  color: var(--qd-accent-text);
 }
 
 .unique-words-tabs__tab.qd-is-selected {
-  background: var(--qd-accent);
+  background: var(--qd-accent-tint);
   border-color: var(--qd-accent);
-  color: var(--qd-surface);
+  color: var(--qd-accent-text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .unique-words-tabs__tab {
+    transition: none;
+  }
 }

@@ -1,5 +1,5 @@
 <div class="qd-page">
-  <div class="qd-container unique-words-page-frame unique-words-page-frame--wide">
+  <div class="qd-container qd-explorer-frame unique-words-page-frame">
     <div class="uw-intro-band">
       <div class="qd-page-header">
         <h1 class="qd-page-title" data-testid="unique-words-page-title">{{ pageTitle }}</h1>
@@ -50,42 +50,40 @@
 
   @switch (listState().status) {
     @default {
-      <div class="unique-words-layout-shell">
-        <div class="unique-words-layout">
-          <section class="unique-words-layout__table">
-            <qd-unique-words-table
-              [rows]="listState().items"
-              [loading]="listState().status === 'loading'"
-              [selectedWordId]="selectedWordId()"
-              [currentPage]="listState().page"
-              [pageSize]="listState().pageSize"
-              [drilldownIsOpen]="drilldownIsOpen()"
-              [activeColumn]="activeColumn()"
-              (rowSelected)="onRowSelected($event)"
-              (drilldownOpen)="onDrilldownOpen($event)"
-            />
-            <qd-pagination
-              [currentPage]="listState().page"
-              [pageSize]="listState().pageSize"
-              [totalCount]="listState().totalCount"
-              [disabled]="listState().status === 'loading'"
-              [ariaLabel]="listPaginationLabel"
-              (pageChange)="onPaginationPageChange($event)"
-            />
-          </section>
+      <div class="unique-words-layout qd-explorer-layout">
+        <section class="unique-words-layout__table qd-explorer-layout__table">
+          <qd-unique-words-table
+            [rows]="listState().items"
+            [loading]="listState().status === 'loading'"
+            [selectedWordId]="selectedWordId()"
+            [currentPage]="listState().page"
+            [pageSize]="listState().pageSize"
+            [drilldownIsOpen]="drilldownIsOpen()"
+            [activeColumn]="activeColumn()"
+            (rowSelected)="onRowSelected($event)"
+            (drilldownOpen)="onDrilldownOpen($event)"
+          />
+          <qd-pagination
+            [currentPage]="listState().page"
+            [pageSize]="listState().pageSize"
+            [totalCount]="listState().totalCount"
+            [disabled]="listState().status === 'loading'"
+            [ariaLabel]="listPaginationLabel"
+            (pageChange)="onPaginationPageChange($event)"
+          />
+        </section>
 
-          @if (isDesktop()) {
-            <aside class="unique-words-layout__panel" [attr.aria-label]="panelSurfaceLabel">
-              <qd-word-drilldown-modal
-                [state]="drilldownState()"
-                [inline]="true"
-                (closeModal)="onDrilldownClose()"
-                (viewChange)="onDrilldownViewChange($event)"
-                (ayahPageChange)="onAyahPageChange($event)"
-              />
-            </aside>
-          }
-        </div>
+        @if (isDesktop()) {
+          <aside class="unique-words-layout__panel qd-explorer-layout__panel" [attr.aria-label]="panelSurfaceLabel">
+            <qd-word-drilldown-modal
+              [state]="drilldownState()"
+              [inline]="true"
+              (closeModal)="onDrilldownClose()"
+              (viewChange)="onDrilldownViewChange($event)"
+              (ayahPageChange)="onAyahPageChange($event)"
+            />
+          </aside>
+        }
       </div>
     }
   }

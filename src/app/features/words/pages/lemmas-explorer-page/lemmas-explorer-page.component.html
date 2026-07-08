@@ -1,5 +1,5 @@
 <div class="qd-page">
-  <div class="qd-container lemmas-explorer-frame">
+  <div class="qd-container qd-explorer-frame lemmas-explorer-frame">
     <div class="uw-intro-band">
       <div class="qd-page-header">
         <h1 class="qd-page-title" data-testid="lemmas-explorer-page-title">{{ pageTitle }}</h1>
@@ -7,11 +7,11 @@
     </div>
 
     <div class="uw-toolbar-recess">
-      <div class="lemmas-explorer__controls">
+      <div class="lemmas-explorer__controls qd-explorer-controls">
         <label class="qd-sr-only" for="lemmas-search">{{ searchLabel }}</label>
         <input
           id="lemmas-search"
-          class="qd-input lemmas-explorer__search"
+          class="qd-input lemmas-explorer__search qd-explorer__search"
           type="search"
           inputmode="search"
           [attr.placeholder]="searchPlaceholder"
@@ -23,7 +23,7 @@
         <label class="qd-sr-only" for="lemmas-sort">{{ sortLabels.label }}</label>
         <select
           id="lemmas-sort"
-          class="qd-select lemmas-explorer__sort"
+          class="qd-select lemmas-explorer__sort qd-explorer__sort"
           data-testid="lemmas-sort-select"
           [value]="listState().sort"
           (change)="onSortChange($any($event.target).value)"
@@ -59,8 +59,8 @@
 
   @switch (listState().status) {
     @default {
-      <div class="lemmas-explorer-layout">
-        <section class="lemmas-explorer-layout__table" [attr.aria-label]="tableSectionLabel">
+      <div class="lemmas-explorer-layout qd-explorer-layout">
+        <section class="lemmas-explorer-layout__table qd-explorer-layout__table" [attr.aria-label]="tableSectionLabel">
           <qd-lemmas-table
             [rows]="listState().items"
             [loading]="listState().status === 'loading'"
@@ -85,7 +85,7 @@
         </section>
 
         @if (isDesktop()) {
-          <aside class="lemmas-explorer-layout__panel" [attr.aria-label]="panelSurfaceLabel">
+          <aside class="lemmas-explorer-layout__panel qd-explorer-layout__panel" [attr.aria-label]="panelSurfaceLabel">
             <qd-lemma-details-panel
               [inline]="true"
               [view]="activeView()"
@@ -132,7 +132,7 @@
 
       @if (activeView() === 'words') {
         <nav
-          class="lemmas-explorer__sub-tabs"
+          class="lemmas-explorer__sub-tabs qd-explorer-subtabs"
           role="tablist"
           [attr.aria-label]="wordsTablistLabel"
           data-testid="lemmas-word-view-tabs"
@@ -153,7 +153,7 @@
         </nav>
       } @else if (activeView() === 'surahs') {
         <nav
-          class="lemmas-explorer__sub-tabs"
+          class="lemmas-explorer__sub-tabs qd-explorer-subtabs"
           role="tablist"
           [attr.aria-label]="surahsTablistLabel"
           data-testid="lemmas-surah-view-tabs"

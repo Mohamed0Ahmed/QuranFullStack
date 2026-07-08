@@ -1,5 +1,5 @@
 <div class="qd-page">
-  <div class="qd-container roots-explorer-frame">
+  <div class="qd-container qd-explorer-frame roots-explorer-frame">
     <div class="uw-intro-band">
       <div class="qd-page-header">
         <h1 class="qd-page-title" data-testid="roots-explorer-page-title">{{ pageTitle }}</h1>
@@ -7,11 +7,11 @@
     </div>
 
     <div class="uw-toolbar-recess">
-      <div class="roots-explorer__controls">
+      <div class="roots-explorer__controls qd-explorer-controls">
         <label class="qd-sr-only" for="roots-search">{{ searchLabel }}</label>
         <input
           id="roots-search"
-          class="qd-input roots-explorer__search"
+          class="qd-input roots-explorer__search qd-explorer__search"
           type="search"
           inputmode="search"
           [attr.placeholder]="searchPlaceholder"
@@ -23,7 +23,7 @@
         <label class="qd-sr-only" for="roots-sort">{{ sortLabels.label }}</label>
         <select
           id="roots-sort"
-          class="qd-select roots-explorer__sort"
+          class="qd-select roots-explorer__sort qd-explorer__sort"
           data-testid="roots-sort-select"
           [value]="listState().sort"
           (change)="onSortChange($any($event.target).value)"
@@ -59,8 +59,8 @@
 
   @switch (listState().status) {
     @default {
-      <div class="roots-explorer-layout">
-        <section class="roots-explorer-layout__table" [attr.aria-label]="rootsTableLabel">
+      <div class="roots-explorer-layout qd-explorer-layout">
+        <section class="roots-explorer-layout__table qd-explorer-layout__table" [attr.aria-label]="rootsTableLabel">
           <qd-roots-table
             [rows]="listState().items"
             [loading]="listState().status === 'loading'"
@@ -85,7 +85,7 @@
         </section>
 
         @if (isDesktop()) {
-          <aside class="roots-explorer-layout__panel" [attr.aria-label]="panelLabel">
+          <aside class="roots-explorer-layout__panel qd-explorer-layout__panel" [attr.aria-label]="panelLabel">
             <qd-root-details-panel
               [inline]="true"
               [view]="activeView()"
@@ -123,7 +123,7 @@
   @if (!emptySelection()) {
     @if (activeView() === 'words') {
       <nav
-        class="roots-explorer__sub-tabs"
+        class="roots-explorer__sub-tabs qd-explorer-subtabs"
         role="tablist"
         [attr.aria-label]="wordsTablistLabel"
         data-testid="roots-word-view-tabs"
@@ -144,7 +144,7 @@
       </nav>
     } @else if (activeView() === 'surahs') {
       <nav
-        class="roots-explorer__sub-tabs"
+        class="roots-explorer__sub-tabs qd-explorer-subtabs"
         role="tablist"
         [attr.aria-label]="surahsTablistLabel"
         data-testid="roots-surah-view-tabs"
