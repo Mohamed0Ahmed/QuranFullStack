@@ -78,7 +78,7 @@ const ayahMatch: WordTypeAyahMatchDto = {
   verseKey: '1:1',
   surahNumber: 1,
   ayahNumber: 1,
-  ayahText: 'AYAH_TEXT_PLACEHOLDER',
+  pageNumber: 1,
   matchedWordPositions: [2],
   matchedWordIds: [1903002],
   words: [

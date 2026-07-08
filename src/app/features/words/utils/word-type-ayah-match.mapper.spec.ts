@@ -9,7 +9,7 @@ describe('mapWordTypeAyahMatchToShared', () => {
         verseKey: '1:1',
         surahNumber: 1,
         ayahNumber: 1,
-        ayahText: 'fixture',
+        pageNumber: 92,
         matchedWordPositions: [2],
         matchedWordIds: [202],
         words: [
@@ -22,7 +22,7 @@ describe('mapWordTypeAyahMatchToShared', () => {
       verseKey: '1:1',
       surahNameArabic: '',
       ayahNumber: 1,
-      pageNumber: 1,
+      pageNumber: 92,
       analysisLocation: '1:1:2',
       matchedQuranWordIds: [1],
       words: [

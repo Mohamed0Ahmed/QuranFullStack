@@ -71,7 +71,7 @@ export interface WordTypeAyahMatchDto {
   verseKey: string;
   surahNumber: number;
   ayahNumber: number;
-  ayahText: string;
+  pageNumber: number;
   matchedWordPositions: number[];
   matchedWordIds: number[];
   words: AyahWordForHighlightDto[];
