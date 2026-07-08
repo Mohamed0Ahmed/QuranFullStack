@@ -12,11 +12,12 @@ internal static class WordTypesHandlerValidation
 
     private const string NounType = "noun";
     private const string VerbType = "verb";
+    private const string ParticleType = "particle";
 
     private static readonly HashSet<string> AllowedTypes = ["noun", "verb", "particle", "inl"];
 
     // Catalogue-defined noun head-POS child codes (research R4 / data-model §2). These mirror
-    // quran_pos_tags noun-category rows; particle/INL expose no child nodes in v1.
+    // quran_pos_tags noun-category rows.
     private static readonly HashSet<string> NounChildCodes = new(StringComparer.Ordinal)
     {
         "N", "PN", "ADJ", "PRON", "REL", "DEM", "T", "LOC", "TIM", "IMPN",
@@ -25,6 +26,15 @@ internal static class WordTypesHandlerValidation
     private static readonly HashSet<string> VerbChildCodes = new(StringComparer.Ordinal)
     {
         "past", "present", "imperative",
+    };
+
+    // Particle child codes mirror quran_pos_tags.category = 'particle' except INL, which is its
+    // own main type. Validation accepts catalogue particle children even when the tree hides them
+    // because the count is zero, so deep links to hidden children still resolve cleanly.
+    private static readonly HashSet<string> ParticleChildCodes = new(StringComparer.Ordinal)
+    {
+        "P", "CONJ", "NEG", "VOC", "IMPV", "ACC", "EMPH", "REM", "ANS", "PRO", "FUT", "INTG", "COND", "PREV", "CAUS", "AMD", "EXL",
+        "RES", "PRP", "COM", "DET", "SUB", "AVR", "CERT", "CIRC", "EQ", "EXH", "EXP", "INC", "INT", "RET", "RSLT", "SUP", "SUR",
     };
 
     // Secondary filter value sets. "all" is the frontend default meaning "no filter applied" and is
@@ -41,12 +51,13 @@ internal static class WordTypesHandlerValidation
             && IsValidChildCode(filter.Type, filter.ChildCode)
             && IsValidSecondaryFilter(filter.Type, filter.Case, filter.Tense, filter.Voice));
 
-    // A child code is valid only when it belongs to the selected parent. particle and inl are
-    // parents/leaves with no child nodes in v1, so any child code on them is rejected here.
+    // A child code is valid only when it belongs to the selected parent. particle now accepts
+    // catalogue child codes; inl remains a leaf with no child nodes.
     public static bool IsValidChildCode(string? type, string? childCode) =>
         string.IsNullOrWhiteSpace(childCode)
         || (type == NounType && NounChildCodes.Contains(childCode))
-        || (type == VerbType && VerbChildCodes.Contains(childCode));
+        || (type == VerbType && VerbChildCodes.Contains(childCode))
+        || (type == ParticleType && ParticleChildCodes.Contains(childCode));
 
     // Secondary filter visibility: case applies only to noun; tense/voice apply only to verb;
     // particle and inl reject every secondary filter. "all" is the no-op default the frontend always

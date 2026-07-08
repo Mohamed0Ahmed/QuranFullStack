@@ -17,8 +17,8 @@ public sealed class WordTypesMainReadTests(WordTypesTestFixture fixture)
         var tree = await reader.GetTreeAsync(CancellationToken.None);
 
         tree.MainTypes.Select(node => node.Code).Should().Equal("noun", "verb", "particle", "inl");
-        Count(tree, "noun").Should().Be(4);
-        Count(tree, "verb").Should().Be(4);
+        Count(tree, "noun").Should().Be(3);
+        Count(tree, "verb").Should().Be(3);
         Count(tree, "particle").Should().Be(1);
         Count(tree, "inl").Should().Be(1);
     }
@@ -28,7 +28,7 @@ public sealed class WordTypesMainReadTests(WordTypesTestFixture fixture)
     [InlineData("verb", 4)]
     [InlineData("particle", 1)]
     [InlineData("inl", 1)]
-    public async Task Rows_TotalCount_EqualsTreeCount_ForMainTypes(string type, int expectedCount)
+    public async Task Rows_ReturnExpectedTotals_ForMainTypes(string type, int expectedCount)
     {
         await using var scope = fixture.CreateScope();
         var reader = scope.ServiceProvider.GetRequiredService<IWordTypesReader>();

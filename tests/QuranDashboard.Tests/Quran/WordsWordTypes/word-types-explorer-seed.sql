@@ -15,6 +15,7 @@ VALUES
   ('N', 'اسم', 'Noun', 'noun', 1),
   ('PN', 'اسم علم', 'Proper Noun', 'noun', 2),
   ('ADJ', 'صفة', 'Adjective', 'noun', 3),
+  ('TIM', 'ظرف زمان', 'Temporal Adverb', 'noun', 33),
   ('V', 'فعل', 'Verb', 'verb', 4),
   ('P', 'حرف جر', 'Preposition', 'particle', 5),
   ('PRO', 'حرف نهي', 'Prohibition', 'particle', 6),
