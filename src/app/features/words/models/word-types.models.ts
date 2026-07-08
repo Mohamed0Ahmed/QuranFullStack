@@ -6,7 +6,7 @@ export type WordTypeTense = 'all' | 'past' | 'present' | 'imperative';
 export type WordTypeVoice = 'all' | 'active' | 'passive';
 export type WordTypeSort = 'occurrences' | 'ayahs' | 'surahs' | 'mushaf-order' | 'alpha';
 export type WordTypeDetailView = 'ayahs' | 'surahs' | 'analysis';
-export type WordTypesLoadStatus = 'idle' | 'loading' | 'success' | 'empty' | 'error' | 'notFound';
+export type WordTypesLoadStatus = 'idle' | 'loading' | 'selectPrompt' | 'success' | 'empty' | 'error' | 'notFound';
 
 export interface PagedResultDto<T> {
   page: number;

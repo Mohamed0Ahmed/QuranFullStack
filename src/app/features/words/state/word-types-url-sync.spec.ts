@@ -41,10 +41,10 @@ describe('parseWordTypesQueryParams — child codes', () => {
     expect(parsed.childCode).toBeNull();
   });
 
-  it('drops child code entirely for particle (no children in v1)', () => {
-    const parsed = parseWordTypesQueryParams(params('type=particle&childCode=P'));
+  it('keeps a valid particle child code', () => {
+    const parsed = parseWordTypesQueryParams(params('type=particle&childCode=PRO'));
 
-    expect(parsed.childCode).toBeNull();
+    expect(parsed.childCode).toBe('PRO');
   });
 
   it('drops child code entirely for inl (leaf node)', () => {
@@ -150,6 +150,16 @@ describe('buildWordTypesDeepLink', () => {
     expect(link.queryParams[WORD_TYPES_QUERY_KEYS.detailPage]).toBe('2');
     expect(link.queryParams[WORD_TYPES_QUERY_KEYS.location]).toBe('1:1:2');
     expect(link.queryParams[WORD_TYPES_QUERY_KEYS.column]).toBe('analysis');
+  });
+
+  it('preserves particle child codes in the deep-link query', () => {
+    const link = buildWordTypesDeepLink({
+      type: 'particle',
+      childCode: 'PRO',
+      page: 1,
+    });
+
+    expect(link.queryParams[WORD_TYPES_QUERY_KEYS.childCode]).toBe('PRO');
   });
 });
 

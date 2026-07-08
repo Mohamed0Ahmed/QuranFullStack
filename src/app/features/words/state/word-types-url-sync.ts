@@ -126,11 +126,10 @@ function normalizeChildCode(type: WordTypeMainType, value: string | null): strin
     return null;
   }
 
-  // particle and inl expose no child nodes in v1, so any child code is invalid and dropped.
-  // Verb children are the fixed tense set and are validated here. Noun children are catalogue POS
-  // codes the parser cannot enumerate, so it passes them through; the backend validates them and
-  // rejects an unrecognized noun code with 400 (surfaced as the list error state).
-  if (type === 'particle' || type === 'inl') {
+  // inl is the only leaf with no child dimension. Verb children are the fixed tense set and are
+  // validated here. Noun and particle children are catalogue POS codes the parser cannot enumerate,
+  // so they pass through; the backend validates them and rejects an unrecognized code with 400.
+  if (type === 'inl') {
     return null;
   }
 

@@ -9,7 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiResponse } from '../../../../core/data-access/api-response.model';
 import { WordTypesApi } from '../../data-access/word-types.api';
 import { ADDITIONAL_ACTIVE_HUB_SECTIONS } from '../../models/unique-words.labels';
-import { WORD_TYPE_SORT_OPTIONS, WORD_TYPES_SORT_LABEL } from '../../models/word-types.labels';
+import { WORD_TYPE_SORT_OPTIONS, WORD_TYPES_SELECT_SUBTYPE_LABEL, WORD_TYPES_SORT_LABEL } from '../../models/word-types.labels';
 import { PagedResultDto, WordTypeAyahMatchDto, WordTypeRowDto, WordTypeTreeDto } from '../../models/word-types.models';
 import { WordTypesTableComponent } from '../../components/word-types-table/word-types-table.component';
 import { WordTypesDetailFacade } from '../../state/word-types-detail.facade';
@@ -30,7 +30,11 @@ const tree: WordTypeTreeDto = {
       secondaryFilter: { kind: 'tense+voice', options: [], voiceOptions: [] },
       children: [{ code: 'past', childCode: 'past', label: { ar: 'ماض' }, count: 1 }],
     },
-    { code: 'particle', label: { ar: 'حرف وأداة' }, count: 1, secondaryFilter: { kind: 'none', options: [], voiceOptions: [] }, children: [] },
+    {
+      code: 'particle', label: { ar: 'حرف وأداة' }, count: 1,
+      secondaryFilter: { kind: 'none', options: [], voiceOptions: [] },
+      children: [{ code: 'PRO', childCode: 'PRO', label: { ar: 'حرف نهي' }, count: 1 }],
+    },
     { code: 'inl', label: { ar: 'حروف مقطّعة' }, count: 1, secondaryFilter: { kind: 'none', options: [], voiceOptions: [] }, children: [] },
   ],
 };
@@ -60,6 +64,14 @@ const properRow: WordTypeRowDto = {
   typeCode: 'PN',
   typeLabel: { ar: 'اسم علم' },
   broadLabel: { ar: 'اسم' },
+};
+
+const verbRow: WordTypeRowDto = {
+  ...row,
+  contextCode: 'present',
+  typeCode: 'present',
+  typeLabel: { ar: 'مضارع' },
+  broadLabel: { ar: 'فعل' },
 };
 
 const ayahMatch: WordTypeAyahMatchDto = {
@@ -129,13 +141,16 @@ describe('WordTypesExplorerPageComponent', () => {
     return fixture;
   }
 
-  it('defaults route state to type=noun, loads tree and rows, and does not call details eagerly', async () => {
+  it('defaults route state to type=noun, loads tree only, and shows the select prompt', async () => {
     const fixture = await createPage();
+    const root = fixture.nativeElement as HTMLElement;
 
-    expect(api.getRows).toHaveBeenCalledWith(expect.objectContaining({ type: 'noun', page: 1, pageSize: 25 }));
-    expect(TestBed.inject(WordTypesExplorerFacade).listState().status).toBe('success');
+    expect(api.getRows).not.toHaveBeenCalled();
+    expect(TestBed.inject(WordTypesExplorerFacade).listState().status).toBe('selectPrompt');
     expect(TestBed.inject(WordTypesDetailFacade).panelState().summary).toBeNull();
-    expect((fixture.nativeElement as HTMLElement).textContent).toContain('كَلِمَة');
+    expect(root.textContent).toContain(WORD_TYPES_SELECT_SUBTYPE_LABEL);
+    expect(root.querySelector('[data-testid="word-types-select-subtype"]')).not.toBeNull();
+    expect(root.querySelector('qd-word-types-table')).toBeNull();
   });
 
   it('renders sort label and options from centralized labels', async () => {
@@ -146,6 +161,68 @@ describe('WordTypesExplorerPageComponent', () => {
 
     expect(root.textContent).toContain(WORD_TYPES_SORT_LABEL);
     expect(optionLabels).toEqual(WORD_TYPE_SORT_OPTIONS.map((option) => option.label));
+  });
+
+  it('keeps rows unloaded when a parent is selected and shows the select prompt', async () => {
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'PN' }));
+    const fixture = await createPage();
+
+    expect(api.getRows).toHaveBeenCalledTimes(1);
+
+    const nounButton = fixture.nativeElement.querySelector(
+      'qd-word-type-filter .word-type-filter__button[data-word-type-code="noun"]',
+    ) as HTMLButtonElement;
+    nounButton.click();
+    fixture.detectChanges();
+
+    expect(router.navigate).toHaveBeenCalledWith([], expect.objectContaining({
+      queryParams: expect.objectContaining({ type: 'noun', childCode: null, page: '1', word: null, contextCode: null }),
+      queryParamsHandling: 'merge',
+    }));
+
+    queryParamMap$.next(convertToParamMap({ type: 'noun' }));
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(api.getRows).toHaveBeenCalledTimes(1);
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('[data-testid="word-types-select-subtype"]')).not.toBeNull();
+    expect(root.querySelector('qd-word-types-table')).toBeNull();
+  });
+
+  it('loads rows when a subtype is selected', async () => {
+    const fixture = await createPage();
+    const nounExpand = fixture.nativeElement.querySelector(
+      'qd-word-type-filter .word-type-filter__expand[data-word-type-code="noun"]',
+    ) as HTMLButtonElement;
+    nounExpand.click();
+    fixture.detectChanges();
+
+    const childButton = fixture.nativeElement.querySelector('.word-type-filter__child-button') as HTMLButtonElement;
+    childButton.click();
+    fixture.detectChanges();
+
+    expect(router.navigate).toHaveBeenCalledWith([], expect.objectContaining({
+      queryParams: expect.objectContaining({ childCode: 'N', page: '1', word: null, contextCode: null }),
+      queryParamsHandling: 'merge',
+    }));
+
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'N' }));
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(api.getRows).toHaveBeenCalledWith(expect.objectContaining({ type: 'noun', childCode: 'N', pageSize: 25 }));
+    expect((fixture.nativeElement as HTMLElement).querySelector('qd-word-types-table')).not.toBeNull();
+  });
+
+  it('loads rows directly for inl', async () => {
+    queryParamMap$.next(convertToParamMap({ type: 'inl' }));
+    api.getRows.mockReturnValueOnce(of(ok<PagedResultDto<WordTypeRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [verbRow] })));
+    const fixture = await createPage();
+
+    expect(api.getRows).toHaveBeenCalledWith(expect.objectContaining({ type: 'inl', childCode: null, pageSize: 25 }));
+    expect(TestBed.inject(WordTypesExplorerFacade).listState().status).toBe('success');
+    expect((fixture.nativeElement as HTMLElement).querySelector('qd-word-types-table')).not.toBeNull();
   });
 
   it('routes main type selection and clears selected row state', async () => {
@@ -197,7 +274,7 @@ describe('WordTypesExplorerPageComponent', () => {
 
   it('renders empty and error states without adding a simple-text toggle', async () => {
     api.getRows.mockReturnValueOnce(of(ok<PagedResultDto<WordTypeRowDto>>({ page: 1, pageSize: 25, totalCount: 0, items: [] })));
-    queryParamMap$.next(convertToParamMap({ page: '2' }));
+    queryParamMap$.next(convertToParamMap({ type: 'particle', childCode: 'P', page: '1' }));
     const emptyFixture = await createPage();
     expect((emptyFixture.nativeElement as HTMLElement).textContent).toContain('لا توجد نتائج لهذا النوع');
     expect((emptyFixture.nativeElement as HTMLElement).textContent).not.toContain('بدون تشكيل');
@@ -264,6 +341,7 @@ describe('WordTypesExplorerPageComponent', () => {
     api.getRows.mockReturnValueOnce(of(ok<PagedResultDto<WordTypeRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [properRow] })));
     queryParamMap$.next(convertToParamMap({
       type: 'noun',
+      childCode: 'PN',
       page: '1',
       word: '191001',
       contextCode: 'PN',
@@ -289,7 +367,7 @@ describe('WordTypesExplorerPageComponent', () => {
     expect(explorerFacade.listState().query.word).toBe(191001);
     expect(explorerFacade.listState().query.contextCode).toBe('PN');
 
-    queryParamMap$.next(convertToParamMap({ type: 'noun', page: '1' }));
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'PN', page: '1' }));
     await fixture.whenStable();
     fixture.detectChanges();
 
@@ -303,6 +381,7 @@ describe('WordTypesExplorerPageComponent', () => {
     queryParamMap$.next(convertToParamMap({
       type: 'noun',
       case: 'genitive',
+      childCode: 'PN',
       page: '1',
       word: '191001',
       contextCode: 'PN',
@@ -316,6 +395,7 @@ describe('WordTypesExplorerPageComponent', () => {
     queryParamMap$.next(convertToParamMap({
       type: 'noun',
       case: 'nominative',
+      childCode: 'PN',
       page: '1',
       word: '191001',
       contextCode: 'PN',
@@ -333,6 +413,7 @@ describe('WordTypesExplorerPageComponent', () => {
     api.getAyahMatches.mockReturnValueOnce(of(ok<PagedResultDto<WordTypeAyahMatchDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [ayahMatch] })));
     queryParamMap$.next(convertToParamMap({
       type: 'noun',
+      childCode: 'PN',
       page: '1',
       word: '191001',
       contextCode: 'PN',
@@ -359,6 +440,7 @@ describe('WordTypesExplorerPageComponent', () => {
   it('returns focus to selected row after selection clears', async () => {
     queryParamMap$.next(convertToParamMap({
       type: 'noun',
+      childCode: 'N',
       page: '1',
       word: '191001',
       contextCode: 'N',
@@ -380,6 +462,7 @@ describe('WordTypesExplorerPageComponent', () => {
     api.getSummary.mockReturnValueOnce(of({ isSuccess: false, data: null, message: 'غير موجود', errors: null }));
     queryParamMap$.next(convertToParamMap({
       type: 'noun',
+      childCode: 'PN',
       page: '1',
       word: '999999',
       contextCode: 'PN',

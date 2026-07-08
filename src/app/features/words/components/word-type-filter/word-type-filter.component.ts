@@ -90,6 +90,7 @@ export class WordTypeFilterComponent {
     }
 
     this.typeSelected.emit(node.code);
+    this.openPanelType.set(node.children.length > 0 ? node.code : null);
   }
 
   protected selectChild(child: WordTypeChildNodeDto): void {

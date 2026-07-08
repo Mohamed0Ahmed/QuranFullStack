@@ -18,6 +18,7 @@ import {
   WORD_TYPES_LOADING_LABEL,
   WORD_TYPES_NULL_PLACEHOLDER,
   WORD_TYPES_PAGE_TITLE,
+  WORD_TYPES_SELECT_SUBTYPE_LABEL,
   WORD_TYPES_SORT_LABEL,
   WORD_TYPES_TABLE_LABEL,
   WORD_TYPES_ANALYSIS_ACTION_LABEL,
@@ -129,6 +130,7 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
   protected get pageTitle() { return WORD_TYPES_PAGE_TITLE; }
   protected get loadingLabel() { return WORD_TYPES_LOADING_LABEL; }
   protected get emptyLabel() { return WORD_TYPES_EMPTY_LABEL; }
+  protected get selectSubtypeLabel() { return WORD_TYPES_SELECT_SUBTYPE_LABEL; }
   protected get errorLabel() { return WORD_TYPES_ERROR_LABEL; }
   protected get tableLabel() { return WORD_TYPES_TABLE_LABEL; }
   protected get sortLabel() { return WORD_TYPES_SORT_LABEL; }

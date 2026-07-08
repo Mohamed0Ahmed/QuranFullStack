@@ -9,6 +9,7 @@ export const WORD_TYPES_DETAILS_PANEL_LABEL = 'تفاصيل كلمة النوع'
 export const WORD_TYPES_SORT_LABEL = 'ترتيب';
 export const WORD_TYPES_LOADING_LABEL = 'جارٍ التحميل…';
 export const WORD_TYPES_EMPTY_LABEL = 'لا توجد نتائج لهذا النوع';
+export const WORD_TYPES_SELECT_SUBTYPE_LABEL = 'اختر نوعًا فرعيًا لعرض الكلمات.';
 export const WORD_TYPES_ERROR_LABEL = 'تعذّر تحميل أنواع الكلمات. تحقّق من الاتصال ثم أعد المحاولة.';
 export const WORD_TYPES_NOT_FOUND_LABEL = 'الكلمة المحددة غير موجودة';
 export const WORD_TYPES_NULL_PLACEHOLDER = '—';

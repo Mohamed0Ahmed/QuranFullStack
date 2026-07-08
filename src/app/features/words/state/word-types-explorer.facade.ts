@@ -161,10 +161,31 @@ export class WordTypesExplorerFacade {
 
   private loadList() {
     const query = this.state().query;
-    this.state.update((current) => ({ ...current, status: 'loading', errorMessage: '' }));
+    const tree$ = this.cache.getOrLoad(WordTypesCacheKeys.tree, () => this.api.getTree());
+
+    this.state.update((current) => ({ ...current, status: 'loading', rows: null, errorMessage: '' }));
+
+    const leafSelected = query.childCode !== null || query.type === 'inl';
+
+    if (!leafSelected) {
+      return tree$.pipe(
+        tap((tree) => this.handleTreeOnlyResponse(tree)),
+        catchError(() => {
+          this.state.update((current) => ({
+            ...current,
+            status: 'error',
+            tree: null,
+            rows: null,
+            errorMessage: WORD_TYPES_ERROR_LABEL,
+          }));
+          return of(undefined);
+        }),
+        map(() => undefined),
+      );
+    }
 
     return forkJoin({
-      tree: this.cache.getOrLoad(WordTypesCacheKeys.tree, () => this.api.getTree()),
+      tree: tree$,
       rows: this.cache.getOrLoad(
         WordTypesCacheKeys.rows(query, query.sort, query.page),
         () => this.api.getRows({ ...query, pageSize: WORD_TYPES_PAGE_SIZE }),
@@ -183,6 +204,29 @@ export class WordTypesExplorerFacade {
       }),
       map(() => undefined),
     );
+  }
+
+  private handleTreeOnlyResponse(tree: ApiResponse<WordTypeTreeDto>): void {
+    const treeData = tree.data;
+
+    if (!tree.isSuccess || !treeData) {
+      this.state.update((current) => ({
+        ...current,
+        status: 'error',
+        tree: treeData ?? null,
+        rows: null,
+        errorMessage: tree.message ?? WORD_TYPES_ERROR_LABEL,
+      }));
+      return;
+    }
+
+    this.state.update((current) => ({
+      ...current,
+      status: 'selectPrompt',
+      tree: treeData,
+      rows: null,
+      errorMessage: '',
+    }));
   }
 
   private handleListResponse(

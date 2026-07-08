@@ -21,7 +21,11 @@ const tree: WordTypeTreeDto = {
         { code: 'past', childCode: 'past', label: { ar: 'ماض' }, count: 1 },
       ],
     },
-    { code: 'particle', label: { ar: 'حرف وأداة' }, count: 1, secondaryFilter: { kind: 'none', options: [], voiceOptions: [] }, children: [] },
+    {
+      code: 'particle', label: { ar: 'حرف وأداة' }, count: 1,
+      secondaryFilter: { kind: 'none', options: [], voiceOptions: [] },
+      children: [{ code: 'PRO', childCode: 'PRO', label: { ar: 'حرف نهي' }, count: 1 }],
+    },
     { code: 'inl', label: { ar: 'حروف مقطّعة' }, count: 1, secondaryFilter: { kind: 'none', options: [], voiceOptions: [] }, children: [] },
   ],
 };
@@ -61,7 +65,7 @@ describe('WordTypeFilterComponent', () => {
     expect(emitted).toEqual(['particle']);
   });
 
-  it('hides child nodes until an arrow opens the panel', () => {
+  it('hides child nodes until a panel opens', () => {
     const fixture = TestBed.createComponent(WordTypeFilterComponent);
     fixture.componentRef.setInput('tree', tree);
     fixture.componentRef.setInput('selectedType', 'particle');
@@ -69,8 +73,24 @@ describe('WordTypeFilterComponent', () => {
 
     const root = fixture.nativeElement as HTMLElement;
     expect(root.textContent).not.toContain('اسم علم');
-    // Only the two parents with children (noun, verb) render an expand button; particle and inl do not.
-    expect(root.querySelectorAll('.word-type-filter__expand').length).toBe(2);
+    expect(root.textContent).not.toContain('حرف نهي');
+    // All three parents with children render an expand button; inl stays leaf-only.
+    expect(root.querySelectorAll('.word-type-filter__expand').length).toBe(3);
+  });
+
+  it('opens a child panel when a parent label is selected', () => {
+    const fixture = TestBed.createComponent(WordTypeFilterComponent);
+    fixture.componentRef.setInput('tree', tree);
+    fixture.componentRef.setInput('selectedType', 'particle');
+    fixture.detectChanges();
+
+    const particleButton = fixture.nativeElement.querySelector('.word-type-filter__button[data-word-type-code="particle"]') as HTMLButtonElement;
+    particleButton.click();
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('.word-type-filter__panel')).not.toBeNull();
+    expect(root.textContent).toContain('حرف نهي');
   });
 
   it('opens a panel from the arrow and emits the selected child code', () => {
