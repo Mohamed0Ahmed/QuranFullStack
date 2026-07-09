@@ -124,14 +124,3 @@ long focus,
 trustworthy structure, genuinely Arabic-first, earned familiarity. Avoid generic
 SaaS templates, kitschy religious decor, gamified/consumer UI, and dense
 enterprise greige.
-
-<!-- lean-ctx -->
-
-## lean-ctx
-
-lean-ctx is active — the MCP tools replace native equivalents.
-Full rules: LEAN-CTX.md (open on demand — do not auto-load).
-
-Use LeanCTX by default for reads/searches and shell-output compression. If LeanCTX blocks a specific command, run only that command outside LeanCTX with normal shell/Bash when available, then continue using LeanCTX.
-
-<!-- /lean-ctx -->
