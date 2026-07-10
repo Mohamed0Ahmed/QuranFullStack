@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.8" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.8" />
+    <PackageReference Include="FluentAssertions" Version="8.2.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="Testcontainers.PostgreSql" Version="4.4.0" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.1">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\api\QuranDashboard.Api\QuranDashboard.Api.csproj" />
+    <ProjectReference Include="..\..\domain\QuranDashboard.Domain\QuranDashboard.Domain.csproj" />
+    <ProjectReference Include="..\..\application\QuranDashboard.Application\QuranDashboard.Application.csproj" />
+    <ProjectReference Include="..\..\application\QuranDashboard.Application.Abstractions\QuranDashboard.Application.Abstractions.csproj" />
+    <ProjectReference Include="..\..\infrastructure\QuranDashboard.Infrastructure\QuranDashboard.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\tools\QuranDashboard.DataImporter\QuranDashboard.DataImporter.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Quran\MushafReader\mushaf-reader-seed.sql" />
+    <EmbeddedResource Include="Quran\Words\unique-words-seed.sql" />
+    <EmbeddedResource Include="Quran\WordsRoots\roots-explorer-seed.sql" />
+    <EmbeddedResource Include="Quran\WordsMorphologyExplorers\morphology-explorers-seed.sql" />
+    <EmbeddedResource Include="Quran\WordsWordTypes\word-types-explorer-seed.sql" />
+  </ItemGroup>
+
+</Project>

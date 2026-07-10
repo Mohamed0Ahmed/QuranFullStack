@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BACKEND_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+API_PROJECT="$BACKEND_ROOT/api/QuranDashboard.Api"
+SWAGGER_URL="https://localhost:5015/swagger"
+HEALTH_URL="https://localhost:5015/api/health"
+
+open_swagger() {
+  local max_attempts=30
+  local attempt=0
+
+  while (( attempt < max_attempts )); do
+    if curl -ksSf "$HEALTH_URL" >/dev/null 2>&1; then
+      if command -v xdg-open >/dev/null 2>&1; then
+        xdg-open "$SWAGGER_URL" >/dev/null 2>&1 || true
+      else
+        echo "Open Swagger manually: $SWAGGER_URL"
+      fi
+      return 0
+    fi
+    sleep 1
+    ((attempt++)) || true
+  done
+
+  echo "API did not become ready in time. Open Swagger manually: $SWAGGER_URL"
+}
+
+cd "$BACKEND_ROOT"
+
+echo
+echo "Starting API (HTTPS profile, no build)..."
+echo "  API:     https://localhost:5015"
+echo "  Swagger: $SWAGGER_URL"
+echo "  Health:  $HEALTH_URL"
+echo "  Build:   run qd-build after backend code changes"
+echo
+
+open_swagger &
+dotnet run --project "$API_PROJECT" --launch-profile https --no-build

@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BACKEND_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+cd "${BACKEND_ROOT}"
+
+dotnet nuget locals all --clear
+
+find . -type d \( -name bin -o -name obj \) -prune -exec rm -rf {} +
+
+dotnet restore QuranDashboard.sln

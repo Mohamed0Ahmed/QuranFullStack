@@ -1,0 +1,74 @@
+namespace QuranDashboard.Application.Abstractions.Quran.MushafReader.Responses;
+
+public sealed record AyahStudyResponse(
+    AyahCoreDto Ayah,
+    SelectedSourcesDto SelectedSources,
+    TafsirEntryDto? Tafsir,
+    TranslationEntryDto? Translation,
+    FullI3rabEntryDto? FullI3rab,
+    SimilaritySummaryDto SimilaritySummary);
+
+public sealed record SimilaritySummaryDto(
+    int SimilarAyahCount,
+    int MutashabihatGroupCount,
+    int MutashabihatOccurrenceCount);
+
+public sealed record AyahCoreDto(
+    string VerseKey,
+    int SurahNumber,
+    string SurahNameArabic,
+    int AyahNumber,
+    string TextUthmani,
+    int WordsCount,
+    int PageFrom,
+    int PageTo,
+    int JuzNumber,
+    int HizbNumber,
+    int RubNumber,
+    SajdaDto? Sajda);
+
+public sealed record SajdaDto(
+    int SajdahNumber,
+    string VerseKey,
+    string SajdahType);
+
+public sealed record SelectedSourcesDto(
+    string? TafsirSource,
+    string? TranslationSource,
+    string? FullI3rabSource);
+
+public sealed record TafsirEntryDto(
+    string SourceKey,
+    string DisplayNameAr,
+    string? ShortNameAr,
+    string LanguageCode,
+    string Direction,
+    string TafsirKind,
+    string SourceValueKind,
+    string? SourceLeaderVerseKey,
+    bool IsGroupLeader,
+    int CoveredAyahCount,
+    IReadOnlyList<string> CoveredAyahKeys,
+    string Text);
+
+public sealed record TranslationEntryDto(
+    string SourceKey,
+    string? DisplayNameAr,
+    string? DisplayNameEn,
+    string LanguageCode,
+    string Direction,
+    string TranslationType,
+    bool ContainsHtmlMarkup,
+    string Text);
+
+public sealed record FullI3rabEntryDto(
+    string SourceKey,
+    string DisplayNameAr,
+    string? ShortNameAr,
+    string MarkupFormat,
+    string SourceValueKind,
+    string? SourceLeaderVerseKey,
+    bool IsGroupLeader,
+    int CoveredAyahCount,
+    IReadOnlyList<string> CoveredAyahKeys,
+    string Html);

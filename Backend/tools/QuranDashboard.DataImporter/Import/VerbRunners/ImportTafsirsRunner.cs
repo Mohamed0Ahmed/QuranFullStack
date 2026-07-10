@@ -1,0 +1,60 @@
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.DependencyInjection;
+using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Tafsirs;
+using QuranDashboard.Application.Quran.DataPipelines.Tafsirs;
+using QuranDashboard.DataImporter.Import.ArgumentParsing;
+using QuranDashboard.DataImporter.Import.DefaultPaths;
+
+namespace QuranDashboard.DataImporter.Import.VerbRunners;
+
+internal static class ImportTafsirsRunner
+{
+    internal static async Task<int> RunAsync(string[] args, Func<IHost> createHost, Action printUsage)
+    {
+        if (!ImportArguments.TryParse(
+                args,
+                requireSource: false,
+                validateSourceExists: true,
+                out var sourcePath,
+                out var reportOutDir,
+                out var force,
+                out var errorMessage))
+        {
+            Console.Error.WriteLine(errorMessage);
+            printUsage();
+            return ImportTafsirsResult.FailureExitCode;
+        }
+
+        var host = createHost();
+        await using var scope = host.Services.CreateAsyncScope();
+        var handler = scope.ServiceProvider.GetRequiredService<ImportTafsirsHandler>();
+
+        sourcePath ??= DataImporterDefaults.ResolveDefaultTafsirSourcePath();
+        reportOutDir ??= DataImporterDefaults.ResolveDefaultTafsirReportDir();
+
+        var result = await handler.HandleAsync(
+            new ImportTafsirsCommand(
+                sourcePath,
+                force,
+                TafsirInvariants.Production,
+                reportOutDir),
+            CancellationToken.None);
+
+        if (result.Succeeded)
+        {
+            Console.WriteLine(result.Message);
+            if (result.Totals is not null)
+            {
+                Console.WriteLine(
+                    $"sources={result.Totals.SourceRows}, ayahMappings={result.Totals.AyahMappingRows}, languages={result.Totals.LanguageCount}, warnings={result.WarningCount}.");
+            }
+
+            VerbConsole.WriteReportPath(result.ReportOutDir);
+            return result.ExitCode;
+        }
+
+        Console.Error.WriteLine(result.Message);
+        VerbConsole.WriteReportPath(result.ReportOutDir);
+        return result.ExitCode;
+    }
+}
