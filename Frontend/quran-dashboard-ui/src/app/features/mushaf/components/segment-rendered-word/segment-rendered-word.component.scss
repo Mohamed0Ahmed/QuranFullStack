@@ -1,0 +1,44 @@
+$segment-slot-colors: (
+  1: var(--qd-segment-cat-1),
+  2: var(--qd-segment-cat-2),
+  3: var(--qd-segment-cat-3),
+  4: var(--qd-segment-cat-4),
+  5: var(--qd-segment-cat-5),
+  6: var(--qd-segment-cat-6),
+);
+
+.segment-rendered-word {
+  display: inline-flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 0;
+  align-items: baseline;
+  white-space: nowrap;
+  font-family: var(--qd-font-quran);
+  font-size: 1.25rem;
+  line-height: 1.9;
+
+  &__text {
+    display: inline;
+    margin: 0;
+    padding: 0;
+  }
+
+  &__segment {
+    display: inline;
+    margin: 0;
+    padding: 0;
+  }
+
+  &__placeholder {
+    opacity: 0.55;
+    font-style: normal;
+    margin-inline-start: 0.15em;
+  }
+}
+
+@each $slot, $color in $segment-slot-colors {
+  ::highlight(qd-segment-slot-#{$slot}) {
+    color: $color;
+  }
+}

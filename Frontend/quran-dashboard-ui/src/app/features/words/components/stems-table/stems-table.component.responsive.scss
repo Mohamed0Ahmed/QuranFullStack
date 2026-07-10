@@ -1,0 +1,90 @@
+@use '../../../../../styles/breakpoints' as bp;
+
+@media (min-width: bp.$qd-bp-desktop-min) {
+  :host-context(.qd-explorer-layout__table) {
+    display: block;
+    block-size: 100%;
+  }
+
+  :host-context(.qd-explorer-layout__table) .stems-table {
+    display: flex;
+    flex-direction: column;
+    block-size: 100%;
+    box-sizing: border-box;
+  }
+
+  :host-context(.qd-explorer-layout__table) .stems-table__header {
+    flex-shrink: 0;
+    block-size: var(--qd-explorer-table-header-height, 2.75rem);
+    min-block-size: unset;
+  }
+
+  :host-context(.qd-explorer-layout__table) .stems-table__body {
+    flex: 1 1 auto;
+    min-block-size: 0;
+  }
+}
+
+@media (max-width: bp.$qd-bp-tablet-max) {
+  .stems-table__header,
+  .stems-table__header-gutter,
+  .stems-table__lemma-cell--desktop,
+  .stems-table__root-cell--desktop,
+  .stems-table__type-cell--desktop {
+    display: none;
+  }
+
+  .stems-table__body {
+    block-size: min(70vh, 40rem);
+  }
+
+  .stems-table__row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    gap: var(--qd-space-1) var(--qd-space-2);
+    align-items: center;
+    padding: var(--qd-space-2);
+    block-size: auto;
+    min-block-size: var(--stems-table-row-height, 6.75rem);
+  }
+
+  .stems-table__cell--row-number {
+    grid-column: 1;
+    grid-row: 1;
+    padding: 0;
+    align-self: center;
+    justify-self: start;
+  }
+
+  .stems-table__stem-cell {
+    grid-column: 2;
+    grid-row: 1;
+    padding: 0;
+    align-items: center;
+    min-width: 0;
+  }
+
+  .stems-table__mobile-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: var(--qd-space-2);
+    width: 100%;
+  }
+
+  .stems-table__chip-cell {
+    display: none;
+  }
+
+  .stems-table__stem {
+    padding: 0;
+    width: 100%;
+    text-align: center;
+  }
+
+  .stems-table__display {
+    text-align: center;
+  }
+}

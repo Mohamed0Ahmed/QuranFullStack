@@ -28,7 +28,7 @@ Before exploring code, answering questions, making changes, reviewing, committin
    - `Frontend/quran-dashboard-ui/.architecture/API_INTEGRATION_GUIDELINES.md`
 
 4. FullStack / Spec Kit work:
-   When the task touches `specs/`, feature planning, phase implementation, tasks, contracts, or cross-repo workflow, read the active feature files:
+   When the task touches `specs/`, feature planning, phase implementation, tasks, contracts, or cross-stack workflow, read the active feature files:
    - `spec.md`
    - `plan.md`
    - `tasks.md`
@@ -118,25 +118,18 @@ Source resource files:
 
 ## Commit workflow
 
-This workspace uses multiple repos:
-
-- `Backend/`
-- `Frontend/quran-dashboard-ui/`
-- FullStack root
+This workspace uses one Git repository. `Backend/` and
+`Frontend/quran-dashboard-ui/` are ordinary tracked directories.
 
 Before any commit:
-- Show repo status for all relevant repos.
-- Show proposed commit order.
+- Run status and diff commands from the monorepo root.
+- Show proposed focused commit boundaries.
 - Do not use `git add .` blindly.
 - Do not commit unless the user explicitly asks.
 - Do not push unless the user explicitly asks.
 
-Commit order:
-1. Commit child repos first: Backend and/or Frontend.
-2. Then commit FullStack root with updated submodule pointers.
-3. Push child repos before pushing FullStack.
-
-Never create a FullStack commit pointing to an uncommitted child repo state.
+Stage explicit root-relative paths. Keep a coherent cross-stack change together;
+split only unrelated concerns. Push the monorepo branch once after verification.
 
 ## Verification
 

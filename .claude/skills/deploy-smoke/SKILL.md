@@ -1,29 +1,22 @@
 ---
 name: deploy-smoke
 description: >-
-  Local deployment / runtime smoke-check for the Quran Dashboard (المنهج القرآني)
-  fullstack workspace (.NET backend + Angular frontend). Use this skill whenever you need
-  to confirm a change still builds, migrates, and runs locally before it is reviewed or
-  committed — after applying or generating an EF Core migration, after a dependency or
-  security upgrade, before a final engineering review or opening a PR, before committing an
-  App submodule-pointer bump, or after backend/frontend performance changes — even if the
-  user only says "does this still run", "smoke test it", "sanity-check the build", or "is
-  this safe to commit". It is a report-only check skill: it builds, inspects the local DB
-  target, optionally applies local migrations only with explicit approval, and smoke-tests
-  health / changed endpoints and the frontend build, then returns a verdict with evidence.
-  It never drops or resets a database, never runs import/reseed/destructive scripts unless
-  explicitly asked, and never targets a remote or production database silently. Not for
-  implementing features or auto-fixing failures, not a full engineering or performance
-  review (use engineering-review / performance-backend-review / performance-angular-review),
-  and not a dependency vulnerability audit (recommend a separate dependency-audit pass).
+  Report-only local deployment and runtime smoke check for the Quran Dashboard
+  monorepo (.NET backend and Angular frontend). Use after migrations, dependency
+  upgrades, cross-stack changes, performance work, or before review and PR creation.
+  It verifies builds, inspects local database targeting, optionally applies local
+  migrations only with explicit approval, and smokes health or changed endpoints.
+  It never drops or resets databases, runs import/reseed/destructive scripts without
+  explicit approval, targets remote databases silently, implements fixes, or replaces
+  engineering, performance, or dependency audits.
 ---
 
 # Deploy Smoke
 
 A fast, **report-only** local smoke check: does this change still restore, build, migrate,
 and run on this machine? The goal is to catch build breakage, pending/broken migrations,
-and dead endpoints locally — before the change reaches engineering review, a PR, or a
-submodule-pointer commit — without touching application code or destroying local data.
+and dead endpoints locally - before the change reaches engineering review, a PR, or a
+cross-stack commit - without touching application code or destroying local data.
 
 This skill produces findings, evidence, and a verdict. It does not fix failures; when it
 finds a break it reports it and hands off.
@@ -36,8 +29,8 @@ finds a break it reports it and hands off.
   review round-trip.
 - **After a dependency or security upgrade** — confirm the app still restores, builds, and
   boots (then recommend a separate `dependency-audit` for vulnerability/version findings).
-- **Before committing an App submodule-pointer bump** — make sure the pointed-at child
-  commits actually build and run together.
+- **Before committing a cross-stack change** - make sure Backend and Frontend build
+  and run together.
 - **After backend or frontend performance changes** — confirm the optimization did not break
   the build or runtime path (perf *quality* stays with the performance-* review skills).
 
@@ -127,7 +120,7 @@ command output as evidence.
 - **Distinguish a locally-applied migration from a pending deployment note** — a migration
   that only exists in code (not applied to a confirmed local DB) is a Deployment Note, not a
   pass.
-- **Submodule / status awareness** — note dirty or pointer-drifted repos so the user knows
+- **Repository status awareness** - note dirty or untracked paths so the user knows
   what a commit would capture, but **do not commit** (that is `commit-workflow`).
 - **Dependency / security upgrades** — recommend a separate `dependency-audit` pass rather
   than duplicating vulnerability/version checks here.

@@ -1,0 +1,217 @@
+@use '../../../../../styles/breakpoints' as bp;
+
+:host {
+  display: block;
+}
+
+.word-types-table {
+  --word-types-table-scrollbar-gutter: 0px;
+  --qd-explorer-table-scrollbar-gutter: var(--word-types-table-scrollbar-gutter);
+  min-inline-size: 0;
+}
+
+.word-types-table__header-row,
+.word-types-table__row {
+  grid-template-columns:
+    minmax(0, 1.65fr)
+    minmax(0, 1.15fr)
+    repeat(3, minmax(0, 1fr))
+    repeat(3, minmax(3.5rem, 0.72fr));
+  box-sizing: border-box;
+}
+
+.word-types-table__header-row {
+  block-size: 100%;
+}
+
+.word-types-table__body {
+  overflow-x: hidden;
+  transition: opacity var(--qd-t-fast);
+}
+
+.word-types-table__body--loading {
+  overflow: hidden auto;
+}
+
+.word-types-table__header-cell {
+  text-align: start;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.word-types-table__header-cell--count,
+.word-types-table__cell--count {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.word-types-table__cell {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.word-types-table__cell--word {
+  display: flex;
+  align-items: center;
+}
+
+.word-types-table__cell--meta {
+  display: flex;
+  align-items: center;
+  color: var(--qd-text-muted);
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+.word-types-table__row {
+  inline-size: 100%;
+  min-inline-size: 0;
+  border: 0;
+  background: transparent;
+  color: var(--qd-text);
+  padding: 0;
+  text-align: start;
+  cursor: pointer;
+}
+
+.word-types-table__row--loading {
+  cursor: default;
+}
+
+.word-types-table__word {
+  display: block;
+  inline-size: 100%;
+  font-family: var(--qd-font-quran, inherit);
+  font-size: 1.05rem;
+  line-height: 1.9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.word-types-table__meta-text {
+  display: block;
+  inline-size: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.word-types-table__count-chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.word-types-table__loading-word {
+  inline-size: min(100%, 7rem);
+}
+
+.word-types-table__loading-meta {
+  inline-size: min(100%, 5rem);
+}
+
+.word-types-table__loading-count {
+  inline-size: 2.65rem;
+  block-size: 1.2rem;
+  margin-inline: auto;
+}
+
+.word-types-table__row:focus-visible {
+  outline: 2px solid var(--qd-focus-ring);
+  outline-offset: -2px;
+}
+
+.word-types-table__placeholder {
+  margin: 0;
+  padding: 1rem;
+}
+
+@media (min-width: bp.$qd-bp-desktop-min) {
+  :host-context(.qd-explorer-layout__table) {
+    display: block;
+    block-size: 100%;
+  }
+
+  :host-context(.qd-explorer-layout__table) .word-types-table {
+    display: flex;
+    flex-direction: column;
+    block-size: 100%;
+    box-sizing: border-box;
+  }
+
+  :host-context(.qd-explorer-layout__table) .word-types-table__header {
+    flex-shrink: 0;
+    block-size: var(--qd-explorer-table-header-height, 2.75rem);
+    min-block-size: unset;
+  }
+
+  :host-context(.qd-explorer-layout__table) .word-types-table__body {
+    flex: 1 1 auto;
+    min-block-size: 0;
+  }
+}
+
+@media (max-width: bp.$qd-bp-tablet-max) {
+  .word-types-table__header,
+  .word-types-table__header-gutter {
+    display: none;
+  }
+
+  .word-types-table__body {
+    block-size: min(70vh, 40rem);
+  }
+
+  .word-types-table__row {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: var(--qd-space-2);
+    align-items: start;
+    padding: var(--qd-space-3);
+    block-size: auto;
+    min-block-size: 0;
+  }
+
+  .word-types-table__cell {
+    display: flex;
+    flex-direction: column;
+    gap: var(--qd-space-1);
+    white-space: normal;
+    padding: 0;
+  }
+
+  .word-types-table__cell--word {
+    grid-column: 1 / -1;
+  }
+
+  .word-types-table__cell--meta {
+    grid-column: span 3;
+  }
+
+  .word-types-table__cell--count {
+    grid-column: span 2;
+    align-items: stretch;
+  }
+
+  .word-types-table__row--loading .word-types-table__cell--meta::before,
+  .word-types-table__row--loading .word-types-table__cell--count::before {
+    content: none;
+  }
+
+  .word-types-table__cell--meta::before,
+  .word-types-table__cell--count::before {
+    content: attr(data-label);
+    color: var(--qd-text-muted);
+    font-size: 0.75rem;
+    line-height: 1.4;
+  }
+
+  .word-types-table__word {
+    white-space: normal;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .word-types-table__body {
+    transition: none;
+  }
+}

@@ -1,0 +1,51 @@
+using QuranDashboard.Application.Abstractions.Quran.MushafReader;
+using QuranDashboard.Application.Abstractions.Quran.MushafReader.Responses;
+
+namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.MushafReader;
+
+public sealed class EfMushafSurahCatalogReader(QuranDashboardDbContext db) : IMushafSurahCatalogReader
+{
+    public async Task<MushafSurahCatalogResponse> GetCatalogAsync(CancellationToken ct)
+    {
+        var surahs = await db.QuranSurahs
+            .AsNoTracking()
+            .OrderBy(s => s.SurahNumber)
+            .ToListAsync(ct);
+
+        var firstAyahPages = await db.QuranAyahs
+            .AsNoTracking()
+            .Where(a => a.AyahNumber == 1)
+            .ToDictionaryAsync(a => a.SurahNumber, a => (int)a.PageFrom, ct);
+
+        var surahNumbersMissingAyahOne = surahs
+            .Select(s => s.SurahNumber)
+            .Where(surahNumber => !firstAyahPages.ContainsKey(surahNumber))
+            .ToList();
+
+        var minAyahPages = surahNumbersMissingAyahOne.Count == 0
+            ? new Dictionary<short, int>()
+            : await db.QuranAyahs
+                .AsNoTracking()
+                .Where(a => surahNumbersMissingAyahOne.Contains(a.SurahNumber))
+                .GroupBy(a => a.SurahNumber)
+                .Select(g => new { SurahNumber = g.Key, MinPage = g.Min(a => a.PageFrom) })
+                .ToDictionaryAsync(x => x.SurahNumber, x => (int)x.MinPage, ct);
+
+        var items = new List<MushafSurahCatalogItem>(surahs.Count);
+        foreach (var surah in surahs)
+        {
+            if (firstAyahPages.TryGetValue(surah.SurahNumber, out var firstPage))
+            {
+                items.Add(new MushafSurahCatalogItem(surah.SurahNumber, surah.NameArabic, firstPage));
+                continue;
+            }
+
+            if (minAyahPages.TryGetValue(surah.SurahNumber, out var minPage))
+            {
+                items.Add(new MushafSurahCatalogItem(surah.SurahNumber, surah.NameArabic, minPage));
+            }
+        }
+
+        return new MushafSurahCatalogResponse(items);
+    }
+}

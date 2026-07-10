@@ -1,0 +1,30 @@
+<header class="mushaf-header" aria-label="التنقّل بين الصفحات">
+  <div class="mushaf-header__deck">
+    <div class="mushaf-header__deck-zone mushaf-header__deck-zone--nav">
+      <div class="mushaf-header__nav-actions">
+        <button
+          class="qd-btn qd-btn-ghost"
+          type="button"
+          [disabled]="page().previousPageNumber === null"
+          (click)="onPrevious()"
+        >
+          السابق
+        </button>
+        <button
+          class="qd-btn qd-btn-ghost"
+          type="button"
+          [disabled]="page().nextPageNumber === null"
+          (click)="onNext()"
+        >
+          التالي
+        </button>
+      </div>
+      <div class="mushaf-header__surah-jump">
+        <qd-surah-jump-picker
+          [surahCatalogByJuz]="surahCatalogByJuz()"
+          (surahJump)="onSurahJump($event)"
+        />
+      </div>
+    </div>
+  </div>
+</header>

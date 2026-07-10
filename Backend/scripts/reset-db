@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+if [[ $# -ne 1 ]] || [[ "$1" != "--yes" ]]; then
+  echo "WARNING: This will drop and recreate the configured database. All data will be lost." >&2
+  echo "Usage: ./scripts/reset-db --yes" >&2
+  exit 1
+fi
+
+"${SCRIPT_DIR}/drop-db" --yes
+"${SCRIPT_DIR}/update-db"

@@ -1,0 +1,109 @@
+<ng-template #panelChrome>
+  <header class="explorer-panel-header word-drilldown-modal__header">
+    <h2 class="explorer-panel-header__label" data-testid="word-drilldown-panel-label">{{ drilldownPanelTitle }}</h2>
+    <span class="explorer-panel-header__entity" data-testid="word-drilldown-entity">{{ entityTitle() }}</span>
+    <div class="explorer-panel-header__end">
+      @if (inline() ? state().isOpen : true) {
+        <button
+          type="button"
+          class="qd-btn qd-btn-ghost"
+          data-testid="word-drilldown-close"
+          (click)="closeModal.emit()"
+        >
+          {{ closeLabel }}
+        </button>
+      }
+    </div>
+  </header>
+
+  <nav class="explorer-detail-panel__toolbar word-drilldown-modal__views" [attr.aria-label]="drilldownViewTablistLabel">
+    @for (viewKey of drilldownViews; track viewKey) {
+      <button
+        type="button"
+        class="qd-btn qd-btn-secondary"
+        [class.qd-is-selected]="state().view === viewKey && (inline() ? state().isOpen : true)"
+        [attr.data-testid]="'word-drilldown-view-' + viewKey"
+        [disabled]="inline() && !state().isOpen"
+        (click)="viewChange.emit(viewKey)"
+      >
+        {{ drilldownLabel(viewKey) }}
+      </button>
+    }
+  </nav>
+
+  <div class="explorer-detail-panel__body word-drilldown-modal__body" cdkScrollable>
+    @if (inline() && !state().isOpen) {
+      <div class="qd-empty-state" data-testid="word-drilldown-empty">
+        {{ panelEmptyLabel }}
+      </div>
+    } @else {
+      @switch (state().status) {
+        @case ('loading') {
+          <qd-explorer-panel-skeleton [loadingLabel]="loadingLabel" data-testid="word-drilldown-loading" />
+        }
+        @case ('error') {
+          <div class="qd-error-state" data-testid="word-drilldown-error">{{ state().errorMessage }}</div>
+        }
+        @case ('empty') {
+          <div class="qd-empty-state" data-testid="word-drilldown-empty">
+            @switch (state().view) {
+              @case ('surahs') { {{ emptySurahsLabel }} }
+              @case ('missing') { {{ emptyMissingLabel }} }
+              @default { {{ emptyAyahsLabel }} }
+            }
+          </div>
+        }
+        @default {
+          @switch (state().view) {
+            @case ('surahs') {
+              @if (state().surahs?.surahs; as surahItems) {
+                <qd-surah-occurrences-list [surahs]="surahItems" />
+              }
+            }
+            @case ('missing') {
+              @if (state().missingSurahs?.surahs; as missingItems) {
+                <qd-missing-surahs-list [surahs]="missingItems" />
+              }
+            }
+            @default {
+              @if (state().ayahs; as ayahs) {
+                <qd-ayah-matches-list
+                  [page]="ayahs"
+                  [currentPage]="state().ayahPage"
+                  (pageChange)="ayahPageChange.emit($event)"
+                />
+              }
+            }
+          }
+        }
+      }
+    }
+  </div>
+</ng-template>
+
+@if (inline()) {
+  <section class="qd-card explorer-detail-panel word-drilldown-panel" [attr.aria-label]="drilldownPanelTitle">
+    <ng-container *ngTemplateOutlet="panelChrome" />
+  </section>
+} @else if (state().isOpen) {
+  <div
+    class="qd-modal-backdrop"
+    role="presentation"
+    data-testid="word-drilldown-backdrop"
+    qdModalScrollLock
+    (click)="onBackdropClick($event)"
+  >
+    <div
+      class="qd-modal explorer-detail-modal word-drilldown-modal"
+      role="dialog"
+      aria-modal="true"
+      cdkTrapFocus
+      cdkTrapFocusAutoCapture
+      [attr.aria-label]="drilldownPanelTitle"
+      data-testid="word-drilldown-modal"
+      (click)="$event.stopPropagation()"
+    >
+      <ng-container *ngTemplateOutlet="panelChrome" />
+    </div>
+  </div>
+}

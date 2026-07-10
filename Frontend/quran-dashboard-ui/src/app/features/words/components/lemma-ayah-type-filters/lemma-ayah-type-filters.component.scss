@@ -1,0 +1,66 @@
+:host {
+  display: block;
+}
+
+.lemma-ayah-type-filters {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qd-space-2);
+  margin-block-end: var(--qd-space-3);
+}
+
+.lemma-ayah-type-filters__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: var(--qd-space-2);
+}
+
+.lemma-ayah-type-filters__grid--loading {
+  min-block-size: 3.5rem;
+}
+
+.lemma-ayah-type-filters__chip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  min-inline-size: 0;
+  text-align: start;
+  padding-block: var(--qd-space-2);
+  padding-inline: var(--qd-space-3);
+}
+
+.lemma-ayah-type-filters__label {
+  font-family: var(--qd-font-quran, inherit);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.lemma-ayah-type-filters__count {
+  font-size: 0.8rem;
+  color: var(--qd-text-muted);
+  line-height: 1.35;
+}
+
+.lemma-ayah-type-filters__chip--loading {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  padding-block: var(--qd-space-2);
+  padding-inline: var(--qd-space-3);
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-sm);
+  pointer-events: none;
+}
+
+.lemma-ayah-type-filters__loading-label {
+  inline-size: 55%;
+  block-size: 0.9375rem;
+}
+
+.lemma-ayah-type-filters__loading-count {
+  inline-size: 35%;
+  block-size: 0.8rem;
+}

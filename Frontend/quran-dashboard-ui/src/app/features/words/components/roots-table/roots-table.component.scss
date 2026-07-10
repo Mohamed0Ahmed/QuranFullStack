@@ -1,0 +1,141 @@
+@use '../../../../../styles/breakpoints' as bp;
+
+:host {
+  display: block;
+}
+
+.roots-table {
+  --roots-table-scrollbar-gutter: 0px;
+  --qd-explorer-table-scrollbar-gutter: var(--roots-table-scrollbar-gutter);
+}
+
+.roots-table__header-row,
+.roots-table__row {
+  grid-template-columns: minmax(2.5rem, 0.3fr) minmax(0, 1.6fr) repeat(7, minmax(4.5rem, 1fr));
+}
+
+.roots-table__word-cell {
+  display: flex;
+  align-items: center;
+}
+
+.roots-table__chip-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.roots-table__word {
+  display: block;
+  width: 100%;
+  padding: var(--qd-space-1);
+  border: 1px solid transparent;
+  border-radius: var(--qd-radius-sm);
+  background: transparent;
+  text-align: start;
+  overflow: hidden;
+}
+
+.roots-table__display {
+  font-family: var(--qd-font-quran, inherit);
+  font-size: 1.0625rem;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.roots-table__loading-number {
+  inline-size: 1.75rem;
+  margin-inline: auto;
+}
+
+.roots-table__loading-word {
+  inline-size: min(100%, 8rem);
+}
+
+.roots-table__loading-chip {
+  inline-size: 2.5rem;
+  block-size: 1.125rem;
+  margin-inline: auto;
+}
+
+.roots-table__loading-mobile-badge {
+  block-size: 1.25rem;
+  min-inline-size: 0;
+}
+
+@media (min-width: bp.$qd-bp-desktop-min) {
+  :host-context(.qd-explorer-layout__table) {
+    display: block;
+    block-size: 100%;
+  }
+
+  :host-context(.qd-explorer-layout__table) .roots-table {
+    display: flex;
+    flex-direction: column;
+    block-size: 100%;
+    box-sizing: border-box;
+  }
+
+  :host-context(.qd-explorer-layout__table) .roots-table__header {
+    flex-shrink: 0;
+    block-size: var(--qd-explorer-table-header-height, 2.75rem);
+    min-block-size: unset;
+  }
+
+  :host-context(.qd-explorer-layout__table) .roots-table__body {
+    flex: 1 1 auto;
+    min-block-size: 0;
+  }
+}
+
+@media (max-width: bp.$qd-bp-tablet-max) {
+  .roots-table__header,
+  .roots-table__header-gutter {
+    display: none;
+  }
+
+  .roots-table__body {
+    block-size: min(70vh, 40rem);
+  }
+
+  .roots-table__row {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    gap: var(--qd-space-1) var(--qd-space-2);
+    padding: var(--qd-space-2);
+    block-size: auto;
+    min-block-size: var(--roots-table-row-height, 5.5rem);
+  }
+
+  .roots-table__cell--row-number {
+    grid-column: 1;
+    grid-row: 1;
+    padding: 0;
+    align-self: center;
+    justify-self: start;
+  }
+
+  .roots-table__word-cell {
+    grid-column: 2;
+    grid-row: 1;
+    padding: 0;
+    justify-content: center;
+    min-width: 0;
+  }
+
+  .roots-table__chip-cell {
+    display: none;
+  }
+
+  .roots-table__word {
+    padding: 0;
+    width: 100%;
+    text-align: center;
+  }
+
+  .roots-table__display {
+    text-align: center;
+  }
+}

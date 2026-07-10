@@ -1,0 +1,43 @@
+<div class="root-lemmas-list-shell">
+  <header class="root-lemmas-list__header">
+    <span class="root-lemmas-list__header-row-number">{{ rowNumberHeader }}</span>
+    <span class="root-lemmas-list__header-text">{{ lemmaTextHeader }}</span>
+    <span class="root-lemmas-list__header-count">{{ occurrencesHeader }}</span>
+  </header>
+
+  <div
+    class="root-lemmas-list"
+    [attr.aria-busy]="loading() ? true : null"
+    [attr.data-testid]="loading() ? 'root-lemmas-list-loading' : 'root-lemmas-list'"
+  >
+    @if (loading()) {
+      <p class="qd-sr-only" role="status" aria-live="polite">{{ loadingLabel }}</p>
+      @for (_ of loadingRowPlaceholders; track $index) {
+        <div class="root-lemmas-list__row root-lemmas-list__row--loading" aria-hidden="true">
+          <span class="root-lemmas-list__row-number">
+            <span class="qd-skeleton qd-skeleton--text root-lemmas-list__loading-number"></span>
+          </span>
+          <span class="root-lemmas-list__text">
+            <span class="qd-skeleton qd-skeleton--text root-lemmas-list__loading-text"></span>
+          </span>
+          <span class="qd-skeleton qd-skeleton--rounded-md root-lemmas-list__loading-badge"></span>
+        </div>
+      }
+    } @else {
+      @for (row of rows(); track row.item.lemmaId; let index = $index) {
+        <a
+          class="root-lemmas-list__row qd-interactive-surface"
+          [attr.href]="row.href"
+          [attr.aria-label]="openLemmaLabel"
+          target="_blank"
+          rel="noopener noreferrer"
+          data-testid="root-lemma-item"
+        >
+          <span class="root-lemmas-list__row-number" aria-hidden="true">{{ index + 1 }}</span>
+          <span class="root-lemmas-list__text">{{ row.item.lemmaText }}</span>
+          <span class="qd-badge">{{ row.item.occurrencesCount }}</span>
+        </a>
+      }
+    }
+  </div>
+</div>

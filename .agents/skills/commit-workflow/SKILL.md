@@ -3,11 +3,9 @@ name: commit-workflow
 description: >-
   Pointer for non-Claude agents. Canonical commit-workflow instructions live at
   `.claude/skills/commit-workflow/SKILL.md`. Safe Git commit workflow for the Quran
-  Dashboard three-repo workspace (Backend + Frontend submodules inside the FullStack
-  workspace): per-repo status, safe explicit staging, child-repos-first then
-  workspace-last commit order, submodule-pointer safety, and the post-PR sync-to-main
-  workflow (only after the PR is merged). Use that Claude skill as the single source of
-  truth.
+  Dashboard monorepo: one root status, safe explicit path staging, focused commit
+  planning, push readiness, and the post-PR sync-to-main workflow (only after the PR
+  is merged). Use that Claude skill as the single source of truth.
 ---
 
 # Commit Workflow Skill Pointer

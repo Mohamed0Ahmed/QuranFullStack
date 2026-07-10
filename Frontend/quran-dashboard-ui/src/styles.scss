@@ -1,0 +1,26 @@
+@use 'styles/tokens';
+@use 'styles/themes';
+@use 'styles/typography';
+@use 'styles/layout';
+@use 'styles/components';
+@use 'styles/words-explorer-layout';
+@use 'styles/explorer-tables';
+@use 'styles/explorer-detail-lists';
+@use 'styles/forms';
+@use 'styles/utilities';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  background: var(--qd-bg);
+  color: var(--qd-text);
+}

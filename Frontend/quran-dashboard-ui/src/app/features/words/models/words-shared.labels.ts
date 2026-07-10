@@ -1,0 +1,52 @@
+export const WORDS_SHARED_HEADERS = {
+  rowNumber: 'م',
+  word: 'الكلمة',
+  lemma: 'الصيغة المعجمية',
+  lemmas: 'الصيغ',
+  root: 'الجذر',
+  stem: 'الأصل الصرفي',
+  stems: 'الأصول',
+  type: 'النوع',
+  occurrences: 'المواضع',
+  ayahs: 'الآيات',
+  surahs: 'السور',
+  simpleWords: 'بدون تشكيل',
+  tashkeelWords: 'بالتشكيل',
+  missingSurahs: 'لم يذكر فيها',
+} as const;
+
+export const ROW_NUMBER_HEADER = WORDS_SHARED_HEADERS.rowNumber;
+
+export const WORDS_SHARED_PANEL_TABS = {
+  words: 'الكلمات',
+  ayahs: WORDS_SHARED_HEADERS.ayahs,
+  surahs: WORDS_SHARED_HEADERS.surahs,
+  lemmas: WORDS_SHARED_HEADERS.lemmas,
+  stems: WORDS_SHARED_HEADERS.stems,
+} as const;
+
+export const WORDS_SHARED_WORD_VIEWS = {
+  simple: WORDS_SHARED_HEADERS.simpleWords,
+  tashkeel: WORDS_SHARED_HEADERS.tashkeelWords,
+} as const;
+
+export const WORDS_SHARED_SURAH_VIEWS = {
+  mentioned: 'ورد فيها',
+  missing: WORDS_SHARED_HEADERS.missingSurahs,
+} as const;
+
+export const WORDS_SHARED_LIST_HEADERS = {
+  word: WORDS_SHARED_HEADERS.word,
+  occurrences: 'عدد مرات الظهور',
+  surahName: 'السورة',
+} as const;
+
+export const WORDS_SHARED_COUNT_COLUMNS = {
+  occurrences: WORDS_SHARED_HEADERS.occurrences,
+  ayahs: WORDS_SHARED_HEADERS.ayahs,
+  surahs: WORDS_SHARED_HEADERS.surahs,
+  simpleWords: 'كلمات بدون تشكيل',
+  tashkeelWords: 'كلمات بالتشكيل',
+  lemmas: 'الصيغ المعجمية',
+  stems: 'الأصول الصرفية',
+} as const;

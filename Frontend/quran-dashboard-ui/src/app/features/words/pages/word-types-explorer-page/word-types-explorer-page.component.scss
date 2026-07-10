@@ -1,0 +1,32 @@
+:host {
+  display: block;
+}
+
+.word-types-page__main,
+.word-types-page__panel {
+  min-inline-size: 0;
+}
+
+.word-types-page__toolbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.word-types-page__sort {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--qd-space-2);
+  min-inline-size: 0;
+  color: var(--qd-text-muted);
+  font-size: 0.9rem;
+}
+
+.word-types-details__scroll {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--qd-space-3);
+  min-block-size: 0;
+  overflow-y: auto;
+}

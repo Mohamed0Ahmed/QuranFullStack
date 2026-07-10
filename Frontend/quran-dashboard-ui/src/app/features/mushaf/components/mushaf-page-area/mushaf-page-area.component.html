@@ -1,0 +1,30 @@
+<section class="mushaf-page-area" aria-label="منطقة المصحف" data-testid="mushaf-page-area">
+  @if (loadState().isLoading) {
+    <div class="qd-loading-state" role="status" aria-live="polite">
+      <span>جارٍ تحميل الصفحة...</span>
+    </div>
+  } @else if (loadState().errorMessage) {
+    <div class="qd-error-state" role="alert">
+      <span>{{ loadState().errorMessage }}</span>
+    </div>
+  } @else if (loadState().isEmpty || !page()) {
+    <div class="qd-empty-state" role="status">
+      <span>لا توجد بيانات لهذه الصفحة.</span>
+    </div>
+  } @else {
+    <qd-mushaf-header-navigation
+      [page]="page()!"
+      [surahCatalogByJuz]="surahCatalogByJuz()"
+      (pageChange)="pageChange.emit($event)"
+      (surahJump)="surahJump.emit($event)"
+    />
+    <qd-mushaf-page-view
+      [page]="page()!"
+      [highlightedVerseKey]="highlightedVerseKey()"
+      [selectedWordLocation]="selectedWordLocation()"
+      (ayahSelect)="ayahSelect.emit($event)"
+      (wordSelect)="wordSelect.emit($event)"
+      (pageChange)="pageChange.emit($event)"
+    />
+  }
+</section>

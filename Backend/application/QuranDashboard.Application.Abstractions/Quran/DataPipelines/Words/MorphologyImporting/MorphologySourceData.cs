@@ -1,0 +1,105 @@
+namespace QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.MorphologyImporting;
+
+public sealed record MorphologySourceData(
+    IReadOnlyList<AlignedWordDto> Words,
+    IReadOnlyDictionary<string, string> Roots,
+    IReadOnlyDictionary<string, string> Lemmas,
+    IReadOnlyDictionary<string, string> Stems,
+    IReadOnlyList<ResolvedRootDto> ResolvedRoots,
+    IReadOnlyList<ResolvedLemmaDto> ResolvedLemmas,
+    IReadOnlyList<ResolvedStemDto> ResolvedStems,
+    IReadOnlyList<string> CharsetWarnings,
+    IReadOnlyList<string> UnknownPosCodes,
+    MorphologyRenderStats RenderStats,
+    IReadOnlyList<SegmentDimensionIssue> SegmentDimensionIssues,
+    WordLemmaCorrectionSummary? CorrectionSummary = null,
+    MorphologyImportSourceKind SourceKind = MorphologyImportSourceKind.Legacy,
+    // Per-buckwalter analytical breakdown under each display lemma (Feature 020). Only the enriched
+    // pathway populates it; the legacy pathway leaves it null and the writer treats null as empty.
+    // Preserves the Corpus lemma_buckwalter/root/POS variants that share one Arabic lemma_text after
+    // quran_lemmas is collapsed to one row per display text.
+    IReadOnlyList<ResolvedLemmaAnalysisDto>? LemmaAnalyses = null);
+
+public enum MorphologyImportSourceKind
+{
+    Legacy,
+    Enriched
+}
+
+public sealed record MorphologyRenderStats(
+    int WholeWordAgreementMatches,
+    int WholeWordAgreementTotal,
+    IReadOnlyList<string> ReviewTierForms,
+    IReadOnlyList<string> MultiwordForms,
+    IReadOnlyList<string> EmptyFormLocations);
+
+public sealed record AlignedWordDto(
+    string Location,
+    string HeadPos,
+    bool IsVerb,
+    string? VerbTense,
+    string? VerbVoice,
+    string? CaseFeature,
+    string? HeadFeaturesJson,
+    IReadOnlyList<AlignedSegmentDto> Segments,
+    int? RootId,
+    int? LemmaId,
+    int? StemId);
+
+public sealed record AlignedSegmentDto(
+    short SegmentNumber,
+    string Kind,
+    string Pos,
+    string FormBuckwalter,
+    string? FormArabicNormalized,
+    string? RenderTier,
+    string RenderSource,
+    string? RootBuckwalter,
+    string? LemmaBuckwalter,
+    int? RootId,
+    int? LemmaId,
+    int? StemId,
+    string FeaturesRaw,
+    string? FeaturesJson);
+
+public sealed record SegmentDimensionIssue(
+    string CheckId,
+    string SegmentLocation,
+    string Message);
+
+public sealed record ResolvedRootDto(
+    int AssignedId,
+    string RootText,
+    string? RootBuckwalter,
+    int WordsCount,
+    short DistinctLemmasCount,
+    int FirstWordOrderInMushaf);
+
+public sealed record ResolvedLemmaDto(
+    int AssignedId,
+    string LemmaText,
+    string? LemmaBuckwalter,
+    int? RootId,
+    int WordsCount,
+    int FirstWordOrderInMushaf);
+
+public sealed record ResolvedStemDto(
+    int AssignedId,
+    string StemText,
+    int WordsCount,
+    int FirstWordOrderInMushaf);
+
+// One row per distinct Corpus lemma_buckwalter that maps to a display lemma (LemmaId). When several
+// buckwalters share the same Arabic lemma_text, they collapse to ONE quran_lemmas row but each keeps its
+// own analysis row here, preserving the Corpus distinctions (root, head POS, first occurrence, count)
+// that the numeric-suffix disambiguation encodes. RootId/HeadPos reflect the variant's FIRST occurrence;
+// occurrence-level truth stays on quran_word_morphology_segments.
+public sealed record ResolvedLemmaAnalysisDto(
+    int AssignedId,
+    int LemmaId,
+    string LemmaBuckwalter,
+    int? RootId,
+    string? HeadPos,
+    int WordsCount,
+    int FirstWordOrderInMushaf,
+    string FirstLocation);

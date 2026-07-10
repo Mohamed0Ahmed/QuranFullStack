@@ -1,0 +1,838 @@
+{
+  "_meta": {
+    "generatedAt": "2026-06-19",
+    "description": "Static Mushaf surah jump catalog grouped by juz (repeat per juz).",
+    "sources": [
+      "resources/import-sources/quran-navigation-metadata/sources/quran-metadata-juz.json (verse_mapping)",
+      "resources/import-sources/quran-foundation/metadata/quran-metadata-surah-name.json (name_arabic)",
+      "resources/import-sources/quran-foundation/mushaf/qpc-v4-pages-layout.json (surah_name line → startPageNumber)"
+    ]
+  },
+  "juzGroups": [
+    {
+      "juzNumber": 1,
+      "surahs": [
+        {
+          "surahNumber": 1,
+          "nameArabic": "الفاتحة",
+          "startPageNumber": 1
+        },
+        {
+          "surahNumber": 2,
+          "nameArabic": "البقرة",
+          "startPageNumber": 2
+        }
+      ]
+    },
+    {
+      "juzNumber": 2,
+      "surahs": [
+        {
+          "surahNumber": 2,
+          "nameArabic": "البقرة",
+          "startPageNumber": 2
+        }
+      ]
+    },
+    {
+      "juzNumber": 3,
+      "surahs": [
+        {
+          "surahNumber": 2,
+          "nameArabic": "البقرة",
+          "startPageNumber": 2
+        },
+        {
+          "surahNumber": 3,
+          "nameArabic": "آل عمران",
+          "startPageNumber": 50
+        }
+      ]
+    },
+    {
+      "juzNumber": 4,
+      "surahs": [
+        {
+          "surahNumber": 3,
+          "nameArabic": "آل عمران",
+          "startPageNumber": 50
+        },
+        {
+          "surahNumber": 4,
+          "nameArabic": "النساء",
+          "startPageNumber": 77
+        }
+      ]
+    },
+    {
+      "juzNumber": 5,
+      "surahs": [
+        {
+          "surahNumber": 4,
+          "nameArabic": "النساء",
+          "startPageNumber": 77
+        }
+      ]
+    },
+    {
+      "juzNumber": 6,
+      "surahs": [
+        {
+          "surahNumber": 4,
+          "nameArabic": "النساء",
+          "startPageNumber": 77
+        },
+        {
+          "surahNumber": 5,
+          "nameArabic": "المائدة",
+          "startPageNumber": 106
+        }
+      ]
+    },
+    {
+      "juzNumber": 7,
+      "surahs": [
+        {
+          "surahNumber": 5,
+          "nameArabic": "المائدة",
+          "startPageNumber": 106
+        },
+        {
+          "surahNumber": 6,
+          "nameArabic": "الأنعام",
+          "startPageNumber": 128
+        }
+      ]
+    },
+    {
+      "juzNumber": 8,
+      "surahs": [
+        {
+          "surahNumber": 6,
+          "nameArabic": "الأنعام",
+          "startPageNumber": 128
+        },
+        {
+          "surahNumber": 7,
+          "nameArabic": "الأعراف",
+          "startPageNumber": 151
+        }
+      ]
+    },
+    {
+      "juzNumber": 9,
+      "surahs": [
+        {
+          "surahNumber": 7,
+          "nameArabic": "الأعراف",
+          "startPageNumber": 151
+        },
+        {
+          "surahNumber": 8,
+          "nameArabic": "الأنفال",
+          "startPageNumber": 177
+        }
+      ]
+    },
+    {
+      "juzNumber": 10,
+      "surahs": [
+        {
+          "surahNumber": 8,
+          "nameArabic": "الأنفال",
+          "startPageNumber": 177
+        },
+        {
+          "surahNumber": 9,
+          "nameArabic": "التوبة",
+          "startPageNumber": 187
+        }
+      ]
+    },
+    {
+      "juzNumber": 11,
+      "surahs": [
+        {
+          "surahNumber": 9,
+          "nameArabic": "التوبة",
+          "startPageNumber": 187
+        },
+        {
+          "surahNumber": 10,
+          "nameArabic": "يونس",
+          "startPageNumber": 208
+        },
+        {
+          "surahNumber": 11,
+          "nameArabic": "هود",
+          "startPageNumber": 221
+        }
+      ]
+    },
+    {
+      "juzNumber": 12,
+      "surahs": [
+        {
+          "surahNumber": 11,
+          "nameArabic": "هود",
+          "startPageNumber": 221
+        },
+        {
+          "surahNumber": 12,
+          "nameArabic": "يوسف",
+          "startPageNumber": 235
+        }
+      ]
+    },
+    {
+      "juzNumber": 13,
+      "surahs": [
+        {
+          "surahNumber": 12,
+          "nameArabic": "يوسف",
+          "startPageNumber": 235
+        },
+        {
+          "surahNumber": 13,
+          "nameArabic": "الرعد",
+          "startPageNumber": 249
+        },
+        {
+          "surahNumber": 14,
+          "nameArabic": "ابراهيم",
+          "startPageNumber": 255
+        }
+      ]
+    },
+    {
+      "juzNumber": 14,
+      "surahs": [
+        {
+          "surahNumber": 15,
+          "nameArabic": "الحجر",
+          "startPageNumber": 262
+        },
+        {
+          "surahNumber": 16,
+          "nameArabic": "النحل",
+          "startPageNumber": 267
+        }
+      ]
+    },
+    {
+      "juzNumber": 15,
+      "surahs": [
+        {
+          "surahNumber": 17,
+          "nameArabic": "الإسراء",
+          "startPageNumber": 282
+        },
+        {
+          "surahNumber": 18,
+          "nameArabic": "الكهف",
+          "startPageNumber": 293
+        }
+      ]
+    },
+    {
+      "juzNumber": 16,
+      "surahs": [
+        {
+          "surahNumber": 18,
+          "nameArabic": "الكهف",
+          "startPageNumber": 293
+        },
+        {
+          "surahNumber": 19,
+          "nameArabic": "مريم",
+          "startPageNumber": 305
+        },
+        {
+          "surahNumber": 20,
+          "nameArabic": "طه",
+          "startPageNumber": 312
+        }
+      ]
+    },
+    {
+      "juzNumber": 17,
+      "surahs": [
+        {
+          "surahNumber": 21,
+          "nameArabic": "الأنبياء",
+          "startPageNumber": 322
+        },
+        {
+          "surahNumber": 22,
+          "nameArabic": "الحج",
+          "startPageNumber": 332
+        }
+      ]
+    },
+    {
+      "juzNumber": 18,
+      "surahs": [
+        {
+          "surahNumber": 23,
+          "nameArabic": "المؤمنون",
+          "startPageNumber": 342
+        },
+        {
+          "surahNumber": 24,
+          "nameArabic": "النور",
+          "startPageNumber": 350
+        },
+        {
+          "surahNumber": 25,
+          "nameArabic": "الفرقان",
+          "startPageNumber": 359
+        }
+      ]
+    },
+    {
+      "juzNumber": 19,
+      "surahs": [
+        {
+          "surahNumber": 25,
+          "nameArabic": "الفرقان",
+          "startPageNumber": 359
+        },
+        {
+          "surahNumber": 26,
+          "nameArabic": "الشعراء",
+          "startPageNumber": 367
+        },
+        {
+          "surahNumber": 27,
+          "nameArabic": "النمل",
+          "startPageNumber": 377
+        }
+      ]
+    },
+    {
+      "juzNumber": 20,
+      "surahs": [
+        {
+          "surahNumber": 27,
+          "nameArabic": "النمل",
+          "startPageNumber": 377
+        },
+        {
+          "surahNumber": 28,
+          "nameArabic": "القصص",
+          "startPageNumber": 385
+        },
+        {
+          "surahNumber": 29,
+          "nameArabic": "العنكبوت",
+          "startPageNumber": 396
+        }
+      ]
+    },
+    {
+      "juzNumber": 21,
+      "surahs": [
+        {
+          "surahNumber": 29,
+          "nameArabic": "العنكبوت",
+          "startPageNumber": 396
+        },
+        {
+          "surahNumber": 30,
+          "nameArabic": "الروم",
+          "startPageNumber": 404
+        },
+        {
+          "surahNumber": 31,
+          "nameArabic": "لقمان",
+          "startPageNumber": 411
+        },
+        {
+          "surahNumber": 32,
+          "nameArabic": "السجدة",
+          "startPageNumber": 415
+        },
+        {
+          "surahNumber": 33,
+          "nameArabic": "الأحزاب",
+          "startPageNumber": 418
+        }
+      ]
+    },
+    {
+      "juzNumber": 22,
+      "surahs": [
+        {
+          "surahNumber": 33,
+          "nameArabic": "الأحزاب",
+          "startPageNumber": 418
+        },
+        {
+          "surahNumber": 34,
+          "nameArabic": "سبإ",
+          "startPageNumber": 428
+        },
+        {
+          "surahNumber": 35,
+          "nameArabic": "فاطر",
+          "startPageNumber": 434
+        },
+        {
+          "surahNumber": 36,
+          "nameArabic": "يس",
+          "startPageNumber": 440
+        }
+      ]
+    },
+    {
+      "juzNumber": 23,
+      "surahs": [
+        {
+          "surahNumber": 36,
+          "nameArabic": "يس",
+          "startPageNumber": 440
+        },
+        {
+          "surahNumber": 37,
+          "nameArabic": "الصافات",
+          "startPageNumber": 446
+        },
+        {
+          "surahNumber": 38,
+          "nameArabic": "ص",
+          "startPageNumber": 453
+        },
+        {
+          "surahNumber": 39,
+          "nameArabic": "الزمر",
+          "startPageNumber": 458
+        }
+      ]
+    },
+    {
+      "juzNumber": 24,
+      "surahs": [
+        {
+          "surahNumber": 39,
+          "nameArabic": "الزمر",
+          "startPageNumber": 458
+        },
+        {
+          "surahNumber": 40,
+          "nameArabic": "غافر",
+          "startPageNumber": 467
+        },
+        {
+          "surahNumber": 41,
+          "nameArabic": "فصلت",
+          "startPageNumber": 477
+        }
+      ]
+    },
+    {
+      "juzNumber": 25,
+      "surahs": [
+        {
+          "surahNumber": 41,
+          "nameArabic": "فصلت",
+          "startPageNumber": 477
+        },
+        {
+          "surahNumber": 42,
+          "nameArabic": "الشورى",
+          "startPageNumber": 483
+        },
+        {
+          "surahNumber": 43,
+          "nameArabic": "الزخرف",
+          "startPageNumber": 489
+        },
+        {
+          "surahNumber": 44,
+          "nameArabic": "الدخان",
+          "startPageNumber": 496
+        },
+        {
+          "surahNumber": 45,
+          "nameArabic": "الجاثية",
+          "startPageNumber": 499
+        }
+      ]
+    },
+    {
+      "juzNumber": 26,
+      "surahs": [
+        {
+          "surahNumber": 46,
+          "nameArabic": "الأحقاف",
+          "startPageNumber": 502
+        },
+        {
+          "surahNumber": 47,
+          "nameArabic": "محمد",
+          "startPageNumber": 507
+        },
+        {
+          "surahNumber": 48,
+          "nameArabic": "الفتح",
+          "startPageNumber": 511
+        },
+        {
+          "surahNumber": 49,
+          "nameArabic": "الحجرات",
+          "startPageNumber": 515
+        },
+        {
+          "surahNumber": 50,
+          "nameArabic": "ق",
+          "startPageNumber": 518
+        },
+        {
+          "surahNumber": 51,
+          "nameArabic": "الذاريات",
+          "startPageNumber": 520
+        }
+      ]
+    },
+    {
+      "juzNumber": 27,
+      "surahs": [
+        {
+          "surahNumber": 51,
+          "nameArabic": "الذاريات",
+          "startPageNumber": 520
+        },
+        {
+          "surahNumber": 52,
+          "nameArabic": "الطور",
+          "startPageNumber": 523
+        },
+        {
+          "surahNumber": 53,
+          "nameArabic": "النجم",
+          "startPageNumber": 526
+        },
+        {
+          "surahNumber": 54,
+          "nameArabic": "القمر",
+          "startPageNumber": 528
+        },
+        {
+          "surahNumber": 55,
+          "nameArabic": "الرحمن",
+          "startPageNumber": 531
+        },
+        {
+          "surahNumber": 56,
+          "nameArabic": "الواقعة",
+          "startPageNumber": 534
+        },
+        {
+          "surahNumber": 57,
+          "nameArabic": "الحديد",
+          "startPageNumber": 537
+        }
+      ]
+    },
+    {
+      "juzNumber": 28,
+      "surahs": [
+        {
+          "surahNumber": 58,
+          "nameArabic": "المجادلة",
+          "startPageNumber": 542
+        },
+        {
+          "surahNumber": 59,
+          "nameArabic": "الحشر",
+          "startPageNumber": 545
+        },
+        {
+          "surahNumber": 60,
+          "nameArabic": "الممتحنة",
+          "startPageNumber": 549
+        },
+        {
+          "surahNumber": 61,
+          "nameArabic": "الصف",
+          "startPageNumber": 551
+        },
+        {
+          "surahNumber": 62,
+          "nameArabic": "الجمعة",
+          "startPageNumber": 553
+        },
+        {
+          "surahNumber": 63,
+          "nameArabic": "المنافقون",
+          "startPageNumber": 554
+        },
+        {
+          "surahNumber": 64,
+          "nameArabic": "التغابن",
+          "startPageNumber": 556
+        },
+        {
+          "surahNumber": 65,
+          "nameArabic": "الطلاق",
+          "startPageNumber": 558
+        },
+        {
+          "surahNumber": 66,
+          "nameArabic": "التحريم",
+          "startPageNumber": 560
+        }
+      ]
+    },
+    {
+      "juzNumber": 29,
+      "surahs": [
+        {
+          "surahNumber": 67,
+          "nameArabic": "الملك",
+          "startPageNumber": 562
+        },
+        {
+          "surahNumber": 68,
+          "nameArabic": "القلم",
+          "startPageNumber": 564
+        },
+        {
+          "surahNumber": 69,
+          "nameArabic": "الحاقة",
+          "startPageNumber": 566
+        },
+        {
+          "surahNumber": 70,
+          "nameArabic": "المعارج",
+          "startPageNumber": 568
+        },
+        {
+          "surahNumber": 71,
+          "nameArabic": "نوح",
+          "startPageNumber": 570
+        },
+        {
+          "surahNumber": 72,
+          "nameArabic": "الجن",
+          "startPageNumber": 572
+        },
+        {
+          "surahNumber": 73,
+          "nameArabic": "المزمل",
+          "startPageNumber": 574
+        },
+        {
+          "surahNumber": 74,
+          "nameArabic": "المدثر",
+          "startPageNumber": 575
+        },
+        {
+          "surahNumber": 75,
+          "nameArabic": "القيامة",
+          "startPageNumber": 577
+        },
+        {
+          "surahNumber": 76,
+          "nameArabic": "الانسان",
+          "startPageNumber": 578
+        },
+        {
+          "surahNumber": 77,
+          "nameArabic": "المرسلات",
+          "startPageNumber": 580
+        }
+      ]
+    },
+    {
+      "juzNumber": 30,
+      "surahs": [
+        {
+          "surahNumber": 78,
+          "nameArabic": "النبإ",
+          "startPageNumber": 582
+        },
+        {
+          "surahNumber": 79,
+          "nameArabic": "النازعات",
+          "startPageNumber": 583
+        },
+        {
+          "surahNumber": 80,
+          "nameArabic": "عبس",
+          "startPageNumber": 585
+        },
+        {
+          "surahNumber": 81,
+          "nameArabic": "التكوير",
+          "startPageNumber": 586
+        },
+        {
+          "surahNumber": 82,
+          "nameArabic": "الإنفطار",
+          "startPageNumber": 587
+        },
+        {
+          "surahNumber": 83,
+          "nameArabic": "المطففين",
+          "startPageNumber": 587
+        },
+        {
+          "surahNumber": 84,
+          "nameArabic": "الإنشقاق",
+          "startPageNumber": 589
+        },
+        {
+          "surahNumber": 85,
+          "nameArabic": "البروج",
+          "startPageNumber": 590
+        },
+        {
+          "surahNumber": 86,
+          "nameArabic": "الطارق",
+          "startPageNumber": 591
+        },
+        {
+          "surahNumber": 87,
+          "nameArabic": "الأعلى",
+          "startPageNumber": 591
+        },
+        {
+          "surahNumber": 88,
+          "nameArabic": "الغاشية",
+          "startPageNumber": 592
+        },
+        {
+          "surahNumber": 89,
+          "nameArabic": "الفجر",
+          "startPageNumber": 593
+        },
+        {
+          "surahNumber": 90,
+          "nameArabic": "البلد",
+          "startPageNumber": 594
+        },
+        {
+          "surahNumber": 91,
+          "nameArabic": "الشمس",
+          "startPageNumber": 595
+        },
+        {
+          "surahNumber": 92,
+          "nameArabic": "الليل",
+          "startPageNumber": 595
+        },
+        {
+          "surahNumber": 93,
+          "nameArabic": "الضحى",
+          "startPageNumber": 596
+        },
+        {
+          "surahNumber": 94,
+          "nameArabic": "الشرح",
+          "startPageNumber": 596
+        },
+        {
+          "surahNumber": 95,
+          "nameArabic": "التين",
+          "startPageNumber": 597
+        },
+        {
+          "surahNumber": 96,
+          "nameArabic": "العلق",
+          "startPageNumber": 597
+        },
+        {
+          "surahNumber": 97,
+          "nameArabic": "القدر",
+          "startPageNumber": 598
+        },
+        {
+          "surahNumber": 98,
+          "nameArabic": "البينة",
+          "startPageNumber": 598
+        },
+        {
+          "surahNumber": 99,
+          "nameArabic": "الزلزلة",
+          "startPageNumber": 599
+        },
+        {
+          "surahNumber": 100,
+          "nameArabic": "العاديات",
+          "startPageNumber": 599
+        },
+        {
+          "surahNumber": 101,
+          "nameArabic": "القارعة",
+          "startPageNumber": 600
+        },
+        {
+          "surahNumber": 102,
+          "nameArabic": "التكاثر",
+          "startPageNumber": 600
+        },
+        {
+          "surahNumber": 103,
+          "nameArabic": "العصر",
+          "startPageNumber": 601
+        },
+        {
+          "surahNumber": 104,
+          "nameArabic": "الهمزة",
+          "startPageNumber": 601
+        },
+        {
+          "surahNumber": 105,
+          "nameArabic": "الفيل",
+          "startPageNumber": 601
+        },
+        {
+          "surahNumber": 106,
+          "nameArabic": "قريش",
+          "startPageNumber": 602
+        },
+        {
+          "surahNumber": 107,
+          "nameArabic": "الماعون",
+          "startPageNumber": 602
+        },
+        {
+          "surahNumber": 108,
+          "nameArabic": "الكوثر",
+          "startPageNumber": 602
+        },
+        {
+          "surahNumber": 109,
+          "nameArabic": "الكافرون",
+          "startPageNumber": 603
+        },
+        {
+          "surahNumber": 110,
+          "nameArabic": "النصر",
+          "startPageNumber": 603
+        },
+        {
+          "surahNumber": 111,
+          "nameArabic": "المسد",
+          "startPageNumber": 603
+        },
+        {
+          "surahNumber": 112,
+          "nameArabic": "الإخلاص",
+          "startPageNumber": 604
+        },
+        {
+          "surahNumber": 113,
+          "nameArabic": "الفلق",
+          "startPageNumber": 604
+        },
+        {
+          "surahNumber": 114,
+          "nameArabic": "الناس",
+          "startPageNumber": 604
+        }
+      ]
+    }
+  ]
+}

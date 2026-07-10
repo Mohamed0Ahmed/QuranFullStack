@@ -1,0 +1,6 @@
+// Canonical layout breakpoints (also mirrored in shared/layout/breakpoints.ts).
+// Tablet: 768–1023px uses tablet rules; phone: ≤767px; desktop: ≥1024px.
+$qd-bp-phone-max: 767px;
+$qd-bp-tablet-max: 1023px;
+$qd-bp-desktop-min: 1024px;
+$qd-bp-wide-desktop-min: 1440px;

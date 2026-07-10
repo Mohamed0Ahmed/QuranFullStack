@@ -1,0 +1,39 @@
+<div class="mushaf-reader" dir="rtl">
+  <section class="mushaf-reader__page" aria-label="منطقة المصحف">
+    <qd-mushaf-page-area
+      [page]="facade.page()"
+      [loadState]="facade.pageLoadState()"
+      [surahCatalogByJuz]="facade.surahCatalogByJuz()"
+      [highlightedVerseKey]="facade.mushafHighlightVerseKey()"
+      [selectedWordLocation]="facade.selectedWordLocation()"
+      (pageChange)="onPageChange($event)"
+      (surahJump)="onSurahJump($event)"
+      (ayahSelect)="onAyahSelect($event)"
+      (wordSelect)="onWordSelect($event)"
+    />
+  </section>
+  <section class="mushaf-reader__study" aria-label="منطقة الدراسة">
+    <qd-study-context-section
+      class="mushaf-reader__study-context"
+      [wordAnalysis]="facade.wordAnalysis()"
+      [wordLoadState]="facade.wordAnalysisLoadState()"
+      [selectedWordLocation]="facade.selectedWordLocation()"
+      [ayahStudy]="facade.ayahStudy()"
+      [ayahLoadState]="facade.ayahStudyLoadState()"
+      [similarAyahs]="facade.similarAyahs()"
+      [similarAyahsLoadState]="facade.similarAyahsLoadState()"
+      [mutashabihat]="facade.mutashabihat()"
+      [mutashabihatLoadState]="facade.mutashabihatLoadState()"
+      [activeAyahTab]="facade.ayahTab()"
+      [selectedVerseKey]="facade.selectedAyahKey()"
+      [tafsirOptions]="facade.tafsirSourceOptions()"
+      [translationOptions]="facade.translationSourceOptions()"
+      [fullI3rabOptions]="facade.fullI3rabSourceOptions()"
+      (ayahTabChange)="onAyahTabChange($event)"
+      (tafsirSourceChange)="onTafsirSourceChange($event)"
+      (translationSourceChange)="onTranslationSourceChange($event)"
+      (fullI3rabSourceChange)="onFullI3rabSourceChange($event)"
+      (ayahNavigate)="onAyahNavigate($event)"
+    />
+  </section>
+</div>

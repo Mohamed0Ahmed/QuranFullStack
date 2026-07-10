@@ -1,0 +1,702 @@
+﻿
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
+using QuranDashboard.Infrastructure.Persistence;
+
+#nullable disable
+
+namespace QuranDashboard.Infrastructure.Migrations
+{
+    [DbContext(typeof(QuranDashboardDbContext))]
+    [Migration("20260609065804_WordsDisplayTables")]
+    partial class WordsDisplayTables
+    {
+
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        {
+#pragma warning disable 612, 618
+            modelBuilder
+                .HasAnnotation("ProductVersion", "10.0.8")
+                .HasAnnotation("Relational:MaxIdentifierLength", 63);
+
+            NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("QuranDashboard.Domain.Quran.Ayahs.Ayah", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    b.Property<short>("AyahNumber")
+                        .HasColumnType("smallint")
+                        .HasColumnName("ayah_number");
+
+                    b.Property<short>("PageFrom")
+                        .HasColumnType("smallint")
+                        .HasColumnName("page_from");
+
+                    b.Property<short>("PageTo")
+                        .HasColumnType("smallint")
+                        .HasColumnName("page_to");
+
+                    b.Property<short>("SurahNumber")
+                        .HasColumnType("smallint")
+                        .HasColumnName("surah_number");
+
+                    b.Property<string>("TextUthmani")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("text_uthmani");
+
+                    b.Property<string>("VerseKey")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("verse_key");
+
+                    b.Property<short>("WordsCountReal")
+                        .HasColumnType("smallint")
+                        .HasColumnName("words_count_real");
+
+                    b.Property<short>("WordsCountSource")
+                        .HasColumnType("smallint")
+                        .HasColumnName("words_count_source");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("VerseKey")
+                        .IsUnique();
+
+                    b.HasIndex("SurahNumber", "AyahNumber")
+                        .IsUnique();
+
+                    b.ToTable("quran_ayahs", (string)null);
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Quran.MushafPages.MushafLine", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("FirstWordId")
+                        .HasColumnType("integer")
+                        .HasColumnName("first_word_id");
+
+                    b.Property<bool>("IsCentered")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_centered");
+
+                    b.Property<int?>("LastWordId")
+                        .HasColumnType("integer")
+                        .HasColumnName("last_word_id");
+
+                    b.Property<short>("LineNumber")
+                        .HasColumnType("smallint")
+                        .HasColumnName("line_number");
+
+                    b.Property<string>("LineType")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("line_type");
+
+                    b.Property<short>("PageNumber")
+                        .HasColumnType("smallint")
+                        .HasColumnName("page_number");
+
+                    b.Property<short?>("SurahNumber")
+                        .HasColumnType("smallint")
+                        .HasColumnName("surah_number");
+
+                    b.Property<short>("WordsCount")
+                        .HasColumnType("smallint")
+                        .HasColumnName("words_count");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FirstWordId");
+
+                    b.HasIndex("LastWordId");
+
+                    b.HasIndex("SurahNumber");
+
+                    b.HasIndex("PageNumber", "LineNumber")
+                        .IsUnique();
+
+                    b.ToTable("quran_mushaf_lines", (string)null);
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Quran.MushafPages.MushafPage", b =>
+                {
+                    b.Property<short>("PageNumber")
+                        .HasColumnType("smallint")
+                        .HasColumnName("page_number");
+
+                    b.Property<short>("FirstAyahNumber")
+                        .HasColumnType("smallint")
+                        .HasColumnName("first_ayah_number");
+
+                    b.Property<short>("FirstSurahNumber")
+                        .HasColumnType("smallint")
+                        .HasColumnName("first_surah_number");
+
+                    b.Property<short>("LastAyahNumber")
+                        .HasColumnType("smallint")
+                        .HasColumnName("last_ayah_number");
+
+                    b.Property<short>("LastSurahNumber")
+                        .HasColumnType("smallint")
+                        .HasColumnName("last_surah_number");
+
+                    b.Property<short>("LinesCount")
+                        .HasColumnType("smallint")
+                        .HasColumnName("lines_count");
+
+                    b.HasKey("PageNumber");
+
+                    b.ToTable("quran_mushaf_pages", (string)null);
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Quran.Surahs.Surah", b =>
+                {
+                    b.Property<short>("SurahNumber")
+                        .HasColumnType("smallint")
+                        .HasColumnName("surah_number");
+
+                    b.Property<bool>("BismillahPre")
+                        .HasColumnType("boolean")
+                        .HasColumnName("bismillah_pre");
+
+                    b.Property<string>("NameArabic")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name_arabic");
+
+                    b.Property<string>("NameSimple")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name_simple");
+
+                    b.Property<string>("NameTransliteration")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name_transliteration");
+
+                    b.Property<short>("RevelationOrder")
+                        .HasColumnType("smallint")
+                        .HasColumnName("revelation_order");
+
+                    b.Property<string>("RevelationPlace")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("revelation_place");
+
+                    b.Property<short>("VersesCount")
+                        .HasColumnType("smallint")
+                        .HasColumnName("verses_count");
+
+                    b.HasKey("SurahNumber");
+
+                    b.HasIndex("NameArabic")
+                        .IsUnique();
+
+                    b.ToTable("quran_surahs", (string)null);
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Quran.Words.Display.OrderedSimpleWord", b =>
+                {
+                    b.Property<int>("WordOrderInMushaf")
+                        .HasColumnType("integer")
+                        .HasColumnName("word_order_in_mushaf");
+
+                    b.Property<short>("AyahNumber")
+                        .HasColumnType("smallint")
+                        .HasColumnName("ayah_number");
+
+                    b.Property<short>("AyahsCount")
+                        .HasColumnType("smallint")
+                        .HasColumnName("ayahs_count");
+
+                    b.Property<short>("LineNumber")
+                        .HasColumnType("smallint")
+                        .HasColumnName("line_number");
+
+                    b.Property<string>("Location")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("location");
+
+                    b.Property<int>("OccurrencesCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("occurrences_count");
+
+                    b.Property<short>("PageNumber")
+                        .HasColumnType("smallint")
+                        .HasColumnName("page_number");
+
+                    b.Property<int>("QuranWordId")
+                        .HasColumnType("integer")
+                        .HasColumnName("quran_word_id");
+
+                    b.Property<short>("SurahNumber")
+                        .HasColumnType("smallint")
+                        .HasColumnName("surah_number");
+
+                    b.Property<short>("SurahsCount")
+                        .HasColumnType("smallint")
+                        .HasColumnName("surahs_count");
+
+                    b.Property<string>("TextImlaeiSimple")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("text_imlaei_simple");
+
+                    b.Property<string>("TextUthmaniSimple")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("text_uthmani_simple");
+
+                    b.Property<string>("VerseKey")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("verse_key");
+
+                    b.Property<short>("WordOrderInAyah")
+                        .HasColumnType("smallint")
+                        .HasColumnName("word_order_in_ayah");
+
+                    b.Property<short>("WordOrderInSurah")
+                        .HasColumnType("smallint")
+                        .HasColumnName("word_order_in_surah");
+
+                    b.HasKey("WordOrderInMushaf");
+
+                    b.HasIndex("QuranWordId")
+                        .IsUnique();
+
+                    b.HasIndex("SurahNumber", "WordOrderInSurah");
+
+                    b.HasIndex("SurahNumber", "AyahNumber", "WordOrderInAyah");
+
+                    b.ToTable("quran_words_ordered_simple", (string)null);
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Quran.Words.Display.OrderedTashkeelWord", b =>
+                {
+                    b.Property<int>("WordOrderInMushaf")
+                        .HasColumnType("integer")
+                        .HasColumnName("word_order_in_mushaf");
+
+                    b.Property<short>("AyahNumber")
+                        .HasColumnType("smallint")
+                        .HasColumnName("ayah_number");
+
+                    b.Property<short>("AyahsCount")
+                        .HasColumnType("smallint")
+                        .HasColumnName("ayahs_count");
+
+                    b.Property<short>("LineNumber")
+                        .HasColumnType("smallint")
+                        .HasColumnName("line_number");
+
+                    b.Property<string>("Location")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("location");
+
+                    b.Property<int>("OccurrencesCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("occurrences_count");
+
+                    b.Property<short>("PageNumber")
+                        .HasColumnType("smallint")
+                        .HasColumnName("page_number");
+
+                    b.Property<int>("QuranWordId")
+                        .HasColumnType("integer")
+                        .HasColumnName("quran_word_id");
+
+                    b.Property<short>("SurahNumber")
+                        .HasColumnType("smallint")
+                        .HasColumnName("surah_number");
+
+                    b.Property<short>("SurahsCount")
+                        .HasColumnType("smallint")
+                        .HasColumnName("surahs_count");
+
+                    b.Property<string>("TextImlaeiSimple")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("text_imlaei_simple");
+
+                    b.Property<string>("TextUthmani")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("text_uthmani");
+
+                    b.Property<string>("TextUthmaniSimple")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("text_uthmani_simple");
+
+                    b.Property<string>("VerseKey")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("verse_key");
+
+                    b.Property<short>("WordOrderInAyah")
+                        .HasColumnType("smallint")
+                        .HasColumnName("word_order_in_ayah");
+
+                    b.Property<short>("WordOrderInSurah")
+                        .HasColumnType("smallint")
+                        .HasColumnName("word_order_in_surah");
+
+                    b.HasKey("WordOrderInMushaf");
+
+                    b.HasIndex("QuranWordId")
+                        .IsUnique();
+
+                    b.HasIndex("SurahNumber", "WordOrderInSurah");
+
+                    b.HasIndex("SurahNumber", "AyahNumber", "WordOrderInAyah");
+
+                    b.ToTable("quran_words_ordered_tashkeel", (string)null);
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Quran.Words.Display.UniqueSimpleWord", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<short>("AyahsCount")
+                        .HasColumnType("smallint")
+                        .HasColumnName("ayahs_count");
+
+                    b.Property<short>("FirstAyahNumber")
+                        .HasColumnType("smallint")
+                        .HasColumnName("first_ayah_number");
+
+                    b.Property<short>("FirstLineNumber")
+                        .HasColumnType("smallint")
+                        .HasColumnName("first_line_number");
+
+                    b.Property<string>("FirstLocation")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("first_location");
+
+                    b.Property<short>("FirstPageNumber")
+                        .HasColumnType("smallint")
+                        .HasColumnName("first_page_number");
+
+                    b.Property<int>("FirstQuranWordId")
+                        .HasColumnType("integer")
+                        .HasColumnName("first_quran_word_id");
+
+                    b.Property<short>("FirstSurahNumber")
+                        .HasColumnType("smallint")
+                        .HasColumnName("first_surah_number");
+
+                    b.Property<int>("FirstWordOrderInMushaf")
+                        .HasColumnType("integer")
+                        .HasColumnName("first_word_order_in_mushaf");
+
+                    b.Property<int>("OccurrencesCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("occurrences_count");
+
+                    b.Property<short>("SurahsCount")
+                        .HasColumnType("smallint")
+                        .HasColumnName("surahs_count");
+
+                    b.Property<string>("TextImlaeiSimple")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("text_imlaei_simple");
+
+                    b.Property<string>("TextUthmaniSimple")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("text_uthmani_simple");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FirstQuranWordId");
+
+                    b.HasIndex("FirstWordOrderInMushaf")
+                        .IsUnique();
+
+                    b.HasIndex("TextUthmaniSimple")
+                        .IsUnique();
+
+                    b.ToTable("quran_words_unique_simple", (string)null);
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Quran.Words.Display.UniqueTashkeelWord", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<short>("AyahsCount")
+                        .HasColumnType("smallint")
+                        .HasColumnName("ayahs_count");
+
+                    b.Property<short>("FirstAyahNumber")
+                        .HasColumnType("smallint")
+                        .HasColumnName("first_ayah_number");
+
+                    b.Property<short>("FirstLineNumber")
+                        .HasColumnType("smallint")
+                        .HasColumnName("first_line_number");
+
+                    b.Property<string>("FirstLocation")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("first_location");
+
+                    b.Property<short>("FirstPageNumber")
+                        .HasColumnType("smallint")
+                        .HasColumnName("first_page_number");
+
+                    b.Property<int>("FirstQuranWordId")
+                        .HasColumnType("integer")
+                        .HasColumnName("first_quran_word_id");
+
+                    b.Property<short>("FirstSurahNumber")
+                        .HasColumnType("smallint")
+                        .HasColumnName("first_surah_number");
+
+                    b.Property<int>("FirstWordOrderInMushaf")
+                        .HasColumnType("integer")
+                        .HasColumnName("first_word_order_in_mushaf");
+
+                    b.Property<int>("OccurrencesCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("occurrences_count");
+
+                    b.Property<short>("SurahsCount")
+                        .HasColumnType("smallint")
+                        .HasColumnName("surahs_count");
+
+                    b.Property<string>("TextImlaeiSimple")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("text_imlaei_simple");
+
+                    b.Property<string>("TextUthmani")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("text_uthmani");
+
+                    b.Property<string>("TextUthmaniSimple")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("text_uthmani_simple");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FirstQuranWordId");
+
+                    b.HasIndex("FirstWordOrderInMushaf")
+                        .IsUnique();
+
+                    b.HasIndex("TextUthmani")
+                        .IsUnique();
+
+                    b.ToTable("quran_words_unique_tashkeel", (string)null);
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Quran.Words.QuranWord", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    b.Property<int>("AyahId")
+                        .HasColumnType("integer")
+                        .HasColumnName("ayah_id");
+
+                    b.Property<short>("AyahNumber")
+                        .HasColumnType("smallint")
+                        .HasColumnName("ayah_number");
+
+                    b.Property<bool>("IsAyahMarker")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_ayah_marker");
+
+                    b.Property<short>("LineNumber")
+                        .HasColumnType("smallint")
+                        .HasColumnName("line_number");
+
+                    b.Property<short>("LineWordOrder")
+                        .HasColumnType("smallint")
+                        .HasColumnName("line_word_order");
+
+                    b.Property<string>("Location")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("location");
+
+                    b.Property<short>("PageNumber")
+                        .HasColumnType("smallint")
+                        .HasColumnName("page_number");
+
+                    b.Property<string>("QpcGlyph")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("qpc_glyph");
+
+                    b.Property<short>("SurahNumber")
+                        .HasColumnType("smallint")
+                        .HasColumnName("surah_number");
+
+                    b.Property<string>("TextImlaeiSimple")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("text_imlaei_simple");
+
+                    b.Property<string>("TextUthmani")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("text_uthmani");
+
+                    b.Property<string>("TextUthmaniSimple")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("text_uthmani_simple");
+
+                    b.Property<short>("WordNumber")
+                        .HasColumnType("smallint")
+                        .HasColumnName("word_number");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AyahId");
+
+                    b.HasIndex("Location")
+                        .IsUnique();
+
+                    b.HasIndex("PageNumber", "LineNumber", "LineWordOrder");
+
+                    b.HasIndex(new[] { "SurahNumber", "AyahNumber", "WordNumber" }, "IX_quran_words_readable_surah_ayah_word")
+                        .HasDatabaseName("IX_quran_words_readable_surah_ayah_word")
+                        .HasFilter("is_ayah_marker = false");
+
+                    b.HasIndex(new[] { "SurahNumber", "AyahNumber", "WordNumber" }, "IX_quran_words_surah_ayah_word")
+                        .HasDatabaseName("IX_quran_words_surah_ayah_word");
+
+                    b.ToTable("quran_words", (string)null);
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Quran.Ayahs.Ayah", b =>
+                {
+                    b.HasOne("QuranDashboard.Domain.Quran.Surahs.Surah", "Surah")
+                        .WithMany()
+                        .HasForeignKey("SurahNumber")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Surah");
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Quran.MushafPages.MushafLine", b =>
+                {
+                    b.HasOne("QuranDashboard.Domain.Quran.Words.QuranWord", "FirstWord")
+                        .WithMany()
+                        .HasForeignKey("FirstWordId");
+
+                    b.HasOne("QuranDashboard.Domain.Quran.Words.QuranWord", "LastWord")
+                        .WithMany()
+                        .HasForeignKey("LastWordId");
+
+                    b.HasOne("QuranDashboard.Domain.Quran.MushafPages.MushafPage", "Page")
+                        .WithMany()
+                        .HasForeignKey("PageNumber")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("QuranDashboard.Domain.Quran.Surahs.Surah", "Surah")
+                        .WithMany()
+                        .HasForeignKey("SurahNumber");
+
+                    b.Navigation("FirstWord");
+
+                    b.Navigation("LastWord");
+
+                    b.Navigation("Page");
+
+                    b.Navigation("Surah");
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Quran.Words.Display.OrderedSimpleWord", b =>
+                {
+                    b.HasOne("QuranDashboard.Domain.Quran.Words.QuranWord", null)
+                        .WithMany()
+                        .HasForeignKey("QuranWordId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Quran.Words.Display.OrderedTashkeelWord", b =>
+                {
+                    b.HasOne("QuranDashboard.Domain.Quran.Words.QuranWord", null)
+                        .WithMany()
+                        .HasForeignKey("QuranWordId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Quran.Words.Display.UniqueSimpleWord", b =>
+                {
+                    b.HasOne("QuranDashboard.Domain.Quran.Words.QuranWord", null)
+                        .WithMany()
+                        .HasForeignKey("FirstQuranWordId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Quran.Words.Display.UniqueTashkeelWord", b =>
+                {
+                    b.HasOne("QuranDashboard.Domain.Quran.Words.QuranWord", null)
+                        .WithMany()
+                        .HasForeignKey("FirstQuranWordId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Quran.Words.QuranWord", b =>
+                {
+                    b.HasOne("QuranDashboard.Domain.Quran.Ayahs.Ayah", "Ayah")
+                        .WithMany()
+                        .HasForeignKey("AyahId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("QuranDashboard.Domain.Quran.MushafPages.MushafPage", "Page")
+                        .WithMany()
+                        .HasForeignKey("PageNumber")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Ayah");
+
+                    b.Navigation("Page");
+                });
+#pragma warning restore 612, 618
+        }
+    }
+}

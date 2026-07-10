@@ -1,0 +1,60 @@
+<div class="word-morphology-summary" data-testid="word-morphology-summary" role="group" aria-label="ملخص الصرف">
+  <div class="word-morphology-summary__column" role="group" aria-label="نوع الكلمة">
+    <span class="word-morphology-summary__label">نوع الكلمة</span>
+    <span class="word-morphology-summary__value">{{ morphologyTextOrDash(morphology().headPosLabel.ar) }}</span>
+  </div>
+  @if (rootExplorerHref()) {
+    <a
+      class="word-morphology-summary__column word-morphology-summary__column--link qd-interactive-surface"
+      [href]="rootExplorerHref()"
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="افتح الجذر في مستكشف الجذور"
+      data-testid="word-morphology-root-link"
+    >
+      <span class="word-morphology-summary__label">الجذر</span>
+      <span class="word-morphology-summary__value">{{ morphologyTextOrDash(morphology().root?.text) }}</span>
+    </a>
+  } @else {
+    <div class="word-morphology-summary__column" role="group" aria-label="الجذر">
+      <span class="word-morphology-summary__label">الجذر</span>
+      <span class="word-morphology-summary__value">{{ morphologyTextOrDash(morphology().root?.text) }}</span>
+    </div>
+  }
+  @if (lemmaExplorerHref()) {
+    <a
+      class="word-morphology-summary__column word-morphology-summary__column--link qd-interactive-surface"
+      [href]="lemmaExplorerHref()"
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="افتح الصيغة المعجمية في مستكشف الصيغ المعجمية"
+      data-testid="word-morphology-lemma-link"
+    >
+      <span class="word-morphology-summary__label">الصيغة المعجمية</span>
+      <span class="word-morphology-summary__value">{{ morphologyTextOrDash(morphology().lemma?.text) }}</span>
+    </a>
+  } @else {
+    <div class="word-morphology-summary__column" role="group" aria-label="الصيغة المعجمية">
+      <span class="word-morphology-summary__label">الصيغة المعجمية</span>
+      <span class="word-morphology-summary__value">{{ morphologyTextOrDash(morphology().lemma?.text) }}</span>
+    </div>
+  }
+  @if (stemExplorerHref()) {
+    <a
+      class="word-morphology-summary__column word-morphology-summary__column--link qd-interactive-surface"
+      [href]="stemExplorerHref()"
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="افتح الأصل الصرفي في مستكشف الأصول الصرفية"
+      data-testid="word-morphology-stem-link"
+    >
+      <span class="word-morphology-summary__label">الأصل الصرفي</span>
+      <span class="word-morphology-summary__value">{{ morphologyTextOrDash(morphology().stem?.text) }}</span>
+    </a>
+  } @else {
+    <div class="word-morphology-summary__column" role="group" aria-label="الأصل الصرفي">
+      <span class="word-morphology-summary__label">الأصل الصرفي</span>
+      <span class="word-morphology-summary__value">{{ morphologyTextOrDash(morphology().stem?.text) }}</span>
+    </div>
+  }
+</div>

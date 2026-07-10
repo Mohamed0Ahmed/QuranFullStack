@@ -1,0 +1,123 @@
+:host {
+  display: block;
+}
+
+.ayah-matches-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qd-space-3);
+}
+
+.ayah-matches-list__viewport {
+  block-size: min(58vh, 30rem);
+  overflow: auto;
+  scrollbar-gutter: stable;
+}
+
+.ayah-matches-list__card {
+  display: grid;
+  gap: var(--qd-space-1);
+  margin-block-end: var(--qd-space-2);
+  padding: var(--qd-space-1);
+  background: var(--qd-surface);
+  --highlighted-ayah-font-size: 1rem;
+  --highlighted-ayah-line-height: 1.7;
+  --highlighted-ayah-matched-border-width: 1px;
+}
+
+.ayah-matches-list__ayah-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--qd-radius-sm);
+  background: transparent;
+}
+
+.ayah-matches-list__ayah-link.qd-interactive-surface {
+  transition: background-color var(--qd-t-fast);
+
+  &:hover {
+    transform: none;
+    box-shadow: none;
+    background: var(--qd-section-bg);
+    border-color: transparent;
+  }
+}
+
+.ayah-matches-list__analysis-action {
+  justify-self: start;
+  padding: var(--qd-space-1) var(--qd-space-2);
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-sm);
+  background: var(--qd-surface);
+  color: var(--qd-text);
+  font: inherit;
+}
+
+.ayah-matches-list__card--alt {
+  background: color-mix(in oklch, var(--qd-surface) 97%, var(--qd-border));
+}
+
+.ayah-matches-list__meta-row {
+  display: flex;
+  align-items: center;
+  gap: var(--qd-space-2);
+}
+
+.ayah-matches-list__row-number {
+  flex-shrink: 0;
+  inline-size: 1.75rem;
+  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--qd-text-muted);
+}
+
+.ayah-matches-list__meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: var(--qd-space-2);
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.ayah-matches-list__surah-name {
+  color: var(--qd-text);
+  font-weight: 600;
+}
+
+.ayah-matches-list__ref {
+  color: var(--qd-text-muted);
+}
+
+.ayah-matches-list__ref-label {
+  margin-inline-end: 0.15em;
+}
+
+.ayah-matches-list__card--loading {
+  pointer-events: none;
+}
+
+.ayah-matches-list__loading-number {
+  inline-size: 1.25rem;
+  block-size: 0.875rem;
+}
+
+.ayah-matches-list__loading-meta {
+  inline-size: 8rem;
+  block-size: 0.875rem;
+}
+
+.ayah-matches-list__loading-ayah {
+  display: block;
+  inline-size: 100%;
+  block-size: 2.5rem;
+  margin-block-start: var(--qd-space-2);
+}

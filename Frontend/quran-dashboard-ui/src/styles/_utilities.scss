@@ -1,0 +1,56 @@
+.qd-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.qd-flex {
+  display: flex;
+}
+
+.qd-flex-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.qd-items-center {
+  align-items: center;
+}
+
+.qd-justify-between {
+  justify-content: space-between;
+}
+
+.qd-gap-2 {
+  gap: var(--qd-space-2);
+}
+
+.qd-gap-3 {
+  gap: var(--qd-space-3);
+}
+
+.qd-gap-4 {
+  gap: var(--qd-space-4);
+}
+
+.qd-text-center {
+  text-align: center;
+}
+
+.qd-mt-4 {
+  margin-block-start: var(--qd-space-4);
+}
+
+.qd-mb-4 {
+  margin-block-end: var(--qd-space-4);
+}
+
+.qd-scroll-stable {
+  scrollbar-gutter: stable;
+}
