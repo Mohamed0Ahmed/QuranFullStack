@@ -36,7 +36,7 @@ This skill is for review only.
 - If untracked files are noticed, mention them only in a separate optional section
   named `Commit workflow reminder`; that section is outside the engineering verdict.
 - `commit-workflow` owns git status, untracked files, explicit staging, commit
-  omission risk, commit ordering, submodule pointer safety, and push readiness.
+  omission risk, commit planning, and push readiness.
 
 If the user wants fixes after the review, that is a separate, explicitly requested
 task.
@@ -486,8 +486,8 @@ Report build/test evidence if provided. If no build/test was run, say so clearly
 Include this optional section only if Git tracking/staging concerns were noticed. This
 section is outside the engineering verdict and must not affect Findings, Notes, Test
 Guard verdict, or final Verdict. Direct the user to `commit-workflow` for git status,
-untracked files, explicit staging, commit omission risk, commit ordering, submodule
-pointer safety, and push readiness.
+untracked files, explicit staging, commit omission risk, commit planning, and push
+readiness.
 
 ## 10. Final Recommendation
 

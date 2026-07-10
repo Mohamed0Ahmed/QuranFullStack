@@ -31,12 +31,12 @@ Before adding or changing logging, exception handling, diagnostics, DataPipeline
 
 Backend report outputs belong under:
 
-- `report/feature-XXX-feature-name/` from the Backend repo perspective
+- `Backend/report/feature-XXX-feature-name/` from the monorepo root
 - `/projects/Dashboard/App/Backend/report/feature-XXX-feature-name/` as an absolute path
 
 Use this location for backend implementation reports, import reports, engineering review outputs, real-run reports, validation reports, and backend feature completion reports.
 
-For backend report filename conventions, follow `report/README.md`: from Feature 006 onward, human-authored reports use three-digit chronological prefixes, while generated importer/tool outputs keep stable canonical names. Do not rename old reports unless explicitly requested.
+For backend report filename conventions, follow `Backend/report/README.md`: from Feature 006 onward, human-authored reports use three-digit chronological prefixes, while generated importer/tool outputs keep stable canonical names. Do not rename old reports unless explicitly requested.
 
 Importer/source-data rules:
 

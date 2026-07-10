@@ -8,17 +8,18 @@ workflows for implementation, review, Spec Kit, tests, and commits.
 > docs. Where it summarizes a rule, the linked file remains the source of truth.
 > Do not copy architecture-doc or skill content into this guide; point to it.
 
-_Reflects the workspace as of 2026-06-07._
+_Reflects the workspace as of 2026-07-10._
 
 ## Workspace shape
 
-This is **three Git repositories**:
+This is one canonical Git monorepo rooted at `App/`:
 
-- **FullStack workspace repo:** `App/` (this repo) — holds project docs, `.claude/skills/`, and Spec Kit specs.
-- **Backend repo:** `App/Backend/` — .NET 10, ASP.NET Core Web API, EF Core, PostgreSQL, Code First, Clean Architecture. Tracked as a **submodule**.
-- **Frontend repo:** `App/Frontend/quran-dashboard-ui/` — Angular / TypeScript. Tracked as a **submodule**.
+- **Workspace:** project docs, `.claude/skills/`, and Spec Kit specs.
+- **Backend:** `Backend/` - .NET 10, ASP.NET Core Web API, EF Core, PostgreSQL, Code First, Clean Architecture.
+- **Frontend:** `Frontend/quran-dashboard-ui/` - Angular / TypeScript.
 
-Because Backend and Frontend are submodules, commit order matters (see §5F and `commit-workflow`).
+Backend and Frontend are ordinary tracked directories. Git status, commits, branches,
+PRs, and pushes operate once from the monorepo root.
 
 ---
 
@@ -121,13 +122,13 @@ All custom skills live under `.claude/skills/`. There are also **14 `speckit-*` 
 - **Review-only:** ✅ yes. **Implements changes:** ❌ no, unless explicitly asked.
 - **Relationship to engineering-review:** a **focused subset** — structure/layering/placement only. It is **not** the general review and deliberately does not duplicate engineering-review.
 
-### 2.4 `commit-workflow` — safe Git commits across the three repos
+### 2.4 `commit-workflow` - safe monorepo Git commits
 
-- **Purpose:** plan and safely execute commits across the workspace + two submodules. Owns Git tracking/staging concerns, including git status, untracked files, explicit staging, commit omission risk, commit ordering, submodule pointer safety, and push readiness. Inspects status per repo, plans explicit staging, enforces **child-repos-first then workspace-last** order, suggests concise messages, and warns about submodule-pointer and unrelated-file risks.
-- **Best used when:** committing/staging/pushing, deciding commit order, or working across more than one repo.
+- **Purpose:** plan and safely execute commits in the monorepo. Owns Git tracking/staging concerns, including status, untracked files, explicit staging, commit omission risk, focused commit boundaries, and push readiness. Inspects one root status, groups changes by concern, suggests concise messages, and warns about unrelated-file risks.
+- **Best used when:** committing/staging/pushing or deciding focused commit boundaries.
 - **Do not use when:** you want destructive Git operations (it never runs `reset`/`clean`/`rebase`) — those are out of scope.
-- **Reads / references:** live `git status` of all three repos.
-- **Output:** repo status, commit order, staging plan, suggested messages, warnings, exact commands, final checklist.
+- **Reads / references:** live root `git status`, diffs, branch, upstream, and recent log.
+- **Output:** repository status, commit plan, staging plan, suggested messages, warnings, exact commands, final checklist.
 - **Review-only:** no — it is **planning + safe execution** (runs non-destructive git only). **Implements source changes:** ❌ never modifies source code.
 - **Relationship to engineering-review:** independent; typically used **after** review passes.
 
@@ -152,7 +153,7 @@ and what is **reference-only**. Use this to know when each item actually comes i
 | `references/clean-code-guard/*` | Reference-only pack | **Never invoked** (read on demand) | During deep clean-code review or the clean-code self-check | `engineering-review`; the clean-code self-check | **Never a skill** — no triggers. Reference material only. |
 | `test-guard` | Manually invoked skill (also applied by engineering-review) | **Manual** for test-only; **Conditional** within engineering-review | Write/add/edit tests, or test-only review; engineering-review applies it **only when a mixed diff contains test files** | Invoked on request; referenced by `engineering-review` | **Explicitly requested** for test-only reviews. Test-code quality only. |
 | `backend-structure-review` | Manually invoked skill | **Manual (explicit)** | Focused backend placement / layering / foldering questions | Invoked on request | **Normally explicitly requested.** Not the full review gate. |
-| `commit-workflow` | Git workflow skill | **Manual** | Commit / stage / push planning across the 3 repos | Invoked on request | Submodule-aware ordering; no destructive git. |
+| `commit-workflow` | Git workflow skill | **Manual** | Monorepo commit / stage / push planning | Invoked on request | Path-aware focused commits; no destructive git. |
 | Spec Kit skills (`speckit-*`: specify, clarify, plan, tasks, analyze, implement, …) | Spec Kit command | **Manual** (user-invoked slash commands) | Feature spec → clarify → plan → tasks → analyze → implement lifecycle | User invokes | 14 commands; see workflow §5A. |
 
 ### Practical rule of thumb
@@ -238,7 +239,7 @@ Location: `Frontend/quran-dashboard-ui/.architecture/`. Canonical frontend rules
 ### F. For commits
 
 - Use `commit-workflow`.
-- **Backend, then Frontend, then FullStack** (workspace commits last to update submodule pointers).
+- Inspect and commit once from the monorepo root; split only by coherent concern.
 - Stage **explicit paths**; avoid broad `git add .`/`-A` unless explicitly safe.
 - Treat untracked files and commit omission risk as commit-workflow concerns, not engineering-review findings.
 - Never commit build outputs, `node_modules`, `bin`/`obj`, `.angular/cache`, or secrets.
@@ -256,7 +257,7 @@ Location: `Frontend/quran-dashboard-ui/.architecture/`. Canonical frontend rules
 | "Review Angular feature folder layout" | `engineering-review` + `FRONTEND_STRUCTURE.md` | Frontend structure/routeable pages. |
 | "Review component styling / RTL / theme" | `engineering-review` + `UI_STYLE_SYSTEM.md` | Tokens, `qd-*` classes, RTL, a11y. |
 | "Review facade/API data flow & states" | `engineering-review` + `API_INTEGRATION_GUIDELINES.md` | Page→Facade→Service flow, `ApiResponse<T>`, states. |
-| "Commit Backend + Frontend changes safely" | `commit-workflow` | Submodule-aware ordering & safe staging. |
+| "Commit Backend + Frontend changes safely" | `commit-workflow` | Monorepo-aware grouping and safe explicit staging. |
 | "Deep clean-code issue in implementation" | `engineering-review` using `references/clean-code-guard/*` | Deep naming/SOLID/DRY/AI-failure-mode checks. |
 | "Is this layer dependency allowed?" | `backend-structure-review` + `CLEAN_ARCHITECTURE.md` | Dependency direction/layering. |
 | "Start a new feature" | `speckit-*` chain (§5A) | Spec → clarify → plan → tasks → analyze. |
@@ -290,4 +291,4 @@ Location: `Frontend/quran-dashboard-ui/.architecture/`. Canonical frontend rules
 - No workspace-root `README.md` — this guide partly fills the "what is here / how do I work" gap, but a short README pointing newcomers to this guide would help.
 - `test-guard` has **no Angular-specific reference** yet (`jest.md` is the closest match). Consider an `angular.md` later only if real Angular test conventions diverge.
 
-**Recommended next action:** keep this guide as the onboarding map; review/update it whenever a skill or `.architecture/` doc is added or materially changed. No code or doc changes are required now.
+**Recommended next action:** keep this guide as the onboarding map; review/update it whenever a skill or `.architecture/` doc is added or materially changed.

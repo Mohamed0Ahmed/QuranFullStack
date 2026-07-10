@@ -1,23 +1,13 @@
 ---
 name: pr-context-prep
 description: >-
-  Prepares a high-quality, copy-paste-ready PR context package before a GitHub
-  pull request is opened on the Quran Dashboard workspace, so CodeRabbit and human
-  reviewers understand scope, risk, and invariants at a glance. Use this skill
-  whenever the user is about to open a PR, asks for a PR title or description, asks
-  what reviewers or CodeRabbit should focus on, wants to "prep" / "package" / "write
-  up" a PR, or asks whether a change is ready to review or merge — even if they
-  don't say "PR context". It reads the current git diff/status against the base
-  branch, classifies the change (Backend importer/DataPipeline, Backend read API,
-  Frontend Angular, specs/docs, or App submodule-pointer bump), and emits scope,
-  out-of-scope, changed-file summary, related files/patterns reviewers should also
-  look at, related specs/contracts/reports, critical project invariants (Quran data
-  safety first), test/build evidence, CodeRabbit focus instructions, a review
-  checklist, size/split advice, a risk level, and a merge-readiness call. CodeRabbit
-  runs on Backend and Frontend PRs only; for App/FullStack pointer-only PRs it emits
-  a lighter package and says so. This is review/prep only: it never edits code, never
-  commits, and never opens the PR. For staging, commit order, and submodule-pointer
-  commits, use commit-workflow instead.
+  Prepares a copy-paste-ready PR context package for the Quran Dashboard monorepo.
+  Use when the user wants a PR title, description, reviewer focus, risk assessment,
+  or merge-readiness check. It reads root status and the branch diff against the
+  base, classifies changed Backend, Frontend, specs/docs, and cross-stack paths,
+  and reports scope, invariants, evidence, review focus, risk, and readiness. It
+  requires merge commits for unsquashed subtree-history imports. Review/prep only:
+  never edits, commits, pushes, or opens a PR. Use commit-workflow for Git execution.
 ---
 
 # PR Context Prep
@@ -29,54 +19,48 @@ the PR body) and saves human reviewers from reconstructing scope from a raw diff
 
 **This skill is prep/review only.** It never edits code, never commits, never
 opens the PR, and never pushes. It reads the current diff/status and writes a
-document. Staging, commit order, and submodule-pointer commits belong to
-`commit-workflow`.
+document. Staging, commit planning, and push readiness belong to `commit-workflow`.
 
 ## Where CodeRabbit helps (and where it doesn't)
 
-CodeRabbit runs on **Backend** (`App/Backend`) and **Frontend**
-(`App/Frontend/quran-dashboard-ui`) PRs only. Those are real code repos.
-
-The **FullStack/App** repo mostly carries **submodule-pointer bumps** and workspace
-docs; CodeRabbit adds little there. For an App-only pointer PR, still produce the
-package but keep it light, drop the CodeRabbit focus section to a one-liner
-("pointer-only PR; CodeRabbit not applicable"), and lean on the human-review
-checklist instead.
+CodeRabbit and human reviewers see one monorepo PR. Tailor review focus to changed
+root-relative paths under `Backend/`, `Frontend/quran-dashboard-ui/`, and workspace
+docs/specs. Do not create separate PR packages for project directories.
 
 ## 1. Establish the target
 
-Before writing anything, pin down three things. Do not guess silently — if the diff
-is empty or the repo is ambiguous, say so.
+Before writing anything, pin down three things. Do not guess silently; if the diff
+is empty or the branch is ambiguous, say so.
 
-1. **Which repo is the PR for?** Detect the repo holding the feature branch with
-   commits ahead of the base. Usually the user is working in one repo:
+1. **Current branch.** Run from the monorepo root:
 
    ```bash
-   git -C App/Backend rev-parse --abbrev-ref HEAD
-   git -C App/Frontend/quran-dashboard-ui rev-parse --abbrev-ref HEAD
-   git -C App rev-parse --abbrev-ref HEAD
+   git rev-parse --show-toplevel
+   git rev-parse --abbrev-ref HEAD
+   git status --short --branch
+   git diff --stat
+   git diff --cached --stat
    ```
-
-   The repo whose branch is not `main` and is ahead of the base is the PR repo.
 
 2. **Base branch.** Default to `main`. Only ask the user if you genuinely can't
    infer it — e.g. the branch's upstream tracks something other than `main`, or
    there are stacked branches. Confirm with:
 
    ```bash
-   git -C <repo> merge-base --fork-point main HEAD   # sanity check the base
+   git merge-base --fork-point main HEAD   # sanity check the base
    ```
 
 3. **The diff.** Use the three-dot form so you compare against the merge base, not
    a moving `main`:
 
    ```bash
-   git -C <repo> diff --name-status main...HEAD
-   git -C <repo> diff --stat        main...HEAD
-   git -C <repo> log --oneline      main..HEAD
+   git diff --name-status main...HEAD
+   git diff --stat        main...HEAD
+   git log --oneline      main..HEAD
    ```
 
-Only cite files and paths that appear in this output. Never invent paths.
+Only claim a file changed when it appears in this output. Related unchanged files
+may be cited only after verifying their paths in the repository.
 
 ## 2. Classify the change
 
@@ -84,11 +68,12 @@ The classification decides which invariants and CodeRabbit focus apply. A PR can
 more than one bucket — include every bucket that matches.
 
 | Signal in the diff | Bucket | Emphasize |
-| Files under `.../DataPipelines/`, `*Importer*`, `*Import*`, seed/source packages, `resources/import-sources/` | **Backend importer / DataPipeline** | Quran-source immutability, rollback, idempotence, source hashes, hard checks, report gates |
-| New/changed read endpoints, controllers, query handlers, DTOs, projections, pagination/filter code | **Backend read API** | Read-only behavior, projection correctness, pagination/filter, DTO contract, null handling, `ApiResponse` shape, tests |
-| Files under `App/Frontend/quran-dashboard-ui/src/**` (components, services, signals, routes, SCSS) | **Frontend Angular** | State/signals, URL sync, Arabic RTL labels, loading/error/empty states, a11y, API-contract drift |
+| Files under `Backend/**/DataPipelines/`, `*Importer*`, `*Import*`, seed/source packages, `resources/import-sources/` | **Backend importer / DataPipeline** | Quran-source immutability, rollback, idempotence, source hashes, hard checks, report gates |
+| New/changed Backend read endpoints, controllers, query handlers, DTOs, projections, pagination/filter code | **Backend read API** | Read-only behavior, projection correctness, pagination/filter, DTO contract, null handling, `ApiResponse` shape, tests |
+| Files under `Frontend/quran-dashboard-ui/src/**` (components, services, signals, routes, SCSS) | **Frontend Angular** | State/signals, URL sync, Arabic RTL labels, loading/error/empty states, a11y, API-contract drift |
 | `specs/**` (`spec.md`, `plan.md`, `tasks.md`, `contracts/**`, `research.md`, `data-model.md`, `quickstart.md`) | **Specs** | Cross-artifact consistency (see §invariants) |
-| `App` diff is only `modified: Backend/Frontend (new commits)` + workspace docs | **App pointer bump** | Pointer targets exist on child remotes; light package |
+| Related changes span Backend and Frontend paths | **Cross-stack** | API contract alignment, integration behavior, combined verification |
+| Unsquashed `git subtree` import commits | **History-preserving migration** | Imported tips remain ancestors; merge commit required; squash/rebase forbidden |
 
 **Quran-data override:** if any diff touches Quran text, an ayah/word/root/morphology
 source file, a seed correction, an identity key, or importer logic that writes Quran
@@ -148,7 +133,7 @@ that should have changed but didn't.>
 <what was run and the result; or "not yet run — needs: …".>
 
 ## For CodeRabbit — focus here
-<3–6 focused directives; see §CodeRabbit focus. One-liner for App pointer PRs.>
+<3–6 focused directives; see §CodeRabbit focus.>
 
 ## Suggested review checklist
 - [ ] <objectively checkable items a reviewer ticks off>
@@ -161,6 +146,10 @@ that should have changed but didn't.>
 
 ## Merge readiness: <Ready | Ready with nits | Needs work | Blocked>
 <one sentence, tied to evidence and invariants — not vibes.>
+
+## Required merge method
+<For unsquashed subtree imports: "Merge commit required; do not squash or rebase."
+Otherwise state the repository's normal policy or "No special requirement".>
 ```
 
 ## Critical invariants by bucket
@@ -208,6 +197,12 @@ about most; a reviewer who checks only these has caught the expensive mistakes.
 - For code+spec PRs: the implementation matches the contract it claims to satisfy.
 - Recommend `speckit-analyze` for a deeper cross-artifact pass when specs are large.
 
+**History-preserving migration**
+- Verify each imported source tip with `git merge-base --is-ancestor <sha> HEAD`.
+- Require GitHub's merge-commit strategy for the PR.
+- Squash or rebase merging is blocking because imported source commits would no
+  longer be ancestors of `main`.
+
 ## CodeRabbit focus instructions
 
 CodeRabbit reads the PR body, so the **For CodeRabbit — focus here** section is a set
@@ -222,25 +217,24 @@ them specific to the diff, not generic. Examples of the shape:
   still match the backend DTO in this PR."
 - "Confirm no Quran text/seed values were altered by this refactor."
 
-For an **App pointer-only PR**, replace the whole section with: "Pointer-only PR;
-CodeRabbit not applicable — see human checklist."
-
 ## Risk & merge-readiness rubric
 
 Be consistent so the labels mean something.
 
 **Risk**
 - **High:** Quran text/source/import mutation; importer rollback/idempotence/hash
-  logic; schema or EF migration; a DTO/API contract consumed by the frontend.
+  logic; schema or EF migration; a DTO/API contract consumed by the frontend;
+  repository-history migration.
 - **Medium:** new read APIs, non-trivial frontend state/URL logic, meaningful logic changes.
-- **Low:** docs, specs-only, tests-only, formatting, submodule-pointer bumps.
+- **Low:** docs, specs-only, tests-only, or formatting with no behavior change.
 
 **Merge readiness**
 - **Ready:** scope clean, invariants satisfied, evidence green.
 - **Ready with nits:** minor issues that don't block; list them.
 - **Needs work:** missing tests/evidence, unaddressed invariant, or scope creep.
 - **Blocked:** an invariant is violated (e.g. Quran data mutated without cause) or
-  the build/tests fail.
+  the build/tests fail. A subtree-history migration is also blocked unless merge
+  commit merging is available and required.
 
 ## Guardrails
 
@@ -250,4 +244,4 @@ Be consistent so the labels mean something.
 - Ask for the base branch only when you truly cannot infer it (default `main`).
 - Keep output copy-paste-ready; prefer tight bullets over prose.
 - Flag any Quran text/source/import mutation at the top, every time.
-- Staging, commit order, and submodule-pointer commits → use `commit-workflow`.
+- Staging, commit planning, and push readiness -> use `commit-workflow`.
