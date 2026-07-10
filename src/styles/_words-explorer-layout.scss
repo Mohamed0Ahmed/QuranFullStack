@@ -92,7 +92,7 @@
   }
 
   .qd-explorer-layout__table > *,
-  .qd-explorer-layout__panel {
+  .qd-explorer-layout > .qd-explorer-layout__panel {
     block-size: var(--qd-explorer-table-card-height);
   }
 
@@ -100,9 +100,10 @@
     block-size: auto;
   }
 
-  .qd-explorer-layout__panel {
+  .qd-explorer-layout > .qd-explorer-layout__panel {
     display: flex;
     flex-direction: column;
+    min-block-size: 0;
   }
 }
 
