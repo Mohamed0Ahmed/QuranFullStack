@@ -1,0 +1,84 @@
+:host {
+  flex-shrink: 0;
+}
+
+.mushaf-header {
+  position: relative;
+  z-index: 5;
+  overflow: visible;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0;
+  border-bottom: none;
+
+  &__nav-actions {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: var(--qd-space-1);
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+  }
+
+  &__surah-jump {
+    grid-column: 2;
+    grid-row: 1;
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+
+    qd-surah-jump-picker {
+      flex: 1 1 auto;
+      width: 100%;
+      min-width: 11.5rem;
+      max-width: 100%;
+    }
+  }
+
+  &__deck {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    width: 100%;
+    gap: var(--qd-space-1);
+    padding: var(--qd-space-1) var(--qd-space-2);
+    border: 1px solid var(--qd-border);
+    border-radius: var(--qd-radius-lg);
+    background: var(--qd-surface);
+    box-shadow: var(--qd-shadow-sm);
+  }
+
+  &__deck-zone {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--qd-space-1) var(--qd-space-2);
+    font-size: 0.875rem;
+    line-height: 1.35;
+  }
+
+  &__deck-zone--nav {
+    display: grid;
+    grid-template-columns: auto minmax(11.5rem, 1fr);
+    align-items: center;
+    width: 100%;
+    gap: var(--qd-space-2);
+    padding: var(--qd-space-1);
+    border-radius: var(--qd-radius-md);
+    background: color-mix(in oklch, var(--qd-accent) 5.5%, var(--qd-section-bg));
+    overflow: visible;
+
+    .qd-btn {
+      min-height: 2rem;
+      padding: calc(var(--qd-space-1) + 1px) var(--qd-space-3);
+      font-size: 0.875rem;
+      line-height: 1.35;
+    }
+  }
+}

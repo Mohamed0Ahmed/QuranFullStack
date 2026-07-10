@@ -1,0 +1,3 @@
+import { MUSHAF_BASMALLAH_LIGATURE } from './mushaf-common-ligature';
+
+export { MUSHAF_BASMALLAH_LIGATURE as MUSHAF_BASMALLAH_DISPLAY_TEXT };

@@ -1,0 +1,10 @@
+:host {
+  display: block;
+}
+
+.explorer-panel-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qd-space-2);
+  padding-block: var(--qd-space-2);
+}

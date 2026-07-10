@@ -1,0 +1,43 @@
+<div class="root-stems-list-shell">
+  <header class="root-stems-list__header">
+    <span class="root-stems-list__header-row-number">{{ rowNumberHeader }}</span>
+    <span class="root-stems-list__header-text">{{ stemTextHeader }}</span>
+    <span class="root-stems-list__header-count">{{ occurrencesHeader }}</span>
+  </header>
+
+  <div
+    class="root-stems-list"
+    [attr.aria-busy]="loading() ? true : null"
+    [attr.data-testid]="loading() ? 'root-stems-list-loading' : 'root-stems-list'"
+  >
+    @if (loading()) {
+      <p class="qd-sr-only" role="status" aria-live="polite">{{ loadingLabel }}</p>
+      @for (_ of loadingRowPlaceholders; track $index) {
+        <div class="root-stems-list__row root-stems-list__row--loading" aria-hidden="true">
+          <span class="root-stems-list__row-number">
+            <span class="qd-skeleton qd-skeleton--text root-stems-list__loading-number"></span>
+          </span>
+          <span class="root-stems-list__text">
+            <span class="qd-skeleton qd-skeleton--text root-stems-list__loading-text"></span>
+          </span>
+          <span class="qd-skeleton qd-skeleton--rounded-md root-stems-list__loading-badge"></span>
+        </div>
+      }
+    } @else {
+      @for (row of rows(); track row.item.stemId; let index = $index) {
+        <a
+          class="root-stems-list__row qd-interactive-surface"
+          [attr.href]="row.href"
+          [attr.aria-label]="openStemLabel"
+          target="_blank"
+          rel="noopener noreferrer"
+          data-testid="root-stem-item"
+        >
+          <span class="root-stems-list__row-number" aria-hidden="true">{{ index + 1 }}</span>
+          <span class="root-stems-list__text">{{ row.item.stemText }}</span>
+          <span class="qd-badge">{{ row.item.occurrencesCount }}</span>
+        </a>
+      }
+    }
+  </div>
+</div>

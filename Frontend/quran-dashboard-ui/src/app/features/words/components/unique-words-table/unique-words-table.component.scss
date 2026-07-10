@@ -1,0 +1,171 @@
+@use '../../../../../styles/breakpoints' as bp;
+
+:host {
+  display: block;
+}
+
+.unique-words-table {
+  --unique-words-table-scrollbar-gutter: 0px;
+  --qd-explorer-table-scrollbar-gutter: var(--unique-words-table-scrollbar-gutter);
+}
+
+.unique-words-table__header-row,
+.unique-words-table__row {
+  grid-template-columns:
+    minmax(2.5rem, 0.35fr)
+    minmax(0, 1.8fr)
+    minmax(5rem, 0.9fr)
+    minmax(5rem, 0.9fr)
+    repeat(4, minmax(5.5rem, 1fr));
+}
+
+.unique-words-table__loading-number {
+  inline-size: 1.75rem;
+  margin-inline: auto;
+}
+
+.unique-words-table__loading-word {
+  inline-size: min(100%, 12rem);
+}
+
+.unique-words-table__loading-chip {
+  inline-size: 3rem;
+  block-size: 1.125rem;
+  margin-inline: auto;
+}
+
+.unique-words-table__loading-text {
+  inline-size: min(100%, 4.5rem);
+}
+
+.unique-words-table__text-cell {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.unique-words-table__text {
+  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  font-size: 0.9375rem;
+  color: var(--qd-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.unique-words-table__root-link {
+  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  font-size: 0.9375rem;
+}
+
+.unique-words-table__loading-mobile-badge {
+  block-size: 1.25rem;
+  min-inline-size: 0;
+}
+
+.unique-words-table__word-cell {
+  display: flex;
+  align-items: center;
+}
+
+.unique-words-table__chip-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.unique-words-table__word {
+  display: block;
+  width: 100%;
+  padding: var(--qd-space-1);
+  border: 1px solid transparent;
+  border-radius: var(--qd-radius-sm);
+  background: transparent;
+  text-align: start;
+  overflow: hidden;
+}
+
+.unique-words-table__display {
+  font-family: var(--qd-font-quran, inherit);
+  font-size: 1.125rem;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (min-width: bp.$qd-bp-desktop-min) {
+  :host-context(.qd-explorer-layout__table) {
+    display: block;
+    block-size: 100%;
+  }
+
+  :host-context(.qd-explorer-layout__table) .unique-words-table {
+    display: flex;
+    flex-direction: column;
+    block-size: 100%;
+    box-sizing: border-box;
+  }
+
+  :host-context(.qd-explorer-layout__table) .unique-words-table__header {
+    flex-shrink: 0;
+    block-size: var(--qd-explorer-table-header-height, 2.75rem);
+    min-block-size: unset;
+  }
+
+  :host-context(.qd-explorer-layout__table) .unique-words-table__body {
+    flex: 1 1 auto;
+    min-block-size: 0;
+  }
+}
+
+@media (max-width: bp.$qd-bp-tablet-max) {
+  .unique-words-table__header,
+  .unique-words-table__header-gutter {
+    display: none;
+  }
+
+  .unique-words-table__body {
+    block-size: min(70vh, 40rem);
+  }
+
+  .unique-words-table__row {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    gap: var(--qd-space-1) var(--qd-space-2);
+    padding: var(--qd-space-2);
+    block-size: auto;
+    min-block-size: var(--unique-words-table-row-height, 4.25rem);
+  }
+
+  .unique-words-table__cell--row-number {
+    grid-column: 1;
+    grid-row: 1;
+    padding: 0;
+    align-self: center;
+    justify-self: start;
+  }
+
+  .unique-words-table__word-cell {
+    grid-column: 2;
+    grid-row: 1;
+    padding: 0;
+    justify-content: center;
+    min-width: 0;
+  }
+
+  .unique-words-table__chip-cell,
+  .unique-words-table__text-cell {
+    display: none;
+  }
+
+  .unique-words-table__word {
+    padding: 0;
+    width: 100%;
+    text-align: center;
+  }
+
+  .unique-words-table__display {
+    text-align: center;
+  }
+}

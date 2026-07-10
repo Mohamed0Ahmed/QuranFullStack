@@ -1,0 +1,17 @@
+.highlighted-ayah {
+  margin: 0;
+  font-family: 'Amiri', 'IBM Plex Sans Arabic', serif;
+  font-size: var(--highlighted-ayah-font-size, 1.25rem);
+  line-height: var(--highlighted-ayah-line-height, 2);
+}
+
+.highlighted-ayah__word {
+  display: inline;
+  padding-inline: 0.1em;
+}
+
+.highlighted-ayah__word--matched {
+  background: var(--qd-accent-tint);
+  border-bottom: var(--highlighted-ayah-matched-border-width, 2px) solid var(--qd-accent);
+  font-weight: 600;
+}

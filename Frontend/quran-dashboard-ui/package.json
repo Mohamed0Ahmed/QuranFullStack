@@ -1,0 +1,47 @@
+{
+  "name": "quran-dashboard-ui",
+  "version": "0.0.0",
+  "scripts": {
+    "ng": "ng",
+    "start": "ng serve",
+    "start:https": "ng serve --ssl --ssl-cert localhost.pem --ssl-key localhost-key.pem",
+    "build": "ng build",
+    "test": "VITEST_MIN_FORKS=1 VITEST_MAX_FORKS=2 ng test",
+    "watch": "ng build --watch --configuration development"
+  },
+  "prettier": {
+    "printWidth": 100,
+    "singleQuote": true,
+    "overrides": [
+      {
+        "files": "*.html",
+        "options": {
+          "parser": "angular"
+        }
+      }
+    ]
+  },
+  "private": true,
+  "dependencies": {
+    "@angular/cdk": "^20.2.14",
+    "@angular/common": "^20.3.0",
+    "@angular/compiler": "^20.3.0",
+    "@angular/core": "^20.3.0",
+    "@angular/platform-browser": "^20.3.0",
+    "@angular/router": "^20.3.0",
+    "rxjs": "~7.8.0",
+    "tslib": "^2.3.0",
+    "zone.js": "~0.15.0"
+  },
+  "devDependencies": {
+    "@angular/build": "^20.3.27",
+    "@angular/cli": "^20.3.27",
+    "@angular/compiler-cli": "^20.3.0",
+    "autoprefixer": "^10.5.0",
+    "jsdom": "^29.1.1",
+    "postcss": "^8.5.15",
+    "tailwindcss": "^3.4.19",
+    "typescript": "~5.9.2",
+    "vitest": "^3.2.6"
+  }
+}

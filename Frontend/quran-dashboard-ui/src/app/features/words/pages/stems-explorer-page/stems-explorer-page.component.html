@@ -1,0 +1,260 @@
+<div class="qd-page">
+  <div class="qd-container qd-explorer-frame stems-explorer-frame">
+    <div class="uw-intro-band">
+      <div class="qd-page-header">
+        <h1 class="qd-page-title" data-testid="stems-explorer-page-title">{{ pageTitle }}</h1>
+      </div>
+    </div>
+
+    <div class="uw-toolbar-recess">
+      <div class="stems-explorer__controls qd-explorer-controls">
+        <label class="qd-sr-only" for="stems-search">{{ searchLabel }}</label>
+        <input
+          id="stems-search"
+          class="qd-input stems-explorer__search qd-explorer__search"
+          type="search"
+          inputmode="search"
+          [attr.placeholder]="searchPlaceholder"
+          [value]="searchDraft()"
+          data-testid="stems-search-input"
+          (input)="onSearchInput($any($event.target).value)"
+        />
+
+        <label class="qd-sr-only" for="stems-sort">{{ sortLabels.label }}</label>
+        <select
+          id="stems-sort"
+          class="qd-select stems-explorer__sort qd-explorer__sort"
+          data-testid="stems-sort-select"
+          [value]="listState().sort"
+          (change)="onSortChange($any($event.target).value)"
+        >
+          @for (option of sortOptions; track option) {
+            <option [value]="option">{{ sortLabels[option] }}</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    @switch (listState().status) {
+      @case ('error') {
+        <div class="qd-error-state" role="alert" data-testid="stems-list-error">
+          {{ listState().errorMessage }}
+        </div>
+      }
+      @case ('empty') {
+        <div class="qd-empty-state" data-testid="stems-list-no-results">{{ noResultsLabel }}</div>
+      }
+    }
+
+    @if (panelState().status === 'notFound') {
+      <div
+        class="qd-empty-state stems-explorer__restored-not-found"
+        role="status"
+        data-testid="stems-restored-not-found"
+      >
+        {{ panelState().errorMessage || notFoundLabel }}
+      </div>
+    }
+  </div>
+
+  @switch (listState().status) {
+    @default {
+      <div class="stems-explorer-layout qd-explorer-layout">
+        <section class="stems-explorer-layout__table qd-explorer-layout__table" [attr.aria-label]="tableSectionLabel">
+          <qd-stems-table
+            [rows]="listState().items"
+            [loading]="listState().status === 'loading'"
+            [selectedStemId]="selectedStemId()"
+            [currentPage]="listState().page"
+            [pageSize]="listState().pageSize"
+            [activeView]="activeView()"
+            [activeWordView]="activeWordView()"
+            [activeSurahView]="activeSurahView()"
+            [activeColumn]="activeColumn()"
+            (rowSelected)="onRowSelected($event)"
+            (countOpened)="onCountOpened($event)"
+          />
+          <qd-pagination
+            [currentPage]="listState().page"
+            [pageSize]="listState().pageSize"
+            [totalCount]="listState().totalCount"
+            [disabled]="listState().status === 'loading'"
+            [ariaLabel]="listPaginationLabel"
+            (pageChange)="onPageChange($event)"
+          />
+        </section>
+
+        @if (isDesktop()) {
+          <aside class="stems-explorer-layout__panel qd-explorer-layout__panel" [attr.aria-label]="panelSurfaceLabel">
+            <qd-stem-details-panel
+              [inline]="true"
+              [view]="activeView()"
+              [emptySelection]="emptySelection()"
+              [selectionTitle]="panelState().summary?.stemText ?? ''"
+              [loading]="panelState().status === 'loading'"
+              [notFound]="panelState().status === 'notFound'"
+              (viewChange)="onPanelViewChange($event)"
+              (close)="onClearSelection()"
+            >
+              <ng-container *ngTemplateOutlet="stemsPanelContent" />
+            </qd-stem-details-panel>
+          </aside>
+        }
+      </div>
+
+      @if (!isDesktop() && !emptySelection()) {
+        <qd-stem-details-panel
+          [inline]="false"
+          [view]="activeView()"
+          [emptySelection]="emptySelection()"
+          [selectionTitle]="panelState().summary?.stemText ?? ''"
+          [loading]="panelState().status === 'loading'"
+          [notFound]="panelState().status === 'notFound'"
+          (viewChange)="onPanelViewChange($event)"
+          (close)="onClearSelection()"
+        >
+          <ng-container *ngTemplateOutlet="stemsPanelContent" />
+        </qd-stem-details-panel>
+      }
+    }
+  }
+
+  <ng-template #stemsPanelContent>
+    @if (!emptySelection()) {
+      @if (activeView() === 'ayahs' && (panelState().summary || panelState().status === 'loading')) {
+        <qd-stem-ayah-type-filters
+          [items]="panelState().summary?.typeDistribution ?? []"
+          [selectedTypeCode]="panelState().ayahTypeCode"
+          [loading]="panelState().status === 'loading' && !panelState().summary"
+          (typeCodeChange)="onAyahTypeChange($event)"
+        />
+      }
+
+      @if (activeView() === 'words') {
+        <nav
+          class="stems-explorer__sub-tabs qd-explorer-subtabs"
+          role="tablist"
+          [attr.aria-label]="wordsTablistLabel"
+          data-testid="stems-word-view-tabs"
+        >
+          @for (option of wordViewOptions; track option) {
+            <button
+              type="button"
+              class="qd-btn qd-btn-secondary stems-explorer__sub-tab"
+              role="tab"
+              [attr.data-testid]="'stems-word-view-' + option"
+              [attr.aria-selected]="panelState().wordView === option"
+              [class.qd-is-selected]="panelState().wordView === option"
+              (click)="onWordViewChange(option)"
+            >
+              {{ wordViewLabels[option] }}
+            </button>
+          }
+        </nav>
+      } @else if (activeView() === 'surahs') {
+        <nav
+          class="stems-explorer__sub-tabs qd-explorer-subtabs"
+          role="tablist"
+          [attr.aria-label]="surahsTablistLabel"
+          data-testid="stems-surah-view-tabs"
+        >
+          @for (option of surahViewOptions; track option) {
+            <button
+              type="button"
+              class="qd-btn qd-btn-secondary stems-explorer__sub-tab"
+              role="tab"
+              [attr.data-testid]="'stems-surah-view-' + option"
+              [attr.aria-selected]="panelState().surahView === option"
+              [class.qd-is-selected]="panelState().surahView === option"
+              (click)="onSurahViewChange(option)"
+            >
+              {{ surahViewLabels[option] }}
+            </button>
+          }
+        </nav>
+      } @else if (activeView() === 'lemmas' && panelState().status !== 'error' && panelState().status !== 'notFound') {
+        <qd-stem-lemmas-list
+          [loading]="panelState().status === 'loading'"
+          [lemmas]="panelState().lemmas?.lemmas ?? []"
+          data-testid="stems-lemmas-view"
+        />
+      }
+
+      @switch (panelState().status) {
+        @case ('loading') {
+          @if (activeView() === 'words') {
+            <qd-stem-words-list
+              [loading]="true"
+              [page]="emptyWordsPage"
+              [wordView]="panelState().wordView"
+              [currentPage]="panelState().detailPage"
+              data-testid="stems-words-view"
+              (pageChange)="onDetailPageChange($event)"
+            />
+          } @else if (activeView() === 'ayahs') {
+            <qd-ayah-matches-list
+              [loading]="true"
+              [page]="emptyAyahsPage"
+              [currentPage]="panelState().detailPage"
+              data-testid="stems-ayahs-view"
+            />
+          } @else if (activeView() === 'surahs' && panelState().surahView === 'mentioned') {
+            <qd-surah-occurrences-list
+              [loading]="true"
+              [surahs]="[]"
+              data-testid="stems-mentioned-surahs-view"
+            />
+          } @else if (activeView() === 'surahs' && panelState().surahView === 'missing') {
+            <qd-missing-surahs-list
+              [loading]="true"
+              [surahs]="[]"
+              data-testid="stems-missing-surahs-view"
+            />
+          } @else {
+            <p class="qd-sr-only" role="status" aria-live="polite" data-testid="stems-panel-loading">
+              {{ panelLoadingLabel }}
+            </p>
+          }
+        }
+        @case ('error') {
+          <div class="qd-error-state" role="alert" data-testid="stems-panel-error">
+            {{ panelState().errorMessage }}
+          </div>
+        }
+        @case ('empty') {
+          @if (activeView() !== 'lemmas') {
+            <div class="qd-empty-state" data-testid="stems-panel-empty">{{ emptyViewLabel }}</div>
+          }
+        }
+        @case ('success') {
+          @if (activeView() === 'words' && panelState().words; as wordsPage) {
+            <qd-stem-words-list
+              [page]="wordsPage"
+              [wordView]="panelState().wordView"
+              [currentPage]="panelState().detailPage"
+              data-testid="stems-words-view"
+              (pageChange)="onDetailPageChange($event)"
+            />
+          } @else if (activeView() === 'ayahs' && panelState().ayahs) {
+            <qd-ayah-matches-list
+              [page]="ayahsPageForView()"
+              [currentPage]="panelState().detailPage"
+              data-testid="stems-ayahs-view"
+              (pageChange)="onDetailPageChange($event)"
+            />
+          } @else if (activeView() === 'surahs' && panelState().surahView === 'mentioned' && panelState().mentionedSurahs; as surahs) {
+            <qd-surah-occurrences-list
+              [surahs]="surahs.surahs"
+              data-testid="stems-mentioned-surahs-view"
+            />
+          } @else if (activeView() === 'surahs' && panelState().surahView === 'missing' && panelState().missingSurahs; as missing) {
+            <qd-missing-surahs-list
+              [surahs]="missing.surahs"
+              data-testid="stems-missing-surahs-view"
+            />
+          }
+        }
+      }
+    }
+  </ng-template>
+</div>

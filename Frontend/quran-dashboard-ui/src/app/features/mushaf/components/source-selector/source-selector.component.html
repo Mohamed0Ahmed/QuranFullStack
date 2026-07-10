@@ -1,0 +1,115 @@
+<div class="source-selector" data-testid="source-selector">
+  <div class="source-selector__header">
+    <span class="source-selector__label">{{ label() }}</span>
+  </div>
+
+  @if (showPicker()) {
+    <div class="source-selector__picker">
+      <button
+        type="button"
+        class="source-selector__trigger"
+        data-testid="source-selector-trigger"
+        [attr.aria-label]="label()"
+        [attr.aria-expanded]="panelOpen()"
+        aria-haspopup="listbox"
+        (click)="togglePanel()"
+      >
+        <span
+          class="source-selector__trigger-text"
+          [class.source-selector__trigger-text--placeholder]="!resolvedSelectedLabel()"
+          data-testid="source-selector-trigger-label"
+        >
+          {{ resolvedSelectedLabel() ?? triggerPlaceholder() }}
+        </span>
+        <span class="source-selector__trigger-chevron" aria-hidden="true">▾</span>
+      </button>
+
+      @if (panelOpen()) {
+        <div
+          class="source-selector__panel"
+          data-testid="source-selector-panel"
+          role="listbox"
+          [attr.aria-label]="label()"
+        >
+          @if (pickerMode() === 'languageFirst' && panelView() === 'languages') {
+            <div class="source-selector__search">
+              <input
+                type="search"
+                class="qd-input source-selector__search-input"
+                placeholder="ابحث عن لغة…"
+                data-testid="source-selector-language-search"
+                [value]="searchQuery()"
+                (input)="onSearchInput($event)"
+              />
+            </div>
+
+            <ul class="source-selector__list" role="presentation">
+              @for (group of filteredLanguageGroups(); track group.languageCode) {
+                <li role="presentation">
+                  <button
+                    type="button"
+                    class="source-selector__row"
+                    role="option"
+                    data-testid="source-selector-language-row"
+                    (click)="selectLanguage(group)"
+                  >
+                    <span class="source-selector__row-label">{{ group.languageNameAr }}</span>
+                    <span class="source-selector__row-meta">({{ group.options.length }})</span>
+                  </button>
+                </li>
+              } @empty {
+                <li class="source-selector__empty" role="status">لا توجد لغات مطابقة.</li>
+              }
+            </ul>
+          } @else {
+            @if (pickerMode() === 'languageFirst' && activeLanguage(); as language) {
+              <button
+                type="button"
+                class="source-selector__back"
+                data-testid="source-selector-back"
+                (click)="backToLanguages()"
+              >
+                <span aria-hidden="true">←</span>
+                <span>اللغات</span>
+                <span class="source-selector__back-language">{{ language.languageNameAr }}</span>
+              </button>
+            }
+
+            <div class="source-selector__search">
+              <input
+                type="search"
+                class="qd-input source-selector__search-input"
+                placeholder="ابحث عن مصدر…"
+                data-testid="source-selector-source-search"
+                [value]="searchQuery()"
+                (input)="onSearchInput($event)"
+              />
+            </div>
+
+            <ul class="source-selector__list" role="presentation">
+              @for (option of filteredSourceOptions(); track option.key) {
+                <li role="presentation">
+                  <button
+                    type="button"
+                    class="source-selector__row"
+                    role="option"
+                    data-testid="source-selector-source-row"
+                    [class.source-selector__row--active]="option.key === selectedKey()"
+                    [attr.aria-selected]="option.key === selectedKey()"
+                    (click)="selectSource(option.key)"
+                  >
+                    <span class="source-selector__row-label">{{ option.label }}</span>
+                  </button>
+                </li>
+              } @empty {
+                <li class="source-selector__empty" role="status">لا توجد مصادر مطابقة.</li>
+              }
+            </ul>
+          }
+        </div>
+      }
+    </div>
+  } @else if (options().length === 1) {
+    <span class="source-selector__single" data-testid="source-single-option">{{ options()[0].label }}</span>
+  }
+</div>

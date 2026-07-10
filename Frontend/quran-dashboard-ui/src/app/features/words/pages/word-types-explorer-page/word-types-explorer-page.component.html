@@ -1,0 +1,133 @@
+<div class="qd-page">
+  <div class="qd-container qd-explorer-frame word-types-page">
+    <div class="uw-intro-band">
+      <div class="qd-page-header">
+        <h1 class="qd-page-title">{{ pageTitle }}</h1>
+      </div>
+    </div>
+
+    <div class="uw-toolbar-recess uw-toolbar-recess--stacked">
+      <div class="word-types-page__filter">
+        <qd-word-type-filter
+          [tree]="listState().tree"
+          [selectedType]="listState().query.type"
+          [selectedChildCode]="listState().query.childCode"
+          [selectedCase]="listState().query.case"
+          [selectedTense]="listState().query.tense"
+          [selectedVoice]="listState().query.voice"
+          [loading]="listState().status === 'loading'"
+          (typeSelected)="selectType($event)"
+          (childSelected)="selectChild($event)"
+          (caseSelected)="selectCase($event)"
+          (tenseSelected)="selectTense($event)"
+          (voiceSelected)="selectVoice($event)"
+        />
+      </div>
+
+      <div class="word-types-page__toolbar">
+        <label class="word-types-page__sort">
+          <span>{{ sortLabel }}</span>
+          <select class="qd-select" [value]="listState().query.sort" (change)="changeSort($event)">
+            @for (option of sortOptions; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
+        </label>
+      </div>
+    </div>
+
+    @if (listState().status === 'error') {
+      <div class="qd-error-state">{{ listState().errorMessage || errorLabel }}</div>
+    } @else if (listState().status === 'selectPrompt' && !listState().rows) {
+      <div class="qd-empty-state" data-testid="word-types-select-subtype">{{ selectSubtypeLabel }}</div>
+    } @else if (listState().status === 'empty') {
+      <div class="qd-empty-state">{{ emptyLabel }}</div>
+    }
+  </div>
+
+  <div class="word-types-page__layout qd-explorer-layout">
+    <main
+      class="word-types-page__main qd-explorer-layout__table"
+      [attr.aria-busy]="listState().status === 'loading' ? true : null"
+    >
+      @if (listState().rows || listState().status === 'loading') {
+        <qd-word-types-table
+          [rows]="listState().rows"
+          [loading]="listState().status === 'loading'"
+          [selectedRow]="selectedRow()"
+          (rowSelected)="selectRow($event)"
+          (countOpened)="onCountOpened($event)"
+        />
+
+        @if (listState().rows; as page) {
+          <qd-pagination
+            [currentPage]="page.page"
+            [pageSize]="page.pageSize"
+            [totalCount]="page.totalCount"
+            [disabled]="listState().status === 'loading'"
+            [ariaLabel]="tableLabel"
+            (pageChange)="changePage($event)"
+          />
+        }
+      }
+    </main>
+
+    <qd-word-type-details-panel
+      class="word-types-page__panel qd-explorer-layout__panel"
+      [inline]="isDesktop()"
+      [view]="panelState().view"
+      [emptySelection]="emptySelection()"
+      [selectionTitle]="selectionTitle()"
+      [loading]="panelState().status === 'loading'"
+      [notFound]="panelState().status === 'notFound'"
+      (viewChange)="onPanelViewChange($event)"
+      (close)="clearSelection()"
+    >
+      @if (panelState().summary) {
+        <div class="word-types-details__scroll">
+          @switch (panelState().status) {
+            @case ('loading') {
+              @if (panelState().view === 'ayahs') {
+                <qd-ayah-matches-list
+                  [page]="emptyAyahsPage"
+                  [currentPage]="panelState().detailPage"
+                  [loading]="true"
+                />
+              } @else if (panelState().view === 'surahs') {
+                <qd-surah-occurrences-list [surahs]="[]" [loading]="true" />
+                <qd-missing-surahs-list [surahs]="[]" [loading]="true" />
+              }
+            }
+            @case ('error') {
+              <div class="qd-error-state">{{ panelState().errorMessage || errorLabel }}</div>
+            }
+            @case ('empty') {
+              <div class="qd-empty-state">{{ emptyLabel }}</div>
+            }
+            @default {
+              @if (panelState().view === 'ayahs' && panelState().ayahs; as ayahsPage) {
+                <qd-ayah-matches-list
+                  [page]="ayahsPageForView()"
+                  [currentPage]="panelState().detailPage"
+                  [loading]="false"
+                  (pageChange)="onDetailPageChange($event)"
+                />
+              }
+
+              @if (panelState().view === 'surahs' && panelState().surahs) {
+                <qd-surah-occurrences-list
+                  [surahs]="mentionedSurahs()"
+                  [loading]="false"
+                />
+                <qd-missing-surahs-list
+                  [surahs]="missingSurahs()"
+                  [loading]="false"
+                />
+              }
+            }
+          }
+        </div>
+      }
+    </qd-word-type-details-panel>
+  </div>
+</div>

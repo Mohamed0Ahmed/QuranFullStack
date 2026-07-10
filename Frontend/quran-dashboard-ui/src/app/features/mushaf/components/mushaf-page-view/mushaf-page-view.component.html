@@ -1,0 +1,80 @@
+<div class="mushaf-page-view qd-scroll-stable" data-testid="mushaf-page-view">
+  <div class="mushaf-page-view__text-column">
+    @if (displaySurahs().length) {
+      <div class="mushaf-page-view__chrome-top">
+        <div class="mushaf-page-view__surah-labels" dir="rtl">
+          <span
+            class="mushaf-page-view__surah-icon-glyph"
+            aria-hidden="true"
+            data-testid="mushaf-page-surah-icon-glyph"
+          >
+            {{ surahIconLigature() }}
+          </span>
+          @for (surah of displaySurahs(); track surah.surahNumber; let last = $last) {
+            <span
+              class="mushaf-page-view__surah-glyph"
+              aria-hidden="true"
+              data-testid="mushaf-page-surah-glyph"
+            >
+              {{ surahLigature(surah.surahNumber) }}
+            </span>
+            @if (!last) {
+              <span class="mushaf-page-view__surah-sep" aria-hidden="true">،</span>
+            }
+          }
+          <span class="qd-sr-only">سورة {{ displaySurahNamesArabic() }}</span>
+        </div>
+        @if (displayJuz(); as juz) {
+          <span
+            class="mushaf-page-view__juz-glyph"
+            aria-hidden="true"
+            data-testid="mushaf-page-juz-glyph"
+          >
+            {{ juzNumberLigature(juz) }}
+          </span>
+          <span class="qd-sr-only">جزء {{ juz }}</span>
+        }
+      </div>
+    }
+
+    @for (lineView of displayLines(); track lineView.line.lineNumber) {
+      <qd-mushaf-line
+        [line]="lineView.line"
+        [markers]="page().markers"
+        [surahNameArabic]="lineView.surahNameArabic"
+        [highlightedVerseKey]="highlightedVerseKey()"
+        [selectedWordLocation]="selectedWordLocation()"
+        (ayahSelect)="ayahSelect.emit($event)"
+        (wordSelect)="wordSelect.emit($event)"
+      />
+    }
+
+    <div class="mushaf-page-view__chrome-bottom">
+      @if (isPageEditing()) {
+        <input
+          #pageJumpInput
+          class="mushaf-page-view__page-input"
+          type="text"
+          inputmode="numeric"
+          pattern="[0-9]*"
+          [value]="pageDraft()"
+          (input)="onPageDraftInput($event)"
+          (keydown)="onPageInputKeydown($event)"
+          (blur)="onPageInputBlur()"
+          data-testid="mushaf-page-jump-input"
+          aria-label="انتقل إلى صفحة"
+        />
+      } @else {
+        <button
+          type="button"
+          class="mushaf-page-view__page-trigger"
+          (click)="startPageEdit()"
+          data-testid="mushaf-page-jump-trigger"
+          [attr.aria-label]="'انتقل إلى صفحة، الصفحة الحالية ' + page().pageNumber"
+        >
+          {{ page().pageNumber }}
+        </button>
+      }
+    </div>
+  </div>
+</div>

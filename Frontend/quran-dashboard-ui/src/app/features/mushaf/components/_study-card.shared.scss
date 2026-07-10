@@ -1,0 +1,27 @@
+.study-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qd-space-3);
+  min-height: 0;
+
+  &.qd-card {
+    background: var(--qd-section-bg);
+  }
+
+  &__coverage {
+    margin: 0;
+    padding: var(--qd-space-2) var(--qd-space-3);
+    border-radius: var(--qd-radius-sm);
+    background: var(--qd-section-bg);
+    color: var(--qd-text-muted);
+    font-size: 0.8125rem;
+    line-height: 1.5;
+  }
+
+  &__body {
+    overflow: visible;
+    font-size: 0.9375rem;
+    line-height: 1.8;
+    color: var(--qd-text);
+  }
+}

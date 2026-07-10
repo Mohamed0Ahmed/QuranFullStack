@@ -1,0 +1,52 @@
+<section class="stem-ayah-type-filters" data-testid="stem-ayah-type-filters" [attr.aria-label]="sectionLabel">
+  @if (loading()) {
+    <p class="qd-sr-only" role="status" aria-live="polite">{{ loadingLabel }}</p>
+  }
+
+  <div
+    class="stem-ayah-type-filters__grid"
+    [class.stem-ayah-type-filters__grid--loading]="loading()"
+    role="group"
+    [attr.aria-busy]="loading() ? true : null"
+  >
+    @if (loading()) {
+      @for (_ of loadingChipPlaceholders; track $index) {
+        <div
+          class="stem-ayah-type-filters__chip stem-ayah-type-filters__chip--loading"
+          aria-hidden="true"
+          data-testid="stem-ayah-type-filter-loading-chip"
+        >
+          <span class="qd-skeleton qd-skeleton--text stem-ayah-type-filters__loading-label"></span>
+          <span class="qd-skeleton qd-skeleton--text stem-ayah-type-filters__loading-count"></span>
+        </div>
+      }
+    } @else {
+      @if (items().length > 1) {
+        <button
+          type="button"
+          class="qd-btn qd-btn-secondary stem-ayah-type-filters__chip"
+          [class.qd-is-selected]="isAllSelected()"
+          [attr.aria-pressed]="isAllSelected()"
+          data-testid="stem-ayah-type-filter-all"
+          (click)="selectTypeCode(null)"
+        >
+          <span class="stem-ayah-type-filters__label">{{ allFilterLabel() }}</span>
+        </button>
+      }
+
+      @for (item of items(); track item.code) {
+        <button
+          type="button"
+          class="qd-btn qd-btn-secondary stem-ayah-type-filters__chip"
+          [class.qd-is-selected]="isSelected(item.code)"
+          [attr.aria-pressed]="isSelected(item.code)"
+          [attr.data-testid]="'stem-ayah-type-filter-' + item.code"
+          (click)="selectTypeCode(item.code)"
+        >
+          <span class="stem-ayah-type-filters__label">{{ item.arabicLabel }}</span>
+          <span class="stem-ayah-type-filters__count">{{ item.occurrencesCount }} مرة</span>
+        </button>
+      }
+    }
+  </div>
+</section>

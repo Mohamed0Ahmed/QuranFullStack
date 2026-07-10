@@ -1,0 +1,195 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+
+  &.qd-selected-ayah-section--embedded {
+    flex: 1;
+    min-height: 0;
+  }
+}
+
+.selected-ayah-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qd-space-3);
+
+  min-height: 18rem;
+  height: 100%;
+  padding: var(--qd-space-3);
+  background: var(--qd-surface);
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-md);
+  box-shadow: var(--qd-shadow-sm);
+
+  :host.qd-selected-ayah-section--embedded & {
+    flex: 1;
+    min-height: 0;
+    height: auto;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  &__source {
+    flex-shrink: 0;
+    min-height: 2.5rem;
+  }
+
+  &__source-loading {
+    display: flex;
+    flex-direction: column;
+    gap: var(--qd-space-2);
+  }
+
+  &__source-loading-label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--qd-text-muted);
+  }
+
+  &__source-skeleton {
+    display: block;
+
+    width: 100%;
+    height: 2.75rem;
+  }
+
+  &__tabs {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: calc(var(--qd-space-1) * 1.1);
+    padding: calc(var(--qd-space-1) * 1.1);
+    border: 1px solid var(--qd-border);
+    border-radius: var(--qd-radius-md);
+    background: var(--qd-section-bg);
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  &__tab {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: calc(var(--qd-space-1) * 0.75);
+    min-width: 0;
+    width: 100%;
+    padding: calc(var(--qd-space-1) * 1.2) calc(var(--qd-space-1) * 0.9);
+    border: 1px solid transparent;
+    border-radius: var(--qd-radius-sm);
+    background: transparent;
+    color: var(--qd-text-muted);
+    font-size: 0.8125rem;
+    line-height: 1.35;
+    cursor: pointer;
+    white-space: nowrap;
+
+    &--active {
+      background: var(--qd-accent-tint);
+      border-color: var(--qd-accent);
+      color: var(--qd-accent-text);
+      font-weight: 600;
+    }
+
+    &:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+  }
+
+  &__tab-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__ayah {
+    margin: 0;
+    padding: var(--qd-space-3) var(--qd-space-4);
+    border-radius: var(--qd-radius-sm);
+    background: var(--qd-surface-recessed);
+    font-family: var(--qd-font-quran);
+    font-size: 1.125rem;
+    line-height: 2.15;
+    color: var(--qd-text);
+    text-align: center;
+    letter-spacing: 0.012em;
+
+    &--navigable {
+      display: block;
+      width: 100%;
+      margin-block-end: var(--qd-space-3);
+      border: 1px solid color-mix(in oklch, var(--qd-accent) 60%, var(--qd-border));
+      border-radius: var(--qd-radius-md);
+      background: var(--qd-accent-tint);
+      box-shadow:
+        var(--qd-shadow-sm),
+        inset 0 0 0 1px color-mix(in oklch, var(--qd-accent) 12%, transparent);
+      cursor: pointer;
+      &:hover {
+        color: var(--qd-accent);
+        border-color: color-mix(in oklch, var(--qd-accent) 75%, var(--qd-border));
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--qd-accent);
+        outline-offset: 2px;
+      }
+    }
+
+    &--skeleton {
+
+      min-height: 3.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+
+  &__ayah-skeleton {
+    width: 70%;
+    height: 1.5rem;
+    border-radius: var(--qd-radius-md);
+  }
+
+  &__content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--qd-space-5);
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    padding: calc(var(--qd-space-3) + var(--qd-space-1));
+    border-radius: var(--qd-radius-md);
+    background: var(--qd-surface-recessed);
+
+    ::ng-deep .study-card__body {
+      font-size: 1.0125rem;
+      line-height: 1.95;
+    }
+
+    &--loading {
+      min-height: 10rem;
+    }
+
+    &--flow {
+      overflow: visible;
+      min-height: auto;
+    }
+
+    :host.qd-selected-ayah-section--embedded .selected-ayah-section & {
+      flex: 1;
+      min-height: 0;
+      margin-block-end: var(--qd-space-2);
+      overflow: auto;
+
+      &--flow {
+        overflow: visible;
+        min-height: auto;
+      }
+    }
+  }
+}

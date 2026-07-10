@@ -1,0 +1,97 @@
+<ng-template #panelChrome>
+  <header class="explorer-panel-header root-details-panel__header">
+    <h2 class="explorer-panel-header__label" data-testid="root-details-panel-label">{{ rootsPanelLabel }}</h2>
+    <span class="explorer-panel-header__entity" data-testid="root-details-panel-entity">{{ selectionTitle() }}</span>
+    <div class="explorer-panel-header__end">
+      @if (hasSelection()) {
+        <button
+          type="button"
+          class="qd-btn qd-btn-ghost root-details-panel__close"
+          data-testid="root-details-panel-close"
+          (click)="close.emit()"
+        >
+          {{ closeLabel }}
+        </button>
+      }
+    </div>
+  </header>
+
+  <div
+    class="explorer-detail-panel__toolbar explorer-detail-panel__toolbar--grid-5 root-details-panel__tabs"
+    role="tablist"
+    [attr.aria-label]="rootsPanelLabel"
+    #tabList
+  >
+    @for (tab of tabs; track tab.key) {
+      <button
+        type="button"
+        class="qd-btn qd-btn-secondary root-details-panel__tab"
+        role="tab"
+        [id]="tabDomId(tab.key)"
+        [attr.data-root-tab]="tab.key"
+        [attr.data-testid]="'root-details-tab-' + tab.key"
+        [attr.aria-controls]="surfaceDomId"
+        [attr.aria-selected]="isActive(tab.key) && hasSelection()"
+        [attr.aria-label]="tab.aria"
+        [attr.tabindex]="isActive(tab.key) && hasSelection() ? 0 : -1"
+        [class.qd-is-selected]="isActive(tab.key) && hasSelection()"
+        [disabled]="emptySelection()"
+        (click)="selectView(tab.key)"
+        (keydown)="onTabKeydown($event, tab.key)"
+      >
+        {{ tab.label }}
+      </button>
+    }
+  </div>
+
+  <div
+    class="explorer-detail-panel__body root-details-panel__surface"
+    role="tabpanel"
+    [id]="surfaceDomId"
+    [attr.aria-labelledby]="tabDomId(view())"
+    [attr.aria-busy]="loading() ? true : null"
+    tabindex="0"
+    data-testid="root-details-panel-surface"
+  >
+    @if (emptySelection()) {
+      <div class="qd-empty-state" data-testid="root-details-empty-selection">
+        {{ emptySelectionLabel }}
+      </div>
+    } @else {
+      <ng-content />
+    }
+  </div>
+</ng-template>
+
+@if (inline()) {
+  <section
+    class="qd-card explorer-detail-panel root-details-panel"
+    [attr.aria-label]="rootsPanelLabel"
+    (keydown.escape)="onEscape()"
+  >
+    <ng-container *ngTemplateOutlet="panelChrome" />
+  </section>
+} @else if (hasSelection()) {
+  <div
+    class="qd-modal-backdrop"
+    role="presentation"
+    data-testid="root-details-panel-backdrop"
+    qdModalScrollLock
+    (click)="onBackdropClick($event)"
+  >
+    <div
+      class="qd-modal explorer-detail-modal root-details-modal"
+      #panelRoot
+      role="dialog"
+      aria-modal="true"
+      cdkTrapFocus
+      cdkTrapFocusAutoCapture
+      [attr.aria-label]="rootsPanelLabel"
+      data-testid="root-details-modal"
+      (click)="$event.stopPropagation()"
+      (keydown.escape)="onEscape()"
+    >
+      <ng-container *ngTemplateOutlet="panelChrome" />
+    </div>
+  </div>
+}

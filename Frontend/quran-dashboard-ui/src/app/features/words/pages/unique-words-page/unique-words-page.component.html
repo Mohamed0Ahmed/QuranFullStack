@@ -1,0 +1,100 @@
+<div class="qd-page">
+  <div class="qd-container qd-explorer-frame unique-words-page-frame">
+    <div class="uw-intro-band">
+      <div class="qd-page-header">
+        <h1 class="qd-page-title" data-testid="unique-words-page-title">{{ pageTitle }}</h1>
+        <p class="qd-text-muted" data-testid="unique-words-page-mode">{{ modeLabel() }}</p>
+      </div>
+    </div>
+
+    <div class="uw-toolbar-recess uw-toolbar-recess--stacked">
+      <qd-unique-words-tabs [activeMode]="listState().mode" />
+
+      <qd-unique-words-search-bar
+        [search]="searchDraft()"
+        [sort]="listState().sort"
+        (searchChange)="onSearchChange($event)"
+        (sortChange)="onSortChange($event)"
+      />
+    </div>
+
+    @switch (listState().status) {
+      @case ('error') {
+        <div class="qd-error-state" data-testid="unique-words-error">{{ listState().errorMessage }}</div>
+      }
+      @case ('empty') {
+        <div class="qd-empty-state" data-testid="unique-words-empty">{{ emptyLabel }}</div>
+      }
+    }
+
+    @if (drilldownState().status === 'notFound') {
+      <div
+        class="qd-empty-state unique-words-restored-not-found"
+        role="status"
+        data-testid="unique-words-restored-not-found"
+      >
+        {{ restoredNotFoundLabel }}
+      </div>
+    }
+
+    @if (drilldownState().status === 'error' && !drilldownState().isOpen) {
+      <div
+        class="qd-error-state unique-words-restored-error"
+        role="status"
+        data-testid="unique-words-restored-error"
+      >
+        {{ drilldownState().errorMessage }}
+      </div>
+    }
+  </div>
+
+  @switch (listState().status) {
+    @default {
+      <div class="unique-words-layout qd-explorer-layout">
+        <section class="unique-words-layout__table qd-explorer-layout__table">
+          <qd-unique-words-table
+            [rows]="listState().items"
+            [loading]="listState().status === 'loading'"
+            [selectedWordId]="selectedWordId()"
+            [currentPage]="listState().page"
+            [pageSize]="listState().pageSize"
+            [drilldownIsOpen]="drilldownIsOpen()"
+            [activeColumn]="activeColumn()"
+            (rowSelected)="onRowSelected($event)"
+            (drilldownOpen)="onDrilldownOpen($event)"
+          />
+          <qd-pagination
+            [currentPage]="listState().page"
+            [pageSize]="listState().pageSize"
+            [totalCount]="listState().totalCount"
+            [disabled]="listState().status === 'loading'"
+            [ariaLabel]="listPaginationLabel"
+            (pageChange)="onPaginationPageChange($event)"
+          />
+        </section>
+
+        @if (isDesktop()) {
+          <aside class="unique-words-layout__panel qd-explorer-layout__panel" [attr.aria-label]="panelSurfaceLabel">
+            <qd-word-drilldown-modal
+              [state]="drilldownState()"
+              [inline]="true"
+              (closeModal)="onDrilldownClose()"
+              (viewChange)="onDrilldownViewChange($event)"
+              (ayahPageChange)="onAyahPageChange($event)"
+            />
+          </aside>
+        }
+      </div>
+    }
+  }
+
+  @if (!isDesktop()) {
+    <qd-word-drilldown-modal
+      [state]="drilldownState()"
+      [inline]="false"
+      (closeModal)="onDrilldownClose()"
+      (viewChange)="onDrilldownViewChange($event)"
+      (ayahPageChange)="onAyahPageChange($event)"
+    />
+  }
+</div>

@@ -1,0 +1,102 @@
+<ng-template #panelChrome>
+  <header class="explorer-panel-header word-type-details-panel__header">
+    <h2 class="explorer-panel-header__label" data-testid="word-type-details-panel-label">{{ panelLabel }}</h2>
+    <span class="explorer-panel-header__entity" data-testid="word-type-details-panel-entity">{{ selectionTitle() }}</span>
+    <div class="explorer-panel-header__end">
+      @if (hasSelection()) {
+        <button
+          type="button"
+          class="qd-btn qd-btn-ghost word-type-details-panel__close"
+          data-testid="word-type-details-panel-close"
+          (click)="close.emit()"
+        >
+          {{ closeLabel }}
+        </button>
+      }
+    </div>
+  </header>
+
+  @if (!notFound()) {
+    <div
+      class="explorer-detail-panel__toolbar explorer-detail-panel__toolbar--grid-3 word-type-details-panel__tabs"
+      role="tablist"
+      [attr.aria-label]="panelLabel"
+      #tabList
+    >
+      @for (tab of tabs; track tab.key) {
+        <button
+          type="button"
+          class="qd-btn qd-btn-secondary word-type-details-panel__tab"
+          role="tab"
+          [id]="tabDomId(tab.key)"
+          [attr.data-word-type-tab]="tab.key"
+          [attr.data-testid]="'word-type-details-tab-' + tab.key"
+          [attr.aria-controls]="surfaceDomId"
+          [attr.aria-selected]="isActive(tab.key) && hasSelection()"
+          [attr.aria-label]="tab.aria"
+          [attr.tabindex]="isActive(tab.key) && hasSelection() ? 0 : -1"
+          [class.qd-is-selected]="isActive(tab.key) && hasSelection()"
+          [disabled]="emptySelection()"
+          (click)="selectView(tab.key)"
+          (keydown)="onTabKeydown($event, tab.key)"
+        >
+          {{ tab.label }}
+        </button>
+      }
+    </div>
+  }
+
+  <div
+    class="explorer-detail-panel__body word-type-details-panel__surface"
+    role="tabpanel"
+    [id]="surfaceDomId"
+    [attr.aria-labelledby]="tabDomId(view())"
+    [attr.aria-busy]="loading() ? true : null"
+    tabindex="0"
+    data-testid="word-type-details-panel-surface"
+  >
+    @if (emptySelection()) {
+      <div class="qd-empty-state" data-testid="word-type-details-empty-selection">
+        {{ emptySelectionLabel }}
+      </div>
+    } @else if (notFound()) {
+      <div class="qd-empty-state" role="status" data-testid="word-type-details-not-found">
+        {{ notFoundLabel }}
+      </div>
+    } @else {
+      <ng-content />
+    }
+  </div>
+</ng-template>
+
+@if (inline()) {
+  <section
+    class="qd-card explorer-detail-panel word-type-details-panel"
+    [attr.aria-label]="panelLabel"
+    (keydown.escape)="onEscape()"
+  >
+    <ng-container *ngTemplateOutlet="panelChrome" />
+  </section>
+} @else if (hasSelection()) {
+  <div
+    class="qd-modal-backdrop"
+    role="presentation"
+    data-testid="word-type-details-panel-backdrop"
+    qdModalScrollLock
+    (click)="onBackdropClick($event)"
+  >
+    <div
+      class="qd-modal explorer-detail-modal word-type-details-modal"
+      role="dialog"
+      aria-modal="true"
+      cdkTrapFocus
+      cdkTrapFocusAutoCapture
+      [attr.aria-label]="panelLabel"
+      data-testid="word-type-details-modal"
+      (click)="$event.stopPropagation()"
+      (keydown.escape)="onEscape()"
+    >
+      <ng-container *ngTemplateOutlet="panelChrome" />
+    </div>
+  </div>
+}

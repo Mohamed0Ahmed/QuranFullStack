@@ -1,0 +1,190 @@
+<section class="selected-ayah-section" aria-label="دراسة الآية المحددة" data-testid="selected-ayah-section" tabindex="0" (focus)="sectionFocus.emit()">
+  @if (!selectedVerseKey()) {
+    <div class="qd-empty-state" role="status">
+      <span>اختر آية من المصحف لعرض سياق الدراسة.</span>
+    </div>
+  } @else if (loadState().errorMessage) {
+    <div class="qd-error-state" role="alert" data-testid="ayah-study-error">
+      <span>{{ loadState().errorMessage }}</span>
+    </div>
+  } @else if (loadState().isEmpty || (!loadState().isLoading && !study())) {
+    <div class="qd-empty-state" role="status">
+      <span>تعذّر تحميل دراسة الآية.</span>
+    </div>
+  } @else {
+    @if (loadState().isLoading) {
+      <p class="qd-sr-only" role="status" aria-live="polite" data-testid="ayah-study-loading">
+        جارٍ تحميل دراسة الآية...
+      </p>
+    }
+
+    <nav class="selected-ayah-section__tabs" aria-label="تبويبات دراسة الآية">
+      <button
+        type="button"
+        class="selected-ayah-section__tab"
+        [class.selected-ayah-section__tab--active]="activeTab() === 'tafsir'"
+        [disabled]="loadState().isLoading"
+        (click)="tabChange.emit('tafsir')"
+      >
+        {{ tabLabels.tafsir.short }}
+      </button>
+      <button
+        type="button"
+        class="selected-ayah-section__tab"
+        [class.selected-ayah-section__tab--active]="activeTab() === 'translation'"
+        [disabled]="loadState().isLoading"
+        (click)="tabChange.emit('translation')"
+      >
+        {{ tabLabels.translation.short }}
+      </button>
+      <button
+        type="button"
+        class="selected-ayah-section__tab"
+        [class.selected-ayah-section__tab--active]="activeTab() === 'full-i3rab'"
+        [disabled]="loadState().isLoading"
+        (click)="tabChange.emit('full-i3rab')"
+      >
+        {{ tabLabels['full-i3rab'].short }}
+      </button>
+      <button
+        type="button"
+        class="selected-ayah-section__tab"
+        [class.selected-ayah-section__tab--active]="activeTab() === 'similar-ayahs'"
+        [disabled]="loadState().isLoading"
+        data-testid="ayah-tab-similar-ayahs"
+        (click)="tabChange.emit('similar-ayahs')"
+      >
+        <span class="selected-ayah-section__tab-label">{{ tabLabels['similar-ayahs'].short }}</span>
+        @if (tabCount('similar-ayahs') !== null) {
+          <span class="selected-ayah-section__tab-count" data-testid="similar-ayah-count">
+            {{ tabCount('similar-ayahs') }}
+          </span>
+        }
+      </button>
+      <button
+        type="button"
+        class="selected-ayah-section__tab"
+        [class.selected-ayah-section__tab--active]="activeTab() === 'mutashabihat'"
+        [disabled]="loadState().isLoading"
+        data-testid="ayah-tab-mutashabihat"
+        (click)="tabChange.emit('mutashabihat')"
+      >
+        <span class="selected-ayah-section__tab-label">{{ tabLabels.mutashabihat.short }}</span>
+        @if (tabCount('mutashabihat') !== null) {
+          <span class="selected-ayah-section__tab-count" data-testid="mutashabihat-group-count">
+            {{ tabCount('mutashabihat') }}
+          </span>
+        }
+      </button>
+    </nav>
+
+    @if (activeTab() === 'tafsir' || activeTab() === 'translation' || activeTab() === 'full-i3rab') {
+      <div class="selected-ayah-section__source">
+        @if (loadState().isLoading) {
+          <div class="selected-ayah-section__source-loading" aria-busy="true">
+            <span class="selected-ayah-section__source-loading-label">
+              @switch (activeTab()) {
+                @case ('tafsir') { مصدر التفسير }
+                @case ('translation') { مصدر الترجمة }
+                @case ('full-i3rab') { مصدر الإعراب }
+              }
+            </span>
+            <span
+              class="qd-skeleton qd-skeleton--rounded-md selected-ayah-section__source-skeleton"
+              aria-hidden="true"
+            ></span>
+          </div>
+        } @else {
+          @switch (activeTab()) {
+            @case ('tafsir') {
+              <qd-source-selector
+                label="مصدر التفسير"
+                pickerMode="languageFirst"
+                [selectedKey]="study()!.selectedSources.tafsirSource"
+                [options]="tafsirOptions()"
+                (sourceChange)="tafsirSourceChange.emit($event)"
+              />
+            }
+            @case ('translation') {
+              <qd-source-selector
+                label="مصدر الترجمة"
+                pickerMode="languageFirst"
+                [selectedKey]="study()!.selectedSources.translationSource"
+                [options]="translationOptions()"
+                (sourceChange)="translationSourceChange.emit($event)"
+              />
+            }
+            @case ('full-i3rab') {
+              <qd-source-selector
+                label="مصدر الإعراب"
+                pickerMode="flat"
+                [selectedKey]="study()!.selectedSources.fullI3rabSource"
+                [options]="fullI3rabOptions()"
+                (sourceChange)="fullI3rabSourceChange.emit($event)"
+              />
+            }
+          }
+        }
+      </div>
+    }
+
+    <div
+      class="selected-ayah-section__content"
+      [class.selected-ayah-section__content--loading]="loadState().isLoading"
+      [class.selected-ayah-section__content--flow]="activeTab() === 'mutashabihat'"
+    >
+      @if (loadState().isLoading) {
+        <p class="selected-ayah-section__ayah selected-ayah-section__ayah--skeleton" dir="rtl" aria-hidden="true">
+          <span class="qd-skeleton qd-skeleton--rounded-md selected-ayah-section__ayah-skeleton"></span>
+        </p>
+        <div class="qd-skeleton-group selected-ayah-section__content-skeleton" data-testid="ayah-content-skeleton" aria-busy="true">
+          <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-50"></span>
+          <span class="qd-skeleton qd-skeleton--text"></span>
+          <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-90"></span>
+          <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-75"></span>
+          <span class="qd-skeleton qd-skeleton--text"></span>
+          <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-50"></span>
+        </div>
+      } @else {
+        @if (displayAyahText()) {
+          <button
+            type="button"
+            class="selected-ayah-section__ayah selected-ayah-section__ayah--navigable"
+            dir="rtl"
+            data-testid="selected-ayah-section-ayah"
+            [attr.aria-label]="selectedAyahNavigateLabel()"
+            (click)="onSelectedAyahNavigate()"
+          >
+            {{ displayAyahText() }}
+          </button>
+        }
+
+        @switch (activeTab()) {
+          @case ('tafsir') {
+            <qd-tafsir-card [entry]="study()!.tafsir" />
+          }
+          @case ('translation') {
+            <qd-translation-card [entry]="study()!.translation" />
+          }
+          @case ('full-i3rab') {
+            <qd-full-i3rab-card [entry]="study()!.fullI3rab" />
+          }
+          @case ('similar-ayahs') {
+            <qd-similar-ayahs-card
+              [similarAyahs]="similarAyahs()"
+              [loadState]="similarAyahsLoadState()"
+              (ayahNavigate)="ayahNavigate.emit($event)"
+            />
+          }
+          @case ('mutashabihat') {
+            <qd-mutashabihat-groups-card
+              [mutashabihat]="mutashabihat()"
+              [loadState]="mutashabihatLoadState()"
+              (ayahNavigate)="ayahNavigate.emit($event)"
+            />
+          }
+        }
+      }
+    </div>
+  }
+</section>

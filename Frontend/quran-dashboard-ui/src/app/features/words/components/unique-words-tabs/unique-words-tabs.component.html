@@ -1,0 +1,14 @@
+<nav class="unique-words-tabs" role="tablist" [attr.aria-label]="tabsLabel">
+  @for (tab of tabs; track tab.key) {
+    <a
+      class="qd-interactive-surface unique-words-tabs__tab"
+      role="tab"
+      [attr.aria-selected]="activeMode() === tab.key"
+      [routerLink]="tab.route"
+      routerLinkActive="qd-is-selected"
+      [attr.data-testid]="'unique-words-tab--' + tab.key"
+    >
+      {{ tab.labelAr }}
+    </a>
+  }
+</nav>
