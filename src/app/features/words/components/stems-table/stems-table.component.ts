@@ -44,7 +44,7 @@ export interface StemCountOpenedEvent {
   standalone: true,
   imports: [NgTemplateOutlet, ScrollingModule, WordCountChipComponent],
   templateUrl: './stems-table.component.html',
-  styleUrls: ['./stems-table.component.scss', './stems-table.component.mobile.scss'],
+  styleUrls: ['./stems-table.component.scss', './stems-table.component.responsive.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StemsTableComponent {

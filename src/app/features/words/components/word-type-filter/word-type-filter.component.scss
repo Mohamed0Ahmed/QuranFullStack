@@ -24,13 +24,12 @@
   background: var(--qd-surface);
   box-shadow: var(--qd-shadow-sm);
   transition: border-color var(--qd-t-fast), box-shadow var(--qd-t-fast),
-    background-color var(--qd-t-fast), transform var(--qd-t-fast);
+    background-color var(--qd-t-fast);
 }
 
 .word-type-filter__trigger:hover:not(.word-type-filter__trigger--disabled) {
   border-color: var(--qd-border-strong);
   box-shadow: var(--qd-shadow);
-  transform: translateY(-2px);
 }
 
 .word-type-filter__trigger.qd-is-selected {
@@ -311,9 +310,5 @@
   .word-type-filter__child-button,
   .word-type-filter__secondary-field select {
     transition: none;
-  }
-
-  .word-type-filter__trigger:hover:not(.word-type-filter__trigger--disabled) {
-    transform: none;
   }
 }

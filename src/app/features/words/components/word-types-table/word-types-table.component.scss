@@ -6,74 +6,31 @@
 
 .word-types-table {
   --word-types-table-scrollbar-gutter: 0px;
+  --qd-explorer-table-scrollbar-gutter: var(--word-types-table-scrollbar-gutter);
   min-inline-size: 0;
-  border: 1px solid var(--qd-border);
-  border-radius: var(--qd-radius-lg);
-  background: var(--qd-surface);
-  overflow: hidden;
-  padding: 0;
-  box-shadow: var(--qd-shadow-sm);
-}
-
-.word-types-table__header {
-  display: flex;
-  align-items: stretch;
-  min-block-size: var(--wt-table-header-height, 2.75rem);
-  overflow: hidden;
-  background: var(--qd-explorer-table-header-bg);
-  border-block-end: 1px solid var(--qd-border);
 }
 
 .word-types-table__header-row,
 .word-types-table__row {
-  display: grid;
   grid-template-columns:
     minmax(0, 1.65fr)
     minmax(0, 1.15fr)
     repeat(3, minmax(0, 1fr))
     repeat(3, minmax(3.5rem, 0.72fr));
-  gap: var(--qd-space-2);
-  align-items: center;
   box-sizing: border-box;
 }
 
-.word-types-table__header {
-  flex-shrink: 0;
-}
-
 .word-types-table__header-row {
-  flex: 1 1 auto;
-  min-inline-size: 0;
   block-size: 100%;
-  padding-inline: 1rem;
-  color: var(--qd-explorer-table-header-fg);
-  font-size: 0.85rem;
-  font-weight: 600;
-}
-
-.word-types-table__header-gutter {
-  flex: 0 0 var(--word-types-table-scrollbar-gutter);
-  inline-size: var(--word-types-table-scrollbar-gutter);
-  flex-shrink: 0;
 }
 
 .word-types-table__body {
-  block-size: var(--wt-table-body-height, min(70vh, 40rem));
-  overflow-y: auto;
   overflow-x: hidden;
-  scrollbar-gutter: stable;
-  background: var(--qd-surface);
   transition: opacity var(--qd-t-fast);
 }
 
 .word-types-table__body--loading {
   overflow: hidden auto;
-}
-
-.word-types-table__header-cell,
-.word-types-table__cell {
-  min-inline-size: 0;
-  overflow: hidden;
 }
 
 .word-types-table__header-cell {
@@ -108,38 +65,14 @@
 }
 
 .word-types-table__row {
-  position: relative;
   inline-size: 100%;
   min-inline-size: 0;
   border: 0;
-  border-block-end: 1px solid var(--qd-border);
   background: transparent;
   color: var(--qd-text);
-  padding: 0.8rem 1rem;
+  padding: 0;
   text-align: start;
   cursor: pointer;
-}
-
-// Hover is background-only, matching the sibling explorer tables. Skeleton rows are excluded here
-// rather than overridden below: a `--loading:hover` override loses on specificity to this selector.
-.word-types-table__row:hover:not(.qd-is-selected, .word-types-table__row--loading) {
-  background: var(--qd-section-bg);
-}
-
-.word-types-table__row.qd-is-selected {
-  background: var(--qd-accent-tint);
-  box-shadow: inset 0 0 0 1px var(--qd-accent);
-  font-weight: 600;
-}
-
-.word-types-table__row.qd-is-selected::before {
-  content: '';
-  position: absolute;
-  inset-block: 0.45rem;
-  inset-inline-start: 0;
-  inline-size: 0.24rem;
-  border-radius: 999px;
-  background: var(--qd-accent);
 }
 
 .word-types-table__row--loading {
@@ -195,28 +128,27 @@
 }
 
 @media (min-width: bp.$qd-bp-desktop-min) {
-  :host-context(.word-types-page__main) {
+  :host-context(.qd-explorer-layout__table) {
     display: block;
     block-size: 100%;
   }
 
-  :host-context(.word-types-page__main) .word-types-table {
+  :host-context(.qd-explorer-layout__table) .word-types-table {
     display: flex;
     flex-direction: column;
     block-size: 100%;
     box-sizing: border-box;
   }
 
-  :host-context(.word-types-page__main) .word-types-table__header {
+  :host-context(.qd-explorer-layout__table) .word-types-table__header {
     flex-shrink: 0;
-    block-size: var(--wt-table-header-height, 2.75rem);
+    block-size: var(--qd-explorer-table-header-height, 2.75rem);
     min-block-size: unset;
   }
 
-  :host-context(.word-types-page__main) .word-types-table__body {
+  :host-context(.qd-explorer-layout__table) .word-types-table__body {
     flex: 1 1 auto;
     min-block-size: 0;
-    block-size: auto;
   }
 }
 
@@ -235,6 +167,8 @@
     gap: var(--qd-space-2);
     align-items: start;
     padding: var(--qd-space-3);
+    block-size: auto;
+    min-block-size: 0;
   }
 
   .word-types-table__cell {
@@ -242,6 +176,7 @@
     flex-direction: column;
     gap: var(--qd-space-1);
     white-space: normal;
+    padding: 0;
   }
 
   .word-types-table__cell--word {
@@ -272,5 +207,11 @@
 
   .word-types-table__word {
     white-space: normal;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .word-types-table__body {
+    transition: none;
   }
 }
