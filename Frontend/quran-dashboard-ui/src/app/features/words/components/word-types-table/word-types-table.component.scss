@@ -20,6 +20,11 @@
   box-sizing: border-box;
 }
 
+.word-types-table--grouped .word-types-table__header-row,
+.word-types-table--grouped .word-types-table__row {
+  grid-template-columns: minmax(0, 1.65fr) repeat(3, minmax(3.5rem, 0.72fr));
+}
+
 .word-types-table__header-row {
   block-size: 100%;
 }
@@ -75,6 +80,7 @@
   cursor: pointer;
 }
 
+.word-types-table__row--grouped,
 .word-types-table__row--loading {
   cursor: default;
 }
@@ -171,6 +177,10 @@
     min-block-size: 0;
   }
 
+  .word-types-table--grouped .word-types-table__row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .word-types-table__cell {
     display: flex;
     flex-direction: column;
@@ -192,13 +202,19 @@
     align-items: stretch;
   }
 
+  .word-types-table--grouped .word-types-table__cell--count {
+    grid-column: span 1;
+  }
+
   .word-types-table__row--loading .word-types-table__cell--meta::before,
-  .word-types-table__row--loading .word-types-table__cell--count::before {
+  .word-types-table__row--loading .word-types-table__cell--count::before,
+  .word-types-table--grouped .word-types-table__row--loading .word-types-table__cell--word::before {
     content: none;
   }
 
   .word-types-table__cell--meta::before,
-  .word-types-table__cell--count::before {
+  .word-types-table__cell--count::before,
+  .word-types-table--grouped .word-types-table__cell--word::before {
     content: attr(data-label);
     color: var(--qd-text-muted);
     font-size: 0.75rem;

@@ -7,6 +7,10 @@
   min-inline-size: 0;
 }
 
+.word-types-page__layout--grouped .qd-explorer-layout__table {
+  grid-column: 1 / -1;
+}
+
 .word-types-page__toolbar {
   display: flex;
   justify-content: flex-end;

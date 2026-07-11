@@ -8,28 +8,28 @@ import { MissingSurahsListComponent } from '../../components/missing-surahs-list
 import { SurahOccurrencesListComponent } from '../../components/surah-occurrences-list/surah-occurrences-list.component';
 import { WordTypeDetailsPanelComponent } from '../../components/word-type-details-panel/word-type-details-panel.component';
 import { WordTypeFilterComponent } from '../../components/word-type-filter/word-type-filter.component';
+import { WordTypeTableViewTabsComponent } from '../../components/word-type-table-view-tabs/word-type-table-view-tabs.component';
 import { WordTypeCountOpenedEvent, WordTypesTableComponent } from '../../components/word-types-table/word-types-table.component';
 import {
   WORD_TYPE_SORT_OPTIONS,
-  WORD_TYPES_EMPTY_LABEL,
+  WORD_TYPE_TABLE_VIEW_EMPTY_LABELS,
+  WORD_TYPE_TABLE_VIEW_TABLE_LABELS,
   WORD_TYPES_ERROR_LABEL,
   WORD_TYPES_PAGE_TITLE,
   WORD_TYPES_SELECT_SUBTYPE_LABEL,
   WORD_TYPES_SORT_LABEL,
-  WORD_TYPES_TABLE_LABEL,
 } from '../../models/word-types.labels';
 import {
   DEFAULT_WORD_TYPES_DETAIL_PAGE,
   DEFAULT_WORD_TYPES_DETAIL_VIEW,
-  PagedResultDto,
   WORD_TYPES_DETAIL_PAGE_SIZE,
   WORD_TYPES_PAGE_SIZE,
   WordTableRowDto,
   WordTypeCase,
   WordTypeDetailView,
   WordTypeMainType,
-  WordTypeRowDto,
   WordTypeSort,
+  WordTypeTableView,
   WordTypeTense,
   WordTypeVoice,
   normalizeWordTableRow,
@@ -50,6 +50,7 @@ import { mapWordTypeAyahMatchToShared } from '../../utils/word-type-ayah-match.m
     SurahOccurrencesListComponent,
     WordTypeDetailsPanelComponent,
     WordTypeFilterComponent,
+    WordTypeTableViewTabsComponent,
     WordTypesTableComponent,
   ],
   templateUrl: './word-types-explorer-page.component.html',
@@ -72,38 +73,30 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
   private readonly filter = viewChild(WordTypeFilterComponent);
   private readonly table = viewChild(WordTypesTableComponent);
 
-  // Grouped /table responses remain available in facade state. Until Phase 6 teaches the table to
-  // render them, this page boundary supplies only word variants to the existing word-only table.
-  protected readonly wordRows = computed<PagedResultDto<WordTypeRowDto> | null>(() => {
-    const page = this.listState().rows;
-    if (!page) {
-      return null;
-    }
-
-    return {
-      ...page,
-      items: page.items
-        .filter((row): row is WordTableRowDto => row.kind === 'word')
-        .map(normalizeWordTableRow),
-    };
+  protected readonly hasTableScope = computed(() => {
+    const query = this.listState().query;
+    return query.childCode !== null || query.type === 'inl';
   });
 
-  protected readonly selectedRow = computed(() => {
+  protected readonly selectedRow = computed<WordTableRowDto | null>(() => {
     const state = this.listState();
-    const selectedId = state.query.word;
-    const page = this.wordRows();
-    if (selectedId === null || !page) {
+    if (state.query.tableView !== 'words' || state.query.word === null || !state.rows) {
       return null;
     }
 
     return (
-      page.items.find(
-        (row) => row.tashkeelWordId === selectedId
-          && row.contextCode === state.query.contextCode
-          && row.case === state.query.case
-          && row.tense === state.query.tense
-          && row.voice === state.query.voice,
-      ) ?? null
+      state.rows.items.find((row): row is WordTableRowDto => {
+        if (row.kind !== 'word') {
+          return false;
+        }
+
+        const identity = normalizeWordTableRow(row);
+        return identity.tashkeelWordId === state.query.word
+          && identity.contextCode === state.query.contextCode
+          && identity.case === state.query.case
+          && identity.tense === state.query.tense
+          && identity.voice === state.query.voice;
+      }) ?? null
     );
   });
 
@@ -121,10 +114,10 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
   });
 
   protected get pageTitle() { return WORD_TYPES_PAGE_TITLE; }
-  protected get emptyLabel() { return WORD_TYPES_EMPTY_LABEL; }
+  protected get emptyLabel() { return WORD_TYPE_TABLE_VIEW_EMPTY_LABELS[this.listState().query.tableView]; }
   protected get selectSubtypeLabel() { return WORD_TYPES_SELECT_SUBTYPE_LABEL; }
   protected get errorLabel() { return WORD_TYPES_ERROR_LABEL; }
-  protected get tableLabel() { return WORD_TYPES_TABLE_LABEL; }
+  protected get tableLabel() { return WORD_TYPE_TABLE_VIEW_TABLE_LABELS[this.listState().query.tableView]; }
   protected get sortLabel() { return WORD_TYPES_SORT_LABEL; }
   protected get sortOptions() { return WORD_TYPE_SORT_OPTIONS; }
 
@@ -165,8 +158,12 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
     this.explorerFacade.selectVoice(voice);
   }
 
-  protected selectRow(row: WordTypeRowDto): void {
-    this.detailFacade.selectRow(row, DEFAULT_WORD_TYPES_DETAIL_VIEW);
+  protected selectTableView(view: WordTypeTableView): void {
+    this.explorerFacade.selectTableView(view);
+  }
+
+  protected selectRow(row: WordTableRowDto): void {
+    this.detailFacade.selectRow(normalizeWordTableRow(row), DEFAULT_WORD_TYPES_DETAIL_VIEW);
     this.updateQueryParams(
       buildWordTypesQueryParams({
         word: row.tashkeelWordId,
@@ -179,7 +176,7 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
   }
 
   protected onCountOpened(event: WordTypeCountOpenedEvent): void {
-    this.detailFacade.selectRow(event.row, event.view);
+    this.detailFacade.selectRow(normalizeWordTableRow(event.row), event.view);
     this.updateQueryParams(
       buildWordTypesQueryParams({
         word: event.row.tashkeelWordId,

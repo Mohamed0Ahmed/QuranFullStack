@@ -1,11 +1,20 @@
 import { getTestBed, TestBed } from '@angular/core/testing';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { WordTypesTableComponent } from './word-types-table.component';
-import { PagedResultDto, WordTypeRowDto } from '../../models/word-types.models';
+import { WordTypeCountOpenedEvent, WordTypesTableComponent } from './word-types-table.component';
+import {
+  LemmaTableRowDto,
+  PagedResultDto,
+  RootTableRowDto,
+  StemTableRowDto,
+  WordTableRowDto,
+  WordTypeTableRowDto,
+  WordTypeTableView,
+} from '../../models/word-types.models';
 
-function row(overrides: Partial<WordTypeRowDto> = {}): WordTypeRowDto {
+function word(overrides: Partial<WordTableRowDto> = {}): WordTableRowDto {
   return {
+    kind: 'word',
     tashkeelWordId: 191001,
     contextCode: 'PN',
     case: 'all',
@@ -26,11 +35,40 @@ function row(overrides: Partial<WordTypeRowDto> = {}): WordTypeRowDto {
   };
 }
 
-const page: PagedResultDto<WordTypeRowDto> = {
-  page: 1,
-  pageSize: 25,
-  totalCount: 1,
-  items: [row()],
+function page(items: WordTypeTableRowDto[]): PagedResultDto<WordTypeTableRowDto> {
+  return {
+    page: 1,
+    pageSize: 25,
+    totalCount: items.length,
+    items,
+  };
+}
+
+const rootRow: RootTableRowDto = {
+  kind: 'root',
+  rootId: 190700,
+  displayText: 'ك ل م',
+  occurrencesCount: 3,
+  ayahsCount: 2,
+  surahsCount: 1,
+};
+
+const stemRow: StemTableRowDto = {
+  kind: 'stem',
+  stemId: 190701,
+  displayText: 'مَكْتُوب',
+  occurrencesCount: 4,
+  ayahsCount: 3,
+  surahsCount: 2,
+};
+
+const lemmaRow: LemmaTableRowDto = {
+  kind: 'lemma',
+  lemmaId: 190702,
+  displayText: 'كِتَاب',
+  occurrencesCount: 5,
+  ayahsCount: 4,
+  surahsCount: 2,
 };
 
 describe('WordTypesTableComponent', () => {
@@ -41,38 +79,83 @@ describe('WordTypesTableComponent', () => {
 
   afterEach(() => getTestBed().resetTestingModule());
 
-  it('renders required columns, Uthmani display, and neutral null placeholders', () => {
+  it('renders corrected word headers, Uthmani display, and interactive count actions', () => {
     const fixture = TestBed.createComponent(WordTypesTableComponent);
-    fixture.componentRef.setInput('rows', page);
+    const selected: WordTableRowDto[] = [];
+    const countEvents: WordTypeCountOpenedEvent[] = [];
+    fixture.componentRef.setInput('rows', page([word()]));
+    fixture.componentRef.setInput('selectedRow', word());
+    fixture.componentInstance.rowSelected.subscribe((row) => selected.push(row));
+    fixture.componentInstance.countOpened.subscribe((event) => countEvents.push(event));
     fixture.detectChanges();
 
     const root = fixture.nativeElement as HTMLElement;
     const headers = Array.from(root.querySelectorAll('[role="columnheader"]')).map((header) => header.textContent?.trim());
-    expect(headers).toEqual(['الكلمة', 'النوع', 'الجذر', 'الصيغة', 'الأصل', 'المواضع', 'الآيات', 'السور']);
+    const rowButton = root.querySelector('.word-types-table__row') as HTMLButtonElement;
+    const countButton = root.querySelector('[data-testid="word-count-chip"]') as HTMLButtonElement;
+
+    expect(headers).toEqual(['الكلمة', 'النوع', 'الجذر', 'الأصل', 'الصيغة', 'المواضع', 'الآيات', 'السور']);
     expect(root.textContent).toContain('كَلِمَة');
     expect(root.textContent).toContain('—');
     expect(root.textContent).not.toContain('191001');
     expect(root.querySelector('.word-types-table__header-gutter')).not.toBeNull();
+    expect(rowButton.getAttribute('aria-current')).toBe('true');
+    expect(rowButton.getAttribute('aria-selected')).toBe('true');
+    expect(rowButton.classList.contains('qd-is-selected')).toBe(true);
+
+    rowButton.click();
+    countButton.click();
+
+    expect(selected).toEqual([word()]);
+    expect(countEvents).toEqual([{ row: word(), column: 'occurrences', view: 'ayahs' }]);
   });
 
-  it('emits selected row and marks active row beyond color', () => {
+  it.each([
+    ['roots', rootRow, 'الجذر', 'جدول الجذور', 190700],
+    ['stems', stemRow, 'الأصل', 'جدول الأصول', 190701],
+    ['lemmas', lemmaRow, 'الصيغة', 'جدول الصيغ', 190702],
+  ] as const)(
+    'renders %s grouped rows as noninteractive four-column data',
+    (tableView, groupedRow, dimensionHeader, tableLabel, numericId) => {
+      const fixture = TestBed.createComponent(WordTypesTableComponent);
+      fixture.componentRef.setInput('rows', page([groupedRow]));
+      fixture.componentRef.setInput('tableView', tableView as WordTypeTableView);
+      fixture.componentRef.setInput('selectedRow', word());
+      fixture.detectChanges();
+
+      const root = fixture.nativeElement as HTMLElement;
+      const headers = Array.from(root.querySelectorAll('[role="columnheader"]')).map((header) => header.textContent?.trim());
+      const groupedTableRow = root.querySelector('.word-types-table__body [role="row"]') as HTMLElement;
+
+      expect(root.querySelector('[role="table"]')?.getAttribute('aria-label')).toBe(tableLabel);
+      expect(headers).toEqual([dimensionHeader, 'المواضع', 'الآيات', 'السور']);
+      expect(groupedTableRow.textContent).toContain(groupedRow.displayText);
+      expect(groupedTableRow.textContent).toContain(String(groupedRow.occurrencesCount));
+      expect(groupedTableRow.textContent).toContain(String(groupedRow.ayahsCount));
+      expect(groupedTableRow.textContent).toContain(String(groupedRow.surahsCount));
+      expect(root.textContent).not.toContain(String(numericId));
+      expect(root.querySelector('button.word-types-table__row')).toBeNull();
+      expect(root.querySelector('[data-word-types-row]')).toBeNull();
+      expect(groupedTableRow.classList.contains('qd-is-selected')).toBe(false);
+      expect(groupedTableRow.getAttribute('aria-current')).toBeNull();
+      expect(groupedTableRow.getAttribute('aria-selected')).toBeNull();
+      expect(root.querySelector('qd-word-count-chip')).toBeNull();
+    },
+  );
+
+  it('skips rows whose discriminant does not match the active table view', () => {
     const fixture = TestBed.createComponent(WordTypesTableComponent);
-    const emitted: WordTypeRowDto[] = [];
-    fixture.componentRef.setInput('rows', page);
-    fixture.componentRef.setInput('selectedRow', row());
-    fixture.componentInstance.rowSelected.subscribe((selected) => emitted.push(selected));
+    fixture.componentRef.setInput('rows', page([word()]));
+    fixture.componentRef.setInput('tableView', 'roots');
     fixture.detectChanges();
 
-    const button = fixture.nativeElement.querySelector('.word-types-table__row') as HTMLButtonElement;
-    expect(button.getAttribute('aria-current')).toBe('true');
-    expect(button.getAttribute('aria-selected')).toBe('true');
-    expect(button.classList.contains('qd-is-selected')).toBe(true);
-    button.click();
+    const root = fixture.nativeElement as HTMLElement;
 
-    expect(emitted[0].contextCode).toBe('PN');
+    expect(root.querySelector('.word-types-table__body [role="row"]')).toBeNull();
+    expect(root.textContent).not.toContain('كَلِمَة');
   });
 
-  it('renders a skeleton body while loading, even when prior rows exist, matching the other word tables', () => {
+  it('renders a skeleton body while loading, even when prior rows exist', () => {
     const loadingFixture = TestBed.createComponent(WordTypesTableComponent);
     loadingFixture.componentRef.setInput('loading', true);
     loadingFixture.detectChanges();
@@ -82,7 +165,7 @@ describe('WordTypesTableComponent', () => {
     expect(loadingRoot.querySelector('.word-types-table__row--loading')).not.toBeNull();
 
     const refreshFixture = TestBed.createComponent(WordTypesTableComponent);
-    refreshFixture.componentRef.setInput('rows', page);
+    refreshFixture.componentRef.setInput('rows', page([word()]));
     refreshFixture.componentRef.setInput('loading', true);
     refreshFixture.detectChanges();
 
@@ -91,13 +174,15 @@ describe('WordTypesTableComponent', () => {
     expect(refreshRoot.querySelector('[data-word-types-row]')).toBeNull();
   });
 
-  it('focuses a row by identity for focus return', () => {
+  it('focuses a word row by its canonicalized nullable identity', () => {
     const fixture = TestBed.createComponent(WordTypesTableComponent);
-    fixture.componentRef.setInput('rows', page);
+    const nullableWord = word({ case: null, tense: null, voice: null });
+    fixture.componentRef.setInput('rows', page([nullableWord]));
     fixture.detectChanges();
 
-    fixture.componentInstance.focusRow(row());
+    fixture.componentInstance.focusRow(nullableWord);
 
     expect(document.activeElement).toBe(fixture.nativeElement.querySelector('.word-types-table__row'));
+    expect((document.activeElement as HTMLElement).getAttribute('data-word-types-row')).toBe('191001:PN:all:all:all');
   });
 });

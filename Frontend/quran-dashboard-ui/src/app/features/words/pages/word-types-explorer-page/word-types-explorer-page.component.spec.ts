@@ -10,7 +10,7 @@ import { ApiResponse } from '../../../../core/data-access/api-response.model';
 import { WordTypesApi } from '../../data-access/word-types.api';
 import { ADDITIONAL_ACTIVE_HUB_SECTIONS } from '../../models/unique-words.labels';
 import { WORD_TYPE_SORT_OPTIONS, WORD_TYPES_SELECT_SUBTYPE_LABEL, WORD_TYPES_SORT_LABEL } from '../../models/word-types.labels';
-import { PagedResultDto, WordTableRowDto, WordTypeAyahMatchDto, WordTypeTableRowDto, WordTypeTreeDto } from '../../models/word-types.models';
+import { PagedResultDto, RootTableRowDto, WordTableRowDto, WordTypeAyahMatchDto, WordTypeTableRowDto, WordTypeTreeDto } from '../../models/word-types.models';
 import { WordTypesTableComponent } from '../../components/word-types-table/word-types-table.component';
 import { WordTypesDetailFacade } from '../../state/word-types-detail.facade';
 import { WordTypesExplorerFacade } from '../../state/word-types-explorer.facade';
@@ -95,6 +95,15 @@ const nullableInlRow: WordTableRowDto = {
   surahsCount: 1,
 };
 
+const groupedRootRow: RootTableRowDto = {
+  kind: 'root',
+  rootId: 190700,
+  displayText: 'ك ل م',
+  occurrencesCount: 3,
+  ayahsCount: 2,
+  surahsCount: 1,
+};
+
 const ayahMatch: WordTypeAyahMatchDto = {
   verseKey: '1:1',
   surahNumber: 1,
@@ -172,6 +181,7 @@ describe('WordTypesExplorerPageComponent', () => {
     expect(root.textContent).toContain(WORD_TYPES_SELECT_SUBTYPE_LABEL);
     expect(root.querySelector('[data-testid="word-types-select-subtype"]')).not.toBeNull();
     expect(root.querySelector('qd-word-types-table')).toBeNull();
+    expect(root.querySelector('qd-word-type-table-view-tabs')).toBeNull();
   });
 
   it('renders sort label and options from centralized labels', async () => {
@@ -209,6 +219,7 @@ describe('WordTypesExplorerPageComponent', () => {
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('[data-testid="word-types-select-subtype"]')).toBeNull();
     expect(root.querySelector('qd-word-types-table')).not.toBeNull();
+    expect(root.querySelector('qd-word-type-table-view-tabs')).toBeNull();
     expect(root.textContent).toContain('ماض');
   });
 
@@ -229,6 +240,78 @@ describe('WordTypesExplorerPageComponent', () => {
 
     expect(api.getTableRows).toHaveBeenCalledWith(expect.objectContaining({ type: 'noun', childCode: 'N', pageSize: 25 }));
     expect((fixture.nativeElement as HTMLElement).querySelector('qd-word-types-table')).not.toBeNull();
+  });
+
+  it('renders scoped tabs and passes the complete grouped payload to a full-width table', async () => {
+    api.getTableRows.mockReturnValueOnce(of(ok<PagedResultDto<WordTypeTableRowDto>>({
+      page: 1,
+      pageSize: 25,
+      totalCount: 1,
+      items: [groupedRootRow],
+    })));
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'PN', tableView: 'roots' }));
+
+    const fixture = await createPage();
+    const root = fixture.nativeElement as HTMLElement;
+    const table = fixture.debugElement.query(By.directive(WordTypesTableComponent)).componentInstance as unknown as {
+      rows: () => PagedResultDto<WordTypeTableRowDto> | null;
+      tableView: () => string;
+    };
+
+    expect(root.querySelector('qd-word-type-table-view-tabs')).not.toBeNull();
+    expect(table.rows()?.items).toEqual([groupedRootRow]);
+    expect(table.tableView()).toBe('roots');
+    expect(root.querySelector('.word-types-page__layout')?.classList.contains('word-types-page__layout--grouped')).toBe(true);
+    expect(root.querySelector('qd-word-type-details-panel')).toBeNull();
+  });
+
+  it('delegates a scoped table-view tab selection to the explorer facade', async () => {
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'PN' }));
+    const fixture = await createPage();
+    const rootsTab = fixture.nativeElement.querySelector(
+      '[data-testid="word-type-table-view-tab--roots"]',
+    ) as HTMLButtonElement;
+
+    rootsTab.click();
+
+    expect(router.navigate).toHaveBeenLastCalledWith([], expect.objectContaining({
+      queryParams: expect.objectContaining({ tableView: 'roots', page: '1' }),
+      queryParamsHandling: 'merge',
+    }));
+  });
+
+  it('restores the word-only details panel when switching back from a grouped view', async () => {
+    api.getTableRows.mockReturnValueOnce(of(ok<PagedResultDto<WordTypeTableRowDto>>({
+      page: 1,
+      pageSize: 25,
+      totalCount: 1,
+      items: [groupedRootRow],
+    })));
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'PN', tableView: 'roots' }));
+    const fixture = await createPage();
+
+    expect((fixture.nativeElement as HTMLElement).querySelector('qd-word-type-details-panel')).toBeNull();
+
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'PN', tableView: 'words' }));
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement as HTMLElement).querySelector('qd-word-type-details-panel')).not.toBeNull();
+    expect((fixture.nativeElement as HTMLElement).querySelector('.word-types-page__layout')?.classList.contains('word-types-page__layout--grouped')).toBe(false);
+  });
+
+  it('uses the active grouped-view empty label', async () => {
+    api.getTableRows.mockReturnValueOnce(of(ok<PagedResultDto<WordTypeTableRowDto>>({
+      page: 1,
+      pageSize: 25,
+      totalCount: 0,
+      items: [],
+    })));
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'PN', tableView: 'roots' }));
+
+    const fixture = await createPage();
+
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('لا توجد جذور لهذا النطاق');
   });
 
   it('loads rows directly for inl', async () => {
@@ -492,11 +575,12 @@ describe('WordTypesExplorerPageComponent', () => {
     closeButton.click();
 
     expect(focusSpy).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'word',
       tashkeelWordId: 191001,
       contextCode: 'N',
-      case: 'all',
-      tense: 'all',
-      voice: 'all',
+      case: null,
+      tense: null,
+      voice: null,
     }));
   });
 

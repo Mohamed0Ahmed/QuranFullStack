@@ -36,6 +36,14 @@
       </div>
     </div>
 
+    @if (hasTableScope()) {
+      <qd-word-type-table-view-tabs
+        [selectedView]="listState().query.tableView"
+        [disabled]="listState().status === 'loading'"
+        (viewSelected)="selectTableView($event)"
+      />
+    }
+
     @if (listState().status === 'error') {
       <div class="qd-error-state">{{ listState().errorMessage || errorLabel }}</div>
     } @else if (listState().status === 'selectPrompt' && !listState().rows) {
@@ -45,14 +53,18 @@
     }
   </div>
 
-  <div class="word-types-page__layout qd-explorer-layout">
+  <div
+    class="word-types-page__layout qd-explorer-layout"
+    [class.word-types-page__layout--grouped]="listState().query.tableView !== 'words'"
+  >
     <main
       class="word-types-page__main qd-explorer-layout__table"
       [attr.aria-busy]="listState().status === 'loading' ? true : null"
     >
       @if (listState().rows || listState().status === 'loading') {
         <qd-word-types-table
-          [rows]="wordRows()"
+          [rows]="listState().rows"
+          [tableView]="listState().query.tableView"
           [loading]="listState().status === 'loading'"
           [selectedRow]="selectedRow()"
           (rowSelected)="selectRow($event)"
@@ -72,62 +84,64 @@
       }
     </main>
 
-    <qd-word-type-details-panel
-      class="word-types-page__panel qd-explorer-layout__panel"
-      [inline]="isDesktop()"
-      [view]="panelState().view"
-      [emptySelection]="emptySelection()"
-      [selectionTitle]="selectionTitle()"
-      [loading]="panelState().status === 'loading'"
-      [notFound]="panelState().status === 'notFound'"
-      (viewChange)="onPanelViewChange($event)"
-      (close)="clearSelection()"
-    >
-      @if (panelState().summary) {
-        <div class="word-types-details__scroll">
-          @switch (panelState().status) {
-            @case ('loading') {
-              @if (panelState().view === 'ayahs') {
-                <qd-ayah-matches-list
-                  [page]="emptyAyahsPage"
-                  [currentPage]="panelState().detailPage"
-                  [loading]="true"
-                />
-              } @else if (panelState().view === 'surahs') {
-                <qd-surah-occurrences-list [surahs]="[]" [loading]="true" />
-                <qd-missing-surahs-list [surahs]="[]" [loading]="true" />
+    @if (listState().query.tableView === 'words') {
+      <qd-word-type-details-panel
+        class="word-types-page__panel qd-explorer-layout__panel"
+        [inline]="isDesktop()"
+        [view]="panelState().view"
+        [emptySelection]="emptySelection()"
+        [selectionTitle]="selectionTitle()"
+        [loading]="panelState().status === 'loading'"
+        [notFound]="panelState().status === 'notFound'"
+        (viewChange)="onPanelViewChange($event)"
+        (close)="clearSelection()"
+      >
+        @if (panelState().summary) {
+          <div class="word-types-details__scroll">
+            @switch (panelState().status) {
+              @case ('loading') {
+                @if (panelState().view === 'ayahs') {
+                  <qd-ayah-matches-list
+                    [page]="emptyAyahsPage"
+                    [currentPage]="panelState().detailPage"
+                    [loading]="true"
+                  />
+                } @else if (panelState().view === 'surahs') {
+                  <qd-surah-occurrences-list [surahs]="[]" [loading]="true" />
+                  <qd-missing-surahs-list [surahs]="[]" [loading]="true" />
+                }
               }
-            }
-            @case ('error') {
-              <div class="qd-error-state">{{ panelState().errorMessage || errorLabel }}</div>
-            }
-            @case ('empty') {
-              <div class="qd-empty-state">{{ emptyLabel }}</div>
-            }
-            @default {
-              @if (panelState().view === 'ayahs' && panelState().ayahs; as ayahsPage) {
-                <qd-ayah-matches-list
-                  [page]="ayahsPageForView()"
-                  [currentPage]="panelState().detailPage"
-                  [loading]="false"
-                  (pageChange)="onDetailPageChange($event)"
-                />
+              @case ('error') {
+                <div class="qd-error-state">{{ panelState().errorMessage || errorLabel }}</div>
               }
+              @case ('empty') {
+                <div class="qd-empty-state">{{ emptyLabel }}</div>
+              }
+              @default {
+                @if (panelState().view === 'ayahs' && panelState().ayahs; as ayahsPage) {
+                  <qd-ayah-matches-list
+                    [page]="ayahsPageForView()"
+                    [currentPage]="panelState().detailPage"
+                    [loading]="false"
+                    (pageChange)="onDetailPageChange($event)"
+                  />
+                }
 
-              @if (panelState().view === 'surahs' && panelState().surahs) {
-                <qd-surah-occurrences-list
-                  [surahs]="mentionedSurahs()"
-                  [loading]="false"
-                />
-                <qd-missing-surahs-list
-                  [surahs]="missingSurahs()"
-                  [loading]="false"
-                />
+                @if (panelState().view === 'surahs' && panelState().surahs) {
+                  <qd-surah-occurrences-list
+                    [surahs]="mentionedSurahs()"
+                    [loading]="false"
+                  />
+                  <qd-missing-surahs-list
+                    [surahs]="missingSurahs()"
+                    [loading]="false"
+                  />
+                }
               }
             }
-          }
-        </div>
-      }
-    </qd-word-type-details-panel>
+          </div>
+        }
+      </qd-word-type-details-panel>
+    }
   </div>
 </div>

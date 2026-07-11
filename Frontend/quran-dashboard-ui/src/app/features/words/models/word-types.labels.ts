@@ -1,13 +1,11 @@
-import { WORD_TYPE_SORTS, WordTypeCase, WordTypeDetailView, WordTypeMainType, WordTypeSort, WordTypeTense, WordTypeVoice } from './word-types.models';
+import { WORD_TYPE_SORTS, WordTypeCase, WordTypeDetailView, WordTypeMainType, WordTypeSort, WordTypeTableView, WordTypeTense, WordTypeVoice } from './word-types.models';
 
 export const WORD_TYPES_PAGE_TITLE = 'أنواع الكلمات';
-export const WORD_TYPES_TABLE_LABEL = 'جدول كلمات النوع';
 export const WORD_TYPES_FILTER_LABEL = 'تصفية أنواع الكلمات';
 export const WORD_TYPES_DETAILS_PANEL_LABEL = 'تفاصيل كلمة النوع';
 export const WORD_TYPES_NO_SUBTYPES_LABEL = 'لا توجد أنواع فرعية لهذا النوع';
 export const WORD_TYPES_SORT_LABEL = 'ترتيب';
 export const WORD_TYPES_LOADING_LABEL = 'جارٍ التحميل…';
-export const WORD_TYPES_EMPTY_LABEL = 'لا توجد نتائج لهذا النوع';
 export const WORD_TYPES_SELECT_SUBTYPE_LABEL = 'اختر نوعًا فرعيًا لعرض الكلمات.';
 export const WORD_TYPES_ERROR_LABEL = 'تعذّر تحميل أنواع الكلمات. تحقّق من الاتصال ثم أعد المحاولة.';
 export const WORD_TYPES_NOT_FOUND_LABEL = 'الكلمة المحددة غير موجودة';
@@ -17,6 +15,28 @@ export const WORD_TYPES_TENSE_FILTER_LABEL = 'الزمن';
 export const WORD_TYPES_VOICE_FILTER_LABEL = 'الصيغة';
 export const WORD_TYPES_SUBTYPE_GROUP_LABEL = 'الأنواع الفرعية';
 export const WORD_TYPES_CURRENT_FILTER_LABEL = 'الحالي';
+export const WORD_TYPE_TABLE_VIEW_TABS_LABEL = 'عرض الجدول';
+
+export const WORD_TYPE_TABLE_VIEW_OPTIONS = [
+  { value: 'words', label: 'كلمات' },
+  { value: 'roots', label: 'جذور' },
+  { value: 'stems', label: 'أصول' },
+  { value: 'lemmas', label: 'صيغ' },
+] as const satisfies readonly { value: WordTypeTableView; label: string }[];
+
+export const WORD_TYPE_TABLE_VIEW_TABLE_LABELS: Record<WordTypeTableView, string> = {
+  words: 'جدول كلمات النوع',
+  roots: 'جدول الجذور',
+  stems: 'جدول الأصول',
+  lemmas: 'جدول الصيغ',
+};
+
+export const WORD_TYPE_TABLE_VIEW_EMPTY_LABELS: Record<WordTypeTableView, string> = {
+  words: 'لا توجد نتائج لهذا النوع',
+  roots: 'لا توجد جذور لهذا النطاق',
+  stems: 'لا توجد أصول لهذا النطاق',
+  lemmas: 'لا توجد صيغ لهذا النطاق',
+};
 
 export const WORD_TYPE_MAIN_LABELS: Record<WordTypeMainType, string> = {
   noun: 'اسم',
@@ -75,8 +95,8 @@ export const WORD_TYPES_TABLE_HEADERS = {
   word: 'الكلمة',
   type: 'النوع',
   root: 'الجذر',
-  stem: 'الصيغة',
-  lemma: 'الأصل',
+  stem: 'الأصل',
+  lemma: 'الصيغة',
   occurrences: 'المواضع',
   ayahs: 'الآيات',
   surahs: 'السور',

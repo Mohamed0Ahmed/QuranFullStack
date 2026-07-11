@@ -1,14 +1,26 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, inject, input, output } from '@angular/core';
 
 import { WordCountChipComponent } from '../word-count-chip/word-count-chip.component';
-import { WORD_TYPES_LOADING_LABEL, WORD_TYPES_NULL_PLACEHOLDER, WORD_TYPES_TABLE_HEADERS, WORD_TYPES_TABLE_LABEL } from '../../models/word-types.labels';
-import { PagedResultDto, WordTypeDetailView, WordTypeRowDto } from '../../models/word-types.models';
+import {
+  WORD_TYPES_LOADING_LABEL,
+  WORD_TYPES_NULL_PLACEHOLDER,
+  WORD_TYPES_TABLE_HEADERS,
+  WORD_TYPE_TABLE_VIEW_TABLE_LABELS,
+} from '../../models/word-types.labels';
+import {
+  PagedResultDto,
+  WordTableRowDto,
+  WordTypeDetailView,
+  WordTypeTableRowDto,
+  WordTypeTableView,
+  normalizeWordTableRow,
+} from '../../models/word-types.models';
 import { syncTableScrollbarGutter } from '../../utils/table-scrollbar-gutter-sync';
 
 export type WordTypeCountColumn = 'occurrences' | 'ayahs' | 'surahs';
 
 export interface WordTypeCountOpenedEvent {
-  row: WordTypeRowDto;
+  row: WordTableRowDto;
   column: WordTypeCountColumn;
   view: WordTypeDetailView;
 }
@@ -25,13 +37,13 @@ export class WordTypesTableComponent {
   private readonly host = inject(ElementRef<HTMLElement>);
   private readonly destroyRef = inject(DestroyRef);
 
-  readonly rows = input<PagedResultDto<WordTypeRowDto> | null>(null);
+  readonly rows = input<PagedResultDto<WordTypeTableRowDto> | null>(null);
+  readonly tableView = input<WordTypeTableView>('words');
   readonly loading = input(false);
-  readonly selectedRow = input<WordTypeRowDto | null>(null);
-  readonly rowSelected = output<WordTypeRowDto>();
+  readonly selectedRow = input<WordTableRowDto | null>(null);
+  readonly rowSelected = output<WordTableRowDto>();
   readonly countOpened = output<WordTypeCountOpenedEvent>();
 
-  protected readonly tableLabel = WORD_TYPES_TABLE_LABEL;
   protected readonly loadingRowPlaceholders = [0, 1, 2, 3, 4] as const;
 
   constructor() {
@@ -49,26 +61,46 @@ export class WordTypesTableComponent {
   protected get headers() { return WORD_TYPES_TABLE_HEADERS; }
   protected get loadingLabel() { return WORD_TYPES_LOADING_LABEL; }
   protected get placeholder() { return WORD_TYPES_NULL_PLACEHOLDER; }
+  protected get tableLabel() { return WORD_TYPE_TABLE_VIEW_TABLE_LABELS[this.tableView()]; }
 
-  protected selectRow(row: WordTypeRowDto): void {
+  protected isWordView(): boolean {
+    return this.tableView() === 'words';
+  }
+
+  protected dimensionHeader(): string {
+    switch (this.tableView()) {
+      case 'roots': return this.headers.root;
+      case 'stems': return this.headers.stem;
+      case 'lemmas': return this.headers.lemma;
+      case 'words': return this.headers.word;
+    }
+  }
+
+  protected selectRow(row: WordTableRowDto): void {
     this.rowSelected.emit(row);
   }
 
-  protected isSelected(row: WordTypeRowDto): boolean {
+  protected isSelected(row: WordTableRowDto): boolean {
     const selected = this.selectedRow();
-    return selected?.tashkeelWordId === row.tashkeelWordId
-      && selected.contextCode === row.contextCode
-      && selected.case === row.case
-      && selected.tense === row.tense
-      && selected.voice === row.voice;
+    if (!selected) {
+      return false;
+    }
+
+    const selectedIdentity = normalizeWordTableRow(selected);
+    const rowIdentity = normalizeWordTableRow(row);
+    return selectedIdentity.tashkeelWordId === rowIdentity.tashkeelWordId
+      && selectedIdentity.contextCode === rowIdentity.contextCode
+      && selectedIdentity.case === rowIdentity.case
+      && selectedIdentity.tense === rowIdentity.tense
+      && selectedIdentity.voice === rowIdentity.voice;
   }
 
-  protected openCount(row: WordTypeRowDto, column: WordTypeCountColumn): void {
+  protected openCount(row: WordTableRowDto, column: WordTypeCountColumn): void {
     const view: WordTypeDetailView = column === 'surahs' ? 'surahs' : 'ayahs';
     this.countOpened.emit({ row, column, view });
   }
 
-  focusRow(row: WordTypeRowDto | null): void {
+  focusRow(row: WordTableRowDto | null): void {
     if (!row) {
       return;
     }
@@ -80,7 +112,18 @@ export class WordTypesTableComponent {
     button?.focus();
   }
 
-  private rowDomId(row: WordTypeRowDto): string {
-    return [row.tashkeelWordId, row.contextCode, row.case, row.tense, row.voice].join(':');
+  protected rowDomId(row: WordTypeTableRowDto): string {
+    switch (row.kind) {
+      case 'word': {
+        const identity = normalizeWordTableRow(row);
+        return [identity.tashkeelWordId, identity.contextCode, identity.case, identity.tense, identity.voice].join(':');
+      }
+      case 'root':
+        return `root:${row.rootId}`;
+      case 'stem':
+        return `stem:${row.stemId}`;
+      case 'lemma':
+        return `lemma:${row.lemmaId}`;
+    }
   }
 }
