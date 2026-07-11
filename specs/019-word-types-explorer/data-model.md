@@ -20,8 +20,8 @@ One row per **word occurrence**. All feature predicates, filters, and counts rea
 | `VerbVoice` | string? (`active`/`passive`) | verb secondary filter | populated only when `IsVerb` |
 | `CaseFeature` | string? (`nominative`/`accusative`/`genitive`/null) | nominal secondary filter | null → غير محدد |
 | `RootId` | int? FK → `quran_roots` | الجذر enrichment | nullable |
-| `LemmaId` | int? FK → `quran_lemmas` | الأصل enrichment (deferrable) | nullable |
-| `StemId` | int? FK → `quran_stems` | الصيغة enrichment (deferrable) | nullable |
+| `LemmaId` | int? FK → `quran_lemmas` | الصيغة المعجمية enrichment (deferrable) | nullable |
+| `StemId` | int? FK → `quran_stems` | الأصل الصرفي enrichment (deferrable) | nullable |
 | (word FK) | → `quran_words` | marker filter + tashkeel identity join | always join + filter `!IsAyahMarker` |
 
 ### 1.2 `quran_words` (join — identity + marker filter)
@@ -43,7 +43,7 @@ Provides `IsAyahMarker` (always exclude) and the link to the **tashkeel unique-w
 
 ### 1.5 Enrichment catalogues (read-only)
 
-`quran_roots`, `quran_lemmas`, `quran_stems` — for الجذر / الأصل / الصيغة display text via winner resolution (§5).
+`quran_roots`, `quran_lemmas`, `quran_stems` — for الجذر / الأصل الصرفي / الصيغة المعجمية display text via winner resolution (§5).
 
 ---
 
@@ -141,7 +141,7 @@ For each word-context row, scoped to its exact context (active type/subtype + ac
 For a row, الجذر/الأصل/الصيغة display text is the row context's value when available. Because the row is pinned to one head-POS (and feature) context, these are usually constant; where they vary across the row's occurrences, take the **dominant (winner)** value.
 
 - الجذر: reuse existing root-winner query (`LoadPrimaryRootsAsync`) and return it when source data provides a root.
-- الأصل (lemma) / الصيغة (stem): **new** winner queries mirroring the root one — low risk, **deferrable** for v1. If not implemented in v1, return null.
+- الصيغة المعجمية (lemma) / الأصل الصرفي (stem): **new** winner queries mirroring the root one — low risk, **deferrable** for v1. If not implemented in v1, return null.
 - Null or deferred root/lemma/stem → `—` fallback in the UI; null enrichment never blocks the row (head_pos is NOT NULL).
 
 ---
@@ -163,3 +163,71 @@ For a row, الجذر/الأصل/الصيغة display text is the row context's 
 ## 7. State transitions
 
 None. This is a stateless read-only explorer; "state" is purely the URL-encoded view selection (type / childCode / case|tense|voice / selected row `tashkeelWordId` + `contextCode` / page / sort / active tab), described in `contracts/frontend-routing-state.md`.
+
+---
+
+## 8. Grouped read model (Feature 022 — table-view tabs)
+
+Extends §3's word-context row with three **grouped** variants, selected by `tableView` and returned by
+the discriminated `E2b` endpoint (`contracts/word-types-api.md`). Grouping is a read-model concern, not
+a frontend concern: the table is server-paginated/sorted, so grouping a loaded page client-side would
+corrupt counts, ordering, and pagination.
+
+### 8.1 Grouped row (root/stem/lemma)
+
+| Field | Meaning | Constraint |
+|-------|---------|------------|
+| `kind` | `"root"` \| `"stem"` \| `"lemma"` | discriminator |
+| `rootId` / `stemId` / `lemmaId` | numeric FK to `quran_roots`/`quran_stems`/`quran_lemmas` | **identity** — Arabic display text is never identity |
+| `displayText` | the dimension's Arabic text (`root_text`/`stem_text`/`lemma_text`) | display only |
+| `occurrencesCount` / `ayahsCount` / `surahsCount` | occurrence-scoped aggregates, summed **per dimension ID** over the same scoped occurrence base as §3's word rows | scoped to the active type/child/case/tense/voice filter |
+
+Grouping key: the numeric `root_id`/`stem_id`/`lemma_id` over the identical scoped `base` occurrence set
+§3 uses (type + child + secondary filter + `!IsAyahMarker` + non-null tashkeel identity). Rows with a
+null dimension ID for the active view are **excluded**, never bucketed as "unknown". Grouping and total
+counting happen **before** pagination.
+
+### 8.2 Third count family
+
+§4 defines two count families (tree/node row counts, and E2's occurrence-level row counts). Grouped
+table counts are a **third view** of the occurrence family — the same occurrence-level aggregates as
+§4.2, summed per dimension ID instead of per word-context row. They are **not** the Roots/Lemmas/Stems
+explorers' own counts (`quran_roots.words_count` and friends), which are global, unscoped, and
+segment-derived — a different population entirely. Do not conflate or cross-derive between the three
+families.
+
+### 8.3 `totalCount` units and null-dimension coverage
+
+Grouped `totalCount` = count of **distinct non-null** dimension IDs in the active scope. This is a
+different unit than the `words`-view `totalCount` (word-context rows) — **never compare the two
+directly** to reason about coverage. Null-dimension coverage is instead an **occurrence-sum identity**,
+both sides measured over the same scope:
+
+```text
+Σ occurrencesCount over all grouped pages (non-null dimension)
+  + Σ occurrencesCount for occurrences whose dimension ID is null
+  = Σ occurrencesCount over the words-view pages
+```
+
+The difference between the grouped and words-view occurrence sums equals exactly the null-dimension
+occurrence count. This must be asserted as a test (§ Required Backend Tests in
+`contracts/backend-read-abstractions.md`), never "balanced" by inventing a bucket.
+
+### 8.4 Deterministic sort tie-breaks
+
+All grouped sorts (`occurrences`, `ayahs`, `surahs`, `mushaf-order`, `alpha`) end their tie-break chain
+at the **numeric** dimension ID, so grouped pages are deterministic. `alpha` reuses the Roots explorer's
+Arabic fold (`ArabicFoldFrom`/`ArabicFoldTo`) with ordinal (`COLLATE "C"`) collation before the ID
+tie-break, so grouped alphabetical order stays consistent with the standalone Roots/Lemmas/Stems
+explorers.
+
+### 8.5 Terminology (aligns with the Roots/Lemmas/Stems explorers)
+
+| Dimension | Correct Arabic (full) | Short label (tab/column) |
+|-----------|------------------------|---------------------------|
+| root | الجذر | جذور / الجذر |
+| stem | الأصل الصرفي / الأصول الصرفية | أصول / الأصل |
+| lemma | الصيغة المعجمية / الصيغ المعجمية | صيغ / الصيغة |
+
+Word Types previously reversed stem/lemma relative to the already-correct Roots/Lemmas/Stems explorer
+terminology; §1.1/§1.5/§5 above and the frontend table headers/tab labels now use this mapping.

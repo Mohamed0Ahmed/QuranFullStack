@@ -37,6 +37,19 @@ Shared across explorers: `utils/explorer-table-*` (focus/keyboard-nav/scroll/col
 - **Identity is clean imlaei-simple** (display Uthmani) — mirrors the backend read models.
 - Tests: obey the repo test-command rule (see `../../../../README.md`) — the vitest worker
   cap and jsdom observer guards apply here.
+- **Word Types has table-view tabs** (`tableView=words|roots|stems|lemmas`, default `words`,
+  RTL order كلمات | جذور | أصول | صيغ). Grouped views (`roots`/`stems`/`lemmas`) are backed by
+  `GET .../word-types/table` and are grouped + counted server-side **before** pagination;
+  `GET .../word-types/words` stays unchanged for existing deep links. Rows are a
+  discriminated union keyed by `kind: 'word'|'root'|'stem'|'lemma'` — grouped identity is
+  the numeric `rootId`/`stemId`/`lemmaId`, **never** Arabic display text. The details panel
+  is hidden and the table spans full width outside `words`; grouped rows/counts are
+  noninteractive (no selection, no count-chip drilldown). Switching to a grouped `tableView`
+  clears any word selection even if a stale deep link supplies one. Both backend and
+  frontend cache keys (`WordTypesCacheKeys.table` / `word-types-cache.ts`'s `table(...)`)
+  include `tableView`, so tab switches never cross-serve another view's rows. Stem/lemma
+  terminology follows the Roots/Lemmas/Stems explorers: **stem = الأصل / الأصول الصرفية**,
+  **lemma = الصيغة / الصيغ المعجمية**.
 
 ## Related
 

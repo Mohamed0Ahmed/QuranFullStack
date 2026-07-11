@@ -18,6 +18,7 @@
 |---|---|---|
 | `type` | `noun`, `verb`, `particle`, `inl` | `noun` |
 | `childCode` | parent-specific code (noun POS code such as `N`, `PN`, `ADJ`, `PRON`, `REL`, `DEM`, `T`, `LOC`, `TIM`, `IMPN`; or verb tense `past`, `present`, `imperative`) | none |
+| `tableView` | `words`, `roots`, `stems`, `lemmas` (Feature 022 — table-view tabs) | `words` |
 | `case` | `all`, `nominative`, `accusative`, `genitive`, `null` | `all` |
 | `tense` | `all`, `past`, `present`, `imperative` | `all` |
 | `voice` | `all`, `active`, `passive` | `all` |
@@ -41,7 +42,15 @@ Rules:
 - Non-positive/malformed `page` and `detailPage` normalize to `1`.
 - `word` without a valid positive `contextCode` does not select a row.
 - Clearing selection removes `word`, `contextCode`, `view`, `detailPage`, `location`, and `column` while preserving list filters.
-- Changing `type`, `childCode`, `case`, `tense`, `voice`, or `sort` resets list `page` to `1` and clears selection.
+- Changing `type`, `childCode`, `case`, `tense`, `voice`, `sort`, or `tableView` resets list `page` to `1` and clears selection.
+- Missing or invalid `tableView` defaults to `words`; existing URLs without `tableView` keep working unchanged.
+- When `tableView !== 'words'`, `word`/`contextCode`/`view`/`detailPage`/`location`/`column` are dropped
+  from parsed state even if a stale or foreign deep link supplies them — grouped views have no word-row
+  selection concept, so a URL like `?tableView=roots&word=123&contextCode=PN` renders the roots view
+  with no selection instead of attempting to select a nonexistent row.
+- Clearing `childCode` back to the parent (`selectChild(null)`) and switching `type` (`selectType`) both
+  reset `tableView` to `words` — a grouped tab never lingers on a no-leaf scope that has nothing to
+  aggregate.
 - A valid positive selected row that the backend no longer resolves renders a controlled panel not-found state; the table remains usable.
 - Page sizes are implementation constants, not URL params.
 
@@ -51,6 +60,7 @@ Rules:
 buildWordTypesDeepLink({
   type,
   childCode,
+  tableView,
   case,
   tense,
   voice,
@@ -110,16 +120,41 @@ Rules:
 - Transport errors and backend-controlled failures are separate states.
 - Missing API data is never replaced with invented Quranic content.
 
-## Table and Selection Behavior
+## Table-View Tabs (Feature 022)
 
-Columns:
+When a table scope is selected (a leaf/`childCode`, or `type=inl`), a tab row above the table switches
+the same filtered scope between four aggregation levels via the `tableView` query param, in RTL order:
 
 ```text
-الكلمة · النوع · الجذر · الصيغة · الأصل · المواضع · الآيات · السور
+كلمات (words) | جذور (roots) | أصول (stems) | صيغ (lemmas)
 ```
 
-`الصيغة` and `الأصل` render the neutral placeholder when the backend returns null or the v1 scope
-defers those winner queries.
+- Tabs are hidden when no table scope is selected (parent node, no leaf chosen) — there is nothing to
+  aggregate.
+- The list always loads from `GET .../word-types/table` (E2b); `GET .../word-types/words` (E2) stays
+  reserved for existing shareable deep links.
+- Selecting a tab resets `page` to `1`, clears any word-row selection, and preserves the active
+  `type`/`childCode`/`case`/`tense`/`voice` filters.
+- Outside `tableView=words`, the details panel is hidden and the table expands to full width; grouped
+  rows and their counts are **noninteractive** (no row click, no count-chip drilldown, no selected
+  state) — grouped-row detail views are out of MVP.
+- Rows whose `kind` does not match the active `tableView` are never rendered (defense-in-depth against
+  a stale response painting under the wrong tab).
+
+## Table and Selection Behavior
+
+Columns (`tableView=words`):
+
+```text
+الكلمة · النوع · الجذر · الأصل · الصيغة · المواضع · الآيات · السور
+```
+
+`الأصل` (stem) and `الصيغة` (lemma) render the neutral placeholder when the backend returns null or the
+v1 scope defers those winner queries.
+
+Grouped-view columns (`tableView=roots|stems|lemmas`): `<dimension> · المواضع · الآيات · السور`, where
+`<dimension>` is `الجذر` (roots), `الأصل` (stems), or `الصيغة` (lemmas) — a single dimension column,
+no root/type/stem/lemma meta columns, since the row itself *is* that dimension.
 
 Secondary filters narrow the table `totalCount` and any active UI count chips derived from the current rows. They do not change the static E1 tree counts.
 
@@ -177,3 +212,13 @@ screens stack/collapse consistently with existing explorers. Quran/Mushaf text i
 - Missing root/lemma/stem placeholders.
 - Secondary filters do not trigger scoped tree-count expectations; only row total and active UI chips reflect the secondary scope.
 - Keyboard/ARIA behavior for filter picker, table rows, tabs, and narrow-screen panel.
+- `tableView` URL parse/build: missing → `words`; invalid → `words`; valid round-trips; appears in the
+  documented param order; a direct grouped URL with stale `word`/`contextCode` parses with no selection.
+- Table-view tab switching resets page to `1`, clears selection, and changes the request/cache key
+  (triggers reload); `selectType`/`selectChild(null)` reset `tableView` to `words`.
+- Grouped rendering: dimension column + three counts per view, noninteractive (no row button, no count
+  click, no selected state); rows whose `kind` mismatches the active `tableView` are skipped.
+- Hidden/restored details panel and full-width table layout across `tableView` transitions.
+- Table-view tabs hidden without a table scope; RTL roving-tab keyboard behavior (`ArrowLeft`=next,
+  `ArrowRight`=previous, `Home`/`End`).
+- Corrected stem/lemma header and tab-label terminology.

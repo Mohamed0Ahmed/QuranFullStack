@@ -121,8 +121,8 @@ Mushaf-order/identity tie-break.
       "broadLabel": { "ar": "اسم" },
       "caseOrFeature": "genitive",      // row's own case/tense/voice context, or null
       "rootText": "…",                  // الجذر (winner; null if unavailable)
-      "lemmaText": null,                // الأصل (winner or null when unavailable/deferred)
-      "stemText": null,                 // الصيغة (winner or null when unavailable/deferred)
+      "lemmaText": null,                // الصيغة المعجمية (winner or null when unavailable/deferred)
+      "stemText": null,                 // الأصل الصرفي (winner or null when unavailable/deferred)
       "occurrencesCount": 0,            // المواضع — scoped to THIS row context
       "ayahsCount": 0,                  // الآيات
       "surahsCount": 0                  // السور
@@ -137,6 +137,93 @@ Mushaf-order/identity tie-break.
 - All counts are occurrence-scoped to each row's exact context, never the union of the word's usages (FR-028).
 - Rows with null `rootText`, `lemmaText`, or `stemText` remain in the result; the frontend renders `—` for null values.
 - `!IsAyahMarker` always applied.
+
+---
+
+## E2b — Unified table endpoint (table-view tabs, Feature 022)
+
+```
+GET api/words/word-types/table
+    ?tableView={words|roots|stems|lemmas}     (optional; default words)
+    &type={noun|verb|particle|inl}
+    &childCode={head_pos | tense}        (optional — when a child node is selected)
+    &case={nominative|accusative|genitive|null}   (nominal types only)
+    &tense={past|present|imperative}     (verb only)
+    &voice={active|passive}              (verb only)
+    &sort={occurrences|ayahs|surahs|mushaf-order|alpha}
+    &page={n}&pageSize={n}
+```
+
+Returns `ApiResponse<PagedResult<WordTypeTableRowDto>>`, a **discriminated union** distinguished by a
+`kind` property (`"word" | "root" | "stem" | "lemma"`). `tableView=words` (the default) returns the
+same word-context rows as E2, plus `kind:"word"` and the row's own `case`/`tense`/`voice`, so the full
+composite identity (`tashkeelWordId` + `contextCode` + `case` + `tense` + `voice`) is complete in the
+payload — the frontend never re-stamps it. `tableView=roots`, `stems`, or `lemmas` return **grouped**
+rows: one row per distinct non-null `rootId`/`stemId`/`lemmaId` within the same filtered occurrence
+scope as E2, grouped and counted **before** pagination. Grouped rows carry no row-level detail
+(grouped-row drilldown is out of MVP) and render noninteractive in the UI.
+
+```jsonc
+// tableView=words (word variant — superset of the E2 WordTypeRowDto shape)
+{
+  "page": 1, "pageSize": 25, "totalCount": 0,
+  "items": [
+    {
+      "kind": "word",
+      "tashkeelWordId": 1234,
+      "contextCode": "PN",
+      "case": null,                     // null when the case filter is inactive for this scope
+      "tense": null,
+      "voice": null,
+      "displayText": "…",
+      "typeCode": "PN",
+      "typeLabel": { "ar": "اسم علم" },
+      "broadLabel": { "ar": "اسم" },
+      "caseOrFeature": "genitive",
+      "rootText": "…", "lemmaText": null, "stemText": null,
+      "occurrencesCount": 0, "ayahsCount": 0, "surahsCount": 0
+    }
+  ]
+}
+
+// tableView=roots|stems|lemmas (grouped variant — numeric stable ID identity)
+{
+  "page": 1, "pageSize": 25, "totalCount": 0,   // totalCount = distinct non-null dimension IDs in scope
+  "items": [
+    { "kind": "root", "rootId": 4210, "displayText": "ك ت ب", "occurrencesCount": 0, "ayahsCount": 0, "surahsCount": 0 }
+  ]
+}
+```
+
+**Rules**:
+- Missing/blank `tableView` defaults to `words`; an unrecognized `tableView` value is a controlled 400
+  (`InvalidTableView` → `ApiMessages.WordTypesInvalidTableView`), not a silent fallback.
+- Grouped views reuse the **identical scoped occurrence base** as E2 (type + child + case + tense +
+  voice + `!IsAyahMarker` + non-null tashkeel identity) — the same rows E2 would return, grouped by the
+  dimension ID instead of `tashkeelWordId + contextCode`.
+- Grouped identity is the **numeric** `rootId`/`stemId`/`lemmaId`. Arabic display text is never
+  identity.
+- Rows with a null `rootId`/`stemId`/`lemmaId` for the active dimension are **excluded** from grouped
+  views (never rendered as an "unknown" bucket).
+- Grouped `occurrencesCount`/`ayahsCount`/`surahsCount` are the same occurrence-scoped aggregates as
+  E2's table columns (§4.2 of `../data-model.md`), summed per dimension ID instead of per row — a
+  **third** view of the occurrence-count family, distinct from both the E1 tree/node row-count family
+  and the Roots/Lemmas/Stems explorers' own global segment/`words_count`-backed counts. Grouped counts
+  are **never** derived from those explorer aggregates.
+- Grouped `totalCount` = count of distinct non-null dimension IDs in the active scope. It is measured
+  in a different unit than the E2 `totalCount` (word-context rows) — **the two must never be compared**
+  to reason about null-dimension coverage. Null-dimension coverage is instead an **occurrence-sum
+  identity**: `Σ occurrencesCount` across all grouped pages (non-null dimension) plus the occurrences
+  whose dimension ID is null equals `Σ occurrencesCount` across the `tableView=words` pages for the
+  same scope.
+- Sorting is deterministic for every `sort` value, tie-broken by the numeric dimension ID (metric sorts
+  add a first-Mushaf-occurrence tie-break before the ID; `alpha` reuses the Roots explorer's Arabic
+  fold with ordinal collation before the ID).
+- `GET .../word-types/words` (E2) is **preserved unchanged** — same params, same `WordTypeRowDto`
+  shape, no `kind` discriminator — for existing deep links and external consumers.
+- Grouped-row **details** (summary/ayahs/surahs) are **out of MVP**; E3–E5 remain word-row only.
+- Cache keys (`wordtypes:table:{filter-hash}:view:{tableView}:sort:{sort}:p{page}:s{pageSize}`) include
+  `tableView`, so switching tabs never cross-serves another view's rows.
 
 ---
 
@@ -230,8 +317,8 @@ Used by the details card **التحليل** tab for a chosen occurrence. **Reuse
 
 ## Cross-cutting contract rules
 
-1. **Envelope**: all of E1–E5 return `ApiResponse<T>`; errors use the standard envelope. No envelope change.
-2. **Paged shape**: E2 and E4 use the existing `PagedResult<T>` shape: `page`, `pageSize`, `totalCount`, `items`.
+1. **Envelope**: all of E1–E5 (and E2b) return `ApiResponse<T>`; errors use the standard envelope. No envelope change.
+2. **Paged shape**: E2, E2b, and E4 use the existing `PagedResult<T>` shape: `page`, `pageSize`, `totalCount`, `items`. E2b's `items` are the `kind`-discriminated `WordTypeTableRowDto` union (§E2b); E2's `items` stay the flat `WordTypeRowDto` shape.
 3. **Count integrity**: E2 `totalCount` == E1 node count for the same type/child only when no secondary filter is applied (FR-027); secondary filters narrow E2 and active UI chips only.
 4. **Row addressability**: `contextCode` is required to address E3–E5; omitting it for a multi-usage word is a client error, not an implicit union (R14).
 5. **Marker exclusion**: every endpoint excludes ayah-marker words.

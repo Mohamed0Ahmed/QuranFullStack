@@ -29,6 +29,16 @@ and Unique Words. They back the `application/.../Quran/Words/**` query handlers 
 - Response shape/paging must stay aligned with `ReadPaging` and the API contract; changing
   a column or page shape is an API-contract change (update the controller + `API_GUIDELINES`
   expectations and any frontend model).
+- **Word Types grouped table reads** (`EfWordTypesReader.GetTableRowsAsync` for
+  `tableView=roots|stems|lemmas`) reuse the same scoped `BaseRowsSql` occurrence base as the
+  word rows, verbatim — grouping by the numeric `root_id`/`stem_id`/`lemma_id`, excluding
+  nulls, with grouping and total counting happening **before** pagination
+  (`GroupedRowsSql`/`GroupedRowsCountSql` in `EfWordTypesReader.Sql.cs`). These grouped
+  counts are a **separate family** from the Roots/Lemmas/Stems explorers' global,
+  unscoped, segment/`words_count`-backed aggregates (`EfRootsReader.LoadWholeSummaryAsync`
+  and friends) — never conflate the two. Grouped `alpha` sort reuses the Roots explorer's
+  Arabic fold (`RootsListDerivation.ArabicFoldFrom`/`ArabicFoldTo`) with `COLLATE "C"`
+  ordinal collation, tie-broken by the numeric dimension ID.
 
 ## Related
 
