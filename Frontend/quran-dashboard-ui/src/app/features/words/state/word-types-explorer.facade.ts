@@ -10,6 +10,7 @@ import {
   DEFAULT_WORD_TYPE,
   DEFAULT_WORD_TYPE_CASE,
   DEFAULT_WORD_TYPE_SORT,
+  DEFAULT_WORD_TYPE_TABLE_VIEW,
   DEFAULT_WORD_TYPE_TENSE,
   DEFAULT_WORD_TYPE_VOICE,
   DEFAULT_WORD_TYPES_DETAIL_PAGE,
@@ -22,9 +23,10 @@ import {
   WordTypeMainType,
   WordTypeRowIdentity,
   WordTypeSort,
+  WordTypeTableRowDto,
+  WordTypeTableView,
   WordTypeTense,
   WordTypeVoice,
-  WordTypeRowDto,
   WordTypeTreeDto,
   WordTypesListState,
 } from '../models/word-types.models';
@@ -34,6 +36,7 @@ import { buildWordTypesQueryParams, clearWordTypesSelection, parseWordTypesQuery
 const DEFAULT_QUERY: ParsedWordTypesQuery = {
   type: DEFAULT_WORD_TYPE,
   childCode: null,
+  tableView: DEFAULT_WORD_TYPE_TABLE_VIEW,
   case: DEFAULT_WORD_TYPE_CASE,
   tense: DEFAULT_WORD_TYPE_TENSE,
   voice: DEFAULT_WORD_TYPE_VOICE,
@@ -56,6 +59,10 @@ export class WordTypesExplorerFacade {
 
   private route?: ActivatedRoute;
   private routeSub?: Subscription;
+  // Tracks which tableView the currently-stored rows belong to, so a tab switch can null the
+  // stale rows before the new page arrives without also clearing rows on ordinary filter changes
+  // (those intentionally keep prior rows visible while loading).
+  private lastRowsTableView: WordTypeTableView | null = null;
   private readonly state = signal<WordTypesListState>({
     status: 'idle',
     tree: null,
@@ -108,6 +115,7 @@ export class WordTypesExplorerFacade {
       buildWordTypesQueryParams({
         type,
         childCode: null,
+        tableView: DEFAULT_WORD_TYPE_TABLE_VIEW,
         case: DEFAULT_WORD_TYPE_CASE,
         tense: DEFAULT_WORD_TYPE_TENSE,
         voice: DEFAULT_WORD_TYPE_VOICE,
@@ -117,10 +125,25 @@ export class WordTypesExplorerFacade {
   }
 
   // Selecting a child node narrows rows to that subtype, resets the page, and clears any selected
-  // row so the detail panel never lingers on a row from a different context.
+  // row so the detail panel never lingers on a row from a different context. Clearing back to the
+  // parent (childCode: null) also resets tableView — a grouped tab must never linger on a no-leaf
+  // scope that has nothing to aggregate (locked decision 12 of the table-view-tabs plan).
   selectChild(childCode: string | null): void {
     this.navigate({
-      ...buildWordTypesQueryParams({ childCode, page: DEFAULT_WORD_TYPES_PAGE }),
+      ...buildWordTypesQueryParams({
+        childCode,
+        page: DEFAULT_WORD_TYPES_PAGE,
+        ...(childCode === null ? { tableView: DEFAULT_WORD_TYPE_TABLE_VIEW } : {}),
+      }),
+      ...clearWordTypesSelection(),
+    });
+  }
+
+  // Switching the table-view tab narrows the same filtered scope to a different aggregation level.
+  // It resets the page and clears any selected row (grouped views have no word-row selection).
+  selectTableView(tableView: WordTypeTableView): void {
+    this.navigate({
+      ...buildWordTypesQueryParams({ tableView, page: DEFAULT_WORD_TYPES_PAGE }),
       ...clearWordTypesSelection(),
     });
   }
@@ -164,7 +187,19 @@ export class WordTypesExplorerFacade {
     const query = this.state().query;
     const tree$ = this.cache.getOrLoad(WordTypesCacheKeys.tree, () => this.api.getTree());
 
-    this.state.update((current) => ({ ...current, status: 'loading', errorMessage: '' }));
+    // Null out rows only when the tableView itself changed: previous-view rows must never paint
+    // under the new scope, but ordinary filter changes intentionally keep prior rows visible
+    // while the next page loads.
+    const tableViewChanged = this.lastRowsTableView !== null && this.lastRowsTableView !== query.tableView;
+    this.state.update((current) => ({
+      ...current,
+      status: 'loading',
+      errorMessage: '',
+      ...(tableViewChanged ? { rows: null } : {}),
+    }));
+    if (tableViewChanged) {
+      this.lastRowsTableView = null;
+    }
 
     const leafSelected = query.childCode !== null || query.type === 'inl';
 
@@ -179,6 +214,7 @@ export class WordTypesExplorerFacade {
             rows: null,
             errorMessage: WORD_TYPES_ERROR_LABEL,
           }));
+          this.lastRowsTableView = null;
           return of(undefined);
         }),
         map(() => undefined),
@@ -188,8 +224,8 @@ export class WordTypesExplorerFacade {
     return forkJoin({
       tree: tree$,
       rows: this.cache.getOrLoad(
-        WordTypesCacheKeys.rows(query, query.sort, query.page),
-        () => this.api.getRows({ ...query, pageSize: WORD_TYPES_PAGE_SIZE }),
+        WordTypesCacheKeys.table(query, query.tableView, query.sort, query.page),
+        () => this.api.getTableRows({ ...query, pageSize: WORD_TYPES_PAGE_SIZE }),
       ),
     }).pipe(
       tap(({ tree, rows }) => this.handleListResponse(tree, rows, query)),
@@ -201,6 +237,7 @@ export class WordTypesExplorerFacade {
           rows: null,
           errorMessage: WORD_TYPES_ERROR_LABEL,
         }));
+        this.lastRowsTableView = null;
         return of(undefined);
       }),
       map(() => undefined),
@@ -232,7 +269,7 @@ export class WordTypesExplorerFacade {
 
   private handleListResponse(
     tree: ApiResponse<WordTypeTreeDto>,
-    rows: ApiResponse<PagedResultDto<WordTypeRowDto>>,
+    rows: ApiResponse<PagedResultDto<WordTypeTableRowDto>>,
     query: ParsedWordTypesQuery,
   ): void {
     if (!tree.isSuccess || !tree.data || !rows.isSuccess || !rows.data) {
@@ -243,18 +280,13 @@ export class WordTypesExplorerFacade {
         rows: null,
         errorMessage: rows.message ?? tree.message ?? WORD_TYPES_ERROR_LABEL,
       }));
+      this.lastRowsTableView = null;
       return;
     }
 
-    const page = {
-      ...rows.data,
-      items: rows.data.items.map((row) => ({
-        ...row,
-        case: query.case,
-        tense: query.tense,
-        voice: query.voice,
-      })),
-    };
+    // Preserve the complete discriminated /table response. The page isolates its temporary
+    // word-only renderer from this page-ready state until grouped rendering lands in Phase 6.
+    const page = rows.data;
 
     this.state.update((current) => ({
       ...current,
@@ -263,6 +295,7 @@ export class WordTypesExplorerFacade {
       rows: page,
       errorMessage: '',
     }));
+    this.lastRowsTableView = query.tableView;
   }
 
   private navigate(queryParams: Record<string, string | null>): void {
@@ -279,6 +312,6 @@ export class WordTypesExplorerFacade {
   }
 
   private requestKey(query: ParsedWordTypesQuery): string {
-    return [query.type, query.childCode, query.case, query.tense, query.voice, query.sort, query.page].join('|');
+    return [query.type, query.childCode, query.tableView, query.case, query.tense, query.voice, query.sort, query.page].join('|');
   }
 }

@@ -243,3 +243,75 @@ describe('buildWordTypesQueryParams — secondary filters', () => {
     expect(built[WORD_TYPES_QUERY_KEYS.tense]).toBeNull();
   });
 });
+
+describe('parseWordTypesQueryParams — tableView', () => {
+  it('defaults a missing tableView to words', () => {
+    const parsed = parseWordTypesQueryParams(params('type=noun'));
+
+    expect(parsed.tableView).toBe('words');
+  });
+
+  it('defaults an unknown tableView to words', () => {
+    const parsed = parseWordTypesQueryParams(params('type=noun&tableView=bogus'));
+
+    expect(parsed.tableView).toBe('words');
+  });
+
+  it('keeps a valid tableView', () => {
+    const parsed = parseWordTypesQueryParams(params('type=noun&tableView=roots'));
+
+    expect(parsed.tableView).toBe('roots');
+  });
+
+  it('clears stale word-selection params when tableView is not words, even if the URL supplies them', () => {
+    const parsed = parseWordTypesQueryParams(
+      params('type=noun&childCode=PN&tableView=roots&word=123&contextCode=PN&view=surahs&detailPage=2&location=2:1:2&column=analysis'),
+    );
+
+    expect(parsed.tableView).toBe('roots');
+    expect(parsed.word).toBeNull();
+    expect(parsed.tashkeelWordId).toBe(0);
+    expect(parsed.contextCode).toBe('');
+    expect(parsed.view).toBe('ayahs');
+    expect(parsed.detailPage).toBe(1);
+    expect(parsed.location).toBeNull();
+    expect(parsed.column).toBeNull();
+  });
+
+  it('keeps selection params when tableView is words', () => {
+    const parsed = parseWordTypesQueryParams(
+      params('type=noun&childCode=PN&tableView=words&word=123&contextCode=PN'),
+    );
+
+    expect(parsed.word).toBe(123);
+    expect(parsed.contextCode).toBe('PN');
+  });
+});
+
+describe('buildWordTypesQueryParams — tableView', () => {
+  it('emits a concrete tableView value', () => {
+    const built = buildWordTypesQueryParams({ tableView: 'lemmas' });
+
+    expect(built[WORD_TYPES_QUERY_KEYS.tableView]).toBe('lemmas');
+  });
+
+  it('places tableView right after childCode in the canonical order', () => {
+    const built = buildWordTypesQueryParams({
+      type: 'noun',
+      childCode: 'PN',
+      tableView: 'roots',
+      case: 'all',
+      sort: 'occurrences',
+      page: 1,
+    });
+
+    expect(Object.keys(built)).toEqual([
+      WORD_TYPES_QUERY_KEYS.type,
+      WORD_TYPES_QUERY_KEYS.childCode,
+      WORD_TYPES_QUERY_KEYS.tableView,
+      WORD_TYPES_QUERY_KEYS.case,
+      WORD_TYPES_QUERY_KEYS.sort,
+      WORD_TYPES_QUERY_KEYS.page,
+    ]);
+  });
+});

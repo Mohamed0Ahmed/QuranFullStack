@@ -10,7 +10,7 @@ import { ApiResponse } from '../../../../core/data-access/api-response.model';
 import { WordTypesApi } from '../../data-access/word-types.api';
 import { ADDITIONAL_ACTIVE_HUB_SECTIONS } from '../../models/unique-words.labels';
 import { WORD_TYPE_SORT_OPTIONS, WORD_TYPES_SELECT_SUBTYPE_LABEL, WORD_TYPES_SORT_LABEL } from '../../models/word-types.labels';
-import { PagedResultDto, WordTypeAyahMatchDto, WordTypeRowDto, WordTypeTreeDto } from '../../models/word-types.models';
+import { PagedResultDto, WordTableRowDto, WordTypeAyahMatchDto, WordTypeTableRowDto, WordTypeTreeDto } from '../../models/word-types.models';
 import { WordTypesTableComponent } from '../../components/word-types-table/word-types-table.component';
 import { WordTypesDetailFacade } from '../../state/word-types-detail.facade';
 import { WordTypesExplorerFacade } from '../../state/word-types-explorer.facade';
@@ -39,12 +39,13 @@ const tree: WordTypeTreeDto = {
   ],
 };
 
-const row: WordTypeRowDto = {
+const row: WordTableRowDto = {
+  kind: 'word',
   tashkeelWordId: 191001,
   contextCode: 'N',
-  case: 'all',
-  tense: 'all',
-  voice: 'all',
+  case: null,
+  tense: null,
+  voice: null,
   displayText: 'كَلِمَة',
   typeCode: 'N',
   typeLabel: { ar: 'اسم' },
@@ -58,7 +59,7 @@ const row: WordTypeRowDto = {
   surahsCount: 1,
 };
 
-const properRow: WordTypeRowDto = {
+const properRow: WordTableRowDto = {
   ...row,
   contextCode: 'PN',
   typeCode: 'PN',
@@ -66,12 +67,32 @@ const properRow: WordTypeRowDto = {
   broadLabel: { ar: 'اسم' },
 };
 
-const verbRow: WordTypeRowDto = {
+const verbRow: WordTableRowDto = {
   ...row,
   contextCode: 'present',
   typeCode: 'present',
   typeLabel: { ar: 'مضارع' },
   broadLabel: { ar: 'فعل' },
+};
+
+const nullableInlRow: WordTableRowDto = {
+  kind: 'word',
+  tashkeelWordId: 191001,
+  contextCode: 'INL',
+  case: null,
+  tense: null,
+  voice: null,
+  displayText: 'الٓمٓ',
+  typeCode: 'INL',
+  typeLabel: { ar: 'حروف مقطّعة' },
+  broadLabel: { ar: 'حروف مقطّعة' },
+  caseOrFeature: null,
+  rootText: null,
+  lemmaText: null,
+  stemText: null,
+  occurrencesCount: 1,
+  ayahsCount: 1,
+  surahsCount: 1,
 };
 
 const ayahMatch: WordTypeAyahMatchDto = {
@@ -94,7 +115,7 @@ function ok<T>(data: T): ApiResponse<T> {
 describe('WordTypesExplorerPageComponent', () => {
   let api: {
     getTree: ReturnType<typeof vi.fn>;
-    getRows: ReturnType<typeof vi.fn>;
+    getTableRows: ReturnType<typeof vi.fn>;
     getSummary: ReturnType<typeof vi.fn>;
     getAyahMatches: ReturnType<typeof vi.fn>;
     getSurahs: ReturnType<typeof vi.fn>;
@@ -105,7 +126,7 @@ describe('WordTypesExplorerPageComponent', () => {
     getTestBed().resetTestingModule();
     api = {
       getTree: vi.fn().mockReturnValue(of(ok(tree))),
-      getRows: vi.fn().mockReturnValue(of(ok<PagedResultDto<WordTypeRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [row] }))),
+      getTableRows: vi.fn().mockReturnValue(of(ok<PagedResultDto<WordTypeTableRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [row] }))),
       getSummary: vi.fn().mockReturnValue(of(ok(properRow))),
       getAyahMatches: vi.fn(),
       getSurahs: vi.fn().mockReturnValue(of(ok({ surahs: [{ surahNumber: 1, nameArabic: 'الفاتحة', occurrencesCount: 1 }], missingSurahs: [] }))),
@@ -145,7 +166,7 @@ describe('WordTypesExplorerPageComponent', () => {
     const fixture = await createPage();
     const root = fixture.nativeElement as HTMLElement;
 
-    expect(api.getRows).not.toHaveBeenCalled();
+    expect(api.getTableRows).not.toHaveBeenCalled();
     expect(TestBed.inject(WordTypesExplorerFacade).listState().status).toBe('selectPrompt');
     expect(TestBed.inject(WordTypesDetailFacade).panelState().summary).toBeNull();
     expect(root.textContent).toContain(WORD_TYPES_SELECT_SUBTYPE_LABEL);
@@ -167,7 +188,7 @@ describe('WordTypesExplorerPageComponent', () => {
     queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'PN' }));
     const fixture = await createPage();
 
-    expect(api.getRows).toHaveBeenCalledTimes(1);
+    expect(api.getTableRows).toHaveBeenCalledTimes(1);
 
     const verbButton = fixture.nativeElement.querySelector(
       'qd-word-type-filter .word-type-filter__button[data-word-type-code="verb"]',
@@ -184,7 +205,7 @@ describe('WordTypesExplorerPageComponent', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(api.getRows).toHaveBeenCalledTimes(1);
+    expect(api.getTableRows).toHaveBeenCalledTimes(1);
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('[data-testid="word-types-select-subtype"]')).toBeNull();
     expect(root.querySelector('qd-word-types-table')).not.toBeNull();
@@ -206,18 +227,39 @@ describe('WordTypesExplorerPageComponent', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(api.getRows).toHaveBeenCalledWith(expect.objectContaining({ type: 'noun', childCode: 'N', pageSize: 25 }));
+    expect(api.getTableRows).toHaveBeenCalledWith(expect.objectContaining({ type: 'noun', childCode: 'N', pageSize: 25 }));
     expect((fixture.nativeElement as HTMLElement).querySelector('qd-word-types-table')).not.toBeNull();
   });
 
   it('loads rows directly for inl', async () => {
     queryParamMap$.next(convertToParamMap({ type: 'inl' }));
-    api.getRows.mockReturnValueOnce(of(ok<PagedResultDto<WordTypeRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [verbRow] })));
+    api.getTableRows.mockReturnValueOnce(of(ok<PagedResultDto<WordTypeTableRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [verbRow] })));
     const fixture = await createPage();
 
-    expect(api.getRows).toHaveBeenCalledWith(expect.objectContaining({ type: 'inl', childCode: null, pageSize: 25 }));
+    expect(api.getTableRows).toHaveBeenCalledWith(expect.objectContaining({ type: 'inl', childCode: null, pageSize: 25 }));
     expect(TestBed.inject(WordTypesExplorerFacade).listState().status).toBe('success');
     expect((fixture.nativeElement as HTMLElement).querySelector('qd-word-types-table')).not.toBeNull();
+  });
+
+  it('restores a backend-shaped nullable identity row against the default URL filters', async () => {
+    api.getTableRows.mockReturnValueOnce(of(ok<PagedResultDto<WordTypeTableRowDto>>({
+      page: 1,
+      pageSize: 25,
+      totalCount: 1,
+      items: [nullableInlRow],
+    })));
+    queryParamMap$.next(convertToParamMap({
+      type: 'inl',
+      page: '1',
+      word: '191001',
+      contextCode: 'INL',
+    }));
+
+    const fixture = await createPage();
+    fixture.detectChanges();
+    const renderedRow = (fixture.nativeElement as HTMLElement).querySelector('[data-word-types-row]');
+    expect(renderedRow?.getAttribute('aria-current')).toBe('true');
+    expect(renderedRow?.getAttribute('data-word-types-row')).toBe('191001:INL:all:all:all');
   });
 
   it('renders independent table and details scroll containers for restored row views', async () => {
@@ -273,7 +315,7 @@ describe('WordTypesExplorerPageComponent', () => {
   });
 
   it('renders empty and error states without adding a simple-text toggle', async () => {
-    api.getRows.mockReturnValueOnce(of(ok<PagedResultDto<WordTypeRowDto>>({ page: 1, pageSize: 25, totalCount: 0, items: [] })));
+    api.getTableRows.mockReturnValueOnce(of(ok<PagedResultDto<WordTypeTableRowDto>>({ page: 1, pageSize: 25, totalCount: 0, items: [] })));
     queryParamMap$.next(convertToParamMap({ type: 'particle', childCode: 'P', page: '1' }));
     const emptyFixture = await createPage();
     expect((emptyFixture.nativeElement as HTMLElement).textContent).toContain('لا توجد نتائج لهذا النوع');
@@ -290,7 +332,7 @@ describe('WordTypesExplorerPageComponent', () => {
           provide: WordTypesApi,
           useValue: {
             getTree: vi.fn().mockReturnValue(of(ok(tree))),
-            getRows: vi.fn().mockReturnValue(of({ isSuccess: false, data: null, message: 'تعذّر تحميل أنواع الكلمات', errors: null })),
+            getTableRows: vi.fn().mockReturnValue(of({ isSuccess: false, data: null, message: 'تعذّر تحميل أنواع الكلمات', errors: null })),
           },
         },
         { provide: ActivatedRoute, useValue: { queryParamMap: queryParamMap$.asObservable() } },
@@ -338,7 +380,7 @@ describe('WordTypesExplorerPageComponent', () => {
   });
 
   it('restores exact row context and view from route state, then clears on back navigation', async () => {
-    api.getRows.mockReturnValueOnce(of(ok<PagedResultDto<WordTypeRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [properRow] })));
+    api.getTableRows.mockReturnValueOnce(of(ok<PagedResultDto<WordTypeTableRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [properRow] })));
     queryParamMap$.next(convertToParamMap({
       type: 'noun',
       childCode: 'PN',
@@ -377,7 +419,7 @@ describe('WordTypesExplorerPageComponent', () => {
   });
 
   it('reloads summary when active feature changes for the same restored word context', async () => {
-    api.getRows.mockReturnValue(of(ok<PagedResultDto<WordTypeRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [properRow] })));
+    api.getTableRows.mockReturnValue(of(ok<PagedResultDto<WordTypeTableRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [properRow] })));
     queryParamMap$.next(convertToParamMap({
       type: 'noun',
       case: 'genitive',
@@ -409,7 +451,7 @@ describe('WordTypesExplorerPageComponent', () => {
   });
 
   it('falls back stale analysis deep-links to ayahs and removes the analysis action from the DOM', async () => {
-    api.getRows.mockReturnValueOnce(of(ok<PagedResultDto<WordTypeRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [properRow] })));
+    api.getTableRows.mockReturnValueOnce(of(ok<PagedResultDto<WordTypeTableRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [properRow] })));
     api.getAyahMatches.mockReturnValueOnce(of(ok<PagedResultDto<WordTypeAyahMatchDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [ayahMatch] })));
     queryParamMap$.next(convertToParamMap({
       type: 'noun',
@@ -449,7 +491,13 @@ describe('WordTypesExplorerPageComponent', () => {
 
     closeButton.click();
 
-    expect(focusSpy).toHaveBeenCalledWith(row);
+    expect(focusSpy).toHaveBeenCalledWith(expect.objectContaining({
+      tashkeelWordId: 191001,
+      contextCode: 'N',
+      case: 'all',
+      tense: 'all',
+      voice: 'all',
+    }));
   });
 
   it('renders a controlled not-found panel for missing restored rows while leaving the table active', async () => {

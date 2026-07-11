@@ -12,6 +12,8 @@ import {
   WordTypeSort,
   WordTypeSummaryDto,
   WordTypeSurahsResponseDto,
+  WordTypeTableRowDto,
+  WordTypeTableView,
   WordTypeTense,
   WordTypeTreeDto,
   WordTypeVoice,
@@ -47,6 +49,31 @@ export class WordTypesApi {
     }
 
     return this.http.get<ApiResponse<PagedResultDto<WordTypeRowDto>>>(`${this.baseUrl}/api/words/word-types/words`, { params });
+  }
+
+  getTableRows(options: {
+    type: string;
+    childCode: string | null;
+    case: WordTypeCase;
+    tense: WordTypeTense;
+    voice: WordTypeVoice;
+    tableView: WordTypeTableView;
+    sort: WordTypeSort;
+    page: number;
+    pageSize: number;
+  }): Observable<ApiResponse<PagedResultDto<WordTypeTableRowDto>>> {
+    let params = this.identityParams(options)
+      .set('type', options.type)
+      .set('tableView', options.tableView)
+      .set('sort', options.sort)
+      .set('page', options.page)
+      .set('pageSize', options.pageSize);
+
+    if (options.childCode !== null) {
+      params = params.set('childCode', options.childCode);
+    }
+
+    return this.http.get<ApiResponse<PagedResultDto<WordTypeTableRowDto>>>(`${this.baseUrl}/api/words/word-types/table`, { params });
   }
 
   getSummary(identity: WordTypeIdentityParams): Observable<ApiResponse<WordTypeSummaryDto>> {

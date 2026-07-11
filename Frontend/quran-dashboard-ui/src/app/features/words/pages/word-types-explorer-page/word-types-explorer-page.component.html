@@ -52,7 +52,7 @@
     >
       @if (listState().rows || listState().status === 'loading') {
         <qd-word-types-table
-          [rows]="listState().rows"
+          [rows]="wordRows()"
           [loading]="listState().status === 'loading'"
           [selectedRow]="selectedRow()"
           (rowSelected)="selectRow($event)"

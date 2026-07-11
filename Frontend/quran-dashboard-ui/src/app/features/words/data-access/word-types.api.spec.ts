@@ -1,0 +1,194 @@
+import { describe, expect, it, beforeEach, afterEach } from 'vitest';
+import { TestBed, getTestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { firstValueFrom } from 'rxjs';
+
+import { ApiResponse } from '../../../core/data-access/api-response.model';
+import { PagedResultDto, WordTypeRowDto, WordTypeTableRowDto } from '../models/word-types.models';
+import { WordTypesApi } from './word-types.api';
+
+function matchTable(): RegExp {
+  return /\/api\/words\/word-types\/table(\?.*)?$/;
+}
+
+function matchRows(): RegExp {
+  return /\/api\/words\/word-types\/words(\?.*)?$/;
+}
+
+describe('WordTypesApi', () => {
+  let api: WordTypesApi;
+  let httpMock: HttpTestingController;
+
+  beforeEach(() => {
+    getTestBed().resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [WordTypesApi, provideHttpClient(), provideHttpClientTesting()],
+    });
+    api = TestBed.inject(WordTypesApi);
+    httpMock = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => {
+    httpMock.verify();
+    getTestBed().resetTestingModule();
+  });
+
+  it('calls the table endpoint with type/tableView/sort/page/pageSize params', async () => {
+    const promise = firstValueFrom(api.getTableRows({
+      type: 'noun',
+      childCode: null,
+      case: 'all',
+      tense: 'all',
+      voice: 'all',
+      tableView: 'roots',
+      sort: 'occurrences',
+      page: 1,
+      pageSize: 25,
+    }));
+
+    const req = httpMock.expectOne((r) => matchTable().test(r.url));
+    expect(req.request.method).toBe('GET');
+    expect(req.request.params.get('type')).toBe('noun');
+    expect(req.request.params.get('tableView')).toBe('roots');
+    expect(req.request.params.get('sort')).toBe('occurrences');
+    expect(req.request.params.get('page')).toBe('1');
+    expect(req.request.params.get('pageSize')).toBe('25');
+    expect(req.request.params.has('childCode')).toBe(false);
+
+    const response: ApiResponse<PagedResultDto<WordTypeTableRowDto>> = {
+      isSuccess: true,
+      message: 'تم',
+      data: { page: 1, pageSize: 25, totalCount: 0, items: [] },
+    };
+    req.flush(response);
+
+    await expect(promise).resolves.toEqual(response);
+  });
+
+  it('includes the childCode param when provided', async () => {
+    const promise = firstValueFrom(api.getTableRows({
+      type: 'noun',
+      childCode: 'PN',
+      case: 'nominative',
+      tense: 'all',
+      voice: 'all',
+      tableView: 'words',
+      sort: 'alpha',
+      page: 2,
+      pageSize: 25,
+    }));
+
+    const req = httpMock.expectOne((r) => matchTable().test(r.url));
+    expect(req.request.params.get('childCode')).toBe('PN');
+    expect(req.request.params.get('case')).toBe('nominative');
+    expect(req.request.params.get('tableView')).toBe('words');
+    req.flush({ isSuccess: true, message: 'تم', data: { page: 2, pageSize: 25, totalCount: 0, items: [] } });
+
+    await promise;
+  });
+
+  it('returns the discriminated WordTypeTableRowDto union unchanged (kind carried through)', async () => {
+    const response: ApiResponse<PagedResultDto<WordTypeTableRowDto>> = {
+      isSuccess: true,
+      message: 'تم',
+      data: {
+        page: 1,
+        pageSize: 25,
+        totalCount: 1,
+        items: [{ kind: 'root', rootId: 190700, displayText: 'ك ل م', occurrencesCount: 3, ayahsCount: 2, surahsCount: 1 }],
+      },
+    };
+
+    const promise = firstValueFrom(api.getTableRows({
+      type: 'noun',
+      childCode: null,
+      case: 'all',
+      tense: 'all',
+      voice: 'all',
+      tableView: 'roots',
+      sort: 'occurrences',
+      page: 1,
+      pageSize: 25,
+    }));
+
+    httpMock.expectOne((r) => matchTable().test(r.url)).flush(response);
+
+    const emitted = await promise;
+    expect(emitted.data?.items[0]?.kind).toBe('root');
+  });
+
+  it('preserves the backend nulls for inactive word identity filters', async () => {
+    const response: ApiResponse<PagedResultDto<WordTypeTableRowDto>> = {
+      isSuccess: true,
+      message: 'تم',
+      data: {
+        page: 1,
+        pageSize: 25,
+        totalCount: 1,
+        items: [{
+          kind: 'word',
+          tashkeelWordId: 191001,
+          contextCode: 'INL',
+          case: null,
+          tense: null,
+          voice: null,
+          displayText: 'الٓمٓ',
+          typeCode: 'INL',
+          typeLabel: { ar: 'حروف مقطّعة' },
+          broadLabel: { ar: 'حروف مقطّعة' },
+          caseOrFeature: null,
+          rootText: null,
+          lemmaText: null,
+          stemText: null,
+          occurrencesCount: 1,
+          ayahsCount: 1,
+          surahsCount: 1,
+        }],
+      },
+    };
+
+    const promise = firstValueFrom(api.getTableRows({
+      type: 'inl',
+      childCode: null,
+      case: 'all',
+      tense: 'all',
+      voice: 'all',
+      tableView: 'words',
+      sort: 'occurrences',
+      page: 1,
+      pageSize: 25,
+    }));
+
+    httpMock.expectOne((r) => matchTable().test(r.url)).flush(response);
+
+    await expect(promise).resolves.toEqual(response);
+  });
+
+  it('retains getRows for the legacy words endpoint', async () => {
+    const response: ApiResponse<PagedResultDto<WordTypeRowDto>> = {
+      isSuccess: true,
+      message: 'تم',
+      data: { page: 2, pageSize: 25, totalCount: 0, items: [] },
+    };
+
+    const promise = firstValueFrom(api.getRows({
+      type: 'noun',
+      childCode: 'PN',
+      case: 'nominative',
+      tense: 'all',
+      voice: 'all',
+      sort: 'alpha',
+      page: 2,
+      pageSize: 25,
+    }));
+
+    const req = httpMock.expectOne((r) => matchRows().test(r.url));
+    expect(req.request.params.get('childCode')).toBe('PN');
+    expect(req.request.params.get('case')).toBe('nominative');
+    expect(req.request.params.has('tableView')).toBe(false);
+    req.flush(response);
+
+    await expect(promise).resolves.toEqual(response);
+  });
+});

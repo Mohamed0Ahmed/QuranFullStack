@@ -5,6 +5,7 @@ import {
   DEFAULT_WORD_TYPE,
   DEFAULT_WORD_TYPE_CASE,
   DEFAULT_WORD_TYPE_SORT,
+  DEFAULT_WORD_TYPE_TABLE_VIEW,
   DEFAULT_WORD_TYPE_TENSE,
   DEFAULT_WORD_TYPE_VOICE,
   DEFAULT_WORD_TYPES_DETAIL_PAGE,
@@ -16,12 +17,14 @@ import {
   WordTypeDetailView,
   WordTypeMainType,
   WordTypeSort,
+  WordTypeTableView,
   WordTypeTense,
   WordTypeVoice,
   isWordTypeCase,
   isWordTypeDetailView,
   isWordTypeMainType,
   isWordTypeSort,
+  isWordTypeTableView,
   isWordTypeTense,
   isWordTypeVoice,
 } from '../models/word-types.models';
@@ -30,12 +33,19 @@ export function parseWordTypesQueryParams(queryParams: ParamMap): ParsedWordType
   const typeRaw = queryParams.get(WORD_TYPES_QUERY_KEYS.type);
   const type: WordTypeMainType = typeRaw !== null && isWordTypeMainType(typeRaw) ? typeRaw : DEFAULT_WORD_TYPE;
   const childCode = normalizeChildCode(type, queryParams.get(WORD_TYPES_QUERY_KEYS.childCode));
-  const word = parsePositiveInt(queryParams.get(WORD_TYPES_QUERY_KEYS.word));
-  const contextCode = word === null ? '' : normalizeOptionalText(queryParams.get(WORD_TYPES_QUERY_KEYS.contextCode)) ?? '';
+  const tableView = normalizeTableView(queryParams.get(WORD_TYPES_QUERY_KEYS.tableView));
+
+  // Grouped views (tableView !== 'words') have no word-row selection concept, so any selection
+  // params from the URL are dropped even if a stale/foreign deep link supplied them (locked 14).
+  const word = tableView === 'words' ? parsePositiveInt(queryParams.get(WORD_TYPES_QUERY_KEYS.word)) : null;
+  const contextCode = tableView !== 'words' || word === null
+    ? ''
+    : normalizeOptionalText(queryParams.get(WORD_TYPES_QUERY_KEYS.contextCode)) ?? '';
 
   return {
     type,
     childCode,
+    tableView,
     case: normalizeCase(type, queryParams.get(WORD_TYPES_QUERY_KEYS.case)),
     tense: normalizeTense(type, queryParams.get(WORD_TYPES_QUERY_KEYS.tense)),
     voice: normalizeVoice(type, queryParams.get(WORD_TYPES_QUERY_KEYS.voice)),
@@ -44,16 +54,19 @@ export function parseWordTypesQueryParams(queryParams: ParamMap): ParsedWordType
     word: contextCode.length === 0 ? null : word,
     tashkeelWordId: word ?? 0,
     contextCode,
-    view: normalizeView(queryParams.get(WORD_TYPES_QUERY_KEYS.view)),
-    detailPage: parsePositiveInt(queryParams.get(WORD_TYPES_QUERY_KEYS.detailPage)) ?? DEFAULT_WORD_TYPES_DETAIL_PAGE,
-    location: normalizeOptionalText(queryParams.get(WORD_TYPES_QUERY_KEYS.location)),
-    column: normalizeOptionalText(queryParams.get(WORD_TYPES_QUERY_KEYS.column)),
+    view: tableView === 'words' ? normalizeView(queryParams.get(WORD_TYPES_QUERY_KEYS.view)) : DEFAULT_WORD_TYPES_DETAIL_VIEW,
+    detailPage: tableView === 'words'
+      ? parsePositiveInt(queryParams.get(WORD_TYPES_QUERY_KEYS.detailPage)) ?? DEFAULT_WORD_TYPES_DETAIL_PAGE
+      : DEFAULT_WORD_TYPES_DETAIL_PAGE,
+    location: tableView === 'words' ? normalizeOptionalText(queryParams.get(WORD_TYPES_QUERY_KEYS.location)) : null,
+    column: tableView === 'words' ? normalizeOptionalText(queryParams.get(WORD_TYPES_QUERY_KEYS.column)) : null,
   };
 }
 
 export type WordTypesQueryChange = Partial<{
   type: WordTypeMainType | null;
   childCode: string | null;
+  tableView: WordTypeTableView | null;
   case: WordTypeCase | null;
   tense: WordTypeTense | null;
   voice: WordTypeVoice | null;
@@ -70,6 +83,7 @@ export type WordTypesQueryChange = Partial<{
 const WORD_TYPES_QUERY_ORDER = [
   'type',
   'childCode',
+  'tableView',
   'case',
   'tense',
   'voice',
@@ -154,6 +168,10 @@ function normalizeVoice(type: WordTypeMainType, value: string | null): WordTypeV
 
 function normalizeSort(value: string | null): WordTypeSort {
   return value !== null && isWordTypeSort(value) ? value : DEFAULT_WORD_TYPE_SORT;
+}
+
+function normalizeTableView(value: string | null): WordTypeTableView {
+  return value !== null && isWordTypeTableView(value) ? value : DEFAULT_WORD_TYPE_TABLE_VIEW;
 }
 
 function normalizeView(value: string | null): WordTypeDetailView {

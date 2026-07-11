@@ -21,8 +21,10 @@ import {
 import {
   DEFAULT_WORD_TYPES_DETAIL_PAGE,
   DEFAULT_WORD_TYPES_DETAIL_VIEW,
+  PagedResultDto,
   WORD_TYPES_DETAIL_PAGE_SIZE,
   WORD_TYPES_PAGE_SIZE,
+  WordTableRowDto,
   WordTypeCase,
   WordTypeDetailView,
   WordTypeMainType,
@@ -30,6 +32,7 @@ import {
   WordTypeSort,
   WordTypeTense,
   WordTypeVoice,
+  normalizeWordTableRow,
 } from '../../models/word-types.models';
 import { AyahMatchDto, PagedResultDto as SharedPagedResultDto } from '../../models/unique-words.models';
 import { WordTypesDetailFacade } from '../../state/word-types-detail.facade';
@@ -69,15 +72,32 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
   private readonly filter = viewChild(WordTypeFilterComponent);
   private readonly table = viewChild(WordTypesTableComponent);
 
+  // Grouped /table responses remain available in facade state. Until Phase 6 teaches the table to
+  // render them, this page boundary supplies only word variants to the existing word-only table.
+  protected readonly wordRows = computed<PagedResultDto<WordTypeRowDto> | null>(() => {
+    const page = this.listState().rows;
+    if (!page) {
+      return null;
+    }
+
+    return {
+      ...page,
+      items: page.items
+        .filter((row): row is WordTableRowDto => row.kind === 'word')
+        .map(normalizeWordTableRow),
+    };
+  });
+
   protected readonly selectedRow = computed(() => {
     const state = this.listState();
     const selectedId = state.query.word;
-    if (selectedId === null || !state.rows) {
+    const page = this.wordRows();
+    if (selectedId === null || !page) {
       return null;
     }
 
     return (
-      state.rows.items.find(
+      page.items.find(
         (row) => row.tashkeelWordId === selectedId
           && row.contextCode === state.query.contextCode
           && row.case === state.query.case
