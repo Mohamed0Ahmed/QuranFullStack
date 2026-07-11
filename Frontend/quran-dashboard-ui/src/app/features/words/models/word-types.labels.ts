@@ -3,9 +3,8 @@ import { WORD_TYPE_SORTS, WordTypeCase, WordTypeDetailView, WordTypeMainType, Wo
 export const WORD_TYPES_PAGE_TITLE = 'أنواع الكلمات';
 export const WORD_TYPES_TABLE_LABEL = 'جدول كلمات النوع';
 export const WORD_TYPES_FILTER_LABEL = 'تصفية أنواع الكلمات';
-export const WORD_TYPES_EXPAND_LABEL = 'توسيع';
-export const WORD_TYPES_COLLAPSE_LABEL = 'طيّ';
 export const WORD_TYPES_DETAILS_PANEL_LABEL = 'تفاصيل كلمة النوع';
+export const WORD_TYPES_NO_SUBTYPES_LABEL = 'لا توجد أنواع فرعية لهذا النوع';
 export const WORD_TYPES_SORT_LABEL = 'ترتيب';
 export const WORD_TYPES_LOADING_LABEL = 'جارٍ التحميل…';
 export const WORD_TYPES_EMPTY_LABEL = 'لا توجد نتائج لهذا النوع';

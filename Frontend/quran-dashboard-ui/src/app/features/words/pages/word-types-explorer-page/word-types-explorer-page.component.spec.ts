@@ -193,12 +193,6 @@ describe('WordTypesExplorerPageComponent', () => {
 
   it('loads rows when a subtype is selected', async () => {
     const fixture = await createPage();
-    const nounExpand = fixture.nativeElement.querySelector(
-      'qd-word-type-filter .word-type-filter__expand[data-word-type-code="noun"]',
-    ) as HTMLButtonElement;
-    nounExpand.click();
-    fixture.detectChanges();
-
     const childButton = fixture.nativeElement.querySelector('.word-type-filter__child-button') as HTMLButtonElement;
     childButton.click();
     fixture.detectChanges();
@@ -257,12 +251,6 @@ describe('WordTypesExplorerPageComponent', () => {
 
   it('routes case filter selection and resets the page while clearing the selected row', async () => {
     const fixture = await createPage();
-    const nounExpand = fixture.nativeElement.querySelector(
-      'qd-word-type-filter .word-type-filter__expand[data-word-type-code="noun"]',
-    ) as HTMLButtonElement;
-    nounExpand.click();
-    fixture.detectChanges();
-
     const caseSelect = fixture.nativeElement.querySelector(
       'qd-word-type-filter [data-testid="word-type-case-filter"] select',
     ) as HTMLSelectElement;
@@ -278,12 +266,6 @@ describe('WordTypesExplorerPageComponent', () => {
 
   it('renders the noun case controls but not the verb controls by default', async () => {
     const fixture = await createPage();
-    const nounExpand = fixture.nativeElement.querySelector(
-      'qd-word-type-filter .word-type-filter__expand[data-word-type-code="noun"]',
-    ) as HTMLButtonElement;
-    nounExpand.click();
-    fixture.detectChanges();
-
     const root = fixture.nativeElement as HTMLElement;
 
     expect(root.querySelector('qd-word-type-filter [data-testid="word-type-case-filter"]')).not.toBeNull();
