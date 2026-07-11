@@ -103,6 +103,76 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
             rows.Select(row => row.ToDto()).ToList());
     }
 
+    public async Task<PagedResult<WordTypeTableRowDto>> GetTableRowsAsync(
+        WordTypeFilter filter,
+        WordTypeTableView tableView,
+        WordTypeSort sort,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken)
+    {
+        if (tableView == WordTypeTableView.Words)
+        {
+            var wordPage = await GetRowsAsync(filter, sort, page, pageSize, cancellationToken);
+            return new PagedResult<WordTypeTableRowDto>(
+                wordPage.Page,
+                wordPage.PageSize,
+                wordPage.TotalCount,
+                wordPage.Items.Select(row => ToWordTableRowDto(row, filter)).ToList());
+        }
+
+        var type = NormalizeType(filter.Type);
+        var childCode = NormalizeChildCode(filter.ChildCode);
+        var context = new WordTypeReadContext(type, childCode, filter.Case, filter.Tense, filter.Voice);
+        var totalCount = await CountGroupedRowsAsync(context, tableView, cancellationToken);
+        var skip = ReadPaging.CalculateSafeSkip(page, pageSize, totalCount);
+        if (skip is null)
+        {
+            return new PagedResult<WordTypeTableRowDto>(page, pageSize, totalCount, []);
+        }
+
+        var parameters = BuildGroupedRowsParameters(context, sort, skip.Value, pageSize);
+        var rows = await _dbContext.Database.SqlQueryRaw<GroupedRowSqlResult>(
+            GroupedRowsSql(context, tableView, sort),
+            parameters)
+            .ToListAsync(cancellationToken);
+
+        return new PagedResult<WordTypeTableRowDto>(
+            page,
+            pageSize,
+            totalCount,
+            rows.Select(row => row.ToDto(tableView)).ToList());
+    }
+
+    private async Task<int> CountGroupedRowsAsync(WordTypeReadContext context, WordTypeTableView tableView, CancellationToken cancellationToken)
+    {
+        var parameters = BuildCountParameters(context);
+        var result = await _dbContext.Database.SqlQueryRaw<CountRow>(GroupedRowsCountSql(context, tableView), parameters)
+            .SingleAsync(cancellationToken);
+
+        return result.Count;
+    }
+
+    // The word variant's Case/Tense/Voice complete the composite identity using the active filter that
+    // scoped this page — the same values the detail endpoints (summary/ayahs/surahs) already accept.
+    private static WordTableRowDto ToWordTableRowDto(WordTypeRowDto row, WordTypeFilter filter) => new(
+        row.TashkeelWordId,
+        row.ContextCode,
+        filter.Case,
+        filter.Tense,
+        filter.Voice,
+        row.DisplayText,
+        row.TypeCode,
+        row.TypeLabel,
+        row.BroadLabel,
+        row.CaseOrFeature,
+        row.RootText,
+        row.LemmaText,
+        row.StemText,
+        row.OccurrencesCount,
+        row.AyahsCount,
+        row.SurahsCount);
+
     public async Task<WordTypeSummaryDto?> GetSummaryAsync(
         WordTypeRowIdentity identity,
         CancellationToken cancellationToken)

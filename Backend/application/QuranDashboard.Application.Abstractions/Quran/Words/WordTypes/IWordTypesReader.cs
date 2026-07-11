@@ -14,6 +14,14 @@ public interface IWordTypesReader
         int pageSize,
         CancellationToken cancellationToken);
 
+    Task<PagedResult<WordTypeTableRowDto>> GetTableRowsAsync(
+        WordTypeFilter filter,
+        WordTypeTableView tableView,
+        WordTypeSort sort,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken);
+
     Task<WordTypeSummaryDto?> GetSummaryAsync(
         WordTypeRowIdentity identity,
         CancellationToken cancellationToken);

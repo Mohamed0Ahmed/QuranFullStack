@@ -35,6 +35,19 @@ public sealed class CachedWordTypesReader(EfWordTypesReader efReader, IMemoryCac
         return rows;
     }
 
+    public async Task<PagedResult<WordTypeTableRowDto>> GetTableRowsAsync(WordTypeFilter filter, WordTypeTableView tableView, WordTypeSort sort, int page, int pageSize, CancellationToken cancellationToken)
+    {
+        var key = WordTypesCacheKeys.Table(filter, tableView, sort, page, pageSize);
+        if (_cache.TryGetValue(key, out PagedResult<WordTypeTableRowDto>? cached))
+        {
+            return cached!;
+        }
+
+        var rows = await _ef.GetTableRowsAsync(filter, tableView, sort, page, pageSize, cancellationToken);
+        _cache.Set(key, rows, WordTypesCacheEntryOptions.PagedRows());
+        return rows;
+    }
+
     public async Task<WordTypeSummaryDto?> GetSummaryAsync(WordTypeRowIdentity identity, CancellationToken cancellationToken)
     {
         var key = WordTypesCacheKeys.Summary(identity);

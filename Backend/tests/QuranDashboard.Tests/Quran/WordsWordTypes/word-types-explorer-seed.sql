@@ -54,7 +54,10 @@ VALUES
   (190501, 'لَا', 'lA', NULL, 1, 1908001),
   (190502, 'عِلْم', 'Elm', 190701, 3, 1907001),
   (190503, 'الٓمٓ', 'Alm', NULL, 1, 1903005),
-  (190504, 'خَارِج', 'fixture', NULL, 1, 1909001)
+  (190504, 'خَارِج', 'fixture', NULL, 1, 1909001),
+  -- Second INL (muqatta'at) lemma, distinct from 190503, so the inl scope has two grouped-table
+  -- dimension groups (table-view-tabs grouped alpha/mushaf-order/pagination coverage).
+  (190505, 'ص', 'S', NULL, 1, 1903012)
 ON CONFLICT DO NOTHING;
 
 INSERT INTO quran_stems (id, stem_text, words_count, first_word_order_in_mushaf)
@@ -62,7 +65,8 @@ VALUES
   (190600, 'كَلَّمَ', 3, 1903001),
   (190601, 'لَا', 1, 1908001),
   (190602, 'عَلِمَ', 3, 1907001),
-  (190603, 'الٓمٓ', 1, 1903005)
+  (190603, 'الٓمٓ', 1, 1903005),
+  (190604, 'ص', 1, 1903012)
 ON CONFLICT DO NOTHING;
 
 INSERT INTO quran_words
@@ -79,7 +83,8 @@ VALUES
   (1907002, '2:25:2', 190025, 2, 25, 2, 5, 1, 2, 'g1907002', 'عُلِمَ', 'علم', 'علم', 'علم', FALSE, NULL, NULL),
   (1907003, '3:8:1', 190032, 3, 8, 1, 50, 1, 1, 'g1907003', 'عَلِمَ', 'علم', 'علم', 'علم', FALSE, NULL, NULL),
   (1908001, '3:8:2', 190032, 3, 8, 2, 50, 1, 2, 'g1908001', 'لَا', 'لا', 'لا', 'لا', FALSE, NULL, NULL),
-  (1909001, '3:8:3', 190032, 3, 8, 3, 50, 1, 3, 'g1909001', 'خَارِج', 'خارج', 'خارج', 'خارج', FALSE, NULL, NULL)
+  (1909001, '3:8:3', 190032, 3, 8, 3, 50, 1, 3, 'g1909001', 'خَارِج', 'خارج', 'خارج', 'خارج', FALSE, NULL, NULL),
+  (1903012, '2:1:2', 190021, 2, 1, 2, 2, 1, 2, 'g1903012', 'ص', 'ص', 'ص', 'ص', FALSE, NULL, NULL)
 ON CONFLICT DO NOTHING;
 
 INSERT INTO quran_words_unique_tashkeel
@@ -92,7 +97,8 @@ VALUES
   (191005, 'لَا', 'لا', 'لا', 1, 1, 1, 1908001, '3:8:2', 3, 8, 1908001, 50, 1),
   (191006, 'خَارِج', 'خارج', 'خارج', 1, 1, 1, 1909001, '3:8:3', 3, 8, 1909001, 50, 1),
   (191007, 'ۚ', 'ۚ', 'ۚ', 1, 1, 1, 1903004, '1:2:2', 1, 2, 1903004, 1, 1),
-  (191008, 'مُثَل', 'مثل', 'مثل', 2, 2, 1, 1903011, '1:1:3', 1, 1, 1903011, 1, 1)
+  (191008, 'مُثَل', 'مثل', 'مثل', 2, 2, 1, 1903011, '1:1:3', 1, 1, 1903011, 1, 1),
+  (191009, 'ص', 'ص', 'ص', 1, 1, 1, 1903012, '2:1:2', 2, 1, 1903012, 2, 1)
 ON CONFLICT DO NOTHING;
 
 INSERT INTO quran_words_unique_simple
@@ -104,7 +110,8 @@ VALUES
   (192004, 'لا', 'لَا', 'لا', 'لا', 'g1908001', 1, 1, 1, 1908001, '3:8:2', 3, 8, 1908001, 50, 1),
   (192005, 'خارج', 'خَارِج', 'خارج', 'خارج', 'g1909001', 1, 1, 1, 1909001, '3:8:3', 3, 8, 1909001, 50, 1),
   (192006, 'ۚ', 'ۚ', 'ۚ', 'ۚ', 'g1903004', 1, 1, 1, 1903004, '1:2:2', 1, 2, 1903004, 1, 1),
-  (192007, 'مثل', 'مُثَل', 'مثل', 'مثل', 'g1903011', 2, 2, 1, 1903011, '1:1:3', 1, 1, 1903011, 1, 1)
+  (192007, 'مثل', 'مُثَل', 'مثل', 'مثل', 'g1903011', 2, 2, 1, 1903011, '1:1:3', 1, 1, 1903011, 1, 1),
+  (192008, 'ص', 'ص', 'ص', 'ص', 'g1903012', 1, 1, 1, 1903012, '2:1:2', 2, 1, 1903012, 2, 1)
 ON CONFLICT DO NOTHING;
 
 UPDATE quran_words SET unique_tashkeel_word_id = 191001, unique_simple_word_id = 192001 WHERE id IN (1903001, 1903002, 1903003);
@@ -115,6 +122,7 @@ UPDATE quran_words SET unique_tashkeel_word_id = 191003, unique_simple_word_id =
 UPDATE quran_words SET unique_tashkeel_word_id = 191004, unique_simple_word_id = 192003 WHERE id = 1907002;
 UPDATE quran_words SET unique_tashkeel_word_id = 191005, unique_simple_word_id = 192004 WHERE id = 1908001;
 UPDATE quran_words SET unique_tashkeel_word_id = 191006, unique_simple_word_id = 192005 WHERE id = 1909001;
+UPDATE quran_words SET unique_tashkeel_word_id = 191009, unique_simple_word_id = 192008 WHERE id = 1903012;
 
 INSERT INTO quran_word_morphology
   (quran_word_id, location, head_pos, segment_count, root_id, lemma_id, stem_id, is_verb, verb_tense, verb_voice, case_feature, head_features_json)
@@ -130,5 +138,6 @@ VALUES
   (1908001, '3:8:2', 'PRO', 1, NULL, 190501, 190601, FALSE, NULL, NULL, NULL, NULL),
   (1909001, '3:8:3', 'X', 1, NULL, 190504, NULL, FALSE, NULL, NULL, NULL, NULL),
   (1903011, '1:1:3', 'N', 1, NULL, NULL, NULL, FALSE, NULL, NULL, 'nominative', NULL),
-  (1903010, '1:2:3', 'V', 1, NULL, NULL, NULL, TRUE, NULL, NULL, NULL, NULL)
+  (1903010, '1:2:3', 'V', 1, NULL, NULL, NULL, TRUE, NULL, NULL, NULL, NULL),
+  (1903012, '2:1:2', 'INL', 1, NULL, 190505, 190604, FALSE, NULL, NULL, NULL, NULL)
 ON CONFLICT DO NOTHING;

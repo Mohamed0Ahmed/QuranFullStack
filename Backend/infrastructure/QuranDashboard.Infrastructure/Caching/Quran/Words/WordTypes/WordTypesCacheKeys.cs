@@ -11,6 +11,9 @@ public static class WordTypesCacheKeys
     public static string Rows(WordTypeFilter filter, WordTypeSort sort, int page, int pageSize) =>
         $"wordtypes:rows:{HashFilter(filter)}:sort:{SortKey(sort)}:p{page}:s{pageSize}";
 
+    public static string Table(WordTypeFilter filter, WordTypeTableView tableView, WordTypeSort sort, int page, int pageSize) =>
+        $"wordtypes:table:{HashFilter(filter)}:view:{TableViewKey(tableView)}:sort:{SortKey(sort)}:p{page}:s{pageSize}";
+
     public static string Summary(WordTypeRowIdentity identity) =>
         $"wordtypes:summary:{HashIdentity(identity)}";
 
@@ -40,6 +43,15 @@ public static class WordTypesCacheKeys
         var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(normalized));
         return Convert.ToHexString(bytes[..8]).ToLowerInvariant();
     }
+
+    private static string TableViewKey(WordTypeTableView tableView) => tableView switch
+    {
+        WordTypeTableView.Words => WordTypeTableViewKeys.Words,
+        WordTypeTableView.Roots => WordTypeTableViewKeys.Roots,
+        WordTypeTableView.Stems => WordTypeTableViewKeys.Stems,
+        WordTypeTableView.Lemmas => WordTypeTableViewKeys.Lemmas,
+        _ => tableView.ToString(),
+    };
 
     private static string SortKey(WordTypeSort sort) => sort switch
     {

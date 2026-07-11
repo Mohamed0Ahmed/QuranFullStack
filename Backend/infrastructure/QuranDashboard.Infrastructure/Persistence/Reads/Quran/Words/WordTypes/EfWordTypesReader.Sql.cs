@@ -1,6 +1,7 @@
 using Npgsql;
 using QuranDashboard.Application.Abstractions.Quran.Words.WordTypes;
 using QuranDashboard.Application.Abstractions.Quran.Words.WordTypes.Responses;
+using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Roots;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.WordTypes;
 
@@ -180,6 +181,95 @@ public sealed partial class EfWordTypesReader
             {TypePredicate(context)}
             {SecondaryFilterPredicate(context)}
         """;
+
+    // Grouped table views (roots/stems/lemmas) reuse BaseRowsSql verbatim and group by the numeric
+    // dimension ID, excluding nulls. Grouping and total counting happen before pagination.
+    private static string GroupedRowsSql(WordTypeReadContext context, WordTypeTableView view, WordTypeSort sort)
+    {
+        var (idColumn, textColumn) = DimensionColumns(view);
+        var needsFold = sort == WordTypeSort.Alpha;
+        var normTextColumn = needsFold
+            ? $", replace(translate(lower(MIN({textColumn})), @foldFrom, @foldTo), ' ', '') AS norm_text"
+            : string.Empty;
+
+        return $"""
+        WITH base AS (
+            {BaseRowsSql(context)}
+        ), grouped AS (
+            SELECT
+                {idColumn} AS dimension_id,
+                MIN({textColumn}) AS display_text,
+                MIN(quran_word_id) AS first_word_order_in_mushaf,
+                COUNT(*)::int AS occurrences_count,
+                COUNT(DISTINCT ayah_id)::int AS ayahs_count,
+                COUNT(DISTINCT surah_number)::int AS surahs_count
+                {normTextColumn}
+            FROM base
+            WHERE {idColumn} IS NOT NULL
+            GROUP BY {idColumn}
+        )
+        SELECT
+            dimension_id AS "{nameof(GroupedRowSqlResult.DimensionId)}",
+            display_text AS "{nameof(GroupedRowSqlResult.DisplayText)}",
+            occurrences_count AS "{nameof(GroupedRowSqlResult.OccurrencesCount)}",
+            ayahs_count AS "{nameof(GroupedRowSqlResult.AyahsCount)}",
+            surahs_count AS "{nameof(GroupedRowSqlResult.SurahsCount)}",
+            first_word_order_in_mushaf AS "{nameof(GroupedRowSqlResult.FirstWordOrderInMushaf)}"
+        FROM grouped
+        ORDER BY {GroupedOrderBy(sort)}
+        OFFSET @skip LIMIT @take
+        """;
+    }
+
+    // Grouped totalCount = distinct non-null dimension IDs over the scoped base, measured before paging.
+    private static string GroupedRowsCountSql(WordTypeReadContext context, WordTypeTableView view)
+    {
+        var (idColumn, _) = DimensionColumns(view);
+        return $"""
+        WITH base AS (
+            {BaseRowsSql(context)}
+        )
+        SELECT COUNT(DISTINCT {idColumn})::int AS "{nameof(CountRow.Count)}"
+        FROM base
+        WHERE {idColumn} IS NOT NULL
+        """;
+    }
+
+    private static string GroupedOrderBy(WordTypeSort sort) => sort switch
+    {
+        WordTypeSort.Ayahs => "ayahs_count DESC, first_word_order_in_mushaf, dimension_id",
+        WordTypeSort.Surahs => "surahs_count DESC, first_word_order_in_mushaf, dimension_id",
+        WordTypeSort.MushafOrder => "first_word_order_in_mushaf, dimension_id",
+        WordTypeSort.Alpha => "norm_text COLLATE \"C\", dimension_id",
+        _ => "occurrences_count DESC, first_word_order_in_mushaf, dimension_id",
+    };
+
+    private static (string IdColumn, string TextColumn) DimensionColumns(WordTypeTableView view) => view switch
+    {
+        WordTypeTableView.Roots => ("root_id", "root_text"),
+        WordTypeTableView.Stems => ("stem_id", "stem_text"),
+        WordTypeTableView.Lemmas => ("lemma_id", "lemma_text"),
+        _ => throw new ArgumentOutOfRangeException(nameof(view), view, "Grouped dimension columns are only defined for roots/stems/lemmas."),
+    };
+
+    private static object[] BuildGroupedRowsParameters(WordTypeReadContext context, WordTypeSort sort, int skip, int take)
+    {
+        var parameters = new List<object>
+        {
+            new NpgsqlParameter<int>("skip", skip),
+            new NpgsqlParameter<int>("take", take),
+        };
+        AddChildCodeParameter(context, parameters);
+        AddSecondaryFilterParameters(context, parameters);
+
+        if (sort == WordTypeSort.Alpha)
+        {
+            parameters.Add(new NpgsqlParameter<string>("foldFrom", RootsListDerivation.ArabicFoldFrom));
+            parameters.Add(new NpgsqlParameter<string>("foldTo", RootsListDerivation.ArabicFoldTo));
+        }
+
+        return [.. parameters];
+    }
 
     private static string TypePredicate(WordTypeReadContext context)
     {
@@ -381,5 +471,22 @@ public sealed partial class EfWordTypesReader
             OccurrencesCount,
             AyahsCount,
             SurahsCount);
+    }
+
+    private sealed record GroupedRowSqlResult(
+        int DimensionId,
+        string DisplayText,
+        int OccurrencesCount,
+        int AyahsCount,
+        int SurahsCount,
+        int FirstWordOrderInMushaf)
+    {
+        public WordTypeTableRowDto ToDto(WordTypeTableView view) => view switch
+        {
+            WordTypeTableView.Roots => new RootTableRowDto(DimensionId, DisplayText, OccurrencesCount, AyahsCount, SurahsCount),
+            WordTypeTableView.Stems => new StemTableRowDto(DimensionId, DisplayText, OccurrencesCount, AyahsCount, SurahsCount),
+            WordTypeTableView.Lemmas => new LemmaTableRowDto(DimensionId, DisplayText, OccurrencesCount, AyahsCount, SurahsCount),
+            _ => throw new ArgumentOutOfRangeException(nameof(view), view, "Grouped mapping is only defined for roots/stems/lemmas."),
+        };
     }
 }

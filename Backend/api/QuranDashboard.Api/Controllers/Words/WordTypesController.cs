@@ -4,6 +4,7 @@ using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeAyahs;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeRows;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeSummary;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeSurahs;
+using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeTable;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeTree;
 
 namespace QuranDashboard.Api.Controllers.Words;
@@ -13,6 +14,7 @@ namespace QuranDashboard.Api.Controllers.Words;
 public sealed class WordTypesController(
     GetWordTypeTreeHandler treeHandler,
     GetWordTypeRowsHandler rowsHandler,
+    GetWordTypeTableHandler tableHandler,
     GetWordTypeSummaryHandler summaryHandler,
     GetWordTypeAyahsHandler ayahsHandler,
     GetWordTypeSurahsHandler surahsHandler) : ControllerBase
@@ -61,6 +63,39 @@ public sealed class WordTypesController(
             GetWordTypeRowsOutcome.InvalidPaging =>
                 BadRequest(ApiResponse<PagedResult<WordTypeRowDto>>.Fail(ApiMessages.WordTypesInvalidPaging)),
             _ => throw new InvalidOperationException($"Unhandled {nameof(GetWordTypeRowsOutcome)} variant."),
+        };
+    }
+
+    [HttpGet("table")]
+    public async Task<ActionResult<ApiResponse<PagedResult<WordTypeTableRowDto>>>> GetTable(
+        [FromQuery] string? tableView,
+        [FromQuery] string? type,
+        [FromQuery] string? childCode,
+        [FromQuery(Name = "case")] string? caseFilter,
+        [FromQuery] string? tense,
+        [FromQuery] string? voice,
+        [FromQuery] string? sort,
+        [FromQuery] int? page,
+        [FromQuery] int? pageSize,
+        CancellationToken cancellationToken)
+    {
+        var outcome = await tableHandler.HandleAsync(
+            new GetWordTypeTableQuery(type, childCode, caseFilter, tense, voice, tableView, sort, page ?? DefaultPage, pageSize ?? DefaultListPageSize),
+            cancellationToken);
+
+        return outcome switch
+        {
+            GetWordTypeTableOutcome.Success success =>
+                Ok(ApiResponse<PagedResult<WordTypeTableRowDto>>.Ok(success.Page, ApiMessages.WordTypesTableLoaded)),
+            GetWordTypeTableOutcome.InvalidTableView =>
+                BadRequest(ApiResponse<PagedResult<WordTypeTableRowDto>>.Fail(ApiMessages.WordTypesInvalidTableView)),
+            GetWordTypeTableOutcome.InvalidFilter =>
+                BadRequest(ApiResponse<PagedResult<WordTypeTableRowDto>>.Fail(ApiMessages.WordTypesInvalidFilter)),
+            GetWordTypeTableOutcome.InvalidSort =>
+                BadRequest(ApiResponse<PagedResult<WordTypeTableRowDto>>.Fail(ApiMessages.WordTypesInvalidSort)),
+            GetWordTypeTableOutcome.InvalidPaging =>
+                BadRequest(ApiResponse<PagedResult<WordTypeTableRowDto>>.Fail(ApiMessages.WordTypesInvalidPaging)),
+            _ => throw new InvalidOperationException($"Unhandled {nameof(GetWordTypeTableOutcome)} variant."),
         };
     }
 

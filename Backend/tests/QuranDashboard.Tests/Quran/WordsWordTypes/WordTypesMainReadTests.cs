@@ -27,7 +27,7 @@ public sealed class WordTypesMainReadTests(WordTypesTestFixture fixture)
     [InlineData("noun", 4)]
     [InlineData("verb", 4)]
     [InlineData("particle", 1)]
-    [InlineData("inl", 1)]
+    [InlineData("inl", 2)]
     public async Task Rows_ReturnExpectedTotals_ForMainTypes(string type, int expectedCount)
     {
         await using var scope = fixture.CreateScope();
@@ -68,7 +68,9 @@ public sealed class WordTypesMainReadTests(WordTypesTestFixture fixture)
 
         particleRows.Items.Should().ContainSingle(row => row.ContextCode == "PRO");
         particleRows.Items.Should().NotContain(row => row.ContextCode == "INL");
-        inlRows.Items.Should().ContainSingle(row => row.ContextCode == "INL");
+        // inl has two word-context rows (191002 الٓمٓ, 191009 ص) — both isolated from particle.
+        inlRows.Items.Should().HaveCount(2);
+        inlRows.Items.Should().OnlyContain(row => row.ContextCode == "INL");
     }
 
     [Fact]
