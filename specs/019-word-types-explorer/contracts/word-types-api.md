@@ -321,6 +321,10 @@ word-context rows of the scoped group. Same five-field scope as E2c; **no `sort`
   **200** with an empty `items` array and the correct `TotalCount`.
 - Cache key `wordtypes:grouped:{kind}:words:{scope-hash}:p{page}:s{pageSize}` — a distinct `:words:`
   segment (never shares the `:summary:` prefix), page/pageSize appended.
+- **Frontend consumption (this iteration):** the member DTO's `tashkeelWordId`/`contextCode` and the
+  `rootText`/`lemmaText`/`stemText` labels are **display data only** — not a drilldown or navigation
+  contract. Member rows render as plain non-interactive rows (no link/button/`tabindex`), emit no
+  selection/navigation, and never write the URL; only the member list's pagination is interactive.
 
 ## E2e — Grouped detail ayahs (root/stem/lemma, Feature 023)
 

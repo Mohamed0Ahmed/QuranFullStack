@@ -119,6 +119,17 @@ export interface LemmaTableRowDto {
 
 export type WordTypeTableRowDto = WordTableRowDto | RootTableRowDto | StemTableRowDto | LemmaTableRowDto;
 
+// The grouped table rows (everything but the word row), keyed by their numeric dimension identity.
+export type WordTypeGroupedTableRowDto = RootTableRowDto | StemTableRowDto | LemmaTableRowDto;
+
+export function groupedTableRowId(row: WordTypeGroupedTableRowDto): number {
+  switch (row.kind) {
+    case 'root': return row.rootId;
+    case 'stem': return row.stemId;
+    case 'lemma': return row.lemmaId;
+  }
+}
+
 export interface WordTypeAyahMatchDto {
   verseKey: string;
   surahNumber: number;

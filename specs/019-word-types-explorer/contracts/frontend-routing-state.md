@@ -278,14 +278,25 @@ Zero-count destinations remain keyboard-operable when they are valid and show an
 
 ## Details Panel
 
-Tabs/sections:
+Tabs/sections are **kind-aware** and rendered inside the always-mounted details host:
 
-- `الآيات الخاصة بالكلمة` (`view=ayahs`)
-- `السور` (`view=surahs`)
+- Word selection: `الآيات الخاصة بالكلمة` (`view=ayahs`, default) · `السور` (`view=surahs`).
+- Grouped selection (root/stem/lemma): `الكلمات المرتبطة` (`view=words`, default) · `الآيات` (`view=ayahs`)
+  · `السور` (`view=surahs`).
 
-The panel summary shows the exact row's word, subtype, case or tense/voice where applicable,
-root/lemma/stem placeholders, and occurrence/ayah/surah counts. The ayah tab highlights only matched
-occurrences for the row context.
+Tabs use tablist semantics with RTL roving focus (`ArrowLeft`=next, `ArrowRight`=previous, `Home`/`End`);
+for an empty selection every tab is disabled while the panel surface stays present.
+
+A summary card renders above the active detail content for **both** kinds: the word summary (word,
+subtype, case or tense/voice, root/lemma/stem placeholders, occurrence/ayah/surah counts) or the grouped
+summary (dimension label + occurrences/ayahs/surahs identical to the selected grouped row). The ayah tab
+highlights only matched occurrences for the selection.
+
+Grouped **member-word rows are strictly display-only**: word context + three scoped counts, with no
+button/link/`tabindex`/interactive-surface/selected state and no Router — only their pagination emits.
+Grouped words and ayahs are server-paged (canonical `detailPage` omitted at page 1, serialized above 1);
+surahs are single-shot and never carry `detailPage`. Grouped detail error state offers a retry that calls
+the detail facade; not-found renders inside the same mounted surface.
 
 Desktop uses the existing Words explorer split-view pattern with an inline-end details panel. Narrow
 screens stack/collapse consistently with existing explorers. Quran/Mushaf text is never animated.
@@ -324,9 +335,14 @@ screens stack/collapse consistently with existing explorers. Quran/Mushaf text i
 - Table-view tab switching resets page to `1`, clears incompatible selection keys, and changes the
   request/cache key (triggers reload); `tableView` is preserved by `selectType`/`selectChild(null)`/
   case/tense/voice/sort/page and only the Words tab returns a grouped view to `words`.
-- Grouped rendering: dimension column + three counts per view, display-only in this iteration (no row
-  button, no count click, no selected state); rows whose `kind` mismatches the active `tableView` are
-  skipped.
+- Grouped rendering: dimension column + three counts per view; rows whose `kind` mismatches the active
+  `tableView` are skipped. Grouped rows are **selectable native row buttons** that write only their explicit
+  `root`/`stem`/`lemma` key with `view=words` and no `detailPage`, expose `aria-current`/`aria-selected`, and
+  send the full scope to the detail facade.
+- Grouped details: kind-aware tabs (grouped adds `الكلمات المرتبطة`), a summary card matching the selected
+  row's counts, **display-only** member-word rows (no button/link/`tabindex`/interactive-surface/selected
+  state, no Router; only pagination emits), and grouped words/ayahs paging that omits `detailPage` at page 1,
+  serializes only pages above 1, and always removes it for surahs.
 - Persistent table-view strip, table shell, and details host across parent/child/filter/sort/view/
   loading/empty/error transitions (same DOM node); split layout retained for grouped views; prompt/
   loading/empty/error render inside the table body with a retry that calls `retryList()`.

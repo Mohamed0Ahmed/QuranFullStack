@@ -94,6 +94,10 @@ export const WORD_TYPE_DETAIL_TAB_ARIA: Record<WordTypeDetailView, string> = {
 
 export const WORD_TYPES_EMPTY_SELECTION_LABEL = 'اختر صفًا من الجدول لعرض تفاصيل الكلمة.';
 
+export const WORD_TYPES_DETAIL_SUMMARY_LABEL = 'ملخص التحديد';
+export const WORD_TYPES_MEMBER_WORDS_PAGINATION_LABEL = 'تنقّل الكلمات المرتبطة';
+export const WORD_TYPES_MEMBER_WORDS_EMPTY_LABEL = 'لا توجد كلمات مرتبطة بهذا التحديد';
+
 export const WORD_TYPES_TABLE_HEADERS = {
   word: 'الكلمة',
   type: 'النوع',

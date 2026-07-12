@@ -82,6 +82,7 @@
         class="word-types-page__panel qd-explorer-layout__panel"
         [inline]="isDesktop()"
         [view]="panelState().view"
+        [kind]="panelState().kind"
         [emptySelection]="emptySelection()"
         [selectionTitle]="selectionTitle()"
         [loading]="panelState().status === 'loading'"
@@ -89,11 +90,24 @@
         (viewChange)="onPanelViewChange($event)"
         (close)="clearSelection()"
       >
-        @if (panelState().summary) {
+        @if (activeSummary(); as summary) {
           <div class="word-types-details__scroll">
+            <qd-word-type-detail-summary
+              [label]="summary.label"
+              [occurrences]="summary.occurrences"
+              [ayahs]="summary.ayahs"
+              [surahs]="summary.surahs"
+            />
+
             @switch (panelState().status) {
               @case ('loading') {
-                @if (panelState().view === 'ayahs') {
+                @if (panelState().view === 'words') {
+                  <qd-word-type-grouped-words-list
+                    [page]="emptyMemberWordsPage"
+                    [currentPage]="panelState().detailPage"
+                    [loading]="true"
+                  />
+                } @else if (panelState().view === 'ayahs') {
                   <qd-ayah-matches-list
                     [page]="emptyAyahsPage"
                     [currentPage]="panelState().detailPage"
@@ -105,13 +119,32 @@
                 }
               }
               @case ('error') {
-                <div class="qd-error-state">{{ panelState().errorMessage || errorLabel }}</div>
+                <div class="qd-error-state word-types-details__error" role="alert" data-testid="word-type-details-error">
+                  <span>{{ panelState().errorMessage || errorLabel }}</span>
+                  <button
+                    type="button"
+                    class="qd-btn qd-btn-secondary"
+                    data-testid="word-type-details-retry"
+                    (click)="retryDetail()"
+                  >
+                    {{ retryLabel }}
+                  </button>
+                </div>
               }
               @case ('empty') {
                 <div class="qd-empty-state">{{ emptyLabel }}</div>
               }
               @default {
-                @if (panelState().view === 'ayahs' && panelState().ayahs; as ayahsPage) {
+                @if (panelState().view === 'words' && panelState().words) {
+                  <qd-word-type-grouped-words-list
+                    [page]="memberWordsForView()"
+                    [currentPage]="panelState().detailPage"
+                    [loading]="false"
+                    (pageChange)="onDetailPageChange($event)"
+                  />
+                }
+
+                @if (panelState().view === 'ayahs' && panelState().ayahs) {
                   <qd-ayah-matches-list
                     [page]="ayahsPageForView()"
                     [currentPage]="panelState().detailPage"

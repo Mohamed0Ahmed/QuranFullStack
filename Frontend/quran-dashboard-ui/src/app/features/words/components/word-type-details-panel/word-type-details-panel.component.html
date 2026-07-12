@@ -23,7 +23,7 @@
       [attr.aria-label]="panelLabel"
       #tabList
     >
-      @for (tab of tabs; track tab.key) {
+      @for (tab of tabs(); track tab.key) {
         <button
           type="button"
           class="qd-btn qd-btn-secondary word-type-details-panel__tab"

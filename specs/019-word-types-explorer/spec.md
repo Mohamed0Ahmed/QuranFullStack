@@ -272,6 +272,14 @@ type/subtype/case/tense/voice scope.
   view to `words`. This supersedes the Feature 022 MVP behavior that hid the strip without a leaf, hid
   the details panel and expanded the table full-width for grouped views, and reset `tableView` on main
   type / parent changes.
+- **FR-055**: A grouped selection MUST render, inside the always-mounted details host, a summary card
+  (dimension label + occurrences/ayahs/surahs) above the active detail content, and kind-aware tabs — word
+  → آيات/سور; grouped → الكلمات المرتبطة/آيات/سور — with RTL roving focus. Grouped detail content is the
+  paged member words, paged ayahs, and single-shot surahs for the selected numeric dimension and scope.
+- **FR-056**: Grouped **member-word rows MUST be strictly display-only**: each row shows its word context
+  and three scoped counts (occurrences/ayahs/surahs) and MUST NOT be a button/link, carry a `tabindex`,
+  interactive-surface, or selected state, mutate selection, or write the URL. Only member-list pagination
+  emits, and it obeys the same `detailPage` canonicalization as every other paged detail view.
 
 ### Key Entities *(include if feature involves data)*
 

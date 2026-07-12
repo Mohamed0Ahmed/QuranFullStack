@@ -3,22 +3,28 @@ import { getTestBed, TestBed } from '@angular/core/testing';
 
 import { WordTypeDetailsPanelComponent } from './word-type-details-panel.component';
 import { WORD_TYPE_DETAIL_VIEW_KEYS, WordTypeDetailView } from '../../models/word-types.models';
+import { WordTypeDetailSelectionKind } from '../../models/word-types-detail.models';
 
 describe('WordTypeDetailsPanelComponent', () => {
   afterEach(() => {
     getTestBed().resetTestingModule();
   });
 
-  function createPanel(view: WordTypeDetailView = 'ayahs') {
+  function createPanel(view: WordTypeDetailView = 'ayahs', kind: WordTypeDetailSelectionKind = 'word') {
     TestBed.configureTestingModule({
       imports: [WordTypeDetailsPanelComponent],
       teardown: { destroyAfterEach: true },
     });
     const fixture = TestBed.createComponent(WordTypeDetailsPanelComponent);
     fixture.componentRef.setInput('view', view);
+    fixture.componentRef.setInput('kind', kind);
     fixture.componentRef.setInput('emptySelection', false);
     fixture.detectChanges();
     return fixture;
+  }
+
+  function tabKeys(host: HTMLElement): (string | null)[] {
+    return Array.from(host.querySelectorAll('[role="tab"]')).map((tab) => tab.getAttribute('data-word-type-tab'));
   }
 
   it('renders only ayahs and surahs tabs linked to a single tabpanel', () => {
@@ -47,6 +53,46 @@ describe('WordTypeDetailsPanelComponent', () => {
     fixture.detectChanges();
 
     expect((fixture.nativeElement as HTMLElement).querySelector('[role="tablist"]')).toBeNull();
+  });
+
+  it('shows ayahs and surahs tabs for a word kind', () => {
+    const fixture = createPanel('ayahs', 'word');
+    expect(tabKeys(fixture.nativeElement as HTMLElement)).toEqual(['ayahs', 'surahs']);
+  });
+
+  it.each(['root', 'stem', 'lemma'] as const)(
+    'shows words, ayahs, and surahs tabs with RTL roving focus for a %s kind',
+    (kind) => {
+      const fixture = createPanel('words', kind);
+      const host = fixture.nativeElement as HTMLElement;
+      expect(tabKeys(host)).toEqual(['words', 'ayahs', 'surahs']);
+
+      const wordsTab = host.querySelector('[data-word-type-tab="words"]') as HTMLElement;
+      expect(wordsTab.getAttribute('tabindex')).toBe('0');
+      expect(host.querySelector('[data-word-type-tab="ayahs"]')?.getAttribute('tabindex')).toBe('-1');
+
+      const views: WordTypeDetailView[] = [];
+      fixture.componentInstance.viewChange.subscribe((view) => views.push(view));
+      // RTL: ArrowLeft advances to the next tab in reading order.
+      wordsTab.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+      fixture.detectChanges();
+
+      expect(views).toEqual(['ayahs']);
+      expect(document.activeElement?.getAttribute('data-word-type-tab')).toBe('ayahs');
+    },
+  );
+
+  it('keeps tabs disabled for an empty selection while the panel surface remains', () => {
+    const fixture = createPanel('ayahs', 'word');
+    fixture.componentRef.setInput('emptySelection', true);
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    const tabs = Array.from(host.querySelectorAll('[role="tab"]')) as HTMLButtonElement[];
+    expect(tabs.length).toBeGreaterThan(0);
+    expect(tabs.every((tab) => tab.disabled)).toBe(true);
+    expect(host.querySelector('[role="tabpanel"]')).not.toBeNull();
+    expect(host.querySelector('[data-testid="word-type-details-empty-selection"]')).not.toBeNull();
   });
 
   it('renders drawer chrome and emits close on Escape outside inline mode', () => {

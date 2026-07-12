@@ -127,14 +127,23 @@
             }
             @default {
               @if (row.kind !== 'word') {
-                <div class="word-types-table__row word-types-table__row--grouped" role="row">
+                <button
+                  type="button"
+                  class="word-types-table__row"
+                  role="row"
+                  [attr.data-word-types-row]="rowDomId(row)"
+                  [class.qd-is-selected]="isSelected(row)"
+                  [attr.aria-current]="isSelected(row) ? 'true' : null"
+                  [attr.aria-selected]="isSelected(row)"
+                  (click)="selectRow(row)"
+                >
                   <span class="word-types-table__cell word-types-table__cell--word" role="cell" [attr.data-label]="dimensionHeader()">
                     <span class="word-types-table__word">{{ row.displayText }}</span>
                   </span>
                   <span class="word-types-table__cell word-types-table__cell--count" role="cell" [attr.data-label]="headers.occurrences">{{ row.occurrencesCount }}</span>
                   <span class="word-types-table__cell word-types-table__cell--count" role="cell" [attr.data-label]="headers.ayahs">{{ row.ayahsCount }}</span>
                   <span class="word-types-table__cell word-types-table__cell--count" role="cell" [attr.data-label]="headers.surahs">{{ row.surahsCount }}</span>
-                </div>
+                </button>
               }
             }
           }

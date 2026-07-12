@@ -14,6 +14,7 @@ import {
   WordTypeTableRowDto,
   WordTypeTableView,
   WordTypesLoadStatus,
+  groupedTableRowId,
   normalizeWordTableRow,
 } from '../../models/word-types.models';
 import { syncTableScrollbarGutter } from '../../utils/table-scrollbar-gutter-sync';
@@ -47,8 +48,8 @@ export class WordTypesTableComponent {
   readonly emptyLabel = input('');
   readonly errorLabel = input('');
   readonly retryLabel = input('');
-  readonly selectedRow = input<WordTableRowDto | null>(null);
-  readonly rowSelected = output<WordTableRowDto>();
+  readonly selectedRow = input<WordTypeTableRowDto | null>(null);
+  readonly rowSelected = output<WordTypeTableRowDto>();
   readonly countOpened = output<WordTypeCountOpenedEvent>();
   readonly retry = output<void>();
 
@@ -91,23 +92,31 @@ export class WordTypesTableComponent {
     }
   }
 
-  protected selectRow(row: WordTableRowDto): void {
+  protected selectRow(row: WordTypeTableRowDto): void {
     this.rowSelected.emit(row);
   }
 
-  protected isSelected(row: WordTableRowDto): boolean {
+  protected isSelected(row: WordTypeTableRowDto): boolean {
     const selected = this.selectedRow();
-    if (!selected) {
+    if (!selected || selected.kind !== row.kind) {
       return false;
     }
 
-    const selectedIdentity = normalizeWordTableRow(selected);
-    const rowIdentity = normalizeWordTableRow(row);
-    return selectedIdentity.tashkeelWordId === rowIdentity.tashkeelWordId
-      && selectedIdentity.contextCode === rowIdentity.contextCode
-      && selectedIdentity.case === rowIdentity.case
-      && selectedIdentity.tense === rowIdentity.tense
-      && selectedIdentity.voice === rowIdentity.voice;
+    if (selected.kind === 'word' && row.kind === 'word') {
+      const selectedIdentity = normalizeWordTableRow(selected);
+      const rowIdentity = normalizeWordTableRow(row);
+      return selectedIdentity.tashkeelWordId === rowIdentity.tashkeelWordId
+        && selectedIdentity.contextCode === rowIdentity.contextCode
+        && selectedIdentity.case === rowIdentity.case
+        && selectedIdentity.tense === rowIdentity.tense
+        && selectedIdentity.voice === rowIdentity.voice;
+    }
+
+    if (selected.kind !== 'word' && row.kind !== 'word') {
+      return groupedTableRowId(selected) === groupedTableRowId(row);
+    }
+
+    return false;
   }
 
   protected openCount(row: WordTableRowDto, column: WordTypeCountColumn): void {
@@ -115,7 +124,7 @@ export class WordTypesTableComponent {
     this.countOpened.emit({ row, column, view });
   }
 
-  focusRow(row: WordTableRowDto | null): void {
+  focusRow(row: WordTypeTableRowDto | null): void {
     if (!row) {
       return;
     }

@@ -1,0 +1,61 @@
+<div class="word-type-grouped-words-list" data-testid="word-type-grouped-words-list" role="table">
+  <div class="word-type-grouped-words-list__header" role="row">
+    <span class="word-type-grouped-words-list__header-cell word-type-grouped-words-list__header-cell--word" role="columnheader">{{ headers.word }}</span>
+    <span class="word-type-grouped-words-list__header-cell word-type-grouped-words-list__header-cell--type" role="columnheader">{{ headers.type }}</span>
+    <span class="word-type-grouped-words-list__header-cell word-type-grouped-words-list__header-cell--count" role="columnheader">{{ headers.occurrences }}</span>
+    <span class="word-type-grouped-words-list__header-cell word-type-grouped-words-list__header-cell--count" role="columnheader">{{ headers.ayahs }}</span>
+    <span class="word-type-grouped-words-list__header-cell word-type-grouped-words-list__header-cell--count" role="columnheader">{{ headers.surahs }}</span>
+  </div>
+
+  <div
+    class="word-type-grouped-words-list__viewport"
+    role="rowgroup"
+    [attr.aria-busy]="loading() ? true : null"
+    [attr.data-testid]="loading() ? 'word-type-grouped-words-loading' : 'word-type-grouped-words-viewport'"
+  >
+    @if (loading()) {
+      <p class="qd-sr-only" role="status" aria-live="polite">{{ loadingLabel }}</p>
+      @for (placeholder of loadingRowPlaceholders; track placeholder) {
+        <div class="word-type-grouped-words-list__row word-type-grouped-words-list__row--loading" role="row" aria-hidden="true">
+          <span class="word-type-grouped-words-list__cell word-type-grouped-words-list__cell--word" role="cell">
+            <span class="qd-skeleton qd-skeleton--text word-type-grouped-words-list__loading-word"></span>
+          </span>
+          <span class="word-type-grouped-words-list__cell word-type-grouped-words-list__cell--type" role="cell">
+            <span class="qd-skeleton qd-skeleton--text word-type-grouped-words-list__loading-type"></span>
+          </span>
+          @for (placeholderCount of [0, 1, 2]; track placeholderCount) {
+            <span class="word-type-grouped-words-list__cell word-type-grouped-words-list__cell--count" role="cell">
+              <span class="qd-skeleton qd-skeleton--rounded-md word-type-grouped-words-list__loading-count"></span>
+            </span>
+          }
+        </div>
+      }
+    } @else if (page().items.length === 0) {
+      <p class="qd-empty-state" role="status" data-testid="word-type-grouped-words-empty">{{ emptyLabel }}</p>
+    } @else {
+      @for (item of page().items; track rowKey(item)) {
+        <div class="word-type-grouped-words-list__row" role="row" data-testid="word-type-grouped-word-row">
+          <span class="word-type-grouped-words-list__cell word-type-grouped-words-list__cell--word" role="cell">
+            <span class="word-type-grouped-words-list__word">{{ item.displayText }}</span>
+          </span>
+          <span class="word-type-grouped-words-list__cell word-type-grouped-words-list__cell--type" role="cell">
+            <span class="word-type-grouped-words-list__type">{{ item.typeLabel.ar }}</span>
+          </span>
+          <span class="word-type-grouped-words-list__cell word-type-grouped-words-list__cell--count" role="cell" [attr.data-label]="headers.occurrences">{{ item.occurrencesCount }}</span>
+          <span class="word-type-grouped-words-list__cell word-type-grouped-words-list__cell--count" role="cell" [attr.data-label]="headers.ayahs">{{ item.ayahsCount }}</span>
+          <span class="word-type-grouped-words-list__cell word-type-grouped-words-list__cell--count" role="cell" [attr.data-label]="headers.surahs">{{ item.surahsCount }}</span>
+        </div>
+      }
+    }
+  </div>
+
+  @if (!loading()) {
+    <qd-pagination
+      [currentPage]="currentPage()"
+      [pageSize]="page().pageSize"
+      [totalCount]="page().totalCount"
+      [ariaLabel]="paginationLabel"
+      (pageChange)="pageChange.emit($event)"
+    />
+  }
+</div>

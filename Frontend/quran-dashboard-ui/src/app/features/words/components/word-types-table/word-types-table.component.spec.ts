@@ -81,7 +81,7 @@ describe('WordTypesTableComponent', () => {
 
   it('renders corrected word headers, Uthmani display, and interactive count actions', () => {
     const fixture = TestBed.createComponent(WordTypesTableComponent);
-    const selected: WordTableRowDto[] = [];
+    const selected: WordTypeTableRowDto[] = [];
     const countEvents: WordTypeCountOpenedEvent[] = [];
     fixture.componentRef.setInput('rows', page([word()]));
     fixture.componentRef.setInput('selectedRow', word());
@@ -111,37 +111,55 @@ describe('WordTypesTableComponent', () => {
   });
 
   it.each([
-    ['roots', rootRow, 'الجذر', 'جدول الجذور', 190700],
-    ['stems', stemRow, 'الأصل', 'جدول الأصول', 190701],
-    ['lemmas', lemmaRow, 'الصيغة', 'جدول الصيغ', 190702],
+    ['roots', rootRow, 'الجذر', 'جدول الجذور', 190700, 'root:190700'],
+    ['stems', stemRow, 'الأصل', 'جدول الأصول', 190701, 'stem:190701'],
+    ['lemmas', lemmaRow, 'الصيغة', 'جدول الصيغ', 190702, 'lemma:190702'],
   ] as const)(
-    'renders %s grouped rows as noninteractive four-column data',
-    (tableView, groupedRow, dimensionHeader, tableLabel, numericId) => {
+    'renders %s grouped rows as selectable four-column row buttons that emit the grouped row',
+    (tableView, groupedRow, dimensionHeader, tableLabel, numericId, rowDomId) => {
       const fixture = TestBed.createComponent(WordTypesTableComponent);
+      const selected: WordTypeTableRowDto[] = [];
       fixture.componentRef.setInput('rows', page([groupedRow]));
       fixture.componentRef.setInput('tableView', tableView as WordTypeTableView);
-      fixture.componentRef.setInput('selectedRow', word());
+      fixture.componentRef.setInput('selectedRow', groupedRow);
+      fixture.componentInstance.rowSelected.subscribe((row) => selected.push(row));
       fixture.detectChanges();
 
       const root = fixture.nativeElement as HTMLElement;
       const headers = Array.from(root.querySelectorAll('[role="columnheader"]')).map((header) => header.textContent?.trim());
-      const groupedTableRow = root.querySelector('.word-types-table__body [role="row"]') as HTMLElement;
+      const groupedTableRow = root.querySelector('button.word-types-table__row') as HTMLButtonElement;
 
       expect(root.querySelector('[role="table"]')?.getAttribute('aria-label')).toBe(tableLabel);
       expect(headers).toEqual([dimensionHeader, 'المواضع', 'الآيات', 'السور']);
+      expect(groupedTableRow).not.toBeNull();
+      expect(groupedTableRow.getAttribute('data-word-types-row')).toBe(rowDomId);
       expect(groupedTableRow.textContent).toContain(groupedRow.displayText);
       expect(groupedTableRow.textContent).toContain(String(groupedRow.occurrencesCount));
       expect(groupedTableRow.textContent).toContain(String(groupedRow.ayahsCount));
       expect(groupedTableRow.textContent).toContain(String(groupedRow.surahsCount));
       expect(root.textContent).not.toContain(String(numericId));
-      expect(root.querySelector('button.word-types-table__row')).toBeNull();
-      expect(root.querySelector('[data-word-types-row]')).toBeNull();
-      expect(groupedTableRow.classList.contains('qd-is-selected')).toBe(false);
-      expect(groupedTableRow.getAttribute('aria-current')).toBeNull();
-      expect(groupedTableRow.getAttribute('aria-selected')).toBeNull();
       expect(root.querySelector('qd-word-count-chip')).toBeNull();
+      expect(groupedTableRow.classList.contains('qd-is-selected')).toBe(true);
+      expect(groupedTableRow.getAttribute('aria-current')).toBe('true');
+      expect(groupedTableRow.getAttribute('aria-selected')).toBe('true');
+
+      groupedTableRow.click();
+      expect(selected).toEqual([groupedRow]);
     },
   );
+
+  it('does not mark a grouped row selected when the active selection is a different kind', () => {
+    const fixture = TestBed.createComponent(WordTypesTableComponent);
+    fixture.componentRef.setInput('rows', page([rootRow]));
+    fixture.componentRef.setInput('tableView', 'roots');
+    fixture.componentRef.setInput('selectedRow', word());
+    fixture.detectChanges();
+
+    const groupedTableRow = (fixture.nativeElement as HTMLElement).querySelector('button.word-types-table__row') as HTMLButtonElement;
+    expect(groupedTableRow.classList.contains('qd-is-selected')).toBe(false);
+    expect(groupedTableRow.getAttribute('aria-selected')).toBe('false');
+    expect(groupedTableRow.getAttribute('aria-current')).toBeNull();
+  });
 
   it('skips rows whose discriminant does not match the active table view', () => {
     const fixture = TestBed.createComponent(WordTypesTableComponent);

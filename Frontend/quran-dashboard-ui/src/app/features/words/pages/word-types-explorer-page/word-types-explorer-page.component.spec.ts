@@ -7,10 +7,10 @@ import { BehaviorSubject, Subject, of } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ApiResponse } from '../../../../core/data-access/api-response.model';
-import { WordTypesApi } from '../../data-access/word-types.api';
+import { WordTypeGroupedMemberWordDto, WordTypeGroupedSummaryDto, WordTypesApi } from '../../data-access/word-types.api';
 import { ADDITIONAL_ACTIVE_HUB_SECTIONS } from '../../models/unique-words.labels';
 import { WORD_TYPE_SORT_OPTIONS, WORD_TYPES_SELECT_SUBTYPE_LABEL, WORD_TYPES_SORT_LABEL } from '../../models/word-types.labels';
-import { PagedResultDto, RootTableRowDto, WordTableRowDto, WordTypeAyahMatchDto, WordTypeTableRowDto, WordTypeTreeDto } from '../../models/word-types.models';
+import { LemmaTableRowDto, PagedResultDto, RootTableRowDto, StemTableRowDto, WordTableRowDto, WordTypeAyahMatchDto, WordTypeTableRowDto, WordTypeTreeDto } from '../../models/word-types.models';
 import { WordTypesTableComponent } from '../../components/word-types-table/word-types-table.component';
 import { WordTypesDetailFacade } from '../../state/word-types-detail.facade';
 import { WordTypesExplorerFacade } from '../../state/word-types-explorer.facade';
@@ -104,6 +104,59 @@ const groupedRootRow: RootTableRowDto = {
   surahsCount: 1,
 };
 
+const groupedStemRow: StemTableRowDto = {
+  kind: 'stem',
+  stemId: 190600,
+  displayText: 'مَكْتُوب',
+  occurrencesCount: 4,
+  ayahsCount: 3,
+  surahsCount: 2,
+};
+
+const groupedLemmaRow: LemmaTableRowDto = {
+  kind: 'lemma',
+  lemmaId: 190500,
+  displayText: 'كِتَاب',
+  occurrencesCount: 5,
+  ayahsCount: 4,
+  surahsCount: 2,
+};
+
+const groupedSummaryDto: WordTypeGroupedSummaryDto = {
+  kind: 'root',
+  dimensionId: 190700,
+  displayText: 'ك ل م',
+  occurrencesCount: 3,
+  ayahsCount: 2,
+  surahsCount: 1,
+};
+
+const groupedMemberWord: WordTypeGroupedMemberWordDto = {
+  tashkeelWordId: 191001,
+  contextCode: 'N',
+  case: 'all',
+  tense: 'all',
+  voice: 'all',
+  displayText: 'كَلِمَة',
+  typeCode: 'N',
+  typeLabel: { ar: 'اسم' },
+  broadLabel: { ar: 'اسم' },
+  caseOrFeature: null,
+  rootText: 'ك ل م',
+  lemmaText: null,
+  stemText: null,
+  occurrencesCount: 1,
+  ayahsCount: 1,
+  surahsCount: 1,
+};
+
+const groupedMemberWordsPage: PagedResultDto<WordTypeGroupedMemberWordDto> = {
+  page: 1,
+  pageSize: 25,
+  totalCount: 60,
+  items: [groupedMemberWord],
+};
+
 const ayahMatch: WordTypeAyahMatchDto = {
   verseKey: '1:1',
   surahNumber: 1,
@@ -128,6 +181,10 @@ describe('WordTypesExplorerPageComponent', () => {
     getSummary: ReturnType<typeof vi.fn>;
     getAyahMatches: ReturnType<typeof vi.fn>;
     getSurahs: ReturnType<typeof vi.fn>;
+    getGroupedSummary: ReturnType<typeof vi.fn>;
+    getGroupedMemberWords: ReturnType<typeof vi.fn>;
+    getGroupedAyahMatches: ReturnType<typeof vi.fn>;
+    getGroupedSurahs: ReturnType<typeof vi.fn>;
   };
   let router: Router;
 
@@ -139,6 +196,10 @@ describe('WordTypesExplorerPageComponent', () => {
       getSummary: vi.fn().mockReturnValue(of(ok(properRow))),
       getAyahMatches: vi.fn(),
       getSurahs: vi.fn().mockReturnValue(of(ok({ surahs: [{ surahNumber: 1, nameArabic: 'الفاتحة', occurrencesCount: 1 }], missingSurahs: [] }))),
+      getGroupedSummary: vi.fn().mockReturnValue(of(ok(groupedSummaryDto))),
+      getGroupedMemberWords: vi.fn().mockReturnValue(of(ok(groupedMemberWordsPage))),
+      getGroupedAyahMatches: vi.fn().mockReturnValue(of(ok<PagedResultDto<WordTypeAyahMatchDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [ayahMatch] }))),
+      getGroupedSurahs: vi.fn().mockReturnValue(of(ok({ surahs: [{ surahNumber: 1, nameArabic: 'الفاتحة', occurrencesCount: 1 }], missingSurahs: [] }))),
     };
 
     await TestBed.configureTestingModule({
@@ -734,6 +795,157 @@ describe('WordTypesExplorerPageComponent', () => {
     expect(detailFacade.panelState().selectedRow?.tashkeelWordId).toBe(999999);
     expect(explorerFacade.listState().status).toBe('success');
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('كَلِمَة');
+  });
+
+  const groupedSelectionCases = [
+    { kind: 'root', tableView: 'roots', groupedRow: groupedRootRow, urlKey: 'root', domId: 'root:190700', id: 190700 },
+    { kind: 'stem', tableView: 'stems', groupedRow: groupedStemRow, urlKey: 'stem', domId: 'stem:190600', id: 190600 },
+    { kind: 'lemma', tableView: 'lemmas', groupedRow: groupedLemmaRow, urlKey: 'lemma', domId: 'lemma:190500', id: 190500 },
+  ] as const;
+
+  it.each(groupedSelectionCases)(
+    'selecting a $kind row writes only its explicit URL key with view=words and no default detailPage',
+    async ({ tableView, groupedRow, urlKey, domId, id }) => {
+      api.getTableRows.mockReturnValue(of(ok<PagedResultDto<WordTypeTableRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [groupedRow] })));
+      queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'PN', tableView }));
+      const fixture = await createPage();
+
+      const rowButton = fixture.nativeElement.querySelector(`[data-word-types-row="${domId}"]`) as HTMLButtonElement;
+      expect(rowButton).not.toBeNull();
+      rowButton.click();
+
+      expect(router.navigate).toHaveBeenLastCalledWith([], expect.objectContaining({
+        queryParams: { [urlKey]: String(id), view: 'words', detailPage: null, location: null, column: null },
+        queryParamsHandling: 'merge',
+      }));
+    },
+  );
+
+  it('gives the restored grouped row aria-selected and a distinct selected state', async () => {
+    api.getTableRows.mockReturnValue(of(ok<PagedResultDto<WordTypeTableRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [groupedRootRow] })));
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'PN', tableView: 'roots', root: '190700' }));
+    const fixture = await createPage();
+
+    const rowButton = fixture.nativeElement.querySelector('[data-word-types-row="root:190700"]') as HTMLButtonElement;
+    expect(rowButton.getAttribute('aria-selected')).toBe('true');
+    expect(rowButton.getAttribute('aria-current')).toBe('true');
+    expect(rowButton.classList.contains('qd-is-selected')).toBe(true);
+  });
+
+  it('passes the selection kind and full grammatical scope to the detail facade', async () => {
+    api.getTableRows.mockReturnValue(of(ok<PagedResultDto<WordTypeTableRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [groupedRootRow] })));
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'PN', tableView: 'roots' }));
+    const fixture = await createPage();
+    const selectSpy = vi.spyOn(TestBed.inject(WordTypesDetailFacade), 'select');
+
+    (fixture.nativeElement.querySelector('[data-word-types-row="root:190700"]') as HTMLButtonElement).click();
+
+    expect(selectSpy).toHaveBeenCalledWith(
+      { kind: 'root', rootId: 190700, scope: { type: 'noun', childCode: 'PN', case: 'all', tense: 'all', voice: 'all' } },
+      'words',
+    );
+  });
+
+  it('defaults a new grouped selection to the words tab and renders its member words', async () => {
+    api.getTableRows.mockReturnValue(of(ok<PagedResultDto<WordTypeTableRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [groupedRootRow] })));
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'PN', tableView: 'roots' }));
+    const fixture = await createPage();
+
+    (fixture.nativeElement.querySelector('[data-word-types-row="root:190700"]') as HTMLButtonElement).click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const detailFacade = TestBed.inject(WordTypesDetailFacade);
+    expect(detailFacade.panelState().kind).toBe('root');
+    expect(detailFacade.panelState().view).toBe('words');
+    expect(api.getGroupedMemberWords).toHaveBeenCalled();
+    expect(fixture.nativeElement.querySelector('[data-word-type-tab="words"]')?.getAttribute('aria-selected')).toBe('true');
+    expect(fixture.nativeElement.querySelector('[data-testid="word-type-grouped-word-row"]')).not.toBeNull();
+  });
+
+  it('shows the grouped summary label and measures matching the selected row', async () => {
+    api.getTableRows.mockReturnValue(of(ok<PagedResultDto<WordTypeTableRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [groupedRootRow] })));
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'PN', tableView: 'roots', root: '190700' }));
+    const fixture = await createPage();
+
+    expect(api.getGroupedSummary).toHaveBeenCalledWith(expect.objectContaining({ kind: 'root', dimensionId: 190700, type: 'noun', childCode: 'PN' }));
+    const summary = fixture.nativeElement.querySelector('[data-testid="word-type-detail-summary"]') as HTMLElement;
+    expect(summary.querySelector('[data-testid="word-type-detail-summary-label"]')?.textContent).toContain('ك ل م');
+    const values = Array.from(summary.querySelectorAll('.word-type-detail-summary__measure-value')).map((cell) => cell.textContent?.trim());
+    expect(values).toEqual(['3', '2', '1']);
+  });
+
+  it('keeps grouped words/ayahs at internal page one, omits page one from the URL, and writes only pages above one', async () => {
+    api.getTableRows.mockReturnValue(of(ok<PagedResultDto<WordTypeTableRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [groupedRootRow] })));
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'PN', tableView: 'roots', root: '190700' }));
+    const fixture = await createPage();
+    const detailFacade = TestBed.inject(WordTypesDetailFacade);
+
+    expect(detailFacade.panelState().view).toBe('words');
+    expect(detailFacade.panelState().detailPage).toBe(1);
+
+    const page2 = fixture.nativeElement.querySelector('qd-word-type-grouped-words-list [data-testid="qd-pagination-page-2"]') as HTMLButtonElement;
+    expect(page2).not.toBeNull();
+    page2.click();
+    expect(router.navigate).toHaveBeenLastCalledWith([], expect.objectContaining({
+      queryParams: { detailPage: '2' },
+      queryParamsHandling: 'merge',
+    }));
+
+    const ayahsTab = fixture.nativeElement.querySelector('[data-word-type-tab="ayahs"]') as HTMLButtonElement;
+    ayahsTab.click();
+    expect(router.navigate).toHaveBeenLastCalledWith([], expect.objectContaining({
+      queryParams: { view: 'ayahs', detailPage: null },
+      queryParamsHandling: 'merge',
+    }));
+    expect(detailFacade.panelState().detailPage).toBe(1);
+  });
+
+  it('always removes detailPage for the surahs view while staying at internal page one', async () => {
+    api.getTableRows.mockReturnValue(of(ok<PagedResultDto<WordTypeTableRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [groupedRootRow] })));
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'PN', tableView: 'roots', root: '190700', view: 'ayahs', detailPage: '3' }));
+    const fixture = await createPage();
+    const detailFacade = TestBed.inject(WordTypesDetailFacade);
+
+    const surahsTab = fixture.nativeElement.querySelector('[data-word-type-tab="surahs"]') as HTMLButtonElement;
+    surahsTab.click();
+
+    expect(router.navigate).toHaveBeenLastCalledWith([], expect.objectContaining({
+      queryParams: { view: 'surahs', detailPage: null },
+      queryParamsHandling: 'merge',
+    }));
+    expect(detailFacade.panelState().view).toBe('surahs');
+    expect(detailFacade.panelState().detailPage).toBe(1);
+  });
+
+  it('renders grouped error with retry inside the mounted details region and retries the failed view', async () => {
+    api.getTableRows.mockReturnValue(of(ok<PagedResultDto<WordTypeTableRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [groupedRootRow] })));
+    api.getGroupedMemberWords.mockReturnValue(of({ isSuccess: false, data: null, message: 'تعذّر تحميل الكلمات', errors: null }));
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'PN', tableView: 'roots', root: '190700' }));
+    const fixture = await createPage();
+
+    expect(fixture.nativeElement.querySelector('qd-word-type-details-panel')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="word-type-details-error"]')?.textContent).toContain('تعذّر تحميل الكلمات');
+
+    api.getGroupedMemberWords.mockReturnValue(of(ok(groupedMemberWordsPage)));
+    (fixture.nativeElement.querySelector('[data-testid="word-type-details-retry"]') as HTMLButtonElement).click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(api.getGroupedMemberWords).toHaveBeenCalledTimes(2);
+    expect(fixture.nativeElement.querySelector('qd-word-type-details-panel')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="word-type-grouped-word-row"]')).not.toBeNull();
+  });
+
+  it('renders a grouped not-found state inside the mounted details region', async () => {
+    api.getTableRows.mockReturnValue(of(ok<PagedResultDto<WordTypeTableRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [groupedRootRow] })));
+    api.getGroupedSummary.mockReturnValue(of({ isSuccess: false, data: null, message: 'المجموعة غير موجودة', errors: null }));
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'PN', tableView: 'roots', root: '190700' }));
+    const fixture = await createPage();
+
+    expect(TestBed.inject(WordTypesDetailFacade).panelState().status).toBe('notFound');
+    expect(fixture.nativeElement.querySelector('qd-word-type-details-panel')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="word-type-details-not-found"]')).not.toBeNull();
   });
 
   it('exposes the Words hub access route for Word Types', () => {

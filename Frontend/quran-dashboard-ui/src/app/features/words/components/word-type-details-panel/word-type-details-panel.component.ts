@@ -19,9 +19,12 @@ import {
   WORD_TYPE_DETAIL_TAB_ARIA,
   WORD_TYPE_DETAIL_TAB_LABELS,
 } from '../../models/word-types.labels';
-import { WORD_TYPE_DETAIL_VIEW_KEYS, WordTypeDetailView } from '../../models/word-types.models';
-
-type WordTypeDetailPanelView = (typeof WORD_TYPE_DETAIL_VIEW_KEYS)[number];
+import {
+  WORD_TYPE_DETAIL_VIEWS,
+  WORD_TYPE_DETAIL_VIEW_KEYS,
+  WordTypeDetailView,
+} from '../../models/word-types.models';
+import { WordTypeDetailSelectionKind } from '../../models/word-types-detail.models';
 
 @Component({
   selector: 'qd-word-type-details-panel',
@@ -33,6 +36,7 @@ type WordTypeDetailPanelView = (typeof WORD_TYPE_DETAIL_VIEW_KEYS)[number];
 })
 export class WordTypeDetailsPanelComponent {
   readonly view = input.required<WordTypeDetailView>();
+  readonly kind = input<WordTypeDetailSelectionKind>('word');
   readonly inline = input(true);
   readonly emptySelection = input(false);
   readonly selectionTitle = input('');
@@ -48,11 +52,18 @@ export class WordTypeDetailsPanelComponent {
   protected readonly notFoundLabel = WORD_TYPES_NOT_FOUND_LABEL;
   protected readonly surfaceDomId = 'word-type-details-panel-surface';
 
-  protected readonly tabs = WORD_TYPE_DETAIL_VIEW_KEYS.map((key) => ({
-    key,
-    label: WORD_TYPE_DETAIL_TAB_LABELS[key],
-    aria: WORD_TYPE_DETAIL_TAB_ARIA[key],
-  }));
+  // Word selections expose ayahs/surahs; grouped selections add the leading related-words tab.
+  protected readonly tabKeys = computed<readonly WordTypeDetailView[]>(() =>
+    this.kind() === 'word' ? WORD_TYPE_DETAIL_VIEW_KEYS : WORD_TYPE_DETAIL_VIEWS,
+  );
+
+  protected readonly tabs = computed(() =>
+    this.tabKeys().map((key) => ({
+      key,
+      label: WORD_TYPE_DETAIL_TAB_LABELS[key],
+      aria: WORD_TYPE_DETAIL_TAB_ARIA[key],
+    })),
+  );
 
   private readonly tabList = viewChild<ElementRef<HTMLElement>>('tabList');
   protected readonly hasSelection = computed(() => !this.emptySelection());
@@ -85,8 +96,8 @@ export class WordTypeDetailsPanelComponent {
     }
   }
 
-  protected onTabKeydown(event: KeyboardEvent, currentKey: WordTypeDetailPanelView): void {
-    const order = WORD_TYPE_DETAIL_VIEW_KEYS;
+  protected onTabKeydown(event: KeyboardEvent, currentKey: WordTypeDetailView): void {
+    const order = this.tabKeys();
     const index = order.indexOf(currentKey);
     let nextIndex: number | null = null;
 
@@ -113,7 +124,7 @@ export class WordTypeDetailsPanelComponent {
     this.focusTab(nextKey);
   }
 
-  private focusTab(key: WordTypeDetailPanelView): void {
+  private focusTab(key: WordTypeDetailView): void {
     const list = this.tabList()?.nativeElement;
     const tab = list?.querySelector<HTMLElement>(`[data-word-type-tab="${key}"]`);
     tab?.focus();

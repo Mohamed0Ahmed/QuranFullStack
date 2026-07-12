@@ -48,8 +48,16 @@ Shared across explorers: `utils/explorer-table-*` (focus/keyboard-nav/scroll/col
   table/details layout is kept for grouped views, and the **table owns its own prompt/loading/empty/
   error (with retry) inside its body** instead of swapping the shell out. `tableView` **survives**
   type/child/case/tense/voice/sort/page changes — only the Words tab returns a grouped view to
-  `words`. Grouped rows/counts are still display-only in this iteration (grouped-row selection and
-  grouped detail content land with US6). Switching a `tableView` clears only the incompatible
+  `words`. **Grouped rows are selectable native row buttons** (`word-types-table__row`, no
+  `qd-interactive-surface`): choosing a root/stem/lemma writes **only its explicit URL key**
+  (`root`/`stem`/`lemma`) with `view=words` and **no** `detailPage`, sends the full grammatical scope to
+  the detail facade, and opens a scoped summary + related-words/ayahs/surahs details. The details panel
+  tabs are **kind-aware** (word → آيات/سور; grouped → كلمات مرتبطة/آيات/سور) with RTL roving focus, and a
+  summary card (label + المواضع/الآيات/السور) renders above the active detail content for both kinds.
+  Grouped **member-word rows are strictly display-only** — no button/link/tabindex/`qd-interactive-surface`/
+  selected state and no Router; only their pagination emits. Grouped words and ayahs are server-paged with
+  internal page 1, the canonical URL omits `detailPage` at page 1 and serializes only pages `> 1`, and the
+  surahs view always removes `detailPage`. Switching a `tableView` clears only the incompatible
   selection keys, even if a stale deep link supplies one. Both backend and
   frontend cache keys (`WordTypesCacheKeys.table` / `word-types-cache.ts`'s `table(...)`)
   include `tableView`, so tab switches never cross-serve another view's rows. Stem/lemma
