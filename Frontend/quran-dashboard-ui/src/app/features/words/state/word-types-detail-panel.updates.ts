@@ -1,31 +1,27 @@
 import { HttpErrorResponse } from '@angular/common/http';
 
 import { ApiResponse } from '../../../core/data-access/api-response.model';
-import { WORD_TYPES_ERROR_LABEL, WORD_TYPES_NOT_FOUND_LABEL } from '../models/word-types.labels';
+import { WordTypeGroupedMemberWordDto } from '../data-access/word-types.api';
+import { WORD_TYPES_ERROR_LABEL } from '../models/word-types.labels';
 import { WordTypesDetailState } from '../models/word-types-detail.models';
 import {
   PagedResultDto,
   WordTypeAyahMatchDto,
   WordTypeDetailView,
-  WordTypeSummaryDto,
   WordTypeSurahsResponseDto,
-  WordTypesLoadStatus,
 } from '../models/word-types.models';
 
-export function buildSummaryPanelUpdate(
-  response: ApiResponse<WordTypeSummaryDto>,
+export function buildWordsPanelUpdate(
+  response: ApiResponse<PagedResultDto<WordTypeGroupedMemberWordDto>>,
 ): Partial<WordTypesDetailState> {
   if (!response.isSuccess || !response.data) {
-    return {
-      status: 'notFound',
-      summary: null,
-      errorMessage: response.message ?? WORD_TYPES_NOT_FOUND_LABEL,
-    };
+    return buildDetailFailureUpdate(response.message ?? WORD_TYPES_ERROR_LABEL);
   }
 
+  const page = response.data;
   return {
-    summary: response.data,
-    status: 'loading',
+    words: page,
+    status: page.totalCount === 0 ? 'empty' : 'success',
     errorMessage: '',
   };
 }
@@ -64,24 +60,6 @@ export function buildDetailErrorUpdate(err: unknown, fallback: string): Partial<
   return buildDetailFailureUpdate(extractPanelErrorMessage(err, fallback));
 }
 
-export function restoredRowNotFoundUpdate(
-  message: string,
-  fallback: string,
-  selectedRow: WordTypesDetailState['selectedRow'],
-): WordTypesDetailState {
-  return {
-    status: 'notFound',
-    selectedRow,
-    view: 'ayahs',
-    summary: null,
-    ayahs: null,
-    surahs: null,
-    detailPage: 1,
-    location: null,
-    errorMessage: message || fallback,
-  };
-}
-
 function buildDetailFailureUpdate(message: string): Partial<WordTypesDetailState> {
   return {
     status: 'error',
@@ -100,6 +78,7 @@ export function extractPanelErrorMessage(err: unknown, fallback: string): string
   return fallback;
 }
 
+// Words and ayahs are server-paged; surahs are single-shot and never receive a detailPage.
 export function isPaginatedWordTypeView(view: WordTypeDetailView): boolean {
-  return view === 'ayahs';
+  return view === 'words' || view === 'ayahs';
 }

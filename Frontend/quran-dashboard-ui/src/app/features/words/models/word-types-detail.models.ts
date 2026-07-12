@@ -1,4 +1,8 @@
 import type {
+  WordTypeGroupedMemberWordDto,
+  WordTypeGroupedSummaryDto,
+} from '../data-access/word-types.api';
+import type {
   PagedResultDto,
   WordTypeAyahMatchDto,
   WordTypeCase,
@@ -26,13 +30,26 @@ export type WordTypeDetailSelection =
   | { kind: 'stem'; stemId: number; scope: WordTypeDetailScope }
   | { kind: 'lemma'; lemmaId: number; scope: WordTypeDetailScope };
 
+export type WordTypeDetailSelectionKind = WordTypeDetailSelection['kind'];
+
+// The grouped selections that carry a scoped numeric dimension (everything but the word selection).
+export type WordTypeGroupedDetailSelection = Extract<WordTypeDetailSelection, { kind: 'root' | 'stem' | 'lemma' }>;
+
 export interface WordTypesDetailState {
   status: WordTypesLoadStatus;
+  // Kind-aware active selection and its discriminant. `selectedRow` remains the word-only identity
+  // that the existing panel/page read; Task 9 migrates those consumers onto `selection`/`kind`.
+  selection: WordTypeDetailSelection | null;
+  kind: WordTypeDetailSelectionKind;
   selectedRow: WordTypeRowIdentity | null;
   view: WordTypeDetailView;
   detailPage: number;
   location: string | null;
+  // Word summaries populate `summary`; grouped summaries populate `groupedSummary`. Exactly one is
+  // non-null for an active selection.
   summary: WordTypeSummaryDto | null;
+  groupedSummary: WordTypeGroupedSummaryDto | null;
+  words: PagedResultDto<WordTypeGroupedMemberWordDto> | null;
   ayahs: PagedResultDto<WordTypeAyahMatchDto> | null;
   surahs: WordTypeSurahsResponseDto | null;
   errorMessage: string;

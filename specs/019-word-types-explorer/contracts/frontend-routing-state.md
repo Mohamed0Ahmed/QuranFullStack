@@ -178,6 +178,36 @@ api.getGroupedSurahs(groupedRequest);
   The `words` and `ayahs` variants append `:p{page}`; `summary` and `surahs` do not. This isolates
   kind, ID, full scope, and view without putting API loading behavior into the cache service.
 
+## Kind-Aware Detail Orchestration (Task 7)
+
+`WordTypesDetailFacade` restores and loads details for all four selection kinds from the URL. It parses
+the explicit selection key compatible with the active `tableView` (`word`+`contextCode`, `root`, `stem`,
+or `lemma`) into a discriminated `WordTypeDetailSelection` carrying the full grammatical scope, then
+loads a kind-appropriate summary and the active view:
+
+- **Summary dispatch by kind.** A `word` selection loads the word summary/cache; a `root`/`stem`/`lemma`
+  selection loads the grouped summary/cache. Word summaries populate `summary`, grouped summaries
+  populate `groupedSummary` (exactly one is non-null for an active selection).
+- **View dispatch by kind and view.** `WordTypesDetailViewLoader` routes `words` to grouped member words
+  (grouped selection only — the word selection has no `words` view), `ayahs` to the word or grouped ayah
+  endpoint, and `surahs` to the single-shot word or grouped surah endpoint. The `surahs` load ignores
+  `detailPage`.
+- **Default view.** A newly restored/selected word defaults to `ayahs`; a grouped selection defaults to
+  `words`. `isPaginatedWordTypeView` is true for `words` and `ayahs`, false for `surahs`.
+- **Internal page vs URL.** A paged view restored without a URL `detailPage` is internal page `1`; URL
+  omission is never a null internal page. Only pages above `1` serialize.
+- **Restoration and history.** Refresh and browser back/forward replace the selection kind, its summary,
+  and the active view from the explicit URL key alone; a scope-only change for the same dimension ID
+  loads a new scoped summary.
+- **Stale protection.** Route-driven loads use `switchMap` to cancel superseded work, and every state
+  write is additionally gated by a monotonic generation counter, so a late non-cancellable summary or
+  detail response can never overwrite a newer kind/scope/view/page.
+- **Not-found vs error vs retry.** An absent scoped dimension (null data or `404`) becomes a kind-aware
+  `notFound` that preserves the selection without clearing list state; a transport/backend failure
+  becomes a retryable `error`. `retry()` reloads the summary when it never arrived, otherwise reloads the
+  active view. Failed reads are never cached (`ApiResponseCache` stores only successful responses), so a
+  retry always re-issues the request.
+
 ## Table-View Tabs (Feature 022)
 
 When a table scope is selected (a leaf/`childCode`, or `type=inl`), a tab row above the table switches
