@@ -35,4 +35,11 @@ public interface IWordTypesReader
     Task<WordTypeSurahsResponse?> GetSurahsAsync(
         WordTypeRowIdentity identity,
         CancellationToken cancellationToken);
+
+    // Grouped (root/stem/lemma) scoped summary. Returns null when the positive dimension ID does not
+    // exist in the supplied scope. All membership and counts derive from head-level
+    // quran_word_morphology, never quran_word_morphology_segments.
+    Task<WordTypeGroupedSummaryDto?> GetGroupedSummaryAsync(
+        WordTypeGroupedSelection selection,
+        CancellationToken cancellationToken);
 }

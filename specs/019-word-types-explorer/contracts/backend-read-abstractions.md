@@ -50,12 +50,21 @@ public interface IWordTypesReader
     Task<WordTypeSurahsResponse?> GetSurahsAsync(
         WordTypeRowIdentity identity,
         CancellationToken cancellationToken);
+
+    // Feature 023 — grouped (root/stem/lemma) scoped summary. Returns null when the positive dimension
+    // ID does not exist in the supplied scope. Membership/counts derive from head-level
+    // quran_word_morphology only (never the segments table).
+    Task<WordTypeGroupedSummaryDto?> GetGroupedSummaryAsync(
+        WordTypeGroupedSelection selection,
+        CancellationToken cancellationToken);
 }
 ```
 
 `null` from selected-row reads means the positive row identity does not resolve to a row-context under
 the supplied filter/context. Empty pages/lists for an existing row-context are successful non-null
-responses.
+responses. For `GetGroupedSummaryAsync`, `null` means the positive `DimensionId` has no rows in the
+supplied scope (a scoped-group 404); the paged grouped reads added by Tasks 2–3 return a non-null empty
+page with the correct `TotalCount` for an out-of-range page of an existing group.
 
 ## Value Objects
 
@@ -121,6 +130,27 @@ Words | Roots | Stems | Lemmas
 - `Roots`/`Stems`/`Lemmas` group the same scoped occurrence base as `Words` by the numeric
   `root_id`/`stem_id`/`lemma_id`, excluding null dimension IDs.
 
+### `WordTypeGroupedDimensionKind` + `WordTypeGroupedSelection` (Feature 023 — grouped details)
+
+Addresses one grouped root/stem/lemma dimension for a scoped detail read:
+
+```text
+WordTypeGroupedDimensionKind: Root | Stem | Lemma
+  - Parser accepts only the PLURAL route keys roots|stems|lemmas (unknown/blank → controlled failure).
+  - ToRouteKey() → plural (roots|stems|lemmas); ToDtoKind() → singular (root|stem|lemma).
+
+WordTypeGroupedSelection(Kind, DimensionId, Filter)
+  - DimensionId: numeric root_id/stem_id/lemma_id; IsValid ⇔ DimensionId > 0.
+  - Filter: the identical five-field WordTypeFilter scope the selected table row carried.
+```
+
+- The selection reuses the **identical** scoped occurrence `base` as `GetTableRowsAsync`; the summary
+  restricts that base to the single allowlisted numeric column (`root_id`/`stem_id`/`lemma_id = @dimensionId`)
+  and computes `COUNT(*)`, `COUNT(DISTINCT ayah_id)`, `COUNT(DISTINCT surah_number)`, plus `MIN(text)` for
+  display. The three counts and `displayText` are identical to the selected E2b grouped row.
+- `WordTypeGroupedSummaryDto` carries the **singular** `kind` discriminator; the text field is
+  projection-only display and is never the membership predicate. Null dimensions and markers are excluded.
+
 ## Handler and Outcome Pattern
 
 Application handlers own input validation and map failures to controlled outcomes. Controllers only
@@ -135,6 +165,7 @@ GetWordTypeTable
 GetWordTypeSummary
 GetWordTypeAyahs
 GetWordTypeSurahs
+GetWordTypeGroupedSummary   (Feature 023; grouped words/ayahs/surahs handlers added by Tasks 2–4)
 ```
 
 Required outcome categories:
@@ -146,6 +177,9 @@ Required outcome categories:
 - `InvalidTableView` (`GetWordTypeTable` only — unrecognized non-blank `tableView`)
 - `InvalidIdentity`
 - `NotFound` for valid row identity that does not resolve
+- Grouped-detail handlers (Feature 023) validate in a fixed order and map to
+  `InvalidKind` → `InvalidId` → `InvalidFilter` → reader result (`Success`/`NotFound`). `InvalidKind`
+  covers an unrecognized non-blank route `kind`; `InvalidId` covers `DimensionId ≤ 0`.
 
 ## Query Rules
 
@@ -174,6 +208,14 @@ Required outcome categories:
   `ArabicFoldTo`) with `COLLATE "C"` ordinal collation, so grouped alphabetical order stays consistent
   with the standalone Roots/Lemmas/Stems explorers. All grouped sorts tie-break on the numeric
   dimension ID for deterministic pages.
+- **Grouped detail reads (Feature 023)**: `GetGroupedSummaryAsync` selects from the same scoped `base`
+  CTE as the grouped table reads and applies the allowlisted numeric predicate
+  `root_id|stem_id|lemma_id = @dimensionId` before grouping — **head-level `quran_word_morphology`
+  only**. `quran_word_morphology_segments` is never joined, so a segment-only dimension can never surface
+  and can never displace a word's head IDs. The membership predicate is always the numeric ID; the text
+  columns are projection-only and never filter membership. Kept in a size-split partial
+  (`EfWordTypesReader.GroupedDetails.cs` + `.GroupedDetails.Sql.cs`) so the primary reader stays under its
+  threshold.
 
 ## Enrichment Rules
 
@@ -197,10 +239,13 @@ wordtypes:table:{filter-hash}:view:{tableView}:sort:{sort}:p{page}:s{pageSize}
 wordtypes:summary:{identity-hash}
 wordtypes:ayahs:{identity-hash}:p{page}:s{pageSize}
 wordtypes:surahs:{identity-hash}
+wordtypes:grouped:{kind}:summary:{scope-hash}      (Feature 023; grouped words/ayahs/surahs keys added by Tasks 2–4)
 ```
 
 The `wordtypes:table:` key **must include `tableView`** — switching tabs must never return another
-view's cached rows. The `wordtypes:rows:` key (E2 `/words`) is untouched and stays independent.
+view's cached rows. The `wordtypes:rows:` key (E2 `/words`) is untouched and stays independent. The
+`wordtypes:grouped:` keys fold the numeric dimension ID plus the five scope fields into `{scope-hash}`
+and expose only kind/view labels in the readable prefix, so different kinds/scopes never cross-serve.
 
 Do not include raw Quran text, word text, or raw search text in cache keys or logs.
 

@@ -86,4 +86,9 @@ public static class ApiMessages
     public const string WordTypesInvalidPaging = "معطيات التصفح غير صالحة";
     public const string WordTypesInvalidTableView = "طريقة عرض الجدول غير صالحة";
     public const string WordTypeNotFound = "الكلمة المحددة غير موجودة";
+
+    public const string WordTypeGroupedSummaryLoaded = "تم تحميل ملخص التجميع";
+    public const string WordTypesInvalidGroupedKind = "نوع التجميع غير صالح";
+    public const string WordTypesInvalidGroupedId = "معرّف التجميع غير صالح";
+    public const string WordTypesGroupedNotFound = "التجميع المحدد غير موجود";
 }

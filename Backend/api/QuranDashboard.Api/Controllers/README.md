@@ -12,7 +12,11 @@ and the `ApiResponse<T>` envelope; application handlers own use-case logic.
 - `MushafReader/Words/` — `api/mushaf/words/{wordLocation}/analysis`.
 - `System/` — `api/health` health-check endpoint.
 - `Words/` — `api/words/unique`, `api/words/roots`, `api/words/lemmas`,
-  `api/words/stems`, and `api/words/word-types` explorer endpoints.
+  `api/words/stems`, and `api/words/word-types` explorer endpoints. Word-types grouped detail reads
+  (`api/words/word-types/table/{kind}/{dimensionId}[/words|/ayahs|/surahs]`, Feature 023) live in the
+  separate `WordTypeGroupedDetailsController`, which shares the `…/word-types/table` route base without
+  growing `WordTypesController`. Route `{kind}` is the plural key `roots|stems|lemmas`; an unknown value
+  is a `400`.
 
 ## Boundary
 

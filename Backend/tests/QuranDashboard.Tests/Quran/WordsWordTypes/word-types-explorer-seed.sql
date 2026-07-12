@@ -141,3 +141,15 @@ VALUES
   (1903010, '1:2:3', 'V', 1, NULL, NULL, NULL, TRUE, NULL, NULL, NULL, NULL),
   (1903012, '2:1:2', 'INL', 1, NULL, 190505, 190604, FALSE, NULL, NULL, NULL, NULL)
 ON CONFLICT DO NOTHING;
+
+-- Head-grain guard: a fixture-only secondary segment on the noun-scope word 1903001 (head root/lemma/
+-- stem 190700/190500/190600) carries the ALTERNATE, already-seeded dimension IDs 190701/190502/190602.
+-- Grouped detail reads must derive membership from head-level quran_word_morphology only, so these
+-- segment IDs must never surface in noun-scoped grouped details and must never displace the head IDs.
+-- No new Quranic text or catalogue value is introduced.
+INSERT INTO quran_word_morphology_segments
+  (quran_word_id, segment_location, segment_number, kind, pos,
+   form_buckwalter, arabic_render_source, features_raw, root_id, lemma_id, stem_id)
+VALUES
+  (1903001, '1:1:1:1', 1, 'STEM', 'N', 'fixture', 'fixture', 'fixture=head-grain-guard', 190701, 190502, 190602)
+ON CONFLICT DO NOTHING;

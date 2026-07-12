@@ -23,6 +23,19 @@ public static class WordTypesCacheKeys
     public static string Surahs(WordTypeRowIdentity identity) =>
         $"wordtypes:surahs:{HashIdentity(identity)}";
 
+    // Grouped detail keys expose only the kind/view labels in the readable prefix; the dimension ID and
+    // the full five-field scope are folded into the hash so different scopes never cross-serve.
+    public static string GroupedSummary(WordTypeGroupedSelection selection) =>
+        $"wordtypes:grouped:{selection.Kind.ToRouteKey()}:summary:{HashGroupedSelection(selection)}";
+
+    private static string HashGroupedSelection(WordTypeGroupedSelection selection) => HashParts(
+        selection.DimensionId.ToString(CultureInfo.InvariantCulture),
+        selection.Filter.Type,
+        selection.Filter.ChildCode,
+        selection.Filter.Case,
+        selection.Filter.Tense,
+        selection.Filter.Voice);
+
     private static string HashFilter(WordTypeFilter filter) => HashParts(
         filter.Type,
         filter.ChildCode,

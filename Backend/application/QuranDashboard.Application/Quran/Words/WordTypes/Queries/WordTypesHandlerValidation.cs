@@ -104,6 +104,19 @@ internal static class WordTypesHandlerValidation
     public static string NormalizeType(string? type) =>
         string.IsNullOrWhiteSpace(type) ? DefaultType : type.Trim().ToLowerInvariant();
 
+    // Shared filter construction so every grouped-detail handler builds the identical WordTypeFilter
+    // (normalized type, trimmed/null-collapsed child and secondary values) before calling IsValidFilter.
+    public static WordTypeFilter NormalizeFilter(string? type, string? childCode, string? @case, string? tense, string? voice) =>
+        new(
+            NormalizeType(type),
+            NormalizeOptional(childCode),
+            NormalizeOptional(@case),
+            NormalizeOptional(tense),
+            NormalizeOptional(voice));
+
+    private static string? NormalizeOptional(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
     public static bool IsValidPaging(int page, int pageSize) =>
         page >= MinPage && pageSize >= MinPageSize && pageSize <= MaxPageSize;
 }

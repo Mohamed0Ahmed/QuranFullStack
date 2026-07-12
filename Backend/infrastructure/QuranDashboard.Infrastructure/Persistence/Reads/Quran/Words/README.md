@@ -12,8 +12,9 @@ and Unique Words. They back the `application/.../Quran/Words/**` query handlers 
 
 - `EfUniqueWordsReader.cs`, `Roots/EfRootsReader.cs`, `Lemmas/EfLemmasReader.cs`,
   `Stems/EfStemsReader.cs` (+ `.Summary.cs`), `WordTypes/EfWordTypesReader.cs`
-  (+ `.Sql.cs`) — the readers. Word-types and stems readers are **partial-split by size**
-  (summary vs list/SQL); keep the split when adding to them.
+  (+ `.Sql.cs`, + `.GroupedDetails.cs` / `.GroupedDetails.Sql.cs`) — the readers. Word-types and
+  stems readers are **partial-split by size** (summary vs list/SQL vs grouped-details); keep the split
+  when adding to them.
 - `*ListDerivation` / `*SummaryRow` — how list rows and summary aggregates are derived.
 - `WordTypes/WordTypeIdentityMatcher.cs`, `WordTypeGrouping.cs` — POS/type identity + grouping.
 - `MorphologyRelatedItemsOrdering.cs` — shared ordering for related lemmas/stems/roots.
@@ -39,6 +40,14 @@ and Unique Words. They back the `application/.../Quran/Words/**` query handlers 
   and friends) — never conflate the two. Grouped `alpha` sort reuses the Roots explorer's
   Arabic fold (`RootsListDerivation.ArabicFoldFrom`/`ArabicFoldTo`) with `COLLATE "C"`
   ordinal collation, tie-broken by the numeric dimension ID.
+- **Word Types grouped detail reads** (`EfWordTypesReader.GetGroupedSummaryAsync`, Feature 023, in the
+  `.GroupedDetails.*` partials) select from the **same scoped `BaseRowsSql` occurrence base** as the
+  grouped table, then restrict it to a single allowlisted numeric column
+  (`root_id`/`stem_id`/`lemma_id = @dimensionId`) at **head grain** — `quran_word_morphology` only, never
+  `quran_word_morphology_segments`. The summary's counts and display text are byte-for-byte identical to
+  the selected grouped table row in the same scope; a positive dimension ID absent from the scope returns
+  `null` (a scoped-group 404). The dimension text columns are projection-only display and never
+  participate in the membership predicate.
 
 ## Related
 

@@ -231,3 +231,38 @@ explorers.
 
 Word Types previously reversed stem/lemma relative to the already-correct Roots/Lemmas/Stems explorer
 terminology; §1.1/§1.5/§5 above and the frontend table headers/tab labels now use this mapping.
+
+---
+
+## 9. Grouped detail read model (Feature 023 — grouped drilldown)
+
+Feature 022 left grouped rows noninteractive with no detail. Feature 023 makes a grouped root/stem/lemma
+row selectable and opens a scoped detail. A grouped selection is the numeric dimension plus the identical
+five-field scope the row was displayed under:
+
+```
+WordTypeGroupedSelection = (Kind ∈ {Root, Stem, Lemma}, DimensionId > 0, WordTypeFilter scope)
+```
+
+### 9.1 Grouped summary (this task)
+
+The scoped summary reuses the **same occurrence `base`** as §8's grouped table row and restricts it to
+the single allowlisted numeric column (`root_id | stem_id | lemma_id = DimensionId`) before aggregating:
+
+| Field | Derivation |
+|-------|-----------|
+| `kind` | singular discriminator (`root`/`stem`/`lemma`) |
+| `dimensionId` | the numeric `root_id`/`stem_id`/`lemma_id` (identity — never the display text) |
+| `displayText` | `MIN(dimension_text)` over the scoped base (projection-only display) |
+| `occurrencesCount` | `COUNT(*)` over the scoped, dimension-filtered base |
+| `ayahsCount` | `COUNT(DISTINCT ayah_id)` |
+| `surahsCount` | `COUNT(DISTINCT surah_number)` |
+
+- **Head-grain invariant**: membership and counts come from head-level `quran_word_morphology` only. The
+  scoped `base` never joins `quran_word_morphology_segments`, so a dimension that appears only on a
+  secondary segment (prefix/suffix) never surfaces and never displaces a word's head root/lemma/stem.
+- The summary's `dimensionId`, `displayText`, and three counts are **byte-for-byte identical** to the
+  selected §8.1 grouped table row in the same scope (integrity invariant — assert in tests).
+- Null dimensions and ayah markers remain excluded exactly as in §8; a positive dimension ID absent from
+  the scope resolves to a 404 (null reader result), not an empty summary.
+- Member words, ayahs, and surahs for the same selection are defined by Feature 023 Tasks 2–4.

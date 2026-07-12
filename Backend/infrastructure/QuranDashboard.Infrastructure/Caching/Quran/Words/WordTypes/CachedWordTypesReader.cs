@@ -98,4 +98,21 @@ public sealed class CachedWordTypesReader(EfWordTypesReader efReader, IMemoryCac
 
         return surahs;
     }
+
+    public async Task<WordTypeGroupedSummaryDto?> GetGroupedSummaryAsync(WordTypeGroupedSelection selection, CancellationToken cancellationToken)
+    {
+        var key = WordTypesCacheKeys.GroupedSummary(selection);
+        if (_cache.TryGetValue(key, out WordTypeGroupedSummaryDto? cached))
+        {
+            return cached;
+        }
+
+        var summary = await _ef.GetGroupedSummaryAsync(selection, cancellationToken);
+        if (summary is not null)
+        {
+            _cache.Set(key, summary, WordTypesCacheEntryOptions.Detail());
+        }
+
+        return summary;
+    }
 }

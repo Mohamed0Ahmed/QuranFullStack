@@ -114,6 +114,31 @@ The admin configures a view (type + subtype + secondary feature + a selected row
 
 ---
 
+### User Story 6 - Drill into a grouped root/stem/lemma row (Priority: P3, Feature 023)
+
+After switching the table to the **جذور / أصول / صيغ** view (Feature 022), the admin selects a grouped
+root, stem, or lemma row and opens its scoped details — starting with a summary whose counts exactly match
+the row — without leaving the active grammatical scope. (Feature 022 shipped grouped rows as noninteractive
+with no detail; Feature 023 supersedes that MVP restriction.)
+
+**Why this priority**: Grouped drilldown turns the aggregation views from read-only tallies into a usable
+research path, but the word-row workflow (US1–US5) remains the core.
+
+**Independent Test**: In a grouped view, select a root/stem/lemma row, open its summary, and confirm the
+summary's dimension, display text, occurrences, ayahs, and surahs equal the selected row within the same
+type/subtype/case/tense/voice scope.
+
+**Acceptance Scenarios**:
+
+1. **Given** a grouped root row under an active scope, **When** its summary is opened, **Then** the
+   occurrences/ayahs/surahs equal that exact row and re-scope with any active secondary filter (not the
+   dimension's global totals).
+2. **Given** a dimension that only appears via a sub-word segment, **When** the grouped summary for the
+   active head scope is read, **Then** that segment-only dimension never appears and never replaces the
+   word's head root/stem/lemma.
+
+---
+
 ### Edge Cases
 
 - **Same spelling, multiple grammatical usages**: a displayed word used both as اسم and as صفة MUST appear as **two separate rows** (one per context), each with its own counts, its own details card, and its own ayah list. No row may mix two contexts. There is NO "dominant type" single row.
@@ -215,6 +240,20 @@ The admin configures a view (type + subtype + secondary feature + a selected row
 - **FR-045**: The feature MUST reuse the existing Words-hub explorer patterns (split-view table + details, ayah list, surah distribution, per-word analysis, URL-restorable state) rather than introduce parallel mechanisms.
 - **FR-046**: The feature MUST NOT change or disturb the behavior, results, or contracts of the existing Roots / Lemmas / Stems / Unique-Words explorers.
 - **FR-047**: The feature MUST be read-only with respect to Quran data: it MUST NOT modify, import, or re-derive any Quran word, morphology, or label data.
+
+#### M. Grouped detail drilldown (Feature 023)
+
+- **FR-048**: A grouped root/stem/lemma row MUST be selectable and MUST open a scoped detail whose summary
+  (dimension identity, display text, occurrences, ayahs, surahs) is **identical** to the selected grouped
+  table row within the same type/subtype/case/tense/voice scope. This supersedes the Feature 022 MVP
+  decision that grouped rows carry no detail.
+- **FR-049**: Grouped detail membership and counts MUST derive from the word's **head-level** grammatical
+  dimensions (`quran_word_morphology`) only, using the same scoped occurrence base as the grouped table.
+  Sub-word / segment dimensions (`quran_word_morphology_segments`) MUST NOT contribute membership or
+  counts, MUST NOT surface a segment-only dimension, and MUST NOT displace a word's head root/stem/lemma.
+- **FR-050**: Grouped detail identity MUST be the **numeric** `root_id`/`stem_id`/`lemma_id`; the Arabic
+  display text is presentation only and MUST NOT be used as membership identity. Null dimensions and
+  ayah markers remain excluded.
 
 ### Key Entities *(include if feature involves data)*
 

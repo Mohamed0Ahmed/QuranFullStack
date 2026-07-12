@@ -221,9 +221,59 @@ scope as E2, grouped and counted **before** pagination. Grouped rows carry no ro
   fold with ordinal collation before the ID).
 - `GET .../word-types/words` (E2) is **preserved unchanged** — same params, same `WordTypeRowDto`
   shape, no `kind` discriminator — for existing deep links and external consumers.
-- Grouped-row **details** (summary/ayahs/surahs) are **out of MVP**; E3–E5 remain word-row only.
+- Grouped-row **details** were out of MVP in Feature 022; Feature 023 adds a Word-Types-owned grouped
+  detail family (summary/words/ayahs/surahs) under `.../table/{kind}/{dimensionId}` — see **E2c**.
 - Cache keys (`wordtypes:table:{filter-hash}:view:{tableView}:sort:{sort}:p{page}:s{pageSize}`) include
   `tableView`, so switching tabs never cross-serves another view's rows.
+
+---
+
+## E2c — Grouped detail summary (root/stem/lemma, Feature 023)
+
+```
+GET api/words/word-types/table/{kind}/{dimensionId}
+    ?type={noun|verb|particle|inl}
+    &childCode={head_pos | tense}        (optional — when a child node is selected)
+    &case={nominative|accusative|genitive|null}   (nominal types only)
+    &tense={past|present|imperative}     (verb only)
+    &voice={active|passive}              (verb only)
+```
+
+`kind` is the **plural** route key `roots|stems|lemmas`; `dimensionId` is the numeric
+`rootId`/`stemId`/`lemmaId` of a row selected from **E2b**. Returns
+`ApiResponse<WordTypeGroupedSummaryDto>` — a **single-shot** scoped summary for that one grouped
+dimension. Every grouped detail read carries the identical five-field grammatical scope
+(`type`, `childCode`, `case`, `tense`, `voice`) as the selected table row.
+
+```jsonc
+{
+  "kind": "root",                 // singular discriminator: root | stem | lemma
+  "dimensionId": 4210,
+  "displayText": "ك ت ب",         // projection-only; never membership identity
+  "occurrencesCount": 0,          // المواضع — scoped occurrences of this dimension
+  "ayahsCount": 0,                // الآيات — distinct ayahs
+  "surahsCount": 0                // السور — distinct surahs
+}
+```
+
+**Rules**:
+- Route `kind` is plural; an unknown value → **400** (`InvalidKind` → `WordTypesInvalidGroupedKind`).
+  `dimensionId ≤ 0` → **400** (`InvalidId` → `WordTypesInvalidGroupedId`). A cross-type/invalid grammatical
+  filter → **400** (`InvalidFilter` → `WordTypesInvalidFilter`). A **positive** dimension ID that is
+  absent from the scoped base → **404** (`NotFound` → `WordTypesGroupedNotFound`). Success → **200**.
+- Validation order in the handler is fixed: route kind → positive ID → grammatical filter → reader result.
+- `dimensionId`, `displayText`, and the three counts are **exactly equal** to the selected E2b grouped
+  row in the same scope (same occurrence base, same aggregates restricted to one dimension ID).
+- Membership and all counts derive from **head-level `quran_word_morphology`** via the same scoped
+  `base` CTE as E2/E2b. `quran_word_morphology_segments` is **never** joined; a segment-only dimension
+  never surfaces and never displaces a word's head IDs.
+- Numeric dimension identity only; the text columns are projection-only display fields. Null dimensions
+  and ayah-marker words are excluded.
+- Cache key `wordtypes:grouped:{kind}:summary:{scope-hash}` folds the dimension ID plus the five scope
+  fields into the hash; different kinds/scopes never cross-serve, and only kind/view labels appear in the
+  readable prefix.
+- The paged member-words, paged ayahs, and single-shot surahs resources under the same
+  `{kind}/{dimensionId}` base are added by Feature 023 Tasks 2–4.
 
 ---
 

@@ -46,6 +46,7 @@ using QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemsPage;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeAyahs;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeRows;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeTable;
+using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeGroupedSummary;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeSummary;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeSurahs;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeTree;
@@ -105,6 +106,7 @@ public static class DependencyInjection
         services.AddScoped<GetWordTypeRowsHandler>();
         services.AddScoped<GetWordTypeTableHandler>();
         services.AddScoped<GetWordTypeSummaryHandler>();
+        services.AddScoped<GetWordTypeGroupedSummaryHandler>();
         services.AddScoped<GetWordTypeAyahsHandler>();
         services.AddScoped<GetWordTypeSurahsHandler>();
 
