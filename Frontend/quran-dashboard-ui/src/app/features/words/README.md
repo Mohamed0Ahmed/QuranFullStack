@@ -42,10 +42,15 @@ Shared across explorers: `utils/explorer-table-*` (focus/keyboard-nav/scroll/col
   `GET .../word-types/table` and are grouped + counted server-side **before** pagination;
   `GET .../word-types/words` stays unchanged for existing deep links. Rows are a
   discriminated union keyed by `kind: 'word'|'root'|'stem'|'lemma'` — grouped identity is
-  the numeric `rootId`/`stemId`/`lemmaId`, **never** Arabic display text. The details panel
-  is hidden and the table spans full width outside `words`; grouped rows/counts are
-  noninteractive (no selection, no count-chip drilldown). Switching to a grouped `tableView`
-  clears any word selection even if a stale deep link supplies one. Both backend and
+  the numeric `rootId`/`stemId`/`lemmaId`, **never** Arabic display text. The **table-view strip,
+  table shell, and details host stay mounted** through every parent/child/filter/sort/view/loading/
+  empty/error transition (the strip appears once the tree loads, including parent scopes); the split
+  table/details layout is kept for grouped views, and the **table owns its own prompt/loading/empty/
+  error (with retry) inside its body** instead of swapping the shell out. `tableView` **survives**
+  type/child/case/tense/voice/sort/page changes — only the Words tab returns a grouped view to
+  `words`. Grouped rows/counts are still display-only in this iteration (grouped-row selection and
+  grouped detail content land with US6). Switching a `tableView` clears only the incompatible
+  selection keys, even if a stale deep link supplies one. Both backend and
   frontend cache keys (`WordTypesCacheKeys.table` / `word-types-cache.ts`'s `table(...)`)
   include `tableView`, so tab switches never cross-serve another view's rows. Stem/lemma
   terminology follows the Roots/Lemmas/Stems explorers: **stem = الأصل / الأصول الصرفية**,

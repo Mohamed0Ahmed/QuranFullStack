@@ -225,29 +225,137 @@ describe('WordTypesExplorerFacade — tableView', () => {
     facade.unbindFromRoute();
   });
 
-  it('resets tableView to words when selecting a main type', () => {
+  function lastQueryParams(router: Router): Record<string, unknown> {
+    return (router.navigate as ReturnType<typeof vi.fn>).mock.calls.at(-1)?.[1].queryParams as Record<string, unknown>;
+  }
+
+  it('preserves the active tableView when selecting a main type', () => {
     const { facade, router } = setup();
     const route = controllableRoute({ type: 'inl', tableView: 'roots' });
     facade.bindToRoute(route.route);
 
     facade.selectType('noun');
 
-    expect(router.navigate).toHaveBeenLastCalledWith([], expect.objectContaining({
-      queryParams: expect.objectContaining({ type: 'noun', tableView: 'words' }),
-    }));
+    const params = lastQueryParams(router);
+    expect(params).not.toHaveProperty('tableView');
+    expect(params).toEqual(expect.objectContaining({ type: 'noun', page: '1', word: null, root: null, stem: null, lemma: null }));
     facade.unbindFromRoute();
   });
 
-  it('resets tableView to words when clearing back to the parent (selectChild(null))', () => {
+  it('preserves the active tableView when clearing back to the parent (selectChild(null))', () => {
     const { facade, router } = setup();
     const route = controllableRoute({ type: 'noun', childCode: 'PN', tableView: 'roots' });
     facade.bindToRoute(route.route);
 
     facade.selectChild(null);
 
-    expect(router.navigate).toHaveBeenLastCalledWith([], expect.objectContaining({
-      queryParams: expect.objectContaining({ childCode: null, tableView: 'words' }),
+    const params = lastQueryParams(router);
+    expect(params).not.toHaveProperty('tableView');
+    expect(params).toEqual(expect.objectContaining({ childCode: null, page: '1' }));
+    facade.unbindFromRoute();
+  });
+
+  const scopeAndSortActions: ReadonlyArray<[string, (f: WordTypesExplorerFacade) => void]> = [
+    ['case', (f) => f.selectCase('genitive')],
+    ['tense', (f) => f.selectTense('past')],
+    ['voice', (f) => f.selectVoice('passive')],
+    ['sort', (f) => f.changeSort('alpha')],
+  ];
+
+  it.each(scopeAndSortActions)('keeps the active tableView and resets to page 1 on a %s change', (_name, act) => {
+    const { facade, router } = setup();
+    const route = controllableRoute({ type: 'noun', childCode: 'PN', tableView: 'roots' });
+    facade.bindToRoute(route.route);
+
+    act(facade);
+
+    const params = lastQueryParams(router);
+    expect(params).not.toHaveProperty('tableView');
+    expect(params['page']).toBe('1');
+    facade.unbindFromRoute();
+  });
+
+  it('selectTableView(words) is the only action that returns a grouped view to words', () => {
+    const { facade, router } = setup();
+    const route = controllableRoute({ type: 'noun', childCode: 'PN', tableView: 'roots' });
+    facade.bindToRoute(route.route);
+
+    facade.selectTableView('words');
+    expect(lastQueryParams(router)['tableView']).toBe('words');
+
+    facade.selectType('noun');
+    facade.selectChild('N');
+    facade.selectCase('genitive');
+    facade.changeSort('alpha');
+    facade.changePage(2);
+
+    const otherCalls = (router.navigate as ReturnType<typeof vi.fn>).mock.calls.slice(1);
+    for (const call of otherCalls) {
+      expect((call[1].queryParams as Record<string, unknown>)['tableView']).not.toBe('words');
+    }
+    facade.unbindFromRoute();
+  });
+
+  it('clears the old scoped selection on scope changes but preserves it on sort and list-page changes', () => {
+    const { facade, router } = setup();
+    const route = controllableRoute({ type: 'noun', childCode: 'PN', tableView: 'roots', root: '190700' });
+    facade.bindToRoute(route.route);
+
+    facade.selectCase('genitive');
+    expect(lastQueryParams(router)).toEqual(expect.objectContaining({
+      word: null, root: null, stem: null, lemma: null, view: null, detailPage: null,
     }));
+
+    facade.changeSort('alpha');
+    expect(lastQueryParams(router)).not.toHaveProperty('root');
+    expect(lastQueryParams(router)).not.toHaveProperty('word');
+
+    facade.changePage(3);
+    expect(lastQueryParams(router)).not.toHaveProperty('root');
+    facade.unbindFromRoute();
+  });
+
+  it('clears only incompatible selection keys when changing table view', () => {
+    const { facade, router } = setup();
+    const route = controllableRoute({ type: 'noun', childCode: 'PN', tableView: 'words', word: '191001', contextCode: 'PN' });
+    facade.bindToRoute(route.route);
+
+    facade.selectTableView('roots');
+
+    const params = lastQueryParams(router);
+    expect(params).toEqual(expect.objectContaining({ tableView: 'roots', word: null, contextCode: null, stem: null, lemma: null }));
+    expect(params).not.toHaveProperty('root');
+    facade.unbindFromRoute();
+  });
+
+  it('preserves the active tableView and does not request rows for a tree-only parent scope', () => {
+    const getTableRows = vi.fn(() => of(okRows([])));
+    const { facade, api } = setup({ getTableRows });
+    const route = controllableRoute({ type: 'noun', tableView: 'roots' });
+    facade.bindToRoute(route.route);
+
+    expect(api.getTableRows).not.toHaveBeenCalled();
+    expect(facade.listState().query.tableView).toBe('roots');
+    facade.unbindFromRoute();
+  });
+
+  it('retryList re-issues the list load after an error', () => {
+    const first$ = new Subject<ApiResponse<PagedResultDto<WordTypeTableRowDto>>>();
+    const second$ = new Subject<ApiResponse<PagedResultDto<WordTypeTableRowDto>>>();
+    const getTableRows = vi.fn().mockReturnValueOnce(first$).mockReturnValueOnce(second$);
+    const { facade, api } = setup({ getTableRows });
+    const route = controllableRoute({ type: 'inl' });
+    facade.bindToRoute(route.route);
+
+    first$.error(new Error('network'));
+    expect(facade.listState().status).toBe('error');
+
+    facade.retryList();
+    expect(api.getTableRows).toHaveBeenCalledTimes(2);
+
+    second$.next(okRows([wordRow()]));
+    second$.complete();
+    expect(facade.listState().status).toBe('success');
     facade.unbindFromRoute();
   });
 

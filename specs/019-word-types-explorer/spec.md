@@ -264,6 +264,14 @@ type/subtype/case/tense/voice scope.
 - **FR-053**: A refresh, shared URL, or browser back/forward navigation MUST restore the compatible
   explicit selection identity together with the active type/subtype/case/tense/voice scope and detail
   view. Changing grammatical scope clears selection; sorting and list pagination do not.
+- **FR-054**: The table-view strip, the table shell, and the details host MUST remain mounted (the same
+  DOM hosts) across parent, child, filter, sort, view, loading, empty, and error transitions once the
+  tree has loaded. The table MUST own its prompt/loading/empty/error (with retry) inside its own body,
+  and the split table/details layout MUST be retained for grouped views. `tableView` MUST survive
+  type/subtype/case/tense/voice/sort/page changes — only choosing the **Words** tab returns a grouped
+  view to `words`. This supersedes the Feature 022 MVP behavior that hid the strip without a leaf, hid
+  the details panel and expanded the table full-width for grouped views, and reset `tableView` on main
+  type / parent changes.
 
 ### Key Entities *(include if feature involves data)*
 

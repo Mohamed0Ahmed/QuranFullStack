@@ -8,6 +8,7 @@ export const WORD_TYPES_SORT_LABEL = 'ترتيب';
 export const WORD_TYPES_LOADING_LABEL = 'جارٍ التحميل…';
 export const WORD_TYPES_SELECT_SUBTYPE_LABEL = 'اختر نوعًا فرعيًا لعرض الكلمات.';
 export const WORD_TYPES_ERROR_LABEL = 'تعذّر تحميل أنواع الكلمات. تحقّق من الاتصال ثم أعد المحاولة.';
+export const WORD_TYPES_RETRY_LABEL = 'إعادة المحاولة';
 export const WORD_TYPES_NOT_FOUND_LABEL = 'الكلمة المحددة غير موجودة';
 export const WORD_TYPES_NULL_PLACEHOLDER = '—';
 export const WORD_TYPES_CASE_FILTER_LABEL = 'الحالة';

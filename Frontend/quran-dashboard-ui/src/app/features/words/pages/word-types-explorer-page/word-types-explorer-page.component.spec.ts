@@ -3,7 +3,7 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { getTestBed, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
 import { By } from '@angular/platform-browser';
-import { BehaviorSubject, of } from 'rxjs';
+import { BehaviorSubject, Subject, of } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ApiResponse } from '../../../../core/data-access/api-response.model';
@@ -180,8 +180,8 @@ describe('WordTypesExplorerPageComponent', () => {
     expect(TestBed.inject(WordTypesDetailFacade).panelState().summary).toBeNull();
     expect(root.textContent).toContain(WORD_TYPES_SELECT_SUBTYPE_LABEL);
     expect(root.querySelector('[data-testid="word-types-select-subtype"]')).not.toBeNull();
-    expect(root.querySelector('qd-word-types-table')).toBeNull();
-    expect(root.querySelector('qd-word-type-table-view-tabs')).toBeNull();
+    expect(root.querySelector('qd-word-types-table')).not.toBeNull();
+    expect(root.querySelector('qd-word-type-table-view-tabs')).not.toBeNull();
   });
 
   it('renders sort label and options from centralized labels', async () => {
@@ -219,7 +219,7 @@ describe('WordTypesExplorerPageComponent', () => {
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('[data-testid="word-types-select-subtype"]')).toBeNull();
     expect(root.querySelector('qd-word-types-table')).not.toBeNull();
-    expect(root.querySelector('qd-word-type-table-view-tabs')).toBeNull();
+    expect(root.querySelector('qd-word-type-table-view-tabs')).not.toBeNull();
     expect(root.textContent).toContain('ماض');
   });
 
@@ -242,7 +242,7 @@ describe('WordTypesExplorerPageComponent', () => {
     expect((fixture.nativeElement as HTMLElement).querySelector('qd-word-types-table')).not.toBeNull();
   });
 
-  it('renders scoped tabs and passes the complete grouped payload to a full-width table', async () => {
+  it('renders scoped tabs and passes the complete grouped payload to the table while keeping the details host mounted', async () => {
     api.getTableRows.mockReturnValueOnce(of(ok<PagedResultDto<WordTypeTableRowDto>>({
       page: 1,
       pageSize: 25,
@@ -261,8 +261,8 @@ describe('WordTypesExplorerPageComponent', () => {
     expect(root.querySelector('qd-word-type-table-view-tabs')).not.toBeNull();
     expect(table.rows()?.items).toEqual([groupedRootRow]);
     expect(table.tableView()).toBe('roots');
-    expect(root.querySelector('.word-types-page__layout')?.classList.contains('word-types-page__layout--grouped')).toBe(true);
-    expect(root.querySelector('qd-word-type-details-panel')).toBeNull();
+    expect(root.querySelector('.word-types-page__layout')?.classList.contains('word-types-page__layout--grouped')).toBe(false);
+    expect(root.querySelector('qd-word-type-details-panel')).not.toBeNull();
   });
 
   it('delegates a scoped table-view tab selection to the explorer facade', async () => {
@@ -280,7 +280,7 @@ describe('WordTypesExplorerPageComponent', () => {
     }));
   });
 
-  it('restores the word-only details panel when switching back from a grouped view', async () => {
+  it('keeps the details host mounted across a grouped-to-words switch without the grouped modifier', async () => {
     api.getTableRows.mockReturnValueOnce(of(ok<PagedResultDto<WordTypeTableRowDto>>({
       page: 1,
       pageSize: 25,
@@ -290,7 +290,7 @@ describe('WordTypesExplorerPageComponent', () => {
     queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'PN', tableView: 'roots' }));
     const fixture = await createPage();
 
-    expect((fixture.nativeElement as HTMLElement).querySelector('qd-word-type-details-panel')).toBeNull();
+    expect((fixture.nativeElement as HTMLElement).querySelector('qd-word-type-details-panel')).not.toBeNull();
 
     queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'PN', tableView: 'words' }));
     await fixture.whenStable();
@@ -312,6 +312,136 @@ describe('WordTypesExplorerPageComponent', () => {
     const fixture = await createPage();
 
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('لا توجد جذور لهذا النطاق');
+  });
+
+  it('keeps the table-view strip visible after the tree loads for parent and leaf scopes', async () => {
+    queryParamMap$.next(convertToParamMap({ type: 'noun' }));
+    const fixture = await createPage();
+    expect((fixture.nativeElement as HTMLElement).querySelector('qd-word-type-table-view-tabs')).not.toBeNull();
+
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'N' }));
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).querySelector('qd-word-type-table-view-tabs')).not.toBeNull();
+  });
+
+  it('keeps the active grouped view highlighted across scope filter changes', async () => {
+    api.getTableRows.mockReturnValue(of(ok<PagedResultDto<WordTypeTableRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [groupedRootRow] })));
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'N', tableView: 'roots' }));
+    const fixture = await createPage();
+
+    const rootsTab = () => fixture.nativeElement.querySelector('[data-testid="word-type-table-view-tab--roots"]') as HTMLButtonElement;
+    expect(rootsTab().getAttribute('aria-selected')).toBe('true');
+
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'N', tableView: 'roots', case: 'genitive' }));
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(rootsTab().getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('keeps the qd-word-types-table host as the same node across view, filter, empty, and error transitions', async () => {
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'N' }));
+    const fixture = await createPage();
+    const host = () => fixture.nativeElement.querySelector('qd-word-types-table');
+    const initial = host();
+    expect(initial).not.toBeNull();
+
+    api.getTableRows.mockReturnValue(of(ok<PagedResultDto<WordTypeTableRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [groupedRootRow] })));
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'N', tableView: 'roots' }));
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(host()).toBe(initial);
+
+    api.getTableRows.mockReturnValue(of(ok<PagedResultDto<WordTypeTableRowDto>>({ page: 1, pageSize: 25, totalCount: 0, items: [] })));
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'N', tableView: 'roots', case: 'genitive' }));
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(host()).toBe(initial);
+
+    api.getTableRows.mockReturnValue(of({ isSuccess: false, data: null, message: 'خطأ', errors: null }));
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'N', tableView: 'roots', case: 'accusative' }));
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(host()).toBe(initial);
+  });
+
+  it('keeps the qd-word-type-details-panel host as the same node across words, roots, stems, lemmas, and empty selection', async () => {
+    api.getTableRows.mockReturnValue(of(ok<PagedResultDto<WordTypeTableRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [groupedRootRow] })));
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'N' }));
+    const fixture = await createPage();
+    const host = () => fixture.nativeElement.querySelector('qd-word-type-details-panel');
+    const initial = host();
+    expect(initial).not.toBeNull();
+
+    for (const tableView of ['roots', 'stems', 'lemmas', 'words']) {
+      queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'N', tableView }));
+      await fixture.whenStable();
+      fixture.detectChanges();
+      expect(host()).toBe(initial);
+    }
+  });
+
+  it('renders select prompt, empty, error, and loading states inside qd-word-types-table', async () => {
+    queryParamMap$.next(convertToParamMap({ type: 'noun' }));
+    const fixture = await createPage();
+    const tableHost = () => fixture.nativeElement.querySelector('qd-word-types-table') as HTMLElement;
+    expect(tableHost().querySelector('[data-testid="word-types-select-subtype"]')).not.toBeNull();
+
+    api.getTableRows.mockReturnValue(of(ok<PagedResultDto<WordTypeTableRowDto>>({ page: 1, pageSize: 25, totalCount: 0, items: [] })));
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'N' }));
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(tableHost().querySelector('[data-testid="word-types-table-empty"]')).not.toBeNull();
+
+    api.getTableRows.mockReturnValue(of({ isSuccess: false, data: null, message: 'خطأ', errors: null }));
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'PN' }));
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(tableHost().querySelector('[data-testid="word-types-table-error"]')).not.toBeNull();
+
+    const pending = new Subject<ApiResponse<PagedResultDto<WordTypeTableRowDto>>>();
+    api.getTableRows.mockReturnValue(pending.asObservable());
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'N', tableView: 'stems' }));
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(tableHost().querySelector('[data-testid="word-types-table-loading"]')).not.toBeNull();
+    pending.complete();
+  });
+
+  it('never shows a frame without the table shell or skeleton during a table-view switch', async () => {
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'N' }));
+    const fixture = await createPage();
+
+    const pending = new Subject<ApiResponse<PagedResultDto<WordTypeTableRowDto>>>();
+    api.getTableRows.mockReturnValue(pending.asObservable());
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'N', tableView: 'roots' }));
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const tableHost = fixture.nativeElement.querySelector('qd-word-types-table') as HTMLElement;
+    expect(tableHost).not.toBeNull();
+    expect(tableHost.querySelector('[data-testid="word-types-table-loading"]')).not.toBeNull();
+
+    pending.next(ok<PagedResultDto<WordTypeTableRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [groupedRootRow] }));
+    pending.complete();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('qd-word-types-table')).not.toBeNull();
+  });
+
+  it('delegates the in-table retry to the explorer facade and keeps the shell mounted', async () => {
+    api.getTableRows.mockReturnValue(of({ isSuccess: false, data: null, message: 'خطأ', errors: null }));
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'N' }));
+    const fixture = await createPage();
+
+    const facade = TestBed.inject(WordTypesExplorerFacade);
+    const retrySpy = vi.spyOn(facade, 'retryList');
+
+    const retryButton = fixture.nativeElement.querySelector('[data-testid="word-types-table-retry"]') as HTMLButtonElement;
+    expect(retryButton).not.toBeNull();
+    retryButton.click();
+
+    expect(retrySpy).toHaveBeenCalled();
+    expect(fixture.nativeElement.querySelector('qd-word-types-table')).not.toBeNull();
   });
 
   it('loads rows directly for inl', async () => {

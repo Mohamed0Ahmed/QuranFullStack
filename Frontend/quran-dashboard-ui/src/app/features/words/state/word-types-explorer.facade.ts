@@ -68,6 +68,7 @@ export class WordTypesExplorerFacade {
 
   private route?: ActivatedRoute;
   private routeSub?: Subscription;
+  private retrySub?: Subscription;
   // Tracks which tableView the currently-stored rows belong to, so a tab switch can null the
   // stale rows before the new page arrives without also clearing rows on ordinary filter changes
   // (those intentionally keep prior rows visible while loading).
@@ -96,8 +97,17 @@ export class WordTypesExplorerFacade {
 
   unbindFromRoute(): void {
     this.routeSub?.unsubscribe();
+    this.retrySub?.unsubscribe();
     this.routeSub = undefined;
+    this.retrySub = undefined;
     this.route = undefined;
+  }
+
+  // Re-issues the current list load after a transport error. Failed reads are never cached, so a
+  // retry always re-fetches; the cancellable subscription prevents overlapping retries.
+  retryList(): void {
+    this.retrySub?.unsubscribe();
+    this.retrySub = this.loadList().subscribe();
   }
 
   selectRow(row: WordTypeRowIdentity | null): void {
@@ -116,13 +126,13 @@ export class WordTypesExplorerFacade {
 
   selectType(type: WordTypeMainType): void {
     // Switching the main type resets its child and secondary filters. Any existing selection belongs to
-    // the old grammatical scope, so it must not remain shareable after this transition.
+    // the old grammatical scope, so it must not remain shareable after this transition. The active
+    // tableView survives — only the Words tab returns a grouped view to words (locked decision 2).
     this.navigate(
       {
         ...buildWordTypesQueryParams({
           type,
           childCode: null,
-          tableView: DEFAULT_WORD_TYPE_TABLE_VIEW,
           case: DEFAULT_WORD_TYPE_CASE,
           tense: DEFAULT_WORD_TYPE_TENSE,
           voice: DEFAULT_WORD_TYPE_VOICE,
@@ -134,15 +144,13 @@ export class WordTypesExplorerFacade {
   }
 
   // Selecting a child node narrows rows to that subtype, resets the page, and clears any selected
-  // row so the detail panel never lingers on a row from a different context. Clearing back to the
-  // parent (childCode: null) also resets tableView — a grouped tab must never linger on a no-leaf
-  // scope that has nothing to aggregate (locked decision 12 of the table-view-tabs plan).
+  // row so the detail panel never lingers on a row from a different context. The active tableView is
+  // preserved through both narrowing and clearing back to the parent (locked decision 2).
   selectChild(childCode: string | null): void {
     this.navigate({
       ...buildWordTypesQueryParams({
         childCode,
         page: DEFAULT_WORD_TYPES_PAGE,
-        ...(childCode === null ? { tableView: DEFAULT_WORD_TYPE_TABLE_VIEW } : {}),
       }),
       ...clearWordTypesSelection(),
     });
@@ -236,10 +244,12 @@ export class WordTypesExplorerFacade {
     }).pipe(
       tap(({ tree, rows }) => this.handleListResponse(tree, rows, query)),
       catchError(() => {
+        // Keep any tree already loaded so the table-view strip stays visible after a rows-only
+        // transport failure; only the rows and status change.
         this.state.update((current) => ({
           ...current,
           status: 'error',
-          tree: null,
+          tree: current.tree,
           rows: null,
           errorMessage: WORD_TYPES_ERROR_LABEL,
         }));
@@ -282,7 +292,7 @@ export class WordTypesExplorerFacade {
       this.state.update((current) => ({
         ...current,
         status: 'error',
-        tree: tree.data ?? null,
+        tree: tree.data ?? current.tree,
         rows: null,
         errorMessage: rows.message ?? tree.message ?? WORD_TYPES_ERROR_LABEL,
       }));

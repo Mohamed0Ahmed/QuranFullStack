@@ -217,12 +217,31 @@ the same filtered scope between four aggregation levels via the `tableView` quer
 كلمات (words) | جذور (roots) | أصول (stems) | صيغ (lemmas)
 ```
 
-- Tabs are hidden when no table scope is selected (parent node, no leaf chosen) — there is nothing to
-  aggregate.
+- The tab strip stays visible once the tree loads (including parent scopes with no leaf chosen); it is
+  only absent before the first successful tree read (Task 8, superseding the Feature 022 hidden-strip
+  behavior).
 - The list always loads from `GET .../word-types/table` (E2b); `GET .../word-types/words` (E2) stays
   reserved for existing shareable deep links.
 - Selecting a tab resets `page` to `1`, clears incompatible selection keys, and preserves the active
   `type`/`childCode`/`case`/`tense`/`voice` filters.
+- `tableView` survives type/child/case/tense/voice/sort/page changes. Only the **Words** tab returns a
+  grouped view to `words`; `selectType`/`selectChild(null)` no longer reset it.
+
+## Stable Shell and List Transitions (Task 8)
+
+- The table-view strip, the `qd-word-types-table` host, and the `qd-word-type-details-panel` host are
+  never conditionally removed once the tree has loaded. The same DOM nodes persist across parent,
+  child, filter, sort, view, loading, empty, and error transitions.
+- The table owns its own **prompt / loading / empty / error (with retry)** states inside its body; the
+  page no longer renders outer replacement blocks for those states. Retry delegates to
+  `WordTypesExplorerFacade.retryList()`, which re-issues the current list load (failed reads are never
+  cached, so a retry always re-fetches).
+- The split table/details layout is retained for grouped views (no full-width grouped modifier). The
+  details host renders a kind-aware empty selection when no valid row is active.
+- A grammatical scope change (type/child/case/tense/voice) clears the old scoped selection; sort and
+  list-page changes preserve a still-valid selection.
+- After a successful tree read, a rows-only transport failure keeps the loaded tree so the strip stays
+  visible; only the rows/status change.
 - A grouped row uses its explicit numeric `root`/`stem`/`lemma` URL identity; display text is never
   serialized as selection identity.
 - Rows whose `kind` does not match the active `tableView` are never rendered (defense-in-depth against
@@ -303,10 +322,14 @@ screens stack/collapse consistently with existing explorers. Quran/Mushaf text i
 - Detail paging: words/ayahs retain internal page `1` while omitting it from URLs, pages above `1`
   serialize it, and surahs always remove it. Browser back/forward replays the compatible identity.
 - Table-view tab switching resets page to `1`, clears incompatible selection keys, and changes the
-  request/cache key (triggers reload); `selectType`/`selectChild(null)` reset `tableView` to `words`.
-- Grouped rendering: dimension column + three counts per view, noninteractive (no row button, no count
-  click, no selected state); rows whose `kind` mismatches the active `tableView` are skipped.
-- Hidden/restored details panel and full-width table layout across `tableView` transitions.
-- Table-view tabs hidden without a table scope; RTL roving-tab keyboard behavior (`ArrowLeft`=next,
-  `ArrowRight`=previous, `Home`/`End`).
+  request/cache key (triggers reload); `tableView` is preserved by `selectType`/`selectChild(null)`/
+  case/tense/voice/sort/page and only the Words tab returns a grouped view to `words`.
+- Grouped rendering: dimension column + three counts per view, display-only in this iteration (no row
+  button, no count click, no selected state); rows whose `kind` mismatches the active `tableView` are
+  skipped.
+- Persistent table-view strip, table shell, and details host across parent/child/filter/sort/view/
+  loading/empty/error transitions (same DOM node); split layout retained for grouped views; prompt/
+  loading/empty/error render inside the table body with a retry that calls `retryList()`.
+- Table-view strip visible once the tree loads (including parent scopes); RTL roving-tab keyboard
+  behavior (`ArrowLeft`=next, `ArrowRight`=previous, `Home`/`End`).
 - Corrected stem/lemma header and tab-label terminology.

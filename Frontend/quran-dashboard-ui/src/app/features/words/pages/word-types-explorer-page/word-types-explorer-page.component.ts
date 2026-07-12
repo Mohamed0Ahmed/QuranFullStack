@@ -16,6 +16,7 @@ import {
   WORD_TYPE_TABLE_VIEW_TABLE_LABELS,
   WORD_TYPES_ERROR_LABEL,
   WORD_TYPES_PAGE_TITLE,
+  WORD_TYPES_RETRY_LABEL,
   WORD_TYPES_SELECT_SUBTYPE_LABEL,
   WORD_TYPES_SORT_LABEL,
 } from '../../models/word-types.labels';
@@ -77,11 +78,6 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
   private readonly filter = viewChild(WordTypeFilterComponent);
   private readonly table = viewChild(WordTypesTableComponent);
 
-  protected readonly hasTableScope = computed(() => {
-    const query = this.listState().query;
-    return query.childCode !== null || query.type === 'inl';
-  });
-
   protected readonly selectedRow = computed<WordTableRowDto | null>(() => {
     const state = this.listState();
     if (state.query.tableView !== 'words' || state.query.word === null || !state.rows) {
@@ -121,6 +117,7 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
   protected get emptyLabel() { return WORD_TYPE_TABLE_VIEW_EMPTY_LABELS[this.listState().query.tableView]; }
   protected get selectSubtypeLabel() { return WORD_TYPES_SELECT_SUBTYPE_LABEL; }
   protected get errorLabel() { return WORD_TYPES_ERROR_LABEL; }
+  protected get retryLabel() { return WORD_TYPES_RETRY_LABEL; }
   protected get tableLabel() { return WORD_TYPE_TABLE_VIEW_TABLE_LABELS[this.listState().query.tableView]; }
   protected get sortLabel() { return WORD_TYPES_SORT_LABEL; }
   protected get sortOptions() { return WORD_TYPE_SORT_OPTIONS; }
@@ -226,6 +223,10 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
 
   protected changePage(page: number): void {
     this.explorerFacade.changePage(page);
+  }
+
+  protected retryList(): void {
+    this.explorerFacade.retryList();
   }
 
   protected selectionTitle(): string {

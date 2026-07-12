@@ -36,56 +36,49 @@
       </div>
     </div>
 
-    @if (hasTableScope()) {
+    @if (listState().tree) {
       <qd-word-type-table-view-tabs
         [selectedView]="listState().query.tableView"
         [disabled]="listState().status === 'loading'"
         (viewSelected)="selectTableView($event)"
       />
     }
-
-    @if (listState().status === 'error') {
-      <div class="qd-error-state">{{ listState().errorMessage || errorLabel }}</div>
-    } @else if (listState().status === 'selectPrompt' && !listState().rows) {
-      <div class="qd-empty-state" data-testid="word-types-select-subtype">{{ selectSubtypeLabel }}</div>
-    } @else if (listState().status === 'empty') {
-      <div class="qd-empty-state">{{ emptyLabel }}</div>
-    }
   </div>
 
-  <div
-    class="word-types-page__layout qd-explorer-layout"
-    [class.word-types-page__layout--grouped]="listState().query.tableView !== 'words'"
-  >
+  <div class="word-types-page__layout qd-explorer-layout">
     <main
       class="word-types-page__main qd-explorer-layout__table"
       [attr.aria-busy]="listState().status === 'loading' ? true : null"
     >
-      @if (listState().rows || listState().status === 'loading') {
-        <qd-word-types-table
-          [rows]="listState().rows"
-          [tableView]="listState().query.tableView"
-          [loading]="listState().status === 'loading'"
-          [selectedRow]="selectedRow()"
-          (rowSelected)="selectRow($event)"
-          (countOpened)="onCountOpened($event)"
-        />
+      <qd-word-types-table
+        [rows]="listState().rows"
+        [tableView]="listState().query.tableView"
+        [loading]="listState().status === 'loading'"
+        [status]="listState().status"
+        [errorMessage]="listState().errorMessage"
+        [selectPromptLabel]="selectSubtypeLabel"
+        [emptyLabel]="emptyLabel"
+        [errorLabel]="errorLabel"
+        [retryLabel]="retryLabel"
+        [selectedRow]="selectedRow()"
+        (rowSelected)="selectRow($event)"
+        (countOpened)="onCountOpened($event)"
+        (retry)="retryList()"
+      />
 
-        @if (listState().rows; as page) {
-          <qd-pagination
-            [currentPage]="page.page"
-            [pageSize]="page.pageSize"
-            [totalCount]="page.totalCount"
-            [disabled]="listState().status === 'loading'"
-            [ariaLabel]="tableLabel"
-            (pageChange)="changePage($event)"
-          />
-        }
+      @if (listState().rows; as page) {
+        <qd-pagination
+          [currentPage]="page.page"
+          [pageSize]="page.pageSize"
+          [totalCount]="page.totalCount"
+          [disabled]="listState().status === 'loading'"
+          [ariaLabel]="tableLabel"
+          (pageChange)="changePage($event)"
+        />
       }
     </main>
 
-    @if (listState().query.tableView === 'words') {
-      <qd-word-type-details-panel
+    <qd-word-type-details-panel
         class="word-types-page__panel qd-explorer-layout__panel"
         [inline]="isDesktop()"
         [view]="panelState().view"
@@ -142,6 +135,5 @@
           </div>
         }
       </qd-word-type-details-panel>
-    }
   </div>
 </div>

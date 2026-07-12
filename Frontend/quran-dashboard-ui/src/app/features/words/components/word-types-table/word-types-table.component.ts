@@ -13,6 +13,7 @@ import {
   WordTypeDetailView,
   WordTypeTableRowDto,
   WordTypeTableView,
+  WordTypesLoadStatus,
   normalizeWordTableRow,
 } from '../../models/word-types.models';
 import { syncTableScrollbarGutter } from '../../utils/table-scrollbar-gutter-sync';
@@ -40,9 +41,16 @@ export class WordTypesTableComponent {
   readonly rows = input<PagedResultDto<WordTypeTableRowDto> | null>(null);
   readonly tableView = input<WordTypeTableView>('words');
   readonly loading = input(false);
+  readonly status = input<WordTypesLoadStatus>('idle');
+  readonly errorMessage = input('');
+  readonly selectPromptLabel = input('');
+  readonly emptyLabel = input('');
+  readonly errorLabel = input('');
+  readonly retryLabel = input('');
   readonly selectedRow = input<WordTableRowDto | null>(null);
   readonly rowSelected = output<WordTableRowDto>();
   readonly countOpened = output<WordTypeCountOpenedEvent>();
+  readonly retry = output<void>();
 
   protected readonly loadingRowPlaceholders = [0, 1, 2, 3, 4] as const;
 
@@ -65,6 +73,13 @@ export class WordTypesTableComponent {
 
   protected isWordView(): boolean {
     return this.tableView() === 'words';
+  }
+
+  // The header and rows render only when there is real data or a load in flight. Prompt, empty, and
+  // error states render inside the same stable shell instead of replacing it (locked decision 4).
+  protected hasRows(): boolean {
+    const page = this.rows();
+    return page !== null && page.items.length > 0;
   }
 
   protected dimensionHeader(): string {

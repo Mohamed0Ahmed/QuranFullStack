@@ -5,7 +5,7 @@
   [attr.aria-label]="tableLabel"
   [attr.aria-rowcount]="rows()?.totalCount ?? null"
 >
-  @if (rows() || loading()) {
+  @if (loading() || hasRows()) {
     <div class="word-types-table__header" role="rowgroup">
       <div class="word-types-table__header-row" role="row">
         @if (isWordView()) {
@@ -141,7 +141,21 @@
         }
       </div>
     }
+  } @else if (status() === 'error') {
+    <div class="word-types-table__state qd-error-state" role="alert" data-testid="word-types-table-error">
+      <span>{{ errorMessage() || errorLabel() }}</span>
+      <button
+        type="button"
+        class="qd-btn qd-btn-secondary word-types-table__retry"
+        data-testid="word-types-table-retry"
+        (click)="retry.emit()"
+      >
+        {{ retryLabel() }}
+      </button>
+    </div>
+  } @else if (status() === 'empty') {
+    <p class="word-types-table__state qd-empty-state" role="status" data-testid="word-types-table-empty">{{ emptyLabel() }}</p>
   } @else {
-    <p class="word-types-table__placeholder">{{ tableLabel }}</p>
+    <p class="word-types-table__state qd-empty-state" role="status" data-testid="word-types-select-subtype">{{ selectPromptLabel() }}</p>
   }
 </section>

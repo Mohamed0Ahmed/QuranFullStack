@@ -128,9 +128,9 @@
   outline-offset: -2px;
 }
 
-.word-types-table__placeholder {
+.word-types-table__state {
   margin: 0;
-  padding: 1rem;
+  gap: var(--qd-space-3);
 }
 
 @media (min-width: bp.$qd-bp-desktop-min) {

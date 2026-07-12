@@ -174,6 +174,44 @@ describe('WordTypesTableComponent', () => {
     expect(refreshRoot.querySelector('[data-word-types-row]')).toBeNull();
   });
 
+  it('renders the select prompt inside the table when no rows and status is selectPrompt', () => {
+    const fixture = TestBed.createComponent(WordTypesTableComponent);
+    fixture.componentRef.setInput('status', 'selectPrompt');
+    fixture.componentRef.setInput('selectPromptLabel', 'اختر نوعًا فرعيًا');
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('[data-testid="word-types-select-subtype"]')?.textContent).toContain('اختر نوعًا فرعيًا');
+    expect(root.querySelector('.word-types-table__header')).toBeNull();
+  });
+
+  it('renders the empty label inside the table when status is empty', () => {
+    const fixture = TestBed.createComponent(WordTypesTableComponent);
+    fixture.componentRef.setInput('rows', page([]));
+    fixture.componentRef.setInput('status', 'empty');
+    fixture.componentRef.setInput('emptyLabel', 'لا توجد نتائج');
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('[data-testid="word-types-table-empty"]')?.textContent).toContain('لا توجد نتائج');
+  });
+
+  it('renders an error message and emits retry from inside the table', () => {
+    const fixture = TestBed.createComponent(WordTypesTableComponent);
+    const retries: void[] = [];
+    fixture.componentRef.setInput('status', 'error');
+    fixture.componentRef.setInput('errorMessage', 'تعذّر التحميل');
+    fixture.componentRef.setInput('retryLabel', 'إعادة المحاولة');
+    fixture.componentInstance.retry.subscribe(() => retries.push(undefined));
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('[data-testid="word-types-table-error"]')?.textContent).toContain('تعذّر التحميل');
+    const retryButton = root.querySelector('[data-testid="word-types-table-retry"]') as HTMLButtonElement;
+    retryButton.click();
+    expect(retries).toHaveLength(1);
+  });
+
   it('focuses a word row by its canonicalized nullable identity', () => {
     const fixture = TestBed.createComponent(WordTypesTableComponent);
     const nullableWord = word({ case: null, tense: null, voice: null });
