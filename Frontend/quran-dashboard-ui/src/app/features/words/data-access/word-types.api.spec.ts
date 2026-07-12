@@ -218,6 +218,9 @@ describe('WordTypesApi', () => {
     expect(req.request.params.has('case')).toBe(false);
     expect(req.request.params.get('tense')).toBe('present');
     expect(req.request.params.get('voice')).toBe('passive');
+    expect(req.request.params.has('page')).toBe(false);
+    expect(req.request.params.has('pageSize')).toBe(false);
+    expect(req.request.params.has('detailPage')).toBe(false);
     req.flush({
       isSuccess: true,
       message: 'تم',

@@ -45,11 +45,15 @@ describe('WordTypesCacheKeys grouped detail', () => {
       WordTypesCacheKeys.groupedSummary(groupedRequest),
       WordTypesCacheKeys.groupedSummary({ ...groupedRequest, kind: 'stem' }),
       WordTypesCacheKeys.groupedSummary({ ...groupedRequest, dimensionId: 4211 }),
+      WordTypesCacheKeys.groupedSummary({ ...groupedRequest, type: 'verb' }),
       WordTypesCacheKeys.groupedSummary({ ...groupedRequest, childCode: 'N' }),
+      WordTypesCacheKeys.groupedSummary({ ...groupedRequest, case: 'accusative' }),
+      WordTypesCacheKeys.groupedSummary({ ...groupedRequest, tense: 'past' }),
+      WordTypesCacheKeys.groupedSummary({ ...groupedRequest, voice: 'active' }),
       WordTypesCacheKeys.groupedAyahs(groupedRequest, 1),
     ]);
 
-    expect(keys.size).toBe(5);
+    expect(keys.size).toBe(9);
   });
 
   it('groupedWordsAndAyahsDifferByPage', () => {
