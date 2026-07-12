@@ -1,7 +1,14 @@
 import { Injectable } from '@angular/core';
 
 import { ApiResponseCache } from '../../../core/caching/api-response-cache';
-import { WordTypeCase, WordTypeSort, WordTypeTableView, WordTypeTense, WordTypeVoice } from '../models/word-types.models';
+import {
+  WordTypeCase,
+  WordTypeMainType,
+  WordTypeSort,
+  WordTypeTableView,
+  WordTypeTense,
+  WordTypeVoice,
+} from '../models/word-types.models';
 
 export const WordTypesCacheKeys = {
   tree: 'wordtypes:tree',
@@ -20,6 +27,18 @@ export const WordTypesCacheKeys = {
   surahs(identity: WordTypesCacheIdentity): string {
     return `wordtypes:surahs:${identity.tashkeelWordId}:${identity.contextCode}:${identity.case}:${identity.tense}:${identity.voice}`;
   },
+  groupedSummary(request: WordTypesCacheGroupedRequest): string {
+    return groupedDetailKey(request, 'summary');
+  },
+  groupedWords(request: WordTypesCacheGroupedRequest, page: number): string {
+    return `${groupedDetailKey(request, 'words')}:p${page}`;
+  },
+  groupedAyahs(request: WordTypesCacheGroupedRequest, page: number): string {
+    return `${groupedDetailKey(request, 'ayahs')}:p${page}`;
+  },
+  groupedSurahs(request: WordTypesCacheGroupedRequest): string {
+    return groupedDetailKey(request, 'surahs');
+  },
 } as const;
 
 export interface WordTypesCacheFilter {
@@ -36,6 +55,23 @@ export interface WordTypesCacheIdentity {
   case: WordTypeCase;
   tense: WordTypeTense;
   voice: WordTypeVoice;
+}
+
+export interface WordTypesCacheGroupedRequest {
+  kind: 'root' | 'stem' | 'lemma';
+  dimensionId: number;
+  type: WordTypeMainType;
+  childCode: string | null;
+  case: WordTypeCase;
+  tense: WordTypeTense;
+  voice: WordTypeVoice;
+}
+
+function groupedDetailKey(
+  request: WordTypesCacheGroupedRequest,
+  view: 'summary' | 'words' | 'ayahs' | 'surahs',
+): string {
+  return `wordtypes:grouped:${request.kind}:${request.dimensionId}:${request.type}:${request.childCode ?? 'all'}:${request.case}:${request.tense}:${request.voice}:view:${view}`;
 }
 
 @Injectable({ providedIn: 'root' })

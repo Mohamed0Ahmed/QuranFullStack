@@ -50,6 +50,12 @@ Shared across explorers: `utils/explorer-table-*` (focus/keyboard-nav/scroll/col
   include `tableView`, so tab switches never cross-serve another view's rows. Stem/lemma
   terminology follows the Roots/Lemmas/Stems explorers: **stem = الأصل / الأصول الصرفية**,
   **lemma = الصيغة / الصيغ المعجمية**.
+- The data-access client also exposes the grouped-detail contract under
+  `.../word-types/table/{roots|stems|lemmas}/{dimensionId}`. Every grouped request carries the
+  full active scope (`type`, optional `childCode`, and concrete `case`/`tense`/`voice` values);
+  member words and ayahs are paged, while surahs are a single-shot read with no page parameter.
+  `WordTypesCacheKeys.grouped*` keys isolate kind, numeric ID, scope, view, and (for paged views)
+  page, so future detail loading cannot cross-serve a different grouped selection.
 
 ## Related
 

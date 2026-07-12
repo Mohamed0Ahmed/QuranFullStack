@@ -8,6 +8,8 @@ import {
   PagedResultDto,
   WordTypeAyahMatchDto,
   WordTypeCase,
+  WordTypeLabelDto,
+  WordTypeMainType,
   WordTypeRowDto,
   WordTypeSort,
   WordTypeSummaryDto,
@@ -76,6 +78,48 @@ export class WordTypesApi {
     return this.http.get<ApiResponse<PagedResultDto<WordTypeTableRowDto>>>(`${this.baseUrl}/api/words/word-types/table`, { params });
   }
 
+  getGroupedSummary(options: WordTypeGroupedRequestParams): Observable<ApiResponse<WordTypeGroupedSummaryDto>> {
+    return this.http.get<ApiResponse<WordTypeGroupedSummaryDto>>(this.groupedDetailUrl(options), {
+      params: this.groupedScopeParams(options),
+    });
+  }
+
+  getGroupedMemberWords(
+    options: WordTypeGroupedRequestParams,
+    page: number,
+    pageSize: number,
+  ): Observable<ApiResponse<PagedResultDto<WordTypeGroupedMemberWordDto>>> {
+    const params = this.groupedScopeParams(options)
+      .set('page', page)
+      .set('pageSize', pageSize);
+
+    return this.http.get<ApiResponse<PagedResultDto<WordTypeGroupedMemberWordDto>>>(
+      `${this.groupedDetailUrl(options)}/words`,
+      { params },
+    );
+  }
+
+  getGroupedAyahMatches(
+    options: WordTypeGroupedRequestParams,
+    page: number,
+    pageSize: number,
+  ): Observable<ApiResponse<PagedResultDto<WordTypeAyahMatchDto>>> {
+    const params = this.groupedScopeParams(options)
+      .set('page', page)
+      .set('pageSize', pageSize);
+
+    return this.http.get<ApiResponse<PagedResultDto<WordTypeAyahMatchDto>>>(
+      `${this.groupedDetailUrl(options)}/ayahs`,
+      { params },
+    );
+  }
+
+  getGroupedSurahs(options: WordTypeGroupedRequestParams): Observable<ApiResponse<WordTypeSurahsResponseDto>> {
+    return this.http.get<ApiResponse<WordTypeSurahsResponseDto>>(`${this.groupedDetailUrl(options)}/surahs`, {
+      params: this.groupedScopeParams(options),
+    });
+  }
+
   getSummary(identity: WordTypeIdentityParams): Observable<ApiResponse<WordTypeSummaryDto>> {
     return this.http.get<ApiResponse<WordTypeSummaryDto>>(
       `${this.baseUrl}/api/words/word-types/words/${identity.tashkeelWordId}`,
@@ -109,6 +153,27 @@ export class WordTypesApi {
     if (options.voice && options.voice !== 'all') params = params.set('voice', options.voice);
     return params;
   }
+
+  private groupedDetailUrl(options: WordTypeGroupedRequestParams): string {
+    return `${this.baseUrl}/api/words/word-types/table/${this.groupedRouteKind(options.kind)}/${options.dimensionId}`;
+  }
+
+  private groupedScopeParams(options: WordTypeGroupedRequestParams): HttpParams {
+    let params = this.identityParams(options).set('type', options.type);
+    if (options.childCode !== null) {
+      params = params.set('childCode', options.childCode);
+    }
+    return params;
+  }
+
+  private groupedRouteKind(kind: WordTypeGroupedKind): WordTypeGroupedRouteKind {
+    const routeKinds: Record<WordTypeGroupedKind, WordTypeGroupedRouteKind> = {
+      root: 'roots',
+      stem: 'stems',
+      lemma: 'lemmas',
+    };
+    return routeKinds[kind];
+  }
 }
 
 export interface WordTypeIdentityParams {
@@ -117,4 +182,45 @@ export interface WordTypeIdentityParams {
   case: WordTypeCase;
   tense: WordTypeTense;
   voice: WordTypeVoice;
+}
+
+export type WordTypeGroupedKind = 'root' | 'stem' | 'lemma';
+type WordTypeGroupedRouteKind = 'roots' | 'stems' | 'lemmas';
+
+export interface WordTypeGroupedRequestParams {
+  kind: WordTypeGroupedKind;
+  dimensionId: number;
+  type: WordTypeMainType;
+  childCode: string | null;
+  case: WordTypeCase;
+  tense: WordTypeTense;
+  voice: WordTypeVoice;
+}
+
+export interface WordTypeGroupedSummaryDto {
+  kind: WordTypeGroupedKind;
+  dimensionId: number;
+  displayText: string;
+  occurrencesCount: number;
+  ayahsCount: number;
+  surahsCount: number;
+}
+
+export interface WordTypeGroupedMemberWordDto {
+  tashkeelWordId: number;
+  contextCode: string;
+  case: WordTypeCase | null;
+  tense: WordTypeTense | null;
+  voice: WordTypeVoice | null;
+  displayText: string;
+  typeCode: string;
+  typeLabel: WordTypeLabelDto;
+  broadLabel: WordTypeLabelDto;
+  caseOrFeature: string | null;
+  rootText: string | null;
+  lemmaText: string | null;
+  stemText: string | null;
+  occurrencesCount: number;
+  ayahsCount: number;
+  surahsCount: number;
 }

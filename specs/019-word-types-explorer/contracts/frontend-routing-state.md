@@ -146,6 +146,38 @@ Rules:
 - Transport errors and backend-controlled failures are separate states.
 - Missing API data is never replaced with invented Quranic content.
 
+## Grouped Detail API and Cache Contract (Task 6)
+
+Grouped detail reads use the selected numeric dimension identity and the complete active grammatical
+scope. The frontend keeps the singular selection kind (`root`, `stem`, `lemma`) and translates it to
+the backend's plural route segment (`roots`, `stems`, `lemmas`):
+
+```ts
+const groupedRequest: WordTypeGroupedRequestParams = {
+  kind: 'root',
+  dimensionId: 4210,
+  type: 'noun',
+  childCode: 'PN',
+  case: 'nominative',
+  tense: 'all',
+  voice: 'all',
+};
+
+api.getGroupedSummary(groupedRequest);
+api.getGroupedMemberWords(groupedRequest, page, pageSize);
+api.getGroupedAyahMatches(groupedRequest, page, pageSize);
+api.getGroupedSurahs(groupedRequest);
+```
+
+- Every call sends `type`, sends `childCode` when present, and sends only concrete grammatical
+  filters through the shared identity-parameter policy.
+- Only member words and ayahs send `page` and `pageSize`; summary and surahs never send paging or
+  `detailPage` query parameters.
+- Grouped cache keys use the stable shape
+  `wordtypes:grouped:{kind}:{dimensionId}:{type}:{childCode|all}:{case}:{tense}:{voice}:view:{view}`.
+  The `words` and `ayahs` variants append `:p{page}`; `summary` and `surahs` do not. This isolates
+  kind, ID, full scope, and view without putting API loading behavior into the cache service.
+
 ## Table-View Tabs (Feature 022)
 
 When a table scope is selected (a leaf/`childCode`, or `type=inl`), a tab row above the table switches

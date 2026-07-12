@@ -16,6 +16,10 @@ function matchRows(): RegExp {
   return /\/api\/words\/word-types\/words(\?.*)?$/;
 }
 
+function matchGroupedDetail(kind: 'roots' | 'stems' | 'lemmas', dimensionId: number, suffix = ''): RegExp {
+  return new RegExp(`/api/words/word-types/table/${kind}/${dimensionId}${suffix}$`);
+}
+
 describe('WordTypesApi', () => {
   let api: WordTypesApi;
   let httpMock: HttpTestingController;
@@ -190,5 +194,106 @@ describe('WordTypesApi', () => {
     req.flush(response);
 
     await expect(promise).resolves.toEqual(response);
+  });
+
+  it.each([
+    ['root', 'roots', 4210],
+    ['stem', 'stems', 5310],
+    ['lemma', 'lemmas', 6410],
+  ] as const)('getGroupedSummary_UsesPluralKindRouteAndPropagatesFullScope for %s', async (kind, routeKind, dimensionId) => {
+    const promise = firstValueFrom(api.getGroupedSummary({
+      kind,
+      dimensionId,
+      type: 'verb',
+      childCode: 'present',
+      case: 'all',
+      tense: 'present',
+      voice: 'passive',
+    }));
+
+    const req = httpMock.expectOne((r) => matchGroupedDetail(routeKind, dimensionId).test(r.url));
+    expect(req.request.method).toBe('GET');
+    expect(req.request.params.get('type')).toBe('verb');
+    expect(req.request.params.get('childCode')).toBe('present');
+    expect(req.request.params.has('case')).toBe(false);
+    expect(req.request.params.get('tense')).toBe('present');
+    expect(req.request.params.get('voice')).toBe('passive');
+    req.flush({
+      isSuccess: true,
+      message: 'تم',
+      data: { kind, dimensionId, displayText: 'sample', occurrencesCount: 1, ayahsCount: 1, surahsCount: 1 },
+    });
+
+    await promise;
+  });
+
+  it('getGroupedMemberWords_SendsPageAndPageSize', async () => {
+    const promise = firstValueFrom(api.getGroupedMemberWords({
+      kind: 'stem',
+      dimensionId: 5310,
+      type: 'noun',
+      childCode: 'PN',
+      case: 'accusative',
+      tense: 'all',
+      voice: 'all',
+    }, 2, 25));
+
+    const req = httpMock.expectOne((r) => matchGroupedDetail('stems', 5310, '/words').test(r.url));
+    expect(req.request.params.get('type')).toBe('noun');
+    expect(req.request.params.get('childCode')).toBe('PN');
+    expect(req.request.params.get('case')).toBe('accusative');
+    expect(req.request.params.get('page')).toBe('2');
+    expect(req.request.params.get('pageSize')).toBe('25');
+    expect(req.request.params.has('sort')).toBe(false);
+    req.flush({ isSuccess: true, message: 'تم', data: { page: 2, pageSize: 25, totalCount: 0, items: [] } });
+
+    await promise;
+  });
+
+  it('getGroupedAyahMatches_SendsPageAndPageSize', async () => {
+    const promise = firstValueFrom(api.getGroupedAyahMatches({
+      kind: 'lemma',
+      dimensionId: 6410,
+      type: 'verb',
+      childCode: 'past',
+      case: 'all',
+      tense: 'past',
+      voice: 'active',
+    }, 3, 10));
+
+    const req = httpMock.expectOne((r) => matchGroupedDetail('lemmas', 6410, '/ayahs').test(r.url));
+    expect(req.request.params.get('type')).toBe('verb');
+    expect(req.request.params.get('childCode')).toBe('past');
+    expect(req.request.params.get('tense')).toBe('past');
+    expect(req.request.params.get('voice')).toBe('active');
+    expect(req.request.params.get('page')).toBe('3');
+    expect(req.request.params.get('pageSize')).toBe('10');
+    expect(req.request.params.has('sort')).toBe(false);
+    req.flush({ isSuccess: true, message: 'تم', data: { page: 3, pageSize: 10, totalCount: 0, items: [] } });
+
+    await promise;
+  });
+
+  it('getGroupedSurahs_SendsNoPagingParams', async () => {
+    const promise = firstValueFrom(api.getGroupedSurahs({
+      kind: 'root',
+      dimensionId: 4210,
+      type: 'noun',
+      childCode: 'PN',
+      case: 'genitive',
+      tense: 'all',
+      voice: 'all',
+    }));
+
+    const req = httpMock.expectOne((r) => matchGroupedDetail('roots', 4210, '/surahs').test(r.url));
+    expect(req.request.params.get('type')).toBe('noun');
+    expect(req.request.params.get('childCode')).toBe('PN');
+    expect(req.request.params.get('case')).toBe('genitive');
+    expect(req.request.params.has('page')).toBe(false);
+    expect(req.request.params.has('pageSize')).toBe(false);
+    expect(req.request.params.has('detailPage')).toBe(false);
+    req.flush({ isSuccess: true, message: 'تم', data: { surahs: [], missingSurahs: [] } });
+
+    await promise;
   });
 });
