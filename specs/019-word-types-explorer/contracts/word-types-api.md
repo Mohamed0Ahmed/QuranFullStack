@@ -322,6 +322,54 @@ word-context rows of the scoped group. Same five-field scope as E2c; **no `sort`
 - Cache key `wordtypes:grouped:{kind}:words:{scope-hash}:p{page}:s{pageSize}` — a distinct `:words:`
   segment (never shares the `:summary:` prefix), page/pageSize appended.
 
+## E2e — Grouped detail ayahs (root/stem/lemma, Feature 023)
+
+```
+GET api/words/word-types/table/{kind}/{dimensionId}/ayahs
+    ?type={noun|verb|particle|inl}
+    &childCode={head_pos | tense}        (optional — when a child node is selected)
+    &case={nominative|accusative|genitive|null}   (nominal types only)
+    &tense={past|present|imperative}     (verb only)
+    &voice={active|passive}              (verb only)
+    &page={n}&pageSize={1..100}          (no sort — ayahs page in Mushaf order)
+```
+
+Returns `ApiResponse<PagedResult<WordTypeAyahMatchDto>>` — the **distinct scoped ayahs** of the group,
+paged in Mushaf order, each hydrated with its full readable word list and the scoped matched-word
+provenance. Same five-field scope as E2c; **no `sort`** parameter. Reuses the same `WordTypeAyahMatchDto`
+shape as E4.
+
+```jsonc
+{
+  "verseKey": "2:25",
+  "surahNumber": 2, "ayahNumber": 25,
+  "pageNumber": 5,
+  "matchedWordPositions": [1, 2],           // 1-based word_number of the scoped head matches only
+  "matchedWordIds": [1907001, 1907002],     // quran_words.id of the scoped head matches only
+  "words": [                                // every readable word of the ayah, marker rows excluded
+    { "quranWordId": 1907001, "textUthmani": "…", "isAyahMarker": false }
+  ]
+}
+```
+
+**Rules**:
+- The paged ayahs are the **distinct `ayah_id`** of the same scoped `base` CTE restricted to the numeric
+  head `root_id | stem_id | lemma_id = {dimensionId}` (E2d membership), ordered by `(surah_number,
+  ayah_number)`. `TotalCount` is the distinct-ayah count measured **before** paging.
+- Highlight provenance is canonical: the `words` list hydrates `quran_words.text_uthmani` (no ayah-text
+  fallback, no string replacement); `matchedWordIds`/`matchedWordPositions` carry **only** the scoped
+  head matches, so a non-scoped word in the same ayah appears in `words` but not in the matches. Ayah
+  markers are excluded from `words`, and secondary-segment dimensions never surface at head grain.
+- Page hydration is **bounded**: one distinct-ayah count query, one grouped-page query, and one
+  word-hydration query per page — the command count is fixed regardless of how many ayahs the page
+  returns (never one query per ayah).
+- Invalid kind/id/filter → **400** (as E2c); invalid paging (`page < 1` or `pageSize` outside `1..100`)
+  → **400** (`InvalidPaging` → `WordTypesInvalidPaging`). A **positive** dimension ID absent from the
+  scope → **404** (`WordTypesGroupedNotFound`); an existing selection with an **out-of-range** page →
+  **200** with an empty `items` array and the correct `TotalCount`.
+- Cache key `wordtypes:grouped:{kind}:ayahs:{scope-hash}:p{page}:s{pageSize}` — a distinct `:ayahs:`
+  segment (never shares the `:summary:`/`:words:` prefixes), page/pageSize appended.
+
 ---
 
 ## E3 — Row details-card summary

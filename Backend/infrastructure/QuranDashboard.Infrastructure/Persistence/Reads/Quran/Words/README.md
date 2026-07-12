@@ -59,6 +59,16 @@ and Unique Words. They back the `application/.../Quran/Words/**` query handlers 
   grouped word-context rows **before** paging (`page`/`pageSize 1..100`), returns a non-null empty page for
   an out-of-range page, and `null` when the dimension is absent from the scope. Existing list/table callers
   pass `null` for the dimension kind and stay semantically unchanged.
+- **Word Types grouped ayahs** (`EfWordTypesReader.GetGroupedAyahMatchesAsync`, Feature 023) page the
+  **distinct `ayah_id`** of the same dimension-filtered `BaseRowsSql` base in Mushaf order and reuse the
+  `WordTypeAyahMatchDto` shape. Hydration is **bounded to three commands** per page — a distinct-ayah count
+  (doubling as the existence check: zero → `null`/404), one grouped-page query that joins the page ayahs
+  back to the scoped base for their matched `(word id, position)`, and one `AsNoTracking`
+  `quran_words` hydration query for the whole page — never one query per ayah. Highlight text is the
+  **canonical `quran_words.text_uthmani`** loaded through the shared `ResolveAyahPageNumber` helper (no
+  ayah-text fallback, no string replacement); `MatchedWordIds`/`MatchedWordPositions` carry only the scoped
+  head matches, and ayah markers are excluded from the hydrated word list. Out-of-range page → non-null
+  empty page with the correct `TotalCount`.
 
 ## Related
 

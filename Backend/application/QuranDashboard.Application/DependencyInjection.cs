@@ -48,6 +48,7 @@ using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeRows;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeTable;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeGroupedSummary;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeGroupedWords;
+using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeGroupedAyahs;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeSummary;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeSurahs;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeTree;
@@ -109,6 +110,7 @@ public static class DependencyInjection
         services.AddScoped<GetWordTypeSummaryHandler>();
         services.AddScoped<GetWordTypeGroupedSummaryHandler>();
         services.AddScoped<GetWordTypeGroupedWordsHandler>();
+        services.AddScoped<GetWordTypeGroupedAyahsHandler>();
         services.AddScoped<GetWordTypeAyahsHandler>();
         services.AddScoped<GetWordTypeSurahsHandler>();
 

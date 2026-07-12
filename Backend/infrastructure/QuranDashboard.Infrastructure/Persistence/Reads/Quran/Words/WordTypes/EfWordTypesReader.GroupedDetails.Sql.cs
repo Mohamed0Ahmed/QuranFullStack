@@ -53,6 +53,50 @@ public sealed partial class EfWordTypesReader
         return [.. parameters];
     }
 
+    // Distinct scoped ayah count over the dimension-filtered base. Zero rows means the positive dimension
+    // is absent from the scope (not found). Measured before paging so it is the stable TotalCount.
+    private static string GroupedAyahsCountSql(WordTypeReadContext context, WordTypeGroupedDimensionKind kind) => $"""
+        WITH base AS (
+            {BaseRowsSql(context, kind)}
+        )
+        SELECT COUNT(DISTINCT ayah_id)::int AS "{nameof(CountRow.Count)}"
+        FROM base
+        """;
+
+    // One page of distinct scoped ayahs in Mushaf order, joined back to the dimension-filtered base so each
+    // returned row carries a single matched (word id, position). The verse key comes from quran_ayahs; the
+    // matches derive only from the scoped base at head grain (no segments table, no marker rows).
+    private static string GroupedAyahsPageSql(WordTypeReadContext context, WordTypeGroupedDimensionKind kind) => $"""
+        WITH base AS (
+            {BaseRowsSql(context, kind)}
+        ), page_ayahs AS (
+            SELECT ayah_id, surah_number, ayah_number
+            FROM base
+            GROUP BY ayah_id, surah_number, ayah_number
+            ORDER BY surah_number, ayah_number
+            OFFSET @skip LIMIT @take
+        )
+        SELECT
+            pa.ayah_id AS "{nameof(GroupedAyahMatchSqlRow.AyahId)}",
+            a.verse_key AS "{nameof(GroupedAyahMatchSqlRow.VerseKey)}",
+            pa.surah_number::int AS "{nameof(GroupedAyahMatchSqlRow.SurahNumber)}",
+            pa.ayah_number::int AS "{nameof(GroupedAyahMatchSqlRow.AyahNumber)}",
+            b.quran_word_id AS "{nameof(GroupedAyahMatchSqlRow.MatchedWordId)}",
+            b.word_number AS "{nameof(GroupedAyahMatchSqlRow.MatchedWordNumber)}"
+        FROM page_ayahs pa
+        JOIN quran_ayahs a ON a.id = pa.ayah_id
+        JOIN base b ON b.ayah_id = pa.ayah_id
+        ORDER BY pa.surah_number, pa.ayah_number, b.word_number, b.quran_word_id
+        """;
+
+    private sealed record GroupedAyahMatchSqlRow(
+        int AyahId,
+        string VerseKey,
+        int SurahNumber,
+        int AyahNumber,
+        int MatchedWordId,
+        int MatchedWordNumber);
+
     private sealed record GroupedSummarySqlResult(
         int DimensionId,
         string DisplayText,

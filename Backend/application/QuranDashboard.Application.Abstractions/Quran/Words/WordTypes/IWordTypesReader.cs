@@ -52,4 +52,14 @@ public interface IWordTypesReader
         int page,
         int pageSize,
         CancellationToken cancellationToken);
+
+    // Grouped scoped ayahs: the distinct ayahs of the selected numeric head dimension ID, paged in Mushaf
+    // order and hydrated with canonical quran_words.text_uthmani plus the scoped matched word ids/positions.
+    // Returns null when the dimension is absent from the scope; an existing selection with an out-of-range
+    // page returns a non-null empty page carrying the correct TotalCount.
+    Task<PagedResult<WordTypeAyahMatchDto>?> GetGroupedAyahMatchesAsync(
+        WordTypeGroupedSelection selection,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken);
 }

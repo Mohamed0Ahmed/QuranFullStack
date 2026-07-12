@@ -33,6 +33,9 @@ public static class WordTypesCacheKeys
     public static string GroupedWords(WordTypeGroupedSelection selection, int page, int pageSize) =>
         $"wordtypes:grouped:{selection.Kind.ToRouteKey()}:words:{HashGroupedSelection(selection)}:p{page}:s{pageSize}";
 
+    public static string GroupedAyahs(WordTypeGroupedSelection selection, int page, int pageSize) =>
+        $"wordtypes:grouped:{selection.Kind.ToRouteKey()}:ayahs:{HashGroupedSelection(selection)}:p{page}:s{pageSize}";
+
     private static string HashGroupedSelection(WordTypeGroupedSelection selection) => HashParts(
         selection.DimensionId.ToString(CultureInfo.InvariantCulture),
         selection.Filter.Type,

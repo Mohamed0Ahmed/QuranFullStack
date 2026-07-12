@@ -89,6 +89,7 @@ public static class ApiMessages
 
     public const string WordTypeGroupedSummaryLoaded = "تم تحميل ملخص التجميع";
     public const string WordTypeGroupedWordsLoaded = "تم تحميل كلمات التجميع";
+    public const string WordTypeGroupedAyahsLoaded = "تم تحميل آيات التجميع";
     public const string WordTypesInvalidGroupedKind = "نوع التجميع غير صالح";
     public const string WordTypesInvalidGroupedId = "معرّف التجميع غير صالح";
     public const string WordTypesGroupedNotFound = "التجميع المحدد غير موجود";

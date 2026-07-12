@@ -2,6 +2,7 @@ using QuranDashboard.Application.Abstractions.Common.Paging;
 using QuranDashboard.Application.Abstractions.Quran.Words.WordTypes.Responses;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeGroupedSummary;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeGroupedWords;
+using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeGroupedAyahs;
 
 namespace QuranDashboard.Api.Controllers.Words;
 
@@ -11,7 +12,8 @@ namespace QuranDashboard.Api.Controllers.Words;
 [Route("api/words/word-types/table")]
 public sealed class WordTypeGroupedDetailsController(
     GetWordTypeGroupedSummaryHandler summaryHandler,
-    GetWordTypeGroupedWordsHandler wordsHandler) : ControllerBase
+    GetWordTypeGroupedWordsHandler wordsHandler,
+    GetWordTypeGroupedAyahsHandler ayahsHandler) : ControllerBase
 {
     private const int DefaultPage = 1;
     private const int DefaultDetailPageSize = 25;
@@ -83,6 +85,45 @@ public sealed class WordTypeGroupedDetailsController(
             GetWordTypeGroupedWordsOutcome.NotFound =>
                 NotFound(ApiResponse<PagedResult<WordTypeGroupedMemberWordDto>>.Fail(ApiMessages.WordTypesGroupedNotFound)),
             _ => throw new InvalidOperationException($"Unhandled {nameof(GetWordTypeGroupedWordsOutcome)} variant."),
+        };
+    }
+
+    // Paged, scoped ayahs of the group. Accepts the identical five-field scope plus page/pageSize; no sort.
+    // Ayahs page in Mushaf order and carry canonical Uthmani text with the scoped matched word ids/positions.
+    [HttpGet("{kind}/{dimensionId:int}/ayahs")]
+    public async Task<ActionResult<ApiResponse<PagedResult<WordTypeAyahMatchDto>>>> GetAyahs(
+        string kind,
+        int dimensionId,
+        [FromQuery] string? type,
+        [FromQuery] string? childCode,
+        [FromQuery(Name = "case")] string? caseFilter,
+        [FromQuery] string? tense,
+        [FromQuery] string? voice,
+        [FromQuery] int? page,
+        [FromQuery] int? pageSize,
+        CancellationToken cancellationToken)
+    {
+        var outcome = await ayahsHandler.HandleAsync(
+            new GetWordTypeGroupedAyahsQuery(
+                kind, dimensionId, type, childCode, caseFilter, tense, voice,
+                page ?? DefaultPage, pageSize ?? DefaultDetailPageSize),
+            cancellationToken);
+
+        return outcome switch
+        {
+            GetWordTypeGroupedAyahsOutcome.Success success =>
+                Ok(ApiResponse<PagedResult<WordTypeAyahMatchDto>>.Ok(success.Page, ApiMessages.WordTypeGroupedAyahsLoaded)),
+            GetWordTypeGroupedAyahsOutcome.InvalidKind =>
+                BadRequest(ApiResponse<PagedResult<WordTypeAyahMatchDto>>.Fail(ApiMessages.WordTypesInvalidGroupedKind)),
+            GetWordTypeGroupedAyahsOutcome.InvalidId =>
+                BadRequest(ApiResponse<PagedResult<WordTypeAyahMatchDto>>.Fail(ApiMessages.WordTypesInvalidGroupedId)),
+            GetWordTypeGroupedAyahsOutcome.InvalidFilter =>
+                BadRequest(ApiResponse<PagedResult<WordTypeAyahMatchDto>>.Fail(ApiMessages.WordTypesInvalidFilter)),
+            GetWordTypeGroupedAyahsOutcome.InvalidPaging =>
+                BadRequest(ApiResponse<PagedResult<WordTypeAyahMatchDto>>.Fail(ApiMessages.WordTypesInvalidPaging)),
+            GetWordTypeGroupedAyahsOutcome.NotFound =>
+                NotFound(ApiResponse<PagedResult<WordTypeAyahMatchDto>>.Fail(ApiMessages.WordTypesGroupedNotFound)),
+            _ => throw new InvalidOperationException($"Unhandled {nameof(GetWordTypeGroupedAyahsOutcome)} variant."),
         };
     }
 }

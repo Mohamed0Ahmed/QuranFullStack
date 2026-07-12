@@ -66,6 +66,15 @@ public interface IWordTypesReader
         int page,
         int pageSize,
         CancellationToken cancellationToken);
+
+    // Feature 023 — grouped scoped ayahs: the distinct ayahs of the selected numeric head dimension, paged
+    // in Mushaf order and hydrated with canonical quran_words.text_uthmani plus the scoped matched-word
+    // ids/positions. null = dimension absent from scope; out-of-range page = non-null empty page.
+    Task<PagedResult<WordTypeAyahMatchDto>?> GetGroupedAyahMatchesAsync(
+        WordTypeGroupedSelection selection,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken);
 }
 ```
 
@@ -174,7 +183,9 @@ GetWordTypeTable
 GetWordTypeSummary
 GetWordTypeAyahs
 GetWordTypeSurahs
-GetWordTypeGroupedSummary   (Feature 023; grouped words/ayahs/surahs handlers added by Tasks 2–4)
+GetWordTypeGroupedSummary   (Feature 023)
+GetWordTypeGroupedWords     (Feature 023)
+GetWordTypeGroupedAyahs     (Feature 023; grouped surahs handler added by Task 4)
 ```
 
 Required outcome categories:
@@ -235,6 +246,17 @@ Required outcome categories:
   `rootText`/`stemText`/`lemmaText` are projection-only and never a membership or parity predicate.
   `TotalCount` counts grouped word-context rows before paging; a dimension absent from the scope returns
   null (404) while an out-of-range page of an existing dimension returns a non-null empty page.
+- **Grouped ayahs (Feature 023)**: `GetGroupedAyahMatchesAsync` pages the **distinct `ayah_id`** of the
+  same dimension-filtered `BaseRowsSql` base in Mushaf order (`surah_number, ayah_number`), reusing the
+  `WordTypeAyahMatchDto` shape. Hydration is **bounded to three commands** per page: (1) a distinct-ayah
+  count (which doubles as the scoped-group existence check — zero → null/404), (2) one grouped-page query
+  that joins the page ayahs back to the scoped base for their matched `(word id, position)`, and (3) one
+  `AsNoTracking` word-hydration query loading every readable word for the page ayahs. Command count is
+  fixed regardless of ayah count — never one query per ayah. Highlight text comes from
+  `quran_words.text_uthmani` via the shared `ResolveAyahPageNumber` helper (no ayah-text fallback, no
+  string replacement); `matchedWordIds`/`matchedWordPositions` carry only the scoped head matches and ayah
+  markers are excluded from the hydrated word list. Out-of-range page → non-null empty page with the
+  correct `TotalCount`.
 
 ## Enrichment Rules
 

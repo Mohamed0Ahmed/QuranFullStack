@@ -132,4 +132,21 @@ public sealed class CachedWordTypesReader(EfWordTypesReader efReader, IMemoryCac
 
         return words;
     }
+
+    public async Task<PagedResult<WordTypeAyahMatchDto>?> GetGroupedAyahMatchesAsync(WordTypeGroupedSelection selection, int page, int pageSize, CancellationToken cancellationToken)
+    {
+        var key = WordTypesCacheKeys.GroupedAyahs(selection, page, pageSize);
+        if (_cache.TryGetValue(key, out PagedResult<WordTypeAyahMatchDto>? cached))
+        {
+            return cached;
+        }
+
+        var ayahs = await _ef.GetGroupedAyahMatchesAsync(selection, page, pageSize, cancellationToken);
+        if (ayahs is not null)
+        {
+            _cache.Set(key, ayahs, WordTypesCacheEntryOptions.Detail());
+        }
+
+        return ayahs;
+    }
 }
