@@ -8,6 +8,7 @@
   @if (loading() || hasRows()) {
     <div class="word-types-table__header" role="rowgroup">
       <div class="word-types-table__header-row" role="row">
+        <span class="word-types-table__header-cell word-types-table__header-cell--row-number qd-explorer-table__header-cell--row-number" role="columnheader">{{ headers.rowNumber }}</span>
         @if (isWordView()) {
           <span class="word-types-table__header-cell word-types-table__header-cell--word" role="columnheader">{{ headers.word }}</span>
           <span class="word-types-table__header-cell word-types-table__header-cell--meta" role="columnheader">{{ headers.type }}</span>
@@ -39,6 +40,9 @@
             role="row"
             aria-hidden="true"
           >
+            <span class="word-types-table__cell word-types-table__cell--row-number qd-explorer-table__cell--row-number" role="cell">
+              <span class="qd-skeleton qd-skeleton--text word-types-table__loading-number"></span>
+            </span>
             @if (isWordView()) {
               <span class="word-types-table__cell word-types-table__cell--word" role="cell">
                 <span class="qd-skeleton qd-skeleton--text word-types-table__loading-word"></span>
@@ -69,7 +73,7 @@
               @if (row.kind === 'word') {
                 <button
                   type="button"
-                  class="word-types-table__row qd-interactive-surface"
+                  class="word-types-table__row qd-explorer-table__row"
                   role="row"
                   [attr.data-word-types-row]="rowDomId(row)"
                   [class.qd-is-selected]="isSelected(row)"
@@ -77,6 +81,7 @@
                   [attr.aria-selected]="isSelected(row)"
                   (click)="selectRow(row)"
                 >
+                  <span class="word-types-table__cell word-types-table__cell--row-number qd-explorer-table__cell--row-number" role="cell">{{ rowNumber($index) }}</span>
                   <span class="word-types-table__cell word-types-table__cell--word" role="cell">
                     <span class="word-types-table__word">{{ row.displayText }}</span>
                   </span>
@@ -129,7 +134,7 @@
               @if (row.kind !== 'word') {
                 <button
                   type="button"
-                  class="word-types-table__row"
+                  class="word-types-table__row qd-explorer-table__row"
                   role="row"
                   [attr.data-word-types-row]="rowDomId(row)"
                   [class.qd-is-selected]="isSelected(row)"
@@ -137,6 +142,7 @@
                   [attr.aria-selected]="isSelected(row)"
                   (click)="selectRow(row)"
                 >
+                  <span class="word-types-table__cell word-types-table__cell--row-number qd-explorer-table__cell--row-number" role="cell">{{ rowNumber($index) }}</span>
                   <span class="word-types-table__cell word-types-table__cell--word" role="cell" [attr.data-label]="dimensionHeader()">
                     <span class="word-types-table__word">{{ row.displayText }}</span>
                   </span>

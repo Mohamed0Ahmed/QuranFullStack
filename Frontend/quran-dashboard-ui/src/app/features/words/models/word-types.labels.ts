@@ -1,4 +1,5 @@
 import { WORD_TYPE_SORTS, WordTypeCase, WordTypeDetailView, WordTypeMainType, WordTypeSort, WordTypeTableView, WordTypeTense, WordTypeVoice } from './word-types.models';
+import { ROW_NUMBER_HEADER } from './words-shared.labels';
 
 export const WORD_TYPES_PAGE_TITLE = 'أنواع الكلمات';
 export const WORD_TYPES_FILTER_LABEL = 'تصفية أنواع الكلمات';
@@ -99,6 +100,7 @@ export const WORD_TYPES_MEMBER_WORDS_PAGINATION_LABEL = 'تنقّل الكلما
 export const WORD_TYPES_MEMBER_WORDS_EMPTY_LABEL = 'لا توجد كلمات مرتبطة بهذا التحديد';
 
 export const WORD_TYPES_TABLE_HEADERS = {
+  rowNumber: ROW_NUMBER_HEADER,
   word: 'الكلمة',
   type: 'النوع',
   root: 'الجذر',

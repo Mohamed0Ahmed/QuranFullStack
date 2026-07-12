@@ -44,6 +44,15 @@ function page(items: WordTypeTableRowDto[]): PagedResultDto<WordTypeTableRowDto>
   };
 }
 
+function pagedPage(items: WordTypeTableRowDto[], pageNumber: number, pageSize: number): PagedResultDto<WordTypeTableRowDto> {
+  return {
+    page: pageNumber,
+    pageSize,
+    totalCount: pageNumber * pageSize + items.length,
+    items,
+  };
+}
+
 const rootRow: RootTableRowDto = {
   kind: 'root',
   rootId: 190700,
@@ -94,7 +103,7 @@ describe('WordTypesTableComponent', () => {
     const rowButton = root.querySelector('.word-types-table__row') as HTMLButtonElement;
     const countButton = root.querySelector('[data-testid="word-count-chip"]') as HTMLButtonElement;
 
-    expect(headers).toEqual(['الكلمة', 'النوع', 'الجذر', 'الأصل', 'الصيغة', 'المواضع', 'الآيات', 'السور']);
+    expect(headers).toEqual(['م', 'الكلمة', 'النوع', 'الجذر', 'الأصل', 'الصيغة', 'المواضع', 'الآيات', 'السور']);
     expect(root.textContent).toContain('كَلِمَة');
     expect(root.textContent).toContain('—');
     expect(root.textContent).not.toContain('191001');
@@ -130,7 +139,7 @@ describe('WordTypesTableComponent', () => {
       const groupedTableRow = root.querySelector('button.word-types-table__row') as HTMLButtonElement;
 
       expect(root.querySelector('[role="table"]')?.getAttribute('aria-label')).toBe(tableLabel);
-      expect(headers).toEqual([dimensionHeader, 'المواضع', 'الآيات', 'السور']);
+      expect(headers).toEqual(['م', dimensionHeader, 'المواضع', 'الآيات', 'السور']);
       expect(groupedTableRow).not.toBeNull();
       expect(groupedTableRow.getAttribute('data-word-types-row')).toBe(rowDomId);
       expect(groupedTableRow.textContent).toContain(groupedRow.displayText);
@@ -228,6 +237,77 @@ describe('WordTypesTableComponent', () => {
     const retryButton = root.querySelector('[data-testid="word-types-table-retry"]') as HTMLButtonElement;
     retryButton.click();
     expect(retries).toHaveLength(1);
+  });
+
+  it('renders page-relative row numbers without database ids across all four views', () => {
+    const views: readonly { tableView: WordTypeTableView; rows: WordTypeTableRowDto[]; hiddenId: string }[] = [
+      { tableView: 'words', rows: [word({ tashkeelWordId: 191001 }), word({ tashkeelWordId: 191002, contextCode: 'N' })], hiddenId: '191001' },
+      { tableView: 'roots', rows: [rootRow, { ...rootRow, rootId: 190711 }], hiddenId: '190700' },
+      { tableView: 'stems', rows: [stemRow, { ...stemRow, stemId: 190712 }], hiddenId: '190701' },
+      { tableView: 'lemmas', rows: [lemmaRow, { ...lemmaRow, lemmaId: 190713 }], hiddenId: '190702' },
+    ];
+
+    for (const view of views) {
+      const fixture = TestBed.createComponent(WordTypesTableComponent);
+      fixture.componentRef.setInput('rows', pagedPage(view.rows, 2, 25));
+      fixture.componentRef.setInput('tableView', view.tableView);
+      fixture.detectChanges();
+
+      const root = fixture.nativeElement as HTMLElement;
+      const numberCells = Array.from(root.querySelectorAll('.word-types-table__cell--row-number')).map((cell) => cell.textContent?.trim());
+
+      expect(numberCells).toEqual(['26', '27']);
+      expect(root.textContent).not.toContain(view.hiddenId);
+
+      fixture.destroy();
+    }
+  });
+
+  it.each([
+    ['words', [word()]],
+    ['roots', [rootRow]],
+  ] as const)('renders %s rows with the quiet explorer-row class and no interactive-surface', (tableView, rows) => {
+    const fixture = TestBed.createComponent(WordTypesTableComponent);
+    fixture.componentRef.setInput('rows', page([...rows]));
+    fixture.componentRef.setInput('tableView', tableView as WordTypeTableView);
+    fixture.detectChanges();
+
+    const rowButton = (fixture.nativeElement as HTMLElement).querySelector('button.word-types-table__row') as HTMLButtonElement;
+    expect(rowButton.classList.contains('qd-explorer-table__row')).toBe(true);
+    expect(rowButton.classList.contains('qd-interactive-surface')).toBe(false);
+  });
+
+  it('keeps loading rows non-selectable with no interactive surface', () => {
+    const fixture = TestBed.createComponent(WordTypesTableComponent);
+    fixture.componentRef.setInput('loading', true);
+    fixture.detectChanges();
+
+    const loadingRow = (fixture.nativeElement as HTMLElement).querySelector('.word-types-table__row--loading') as HTMLElement;
+    expect(loadingRow).not.toBeNull();
+    expect(loadingRow.classList.contains('qd-interactive-surface')).toBe(false);
+    expect(loadingRow.classList.contains('qd-explorer-table__row')).toBe(false);
+    expect(loadingRow.getAttribute('data-word-types-row')).toBeNull();
+    expect(loadingRow.getAttribute('aria-selected')).toBeNull();
+  });
+
+  it.each([
+    ['words', word(), '191001:PN:all:all:all'],
+    ['roots', rootRow, 'root:190700'],
+    ['stems', stemRow, 'stem:190701'],
+    ['lemmas', lemmaRow, 'lemma:190702'],
+  ] as const)('exposes keyboard-operable %s row buttons that focusRow can target', (tableView, row, domId) => {
+    const fixture = TestBed.createComponent(WordTypesTableComponent);
+    fixture.componentRef.setInput('rows', page([row]));
+    fixture.componentRef.setInput('tableView', tableView as WordTypeTableView);
+    fixture.detectChanges();
+
+    const rowButton = (fixture.nativeElement as HTMLElement).querySelector('button.word-types-table__row') as HTMLButtonElement;
+    expect(rowButton.tagName).toBe('BUTTON');
+
+    fixture.componentInstance.focusRow(row);
+
+    expect(document.activeElement).toBe(rowButton);
+    expect((document.activeElement as HTMLElement).getAttribute('data-word-types-row')).toBe(domId);
   });
 
   it('focuses a word row by its canonicalized nullable identity', () => {

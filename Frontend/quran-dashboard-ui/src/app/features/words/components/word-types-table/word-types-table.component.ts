@@ -17,6 +17,7 @@ import {
   groupedTableRowId,
   normalizeWordTableRow,
 } from '../../models/word-types.models';
+import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
 import { syncTableScrollbarGutter } from '../../utils/table-scrollbar-gutter-sync';
 
 export type WordTypeCountColumn = 'occurrences' | 'ayahs' | 'surahs';
@@ -74,6 +75,15 @@ export class WordTypesTableComponent {
 
   protected isWordView(): boolean {
     return this.tableView() === 'words';
+  }
+
+  // Page-relative sequence shared across all four views; the persisted database ID is never shown.
+  protected rowNumber(index: number): number {
+    const page = this.rows();
+    if (!page) {
+      return index + 1;
+    }
+    return pageRelativeRowNumber(page.page, page.pageSize, index);
   }
 
   // The header and rows render only when there is real data or a load in flight. Prompt, empty, and

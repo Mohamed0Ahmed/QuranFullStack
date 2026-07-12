@@ -13,6 +13,7 @@
 .word-types-table__header-row,
 .word-types-table__row {
   grid-template-columns:
+    minmax(2.5rem, 0.3fr)
     minmax(0, 1.65fr)
     minmax(0, 1.15fr)
     repeat(3, minmax(0, 1fr))
@@ -22,7 +23,7 @@
 
 .word-types-table--grouped .word-types-table__header-row,
 .word-types-table--grouped .word-types-table__row {
-  grid-template-columns: minmax(0, 1.65fr) repeat(3, minmax(3.5rem, 0.72fr));
+  grid-template-columns: minmax(2.5rem, 0.3fr) minmax(0, 1.65fr) repeat(3, minmax(3.5rem, 0.72fr));
 }
 
 .word-types-table__header-row {
@@ -72,9 +73,11 @@
 .word-types-table__row {
   inline-size: 100%;
   min-inline-size: 0;
+  appearance: none;
   border: 0;
   background: transparent;
   color: var(--qd-text);
+  font: inherit;
   padding: 0;
   text-align: start;
   cursor: pointer;
@@ -106,6 +109,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.word-types-table__loading-number {
+  inline-size: 1.5rem;
+  margin-inline: auto;
 }
 
 .word-types-table__loading-word {
@@ -186,6 +194,13 @@
     gap: var(--qd-space-1);
     white-space: normal;
     padding: 0;
+  }
+
+  .word-types-table__cell--row-number {
+    grid-column: 1 / -1;
+    align-items: flex-start;
+    font-size: 0.75rem;
+    color: var(--qd-text-muted);
   }
 
   .word-types-table__cell--word {

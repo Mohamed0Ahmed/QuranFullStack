@@ -48,8 +48,13 @@ Shared across explorers: `utils/explorer-table-*` (focus/keyboard-nav/scroll/col
   table/details layout is kept for grouped views, and the **table owns its own prompt/loading/empty/
   error (with retry) inside its body** instead of swapping the shell out. `tableView` **survives**
   type/child/case/tense/voice/sort/page changes — only the Words tab returns a grouped view to
-  `words`. **Grouped rows are selectable native row buttons** (`word-types-table__row`, no
-  `qd-interactive-surface`): choosing a root/stem/lemma writes **only its explicit URL key**
+  `words`. **All four views** render **quiet explorer rows** (`word-types-table__row` +
+  `qd-explorer-table__row`, **no** `qd-interactive-surface`/card-lift) with a leading
+  **page-relative row number** (`(page-1)·pageSize + index + 1`, **never** the database ID);
+  the selected row keeps `aria-selected`/`aria-current` + `qd-is-selected` with visible focus,
+  and skeleton rows stay non-interactive with no hover. **Grouped rows are selectable native row
+  buttons** (`word-types-table__row`, no `qd-interactive-surface`): choosing a root/stem/lemma
+  writes **only its explicit URL key**
   (`root`/`stem`/`lemma`) with `view=words` and **no** `detailPage`, sends the full grammatical scope to
   the detail facade, and opens a scoped summary + related-words/ayahs/surahs details. The details panel
   tabs are **kind-aware** (word → آيات/سور; grouped → كلمات مرتبطة/آيات/سور) with RTL roving focus, and a
