@@ -31,7 +31,13 @@ import {
   WordTypesListState,
 } from '../models/word-types.models';
 import { WordTypesCache, WordTypesCacheKeys } from './word-types-cache';
-import { buildWordTypesQueryParams, clearWordTypesSelection, parseWordTypesQueryParams } from './word-types-url-sync';
+import {
+  buildWordTypesQueryParams,
+  canonicalWordTypesDetailPage,
+  clearSelectionForTableView,
+  clearWordTypesSelection,
+  parseWordTypesQueryParams,
+} from './word-types-url-sync';
 
 const DEFAULT_QUERY: ParsedWordTypesQuery = {
   type: DEFAULT_WORD_TYPE,
@@ -43,6 +49,9 @@ const DEFAULT_QUERY: ParsedWordTypesQuery = {
   sort: DEFAULT_WORD_TYPE_SORT,
   page: DEFAULT_WORD_TYPES_PAGE,
   word: null,
+  root: null,
+  stem: null,
+  lemma: null,
   tashkeelWordId: 0,
   contextCode: '',
   view: DEFAULT_WORD_TYPES_DETAIL_VIEW,
@@ -101,26 +110,26 @@ export class WordTypesExplorerFacade {
       word: row.tashkeelWordId,
       contextCode: row.contextCode,
       view: DEFAULT_WORD_TYPES_DETAIL_VIEW,
-      detailPage: DEFAULT_WORD_TYPES_DETAIL_PAGE,
+      detailPage: canonicalWordTypesDetailPage(DEFAULT_WORD_TYPES_DETAIL_VIEW, DEFAULT_WORD_TYPES_DETAIL_PAGE),
     }));
   }
 
   selectType(type: WordTypeMainType): void {
-    // Switching the main type resets the child selection AND every secondary filter: case belongs to
-    // nouns only and tense/voice to verbs only, so carrying them across types would produce stale,
-    // type-invalid filters. The URL normalizer redrops invalid values defensively as well. The detail
-    // panel selection is intentionally left alone: it stays open across type switches instead of
-    // clearing, since the selected row's own identity does not depend on the current list filter.
+    // Switching the main type resets its child and secondary filters. Any existing selection belongs to
+    // the old grammatical scope, so it must not remain shareable after this transition.
     this.navigate(
-      buildWordTypesQueryParams({
-        type,
-        childCode: null,
-        tableView: DEFAULT_WORD_TYPE_TABLE_VIEW,
-        case: DEFAULT_WORD_TYPE_CASE,
-        tense: DEFAULT_WORD_TYPE_TENSE,
-        voice: DEFAULT_WORD_TYPE_VOICE,
-        page: DEFAULT_WORD_TYPES_PAGE,
-      }),
+      {
+        ...buildWordTypesQueryParams({
+          type,
+          childCode: null,
+          tableView: DEFAULT_WORD_TYPE_TABLE_VIEW,
+          case: DEFAULT_WORD_TYPE_CASE,
+          tense: DEFAULT_WORD_TYPE_TENSE,
+          voice: DEFAULT_WORD_TYPE_VOICE,
+          page: DEFAULT_WORD_TYPES_PAGE,
+        }),
+        ...clearWordTypesSelection(),
+      },
     );
   }
 
@@ -144,7 +153,7 @@ export class WordTypesExplorerFacade {
   selectTableView(tableView: WordTypeTableView): void {
     this.navigate({
       ...buildWordTypesQueryParams({ tableView, page: DEFAULT_WORD_TYPES_PAGE }),
-      ...clearWordTypesSelection(),
+      ...clearSelectionForTableView(tableView),
     });
   }
 
@@ -173,10 +182,7 @@ export class WordTypesExplorerFacade {
   }
 
   changeSort(sort: WordTypeSort): void {
-    this.navigate({
-      ...buildWordTypesQueryParams({ sort, page: DEFAULT_WORD_TYPES_PAGE }),
-      ...clearWordTypesSelection(),
-    });
+    this.navigate(buildWordTypesQueryParams({ sort, page: DEFAULT_WORD_TYPES_PAGE }));
   }
 
   changePage(page: number): void {

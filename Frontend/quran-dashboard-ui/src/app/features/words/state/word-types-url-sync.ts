@@ -8,6 +8,7 @@ import {
   DEFAULT_WORD_TYPE_TABLE_VIEW,
   DEFAULT_WORD_TYPE_TENSE,
   DEFAULT_WORD_TYPE_VOICE,
+  DEFAULT_GROUPED_WORD_TYPES_DETAIL_VIEW,
   DEFAULT_WORD_TYPES_DETAIL_PAGE,
   DEFAULT_WORD_TYPES_DETAIL_VIEW,
   DEFAULT_WORD_TYPES_PAGE,
@@ -35,12 +36,15 @@ export function parseWordTypesQueryParams(queryParams: ParamMap): ParsedWordType
   const childCode = normalizeChildCode(type, queryParams.get(WORD_TYPES_QUERY_KEYS.childCode));
   const tableView = normalizeTableView(queryParams.get(WORD_TYPES_QUERY_KEYS.tableView));
 
-  // Grouped views (tableView !== 'words') have no word-row selection concept, so any selection
-  // params from the URL are dropped even if a stale/foreign deep link supplied them (locked 14).
+  // A URL selection must match its table view. Display text never participates in this identity.
   const word = tableView === 'words' ? parsePositiveInt(queryParams.get(WORD_TYPES_QUERY_KEYS.word)) : null;
   const contextCode = tableView !== 'words' || word === null
     ? ''
     : normalizeOptionalText(queryParams.get(WORD_TYPES_QUERY_KEYS.contextCode)) ?? '';
+  const root = tableView === 'roots' ? parsePositiveInt(queryParams.get(WORD_TYPES_QUERY_KEYS.root)) : null;
+  const stem = tableView === 'stems' ? parsePositiveInt(queryParams.get(WORD_TYPES_QUERY_KEYS.stem)) : null;
+  const lemma = tableView === 'lemmas' ? parsePositiveInt(queryParams.get(WORD_TYPES_QUERY_KEYS.lemma)) : null;
+  const view = normalizeView(tableView, queryParams.get(WORD_TYPES_QUERY_KEYS.view));
 
   return {
     type,
@@ -52,12 +56,15 @@ export function parseWordTypesQueryParams(queryParams: ParamMap): ParsedWordType
     sort: normalizeSort(queryParams.get(WORD_TYPES_QUERY_KEYS.sort)),
     page: parsePositiveInt(queryParams.get(WORD_TYPES_QUERY_KEYS.page)) ?? DEFAULT_WORD_TYPES_PAGE,
     word: contextCode.length === 0 ? null : word,
+    root,
+    stem,
+    lemma,
     tashkeelWordId: word ?? 0,
     contextCode,
-    view: tableView === 'words' ? normalizeView(queryParams.get(WORD_TYPES_QUERY_KEYS.view)) : DEFAULT_WORD_TYPES_DETAIL_VIEW,
-    detailPage: tableView === 'words'
-      ? parsePositiveInt(queryParams.get(WORD_TYPES_QUERY_KEYS.detailPage)) ?? DEFAULT_WORD_TYPES_DETAIL_PAGE
-      : DEFAULT_WORD_TYPES_DETAIL_PAGE,
+    view,
+    detailPage: view === 'surahs'
+      ? DEFAULT_WORD_TYPES_DETAIL_PAGE
+      : parsePositiveInt(queryParams.get(WORD_TYPES_QUERY_KEYS.detailPage)) ?? DEFAULT_WORD_TYPES_DETAIL_PAGE,
     location: tableView === 'words' ? normalizeOptionalText(queryParams.get(WORD_TYPES_QUERY_KEYS.location)) : null,
     column: tableView === 'words' ? normalizeOptionalText(queryParams.get(WORD_TYPES_QUERY_KEYS.column)) : null,
   };
@@ -74,8 +81,11 @@ export type WordTypesQueryChange = Partial<{
   page: number | null;
   word: number | null;
   contextCode: string | null;
+  root: number | null;
+  stem: number | null;
+  lemma: number | null;
   view: WordTypeDetailView | null;
-  detailPage: number | null;
+  detailPage: number | string | null;
   location: string | null;
   column: string | null;
 }>;
@@ -91,6 +101,9 @@ const WORD_TYPES_QUERY_ORDER = [
   'page',
   'word',
   'contextCode',
+  'root',
+  'stem',
+  'lemma',
   'view',
   'detailPage',
   'location',
@@ -118,11 +131,37 @@ export function clearWordTypesSelection(): Record<string, string | null> {
   return buildWordTypesQueryParams({
     word: null,
     contextCode: null,
+    root: null,
+    stem: null,
+    lemma: null,
     view: null,
     detailPage: null,
     location: null,
     column: null,
   });
+}
+
+export function clearSelectionForTableView(target: WordTypeTableView): Record<string, string | null> {
+  return buildWordTypesQueryParams({
+    ...(target === 'words' ? {} : { word: null, contextCode: null }),
+    ...(target === 'roots' ? {} : { root: null }),
+    ...(target === 'stems' ? {} : { stem: null }),
+    ...(target === 'lemmas' ? {} : { lemma: null }),
+    view: null,
+    detailPage: null,
+    location: null,
+    column: null,
+  });
+}
+
+export function canonicalWordTypesDetailPage(view: WordTypeDetailView, page: number | string): string | null {
+  const normalizedPage = typeof page === 'string'
+    ? parsePositiveInt(page)
+    : Number.isInteger(page) && page > 0 ? page : null;
+
+  return view === 'surahs' || normalizedPage === null || normalizedPage <= DEFAULT_WORD_TYPES_DETAIL_PAGE
+    ? null
+    : String(normalizedPage);
 }
 
 export interface WordTypesDeepLinkTarget {
@@ -131,7 +170,16 @@ export interface WordTypesDeepLinkTarget {
 }
 
 export function buildWordTypesDeepLink(options: WordTypesQueryChange = {}): WordTypesDeepLinkTarget {
-  return { path: wordTypesRoutePath(), queryParams: buildWordTypesQueryParams(options) };
+  const tableView = options.tableView ?? DEFAULT_WORD_TYPE_TABLE_VIEW;
+  const view = options.view ?? defaultViewForTableView(tableView);
+  const detailPage = options.detailPage === undefined || options.detailPage === null
+    ? options.detailPage
+    : canonicalWordTypesDetailPage(view, options.detailPage);
+
+  return {
+    path: wordTypesRoutePath(),
+    queryParams: buildWordTypesQueryParams({ ...options, ...(detailPage === undefined ? {} : { detailPage }) }),
+  };
 }
 
 function normalizeChildCode(type: WordTypeMainType, value: string | null): string | null {
@@ -174,8 +222,13 @@ function normalizeTableView(value: string | null): WordTypeTableView {
   return value !== null && isWordTypeTableView(value) ? value : DEFAULT_WORD_TYPE_TABLE_VIEW;
 }
 
-function normalizeView(value: string | null): WordTypeDetailView {
-  return value !== null && isWordTypeDetailView(value) ? value : DEFAULT_WORD_TYPES_DETAIL_VIEW;
+function normalizeView(tableView: WordTypeTableView, value: string | null): WordTypeDetailView {
+  const normalized = value !== null && isWordTypeDetailView(value) ? value : defaultViewForTableView(tableView);
+  return tableView === 'words' && normalized === 'words' ? DEFAULT_WORD_TYPES_DETAIL_VIEW : normalized;
+}
+
+function defaultViewForTableView(tableView: WordTypeTableView): WordTypeDetailView {
+  return tableView === 'words' ? DEFAULT_WORD_TYPES_DETAIL_VIEW : DEFAULT_GROUPED_WORD_TYPES_DETAIL_VIEW;
 }
 
 function parsePositiveInt(value: string | null): number | null {

@@ -21,6 +21,8 @@ import {
 } from '../../models/word-types.labels';
 import { WORD_TYPE_DETAIL_VIEW_KEYS, WordTypeDetailView } from '../../models/word-types.models';
 
+type WordTypeDetailPanelView = (typeof WORD_TYPE_DETAIL_VIEW_KEYS)[number];
+
 @Component({
   selector: 'qd-word-type-details-panel',
   standalone: true,
@@ -83,7 +85,7 @@ export class WordTypeDetailsPanelComponent {
     }
   }
 
-  protected onTabKeydown(event: KeyboardEvent, currentKey: WordTypeDetailView): void {
+  protected onTabKeydown(event: KeyboardEvent, currentKey: WordTypeDetailPanelView): void {
     const order = WORD_TYPE_DETAIL_VIEW_KEYS;
     const index = order.indexOf(currentKey);
     let nextIndex: number | null = null;
@@ -111,7 +113,7 @@ export class WordTypeDetailsPanelComponent {
     this.focusTab(nextKey);
   }
 
-  private focusTab(key: WordTypeDetailView): void {
+  private focusTab(key: WordTypeDetailPanelView): void {
     const list = this.tabList()?.nativeElement;
     const tab = list?.querySelector<HTMLElement>(`[data-word-type-tab="${key}"]`);
     tab?.focus();

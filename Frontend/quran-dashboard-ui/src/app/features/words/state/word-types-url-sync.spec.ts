@@ -4,6 +4,8 @@ import { convertToParamMap, ParamMap } from '@angular/router';
 import {
   buildWordTypesDeepLink,
   buildWordTypesQueryParams,
+  canonicalWordTypesDetailPage,
+  clearSelectionForTableView,
   clearWordTypesSelection,
   parseWordTypesQueryParams,
 } from './word-types-url-sync';
@@ -86,6 +88,9 @@ describe('buildWordTypesQueryParams — canonical ordering', () => {
       page: 3,
       word: 191004,
       contextCode: 'present',
+      root: 12,
+      stem: 34,
+      lemma: 56,
       view: 'surahs',
       detailPage: 2,
       location: '2:25:2',
@@ -102,11 +107,15 @@ describe('buildWordTypesQueryParams — canonical ordering', () => {
       WORD_TYPES_QUERY_KEYS.page,
       WORD_TYPES_QUERY_KEYS.word,
       WORD_TYPES_QUERY_KEYS.contextCode,
+      WORD_TYPES_QUERY_KEYS.root,
+      WORD_TYPES_QUERY_KEYS.stem,
+      WORD_TYPES_QUERY_KEYS.lemma,
       WORD_TYPES_QUERY_KEYS.view,
       WORD_TYPES_QUERY_KEYS.detailPage,
       WORD_TYPES_QUERY_KEYS.location,
       WORD_TYPES_QUERY_KEYS.column,
     ]);
+    expect(built['dim']).toBeUndefined();
     expect(built[WORD_TYPES_QUERY_KEYS.view]).toBe('surahs');
     expect(built[WORD_TYPES_QUERY_KEYS.detailPage]).toBe('2');
     expect(built[WORD_TYPES_QUERY_KEYS.location]).toBe('2:25:2');
@@ -130,11 +139,31 @@ describe('clearWordTypesSelection', () => {
 
     expect(cleared[WORD_TYPES_QUERY_KEYS.word]).toBeNull();
     expect(cleared[WORD_TYPES_QUERY_KEYS.contextCode]).toBeNull();
+    expect(cleared[WORD_TYPES_QUERY_KEYS.root]).toBeNull();
+    expect(cleared[WORD_TYPES_QUERY_KEYS.stem]).toBeNull();
+    expect(cleared[WORD_TYPES_QUERY_KEYS.lemma]).toBeNull();
     expect(cleared[WORD_TYPES_QUERY_KEYS.view]).toBeNull();
     expect(cleared[WORD_TYPES_QUERY_KEYS.detailPage]).toBeNull();
     expect(cleared[WORD_TYPES_QUERY_KEYS.location]).toBeNull();
     expect(cleared[WORD_TYPES_QUERY_KEYS.column]).toBeNull();
     expect(cleared[WORD_TYPES_QUERY_KEYS.childCode]).toBeUndefined();
+  });
+});
+
+describe('clearSelectionForTableView', () => {
+  it('clears only incompatible selection keys and selection display state', () => {
+    const cleared = clearSelectionForTableView('roots');
+
+    expect(cleared[WORD_TYPES_QUERY_KEYS.word]).toBeNull();
+    expect(cleared[WORD_TYPES_QUERY_KEYS.contextCode]).toBeNull();
+    expect(cleared[WORD_TYPES_QUERY_KEYS.stem]).toBeNull();
+    expect(cleared[WORD_TYPES_QUERY_KEYS.lemma]).toBeNull();
+    expect(cleared[WORD_TYPES_QUERY_KEYS.root]).toBeUndefined();
+    expect(cleared[WORD_TYPES_QUERY_KEYS.view]).toBeNull();
+    expect(cleared[WORD_TYPES_QUERY_KEYS.detailPage]).toBeNull();
+    expect(cleared[WORD_TYPES_QUERY_KEYS.location]).toBeNull();
+    expect(cleared[WORD_TYPES_QUERY_KEYS.column]).toBeNull();
+    expect(cleared['dim']).toBeUndefined();
   });
 });
 
@@ -157,7 +186,7 @@ describe('buildWordTypesDeepLink', () => {
     expect(link.queryParams[WORD_TYPES_QUERY_KEYS.word]).toBe('191001');
     expect(link.queryParams[WORD_TYPES_QUERY_KEYS.contextCode]).toBe('PN');
     expect(link.queryParams[WORD_TYPES_QUERY_KEYS.view]).toBe('surahs');
-    expect(link.queryParams[WORD_TYPES_QUERY_KEYS.detailPage]).toBe('2');
+    expect(link.queryParams[WORD_TYPES_QUERY_KEYS.detailPage]).toBeNull();
     expect(link.queryParams[WORD_TYPES_QUERY_KEYS.location]).toBe('1:1:2');
     expect(link.queryParams[WORD_TYPES_QUERY_KEYS.column]).toBe('analysis');
   });
@@ -272,7 +301,7 @@ describe('parseWordTypesQueryParams — tableView', () => {
     expect(parsed.word).toBeNull();
     expect(parsed.tashkeelWordId).toBe(0);
     expect(parsed.contextCode).toBe('');
-    expect(parsed.view).toBe('ayahs');
+    expect(parsed.view).toBe('surahs');
     expect(parsed.detailPage).toBe(1);
     expect(parsed.location).toBeNull();
     expect(parsed.column).toBeNull();
@@ -285,6 +314,140 @@ describe('parseWordTypesQueryParams — tableView', () => {
 
     expect(parsed.word).toBe(123);
     expect(parsed.contextCode).toBe('PN');
+  });
+});
+
+describe('parseWordTypesQueryParams — explicit selection identity', () => {
+  it.each([
+    ['root', 'roots', 123],
+    ['stem', 'stems', 456],
+    ['lemma', 'lemmas', 789],
+  ] as const)('restores %s selection only from tableView=%s and its positive ID', (key, tableView, id) => {
+    const parsed = parseWordTypesQueryParams(params(`tableView=${tableView}&${key}=${id}`));
+
+    expect(parsed.tableView).toBe(tableView);
+    expect(parsed[key]).toBe(id);
+    expect(parsed.root).toBe(key === 'root' ? id : null);
+    expect(parsed.stem).toBe(key === 'stem' ? id : null);
+    expect(parsed.lemma).toBe(key === 'lemma' ? id : null);
+    expect(parsed.view).toBe('words');
+    expect(parsed.detailPage).toBe(1);
+  });
+
+  it('ignores grouped identity keys that are incompatible with the active tableView', () => {
+    const parsed = parseWordTypesQueryParams(
+      params('tableView=roots&root=123&stem=456&lemma=789'),
+    );
+
+    expect(parsed.root).toBe(123);
+    expect(parsed.stem).toBeNull();
+    expect(parsed.lemma).toBeNull();
+  });
+
+  it.each([
+    ['roots', 'root'],
+    ['stems', 'stem'],
+    ['lemmas', 'lemma'],
+  ] as const)('keeps word and contextCode only in words view, not %s', (tableView, key) => {
+    const parsed = parseWordTypesQueryParams(
+      params(`tableView=${tableView}&${key}=123&word=191004&contextCode=PN`),
+    );
+
+    expect(parsed.word).toBeNull();
+    expect(parsed.contextCode).toBe('');
+  });
+
+  it('normalizes words view back to ayahs for word selections', () => {
+    const parsed = parseWordTypesQueryParams(
+      params('tableView=words&word=191004&contextCode=PN&view=words'),
+    );
+
+    expect(parsed.view).toBe('ayahs');
+  });
+
+  it.each([
+    ['words', 'word=191004&contextCode=PN', 'words'],
+    ['roots', 'root=123', 'ayahs'],
+  ] as const)('defaults missing detailPage to one for %s paged %s view', (tableView, selection, view) => {
+    const parsed = parseWordTypesQueryParams(params(`tableView=${tableView}&${selection}&view=${view}`));
+
+    expect(parsed.detailPage).toBe(1);
+  });
+
+  it('normalizes a grouped surahs URL to internal page one and clears its canonical page param', () => {
+    const parsed = parseWordTypesQueryParams(params('tableView=roots&root=123&view=surahs&detailPage=5'));
+    const rebuilt = buildWordTypesQueryParams({
+      tableView: 'roots',
+      root: parsed.root,
+      view: parsed.view,
+      detailPage: canonicalWordTypesDetailPage(parsed.view, parsed.detailPage),
+    });
+
+    expect(parsed.detailPage).toBe(1);
+    expect(rebuilt[WORD_TYPES_QUERY_KEYS.detailPage]).toBeNull();
+  });
+
+  it('round-trips a grouped selection with its full scope for refresh and sharing', () => {
+    const original = params(
+      'type=verb&childCode=present&tableView=stems&stem=456&tense=present&voice=passive&view=ayahs&detailPage=2',
+    );
+    const parsed = parseWordTypesQueryParams(original);
+    const rebuilt = buildWordTypesQueryParams({
+      type: parsed.type,
+      childCode: parsed.childCode,
+      tableView: parsed.tableView,
+      case: parsed.case,
+      tense: parsed.tense,
+      voice: parsed.voice,
+      stem: parsed.stem,
+      view: parsed.view,
+      detailPage: canonicalWordTypesDetailPage(parsed.view, parsed.detailPage),
+    });
+
+    expect(rebuilt).toMatchObject({
+      type: 'verb',
+      childCode: 'present',
+      tableView: 'stems',
+      tense: 'present',
+      voice: 'passive',
+      stem: '456',
+      view: 'ayahs',
+      detailPage: '2',
+    });
+  });
+
+  it('replays root, stem, then root ParamMaps as browser back and forward state', () => {
+    const restored = [
+      params('tableView=roots&root=123'),
+      params('tableView=stems&stem=456'),
+      params('tableView=roots&root=123'),
+    ].map(parseWordTypesQueryParams);
+
+    expect(restored.map(({ tableView, root, stem, lemma, view, detailPage }) => ({
+      tableView,
+      root,
+      stem,
+      lemma,
+      view,
+      detailPage,
+    }))).toEqual([
+      { tableView: 'roots', root: 123, stem: null, lemma: null, view: 'words', detailPage: 1 },
+      { tableView: 'stems', root: null, stem: 456, lemma: null, view: 'words', detailPage: 1 },
+      { tableView: 'roots', root: 123, stem: null, lemma: null, view: 'words', detailPage: 1 },
+    ]);
+  });
+});
+
+describe('canonicalWordTypesDetailPage', () => {
+  it.each([
+    ['words', 1, null],
+    ['ayahs', 1, null],
+    ['words', 2, '2'],
+    ['ayahs', 3, '3'],
+    ['surahs', 1, null],
+    ['surahs', 5, null],
+  ] as const)('serializes %s page %d as %s', (view, page, expected) => {
+    expect(canonicalWordTypesDetailPage(view, page)).toBe(expected);
   });
 });
 

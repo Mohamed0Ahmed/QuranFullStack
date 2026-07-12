@@ -5,6 +5,9 @@ Branch: `023-quran-search-and-words-ux` (current)
 Scope: **planning/documentation only.** No production or test code is written by this document.
 Incorporates: latest Codex repository review — verdict **CHANGES REQUIRED** — and a full re-inspection of the shipped Backend and Frontend Word Types architecture.
 
+> **Supersession note:** The grouped-detail URL identity and selection behavior in this historical MVP
+> plan are superseded by [Word Types Explorer Details & Stability Implementation Plan](word-types-explorer-details-and-stability-plan.md), Task 5. This document remains the Feature 022 MVP record.
+
 This plan is written so another implementation agent can execute it **without rediscovering the
 architecture**. Every referenced path below was verified against the repository; each new file is
 explicitly labelled **(new)**.

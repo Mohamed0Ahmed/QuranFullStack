@@ -2,13 +2,13 @@ import { HttpErrorResponse } from '@angular/common/http';
 
 import { ApiResponse } from '../../../core/data-access/api-response.model';
 import { WORD_TYPES_ERROR_LABEL, WORD_TYPES_NOT_FOUND_LABEL } from '../models/word-types.labels';
+import { WordTypesDetailState } from '../models/word-types-detail.models';
 import {
   PagedResultDto,
   WordTypeAyahMatchDto,
   WordTypeDetailView,
   WordTypeSummaryDto,
   WordTypeSurahsResponseDto,
-  WordTypesDetailState,
   WordTypesLoadStatus,
 } from '../models/word-types.models';
 

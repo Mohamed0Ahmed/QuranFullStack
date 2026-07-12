@@ -80,11 +80,13 @@ export const WORD_TYPE_SORT_OPTIONS = WORD_TYPE_SORTS.map((value) => ({
 }));
 
 export const WORD_TYPE_DETAIL_TAB_LABELS: Record<WordTypeDetailView, string> = {
+  words: 'الكلمات المرتبطة',
   ayahs: 'الآيات الخاصة بالكلمة',
   surahs: 'السور',
 };
 
 export const WORD_TYPE_DETAIL_TAB_ARIA: Record<WordTypeDetailView, string> = {
+  words: 'الكلمات المرتبطة بالهوية المحددة',
   ayahs: 'الآيات الخاصة بالكلمة المحددة',
   surahs: 'توزيع السور للكلمة المحددة',
 };

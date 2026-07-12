@@ -4,7 +4,7 @@ export type WordTypeTense = 'all' | 'past' | 'present' | 'imperative';
 export type WordTypeVoice = 'all' | 'active' | 'passive';
 export type WordTypeSort = 'occurrences' | 'ayahs' | 'surahs' | 'mushaf-order' | 'alpha';
 export type WordTypeTableView = 'words' | 'roots' | 'stems' | 'lemmas';
-export type WordTypeDetailView = 'ayahs' | 'surahs';
+export type WordTypeDetailView = 'words' | 'ayahs' | 'surahs';
 export type WordTypesLoadStatus = 'idle' | 'loading' | 'selectPrompt' | 'success' | 'empty' | 'error' | 'notFound';
 
 export interface PagedResultDto<T> {
@@ -158,6 +158,9 @@ export interface ParsedWordTypesQuery extends WordTypeRowIdentity {
   sort: WordTypeSort;
   page: number;
   word: number | null;
+  root: number | null;
+  stem: number | null;
+  lemma: number | null;
   view: WordTypeDetailView;
   detailPage: number;
   location: string | null;
@@ -174,18 +177,6 @@ export interface WordTypesListState {
   errorMessage: string;
 }
 
-export interface WordTypesDetailState {
-  status: WordTypesLoadStatus;
-  selectedRow: WordTypeRowIdentity | null;
-  view: WordTypeDetailView;
-  detailPage: number;
-  location: string | null;
-  summary: WordTypeSummaryDto | null;
-  ayahs: PagedResultDto<WordTypeAyahMatchDto> | null;
-  surahs: WordTypeSurahsResponseDto | null;
-  errorMessage: string;
-}
-
 export const WORD_TYPES_QUERY_KEYS = {
   type: 'type',
   childCode: 'childCode',
@@ -197,6 +188,9 @@ export const WORD_TYPES_QUERY_KEYS = {
   page: 'page',
   word: 'word',
   contextCode: 'contextCode',
+  root: 'root',
+  stem: 'stem',
+  lemma: 'lemma',
   view: 'view',
   detailPage: 'detailPage',
   location: 'location',
@@ -206,6 +200,9 @@ export const WORD_TYPES_QUERY_KEYS = {
 export const WORD_TYPES_SELECTION_QUERY_KEYS: readonly string[] = [
   WORD_TYPES_QUERY_KEYS.word,
   WORD_TYPES_QUERY_KEYS.contextCode,
+  WORD_TYPES_QUERY_KEYS.root,
+  WORD_TYPES_QUERY_KEYS.stem,
+  WORD_TYPES_QUERY_KEYS.lemma,
   WORD_TYPES_QUERY_KEYS.view,
   WORD_TYPES_QUERY_KEYS.detailPage,
   WORD_TYPES_QUERY_KEYS.location,
@@ -219,7 +216,7 @@ export const WORD_TYPE_VOICES = ['all', 'active', 'passive'] as const satisfies 
 export const WORD_TYPE_SORTS = ['occurrences', 'ayahs', 'surahs', 'mushaf-order', 'alpha'] as const satisfies readonly WordTypeSort[];
 export const WORD_TYPE_TABLE_VIEWS = ['words', 'roots', 'stems', 'lemmas'] as const satisfies readonly WordTypeTableView[];
 export const WORD_TYPE_DETAIL_VIEW_KEYS = ['ayahs', 'surahs'] as const satisfies readonly WordTypeDetailView[];
-export const WORD_TYPE_DETAIL_VIEWS = WORD_TYPE_DETAIL_VIEW_KEYS;
+export const WORD_TYPE_DETAIL_VIEWS = ['words', 'ayahs', 'surahs'] as const satisfies readonly WordTypeDetailView[];
 
 export const DEFAULT_WORD_TYPE: WordTypeMainType = 'noun';
 export const DEFAULT_WORD_TYPE_CASE: WordTypeCase = 'all';
@@ -230,6 +227,7 @@ export const DEFAULT_WORD_TYPE_TABLE_VIEW: WordTypeTableView = 'words';
 export const DEFAULT_WORD_TYPES_PAGE = 1;
 export const WORD_TYPES_PAGE_SIZE = 25;
 export const DEFAULT_WORD_TYPES_DETAIL_VIEW: WordTypeDetailView = 'ayahs';
+export const DEFAULT_GROUPED_WORD_TYPES_DETAIL_VIEW: WordTypeDetailView = 'words';
 export const DEFAULT_WORD_TYPES_DETAIL_PAGE = 1;
 export const WORD_TYPES_DETAIL_PAGE_SIZE = 25;
 

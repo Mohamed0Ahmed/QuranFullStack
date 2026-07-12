@@ -37,7 +37,11 @@ import {
 import { AyahMatchDto, PagedResultDto as SharedPagedResultDto } from '../../models/unique-words.models';
 import { WordTypesDetailFacade } from '../../state/word-types-detail.facade';
 import { WordTypesExplorerFacade } from '../../state/word-types-explorer.facade';
-import { buildWordTypesQueryParams, clearWordTypesSelection } from '../../state/word-types-url-sync';
+import {
+  buildWordTypesQueryParams,
+  canonicalWordTypesDetailPage,
+  clearWordTypesSelection,
+} from '../../state/word-types-url-sync';
 import { mapWordTypeAyahMatchToShared } from '../../utils/word-type-ayah-match.mapper';
 
 @Component({
@@ -169,7 +173,7 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
         word: row.tashkeelWordId,
         contextCode: row.contextCode,
         view: DEFAULT_WORD_TYPES_DETAIL_VIEW,
-        detailPage: DEFAULT_WORD_TYPES_DETAIL_PAGE,
+        detailPage: canonicalWordTypesDetailPage(DEFAULT_WORD_TYPES_DETAIL_VIEW, DEFAULT_WORD_TYPES_DETAIL_PAGE),
         location: null,
       }),
     );
@@ -182,7 +186,7 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
         word: event.row.tashkeelWordId,
         contextCode: event.row.contextCode,
         view: event.view,
-        detailPage: DEFAULT_WORD_TYPES_DETAIL_PAGE,
+        detailPage: canonicalWordTypesDetailPage(event.view, DEFAULT_WORD_TYPES_DETAIL_PAGE),
         location: null,
       }),
     );
@@ -190,12 +194,17 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
 
   protected onPanelViewChange(view: WordTypeDetailView): void {
     this.detailFacade.setView(view);
-    this.updateQueryParams(buildWordTypesQueryParams({ view, detailPage: DEFAULT_WORD_TYPES_DETAIL_PAGE }));
+    this.updateQueryParams(buildWordTypesQueryParams({
+      view,
+      detailPage: canonicalWordTypesDetailPage(view, DEFAULT_WORD_TYPES_DETAIL_PAGE),
+    }));
   }
 
   protected onDetailPageChange(page: number): void {
     this.detailFacade.setDetailPage(page);
-    this.updateQueryParams(buildWordTypesQueryParams({ detailPage: page }));
+    this.updateQueryParams(buildWordTypesQueryParams({
+      detailPage: canonicalWordTypesDetailPage(this.panelState().view, page),
+    }));
   }
 
   protected clearSelection(): void {

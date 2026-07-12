@@ -26,8 +26,11 @@
 | `page` | positive integer | `1` |
 | `word` | positive `tashkeelWordId` | none |
 | `contextCode` | selected row context code | none |
-| `view` | `ayahs`, `surahs`, `analysis` | `ayahs` when row selected |
-| `detailPage` | positive integer | `1` |
+| `root` | positive root ID | none |
+| `stem` | positive stem ID | none |
+| `lemma` | positive lemma ID | none |
+| `view` | `words`, `ayahs`, `surahs` | `ayahs` for word selection; `words` for grouped selection |
+| `detailPage` | positive integer | internal `1`; omitted from the canonical URL at page `1` |
 | `location` | Quran word location for per-occurrence analysis | none |
 | `column` | focused/active table column key | none |
 
@@ -40,14 +43,32 @@ Rules:
 - `particle` and `inl` hide secondary filters.
 - `inl` is a leaf: `childCode` is ignored.
 - Non-positive/malformed `page` and `detailPage` normalize to `1`.
-- `word` without a valid positive `contextCode` does not select a row.
-- Clearing selection removes `word`, `contextCode`, `view`, `detailPage`, `location`, and `column` while preserving list filters.
-- Changing `type`, `childCode`, `case`, `tense`, `voice`, `sort`, or `tableView` resets list `page` to `1` and clears selection.
+- `word` without a valid positive `contextCode` does not select a row. `root`, `stem`, and `lemma`
+  must each be positive integers when their table view is active.
+- Identity keys are compatible only with the matching `tableView`:
+
+  | `tableView` | Accepted identity | Default `view` |
+  |---|---|---|
+  | `words` | `word` + `contextCode` | `ayahs` |
+  | `roots` | `root` | `words` |
+  | `stems` | `stem` | `words` |
+  | `lemmas` | `lemma` | `words` |
+
+  The parser clears every incompatible identity key. `word`, `contextCode`, `location`, and `column`
+  are retained only in `words`; grouped views ignore them. Display text is never identity, and the
+  generic `dim` query key is forbidden.
+- Clearing selection removes `word`, `contextCode`, `root`, `stem`, `lemma`, `view`, `detailPage`,
+  `location`, and `column` while preserving list filters.
+- Changing `type`, `childCode`, `case`, `tense`, or `voice` resets list `page` to `1` and clears every
+  selection key. Changing `tableView` resets list `page` to `1`, clears incompatible selection keys,
+  and leaves the target view's identity key untouched. Sorting and list pagination do not clear a
+  compatible selection.
 - Missing or invalid `tableView` defaults to `words`; existing URLs without `tableView` keep working unchanged.
-- When `tableView !== 'words'`, `word`/`contextCode`/`view`/`detailPage`/`location`/`column` are dropped
-  from parsed state even if a stale or foreign deep link supplies them — grouped views have no word-row
-  selection concept, so a URL like `?tableView=roots&word=123&contextCode=PN` renders the roots view
-  with no selection instead of attempting to select a nonexistent row.
+- `view=words` normalizes to `ayahs` for word selection. `view=surahs` always keeps internal
+  `detailPage=1` and removes `detailPage` from canonical URL writes. For `words` and `ayahs`, page `1`
+  is represented internally but omitted from the URL; only pages above `1` serialize `detailPage`.
+- Browser back/forward restores the identity key compatible with each emitted `ParamMap`, together with
+  the complete filter scope and the canonical detail view/page state.
 - Clearing `childCode` back to the parent (`selectChild(null)`) and switching `type` (`selectType`) both
   reset `tableView` to `words` — a grouped tab never lingers on a no-leaf scope that has nothing to
   aggregate.
@@ -68,6 +89,9 @@ buildWordTypesDeepLink({
   page,
   word,
   contextCode,
+  root,
+  stem,
+  lemma,
   view,
   detailPage,
   location,
@@ -81,10 +105,13 @@ Return the existing deep-link target shape:
 { path: wordTypesRoutePath(), queryParams }
 ```
 
-The canonical selected-row URL includes both `word` and `contextCode`:
+Canonical URLs use explicit selection keys and omit default page `1`:
 
 ```text
 /dashboard/words/types?type=noun&childCode=PN&word=1234&contextCode=PN&view=ayahs
+/dashboard/words/types?tableView=roots&root=123&view=words
+/dashboard/words/types?tableView=stems&stem=456&view=ayahs&detailPage=2
+/dashboard/words/types?tableView=lemmas&lemma=789&view=surahs
 ```
 
 ## Page and Component State
@@ -110,7 +137,6 @@ components are presentational and never call backend services.
 | Row select | Load summary for exact `word + contextCode + active feature` identity. |
 | `view=ayahs` | Lazy-load paged ayah matches for exact row context. |
 | `view=surahs` | Lazy-load surah distribution + missing surahs for exact row context. |
-| `view=analysis` | Reuse `GET api/mushaf/words/{location}/analysis`; no request until a location is selected. |
 
 Rules:
 
@@ -133,11 +159,10 @@ the same filtered scope between four aggregation levels via the `tableView` quer
   aggregate.
 - The list always loads from `GET .../word-types/table` (E2b); `GET .../word-types/words` (E2) stays
   reserved for existing shareable deep links.
-- Selecting a tab resets `page` to `1`, clears any word-row selection, and preserves the active
+- Selecting a tab resets `page` to `1`, clears incompatible selection keys, and preserves the active
   `type`/`childCode`/`case`/`tense`/`voice` filters.
-- Outside `tableView=words`, the details panel is hidden and the table expands to full width; grouped
-  rows and their counts are **noninteractive** (no row click, no count-chip drilldown, no selected
-  state) — grouped-row detail views are out of MVP.
+- A grouped row uses its explicit numeric `root`/`stem`/`lemma` URL identity; display text is never
+  serialized as selection identity.
 - Rows whose `kind` does not match the active `tableView` are never rendered (defense-in-depth against
   a stale response painting under the wrong tab).
 
@@ -162,11 +187,10 @@ Count mapping:
 
 | Interaction | Destination |
 |---|---|
-| Row select | `view=ayahs&detailPage=1` |
-| المواضع | `view=ayahs&detailPage=1` |
-| الآيات | `view=ayahs&detailPage=1` |
+| Row select | `view=ayahs` |
+| المواضع | `view=ayahs` |
+| الآيات | `view=ayahs` |
 | السور | `view=surahs` |
-| analysis action for a listed occurrence | `view=analysis&location={location}` |
 
 Rows are selected by `tashkeelWordId + contextCode + active feature`, not by displayed text.
 Zero-count destinations remain keyboard-operable when they are valid and show an empty state.
@@ -177,12 +201,10 @@ Tabs/sections:
 
 - `الآيات الخاصة بالكلمة` (`view=ayahs`)
 - `السور` (`view=surahs`)
-- `التحليل` (`view=analysis`)
 
 The panel summary shows the exact row's word, subtype, case or tense/voice where applicable,
 root/lemma/stem placeholders, and occurrence/ayah/surah counts. The ayah tab highlights only matched
-occurrences for the row context. The analysis tab displays one selected occurrence's existing
-`WordAnalysisResponse`.
+occurrences for the row context.
 
 Desktop uses the existing Words explorer split-view pattern with an inline-end details panel. Narrow
 screens stack/collapse consistently with existing explorers. Quran/Mushaf text is never animated.
@@ -204,7 +226,8 @@ screens stack/collapse consistently with existing explorers. Quran/Mushaf text i
 - URL parse/build/normalize for default noun state and all filter classes.
 - Secondary filter visibility by main type.
 - Filter changes reset page and clear selection.
-- Deep link restores exact `word + contextCode`, including same spelling/different context cases.
+- Deep link restores exact compatible `word + contextCode` or grouped ID, including same
+  spelling/different-context word cases and full grouped scope.
 - No eager detail calls on list render.
 - Row/count interactions map to the expected detail view.
 - Ayah highlighting receives context-scoped match data without string replacement.
@@ -212,10 +235,13 @@ screens stack/collapse consistently with existing explorers. Quran/Mushaf text i
 - Missing root/lemma/stem placeholders.
 - Secondary filters do not trigger scoped tree-count expectations; only row total and active UI chips reflect the secondary scope.
 - Keyboard/ARIA behavior for filter picker, table rows, tabs, and narrow-screen panel.
-- `tableView` URL parse/build: missing → `words`; invalid → `words`; valid round-trips; appears in the
-  documented param order; a direct grouped URL with stale `word`/`contextCode` parses with no selection.
-- Table-view tab switching resets page to `1`, clears selection, and changes the request/cache key
-  (triggers reload); `selectType`/`selectChild(null)` reset `tableView` to `words`.
+- `tableView` URL parse/build: missing → `words`; invalid → `words`; compatible explicit grouped keys
+  round-trip with scope; incompatible keys are removed; the canonical order includes `root`, `stem`, and
+  `lemma` and has no generic `dim` key.
+- Detail paging: words/ayahs retain internal page `1` while omitting it from URLs, pages above `1`
+  serialize it, and surahs always remove it. Browser back/forward replays the compatible identity.
+- Table-view tab switching resets page to `1`, clears incompatible selection keys, and changes the
+  request/cache key (triggers reload); `selectType`/`selectChild(null)` reset `tableView` to `words`.
 - Grouped rendering: dimension column + three counts per view, noninteractive (no row button, no count
   click, no selected state); rows whose `kind` mismatches the active `tableView` are skipped.
 - Hidden/restored details panel and full-width table layout across `tableView` transitions.

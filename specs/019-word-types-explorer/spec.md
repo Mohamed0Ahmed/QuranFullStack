@@ -254,6 +254,16 @@ type/subtype/case/tense/voice scope.
 - **FR-050**: Grouped detail identity MUST be the **numeric** `root_id`/`stem_id`/`lemma_id`; the Arabic
   display text is presentation only and MUST NOT be used as membership identity. Null dimensions and
   ayah markers remain excluded.
+- **FR-051**: Shareable grouped selection identity MUST use the explicit positive query key compatible
+  with the active `tableView`: `root` for `roots`, `stem` for `stems`, and `lemma` for `lemmas`.
+  Word selection remains `word + contextCode` in `tableView=words`. Incompatible selection keys are
+  ignored; the generic `dim` key is forbidden.
+- **FR-052**: Detail view defaults are kind-aware: word selection defaults to `ayahs`; grouped selection
+  defaults to `words`. `detailPage` remains internal page `1` when omitted or invalid, is omitted from
+  canonical URLs at page `1`, is serialized only above page `1`, and is always removed for `surahs`.
+- **FR-053**: A refresh, shared URL, or browser back/forward navigation MUST restore the compatible
+  explicit selection identity together with the active type/subtype/case/tense/voice scope and detail
+  view. Changing grammatical scope clears selection; sorting and list pagination do not.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -277,7 +287,8 @@ type/subtype/case/tense/voice scope.
 - **SC-005**: Disconnected letters never appear in the particle (حرف وأداة) results, and the sum of disconnected-letter rows is identical whether counted from the main type or the table (no double counting).
 - **SC-006**: For nominal selections the case filter is present and for verb selections the tense+voice filters are present; for particle/disconnected-letter selections none are present — 100% of selections obey these visibility rules.
 - **SC-007**: All displayed words appear with full tashkeel; the page offers no without-tashkeel toggle.
-- **SC-008**: A shared deep link restores the exact filters and the exact selected word-context row in 100% of cases, including words that produce multiple rows.
+- **SC-008**: A shared deep link restores the exact filters and compatible selected word-context or
+  grouped identity in 100% of cases, including words that produce multiple rows.
 - **SC-009**: Markers and sub-word parts contribute to zero counts anywhere on the page (verifiable against known totals).
 - **SC-010**: The existing Roots / Lemmas / Stems / Unique-Words explorers produce identical results before and after this feature ships (no regressions).
 - **SC-011**: An admin can go from opening the page to viewing a specific word's ayahs and analysis in at most 4 interactions (select type → optional subtype/feature → select row → open tab).

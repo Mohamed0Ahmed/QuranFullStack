@@ -35,6 +35,9 @@ export class WordTypesDetailViewLoader {
     handlers: WordTypesDetailViewHandlers,
   ): Subscription | undefined {
     switch (context.view) {
+      // Grouped member-word loading is introduced with the kind-aware loader in Task 7.
+      case 'words':
+        return undefined;
       case 'ayahs':
         return this.subscribe(
           this.cache.getOrLoad(

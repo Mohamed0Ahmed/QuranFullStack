@@ -17,8 +17,8 @@ import {
   WordTypeRowDto,
   WordTypeRowIdentity,
   WordTypeSummaryDto,
-  WordTypesDetailState,
 } from '../models/word-types.models';
+import { WordTypesDetailState } from '../models/word-types-detail.models';
 import { parseWordTypesQueryParams } from './word-types-url-sync';
 import { WordTypesCache, WordTypesCacheKeys } from './word-types-cache';
 import {
