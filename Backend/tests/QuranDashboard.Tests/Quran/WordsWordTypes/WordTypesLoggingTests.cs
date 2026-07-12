@@ -1,4 +1,8 @@
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeAyahs;
+using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeGroupedAyahs;
+using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeGroupedSummary;
+using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeGroupedSurahs;
+using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeGroupedWords;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeRows;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeSummary;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeSurahs;
@@ -112,6 +116,49 @@ public sealed class WordTypesLoggingTests(WordTypesTestFixture fixture)
         entry.GetValue<string>("reason").Should().Be(expectedReason);
         entry.GetValue<int>("tashkeelWordId").Should().Be(tashkeelWordId);
         entry.GetValue<string>("contextCode").Should().Be(contextCode);
+        AssertNoRawQueryText(entry);
+    }
+
+    // Each grouped detail handler logs a completion entry with safe kind/ID/scope metadata only — never
+    // display text, Quran text, SQL, or a payload.
+    [Fact]
+    public async Task GroupedDetailsHandlers_LogSafeStructuredFieldsWithoutTextPayloadOrSql()
+    {
+        await using var scope = fixture.CreateScope();
+        var services = scope.ServiceProvider;
+
+        await AssertGroupedInfoLog<GetWordTypeGroupedSummaryHandler>(services, "GetWordTypeGroupedSummary",
+            handler => handler.HandleAsync(
+                new GetWordTypeGroupedSummaryQuery("roots", 190700, "noun", null, null, null, null), CancellationToken.None));
+
+        await AssertGroupedInfoLog<GetWordTypeGroupedWordsHandler>(services, "GetWordTypeGroupedWords",
+            handler => handler.HandleAsync(
+                new GetWordTypeGroupedWordsQuery("roots", 190700, "noun", null, null, null, null, 1, 25), CancellationToken.None));
+
+        await AssertGroupedInfoLog<GetWordTypeGroupedAyahsHandler>(services, "GetWordTypeGroupedAyahs",
+            handler => handler.HandleAsync(
+                new GetWordTypeGroupedAyahsQuery("roots", 190700, "noun", null, null, null, null, 1, 25), CancellationToken.None));
+
+        await AssertGroupedInfoLog<GetWordTypeGroupedSurahsHandler>(services, "GetWordTypeGroupedSurahs",
+            handler => handler.HandleAsync(
+                new GetWordTypeGroupedSurahsQuery("roots", 190700, "noun", null, null, null, null), CancellationToken.None));
+    }
+
+    private async Task AssertGroupedInfoLog<THandler>(
+        IServiceProvider services, string expectedOperation, Func<THandler, Task> invoke)
+        where THandler : class
+    {
+        fixture.LoggingProvider.Clear();
+        var handler = services.GetRequiredService<THandler>();
+
+        await invoke(handler);
+
+        var entry = SingleEntryFor<THandler>(LogLevel.Information);
+        entry.GetValue<string>("feature").Should().Be("WordTypes");
+        entry.GetValue<string>("operation").Should().Be(expectedOperation);
+        entry.GetValue<string>("kind").Should().Be("roots");
+        entry.GetValue<int>("dimensionId").Should().Be(190700);
+        entry.GetValue<string>("type").Should().Be("noun");
         AssertNoRawQueryText(entry);
     }
 

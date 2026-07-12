@@ -163,6 +163,58 @@ public sealed partial class EfWordTypesReader
         return new PagedResult<WordTypeAyahMatchDto>(page, pageSize, totalCount, items);
     }
 
+    public async Task<WordTypeSurahsResponse?> GetGroupedSurahsAsync(
+        WordTypeGroupedSelection selection,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(selection);
+
+        if (!selection.IsValid)
+        {
+            return null;
+        }
+
+        var context = ToGroupedReadContext(selection.Filter);
+        var parameters = BuildCountParameters(context, selection.DimensionId);
+
+        // One server-side aggregate groups occurrences by surah. Zero rows means the positive dimension is
+        // absent from the scope (not found) — the aggregate doubles as the existence check and short-circuits
+        // before the catalogue read.
+        var occurrences = await _dbContext.Database
+            .SqlQueryRaw<GroupedSurahOccurrenceRow>(GroupedSurahsSql(context, selection.Kind), parameters)
+            .ToListAsync(cancellationToken);
+        if (occurrences.Count == 0)
+        {
+            return null;
+        }
+
+        var occurrencesByNumber = occurrences.ToDictionary(row => row.SurahNumber, row => row.OccurrencesCount);
+
+        // One bounded catalogue read supplies every surah number/name once; mentioned and missing lists are
+        // derived in memory in numeric order — never one query per occurrence.
+        var catalogue = await _dbContext.QuranSurahs
+            .AsNoTracking()
+            .OrderBy(surah => surah.SurahNumber)
+            .Select(surah => new SurahCatalogueRow((int)surah.SurahNumber, surah.NameArabic))
+            .ToListAsync(cancellationToken);
+
+        var surahs = new List<WordTypeSurahOccurrenceDto>();
+        var missingSurahs = new List<WordTypeMissingSurahDto>();
+        foreach (var surah in catalogue)
+        {
+            if (occurrencesByNumber.TryGetValue(surah.SurahNumber, out var occurrencesCount))
+            {
+                surahs.Add(new WordTypeSurahOccurrenceDto(surah.SurahNumber, surah.NameArabic, occurrencesCount));
+            }
+            else
+            {
+                missingSurahs.Add(new WordTypeMissingSurahDto(surah.SurahNumber, surah.NameArabic));
+            }
+        }
+
+        return new WordTypeSurahsResponse(surahs, missingSurahs);
+    }
+
     private async Task<int> CountGroupedMemberWordsAsync(
         WordTypeReadContext context,
         WordTypeGroupedDimensionKind kind,
@@ -196,4 +248,7 @@ public sealed partial class EfWordTypesReader
         row.OccurrencesCount,
         row.AyahsCount,
         row.SurahsCount);
+
+    // The 114-row surah catalogue projection used to derive the mentioned/missing split in a single read.
+    private sealed record SurahCatalogueRow(int SurahNumber, string NameArabic);
 }

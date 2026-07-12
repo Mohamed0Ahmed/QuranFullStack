@@ -370,6 +370,47 @@ shape as E4.
 - Cache key `wordtypes:grouped:{kind}:ayahs:{scope-hash}:p{page}:s{pageSize}` — a distinct `:ayahs:`
   segment (never shares the `:summary:`/`:words:` prefixes), page/pageSize appended.
 
+## E2f — Grouped detail surahs (root/stem/lemma, Feature 023)
+
+```
+GET api/words/word-types/table/{kind}/{dimensionId}/surahs
+    ?type={noun|verb|particle|inl}
+    &childCode={head_pos | tense}        (optional — when a child node is selected)
+    &case={nominative|accusative|genitive|null}   (nominal types only)
+    &tense={past|present|imperative}     (verb only)
+    &voice={active|passive}              (verb only)
+                                         (no page/pageSize — single-shot; no sort)
+```
+
+Returns `ApiResponse<WordTypeSurahsResponse>` — the **single-shot** mentioned + missing surah lists for
+the group. Same five-field scope as E2c; **no paging** and **no `sort`** parameter. Reuses the same
+`WordTypeSurahsResponse` shape as E5.
+
+```jsonc
+{
+  "surahs": [                             // mentioned — numeric order, with scoped occurrence counts
+    { "surahNumber": 1, "nameArabic": "الفاتحة", "occurrencesCount": 3 }
+  ],
+  "missingSurahs": [                       // surahs of the catalogue with no scoped occurrence
+    { "surahNumber": 2, "nameArabic": "البقرة" }
+  ]
+}
+```
+
+**Rules**:
+- Occurrence counts are aggregated **inside PostgreSQL** by `surah_number` over the same scoped `base`
+  CTE restricted to the numeric head `root_id | stem_id | lemma_id = {dimensionId}` (E2d membership). The
+  mentioned/missing split is derived against the surah catalogue in **numeric order**.
+- Hydration is **bounded to two commands**: one scoped surah aggregate (which doubles as the existence
+  check — zero rows short-circuits to 404 before any catalogue read) and one surah-catalogue read. Never
+  one query per occurrence.
+- Both the mentioned (`surahs`) and missing (`missingSurahs`) arrays ship in the **same** response;
+  `detailPage`/paging is **not** an API parameter for this read.
+- Invalid kind/id/filter → **400** (as E2c). A **positive** dimension ID absent from the scope → **404**
+  (`WordTypesGroupedNotFound`); success → **200**.
+- Cache key `wordtypes:grouped:{kind}:surahs:{scope-hash}` — a distinct `:surahs:` segment (never shares
+  the `:summary:`/`:words:`/`:ayahs:` prefixes) and **no page component** (single-shot).
+
 ---
 
 ## E3 — Row details-card summary

@@ -16,7 +16,10 @@ and the `ApiResponse<T>` envelope; application handlers own use-case logic.
   (`api/words/word-types/table/{kind}/{dimensionId}[/words|/ayahs|/surahs]`, Feature 023) live in the
   separate `WordTypeGroupedDetailsController`, which shares the `…/word-types/table` route base without
   growing `WordTypesController`. Route `{kind}` is the plural key `roots|stems|lemmas`; an unknown value
-  is a `400`.
+  is a `400`. All four actions carry the identical five-field scope (`type`, `childCode`, `case`, `tense`,
+  `voice`); `words` and `ayahs` are paged (`page`/`pageSize`), while summary and `surahs` are single-shot
+  and expose no paging parameter. Invalid kind/id/filter/paging → `400`, an absent scoped group → `404`,
+  and an out-of-range page → `200` with an empty page.
 
 ## Boundary
 

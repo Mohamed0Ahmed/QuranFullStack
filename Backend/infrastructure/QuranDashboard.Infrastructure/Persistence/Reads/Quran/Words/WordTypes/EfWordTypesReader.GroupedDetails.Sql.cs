@@ -89,6 +89,24 @@ public sealed partial class EfWordTypesReader
         ORDER BY pa.surah_number, pa.ayah_number, b.word_number, b.quran_word_id
         """;
 
+    // One server-side aggregate over the dimension-filtered base: occurrence counts grouped by surah in
+    // numeric order. Zero rows means the positive dimension is absent from the scope (not found). The
+    // mentioned/missing split is derived in memory against the surah catalogue, so no per-occurrence rows
+    // are hydrated. Head-level quran_word_morphology only — the segments table is never referenced.
+    private static string GroupedSurahsSql(WordTypeReadContext context, WordTypeGroupedDimensionKind kind) => $"""
+        WITH base AS (
+            {BaseRowsSql(context, kind)}
+        )
+        SELECT
+            surah_number::int AS "{nameof(GroupedSurahOccurrenceRow.SurahNumber)}",
+            COUNT(*)::int AS "{nameof(GroupedSurahOccurrenceRow.OccurrencesCount)}"
+        FROM base
+        GROUP BY surah_number
+        ORDER BY surah_number
+        """;
+
+    private sealed record GroupedSurahOccurrenceRow(int SurahNumber, int OccurrencesCount);
+
     private sealed record GroupedAyahMatchSqlRow(
         int AyahId,
         string VerseKey,

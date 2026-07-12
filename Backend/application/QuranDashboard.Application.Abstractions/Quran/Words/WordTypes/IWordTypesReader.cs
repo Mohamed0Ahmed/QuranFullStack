@@ -62,4 +62,12 @@ public interface IWordTypesReader
         int page,
         int pageSize,
         CancellationToken cancellationToken);
+
+    // Grouped scoped surahs: single-shot mentioned + missing surah lists for the selected numeric head
+    // dimension ID. Occurrence counts are aggregated inside the database over the same dimension-filtered
+    // base; the mentioned/missing split is derived against the surah catalogue in numeric order. Returns
+    // null when the dimension is absent from the scope. There is no paging contract for this read.
+    Task<WordTypeSurahsResponse?> GetGroupedSurahsAsync(
+        WordTypeGroupedSelection selection,
+        CancellationToken cancellationToken);
 }

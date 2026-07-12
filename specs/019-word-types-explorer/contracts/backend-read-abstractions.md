@@ -75,14 +75,23 @@ public interface IWordTypesReader
         int page,
         int pageSize,
         CancellationToken cancellationToken);
+
+    // Feature 023 — grouped scoped surahs: single-shot mentioned + missing surah lists for the selected
+    // numeric head dimension. Occurrence counts are aggregated inside the database over the same
+    // dimension-filtered base; the mentioned/missing split is derived against the surah catalogue in
+    // numeric order. null = dimension absent from scope. No paging contract.
+    Task<WordTypeSurahsResponse?> GetGroupedSurahsAsync(
+        WordTypeGroupedSelection selection,
+        CancellationToken cancellationToken);
 }
 ```
 
 `null` from selected-row reads means the positive row identity does not resolve to a row-context under
 the supplied filter/context. Empty pages/lists for an existing row-context are successful non-null
 responses. For `GetGroupedSummaryAsync`, `null` means the positive `DimensionId` has no rows in the
-supplied scope (a scoped-group 404); the paged grouped reads added by Tasks 2–3 return a non-null empty
-page with the correct `TotalCount` for an out-of-range page of an existing group.
+supplied scope (a scoped-group 404); the paged grouped reads (member words, ayahs) return a non-null empty
+page with the correct `TotalCount` for an out-of-range page of an existing group. `GetGroupedSurahsAsync`
+is single-shot (same null-is-404 rule, no paging).
 
 ## Value Objects
 
@@ -185,7 +194,8 @@ GetWordTypeAyahs
 GetWordTypeSurahs
 GetWordTypeGroupedSummary   (Feature 023)
 GetWordTypeGroupedWords     (Feature 023)
-GetWordTypeGroupedAyahs     (Feature 023; grouped surahs handler added by Task 4)
+GetWordTypeGroupedAyahs     (Feature 023)
+GetWordTypeGroupedSurahs    (Feature 023)
 ```
 
 Required outcome categories:
@@ -257,6 +267,13 @@ Required outcome categories:
   string replacement); `matchedWordIds`/`matchedWordPositions` carry only the scoped head matches and ayah
   markers are excluded from the hydrated word list. Out-of-range page → non-null empty page with the
   correct `TotalCount`.
+- **Grouped surahs (Feature 023)**: `GetGroupedSurahsAsync` is **single-shot** (no paging). Occurrence
+  counts are aggregated inside PostgreSQL by `surah_number` over the same dimension-filtered `BaseRowsSql`
+  base at head grain; the mentioned/missing split is derived in memory against the surah catalogue in
+  numeric order. Hydration is **bounded to two commands**: (1) one scoped surah aggregate — which doubles
+  as the existence check (zero rows → null/404, short-circuiting before the catalogue read) — and (2) one
+  catalogue read. Never one query per occurrence. Both mentioned (`surahs`) and missing (`missingSurahs`)
+  arrays ship in the same `WordTypeSurahsResponse`; `detailPage`/paging is not part of this read's contract.
 
 ## Enrichment Rules
 

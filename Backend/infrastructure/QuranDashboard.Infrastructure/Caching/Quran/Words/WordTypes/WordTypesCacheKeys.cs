@@ -36,6 +36,10 @@ public static class WordTypesCacheKeys
     public static string GroupedAyahs(WordTypeGroupedSelection selection, int page, int pageSize) =>
         $"wordtypes:grouped:{selection.Kind.ToRouteKey()}:ayahs:{HashGroupedSelection(selection)}:p{page}:s{pageSize}";
 
+    // Surahs are single-shot, so the key carries no page component (mirrors the summary key shape).
+    public static string GroupedSurahs(WordTypeGroupedSelection selection) =>
+        $"wordtypes:grouped:{selection.Kind.ToRouteKey()}:surahs:{HashGroupedSelection(selection)}";
+
     private static string HashGroupedSelection(WordTypeGroupedSelection selection) => HashParts(
         selection.DimensionId.ToString(CultureInfo.InvariantCulture),
         selection.Filter.Type,

@@ -3,6 +3,7 @@ using QuranDashboard.Application.Abstractions.Quran.Words.WordTypes.Responses;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeGroupedSummary;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeGroupedWords;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeGroupedAyahs;
+using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeGroupedSurahs;
 
 namespace QuranDashboard.Api.Controllers.Words;
 
@@ -13,7 +14,8 @@ namespace QuranDashboard.Api.Controllers.Words;
 public sealed class WordTypeGroupedDetailsController(
     GetWordTypeGroupedSummaryHandler summaryHandler,
     GetWordTypeGroupedWordsHandler wordsHandler,
-    GetWordTypeGroupedAyahsHandler ayahsHandler) : ControllerBase
+    GetWordTypeGroupedAyahsHandler ayahsHandler,
+    GetWordTypeGroupedSurahsHandler surahsHandler) : ControllerBase
 {
     private const int DefaultPage = 1;
     private const int DefaultDetailPageSize = 25;
@@ -124,6 +126,39 @@ public sealed class WordTypeGroupedDetailsController(
             GetWordTypeGroupedAyahsOutcome.NotFound =>
                 NotFound(ApiResponse<PagedResult<WordTypeAyahMatchDto>>.Fail(ApiMessages.WordTypesGroupedNotFound)),
             _ => throw new InvalidOperationException($"Unhandled {nameof(GetWordTypeGroupedAyahsOutcome)} variant."),
+        };
+    }
+
+    // Single-shot scoped surahs: mentioned + missing lists for the group. Accepts the identical five-field
+    // scope and never page/pageSize — surahs are not paged.
+    [HttpGet("{kind}/{dimensionId:int}/surahs")]
+    public async Task<ActionResult<ApiResponse<WordTypeSurahsResponse>>> GetSurahs(
+        string kind,
+        int dimensionId,
+        [FromQuery] string? type,
+        [FromQuery] string? childCode,
+        [FromQuery(Name = "case")] string? caseFilter,
+        [FromQuery] string? tense,
+        [FromQuery] string? voice,
+        CancellationToken cancellationToken)
+    {
+        var outcome = await surahsHandler.HandleAsync(
+            new GetWordTypeGroupedSurahsQuery(kind, dimensionId, type, childCode, caseFilter, tense, voice),
+            cancellationToken);
+
+        return outcome switch
+        {
+            GetWordTypeGroupedSurahsOutcome.Success success =>
+                Ok(ApiResponse<WordTypeSurahsResponse>.Ok(success.Surahs, ApiMessages.WordTypeGroupedSurahsLoaded)),
+            GetWordTypeGroupedSurahsOutcome.InvalidKind =>
+                BadRequest(ApiResponse<WordTypeSurahsResponse>.Fail(ApiMessages.WordTypesInvalidGroupedKind)),
+            GetWordTypeGroupedSurahsOutcome.InvalidId =>
+                BadRequest(ApiResponse<WordTypeSurahsResponse>.Fail(ApiMessages.WordTypesInvalidGroupedId)),
+            GetWordTypeGroupedSurahsOutcome.InvalidFilter =>
+                BadRequest(ApiResponse<WordTypeSurahsResponse>.Fail(ApiMessages.WordTypesInvalidFilter)),
+            GetWordTypeGroupedSurahsOutcome.NotFound =>
+                NotFound(ApiResponse<WordTypeSurahsResponse>.Fail(ApiMessages.WordTypesGroupedNotFound)),
+            _ => throw new InvalidOperationException($"Unhandled {nameof(GetWordTypeGroupedSurahsOutcome)} variant."),
         };
     }
 }

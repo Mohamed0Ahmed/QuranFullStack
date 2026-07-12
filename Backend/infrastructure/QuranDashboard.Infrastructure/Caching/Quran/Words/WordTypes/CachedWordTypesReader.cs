@@ -149,4 +149,21 @@ public sealed class CachedWordTypesReader(EfWordTypesReader efReader, IMemoryCac
 
         return ayahs;
     }
+
+    public async Task<WordTypeSurahsResponse?> GetGroupedSurahsAsync(WordTypeGroupedSelection selection, CancellationToken cancellationToken)
+    {
+        var key = WordTypesCacheKeys.GroupedSurahs(selection);
+        if (_cache.TryGetValue(key, out WordTypeSurahsResponse? cached))
+        {
+            return cached;
+        }
+
+        var surahs = await _ef.GetGroupedSurahsAsync(selection, cancellationToken);
+        if (surahs is not null)
+        {
+            _cache.Set(key, surahs, WordTypesCacheEntryOptions.Detail());
+        }
+
+        return surahs;
+    }
 }

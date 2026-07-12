@@ -69,6 +69,14 @@ and Unique Words. They back the `application/.../Quran/Words/**` query handlers 
   ayah-text fallback, no string replacement); `MatchedWordIds`/`MatchedWordPositions` carry only the scoped
   head matches, and ayah markers are excluded from the hydrated word list. Out-of-range page → non-null
   empty page with the correct `TotalCount`.
+- **Word Types grouped surahs** (`EfWordTypesReader.GetGroupedSurahsAsync`, Feature 023) are **single-shot**
+  (no paging contract). Occurrence counts are aggregated **inside PostgreSQL** by `surah_number` over the same
+  dimension-filtered `BaseRowsSql` base at head grain; the mentioned/missing split is then derived in memory
+  against the surah catalogue in numeric order. Hydration is **bounded to two commands** — one scoped surah
+  aggregate (doubling as the existence check: zero rows → `null`/404, short-circuiting before the catalogue
+  read) and one catalogue read — never one query per occurrence. Both the mentioned (`Surahs`) and missing
+  (`MissingSurahs`) arrays ship in the same `WordTypeSurahsResponse`; `detailPage`/paging is not part of this
+  read's contract.
 
 ## Related
 
