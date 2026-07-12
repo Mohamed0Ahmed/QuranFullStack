@@ -266,3 +266,31 @@ the single allowlisted numeric column (`root_id | stem_id | lemma_id = Dimension
 - Null dimensions and ayah markers remain excluded exactly as in §8; a positive dimension ID absent from
   the scope resolves to a 404 (null reader result), not an empty summary.
 - Member words, ayahs, and surahs for the same selection are defined by Feature 023 Tasks 2–4.
+
+### 9.2 Grouped member words (this task)
+
+The member list is the **Words view (E2 / §7 word-context rows) restricted to one numeric head
+dimension**. The shared occurrence `base` is filtered by the allowlisted numeric column
+(`root_id | stem_id | lemma_id = DimensionId`) **before** grouping, then grouped by the identical
+`(unique_tashkeel_word_id, context_code)` formula the Words view uses — so the members are a row-for-row
+subset of the Words table for that dimension.
+
+| Field | Derivation |
+|-------|-----------|
+| `(tashkeelWordId, contextCode)` | the exact Words-view grouping key (`unique_tashkeel_word_id`, then `head_pos` for nominal/particle rows or `COALESCE(verb_tense,'unspecified')` for verb rows) |
+| `case` / `tense` / `voice` | the **active scope** values, carried exactly as `WordTableRowDto` does |
+| `displayText`, `typeCode`, `typeLabel`, `broadLabel`, `caseOrFeature` | reuse the Words-view row projection unchanged |
+| `rootText` / `lemmaText` / `stemText` | winner display labels — **projection-only**, never membership or parity identity |
+| `occurrencesCount` / `ayahsCount` / `surahsCount` | per-row `COUNT(*)`, `COUNT(DISTINCT ayah_id)`, `COUNT(DISTINCT surah_number)` |
+
+- **Numeric identity, not text**: the dimension filters the base solely on `root_id`/`stem_id`/`lemma_id`.
+  `rootText`/`stemText`/`lemmaText` (and their DTO fields) are **never** a membership or parity filter.
+- **No distinct-word collapse**: the same tashkeel word used across several head-POS or tense contexts
+  stays several member rows (e.g. `N`/`PN`/`ADJ`, or verb past/present/imperative).
+- `TotalCount` is the grouped word-context row count **before** paging; paging (`page`, `pageSize ∈ 1..100`)
+  slices the fixed occurrence order. A positive dimension absent from the scope → 404 (null reader
+  result); an existing selection with an out-of-range page → non-null empty page with the correct
+  `TotalCount`.
+- Head-grain invariant is unchanged: markers, null dimensions, and secondary-segment-only dimensions
+  never appear.
+- Ayahs and surahs for the same selection are defined by Feature 023 Tasks 3–4.

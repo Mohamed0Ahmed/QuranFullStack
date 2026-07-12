@@ -41,9 +41,13 @@ public sealed partial class EfWordTypesReader
         """;
     }
 
-    private static string RowsCountSql(WordTypeReadContext context) => $"""
+    // groupedDimension is null for the Words table/list reads and set only for grouped member-word
+    // reads, where it adds an allowlisted numeric root_id|stem_id|lemma_id = @dimensionId predicate to
+    // the shared base. Everything after the base — the (tashkeel_word_id, context_code) grouping — is
+    // identical, guaranteeing row-for-row Words-table parity.
+    private static string RowsCountSql(WordTypeReadContext context, WordTypeGroupedDimensionKind? groupedDimension = null) => $"""
         WITH base AS (
-            {BaseRowsSql(context)}
+            {BaseRowsSql(context, groupedDimension)}
         ), grouped AS (
             SELECT tashkeel_word_id, {ContextExpression(context)} AS context_code
             FROM base
@@ -53,9 +57,9 @@ public sealed partial class EfWordTypesReader
         FROM grouped
         """;
 
-    private static string RowsSql(WordTypeReadContext context, WordTypeSort sort) => $"""
+    private static string RowsSql(WordTypeReadContext context, WordTypeSort sort, WordTypeGroupedDimensionKind? groupedDimension = null) => $"""
         WITH base AS (
-            {BaseRowsSql(context)}
+            {BaseRowsSql(context, groupedDimension)}
         ), grouped AS (
             SELECT
                 tashkeel_word_id,
@@ -147,7 +151,7 @@ public sealed partial class EfWordTypesReader
         OFFSET @skip LIMIT @take
         """;
 
-    private static string BaseRowsSql(WordTypeReadContext context) => $"""
+    private static string BaseRowsSql(WordTypeReadContext context, WordTypeGroupedDimensionKind? groupedDimension = null) => $"""
         SELECT
             w.id AS quran_word_id,
             w.ayah_id,
@@ -180,7 +184,19 @@ public sealed partial class EfWordTypesReader
             AND w.unique_tashkeel_word_id IS NOT NULL
             {TypePredicate(context)}
             {SecondaryFilterPredicate(context)}
+            {GroupedDimensionPredicate(groupedDimension)}
         """;
+
+    // Grouped member/detail reads restrict the shared base to a single numeric head dimension. Only the
+    // allowlisted id column may appear; the *_text columns are projection-only and never a membership
+    // predicate. Null (list/table reads) emits nothing, so the base stays byte-for-byte semantically
+    // unchanged for existing callers.
+    // Qualified with the morphology alias (m.) because the base FROM also joins quran_lemmas, which
+    // carries its own root_id; an unqualified column would be ambiguous.
+    private static string GroupedDimensionPredicate(WordTypeGroupedDimensionKind? groupedDimension) =>
+        groupedDimension is null
+            ? string.Empty
+            : $"AND m.{GroupedDimensionColumns(groupedDimension.Value).IdColumn} = @dimensionId";
 
     // Grouped table views (roots/stems/lemmas) reuse BaseRowsSql verbatim and group by the numeric
     // dimension ID, excluding nulls. Grouping and total counting happen before pagination.
@@ -322,7 +338,9 @@ public sealed partial class EfWordTypesReader
         return fragments.Count == 0 ? string.Empty : "AND " + string.Join(" AND ", fragments);
     }
 
-    private static object[] BuildRowsParameters(WordTypeReadContext context, int skip, int take)
+    // dimensionId is bound only for grouped member-word reads (where BaseRowsSql emits the numeric
+    // predicate). List/table callers pass null and the @dimensionId parameter is never added.
+    private static object[] BuildRowsParameters(WordTypeReadContext context, int skip, int take, int? dimensionId = null)
     {
         var parameters = new List<object>
         {
@@ -331,15 +349,25 @@ public sealed partial class EfWordTypesReader
         };
         AddChildCodeParameter(context, parameters);
         AddSecondaryFilterParameters(context, parameters);
+        AddDimensionParameter(dimensionId, parameters);
         return [.. parameters];
     }
 
-    private static object[] BuildCountParameters(WordTypeReadContext context)
+    private static object[] BuildCountParameters(WordTypeReadContext context, int? dimensionId = null)
     {
         var parameters = new List<object>();
         AddChildCodeParameter(context, parameters);
         AddSecondaryFilterParameters(context, parameters);
+        AddDimensionParameter(dimensionId, parameters);
         return [.. parameters];
+    }
+
+    private static void AddDimensionParameter(int? dimensionId, List<object> parameters)
+    {
+        if (dimensionId is not null)
+        {
+            parameters.Add(new NpgsqlParameter<int>("dimensionId", dimensionId.Value));
+        }
     }
 
     private static void AddChildCodeParameter(WordTypeReadContext context, List<object> parameters)

@@ -42,4 +42,14 @@ public interface IWordTypesReader
     Task<WordTypeGroupedSummaryDto?> GetGroupedSummaryAsync(
         WordTypeGroupedSelection selection,
         CancellationToken cancellationToken);
+
+    // Grouped scoped member words: the Words table restricted to the selected numeric head dimension ID,
+    // grouped by the identical (unique_tashkeel_word_id, context_code) formula and paged after grouping.
+    // Returns null when the dimension is absent from the scope; an existing selection with an out-of-range
+    // page returns a non-null empty page carrying the correct TotalCount.
+    Task<PagedResult<WordTypeGroupedMemberWordDto>?> GetGroupedMemberWordsAsync(
+        WordTypeGroupedSelection selection,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken);
 }

@@ -48,6 +48,17 @@ and Unique Words. They back the `application/.../Quran/Words/**` query handlers 
   the selected grouped table row in the same scope; a positive dimension ID absent from the scope returns
   `null` (a scoped-group 404). The dimension text columns are projection-only display and never
   participate in the membership predicate.
+- **Word Types grouped member words** (`EfWordTypesReader.GetGroupedMemberWordsAsync`, Feature 023) reuse
+  the **existing** `RowsSql`/`RowsCountSql` (the Words-view grouping/winner/order SQL) with an optional
+  `WordTypeGroupedDimensionKind` that adds only the allowlisted numeric predicate
+  `m.root_id|m.stem_id|m.lemma_id = @dimensionId` to `BaseRowsSql`. Members are grouped by the identical
+  `(unique_tashkeel_word_id, context_code)` formula the Words view uses, so they are a **row-for-row**
+  subset of the Words table for that numeric dimension — never a distinct-word collapse and never filtered
+  by `root_text`/`stem_text`/`lemma_text` (labels are projection-only). Rows are **display-only** for the
+  consumer: the reader orders them by the fixed occurrence order (`WordTypeSort.Occurrences`), counts the
+  grouped word-context rows **before** paging (`page`/`pageSize 1..100`), returns a non-null empty page for
+  an out-of-range page, and `null` when the dimension is absent from the scope. Existing list/table callers
+  pass `null` for the dimension kind and stay semantically unchanged.
 
 ## Related
 

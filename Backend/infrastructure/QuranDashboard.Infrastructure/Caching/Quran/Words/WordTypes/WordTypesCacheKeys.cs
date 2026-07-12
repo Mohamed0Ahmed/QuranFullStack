@@ -24,9 +24,14 @@ public static class WordTypesCacheKeys
         $"wordtypes:surahs:{HashIdentity(identity)}";
 
     // Grouped detail keys expose only the kind/view labels in the readable prefix; the dimension ID and
-    // the full five-field scope are folded into the hash so different scopes never cross-serve.
+    // the full five-field scope are folded into the hash so different scopes never cross-serve. Each view
+    // carries its own segment (summary vs words vs …) so views never share a prefix; paged views append
+    // page/pageSize.
     public static string GroupedSummary(WordTypeGroupedSelection selection) =>
         $"wordtypes:grouped:{selection.Kind.ToRouteKey()}:summary:{HashGroupedSelection(selection)}";
+
+    public static string GroupedWords(WordTypeGroupedSelection selection, int page, int pageSize) =>
+        $"wordtypes:grouped:{selection.Kind.ToRouteKey()}:words:{HashGroupedSelection(selection)}:p{page}:s{pageSize}";
 
     private static string HashGroupedSelection(WordTypeGroupedSelection selection) => HashParts(
         selection.DimensionId.ToString(CultureInfo.InvariantCulture),

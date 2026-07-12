@@ -115,4 +115,21 @@ public sealed class CachedWordTypesReader(EfWordTypesReader efReader, IMemoryCac
 
         return summary;
     }
+
+    public async Task<PagedResult<WordTypeGroupedMemberWordDto>?> GetGroupedMemberWordsAsync(WordTypeGroupedSelection selection, int page, int pageSize, CancellationToken cancellationToken)
+    {
+        var key = WordTypesCacheKeys.GroupedWords(selection, page, pageSize);
+        if (_cache.TryGetValue(key, out PagedResult<WordTypeGroupedMemberWordDto>? cached))
+        {
+            return cached;
+        }
+
+        var words = await _ef.GetGroupedMemberWordsAsync(selection, page, pageSize, cancellationToken);
+        if (words is not null)
+        {
+            _cache.Set(key, words, WordTypesCacheEntryOptions.Detail());
+        }
+
+        return words;
+    }
 }

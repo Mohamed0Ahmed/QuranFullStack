@@ -57,6 +57,15 @@ public interface IWordTypesReader
     Task<WordTypeGroupedSummaryDto?> GetGroupedSummaryAsync(
         WordTypeGroupedSelection selection,
         CancellationToken cancellationToken);
+
+    // Feature 023 — grouped scoped member words: the Words-view rows restricted to the selected numeric
+    // head dimension, grouped by the identical (unique_tashkeel_word_id, context_code) formula and paged
+    // after grouping. null = dimension absent from scope; out-of-range page = non-null empty page.
+    Task<PagedResult<WordTypeGroupedMemberWordDto>?> GetGroupedMemberWordsAsync(
+        WordTypeGroupedSelection selection,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken);
 }
 ```
 
@@ -216,6 +225,16 @@ Required outcome categories:
   columns are projection-only and never filter membership. Kept in a size-split partial
   (`EfWordTypesReader.GroupedDetails.cs` + `.GroupedDetails.Sql.cs`) so the primary reader stays under its
   threshold.
+- **Grouped member words (Feature 023)**: `GetGroupedMemberWordsAsync` reuses the existing
+  `RowsSql`/`RowsCountSql` (the Words-view grouping/winner/order SQL) with an optional
+  `WordTypeGroupedDimensionKind` that adds **only** the allowlisted numeric predicate
+  `m.root_id|m.stem_id|m.lemma_id = @dimensionId` to the shared `BaseRowsSql` — no second grouping
+  implementation and never `DISTINCT tashkeel_word_id` alone. Existing list/table callers pass null and
+  stay semantically unchanged. Rows are grouped by the identical `(unique_tashkeel_word_id, context_code)`
+  formula, so members are a **row-for-row** subset of the Words view for that numeric dimension;
+  `rootText`/`stemText`/`lemmaText` are projection-only and never a membership or parity predicate.
+  `TotalCount` counts grouped word-context rows before paging; a dimension absent from the scope returns
+  null (404) while an out-of-range page of an existing dimension returns a non-null empty page.
 
 ## Enrichment Rules
 

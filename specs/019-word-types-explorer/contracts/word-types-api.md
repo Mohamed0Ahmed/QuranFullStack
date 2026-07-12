@@ -275,6 +275,53 @@ dimension. Every grouped detail read carries the identical five-field grammatica
 - The paged member-words, paged ayahs, and single-shot surahs resources under the same
   `{kind}/{dimensionId}` base are added by Feature 023 Tasks 2–4.
 
+## E2d — Grouped detail member words (root/stem/lemma, Feature 023)
+
+```
+GET api/words/word-types/table/{kind}/{dimensionId}/words
+    ?type={noun|verb|particle|inl}
+    &childCode={head_pos | tense}        (optional — when a child node is selected)
+    &case={nominative|accusative|genitive|null}   (nominal types only)
+    &tense={past|present|imperative}     (verb only)
+    &voice={active|passive}              (verb only)
+    &page={n}&pageSize={1..100}          (no sort — member order is fixed)
+```
+
+Returns `ApiResponse<PagedResult<WordTypeGroupedMemberWordDto>>` — the **display-only** member
+word-context rows of the scoped group. Same five-field scope as E2c; **no `sort`** parameter.
+
+```jsonc
+{
+  "tashkeelWordId": 1234,
+  "contextCode": "PN",
+  "case": null, "tense": null, "voice": null,   // active scope, exactly as the E2b word row
+  "displayText": "…",
+  "typeCode": "PN",
+  "typeLabel": { "ar": "اسم علم" },
+  "broadLabel": { "ar": "اسم" },
+  "caseOrFeature": "genitive",
+  "rootText": "…", "lemmaText": null, "stemText": null,   // projection-only display, never membership
+  "occurrencesCount": 0, "ayahsCount": 0, "surahsCount": 0
+}
+```
+
+**Rules**:
+- Membership is the scoped `base` CTE (E2/E2b) restricted to the selected **numeric** head
+  `root_id | stem_id | lemma_id = {dimensionId}` **before** grouping, then grouped by the identical
+  `(unique_tashkeel_word_id, context_code)` formula the Words view (E2) uses — **row-for-row parity**
+  with a numeric-ID-scoped Words baseline. The `rootText`/`lemmaText`/`stemText` labels are
+  projection-only and are **never** a membership or parity predicate.
+- The same tashkeel word used across multiple contexts (e.g. `N`/`PN`/`ADJ`, or verb past/present/
+  imperative) stays **multiple** member rows; there is no distinct-word collapse.
+- `TotalCount` is the grouped word-context row count measured **before** paging. Member order is the
+  fixed occurrence order (`occurrencesCount DESC`, first mushaf order, tashkeel ID, context).
+- Invalid kind/id/filter → **400** (as E2c); invalid paging (`page < 1` or `pageSize` outside `1..100`)
+  → **400** (`InvalidPaging` → `WordTypesInvalidPaging`). A **positive** dimension ID absent from the
+  scope → **404** (`WordTypesGroupedNotFound`); an existing selection with an **out-of-range** page →
+  **200** with an empty `items` array and the correct `TotalCount`.
+- Cache key `wordtypes:grouped:{kind}:words:{scope-hash}:p{page}:s{pageSize}` — a distinct `:words:`
+  segment (never shares the `:summary:` prefix), page/pageSize appended.
+
 ---
 
 ## E3 — Row details-card summary
