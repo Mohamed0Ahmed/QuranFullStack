@@ -48,7 +48,11 @@ Shared across explorers: `utils/explorer-table-*` (focus/keyboard-nav/scroll/col
   table/details layout is kept for grouped views, and the **table owns its own prompt/loading/empty/
   error (with retry) inside its body** instead of swapping the shell out. `tableView` **survives**
   type/child/case/tense/voice/sort/page changes — only the Words tab returns a grouped view to
-  `words`. **All four views** render **quiet explorer rows** (`word-types-table__row` +
+  `words`. Returning to a **parent scope** clears the previous leaf's rows and shows the in-shell
+  subtype prompt (no stale rows under the new scope); after a **successful tree read**, both a
+  **rows-only failure** and a later **parent-tree reload failure** keep the strip visible from the last
+  valid tree; and rows whose `kind` mismatches the active `tableView` are **never rendered**. **All four
+  views** render **quiet explorer rows** (`word-types-table__row` +
   `qd-explorer-table__row`, **no** `qd-interactive-surface`/card-lift) with a leading
   **page-relative row number** (`(page-1)·pageSize + index + 1`, **never** the database ID);
   the selected row keeps `aria-selected`/`aria-current` + `qd-is-selected` with visible focus,
@@ -59,6 +63,8 @@ Shared across explorers: `utils/explorer-table-*` (focus/keyboard-nav/scroll/col
   the detail facade, and opens a scoped summary + related-words/ayahs/surahs details. The details panel
   tabs are **kind-aware** (word → آيات/سور; grouped → كلمات مرتبطة/آيات/سور) with RTL roving focus, and a
   summary card (label + المواضع/الآيات/السور) renders above the active detail content for both kinds.
+  The panel's **loading and error (with retry) states render even before the summary resolves**, so a
+  grouped summary that is still loading or failed never shows a blank surface.
   Grouped **member-word rows are strictly display-only** — no button/link/tabindex/`qd-interactive-surface`/
   selected state and no Router; only their pagination emits. Grouped words and ayahs are server-paged with
   internal page 1, the canonical URL omits `detailPage` at page 1 and serializes only pages `> 1`, and the

@@ -37,8 +37,8 @@ export type WordTypeGroupedDetailSelection = Extract<WordTypeDetailSelection, { 
 
 export interface WordTypesDetailState {
   status: WordTypesLoadStatus;
-  // Kind-aware active selection and its discriminant. `selectedRow` remains the word-only identity
-  // that the existing panel/page read; Task 9 migrates those consumers onto `selection`/`kind`.
+  // Kind-aware active selection and its discriminant. `selectedRow` stays the word-only identity used
+  // for row focus restoration; grouped selections carry their numeric dimension in `selection`/`kind`.
   selection: WordTypeDetailSelection | null;
   kind: WordTypeDetailSelectionKind;
   selectedRow: WordTypeRowIdentity | null;

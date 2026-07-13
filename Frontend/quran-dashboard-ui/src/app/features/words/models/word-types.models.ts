@@ -181,8 +181,8 @@ export interface ParsedWordTypesQuery extends WordTypeRowIdentity {
 export interface WordTypesListState {
   status: WordTypesLoadStatus;
   tree: WordTypeTreeDto | null;
-  // Preserve every /table variant in feature state. The page owns the temporary word-only rendering
-  // adapter until Phase 6 adds branched grouped-row rendering to the table component.
+  // Preserve every discriminated /table variant (word rows and grouped root/stem/lemma rows) in
+  // feature state; the table component branches on `tableView` to render each kind.
   rows: PagedResultDto<WordTypeTableRowDto> | null;
   query: ParsedWordTypesQuery;
   errorMessage: string;

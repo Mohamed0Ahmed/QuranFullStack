@@ -77,6 +77,17 @@ export class WordTypesTableComponent {
     return this.tableView() === 'words';
   }
 
+  // Defense-in-depth: a row renders only when its discriminant matches the active view exactly, so a
+  // stale/mismatched response can never paint (e.g.) a root row under the stems tab.
+  protected matchesActiveView(row: WordTypeTableRowDto): boolean {
+    switch (this.tableView()) {
+      case 'words': return row.kind === 'word';
+      case 'roots': return row.kind === 'root';
+      case 'stems': return row.kind === 'stem';
+      case 'lemmas': return row.kind === 'lemma';
+    }
+  }
+
   // Page-relative sequence shared across all four views; the persisted database ID is never shown.
   protected rowNumber(index: number): number {
     const page = this.rows();

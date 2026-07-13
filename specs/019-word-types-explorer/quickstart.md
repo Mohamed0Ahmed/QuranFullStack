@@ -83,7 +83,7 @@ the plural `word-types-*` explorer/table specs — 14 files):
 
 ```bash
 cd /projects/Dashboard/App/Frontend/quran-dashboard-ui
-npm test -- --include='src/app/features/words/**/*word-type*.spec.ts'   # 198 passed (14 files)
+npm test -- --include='src/app/features/words/**/*word-type*.spec.ts'   # 210 passed (14 files)
 ```
 
 If the builder rejects that glob, run these supported capped subsets instead:
@@ -104,7 +104,8 @@ Required frontend acceptance coverage:
 - `/dashboard/words/types` route loads and defaults to `type=noun`.
 - URL state restores exact `word + contextCode`.
 - Secondary filters appear only for their valid main type.
-- Changing filter/sort clears selection and resets page.
+- Changing a scope filter (type/child/case/tense/voice) clears selection and resets page; sorting and
+  list pagination preserve a still-compatible selection.
 - Secondary filter changes do not expect or render scoped tree counts.
 - The table displays Uthmani-with-tashkeel words only.
 - Null or deferred lemma/stem values render `—` and do not remove rows.
@@ -156,6 +157,23 @@ Table-view tabs & grouped detail coverage (Feature 022 evolution):
 6. Verify row 26 on page 2, no visible database IDs, quiet hover, visible keyboard focus, a distinct
    selected row, and no skeleton hover.
 7. Check desktop split scrolling and mobile modal/RTL layout in both light and dark themes.
+
+### 4b. Acceptance Record (last updated 2026-07-13)
+
+The stable-shell and error-state invariants exercised by the manual flow are now covered by facade and
+DOM-level automated tests (host identity across transitions, the in-table subtype prompt on a parent
+scope, rows-only and later parent-tree failure strip survival, grouped-summary loading and
+error-with-retry, and cross-kind row skipping):
+
+```bash
+cd /projects/Dashboard/App/Frontend/quran-dashboard-ui
+npm test -- --include='src/app/features/words/**/*word-type*.spec.ts'   # 210 passed (14 files)
+npm run build            # Application bundle generation complete (2 pre-existing non-fatal SCSS budget warnings)
+```
+
+The live desktop/mobile + light/dark + modal/RTL walkthrough (steps 1–10 and 4a.1–7) still requires a
+running dev environment and remains a human confirmation step; it was **not executed** as part of this
+automated change.
 
 ## 5. Non-Regression Checks
 

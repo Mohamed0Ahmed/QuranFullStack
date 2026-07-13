@@ -182,6 +182,28 @@ describe('WordTypesTableComponent', () => {
     expect(root.textContent).not.toContain('كَلِمَة');
   });
 
+  it.each([
+    { label: 'stem under roots', tableView: 'roots', row: stemRow, hiddenText: stemRow.displayText },
+    { label: 'lemma under roots', tableView: 'roots', row: lemmaRow, hiddenText: lemmaRow.displayText },
+    { label: 'root under stems', tableView: 'stems', row: rootRow, hiddenText: rootRow.displayText },
+    { label: 'lemma under stems', tableView: 'stems', row: lemmaRow, hiddenText: lemmaRow.displayText },
+    { label: 'root under lemmas', tableView: 'lemmas', row: rootRow, hiddenText: rootRow.displayText },
+    { label: 'stem under lemmas', tableView: 'lemmas', row: stemRow, hiddenText: stemRow.displayText },
+  ] as const)(
+    'skips a $label mismatch so a stale grouped response never paints under the wrong tab',
+    ({ tableView, row, hiddenText }) => {
+      const fixture = TestBed.createComponent(WordTypesTableComponent);
+      fixture.componentRef.setInput('rows', page([row]));
+      fixture.componentRef.setInput('tableView', tableView as WordTypeTableView);
+      fixture.detectChanges();
+
+      const root = fixture.nativeElement as HTMLElement;
+
+      expect(root.querySelector('.word-types-table__body [role="row"]')).toBeNull();
+      expect(root.textContent).not.toContain(hiddenText);
+    },
+  );
+
   it('renders a skeleton body while loading, even when prior rows exist', () => {
     const loadingFixture = TestBed.createComponent(WordTypesTableComponent);
     loadingFixture.componentRef.setInput('loading', true);

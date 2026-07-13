@@ -1,6 +1,6 @@
 import { Injectable, Signal, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subscription, forkJoin, of } from 'rxjs';
+import { Observable, Subscription, forkJoin, of } from 'rxjs';
 import { catchError, distinctUntilChanged, map, switchMap, tap } from 'rxjs/operators';
 
 import { ApiResponse } from '../../../core/data-access/api-response.model';
@@ -224,7 +224,7 @@ export class WordTypesExplorerFacade {
           this.state.update((current) => ({
             ...current,
             status: 'error',
-            tree: null,
+            tree: current.tree,
             rows: null,
             errorMessage: WORD_TYPES_ERROR_LABEL,
           }));
@@ -235,29 +235,25 @@ export class WordTypesExplorerFacade {
       );
     }
 
+    const rows$ = this.cache.getOrLoad(
+      WordTypesCacheKeys.table(query, query.tableView, query.sort, query.page),
+      () => this.api.getTableRows({ ...query, pageSize: WORD_TYPES_PAGE_SIZE }),
+    );
+
+    // Each request settles to its response or `null` on a transport throw, so a rows-only failure
+    // cannot discard an already-successful tree: forkJoin still emits, and handleListResponse persists
+    // the tree so the table-view strip survives the failure (Task 8).
     return forkJoin({
-      tree: tree$,
-      rows: this.cache.getOrLoad(
-        WordTypesCacheKeys.table(query, query.tableView, query.sort, query.page),
-        () => this.api.getTableRows({ ...query, pageSize: WORD_TYPES_PAGE_SIZE }),
-      ),
+      tree: this.settle(tree$),
+      rows: this.settle(rows$),
     }).pipe(
       tap(({ tree, rows }) => this.handleListResponse(tree, rows, query)),
-      catchError(() => {
-        // Keep any tree already loaded so the table-view strip stays visible after a rows-only
-        // transport failure; only the rows and status change.
-        this.state.update((current) => ({
-          ...current,
-          status: 'error',
-          tree: current.tree,
-          rows: null,
-          errorMessage: WORD_TYPES_ERROR_LABEL,
-        }));
-        this.lastRowsTableView = null;
-        return of(undefined);
-      }),
       map(() => undefined),
     );
+  }
+
+  private settle<T>(source: Observable<ApiResponse<T>>): Observable<ApiResponse<T> | null> {
+    return source.pipe(catchError(() => of(null)));
   }
 
   private handleTreeOnlyResponse(tree: ApiResponse<WordTypeTreeDto>): void {
@@ -267,48 +263,52 @@ export class WordTypesExplorerFacade {
       this.state.update((current) => ({
         ...current,
         status: 'error',
-        tree: treeData ?? null,
+        tree: current.tree,
         rows: null,
         errorMessage: tree.message ?? WORD_TYPES_ERROR_LABEL,
       }));
       return;
     }
 
+    // A parent scope fetches no rows, so the table shows the in-shell subtype prompt. Any rows from a
+    // previous leaf scope are cleared here so they never paint under the new parent (Task 8).
     this.state.update((current) => ({
       ...current,
-      status: current.rows === null ? 'selectPrompt' : current.rows.totalCount === 0 ? 'empty' : 'success',
+      status: 'selectPrompt',
       tree: treeData,
-      rows: current.rows,
+      rows: null,
       errorMessage: '',
     }));
+    this.lastRowsTableView = null;
   }
 
   private handleListResponse(
-    tree: ApiResponse<WordTypeTreeDto>,
-    rows: ApiResponse<PagedResultDto<WordTypeTableRowDto>>,
+    tree: ApiResponse<WordTypeTreeDto> | null,
+    rows: ApiResponse<PagedResultDto<WordTypeTableRowDto>> | null,
     query: ParsedWordTypesQuery,
   ): void {
-    if (!tree.isSuccess || !tree.data || !rows.isSuccess || !rows.data) {
+    const treeData = tree?.isSuccess ? tree.data ?? null : null;
+    const rowsData = rows?.isSuccess ? rows.data ?? null : null;
+
+    if (!treeData || !rowsData) {
+      // Persist any freshly-loaded tree (`treeData`) so the table-view strip stays visible after a
+      // rows-only transport failure; fall back to the previously loaded tree when this tree failed.
       this.state.update((current) => ({
         ...current,
         status: 'error',
-        tree: tree.data ?? current.tree,
+        tree: treeData ?? current.tree,
         rows: null,
-        errorMessage: rows.message ?? tree.message ?? WORD_TYPES_ERROR_LABEL,
+        errorMessage: rows?.message ?? tree?.message ?? WORD_TYPES_ERROR_LABEL,
       }));
       this.lastRowsTableView = null;
       return;
     }
 
-    // Preserve the complete discriminated /table response. The page isolates its temporary
-    // word-only renderer from this page-ready state until grouped rendering lands in Phase 6.
-    const page = rows.data;
-
     this.state.update((current) => ({
       ...current,
-      status: page.totalCount === 0 ? 'empty' : 'success',
-      tree: tree.data!,
-      rows: page,
+      status: rowsData.totalCount === 0 ? 'empty' : 'success',
+      tree: treeData,
+      rows: rowsData,
       errorMessage: '',
     }));
     this.lastRowsTableView = query.tableView;

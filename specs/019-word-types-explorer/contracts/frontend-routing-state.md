@@ -69,9 +69,10 @@ Rules:
   is represented internally but omitted from the URL; only pages above `1` serialize `detailPage`.
 - Browser back/forward restores the identity key compatible with each emitted `ParamMap`, together with
   the complete filter scope and the canonical detail view/page state.
-- Clearing `childCode` back to the parent (`selectChild(null)`) and switching `type` (`selectType`) both
-  reset `tableView` to `words` — a grouped tab never lingers on a no-leaf scope that has nothing to
-  aggregate.
+- Switching `type` (`selectType`) and clearing `childCode` back to the parent (`selectChild(null)`)
+  preserve the active `tableView`; only the Words tab returns a grouped view to `words`. A no-leaf
+  parent scope aggregates nothing, so the table shows the in-shell subtype prompt (no rows) under the
+  retained tab.
 - A valid positive selected row that the backend no longer resolves renders a controlled panel not-found state; the table remains usable.
 - Page sizes are implementation constants, not URL params.
 
@@ -240,8 +241,9 @@ the same filtered scope between four aggregation levels via the `tableView` quer
   details host renders a kind-aware empty selection when no valid row is active.
 - A grammatical scope change (type/child/case/tense/voice) clears the old scoped selection; sort and
   list-page changes preserve a still-valid selection.
-- After a successful tree read, a rows-only transport failure keeps the loaded tree so the strip stays
-  visible; only the rows/status change.
+- After a successful tree read, a rows-only failure keeps the loaded tree so the strip stays visible;
+  only the rows/status change. If a later tree-only parent reload fails after the cache no longer holds
+  the tree, the facade likewise retains its last valid tree instead of unmounting the strip.
 - A grouped row uses its explicit numeric `root`/`stem`/`lemma` URL identity; display text is never
   serialized as selection identity.
 - Rows whose `kind` does not match the active `tableView` are never rendered (defense-in-depth against

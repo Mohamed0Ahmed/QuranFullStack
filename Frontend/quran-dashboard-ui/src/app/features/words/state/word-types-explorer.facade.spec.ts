@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getTestBed, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, ParamMap, Router, convertToParamMap, provideRouter } from '@angular/router';
-import { BehaviorSubject, Subject, of } from 'rxjs';
+import { BehaviorSubject, Subject, of, throwError } from 'rxjs';
 
 import { ApiResponse } from '../../../core/data-access/api-response.model';
 import { WordTypesApi } from '../data-access/word-types.api';
@@ -13,6 +13,7 @@ import {
   WordTypeTableRowDto,
   WordTypeTreeDto,
 } from '../models/word-types.models';
+import { WordTypesCache } from './word-types-cache';
 import { WordTypesExplorerFacade } from './word-types-explorer.facade';
 
 function wordRow(overrides: Partial<WordTableRowDto> = {}): WordTableRowDto {
@@ -336,6 +337,77 @@ describe('WordTypesExplorerFacade — tableView', () => {
 
     expect(api.getTableRows).not.toHaveBeenCalled();
     expect(facade.listState().query.tableView).toBe('roots');
+    facade.unbindFromRoute();
+  });
+
+  it('clears prior leaf rows and enters the subtype prompt when returning to a tree-only parent', () => {
+    const getTableRows = vi.fn(() => of(okRows([rootRow()])));
+    const { facade } = setup({ getTableRows });
+    const route = controllableRoute({ type: 'noun', childCode: 'PN', tableView: 'roots' });
+    facade.bindToRoute(route.route);
+
+    expect(facade.listState().rows?.items).toEqual([rootRow()]);
+    expect(facade.listState().status).toBe('success');
+
+    // Back to the parent (no leaf): the previous scope's rows must not linger under the new scope;
+    // the table shows the in-shell subtype prompt while the loaded tree keeps the strip visible.
+    route.setQueryParams({ type: 'noun', tableView: 'roots' });
+
+    expect(facade.listState().rows).toBeNull();
+    expect(facade.listState().status).toBe('selectPrompt');
+    expect(facade.listState().tree).not.toBeNull();
+    facade.unbindFromRoute();
+  });
+
+  it('keeps a successfully loaded tree when the initial rows request throws, so the strip survives', () => {
+    const rows$ = new Subject<ApiResponse<PagedResultDto<WordTypeTableRowDto>>>();
+    const getTableRows = vi.fn(() => rows$);
+    const { facade } = setup({ getTableRows });
+    const route = controllableRoute({ type: 'inl' });
+    facade.bindToRoute(route.route);
+
+    // Tree resolves first (default mock is synchronous), rows then fail at transport level.
+    rows$.error(new Error('network'));
+
+    expect(facade.listState().status).toBe('error');
+    expect(facade.listState().tree).not.toBeNull();
+    expect(facade.listState().rows).toBeNull();
+    facade.unbindFromRoute();
+  });
+
+  it.each([
+    {
+      label: 'transport failure',
+      failedTree: throwError(() => new Error('network')),
+    },
+    {
+      label: 'controlled API failure',
+      failedTree: of<ApiResponse<WordTypeTreeDto>>({ isSuccess: false, message: 'تعذّر تحميل الشجرة', data: null }),
+    },
+  ])('keeps the previously loaded tree on a tree-only parent $label', ({ failedTree }) => {
+    const getTree = vi.fn()
+      .mockReturnValueOnce(of(okTree()))
+      .mockReturnValueOnce(failedTree);
+    const { facade } = setup({ getTree });
+    const route = controllableRoute({ type: 'noun', childCode: 'PN', tableView: 'roots' });
+    facade.bindToRoute(route.route);
+
+    const loadedTree = facade.listState().tree;
+    expect(loadedTree).not.toBeNull();
+
+    // Tree and detail/list responses share the bounded cache. Fill it so the parent transition must
+    // re-fetch the tree while the last valid tree remains available in facade state.
+    const cache = TestBed.inject(WordTypesCache);
+    for (let index = 0; index < 50; index++) {
+      cache.store(`tree-eviction-fixture:${index}`, { isSuccess: true, message: null, data: { index } });
+    }
+
+    route.setQueryParams({ type: 'noun', tableView: 'roots' });
+
+    expect(getTree).toHaveBeenCalledTimes(2);
+    expect(facade.listState().status).toBe('error');
+    expect(facade.listState().tree).toBe(loadedTree);
+    expect(facade.listState().rows).toBeNull();
     facade.unbindFromRoute();
   });
 

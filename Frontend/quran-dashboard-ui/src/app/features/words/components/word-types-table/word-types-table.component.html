@@ -131,7 +131,7 @@
               }
             }
             @default {
-              @if (row.kind !== 'word') {
+              @if (matchesActiveView(row)) {
                 <button
                   type="button"
                   class="word-types-table__row qd-explorer-table__row"

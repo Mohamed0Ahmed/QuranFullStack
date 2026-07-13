@@ -3,7 +3,7 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { getTestBed, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
 import { By } from '@angular/platform-browser';
-import { BehaviorSubject, Subject, of } from 'rxjs';
+import { BehaviorSubject, Subject, of, throwError } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ApiResponse } from '../../../../core/data-access/api-response.model';
@@ -255,33 +255,29 @@ describe('WordTypesExplorerPageComponent', () => {
     expect(optionLabels).toEqual(WORD_TYPE_SORT_OPTIONS.map((option) => option.label));
   });
 
-  it('keeps prior rows visible when switching to a different parent until a new subtype is chosen', async () => {
-    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'PN' }));
+  it('clears prior leaf rows for the in-table subtype prompt when returning to a parent, keeping the shells mounted', async () => {
+    api.getTableRows.mockReturnValue(of(ok<PagedResultDto<WordTypeTableRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [groupedRootRow] })));
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'PN', tableView: 'roots' }));
     const fixture = await createPage();
 
-    expect(api.getTableRows).toHaveBeenCalledTimes(1);
+    const tableHost = () => fixture.nativeElement.querySelector('qd-word-types-table');
+    const detailsHost = () => fixture.nativeElement.querySelector('qd-word-type-details-panel');
+    const initialTable = tableHost();
+    const initialDetails = detailsHost();
+    expect(fixture.nativeElement.querySelector('[data-word-types-row="root:190700"]')).not.toBeNull();
 
-    const verbButton = fixture.nativeElement.querySelector(
-      'qd-word-type-filter .word-type-filter__button[data-word-type-code="verb"]',
-    ) as HTMLButtonElement;
-    verbButton.click();
-    fixture.detectChanges();
-
-    expect(router.navigate).toHaveBeenCalledWith([], expect.objectContaining({
-      queryParams: expect.objectContaining({ type: 'verb', childCode: null, page: '1' }),
-      queryParamsHandling: 'merge',
-    }));
-
-    queryParamMap$.next(convertToParamMap({ type: 'verb' }));
+    // Return to a parent scope (no leaf). The previous leaf's grouped row must disappear and the
+    // in-table subtype prompt must appear, while the strip/table/details hosts keep their identity.
+    queryParamMap$.next(convertToParamMap({ type: 'verb', tableView: 'roots' }));
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(api.getTableRows).toHaveBeenCalledTimes(1);
     const root = fixture.nativeElement as HTMLElement;
-    expect(root.querySelector('[data-testid="word-types-select-subtype"]')).toBeNull();
-    expect(root.querySelector('qd-word-types-table')).not.toBeNull();
+    expect(root.querySelector('[data-word-types-row="root:190700"]')).toBeNull();
+    expect(root.querySelector('[data-testid="word-types-select-subtype"]')).not.toBeNull();
     expect(root.querySelector('qd-word-type-table-view-tabs')).not.toBeNull();
-    expect(root.textContent).toContain('ماض');
+    expect(tableHost()).toBe(initialTable);
+    expect(detailsHost()).toBe(initialDetails);
   });
 
   it('loads rows when a subtype is selected', async () => {
@@ -935,6 +931,43 @@ describe('WordTypesExplorerPageComponent', () => {
     expect(api.getGroupedMemberWords).toHaveBeenCalledTimes(2);
     expect(fixture.nativeElement.querySelector('qd-word-type-details-panel')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('[data-testid="word-type-grouped-word-row"]')).not.toBeNull();
+  });
+
+  it('renders a loading state in the details panel while the grouped summary is still in flight', async () => {
+    api.getTableRows.mockReturnValue(of(ok<PagedResultDto<WordTypeTableRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [groupedRootRow] })));
+    const pendingSummary = new Subject<ApiResponse<WordTypeGroupedSummaryDto>>();
+    api.getGroupedSummary.mockReturnValue(pendingSummary.asObservable());
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'PN', tableView: 'roots', root: '190700' }));
+
+    const fixture = await createPage();
+    const detailFacade = TestBed.inject(WordTypesDetailFacade);
+
+    // The grouped summary has not arrived, so activeSummary() is null; the panel must still show a
+    // visible loading state (not a blank surface) rather than gating everything behind the summary.
+    expect(detailFacade.panelState().status).toBe('loading');
+    expect(detailFacade.panelState().groupedSummary).toBeNull();
+    const panel = fixture.nativeElement.querySelector('qd-word-type-details-panel') as HTMLElement;
+    expect(panel.querySelector('[data-testid="word-type-grouped-words-loading"]')).not.toBeNull();
+
+    pendingSummary.next(ok(groupedSummaryDto));
+    pendingSummary.complete();
+  });
+
+  it('renders an error with retry in the details panel when the grouped summary transport fails', async () => {
+    api.getTableRows.mockReturnValue(of(ok<PagedResultDto<WordTypeTableRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [groupedRootRow] })));
+    api.getGroupedSummary.mockReturnValue(throwError(() => new Error('network')));
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'PN', tableView: 'roots', root: '190700' }));
+
+    const fixture = await createPage();
+    const detailFacade = TestBed.inject(WordTypesDetailFacade);
+
+    // A summary transport failure leaves no summary; the panel must surface a retryable error rather
+    // than a blank surface with no way forward.
+    expect(detailFacade.panelState().status).toBe('error');
+    expect(detailFacade.panelState().groupedSummary).toBeNull();
+    const panel = fixture.nativeElement.querySelector('qd-word-type-details-panel') as HTMLElement;
+    expect(panel.querySelector('[data-testid="word-type-details-error"]')).not.toBeNull();
+    expect(panel.querySelector('[data-testid="word-type-details-retry"]')).not.toBeNull();
   });
 
   it('renders a grouped not-found state inside the mounted details region', async () => {
