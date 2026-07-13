@@ -54,11 +54,26 @@ public sealed class GetWordTypeTableHandler(
         var sortValue = string.IsNullOrWhiteSpace(query.Sort) ? WordTypesHandlerValidation.DefaultSort : query.Sort;
         if (!WordTypeSortParser.TryParse(sortValue, out var sort))
         {
+            logger.LogWarning(
+                "Rejected {feature} {operation} {reason} {sort}",
+                FeatureName,
+                OperationName,
+                "invalidSort",
+                sortValue);
+
             return new GetWordTypeTableOutcome.InvalidSort();
         }
 
         if (!WordTypesHandlerValidation.IsValidPaging(query.Page, query.PageSize))
         {
+            logger.LogWarning(
+                "Rejected {feature} {operation} {reason} {pageNumber} {pageSize}",
+                FeatureName,
+                OperationName,
+                "invalidPaging",
+                query.Page,
+                query.PageSize);
+
             return new GetWordTypeTableOutcome.InvalidPaging();
         }
 

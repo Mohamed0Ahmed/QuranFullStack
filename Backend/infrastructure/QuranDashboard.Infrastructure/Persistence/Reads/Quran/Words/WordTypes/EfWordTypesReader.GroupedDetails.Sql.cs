@@ -13,7 +13,7 @@ public sealed partial class EfWordTypesReader
         var (idColumn, textColumn) = GroupedDimensionColumns(kind);
         return $"""
         WITH base AS (
-            {BaseRowsSql(context)}
+            {BaseRowsSql(context, kind)}
         )
         SELECT
             {idColumn} AS "{nameof(GroupedSummarySqlResult.DimensionId)}",
@@ -22,18 +22,23 @@ public sealed partial class EfWordTypesReader
             COUNT(DISTINCT ayah_id)::int AS "{nameof(GroupedSummarySqlResult.AyahsCount)}",
             COUNT(DISTINCT surah_number)::int AS "{nameof(GroupedSummarySqlResult.SurahsCount)}"
         FROM base
-        WHERE {idColumn} = @dimensionId
         GROUP BY {idColumn}
         """;
     }
 
     // Allowlisted numeric membership columns. The text columns are projection-only display fields and
-    // never participate in the membership predicate.
-    private static (string IdColumn, string TextColumn) GroupedDimensionColumns(WordTypeGroupedDimensionKind kind) => kind switch
+    // never participate in the membership predicate. Delegates to the shared DimensionColumns mapping
+    // (keyed by WordTypeTableView) so the root/stem/lemma column names live in exactly one place.
+    private static (string IdColumn, string TextColumn) GroupedDimensionColumns(WordTypeGroupedDimensionKind kind) =>
+        DimensionColumns(ToTableView(kind));
+
+    // Bridges the grouped-detail kind to the table-view discriminator so both reuse DimensionColumns.
+    // Unknown values fail exactly as DimensionColumns does.
+    private static WordTypeTableView ToTableView(WordTypeGroupedDimensionKind kind) => kind switch
     {
-        WordTypeGroupedDimensionKind.Root => ("root_id", "root_text"),
-        WordTypeGroupedDimensionKind.Stem => ("stem_id", "stem_text"),
-        WordTypeGroupedDimensionKind.Lemma => ("lemma_id", "lemma_text"),
+        WordTypeGroupedDimensionKind.Root => WordTypeTableView.Roots,
+        WordTypeGroupedDimensionKind.Stem => WordTypeTableView.Stems,
+        WordTypeGroupedDimensionKind.Lemma => WordTypeTableView.Lemmas,
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Grouped dimension columns are only defined for root/stem/lemma."),
     };
 

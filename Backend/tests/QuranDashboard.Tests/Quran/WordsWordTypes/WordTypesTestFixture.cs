@@ -13,6 +13,7 @@ public sealed class WordTypesTestFixture : IAsyncLifetime
     private const string SeedResourceSuffix = "word-types-explorer-seed.sql";
 
     private readonly PostgreSqlContainer? _container;
+    private readonly object _apiFactoryLock = new();
     private WebApplicationFactory<WordTypeGroupedDetailsController>? _apiFactory;
     private ServiceProvider? _rootProvider;
 
@@ -89,23 +90,29 @@ public sealed class WordTypesTestFixture : IAsyncLifetime
 
     public HttpClient CreateApiClient()
     {
-        _apiFactory ??= new WebApplicationFactory<WordTypeGroupedDetailsController>()
-            .WithWebHostBuilder(builder =>
-            {
-                builder.ConfigureAppConfiguration((_, configuration) =>
-                    configuration.AddInMemoryCollection(new Dictionary<string, string?>
-                    {
-                        ["ConnectionStrings:QuranDashboardDb"] = ConnectionString,
-                    }));
-                builder.ConfigureTestServices(services =>
+        // Guard the lazy init so concurrent callers reuse the single factory instead of racing to
+        // construct (and leak) multiple WebApplicationFactory instances.
+        WebApplicationFactory<WordTypeGroupedDetailsController> factory;
+        lock (_apiFactoryLock)
+        {
+            factory = _apiFactory ??= new WebApplicationFactory<WordTypeGroupedDetailsController>()
+                .WithWebHostBuilder(builder =>
                 {
-                    services.RemoveAll<QuranDashboardDbContext>();
-                    services.RemoveAll<DbContextOptions<QuranDashboardDbContext>>();
-                    services.AddDbContext<QuranDashboardDbContext>(options => options.UseNpgsql(ConnectionString));
+                    builder.ConfigureAppConfiguration((_, configuration) =>
+                        configuration.AddInMemoryCollection(new Dictionary<string, string?>
+                        {
+                            ["ConnectionStrings:QuranDashboardDb"] = ConnectionString,
+                        }));
+                    builder.ConfigureTestServices(services =>
+                    {
+                        services.RemoveAll<QuranDashboardDbContext>();
+                        services.RemoveAll<DbContextOptions<QuranDashboardDbContext>>();
+                        services.AddDbContext<QuranDashboardDbContext>(options => options.UseNpgsql(ConnectionString));
+                    });
                 });
-            });
+        }
 
-        return _apiFactory.CreateClient(new WebApplicationFactoryClientOptions
+        return factory.CreateClient(new WebApplicationFactoryClientOptions
         {
             BaseAddress = new Uri("https://localhost"),
         });

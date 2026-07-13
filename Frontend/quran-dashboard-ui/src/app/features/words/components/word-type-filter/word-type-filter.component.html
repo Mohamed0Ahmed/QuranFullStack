@@ -14,6 +14,7 @@
             [attr.aria-current]="isSelected(node) ? 'true' : null"
             [attr.aria-selected]="isSelected(node)"
             [attr.aria-expanded]="node.children.length > 0 ? isBrowsed(node) : null"
+            [attr.aria-controls]="node.children.length > 0 ? 'word-type-filter-panel' : null"
             [attr.data-word-type-code]="node.code"
             [disabled]="loading()"
             (click)="selectType(node)"
@@ -32,7 +33,7 @@
       }
     </div>
 
-    <div class="word-type-filter__panel qd-surface-elevated" role="region" [attr.aria-label]="browsedNode() ? panelRegionLabel(browsedNode()!) : filterLabel">
+    <div id="word-type-filter-panel" class="word-type-filter__panel qd-surface-elevated" role="region" [attr.aria-label]="browsedNode() ? panelRegionLabel(browsedNode()!) : filterLabel">
       @if (browsedNode(); as panelNode) {
         @if (panelNode.children.length > 0) {
           <section class="word-type-filter__children-section" role="group" [attr.aria-labelledby]="'word-type-filter-children-heading-' + panelNode.code">

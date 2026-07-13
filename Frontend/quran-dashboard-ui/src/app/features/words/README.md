@@ -58,7 +58,8 @@ Shared across explorers: `utils/explorer-table-*` (focus/keyboard-nav/scroll/col
 
   URL state separates the list scope from the detail selection's snapshot:
   `detailType`, `detailChildCode`, `detailCase`, `detailTense`, `detailVoice`. Every statistic writes all
-  five with identity/view/page; child selection preserves them, refresh/direct URLs/Back/Forward restore
+  five with identity/view/page; committing a child under the same main type preserves them while switching
+main type clears them (the snapshot belonged to the previous type), refresh/direct URLs/Back/Forward restore
   both scopes independently, malformed/incomplete snapshots fail closed, and closing details clears
   identity/view/page plus all five detail keys. Detail tabs remain kind-aware (word → آيات/سور الكلمة;
   root → كلمات/آيات/سور الجذر; stem → كلمات/آيات/سور الأصل الصرفي; lemma → كلمات/آيات/سور الصيغة المعجمية),

@@ -38,6 +38,7 @@ public sealed class GetWordTypeGroupedWordsHandler(
 
         if (!WordTypesHandlerValidation.IsValidPaging(query.Page, query.PageSize))
         {
+            LogRejected("invalidPaging", kind.ToRouteKey(), query.DimensionId, query);
             return new GetWordTypeGroupedWordsOutcome.InvalidPaging();
         }
 

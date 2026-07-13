@@ -130,18 +130,24 @@ export class WordTypesExplorerFacade {
 
   selectScope(type: WordTypeMainType, childCode: string | null): void {
     const typeChanged = type !== this.state().query.type;
-    this.navigate(buildWordTypesQueryParams({
-      type,
-      childCode,
-      ...(typeChanged
-        ? {
-            case: DEFAULT_WORD_TYPE_CASE,
-            tense: DEFAULT_WORD_TYPE_TENSE,
-            voice: DEFAULT_WORD_TYPE_VOICE,
-          }
-        : {}),
-      page: DEFAULT_WORD_TYPES_PAGE,
-    }));
+    this.navigate({
+      ...buildWordTypesQueryParams({
+        type,
+        childCode,
+        ...(typeChanged
+          ? {
+              case: DEFAULT_WORD_TYPE_CASE,
+              tense: DEFAULT_WORD_TYPE_TENSE,
+              voice: DEFAULT_WORD_TYPE_VOICE,
+            }
+          : {}),
+        page: DEFAULT_WORD_TYPES_PAGE,
+      }),
+      // A new main type invalidates any open detail selection (the selected word/root/stem/lemma
+      // belongs to the previous type); browsing within the same type keeps it, matching the
+      // selection-clearing the secondary filters already perform.
+      ...(typeChanged ? clearWordTypesSelection() : {}),
+    });
   }
 
   // The table aggregation is independent of an open detail selection. A tab change only replaces

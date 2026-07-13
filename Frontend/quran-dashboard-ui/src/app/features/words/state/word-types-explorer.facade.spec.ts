@@ -309,12 +309,10 @@ describe('WordTypesExplorerFacade — tableView', () => {
   }
 
   function selectScope(facade: WordTypesExplorerFacade, type: WordTypeMainType, childCode: string | null): void {
-    (facade as unknown as {
-      selectScope?: (nextType: WordTypeMainType, nextChildCode: string | null) => void;
-    }).selectScope?.(type, childCode);
+    facade.selectScope(type, childCode);
   }
 
-  it('commits a cross-parent child using only list-scope keys', () => {
+  it('clears the active detail selection when committing a cross-parent child', () => {
     const { facade, router } = setup();
     const route = controllableRoute({
       type: 'verb',
@@ -335,6 +333,8 @@ describe('WordTypesExplorerFacade — tableView', () => {
 
     const params = lastQueryParams(router);
     expect(params).not.toHaveProperty('tableView');
+    // A cross-parent commit resets the secondary filters and page AND clears the stale detail
+    // selection (the open root/word detail belonged to the previous main type).
     expect(params).toEqual({
       type: 'noun',
       childCode: 'ADJ',
@@ -342,6 +342,20 @@ describe('WordTypesExplorerFacade — tableView', () => {
       tense: 'all',
       voice: 'all',
       page: '1',
+      word: null,
+      contextCode: null,
+      root: null,
+      stem: null,
+      lemma: null,
+      detailType: null,
+      detailChildCode: null,
+      detailCase: null,
+      detailTense: null,
+      detailVoice: null,
+      view: null,
+      detailPage: null,
+      location: null,
+      column: null,
     });
     facade.unbindFromRoute();
   });

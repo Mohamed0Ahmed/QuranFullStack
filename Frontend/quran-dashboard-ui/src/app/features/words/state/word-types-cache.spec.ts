@@ -59,8 +59,10 @@ describe('WordTypesCacheKeys grouped detail', () => {
   });
 
   describe.each([
-    ['summary', WordTypesCacheKeys.groupedSummary],
-    ['surahs', WordTypesCacheKeys.groupedSurahs],
+    ['summary', (request: WordTypeGroupedRequestParams) => WordTypesCacheKeys.groupedSummary(request)],
+    ['surahs', (request: WordTypeGroupedRequestParams) => WordTypesCacheKeys.groupedSurahs(request)],
+    ['words', (request: WordTypeGroupedRequestParams) => WordTypesCacheKeys.groupedWords(request, 1)],
+    ['ayahs', (request: WordTypeGroupedRequestParams) => WordTypesCacheKeys.groupedAyahs(request, 1)],
   ] as const)('grouped %s key isolation', (_view, keyForRequest) => {
     it('keeps all identity and scope variants pairwise unique', () => {
       const keys = groupedIdentityScopeVariants.map((request) => keyForRequest(request));

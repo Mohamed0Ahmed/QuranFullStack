@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { convertToParamMap, ParamMap } from '@angular/router';
 
-import * as wordTypesUrlSync from './word-types-url-sync';
-
 import {
   buildWordTypesDeepLink,
+  buildWordTypesDetailScopeQuery,
   buildWordTypesQueryParams,
   canonicalWordTypesDetailPage,
   clearWordTypesSelection,
   parseWordTypesQueryParams,
+  WordTypesQueryChange,
 } from './word-types-url-sync';
 import { WORD_TYPES_QUERY_KEYS } from '../models/word-types.models';
 import { WordTypeDetailSelection } from '../models/word-types-detail.models';
@@ -17,11 +17,8 @@ function params(query: string): ParamMap {
   return convertToParamMap(query ? Object.fromEntries(new URLSearchParams(query)) : {});
 }
 
-function encodeDetailScope(selection: unknown): Record<string, string | null> | undefined {
-  const encoder = (wordTypesUrlSync as unknown as {
-    buildWordTypesDetailScopeQuery?: (value: WordTypeDetailSelection) => Record<string, string | null>;
-  }).buildWordTypesDetailScopeQuery;
-  return encoder?.(selection as WordTypeDetailSelection);
+function encodeDetailScope(selection: WordTypeDetailSelection): WordTypesQueryChange {
+  return buildWordTypesDetailScopeQuery(selection);
 }
 
 describe('parseWordTypesQueryParams — child codes', () => {
@@ -279,12 +276,11 @@ describe('clearWordTypesSelection', () => {
     expect(cleared[WORD_TYPES_QUERY_KEYS.root]).toBeNull();
     expect(cleared[WORD_TYPES_QUERY_KEYS.stem]).toBeNull();
     expect(cleared[WORD_TYPES_QUERY_KEYS.lemma]).toBeNull();
-    const detailKeys = WORD_TYPES_QUERY_KEYS as unknown as Record<string, string>;
-    expect(cleared[detailKeys['detailType']]).toBeNull();
-    expect(cleared[detailKeys['detailChildCode']]).toBeNull();
-    expect(cleared[detailKeys['detailCase']]).toBeNull();
-    expect(cleared[detailKeys['detailTense']]).toBeNull();
-    expect(cleared[detailKeys['detailVoice']]).toBeNull();
+    expect(cleared[WORD_TYPES_QUERY_KEYS.detailType]).toBeNull();
+    expect(cleared[WORD_TYPES_QUERY_KEYS.detailChildCode]).toBeNull();
+    expect(cleared[WORD_TYPES_QUERY_KEYS.detailCase]).toBeNull();
+    expect(cleared[WORD_TYPES_QUERY_KEYS.detailTense]).toBeNull();
+    expect(cleared[WORD_TYPES_QUERY_KEYS.detailVoice]).toBeNull();
     expect(cleared[WORD_TYPES_QUERY_KEYS.view]).toBeNull();
     expect(cleared[WORD_TYPES_QUERY_KEYS.detailPage]).toBeNull();
     expect(cleared[WORD_TYPES_QUERY_KEYS.location]).toBeNull();
