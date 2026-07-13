@@ -34,7 +34,6 @@ import { WordTypesCache, WordTypesCacheKeys } from './word-types-cache';
 import {
   buildWordTypesQueryParams,
   canonicalWordTypesDetailPage,
-  clearSelectionForTableView,
   clearWordTypesSelection,
   parseWordTypesQueryParams,
 } from './word-types-url-sync';
@@ -145,13 +144,10 @@ export class WordTypesExplorerFacade {
     }));
   }
 
-  // Switching the table-view tab narrows the same filtered scope to a different aggregation level.
-  // It resets the page and clears any selected row (grouped views have no word-row selection).
+  // The table aggregation is independent of an open detail selection. A tab change only replaces
+  // the displayed list and resets its page; route merging preserves every detail key unchanged.
   selectTableView(tableView: WordTypeTableView): void {
-    this.navigate({
-      ...buildWordTypesQueryParams({ tableView, page: DEFAULT_WORD_TYPES_PAGE }),
-      ...clearSelectionForTableView(tableView),
-    });
+    this.navigate(buildWordTypesQueryParams({ tableView, page: DEFAULT_WORD_TYPES_PAGE }));
   }
 
   // A secondary filter narrows the rows without crossing type boundaries. It resets the page, clears

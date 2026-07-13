@@ -7,7 +7,6 @@ import {
   buildWordTypesDeepLink,
   buildWordTypesQueryParams,
   canonicalWordTypesDetailPage,
-  clearSelectionForTableView,
   clearWordTypesSelection,
   parseWordTypesQueryParams,
 } from './word-types-url-sync';
@@ -306,23 +305,6 @@ describe('clearWordTypesSelection', () => {
   });
 });
 
-describe('clearSelectionForTableView', () => {
-  it('clears only incompatible selection keys and selection display state', () => {
-    const cleared = clearSelectionForTableView('roots');
-
-    expect(cleared[WORD_TYPES_QUERY_KEYS.word]).toBeNull();
-    expect(cleared[WORD_TYPES_QUERY_KEYS.contextCode]).toBeNull();
-    expect(cleared[WORD_TYPES_QUERY_KEYS.stem]).toBeNull();
-    expect(cleared[WORD_TYPES_QUERY_KEYS.lemma]).toBeNull();
-    expect(cleared[WORD_TYPES_QUERY_KEYS.root]).toBeUndefined();
-    expect(cleared[WORD_TYPES_QUERY_KEYS.view]).toBeNull();
-    expect(cleared[WORD_TYPES_QUERY_KEYS.detailPage]).toBeNull();
-    expect(cleared[WORD_TYPES_QUERY_KEYS.location]).toBeNull();
-    expect(cleared[WORD_TYPES_QUERY_KEYS.column]).toBeNull();
-    expect(cleared['dim']).toBeUndefined();
-  });
-});
-
 describe('buildWordTypesDeepLink', () => {
   it('targets the word types route with a full selected-row query', () => {
     const link = buildWordTypesDeepLink({
@@ -448,19 +430,19 @@ describe('parseWordTypesQueryParams — tableView', () => {
     expect(parsed.tableView).toBe('roots');
   });
 
-  it('clears stale word-selection params when tableView is not words, even if the URL supplies them', () => {
+  it('restores a word detail independently when tableView is not words', () => {
     const parsed = parseWordTypesQueryParams(
       params('type=noun&childCode=PN&tableView=roots&word=123&contextCode=PN&view=surahs&detailPage=2&location=2:1:2&column=analysis'),
     );
 
     expect(parsed.tableView).toBe('roots');
-    expect(parsed.word).toBeNull();
-    expect(parsed.tashkeelWordId).toBe(0);
-    expect(parsed.contextCode).toBe('');
+    expect(parsed.word).toBe(123);
+    expect(parsed.tashkeelWordId).toBe(123);
+    expect(parsed.contextCode).toBe('PN');
     expect(parsed.view).toBe('surahs');
     expect(parsed.detailPage).toBe(1);
-    expect(parsed.location).toBeNull();
-    expect(parsed.column).toBeNull();
+    expect(parsed.location).toBe('2:1:2');
+    expect(parsed.column).toBe('analysis');
   });
 
   it('keeps selection params when tableView is words', () => {
@@ -478,7 +460,7 @@ describe('parseWordTypesQueryParams — explicit selection identity', () => {
     ['root', 'roots', 123],
     ['stem', 'stems', 456],
     ['lemma', 'lemmas', 789],
-  ] as const)('restores %s selection only from tableView=%s and its positive ID', (key, tableView, id) => {
+  ] as const)('restores %s selection from its positive ID', (key, tableView, id) => {
     const parsed = parseWordTypesQueryParams(params(`tableView=${tableView}&${key}=${id}`));
 
     expect(parsed.tableView).toBe(tableView);
@@ -490,12 +472,12 @@ describe('parseWordTypesQueryParams — explicit selection identity', () => {
     expect(parsed.detailPage).toBe(1);
   });
 
-  it('ignores grouped identity keys that are incompatible with the active tableView', () => {
+  it('fails closed when more than one detail identity is present', () => {
     const parsed = parseWordTypesQueryParams(
       params('tableView=roots&root=123&stem=456&lemma=789'),
     );
 
-    expect(parsed.root).toBe(123);
+    expect(parsed.root).toBeNull();
     expect(parsed.stem).toBeNull();
     expect(parsed.lemma).toBeNull();
   });
@@ -504,14 +486,37 @@ describe('parseWordTypesQueryParams — explicit selection identity', () => {
     ['roots', 'root'],
     ['stems', 'stem'],
     ['lemmas', 'lemma'],
-  ] as const)('keeps word and contextCode only in words view, not %s', (tableView, key) => {
+  ] as const)('keeps a word identity while the %s table is displayed', (tableView, _key) => {
     const parsed = parseWordTypesQueryParams(
-      params(`tableView=${tableView}&${key}=123&word=191004&contextCode=PN`),
+      params(`tableView=${tableView}&word=191004&contextCode=PN&view=ayahs`),
     );
 
-    expect(parsed.word).toBeNull();
-    expect(parsed.contextCode).toBe('');
+    expect(parsed.word).toBe(191004);
+    expect(parsed.contextCode).toBe('PN');
   });
+
+  it.each([
+    ['roots', 'stem', 456, 'ayahs', 2],
+    ['words', 'lemma', 789, 'words', 3],
+  ] as const)(
+    'restores a mismatched %s table with preserved %s detail state',
+    (tableView, key, id, view, detailPage) => {
+      const parsed = parseWordTypesQueryParams(params(
+        `type=noun&childCode=PN&tableView=${tableView}&${key}=${id}&detailType=verb&detailChildCode=present&detailCase=all&detailTense=present&detailVoice=active&view=${view}&detailPage=${detailPage}`,
+      ));
+
+      expect(parsed).toEqual(expect.objectContaining({
+        tableView,
+        [key]: id,
+        detailType: 'verb',
+        detailChildCode: 'present',
+        detailTense: 'present',
+        detailVoice: 'active',
+        view,
+        detailPage,
+      }));
+    },
+  );
 
   it('normalizes words view back to ayahs for word selections', () => {
     const parsed = parseWordTypesQueryParams(

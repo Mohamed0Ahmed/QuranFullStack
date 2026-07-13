@@ -119,12 +119,16 @@ Table-view tabs & grouped detail coverage (Feature 022 evolution):
 - The table-view strip (كلمات | جذور | أصول | صيغ), table shell, and details host stay mounted
   through every parent/child/filter/sort/view/loading/empty/error transition.
 - `tableView` survives type/child/case/tense/voice/sort/page changes; only the Words tab returns a
-  grouped view to `words`, and switching a tab clears only the incompatible selection keys.
+  grouped view to `words`. Switching a tab changes only the displayed table/list page and preserves the
+  complete open detail identity, scope, view, page, title, and content without another detail request.
 - Activating a grouped occurrence statistic writes its explicit `root`/`stem`/`lemma` key, all five
   detail-scope keys, `view=words`, and no page-1 `detailPage`; ayah/surah statistics map directly to
   their views. The frontend cache key includes `tableView` so tabs never cross-serve.
 - Detail panels are kind-aware (word → آيات/سور; grouped → كلمات مرتبطة/آيات/سور), begin directly with
   tabs/content with no repeated summary card, and member-word rows remain strictly display-only.
+- Refresh/direct URLs/Back/Forward restore mismatched table/detail kinds independently. No row is active
+  while kinds differ; returning to the exact matching table kind and grammatical scope restores the
+  shared active color.
 - Grouped words/ayahs are server-paged with internal page 1: page 1 omits `detailPage`, pages `> 1`
   serialize it, and surahs always remove it.
 - All four views render quiet, non-focusable row containers with a leading page-relative row number.

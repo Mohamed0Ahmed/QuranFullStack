@@ -69,8 +69,10 @@ Shared across explorers: `utils/explorer-table-*` (focus/keyboard-nav/scroll/col
   Grouped **member-word rows are strictly display-only** — no button/link/tabindex/`qd-interactive-surface`/
   selected state and no Router; only their pagination emits. Grouped words and ayahs are server-paged with
   internal page 1, the canonical URL omits `detailPage` at page 1 and serializes only pages `> 1`, and the
-  surahs view always removes `detailPage`. Switching a `tableView` clears only the incompatible
-  selection keys, even if a stale deep link supplies one. Both backend and
+  surahs view always removes `detailPage`. Switching `tableView` changes only the displayed table and
+  list page: an open detail identity/scope/view/page remains loaded even when its kind differs from the
+  current table. Returning to the matching table kind and scope restores the exact row highlight without
+  reloading details. Both backend and
   frontend cache keys (`WordTypesCacheKeys.table` / `word-types-cache.ts`'s `table(...)`)
   include `tableView`, so tab switches never cross-serve another view's rows. Stem/lemma
   terminology follows the Roots/Lemmas/Stems explorers: **stem = الأصل / الأصول الصرفية**,

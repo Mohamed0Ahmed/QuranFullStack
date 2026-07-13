@@ -121,7 +121,7 @@ describe('WordTypesExplorerFacade — tableView', () => {
   beforeEach(() => getTestBed().resetTestingModule());
   afterEach(() => getTestBed().resetTestingModule());
 
-  it('selectTableView resets page to 1, clears selection, and navigates with the new tableView', () => {
+  it('selectTableView changes only list presentation and preserves the complete detail route state', () => {
     const { facade, router } = setup();
     const route = controllableRoute();
     facade.bindToRoute(route.route);
@@ -129,16 +129,10 @@ describe('WordTypesExplorerFacade — tableView', () => {
     facade.selectTableView('roots');
 
     expect(router.navigate).toHaveBeenLastCalledWith([], expect.objectContaining({
-      queryParams: expect.objectContaining({
+      queryParams: {
         tableView: 'roots',
         page: '1',
-        word: null,
-        contextCode: null,
-        view: null,
-        detailPage: null,
-        location: null,
-        column: null,
-      }),
+      },
       queryParamsHandling: 'merge',
     }));
     facade.unbindFromRoute();
@@ -341,7 +335,7 @@ describe('WordTypesExplorerFacade — tableView', () => {
     facade.unbindFromRoute();
   });
 
-  it('clears only incompatible selection keys when changing table view', () => {
+  it('does not clear a mismatched detail identity when changing table view', () => {
     const { facade, router } = setup();
     const route = controllableRoute({ type: 'noun', childCode: 'PN', tableView: 'words', word: '191001', contextCode: 'PN' });
     facade.bindToRoute(route.route);
@@ -349,8 +343,7 @@ describe('WordTypesExplorerFacade — tableView', () => {
     facade.selectTableView('roots');
 
     const params = lastQueryParams(router);
-    expect(params).toEqual(expect.objectContaining({ tableView: 'roots', word: null, contextCode: null, stem: null, lemma: null }));
-    expect(params).not.toHaveProperty('root');
+    expect(params).toEqual({ tableView: 'roots', page: '1' });
     facade.unbindFromRoute();
   });
 

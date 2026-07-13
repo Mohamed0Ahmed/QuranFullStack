@@ -881,7 +881,11 @@ describe('WordTypesExplorerPageComponent', () => {
 
       expect(router.navigate).toHaveBeenLastCalledWith([], expect.objectContaining({
         queryParams: {
-          [urlKey]: String(id),
+          word: null,
+          contextCode: null,
+          root: urlKey === 'root' ? String(id) : null,
+          stem: urlKey === 'stem' ? String(id) : null,
+          lemma: urlKey === 'lemma' ? String(id) : null,
           detailType: 'noun',
           detailChildCode: 'PN',
           detailCase: 'all',
@@ -910,6 +914,9 @@ describe('WordTypesExplorerPageComponent', () => {
       queryParams: {
         word: '191001',
         contextCode: 'PN',
+        root: null,
+        stem: null,
+        lemma: null,
         detailType: 'noun',
         detailChildCode: 'PN',
         detailCase: 'all',
@@ -984,6 +991,101 @@ describe('WordTypesExplorerPageComponent', () => {
     await fixture.whenStable();
     fixture.detectChanges();
     expect(rowContainer.classList.contains('qd-is-selected')).toBe(false);
+  });
+
+  it('keeps mismatched stem details populated across table views and restores the exact active row on return', async () => {
+    api.getTableRows.mockImplementation((request: { tableView: string }) => of(ok<PagedResultDto<WordTypeTableRowDto>>({
+      page: 1,
+      pageSize: 25,
+      totalCount: 1,
+      items: [request.tableView === 'stems' ? groupedStemRow : groupedRootRow],
+    })));
+    api.getGroupedSummary.mockReturnValue(of(ok({
+      ...groupedSummaryDto,
+      kind: 'stem',
+      dimensionId: 190600,
+      displayText: 'مَكْتُوب',
+    })));
+    const preserved = withDetailScope({
+      type: 'noun',
+      childCode: 'PN',
+      tableView: 'roots',
+      stem: '190600',
+      view: 'ayahs',
+      detailPage: '2',
+    });
+    queryParamMap$.next(convertToParamMap(preserved));
+    const fixture = await createPage();
+    const detailFacade = TestBed.inject(WordTypesDetailFacade);
+    const panelBefore = detailFacade.panelState();
+    const summaryCalls = api.getGroupedSummary.mock.calls.length;
+    const detailCalls = api.getGroupedAyahMatches.mock.calls.length;
+
+    expect(fixture.nativeElement.querySelector('[data-word-types-row="root:190700"].qd-is-selected')).toBeNull();
+    expect(panelBefore).toMatchObject({
+      selection: { kind: 'stem', stemId: 190600 },
+      view: 'ayahs',
+      detailPage: 2,
+      groupedSummary: { displayText: 'مَكْتُوب' },
+    });
+
+    for (const tableView of ['words', 'lemmas', 'roots']) {
+      queryParamMap$.next(convertToParamMap({ ...preserved, tableView }));
+      await fixture.whenStable();
+      fixture.detectChanges();
+      expect(detailFacade.panelState()).toEqual(panelBefore);
+    }
+    expect(api.getGroupedSummary).toHaveBeenCalledTimes(summaryCalls);
+    expect(api.getGroupedAyahMatches).toHaveBeenCalledTimes(detailCalls);
+
+    queryParamMap$.next(convertToParamMap({ ...preserved, tableView: 'stems' }));
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[data-word-types-row="stem:190600"].qd-is-selected')).not.toBeNull();
+  });
+
+  it('atomically replaces a preserved mismatched identity when a new statistic opens details', async () => {
+    api.getTableRows.mockReturnValue(of(ok<PagedResultDto<WordTypeTableRowDto>>({
+      page: 1,
+      pageSize: 25,
+      totalCount: 1,
+      items: [groupedRootRow],
+    })));
+    queryParamMap$.next(convertToParamMap(withDetailScope({
+      type: 'noun',
+      childCode: 'PN',
+      tableView: 'roots',
+      stem: '190600',
+      view: 'ayahs',
+      detailPage: '2',
+    })));
+    const fixture = await createPage();
+
+    (fixture.nativeElement.querySelector(
+      '[data-word-types-row="root:190700"] [data-word-count-column="occurrences"] button',
+    ) as HTMLButtonElement).click();
+
+    expect(router.navigate).toHaveBeenLastCalledWith([], expect.objectContaining({
+      queryParams: expect.objectContaining({
+        word: null,
+        contextCode: null,
+        root: '190700',
+        stem: null,
+        lemma: null,
+        detailType: 'noun',
+        detailChildCode: 'PN',
+        detailCase: 'all',
+        detailTense: 'all',
+        detailVoice: 'all',
+        view: 'words',
+        detailPage: null,
+      }),
+      queryParamsHandling: 'merge',
+    }));
+    expect(TestBed.inject(WordTypesDetailFacade).panelState().selection).toMatchObject({
+      kind: 'root',
+      rootId: 190700,
+    });
   });
 
   it.each([

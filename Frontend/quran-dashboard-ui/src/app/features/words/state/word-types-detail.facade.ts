@@ -390,39 +390,29 @@ function hasSummary(state: WordTypesDetailState): boolean {
 }
 
 function toSelection(parsed: ParsedWordTypesQuery): WordTypeDetailSelection | null {
-  if (parsed.tableView === 'words') {
-    const scope = scopeFrom(parsed);
-    return parsed.word !== null
-      && parsed.contextCode.length > 0
-      && scope !== null
-      ? {
-          kind: 'word',
-          identity: {
-            tashkeelWordId: parsed.word,
-            contextCode: parsed.contextCode,
-            case: scope.case,
-            tense: scope.tense,
-            voice: scope.voice,
-          },
-          scope,
-        }
-      : null;
-  }
-
   const scope = scopeFrom(parsed);
   if (scope === null) {
     return null;
   }
-  if (parsed.root !== null) {
-    return { kind: 'root', rootId: parsed.root, scope };
+
+  const selections: WordTypeDetailSelection[] = [];
+  if (parsed.word !== null && parsed.contextCode.length > 0) {
+    selections.push({
+      kind: 'word',
+      identity: {
+        tashkeelWordId: parsed.word,
+        contextCode: parsed.contextCode,
+        case: scope.case,
+        tense: scope.tense,
+        voice: scope.voice,
+      },
+      scope,
+    });
   }
-  if (parsed.stem !== null) {
-    return { kind: 'stem', stemId: parsed.stem, scope };
-  }
-  if (parsed.lemma !== null) {
-    return { kind: 'lemma', lemmaId: parsed.lemma, scope };
-  }
-  return null;
+  if (parsed.root !== null) selections.push({ kind: 'root', rootId: parsed.root, scope });
+  if (parsed.stem !== null) selections.push({ kind: 'stem', stemId: parsed.stem, scope });
+  if (parsed.lemma !== null) selections.push({ kind: 'lemma', lemmaId: parsed.lemma, scope });
+  return selections.length === 1 ? selections[0] : null;
 }
 
 function scopeFrom(parsed: ParsedWordTypesQuery): WordTypeDetailScope | null {

@@ -308,6 +308,57 @@ describe('WordTypesDetailFacade — kind-aware orchestration', () => {
     facade.unbindFromRoute();
   });
 
+  it.each(['roots', 'words', 'lemmas'] as const)(
+    'keeps a loaded stem detail unchanged without another API request when tableView changes to %s',
+    (tableView) => {
+      const getGroupedSummary = vi.fn(() => of(okGroupedSummary({ kind: 'stem', dimensionId: 190600, displayText: 'مَكْتُوب' })));
+      const getGroupedAyahMatches = vi.fn(() => of(okAyahs(2)));
+      const { facade, api } = setup({ getGroupedSummary, getGroupedAyahMatches });
+      const preserved = groupedDetailParams(
+        { tableView: 'stems', type: 'noun', childCode: 'N', stem: '190600', view: 'ayahs', detailPage: '2' },
+      );
+      const route = controllableRoute(preserved);
+
+      facade.bindToRoute(route.route);
+      const before = facade.panelState();
+
+      route.setQueryParams({ ...preserved, tableView });
+
+      expect(facade.panelState()).toEqual(before);
+      expect(api.getGroupedSummary).toHaveBeenCalledTimes(1);
+      expect(api.getGroupedAyahMatches).toHaveBeenCalledTimes(1);
+      facade.unbindFromRoute();
+    },
+  );
+
+  it('restores mismatched table and detail kinds independently through refresh and history', () => {
+    const getGroupedSummary = vi.fn((request: { kind: string; dimensionId: number }) =>
+      of(okGroupedSummary({ kind: request.kind as WordTypeGroupedSummaryDto['kind'], dimensionId: request.dimensionId })),
+    );
+    const { facade } = setup({ getGroupedSummary });
+    const stemDetail = groupedDetailParams({ tableView: 'roots', type: 'noun', stem: '190600', view: 'ayahs', detailPage: '2' });
+    const lemmaDetail = groupedDetailParams({ tableView: 'words', type: 'noun', lemma: '190500', view: 'words' });
+    const route = controllableRoute(stemDetail);
+
+    facade.bindToRoute(route.route);
+    expect(facade.panelState()).toMatchObject({
+      selection: { kind: 'stem', stemId: 190600 },
+      view: 'ayahs',
+      detailPage: 2,
+    });
+
+    route.setQueryParams(lemmaDetail);
+    expect(facade.panelState()).toMatchObject({ selection: { kind: 'lemma', lemmaId: 190500 }, view: 'words' });
+
+    route.setQueryParams(stemDetail);
+    expect(facade.panelState()).toMatchObject({
+      selection: { kind: 'stem', stemId: 190600 },
+      view: 'ayahs',
+      detailPage: 2,
+    });
+    facade.unbindFromRoute();
+  });
+
   it('restores a grouped detail from its stored scope when list scope differs on direct load', () => {
     const getGroupedSummary = vi.fn(() => of(okGroupedSummary({ kind: 'root', dimensionId: 190700 })));
     const { facade, api } = setup({ getGroupedSummary });

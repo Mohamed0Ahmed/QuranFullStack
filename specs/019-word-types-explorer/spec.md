@@ -253,10 +253,11 @@ ayahs, and surahs for the exact numeric identity/scope, while the row container 
 - **FR-050**: Grouped detail identity MUST be the **numeric** `root_id`/`stem_id`/`lemma_id`; the Arabic
   display text is presentation only and MUST NOT be used as membership identity. Null dimensions and
   ayah markers remain excluded.
-- **FR-051**: Shareable grouped selection identity MUST use the explicit positive query key compatible
-  with the active `tableView`: `root` for `roots`, `stem` for `stems`, and `lemma` for `lemmas`.
-  Word selection remains `word + contextCode` in `tableView=words`. Incompatible selection keys are
-  ignored; the generic `dim` key is forbidden.
+- **FR-051**: Shareable detail identity MUST use exactly one explicit positive key: `root`, `stem`, or
+  `lemma` for grouped details, or `word + contextCode` for a word detail. Detail identity is independent
+  of the active `tableView`; combinations such as a roots table with a preserved stem detail MUST
+  restore on refresh and history navigation. Multiple simultaneous identities fail closed, and the
+  generic `dim` key is forbidden.
 - **FR-052**: Detail view defaults are kind-aware: word selection defaults to `ayahs`; grouped selection
   defaults to `words`. `detailPage` remains internal page `1` when omitted or invalid, is omitted from
   canonical URLs at page `1`, is serialized only above page `1`, and is always removed for `surahs`.
@@ -273,6 +274,10 @@ ayahs, and surahs for the exact numeric identity/scope, while the row container 
   view to `words`. This supersedes the Feature 022 MVP behavior that hid the strip without a leaf, hid
   the details panel and expanded the table full-width for grouped views, and reset `tableView` on main
   type / parent changes.
+- **FR-054a**: Changing `tableView` MUST change only the displayed table and reset list page. It MUST
+  preserve the complete open detail identity/scope/view/page/content without a detail reload. If the
+  current table kind differs, no row is active; returning to the matching kind and scope restores the
+  exact selected-row color.
 - **FR-055**: A grouped selection MUST render, inside the always-mounted details host, kind-aware tabs —
   word → آيات/سور; grouped → الكلمات المرتبطة/آيات/سور — with RTL roving focus. Content begins directly
   with the tabs and active list; no repeated summary card is shown. Grouped detail content is paged

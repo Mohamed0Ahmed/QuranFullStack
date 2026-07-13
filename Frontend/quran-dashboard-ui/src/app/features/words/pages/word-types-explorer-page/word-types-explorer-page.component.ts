@@ -263,14 +263,17 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
     }
 
     this.updateQueryParams(
-      buildWordTypesQueryParams({
-        ...keyChange,
-        ...buildWordTypesDetailScopeQuery(selection),
-        view: event.view,
-        detailPage: canonicalWordTypesDetailPage(event.view, DEFAULT_WORD_TYPES_DETAIL_PAGE),
-        location: null,
-        column: event.row.kind === 'word' ? event.column : null,
-      }),
+      {
+        ...clearWordTypesSelection(),
+        ...buildWordTypesQueryParams({
+          ...keyChange,
+          ...buildWordTypesDetailScopeQuery(selection),
+          view: event.view,
+          detailPage: canonicalWordTypesDetailPage(event.view, DEFAULT_WORD_TYPES_DETAIL_PAGE),
+          location: null,
+          column: event.row.kind === 'word' ? event.column : null,
+        }),
+      },
     );
   }
 

@@ -49,8 +49,9 @@ Rules:
 - `inl` is a leaf: `childCode` is ignored.
 - Non-positive/malformed `page` and `detailPage` normalize to `1`.
 - `word` without a valid positive `contextCode` does not select a row. `root`, `stem`, and `lemma`
-  must each be positive integers when their table view is active.
-- Identity keys are compatible only with the matching `tableView`:
+  must each be positive integers. Exactly one valid identity may be present; multiple identities fail
+  closed.
+- Detail identity is independent of the displayed `tableView`:
 
   | `tableView` | Accepted identity | Default `view` |
   |---|---|---|
@@ -59,9 +60,10 @@ Rules:
   | `stems` | `stem` | `words` |
   | `lemmas` | `lemma` | `words` |
 
-  The parser clears every incompatible identity key. `word`, `contextCode`, `location`, and `column`
-  are retained only in `words`; grouped views ignore them. Display text is never identity, and the
-  generic `dim` query key is forbidden.
+  The table may differ from the identity kind (for example, `tableView=roots` with a preserved `stem`,
+  or `tableView=words` with a preserved `lemma`). Detail defaults and compatibility derive from the
+  identity kind, not the table kind. `location` and `column` follow a word detail even while another
+  table is displayed. Display text is never identity, and the generic `dim` query key is forbidden.
 - An identity is valid only with a complete, type-compatible detail snapshot. Missing, malformed, or
   incomplete `detailType/detailChildCode/detailCase/detailTense/detailVoice` fails closed: list state
   remains usable, but no detail selection is restored and no detail request is issued. Detail scope is
@@ -72,14 +74,16 @@ Rules:
   child writes list `type`/`childCode` plus any normalized list feature keys and resets list `page` to
   `1`; it deliberately preserves identity, `view`, `detailPage`, and the five detail-scope keys.
   Clicking a statistic replaces the identity/view/page and copies the current list scope into all five
-  detail keys. Changing `tableView` clears incompatible selection/detail keys. Existing secondary-filter
-  reset behavior, sorting, and list pagination remain unchanged.
+  detail keys. Changing `tableView` writes only `tableView` and list `page=1`; route merging preserves
+  the existing identity, all five detail-scope keys, `view`, `detailPage`, `location`, and `column`, and
+  does not trigger a detail reload. Existing secondary-filter reset behavior, sorting, and list
+  pagination remain unchanged.
 - Missing or invalid `tableView` defaults to `words`; existing URLs without `tableView` keep working unchanged.
 - `view=words` normalizes to `ayahs` for word selection. `view=surahs` always keeps internal
   `detailPage=1` and removes `detailPage` from canonical URL writes. For `words` and `ayahs`, page `1`
   is represented internally but omitted from the URL; only pages above `1` serialize `detailPage`.
-- Browser refresh, direct loading, and back/forward restore the list scope and stored detail scope
-  independently, together with compatible identity and canonical detail view/page state.
+- Browser refresh, direct loading, and back/forward restore the list scope, table view, and stored
+  detail selection independently, including combinations whose table and detail kinds differ.
 - Browse-only parents never replace the committed list shell. A selected child changes the table while
   preserved details continue loading/querying under their original stored scope. Only `inl` is a
   directly committed parent/leaf.
@@ -196,8 +200,8 @@ api.getGroupedSurahs(groupedRequest);
 ## Kind-Aware Detail Orchestration (Task 7)
 
 `WordTypesDetailFacade` restores and loads details for all four selection kinds from the URL. It parses
-the explicit selection key compatible with the active `tableView` (`word`+`contextCode`, `root`, `stem`,
-or `lemma`) and the independent five-key detail snapshot into a discriminated
+the one explicit selection key (`word`+`contextCode`, `root`, `stem`, or `lemma`) independently of the
+active `tableView` and combines it with the independent five-key detail snapshot into a discriminated
 `WordTypeDetailSelection`. Loaders use that stored scope—not the current list scope—when they construct
 requests, then load a kind-appropriate summary and the active view:
 
@@ -238,8 +242,9 @@ the same filtered scope between four aggregation levels via the `tableView` quer
   behavior).
 - The list always loads from `GET .../word-types/table` (E2b); `GET .../word-types/words` (E2) stays
   reserved for existing shareable deep links.
-- Selecting a tab resets `page` to `1`, clears incompatible selection keys, and preserves the active
-  `type`/`childCode`/`case`/`tense`/`voice` filters.
+- Selecting a tab resets list `page` to `1` and preserves both the active
+  `type`/`childCode`/`case`/`tense`/`voice` filters and the complete open detail state. A tab-only change
+  never reloads details.
 - `tableView` survives type/child/case/tense/voice/sort/page changes. Only the **Words** tab returns a
   grouped view to `words`; browse-only parents and `selectScope(type, childCode)` do not reset it.
 
@@ -352,15 +357,15 @@ screens stack/collapse consistently with existing explorers. Quran/Mushaf text i
 - Missing root/lemma/stem placeholders.
 - Secondary filters do not trigger scoped tree-count expectations; only row total and active UI chips reflect the secondary scope.
 - Keyboard/ARIA behavior for filter picker, statistic buttons, tabs, and narrow-screen panel.
-- `tableView` URL parse/build: missing → `words`; invalid → `words`; compatible explicit grouped keys
-  round-trip with scope; incompatible keys are removed; the canonical order includes `root`, `stem`, and
-  `lemma`, then `detailType`, `detailChildCode`, `detailCase`, `detailTense`, `detailVoice` before `view`,
-  and has no generic `dim` key.
+- `tableView` URL parse/build: missing → `words`; invalid → `words`; one explicit identity of any kind
+  round-trips independently with scope while multiple identities fail closed; the canonical order
+  includes `root`, `stem`, and `lemma`, then `detailType`, `detailChildCode`, `detailCase`, `detailTense`,
+  `detailVoice` before `view`, and has no generic `dim` key.
 - Detail paging: words/ayahs retain internal page `1` while omitting it from URLs, pages above `1`
-  serialize it, and surahs always remove it. Browser back/forward replays compatible identity plus the
-  independent list/detail scopes.
-- Table-view tab switching resets page to `1`, clears incompatible selection keys, and changes the
-  request/cache key (triggers reload); `tableView` is preserved by browse-only parents,
+  serialize it, and surahs always remove it. Browser back/forward replays table view and detail identity
+  independently with the list/detail scopes.
+- Table-view tab switching resets list page to `1`, preserves the complete detail selection without a
+  detail request, and changes only the table request/cache key; `tableView` is preserved by browse-only parents,
   `selectScope(type, childCode)`, case/tense/voice/sort/page, and only the Words tab returns a grouped
   view to `words`.
 - Grouped rendering: dimension column + three native statistic buttons per view; rows whose `kind`
