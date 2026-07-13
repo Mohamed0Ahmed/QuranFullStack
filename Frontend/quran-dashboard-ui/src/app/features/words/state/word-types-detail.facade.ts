@@ -16,13 +16,16 @@ import {
   DEFAULT_WORD_TYPES_DETAIL_VIEW,
   ParsedWordTypesQuery,
   WordTypeDetailView,
+  WordTypeGroupedTableRowDto,
   WordTypeRowDto,
   WordTypeRowIdentity,
   WordTypeSummaryDto,
+  groupedTableRowId,
 } from '../models/word-types.models';
 import {
   WordTypeDetailScope,
   WordTypeDetailSelection,
+  WordTypeGroupedDetailSelection,
   WordTypesDetailState,
 } from '../models/word-types-detail.models';
 import { parseWordTypesQueryParams } from './word-types-url-sync';
@@ -102,10 +105,7 @@ export class WordTypesDetailFacade {
   unbindFromRoute(): void {
     this.routeSub?.unsubscribe();
     this.routeSub = undefined;
-    this.summarySub?.unsubscribe();
-    this.detailSub?.unsubscribe();
-    this.summarySub = undefined;
-    this.detailSub = undefined;
+    this.cancelPendingLoads();
   }
 
   // Optimistic word selection from a table row: the row already carries its summary, so only the
@@ -115,6 +115,7 @@ export class WordTypesDetailFacade {
     scope: WordTypeDetailScope,
     view: WordTypeDetailView = DEFAULT_WORD_TYPES_DETAIL_VIEW,
   ): void {
+    this.cancelPendingLoads();
     const identity = toIdentity(row);
     const selection: WordTypeDetailSelection = { kind: 'word', identity, scope };
     this.activeUrlState = { selection, view, detailPage: DEFAULT_WORD_TYPES_DETAIL_PAGE, location: null };
@@ -130,28 +131,27 @@ export class WordTypesDetailFacade {
     this.loadActiveView(selection, view, DEFAULT_WORD_TYPES_DETAIL_PAGE);
   }
 
-  // General selection (word or grouped): the summary is fetched for the selected identity/scope.
-  select(selection: WordTypeDetailSelection, view?: WordTypeDetailView): void {
-    const resolvedView = view ?? defaultViewForSelection(selection);
-    const state: PanelUrlState = { selection, view: resolvedView, detailPage: DEFAULT_WORD_TYPES_DETAIL_PAGE, location: null };
-    this.activeUrlState = state;
+  selectGroupedRow(
+    row: WordTypeGroupedTableRowDto,
+    scope: WordTypeDetailScope,
+    view: WordTypeDetailView = DEFAULT_GROUPED_WORD_TYPES_DETAIL_VIEW,
+  ): void {
+    this.cancelPendingLoads();
+    const selection = groupedSelectionFromRow(row, scope);
+    this.activeUrlState = { selection, view, detailPage: DEFAULT_WORD_TYPES_DETAIL_PAGE, location: null };
     this._panel.set({
       ...INITIAL_PANEL,
       selection,
       kind: selection.kind,
-      selectedRow: selectedRowOf(selection),
-      view: resolvedView,
+      groupedSummary: groupedSummaryFromRow(row),
+      view,
       status: 'loading',
     });
-    this.summarySub?.unsubscribe();
-    this.summarySub = this.loadSummaryAndRestore(state).subscribe();
+    this.loadActiveView(selection, view, DEFAULT_WORD_TYPES_DETAIL_PAGE);
   }
 
   clearSelection(): void {
-    this.summarySub?.unsubscribe();
-    this.detailSub?.unsubscribe();
-    this.summarySub = undefined;
-    this.detailSub = undefined;
+    this.cancelPendingLoads();
     this.activeUrlState = null;
     this.generation++;
     this._panel.set(INITIAL_PANEL);
@@ -233,6 +233,7 @@ export class WordTypesDetailFacade {
       return of(undefined);
     }
 
+    this.cancelPendingLoads();
     this.activeUrlState = state;
     const current = this._panel();
 
@@ -298,6 +299,13 @@ export class WordTypesDetailFacade {
       }),
       map(() => undefined),
     );
+  }
+
+  private cancelPendingLoads(): void {
+    this.summarySub?.unsubscribe();
+    this.detailSub?.unsubscribe();
+    this.summarySub = undefined;
+    this.detailSub = undefined;
   }
 
   private summaryDescriptor(selection: WordTypeDetailSelection): SummaryDescriptor {
@@ -485,8 +493,29 @@ function isSameIdentity(current: WordTypeRowIdentity, next: WordTypeRowIdentity)
   );
 }
 
-function defaultViewForSelection(selection: WordTypeDetailSelection): WordTypeDetailView {
-  return selection.kind === 'word' ? DEFAULT_WORD_TYPES_DETAIL_VIEW : DEFAULT_GROUPED_WORD_TYPES_DETAIL_VIEW;
+function groupedSelectionFromRow(
+  row: WordTypeGroupedTableRowDto,
+  scope: WordTypeDetailScope,
+): WordTypeGroupedDetailSelection {
+  switch (row.kind) {
+    case 'root':
+      return { kind: 'root', rootId: row.rootId, scope };
+    case 'stem':
+      return { kind: 'stem', stemId: row.stemId, scope };
+    case 'lemma':
+      return { kind: 'lemma', lemmaId: row.lemmaId, scope };
+  }
+}
+
+function groupedSummaryFromRow(row: WordTypeGroupedTableRowDto): WordTypeGroupedSummaryDto {
+  return {
+    kind: row.kind,
+    dimensionId: groupedTableRowId(row),
+    displayText: row.displayText,
+    occurrencesCount: row.occurrencesCount,
+    ayahsCount: row.ayahsCount,
+    surahsCount: row.surahsCount,
+  };
 }
 
 function toIdentity(row: WordTypeRowIdentity): WordTypeRowIdentity {

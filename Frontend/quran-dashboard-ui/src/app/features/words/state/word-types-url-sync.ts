@@ -152,7 +152,7 @@ export function buildWordTypesQueryParams(changes: WordTypesQueryChange): Record
 }
 
 export function buildWordTypesDetailScopeQuery(
-  selection: WordTypeDetailSelection,
+  selection: Pick<WordTypeDetailSelection, 'scope'>,
 ): WordTypesQueryChange {
   return {
     detailType: selection.scope.type,

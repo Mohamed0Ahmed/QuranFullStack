@@ -1117,17 +1117,28 @@ describe('WordTypesExplorerPageComponent', () => {
     expect(rowContainer.classList.contains('qd-is-selected')).toBe(true);
   });
 
-  it('passes the selection kind and full grammatical scope to the detail facade', async () => {
+  it('opens grouped details immediately from the table row without requesting its summary', async () => {
     api.getTableRows.mockReturnValue(of(ok<PagedResultDto<WordTypeTableRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [groupedRootRow] })));
+    api.getGroupedSummary.mockReturnValue(new Subject<ApiResponse<WordTypeGroupedSummaryDto>>());
     queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'PN', tableView: 'roots' }));
     const fixture = await createPage();
-    const selectSpy = vi.spyOn(TestBed.inject(WordTypesDetailFacade), 'select');
 
     (fixture.nativeElement.querySelector('[data-word-types-row="root:190700"] [data-word-count-column="occurrences"] button') as HTMLButtonElement).click();
 
-    expect(selectSpy).toHaveBeenCalledWith(
-      { kind: 'root', rootId: 190700, scope: { type: 'noun', childCode: 'PN', case: 'all', tense: 'all', voice: 'all' } },
-      'words',
+    expect(TestBed.inject(WordTypesDetailFacade).panelState()).toEqual(expect.objectContaining({
+      selection: {
+        kind: 'root',
+        rootId: 190700,
+        scope: { type: 'noun', childCode: 'PN', case: 'all', tense: 'all', voice: 'all' },
+      },
+      groupedSummary: groupedSummaryDto,
+      view: 'words',
+    }));
+    expect(api.getGroupedSummary).not.toHaveBeenCalled();
+    expect(api.getGroupedMemberWords).toHaveBeenCalledWith(
+      { kind: 'root', dimensionId: 190700, type: 'noun', childCode: 'PN', case: 'all', tense: 'all', voice: 'all' },
+      1,
+      25,
     );
   });
 

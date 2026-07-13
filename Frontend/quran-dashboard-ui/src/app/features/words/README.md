@@ -62,8 +62,9 @@ Shared across explorers: `utils/explorer-table-*` (focus/keyboard-nav/scroll/col
   both scopes independently, malformed/incomplete snapshots fail closed, and closing details clears
   identity/view/page plus all five detail keys. Detail tabs remain kind-aware (word → آيات/سور; grouped
   → كلمات مرتبطة/آيات/سور) and content begins directly with the tabs and active list—there is no repeated
-  summary card. Summary fetch/state remains because the panel title and loading/error/retry/not-found
-  orchestration consume it.
+  summary card. Row-driven selections seed summary state from the table row and load the chosen detail
+  immediately; refresh/direct URLs still fetch the summary because no table-row payload is available for
+  the panel title and loading/error/retry/not-found orchestration.
 
   After a successful tree read, rows-only and later tree failures retain the last valid tree/strip.
   Grouped **member-word rows are strictly display-only** — no button/link/tabindex/`qd-interactive-surface`/

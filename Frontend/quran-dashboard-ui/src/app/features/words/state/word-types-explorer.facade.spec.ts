@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getTestBed, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, ParamMap, Router, convertToParamMap, provideRouter } from '@angular/router';
-import { BehaviorSubject, Subject, of, throwError } from 'rxjs';
+import { BehaviorSubject, Observable, Subject, of, throwError } from 'rxjs';
 
 import { ApiResponse } from '../../../core/data-access/api-response.model';
 import { WordTypesApi } from '../data-access/word-types.api';
@@ -446,6 +446,28 @@ describe('WordTypesExplorerFacade — tableView', () => {
     second$.next(okRows([wordRow()]));
     second$.complete();
     expect(facade.listState().status).toBe('success');
+    facade.unbindFromRoute();
+  });
+
+  it('cancels an in-flight retry only when the list request key changes', () => {
+    const retryCancelled = vi.fn();
+    const retryRows$ = new Observable<ApiResponse<PagedResultDto<WordTypeTableRowDto>>>(
+      () => retryCancelled,
+    );
+    const getTableRows = vi.fn()
+      .mockReturnValueOnce(throwError(() => new Error('network')))
+      .mockReturnValueOnce(retryRows$)
+      .mockReturnValueOnce(of(okRows([rootRow()])));
+    const { facade } = setup({ getTableRows });
+    const route = controllableRoute({ type: 'inl' });
+    facade.bindToRoute(route.route);
+
+    facade.retryList();
+    route.setQueryParams({ type: 'inl', word: '191001', contextCode: 'INL' });
+    expect(retryCancelled).not.toHaveBeenCalled();
+
+    route.setQueryParams({ type: 'noun', childCode: 'PN' });
+    expect(retryCancelled).toHaveBeenCalledTimes(1);
     facade.unbindFromRoute();
   });
 

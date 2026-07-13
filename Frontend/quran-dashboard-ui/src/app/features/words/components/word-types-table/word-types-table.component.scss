@@ -71,19 +71,6 @@
 }
 
 .word-types-table__row {
-  inline-size: 100%;
-  min-inline-size: 0;
-  appearance: none;
-  border: 0;
-  background: transparent;
-  color: var(--qd-text);
-  font: inherit;
-  padding: 0;
-  text-align: start;
-  cursor: default;
-}
-
-.word-types-table__row--loading {
   cursor: default;
 }
 

@@ -46,7 +46,6 @@ import { WordTypeGroupedMemberWordDto } from '../../data-access/word-types.api';
 import {
   WordTypeDetailScope,
   WordTypeDetailSelection,
-  WordTypeGroupedDetailSelection,
 } from '../../models/word-types-detail.models';
 import { AyahMatchDto, PagedResultDto as SharedPagedResultDto } from '../../models/unique-words.models';
 import { WordTypesDetailFacade } from '../../state/word-types-detail.facade';
@@ -205,15 +204,6 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
     this.explorerFacade.selectTableView(view);
   }
 
-  private toGroupedSelection(row: RootTableRowDto | StemTableRowDto | LemmaTableRowDto): WordTypeGroupedDetailSelection {
-    const scope = this.currentScope();
-    switch (row.kind) {
-      case 'root': return { kind: 'root', rootId: row.rootId, scope };
-      case 'stem': return { kind: 'stem', stemId: row.stemId, scope };
-      case 'lemma': return { kind: 'lemma', lemmaId: row.lemmaId, scope };
-    }
-  }
-
   private currentScope(): WordTypeDetailScope {
     const query = this.listState().query;
     return {
@@ -244,22 +234,19 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
 
   protected onCountOpened(event: WordTypeCountOpenedEvent): void {
     const scope = this.currentScope();
-    let selection: WordTypeDetailSelection;
     let keyChange: { word: number; contextCode: string } | { root: number } | { stem: number } | { lemma: number };
 
     if (event.row.kind === 'word') {
       const identity = normalizeWordTableRow(event.row);
-      selection = { kind: 'word', identity, scope };
       keyChange = { word: event.row.tashkeelWordId, contextCode: event.row.contextCode };
       this.detailFacade.selectRow(identity, scope, event.view);
     } else {
-      selection = this.toGroupedSelection(event.row);
-      keyChange = selection.kind === 'root'
-        ? { root: selection.rootId }
-        : selection.kind === 'stem'
-          ? { stem: selection.stemId }
-          : { lemma: selection.lemmaId };
-      this.detailFacade.select(selection, event.view);
+      this.detailFacade.selectGroupedRow(event.row, scope, event.view);
+      keyChange = event.row.kind === 'root'
+        ? { root: event.row.rootId }
+        : event.row.kind === 'stem'
+          ? { stem: event.row.stemId }
+          : { lemma: event.row.lemmaId };
     }
 
     this.updateQueryParams(
@@ -267,7 +254,7 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
         ...clearWordTypesSelection(),
         ...buildWordTypesQueryParams({
           ...keyChange,
-          ...buildWordTypesDetailScopeQuery(selection),
+          ...buildWordTypesDetailScopeQuery({ scope }),
           view: event.view,
           detailPage: canonicalWordTypesDetailPage(event.view, DEFAULT_WORD_TYPES_DETAIL_PAGE),
           location: null,

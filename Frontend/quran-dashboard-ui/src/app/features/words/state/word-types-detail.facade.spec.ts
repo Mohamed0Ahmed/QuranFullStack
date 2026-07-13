@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getTestBed, TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, ParamMap, convertToParamMap, provideRouter } from '@angular/router';
-import { BehaviorSubject, Subject, of, throwError } from 'rxjs';
+import { BehaviorSubject, Observable, Subject, of, throwError } from 'rxjs';
 
 import { ApiResponse } from '../../../core/data-access/api-response.model';
 import {
@@ -421,6 +421,26 @@ describe('WordTypesDetailFacade — kind-aware orchestration', () => {
     const state = facade.panelState();
     expect(state.selection?.kind).toBe('stem');
     expect(state.groupedSummary?.dimensionId).toBe(190600);
+    facade.unbindFromRoute();
+  });
+
+  it('cancels an in-flight detail as soon as the route replaces its selection', () => {
+    const firstDetailCancelled = vi.fn();
+    const firstDetail$ = new Observable<ApiResponse<PagedResultDto<WordTypeGroupedMemberWordDto>>>(
+      () => firstDetailCancelled,
+    );
+    const secondSummary$ = new Subject<ApiResponse<WordTypeGroupedSummaryDto>>();
+    const getGroupedSummary = vi.fn()
+      .mockReturnValueOnce(of(okGroupedSummary({ kind: 'root', dimensionId: 190700 })))
+      .mockReturnValueOnce(secondSummary$);
+    const getGroupedMemberWords = vi.fn().mockReturnValueOnce(firstDetail$);
+    const { facade } = setup({ getGroupedSummary, getGroupedMemberWords });
+    const route = controllableRoute(groupedDetailParams({ tableView: 'roots', type: 'noun', root: '190700' }));
+
+    facade.bindToRoute(route.route);
+    route.setQueryParams(groupedDetailParams({ tableView: 'stems', type: 'noun', stem: '190600' }));
+
+    expect(firstDetailCancelled).toHaveBeenCalledTimes(1);
     facade.unbindFromRoute();
   });
 

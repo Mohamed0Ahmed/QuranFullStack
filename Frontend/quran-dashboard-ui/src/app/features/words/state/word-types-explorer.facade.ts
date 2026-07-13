@@ -95,22 +95,22 @@ export class WordTypesExplorerFacade {
       tap((query) => this.state.update((current) => ({ ...current, query }))),
       map((query) => this.requestKey(query)),
       distinctUntilChanged(),
+      tap(() => this.cancelRetry()),
       switchMap(() => this.loadList()),
     ).subscribe();
   }
 
   unbindFromRoute(): void {
     this.routeSub?.unsubscribe();
-    this.retrySub?.unsubscribe();
+    this.cancelRetry();
     this.routeSub = undefined;
-    this.retrySub = undefined;
     this.route = undefined;
   }
 
   // Re-issues the current list load after a transport error. Failed reads are never cached, so a
   // retry always re-fetches; the cancellable subscription prevents overlapping retries.
   retryList(): void {
-    this.retrySub?.unsubscribe();
+    this.cancelRetry();
     this.retrySub = this.loadList().subscribe();
   }
 
@@ -239,6 +239,11 @@ export class WordTypesExplorerFacade {
 
   private settle<T>(source: Observable<ApiResponse<T>>): Observable<ApiResponse<T> | null> {
     return source.pipe(catchError(() => of(null)));
+  }
+
+  private cancelRetry(): void {
+    this.retrySub?.unsubscribe();
+    this.retrySub = undefined;
   }
 
   private handleTreeOnlyResponse(tree: ApiResponse<WordTypeTreeDto>): void {
