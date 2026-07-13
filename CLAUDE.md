@@ -27,7 +27,9 @@ Canonical workspace paths:
 - `resources/` is local and gitignored; do not assume files under it are committed or available in other clones.
 - Source packages must be staged/canonicalized before import features use them. Do not import directly from random upstream folders when a staged package is required.
 - Feature planning documents, capability reports, decision addendums, and pre-Spec Kit reports live under `docs/feature-XXX-feature-name/`.
-- Spec Kit artifacts live under `specs/`; do not confuse `docs/` planning reports with `specs/` feature specifications, plans, tasks, contracts, or quickstarts.
+- Spec Kit artifacts live under `specs/<feature>/`, the per-feature planning workspace. For an **active** feature its `spec`/`plan`/`tasks`/`contracts` are live planning inputs (the Spec-Kit implementation-review checks the work against `specs/<feature>/contracts/`). Do not confuse `docs/` planning reports with `specs/` feature specifications, plans, tasks, or quickstarts.
+- Current contract index (thin, pointer-only) → `docs/contracts/`; it defers to code + the nearest `README.md`.
+- Merged features 001–019 are historical and their `contracts/` were removed; the current/steady-state contract truth is the code + nearest README, indexed by `docs/contracts/`. New features still populate `specs/<feature>/contracts/` during development.
 - Backend implementation, import, engineering review, real-run, validation, and completion reports live under `Backend/report/feature-XXX-feature-name/`.
 - Frontend report conventions are not established yet; do not invent frontend report folders unless the task explicitly asks for that decision.
 
@@ -38,13 +40,13 @@ Canonical workspace paths:
   current truth, boundaries, and invariants of that area.
 - Local `README.md` = WHAT an area does now and what must not break.
   `AGENTS.md` / `CLAUDE.md` / `.architecture/*` = HOW to work and how to write code.
-  `specs/` = feature plans/contracts. Reports = evidence only.
+  `specs/<feature>/` = per-feature Spec-Kit planning (active features live; 001–019 historical, contracts removed). Reports = evidence only.
 - If your change alters behavior, commands, boundaries, routes, data invariants,
   import behavior, API contracts, URL state, or tests described in a README, UPDATE
   that README in the SAME change.
 - Do NOT create long-lived feature reports by default. Reserve reports for audits,
   reviews, acceptance evidence, data imports, diagnostics, and one-off investigations.
-- Specs remain planning/contract artifacts; README files do not replace them.
+- Specs are per-feature planning artifacts; steady-state truth is code + nearest README, indexed by `docs/contracts/`.
 
 ## Coding Principles
 

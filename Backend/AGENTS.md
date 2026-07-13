@@ -19,7 +19,7 @@ Before adding or changing logging, exception handling, diagnostics, DataPipeline
   `infrastructure/QuranDashboard.Infrastructure/Files/Quran/DataPipelines/Words/MorphologyImporting/README.md`,
   `infrastructure/QuranDashboard.Infrastructure/Persistence/DataPipelines/Quran/README.md`,
   `infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/README.md`,
-  `tools/QuranDashboard.DataImporter/README.md`) before the `.architecture/*` HOW docs.
+  `tools/QuranDashboard.DataImporter/README.md`) before the `.architecture/*` HOW docs, and consult `docs/contracts/` (the pointer index) to locate the authoritative README/code for a contract.
 - If you change pipeline behavior, import commands/verbs, read-model derivation,
   identity/ordering invariants, source-safety handling, or an API contract that a
   README documents, update that README in the same change.
@@ -49,7 +49,8 @@ Importer/source-data rules:
 Planning and Spec Kit separation:
 
 - Workspace planning reports and pre-Spec Kit documents belong under `/projects/Dashboard/App/docs/feature-XXX-feature-name/`.
-- Spec Kit artifacts belong under `/projects/Dashboard/App/specs/`.
+- Spec Kit artifacts belong under `/projects/Dashboard/App/specs/<feature>/`, the per-feature planning workspace; for an active feature its `spec`/`plan`/`tasks`/`contracts` are live planning inputs (the Spec-Kit implementation-review checks the work against `specs/<feature>/contracts/`).
+- Merged features 001–019 are historical (their `contracts/` were removed); steady-state contract truth is code + nearest README, indexed by `docs/contracts/`. New features still populate `specs/<feature>/contracts/`.
 - Backend post-work and validation reports belong under `/projects/Dashboard/App/Backend/report/`, not under workspace `docs/`.
 
 ## EF Core Migrations

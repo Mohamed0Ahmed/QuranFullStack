@@ -23,8 +23,10 @@ You cannot judge scope without knowing what was asked. First pin down:
    infer the intended scope from `tasks.md` and **state the assumption** you made.
 3. **What the artifacts say** — read `spec.md` (requirements, Locked Decisions, Out of
    Scope), `plan.md` (technical context, structure, gates), `tasks.md` (the exact task
-   IDs and their file paths), the relevant files under `contracts/`, and
-   `quickstart.md` when acceptance/verification is in question.
+   IDs and their file paths), the feature's planned contracts under `specs/<feature>/contracts/`
+   (compare the implementation against what was specified), and `quickstart.md` when
+   acceptance/verification is in question. Where a contract is now implemented, its
+   authoritative current truth is the code + nearest README (indexed by `docs/contracts/`).
 
 `tasks.md` is the spine: each task lists an **exact file path**, a phase, and often a
 User Story tag (US1–US5). That mapping is what makes the checks below objective rather
@@ -69,17 +71,22 @@ Make the mapping explicit so a reader can audit it:
 
 ### 4. Contract Compliance
 
-When a contract under `contracts/` is relevant to what changed, compare the
-implementation against the contract file directly — not against memory:
+When a contract is relevant to what changed, compare the implementation against **both**
+(a) the feature's **planned** contract in `specs/<feature>/contracts/` — flag any drift
+from what was specified — and (b) the **implemented** truth in code + the nearest README
+(indexed by `docs/contracts/`). Compare against the artifacts directly, not memory:
 
-- **API endpoints changed** → compare routes, verbs, status codes, and payloads against
-  the matching `contracts/api-*.md` (e.g. `api-health.md`, `api-dashboard-info.md`).
-- **Navigation changed** → compare against `contracts/ui-navigation.md`.
-- **Design tokens / styling changed** → compare against `contracts/ui-design-tokens.md`
-  (token names, OKLCH/parchment values, no raw `#fff`/`#000` where the contract forbids
-  it).
-- **API response shape changed** → compare against `contracts/api-response-envelope.md`
-  (the `{ IsSuccess, Message, Data, Errors }` envelope and its `Ok`/`Fail` helpers).
+- **API endpoints changed** → planned: the feature's API contract under
+  `specs/<feature>/contracts/`; implemented: the endpoint's controller + `Controllers/README.md`
+  route family (indexed by `docs/contracts/http-api.md`).
+- **Navigation changed** → planned: the feature's navigation contract under
+  `specs/<feature>/contracts/`; implemented: the frontend `core/README.md` (indexed by
+  `docs/contracts/frontend-shell.md`).
+- **Design tokens / styling changed** → planned: the feature's design-token contract under
+  `specs/<feature>/contracts/`; implemented: the frontend `styles/README.md` (indexed by
+  `docs/contracts/frontend-shell.md`); no raw `#fff`/`#000` where the styles README forbids it.
+- **API response shape changed** → compare against `Contracts/ApiResponse.cs` + `API_GUIDELINES.md` §5
+  (the `{ IsSuccess, Message, Data, Errors }` envelope and its `Ok`/`Fail` helpers; indexed by `docs/contracts/response-envelope.md`).
 
 For each relevant contract, state explicitly whether the implementation **matches**,
 **deviates** (with the specific difference), or the contract is **not applicable** to
@@ -114,7 +121,7 @@ sidesteps the phase ordering and gates the plan depends on. Rate it by impact:
 When a contract names a **single source of truth**, verify the implementation actually
 derives from it instead of hardcoding a parallel copy that can drift.
 
-> **Example:** `contracts/ui-navigation.md` declares `core/navigation/nav-items.ts`
+> **Example:** a feature's planned navigation contract under `specs/<feature>/contracts/` declares `core/navigation/nav-items.ts`
 > (the `NavItem[]` config) the single navigation source of truth. Navbar links, the
 > «المزيد» dropdown grouping, routes, and labels must be **driven by** that config —
 > not duplicated as hardcoded markup in the navbar template. A hardcoded parallel list

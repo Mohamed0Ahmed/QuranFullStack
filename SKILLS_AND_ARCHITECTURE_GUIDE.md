@@ -53,7 +53,7 @@ These live at the workspace root and apply across Backend + Frontend.
 
 - Full clean-code / test-guard rule bodies (they live in the skills/references; the docs only *point* to them).
 - Architecture rules (those live in the Backend/Frontend `.architecture/` docs).
-- Spec Kit per-feature details (those live in `specs/<feature>/`).
+- Spec Kit per-feature details (those live in the active feature's `specs/<feature>/`; merged features 001–019 had their `contracts/` removed, steady-state truth is code + README indexed by `docs/contracts/`).
 - Anything that would create a second, drifting copy of a rule that already has a home.
 
 ---
@@ -97,14 +97,14 @@ review/commit skills detailed below (`engineering-review`, `test-guard`,
   - Backend changed: `Backend/.architecture/{BACKEND_STRUCTURE,CLEAN_ARCHITECTURE,API_GUIDELINES}.md`.
   - Frontend changed: `Frontend/quran-dashboard-ui/.architecture/{FRONTEND_STRUCTURE,UI_STYLE_SYSTEM,API_INTEGRATION_GUIDELINES}.md`, plus `PRODUCT.md`/`DESIGN.md` for UI/product decisions.
   - Test files in the diff: applies `test-guard` (`references/dotnet.md` backend, `references/jest.md` frontend).
-  - Spec Kit change: `.claude/skills/engineering-review/SPEC_KIT_IMPLEMENTATION_REVIEW.md` + the relevant `specs/<feature>/{spec,plan,tasks}.md`, `contracts/`, `quickstart.md`.
+  - Spec Kit change: `.claude/skills/engineering-review/SPEC_KIT_IMPLEMENTATION_REVIEW.md` + the active feature's `specs/<feature>/{spec,plan,tasks,contracts}` (planning inputs); the implemented/steady-state truth is code + nearest README (indexed by `docs/contracts/`).
 - **Output:** structured verdict (PASS / PASS WITH NOTES / CHANGES REQUESTED / BLOCKED), scope reviewed, optional Spec Kit compliance section, findings by severity (BLOCKING / MAJOR / MINOR / NOTE), threshold check, architecture/responsibility check, Quranic data safety check, verification check, final recommendation.
 - **Review-only:** ✅ yes. **Implements changes:** ❌ no, unless the user explicitly asks for fixes as a separate task.
 
 #### 2.1a `SPEC_KIT_IMPLEMENTATION_REVIEW.md` (add-on, inside engineering-review)
 
-- **Purpose:** extra rules that **extend** engineering-review **only when** the change was implemented from Spec Kit. Verifies phase/task scope (no future-phase leakage, nothing skipped), task→file traceability, Locked-Decisions and Out-of-Scope compliance, contract compliance (`contracts/api-*.md`, `ui-*.md`), acceptance/quickstart verification, scope-creep, and single-source-of-truth derivation.
-- **Best used when:** the request mentions a Phase, a User Story/US, task IDs (e.g. `T013–T018`), `specs/<feature>/`, `spec.md`/`plan.md`/`tasks.md`, `contracts/`, or "implemented Phase/tasks".
+- **Purpose:** extra rules that **extend** engineering-review **only when** the change was implemented from Spec Kit. Verifies phase/task scope (no future-phase leakage, nothing skipped), task→file traceability, Locked-Decisions and Out-of-Scope compliance, contract compliance (compare against the feature's planned `specs/<feature>/contracts` **and** the implemented code + nearest README indexed by `docs/contracts/`; response envelope via `Contracts/ApiResponse.cs` + `API_GUIDELINES.md` §5), acceptance/quickstart verification, scope-creep, and single-source-of-truth derivation.
+- **Best used when:** the request mentions a Phase, a User Story/US, task IDs (e.g. `T013–T018`), `specs/<feature>/`, `spec.md`/`plan.md`/`tasks.md`, `specs/<feature>/contracts/`, or "implemented Phase/tasks".
 - **Do not use when:** the change is a simple, non–Spec-Kit change.
 - **Relationship to engineering-review:** it is a conditional module of it, not a separate skill. Findings fold into the same output.
 
