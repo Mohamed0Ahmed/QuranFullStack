@@ -16,6 +16,8 @@ feature-report indexes.
 | `architecture/` | Backend structure inventory, target-structure feasibility/execution/review, and the global logging/observability foundation plan. |
 | `database/` | `current-database-tables-and-relationships-report.md` — read-only DB baseline. |
 | `database-inventory/` | Live PostgreSQL inventory + the DB reset/seeding-order runbook. |
+| `feature-008-quran-translations-foundation/` | Generated Quran translation import acceptance reports (Markdown + JSON), including source coverage, validation, exclusions, and provenance warnings. |
+| `feature-009-quran-navigation-metadata-foundation/` | Generated Quran navigation metadata import acceptance reports (Markdown + JSON) for juz, hizb, rub, sajda, and ayah coverage validation. |
 
 ## Filename conventions (for any future evidence report)
 

@@ -1,4 +1,8 @@
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeAyahs;
+using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeGroupedAyahs;
+using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeGroupedSummary;
+using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeGroupedSurahs;
+using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeGroupedWords;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeRows;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeSummary;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeSurahs;
@@ -23,7 +27,7 @@ public sealed class WordTypesLoggingTests(WordTypesTestFixture fixture)
         entry.GetValue<string>("feature").Should().Be("WordTypes");
         entry.GetValue<string>("operation").Should().Be("GetWordTypeTree");
         entry.GetValue<int>("itemCount").Should().Be(4);
-        AssertNoRawQueryText(entry);
+        AssertNoSensitivePayload(entry);
     }
 
     [Fact]
@@ -47,7 +51,7 @@ public sealed class WordTypesLoggingTests(WordTypesTestFixture fixture)
         entry.GetValue<string>("sort").Should().Be("occurrences");
         entry.GetValue<int>("totalCount").Should().BeGreaterThan(0);
         entry.GetValue<int>("itemCount").Should().BeGreaterThan(0);
-        AssertNoRawQueryText(entry);
+        AssertNoSensitivePayload(entry);
     }
 
     [Fact]
@@ -71,7 +75,7 @@ public sealed class WordTypesLoggingTests(WordTypesTestFixture fixture)
         entry.GetValue<bool>("hasCaseFilter").Should().BeTrue();
         entry.GetValue<bool>("hasTenseFilter").Should().BeFalse();
         entry.GetValue<bool>("hasVoiceFilter").Should().BeFalse();
-        AssertNoRawQueryText(entry);
+        AssertNoSensitivePayload(entry);
     }
 
     [Theory]
@@ -112,7 +116,66 @@ public sealed class WordTypesLoggingTests(WordTypesTestFixture fixture)
         entry.GetValue<string>("reason").Should().Be(expectedReason);
         entry.GetValue<int>("tashkeelWordId").Should().Be(tashkeelWordId);
         entry.GetValue<string>("contextCode").Should().Be(contextCode);
-        AssertNoRawQueryText(entry);
+        AssertNoSensitivePayload(entry);
+    }
+
+    // Each grouped detail handler logs a completion entry with safe kind/ID/scope metadata only — never
+    // display text, Quran text, SQL, or a payload.
+    [Fact]
+    public async Task GroupedDetailsHandlers_LogSafeStructuredFieldsWithoutTextPayloadOrSql()
+    {
+        await using var scope = fixture.CreateScope();
+        var services = scope.ServiceProvider;
+
+        await AssertGroupedInfoLog<GetWordTypeGroupedSummaryHandler>(
+            services,
+            "GetWordTypeGroupedSummary",
+            ["feature", "operation", "kind", "dimensionId", "type", "childCode"],
+            handler => handler.HandleAsync(
+                new GetWordTypeGroupedSummaryQuery("roots", 190700, "noun", null, null, null, null), CancellationToken.None));
+
+        await AssertGroupedInfoLog<GetWordTypeGroupedWordsHandler>(
+            services,
+            "GetWordTypeGroupedWords",
+            ["feature", "operation", "kind", "dimensionId", "type", "childCode", "pageNumber", "pageSize", "totalCount", "itemCount"],
+            handler => handler.HandleAsync(
+                new GetWordTypeGroupedWordsQuery("roots", 190700, "noun", null, null, null, null, 1, 25), CancellationToken.None));
+
+        await AssertGroupedInfoLog<GetWordTypeGroupedAyahsHandler>(
+            services,
+            "GetWordTypeGroupedAyahs",
+            ["feature", "operation", "kind", "dimensionId", "type", "childCode", "pageNumber", "pageSize", "totalCount", "itemCount"],
+            handler => handler.HandleAsync(
+                new GetWordTypeGroupedAyahsQuery("roots", 190700, "noun", null, null, null, null, 1, 25), CancellationToken.None));
+
+        await AssertGroupedInfoLog<GetWordTypeGroupedSurahsHandler>(
+            services,
+            "GetWordTypeGroupedSurahs",
+            ["feature", "operation", "kind", "dimensionId", "type", "childCode", "mentionedCount", "missingCount"],
+            handler => handler.HandleAsync(
+                new GetWordTypeGroupedSurahsQuery("roots", 190700, "noun", null, null, null, null), CancellationToken.None));
+    }
+
+    private async Task AssertGroupedInfoLog<THandler>(
+        IServiceProvider services,
+        string expectedOperation,
+        IReadOnlyCollection<string> expectedFields,
+        Func<THandler, Task> invoke)
+        where THandler : class
+    {
+        fixture.LoggingProvider.Clear();
+        var handler = services.GetRequiredService<THandler>();
+
+        await invoke(handler);
+
+        var entry = SingleEntryFor<THandler>(LogLevel.Information);
+        entry.FieldNames().Should().BeEquivalentTo(expectedFields);
+        entry.GetValue<string>("feature").Should().Be("WordTypes");
+        entry.GetValue<string>("operation").Should().Be(expectedOperation);
+        entry.GetValue<string>("kind").Should().Be("roots");
+        entry.GetValue<int>("dimensionId").Should().Be(190700);
+        entry.GetValue<string>("type").Should().Be("noun");
+        AssertNoSensitivePayload(entry);
     }
 
     private RecordingLoggerProvider.LogEntry SingleEntryFor<THandler>(LogLevel expectedLevel)
@@ -133,13 +196,32 @@ public sealed class WordTypesLoggingTests(WordTypesTestFixture fixture)
         return entry;
     }
 
-    private static void AssertNoRawQueryText(RecordingLoggerProvider.LogEntry entry)
+    private static void AssertNoSensitivePayload(RecordingLoggerProvider.LogEntry entry)
     {
-        entry.Message.Should().NotContain("كَلِمَة");
-        entry.Message.ToLowerInvariant().Should().NotContain("select");
-        entry.Message.ToLowerInvariant().Should().NotContain("quran_word_morphology");
-        entry.StructuredFieldsWithoutOriginalFormat().Select(pair => pair.Value?.ToString()).Should().NotContain("كَلِمَة");
-        entry.StructuredFieldsWithoutOriginalFormat().Select(pair => pair.Value?.ToString()).Should().NotContain("select");
-        entry.StructuredFieldsWithoutOriginalFormat().Select(pair => pair.Value?.ToString()).Should().NotContain("quran_word_morphology");
+        string[] forbiddenFragments =
+        [
+            "select",
+            "from",
+            "where",
+            "join",
+            "quran_",
+            "ك ل م",
+            "كَلِمَة",
+            "بِسْمِ",
+            "ٱللَّهِ",
+        ];
+        var loggedStrings = entry.StructuredFields()
+            .Select(pair => pair.Value)
+            .OfType<string>()
+            .Append(entry.Message);
+
+        foreach (var loggedString in loggedStrings)
+        {
+            foreach (var forbiddenFragment in forbiddenFragments)
+            {
+                loggedString.Contains(forbiddenFragment, StringComparison.OrdinalIgnoreCase)
+                    .Should().BeFalse($"logs must not contain '{forbiddenFragment}'");
+            }
+        }
     }
 }

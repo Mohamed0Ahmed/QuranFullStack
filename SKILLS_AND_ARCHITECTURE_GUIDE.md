@@ -8,7 +8,7 @@ workflows for implementation, review, Spec Kit, tests, and commits.
 > docs. Where it summarizes a rule, the linked file remains the source of truth.
 > Do not copy architecture-doc or skill content into this guide; point to it.
 
-_Reflects the workspace as of 2026-07-10._
+_Reflects the workspace as of 2026-07-11._
 
 ## Workspace shape
 
@@ -60,7 +60,14 @@ These live at the workspace root and apply across Backend + Frontend.
 
 ## 2. Current skills
 
-All custom skills live under `.claude/skills/`. There are also **14 `speckit-*` skills** (the Spec Kit command set: `specify`, `clarify`, `plan`, `tasks`, `analyze`, `implement`, `checklist`, `constitution`, the `git-*` helpers, `taskstoissues`) — those are the Spec Kit workflow commands referenced in §5.
+All custom skills live under `.claude/skills/`. Ten are workspace skills — the four
+review/commit skills detailed below (`engineering-review`, `test-guard`,
+`backend-structure-review`, `commit-workflow`) plus six operational skills
+(`deploy-smoke`, `pr-context-prep`, `dependency-audit`, `performance-backend-review`,
+`performance-angular-review`, `backend-global-usings-cleanup`). There are also **14
+`speckit-*` skills** (the Spec Kit command set: `specify`, `clarify`, `plan`, `tasks`,
+`analyze`, `implement`, `checklist`, `constitution`, the `git-*` helpers,
+`taskstoissues`) — the Spec Kit workflow commands referenced in §5.
 
 ### Quick orientation
 
@@ -70,6 +77,12 @@ All custom skills live under `.claude/skills/`. There are also **14 `speckit-*` 
 | `test-guard` | Review **and** write-time guard | ✅ Authors/guards test code | **Test-code quality only** | Called *by* engineering-review for the test-file portion of a diff |
 | `backend-structure-review` | ✅ Yes | ❌ No (unless explicitly asked) | **Backend structure / layering / placement** | A focused subset, not a replacement |
 | `commit-workflow` | Planning + safe execution | Runs git (no destructive cmds) | **Git tracking, commit ordering & safe staging** | Independent (runs after review) |
+| `deploy-smoke` | ✅ Report-only | ❌ No (build/migrate/smoke only) | **Local build/migrate/runtime smoke** | Independent (runtime gate, not code review) |
+| `pr-context-prep` | ✅ Prep-only | ❌ No (never edits/commits/opens PR) | **PR context package before opening a PR** | Independent (PR-time; use after review) |
+| `dependency-audit` | ✅ Report-only (audit) | ❌ No upgrades unless asked | **NuGet + npm vuln / staleness audit** | Independent (security hygiene) |
+| `performance-backend-review` | ✅ Yes (explicit-invoke) | ❌ No | **Backend / EF Core / Postgres perf audit** | Perf counterpart; not the general gate |
+| `performance-angular-review` | ✅ Yes (explicit-invoke) | ❌ No | **Angular frontend perf audit** | Perf counterpart; not the general gate |
+| `backend-global-usings-cleanup` | ❌ No — action skill | ✅ Edits C# global usings | **Backend global-usings consolidation** | Independent (mechanical cleanup) |
 | `clean-code-guard` | _Not a skill_ — reference pack | n/a | Deep clean-code references | Lives **inside** engineering-review |
 
 ### 2.1 `engineering-review` — the primary holistic review skill
@@ -132,6 +145,51 @@ All custom skills live under `.claude/skills/`. There are also **14 `speckit-*` 
 - **Review-only:** no — it is **planning + safe execution** (runs non-destructive git only). **Implements source changes:** ❌ never modifies source code.
 - **Relationship to engineering-review:** independent; typically used **after** review passes.
 
+### 2.5 `deploy-smoke` — local build / migrate / runtime smoke
+
+- **Purpose:** report-only check that a change still restores, builds, migrates, and runs locally — catches build breakage, pending/broken migrations, and dead endpoints before review/PR/commit. Verifies backend build + frontend build, inspects the local DB target, optionally applies **local** migrations only with explicit approval, and smokes `/api/health` + changed endpoints.
+- **Best used when:** after an EF Core migration, before a review or PR, after a dependency/perf change, or before committing a cross-stack change.
+- **Do not use when:** you want fixes applied (report-only), a full quality review (engineering-review), or a vulnerability audit (dependency-audit).
+- **Hard rules:** local only; verify & display the DB target first; never drop/reset/reseed a DB; never target remote/production.
+- **Output:** verdict (`PASS` / `PASS WITH DEPLOYMENT NOTE` / `CHANGES REQUESTED` / `BLOCKED`), scope, commands, evidence, deployment notes, risks/skipped, next action.
+- **Review-only:** ✅ report-only. **Implements changes:** ❌ no.
+
+### 2.6 `pr-context-prep` — PR context package (before opening a PR)
+
+- **Purpose:** produce a copy-paste-ready PR context package so reviewers and CodeRabbit understand scope, risk, and invariants. Reads the branch diff/status vs base, classifies the change by **path group** (Backend, Frontend, specs/docs, cross-stack), and emits scope/out-of-scope, changed-file summary, related files & specs, critical invariants (Quran data safety first), test/build evidence, CodeRabbit focus, review checklist, size/split advice, risk level, and a merge-readiness call. Requires GitHub **merge commits** for PRs that import unsquashed subtree history.
+- **Best used when:** about to open a PR, or asked for a PR title/description/reviewer focus/merge-readiness.
+- **Do not use when:** you need Git staging/commit ordering/push execution (that is `commit-workflow`).
+- **Review/prep only:** ✅ never edits, commits, or opens the PR.
+
+### 2.7 `dependency-audit` — NuGet + npm security/staleness audit
+
+- **Purpose:** audit backend NuGet and frontend npm dependencies for known vulnerabilities and staleness. Separates **direct** from **transitive** advisories, identifies the likely parent for a transitive one, and proposes the **smallest safe remediation** with verification commands.
+- **Best used when:** checking for vulnerable/outdated packages, reacting to a CVE/advisory, or before bumping a dependency.
+- **Do not use when:** implementing features, doing a full engineering/perf review, or a build/runtime smoke (recommend `deploy-smoke` after a bump).
+- **Guardrails:** audit-first; no upgrades unless explicitly asked; never a major bump by default; never suppress an advisory without explicit approval; never mix dependency cleanup with feature/perf changes.
+- **Review-only:** ✅ report-first. **Implements changes:** ❌ not unless explicitly asked.
+
+### 2.8 `performance-backend-review` — backend/DB performance audit (explicit-invoke)
+
+- **Purpose:** deep, **review-only** performance audit for the .NET / ASP.NET Core / EF Core / PostgreSQL backend — N+1 queries, tracking vs `AsNoTracking`, missing indexes/query plans, transaction/lock cost, pagination/result-size and payload over-fetching, streaming vs in-memory, caching of expensive reads, importer/DataPipeline runtime cost, and slow backend tests. Inspects only the changed backend scope unless a wider audit is requested.
+- **Best used when:** the user **explicitly** asks for a backend or database performance review.
+- **Do not use when:** you want general/engineering/PR/clean-code/structure review (those are `engineering-review` / `backend-structure-review`), or frontend perf (that is `performance-angular-review`). Triggers only on explicit backend-perf intent, not the word "review".
+- **Output:** evidence-based findings, severities, recommendations — **never code fixes.**
+
+### 2.9 `performance-angular-review` — frontend performance audit (explicit-invoke)
+
+- **Purpose:** deep, **review-only** performance audit for the Angular 20 frontend — change-detection cost, Signals/computed/effect recomputation, RxJS leaks and subscription/timer/router cleanup, missing `@for` `track`, large DOM/heavy lists, bundle/chunk cost, duplicate API calls, route lazy-loading, and slow Vitest runs. Inspects only the changed frontend scope unless a wider audit is requested.
+- **Best used when:** the user **explicitly** asks for an Angular/frontend performance review.
+- **Do not use when:** you want general/engineering/UI-design review, or backend perf (`performance-backend-review`). Triggers only on explicit frontend-perf intent.
+- **Output:** evidence-based findings, severities, recommendations — **never code fixes.**
+
+### 2.10 `backend-global-usings-cleanup` — C# global-usings consolidation (action skill)
+
+- **Purpose:** the one **action** skill here (it edits code) — cleans up and consolidates C# global usings across the backend projects. Promotes only common, layer-safe, non-feature-specific namespaces that repeat in **more than five files** in the same project into that project's `GlobalUsings.cs`, removes now-redundant per-file usings, respects Clean Architecture layer boundaries from `BACKEND_STRUCTURE.md`, and verifies with `dotnet build`.
+- **Best used when:** the same imports repeat across many files in a Backend project, or a `GlobalUsings.cs` is sprawling/missing.
+- **Do not use when:** adding a single using, cleaning frontend/TypeScript imports, or touching C# `using` resource/disposal statements. Does **not** edit `BACKEND_STRUCTURE.md`.
+- **Review-only:** ❌ no — it modifies backend code (usings only), then builds to verify.
+
 ---
 
 ## Invocation & Reading Behavior
@@ -154,6 +212,12 @@ and what is **reference-only**. Use this to know when each item actually comes i
 | `test-guard` | Manually invoked skill (also applied by engineering-review) | **Manual** for test-only; **Conditional** within engineering-review | Write/add/edit tests, or test-only review; engineering-review applies it **only when a mixed diff contains test files** | Invoked on request; referenced by `engineering-review` | **Explicitly requested** for test-only reviews. Test-code quality only. |
 | `backend-structure-review` | Manually invoked skill | **Manual (explicit)** | Focused backend placement / layering / foldering questions | Invoked on request | **Normally explicitly requested.** Not the full review gate. |
 | `commit-workflow` | Git workflow skill | **Manual** | Monorepo commit / stage / push planning | Invoked on request | Path-aware focused commits; no destructive git. |
+| `deploy-smoke` | Runtime smoke skill | **Manual** | After a migration / before review or PR / after dep or perf change | Invoked on request | Report-only; local DB only; never drops/resets a DB. |
+| `pr-context-prep` | PR-prep skill | **Manual** | About to open a PR | Invoked on request | Prep-only; never edits/commits/opens the PR; path-group classification. |
+| `dependency-audit` | Security-audit skill | **Manual** | Vuln/staleness check; CVE reaction; before a bump | Invoked on request | Audit-first; no upgrades unless asked; no default major bump. |
+| `performance-backend-review` | Perf-audit skill | **Manual (explicit)** | Explicit backend/DB performance review only | Invoked on request | Review-only; changed scope; never code fixes. Not the general gate. |
+| `performance-angular-review` | Perf-audit skill | **Manual (explicit)** | Explicit Angular/frontend performance review only | Invoked on request | Review-only; changed scope; never code fixes. Not the general gate. |
+| `backend-global-usings-cleanup` | Action skill | **Manual** | Repeated imports / sprawling `GlobalUsings.cs` in a Backend project | Invoked on request | **Edits code** (usings only); verifies with `dotnet build`. |
 | Spec Kit skills (`speckit-*`: specify, clarify, plan, tasks, analyze, implement, …) | Spec Kit command | **Manual** (user-invoked slash commands) | Feature spec → clarify → plan → tasks → analyze → implement lifecycle | User invokes | 14 commands; see workflow §5A. |
 
 ### Practical rule of thumb
@@ -163,6 +227,11 @@ and what is **reference-only**. Use this to know when each item actually comes i
 - **Backend folder/layer uncertainty:** ask for `backend-structure-review`.
 - **Test-only review:** ask for `test-guard`.
 - **Commit planning:** ask for `commit-workflow`.
+- **Does it still build/run?** ask for `deploy-smoke` (after a migration, before a PR).
+- **Opening a PR:** ask for `pr-context-prep` (scope, risk, reviewer/CodeRabbit focus).
+- **Are our packages safe/current?** ask for `dependency-audit`.
+- **Backend/frontend feels slow:** ask (explicitly) for `performance-backend-review` / `performance-angular-review`.
+- **Imports repeated across a Backend project:** ask for `backend-global-usings-cleanup`.
 
 ---
 
@@ -244,6 +313,19 @@ Location: `Frontend/quran-dashboard-ui/.architecture/`. Canonical frontend rules
 - Treat untracked files and commit omission risk as commit-workflow concerns, not engineering-review findings.
 - Never commit build outputs, `node_modules`, `bin`/`obj`, `.angular/cache`, or secrets.
 
+### G. Before opening a PR
+
+- Run `deploy-smoke` to confirm the change still builds, migrates, and runs locally.
+- Then run `pr-context-prep` to package scope, invariants, evidence, and reviewer/CodeRabbit focus.
+- Open the PR with `commit-workflow` for staging/commits; for unsquashed subtree-import PRs, use GitHub's **merge commit** strategy.
+
+### H. Performance & dependency audits (explicit, review-only)
+
+- **Backend/DB feels slow?** Explicitly invoke `performance-backend-review`.
+- **Angular UI feels slow/janky?** Explicitly invoke `performance-angular-review`.
+- **Checking packages for vulnerabilities/staleness?** Use `dependency-audit`; run `deploy-smoke` after any approved bump.
+- These are findings-only; they do not apply fixes.
+
 ---
 
 ## 6. Decision matrix
@@ -258,6 +340,12 @@ Location: `Frontend/quran-dashboard-ui/.architecture/`. Canonical frontend rules
 | "Review component styling / RTL / theme" | `engineering-review` + `UI_STYLE_SYSTEM.md` | Tokens, `qd-*` classes, RTL, a11y. |
 | "Review facade/API data flow & states" | `engineering-review` + `API_INTEGRATION_GUIDELINES.md` | Page→Facade→Service flow, `ApiResponse<T>`, states. |
 | "Commit Backend + Frontend changes safely" | `commit-workflow` | Monorepo-aware grouping and safe explicit staging. |
+| "Does this change still build / migrate / run?" | `deploy-smoke` | Local build + migrate-check + runtime smoke; report-only. |
+| "Prepare / write up a PR before opening it" | `pr-context-prep` | Scope, invariants, evidence, reviewer/CodeRabbit focus, merge-readiness. |
+| "Are our NuGet/npm packages vulnerable or stale?" | `dependency-audit` | Direct vs transitive advisories + smallest safe remediation. |
+| "This backend endpoint / query is slow" | `performance-backend-review` | Explicit EF/DB/N+1/index/payload perf audit; findings-only. |
+| "This Angular page is slow / re-renders too much" | `performance-angular-review` | Explicit change-detection/Signals/RxJS/bundle perf audit; findings-only. |
+| "Same imports repeated across a Backend project" | `backend-global-usings-cleanup` | Consolidates layer-safe global usings; verifies with `dotnet build`. |
 | "Deep clean-code issue in implementation" | `engineering-review` using `references/clean-code-guard/*` | Deep naming/SOLID/DRY/AI-failure-mode checks. |
 | "Is this layer dependency allowed?" | `backend-structure-review` + `CLEAN_ARCHITECTURE.md` | Dependency direction/layering. |
 | "Start a new feature" | `speckit-*` chain (§5A) | Spec → clarify → plan → tasks → analyze. |
@@ -281,7 +369,7 @@ Location: `Frontend/quran-dashboard-ui/.architecture/`. Canonical frontend rules
 **Inventory check (all present unless noted):**
 
 - Root docs: `CODING_PRINCIPLES.md`, `PRODUCT.md`, `DESIGN.md`, `AGENTS.md`, `CLAUDE.md` ✅
-- Skills: `engineering-review/` (+ `SPEC_KIT_IMPLEMENTATION_REVIEW.md`, `references/clean-code-guard/`), `test-guard/` (+ `dotnet.md`, `jest.md`, `llm-app-testing.md`), `backend-structure-review/`, `commit-workflow/` ✅; plus 14 `speckit-*` skills ✅
+- Skills: `engineering-review/` (+ `SPEC_KIT_IMPLEMENTATION_REVIEW.md`, `references/clean-code-guard/`), `test-guard/` (+ `dotnet.md`, `jest.md`, `llm-app-testing.md`, `frontend-test-harness-constraints.md`), `backend-structure-review/`, `commit-workflow/`, `deploy-smoke/`, `pr-context-prep/`, `dependency-audit/`, `performance-backend-review/`, `performance-angular-review/`, `backend-global-usings-cleanup/` ✅; plus 14 `speckit-*` skills ✅
 - Backend `.architecture/`: `BACKEND_STRUCTURE.md`, `CLEAN_ARCHITECTURE.md`, `API_GUIDELINES.md` ✅
 - Frontend `.architecture/`: `FRONTEND_STRUCTURE.md`, `UI_STYLE_SYSTEM.md`, `API_INTEGRATION_GUIDELINES.md` ✅
 

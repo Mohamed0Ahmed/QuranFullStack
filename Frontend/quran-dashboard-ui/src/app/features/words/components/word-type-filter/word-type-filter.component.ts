@@ -1,6 +1,6 @@
-import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, input, linkedSignal, output } from '@angular/core';
 
-import { WORD_TYPES_CASE_FILTER_LABEL, WORD_TYPES_COLLAPSE_LABEL, WORD_TYPES_CURRENT_FILTER_LABEL, WORD_TYPES_EXPAND_LABEL, WORD_TYPES_FILTER_LABEL, WORD_TYPES_SUBTYPE_GROUP_LABEL, WORD_TYPES_TENSE_FILTER_LABEL, WORD_TYPES_VOICE_FILTER_LABEL, WORD_TYPE_CASE_LABELS, WORD_TYPE_TENSE_LABELS, WORD_TYPE_VOICE_LABELS } from '../../models/word-types.labels';
+import { WORD_TYPES_CASE_FILTER_LABEL, WORD_TYPES_CURRENT_FILTER_LABEL, WORD_TYPES_FILTER_LABEL, WORD_TYPES_NO_SUBTYPES_LABEL, WORD_TYPES_SUBTYPE_GROUP_LABEL, WORD_TYPES_TENSE_FILTER_LABEL, WORD_TYPES_VOICE_FILTER_LABEL, WORD_TYPE_CASE_LABELS, WORD_TYPE_TENSE_LABELS, WORD_TYPE_VOICE_LABELS } from '../../models/word-types.labels';
 import {
   WORD_TYPE_CASES,
   WORD_TYPE_TENSES,
@@ -14,6 +14,11 @@ import {
   WordTypeTreeNodeDto,
   WordTypeVoice,
 } from '../../models/word-types.models';
+
+export interface WordTypeScopeSelectedEvent {
+  readonly type: WordTypeMainType;
+  readonly childCode: string | null;
+}
 
 @Component({
   selector: 'qd-word-type-filter',
@@ -32,12 +37,10 @@ export class WordTypeFilterComponent {
   readonly selectedTense = input<WordTypeTense>('all');
   readonly selectedVoice = input<WordTypeVoice>('all');
   readonly loading = input(false);
-  readonly typeSelected = output<WordTypeMainType>();
-  readonly childSelected = output<string | null>();
+  readonly scopeSelected = output<WordTypeScopeSelectedEvent>();
   readonly caseSelected = output<WordTypeCase>();
   readonly tenseSelected = output<WordTypeTense>();
   readonly voiceSelected = output<WordTypeVoice>();
-  protected readonly openPanelType = signal<WordTypeMainType | null>(null);
 
   protected get filterLabel() {
     return WORD_TYPES_FILTER_LABEL;
@@ -75,30 +78,40 @@ export class WordTypeFilterComponent {
     return WORD_TYPE_VOICES;
   }
 
-  // Open panel drives secondary-filter visibility. particle and inl expose kind="none"
-  // and render no controls; noun renders case; verb renders tense + voice.
-  protected readonly openNode = computed<WordTypeTreeNodeDto | null>(() => {
+  protected readonly browsedType = linkedSignal(() => this.selectedType());
+
+  protected readonly browsedNode = computed<WordTypeTreeNodeDto | null>(() => {
     const currentTree = this.tree();
     if (!currentTree) {
       return null;
     }
-    return currentTree.mainTypes.find((node) => node.code === this.openPanelType()) ?? null;
+    return currentTree.mainTypes.find((node) => node.code === this.browsedType()) ?? null;
   });
 
   protected readonly secondaryFilter = computed<WordTypeSecondaryFilterDto | null>(
-    () => this.openNode()?.secondaryFilter ?? null,
+    () => this.browsedType() === this.selectedType()
+      ? this.browsedNode()?.secondaryFilter ?? null
+      : null,
   );
 
   protected readonly showCaseControls = computed(() => this.secondaryFilter()?.kind === 'case');
   protected readonly showVerbControls = computed(() => this.secondaryFilter()?.kind === 'tense+voice');
+
+  protected readonly showNoSubtypes = computed(
+    () => (this.browsedNode()?.children.length ?? 0) === 0 && this.secondaryFilter()?.kind === 'none',
+  );
 
   protected selectType(node: WordTypeTreeNodeDto): void {
     if (this.loading()) {
       return;
     }
 
-    this.typeSelected.emit(node.code);
-    this.openPanelType.set(node.children.length > 0 ? node.code : null);
+    if (node.children.length === 0) {
+      this.scopeSelected.emit({ type: node.code, childCode: null });
+      return;
+    }
+
+    this.browsedType.set(node.code);
   }
 
   protected selectChild(child: WordTypeChildNodeDto): void {
@@ -106,7 +119,10 @@ export class WordTypeFilterComponent {
       return;
     }
 
-    this.childSelected.emit(child.childCode);
+    const type = this.browsedNode()?.code;
+    if (type) {
+      this.scopeSelected.emit({ type, childCode: child.childCode });
+    }
   }
 
   protected changeCase(event: Event): void {
@@ -130,39 +146,21 @@ export class WordTypeFilterComponent {
     this.voiceSelected.emit((event.target as HTMLSelectElement).value as WordTypeVoice);
   }
 
-  protected toggleExpand(node: WordTypeTreeNodeDto, event: Event): void {
-    event.stopPropagation();
-    if (node.children.length === 0) {
-      return;
-    }
-
-    if (this.openPanelType() === node.code) {
-      this.closePanel(node.code);
-      return;
-    }
-
-    this.openPanelType.set(node.code);
-  }
-
-  protected isPanelOpen(node: WordTypeTreeNodeDto): boolean {
-    return node.children.length > 0 && this.openPanelType() === node.code;
-  }
-
   protected isSelected(node: WordTypeTreeNodeDto): boolean {
     return node.code === this.selectedType();
   }
 
-  protected isChildSelected(child: WordTypeChildNodeDto): boolean {
-    return child.childCode === this.selectedChildCode();
+  protected isBrowsed(node: WordTypeTreeNodeDto): boolean {
+    return node.code === this.browsedType();
   }
 
-  protected expandAriaLabel(node: WordTypeTreeNodeDto): string {
-    if (node.children.length === 0) {
-      return '';
-    }
+  protected isChildSelected(child: WordTypeChildNodeDto): boolean {
+    return this.browsedType() === this.selectedType()
+      && child.childCode === this.selectedChildCode();
+  }
 
-    const action = this.isPanelOpen(node) ? WORD_TYPES_COLLAPSE_LABEL : WORD_TYPES_EXPAND_LABEL;
-    return `${action} ${node.label.ar}`;
+  protected get noSubtypesLabel() {
+    return WORD_TYPES_NO_SUBTYPES_LABEL;
   }
 
   protected caseOptionLabel(option: WordTypeCase): string {
@@ -179,22 +177,6 @@ export class WordTypeFilterComponent {
 
   protected panelRegionLabel(node: WordTypeTreeNodeDto): string {
     return node.label.ar;
-  }
-
-  private closePanel(focusType: WordTypeMainType | null): void {
-    this.openPanelType.set(null);
-    this.restorePanelFocus(focusType);
-  }
-
-  private restorePanelFocus(focusType: WordTypeMainType | null): void {
-    if (!focusType) {
-      return;
-    }
-
-    const host = this.host.nativeElement as HTMLElement;
-    const trigger = host.querySelector<HTMLButtonElement>(`button.word-type-filter__expand[data-word-type-code="${focusType}"]`)
-      ?? host.querySelector<HTMLButtonElement>(`button.word-type-filter__button[data-word-type-code="${focusType}"]`);
-    trigger?.focus();
   }
 
   focusSelectedType(): void {

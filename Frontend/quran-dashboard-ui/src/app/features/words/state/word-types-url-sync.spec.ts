@@ -3,14 +3,22 @@ import { convertToParamMap, ParamMap } from '@angular/router';
 
 import {
   buildWordTypesDeepLink,
+  buildWordTypesDetailScopeQuery,
   buildWordTypesQueryParams,
+  canonicalWordTypesDetailPage,
   clearWordTypesSelection,
   parseWordTypesQueryParams,
+  WordTypesQueryChange,
 } from './word-types-url-sync';
 import { WORD_TYPES_QUERY_KEYS } from '../models/word-types.models';
+import { WordTypeDetailSelection } from '../models/word-types-detail.models';
 
 function params(query: string): ParamMap {
   return convertToParamMap(query ? Object.fromEntries(new URLSearchParams(query)) : {});
+}
+
+function encodeDetailScope(selection: WordTypeDetailSelection): WordTypesQueryChange {
+  return buildWordTypesDetailScopeQuery(selection);
 }
 
 describe('parseWordTypesQueryParams — child codes', () => {
@@ -86,6 +94,9 @@ describe('buildWordTypesQueryParams — canonical ordering', () => {
       page: 3,
       word: 191004,
       contextCode: 'present',
+      root: 12,
+      stem: 34,
+      lemma: 56,
       view: 'surahs',
       detailPage: 2,
       location: '2:25:2',
@@ -102,15 +113,147 @@ describe('buildWordTypesQueryParams — canonical ordering', () => {
       WORD_TYPES_QUERY_KEYS.page,
       WORD_TYPES_QUERY_KEYS.word,
       WORD_TYPES_QUERY_KEYS.contextCode,
+      WORD_TYPES_QUERY_KEYS.root,
+      WORD_TYPES_QUERY_KEYS.stem,
+      WORD_TYPES_QUERY_KEYS.lemma,
       WORD_TYPES_QUERY_KEYS.view,
       WORD_TYPES_QUERY_KEYS.detailPage,
       WORD_TYPES_QUERY_KEYS.location,
       WORD_TYPES_QUERY_KEYS.column,
     ]);
+    expect(built['dim']).toBeUndefined();
     expect(built[WORD_TYPES_QUERY_KEYS.view]).toBe('surahs');
     expect(built[WORD_TYPES_QUERY_KEYS.detailPage]).toBe('2');
     expect(built[WORD_TYPES_QUERY_KEYS.location]).toBe('2:25:2');
     expect(built[WORD_TYPES_QUERY_KEYS.column]).toBe('analysis');
+  });
+});
+
+describe('independent detail-scope URL state', () => {
+  it('encodes the full grouped query scope independently from list scope', () => {
+    const encoded = encodeDetailScope({
+      kind: 'root',
+      rootId: 123,
+      scope: {
+        type: 'verb',
+        childCode: 'present',
+        case: 'all',
+        tense: 'present',
+        voice: 'passive',
+      },
+    });
+
+    expect(encoded).toEqual({
+      detailType: 'verb',
+      detailChildCode: 'present',
+      detailCase: 'all',
+      detailTense: 'present',
+      detailVoice: 'passive',
+    });
+  });
+
+  it('encodes the full word scope needed for exact restored row selection', () => {
+    const encoded = encodeDetailScope({
+      kind: 'word',
+      identity: {
+        tashkeelWordId: 191004,
+        contextCode: 'present',
+        case: 'all',
+        tense: 'present',
+        voice: 'active',
+      },
+      scope: {
+        type: 'verb',
+        childCode: 'present',
+        case: 'all',
+        tense: 'present',
+        voice: 'active',
+      },
+    });
+
+    expect(encoded).toEqual({
+      detailType: 'verb',
+      detailChildCode: 'present',
+      detailCase: 'all',
+      detailTense: 'present',
+      detailVoice: 'active',
+    });
+  });
+
+  it('parses the full stored word scope independently from its current list scope', () => {
+    const parsed = parseWordTypesQueryParams(params(
+      'type=noun&childCode=ADJ&tableView=words&word=191004&contextCode=present&detailType=verb&detailChildCode=present&detailCase=all&detailTense=present&detailVoice=active&view=ayahs',
+    )) as ReturnType<typeof parseWordTypesQueryParams> & Record<string, unknown>;
+
+    expect({
+      listType: parsed.type,
+      listChildCode: parsed.childCode,
+      detailType: parsed['detailType'],
+      detailChildCode: parsed['detailChildCode'],
+    }).toEqual({
+      listType: 'noun',
+      listChildCode: 'ADJ',
+      detailType: 'verb',
+      detailChildCode: 'present',
+    });
+  });
+
+  it('parses different list and grouped detail scopes without inference', () => {
+    const parsed = parseWordTypesQueryParams(params(
+      'type=noun&childCode=ADJ&tableView=roots&root=123&detailType=verb&detailChildCode=present&detailCase=all&detailTense=present&detailVoice=passive&view=ayahs',
+    )) as ReturnType<typeof parseWordTypesQueryParams> & Record<string, unknown>;
+
+    expect({ type: parsed.type, childCode: parsed.childCode, tense: parsed.tense, voice: parsed.voice }).toEqual({
+      type: 'noun', childCode: 'ADJ', tense: 'all', voice: 'all',
+    });
+    expect({
+      detailType: parsed['detailType'],
+      detailChildCode: parsed['detailChildCode'],
+      detailCase: parsed['detailCase'],
+      detailTense: parsed['detailTense'],
+      detailVoice: parsed['detailVoice'],
+    }).toEqual({
+      detailType: 'verb',
+      detailChildCode: 'present',
+      detailCase: 'all',
+      detailTense: 'present',
+      detailVoice: 'passive',
+    });
+  });
+
+  it.each([
+    'tableView=roots&root=123&detailChildCode=present&detailCase=all&detailTense=present&detailVoice=all',
+    'tableView=roots&root=123&detailType=verb&detailChildCode=future&detailCase=all&detailTense=present&detailVoice=all',
+    'tableView=roots&root=123&detailType=noun&detailChildCode=ADJ&detailCase=all&detailTense=present&detailVoice=all',
+    'tableView=words&word=191004&contextCode=present&detailType=verb&detailChildCode=present&detailCase=all&detailTense=present',
+  ])('fails closed for incomplete or incompatible detail scope: %s', (query) => {
+    const parsed = parseWordTypesQueryParams(params(query)) as ReturnType<typeof parseWordTypesQueryParams> & Record<string, unknown>;
+
+    expect(parsed['detailCase']).toBeNull();
+    expect(parsed['detailTense']).toBeNull();
+    expect(parsed['detailVoice']).toBeNull();
+  });
+
+  it('replays list and detail scopes independently for Back and Forward', () => {
+    const restored = [
+      'type=verb&childCode=present&tableView=roots&root=123&detailType=verb&detailChildCode=present&detailCase=all&detailTense=present&detailVoice=all&view=ayahs',
+      'type=noun&childCode=ADJ&tableView=roots&root=123&detailType=verb&detailChildCode=present&detailCase=all&detailTense=present&detailVoice=all&view=ayahs',
+      'type=noun&childCode=ADJ&tableView=roots&root=456&detailType=noun&detailChildCode=ADJ&detailCase=all&detailTense=all&detailVoice=all&view=surahs',
+    ].map((query) => parseWordTypesQueryParams(params(query)) as ReturnType<typeof parseWordTypesQueryParams> & Record<string, unknown>);
+
+    expect(restored.map((state) => ({
+      listType: state.type,
+      listChildCode: state.childCode,
+      root: state.root,
+      detailType: state['detailType'],
+      detailChildCode: state['detailChildCode'],
+      detailTense: state['detailTense'],
+      view: state.view,
+    }))).toEqual([
+      { listType: 'verb', listChildCode: 'present', root: 123, detailType: 'verb', detailChildCode: 'present', detailTense: 'present', view: 'ayahs' },
+      { listType: 'noun', listChildCode: 'ADJ', root: 123, detailType: 'verb', detailChildCode: 'present', detailTense: 'present', view: 'ayahs' },
+      { listType: 'noun', listChildCode: 'ADJ', root: 456, detailType: 'noun', detailChildCode: 'ADJ', detailTense: 'all', view: 'surahs' },
+    ]);
   });
 });
 
@@ -130,6 +273,14 @@ describe('clearWordTypesSelection', () => {
 
     expect(cleared[WORD_TYPES_QUERY_KEYS.word]).toBeNull();
     expect(cleared[WORD_TYPES_QUERY_KEYS.contextCode]).toBeNull();
+    expect(cleared[WORD_TYPES_QUERY_KEYS.root]).toBeNull();
+    expect(cleared[WORD_TYPES_QUERY_KEYS.stem]).toBeNull();
+    expect(cleared[WORD_TYPES_QUERY_KEYS.lemma]).toBeNull();
+    expect(cleared[WORD_TYPES_QUERY_KEYS.detailType]).toBeNull();
+    expect(cleared[WORD_TYPES_QUERY_KEYS.detailChildCode]).toBeNull();
+    expect(cleared[WORD_TYPES_QUERY_KEYS.detailCase]).toBeNull();
+    expect(cleared[WORD_TYPES_QUERY_KEYS.detailTense]).toBeNull();
+    expect(cleared[WORD_TYPES_QUERY_KEYS.detailVoice]).toBeNull();
     expect(cleared[WORD_TYPES_QUERY_KEYS.view]).toBeNull();
     expect(cleared[WORD_TYPES_QUERY_KEYS.detailPage]).toBeNull();
     expect(cleared[WORD_TYPES_QUERY_KEYS.location]).toBeNull();
@@ -157,7 +308,7 @@ describe('buildWordTypesDeepLink', () => {
     expect(link.queryParams[WORD_TYPES_QUERY_KEYS.word]).toBe('191001');
     expect(link.queryParams[WORD_TYPES_QUERY_KEYS.contextCode]).toBe('PN');
     expect(link.queryParams[WORD_TYPES_QUERY_KEYS.view]).toBe('surahs');
-    expect(link.queryParams[WORD_TYPES_QUERY_KEYS.detailPage]).toBe('2');
+    expect(link.queryParams[WORD_TYPES_QUERY_KEYS.detailPage]).toBeNull();
     expect(link.queryParams[WORD_TYPES_QUERY_KEYS.location]).toBe('1:1:2');
     expect(link.queryParams[WORD_TYPES_QUERY_KEYS.column]).toBe('analysis');
   });
@@ -241,5 +392,234 @@ describe('buildWordTypesQueryParams — secondary filters', () => {
     const built = buildWordTypesQueryParams({ tense: null });
 
     expect(built[WORD_TYPES_QUERY_KEYS.tense]).toBeNull();
+  });
+});
+
+describe('parseWordTypesQueryParams — tableView', () => {
+  it('defaults a missing tableView to words', () => {
+    const parsed = parseWordTypesQueryParams(params('type=noun'));
+
+    expect(parsed.tableView).toBe('words');
+  });
+
+  it('defaults an unknown tableView to words', () => {
+    const parsed = parseWordTypesQueryParams(params('type=noun&tableView=bogus'));
+
+    expect(parsed.tableView).toBe('words');
+  });
+
+  it('keeps a valid tableView', () => {
+    const parsed = parseWordTypesQueryParams(params('type=noun&tableView=roots'));
+
+    expect(parsed.tableView).toBe('roots');
+  });
+
+  it('restores a word detail independently when tableView is not words', () => {
+    const parsed = parseWordTypesQueryParams(
+      params('type=noun&childCode=PN&tableView=roots&word=123&contextCode=PN&view=surahs&detailPage=2&location=999:999:999&column=analysis'),
+    );
+
+    expect(parsed.tableView).toBe('roots');
+    expect(parsed.word).toBe(123);
+    expect(parsed.tashkeelWordId).toBe(123);
+    expect(parsed.contextCode).toBe('PN');
+    expect(parsed.view).toBe('surahs');
+    expect(parsed.detailPage).toBe(1);
+    expect(parsed.location).toBe('999:999:999');
+    expect(parsed.column).toBe('analysis');
+  });
+
+  it('keeps selection params when tableView is words', () => {
+    const parsed = parseWordTypesQueryParams(
+      params('type=noun&childCode=PN&tableView=words&word=123&contextCode=PN'),
+    );
+
+    expect(parsed.word).toBe(123);
+    expect(parsed.contextCode).toBe('PN');
+  });
+});
+
+describe('parseWordTypesQueryParams — explicit selection identity', () => {
+  it.each([
+    ['root', 'roots', 123],
+    ['stem', 'stems', 456],
+    ['lemma', 'lemmas', 789],
+  ] as const)('restores %s selection from its positive ID', (key, tableView, id) => {
+    const parsed = parseWordTypesQueryParams(params(`tableView=${tableView}&${key}=${id}`));
+
+    expect(parsed.tableView).toBe(tableView);
+    expect(parsed[key]).toBe(id);
+    expect(parsed.root).toBe(key === 'root' ? id : null);
+    expect(parsed.stem).toBe(key === 'stem' ? id : null);
+    expect(parsed.lemma).toBe(key === 'lemma' ? id : null);
+    expect(parsed.view).toBe('words');
+    expect(parsed.detailPage).toBe(1);
+  });
+
+  it('fails closed when more than one detail identity is present', () => {
+    const parsed = parseWordTypesQueryParams(
+      params('tableView=roots&root=123&stem=456&lemma=789'),
+    );
+
+    expect(parsed.root).toBeNull();
+    expect(parsed.stem).toBeNull();
+    expect(parsed.lemma).toBeNull();
+  });
+
+  it.each([
+    ['roots', 'root'],
+    ['stems', 'stem'],
+    ['lemmas', 'lemma'],
+  ] as const)('keeps a word identity while the %s table is displayed', (tableView, _key) => {
+    const parsed = parseWordTypesQueryParams(
+      params(`tableView=${tableView}&word=191004&contextCode=PN&view=ayahs`),
+    );
+
+    expect(parsed.word).toBe(191004);
+    expect(parsed.contextCode).toBe('PN');
+  });
+
+  it.each([
+    ['roots', 'stem', 456, 'ayahs', 2],
+    ['words', 'lemma', 789, 'words', 3],
+  ] as const)(
+    'restores a mismatched %s table with preserved %s detail state',
+    (tableView, key, id, view, detailPage) => {
+      const parsed = parseWordTypesQueryParams(params(
+        `type=noun&childCode=PN&tableView=${tableView}&${key}=${id}&detailType=verb&detailChildCode=present&detailCase=all&detailTense=present&detailVoice=active&view=${view}&detailPage=${detailPage}`,
+      ));
+
+      expect(parsed).toEqual(expect.objectContaining({
+        tableView,
+        [key]: id,
+        detailType: 'verb',
+        detailChildCode: 'present',
+        detailTense: 'present',
+        detailVoice: 'active',
+        view,
+        detailPage,
+      }));
+    },
+  );
+
+  it('normalizes words view back to ayahs for word selections', () => {
+    const parsed = parseWordTypesQueryParams(
+      params('tableView=words&word=191004&contextCode=PN&view=words'),
+    );
+
+    expect(parsed.view).toBe('ayahs');
+  });
+
+  it.each([
+    ['words', 'word=191004&contextCode=PN', 'words'],
+    ['roots', 'root=123', 'ayahs'],
+  ] as const)('defaults missing detailPage to one for %s paged %s view', (tableView, selection, view) => {
+    const parsed = parseWordTypesQueryParams(params(`tableView=${tableView}&${selection}&view=${view}`));
+
+    expect(parsed.detailPage).toBe(1);
+  });
+
+  it('normalizes a grouped surahs URL to internal page one and clears its canonical page param', () => {
+    const parsed = parseWordTypesQueryParams(params('tableView=roots&root=123&view=surahs&detailPage=5'));
+    const rebuilt = buildWordTypesQueryParams({
+      tableView: 'roots',
+      root: parsed.root,
+      view: parsed.view,
+      detailPage: canonicalWordTypesDetailPage(parsed.view, parsed.detailPage),
+    });
+
+    expect(parsed.detailPage).toBe(1);
+    expect(rebuilt[WORD_TYPES_QUERY_KEYS.detailPage]).toBeNull();
+  });
+
+  it('round-trips a grouped selection with its full scope for refresh and sharing', () => {
+    const original = params(
+      'type=verb&childCode=present&tableView=stems&stem=456&tense=present&voice=passive&view=ayahs&detailPage=2',
+    );
+    const parsed = parseWordTypesQueryParams(original);
+    const rebuilt = buildWordTypesQueryParams({
+      type: parsed.type,
+      childCode: parsed.childCode,
+      tableView: parsed.tableView,
+      case: parsed.case,
+      tense: parsed.tense,
+      voice: parsed.voice,
+      stem: parsed.stem,
+      view: parsed.view,
+      detailPage: canonicalWordTypesDetailPage(parsed.view, parsed.detailPage),
+    });
+
+    expect(rebuilt).toMatchObject({
+      type: 'verb',
+      childCode: 'present',
+      tableView: 'stems',
+      tense: 'present',
+      voice: 'passive',
+      stem: '456',
+      view: 'ayahs',
+      detailPage: '2',
+    });
+  });
+
+  it('replays root, stem, then root ParamMaps as browser back and forward state', () => {
+    const restored = [
+      params('tableView=roots&root=123'),
+      params('tableView=stems&stem=456'),
+      params('tableView=roots&root=123'),
+    ].map(parseWordTypesQueryParams);
+
+    expect(restored.map(({ tableView, root, stem, lemma, view, detailPage }) => ({
+      tableView,
+      root,
+      stem,
+      lemma,
+      view,
+      detailPage,
+    }))).toEqual([
+      { tableView: 'roots', root: 123, stem: null, lemma: null, view: 'words', detailPage: 1 },
+      { tableView: 'stems', root: null, stem: 456, lemma: null, view: 'words', detailPage: 1 },
+      { tableView: 'roots', root: 123, stem: null, lemma: null, view: 'words', detailPage: 1 },
+    ]);
+  });
+});
+
+describe('canonicalWordTypesDetailPage', () => {
+  it.each([
+    ['words', 1, null],
+    ['ayahs', 1, null],
+    ['words', 2, '2'],
+    ['ayahs', 3, '3'],
+    ['surahs', 1, null],
+    ['surahs', 5, null],
+  ] as const)('serializes %s page %d as %s', (view, page, expected) => {
+    expect(canonicalWordTypesDetailPage(view, page)).toBe(expected);
+  });
+});
+
+describe('buildWordTypesQueryParams — tableView', () => {
+  it('emits a concrete tableView value', () => {
+    const built = buildWordTypesQueryParams({ tableView: 'lemmas' });
+
+    expect(built[WORD_TYPES_QUERY_KEYS.tableView]).toBe('lemmas');
+  });
+
+  it('places tableView right after childCode in the canonical order', () => {
+    const built = buildWordTypesQueryParams({
+      type: 'noun',
+      childCode: 'PN',
+      tableView: 'roots',
+      case: 'all',
+      sort: 'occurrences',
+      page: 1,
+    });
+
+    expect(Object.keys(built)).toEqual([
+      WORD_TYPES_QUERY_KEYS.type,
+      WORD_TYPES_QUERY_KEYS.childCode,
+      WORD_TYPES_QUERY_KEYS.tableView,
+      WORD_TYPES_QUERY_KEYS.case,
+      WORD_TYPES_QUERY_KEYS.sort,
+      WORD_TYPES_QUERY_KEYS.page,
+    ]);
   });
 });

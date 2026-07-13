@@ -76,6 +76,7 @@ public static class ApiMessages
 
     public const string WordTypesTreeLoaded = "تم تحميل أنواع الكلمات";
     public const string WordTypesRowsLoaded = "تم تحميل كلمات النوع";
+    public const string WordTypesTableLoaded = "تم تحميل جدول النوع";
     public const string WordTypeSummaryLoaded = "تم تحميل ملخص الكلمة";
     public const string WordTypeAyahsLoaded = "تم تحميل الآيات الخاصة بالكلمة";
     public const string WordTypeSurahsLoaded = "تم تحميل سور الكلمة";
@@ -83,5 +84,14 @@ public static class ApiMessages
     public const string WordTypesInvalidIdentity = "هوية الكلمة غير صالحة";
     public const string WordTypesInvalidSort = "خيار الترتيب غير صالح";
     public const string WordTypesInvalidPaging = "معطيات التصفح غير صالحة";
+    public const string WordTypesInvalidTableView = "طريقة عرض الجدول غير صالحة";
     public const string WordTypeNotFound = "الكلمة المحددة غير موجودة";
+
+    public const string WordTypeGroupedSummaryLoaded = "تم تحميل ملخص التجميع";
+    public const string WordTypeGroupedWordsLoaded = "تم تحميل كلمات التجميع";
+    public const string WordTypeGroupedAyahsLoaded = "تم تحميل آيات التجميع";
+    public const string WordTypeGroupedSurahsLoaded = "تم تحميل سور التجميع";
+    public const string WordTypesInvalidGroupedKind = "نوع التجميع غير صالح";
+    public const string WordTypesInvalidGroupedId = "معرّف التجميع غير صالح";
+    public const string WordTypesGroupedNotFound = "التجميع المحدد غير موجود";
 }

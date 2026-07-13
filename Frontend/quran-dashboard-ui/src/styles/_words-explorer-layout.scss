@@ -24,6 +24,27 @@
   gap: var(--qd-space-3);
 }
 
+.uw-toolbar-recess--kinetic {
+  animation: uw-toolbar-rise 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes uw-toolbar-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .uw-toolbar-recess--kinetic {
+    animation: none;
+  }
+}
+
 .qd-explorer-frame {
   width: 100%;
   max-width: none;

@@ -1,6 +1,6 @@
 import { Injectable, Signal, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subscription, forkJoin, of } from 'rxjs';
+import { Observable, Subscription, forkJoin, of } from 'rxjs';
 import { catchError, distinctUntilChanged, map, switchMap, tap } from 'rxjs/operators';
 
 import { ApiResponse } from '../../../core/data-access/api-response.model';
@@ -10,6 +10,7 @@ import {
   DEFAULT_WORD_TYPE,
   DEFAULT_WORD_TYPE_CASE,
   DEFAULT_WORD_TYPE_SORT,
+  DEFAULT_WORD_TYPE_TABLE_VIEW,
   DEFAULT_WORD_TYPE_TENSE,
   DEFAULT_WORD_TYPE_VOICE,
   DEFAULT_WORD_TYPES_DETAIL_PAGE,
@@ -22,24 +23,39 @@ import {
   WordTypeMainType,
   WordTypeRowIdentity,
   WordTypeSort,
+  WordTypeTableRowDto,
+  WordTypeTableView,
   WordTypeTense,
   WordTypeVoice,
-  WordTypeRowDto,
   WordTypeTreeDto,
   WordTypesListState,
 } from '../models/word-types.models';
 import { WordTypesCache, WordTypesCacheKeys } from './word-types-cache';
-import { buildWordTypesQueryParams, clearWordTypesSelection, parseWordTypesQueryParams } from './word-types-url-sync';
+import {
+  buildWordTypesQueryParams,
+  canonicalWordTypesDetailPage,
+  clearWordTypesSelection,
+  parseWordTypesQueryParams,
+} from './word-types-url-sync';
 
 const DEFAULT_QUERY: ParsedWordTypesQuery = {
   type: DEFAULT_WORD_TYPE,
   childCode: null,
+  tableView: DEFAULT_WORD_TYPE_TABLE_VIEW,
   case: DEFAULT_WORD_TYPE_CASE,
   tense: DEFAULT_WORD_TYPE_TENSE,
   voice: DEFAULT_WORD_TYPE_VOICE,
   sort: DEFAULT_WORD_TYPE_SORT,
   page: DEFAULT_WORD_TYPES_PAGE,
   word: null,
+  root: null,
+  stem: null,
+  lemma: null,
+  detailType: null,
+  detailChildCode: null,
+  detailCase: null,
+  detailTense: null,
+  detailVoice: null,
   tashkeelWordId: 0,
   contextCode: '',
   view: DEFAULT_WORD_TYPES_DETAIL_VIEW,
@@ -56,6 +72,11 @@ export class WordTypesExplorerFacade {
 
   private route?: ActivatedRoute;
   private routeSub?: Subscription;
+  private retrySub?: Subscription;
+  // Tracks which tableView the currently-stored rows belong to, so a tab switch can null the
+  // stale rows before the new page arrives without also clearing rows on ordinary filter changes
+  // (those intentionally keep prior rows visible while loading).
+  private lastRowsTableView: WordTypeTableView | null = null;
   private readonly state = signal<WordTypesListState>({
     status: 'idle',
     tree: null,
@@ -74,14 +95,23 @@ export class WordTypesExplorerFacade {
       tap((query) => this.state.update((current) => ({ ...current, query }))),
       map((query) => this.requestKey(query)),
       distinctUntilChanged(),
+      tap(() => this.cancelRetry()),
       switchMap(() => this.loadList()),
     ).subscribe();
   }
 
   unbindFromRoute(): void {
     this.routeSub?.unsubscribe();
+    this.cancelRetry();
     this.routeSub = undefined;
     this.route = undefined;
+  }
+
+  // Re-issues the current list load after a transport error. Failed reads are never cached, so a
+  // retry always re-fetches; the cancellable subscription prevents overlapping retries.
+  retryList(): void {
+    this.cancelRetry();
+    this.retrySub = this.loadList().subscribe();
   }
 
   selectRow(row: WordTypeRowIdentity | null): void {
@@ -94,35 +124,36 @@ export class WordTypesExplorerFacade {
       word: row.tashkeelWordId,
       contextCode: row.contextCode,
       view: DEFAULT_WORD_TYPES_DETAIL_VIEW,
-      detailPage: DEFAULT_WORD_TYPES_DETAIL_PAGE,
+      detailPage: canonicalWordTypesDetailPage(DEFAULT_WORD_TYPES_DETAIL_VIEW, DEFAULT_WORD_TYPES_DETAIL_PAGE),
     }));
   }
 
-  selectType(type: WordTypeMainType): void {
-    // Switching the main type resets the child selection AND every secondary filter: case belongs to
-    // nouns only and tense/voice to verbs only, so carrying them across types would produce stale,
-    // type-invalid filters. The URL normalizer redrops invalid values defensively as well. The detail
-    // panel selection is intentionally left alone: it stays open across type switches instead of
-    // clearing, since the selected row's own identity does not depend on the current list filter.
-    this.navigate(
-      buildWordTypesQueryParams({
+  selectScope(type: WordTypeMainType, childCode: string | null): void {
+    const typeChanged = type !== this.state().query.type;
+    this.navigate({
+      ...buildWordTypesQueryParams({
         type,
-        childCode: null,
-        case: DEFAULT_WORD_TYPE_CASE,
-        tense: DEFAULT_WORD_TYPE_TENSE,
-        voice: DEFAULT_WORD_TYPE_VOICE,
+        childCode,
+        ...(typeChanged
+          ? {
+              case: DEFAULT_WORD_TYPE_CASE,
+              tense: DEFAULT_WORD_TYPE_TENSE,
+              voice: DEFAULT_WORD_TYPE_VOICE,
+            }
+          : {}),
         page: DEFAULT_WORD_TYPES_PAGE,
       }),
-    );
+      // A new main type invalidates any open detail selection (the selected word/root/stem/lemma
+      // belongs to the previous type); browsing within the same type keeps it, matching the
+      // selection-clearing the secondary filters already perform.
+      ...(typeChanged ? clearWordTypesSelection() : {}),
+    });
   }
 
-  // Selecting a child node narrows rows to that subtype, resets the page, and clears any selected
-  // row so the detail panel never lingers on a row from a different context.
-  selectChild(childCode: string | null): void {
-    this.navigate({
-      ...buildWordTypesQueryParams({ childCode, page: DEFAULT_WORD_TYPES_PAGE }),
-      ...clearWordTypesSelection(),
-    });
+  // The table aggregation is independent of an open detail selection. A tab change only replaces
+  // the displayed list and resets its page; route merging preserves every detail key unchanged.
+  selectTableView(tableView: WordTypeTableView): void {
+    this.navigate(buildWordTypesQueryParams({ tableView, page: DEFAULT_WORD_TYPES_PAGE }));
   }
 
   // A secondary filter narrows the rows without crossing type boundaries. It resets the page, clears
@@ -150,10 +181,7 @@ export class WordTypesExplorerFacade {
   }
 
   changeSort(sort: WordTypeSort): void {
-    this.navigate({
-      ...buildWordTypesQueryParams({ sort, page: DEFAULT_WORD_TYPES_PAGE }),
-      ...clearWordTypesSelection(),
-    });
+    this.navigate(buildWordTypesQueryParams({ sort, page: DEFAULT_WORD_TYPES_PAGE }));
   }
 
   changePage(page: number): void {
@@ -164,7 +192,19 @@ export class WordTypesExplorerFacade {
     const query = this.state().query;
     const tree$ = this.cache.getOrLoad(WordTypesCacheKeys.tree, () => this.api.getTree());
 
-    this.state.update((current) => ({ ...current, status: 'loading', errorMessage: '' }));
+    // Null out rows only when the tableView itself changed: previous-view rows must never paint
+    // under the new scope, but ordinary filter changes intentionally keep prior rows visible
+    // while the next page loads.
+    const tableViewChanged = this.lastRowsTableView !== null && this.lastRowsTableView !== query.tableView;
+    this.state.update((current) => ({
+      ...current,
+      status: 'loading',
+      errorMessage: '',
+      ...(tableViewChanged ? { rows: null } : {}),
+    }));
+    if (tableViewChanged) {
+      this.lastRowsTableView = null;
+    }
 
     const leafSelected = query.childCode !== null || query.type === 'inl';
 
@@ -175,36 +215,41 @@ export class WordTypesExplorerFacade {
           this.state.update((current) => ({
             ...current,
             status: 'error',
-            tree: null,
+            tree: current.tree,
             rows: null,
             errorMessage: WORD_TYPES_ERROR_LABEL,
           }));
+          this.lastRowsTableView = null;
           return of(undefined);
         }),
         map(() => undefined),
       );
     }
 
+    const rows$ = this.cache.getOrLoad(
+      WordTypesCacheKeys.table(query, query.tableView, query.sort, query.page),
+      () => this.api.getTableRows({ ...query, pageSize: WORD_TYPES_PAGE_SIZE }),
+    );
+
+    // Each request settles to its response or `null` on a transport throw, so a rows-only failure
+    // cannot discard an already-successful tree: forkJoin still emits, and handleListResponse persists
+    // the tree so the table-view strip survives the failure.
     return forkJoin({
-      tree: tree$,
-      rows: this.cache.getOrLoad(
-        WordTypesCacheKeys.rows(query, query.sort, query.page),
-        () => this.api.getRows({ ...query, pageSize: WORD_TYPES_PAGE_SIZE }),
-      ),
+      tree: this.settle(tree$),
+      rows: this.settle(rows$),
     }).pipe(
       tap(({ tree, rows }) => this.handleListResponse(tree, rows, query)),
-      catchError(() => {
-        this.state.update((current) => ({
-          ...current,
-          status: 'error',
-          tree: null,
-          rows: null,
-          errorMessage: WORD_TYPES_ERROR_LABEL,
-        }));
-        return of(undefined);
-      }),
       map(() => undefined),
     );
+  }
+
+  private settle<T>(source: Observable<ApiResponse<T>>): Observable<ApiResponse<T> | null> {
+    return source.pipe(catchError(() => of(null)));
+  }
+
+  private cancelRetry(): void {
+    this.retrySub?.unsubscribe();
+    this.retrySub = undefined;
   }
 
   private handleTreeOnlyResponse(tree: ApiResponse<WordTypeTreeDto>): void {
@@ -214,55 +259,70 @@ export class WordTypesExplorerFacade {
       this.state.update((current) => ({
         ...current,
         status: 'error',
-        tree: treeData ?? null,
+        tree: current.tree,
         rows: null,
         errorMessage: tree.message ?? WORD_TYPES_ERROR_LABEL,
       }));
       return;
     }
 
+    // A parent scope fetches no rows, so the table shows the in-shell subtype prompt. Any rows from a
+    // previous leaf scope are cleared here so they never paint under the new parent.
     this.state.update((current) => ({
       ...current,
-      status: current.rows === null ? 'selectPrompt' : current.rows.totalCount === 0 ? 'empty' : 'success',
+      status: 'selectPrompt',
       tree: treeData,
-      rows: current.rows,
+      rows: null,
       errorMessage: '',
     }));
+    this.lastRowsTableView = null;
   }
 
   private handleListResponse(
-    tree: ApiResponse<WordTypeTreeDto>,
-    rows: ApiResponse<PagedResultDto<WordTypeRowDto>>,
+    tree: ApiResponse<WordTypeTreeDto> | null,
+    rows: ApiResponse<PagedResultDto<WordTypeTableRowDto>> | null,
     query: ParsedWordTypesQuery,
   ): void {
-    if (!tree.isSuccess || !tree.data || !rows.isSuccess || !rows.data) {
+    const treeData = tree?.isSuccess ? tree.data ?? null : null;
+    const rowsData = rows?.isSuccess ? rows.data ?? null : null;
+
+    if (!treeData || !rowsData) {
+      // Persist any freshly-loaded tree (`treeData`) so the table-view strip stays visible after a
+      // rows-only transport failure; fall back to the previously loaded tree when this tree failed.
       this.state.update((current) => ({
         ...current,
         status: 'error',
-        tree: tree.data ?? null,
+        tree: treeData ?? current.tree,
         rows: null,
-        errorMessage: rows.message ?? tree.message ?? WORD_TYPES_ERROR_LABEL,
+        errorMessage: this.listErrorMessage(tree, rows),
       }));
+      this.lastRowsTableView = null;
       return;
     }
 
-    const page = {
-      ...rows.data,
-      items: rows.data.items.map((row) => ({
-        ...row,
-        case: query.case,
-        tense: query.tense,
-        voice: query.voice,
-      })),
-    };
-
     this.state.update((current) => ({
       ...current,
-      status: page.totalCount === 0 ? 'empty' : 'success',
-      tree: tree.data!,
-      rows: page,
+      status: rowsData.totalCount === 0 ? 'empty' : 'success',
+      tree: treeData,
+      rows: rowsData,
       errorMessage: '',
     }));
+    this.lastRowsTableView = query.tableView;
+  }
+
+  private listErrorMessage(
+    tree: ApiResponse<WordTypeTreeDto> | null,
+    rows: ApiResponse<PagedResultDto<WordTypeTableRowDto>> | null,
+  ): string {
+    return this.failedResponseMessage(rows) ?? this.failedResponseMessage(tree) ?? WORD_TYPES_ERROR_LABEL;
+  }
+
+  private failedResponseMessage<T>(response: ApiResponse<T> | null): string | null {
+    if (response?.isSuccess === false) {
+      return response.message || WORD_TYPES_ERROR_LABEL;
+    }
+
+    return response === null || response.data == null ? WORD_TYPES_ERROR_LABEL : null;
   }
 
   private navigate(queryParams: Record<string, string | null>): void {
@@ -279,6 +339,6 @@ export class WordTypesExplorerFacade {
   }
 
   private requestKey(query: ParsedWordTypesQuery): string {
-    return [query.type, query.childCode, query.case, query.tense, query.voice, query.sort, query.page].join('|');
+    return [query.type, query.childCode, query.tableView, query.case, query.tense, query.voice, query.sort, query.page].join('|');
   }
 }

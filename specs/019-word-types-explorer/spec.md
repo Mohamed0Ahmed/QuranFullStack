@@ -33,16 +33,16 @@ This spec describes **WHAT** the page must do and the **exact behavioral rules**
 
 ### User Story 1 - Browse words by main type (Priority: P1)
 
-An admin opens the Word Types Explorer. They see the four main type filters with a word count beside each. They click **فعل**; the table immediately fills with the verb words and shows, per row, the word, its type, and its occurrence/ayah/surah statistics. They click **اسم** and the table switches to nominal words. This is the minimum usable product: a browsable, type-filtered word list.
+An admin opens the Word Types Explorer. They see the four main type filters with a word count beside each. Clicking a parent with children browses its subtypes without disturbing the committed table/details; choosing a child commits that list scope. This is the minimum usable product: a browsable, type-filtered word list.
 
 **Why this priority**: This is the core value — seeing the Qur'an's vocabulary organized by grammatical type. Without it nothing else matters; with it alone the page is already useful.
 
-**Independent Test**: Load the page, select each of the four main types in turn, and confirm the table shows the matching words with counts and that the four selections are mutually exclusive (a word in the verb list is grammatically a verb, etc.).
+**Independent Test**: Load the page, browse each parent, commit representative children, and confirm the table shows the matching mutually exclusive grammatical rows; confirm browsing alone leaves the prior table/details intact.
 
 **Acceptance Scenarios**:
 
 1. **Given** the page is open, **When** no type is selected yet, **Then** a clear default state is shown (either a prompt to pick a type, or a sensible default type selected) and the four main type filters each display a word count.
-2. **Given** the admin clicks the **فعل** main label, **Then** the table shows verb word-context rows only, and the table's total row count equals the count shown on the **فعل** filter.
+2. **Given** a committed subtype and open details, **When** the admin clicks another parent with children, **Then** only that parent's children are displayed; the committed table and details do not change until a child is selected.
 3. **Given** the admin clicks **حروف مقطّعة**, **Then** the table shows only disconnected-letters words (e.g. الٓمٓ) and no other type.
 4. **Given** any main type is selected, **When** the admin reads a row, **Then** the row shows the displayed word in Uthmani-with-tashkeel plus its occurrence/ayah/surah counts for that row's context.
 
@@ -50,15 +50,15 @@ An admin opens the Word Types Explorer. They see the four main type filters with
 
 ### User Story 2 - Inspect a selected word's details (Priority: P2)
 
-After filtering, the admin clicks a row. The right-side details card shows that word-context: its type/subtype, its grammatical feature (case, or tense/voice), its root / lemma / stem, its occurrence / ayah / surah counts, and tabs for **الآيات** (the ayahs containing it), **السور** (surah distribution), and **التحليل** (full grammatical analysis of a chosen occurrence). The ayah list highlights only the occurrences that belong to the selected row's context.
+After filtering, the admin activates one of a row's occurrence/ayah/surah statistics. The right-side details panel opens the mapped view for that exact word-context. The row container itself is inert. The ayah list highlights only the occurrences that belong to the selected row's context.
 
 **Why this priority**: Browsing is more valuable when the admin can verify and study a specific word. This is the primary "study" action.
 
-**Independent Test**: Select a type, click a row, and confirm the details card and its three tabs populate with information scoped to exactly that row's word + context (not to unrelated usages of the same spelling).
+**Independent Test**: Select a type, activate a row statistic, and confirm the mapped detail tab populates for exactly that row's word + context; clicking or keyboard-activating the row container does nothing.
 
 **Acceptance Scenarios**:
 
-1. **Given** a type-filtered table, **When** the admin selects a row, **Then** the details card shows that word, its type/subtype, its applicable grammatical feature, its root/lemma/stem, and its occurrence/ayah/surah counts — all matching the selected row's context.
+1. **Given** a type-filtered table, **When** the admin activates a row statistic, **Then** the details header and mapped content belong to that exact word-context and the row receives the shared active color.
 2. **Given** a selected row, **When** the admin opens the **الآيات** tab, **Then** the listed ayahs are exactly those containing the row-context occurrences, with the relevant word highlighted, and the ayah count matches the row's الآيات value.
 3. **Given** a selected row, **When** the admin opens the **السور** tab, **Then** the surah distribution (and any "not mentioned in" information) reflects only the row-context occurrences.
 4. **Given** a selected row, **When** the admin opens the **التحليل** tab for a specific occurrence, **Then** the full grammatical analysis of that occurrence is shown.
@@ -67,15 +67,15 @@ After filtering, the admin clicks a row. The right-side details card shows that 
 
 ### User Story 3 - Refine a main type by subtype (Priority: P3)
 
-The admin clicks the **expand arrow** next to a main type to reveal its subtypes. Under **اسم** they choose **اسم علم**; the table narrows to proper-noun words. Under **فعل** they choose **فعل أمر**; the table narrows to imperative verbs. Each subtype filter shows its own word count.
+The admin clicks a main type to reveal its subtypes. Under **اسم** they choose **اسم علم**; the table narrows to proper-noun words. Under **فعل** they choose **فعل أمر**; the table narrows to imperative verbs. Each subtype filter shows its own word count.
 
 **Why this priority**: Subtype browsing sharpens the grammatical exploration but is meaningful only after the main-type browse (P1) exists.
 
-**Independent Test**: Expand each main type, select a child subtype, and confirm the table and the subtype's count narrow correctly and remain a strict subset of the parent.
+**Independent Test**: Browse each main type, select a child subtype, and confirm the table and subtype count narrow correctly while browsing alone remains inert.
 
 **Acceptance Scenarios**:
 
-1. **Given** a main type with subtypes, **When** the admin clicks its expand arrow, **Then** the child subtypes appear, each with its own word count, without losing the ability to still select the whole parent.
+1. **Given** a main type with subtypes, **When** the admin clicks that parent, **Then** its child subtypes appear with counts and no list/detail/URL state changes.
 2. **Given** the admin selects subtype **اسم علم**, **Then** the table shows only proper-noun word-context rows and the table total equals the **اسم علم** count.
 3. **Given** the admin selects subtype **فعل أمر**, **Then** the table shows only imperative-verb word-context rows.
 4. **Given** any subtype is selected, **Then** the set of rows is a subset of the rows shown for that subtype's parent.
@@ -101,16 +101,39 @@ When a **nominal** type is selected, the admin sees a **case** filter (الكل 
 
 ### User Story 5 - Share / restore an exact view (Priority: P5)
 
-The admin configures a view (type + subtype + secondary feature + a selected row) and copies the page link. Reopening the link restores the same filters **and** re-selects the exact same word-context row (not merely the same word spelling).
+The admin configures a list scope and opens a detail under that scope, then may change the list to another child while keeping the detail open. Reopening the link restores the list scope and the detail's original grammatical scope independently, together with the exact identity/view/page.
 
 **Why this priority**: Shareable, restorable deep links help collaboration and review but are not required for core use.
 
-**Independent Test**: Configure filters + select a row, reload via the saved link, and confirm the exact filters and the exact word-context row are restored.
+**Independent Test**: Open a detail, change the child list scope, reload via the saved link, and confirm the new table plus the detail's original scope/identity/view are restored independently.
 
 **Acceptance Scenarios**:
 
-1. **Given** a configured view with a selected row, **When** the link is reopened, **Then** the same type/subtype/secondary filters are active and the same word-context row is selected.
+1. **Given** different current list and stored detail scopes, **When** the link is reopened, **Then** both scopes plus the same identity/view/page are restored independently.
 2. **Given** a word that produces multiple rows (different contexts), **When** a deep link to one specific row is reopened, **Then** the correct one of those rows is selected — not a different context of the same spelling.
+
+---
+
+### User Story 6 - Drill into a grouped root/stem/lemma row (Priority: P3, Feature 023)
+
+After switching the table to the **جذور / أصول / صيغ** view (Feature 022), the admin activates a grouped
+root, stem, or lemma statistic and opens its mapped scoped details without leaving the active grammatical
+scope. (Feature 022 shipped grouped rows as noninteractive
+with no detail; Feature 023 supersedes that MVP restriction.)
+
+**Why this priority**: Grouped drilldown turns the aggregation views from read-only tallies into a usable
+research path, but the word-row workflow (US1–US5) remains the core.
+
+**Independent Test**: In each grouped view, confirm its three statistic buttons map to related words,
+ayahs, and surahs for the exact numeric identity/scope, while the row container remains inert.
+
+**Acceptance Scenarios**:
+
+1. **Given** a grouped root row under an active scope, **When** one of its statistics is activated,
+   **Then** the requested detail uses that exact numeric identity and current scope (not a broader scope).
+2. **Given** a dimension that only appears via a sub-word segment, **When** the grouped summary for the
+   active head scope is read, **Then** that segment-only dimension never appears and never replaces the
+   word's head root/stem/lemma.
 
 ---
 
@@ -142,8 +165,8 @@ The admin configures a view (type + subtype + secondary feature + a selected row
 #### B. Main types & filter actions
 
 - **FR-006**: The filter picker MUST offer exactly four main types: **اسم**, **فعل**, **حرف وأداة**, **حروف مقطّعة**.
-- **FR-007**: Each main type MUST support two distinct actions: (a) clicking the **label** selects ALL words under that parent type; (b) clicking the **expand arrow** reveals the child subtype list.
-- **FR-008**: Selecting **اسم** MUST select all nominal words; **فعل** all verbs; **حرف وأداة** all particle/tool words EXCLUDING disconnected letters; **حروف مقطّعة** only the disconnected-letters words.
+- **FR-007**: Clicking a main type that has children MUST only browse/show that parent's child list. It MUST NOT change committed table/detail state or URL state. Selecting a child commits the new list scope; the childless **حروف مقطّعة** leaf commits directly.
+- **FR-008**: Committed children under **اسم**, **فعل**, and **حرف وأداة** MUST remain within their mutually exclusive parent bucket; directly committed **حروف مقطّعة** contains only disconnected-letter words.
 - **FR-009**: The **حرف وأداة** selection MUST exclude disconnected letters (حروف مقطّعة), and disconnected letters MUST be counted only under their own main type (no double counting).
 - **FR-010**: The four main types MUST be mutually exclusive: every word's main type places it under exactly one of the four.
 
@@ -151,7 +174,7 @@ The admin configures a view (type + subtype + secondary feature + a selected row
 
 - **FR-011**: Expanding **اسم** MUST reveal nominal subtypes including at least **اسم علم**, **صفة**, **ضمير**, plus any additional nominal subtypes the system's word-type catalogue defines (e.g. اسم موصول, اسم إشارة, ظرف). Each subtype MUST be selectable and show its own word count.
 - **FR-012**: Expanding **فعل** MUST reveal verb **tense** subtypes: **ماض**, **مضارع**, **أمر** (verb voice is offered as a secondary filter, not as a subtype — see FR-019).
-- **FR-013**: Expanding **حرف وأداة** MAY reveal specific particle subtypes the catalogue defines; if subtypes are not shown for particles in v1, the parent "all particles" selection MUST still work.
+- **FR-013**: Browsing **حرف وأداة** MUST reveal the selectable particle subtypes defined by the catalogue; the parent button itself remains browse-only.
 - **FR-014**: **حروف مقطّعة** MUST be a leaf (no children, no secondary filters).
 - **FR-015**: Selecting any subtype MUST yield a strict subset of its parent's words.
 - **FR-016**: Subtype and main-type Arabic display labels MUST come from the system's word-type catalogue (not be re-invented in the page), except the four fixed main-type headings and the secondary-filter option labels.
@@ -193,7 +216,7 @@ The admin configures a view (type + subtype + secondary feature + a selected row
 
 #### I. Details card
 
-- **FR-035**: The details card MUST show, for the selected word-context row: the word; its type/subtype; its case OR tense/voice when applicable; root / lemma / stem fields with neutral placeholders when null or deferred; and its occurrences / ayahs / surahs counts — all scoped to that row's context.
+- **FR-035**: The details header MUST identify the selected word-context, and detail content MUST begin directly with its tabs/content without a repeated summary card. Summary data MAY remain loaded for title and state orchestration.
 - **FR-036**: The details card MUST provide three tabbed sections: **الآيات الخاصة بالكلمة**, **السور**, **التحليل**.
 - **FR-037**: The **الآيات** tab MUST list the ayahs containing the row-context occurrences and MUST highlight the matching word occurrences for that context; it MUST reflect the active filter context (e.g. under فعل → أمر, highlight only imperative-verb occurrences).
 - **FR-038**: The **السور** tab MUST show the surah distribution for the row context (and may show which surahs do not contain it), consistent with the existing explorers.
@@ -215,6 +238,54 @@ The admin configures a view (type + subtype + secondary feature + a selected row
 - **FR-045**: The feature MUST reuse the existing Words-hub explorer patterns (split-view table + details, ayah list, surah distribution, per-word analysis, URL-restorable state) rather than introduce parallel mechanisms.
 - **FR-046**: The feature MUST NOT change or disturb the behavior, results, or contracts of the existing Roots / Lemmas / Stems / Unique-Words explorers.
 - **FR-047**: The feature MUST be read-only with respect to Quran data: it MUST NOT modify, import, or re-derive any Quran word, morphology, or label data.
+
+#### M. Grouped detail drilldown (Feature 023)
+
+- **FR-048**: Every word/root/stem/lemma row container MUST be inert and non-focusable. Only its three
+  native statistic buttons open details. Word mappings are occurrences/ayahs → ayahs and surahs →
+  surahs; grouped mappings are occurrences → related words, ayahs → ayahs, and surahs → surahs. A
+  grouped action MUST preserve exact numeric identity and full grammatical scope. The exact scoped row
+  receives the shared active color until details close; no cross-scope coincidental row may be active.
+- **FR-049**: Grouped detail membership and counts MUST derive from the word's **head-level** grammatical
+  dimensions (`quran_word_morphology`) only, using the same scoped occurrence base as the grouped table.
+  Sub-word / segment dimensions (`quran_word_morphology_segments`) MUST NOT contribute membership or
+  counts, MUST NOT surface a segment-only dimension, and MUST NOT displace a word's head root/stem/lemma.
+- **FR-050**: Grouped detail identity MUST be the **numeric** `root_id`/`stem_id`/`lemma_id`; the Arabic
+  display text is presentation only and MUST NOT be used as membership identity. Null dimensions and
+  ayah markers remain excluded.
+- **FR-051**: Shareable detail identity MUST use exactly one explicit positive key: `root`, `stem`, or
+  `lemma` for grouped details, or `word + contextCode` for a word detail. Detail identity is independent
+  of the active `tableView`; combinations such as a roots table with a preserved stem detail MUST
+  restore on refresh and history navigation. Multiple simultaneous identities fail closed, and the
+  generic `dim` key is forbidden.
+- **FR-052**: Detail view defaults are kind-aware: word selection defaults to `ayahs`; grouped selection
+  defaults to `words`. `detailPage` remains internal page `1` when omitted or invalid, is omitted from
+  canonical URLs at page `1`, is serialized only above page `1`, and is always removed for `surahs`.
+- **FR-053**: URL state MUST store list scope separately from the five-field detail-scope snapshot
+  (`detailType`, `detailChildCode`, `detailCase`, `detailTense`, `detailVoice`). Refresh, direct loading,
+  and browser Back/Forward MUST restore both independently with identity/view/page. Selecting a child
+  changes only list scope and preserves the open detail snapshot; a new statistic replaces it from the
+  current list. Missing/incomplete/incompatible snapshots fail closed, and closing details clears them.
+- **FR-054**: The table-view strip, the table shell, and the details host MUST remain mounted (the same
+  DOM hosts) across parent, child, filter, sort, view, loading, empty, and error transitions once the
+  tree has loaded. The table MUST own its prompt/loading/empty/error (with retry) inside its own body,
+  and the split table/details layout MUST be retained for grouped views. `tableView` MUST survive
+  type/subtype/case/tense/voice/sort/page changes — only choosing the **Words** tab returns a grouped
+  view to `words`. This supersedes the Feature 022 MVP behavior that hid the strip without a leaf, hid
+  the details panel and expanded the table full-width for grouped views, and reset `tableView` on main
+  type / parent changes.
+- **FR-054a**: Changing `tableView` MUST change only the displayed table and reset list page. It MUST
+  preserve the complete open detail identity/scope/view/page/content without a detail reload. If the
+  current table kind differs, no row is active; returning to the matching kind and scope restores the
+  exact selected-row color.
+- **FR-055**: A grouped selection MUST render, inside the always-mounted details host, kind-aware tabs —
+  word → آيات/سور; grouped → الكلمات المرتبطة/آيات/سور — with RTL roving focus. Content begins directly
+  with the tabs and active list; no repeated summary card is shown. Grouped detail content is paged
+  member words, paged ayahs, and single-shot surahs for the selected numeric dimension and scope.
+- **FR-056**: Grouped **member-word rows MUST be strictly display-only**: each row shows its word context
+  and three scoped counts (occurrences/ayahs/surahs) and MUST NOT be a button/link, carry a `tabindex`,
+  interactive-surface, or selected state, mutate selection, or write the URL. Only member-list pagination
+  emits, and it obeys the same `detailPage` canonicalization as every other paged detail view.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -238,7 +309,8 @@ The admin configures a view (type + subtype + secondary feature + a selected row
 - **SC-005**: Disconnected letters never appear in the particle (حرف وأداة) results, and the sum of disconnected-letter rows is identical whether counted from the main type or the table (no double counting).
 - **SC-006**: For nominal selections the case filter is present and for verb selections the tense+voice filters are present; for particle/disconnected-letter selections none are present — 100% of selections obey these visibility rules.
 - **SC-007**: All displayed words appear with full tashkeel; the page offers no without-tashkeel toggle.
-- **SC-008**: A shared deep link restores the exact filters and the exact selected word-context row in 100% of cases, including words that produce multiple rows.
+- **SC-008**: A shared deep link restores the exact filters and compatible selected word-context or
+  grouped identity in 100% of cases, including words that produce multiple rows.
 - **SC-009**: Markers and sub-word parts contribute to zero counts anywhere on the page (verifiable against known totals).
 - **SC-010**: The existing Roots / Lemmas / Stems / Unique-Words explorers produce identical results before and after this feature ships (no regressions).
 - **SC-011**: An admin can go from opening the page to viewing a specific word's ayahs and analysis in at most 4 interactions (select type → optional subtype/feature → select row → open tab).

@@ -18,6 +18,7 @@
 |---|---|---|
 | `type` | `noun`, `verb`, `particle`, `inl` | `noun` |
 | `childCode` | parent-specific code (noun POS code such as `N`, `PN`, `ADJ`, `PRON`, `REL`, `DEM`, `T`, `LOC`, `TIM`, `IMPN`; or verb tense `past`, `present`, `imperative`) | none |
+| `tableView` | `words`, `roots`, `stems`, `lemmas` (Feature 022 — table-view tabs) | `words` |
 | `case` | `all`, `nominative`, `accusative`, `genitive`, `null` | `all` |
 | `tense` | `all`, `past`, `present`, `imperative` | `all` |
 | `voice` | `all`, `active`, `passive` | `all` |
@@ -25,8 +26,16 @@
 | `page` | positive integer | `1` |
 | `word` | positive `tashkeelWordId` | none |
 | `contextCode` | selected row context code | none |
-| `view` | `ayahs`, `surahs`, `analysis` | `ayahs` when row selected |
-| `detailPage` | positive integer | `1` |
+| `root` | positive root ID | none |
+| `stem` | positive stem ID | none |
+| `lemma` | positive lemma ID | none |
+| `detailType` | `noun`, `verb`, `particle`, `inl` | required for an open detail |
+| `detailChildCode` | captured child code | required except for `detailType=inl` |
+| `detailCase` | captured `WordTypeCase` | required for an open detail |
+| `detailTense` | captured `WordTypeTense` | required for an open detail |
+| `detailVoice` | captured `WordTypeVoice` | required for an open detail |
+| `view` | `words`, `ayahs`, `surahs` | `ayahs` for word selection; `words` for grouped selection |
+| `detailPage` | positive integer | internal `1`; omitted from the canonical URL at page `1` |
 | `location` | Quran word location for per-occurrence analysis | none |
 | `column` | focused/active table column key | none |
 
@@ -39,9 +48,45 @@ Rules:
 - `particle` and `inl` hide secondary filters.
 - `inl` is a leaf: `childCode` is ignored.
 - Non-positive/malformed `page` and `detailPage` normalize to `1`.
-- `word` without a valid positive `contextCode` does not select a row.
-- Clearing selection removes `word`, `contextCode`, `view`, `detailPage`, `location`, and `column` while preserving list filters.
-- Changing `type`, `childCode`, `case`, `tense`, `voice`, or `sort` resets list `page` to `1` and clears selection.
+- `word` without a valid positive `contextCode` does not select a row. `root`, `stem`, and `lemma`
+  must each be positive integers. Exactly one valid identity may be present; multiple identities fail
+  closed.
+- Detail identity is independent of the displayed `tableView`:
+
+  | `tableView` | Accepted identity | Default `view` |
+  |---|---|---|
+  | `words` | `word` + `contextCode` | `ayahs` |
+  | `roots` | `root` | `words` |
+  | `stems` | `stem` | `words` |
+  | `lemmas` | `lemma` | `words` |
+
+  The table may differ from the identity kind (for example, `tableView=roots` with a preserved `stem`,
+  or `tableView=words` with a preserved `lemma`). Detail defaults and compatibility derive from the
+  identity kind, not the table kind. `location` and `column` follow a word detail even while another
+  table is displayed. Display text is never identity, and the generic `dim` query key is forbidden.
+- An identity is valid only with a complete, type-compatible detail snapshot. Missing, malformed, or
+  incomplete `detailType/detailChildCode/detailCase/detailTense/detailVoice` fails closed: list state
+  remains usable, but no detail selection is restored and no detail request is issued. Detail scope is
+  never inferred from current list keys.
+- Clearing selection removes `word`, `contextCode`, `root`, `stem`, `lemma`, all five `detail*` scope
+  keys, `view`, `detailPage`, `location`, and `column` while preserving list filters.
+- Clicking a parent with children changes only local browsed-parent state and writes no URL. Selecting a
+  child writes list `type`/`childCode` plus any normalized list feature keys and resets list `page` to
+  `1`; it deliberately preserves identity, `view`, `detailPage`, and the five detail-scope keys.
+  Clicking a statistic replaces the identity/view/page and copies the current list scope into all five
+  detail keys. Changing `tableView` writes only `tableView` and list `page=1`; route merging preserves
+  the existing identity, all five detail-scope keys, `view`, `detailPage`, `location`, and `column`, and
+  does not trigger a detail reload. Existing secondary-filter reset behavior, sorting, and list
+  pagination remain unchanged.
+- Missing or invalid `tableView` defaults to `words`; existing URLs without `tableView` keep working unchanged.
+- `view=words` normalizes to `ayahs` for word selection. `view=surahs` always keeps internal
+  `detailPage=1` and removes `detailPage` from canonical URL writes. For `words` and `ayahs`, page `1`
+  is represented internally but omitted from the URL; only pages above `1` serialize `detailPage`.
+- Browser refresh, direct loading, and back/forward restore the list scope, table view, and stored
+  detail selection independently, including combinations whose table and detail kinds differ.
+- Browse-only parents never replace the committed list shell. A selected child changes the table while
+  preserved details continue loading/querying under their original stored scope. Only `inl` is a
+  directly committed parent/leaf.
 - A valid positive selected row that the backend no longer resolves renders a controlled panel not-found state; the table remains usable.
 - Page sizes are implementation constants, not URL params.
 
@@ -51,6 +96,7 @@ Rules:
 buildWordTypesDeepLink({
   type,
   childCode,
+  tableView,
   case,
   tense,
   voice,
@@ -58,6 +104,14 @@ buildWordTypesDeepLink({
   page,
   word,
   contextCode,
+  root,
+  stem,
+  lemma,
+  detailType,
+  detailChildCode,
+  detailCase,
+  detailTense,
+  detailVoice,
   view,
   detailPage,
   location,
@@ -71,10 +125,12 @@ Return the existing deep-link target shape:
 { path: wordTypesRoutePath(), queryParams }
 ```
 
-The canonical selected-row URL includes both `word` and `contextCode`:
+Canonical URLs use explicit selection keys and omit default page `1`:
 
 ```text
-/dashboard/words/types?type=noun&childCode=PN&word=1234&contextCode=PN&view=ayahs
+/dashboard/words/types?type=noun&childCode=PN&word=1234&contextCode=PN&detailType=noun&detailChildCode=PN&detailCase=all&detailTense=all&detailVoice=all&view=ayahs
+/dashboard/words/types?tableView=roots&root=123&detailType=noun&detailChildCode=N&detailCase=all&detailTense=all&detailVoice=all&view=words
+/dashboard/words/types?type=noun&childCode=ADJ&tableView=roots&root=123&detailType=verb&detailChildCode=present&detailCase=all&detailTense=present&detailVoice=all&view=ayahs
 ```
 
 ## Page and Component State
@@ -97,10 +153,9 @@ components are presentational and never call backend services.
 |---|---|
 | Page open | Load tree and first rows for normalized filters. |
 | Filter change | Reload rows. Reload the static tree only when type/child catalogue data is stale; secondary filter changes do not request scoped tree counts. |
-| Row select | Load summary for exact `word + contextCode + active feature` identity. |
+| Statistic action | Capture current list scope, then load the requested detail for the exact identity. |
 | `view=ayahs` | Lazy-load paged ayah matches for exact row context. |
 | `view=surahs` | Lazy-load surah distribution + missing surahs for exact row context. |
-| `view=analysis` | Reuse `GET api/mushaf/words/{location}/analysis`; no request until a location is selected. |
 
 Rules:
 
@@ -110,53 +165,176 @@ Rules:
 - Transport errors and backend-controlled failures are separate states.
 - Missing API data is never replaced with invented Quranic content.
 
-## Table and Selection Behavior
+## Grouped Detail API and Cache Contract (Task 6)
 
-Columns:
+Grouped detail reads use the selected numeric dimension identity and the complete active grammatical
+scope. The frontend keeps the singular selection kind (`root`, `stem`, `lemma`) and translates it to
+the backend's plural route segment (`roots`, `stems`, `lemmas`):
 
-```text
-الكلمة · النوع · الجذر · الصيغة · الأصل · المواضع · الآيات · السور
+```ts
+const groupedRequest: WordTypeGroupedRequestParams = {
+  kind: 'root',
+  dimensionId: 4210,
+  type: 'noun',
+  childCode: 'PN',
+  case: 'nominative',
+  tense: 'all',
+  voice: 'all',
+};
+
+api.getGroupedSummary(groupedRequest);
+api.getGroupedMemberWords(groupedRequest, page, pageSize);
+api.getGroupedAyahMatches(groupedRequest, page, pageSize);
+api.getGroupedSurahs(groupedRequest);
 ```
 
-`الصيغة` and `الأصل` render the neutral placeholder when the backend returns null or the v1 scope
-defers those winner queries.
+- Every call sends `type`, sends `childCode` when present, and sends only concrete grammatical
+  filters through the shared identity-parameter policy.
+- Only member words and ayahs send `page` and `pageSize`; summary and surahs never send paging or
+  `detailPage` query parameters.
+- Grouped cache keys use the stable shape
+  `wordtypes:grouped:{kind}:{dimensionId}:{type}:{childCode|all}:{case}:{tense}:{voice}:view:{view}`.
+  The `words` and `ayahs` variants append `:p{page}`; `summary` and `surahs` do not. This isolates
+  kind, ID, full scope, and view without putting API loading behavior into the cache service.
+
+## Kind-Aware Detail Orchestration (Task 7)
+
+`WordTypesDetailFacade` restores and loads details for all four selection kinds from the URL. It parses
+the one explicit selection key (`word`+`contextCode`, `root`, `stem`, or `lemma`) independently of the
+active `tableView` and combines it with the independent five-key detail snapshot into a discriminated
+`WordTypeDetailSelection`. Loaders use that stored scope—not the current list scope—when they construct
+requests, then load a kind-appropriate summary and the active view:
+
+- **Summary dispatch by kind.** A `word` selection loads the word summary/cache; a `root`/`stem`/`lemma`
+  selection loads the grouped summary/cache. Word summaries populate `summary`, grouped summaries
+  populate `groupedSummary` (exactly one is non-null for an active selection).
+- **View dispatch by kind and view.** `WordTypesDetailViewLoader` routes `words` to grouped member words
+  (grouped selection only — the word selection has no `words` view), `ayahs` to the word or grouped ayah
+  endpoint, and `surahs` to the single-shot word or grouped surah endpoint. The `surahs` load ignores
+  `detailPage`.
+- **Default view.** A newly restored/selected word defaults to `ayahs`; a grouped selection defaults to
+  `words`. `isPaginatedWordTypeView` is true for `words` and `ayahs`, false for `surahs`.
+- **Internal page vs URL.** A paged view restored without a URL `detailPage` is internal page `1`; URL
+  omission is never a null internal page. Only pages above `1` serialize.
+- **Restoration and history.** Refresh/direct loading and browser back/forward restore list and detail
+  scopes independently. A scope-only detail change for the same identity loads the newly stored scope;
+  a list-only child change preserves the existing detail request and content.
+- **Stale protection.** Route-driven loads use `switchMap` to cancel superseded work, and every state
+  write is additionally gated by a monotonic generation counter, so a late non-cancellable summary or
+  detail response can never overwrite a newer kind/scope/view/page.
+- **Not-found vs error vs retry.** An absent scoped dimension (null data or `404`) becomes a kind-aware
+  `notFound` that preserves the selection without clearing list state; a transport/backend failure
+  becomes a retryable `error`. `retry()` reloads the summary when it never arrived, otherwise reloads the
+  active view. Failed reads are never cached (`ApiResponseCache` stores only successful responses), so a
+  retry always re-issues the request.
+
+## Table-View Tabs (Feature 022)
+
+When a table scope is selected (a leaf/`childCode`, or `type=inl`), a tab row above the table switches
+the same filtered scope between four aggregation levels via the `tableView` query param, in RTL order:
+
+```text
+كلمات (words) | جذور (roots) | أصول (stems) | صيغ (lemmas)
+```
+
+- The tab strip stays visible once the tree loads (including parent scopes with no leaf chosen); it is
+  only absent before the first successful tree read (Task 8, superseding the Feature 022 hidden-strip
+  behavior).
+- The list always loads from `GET .../word-types/table` (E2b); `GET .../word-types/words` (E2) stays
+  reserved for existing shareable deep links.
+- Selecting a tab resets list `page` to `1` and preserves both the active
+  `type`/`childCode`/`case`/`tense`/`voice` filters and the complete open detail state. A tab-only change
+  never reloads details.
+- `tableView` survives type/child/case/tense/voice/sort/page changes. Only the **Words** tab returns a
+  grouped view to `words`; browse-only parents and `selectScope(type, childCode)` do not reset it.
+
+## Stable Shell and List Transitions (Task 8)
+
+- The table-view strip, the `qd-word-types-table` host, and the `qd-word-type-details-panel` host are
+  never conditionally removed once the tree has loaded. The same DOM nodes persist across parent,
+  child, filter, sort, view, loading, empty, and error transitions.
+- The table owns its own **prompt / loading / empty / error (with retry)** states inside its body; the
+  page no longer renders outer replacement blocks for those states. Retry delegates to
+  `WordTypesExplorerFacade.retryList()`, which re-issues the current list load (failed reads are never
+  cached, so a retry always re-fetches).
+- The split table/details layout is retained for grouped views (no full-width grouped modifier). The
+  details host renders a kind-aware empty selection when no valid row is active.
+- Browsing a parent does not change this state. A committed child changes the list scope while retaining
+  the open detail identity/view/page/snapshot; exact selected-row styling is suppressed whenever stored
+  detail scope differs from the current list. Existing secondary-filter, sort, and list-page behavior is
+  otherwise retained.
+- After a successful tree read, a rows-only failure keeps the loaded tree so the strip stays visible;
+  only the rows/status change. If a later tree-only parent reload fails after the cache no longer holds
+  the tree, the facade likewise retains its last valid tree instead of unmounting the strip.
+- A grouped row uses its explicit numeric `root`/`stem`/`lemma` URL identity; display text is never
+  serialized as selection identity.
+- Rows whose `kind` does not match the active `tableView` are never rendered (defense-in-depth against
+  a stale response painting under the wrong tab).
+
+## Table and Selection Behavior
+
+Columns (`tableView=words`):
+
+```text
+الكلمة · النوع · الجذر · الأصل · الصيغة · المواضع · الآيات · السور
+```
+
+`الأصل` (stem) and `الصيغة` (lemma) render the neutral placeholder when the backend returns null or the
+v1 scope defers those winner queries.
+
+Grouped-view columns (`tableView=roots|stems|lemmas`): `<dimension> · المواضع · الآيات · السور`, where
+`<dimension>` is `الجذر` (roots), `الأصل` (stems), or `الصيغة` (lemmas) — a single dimension column,
+no root/type/stem/lemma meta columns, since the row itself *is* that dimension.
 
 Secondary filters narrow the table `totalCount` and any active UI count chips derived from the current rows. They do not change the static E1 tree counts.
 
 Count mapping:
 
-| Interaction | Destination |
-|---|---|
-| Row select | `view=ayahs&detailPage=1` |
-| المواضع | `view=ayahs&detailPage=1` |
-| الآيات | `view=ayahs&detailPage=1` |
-| السور | `view=surahs` |
-| analysis action for a listed occurrence | `view=analysis&location={location}` |
+| Row kind | Statistic | Destination |
+|---|---|---|
+| word | المواضع | `view=ayahs` |
+| word | الآيات | `view=ayahs` |
+| word | السور | `view=surahs` |
+| root/stem/lemma | المواضع | `view=words` |
+| root/stem/lemma | الآيات | `view=ayahs` |
+| root/stem/lemma | السور | `view=surahs` |
 
-Rows are selected by `tashkeelWordId + contextCode + active feature`, not by displayed text.
-Zero-count destinations remain keyboard-operable when they are valid and show an empty state.
+Every row container is a non-focusable presentation/selection container: pointer, Enter, and Space do
+nothing. Only the three native statistic buttons open details. Rows are selected by exact identity plus
+stored-scope equality with the current list—word ID + context + features, or grouped kind + numeric ID.
+The shared active row color persists across detail-tab changes, transfers on another statistic, clears
+on close, restores through refresh/history when scopes match, and is not applied cross-scope. Zero-count
+destinations remain keyboard-operable when valid and show an empty state.
 
 ## Details Panel
 
-Tabs/sections:
+Tabs/sections are **kind-aware** and rendered inside the always-mounted details host:
 
-- `الآيات الخاصة بالكلمة` (`view=ayahs`)
-- `السور` (`view=surahs`)
-- `التحليل` (`view=analysis`)
+- Word selection: `الآيات الخاصة بالكلمة` (`view=ayahs`, default) · `السور` (`view=surahs`).
+- Grouped selection (root/stem/lemma): `الكلمات المرتبطة` (`view=words`, default) · `الآيات` (`view=ayahs`)
+  · `السور` (`view=surahs`).
 
-The panel summary shows the exact row's word, subtype, case or tense/voice where applicable,
-root/lemma/stem placeholders, and occurrence/ayah/surah counts. The ayah tab highlights only matched
-occurrences for the row context. The analysis tab displays one selected occurrence's existing
-`WordAnalysisResponse`.
+Tabs use tablist semantics with RTL roving focus (`ArrowLeft`=next, `ArrowRight`=previous, `Home`/`End`);
+for an empty selection every tab is disabled while the panel surface stays present.
+
+Detail content begins directly with the tabs and active content; there is no repeated white summary
+card. Summary requests/state remain in place for the header title and loading/error/retry/not-found
+orchestration. The ayah tab highlights only matched occurrences for the selection.
+
+Grouped **member-word rows are strictly display-only**: word context + three scoped counts, with no
+button/link/`tabindex`/interactive-surface/selected state and no Router — only their pagination emits.
+Grouped words and ayahs are server-paged (canonical `detailPage` omitted at page 1, serialized above 1);
+surahs are single-shot and never carry `detailPage`. Grouped detail error state offers a retry that calls
+the detail facade; not-found renders inside the same mounted surface.
 
 Desktop uses the existing Words explorer split-view pattern with an inline-end details panel. Narrow
 screens stack/collapse consistently with existing explorers. Quran/Mushaf text is never animated.
 
 ## Accessibility and RTL
 
-- Filter buttons, expand arrows, row controls, count chips, tabs, pagination, and analysis links are
+- Filter buttons, statistic buttons, tabs, pagination, and analysis links are
   keyboard-operable.
-- The filter picker distinguishes label select from expand-arrow behavior.
+- Parent buttons browse child choices without committing list state; child buttons commit scope.
 - Rows expose selected state beyond color (`aria-current` or equivalent).
 - Tabs use tablist semantics and RTL-aware keyboard behavior.
 - Loading states use polite live regions where appropriate.
@@ -169,11 +347,38 @@ screens stack/collapse consistently with existing explorers. Quran/Mushaf text i
 - URL parse/build/normalize for default noun state and all filter classes.
 - Secondary filter visibility by main type.
 - Filter changes reset page and clear selection.
-- Deep link restores exact `word + contextCode`, including same spelling/different context cases.
+- Deep link restores exact compatible `word + contextCode` or grouped ID, including same
+  spelling/different-context word cases and full grouped scope.
 - No eager detail calls on list render.
-- Row/count interactions map to the expected detail view.
+- Every row container is inert; word/grouped statistic buttons map once to the expected detail view and
+  capture the current list scope as the new detail snapshot.
 - Ayah highlighting receives context-scoped match data without string replacement.
 - Transport error vs backend failure/not-found states.
 - Missing root/lemma/stem placeholders.
 - Secondary filters do not trigger scoped tree-count expectations; only row total and active UI chips reflect the secondary scope.
-- Keyboard/ARIA behavior for filter picker, table rows, tabs, and narrow-screen panel.
+- Keyboard/ARIA behavior for filter picker, statistic buttons, tabs, and narrow-screen panel.
+- `tableView` URL parse/build: missing → `words`; invalid → `words`; one explicit identity of any kind
+  round-trips independently with scope while multiple identities fail closed; the canonical order
+  includes `root`, `stem`, and `lemma`, then `detailType`, `detailChildCode`, `detailCase`, `detailTense`,
+  `detailVoice` before `view`, and has no generic `dim` key.
+- Detail paging: words/ayahs retain internal page `1` while omitting it from URLs, pages above `1`
+  serialize it, and surahs always remove it. Browser back/forward replays table view and detail identity
+  independently with the list/detail scopes.
+- Table-view tab switching resets list page to `1`, preserves the complete detail selection without a
+  detail request, and changes only the table request/cache key; `tableView` is preserved by browse-only parents,
+  `selectScope(type, childCode)`, case/tense/voice/sort/page, and only the Words tab returns a grouped
+  view to `words`.
+- Grouped rendering: dimension column + three native statistic buttons per view; rows whose `kind`
+  mismatches the active `tableView` are skipped. Row containers are inert. Statistic selection writes
+  the explicit numeric identity, mapped view, and full five-key detail snapshot; the exact scoped row
+  exposes `aria-current`/`aria-selected` and the shared selected color.
+- Grouped details: kind-aware tabs (grouped adds `الكلمات المرتبطة`), no repeated summary card,
+  **display-only** member-word rows (no button/link/`tabindex`/interactive-surface/selected
+  state, no Router; only pagination emits), and grouped words/ayahs paging that omits `detailPage` at page 1,
+  serializes only pages above 1, and always removes it for surahs.
+- Persistent table-view strip, table shell, and details host across parent/child/filter/sort/view/
+  loading/empty/error transitions (same DOM node); split layout retained for grouped views; prompt/
+  loading/empty/error render inside the table body with a retry that calls `retryList()`.
+- Table-view strip visible once the tree loads (including parent scopes); RTL roving-tab keyboard
+  behavior (`ArrowLeft`=next, `ArrowRight`=previous, `Home`/`End`).
+- Corrected stem/lemma header and tab-label terminology.

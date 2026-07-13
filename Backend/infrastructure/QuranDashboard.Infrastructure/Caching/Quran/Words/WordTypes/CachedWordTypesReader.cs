@@ -35,6 +35,19 @@ public sealed class CachedWordTypesReader(EfWordTypesReader efReader, IMemoryCac
         return rows;
     }
 
+    public async Task<PagedResult<WordTypeTableRowDto>> GetTableRowsAsync(WordTypeFilter filter, WordTypeTableView tableView, WordTypeSort sort, int page, int pageSize, CancellationToken cancellationToken)
+    {
+        var key = WordTypesCacheKeys.Table(filter, tableView, sort, page, pageSize);
+        if (_cache.TryGetValue(key, out PagedResult<WordTypeTableRowDto>? cached))
+        {
+            return cached!;
+        }
+
+        var rows = await _ef.GetTableRowsAsync(filter, tableView, sort, page, pageSize, cancellationToken);
+        _cache.Set(key, rows, WordTypesCacheEntryOptions.PagedRows());
+        return rows;
+    }
+
     public async Task<WordTypeSummaryDto?> GetSummaryAsync(WordTypeRowIdentity identity, CancellationToken cancellationToken)
     {
         var key = WordTypesCacheKeys.Summary(identity);
@@ -78,6 +91,74 @@ public sealed class CachedWordTypesReader(EfWordTypesReader efReader, IMemoryCac
         }
 
         var surahs = await _ef.GetSurahsAsync(identity, cancellationToken);
+        if (surahs is not null)
+        {
+            _cache.Set(key, surahs, WordTypesCacheEntryOptions.Detail());
+        }
+
+        return surahs;
+    }
+
+    public async Task<WordTypeGroupedSummaryDto?> GetGroupedSummaryAsync(WordTypeGroupedSelection selection, CancellationToken cancellationToken)
+    {
+        var key = WordTypesCacheKeys.GroupedSummary(selection);
+        if (_cache.TryGetValue(key, out WordTypeGroupedSummaryDto? cached))
+        {
+            return cached;
+        }
+
+        var summary = await _ef.GetGroupedSummaryAsync(selection, cancellationToken);
+        if (summary is not null)
+        {
+            _cache.Set(key, summary, WordTypesCacheEntryOptions.Detail());
+        }
+
+        return summary;
+    }
+
+    public async Task<PagedResult<WordTypeGroupedMemberWordDto>?> GetGroupedMemberWordsAsync(WordTypeGroupedSelection selection, int page, int pageSize, CancellationToken cancellationToken)
+    {
+        var key = WordTypesCacheKeys.GroupedWords(selection, page, pageSize);
+        if (_cache.TryGetValue(key, out PagedResult<WordTypeGroupedMemberWordDto>? cached))
+        {
+            return cached;
+        }
+
+        var words = await _ef.GetGroupedMemberWordsAsync(selection, page, pageSize, cancellationToken);
+        if (words is not null)
+        {
+            _cache.Set(key, words, WordTypesCacheEntryOptions.Detail());
+        }
+
+        return words;
+    }
+
+    public async Task<PagedResult<WordTypeAyahMatchDto>?> GetGroupedAyahMatchesAsync(WordTypeGroupedSelection selection, int page, int pageSize, CancellationToken cancellationToken)
+    {
+        var key = WordTypesCacheKeys.GroupedAyahs(selection, page, pageSize);
+        if (_cache.TryGetValue(key, out PagedResult<WordTypeAyahMatchDto>? cached))
+        {
+            return cached;
+        }
+
+        var ayahs = await _ef.GetGroupedAyahMatchesAsync(selection, page, pageSize, cancellationToken);
+        if (ayahs is not null)
+        {
+            _cache.Set(key, ayahs, WordTypesCacheEntryOptions.Detail());
+        }
+
+        return ayahs;
+    }
+
+    public async Task<WordTypeSurahsResponse?> GetGroupedSurahsAsync(WordTypeGroupedSelection selection, CancellationToken cancellationToken)
+    {
+        var key = WordTypesCacheKeys.GroupedSurahs(selection);
+        if (_cache.TryGetValue(key, out WordTypeSurahsResponse? cached))
+        {
+            return cached;
+        }
+
+        var surahs = await _ef.GetGroupedSurahsAsync(selection, cancellationToken);
         if (surahs is not null)
         {
             _cache.Set(key, surahs, WordTypesCacheEntryOptions.Detail());

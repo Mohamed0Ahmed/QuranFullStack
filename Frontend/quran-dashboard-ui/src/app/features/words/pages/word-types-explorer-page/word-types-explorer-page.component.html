@@ -6,7 +6,7 @@
       </div>
     </div>
 
-    <div class="uw-toolbar-recess uw-toolbar-recess--stacked">
+    <div class="uw-toolbar-recess uw-toolbar-recess--stacked uw-toolbar-recess--kinetic">
       <div class="word-types-page__filter">
         <qd-word-type-filter
           [tree]="listState().tree"
@@ -16,8 +16,7 @@
           [selectedTense]="listState().query.tense"
           [selectedVoice]="listState().query.voice"
           [loading]="listState().status === 'loading'"
-          (typeSelected)="selectType($event)"
-          (childSelected)="selectChild($event)"
+          (scopeSelected)="selectScope($event)"
           (caseSelected)="selectCase($event)"
           (tenseSelected)="selectTense($event)"
           (voiceSelected)="selectVoice($event)"
@@ -36,12 +35,12 @@
       </div>
     </div>
 
-    @if (listState().status === 'error') {
-      <div class="qd-error-state">{{ listState().errorMessage || errorLabel }}</div>
-    } @else if (listState().status === 'selectPrompt' && !listState().rows) {
-      <div class="qd-empty-state" data-testid="word-types-select-subtype">{{ selectSubtypeLabel }}</div>
-    } @else if (listState().status === 'empty') {
-      <div class="qd-empty-state">{{ emptyLabel }}</div>
+    @if (listState().tree) {
+      <qd-word-type-table-view-tabs
+        [selectedView]="listState().query.tableView"
+        [disabled]="listState().status === 'loading'"
+        (viewSelected)="selectTableView($event)"
+      />
     }
   </div>
 
@@ -50,44 +49,55 @@
       class="word-types-page__main qd-explorer-layout__table"
       [attr.aria-busy]="listState().status === 'loading' ? true : null"
     >
-      @if (listState().rows || listState().status === 'loading') {
-        <qd-word-types-table
-          [rows]="listState().rows"
-          [loading]="listState().status === 'loading'"
-          [selectedRow]="selectedRow()"
-          (rowSelected)="selectRow($event)"
-          (countOpened)="onCountOpened($event)"
-        />
+      <qd-word-types-table
+        [rows]="listState().rows"
+        [tableView]="listState().query.tableView"
+        [loading]="listState().status === 'loading'"
+        [status]="listState().status"
+        [errorMessage]="listState().errorMessage"
+        [selectPromptLabel]="selectSubtypeLabel"
+        [emptyLabel]="emptyLabel"
+        [errorLabel]="errorLabel"
+        [retryLabel]="retryLabel"
+        [selectedRow]="selectedRow()"
+        (countOpened)="onCountOpened($event)"
+        (retry)="retryList()"
+      />
 
-        @if (listState().rows; as page) {
-          <qd-pagination
-            [currentPage]="page.page"
-            [pageSize]="page.pageSize"
-            [totalCount]="page.totalCount"
-            [disabled]="listState().status === 'loading'"
-            [ariaLabel]="tableLabel"
-            (pageChange)="changePage($event)"
-          />
-        }
+      @if (listState().rows; as page) {
+        <qd-pagination
+          [currentPage]="page.page"
+          [pageSize]="page.pageSize"
+          [totalCount]="page.totalCount"
+          [disabled]="listState().status === 'loading'"
+          [ariaLabel]="tableLabel"
+          (pageChange)="changePage($event)"
+        />
       }
     </main>
 
     <qd-word-type-details-panel
-      class="word-types-page__panel qd-explorer-layout__panel"
-      [inline]="isDesktop()"
-      [view]="panelState().view"
-      [emptySelection]="emptySelection()"
-      [selectionTitle]="selectionTitle()"
-      [loading]="panelState().status === 'loading'"
-      [notFound]="panelState().status === 'notFound'"
-      (viewChange)="onPanelViewChange($event)"
-      (close)="clearSelection()"
-    >
-      @if (panelState().summary) {
+        class="word-types-page__panel qd-explorer-layout__panel"
+        [inline]="isDesktop()"
+        [view]="panelState().view"
+        [kind]="detailKind()"
+        [emptySelection]="emptySelection()"
+        [selectionTitle]="selectionTitle()"
+        [loading]="panelState().status === 'loading'"
+        [notFound]="panelState().status === 'notFound'"
+        (viewChange)="onPanelViewChange($event)"
+        (close)="clearSelection()"
+      >
         <div class="word-types-details__scroll">
           @switch (panelState().status) {
             @case ('loading') {
-              @if (panelState().view === 'ayahs') {
+              @if (panelState().view === 'words') {
+                <qd-word-type-grouped-words-list
+                  [page]="emptyMemberWordsPage"
+                  [currentPage]="panelState().detailPage"
+                  [loading]="true"
+                />
+              } @else if (panelState().view === 'ayahs') {
                 <qd-ayah-matches-list
                   [page]="emptyAyahsPage"
                   [currentPage]="panelState().detailPage"
@@ -99,13 +109,32 @@
               }
             }
             @case ('error') {
-              <div class="qd-error-state">{{ panelState().errorMessage || errorLabel }}</div>
+              <div class="qd-error-state word-types-details__error" role="alert" data-testid="word-type-details-error">
+                <span>{{ panelState().errorMessage || errorLabel }}</span>
+                <button
+                  type="button"
+                  class="qd-btn qd-btn-secondary"
+                  data-testid="word-type-details-retry"
+                  (click)="retryDetail()"
+                >
+                  {{ retryLabel }}
+                </button>
+              </div>
             }
             @case ('empty') {
-              <div class="qd-empty-state">{{ emptyLabel }}</div>
+              <div class="qd-empty-state">{{ detailEmptyLabel() }}</div>
             }
             @default {
-              @if (panelState().view === 'ayahs' && panelState().ayahs; as ayahsPage) {
+              @if (panelState().view === 'words' && panelState().words) {
+                <qd-word-type-grouped-words-list
+                  [page]="memberWordsForView()"
+                  [currentPage]="panelState().detailPage"
+                  [loading]="false"
+                  (pageChange)="onDetailPageChange($event)"
+                />
+              }
+
+              @if (panelState().view === 'ayahs' && panelState().ayahs) {
                 <qd-ayah-matches-list
                   [page]="ayahsPageForView()"
                   [currentPage]="panelState().detailPage"
@@ -127,7 +156,6 @@
             }
           }
         </div>
-      }
-    </qd-word-type-details-panel>
+      </qd-word-type-details-panel>
   </div>
 </div>

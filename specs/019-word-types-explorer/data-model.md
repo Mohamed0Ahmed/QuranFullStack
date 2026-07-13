@@ -20,8 +20,8 @@ One row per **word occurrence**. All feature predicates, filters, and counts rea
 | `VerbVoice` | string? (`active`/`passive`) | verb secondary filter | populated only when `IsVerb` |
 | `CaseFeature` | string? (`nominative`/`accusative`/`genitive`/null) | nominal secondary filter | null → غير محدد |
 | `RootId` | int? FK → `quran_roots` | الجذر enrichment | nullable |
-| `LemmaId` | int? FK → `quran_lemmas` | الأصل enrichment (deferrable) | nullable |
-| `StemId` | int? FK → `quran_stems` | الصيغة enrichment (deferrable) | nullable |
+| `LemmaId` | int? FK → `quran_lemmas` | الصيغة المعجمية enrichment (deferrable) | nullable |
+| `StemId` | int? FK → `quran_stems` | الأصل الصرفي enrichment (deferrable) | nullable |
 | (word FK) | → `quran_words` | marker filter + tashkeel identity join | always join + filter `!IsAyahMarker` |
 
 ### 1.2 `quran_words` (join — identity + marker filter)
@@ -43,7 +43,7 @@ Provides `IsAyahMarker` (always exclude) and the link to the **tashkeel unique-w
 
 ### 1.5 Enrichment catalogues (read-only)
 
-`quran_roots`, `quran_lemmas`, `quran_stems` — for الجذر / الأصل / الصيغة display text via winner resolution (§5).
+`quran_roots`, `quran_lemmas`, `quran_stems` — for الجذر / الأصل الصرفي / الصيغة المعجمية display text via winner resolution (§5).
 
 ---
 
@@ -141,7 +141,7 @@ For each word-context row, scoped to its exact context (active type/subtype + ac
 For a row, الجذر/الأصل/الصيغة display text is the row context's value when available. Because the row is pinned to one head-POS (and feature) context, these are usually constant; where they vary across the row's occurrences, take the **dominant (winner)** value.
 
 - الجذر: reuse existing root-winner query (`LoadPrimaryRootsAsync`) and return it when source data provides a root.
-- الأصل (lemma) / الصيغة (stem): **new** winner queries mirroring the root one — low risk, **deferrable** for v1. If not implemented in v1, return null.
+- الصيغة المعجمية (lemma) / الأصل الصرفي (stem): **new** winner queries mirroring the root one — low risk, **deferrable** for v1. If not implemented in v1, return null.
 - Null or deferred root/lemma/stem → `—` fallback in the UI; null enrichment never blocks the row (head_pos is NOT NULL).
 
 ---
@@ -163,3 +163,134 @@ For a row, الجذر/الأصل/الصيغة display text is the row context's 
 ## 7. State transitions
 
 None. This is a stateless read-only explorer; "state" is purely the URL-encoded view selection (type / childCode / case|tense|voice / selected row `tashkeelWordId` + `contextCode` / page / sort / active tab), described in `contracts/frontend-routing-state.md`.
+
+---
+
+## 8. Grouped read model (Feature 022 — table-view tabs)
+
+Extends §3's word-context row with three **grouped** variants, selected by `tableView` and returned by
+the discriminated `E2b` endpoint (`contracts/word-types-api.md`). Grouping is a read-model concern, not
+a frontend concern: the table is server-paginated/sorted, so grouping a loaded page client-side would
+corrupt counts, ordering, and pagination.
+
+### 8.1 Grouped row (root/stem/lemma)
+
+| Field | Meaning | Constraint |
+|-------|---------|------------|
+| `kind` | `"root"` \| `"stem"` \| `"lemma"` | discriminator |
+| `rootId` / `stemId` / `lemmaId` | numeric FK to `quran_roots`/`quran_stems`/`quran_lemmas` | **identity** — Arabic display text is never identity |
+| `displayText` | the dimension's Arabic text (`root_text`/`stem_text`/`lemma_text`) | display only |
+| `occurrencesCount` / `ayahsCount` / `surahsCount` | occurrence-scoped aggregates, summed **per dimension ID** over the same scoped occurrence base as §3's word rows | scoped to the active type/child/case/tense/voice filter |
+
+Grouping key: the numeric `root_id`/`stem_id`/`lemma_id` over the identical scoped `base` occurrence set
+§3 uses (type + child + secondary filter + `!IsAyahMarker` + non-null tashkeel identity). Rows with a
+null dimension ID for the active view are **excluded**, never bucketed as "unknown". Grouping and total
+counting happen **before** pagination.
+
+### 8.2 Third count family
+
+§4 defines two count families (tree/node row counts, and E2's occurrence-level row counts). Grouped
+table counts are a **third view** of the occurrence family — the same occurrence-level aggregates as
+§4.2, summed per dimension ID instead of per word-context row. They are **not** the Roots/Lemmas/Stems
+explorers' own counts (`quran_roots.words_count` and friends), which are global, unscoped, and
+segment-derived — a different population entirely. Do not conflate or cross-derive between the three
+families.
+
+### 8.3 `totalCount` units and null-dimension coverage
+
+Grouped `totalCount` = count of **distinct non-null** dimension IDs in the active scope. This is a
+different unit than the `words`-view `totalCount` (word-context rows) — **never compare the two
+directly** to reason about coverage. Null-dimension coverage is instead an **occurrence-sum identity**,
+both sides measured over the same scope:
+
+```text
+Σ occurrencesCount over all grouped pages (non-null dimension)
+  + Σ occurrencesCount for occurrences whose dimension ID is null
+  = Σ occurrencesCount over the words-view pages
+```
+
+The difference between the grouped and words-view occurrence sums equals exactly the null-dimension
+occurrence count. This must be asserted as a test (§ Required Backend Tests in
+`contracts/backend-read-abstractions.md`), never "balanced" by inventing a bucket.
+
+### 8.4 Deterministic sort tie-breaks
+
+All grouped sorts (`occurrences`, `ayahs`, `surahs`, `mushaf-order`, `alpha`) end their tie-break chain
+at the **numeric** dimension ID, so grouped pages are deterministic. `alpha` reuses the Roots explorer's
+Arabic fold (`ArabicFoldFrom`/`ArabicFoldTo`) with ordinal (`COLLATE "C"`) collation before the ID
+tie-break, so grouped alphabetical order stays consistent with the standalone Roots/Lemmas/Stems
+explorers.
+
+### 8.5 Terminology (aligns with the Roots/Lemmas/Stems explorers)
+
+| Dimension | Correct Arabic (full) | Short label (tab/column) |
+|-----------|------------------------|---------------------------|
+| root | الجذر | جذور / الجذر |
+| stem | الأصل الصرفي / الأصول الصرفية | أصول / الأصل |
+| lemma | الصيغة المعجمية / الصيغ المعجمية | صيغ / الصيغة |
+
+Word Types previously reversed stem/lemma relative to the already-correct Roots/Lemmas/Stems explorer
+terminology; §1.1/§1.5/§5 above and the frontend table headers/tab labels now use this mapping.
+
+---
+
+## 9. Grouped detail read model (Feature 023 — grouped drilldown)
+
+Feature 022 left grouped rows noninteractive with no detail. Feature 023 makes a grouped root/stem/lemma
+row selectable and opens a scoped detail. A grouped selection is the numeric dimension plus the identical
+five-field scope the row was displayed under:
+
+```
+WordTypeGroupedSelection = (Kind ∈ {Root, Stem, Lemma}, DimensionId > 0, WordTypeFilter scope)
+```
+
+### 9.1 Grouped summary (this task)
+
+The scoped summary reuses the **same occurrence `base`** as §8's grouped table row and restricts it to
+the single allowlisted numeric column (`root_id | stem_id | lemma_id = DimensionId`) before aggregating:
+
+| Field | Derivation |
+|-------|-----------|
+| `kind` | singular discriminator (`root`/`stem`/`lemma`) |
+| `dimensionId` | the numeric `root_id`/`stem_id`/`lemma_id` (identity — never the display text) |
+| `displayText` | `MIN(dimension_text)` over the scoped base (projection-only display) |
+| `occurrencesCount` | `COUNT(*)` over the scoped, dimension-filtered base |
+| `ayahsCount` | `COUNT(DISTINCT ayah_id)` |
+| `surahsCount` | `COUNT(DISTINCT surah_number)` |
+
+- **Head-grain invariant**: membership and counts come from head-level `quran_word_morphology` only. The
+  scoped `base` never joins `quran_word_morphology_segments`, so a dimension that appears only on a
+  secondary segment (prefix/suffix) never surfaces and never displaces a word's head root/lemma/stem.
+- The summary's `dimensionId`, `displayText`, and three counts are **byte-for-byte identical** to the
+  selected §8.1 grouped table row in the same scope (integrity invariant — assert in tests).
+- Null dimensions and ayah markers remain excluded exactly as in §8; a positive dimension ID absent from
+  the scope resolves to a 404 (null reader result), not an empty summary.
+- Member words, ayahs, and surahs for the same selection are defined by Feature 023 Tasks 2–4.
+
+### 9.2 Grouped member words (this task)
+
+The member list is the **Words view (E2 / §7 word-context rows) restricted to one numeric head
+dimension**. The shared occurrence `base` is filtered by the allowlisted numeric column
+(`root_id | stem_id | lemma_id = DimensionId`) **before** grouping, then grouped by the identical
+`(unique_tashkeel_word_id, context_code)` formula the Words view uses — so the members are a row-for-row
+subset of the Words table for that dimension.
+
+| Field | Derivation |
+|-------|-----------|
+| `(tashkeelWordId, contextCode)` | the exact Words-view grouping key (`unique_tashkeel_word_id`, then `head_pos` for nominal/particle rows or `COALESCE(verb_tense,'unspecified')` for verb rows) |
+| `case` / `tense` / `voice` | the **active scope** values, carried exactly as `WordTableRowDto` does |
+| `displayText`, `typeCode`, `typeLabel`, `broadLabel`, `caseOrFeature` | reuse the Words-view row projection unchanged |
+| `rootText` / `lemmaText` / `stemText` | winner display labels — **projection-only**, never membership or parity identity |
+| `occurrencesCount` / `ayahsCount` / `surahsCount` | per-row `COUNT(*)`, `COUNT(DISTINCT ayah_id)`, `COUNT(DISTINCT surah_number)` |
+
+- **Numeric identity, not text**: the dimension filters the base solely on `root_id`/`stem_id`/`lemma_id`.
+  `rootText`/`stemText`/`lemmaText` (and their DTO fields) are **never** a membership or parity filter.
+- **No distinct-word collapse**: the same tashkeel word used across several head-POS or tense contexts
+  stays several member rows (e.g. `N`/`PN`/`ADJ`, or verb past/present/imperative).
+- `TotalCount` is the grouped word-context row count **before** paging; paging (`page`, `pageSize ∈ 1..100`)
+  slices the fixed occurrence order. A positive dimension absent from the scope → 404 (null reader
+  result); an existing selection with an out-of-range page → non-null empty page with the correct
+  `TotalCount`.
+- Head-grain invariant is unchanged: markers, null dimensions, and secondary-segment-only dimensions
+  never appear.
+- Ayahs and surahs for the same selection are defined by Feature 023 Tasks 3–4.

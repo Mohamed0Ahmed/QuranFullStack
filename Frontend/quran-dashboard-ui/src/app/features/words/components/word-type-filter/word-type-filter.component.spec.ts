@@ -2,8 +2,22 @@ import { getTestBed, TestBed } from '@angular/core/testing';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { WordTypeFilterComponent } from './word-type-filter.component';
-import { WORD_TYPES_CURRENT_FILTER_LABEL } from '../../models/word-types.labels';
-import { WordTypeTreeDto } from '../../models/word-types.models';
+import { WORD_TYPES_CURRENT_FILTER_LABEL, WORD_TYPES_NO_SUBTYPES_LABEL } from '../../models/word-types.labels';
+import { WordTypeMainType, WordTypeTreeDto } from '../../models/word-types.models';
+
+interface ScopeSelectedEvent {
+  type: WordTypeMainType;
+  childCode: string | null;
+}
+
+function captureScopeSelections(component: WordTypeFilterComponent): ScopeSelectedEvent[] {
+  const emitted: ScopeSelectedEvent[] = [];
+  const output = (component as unknown as {
+    scopeSelected?: { subscribe: (listener: (event: ScopeSelectedEvent) => void) => void };
+  }).scopeSelected;
+  output?.subscribe((event) => emitted.push(event));
+  return emitted;
+}
 
 const tree: WordTypeTreeDto = {
   mainTypes: [
@@ -12,20 +26,20 @@ const tree: WordTypeTreeDto = {
       secondaryFilter: { kind: 'case', options: [], voiceOptions: [] },
       children: [
         { code: 'N', childCode: 'N', label: { ar: 'اسم' }, count: 2 },
-        { code: 'PN', childCode: 'PN', label: { ar: 'اسم علم' }, count: 1 },
+        { code: 'PN', childCode: 'PN', label: { ar: 'SYNTH_NOUN_CHILD' }, count: 1 },
       ],
     },
     {
       code: 'verb', label: { ar: 'فعل' }, count: 2,
       secondaryFilter: { kind: 'tense+voice', options: [], voiceOptions: [] },
       children: [
-        { code: 'past', childCode: 'past', label: { ar: 'ماض' }, count: 1 },
+        { code: 'past', childCode: 'past', label: { ar: 'SYNTH_VERB_CHILD' }, count: 1 },
       ],
     },
     {
       code: 'particle', label: { ar: 'حرف وأداة' }, count: 1,
       secondaryFilter: { kind: 'none', options: [], voiceOptions: [] },
-      children: [{ code: 'PRO', childCode: 'PRO', label: { ar: 'حرف نهي' }, count: 1 }],
+      children: [{ code: 'PRO', childCode: 'PRO', label: { ar: 'SYNTH_PARTICLE_CHILD' }, count: 1 }],
     },
     { code: 'inl', label: { ar: 'حروف مقطّعة' }, count: 1, secondaryFilter: { kind: 'none', options: [], voiceOptions: [] }, children: [] },
   ],
@@ -56,71 +70,69 @@ describe('WordTypeFilterComponent', () => {
     expect(selectedTrigger.textContent).toContain(WORD_TYPES_CURRENT_FILTER_LABEL);
   });
 
-  it('emits selected main type from keyboard-operable buttons', () => {
+  it('browses a parent without changing the committed scope', () => {
     const fixture = TestBed.createComponent(WordTypeFilterComponent);
-    const emitted: string[] = [];
     fixture.componentRef.setInput('tree', tree);
-    fixture.componentInstance.typeSelected.subscribe((type) => emitted.push(type));
+    fixture.componentRef.setInput('selectedType', 'verb');
+    fixture.componentRef.setInput('selectedChildCode', 'past');
+    const emitted = captureScopeSelections(fixture.componentInstance);
     fixture.detectChanges();
 
-    const buttons = fixture.nativeElement.querySelectorAll('.word-type-filter__button') as NodeListOf<HTMLButtonElement>;
-    buttons[2].click();
+    const root = fixture.nativeElement as HTMLElement;
+    const nounButton = root.querySelector('[data-word-type-code="noun"]') as HTMLButtonElement;
+    nounButton.click();
+    fixture.detectChanges();
 
-    expect(emitted).toEqual(['particle']);
+    expect(emitted).toEqual([]);
+    expect(root.querySelector('[data-word-type-code="verb"]')?.getAttribute('aria-current')).toBe('true');
+    expect(nounButton.getAttribute('aria-expanded')).toBe('true');
+    expect(root.textContent).toContain('SYNTH_NOUN_CHILD');
+    expect(root.textContent).not.toContain('SYNTH_VERB_CHILD');
+    expect(root.querySelector('[data-testid="word-type-case-filter"]')).toBeNull();
+    expect(root.querySelector('[data-testid="word-type-verb-filter"]')).toBeNull();
   });
 
-  it('hides child nodes until a panel opens', () => {
+  it('shows only the browsed type\'s children in the always-open panel', () => {
     const fixture = TestBed.createComponent(WordTypeFilterComponent);
     fixture.componentRef.setInput('tree', tree);
     fixture.componentRef.setInput('selectedType', 'particle');
     fixture.detectChanges();
 
     const root = fixture.nativeElement as HTMLElement;
-    expect(root.textContent).not.toContain('اسم علم');
-    expect(root.textContent).not.toContain('حرف نهي');
-    // All three parents with children render an expand button; inl stays leaf-only.
-    expect(root.querySelectorAll('.word-type-filter__expand').length).toBe(3);
+    expect(root.textContent).toContain('SYNTH_PARTICLE_CHILD');
+    expect(root.textContent).not.toContain('SYNTH_NOUN_CHILD');
+    expect(root.textContent).not.toContain('SYNTH_VERB_CHILD');
+    expect(root.querySelectorAll('.word-type-filter__expand').length).toBe(0);
   });
 
-  it('opens a child panel when a parent label is selected', () => {
+  it('commits the browsed parent together with the clicked child', () => {
     const fixture = TestBed.createComponent(WordTypeFilterComponent);
     fixture.componentRef.setInput('tree', tree);
-    fixture.componentRef.setInput('selectedType', 'particle');
-    fixture.detectChanges();
-
-    const particleButton = fixture.nativeElement.querySelector('.word-type-filter__button[data-word-type-code="particle"]') as HTMLButtonElement;
-    particleButton.click();
+    fixture.componentRef.setInput('selectedType', 'verb');
+    fixture.componentRef.setInput('selectedChildCode', 'past');
+    const emitted = captureScopeSelections(fixture.componentInstance);
     fixture.detectChanges();
 
     const root = fixture.nativeElement as HTMLElement;
-    expect(root.querySelector('.word-type-filter__panel')).not.toBeNull();
-    expect(root.textContent).toContain('حرف نهي');
+    (root.querySelector('[data-word-type-code="noun"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    const childButtons = root.querySelectorAll('.word-type-filter__child-button') as NodeListOf<HTMLButtonElement>;
+    childButtons[1]?.click();
+
+    expect(emitted).toEqual([{ type: 'noun', childCode: 'PN' }]);
   });
 
-  it('opens a panel from the arrow, emits the selected child code, and keeps the panel open', () => {
+  it('keeps inl as a directly committable childless leaf', () => {
     const fixture = TestBed.createComponent(WordTypeFilterComponent);
-    const emitted: (string | null)[] = [];
     fixture.componentRef.setInput('tree', tree);
     fixture.componentRef.setInput('selectedType', 'noun');
-    fixture.componentRef.setInput('selectedChildCode', null);
-    fixture.componentInstance.childSelected.subscribe((code) => emitted.push(code));
+    const emitted = captureScopeSelections(fixture.componentInstance);
     fixture.detectChanges();
 
     const root = fixture.nativeElement as HTMLElement;
-    expect(root.textContent).not.toContain('اسم علم');
+    (root.querySelector('[data-word-type-code="inl"]') as HTMLButtonElement).click();
 
-    const nounExpand = root.querySelector('.word-type-filter__expand[data-word-type-code="noun"]') as HTMLButtonElement;
-    nounExpand.click();
-    fixture.detectChanges();
-
-    expect(root.textContent).toContain('اسم علم');
-
-    const childButtons = root.querySelectorAll('.word-type-filter__child-button') as NodeListOf<HTMLButtonElement>;
-    childButtons[1].click();
-    fixture.detectChanges();
-
-    expect(emitted).toEqual(['PN']);
-    expect(root.querySelector('.word-type-filter__panel')).not.toBeNull();
+    expect(emitted).toEqual([{ type: 'inl', childCode: null }]);
   });
 
   it('marks the selected child with aria-current and styled state', () => {
@@ -130,15 +142,22 @@ describe('WordTypeFilterComponent', () => {
     fixture.componentRef.setInput('selectedChildCode', 'PN');
     fixture.detectChanges();
 
-    const nounExpand = fixture.nativeElement.querySelector('.word-type-filter__expand[data-word-type-code="noun"]') as HTMLButtonElement;
-    nounExpand.click();
-    fixture.detectChanges();
-
     const selectedChild = fixture.nativeElement.querySelector('.word-type-filter__child-button[aria-current="true"]') as HTMLButtonElement;
     expect(selectedChild).not.toBeNull();
     expect(selectedChild.getAttribute('aria-selected')).toBe('true');
     expect(selectedChild.classList.contains('qd-is-selected')).toBe(true);
-    expect(selectedChild.textContent).toContain('اسم علم');
+    expect(selectedChild.textContent).toContain('SYNTH_NOUN_CHILD');
+  });
+
+  it('shows a static placeholder for a type with no subtypes and no secondary filter', () => {
+    const fixture = TestBed.createComponent(WordTypeFilterComponent);
+    fixture.componentRef.setInput('tree', tree);
+    fixture.componentRef.setInput('selectedType', 'inl');
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('.word-type-filter__panel')).not.toBeNull();
+    expect(root.querySelector('.word-type-filter__placeholder')?.textContent).toContain(WORD_TYPES_NO_SUBTYPES_LABEL);
   });
 
   it('focuses the active type button for focus return', () => {
@@ -153,39 +172,11 @@ describe('WordTypeFilterComponent', () => {
     expect(document.activeElement).toBe(selected);
   });
 
-  it('toggles expand state via the expand affordance and exposes aria-expanded', () => {
-    const fixture = TestBed.createComponent(WordTypeFilterComponent);
-    fixture.componentRef.setInput('tree', tree);
-    fixture.componentRef.setInput('selectedType', 'inl');
-    fixture.detectChanges();
-
-    const verbExpand = fixture.nativeElement.querySelector('.word-type-filter__expand[data-word-type-code="verb"]') as HTMLButtonElement;
-    expect(verbExpand.getAttribute('aria-expanded')).toBe('false');
-
-    verbExpand.click();
-    fixture.detectChanges();
-
-    expect(verbExpand.getAttribute('aria-expanded')).toBe('true');
-    expect(verbExpand.closest('.word-type-filter__trigger')?.classList.contains('word-type-filter__trigger--expanded')).toBe(true);
-    expect((fixture.nativeElement as HTMLElement).textContent).toContain('ماض');
-
-    verbExpand.click();
-    fixture.detectChanges();
-
-    expect(verbExpand.getAttribute('aria-expanded')).toBe('false');
-    expect(verbExpand.closest('.word-type-filter__trigger')?.classList.contains('word-type-filter__trigger--expanded')).toBe(false);
-    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('ماض');
-  });
-
   describe('secondary filter visibility', () => {
     it('renders case controls only for the noun type', () => {
       const fixture = TestBed.createComponent(WordTypeFilterComponent);
       fixture.componentRef.setInput('tree', tree);
       fixture.componentRef.setInput('selectedType', 'noun');
-      fixture.detectChanges();
-
-      const nounExpand = fixture.nativeElement.querySelector('.word-type-filter__expand[data-word-type-code="noun"]') as HTMLButtonElement;
-      nounExpand.click();
       fixture.detectChanges();
 
       const root = fixture.nativeElement as HTMLElement;
@@ -197,10 +188,6 @@ describe('WordTypeFilterComponent', () => {
       const fixture = TestBed.createComponent(WordTypeFilterComponent);
       fixture.componentRef.setInput('tree', tree);
       fixture.componentRef.setInput('selectedType', 'verb');
-      fixture.detectChanges();
-
-      const verbExpand = fixture.nativeElement.querySelector('.word-type-filter__expand[data-word-type-code="verb"]') as HTMLButtonElement;
-      verbExpand.click();
       fixture.detectChanges();
 
       const root = fixture.nativeElement as HTMLElement;
@@ -238,10 +225,6 @@ describe('WordTypeFilterComponent', () => {
       fixture.componentInstance.caseSelected.subscribe((value) => emitted.push(value));
       fixture.detectChanges();
 
-      const nounExpand = fixture.nativeElement.querySelector('.word-type-filter__expand[data-word-type-code="noun"]') as HTMLButtonElement;
-      nounExpand.click();
-      fixture.detectChanges();
-
       const select = fixture.nativeElement.querySelector(
         '[data-testid="word-type-case-filter"] select',
       ) as HTMLSelectElement;
@@ -257,10 +240,6 @@ describe('WordTypeFilterComponent', () => {
       fixture.componentRef.setInput('tree', tree);
       fixture.componentRef.setInput('selectedType', 'verb');
       fixture.componentInstance.tenseSelected.subscribe((value) => emitted.push(value));
-      fixture.detectChanges();
-
-      const verbExpand = fixture.nativeElement.querySelector('.word-type-filter__expand[data-word-type-code="verb"]') as HTMLButtonElement;
-      verbExpand.click();
       fixture.detectChanges();
 
       const tenseSelect = (fixture.nativeElement.querySelectorAll(
@@ -280,10 +259,6 @@ describe('WordTypeFilterComponent', () => {
       fixture.componentInstance.voiceSelected.subscribe((value) => emitted.push(value));
       fixture.detectChanges();
 
-      const verbExpand = fixture.nativeElement.querySelector('.word-type-filter__expand[data-word-type-code="verb"]') as HTMLButtonElement;
-      verbExpand.click();
-      fixture.detectChanges();
-
       const voiceSelect = (fixture.nativeElement.querySelectorAll(
         '[data-testid="word-type-verb-filter"] select',
       )[1]) as HTMLSelectElement;
@@ -291,34 +266,6 @@ describe('WordTypeFilterComponent', () => {
       voiceSelect.dispatchEvent(new Event('change'));
 
       expect(emitted).toEqual(['passive']);
-    });
-  });
-
-  describe('panel closing', () => {
-    it('stays open on Escape and outside click, and only closes via the expand toggle', () => {
-      const fixture = TestBed.createComponent(WordTypeFilterComponent);
-      fixture.componentRef.setInput('tree', tree);
-      fixture.detectChanges();
-
-      const nounExpand = fixture.nativeElement.querySelector('.word-type-filter__expand[data-word-type-code="noun"]') as HTMLButtonElement;
-      nounExpand.click();
-      fixture.detectChanges();
-      expect(fixture.nativeElement.querySelector('.word-type-filter__panel')).not.toBeNull();
-
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
-      fixture.detectChanges();
-      expect(fixture.nativeElement.querySelector('.word-type-filter__panel')).not.toBeNull();
-
-      const outside = document.createElement('button');
-      document.body.appendChild(outside);
-      outside.click();
-      fixture.detectChanges();
-      expect(fixture.nativeElement.querySelector('.word-type-filter__panel')).not.toBeNull();
-      outside.remove();
-
-      nounExpand.click();
-      fixture.detectChanges();
-      expect(fixture.nativeElement.querySelector('.word-type-filter__panel')).toBeNull();
     });
   });
 });

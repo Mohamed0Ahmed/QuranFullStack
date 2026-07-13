@@ -78,6 +78,103 @@ public sealed class WordTypesCacheReadTests(WordTypesTestFixture fixture)
         rowsCommandCount.Should().BeGreaterThan(0);
     }
 
+    // Grouped detail keys isolate kind, dimension ID, and the full five-field scope, and never share a
+    // view prefix. Paged views (words/ayahs) carry page/pageSize; single-shot views (summary/surahs) do not.
+    [Fact]
+    public void GroupedDetailsCacheKeys_IsolateKindIdScopeViewAndApplicablePage()
+    {
+        var selection = new WordTypeGroupedSelection(
+            WordTypeGroupedDimensionKind.Root, 190700, new WordTypeFilter("noun", null, null, null, null));
+
+        var summary = WordTypesCacheKeys.GroupedSummary(selection);
+        var words = WordTypesCacheKeys.GroupedWords(selection, 1, 25);
+        var ayahs = WordTypesCacheKeys.GroupedAyahs(selection, 1, 25);
+        var surahs = WordTypesCacheKeys.GroupedSurahs(selection);
+
+        new[] { summary, words, ayahs, surahs }.Should().OnlyHaveUniqueItems();
+        summary.Should().StartWith("wordtypes:grouped:roots:summary:");
+        words.Should().StartWith("wordtypes:grouped:roots:words:");
+        ayahs.Should().StartWith("wordtypes:grouped:roots:ayahs:");
+        surahs.Should().StartWith("wordtypes:grouped:roots:surahs:");
+
+        words.Should().Contain(":p1:s25");
+        ayahs.Should().Contain(":p1:s25");
+        summary.Should().NotContain(":p");
+        surahs.Should().NotContain(":p");
+
+        WordTypesCacheKeys.GroupedSurahs(selection with { Kind = WordTypeGroupedDimensionKind.Stem })
+            .Should().NotBe(surahs);
+        WordTypesCacheKeys.GroupedSurahs(selection with { DimensionId = 190600 })
+            .Should().NotBe(surahs);
+        WordTypesCacheKeys.GroupedSurahs(selection with { Filter = new WordTypeFilter("noun", null, "nominative", null, null) })
+            .Should().NotBe(surahs);
+
+        WordTypesCacheKeys.GroupedWords(selection, 2, 25).Should().NotBe(words);
+        WordTypesCacheKeys.GroupedAyahs(selection, 1, 10).Should().NotBe(ayahs);
+    }
+
+    [Fact]
+    public void GroupedSummaryAndSurahsCacheKeys_AreUniqueForEverySelectionField()
+    {
+        var selection = new WordTypeGroupedSelection(
+            WordTypeGroupedDimensionKind.Root,
+            190700,
+            new WordTypeFilter("noun", null, null, null, null));
+        WordTypeGroupedSelection[] selections =
+        [
+            selection,
+            selection with { Kind = WordTypeGroupedDimensionKind.Stem },
+            selection with { Kind = WordTypeGroupedDimensionKind.Lemma },
+            selection with { DimensionId = 190600 },
+            selection with { Filter = selection.Filter with { Type = "verb" } },
+            selection with { Filter = selection.Filter with { ChildCode = "PN" } },
+            selection with { Filter = selection.Filter with { Case = "genitive" } },
+            selection with { Filter = selection.Filter with { Tense = "past" } },
+            selection with { Filter = selection.Filter with { Voice = "active" } },
+        ];
+
+        var summaryKeys = selections.Select(WordTypesCacheKeys.GroupedSummary).ToArray();
+        var surahsKeys = selections.Select(WordTypesCacheKeys.GroupedSurahs).ToArray();
+
+        summaryKeys.Should().OnlyHaveUniqueItems();
+        surahsKeys.Should().OnlyHaveUniqueItems();
+        summaryKeys.Concat(surahsKeys).Should().OnlyHaveUniqueItems();
+    }
+
+    // A second read of every grouped view is served from the cache without issuing new SQL commands.
+    [Fact]
+    public async Task GroupedDetailsCachedReader_RepeatedReadsDoNotIssueExtraCommands()
+    {
+        var interceptor = new SqlCommandCountInterceptor();
+        var options = new DbContextOptionsBuilder<QuranDashboardDbContext>()
+            .UseNpgsql(fixture.ConnectionString)
+            .AddInterceptors(interceptor)
+            .Options;
+
+        await using var dbContext = new QuranDashboardDbContext(options);
+        using var cache = new MemoryCache(new MemoryCacheOptions());
+        var reader = new CachedWordTypesReader(new EfWordTypesReader(dbContext), cache);
+
+        var selection = new WordTypeGroupedSelection(
+            WordTypeGroupedDimensionKind.Root, 190700, new WordTypeFilter("noun", null, null, null, null));
+
+        await AssertSecondReadHitsCache(interceptor, () => reader.GetGroupedSummaryAsync(selection, CancellationToken.None));
+        await AssertSecondReadHitsCache(interceptor, () => reader.GetGroupedMemberWordsAsync(selection, 1, 25, CancellationToken.None));
+        await AssertSecondReadHitsCache(interceptor, () => reader.GetGroupedAyahMatchesAsync(selection, 1, 25, CancellationToken.None));
+        await AssertSecondReadHitsCache(interceptor, () => reader.GetGroupedSurahsAsync(selection, CancellationToken.None));
+    }
+
+    private static async Task AssertSecondReadHitsCache<T>(SqlCommandCountInterceptor interceptor, Func<Task<T>> read)
+    {
+        interceptor.Reset();
+        _ = await read();
+        var firstCount = interceptor.CommandCount;
+        _ = await read();
+
+        interceptor.CommandCount.Should().Be(firstCount);
+        firstCount.Should().BeGreaterThan(0);
+    }
+
     [Fact]
     public async Task RepeatedTreeAndRowsReads_ReturnCachedInstances()
     {

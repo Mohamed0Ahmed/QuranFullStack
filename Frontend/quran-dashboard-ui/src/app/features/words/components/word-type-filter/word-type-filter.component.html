@@ -4,16 +4,17 @@
       @for (node of currentTree.mainTypes; track node.code) {
         <div
           class="word-type-filter__trigger"
-          [class.qd-is-selected]="isSelected(node) && selectedChildCode() === null"
-          [class.word-type-filter__trigger--expanded]="isPanelOpen(node)"
+          [class.qd-is-selected]="isSelected(node)"
           [class.word-type-filter__trigger--disabled]="loading()"
         >
           <button
             type="button"
             class="word-type-filter__button"
-            [class.qd-is-selected]="isSelected(node) && selectedChildCode() === null"
-            [attr.aria-current]="isSelected(node) && selectedChildCode() === null ? 'true' : null"
-            [attr.aria-selected]="isSelected(node) && selectedChildCode() === null"
+            [class.qd-is-selected]="isSelected(node)"
+            [attr.aria-current]="isSelected(node) ? 'true' : null"
+            [attr.aria-selected]="isSelected(node)"
+            [attr.aria-expanded]="node.children.length > 0 ? isBrowsed(node) : null"
+            [attr.aria-controls]="node.children.length > 0 ? 'word-type-filter-panel' : null"
             [attr.data-word-type-code]="node.code"
             [disabled]="loading()"
             (click)="selectType(node)"
@@ -21,35 +22,19 @@
             <span class="word-type-filter__button-content">
               <span class="word-type-filter__label-row">
                 <span class="word-type-filter__label">{{ node.label.ar }}</span>
-                @if (isSelected(node) && selectedChildCode() === null) {
+                @if (isSelected(node)) {
                   <span class="word-type-filter__state qd-badge qd-badge--accent">{{ currentFilterLabel }}</span>
                 }
               </span>
             </span>
             <span class="word-type-filter__count qd-badge">{{ node.count }}</span>
           </button>
-
-          @if (node.children.length > 0) {
-            <button
-              type="button"
-              class="word-type-filter__expand"
-              [class.qd-is-selected]="isPanelOpen(node)"
-              [attr.aria-expanded]="isPanelOpen(node)"
-              [attr.aria-controls]="'word-type-filter-panel-' + node.code"
-              [attr.aria-label]="expandAriaLabel(node)"
-              [attr.data-word-type-code]="node.code"
-              [disabled]="loading()"
-              (click)="toggleExpand(node, $event)"
-            >
-              <span class="word-type-filter__expand-icon" aria-hidden="true">{{ isPanelOpen(node) ? '−' : '+' }}</span>
-            </button>
-          }
         </div>
       }
     </div>
 
-    @if (openNode(); as panelNode) {
-      <div class="word-type-filter__panel qd-surface-elevated" [id]="'word-type-filter-panel-' + panelNode.code" role="region" [attr.aria-label]="panelRegionLabel(panelNode)">
+    <div id="word-type-filter-panel" class="word-type-filter__panel qd-surface-elevated" role="region" [attr.aria-label]="browsedNode() ? panelRegionLabel(browsedNode()!) : filterLabel">
+      @if (browsedNode(); as panelNode) {
         @if (panelNode.children.length > 0) {
           <section class="word-type-filter__children-section" role="group" [attr.aria-labelledby]="'word-type-filter-children-heading-' + panelNode.code">
             <div class="word-type-filter__children-header">
@@ -69,7 +54,7 @@
                     [disabled]="loading()"
                     (click)="selectChild(child)"
                   >
-                    <span class="word-type-filter__child-label">{{ child.label.ar }}</span>
+                    <span class="word-type-filter__child-label" [title]="child.label.ar">{{ child.label.ar }}</span>
                     <span class="word-type-filter__count qd-badge">{{ child.count }}</span>
                   </button>
                 </li>
@@ -111,8 +96,12 @@
             </label>
           </div>
         }
-      </div>
-    }
+
+        @if (showNoSubtypes()) {
+          <p class="word-type-filter__placeholder">{{ noSubtypesLabel }}</p>
+        }
+      }
+    </div>
   } @else {
     <p class="word-type-filter__placeholder">{{ filterLabel }}</p>
   }

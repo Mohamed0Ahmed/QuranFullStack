@@ -26,6 +26,17 @@ public interface IWordTypesReader
         int pageSize,
         CancellationToken cancellationToken);
 
+    // Feature 022 — unified table-view-tabs endpoint. tableView=Words wraps the same rows
+    // GetRowsAsync would return (kind:"word"); Roots/Stems/Lemmas return grouped rows keyed by the
+    // numeric dimension ID, grouped and counted before pagination.
+    Task<PagedResult<WordTypeTableRowDto>> GetTableRowsAsync(
+        WordTypeFilter filter,
+        WordTypeTableView tableView,
+        WordTypeSort sort,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken);
+
     Task<WordTypeSummaryDto?> GetSummaryAsync(
         WordTypeRowIdentity identity,
         CancellationToken cancellationToken);
@@ -39,12 +50,48 @@ public interface IWordTypesReader
     Task<WordTypeSurahsResponse?> GetSurahsAsync(
         WordTypeRowIdentity identity,
         CancellationToken cancellationToken);
+
+    // Feature 023 — grouped (root/stem/lemma) scoped summary. Returns null when the positive dimension
+    // ID does not exist in the supplied scope. Membership/counts derive from head-level
+    // quran_word_morphology only (never the segments table).
+    Task<WordTypeGroupedSummaryDto?> GetGroupedSummaryAsync(
+        WordTypeGroupedSelection selection,
+        CancellationToken cancellationToken);
+
+    // Feature 023 — grouped scoped member words: the Words-view rows restricted to the selected numeric
+    // head dimension, grouped by the identical (unique_tashkeel_word_id, context_code) formula and paged
+    // after grouping. null = dimension absent from scope; out-of-range page = non-null empty page.
+    Task<PagedResult<WordTypeGroupedMemberWordDto>?> GetGroupedMemberWordsAsync(
+        WordTypeGroupedSelection selection,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken);
+
+    // Feature 023 — grouped scoped ayahs: the distinct ayahs of the selected numeric head dimension, paged
+    // in Mushaf order and hydrated with canonical quran_words.text_uthmani plus the scoped matched-word
+    // ids/positions. null = dimension absent from scope; out-of-range page = non-null empty page.
+    Task<PagedResult<WordTypeAyahMatchDto>?> GetGroupedAyahMatchesAsync(
+        WordTypeGroupedSelection selection,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken);
+
+    // Feature 023 — grouped scoped surahs: single-shot mentioned + missing surah lists for the selected
+    // numeric head dimension. Occurrence counts are aggregated inside the database over the same
+    // dimension-filtered base; the mentioned/missing split is derived against the surah catalogue in
+    // numeric order. null = dimension absent from scope. No paging contract.
+    Task<WordTypeSurahsResponse?> GetGroupedSurahsAsync(
+        WordTypeGroupedSelection selection,
+        CancellationToken cancellationToken);
 }
 ```
 
 `null` from selected-row reads means the positive row identity does not resolve to a row-context under
 the supplied filter/context. Empty pages/lists for an existing row-context are successful non-null
-responses.
+responses. For `GetGroupedSummaryAsync`, `null` means the positive `DimensionId` has no rows in the
+supplied scope (a scoped-group 404); the paged grouped reads (member words, ayahs) return a non-null empty
+page with the correct `TotalCount` for an out-of-range page of an existing group. `GetGroupedSurahsAsync`
+is single-shot (same null-is-404 rule, no paging).
 
 ## Value Objects
 
@@ -97,6 +144,40 @@ alpha
 
 Default: `occurrences` descending, with Mushaf-order and identity tie-breaks for deterministic pages.
 
+### `WordTypeTableView` (Feature 022 — table-view tabs)
+
+Selects the aggregation level for `GetTableRowsAsync` / `GET .../word-types/table`:
+
+```text
+Words | Roots | Stems | Lemmas
+```
+
+- Missing/blank value defaults to `Words`. An unrecognized non-blank value is a controlled failure
+  (`InvalidTableView`), not a silent fallback — same contract shape as `WordTypeSortParser`.
+- `Roots`/`Stems`/`Lemmas` group the same scoped occurrence base as `Words` by the numeric
+  `root_id`/`stem_id`/`lemma_id`, excluding null dimension IDs.
+
+### `WordTypeGroupedDimensionKind` + `WordTypeGroupedSelection` (Feature 023 — grouped details)
+
+Addresses one grouped root/stem/lemma dimension for a scoped detail read:
+
+```text
+WordTypeGroupedDimensionKind: Root | Stem | Lemma
+  - Parser accepts only the PLURAL route keys roots|stems|lemmas (unknown/blank → controlled failure).
+  - ToRouteKey() → plural (roots|stems|lemmas); ToDtoKind() → singular (root|stem|lemma).
+
+WordTypeGroupedSelection(Kind, DimensionId, Filter)
+  - DimensionId: numeric root_id/stem_id/lemma_id; IsValid ⇔ DimensionId > 0.
+  - Filter: the identical five-field WordTypeFilter scope the selected table row carried.
+```
+
+- The selection reuses the **identical** scoped occurrence `base` as `GetTableRowsAsync`; the summary
+  restricts that base to the single allowlisted numeric column (`root_id`/`stem_id`/`lemma_id = @dimensionId`)
+  and computes `COUNT(*)`, `COUNT(DISTINCT ayah_id)`, `COUNT(DISTINCT surah_number)`, plus `MIN(text)` for
+  display. The three counts and `displayText` are identical to the selected E2b grouped row.
+- `WordTypeGroupedSummaryDto` carries the **singular** `kind` discriminator; the text field is
+  projection-only display and is never the membership predicate. Null dimensions and markers are excluded.
+
 ## Handler and Outcome Pattern
 
 Application handlers own input validation and map failures to controlled outcomes. Controllers only
@@ -107,9 +188,14 @@ Required handler groups:
 ```text
 GetWordTypeTree
 GetWordTypeRows
+GetWordTypeTable
 GetWordTypeSummary
 GetWordTypeAyahs
 GetWordTypeSurahs
+GetWordTypeGroupedSummary   (Feature 023)
+GetWordTypeGroupedWords     (Feature 023)
+GetWordTypeGroupedAyahs     (Feature 023)
+GetWordTypeGroupedSurahs    (Feature 023)
 ```
 
 Required outcome categories:
@@ -118,8 +204,12 @@ Required outcome categories:
 - `InvalidFilter`
 - `InvalidPaging`
 - `InvalidSort`
+- `InvalidTableView` (`GetWordTypeTable` only — unrecognized non-blank `tableView`)
 - `InvalidIdentity`
 - `NotFound` for valid row identity that does not resolve
+- Grouped-detail handlers (Feature 023) validate in a fixed order and map to
+  `InvalidKind` → `InvalidId` → `InvalidFilter` → reader result (`Success`/`NotFound`). `InvalidKind`
+  covers an unrecognized non-blank route `kind`; `InvalidId` covers `DimensionId ≤ 0`.
 
 ## Query Rules
 
@@ -134,6 +224,56 @@ Required outcome categories:
   filter-scoped counts.
 - POS labels come from `quran_pos_tags.ArabicLabel` for child/subtype labels.
 - Main labels and secondary-option labels may be static feature-owned Arabic labels.
+- **Grouped table reads (Feature 022)**: `GetTableRowsAsync` for `Roots`/`Stems`/`Lemmas` reuses the
+  identical scoped occurrence base as `GetRowsAsync` (same type/child/case/tense/voice predicates,
+  `!IsAyahMarker`, non-null tashkeel identity), grouped by the numeric dimension ID with nulls
+  excluded. **Grouping and total counting happen before pagination.**
+  `COUNT(DISTINCT dimension_id)` over the scoped base is the grouped `totalCount`.
+- Grouped counts (`occurrencesCount`/`ayahsCount`/`surahsCount` per dimension) are a **third**
+  occurrence-count family, separate from both the tree/node row-count family (§4.1 of
+  `../data-model.md`) and the Roots/Lemmas/Stems explorers' own global, unscoped,
+  segment/`words_count`-backed aggregates. Grouped counts must never be derived from those explorer
+  aggregates.
+- Grouped `alpha` sort reuses the Roots explorer's Arabic fold (`RootsListDerivation.ArabicFoldFrom`/
+  `ArabicFoldTo`) with `COLLATE "C"` ordinal collation, so grouped alphabetical order stays consistent
+  with the standalone Roots/Lemmas/Stems explorers. All grouped sorts tie-break on the numeric
+  dimension ID for deterministic pages.
+- **Grouped detail reads (Feature 023)**: `GetGroupedSummaryAsync` selects from the same scoped `base`
+  CTE as the grouped table reads and applies the allowlisted numeric predicate
+  `root_id|stem_id|lemma_id = @dimensionId` before grouping — **head-level `quran_word_morphology`
+  only**. `quran_word_morphology_segments` is never joined, so a segment-only dimension can never surface
+  and can never displace a word's head IDs. The membership predicate is always the numeric ID; the text
+  columns are projection-only and never filter membership. Kept in a size-split partial
+  (`EfWordTypesReader.GroupedDetails.cs` + `.GroupedDetails.Sql.cs`) so the primary reader stays under its
+  threshold.
+- **Grouped member words (Feature 023)**: `GetGroupedMemberWordsAsync` reuses the existing
+  `RowsSql`/`RowsCountSql` (the Words-view grouping/winner/order SQL) with an optional
+  `WordTypeGroupedDimensionKind` that adds **only** the allowlisted numeric predicate
+  `m.root_id|m.stem_id|m.lemma_id = @dimensionId` to the shared `BaseRowsSql` — no second grouping
+  implementation and never `DISTINCT tashkeel_word_id` alone. Existing list/table callers pass null and
+  stay semantically unchanged. Rows are grouped by the identical `(unique_tashkeel_word_id, context_code)`
+  formula, so members are a **row-for-row** subset of the Words view for that numeric dimension;
+  `rootText`/`stemText`/`lemmaText` are projection-only and never a membership or parity predicate.
+  `TotalCount` counts grouped word-context rows before paging; a dimension absent from the scope returns
+  null (404) while an out-of-range page of an existing dimension returns a non-null empty page.
+- **Grouped ayahs (Feature 023)**: `GetGroupedAyahMatchesAsync` pages the **distinct `ayah_id`** of the
+  same dimension-filtered `BaseRowsSql` base in Mushaf order (`surah_number, ayah_number`), reusing the
+  `WordTypeAyahMatchDto` shape. Hydration is **bounded to three commands** per page: (1) a distinct-ayah
+  count (which doubles as the scoped-group existence check — zero → null/404), (2) one grouped-page query
+  that joins the page ayahs back to the scoped base for their matched `(word id, position)`, and (3) one
+  `AsNoTracking` word-hydration query loading every readable word for the page ayahs. Command count is
+  fixed regardless of ayah count — never one query per ayah. Highlight text comes from
+  `quran_words.text_uthmani` via the shared `ResolveAyahPageNumber` helper (no ayah-text fallback, no
+  string replacement); `matchedWordIds`/`matchedWordPositions` carry only the scoped head matches and ayah
+  markers are excluded from the hydrated word list. Out-of-range page → non-null empty page with the
+  correct `TotalCount`.
+- **Grouped surahs (Feature 023)**: `GetGroupedSurahsAsync` is **single-shot** (no paging). Occurrence
+  counts are aggregated inside PostgreSQL by `surah_number` over the same dimension-filtered `BaseRowsSql`
+  base at head grain; the mentioned/missing split is derived in memory against the surah catalogue in
+  numeric order. Hydration is **bounded to two commands**: (1) one scoped surah aggregate — which doubles
+  as the existence check (zero rows → null/404, short-circuiting before the catalogue read) — and (2) one
+  catalogue read. Never one query per occurrence. Both mentioned (`surahs`) and missing (`missingSurahs`)
+  arrays ship in the same `WordTypeSurahsResponse`; `detailPage`/paging is not part of this read's contract.
 
 ## Enrichment Rules
 
@@ -153,10 +293,17 @@ Suggested keys:
 ```text
 wordtypes:tree
 wordtypes:rows:{filter-hash}:sort:{sort}:p{page}:s{pageSize}
+wordtypes:table:{filter-hash}:view:{tableView}:sort:{sort}:p{page}:s{pageSize}
 wordtypes:summary:{identity-hash}
 wordtypes:ayahs:{identity-hash}:p{page}:s{pageSize}
 wordtypes:surahs:{identity-hash}
+wordtypes:grouped:{kind}:summary:{scope-hash}      (Feature 023; grouped words/ayahs/surahs keys added by Tasks 2–4)
 ```
+
+The `wordtypes:table:` key **must include `tableView`** — switching tabs must never return another
+view's cached rows. The `wordtypes:rows:` key (E2 `/words`) is untouched and stays independent. The
+`wordtypes:grouped:` keys fold the numeric dimension ID plus the five scope fields into `{scope-hash}`
+and expose only kind/view labels in the readable prefix, so different kinds/scopes never cross-serve.
 
 Do not include raw Quran text, word text, or raw search text in cache keys or logs.
 
@@ -199,3 +346,21 @@ payloads, SQL, connection details, and large ID/location lists.
 - `contextCode`-scoped summary/ayahs/surahs do not widen to all usages of the word.
 - Invalid filter, paging, sort, and row identity map to controlled outcomes.
 - Cache hit does not re-query expensive grouped reads when using the same filter/page.
+- **Table-view tabs (Feature 022)** — `Backend/tests/QuranDashboard.Tests/Quran/WordsWordTypes/WordTypesTableReadTests.cs`:
+  - `tableView=roots|stems|lemmas` returns one row per distinct non-null dimension ID; `displayText`
+    matches the dimension text; `kind` matches the view.
+  - Grouped counts under an active grammatical filter (e.g. verb `tense=past`) equal the occurrences of
+    that scope only, from the same scoped base as E2.
+  - Null-dimension occurrences produce no grouped row: grouped `totalCount` equals the distinct
+    non-null dimension-ID count for that scope (never compared to the `/words` `totalCount`), and the
+    occurrence-sum identity holds (`Σ occurrencesCount` over grouped pages + null-dimension occurrences
+    = `Σ occurrencesCount` over `/words` pages for the same scope).
+  - Sorting/tie-breakers are deterministic for every `sort` value (metric DESC → first-Mushaf →
+    dimension ID; `mushaf-order` → dimension ID; `alpha` → fold + ordinal collation → dimension ID).
+  - Grouping and total counting happen before pagination; page 2 continues the deterministic order;
+    an out-of-range page returns empty items with the correct `totalCount`.
+  - `roots`/`stems`/`lemmas` for the same filter/sort/page produce different cache keys and never
+    cross-serve.
+  - Missing `tableView` defaults to `words`; an unknown value returns the controlled `InvalidTableView`
+    400.
+  - `/words` (E2) stays unchanged; `/table?tableView=words` returns the same rows plus `kind:"word"`.

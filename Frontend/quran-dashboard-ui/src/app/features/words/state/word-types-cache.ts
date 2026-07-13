@@ -1,12 +1,22 @@
 import { Injectable } from '@angular/core';
 
 import { ApiResponseCache } from '../../../core/caching/api-response-cache';
-import { WordTypeCase, WordTypeSort, WordTypeTense, WordTypeVoice } from '../models/word-types.models';
+import { WordTypeGroupedRequestParams } from '../models/word-types-detail.models';
+import {
+  WordTypeCase,
+  WordTypeSort,
+  WordTypeTableView,
+  WordTypeTense,
+  WordTypeVoice,
+} from '../models/word-types.models';
 
 export const WordTypesCacheKeys = {
   tree: 'wordtypes:tree',
   rows(filter: WordTypesCacheFilter, sort: WordTypeSort, page: number): string {
     return `wordtypes:rows:${filter.type}:${filter.childCode ?? 'all'}:${filter.case}:${filter.tense}:${filter.voice}:sort:${sort}:p${page}`;
+  },
+  table(filter: WordTypesCacheFilter, tableView: WordTypeTableView, sort: WordTypeSort, page: number): string {
+    return `wordtypes:table:${filter.type}:${filter.childCode ?? 'all'}:${filter.case}:${filter.tense}:${filter.voice}:view:${tableView}:sort:${sort}:p${page}`;
   },
   summary(identity: WordTypesCacheIdentity): string {
     return `wordtypes:summary:${identity.tashkeelWordId}:${identity.contextCode}:${identity.case}:${identity.tense}:${identity.voice}`;
@@ -16,6 +26,18 @@ export const WordTypesCacheKeys = {
   },
   surahs(identity: WordTypesCacheIdentity): string {
     return `wordtypes:surahs:${identity.tashkeelWordId}:${identity.contextCode}:${identity.case}:${identity.tense}:${identity.voice}`;
+  },
+  groupedSummary(request: WordTypeGroupedRequestParams): string {
+    return groupedDetailKey(request, 'summary');
+  },
+  groupedWords(request: WordTypeGroupedRequestParams, page: number): string {
+    return `${groupedDetailKey(request, 'words')}:p${page}`;
+  },
+  groupedAyahs(request: WordTypeGroupedRequestParams, page: number): string {
+    return `${groupedDetailKey(request, 'ayahs')}:p${page}`;
+  },
+  groupedSurahs(request: WordTypeGroupedRequestParams): string {
+    return groupedDetailKey(request, 'surahs');
   },
 } as const;
 
@@ -33,6 +55,13 @@ export interface WordTypesCacheIdentity {
   case: WordTypeCase;
   tense: WordTypeTense;
   voice: WordTypeVoice;
+}
+
+function groupedDetailKey(
+  request: WordTypeGroupedRequestParams,
+  view: 'summary' | 'words' | 'ayahs' | 'surahs',
+): string {
+  return `wordtypes:grouped:${request.kind}:${request.dimensionId}:${request.type}:${request.childCode ?? 'all'}:${request.case}:${request.tense}:${request.voice}:view:${view}`;
 }
 
 @Injectable({ providedIn: 'root' })
