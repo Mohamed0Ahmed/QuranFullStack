@@ -168,6 +168,37 @@ function controllableRoute(queryParams: Record<string, string> = {}): {
   };
 }
 
+function groupedDetailParams(
+  queryParams: Record<string, string>,
+  scope: Record<string, string> = {},
+): Record<string, string> {
+  return {
+    detailType: 'noun',
+    detailChildCode: 'N',
+    detailCase: 'all',
+    detailTense: 'all',
+    detailVoice: 'all',
+    ...queryParams,
+    ...scope,
+  };
+}
+
+function wordDetailParams(queryParams: Record<string, string>): Record<string, string> {
+  const type = queryParams['type'] ?? 'noun';
+  const childCode = queryParams['childCode'] ?? (type === 'inl' ? null : type === 'verb' ? 'present' : 'N');
+  const result: Record<string, string> = {
+    detailType: type,
+    detailCase: 'all',
+    detailTense: 'all',
+    detailVoice: 'all',
+    ...queryParams,
+  };
+  if (childCode !== null) {
+    result['detailChildCode'] = childCode;
+  }
+  return result;
+}
+
 const groupedCases = [
   { tableView: 'roots', key: 'root', kind: 'root', dimensionId: 190700, idField: 'rootId' },
   { tableView: 'stems', key: 'stem', kind: 'stem', dimensionId: 190600, idField: 'stemId' },
@@ -184,7 +215,7 @@ describe('WordTypesDetailFacade — kind-aware orchestration', () => {
       const getGroupedSummary = vi.fn(() => of(okGroupedSummary({ kind, dimensionId })));
       const getGroupedMemberWords = vi.fn(() => of(okGroupedWords()));
       const { facade, api } = setup({ getGroupedSummary, getGroupedMemberWords });
-      const route = controllableRoute({ tableView, type: 'noun', [key]: String(dimensionId) });
+      const route = controllableRoute(groupedDetailParams({ tableView, type: 'noun', [key]: String(dimensionId) }));
 
       facade.bindToRoute(route.route);
 
@@ -193,7 +224,7 @@ describe('WordTypesDetailFacade — kind-aware orchestration', () => {
       expect((state.selection as unknown as Record<string, number>)[idField]).toBe(dimensionId);
       expect(state.view).toBe('words');
       expect(state.detailPage).toBe(1);
-      const expectedRequest = { kind, dimensionId, type: 'noun', childCode: null, case: 'all', tense: 'all', voice: 'all' };
+      const expectedRequest = { kind, dimensionId, type: 'noun', childCode: 'N', case: 'all', tense: 'all', voice: 'all' };
       expect(api.getGroupedSummary).toHaveBeenCalledWith(expectedRequest);
       expect(api.getGroupedMemberWords).toHaveBeenCalledWith(expectedRequest, 1, WORD_TYPES_DETAIL_PAGE_SIZE);
       facade.unbindFromRoute();
@@ -204,13 +235,13 @@ describe('WordTypesDetailFacade — kind-aware orchestration', () => {
     const getGroupedSummary = vi.fn(() => of(okGroupedSummary({ kind: 'stem', dimensionId: 190600 })));
     const getGroupedAyahMatches = vi.fn((_request: unknown, page: number) => of(okAyahs(page)));
     const { facade, api } = setup({ getGroupedSummary, getGroupedAyahMatches });
-    const route = controllableRoute({ tableView: 'stems', type: 'noun', stem: '190600', view: 'ayahs', detailPage: '2' });
+    const route = controllableRoute(groupedDetailParams({ tableView: 'stems', type: 'noun', stem: '190600', view: 'ayahs', detailPage: '2' }));
 
     facade.bindToRoute(route.route);
     expect(facade.panelState().detailPage).toBe(2);
     expect(api.getGroupedAyahMatches).toHaveBeenLastCalledWith(expect.objectContaining({ dimensionId: 190600 }), 2, WORD_TYPES_DETAIL_PAGE_SIZE);
 
-    route.setQueryParams({ tableView: 'stems', type: 'noun', stem: '190600', view: 'ayahs' });
+    route.setQueryParams(groupedDetailParams({ tableView: 'stems', type: 'noun', stem: '190600', view: 'ayahs' }));
     expect(facade.panelState().detailPage).toBe(1);
     expect(api.getGroupedAyahMatches).toHaveBeenLastCalledWith(expect.objectContaining({ dimensionId: 190600 }), 1, WORD_TYPES_DETAIL_PAGE_SIZE);
     facade.unbindFromRoute();
@@ -218,7 +249,7 @@ describe('WordTypesDetailFacade — kind-aware orchestration', () => {
 
   it('restores a word selection and keeps the ayahs default', () => {
     const { facade, api } = setup();
-    const route = controllableRoute({ tableView: 'words', type: 'inl', word: '191001', contextCode: 'INL' });
+    const route = controllableRoute(wordDetailParams({ tableView: 'words', type: 'inl', word: '191001', contextCode: 'INL' }));
 
     facade.bindToRoute(route.route);
 
@@ -236,32 +267,88 @@ describe('WordTypesDetailFacade — kind-aware orchestration', () => {
       of(okGroupedSummary({ kind: request.kind as WordTypeGroupedSummaryDto['kind'], dimensionId: request.dimensionId })),
     );
     const { facade } = setup({ getGroupedSummary });
-    const route = controllableRoute({ tableView: 'roots', type: 'noun', root: '190700' });
+    const route = controllableRoute(groupedDetailParams({ tableView: 'roots', type: 'noun', root: '190700' }));
 
     facade.bindToRoute(route.route);
     expect(facade.panelState().selection?.kind).toBe('root');
 
-    route.setQueryParams({ tableView: 'stems', type: 'noun', stem: '190600' });
+    route.setQueryParams(groupedDetailParams({ tableView: 'stems', type: 'noun', stem: '190600' }));
     expect(facade.panelState().selection?.kind).toBe('stem');
     expect(facade.panelState().groupedSummary?.dimensionId).toBe(190600);
 
-    route.setQueryParams({ tableView: 'roots', type: 'noun', root: '190700' });
+    route.setQueryParams(groupedDetailParams({ tableView: 'roots', type: 'noun', root: '190700' }));
     expect(facade.panelState().selection?.kind).toBe('root');
     facade.unbindFromRoute();
   });
 
-  it('loads a new scoped summary when only the scope changes for the same dimension id', () => {
+  it('keeps stored detail scope when only list scope changes, then reloads when detail scope changes', () => {
     const getGroupedSummary = vi.fn(() => of(okGroupedSummary({ kind: 'root', dimensionId: 190700 })));
     const { facade, api } = setup({ getGroupedSummary });
-    const route = controllableRoute({ tableView: 'roots', type: 'noun', root: '190700' });
+    const route = controllableRoute(groupedDetailParams(
+      { tableView: 'roots', type: 'verb', childCode: 'present', root: '190700', view: 'ayahs' },
+      { detailType: 'verb', detailChildCode: 'present', detailTense: 'present' },
+    ));
 
     facade.bindToRoute(route.route);
     expect(api.getGroupedSummary).toHaveBeenCalledTimes(1);
-    expect(api.getGroupedSummary).toHaveBeenLastCalledWith(expect.objectContaining({ childCode: null }));
+    expect(api.getGroupedSummary).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'verb', childCode: 'present', tense: 'present' }));
 
-    route.setQueryParams({ tableView: 'roots', type: 'noun', childCode: 'PN', root: '190700' });
+    route.setQueryParams(groupedDetailParams(
+      { tableView: 'roots', type: 'noun', childCode: 'ADJ', root: '190700', view: 'ayahs' },
+      { detailType: 'verb', detailChildCode: 'present', detailTense: 'present' },
+    ));
+    expect(api.getGroupedSummary).toHaveBeenCalledTimes(1);
+
+    route.setQueryParams(groupedDetailParams(
+      { tableView: 'roots', type: 'noun', childCode: 'ADJ', root: '190700', view: 'ayahs' },
+      { detailType: 'noun', detailChildCode: 'ADJ' },
+    ));
     expect(api.getGroupedSummary).toHaveBeenCalledTimes(2);
-    expect(api.getGroupedSummary).toHaveBeenLastCalledWith(expect.objectContaining({ childCode: 'PN' }));
+    expect(api.getGroupedSummary).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'noun', childCode: 'ADJ', tense: 'all' }));
+    facade.unbindFromRoute();
+  });
+
+  it('restores a grouped detail from its stored scope when list scope differs on direct load', () => {
+    const getGroupedSummary = vi.fn(() => of(okGroupedSummary({ kind: 'root', dimensionId: 190700 })));
+    const { facade, api } = setup({ getGroupedSummary });
+    const route = controllableRoute(groupedDetailParams(
+      { tableView: 'roots', type: 'noun', childCode: 'ADJ', root: '190700', view: 'ayahs' },
+      { detailType: 'verb', detailChildCode: 'present', detailTense: 'present', detailVoice: 'passive' },
+    ));
+
+    facade.bindToRoute(route.route);
+
+    expect(api.getGroupedSummary).toHaveBeenCalledWith({
+      kind: 'root',
+      dimensionId: 190700,
+      type: 'verb',
+      childCode: 'present',
+      case: 'all',
+      tense: 'present',
+      voice: 'passive',
+    });
+    expect(facade.panelState().selection).toMatchObject({ kind: 'root', rootId: 190700 });
+    facade.unbindFromRoute();
+  });
+
+  it('fails closed without a complete stored detail scope', () => {
+    const { facade, api } = setup();
+    const route = controllableRoute({
+      tableView: 'roots',
+      type: 'noun',
+      childCode: 'ADJ',
+      root: '190700',
+      detailType: 'verb',
+      detailChildCode: 'present',
+      detailCase: 'all',
+      detailTense: 'present',
+    });
+
+    facade.bindToRoute(route.route);
+
+    expect(facade.panelState().selection).toBeNull();
+    expect(api.getGroupedSummary).not.toHaveBeenCalled();
+    expect(api.getGroupedAyahMatches).not.toHaveBeenCalled();
     facade.unbindFromRoute();
   });
 
@@ -270,10 +357,10 @@ describe('WordTypesDetailFacade — kind-aware orchestration', () => {
     const second$ = new Subject<ApiResponse<WordTypeGroupedSummaryDto>>();
     const getGroupedSummary = vi.fn().mockReturnValueOnce(first$).mockReturnValueOnce(second$);
     const { facade } = setup({ getGroupedSummary });
-    const route = controllableRoute({ tableView: 'roots', type: 'noun', root: '190700' });
+    const route = controllableRoute(groupedDetailParams({ tableView: 'roots', type: 'noun', root: '190700' }));
 
     facade.bindToRoute(route.route);
-    route.setQueryParams({ tableView: 'stems', type: 'noun', stem: '190600' });
+    route.setQueryParams(groupedDetailParams({ tableView: 'stems', type: 'noun', stem: '190600' }));
 
     second$.next(okGroupedSummary({ kind: 'stem', dimensionId: 190600 }));
     second$.complete();
@@ -292,10 +379,10 @@ describe('WordTypesDetailFacade — kind-aware orchestration', () => {
     const getGroupedAyahMatches = vi.fn().mockReturnValueOnce(first$).mockReturnValueOnce(second$);
     const getGroupedSummary = vi.fn(() => of(okGroupedSummary({ kind: 'root', dimensionId: 190700 })));
     const { facade } = setup({ getGroupedSummary, getGroupedAyahMatches });
-    const route = controllableRoute({ tableView: 'roots', type: 'noun', root: '190700', view: 'ayahs', detailPage: '2' });
+    const route = controllableRoute(groupedDetailParams({ tableView: 'roots', type: 'noun', root: '190700', view: 'ayahs', detailPage: '2' }));
 
     facade.bindToRoute(route.route);
-    route.setQueryParams({ tableView: 'roots', type: 'noun', root: '190700', view: 'ayahs', detailPage: '3' });
+    route.setQueryParams(groupedDetailParams({ tableView: 'roots', type: 'noun', root: '190700', view: 'ayahs', detailPage: '3' }));
 
     second$.next(okAyahs(3));
     second$.complete();
@@ -310,7 +397,7 @@ describe('WordTypesDetailFacade — kind-aware orchestration', () => {
   it('produces a kind-aware not-found without dropping the selection', () => {
     const getGroupedSummary = vi.fn(() => of({ isSuccess: true, message: 'المجموعة المحددة غير موجودة', data: null } as ApiResponse<WordTypeGroupedSummaryDto>));
     const { facade, api } = setup({ getGroupedSummary });
-    const route = controllableRoute({ tableView: 'roots', type: 'noun', root: '999999' });
+    const route = controllableRoute(groupedDetailParams({ tableView: 'roots', type: 'noun', root: '999999' }));
 
     facade.bindToRoute(route.route);
 
@@ -330,7 +417,7 @@ describe('WordTypesDetailFacade — kind-aware orchestration', () => {
         : of(okGroupedSummary({ kind: 'root', dimensionId: 190700 })),
     );
     const { facade, api } = setup({ getGroupedSummary });
-    const route = controllableRoute({ tableView: 'roots', type: 'noun', root: '190700' });
+    const route = controllableRoute(groupedDetailParams({ tableView: 'roots', type: 'noun', root: '190700' }));
 
     facade.bindToRoute(route.route);
     expect(facade.panelState().status).toBe('error');

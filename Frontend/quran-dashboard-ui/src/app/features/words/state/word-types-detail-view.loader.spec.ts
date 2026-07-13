@@ -43,6 +43,7 @@ const rootSelection: WordTypeDetailSelection = {
 const wordSelection: WordTypeDetailSelection = {
   kind: 'word',
   identity: { tashkeelWordId: 191001, contextCode: 'INL', case: 'all', tense: 'all', voice: 'all' },
+  scope: { type: 'inl', childCode: null, case: 'all', tense: 'all', voice: 'all' },
 };
 
 const groupedRequest = { kind: 'root', dimensionId: 190700, type: 'noun', childCode: null, case: 'all', tense: 'all', voice: 'all' };

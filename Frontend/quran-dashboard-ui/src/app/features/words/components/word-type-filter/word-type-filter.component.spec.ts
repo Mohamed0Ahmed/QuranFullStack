@@ -3,7 +3,21 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { WordTypeFilterComponent } from './word-type-filter.component';
 import { WORD_TYPES_CURRENT_FILTER_LABEL, WORD_TYPES_NO_SUBTYPES_LABEL } from '../../models/word-types.labels';
-import { WordTypeTreeDto } from '../../models/word-types.models';
+import { WordTypeMainType, WordTypeTreeDto } from '../../models/word-types.models';
+
+interface ScopeSelectedEvent {
+  type: WordTypeMainType;
+  childCode: string | null;
+}
+
+function captureScopeSelections(component: WordTypeFilterComponent): ScopeSelectedEvent[] {
+  const emitted: ScopeSelectedEvent[] = [];
+  const output = (component as unknown as {
+    scopeSelected?: { subscribe: (listener: (event: ScopeSelectedEvent) => void) => void };
+  }).scopeSelected;
+  output?.subscribe((event) => emitted.push(event));
+  return emitted;
+}
 
 const tree: WordTypeTreeDto = {
   mainTypes: [
@@ -56,20 +70,29 @@ describe('WordTypeFilterComponent', () => {
     expect(selectedTrigger.textContent).toContain(WORD_TYPES_CURRENT_FILTER_LABEL);
   });
 
-  it('emits selected main type from keyboard-operable buttons', () => {
+  it('browses a parent without changing the committed scope', () => {
     const fixture = TestBed.createComponent(WordTypeFilterComponent);
-    const emitted: string[] = [];
     fixture.componentRef.setInput('tree', tree);
-    fixture.componentInstance.typeSelected.subscribe((type) => emitted.push(type));
+    fixture.componentRef.setInput('selectedType', 'verb');
+    fixture.componentRef.setInput('selectedChildCode', 'past');
+    const emitted = captureScopeSelections(fixture.componentInstance);
     fixture.detectChanges();
 
-    const buttons = fixture.nativeElement.querySelectorAll('.word-type-filter__button') as NodeListOf<HTMLButtonElement>;
-    buttons[2].click();
+    const root = fixture.nativeElement as HTMLElement;
+    const nounButton = root.querySelector('[data-word-type-code="noun"]') as HTMLButtonElement;
+    nounButton.click();
+    fixture.detectChanges();
 
-    expect(emitted).toEqual(['particle']);
+    expect(emitted).toEqual([]);
+    expect(root.querySelector('[data-word-type-code="verb"]')?.getAttribute('aria-current')).toBe('true');
+    expect(nounButton.getAttribute('aria-expanded')).toBe('true');
+    expect(root.textContent).toContain('اسم علم');
+    expect(root.textContent).not.toContain('ماض');
+    expect(root.querySelector('[data-testid="word-type-case-filter"]')).toBeNull();
+    expect(root.querySelector('[data-testid="word-type-verb-filter"]')).toBeNull();
   });
 
-  it('shows only the selected type\'s children in the always-open panel', () => {
+  it('shows only the browsed type\'s children in the always-open panel', () => {
     const fixture = TestBed.createComponent(WordTypeFilterComponent);
     fixture.componentRef.setInput('tree', tree);
     fixture.componentRef.setInput('selectedType', 'particle');
@@ -82,45 +105,34 @@ describe('WordTypeFilterComponent', () => {
     expect(root.querySelectorAll('.word-type-filter__expand').length).toBe(0);
   });
 
-  it('emits typeSelected and reflects the new selection once the input updates', () => {
+  it('commits the browsed parent together with the clicked child', () => {
     const fixture = TestBed.createComponent(WordTypeFilterComponent);
-    const emitted: string[] = [];
     fixture.componentRef.setInput('tree', tree);
-    fixture.componentRef.setInput('selectedType', 'noun');
-    fixture.componentInstance.typeSelected.subscribe((type) => emitted.push(type));
-    fixture.detectChanges();
-
-    const particleButton = fixture.nativeElement.querySelector('.word-type-filter__button[data-word-type-code="particle"]') as HTMLButtonElement;
-    particleButton.click();
-
-    expect(emitted).toEqual(['particle']);
-
-    fixture.componentRef.setInput('selectedType', 'particle');
+    fixture.componentRef.setInput('selectedType', 'verb');
+    fixture.componentRef.setInput('selectedChildCode', 'past');
+    const emitted = captureScopeSelections(fixture.componentInstance);
     fixture.detectChanges();
 
     const root = fixture.nativeElement as HTMLElement;
-    expect(root.querySelector('.word-type-filter__panel')).not.toBeNull();
-    expect(root.textContent).toContain('حرف نهي');
+    (root.querySelector('[data-word-type-code="noun"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    const childButtons = root.querySelectorAll('.word-type-filter__child-button') as NodeListOf<HTMLButtonElement>;
+    childButtons[1]?.click();
+
+    expect(emitted).toEqual([{ type: 'noun', childCode: 'PN' }]);
   });
 
-  it('emits the selected child code from the always-open panel', () => {
+  it('keeps inl as a directly committable childless leaf', () => {
     const fixture = TestBed.createComponent(WordTypeFilterComponent);
-    const emitted: (string | null)[] = [];
     fixture.componentRef.setInput('tree', tree);
     fixture.componentRef.setInput('selectedType', 'noun');
-    fixture.componentRef.setInput('selectedChildCode', null);
-    fixture.componentInstance.childSelected.subscribe((code) => emitted.push(code));
+    const emitted = captureScopeSelections(fixture.componentInstance);
     fixture.detectChanges();
 
     const root = fixture.nativeElement as HTMLElement;
-    expect(root.textContent).toContain('اسم علم');
+    (root.querySelector('[data-word-type-code="inl"]') as HTMLButtonElement).click();
 
-    const childButtons = root.querySelectorAll('.word-type-filter__child-button') as NodeListOf<HTMLButtonElement>;
-    childButtons[1].click();
-    fixture.detectChanges();
-
-    expect(emitted).toEqual(['PN']);
-    expect(root.querySelector('.word-type-filter__panel')).not.toBeNull();
+    expect(emitted).toEqual([{ type: 'inl', childCode: null }]);
   });
 
   it('marks the selected child with aria-current and styled state', () => {

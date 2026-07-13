@@ -80,7 +80,7 @@
   font: inherit;
   padding: 0;
   text-align: start;
-  cursor: pointer;
+  cursor: default;
 }
 
 .word-types-table__row--loading {
@@ -128,11 +128,6 @@
   inline-size: 2.65rem;
   block-size: 1.2rem;
   margin-inline: auto;
-}
-
-.word-types-table__row:focus-visible {
-  outline: 2px solid var(--qd-focus-ring);
-  outline-offset: -2px;
 }
 
 .word-types-table__state {

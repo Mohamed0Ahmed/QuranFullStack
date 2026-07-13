@@ -172,6 +172,11 @@ export interface ParsedWordTypesQuery extends WordTypeRowIdentity {
   root: number | null;
   stem: number | null;
   lemma: number | null;
+  detailType: WordTypeMainType | null;
+  detailChildCode: string | null;
+  detailCase: WordTypeCase | null;
+  detailTense: WordTypeTense | null;
+  detailVoice: WordTypeVoice | null;
   view: WordTypeDetailView;
   detailPage: number;
   location: string | null;
@@ -202,6 +207,11 @@ export const WORD_TYPES_QUERY_KEYS = {
   root: 'root',
   stem: 'stem',
   lemma: 'lemma',
+  detailType: 'detailType',
+  detailChildCode: 'detailChildCode',
+  detailCase: 'detailCase',
+  detailTense: 'detailTense',
+  detailVoice: 'detailVoice',
   view: 'view',
   detailPage: 'detailPage',
   location: 'location',
@@ -214,6 +224,11 @@ export const WORD_TYPES_SELECTION_QUERY_KEYS: readonly string[] = [
   WORD_TYPES_QUERY_KEYS.root,
   WORD_TYPES_QUERY_KEYS.stem,
   WORD_TYPES_QUERY_KEYS.lemma,
+  WORD_TYPES_QUERY_KEYS.detailType,
+  WORD_TYPES_QUERY_KEYS.detailChildCode,
+  WORD_TYPES_QUERY_KEYS.detailCase,
+  WORD_TYPES_QUERY_KEYS.detailTense,
+  WORD_TYPES_QUERY_KEYS.detailVoice,
   WORD_TYPES_QUERY_KEYS.view,
   WORD_TYPES_QUERY_KEYS.detailPage,
   WORD_TYPES_QUERY_KEYS.location,

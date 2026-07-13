@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, input, linkedSignal, output } from '@angular/core';
 
 import { WORD_TYPES_CASE_FILTER_LABEL, WORD_TYPES_CURRENT_FILTER_LABEL, WORD_TYPES_FILTER_LABEL, WORD_TYPES_NO_SUBTYPES_LABEL, WORD_TYPES_SUBTYPE_GROUP_LABEL, WORD_TYPES_TENSE_FILTER_LABEL, WORD_TYPES_VOICE_FILTER_LABEL, WORD_TYPE_CASE_LABELS, WORD_TYPE_TENSE_LABELS, WORD_TYPE_VOICE_LABELS } from '../../models/word-types.labels';
 import {
@@ -14,6 +14,11 @@ import {
   WordTypeTreeNodeDto,
   WordTypeVoice,
 } from '../../models/word-types.models';
+
+export interface WordTypeScopeSelectedEvent {
+  readonly type: WordTypeMainType;
+  readonly childCode: string | null;
+}
 
 @Component({
   selector: 'qd-word-type-filter',
@@ -32,8 +37,7 @@ export class WordTypeFilterComponent {
   readonly selectedTense = input<WordTypeTense>('all');
   readonly selectedVoice = input<WordTypeVoice>('all');
   readonly loading = input(false);
-  readonly typeSelected = output<WordTypeMainType>();
-  readonly childSelected = output<string | null>();
+  readonly scopeSelected = output<WordTypeScopeSelectedEvent>();
   readonly caseSelected = output<WordTypeCase>();
   readonly tenseSelected = output<WordTypeTense>();
   readonly voiceSelected = output<WordTypeVoice>();
@@ -74,26 +78,27 @@ export class WordTypeFilterComponent {
     return WORD_TYPE_VOICES;
   }
 
-  // The panel always reflects the currently selected main type. particle and inl
-  // expose kind="none" and render no controls; noun renders case; verb renders
-  // tense + voice.
-  protected readonly selectedNode = computed<WordTypeTreeNodeDto | null>(() => {
+  protected readonly browsedType = linkedSignal(() => this.selectedType());
+
+  protected readonly browsedNode = computed<WordTypeTreeNodeDto | null>(() => {
     const currentTree = this.tree();
     if (!currentTree) {
       return null;
     }
-    return currentTree.mainTypes.find((node) => node.code === this.selectedType()) ?? null;
+    return currentTree.mainTypes.find((node) => node.code === this.browsedType()) ?? null;
   });
 
   protected readonly secondaryFilter = computed<WordTypeSecondaryFilterDto | null>(
-    () => this.selectedNode()?.secondaryFilter ?? null,
+    () => this.browsedType() === this.selectedType()
+      ? this.browsedNode()?.secondaryFilter ?? null
+      : null,
   );
 
   protected readonly showCaseControls = computed(() => this.secondaryFilter()?.kind === 'case');
   protected readonly showVerbControls = computed(() => this.secondaryFilter()?.kind === 'tense+voice');
 
   protected readonly showNoSubtypes = computed(
-    () => (this.selectedNode()?.children.length ?? 0) === 0 && this.secondaryFilter()?.kind === 'none',
+    () => (this.browsedNode()?.children.length ?? 0) === 0 && this.secondaryFilter()?.kind === 'none',
   );
 
   protected selectType(node: WordTypeTreeNodeDto): void {
@@ -101,7 +106,12 @@ export class WordTypeFilterComponent {
       return;
     }
 
-    this.typeSelected.emit(node.code);
+    if (node.children.length === 0) {
+      this.scopeSelected.emit({ type: node.code, childCode: null });
+      return;
+    }
+
+    this.browsedType.set(node.code);
   }
 
   protected selectChild(child: WordTypeChildNodeDto): void {
@@ -109,7 +119,10 @@ export class WordTypeFilterComponent {
       return;
     }
 
-    this.childSelected.emit(child.childCode);
+    const type = this.browsedNode()?.code;
+    if (type) {
+      this.scopeSelected.emit({ type, childCode: child.childCode });
+    }
   }
 
   protected changeCase(event: Event): void {
@@ -137,8 +150,13 @@ export class WordTypeFilterComponent {
     return node.code === this.selectedType();
   }
 
+  protected isBrowsed(node: WordTypeTreeNodeDto): boolean {
+    return node.code === this.browsedType();
+  }
+
   protected isChildSelected(child: WordTypeChildNodeDto): boolean {
-    return child.childCode === this.selectedChildCode();
+    return this.browsedType() === this.selectedType()
+      && child.childCode === this.selectedChildCode();
   }
 
   protected get noSubtypesLabel() {

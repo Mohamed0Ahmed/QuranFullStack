@@ -29,6 +29,20 @@ import {
   isWordTypeTense,
   isWordTypeVoice,
 } from '../models/word-types.models';
+import { WordTypeDetailSelection } from '../models/word-types-detail.models';
+
+type ParsedDetailScope = Pick<
+  ParsedWordTypesQuery,
+  'detailType' | 'detailChildCode' | 'detailCase' | 'detailTense' | 'detailVoice'
+>;
+
+const EMPTY_DETAIL_SCOPE: ParsedDetailScope = {
+  detailType: null,
+  detailChildCode: null,
+  detailCase: null,
+  detailTense: null,
+  detailVoice: null,
+};
 
 export function parseWordTypesQueryParams(queryParams: ParamMap): ParsedWordTypesQuery {
   const typeRaw = queryParams.get(WORD_TYPES_QUERY_KEYS.type);
@@ -45,6 +59,7 @@ export function parseWordTypesQueryParams(queryParams: ParamMap): ParsedWordType
   const stem = tableView === 'stems' ? parsePositiveInt(queryParams.get(WORD_TYPES_QUERY_KEYS.stem)) : null;
   const lemma = tableView === 'lemmas' ? parsePositiveInt(queryParams.get(WORD_TYPES_QUERY_KEYS.lemma)) : null;
   const view = normalizeView(tableView, queryParams.get(WORD_TYPES_QUERY_KEYS.view));
+  const detailScope = parseDetailScope(queryParams);
 
   return {
     type,
@@ -59,6 +74,7 @@ export function parseWordTypesQueryParams(queryParams: ParamMap): ParsedWordType
     root,
     stem,
     lemma,
+    ...detailScope,
     tashkeelWordId: word ?? 0,
     contextCode,
     view,
@@ -84,6 +100,11 @@ export type WordTypesQueryChange = Partial<{
   root: number | null;
   stem: number | null;
   lemma: number | null;
+  detailType: WordTypeMainType | null;
+  detailChildCode: string | null;
+  detailCase: WordTypeCase | null;
+  detailTense: WordTypeTense | null;
+  detailVoice: WordTypeVoice | null;
   view: WordTypeDetailView | null;
   detailPage: number | string | null;
   location: string | null;
@@ -104,6 +125,11 @@ const WORD_TYPES_QUERY_ORDER = [
   'root',
   'stem',
   'lemma',
+  'detailType',
+  'detailChildCode',
+  'detailCase',
+  'detailTense',
+  'detailVoice',
   'view',
   'detailPage',
   'location',
@@ -127,6 +153,18 @@ export function buildWordTypesQueryParams(changes: WordTypesQueryChange): Record
   return params;
 }
 
+export function buildWordTypesDetailScopeQuery(
+  selection: WordTypeDetailSelection,
+): WordTypesQueryChange {
+  return {
+    detailType: selection.scope.type,
+    detailChildCode: selection.scope.childCode,
+    detailCase: selection.scope.case,
+    detailTense: selection.scope.tense,
+    detailVoice: selection.scope.voice,
+  };
+}
+
 export function clearWordTypesSelection(): Record<string, string | null> {
   return buildWordTypesQueryParams({
     word: null,
@@ -134,6 +172,11 @@ export function clearWordTypesSelection(): Record<string, string | null> {
     root: null,
     stem: null,
     lemma: null,
+    detailType: null,
+    detailChildCode: null,
+    detailCase: null,
+    detailTense: null,
+    detailVoice: null,
     view: null,
     detailPage: null,
     location: null,
@@ -147,6 +190,11 @@ export function clearSelectionForTableView(target: WordTypeTableView): Record<st
     ...(target === 'roots' ? {} : { root: null }),
     ...(target === 'stems' ? {} : { stem: null }),
     ...(target === 'lemmas' ? {} : { lemma: null }),
+    detailType: null,
+    detailChildCode: null,
+    detailCase: null,
+    detailTense: null,
+    detailVoice: null,
     view: null,
     detailPage: null,
     location: null,
@@ -200,6 +248,59 @@ function normalizeChildCode(type: WordTypeMainType, value: string | null): strin
   }
 
   return raw;
+}
+
+function parseDetailScope(queryParams: ParamMap): ParsedDetailScope {
+  const detailCaseRaw = queryParams.get(WORD_TYPES_QUERY_KEYS.detailCase);
+  const detailTenseRaw = queryParams.get(WORD_TYPES_QUERY_KEYS.detailTense);
+  const detailVoiceRaw = queryParams.get(WORD_TYPES_QUERY_KEYS.detailVoice);
+  if (
+    detailCaseRaw === null || !isWordTypeCase(detailCaseRaw)
+    || detailTenseRaw === null || !isWordTypeTense(detailTenseRaw)
+    || detailVoiceRaw === null || !isWordTypeVoice(detailVoiceRaw)
+  ) {
+    return EMPTY_DETAIL_SCOPE;
+  }
+
+  const detailTypeRaw = queryParams.get(WORD_TYPES_QUERY_KEYS.detailType);
+  if (detailTypeRaw === null || !isWordTypeMainType(detailTypeRaw)) {
+    return EMPTY_DETAIL_SCOPE;
+  }
+
+  const detailChildCodeRaw = normalizeOptionalText(queryParams.get(WORD_TYPES_QUERY_KEYS.detailChildCode));
+  const detailChildCode = normalizeChildCode(detailTypeRaw, detailChildCodeRaw);
+  if (
+    (detailTypeRaw === 'inl' && detailChildCodeRaw !== null)
+    || (detailTypeRaw !== 'inl' && detailChildCode === null)
+    || !hasCompatibleDetailFeatures(detailTypeRaw, detailCaseRaw, detailTenseRaw, detailVoiceRaw)
+  ) {
+    return EMPTY_DETAIL_SCOPE;
+  }
+
+  return {
+    detailType: detailTypeRaw,
+    detailChildCode,
+    detailCase: detailCaseRaw,
+    detailTense: detailTenseRaw,
+    detailVoice: detailVoiceRaw,
+  };
+}
+
+function hasCompatibleDetailFeatures(
+  type: WordTypeMainType,
+  caseValue: WordTypeCase,
+  tense: WordTypeTense,
+  voice: WordTypeVoice,
+): boolean {
+  switch (type) {
+    case 'noun': return tense === DEFAULT_WORD_TYPE_TENSE && voice === DEFAULT_WORD_TYPE_VOICE;
+    case 'verb': return caseValue === DEFAULT_WORD_TYPE_CASE;
+    case 'particle':
+    case 'inl':
+      return caseValue === DEFAULT_WORD_TYPE_CASE
+        && tense === DEFAULT_WORD_TYPE_TENSE
+        && voice === DEFAULT_WORD_TYPE_VOICE;
+  }
 }
 
 function normalizeCase(type: WordTypeMainType, value: string | null): WordTypeCase {

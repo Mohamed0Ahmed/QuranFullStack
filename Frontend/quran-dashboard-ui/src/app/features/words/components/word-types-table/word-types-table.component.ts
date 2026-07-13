@@ -9,7 +9,6 @@ import {
 } from '../../models/word-types.labels';
 import {
   PagedResultDto,
-  WordTableRowDto,
   WordTypeDetailView,
   WordTypeTableRowDto,
   WordTypeTableView,
@@ -23,7 +22,7 @@ import { syncTableScrollbarGutter } from '../../utils/table-scrollbar-gutter-syn
 export type WordTypeCountColumn = 'occurrences' | 'ayahs' | 'surahs';
 
 export interface WordTypeCountOpenedEvent {
-  row: WordTableRowDto;
+  row: WordTypeTableRowDto;
   column: WordTypeCountColumn;
   view: WordTypeDetailView;
 }
@@ -50,7 +49,6 @@ export class WordTypesTableComponent {
   readonly errorLabel = input('');
   readonly retryLabel = input('');
   readonly selectedRow = input<WordTypeTableRowDto | null>(null);
-  readonly rowSelected = output<WordTypeTableRowDto>();
   readonly countOpened = output<WordTypeCountOpenedEvent>();
   readonly retry = output<void>();
 
@@ -113,10 +111,6 @@ export class WordTypesTableComponent {
     }
   }
 
-  protected selectRow(row: WordTypeTableRowDto): void {
-    this.rowSelected.emit(row);
-  }
-
   protected isSelected(row: WordTypeTableRowDto): boolean {
     const selected = this.selectedRow();
     if (!selected || selected.kind !== row.kind) {
@@ -140,19 +134,28 @@ export class WordTypesTableComponent {
     return false;
   }
 
-  protected openCount(row: WordTableRowDto, column: WordTypeCountColumn): void {
-    const view: WordTypeDetailView = column === 'surahs' ? 'surahs' : 'ayahs';
+  protected openCount(row: WordTypeTableRowDto, column: WordTypeCountColumn): void {
+    const view: WordTypeDetailView = column === 'surahs'
+      ? 'surahs'
+      : row.kind !== 'word' && column === 'occurrences'
+        ? 'words'
+        : 'ayahs';
     this.countOpened.emit({ row, column, view });
   }
 
-  focusRow(row: WordTypeTableRowDto | null): void {
+  focusStatistic(
+    row: WordTypeTableRowDto | null,
+    view: WordTypeDetailView,
+    column: WordTypeCountColumn | null = null,
+  ): void {
     if (!row) {
       return;
     }
 
+    const resolvedColumn = column ?? (view === 'words' ? 'occurrences' : view);
     const host = this.host.nativeElement as HTMLElement;
     const button = host.querySelector<HTMLButtonElement>(
-      `[data-word-types-row="${this.rowDomId(row)}"]`,
+      `[data-word-types-row="${this.rowDomId(row)}"] [data-word-count-column="${resolvedColumn}"] [data-testid="word-count-chip"]`,
     );
     button?.focus();
   }

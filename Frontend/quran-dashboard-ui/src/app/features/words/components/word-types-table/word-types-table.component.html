@@ -71,15 +71,13 @@
           @switch (tableView()) {
             @case ('words') {
               @if (row.kind === 'word') {
-                <button
-                  type="button"
+                <div
                   class="word-types-table__row qd-explorer-table__row"
                   role="row"
                   [attr.data-word-types-row]="rowDomId(row)"
                   [class.qd-is-selected]="isSelected(row)"
                   [attr.aria-current]="isSelected(row) ? 'true' : null"
                   [attr.aria-selected]="isSelected(row)"
-                  (click)="selectRow(row)"
                 >
                   <span class="word-types-table__cell word-types-table__cell--row-number qd-explorer-table__cell--row-number" role="cell">{{ rowNumber($index) }}</span>
                   <span class="word-types-table__cell word-types-table__cell--word" role="cell">
@@ -98,7 +96,7 @@
                     <span class="word-types-table__meta-text">{{ row.lemmaText || placeholder }}</span>
                   </span>
                   <span class="word-types-table__cell word-types-table__cell--count" role="cell" [attr.data-label]="headers.occurrences">
-                    <span class="word-types-table__count-chip" (click)="$event.stopPropagation()">
+                    <span class="word-types-table__count-chip" data-word-count-column="occurrences">
                       <qd-word-count-chip
                         [label]="headers.occurrences"
                         [count]="row.occurrencesCount"
@@ -108,7 +106,7 @@
                     </span>
                   </span>
                   <span class="word-types-table__cell word-types-table__cell--count" role="cell" [attr.data-label]="headers.ayahs">
-                    <span class="word-types-table__count-chip" (click)="$event.stopPropagation()">
+                    <span class="word-types-table__count-chip" data-word-count-column="ayahs">
                       <qd-word-count-chip
                         [label]="headers.ayahs"
                         [count]="row.ayahsCount"
@@ -118,7 +116,7 @@
                     </span>
                   </span>
                   <span class="word-types-table__cell word-types-table__cell--count" role="cell" [attr.data-label]="headers.surahs">
-                    <span class="word-types-table__count-chip" (click)="$event.stopPropagation()">
+                    <span class="word-types-table__count-chip" data-word-count-column="surahs">
                       <qd-word-count-chip
                         [label]="headers.surahs"
                         [count]="row.surahsCount"
@@ -127,29 +125,54 @@
                       />
                     </span>
                   </span>
-                </button>
+                </div>
               }
             }
             @default {
               @if (matchesActiveView(row)) {
-                <button
-                  type="button"
+                <div
                   class="word-types-table__row qd-explorer-table__row"
                   role="row"
                   [attr.data-word-types-row]="rowDomId(row)"
                   [class.qd-is-selected]="isSelected(row)"
                   [attr.aria-current]="isSelected(row) ? 'true' : null"
                   [attr.aria-selected]="isSelected(row)"
-                  (click)="selectRow(row)"
                 >
                   <span class="word-types-table__cell word-types-table__cell--row-number qd-explorer-table__cell--row-number" role="cell">{{ rowNumber($index) }}</span>
                   <span class="word-types-table__cell word-types-table__cell--word" role="cell" [attr.data-label]="dimensionHeader()">
                     <span class="word-types-table__word">{{ row.displayText }}</span>
                   </span>
-                  <span class="word-types-table__cell word-types-table__cell--count" role="cell" [attr.data-label]="headers.occurrences">{{ row.occurrencesCount }}</span>
-                  <span class="word-types-table__cell word-types-table__cell--count" role="cell" [attr.data-label]="headers.ayahs">{{ row.ayahsCount }}</span>
-                  <span class="word-types-table__cell word-types-table__cell--count" role="cell" [attr.data-label]="headers.surahs">{{ row.surahsCount }}</span>
-                </button>
+                  <span class="word-types-table__cell word-types-table__cell--count" role="cell" [attr.data-label]="headers.occurrences">
+                    <span class="word-types-table__count-chip" data-word-count-column="occurrences">
+                      <qd-word-count-chip
+                        [label]="headers.occurrences"
+                        [count]="row.occurrencesCount"
+                        [showLabel]="false"
+                        (chipClick)="openCount(row, 'occurrences')"
+                      />
+                    </span>
+                  </span>
+                  <span class="word-types-table__cell word-types-table__cell--count" role="cell" [attr.data-label]="headers.ayahs">
+                    <span class="word-types-table__count-chip" data-word-count-column="ayahs">
+                      <qd-word-count-chip
+                        [label]="headers.ayahs"
+                        [count]="row.ayahsCount"
+                        [showLabel]="false"
+                        (chipClick)="openCount(row, 'ayahs')"
+                      />
+                    </span>
+                  </span>
+                  <span class="word-types-table__cell word-types-table__cell--count" role="cell" [attr.data-label]="headers.surahs">
+                    <span class="word-types-table__count-chip" data-word-count-column="surahs">
+                      <qd-word-count-chip
+                        [label]="headers.surahs"
+                        [count]="row.surahsCount"
+                        [showLabel]="false"
+                        (chipClick)="openCount(row, 'surahs')"
+                      />
+                    </span>
+                  </span>
+                </div>
               }
             }
           }

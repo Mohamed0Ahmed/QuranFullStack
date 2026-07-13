@@ -25,7 +25,7 @@ export interface WordTypeDetailScope {
 }
 
 export type WordTypeDetailSelection =
-  | { kind: 'word'; identity: WordTypeRowIdentity }
+  | { kind: 'word'; identity: WordTypeRowIdentity; scope: WordTypeDetailScope }
   | { kind: 'root'; rootId: number; scope: WordTypeDetailScope }
   | { kind: 'stem'; stemId: number; scope: WordTypeDetailScope }
   | { kind: 'lemma'; lemmaId: number; scope: WordTypeDetailScope };
@@ -37,8 +37,8 @@ export type WordTypeGroupedDetailSelection = Extract<WordTypeDetailSelection, { 
 
 export interface WordTypesDetailState {
   status: WordTypesLoadStatus;
-  // Kind-aware active selection and its discriminant. `selectedRow` stays the word-only identity used
-  // for row focus restoration; grouped selections carry their numeric dimension in `selection`/`kind`.
+  // Kind-aware active selection and its discriminant. `selectedRow` remains the word-only compatibility
+  // projection; every kind's exact identity and stored scope live in `selection`.
   selection: WordTypeDetailSelection | null;
   kind: WordTypeDetailSelectionKind;
   selectedRow: WordTypeRowIdentity | null;

@@ -10,6 +10,7 @@ import {
   RootTableRowDto,
   WORD_TYPES_PAGE_SIZE,
   WordTableRowDto,
+  WordTypeMainType,
   WordTypeTableRowDto,
   WordTypeTreeDto,
 } from '../models/word-types.models';
@@ -230,29 +231,54 @@ describe('WordTypesExplorerFacade — tableView', () => {
     return (router.navigate as ReturnType<typeof vi.fn>).mock.calls.at(-1)?.[1].queryParams as Record<string, unknown>;
   }
 
-  it('preserves the active tableView when selecting a main type', () => {
+  function selectScope(facade: WordTypesExplorerFacade, type: WordTypeMainType, childCode: string | null): void {
+    (facade as unknown as {
+      selectScope?: (nextType: WordTypeMainType, nextChildCode: string | null) => void;
+    }).selectScope?.(type, childCode);
+  }
+
+  it('commits a cross-parent child using only list-scope keys', () => {
     const { facade, router } = setup();
-    const route = controllableRoute({ type: 'inl', tableView: 'roots' });
+    const route = controllableRoute({
+      type: 'verb',
+      childCode: 'present',
+      tableView: 'roots',
+      root: '190700',
+      detailType: 'verb',
+      detailChildCode: 'present',
+      detailCase: 'all',
+      detailTense: 'present',
+      detailVoice: 'all',
+      view: 'ayahs',
+      detailPage: '2',
+    });
     facade.bindToRoute(route.route);
 
-    facade.selectType('noun');
+    selectScope(facade, 'noun', 'ADJ');
 
     const params = lastQueryParams(router);
     expect(params).not.toHaveProperty('tableView');
-    expect(params).toEqual(expect.objectContaining({ type: 'noun', page: '1', word: null, root: null, stem: null, lemma: null }));
+    expect(params).toEqual({
+      type: 'noun',
+      childCode: 'ADJ',
+      case: 'all',
+      tense: 'all',
+      voice: 'all',
+      page: '1',
+    });
     facade.unbindFromRoute();
   });
 
-  it('preserves the active tableView when clearing back to the parent (selectChild(null))', () => {
+  it('preserves compatible secondary filters when committing another child under the same parent', () => {
     const { facade, router } = setup();
-    const route = controllableRoute({ type: 'noun', childCode: 'PN', tableView: 'roots' });
+    const route = controllableRoute({ type: 'noun', childCode: 'PN', case: 'genitive', tableView: 'roots' });
     facade.bindToRoute(route.route);
 
-    facade.selectChild(null);
+    selectScope(facade, 'noun', 'ADJ');
 
     const params = lastQueryParams(router);
     expect(params).not.toHaveProperty('tableView');
-    expect(params).toEqual(expect.objectContaining({ childCode: null, page: '1' }));
+    expect(params).toEqual({ type: 'noun', childCode: 'ADJ', page: '1' });
     facade.unbindFromRoute();
   });
 
@@ -284,8 +310,7 @@ describe('WordTypesExplorerFacade — tableView', () => {
     facade.selectTableView('words');
     expect(lastQueryParams(router)['tableView']).toBe('words');
 
-    facade.selectType('noun');
-    facade.selectChild('N');
+    selectScope(facade, 'noun', 'N');
     facade.selectCase('genitive');
     facade.changeSort('alpha');
     facade.changePage(2);
@@ -436,7 +461,7 @@ describe('WordTypesExplorerFacade — tableView', () => {
     const route = controllableRoute({ type: 'noun', childCode: 'PN', tableView: 'roots' });
     facade.bindToRoute(route.route);
 
-    facade.selectChild('N');
+    selectScope(facade, 'noun', 'N');
 
     const lastCall = (router.navigate as ReturnType<typeof vi.fn>).mock.calls.at(-1);
     expect(lastCall?.[1].queryParams).not.toHaveProperty('tableView');

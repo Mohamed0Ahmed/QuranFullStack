@@ -88,35 +88,44 @@ describe('WordTypesTableComponent', () => {
 
   afterEach(() => getTestBed().resetTestingModule());
 
-  it('renders corrected word headers, Uthmani display, and interactive count actions', () => {
+  it('renders corrected word headers and makes only its statistics actionable', () => {
     const fixture = TestBed.createComponent(WordTypesTableComponent);
-    const selected: WordTypeTableRowDto[] = [];
     const countEvents: WordTypeCountOpenedEvent[] = [];
     fixture.componentRef.setInput('rows', page([word()]));
     fixture.componentRef.setInput('selectedRow', word());
-    fixture.componentInstance.rowSelected.subscribe((row) => selected.push(row));
     fixture.componentInstance.countOpened.subscribe((event) => countEvents.push(event));
     fixture.detectChanges();
 
     const root = fixture.nativeElement as HTMLElement;
     const headers = Array.from(root.querySelectorAll('[role="columnheader"]')).map((header) => header.textContent?.trim());
-    const rowButton = root.querySelector('.word-types-table__row') as HTMLButtonElement;
-    const countButton = root.querySelector('[data-testid="word-count-chip"]') as HTMLButtonElement;
+    const tableRow = root.querySelector('.word-types-table__row') as HTMLElement;
+    const countButtons = root.querySelectorAll('[data-testid="word-count-chip"]') as NodeListOf<HTMLButtonElement>;
 
     expect(headers).toEqual(['م', 'الكلمة', 'النوع', 'الجذر', 'الأصل', 'الصيغة', 'المواضع', 'الآيات', 'السور']);
     expect(root.textContent).toContain('كَلِمَة');
     expect(root.textContent).toContain('—');
     expect(root.textContent).not.toContain('191001');
     expect(root.querySelector('.word-types-table__header-gutter')).not.toBeNull();
-    expect(rowButton.getAttribute('aria-current')).toBe('true');
-    expect(rowButton.getAttribute('aria-selected')).toBe('true');
-    expect(rowButton.classList.contains('qd-is-selected')).toBe(true);
+    expect(tableRow.tagName).toBe('DIV');
+    expect(tableRow.getAttribute('tabindex')).toBeNull();
+    expect(tableRow.getAttribute('aria-current')).toBe('true');
+    expect(tableRow.getAttribute('aria-selected')).toBe('true');
+    expect(tableRow.classList.contains('qd-is-selected')).toBe(true);
+    expect(countButtons).toHaveLength(3);
+    expect('rowSelected' in fixture.componentInstance).toBe(false);
 
-    rowButton.click();
-    countButton.click();
+    tableRow.click();
+    tableRow.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    tableRow.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+    expect(countEvents).toEqual([]);
 
-    expect(selected).toEqual([word()]);
-    expect(countEvents).toEqual([{ row: word(), column: 'occurrences', view: 'ayahs' }]);
+    countButtons.forEach((button) => button.click());
+
+    expect(countEvents).toEqual([
+      { row: word(), column: 'occurrences', view: 'ayahs' },
+      { row: word(), column: 'ayahs', view: 'ayahs' },
+      { row: word(), column: 'surahs', view: 'surahs' },
+    ]);
   });
 
   it.each([
@@ -124,36 +133,53 @@ describe('WordTypesTableComponent', () => {
     ['stems', stemRow, 'الأصل', 'جدول الأصول', 190701, 'stem:190701'],
     ['lemmas', lemmaRow, 'الصيغة', 'جدول الصيغ', 190702, 'lemma:190702'],
   ] as const)(
-    'renders %s grouped rows as selectable four-column row buttons that emit the grouped row',
+    'renders %s grouped rows with three statistic actions and an inert row container',
     (tableView, groupedRow, dimensionHeader, tableLabel, numericId, rowDomId) => {
       const fixture = TestBed.createComponent(WordTypesTableComponent);
-      const selected: WordTypeTableRowDto[] = [];
+      const countEvents: WordTypeCountOpenedEvent[] = [];
       fixture.componentRef.setInput('rows', page([groupedRow]));
       fixture.componentRef.setInput('tableView', tableView as WordTypeTableView);
       fixture.componentRef.setInput('selectedRow', groupedRow);
-      fixture.componentInstance.rowSelected.subscribe((row) => selected.push(row));
+      fixture.componentInstance.countOpened.subscribe((event) => countEvents.push(event));
       fixture.detectChanges();
 
       const root = fixture.nativeElement as HTMLElement;
       const headers = Array.from(root.querySelectorAll('[role="columnheader"]')).map((header) => header.textContent?.trim());
-      const groupedTableRow = root.querySelector('button.word-types-table__row') as HTMLButtonElement;
+      const groupedTableRow = root.querySelector('.word-types-table__row') as HTMLElement;
+      const countButtons = root.querySelectorAll('[data-testid="word-count-chip"]') as NodeListOf<HTMLButtonElement>;
 
       expect(root.querySelector('[role="table"]')?.getAttribute('aria-label')).toBe(tableLabel);
       expect(headers).toEqual(['م', dimensionHeader, 'المواضع', 'الآيات', 'السور']);
       expect(groupedTableRow).not.toBeNull();
+      expect(groupedTableRow.tagName).toBe('DIV');
+      expect(groupedTableRow.getAttribute('tabindex')).toBeNull();
       expect(groupedTableRow.getAttribute('data-word-types-row')).toBe(rowDomId);
       expect(groupedTableRow.textContent).toContain(groupedRow.displayText);
       expect(groupedTableRow.textContent).toContain(String(groupedRow.occurrencesCount));
       expect(groupedTableRow.textContent).toContain(String(groupedRow.ayahsCount));
       expect(groupedTableRow.textContent).toContain(String(groupedRow.surahsCount));
       expect(root.textContent).not.toContain(String(numericId));
-      expect(root.querySelector('qd-word-count-chip')).toBeNull();
+      expect(countButtons).toHaveLength(3);
+      expect(Array.from(countButtons).map((button) => button.getAttribute('aria-label'))).toEqual([
+        `المواضع: ${groupedRow.occurrencesCount}`,
+        `الآيات: ${groupedRow.ayahsCount}`,
+        `السور: ${groupedRow.surahsCount}`,
+      ]);
       expect(groupedTableRow.classList.contains('qd-is-selected')).toBe(true);
       expect(groupedTableRow.getAttribute('aria-current')).toBe('true');
       expect(groupedTableRow.getAttribute('aria-selected')).toBe('true');
 
       groupedTableRow.click();
-      expect(selected).toEqual([groupedRow]);
+      groupedTableRow.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      groupedTableRow.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+      expect(countEvents).toEqual([]);
+
+      countButtons.forEach((button) => button.click());
+      expect(countEvents).toEqual([
+        { row: groupedRow, column: 'occurrences', view: 'words' },
+        { row: groupedRow, column: 'ayahs', view: 'ayahs' },
+        { row: groupedRow, column: 'surahs', view: 'surahs' },
+      ]);
     },
   );
 
@@ -164,7 +190,7 @@ describe('WordTypesTableComponent', () => {
     fixture.componentRef.setInput('selectedRow', word());
     fixture.detectChanges();
 
-    const groupedTableRow = (fixture.nativeElement as HTMLElement).querySelector('button.word-types-table__row') as HTMLButtonElement;
+    const groupedTableRow = (fixture.nativeElement as HTMLElement).querySelector('.word-types-table__row') as HTMLElement;
     expect(groupedTableRow.classList.contains('qd-is-selected')).toBe(false);
     expect(groupedTableRow.getAttribute('aria-selected')).toBe('false');
     expect(groupedTableRow.getAttribute('aria-current')).toBeNull();
@@ -294,9 +320,10 @@ describe('WordTypesTableComponent', () => {
     fixture.componentRef.setInput('tableView', tableView as WordTypeTableView);
     fixture.detectChanges();
 
-    const rowButton = (fixture.nativeElement as HTMLElement).querySelector('button.word-types-table__row') as HTMLButtonElement;
-    expect(rowButton.classList.contains('qd-explorer-table__row')).toBe(true);
-    expect(rowButton.classList.contains('qd-interactive-surface')).toBe(false);
+    const tableRow = (fixture.nativeElement as HTMLElement).querySelector('.word-types-table__row') as HTMLElement;
+    expect(tableRow.tagName).toBe('DIV');
+    expect(tableRow.classList.contains('qd-explorer-table__row')).toBe(true);
+    expect(tableRow.classList.contains('qd-interactive-surface')).toBe(false);
   });
 
   it('keeps loading rows non-selectable with no interactive surface', () => {
@@ -317,30 +344,62 @@ describe('WordTypesTableComponent', () => {
     ['roots', rootRow, 'root:190700'],
     ['stems', stemRow, 'stem:190701'],
     ['lemmas', lemmaRow, 'lemma:190702'],
-  ] as const)('exposes keyboard-operable %s row buttons that focusRow can target', (tableView, row, domId) => {
+  ] as const)('renders an inert %s row container with the stable DOM identity', (tableView, row, domId) => {
     const fixture = TestBed.createComponent(WordTypesTableComponent);
     fixture.componentRef.setInput('rows', page([row]));
     fixture.componentRef.setInput('tableView', tableView as WordTypeTableView);
     fixture.detectChanges();
 
-    const rowButton = (fixture.nativeElement as HTMLElement).querySelector('button.word-types-table__row') as HTMLButtonElement;
-    expect(rowButton.tagName).toBe('BUTTON');
-
-    fixture.componentInstance.focusRow(row);
-
-    expect(document.activeElement).toBe(rowButton);
-    expect((document.activeElement as HTMLElement).getAttribute('data-word-types-row')).toBe(domId);
+    const tableRow = (fixture.nativeElement as HTMLElement).querySelector('.word-types-table__row') as HTMLElement;
+    expect(tableRow.tagName).toBe('DIV');
+    expect(tableRow.getAttribute('tabindex')).toBeNull();
+    expect(tableRow.getAttribute('data-word-types-row')).toBe(domId);
   });
 
-  it('focuses a word row by its canonicalized nullable identity', () => {
+  it.each([
+    ['words', word(), 'ayahs', 'occurrences', 0],
+    ['roots', rootRow, 'words', null, 0],
+    ['stems', stemRow, 'ayahs', null, 1],
+    ['lemmas', lemmaRow, 'surahs', null, 2],
+  ] as const)('returns focus to the matching %s statistic button', (tableView, row, view, column, expectedIndex) => {
     const fixture = TestBed.createComponent(WordTypesTableComponent);
-    const nullableWord = word({ case: null, tense: null, voice: null });
-    fixture.componentRef.setInput('rows', page([nullableWord]));
+    fixture.componentRef.setInput('rows', page([row]));
+    fixture.componentRef.setInput('tableView', tableView as WordTypeTableView);
     fixture.detectChanges();
 
-    fixture.componentInstance.focusRow(nullableWord);
+    const focusStatistic = (fixture.componentInstance as unknown as {
+      focusStatistic?: (target: WordTypeTableRowDto, targetView: string, targetColumn?: string | null) => void;
+    }).focusStatistic;
+    focusStatistic?.call(fixture.componentInstance, row, view, column);
 
-    expect(document.activeElement).toBe(fixture.nativeElement.querySelector('.word-types-table__row'));
-    expect((document.activeElement as HTMLElement).getAttribute('data-word-types-row')).toBe('191001:PN:all:all:all');
+    const buttons = (fixture.nativeElement as HTMLElement).querySelectorAll('[data-testid="word-count-chip"]');
+    expect(document.activeElement).toBe(buttons[expectedIndex]);
+  });
+
+  it.each([
+    ['words', word(), word({ tashkeelWordId: 191002 })],
+    ['roots', rootRow, { ...rootRow, rootId: 190711 }],
+    ['stems', stemRow, { ...stemRow, stemId: 190712 }],
+    ['lemmas', lemmaRow, { ...lemmaRow, lemmaId: 190713 }],
+  ] as const)('transfers and clears the shared selected style for %s rows', (tableView, firstRow, secondRow) => {
+    const fixture = TestBed.createComponent(WordTypesTableComponent);
+    fixture.componentRef.setInput('rows', page([firstRow, secondRow]));
+    fixture.componentRef.setInput('tableView', tableView as WordTypeTableView);
+    fixture.componentRef.setInput('selectedRow', firstRow);
+    fixture.detectChanges();
+
+    let rows = (fixture.nativeElement as HTMLElement).querySelectorAll('.word-types-table__row');
+    expect(rows[0].classList.contains('qd-is-selected')).toBe(true);
+    expect(rows[1].classList.contains('qd-is-selected')).toBe(false);
+
+    fixture.componentRef.setInput('selectedRow', secondRow);
+    fixture.detectChanges();
+    rows = (fixture.nativeElement as HTMLElement).querySelectorAll('.word-types-table__row');
+    expect(rows[0].classList.contains('qd-is-selected')).toBe(false);
+    expect(rows[1].classList.contains('qd-is-selected')).toBe(true);
+
+    fixture.componentRef.setInput('selectedRow', null);
+    fixture.detectChanges();
+    expect(Array.from(rows).every((item) => !item.classList.contains('qd-is-selected'))).toBe(true);
   });
 });

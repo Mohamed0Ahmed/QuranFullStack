@@ -38,33 +38,34 @@ Shared across explorers: `utils/explorer-table-*` (focus/keyboard-nav/scroll/col
 - Tests: obey the repo test-command rule (see `../../../../README.md`) — the vitest worker
   cap and jsdom observer guards apply here.
 - **Word Types has table-view tabs** (`tableView=words|roots|stems|lemmas`, default `words`,
-  RTL order كلمات | جذور | أصول | صيغ). Grouped views (`roots`/`stems`/`lemmas`) are backed by
-  `GET .../word-types/table` and are grouped + counted server-side **before** pagination;
-  `GET .../word-types/words` stays unchanged for existing deep links. Rows are a
-  discriminated union keyed by `kind: 'word'|'root'|'stem'|'lemma'` — grouped identity is
-  the numeric `rootId`/`stemId`/`lemmaId`, **never** Arabic display text. The **table-view strip,
-  table shell, and details host stay mounted** through every parent/child/filter/sort/view/loading/
-  empty/error transition (the strip appears once the tree loads, including parent scopes); the split
-  table/details layout is kept for grouped views, and the **table owns its own prompt/loading/empty/
-  error (with retry) inside its body** instead of swapping the shell out. `tableView` **survives**
-  type/child/case/tense/voice/sort/page changes — only the Words tab returns a grouped view to
-  `words`. Returning to a **parent scope** clears the previous leaf's rows and shows the in-shell
-  subtype prompt (no stale rows under the new scope); after a **successful tree read**, both a
-  **rows-only failure** and a later **parent-tree reload failure** keep the strip visible from the last
-  valid tree; and rows whose `kind` mismatches the active `tableView` are **never rendered**. **All four
-  views** render **quiet explorer rows** (`word-types-table__row` +
-  `qd-explorer-table__row`, **no** `qd-interactive-surface`/card-lift) with a leading
-  **page-relative row number** (`(page-1)·pageSize + index + 1`, **never** the database ID);
-  the selected row keeps `aria-selected`/`aria-current` + `qd-is-selected` with visible focus,
-  and skeleton rows stay non-interactive with no hover. **Grouped rows are selectable native row
-  buttons** (`word-types-table__row`, no `qd-interactive-surface`): choosing a root/stem/lemma
-  writes **only its explicit URL key**
-  (`root`/`stem`/`lemma`) with `view=words` and **no** `detailPage`, sends the full grammatical scope to
-  the detail facade, and opens a scoped summary + related-words/ayahs/surahs details. The details panel
-  tabs are **kind-aware** (word → آيات/سور; grouped → كلمات مرتبطة/آيات/سور) with RTL roving focus, and a
-  summary card (label + المواضع/الآيات/السور) renders above the active detail content for both kinds.
-  The panel's **loading and error (with retry) states render even before the summary resolves**, so a
-  grouped summary that is still loading or failed never shows a blank surface.
+  RTL order كلمات | جذور | أصول | صيغ). Grouped views are grouped and counted server-side before
+  pagination, and their identity is the numeric `rootId`/`stemId`/`lemmaId`, never display text. The
+  **table-view strip, table shell, and details host stay mounted** through every browse/list/filter/
+  sort/view/loading/empty/error transition; the table owns prompt/loading/empty/error-with-retry.
+  A parent with children is **browse-only local state**: clicking it changes only the displayed child
+  choices and performs no URL, list, or detail change. Selecting a child commits the list scope
+  (`type`, `childCode`, `case`, `tense`, `voice`) and resets list page; the `inl` leaf commits directly.
+  `tableView` survives list changes, and rows whose `kind` mismatches it are never rendered.
+
+  All four views render quiet, non-focusable row containers with page-relative row numbers. The row
+  container has no click/Enter/Space action. Only the three native statistic buttons open details:
+  word `occurrences/ayahs → ayahs`, word `surahs → surahs`; grouped `occurrences → words`, grouped
+  `ayahs → ayahs`, grouped `surahs → surahs`. Skeleton rows remain non-interactive. The exact open-detail
+  row carries the shared `qd-is-selected`/`aria-selected`/`aria-current` treatment until details close;
+  identity and the complete stored grammatical scope must match the current list, so preserved details
+  from another list scope never highlight a coincidentally equal row. Focus returns to the originating
+  statistic button, and hover never overrides the active color.
+
+  URL state separates the list scope from the detail selection's snapshot:
+  `detailType`, `detailChildCode`, `detailCase`, `detailTense`, `detailVoice`. Every statistic writes all
+  five with identity/view/page; child selection preserves them, refresh/direct URLs/Back/Forward restore
+  both scopes independently, malformed/incomplete snapshots fail closed, and closing details clears
+  identity/view/page plus all five detail keys. Detail tabs remain kind-aware (word → آيات/سور; grouped
+  → كلمات مرتبطة/آيات/سور) and content begins directly with the tabs and active list—there is no repeated
+  summary card. Summary fetch/state remains because the panel title and loading/error/retry/not-found
+  orchestration consume it.
+
+  After a successful tree read, rows-only and later tree failures retain the last valid tree/strip.
   Grouped **member-word rows are strictly display-only** — no button/link/tabindex/`qd-interactive-surface`/
   selected state and no Router; only their pagination emits. Grouped words and ayahs are server-paged with
   internal page 1, the canonical URL omits `detailPage` at page 1 and serializes only pages `> 1`, and the

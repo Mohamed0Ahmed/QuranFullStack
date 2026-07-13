@@ -52,6 +52,11 @@ const DEFAULT_QUERY: ParsedWordTypesQuery = {
   root: null,
   stem: null,
   lemma: null,
+  detailType: null,
+  detailChildCode: null,
+  detailCase: null,
+  detailTense: null,
+  detailVoice: null,
   tashkeelWordId: 0,
   contextCode: '',
   view: DEFAULT_WORD_TYPES_DETAIL_VIEW,
@@ -124,36 +129,20 @@ export class WordTypesExplorerFacade {
     }));
   }
 
-  selectType(type: WordTypeMainType): void {
-    // Switching the main type resets its child and secondary filters. Any existing selection belongs to
-    // the old grammatical scope, so it must not remain shareable after this transition. The active
-    // tableView survives — only the Words tab returns a grouped view to words (locked decision 2).
-    this.navigate(
-      {
-        ...buildWordTypesQueryParams({
-          type,
-          childCode: null,
-          case: DEFAULT_WORD_TYPE_CASE,
-          tense: DEFAULT_WORD_TYPE_TENSE,
-          voice: DEFAULT_WORD_TYPE_VOICE,
-          page: DEFAULT_WORD_TYPES_PAGE,
-        }),
-        ...clearWordTypesSelection(),
-      },
-    );
-  }
-
-  // Selecting a child node narrows rows to that subtype, resets the page, and clears any selected
-  // row so the detail panel never lingers on a row from a different context. The active tableView is
-  // preserved through both narrowing and clearing back to the parent (locked decision 2).
-  selectChild(childCode: string | null): void {
-    this.navigate({
-      ...buildWordTypesQueryParams({
-        childCode,
-        page: DEFAULT_WORD_TYPES_PAGE,
-      }),
-      ...clearWordTypesSelection(),
-    });
+  selectScope(type: WordTypeMainType, childCode: string | null): void {
+    const typeChanged = type !== this.state().query.type;
+    this.navigate(buildWordTypesQueryParams({
+      type,
+      childCode,
+      ...(typeChanged
+        ? {
+            case: DEFAULT_WORD_TYPE_CASE,
+            tense: DEFAULT_WORD_TYPE_TENSE,
+            voice: DEFAULT_WORD_TYPE_VOICE,
+          }
+        : {}),
+      page: DEFAULT_WORD_TYPES_PAGE,
+    }));
   }
 
   // Switching the table-view tab narrows the same filtered scope to a different aggregation level.

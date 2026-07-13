@@ -79,11 +79,11 @@ npm run build            # Application bundle generation complete (SCSS budget w
 ```
 
 Focused Word Types suite (the `*word-type*` glob matches both the singular grouped-detail specs and
-the plural `word-types-*` explorer/table specs — 14 files):
+the plural `word-types-*` explorer/table specs — 13 files):
 
 ```bash
 cd /projects/Dashboard/App/Frontend/quran-dashboard-ui
-npm test -- --include='src/app/features/words/**/*word-type*.spec.ts'   # 210 passed (14 files)
+npm test -- --include='src/app/features/words/**/*word-type*.spec.ts'   # 237 passed (13 files)
 ```
 
 If the builder rejects that glob, run these supported capped subsets instead:
@@ -102,10 +102,12 @@ Only a `Build failed` line is a real failure.
 Required frontend acceptance coverage:
 
 - `/dashboard/words/types` route loads and defaults to `type=noun`.
-- URL state restores exact `word + contextCode`.
+- URL state restores exact identity plus the independent five-key detail scope
+  (`detailType`, `detailChildCode`, `detailCase`, `detailTense`, `detailVoice`).
 - Secondary filters appear only for their valid main type.
-- Changing a scope filter (type/child/case/tense/voice) clears selection and resets page; sorting and
-  list pagination preserve a still-compatible selection.
+- Browsing a parent is URL/list/detail inert. Selecting a child changes list scope/page while preserving
+  identity/view/detail page/detail scope; a new statistic replaces the detail snapshot from the current
+  list. Existing secondary-filter reset behavior and sort/list-page behavior remain covered.
 - Secondary filter changes do not expect or render scoped tree counts.
 - The table displays Uthmani-with-tashkeel words only.
 - Null or deferred lemma/stem values render `—` and do not remove rows.
@@ -118,15 +120,17 @@ Table-view tabs & grouped detail coverage (Feature 022 evolution):
   through every parent/child/filter/sort/view/loading/empty/error transition.
 - `tableView` survives type/child/case/tense/voice/sort/page changes; only the Words tab returns a
   grouped view to `words`, and switching a tab clears only the incompatible selection keys.
-- Selecting a grouped row writes only its explicit `root`/`stem`/`lemma` key with `view=words` and
-  no page-1 `detailPage`; the frontend cache key includes `tableView` so tabs never cross-serve.
-- Grouped detail panels are kind-aware (word → آيات/سور; grouped → كلمات مرتبطة/آيات/سور) with a
-  summary card, and member-word rows are strictly display-only (no button/link/tabindex/selection).
+- Activating a grouped occurrence statistic writes its explicit `root`/`stem`/`lemma` key, all five
+  detail-scope keys, `view=words`, and no page-1 `detailPage`; ayah/surah statistics map directly to
+  their views. The frontend cache key includes `tableView` so tabs never cross-serve.
+- Detail panels are kind-aware (word → آيات/سور; grouped → كلمات مرتبطة/آيات/سور), begin directly with
+  tabs/content with no repeated summary card, and member-word rows remain strictly display-only.
 - Grouped words/ayahs are server-paged with internal page 1: page 1 omits `detailPage`, pages `> 1`
   serialize it, and surahs always remove it.
-- All four views render quiet explorer rows (`word-types-table__row` + `qd-explorer-table__row`,
-  no `qd-interactive-surface`) with a leading page-relative row number (never the database ID),
-  `aria-selected`/`aria-current` + visible focus on the selected row, and non-interactive skeletons.
+- All four views render quiet, non-focusable row containers with a leading page-relative row number.
+  Row click/Enter/Space is inert; only native statistic buttons act. The exact identity+scope row gets
+  `aria-selected`/`aria-current` and the shared active color, cross-scope details never falsely select,
+  focus returns to the originating statistic, and skeletons remain non-interactive.
 
 ## 4. Manual Smoke Flow
 
@@ -136,26 +140,26 @@ Table-view tabs & grouped detail coverage (Feature 022 evolution):
 4. Switch to فعل, then choose ماض / مضارع / أمر and voice filters.
 5. Switch to حرف وأداة and confirm no secondary filter appears.
 6. Switch to حروف مقطعة and confirm disconnected letters are isolated.
-7. Select a row, open الآيات, السور, and التحليل.
+7. Use only the row statistic buttons to open الآيات and السور; confirm row-container click/Enter/Space does nothing.
 8. Confirm main-type selection loads the first page within the 2-second target in the local dev environment after initial app bootstrap.
 9. Confirm the path from page open to a selected row's الآيات or التحليل view takes at most 4 interactions.
-10. Copy the URL, reload, and confirm the same filters and exact selected row restore.
+10. Change the child list scope while details remain open, then copy/reload and use Back/Forward; confirm
+    list scope and the original detail scope/identity/view restore independently.
 
 ### 4a. Table-View Tabs & Grouped Detail (Feature 022 evolution)
 
-1. Open a parent scope with `tableView=roots`. Confirm the strip, table, and details region remain
-   present while the subtype prompt is inside the table.
-2. Change main type, child, case/tense/voice, and sort. Confirm `roots` stays active and no blank
-   frame appears.
-3. Select root/stem/lemma rows; confirm the URL contains the explicit identity and `view=words` but
-   no page-1 `detailPage`. Refresh, share the URL, and use Back/Forward; confirm the correct kind,
-   default words tab, and internal page 1 restore.
+1. From a populated Verb child with open details, browse Noun. Confirm only Noun children change; the
+   strip, table, selected detail title/tab/content, URL, and request counts remain unchanged.
+2. Select a Noun child. Confirm `roots` stays active, the table changes, and the original Verb detail
+   remains open under its stored scope with no false row highlight.
+3. Activate each root/stem/lemma statistic; confirm only the statistic acts, the URL contains exact
+   numeric identity plus all five detail keys and the mapped view, and page 1 omits `detailPage`.
 4. Page grouped words and ayahs. Confirm page 1 omits `detailPage`, page 2 writes `detailPage=2`,
    returning to page 1 removes it, and switching to surahs removes it regardless of the prior page.
 5. Click/tap member-word rows and confirm nothing happens; use pagination and confirm only
    pagination acts.
-6. Verify row 26 on page 2, no visible database IDs, quiet hover, visible keyboard focus, a distinct
-   selected row, and no skeleton hover.
+6. Verify row 26 on page 2, no visible database IDs, quiet hover, native statistic focus, active color
+   transfer/clear, no cross-scope false highlight, and no skeleton hover.
 7. Check desktop split scrolling and mobile modal/RTL layout in both light and dark themes.
 
 ### 4b. Acceptance Record (last updated 2026-07-13)
@@ -167,7 +171,7 @@ error-with-retry, and cross-kind row skipping):
 
 ```bash
 cd /projects/Dashboard/App/Frontend/quran-dashboard-ui
-npm test -- --include='src/app/features/words/**/*word-type*.spec.ts'   # 210 passed (14 files)
+npm test -- --include='src/app/features/words/**/*word-type*.spec.ts'   # 237 passed (13 files)
 npm run build            # Application bundle generation complete (2 pre-existing non-fatal SCSS budget warnings)
 ```
 

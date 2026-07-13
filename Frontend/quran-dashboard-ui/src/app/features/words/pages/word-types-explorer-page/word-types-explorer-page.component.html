@@ -16,8 +16,7 @@
           [selectedTense]="listState().query.tense"
           [selectedVoice]="listState().query.voice"
           [loading]="listState().status === 'loading'"
-          (typeSelected)="selectType($event)"
-          (childSelected)="selectChild($event)"
+          (scopeSelected)="selectScope($event)"
           (caseSelected)="selectCase($event)"
           (tenseSelected)="selectTense($event)"
           (voiceSelected)="selectVoice($event)"
@@ -61,7 +60,6 @@
         [errorLabel]="errorLabel"
         [retryLabel]="retryLabel"
         [selectedRow]="selectedRow()"
-        (rowSelected)="selectRow($event)"
         (countOpened)="onCountOpened($event)"
         (retry)="retryList()"
       />
@@ -91,15 +89,6 @@
         (close)="clearSelection()"
       >
         <div class="word-types-details__scroll">
-          @if (activeSummary(); as summary) {
-            <qd-word-type-detail-summary
-              [label]="summary.label"
-              [occurrences]="summary.occurrences"
-              [ayahs]="summary.ayahs"
-              [surahs]="summary.surahs"
-            />
-          }
-
           @switch (panelState().status) {
             @case ('loading') {
               @if (panelState().view === 'words') {

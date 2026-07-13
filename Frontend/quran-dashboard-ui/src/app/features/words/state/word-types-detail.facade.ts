@@ -110,9 +110,13 @@ export class WordTypesDetailFacade {
 
   // Optimistic word selection from a table row: the row already carries its summary, so only the
   // active detail view is fetched.
-  selectRow(row: WordTypeRowDto, view: WordTypeDetailView = DEFAULT_WORD_TYPES_DETAIL_VIEW): void {
+  selectRow(
+    row: WordTypeRowDto,
+    scope: WordTypeDetailScope,
+    view: WordTypeDetailView = DEFAULT_WORD_TYPES_DETAIL_VIEW,
+  ): void {
     const identity = toIdentity(row);
-    const selection: WordTypeDetailSelection = { kind: 'word', identity };
+    const selection: WordTypeDetailSelection = { kind: 'word', identity, scope };
     this.activeUrlState = { selection, view, detailPage: DEFAULT_WORD_TYPES_DETAIL_PAGE, location: null };
     this._panel.set({
       ...INITIAL_PANEL,
@@ -387,21 +391,28 @@ function hasSummary(state: WordTypesDetailState): boolean {
 
 function toSelection(parsed: ParsedWordTypesQuery): WordTypeDetailSelection | null {
   if (parsed.tableView === 'words') {
-    return parsed.word !== null && parsed.contextCode.length > 0
+    const scope = scopeFrom(parsed);
+    return parsed.word !== null
+      && parsed.contextCode.length > 0
+      && scope !== null
       ? {
           kind: 'word',
           identity: {
             tashkeelWordId: parsed.word,
             contextCode: parsed.contextCode,
-            case: parsed.case,
-            tense: parsed.tense,
-            voice: parsed.voice,
+            case: scope.case,
+            tense: scope.tense,
+            voice: scope.voice,
           },
+          scope,
         }
       : null;
   }
 
   const scope = scopeFrom(parsed);
+  if (scope === null) {
+    return null;
+  }
   if (parsed.root !== null) {
     return { kind: 'root', rootId: parsed.root, scope };
   }
@@ -414,13 +425,22 @@ function toSelection(parsed: ParsedWordTypesQuery): WordTypeDetailSelection | nu
   return null;
 }
 
-function scopeFrom(parsed: ParsedWordTypesQuery): WordTypeDetailScope {
+function scopeFrom(parsed: ParsedWordTypesQuery): WordTypeDetailScope | null {
+  if (
+    parsed.detailType === null
+    || parsed.detailCase === null
+    || parsed.detailTense === null
+    || parsed.detailVoice === null
+  ) {
+    return null;
+  }
+
   return {
-    type: parsed.type,
-    childCode: parsed.childCode,
-    case: parsed.case,
-    tense: parsed.tense,
-    voice: parsed.voice,
+    type: parsed.detailType,
+    childCode: parsed.detailChildCode,
+    case: parsed.detailCase,
+    tense: parsed.detailTense,
+    voice: parsed.detailVoice,
   };
 }
 
@@ -434,7 +454,7 @@ function isSameSelection(current: WordTypeDetailSelection | null, next: WordType
   }
 
   if (current.kind === 'word' && next.kind === 'word') {
-    return isSameIdentity(current.identity, next.identity);
+    return isSameIdentity(current.identity, next.identity) && isSameScope(current.scope, next.scope);
   }
   if (current.kind !== 'word' && next.kind !== 'word') {
     return dimensionIdOf(current) === dimensionIdOf(next) && isSameScope(current.scope, next.scope);
