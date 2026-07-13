@@ -5,6 +5,63 @@ import { WordTypeDetailsPanelComponent } from './word-type-details-panel.compone
 import { WORD_TYPE_DETAIL_VIEW_KEYS, WordTypeDetailView } from '../../models/word-types.models';
 import { WordTypeDetailSelectionKind } from '../../models/word-types-detail.models';
 
+const KIND_PRESENTATION_CASES = [
+  {
+    kind: 'word',
+    view: 'ayahs',
+    panelLabel: 'تفاصيل كلمة النوع',
+    tabs: [
+      ['ayahs', 'الآيات الخاصة بالكلمة', 'الآيات الخاصة بالكلمة المحددة'],
+      ['surahs', 'سور الكلمة', 'توزيع السور للكلمة المحددة'],
+    ],
+    emptySelection: 'اختر كلمة من الجدول لعرض تفاصيلها.',
+    notFound: 'الكلمة المحددة غير موجودة',
+  },
+  {
+    kind: 'root',
+    view: 'words',
+    panelLabel: 'تفاصيل الجذر',
+    tabs: [
+      ['words', 'كلمات الجذر', 'الكلمات المرتبطة بالجذر المحدد'],
+      ['ayahs', 'آيات الجذر', 'الآيات المرتبطة بالجذر المحدد'],
+      ['surahs', 'سور الجذر', 'توزيع السور للجذر المحدد'],
+    ],
+    emptySelection: 'اختر جذرًا من الجدول لعرض تفاصيله.',
+    notFound: 'الجذر المحدد غير موجود',
+  },
+  {
+    kind: 'stem',
+    view: 'words',
+    panelLabel: 'تفاصيل الأصل الصرفي',
+    tabs: [
+      ['words', 'كلمات الأصل الصرفي', 'الكلمات المرتبطة بالأصل الصرفي المحدد'],
+      ['ayahs', 'آيات الأصل الصرفي', 'الآيات المرتبطة بالأصل الصرفي المحدد'],
+      ['surahs', 'سور الأصل الصرفي', 'توزيع السور للأصل الصرفي المحدد'],
+    ],
+    emptySelection: 'اختر أصلًا صرفيًا من الجدول لعرض تفاصيله.',
+    notFound: 'الأصل الصرفي المحدد غير موجود',
+  },
+  {
+    kind: 'lemma',
+    view: 'words',
+    panelLabel: 'تفاصيل الصيغة المعجمية',
+    tabs: [
+      ['words', 'كلمات الصيغة المعجمية', 'الكلمات المرتبطة بالصيغة المعجمية المحددة'],
+      ['ayahs', 'آيات الصيغة المعجمية', 'الآيات المرتبطة بالصيغة المعجمية المحددة'],
+      ['surahs', 'سور الصيغة المعجمية', 'توزيع السور للصيغة المعجمية المحددة'],
+    ],
+    emptySelection: 'اختر صيغة معجمية من الجدول لعرض تفاصيلها.',
+    notFound: 'الصيغة المعجمية المحددة غير موجودة',
+  },
+] as const satisfies readonly {
+  kind: WordTypeDetailSelectionKind;
+  view: WordTypeDetailView;
+  panelLabel: string;
+  tabs: readonly (readonly [WordTypeDetailView, string, string])[];
+  emptySelection: string;
+  notFound: string;
+}[];
+
 describe('WordTypeDetailsPanelComponent', () => {
   afterEach(() => {
     getTestBed().resetTestingModule();
@@ -79,6 +136,49 @@ describe('WordTypeDetailsPanelComponent', () => {
 
       expect(views).toEqual(['ayahs']);
       expect(document.activeElement?.getAttribute('data-word-type-tab')).toBe('ayahs');
+    },
+  );
+
+  it.each(KIND_PRESENTATION_CASES)(
+    'renders kind-aware panel, tab, and ARIA copy for $kind details',
+    ({ kind, view, panelLabel, tabs }) => {
+      const fixture = createPanel(view, kind);
+      const host = fixture.nativeElement as HTMLElement;
+
+      expect(host.querySelector('[data-testid="word-type-details-panel-label"]')?.textContent?.trim()).toBe(panelLabel);
+      for (const [key, label, aria] of tabs) {
+        const tab = host.querySelector(`[data-word-type-tab="${key}"]`);
+        expect(tab?.textContent?.trim()).toBe(label);
+        expect(tab?.getAttribute('aria-label')).toBe(aria);
+      }
+    },
+  );
+
+  it.each(KIND_PRESENTATION_CASES)(
+    'renders kind-aware empty-selection guidance for $kind details',
+    ({ kind, view, emptySelection }) => {
+      const fixture = createPanel(view, kind);
+      fixture.componentRef.setInput('emptySelection', true);
+      fixture.detectChanges();
+
+      const message = (fixture.nativeElement as HTMLElement)
+        .querySelector('[data-testid="word-type-details-empty-selection"]');
+      expect(message?.textContent?.trim()).toBe(emptySelection);
+    },
+  );
+
+  it.each(KIND_PRESENTATION_CASES)(
+    'renders kind-aware not-found guidance for $kind details',
+    ({ kind, view, panelLabel, notFound }) => {
+      const fixture = createPanel(view, kind);
+      fixture.componentRef.setInput('notFound', true);
+      fixture.detectChanges();
+
+      const host = fixture.nativeElement as HTMLElement;
+      const surface = host.querySelector('[role="tabpanel"]');
+      expect(host.querySelector('[data-testid="word-type-details-not-found"]')?.textContent?.trim()).toBe(notFound);
+      expect(surface?.getAttribute('aria-labelledby')).toBeNull();
+      expect(surface?.getAttribute('aria-label')).toBe(panelLabel);
     },
   );
 

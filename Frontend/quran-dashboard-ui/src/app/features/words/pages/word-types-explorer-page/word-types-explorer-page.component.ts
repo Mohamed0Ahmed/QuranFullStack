@@ -17,6 +17,7 @@ import {
 } from '../../components/word-types-table/word-types-table.component';
 import {
   WORD_TYPE_SORT_OPTIONS,
+  WORD_TYPE_DETAIL_PRESENTATIONS,
   WORD_TYPE_TABLE_VIEW_EMPTY_LABELS,
   WORD_TYPE_TABLE_VIEW_TABLE_LABELS,
   WORD_TYPES_ERROR_LABEL,
@@ -42,10 +43,11 @@ import {
   WordTypeVoice,
   normalizeWordTableRow,
 } from '../../models/word-types.models';
-import { WordTypeGroupedMemberWordDto } from '../../data-access/word-types.api';
 import {
   WordTypeDetailScope,
   WordTypeDetailSelection,
+  WordTypeDetailSelectionKind,
+  WordTypeGroupedMemberWordDto,
 } from '../../models/word-types-detail.models';
 import { AyahMatchDto, PagedResultDto as SharedPagedResultDto } from '../../models/unique-words.models';
 import { WordTypesDetailFacade } from '../../state/word-types-detail.facade';
@@ -57,6 +59,13 @@ import {
   clearWordTypesSelection,
 } from '../../state/word-types-url-sync';
 import { mapWordTypeAyahMatchToShared } from '../../utils/word-type-ayah-match.mapper';
+
+const DETAIL_KIND_BY_TABLE_VIEW: Record<WordTypeTableView, WordTypeDetailSelectionKind> = {
+  words: 'word',
+  roots: 'root',
+  stems: 'stem',
+  lemmas: 'lemma',
+};
 
 @Component({
   selector: 'qd-word-types-explorer-page',
@@ -121,6 +130,13 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
   });
 
   protected readonly emptySelection = computed(() => this.panelState().selection === null);
+  protected readonly detailKind = computed<WordTypeDetailSelectionKind>(() =>
+    this.panelState().selection?.kind
+      ?? DETAIL_KIND_BY_TABLE_VIEW[this.listState().query.tableView],
+  );
+  protected readonly detailEmptyLabel = computed(() =>
+    WORD_TYPE_DETAIL_PRESENTATIONS[this.detailKind()].emptyViewLabels[this.panelState().view],
+  );
 
   // A word summary and a grouped summary share the same measure shape; the panel renders whichever
   // one the active selection produced.

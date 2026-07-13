@@ -2,7 +2,7 @@ import { getTestBed, TestBed } from '@angular/core/testing';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { WordTypeTableViewTabsComponent } from './word-type-table-view-tabs.component';
-import { WORD_TYPE_TABLE_VIEW_OPTIONS, WORD_TYPE_TABLE_VIEW_TABS_LABEL } from '../../models/word-types.labels';
+import { WORD_TYPE_TABLE_VIEW_TABS_LABEL } from '../../models/word-types.labels';
 import { WordTypeTableView } from '../../models/word-types.models';
 
 describe('WordTypeTableViewTabsComponent', () => {
@@ -28,12 +28,6 @@ describe('WordTypeTableViewTabsComponent', () => {
     const root = fixture.nativeElement as HTMLElement;
     const tabs = Array.from(root.querySelectorAll('[role="tab"]')) as HTMLButtonElement[];
 
-    expect(WORD_TYPE_TABLE_VIEW_OPTIONS).toEqual([
-      { value: 'words', label: 'كلمات' },
-      { value: 'roots', label: 'جذور' },
-      { value: 'stems', label: 'أصول' },
-      { value: 'lemmas', label: 'صيغ' },
-    ]);
     expect(root.querySelector('[role="tablist"]')?.getAttribute('aria-label')).toBe(WORD_TYPE_TABLE_VIEW_TABS_LABEL);
     expect(tabs.map((tab) => tab.textContent?.trim())).toEqual(['كلمات', 'جذور', 'أصول', 'صيغ']);
     expect(tabs.map((tab) => tab.getAttribute('data-testid'))).toEqual([

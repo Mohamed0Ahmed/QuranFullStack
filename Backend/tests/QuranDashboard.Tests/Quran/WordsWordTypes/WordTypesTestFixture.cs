@@ -1,3 +1,8 @@
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using QuranDashboard.Api.Controllers.Words;
 using QuranDashboard.Infrastructure.Persistence;
 
 namespace QuranDashboard.Tests.Quran.WordsWordTypes;
@@ -8,6 +13,7 @@ public sealed class WordTypesTestFixture : IAsyncLifetime
     private const string SeedResourceSuffix = "word-types-explorer-seed.sql";
 
     private readonly PostgreSqlContainer? _container;
+    private WebApplicationFactory<WordTypeGroupedDetailsController>? _apiFactory;
     private ServiceProvider? _rootProvider;
 
     public RecordingLoggerProvider LoggingProvider { get; } = new();
@@ -56,6 +62,9 @@ public sealed class WordTypesTestFixture : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
+        _apiFactory?.Dispose();
+        _apiFactory = null;
+
         if (_rootProvider is not null)
         {
             await _rootProvider.DisposeAsync();
@@ -76,6 +85,30 @@ public sealed class WordTypesTestFixture : IAsyncLifetime
         }
 
         return _rootProvider.CreateAsyncScope();
+    }
+
+    public HttpClient CreateApiClient()
+    {
+        _apiFactory ??= new WebApplicationFactory<WordTypeGroupedDetailsController>()
+            .WithWebHostBuilder(builder =>
+            {
+                builder.ConfigureAppConfiguration((_, configuration) =>
+                    configuration.AddInMemoryCollection(new Dictionary<string, string?>
+                    {
+                        ["ConnectionStrings:QuranDashboardDb"] = ConnectionString,
+                    }));
+                builder.ConfigureTestServices(services =>
+                {
+                    services.RemoveAll<QuranDashboardDbContext>();
+                    services.RemoveAll<DbContextOptions<QuranDashboardDbContext>>();
+                    services.AddDbContext<QuranDashboardDbContext>(options => options.UseNpgsql(ConnectionString));
+                });
+            });
+
+        return _apiFactory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            BaseAddress = new Uri("https://localhost"),
+        });
     }
 
     private ServiceProvider BuildServiceProvider()

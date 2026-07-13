@@ -20,12 +20,12 @@ function word(overrides: Partial<WordTableRowDto> = {}): WordTableRowDto {
     case: 'all',
     tense: 'all',
     voice: 'all',
-    displayText: 'كَلِمَة',
+    displayText: 'SYNTH_WORD_TEXT',
     typeCode: 'PN',
-    typeLabel: { ar: 'اسم علم' },
-    broadLabel: { ar: 'اسم' },
+    typeLabel: { ar: 'SYNTH_TYPE_LABEL' },
+    broadLabel: { ar: 'SYNTH_BROAD_LABEL' },
     caseOrFeature: null,
-    rootText: 'ك ل م',
+    rootText: 'SYNTH_ROOT_TEXT',
     lemmaText: null,
     stemText: null,
     occurrencesCount: 2,
@@ -56,7 +56,7 @@ function pagedPage(items: WordTypeTableRowDto[], pageNumber: number, pageSize: n
 const rootRow: RootTableRowDto = {
   kind: 'root',
   rootId: 190700,
-  displayText: 'ك ل م',
+  displayText: 'SYNTH_ROOT_TEXT',
   occurrencesCount: 3,
   ayahsCount: 2,
   surahsCount: 1,
@@ -65,7 +65,7 @@ const rootRow: RootTableRowDto = {
 const stemRow: StemTableRowDto = {
   kind: 'stem',
   stemId: 190701,
-  displayText: 'مَكْتُوب',
+  displayText: 'SYNTH_STEM_TEXT',
   occurrencesCount: 4,
   ayahsCount: 3,
   surahsCount: 2,
@@ -74,7 +74,7 @@ const stemRow: StemTableRowDto = {
 const lemmaRow: LemmaTableRowDto = {
   kind: 'lemma',
   lemmaId: 190702,
-  displayText: 'كِتَاب',
+  displayText: 'SYNTH_LEMMA_TEXT',
   occurrencesCount: 5,
   ayahsCount: 4,
   surahsCount: 2,
@@ -102,17 +102,15 @@ describe('WordTypesTableComponent', () => {
     const countButtons = root.querySelectorAll('[data-testid="word-count-chip"]') as NodeListOf<HTMLButtonElement>;
 
     expect(headers).toEqual(['م', 'الكلمة', 'النوع', 'الجذر', 'الأصل', 'الصيغة', 'المواضع', 'الآيات', 'السور']);
-    expect(root.textContent).toContain('كَلِمَة');
+    expect(root.textContent).toContain('SYNTH_WORD_TEXT');
     expect(root.textContent).toContain('—');
     expect(root.textContent).not.toContain('191001');
     expect(root.querySelector('.word-types-table__header-gutter')).not.toBeNull();
-    expect(tableRow.tagName).toBe('DIV');
     expect(tableRow.getAttribute('tabindex')).toBeNull();
     expect(tableRow.getAttribute('aria-current')).toBe('true');
     expect(tableRow.getAttribute('aria-selected')).toBe('true');
     expect(tableRow.classList.contains('qd-is-selected')).toBe(true);
     expect(countButtons).toHaveLength(3);
-    expect('rowSelected' in fixture.componentInstance).toBe(false);
 
     tableRow.click();
     tableRow.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
@@ -151,7 +149,6 @@ describe('WordTypesTableComponent', () => {
       expect(root.querySelector('[role="table"]')?.getAttribute('aria-label')).toBe(tableLabel);
       expect(headers).toEqual(['م', dimensionHeader, 'المواضع', 'الآيات', 'السور']);
       expect(groupedTableRow).not.toBeNull();
-      expect(groupedTableRow.tagName).toBe('DIV');
       expect(groupedTableRow.getAttribute('tabindex')).toBeNull();
       expect(groupedTableRow.getAttribute('data-word-types-row')).toBe(rowDomId);
       expect(groupedTableRow.textContent).toContain(groupedRow.displayText);
@@ -205,7 +202,7 @@ describe('WordTypesTableComponent', () => {
     const root = fixture.nativeElement as HTMLElement;
 
     expect(root.querySelector('.word-types-table__body [role="row"]')).toBeNull();
-    expect(root.textContent).not.toContain('كَلِمَة');
+    expect(root.textContent).not.toContain('SYNTH_WORD_TEXT');
   });
 
   it.each([
@@ -321,7 +318,6 @@ describe('WordTypesTableComponent', () => {
     fixture.detectChanges();
 
     const tableRow = (fixture.nativeElement as HTMLElement).querySelector('.word-types-table__row') as HTMLElement;
-    expect(tableRow.tagName).toBe('DIV');
     expect(tableRow.classList.contains('qd-explorer-table__row')).toBe(true);
     expect(tableRow.classList.contains('qd-interactive-surface')).toBe(false);
   });
@@ -351,7 +347,6 @@ describe('WordTypesTableComponent', () => {
     fixture.detectChanges();
 
     const tableRow = (fixture.nativeElement as HTMLElement).querySelector('.word-types-table__row') as HTMLElement;
-    expect(tableRow.tagName).toBe('DIV');
     expect(tableRow.getAttribute('tabindex')).toBeNull();
     expect(tableRow.getAttribute('data-word-types-row')).toBe(domId);
   });

@@ -12,13 +12,7 @@ import { A11yModule } from '@angular/cdk/a11y';
 
 import { ModalScrollLockDirective } from '../../../../shared/ui/modal-scroll-lock/modal-scroll-lock.directive';
 import { CLOSE_LABEL } from '../../models/unique-words.labels';
-import {
-  WORD_TYPES_DETAILS_PANEL_LABEL,
-  WORD_TYPES_EMPTY_SELECTION_LABEL,
-  WORD_TYPES_NOT_FOUND_LABEL,
-  WORD_TYPE_DETAIL_TAB_ARIA,
-  WORD_TYPE_DETAIL_TAB_LABELS,
-} from '../../models/word-types.labels';
+import { WORD_TYPE_DETAIL_PRESENTATIONS } from '../../models/word-types.labels';
 import {
   WORD_TYPE_DETAIL_VIEWS,
   WORD_TYPE_DETAIL_VIEW_KEYS,
@@ -46,11 +40,13 @@ export class WordTypeDetailsPanelComponent {
   readonly viewChange = output<WordTypeDetailView>();
   readonly close = output<void>();
 
-  protected readonly panelLabel = WORD_TYPES_DETAILS_PANEL_LABEL;
-  protected readonly closeLabel = CLOSE_LABEL;
-  protected readonly emptySelectionLabel = WORD_TYPES_EMPTY_SELECTION_LABEL;
-  protected readonly notFoundLabel = WORD_TYPES_NOT_FOUND_LABEL;
+  protected get panelLabel() { return this.presentation.panelLabel; }
+  protected get closeLabel() { return CLOSE_LABEL; }
+  protected get emptySelectionLabel() { return this.presentation.emptySelectionLabel; }
+  protected get notFoundLabel() { return this.presentation.notFoundLabel; }
   protected readonly surfaceDomId = 'word-type-details-panel-surface';
+
+  private get presentation() { return WORD_TYPE_DETAIL_PRESENTATIONS[this.kind()]; }
 
   // Word selections expose ayahs/surahs; grouped selections add the leading related-words tab.
   protected readonly tabKeys = computed<readonly WordTypeDetailView[]>(() =>
@@ -60,8 +56,7 @@ export class WordTypeDetailsPanelComponent {
   protected readonly tabs = computed(() =>
     this.tabKeys().map((key) => ({
       key,
-      label: WORD_TYPE_DETAIL_TAB_LABELS[key],
-      aria: WORD_TYPE_DETAIL_TAB_ARIA[key],
+      ...this.presentation.tabs[key],
     })),
   );
 

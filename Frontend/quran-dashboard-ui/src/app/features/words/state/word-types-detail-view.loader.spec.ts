@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getTestBed, TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 
 import { ApiResponse } from '../../../core/data-access/api-response.model';
-import { WordTypeGroupedMemberWordDto, WordTypesApi } from '../data-access/word-types.api';
+import { WordTypeGroupedMemberWordDto } from '../models/word-types-detail.models';
 import {
   PagedResultDto,
   WORD_TYPES_DETAIL_PAGE_SIZE,
@@ -46,38 +47,56 @@ const wordSelection: WordTypeDetailSelection = {
   scope: { type: 'inl', childCode: null, case: 'all', tense: 'all', voice: 'all' },
 };
 
-const groupedRequest = { kind: 'root', dimensionId: 190700, type: 'noun', childCode: null, case: 'all', tense: 'all', voice: 'all' };
+const groupedCacheIsolationCases: readonly {
+  label: string;
+  selection: WordTypeDetailSelection;
+  endpoint: string;
+  childCode: string | null;
+}[] = [
+  {
+    label: 'kind',
+    selection: {
+      kind: 'stem',
+      stemId: 190600,
+      scope: rootSelection.scope,
+    },
+    endpoint: '/stems/190600/words',
+    childCode: null,
+  },
+  {
+    label: 'dimension identity',
+    selection: {
+      kind: 'root',
+      rootId: 190701,
+      scope: rootSelection.scope,
+    },
+    endpoint: '/roots/190701/words',
+    childCode: null,
+  },
+  {
+    label: 'grammatical scope',
+    selection: {
+      ...rootSelection,
+      scope: { ...rootSelection.scope, childCode: 'PN' },
+    },
+    endpoint: '/roots/190700/words',
+    childCode: 'PN',
+  },
+];
 
-interface ApiMock {
-  getAyahMatches: ReturnType<typeof vi.fn>;
-  getSurahs: ReturnType<typeof vi.fn>;
-  getGroupedMemberWords: ReturnType<typeof vi.fn>;
-  getGroupedAyahMatches: ReturnType<typeof vi.fn>;
-  getGroupedSurahs: ReturnType<typeof vi.fn>;
-}
-
-function setup(apiOverrides: Partial<ApiMock> = {}): { loader: WordTypesDetailViewLoader; api: ApiMock } {
+function setup(): { loader: WordTypesDetailViewLoader; http: HttpTestingController } {
   TestBed.configureTestingModule({
     providers: [
       WordTypesDetailViewLoader,
       WordTypesCache,
-      {
-        provide: WordTypesApi,
-        useValue: {
-          getAyahMatches: vi.fn(() => of(okAyahs())),
-          getSurahs: vi.fn(() => of(okSurahs())),
-          getGroupedMemberWords: vi.fn(() => of(okGroupedWords())),
-          getGroupedAyahMatches: vi.fn(() => of(okAyahs())),
-          getGroupedSurahs: vi.fn(() => of(okSurahs())),
-          ...apiOverrides,
-        },
-      },
+      provideHttpClient(),
+      provideHttpClientTesting(),
     ],
   });
 
   const loader = TestBed.inject(WordTypesDetailViewLoader);
-  const api = TestBed.inject(WordTypesApi) as unknown as ApiMock;
-  return { loader, api };
+  const http = TestBed.inject(HttpTestingController);
+  return { loader, http };
 }
 
 function handlers(): WordTypesDetailViewHandlers & { [K in keyof WordTypesDetailViewHandlers]: ReturnType<typeof vi.fn> } {
@@ -91,69 +110,108 @@ function handlers(): WordTypesDetailViewHandlers & { [K in keyof WordTypesDetail
 
 describe('WordTypesDetailViewLoader — kind + view dispatch', () => {
   beforeEach(() => getTestBed().resetTestingModule());
-  afterEach(() => getTestBed().resetTestingModule());
+  afterEach(() => {
+    TestBed.inject(HttpTestingController, null)?.verify({ ignoreCancelled: true });
+    getTestBed().resetTestingModule();
+  });
 
   it('loads only grouped member words with the requested page', () => {
-    const { loader, api } = setup();
+    const { loader, http } = setup();
     const h = handlers();
 
     loader.loadActiveView({ selection: rootSelection, view: 'words', detailPage: 3 }, h);
 
-    expect(api.getGroupedMemberWords).toHaveBeenCalledWith(groupedRequest, 3, WORD_TYPES_DETAIL_PAGE_SIZE);
+    const request = http.expectOne((candidate) => candidate.url.endsWith('/api/words/word-types/table/roots/190700/words'));
+    expect(request.request.params.get('type')).toBe('noun');
+    expect(request.request.params.get('page')).toBe('3');
+    expect(request.request.params.get('pageSize')).toBe(String(WORD_TYPES_DETAIL_PAGE_SIZE));
+    request.flush(okGroupedWords());
+
     expect(h.onWords).toHaveBeenCalledTimes(1);
-    expect(api.getGroupedAyahMatches).not.toHaveBeenCalled();
-    expect(api.getGroupedSurahs).not.toHaveBeenCalled();
   });
 
   it('dispatches the word or grouped ayahs endpoint by selection kind', () => {
-    const { loader, api } = setup();
+    const { loader, http } = setup();
 
-    loader.loadActiveView({ selection: wordSelection, view: 'ayahs', detailPage: 1 }, handlers());
-    expect(api.getAyahMatches).toHaveBeenCalled();
-    expect(api.getGroupedAyahMatches).not.toHaveBeenCalled();
+    const wordHandlers = handlers();
+    loader.loadActiveView({ selection: wordSelection, view: 'ayahs', detailPage: 1 }, wordHandlers);
+    const wordRequest = http.expectOne((candidate) => candidate.url.endsWith('/api/words/word-types/words/191001/ayahs'));
+    wordRequest.flush(okAyahs());
+    expect(wordHandlers.onAyahs).toHaveBeenCalledTimes(1);
 
-    loader.loadActiveView({ selection: rootSelection, view: 'ayahs', detailPage: 1 }, handlers());
-    expect(api.getGroupedAyahMatches).toHaveBeenCalled();
+    const groupedHandlers = handlers();
+    loader.loadActiveView({ selection: rootSelection, view: 'ayahs', detailPage: 1 }, groupedHandlers);
+    const groupedRequest = http.expectOne((candidate) => candidate.url.endsWith('/api/words/word-types/table/roots/190700/ayahs'));
+    groupedRequest.flush(okAyahs());
+    expect(groupedHandlers.onAyahs).toHaveBeenCalledTimes(1);
   });
 
   it('dispatches the single-shot surahs endpoint and ignores detailPage', () => {
-    const { loader, api } = setup();
+    const { loader, http } = setup();
     const h = handlers();
 
     loader.loadActiveView({ selection: rootSelection, view: 'surahs', detailPage: 5 }, h);
-    expect(api.getGroupedSurahs).toHaveBeenCalledWith(groupedRequest);
-    expect(api.getGroupedSurahs).toHaveBeenCalledTimes(1);
+    const groupedRequest = http.expectOne((candidate) => candidate.url.endsWith('/api/words/word-types/table/roots/190700/surahs'));
+    expect(groupedRequest.request.params.has('page')).toBe(false);
+    groupedRequest.flush(okSurahs());
     expect(h.onSurahs).toHaveBeenCalledTimes(1);
 
     const wordHandlers = handlers();
     loader.loadActiveView({ selection: wordSelection, view: 'surahs', detailPage: 9 }, wordHandlers);
-    expect(api.getSurahs).toHaveBeenCalled();
+    const wordRequest = http.expectOne((candidate) => candidate.url.endsWith('/api/words/word-types/words/191001/surahs'));
+    expect(wordRequest.request.params.has('page')).toBe(false);
+    wordRequest.flush(okSurahs());
+    expect(wordHandlers.onSurahs).toHaveBeenCalledTimes(1);
   });
 
   it('rejects the words view for a word selection', () => {
-    const { loader, api } = setup();
+    const { loader, http } = setup();
     const h = handlers();
 
     const subscription = loader.loadActiveView({ selection: wordSelection, view: 'words', detailPage: 1 }, h);
 
     expect(subscription).toBeUndefined();
-    expect(api.getGroupedMemberWords).not.toHaveBeenCalled();
+    http.expectNone(() => true);
     expect(h.onWords).not.toHaveBeenCalled();
   });
 
-  it('uses a separate cache entry per page for words and ayahs but shares the single-shot surahs entry', () => {
-    const { loader, api } = setup();
+  it('reuses identical grouped reads, isolates paged views by page, and shares single-shot surahs', () => {
+    const { loader, http } = setup();
 
+    const firstWordsHandlers = handlers();
+    loader.loadActiveView({ selection: rootSelection, view: 'words', detailPage: 1 }, firstWordsHandlers);
+    http.expectOne((candidate) => candidate.url.endsWith('/roots/190700/words')).flush(okGroupedWords());
     loader.loadActiveView({ selection: rootSelection, view: 'words', detailPage: 1 }, handlers());
+    http.expectNone((candidate) => candidate.url.endsWith('/roots/190700/words'));
     loader.loadActiveView({ selection: rootSelection, view: 'words', detailPage: 2 }, handlers());
-    expect(api.getGroupedMemberWords).toHaveBeenCalledTimes(2);
+    const secondWordsPage = http.expectOne((candidate) => candidate.url.endsWith('/roots/190700/words'));
+    expect(secondWordsPage.request.params.get('page')).toBe('2');
+    secondWordsPage.flush(okGroupedWords());
 
     loader.loadActiveView({ selection: rootSelection, view: 'ayahs', detailPage: 1 }, handlers());
+    http.expectOne((candidate) => candidate.url.endsWith('/roots/190700/ayahs')).flush(okAyahs());
+    loader.loadActiveView({ selection: rootSelection, view: 'ayahs', detailPage: 1 }, handlers());
+    http.expectNone((candidate) => candidate.url.endsWith('/roots/190700/ayahs'));
     loader.loadActiveView({ selection: rootSelection, view: 'ayahs', detailPage: 2 }, handlers());
-    expect(api.getGroupedAyahMatches).toHaveBeenCalledTimes(2);
+    const secondAyahsPage = http.expectOne((candidate) => candidate.url.endsWith('/roots/190700/ayahs'));
+    expect(secondAyahsPage.request.params.get('page')).toBe('2');
+    secondAyahsPage.flush(okAyahs());
 
     loader.loadActiveView({ selection: rootSelection, view: 'surahs', detailPage: 1 }, handlers());
+    http.expectOne((candidate) => candidate.url.endsWith('/roots/190700/surahs')).flush(okSurahs());
     loader.loadActiveView({ selection: rootSelection, view: 'surahs', detailPage: 2 }, handlers());
-    expect(api.getGroupedSurahs).toHaveBeenCalledTimes(1);
+    http.expectNone((candidate) => candidate.url.endsWith('/roots/190700/surahs'));
+  });
+
+  it.each(groupedCacheIsolationCases)('does not reuse grouped words across a changed $label', ({ selection, endpoint, childCode }) => {
+    const { loader, http } = setup();
+
+    loader.loadActiveView({ selection: rootSelection, view: 'words', detailPage: 1 }, handlers());
+    http.expectOne((candidate) => candidate.url.endsWith('/roots/190700/words')).flush(okGroupedWords());
+
+    loader.loadActiveView({ selection, view: 'words', detailPage: 1 }, handlers());
+    const isolatedRequest = http.expectOne((candidate) => candidate.url.endsWith(endpoint));
+    expect(isolatedRequest.request.params.get('childCode')).toBe(childCode);
+    isolatedRequest.flush(okGroupedWords());
   });
 });

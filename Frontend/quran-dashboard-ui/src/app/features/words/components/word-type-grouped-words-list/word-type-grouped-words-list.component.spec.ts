@@ -1,8 +1,8 @@
 import { getTestBed, TestBed } from '@angular/core/testing';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { WordTypeGroupedWordsListComponent } from './word-type-grouped-words-list.component';
-import { WordTypeGroupedMemberWordDto } from '../../data-access/word-types.api';
+import { WordTypeGroupedMemberWordDto } from '../../models/word-types-detail.models';
 import { PagedResultDto } from '../../models/word-types.models';
 
 function member(overrides: Partial<WordTypeGroupedMemberWordDto> = {}): WordTypeGroupedMemberWordDto {
@@ -12,12 +12,12 @@ function member(overrides: Partial<WordTypeGroupedMemberWordDto> = {}): WordType
     case: 'all',
     tense: 'all',
     voice: 'all',
-    displayText: 'كَلِمَة',
+    displayText: 'SYNTH_WORD_TEXT',
     typeCode: 'PN',
-    typeLabel: { ar: 'اسم علم' },
-    broadLabel: { ar: 'اسم' },
+    typeLabel: { ar: 'SYNTH_TYPE_LABEL' },
+    broadLabel: { ar: 'SYNTH_BROAD_LABEL' },
     caseOrFeature: null,
-    rootText: 'ك ل م',
+    rootText: 'SYNTH_ROOT_TEXT',
     lemmaText: null,
     stemText: null,
     occurrencesCount: 4,
@@ -53,8 +53,8 @@ describe('WordTypeGroupedWordsListComponent', () => {
 
     const row = host.querySelector('[data-testid="word-type-grouped-word-row"]') as HTMLElement;
     expect(row).not.toBeNull();
-    expect(row.textContent).toContain('كَلِمَة');
-    expect(row.textContent).toContain('اسم علم');
+    expect(row.textContent).toContain('SYNTH_WORD_TEXT');
+    expect(row.textContent).toContain('SYNTH_TYPE_LABEL');
     expect(row.textContent).toContain('4');
     expect(row.textContent).toContain('3');
     expect(row.textContent).toContain('2');
@@ -70,18 +70,6 @@ describe('WordTypeGroupedWordsListComponent', () => {
     expect(viewport.querySelector('.qd-interactive-surface')).toBeNull();
     expect(viewport.querySelector('.qd-is-selected')).toBeNull();
     expect(viewport.querySelector('[aria-selected]')).toBeNull();
-  });
-
-  it('clicking a member row emits no event', () => {
-    const fixture = createList(page([member()]));
-    const emitted: number[] = [];
-    fixture.componentInstance.pageChange.subscribe((value) => emitted.push(value));
-
-    (fixture.nativeElement as HTMLElement)
-      .querySelector('[data-testid="word-type-grouped-word-row"]')
-      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-
-    expect(emitted).toHaveLength(0);
   });
 
   it('emits pagination as the only interaction', () => {

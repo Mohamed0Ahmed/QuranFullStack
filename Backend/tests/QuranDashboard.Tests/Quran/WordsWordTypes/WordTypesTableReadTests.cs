@@ -2,6 +2,7 @@ using QuranDashboard.Application.Abstractions.Quran.Words.WordTypes;
 using QuranDashboard.Application.Abstractions.Quran.Words.WordTypes.Responses;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeTable;
 using QuranDashboard.Infrastructure.Caching.Quran.Words.WordTypes;
+using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.WordTypes;
 
 namespace QuranDashboard.Tests.Quran.WordsWordTypes;
 
@@ -135,82 +136,119 @@ public sealed class WordTypesTableReadTests(WordTypesTestFixture fixture)
     public async Task GroupedViews_Sort_ByMushafOrder_Deterministically()
     {
         await using var scope = fixture.CreateScope();
-        var reader = scope.ServiceProvider.GetRequiredService<IWordTypesReader>();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+        await using var transaction = await WordTypesSyntheticStructuralData.BeginSeededTransactionAsync(dbContext);
+        var reader = scope.ServiceProvider.GetRequiredService<EfWordTypesReader>();
 
-        // inl scope has two lemma groups: 190503 (الٓمٓ, first occurrence 1903005) and
-        // 190505 (ص, first occurrence 1903012). MushafOrder must place the earlier Mushaf
-        // occurrence first, proving the multi-group ORDER BY (not a single-row coincidence).
         var page = await reader.GetTableRowsAsync(
-            new WordTypeFilter("inl", null, null, null, null),
+            new WordTypeFilter("noun", WordTypesSyntheticStructuralData.NounChildCode, null, null, null),
             WordTypeTableView.Lemmas,
             WordTypeSort.MushafOrder,
             1,
             25,
             CancellationToken.None);
 
-        page.Items.Select(row => ((LemmaTableRowDto)row).LemmaId).Should().Equal(190503, 190505);
+        page.Items.Select(row => ((LemmaTableRowDto)row).LemmaId).Should().Equal(
+            WordTypesSyntheticStructuralData.MushafFirstLemmaId,
+            WordTypesSyntheticStructuralData.FoldSecondLemmaId,
+            WordTypesSyntheticStructuralData.FoldFirstLemmaId);
     }
 
     [Fact]
     public async Task GroupedViews_Sort_ByAlpha_UsesArabicFoldAndCollation_Deterministically()
     {
         await using var scope = fixture.CreateScope();
-        var reader = scope.ServiceProvider.GetRequiredService<IWordTypesReader>();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+        await using var transaction = await WordTypesSyntheticStructuralData.BeginSeededTransactionAsync(dbContext);
+        var reader = scope.ServiceProvider.GetRequiredService<EfWordTypesReader>();
+        var filter = new WordTypeFilter(
+            "noun", WordTypesSyntheticStructuralData.NounChildCode, null, null, null);
 
-        // Exercises the previously-uncovered Alpha branch: the norm_text fold expression, the
-        // COLLATE "C" ordinal ORDER BY, and the conditional @foldFrom/@foldTo parameter binding.
-        // ا (U+0627, لemma 190503 الٓمٓ) sorts before ص (U+0635, lemma 190505 ص) both raw and
-        // folded (neither is a hamza-family character), so the order is deterministic.
-        var page = await reader.GetTableRowsAsync(
-            new WordTypeFilter("inl", null, null, null, null),
+        var alphaPage = await reader.GetTableRowsAsync(
+            filter,
             WordTypeTableView.Lemmas,
             WordTypeSort.Alpha,
             1,
             25,
             CancellationToken.None);
+        var mushafPage = await reader.GetTableRowsAsync(
+            filter,
+            WordTypeTableView.Lemmas,
+            WordTypeSort.MushafOrder,
+            1,
+            25,
+            CancellationToken.None);
 
-        page.TotalCount.Should().Be(2);
-        page.Items.Select(row => ((LemmaTableRowDto)row).LemmaId).Should().Equal(190503, 190505);
+        var alphaIds = alphaPage.Items.Cast<LemmaTableRowDto>().Select(row => row.LemmaId).ToArray();
+        var rawOrdinalIds = alphaPage.Items.Cast<LemmaTableRowDto>()
+            .OrderBy(row => row.DisplayText, StringComparer.Ordinal)
+            .Select(row => row.LemmaId)
+            .ToArray();
+        var mushafIds = mushafPage.Items.Cast<LemmaTableRowDto>().Select(row => row.LemmaId).ToArray();
+
+        alphaPage.TotalCount.Should().Be(3);
+        rawOrdinalIds.Should().Equal(
+            WordTypesSyntheticStructuralData.FoldSecondLemmaId,
+            WordTypesSyntheticStructuralData.FoldFirstLemmaId,
+            WordTypesSyntheticStructuralData.MushafFirstLemmaId);
+        alphaIds.Should().Equal(
+            WordTypesSyntheticStructuralData.FoldFirstLemmaId,
+            WordTypesSyntheticStructuralData.FoldSecondLemmaId,
+            WordTypesSyntheticStructuralData.MushafFirstLemmaId);
+        mushafIds.Should().Equal(
+            WordTypesSyntheticStructuralData.MushafFirstLemmaId,
+            WordTypesSyntheticStructuralData.FoldSecondLemmaId,
+            WordTypesSyntheticStructuralData.FoldFirstLemmaId);
     }
 
     [Fact]
     public async Task GroupedViews_Paginate_AfterGroupingAndCounting()
     {
         await using var scope = fixture.CreateScope();
-        var reader = scope.ServiceProvider.GetRequiredService<IWordTypesReader>();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+        await using var transaction = await WordTypesSyntheticStructuralData.BeginSeededTransactionAsync(dbContext);
+        var reader = scope.ServiceProvider.GetRequiredService<EfWordTypesReader>();
+        var filter = new WordTypeFilter(
+            "noun", WordTypesSyntheticStructuralData.NounChildCode, null, null, null);
 
-        // inl/lemmas has two groups with an equal OccurrencesCount (1 each), so the default
-        // Occurrences sort falls through to the first_word_order_in_mushaf tie-break: 1903005
-        // (lemma 190503) precedes 1903012 (lemma 190505). pageSize=1 proves grouping/counting
-        // happen before pagination and that page 2 continues the same deterministic order.
         var pageOne = await reader.GetTableRowsAsync(
-            new WordTypeFilter("inl", null, null, null, null),
+            filter,
             WordTypeTableView.Lemmas,
             WordTypeSort.Occurrences,
             1,
             1,
             CancellationToken.None);
         var pageTwo = await reader.GetTableRowsAsync(
-            new WordTypeFilter("inl", null, null, null, null),
+            filter,
             WordTypeTableView.Lemmas,
             WordTypeSort.Occurrences,
             2,
             1,
             CancellationToken.None);
         var pageThree = await reader.GetTableRowsAsync(
-            new WordTypeFilter("inl", null, null, null, null),
+            filter,
             WordTypeTableView.Lemmas,
             WordTypeSort.Occurrences,
             3,
             1,
             CancellationToken.None);
+        var pageFour = await reader.GetTableRowsAsync(
+            filter,
+            WordTypeTableView.Lemmas,
+            WordTypeSort.Occurrences,
+            4,
+            1,
+            CancellationToken.None);
 
-        pageOne.TotalCount.Should().Be(2);
-        pageTwo.TotalCount.Should().Be(2);
-        ((LemmaTableRowDto)pageOne.Items.Single()).LemmaId.Should().Be(190503);
-        ((LemmaTableRowDto)pageTwo.Items.Single()).LemmaId.Should().Be(190505);
-        pageThree.TotalCount.Should().Be(2);
-        pageThree.Items.Should().BeEmpty();
+        new[] { pageOne, pageTwo, pageThree, pageFour }
+            .Should().OnlyContain(page => page.TotalCount == 3);
+        new[] { pageOne, pageTwo, pageThree }
+            .Select(page => ((LemmaTableRowDto)page.Items.Single()).LemmaId)
+            .Should().Equal(
+                WordTypesSyntheticStructuralData.MushafFirstLemmaId,
+                WordTypesSyntheticStructuralData.FoldSecondLemmaId,
+                WordTypesSyntheticStructuralData.FoldFirstLemmaId);
+        pageFour.Items.Should().BeEmpty();
     }
 
     [Fact]

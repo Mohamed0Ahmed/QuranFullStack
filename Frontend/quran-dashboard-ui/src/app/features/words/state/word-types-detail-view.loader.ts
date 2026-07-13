@@ -2,11 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, Subscription } from 'rxjs';
 
 import { ApiResponse } from '../../../core/data-access/api-response.model';
-import {
-  WordTypeGroupedMemberWordDto,
-  WordTypeGroupedRequestParams,
-  WordTypesApi,
-} from '../data-access/word-types.api';
+import { WordTypesApi } from '../data-access/word-types.api';
 import {
   WORD_TYPES_DETAIL_PAGE_SIZE,
   PagedResultDto,
@@ -14,7 +10,12 @@ import {
   WordTypeDetailView,
   WordTypeSurahsResponseDto,
 } from '../models/word-types.models';
-import { WordTypeDetailSelection, WordTypeGroupedDetailSelection } from '../models/word-types-detail.models';
+import {
+  WordTypeDetailSelection,
+  WordTypeGroupedDetailSelection,
+  WordTypeGroupedMemberWordDto,
+  WordTypeGroupedRequestParams,
+} from '../models/word-types-detail.models';
 import { WordTypesCache, WordTypesCacheKeys } from './word-types-cache';
 
 export interface WordTypesDetailViewHandlers {

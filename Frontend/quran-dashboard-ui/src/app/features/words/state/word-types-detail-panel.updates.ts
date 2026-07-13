@@ -1,9 +1,8 @@
 import { HttpErrorResponse } from '@angular/common/http';
 
 import { ApiResponse } from '../../../core/data-access/api-response.model';
-import { WordTypeGroupedMemberWordDto } from '../data-access/word-types.api';
 import { WORD_TYPES_ERROR_LABEL } from '../models/word-types.labels';
-import { WordTypesDetailState } from '../models/word-types-detail.models';
+import { WordTypeGroupedMemberWordDto, WordTypesDetailState } from '../models/word-types-detail.models';
 import {
   PagedResultDto,
   WordTypeAyahMatchDto,

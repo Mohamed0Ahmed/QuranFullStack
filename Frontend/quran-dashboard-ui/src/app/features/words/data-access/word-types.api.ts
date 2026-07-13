@@ -8,7 +8,6 @@ import {
   PagedResultDto,
   WordTypeAyahMatchDto,
   WordTypeCase,
-  WordTypeLabelDto,
   WordTypeMainType,
   WordTypeRowDto,
   WordTypeSort,
@@ -20,6 +19,12 @@ import {
   WordTypeTreeDto,
   WordTypeVoice,
 } from '../models/word-types.models';
+import {
+  WordTypeGroupedKind,
+  WordTypeGroupedMemberWordDto,
+  WordTypeGroupedRequestParams,
+  WordTypeGroupedSummaryDto,
+} from '../models/word-types-detail.models';
 
 @Injectable({ providedIn: 'root' })
 export class WordTypesApi {
@@ -184,43 +189,4 @@ export interface WordTypeIdentityParams {
   voice: WordTypeVoice;
 }
 
-export type WordTypeGroupedKind = 'root' | 'stem' | 'lemma';
 type WordTypeGroupedRouteKind = 'roots' | 'stems' | 'lemmas';
-
-export interface WordTypeGroupedRequestParams {
-  kind: WordTypeGroupedKind;
-  dimensionId: number;
-  type: WordTypeMainType;
-  childCode: string | null;
-  case: WordTypeCase;
-  tense: WordTypeTense;
-  voice: WordTypeVoice;
-}
-
-export interface WordTypeGroupedSummaryDto {
-  kind: WordTypeGroupedKind;
-  dimensionId: number;
-  displayText: string;
-  occurrencesCount: number;
-  ayahsCount: number;
-  surahsCount: number;
-}
-
-export interface WordTypeGroupedMemberWordDto {
-  tashkeelWordId: number;
-  contextCode: string;
-  case: WordTypeCase | null;
-  tense: WordTypeTense | null;
-  voice: WordTypeVoice | null;
-  displayText: string;
-  typeCode: string;
-  typeLabel: WordTypeLabelDto;
-  broadLabel: WordTypeLabelDto;
-  caseOrFeature: string | null;
-  rootText: string | null;
-  lemmaText: string | null;
-  stemText: string | null;
-  occurrencesCount: number;
-  ayahsCount: number;
-  surahsCount: number;
-}

@@ -96,7 +96,7 @@ export class WordTypesTableComponent {
   }
 
   // The header and rows render only when there is real data or a load in flight. Prompt, empty, and
-  // error states render inside the same stable shell instead of replacing it (locked decision 4).
+  // error states render inside the same stable shell instead of replacing it.
   protected hasRows(): boolean {
     const page = this.rows();
     return page !== null && page.items.length > 0;

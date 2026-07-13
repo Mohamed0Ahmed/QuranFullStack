@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
-import { WordTypeGroupedMemberWordDto } from '../../data-access/word-types.api';
+import { WordTypeGroupedMemberWordDto } from '../../models/word-types-detail.models';
 import {
   WORD_TYPES_LOADING_LABEL,
   WORD_TYPES_MEMBER_WORDS_EMPTY_LABEL,
@@ -11,7 +11,7 @@ import {
 import { PagedResultDto } from '../../models/word-types.models';
 
 // Display-only member words for a grouped selection. It intentionally exposes no row selection,
-// carries no Router dependency, and emits nothing but pagination (plan locked decision 9).
+// carries no Router dependency, and emits nothing but pagination.
 @Component({
   selector: 'qd-word-type-grouped-words-list',
   standalone: true,

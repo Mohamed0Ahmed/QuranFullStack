@@ -26,6 +26,8 @@ and Unique Words. They back the `application/.../Quran/Words/**` query handlers 
   words that differ only by tashkeel/Uthmani orthography are the same identity.
 - **Ordering is part of the contract** — related-item and list ordering is deterministic
   via `MorphologyRelatedItemsOrdering` / `*ListDerivation`; do not reorder casually.
+- **Word Types tree parent counts use row-count semantics** — each parent count equals the
+  unscoped grouped word-context row total returned for that main type, not the number of visible children.
 - **Read-only + `AsNoTracking`** semantics; these readers must not mutate state.
 - Response shape/paging must stay aligned with `ReadPaging` and the API contract; changing
   a column or page shape is an API-contract change (update the controller + `API_GUIDELINES`

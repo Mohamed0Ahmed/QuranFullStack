@@ -1,7 +1,7 @@
 using QuranDashboard.Application.Abstractions.Quran.Words.WordTypes;
-using QuranDashboard.Application.Abstractions.Quran.Words.WordTypes.Responses;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeRows;
 using QuranDashboard.Infrastructure.Persistence;
+using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.WordTypes;
 
 namespace QuranDashboard.Tests.Quran.WordsWordTypes;
 
@@ -9,25 +9,34 @@ namespace QuranDashboard.Tests.Quran.WordsWordTypes;
 public sealed class WordTypesMainReadTests(WordTypesTestFixture fixture)
 {
     [Fact]
-    public async Task Tree_ReturnsFourMainTypes_WithCorrectMainCounts()
+    public async Task Tree_MainCounts_MatchEachMainTypeRowsTotal()
     {
         await using var scope = fixture.CreateScope();
-        var reader = scope.ServiceProvider.GetRequiredService<IWordTypesReader>();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+        await using var transaction = await WordTypesSyntheticStructuralData.BeginSeededTransactionAsync(dbContext);
+        var reader = scope.ServiceProvider.GetRequiredService<EfWordTypesReader>();
 
         var tree = await reader.GetTreeAsync(CancellationToken.None);
 
         tree.MainTypes.Select(node => node.Code).Should().Equal("noun", "verb", "particle", "inl");
-        Count(tree, "noun").Should().Be(3);
-        Count(tree, "verb").Should().Be(3);
-        Count(tree, "particle").Should().Be(1);
-        Count(tree, "inl").Should().Be(1);
+        foreach (var mainType in tree.MainTypes)
+        {
+            var rows = await reader.GetRowsAsync(
+                new WordTypeFilter(mainType.Code, null, null, null, null),
+                WordTypeSort.Occurrences,
+                page: 1,
+                pageSize: 100,
+                CancellationToken.None);
+
+            mainType.Count.Should().Be(rows.TotalCount, $"{mainType.Code} uses the same grouped word-context unit as its rows endpoint");
+        }
     }
 
     [Theory]
     [InlineData("noun", 4)]
     [InlineData("verb", 4)]
     [InlineData("particle", 1)]
-    [InlineData("inl", 2)]
+    [InlineData("inl", 1)]
     public async Task Rows_ReturnExpectedTotals_ForMainTypes(string type, int expectedCount)
     {
         await using var scope = fixture.CreateScope();
@@ -68,8 +77,7 @@ public sealed class WordTypesMainReadTests(WordTypesTestFixture fixture)
 
         particleRows.Items.Should().ContainSingle(row => row.ContextCode == "PRO");
         particleRows.Items.Should().NotContain(row => row.ContextCode == "INL");
-        // inl has two word-context rows (191002 الٓمٓ, 191009 ص) — both isolated from particle.
-        inlRows.Items.Should().HaveCount(2);
+        inlRows.Items.Should().ContainSingle();
         inlRows.Items.Should().OnlyContain(row => row.ContextCode == "INL");
     }
 
@@ -150,7 +158,4 @@ public sealed class WordTypesMainReadTests(WordTypesTestFixture fixture)
 
         outcome.GetType().Should().Be(expectedOutcome);
     }
-
-    private static int Count(WordTypeTreeDto tree, string code) =>
-        tree.MainTypes.Single(node => node.Code == code).Count;
 }

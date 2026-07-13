@@ -227,7 +227,7 @@ export class WordTypesExplorerFacade {
 
     // Each request settles to its response or `null` on a transport throw, so a rows-only failure
     // cannot discard an already-successful tree: forkJoin still emits, and handleListResponse persists
-    // the tree so the table-view strip survives the failure (Task 8).
+    // the tree so the table-view strip survives the failure.
     return forkJoin({
       tree: this.settle(tree$),
       rows: this.settle(rows$),
@@ -261,7 +261,7 @@ export class WordTypesExplorerFacade {
     }
 
     // A parent scope fetches no rows, so the table shows the in-shell subtype prompt. Any rows from a
-    // previous leaf scope are cleared here so they never paint under the new parent (Task 8).
+    // previous leaf scope are cleared here so they never paint under the new parent.
     this.state.update((current) => ({
       ...current,
       status: 'selectPrompt',
@@ -288,7 +288,7 @@ export class WordTypesExplorerFacade {
         status: 'error',
         tree: treeData ?? current.tree,
         rows: null,
-        errorMessage: rows?.message ?? tree?.message ?? WORD_TYPES_ERROR_LABEL,
+        errorMessage: this.listErrorMessage(tree, rows),
       }));
       this.lastRowsTableView = null;
       return;
@@ -302,6 +302,21 @@ export class WordTypesExplorerFacade {
       errorMessage: '',
     }));
     this.lastRowsTableView = query.tableView;
+  }
+
+  private listErrorMessage(
+    tree: ApiResponse<WordTypeTreeDto> | null,
+    rows: ApiResponse<PagedResultDto<WordTypeTableRowDto>> | null,
+  ): string {
+    return this.failedResponseMessage(rows) ?? this.failedResponseMessage(tree) ?? WORD_TYPES_ERROR_LABEL;
+  }
+
+  private failedResponseMessage<T>(response: ApiResponse<T> | null): string | null {
+    if (response?.isSuccess === false) {
+      return response.message || WORD_TYPES_ERROR_LABEL;
+    }
+
+    return response === null || response.data == null ? WORD_TYPES_ERROR_LABEL : null;
   }
 
   private navigate(queryParams: Record<string, string | null>): void {

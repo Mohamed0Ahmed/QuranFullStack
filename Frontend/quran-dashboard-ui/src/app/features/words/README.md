@@ -60,8 +60,9 @@ Shared across explorers: `utils/explorer-table-*` (focus/keyboard-nav/scroll/col
   `detailType`, `detailChildCode`, `detailCase`, `detailTense`, `detailVoice`. Every statistic writes all
   five with identity/view/page; child selection preserves them, refresh/direct URLs/Back/Forward restore
   both scopes independently, malformed/incomplete snapshots fail closed, and closing details clears
-  identity/view/page plus all five detail keys. Detail tabs remain kind-aware (word → آيات/سور; grouped
-  → كلمات مرتبطة/آيات/سور) and content begins directly with the tabs and active list—there is no repeated
+  identity/view/page plus all five detail keys. Detail tabs remain kind-aware (word → آيات/سور الكلمة;
+  root → كلمات/آيات/سور الجذر; stem → كلمات/آيات/سور الأصل الصرفي; lemma → كلمات/آيات/سور الصيغة المعجمية),
+  and content begins directly with the tabs and active list—there is no repeated
   summary card. Row-driven selections seed summary state from the table row and load the chosen detail
   immediately; refresh/direct URLs still fetch the summary because no table-row payload is available for
   the panel title and loading/error/retry/not-found orchestration.

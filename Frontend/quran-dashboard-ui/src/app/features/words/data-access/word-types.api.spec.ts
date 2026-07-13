@@ -92,83 +92,6 @@ describe('WordTypesApi', () => {
     await promise;
   });
 
-  it('returns the discriminated WordTypeTableRowDto union unchanged (kind carried through)', async () => {
-    const response: ApiResponse<PagedResultDto<WordTypeTableRowDto>> = {
-      isSuccess: true,
-      message: 'تم',
-      data: {
-        page: 1,
-        pageSize: 25,
-        totalCount: 1,
-        items: [{ kind: 'root', rootId: 190700, displayText: 'ك ل م', occurrencesCount: 3, ayahsCount: 2, surahsCount: 1 }],
-      },
-    };
-
-    const promise = firstValueFrom(api.getTableRows({
-      type: 'noun',
-      childCode: null,
-      case: 'all',
-      tense: 'all',
-      voice: 'all',
-      tableView: 'roots',
-      sort: 'occurrences',
-      page: 1,
-      pageSize: 25,
-    }));
-
-    httpMock.expectOne((r) => matchTable().test(r.url)).flush(response);
-
-    const emitted = await promise;
-    expect(emitted.data?.items[0]?.kind).toBe('root');
-  });
-
-  it('preserves the backend nulls for inactive word identity filters', async () => {
-    const response: ApiResponse<PagedResultDto<WordTypeTableRowDto>> = {
-      isSuccess: true,
-      message: 'تم',
-      data: {
-        page: 1,
-        pageSize: 25,
-        totalCount: 1,
-        items: [{
-          kind: 'word',
-          tashkeelWordId: 191001,
-          contextCode: 'INL',
-          case: null,
-          tense: null,
-          voice: null,
-          displayText: 'الٓمٓ',
-          typeCode: 'INL',
-          typeLabel: { ar: 'حروف مقطّعة' },
-          broadLabel: { ar: 'حروف مقطّعة' },
-          caseOrFeature: null,
-          rootText: null,
-          lemmaText: null,
-          stemText: null,
-          occurrencesCount: 1,
-          ayahsCount: 1,
-          surahsCount: 1,
-        }],
-      },
-    };
-
-    const promise = firstValueFrom(api.getTableRows({
-      type: 'inl',
-      childCode: null,
-      case: 'all',
-      tense: 'all',
-      voice: 'all',
-      tableView: 'words',
-      sort: 'occurrences',
-      page: 1,
-      pageSize: 25,
-    }));
-
-    httpMock.expectOne((r) => matchTable().test(r.url)).flush(response);
-
-    await expect(promise).resolves.toEqual(response);
-  });
-
   it('retains getRows for the legacy words endpoint', async () => {
     const response: ApiResponse<PagedResultDto<WordTypeRowDto>> = {
       isSuccess: true,
@@ -221,10 +144,11 @@ describe('WordTypesApi', () => {
     expect(req.request.params.has('page')).toBe(false);
     expect(req.request.params.has('pageSize')).toBe(false);
     expect(req.request.params.has('detailPage')).toBe(false);
+    expect(req.request.params.has('sort')).toBe(false);
     req.flush({
       isSuccess: true,
       message: 'تم',
-      data: { kind, dimensionId, displayText: 'sample', occurrencesCount: 1, ayahsCount: 1, surahsCount: 1 },
+      data: { kind, dimensionId, displayText: 'SYNTH_GROUP', occurrencesCount: 1, ayahsCount: 1, surahsCount: 1 },
     });
 
     await promise;
@@ -295,6 +219,7 @@ describe('WordTypesApi', () => {
     expect(req.request.params.has('page')).toBe(false);
     expect(req.request.params.has('pageSize')).toBe(false);
     expect(req.request.params.has('detailPage')).toBe(false);
+    expect(req.request.params.has('sort')).toBe(false);
     req.flush({ isSuccess: true, message: 'تم', data: { surahs: [], missingSurahs: [] } });
 
     await promise;

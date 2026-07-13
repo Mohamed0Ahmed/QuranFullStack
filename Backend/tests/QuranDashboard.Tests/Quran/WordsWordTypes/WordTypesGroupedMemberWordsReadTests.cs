@@ -146,11 +146,10 @@ public sealed class WordTypesGroupedMemberWordsReadTests(WordTypesTestFixture fi
             .Should().OnlyHaveUniqueItems();
     }
 
-    // Markers, null head dimensions, and segment-only dimensions never appear. The alternate IDs carried
-    // only by a fixture segment (root 190701 / lemma 190502 / stem 190602) are absent from the head-grain
-    // noun scope, and the real head members never include the marker or null-dimension words.
+    // Markers, null head dimensions, and dimensions outside the active scope never appear. The verb-only
+    // root/lemma/stem IDs are absent from the noun scope, and real head members exclude marker/null rows.
     [Fact]
-    public async Task GroupedMemberWords_MarkersNullAndSegmentOnlyDimensionsNeverAppear()
+    public async Task GroupedMemberWords_MarkersNullAndOutOfScopeDimensionsNeverAppear()
     {
         await using var scope = fixture.CreateScope();
         var reader = scope.ServiceProvider.GetRequiredService<IWordTypesReader>();
@@ -162,6 +161,34 @@ public sealed class WordTypesGroupedMemberWordsReadTests(WordTypesTestFixture fi
         var headMembers = await MembersAsync(reader, WordTypeGroupedDimensionKind.Root, 190700, NounScope);
         headMembers!.Items.Should().NotContain(item => item.TashkeelWordId == MarkerTashkeelId);
         headMembers.Items.Should().NotContain(item => item.TashkeelWordId == MuthalTashkeelId);
+    }
+
+    [Fact]
+    public async Task GroupedMemberWords_HeadDimensionIgnoresSecondarySegmentDimension()
+    {
+        await using var scope = fixture.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+        await using var transaction = await WordTypesSyntheticStructuralData.BeginSeededTransactionAsync(dbContext);
+        var reader = scope.ServiceProvider.GetRequiredService<EfWordTypesReader>();
+        var syntheticScope = new WordTypeFilter(
+            "noun", WordTypesSyntheticStructuralData.NounChildCode, null, null, null);
+
+        var segmentMembers = await MembersAsync(
+            reader,
+            WordTypeGroupedDimensionKind.Lemma,
+            WordTypesSyntheticStructuralData.SegmentOnlyLemmaId,
+            syntheticScope);
+        var headMembers = await MembersAsync(
+            reader,
+            WordTypeGroupedDimensionKind.Lemma,
+            WordTypesSyntheticStructuralData.MushafFirstLemmaId,
+            syntheticScope);
+
+        segmentMembers.Should().BeNull();
+        headMembers.Should().NotBeNull();
+        headMembers!.TotalCount.Should().Be(1);
+        headMembers.Items.Should().ContainSingle()
+            .Which.TashkeelWordId.Should().Be(WordTypesSyntheticStructuralData.MushafFirstTashkeelId);
     }
 
     [Fact]

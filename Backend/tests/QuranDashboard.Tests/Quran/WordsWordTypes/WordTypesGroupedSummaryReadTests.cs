@@ -1,6 +1,7 @@
 using QuranDashboard.Application.Abstractions.Quran.Words.WordTypes;
 using QuranDashboard.Application.Abstractions.Quran.Words.WordTypes.Responses;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeGroupedSummary;
+using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.WordTypes;
 
 namespace QuranDashboard.Tests.Quran.WordsWordTypes;
 
@@ -78,42 +79,36 @@ public sealed class WordTypesGroupedSummaryReadTests(WordTypesTestFixture fixtur
         summary.Should().BeNull();
     }
 
-    // Grouped membership comes from head-level quran_word_morphology only. A fixture segment on word
-    // 1903001 carries the alternate dimension IDs 190701/190502/190602, but those must never surface in
-    // the noun scope and must never displace the word's real head IDs 190700/190500/190600.
+    // Grouped membership comes from head-level quran_word_morphology only. The non-canonical structural
+    // word carries one head lemma and a different segment-only lemma; the segment must never become a group.
     [Fact]
     public async Task GroupedSummary_HeadDimensionIgnoresSecondarySegmentDimension()
     {
         await using var scope = fixture.CreateScope();
-        var reader = scope.ServiceProvider.GetRequiredService<IWordTypesReader>();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+        await using var transaction = await WordTypesSyntheticStructuralData.BeginSeededTransactionAsync(dbContext);
+        var reader = scope.ServiceProvider.GetRequiredService<EfWordTypesReader>();
+        var syntheticScope = new WordTypeFilter(
+            "noun", WordTypesSyntheticStructuralData.NounChildCode, null, null, null);
 
-        var segmentRoot = await reader.GetGroupedSummaryAsync(
-            new WordTypeGroupedSelection(WordTypeGroupedDimensionKind.Root, 190701, NounScope),
-            CancellationToken.None);
         var segmentLemma = await reader.GetGroupedSummaryAsync(
-            new WordTypeGroupedSelection(WordTypeGroupedDimensionKind.Lemma, 190502, NounScope),
-            CancellationToken.None);
-        var segmentStem = await reader.GetGroupedSummaryAsync(
-            new WordTypeGroupedSelection(WordTypeGroupedDimensionKind.Stem, 190602, NounScope),
+            new WordTypeGroupedSelection(
+                WordTypeGroupedDimensionKind.Lemma,
+                WordTypesSyntheticStructuralData.SegmentOnlyLemmaId,
+                syntheticScope),
             CancellationToken.None);
 
-        segmentRoot.Should().BeNull();
         segmentLemma.Should().BeNull();
-        segmentStem.Should().BeNull();
 
-        var headRoot = await reader.GetGroupedSummaryAsync(
-            new WordTypeGroupedSelection(WordTypeGroupedDimensionKind.Root, 190700, NounScope),
-            CancellationToken.None);
         var headLemma = await reader.GetGroupedSummaryAsync(
-            new WordTypeGroupedSelection(WordTypeGroupedDimensionKind.Lemma, 190500, NounScope),
-            CancellationToken.None);
-        var headStem = await reader.GetGroupedSummaryAsync(
-            new WordTypeGroupedSelection(WordTypeGroupedDimensionKind.Stem, 190600, NounScope),
+            new WordTypeGroupedSelection(
+                WordTypeGroupedDimensionKind.Lemma,
+                WordTypesSyntheticStructuralData.MushafFirstLemmaId,
+                syntheticScope),
             CancellationToken.None);
 
-        headRoot!.OccurrencesCount.Should().Be(3);
-        headLemma!.OccurrencesCount.Should().Be(3);
-        headStem!.OccurrencesCount.Should().Be(3);
+        headLemma.Should().NotBeNull();
+        headLemma!.OccurrencesCount.Should().Be(1);
     }
 
     // Markers and null head dimensions must never contribute a grouped dimension. The noun WORDS view

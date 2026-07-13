@@ -5,7 +5,7 @@ import { Observable, Subscription, of } from 'rxjs';
 import { catchError, distinctUntilChanged, map, switchMap, tap } from 'rxjs/operators';
 
 import { ApiResponse } from '../../../core/data-access/api-response.model';
-import { WordTypeGroupedSummaryDto, WordTypesApi } from '../data-access/word-types.api';
+import { WordTypesApi } from '../data-access/word-types.api';
 import { WORD_TYPES_ERROR_LABEL, WORD_TYPES_NOT_FOUND_LABEL } from '../models/word-types.labels';
 import {
   DEFAULT_GROUPED_WORD_TYPES_DETAIL_VIEW,
@@ -26,6 +26,7 @@ import {
   WordTypeDetailScope,
   WordTypeDetailSelection,
   WordTypeGroupedDetailSelection,
+  WordTypeGroupedSummaryDto,
   WordTypesDetailState,
 } from '../models/word-types-detail.models';
 import { parseWordTypesQueryParams } from './word-types-url-sync';

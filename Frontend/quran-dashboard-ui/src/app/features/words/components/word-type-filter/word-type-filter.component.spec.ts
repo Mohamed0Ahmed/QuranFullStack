@@ -26,20 +26,20 @@ const tree: WordTypeTreeDto = {
       secondaryFilter: { kind: 'case', options: [], voiceOptions: [] },
       children: [
         { code: 'N', childCode: 'N', label: { ar: 'اسم' }, count: 2 },
-        { code: 'PN', childCode: 'PN', label: { ar: 'اسم علم' }, count: 1 },
+        { code: 'PN', childCode: 'PN', label: { ar: 'SYNTH_NOUN_CHILD' }, count: 1 },
       ],
     },
     {
       code: 'verb', label: { ar: 'فعل' }, count: 2,
       secondaryFilter: { kind: 'tense+voice', options: [], voiceOptions: [] },
       children: [
-        { code: 'past', childCode: 'past', label: { ar: 'ماض' }, count: 1 },
+        { code: 'past', childCode: 'past', label: { ar: 'SYNTH_VERB_CHILD' }, count: 1 },
       ],
     },
     {
       code: 'particle', label: { ar: 'حرف وأداة' }, count: 1,
       secondaryFilter: { kind: 'none', options: [], voiceOptions: [] },
-      children: [{ code: 'PRO', childCode: 'PRO', label: { ar: 'حرف نهي' }, count: 1 }],
+      children: [{ code: 'PRO', childCode: 'PRO', label: { ar: 'SYNTH_PARTICLE_CHILD' }, count: 1 }],
     },
     { code: 'inl', label: { ar: 'حروف مقطّعة' }, count: 1, secondaryFilter: { kind: 'none', options: [], voiceOptions: [] }, children: [] },
   ],
@@ -86,8 +86,8 @@ describe('WordTypeFilterComponent', () => {
     expect(emitted).toEqual([]);
     expect(root.querySelector('[data-word-type-code="verb"]')?.getAttribute('aria-current')).toBe('true');
     expect(nounButton.getAttribute('aria-expanded')).toBe('true');
-    expect(root.textContent).toContain('اسم علم');
-    expect(root.textContent).not.toContain('ماض');
+    expect(root.textContent).toContain('SYNTH_NOUN_CHILD');
+    expect(root.textContent).not.toContain('SYNTH_VERB_CHILD');
     expect(root.querySelector('[data-testid="word-type-case-filter"]')).toBeNull();
     expect(root.querySelector('[data-testid="word-type-verb-filter"]')).toBeNull();
   });
@@ -99,9 +99,9 @@ describe('WordTypeFilterComponent', () => {
     fixture.detectChanges();
 
     const root = fixture.nativeElement as HTMLElement;
-    expect(root.textContent).toContain('حرف نهي');
-    expect(root.textContent).not.toContain('اسم علم');
-    expect(root.textContent).not.toContain('ماض');
+    expect(root.textContent).toContain('SYNTH_PARTICLE_CHILD');
+    expect(root.textContent).not.toContain('SYNTH_NOUN_CHILD');
+    expect(root.textContent).not.toContain('SYNTH_VERB_CHILD');
     expect(root.querySelectorAll('.word-type-filter__expand').length).toBe(0);
   });
 
@@ -146,7 +146,7 @@ describe('WordTypeFilterComponent', () => {
     expect(selectedChild).not.toBeNull();
     expect(selectedChild.getAttribute('aria-selected')).toBe('true');
     expect(selectedChild.classList.contains('qd-is-selected')).toBe(true);
-    expect(selectedChild.textContent).toContain('اسم علم');
+    expect(selectedChild.textContent).toContain('SYNTH_NOUN_CHILD');
   });
 
   it('shows a static placeholder for a type with no subtypes and no secondary filter', () => {

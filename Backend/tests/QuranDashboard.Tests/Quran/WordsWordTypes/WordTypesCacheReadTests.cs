@@ -113,6 +113,34 @@ public sealed class WordTypesCacheReadTests(WordTypesTestFixture fixture)
         WordTypesCacheKeys.GroupedAyahs(selection, 1, 10).Should().NotBe(ayahs);
     }
 
+    [Fact]
+    public void GroupedSummaryAndSurahsCacheKeys_AreUniqueForEverySelectionField()
+    {
+        var selection = new WordTypeGroupedSelection(
+            WordTypeGroupedDimensionKind.Root,
+            190700,
+            new WordTypeFilter("noun", null, null, null, null));
+        WordTypeGroupedSelection[] selections =
+        [
+            selection,
+            selection with { Kind = WordTypeGroupedDimensionKind.Stem },
+            selection with { Kind = WordTypeGroupedDimensionKind.Lemma },
+            selection with { DimensionId = 190600 },
+            selection with { Filter = selection.Filter with { Type = "verb" } },
+            selection with { Filter = selection.Filter with { ChildCode = "PN" } },
+            selection with { Filter = selection.Filter with { Case = "genitive" } },
+            selection with { Filter = selection.Filter with { Tense = "past" } },
+            selection with { Filter = selection.Filter with { Voice = "active" } },
+        ];
+
+        var summaryKeys = selections.Select(WordTypesCacheKeys.GroupedSummary).ToArray();
+        var surahsKeys = selections.Select(WordTypesCacheKeys.GroupedSurahs).ToArray();
+
+        summaryKeys.Should().OnlyHaveUniqueItems();
+        surahsKeys.Should().OnlyHaveUniqueItems();
+        summaryKeys.Concat(surahsKeys).Should().OnlyHaveUniqueItems();
+    }
+
     // A second read of every grouped view is served from the cache without issuing new SQL commands.
     [Fact]
     public async Task GroupedDetailsCachedReader_RepeatedReadsDoNotIssueExtraCommands()

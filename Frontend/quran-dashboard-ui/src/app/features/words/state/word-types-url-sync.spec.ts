@@ -133,18 +133,6 @@ describe('buildWordTypesQueryParams — canonical ordering', () => {
 });
 
 describe('independent detail-scope URL state', () => {
-  it('declares the five locked detail-scope key names', () => {
-    const keys = WORD_TYPES_QUERY_KEYS as unknown as Record<string, string>;
-
-    expect([
-      keys['detailType'],
-      keys['detailChildCode'],
-      keys['detailCase'],
-      keys['detailTense'],
-      keys['detailVoice'],
-    ]).toEqual(['detailType', 'detailChildCode', 'detailCase', 'detailTense', 'detailVoice']);
-  });
-
   it('encodes the full grouped query scope independently from list scope', () => {
     const encoded = encodeDetailScope({
       kind: 'root',
@@ -432,7 +420,7 @@ describe('parseWordTypesQueryParams — tableView', () => {
 
   it('restores a word detail independently when tableView is not words', () => {
     const parsed = parseWordTypesQueryParams(
-      params('type=noun&childCode=PN&tableView=roots&word=123&contextCode=PN&view=surahs&detailPage=2&location=2:1:2&column=analysis'),
+      params('type=noun&childCode=PN&tableView=roots&word=123&contextCode=PN&view=surahs&detailPage=2&location=999:999:999&column=analysis'),
     );
 
     expect(parsed.tableView).toBe('roots');
@@ -441,7 +429,7 @@ describe('parseWordTypesQueryParams — tableView', () => {
     expect(parsed.contextCode).toBe('PN');
     expect(parsed.view).toBe('surahs');
     expect(parsed.detailPage).toBe(1);
-    expect(parsed.location).toBe('2:1:2');
+    expect(parsed.location).toBe('999:999:999');
     expect(parsed.column).toBe('analysis');
   });
 

@@ -80,7 +80,7 @@
         class="word-types-page__panel qd-explorer-layout__panel"
         [inline]="isDesktop()"
         [view]="panelState().view"
-        [kind]="panelState().kind"
+        [kind]="detailKind()"
         [emptySelection]="emptySelection()"
         [selectionTitle]="selectionTitle()"
         [loading]="panelState().status === 'loading'"
@@ -122,7 +122,7 @@
               </div>
             }
             @case ('empty') {
-              <div class="qd-empty-state">{{ emptyLabel }}</div>
+              <div class="qd-empty-state">{{ detailEmptyLabel() }}</div>
             }
             @default {
               @if (panelState().view === 'words' && panelState().words) {

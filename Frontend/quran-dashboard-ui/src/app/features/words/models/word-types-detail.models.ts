@@ -1,12 +1,9 @@
 import type {
-  WordTypeGroupedMemberWordDto,
-  WordTypeGroupedSummaryDto,
-} from '../data-access/word-types.api';
-import type {
   PagedResultDto,
   WordTypeAyahMatchDto,
   WordTypeCase,
   WordTypeDetailView,
+  WordTypeLabelDto,
   WordTypeMainType,
   WordTypeRowIdentity,
   WordTypeSummaryDto,
@@ -22,6 +19,41 @@ export interface WordTypeDetailScope {
   case: WordTypeCase;
   tense: WordTypeTense;
   voice: WordTypeVoice;
+}
+
+export type WordTypeGroupedKind = 'root' | 'stem' | 'lemma';
+
+export interface WordTypeGroupedRequestParams extends WordTypeDetailScope {
+  kind: WordTypeGroupedKind;
+  dimensionId: number;
+}
+
+export interface WordTypeGroupedSummaryDto {
+  kind: WordTypeGroupedKind;
+  dimensionId: number;
+  displayText: string;
+  occurrencesCount: number;
+  ayahsCount: number;
+  surahsCount: number;
+}
+
+export interface WordTypeGroupedMemberWordDto {
+  tashkeelWordId: number;
+  contextCode: string;
+  case: WordTypeCase | null;
+  tense: WordTypeTense | null;
+  voice: WordTypeVoice | null;
+  displayText: string;
+  typeCode: string;
+  typeLabel: WordTypeLabelDto;
+  broadLabel: WordTypeLabelDto;
+  caseOrFeature: string | null;
+  rootText: string | null;
+  lemmaText: string | null;
+  stemText: string | null;
+  occurrencesCount: number;
+  ayahsCount: number;
+  surahsCount: number;
 }
 
 export type WordTypeDetailSelection =

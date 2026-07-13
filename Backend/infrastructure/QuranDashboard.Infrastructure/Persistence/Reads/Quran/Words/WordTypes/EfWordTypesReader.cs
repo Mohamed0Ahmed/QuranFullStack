@@ -32,6 +32,9 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
         var particleChildCounts = childCounts
             .Where(row => row.Type == ParticleType)
             .ToDictionary(row => row.ChildCode, row => row.Count);
+        var mainCounts = childCounts
+            .GroupBy(row => row.Type)
+            .ToDictionary(group => group.Key, group => group.Sum(row => row.Count));
 
         // Catalogue-driven noun children: every noun-category POS code ordered by SortOrder,
         // each carrying its distinct word-context row count (0 when no rows exist).
@@ -65,10 +68,10 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
             .ToList();
 
         return new WordTypeTreeDto([
-            MainNode(NounType, "اسم", nounChildren.Count, "case", nounChildren),
-            MainNode(VerbType, "فعل", verbChildren.Count, "tense+voice", verbChildren),
-            MainNode(ParticleType, "حرف وأداة", particleChildren.Count, "none", particleChildren),
-            MainNode(InlType, "حروف مقطّعة", 1, "none", []),
+            MainNode(NounType, "اسم", mainCounts.GetValueOrDefault(NounType), "case", nounChildren),
+            MainNode(VerbType, "فعل", mainCounts.GetValueOrDefault(VerbType), "tense+voice", verbChildren),
+            MainNode(ParticleType, "حرف وأداة", mainCounts.GetValueOrDefault(ParticleType), "none", particleChildren),
+            MainNode(InlType, "حروف مقطّعة", mainCounts.GetValueOrDefault(InlType), "none", []),
         ]);
     }
 

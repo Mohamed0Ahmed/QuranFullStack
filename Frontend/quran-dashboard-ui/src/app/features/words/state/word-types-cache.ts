@@ -1,9 +1,9 @@
 import { Injectable } from '@angular/core';
 
 import { ApiResponseCache } from '../../../core/caching/api-response-cache';
+import { WordTypeGroupedRequestParams } from '../models/word-types-detail.models';
 import {
   WordTypeCase,
-  WordTypeMainType,
   WordTypeSort,
   WordTypeTableView,
   WordTypeTense,
@@ -27,16 +27,16 @@ export const WordTypesCacheKeys = {
   surahs(identity: WordTypesCacheIdentity): string {
     return `wordtypes:surahs:${identity.tashkeelWordId}:${identity.contextCode}:${identity.case}:${identity.tense}:${identity.voice}`;
   },
-  groupedSummary(request: WordTypesCacheGroupedRequest): string {
+  groupedSummary(request: WordTypeGroupedRequestParams): string {
     return groupedDetailKey(request, 'summary');
   },
-  groupedWords(request: WordTypesCacheGroupedRequest, page: number): string {
+  groupedWords(request: WordTypeGroupedRequestParams, page: number): string {
     return `${groupedDetailKey(request, 'words')}:p${page}`;
   },
-  groupedAyahs(request: WordTypesCacheGroupedRequest, page: number): string {
+  groupedAyahs(request: WordTypeGroupedRequestParams, page: number): string {
     return `${groupedDetailKey(request, 'ayahs')}:p${page}`;
   },
-  groupedSurahs(request: WordTypesCacheGroupedRequest): string {
+  groupedSurahs(request: WordTypeGroupedRequestParams): string {
     return groupedDetailKey(request, 'surahs');
   },
 } as const;
@@ -57,18 +57,8 @@ export interface WordTypesCacheIdentity {
   voice: WordTypeVoice;
 }
 
-export interface WordTypesCacheGroupedRequest {
-  kind: 'root' | 'stem' | 'lemma';
-  dimensionId: number;
-  type: WordTypeMainType;
-  childCode: string | null;
-  case: WordTypeCase;
-  tense: WordTypeTense;
-  voice: WordTypeVoice;
-}
-
 function groupedDetailKey(
-  request: WordTypesCacheGroupedRequest,
+  request: WordTypeGroupedRequestParams,
   view: 'summary' | 'words' | 'ayahs' | 'surahs',
 ): string {
   return `wordtypes:grouped:${request.kind}:${request.dimensionId}:${request.type}:${request.childCode ?? 'all'}:${request.case}:${request.tense}:${request.voice}:view:${view}`;

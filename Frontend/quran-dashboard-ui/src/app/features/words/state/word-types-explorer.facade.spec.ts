@@ -1,10 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@angular/common/http/testing';
 import { getTestBed, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, ParamMap, Router, convertToParamMap, provideRouter } from '@angular/router';
-import { BehaviorSubject, Observable, Subject, of, throwError } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
 
 import { ApiResponse } from '../../../core/data-access/api-response.model';
-import { WordTypesApi } from '../data-access/word-types.api';
+import { WORD_TYPES_ERROR_LABEL } from '../models/word-types.labels';
 import {
   PagedResultDto,
   RootTableRowDto,
@@ -25,10 +27,10 @@ function wordRow(overrides: Partial<WordTableRowDto> = {}): WordTableRowDto {
     case: null,
     tense: null,
     voice: null,
-    displayText: 'الٓمٓ',
+    displayText: 'SYNTH_WORD_TEXT',
     typeCode: 'INL',
-    typeLabel: { ar: 'حروف مقطّعة' },
-    broadLabel: { ar: 'حروف مقطّعة' },
+    typeLabel: { ar: 'SYNTH_TYPE_LABEL' },
+    broadLabel: { ar: 'SYNTH_BROAD_LABEL' },
     caseOrFeature: null,
     rootText: null,
     lemmaText: null,
@@ -44,7 +46,7 @@ function rootRow(overrides: Partial<RootTableRowDto> = {}): RootTableRowDto {
   return {
     kind: 'root',
     rootId: 190700,
-    displayText: 'ك ل م',
+    displayText: 'SYNTH_ROOT_TEXT',
     occurrencesCount: 3,
     ayahsCount: 2,
     surahsCount: 1,
@@ -67,43 +69,104 @@ function okTree(): ApiResponse<WordTypeTreeDto> {
     data: {
       mainTypes: [
         {
-          code: 'noun', label: { ar: 'اسم' }, count: 2,
+          code: 'noun', label: { ar: 'SYNTH_NOUN_LABEL' }, count: 2,
           secondaryFilter: { kind: 'case', options: [], voiceOptions: [] },
           children: [
-            { code: 'N', childCode: 'N', label: { ar: 'اسم' }, count: 1 },
-            { code: 'PN', childCode: 'PN', label: { ar: 'اسم علم' }, count: 1 },
+            { code: 'N', childCode: 'N', label: { ar: 'SYNTH_NOUN_CHILD' }, count: 1 },
+            { code: 'PN', childCode: 'PN', label: { ar: 'SYNTH_PROPER_CHILD' }, count: 1 },
           ],
         },
-        { code: 'verb', label: { ar: 'فعل' }, count: 0, secondaryFilter: { kind: 'tense+voice', options: [], voiceOptions: [] }, children: [] },
-        { code: 'particle', label: { ar: 'حرف وأداة' }, count: 0, secondaryFilter: { kind: 'none', options: [], voiceOptions: [] }, children: [] },
-        { code: 'inl', label: { ar: 'حروف مقطّعة' }, count: 1, secondaryFilter: { kind: 'none', options: [], voiceOptions: [] }, children: [] },
+        { code: 'verb', label: { ar: 'SYNTH_VERB_LABEL' }, count: 0, secondaryFilter: { kind: 'tense+voice', options: [], voiceOptions: [] }, children: [] },
+        { code: 'particle', label: { ar: 'SYNTH_PARTICLE_LABEL' }, count: 0, secondaryFilter: { kind: 'none', options: [], voiceOptions: [] }, children: [] },
+        { code: 'inl', label: { ar: 'SYNTH_INL_LABEL' }, count: 1, secondaryFilter: { kind: 'none', options: [], voiceOptions: [] }, children: [] },
       ],
     },
   };
 }
 
-function setup(apiOverrides: Partial<{ getTree: unknown; getTableRows: unknown }> = {}) {
+let activeHttp: HttpTestingController | undefined;
+
+function setup(): { facade: WordTypesExplorerFacade; router: Router; http: HttpTestingController } {
   TestBed.configureTestingModule({
     providers: [
       WordTypesExplorerFacade,
       provideRouter([]),
-      {
-        provide: WordTypesApi,
-        useValue: {
-          getTree: vi.fn(() => of(okTree())),
-          getTableRows: vi.fn(() => of(okRows([]))),
-          ...apiOverrides,
-        },
-      },
+      provideHttpClient(),
+      provideHttpClientTesting(),
     ],
   });
 
   const facade = TestBed.inject(WordTypesExplorerFacade);
   const router = TestBed.inject(Router);
+  const http = TestBed.inject(HttpTestingController);
+  activeHttp = http;
   vi.spyOn(router, 'navigate').mockResolvedValue(true);
-  const api = TestBed.inject(WordTypesApi) as unknown as { getTree: ReturnType<typeof vi.fn>; getTableRows: ReturnType<typeof vi.fn> };
 
-  return { facade, router, api };
+  return { facade, router, http };
+}
+
+function expectTreeRequest(http: HttpTestingController): TestRequest {
+  const request = http.expectOne((candidate) =>
+    candidate.url.endsWith('/api/words/word-types/tree'),
+  );
+  expect(request.request.method).toBe('GET');
+  expect(request.request.params.keys()).toEqual([]);
+  return request;
+}
+
+function expectTableRequest(
+  http: HttpTestingController,
+  expected: {
+    type: string;
+    childCode?: string | null;
+    tableView?: string;
+    case?: string | null;
+    tense?: string | null;
+    voice?: string | null;
+    sort?: string;
+    page?: number;
+  },
+): TestRequest {
+  const request = http.expectOne((candidate) =>
+    candidate.url.endsWith('/api/words/word-types/table'),
+  );
+  expect(request.request.method).toBe('GET');
+  expect(request.request.params.get('type')).toBe(expected.type);
+  expect(request.request.params.get('childCode')).toBe(expected.childCode ?? null);
+  expect(request.request.params.get('tableView')).toBe(expected.tableView ?? 'words');
+  expect(request.request.params.get('case')).toBe(expected.case ?? null);
+  expect(request.request.params.get('tense')).toBe(expected.tense ?? null);
+  expect(request.request.params.get('voice')).toBe(expected.voice ?? null);
+  expect(request.request.params.get('sort')).toBe(expected.sort ?? 'occurrences');
+  expect(request.request.params.get('page')).toBe(String(expected.page ?? 1));
+  expect(request.request.params.get('pageSize')).toBe(String(WORD_TYPES_PAGE_SIZE));
+  return request;
+}
+
+function flushLeafList(
+  http: HttpTestingController,
+  expected: Parameters<typeof expectTableRequest>[1],
+  rows: ApiResponse<PagedResultDto<WordTypeTableRowDto>> = okRows([]),
+  tree: ApiResponse<WordTypeTreeDto> = okTree(),
+): { treeRequest: TestRequest; tableRequest: TestRequest } {
+  const treeRequest = expectTreeRequest(http);
+  const tableRequest = expectTableRequest(http, expected);
+  treeRequest.flush(tree);
+  tableRequest.flush(rows);
+  return { treeRequest, tableRequest };
+}
+
+function flushTreeOnly(
+  http: HttpTestingController,
+  tree: ApiResponse<WordTypeTreeDto> = okTree(),
+): TestRequest {
+  const request = expectTreeRequest(http);
+  request.flush(tree);
+  return request;
+}
+
+function failTransport(request: TestRequest): void {
+  request.error(new ProgressEvent('error'));
 }
 
 function controllableRoute(queryParams: Record<string, string> = {}): {
@@ -119,7 +182,11 @@ function controllableRoute(queryParams: Record<string, string> = {}): {
 
 describe('WordTypesExplorerFacade — tableView', () => {
   beforeEach(() => getTestBed().resetTestingModule());
-  afterEach(() => getTestBed().resetTestingModule());
+  afterEach(() => {
+    activeHttp?.verify({ ignoreCancelled: true });
+    activeHttp = undefined;
+    getTestBed().resetTestingModule();
+  });
 
   it('selectTableView changes only list presentation and preserves the complete detail route state', () => {
     const { facade, router } = setup();
@@ -139,68 +206,80 @@ describe('WordTypesExplorerFacade — tableView', () => {
   });
 
   it('loads through getTableRows with the active tableView, and reloads when tableView changes', () => {
-    const getTableRows = vi.fn(() => of(okRows([wordRow()])));
-    const { facade, api } = setup({ getTableRows });
+    const { facade, http } = setup();
     const route = controllableRoute({ type: 'inl' });
     facade.bindToRoute(route.route);
 
-    expect(api.getTableRows).toHaveBeenCalledTimes(1);
-    expect(api.getTableRows).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'inl', tableView: 'words', pageSize: WORD_TYPES_PAGE_SIZE }));
+    flushLeafList(http, {
+      type: 'inl',
+      childCode: null,
+      tableView: 'words',
+      sort: 'occurrences',
+      page: 1,
+    }, okRows([wordRow()]));
 
     route.setQueryParams({ type: 'inl', tableView: 'roots' });
 
-    expect(api.getTableRows).toHaveBeenCalledTimes(2);
-    expect(api.getTableRows).toHaveBeenLastCalledWith(expect.objectContaining({ tableView: 'roots' }));
+    const groupedRequest = expectTableRequest(http, {
+      type: 'inl',
+      childCode: null,
+      tableView: 'roots',
+      sort: 'occurrences',
+      page: 1,
+    });
+    groupedRequest.flush(okRows([rootRow()]));
     facade.unbindFromRoute();
   });
 
-  it('nulls rows while loading after tableView changes, so the previous view cannot paint under the new scope', () => {
-    const first$ = new Subject<ApiResponse<PagedResultDto<WordTypeTableRowDto>>>();
-    const second$ = new Subject<ApiResponse<PagedResultDto<WordTypeTableRowDto>>>();
-    const getTableRows = vi.fn().mockReturnValueOnce(first$).mockReturnValueOnce(second$);
-    const { facade } = setup({ getTableRows });
+  it('nulls rows after tableView changes and cancels a stale request so only the latest view can win', () => {
+    const { facade, http } = setup();
     const route = controllableRoute({ type: 'inl' });
     facade.bindToRoute(route.route);
 
-    first$.next(okRows([wordRow()]));
-    first$.complete();
+    flushLeafList(http, { type: 'inl', tableView: 'words' }, okRows([wordRow()]));
     expect(facade.listState().rows?.items).toHaveLength(1);
 
     route.setQueryParams({ type: 'inl', tableView: 'roots' });
     expect(facade.listState().rows).toBeNull();
+    const staleRequest = expectTableRequest(http, { type: 'inl', tableView: 'roots' });
 
-    second$.next(okRows([]));
-    second$.complete();
+    route.setQueryParams({ type: 'inl', tableView: 'lemmas' });
+    expect(staleRequest.cancelled).toBe(true);
+    expect(facade.listState().rows).toBeNull();
+
+    const latestRequest = expectTableRequest(http, { type: 'inl', tableView: 'lemmas' });
+    latestRequest.flush(okRows([]));
+    expect(facade.listState().query.tableView).toBe('lemmas');
+    expect(facade.listState().status).toBe('empty');
     facade.unbindFromRoute();
   });
 
   it('keeps prior rows visible while a non-tableView filter reloads', () => {
-    const first$ = new Subject<ApiResponse<PagedResultDto<WordTypeTableRowDto>>>();
-    const second$ = new Subject<ApiResponse<PagedResultDto<WordTypeTableRowDto>>>();
-    const getTableRows = vi.fn().mockReturnValueOnce(first$).mockReturnValueOnce(second$);
-    const { facade } = setup({ getTableRows });
+    const { facade, http } = setup();
     const route = controllableRoute({ type: 'inl' });
     facade.bindToRoute(route.route);
 
     const initialRow = wordRow();
-    first$.next(okRows([initialRow]));
-    first$.complete();
+    flushLeafList(http, { type: 'inl', tableView: 'words' }, okRows([initialRow]));
     expect(facade.listState().rows?.items).toEqual([initialRow]);
 
     route.setQueryParams({ type: 'noun', childCode: 'PN' });
     expect(facade.listState().status).toBe('loading');
     expect(facade.listState().rows?.items).toEqual([initialRow]);
 
-    second$.next(okRows([]));
-    second$.complete();
+    expectTableRequest(http, {
+      type: 'noun',
+      childCode: 'PN',
+      tableView: 'words',
+    }).flush(okRows([]));
     facade.unbindFromRoute();
   });
 
   it('preserves nullable word identity fields from the table response', () => {
-    const getTableRows = vi.fn(() => of(okRows([wordRow()])));
-    const { facade } = setup({ getTableRows });
+    const { facade, http } = setup();
     const route = controllableRoute({ type: 'inl' });
     facade.bindToRoute(route.route);
+    flushLeafList(http, { type: 'inl', tableView: 'words' }, okRows([wordRow()]));
 
     const row = facade.listState().rows!.items.find((item): item is WordTableRowDto => item.kind === 'word');
     expect(row?.case).toBeNull();
@@ -211,10 +290,14 @@ describe('WordTypesExplorerFacade — tableView', () => {
 
   it('preserves grouped rows in list state for the active tableView', () => {
     const groupedRow = rootRow();
-    const getTableRows = vi.fn(() => of(okRows([groupedRow])));
-    const { facade } = setup({ getTableRows });
+    const { facade, http } = setup();
     const route = controllableRoute({ type: 'noun', childCode: 'PN', tableView: 'roots' });
     facade.bindToRoute(route.route);
+    flushLeafList(http, {
+      type: 'noun',
+      childCode: 'PN',
+      tableView: 'roots',
+    }, okRows([groupedRow]));
 
     expect(facade.listState().rows?.items).toEqual([groupedRow]);
     expect(facade.listState().rows?.totalCount).toBe(1);
@@ -348,21 +431,26 @@ describe('WordTypesExplorerFacade — tableView', () => {
   });
 
   it('preserves the active tableView and does not request rows for a tree-only parent scope', () => {
-    const getTableRows = vi.fn(() => of(okRows([])));
-    const { facade, api } = setup({ getTableRows });
+    const { facade, http } = setup();
     const route = controllableRoute({ type: 'noun', tableView: 'roots' });
     facade.bindToRoute(route.route);
 
-    expect(api.getTableRows).not.toHaveBeenCalled();
+    http.expectNone((candidate) => candidate.url.endsWith('/api/words/word-types/table'));
+    flushTreeOnly(http);
     expect(facade.listState().query.tableView).toBe('roots');
+    expect(facade.listState().status).toBe('selectPrompt');
     facade.unbindFromRoute();
   });
 
   it('clears prior leaf rows and enters the subtype prompt when returning to a tree-only parent', () => {
-    const getTableRows = vi.fn(() => of(okRows([rootRow()])));
-    const { facade } = setup({ getTableRows });
+    const { facade, http } = setup();
     const route = controllableRoute({ type: 'noun', childCode: 'PN', tableView: 'roots' });
     facade.bindToRoute(route.route);
+    flushLeafList(http, {
+      type: 'noun',
+      childCode: 'PN',
+      tableView: 'roots',
+    }, okRows([rootRow()]));
 
     expect(facade.listState().rows?.items).toEqual([rootRow()]);
     expect(facade.listState().status).toBe('success');
@@ -371,6 +459,7 @@ describe('WordTypesExplorerFacade — tableView', () => {
     // the table shows the in-shell subtype prompt while the loaded tree keeps the strip visible.
     route.setQueryParams({ type: 'noun', tableView: 'roots' });
 
+    http.expectNone((candidate) => candidate.url.endsWith('/api/words/word-types/table'));
     expect(facade.listState().rows).toBeNull();
     expect(facade.listState().status).toBe('selectPrompt');
     expect(facade.listState().tree).not.toBeNull();
@@ -378,14 +467,14 @@ describe('WordTypesExplorerFacade — tableView', () => {
   });
 
   it('keeps a successfully loaded tree when the initial rows request throws, so the strip survives', () => {
-    const rows$ = new Subject<ApiResponse<PagedResultDto<WordTypeTableRowDto>>>();
-    const getTableRows = vi.fn(() => rows$);
-    const { facade } = setup({ getTableRows });
+    const { facade, http } = setup();
     const route = controllableRoute({ type: 'inl' });
     facade.bindToRoute(route.route);
 
-    // Tree resolves first (default mock is synchronous), rows then fail at transport level.
-    rows$.error(new Error('network'));
+    const treeRequest = expectTreeRequest(http);
+    const rowsRequest = expectTableRequest(http, { type: 'inl', tableView: 'words' });
+    treeRequest.flush(okTree());
+    failTransport(rowsRequest);
 
     expect(facade.listState().status).toBe('error');
     expect(facade.listState().tree).not.toBeNull();
@@ -395,20 +484,76 @@ describe('WordTypesExplorerFacade — tableView', () => {
 
   it.each([
     {
+      label: 'rows controlled failure',
+      failedRequest: 'rows',
+      failureKind: 'controlled',
+      expectedMessage: 'SYNTH_ROWS_FAILURE',
+    },
+    {
+      label: 'rows transport failure',
+      failedRequest: 'rows',
+      failureKind: 'transport',
+      expectedMessage: WORD_TYPES_ERROR_LABEL,
+    },
+    {
+      label: 'tree controlled failure',
+      failedRequest: 'tree',
+      failureKind: 'controlled',
+      expectedMessage: 'SYNTH_TREE_FAILURE',
+    },
+    {
+      label: 'tree transport failure',
+      failedRequest: 'tree',
+      failureKind: 'transport',
+      expectedMessage: WORD_TYPES_ERROR_LABEL,
+    },
+  ] as const)('shows only the failed response message for a $label', ({ failedRequest, failureKind, expectedMessage }) => {
+    const { facade, http } = setup();
+    const route = controllableRoute({ type: 'inl' });
+
+    facade.bindToRoute(route.route);
+    const treeRequest = expectTreeRequest(http);
+    const rowsRequest = expectTableRequest(http, { type: 'inl', tableView: 'words' });
+
+    if (failedRequest === 'tree') {
+      rowsRequest.flush({ ...okRows([wordRow()]), message: 'SYNTH_ROWS_SUCCESS' });
+      if (failureKind === 'controlled') {
+        treeRequest.flush({ isSuccess: false, message: 'SYNTH_TREE_FAILURE', data: null });
+      } else {
+        failTransport(treeRequest);
+      }
+    } else {
+      treeRequest.flush({ ...okTree(), message: 'SYNTH_TREE_SUCCESS' });
+      if (failureKind === 'controlled') {
+        rowsRequest.flush({ isSuccess: false, message: 'SYNTH_ROWS_FAILURE', data: null });
+      } else {
+        failTransport(rowsRequest);
+      }
+    }
+
+    expect(facade.listState().status).toBe('error');
+    expect(facade.listState().errorMessage).toBe(expectedMessage);
+    facade.unbindFromRoute();
+  });
+
+  it.each([
+    {
       label: 'transport failure',
-      failedTree: throwError(() => new Error('network')),
+      failureKind: 'transport',
     },
     {
       label: 'controlled API failure',
-      failedTree: of<ApiResponse<WordTypeTreeDto>>({ isSuccess: false, message: 'تعذّر تحميل الشجرة', data: null }),
+      failureKind: 'controlled',
     },
-  ])('keeps the previously loaded tree on a tree-only parent $label', ({ failedTree }) => {
-    const getTree = vi.fn()
-      .mockReturnValueOnce(of(okTree()))
-      .mockReturnValueOnce(failedTree);
-    const { facade } = setup({ getTree });
+  ] as const)('keeps the previously loaded tree on a tree-only parent $label', ({ failureKind }) => {
+    const { facade, http } = setup();
     const route = controllableRoute({ type: 'noun', childCode: 'PN', tableView: 'roots' });
     facade.bindToRoute(route.route);
+    flushLeafList(http, {
+      type: 'noun',
+      childCode: 'PN',
+      tableView: 'roots',
+    }, okRows([rootRow()]));
 
     const loadedTree = facade.listState().tree;
     expect(loadedTree).not.toBeNull();
@@ -422,7 +567,13 @@ describe('WordTypesExplorerFacade — tableView', () => {
 
     route.setQueryParams({ type: 'noun', tableView: 'roots' });
 
-    expect(getTree).toHaveBeenCalledTimes(2);
+    http.expectNone((candidate) => candidate.url.endsWith('/api/words/word-types/table'));
+    const failedTreeRequest = expectTreeRequest(http);
+    if (failureKind === 'controlled') {
+      failedTreeRequest.flush({ isSuccess: false, message: 'SYNTH_TREE_FAILURE', data: null });
+    } else {
+      failTransport(failedTreeRequest);
+    }
     expect(facade.listState().status).toBe('error');
     expect(facade.listState().tree).toBe(loadedTree);
     expect(facade.listState().rows).toBeNull();
@@ -430,44 +581,51 @@ describe('WordTypesExplorerFacade — tableView', () => {
   });
 
   it('retryList re-issues the list load after an error', () => {
-    const first$ = new Subject<ApiResponse<PagedResultDto<WordTypeTableRowDto>>>();
-    const second$ = new Subject<ApiResponse<PagedResultDto<WordTypeTableRowDto>>>();
-    const getTableRows = vi.fn().mockReturnValueOnce(first$).mockReturnValueOnce(second$);
-    const { facade, api } = setup({ getTableRows });
+    const { facade, http } = setup();
     const route = controllableRoute({ type: 'inl' });
     facade.bindToRoute(route.route);
 
-    first$.error(new Error('network'));
+    const treeRequest = expectTreeRequest(http);
+    const failedRowsRequest = expectTableRequest(http, { type: 'inl', tableView: 'words' });
+    treeRequest.flush(okTree());
+    failTransport(failedRowsRequest);
     expect(facade.listState().status).toBe('error');
 
     facade.retryList();
-    expect(api.getTableRows).toHaveBeenCalledTimes(2);
-
-    second$.next(okRows([wordRow()]));
-    second$.complete();
+    const retryRequest = expectTableRequest(http, {
+      type: 'inl',
+      childCode: null,
+      tableView: 'words',
+      sort: 'occurrences',
+      page: 1,
+    });
+    retryRequest.flush(okRows([wordRow()]));
     expect(facade.listState().status).toBe('success');
     facade.unbindFromRoute();
   });
 
   it('cancels an in-flight retry only when the list request key changes', () => {
-    const retryCancelled = vi.fn();
-    const retryRows$ = new Observable<ApiResponse<PagedResultDto<WordTypeTableRowDto>>>(
-      () => retryCancelled,
-    );
-    const getTableRows = vi.fn()
-      .mockReturnValueOnce(throwError(() => new Error('network')))
-      .mockReturnValueOnce(retryRows$)
-      .mockReturnValueOnce(of(okRows([rootRow()])));
-    const { facade } = setup({ getTableRows });
+    const { facade, http } = setup();
     const route = controllableRoute({ type: 'inl' });
     facade.bindToRoute(route.route);
+    const treeRequest = expectTreeRequest(http);
+    const failedRowsRequest = expectTableRequest(http, { type: 'inl', tableView: 'words' });
+    treeRequest.flush(okTree());
+    failTransport(failedRowsRequest);
 
     facade.retryList();
+    const retryRequest = expectTableRequest(http, { type: 'inl', tableView: 'words' });
+
     route.setQueryParams({ type: 'inl', word: '191001', contextCode: 'INL' });
-    expect(retryCancelled).not.toHaveBeenCalled();
+    expect(retryRequest.cancelled).toBe(false);
 
     route.setQueryParams({ type: 'noun', childCode: 'PN' });
-    expect(retryCancelled).toHaveBeenCalledTimes(1);
+    expect(retryRequest.cancelled).toBe(true);
+    expectTableRequest(http, {
+      type: 'noun',
+      childCode: 'PN',
+      tableView: 'words',
+    }).flush(okRows([wordRow({ contextCode: 'PN' })]));
     facade.unbindFromRoute();
   });
 

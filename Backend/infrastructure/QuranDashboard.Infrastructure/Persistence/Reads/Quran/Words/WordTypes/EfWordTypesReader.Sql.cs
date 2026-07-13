@@ -28,12 +28,19 @@ public sealed partial class EfWordTypesReader
             FROM base
             WHERE pos_category = '{ParticleType}' AND head_pos <> '{InlPos}'
             GROUP BY head_pos, tashkeel_word_id
+        ), inl_rows AS (
+            SELECT '{InlType}' AS type, '{InlPos}' AS child_code, tashkeel_word_id
+            FROM base
+            WHERE head_pos = '{InlPos}'
+            GROUP BY tashkeel_word_id
         ), all_children AS (
             SELECT * FROM noun_children
             UNION ALL
             SELECT * FROM verb_children
             UNION ALL
             SELECT * FROM particle_children
+            UNION ALL
+            SELECT * FROM inl_rows
         )
         SELECT type AS "{nameof(TreeChildCountRow.Type)}", child_code AS "{nameof(TreeChildCountRow.ChildCode)}", COUNT(*)::int AS "{nameof(TreeChildCountRow.Count)}"
         FROM all_children

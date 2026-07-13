@@ -1,9 +1,9 @@
 import { WORD_TYPE_SORTS, WordTypeCase, WordTypeDetailView, WordTypeMainType, WordTypeSort, WordTypeTableView, WordTypeTense, WordTypeVoice } from './word-types.models';
+import type { WordTypeDetailSelectionKind } from './word-types-detail.models';
 import { ROW_NUMBER_HEADER } from './words-shared.labels';
 
 export const WORD_TYPES_PAGE_TITLE = 'أنواع الكلمات';
 export const WORD_TYPES_FILTER_LABEL = 'تصفية أنواع الكلمات';
-export const WORD_TYPES_DETAILS_PANEL_LABEL = 'تفاصيل كلمة النوع';
 export const WORD_TYPES_NO_SUBTYPES_LABEL = 'لا توجد أنواع فرعية لهذا النوع';
 export const WORD_TYPES_SORT_LABEL = 'ترتيب';
 export const WORD_TYPES_LOADING_LABEL = 'جارٍ التحميل…';
@@ -81,19 +81,76 @@ export const WORD_TYPE_SORT_OPTIONS = WORD_TYPE_SORTS.map((value) => ({
   label: WORD_TYPE_SORT_LABELS[value],
 }));
 
-export const WORD_TYPE_DETAIL_TAB_LABELS: Record<WordTypeDetailView, string> = {
-  words: 'الكلمات المرتبطة',
-  ayahs: 'الآيات الخاصة بالكلمة',
-  surahs: 'السور',
-};
+export interface WordTypeDetailPresentation {
+  readonly panelLabel: string;
+  readonly emptySelectionLabel: string;
+  readonly notFoundLabel: string;
+  readonly tabs: Record<WordTypeDetailView, { readonly label: string; readonly aria: string }>;
+  readonly emptyViewLabels: Record<WordTypeDetailView, string>;
+}
 
-export const WORD_TYPE_DETAIL_TAB_ARIA: Record<WordTypeDetailView, string> = {
-  words: 'الكلمات المرتبطة بالهوية المحددة',
-  ayahs: 'الآيات الخاصة بالكلمة المحددة',
-  surahs: 'توزيع السور للكلمة المحددة',
+export const WORD_TYPE_DETAIL_PRESENTATIONS: Record<WordTypeDetailSelectionKind, WordTypeDetailPresentation> = {
+  word: {
+    panelLabel: 'تفاصيل كلمة النوع',
+    emptySelectionLabel: 'اختر كلمة من الجدول لعرض تفاصيلها.',
+    notFoundLabel: 'الكلمة المحددة غير موجودة',
+    tabs: {
+      words: { label: 'الكلمات المرتبطة', aria: 'الكلمات المرتبطة بالكلمة المحددة' },
+      ayahs: { label: 'الآيات الخاصة بالكلمة', aria: 'الآيات الخاصة بالكلمة المحددة' },
+      surahs: { label: 'سور الكلمة', aria: 'توزيع السور للكلمة المحددة' },
+    },
+    emptyViewLabels: {
+      words: 'لا توجد كلمات مرتبطة بالكلمة المحددة',
+      ayahs: 'لا توجد آيات مرتبطة بالكلمة المحددة',
+      surahs: 'لا توجد سور مرتبطة بالكلمة المحددة',
+    },
+  },
+  root: {
+    panelLabel: 'تفاصيل الجذر',
+    emptySelectionLabel: 'اختر جذرًا من الجدول لعرض تفاصيله.',
+    notFoundLabel: 'الجذر المحدد غير موجود',
+    tabs: {
+      words: { label: 'كلمات الجذر', aria: 'الكلمات المرتبطة بالجذر المحدد' },
+      ayahs: { label: 'آيات الجذر', aria: 'الآيات المرتبطة بالجذر المحدد' },
+      surahs: { label: 'سور الجذر', aria: 'توزيع السور للجذر المحدد' },
+    },
+    emptyViewLabels: {
+      words: 'لا توجد كلمات مرتبطة بالجذر المحدد',
+      ayahs: 'لا توجد آيات مرتبطة بالجذر المحدد',
+      surahs: 'لا توجد سور مرتبطة بالجذر المحدد',
+    },
+  },
+  stem: {
+    panelLabel: 'تفاصيل الأصل الصرفي',
+    emptySelectionLabel: 'اختر أصلًا صرفيًا من الجدول لعرض تفاصيله.',
+    notFoundLabel: 'الأصل الصرفي المحدد غير موجود',
+    tabs: {
+      words: { label: 'كلمات الأصل الصرفي', aria: 'الكلمات المرتبطة بالأصل الصرفي المحدد' },
+      ayahs: { label: 'آيات الأصل الصرفي', aria: 'الآيات المرتبطة بالأصل الصرفي المحدد' },
+      surahs: { label: 'سور الأصل الصرفي', aria: 'توزيع السور للأصل الصرفي المحدد' },
+    },
+    emptyViewLabels: {
+      words: 'لا توجد كلمات مرتبطة بالأصل الصرفي المحدد',
+      ayahs: 'لا توجد آيات مرتبطة بالأصل الصرفي المحدد',
+      surahs: 'لا توجد سور مرتبطة بالأصل الصرفي المحدد',
+    },
+  },
+  lemma: {
+    panelLabel: 'تفاصيل الصيغة المعجمية',
+    emptySelectionLabel: 'اختر صيغة معجمية من الجدول لعرض تفاصيلها.',
+    notFoundLabel: 'الصيغة المعجمية المحددة غير موجودة',
+    tabs: {
+      words: { label: 'كلمات الصيغة المعجمية', aria: 'الكلمات المرتبطة بالصيغة المعجمية المحددة' },
+      ayahs: { label: 'آيات الصيغة المعجمية', aria: 'الآيات المرتبطة بالصيغة المعجمية المحددة' },
+      surahs: { label: 'سور الصيغة المعجمية', aria: 'توزيع السور للصيغة المعجمية المحددة' },
+    },
+    emptyViewLabels: {
+      words: 'لا توجد كلمات مرتبطة بالصيغة المعجمية المحددة',
+      ayahs: 'لا توجد آيات مرتبطة بالصيغة المعجمية المحددة',
+      surahs: 'لا توجد سور مرتبطة بالصيغة المعجمية المحددة',
+    },
+  },
 };
-
-export const WORD_TYPES_EMPTY_SELECTION_LABEL = 'اختر صفًا من الجدول لعرض تفاصيل الكلمة.';
 
 export const WORD_TYPES_DETAIL_SUMMARY_LABEL = 'ملخص التحديد';
 export const WORD_TYPES_MEMBER_WORDS_PAGINATION_LABEL = 'تنقّل الكلمات المرتبطة';

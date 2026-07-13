@@ -29,7 +29,7 @@ public sealed record WordTableRowDto(
     int AyahsCount,
     int SurahsCount) : WordTypeTableRowDto;
 
-// Grouped variants — numeric stable ID identity. No details in MVP; rows are noninteractive.
+// Grouped variants carry the numeric stable identity used to open their scoped detail views.
 public sealed record RootTableRowDto(
     int RootId,
     string DisplayText,

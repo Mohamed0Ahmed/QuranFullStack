@@ -106,10 +106,9 @@ public sealed class WordTypesGroupedAyahsReadTests(WordTypesTestFixture fixture)
         firstAyah.MatchedWordPositions.Should().Equal(1, 2);
     }
 
-    // Ayah markers stay out of the hydrated words, and a dimension carried ONLY by a secondary segment never
-    // resolves at head grain (root 190701 / lemma 190502 / stem 190602 live on the noun word's segment).
+    // Ayah markers stay out of hydrated words, and verb-only dimensions never resolve in the noun scope.
     [Fact]
-    public async Task GroupedAyahs_ExcludesMarkersAndSecondarySegmentDimensions()
+    public async Task GroupedAyahs_ExcludesMarkersAndOutOfScopeDimensions()
     {
         await using var scope = fixture.CreateScope();
         var reader = scope.ServiceProvider.GetRequiredService<IWordTypesReader>();
@@ -122,6 +121,34 @@ public sealed class WordTypesGroupedAyahsReadTests(WordTypesTestFixture fixture)
         (await AyahsAsync(reader, WordTypeGroupedDimensionKind.Root, 190701, NounScope)).Should().BeNull();
         (await AyahsAsync(reader, WordTypeGroupedDimensionKind.Lemma, 190502, NounScope)).Should().BeNull();
         (await AyahsAsync(reader, WordTypeGroupedDimensionKind.Stem, 190602, NounScope)).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GroupedAyahs_HeadDimensionIgnoresSecondarySegmentDimension()
+    {
+        await using var scope = fixture.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+        await using var transaction = await WordTypesSyntheticStructuralData.BeginSeededTransactionAsync(dbContext);
+        var reader = scope.ServiceProvider.GetRequiredService<EfWordTypesReader>();
+        var syntheticScope = new WordTypeFilter(
+            "noun", WordTypesSyntheticStructuralData.NounChildCode, null, null, null);
+
+        var segmentAyahs = await AyahsAsync(
+            reader,
+            WordTypeGroupedDimensionKind.Lemma,
+            WordTypesSyntheticStructuralData.SegmentOnlyLemmaId,
+            syntheticScope);
+        var headAyahs = await AyahsAsync(
+            reader,
+            WordTypeGroupedDimensionKind.Lemma,
+            WordTypesSyntheticStructuralData.MushafFirstLemmaId,
+            syntheticScope);
+
+        segmentAyahs.Should().BeNull();
+        headAyahs.Should().NotBeNull();
+        headAyahs!.TotalCount.Should().Be(1);
+        headAyahs.Items.Should().ContainSingle()
+            .Which.MatchedWordIds.Should().Equal(WordTypesSyntheticStructuralData.MushafFirstWordId);
     }
 
     // An out-of-range page on an existing selection is a 200-empty page (correct TotalCount), never a 404;
