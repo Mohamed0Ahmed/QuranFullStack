@@ -24,7 +24,11 @@ ayahs, and متشابهات groups. State (page, selected ayah/word, source sele
 - `utils/`: `segment-uthmani-slices`, `segment-word-highlights`, `mushaf-word-display-text`,
   `morphology-display.labels`, `arabic-search-normalize`, `study-source-catalog.*`,
   `mushaf-verse-key-display`, `mushaf-location-keys`, `surah-jump-catalog.helpers`.
-- `models/mushaf.models.ts` — the reader/segment/study view models.
+- `models/mushaf.models.ts` — the reader/segment/study view models. Wire DTOs are
+  re-exported from `core/api/generated/` (aliased, e.g. `MushafPageDto` ↔ generated
+  `MushafPageResponse`); closed vocabularies (line/marker types, text direction,
+  source-value kinds, relationship directions) are narrowed via `Omit`-overlays, and
+  view models stay hand-written.
 
 ## Gotchas / invariants (read before changing)
 

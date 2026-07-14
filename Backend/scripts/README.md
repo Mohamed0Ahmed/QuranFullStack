@@ -9,6 +9,8 @@ Short commands to build/run the backend API and Angular dev server from any dire
 | `qd-build` | `dotnet build QuranDashboard.sln` for backend changes |
 | `qd-api` | `dotnet run --launch-profile https --no-build`; opens Swagger when the API is ready |
 | `qd-ui` | `npm run start:https` for the Angular dashboard |
+| `export-swagger` | Builds the API (Release) and writes the OpenAPI spec to `Frontend/quran-dashboard-ui/openapi/swagger.json` via the Swashbuckle CLI (`Backend/dotnet-tools.json` manifest); no running server or database needed |
+| `check-api-contract` | Runs `export-swagger`, regenerates the frontend API models (`npm run generate:api`) and the static API reference (`npm run docs:api`), then fails with `git diff --exit-code` if any committed generated output is stale |
 
 Typical daily flow:
 

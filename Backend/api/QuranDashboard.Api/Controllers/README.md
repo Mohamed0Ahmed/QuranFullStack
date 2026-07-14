@@ -39,6 +39,20 @@ and the `ApiResponse<T>` envelope; application handlers own use-case logic.
 - Unhandled exceptions should stay outside controllers and flow through the global exception
   handler so the API still returns the shared envelope.
 
+## Generated contract artifacts
+
+- The OpenAPI spec for this API is exported offline to
+  `Frontend/quran-dashboard-ui/openapi/swagger.json` by `Backend/scripts/export-swagger`
+  (Swashbuckle CLI; no running server). Controller and response-DTO XML docs are the
+  source of every description in that spec, so keep them accurate.
+- Frontend payload types are generated from that spec into
+  `Frontend/quran-dashboard-ui/src/app/core/api/generated/` (models-only consumption), and a
+  static human-browsable reference is generated at `docs/api-reference/index.html`.
+  `Backend/scripts/check-api-contract` detects stale generated output.
+- Typed non-200 response schemas (`[ProducesResponseType]` for 400/404/500) are a recorded
+  follow-up; today error codes are documented via XML `<response>` tags only, and all error
+  bodies still use the shared `ApiResponse<T>` envelope.
+
 ## Related
 
 - API root: `../README.md`

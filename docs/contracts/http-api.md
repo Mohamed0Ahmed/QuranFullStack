@@ -13,5 +13,9 @@ parameters, or payloads.
 - API boundary rules (verbs, status codes, response shape) → [`API_GUIDELINES.md`](../../Backend/.architecture/API_GUIDELINES.md)
 - API project overview → [`api/QuranDashboard.Api/README.md`](../../Backend/api/QuranDashboard.Api/README.md)
 - Response envelope → [response-envelope.md](./response-envelope.md)
+- Machine contract (generated) → [`Frontend/quran-dashboard-ui/openapi/swagger.json`](../../Frontend/quran-dashboard-ui/openapi/swagger.json), exported by `Backend/scripts/export-swagger`
+- Human-browsable reference (generated) → [`docs/api-reference/index.html`](../api-reference/index.html), built by `npm run docs:api`
 
 **Precedence:** the controller code + `Controllers/README.md` win over any other description.
+The generated spec and reference are machine expressions of that code, not new authorities;
+`Backend/scripts/check-api-contract` keeps them in sync.

@@ -29,6 +29,23 @@ ng build                 # production build → dist/
 
 Local HTTPS needs `mkcert localhost` in the project root (see `Backend/scripts/README.md`).
 
+## Generated API contract (types from the backend OpenAPI spec)
+
+- `openapi/swagger.json` — committed OpenAPI spec exported from the backend by
+  `Backend/scripts/export-swagger` (offline; no running server).
+- `src/app/core/api/generated/` — committed payload DTO interfaces generated from that spec
+  (`npm run generate:api`, ng-openapi-gen, models-only: the generated services are never
+  imported). Never hand-edit generated files.
+- `docs/api-reference/index.html` (repo root) — committed static API reference
+  (`npm run docs:api`): redocly build-docs plus `scripts/inline-redoc-bundle.mjs`, which
+  inlines the pinned local `redoc` bundle so the file opens fully offline.
+- Regenerate all three with `Backend/scripts/check-api-contract`; it fails when committed
+  output is stale. Vercel builds rely on the committed output (no dotnet in that path).
+- Feature `models/*.models.ts` files re-export the generated wire DTOs (aliased to the
+  historical local names) and keep UI-only unions, request params, and view models
+  hand-written; closed backend vocabularies the spec types as `string` are narrowed there
+  via documented `Omit`-overlays.
+
 ## Testing (read before running tests)
 
 - **Keep the `VITEST_MAX_FORKS` cap on `npm test`** — without it the run OOMs/freezes the

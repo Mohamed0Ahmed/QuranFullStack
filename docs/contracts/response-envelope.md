@@ -11,5 +11,6 @@ fields.
 - Backend envelope type → [`Contracts/ApiResponse.cs`](../../Backend/api/QuranDashboard.Api/Contracts/ApiResponse.cs)
 - Envelope + status-code rules → [`API_GUIDELINES.md`](../../Backend/.architecture/API_GUIDELINES.md) (§5 Response Shape)
 - Frontend mirror type → [`api-response.model.ts`](../../Frontend/quran-dashboard-ui/src/app/core/data-access/api-response.model.ts)
+- Generated payload models (frontend expression of the wire DTOs) → [`core/api/generated/`](../../Frontend/quran-dashboard-ui/src/app/core/api/generated/) — generated from `openapi/swagger.json`; the envelope itself stays hand-written
 
 **Precedence:** `ApiResponse.cs` + `API_GUIDELINES.md` win.
