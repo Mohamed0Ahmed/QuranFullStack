@@ -4,60 +4,34 @@ export type UniqueWordSort = 'mushaf-order' | 'occurrences' | 'alpha';
 
 export type WordDrilldownView = 'surahs' | 'missing' | 'ayahs';
 
-export interface PagedResultDto<T> {
-  page: number;
-  pageSize: number;
-  totalCount: number;
-  items: T[];
-}
+import type {
+  AyahWordForHighlightDto,
+  MissingSurahItemDto,
+  UniqueWordAyahMatchDto,
+  UniqueWordListItemDto as UniqueWordListItemWireDto,
+  UniqueWordMissingSurahsResponse as UniqueWordMissingSurahsDto,
+  UniqueWordSummaryDto as UniqueWordSummaryWireDto,
+  UniqueWordSurahItemDto,
+  UniqueWordSurahsResponse as UniqueWordSurahsDto,
+} from '../../../core/api/generated/models';
+import type { PagedResultDto } from '../../../core/data-access/paged-result.model';
 
-export interface UniqueWordListItemDto {
-  id: number;
+export type {
+  AyahWordForHighlightDto,
+  MissingSurahItemDto,
+  PagedResultDto,
+  UniqueWordAyahMatchDto,
+  UniqueWordMissingSurahsDto,
+  UniqueWordSurahItemDto,
+  UniqueWordSurahsDto,
+};
+
+export interface UniqueWordListItemDto extends Omit<UniqueWordListItemWireDto, 'kind'> {
   kind: UniqueWordKind;
-  displayText: string;
-  occurrencesCount: number;
-  ayahsCount: number;
-  surahsCount: number;
-  missingSurahsCount: number;
-  primaryWordTypeCode: string | null;
-  primaryWordTypeBroadArabicLabel: string | null;
-  rootId: number | null;
-  rootText: string | null;
 }
 
-export interface UniqueWordSummaryDto {
-  id: number;
+export interface UniqueWordSummaryDto extends Omit<UniqueWordSummaryWireDto, 'kind'> {
   kind: UniqueWordKind;
-  displayText: string;
-  occurrencesCount: number;
-  ayahsCount: number;
-  surahsCount: number;
-  missingSurahsCount: number;
-}
-
-export interface UniqueWordSurahItemDto {
-  surahNumber: number;
-  nameArabic: string;
-  occurrencesInSurah: number;
-}
-
-export interface UniqueWordSurahsDto {
-  surahs: UniqueWordSurahItemDto[];
-}
-
-export interface MissingSurahItemDto {
-  surahNumber: number;
-  nameArabic: string;
-}
-
-export interface UniqueWordMissingSurahsDto {
-  surahs: MissingSurahItemDto[];
-}
-
-export interface AyahWordForHighlightDto {
-  quranWordId: number;
-  textUthmani: string;
-  isAyahMarker: boolean;
 }
 
 export interface AyahMatchDto {
@@ -70,8 +44,6 @@ export interface AyahMatchDto {
   analysisLocation?: string | null;
   words: AyahWordForHighlightDto[];
 }
-
-export interface UniqueWordAyahMatchDto extends AyahMatchDto {}
 
 export type LoadStatus = 'idle' | 'loading' | 'success' | 'empty' | 'error' | 'notFound';
 
