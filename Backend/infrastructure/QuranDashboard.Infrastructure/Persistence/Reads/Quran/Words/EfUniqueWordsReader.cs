@@ -9,9 +9,6 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
 {
     private const int TotalSurahs = 114;
 
-    private const string FoldFrom = "أإآٱؤئةىي";
-    private const string FoldTo = "ااااواهيي";
-
     private readonly QuranDashboardDbContext _db = db;
 
     public async Task<PagedResult<UniqueWordListItemDto>> GetUniqueWordsPageAsync(
@@ -22,7 +19,7 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
         int pageSize,
         CancellationToken cancellationToken)
     {
-        var normalizedSearch = NormalizeArabicQuery(search);
+        var normalizedSearch = ArabicSearchQueryNormalizer.Normalize(search);
         var kindKey = kind == UniqueWordKind.Tashkeel
             ? UniqueWordKindKeys.Tashkeel
             : UniqueWordKindKeys.Simple;
@@ -386,7 +383,7 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
 
         if (!string.IsNullOrEmpty(normalizedSearch))
         {
-            var pattern = $"%{EscapeLikePattern(normalizedSearch)}%";
+            var pattern = $"%{ArabicSearchQueryNormalizer.EscapeLikePattern(normalizedSearch)}%";
             sql += " WHERE search_text_normalized ILIKE @pattern";
             return _db.Database.SqlQueryRaw<UniqueWordListRow>(
                 sql,
@@ -412,7 +409,7 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
 
         if (!string.IsNullOrEmpty(normalizedSearch))
         {
-            var pattern = $"%{EscapeLikePattern(normalizedSearch)}%";
+            var pattern = $"%{ArabicSearchQueryNormalizer.EscapeLikePattern(normalizedSearch)}%";
             sql += " WHERE search_text_normalized ILIKE @pattern";
             return _db.Database.SqlQueryRaw<UniqueWordListRow>(
                 sql,
@@ -432,47 +429,6 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
             .ThenBy(r => r.FirstWordOrderInMushaf),
         _ => rows.OrderBy(r => r.FirstWordOrderInMushaf),
     };
-
-    private static string? NormalizeArabicQuery(string? search)
-    {
-        if (string.IsNullOrWhiteSpace(search))
-        {
-            return null;
-        }
-
-        var builder = new StringBuilder(search.Length);
-        foreach (var ch in search)
-        {
-
-            if (IsSkippable(ch))
-            {
-                continue;
-            }
-
-            var folded = Fold(ch);
-            builder.Append(folded);
-        }
-
-        var normalized = builder.ToString().ToLowerInvariant();
-        return string.IsNullOrEmpty(normalized) ? null : normalized;
-    }
-
-    private static bool IsSkippable(char ch) =>
-        ch == '\u0640' ||
-        ch is >= '\u0610' and <= '\u061A' ||
-        ch is >= '\u064B' and <= '\u065F' ||
-        ch == '\u0670' ||
-        ch is >= '\u06D6' and <= '\u06ED' ||
-        ch is >= '\u08D3' and <= '\u08FF';
-
-    private static char Fold(char ch)
-    {
-        var index = FoldFrom.IndexOf(ch);
-        return index >= 0 ? FoldTo[index] : ch;
-    }
-
-    private static string EscapeLikePattern(string value) =>
-        value.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_");
 
     private static string? ResolvePrimaryWordTypeBroadLabel(string code, string? category) => code switch
     {

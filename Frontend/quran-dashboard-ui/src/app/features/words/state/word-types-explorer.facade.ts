@@ -45,6 +45,7 @@ const DEFAULT_QUERY: ParsedWordTypesQuery = {
   case: DEFAULT_WORD_TYPE_CASE,
   tense: DEFAULT_WORD_TYPE_TENSE,
   voice: DEFAULT_WORD_TYPE_VOICE,
+  search: null,
   sort: DEFAULT_WORD_TYPE_SORT,
   page: DEFAULT_WORD_TYPES_PAGE,
   word: null,
@@ -339,6 +340,6 @@ export class WordTypesExplorerFacade {
   }
 
   private requestKey(query: ParsedWordTypesQuery): string {
-    return [query.type, query.childCode, query.tableView, query.case, query.tense, query.voice, query.sort, query.page].join('|');
+    return [query.type, query.childCode, query.tableView, query.case, query.tense, query.voice, query.search, query.sort, query.page].join('|');
   }
 }

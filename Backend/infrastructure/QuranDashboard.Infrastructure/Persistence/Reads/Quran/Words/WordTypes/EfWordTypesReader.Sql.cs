@@ -191,8 +191,20 @@ public sealed partial class EfWordTypesReader
             AND w.unique_tashkeel_word_id IS NOT NULL
             {TypePredicate(context)}
             {SecondaryFilterPredicate(context)}
+            {SearchPredicate(context)}
             {GroupedDimensionPredicate(groupedDimension)}
         """;
+
+    // Word-identity search reuses the unique-tashkeel join the base already carries and matches the
+    // same computed identity-search column Unique Words search uses (research R2 equivalence): the
+    // GIN-trgm-indexed search_text_normalized (a fold of text_uthmani_simple + text_imlaei_simple).
+    // Identity text only — never root/stem/lemma display text. The term is a parameter value, never
+    // interpolated; the tree (Unscoped) and grouped-detail contexts carry no search so this is empty
+    // for them, keeping the base byte-for-byte unchanged for existing callers.
+    private static string SearchPredicate(WordTypeReadContext context) =>
+        context.HasSearch
+            ? "AND unique_word.search_text_normalized ILIKE @searchPattern"
+            : string.Empty;
 
     // Grouped member/detail reads restrict the shared base to a single numeric head dimension. Only the
     // allowlisted id column may appear; the *_text columns are projection-only and never a membership
@@ -284,6 +296,7 @@ public sealed partial class EfWordTypesReader
         };
         AddChildCodeParameter(context, parameters);
         AddSecondaryFilterParameters(context, parameters);
+        AddSearchParameter(context, parameters);
 
         if (sort == WordTypeSort.Alpha)
         {
@@ -356,6 +369,7 @@ public sealed partial class EfWordTypesReader
         };
         AddChildCodeParameter(context, parameters);
         AddSecondaryFilterParameters(context, parameters);
+        AddSearchParameter(context, parameters);
         AddDimensionParameter(dimensionId, parameters);
         return [.. parameters];
     }
@@ -365,6 +379,7 @@ public sealed partial class EfWordTypesReader
         var parameters = new List<object>();
         AddChildCodeParameter(context, parameters);
         AddSecondaryFilterParameters(context, parameters);
+        AddSearchParameter(context, parameters);
         AddDimensionParameter(dimensionId, parameters);
         return [.. parameters];
     }
@@ -402,6 +417,18 @@ public sealed partial class EfWordTypesReader
         if (context.HasVoiceFilter)
         {
             parameters.Add(new NpgsqlParameter<string>("voiceFilter", context.Voice!));
+        }
+    }
+
+    // Context.Search is already normalized; the parameter is the escaped %contains% pattern, matching
+    // the Unique Words reader's `%EscapeLikePattern(normalized)%` + ILIKE shape exactly. Added only when
+    // the SearchPredicate is emitted so the SQL and parameter list stay in sync.
+    private static void AddSearchParameter(WordTypeReadContext context, List<object> parameters)
+    {
+        if (context.HasSearch)
+        {
+            var pattern = $"%{ArabicSearchQueryNormalizer.EscapeLikePattern(context.Search!)}%";
+            parameters.Add(new NpgsqlParameter<string>("searchPattern", pattern));
         }
     }
 
@@ -459,7 +486,7 @@ public sealed partial class EfWordTypesReader
     /// filters so the row/tree SQL builders thread every dimension consistently. <see cref="Unscoped"/>
     /// is the no-child/no-secondary-filter baseline used by the tree reads (E1 counts stay unscoped).
     /// </summary>
-    private sealed record WordTypeReadContext(string Type, string? ChildCode, string? Case, string? Tense, string? Voice)
+    private sealed record WordTypeReadContext(string Type, string? ChildCode, string? Case, string? Tense, string? Voice, string? Search = null)
     {
         public static WordTypeReadContext Unscoped { get; } = new(string.Empty, null, null, null, null);
 
@@ -470,6 +497,10 @@ public sealed partial class EfWordTypesReader
         public bool HasCaseFilter => !string.IsNullOrWhiteSpace(Case) && Case != "all";
         public bool HasTenseFilter => !string.IsNullOrWhiteSpace(Tense) && Tense != "all";
         public bool HasVoiceFilter => !string.IsNullOrWhiteSpace(Voice) && Voice != "all";
+
+        // Search holds the already-normalized identity fragment (empty/whitespace/diacritics-only
+        // collapsed to null in the reader), so a non-empty value always narrows the base.
+        public bool HasSearch => !string.IsNullOrEmpty(Search);
     }
 
     private sealed record TreeChildCountRow(string Type, string ChildCode, int Count);

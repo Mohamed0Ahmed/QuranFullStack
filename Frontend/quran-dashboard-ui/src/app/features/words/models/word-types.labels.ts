@@ -4,6 +4,10 @@ import { ROW_NUMBER_HEADER } from './words-shared.labels';
 
 export const WORD_TYPES_PAGE_TITLE = 'أنواع الكلمات';
 export const WORD_TYPES_FILTER_LABEL = 'تصفية أنواع الكلمات';
+// Search runs over word identity text only; both label and placeholder name the word grain so grouped
+// views stay honest about what was searched (A1×C2 reconciliation).
+export const WORD_TYPES_SEARCH_LABEL = 'بحث في الكلمات';
+export const WORD_TYPES_SEARCH_PLACEHOLDER = 'ابحث في الكلمات';
 export const WORD_TYPES_NO_SUBTYPES_LABEL = 'لا توجد أنواع فرعية لهذا النوع';
 export const WORD_TYPES_SORT_LABEL = 'ترتيب';
 export const WORD_TYPES_LOADING_LABEL = 'جارٍ التحميل…';

@@ -84,7 +84,7 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
     {
         var type = NormalizeType(filter.Type);
         var childCode = NormalizeChildCode(filter.ChildCode);
-        var context = new WordTypeReadContext(type, childCode, filter.Case, filter.Tense, filter.Voice);
+        var context = new WordTypeReadContext(type, childCode, filter.Case, filter.Tense, filter.Voice, ArabicSearchQueryNormalizer.Normalize(filter.Search));
         var totalCount = await CountRowsAsync(context, cancellationToken);
         var skip = ReadPaging.CalculateSafeSkip(page, pageSize, totalCount);
         if (skip is null)
@@ -126,7 +126,7 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
 
         var type = NormalizeType(filter.Type);
         var childCode = NormalizeChildCode(filter.ChildCode);
-        var context = new WordTypeReadContext(type, childCode, filter.Case, filter.Tense, filter.Voice);
+        var context = new WordTypeReadContext(type, childCode, filter.Case, filter.Tense, filter.Voice, ArabicSearchQueryNormalizer.Normalize(filter.Search));
         var totalCount = await CountGroupedRowsAsync(context, tableView, cancellationToken);
         var skip = ReadPaging.CalculateSafeSkip(page, pageSize, totalCount);
         if (skip is null)

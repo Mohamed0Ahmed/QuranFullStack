@@ -32,6 +32,23 @@ and Unique Words. They back the `application/.../Quran/Words/**` query handlers 
 - Response shape/paging must stay aligned with `ReadPaging` and the API contract; changing
   a column or page shape is an API-contract change (update the controller + `API_GUIDELINES`
   expectations and any frontend model).
+- **Word Types word-identity search** (Feature 026) is one optional predicate on the shared
+  `BaseRowsSql` occurrence base (`SearchPredicate` in `EfWordTypesReader.Sql.cs`): a parameterized
+  `unique_word.search_text_normalized ILIKE @searchPattern` on the tashkeel-word join the base already
+  carries. It reuses the **same computed identity-search column** (`search_text_normalized`, a folded
+  `text_uthmani_simple || ' ' || text_imlaei_simple`) and the **same query normalizer**
+  (`ArabicSearchQueryNormalizer`, extracted from `EfUniqueWordsReader`) that Unique Words search uses, so
+  the two boxes fold diacritics/orthography identically. It matches **word identity text only** — never
+  `root_text`/`stem_text`/`lemma_text` — and, because it lives on the shared base, the words view, all
+  three grouped views, and their `TotalCount`s narrow together (list scope). The search term reaches SQL
+  only as a parameter value and is never logged (`hasSearch` boolean only). **Grouped-detail reads
+  (`.GroupedDetails.*`) take NO search term** — their identity is a numeric dimension id already scoped;
+  `ToGroupedReadContext` builds a search-free context, so the asymmetry is by construction.
+- **Word Types page-size caps** are split in `WordTypesHandlerValidation` (Feature 026): **list reads**
+  (`/words`, `/table`) accept `pageSize 1..1000` (`MaxListPageSize`, default 1000); **detail reads** (word
+  ayahs, grouped member words, grouped ayahs) keep `pageSize 1..100` (`MaxDetailPageSize`, default 100).
+  The former single 100 cap gated both; the split preserves the documented grouped-detail 1..100 contract
+  while unlocking 1000-row list parity. Grouped surahs stay single-shot.
 - **Word Types grouped table reads** (`EfWordTypesReader.GetTableRowsAsync` for
   `tableView=roots|stems|lemmas`) reuse the same scoped `BaseRowsSql` occurrence base as the
   word rows, verbatim — grouping by the numeric `root_id`/`stem_id`/`lemma_id`, excluding

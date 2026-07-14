@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, inject, signal, viewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Subject, Subscription, debounceTime } from 'rxjs';
 
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
 import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
@@ -23,6 +24,8 @@ import {
   WORD_TYPES_ERROR_LABEL,
   WORD_TYPES_PAGE_TITLE,
   WORD_TYPES_RETRY_LABEL,
+  WORD_TYPES_SEARCH_LABEL,
+  WORD_TYPES_SEARCH_PLACEHOLDER,
   WORD_TYPES_SELECT_SUBTYPE_LABEL,
   WORD_TYPES_SORT_LABEL,
 } from '../../models/word-types.labels';
@@ -57,6 +60,7 @@ import {
   buildWordTypesDetailScopeQuery,
   canonicalWordTypesDetailPage,
   clearWordTypesSelection,
+  parseWordTypesQueryParams,
 } from '../../state/word-types-url-sync';
 import { mapWordTypeAyahMatchToShared } from '../../utils/word-type-ayah-match.mapper';
 
@@ -94,10 +98,17 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
   private desktopQuery?: MediaQueryList;
   private readonly onDesktopChange = (event: MediaQueryListEvent): void => this.isDesktop.set(event.matches);
 
+  // Debounced word-identity search: user input echoes into searchDraft immediately and only settles to
+  // the URL after 300ms; the route sync mirrors the restored search back into the input on refresh/Back.
+  private readonly searchInput = new Subject<string>();
+  private searchSub?: Subscription;
+  private querySyncSub?: Subscription;
+
   protected readonly pageSize = WORD_TYPES_PAGE_SIZE;
   protected readonly listState = this.explorerFacade.listState;
   protected readonly panelState = this.detailFacade.panelState;
   protected readonly isDesktop = signal(true);
+  protected readonly searchDraft = signal('');
   private readonly filter = viewChild(WordTypeFilterComponent);
   private readonly table = viewChild(WordTypesTableComponent);
 
@@ -182,10 +193,18 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
   protected get tableLabel() { return WORD_TYPE_TABLE_VIEW_TABLE_LABELS[this.listState().query.tableView]; }
   protected get sortLabel() { return WORD_TYPES_SORT_LABEL; }
   protected get sortOptions() { return WORD_TYPE_SORT_OPTIONS; }
+  protected get searchLabel() { return WORD_TYPES_SEARCH_LABEL; }
+  protected get searchPlaceholder() { return WORD_TYPES_SEARCH_PLACEHOLDER; }
 
   ngOnInit(): void {
     this.explorerFacade.bindToRoute(this.route);
     this.detailFacade.bindToRoute(this.route);
+
+    // Search is list-scope: a change resets the list page and keeps the identity-loaded detail selection.
+    this.searchSub = this.searchInput.pipe(debounceTime(300))
+      .subscribe((value) => this.updateQueryParams({ search: value || null, page: null }));
+    this.querySyncSub = this.route.queryParamMap
+      .subscribe((params) => this.searchDraft.set(parseWordTypesQueryParams(params).search ?? ''));
 
     if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
       this.desktopQuery = window.matchMedia(QD_BP_DESKTOP_MIN_QUERY);
@@ -197,7 +216,14 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.explorerFacade.unbindFromRoute();
     this.detailFacade.unbindFromRoute();
+    this.searchSub?.unsubscribe();
+    this.querySyncSub?.unsubscribe();
     this.desktopQuery?.removeEventListener('change', this.onDesktopChange);
+  }
+
+  protected onSearchInput(value: string): void {
+    this.searchDraft.set(value);
+    this.searchInput.next(value);
   }
 
   protected selectScope(event: WordTypeScopeSelectedEvent): void {

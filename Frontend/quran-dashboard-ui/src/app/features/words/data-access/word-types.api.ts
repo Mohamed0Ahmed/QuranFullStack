@@ -41,6 +41,7 @@ export class WordTypesApi {
     case: WordTypeCase;
     tense: WordTypeTense;
     voice: WordTypeVoice;
+    search: string | null;
     sort: WordTypeSort;
     page: number;
     pageSize: number;
@@ -55,6 +56,10 @@ export class WordTypesApi {
       params = params.set('childCode', options.childCode);
     }
 
+    if (options.search) {
+      params = params.set('search', options.search);
+    }
+
     return this.http.get<ApiResponse<PagedResultDto<WordTypeRowDto>>>(`${this.baseUrl}/api/words/word-types/words`, { params });
   }
 
@@ -64,6 +69,7 @@ export class WordTypesApi {
     case: WordTypeCase;
     tense: WordTypeTense;
     voice: WordTypeVoice;
+    search: string | null;
     tableView: WordTypeTableView;
     sort: WordTypeSort;
     page: number;
@@ -78,6 +84,10 @@ export class WordTypesApi {
 
     if (options.childCode !== null) {
       params = params.set('childCode', options.childCode);
+    }
+
+    if (options.search) {
+      params = params.set('search', options.search);
     }
 
     return this.http.get<ApiResponse<PagedResultDto<WordTypeTableRowDto>>>(`${this.baseUrl}/api/words/word-types/table`, { params });

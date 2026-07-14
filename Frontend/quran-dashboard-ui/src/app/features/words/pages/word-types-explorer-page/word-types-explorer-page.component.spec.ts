@@ -412,8 +412,22 @@ describe('WordTypesExplorerPageComponent', () => {
 
     expect(requestsFor('table').at(-1)?.request.params.get('type')).toBe('noun');
     expect(requestsFor('table').at(-1)?.request.params.get('childCode')).toBe('N');
-    expect(requestsFor('table').at(-1)?.request.params.get('pageSize')).toBe('25');
+    expect(requestsFor('table').at(-1)?.request.params.get('pageSize')).toBe('1000');
     expect((fixture.nativeElement as HTMLElement).querySelector('qd-word-types-table')).not.toBeNull();
+  });
+
+  it('restores the search term into the toolbar input and threads it to the list read', async () => {
+    const fixture = await createPage();
+
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'N', search: 'SYNTH_SEARCH' }));
+    flushPendingRequests();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const searchInput = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="word-types-search-input"]') as HTMLInputElement;
+    expect(searchInput).not.toBeNull();
+    expect(searchInput.value).toBe('SYNTH_SEARCH');
+    expect(requestsFor('table').at(-1)?.request.params.get('search')).toBe('SYNTH_SEARCH');
   });
 
   it('renders scoped tabs and passes the complete grouped payload to the table while keeping the details host mounted', async () => {
@@ -653,7 +667,7 @@ describe('WordTypesExplorerPageComponent', () => {
 
     expect(requestsFor('table').at(-1)?.request.params.get('type')).toBe('inl');
     expect(requestsFor('table').at(-1)?.request.params.has('childCode')).toBe(false);
-    expect(requestsFor('table').at(-1)?.request.params.get('pageSize')).toBe('25');
+    expect(requestsFor('table').at(-1)?.request.params.get('pageSize')).toBe('1000');
     expect(TestBed.inject(WordTypesExplorerFacade).listState().status).toBe('success');
     expect((fixture.nativeElement as HTMLElement).querySelector('qd-word-types-table')).not.toBeNull();
   });
@@ -1229,7 +1243,7 @@ describe('WordTypesExplorerPageComponent', () => {
     expect(wordsRequest?.params.get('type')).toBe('noun');
     expect(wordsRequest?.params.get('childCode')).toBe('PN');
     expect(wordsRequest?.params.get('page')).toBe('1');
-    expect(wordsRequest?.params.get('pageSize')).toBe('25');
+    expect(wordsRequest?.params.get('pageSize')).toBe('100');
   });
 
   it('defaults a new grouped selection to the words tab and renders its member words', async () => {

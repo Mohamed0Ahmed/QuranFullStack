@@ -16,17 +16,19 @@ public sealed class GetWordTypeTableHandler(
     {
         ArgumentNullException.ThrowIfNull(query);
 
+        var search = WordTypesHandlerValidation.NormalizeSearch(query.Search);
         var filter = new WordTypeFilter(
             WordTypesHandlerValidation.NormalizeType(query.Type),
             Normalize(query.ChildCode),
             Normalize(query.Case),
             Normalize(query.Tense),
-            Normalize(query.Voice));
+            Normalize(query.Voice),
+            search);
 
         if (!WordTypesHandlerValidation.IsValidFilter(filter))
         {
             logger.LogWarning(
-                "Rejected {feature} {operation} {reason} {type} {childCode} {hasCaseFilter} {hasTenseFilter} {hasVoiceFilter}",
+                "Rejected {feature} {operation} {reason} {type} {childCode} {hasCaseFilter} {hasTenseFilter} {hasVoiceFilter} {hasSearch}",
                 FeatureName,
                 OperationName,
                 "invalidFilter",
@@ -34,7 +36,8 @@ public sealed class GetWordTypeTableHandler(
                 filter.ChildCode,
                 filter.Case is not null,
                 filter.Tense is not null,
-                filter.Voice is not null);
+                filter.Voice is not null,
+                filter.Search is not null);
 
             return new GetWordTypeTableOutcome.InvalidFilter();
         }
@@ -64,7 +67,7 @@ public sealed class GetWordTypeTableHandler(
             return new GetWordTypeTableOutcome.InvalidSort();
         }
 
-        if (!WordTypesHandlerValidation.IsValidPaging(query.Page, query.PageSize))
+        if (!WordTypesHandlerValidation.IsValidListPaging(query.Page, query.PageSize))
         {
             logger.LogWarning(
                 "Rejected {feature} {operation} {reason} {pageNumber} {pageSize}",
@@ -79,11 +82,12 @@ public sealed class GetWordTypeTableHandler(
 
         var page = await reader.GetTableRowsAsync(filter, tableView, sort, query.Page, query.PageSize, cancellationToken);
         logger.LogInformation(
-            "Completed {feature} {operation} {type} {childCode} {tableView} {pageNumber} {pageSize} {sort} {totalCount} {itemCount}",
+            "Completed {feature} {operation} {type} {childCode} {hasSearch} {tableView} {pageNumber} {pageSize} {sort} {totalCount} {itemCount}",
             FeatureName,
             OperationName,
             filter.Type,
             filter.ChildCode,
+            filter.Search is not null,
             query.TableView,
             query.Page,
             query.PageSize,

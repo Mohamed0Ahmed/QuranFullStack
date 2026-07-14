@@ -66,6 +66,8 @@ export function parseWordTypesQueryParams(queryParams: ParamMap): ParsedWordType
     case: normalizeCase(type, queryParams.get(WORD_TYPES_QUERY_KEYS.case)),
     tense: normalizeTense(type, queryParams.get(WORD_TYPES_QUERY_KEYS.tense)),
     voice: normalizeVoice(type, queryParams.get(WORD_TYPES_QUERY_KEYS.voice)),
+    // Search is list-scope free text: trimmed, empty/whitespace collapses to null (fail-closed).
+    search: normalizeOptionalText(queryParams.get(WORD_TYPES_QUERY_KEYS.search)),
     sort: normalizeSort(queryParams.get(WORD_TYPES_QUERY_KEYS.sort)),
     page: parsePositiveInt(queryParams.get(WORD_TYPES_QUERY_KEYS.page)) ?? DEFAULT_WORD_TYPES_PAGE,
     word: parsedIdentity.word,
@@ -91,6 +93,7 @@ export type WordTypesQueryChange = Partial<{
   case: WordTypeCase | null;
   tense: WordTypeTense | null;
   voice: WordTypeVoice | null;
+  search: string | null;
   sort: WordTypeSort | null;
   page: number | null;
   word: number | null;
@@ -116,6 +119,7 @@ const WORD_TYPES_QUERY_ORDER = [
   'case',
   'tense',
   'voice',
+  'search',
   'sort',
   'page',
   'word',

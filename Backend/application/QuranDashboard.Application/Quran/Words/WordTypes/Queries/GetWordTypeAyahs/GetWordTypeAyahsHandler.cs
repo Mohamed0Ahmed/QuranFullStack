@@ -22,7 +22,7 @@ public sealed class GetWordTypeAyahsHandler(
             return new GetWordTypeAyahsOutcome.InvalidIdentity();
         }
 
-        if (!WordTypesHandlerValidation.IsValidPaging(query.Page, query.PageSize))
+        if (!WordTypesHandlerValidation.IsValidDetailPaging(query.Page, query.PageSize))
         {
             return new GetWordTypeAyahsOutcome.InvalidPaging();
         }

@@ -68,6 +68,12 @@ row shapes (`WordTypeRowDto`, `WordTypeTableRowDto` polymorphic variants) unchan
 - SQL identifiers stay allowlisted; user input reaches SQL only as parameter values.
 - Search predicate joins/EXISTS against `quran_words_unique_tashkeel` on the base's
   word id; no ayah-text access, no dimension-text predicates.
+- Recorded implementation deviation (accepted): the search predicate matches the computed
+  `quran_words_unique_tashkeel.search_text_normalized` column (the folded identity-search text
+  Unique Words search already uses) instead of the literal `text_imlaei_simple` named in §1 —
+  the substance of Locked Decision A1 (normalized imlaei-simple word-identity text only) is
+  preserved, and the T009(d) normalization-equivalence requirement makes the folded column the
+  correct target.
 - No writes; `AsNoTracking`/raw-read semantics preserved.
 - reads README + `features/words/README.md` updated in the same commit as each
   contract change here.

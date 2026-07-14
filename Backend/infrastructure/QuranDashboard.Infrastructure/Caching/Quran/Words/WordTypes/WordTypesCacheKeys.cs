@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using QuranDashboard.Application.Abstractions.Quran.Words.WordTypes;
+using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words;
 
 namespace QuranDashboard.Infrastructure.Caching.Quran.Words.WordTypes;
 
@@ -48,12 +49,17 @@ public static class WordTypesCacheKeys
         selection.Filter.Tense,
         selection.Filter.Voice);
 
-    private static string HashFilter(WordTypeFilter filter) => HashParts(
-        filter.Type,
-        filter.ChildCode,
-        filter.Case,
-        filter.Tense,
-        filter.Voice);
+    // Empty/absent search keeps the pre-feature 5-part hash so warm rows/table entries stay valid; a
+    // non-empty NORMALIZED search appends a sixth component (same normalization the SQL predicate uses)
+    // so searched and unsearched reads never cross-serve, and two raw terms that normalize equally share
+    // one entry.
+    private static string HashFilter(WordTypeFilter filter)
+    {
+        var normalizedSearch = ArabicSearchQueryNormalizer.Normalize(filter.Search);
+        return string.IsNullOrEmpty(normalizedSearch)
+            ? HashParts(filter.Type, filter.ChildCode, filter.Case, filter.Tense, filter.Voice)
+            : HashParts(filter.Type, filter.ChildCode, filter.Case, filter.Tense, filter.Voice, normalizedSearch);
+    }
 
     private static string HashIdentity(WordTypeRowIdentity identity) => HashParts(
         identity.TashkeelWordId.ToString(CultureInfo.InvariantCulture),

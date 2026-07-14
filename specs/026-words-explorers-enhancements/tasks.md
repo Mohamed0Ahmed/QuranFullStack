@@ -32,7 +32,7 @@ follow the plan's four phases: **plan-P1 = US1+US2+US3 (one commit)**,
 
 **Purpose**: verified clean baseline before touching contracts.
 
-- [ ] T001 Verify baseline is green on branch `026-words-explorers-enhancements`: `dotnet build Backend/QuranDashboard.sln`, `dotnet test Backend/QuranDashboard.sln`, and frontend `npm test` under the repo vitest worker cap (root README rule). Record any pre-existing failure BEFORE starting — do not absorb it into feature commits.
+- [x] T001 Verify baseline is green on branch `026-words-explorers-enhancements`: `dotnet build Backend/QuranDashboard.sln`, `dotnet test Backend/QuranDashboard.sln`, and frontend `npm test` under the repo vitest worker cap (root README rule). Record any pre-existing failure BEFORE starting — do not absorb it into feature commits.
 
 ---
 
@@ -42,8 +42,8 @@ follow the plan's four phases: **plan-P1 = US1+US2+US3 (one commit)**,
 identically to Unique Words search (research R2). Blocks US1 only, but do it first
 to keep the Unique Words behavior pin honest.
 
-- [ ] T002 Extract the private Arabic normalization from `BE-INF/Persistence/Reads/Quran/Words/EfUniqueWordsReader.cs` (`NormalizeArabicQuery`) into a new shared internal static helper `BE-INF/Persistence/Reads/Quran/Words/ArabicSearchQueryNormalizer.cs`; `EfUniqueWordsReader` consumes it; logic byte-identical (pure move, no behavior change).
-- [ ] T003 Re-run the Unique Words search/sort/paging tests (`BE-TST/Quran/Words/UniqueWordsSearchSortPagingTests.cs` and siblings) to pin that T002 changed nothing. All green before any US1 work.
+- [x] T002 Extract the private Arabic normalization from `BE-INF/Persistence/Reads/Quran/Words/EfUniqueWordsReader.cs` (`NormalizeArabicQuery`) into a new shared internal static helper `BE-INF/Persistence/Reads/Quran/Words/ArabicSearchQueryNormalizer.cs`; `EfUniqueWordsReader` consumes it; logic byte-identical (pure move, no behavior change).
+- [x] T003 Re-run the Unique Words search/sort/paging tests (`BE-TST/Quran/Words/UniqueWordsSearchSortPagingTests.cs` and siblings) to pin that T002 changed nothing. All green before any US1 work.
 
 **Checkpoint**: normalizer shared + pinned. User stories may begin.
 
@@ -61,20 +61,20 @@ switch tabs, grouped views show roots/stems/lemmas of matching words; URL carrie
 
 ### Implementation — backend
 
-- [ ] T004 [US1] Add `string? Search` to `GetWordTypeRowsQuery` and `GetWordTypeTableQuery` records in `BE-APP/Quran/Words/WordTypes/Queries/GetWordTypeRows/` and `.../GetWordTypeTable/`; thread through both handlers; log ONLY a `hasSearch` boolean (mirror `GetRootsPageHandler`'s `{hasSearch}`), never the text.
-- [ ] T005 [US1] Add search validation to `BE-APP/Quran/Words/WordTypes/Queries/WordTypesHandlerValidation.cs`: trim; empty/whitespace → null; length > 64 → the existing `InvalidFilter`-style outcome (400).
-- [ ] T006 [US1] Add the search predicate to `BaseRowsSql` in `BE-INF/Persistence/Reads/Quran/Words/WordTypes/EfWordTypesReader.Sql.cs`: parameterized `LIKE @search` (`%normalized%` as a VALUE) against `quran_words_unique_tashkeel.text_imlaei_simple` joined/EXISTS on the base's word id; normalize via `ArabicSearchQueryNormalizer` (T002). Plumb the param through `EfWordTypesReader.cs` `GetRowsAsync`/`GetTableRowsAsync` and the reader interface `BE-ABS/Quran/Words/WordTypes/IWordTypesReader.cs`. Grouped detail reads (`.GroupedDetails.*`) take NO search param.
-- [ ] T007 [US1] Include normalized search in rows/table cache keys in `BE-INF/Caching/Quran/Words/WordTypes/WordTypesCacheKeys.cs` + pass-through in `CachedWordTypesReader.cs`. Empty search ⇒ key byte-identical to today (warm entries stay valid).
-- [ ] T008 [US1] Add `[FromQuery] string? search` to `GetRows` and `GetTable` in `BE-API/Controllers/Words/WordTypesController.cs`; add any new Arabic message to `BE-API/Common/ApiMessages.cs`.
-- [ ] T009 [US1] Backend tests in `BE-TST/Quran/WordsWordTypes/`: (a) search narrows words rows by identity text only (tashkeel-insensitive match hits); (b) `tableView=roots|stems|lemmas` rows AND `TotalCount` reflect the searched base; (c) a term matching only `root_text`/`lemma_text`/`stem_text` (not word text) matches NOTHING; (d) normalization equivalence with Unique Words search; (e) 65-char search → 400; (f) cache-key isolation (search vs no-search never cross-serve); (g) grouped detail reads unaffected.
+- [x] T004 [US1] Add `string? Search` to `GetWordTypeRowsQuery` and `GetWordTypeTableQuery` records in `BE-APP/Quran/Words/WordTypes/Queries/GetWordTypeRows/` and `.../GetWordTypeTable/`; thread through both handlers; log ONLY a `hasSearch` boolean (mirror `GetRootsPageHandler`'s `{hasSearch}`), never the text.
+- [x] T005 [US1] Add search validation to `BE-APP/Quran/Words/WordTypes/Queries/WordTypesHandlerValidation.cs`: trim; empty/whitespace → null; length > 64 → the existing `InvalidFilter`-style outcome (400).
+- [x] T006 [US1] Add the search predicate to `BaseRowsSql` in `BE-INF/Persistence/Reads/Quran/Words/WordTypes/EfWordTypesReader.Sql.cs`: parameterized `LIKE @search` (`%normalized%` as a VALUE) against `quran_words_unique_tashkeel.text_imlaei_simple` joined/EXISTS on the base's word id; normalize via `ArabicSearchQueryNormalizer` (T002). Plumb the param through `EfWordTypesReader.cs` `GetRowsAsync`/`GetTableRowsAsync` and the reader interface `BE-ABS/Quran/Words/WordTypes/IWordTypesReader.cs`. Grouped detail reads (`.GroupedDetails.*`) take NO search param.
+- [x] T007 [US1] Include normalized search in rows/table cache keys in `BE-INF/Caching/Quran/Words/WordTypes/WordTypesCacheKeys.cs` + pass-through in `CachedWordTypesReader.cs`. Empty search ⇒ key byte-identical to today (warm entries stay valid).
+- [x] T008 [US1] Add `[FromQuery] string? search` to `GetRows` and `GetTable` in `BE-API/Controllers/Words/WordTypesController.cs`; add any new Arabic message to `BE-API/Common/ApiMessages.cs`.
+- [x] T009 [US1] Backend tests in `BE-TST/Quran/WordsWordTypes/`: (a) search narrows words rows by identity text only (tashkeel-insensitive match hits); (b) `tableView=roots|stems|lemmas` rows AND `TotalCount` reflect the searched base; (c) a term matching only `root_text`/`lemma_text`/`stem_text` (not word text) matches NOTHING; (d) normalization equivalence with Unique Words search; (e) 65-char search → 400; (f) cache-key isolation (search vs no-search never cross-serve); (g) grouped detail reads unaffected.
 
 ### Implementation — frontend
 
-- [ ] T010 [P] [US1] Add `search` to `WORD_TYPES_QUERY_KEYS` in `WORDS/models/word-types.models.ts`; parse fail-closed (trim, empty → absent) in `WORDS/state/word-types-url-sync.ts`; search change serializes with `page: null`; update `WORDS/state/word-types-url-sync.spec.ts` (parse/serialize/fail-closed/restore cases + one backward-compat case: a pre-feature URL without `search` parses byte-identically to today).
-- [ ] T011 [US1] `WORDS/data-access/word-types.api.ts`: send `search` param only when non-empty on rows + table calls; update `word-types.api.spec.ts`.
-- [ ] T012 [US1] `WORDS/state/word-types-explorer.facade.ts`: search is part of the list query; `WORDS/state/word-types-cache.ts`: rows/table keys gain the search component (empty ⇒ unchanged key); update both specs.
-- [ ] T013 [US1] `WORDS/pages/word-types-explorer-page/word-types-explorer-page.component.ts` + `.html`: toolbar search input visible on ALL tableViews, wired `Subject` + `debounceTime(300)` → `updateQueryParams({ search: value || null, page: null })` (mirror `roots-explorer-page.component.ts:100`); labels/placeholder in `WORDS/models/word-types.labels.ts` — placeholder names the word grain: "ابحث في الكلمات" (TDZ getter pattern — do not use readonly fields).
-- [ ] T014 [US1] Update words README (search param, list-scope semantics, all-views behavior) and reads README (predicate location, identity-text-only rule, grouped-detail asymmetry) in the same commit.
+- [x] T010 [P] [US1] Add `search` to `WORD_TYPES_QUERY_KEYS` in `WORDS/models/word-types.models.ts`; parse fail-closed (trim, empty → absent) in `WORDS/state/word-types-url-sync.ts`; search change serializes with `page: null`; update `WORDS/state/word-types-url-sync.spec.ts` (parse/serialize/fail-closed/restore cases + one backward-compat case: a pre-feature URL without `search` parses byte-identically to today).
+- [x] T011 [US1] `WORDS/data-access/word-types.api.ts`: send `search` param only when non-empty on rows + table calls; update `word-types.api.spec.ts`.
+- [x] T012 [US1] `WORDS/state/word-types-explorer.facade.ts`: search is part of the list query; `WORDS/state/word-types-cache.ts`: rows/table keys gain the search component (empty ⇒ unchanged key); update both specs.
+- [x] T013 [US1] `WORDS/pages/word-types-explorer-page/word-types-explorer-page.component.ts` + `.html`: toolbar search input visible on ALL tableViews, wired `Subject` + `debounceTime(300)` → `updateQueryParams({ search: value || null, page: null })` (mirror `roots-explorer-page.component.ts:100`); labels/placeholder in `WORDS/models/word-types.labels.ts` — placeholder names the word grain: "ابحث في الكلمات" (TDZ getter pattern — do not use readonly fields).
+- [x] T014 [US1] Update words README (search param, list-scope semantics, all-views behavior) and reads README (predicate location, identity-text-only rule, grouped-detail asymmetry) in the same commit.
 
 **Checkpoint**: search fully functional and URL-restorable on all four views.
 
@@ -89,12 +89,12 @@ switch tabs, grouped views show roots/stems/lemmas of matching words; URL carrie
 
 ### Implementation
 
-- [ ] T015 [US2] In `BE-APP/Quran/Words/WordTypes/Queries/WordTypesHandlerValidation.cs`, split `MaxPageSize = 100` into `MaxListPageSize = 1000` (rows/table reads) and `MaxDetailPageSize = 100` (word ayahs, grouped member words/ayahs); update every handler that validates paging to use the correct constant.
-- [ ] T016 [US2] `BE-API/Controllers/Words/WordTypesController.cs`: `DefaultListPageSize` 25 → 1000.
-- [ ] T017 [US2] `WORDS/models/word-types.models.ts`: `WORD_TYPES_PAGE_SIZE` 25 → 1000; update every spec pinning 25 for LIST reads (`word-types.api.spec.ts`, `word-types-explorer.facade.spec.ts`).
-- [ ] T018 [US2] `WORDS/components/word-types-table/word-types-table.component.ts` + `.html` + `.scss`: adopt `CdkVirtualScrollViewport` mirroring `WORDS/components/roots-table/roots-table.component.ts` (`useVirtualScroll = HAS_RESIZE_OBSERVER`, wiring via `WORDS/utils/explorer-table-scroll.ts`); all four row kinds render inside the viewport; skeletons, mounted-shell invariant, focus controller, statistic buttons unchanged; update `word-types-table.component.spec.ts`.
-- [ ] T019 [US2] Backend tests in `BE-TST/Quran/WordsWordTypes/`: list `pageSize=1000` → 200; `1001` → 400 `InvalidPaging`; default page size is 1000; DETAIL `pageSize=101` still → 400 (cap split verified).
-- [ ] T020 [US2] Perf gate (MANDATORY, record numbers). Budget: **p95 ≤ 2s per uncached list read** (feature 019's populate target). Time `/table` at `pageSize=1000` for `type=verb` unscoped (`tableView=words`) and `tableView=stems` (~12,108 groups pre-pagination); measure cache-entry growth; verify UI scroll on the loaded page. p95 > 2s at default 1000 → STOP per decision-record stop condition 4 (cap may land, default needs user sign-off).
+- [x] T015 [US2] In `BE-APP/Quran/Words/WordTypes/Queries/WordTypesHandlerValidation.cs`, split `MaxPageSize = 100` into `MaxListPageSize = 1000` (rows/table reads) and `MaxDetailPageSize = 100` (word ayahs, grouped member words/ayahs); update every handler that validates paging to use the correct constant.
+- [x] T016 [US2] `BE-API/Controllers/Words/WordTypesController.cs`: `DefaultListPageSize` 25 → 1000.
+- [x] T017 [US2] `WORDS/models/word-types.models.ts`: `WORD_TYPES_PAGE_SIZE` 25 → 1000; update every spec pinning 25 for LIST reads (`word-types.api.spec.ts`, `word-types-explorer.facade.spec.ts`).
+- [x] T018 [US2] `WORDS/components/word-types-table/word-types-table.component.ts` + `.html` + `.scss`: adopt `CdkVirtualScrollViewport` mirroring `WORDS/components/roots-table/roots-table.component.ts` (`useVirtualScroll = HAS_RESIZE_OBSERVER`, wiring via `WORDS/utils/explorer-table-scroll.ts`); all four row kinds render inside the viewport; skeletons, mounted-shell invariant, focus controller, statistic buttons unchanged; update `word-types-table.component.spec.ts`.
+- [x] T019 [US2] Backend tests in `BE-TST/Quran/WordsWordTypes/`: list `pageSize=1000` → 200; `1001` → 400 `InvalidPaging`; default page size is 1000; DETAIL `pageSize=101` still → 400 (cap split verified).
+- [x] T020 [US2] Perf gate (MANDATORY, record numbers). Budget: **p95 ≤ 2s per uncached list read** (feature 019's populate target). Time `/table` at `pageSize=1000` for `type=verb` unscoped (`tableView=words`) and `tableView=stems` (~12,108 groups pre-pagination); measure cache-entry growth; verify UI scroll on the loaded page. p95 > 2s at default 1000 → STOP per decision-record stop condition 4 (cap may land, default needs user sign-off).
 
 **Checkpoint**: 1000-row pages served + smooth; caps proven split.
 
@@ -109,10 +109,10 @@ defaults aligned; cap stays 100). Surahs views stay single-shot.
 
 ### Implementation
 
-- [ ] T021 [US3] `WORDS/models/word-types.models.ts`: `WORD_TYPES_DETAIL_PAGE_SIZE` 25 → 100 (single constant covers word ayahs + grouped member words + grouped ayahs via `WORDS/state/word-types-detail-view.loader.ts`); update `word-types-detail-view.loader.spec.ts` + `word-types-detail.facade.spec.ts` pins.
-- [ ] T022 [US3] Backend: `DefaultDetailPageSize` 25 → 100 in `BE-API/Controllers/Words/WordTypesController.cs` AND `BE-API/Controllers/Words/WordTypeGroupedDetailsController.cs`; backend tests assert new defaults + grouped-ayah 3-command budget unchanged in `BE-TST/Quran/WordsWordTypes/`.
-- [ ] T023 [US3] Update words README + reads README page-size documentation (list 1000/1000, detail 100/100); sanity-render a 100-ayah detail page (~1,500 word spans) and note result.
-- [ ] T024 [US3] **Plan-P1 checkpoint**: full `dotnet test` + `npm test` green; run repo deploy-smoke flow on the changed Word Types endpoints; commit plan-P1: `feat(words): word-types parity — search, 1000-row list, 100-row details`.
+- [x] T021 [US3] `WORDS/models/word-types.models.ts`: `WORD_TYPES_DETAIL_PAGE_SIZE` 25 → 100 (single constant covers word ayahs + grouped member words + grouped ayahs via `WORDS/state/word-types-detail-view.loader.ts`); update `word-types-detail-view.loader.spec.ts` + `word-types-detail.facade.spec.ts` pins.
+- [x] T022 [US3] Backend: `DefaultDetailPageSize` 25 → 100 in `BE-API/Controllers/Words/WordTypesController.cs` AND `BE-API/Controllers/Words/WordTypeGroupedDetailsController.cs`; backend tests assert new defaults + grouped-ayah 3-command budget unchanged in `BE-TST/Quran/WordsWordTypes/`.
+- [x] T023 [US3] Update words README + reads README page-size documentation (list 1000/1000, detail 100/100); sanity-render a 100-ayah detail page (~1,500 word spans) and note result.
+- [x] T024 [US3] **Plan-P1 checkpoint**: full `dotnet test` + `npm test` green; run repo deploy-smoke flow on the changed Word Types endpoints; commit plan-P1: `feat(words): word-types parity — search, 1000-row list, 100-row details`.
 
 **Checkpoint**: plan-P1 committed — Word Types at parity. MVP delivered.
 

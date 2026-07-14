@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { WordTypeGroupedRequestParams } from '../models/word-types-detail.models';
 import { WordTypesCacheFilter, WordTypesCacheKeys } from './word-types-cache';
 
-const filter: WordTypesCacheFilter = { type: 'noun', childCode: 'PN', case: 'all', tense: 'all', voice: 'all' };
+const filter: WordTypesCacheFilter = { type: 'noun', childCode: 'PN', case: 'all', tense: 'all', voice: 'all', search: null };
 const groupedRequest: WordTypeGroupedRequestParams = {
   kind: 'root',
   dimensionId: 4210,
@@ -43,6 +43,30 @@ describe('WordTypesCacheKeys.table', () => {
     const tableKey = WordTypesCacheKeys.table(filter, 'words', 'occurrences', 1);
 
     expect(tableKey).not.toBe(rowsKey);
+  });
+});
+
+describe('WordTypesCacheKeys search isolation', () => {
+  const searched: WordTypesCacheFilter = { ...filter, search: 'كلمة' };
+
+  it('keeps the pre-feature key when search is absent', () => {
+    // A null search must not alter the key (warm entries stay valid).
+    expect(WordTypesCacheKeys.rows(filter, 'occurrences', 1))
+      .toBe(WordTypesCacheKeys.rows({ ...filter, search: null }, 'occurrences', 1));
+    expect(WordTypesCacheKeys.table(filter, 'roots', 'occurrences', 1))
+      .toBe(WordTypesCacheKeys.table({ ...filter, search: null }, 'roots', 'occurrences', 1));
+  });
+
+  it('isolates a searched read from an unsearched one on both keys', () => {
+    expect(WordTypesCacheKeys.rows(searched, 'occurrences', 1))
+      .not.toBe(WordTypesCacheKeys.rows(filter, 'occurrences', 1));
+    expect(WordTypesCacheKeys.table(searched, 'roots', 'occurrences', 1))
+      .not.toBe(WordTypesCacheKeys.table(filter, 'roots', 'occurrences', 1));
+  });
+
+  it('separates two distinct searches', () => {
+    expect(WordTypesCacheKeys.rows(searched, 'occurrences', 1))
+      .not.toBe(WordTypesCacheKeys.rows({ ...filter, search: 'جذر' }, 'occurrences', 1));
   });
 });
 

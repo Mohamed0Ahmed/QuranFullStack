@@ -45,6 +45,7 @@ describe('WordTypesApi', () => {
       case: 'all',
       tense: 'all',
       voice: 'all',
+      search: null,
       tableView: 'roots',
       sort: 'occurrences',
       page: 1,
@@ -59,6 +60,7 @@ describe('WordTypesApi', () => {
     expect(req.request.params.get('page')).toBe('1');
     expect(req.request.params.get('pageSize')).toBe('25');
     expect(req.request.params.has('childCode')).toBe(false);
+    expect(req.request.params.has('search')).toBe(false);
 
     const response: ApiResponse<PagedResultDto<WordTypeTableRowDto>> = {
       isSuccess: true,
@@ -77,6 +79,7 @@ describe('WordTypesApi', () => {
       case: 'nominative',
       tense: 'all',
       voice: 'all',
+      search: null,
       tableView: 'words',
       sort: 'alpha',
       page: 2,
@@ -105,6 +108,7 @@ describe('WordTypesApi', () => {
       case: 'nominative',
       tense: 'all',
       voice: 'all',
+      search: null,
       sort: 'alpha',
       page: 2,
       pageSize: 25,
@@ -114,9 +118,30 @@ describe('WordTypesApi', () => {
     expect(req.request.params.get('childCode')).toBe('PN');
     expect(req.request.params.get('case')).toBe('nominative');
     expect(req.request.params.has('tableView')).toBe(false);
+    expect(req.request.params.has('search')).toBe(false);
     req.flush(response);
 
     await expect(promise).resolves.toEqual(response);
+  });
+
+  it('sends the search param on rows and table reads only when non-empty', async () => {
+    const rowsPromise = firstValueFrom(api.getRows({
+      type: 'noun', childCode: null, case: 'all', tense: 'all', voice: 'all',
+      search: 'كلمة', sort: 'occurrences', page: 1, pageSize: 1000,
+    }));
+    const rowsReq = httpMock.expectOne((r) => matchRows().test(r.url));
+    expect(rowsReq.request.params.get('search')).toBe('كلمة');
+    rowsReq.flush({ isSuccess: true, message: 'تم', data: { page: 1, pageSize: 1000, totalCount: 0, items: [] } });
+    await rowsPromise;
+
+    const tablePromise = firstValueFrom(api.getTableRows({
+      type: 'noun', childCode: null, case: 'all', tense: 'all', voice: 'all',
+      search: 'كلمة', tableView: 'roots', sort: 'occurrences', page: 1, pageSize: 1000,
+    }));
+    const tableReq = httpMock.expectOne((r) => matchTable().test(r.url));
+    expect(tableReq.request.params.get('search')).toBe('كلمة');
+    tableReq.flush({ isSuccess: true, message: 'تم', data: { page: 1, pageSize: 1000, totalCount: 0, items: [] } });
+    await tablePromise;
   });
 
   it.each([

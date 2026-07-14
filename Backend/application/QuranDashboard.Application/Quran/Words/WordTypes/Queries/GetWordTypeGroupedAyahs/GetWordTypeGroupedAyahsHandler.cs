@@ -36,7 +36,7 @@ public sealed class GetWordTypeGroupedAyahsHandler(
             return new GetWordTypeGroupedAyahsOutcome.InvalidFilter();
         }
 
-        if (!WordTypesHandlerValidation.IsValidPaging(query.Page, query.PageSize))
+        if (!WordTypesHandlerValidation.IsValidDetailPaging(query.Page, query.PageSize))
         {
             return new GetWordTypeGroupedAyahsOutcome.InvalidPaging();
         }

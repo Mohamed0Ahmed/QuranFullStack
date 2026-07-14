@@ -84,6 +84,20 @@ main type clears them (the snapshot belonged to the previous type), refresh/dire
   include `tableView`, so tab switches never cross-serve another view's rows. Stem/lemma
   terminology follows the Roots/Lemmas/Stems explorers: **stem = الأصل / الأصول الصرفية**,
   **lemma = الصيغة / الصيغ المعجمية**.
+- **Word Types search** (`search` URL key, Feature 026) matches the clean, tashkeel-insensitive **word
+  identity text only** (never root/stem/lemma display text). It is part of the **list scope**: the one
+  toolbar input is visible on ALL four table views, and changing it narrows the words view AND the grouped
+  roots/stems/lemmas views together (the placeholder names the word grain — "ابحث في الكلمات"). It follows
+  the shared explorer feel: page-owned `Subject` + `debounceTime(300)` → router merge
+  `{ search, page: null }`; parsed fail-closed (trim, empty → absent); URL-shareable and restored into the
+  input on refresh/Back. Frontend and backend list cache keys gain the search component (empty ⇒
+  pre-feature key). Search resets the list page but keeps the identity-loaded detail selection.
+- **Word Types page sizes** (Feature 026): the list serves up to **1000 rows/page**
+  (`WORD_TYPES_PAGE_SIZE`, default + cap 1000) across all four views with `CdkVirtualScrollViewport`
+  virtual scrolling (mirrors the other explorer tables; guarded on `ResizeObserver`); detail lists (word
+  ayahs, grouped member words, grouped ayahs) serve up to **100 items/page**
+  (`WORD_TYPES_DETAIL_PAGE_SIZE`). The mounted table-view strip / shell / details-host invariant survives
+  the virtual-scroll change.
 - The data-access client also exposes the grouped-detail contract under
   `.../word-types/table/{roots|stems|lemmas}/{dimensionId}`. Every grouped request carries the
   full active scope (`type`, optional `childCode`, and concrete `case`/`tense`/`voice` values);

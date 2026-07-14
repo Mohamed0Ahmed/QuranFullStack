@@ -107,6 +107,8 @@ export interface ParsedWordTypesQuery extends WordTypeRowIdentity {
   type: WordTypeMainType;
   childCode: string | null;
   tableView: WordTypeTableView;
+  // Word-identity search; part of the list scope (narrows all table views), fail-closed to null.
+  search: string | null;
   sort: WordTypeSort;
   page: number;
   word: number | null;
@@ -141,6 +143,7 @@ export const WORD_TYPES_QUERY_KEYS = {
   case: 'case',
   tense: 'tense',
   voice: 'voice',
+  search: 'search',
   sort: 'sort',
   page: 'page',
   word: 'word',
@@ -192,11 +195,12 @@ export const DEFAULT_WORD_TYPE_VOICE: WordTypeVoice = 'all';
 export const DEFAULT_WORD_TYPE_SORT: WordTypeSort = 'occurrences';
 export const DEFAULT_WORD_TYPE_TABLE_VIEW: WordTypeTableView = 'words';
 export const DEFAULT_WORD_TYPES_PAGE = 1;
-export const WORD_TYPES_PAGE_SIZE = 25;
+// List reads serve up to 1000 rows per page (parity with the other explorers); detail lists 100.
+export const WORD_TYPES_PAGE_SIZE = 1000;
 export const DEFAULT_WORD_TYPES_DETAIL_VIEW: WordTypeDetailView = 'ayahs';
 export const DEFAULT_GROUPED_WORD_TYPES_DETAIL_VIEW: WordTypeDetailView = 'words';
 export const DEFAULT_WORD_TYPES_DETAIL_PAGE = 1;
-export const WORD_TYPES_DETAIL_PAGE_SIZE = 25;
+export const WORD_TYPES_DETAIL_PAGE_SIZE = 100;
 
 export function normalizeWordTableRow(row: WordTableRowDto): WordTypeRowDto {
   const { kind: _kind, case: caseValue, tense, voice, ...word } = row;

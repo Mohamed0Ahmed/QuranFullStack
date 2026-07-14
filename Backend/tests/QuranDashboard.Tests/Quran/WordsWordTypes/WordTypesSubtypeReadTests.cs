@@ -152,7 +152,7 @@ public sealed class WordTypesSubtypeReadTests(WordTypesTestFixture fixture)
         var handler = scope.ServiceProvider.GetRequiredService<GetWordTypeRowsHandler>();
 
         var outcome = await handler.HandleAsync(
-            new GetWordTypeRowsQuery(type, childCode, null, null, null, "occurrences", 1, 25),
+            new GetWordTypeRowsQuery(type, childCode, null, null, null, null, "occurrences", 1, 25),
             CancellationToken.None);
 
         outcome.GetType().Should().Be(expectedOutcome);
@@ -167,7 +167,7 @@ public sealed class WordTypesSubtypeReadTests(WordTypesTestFixture fixture)
         var handler = scope.ServiceProvider.GetRequiredService<GetWordTypeRowsHandler>();
 
         var outcome = await handler.HandleAsync(
-            new GetWordTypeRowsQuery("particle", childCode, null, null, null, "occurrences", 1, 25),
+            new GetWordTypeRowsQuery("particle", childCode, null, null, null, null, "occurrences", 1, 25),
             CancellationToken.None);
 
         outcome.Should().BeOfType<GetWordTypeRowsOutcome.Success>();

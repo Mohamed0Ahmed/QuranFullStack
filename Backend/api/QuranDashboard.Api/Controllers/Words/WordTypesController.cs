@@ -20,8 +20,8 @@ public sealed class WordTypesController(
     GetWordTypeSurahsHandler surahsHandler) : ControllerBase
 {
     private const int DefaultPage = 1;
-    private const int DefaultListPageSize = 25;
-    private const int DefaultDetailPageSize = 25;
+    private const int DefaultListPageSize = 1000;
+    private const int DefaultDetailPageSize = 100;
 
     /// <summary>
     /// يُرجع شجرة أنواع الكلمات: الأنواع الرئيسية (اسم/فعل/حرف) وفروعها مع عدّاداتها.
@@ -49,9 +49,10 @@ public sealed class WordTypesController(
     /// <param name="caseFilter">مرشّح الحالة الإعرابية (اختياري).</param>
     /// <param name="tense">مرشّح الزمن (اختياري).</param>
     /// <param name="voice">مرشّح البناء للمعلوم/المجهول (اختياري).</param>
+    /// <param name="search">نص البحث في هوية الكلمة (اختياري).</param>
     /// <param name="sort">مفتاح الفرز (اختياري).</param>
     /// <param name="page">رقم الصفحة (الافتراضي 1).</param>
-    /// <param name="pageSize">حجم الصفحة (الافتراضي 25).</param>
+    /// <param name="pageSize">حجم الصفحة (الافتراضي 1000).</param>
     /// <param name="cancellationToken">رمز إلغاء الطلب.</param>
     /// <response code="200">تم تحميل صفوف الكلمات بنجاح.</response>
     /// <response code="400">مرشّح أو فرز أو تقسيم صفحات غير صالح.</response>
@@ -62,13 +63,14 @@ public sealed class WordTypesController(
         [FromQuery(Name = "case")] string? caseFilter,
         [FromQuery] string? tense,
         [FromQuery] string? voice,
+        [FromQuery] string? search,
         [FromQuery] string? sort,
         [FromQuery] int? page,
         [FromQuery] int? pageSize,
         CancellationToken cancellationToken)
     {
         var outcome = await rowsHandler.HandleAsync(
-            new GetWordTypeRowsQuery(type, childCode, caseFilter, tense, voice, sort, page ?? DefaultPage, pageSize ?? DefaultListPageSize),
+            new GetWordTypeRowsQuery(type, childCode, caseFilter, tense, voice, search, sort, page ?? DefaultPage, pageSize ?? DefaultListPageSize),
             cancellationToken);
 
         return outcome switch
@@ -94,9 +96,10 @@ public sealed class WordTypesController(
     /// <param name="caseFilter">مرشّح الحالة الإعرابية (اختياري).</param>
     /// <param name="tense">مرشّح الزمن (اختياري).</param>
     /// <param name="voice">مرشّح البناء للمعلوم/المجهول (اختياري).</param>
+    /// <param name="search">نص البحث في هوية الكلمة (اختياري).</param>
     /// <param name="sort">مفتاح الفرز (اختياري).</param>
     /// <param name="page">رقم الصفحة (الافتراضي 1).</param>
-    /// <param name="pageSize">حجم الصفحة (الافتراضي 25).</param>
+    /// <param name="pageSize">حجم الصفحة (الافتراضي 1000).</param>
     /// <param name="cancellationToken">رمز إلغاء الطلب.</param>
     /// <response code="200">تم تحميل صفوف الجدول بنجاح.</response>
     /// <response code="400">تبويب عرض أو مرشّح أو فرز أو تقسيم صفحات غير صالح.</response>
@@ -108,13 +111,14 @@ public sealed class WordTypesController(
         [FromQuery(Name = "case")] string? caseFilter,
         [FromQuery] string? tense,
         [FromQuery] string? voice,
+        [FromQuery] string? search,
         [FromQuery] string? sort,
         [FromQuery] int? page,
         [FromQuery] int? pageSize,
         CancellationToken cancellationToken)
     {
         var outcome = await tableHandler.HandleAsync(
-            new GetWordTypeTableQuery(type, childCode, caseFilter, tense, voice, tableView, sort, page ?? DefaultPage, pageSize ?? DefaultListPageSize),
+            new GetWordTypeTableQuery(type, childCode, caseFilter, tense, voice, search, tableView, sort, page ?? DefaultPage, pageSize ?? DefaultListPageSize),
             cancellationToken);
 
         return outcome switch
@@ -179,7 +183,7 @@ public sealed class WordTypesController(
     /// <param name="tense">مرشّح الزمن (اختياري).</param>
     /// <param name="voice">مرشّح البناء للمعلوم/المجهول (اختياري).</param>
     /// <param name="page">رقم الصفحة (الافتراضي 1).</param>
-    /// <param name="pageSize">حجم الصفحة (الافتراضي 25).</param>
+    /// <param name="pageSize">حجم الصفحة (الافتراضي 100).</param>
     /// <param name="cancellationToken">رمز إلغاء الطلب.</param>
     /// <response code="200">تم تحميل آيات الكلمة بنجاح.</response>
     /// <response code="400">هوية كلمة أو تقسيم صفحات غير صالح.</response>

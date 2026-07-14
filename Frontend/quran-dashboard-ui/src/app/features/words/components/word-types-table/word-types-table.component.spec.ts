@@ -227,6 +227,17 @@ describe('WordTypesTableComponent', () => {
     },
   );
 
+  it('renders rows in a stable body rowgroup under the jsdom (no-ResizeObserver) fallback branch', () => {
+    const fixture = TestBed.createComponent(WordTypesTableComponent);
+    fixture.componentRef.setInput('rows', page([word({ tashkeelWordId: 191001 }), word({ tashkeelWordId: 191002, contextCode: 'N' })]));
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const body = root.querySelector('.word-types-table__body[role="rowgroup"]');
+    expect(body).not.toBeNull();
+    expect(body?.querySelectorAll('.word-types-table__row').length).toBe(2);
+  });
+
   it('renders a skeleton body while loading, even when prior rows exist', () => {
     const loadingFixture = TestBed.createComponent(WordTypesTableComponent);
     loadingFixture.componentRef.setInput('loading', true);

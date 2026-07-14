@@ -6,6 +6,7 @@ public sealed record GetWordTypeRowsQuery(
     string? Case,
     string? Tense,
     string? Voice,
+    string? Search,
     string? Sort,
     int Page,
     int PageSize);

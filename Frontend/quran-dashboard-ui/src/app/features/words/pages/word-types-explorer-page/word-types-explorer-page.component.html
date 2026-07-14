@@ -24,6 +24,18 @@
       </div>
 
       <div class="word-types-page__toolbar">
+        <label class="qd-sr-only" for="word-types-search">{{ searchLabel }}</label>
+        <input
+          id="word-types-search"
+          class="qd-input word-types-page__search qd-explorer__search"
+          type="search"
+          inputmode="search"
+          [attr.placeholder]="searchPlaceholder"
+          [value]="searchDraft()"
+          data-testid="word-types-search-input"
+          (input)="onSearchInput($any($event.target).value)"
+        />
+
         <label class="word-types-page__sort">
           <span>{{ sortLabel }}</span>
           <select class="qd-select" [value]="listState().query.sort" (change)="changeSort($event)">

@@ -13,10 +13,10 @@ import {
 export const WordTypesCacheKeys = {
   tree: 'wordtypes:tree',
   rows(filter: WordTypesCacheFilter, sort: WordTypeSort, page: number): string {
-    return `wordtypes:rows:${filter.type}:${filter.childCode ?? 'all'}:${filter.case}:${filter.tense}:${filter.voice}:sort:${sort}:p${page}`;
+    return `wordtypes:rows:${filter.type}:${filter.childCode ?? 'all'}:${filter.case}:${filter.tense}:${filter.voice}${searchSegment(filter.search)}:sort:${sort}:p${page}`;
   },
   table(filter: WordTypesCacheFilter, tableView: WordTypeTableView, sort: WordTypeSort, page: number): string {
-    return `wordtypes:table:${filter.type}:${filter.childCode ?? 'all'}:${filter.case}:${filter.tense}:${filter.voice}:view:${tableView}:sort:${sort}:p${page}`;
+    return `wordtypes:table:${filter.type}:${filter.childCode ?? 'all'}:${filter.case}:${filter.tense}:${filter.voice}${searchSegment(filter.search)}:view:${tableView}:sort:${sort}:p${page}`;
   },
   summary(identity: WordTypesCacheIdentity): string {
     return `wordtypes:summary:${identity.tashkeelWordId}:${identity.contextCode}:${identity.case}:${identity.tense}:${identity.voice}`;
@@ -47,6 +47,13 @@ export interface WordTypesCacheFilter {
   case: WordTypeCase;
   tense: WordTypeTense;
   voice: WordTypeVoice;
+  search: string | null;
+}
+
+// Empty/absent search adds nothing, keeping the pre-feature key byte-identical (warm entries stay
+// valid); a non-empty term is encoded into its own segment so searched reads never cross-serve.
+function searchSegment(search: string | null): string {
+  return search ? `:q:${encodeURIComponent(search)}` : '';
 }
 
 export interface WordTypesCacheIdentity {
