@@ -102,3 +102,59 @@
 .range-filter__clear {
   align-self: flex-start;
 }
+
+// "Quiet cards" treatment: metrics laid out as a three-column grid of soft labeled
+// cells on a lifted near-white card, with an eyebrow label per cell.
+.range-filter--cards {
+  background: var(--qd-surface);
+  box-shadow: var(--qd-shadow-sm);
+
+  .range-filter__summary {
+    border-block-end: 1px solid var(--qd-border);
+    margin-block-end: var(--qd-space-3);
+  }
+
+  .range-filter__summary-label {
+    font-size: 0.95rem;
+  }
+
+  .range-filter__badge {
+    background: var(--qd-accent-tint);
+    color: var(--qd-accent-text);
+  }
+
+  .range-filter__body {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--qd-space-3);
+  }
+
+  .range-filter__metric {
+    gap: var(--qd-space-2);
+    padding: 0.6rem 0.7rem;
+    background: var(--qd-section-bg);
+    border: 1px solid var(--qd-border);
+    border-radius: var(--qd-radius-sm);
+  }
+
+  .range-filter__metric-label {
+    font-size: 0.72rem;
+    letter-spacing: 0.02em;
+  }
+
+  .range-filter__chip {
+    border: 1px solid var(--qd-border);
+    border-radius: var(--qd-radius-pill);
+    background: var(--qd-surface);
+
+    &:hover:not(:disabled) {
+      background: var(--qd-accent-tint);
+      border-color: var(--qd-accent-soft);
+    }
+  }
+
+  .range-filter__clear {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+}
