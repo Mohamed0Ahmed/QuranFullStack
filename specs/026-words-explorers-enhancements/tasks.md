@@ -240,9 +240,9 @@ scope change only; strip retry refetches counts without touching the table.
 
 ## Phase 11: Polish & Cross-Cutting
 
-- [ ] T061 [P] Cross-phase count-family audit: grep/read every new surface — no `words_count`-backed number on any Word Types surface; no scoped word-context count on the four normal explorers' stat line (spec SC-007).
-- [ ] T062 [P] Ordering-untouched assertion: existing ordering tests green (`MorphologyRelatedItemsOrdering`, `*ListDerivation` sorts, `WordTypeSort`); filter predicates are pure `Where`s — confirm no `OrderBy` was added/moved.
-- [ ] T063 Run the full quickstart.md validation end-to-end (all four phase smokes + perf gates recorded) and the clean-code + test-code self-checks from root `CLAUDE.md` before requesting `engineering-review`.
+- [x] T061 [P] Cross-phase count-family audit: grep/read every new surface — no `words_count`-backed number on any Word Types surface; no scoped word-context count on the four normal explorers' stat line (spec SC-007). PASS — evidence: `Backend/report/feature-026-words-explorers-enhancements/003-polish-validation.md`.
+- [x] T062 [P] Ordering-untouched assertion: existing ordering tests green (`MorphologyRelatedItemsOrdering`, `*ListDerivation` sorts, `WordTypeSort`); filter predicates are pure `Where`s — confirm no `OrderBy` was added/moved. PASS — evidence: `003-polish-validation.md`.
+- [x] T063 Run the full quickstart.md validation end-to-end (all four phase smokes + perf gates recorded) and the clean-code + test-code self-checks from root `CLAUDE.md` before requesting `engineering-review`. PASS (backend 1271, frontend 1113, prod build green, live §P1–§P4 smoke clean) — evidence: `003-polish-validation.md`.
 
 ---
 
