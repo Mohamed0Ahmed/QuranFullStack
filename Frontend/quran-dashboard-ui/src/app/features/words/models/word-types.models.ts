@@ -17,6 +17,7 @@ import type {
   WordTypeFilterOptionDto,
   WordTypeLabelDto,
   WordTypeMissingSurahDto,
+  WordTypeScopeCountsDto,
   WordTypeSecondaryFilterDto as WordTypeSecondaryFilterWireDto,
   WordTypeSurahOccurrenceDto,
   WordTypeSurahsResponse as WordTypeSurahsResponseDto,
@@ -36,6 +37,7 @@ export type {
   WordTypeFilterOptionDto,
   WordTypeLabelDto,
   WordTypeMissingSurahDto,
+  WordTypeScopeCountsDto,
   WordTypeSurahOccurrenceDto,
   WordTypeSurahsResponseDto,
 };
@@ -142,6 +144,16 @@ export interface WordTypesListState {
   rows: PagedResultDto<WordTypeTableRowDto> | null;
   query: ParsedWordTypesQuery;
   errorMessage: string;
+}
+
+// Scoped four-count summary (Feature 026, US8). The strip has its own load lifecycle, independent of the
+// table: 'idle' before a leaf scope is confirmed, then loading/success/error. Counts refetch on scope
+// change only (not tableView, not page); a counts failure never blocks the table.
+export type WordTypeScopeCountsStatus = 'idle' | 'loading' | 'success' | 'error';
+
+export interface WordTypesScopeCountsState {
+  status: WordTypeScopeCountsStatus;
+  counts: WordTypeScopeCountsDto | null;
 }
 
 export const WORD_TYPES_QUERY_KEYS = {

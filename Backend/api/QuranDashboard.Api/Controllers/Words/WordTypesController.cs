@@ -3,6 +3,7 @@ using QuranDashboard.Application.Abstractions.Quran.Words.WordTypes.Responses;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeAyahs;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeRows;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeSummary;
+using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeScopeCounts;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeSurahs;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeTable;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeTree;
@@ -15,6 +16,7 @@ public sealed class WordTypesController(
     GetWordTypeTreeHandler treeHandler,
     GetWordTypeRowsHandler rowsHandler,
     GetWordTypeTableHandler tableHandler,
+    GetWordTypeScopeCountsHandler scopeCountsHandler,
     GetWordTypeSummaryHandler summaryHandler,
     GetWordTypeAyahsHandler ayahsHandler,
     GetWordTypeSurahsHandler surahsHandler) : ControllerBase
@@ -140,6 +142,48 @@ public sealed class WordTypesController(
             GetWordTypeTableOutcome.InvalidPaging =>
                 BadRequest(ApiResponse<PagedResult<WordTypeTableRowDto>>.Fail(ApiMessages.WordTypesInvalidPaging)),
             _ => throw new InvalidOperationException($"Unhandled {nameof(GetWordTypeTableOutcome)} variant."),
+        };
+    }
+
+    /// <summary>
+    /// يُرجع الإحصاء الرباعي لنطاق النوع النشط: عدد الكلمات والجذور والأصول والصيغ ضمن النطاق ذاته الذي يعرضه الجدول.
+    /// </summary>
+    /// <param name="type">رمز النوع الرئيسي (مطلوب لتحديد النطاق).</param>
+    /// <param name="childCode">رمز النوع الفرعي إن وجد.</param>
+    /// <param name="caseFilter">مرشّح الحالة الإعرابية (اختياري).</param>
+    /// <param name="tense">مرشّح الزمن (اختياري).</param>
+    /// <param name="voice">مرشّح البناء للمعلوم/المجهول (اختياري).</param>
+    /// <param name="search">نص البحث في هوية الكلمة (اختياري).</param>
+    /// <param name="hasRoot">مرشّح وجود الجذر ثلاثي الحالة (اختياري).</param>
+    /// <param name="hasStem">مرشّح وجود الأصل الصرفي ثلاثي الحالة (اختياري).</param>
+    /// <param name="hasLemma">مرشّح وجود الصيغة المعجمية ثلاثي الحالة (اختياري).</param>
+    /// <param name="cancellationToken">رمز إلغاء الطلب.</param>
+    /// <response code="200">تم تحميل إحصاء النطاق بنجاح (نطاق بلا نتائج يُرجع أصفارًا).</response>
+    /// <response code="400">مرشّح غير صالح.</response>
+    [HttpGet("scope-counts")]
+    public async Task<ActionResult<ApiResponse<WordTypeScopeCountsDto>>> GetScopeCounts(
+        [FromQuery] string? type,
+        [FromQuery] string? childCode,
+        [FromQuery(Name = "case")] string? caseFilter,
+        [FromQuery] string? tense,
+        [FromQuery] string? voice,
+        [FromQuery] string? search,
+        [FromQuery] bool? hasRoot,
+        [FromQuery] bool? hasStem,
+        [FromQuery] bool? hasLemma,
+        CancellationToken cancellationToken)
+    {
+        var outcome = await scopeCountsHandler.HandleAsync(
+            new GetWordTypeScopeCountsQuery(type, childCode, caseFilter, tense, voice, search, hasRoot, hasStem, hasLemma),
+            cancellationToken);
+
+        return outcome switch
+        {
+            GetWordTypeScopeCountsOutcome.Success success =>
+                Ok(ApiResponse<WordTypeScopeCountsDto>.Ok(success.Counts, ApiMessages.WordTypesScopeCountsLoaded)),
+            GetWordTypeScopeCountsOutcome.InvalidFilter =>
+                BadRequest(ApiResponse<WordTypeScopeCountsDto>.Fail(ApiMessages.WordTypesInvalidFilter)),
+            _ => throw new InvalidOperationException($"Unhandled {nameof(GetWordTypeScopeCountsOutcome)} variant."),
         };
     }
 

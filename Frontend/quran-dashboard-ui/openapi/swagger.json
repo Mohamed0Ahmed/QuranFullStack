@@ -101,6 +101,110 @@
               "type": "integer",
               "format": "int32"
             }
+          },
+          {
+            "name": "occMin",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "occMax",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "ayahsMin",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "ayahsMax",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "surahsMin",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "surahsMax",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "simpleWordsMin",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "simpleWordsMax",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "tashkeelWordsMin",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "tashkeelWordsMax",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "stemsMin",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "stemsMax",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "rootId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
           }
         ],
         "responses": {
@@ -775,6 +879,118 @@
               "type": "integer",
               "format": "int32"
             }
+          },
+          {
+            "name": "occMin",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "occMax",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "ayahsMin",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "ayahsMax",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "surahsMin",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "surahsMax",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "simpleWordsMin",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "simpleWordsMax",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "tashkeelWordsMin",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "tashkeelWordsMax",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "lemmasMin",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "lemmasMax",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "stemsMin",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "stemsMax",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
           }
         ],
         "responses": {
@@ -1164,6 +1380,102 @@
               "type": "integer",
               "format": "int32"
             }
+          },
+          {
+            "name": "occMin",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "occMax",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "ayahsMin",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "ayahsMax",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "surahsMin",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "surahsMax",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "simpleWordsMin",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "simpleWordsMax",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "tashkeelWordsMin",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "tashkeelWordsMax",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "rootId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "lemmaId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
           }
         ],
         "responses": {
@@ -1522,6 +1834,69 @@
           },
           {
             "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "occMin",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "occMax",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "ayahsMin",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "ayahsMax",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "surahsMin",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "surahsMax",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "primaryType",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "rootId",
             "in": "query",
             "schema": {
               "type": "integer",
@@ -1940,7 +2315,7 @@
           {
             "name": "pageSize",
             "in": "query",
-            "description": "حجم الصفحة (الافتراضي 25).",
+            "description": "حجم الصفحة (الافتراضي 100).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -2055,7 +2430,7 @@
           {
             "name": "pageSize",
             "in": "query",
-            "description": "حجم الصفحة (الافتراضي 25).",
+            "description": "حجم الصفحة (الافتراضي 100).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -2267,6 +2642,14 @@
             }
           },
           {
+            "name": "search",
+            "in": "query",
+            "description": "نص البحث في هوية الكلمة (اختياري).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "sort",
             "in": "query",
             "description": "مفتاح الفرز (اختياري).",
@@ -2286,10 +2669,31 @@
           {
             "name": "pageSize",
             "in": "query",
-            "description": "حجم الصفحة (الافتراضي 25).",
+            "description": "حجم الصفحة (الافتراضي 1000).",
             "schema": {
               "type": "integer",
               "format": "int32"
+            }
+          },
+          {
+            "name": "hasRoot",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "hasStem",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "hasLemma",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
             }
           }
         ],
@@ -2376,6 +2780,14 @@
             }
           },
           {
+            "name": "search",
+            "in": "query",
+            "description": "نص البحث في هوية الكلمة (اختياري).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "sort",
             "in": "query",
             "description": "مفتاح الفرز (اختياري).",
@@ -2395,10 +2807,31 @@
           {
             "name": "pageSize",
             "in": "query",
-            "description": "حجم الصفحة (الافتراضي 25).",
+            "description": "حجم الصفحة (الافتراضي 1000).",
             "schema": {
               "type": "integer",
               "format": "int32"
+            }
+          },
+          {
+            "name": "hasRoot",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "hasStem",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "hasLemma",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
             }
           }
         ],
@@ -2425,6 +2858,113 @@
           },
           "400": {
             "description": "تبويب عرض أو مرشّح أو فرز أو تقسيم صفحات غير صالح."
+          }
+        }
+      }
+    },
+    "/api/words/word-types/scope-counts": {
+      "get": {
+        "tags": [
+          "WordTypes"
+        ],
+        "summary": "يُرجع الإحصاء الرباعي لنطاق النوع النشط: عدد الكلمات والجذور والأصول والصيغ ضمن النطاق ذاته الذي يعرضه الجدول.",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "description": "رمز النوع الرئيسي (مطلوب لتحديد النطاق).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "childCode",
+            "in": "query",
+            "description": "رمز النوع الفرعي إن وجد.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "case",
+            "in": "query",
+            "description": "مرشّح الحالة الإعرابية (اختياري).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tense",
+            "in": "query",
+            "description": "مرشّح الزمن (اختياري).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "voice",
+            "in": "query",
+            "description": "مرشّح البناء للمعلوم/المجهول (اختياري).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "description": "نص البحث في هوية الكلمة (اختياري).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "hasRoot",
+            "in": "query",
+            "description": "مرشّح وجود الجذر ثلاثي الحالة (اختياري).",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "hasStem",
+            "in": "query",
+            "description": "مرشّح وجود الأصل الصرفي ثلاثي الحالة (اختياري).",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "hasLemma",
+            "in": "query",
+            "description": "مرشّح وجود الصيغة المعجمية ثلاثي الحالة (اختياري).",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "تم تحميل إحصاء النطاق بنجاح (نطاق بلا نتائج يُرجع أصفارًا).",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/WordTypeScopeCountsDtoApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WordTypeScopeCountsDtoApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WordTypeScopeCountsDtoApiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "مرشّح غير صالح."
           }
         }
       }
@@ -2570,7 +3110,7 @@
           {
             "name": "pageSize",
             "in": "query",
-            "description": "حجم الصفحة (الافتراضي 25).",
+            "description": "حجم الصفحة (الافتراضي 100).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -7661,6 +8201,68 @@
             "allOf": [
               {
                 "$ref": "#/components/schemas/WordTypeRowDtoPagedResult"
+              }
+            ],
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "WordTypeScopeCountsDto": {
+        "required": [
+          "lemmasCount",
+          "rootsCount",
+          "stemsCount",
+          "wordsCount"
+        ],
+        "type": "object",
+        "properties": {
+          "wordsCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rootsCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "stemsCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "lemmasCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "WordTypeScopeCountsDtoApiResponse": {
+        "required": [
+          "data",
+          "errors",
+          "isSuccess",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/WordTypeScopeCountsDto"
               }
             ],
             "nullable": true

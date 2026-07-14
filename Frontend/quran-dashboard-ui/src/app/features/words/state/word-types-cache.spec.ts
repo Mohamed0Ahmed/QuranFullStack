@@ -91,6 +91,37 @@ describe('WordTypesCacheKeys presence-flag isolation (Feature 026)', () => {
   });
 });
 
+describe('WordTypesCacheKeys.scopeCounts (Feature 026, US8)', () => {
+  it('keys by the full scope and nothing view/page — no tableView, sort, or page component', () => {
+    const key = WordTypesCacheKeys.scopeCounts(filter);
+    expect(key).toBe('wordtypes:scope-counts:noun:PN:all:all:all');
+    expect(key).not.toContain('view');
+    expect(key).not.toContain('sort');
+    expect(key).not.toContain(':p');
+  });
+
+  it('keeps the pre-feature-shaped key when search and every flag are absent', () => {
+    expect(WordTypesCacheKeys.scopeCounts({ ...filter, search: null, hasRoot: null, hasStem: null, hasLemma: null }))
+      .toBe(WordTypesCacheKeys.scopeCounts(filter));
+  });
+
+  it('isolates every scope input', () => {
+    const keys = [
+      WordTypesCacheKeys.scopeCounts(filter),
+      WordTypesCacheKeys.scopeCounts({ ...filter, type: 'verb' }),
+      WordTypesCacheKeys.scopeCounts({ ...filter, childCode: 'N' }),
+      WordTypesCacheKeys.scopeCounts({ ...filter, case: 'genitive' }),
+      WordTypesCacheKeys.scopeCounts({ ...filter, tense: 'past' }),
+      WordTypesCacheKeys.scopeCounts({ ...filter, voice: 'active' }),
+      WordTypesCacheKeys.scopeCounts({ ...filter, search: 'كلمة' }),
+      WordTypesCacheKeys.scopeCounts({ ...filter, hasRoot: true }),
+      WordTypesCacheKeys.scopeCounts({ ...filter, hasStem: false }),
+      WordTypesCacheKeys.scopeCounts({ ...filter, hasLemma: true }),
+    ];
+    expect(new Set(keys).size).toBe(keys.length);
+  });
+});
+
 describe('WordTypesCacheKeys grouped detail', () => {
   it('keeps summary, words, ayahs, and surahs pairwise unique for one identity and scope', () => {
     const keys = [

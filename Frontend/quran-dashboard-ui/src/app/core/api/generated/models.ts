@@ -149,6 +149,8 @@ export type { WordTypeMissingSurahDto } from './models/word-type-missing-surah-d
 export type { WordTypeRowDto } from './models/word-type-row-dto';
 export type { WordTypeRowDtoPagedResult } from './models/word-type-row-dto-paged-result';
 export type { WordTypeRowDtoPagedResultApiResponse } from './models/word-type-row-dto-paged-result-api-response';
+export type { WordTypeScopeCountsDto } from './models/word-type-scope-counts-dto';
+export type { WordTypeScopeCountsDtoApiResponse } from './models/word-type-scope-counts-dto-api-response';
 export type { WordTypeSecondaryFilterDto } from './models/word-type-secondary-filter-dto';
 export type { WordTypeSummaryDto } from './models/word-type-summary-dto';
 export type { WordTypeSummaryDtoApiResponse } from './models/word-type-summary-dto-api-response';

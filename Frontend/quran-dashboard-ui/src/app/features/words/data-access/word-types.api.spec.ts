@@ -168,6 +168,47 @@ describe('WordTypesApi', () => {
     await promise;
   });
 
+  it('getScopeCounts sends the full scope but no tableView/sort/paging params (Feature 026, US8)', async () => {
+    const promise = firstValueFrom(api.getScopeCounts({
+      type: 'noun', childCode: 'PN', case: 'genitive', tense: 'all', voice: 'all',
+      search: 'كلمة', hasRoot: true, hasStem: false, hasLemma: null,
+    }));
+
+    const req = httpMock.expectOne((r) => /\/api\/words\/word-types\/scope-counts(\?.*)?$/.test(r.url));
+    expect(req.request.method).toBe('GET');
+    expect(req.request.params.get('type')).toBe('noun');
+    expect(req.request.params.get('childCode')).toBe('PN');
+    expect(req.request.params.get('case')).toBe('genitive');
+    expect(req.request.params.get('search')).toBe('كلمة');
+    expect(req.request.params.get('hasRoot')).toBe('true');
+    expect(req.request.params.get('hasStem')).toBe('false');
+    expect(req.request.params.has('hasLemma')).toBe(false);
+    // Scope-level only — the four counts describe the scope, not a view or page.
+    expect(req.request.params.has('tableView')).toBe(false);
+    expect(req.request.params.has('sort')).toBe(false);
+    expect(req.request.params.has('page')).toBe(false);
+    expect(req.request.params.has('pageSize')).toBe(false);
+
+    req.flush({ isSuccess: true, message: 'تم', data: { wordsCount: 3, rootsCount: 1, stemsCount: 1, lemmasCount: 1 } });
+    await promise;
+  });
+
+  it('getScopeCounts omits optional scope params when absent', async () => {
+    const promise = firstValueFrom(api.getScopeCounts({
+      type: 'verb', childCode: null, case: 'all', tense: 'all', voice: 'all',
+      search: null, hasRoot: null, hasStem: null, hasLemma: null,
+    }));
+
+    const req = httpMock.expectOne((r) => /\/api\/words\/word-types\/scope-counts(\?.*)?$/.test(r.url));
+    expect(req.request.params.get('type')).toBe('verb');
+    expect(req.request.params.has('childCode')).toBe(false);
+    expect(req.request.params.has('case')).toBe(false);
+    expect(req.request.params.has('search')).toBe(false);
+    expect(req.request.params.has('hasRoot')).toBe(false);
+    req.flush({ isSuccess: true, message: 'تم', data: { wordsCount: 0, rootsCount: 0, stemsCount: 0, lemmasCount: 0 } });
+    await promise;
+  });
+
   it.each([
     ['root', 'roots', 4210],
     ['stem', 'stems', 5310],

@@ -23,6 +23,12 @@ export const WORD_TYPES_SUBTYPE_GROUP_LABEL = 'الأنواع الفرعية';
 export const WORD_TYPES_CURRENT_FILTER_LABEL = 'الحالي';
 export const WORD_TYPE_TABLE_VIEW_TABS_LABEL = 'عرض الجدول';
 
+// Scoped four-count summary strip (Feature 026, US8). The four count labels reuse the view tabs' SHORT
+// labels verbatim (WORD_TYPE_TABLE_VIEW_OPTIONS: كلمات | جذور | أصول | صيغ) — the tabs are not renamed.
+// These are only the strip's own aria/error copy; retry reuses WORD_TYPES_RETRY_LABEL.
+export const WORD_TYPES_SCOPE_COUNTS_LABEL = 'إحصاء النطاق';
+export const WORD_TYPES_SCOPE_COUNTS_ERROR_LABEL = 'تعذّر تحميل إحصاء النطاق';
+
 export const WORD_TYPE_TABLE_VIEW_OPTIONS = [
   { value: 'words', label: 'كلمات' },
   { value: 'roots', label: 'جذور' },

@@ -48,6 +48,21 @@ public sealed class CachedWordTypesReader(EfWordTypesReader efReader, IMemoryCac
         return rows;
     }
 
+    public async Task<WordTypeScopeCountsDto> GetScopeCountsAsync(WordTypeFilter filter, CancellationToken cancellationToken)
+    {
+        var key = WordTypesCacheKeys.ScopeCounts(filter);
+        if (_cache.TryGetValue(key, out WordTypeScopeCountsDto? cached))
+        {
+            return cached!;
+        }
+
+        var counts = await _ef.GetScopeCountsAsync(filter, cancellationToken);
+        // Entry options mirror the table read's (PagedRows, 15 min): the scope counts describe the same
+        // list scope the table serves and should age out on the same cadence.
+        _cache.Set(key, counts, WordTypesCacheEntryOptions.PagedRows());
+        return counts;
+    }
+
     public async Task<WordTypeSummaryDto?> GetSummaryAsync(WordTypeRowIdentity identity, CancellationToken cancellationToken)
     {
         var key = WordTypesCacheKeys.Summary(identity);

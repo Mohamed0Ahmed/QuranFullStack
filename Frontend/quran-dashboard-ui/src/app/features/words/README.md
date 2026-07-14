@@ -143,6 +143,23 @@ main type clears them (the snapshot belonged to the previous type), refresh/dire
   gain a compact flag segment (all-absent ⇒ pre-feature key); grouped-detail reads never carry the
   flags. The scope threads through `word-types-url-sync.ts` → `word-types-explorer.facade.ts` →
   `word-types.api.ts` (`hasRoot=true|false` sent only when set) → `word-types-cache.ts`.
+- **Word Types scoped four-count summary** (Feature 026, US8) is the non-interactive `word-type-scope-counts`
+  strip between the filter strip and the view tabs (order: filters → scope summary → tabs → table). It shows
+  how many **كلمات / جذور / أصول / صيغ** the active scope contains, reusing the view tabs' SHORT labels
+  **verbatim** (`WORD_TYPE_TABLE_VIEW_OPTIONS`, same RTL order كلمات | جذور | أصول | صيغ — the tabs are NOT
+  renamed). Each count equals the corresponding tab's pagination `TotalCount` for the identical scope. It is
+  served by **one** new read `GET api/words/word-types/scope-counts` (→ `WordTypeScopeCountsDto`). The strip
+  is a self-contained widget that reads `WordTypesExplorerFacade.scopeCountsState` and triggers a
+  counts-only refetch (`retryScopeCounts`) itself, so the page class stays thin. Counts **load on scope
+  change only** — type/childCode/case/tense/voice/search/flags — and **NOT** on a `tableView` or `page`
+  change (they describe the scope, not a page); the facade keys them off a `scopeKey` that omits
+  tableView/sort/page, and both the frontend (`word-types-cache.ts` `scopeCounts(...)`) and backend
+  (`WordTypesCacheKeys.ScopeCounts`) cache keys use the full scope and nothing view/page. States: a leaf
+  scope confirmed → loading skeleton → four counts (0 renders as 0); a **counts** failure shows a compact
+  error + **إعادة المحاولة** (refetches counts only) and **never blocks the table**; a **table** failure
+  hides the strip's numbers (scope unconfirmed); a parent/prompt scope shows nothing. The strip host stays
+  mounted through every transition (mounted-shell invariant). These are the scoped word-context counts only,
+  never the global `words_count`-backed family.
 - **Word Types page sizes** (Feature 026): the list serves up to **1000 rows/page**
   (`WORD_TYPES_PAGE_SIZE`, default + cap 1000) across all four views with `CdkVirtualScrollViewport`
   virtual scrolling (mirrors the other explorer tables; guarded on `ResizeObserver`); detail lists (word

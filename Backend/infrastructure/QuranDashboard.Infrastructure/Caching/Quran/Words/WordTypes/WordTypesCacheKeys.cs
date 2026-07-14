@@ -15,6 +15,12 @@ public static class WordTypesCacheKeys
     public static string Table(WordTypeFilter filter, WordTypeTableView tableView, WordTypeSort sort, int page, int pageSize) =>
         $"wordtypes:table:{HashFilter(filter)}:view:{TableViewKey(tableView)}:sort:{SortKey(sort)}:p{page}:s{pageSize}";
 
+    // Scoped four-count summary (Feature 026, US8). The key folds in EVERY scope input via HashFilter
+    // (type, childCode, case, tense, voice, normalized search, presence flags) and NOTHING else — no
+    // tableView, no sort, no page — so counts are shared across tab/page changes but isolated per scope.
+    public static string ScopeCounts(WordTypeFilter filter) =>
+        $"wordtypes:scope-counts:{HashFilter(filter)}";
+
     public static string Summary(WordTypeRowIdentity identity) =>
         $"wordtypes:summary:{HashIdentity(identity)}";
 

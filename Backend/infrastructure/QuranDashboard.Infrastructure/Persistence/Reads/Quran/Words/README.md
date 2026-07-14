@@ -101,6 +101,22 @@ and Unique Words. They back the `application/.../Quran/Words/**` query handlers 
   and friends) — never conflate the two. Grouped `alpha` sort reuses the Roots explorer's
   Arabic fold (`RootsListDerivation.ArabicFoldFrom`/`ArabicFoldTo`) with `COLLATE "C"`
   ordinal collation, tie-broken by the numeric dimension ID.
+- **Word Types scoped four-count summary** (Feature 026, US8, `EfWordTypesReader.GetScopeCountsAsync` in the
+  `.ScopeCounts.cs` partial) returns `WordTypeScopeCountsDto(WordsCount, RootsCount, StemsCount, LemmasCount)`
+  for the FULL active list scope (type, childCode, case, tense, voice, search, presence flags — the same
+  `WordTypeReadContext` the words/table reads build). It is **one SQL command**: a single CTE over the shared
+  scoped `BaseRowsSql` base (search predicate + presence flags included), then four aggregates that **reuse
+  the existing count formulas verbatim** rather than re-deriving them — words = the `RowsCountSql` formula
+  (`COUNT(DISTINCT (tashkeel_word_id, context_code))`, the row-constructor form of its `GROUP BY … COUNT(*)`),
+  and roots/stems/lemmas = the `GroupedRowsCountSql` formula (`COUNT(DISTINCT <dim>_id)`, which already
+  excludes NULLs). Because the base and the formulas are identical, each count **equals the corresponding
+  tableView's `PagedResult.TotalCount` for the identical scope** — the FR-016 equality contract, pinned by the
+  equality matrix in `WordTypesScopeCountsReadTests`. These are the **scoped word-context count family only**,
+  never the global `words_count`-backed aggregates. The search term reaches SQL only as a parameter value and
+  is never logged (`hasSearch` boolean only). `CachedWordTypesReader` caches it under
+  `WordTypesCacheKeys.ScopeCounts` — keyed by every scope input and nothing view/page (no `tableView`/`sort`/
+  `page`) — with the table read's entry options; a zero-row valid scope returns an all-zero DTO, an invalid
+  scope is a controlled 400 `InvalidFilter`.
 - **Word Types grouped detail reads** (`EfWordTypesReader.GetGroupedSummaryAsync`, Feature 023, in the
   `.GroupedDetails.*` partials) select from the **same scoped `BaseRowsSql` occurrence base** as the
   grouped table, then restrict it to a single allowlisted numeric column

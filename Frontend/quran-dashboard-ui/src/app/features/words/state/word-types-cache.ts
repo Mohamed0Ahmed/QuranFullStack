@@ -18,6 +18,12 @@ export const WordTypesCacheKeys = {
   table(filter: WordTypesCacheFilter, tableView: WordTypeTableView, sort: WordTypeSort, page: number): string {
     return `wordtypes:table:${filter.type}:${filter.childCode ?? 'all'}:${filter.case}:${filter.tense}:${filter.voice}${searchSegment(filter.search)}${presenceSegment(filter)}:view:${tableView}:sort:${sort}:p${page}`;
   },
+  // Scoped four-count summary (Feature 026, US8). Keyed by the FULL list scope and NOTHING view/page —
+  // the same components as the backend WordTypesCacheKeys.ScopeCounts key — so counts are shared across
+  // tab/page changes and refetched only when the scope changes.
+  scopeCounts(filter: WordTypesCacheFilter): string {
+    return `wordtypes:scope-counts:${filter.type}:${filter.childCode ?? 'all'}:${filter.case}:${filter.tense}:${filter.voice}${searchSegment(filter.search)}${presenceSegment(filter)}`;
+  },
   summary(identity: WordTypesCacheIdentity): string {
     return `wordtypes:summary:${identity.tashkeelWordId}:${identity.contextCode}:${identity.case}:${identity.tense}:${identity.voice}`;
   },

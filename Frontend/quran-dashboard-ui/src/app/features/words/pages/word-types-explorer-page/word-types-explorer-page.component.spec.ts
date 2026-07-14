@@ -183,6 +183,7 @@ function ok<T>(data: T): ApiResponse<T> {
 type Endpoint =
   | 'tree'
   | 'table'
+  | 'scopeCounts'
   | 'wordSummary'
   | 'wordAyahs'
   | 'wordSurahs'
@@ -215,6 +216,7 @@ interface FakeServer {
 function endpointFor(request: TestRequest): Endpoint {
   const url = request.request.url;
   if (url.endsWith('/api/words/word-types/tree')) return 'tree';
+  if (url.endsWith('/api/words/word-types/scope-counts')) return 'scopeCounts';
   if (url.endsWith('/api/words/word-types/table')) return 'table';
   if (/\/api\/words\/word-types\/words\/\d+\/ayahs$/.test(url)) return 'wordAyahs';
   if (/\/api\/words\/word-types\/words\/\d+\/surahs$/.test(url)) return 'wordSurahs';
@@ -230,6 +232,7 @@ function defaultResponse(endpoint: Endpoint): ApiResponse<unknown> {
   const responses: Record<Endpoint, ApiResponse<unknown>> = {
     tree: ok(tree),
     table: ok<PagedResultDto<WordTypeTableRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [row] }),
+    scopeCounts: ok({ wordsCount: 1, rootsCount: 1, stemsCount: 0, lemmasCount: 0 }),
     wordSummary: ok(properRow),
     wordAyahs: ok<PagedResultDto<WordTypeAyahMatchDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [ayahMatch] }),
     wordSurahs: ok({ surahs: [{ surahNumber: 999, nameArabic: 'SYNTH_WORD_SURAH_NAME', occurrencesCount: 1 }], missingSurahs: [] }),
@@ -367,6 +370,43 @@ describe('WordTypesExplorerPageComponent', () => {
 
     expect(root.textContent).toContain(WORD_TYPES_SORT_LABEL);
     expect(optionLabels).toEqual(WORD_TYPE_SORT_OPTIONS.map((option) => option.label));
+  });
+
+  it('mounts the scope-counts strip between the filter strip and the view tabs, showing the four scoped counts (US8)', async () => {
+    respond('scopeCounts', ok({ wordsCount: 40, rootsCount: 12, stemsCount: 8, lemmasCount: 5 }));
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'N' }));
+    const fixture = await createPage();
+    const root = fixture.nativeElement as HTMLElement;
+
+    const strip = root.querySelector('qd-word-type-scope-counts');
+    const tabs = root.querySelector('qd-word-type-table-view-tabs');
+    expect(strip).not.toBeNull();
+    expect(tabs).not.toBeNull();
+
+    const values = Array.from(strip!.querySelectorAll('[data-testid="word-type-scope-count-value"]')).map((el) => el.textContent?.trim());
+    expect(values).toEqual(['40', '12', '8', '5']);
+
+    // Placement: filters → scope summary → tabs → table (the tabs follow the strip in document order).
+    expect(strip!.compareDocumentPosition(tabs!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(requestsFor('scopeCounts')).toHaveLength(1);
+  });
+
+  it('does not refetch the scope counts on a tableView or page change (US8)', async () => {
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'N' }));
+    const fixture = await createPage();
+
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'N', tableView: 'roots' }));
+    await fixture.whenStable();
+    fixture.detectChanges();
+    flushPendingRequests();
+
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'N', tableView: 'roots', page: '2' }));
+    await fixture.whenStable();
+    fixture.detectChanges();
+    flushPendingRequests();
+
+    // Only the initial scope load fetched counts; tab + page changes did not.
+    expect(requestsFor('scopeCounts')).toHaveLength(1);
   });
 
   it('clears prior leaf rows for the in-table subtype prompt when returning to a parent, keeping the shells mounted', async () => {

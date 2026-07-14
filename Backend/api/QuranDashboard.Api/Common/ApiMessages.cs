@@ -81,6 +81,7 @@ public static class ApiMessages
     public const string WordTypesTreeLoaded = "تم تحميل أنواع الكلمات";
     public const string WordTypesRowsLoaded = "تم تحميل كلمات النوع";
     public const string WordTypesTableLoaded = "تم تحميل جدول النوع";
+    public const string WordTypesScopeCountsLoaded = "تم تحميل إحصاء النطاق";
     public const string WordTypeSummaryLoaded = "تم تحميل ملخص الكلمة";
     public const string WordTypeAyahsLoaded = "تم تحميل الآيات الخاصة بالكلمة";
     public const string WordTypeSurahsLoaded = "تم تحميل سور الكلمة";

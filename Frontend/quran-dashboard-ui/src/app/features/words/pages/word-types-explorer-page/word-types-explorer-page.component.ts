@@ -10,6 +10,7 @@ import { SurahOccurrencesListComponent } from '../../components/surah-occurrence
 import { WordTypeDetailsPanelComponent } from '../../components/word-type-details-panel/word-type-details-panel.component';
 import { WordTypeFilterComponent, WordTypeScopeSelectedEvent } from '../../components/word-type-filter/word-type-filter.component';
 import { WordTypeGroupedWordsListComponent } from '../../components/word-type-grouped-words-list/word-type-grouped-words-list.component';
+import { WordTypeScopeCountsComponent } from '../../components/word-type-scope-counts/word-type-scope-counts.component';
 import { WordTypeTableViewTabsComponent } from '../../components/word-type-table-view-tabs/word-type-table-view-tabs.component';
 import {
   WordTypePresenceFlagChange,
@@ -86,6 +87,7 @@ const DETAIL_KIND_BY_TABLE_VIEW: Record<WordTypeTableView, WordTypeDetailSelecti
     WordTypeDetailsPanelComponent,
     WordTypeFilterComponent,
     WordTypeGroupedWordsListComponent,
+    WordTypeScopeCountsComponent,
     WordTypeTableViewTabsComponent,
     WordTypesPresenceFilterComponent,
     WordTypesTableComponent,

@@ -23,6 +23,7 @@ import {
   WordTypeMainType,
   WordTypePresenceDimension,
   WordTypeRowIdentity,
+  WordTypeScopeCountsDto,
   WordTypeSort,
   WordTypeTableRowDto,
   WordTypeTableView,
@@ -30,6 +31,7 @@ import {
   WordTypeVoice,
   WordTypeTreeDto,
   WordTypesListState,
+  WordTypesScopeCountsState,
 } from '../models/word-types.models';
 import { WordTypesCache, WordTypesCacheKeys } from './word-types-cache';
 import {
@@ -78,6 +80,12 @@ export class WordTypesExplorerFacade {
   private route?: ActivatedRoute;
   private routeSub?: Subscription;
   private retrySub?: Subscription;
+  // Scope-counts (US8) load on a SEPARATE trigger from the list: only when the scope key changes
+  // (type/childCode/case/tense/voice/search/flags), never on a tableView or page change. lastScopeQuery
+  // holds the scope the strip currently describes so retry can refetch only the counts.
+  private scopeCountsSub?: Subscription;
+  private scopeCountsRetrySub?: Subscription;
+  private lastScopeQuery: ParsedWordTypesQuery | null = null;
   // Tracks which tableView the currently-stored rows belong to, so a tab switch can null the
   // stale rows before the new page arrives without also clearing rows on ordinary filter changes
   // (those intentionally keep prior rows visible while loading).
@@ -92,6 +100,9 @@ export class WordTypesExplorerFacade {
 
   readonly listState: Signal<WordTypesListState> = this.state.asReadonly();
 
+  private readonly scopeCounts = signal<WordTypesScopeCountsState>({ status: 'idle', counts: null });
+  readonly scopeCountsState: Signal<WordTypesScopeCountsState> = this.scopeCounts.asReadonly();
+
   bindToRoute(route: ActivatedRoute): void {
     this.unbindFromRoute();
     this.route = route;
@@ -103,13 +114,37 @@ export class WordTypesExplorerFacade {
       tap(() => this.cancelRetry()),
       switchMap(() => this.loadList()),
     ).subscribe();
+
+    // Counts are scope-level: a distinct scope key (excludes tableView, page, sort) is the only trigger,
+    // so switching tabs or paging never refetches them.
+    this.scopeCountsSub = route.queryParamMap.pipe(
+      map((params) => parseWordTypesQueryParams(params)),
+      distinctUntilChanged((a, b) => this.scopeKey(a) === this.scopeKey(b)),
+      tap(() => this.cancelScopeCountsRetry()),
+      switchMap((query) => this.loadScopeCounts(query)),
+    ).subscribe();
   }
 
   unbindFromRoute(): void {
     this.routeSub?.unsubscribe();
+    this.scopeCountsSub?.unsubscribe();
     this.cancelRetry();
+    this.cancelScopeCountsRetry();
     this.routeSub = undefined;
+    this.scopeCountsSub = undefined;
     this.route = undefined;
+  }
+
+  // Refetches ONLY the counts after a strip error; the table is never touched. Failed reads are not
+  // cached, so this always re-issues the request.
+  retryScopeCounts(): void {
+    const query = this.lastScopeQuery;
+    if (!query) {
+      return;
+    }
+    this.cancelScopeCountsRetry();
+    this.scopeCounts.set({ status: 'loading', counts: null });
+    this.scopeCountsRetrySub = this.fetchScopeCounts(query).subscribe();
   }
 
   // Re-issues the current list load after a transport error. Failed reads are never cached, so a
@@ -261,9 +296,50 @@ export class WordTypesExplorerFacade {
     return source.pipe(catchError(() => of(null)));
   }
 
+  // Loads the scoped four-count summary. Only a confirmed leaf scope (a selected child, or the inl leaf)
+  // has a table to count; a parent/prompt scope shows no strip numbers (status 'idle'), mirroring the
+  // table's own subtype prompt.
+  private loadScopeCounts(query: ParsedWordTypesQuery): Observable<void> {
+    const leafSelected = query.childCode !== null || query.type === 'inl';
+    if (!leafSelected) {
+      this.lastScopeQuery = null;
+      this.scopeCounts.set({ status: 'idle', counts: null });
+      return of(undefined);
+    }
+
+    this.lastScopeQuery = query;
+    this.scopeCounts.update((current) => ({ ...current, status: 'loading' }));
+    return this.fetchScopeCounts(query);
+  }
+
+  private fetchScopeCounts(query: ParsedWordTypesQuery): Observable<void> {
+    return this.cache.getOrLoad(
+      WordTypesCacheKeys.scopeCounts(query),
+      () => this.api.getScopeCounts(query),
+    ).pipe(
+      tap((response) => this.handleScopeCountsResponse(response)),
+      // A counts failure never blocks the table: the strip owns its own error state and retry.
+      catchError(() => {
+        this.scopeCounts.set({ status: 'error', counts: null });
+        return of(undefined);
+      }),
+      map(() => undefined),
+    );
+  }
+
+  private handleScopeCountsResponse(response: ApiResponse<WordTypeScopeCountsDto>): void {
+    const counts = response.isSuccess ? response.data ?? null : null;
+    this.scopeCounts.set(counts ? { status: 'success', counts } : { status: 'error', counts: null });
+  }
+
   private cancelRetry(): void {
     this.retrySub?.unsubscribe();
     this.retrySub = undefined;
+  }
+
+  private cancelScopeCountsRetry(): void {
+    this.scopeCountsRetrySub?.unsubscribe();
+    this.scopeCountsRetrySub = undefined;
   }
 
   private handleTreeOnlyResponse(tree: ApiResponse<WordTypeTreeDto>): void {
@@ -354,6 +430,12 @@ export class WordTypesExplorerFacade {
 
   private requestKey(query: ParsedWordTypesQuery): string {
     return [query.type, query.childCode, query.tableView, query.case, query.tense, query.voice, query.search, query.hasRoot, query.hasStem, query.hasLemma, query.sort, query.page].join('|');
+  }
+
+  // The scope key deliberately omits tableView, sort, and page: the four counts describe the list scope,
+  // not a view or page, so only these fields retrigger a counts load.
+  private scopeKey(query: ParsedWordTypesQuery): string {
+    return [query.type, query.childCode, query.case, query.tense, query.voice, query.search, query.hasRoot, query.hasStem, query.hasLemma].join('|');
   }
 }
 
