@@ -150,8 +150,10 @@
 
 - **Decision**: user-facing labels use the app's live terms — stem = "الأصل الصرفي"
   (pl. "الأصول الصرفية"), lemma = "الصيغة المعجمية" (pl. "الصيغ المعجمية"), root =
-  "الجذر" (pl. "الجذور"); "الجذع"/"اللمّة" are internal reference terms only. Strip
-  order: كلمات | جذور | أصول صرفية | صيغ معجمية.
+  "الجذر" (pl. "الجذور"); "الجذع"/"اللمّة" are internal reference terms only. The
+  four-count strip reuses the existing tabs' short labels verbatim
+  (كلمات | جذور | أصول | صيغ) — tabs are not renamed; full terms stay canonical for
+  standalone labels (stat lines, filter labels).
 - **Rationale**: verified against the words feature's live label files; introducing a
   second user-facing synonym pair would violate the feature's own "label names the
   dimension" rule and confuse existing users.

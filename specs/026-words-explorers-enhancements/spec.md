@@ -25,6 +25,11 @@ as overriding any Locked Decision A1–D, Non-Goal, or acceptance criterion ther
   "عدد الـ…: N" — عدد الكلمات: N / عدد الجذور: N / عدد الصيغ المعجمية: N /
   عدد الأصول الصرفية: N. Sidesteps تمييز number-agreement with dynamic
   digits; dimension named explicitly per terminology lock D.
+- Q (analysis follow-up): Do the four-count strip labels use the full terms or the
+  existing tabs' short forms? → A: The strip reuses the existing view tabs' short
+  labels (كلمات | جذور | أصول | صيغ) so strip and tabs stay literally identical; the
+  existing tabs are NOT renamed. The full terms ("الأصول الصرفية" / "الصيغ
+  المعجمية") remain canonical for standalone labels (stat lines, filter labels).
 
 ## Context & Why
 
@@ -265,9 +270,9 @@ four counts narrow.
 **Acceptance Scenarios**:
 
 1. **Given** any active scope, **Then** the summary shows exactly four counts — words,
-   roots, stems, lemmas — each labeled per the terminology lock, in the same
-   right-to-left order as the existing view tabs
-   (كلمات | جذور | أصول صرفية | صيغ معجمية).
+   roots, stems, lemmas — in the same right-to-left order AND with the same short
+   labels as the existing view tabs (كلمات | جذور | أصول | صيغ); the existing tabs
+   are not renamed (decided — see Clarifications).
 2. **Given** the identical scope, **Then** each of the four counts EQUALS the total the
    corresponding table view (words/roots/stems/lemmas) reports — always, for every
    combination of type, child type, case, tense, voice, presence flags, and search.
@@ -387,8 +392,10 @@ four counts narrow.
   **"الصيغة المعجمية"** (plural "الصيغ المعجمية") — the app's live terms (verified in
   the words feature label files). "الجذع" and "اللمّة" remain internal reference terms
   only and MUST NOT appear in user-facing labels. Every Arabic label MUST name the
-  dimension it actually counts; view-tab labels and count labels stay mutually
-  consistent.
+  dimension it actually counts. Where a label sits directly beside the existing view
+  tabs (the four-count strip), it reuses the tabs' established short forms
+  (أصول / صيغ) verbatim — the tabs are not renamed; standalone labels (stat lines,
+  filter labels) use the full canonical terms.
 
 ### Key Entities
 

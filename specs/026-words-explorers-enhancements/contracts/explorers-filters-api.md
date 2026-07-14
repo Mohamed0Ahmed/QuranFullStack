@@ -30,7 +30,7 @@ Per metric `k`: `kMin` / `kMax` (`int?`).
 
 | Endpoint | Param | Validation | Semantics |
 |---|---|---|---|
-| `GET api/words/unique/{kind}` | `primaryType` (string) | POS code must exist in the catalogue, else 400 `InvalidFilter` | keeps rows whose **primary** word type — computed by the same rule as the displayed chip enrichment — equals the code. Predicate lives in the base SQL; the enrichment and the predicate must share one selection rule (agreement is a tested invariant). |
+| `GET api/words/unique/{kind}` | `primaryType` (string) | POS code must exist in the POS catalogue (`quran_pos_tags`, resolved via the existing readers), else 400 `InvalidFilter` | keeps rows whose **primary** word type — computed by the same rule as the displayed chip enrichment — equals the code. Predicate lives in the base SQL; the enrichment and the predicate must share one selection rule (agreement is a tested invariant). Frontend feeds its type select from the existing word-types tree read (no new endpoint). |
 | `GET api/words/unique/{kind}` | `rootId` (int) | positive, else 400 | keeps rows whose **primary** root (same rule as displayed chip) is this root |
 | `GET api/words/lemmas` | `rootId` (int) | positive, else 400 | real FK belonging: lemma's `root_id = @rootId` |
 | `GET api/words/stems` | `rootId` / `lemmaId` (int) | positive, else 400 | derived **primary** association match (the association already displayed on the row). Label contract: "الجذر الأساسي" / "الصيغة المعجمية الأساسية"; README documents primary-not-sole. |

@@ -81,11 +81,13 @@ list-scope changes keep following the page's existing selection rules.
 |---|---|
 | `explorer-result-count` (4 normal pages, toolbar) | value = `listState().totalCount`, phrasing "عدد الـ…: N" (عدد الكلمات / عدد الجذور / عدد الصيغ المعجمية / عدد الأصول الصرفية); loading → non-interactive skeleton; list error → hidden; empty → "0" |
 | `explorer-count-range-filter` (4 normal pages + Word Types flags row) | idle/active chips (`aria-pressed`), مخصّص expanded, disabled while list loading |
-| `word-type-scope-counts` (Word Types, between filter strip and view tabs) | four counts labeled كلمات \| جذور \| أصول صرفية \| صيغ معجمية (RTL, same order as tabs); own loading skeleton (non-interactive) / compact error + إعادة المحاولة (refetches counts only) / zeros for empty scope; counts failure never blocks the table; table failure hides the strip's numbers (scope unconfirmed); mounted-shell invariant preserved |
+| `word-type-scope-counts` (Word Types, between filter strip and view tabs) | four counts reusing the existing tabs' SHORT labels verbatim — كلمات \| جذور \| أصول \| صيغ (RTL, same order AND same text as the tabs; tabs not renamed — spec Clarifications); own loading skeleton (non-interactive) / compact error + إعادة المحاولة (refetches counts only) / zeros for empty scope; counts failure never blocks the table; table failure hides the strip's numbers (scope unconfirmed); mounted-shell invariant preserved |
 
 ## 6. Terminology (lock D, app terms — binding for every new label)
 
 root "الجذر/الجذور" · stem "الأصل الصرفي/الأصول الصرفية" · lemma
 "الصيغة المعجمية/الصيغ المعجمية" · words "الكلمات". "الجذع"/"اللمّة" must not appear
-in user-facing labels. Labels follow the existing TDZ-getter pattern in
+in user-facing labels. Exception scope: surfaces sitting directly beside the existing
+view tabs (the four-count strip) reuse the tabs' established short forms
+(أصول / صيغ) verbatim. Labels follow the existing TDZ-getter pattern in
 `*.labels.ts` (do not revert the getters).

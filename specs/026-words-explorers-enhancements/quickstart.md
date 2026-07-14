@@ -33,7 +33,7 @@ frontend `src/app/features/words/**/*.spec.ts`.
 1. `/dashboard/words/types?type=noun` → first page holds up to 1000 rows; smooth
    scroll; tabs/details behave as before.
 2. Type a fragment in the new search box → table narrows (word identity match);
-   switch to جذور/أصول صرفية/صيغ معجمية tabs → grouped rows reflect the searched
+   switch to the جذور/أصول/صيغ tabs → grouped rows reflect the searched
    words; URL carries `search=`; refresh restores.
 3. Open a word's آيات view → 100 ayahs per page; grouped member words/ayahs → 100.
 4. API checks: `GET /api/words/word-types/table?type=noun&pageSize=1000` → 200;
@@ -59,8 +59,8 @@ frontend `src/app/features/words/**/*.spec.ts`.
 
 ### P4 — Scope counts
 
-1. Word Types: strip between filters and tabs shows four counts
-   (كلمات | جذور | أصول صرفية | صيغ معجمية).
+1. Word Types: strip between filters and tabs shows four counts using the tabs'
+   short labels verbatim (كلمات | جذور | أصول | صيغ).
 2. Equality: for the same scope, each count equals the matching tab's pagination
    total — check all four tabs, then repeat with search + a has-flag active.
 3. Change type/sub-filter/search → counts reload; switch tabs or pages → counts do

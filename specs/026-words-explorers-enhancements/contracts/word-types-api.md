@@ -14,7 +14,7 @@ New optional query params (added to the existing
 
 | Param | Type | Default | Validation | Semantics |
 |---|---|---|---|---|
-| `search` | string | absent | trim; whitespace→absent; length > ~64 → 400 `WordTypesInvalidFilter`; value never logged (structured logs carry `hasSearch` only) | Arabic-normalized contains-match on **word identity text** (`quran_words_unique_tashkeel.text_imlaei_simple`) applied to the shared scoped occurrence base — the words view rows, all three grouped views, and their `TotalCount`s inherit it. Never matches root/stem/lemma display text. |
+| `search` | string | absent | trim; whitespace→absent; length > 64 → 400 `WordTypesInvalidFilter`; value never logged (structured logs carry `hasSearch` only) | Arabic-normalized contains-match on **word identity text** (`quran_words_unique_tashkeel.text_imlaei_simple`) applied to the shared scoped occurrence base — the words view rows, all three grouped views, and their `TotalCount`s inherit it. Never matches root/stem/lemma display text. |
 | `hasRoot` | bool | absent | `true`/`false` only, else 400 | tri-state presence predicate `m.root_id IS [NOT] NULL` on the shared base |
 | `hasStem` | bool | absent | same | `m.stem_id IS [NOT] NULL` |
 | `hasLemma` | bool | absent | same | `m.lemma_id IS [NOT] NULL` |

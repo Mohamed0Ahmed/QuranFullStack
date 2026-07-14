@@ -7,9 +7,12 @@
 
 > **Precedence**: the docs/ plan is the locked decision record (Locked Decisions A1–D,
 > non-goals, stop conditions). This file operationalizes it for Spec Kit execution and
-> folds in the three clarification outcomes. On any conflict, the docs plan's locked
-> decisions and the spec's Clarifications section govern; this file must be updated,
-> not argued with.
+> folds in the clarification outcomes. Precedence order on conflict:
+> (1) the docs plan's locked decision **substance** (what to build, invariants,
+> non-goals, stop conditions); (2) the spec's `## Clarifications` and terminology
+> edits, which **supersede the docs plan's illustrative values** (bucket examples,
+> Arabic label examples in lock D); (3) this file, which must be updated to match,
+> not argued with. The docs plan itself stays untouched as the historical record.
 
 ## Summary
 
@@ -23,8 +26,8 @@ Three workstreams over the five read-only Words explorers:
   root FK, stems by *primary* root/lemma).
 - **C — Statistics**: headline result-count ("عدد الـ…: N") on the four normal
   explorers surfacing the existing filtered `TotalCount`; a scoped four-count summary
-  strip (كلمات | جذور | أصول صرفية | صيغ معجمية) on Word Types served by ONE new
-  read that reuses the grouped-count SQL fragments.
+  strip (tabs' short labels: كلمات | جذور | أصول | صيغ) on Word Types served by ONE
+  new read that reuses the grouped-count SQL fragments.
 
 Read-only throughout: no schema, no migrations, no importers, no new packages.
 
@@ -136,7 +139,7 @@ children of the existing pages.
 | Preset buckets (disjoint) | occurrences 1 · 2–10 · 11–100 · 101–1000 · 1001+; ayahs/surahs 1 · 2–10 · 11–50 · 51+ (≤114); word/lemma/stem sub-counts 1 · 2–5 · 6–20 · 21+; plus مخصّص custom. URL stores the actual range. |
 | Result-count phrasing | Label-prefix: عدد الكلمات / عدد الجذور / عدد الصيغ المعجمية / عدد الأصول الصرفية: N |
 | Four-count strip placement | Between type-filter strip and table-view tabs (filters → scope summary → tabs → table); mounted-shell invariant preserved. |
-| Terminology (lock D, app terms) | root "الجذر/الجذور"; stem label "الأصل الصرفي/الأصول الصرفية"; lemma label "الصيغة المعجمية/الصيغ المعجمية". "الجذع"/"اللمّة" internal-reference only. Strip order: كلمات \| جذور \| أصول صرفية \| صيغ معجمية. |
+| Terminology (lock D, app terms) | root "الجذر/الجذور"; stem label "الأصل الصرفي/الأصول الصرفية"; lemma label "الصيغة المعجمية/الصيغ المعجمية". "الجذع"/"اللمّة" internal-reference only. Strip reuses the tabs' short labels verbatim: كلمات \| جذور \| أصول \| صيغ (tabs not renamed). |
 
 ## Phases (execution order; each = one commit)
 
@@ -146,7 +149,7 @@ Touches the Word Types SQL first so P2/P4 build on the final base shape.
 Key mechanics (full contract: `contracts/word-types-api.md`):
 
 - Search: optional `search` param on rows + table reads → validation (trim, empty→null,
-  defensive max length, log only `hasSearch`) → shared Arabic-normalize helper
+  max length 64, log only `hasSearch`) → shared Arabic-normalize helper
   (extracted from `EfUniqueWordsReader.NormalizeArabicQuery`; Unique Words behavior
   pinned unchanged) → ONE parameterized predicate on `BaseRowsSql`'s occurrence base
   matching `quran_words_unique_tashkeel.text_imlaei_simple` (`LIKE @search`,
@@ -164,9 +167,11 @@ Key mechanics (full contract: `contracts/word-types-api.md`):
   `{ search, page: null }`; input visible on all tableViews, placeholder names the
   word grain ("ابحث في الكلمات"); cache keys (frontend + backend) gain normalized
   search (empty ⇒ key unchanged).
-- Perf gate (mandatory): `RowsSql`/`GroupedRowsSql` timed at `pageSize=1000` worst
-  scopes (unscoped verb; stems grouped ≈ 12,108 groups); cache-entry growth measured;
-  100-ayah detail render sanity. Hard failure at default 1000 = stop condition 4.
+- Perf gate (mandatory, numeric): `RowsSql`/`GroupedRowsSql` timed at `pageSize=1000`
+  worst scopes (unscoped verb; stems grouped ≈ 12,108 groups). **Budget: p95 ≤ 2s per
+  uncached list read** (same 2-second populate target feature 019 set); cache-entry
+  growth measured; 100-ayah detail render sanity. p95 > 2s at default 1000 = hard
+  failure = stop condition 4.
 - Commit: `feat(words): word-types parity — search, 1000-row list, 100-row details`.
 
 ### P2 — Cheap filters + headline result count (B1 + C1) — after P1
@@ -209,9 +214,11 @@ Key mechanics (full contract: `contracts/word-types-api.md`):
   the three `GroupedRowsCountSql` (reuse fragments, never re-derive). Cached with a
   key containing every scope input.
 - Facade loads counts on scope change only (not tableView, not page). New
-  `word-type-scope-counts` strip between filter strip and tabs; labels كلمات | جذور |
-  أصول صرفية | صيغ معجمية; own loading/error(إعادة المحاولة)/zero states; partial
-  failure never blocks the table.
+  `word-type-scope-counts` strip between filter strip and tabs; labels reuse the
+  existing tabs' short forms verbatim — كلمات | جذور | أصول | صيغ (tabs NOT renamed;
+  spec Clarifications) — with own loading/error(إعادة المحاولة)/zero states; partial
+  failure never blocks the table. Scope-counts perf budget: **p95 ≤ 2s uncached** on
+  the widest scopes, 1 SQL command.
 - Equality test matrix: four counts == the four tableViews' `TotalCount` for identical
   scopes (types × children × case/tense/voice × search × has-flags); single-command
   budget pinned via `SqlCommandCountInterceptor`.
