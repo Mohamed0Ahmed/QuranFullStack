@@ -1,62 +1,75 @@
-export interface SurahOnPageDto {
-  surahNumber: number;
-  nameArabic: string;
-  firstAyahOnPage: number;
-  lastAyahOnPage: number;
-}
+import type {
+  AyahCoreDto,
+  AyahMutashabihatResponse as AyahMutashabihatDto,
+  AyahStudyResponse as AyahStudyWireDto,
+  FullI3RabEntryDto as FullI3rabEntryWireDto,
+  LocalizedLabel,
+  MushafLineDto as MushafLineWireDto,
+  MushafPageResponse as MushafPageWireDto,
+  MushafStudySourceCatalogResponse as MushafStudySourceCatalogDto,
+  MushafSurahCatalogItem as MushafSurahCatalogItemDto,
+  MushafWordDto,
+  MutashabihatGroupDto,
+  MutashabihatOccurrenceDto,
+  MutashabihatSelectedOccurrenceDto,
+  PageMarkerDto as PageMarkerWireDto,
+  PageNavigationSummary as PageNavigationSummaryDto,
+  RenderedSegmentDto as RenderedSegmentWireDto,
+  SajdaDto,
+  SelectedSourcesDto,
+  SimilarAyahItemDto as SimilarAyahItemWireDto,
+  SimilarAyahsResponse as SimilarAyahsWireDto,
+  SimilaritySummaryDto as AyahSimilaritySummaryDto,
+  StudySourceCatalogItem as StudySourceCatalogItemDto,
+  SurahOnPage as SurahOnPageDto,
+  TafsirEntryDto as TafsirEntryWireDto,
+  TranslationEntryDto as TranslationEntryWireDto,
+  UniqueSimpleWordCountSummary,
+  UniqueWordCountSummary,
+  WordAnalysisResponse as WordAnalysisWireDto,
+  WordCountSummary,
+  WordIdentityDto,
+  WordMorphologyDto,
+  WordOccurrenceDto,
+  AyahRange as AyahRangeDto,
+} from '../../../core/api/generated/models';
 
-export interface AyahRangeDto {
-  firstVerseKey: string;
-  lastVerseKey: string;
-}
+export type {
+  AyahCoreDto,
+  AyahMutashabihatDto,
+  AyahRangeDto,
+  AyahSimilaritySummaryDto,
+  LocalizedLabel,
+  MushafStudySourceCatalogDto,
+  MushafSurahCatalogItemDto,
+  MushafWordDto,
+  MutashabihatGroupDto,
+  MutashabihatOccurrenceDto,
+  MutashabihatSelectedOccurrenceDto,
+  PageNavigationSummaryDto,
+  SajdaDto,
+  SelectedSourcesDto,
+  StudySourceCatalogItemDto,
+  SurahOnPageDto,
+  UniqueSimpleWordCountSummary,
+  UniqueWordCountSummary,
+  WordCountSummary,
+  WordIdentityDto,
+  WordMorphologyDto,
+  WordOccurrenceDto,
+};
 
-export interface PageNavigationSummaryDto {
-  juzNumbers: number[];
-  hizbNumbers: number[];
-  rubNumbers: number[];
-}
-
-export interface MushafWordDto {
-  wordLocation: string;
-  verseKey: string;
-  wordNumber: number;
-  lineWordOrder: number;
-  textUthmani: string;
-  isAyahMarker: boolean;
-}
-
-export interface MushafLineDto {
-  lineNumber: number;
+export interface MushafLineDto extends Omit<MushafLineWireDto, 'lineType'> {
   lineType: 'ayah' | 'surah_name' | 'basmallah';
-  isCentered: boolean;
-  surahNumber: number | null;
-  words: MushafWordDto[];
 }
 
-export interface PageMarkerDto {
+export interface PageMarkerDto extends Omit<PageMarkerWireDto, 'markerType'> {
   markerType: 'juz' | 'hizb' | 'rub' | 'sajda';
-  markerNumber: number;
-  verseKey: string;
-  lineNumber: number;
-  wordLocation: string;
-  sajdahType: string | null;
 }
 
-export interface MushafPageDto {
-  pageNumber: number;
-  previousPageNumber: number | null;
-  nextPageNumber: number | null;
-  surahs: SurahOnPageDto[];
-  ayahRange: AyahRangeDto;
-  navigation: PageNavigationSummaryDto;
+export interface MushafPageDto extends Omit<MushafPageWireDto, 'lines' | 'markers'> {
   lines: MushafLineDto[];
   markers: PageMarkerDto[];
-}
-
-export interface MushafSurahCatalogItemDto {
-  surahNumber: number;
-  nameArabic: string;
-  startPageNumber: number;
 }
 
 export interface MushafSurahJuzGroupDto {
@@ -64,117 +77,27 @@ export interface MushafSurahJuzGroupDto {
   surahs: MushafSurahCatalogItemDto[];
 }
 
-export interface StudySourceCatalogItemDto {
-  sourceKey: string;
-  displayNameAr: string;
-  displayNameEn: string | null;
-  languageCode: string;
-  languageNameAr: string | null;
-  direction: string;
-  tafsirKind: string | null;
-  translationType: string | null;
-}
-
-export interface MushafStudySourceCatalogDto {
-  tafsirSources: StudySourceCatalogItemDto[];
-  translationSources: StudySourceCatalogItemDto[];
-  fullI3rabSources: StudySourceCatalogItemDto[];
-}
-
-export interface SajdaDto {
-  sajdahNumber: number;
-  verseKey: string;
-  sajdahType: string;
-}
-
-export interface AyahCoreDto {
-  verseKey: string;
-  surahNumber: number;
-  surahNameArabic: string;
-  ayahNumber: number;
-  textUthmani: string;
-  wordsCount: number;
-  pageFrom: number;
-  pageTo: number;
-  juzNumber: number;
-  hizbNumber: number;
-  rubNumber: number;
-  sajda: SajdaDto | null;
-}
-
-export interface SelectedSourcesDto {
-  tafsirSource: string | null;
-  translationSource: string | null;
-  fullI3rabSource: string | null;
-}
-
-export interface TafsirEntryDto {
-  sourceKey: string;
-  displayNameAr: string;
-  shortNameAr: string | null;
-  languageCode: string;
+export interface TafsirEntryDto extends Omit<TafsirEntryWireDto, 'direction' | 'sourceValueKind'> {
   direction: 'rtl' | 'ltr';
-  tafsirKind: string;
   sourceValueKind: 'leader' | 'member_pointer' | 'flat';
-  sourceLeaderVerseKey: string | null;
-  isGroupLeader: boolean;
-  coveredAyahCount: number;
-  coveredAyahKeys: string[];
-  text: string;
 }
 
-export interface TranslationEntryDto {
-  sourceKey: string;
-  displayNameAr: string | null;
-  displayNameEn: string | null;
-  languageCode: string;
+export interface TranslationEntryDto extends Omit<TranslationEntryWireDto, 'direction'> {
   direction: 'rtl' | 'ltr';
-  translationType: string;
-  containsHtmlMarkup: boolean;
-  text: string;
 }
 
-export interface FullI3rabEntryDto {
-  sourceKey: string;
-  displayNameAr: string;
-  shortNameAr: string | null;
+export interface FullI3rabEntryDto extends Omit<FullI3rabEntryWireDto, 'markupFormat' | 'sourceValueKind'> {
   markupFormat: 'html';
   sourceValueKind: 'leader' | 'member_pointer' | 'flat';
-  sourceLeaderVerseKey: string | null;
-  isGroupLeader: boolean;
-  coveredAyahCount: number;
-  coveredAyahKeys: string[];
-  html: string;
-}
-
-export interface AyahSimilaritySummaryDto {
-  similarAyahCount: number;
-  mutashabihatGroupCount: number;
-  mutashabihatOccurrenceCount: number;
 }
 
 export type SimilarAyahRelationshipDirection = 'outgoing' | 'incoming' | 'bidirectional';
 
-export interface SimilarAyahItemDto {
-  targetVerseKey: string;
-  surahNumber: number;
-  surahNameArabic: string;
-  ayahNumber: number;
-  pageNumber: number;
-  juzNumber: number;
-  hizbNumber: number;
-  rubNumber: number;
-  textUthmani: string;
-  score: number;
-  coverage: number;
-  matchedWordsCount: number;
+export interface SimilarAyahItemDto extends Omit<SimilarAyahItemWireDto, 'relationshipDirection'> {
   relationshipDirection: SimilarAyahRelationshipDirection;
-  hasReverseLink: boolean;
 }
 
-export interface SimilarAyahsDto {
-  verseKey: string;
-  count: number;
+export interface SimilarAyahsDto extends Omit<SimilarAyahsWireDto, 'items'> {
   items: SimilarAyahItemDto[];
 }
 
@@ -188,139 +111,24 @@ export const SIMILAR_AYAHS_EMPTY_MESSAGE =
 
 export const SIMILAR_AYAHS_LOADING_MESSAGE = 'جارٍ تحميل الآيات القريبة...';
 
-export interface MutashabihatSelectedOccurrenceDto {
-  verseKey: string;
-  wordFrom: number;
-  wordTo: number;
-  isRepresentative: boolean;
-  phraseTextUthmani: string | null;
-}
-
-export interface MutashabihatOccurrenceDto {
-  verseKey: string;
-  surahNumber: number;
-  surahNameArabic: string;
-  ayahNumber: number;
-  pageNumber: number;
-  wordFrom: number;
-  wordTo: number;
-  isSelectedAyah: boolean;
-  isRepresentative: boolean;
-  textUthmani: string;
-  phraseTextUthmani: string | null;
-}
-
-export interface MutashabihatGroupDto {
-  groupKey: string;
-  sourceGroupId: number;
-  representativeVerseKey: string;
-  representativeWordFrom: number;
-  representativeWordTo: number;
-  phraseTextUthmani: string | null;
-  occurrenceCount: number;
-  distinctAyahCount: number;
-  distinctSurahCount: number;
-  selectedOccurrences: MutashabihatSelectedOccurrenceDto[];
-  occurrences: MutashabihatOccurrenceDto[];
-}
-
-export interface AyahMutashabihatDto {
-  verseKey: string;
-  groupCount: number;
-  groups: MutashabihatGroupDto[];
-}
-
 export const MUTASHABIHAT_EMPTY_MESSAGE =
   'لا توجد متشابهات لفظية مسجلة لهذه الآية في البيانات الحالية.';
 
 export const MUTASHABIHAT_LOADING_MESSAGE = 'جارٍ تحميل المتشابهات اللفظية...';
 
-export interface AyahStudyDto {
-  ayah: AyahCoreDto;
-  selectedSources: SelectedSourcesDto;
+export interface AyahStudyDto extends Omit<AyahStudyWireDto, 'tafsir' | 'translation' | 'fullI3rab'> {
   tafsir: TafsirEntryDto | null;
   translation: TranslationEntryDto | null;
   fullI3rab: FullI3rabEntryDto | null;
-  similaritySummary: AyahSimilaritySummaryDto;
-}
-
-export interface WordOccurrenceDto {
-  quranWordId: number;
-  wordLocation: string;
-  verseKey: string;
-  surahNumber: number;
-  ayahNumber: number;
-  wordNumber: number;
-  pageNumber: number;
-  lineNumber: number;
-  lineWordOrder: number;
-  textUthmani: string;
-  textUthmaniSimple: string | null;
-  textImlaeiSimple: string | null;
-  qpcGlyph: string | null;
-}
-
-export interface WordCountSummary {
-  occurrencesCount: number;
-  ayahsCount: number;
-  surahsCount: number;
-}
-
-export interface UniqueWordCountSummary extends WordCountSummary {
-  id: number;
-}
-
-export interface UniqueSimpleWordCountSummary extends UniqueWordCountSummary {
-  wordKeyImlaeiSimple: string;
-}
-
-export interface WordIdentityDto {
-  orderedTashkeel: WordCountSummary;
-  orderedSimple: WordCountSummary;
-  uniqueTashkeel: UniqueWordCountSummary;
-  uniqueSimple: UniqueSimpleWordCountSummary;
-}
-
-export interface LocalizedLabel {
-  ar: string;
-  en: string;
-}
-
-export interface WordMorphologyDto {
-  headPos: string;
-  headPosLabel: LocalizedLabel;
-  root: { id: number; text: string | null; buckwalter: string | null } | null;
-  lemma: { id: number; text: string | null; buckwalter: string | null } | null;
-  stem: { id: number; text: string | null } | null;
-  isVerb: boolean;
-  verbTense: string | null;
-  verbVoice: string | null;
-  caseFeature: string | null;
 }
 
 export type SegmentDisplayTextStatus = 'available' | 'missing';
 
-export interface RenderedSegmentDto {
-  segmentLocation: string;
-  segmentNumber: number;
-  segmentColorSlot: number;
-  segmentKind: string | null;
-  segmentDisplayText: string | null;
+export interface RenderedSegmentDto extends Omit<RenderedSegmentWireDto, 'displayTextStatus'> {
   displayTextStatus: SegmentDisplayTextStatus;
-  segmentPos: string | null;
-  segmentPosLabel: LocalizedLabel | null;
-  segmentI3rabArabic: string | null;
-  i3rabRuleId: number | null;
-  i3rabRuleSignature: string | null;
-  i3rabRuleFamily: string | null;
-  i3rabStatus: string | null;
-  segmentFeatures: { raw: string | null; json: object[] } | null;
 }
 
-export interface WordAnalysisDto {
-  word: WordOccurrenceDto;
-  identity: WordIdentityDto;
-  morphology: WordMorphologyDto;
+export interface WordAnalysisDto extends Omit<WordAnalysisWireDto, 'renderedWordSegments'> {
   renderedWordSegments: RenderedSegmentDto[];
 }
 
