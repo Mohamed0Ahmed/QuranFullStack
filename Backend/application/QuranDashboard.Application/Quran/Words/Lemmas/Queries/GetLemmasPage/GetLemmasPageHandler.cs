@@ -53,10 +53,27 @@ public sealed class GetLemmasPageHandler(
             return new GetLemmasPageOutcome.InvalidPaging();
         }
 
+        var filter = query.Filter ?? LemmasCountFilter.None;
+        if (!filter.IsValid)
+        {
+            logger.LogWarning(
+                "Rejected {feature} {operation} {reason} {sort} {pageNumber} {pageSize} {hasSearch}",
+                FeatureName,
+                OperationName,
+                "invalidFilter",
+                GetSortKey(sort),
+                query.Page,
+                query.PageSize,
+                HasSearch(query.Search));
+
+            return new GetLemmasPageOutcome.InvalidFilter();
+        }
+
         var hasSearch = HasSearch(query.Search);
         var page = await reader.GetLemmasPageAsync(
             query.Search,
             sort,
+            filter,
             query.Page,
             query.PageSize,
             cancellationToken);

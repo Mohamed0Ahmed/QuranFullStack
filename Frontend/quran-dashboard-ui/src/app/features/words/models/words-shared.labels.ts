@@ -50,3 +50,12 @@ export const WORDS_SHARED_COUNT_COLUMNS = {
   lemmas: 'الصيغ المعجمية',
   stems: 'الأصول الصرفية',
 } as const;
+
+// UI labels for the shared count-range filter (Feature 026, US5).
+export const WORDS_RANGE_FILTER_LABELS = {
+  sectionLabel: 'تصفية حسب الأعداد',
+  custom: 'مخصّص',
+  min: 'من',
+  max: 'إلى',
+  clearAll: 'مسح كل عوامل التصفية',
+} as const;

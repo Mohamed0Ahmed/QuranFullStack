@@ -45,6 +45,14 @@
           </select>
         </label>
       </div>
+
+      <qd-word-types-presence-filter
+        [hasRoot]="listState().query.hasRoot"
+        [hasStem]="listState().query.hasStem"
+        [hasLemma]="listState().query.hasLemma"
+        [disabled]="listState().status === 'loading'"
+        (flagChange)="onPresenceFlagChange($event)"
+      />
     </div>
 
     @if (listState().tree) {

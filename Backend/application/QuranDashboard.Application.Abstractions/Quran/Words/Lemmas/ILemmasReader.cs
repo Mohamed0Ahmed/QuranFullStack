@@ -15,6 +15,7 @@ public interface ILemmasReader
     Task<PagedResult<LemmaListItemDto>> GetLemmasPageAsync(
         string? search,
         LemmaSort sort,
+        LemmasCountFilter filter,
         int page,
         int pageSize,
         CancellationToken cancellationToken);

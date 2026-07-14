@@ -99,6 +99,37 @@ describe('UniqueWordsApi.getList', () => {
     await expect(promise).resolves.toEqual({ isSuccess: true, message: 'ok', data: page([], 0) });
   });
 
+  it('sends only the active count-range params (Feature 026)', async () => {
+    const promise = firstValueFrom(
+      api.getList('tashkeel', '', 'mushaf-order', 1, 1000, {
+        occurrences: { min: 11, max: 100 },
+        surahs: { min: 1, max: null },
+      }),
+    );
+
+    const req = httpMock.expectOne((r) => matchUniqueWords('tashkeel').test(r.url));
+    expect(req.request.params.get('occMin')).toBe('11');
+    expect(req.request.params.get('occMax')).toBe('100');
+    expect(req.request.params.get('surahsMin')).toBe('1');
+    expect(req.request.params.has('surahsMax')).toBe(false);
+    expect(req.request.params.has('ayahsMin')).toBe(false);
+    req.flush({ isSuccess: true, message: 'ok', data: page([], 0) });
+
+    await expect(promise).resolves.toEqual({ isSuccess: true, message: 'ok', data: page([], 0) });
+  });
+
+  it('omits every range param for an unfiltered read (backward compat)', async () => {
+    const promise = firstValueFrom(api.getList('tashkeel', '', 'mushaf-order', 1, 1000));
+
+    const req = httpMock.expectOne((r) => matchUniqueWords('tashkeel').test(r.url));
+    expect(req.request.params.has('occMin')).toBe(false);
+    expect(req.request.params.has('ayahsMax')).toBe(false);
+    expect(req.request.params.has('surahsMin')).toBe(false);
+    req.flush({ isSuccess: true, message: 'ok', data: page([], 0) });
+
+    await expect(promise).resolves.toEqual({ isSuccess: true, message: 'ok', data: page([], 0) });
+  });
+
   it('returns the typed ApiResponse<PagedResultDto<UniqueWordListItemDto>> shape', async () => {
     const response: ApiResponse<PagedResultDto<UniqueWordListItemDto>> = {
       isSuccess: true,

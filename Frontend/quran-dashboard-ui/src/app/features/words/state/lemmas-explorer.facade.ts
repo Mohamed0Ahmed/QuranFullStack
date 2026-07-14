@@ -16,9 +16,11 @@ import {
   LemmasListState,
   PagedResultDto,
 } from '../models/lemmas.models';
+import { LEMMAS_RANGE_METRICS } from '../models/lemmas.models';
 import { LEMMAS_LIST_ERROR_LABEL } from '../models/lemmas.labels';
 import { parseLemmasQueryParams } from './lemmas-url-sync';
 import { LemmasCache, LemmasCacheKeys } from './lemmas-cache';
+import { EMPTY_RANGE_FILTERS, RangeFilters, serializeRangeFiltersKey } from './words-range-filters';
 
 const CONNECTION_ERROR_MESSAGE = LEMMAS_LIST_ERROR_LABEL;
 
@@ -45,6 +47,7 @@ export class LemmasExplorerFacade {
   private readonly _totalCount = signal<number>(0);
   private readonly _search = signal<string>('');
   private readonly _sort = signal<LemmaSort>(DEFAULT_LEMMA_SORT);
+  private readonly _ranges = signal<RangeFilters>(EMPTY_RANGE_FILTERS);
   private readonly _errorMessage = signal<string>('');
 
   private get pageSize(): number {
@@ -100,23 +103,29 @@ export class LemmasExplorerFacade {
     const parsed = parseLemmasQueryParams(queryParams);
     this._search.set(parsed.search);
     this._sort.set(parsed.sort);
+    this._ranges.set(parsed.ranges);
     this._page.set(parsed.page);
   }
 
   private listRequestKey(): string {
-    return [this._search(), this._sort(), this._page()].join('|');
+    return [this._search(), this._sort(), this.rangesKey(), this._page()].join('|');
+  }
+
+  private rangesKey(): string {
+    return serializeRangeFiltersKey(this._ranges(), LEMMAS_RANGE_METRICS);
   }
 
   private runListRequest(): Observable<void> {
     const targetPage = this._page();
-    const cacheKey = LemmasCacheKeys.list(this._search(), this._sort(), targetPage);
+    const ranges = this._ranges();
+    const cacheKey = LemmasCacheKeys.list(this._search(), this._sort(), targetPage, this.rangesKey());
 
     this._status.set('loading');
     this._errorMessage.set('');
 
     return this.cache
       .getOrLoad(cacheKey, () =>
-        this.api.getLemmasList(this._search(), this._sort(), targetPage, this.pageSize),
+        this.api.getLemmasList(this._search(), this._sort(), targetPage, this.pageSize, ranges),
       )
       .pipe(
         tap((response) => this.handleListResponse(response)),

@@ -21,6 +21,7 @@ import {
   WORD_TYPES_PAGE_SIZE,
   WordTypeCase,
   WordTypeMainType,
+  WordTypePresenceDimension,
   WordTypeRowIdentity,
   WordTypeSort,
   WordTypeTableRowDto,
@@ -46,6 +47,9 @@ const DEFAULT_QUERY: ParsedWordTypesQuery = {
   tense: DEFAULT_WORD_TYPE_TENSE,
   voice: DEFAULT_WORD_TYPE_VOICE,
   search: null,
+  hasRoot: null,
+  hasStem: null,
+  hasLemma: null,
   sort: DEFAULT_WORD_TYPE_SORT,
   page: DEFAULT_WORD_TYPES_PAGE,
   word: null,
@@ -177,6 +181,15 @@ export class WordTypesExplorerFacade {
   selectVoice(voice: WordTypeVoice): void {
     this.navigate({
       ...buildWordTypesQueryParams({ voice, page: DEFAULT_WORD_TYPES_PAGE }),
+      ...clearWordTypesSelection(),
+    });
+  }
+
+  // A presence flag is part of the list scope like the secondary filters: it resets the page, clears
+  // any selected row (the row may fall out of the narrowed scope), and reshapes words + grouped views.
+  selectPresenceFlag(dimension: WordTypePresenceDimension, value: boolean | null): void {
+    this.navigate({
+      ...buildWordTypesQueryParams({ [presenceKeyFor(dimension)]: value, page: DEFAULT_WORD_TYPES_PAGE }),
       ...clearWordTypesSelection(),
     });
   }
@@ -340,6 +353,14 @@ export class WordTypesExplorerFacade {
   }
 
   private requestKey(query: ParsedWordTypesQuery): string {
-    return [query.type, query.childCode, query.tableView, query.case, query.tense, query.voice, query.search, query.sort, query.page].join('|');
+    return [query.type, query.childCode, query.tableView, query.case, query.tense, query.voice, query.search, query.hasRoot, query.hasStem, query.hasLemma, query.sort, query.page].join('|');
+  }
+}
+
+function presenceKeyFor(dimension: WordTypePresenceDimension): 'hasRoot' | 'hasStem' | 'hasLemma' {
+  switch (dimension) {
+    case 'root': return 'hasRoot';
+    case 'stem': return 'hasStem';
+    case 'lemma': return 'hasLemma';
   }
 }

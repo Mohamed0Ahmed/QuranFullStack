@@ -1,6 +1,7 @@
 import { ParamMap } from '@angular/router';
 
 import { uniqueWordsRoutePath } from '../../../core/navigation/route-paths';
+import { parseRangeFilters } from './words-range-filters';
 
 import {
   DEFAULT_AYAH_PAGE,
@@ -9,6 +10,7 @@ import {
   MODAL_QUERY_KEYS,
   ParsedUniqueWordsQuery,
   UNIQUE_WORDS_QUERY_KEYS,
+  UNIQUE_WORDS_RANGE_METRICS,
   UniqueWordKind,
   UniqueWordSort,
   WordDrilldownView,
@@ -39,6 +41,7 @@ export function parseUniqueWordsQueryParams(queryParams: ParamMap): ParsedUnique
     search: queryParams.get(UNIQUE_WORDS_QUERY_KEYS.search) ?? '',
     sort,
     page,
+    ranges: parseRangeFilters(queryParams, UNIQUE_WORDS_RANGE_METRICS),
     wordId,
     view,
     ayahPage,

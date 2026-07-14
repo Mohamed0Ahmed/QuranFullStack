@@ -1,0 +1,35 @@
+:host {
+  display: block;
+}
+
+.explorer-result-count {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--qd-space-1, 0.25rem);
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.35;
+  color: var(--qd-text-muted);
+}
+
+.explorer-result-count__label {
+  font-weight: 600;
+  color: var(--qd-text);
+}
+
+.explorer-result-count__value {
+  font-weight: 700;
+  color: var(--qd-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.explorer-result-count--loading {
+  min-block-size: 1.35rem;
+  display: flex;
+  align-items: center;
+}
+
+.explorer-result-count__skeleton {
+  inline-size: 6.5rem;
+  block-size: 0.9375rem;
+}

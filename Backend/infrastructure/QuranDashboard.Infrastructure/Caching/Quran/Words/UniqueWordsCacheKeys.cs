@@ -1,11 +1,31 @@
+using QuranDashboard.Application.Abstractions.Common.Filtering;
 using QuranDashboard.Application.Abstractions.Quran.Words;
 
 namespace QuranDashboard.Infrastructure.Caching.Quran.Words;
 
 public static class UniqueWordsCacheKeys
 {
-    public static string List(UniqueWordKind kind, UniqueWordSort sort, int page, int pageSize) =>
-        $"words:{KindKey(kind)}:list:{SortKey(sort)}:p{page}:s{pageSize}";
+    // An absent/empty count filter yields the pre-feature key byte-for-byte so warm entries stay
+    // valid (Feature 026, US5); an active filter appends a deterministic range segment so filtered
+    // and unfiltered reads never cross-serve.
+    public static string List(
+        UniqueWordKind kind,
+        UniqueWordSort sort,
+        int page,
+        int pageSize,
+        UniqueWordsCountFilter? filter = null)
+    {
+        var baseKey = $"words:{KindKey(kind)}:list:{SortKey(sort)}:p{page}:s{pageSize}";
+        return filter is null || !filter.IsActive
+            ? baseKey
+            : $"{baseKey}:{FilterKey(filter)}";
+    }
+
+    private static string FilterKey(UniqueWordsCountFilter filter) =>
+        $"occ{RangeKey(filter.Occurrences)}:ayahs{RangeKey(filter.Ayahs)}:surahs{RangeKey(filter.Surahs)}";
+
+    private static string RangeKey(CountRange range) =>
+        $"{range.Min?.ToString() ?? string.Empty}-{range.Max?.ToString() ?? string.Empty}";
 
     public static string Summary(UniqueWordKind kind, int id) =>
         $"words:{KindKey(kind)}:{id}:summary";

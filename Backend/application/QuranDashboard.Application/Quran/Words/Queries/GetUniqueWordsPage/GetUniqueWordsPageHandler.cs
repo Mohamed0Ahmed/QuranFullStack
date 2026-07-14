@@ -70,11 +70,29 @@ public sealed class GetUniqueWordsPageHandler(
             return new GetUniqueWordsPageOutcome.InvalidPaging();
         }
 
+        var filter = query.Filter ?? UniqueWordsCountFilter.None;
+        if (!filter.IsValid)
+        {
+            logger.LogWarning(
+                "Rejected {feature} {operation} {reason} {kind} {sort} {pageNumber} {pageSize} {hasSearch}",
+                FeatureName,
+                OperationName,
+                "invalidFilter",
+                GetKindKey(kind),
+                GetSortKey(sort),
+                query.Page,
+                query.PageSize,
+                HasSearch(query.Search));
+
+            return new GetUniqueWordsPageOutcome.InvalidFilter();
+        }
+
         var hasSearch = HasSearch(query.Search);
         var page = await reader.GetUniqueWordsPageAsync(
             kind,
             query.Search,
             sort,
+            filter,
             query.Page,
             query.PageSize,
             cancellationToken);

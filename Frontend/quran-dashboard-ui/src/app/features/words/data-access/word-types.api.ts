@@ -26,6 +26,25 @@ import {
   WordTypeGroupedSummaryDto,
 } from '../models/word-types-detail.models';
 
+// Appends the tri-state presence flags (Feature 026, US6) as `hasRoot=true|false` etc., only for a set
+// flag (null = any ⇒ param omitted, keeping the pre-feature request byte-identical).
+function appendPresenceFlags(
+  params: HttpParams,
+  flags: { hasRoot: boolean | null; hasStem: boolean | null; hasLemma: boolean | null },
+): HttpParams {
+  let next = params;
+  if (flags.hasRoot !== null) {
+    next = next.set('hasRoot', flags.hasRoot);
+  }
+  if (flags.hasStem !== null) {
+    next = next.set('hasStem', flags.hasStem);
+  }
+  if (flags.hasLemma !== null) {
+    next = next.set('hasLemma', flags.hasLemma);
+  }
+  return next;
+}
+
 @Injectable({ providedIn: 'root' })
 export class WordTypesApi {
   private readonly http = inject(HttpClient);
@@ -42,6 +61,9 @@ export class WordTypesApi {
     tense: WordTypeTense;
     voice: WordTypeVoice;
     search: string | null;
+    hasRoot: boolean | null;
+    hasStem: boolean | null;
+    hasLemma: boolean | null;
     sort: WordTypeSort;
     page: number;
     pageSize: number;
@@ -60,6 +82,8 @@ export class WordTypesApi {
       params = params.set('search', options.search);
     }
 
+    params = appendPresenceFlags(params, options);
+
     return this.http.get<ApiResponse<PagedResultDto<WordTypeRowDto>>>(`${this.baseUrl}/api/words/word-types/words`, { params });
   }
 
@@ -70,6 +94,9 @@ export class WordTypesApi {
     tense: WordTypeTense;
     voice: WordTypeVoice;
     search: string | null;
+    hasRoot: boolean | null;
+    hasStem: boolean | null;
+    hasLemma: boolean | null;
     tableView: WordTypeTableView;
     sort: WordTypeSort;
     page: number;
@@ -89,6 +116,8 @@ export class WordTypesApi {
     if (options.search) {
       params = params.set('search', options.search);
     }
+
+    params = appendPresenceFlags(params, options);
 
     return this.http.get<ApiResponse<PagedResultDto<WordTypeTableRowDto>>>(`${this.baseUrl}/api/words/word-types/table`, { params });
   }

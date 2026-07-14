@@ -67,10 +67,13 @@ public sealed class WordTypesController(
         [FromQuery] string? sort,
         [FromQuery] int? page,
         [FromQuery] int? pageSize,
+        [FromQuery] bool? hasRoot,
+        [FromQuery] bool? hasStem,
+        [FromQuery] bool? hasLemma,
         CancellationToken cancellationToken)
     {
         var outcome = await rowsHandler.HandleAsync(
-            new GetWordTypeRowsQuery(type, childCode, caseFilter, tense, voice, search, sort, page ?? DefaultPage, pageSize ?? DefaultListPageSize),
+            new GetWordTypeRowsQuery(type, childCode, caseFilter, tense, voice, search, sort, page ?? DefaultPage, pageSize ?? DefaultListPageSize, hasRoot, hasStem, hasLemma),
             cancellationToken);
 
         return outcome switch
@@ -115,10 +118,13 @@ public sealed class WordTypesController(
         [FromQuery] string? sort,
         [FromQuery] int? page,
         [FromQuery] int? pageSize,
+        [FromQuery] bool? hasRoot,
+        [FromQuery] bool? hasStem,
+        [FromQuery] bool? hasLemma,
         CancellationToken cancellationToken)
     {
         var outcome = await tableHandler.HandleAsync(
-            new GetWordTypeTableQuery(type, childCode, caseFilter, tense, voice, search, tableView, sort, page ?? DefaultPage, pageSize ?? DefaultListPageSize),
+            new GetWordTypeTableQuery(type, childCode, caseFilter, tense, voice, search, tableView, sort, page ?? DefaultPage, pageSize ?? DefaultListPageSize, hasRoot, hasStem, hasLemma),
             cancellationToken);
 
         return outcome switch

@@ -16,6 +16,22 @@
         (searchChange)="onSearchChange($event)"
         (sortChange)="onSortChange($event)"
       />
+
+      <qd-explorer-result-count
+        data-testid="unique-words-result-count"
+        [count]="listState().totalCount"
+        [labelPrefix]="resultCountLabel"
+        [loading]="listState().status === 'loading' || listState().status === 'idle'"
+        [hasError]="listState().status === 'error'"
+      />
+
+      <qd-explorer-count-range-filter
+        data-testid="unique-words-range-filter"
+        [metrics]="rangeMetrics"
+        [ranges]="ranges()"
+        [disabled]="listState().status === 'loading'"
+        (rangesChange)="onRangesChange($event)"
+      />
     </div>
 
     @switch (listState().status) {

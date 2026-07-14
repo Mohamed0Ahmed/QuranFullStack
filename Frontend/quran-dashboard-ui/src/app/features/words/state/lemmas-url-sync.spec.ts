@@ -308,3 +308,20 @@ describe('buildLemmasDeepLink', () => {
     expect(b.queryParams['lemma']).toBe('2');
   });
 });
+
+describe('parseLemmasQueryParams count ranges (Feature 026)', () => {
+  it('has no active ranges for a pre-feature URL (backward compat)', () => {
+    expect(parseLemmasQueryParams(params('search=كلمة&sort=alpha&page=2')).ranges).toEqual({});
+  });
+
+  it('parses active ranges from their URL keys', () => {
+    const ranges = parseLemmasQueryParams(params('occ=11..100&stems=2..')).ranges;
+    expect(ranges).toEqual({ occurrences: { min: 11, max: 100 }, stems: { min: 2, max: null } });
+  });
+
+  it('drops malformed ranges fail-closed while the page still parses', () => {
+    const parsed = parseLemmasQueryParams(params('occ=9..2&surahs=1..50'));
+    expect(parsed.ranges).toEqual({ surahs: { min: 1, max: 50 } });
+    expect(parsed.page).toBe(1);
+  });
+});

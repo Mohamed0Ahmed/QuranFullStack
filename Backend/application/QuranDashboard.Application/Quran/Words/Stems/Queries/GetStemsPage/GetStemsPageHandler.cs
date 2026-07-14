@@ -53,10 +53,27 @@ public sealed class GetStemsPageHandler(
             return new GetStemsPageOutcome.InvalidPaging();
         }
 
+        var filter = query.Filter ?? StemsCountFilter.None;
+        if (!filter.IsValid)
+        {
+            logger.LogWarning(
+                "Rejected {feature} {operation} {reason} {sort} {pageNumber} {pageSize} {hasSearch}",
+                FeatureName,
+                OperationName,
+                "invalidFilter",
+                GetSortKey(sort),
+                query.Page,
+                query.PageSize,
+                HasSearch(query.Search));
+
+            return new GetStemsPageOutcome.InvalidFilter();
+        }
+
         var hasSearch = HasSearch(query.Search);
         var page = await reader.GetStemsPageAsync(
             query.Search,
             sort,
+            filter,
             query.Page,
             query.PageSize,
             cancellationToken);

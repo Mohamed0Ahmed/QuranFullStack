@@ -100,9 +100,9 @@ public sealed class WordTypesSearchReadTests(WordTypesTestFixture fixture)
         diacritizedRows.Items.Should().NotBeEmpty();
 
         var diacritizedUnique = await uniqueWords.GetUniqueWordsPageAsync(
-            UniqueWordKind.Tashkeel, diacritizedTerm, UniqueWordSort.Occurrences, 1, 1000, CancellationToken.None);
+            UniqueWordKind.Tashkeel, diacritizedTerm, UniqueWordSort.Occurrences, UniqueWordsCountFilter.None, 1, 1000, CancellationToken.None);
         var bareUnique = await uniqueWords.GetUniqueWordsPageAsync(
-            UniqueWordKind.Tashkeel, "علم", UniqueWordSort.Occurrences, 1, 1000, CancellationToken.None);
+            UniqueWordKind.Tashkeel, "علم", UniqueWordSort.Occurrences, UniqueWordsCountFilter.None, 1, 1000, CancellationToken.None);
 
         diacritizedUnique.Items.Select(item => item.Id)
             .Should().BeEquivalentTo(bareUnique.Items.Select(item => item.Id));

@@ -4,8 +4,10 @@ import { ApiResponseCache } from '../../../core/caching/api-response-cache';
 import { RootSort, RootWordView } from '../models/roots.models';
 
 export const RootsCacheKeys = {
-  list(search: string, sort: RootSort, page: number): string {
-    return `roots:list:${sort}:${search}:p${page}`;
+  // rangesKey is '' for an unfiltered read, keeping the pre-feature cache key byte-identical (US5).
+  list(search: string, sort: RootSort, page: number, rangesKey = ''): string {
+    const base = `roots:list:${sort}:${search}:p${page}`;
+    return rangesKey.length > 0 ? `${base}:${rangesKey}` : base;
   },
 
   summary(rootId: number): string {

@@ -22,12 +22,13 @@ internal static class StemsListDerivation
 
     public static PagedResult<StemListItemDto> ToPage(
         IReadOnlyList<StemSummaryRow> all,
+        StemsCountFilter filter,
         string? search,
         StemSort sort,
         int page,
         int pageSize)
     {
-        var rows = FilterAndSort(all, search, sort);
+        var rows = FilterAndSort(all, filter, search, sort);
         var materialized = rows.ToList();
         var totalCount = materialized.Count;
         var skip = ReadPaging.CalculateSafeSkip(page, pageSize, totalCount);
@@ -53,6 +54,7 @@ internal static class StemsListDerivation
 
     public static IEnumerable<StemSummaryRow> FilterAndSort(
         IReadOnlyList<StemSummaryRow> all,
+        StemsCountFilter filter,
         string? search,
         StemSort sort)
     {
@@ -64,8 +66,22 @@ internal static class StemsListDerivation
             rows = rows.Where(r => r.NormalizedStemText.Contains(normalizedSearch, StringComparison.Ordinal));
         }
 
+        if (filter.IsActive)
+        {
+            rows = rows.Where(r => MatchesFilter(r, filter));
+        }
+
         return ApplySort(rows, sort);
     }
+
+    // Count-range predicates (Feature 026, US5) compare against the same count values the list rows
+    // display; every active range ANDs with search/sort. Ranges filter stem dimension entries.
+    private static bool MatchesFilter(StemSummaryRow row, StemsCountFilter filter) =>
+        filter.Occurrences.Includes(row.OccurrencesCount)
+        && filter.Ayahs.Includes(row.AyahsCount)
+        && filter.Surahs.Includes(row.SurahsCount)
+        && filter.SimpleWords.Includes(row.SimpleWordsCount)
+        && filter.TashkeelWords.Includes(row.TashkeelWordsCount);
 
     private static IEnumerable<StemSummaryRow> ApplySort(IEnumerable<StemSummaryRow> rows, StemSort sort) => sort switch
     {

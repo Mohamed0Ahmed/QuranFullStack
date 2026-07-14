@@ -180,3 +180,20 @@ describe('buildUniqueWordsDeepLink', () => {
     });
   });
 });
+
+describe('parseUniqueWordsQueryParams count ranges (Feature 026)', () => {
+  it('has no active ranges for a pre-feature URL (backward compat)', () => {
+    expect(parseUniqueWordsQueryParams(params('search=اسم&sort=alpha&page=2')).ranges).toEqual({});
+  });
+
+  it('parses active ranges from their URL keys', () => {
+    const ranges = parseUniqueWordsQueryParams(params('occ=11..100&surahs=1..1')).ranges;
+    expect(ranges).toEqual({ occurrences: { min: 11, max: 100 }, surahs: { min: 1, max: 1 } });
+  });
+
+  it('drops malformed ranges fail-closed while the page still parses', () => {
+    const parsed = parseUniqueWordsQueryParams(params('occ=9..2&ayahs=2..10'));
+    expect(parsed.ranges).toEqual({ ayahs: { min: 2, max: 10 } });
+    expect(parsed.page).toBe(1);
+  });
+});

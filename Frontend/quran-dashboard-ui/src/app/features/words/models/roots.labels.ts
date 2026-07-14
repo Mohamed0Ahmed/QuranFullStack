@@ -10,6 +10,8 @@ import {
 } from './words-shared.labels';
 
 export const ROOTS_PAGE_TITLE = 'الجذور';
+// Headline result-count stat (Feature 026, US4): label-prefix "عدد الـ…: N".
+export const ROOTS_RESULT_COUNT_LABEL = 'عدد الجذور';
 export const ROOTS_SEARCH_LABEL = 'بحث في الجذور';
 export const ROOTS_SEARCH_PLACEHOLDER = 'اكتب جذرًا…';
 

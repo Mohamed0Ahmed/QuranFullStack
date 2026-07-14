@@ -32,6 +32,7 @@ public static class ApiMessages
     public const string UniqueWordsInvalidId = "معرّف الكلمة غير صالح";
     public const string UniqueWordsInvalidPaging = "معطيات التصفح غير صالحة";
     public const string UniqueWordsInvalidSort = "خيار الترتيب غير صالح";
+    public const string UniqueWordsInvalidFilter = "نطاق التصفية غير صالح";
     public const string UniqueWordNotFound = "الكلمة غير موجودة";
 
     public const string RootsListLoaded = "تم تحميل الجذور";
@@ -46,6 +47,7 @@ public static class ApiMessages
     public const string RootsInvalidKind = "نوع الكلمات غير صالح";
     public const string RootsInvalidId = "معرّف الجذر غير صالح";
     public const string RootsInvalidPaging = "معطيات التصفح غير صالحة";
+    public const string RootsInvalidFilter = "نطاق التصفية غير صالح";
     public const string RootNotFound = "الجذر غير موجود";
 
     public const string LemmasListLoaded = "تم تحميل الصيغ المعجمية";
@@ -59,6 +61,7 @@ public static class ApiMessages
     public const string LemmasInvalidKind = "نوع الكلمات غير صالح";
     public const string LemmasInvalidId = "معرّف الصيغة المعجمية غير صالح";
     public const string LemmasInvalidPaging = "معطيات التصفح غير صالحة";
+    public const string LemmasInvalidFilter = "نطاق التصفية غير صالح";
     public const string LemmaNotFound = "الصيغة المعجمية غير موجودة";
 
     public const string StemsListLoaded = "تم تحميل الأصول الصرفية";
@@ -72,6 +75,7 @@ public static class ApiMessages
     public const string StemsInvalidKind = "نوع الكلمات غير صالح";
     public const string StemsInvalidId = "معرّف الأصل الصرفي غير صالح";
     public const string StemsInvalidPaging = "معطيات التصفح غير صالحة";
+    public const string StemsInvalidFilter = "نطاق التصفية غير صالح";
     public const string StemNotFound = "الأصل الصرفي غير موجود";
 
     public const string WordTypesTreeLoaded = "تم تحميل أنواع الكلمات";

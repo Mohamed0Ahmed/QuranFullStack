@@ -46,6 +46,9 @@ describe('WordTypesApi', () => {
       tense: 'all',
       voice: 'all',
       search: null,
+      hasRoot: null,
+      hasStem: null,
+      hasLemma: null,
       tableView: 'roots',
       sort: 'occurrences',
       page: 1,
@@ -80,6 +83,9 @@ describe('WordTypesApi', () => {
       tense: 'all',
       voice: 'all',
       search: null,
+      hasRoot: null,
+      hasStem: null,
+      hasLemma: null,
       tableView: 'words',
       sort: 'alpha',
       page: 2,
@@ -109,6 +115,9 @@ describe('WordTypesApi', () => {
       tense: 'all',
       voice: 'all',
       search: null,
+      hasRoot: null,
+      hasStem: null,
+      hasLemma: null,
       sort: 'alpha',
       page: 2,
       pageSize: 25,
@@ -127,7 +136,7 @@ describe('WordTypesApi', () => {
   it('sends the search param on rows and table reads only when non-empty', async () => {
     const rowsPromise = firstValueFrom(api.getRows({
       type: 'noun', childCode: null, case: 'all', tense: 'all', voice: 'all',
-      search: 'كلمة', sort: 'occurrences', page: 1, pageSize: 1000,
+      search: 'كلمة', hasRoot: null, hasStem: null, hasLemma: null, sort: 'occurrences', page: 1, pageSize: 1000,
     }));
     const rowsReq = httpMock.expectOne((r) => matchRows().test(r.url));
     expect(rowsReq.request.params.get('search')).toBe('كلمة');
@@ -136,12 +145,27 @@ describe('WordTypesApi', () => {
 
     const tablePromise = firstValueFrom(api.getTableRows({
       type: 'noun', childCode: null, case: 'all', tense: 'all', voice: 'all',
-      search: 'كلمة', tableView: 'roots', sort: 'occurrences', page: 1, pageSize: 1000,
+      search: 'كلمة', hasRoot: null, hasStem: null, hasLemma: null, tableView: 'roots', sort: 'occurrences', page: 1, pageSize: 1000,
     }));
     const tableReq = httpMock.expectOne((r) => matchTable().test(r.url));
     expect(tableReq.request.params.get('search')).toBe('كلمة');
     tableReq.flush({ isSuccess: true, message: 'تم', data: { page: 1, pageSize: 1000, totalCount: 0, items: [] } });
     await tablePromise;
+  });
+
+  it('sends only the set presence flags (Feature 026)', async () => {
+    const promise = firstValueFrom(api.getRows({
+      type: 'noun', childCode: null, case: 'all', tense: 'all', voice: 'all',
+      search: null, hasRoot: true, hasStem: false, hasLemma: null, sort: 'occurrences', page: 1, pageSize: 1000,
+    }));
+
+    const req = httpMock.expectOne((r) => matchRows().test(r.url));
+    expect(req.request.params.get('hasRoot')).toBe('true');
+    expect(req.request.params.get('hasStem')).toBe('false');
+    expect(req.request.params.has('hasLemma')).toBe(false);
+    req.flush({ isSuccess: true, message: 'تم', data: { page: 1, pageSize: 1000, totalCount: 0, items: [] } });
+
+    await promise;
   });
 
   it.each([

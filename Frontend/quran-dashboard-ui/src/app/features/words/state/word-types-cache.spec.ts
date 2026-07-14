@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { WordTypeGroupedRequestParams } from '../models/word-types-detail.models';
 import { WordTypesCacheFilter, WordTypesCacheKeys } from './word-types-cache';
 
-const filter: WordTypesCacheFilter = { type: 'noun', childCode: 'PN', case: 'all', tense: 'all', voice: 'all', search: null };
+const filter: WordTypesCacheFilter = { type: 'noun', childCode: 'PN', case: 'all', tense: 'all', voice: 'all', search: null, hasRoot: null, hasStem: null, hasLemma: null };
 const groupedRequest: WordTypeGroupedRequestParams = {
   kind: 'root',
   dimensionId: 4210,
@@ -67,6 +67,27 @@ describe('WordTypesCacheKeys search isolation', () => {
   it('separates two distinct searches', () => {
     expect(WordTypesCacheKeys.rows(searched, 'occurrences', 1))
       .not.toBe(WordTypesCacheKeys.rows({ ...filter, search: 'جذر' }, 'occurrences', 1));
+  });
+});
+
+describe('WordTypesCacheKeys presence-flag isolation (Feature 026)', () => {
+  it('keeps the pre-feature key when every flag is absent', () => {
+    expect(WordTypesCacheKeys.rows({ ...filter, hasRoot: null, hasStem: null, hasLemma: null }, 'occurrences', 1))
+      .toBe(WordTypesCacheKeys.rows(filter, 'occurrences', 1));
+  });
+
+  it('isolates flagged reads and distinguishes every flag value', () => {
+    const base = WordTypesCacheKeys.rows(filter, 'occurrences', 1);
+    const keys = [
+      base,
+      WordTypesCacheKeys.rows({ ...filter, hasRoot: true }, 'occurrences', 1),
+      WordTypesCacheKeys.rows({ ...filter, hasRoot: false }, 'occurrences', 1),
+      WordTypesCacheKeys.rows({ ...filter, hasStem: true }, 'occurrences', 1),
+    ];
+    expect(new Set(keys).size).toBe(keys.length);
+
+    expect(WordTypesCacheKeys.table({ ...filter, hasLemma: false }, 'roots', 'occurrences', 1))
+      .not.toBe(WordTypesCacheKeys.table(filter, 'roots', 'occurrences', 1));
   });
 });
 

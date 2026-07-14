@@ -192,6 +192,7 @@ public sealed partial class EfWordTypesReader
             {TypePredicate(context)}
             {SecondaryFilterPredicate(context)}
             {SearchPredicate(context)}
+            {PresenceFilterPredicate(context)}
             {GroupedDimensionPredicate(groupedDimension)}
         """;
 
@@ -205,6 +206,33 @@ public sealed partial class EfWordTypesReader
         context.HasSearch
             ? "AND unique_word.search_text_normalized ILIKE @searchPattern"
             : string.Empty;
+
+    // Tri-state presence flags (Feature 026, US6) narrow the shared base by whether the head morphology
+    // row carries a root/stem/lemma. Only the allowlisted numeric id columns and the IS [NOT] NULL
+    // operators appear — no user text, no parameters. Absent flags (list/table pre-feature callers,
+    // tree Unscoped, grouped-detail contexts) emit nothing, keeping the base byte-for-byte unchanged.
+    // Qualified with the morphology alias (m.) because the base FROM also joins quran_lemmas.
+    private static string PresenceFilterPredicate(WordTypeReadContext context)
+    {
+        var fragments = new List<string>(3);
+
+        if (context.HasRoot is { } hasRoot)
+        {
+            fragments.Add(hasRoot ? "m.root_id IS NOT NULL" : "m.root_id IS NULL");
+        }
+
+        if (context.HasStem is { } hasStem)
+        {
+            fragments.Add(hasStem ? "m.stem_id IS NOT NULL" : "m.stem_id IS NULL");
+        }
+
+        if (context.HasLemma is { } hasLemma)
+        {
+            fragments.Add(hasLemma ? "m.lemma_id IS NOT NULL" : "m.lemma_id IS NULL");
+        }
+
+        return fragments.Count == 0 ? string.Empty : "AND " + string.Join(" AND ", fragments);
+    }
 
     // Grouped member/detail reads restrict the shared base to a single numeric head dimension. Only the
     // allowlisted id column may appear; the *_text columns are projection-only and never a membership
@@ -486,7 +514,16 @@ public sealed partial class EfWordTypesReader
     /// filters so the row/tree SQL builders thread every dimension consistently. <see cref="Unscoped"/>
     /// is the no-child/no-secondary-filter baseline used by the tree reads (E1 counts stay unscoped).
     /// </summary>
-    private sealed record WordTypeReadContext(string Type, string? ChildCode, string? Case, string? Tense, string? Voice, string? Search = null)
+    private sealed record WordTypeReadContext(
+        string Type,
+        string? ChildCode,
+        string? Case,
+        string? Tense,
+        string? Voice,
+        string? Search = null,
+        bool? HasRoot = null,
+        bool? HasStem = null,
+        bool? HasLemma = null)
     {
         public static WordTypeReadContext Unscoped { get; } = new(string.Empty, null, null, null, null);
 

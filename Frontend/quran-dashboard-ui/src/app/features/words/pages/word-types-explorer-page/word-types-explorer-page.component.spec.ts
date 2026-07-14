@@ -394,6 +394,22 @@ describe('WordTypesExplorerPageComponent', () => {
     expect(detailsHost()).toBe(initialDetails);
   });
 
+  it('serializes a presence flag to the URL and resets the page (US6)', async () => {
+    respond('table', ok<PagedResultDto<WordTypeTableRowDto>>({ page: 1, pageSize: 1000, totalCount: 1, items: [groupedRootRow] }));
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'PN', tableView: 'roots' }));
+    const fixture = await createPage();
+
+    const chip = fixture.nativeElement.querySelector('[data-testid="word-types-presence-root-present"]') as HTMLButtonElement;
+    expect(chip).not.toBeNull();
+    chip.click();
+    fixture.detectChanges();
+
+    expect(router.navigate).toHaveBeenCalledWith([], expect.objectContaining({
+      queryParams: expect.objectContaining({ hasRoot: 'true', page: '1' }),
+      queryParamsHandling: 'merge',
+    }));
+  });
+
   it('loads rows when a subtype is selected', async () => {
     const fixture = await createPage();
     const childButton = fixture.nativeElement.querySelector('.word-type-filter__child-button') as HTMLButtonElement;

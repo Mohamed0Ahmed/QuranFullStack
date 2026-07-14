@@ -5,6 +5,9 @@ export type WordTypeVoice = 'all' | 'active' | 'passive';
 export type WordTypeSort = 'occurrences' | 'ayahs' | 'surahs' | 'mushaf-order' | 'alpha';
 export type WordTypeTableView = 'words' | 'roots' | 'stems' | 'lemmas';
 export type WordTypeDetailView = 'words' | 'ayahs' | 'surahs';
+// Presence-filter dimensions (Feature 026, US6): the three morphology associations a word-context row
+// may carry; each maps to its tri-state hasRoot/hasStem/hasLemma URL key.
+export type WordTypePresenceDimension = 'root' | 'stem' | 'lemma';
 export type WordTypesLoadStatus = 'idle' | 'loading' | 'selectPrompt' | 'success' | 'empty' | 'error' | 'notFound';
 
 import type {
@@ -109,6 +112,11 @@ export interface ParsedWordTypesQuery extends WordTypeRowIdentity {
   tableView: WordTypeTableView;
   // Word-identity search; part of the list scope (narrows all table views), fail-closed to null.
   search: string | null;
+  // Tri-state presence flags (Feature 026, US6): null = any, true = has, false = missing. Part of the
+  // list scope — words + grouped views reshape together — fail-closed to null.
+  hasRoot: boolean | null;
+  hasStem: boolean | null;
+  hasLemma: boolean | null;
   sort: WordTypeSort;
   page: number;
   word: number | null;
@@ -144,6 +152,9 @@ export const WORD_TYPES_QUERY_KEYS = {
   tense: 'tense',
   voice: 'voice',
   search: 'search',
+  hasRoot: 'hasRoot',
+  hasStem: 'hasStem',
+  hasLemma: 'hasLemma',
   sort: 'sort',
   page: 'page',
   word: 'word',

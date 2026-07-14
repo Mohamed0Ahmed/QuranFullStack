@@ -9,4 +9,7 @@ public sealed record GetWordTypeRowsQuery(
     string? Search,
     string? Sort,
     int Page,
-    int PageSize);
+    int PageSize,
+    bool? HasRoot = null,
+    bool? HasStem = null,
+    bool? HasLemma = null);

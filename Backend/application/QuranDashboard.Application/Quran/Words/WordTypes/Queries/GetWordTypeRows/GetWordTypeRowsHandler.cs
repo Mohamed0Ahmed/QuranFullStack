@@ -24,7 +24,10 @@ public sealed class GetWordTypeRowsHandler(
             Normalize(query.Case),
             Normalize(query.Tense),
             Normalize(query.Voice),
-            search);
+            search,
+            query.HasRoot,
+            query.HasStem,
+            query.HasLemma);
 
         if (!WordTypesHandlerValidation.IsValidFilter(filter))
         {

@@ -660,3 +660,30 @@ describe('buildWordTypesQueryParams — tableView', () => {
     ]);
   });
 });
+
+describe('parseWordTypesQueryParams presence flags (Feature 026)', () => {
+  it('defaults every flag to null for a pre-feature URL (backward compat)', () => {
+    const parsed = parseWordTypesQueryParams(params('type=noun&childCode=PN'));
+    expect(parsed.hasRoot).toBeNull();
+    expect(parsed.hasStem).toBeNull();
+    expect(parsed.hasLemma).toBeNull();
+  });
+
+  it('parses the true/false tri-state tokens', () => {
+    const parsed = parseWordTypesQueryParams(params('type=noun&childCode=PN&hasRoot=true&hasStem=false'));
+    expect(parsed.hasRoot).toBe(true);
+    expect(parsed.hasStem).toBe(false);
+    expect(parsed.hasLemma).toBeNull();
+  });
+
+  it('fails closed to null on any non-boolean token', () => {
+    const parsed = parseWordTypesQueryParams(params('type=noun&childCode=PN&hasRoot=maybe&hasLemma=1'));
+    expect(parsed.hasRoot).toBeNull();
+    expect(parsed.hasLemma).toBeNull();
+  });
+
+  it('serializes a flag change to its token', () => {
+    expect(buildWordTypesQueryParams({ hasRoot: true, hasStem: false, hasLemma: null }))
+      .toEqual({ hasRoot: 'true', hasStem: 'false', hasLemma: null });
+  });
+});

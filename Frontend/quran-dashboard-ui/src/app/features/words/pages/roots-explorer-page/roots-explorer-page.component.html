@@ -33,6 +33,24 @@
           }
         </select>
       </div>
+
+      <qd-explorer-result-count
+        class="uw-toolbar-recess__stat"
+        data-testid="roots-result-count"
+        [count]="listState().totalCount"
+        [labelPrefix]="resultCountLabel"
+        [loading]="listState().status === 'loading' || listState().status === 'idle'"
+        [hasError]="listState().status === 'error'"
+      />
+
+      <qd-explorer-count-range-filter
+        class="uw-toolbar-recess__stat"
+        data-testid="roots-range-filter"
+        [metrics]="rangeMetrics"
+        [ranges]="ranges()"
+        [disabled]="listState().status === 'loading'"
+        (rangesChange)="onRangesChange($event)"
+      />
     </div>
 
     @switch (listState().status) {

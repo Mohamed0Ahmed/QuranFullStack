@@ -4,8 +4,10 @@ import { ApiResponseCache } from '../../../core/caching/api-response-cache';
 import { StemSort, StemWordView } from '../models/stems.models';
 
 export const StemsCacheKeys = {
-  list(search: string, sort: StemSort, page: number): string {
-    return `stems:list:${sort}:${search}:p${page}`;
+  // rangesKey is '' for an unfiltered read, keeping the pre-feature cache key byte-identical (US5).
+  list(search: string, sort: StemSort, page: number, rangesKey = ''): string {
+    const base = `stems:list:${sort}:${search}:p${page}`;
+    return rangesKey.length > 0 ? `${base}:${rangesKey}` : base;
   },
 
   summary(stemId: number): string {

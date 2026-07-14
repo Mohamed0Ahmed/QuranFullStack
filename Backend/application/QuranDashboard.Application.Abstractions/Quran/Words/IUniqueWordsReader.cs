@@ -9,6 +9,7 @@ public interface IUniqueWordsReader
         UniqueWordKind kind,
         string? search,
         UniqueWordSort sort,
+        UniqueWordsCountFilter filter,
         int page,
         int pageSize,
         CancellationToken cancellationToken);

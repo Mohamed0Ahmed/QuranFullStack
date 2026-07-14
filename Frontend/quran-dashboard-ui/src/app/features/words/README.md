@@ -39,6 +39,29 @@ Shared across explorers: `utils/explorer-table-*` (focus/keyboard-nav/scroll/col
 - **URL-state is a contract.** `*-url-sync.ts` param names/shape are user-facing (shareable
   links) and spec'd; changing them is a contract change — update the spec and tests too.
 - **Identity is clean imlaei-simple** (display Uthmani) — mirrors the backend read models.
+- **Headline result-count stat** (Feature 026, US4) on the four "normal" explorers (Unique Words, Roots,
+  Lemmas, Stems): the shared presentational `explorer-result-count` component renders the label-prefix
+  phrasing **"عدد الـ…: N"** (عدد الكلمات / عدد الجذور / عدد الصيغ المعجمية / عدد الأصول الصرفية) from the
+  page's existing `listState().totalCount` — no new backend read or aggregation. It sits in the toolbar
+  recess beside search/sort. States: list loading → non-interactive skeleton; list error → renders nothing
+  (the page's own error state owns the message); zero results → "0". Because the total is the filtered
+  query's own count, the stat reflects search/filters by construction and never disagrees with pagination.
+  Word Types uses the separate four-count scope summary, not this stat.
+- **Count-range filters** (Feature 026, US5) on the four normal explorers: the shared
+  `explorer-count-range-filter` component offers preset bucket chips (`aria-pressed`, RTL) plus a
+  "مخصّص" min/max panel per metric — exactly the count columns each page already shows (Unique Words:
+  occurrences/ayahs/surahs; Roots: + simple/tashkeel words + lemmas + stems; Lemmas: + simple/tashkeel
+  + stems; Stems: + simple/tashkeel). Presets live in `models/words-filter-presets.ts` (config, not
+  labels); per-page metric descriptors (`*_RANGE_METRICS`) map each metric to its URL key, backend API
+  prefix, and bucket family. The **URL grammar is `min..max`** (either bound omissible), parsed
+  **fail-closed** (malformed / min>max ⇒ that filter absent, page still loads) by the shared
+  `parseCountRange`/`words-range-filters` helpers. URL keys per page: Unique Words / Lemmas / Stems /
+  Roots share `occ`, `ayahs`, `surahs`; Roots/Lemmas/Stems add `simple`, `tashkeel`; Roots/Lemmas add
+  `stems`; Roots adds `lemmas`. Changing any range resets the list `page`. The API sends
+  `<prefix>Min`/`<prefix>Max` only for active bounds; frontend list cache keys gain a deterministic
+  range fragment (absent ⇒ pre-feature key). The headline stat reflects the filtered `totalCount` by
+  construction. `*_RANGE_METRICS` and the range-filter labels are read via **TDZ-safe getters**, never
+  `readonly` fields (they resolve to `undefined` in the bundled test build otherwise).
 - Tests: obey the repo test-command rule (see `../../../../README.md`) — the vitest worker
   cap and jsdom observer guards apply here.
 - **Word Types has table-view tabs** (`tableView=words|roots|stems|lemmas`, default `words`,
@@ -92,6 +115,16 @@ main type clears them (the snapshot belonged to the previous type), refresh/dire
   `{ search, page: null }`; parsed fail-closed (trim, empty → absent); URL-shareable and restored into the
   input on refresh/Back. Frontend and backend list cache keys gain the search component (empty ⇒
   pre-feature key). Search resets the list page but keeps the identity-loaded detail selection.
+- **Word Types presence flags** (`hasRoot`/`hasStem`/`hasLemma` URL keys, Feature 026, US6) are
+  tri-state (`true`/`false`, absent = any; parsed fail-closed to null). Like search they are part of the
+  **list scope**: the words view AND the grouped roots/stems/lemmas views (and their totals) reshape
+  together, so a "missing" choice keeps a rootless word row but collapses that grouped view. The
+  toolbar exposes a three-option chip group per dimension (labels per lock D: الجذر / الأصل الصرفي /
+  الصيغة المعجمية; options الكل / موجود / غير موجود). Changing a flag resets the list page and clears any
+  open detail selection (like the case/tense/voice sub-filters). Frontend and backend list cache keys
+  gain a compact flag segment (all-absent ⇒ pre-feature key); grouped-detail reads never carry the
+  flags. The scope threads through `word-types-url-sync.ts` → `word-types-explorer.facade.ts` →
+  `word-types.api.ts` (`hasRoot=true|false` sent only when set) → `word-types-cache.ts`.
 - **Word Types page sizes** (Feature 026): the list serves up to **1000 rows/page**
   (`WORD_TYPES_PAGE_SIZE`, default + cap 1000) across all four views with `CdkVirtualScrollViewport`
   virtual scrolling (mirrors the other explorer tables; guarded on `ResizeObserver`); detail lists (word

@@ -21,6 +21,8 @@ import type {
   TypeSummaryDto,
 } from '../../../core/api/generated/models';
 import type { PagedResultDto } from '../../../core/data-access/paged-result.model';
+import type { RangeFilters, RangeMetric } from '../state/words-range-filters';
+import { WORDS_SHARED_COUNT_COLUMNS } from './words-shared.labels';
 
 export type {
   MissingSurahItemDto,
@@ -85,6 +87,15 @@ export const STEMS_QUERY_KEYS = {
   typeCode: 'typeCode',
 } as const;
 
+// Count-range filter metrics (Feature 026, US5) — the five count columns the Stems list shows.
+export const STEMS_RANGE_METRICS: readonly RangeMetric[] = [
+  { key: 'occurrences', urlKey: 'occ', apiKey: 'occ', family: 'occurrences', labelAr: WORDS_SHARED_COUNT_COLUMNS.occurrences },
+  { key: 'ayahs', urlKey: 'ayahs', apiKey: 'ayahs', family: 'ayahsSurahs', labelAr: WORDS_SHARED_COUNT_COLUMNS.ayahs },
+  { key: 'surahs', urlKey: 'surahs', apiKey: 'surahs', family: 'ayahsSurahs', labelAr: WORDS_SHARED_COUNT_COLUMNS.surahs },
+  { key: 'simpleWords', urlKey: 'simple', apiKey: 'simpleWords', family: 'subCount', labelAr: WORDS_SHARED_COUNT_COLUMNS.simpleWords },
+  { key: 'tashkeelWords', urlKey: 'tashkeel', apiKey: 'tashkeelWords', family: 'subCount', labelAr: WORDS_SHARED_COUNT_COLUMNS.tashkeelWords },
+];
+
 export const STEMS_SELECTION_QUERY_KEYS: readonly string[] = [
   STEMS_QUERY_KEYS.stem,
   STEMS_QUERY_KEYS.view,
@@ -135,6 +146,7 @@ export interface ParsedStemsQuery {
   search: string;
   sort: StemSort;
   page: number;
+  ranges: RangeFilters;
   stemId: number | null;
   view: StemView;
   column: string | null;

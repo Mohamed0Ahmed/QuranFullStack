@@ -10,4 +10,7 @@ public sealed record GetWordTypeTableQuery(
     string? TableView,
     string? Sort,
     int Page,
-    int PageSize);
+    int PageSize,
+    bool? HasRoot = null,
+    bool? HasStem = null,
+    bool? HasLemma = null);

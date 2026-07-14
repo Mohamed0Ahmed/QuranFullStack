@@ -1,3 +1,4 @@
+using QuranDashboard.Application.Abstractions.Common.Filtering;
 using QuranDashboard.Application.Abstractions.Common.Paging;
 using QuranDashboard.Application.Abstractions.Quran.Words;
 using QuranDashboard.Application.Abstractions.Quran.Words.Responses;
@@ -15,6 +16,7 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
         UniqueWordKind kind,
         string? search,
         UniqueWordSort sort,
+        UniqueWordsCountFilter filter,
         int page,
         int pageSize,
         CancellationToken cancellationToken)
@@ -25,8 +27,8 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
             : UniqueWordKindKeys.Simple;
 
         IQueryable<UniqueWordListRow> rows = kind == UniqueWordKind.Tashkeel
-            ? BuildTashkeelQuery(normalizedSearch)
-            : BuildSimpleQuery(normalizedSearch);
+            ? BuildTashkeelQuery(normalizedSearch, filter)
+            : BuildSimpleQuery(normalizedSearch, filter);
 
         rows = ApplySort(rows, sort);
 
@@ -367,7 +369,7 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
                     .First());
     }
 
-    private IQueryable<UniqueWordListRow> BuildTashkeelQuery(string? normalizedSearch)
+    private IQueryable<UniqueWordListRow> BuildTashkeelQuery(string? normalizedSearch, UniqueWordsCountFilter filter)
     {
         var sql = $"""
             SELECT
@@ -381,19 +383,10 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
             FROM quran_words_unique_tashkeel
             """;
 
-        if (!string.IsNullOrEmpty(normalizedSearch))
-        {
-            var pattern = $"%{ArabicSearchQueryNormalizer.EscapeLikePattern(normalizedSearch)}%";
-            sql += " WHERE search_text_normalized ILIKE @pattern";
-            return _db.Database.SqlQueryRaw<UniqueWordListRow>(
-                sql,
-                new NpgsqlParameter("pattern", pattern));
-        }
-
-        return _db.Database.SqlQueryRaw<UniqueWordListRow>(sql);
+        return BuildListQuery(sql, normalizedSearch, filter);
     }
 
-    private IQueryable<UniqueWordListRow> BuildSimpleQuery(string? normalizedSearch)
+    private IQueryable<UniqueWordListRow> BuildSimpleQuery(string? normalizedSearch, UniqueWordsCountFilter filter)
     {
         var sql = $"""
             SELECT
@@ -407,16 +400,57 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
             FROM quran_words_unique_simple
             """;
 
+        return BuildListQuery(sql, normalizedSearch, filter);
+    }
+
+    // Composes the optional search predicate and the count-range predicates (Feature 026, US5) into a
+    // single WHERE clause. Column identifiers are hardcoded/allowlisted; the search fragment and every
+    // range bound reach SQL only as parameter values. Both unique tables expose the same
+    // occurrences_count/ayahs_count/surahs_count columns and the search_text_normalized identity column.
+    private IQueryable<UniqueWordListRow> BuildListQuery(string sql, string? normalizedSearch, UniqueWordsCountFilter filter)
+    {
+        var conditions = new List<string>();
+        var parameters = new List<NpgsqlParameter>();
+
         if (!string.IsNullOrEmpty(normalizedSearch))
         {
             var pattern = $"%{ArabicSearchQueryNormalizer.EscapeLikePattern(normalizedSearch)}%";
-            sql += " WHERE search_text_normalized ILIKE @pattern";
-            return _db.Database.SqlQueryRaw<UniqueWordListRow>(
-                sql,
-                new NpgsqlParameter("pattern", pattern));
+            conditions.Add("search_text_normalized ILIKE @pattern");
+            parameters.Add(new NpgsqlParameter("pattern", pattern));
         }
 
-        return _db.Database.SqlQueryRaw<UniqueWordListRow>(sql);
+        AppendRange(conditions, parameters, "occurrences_count", "occ", filter.Occurrences);
+        AppendRange(conditions, parameters, "ayahs_count", "ayahs", filter.Ayahs);
+        AppendRange(conditions, parameters, "surahs_count", "surahs", filter.Surahs);
+
+        if (conditions.Count > 0)
+        {
+            sql += " WHERE " + string.Join(" AND ", conditions);
+        }
+
+        return parameters.Count > 0
+            ? _db.Database.SqlQueryRaw<UniqueWordListRow>(sql, [.. parameters])
+            : _db.Database.SqlQueryRaw<UniqueWordListRow>(sql);
+    }
+
+    private static void AppendRange(
+        List<string> conditions,
+        List<NpgsqlParameter> parameters,
+        string column,
+        string parameterPrefix,
+        CountRange range)
+    {
+        if (range.Min is int min)
+        {
+            conditions.Add($"{column} >= @{parameterPrefix}Min");
+            parameters.Add(new NpgsqlParameter($"{parameterPrefix}Min", min));
+        }
+
+        if (range.Max is int max)
+        {
+            conditions.Add($"{column} <= @{parameterPrefix}Max");
+            parameters.Add(new NpgsqlParameter($"{parameterPrefix}Max", max));
+        }
     }
 
     private static IQueryable<UniqueWordListRow> ApplySort(IQueryable<UniqueWordListRow> rows, UniqueWordSort sort) => sort switch

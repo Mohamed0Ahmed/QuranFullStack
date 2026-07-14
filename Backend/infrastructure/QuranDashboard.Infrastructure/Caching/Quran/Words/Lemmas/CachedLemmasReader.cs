@@ -23,12 +23,13 @@ public sealed class CachedLemmasReader(EfLemmasReader efReader, IMemoryCache cac
     public async Task<PagedResult<LemmaListItemDto>> GetLemmasPageAsync(
         string? search,
         LemmaSort sort,
+        LemmasCountFilter filter,
         int page,
         int pageSize,
         CancellationToken cancellationToken)
     {
         var all = await GetOrLoadWholeSummaryAsync(cancellationToken);
-        return LemmasListDerivation.ToPage(all, search, sort, page, pageSize);
+        return LemmasListDerivation.ToPage(all, filter, search, sort, page, pageSize);
     }
 
     public async Task<LemmaSummaryDto?> GetLemmaSummaryAsync(int id, CancellationToken cancellationToken)

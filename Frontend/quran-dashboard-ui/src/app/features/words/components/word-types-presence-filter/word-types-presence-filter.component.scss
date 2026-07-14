@@ -1,0 +1,52 @@
+:host {
+  display: block;
+}
+
+.presence-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--qd-space-3);
+}
+
+.presence-filter__label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--qd-text-muted);
+}
+
+.presence-filter__row {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--qd-space-2);
+}
+
+.presence-filter__dim {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.presence-filter__options {
+  display: inline-flex;
+  gap: var(--qd-space-1);
+}
+
+.presence-filter__chip {
+  cursor: pointer;
+
+  &.qd-is-selected:not(:disabled) {
+    background: var(--qd-accent);
+    border-color: var(--qd-accent);
+    color: var(--qd-primary);
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.6;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--qd-focus-ring);
+    outline-offset: 2px;
+  }
+}

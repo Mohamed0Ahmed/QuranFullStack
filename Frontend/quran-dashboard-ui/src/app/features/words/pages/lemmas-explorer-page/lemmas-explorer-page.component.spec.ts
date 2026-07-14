@@ -6,7 +6,7 @@ import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angul
 import { BehaviorSubject, of, Subject, throwError } from 'rxjs';
 
 import { ApiResponse } from '../../../../core/data-access/api-response.model';
-import { LEMMAS_COLUMN_HEADERS } from '../../models/lemmas.labels';
+import { LEMMAS_COLUMN_HEADERS, LEMMAS_RESULT_COUNT_LABEL } from '../../models/lemmas.labels';
 import {
   LEMMA_DETAIL_PAGE_SIZE,
   LEMMAS_QUERY_KEYS,
@@ -202,6 +202,40 @@ describe('LemmasExplorerPageComponent US1', () => {
     fixture.detectChanges();
     return fixture;
   }
+
+  it('shows the headline result count equal to the list totalCount (US4)', async () => {
+    const fixture = await initLifecycle();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const stat = root.querySelector('[data-testid="lemmas-result-count"] [data-testid="explorer-result-count"]');
+    expect(stat).toBeTruthy();
+    expect(stat?.getAttribute('aria-label')).toBe(`${LEMMAS_RESULT_COUNT_LABEL}: 1`);
+    expect(
+      root
+        .querySelector('[data-testid="lemmas-result-count"] [data-testid="explorer-result-count-value"]')
+        ?.textContent?.trim(),
+    ).toBe('1');
+  });
+
+  it('hides the headline result count when the list read fails (US4)', async () => {
+    lemmasApi.getLemmasList.mockReturnValue(
+      of<ApiResponse<{ page: number; pageSize: number; totalCount: number; items: LemmaListItemViewModel[] }>>({
+        isSuccess: false,
+        data: null,
+        message: 'boom',
+        errors: null,
+      }),
+    );
+
+    const fixture = await initLifecycle();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('[data-testid="lemmas-result-count"] [data-testid="explorer-result-count"]')).toBeNull();
+  });
 
   it('renders the catalogue table with the nine locked column headers', async () => {
     const fixture = await initLifecycle();

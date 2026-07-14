@@ -7,6 +7,7 @@ import { of } from 'rxjs';
 import { UniqueWordsPageComponent } from './unique-words-page.component';
 import { UniqueWordsFacade } from '../../state/unique-words.facade';
 import { UniqueWordKind, UniqueWordListItemViewModel, UniqueWordsListState, WordDrilldownState } from '../../models/unique-words.models';
+import { UNIQUE_WORDS_RESULT_COUNT_LABEL } from '../../models/unique-words.labels';
 
 const CLOSED_DRILLDOWN: WordDrilldownState = { isOpen: false, selectedWordId: null, view: 'surahs', summary: null, surahs: null, missingSurahs: null, ayahs: null, ayahPage: 1, status: 'idle', errorMessage: '' };
 
@@ -73,6 +74,34 @@ describe('UniqueWordsPageComponent', () => {
     const root = await render();
     expect(root.querySelector('[data-testid="unique-words-tab--tashkeel"]')).toBeTruthy();
     expect(root.querySelector('[data-testid="unique-words-tab--simple"]')).toBeTruthy();
+  });
+
+  it('shows the headline result count equal to the list totalCount (US4)', async () => {
+    const root = await render({ totalCount: 2 });
+    const stat = root.querySelector('[data-testid="unique-words-result-count"] [data-testid="explorer-result-count"]');
+    expect(stat).toBeTruthy();
+    expect(stat?.getAttribute('aria-label')).toBe(`${UNIQUE_WORDS_RESULT_COUNT_LABEL}: 2`);
+    expect(
+      root
+        .querySelector('[data-testid="unique-words-result-count"] [data-testid="explorer-result-count-value"]')
+        ?.textContent?.trim(),
+    ).toBe('2');
+  });
+
+  it('shows 0 in the headline result count for an empty scope (US4)', async () => {
+    const root = await render({ status: 'empty', items: [], totalCount: 0 });
+    expect(
+      root
+        .querySelector('[data-testid="unique-words-result-count"] [data-testid="explorer-result-count-value"]')
+        ?.textContent?.trim(),
+    ).toBe('0');
+  });
+
+  it('hides the headline result count when the list read fails (US4)', async () => {
+    const root = await render({ status: 'error', items: [], errorMessage: 'خطأ' });
+    expect(
+      root.querySelector('[data-testid="unique-words-result-count"] [data-testid="explorer-result-count"]'),
+    ).toBeNull();
   });
 
   it('renders the search input and sort select', async () => {

@@ -17,7 +17,11 @@ import { UniqueWordsFacade } from '../../state/unique-words.facade';
 import {
   buildModalCloseQueryParams,
   buildUniqueWordsQueryParams,
+  parseUniqueWordsQueryParams,
 } from '../../state/unique-words-url-sync';
+import { EMPTY_RANGE_FILTERS, RangeFilters, buildRangeQueryParams } from '../../state/words-range-filters';
+import { ExplorerCountRangeFilterComponent } from '../../components/explorer-count-range-filter/explorer-count-range-filter.component';
+import { ExplorerResultCountComponent } from '../../components/explorer-result-count/explorer-result-count.component';
 import { UniqueWordsTabsComponent } from '../../components/unique-words-tabs/unique-words-tabs.component';
 import { UniqueWordsSearchBarComponent } from '../../components/unique-words-search-bar/unique-words-search-bar.component';
 import { UniqueWordsTableComponent } from '../../components/unique-words-table/unique-words-table.component';
@@ -28,11 +32,13 @@ import {
   ACTIVE_HUB_SECTION,
   EMPTY_LIST_LABEL,
   RESTORED_WORD_NOT_FOUND_LABEL,
+  UNIQUE_WORDS_RESULT_COUNT_LABEL,
   UNIQUE_WORD_KIND_LABELS,
   UNIQUE_WORD_LIST_PAGINATION_LABEL,
   UNIQUE_WORD_PANEL_SURFACE_LABEL,
 } from '../../models/unique-words.labels';
 import {
+  UNIQUE_WORDS_RANGE_METRICS,
   UniqueWordKind,
   UniqueWordSort,
   WordDrilldownView,
@@ -48,6 +54,8 @@ type UniqueWordsDrilldownState = ReturnType<UniqueWordsFacade['drilldownState']>
   selector: 'qd-unique-words-page',
   standalone: true,
   imports: [
+    ExplorerCountRangeFilterComponent,
+    ExplorerResultCountComponent,
     UniqueWordsTabsComponent,
     UniqueWordsSearchBarComponent,
     UniqueWordsTableComponent,
@@ -65,6 +73,10 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
 
   private readonly searchInput = new Subject<string>();
   private searchSub?: Subscription;
+  private rangesSyncSub?: Subscription;
+
+  protected readonly ranges = signal<RangeFilters>(EMPTY_RANGE_FILTERS);
+  protected get rangeMetrics() { return UNIQUE_WORDS_RANGE_METRICS; }
 
   protected readonly listState = this.facade.listState;
   protected readonly drilldownState = this.facade.drilldownState;
@@ -73,6 +85,7 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
   protected readonly pageTitle = ACTIVE_HUB_SECTION.labelAr;
   protected readonly listPaginationLabel = UNIQUE_WORD_LIST_PAGINATION_LABEL;
   protected readonly panelSurfaceLabel = UNIQUE_WORD_PANEL_SURFACE_LABEL;
+  protected get resultCountLabel(): string { return UNIQUE_WORDS_RESULT_COUNT_LABEL; }
 
   protected readonly isDesktop = signal(true);
   private desktopQuery?: MediaQueryList;
@@ -145,6 +158,10 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
       .pipe(debounceTime(300))
       .subscribe((value) => this.updateQueryParams({ search: value || null, page: null }));
 
+    this.rangesSyncSub = this.route.queryParamMap.subscribe((params) =>
+      this.ranges.set(parseUniqueWordsQueryParams(params).ranges),
+    );
+
     if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
       this.desktopQuery = window.matchMedia(QD_BP_DESKTOP_MIN_QUERY);
       this.isDesktop.set(this.desktopQuery.matches);
@@ -155,6 +172,7 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.facade.unbindFromRoute();
     this.searchSub?.unsubscribe();
+    this.rangesSyncSub?.unsubscribe();
     this.desktopQuery?.removeEventListener('change', this.onDesktopChange);
     this.tableFocus.destroy();
   }
@@ -168,6 +186,11 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
   protected onSortChange(sort: UniqueWordSort): void {
     this.clearTableFocus();
     this.updateQueryParams({ sort, page: null });
+  }
+
+  protected onRangesChange(ranges: RangeFilters): void {
+    this.clearTableFocus();
+    this.updateQueryParams({ ...buildRangeQueryParams(ranges, UNIQUE_WORDS_RANGE_METRICS), page: null });
   }
 
   protected onTabActivated(mode: UniqueWordKind): void {

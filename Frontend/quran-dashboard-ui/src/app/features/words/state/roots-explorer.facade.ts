@@ -16,9 +16,11 @@ import {
   RootSort,
   RootsListState,
 } from '../models/roots.models';
+import { ROOTS_RANGE_METRICS } from '../models/roots.models';
 import { ROOTS_LIST_ERROR_LABEL } from '../models/roots.labels';
 import { parseRootsQueryParams } from './roots-url-sync';
 import { RootsCache, RootsCacheKeys } from './roots-cache';
+import { EMPTY_RANGE_FILTERS, RangeFilters, serializeRangeFiltersKey } from './words-range-filters';
 
 const CONNECTION_ERROR_MESSAGE = ROOTS_LIST_ERROR_LABEL;
 
@@ -37,6 +39,7 @@ export class RootsExplorerFacade {
   private readonly _totalCount = signal<number>(0);
   private readonly _search = signal<string>('');
   private readonly _sort = signal<RootSort>(DEFAULT_ROOT_SORT);
+  private readonly _ranges = signal<RangeFilters>(EMPTY_RANGE_FILTERS);
   private readonly _errorMessage = signal<string>('');
 
   private get pageSize(): number {
@@ -92,23 +95,29 @@ export class RootsExplorerFacade {
     const parsed = parseRootsQueryParams(queryParams);
     this._search.set(parsed.search);
     this._sort.set(parsed.sort);
+    this._ranges.set(parsed.ranges);
     this._page.set(parsed.page);
   }
 
   private listRequestKey(): string {
-    return [this._search(), this._sort(), this._page()].join('|');
+    return [this._search(), this._sort(), this.rangesKey(), this._page()].join('|');
+  }
+
+  private rangesKey(): string {
+    return serializeRangeFiltersKey(this._ranges(), ROOTS_RANGE_METRICS);
   }
 
   private runListRequest(): Observable<void> {
     const targetPage = this._page();
-    const cacheKey = RootsCacheKeys.list(this._search(), this._sort(), targetPage);
+    const ranges = this._ranges();
+    const cacheKey = RootsCacheKeys.list(this._search(), this._sort(), targetPage, this.rangesKey());
 
     this._status.set('loading');
     this._errorMessage.set('');
 
     return this.cache
       .getOrLoad(cacheKey, () =>
-        this.api.getRootsList(this._search(), this._sort(), targetPage, this.pageSize),
+        this.api.getRootsList(this._search(), this._sort(), targetPage, this.pageSize, ranges),
       )
       .pipe(
         tap((response) => this.handleListResponse(response)),

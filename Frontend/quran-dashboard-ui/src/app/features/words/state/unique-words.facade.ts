@@ -15,6 +15,7 @@ import {
   PagedResultDto,
   UniqueWordKind,
   UniqueWordListItemDto,
+  UNIQUE_WORDS_RANGE_METRICS,
   UniqueWordListItemViewModel,
   UniqueWordSort,
   UniqueWordsListState,
@@ -25,6 +26,7 @@ import { extractDrilldownMessage } from '../utils/unique-words-drilldown.state';
 import { parseUniqueWordsQueryParams } from './unique-words-url-sync';
 import { UniqueWordsCache, UniqueWordsCacheKeys } from './unique-words-cache';
 import { UniqueWordsDrilldownFacade } from './unique-words-drilldown.facade';
+import { EMPTY_RANGE_FILTERS, RangeFilters, serializeRangeFiltersKey } from './words-range-filters';
 
 const CONNECTION_ERROR_MESSAGE = 'تعذّر تحميل الكلمات الفريدة. تحقّق من الاتصال ثم أعد المحاولة.';
 
@@ -42,6 +44,7 @@ export class UniqueWordsFacade {
   private readonly _mode = signal<UniqueWordKind>(DEFAULT_UNIQUE_WORD_KIND);
   private readonly _search = signal<string>('');
   private readonly _sort = signal<UniqueWordSort>(DEFAULT_UNIQUE_WORD_SORT);
+  private readonly _ranges = signal<RangeFilters>(EMPTY_RANGE_FILTERS);
   private readonly _errorMessage = signal<string>('');
 
   private get _pageSize(): number {
@@ -119,7 +122,8 @@ export class UniqueWordsFacade {
     const nextMode = modeParam === 'simple' || modeParam === 'tashkeel' ? modeParam : DEFAULT_UNIQUE_WORD_KIND;
 
     const parsed = parseUniqueWordsQueryParams(queryParams);
-    const nextFilterKey = [nextMode, parsed.search, parsed.sort].join('|');
+    const rangesKey = serializeRangeFiltersKey(parsed.ranges, UNIQUE_WORDS_RANGE_METRICS);
+    const nextFilterKey = [nextMode, parsed.search, parsed.sort, rangesKey].join('|');
 
     if (this.lastFilterKey !== nextFilterKey) {
       this.lastFilterKey = nextFilterKey;
@@ -129,22 +133,29 @@ export class UniqueWordsFacade {
     this._mode.set(nextMode);
     this._search.set(parsed.search);
     this._sort.set(parsed.sort);
+    this._ranges.set(parsed.ranges);
     this._page.set(parsed.page);
 
     this.drilldown.restoreFromUrl(nextMode, parsed.wordId, parsed.view, parsed.ayahPage);
   }
 
   private listRequestKey(): string {
-    return [this._mode(), this._search(), this._sort(), this._page()].join('|');
+    return [this._mode(), this._search(), this._sort(), this.rangesKey(), this._page()].join('|');
+  }
+
+  private rangesKey(): string {
+    return serializeRangeFiltersKey(this._ranges(), UNIQUE_WORDS_RANGE_METRICS);
   }
 
   private runListRequest(): Observable<void> {
     const targetPage = this._page();
+    const ranges = this._ranges();
     const cacheKey = UniqueWordsCacheKeys.list(
       this._mode(),
       this._sort(),
       this._search(),
       targetPage,
+      this.rangesKey(),
     );
 
     this._status.set('loading');
@@ -152,7 +163,7 @@ export class UniqueWordsFacade {
 
     return this.cache
       .getOrLoad(cacheKey, () =>
-        this.api.getList(this._mode(), this._search(), this._sort(), targetPage, this._pageSize),
+        this.api.getList(this._mode(), this._search(), this._sort(), targetPage, this._pageSize, ranges),
       )
       .pipe(
         tap((response) => this.handleListResponse(response)),

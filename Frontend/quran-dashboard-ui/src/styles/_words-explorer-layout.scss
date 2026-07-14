@@ -24,6 +24,11 @@
   gap: var(--qd-space-3);
 }
 
+// Headline result-count stat slot inside a (non-stacked) toolbar recess (Feature 026, US4).
+.uw-toolbar-recess__stat {
+  margin-block-start: var(--qd-space-3);
+}
+
 .uw-toolbar-recess--kinetic {
   animation: uw-toolbar-rise 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
 }

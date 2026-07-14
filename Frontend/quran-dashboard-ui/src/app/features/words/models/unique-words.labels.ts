@@ -83,6 +83,9 @@ export const SURAH_NAME_HEADER = WORDS_SHARED_LIST_HEADERS.surahName;
 export const AYAH_REF_LABEL = 'آية';
 export const MUSHAF_PAGE_REF_LABEL = 'ص';
 
+// Headline result-count stat (Feature 026, US4): label-prefix "عدد الـ…: N".
+export const UNIQUE_WORDS_RESULT_COUNT_LABEL = 'عدد الكلمات';
+
 export const EMPTY_LIST_LABEL = 'لا توجد نتائج';
 export const SEARCH_LABEL = 'بحث';
 export const SEARCH_PLACEHOLDER = 'ابحث في الكلمات…';

@@ -6,6 +6,7 @@ import { environment } from '../../../../environments/environment';
 import { ApiResponse } from '../../../core/data-access/api-response.model';
 import {
   PagedResultDto,
+  STEMS_RANGE_METRICS,
   StemAyahMatchDto,
   StemLemmasDto,
   StemListItemDto,
@@ -16,6 +17,7 @@ import {
   StemWordItemDto,
   StemWordView,
 } from '../models/stems.models';
+import { EMPTY_RANGE_FILTERS, RangeFilters, appendRangeApiParams } from '../state/words-range-filters';
 
 /**
  * Typed HTTP client for the Stems Explorer (Feature 016). Endpoints live under
@@ -33,6 +35,7 @@ export class StemsApi {
     sort: StemSort,
     page: number,
     pageSize: number,
+    ranges: RangeFilters = EMPTY_RANGE_FILTERS,
   ): Observable<ApiResponse<PagedResultDto<StemListItemDto>>> {
     let params = new HttpParams()
       .set('sort', sort)
@@ -42,6 +45,8 @@ export class StemsApi {
     if (search.trim().length > 0) {
       params = params.set('search', search.trim());
     }
+
+    params = appendRangeApiParams(params, ranges, STEMS_RANGE_METRICS);
 
     return this.http.get<ApiResponse<PagedResultDto<StemListItemDto>>>(
       `${this.baseUrl}/api/words/stems`,

@@ -1,6 +1,7 @@
 import { ParamMap } from '@angular/router';
 
 import { lemmasRoutePath } from '../../../core/navigation/route-paths';
+import { parseRangeFilters } from './words-range-filters';
 
 import {
   DEFAULT_LEMMA_DETAIL_PAGE,
@@ -10,6 +11,7 @@ import {
   DEFAULT_LEMMA_WORD_VIEW,
   DEFAULT_LEMMAS_LIST_PAGE,
   LEMMAS_QUERY_KEYS,
+  LEMMAS_RANGE_METRICS,
   LEMMAS_SELECTION_QUERY_KEYS,
   LemmaSort,
   LemmaSurahView,
@@ -56,6 +58,7 @@ export function parseLemmasQueryParams(queryParams: ParamMap): ParsedLemmasQuery
     search: queryParams.get(LEMMAS_QUERY_KEYS.search) ?? '',
     sort,
     page,
+    ranges: parseRangeFilters(queryParams, LEMMAS_RANGE_METRICS),
     lemmaId,
     view,
     column: queryParams.get(LEMMAS_QUERY_KEYS.column),

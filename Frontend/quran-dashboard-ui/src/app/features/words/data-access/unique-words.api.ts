@@ -6,6 +6,7 @@ import { environment } from '../../../../environments/environment';
 import { ApiResponse } from '../../../core/data-access/api-response.model';
 import {
   PagedResultDto,
+  UNIQUE_WORDS_RANGE_METRICS,
   UniqueWordAyahMatchDto,
   UniqueWordKind,
   UniqueWordListItemDto,
@@ -14,6 +15,7 @@ import {
   UniqueWordSummaryDto,
   UniqueWordSurahsDto,
 } from '../models/unique-words.models';
+import { EMPTY_RANGE_FILTERS, RangeFilters, appendRangeApiParams } from '../state/words-range-filters';
 
 @Injectable({ providedIn: 'root' })
 export class UniqueWordsApi {
@@ -26,6 +28,7 @@ export class UniqueWordsApi {
     sort: UniqueWordSort,
     page: number,
     pageSize: number,
+    ranges: RangeFilters = EMPTY_RANGE_FILTERS,
   ): Observable<ApiResponse<PagedResultDto<UniqueWordListItemDto>>> {
     let params = new HttpParams()
       .set('sort', sort)
@@ -35,6 +38,8 @@ export class UniqueWordsApi {
     if (search.trim().length > 0) {
       params = params.set('search', search.trim());
     }
+
+    params = appendRangeApiParams(params, ranges, UNIQUE_WORDS_RANGE_METRICS);
 
     return this.http.get<ApiResponse<PagedResultDto<UniqueWordListItemDto>>>(
       `${this.baseUrl}/api/words/unique/${encodeURIComponent(kind)}`,

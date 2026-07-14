@@ -16,9 +16,11 @@ import {
   StemsListState,
   STEMS_LIST_PAGE_SIZE,
 } from '../models/stems.models';
+import { STEMS_RANGE_METRICS } from '../models/stems.models';
 import { STEMS_LIST_ERROR_LABEL } from '../models/stems.labels';
 import { parseStemsQueryParams } from './stems-url-sync';
 import { StemsCache, StemsCacheKeys } from './stems-cache';
+import { EMPTY_RANGE_FILTERS, RangeFilters, serializeRangeFiltersKey } from './words-range-filters';
 
 const CONNECTION_ERROR_MESSAGE = STEMS_LIST_ERROR_LABEL;
 
@@ -35,6 +37,7 @@ export class StemsExplorerFacade {
   private readonly _items = signal<readonly StemListItemViewModel[]>([]);
   private readonly _page = signal<number>(DEFAULT_STEMS_LIST_PAGE);
   private readonly _totalCount = signal<number>(0);
+  private readonly _ranges = signal<RangeFilters>(EMPTY_RANGE_FILTERS);
   private readonly _search = signal<string>('');
   private readonly _sort = signal<StemSort>(DEFAULT_STEM_SORT);
   private readonly _errorMessage = signal<string>('');
@@ -92,22 +95,28 @@ export class StemsExplorerFacade {
     const parsed = parseStemsQueryParams(queryParams);
     this._search.set(parsed.search);
     this._sort.set(parsed.sort);
+    this._ranges.set(parsed.ranges);
     this._page.set(parsed.page);
   }
 
   private listRequestKey(): string {
-    return [this._search(), this._sort(), this._page()].join('|');
+    return [this._search(), this._sort(), this.rangesKey(), this._page()].join('|');
+  }
+
+  private rangesKey(): string {
+    return serializeRangeFiltersKey(this._ranges(), STEMS_RANGE_METRICS);
   }
 
   private runListRequest(): Observable<void> {
     const targetPage = this._page();
-    const cacheKey = StemsCacheKeys.list(this._search(), this._sort(), targetPage);
+    const ranges = this._ranges();
+    const cacheKey = StemsCacheKeys.list(this._search(), this._sort(), targetPage, this.rangesKey());
 
     this._status.set('loading');
     this._errorMessage.set('');
 
     return this.cache
-      .getOrLoad(cacheKey, () => this.api.getStemsList(this._search(), this._sort(), targetPage, this.pageSize))
+      .getOrLoad(cacheKey, () => this.api.getStemsList(this._search(), this._sort(), targetPage, this.pageSize, ranges))
       .pipe(
         tap((response) => this.handleListResponse(response)),
         catchError(() => {

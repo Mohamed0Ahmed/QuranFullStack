@@ -49,17 +49,34 @@ public static class WordTypesCacheKeys
         selection.Filter.Tense,
         selection.Filter.Voice);
 
-    // Empty/absent search keeps the pre-feature 5-part hash so warm rows/table entries stay valid; a
-    // non-empty NORMALIZED search appends a sixth component (same normalization the SQL predicate uses)
-    // so searched and unsearched reads never cross-serve, and two raw terms that normalize equally share
-    // one entry.
+    // Empty/absent search AND absent presence flags keep the pre-feature 5-part hash so warm rows/table
+    // entries stay valid. A non-empty NORMALIZED search appends a component (same normalization the SQL
+    // predicate uses); any set presence flag (Feature 026, US6) appends a distinct flag component. So
+    // searched/flagged reads never cross-serve their unsearched/unflagged counterparts.
     private static string HashFilter(WordTypeFilter filter)
     {
         var normalizedSearch = ArabicSearchQueryNormalizer.Normalize(filter.Search);
-        return string.IsNullOrEmpty(normalizedSearch)
-            ? HashParts(filter.Type, filter.ChildCode, filter.Case, filter.Tense, filter.Voice)
-            : HashParts(filter.Type, filter.ChildCode, filter.Case, filter.Tense, filter.Voice, normalizedSearch);
+        var parts = new List<string?> { filter.Type, filter.ChildCode, filter.Case, filter.Tense, filter.Voice };
+
+        if (!string.IsNullOrEmpty(normalizedSearch))
+        {
+            parts.Add(normalizedSearch);
+        }
+
+        if (filter.HasRoot is not null || filter.HasStem is not null || filter.HasLemma is not null)
+        {
+            parts.Add($"flags:{FlagKey(filter.HasRoot)}{FlagKey(filter.HasStem)}{FlagKey(filter.HasLemma)}");
+        }
+
+        return HashParts([.. parts]);
     }
+
+    private static string FlagKey(bool? flag) => flag switch
+    {
+        true => "1",
+        false => "0",
+        _ => "_",
+    };
 
     private static string HashIdentity(WordTypeRowIdentity identity) => HashParts(
         identity.TashkeelWordId.ToString(CultureInfo.InvariantCulture),

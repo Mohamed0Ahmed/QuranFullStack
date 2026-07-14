@@ -4,8 +4,10 @@ import { ApiResponseCache } from '../../../core/caching/api-response-cache';
 import { LemmaSort, LemmaWordView } from '../models/lemmas.models';
 
 export const LemmasCacheKeys = {
-  list(search: string, sort: LemmaSort, page: number): string {
-    return `lemmas:list:${sort}:${search}:p${page}`;
+  // rangesKey is '' for an unfiltered read, keeping the pre-feature cache key byte-identical (US5).
+  list(search: string, sort: LemmaSort, page: number, rangesKey = ''): string {
+    const base = `lemmas:list:${sort}:${search}:p${page}`;
+    return rangesKey.length > 0 ? `${base}:${rangesKey}` : base;
   },
 
   summary(lemmaId: number): string {

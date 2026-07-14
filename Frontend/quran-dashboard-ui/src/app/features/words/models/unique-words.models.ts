@@ -15,6 +15,8 @@ import type {
   UniqueWordSurahsResponse as UniqueWordSurahsDto,
 } from '../../../core/api/generated/models';
 import type { PagedResultDto } from '../../../core/data-access/paged-result.model';
+import type { RangeFilters, RangeMetric } from '../state/words-range-filters';
+import { WORDS_SHARED_COUNT_COLUMNS } from './words-shared.labels';
 
 export type {
   AyahWordForHighlightDto,
@@ -106,6 +108,13 @@ export const UNIQUE_WORDS_QUERY_KEYS = {
   ayahPage: 'ap',
 } as const;
 
+// Count-range filter metrics (Feature 026, US5) — the three count columns the Unique Words list shows.
+export const UNIQUE_WORDS_RANGE_METRICS: readonly RangeMetric[] = [
+  { key: 'occurrences', urlKey: 'occ', apiKey: 'occ', family: 'occurrences', labelAr: WORDS_SHARED_COUNT_COLUMNS.occurrences },
+  { key: 'ayahs', urlKey: 'ayahs', apiKey: 'ayahs', family: 'ayahsSurahs', labelAr: WORDS_SHARED_COUNT_COLUMNS.ayahs },
+  { key: 'surahs', urlKey: 'surahs', apiKey: 'surahs', family: 'ayahsSurahs', labelAr: WORDS_SHARED_COUNT_COLUMNS.surahs },
+];
+
 export const MODAL_QUERY_KEYS: readonly string[] = [
   UNIQUE_WORDS_QUERY_KEYS.word,
   UNIQUE_WORDS_QUERY_KEYS.view,
@@ -116,6 +125,7 @@ export interface ParsedUniqueWordsQuery {
   search: string;
   sort: UniqueWordSort;
   page: number;
+  ranges: RangeFilters;
   wordId: number | null;
   view: WordDrilldownView | null;
   ayahPage: number | null;

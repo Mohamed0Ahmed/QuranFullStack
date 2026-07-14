@@ -13,12 +13,13 @@ public sealed class CachedRootsReader(EfRootsReader efReader, IMemoryCache cache
     public async Task<PagedResult<RootListItemDto>> GetRootsPageAsync(
         string? search,
         RootSort sort,
+        RootsCountFilter filter,
         int page,
         int pageSize,
         CancellationToken cancellationToken)
     {
         var all = await GetOrLoadWholeSummaryAsync(cancellationToken);
-        return RootsListDerivation.ToPage(all, search, sort, page, pageSize);
+        return RootsListDerivation.ToPage(all, filter, search, sort, page, pageSize);
     }
 
     public async Task<RootSummaryDto?> GetRootSummaryAsync(int id, CancellationToken cancellationToken)

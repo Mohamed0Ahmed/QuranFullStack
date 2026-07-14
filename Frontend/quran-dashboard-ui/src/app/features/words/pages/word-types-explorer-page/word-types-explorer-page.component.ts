@@ -12,6 +12,10 @@ import { WordTypeFilterComponent, WordTypeScopeSelectedEvent } from '../../compo
 import { WordTypeGroupedWordsListComponent } from '../../components/word-type-grouped-words-list/word-type-grouped-words-list.component';
 import { WordTypeTableViewTabsComponent } from '../../components/word-type-table-view-tabs/word-type-table-view-tabs.component';
 import {
+  WordTypePresenceFlagChange,
+  WordTypesPresenceFilterComponent,
+} from '../../components/word-types-presence-filter/word-types-presence-filter.component';
+import {
   WordTypeCountColumn,
   WordTypeCountOpenedEvent,
   WordTypesTableComponent,
@@ -83,6 +87,7 @@ const DETAIL_KIND_BY_TABLE_VIEW: Record<WordTypeTableView, WordTypeDetailSelecti
     WordTypeFilterComponent,
     WordTypeGroupedWordsListComponent,
     WordTypeTableViewTabsComponent,
+    WordTypesPresenceFilterComponent,
     WordTypesTableComponent,
   ],
   templateUrl: './word-types-explorer-page.component.html',
@@ -195,6 +200,10 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
   protected get sortOptions() { return WORD_TYPE_SORT_OPTIONS; }
   protected get searchLabel() { return WORD_TYPES_SEARCH_LABEL; }
   protected get searchPlaceholder() { return WORD_TYPES_SEARCH_PLACEHOLDER; }
+
+  protected onPresenceFlagChange(change: WordTypePresenceFlagChange): void {
+    this.explorerFacade.selectPresenceFlag(change.dimension, change.value);
+  }
 
   ngOnInit(): void {
     this.explorerFacade.bindToRoute(this.route);

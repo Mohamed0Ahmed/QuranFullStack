@@ -10,23 +10,24 @@ public sealed class CachedUniqueWordsReader(IUniqueWordsReader inner, IMemoryCac
         UniqueWordKind kind,
         string? search,
         UniqueWordSort sort,
+        UniqueWordsCountFilter filter,
         int page,
         int pageSize,
         CancellationToken cancellationToken)
     {
         if (!string.IsNullOrWhiteSpace(search))
         {
-            return await inner.GetUniqueWordsPageAsync(kind, search, sort, page, pageSize, cancellationToken);
+            return await inner.GetUniqueWordsPageAsync(kind, search, sort, filter, page, pageSize, cancellationToken);
         }
 
-        var key = UniqueWordsCacheKeys.List(kind, sort, page, pageSize);
+        var key = UniqueWordsCacheKeys.List(kind, sort, page, pageSize, filter);
 
         if (cache.TryGetValue(key, out PagedResult<UniqueWordListItemDto>? cached))
         {
             return cached!;
         }
 
-        var result = await inner.GetUniqueWordsPageAsync(kind, search, sort, page, pageSize, cancellationToken);
+        var result = await inner.GetUniqueWordsPageAsync(kind, search, sort, filter, page, pageSize, cancellationToken);
         cache.Set(key, result, UniqueWordsCacheEntryOptions.List());
 
         return result;

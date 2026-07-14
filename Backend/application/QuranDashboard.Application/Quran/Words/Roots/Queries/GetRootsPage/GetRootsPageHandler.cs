@@ -54,10 +54,27 @@ public sealed class GetRootsPageHandler(
             return new GetRootsPageOutcome.InvalidPaging();
         }
 
+        var filter = query.Filter ?? RootsCountFilter.None;
+        if (!filter.IsValid)
+        {
+            logger.LogWarning(
+                "Rejected {feature} {operation} {reason} {sort} {pageNumber} {pageSize} {hasSearch}",
+                FeatureName,
+                OperationName,
+                "invalidFilter",
+                GetSortKey(sort),
+                query.Page,
+                query.PageSize,
+                HasSearch(query.Search));
+
+            return new GetRootsPageOutcome.InvalidFilter();
+        }
+
         var hasSearch = HasSearch(query.Search);
         var page = await reader.GetRootsPageAsync(
             query.Search,
             sort,
+            filter,
             query.Page,
             query.PageSize,
             cancellationToken);

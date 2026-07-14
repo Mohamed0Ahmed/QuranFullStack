@@ -44,6 +44,27 @@ and Unique Words. They back the `application/.../Quran/Words/**` query handlers 
   only as a parameter value and is never logged (`hasSearch` boolean only). **Grouped-detail reads
   (`.GroupedDetails.*`) take NO search term** — their identity is a numeric dimension id already scoped;
   `ToGroupedReadContext` builds a search-free context, so the asymmetry is by construction.
+- **Count-range filters** (Feature 026, US5) narrow the four normal explorers by exactly the count
+  columns each list already displays — no recomputation, no count-family change. The shared
+  `CountRange`/`<page>CountFilter` value objects (Application.Abstractions) validate `Min >= 0` and
+  `Max >= Min` in the handlers (else a controlled 400 `InvalidFilter`); an open bound is allowed. Every
+  active range **ANDs** with search/sort. Execution follows each page's existing read mechanism: Unique
+  Words applies parameterized SQL predicates on `occurrences_count`/`ayahs_count`/`surahs_count` inside
+  `BuildListQuery` (identifiers allowlisted, bounds are parameter values only) and its list cache keys
+  gain the range fragment (absent ⇒ pre-feature key); Roots/Lemmas/Stems apply **in-memory** predicates
+  in their `*ListDerivation.FilterAndSort` over the cached whole-summary rows, so their backend cache
+  keys are unchanged. Ranges filter dimension entries (Roots/Lemmas/Stems) or unique-word identities
+  (Unique Words). The filtered `PagedResult.TotalCount` equals the filtered row count (the stat
+  contract), and ordering is untouched — the predicates are pure `Where`s.
+- **Word Types presence flags** (Feature 026, US6) are tri-state `hasRoot`/`hasStem`/`hasLemma`
+  (`bool?`: null = any, true = has, false = missing) threaded through `WordTypeFilter` →
+  `WordTypeReadContext` → `PresenceFilterPredicate` on the shared `BaseRowsSql`. The predicate is
+  allowlisted `m.root_id|stem_id|lemma_id IS [NOT] NULL` — no user text, no parameters. Because it lives
+  on the shared base, the words view, all three grouped views, and their `TotalCount`s narrow together
+  (list scope); grouped-detail reads (`.GroupedDetails.*`) never set the flags (same asymmetry as
+  search). `WordTypesCacheKeys.HashFilter` appends a flag component only when a flag is set (absent ⇒
+  pre-feature 5-part hash), so flagged and unflagged reads never cross-serve. Malformed direct-API flag
+  values are rejected by the `[ApiController]` bool binding (400); the frontend fails closed to absent.
 - **Word Types page-size caps** are split in `WordTypesHandlerValidation` (Feature 026): **list reads**
   (`/words`, `/table`) accept `pageSize 1..1000` (`MaxListPageSize`, default 1000); **detail reads** (word
   ayahs, grouped member words, grouped ayahs) keep `pageSize 1..100` (`MaxDetailPageSize`, default 100).

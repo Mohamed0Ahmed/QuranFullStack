@@ -198,10 +198,10 @@ public sealed class RootsListReadTests(RootsExplorerTestFixture fixture)
         var cache = new MemoryCache(new MemoryCacheOptions());
         var reader = new CachedRootsReader(inner, cache);
 
-        await reader.GetRootsPageAsync(null, RootSort.MushafOrder, 1, 50, CancellationToken.None);
+        await reader.GetRootsPageAsync(null, RootSort.MushafOrder, RootsCountFilter.None, 1, 50, CancellationToken.None);
 
         interceptor.Reset();
-        await reader.GetRootsPageAsync(null, RootSort.Occurrences, 2, 2, CancellationToken.None);
+        await reader.GetRootsPageAsync(null, RootSort.Occurrences, RootsCountFilter.None, 2, 2, CancellationToken.None);
         interceptor.CommandCount.Should().Be(0, "the whole summary is cached once; sort/page are in-memory");
     }
 

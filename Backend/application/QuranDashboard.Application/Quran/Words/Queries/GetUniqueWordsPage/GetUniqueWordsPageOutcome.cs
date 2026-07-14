@@ -11,4 +11,5 @@ public abstract record GetUniqueWordsPageOutcome
     public sealed record InvalidKind : GetUniqueWordsPageOutcome;
     public sealed record InvalidSort : GetUniqueWordsPageOutcome;
     public sealed record InvalidPaging : GetUniqueWordsPageOutcome;
+    public sealed record InvalidFilter : GetUniqueWordsPageOutcome;
 }
