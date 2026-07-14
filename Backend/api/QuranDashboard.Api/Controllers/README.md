@@ -43,8 +43,7 @@ and the `ApiResponse<T>` envelope; application handlers own use-case logic.
 
 - The OpenAPI spec for this API is exported offline to
   `Frontend/quran-dashboard-ui/openapi/swagger.json` by `Backend/scripts/export-swagger`
-  (Swashbuckle CLI; no running server). Controller and response-DTO XML docs are the
-  source of every description in that spec, so keep them accurate.
+  (Swashbuckle CLI; no running server). Controller (endpoint) XML docs are the source of the endpoint descriptions in that spec; response DTO schemas are intentionally undocumented (bare typed schemas). Keep the controller docs accurate.
 - Frontend payload types are generated from that spec into
   `Frontend/quran-dashboard-ui/src/app/core/api/generated/` (models-only consumption), and a
   static human-browsable reference is generated at `docs/api-reference/index.html`.

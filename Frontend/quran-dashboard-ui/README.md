@@ -34,8 +34,7 @@ Local HTTPS needs `mkcert localhost` in the project root (see `Backend/scripts/R
 - `openapi/swagger.json` — committed OpenAPI spec exported from the backend by
   `Backend/scripts/export-swagger` (offline; no running server).
 - `src/app/core/api/generated/` — committed payload DTO interfaces generated from that spec
-  (`npm run generate:api`, ng-openapi-gen, models-only: the generated services are never
-  imported). Never hand-edit generated files.
+  (`npm run generate:api`, ng-openapi-gen, models-only: `generate:api` prunes the output to `models/` via `scripts/prune-generated-api.mjs`, so no service/fn files are kept). Never hand-edit generated files.
 - `docs/api-reference/index.html` (repo root) — committed static API reference
   (`npm run docs:api`): redocly build-docs plus `scripts/inline-redoc-bundle.mjs`, which
   inlines the pinned local `redoc` bundle so the file opens fully offline.

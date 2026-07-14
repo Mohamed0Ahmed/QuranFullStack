@@ -10,7 +10,7 @@ per-feature.
 
 - `api/generated/` — payload DTO interfaces generated from the backend OpenAPI spec
   (`npm run generate:api`; see the project README). Generated output — never hand-edit;
-  only the `models` are consumed (generated services stay unused).
+  generation is pruned to models-only via `scripts/prune-generated-api.mjs` — no service/fn files are emitted.
 - `data-access/` — the API client boundary:
   - `api-response.model.ts` — the `ApiResponse<T>` envelope every API returns (hand-written;
     intentionally not generated).
