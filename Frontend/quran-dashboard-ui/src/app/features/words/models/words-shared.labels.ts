@@ -67,3 +67,9 @@ export const WORDS_ASSOCIATION_FILTER_LABELS = {
   clear: 'مسح التصفية',
   loading: 'جارٍ التحميل…',
 } as const;
+
+// UI labels for the shared result-count stat (Feature 026, US4). loading is the sr-only text
+// announced by the skeleton's role="status" container.
+export const WORDS_RESULT_COUNT_LABELS = {
+  loading: 'جارٍ التحميل…',
+} as const;

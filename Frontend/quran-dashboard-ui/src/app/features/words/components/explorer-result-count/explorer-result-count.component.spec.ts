@@ -36,10 +36,17 @@ describe('ExplorerResultCountComponent', () => {
     expect(root.textContent).toContain('عدد الجذور');
   });
 
-  it('renders a non-interactive skeleton while loading', () => {
+  it('renders a non-interactive skeleton while loading, announced via sr-only text', () => {
     const root = render({ count: 0, labelPrefix: 'عدد الكلمات', loading: true });
 
-    expect(root.querySelector('[data-testid="explorer-result-count-skeleton"]')).toBeTruthy();
+    const skeleton = root.querySelector('[data-testid="explorer-result-count-skeleton"]');
+    expect(skeleton).toBeTruthy();
+    // The role="status" container must NOT be aria-hidden (that would nullify the announcement); the
+    // visual skeleton bar is hidden while the sr-only loading text carries the announcement.
+    expect(skeleton?.getAttribute('role')).toBe('status');
+    expect(skeleton?.getAttribute('aria-hidden')).toBeNull();
+    expect(skeleton?.querySelector('.qd-sr-only')?.textContent?.trim()).toBe('جارٍ التحميل…');
+    expect(skeleton?.querySelector('.qd-skeleton')?.getAttribute('aria-hidden')).toBe('true');
     expect(root.querySelector('[data-testid="explorer-result-count"]')).toBeNull();
     expect(root.querySelector('button')).toBeNull();
     expect(root.querySelector('a')).toBeNull();
