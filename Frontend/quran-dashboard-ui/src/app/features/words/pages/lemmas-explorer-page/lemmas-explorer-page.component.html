@@ -51,6 +51,20 @@
         [disabled]="listState().status === 'loading'"
         (rangesChange)="onRangesChange($event)"
       />
+
+      <qd-explorer-association-filter
+        class="uw-toolbar-recess__stat"
+        testid="lemmas-root-filter"
+        [label]="rootFilterLabel"
+        [placeholder]="rootFilterPlaceholder"
+        [options]="rootOptions()"
+        [selectedId]="association().rootId"
+        [selectedLabel]="selectedRootLabel()"
+        [loading]="rootOptionsLoading()"
+        [disabled]="listState().status === 'loading'"
+        (searchChange)="onRootSearch($event)"
+        (selectionChange)="onRootFilterChange($event)"
+      />
     </div>
 
     @switch (listState().status) {

@@ -78,6 +78,7 @@ export const LEMMAS_QUERY_KEYS = {
   search: 'search',
   sort: 'sort',
   page: 'page',
+  rootId: 'rootId',
   lemma: 'lemma',
   view: 'view',
   column: 'column',
@@ -86,6 +87,17 @@ export const LEMMAS_QUERY_KEYS = {
   detailPage: 'detailPage',
   typeCode: 'typeCode',
 } as const;
+
+// Association filter (Feature 026, US7): owned root (real FK belonging). Fails closed in the URL.
+export interface LemmasAssociation {
+  readonly rootId: number | null;
+}
+
+export const EMPTY_LEMMAS_ASSOCIATION: LemmasAssociation = { rootId: null };
+
+export function isLemmasAssociationActive(association: LemmasAssociation): boolean {
+  return association.rootId !== null;
+}
 
 // Count-range filter metrics (Feature 026, US5) — the six count columns the Lemmas list shows.
 export const LEMMAS_RANGE_METRICS: readonly RangeMetric[] = [
@@ -148,6 +160,7 @@ export interface ParsedLemmasQuery {
   sort: LemmaSort;
   page: number;
   ranges: RangeFilters;
+  association: LemmasAssociation;
   lemmaId: number | null;
   view: LemmaView;
   column: string | null;

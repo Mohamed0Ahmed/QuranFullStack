@@ -56,6 +56,27 @@ and Unique Words. They back the `application/.../Quran/Words/**` query handlers 
   keys are unchanged. Ranges filter dimension entries (Roots/Lemmas/Stems) or unique-word identities
   (Unique Words). The filtered `PagedResult.TotalCount` equals the filtered row count (the stat
   contract), and ordering is untouched — the predicates are pure `Where`s.
+- **Association filters** (Feature 026, US7) narrow three normal explorers by a related dimension, always
+  by the SAME association the list row displays (so the filter and the displayed value can never disagree —
+  the chip⇔filter invariant, pinned by tests). **Unique Words** `primaryType` (POS code) and `rootId`
+  (positive int) are predicates in the base SQL of `BuildTashkeelQuery`/`BuildSimpleQuery`
+  (`EfUniqueWordsReader.BuildListQuery`): each is an `id IN (…)` over a `DISTINCT ON (unique_id)` winner
+  subquery that reproduces EXACTLY the primary-selection ordering `LoadPrimaryWordTypesAsync` /
+  `LoadPrimaryRootsAsync` use for the displayed chip (group the word's occurrences by POS code / root,
+  order by occurrence count DESC, earliest `quran_word` id ASC, then code/root id). Values reach SQL only
+  as parameters; the unique-id column is an allowlisted constant. `primaryType` is validated against the
+  POS catalogue (`quran_pos_tags` via `IPosTagCatalogueReader`) in the handler — an unknown code is a
+  controlled **400 InvalidFilter**, not a silent empty result; a nonpositive id is likewise 400. A
+  valid-but-unmatched id returns a **200 empty page** (`TotalCount = 0`), never a 404. Unique Words list
+  cache keys gain a `pt…:root…` segment (absent ⇒ pre-feature key). **Lemmas** `rootId` is an in-memory
+  predicate on the real FK `quran_lemmas.root_id` (`LemmasListDerivation.FilterAndSort`) — a true
+  belonging relation. **Stems** `rootId`/`lemmaId` are in-memory predicates on the derived **primary**
+  (dominant) association surfaced on the stem's list row (`StemsListDerivation.FilterAndSort`,
+  `DominantRootId`/`DominantLemmaId`). **This is a primary-not-sole filter: a stem whose primary root or
+  lemma differs is excluded even if it co-occurs with the filtered id** — the filter matches only the one
+  primary association, not all co-occurring associations. Roots/Lemmas/Stems derive over the cached whole
+  summary, so their backend cache keys are unchanged; ordering is untouched (the predicates are pure
+  `Where`s). All association params may be logged as booleans/ids (no user text).
 - **Word Types presence flags** (Feature 026, US6) are tri-state `hasRoot`/`hasStem`/`hasLemma`
   (`bool?`: null = any, true = has, false = missing) threaded through `WordTypeFilter` →
   `WordTypeReadContext` → `PresenceFilterPredicate` on the shared `BaseRowsSql`. The predicate is

@@ -169,7 +169,7 @@ describe('UniqueWordsFacade list state', () => {
 
     route.setQueryParams({ search: 'اسم' });
 
-    expect(getList).toHaveBeenLastCalledWith('tashkeel', 'اسم', 'mushaf-order', 1, DEFAULT_LIST_PAGE_SIZE, {});
+    expect(getList).toHaveBeenLastCalledWith('tashkeel', 'اسم', 'mushaf-order', 1, DEFAULT_LIST_PAGE_SIZE, {}, { primaryType: null, rootId: null });
     facade.unbindFromRoute();
   });
 
@@ -181,7 +181,7 @@ describe('UniqueWordsFacade list state', () => {
 
     route.setQueryParams({ sort: 'occurrences' });
 
-    expect(getList).toHaveBeenLastCalledWith('tashkeel', '', 'occurrences', 1, DEFAULT_LIST_PAGE_SIZE, {});
+    expect(getList).toHaveBeenLastCalledWith('tashkeel', '', 'occurrences', 1, DEFAULT_LIST_PAGE_SIZE, {}, { primaryType: null, rootId: null });
     facade.unbindFromRoute();
   });
 
@@ -197,7 +197,7 @@ describe('UniqueWordsFacade list state', () => {
 
     route.setQueryParams({ page: '3' });
 
-    expect(getList).toHaveBeenLastCalledWith('tashkeel', '', 'mushaf-order', 3, DEFAULT_LIST_PAGE_SIZE, {});
+    expect(getList).toHaveBeenLastCalledWith('tashkeel', '', 'mushaf-order', 3, DEFAULT_LIST_PAGE_SIZE, {}, { primaryType: null, rootId: null });
     facade.unbindFromRoute();
   });
 
@@ -213,7 +213,7 @@ describe('UniqueWordsFacade list state', () => {
     route.setQueryParams({ page: '2' });
 
     expect(getList).toHaveBeenCalledTimes(2);
-    expect(getList).toHaveBeenLastCalledWith('tashkeel', '', 'mushaf-order', 2, DEFAULT_LIST_PAGE_SIZE, {});
+    expect(getList).toHaveBeenLastCalledWith('tashkeel', '', 'mushaf-order', 2, DEFAULT_LIST_PAGE_SIZE, {}, { primaryType: null, rootId: null });
     expect(facade.items().map((row) => row.id)).toEqual([2]);
     facade.unbindFromRoute();
   });
@@ -251,7 +251,7 @@ describe('UniqueWordsFacade route binding', () => {
     facade.bindToRoute(fakeRoute(paramMap, queryParamMap));
 
     expect(facade.mode()).toBe('simple');
-    expect(getList).toHaveBeenLastCalledWith('simple', 'اسم', 'occurrences', 2, DEFAULT_LIST_PAGE_SIZE, {});
+    expect(getList).toHaveBeenLastCalledWith('simple', 'اسم', 'occurrences', 2, DEFAULT_LIST_PAGE_SIZE, {}, { primaryType: null, rootId: null });
   });
 
   it('reloads with the new mode when only the :mode path segment changes', () => {
@@ -262,12 +262,12 @@ describe('UniqueWordsFacade route binding', () => {
     const paramMap = new BehaviorSubject<ParamMap>(convertToParamMap({ mode: 'tashkeel' }));
     const queryParamMap = new BehaviorSubject<ParamMap>(convertToParamMap({}));
     facade.bindToRoute(fakeRoute(paramMap, queryParamMap));
-    expect(getList).toHaveBeenLastCalledWith('tashkeel', '', 'mushaf-order', 1, DEFAULT_LIST_PAGE_SIZE, {});
+    expect(getList).toHaveBeenLastCalledWith('tashkeel', '', 'mushaf-order', 1, DEFAULT_LIST_PAGE_SIZE, {}, { primaryType: null, rootId: null });
 
     paramMap.next(convertToParamMap({ mode: 'simple' }));
 
     expect(facade.mode()).toBe('simple');
-    expect(getList).toHaveBeenLastCalledWith('simple', '', 'mushaf-order', 1, DEFAULT_LIST_PAGE_SIZE, {});
+    expect(getList).toHaveBeenLastCalledWith('simple', '', 'mushaf-order', 1, DEFAULT_LIST_PAGE_SIZE, {}, { primaryType: null, rootId: null });
 
     facade.unbindFromRoute();
   });
@@ -281,7 +281,7 @@ describe('UniqueWordsFacade route binding', () => {
     facade.bindToRoute(fakeRoute(paramMap, queryParamMap));
 
     expect(facade.mode()).toBe('tashkeel');
-    expect(getList).toHaveBeenLastCalledWith('tashkeel', '', 'mushaf-order', 1, DEFAULT_LIST_PAGE_SIZE, {});
+    expect(getList).toHaveBeenLastCalledWith('tashkeel', '', 'mushaf-order', 1, DEFAULT_LIST_PAGE_SIZE, {}, { primaryType: null, rootId: null });
 
     facade.unbindFromRoute();
   });

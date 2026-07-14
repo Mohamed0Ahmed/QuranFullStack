@@ -62,6 +62,24 @@ Shared across explorers: `utils/explorer-table-*` (focus/keyboard-nav/scroll/col
   range fragment (absent ⇒ pre-feature key). The headline stat reflects the filtered `totalCount` by
   construction. `*_RANGE_METRICS` and the range-filter labels are read via **TDZ-safe getters**, never
   `readonly` fields (they resolve to `undefined` in the bundled test build otherwise).
+- **Association filters** (Feature 026, US7) narrow three of the normal explorers by a related dimension,
+  using the shared presentational `explorer-association-filter` search-select (a `<details>` disclosure
+  with a search input, an options list, and a clear affordance; RTL, `aria`). URL keys (all optional,
+  additive, parsed **fail-closed**): Unique Words `primaryType` (POS code) + `rootId`; Lemmas `rootId`;
+  Stems `rootId` + `lemmaId`. `primaryType` keeps a well-formed catalogue token else absent; ids keep a
+  positive integer else absent (`state/words-association-filters.ts` `parsePosCodeParam` /
+  `parsePositiveIntParam`). Changing any association resets the list `page`. The API sends each param only
+  when set; frontend list cache keys gain an `assoc(...)` fragment (absent ⇒ pre-feature key). Options are
+  loaded by `WordsAssociationOptionsService`, **reusing existing reads with no new endpoint**: the
+  root/lemma pickers server-search `roots.api`/`lemmas.api` (cached under a `*:picker:` namespace in the
+  shared caches); the Unique Words type select is fed from the word-types **tree** read, flattening the
+  noun and particle POS-leaf children (the "POS child catalogue"). Verb and muqatta'at are represented
+  non-granularly in the tree (by tense / as a main type) and are therefore not offered as granular
+  primary-type options — use the Word Types explorer for those. Labels (lock D): Unique Words
+  "النوع الأساسي" / "الجذر الأساسي"; Lemmas "الجذر" (owned root, a true belonging relation); Stems
+  "الجذر الأساسي" / "الصيغة المعجمية الأساسية" (**primary, not sole** — the filter matches the displayed
+  dominant association). Every association filter agrees with the value the row displays, so the chip and
+  the filter can never disagree.
 - Tests: obey the repo test-command rule (see `../../../../README.md`) — the vitest worker
   cap and jsdom observer guards apply here.
 - **Word Types has table-view tabs** (`tableView=words|roots|stems|lemmas`, default `words`,

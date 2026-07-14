@@ -5,9 +5,15 @@ import { LemmaSort, LemmaWordView } from '../models/lemmas.models';
 
 export const LemmasCacheKeys = {
   // rangesKey is '' for an unfiltered read, keeping the pre-feature cache key byte-identical (US5).
-  list(search: string, sort: LemmaSort, page: number, rangesKey = ''): string {
-    const base = `lemmas:list:${sort}:${search}:p${page}`;
-    return rangesKey.length > 0 ? `${base}:${rangesKey}` : base;
+  list(search: string, sort: LemmaSort, page: number, rangesKey = '', associationKey = ''): string {
+    let key = `lemmas:list:${sort}:${search}:p${page}`;
+    if (rangesKey.length > 0) {
+      key += `:${rangesKey}`;
+    }
+    if (associationKey.length > 0) {
+      key += `:assoc(${associationKey})`;
+    }
+    return key;
   },
 
   summary(lemmaId: number): string {

@@ -78,6 +78,8 @@ export const STEMS_QUERY_KEYS = {
   search: 'search',
   sort: 'sort',
   page: 'page',
+  rootId: 'rootId',
+  lemmaId: 'lemmaId',
   stem: 'stem',
   view: 'view',
   column: 'column',
@@ -86,6 +88,18 @@ export const STEMS_QUERY_KEYS = {
   detailPage: 'detailPage',
   typeCode: 'typeCode',
 } as const;
+
+// Association filters (Feature 026, US7): primary (dominant) root and primary lemma. Fail closed.
+export interface StemsAssociation {
+  readonly rootId: number | null;
+  readonly lemmaId: number | null;
+}
+
+export const EMPTY_STEMS_ASSOCIATION: StemsAssociation = { rootId: null, lemmaId: null };
+
+export function isStemsAssociationActive(association: StemsAssociation): boolean {
+  return association.rootId !== null || association.lemmaId !== null;
+}
 
 // Count-range filter metrics (Feature 026, US5) — the five count columns the Stems list shows.
 export const STEMS_RANGE_METRICS: readonly RangeMetric[] = [
@@ -147,6 +161,7 @@ export interface ParsedStemsQuery {
   sort: StemSort;
   page: number;
   ranges: RangeFilters;
+  association: StemsAssociation;
   stemId: number | null;
   view: StemView;
   column: string | null;

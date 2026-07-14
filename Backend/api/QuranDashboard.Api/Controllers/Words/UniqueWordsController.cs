@@ -39,6 +39,8 @@ public sealed class UniqueWordsController(
         [FromQuery] int? ayahsMax,
         [FromQuery] int? surahsMin,
         [FromQuery] int? surahsMax,
+        [FromQuery] string? primaryType,
+        [FromQuery] int? rootId,
         CancellationToken cancellationToken)
     {
         var outcome = await listHandler.HandleAsync(
@@ -51,7 +53,8 @@ public sealed class UniqueWordsController(
                 UniqueWordsCountFilter.FromRaw(
                     occMin, occMax,
                     ayahsMin, ayahsMax,
-                    surahsMin, surahsMax)),
+                    surahsMin, surahsMax),
+                UniqueWordsAssociationFilter.FromRaw(primaryType, rootId)),
             cancellationToken);
 
         return outcome switch

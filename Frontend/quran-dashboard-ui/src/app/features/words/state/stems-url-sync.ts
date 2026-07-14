@@ -2,6 +2,7 @@ import { ParamMap } from '@angular/router';
 
 import { stemsRoutePath } from '../../../core/navigation/route-paths';
 import { parseRangeFilters } from './words-range-filters';
+import { parsePositiveIntParam } from './words-association-filters';
 
 import {
   DEFAULT_STEM_DETAIL_PAGE,
@@ -59,6 +60,10 @@ export function parseStemsQueryParams(queryParams: ParamMap): ParsedStemsQuery {
     sort,
     page,
     ranges: parseRangeFilters(queryParams, STEMS_RANGE_METRICS),
+    association: {
+      rootId: parsePositiveIntParam(queryParams.get(STEMS_QUERY_KEYS.rootId)),
+      lemmaId: parsePositiveIntParam(queryParams.get(STEMS_QUERY_KEYS.lemmaId)),
+    },
     stemId,
     view,
     column: queryParams.get(STEMS_QUERY_KEYS.column),
@@ -73,6 +78,8 @@ export type StemsQueryChange = Partial<{
   search: string | null;
   sort: StemSort | null;
   page: number | null;
+  rootId: number | null;
+  lemmaId: number | null;
   stemId: number | null;
   view: StemView | null;
   column: string | null;
@@ -93,6 +100,12 @@ export function buildStemsQueryParams(changes: StemsQueryChange): Record<string,
   }
   if (changes.page !== undefined) {
     params[STEMS_QUERY_KEYS.page] = changes.page === null ? null : String(changes.page);
+  }
+  if (changes.rootId !== undefined) {
+    params[STEMS_QUERY_KEYS.rootId] = changes.rootId === null ? null : String(changes.rootId);
+  }
+  if (changes.lemmaId !== undefined) {
+    params[STEMS_QUERY_KEYS.lemmaId] = changes.lemmaId === null ? null : String(changes.lemmaId);
   }
   if (changes.stemId !== undefined) {
     params[STEMS_QUERY_KEYS.stem] = changes.stemId === null ? null : String(changes.stemId);

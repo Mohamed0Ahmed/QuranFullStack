@@ -16,6 +16,7 @@ public interface ILemmasReader
         string? search,
         LemmaSort sort,
         LemmasCountFilter filter,
+        LemmasAssociationFilter association,
         int page,
         int pageSize,
         CancellationToken cancellationToken);

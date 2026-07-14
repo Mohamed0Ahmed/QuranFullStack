@@ -51,6 +51,34 @@
         [disabled]="listState().status === 'loading'"
         (rangesChange)="onRangesChange($event)"
       />
+
+      <qd-explorer-association-filter
+        class="uw-toolbar-recess__stat"
+        testid="stems-root-filter"
+        [label]="primaryRootLabel"
+        [placeholder]="primaryRootPlaceholder"
+        [options]="rootOptions()"
+        [selectedId]="association().rootId"
+        [selectedLabel]="selectedRootLabel()"
+        [loading]="rootOptionsLoading()"
+        [disabled]="listState().status === 'loading'"
+        (searchChange)="onRootSearch($event)"
+        (selectionChange)="onPrimaryRootChange($event)"
+      />
+
+      <qd-explorer-association-filter
+        class="uw-toolbar-recess__stat"
+        testid="stems-lemma-filter"
+        [label]="primaryLemmaLabel"
+        [placeholder]="primaryLemmaPlaceholder"
+        [options]="lemmaOptions()"
+        [selectedId]="association().lemmaId"
+        [selectedLabel]="selectedLemmaLabel()"
+        [loading]="lemmaOptionsLoading()"
+        [disabled]="listState().status === 'loading'"
+        (searchChange)="onLemmaSearch($event)"
+        (selectionChange)="onPrimaryLemmaChange($event)"
+      />
     </div>
 
     @switch (listState().status) {

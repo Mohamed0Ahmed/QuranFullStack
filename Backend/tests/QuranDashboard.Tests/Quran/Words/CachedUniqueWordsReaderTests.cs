@@ -19,6 +19,7 @@ public sealed class CachedUniqueWordsReaderTests
             null,
             UniqueWordSort.MushafOrder,
             UniqueWordsCountFilter.None,
+            UniqueWordsAssociationFilter.None,
             page: 1,
             pageSize: 50,
             CancellationToken.None);
@@ -27,6 +28,7 @@ public sealed class CachedUniqueWordsReaderTests
             null,
             UniqueWordSort.MushafOrder,
             UniqueWordsCountFilter.None,
+            UniqueWordsAssociationFilter.None,
             page: 1,
             pageSize: 50,
             CancellationToken.None);
@@ -47,6 +49,7 @@ public sealed class CachedUniqueWordsReaderTests
             "synthetic-search",
             UniqueWordSort.Alpha,
             UniqueWordsCountFilter.None,
+            UniqueWordsAssociationFilter.None,
             page: 1,
             pageSize: 50,
             CancellationToken.None);
@@ -55,6 +58,7 @@ public sealed class CachedUniqueWordsReaderTests
             "synthetic-search",
             UniqueWordSort.Alpha,
             UniqueWordsCountFilter.None,
+            UniqueWordsAssociationFilter.None,
             page: 1,
             pageSize: 50,
             CancellationToken.None);
@@ -98,6 +102,7 @@ public sealed class CachedUniqueWordsReaderTests
             string? search,
             UniqueWordSort sort,
             UniqueWordsCountFilter filter,
+            UniqueWordsAssociationFilter association,
             int page,
             int pageSize,
             CancellationToken cancellationToken)

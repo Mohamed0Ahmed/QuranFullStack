@@ -13,6 +13,9 @@ internal static class UniqueWordsDependencyInjection
             sp.GetRequiredService<EfUniqueWordsReader>(),
             sp.GetRequiredService<IMemoryCache>()));
 
+        // POS catalogue validation for the Unique Words primaryType association filter (Feature 026, US7).
+        services.AddScoped<IPosTagCatalogueReader, EfPosTagCatalogueReader>();
+
         return services;
     }
 }

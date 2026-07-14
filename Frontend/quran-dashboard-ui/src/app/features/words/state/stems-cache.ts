@@ -5,9 +5,15 @@ import { StemSort, StemWordView } from '../models/stems.models';
 
 export const StemsCacheKeys = {
   // rangesKey is '' for an unfiltered read, keeping the pre-feature cache key byte-identical (US5).
-  list(search: string, sort: StemSort, page: number, rangesKey = ''): string {
-    const base = `stems:list:${sort}:${search}:p${page}`;
-    return rangesKey.length > 0 ? `${base}:${rangesKey}` : base;
+  list(search: string, sort: StemSort, page: number, rangesKey = '', associationKey = ''): string {
+    let key = `stems:list:${sort}:${search}:p${page}`;
+    if (rangesKey.length > 0) {
+      key += `:${rangesKey}`;
+    }
+    if (associationKey.length > 0) {
+      key += `:assoc(${associationKey})`;
+    }
+    return key;
   },
 
   summary(stemId: number): string {

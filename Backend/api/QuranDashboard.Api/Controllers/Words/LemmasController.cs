@@ -54,6 +54,7 @@ public sealed class LemmasController(
         [FromQuery] int? tashkeelWordsMax,
         [FromQuery] int? stemsMin,
         [FromQuery] int? stemsMax,
+        [FromQuery] int? rootId,
         CancellationToken cancellationToken)
     {
         var outcome = await listHandler.HandleAsync(
@@ -68,7 +69,8 @@ public sealed class LemmasController(
                     surahsMin, surahsMax,
                     simpleWordsMin, simpleWordsMax,
                     tashkeelWordsMin, tashkeelWordsMax,
-                    stemsMin, stemsMax)),
+                    stemsMin, stemsMax),
+                LemmasAssociationFilter.FromRaw(rootId)),
             cancellationToken);
 
         return outcome switch

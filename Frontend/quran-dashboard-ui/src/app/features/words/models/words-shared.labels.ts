@@ -59,3 +59,11 @@ export const WORDS_RANGE_FILTER_LABELS = {
   max: 'إلى',
   clearAll: 'مسح كل عوامل التصفية',
 } as const;
+
+// UI labels for the shared association filter picker (Feature 026, US7). activeFilter is the
+// neutral badge shown while a URL-restored selection's real label has not resolved yet.
+export const WORDS_ASSOCIATION_FILTER_LABELS = {
+  activeFilter: 'مرشَّح نشط',
+  clear: 'مسح التصفية',
+  loading: 'جارٍ التحميل…',
+} as const;

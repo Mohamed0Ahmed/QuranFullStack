@@ -54,7 +54,8 @@ public sealed class GetStemsPageHandler(
         }
 
         var filter = query.Filter ?? StemsCountFilter.None;
-        if (!filter.IsValid)
+        var association = query.Association ?? StemsAssociationFilter.None;
+        if (!filter.IsValid || !association.IsValid)
         {
             logger.LogWarning(
                 "Rejected {feature} {operation} {reason} {sort} {pageNumber} {pageSize} {hasSearch}",
@@ -74,6 +75,7 @@ public sealed class GetStemsPageHandler(
             query.Search,
             sort,
             filter,
+            association,
             query.Page,
             query.PageSize,
             cancellationToken);

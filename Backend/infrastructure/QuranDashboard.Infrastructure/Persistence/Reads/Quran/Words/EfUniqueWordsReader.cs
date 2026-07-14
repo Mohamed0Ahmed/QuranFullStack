@@ -6,7 +6,9 @@ using QuranDashboard.Domain.Quran.Words;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words;
 
-public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWordsReader
+// The list-query building (raw SELECTs, WHERE composition, winner predicates, list sort) lives in the
+// EfUniqueWordsReader.List.cs partial — split by size, matching the EfStemsReader partial convention.
+public sealed partial class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWordsReader
 {
     private const int TotalSurahs = 114;
 
@@ -17,6 +19,7 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
         string? search,
         UniqueWordSort sort,
         UniqueWordsCountFilter filter,
+        UniqueWordsAssociationFilter association,
         int page,
         int pageSize,
         CancellationToken cancellationToken)
@@ -27,8 +30,8 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
             : UniqueWordKindKeys.Simple;
 
         IQueryable<UniqueWordListRow> rows = kind == UniqueWordKind.Tashkeel
-            ? BuildTashkeelQuery(normalizedSearch, filter)
-            : BuildSimpleQuery(normalizedSearch, filter);
+            ? BuildTashkeelQuery(normalizedSearch, filter, association)
+            : BuildSimpleQuery(normalizedSearch, filter, association);
 
         rows = ApplySort(rows, sort);
 
@@ -277,6 +280,11 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
             ? await _db.QuranWordsUniqueTashkeel.AsNoTracking().AnyAsync(w => w.Id == id, cancellationToken)
             : await _db.QuranWordsUniqueSimple.AsNoTracking().AnyAsync(w => w.Id == id, cancellationToken);
 
+    // LOCKSTEP WARNING (Feature 026, US7): this primary-selection rule (occurrence count DESC,
+    // earliest quran_word id ASC, POS code ordinal ASC) is REPRODUCED in SQL by
+    // PrimaryWordTypeWinnerPredicate in EfUniqueWordsReader.List.cs — the primaryType filter and the
+    // displayed chip must never disagree. Any change here MUST be mirrored there (and vice versa);
+    // UniqueWordsAssociationFilterTests pins the agreement.
     private async Task<IReadOnlyDictionary<int, PrimaryWordTypeRow>> LoadPrimaryWordTypesAsync(
         UniqueWordKind kind, IReadOnlyList<int?> uniqueWordIds, CancellationToken cancellationToken)
     {
@@ -323,6 +331,11 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
                     .First());
     }
 
+    // LOCKSTEP WARNING (Feature 026, US7): this primary-selection rule (occurrence count DESC,
+    // earliest quran_word id ASC, root id ASC) is REPRODUCED in SQL by PrimaryRootWinnerPredicate in
+    // EfUniqueWordsReader.List.cs — the rootId filter and the displayed chip must never disagree. Any
+    // change here MUST be mirrored there (and vice versa); UniqueWordsAssociationFilterTests pins the
+    // agreement.
     private async Task<IReadOnlyDictionary<int, PrimaryRootRow>> LoadPrimaryRootsAsync(
         UniqueWordKind kind, IReadOnlyList<int?> uniqueWordIds, CancellationToken cancellationToken)
     {
@@ -369,101 +382,6 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
                     .First());
     }
 
-    private IQueryable<UniqueWordListRow> BuildTashkeelQuery(string? normalizedSearch, UniqueWordsCountFilter filter)
-    {
-        var sql = $"""
-            SELECT
-                id AS "{nameof(UniqueWordListRow.Id)}",
-                text_uthmani AS "{nameof(UniqueWordListRow.DisplayText)}",
-                occurrences_count AS "{nameof(UniqueWordListRow.OccurrencesCount)}",
-                ayahs_count AS "{nameof(UniqueWordListRow.AyahsCount)}",
-                surahs_count AS "{nameof(UniqueWordListRow.SurahsCount)}",
-                first_word_order_in_mushaf AS "{nameof(UniqueWordListRow.FirstWordOrderInMushaf)}",
-                text_imlaei_simple AS "{nameof(UniqueWordListRow.SearchText)}"
-            FROM quran_words_unique_tashkeel
-            """;
-
-        return BuildListQuery(sql, normalizedSearch, filter);
-    }
-
-    private IQueryable<UniqueWordListRow> BuildSimpleQuery(string? normalizedSearch, UniqueWordsCountFilter filter)
-    {
-        var sql = $"""
-            SELECT
-                id AS "{nameof(UniqueWordListRow.Id)}",
-                text_uthmani_simple AS "{nameof(UniqueWordListRow.DisplayText)}",
-                occurrences_count AS "{nameof(UniqueWordListRow.OccurrencesCount)}",
-                ayahs_count AS "{nameof(UniqueWordListRow.AyahsCount)}",
-                surahs_count AS "{nameof(UniqueWordListRow.SurahsCount)}",
-                first_word_order_in_mushaf AS "{nameof(UniqueWordListRow.FirstWordOrderInMushaf)}",
-                word_key_imlaei_simple AS "{nameof(UniqueWordListRow.SearchText)}"
-            FROM quran_words_unique_simple
-            """;
-
-        return BuildListQuery(sql, normalizedSearch, filter);
-    }
-
-    // Composes the optional search predicate and the count-range predicates (Feature 026, US5) into a
-    // single WHERE clause. Column identifiers are hardcoded/allowlisted; the search fragment and every
-    // range bound reach SQL only as parameter values. Both unique tables expose the same
-    // occurrences_count/ayahs_count/surahs_count columns and the search_text_normalized identity column.
-    private IQueryable<UniqueWordListRow> BuildListQuery(string sql, string? normalizedSearch, UniqueWordsCountFilter filter)
-    {
-        var conditions = new List<string>();
-        var parameters = new List<NpgsqlParameter>();
-
-        if (!string.IsNullOrEmpty(normalizedSearch))
-        {
-            var pattern = $"%{ArabicSearchQueryNormalizer.EscapeLikePattern(normalizedSearch)}%";
-            conditions.Add("search_text_normalized ILIKE @pattern");
-            parameters.Add(new NpgsqlParameter("pattern", pattern));
-        }
-
-        AppendRange(conditions, parameters, "occurrences_count", "occ", filter.Occurrences);
-        AppendRange(conditions, parameters, "ayahs_count", "ayahs", filter.Ayahs);
-        AppendRange(conditions, parameters, "surahs_count", "surahs", filter.Surahs);
-
-        if (conditions.Count > 0)
-        {
-            sql += " WHERE " + string.Join(" AND ", conditions);
-        }
-
-        return parameters.Count > 0
-            ? _db.Database.SqlQueryRaw<UniqueWordListRow>(sql, [.. parameters])
-            : _db.Database.SqlQueryRaw<UniqueWordListRow>(sql);
-    }
-
-    private static void AppendRange(
-        List<string> conditions,
-        List<NpgsqlParameter> parameters,
-        string column,
-        string parameterPrefix,
-        CountRange range)
-    {
-        if (range.Min is int min)
-        {
-            conditions.Add($"{column} >= @{parameterPrefix}Min");
-            parameters.Add(new NpgsqlParameter($"{parameterPrefix}Min", min));
-        }
-
-        if (range.Max is int max)
-        {
-            conditions.Add($"{column} <= @{parameterPrefix}Max");
-            parameters.Add(new NpgsqlParameter($"{parameterPrefix}Max", max));
-        }
-    }
-
-    private static IQueryable<UniqueWordListRow> ApplySort(IQueryable<UniqueWordListRow> rows, UniqueWordSort sort) => sort switch
-    {
-        UniqueWordSort.Occurrences => rows
-            .OrderByDescending(r => r.OccurrencesCount)
-            .ThenBy(r => r.FirstWordOrderInMushaf),
-        UniqueWordSort.Alpha => rows
-            .OrderBy(r => r.SearchText)
-            .ThenBy(r => r.FirstWordOrderInMushaf),
-        _ => rows.OrderBy(r => r.FirstWordOrderInMushaf),
-    };
-
     private static string? ResolvePrimaryWordTypeBroadLabel(string code, string? category) => code switch
     {
         "INL" => "حروف مقطّعة",
@@ -475,15 +393,6 @@ public sealed class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWor
             _ => null,
         },
     };
-
-    private sealed record UniqueWordListRow(
-        int Id,
-        string DisplayText,
-        int OccurrencesCount,
-        short AyahsCount,
-        short SurahsCount,
-        int FirstWordOrderInMushaf,
-        string SearchText);
 
     private sealed record UniqueWordSummaryRow(
         string KindKey,

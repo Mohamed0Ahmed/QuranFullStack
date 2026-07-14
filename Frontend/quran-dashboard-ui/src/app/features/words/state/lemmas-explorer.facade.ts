@@ -8,11 +8,13 @@ import { LemmasApi } from '../data-access/lemmas.api';
 import {
   DEFAULT_LEMMAS_LIST_PAGE,
   DEFAULT_LEMMA_SORT,
+  EMPTY_LEMMAS_ASSOCIATION,
   LEMMAS_LIST_PAGE_SIZE,
   LoadStatus,
   LemmaListItemDto,
   LemmaListItemViewModel,
   LemmaSort,
+  LemmasAssociation,
   LemmasListState,
   PagedResultDto,
 } from '../models/lemmas.models';
@@ -21,6 +23,7 @@ import { LEMMAS_LIST_ERROR_LABEL } from '../models/lemmas.labels';
 import { parseLemmasQueryParams } from './lemmas-url-sync';
 import { LemmasCache, LemmasCacheKeys } from './lemmas-cache';
 import { EMPTY_RANGE_FILTERS, RangeFilters, serializeRangeFiltersKey } from './words-range-filters';
+import { serializeAssociationKey } from './words-association-filters';
 
 const CONNECTION_ERROR_MESSAGE = LEMMAS_LIST_ERROR_LABEL;
 
@@ -48,6 +51,7 @@ export class LemmasExplorerFacade {
   private readonly _search = signal<string>('');
   private readonly _sort = signal<LemmaSort>(DEFAULT_LEMMA_SORT);
   private readonly _ranges = signal<RangeFilters>(EMPTY_RANGE_FILTERS);
+  private readonly _association = signal<LemmasAssociation>(EMPTY_LEMMAS_ASSOCIATION);
   private readonly _errorMessage = signal<string>('');
 
   private get pageSize(): number {
@@ -74,6 +78,7 @@ export class LemmasExplorerFacade {
   readonly search = this._search.asReadonly();
   readonly sort = this._sort.asReadonly();
   readonly totalCount = this._totalCount.asReadonly();
+  readonly association = this._association.asReadonly();
   readonly errorMessage = this._errorMessage.asReadonly();
 
   bindToRoute(route: ActivatedRoute): void {
@@ -104,28 +109,34 @@ export class LemmasExplorerFacade {
     this._search.set(parsed.search);
     this._sort.set(parsed.sort);
     this._ranges.set(parsed.ranges);
+    this._association.set(parsed.association);
     this._page.set(parsed.page);
   }
 
   private listRequestKey(): string {
-    return [this._search(), this._sort(), this.rangesKey(), this._page()].join('|');
+    return [this._search(), this._sort(), this.rangesKey(), this.associationKey(), this._page()].join('|');
   }
 
   private rangesKey(): string {
     return serializeRangeFiltersKey(this._ranges(), LEMMAS_RANGE_METRICS);
   }
 
+  private associationKey(): string {
+    return serializeAssociationKey([['rootId', this._association().rootId]]);
+  }
+
   private runListRequest(): Observable<void> {
     const targetPage = this._page();
     const ranges = this._ranges();
-    const cacheKey = LemmasCacheKeys.list(this._search(), this._sort(), targetPage, this.rangesKey());
+    const association = this._association();
+    const cacheKey = LemmasCacheKeys.list(this._search(), this._sort(), targetPage, this.rangesKey(), this.associationKey());
 
     this._status.set('loading');
     this._errorMessage.set('');
 
     return this.cache
       .getOrLoad(cacheKey, () =>
-        this.api.getLemmasList(this._search(), this._sort(), targetPage, this.pageSize, ranges),
+        this.api.getLemmasList(this._search(), this._sort(), targetPage, this.pageSize, ranges, association),
       )
       .pipe(
         tap((response) => this.handleListResponse(response)),

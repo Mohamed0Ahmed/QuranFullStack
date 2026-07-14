@@ -103,10 +103,25 @@ export const UNIQUE_WORDS_QUERY_KEYS = {
   search: 'search',
   sort: 'sort',
   page: 'page',
+  primaryType: 'primaryType',
+  rootId: 'rootId',
   word: 'word',
   view: 'view',
   ayahPage: 'ap',
 } as const;
+
+// Association filters (Feature 026, US7): primary word type (POS code) and primary root. Both fail
+// closed in the URL and are absent by default (pre-feature URLs unchanged).
+export interface UniqueWordsAssociation {
+  readonly primaryType: string | null;
+  readonly rootId: number | null;
+}
+
+export const EMPTY_UNIQUE_WORDS_ASSOCIATION: UniqueWordsAssociation = { primaryType: null, rootId: null };
+
+export function isUniqueWordsAssociationActive(association: UniqueWordsAssociation): boolean {
+  return association.primaryType !== null || association.rootId !== null;
+}
 
 // Count-range filter metrics (Feature 026, US5) — the three count columns the Unique Words list shows.
 export const UNIQUE_WORDS_RANGE_METRICS: readonly RangeMetric[] = [
@@ -126,6 +141,7 @@ export interface ParsedUniqueWordsQuery {
   sort: UniqueWordSort;
   page: number;
   ranges: RangeFilters;
+  association: UniqueWordsAssociation;
   wordId: number | null;
   view: WordDrilldownView | null;
   ayahPage: number | null;

@@ -54,7 +54,8 @@ public sealed class GetLemmasPageHandler(
         }
 
         var filter = query.Filter ?? LemmasCountFilter.None;
-        if (!filter.IsValid)
+        var association = query.Association ?? LemmasAssociationFilter.None;
+        if (!filter.IsValid || !association.IsValid)
         {
             logger.LogWarning(
                 "Rejected {feature} {operation} {reason} {sort} {pageNumber} {pageSize} {hasSearch}",
@@ -74,6 +75,7 @@ public sealed class GetLemmasPageHandler(
             query.Search,
             sort,
             filter,
+            association,
             query.Page,
             query.PageSize,
             cancellationToken);

@@ -25,12 +25,13 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
         string? search,
         LemmaSort sort,
         LemmasCountFilter filter,
+        LemmasAssociationFilter association,
         int page,
         int pageSize,
         CancellationToken cancellationToken)
     {
         var all = await LoadWholeSummaryAsync(cancellationToken);
-        return LemmasListDerivation.ToPage(all, filter, search, sort, page, pageSize);
+        return LemmasListDerivation.ToPage(all, filter, association, search, sort, page, pageSize);
     }
 
     public async Task<LemmaSummaryDto?> GetLemmaSummaryAsync(int id, CancellationToken cancellationToken)

@@ -22,12 +22,13 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
         string? search,
         StemSort sort,
         StemsCountFilter filter,
+        StemsAssociationFilter association,
         int page,
         int pageSize,
         CancellationToken cancellationToken)
     {
         var all = await LoadWholeSummaryAsync(cancellationToken);
-        return StemsListDerivation.ToPage(all, filter, search, sort, page, pageSize);
+        return StemsListDerivation.ToPage(all, filter, association, search, sort, page, pageSize);
     }
 
     public async Task<StemSummaryDto?> GetStemSummaryAsync(int id, CancellationToken cancellationToken)

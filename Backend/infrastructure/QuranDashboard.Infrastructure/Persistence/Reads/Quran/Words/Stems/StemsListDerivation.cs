@@ -23,12 +23,13 @@ internal static class StemsListDerivation
     public static PagedResult<StemListItemDto> ToPage(
         IReadOnlyList<StemSummaryRow> all,
         StemsCountFilter filter,
+        StemsAssociationFilter association,
         string? search,
         StemSort sort,
         int page,
         int pageSize)
     {
-        var rows = FilterAndSort(all, filter, search, sort);
+        var rows = FilterAndSort(all, filter, association, search, sort);
         var materialized = rows.ToList();
         var totalCount = materialized.Count;
         var skip = ReadPaging.CalculateSafeSkip(page, pageSize, totalCount);
@@ -55,6 +56,7 @@ internal static class StemsListDerivation
     public static IEnumerable<StemSummaryRow> FilterAndSort(
         IReadOnlyList<StemSummaryRow> all,
         StemsCountFilter filter,
+        StemsAssociationFilter association,
         string? search,
         StemSort sort)
     {
@@ -69,6 +71,19 @@ internal static class StemsListDerivation
         if (filter.IsActive)
         {
             rows = rows.Where(r => MatchesFilter(r, filter));
+        }
+
+        // Primary (dominant) association filters (Feature 026, US7). DominantRootId/DominantLemmaId are the
+        // same primary associations the list row displays; a stem whose primary differs is excluded even if
+        // it co-occurs with the filtered id (primary-not-sole — pinned by MorphologyAssociationFilterTests).
+        if (association.RootId is int rootId)
+        {
+            rows = rows.Where(r => r.DominantRootId == rootId);
+        }
+
+        if (association.LemmaId is int lemmaId)
+        {
+            rows = rows.Where(r => r.DominantLemmaId == lemmaId);
         }
 
         return ApplySort(rows, sort);

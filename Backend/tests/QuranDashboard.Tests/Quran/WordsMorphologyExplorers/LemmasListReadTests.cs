@@ -439,10 +439,10 @@ public sealed class LemmasListReadTests(MorphologyExplorersTestFixture fixture)
         var cache = new MemoryCache(new MemoryCacheOptions());
         var reader = new CachedLemmasReader(inner, cache);
 
-        await reader.GetLemmasPageAsync(null, LemmaSort.MushafOrder, LemmasCountFilter.None, 1, 50, CancellationToken.None);
+        await reader.GetLemmasPageAsync(null, LemmaSort.MushafOrder, LemmasCountFilter.None, LemmasAssociationFilter.None, 1, 50, CancellationToken.None);
 
         interceptor.Reset();
-        await reader.GetLemmasPageAsync(null, LemmaSort.Occurrences, LemmasCountFilter.None, 2, 2, CancellationToken.None);
+        await reader.GetLemmasPageAsync(null, LemmaSort.Occurrences, LemmasCountFilter.None, LemmasAssociationFilter.None, 2, 2, CancellationToken.None);
         interceptor.CommandCount.Should().Be(0, "the whole summary is cached once; sort/page are in-memory");
     }
 

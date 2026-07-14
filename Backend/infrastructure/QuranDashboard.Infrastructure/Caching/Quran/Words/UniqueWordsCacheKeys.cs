@@ -5,24 +5,34 @@ namespace QuranDashboard.Infrastructure.Caching.Quran.Words;
 
 public static class UniqueWordsCacheKeys
 {
-    // An absent/empty count filter yields the pre-feature key byte-for-byte so warm entries stay
-    // valid (Feature 026, US5); an active filter appends a deterministic range segment so filtered
-    // and unfiltered reads never cross-serve.
+    // An absent/empty count and association filter yields the pre-feature key byte-for-byte so warm
+    // entries stay valid (Feature 026, US5/US7); an active filter appends a deterministic range and/or
+    // association segment so filtered and unfiltered reads never cross-serve.
     public static string List(
         UniqueWordKind kind,
         UniqueWordSort sort,
         int page,
         int pageSize,
-        UniqueWordsCountFilter? filter = null)
+        UniqueWordsCountFilter? filter = null,
+        UniqueWordsAssociationFilter? association = null)
     {
-        var baseKey = $"words:{KindKey(kind)}:list:{SortKey(sort)}:p{page}:s{pageSize}";
-        return filter is null || !filter.IsActive
-            ? baseKey
-            : $"{baseKey}:{FilterKey(filter)}";
+        var key = $"words:{KindKey(kind)}:list:{SortKey(sort)}:p{page}:s{pageSize}";
+        if (filter is { IsActive: true })
+        {
+            key += $":{FilterKey(filter)}";
+        }
+        if (association is { IsActive: true })
+        {
+            key += $":{AssociationKey(association)}";
+        }
+        return key;
     }
 
     private static string FilterKey(UniqueWordsCountFilter filter) =>
         $"occ{RangeKey(filter.Occurrences)}:ayahs{RangeKey(filter.Ayahs)}:surahs{RangeKey(filter.Surahs)}";
+
+    private static string AssociationKey(UniqueWordsAssociationFilter association) =>
+        $"pt{association.NormalizedPrimaryType ?? string.Empty}:root{association.RootId?.ToString() ?? string.Empty}";
 
     private static string RangeKey(CountRange range) =>
         $"{range.Min?.ToString() ?? string.Empty}-{range.Max?.ToString() ?? string.Empty}";

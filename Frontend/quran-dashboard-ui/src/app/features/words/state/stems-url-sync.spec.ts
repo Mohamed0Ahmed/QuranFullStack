@@ -325,6 +325,33 @@ describe('buildStemsDeepLink', () => {
   });
 });
 
+describe('parseStemsQueryParams association filters (Feature 026, US7)', () => {
+  it('is absent for a pre-feature URL (backward compat)', () => {
+    expect(parseStemsQueryParams(params('search=حكم&sort=alpha&page=2')).association).toEqual({
+      rootId: null,
+      lemmaId: null,
+    });
+  });
+
+  it('parses positive rootId/lemmaId (primary-association filters)', () => {
+    expect(parseStemsQueryParams(params('rootId=701&lemmaId=502')).association).toEqual({
+      rootId: 701,
+      lemmaId: 502,
+    });
+  });
+
+  it('fails closed on non-positive or non-numeric ids', () => {
+    expect(parseStemsQueryParams(params('rootId=0')).association.rootId).toBeNull();
+    expect(parseStemsQueryParams(params('lemmaId=-2')).association.lemmaId).toBeNull();
+    expect(parseStemsQueryParams(params('rootId=abc&lemmaId=x')).association).toEqual({ rootId: null, lemmaId: null });
+  });
+
+  it('serializes rootId/lemmaId and passes null through to remove', () => {
+    expect(buildStemsQueryParams({ rootId: 701, lemmaId: 502 })).toEqual({ rootId: '701', lemmaId: '502' });
+    expect(buildStemsQueryParams({ rootId: null, lemmaId: null })).toEqual({ rootId: null, lemmaId: null });
+  });
+});
+
 describe('parseStemsQueryParams count ranges (Feature 026)', () => {
   it('has no active ranges for a pre-feature URL (backward compat)', () => {
     expect(parseStemsQueryParams(params('search=حكم&sort=alpha&page=2')).ranges).toEqual({});

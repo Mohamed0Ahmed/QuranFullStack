@@ -28,12 +28,13 @@ internal static class LemmasListDerivation
     public static PagedResult<LemmaListItemDto> ToPage(
         IReadOnlyList<LemmaSummaryRow> all,
         LemmasCountFilter filter,
+        LemmasAssociationFilter association,
         string? search,
         LemmaSort sort,
         int page,
         int pageSize)
     {
-        var rows = FilterAndSort(all, filter, search, sort);
+        var rows = FilterAndSort(all, filter, association, search, sort);
         var materialized = rows.ToList();
         var totalCount = materialized.Count;
         var skip = ReadPaging.CalculateSafeSkip(page, pageSize, totalCount);
@@ -60,6 +61,7 @@ internal static class LemmasListDerivation
     public static IEnumerable<LemmaSummaryRow> FilterAndSort(
         IReadOnlyList<LemmaSummaryRow> all,
         LemmasCountFilter filter,
+        LemmasAssociationFilter association,
         string? search,
         LemmaSort sort)
     {
@@ -74,6 +76,13 @@ internal static class LemmasListDerivation
         if (filter.IsActive)
         {
             rows = rows.Where(r => MatchesFilter(r, filter));
+        }
+
+        // Root belonging via the real FK (Feature 026, US7). RootId is the same owned-root the list row
+        // displays, so the filter and the displayed root can never disagree.
+        if (association.RootId is int rootId)
+        {
+            rows = rows.Where(r => r.RootId == rootId);
         }
 
         return ApplySort(rows, sort);

@@ -219,6 +219,33 @@ describe('LemmasExplorerPageComponent US1', () => {
     ).toBe('1');
   });
 
+  it('serializes a count-range bucket to the URL and resets the page (US5)', async () => {
+    const fixture = await initLifecycle();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('[data-testid="lemmas-range-filter"]')).toBeTruthy();
+    (root.querySelector('[data-testid="range-filter-bucket-occurrences-11–100"]') as HTMLButtonElement).click();
+
+    expect(router.navigate).toHaveBeenCalledWith([], {
+      relativeTo: expect.anything(),
+      queryParams: expect.objectContaining({ occ: '11..100', page: null }),
+      queryParamsHandling: 'merge',
+    });
+  });
+
+  it('serializes a root-belonging selection to the URL and resets the page (US7)', async () => {
+    const fixture = await initLifecycle();
+    fixture.componentInstance['onRootFilterChange']({ id: 701, label: 'ع ل م' });
+
+    expect(router.navigate).toHaveBeenCalledWith([], {
+      relativeTo: expect.anything(),
+      queryParams: expect.objectContaining({ rootId: '701', page: null }),
+      queryParamsHandling: 'merge',
+    });
+  });
+
   it('hides the headline result count when the list read fails (US4)', async () => {
     lemmasApi.getLemmasList.mockReturnValue(
       of<ApiResponse<{ page: number; pageSize: number; totalCount: number; items: LemmaListItemViewModel[] }>>({

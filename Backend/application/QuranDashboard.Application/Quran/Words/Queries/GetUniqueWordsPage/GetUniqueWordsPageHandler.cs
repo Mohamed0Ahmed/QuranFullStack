@@ -5,7 +5,8 @@ namespace QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordsPage;
 
 public sealed class GetUniqueWordsPageHandler(
     ILogger<GetUniqueWordsPageHandler> logger,
-    IUniqueWordsReader reader)
+    IUniqueWordsReader reader,
+    IPosTagCatalogueReader posCatalogue)
 {
     public const int MinPage = 1;
     public const int MinPageSize = 1;
@@ -71,7 +72,10 @@ public sealed class GetUniqueWordsPageHandler(
         }
 
         var filter = query.Filter ?? UniqueWordsCountFilter.None;
-        if (!filter.IsValid)
+        var association = query.Association ?? UniqueWordsAssociationFilter.None;
+        if (!filter.IsValid
+            || !association.IsValid
+            || !await IsAssociationTypeKnownAsync(association, cancellationToken))
         {
             logger.LogWarning(
                 "Rejected {feature} {operation} {reason} {kind} {sort} {pageNumber} {pageSize} {hasSearch}",
@@ -93,6 +97,7 @@ public sealed class GetUniqueWordsPageHandler(
             query.Search,
             sort,
             filter,
+            association,
             query.Page,
             query.PageSize,
             cancellationToken);
@@ -127,4 +132,18 @@ public sealed class GetUniqueWordsPageHandler(
         };
 
     private static bool HasSearch(string? search) => !string.IsNullOrWhiteSpace(search);
+
+    // The primary-type filter value must exist in the POS catalogue; an unknown code is a controlled
+    // 400 (InvalidFilter), not a silent empty result. Absent/empty primaryType needs no lookup.
+    private async Task<bool> IsAssociationTypeKnownAsync(
+        UniqueWordsAssociationFilter association,
+        CancellationToken cancellationToken)
+    {
+        if (association.NormalizedPrimaryType is not { } code)
+        {
+            return true;
+        }
+
+        return await posCatalogue.ExistsAsync(code, cancellationToken);
+    }
 }

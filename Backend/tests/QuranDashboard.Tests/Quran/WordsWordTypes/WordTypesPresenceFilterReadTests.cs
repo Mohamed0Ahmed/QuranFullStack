@@ -113,6 +113,59 @@ public sealed class WordTypesPresenceFilterReadTests(WordTypesTestFixture fixtur
         kalimaHasRoot.TotalCount.Should().BeGreaterThan(0);
     }
 
+    // Feature 026 D2: presence flags AND with the noun case sub-filter. Under type=noun, case=nominative
+    // the seed has two identities — root-bearing كَلِمَة and rootless مُثَل — so a presence flag must
+    // partition WITHIN the case scope, not ignore it.
+    [Fact]
+    public async Task PresenceFlags_ComposeWithNounCaseFilter()
+    {
+        await using var scope = fixture.CreateScope();
+        var reader = scope.ServiceProvider.GetRequiredService<EfWordTypesReader>();
+
+        var all = await reader.GetRowsAsync(
+            new WordTypeFilter("noun", null, "nominative", null, null),
+            WordTypeSort.Occurrences, 1, 1000, CancellationToken.None);
+        var hasRoot = await reader.GetRowsAsync(
+            new WordTypeFilter("noun", null, "nominative", null, null, HasRoot: true),
+            WordTypeSort.Occurrences, 1, 1000, CancellationToken.None);
+        var noRoot = await reader.GetRowsAsync(
+            new WordTypeFilter("noun", null, "nominative", null, null, HasRoot: false),
+            WordTypeSort.Occurrences, 1, 1000, CancellationToken.None);
+
+        all.TotalCount.Should().Be(2);
+        hasRoot.Items.Should().OnlyContain(row => row.RootText != null && row.CaseOrFeature == "nominative");
+        hasRoot.Items.Should().NotContain(row => row.DisplayText == "مُثَل");
+        noRoot.Items.Should().OnlyContain(row => row.RootText == null && row.CaseOrFeature == "nominative");
+        noRoot.Items.Should().OnlyContain(row => row.DisplayText == "مُثَل");
+        (hasRoot.TotalCount + noRoot.TotalCount).Should().Be(all.TotalCount);
+        hasRoot.TotalCount.Should().BeGreaterThan(0);
+        noRoot.TotalCount.Should().BeGreaterThan(0);
+    }
+
+    // Feature 026 D2: presence flags AND with the verb tense/voice sub-filters. The flag partitions the
+    // tense-scoped rows by root presence while every row stays within the tense scope (ContextCode).
+    [Fact]
+    public async Task PresenceFlags_ComposeWithVerbTenseFilter()
+    {
+        await using var scope = fixture.CreateScope();
+        var reader = scope.ServiceProvider.GetRequiredService<EfWordTypesReader>();
+
+        var all = await reader.GetRowsAsync(
+            new WordTypeFilter("verb", null, null, "present", null),
+            WordTypeSort.Occurrences, 1, 1000, CancellationToken.None);
+        var hasRoot = await reader.GetRowsAsync(
+            new WordTypeFilter("verb", null, null, "present", null, HasRoot: true),
+            WordTypeSort.Occurrences, 1, 1000, CancellationToken.None);
+        var noRoot = await reader.GetRowsAsync(
+            new WordTypeFilter("verb", null, null, "present", null, HasRoot: false),
+            WordTypeSort.Occurrences, 1, 1000, CancellationToken.None);
+
+        all.TotalCount.Should().BeGreaterThan(0);
+        hasRoot.Items.Should().OnlyContain(row => row.RootText != null && row.ContextCode == "present");
+        noRoot.Items.Should().OnlyContain(row => row.RootText == null && row.ContextCode == "present");
+        (hasRoot.TotalCount + noRoot.TotalCount).Should().Be(all.TotalCount);
+    }
+
     // Presence flags fold into the rows/table cache key: absent flags keep the pre-feature key (warm
     // entries stay valid); every flag value isolates its entry so flagged and unflagged reads never
     // cross-serve.

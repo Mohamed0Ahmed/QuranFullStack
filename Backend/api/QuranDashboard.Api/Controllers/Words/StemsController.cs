@@ -53,6 +53,8 @@ public sealed class StemsController(
         [FromQuery] int? simpleWordsMax,
         [FromQuery] int? tashkeelWordsMin,
         [FromQuery] int? tashkeelWordsMax,
+        [FromQuery] int? rootId,
+        [FromQuery] int? lemmaId,
         CancellationToken cancellationToken)
     {
         var outcome = await listHandler.HandleAsync(
@@ -66,7 +68,8 @@ public sealed class StemsController(
                     ayahsMin, ayahsMax,
                     surahsMin, surahsMax,
                     simpleWordsMin, simpleWordsMax,
-                    tashkeelWordsMin, tashkeelWordsMax)),
+                    tashkeelWordsMin, tashkeelWordsMax),
+                StemsAssociationFilter.FromRaw(rootId, lemmaId)),
             cancellationToken);
 
         return outcome switch

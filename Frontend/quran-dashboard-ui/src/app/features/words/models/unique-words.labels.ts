@@ -86,6 +86,12 @@ export const MUSHAF_PAGE_REF_LABEL = 'ص';
 // Headline result-count stat (Feature 026, US4): label-prefix "عدد الـ…: N".
 export const UNIQUE_WORDS_RESULT_COUNT_LABEL = 'عدد الكلمات';
 
+// Association filters (Feature 026, US7): primary word type + primary root (lock D terms).
+export const UNIQUE_WORDS_PRIMARY_TYPE_FILTER_LABEL = 'النوع الأساسي';
+export const UNIQUE_WORDS_PRIMARY_TYPE_FILTER_PLACEHOLDER = 'اختر نوعًا…';
+export const UNIQUE_WORDS_PRIMARY_ROOT_FILTER_LABEL = 'الجذر الأساسي';
+export const UNIQUE_WORDS_PRIMARY_ROOT_FILTER_PLACEHOLDER = 'ابحث عن جذر…';
+
 export const EMPTY_LIST_LABEL = 'لا توجد نتائج';
 export const SEARCH_LABEL = 'بحث';
 export const SEARCH_PLACEHOLDER = 'ابحث في الكلمات…';

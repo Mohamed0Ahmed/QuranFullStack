@@ -32,6 +32,30 @@
         [disabled]="listState().status === 'loading'"
         (rangesChange)="onRangesChange($event)"
       />
+
+      <qd-explorer-association-filter
+        testid="unique-words-primary-type-filter"
+        [label]="primaryTypeLabel"
+        [placeholder]="primaryTypePlaceholder"
+        [options]="typeOptions()"
+        [selectedId]="association().primaryType"
+        [clientFilter]="true"
+        [disabled]="listState().status === 'loading'"
+        (selectionChange)="onPrimaryTypeChange($event)"
+      />
+
+      <qd-explorer-association-filter
+        testid="unique-words-primary-root-filter"
+        [label]="primaryRootLabel"
+        [placeholder]="primaryRootPlaceholder"
+        [options]="rootOptions()"
+        [selectedId]="association().rootId"
+        [selectedLabel]="selectedRootLabel()"
+        [loading]="rootOptionsLoading()"
+        [disabled]="listState().status === 'loading'"
+        (searchChange)="onRootSearch($event)"
+        (selectionChange)="onPrimaryRootChange($event)"
+      />
     </div>
 
     @switch (listState().status) {

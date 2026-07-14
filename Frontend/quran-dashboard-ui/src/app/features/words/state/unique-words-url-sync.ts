@@ -2,6 +2,7 @@ import { ParamMap } from '@angular/router';
 
 import { uniqueWordsRoutePath } from '../../../core/navigation/route-paths';
 import { parseRangeFilters } from './words-range-filters';
+import { parsePosCodeParam, parsePositiveIntParam } from './words-association-filters';
 
 import {
   DEFAULT_AYAH_PAGE,
@@ -42,6 +43,10 @@ export function parseUniqueWordsQueryParams(queryParams: ParamMap): ParsedUnique
     sort,
     page,
     ranges: parseRangeFilters(queryParams, UNIQUE_WORDS_RANGE_METRICS),
+    association: {
+      primaryType: parsePosCodeParam(queryParams.get(UNIQUE_WORDS_QUERY_KEYS.primaryType)),
+      rootId: parsePositiveIntParam(queryParams.get(UNIQUE_WORDS_QUERY_KEYS.rootId)),
+    },
     wordId,
     view,
     ayahPage,
@@ -53,6 +58,8 @@ export function buildUniqueWordsQueryParams(
     search: string | null;
     sort: UniqueWordSort | null;
     page: number | null;
+    primaryType: string | null;
+    rootId: number | null;
     wordId: number | null;
     view: WordDrilldownView | null;
     ayahPage: number | null;
@@ -68,6 +75,12 @@ export function buildUniqueWordsQueryParams(
   }
   if (changes.page !== undefined) {
     params[UNIQUE_WORDS_QUERY_KEYS.page] = changes.page === null ? null : String(changes.page);
+  }
+  if (changes.primaryType !== undefined) {
+    params[UNIQUE_WORDS_QUERY_KEYS.primaryType] = changes.primaryType ?? null;
+  }
+  if (changes.rootId !== undefined) {
+    params[UNIQUE_WORDS_QUERY_KEYS.rootId] = changes.rootId === null ? null : String(changes.rootId);
   }
   if (changes.wordId !== undefined) {
     params[UNIQUE_WORDS_QUERY_KEYS.word] =

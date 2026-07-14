@@ -309,6 +309,27 @@ describe('buildLemmasDeepLink', () => {
   });
 });
 
+describe('parseLemmasQueryParams association filter (Feature 026, US7)', () => {
+  it('is absent for a pre-feature URL (backward compat)', () => {
+    expect(parseLemmasQueryParams(params('search=كلمة&sort=alpha&page=2')).association).toEqual({ rootId: null });
+  });
+
+  it('parses a positive rootId (owned-root FK filter)', () => {
+    expect(parseLemmasQueryParams(params('rootId=701')).association).toEqual({ rootId: 701 });
+  });
+
+  it('fails closed on a non-positive or non-numeric rootId', () => {
+    expect(parseLemmasQueryParams(params('rootId=0')).association.rootId).toBeNull();
+    expect(parseLemmasQueryParams(params('rootId=-1')).association.rootId).toBeNull();
+    expect(parseLemmasQueryParams(params('rootId=abc')).association.rootId).toBeNull();
+  });
+
+  it('serializes rootId and passes null through to remove', () => {
+    expect(buildLemmasQueryParams({ rootId: 701 })).toEqual({ rootId: '701' });
+    expect(buildLemmasQueryParams({ rootId: null })).toEqual({ rootId: null });
+  });
+});
+
 describe('parseLemmasQueryParams count ranges (Feature 026)', () => {
   it('has no active ranges for a pre-feature URL (backward compat)', () => {
     expect(parseLemmasQueryParams(params('search=كلمة&sort=alpha&page=2')).ranges).toEqual({});
