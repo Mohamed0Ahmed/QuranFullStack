@@ -20,7 +20,11 @@ Per explorer `X` in {roots, lemmas, stems, word-types, unique-words}:
 - `state/X-url-sync.ts` — URL ⇄ state (the URL-state contract; keep params stable).
 - `state/X-detail-view.loader.ts` — loads the detail panel for a selection.
 - `data-access/X.api.ts` — `ApiResponse<T>` calls.
-- `models/X.models.ts` + `models/X.labels.ts` — view models + Arabic labels.
+- `models/X.models.ts` + `models/X.labels.ts` — view models + Arabic labels. Wire DTOs are
+  re-exported from `core/api/generated/` (aliased to the historical `*Dto` names); UI-only
+  unions, request params, and view models stay hand-written, and closed backend vocabularies
+  (e.g. `kind`, table-row discriminators) are narrowed via `Omit`-overlays over the generated
+  types.
 - `utils/X-ayah-match.mapper.ts` — maps API ayah matches to view rows.
 
 Shared across explorers: `utils/explorer-table-*` (focus/keyboard-nav/scroll/column-nav),

@@ -6,6 +6,10 @@ namespace QuranDashboard.Api.Controllers.Dashboard;
 [Route("api/dashboard")]
 public sealed class DashboardController(IHostEnvironment environment) : ControllerBase
 {
+    /// <summary>
+    /// يُرجع معلومات التطبيق: الاسم والإصدار وبيئة التشغيل.
+    /// </summary>
+    /// <response code="200">تم تحميل معلومات التطبيق بنجاح.</response>
     [HttpGet("info")]
     public ActionResult<ApiResponse<AppInfoData>> GetInfo()
     {

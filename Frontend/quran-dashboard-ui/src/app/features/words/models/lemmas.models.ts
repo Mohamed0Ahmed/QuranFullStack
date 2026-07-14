@@ -1,9 +1,3 @@
-/**
- * Lemmas Explorer (Feature 016) view models, DTOs, and URL-state primitives.
- * Sibling of `roots.models.ts`. Lemma views are `words | ayahs | surahs | stems`
- * (no self/lemma view). All technical IDs are navigation/restoration fields and
- * are never rendered as visible labels.
- */
 export type LemmaSort = 'mushaf-order' | 'occurrences' | 'alpha';
 
 export type LemmaWordView = 'simple' | 'tashkeel';
@@ -12,88 +6,37 @@ export type LemmaSurahView = 'mentioned' | 'missing';
 
 export type LemmaView = 'words' | 'ayahs' | 'surahs' | 'stems';
 
-export interface PagedResultDto<T> {
-  page: number;
-  pageSize: number;
-  totalCount: number;
-  items: T[];
-}
+import type {
+  LemmaAyahMatchDto,
+  LemmaAyahWordDto,
+  LemmaListItemDto,
+  LemmaMissingSurahsResponse as LemmaMissingSurahsDto,
+  LemmaStemItemDto,
+  LemmaStemsResponse as LemmaStemsDto,
+  LemmaSummaryDto,
+  LemmaSurahItemDto,
+  LemmaSurahsResponse as LemmaSurahsDto,
+  LemmaWordItemDto,
+  MissingSurahItemDto,
+  TypeSummaryDto,
+} from '../../../core/api/generated/models';
+import type { PagedResultDto } from '../../../core/data-access/paged-result.model';
 
-export interface TypeSummaryDto {
-  code: string;
-  arabicLabel: string;
-  occurrencesCount: number;
-}
-
-/** Controlled POS summary used by both the Lemmas and Stems explorers. */
-export interface LemmaSurahItemDto {
-  surahNumber: number;
-  nameArabic: string;
-  occurrencesInSurah: number;
-}
-
-export interface LemmaSurahsDto {
-  surahs: LemmaSurahItemDto[];
-}
-
-export interface MissingSurahItemDto {
-  surahNumber: number;
-  nameArabic: string;
-}
-
-export interface LemmaMissingSurahsDto {
-  surahs: MissingSurahItemDto[];
-}
-
-export interface LemmaStemItemDto {
-  stemId: number;
-  stemText: string;
-  occurrencesCount: number;
-}
-
-export interface LemmaStemsDto {
-  stems: LemmaStemItemDto[];
-}
-
-export interface LemmaWordItemDto {
-  uniqueWordId: number;
-  displayText: string;
-  occurrencesCount: number;
-}
-
-export interface LemmaAyahWordDto {
-  textUthmani: string;
-  isMatched: boolean;
-}
-
-export interface LemmaAyahMatchDto {
-  ayahId: number;
-  verseKey: string;
-  surahNameArabic: string;
-  pageNumber: number;
-  words: LemmaAyahWordDto[];
-}
-
-/**
- * Lemma catalogue row. Root fields come from the lemma's owned root
- * (`quran_lemmas.root_id`); all are null when the lemma has no owned root.
- */
-export interface LemmaListItemDto {
-  id: number;
-  lemmaText: string;
-  rootId: number | null;
-  rootText: string | null;
-  occurrencesCount: number;
-  ayahsCount: number;
-  surahsCount: number;
-  simpleWordsCount: number;
-  tashkeelWordsCount: number;
-  stemsCount: number;
-}
-
-export interface LemmaSummaryDto extends LemmaListItemDto {
-  typeDistribution: readonly TypeSummaryDto[];
-}
+export type {
+  LemmaAyahMatchDto,
+  LemmaAyahWordDto,
+  LemmaListItemDto,
+  LemmaMissingSurahsDto,
+  LemmaStemItemDto,
+  LemmaStemsDto,
+  LemmaSummaryDto,
+  LemmaSurahItemDto,
+  LemmaSurahsDto,
+  LemmaWordItemDto,
+  MissingSurahItemDto,
+  PagedResultDto,
+  TypeSummaryDto,
+};
 
 export type LoadStatus = 'idle' | 'loading' | 'success' | 'empty' | 'error' | 'notFound';
 

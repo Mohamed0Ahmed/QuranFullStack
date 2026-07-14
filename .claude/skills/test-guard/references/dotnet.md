@@ -55,7 +55,7 @@ Prefer integration tests where the real bugs live: the HTTP boundary and persist
 
 - Boot the app in-memory and exercise the **real** pipeline: routing, model binding, filters, middleware, and the `ApiResponse<T>` envelope end to end.
 - In `ConfigureTestServices`, override **only true boundaries** (swap external HTTP/LLM clients for fakes); keep the real pipeline and the real database.
-- Assert on the HTTP status code **plus** the deserialized `ApiResponse<T>` — `IsSuccess`, `Message`, `Data`, `Errors` — matching the relevant `contracts/api-*.md`. Do not assert internal call chains.
+- Assert on the HTTP status code **plus** the deserialized `ApiResponse<T>` — `IsSuccess`, `Message`, `Data`, `Errors` — matching `API_GUIDELINES.md` §5 / `Contracts/ApiResponse.cs` (indexed by `docs/contracts/response-envelope.md`). Do not assert internal call chains.
 
 **Database — real PostgreSQL via Testcontainers:**
 

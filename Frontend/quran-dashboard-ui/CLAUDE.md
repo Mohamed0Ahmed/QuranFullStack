@@ -21,7 +21,7 @@ read and follow:
 
 - Before touching a frontend feature, read the nearest `README.md`
   (`src/app/features/words/README.md`, `src/app/features/mushaf/README.md`,
-  `src/app/core/README.md`) before the `.architecture/*` HOW docs.
+  `src/app/core/README.md`) before the `.architecture/*` HOW docs; use `docs/contracts/frontend-shell.md` / `words-explorers.md` / `mushaf-reader.md` to find the authoritative README/code.
 - If you change routes, URL-state contracts, facade/cache patterns, render/font
   invariants, or the test-command rules a README documents, update that README in the
   same change.

@@ -6,94 +6,41 @@ export type RootSurahView = 'mentioned' | 'missing';
 
 export type RootView = 'words' | 'ayahs' | 'surahs' | 'lemmas' | 'stems';
 
-export interface PagedResultDto<T> {
-  page: number;
-  pageSize: number;
-  totalCount: number;
-  items: T[];
-}
+import type {
+  MissingSurahItemDto,
+  RootAyahMatchDto,
+  RootAyahWordDto,
+  RootLemmaItemDto,
+  RootLemmasResponse as RootLemmasDto,
+  RootListItemDto,
+  RootMissingSurahsResponse as RootMissingSurahsDto,
+  RootStemItemDto,
+  RootStemsResponse as RootStemsDto,
+  RootSummaryDto,
+  RootSurahItemDto,
+  RootSurahsResponse as RootSurahsDto,
+  RootWordItemDto as RootWordItemWireDto,
+} from '../../../core/api/generated/models';
+import type { PagedResultDto } from '../../../core/data-access/paged-result.model';
 
-export interface RootListItemDto {
-  id: number;
-  rootText: string;
-  occurrencesCount: number;
-  ayahsCount: number;
-  surahsCount: number;
-  simpleWordsCount: number;
-  tashkeelWordsCount: number;
-  lemmasCount: number;
-  stemsCount: number;
-}
+export type {
+  MissingSurahItemDto,
+  PagedResultDto,
+  RootAyahMatchDto,
+  RootAyahWordDto,
+  RootLemmaItemDto,
+  RootLemmasDto,
+  RootListItemDto,
+  RootMissingSurahsDto,
+  RootStemItemDto,
+  RootStemsDto,
+  RootSummaryDto,
+  RootSurahItemDto,
+  RootSurahsDto,
+};
 
-export interface RootSummaryDto {
-  id: number;
-  rootText: string;
-  occurrencesCount: number;
-  ayahsCount: number;
-  surahsCount: number;
-  simpleWordsCount: number;
-  tashkeelWordsCount: number;
-  lemmasCount: number;
-  stemsCount: number;
-}
-
-export interface RootWordItemDto {
-  uniqueWordId: number;
+export interface RootWordItemDto extends Omit<RootWordItemWireDto, 'kind'> {
   kind: RootWordView;
-  displayText: string;
-  occurrencesCount: number;
-}
-
-export interface RootAyahWordDto {
-  textUthmani: string;
-  isMatched: boolean;
-}
-
-export interface RootAyahMatchDto {
-  ayahId: number;
-  verseKey: string;
-  surahNameArabic: string;
-  pageNumber: number;
-  words: RootAyahWordDto[];
-}
-
-export interface RootSurahItemDto {
-  surahNumber: number;
-  nameArabic: string;
-  occurrencesInSurah: number;
-}
-
-export interface RootSurahsDto {
-  surahs: RootSurahItemDto[];
-}
-
-export interface MissingSurahItemDto {
-  surahNumber: number;
-  nameArabic: string;
-}
-
-export interface RootMissingSurahsDto {
-  surahs: MissingSurahItemDto[];
-}
-
-export interface RootLemmaItemDto {
-  lemmaId: number;
-  lemmaText: string;
-  occurrencesCount: number;
-}
-
-export interface RootLemmasDto {
-  lemmas: RootLemmaItemDto[];
-}
-
-export interface RootStemItemDto {
-  stemId: number;
-  stemText: string;
-  occurrencesCount: number;
-}
-
-export interface RootStemsDto {
-  stems: RootStemItemDto[];
 }
 
 export type LoadStatus = 'idle' | 'loading' | 'success' | 'empty' | 'error' | 'notFound';

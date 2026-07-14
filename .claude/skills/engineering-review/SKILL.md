@@ -134,7 +134,7 @@ In that case, additionally read:
 - the relevant `specs/<feature>/spec.md`
 - the relevant `specs/<feature>/plan.md`
 - the relevant `specs/<feature>/tasks.md`
-- the relevant files under `specs/<feature>/contracts/`
+- the relevant files under `specs/<feature>/contracts/` (the feature's planned contracts); the implemented truth is the code + nearest README (indexed by `docs/contracts/`)
 - `specs/<feature>/quickstart.md` — when verification or acceptance criteria are
   involved.
 

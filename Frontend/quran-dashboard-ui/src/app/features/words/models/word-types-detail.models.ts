@@ -1,9 +1,12 @@
 import type {
+  WordTypeGroupedMemberWordDto as WordTypeGroupedMemberWordWireDto,
+  WordTypeGroupedSummaryDto as WordTypeGroupedSummaryWireDto,
+} from '../../../core/api/generated/models';
+import type {
   PagedResultDto,
   WordTypeAyahMatchDto,
   WordTypeCase,
   WordTypeDetailView,
-  WordTypeLabelDto,
   WordTypeMainType,
   WordTypeRowIdentity,
   WordTypeSummaryDto,
@@ -28,32 +31,15 @@ export interface WordTypeGroupedRequestParams extends WordTypeDetailScope {
   dimensionId: number;
 }
 
-export interface WordTypeGroupedSummaryDto {
+export interface WordTypeGroupedSummaryDto extends Omit<WordTypeGroupedSummaryWireDto, 'kind'> {
   kind: WordTypeGroupedKind;
-  dimensionId: number;
-  displayText: string;
-  occurrencesCount: number;
-  ayahsCount: number;
-  surahsCount: number;
 }
 
-export interface WordTypeGroupedMemberWordDto {
-  tashkeelWordId: number;
-  contextCode: string;
+export interface WordTypeGroupedMemberWordDto
+  extends Omit<WordTypeGroupedMemberWordWireDto, 'case' | 'tense' | 'voice'> {
   case: WordTypeCase | null;
   tense: WordTypeTense | null;
   voice: WordTypeVoice | null;
-  displayText: string;
-  typeCode: string;
-  typeLabel: WordTypeLabelDto;
-  broadLabel: WordTypeLabelDto;
-  caseOrFeature: string | null;
-  rootText: string | null;
-  lemmaText: string | null;
-  stemText: string | null;
-  occurrencesCount: number;
-  ayahsCount: number;
-  surahsCount: number;
 }
 
 export type WordTypeDetailSelection =
@@ -64,7 +50,6 @@ export type WordTypeDetailSelection =
 
 export type WordTypeDetailSelectionKind = WordTypeDetailSelection['kind'];
 
-// The grouped selections that carry a scoped numeric dimension (everything but the word selection).
 export type WordTypeGroupedDetailSelection = Extract<WordTypeDetailSelection, { kind: 'root' | 'stem' | 'lemma' }>;
 
 export interface WordTypesDetailState {

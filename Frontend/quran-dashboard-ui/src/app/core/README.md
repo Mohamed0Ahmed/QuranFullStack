@@ -8,11 +8,18 @@
 App-wide concerns shared by all features. If it is cross-cutting, change it here — not
 per-feature.
 
+- `api/generated/` — payload DTO interfaces generated from the backend OpenAPI spec
+  (`npm run generate:api`; see the project README). Generated output — never hand-edit;
+  generation is pruned to models-only via `scripts/prune-generated-api.mjs` — no service/fn files are emitted.
 - `data-access/` — the API client boundary:
-  - `api-response.model.ts` — the `ApiResponse<T>` envelope every API returns.
+  - `api-response.model.ts` — the `ApiResponse<T>` envelope every API returns (hand-written;
+    intentionally not generated).
+  - `paged-result.model.ts` — the shared `PagedResultDto<T>` generic (hand-written wrapper
+    over generated payload models).
   - `secure-url.interceptor.ts` — forces/validates the API base URL.
   - `dev-latency.interceptor.ts` + `dev-api-latency.ts` — dev-only injected latency.
-  - `system.api.ts` / `system.models.ts` — health/system info.
+  - `system.api.ts` / `system.models.ts` — health/system info (models re-export generated
+    types with UI narrowing).
 - `caching/api-response-cache.ts` — shared response cache (feature caches build on the
   same idea; keep the key strategy consistent).
 - `layout/` — `app-shell`, `top-navbar`, `footer`, `shell-layout.model.ts`.

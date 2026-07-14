@@ -7,39 +7,43 @@ export type WordTypeTableView = 'words' | 'roots' | 'stems' | 'lemmas';
 export type WordTypeDetailView = 'words' | 'ayahs' | 'surahs';
 export type WordTypesLoadStatus = 'idle' | 'loading' | 'selectPrompt' | 'success' | 'empty' | 'error' | 'notFound';
 
-export interface PagedResultDto<T> {
-  page: number;
-  pageSize: number;
-  totalCount: number;
-  items: T[];
-}
+import type {
+  AyahWordForHighlightDto,
+  WordTypeAyahMatchDto,
+  WordTypeChildNodeDto,
+  WordTypeFilterOptionDto,
+  WordTypeLabelDto,
+  WordTypeMissingSurahDto,
+  WordTypeSecondaryFilterDto as WordTypeSecondaryFilterWireDto,
+  WordTypeSurahOccurrenceDto,
+  WordTypeSurahsResponse as WordTypeSurahsResponseDto,
+  WordTypeTreeNodeDto as WordTypeTreeNodeWireDto,
+  LemmaTableRowDto as LemmaTableRowWireDto,
+  RootTableRowDto as RootTableRowWireDto,
+  StemTableRowDto as StemTableRowWireDto,
+  WordTableRowDto as WordTableRowWireDto,
+} from '../../../core/api/generated/models';
+import type { PagedResultDto } from '../../../core/data-access/paged-result.model';
 
-export interface WordTypeLabelDto { ar: string; }
+export type {
+  AyahWordForHighlightDto,
+  PagedResultDto,
+  WordTypeAyahMatchDto,
+  WordTypeChildNodeDto,
+  WordTypeFilterOptionDto,
+  WordTypeLabelDto,
+  WordTypeMissingSurahDto,
+  WordTypeSurahOccurrenceDto,
+  WordTypeSurahsResponseDto,
+};
 
-export interface WordTypeFilterOptionDto {
-  code: string;
-  label: WordTypeLabelDto;
-}
-
-export interface WordTypeSecondaryFilterDto {
+export interface WordTypeSecondaryFilterDto extends Omit<WordTypeSecondaryFilterWireDto, 'kind'> {
   kind: 'case' | 'tense+voice' | 'none';
-  options?: WordTypeFilterOptionDto[];
-  voiceOptions?: WordTypeFilterOptionDto[];
 }
 
-export interface WordTypeChildNodeDto {
-  code: string;
-  childCode: string;
-  label: WordTypeLabelDto;
-  count: number;
-}
-
-export interface WordTypeTreeNodeDto {
+export interface WordTypeTreeNodeDto extends Omit<WordTypeTreeNodeWireDto, 'code' | 'secondaryFilter'> {
   code: WordTypeMainType;
-  label: WordTypeLabelDto;
-  count: number;
   secondaryFilter: WordTypeSecondaryFilterDto;
-  children: WordTypeChildNodeDto[];
 }
 
 export interface WordTypeTreeDto { mainTypes: WordTypeTreeNodeDto[]; }
@@ -68,58 +72,27 @@ export interface WordTypeRowDto extends WordTypeRowIdentity {
 
 export type WordTypeSummaryDto = WordTypeRowDto;
 
-// Wire row returned by GET .../word-types/table (kind:"word"). The backend leaves inactive
-// grammatical filters null, while the URL/detail identity represents them canonically as "all".
-export interface WordTableRowDto {
+export interface WordTableRowDto extends Omit<WordTableRowWireDto, 'kind' | 'case' | 'tense' | 'voice'> {
   kind: 'word';
-  tashkeelWordId: number;
-  contextCode: string;
   case: WordTypeCase | null;
   tense: WordTypeTense | null;
   voice: WordTypeVoice | null;
-  displayText: string;
-  typeCode: string;
-  typeLabel: WordTypeLabelDto;
-  broadLabel: WordTypeLabelDto;
-  caseOrFeature: string | null;
-  rootText: string | null;
-  lemmaText: string | null;
-  stemText: string | null;
-  occurrencesCount: number;
-  ayahsCount: number;
-  surahsCount: number;
 }
 
-export interface RootTableRowDto {
+export interface RootTableRowDto extends Omit<RootTableRowWireDto, 'kind'> {
   kind: 'root';
-  rootId: number;
-  displayText: string;
-  occurrencesCount: number;
-  ayahsCount: number;
-  surahsCount: number;
 }
 
-export interface StemTableRowDto {
+export interface StemTableRowDto extends Omit<StemTableRowWireDto, 'kind'> {
   kind: 'stem';
-  stemId: number;
-  displayText: string;
-  occurrencesCount: number;
-  ayahsCount: number;
-  surahsCount: number;
 }
 
-export interface LemmaTableRowDto {
+export interface LemmaTableRowDto extends Omit<LemmaTableRowWireDto, 'kind'> {
   kind: 'lemma';
-  lemmaId: number;
-  displayText: string;
-  occurrencesCount: number;
-  ayahsCount: number;
-  surahsCount: number;
 }
 
 export type WordTypeTableRowDto = WordTableRowDto | RootTableRowDto | StemTableRowDto | LemmaTableRowDto;
 
-// The grouped table rows (everything but the word row), keyed by their numeric dimension identity.
 export type WordTypeGroupedTableRowDto = RootTableRowDto | StemTableRowDto | LemmaTableRowDto;
 
 export function groupedTableRowId(row: WordTypeGroupedTableRowDto): number {
@@ -128,38 +101,6 @@ export function groupedTableRowId(row: WordTypeGroupedTableRowDto): number {
     case 'stem': return row.stemId;
     case 'lemma': return row.lemmaId;
   }
-}
-
-export interface WordTypeAyahMatchDto {
-  verseKey: string;
-  surahNumber: number;
-  ayahNumber: number;
-  pageNumber: number;
-  matchedWordPositions: number[];
-  matchedWordIds: number[];
-  words: AyahWordForHighlightDto[];
-}
-
-export interface AyahWordForHighlightDto {
-  quranWordId: number;
-  textUthmani: string;
-  isAyahMarker: boolean;
-}
-
-export interface WordTypeSurahOccurrenceDto {
-  surahNumber: number;
-  nameArabic: string;
-  occurrencesCount: number;
-}
-
-export interface WordTypeMissingSurahDto {
-  surahNumber: number;
-  nameArabic: string;
-}
-
-export interface WordTypeSurahsResponseDto {
-  surahs: WordTypeSurahOccurrenceDto[];
-  missingSurahs: WordTypeMissingSurahDto[];
 }
 
 export interface ParsedWordTypesQuery extends WordTypeRowIdentity {

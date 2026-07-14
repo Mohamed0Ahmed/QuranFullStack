@@ -1,7 +1,10 @@
 using System.Reflection;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.OpenApi;
 using QuranDashboard.Api.Middleware;
+using QuranDashboard.Api.Swagger;
 using QuranDashboard.Infrastructure.Persistence;
 
 namespace QuranDashboard.Api.Extensions;
@@ -20,12 +23,35 @@ public static class ServiceCollectionExtensions
                 Version = "v1"
             });
 
-            var xmlPath = Path.Combine(
-                AppContext.BaseDirectory,
-                $"{Assembly.GetExecutingAssembly().GetName().Name}.xml");
-            if (File.Exists(xmlPath))
+            options.SupportNonNullableReferenceTypes();
+            options.NonNullableReferenceTypesAsRequired();
+            options.UseAllOfForInheritance();
+            options.UseOneOfForPolymorphism();
+            options.UseAllOfToExtendReferenceSchemas();
+            options.SelectDiscriminatorNameUsing(type =>
+                type.GetCustomAttribute<JsonPolymorphicAttribute>()?.TypeDiscriminatorPropertyName);
+            options.SelectDiscriminatorValueUsing(subType =>
+                subType.BaseType?.GetCustomAttributes<JsonDerivedTypeAttribute>()
+                    .FirstOrDefault(attribute => attribute.DerivedType == subType)?.TypeDiscriminator?.ToString());
+            options.MapType<JsonElement>(() => new OpenApiSchema
             {
-                options.IncludeXmlComments(xmlPath);
+                Type = JsonSchemaType.Object,
+                AdditionalPropertiesAllowed = true
+            });
+            options.SchemaFilter<AllPropertiesRequiredSchemaFilter>();
+
+            var xmlFiles = new[]
+            {
+                $"{Assembly.GetExecutingAssembly().GetName().Name}.xml",
+                "QuranDashboard.Application.Abstractions.xml"
+            };
+            foreach (var xmlFile in xmlFiles)
+            {
+                var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+                if (File.Exists(xmlPath))
+                {
+                    options.IncludeXmlComments(xmlPath);
+                }
             }
         });
         services.AddHealthChecks()
