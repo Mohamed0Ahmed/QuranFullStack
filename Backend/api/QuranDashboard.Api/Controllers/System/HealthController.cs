@@ -6,6 +6,11 @@ namespace QuranDashboard.Api.Controllers.System;
 [Route("api/health")]
 public sealed class HealthController(HealthCheckService healthCheckService) : ControllerBase
 {
+    /// <summary>
+    /// يُرجع الحالة الصحية للتطبيق واعتمادياته (قاعدة البيانات) مع حالة كل فحص على حدة.
+    /// </summary>
+    /// <param name="cancellationToken">رمز إلغاء الطلب.</param>
+    /// <response code="200">تم تنفيذ فحوصات الحالة؛ الحالة الكلية ضمن البيانات (healthy أو degraded أو unhealthy).</response>
     [HttpGet]
     public async Task<ActionResult<ApiResponse<HealthReportData>>> Get(CancellationToken cancellationToken)
     {

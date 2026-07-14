@@ -23,6 +23,11 @@ public sealed class WordTypesController(
     private const int DefaultListPageSize = 25;
     private const int DefaultDetailPageSize = 25;
 
+    /// <summary>
+    /// يُرجع شجرة أنواع الكلمات: الأنواع الرئيسية (اسم/فعل/حرف) وفروعها مع عدّاداتها.
+    /// </summary>
+    /// <param name="cancellationToken">رمز إلغاء الطلب.</param>
+    /// <response code="200">تم تحميل شجرة الأنواع بنجاح.</response>
     [HttpGet("tree")]
     public async Task<ActionResult<ApiResponse<WordTypeTreeDto>>> GetTree(CancellationToken cancellationToken)
     {
@@ -36,6 +41,20 @@ public sealed class WordTypesController(
         };
     }
 
+    /// <summary>
+    /// يُرجع صفوف الكلمات ضمن نطاق نوع محدّد، مقسّمة إلى صفحات مع دعم الفرز ومرشّحات الحالة والزمن والبناء.
+    /// </summary>
+    /// <param name="type">رمز النوع الرئيسي (مطلوب لتحديد النطاق).</param>
+    /// <param name="childCode">رمز النوع الفرعي إن وجد.</param>
+    /// <param name="caseFilter">مرشّح الحالة الإعرابية (اختياري).</param>
+    /// <param name="tense">مرشّح الزمن (اختياري).</param>
+    /// <param name="voice">مرشّح البناء للمعلوم/المجهول (اختياري).</param>
+    /// <param name="sort">مفتاح الفرز (اختياري).</param>
+    /// <param name="page">رقم الصفحة (الافتراضي 1).</param>
+    /// <param name="pageSize">حجم الصفحة (الافتراضي 25).</param>
+    /// <param name="cancellationToken">رمز إلغاء الطلب.</param>
+    /// <response code="200">تم تحميل صفوف الكلمات بنجاح.</response>
+    /// <response code="400">مرشّح أو فرز أو تقسيم صفحات غير صالح.</response>
     [HttpGet("words")]
     public async Task<ActionResult<ApiResponse<PagedResult<WordTypeRowDto>>>> GetRows(
         [FromQuery] string? type,
@@ -66,6 +85,21 @@ public sealed class WordTypesController(
         };
     }
 
+    /// <summary>
+    /// يُرجع صفوف عرض الجدول ضمن نطاق نوع محدّد بحسب تبويب العرض (كلمات/جذور/أصول/صيغ)، مقسّمة إلى صفحات ومجمّعة ومعدودة على الخادم.
+    /// </summary>
+    /// <param name="tableView">تبويب العرض: words أو roots أو stems أو lemmas (الافتراضي words).</param>
+    /// <param name="type">رمز النوع الرئيسي (مطلوب لتحديد النطاق).</param>
+    /// <param name="childCode">رمز النوع الفرعي إن وجد.</param>
+    /// <param name="caseFilter">مرشّح الحالة الإعرابية (اختياري).</param>
+    /// <param name="tense">مرشّح الزمن (اختياري).</param>
+    /// <param name="voice">مرشّح البناء للمعلوم/المجهول (اختياري).</param>
+    /// <param name="sort">مفتاح الفرز (اختياري).</param>
+    /// <param name="page">رقم الصفحة (الافتراضي 1).</param>
+    /// <param name="pageSize">حجم الصفحة (الافتراضي 25).</param>
+    /// <param name="cancellationToken">رمز إلغاء الطلب.</param>
+    /// <response code="200">تم تحميل صفوف الجدول بنجاح.</response>
+    /// <response code="400">تبويب عرض أو مرشّح أو فرز أو تقسيم صفحات غير صالح.</response>
     [HttpGet("table")]
     public async Task<ActionResult<ApiResponse<PagedResult<WordTypeTableRowDto>>>> GetTable(
         [FromQuery] string? tableView,
@@ -99,6 +133,18 @@ public sealed class WordTypesController(
         };
     }
 
+    /// <summary>
+    /// يُرجع ملخّص كلمة واحدة ضمن نطاق النوع؛ هوية الكلمة هي معرّف الكلمة المشكولة مع رمز السياق.
+    /// </summary>
+    /// <param name="tashkeelWordId">معرّف الكلمة المشكولة.</param>
+    /// <param name="contextCode">رمز السياق الصرفي (جزء من الهوية).</param>
+    /// <param name="caseFilter">مرشّح الحالة الإعرابية (اختياري).</param>
+    /// <param name="tense">مرشّح الزمن (اختياري).</param>
+    /// <param name="voice">مرشّح البناء للمعلوم/المجهول (اختياري).</param>
+    /// <param name="cancellationToken">رمز إلغاء الطلب.</param>
+    /// <response code="200">تم تحميل ملخّص الكلمة بنجاح.</response>
+    /// <response code="400">هوية كلمة غير صالحة.</response>
+    /// <response code="404">الكلمة غير موجودة ضمن النطاق المحدّد.</response>
     [HttpGet("words/{tashkeelWordId:int}")]
     public async Task<ActionResult<ApiResponse<WordTypeSummaryDto>>> GetSummary(
         int tashkeelWordId,
@@ -124,6 +170,20 @@ public sealed class WordTypesController(
         };
     }
 
+    /// <summary>
+    /// يُرجع آيات ورود الكلمة ضمن نطاق النوع، مقسّمة إلى صفحات بترتيب المصحف مع مواضع التطابق.
+    /// </summary>
+    /// <param name="tashkeelWordId">معرّف الكلمة المشكولة.</param>
+    /// <param name="contextCode">رمز السياق الصرفي (جزء من الهوية).</param>
+    /// <param name="caseFilter">مرشّح الحالة الإعرابية (اختياري).</param>
+    /// <param name="tense">مرشّح الزمن (اختياري).</param>
+    /// <param name="voice">مرشّح البناء للمعلوم/المجهول (اختياري).</param>
+    /// <param name="page">رقم الصفحة (الافتراضي 1).</param>
+    /// <param name="pageSize">حجم الصفحة (الافتراضي 25).</param>
+    /// <param name="cancellationToken">رمز إلغاء الطلب.</param>
+    /// <response code="200">تم تحميل آيات الكلمة بنجاح.</response>
+    /// <response code="400">هوية كلمة أو تقسيم صفحات غير صالح.</response>
+    /// <response code="404">الكلمة غير موجودة ضمن النطاق المحدّد.</response>
     [HttpGet("words/{tashkeelWordId:int}/ayahs")]
     public async Task<ActionResult<ApiResponse<PagedResult<WordTypeAyahMatchDto>>>> GetAyahs(
         int tashkeelWordId,
@@ -153,6 +213,18 @@ public sealed class WordTypesController(
         };
     }
 
+    /// <summary>
+    /// يُرجع سور ورود الكلمة ضمن نطاق النوع: قائمتا السور الواردة والمفقودة دون تقسيم صفحات.
+    /// </summary>
+    /// <param name="tashkeelWordId">معرّف الكلمة المشكولة.</param>
+    /// <param name="contextCode">رمز السياق الصرفي (جزء من الهوية).</param>
+    /// <param name="caseFilter">مرشّح الحالة الإعرابية (اختياري).</param>
+    /// <param name="tense">مرشّح الزمن (اختياري).</param>
+    /// <param name="voice">مرشّح البناء للمعلوم/المجهول (اختياري).</param>
+    /// <param name="cancellationToken">رمز إلغاء الطلب.</param>
+    /// <response code="200">تم تحميل سور الكلمة بنجاح.</response>
+    /// <response code="400">هوية كلمة غير صالحة.</response>
+    /// <response code="404">الكلمة غير موجودة ضمن النطاق المحدّد.</response>
     [HttpGet("words/{tashkeelWordId:int}/surahs")]
     public async Task<ActionResult<ApiResponse<WordTypeSurahsResponse>>> GetSurahs(
         int tashkeelWordId,
