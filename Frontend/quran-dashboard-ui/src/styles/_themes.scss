@@ -4,7 +4,6 @@
   --qd-surface: oklch(0.228 0.037 265.3);
   --qd-section-bg: oklch(0.265 0.039 262.7);
   --qd-surface-recessed: oklch(0.302 0.045 264.3);
-  --qd-surface-elevated: var(--qd-section-bg);
   --qd-surface-hover: oklch(0.265 0.039 262.7);       /* == dark section-bg tone */
 
   --qd-explorer-detail-bg: oklch(0.281 0.032 262);
@@ -12,7 +11,7 @@
   --qd-explorer-detail-surface: oklch(0.282 0.036 262);
   --qd-explorer-detail-card: oklch(0.302 0.045 264.3);
   --qd-explorer-detail-border: oklch(0.55 0.04 265 / 0.22);
-  --qd-explorer-table-header-bg: color-mix(in oklch, var(--qd-primary) 8%, var(--qd-surface-elevated));
+  --qd-explorer-table-header-bg: color-mix(in oklch, var(--qd-primary) 8%, var(--qd-section-bg));
   --qd-explorer-table-header-fg: var(--qd-text);
 
   --qd-text: oklch(0.935 0.007 277.2);

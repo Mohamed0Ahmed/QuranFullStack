@@ -16,7 +16,9 @@
     text-align: start;
 
     &[aria-expanded='true'] {
-      border-color: color-mix(in oklch, var(--qd-accent) 40%, var(--qd-border));
+      border-color: var(--qd-border-accent);
+      /* one-off: subtle expanded-state glow ring, distinct alpha from
+         --qd-border-accent; not a fill, no role token fits a glow */
       box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--qd-accent) 15%, transparent);
     }
   }
@@ -41,6 +43,7 @@
     width: 1.125rem;
     height: 1.125rem;
     border-radius: var(--qd-radius-sm);
+    /* one-off: static icon-chip wash (not hover/selected), no role token fits */
     background: color-mix(in oklch, var(--qd-accent) 10%, var(--qd-surface));
     color: var(--qd-text-muted);
     font-size: 0.625rem;
@@ -100,6 +103,8 @@
     padding: var(--qd-space-1) var(--qd-space-2);
     border-radius: var(--qd-radius-sm);
     background: var(--qd-section-bg);
+    /* one-off: bespoke heading-text blend tuned against --qd-section-bg;
+       --qd-accent-text is pure navy in light and would lose the eyebrow warmth */
     color: color-mix(in oklch, var(--qd-accent) 78%, var(--qd-text));
     font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
     font-size: 0.75rem;

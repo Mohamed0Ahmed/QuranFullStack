@@ -72,7 +72,7 @@ button.qd-interactive-surface {
               color var(--qd-t-fast), transform var(--qd-t-fast);
 
   &:hover {
-    background: var(--qd-surface-elevated);
+    background: var(--qd-surface-hover);
   }
 
   &:active { transform: translateY(1px); }
@@ -515,7 +515,10 @@ button.qd-interactive-surface {
 }
 
 .qd-modal {
-  background: var(--qd-surface-elevated, var(--qd-surface));
+  /* Option B (R1, color-doctrine plan P6): elevation comes from --qd-shadow-lg
+     + the dimmed backdrop, not a distinct surface tone — the modal sits on the
+     same near-white card surface as everything else. */
+  background: var(--qd-surface);
   border: 1px solid var(--qd-border);
   border-radius: var(--qd-radius-lg);
   box-shadow: var(--qd-shadow-lg);
@@ -530,6 +533,8 @@ button.qd-interactive-surface {
      so existing call-sites keep working unchanged. */
   width: var(--qd-skeleton-w, 100%);
   height: var(--qd-skeleton-h, 0.75rem);
+  /* one-off: shimmer-system base tone, kept (color-doctrine plan §11) — no role
+     token models a skeleton placeholder tint */
   background: color-mix(in oklch, var(--qd-surface) 78%, var(--qd-border));
   border-radius: var(--qd-radius-sm);
   position: relative;
@@ -570,6 +575,8 @@ button.qd-interactive-surface {
   position: absolute;
   inset: 0;
   transform: translateX(-100%);
+  /* one-off: shimmer-wave gradient, kept (color-doctrine plan §11 named
+     exception) — a moving highlight, not a role-derivable fill */
   background: linear-gradient(
     90deg,
     transparent 0%,
@@ -605,6 +612,7 @@ button.qd-interactive-surface {
 
   .qd-skeleton::after {
     animation: none;
+    /* one-off: static stand-in for the shimmer gradient above, same rationale */
     background: color-mix(in oklch, var(--qd-surface) 50%, var(--qd-text) 16%);
     transform: none;
   }

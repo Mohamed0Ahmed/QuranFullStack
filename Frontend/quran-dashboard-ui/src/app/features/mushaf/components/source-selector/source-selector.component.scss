@@ -28,7 +28,7 @@
     width: 100%;
     min-height: 2.75rem;
     padding: var(--qd-space-2) var(--qd-space-4);
-    border: 1px solid color-mix(in oklch, var(--qd-border) 80%, var(--qd-accent));
+    border: 1px solid var(--qd-border);
     border-radius: var(--qd-radius-md);
     background: var(--qd-section-bg);
     color: var(--qd-text);
@@ -42,7 +42,9 @@
     }
 
     &[aria-expanded='true'] {
-      border-color: color-mix(in oklch, var(--qd-accent) 40%, var(--qd-border));
+      border-color: var(--qd-border-accent);
+      /* one-off: subtle expanded-state glow ring, distinct alpha from
+         --qd-border-accent; not a fill, no role token fits a glow */
       box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--qd-accent) 15%, transparent);
     }
 
@@ -74,6 +76,7 @@
     width: 1.5rem;
     height: 1.5rem;
     border-radius: var(--qd-radius-sm);
+    /* one-off: static icon-chip wash (not hover/selected), no role token fits */
     background: color-mix(in oklch, var(--qd-accent) 10%, var(--qd-surface));
     color: var(--qd-accent);
     font-size: 0.75rem;

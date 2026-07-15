@@ -4,7 +4,6 @@
   --qd-surface: oklch(0.997 0.003 90);
   --qd-section-bg: oklch(0.955 0.015 77.1);
   --qd-surface-recessed: oklch(0.921 0.025 75.3);
-  --qd-surface-elevated: var(--qd-section-bg);
   --qd-surface-hover: oklch(0.955 0.015 77.1);        /* single hover fill (== light section-bg tone) */
 
   --qd-explorer-detail-bg: oklch(0.938 0.022 78);
@@ -12,7 +11,7 @@
   --qd-explorer-detail-surface: oklch(0.972 0.012 90);
   --qd-explorer-detail-card: oklch(0.978 0.010 88);
   --qd-explorer-detail-border: oklch(0.42 0.045 72 / 0.16);
-  --qd-explorer-table-header-bg: color-mix(in oklch, var(--qd-primary) 6%, var(--qd-surface-elevated));
+  --qd-explorer-table-header-bg: color-mix(in oklch, var(--qd-primary) 6%, var(--qd-section-bg));
   --qd-explorer-table-header-fg: var(--qd-text);
 
   --qd-text: oklch(0.278 0.030 256.8);

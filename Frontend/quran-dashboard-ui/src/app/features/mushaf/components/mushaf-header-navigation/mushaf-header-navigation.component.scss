@@ -71,6 +71,8 @@
     gap: var(--qd-space-2);
     padding: var(--qd-space-1);
     border-radius: var(--qd-radius-md);
+    /* one-off: 5.5% accent wash grouping the nav zone, always-on (not
+       hover/selected) — no role token models a static subtle group wash */
     background: color-mix(in oklch, var(--qd-accent) 5.5%, var(--qd-section-bg));
     overflow: visible;
 

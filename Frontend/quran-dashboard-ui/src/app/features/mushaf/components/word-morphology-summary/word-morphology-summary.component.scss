@@ -15,6 +15,7 @@
     padding: calc(var(--qd-space-2) + 0.45 * var(--qd-space-1));
     border: 1px solid var(--qd-border);
     border-radius: var(--qd-radius-sm);
+    /* one-off: 4% navy-tinted quiet-card wash, not hover/selected/border role */
     background: color-mix(in oklch, var(--qd-primary) 4%, var(--qd-surface));
     font-size: 0.875rem;
     text-align: center;
