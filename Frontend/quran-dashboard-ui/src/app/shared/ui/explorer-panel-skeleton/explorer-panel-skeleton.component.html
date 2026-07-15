@@ -3,11 +3,22 @@
   aria-busy="true"
   data-testid="explorer-panel-skeleton"
 >
-  <p class="qd-sr-only" role="status" aria-live="polite">{{ loadingLabel() }}</p>
-  <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-50" aria-hidden="true"></span>
-  <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-75" aria-hidden="true"></span>
-  <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-90" aria-hidden="true"></span>
-  <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-75" aria-hidden="true"></span>
-  <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-50" aria-hidden="true"></span>
-  <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-90" aria-hidden="true"></span>
+  @switch (shape()) {
+    @case ('rows') {
+      <qd-skeleton-rows [count]="rowsCount()" [rowTemplate]="rowTemplate()" [loadingLabel]="loadingLabel()" />
+    }
+    @case ('panel') {
+      <p class="qd-sr-only" role="status" aria-live="polite">{{ loadingLabel() }}</p>
+      <span class="qd-skeleton qd-skeleton--block qd-skeleton--rounded-md" aria-hidden="true"></span>
+    }
+    @default {
+      <p class="qd-sr-only" role="status" aria-live="polite">{{ loadingLabel() }}</p>
+      <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-50" aria-hidden="true"></span>
+      <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-75" aria-hidden="true"></span>
+      <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-90" aria-hidden="true"></span>
+      <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-75" aria-hidden="true"></span>
+      <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-50" aria-hidden="true"></span>
+      <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-90" aria-hidden="true"></span>
+    }
+  }
 </div>
