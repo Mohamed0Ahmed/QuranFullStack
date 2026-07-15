@@ -8,11 +8,17 @@ import {
 } from '../../models/mushaf.models';
 import { MushafHeaderNavigationComponent } from '../mushaf-header-navigation/mushaf-header-navigation.component';
 import { MushafPageViewComponent } from '../mushaf-page-view/mushaf-page-view.component';
+import { ExplorerPanelSkeletonComponent } from '../../../../shared/ui/explorer-panel-skeleton/explorer-panel-skeleton.component';
 
 @Component({
   selector: 'qd-mushaf-page-area',
   standalone: true,
-  imports: [CommonModule, MushafHeaderNavigationComponent, MushafPageViewComponent],
+  imports: [
+    CommonModule,
+    MushafHeaderNavigationComponent,
+    MushafPageViewComponent,
+    ExplorerPanelSkeletonComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './mushaf-page-area.component.html',
   styleUrls: ['./mushaf-page-area.component.scss'],

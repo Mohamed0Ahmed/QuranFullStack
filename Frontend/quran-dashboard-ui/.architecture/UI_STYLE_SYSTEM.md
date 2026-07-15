@@ -526,10 +526,9 @@ component-by-component color decisions. New and changed UI must conform to this
 section. The token set it depends on (`--qd-accent-fg`, `--qd-border-accent`,
 `--qd-surface-hover`, `--qd-selected-bg`, `--qd-danger-tint`, `--qd-success-tint`,
 `--qd-warning-tint`) is live in `_tokens.scss` / `_themes.scss`. Rolling every
-existing call-site onto this doctrine is a phased migration tracked in
-`docs/feature-028-color-doctrine-unification/plan.md` (P2–P7); until a call-site is
-migrated it keeps working as-is, but no *new* code may reintroduce a pattern this
-section bans.
+existing call-site onto this doctrine was a phased migration tracked in
+`docs/feature-028-color-doctrine-unification/plan.md` (P1–P7); the migration is
+**complete** — no *new* code may reintroduce a pattern this section bans.
 
 ### 16.1 Role → color table
 
@@ -565,24 +564,33 @@ commit; re-verify whenever a token in this table changes.
 (`--qd-bg`) → elevated card (`--qd-surface`) → quiet/section grouping
 (`--qd-section-bg`) → nested/recessed inset (`--qd-surface-recessed`).
 `--qd-surface-hover` sits alongside the ladder as the **one** hover fill — it is not
-a ladder step. `--qd-surface-elevated` is a legacy alias (currently
-`= --qd-section-bg`); it is retired in P6 of the color-doctrine plan — do not add
-new consumers of it.
+a ladder step. `--qd-surface-elevated` (the legacy alias that used to equal
+`--qd-section-bg`) is **retired** as of P6 of the color-doctrine plan — it no longer
+exists in `_tokens.scss`/`_themes.scss`; do not reintroduce it.
 
 **Shadow ladder:** `--qd-shadow-sm` (card resting) → `--qd-shadow` (card hover) →
 `--qd-shadow-lg` (floating layers — dropdowns, popovers, modals, drawers). Dark mode
 re-tunes these heavier/darker; that does not change the ladder order.
 
-**Elevation direction must be consistent across themes.** It is currently **not**:
-`--qd-surface-recessed` is the *darkest*/most-inset step in light (`L≈0.921`, darker
-than `--qd-section-bg` at `L≈0.955`) but the *brightest* step in dark (`L≈0.302`,
-brighter than `--qd-section-bg` at `L≈0.265`) — the same token name means opposite
-visual directions per theme. This is a known, tracked defect (R1 in
-`docs/feature-028-color-doctrine-unification/plan.md`); the fix (dark-ladder
-reordering, retiring `--qd-surface-elevated`, and moving the modal onto
-`--qd-surface` + `--qd-shadow-lg` + backdrop rather than a new `--qd-surface-3`
-token) lands in that plan's P6. No ladder values change as part of authoring this
-doctrine section — this is the rule the fix must satisfy, not the fix itself.
+**Elevation direction across themes (R1, resolved in P6).** `--qd-surface-recessed`
+is the *darkest*/most-inset step in light (`L≈0.921`, darker than `--qd-section-bg`
+at `L≈0.955`) and the *brightest* step in dark (`L≈0.302`, brighter than
+`--qd-section-bg` at `L≈0.265`) — those two raw values were **deliberately left
+unchanged** in P6 because they already match `DESIGN.md` §2's dark palette, and no
+shipped consumer places `--qd-surface-recessed` directly against `--qd-section-bg`
+as a literal "more/less recessed" visual comparison (each consumer nests it one
+step below its own local parent surface, not against the ladder's other steps).
+What P6 actually fixed was the **ambiguity**, not the raw numbers: the confusing
+`--qd-surface-elevated` alias (`= --qd-section-bg` in both themes, an ill-defined
+extra "step" consumers reached for inconsistently) is **retired** — deleted from
+both themes, zero remaining references — and every former consumer now maps to the
+token matching its actual role: `--qd-surface-hover` for hover fills,
+`--qd-section-bg` for header-bg/marker backgrounds. The modal sits on
+**`--qd-surface`** (near-white card in light / card surface in dark) and gets its
+lift from `--qd-shadow-lg` + the dimmed backdrop (R1 **Option B**, locked) — **no**
+`--qd-surface-3` token was introduced. A future strict raw-value reordering of
+`--qd-surface-recessed`/`--qd-section-bg` remains an option if a consumer ever needs
+a direct cross-theme comparison between those two steps; none does today.
 
 ### 16.3 The allowed-gold list (locked)
 
@@ -605,13 +613,18 @@ fills, `qd-select` resting border — is **banned gold**: use a tint,
 
 ## 17. Component contracts ("never hand-write these again")
 
-> **Status:** this section documents the **target contract** for six shared
+> **Status: implemented.** This section is the **live contract** for six shared
 > primitives. `qd-tabs`, `qd-chip`, `qd-state`, and the skeleton primitives
 > (`qd-skeleton-rows`, `qd-panel-skeleton`) are Angular components shipped in P2 of
 > `docs/feature-028-color-doctrine-unification/plan.md`; `.qd-explorer-table` and
-> `.qd-detail-list` are CSS class-family collapses shipped in P3/P4. Existing
-> call-sites migrate onto this contract through P2–P7. Once a contract exists for a
-> pattern, **compose it — do not re-style it or hand-roll an equivalent.**
+> `.qd-detail-list` are CSS class-family collapses shipped in P3/P4. Chip/tab
+> call-sites and the gold-fill ban landed in P5; density/motion/radius/ladder
+> cleanup in P6; the remaining ad-hoc text-loading states (dashboard-home,
+> mushaf-page-area) moved onto `qd-skeleton-rows`/`qd-panel-skeleton` in P7 — the
+> `selected-ayah-section` and `selected-word-section` loading states already used
+> `.qd-skeleton` + an sr-only `role="status"` label before P7 and needed no change.
+> The phased migration (P1–P7) is complete. Once a contract exists for a pattern,
+> **compose it — do not re-style it or hand-roll an equivalent.**
 
 ### `qd-tabs`
 - **Purpose:** the one tab-strip implementation app-wide (explorer view-mode tabs,

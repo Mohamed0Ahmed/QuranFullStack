@@ -33,6 +33,20 @@ Shared across explorers: `utils/explorer-table-*` (focus/keyboard-nav/scroll/col
 
 ## Gotchas / invariants (read before changing)
 
+- **Table/list visuals are centralized** (`UI_STYLE_SYSTEM.md` §17): all 5 explorer
+  tables compose `.qd-explorer-table` (root class + `.qd-explorer-table__*` BEM
+  elements, `styles/_explorer-tables.scss`) and all 10 detail-list panels compose
+  `.qd-detail-list__*` BEM elements (`styles/_explorer-detail-lists.scss`) alongside
+  their own component root class. These shared class families own row/header/hover/
+  selected visuals **and** density (row `2.5rem`, cell `6×10px`, header `2.75rem`) —
+  per-component SCSS keeps only `grid-template-columns` and genuine column extras
+  (e.g. `stem-lemmas` 4-col, `type-distribution` 2-col). No table/list needed a
+  partial-collapse exception. **Selected state** (a table row, a `qd-is-selected`
+  list row, a chip, a tab) is the one doctrine visual app-wide (§16.1):
+  `--qd-selected-bg` (accent-tint) background + `--qd-accent-text` label + a
+  hairline `--qd-border-accent` edge or indicator — **never** a solid gold fill.
+  Hover is always `--qd-surface-hover`. A component needing a visual rule beyond
+  columns/selected-state is a signal to extend the shared base, not fork it.
 - **Labels use the TDZ getter pattern.** Read `*.labels.ts` consts via **getters**, not
   `readonly` fields — otherwise they resolve to `undefined` (temporal dead zone) in the
   test bundle. **Do not revert the getters.**

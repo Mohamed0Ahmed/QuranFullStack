@@ -5,13 +5,14 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { SystemApi } from '../../../../core/data-access/system.api';
 import { AppInfo } from '../../../../core/data-access/system.models';
+import { QdSkeletonRowsComponent } from '../../../../shared/ui/skeleton/skeleton-rows.component';
 
 type ViewState = 'loading' | 'success' | 'error';
 
 @Component({
   selector: 'qd-dashboard-home',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, QdSkeletonRowsComponent],
   templateUrl: './dashboard-home.component.html',
   styleUrls: ['./dashboard-home.component.scss'],
 })

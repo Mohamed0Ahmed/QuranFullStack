@@ -10,22 +10,12 @@
   }
 }
 
+/* qd-card--hover + qd-interactive-surface (styles/_components.scss) supply
+   border/shadow/hover-lift/focus-visible; this card only needs anchor-as-card
+   display + underline reset, which are genuinely layout-specific. */
 .dashboard-card {
   display: block;
   text-decoration: none;
-  transition: border-color var(--qd-t-fast), box-shadow var(--qd-t-fast),
-              transform var(--qd-t-fast);
-
-  &:hover {
-    border-color: var(--qd-border-strong);
-    box-shadow: var(--qd-shadow);
-    transform: translateY(-2px);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--qd-focus-ring);
-    outline-offset: 2px;
-  }
 }
 
 .app-meta {
@@ -39,11 +29,4 @@
   flex-direction: row;
   gap: var(--qd-space-3);
   padding: var(--qd-space-2) var(--qd-space-3);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .dashboard-card {
-    transition: border-color var(--qd-t-fast), box-shadow var(--qd-t-fast);
-  }
-  .dashboard-card:hover { transform: none; }
 }
