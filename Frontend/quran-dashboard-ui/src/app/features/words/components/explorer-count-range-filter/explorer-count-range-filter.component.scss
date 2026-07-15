@@ -28,8 +28,8 @@
   padding-inline: 0.4rem;
   text-align: center;
   border-radius: 999px;
-  background: var(--qd-accent);
-  color: var(--qd-primary);
+  background: var(--qd-selected-bg);
+  color: var(--qd-accent-text);
   font-size: 0.8rem;
   font-variant-numeric: tabular-nums;
 }
@@ -69,9 +69,9 @@
   }
 
   &.qd-is-selected:not(:disabled) {
-    background: var(--qd-accent);
-    border-color: var(--qd-accent);
-    color: var(--qd-primary);
+    background: var(--qd-selected-bg);
+    border-color: var(--qd-border-accent);
+    color: var(--qd-accent-text);
   }
 
   &:focus-visible {
@@ -118,11 +118,6 @@
     font-size: 0.95rem;
   }
 
-  .range-filter__badge {
-    background: var(--qd-accent-tint);
-    color: var(--qd-accent-text);
-  }
-
   .range-filter__body {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -148,8 +143,7 @@
     background: var(--qd-surface);
 
     &:hover:not(:disabled) {
-      background: var(--qd-accent-tint);
-      border-color: var(--qd-accent-soft);
+      background: var(--qd-surface-hover);
     }
   }
 

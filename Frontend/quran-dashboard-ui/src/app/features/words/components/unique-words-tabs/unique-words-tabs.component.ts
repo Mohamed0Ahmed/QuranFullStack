@@ -1,6 +1,8 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { RouterLink } from '@angular/router';
 
+import { QdTabDirective } from '../../../../shared/ui/tabs/tab.directive';
+import { QdTabsComponent } from '../../../../shared/ui/tabs/tabs.component';
 import { UNIQUE_WORD_KIND_LABELS, UNIQUE_WORD_TABS_LABEL } from '../../models/unique-words.labels';
 import { UNIQUE_WORD_KIND_KEYS, UniqueWordKind } from '../../models/unique-words.models';
 
@@ -13,7 +15,7 @@ interface UniqueWordsTabViewModel {
 @Component({
   selector: 'qd-unique-words-tabs',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive],
+  imports: [RouterLink, QdTabsComponent, QdTabDirective],
   templateUrl: './unique-words-tabs.component.html',
   styleUrl: './unique-words-tabs.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
