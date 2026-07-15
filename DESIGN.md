@@ -105,6 +105,24 @@ screen — active state, links, icon highlights, section eyebrows, and review/pu
 state. Its rarity is what gives it meaning. Navy is structural, not an accent, and
 may appear more (primary buttons, brand, footer) but still calmly.
 
+**The allowed-gold list (locked).** Gold (`--qd-accent` / `--qd-accent-soft`) may
+appear **only** as:
+1. the `:focus-visible` ring/halo (`--qd-focus-ring` / `--qd-ring`);
+2. the 2px selection **indicator** bar or the selected **dot** (fill), with
+   `--qd-accent-fg` ink if it carries a glyph;
+3. a **1px selected/active border** (`--qd-accent` or `--qd-border-accent`);
+4. **text** emphasis via `--qd-accent-text` (active nav, links, soft/selected
+   labels, section eyebrows) — never raw `--qd-accent` as small text on light;
+5. footer gold (`--qd-footer-accent`) headings and link-hover;
+6. icon highlights and the mushaf word-selection indicator
+   (`--qd-mushaf-word-selection-indicator`).
+
+Everything else — chip fills, badge fills, count fills, range badges, selected-row
+fills, `qd-select` resting border — is **banned gold**: no solid gold at rest and no
+gold fill behind text, anywhere; use a tint, `--qd-accent-text`, or a hairline
+border instead. This list is the authoritative source mirrored into
+`UI_STYLE_SYSTEM.md` §16.3 — keep the two in sync if either changes.
+
 **The Warm Neutral Rule (revised).** The parchment canvas and neutrals stay tinted
 warm; pure `#000` is still forbidden. **Near-white or white *elevated cards* are
 allowed** when they sit on the warm parchment background and are defined by a border

@@ -6,8 +6,12 @@ Compiled through `../styles.scss`; component-specific styling stays beside each 
 ## Partial groups
 
 - `_tokens.scss` — root CSS custom properties for color, spacing, radii, shadows, fonts,
-  Mushaf, and explorer variables.
-- `_themes.scss` — dark-theme overrides for the same token surface.
+  Mushaf, and explorer variables. Includes the color-doctrine role tokens
+  (`--qd-accent-fg`, `--qd-border-accent`, `--qd-surface-hover`, `--qd-selected-bg`,
+  `--qd-danger-tint`, `--qd-success-tint`, `--qd-warning-tint`) — see
+  `.architecture/UI_STYLE_SYSTEM.md` §16 for the role→color contract these back.
+- `_themes.scss` — dark-theme overrides for the same token surface (`--qd-accent-fg` and
+  `--qd-selected-bg` are intentionally theme-invariant and not overridden here).
 - `_typography.scss` — font-face declarations and shared Arabic-first type classes.
 - `_breakpoints.scss` — canonical Sass breakpoints; mirrored in `../app/shared/layout/breakpoints.ts`.
 - `_layout.scss` — shell, navbar, footer, container, and page-level layout primitives.

@@ -5,6 +5,7 @@
   --qd-section-bg: oklch(0.265 0.039 262.7);
   --qd-surface-recessed: oklch(0.302 0.045 264.3);
   --qd-surface-elevated: var(--qd-section-bg);
+  --qd-surface-hover: oklch(0.265 0.039 262.7);       /* == dark section-bg tone */
 
   --qd-explorer-detail-bg: oklch(0.281 0.032 262);
   --qd-explorer-detail-header-bg: oklch(0.252 0.034 265.3);
@@ -19,6 +20,7 @@
 
   --qd-border: oklch(0.319 0.045 266.5);
   --qd-border-strong: oklch(0.403 0.062 268.0);
+  --qd-border-accent: oklch(0.772 0.098 82 / 0.32);
 
   --qd-primary: oklch(0.772 0.098 82.0);
   --qd-primary-fg: oklch(0.189 0.032 266.8);
@@ -29,10 +31,15 @@
   --qd-accent-soft: oklch(0.323 0.030 88.2);
   --qd-accent-tint: oklch(0.250 0.030 281.2);
   --qd-accent-text: var(--qd-accent);
+  /* --qd-accent-fg and --qd-selected-bg intentionally NOT overridden here:
+     accent-fg stays navy ink; selected-bg follows accent-tint which is already dark-defined above. */
 
   --qd-danger: oklch(0.682 0.116 20.5);
   --qd-warning: oklch(0.75 0.14 75);
   --qd-success: oklch(0.761 0.072 152.1);
+  --qd-danger-tint: oklch(0.305 0.045 23);
+  --qd-success-tint: oklch(0.305 0.035 163);
+  --qd-warning-tint: oklch(0.320 0.045 75);
 
   --qd-focus-ring: oklch(0.78 0.10 82);
   --qd-ring: 0 0 0 4px oklch(0.772 0.098 82 / 0.22);

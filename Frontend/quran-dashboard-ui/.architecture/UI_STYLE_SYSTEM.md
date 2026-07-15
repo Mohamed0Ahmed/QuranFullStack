@@ -90,9 +90,16 @@ Rules:
 - Do not put feature-specific styles in global files.
 - Do not put global design-system styles inside component SCSS.
 
-> Current state: `src/styles.scss` exists and pulls in Tailwind layers; the
-> `src/styles/` partials above do not exist yet. Create them only when global
-> style work is actually requested — do not scaffold empty files in advance.
+> Current state: **implemented.** `src/styles.scss` is the single entry point and
+> pulls in Tailwind layers plus the `src/styles/` partials, which exist today:
+> `_tokens.scss`, `_themes.scss`, `_typography.scss`, `_breakpoints.scss`,
+> `_layout.scss`, `_components.scss`, `_words-explorer-layout.scss`,
+> `_explorer-tables.scss`, `_explorer-detail-lists.scss`, `_forms.scss`,
+> `_utilities.scss` — see `src/styles/README.md` for the exact import order and
+> boundary. §16 (color doctrine) and §17 (component contracts) below are the live
+> contract for how these partials are consumed; this section still governs file
+> organization. Only add a new global partial when it holds a genuinely reusable,
+> app-wide pattern — do not scaffold speculative empty files.
 
 ## 3. Naming Convention
 
@@ -355,12 +362,14 @@ Any future style system change should report:
 
 ## 15. Prototype-Derived Implementation Contract (Navy + Gold + Parchment)
 
-This section is the **future implementation contract** for adopting the Real Pages
-prototype as the visual source of truth. It is documentation only; nothing here is
-implemented yet. When a phase is actually built, re-author every value below as an
-OKLCH `--qd-*` token in the app's SCSS system — **do not paste prototype CSS, inline
-styles, or hex values into Angular.** Reference values are the prototype's; the
-extraction reference is `../report/ui/real-pages-visual-system-extraction-report.md`.
+This section was the **implementation contract** for adopting the Real Pages
+prototype as the visual source of truth. **Status: implemented — see §16/§17
+below**, which are the live, authoritative contract for color roles and shared
+component APIs going forward. This section is retained as the historical record of
+the phased rollout (phases A–H) and the prototype's reference values; do not treat
+its "future" language as current — where it conflicts with §16/§17, §16/§17 wins.
+Reference values are the prototype's; the extraction reference is
+`../report/ui/real-pages-visual-system-extraction-report.md`.
 
 App themes remain **light + dark** (prototype *ivory* → light, *midnight* → dark;
 *sage* not adopted). Every adopted token **must** be defined for both themes.
@@ -486,9 +495,11 @@ Dark theme reference (adapted midnight): bg `#0D1322`, surface `#141C2E`, surfac
 
 ### H. Implementation phasing
 
-Future implementation order (build only when explicitly requested; each phase is
-additive and must keep `--qd-bg` / `--qd-surface` / `--qd-border` / `--qd-accent`
-working during migration):
+**Status: implemented — see §16/§17.** The phases below shipped; kept here as the
+historical rollout record.
+
+Implementation order used (each phase was additive and kept `--qd-bg` /
+`--qd-surface` / `--qd-border` / `--qd-accent` working during migration):
 
 - **Phase 1 — Navbar + Footer chrome.** Introduce chrome + footer tokens (both
   themes); light distinct navbar, dark navy footer, active-nav state, fix the
@@ -506,3 +517,167 @@ working during migration):
 
 **Implementation note:** do not paste prototype CSS directly into Angular. Re-author
 everything with the app's SCSS partials and OKLCH `--qd-*` tokens.
+
+## 16. Color doctrine
+
+This is the **live, normative color contract**: it defines what color a UI element
+gets by its *role*, not by ad-hoc per-component choice, and it supersedes
+component-by-component color decisions. New and changed UI must conform to this
+section. The token set it depends on (`--qd-accent-fg`, `--qd-border-accent`,
+`--qd-surface-hover`, `--qd-selected-bg`, `--qd-danger-tint`, `--qd-success-tint`,
+`--qd-warning-tint`) is live in `_tokens.scss` / `_themes.scss`. Rolling every
+existing call-site onto this doctrine is a phased migration tracked in
+`docs/feature-028-color-doctrine-unification/plan.md` (P2–P7); until a call-site is
+migrated it keeps working as-is, but no *new* code may reintroduce a pattern this
+section bans.
+
+### 16.1 Role → color table
+
+| Role | Light | Dark | Notes |
+|------|-------|------|-------|
+| Selected/active background | `--qd-selected-bg` (= `--qd-accent-tint`) | same token | never a solid fill |
+| Selected/active label | `--qd-accent-text` (navy) | `--qd-accent-text` (gold) | must hit AA on the tint |
+| Selected/active edge | 1px `--qd-accent` or `--qd-border-accent` | same | hairline, not a fill |
+| Solid-accent indicator (dot / 2px bar) | `--qd-accent` fill + `--qd-accent-fg` ink | same | the ONLY solid gold behind pixels |
+| Hover fill | `--qd-surface-hover` | same | one token, everywhere |
+| Resting control border | `--qd-border` | `--qd-border` | no gold at rest |
+| Primary action | `--qd-primary` + `--qd-primary-fg` | gold-primary per `DESIGN.md` dark theme | structural navy in light |
+| Danger / success / warning text | `--qd-danger` / `--qd-success` / `--qd-warning` on the matching `*-tint` | same tokens | AA-verified, see below |
+
+`--qd-accent-fg` is **navy ink in both themes** (defined once in `:root`,
+deliberately not overridden in dark) — it exists so a solid-accent indicator never
+borrows `--qd-primary` for ink, because `--qd-primary` is gold in dark and gold ink
+on a gold indicator is unreadable. Never use `--qd-accent-fg` as running text; it is
+ink for a rare *filled* indicator only.
+
+**AA verification (P1 gate, both themes, all pass ≥4.5:1):** `--qd-accent-text` on
+`--qd-selected-bg`, `--qd-danger` on `--qd-danger-tint`, `--qd-success` on
+`--qd-success-tint`, `--qd-accent-fg` on `--qd-accent`. One tint was retuned to
+pass: the light `--qd-success-tint` draft value (`oklch(0.945 0.028 163)`) measured
+4.10:1 against `--qd-success` and failed AA; it ships as
+`oklch(0.982 0.020 163)` (4.58:1) instead. All other tokens ship at the values in
+`_tokens.scss`/`_themes.scss` exactly as specified. Numbers are recorded in the P1
+commit; re-verify whenever a token in this table changes.
+
+### 16.2 Grading / ladder
+
+**Surface ladder (role progression, not raw lightness):** parchment page
+(`--qd-bg`) → elevated card (`--qd-surface`) → quiet/section grouping
+(`--qd-section-bg`) → nested/recessed inset (`--qd-surface-recessed`).
+`--qd-surface-hover` sits alongside the ladder as the **one** hover fill — it is not
+a ladder step. `--qd-surface-elevated` is a legacy alias (currently
+`= --qd-section-bg`); it is retired in P6 of the color-doctrine plan — do not add
+new consumers of it.
+
+**Shadow ladder:** `--qd-shadow-sm` (card resting) → `--qd-shadow` (card hover) →
+`--qd-shadow-lg` (floating layers — dropdowns, popovers, modals, drawers). Dark mode
+re-tunes these heavier/darker; that does not change the ladder order.
+
+**Elevation direction must be consistent across themes.** It is currently **not**:
+`--qd-surface-recessed` is the *darkest*/most-inset step in light (`L≈0.921`, darker
+than `--qd-section-bg` at `L≈0.955`) but the *brightest* step in dark (`L≈0.302`,
+brighter than `--qd-section-bg` at `L≈0.265`) — the same token name means opposite
+visual directions per theme. This is a known, tracked defect (R1 in
+`docs/feature-028-color-doctrine-unification/plan.md`); the fix (dark-ladder
+reordering, retiring `--qd-surface-elevated`, and moving the modal onto
+`--qd-surface` + `--qd-shadow-lg` + backdrop rather than a new `--qd-surface-3`
+token) lands in that plan's P6. No ladder values change as part of authoring this
+doctrine section — this is the rule the fix must satisfy, not the fix itself.
+
+### 16.3 The allowed-gold list (locked)
+
+Gold (`--qd-accent` / `--qd-accent-soft`) may appear **only** as:
+
+1. `:focus-visible` ring/halo (`--qd-focus-ring` / `--qd-ring`).
+2. The 2px selection **indicator** bar or the selected **dot** (fill), with
+   `--qd-accent-fg` ink if it carries a glyph.
+3. A **1px selected/active border** (`--qd-accent` or `--qd-border-accent`).
+4. **Text** emphasis via `--qd-accent-text` (active nav, links, soft/selected
+   labels, section eyebrows) — never raw `--qd-accent` as small text on light.
+5. Footer gold (`--qd-footer-accent`) headings and link-hover.
+6. Icon highlights and the mushaf word-selection indicator
+   (`--qd-mushaf-word-selection-indicator`).
+
+Everything else — chip fills, badge fills, count fills, range badges, selected-row
+fills, `qd-select` resting border — is **banned gold**: use a tint,
+`--qd-accent-text`, or a hairline border instead. This list is mirrored in
+`DESIGN.md` §2 (One Voice Rule) — keep the two in sync if either changes.
+
+## 17. Component contracts ("never hand-write these again")
+
+> **Status:** this section documents the **target contract** for six shared
+> primitives. `qd-tabs`, `qd-chip`, `qd-state`, and the skeleton primitives
+> (`qd-skeleton-rows`, `qd-panel-skeleton`) are Angular components shipped in P2 of
+> `docs/feature-028-color-doctrine-unification/plan.md`; `.qd-explorer-table` and
+> `.qd-detail-list` are CSS class-family collapses shipped in P3/P4. Existing
+> call-sites migrate onto this contract through P2–P7. Once a contract exists for a
+> pattern, **compose it — do not re-style it or hand-roll an equivalent.**
+
+### `qd-tabs`
+- **Purpose:** the one tab-strip implementation app-wide (explorer view-mode tabs,
+  mushaf ayah-section tabs, inline list tabs).
+- **Inputs / roles:** `ariaLabel`, `orientation?='horizontal'`; container is
+  `role="tablist"`; each item is `role="tab"` with `aria-selected`, roving
+  tabindex, Arrow/Home/End keyboard nav (RTL-aware).
+- **Selected / hover / disabled:** selected per §16.1 (tint background +
+  accent-text label + hairline/indicator edge); hover = `--qd-surface-hover`;
+  disabled is non-interactive and drops out of the roving tab order.
+- **Backing classes:** `.qd-tabs`, `.qd-tabs__tab`, `.qd-tabs__tab.qd-is-selected`,
+  `.qd-tabs__count`. Compose, do not re-style.
+
+### `qd-chip`
+- **Purpose:** the one selectable/informational chip (filters, association
+  popovers, count badges).
+- **Inputs / roles:** `selected`, `disabled`, `as?='button'|'a'`, optional
+  trailing `count`.
+- **Selected / hover / disabled:** selected = `--qd-selected-bg` +
+  `--qd-accent-text` + `--qd-border-accent` (§16.1) — **no gold fill**; hover =
+  `--qd-surface-hover`; disabled is visually muted and non-interactive.
+- **Backing classes:** `.qd-chip`, `.qd-chip--pill`, `.qd-chip.qd-is-selected`,
+  `.qd-chip__count`. Compose, do not re-style.
+
+### `qd-state`
+- **Purpose:** the one empty / loading / error presentation.
+- **Inputs / roles:** `variant: 'empty' | 'loading' | 'error'`, `message`; loading
+  is non-interactive `role="status"`.
+- **Visuals:** error uses `--qd-danger` on `--qd-danger-tint` (§16.1), calm per §11
+  — not visually aggressive; empty/loading stay on the neutral surface ladder, no
+  status color.
+- Supersedes ad-hoc `.qd-empty-state` / `.qd-loading-state` / `.qd-error-state`
+  usage; those classes remain as the backing layer. Compose, do not re-style.
+
+### `.qd-explorer-table`
+- **Purpose:** the one table implementation for all 5 explorer tables (roots,
+  lemmas, stems, unique-words, word-types).
+- **Inputs / roles:** per-component SCSS supplies only `grid-template-columns` (+
+  column-specific alignment); virtual-scroll/body wiring is unchanged.
+- **Selected / hover:** selected row = `--qd-selected-bg` (§16.1); hover =
+  `--qd-surface-hover`; density defaults (row height, cell padding, header height)
+  live on the base, not per component.
+- Compose, do not re-style — a table needing a rule beyond
+  `grid-template-columns` is a signal to extend the base, not fork it.
+
+### `.qd-detail-list`
+- **Purpose:** the one detail-list implementation for all 10 explorer detail-list
+  panels (root/lemma/stem word lists, cross-links, missing-surahs, occurrences,
+  type-distribution).
+- **Inputs / roles:** per-component SCSS supplies only `grid-template-columns` and
+  column extras (e.g. `stem-lemmas` 4-col, `type-distribution` 2-col);
+  scroll/pagination wiring is unchanged.
+- **Selected / hover:** same tokens as `.qd-explorer-table` (§16.1) — the two class
+  families share one visual language.
+- Compose, do not re-style.
+
+### Loading/skeleton system
+- **Purpose:** the one loading representation app-wide — no bespoke text-only
+  loading states.
+- **Pieces:** `.qd-skeleton` (parameterized by `--qd-skeleton-w` /
+  `--qd-skeleton-h`; `--text`/`--block`/`--w-*` shorthands retained as thin
+  aliases); `qd-skeleton-rows` (`count`, `rowTemplate` → renders skeleton cells
+  inside the real row grid so loading rows match loaded rows exactly);
+  `qd-panel-skeleton` (generalized `explorer-panel-skeleton`, `shape: 'lines' |
+  'rows' | 'panel'`, default reproduces today's six-line panel skeleton).
+- **Roles:** all skeletons are non-interactive, `aria-busy="true"` + `role="status"`
+  with an sr-only label, and static under `prefers-reduced-motion`.
+- Compose, do not re-style — a new loading state is a `shape`/`rowTemplate` input,
+  not a new component.
