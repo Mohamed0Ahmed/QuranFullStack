@@ -54,6 +54,35 @@ dotnet run --project api/QuranDashboard.Api   # or: scripts/qd-api after scripts
 Connection string via user secrets — see `api/QuranDashboard.Api/README.md`. Swagger at
 `https://localhost:5015/swagger`, health at `/api/health`.
 
+## Deployment (Docker / Railway)
+
+The API is containerized for Railway (Hobby). Artifacts live at the backend root:
+`Dockerfile` (multi-stage: `sdk:10.0` build → `aspnet:10.0` runtime, publishes only
+`api/QuranDashboard.Api`), `.dockerignore`, and `railway.json`. Full plan:
+`docs/deployment-railway/plan.md`.
+
+Build the image locally (build context is this `Backend/` folder):
+
+```bash
+docker build -f Backend/Dockerfile -t quran-api Backend
+```
+
+**Production config comes ONLY from environment variables** — nothing secret is baked into
+the image (`appsettings.Production.json` is gitignored and excluded from the build context).
+Railway must set:
+
+| Variable | Value / note |
+|---|---|
+| `ASPNETCORE_ENVIRONMENT` | `Production` |
+| `ASPNETCORE_URLS` | `http://0.0.0.0:${PORT}` — Kestrel does not read Railway's `$PORT` on its own |
+| `ConnectionStrings__QuranDashboardDb` | `Host=…;Port=5432;Database=…;Username=…;Password=…;SSL Mode=Prefer` |
+| `Cors__AllowedOrigins__0` | `https://manhag-qurany-ui.vercel.app` (array → **indexed** keys; a joined string leaves it empty and the app throws) |
+| `Cors__VercelPreviewHostPrefix` | `manhag-qurany` (enables `*.vercel.app` preview CORS) |
+
+TLS is terminated at Railway's edge; the container serves plain HTTP on `$PORT`
+(`app.UseHttpsRedirection()` no-ops with no HTTPS port configured). Railway healthcheck path:
+`/api/health` (liveness — returns `200` with per-check status in the body).
+
 ## Invariants
 
 - Word identity keys on **clean imlaei-simple** (display stays Uthmani).
