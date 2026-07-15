@@ -14,28 +14,20 @@
   align-items: stretch;
 }
 
+/* .qd-card qd-card--hover supplies border/background/shadow/hover/transition;
+   this trigger only needs its own flex sizing and to zero the card's padding
+   so the full-size inner button remains the click target. */
 .word-type-filter__trigger {
   display: flex;
   align-items: stretch;
   flex: 1 1 16rem;
   min-inline-size: 0;
-  border: 1px solid var(--qd-border);
-  border-radius: var(--qd-radius-lg);
-  background: var(--qd-surface);
-  box-shadow: var(--qd-shadow-sm);
-  transition: border-color var(--qd-t-fast), box-shadow var(--qd-t-fast),
-    background-color var(--qd-t-fast);
-}
-
-.word-type-filter__trigger:hover:not(.word-type-filter__trigger--disabled) {
-  border-color: var(--qd-border-strong);
-  box-shadow: var(--qd-shadow);
+  padding: 0;
 }
 
 .word-type-filter__trigger.qd-is-selected {
-  border-color: var(--qd-accent);
-  background: var(--qd-accent-tint);
-  box-shadow: var(--qd-shadow-sm), inset 0 0 0 1px var(--qd-accent);
+  background: var(--qd-selected-bg);
+  border-color: var(--qd-border-accent);
 }
 
 .word-type-filter__trigger--disabled {
@@ -56,11 +48,7 @@
   padding: 0.95rem 1rem;
   text-align: start;
   cursor: pointer;
-  transition: transform var(--qd-t-fast), box-shadow var(--qd-t-base);
-}
-
-.word-type-filter__button:active {
-  transform: scale(0.97);
+  transition: color var(--qd-t-fast);
 }
 
 .word-type-filter__button.qd-is-selected {
@@ -72,7 +60,6 @@
 }
 
 .word-type-filter__button:focus-visible,
-.word-type-filter__child-button:focus-visible,
 .word-type-filter__secondary-field select:focus-visible {
   outline: 2px solid var(--qd-focus-ring);
   outline-offset: 2px;
@@ -137,39 +124,23 @@
   min-inline-size: 0;
 }
 
+/* .qd-chip .qd-chip--pill supplies border/background/hover/selected/focus/
+   transition; this child only needs its list-item sizing plus the selected
+   dot indicator, which is genuinely local. */
 .word-type-filter__child-button {
   position: relative;
-  display: flex;
-  align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
   inline-size: 100%;
   min-inline-size: 0;
-  border: 1px solid var(--qd-border);
-  border-radius: 999px;
-  background: var(--qd-surface);
-  color: var(--qd-text);
-  padding: 0.65rem 0.8rem;
-  text-align: start;
-  cursor: pointer;
-  transition: border-color var(--qd-t-fast), background-color var(--qd-t-fast),
-    box-shadow var(--qd-t-fast), transform var(--qd-t-fast), color var(--qd-t-fast);
-}
-
-.word-type-filter__child-button:hover:not(:disabled) {
-  border-color: var(--qd-border-strong);
-  background: var(--qd-section-bg);
+  padding-block: 0.6rem;
 }
 
 .word-type-filter__child-button.qd-is-selected {
   padding-inline-start: 1.15rem;
-  border-color: var(--qd-accent);
-  background: var(--qd-accent-tint);
-  color: var(--qd-accent-text, var(--qd-text));
-  box-shadow: inset 0 0 0 1px var(--qd-accent);
   font-weight: 600;
 }
 
+/* Selected-child dot indicator — §16 allowed-gold (solid selection indicator). */
 .word-type-filter__child-button.qd-is-selected::before {
   content: '';
   position: absolute;
@@ -179,7 +150,7 @@
   display: block;
   inline-size: 0.45rem;
   block-size: 0.45rem;
-  border-radius: 999px;
+  border-radius: var(--qd-radius-pill);
   background: var(--qd-accent);
 }
 
@@ -201,36 +172,14 @@
 
 .word-type-filter__count {
   flex-shrink: 0;
-  justify-content: center;
   min-inline-size: 2.5rem;
-  font-variant-numeric: tabular-nums;
 }
 
-.word-type-filter__trigger .word-type-filter__count {
-  background: var(--qd-section-bg);
-}
-
-.word-type-filter__trigger.qd-is-selected .word-type-filter__count,
-.word-type-filter__child-button.qd-is-selected .word-type-filter__count {
-  background: var(--qd-accent-soft);
-  border-color: var(--qd-accent);
-  color: inherit;
-}
-
-.word-type-filter__trigger.qd-is-selected .word-type-filter__count {
-  animation: word-type-filter-count-pulse var(--qd-t-base) cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes word-type-filter-count-pulse {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.12);
-  }
-  100% {
-    transform: scale(1);
-  }
+/* The trigger isn't a .qd-chip, so it needs its own selected-count treatment;
+   the child gets this for free from .qd-chip.qd-is-selected .qd-chip__count. */
+.word-type-filter__trigger.qd-is-selected .qd-chip__count {
+  background: var(--qd-surface);
+  color: var(--qd-accent-text);
 }
 
 .word-type-filter__panel {
@@ -238,8 +187,8 @@
   align-content: start;
   gap: 0.85rem;
   border: 1px solid var(--qd-border);
-  border-radius: var(--qd-radius-lg);
-  background: var(--qd-surface-elevated);
+  border-radius: var(--qd-radius-md);
+  background: var(--qd-surface);
   box-shadow: var(--qd-shadow-lg);
   padding: 1rem;
   block-size: min(22rem, 60vh);
@@ -282,18 +231,5 @@
   select:disabled {
     cursor: wait;
     opacity: 0.72;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .word-type-filter__trigger,
-  .word-type-filter__button,
-  .word-type-filter__child-button,
-  .word-type-filter__secondary-field select {
-    transition: none;
-  }
-
-  .word-type-filter__trigger.qd-is-selected .word-type-filter__count {
-    animation: none;
   }
 }
