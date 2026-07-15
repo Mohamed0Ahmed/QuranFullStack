@@ -88,6 +88,22 @@ describe('WordTypesTableComponent', () => {
 
   afterEach(() => getTestBed().resetTestingModule());
 
+  // Regression: CDK's DefaultIterableDiffer invokes the `trackBy` callback UNBOUND (with no
+  // `this`), so a trackBy that dereferences `this` throws every change-detection cycle and the
+  // virtual-scroll viewport renders zero rows in the browser. jsdom specs use the non-virtual
+  // `@for` fallback (where `this` is bound), which is why this stayed invisible. Exercise the
+  // detached call the way CDK does.
+  it('trackRowDomId works when called unbound (CDK virtual-scroll trackBy) so rows render', () => {
+    const fixture = TestBed.createComponent(WordTypesTableComponent);
+    const instance = fixture.componentInstance as unknown as {
+      trackRowDomId: (index: number, row: WordTypeTableRowDto) => string;
+    };
+    const detachedTrackBy = instance.trackRowDomId;
+
+    expect(() => detachedTrackBy(0, rootRow)).not.toThrow();
+    expect(detachedTrackBy(0, rootRow)).toBe('root:190700');
+  });
+
   it('renders corrected word headers and makes only its statistics actionable', () => {
     const fixture = TestBed.createComponent(WordTypesTableComponent);
     const countEvents: WordTypeCountOpenedEvent[] = [];

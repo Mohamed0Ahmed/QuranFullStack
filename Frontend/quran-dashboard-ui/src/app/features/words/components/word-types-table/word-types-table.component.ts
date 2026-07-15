@@ -98,9 +98,13 @@ export class WordTypesTableComponent {
     });
   }
 
-  protected trackRowDomId(_index: number, row: WordTypeTableRowDto): string {
-    return this.rowDomId(row);
-  }
+  // Arrow-function field, not a method: CDK's DefaultIterableDiffer invokes the virtual-scroll
+  // `trackBy` callback unbound (no `this`). A prototype method would dereference `this` as
+  // undefined and throw every change-detection cycle, rendering zero rows in the browser (the
+  // jsdom specs use the non-virtual `@for` fallback, so they never caught it). The arrow binds
+  // `this` lexically.
+  protected readonly trackRowDomId = (_index: number, row: WordTypeTableRowDto): string =>
+    this.rowDomId(row);
 
   protected get headers() { return WORD_TYPES_TABLE_HEADERS; }
   protected get loadingLabel() { return WORD_TYPES_LOADING_LABEL; }
