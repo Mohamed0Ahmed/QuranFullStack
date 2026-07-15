@@ -46,7 +46,7 @@ import { syncTableScrollbarGutter } from '../../utils/table-scrollbar-gutter-syn
 
 import { QD_BP_TABLET_MAX_QUERY } from '../../../../shared/layout/breakpoints';
 
-const ROW_HEIGHT_DESKTOP = 48;
+const ROW_HEIGHT_DESKTOP = 40;
 const ROW_HEIGHT_MOBILE = 88;
 const HAS_RESIZE_OBSERVER = typeof ResizeObserver !== 'undefined';
 type RootTableColumnKey = MorphologyColumnKey;

@@ -1,33 +1,33 @@
 <section
-  class="word-types-table"
+  class="word-types-table qd-explorer-table"
   [class.word-types-table--grouped]="!isWordView()"
   role="table"
   [attr.aria-label]="tableLabel"
   [attr.aria-rowcount]="rows()?.totalCount ?? null"
 >
   @if (loading() || hasRows()) {
-    <div class="word-types-table__header" role="rowgroup">
-      <div class="word-types-table__header-row" role="row">
-        <span class="word-types-table__header-cell word-types-table__header-cell--row-number qd-explorer-table__header-cell--row-number" role="columnheader">{{ headers.rowNumber }}</span>
+    <div class="word-types-table__header qd-explorer-table__header" role="rowgroup">
+      <div class="word-types-table__header-row qd-explorer-table__header-row" role="row">
+        <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--row-number qd-explorer-table__header-cell--row-number" role="columnheader">{{ headers.rowNumber }}</span>
         @if (isWordView()) {
-          <span class="word-types-table__header-cell word-types-table__header-cell--word" role="columnheader">{{ headers.word }}</span>
-          <span class="word-types-table__header-cell word-types-table__header-cell--meta" role="columnheader">{{ headers.type }}</span>
-          <span class="word-types-table__header-cell word-types-table__header-cell--meta" role="columnheader">{{ headers.root }}</span>
-          <span class="word-types-table__header-cell word-types-table__header-cell--meta" role="columnheader">{{ headers.stem }}</span>
-          <span class="word-types-table__header-cell word-types-table__header-cell--meta" role="columnheader">{{ headers.lemma }}</span>
+          <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--word" role="columnheader">{{ headers.word }}</span>
+          <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--meta" role="columnheader">{{ headers.type }}</span>
+          <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--meta" role="columnheader">{{ headers.root }}</span>
+          <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--meta" role="columnheader">{{ headers.stem }}</span>
+          <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--meta" role="columnheader">{{ headers.lemma }}</span>
         } @else {
-          <span class="word-types-table__header-cell word-types-table__header-cell--word" role="columnheader">{{ dimensionHeader() }}</span>
+          <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--word" role="columnheader">{{ dimensionHeader() }}</span>
         }
-        <span class="word-types-table__header-cell word-types-table__header-cell--count" role="columnheader">{{ headers.occurrences }}</span>
-        <span class="word-types-table__header-cell word-types-table__header-cell--count" role="columnheader">{{ headers.ayahs }}</span>
-        <span class="word-types-table__header-cell word-types-table__header-cell--count" role="columnheader">{{ headers.surahs }}</span>
+        <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--count qd-explorer-table__header-cell--numeric" role="columnheader">{{ headers.occurrences }}</span>
+        <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--count qd-explorer-table__header-cell--numeric" role="columnheader">{{ headers.ayahs }}</span>
+        <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--count qd-explorer-table__header-cell--numeric" role="columnheader">{{ headers.surahs }}</span>
       </div>
-      <div class="word-types-table__header-gutter" aria-hidden="true"></div>
+      <div class="word-types-table__header-gutter qd-explorer-table__header-gutter" aria-hidden="true"></div>
     </div>
 
     @if (loading()) {
       <div
-        class="word-types-table__body word-types-table__body--loading"
+        class="word-types-table__body qd-explorer-table__body word-types-table__body--loading qd-explorer-table__body--loading"
         role="rowgroup"
         aria-busy="true"
         data-testid="word-types-table-loading"
@@ -35,30 +35,30 @@
         <p class="qd-sr-only" role="status" aria-live="polite">{{ loadingLabel }}</p>
         @for (placeholderRow of loadingRowPlaceholders; track placeholderRow) {
           <div
-            class="word-types-table__row word-types-table__row--loading"
+            class="word-types-table__row word-types-table__row--loading qd-explorer-table__row--loading"
             [class.word-types-table__row--grouped]="!isWordView()"
             role="row"
             aria-hidden="true"
           >
-            <span class="word-types-table__cell word-types-table__cell--row-number qd-explorer-table__cell--row-number" role="cell">
+            <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--row-number qd-explorer-table__cell--row-number" role="cell">
               <span class="qd-skeleton qd-skeleton--text word-types-table__loading-number"></span>
             </span>
             @if (isWordView()) {
-              <span class="word-types-table__cell word-types-table__cell--word" role="cell">
+              <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--word" role="cell">
                 <span class="qd-skeleton qd-skeleton--text word-types-table__loading-word"></span>
               </span>
               @for (placeholderMeta of [0, 1, 2, 3]; track placeholderMeta) {
-                <span class="word-types-table__cell word-types-table__cell--meta" role="cell">
+                <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--meta" role="cell">
                   <span class="qd-skeleton qd-skeleton--text word-types-table__loading-meta"></span>
                 </span>
               }
             } @else {
-              <span class="word-types-table__cell word-types-table__cell--word" role="cell">
+              <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--word" role="cell">
                 <span class="qd-skeleton qd-skeleton--text word-types-table__loading-word"></span>
               </span>
             }
             @for (placeholderCount of [0, 1, 2]; track placeholderCount) {
-              <span class="word-types-table__cell word-types-table__cell--count" role="cell">
+              <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--count" role="cell">
                 <span class="qd-skeleton qd-skeleton--rounded-md word-types-table__loading-count"></span>
               </span>
             }
@@ -68,7 +68,7 @@
     } @else if (rows()) {
       @if (useVirtualScroll) {
         <cdk-virtual-scroll-viewport
-          class="word-types-table__body"
+          class="word-types-table__body qd-explorer-table__body"
           [itemSize]="rowHeight()"
           [minBufferPx]="rowHeight() * 4"
           [maxBufferPx]="rowHeight() * 8"
@@ -87,7 +87,7 @@
           </div>
         </cdk-virtual-scroll-viewport>
       } @else {
-        <div class="word-types-table__body" role="rowgroup">
+        <div class="word-types-table__body qd-explorer-table__body" role="rowgroup">
           @for (row of visibleRows(); track rowDomId(row); let index = $index) {
             <div
               class="word-types-table__row qd-explorer-table__row"
@@ -125,29 +125,29 @@
        morphology-meta columns; grouped rows carry only the dimension label; both end in three
        statistic chips, which are the only interactive elements in a row. -->
   <ng-template #rowCells let-row="row" let-index="index">
-    <span class="word-types-table__cell word-types-table__cell--row-number qd-explorer-table__cell--row-number" role="cell">{{ rowNumber(index) }}</span>
+    <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--row-number qd-explorer-table__cell--row-number" role="cell">{{ rowNumber(index) }}</span>
     @if (row.kind === 'word') {
-      <span class="word-types-table__cell word-types-table__cell--word" role="cell">
+      <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--word" role="cell">
         <span class="word-types-table__word">{{ row.displayText }}</span>
       </span>
-      <span class="word-types-table__cell word-types-table__cell--meta" role="cell" [attr.data-label]="headers.type">
+      <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--meta" role="cell" [attr.data-label]="headers.type">
         <span class="word-types-table__meta-text">{{ row.typeLabel.ar }}</span>
       </span>
-      <span class="word-types-table__cell word-types-table__cell--meta" role="cell" [attr.data-label]="headers.root">
+      <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--meta" role="cell" [attr.data-label]="headers.root">
         <span class="word-types-table__meta-text">{{ row.rootText || placeholder }}</span>
       </span>
-      <span class="word-types-table__cell word-types-table__cell--meta" role="cell" [attr.data-label]="headers.stem">
+      <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--meta" role="cell" [attr.data-label]="headers.stem">
         <span class="word-types-table__meta-text">{{ row.stemText || placeholder }}</span>
       </span>
-      <span class="word-types-table__cell word-types-table__cell--meta" role="cell" [attr.data-label]="headers.lemma">
+      <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--meta" role="cell" [attr.data-label]="headers.lemma">
         <span class="word-types-table__meta-text">{{ row.lemmaText || placeholder }}</span>
       </span>
     } @else {
-      <span class="word-types-table__cell word-types-table__cell--word" role="cell" [attr.data-label]="dimensionHeader()">
+      <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--word" role="cell" [attr.data-label]="dimensionHeader()">
         <span class="word-types-table__word">{{ row.displayText }}</span>
       </span>
     }
-    <span class="word-types-table__cell word-types-table__cell--count" role="cell" [attr.data-label]="headers.occurrences">
+    <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--count" role="cell" [attr.data-label]="headers.occurrences">
       <span class="word-types-table__count-chip" data-word-count-column="occurrences">
         <qd-word-count-chip
           [label]="headers.occurrences"
@@ -157,7 +157,7 @@
         />
       </span>
     </span>
-    <span class="word-types-table__cell word-types-table__cell--count" role="cell" [attr.data-label]="headers.ayahs">
+    <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--count" role="cell" [attr.data-label]="headers.ayahs">
       <span class="word-types-table__count-chip" data-word-count-column="ayahs">
         <qd-word-count-chip
           [label]="headers.ayahs"
@@ -167,7 +167,7 @@
         />
       </span>
     </span>
-    <span class="word-types-table__cell word-types-table__cell--count" role="cell" [attr.data-label]="headers.surahs">
+    <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--count" role="cell" [attr.data-label]="headers.surahs">
       <span class="word-types-table__count-chip" data-word-count-column="surahs">
         <qd-word-count-chip
           [label]="headers.surahs"

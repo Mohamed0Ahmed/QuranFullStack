@@ -50,7 +50,7 @@ import { deepLinkToHref } from '../../../../shared/url/deep-link-href';
 
 import { QD_BP_PHONE_MAX_QUERY } from '../../../../shared/layout/breakpoints';
 
-const ROW_HEIGHT_DESKTOP = 48;
+const ROW_HEIGHT_DESKTOP = 40;
 const ROW_HEIGHT_MOBILE = 68;
 const HAS_RESIZE_OBSERVER = typeof ResizeObserver !== 'undefined';
 
