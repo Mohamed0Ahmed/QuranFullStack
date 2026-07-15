@@ -113,6 +113,7 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
 
   protected readonly pageSize = WORD_TYPES_PAGE_SIZE;
   protected readonly listState = this.explorerFacade.listState;
+  protected readonly scopeCountsState = this.explorerFacade.scopeCountsState;
   protected readonly panelState = this.detailFacade.panelState;
   protected readonly isDesktop = signal(true);
   protected readonly searchDraft = signal('');
@@ -205,6 +206,10 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
 
   protected onPresenceFlagChange(change: WordTypePresenceFlagChange): void {
     this.explorerFacade.selectPresenceFlag(change.dimension, change.value);
+  }
+
+  protected onScopeCountsRetry(): void {
+    this.explorerFacade.retryScopeCounts();
   }
 
   ngOnInit(): void {

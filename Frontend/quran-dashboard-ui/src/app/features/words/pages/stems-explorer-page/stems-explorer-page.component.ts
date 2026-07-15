@@ -1,7 +1,7 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subject, Subscription, debounceTime, switchMap } from 'rxjs';
+import { Subject, Subscription, catchError, debounceTime, of, switchMap } from 'rxjs';
 
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
 import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
@@ -144,13 +144,19 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
     });
     this.searchSub = this.searchInput.pipe(debounceTime(300)).subscribe((value) => this.updateQueryParams({ search: value || null, page: null }));
     this.rootSearchSub = this.rootSearchInput
-      .pipe(debounceTime(300), switchMap((term) => this.associationOptions.searchRoots(term)))
+      .pipe(
+        debounceTime(300),
+        switchMap((term) => this.associationOptions.searchRoots(term).pipe(catchError(() => of([])))),
+      )
       .subscribe((options) => {
         this.rootOptions.set(options);
         this.rootOptionsLoading.set(false);
       });
     this.lemmaSearchSub = this.lemmaSearchInput
-      .pipe(debounceTime(300), switchMap((term) => this.associationOptions.searchLemmas(term)))
+      .pipe(
+        debounceTime(300),
+        switchMap((term) => this.associationOptions.searchLemmas(term).pipe(catchError(() => of([])))),
+      )
       .subscribe((options) => {
         this.lemmaOptions.set(options);
         this.lemmaOptionsLoading.set(false);

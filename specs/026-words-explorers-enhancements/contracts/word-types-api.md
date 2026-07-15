@@ -14,7 +14,7 @@ New optional query params (added to the existing
 
 | Param | Type | Default | Validation | Semantics |
 |---|---|---|---|---|
-| `search` | string | absent | trim; whitespace→absent; length > 64 → 400 `WordTypesInvalidFilter`; value never logged (structured logs carry `hasSearch` only) | Arabic-normalized contains-match on **word identity text** (`quran_words_unique_tashkeel.text_imlaei_simple`) applied to the shared scoped occurrence base — the words view rows, all three grouped views, and their `TotalCount`s inherit it. Never matches root/stem/lemma display text. |
+| `search` | string | absent | trim; whitespace→absent; length > 64 → 400 `WordTypesInvalidFilter`; value never logged (structured logs carry `hasSearch` only) | Arabic-normalized contains-match on the **folded word-identity search column** (`quran_words_unique_tashkeel.search_text_normalized`, the same column Unique Words search uses) applied to the shared scoped occurrence base — the words view rows, all three grouped views, and their `TotalCount`s inherit it. Never matches root/stem/lemma display text. |
 | `hasRoot` | bool | absent | `true`/`false` only, else 400 | tri-state presence predicate `m.root_id IS [NOT] NULL` on the shared base |
 | `hasStem` | bool | absent | same | `m.stem_id IS [NOT] NULL` |
 | `hasLemma` | bool | absent | same | `m.lemma_id IS [NOT] NULL` |
@@ -68,12 +68,10 @@ row shapes (`WordTypeRowDto`, `WordTypeTableRowDto` polymorphic variants) unchan
 - SQL identifiers stay allowlisted; user input reaches SQL only as parameter values.
 - Search predicate joins/EXISTS against `quran_words_unique_tashkeel` on the base's
   word id; no ayah-text access, no dimension-text predicates.
-- Recorded implementation deviation (accepted): the search predicate matches the computed
-  `quran_words_unique_tashkeel.search_text_normalized` column (the folded identity-search text
-  Unique Words search already uses) instead of the literal `text_imlaei_simple` named in §1 —
-  the substance of Locked Decision A1 (normalized imlaei-simple word-identity text only) is
-  preserved, and the T009(d) normalization-equivalence requirement makes the folded column the
-  correct target.
+- The search predicate matches the computed `quran_words_unique_tashkeel.search_text_normalized`
+  column — the folded identity-search text Unique Words search already uses (see §1). This upholds
+  the substance of Locked Decision A1 (normalized imlaei-simple word-identity text only), and the
+  T009(d) normalization-equivalence requirement makes the folded column the correct single target.
 - No writes; `AsNoTracking`/raw-read semantics preserved.
 - reads README + `features/words/README.md` updated in the same commit as each
   contract change here.

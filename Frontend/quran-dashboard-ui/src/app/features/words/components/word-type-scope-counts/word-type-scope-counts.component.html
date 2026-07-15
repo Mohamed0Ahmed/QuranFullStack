@@ -12,6 +12,7 @@
       <div
         class="word-type-scope-counts word-type-scope-counts--loading"
         role="status"
+        aria-busy="true"
         data-testid="word-type-scope-counts-skeleton"
       >
         <span class="qd-sr-only">{{ loadingLabel }}</span>
@@ -23,7 +24,7 @@
     @case ('error') {
       <div
         class="word-type-scope-counts word-type-scope-counts--error"
-        role="status"
+        role="alert"
         data-testid="word-type-scope-counts-error"
       >
         <span class="word-type-scope-counts__error-text">{{ errorLabel }}</span>

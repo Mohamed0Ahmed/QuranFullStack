@@ -80,6 +80,14 @@
     animation: association-filter-panel-in 140ms ease-out;
   }
 
+  // When there is more room above the field than below (e.g. near the viewport bottom, or with a
+  // mobile keyboard raising the fold), applyPanelMaxHeight() toggles this modifier so the panel opens
+  // upward instead of running off-screen.
+  &__panel--above {
+    top: auto;
+    bottom: calc(100% + var(--qd-space-1));
+  }
+
   &__options {
     list-style: none;
     margin: 0;

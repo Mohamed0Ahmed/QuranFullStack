@@ -40,7 +40,7 @@ no new packages.
 | C1 | Normal explorers: ONE headline stat = the current result set's total (the page's existing filtered `PagedResult<T>.TotalCount`), reflecting active search/filters. No new backend aggregation. Arabic label per page. |
 | C2 | Word Types: scoped FOUR-count summary (words, roots, stems, lemmas) for the active `type/childCode/case/tense/voice` scope **and** the new search. Uses the scoped word-context count family only; prefers a single new read returning all four counts; never conflated with the global `words_count`-backed family. |
 | C3 | Stat areas share the exact URL/cache identity of their page's list. Any new endpoint: `ApiResponse<T>`, read-only, parameterized values + allowlisted identifiers, cache key includes every scope input. Distinct loading/empty/error states; loading is non-interactive. |
-| D | Terminology: root = **"الجذر"**; stem = **"الجذع"** (may be labeled "الأصل" — the app today uses "الأصل الصرفي"); lemma = **"اللمّة"** (may be labeled "الصيغة المعجمية" — the app's current term). Every Arabic label must name the dimension it actually counts. |
+| D | Terminology (per spec FR-021): root = **"الجذر"** (plural "الجذور"); stem's canonical user-facing label = **"الأصل الصرفي"** (plural "الأصول الصرفية"; internal reference "الجذع"); lemma's canonical user-facing label = **"الصيغة المعجمية"** (plural "الصيغ المعجمية"; internal reference "اللمّة"). "الجذع"/"اللمّة" are internal reference terms only, never user-facing labels. Every Arabic label must name the dimension it actually counts. |
 
 ### Decision reconciliation (A1 × C2) — recorded, not re-opened
 

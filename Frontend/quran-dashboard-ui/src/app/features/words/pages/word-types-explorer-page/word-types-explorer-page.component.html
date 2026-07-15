@@ -57,7 +57,11 @@
 
     <!-- Scope summary between the filter strip and the view tabs (filters → scope summary → tabs → table).
          Host stays mounted; the table's failure hides its numbers (scope unconfirmed). -->
-    <qd-word-type-scope-counts [tableFailed]="listState().status === 'error'" />
+    <qd-word-type-scope-counts
+      [state]="scopeCountsState()"
+      [tableFailed]="listState().status === 'error'"
+      (retryRequested)="onScopeCountsRetry()"
+    />
 
     @if (listState().tree) {
       <qd-word-type-table-view-tabs

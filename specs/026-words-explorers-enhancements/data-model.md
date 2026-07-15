@@ -29,7 +29,7 @@ one surface; the new scope counts belong exclusively to the scoped family.
 
 | Param | Type | Validation | Meaning |
 |---|---|---|---|
-| `search` | `string?` | trim; empty→null; max length 64 else `InvalidFilter`; never logged (only `hasSearch`) | normalized-contains match on word identity text (`text_imlaei_simple`); part of the shared scope — words view, grouped views, and scope counts all inherit it |
+| `search` | `string?` | trim; empty→null; max length 64 else `InvalidFilter`; never logged (only `hasSearch`) | normalized-contains match on the folded word-identity search column (`search_text_normalized`); part of the shared scope — words view, grouped views, and scope counts all inherit it |
 | `hasRoot` / `hasStem` / `hasLemma` | `bool?` (tri-state) | absent = any; `true` = has; `false` = missing | presence predicates over `m.root_id`/`m.stem_id`/`m.lemma_id` (allowlisted `IS [NOT] NULL`); part of the shared scope |
 | `pageSize` | `int?` | list reads: 1..**1000** (`MaxListPageSize`), default **1000**; detail reads: 1..**100** (`MaxDetailPageSize`), default **100** | split caps — the documented grouped-detail 1..100 contract is preserved |
 

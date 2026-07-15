@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 
 import {
   WORD_TYPE_TABLE_VIEW_OPTIONS,
@@ -7,8 +7,7 @@ import {
   WORD_TYPES_SCOPE_COUNTS_ERROR_LABEL,
   WORD_TYPES_SCOPE_COUNTS_LABEL,
 } from '../../models/word-types.labels';
-import { WordTypeScopeCountsDto, WordTypeTableView } from '../../models/word-types.models';
-import { WordTypesExplorerFacade } from '../../state/word-types-explorer.facade';
+import { WordTypeScopeCountsDto, WordTypeTableView, WordTypesScopeCountsState } from '../../models/word-types.models';
 
 /**
  * Scoped four-count summary strip for the Word Types page (Feature 026, US8). Sits between the filter
@@ -16,12 +15,12 @@ import { WordTypesExplorerFacade } from '../../state/word-types-explorer.facade'
  * contains, reusing the view tabs' SHORT labels verbatim (كلمات | جذور | أصول | صيغ, same order and text
  * — the tabs are not renamed). Non-interactive apart from the error-state retry.
  *
- * This is a self-contained scope-counts widget for the one page it belongs to: it reads the facade's
- * scope-counts state and triggers a counts-only refetch directly, so the page class stays thin (the US8
- * additions live here, not in `word-types-explorer-page.component.ts`). Its own load lifecycle is fully
- * independent of the table — a counts failure shows the strip's compact error + retry and never blocks
- * the table — while a `tableFailed` table read hides the strip numbers (the scope is unconfirmed). The
- * host stays mounted through every transition (mounted-shell invariant); only its inner content toggles.
+ * Presentational strip: the page (via `WordTypesExplorerFacade`) owns the scope-counts load lifecycle
+ * and passes it in as `state`; this component only renders it and emits `retryRequested` so the page can
+ * trigger a counts-only refetch (page → facade → presentational-child boundary). Its load lifecycle is
+ * fully independent of the table — a counts failure shows the strip's compact error + retry and never
+ * blocks the table — while a `tableFailed` table read hides the strip numbers (the scope is unconfirmed).
+ * The host stays mounted through every transition (mounted-shell invariant); only its inner content toggles.
  */
 @Component({
   selector: 'qd-word-type-scope-counts',
@@ -35,8 +34,10 @@ export class WordTypeScopeCountsComponent {
   // by its error state and never propagates to the table.
   readonly tableFailed = input(false);
 
-  private readonly facade = inject(WordTypesExplorerFacade);
-  protected readonly state = this.facade.scopeCountsState;
+  // The page owns the scope-counts load lifecycle (facade) and passes the current state in; retry is
+  // delegated back to the page via an output so this strip stays presentational.
+  readonly state = input.required<WordTypesScopeCountsState>();
+  readonly retryRequested = output<void>();
 
   // The four labeled counts, in the tabs' RTL order, each reusing the tab's short label verbatim.
   protected readonly items = computed<readonly ScopeCountItem[]>(() => {
@@ -56,7 +57,7 @@ export class WordTypeScopeCountsComponent {
   protected get loadingLabel() { return WORD_TYPES_LOADING_LABEL; }
 
   protected retry(): void {
-    this.facade.retryScopeCounts();
+    this.retryRequested.emit();
   }
 }
 

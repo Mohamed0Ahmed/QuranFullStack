@@ -56,9 +56,12 @@ public static class WordTypesCacheKeys
         selection.Filter.Voice);
 
     // Empty/absent search AND absent presence flags keep the pre-feature 5-part hash so warm rows/table
-    // entries stay valid. A non-empty NORMALIZED search appends a component (same normalization the SQL
-    // predicate uses); any set presence flag (Feature 026, US6) appends a distinct flag component. So
-    // searched/flagged reads never cross-serve their unsearched/unflagged counterparts.
+    // entries stay valid. A non-empty NORMALIZED search appends a LABELLED component (same normalization
+    // the SQL predicate uses); any set presence flag (Feature 026, US6) appends a distinct LABELLED flag
+    // component. The distinct "search:"/"flags:" prefixes plus the delimiter escaping in HashParts stop a
+    // free-form search term (e.g. one that normalizes to "flags:1__" or embeds the '|' delimiter) from
+    // hashing to the same key as a different presence-flag scope — so searched/flagged reads never
+    // cross-serve their unsearched/unflagged counterparts.
     private static string HashFilter(WordTypeFilter filter)
     {
         var normalizedSearch = ArabicSearchQueryNormalizer.Normalize(filter.Search);
@@ -66,7 +69,7 @@ public static class WordTypesCacheKeys
 
         if (!string.IsNullOrEmpty(normalizedSearch))
         {
-            parts.Add(normalizedSearch);
+            parts.Add($"search:{normalizedSearch}");
         }
 
         if (filter.HasRoot is not null || filter.HasStem is not null || filter.HasLemma is not null)
@@ -93,10 +96,16 @@ public static class WordTypesCacheKeys
 
     private static string HashParts(params string?[] parts)
     {
-        var normalized = string.Join('|', parts.Select(part => string.IsNullOrWhiteSpace(part) ? "_" : part.Trim()));
+        var normalized = string.Join('|', parts.Select(EncodePart));
         var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(normalized));
         return Convert.ToHexString(bytes[..8]).ToLowerInvariant();
     }
+
+    // Escape the join delimiter (and its own escape char) so a part that contains '|' cannot split into
+    // extra slots and align with a different combination of parts. Absent/whitespace parts collapse to
+    // the reserved "_" placeholder, matching the pre-feature key shape for unfiltered reads.
+    private static string EncodePart(string? part) =>
+        string.IsNullOrWhiteSpace(part) ? "_" : part.Trim().Replace("\\", "\\\\").Replace("|", "\\|");
 
     private static string TableViewKey(WordTypeTableView tableView) => tableView switch
     {

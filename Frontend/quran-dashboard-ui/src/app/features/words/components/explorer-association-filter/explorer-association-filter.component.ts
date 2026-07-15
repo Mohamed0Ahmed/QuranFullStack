@@ -17,9 +17,11 @@ import { WORDS_ASSOCIATION_FILTER_LABELS } from '../../models/words-shared.label
 export type { AssociationOption } from '../../state/words-association-filters';
 
 const PANEL_VIEWPORT_PADDING_PX = 8;
-const PANEL_MIN_HEIGHT_PX = 120;
+// Preferred room below the field before we flip the panel above it — not a forced minimum height.
+const PANEL_FLIP_THRESHOLD_PX = 120;
 const PANEL_MAX_HEIGHT_PX = 320;
 const PANEL_MAX_HEIGHT_VAR = '--assoc-filter-panel-max-height';
+const PANEL_ABOVE_CLASS = 'association-filter__panel--above';
 
 let nextPanelId = 0;
 
@@ -204,12 +206,16 @@ export class ExplorerAssociationFilterComponent {
     }
 
     const fieldRect = field.getBoundingClientRect();
-    const availableBelowField = window.innerHeight - fieldRect.bottom - PANEL_VIEWPORT_PADDING_PX;
-    const maxHeight = Math.min(
-      PANEL_MAX_HEIGHT_PX,
-      Math.max(PANEL_MIN_HEIGHT_PX, availableBelowField),
-    );
+    const spaceBelow = window.innerHeight - fieldRect.bottom - PANEL_VIEWPORT_PADDING_PX;
+    const spaceAbove = fieldRect.top - PANEL_VIEWPORT_PADDING_PX;
 
+    // Flip above only when there is too little room below AND more room above; otherwise stay below.
+    const openAbove = spaceBelow < PANEL_FLIP_THRESHOLD_PX && spaceAbove > spaceBelow;
+    // Cap the height to the chosen side's actual space so the panel never overflows the viewport.
+    const available = Math.max(0, openAbove ? spaceAbove : spaceBelow);
+    const maxHeight = Math.min(PANEL_MAX_HEIGHT_PX, available);
+
+    panel.classList.toggle(PANEL_ABOVE_CLASS, openAbove);
     panel.style.setProperty(PANEL_MAX_HEIGHT_VAR, `${maxHeight}px`);
   }
 }

@@ -9,7 +9,7 @@
 
 - **Decision**: one parameterized predicate on the shared scoped occurrence base
   (`BaseRowsSql` in `EfWordTypesReader.Sql.cs`), matching
-  `quran_words_unique_tashkeel.text_imlaei_simple` via normalized `LIKE @search`.
+  `quran_words_unique_tashkeel.search_text_normalized` via normalized `ILIKE @searchPattern`.
 - **Rationale**: all four tableViews and the new scope-counts read derive from that
   base verbatim (reads README invariant), so a single predicate keeps words view,
   grouped views, and the four counts mutually consistent — which the spec's equality

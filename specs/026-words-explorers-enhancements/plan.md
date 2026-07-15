@@ -152,7 +152,7 @@ Key mechanics (full contract: `contracts/word-types-api.md`):
   max length 64, log only `hasSearch`) → shared Arabic-normalize helper
   (extracted from `EfUniqueWordsReader.NormalizeArabicQuery`; Unique Words behavior
   pinned unchanged) → ONE parameterized predicate on `BaseRowsSql`'s occurrence base
-  matching `quran_words_unique_tashkeel.text_imlaei_simple` (`LIKE @search`,
+  matching `quran_words_unique_tashkeel.search_text_normalized` (`ILIKE @searchPattern`,
   value-parameterized, identifiers allowlisted). Rows/count/grouped SQL inherit it;
   `.GroupedDetails.*` detail reads do NOT take search (numeric identity, already
   scoped — asymmetry documented in reads README).

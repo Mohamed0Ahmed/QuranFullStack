@@ -11,7 +11,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subscription, debounceTime, Subject, switchMap } from 'rxjs';
+import { Subscription, catchError, debounceTime, of, Subject, switchMap } from 'rxjs';
 
 import { UniqueWordsFacade } from '../../state/unique-words.facade';
 import {
@@ -203,7 +203,10 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
       .subscribe((options) => this.typeOptions.set(options));
 
     this.rootSearchSub = this.rootSearchInput
-      .pipe(debounceTime(300), switchMap((term) => this.associationOptions.searchRoots(term)))
+      .pipe(
+        debounceTime(300),
+        switchMap((term) => this.associationOptions.searchRoots(term).pipe(catchError(() => of([])))),
+      )
       .subscribe((options) => {
         this.rootOptions.set(options);
         this.rootOptionsLoading.set(false);
