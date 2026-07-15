@@ -1,0 +1,40 @@
+# Build context is Backend/. Keep the image small and secret-free.
+# NOTE: the repo-root resources/ folder is OUTSIDE this context and is never included.
+
+# Build outputs
+**/bin/
+**/obj/
+
+# IDE / editor
+**/.vs/
+**/.idea/
+**/*.user
+**/*.suo
+**/*.userosscache
+
+# Secrets / local configuration — must never be baked into the image
+**/appsettings.Production.json
+**/appsettings.*.local.json
+**/appsettings.Local.json
+**/secrets.json
+**/*.env
+**/.env
+
+# Projects and assets not needed to publish the API
+tests/
+tools/
+report/
+scripts/
+.architecture/
+
+# Docs / metadata
+**/*.md
+.idea/
+
+# Git
+.git/
+.gitignore
+
+# Docker artifacts themselves
+Dockerfile
+.dockerignore
