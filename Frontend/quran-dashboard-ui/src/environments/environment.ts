@@ -1,5 +1,5 @@
 export const environment = {
   production: true,
-  apiBaseUrl: 'https://manhaj.runasp.net',
+  apiBaseUrl: 'https://quranfullstack-production.up.railway.app',
   devApiLatencyMs: 0,
 };
