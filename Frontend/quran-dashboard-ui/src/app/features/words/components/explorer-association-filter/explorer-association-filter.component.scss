@@ -1,5 +1,6 @@
 :host {
   display: block;
+  position: relative;
 }
 
 .association-filter {
@@ -8,18 +9,11 @@
   padding: var(--qd-space-1) var(--qd-space-2);
   background: var(--qd-surface);
 
-  &__summary {
+  &__field {
     display: flex;
     align-items: center;
     gap: var(--qd-space-2);
-    cursor: pointer;
-    list-style: none;
     font-size: 0.875rem;
-
-    &:focus-visible {
-      outline: 2px solid var(--qd-focus-ring);
-      outline-offset: 2px;
-    }
   }
 
   &__label {
@@ -34,7 +28,6 @@
   }
 
   &__clear {
-    margin-inline-start: auto;
     border: none;
     background: transparent;
     cursor: pointer;
@@ -53,21 +46,45 @@
     }
   }
 
-  &__body {
-    margin-top: var(--qd-space-2);
-    display: flex;
-    flex-direction: column;
-    gap: var(--qd-space-1);
+  &__search-field {
+    flex: 1;
+    min-width: 0;
+    margin-inline-start: auto;
   }
 
   &__search {
     width: 100%;
+
+    &:focus-visible {
+      outline: 2px solid var(--qd-focus-ring);
+      outline-offset: 2px;
+    }
+  }
+
+  // Popover panel: mirrors the surah-jump-picker anchor/positioning mechanic (see
+  // mushaf/components/surah-jump-picker) so it escapes the .uw-toolbar-recess surface unclipped.
+  // :host establishes the containing block; the panel anchors under the whole component.
+  &__panel {
+    position: absolute;
+    inset-inline: 0;
+    top: calc(100% + var(--qd-space-1));
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    max-height: var(--assoc-filter-panel-max-height, 20rem);
+    overflow: hidden;
+    background: var(--qd-surface);
+    border: 1px solid var(--qd-border);
+    border-radius: var(--qd-radius-md);
+    box-shadow: var(--qd-shadow-lg);
+    animation: association-filter-panel-in 140ms ease-out;
   }
 
   &__options {
     list-style: none;
     margin: 0;
-    padding: 0;
+    padding: var(--qd-space-1);
+    min-height: 0;
     max-height: 14rem;
     overflow-y: auto;
     display: flex;
@@ -111,6 +128,24 @@
 
   &__hint {
     margin: 0;
+    padding: var(--qd-space-2);
     color: var(--qd-text-muted);
+  }
+}
+
+@keyframes association-filter-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .association-filter__panel {
+    animation: none;
   }
 }

@@ -1,11 +1,7 @@
-<details
-  class="association-filter"
-  [open]="expanded()"
-  [attr.data-testid]="testid()"
-  (toggle)="expanded.set($any($event.target).open)"
->
-  <summary class="association-filter__summary">
+<div class="association-filter" [attr.data-testid]="testid()">
+  <div class="association-filter__field">
     <span class="association-filter__label">{{ label() }}</span>
+
     @if (hasSelection()) {
       <span class="qd-badge association-filter__value" data-testid="association-filter-value">
         {{ selectionText() }}
@@ -16,55 +12,63 @@
         [disabled]="disabled()"
         [attr.aria-label]="labels.clear + ': ' + label()"
         data-testid="association-filter-clear"
-        (click)="onClear(); $event.preventDefault()"
+        (click)="onClear()"
       >
         ×
       </button>
     }
-  </summary>
 
-  <div class="association-filter__body">
     <label class="association-filter__search-field">
       <span class="qd-sr-only">{{ label() }}</span>
       <input
+        #fieldInput
         type="search"
         class="qd-input association-filter__search"
         [attr.placeholder]="placeholder()"
         [value]="query()"
         [disabled]="disabled()"
+        aria-haspopup="true"
+        [attr.aria-expanded]="panelOpen()"
+        [attr.aria-controls]="panelOpen() ? panelId : null"
         data-testid="association-filter-search"
         (input)="onQueryInput($any($event.target).value)"
+        (focus)="onFieldFocus()"
+        (blur)="onFieldBlur()"
       />
     </label>
-
-    @if (loading()) {
-      <p class="association-filter__hint" data-testid="association-filter-loading" role="status">
-        <span aria-hidden="true">…</span>
-        <span class="qd-sr-only">{{ labels.loading }}</span>
-      </p>
-    } @else {
-      <!-- Plain list semantics on purpose: options are ordinary buttons reachable by Tab. No listbox
-           role is claimed because no arrow-key/listbox keyboard model is implemented. -->
-      <ul class="association-filter__options" [attr.aria-label]="label()">
-        @for (option of visibleOptions(); track option.id) {
-          <li>
-            <button
-              type="button"
-              class="association-filter__option"
-              [class.qd-is-selected]="option.id === selectedId()"
-              [attr.aria-pressed]="option.id === selectedId()"
-              [disabled]="disabled()"
-              [attr.data-testid]="'association-filter-option-' + option.id"
-              (click)="onSelect(option)"
-            >
-              <span class="association-filter__option-label">{{ option.label }}</span>
-              @if (option.sublabel) {
-                <span class="association-filter__option-sublabel">{{ option.sublabel }}</span>
-              }
-            </button>
-          </li>
-        }
-      </ul>
-    }
   </div>
-</details>
+
+  @if (panelOpen()) {
+    <div #panel class="association-filter__panel" [id]="panelId" [attr.aria-label]="label()">
+      @if (loading()) {
+        <p class="association-filter__hint" data-testid="association-filter-loading" role="status">
+          <span aria-hidden="true">…</span>
+          <span class="qd-sr-only">{{ labels.loading }}</span>
+        </p>
+      } @else {
+        <!-- Plain list semantics on purpose: options are ordinary buttons reachable by Tab. No listbox
+             role is claimed because no arrow-key/listbox keyboard model is implemented. -->
+        <ul class="association-filter__options">
+          @for (option of visibleOptions(); track option.id) {
+            <li>
+              <button
+                type="button"
+                class="association-filter__option"
+                [class.qd-is-selected]="option.id === selectedId()"
+                [attr.aria-pressed]="option.id === selectedId()"
+                [disabled]="disabled()"
+                [attr.data-testid]="'association-filter-option-' + option.id"
+                (click)="onSelect(option)"
+              >
+                <span class="association-filter__option-label">{{ option.label }}</span>
+                @if (option.sublabel) {
+                  <span class="association-filter__option-sublabel">{{ option.sublabel }}</span>
+                }
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+  }
+</div>

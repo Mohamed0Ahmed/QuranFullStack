@@ -13,6 +13,7 @@ import {
 } from '../../components/explorer-association-filter/explorer-association-filter.component';
 import { WordsAssociationOptionsService } from '../../data-access/words-association-options.service';
 import { ExplorerResultCountComponent } from '../../components/explorer-result-count/explorer-result-count.component';
+import { ExplorerSearchRowComponent } from '../../components/explorer-search-row/explorer-search-row.component';
 import { LemmaAyahTypeFiltersComponent } from '../../components/lemma-ayah-type-filters/lemma-ayah-type-filters.component';
 import { LemmaDetailsPanelComponent } from '../../components/lemma-details-panel/lemma-details-panel.component';
 import { LemmaStemsListComponent } from '../../components/lemma-stems-list/lemma-stems-list.component';
@@ -38,7 +39,7 @@ type LemmaCountTarget = LemmaCountOpenedEvent & { column: LemmaTableColumnKey };
 @Component({
   selector: 'qd-lemmas-explorer-page',
   standalone: true,
-  imports: [NgTemplateOutlet, AyahMatchesListComponent, ExplorerCountRangeFilterComponent, ExplorerAssociationFilterComponent, ExplorerResultCountComponent, LemmaAyahTypeFiltersComponent, LemmaDetailsPanelComponent, LemmaStemsListComponent, LemmaWordsListComponent, LemmasTableComponent, MissingSurahsListComponent, PaginationComponent, SurahOccurrencesListComponent],
+  imports: [NgTemplateOutlet, AyahMatchesListComponent, ExplorerCountRangeFilterComponent, ExplorerAssociationFilterComponent, ExplorerResultCountComponent, ExplorerSearchRowComponent, LemmaAyahTypeFiltersComponent, LemmaDetailsPanelComponent, LemmaStemsListComponent, LemmaWordsListComponent, LemmasTableComponent, MissingSurahsListComponent, PaginationComponent, SurahOccurrencesListComponent],
   templateUrl: './lemmas-explorer-page.component.html',
   styleUrl: './lemmas-explorer-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

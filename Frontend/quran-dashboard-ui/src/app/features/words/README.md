@@ -63,8 +63,10 @@ Shared across explorers: `utils/explorer-table-*` (focus/keyboard-nav/scroll/col
   construction. `*_RANGE_METRICS` and the range-filter labels are read via **TDZ-safe getters**, never
   `readonly` fields (they resolve to `undefined` in the bundled test build otherwise).
 - **Association filters** (Feature 026, US7) narrow three of the normal explorers by a related dimension,
-  using the shared presentational `explorer-association-filter` search-select (a `<details>` disclosure
-  with a search input, an options list, and a clear affordance; RTL, `aria`). URL keys (all optional,
+  using the shared presentational `explorer-association-filter` search-select (an inline search field whose
+  input opens a focus-driven popover holding the options list, with the current selection shown as a badge
+  plus a clear affordance; RTL, `aria`; options stay plain `aria-pressed` buttons, not a listbox — see the
+  Feature 027 controls-layout bullet below for the popover interaction). URL keys (all optional,
   additive, parsed **fail-closed**): Unique Words `primaryType` (POS code) + `rootId`; Lemmas `rootId`;
   Stems `rootId` + `lemmaId`. `primaryType` keeps a well-formed catalogue token else absent; ids keep a
   positive integer else absent (`state/words-association-filters.ts` `parsePosCodeParam` /
@@ -80,6 +82,22 @@ Shared across explorers: `utils/explorer-table-*` (focus/keyboard-nav/scroll/col
   "الجذر الأساسي" / "الصيغة المعجمية الأساسية" (**primary, not sole** — the filter matches the displayed
   dominant association). Every association filter agrees with the value the row displays, so the chip and
   the filter can never disagree.
+- **Explorer controls layout** (Feature 027) restructures the four normal explorers' toolbars: the shared
+  presentational `qd-explorer-search-row` (`role="search"`) holds the main search `<input type="search">`
+  plus each page's projected association-filter fields (`<ng-content>`) side-by-side at ≥ tablet (≥1024px),
+  stacking full-width on phone (≤767px). A secondary controls row (`.qd-explorer-controls-secondary`) holds
+  the sort `<select>` plus `explorer-count-range-filter`; the headline result-count stat stays visible. The
+  former `qd-unique-words-search-bar` is retired — its input is now the shared row's main input, its sort
+  select a page-level secondary-row `<select>` — with the `unique-words-search-input`/`unique-words-sort-select`
+  testids preserved. `explorer-association-filter`'s popover is now focus-driven rather than a `<details>`
+  disclosure: it opens on field focus or typing and closes on Escape (focus restored to the field),
+  outside-click, focus leaving the component (`focusout`), or selecting an option, with no focus trap and
+  single-open behavior (focusing a sibling field closes the previous); `aria-expanded`/`aria-controls`/
+  `aria-haspopup="true"` sit on the field, and options stay plain Tab-reachable `aria-pressed` buttons, not a
+  listbox (no arrow-key/`aria-activedescendant` model, deliberate). The panel floats above
+  `.uw-toolbar-recess` (unclipped, RTL-anchored under the field, viewport-aware height limit). **Unchanged:**
+  every URL query key, the url-sync contract, all data-testids, search debounce/semantics, and the
+  association-filter public inputs/outputs.
 - Tests: obey the repo test-command rule (see `../../../../README.md`) — the vitest worker
   cap and jsdom observer guards apply here.
 - **Word Types has table-view tabs** (`tableView=words|roots|stems|lemmas`, default `words`,

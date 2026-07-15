@@ -10,12 +10,36 @@
     <div class="uw-toolbar-recess uw-toolbar-recess--stacked">
       <qd-unique-words-tabs [activeMode]="listState().mode" />
 
-      <qd-unique-words-search-bar
-        [search]="searchDraft()"
-        [sort]="listState().sort"
+      <qd-explorer-search-row
+        [searchValue]="searchDraft()"
+        [searchLabel]="searchLabel"
+        [searchPlaceholder]="searchPlaceholder"
+        searchTestid="unique-words-search-input"
         (searchChange)="onSearchChange($event)"
-        (sortChange)="onSortChange($event)"
-      />
+      >
+        <qd-explorer-association-filter
+          testid="unique-words-primary-type-filter"
+          [label]="primaryTypeLabel"
+          [placeholder]="primaryTypePlaceholder"
+          [options]="typeOptions()"
+          [selectedId]="association().primaryType"
+          [clientFilter]="true"
+          [disabled]="listState().status === 'loading'"
+          (selectionChange)="onPrimaryTypeChange($event)"
+        />
+        <qd-explorer-association-filter
+          testid="unique-words-primary-root-filter"
+          [label]="primaryRootLabel"
+          [placeholder]="primaryRootPlaceholder"
+          [options]="rootOptions()"
+          [selectedId]="association().rootId"
+          [selectedLabel]="selectedRootLabel()"
+          [loading]="rootOptionsLoading()"
+          [disabled]="listState().status === 'loading'"
+          (searchChange)="onRootSearch($event)"
+          (selectionChange)="onPrimaryRootChange($event)"
+        />
+      </qd-explorer-search-row>
 
       <qd-explorer-result-count
         data-testid="unique-words-result-count"
@@ -25,37 +49,28 @@
         [hasError]="listState().status === 'error'"
       />
 
-      <qd-explorer-count-range-filter
-        data-testid="unique-words-range-filter"
-        [metrics]="rangeMetrics"
-        [ranges]="ranges()"
-        [disabled]="listState().status === 'loading'"
-        (rangesChange)="onRangesChange($event)"
-      />
+      <div class="qd-explorer-controls-secondary">
+        <label class="qd-sr-only" for="unique-words-sort">{{ sortLabel }}</label>
+        <select
+          id="unique-words-sort"
+          class="qd-select"
+          data-testid="unique-words-sort-select"
+          [value]="listState().sort"
+          (change)="onSortChange($any($event.target).value)"
+        >
+          @for (option of sortOptions; track option.key) {
+            <option [value]="option.key">{{ option.labelAr }}</option>
+          }
+        </select>
 
-      <qd-explorer-association-filter
-        testid="unique-words-primary-type-filter"
-        [label]="primaryTypeLabel"
-        [placeholder]="primaryTypePlaceholder"
-        [options]="typeOptions()"
-        [selectedId]="association().primaryType"
-        [clientFilter]="true"
-        [disabled]="listState().status === 'loading'"
-        (selectionChange)="onPrimaryTypeChange($event)"
-      />
-
-      <qd-explorer-association-filter
-        testid="unique-words-primary-root-filter"
-        [label]="primaryRootLabel"
-        [placeholder]="primaryRootPlaceholder"
-        [options]="rootOptions()"
-        [selectedId]="association().rootId"
-        [selectedLabel]="selectedRootLabel()"
-        [loading]="rootOptionsLoading()"
-        [disabled]="listState().status === 'loading'"
-        (searchChange)="onRootSearch($event)"
-        (selectionChange)="onPrimaryRootChange($event)"
-      />
+        <qd-explorer-count-range-filter
+          data-testid="unique-words-range-filter"
+          [metrics]="rangeMetrics"
+          [ranges]="ranges()"
+          [disabled]="listState().status === 'loading'"
+          (rangesChange)="onRangesChange($event)"
+        />
+      </div>
     </div>
 
     @switch (listState().status) {

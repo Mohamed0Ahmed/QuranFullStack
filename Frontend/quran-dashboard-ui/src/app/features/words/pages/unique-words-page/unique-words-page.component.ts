@@ -28,7 +28,7 @@ import {
 import { WordsAssociationOptionsService } from '../../data-access/words-association-options.service';
 import { ExplorerResultCountComponent } from '../../components/explorer-result-count/explorer-result-count.component';
 import { UniqueWordsTabsComponent } from '../../components/unique-words-tabs/unique-words-tabs.component';
-import { UniqueWordsSearchBarComponent } from '../../components/unique-words-search-bar/unique-words-search-bar.component';
+import { ExplorerSearchRowComponent } from '../../components/explorer-search-row/explorer-search-row.component';
 import { UniqueWordsTableComponent } from '../../components/unique-words-table/unique-words-table.component';
 import { WordDrilldownModalComponent } from '../../components/word-drilldown-modal/word-drilldown-modal.component';
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
@@ -37,6 +37,9 @@ import {
   ACTIVE_HUB_SECTION,
   EMPTY_LIST_LABEL,
   RESTORED_WORD_NOT_FOUND_LABEL,
+  SEARCH_LABEL,
+  SEARCH_PLACEHOLDER,
+  SORT_LABEL,
   UNIQUE_WORDS_PRIMARY_ROOT_FILTER_LABEL,
   UNIQUE_WORDS_PRIMARY_ROOT_FILTER_PLACEHOLDER,
   UNIQUE_WORDS_PRIMARY_TYPE_FILTER_LABEL,
@@ -45,9 +48,11 @@ import {
   UNIQUE_WORD_KIND_LABELS,
   UNIQUE_WORD_LIST_PAGINATION_LABEL,
   UNIQUE_WORD_PANEL_SURFACE_LABEL,
+  UNIQUE_WORD_SORT_LABELS,
 } from '../../models/unique-words.labels';
 import {
   UNIQUE_WORDS_RANGE_METRICS,
+  UNIQUE_WORD_SORT_KEYS,
   UniqueWordKind,
   UniqueWordSort,
   WordDrilldownView,
@@ -67,7 +72,7 @@ type UniqueWordsDrilldownState = ReturnType<UniqueWordsFacade['drilldownState']>
     ExplorerAssociationFilterComponent,
     ExplorerResultCountComponent,
     UniqueWordsTabsComponent,
-    UniqueWordsSearchBarComponent,
+    ExplorerSearchRowComponent,
     UniqueWordsTableComponent,
     PaginationComponent,
     WordDrilldownModalComponent,
@@ -101,6 +106,13 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
   protected get primaryTypePlaceholder(): string { return UNIQUE_WORDS_PRIMARY_TYPE_FILTER_PLACEHOLDER; }
   protected get primaryRootLabel(): string { return UNIQUE_WORDS_PRIMARY_ROOT_FILTER_LABEL; }
   protected get primaryRootPlaceholder(): string { return UNIQUE_WORDS_PRIMARY_ROOT_FILTER_PLACEHOLDER; }
+
+  protected get searchLabel(): string { return SEARCH_LABEL; }
+  protected get searchPlaceholder(): string { return SEARCH_PLACEHOLDER; }
+  protected get sortLabel(): string { return SORT_LABEL; }
+  protected get sortOptions(): readonly { key: UniqueWordSort; labelAr: string }[] {
+    return UNIQUE_WORD_SORT_KEYS.map((key) => ({ key, labelAr: UNIQUE_WORD_SORT_LABELS[key] }));
+  }
 
   protected readonly listState = this.facade.listState;
   protected readonly drilldownState = this.facade.drilldownState;

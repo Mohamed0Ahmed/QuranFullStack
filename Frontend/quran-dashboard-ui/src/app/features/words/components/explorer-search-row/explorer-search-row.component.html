@@ -1,0 +1,15 @@
+<label class="qd-explorer-search-row__main">
+  <span class="qd-sr-only">{{ searchLabel() }}</span>
+  <input
+    type="search"
+    inputmode="search"
+    class="qd-input"
+    [attr.placeholder]="searchPlaceholder()"
+    [value]="searchValue()"
+    [disabled]="disabled()"
+    [attr.data-testid]="searchTestid()"
+    (input)="searchChange.emit($any($event.target).value)"
+  />
+</label>
+
+<ng-content></ng-content>

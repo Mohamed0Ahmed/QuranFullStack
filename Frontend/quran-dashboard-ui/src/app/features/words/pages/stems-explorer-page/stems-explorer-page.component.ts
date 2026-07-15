@@ -13,6 +13,7 @@ import {
 } from '../../components/explorer-association-filter/explorer-association-filter.component';
 import { WordsAssociationOptionsService } from '../../data-access/words-association-options.service';
 import { ExplorerResultCountComponent } from '../../components/explorer-result-count/explorer-result-count.component';
+import { ExplorerSearchRowComponent } from '../../components/explorer-search-row/explorer-search-row.component';
 import { MissingSurahsListComponent } from '../../components/missing-surahs-list/missing-surahs-list.component';
 import { StemAyahTypeFiltersComponent } from '../../components/stem-ayah-type-filters/stem-ayah-type-filters.component';
 import { StemDetailsPanelComponent } from '../../components/stem-details-panel/stem-details-panel.component';
@@ -38,7 +39,7 @@ type StemCountTarget = StemCountOpenedEvent & { column: StemTableColumnKey };
 @Component({
   selector: 'qd-stems-explorer-page',
   standalone: true,
-  imports: [AyahMatchesListComponent, ExplorerCountRangeFilterComponent, ExplorerAssociationFilterComponent, ExplorerResultCountComponent, MissingSurahsListComponent, NgTemplateOutlet, PaginationComponent, StemAyahTypeFiltersComponent, StemDetailsPanelComponent, StemLemmasListComponent, StemsTableComponent, StemWordsListComponent, SurahOccurrencesListComponent],
+  imports: [AyahMatchesListComponent, ExplorerCountRangeFilterComponent, ExplorerAssociationFilterComponent, ExplorerResultCountComponent, ExplorerSearchRowComponent, MissingSurahsListComponent, NgTemplateOutlet, PaginationComponent, StemAyahTypeFiltersComponent, StemDetailsPanelComponent, StemLemmasListComponent, StemsTableComponent, StemWordsListComponent, SurahOccurrencesListComponent],
   templateUrl: './stems-explorer-page.component.html',
   styleUrl: './stems-explorer-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

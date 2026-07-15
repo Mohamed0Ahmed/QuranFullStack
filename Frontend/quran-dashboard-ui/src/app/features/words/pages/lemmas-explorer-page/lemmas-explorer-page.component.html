@@ -7,19 +7,37 @@
     </div>
 
     <div class="uw-toolbar-recess">
-      <div class="lemmas-explorer__controls qd-explorer-controls">
-        <label class="qd-sr-only" for="lemmas-search">{{ searchLabel }}</label>
-        <input
-          id="lemmas-search"
-          class="qd-input lemmas-explorer__search qd-explorer__search"
-          type="search"
-          inputmode="search"
-          [attr.placeholder]="searchPlaceholder"
-          [value]="searchDraft()"
-          data-testid="lemmas-search-input"
-          (input)="onSearchInput($any($event.target).value)"
+      <qd-explorer-search-row
+        [searchValue]="searchDraft()"
+        [searchLabel]="searchLabel"
+        [searchPlaceholder]="searchPlaceholder"
+        searchTestid="lemmas-search-input"
+        (searchChange)="onSearchInput($event)"
+      >
+        <qd-explorer-association-filter
+          testid="lemmas-root-filter"
+          [label]="rootFilterLabel"
+          [placeholder]="rootFilterPlaceholder"
+          [options]="rootOptions()"
+          [selectedId]="association().rootId"
+          [selectedLabel]="selectedRootLabel()"
+          [loading]="rootOptionsLoading()"
+          [disabled]="listState().status === 'loading'"
+          (searchChange)="onRootSearch($event)"
+          (selectionChange)="onRootFilterChange($event)"
         />
+      </qd-explorer-search-row>
 
+      <qd-explorer-result-count
+        class="uw-toolbar-recess__stat"
+        data-testid="lemmas-result-count"
+        [count]="listState().totalCount"
+        [labelPrefix]="resultCountLabel"
+        [loading]="listState().status === 'loading' || listState().status === 'idle'"
+        [hasError]="listState().status === 'error'"
+      />
+
+      <div class="qd-explorer-controls-secondary">
         <label class="qd-sr-only" for="lemmas-sort">{{ sortLabels.label }}</label>
         <select
           id="lemmas-sort"
@@ -32,39 +50,15 @@
             <option [value]="option">{{ sortLabels[option] }}</option>
           }
         </select>
+
+        <qd-explorer-count-range-filter
+          data-testid="lemmas-range-filter"
+          [metrics]="rangeMetrics"
+          [ranges]="ranges()"
+          [disabled]="listState().status === 'loading'"
+          (rangesChange)="onRangesChange($event)"
+        />
       </div>
-
-      <qd-explorer-result-count
-        class="uw-toolbar-recess__stat"
-        data-testid="lemmas-result-count"
-        [count]="listState().totalCount"
-        [labelPrefix]="resultCountLabel"
-        [loading]="listState().status === 'loading' || listState().status === 'idle'"
-        [hasError]="listState().status === 'error'"
-      />
-
-      <qd-explorer-count-range-filter
-        class="uw-toolbar-recess__stat"
-        data-testid="lemmas-range-filter"
-        [metrics]="rangeMetrics"
-        [ranges]="ranges()"
-        [disabled]="listState().status === 'loading'"
-        (rangesChange)="onRangesChange($event)"
-      />
-
-      <qd-explorer-association-filter
-        class="uw-toolbar-recess__stat"
-        testid="lemmas-root-filter"
-        [label]="rootFilterLabel"
-        [placeholder]="rootFilterPlaceholder"
-        [options]="rootOptions()"
-        [selectedId]="association().rootId"
-        [selectedLabel]="selectedRootLabel()"
-        [loading]="rootOptionsLoading()"
-        [disabled]="listState().status === 'loading'"
-        (searchChange)="onRootSearch($event)"
-        (selectionChange)="onRootFilterChange($event)"
-      />
     </div>
 
     @switch (listState().status) {
