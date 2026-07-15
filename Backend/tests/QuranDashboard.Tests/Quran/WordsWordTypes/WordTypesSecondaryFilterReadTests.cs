@@ -153,7 +153,7 @@ public sealed class WordTypesSecondaryFilterReadTests(WordTypesTestFixture fixtu
         var handler = scope.ServiceProvider.GetRequiredService<GetWordTypeRowsHandler>();
 
         var outcome = await handler.HandleAsync(
-            new GetWordTypeRowsQuery(type, null, @case, tense, voice, "occurrences", 1, 25),
+            new GetWordTypeRowsQuery(type, null, @case, tense, voice, null, "occurrences", 1, 25),
             CancellationToken.None);
 
         outcome.GetType().Should().Be(expectedOutcome);
@@ -167,7 +167,7 @@ public sealed class WordTypesSecondaryFilterReadTests(WordTypesTestFixture fixtu
 
         // "all" is the frontend default; particle accepts it without a controlled failure.
         var outcome = await handler.HandleAsync(
-            new GetWordTypeRowsQuery("particle", null, "all", "all", "all", "occurrences", 1, 25),
+            new GetWordTypeRowsQuery("particle", null, "all", "all", "all", null, "occurrences", 1, 25),
             CancellationToken.None);
 
         outcome.Should().BeOfType<GetWordTypeRowsOutcome.Success>();

@@ -6,6 +6,9 @@ import { Subject, Subscription, debounceTime } from 'rxjs';
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
 import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
 import { AyahMatchesListComponent } from '../../components/ayah-matches-list/ayah-matches-list.component';
+import { ExplorerCountRangeFilterComponent } from '../../components/explorer-count-range-filter/explorer-count-range-filter.component';
+import { ExplorerResultCountComponent } from '../../components/explorer-result-count/explorer-result-count.component';
+import { ExplorerSearchRowComponent } from '../../components/explorer-search-row/explorer-search-row.component';
 import { MissingSurahsListComponent } from '../../components/missing-surahs-list/missing-surahs-list.component';
 import { RootDetailsPanelComponent } from '../../components/root-details-panel/root-details-panel.component';
 import { RootLemmasListComponent } from '../../components/root-lemmas-list/root-lemmas-list.component';
@@ -13,8 +16,8 @@ import { RootStemsListComponent } from '../../components/root-stems-list/root-st
 import { RootWordsListComponent } from '../../components/root-words-list/root-words-list.component';
 import { RootCountOpenedEvent, RootsTableComponent } from '../../components/roots-table/roots-table.component';
 import { SurahOccurrencesListComponent } from '../../components/surah-occurrences-list/surah-occurrences-list.component';
-import { ROOTS_EMPTY_SELECTION_LABEL, ROOTS_EMPTY_VIEW_LABEL, ROOTS_LIST_PAGINATION_LABEL, ROOTS_NO_RESULTS_LABEL, ROOTS_NOT_FOUND_LABEL, ROOTS_PAGE_TITLE, ROOTS_PANEL_LABEL, ROOTS_SEARCH_LABEL, ROOTS_SEARCH_PLACEHOLDER, ROOTS_SORT_LABELS, ROOTS_SURAHS_TABLIST_LABEL, ROOTS_SURAHS_VIEW_LABELS, ROOTS_TABLE_LABEL, ROOTS_WORDS_TABLIST_LABEL, ROOTS_WORD_VIEW_LABELS } from '../../models/roots.labels';
-import { DEFAULT_ROOT_VIEW, PagedResultDto, ROOT_DETAIL_PAGE_SIZE, RootListItemViewModel, RootSort, RootSurahView, RootView, RootWordItemDto, RootWordView, toRootSummary } from '../../models/roots.models';
+import { ROOTS_EMPTY_SELECTION_LABEL, ROOTS_EMPTY_VIEW_LABEL, ROOTS_LIST_PAGINATION_LABEL, ROOTS_NO_RESULTS_LABEL, ROOTS_NOT_FOUND_LABEL, ROOTS_PAGE_TITLE, ROOTS_PANEL_LABEL, ROOTS_RESULT_COUNT_LABEL, ROOTS_SEARCH_LABEL, ROOTS_SEARCH_PLACEHOLDER, ROOTS_SORT_LABELS, ROOTS_SURAHS_TABLIST_LABEL, ROOTS_SURAHS_VIEW_LABELS, ROOTS_TABLE_LABEL, ROOTS_WORDS_TABLIST_LABEL, ROOTS_WORD_VIEW_LABELS } from '../../models/roots.labels';
+import { DEFAULT_ROOT_VIEW, PagedResultDto, ROOTS_RANGE_METRICS, ROOT_DETAIL_PAGE_SIZE, RootListItemViewModel, RootSort, RootSurahView, RootView, RootWordItemDto, RootWordView, toRootSummary } from '../../models/roots.models';
 import { AyahMatchDto } from '../../models/unique-words.models';
 import { RootsDetailFacade } from '../../state/roots-detail.facade';
 import { RootsExplorerFacade } from '../../state/roots-explorer.facade';
@@ -22,6 +25,7 @@ import { buildClearSelectionQueryParams, buildRootsQueryParams, parseRootsQueryP
 import { MorphologyColumnKey, parseMorphologyColumnKey, resolveMorphologyActiveColumn } from '../../utils/explorer-count-active';
 import { ExplorerTableFocusController } from '../../utils/explorer-table-focus-controller';
 import { mapRootAyahMatchToShared } from '../../utils/root-ayah-match.mapper';
+import { EMPTY_RANGE_FILTERS, RangeFilters, buildRangeQueryParams } from '../../state/words-range-filters';
 
 type RootTableColumnKey = MorphologyColumnKey;
 type RootPanelState = ReturnType<RootsDetailFacade['panelState']>;
@@ -30,7 +34,7 @@ type RootCountTarget = RootCountOpenedEvent & { column: RootTableColumnKey };
 @Component({
   selector: 'qd-roots-explorer-page',
   standalone: true,
-  imports: [AyahMatchesListComponent, MissingSurahsListComponent, NgTemplateOutlet, PaginationComponent, RootDetailsPanelComponent, RootLemmasListComponent, RootStemsListComponent, RootWordsListComponent, RootsTableComponent, SurahOccurrencesListComponent],
+  imports: [AyahMatchesListComponent, ExplorerCountRangeFilterComponent, ExplorerResultCountComponent, ExplorerSearchRowComponent, MissingSurahsListComponent, NgTemplateOutlet, PaginationComponent, RootDetailsPanelComponent, RootLemmasListComponent, RootStemsListComponent, RootWordsListComponent, RootsTableComponent, SurahOccurrencesListComponent],
   templateUrl: './roots-explorer-page.component.html',
   styleUrl: './roots-explorer-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -66,6 +70,7 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly noResultsLabel = ROOTS_NO_RESULTS_LABEL;
   protected readonly searchLabel = ROOTS_SEARCH_LABEL;
   protected readonly searchPlaceholder = ROOTS_SEARCH_PLACEHOLDER;
+  protected get resultCountLabel(): string { return ROOTS_RESULT_COUNT_LABEL; }
   protected readonly sortOptions: readonly RootSort[] = ['mushaf-order', 'occurrences', 'alpha'];
   protected readonly wordViewOptions: readonly RootWordView[] = ['simple', 'tashkeel'];
   protected readonly surahViewOptions: readonly RootSurahView[] = ['mentioned', 'missing'];
@@ -77,6 +82,8 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly wordsTablistLabel = ROOTS_WORDS_TABLIST_LABEL;
   protected readonly surahsTablistLabel = ROOTS_SURAHS_TABLIST_LABEL;
   protected readonly searchDraft = signal('');
+  protected readonly ranges = signal<RangeFilters>(EMPTY_RANGE_FILTERS);
+  protected get rangeMetrics() { return ROOTS_RANGE_METRICS; }
   protected readonly isDesktop = signal(true);
   protected readonly selectedRootId = this.tableFocus.selectedRowId;
   protected readonly activeView = computed(() => this.tableFocus.activeView() ?? DEFAULT_ROOT_VIEW);
@@ -98,7 +105,11 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
     this.listFacade.bindToRoute(this.route);
     this.detailFacade.bindToRoute(this.route);
     this.searchSub = this.searchInput.pipe(debounceTime(300)).subscribe((value) => this.updateQueryParams({ search: value || null, page: null }));
-    this.querySyncSub = this.route.queryParamMap.subscribe((params) => this.restoredColumn.set(parseMorphologyColumnKey(parseRootsQueryParams(params).column)));
+    this.querySyncSub = this.route.queryParamMap.subscribe((params) => {
+      const parsed = parseRootsQueryParams(params);
+      this.restoredColumn.set(parseMorphologyColumnKey(parsed.column));
+      this.ranges.set(parsed.ranges);
+    });
     if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
       this.desktopQuery = window.matchMedia(QD_BP_DESKTOP_MIN_QUERY);
       this.isDesktop.set(this.desktopQuery.matches);
@@ -116,6 +127,10 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
   }
 
   protected onSearchInput(value: string): void { this.clearTableFocus(); this.searchDraft.set(value); this.searchInput.next(value); }
+  protected onRangesChange(ranges: RangeFilters): void {
+    this.clearTableFocus();
+    this.updateQueryParams({ ...buildRangeQueryParams(ranges, ROOTS_RANGE_METRICS), page: null });
+  }
   protected onSortChange(sort: RootSort): void { this.clearTableFocus(); this.updateQueryParams({ sort, page: null }); }
   protected onPageChange(page: number): void { if (page !== this.listState().page) { this.clearTableFocus(); this.updateQueryParams(buildRootsQueryParams({ page })); } }
 

@@ -1,6 +1,8 @@
 import { ParamMap } from '@angular/router';
 
 import { lemmasRoutePath } from '../../../core/navigation/route-paths';
+import { parseRangeFilters } from './words-range-filters';
+import { parsePositiveIntParam } from './words-association-filters';
 
 import {
   DEFAULT_LEMMA_DETAIL_PAGE,
@@ -10,6 +12,7 @@ import {
   DEFAULT_LEMMA_WORD_VIEW,
   DEFAULT_LEMMAS_LIST_PAGE,
   LEMMAS_QUERY_KEYS,
+  LEMMAS_RANGE_METRICS,
   LEMMAS_SELECTION_QUERY_KEYS,
   LemmaSort,
   LemmaSurahView,
@@ -56,6 +59,8 @@ export function parseLemmasQueryParams(queryParams: ParamMap): ParsedLemmasQuery
     search: queryParams.get(LEMMAS_QUERY_KEYS.search) ?? '',
     sort,
     page,
+    ranges: parseRangeFilters(queryParams, LEMMAS_RANGE_METRICS),
+    association: { rootId: parsePositiveIntParam(queryParams.get(LEMMAS_QUERY_KEYS.rootId)) },
     lemmaId,
     view,
     column: queryParams.get(LEMMAS_QUERY_KEYS.column),
@@ -70,6 +75,7 @@ export type LemmasQueryChange = Partial<{
   search: string | null;
   sort: LemmaSort | null;
   page: number | null;
+  rootId: number | null;
   lemmaId: number | null;
   view: LemmaView | null;
   column: string | null;
@@ -90,6 +96,9 @@ export function buildLemmasQueryParams(changes: LemmasQueryChange): Record<strin
   }
   if (changes.page !== undefined) {
     params[LEMMAS_QUERY_KEYS.page] = changes.page === null ? null : String(changes.page);
+  }
+  if (changes.rootId !== undefined) {
+    params[LEMMAS_QUERY_KEYS.rootId] = changes.rootId === null ? null : String(changes.rootId);
   }
   if (changes.lemmaId !== undefined) {
     params[LEMMAS_QUERY_KEYS.lemma] = changes.lemmaId === null ? null : String(changes.lemmaId);

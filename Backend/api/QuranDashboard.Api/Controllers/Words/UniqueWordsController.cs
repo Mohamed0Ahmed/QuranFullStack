@@ -1,4 +1,5 @@
 using QuranDashboard.Application.Abstractions.Common.Paging;
+using QuranDashboard.Application.Abstractions.Quran.Words;
 using QuranDashboard.Application.Abstractions.Quran.Words.Responses;
 using QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordAyahs;
 using QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordMissingSurahs;
@@ -32,6 +33,14 @@ public sealed class UniqueWordsController(
         [FromQuery(Name = "sort")] string? paramSort,
         [FromQuery] int? page,
         [FromQuery] int? pageSize,
+        [FromQuery] int? occMin,
+        [FromQuery] int? occMax,
+        [FromQuery] int? ayahsMin,
+        [FromQuery] int? ayahsMax,
+        [FromQuery] int? surahsMin,
+        [FromQuery] int? surahsMax,
+        [FromQuery] string? primaryType,
+        [FromQuery] int? rootId,
         CancellationToken cancellationToken)
     {
         var outcome = await listHandler.HandleAsync(
@@ -40,7 +49,12 @@ public sealed class UniqueWordsController(
                 search,
                 paramSort,
                 page ?? DefaultPage,
-                pageSize ?? DefaultListPageSize),
+                pageSize ?? DefaultListPageSize,
+                UniqueWordsCountFilter.FromRaw(
+                    occMin, occMax,
+                    ayahsMin, ayahsMax,
+                    surahsMin, surahsMax),
+                UniqueWordsAssociationFilter.FromRaw(primaryType, rootId)),
             cancellationToken);
 
         return outcome switch
@@ -53,6 +67,8 @@ public sealed class UniqueWordsController(
                 BadRequest(ApiResponse<PagedResult<UniqueWordListItemDto>>.Fail(ApiMessages.UniqueWordsInvalidSort)),
             GetUniqueWordsPageOutcome.InvalidPaging =>
                 BadRequest(ApiResponse<PagedResult<UniqueWordListItemDto>>.Fail(ApiMessages.UniqueWordsInvalidPaging)),
+            GetUniqueWordsPageOutcome.InvalidFilter =>
+                BadRequest(ApiResponse<PagedResult<UniqueWordListItemDto>>.Fail(ApiMessages.UniqueWordsInvalidFilter)),
             _ => throw new InvalidOperationException($"Unhandled {nameof(GetUniqueWordsPageOutcome)} variant."),
         };
     }

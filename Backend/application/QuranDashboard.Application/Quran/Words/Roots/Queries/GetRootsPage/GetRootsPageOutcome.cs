@@ -10,4 +10,5 @@ public abstract record GetRootsPageOutcome
     public sealed record Success(PagedResult<RootListItemDto> Page) : GetRootsPageOutcome;
     public sealed record InvalidSort : GetRootsPageOutcome;
     public sealed record InvalidPaging : GetRootsPageOutcome;
+    public sealed record InvalidFilter : GetRootsPageOutcome;
 }

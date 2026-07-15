@@ -8,17 +8,22 @@ import { StemsApi } from '../data-access/stems.api';
 import {
   DEFAULT_STEMS_LIST_PAGE,
   DEFAULT_STEM_SORT,
+  EMPTY_STEMS_ASSOCIATION,
   LoadStatus,
   PagedResultDto,
   StemListItemDto,
   StemListItemViewModel,
   StemSort,
+  StemsAssociation,
   StemsListState,
   STEMS_LIST_PAGE_SIZE,
 } from '../models/stems.models';
+import { STEMS_RANGE_METRICS } from '../models/stems.models';
 import { STEMS_LIST_ERROR_LABEL } from '../models/stems.labels';
 import { parseStemsQueryParams } from './stems-url-sync';
 import { StemsCache, StemsCacheKeys } from './stems-cache';
+import { EMPTY_RANGE_FILTERS, RangeFilters, serializeRangeFiltersKey } from './words-range-filters';
+import { serializeAssociationKey } from './words-association-filters';
 
 const CONNECTION_ERROR_MESSAGE = STEMS_LIST_ERROR_LABEL;
 
@@ -35,6 +40,8 @@ export class StemsExplorerFacade {
   private readonly _items = signal<readonly StemListItemViewModel[]>([]);
   private readonly _page = signal<number>(DEFAULT_STEMS_LIST_PAGE);
   private readonly _totalCount = signal<number>(0);
+  private readonly _ranges = signal<RangeFilters>(EMPTY_RANGE_FILTERS);
+  private readonly _association = signal<StemsAssociation>(EMPTY_STEMS_ASSOCIATION);
   private readonly _search = signal<string>('');
   private readonly _sort = signal<StemSort>(DEFAULT_STEM_SORT);
   private readonly _errorMessage = signal<string>('');
@@ -63,6 +70,7 @@ export class StemsExplorerFacade {
   readonly search = this._search.asReadonly();
   readonly sort = this._sort.asReadonly();
   readonly totalCount = this._totalCount.asReadonly();
+  readonly association = this._association.asReadonly();
   readonly errorMessage = this._errorMessage.asReadonly();
 
   bindToRoute(route: ActivatedRoute): void {
@@ -92,22 +100,37 @@ export class StemsExplorerFacade {
     const parsed = parseStemsQueryParams(queryParams);
     this._search.set(parsed.search);
     this._sort.set(parsed.sort);
+    this._ranges.set(parsed.ranges);
+    this._association.set(parsed.association);
     this._page.set(parsed.page);
   }
 
   private listRequestKey(): string {
-    return [this._search(), this._sort(), this._page()].join('|');
+    return [this._search(), this._sort(), this.rangesKey(), this.associationKey(), this._page()].join('|');
+  }
+
+  private rangesKey(): string {
+    return serializeRangeFiltersKey(this._ranges(), STEMS_RANGE_METRICS);
+  }
+
+  private associationKey(): string {
+    return serializeAssociationKey([
+      ['rootId', this._association().rootId],
+      ['lemmaId', this._association().lemmaId],
+    ]);
   }
 
   private runListRequest(): Observable<void> {
     const targetPage = this._page();
-    const cacheKey = StemsCacheKeys.list(this._search(), this._sort(), targetPage);
+    const ranges = this._ranges();
+    const association = this._association();
+    const cacheKey = StemsCacheKeys.list(this._search(), this._sort(), targetPage, this.rangesKey(), this.associationKey());
 
     this._status.set('loading');
     this._errorMessage.set('');
 
     return this.cache
-      .getOrLoad(cacheKey, () => this.api.getStemsList(this._search(), this._sort(), targetPage, this.pageSize))
+      .getOrLoad(cacheKey, () => this.api.getStemsList(this._search(), this._sort(), targetPage, this.pageSize, ranges, association))
       .pipe(
         tap((response) => this.handleListResponse(response)),
         catchError(() => {

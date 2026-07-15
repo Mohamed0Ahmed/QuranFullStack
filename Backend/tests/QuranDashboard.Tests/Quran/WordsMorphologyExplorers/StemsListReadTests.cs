@@ -341,7 +341,7 @@ public sealed class StemsListReadTests(MorphologyExplorersTestFixture fixture)
         var cache = new MemoryCache(new MemoryCacheOptions());
         var reader = new CachedStemsReader(inner, cache);
 
-        await reader.GetStemsPageAsync(null, StemSort.MushafOrder, 1, 50, CancellationToken.None);
+        await reader.GetStemsPageAsync(null, StemSort.MushafOrder, StemsCountFilter.None, StemsAssociationFilter.None, 1, 50, CancellationToken.None);
 
         interceptor.Reset();
         await reader.GetStemSummaryAsync(ExactTieStemId, CancellationToken.None);

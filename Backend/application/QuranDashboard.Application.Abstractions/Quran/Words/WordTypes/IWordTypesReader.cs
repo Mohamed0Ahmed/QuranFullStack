@@ -22,6 +22,14 @@ public interface IWordTypesReader
         int pageSize,
         CancellationToken cancellationToken);
 
+    // Scoped four-count summary (Feature 026, US8): words + distinct roots/stems/lemmas for the full
+    // active list scope carried by the filter (type, childCode, case, tense, voice, search, presence
+    // flags). One SQL command; each count equals the corresponding tableView's TotalCount for the
+    // identical scope. A valid scope with no rows returns an all-zero DTO.
+    Task<WordTypeScopeCountsDto> GetScopeCountsAsync(
+        WordTypeFilter filter,
+        CancellationToken cancellationToken);
+
     Task<WordTypeSummaryDto?> GetSummaryAsync(
         WordTypeRowIdentity identity,
         CancellationToken cancellationToken);

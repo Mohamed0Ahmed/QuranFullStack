@@ -1,0 +1,5 @@
+// Intentionally no rules here: the row's flex layout (`display:flex`, wrap, gap,
+// responsive stacking) lives in the shared `.qd-explorer-search-row` class in
+// `src/styles/_words-explorer-layout.scss`, applied via this component's host class. The row is a
+// transparent layout container with no own background/border/shadow — elevation belongs to the
+// association-filter popover, not the row (see plan §4 / §12).

@@ -28,7 +28,7 @@
   font-size: 0.875rem;
   padding: var(--qd-space-1) var(--qd-space-2);
   white-space: nowrap;
-  transition: background-color 0.15s, color 0.15s;
+  transition: background-color var(--qd-t-fast), color var(--qd-t-fast);
 }
 
 .nav-link.active {
@@ -47,7 +47,7 @@
 
 .chevron {
   margin-inline-start: var(--qd-space-1);
-  transition: transform 0.15s;
+  transition: transform var(--qd-t-fast);
 }
 
 .more-dropdown.open .chevron {
@@ -104,12 +104,12 @@
   line-height: 1;
   color: var(--qd-text-muted);
   border-radius: var(--qd-radius-sm);
-  transition: background-color 0.15s, color 0.15s;
+  transition: background-color var(--qd-t-fast), color var(--qd-t-fast);
 }
 
 .theme-toggle:hover {
   color: var(--qd-text);
-  background-color: var(--qd-surface-elevated);
+  background-color: var(--qd-surface-hover);
 }
 
 .mobile-theme-toggle {

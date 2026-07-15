@@ -33,7 +33,7 @@
   min-height: 2.375rem;
   padding: calc(var(--qd-space-2) * 0.85) var(--qd-space-3);
   padding-inline-end: calc(var(--qd-space-4) + 0.5rem);
-  border: 1px solid color-mix(in oklch, var(--qd-border) 88%, var(--qd-accent));
+  border: 1px solid var(--qd-border);
   border-radius: var(--qd-radius-md);
   background-color: var(--qd-surface);
   background-image:
@@ -51,13 +51,13 @@
   line-height: 1.45;
   cursor: pointer;
   transition:
-    border-color 0.15s ease,
-    background-color 0.15s ease,
-    box-shadow 0.15s ease;
+    border-color var(--qd-t-fast),
+    background-color var(--qd-t-fast),
+    box-shadow var(--qd-t-fast);
 
   &:hover:not(:disabled) {
-    border-color: color-mix(in oklch, var(--qd-accent) 28%, var(--qd-border));
-    background-color: var(--qd-surface-elevated);
+    border-color: var(--qd-border-accent);
+    background-color: var(--qd-surface-hover);
   }
 
   &:focus-visible {

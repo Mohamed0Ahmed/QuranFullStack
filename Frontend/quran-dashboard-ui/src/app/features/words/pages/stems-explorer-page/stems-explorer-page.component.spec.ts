@@ -5,7 +5,8 @@ import { provideRouter, ActivatedRoute, convertToParamMap, Router } from '@angul
 import { BehaviorSubject, of, Subject, throwError } from 'rxjs';
 
 import { ApiResponse } from '../../../../core/data-access/api-response.model';
-import { STEMS_COLUMN_HEADERS } from '../../models/stems.labels';
+import { WordsAssociationOptionsService } from '../../data-access/words-association-options.service';
+import { STEMS_COLUMN_HEADERS, STEMS_RESULT_COUNT_LABEL } from '../../models/stems.labels';
 import {
   STEM_DETAIL_PAGE_SIZE,
   STEMS_QUERY_KEYS,
@@ -23,6 +24,12 @@ import { StemsApi } from '../../data-access/stems.api';
 import { StemsDetailFacade } from '../../state/stems-detail.facade';
 import { StemsExplorerFacade } from '../../state/stems-explorer.facade';
 import { StemsExplorerPageComponent } from './stems-explorer-page.component';
+
+const STUB_ASSOCIATION_OPTIONS = {
+  searchRoots: () => of([]),
+  searchLemmas: () => of([]),
+  wordTypeOptions: () => of([]),
+};
 
 function listRow(id: number, overrides: Partial<StemListItemViewModel> = {}): StemListItemViewModel {
   return {
@@ -167,6 +174,7 @@ describe('StemsExplorerPageComponent US2', () => {
       providers: [
         provideRouter([{ path: 'stems', component: StemsExplorerPageComponent }]),
         { provide: StemsApi, useValue: stemsApi },
+        { provide: WordsAssociationOptionsService, useValue: STUB_ASSOCIATION_OPTIONS },
         {
           provide: ActivatedRoute,
           useValue: {
@@ -190,6 +198,74 @@ describe('StemsExplorerPageComponent US2', () => {
     fixture.detectChanges();
     return fixture;
   }
+
+  it('shows the headline result count equal to the list totalCount (US4)', async () => {
+    const fixture = await initLifecycle();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const stat = root.querySelector('[data-testid="stems-result-count"] [data-testid="explorer-result-count"]');
+    expect(stat).toBeTruthy();
+    expect(stat?.getAttribute('aria-label')).toBe(`${STEMS_RESULT_COUNT_LABEL}: 1`);
+    expect(
+      root
+        .querySelector('[data-testid="stems-result-count"] [data-testid="explorer-result-count-value"]')
+        ?.textContent?.trim(),
+    ).toBe('1');
+  });
+
+  it('hides the headline result count when the list read fails (US4)', async () => {
+    stemsApi.getStemsList.mockReturnValue(
+      of<ApiResponse<{ page: number; pageSize: number; totalCount: number; items: StemListItemViewModel[] }>>({
+        isSuccess: false,
+        data: null,
+        message: 'boom',
+        errors: null,
+      }),
+    );
+
+    const fixture = await initLifecycle();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('[data-testid="stems-result-count"] [data-testid="explorer-result-count"]')).toBeNull();
+  });
+
+  it('serializes a count-range bucket to the URL and resets the page (US5)', async () => {
+    const fixture = await initLifecycle();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('[data-testid="stems-range-filter"]')).toBeTruthy();
+    (root.querySelector('[data-testid="range-filter-bucket-occurrences-11–100"]') as HTMLButtonElement).click();
+
+    expect(router.navigate).toHaveBeenCalledWith([], {
+      relativeTo: expect.anything(),
+      queryParams: expect.objectContaining({ occ: '11..100', page: null }),
+      queryParamsHandling: 'merge',
+    });
+  });
+
+  it('serializes primary root/lemma selections to the URL and resets the page (US7)', async () => {
+    const fixture = await initLifecycle();
+
+    fixture.componentInstance['onPrimaryRootChange']({ id: 701, label: 'ع ل م' });
+    expect(router.navigate).toHaveBeenCalledWith([], {
+      relativeTo: expect.anything(),
+      queryParams: expect.objectContaining({ rootId: '701', page: null }),
+      queryParamsHandling: 'merge',
+    });
+
+    fixture.componentInstance['onPrimaryLemmaChange']({ id: 502, label: 'عِلْم' });
+    expect(router.navigate).toHaveBeenCalledWith([], {
+      relativeTo: expect.anything(),
+      queryParams: expect.objectContaining({ lemmaId: '502', page: null }),
+      queryParamsHandling: 'merge',
+    });
+  });
 
   it('renders the catalogue table with the locked stem headers', async () => {
     const fixture = await initLifecycle();
@@ -542,6 +618,7 @@ describe('StemsExplorerPageComponent US5', () => {
       providers: [
         provideRouter([{ path: 'stems', component: StemsExplorerPageComponent }]),
         { provide: StemsApi, useValue: stemsApi },
+        { provide: WordsAssociationOptionsService, useValue: STUB_ASSOCIATION_OPTIONS },
         {
           provide: ActivatedRoute,
           useValue: {
@@ -693,6 +770,7 @@ describe('StemsExplorerPageComponent US8 — restore and navigate exact state', 
       providers: [
         provideRouter([{ path: 'stems', component: StemsExplorerPageComponent }]),
         { provide: StemsApi, useValue: stemsApi },
+        { provide: WordsAssociationOptionsService, useValue: STUB_ASSOCIATION_OPTIONS },
         {
           provide: ActivatedRoute,
           useValue: {

@@ -7,19 +7,24 @@
     </div>
 
     <div class="uw-toolbar-recess">
-      <div class="roots-explorer__controls qd-explorer-controls">
-        <label class="qd-sr-only" for="roots-search">{{ searchLabel }}</label>
-        <input
-          id="roots-search"
-          class="qd-input roots-explorer__search qd-explorer__search"
-          type="search"
-          inputmode="search"
-          [attr.placeholder]="searchPlaceholder"
-          [value]="searchDraft()"
-          data-testid="roots-search-input"
-          (input)="onSearchInput($any($event.target).value)"
-        />
+      <qd-explorer-search-row
+        [searchValue]="searchDraft()"
+        [searchLabel]="searchLabel"
+        [searchPlaceholder]="searchPlaceholder"
+        searchTestid="roots-search-input"
+        (searchChange)="onSearchInput($event)"
+      ></qd-explorer-search-row>
 
+      <qd-explorer-result-count
+        class="uw-toolbar-recess__stat"
+        data-testid="roots-result-count"
+        [count]="listState().totalCount"
+        [labelPrefix]="resultCountLabel"
+        [loading]="listState().status === 'loading' || listState().status === 'idle'"
+        [hasError]="listState().status === 'error'"
+      />
+
+      <div class="qd-explorer-controls-secondary">
         <label class="qd-sr-only" for="roots-sort">{{ sortLabels.label }}</label>
         <select
           id="roots-sort"
@@ -32,6 +37,14 @@
             <option [value]="option">{{ sortLabels[option] }}</option>
           }
         </select>
+
+        <qd-explorer-count-range-filter
+          data-testid="roots-range-filter"
+          [metrics]="rangeMetrics"
+          [ranges]="ranges()"
+          [disabled]="listState().status === 'loading'"
+          (rangesChange)="onRangesChange($event)"
+        />
       </div>
     </div>
 

@@ -12,20 +12,16 @@
   padding-inline: 0.375rem;
   cursor: pointer;
   transition: background-color var(--qd-t-fast), border-color var(--qd-t-fast),
-    color var(--qd-t-fast), box-shadow var(--qd-t-fast);
+    color var(--qd-t-fast);
 
   &:hover:not(:disabled) {
-    background: var(--qd-accent-soft);
-    border-color: var(--qd-accent);
-    color: var(--qd-primary);
-    box-shadow: 0 0 0 1px color-mix(in oklch, var(--qd-accent) 24%, transparent);
+    background: var(--qd-surface-hover);
   }
 
   &.qd-is-selected:not(:disabled) {
-    background: var(--qd-accent);
-    border-color: var(--qd-accent);
-    color: var(--qd-primary);
-    box-shadow: 0 0 0 1px color-mix(in oklch, var(--qd-accent) 28%, transparent);
+    background: var(--qd-selected-bg);
+    border-color: var(--qd-border-accent);
+    color: var(--qd-accent-text);
   }
 
   &:focus-visible {

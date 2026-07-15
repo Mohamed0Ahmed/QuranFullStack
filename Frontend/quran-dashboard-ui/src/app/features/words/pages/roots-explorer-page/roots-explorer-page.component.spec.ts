@@ -6,7 +6,7 @@ import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angul
 import { BehaviorSubject, of, Subject } from 'rxjs';
 
 import { ApiResponse } from '../../../../core/data-access/api-response.model';
-import { ROOTS_PANEL_TAB_LABELS } from '../../models/roots.labels';
+import { ROOTS_PANEL_TAB_LABELS, ROOTS_RESULT_COUNT_LABEL } from '../../models/roots.labels';
 import {
   ROOT_VIEW_KEYS,
   RootAyahMatchDto,
@@ -136,6 +136,58 @@ describe('RootsExplorerPageComponent US2', () => {
     fixture.detectChanges();
     return fixture;
   }
+
+  it('shows the headline result count equal to the list totalCount (US4)', async () => {
+    const fixture = await initLifecycle();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const stat = root.querySelector('[data-testid="roots-result-count"] [data-testid="explorer-result-count"]');
+    expect(stat).toBeTruthy();
+    expect(stat?.getAttribute('aria-label')).toBe(`${ROOTS_RESULT_COUNT_LABEL}: 1`);
+    expect(
+      root
+        .querySelector('[data-testid="roots-result-count"] [data-testid="explorer-result-count-value"]')
+        ?.textContent?.trim(),
+    ).toBe('1');
+  });
+
+  it('hides the headline result count when the list read fails (US4)', async () => {
+    rootsApi.getRootsList.mockReturnValue(
+      of<ApiResponse<{ page: number; pageSize: number; totalCount: number; items: RootListItemViewModel[] }>>({
+        isSuccess: false,
+        data: null,
+        message: 'boom',
+        errors: null,
+      }),
+    );
+
+    const fixture = await initLifecycle();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('[data-testid="roots-result-count"] [data-testid="explorer-result-count"]')).toBeNull();
+  });
+
+  it('serializes a count-range bucket to the URL and resets the page (US5)', async () => {
+    const fixture = await initLifecycle();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const filter = root.querySelector('[data-testid="roots-range-filter"]');
+    expect(filter).toBeTruthy();
+
+    (root.querySelector('[data-testid="range-filter-bucket-occurrences-11–100"]') as HTMLButtonElement).click();
+
+    expect(router.navigate).toHaveBeenCalledWith([], {
+      relativeTo: expect.anything(),
+      queryParams: expect.objectContaining({ occ: '11..100', page: null }),
+      queryParamsHandling: 'merge',
+    });
+  });
 
   it('renders exactly the five named panel tabs and no overview tab', async () => {
     queryParamMap$.next(convertToParamMap({ root: '10', view: 'ayahs' }));

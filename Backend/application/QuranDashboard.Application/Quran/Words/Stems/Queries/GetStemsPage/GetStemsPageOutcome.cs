@@ -10,4 +10,5 @@ public abstract record GetStemsPageOutcome
     public sealed record Success(PagedResult<StemListItemDto> Page) : GetStemsPageOutcome;
     public sealed record InvalidSort : GetStemsPageOutcome;
     public sealed record InvalidPaging : GetStemsPageOutcome;
+    public sealed record InvalidFilter : GetStemsPageOutcome;
 }

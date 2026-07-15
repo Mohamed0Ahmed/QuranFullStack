@@ -5,7 +5,9 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { ApiResponse } from '../../../core/data-access/api-response.model';
 import {
+  EMPTY_UNIQUE_WORDS_ASSOCIATION,
   PagedResultDto,
+  UNIQUE_WORDS_RANGE_METRICS,
   UniqueWordAyahMatchDto,
   UniqueWordKind,
   UniqueWordListItemDto,
@@ -13,7 +15,10 @@ import {
   UniqueWordSort,
   UniqueWordSummaryDto,
   UniqueWordSurahsDto,
+  UniqueWordsAssociation,
 } from '../models/unique-words.models';
+import { EMPTY_RANGE_FILTERS, RangeFilters, appendRangeApiParams } from '../state/words-range-filters';
+import { appendAssociationParam } from '../state/words-association-filters';
 
 @Injectable({ providedIn: 'root' })
 export class UniqueWordsApi {
@@ -26,6 +31,8 @@ export class UniqueWordsApi {
     sort: UniqueWordSort,
     page: number,
     pageSize: number,
+    ranges: RangeFilters = EMPTY_RANGE_FILTERS,
+    association: UniqueWordsAssociation = EMPTY_UNIQUE_WORDS_ASSOCIATION,
   ): Observable<ApiResponse<PagedResultDto<UniqueWordListItemDto>>> {
     let params = new HttpParams()
       .set('sort', sort)
@@ -35,6 +42,10 @@ export class UniqueWordsApi {
     if (search.trim().length > 0) {
       params = params.set('search', search.trim());
     }
+
+    params = appendRangeApiParams(params, ranges, UNIQUE_WORDS_RANGE_METRICS);
+    params = appendAssociationParam(params, 'primaryType', association.primaryType);
+    params = appendAssociationParam(params, 'rootId', association.rootId);
 
     return this.http.get<ApiResponse<PagedResultDto<UniqueWordListItemDto>>>(
       `${this.baseUrl}/api/words/unique/${encodeURIComponent(kind)}`,

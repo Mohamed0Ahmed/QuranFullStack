@@ -180,3 +180,55 @@ describe('buildUniqueWordsDeepLink', () => {
     });
   });
 });
+
+describe('parseUniqueWordsQueryParams association filters (Feature 026, US7)', () => {
+  it('is absent for a pre-feature URL (backward compat)', () => {
+    const parsed = parseUniqueWordsQueryParams(params('search=اسم&sort=alpha&page=2'));
+    expect(parsed.association).toEqual({ primaryType: null, rootId: null });
+  });
+
+  it('parses a well-formed primaryType and a positive rootId', () => {
+    const parsed = parseUniqueWordsQueryParams(params('primaryType=PN&rootId=5001'));
+    expect(parsed.association).toEqual({ primaryType: 'PN', rootId: 5001 });
+  });
+
+  it('fails closed on a malformed primaryType while the page still parses', () => {
+    expect(parseUniqueWordsQueryParams(params('primaryType=%3Cscript%3E')).association.primaryType).toBeNull();
+    expect(parseUniqueWordsQueryParams(params('primaryType=123')).association.primaryType).toBeNull();
+    expect(parseUniqueWordsQueryParams(params('primaryType=')).association.primaryType).toBeNull();
+  });
+
+  it('fails closed on a non-positive or non-numeric rootId', () => {
+    expect(parseUniqueWordsQueryParams(params('rootId=0')).association.rootId).toBeNull();
+    expect(parseUniqueWordsQueryParams(params('rootId=-3')).association.rootId).toBeNull();
+    expect(parseUniqueWordsQueryParams(params('rootId=abc')).association.rootId).toBeNull();
+  });
+
+  it('serializes primaryType/rootId and passes null through to remove', () => {
+    expect(buildUniqueWordsQueryParams({ primaryType: 'PN', rootId: 5001 })).toEqual({
+      primaryType: 'PN',
+      rootId: '5001',
+    });
+    expect(buildUniqueWordsQueryParams({ primaryType: null, rootId: null })).toEqual({
+      primaryType: null,
+      rootId: null,
+    });
+  });
+});
+
+describe('parseUniqueWordsQueryParams count ranges (Feature 026)', () => {
+  it('has no active ranges for a pre-feature URL (backward compat)', () => {
+    expect(parseUniqueWordsQueryParams(params('search=اسم&sort=alpha&page=2')).ranges).toEqual({});
+  });
+
+  it('parses active ranges from their URL keys', () => {
+    const ranges = parseUniqueWordsQueryParams(params('occ=11..100&surahs=1..1')).ranges;
+    expect(ranges).toEqual({ occurrences: { min: 11, max: 100 }, surahs: { min: 1, max: 1 } });
+  });
+
+  it('drops malformed ranges fail-closed while the page still parses', () => {
+    const parsed = parseUniqueWordsQueryParams(params('occ=9..2&ayahs=2..10'));
+    expect(parsed.ranges).toEqual({ ayahs: { min: 2, max: 10 } });
+    expect(parsed.page).toBe(1);
+  });
+});

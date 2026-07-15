@@ -21,6 +21,8 @@ import type {
   TypeSummaryDto,
 } from '../../../core/api/generated/models';
 import type { PagedResultDto } from '../../../core/data-access/paged-result.model';
+import type { RangeFilters, RangeMetric } from '../state/words-range-filters';
+import { WORDS_SHARED_COUNT_COLUMNS } from './words-shared.labels';
 
 export type {
   LemmaAyahMatchDto,
@@ -76,6 +78,7 @@ export const LEMMAS_QUERY_KEYS = {
   search: 'search',
   sort: 'sort',
   page: 'page',
+  rootId: 'rootId',
   lemma: 'lemma',
   view: 'view',
   column: 'column',
@@ -84,6 +87,27 @@ export const LEMMAS_QUERY_KEYS = {
   detailPage: 'detailPage',
   typeCode: 'typeCode',
 } as const;
+
+// Association filter (Feature 026, US7): owned root (real FK belonging). Fails closed in the URL.
+export interface LemmasAssociation {
+  readonly rootId: number | null;
+}
+
+export const EMPTY_LEMMAS_ASSOCIATION: LemmasAssociation = { rootId: null };
+
+export function isLemmasAssociationActive(association: LemmasAssociation): boolean {
+  return association.rootId !== null;
+}
+
+// Count-range filter metrics (Feature 026, US5) — the six count columns the Lemmas list shows.
+export const LEMMAS_RANGE_METRICS: readonly RangeMetric[] = [
+  { key: 'occurrences', urlKey: 'occ', apiKey: 'occ', family: 'occurrences', labelAr: WORDS_SHARED_COUNT_COLUMNS.occurrences },
+  { key: 'ayahs', urlKey: 'ayahs', apiKey: 'ayahs', family: 'ayahsSurahs', labelAr: WORDS_SHARED_COUNT_COLUMNS.ayahs },
+  { key: 'surahs', urlKey: 'surahs', apiKey: 'surahs', family: 'ayahsSurahs', labelAr: WORDS_SHARED_COUNT_COLUMNS.surahs },
+  { key: 'simpleWords', urlKey: 'simple', apiKey: 'simpleWords', family: 'subCount', labelAr: WORDS_SHARED_COUNT_COLUMNS.simpleWords },
+  { key: 'tashkeelWords', urlKey: 'tashkeel', apiKey: 'tashkeelWords', family: 'subCount', labelAr: WORDS_SHARED_COUNT_COLUMNS.tashkeelWords },
+  { key: 'stems', urlKey: 'stems', apiKey: 'stems', family: 'subCount', labelAr: WORDS_SHARED_COUNT_COLUMNS.stems },
+];
 
 export const LEMMAS_SELECTION_QUERY_KEYS: readonly string[] = [
   LEMMAS_QUERY_KEYS.lemma,
@@ -135,6 +159,8 @@ export interface ParsedLemmasQuery {
   search: string;
   sort: LemmaSort;
   page: number;
+  ranges: RangeFilters;
+  association: LemmasAssociation;
   lemmaId: number | null;
   view: LemmaView;
   column: string | null;

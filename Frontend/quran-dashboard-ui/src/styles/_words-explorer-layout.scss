@@ -24,6 +24,11 @@
   gap: var(--qd-space-3);
 }
 
+// Headline result-count stat slot inside a (non-stacked) toolbar recess (Feature 026, US4).
+.uw-toolbar-recess__stat {
+  margin-block-start: var(--qd-space-3);
+}
+
 .uw-toolbar-recess--kinetic {
   animation: uw-toolbar-rise 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
@@ -147,4 +152,64 @@
     padding-inline: var(--qd-space-4);
     gap: var(--qd-space-3);
   }
+}
+
+// Shared search-row shell (Feature 027, Phase 1): a transparent flex LAYOUT container — no own
+// background/border/shadow — hosting each explorer's main search input plus its projected
+// association-filter fields (root/lemma/type). It lives inside `.uw-toolbar-recess`; elevation
+// belongs to the association-filter popover, not this row.
+.qd-explorer-search-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--qd-space-3);
+  align-items: center;
+}
+
+.qd-explorer-search-row__main {
+  flex: 1 1 18rem;
+  min-inline-size: 0;
+}
+
+.qd-explorer-search-row > qd-explorer-association-filter {
+  flex: 1 1 14rem;
+  min-inline-size: 0;
+}
+
+@media (max-width: bp.$qd-bp-phone-max) {
+  .qd-explorer-search-row {
+    flex-direction: column;
+  }
+
+  // Full-width stacked fields on phone, preserving DOM order (main search first, then the
+  // projected association fields in their locked leading→trailing order).
+  .qd-explorer-search-row > * {
+    flex-basis: auto;
+    width: 100%;
+    min-inline-size: 0;
+  }
+}
+
+// Secondary controls row (Feature 027, Phase 1): sort + count-range-filter live here in a later
+// phase, below the search row.
+.qd-explorer-controls-secondary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--qd-space-3);
+  align-items: center;
+  margin-block-start: var(--qd-space-3);
+}
+
+@media (max-width: bp.$qd-bp-phone-max) {
+  .qd-explorer-controls-secondary {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+// Feature 027, Phase 4 — scoped sort-width fix. The global `.qd-select { width: 100% }` in
+// _forms.scss would stretch the sort select across the secondary controls row and force the
+// count-range-filter to wrap. Scope it back to content width here (globals stay untouched).
+.qd-explorer-controls-secondary .qd-select {
+  inline-size: auto;
+  flex: 0 0 auto;
 }

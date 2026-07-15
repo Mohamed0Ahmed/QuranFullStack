@@ -32,6 +32,15 @@ ayahs, and متشابهات groups. State (page, selected ayah/word, source sele
 
 ## Gotchas / invariants (read before changing)
 
+- **Loading is a skeleton, never visible loading text** (`UI_STYLE_SYSTEM.md` §17
+  loading/skeleton system). `mushaf-page-area` shows `qd-panel-skeleton` (`shape="panel"`,
+  a neutral rounded block — chrome only) while `loadState().isLoading`; the Arabic
+  string "جارٍ تحميل الصفحة..." is the sr-only `role="status"` label, not visible text.
+  `selected-ayah-section` / `selected-word-section` render their own inline `.qd-skeleton`
+  cells (sized to the study/analysis layout they load into) with the same sr-only
+  `role="status"` pattern ("جارٍ تحميل دراسة الآية...", "جارٍ تحميل تحليل الكلمة..."). All
+  three skeletons are **loading chrome only** — they never approximate or touch Quran
+  text, ayah glyphs, word-segment rendering, or `--qd-font-quran`.
 - **Mushaf font is Amiri** (`public/fonts/` + `assets/fonts/quran/`) — **not**
   `UthmanicHafs_V22`, which mis-renders mark **U+06DF** as baseline dots. Do not swap the
   Mushaf font.

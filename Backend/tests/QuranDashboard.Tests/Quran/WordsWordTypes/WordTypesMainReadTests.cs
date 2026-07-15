@@ -153,7 +153,7 @@ public sealed class WordTypesMainReadTests(WordTypesTestFixture fixture)
         var handler = scope.ServiceProvider.GetRequiredService<GetWordTypeRowsHandler>();
 
         var outcome = await handler.HandleAsync(
-            new GetWordTypeRowsQuery(type, null, null, null, null, sort, page, pageSize),
+            new GetWordTypeRowsQuery(type, null, null, null, null, null, sort, page, pageSize),
             CancellationToken.None);
 
         outcome.GetType().Should().Be(expectedOutcome);

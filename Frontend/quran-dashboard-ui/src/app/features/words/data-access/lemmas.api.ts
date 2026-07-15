@@ -5,6 +5,8 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { ApiResponse } from '../../../core/data-access/api-response.model';
 import {
+  EMPTY_LEMMAS_ASSOCIATION,
+  LEMMAS_RANGE_METRICS,
   LemmaAyahMatchDto,
   LemmaListItemDto,
   LemmaMissingSurahsDto,
@@ -14,8 +16,11 @@ import {
   LemmaSurahsDto,
   LemmaWordItemDto,
   LemmaWordView,
+  LemmasAssociation,
   PagedResultDto,
 } from '../models/lemmas.models';
+import { EMPTY_RANGE_FILTERS, RangeFilters, appendRangeApiParams } from '../state/words-range-filters';
+import { appendAssociationParam } from '../state/words-association-filters';
 
 /**
  * Typed HTTP client for the Lemmas Explorer (Feature 016). Endpoints live under
@@ -33,6 +38,8 @@ export class LemmasApi {
     sort: LemmaSort,
     page: number,
     pageSize: number,
+    ranges: RangeFilters = EMPTY_RANGE_FILTERS,
+    association: LemmasAssociation = EMPTY_LEMMAS_ASSOCIATION,
   ): Observable<ApiResponse<PagedResultDto<LemmaListItemDto>>> {
     let params = new HttpParams()
       .set('sort', sort)
@@ -42,6 +49,9 @@ export class LemmasApi {
     if (search.trim().length > 0) {
       params = params.set('search', search.trim());
     }
+
+    params = appendRangeApiParams(params, ranges, LEMMAS_RANGE_METRICS);
+    params = appendAssociationParam(params, 'rootId', association.rootId);
 
     return this.http.get<ApiResponse<PagedResultDto<LemmaListItemDto>>>(
       `${this.baseUrl}/api/words/lemmas`,

@@ -13,6 +13,7 @@ import {
   WORD_TYPES_PAGE_SIZE,
   WordTableRowDto,
   WordTypeMainType,
+  WordTypeScopeCountsDto,
   WordTypeTableRowDto,
   WordTypeTreeDto,
 } from '../models/word-types.models';
@@ -652,6 +653,143 @@ describe('WordTypesExplorerFacade — tableView', () => {
 
     const lastCall = (router.navigate as ReturnType<typeof vi.fn>).mock.calls.at(-1);
     expect(lastCall?.[1].queryParams).not.toHaveProperty('tableView');
+    facade.unbindFromRoute();
+  });
+});
+
+// Feature 026 US8: the scoped four-count summary loads on a SEPARATE trigger from the table — only when
+// the scope changes (type/childCode/case/tense/voice/search/flags), never on a tableView or page change —
+// and its lifecycle is fully independent of the table (partial-failure isolation + counts-only retry).
+describe('WordTypesExplorerFacade — scope counts (US8)', () => {
+  beforeEach(() => getTestBed().resetTestingModule());
+  afterEach(() => {
+    activeHttp?.verify({ ignoreCancelled: true });
+    activeHttp = undefined;
+    getTestBed().resetTestingModule();
+  });
+
+  const SCOPE_COUNTS_URL = '/api/words/word-types/scope-counts';
+
+  function okCounts(
+    counts: WordTypeScopeCountsDto = { wordsCount: 3, rootsCount: 1, stemsCount: 1, lemmasCount: 1 },
+  ): ApiResponse<WordTypeScopeCountsDto> {
+    return { isSuccess: true, message: 'تم', data: counts };
+  }
+
+  function expectScopeCountsRequest(
+    http: HttpTestingController,
+    expected: { type: string; childCode?: string | null; case?: string | null },
+  ): TestRequest {
+    const request = http.expectOne((candidate) => candidate.url.endsWith(SCOPE_COUNTS_URL));
+    expect(request.request.method).toBe('GET');
+    expect(request.request.params.get('type')).toBe(expected.type);
+    expect(request.request.params.get('childCode')).toBe(expected.childCode ?? null);
+    expect(request.request.params.get('case')).toBe(expected.case ?? null);
+    // Scope-level only: never view/sort/paging params.
+    expect(request.request.params.has('tableView')).toBe(false);
+    expect(request.request.params.has('sort')).toBe(false);
+    expect(request.request.params.has('page')).toBe(false);
+    expect(request.request.params.has('pageSize')).toBe(false);
+    return request;
+  }
+
+  function expectNoScopeCountsRequest(http: HttpTestingController): void {
+    http.expectNone((candidate) => candidate.url.endsWith(SCOPE_COUNTS_URL));
+  }
+
+  it('loads and exposes the four counts for a confirmed leaf scope', () => {
+    const { facade, http } = setup();
+    const route = controllableRoute({ type: 'noun', childCode: 'PN' });
+    facade.bindToRoute(route.route);
+
+    flushLeafList(http, { type: 'noun', childCode: 'PN', tableView: 'words' }, okRows([wordRow()]));
+    expectScopeCountsRequest(http, { type: 'noun', childCode: 'PN' }).flush(okCounts());
+
+    expect(facade.scopeCountsState().status).toBe('success');
+    expect(facade.scopeCountsState().counts).toEqual({ wordsCount: 3, rootsCount: 1, stemsCount: 1, lemmasCount: 1 });
+    facade.unbindFromRoute();
+  });
+
+  it('shows no counts (idle) and issues no request for a parent (non-leaf) scope', () => {
+    const { facade, http } = setup();
+    const route = controllableRoute({ type: 'noun' });
+    facade.bindToRoute(route.route);
+
+    expectNoScopeCountsRequest(http);
+    flushTreeOnly(http);
+
+    expect(facade.scopeCountsState().status).toBe('idle');
+    expect(facade.scopeCountsState().counts).toBeNull();
+    facade.unbindFromRoute();
+  });
+
+  it('does NOT refetch counts on a tableView change or a page change', () => {
+    const { facade, http } = setup();
+    const route = controllableRoute({ type: 'noun', childCode: 'PN' });
+    facade.bindToRoute(route.route);
+    flushLeafList(http, { type: 'noun', childCode: 'PN', tableView: 'words' }, okRows([wordRow()]));
+    expectScopeCountsRequest(http, { type: 'noun', childCode: 'PN' }).flush(okCounts());
+
+    // Tab switch: the table reloads, the counts do not.
+    route.setQueryParams({ type: 'noun', childCode: 'PN', tableView: 'roots' });
+    expectNoScopeCountsRequest(http);
+    expectTableRequest(http, { type: 'noun', childCode: 'PN', tableView: 'roots' }).flush(okRows([rootRow()]));
+
+    // Page change: same — the table reloads, the counts do not.
+    route.setQueryParams({ type: 'noun', childCode: 'PN', tableView: 'roots', page: '2' });
+    expectNoScopeCountsRequest(http);
+    expectTableRequest(http, { type: 'noun', childCode: 'PN', tableView: 'roots', page: 2 }).flush(okRows([]));
+
+    expect(facade.scopeCountsState().counts).toEqual({ wordsCount: 3, rootsCount: 1, stemsCount: 1, lemmasCount: 1 });
+    facade.unbindFromRoute();
+  });
+
+  it('refetches counts when the scope changes (e.g. a case sub-filter)', () => {
+    const { facade, http } = setup();
+    const route = controllableRoute({ type: 'noun', childCode: 'PN' });
+    facade.bindToRoute(route.route);
+    flushLeafList(http, { type: 'noun', childCode: 'PN', tableView: 'words' }, okRows([wordRow()]));
+    expectScopeCountsRequest(http, { type: 'noun', childCode: 'PN' }).flush(okCounts());
+
+    route.setQueryParams({ type: 'noun', childCode: 'PN', case: 'genitive' });
+    expectTableRequest(http, { type: 'noun', childCode: 'PN', case: 'genitive' }).flush(okRows([]));
+    expectScopeCountsRequest(http, { type: 'noun', childCode: 'PN', case: 'genitive' })
+      .flush(okCounts({ wordsCount: 1, rootsCount: 1, stemsCount: 1, lemmasCount: 1 }));
+
+    expect(facade.scopeCountsState().counts?.wordsCount).toBe(1);
+    facade.unbindFromRoute();
+  });
+
+  it('isolates a counts failure from the table and retries counts only', () => {
+    const { facade, http } = setup();
+    const route = controllableRoute({ type: 'inl' });
+    facade.bindToRoute(route.route);
+    flushLeafList(http, { type: 'inl', tableView: 'words' }, okRows([wordRow()]));
+
+    // Counts fail while the table succeeded: the table stays usable; the strip shows its own error.
+    failTransport(expectScopeCountsRequest(http, { type: 'inl' }));
+    expect(facade.scopeCountsState().status).toBe('error');
+    expect(facade.scopeCountsState().counts).toBeNull();
+    expect(facade.listState().status).toBe('success');
+
+    // Retry refetches ONLY the counts — no table request is issued.
+    facade.retryScopeCounts();
+    expect(facade.scopeCountsState().status).toBe('loading');
+    const retry = expectScopeCountsRequest(http, { type: 'inl' });
+    http.expectNone((candidate) => candidate.url.endsWith('/api/words/word-types/table'));
+    retry.flush(okCounts());
+    expect(facade.scopeCountsState().status).toBe('success');
+    facade.unbindFromRoute();
+  });
+
+  it('treats a controlled (isSuccess:false) counts response as an error', () => {
+    const { facade, http } = setup();
+    const route = controllableRoute({ type: 'inl' });
+    facade.bindToRoute(route.route);
+    flushLeafList(http, { type: 'inl', tableView: 'words' }, okRows([wordRow()]));
+
+    expectScopeCountsRequest(http, { type: 'inl' }).flush({ isSuccess: false, message: 'SYNTH', data: null });
+    expect(facade.scopeCountsState().status).toBe('error');
     facade.unbindFromRoute();
   });
 });

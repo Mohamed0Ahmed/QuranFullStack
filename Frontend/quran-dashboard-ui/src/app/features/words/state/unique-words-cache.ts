@@ -4,8 +4,24 @@ import { ApiResponseCache } from '../../../core/caching/api-response-cache';
 import { UniqueWordKind, UniqueWordSort } from '../models/unique-words.models';
 
 export const UniqueWordsCacheKeys = {
-  list(mode: UniqueWordKind, sort: UniqueWordSort, search: string, page: number): string {
-    return `words:list:${mode}:${sort}:${search}:p${page}`;
+  // rangesKey/associationKey are '' for an unfiltered read, keeping the pre-feature cache key
+  // byte-identical (US5/US7).
+  list(
+    mode: UniqueWordKind,
+    sort: UniqueWordSort,
+    search: string,
+    page: number,
+    rangesKey = '',
+    associationKey = '',
+  ): string {
+    let key = `words:list:${mode}:${sort}:${search}:p${page}`;
+    if (rangesKey.length > 0) {
+      key += `:${rangesKey}`;
+    }
+    if (associationKey.length > 0) {
+      key += `:assoc(${associationKey})`;
+    }
+    return key;
   },
 
   summary(mode: UniqueWordKind, wordId: number): string {

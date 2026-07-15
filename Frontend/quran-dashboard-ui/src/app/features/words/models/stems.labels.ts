@@ -10,6 +10,13 @@ import {
 } from './words-shared.labels';
 
 export const STEMS_PAGE_TITLE = 'الأصول الصرفية';
+// Headline result-count stat (Feature 026, US4): label-prefix "عدد الـ…: N".
+export const STEMS_RESULT_COUNT_LABEL = 'عدد الأصول الصرفية';
+// Association filters (Feature 026, US7): primary (dominant) root + lemma, labeled primary-not-sole.
+export const STEMS_PRIMARY_ROOT_FILTER_LABEL = 'الجذر الأساسي';
+export const STEMS_PRIMARY_ROOT_FILTER_PLACEHOLDER = 'ابحث عن جذر…';
+export const STEMS_PRIMARY_LEMMA_FILTER_LABEL = 'الصيغة المعجمية الأساسية';
+export const STEMS_PRIMARY_LEMMA_FILTER_PLACEHOLDER = 'ابحث عن صيغة معجمية…';
 export const STEMS_SEARCH_LABEL = 'بحث في الأصول الصرفية';
 export const STEMS_SEARCH_PLACEHOLDER = 'اكتب أصلًا صرفيًا…';
 

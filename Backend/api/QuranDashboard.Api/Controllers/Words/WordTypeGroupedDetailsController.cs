@@ -18,7 +18,7 @@ public sealed class WordTypeGroupedDetailsController(
     GetWordTypeGroupedSurahsHandler surahsHandler) : ControllerBase
 {
     private const int DefaultPage = 1;
-    private const int DefaultDetailPageSize = 25;
+    private const int DefaultDetailPageSize = 100;
 
     /// <summary>
     /// يُرجع ملخّص مجموعة (جذر أو أصل أو صيغة) ضمن نطاق نوع الكلمات المحدّد بالنص والعدّادات.
@@ -78,7 +78,7 @@ public sealed class WordTypeGroupedDetailsController(
     /// <param name="tense">مرشّح الزمن (اختياري).</param>
     /// <param name="voice">مرشّح البناء للمعلوم/المجهول (اختياري).</param>
     /// <param name="page">رقم الصفحة (الافتراضي 1).</param>
-    /// <param name="pageSize">حجم الصفحة (الافتراضي 25).</param>
+    /// <param name="pageSize">حجم الصفحة (الافتراضي 100).</param>
     /// <param name="cancellationToken">رمز إلغاء الطلب.</param>
     /// <response code="200">تم تحميل كلمات المجموعة بنجاح.</response>
     /// <response code="400">نوع مجموعة أو معرّف أو مرشّح أو تقسيم صفحات غير صالح.</response>
@@ -133,7 +133,7 @@ public sealed class WordTypeGroupedDetailsController(
     /// <param name="tense">مرشّح الزمن (اختياري).</param>
     /// <param name="voice">مرشّح البناء للمعلوم/المجهول (اختياري).</param>
     /// <param name="page">رقم الصفحة (الافتراضي 1).</param>
-    /// <param name="pageSize">حجم الصفحة (الافتراضي 25).</param>
+    /// <param name="pageSize">حجم الصفحة (الافتراضي 100).</param>
     /// <param name="cancellationToken">رمز إلغاء الطلب.</param>
     /// <response code="200">تم تحميل آيات المجموعة بنجاح.</response>
     /// <response code="400">نوع مجموعة أو معرّف أو مرشّح أو تقسيم صفحات غير صالح.</response>

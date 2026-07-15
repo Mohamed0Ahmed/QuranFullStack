@@ -3,7 +3,7 @@
     <div class="word-type-filter__toolbar" role="toolbar" (click)="$event.stopPropagation()">
       @for (node of currentTree.mainTypes; track node.code) {
         <div
-          class="word-type-filter__trigger"
+          class="word-type-filter__trigger qd-card qd-card--hover"
           [class.qd-is-selected]="isSelected(node)"
           [class.word-type-filter__trigger--disabled]="loading()"
         >
@@ -27,13 +27,13 @@
                 }
               </span>
             </span>
-            <span class="word-type-filter__count qd-badge">{{ node.count }}</span>
+            <span class="word-type-filter__count qd-chip__count">{{ node.count }}</span>
           </button>
         </div>
       }
     </div>
 
-    <div id="word-type-filter-panel" class="word-type-filter__panel qd-surface-elevated" role="region" [attr.aria-label]="browsedNode() ? panelRegionLabel(browsedNode()!) : filterLabel">
+    <div id="word-type-filter-panel" class="word-type-filter__panel" role="region" [attr.aria-label]="browsedNode() ? panelRegionLabel(browsedNode()!) : filterLabel">
       @if (browsedNode(); as panelNode) {
         @if (panelNode.children.length > 0) {
           <section class="word-type-filter__children-section" role="group" [attr.aria-labelledby]="'word-type-filter-children-heading-' + panelNode.code">
@@ -47,7 +47,7 @@
                 <li class="word-type-filter__child" role="listitem">
                   <button
                     type="button"
-                    class="word-type-filter__child-button"
+                    class="word-type-filter__child-button qd-chip qd-chip--pill"
                     [class.qd-is-selected]="isChildSelected(child)"
                     [attr.aria-current]="isChildSelected(child) ? 'true' : null"
                     [attr.aria-selected]="isChildSelected(child)"
@@ -55,7 +55,7 @@
                     (click)="selectChild(child)"
                   >
                     <span class="word-type-filter__child-label" [title]="child.label.ar">{{ child.label.ar }}</span>
-                    <span class="word-type-filter__count qd-badge">{{ child.count }}</span>
+                    <span class="word-type-filter__count qd-chip__count">{{ child.count }}</span>
                   </button>
                 </li>
               }

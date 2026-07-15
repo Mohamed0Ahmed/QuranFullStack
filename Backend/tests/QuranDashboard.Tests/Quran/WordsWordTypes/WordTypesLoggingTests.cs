@@ -38,7 +38,7 @@ public sealed class WordTypesLoggingTests(WordTypesTestFixture fixture)
         var handler = scope.ServiceProvider.GetRequiredService<GetWordTypeRowsHandler>();
 
         _ = await handler.HandleAsync(
-            new GetWordTypeRowsQuery("noun", null, null, null, null, "occurrences", 1, 25),
+            new GetWordTypeRowsQuery("noun", null, null, null, null, null, "occurrences", 1, 25),
             CancellationToken.None);
 
         var entry = SingleEntryFor<GetWordTypeRowsHandler>(LogLevel.Information);
@@ -54,6 +54,28 @@ public sealed class WordTypesLoggingTests(WordTypesTestFixture fixture)
         AssertNoSensitivePayload(entry);
     }
 
+    // FR-006: an active search is recorded only as a hasSearch boolean; the term text never reaches the log.
+    [Fact]
+    public async Task RowsHandler_WithActiveSearch_LogsHasSearchBoolean_NeverTheTerm()
+    {
+        await using var scope = fixture.CreateScope();
+        fixture.LoggingProvider.Clear();
+        var handler = scope.ServiceProvider.GetRequiredService<GetWordTypeRowsHandler>();
+        const string searchTerm = "كَلِم";
+
+        _ = await handler.HandleAsync(
+            new GetWordTypeRowsQuery("noun", null, null, null, null, searchTerm, "occurrences", 1, 25),
+            CancellationToken.None);
+
+        var entry = SingleEntryFor<GetWordTypeRowsHandler>(LogLevel.Information);
+        entry.GetValue<bool>("hasSearch").Should().BeTrue();
+        entry.StructuredFields()
+            .Select(pair => pair.Value)
+            .OfType<string>()
+            .Append(entry.Message)
+            .Should().OnlyContain(value => !value.Contains(searchTerm, StringComparison.Ordinal));
+    }
+
     [Fact]
     public async Task RowsHandler_LogsInvalidFilterWarning_WithStructuredFields()
     {
@@ -62,11 +84,11 @@ public sealed class WordTypesLoggingTests(WordTypesTestFixture fixture)
         var handler = scope.ServiceProvider.GetRequiredService<GetWordTypeRowsHandler>();
 
         _ = await handler.HandleAsync(
-            new GetWordTypeRowsQuery("bad", "PN", "genitive", null, null, "occurrences", 1, 25),
+            new GetWordTypeRowsQuery("bad", "PN", "genitive", null, null, null, "occurrences", 1, 25),
             CancellationToken.None);
 
         var entry = SingleEntryFor<GetWordTypeRowsHandler>(LogLevel.Warning);
-        entry.FieldNames().Should().BeEquivalentTo(["feature", "operation", "reason", "type", "childCode", "hasCaseFilter", "hasTenseFilter", "hasVoiceFilter"]);
+        entry.FieldNames().Should().BeEquivalentTo(["feature", "operation", "reason", "type", "childCode", "hasCaseFilter", "hasTenseFilter", "hasVoiceFilter", "hasSearch"]);
         entry.GetValue<string>("feature").Should().Be("WordTypes");
         entry.GetValue<string>("operation").Should().Be("GetWordTypeRows");
         entry.GetValue<string>("reason").Should().Be("invalidFilter");
@@ -75,6 +97,8 @@ public sealed class WordTypesLoggingTests(WordTypesTestFixture fixture)
         entry.GetValue<bool>("hasCaseFilter").Should().BeTrue();
         entry.GetValue<bool>("hasTenseFilter").Should().BeFalse();
         entry.GetValue<bool>("hasVoiceFilter").Should().BeFalse();
+        // Search presence is logged only as a boolean — the term text is never recorded (FR-006).
+        entry.GetValue<bool>("hasSearch").Should().BeFalse();
         AssertNoSensitivePayload(entry);
     }
 

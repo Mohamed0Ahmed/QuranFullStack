@@ -50,3 +50,26 @@ export const WORDS_SHARED_COUNT_COLUMNS = {
   lemmas: 'الصيغ المعجمية',
   stems: 'الأصول الصرفية',
 } as const;
+
+// UI labels for the shared count-range filter (Feature 026, US5).
+export const WORDS_RANGE_FILTER_LABELS = {
+  sectionLabel: 'تصفية حسب الأعداد',
+  custom: 'مخصّص',
+  min: 'من',
+  max: 'إلى',
+  clearAll: 'مسح كل عوامل التصفية',
+} as const;
+
+// UI labels for the shared association filter picker (Feature 026, US7). activeFilter is the
+// neutral badge shown while a URL-restored selection's real label has not resolved yet.
+export const WORDS_ASSOCIATION_FILTER_LABELS = {
+  activeFilter: 'مرشَّح نشط',
+  clear: 'مسح التصفية',
+  loading: 'جارٍ التحميل…',
+} as const;
+
+// UI labels for the shared result-count stat (Feature 026, US4). loading is the sr-only text
+// announced by the skeleton's role="status" container.
+export const WORDS_RESULT_COUNT_LABELS = {
+  loading: 'جارٍ التحميل…',
+} as const;

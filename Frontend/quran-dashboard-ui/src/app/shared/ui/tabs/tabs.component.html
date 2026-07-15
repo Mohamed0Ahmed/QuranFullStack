@@ -1,0 +1,9 @@
+<div
+  class="qd-tabs"
+  [class.qd-tabs--vertical]="orientation() === 'vertical'"
+  role="tablist"
+  [attr.aria-label]="ariaLabel()"
+  [attr.aria-orientation]="orientation()"
+>
+  <ng-content></ng-content>
+</div>

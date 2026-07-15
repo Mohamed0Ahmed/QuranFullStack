@@ -1,0 +1,35 @@
+@if (elementType() === 'a') {
+  <a
+    class="qd-chip qd-chip--pill"
+    [class.qd-is-selected]="selected()"
+    [class.qd-chip--disabled]="disabled()"
+    [attr.href]="disabled() ? null : href()"
+    [attr.tabindex]="disabled() ? -1 : null"
+    [attr.aria-disabled]="disabled() ? 'true' : null"
+    [attr.aria-current]="selected() ? 'true' : null"
+    [attr.aria-label]="ariaLabel()"
+    data-testid="qd-chip"
+    (click)="onClick($event)"
+  >
+    <span class="qd-chip__label"><ng-content></ng-content></span>
+    @if (count() !== null) {
+      <span class="qd-chip__count" data-testid="qd-chip-count">{{ count() }}</span>
+    }
+  </a>
+} @else {
+  <button
+    type="button"
+    class="qd-chip qd-chip--pill"
+    [class.qd-is-selected]="selected()"
+    [attr.aria-pressed]="selected()"
+    [attr.aria-label]="ariaLabel()"
+    [disabled]="disabled()"
+    data-testid="qd-chip"
+    (click)="onClick($event)"
+  >
+    <span class="qd-chip__label"><ng-content></ng-content></span>
+    @if (count() !== null) {
+      <span class="qd-chip__count" data-testid="qd-chip-count">{{ count() }}</span>
+    }
+  </button>
+}

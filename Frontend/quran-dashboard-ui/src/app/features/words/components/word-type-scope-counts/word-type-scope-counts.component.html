@@ -1,0 +1,56 @@
+<!--
+  Renders nothing when the table failed (scope unconfirmed) or before a leaf scope is confirmed
+  (status 'idle'), keeping the strip host mounted but numberless. Otherwise: a non-interactive skeleton
+  while loading, a compact error + retry (refetches counts only) on failure, or the four labeled counts
+  (0 renders as 0 for an all-zero scope).
+-->
+@if (!tableFailed()) {
+  @switch (state().status) {
+    @case ('loading') {
+      <!-- The visual skeleton stays aria-hidden; the sr-only text inside the role="status" container is
+           what assistive technology announces (same pattern as the association filter's loading hint). -->
+      <div
+        class="word-type-scope-counts word-type-scope-counts--loading"
+        role="status"
+        aria-busy="true"
+        data-testid="word-type-scope-counts-skeleton"
+      >
+        <span class="qd-sr-only">{{ loadingLabel }}</span>
+        @for (item of items(); track item.key) {
+          <span class="qd-skeleton word-type-scope-counts__skeleton" aria-hidden="true"></span>
+        }
+      </div>
+    }
+    @case ('error') {
+      <div
+        class="word-type-scope-counts word-type-scope-counts--error"
+        role="alert"
+        data-testid="word-type-scope-counts-error"
+      >
+        <span class="word-type-scope-counts__error-text">{{ errorLabel }}</span>
+        <button
+          type="button"
+          class="qd-btn qd-btn-secondary qd-interactive-surface word-type-scope-counts__retry"
+          data-testid="word-type-scope-counts-retry"
+          (click)="retry()"
+        >
+          {{ retryLabel }}
+        </button>
+      </div>
+    }
+    @case ('success') {
+      <dl
+        class="word-type-scope-counts"
+        [attr.aria-label]="ariaLabel"
+        data-testid="word-type-scope-counts"
+      >
+        @for (item of items(); track item.key) {
+          <div class="word-type-scope-counts__item" [attr.data-testid]="'word-type-scope-count--' + item.key">
+            <dt class="word-type-scope-counts__label">{{ item.label }}</dt>
+            <dd class="word-type-scope-counts__value" data-testid="word-type-scope-count-value">{{ item.value }}</dd>
+          </div>
+        }
+      </dl>
+    }
+  }
+}

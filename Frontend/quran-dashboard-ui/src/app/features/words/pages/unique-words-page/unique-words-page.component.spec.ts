@@ -6,7 +6,15 @@ import { of } from 'rxjs';
 
 import { UniqueWordsPageComponent } from './unique-words-page.component';
 import { UniqueWordsFacade } from '../../state/unique-words.facade';
-import { UniqueWordKind, UniqueWordListItemViewModel, UniqueWordsListState, WordDrilldownState } from '../../models/unique-words.models';
+import { WordsAssociationOptionsService } from '../../data-access/words-association-options.service';
+import { UniqueWordKind, UniqueWordListItemViewModel, UniqueWordsAssociation, UniqueWordsListState, WordDrilldownState } from '../../models/unique-words.models';
+import { UNIQUE_WORDS_RESULT_COUNT_LABEL } from '../../models/unique-words.labels';
+
+const STUB_ASSOCIATION_OPTIONS = {
+  searchRoots: () => of([]),
+  searchLemmas: () => of([]),
+  wordTypeOptions: () => of([]),
+};
 
 const CLOSED_DRILLDOWN: WordDrilldownState = { isOpen: false, selectedWordId: null, view: 'surahs', summary: null, surahs: null, missingSurahs: null, ayahs: null, ayahPage: 1, status: 'idle', errorMessage: '' };
 
@@ -23,6 +31,7 @@ class StubFacade {
   readonly drilldownState = signal<WordDrilldownState>(CLOSED_DRILLDOWN);
   readonly mode = signal<UniqueWordKind>('tashkeel');
   readonly search = signal<string>('');
+  readonly association = signal<UniqueWordsAssociation>({ primaryType: null, rootId: null });
   readonly bindToRoute = vi.fn();
   readonly unbindFromRoute = vi.fn();
   readonly openDrilldown = vi.fn();
@@ -44,6 +53,7 @@ describe('UniqueWordsPageComponent', () => {
         provideRouter([]),
         { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({})), queryParamMap: of(convertToParamMap({})) } },
         { provide: UniqueWordsFacade, useValue: stub },
+        { provide: WordsAssociationOptionsService, useValue: STUB_ASSOCIATION_OPTIONS },
       ],
       teardown: { destroyAfterEach: true },
     }).compileComponents();
@@ -73,6 +83,34 @@ describe('UniqueWordsPageComponent', () => {
     const root = await render();
     expect(root.querySelector('[data-testid="unique-words-tab--tashkeel"]')).toBeTruthy();
     expect(root.querySelector('[data-testid="unique-words-tab--simple"]')).toBeTruthy();
+  });
+
+  it('shows the headline result count equal to the list totalCount (US4)', async () => {
+    const root = await render({ totalCount: 2 });
+    const stat = root.querySelector('[data-testid="unique-words-result-count"] [data-testid="explorer-result-count"]');
+    expect(stat).toBeTruthy();
+    expect(stat?.getAttribute('aria-label')).toBe(`${UNIQUE_WORDS_RESULT_COUNT_LABEL}: 2`);
+    expect(
+      root
+        .querySelector('[data-testid="unique-words-result-count"] [data-testid="explorer-result-count-value"]')
+        ?.textContent?.trim(),
+    ).toBe('2');
+  });
+
+  it('shows 0 in the headline result count for an empty scope (US4)', async () => {
+    const root = await render({ status: 'empty', items: [], totalCount: 0 });
+    expect(
+      root
+        .querySelector('[data-testid="unique-words-result-count"] [data-testid="explorer-result-count-value"]')
+        ?.textContent?.trim(),
+    ).toBe('0');
+  });
+
+  it('hides the headline result count when the list read fails (US4)', async () => {
+    const root = await render({ status: 'error', items: [], errorMessage: 'خطأ' });
+    expect(
+      root.querySelector('[data-testid="unique-words-result-count"] [data-testid="explorer-result-count"]'),
+    ).toBeNull();
   });
 
   it('renders the search input and sort select', async () => {
@@ -133,6 +171,47 @@ describe('UniqueWordsPageComponent', () => {
   it('hides list pagination when totalCount fits in one page', async () => {
     const root = await render({ totalCount: 2, page: 1 });
     expect(root.querySelector('[data-testid="qd-pagination-prev"]')).toBeNull();
+  });
+
+  it('serializes a count-range bucket to the URL and resets the page (US5)', async () => {
+    const root = await render();
+
+    expect(root.querySelector('[data-testid="unique-words-range-filter"]')).toBeTruthy();
+    (root.querySelector('[data-testid="range-filter-bucket-occurrences-11–100"]') as HTMLButtonElement).click();
+
+    expect(router.navigate).toHaveBeenCalledWith([], {
+      relativeTo: expect.anything(),
+      queryParams: expect.objectContaining({ occ: '11..100', page: null }),
+      queryParamsHandling: 'merge',
+    });
+  });
+
+  it('serializes a primary-type selection to the URL and resets the page (US7)', async () => {
+    const fixture = TestBed.createComponent(UniqueWordsPageComponent);
+    fixture.componentInstance.ngOnInit();
+    await fixture.whenStable();
+
+    fixture.componentInstance['onPrimaryTypeChange']({ id: 'PN', label: 'اسم علم' });
+
+    expect(router.navigate).toHaveBeenCalledWith([], {
+      relativeTo: expect.anything(),
+      queryParams: expect.objectContaining({ primaryType: 'PN', page: null }),
+      queryParamsHandling: 'merge',
+    });
+  });
+
+  it('serializes a primary-root selection to the URL and resets the page (US7)', async () => {
+    const fixture = TestBed.createComponent(UniqueWordsPageComponent);
+    fixture.componentInstance.ngOnInit();
+    await fixture.whenStable();
+
+    fixture.componentInstance['onPrimaryRootChange']({ id: 5001, label: 'ك ل م' });
+
+    expect(router.navigate).toHaveBeenCalledWith([], {
+      relativeTo: expect.anything(),
+      queryParams: expect.objectContaining({ rootId: '5001', page: null }),
+      queryParamsHandling: 'merge',
+    });
   });
 
   it('debounces keyboard drilldown navigation and keeps only the final target', async () => {

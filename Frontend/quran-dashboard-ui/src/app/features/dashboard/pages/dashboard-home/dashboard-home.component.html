@@ -6,9 +6,12 @@
 
       @switch (viewState) {
         @case ('loading') {
-          <div class="qd-loading-state" role="status" aria-live="polite">
-            <span>جارٍ تحميل بيانات التطبيق...</span>
-          </div>
+          <qd-skeleton-rows
+            [count]="1"
+            rowTemplate="6rem 7.5rem 6rem"
+            loadingLabel="جارٍ تحميل بيانات التطبيق..."
+            data-testid="dashboard-app-meta-loading"
+          />
         }
         @case ('success') {
           <div class="app-meta" role="status" aria-live="polite">
@@ -29,27 +32,27 @@
     </div>
 
     <div class="dashboard-cards">
-      <a class="qd-card dashboard-card" [routerLink]="['/dashboard/mushaf']">
+      <a class="qd-card dashboard-card qd-card--hover qd-interactive-surface" [routerLink]="['/dashboard/mushaf']">
         <h2 class="qd-card-title">المصحف والآيات</h2>
         <p class="qd-text-muted">عرض صفحات المصحف والآيات الكريمة</p>
       </a>
 
-      <a class="qd-card dashboard-card" [routerLink]="['/dashboard/words']">
+      <a class="qd-card dashboard-card qd-card--hover qd-interactive-surface" [routerLink]="['/dashboard/words']">
         <h2 class="qd-card-title">الكلمات والجذور</h2>
         <p class="qd-text-muted">استكشاف كلمات القرآن وجذورها</p>
       </a>
 
-      <a class="qd-card dashboard-card" [routerLink]="['/tafsirs']">
+      <a class="qd-card dashboard-card qd-card--hover qd-interactive-surface" [routerLink]="['/tafsirs']">
         <h2 class="qd-card-title">التفاسير</h2>
         <p class="qd-text-muted">التفاسير المتصلة بالآيات</p>
       </a>
 
-      <a class="qd-card dashboard-card" [routerLink]="['/gates']">
+      <a class="qd-card dashboard-card qd-card--hover qd-interactive-surface" [routerLink]="['/gates']">
         <h2 class="qd-card-title">الأبواب</h2>
         <p class="qd-text-muted">إدارة أبواب الدراسات القرآنية</p>
       </a>
 
-      <a class="qd-card dashboard-card" [routerLink]="['/resources']">
+      <a class="qd-card dashboard-card qd-card--hover qd-interactive-surface" [routerLink]="['/resources']">
         <h2 class="qd-card-title">المصادر</h2>
         <p class="qd-text-muted">المصادر والمراجع القرآنية</p>
       </a>

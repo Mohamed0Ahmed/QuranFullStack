@@ -192,12 +192,16 @@ VALUES
 -- ======================================================================
 
 -- POS tags referenced by morphology (canonical catalog subset) ----------
+-- ADJ is catalogued but has NO morphology occurrences in this slice — it backs the
+-- "catalogued-but-never-primary POS code → 200 empty page" association-filter case
+-- (Feature 026, US7).
 INSERT INTO quran_pos_tags
   (code, arabic_label, english_label, category, sort_order, description)
 VALUES
   ('N',   'اسم',       'Noun',       'noun',     1,  NULL),
   ('V',   'فعل',       'Verb',       'verb',     2,  NULL),
   ('PN',  'اسم علم',   'Proper Noun','noun',     3,  NULL),
+  ('ADJ', 'صفة',       'Adjective',  'noun',     4,  NULL),
   ('P',   'حرف جر',    'Preposition','particle', 6,  NULL),
   ('INL', 'حروف مقطّعة', 'Quranic Initials', 'particle', 12, NULL)
 ON CONFLICT (code) DO NOTHING;
@@ -213,6 +217,9 @@ ON CONFLICT (id) DO NOTHING;
 
 -- Word morphology (one row per readable quran word needed by assertions) -
 -- الله (1002, 10021): proper-noun majority → primary type PN, root أ ل ه.
+-- N is deliberately a MINORITY type on both الله (10022) and آمنوا (20031) and never a
+-- primary type anywhere — it backs the primary-vs-any discrimination case: primaryType=N
+-- must return an empty page even though two words carry N occurrences (Feature 026, US7).
 INSERT INTO quran_word_morphology
   (quran_word_id, location, head_pos, segment_count, root_id, lemma_id, stem_id, is_verb, verb_tense, verb_voice, case_feature, head_features_json)
 VALUES
@@ -224,4 +231,11 @@ VALUES
   (2003,  '2:25:3',  'V',  1, 5002, NULL, NULL, TRUE,  'perfect', 'active', NULL, NULL),
   (20032, '2:25:5',  'V',  1, 5002, NULL, NULL, TRUE,  'perfect', 'active', NULL, NULL),
   (20031, '1:2:1',   'N',  1, 5002, NULL, NULL, FALSE, NULL,       NULL,     NULL, NULL),
-  (31001, '3:1:1',  'INL', 1, NULL, NULL, NULL, FALSE, NULL, NULL, NULL, NULL);
+  (31001, '3:1:1',  'INL', 1, NULL, NULL, NULL, FALSE, NULL, NULL, NULL, NULL),
+  -- SYNTHETIC fixture association (mirrors the morphology-explorers S602 pattern; NOT
+  -- authoritative morphology): one occurrence of الله (10023) carries the MINORITY root
+  -- ر ح م (5003) so the identity co-occurs with TWO roots — dominant أ ل ه (5001, ×3)
+  -- vs minority ر ح م (5003, ×1). Backs the primary-vs-any root discrimination case:
+  -- rootId=5003 must EXCLUDE الله even though it co-occurs; rootId=5001 keeps it
+  -- (Feature 026, US7). Primary type/root of الله are unchanged (PN ×3, root 5001 ×3).
+  (10023, '4:1:1',  'PN', 1, 5003, NULL, NULL, FALSE, NULL, NULL, NULL, NULL);

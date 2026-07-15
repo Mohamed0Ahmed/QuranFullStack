@@ -4,14 +4,14 @@
   --qd-surface: oklch(0.997 0.003 90);
   --qd-section-bg: oklch(0.955 0.015 77.1);
   --qd-surface-recessed: oklch(0.921 0.025 75.3);
-  --qd-surface-elevated: var(--qd-section-bg);
+  --qd-surface-hover: oklch(0.955 0.015 77.1);        /* single hover fill (== light section-bg tone) */
 
   --qd-explorer-detail-bg: oklch(0.938 0.022 78);
   --qd-explorer-detail-header-bg: oklch(0.952 0.018 84);
   --qd-explorer-detail-surface: oklch(0.972 0.012 90);
   --qd-explorer-detail-card: oklch(0.978 0.010 88);
   --qd-explorer-detail-border: oklch(0.42 0.045 72 / 0.16);
-  --qd-explorer-table-header-bg: color-mix(in oklch, var(--qd-primary) 6%, var(--qd-surface-elevated));
+  --qd-explorer-table-header-bg: color-mix(in oklch, var(--qd-primary) 6%, var(--qd-section-bg));
   --qd-explorer-table-header-fg: var(--qd-text);
 
   --qd-text: oklch(0.278 0.030 256.8);
@@ -19,6 +19,7 @@
 
   --qd-border: oklch(0.263 0.046 250 / 0.12);
   --qd-border-strong: oklch(0.263 0.046 250 / 0.22);
+  --qd-border-accent: oklch(0.718 0.118 84 / 0.32);   /* one canonical ~32% accent border (selected/active edge) */
 
   --qd-primary: oklch(0.263 0.046 250.0);
   --qd-primary-fg: oklch(0.985 0.008 91.5);
@@ -29,10 +30,15 @@
   --qd-accent-soft: oklch(0.845 0.087 86.6);
   --qd-accent-tint: oklch(0.960 0.028 86.6);
   --qd-accent-text: var(--qd-primary);
+  --qd-accent-fg: oklch(0.263 0.046 250);             /* ink on ANY solid-accent indicator; navy in BOTH themes (not overridden in dark) → never gold-on-gold */
+  --qd-selected-bg: var(--qd-accent-tint);            /* semantic alias — selected/active background */
 
   --qd-danger: oklch(0.541 0.138 22.8);
   --qd-warning: oklch(0.70 0.14 75);
   --qd-success: oklch(0.546 0.062 162.7);
+  --qd-danger-tint: oklch(0.945 0.030 23);            /* danger wash; danger text must hit AA on it */
+  --qd-success-tint: oklch(0.982 0.020 163);          /* retuned lighter than the plan draft (0.945/0.028) — 0.945 failed AA (4.10:1) against --qd-success; 0.982/0.020 clears AA (4.58:1), see UI_STYLE_SYSTEM §16 */
+  --qd-warning-tint: oklch(0.950 0.038 75);           /* frozen warning hue; tint defined for parity, not yet consumed beyond the footer dot */
 
   --qd-focus-ring: oklch(0.60 0.10 84);
   --qd-ring: 0 0 0 4px oklch(0.718 0.118 84 / 0.22);

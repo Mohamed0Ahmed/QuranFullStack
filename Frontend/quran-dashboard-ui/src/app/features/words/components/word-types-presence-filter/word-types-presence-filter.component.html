@@ -1,0 +1,43 @@
+<div class="presence-filter" data-testid="word-types-presence-filter">
+  <span class="presence-filter__label">{{ labels.sectionLabel }}</span>
+  @for (dimension of dimensions; track dimension) {
+    <div class="presence-filter__row" [attr.data-testid]="'word-types-presence-' + dimension">
+      <span class="presence-filter__dim">{{ labels[dimension] }}</span>
+      <div class="presence-filter__options" role="group" [attr.aria-label]="labels[dimension]">
+        <button
+          type="button"
+          class="qd-badge presence-filter__chip"
+          [class.qd-is-selected]="valueFor(dimension) === null"
+          [attr.aria-pressed]="valueFor(dimension) === null"
+          [disabled]="disabled()"
+          [attr.data-testid]="'word-types-presence-' + dimension + '-any'"
+          (click)="onSelect(dimension, null)"
+        >
+          {{ labels.any }}
+        </button>
+        <button
+          type="button"
+          class="qd-badge presence-filter__chip"
+          [class.qd-is-selected]="valueFor(dimension) === true"
+          [attr.aria-pressed]="valueFor(dimension) === true"
+          [disabled]="disabled()"
+          [attr.data-testid]="'word-types-presence-' + dimension + '-present'"
+          (click)="onSelect(dimension, true)"
+        >
+          {{ labels.present }}
+        </button>
+        <button
+          type="button"
+          class="qd-badge presence-filter__chip"
+          [class.qd-is-selected]="valueFor(dimension) === false"
+          [attr.aria-pressed]="valueFor(dimension) === false"
+          [disabled]="disabled()"
+          [attr.data-testid]="'word-types-presence-' + dimension + '-missing'"
+          (click)="onSelect(dimension, false)"
+        >
+          {{ labels.missing }}
+        </button>
+      </div>
+    </div>
+  }
+</div>

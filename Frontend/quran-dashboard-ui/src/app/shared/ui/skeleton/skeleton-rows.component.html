@@ -1,0 +1,16 @@
+<div class="qd-skeleton-rows" aria-busy="true" data-testid="qd-skeleton-rows">
+  <p class="qd-sr-only" role="status" aria-live="polite">{{ loadingLabel() }}</p>
+
+  @for (row of rowIndexes(); track row) {
+    <div
+      class="qd-skeleton-rows__row"
+      [style.grid-template-columns]="rowTemplate()"
+      [attr.data-testid]="'qd-skeleton-row-' + row"
+      aria-hidden="true"
+    >
+      @for (track of columnTracks(); track $index) {
+        <span class="qd-skeleton"></span>
+      }
+    </div>
+  }
+</div>

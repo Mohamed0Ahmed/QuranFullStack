@@ -14,9 +14,11 @@ import {
   RootStemsDto,
   RootSummaryDto,
   RootSurahsDto,
+  ROOTS_RANGE_METRICS,
   RootWordItemDto,
   RootWordView,
 } from '../models/roots.models';
+import { EMPTY_RANGE_FILTERS, RangeFilters, appendRangeApiParams } from '../state/words-range-filters';
 
 @Injectable({ providedIn: 'root' })
 export class RootsApi {
@@ -28,6 +30,7 @@ export class RootsApi {
     sort: RootSort,
     page: number,
     pageSize: number,
+    ranges: RangeFilters = EMPTY_RANGE_FILTERS,
   ): Observable<ApiResponse<PagedResultDto<RootListItemDto>>> {
     let params = new HttpParams()
       .set('sort', sort)
@@ -37,6 +40,8 @@ export class RootsApi {
     if (search.trim().length > 0) {
       params = params.set('search', search.trim());
     }
+
+    params = appendRangeApiParams(params, ranges, ROOTS_RANGE_METRICS);
 
     return this.http.get<ApiResponse<PagedResultDto<RootListItemDto>>>(
       `${this.baseUrl}/api/words/roots`,

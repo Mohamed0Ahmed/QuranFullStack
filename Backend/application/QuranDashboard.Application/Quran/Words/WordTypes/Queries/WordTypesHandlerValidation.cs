@@ -6,7 +6,14 @@ internal static class WordTypesHandlerValidation
 {
     public const int MinPage = 1;
     public const int MinPageSize = 1;
-    public const int MaxPageSize = 100;
+
+    // Split cap (research R3): list reads (words/table) serve up to 1000 rows; every detail read
+    // (word ayahs, grouped member words, grouped ayahs) keeps the documented 1..100 contract.
+    public const int MaxListPageSize = 1000;
+    public const int MaxDetailPageSize = 100;
+
+    // Defensive bound on the raw (trimmed) search term; longer input is rejected as InvalidFilter.
+    public const int MaxSearchLength = 64;
     public const string DefaultType = "noun";
     public const string DefaultSort = WordTypeSortKeys.Occurrences;
 
@@ -46,10 +53,22 @@ internal static class WordTypesHandlerValidation
     private static readonly HashSet<string> AllowedVoices = ["all", "active", "passive"];
 
     public static bool IsValidFilter(WordTypeFilter filter) =>
-        filter.Type is null
-        || (AllowedTypes.Contains(filter.Type)
-            && IsValidChildCode(filter.Type, filter.ChildCode)
-            && IsValidSecondaryFilter(filter.Type, filter.Case, filter.Tense, filter.Voice));
+        IsValidSearch(filter.Search)
+        && (filter.Type is null
+            || (AllowedTypes.Contains(filter.Type)
+                && IsValidChildCode(filter.Type, filter.ChildCode)
+                && IsValidSecondaryFilter(filter.Type, filter.Case, filter.Tense, filter.Voice)));
+
+    // Search is optional; when present, only its length is bounded here (the value itself is a free
+    // word-identity fragment normalized in Infrastructure). Over-length input maps to InvalidFilter.
+    public static bool IsValidSearch(string? search) =>
+        search is null || search.Length <= MaxSearchLength;
+
+    // Trims the raw search term and collapses empty/whitespace to null. The over-length check stays in
+    // IsValidFilter so a too-long term produces a controlled InvalidFilter (400) rather than silent
+    // truncation. The value is never logged (handlers log only a hasSearch boolean).
+    public static string? NormalizeSearch(string? search) =>
+        string.IsNullOrWhiteSpace(search) ? null : search.Trim();
 
     // A child code is valid only when it belongs to the selected parent. particle now accepts
     // catalogue child codes; inl remains a leaf with no child nodes.
@@ -117,6 +136,11 @@ internal static class WordTypesHandlerValidation
     private static string? NormalizeOptional(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
-    public static bool IsValidPaging(int page, int pageSize) =>
-        page >= MinPage && pageSize >= MinPageSize && pageSize <= MaxPageSize;
+    // List reads (words/table) accept up to MaxListPageSize (1000).
+    public static bool IsValidListPaging(int page, int pageSize) =>
+        page >= MinPage && pageSize >= MinPageSize && pageSize <= MaxListPageSize;
+
+    // Detail reads (word ayahs, grouped member words, grouped ayahs) keep the 1..MaxDetailPageSize (100) cap.
+    public static bool IsValidDetailPaging(int page, int pageSize) =>
+        page >= MinPage && pageSize >= MinPageSize && pageSize <= MaxDetailPageSize;
 }

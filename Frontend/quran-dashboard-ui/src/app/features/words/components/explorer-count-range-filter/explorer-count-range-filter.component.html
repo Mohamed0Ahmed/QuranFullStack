@@ -1,0 +1,90 @@
+<details class="range-filter range-filter--cards" data-testid="explorer-count-range-filter">
+  <summary class="range-filter__summary">
+    <span class="range-filter__summary-label">{{ labels.sectionLabel }}</span>
+    @if (activeCount() > 0) {
+      <span class="range-filter__badge" data-testid="range-filter-active-count">{{ activeCount() }}</span>
+    }
+  </summary>
+
+  <div class="range-filter__body">
+    @for (metric of metrics(); track metric.key) {
+      <div class="range-filter__metric" [attr.data-testid]="'range-filter-metric-' + metric.key">
+        <span class="range-filter__metric-label">{{ metric.labelAr }}</span>
+
+        <div class="range-filter__chips" role="group" [attr.aria-label]="metric.labelAr">
+          @for (bucket of bucketsFor(metric); track bucket.labelAr) {
+            <button
+              type="button"
+              class="qd-badge range-filter__chip"
+              [class.qd-is-selected]="isBucketActive(metric, bucket)"
+              [attr.aria-pressed]="isBucketActive(metric, bucket)"
+              [disabled]="disabled()"
+              [attr.data-testid]="'range-filter-bucket-' + metric.key + '-' + bucket.labelAr"
+              (click)="onBucketToggle(metric, bucket)"
+            >
+              {{ bucket.labelAr }}
+            </button>
+          }
+
+          <button
+            type="button"
+            class="qd-badge range-filter__chip range-filter__chip--custom"
+            [class.qd-is-selected]="isCustomActive(metric)"
+            [attr.aria-pressed]="isCustomActive(metric)"
+            [disabled]="disabled()"
+            [attr.data-testid]="'range-filter-custom-' + metric.key"
+            (click)="onCustomToggle(metric)"
+          >
+            {{ labels.custom }}
+          </button>
+        </div>
+
+        @if (isCustomActive(metric)) {
+          <div class="range-filter__custom" data-testid="range-filter-custom-inputs">
+            <label class="range-filter__custom-field">
+              <span class="qd-sr-only">{{ metric.labelAr }} — {{ labels.min }}</span>
+              <input
+                type="number"
+                inputmode="numeric"
+                min="0"
+                class="qd-input range-filter__custom-input"
+                [attr.placeholder]="labels.min"
+                [value]="minValue(metric)"
+                [disabled]="disabled()"
+                [attr.data-testid]="'range-filter-min-' + metric.key"
+                (input)="onMinInput(metric, $any($event.target).value)"
+              />
+            </label>
+            <span class="range-filter__custom-sep" aria-hidden="true">–</span>
+            <label class="range-filter__custom-field">
+              <span class="qd-sr-only">{{ metric.labelAr }} — {{ labels.max }}</span>
+              <input
+                type="number"
+                inputmode="numeric"
+                min="0"
+                class="qd-input range-filter__custom-input"
+                [attr.placeholder]="labels.max"
+                [value]="maxValue(metric)"
+                [disabled]="disabled()"
+                [attr.data-testid]="'range-filter-max-' + metric.key"
+                (input)="onMaxInput(metric, $any($event.target).value)"
+              />
+            </label>
+          </div>
+        }
+      </div>
+    }
+
+    @if (activeCount() > 0) {
+      <button
+        type="button"
+        class="qd-btn qd-btn-secondary range-filter__clear"
+        [disabled]="disabled()"
+        data-testid="range-filter-clear-all"
+        (click)="onClearAll()"
+      >
+        {{ labels.clearAll }}
+      </button>
+    }
+  </div>
+</details>

@@ -6,7 +6,23 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
 
 - `layout/` — shared layout constants; today this is the canonical breakpoint mirror for the app
   TypeScript side (`breakpoints.ts`).
-- `ui/explorer-panel-skeleton/` — loading skeleton for split-view explorer detail panels.
+- `ui/tabs/` — `qd-tabs` (the app-wide tablist) + the `qdTab` directive. `qd-tabs` owns no
+  selection state: consumers project their own `<a routerLink>`/`<button>` tab elements marked
+  with `qdTab [selected]="…"` and their own click/routerLink; `qd-tabs` supplies the
+  `role="tablist"` wrapper and RTL-aware roving-tabindex keyboard nav (Arrow/Home/End) over
+  them. See `UI_STYLE_SYSTEM.md` §17.
+- `ui/chip/` — `qd-chip`, the one selectable/informational chip (button or anchor, optional
+  trailing count). See `UI_STYLE_SYSTEM.md` §17.
+- `ui/state/` — `qd-state`, the one empty/loading/error presentation; backed by the existing
+  `.qd-empty-state`/`.qd-loading-state`/`.qd-error-state` classes. See `UI_STYLE_SYSTEM.md` §17.
+- `ui/skeleton/` — `qd-skeleton-rows`, renders N skeleton rows into a caller-supplied
+  `grid-template-columns` string so loading rows match loaded rows exactly; plus the pure
+  `splitGridTemplateColumns` helper it's built on.
+- `ui/explorer-panel-skeleton/` — `qd-panel-skeleton` (class `ExplorerPanelSkeletonComponent`),
+  the generalized loading skeleton for explorer/detail panels, with a `shape` input
+  (`'lines' | 'rows' | 'panel'`; default `'lines'` reproduces the original six-line panel
+  skeleton). The `qd-explorer-panel-skeleton` selector is kept as a thin alias on the same
+  component for existing call-sites.
 - `ui/modal-scroll-lock/` — directive that locks body scrolling while a modal is mounted.
 - `ui/pagination/` — reusable pagination component, windowing helpers, labels, and tests.
 - `ui/placeholder-page/` — generic placeholder page that reads its title from route data.

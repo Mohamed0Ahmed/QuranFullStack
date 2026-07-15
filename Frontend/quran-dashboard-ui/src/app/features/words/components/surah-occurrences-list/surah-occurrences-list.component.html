@@ -1,32 +1,32 @@
 <div class="surah-occurrences-list-shell">
-  <header class="surah-occurrences-list__header">
-    <span class="surah-occurrences-list__header-row-number">{{ rowNumberHeader }}</span>
+  <header class="surah-occurrences-list__header qd-detail-list__header">
+    <span class="surah-occurrences-list__header-row-number qd-detail-list__row-number">{{ rowNumberHeader }}</span>
     <span class="surah-occurrences-list__header-name">{{ surahNameHeader }}</span>
     <span class="surah-occurrences-list__header-count">{{ occurrencesCountHeader }}</span>
   </header>
 
   <div
-    class="surah-occurrences-list"
+    class="surah-occurrences-list qd-detail-list__viewport"
     [attr.aria-busy]="loading() ? true : null"
     [attr.data-testid]="loading() ? 'surah-occurrences-list-loading' : 'surah-occurrences-list'"
   >
     @if (loading()) {
       <p class="qd-sr-only" role="status" aria-live="polite">{{ loadingLabel }}</p>
       @for (_ of loadingRowPlaceholders; track $index) {
-        <div class="surah-occurrences-list__row surah-occurrences-list__row--loading" aria-hidden="true">
-          <span class="surah-occurrences-list__row-number">
-            <span class="qd-skeleton qd-skeleton--text surah-occurrences-list__loading-number"></span>
+        <div class="surah-occurrences-list__row surah-occurrences-list__row--loading qd-detail-list__row qd-detail-list__row--flat qd-detail-list__row--loading" aria-hidden="true">
+          <span class="surah-occurrences-list__row-number qd-detail-list__row-number">
+            <span class="qd-skeleton qd-skeleton--text surah-occurrences-list__loading-number qd-detail-list__loading-number"></span>
           </span>
           <span class="surah-occurrences-list__name">
             <span class="qd-skeleton qd-skeleton--text surah-occurrences-list__loading-name"></span>
           </span>
-          <span class="qd-skeleton qd-skeleton--rounded-md surah-occurrences-list__loading-badge"></span>
+          <span class="qd-skeleton qd-skeleton--rounded-md surah-occurrences-list__loading-badge qd-detail-list__loading-badge"></span>
         </div>
       }
     } @else {
       @for (surah of surahs(); track surah.surahNumber; let index = $index) {
-        <div class="surah-occurrences-list__row">
-          <span class="surah-occurrences-list__row-number">{{ index + 1 }}</span>
+        <div class="surah-occurrences-list__row qd-detail-list__row qd-detail-list__row--flat">
+          <span class="surah-occurrences-list__row-number qd-detail-list__row-number">{{ index + 1 }}</span>
           <span class="surah-occurrences-list__name">{{ surah.nameArabic }}</span>
           <span class="qd-badge">{{ surah.occurrencesInSurah }}</span>
         </div>

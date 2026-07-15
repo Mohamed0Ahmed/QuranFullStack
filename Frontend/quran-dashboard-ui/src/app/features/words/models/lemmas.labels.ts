@@ -10,6 +10,11 @@ import {
 } from './words-shared.labels';
 
 export const LEMMAS_PAGE_TITLE = 'الصيغ المعجمية';
+// Headline result-count stat (Feature 026, US4): label-prefix "عدد الـ…: N".
+export const LEMMAS_RESULT_COUNT_LABEL = 'عدد الصيغ المعجمية';
+// Association filter (Feature 026, US7): owned root (real FK belonging).
+export const LEMMAS_ROOT_FILTER_LABEL = 'الجذر';
+export const LEMMAS_ROOT_FILTER_PLACEHOLDER = 'ابحث عن جذر…';
 export const LEMMAS_SEARCH_LABEL = 'بحث في الصيغ المعجمية';
 export const LEMMAS_SEARCH_PLACEHOLDER = 'اكتب صيغة معجمية…';
 

@@ -1,0 +1,260 @@
+using System.Data.Common;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using QuranDashboard.Application.Abstractions.Quran.Words.WordTypes;
+using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeScopeCounts;
+using QuranDashboard.Infrastructure.Caching.Quran.Words.WordTypes;
+using QuranDashboard.Infrastructure.Persistence;
+using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.WordTypes;
+using QuranDashboard.Tests.Quran.Words;
+
+namespace QuranDashboard.Tests.Quran.WordsWordTypes;
+
+// Feature 026 US8: the scoped four-count summary. Its correctness contract (FR-016) is that each of the
+// four counts EQUALS the corresponding tableView's TotalCount for the identical scope — always. The read
+// reuses the same RowsCountSql / GroupedRowsCountSql formulas over the same shared BaseRowsSql base, so
+// this file's core gate is the equality matrix. It also pins the single-SQL-command budget, cache-key
+// isolation per scope input, the zero-row/invalid-scope outcomes, and the count-family (no words_count).
+[Collection(nameof(WordTypesCollection))]
+public sealed class WordTypesScopeCountsReadTests(WordTypesTestFixture fixture)
+{
+    // A matrix of valid scopes spanning each main type, a child, case/tense/voice sub-filters, ±search,
+    // ±presence flags, and search+flag composition. Every field is a serializable primitive; the test
+    // body reconstructs the WordTypeFilter. Each equals its own four tableView totals by construction.
+    public static IEnumerable<object?[]> EqualityScopes()
+    {
+        // type, childCode, case, tense, voice, search, hasRoot, hasStem, hasLemma
+        yield return ["noun", null, null, null, null, null, null, null, null];
+        yield return ["noun", "PN", null, null, null, null, null, null, null];
+        yield return ["noun", null, "nominative", null, null, null, null, null, null];
+        yield return ["noun", null, "genitive", null, null, null, null, null, null];
+        yield return ["verb", null, null, null, null, null, null, null, null];
+        yield return ["verb", null, null, "past", null, null, null, null, null];
+        yield return ["verb", null, null, "present", null, null, null, null, null];
+        yield return ["verb", null, null, null, "active", null, null, null, null];
+        yield return ["particle", null, null, null, null, null, null, null, null];
+        yield return ["inl", null, null, null, null, null, null, null, null];
+        yield return ["noun", null, null, null, null, "كلم", null, null, null];
+        yield return ["noun", null, null, null, null, "مثل", null, null, null];
+        yield return ["noun", null, null, null, null, null, true, null, null];
+        yield return ["noun", null, null, null, null, null, false, null, null];
+        yield return ["noun", null, null, null, null, null, null, true, null];
+        yield return ["noun", null, null, null, null, null, null, null, false];
+        yield return ["noun", null, null, null, null, "كلم", true, null, null];
+        yield return ["verb", null, null, "present", null, null, false, null, null];
+    }
+
+    [Theory]
+    [MemberData(nameof(EqualityScopes))]
+    public async Task ScopeCounts_EqualEveryTableViewTotal_ForIdenticalScope(
+        string type, string? childCode, string? @case, string? tense, string? voice,
+        string? search, bool? hasRoot, bool? hasStem, bool? hasLemma)
+    {
+        await using var scope = fixture.CreateScope();
+        var reader = scope.ServiceProvider.GetRequiredService<EfWordTypesReader>();
+        var filter = new WordTypeFilter(type, childCode, @case, tense, voice, search, hasRoot, hasStem, hasLemma);
+
+        var counts = await reader.GetScopeCountsAsync(filter, CancellationToken.None);
+
+        var wordsTotal = await TableTotalAsync(reader, filter, WordTypeTableView.Words);
+        var rootsTotal = await TableTotalAsync(reader, filter, WordTypeTableView.Roots);
+        var stemsTotal = await TableTotalAsync(reader, filter, WordTypeTableView.Stems);
+        var lemmasTotal = await TableTotalAsync(reader, filter, WordTypeTableView.Lemmas);
+
+        counts.WordsCount.Should().Be(wordsTotal, "the words count is the words-view TotalCount for the identical scope");
+        counts.RootsCount.Should().Be(rootsTotal, "the roots count is the roots-view TotalCount for the identical scope");
+        counts.StemsCount.Should().Be(stemsTotal, "the stems count is the stems-view TotalCount for the identical scope");
+        counts.LemmasCount.Should().Be(lemmasTotal, "the lemmas count is the lemmas-view TotalCount for the identical scope");
+    }
+
+    // Guards the matrix against passing vacuously: the unscoped noun scope has real, non-zero counts on
+    // every dimension, so the equality assertions above are exercising live numbers, not all-zeros.
+    [Fact]
+    public async Task ScopeCounts_UnscopedNoun_HasNonZeroCountsAcrossEveryDimension()
+    {
+        await using var scope = fixture.CreateScope();
+        var reader = scope.ServiceProvider.GetRequiredService<EfWordTypesReader>();
+
+        var counts = await reader.GetScopeCountsAsync(
+            new WordTypeFilter("noun", null, null, null, null), CancellationToken.None);
+
+        counts.WordsCount.Should().BeGreaterThan(0);
+        counts.RootsCount.Should().BeGreaterThan(0);
+        counts.StemsCount.Should().BeGreaterThan(0);
+        counts.LemmasCount.Should().BeGreaterThan(0);
+    }
+
+    // A valid scope that matches nothing (a well-formed search term absent from the corpus) returns an
+    // all-zero DTO — never null, never an error.
+    [Fact]
+    public async Task ScopeCounts_ZeroRowValidScope_ReturnsAllZeros()
+    {
+        await using var scope = fixture.CreateScope();
+        var reader = scope.ServiceProvider.GetRequiredService<EfWordTypesReader>();
+
+        var counts = await reader.GetScopeCountsAsync(
+            new WordTypeFilter("noun", null, null, null, null, "لاتوجدهذهالكلمة"), CancellationToken.None);
+
+        counts.Should().Be(new Application.Abstractions.Quran.Words.WordTypes.Responses.WordTypeScopeCountsDto(0, 0, 0, 0));
+    }
+
+    // The whole four-count summary is ONE SQL command per uncached call (contract §3, execution budget).
+    [Fact]
+    public async Task ScopeCounts_UsesSingleSqlCommand()
+    {
+        var interceptor = new SqlCommandCountInterceptor();
+        var options = new DbContextOptionsBuilder<QuranDashboardDbContext>()
+            .UseNpgsql(fixture.ConnectionString)
+            .AddInterceptors(interceptor)
+            .Options;
+
+        await using var dbContext = new QuranDashboardDbContext(options);
+        var reader = new EfWordTypesReader(dbContext);
+
+        interceptor.Reset();
+        _ = await reader.GetScopeCountsAsync(
+            new WordTypeFilter("noun", null, null, null, null, "كلم", HasRoot: true), CancellationToken.None);
+
+        interceptor.CommandCount.Should().Be(1);
+    }
+
+    // Count-family audit: the emitted SQL counts the scoped word-context family (COUNT(DISTINCT …) over the
+    // scoped base) and never touches a global words_count-backed aggregate.
+    [Fact]
+    public async Task ScopeCountsSql_UsesScopedCountFamily_NeverWordsCount()
+    {
+        var capture = new CommandTextCapture();
+        var options = new DbContextOptionsBuilder<QuranDashboardDbContext>()
+            .UseNpgsql(fixture.ConnectionString)
+            .AddInterceptors(capture)
+            .Options;
+
+        await using var dbContext = new QuranDashboardDbContext(options);
+        var reader = new EfWordTypesReader(dbContext);
+
+        _ = await reader.GetScopeCountsAsync(new WordTypeFilter("noun", null, null, null, null), CancellationToken.None);
+
+        var sql = capture.CommandTexts.Should().ContainSingle().Subject;
+        sql.Should().NotContainEquivalentOf("words_count");
+        sql.ToLowerInvariant().Should().Contain("count(distinct");
+    }
+
+    // The scope-counts cache key folds in EVERY scope input and NOTHING else (no tableView/sort/page).
+    // Absent search + absent flags keep the pre-feature 5-part hash so warm entries stay valid; every
+    // distinct scope input isolates its own entry.
+    [Fact]
+    public void ScopeCountsCacheKey_IsolatesEveryScopeInput_AndKeepsAbsentStable()
+    {
+        var baseFilter = new WordTypeFilter("noun", null, null, null, null);
+        var explicitAbsent = new WordTypeFilter("noun", null, null, null, null, null, null, null, null);
+
+        var baseKey = WordTypesCacheKeys.ScopeCounts(baseFilter);
+        baseKey.Should().StartWith("wordtypes:scope-counts:");
+        WordTypesCacheKeys.ScopeCounts(explicitAbsent).Should().Be(baseKey);
+
+        WordTypeFilter[] scopes =
+        [
+            baseFilter,
+            baseFilter with { Type = "verb" },
+            baseFilter with { ChildCode = "PN" },
+            baseFilter with { Case = "genitive" },
+            baseFilter with { Tense = "past" },
+            baseFilter with { Voice = "active" },
+            baseFilter with { Search = "كلم" },
+            baseFilter with { HasRoot = true },
+            baseFilter with { HasStem = false },
+            baseFilter with { HasLemma = true },
+        ];
+
+        scopes.Select(WordTypesCacheKeys.ScopeCounts).Should().OnlyHaveUniqueItems();
+
+        // Two raw terms that normalize to the same skeleton collide; the raw text never leaks.
+        WordTypesCacheKeys.ScopeCounts(baseFilter with { Search = "كَلِم" })
+            .Should().Be(WordTypesCacheKeys.ScopeCounts(baseFilter with { Search = "كلم" }));
+        WordTypesCacheKeys.ScopeCounts(baseFilter with { Search = "كلم" }).Should().NotContain("كلم");
+    }
+
+    // The cached reader serves a repeated scope-counts read from memory without issuing new SQL commands.
+    [Fact]
+    public async Task CachedScopeCounts_RepeatedRead_HitsCache()
+    {
+        var interceptor = new SqlCommandCountInterceptor();
+        var options = new DbContextOptionsBuilder<QuranDashboardDbContext>()
+            .UseNpgsql(fixture.ConnectionString)
+            .AddInterceptors(interceptor)
+            .Options;
+
+        await using var dbContext = new QuranDashboardDbContext(options);
+        using var cache = new MemoryCache(new MemoryCacheOptions());
+        var reader = new CachedWordTypesReader(new EfWordTypesReader(dbContext), cache);
+        var filter = new WordTypeFilter("noun", null, null, null, null);
+
+        interceptor.Reset();
+        var first = await reader.GetScopeCountsAsync(filter, CancellationToken.None);
+        var firstCommandCount = interceptor.CommandCount;
+        var second = await reader.GetScopeCountsAsync(filter, CancellationToken.None);
+
+        second.Should().BeSameAs(first);
+        interceptor.CommandCount.Should().Be(firstCommandCount);
+        firstCommandCount.Should().BeGreaterThan(0);
+    }
+
+    [Fact]
+    public async Task ScopeCountsHandler_InvalidFilter_ReturnsControlledOutcome()
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetWordTypeScopeCountsHandler>();
+
+        var unknownType = await handler.HandleAsync(
+            new GetWordTypeScopeCountsQuery("bogus", null, null, null, null, null), CancellationToken.None);
+        var overLongSearch = await handler.HandleAsync(
+            new GetWordTypeScopeCountsQuery("noun", null, null, null, null, new string('ا', 65)), CancellationToken.None);
+
+        unknownType.Should().BeOfType<GetWordTypeScopeCountsOutcome.InvalidFilter>();
+        overLongSearch.Should().BeOfType<GetWordTypeScopeCountsOutcome.InvalidFilter>();
+    }
+
+    [Fact]
+    public async Task ScopeCountsHandler_ValidScope_ReturnsSuccessMatchingReader()
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetWordTypeScopeCountsHandler>();
+        var reader = scope.ServiceProvider.GetRequiredService<IWordTypesReader>();
+
+        var outcome = await handler.HandleAsync(
+            new GetWordTypeScopeCountsQuery("noun", null, null, null, null, null), CancellationToken.None);
+
+        var success = outcome.Should().BeOfType<GetWordTypeScopeCountsOutcome.Success>().Subject;
+        var expected = await reader.GetScopeCountsAsync(new WordTypeFilter("noun", null, null, null, null), CancellationToken.None);
+        success.Counts.Should().Be(expected);
+    }
+
+    private static async Task<int> TableTotalAsync(EfWordTypesReader reader, WordTypeFilter filter, WordTypeTableView view)
+    {
+        var page = await reader.GetTableRowsAsync(filter, view, WordTypeSort.Occurrences, 1, 1000, CancellationToken.None);
+        return page.TotalCount;
+    }
+
+    // Records the SQL command text of each executed reader so the count-family audit can inspect it.
+    private sealed class CommandTextCapture : DbCommandInterceptor
+    {
+        private readonly List<string> _commandTexts = [];
+
+        public IReadOnlyList<string> CommandTexts => _commandTexts;
+
+        public override InterceptionResult<DbDataReader> ReaderExecuting(
+            DbCommand command, CommandEventData eventData, InterceptionResult<DbDataReader> result)
+        {
+            _commandTexts.Add(command.CommandText);
+            return base.ReaderExecuting(command, eventData, result);
+        }
+
+        public override ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(
+            DbCommand command, CommandEventData eventData, InterceptionResult<DbDataReader> result,
+            CancellationToken cancellationToken = default)
+        {
+            _commandTexts.Add(command.CommandText);
+            return base.ReaderExecutingAsync(command, eventData, result, cancellationToken);
+        }
+    }
+}

@@ -15,6 +15,8 @@ public interface IStemsReader
     Task<PagedResult<StemListItemDto>> GetStemsPageAsync(
         string? search,
         StemSort sort,
+        StemsCountFilter filter,
+        StemsAssociationFilter association,
         int page,
         int pageSize,
         CancellationToken cancellationToken);

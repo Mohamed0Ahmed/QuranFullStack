@@ -13,12 +13,13 @@ public sealed class EfRootsReader(QuranDashboardDbContext db) : IRootsReader
     public async Task<PagedResult<RootListItemDto>> GetRootsPageAsync(
         string? search,
         RootSort sort,
+        RootsCountFilter filter,
         int page,
         int pageSize,
         CancellationToken cancellationToken)
     {
         var all = await LoadWholeSummaryAsync(cancellationToken);
-        return RootsListDerivation.ToPage(all, search, sort, page, pageSize);
+        return RootsListDerivation.ToPage(all, filter, search, sort, page, pageSize);
     }
 
     public async Task<RootSummaryDto?> GetRootSummaryAsync(int id, CancellationToken cancellationToken)

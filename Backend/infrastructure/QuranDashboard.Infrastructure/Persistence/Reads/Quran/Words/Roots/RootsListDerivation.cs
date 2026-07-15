@@ -12,12 +12,13 @@ internal static class RootsListDerivation
 
     public static PagedResult<RootListItemDto> ToPage(
         IReadOnlyList<RootSummaryRow> all,
+        RootsCountFilter filter,
         string? search,
         RootSort sort,
         int page,
         int pageSize)
     {
-        var rows = FilterAndSort(all, search, sort);
+        var rows = FilterAndSort(all, filter, search, sort);
         var materialized = rows.ToList();
         var totalCount = materialized.Count;
         var pageRows = materialized
@@ -37,6 +38,7 @@ internal static class RootsListDerivation
 
     public static IEnumerable<RootSummaryRow> FilterAndSort(
         IReadOnlyList<RootSummaryRow> all,
+        RootsCountFilter filter,
         string? search,
         RootSort sort)
     {
@@ -48,8 +50,24 @@ internal static class RootsListDerivation
             rows = rows.Where(r => r.NormalizedRootText.Contains(normalizedSearch, StringComparison.Ordinal));
         }
 
+        if (filter.IsActive)
+        {
+            rows = rows.Where(r => MatchesFilter(r, filter));
+        }
+
         return ApplySort(rows, sort);
     }
+
+    // Count-range predicates (Feature 026, US5) compare against the same count values the list rows
+    // display; every active range ANDs with search/sort. Ranges filter root dimension entries.
+    private static bool MatchesFilter(RootSummaryRow row, RootsCountFilter filter) =>
+        filter.Occurrences.Includes(row.OccurrencesCount)
+        && filter.Ayahs.Includes(row.AyahsCount)
+        && filter.Surahs.Includes(row.SurahsCount)
+        && filter.SimpleWords.Includes(row.SimpleWordsCount)
+        && filter.TashkeelWords.Includes(row.TashkeelWordsCount)
+        && filter.Lemmas.Includes(row.LemmasCount)
+        && filter.Stems.Includes(row.StemsCount);
 
     private static IEnumerable<RootSummaryRow> ApplySort(IEnumerable<RootSummaryRow> rows, RootSort sort) => sort switch
     {

@@ -1,5 +1,5 @@
 <div class="stem-lemmas-list-shell">
-  <header class="stem-lemmas-list__header" aria-hidden="true">
+  <header class="stem-lemmas-list__header qd-detail-list__header" aria-hidden="true">
     <span class="stem-lemmas-list__header-row-number">{{ rowNumberHeader }}</span>
     <span class="stem-lemmas-list__header-text">{{ lemmaTextHeader }}</span>
     <span class="stem-lemmas-list__header-count">{{ occurrencesHeader }}</span>
@@ -15,17 +15,17 @@
     @if (loading()) {
       <p class="qd-sr-only" role="status" aria-live="polite">{{ loadingLabel }}</p>
       @for (_ of [0, 1, 2, 3]; track $index) {
-        <div class="stem-lemmas-list__row stem-lemmas-list__row--loading" aria-hidden="true">
-          <span class="stem-lemmas-list__row-number">
-            <span class="qd-skeleton qd-skeleton--text stem-lemmas-list__loading-number"></span>
+        <div class="stem-lemmas-list__row stem-lemmas-list__row--loading qd-detail-list__row qd-detail-list__row--loading" aria-hidden="true">
+          <span class="stem-lemmas-list__row-number qd-detail-list__row-number">
+            <span class="qd-skeleton qd-skeleton--text stem-lemmas-list__loading-number qd-detail-list__loading-number"></span>
           </span>
-          <span class="stem-lemmas-list__text">
+          <span class="stem-lemmas-list__text qd-detail-list__text">
             <span class="qd-skeleton qd-skeleton--text stem-lemmas-list__loading-text"></span>
           </span>
           <span class="stem-lemmas-list__meta">
             <span class="qd-skeleton qd-skeleton--text stem-lemmas-list__loading-meta"></span>
           </span>
-          <span class="qd-skeleton qd-skeleton--rounded-md stem-lemmas-list__loading-badge"></span>
+          <span class="qd-skeleton qd-skeleton--rounded-md stem-lemmas-list__loading-badge qd-detail-list__loading-badge"></span>
         </div>
       }
     } @else if (rows().length === 0) {
@@ -35,7 +35,7 @@
     } @else {
       @for (row of rows(); track row.lemma.lemmaId; let index = $index) {
         <a
-          class="stem-lemmas-list__row qd-interactive-surface"
+          class="stem-lemmas-list__row qd-interactive-surface qd-detail-list__row"
           role="listitem"
           data-testid="stem-lemmas-list-link"
           [href]="row.href"
@@ -43,9 +43,9 @@
           rel="noopener noreferrer"
           [attr.aria-label]="'الصيغة المعجمية: ' + row.lemma.lemmaText"
         >
-          <span class="stem-lemmas-list__row-number" aria-hidden="true">{{ index + 1 }}</span>
-          <span class="stem-lemmas-list__text">{{ row.lemma.lemmaText }}</span>
-          <span class="qd-badge stem-lemmas-list__count">{{ row.lemma.occurrencesCount }}</span>
+          <span class="stem-lemmas-list__row-number qd-detail-list__row-number" aria-hidden="true">{{ index + 1 }}</span>
+          <span class="stem-lemmas-list__text qd-detail-list__text">{{ row.lemma.lemmaText }}</span>
+          <span class="qd-badge stem-lemmas-list__count qd-detail-list__count">{{ row.lemma.occurrencesCount }}</span>
         </a>
       }
     }

@@ -22,6 +22,8 @@ import type {
   RootWordItemDto as RootWordItemWireDto,
 } from '../../../core/api/generated/models';
 import type { PagedResultDto } from '../../../core/data-access/paged-result.model';
+import type { RangeFilters, RangeMetric } from '../state/words-range-filters';
+import { WORDS_SHARED_COUNT_COLUMNS } from './words-shared.labels';
 
 export type {
   MissingSurahItemDto,
@@ -103,6 +105,17 @@ export const ROOTS_QUERY_KEYS = {
   detailPage: 'detailPage',
 } as const;
 
+// Count-range filter metrics (Feature 026, US5) — exactly the seven count columns the Roots list shows.
+export const ROOTS_RANGE_METRICS: readonly RangeMetric[] = [
+  { key: 'occurrences', urlKey: 'occ', apiKey: 'occ', family: 'occurrences', labelAr: WORDS_SHARED_COUNT_COLUMNS.occurrences },
+  { key: 'ayahs', urlKey: 'ayahs', apiKey: 'ayahs', family: 'ayahsSurahs', labelAr: WORDS_SHARED_COUNT_COLUMNS.ayahs },
+  { key: 'surahs', urlKey: 'surahs', apiKey: 'surahs', family: 'ayahsSurahs', labelAr: WORDS_SHARED_COUNT_COLUMNS.surahs },
+  { key: 'simpleWords', urlKey: 'simple', apiKey: 'simpleWords', family: 'subCount', labelAr: WORDS_SHARED_COUNT_COLUMNS.simpleWords },
+  { key: 'tashkeelWords', urlKey: 'tashkeel', apiKey: 'tashkeelWords', family: 'subCount', labelAr: WORDS_SHARED_COUNT_COLUMNS.tashkeelWords },
+  { key: 'lemmas', urlKey: 'lemmas', apiKey: 'lemmas', family: 'subCount', labelAr: WORDS_SHARED_COUNT_COLUMNS.lemmas },
+  { key: 'stems', urlKey: 'stems', apiKey: 'stems', family: 'subCount', labelAr: WORDS_SHARED_COUNT_COLUMNS.stems },
+];
+
 export const ROOTS_SELECTION_QUERY_KEYS: readonly string[] = [
   ROOTS_QUERY_KEYS.root,
   ROOTS_QUERY_KEYS.view,
@@ -152,6 +165,7 @@ export interface ParsedRootsQuery {
   search: string;
   sort: RootSort;
   page: number;
+  ranges: RangeFilters;
   rootId: number | null;
   view: RootView;
   column: string | null;

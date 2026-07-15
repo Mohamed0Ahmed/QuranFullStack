@@ -10,6 +10,7 @@ import {
   WordTypeCase,
   WordTypeMainType,
   WordTypeRowDto,
+  WordTypeScopeCountsDto,
   WordTypeSort,
   WordTypeSummaryDto,
   WordTypeSurahsResponseDto,
@@ -26,6 +27,25 @@ import {
   WordTypeGroupedSummaryDto,
 } from '../models/word-types-detail.models';
 
+// Appends the tri-state presence flags (Feature 026, US6) as `hasRoot=true|false` etc., only for a set
+// flag (null = any ⇒ param omitted, keeping the pre-feature request byte-identical).
+function appendPresenceFlags(
+  params: HttpParams,
+  flags: { hasRoot: boolean | null; hasStem: boolean | null; hasLemma: boolean | null },
+): HttpParams {
+  let next = params;
+  if (flags.hasRoot !== null) {
+    next = next.set('hasRoot', flags.hasRoot);
+  }
+  if (flags.hasStem !== null) {
+    next = next.set('hasStem', flags.hasStem);
+  }
+  if (flags.hasLemma !== null) {
+    next = next.set('hasLemma', flags.hasLemma);
+  }
+  return next;
+}
+
 @Injectable({ providedIn: 'root' })
 export class WordTypesApi {
   private readonly http = inject(HttpClient);
@@ -41,6 +61,10 @@ export class WordTypesApi {
     case: WordTypeCase;
     tense: WordTypeTense;
     voice: WordTypeVoice;
+    search: string | null;
+    hasRoot: boolean | null;
+    hasStem: boolean | null;
+    hasLemma: boolean | null;
     sort: WordTypeSort;
     page: number;
     pageSize: number;
@@ -55,6 +79,12 @@ export class WordTypesApi {
       params = params.set('childCode', options.childCode);
     }
 
+    if (options.search) {
+      params = params.set('search', options.search);
+    }
+
+    params = appendPresenceFlags(params, options);
+
     return this.http.get<ApiResponse<PagedResultDto<WordTypeRowDto>>>(`${this.baseUrl}/api/words/word-types/words`, { params });
   }
 
@@ -64,6 +94,10 @@ export class WordTypesApi {
     case: WordTypeCase;
     tense: WordTypeTense;
     voice: WordTypeVoice;
+    search: string | null;
+    hasRoot: boolean | null;
+    hasStem: boolean | null;
+    hasLemma: boolean | null;
     tableView: WordTypeTableView;
     sort: WordTypeSort;
     page: number;
@@ -80,7 +114,43 @@ export class WordTypesApi {
       params = params.set('childCode', options.childCode);
     }
 
+    if (options.search) {
+      params = params.set('search', options.search);
+    }
+
+    params = appendPresenceFlags(params, options);
+
     return this.http.get<ApiResponse<PagedResultDto<WordTypeTableRowDto>>>(`${this.baseUrl}/api/words/word-types/table`, { params });
+  }
+
+  // Scoped four-count summary (Feature 026, US8). Sends EXACTLY the list scope — no tableView, sort, or
+  // paging — so counts describe the scope, not a page. Optional scope inputs (childCode/search/flags/
+  // secondary filters) are appended only when set, keeping the request byte-identical to the table read's
+  // scope portion.
+  getScopeCounts(options: {
+    type: string;
+    childCode: string | null;
+    case: WordTypeCase;
+    tense: WordTypeTense;
+    voice: WordTypeVoice;
+    search: string | null;
+    hasRoot: boolean | null;
+    hasStem: boolean | null;
+    hasLemma: boolean | null;
+  }): Observable<ApiResponse<WordTypeScopeCountsDto>> {
+    let params = this.identityParams(options).set('type', options.type);
+
+    if (options.childCode !== null) {
+      params = params.set('childCode', options.childCode);
+    }
+
+    if (options.search) {
+      params = params.set('search', options.search);
+    }
+
+    params = appendPresenceFlags(params, options);
+
+    return this.http.get<ApiResponse<WordTypeScopeCountsDto>>(`${this.baseUrl}/api/words/word-types/scope-counts`, { params });
   }
 
   getGroupedSummary(options: WordTypeGroupedRequestParams): Observable<ApiResponse<WordTypeGroupedSummaryDto>> {

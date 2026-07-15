@@ -1,5 +1,8 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, inject, input, output } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, computed, inject, input, output, signal } from '@angular/core';
+import { ScrollingModule } from '@angular/cdk/scrolling';
 
+import { QD_BP_TABLET_MAX_QUERY } from '../../../../shared/layout/breakpoints';
 import { WordCountChipComponent } from '../word-count-chip/word-count-chip.component';
 import {
   WORD_TYPES_LOADING_LABEL,
@@ -27,10 +30,14 @@ export interface WordTypeCountOpenedEvent {
   view: WordTypeDetailView;
 }
 
+const ROW_HEIGHT_DESKTOP = 40;
+const ROW_HEIGHT_MOBILE = 88;
+const HAS_RESIZE_OBSERVER = typeof ResizeObserver !== 'undefined';
+
 @Component({
   selector: 'qd-word-types-table',
   standalone: true,
-  imports: [WordCountChipComponent],
+  imports: [NgTemplateOutlet, ScrollingModule, WordCountChipComponent],
   templateUrl: './word-types-table.component.html',
   styleUrl: './word-types-table.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -54,8 +61,33 @@ export class WordTypesTableComponent {
 
   protected readonly loadingRowPlaceholders = [0, 1, 2, 3, 4] as const;
 
+  // Virtual scrolling keeps the 1000-row list bounded (mirrors the other explorer tables). It is guarded
+  // on ResizeObserver so the jsdom test builder falls back to plain rendering.
+  protected readonly useVirtualScroll = HAS_RESIZE_OBSERVER;
+  protected readonly rowHeight = signal(ROW_HEIGHT_DESKTOP);
+
+  // Only rows whose discriminant matches the active view render; a stale/mismatched response is dropped
+  // here (defense-in-depth) so it can never paint a root row under the stems tab, in either branch.
+  protected readonly visibleRows = computed<readonly WordTypeTableRowDto[]>(() => {
+    const page = this.rows();
+    if (!page) {
+      return [];
+    }
+    return page.items.filter((row) => this.matchesActiveView(row));
+  });
+
   constructor() {
     afterNextRender(() => {
+      if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+        const mobileMq = window.matchMedia(QD_BP_TABLET_MAX_QUERY);
+        const syncRowHeight = () => this.rowHeight.set(mobileMq.matches ? ROW_HEIGHT_MOBILE : ROW_HEIGHT_DESKTOP);
+        syncRowHeight();
+        if (typeof mobileMq.addEventListener === 'function') {
+          mobileMq.addEventListener('change', syncRowHeight);
+          this.destroyRef.onDestroy(() => mobileMq.removeEventListener('change', syncRowHeight));
+        }
+      }
+
       const disconnect = syncTableScrollbarGutter(
         this.host.nativeElement,
         '--word-types-table-scrollbar-gutter',
@@ -65,6 +97,14 @@ export class WordTypesTableComponent {
       this.destroyRef.onDestroy(disconnect);
     });
   }
+
+  // Arrow-function field, not a method: CDK's DefaultIterableDiffer invokes the virtual-scroll
+  // `trackBy` callback unbound (no `this`). A prototype method would dereference `this` as
+  // undefined and throw every change-detection cycle, rendering zero rows in the browser (the
+  // jsdom specs use the non-virtual `@for` fallback, so they never caught it). The arrow binds
+  // `this` lexically.
+  protected readonly trackRowDomId = (_index: number, row: WordTypeTableRowDto): string =>
+    this.rowDomId(row);
 
   protected get headers() { return WORD_TYPES_TABLE_HEADERS; }
   protected get loadingLabel() { return WORD_TYPES_LOADING_LABEL; }

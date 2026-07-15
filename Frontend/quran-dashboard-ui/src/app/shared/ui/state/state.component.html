@@ -1,0 +1,17 @@
+@switch (variant()) {
+  @case ('loading') {
+    <div class="qd-loading-state" role="status" aria-live="polite" aria-busy="true" data-testid="qd-state-loading">
+      <span>{{ message() }}</span>
+    </div>
+  }
+  @case ('error') {
+    <div class="qd-error-state" role="alert" data-testid="qd-state-error">
+      <span>{{ message() }}</span>
+    </div>
+  }
+  @default {
+    <div class="qd-empty-state" role="status" data-testid="qd-state-empty">
+      <span>{{ message() }}</span>
+    </div>
+  }
+}

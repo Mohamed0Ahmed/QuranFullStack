@@ -1,30 +1,30 @@
 <div
-  class="lemmas-table"
+  class="lemmas-table qd-explorer-table"
   role="table"
   [attr.aria-label]="tableLabel"
   tabindex="0"
   (keydown)="onTableKeydown($event)"
 >
-  <div class="lemmas-table__header" role="rowgroup">
-    <div class="lemmas-table__header-row" role="row">
-      <div class="lemmas-table__header-cell lemmas-table__header-cell--row-number" role="columnheader">
+  <div class="lemmas-table__header qd-explorer-table__header" role="rowgroup">
+    <div class="lemmas-table__header-row qd-explorer-table__header-row" role="row">
+      <div class="lemmas-table__header-cell qd-explorer-table__header-cell lemmas-table__header-cell--row-number qd-explorer-table__header-cell--row-number" role="columnheader">
         {{ headers.rowNumber }}
       </div>
-      <div class="lemmas-table__header-cell" role="columnheader">{{ headers.lemma }}</div>
-      <div class="lemmas-table__header-cell" role="columnheader">{{ headers.root }}</div>
-      <div class="lemmas-table__header-cell lemmas-table__header-cell--numeric" role="columnheader">{{ headers.occurrences }}</div>
-      <div class="lemmas-table__header-cell lemmas-table__header-cell--numeric" role="columnheader">{{ headers.ayahs }}</div>
-      <div class="lemmas-table__header-cell lemmas-table__header-cell--numeric" role="columnheader">{{ headers.surahs }}</div>
-      <div class="lemmas-table__header-cell lemmas-table__header-cell--numeric" role="columnheader">{{ headers.simpleWords }}</div>
-      <div class="lemmas-table__header-cell lemmas-table__header-cell--numeric" role="columnheader">{{ headers.tashkeelWords }}</div>
-      <div class="lemmas-table__header-cell lemmas-table__header-cell--numeric" role="columnheader">{{ headers.stems }}</div>
+      <div class="lemmas-table__header-cell qd-explorer-table__header-cell" role="columnheader">{{ headers.lemma }}</div>
+      <div class="lemmas-table__header-cell qd-explorer-table__header-cell" role="columnheader">{{ headers.root }}</div>
+      <div class="lemmas-table__header-cell qd-explorer-table__header-cell lemmas-table__header-cell--numeric qd-explorer-table__header-cell--numeric" role="columnheader">{{ headers.occurrences }}</div>
+      <div class="lemmas-table__header-cell qd-explorer-table__header-cell lemmas-table__header-cell--numeric qd-explorer-table__header-cell--numeric" role="columnheader">{{ headers.ayahs }}</div>
+      <div class="lemmas-table__header-cell qd-explorer-table__header-cell lemmas-table__header-cell--numeric qd-explorer-table__header-cell--numeric" role="columnheader">{{ headers.surahs }}</div>
+      <div class="lemmas-table__header-cell qd-explorer-table__header-cell lemmas-table__header-cell--numeric qd-explorer-table__header-cell--numeric" role="columnheader">{{ headers.simpleWords }}</div>
+      <div class="lemmas-table__header-cell qd-explorer-table__header-cell lemmas-table__header-cell--numeric qd-explorer-table__header-cell--numeric" role="columnheader">{{ headers.tashkeelWords }}</div>
+      <div class="lemmas-table__header-cell qd-explorer-table__header-cell lemmas-table__header-cell--numeric qd-explorer-table__header-cell--numeric" role="columnheader">{{ headers.stems }}</div>
     </div>
-    <div class="lemmas-table__header-gutter" aria-hidden="true"></div>
+    <div class="lemmas-table__header-gutter qd-explorer-table__header-gutter" aria-hidden="true"></div>
   </div>
 
   @if (loading()) {
     <div
-      class="lemmas-table__body lemmas-table__body--loading"
+      class="lemmas-table__body qd-explorer-table__body lemmas-table__body--loading qd-explorer-table__body--loading"
       role="rowgroup"
       [attr.aria-label]="tableBodyLabel"
       aria-busy="true"
@@ -32,18 +32,18 @@
     >
       <p class="qd-sr-only" role="status" aria-live="polite">{{ loadingLabel }}</p>
       @for (_ of loadingRowPlaceholders; track $index) {
-        <div class="lemmas-table__row" role="row" aria-hidden="true">
-          <div class="lemmas-table__cell lemmas-table__cell--row-number" role="cell">
+        <div class="lemmas-table__row qd-explorer-table__row" role="row" aria-hidden="true">
+          <div class="lemmas-table__cell qd-explorer-table__cell lemmas-table__cell--row-number qd-explorer-table__cell--row-number" role="cell">
             <span class="qd-skeleton qd-skeleton--text lemmas-table__loading-number"></span>
           </div>
-          <div class="lemmas-table__cell lemmas-table__word-cell" role="cell">
+          <div class="lemmas-table__cell qd-explorer-table__cell lemmas-table__word-cell" role="cell">
             <span class="qd-skeleton qd-skeleton--text lemmas-table__loading-word"></span>
           </div>
-          <div class="lemmas-table__cell lemmas-table__root-cell" role="cell">
+          <div class="lemmas-table__cell qd-explorer-table__cell lemmas-table__root-cell" role="cell">
             <span class="qd-skeleton qd-skeleton--text lemmas-table__loading-root"></span>
           </div>
           @for (i of [0,1,2,3,4,5]; track i) {
-            <div class="lemmas-table__cell lemmas-table__chip-cell" role="cell">
+            <div class="lemmas-table__cell qd-explorer-table__cell lemmas-table__chip-cell" role="cell">
               <span class="qd-skeleton qd-skeleton--rounded-md lemmas-table__loading-chip"></span>
             </div>
           }
@@ -57,7 +57,7 @@
     </div>
   } @else if (useVirtualScroll) {
     <cdk-virtual-scroll-viewport
-      class="lemmas-table__body"
+      class="lemmas-table__body qd-explorer-table__body"
       [itemSize]="rowHeight()"
       [minBufferPx]="rowHeight() * 4"
       [maxBufferPx]="rowHeight() * 8"
@@ -66,7 +66,7 @@
     >
       <div
         *cdkVirtualFor="let row of rows(); let index = index; trackBy: trackRowById"
-        class="lemmas-table__row"
+        class="lemmas-table__row qd-explorer-table__row"
         role="row"
         [class.qd-is-selected]="isSelected(row)"
         [attr.aria-selected]="isSelected(row)"
@@ -77,10 +77,10 @@
       </div>
     </cdk-virtual-scroll-viewport>
   } @else {
-    <div class="lemmas-table__body" role="rowgroup" [attr.aria-label]="tableBodyLabel">
+    <div class="lemmas-table__body qd-explorer-table__body" role="rowgroup" [attr.aria-label]="tableBodyLabel">
       @for (row of rows(); track row.id; let index = $index) {
         <div
-          class="lemmas-table__row"
+          class="lemmas-table__row qd-explorer-table__row"
           role="row"
           [class.qd-is-selected]="isSelected(row)"
           [attr.aria-selected]="isSelected(row)"
@@ -94,9 +94,9 @@
   }
 
   <ng-template #lemmaRowCells let-row="row" let-index="index">
-    <div class="lemmas-table__cell lemmas-table__cell--row-number" role="cell">{{ rowNumber(index) }}</div>
+    <div class="lemmas-table__cell qd-explorer-table__cell lemmas-table__cell--row-number qd-explorer-table__cell--row-number" role="cell">{{ rowNumber(index) }}</div>
 
-    <div class="lemmas-table__cell lemmas-table__word-cell" role="cell">
+    <div class="lemmas-table__cell qd-explorer-table__cell lemmas-table__word-cell" role="cell">
       <button
         type="button"
         class="lemmas-table__word qd-interactive-surface"
@@ -110,11 +110,11 @@
       </div>
     </div>
 
-    <div class="lemmas-table__cell lemmas-table__root-cell lemmas-table__root-cell--desktop" role="cell">
+    <div class="lemmas-table__cell qd-explorer-table__cell lemmas-table__root-cell lemmas-table__root-cell--desktop" role="cell">
       <ng-container *ngTemplateOutlet="rootCell; context: { row: row }" />
     </div>
 
-    <div class="lemmas-table__cell lemmas-table__chip-cell" role="cell">
+    <div class="lemmas-table__cell qd-explorer-table__cell lemmas-table__chip-cell" role="cell">
       <qd-word-count-chip
         [label]="countLabels.occurrences" [count]="row.occurrencesCount" [showLabel]="false"
         [disabled]="row.occurrencesCount === 0"
@@ -122,7 +122,7 @@
         (chipClick)="openCount(row, 'occurrences', 'ayahs')"
       />
     </div>
-    <div class="lemmas-table__cell lemmas-table__chip-cell" role="cell">
+    <div class="lemmas-table__cell qd-explorer-table__cell lemmas-table__chip-cell" role="cell">
       <qd-word-count-chip
         [label]="countLabels.ayahs" [count]="row.ayahsCount" [showLabel]="false"
         [disabled]="row.ayahsCount === 0"
@@ -130,7 +130,7 @@
         (chipClick)="openCount(row, 'ayahs', 'ayahs')"
       />
     </div>
-    <div class="lemmas-table__cell lemmas-table__chip-cell" role="cell">
+    <div class="lemmas-table__cell qd-explorer-table__cell lemmas-table__chip-cell" role="cell">
       <qd-word-count-chip
         [label]="countLabels.surahs" [count]="row.surahsCount" [showLabel]="false"
         [disabled]="row.surahsCount === 0"
@@ -138,7 +138,7 @@
         (chipClick)="openCount(row, 'surahs', 'surahs', { surahView: 'mentioned' })"
       />
     </div>
-    <div class="lemmas-table__cell lemmas-table__chip-cell" role="cell">
+    <div class="lemmas-table__cell qd-explorer-table__cell lemmas-table__chip-cell" role="cell">
       <qd-word-count-chip
         [label]="countLabels.simpleWords" [count]="row.simpleWordsCount" [showLabel]="false"
         [disabled]="row.simpleWordsCount === 0"
@@ -146,7 +146,7 @@
         (chipClick)="openCount(row, 'simple', 'words', { wordView: 'simple' })"
       />
     </div>
-    <div class="lemmas-table__cell lemmas-table__chip-cell" role="cell">
+    <div class="lemmas-table__cell qd-explorer-table__cell lemmas-table__chip-cell" role="cell">
       <qd-word-count-chip
         [label]="countLabels.tashkeelWords" [count]="row.tashkeelWordsCount" [showLabel]="false"
         [disabled]="row.tashkeelWordsCount === 0"
@@ -154,7 +154,7 @@
         (chipClick)="openCount(row, 'tashkeel', 'words', { wordView: 'tashkeel' })"
       />
     </div>
-    <div class="lemmas-table__cell lemmas-table__chip-cell" role="cell">
+    <div class="lemmas-table__cell qd-explorer-table__cell lemmas-table__chip-cell" role="cell">
       <qd-word-count-chip
         [label]="countLabels.stems" [count]="row.stemsCount" [showLabel]="false"
         [disabled]="row.stemsCount === 0"

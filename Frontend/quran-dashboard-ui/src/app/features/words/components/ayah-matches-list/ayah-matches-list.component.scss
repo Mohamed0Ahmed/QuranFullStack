@@ -57,6 +57,8 @@
 }
 
 .ayah-matches-list__card--alt {
+  /* one-off: kept per color-doctrine plan §11 named exception — a subtle
+     alternating-row blend, not a role-derivable fill */
   background: color-mix(in oklch, var(--qd-surface) 97%, var(--qd-border));
 }
 

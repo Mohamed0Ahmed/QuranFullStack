@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { WordTypeGroupedRequestParams } from '../models/word-types-detail.models';
 import { WordTypesCacheFilter, WordTypesCacheKeys } from './word-types-cache';
 
-const filter: WordTypesCacheFilter = { type: 'noun', childCode: 'PN', case: 'all', tense: 'all', voice: 'all' };
+const filter: WordTypesCacheFilter = { type: 'noun', childCode: 'PN', case: 'all', tense: 'all', voice: 'all', search: null, hasRoot: null, hasStem: null, hasLemma: null };
 const groupedRequest: WordTypeGroupedRequestParams = {
   kind: 'root',
   dimensionId: 4210,
@@ -43,6 +43,82 @@ describe('WordTypesCacheKeys.table', () => {
     const tableKey = WordTypesCacheKeys.table(filter, 'words', 'occurrences', 1);
 
     expect(tableKey).not.toBe(rowsKey);
+  });
+});
+
+describe('WordTypesCacheKeys search isolation', () => {
+  const searched: WordTypesCacheFilter = { ...filter, search: 'كلمة' };
+
+  it('keeps the pre-feature key when search is absent', () => {
+    // A null search must not alter the key (warm entries stay valid).
+    expect(WordTypesCacheKeys.rows(filter, 'occurrences', 1))
+      .toBe(WordTypesCacheKeys.rows({ ...filter, search: null }, 'occurrences', 1));
+    expect(WordTypesCacheKeys.table(filter, 'roots', 'occurrences', 1))
+      .toBe(WordTypesCacheKeys.table({ ...filter, search: null }, 'roots', 'occurrences', 1));
+  });
+
+  it('isolates a searched read from an unsearched one on both keys', () => {
+    expect(WordTypesCacheKeys.rows(searched, 'occurrences', 1))
+      .not.toBe(WordTypesCacheKeys.rows(filter, 'occurrences', 1));
+    expect(WordTypesCacheKeys.table(searched, 'roots', 'occurrences', 1))
+      .not.toBe(WordTypesCacheKeys.table(filter, 'roots', 'occurrences', 1));
+  });
+
+  it('separates two distinct searches', () => {
+    expect(WordTypesCacheKeys.rows(searched, 'occurrences', 1))
+      .not.toBe(WordTypesCacheKeys.rows({ ...filter, search: 'جذر' }, 'occurrences', 1));
+  });
+});
+
+describe('WordTypesCacheKeys presence-flag isolation (Feature 026)', () => {
+  it('keeps the pre-feature key when every flag is absent', () => {
+    expect(WordTypesCacheKeys.rows({ ...filter, hasRoot: null, hasStem: null, hasLemma: null }, 'occurrences', 1))
+      .toBe(WordTypesCacheKeys.rows(filter, 'occurrences', 1));
+  });
+
+  it('isolates flagged reads and distinguishes every flag value', () => {
+    const base = WordTypesCacheKeys.rows(filter, 'occurrences', 1);
+    const keys = [
+      base,
+      WordTypesCacheKeys.rows({ ...filter, hasRoot: true }, 'occurrences', 1),
+      WordTypesCacheKeys.rows({ ...filter, hasRoot: false }, 'occurrences', 1),
+      WordTypesCacheKeys.rows({ ...filter, hasStem: true }, 'occurrences', 1),
+    ];
+    expect(new Set(keys).size).toBe(keys.length);
+
+    expect(WordTypesCacheKeys.table({ ...filter, hasLemma: false }, 'roots', 'occurrences', 1))
+      .not.toBe(WordTypesCacheKeys.table(filter, 'roots', 'occurrences', 1));
+  });
+});
+
+describe('WordTypesCacheKeys.scopeCounts (Feature 026, US8)', () => {
+  it('keys by the full scope and nothing view/page — no tableView, sort, or page component', () => {
+    const key = WordTypesCacheKeys.scopeCounts(filter);
+    expect(key).toBe('wordtypes:scope-counts:noun:PN:all:all:all');
+    expect(key).not.toContain('view');
+    expect(key).not.toContain('sort');
+    expect(key).not.toContain(':p');
+  });
+
+  it('keeps the pre-feature-shaped key when search and every flag are absent', () => {
+    expect(WordTypesCacheKeys.scopeCounts({ ...filter, search: null, hasRoot: null, hasStem: null, hasLemma: null }))
+      .toBe(WordTypesCacheKeys.scopeCounts(filter));
+  });
+
+  it('isolates every scope input', () => {
+    const keys = [
+      WordTypesCacheKeys.scopeCounts(filter),
+      WordTypesCacheKeys.scopeCounts({ ...filter, type: 'verb' }),
+      WordTypesCacheKeys.scopeCounts({ ...filter, childCode: 'N' }),
+      WordTypesCacheKeys.scopeCounts({ ...filter, case: 'genitive' }),
+      WordTypesCacheKeys.scopeCounts({ ...filter, tense: 'past' }),
+      WordTypesCacheKeys.scopeCounts({ ...filter, voice: 'active' }),
+      WordTypesCacheKeys.scopeCounts({ ...filter, search: 'كلمة' }),
+      WordTypesCacheKeys.scopeCounts({ ...filter, hasRoot: true }),
+      WordTypesCacheKeys.scopeCounts({ ...filter, hasStem: false }),
+      WordTypesCacheKeys.scopeCounts({ ...filter, hasLemma: true }),
+    ];
+    expect(new Set(keys).size).toBe(keys.length);
   });
 });
 

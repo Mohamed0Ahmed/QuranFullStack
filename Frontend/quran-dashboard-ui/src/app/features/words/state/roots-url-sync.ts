@@ -1,6 +1,7 @@
 import { ParamMap } from '@angular/router';
 
 import { rootsRoutePath } from '../../../core/navigation/route-paths';
+import { parseRangeFilters } from './words-range-filters';
 
 import {
   DEFAULT_ROOT_DETAIL_PAGE,
@@ -11,6 +12,7 @@ import {
   DEFAULT_ROOTS_LIST_PAGE,
   ParsedRootsQuery,
   ROOTS_QUERY_KEYS,
+  ROOTS_RANGE_METRICS,
   ROOTS_SELECTION_QUERY_KEYS,
   RootSort,
   RootSurahView,
@@ -53,6 +55,7 @@ export function parseRootsQueryParams(queryParams: ParamMap): ParsedRootsQuery {
     search: queryParams.get(ROOTS_QUERY_KEYS.search) ?? '',
     sort,
     page,
+    ranges: parseRangeFilters(queryParams, ROOTS_RANGE_METRICS),
     rootId,
     view,
     column: queryParams.get(ROOTS_QUERY_KEYS.column),

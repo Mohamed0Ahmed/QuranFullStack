@@ -16,7 +16,7 @@ import { buildRootsDeepLink } from '../../state/roots-url-sync';
 
 import { QD_BP_TABLET_MAX_QUERY } from '../../../../shared/layout/breakpoints';
 
-const ROW_HEIGHT_DESKTOP = 48;
+const ROW_HEIGHT_DESKTOP = 40;
 const ROW_HEIGHT_MOBILE = 108;
 const HAS_RESIZE_OBSERVER = typeof ResizeObserver !== 'undefined';
 type StemTableColumnKey = Exclude<MorphologyColumnKey, 'stems'>;

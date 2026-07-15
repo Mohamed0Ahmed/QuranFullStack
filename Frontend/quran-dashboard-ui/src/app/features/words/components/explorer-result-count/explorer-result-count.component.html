@@ -1,0 +1,24 @@
+@if (!hasError()) {
+  @if (loading()) {
+    <!-- The visual skeleton stays aria-hidden; the sr-only text inside the role="status" container is
+         what assistive technology announces (same pattern as the scope-counts / association-filter hints). -->
+    <div
+      class="explorer-result-count explorer-result-count--loading"
+      role="status"
+      data-testid="explorer-result-count-skeleton"
+    >
+      <span class="qd-sr-only">{{ labels.loading }}</span>
+      <span class="qd-skeleton explorer-result-count__skeleton" aria-hidden="true"></span>
+    </div>
+  } @else {
+    <p
+      class="explorer-result-count"
+      role="status"
+      [attr.aria-label]="ariaLabel()"
+      data-testid="explorer-result-count"
+    >
+      <span class="explorer-result-count__label">{{ labelPrefix() }}:</span>
+      <span class="explorer-result-count__value" data-testid="explorer-result-count-value">{{ count() }}</span>
+    </p>
+  }
+}

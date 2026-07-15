@@ -66,6 +66,12 @@ export function parseWordTypesQueryParams(queryParams: ParamMap): ParsedWordType
     case: normalizeCase(type, queryParams.get(WORD_TYPES_QUERY_KEYS.case)),
     tense: normalizeTense(type, queryParams.get(WORD_TYPES_QUERY_KEYS.tense)),
     voice: normalizeVoice(type, queryParams.get(WORD_TYPES_QUERY_KEYS.voice)),
+    // Search is list-scope free text: trimmed, empty/whitespace collapses to null (fail-closed).
+    search: normalizeOptionalText(queryParams.get(WORD_TYPES_QUERY_KEYS.search)),
+    // Presence flags are list-scope tri-state: 'true'/'false' only, anything else → null (fail-closed).
+    hasRoot: parseTriState(queryParams.get(WORD_TYPES_QUERY_KEYS.hasRoot)),
+    hasStem: parseTriState(queryParams.get(WORD_TYPES_QUERY_KEYS.hasStem)),
+    hasLemma: parseTriState(queryParams.get(WORD_TYPES_QUERY_KEYS.hasLemma)),
     sort: normalizeSort(queryParams.get(WORD_TYPES_QUERY_KEYS.sort)),
     page: parsePositiveInt(queryParams.get(WORD_TYPES_QUERY_KEYS.page)) ?? DEFAULT_WORD_TYPES_PAGE,
     word: parsedIdentity.word,
@@ -91,6 +97,10 @@ export type WordTypesQueryChange = Partial<{
   case: WordTypeCase | null;
   tense: WordTypeTense | null;
   voice: WordTypeVoice | null;
+  search: string | null;
+  hasRoot: boolean | null;
+  hasStem: boolean | null;
+  hasLemma: boolean | null;
   sort: WordTypeSort | null;
   page: number | null;
   word: number | null;
@@ -116,6 +126,10 @@ const WORD_TYPES_QUERY_ORDER = [
   'case',
   'tense',
   'voice',
+  'search',
+  'hasRoot',
+  'hasStem',
+  'hasLemma',
   'sort',
   'page',
   'word',
@@ -353,6 +367,18 @@ function defaultViewForTableView(tableView: WordTypeTableView): WordTypeDetailVi
 
 function parsePositiveInt(value: string | null): number | null {
   return value !== null && /^[1-9]\d*$/.test(value) ? Number.parseInt(value, 10) : null;
+}
+
+// Tri-state presence flag: only the exact 'true'/'false' tokens are honored; anything else (including
+// absent) is treated as "any" (null), matching the fail-closed URL discipline.
+function parseTriState(value: string | null): boolean | null {
+  if (value === 'true') {
+    return true;
+  }
+  if (value === 'false') {
+    return false;
+  }
+  return null;
 }
 
 function normalizeOptionalText(value: string | null): string | null {

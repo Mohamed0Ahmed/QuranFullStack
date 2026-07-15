@@ -1,4 +1,5 @@
 using QuranDashboard.Application.Abstractions.Common.Paging;
+using QuranDashboard.Application.Abstractions.Quran.Words.Lemmas;
 using QuranDashboard.Application.Abstractions.Quran.Words.Lemmas.Responses;
 using QuranDashboard.Application.Quran.Words.Lemmas.Queries.GetLemmaAyahs;
 using QuranDashboard.Application.Quran.Words.Lemmas.Queries.GetLemmaMissingSurahs;
@@ -41,6 +42,19 @@ public sealed class LemmasController(
         [FromQuery(Name = "sort")] string? paramSort,
         [FromQuery] int? page,
         [FromQuery] int? pageSize,
+        [FromQuery] int? occMin,
+        [FromQuery] int? occMax,
+        [FromQuery] int? ayahsMin,
+        [FromQuery] int? ayahsMax,
+        [FromQuery] int? surahsMin,
+        [FromQuery] int? surahsMax,
+        [FromQuery] int? simpleWordsMin,
+        [FromQuery] int? simpleWordsMax,
+        [FromQuery] int? tashkeelWordsMin,
+        [FromQuery] int? tashkeelWordsMax,
+        [FromQuery] int? stemsMin,
+        [FromQuery] int? stemsMax,
+        [FromQuery] int? rootId,
         CancellationToken cancellationToken)
     {
         var outcome = await listHandler.HandleAsync(
@@ -48,7 +62,15 @@ public sealed class LemmasController(
                 search,
                 paramSort,
                 page ?? DefaultPage,
-                pageSize ?? DefaultListPageSize),
+                pageSize ?? DefaultListPageSize,
+                LemmasCountFilter.FromRaw(
+                    occMin, occMax,
+                    ayahsMin, ayahsMax,
+                    surahsMin, surahsMax,
+                    simpleWordsMin, simpleWordsMax,
+                    tashkeelWordsMin, tashkeelWordsMax,
+                    stemsMin, stemsMax),
+                LemmasAssociationFilter.FromRaw(rootId)),
             cancellationToken);
 
         return outcome switch
@@ -59,6 +81,8 @@ public sealed class LemmasController(
                 BadRequest(ApiResponse<PagedResult<LemmaListItemDto>>.Fail(ApiMessages.LemmasInvalidSort)),
             GetLemmasPageOutcome.InvalidPaging =>
                 BadRequest(ApiResponse<PagedResult<LemmaListItemDto>>.Fail(ApiMessages.LemmasInvalidPaging)),
+            GetLemmasPageOutcome.InvalidFilter =>
+                BadRequest(ApiResponse<PagedResult<LemmaListItemDto>>.Fail(ApiMessages.LemmasInvalidFilter)),
             _ => throw new InvalidOperationException($"Unhandled {nameof(GetLemmasPageOutcome)} variant."),
         };
     }

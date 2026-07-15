@@ -183,6 +183,7 @@ function ok<T>(data: T): ApiResponse<T> {
 type Endpoint =
   | 'tree'
   | 'table'
+  | 'scopeCounts'
   | 'wordSummary'
   | 'wordAyahs'
   | 'wordSurahs'
@@ -215,6 +216,7 @@ interface FakeServer {
 function endpointFor(request: TestRequest): Endpoint {
   const url = request.request.url;
   if (url.endsWith('/api/words/word-types/tree')) return 'tree';
+  if (url.endsWith('/api/words/word-types/scope-counts')) return 'scopeCounts';
   if (url.endsWith('/api/words/word-types/table')) return 'table';
   if (/\/api\/words\/word-types\/words\/\d+\/ayahs$/.test(url)) return 'wordAyahs';
   if (/\/api\/words\/word-types\/words\/\d+\/surahs$/.test(url)) return 'wordSurahs';
@@ -230,6 +232,7 @@ function defaultResponse(endpoint: Endpoint): ApiResponse<unknown> {
   const responses: Record<Endpoint, ApiResponse<unknown>> = {
     tree: ok(tree),
     table: ok<PagedResultDto<WordTypeTableRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [row] }),
+    scopeCounts: ok({ wordsCount: 1, rootsCount: 1, stemsCount: 0, lemmasCount: 0 }),
     wordSummary: ok(properRow),
     wordAyahs: ok<PagedResultDto<WordTypeAyahMatchDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [ayahMatch] }),
     wordSurahs: ok({ surahs: [{ surahNumber: 999, nameArabic: 'SYNTH_WORD_SURAH_NAME', occurrencesCount: 1 }], missingSurahs: [] }),
@@ -369,6 +372,43 @@ describe('WordTypesExplorerPageComponent', () => {
     expect(optionLabels).toEqual(WORD_TYPE_SORT_OPTIONS.map((option) => option.label));
   });
 
+  it('mounts the scope-counts strip between the filter strip and the view tabs, showing the four scoped counts (US8)', async () => {
+    respond('scopeCounts', ok({ wordsCount: 40, rootsCount: 12, stemsCount: 8, lemmasCount: 5 }));
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'N' }));
+    const fixture = await createPage();
+    const root = fixture.nativeElement as HTMLElement;
+
+    const strip = root.querySelector('qd-word-type-scope-counts');
+    const tabs = root.querySelector('qd-word-type-table-view-tabs');
+    expect(strip).not.toBeNull();
+    expect(tabs).not.toBeNull();
+
+    const values = Array.from(strip!.querySelectorAll('[data-testid="word-type-scope-count-value"]')).map((el) => el.textContent?.trim());
+    expect(values).toEqual(['40', '12', '8', '5']);
+
+    // Placement: filters → scope summary → tabs → table (the tabs follow the strip in document order).
+    expect(strip!.compareDocumentPosition(tabs!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(requestsFor('scopeCounts')).toHaveLength(1);
+  });
+
+  it('does not refetch the scope counts on a tableView or page change (US8)', async () => {
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'N' }));
+    const fixture = await createPage();
+
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'N', tableView: 'roots' }));
+    await fixture.whenStable();
+    fixture.detectChanges();
+    flushPendingRequests();
+
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'N', tableView: 'roots', page: '2' }));
+    await fixture.whenStable();
+    fixture.detectChanges();
+    flushPendingRequests();
+
+    // Only the initial scope load fetched counts; tab + page changes did not.
+    expect(requestsFor('scopeCounts')).toHaveLength(1);
+  });
+
   it('clears prior leaf rows for the in-table subtype prompt when returning to a parent, keeping the shells mounted', async () => {
     respond('table', ok<PagedResultDto<WordTypeTableRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [groupedRootRow] }));
     queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'PN', tableView: 'roots' }));
@@ -394,6 +434,22 @@ describe('WordTypesExplorerPageComponent', () => {
     expect(detailsHost()).toBe(initialDetails);
   });
 
+  it('serializes a presence flag to the URL and resets the page (US6)', async () => {
+    respond('table', ok<PagedResultDto<WordTypeTableRowDto>>({ page: 1, pageSize: 1000, totalCount: 1, items: [groupedRootRow] }));
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'PN', tableView: 'roots' }));
+    const fixture = await createPage();
+
+    const chip = fixture.nativeElement.querySelector('[data-testid="word-types-presence-root-present"]') as HTMLButtonElement;
+    expect(chip).not.toBeNull();
+    chip.click();
+    fixture.detectChanges();
+
+    expect(router.navigate).toHaveBeenCalledWith([], expect.objectContaining({
+      queryParams: expect.objectContaining({ hasRoot: 'true', page: '1' }),
+      queryParamsHandling: 'merge',
+    }));
+  });
+
   it('loads rows when a subtype is selected', async () => {
     const fixture = await createPage();
     const childButton = fixture.nativeElement.querySelector('.word-type-filter__child-button') as HTMLButtonElement;
@@ -412,8 +468,22 @@ describe('WordTypesExplorerPageComponent', () => {
 
     expect(requestsFor('table').at(-1)?.request.params.get('type')).toBe('noun');
     expect(requestsFor('table').at(-1)?.request.params.get('childCode')).toBe('N');
-    expect(requestsFor('table').at(-1)?.request.params.get('pageSize')).toBe('25');
+    expect(requestsFor('table').at(-1)?.request.params.get('pageSize')).toBe('1000');
     expect((fixture.nativeElement as HTMLElement).querySelector('qd-word-types-table')).not.toBeNull();
+  });
+
+  it('restores the search term into the toolbar input and threads it to the list read', async () => {
+    const fixture = await createPage();
+
+    queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'N', search: 'SYNTH_SEARCH' }));
+    flushPendingRequests();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const searchInput = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="word-types-search-input"]') as HTMLInputElement;
+    expect(searchInput).not.toBeNull();
+    expect(searchInput.value).toBe('SYNTH_SEARCH');
+    expect(requestsFor('table').at(-1)?.request.params.get('search')).toBe('SYNTH_SEARCH');
   });
 
   it('renders scoped tabs and passes the complete grouped payload to the table while keeping the details host mounted', async () => {
@@ -653,7 +723,7 @@ describe('WordTypesExplorerPageComponent', () => {
 
     expect(requestsFor('table').at(-1)?.request.params.get('type')).toBe('inl');
     expect(requestsFor('table').at(-1)?.request.params.has('childCode')).toBe(false);
-    expect(requestsFor('table').at(-1)?.request.params.get('pageSize')).toBe('25');
+    expect(requestsFor('table').at(-1)?.request.params.get('pageSize')).toBe('1000');
     expect(TestBed.inject(WordTypesExplorerFacade).listState().status).toBe('success');
     expect((fixture.nativeElement as HTMLElement).querySelector('qd-word-types-table')).not.toBeNull();
   });
@@ -1229,7 +1299,7 @@ describe('WordTypesExplorerPageComponent', () => {
     expect(wordsRequest?.params.get('type')).toBe('noun');
     expect(wordsRequest?.params.get('childCode')).toBe('PN');
     expect(wordsRequest?.params.get('page')).toBe('1');
-    expect(wordsRequest?.params.get('pageSize')).toBe('25');
+    expect(wordsRequest?.params.get('pageSize')).toBe('100');
   });
 
   it('defaults a new grouped selection to the words tab and renders its member words', async () => {

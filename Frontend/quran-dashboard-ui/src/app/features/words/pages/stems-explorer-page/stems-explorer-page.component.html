@@ -7,19 +7,49 @@
     </div>
 
     <div class="uw-toolbar-recess">
-      <div class="stems-explorer__controls qd-explorer-controls">
-        <label class="qd-sr-only" for="stems-search">{{ searchLabel }}</label>
-        <input
-          id="stems-search"
-          class="qd-input stems-explorer__search qd-explorer__search"
-          type="search"
-          inputmode="search"
-          [attr.placeholder]="searchPlaceholder"
-          [value]="searchDraft()"
-          data-testid="stems-search-input"
-          (input)="onSearchInput($any($event.target).value)"
+      <qd-explorer-search-row
+        [searchValue]="searchDraft()"
+        [searchLabel]="searchLabel"
+        [searchPlaceholder]="searchPlaceholder"
+        searchTestid="stems-search-input"
+        (searchChange)="onSearchInput($event)"
+      >
+        <qd-explorer-association-filter
+          testid="stems-root-filter"
+          [label]="primaryRootLabel"
+          [placeholder]="primaryRootPlaceholder"
+          [options]="rootOptions()"
+          [selectedId]="association().rootId"
+          [selectedLabel]="selectedRootLabel()"
+          [loading]="rootOptionsLoading()"
+          [disabled]="listState().status === 'loading'"
+          (searchChange)="onRootSearch($event)"
+          (selectionChange)="onPrimaryRootChange($event)"
         />
+        <qd-explorer-association-filter
+          testid="stems-lemma-filter"
+          [label]="primaryLemmaLabel"
+          [placeholder]="primaryLemmaPlaceholder"
+          [options]="lemmaOptions()"
+          [selectedId]="association().lemmaId"
+          [selectedLabel]="selectedLemmaLabel()"
+          [loading]="lemmaOptionsLoading()"
+          [disabled]="listState().status === 'loading'"
+          (searchChange)="onLemmaSearch($event)"
+          (selectionChange)="onPrimaryLemmaChange($event)"
+        />
+      </qd-explorer-search-row>
 
+      <qd-explorer-result-count
+        class="uw-toolbar-recess__stat"
+        data-testid="stems-result-count"
+        [count]="listState().totalCount"
+        [labelPrefix]="resultCountLabel"
+        [loading]="listState().status === 'loading' || listState().status === 'idle'"
+        [hasError]="listState().status === 'error'"
+      />
+
+      <div class="qd-explorer-controls-secondary">
         <label class="qd-sr-only" for="stems-sort">{{ sortLabels.label }}</label>
         <select
           id="stems-sort"
@@ -32,6 +62,14 @@
             <option [value]="option">{{ sortLabels[option] }}</option>
           }
         </select>
+
+        <qd-explorer-count-range-filter
+          data-testid="stems-range-filter"
+          [metrics]="rangeMetrics"
+          [ranges]="ranges()"
+          [disabled]="listState().status === 'loading'"
+          (rangesChange)="onRangesChange($event)"
+        />
       </div>
     </div>
 

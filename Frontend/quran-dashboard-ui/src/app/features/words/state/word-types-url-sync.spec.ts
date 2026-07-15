@@ -68,6 +68,43 @@ describe('parseWordTypesQueryParams — child codes', () => {
   });
 });
 
+describe('parseWordTypesQueryParams — search (list scope)', () => {
+  it('keeps a non-empty search and trims surrounding whitespace', () => {
+    expect(parseWordTypesQueryParams(params('type=noun&search=كلمة')).search).toBe('كلمة');
+    expect(parseWordTypesQueryParams(params('search=' + encodeURIComponent('  كلمة  '))).search).toBe('كلمة');
+  });
+
+  it('fails closed to null for empty or whitespace-only search', () => {
+    expect(parseWordTypesQueryParams(params('type=noun&search=')).search).toBeNull();
+    expect(parseWordTypesQueryParams(params('search=' + encodeURIComponent('   '))).search).toBeNull();
+  });
+
+  it('parses a pre-feature URL (no search key) byte-identically to today, with search null', () => {
+    const parsed = parseWordTypesQueryParams(params('type=noun&childCode=PN&tableView=roots&sort=alpha&page=3'));
+
+    expect(parsed.search).toBeNull();
+    // Every pre-existing field is unaffected by the additive search key.
+    expect(parsed.type).toBe('noun');
+    expect(parsed.childCode).toBe('PN');
+    expect(parsed.tableView).toBe('roots');
+    expect(parsed.sort).toBe('alpha');
+    expect(parsed.page).toBe(3);
+  });
+});
+
+describe('buildWordTypesQueryParams — search serialization', () => {
+  it('serializes a search change and resets the page', () => {
+    const built = buildWordTypesQueryParams({ search: 'كلمة', page: null });
+
+    expect(built[WORD_TYPES_QUERY_KEYS.search]).toBe('كلمة');
+    expect(built[WORD_TYPES_QUERY_KEYS.page]).toBeNull();
+  });
+
+  it('removes the search key when cleared', () => {
+    expect(buildWordTypesQueryParams({ search: null })[WORD_TYPES_QUERY_KEYS.search]).toBeNull();
+  });
+});
+
 describe('buildWordTypesQueryParams — child selection', () => {
   it('emits the childCode param when a child is selected', () => {
     const built = buildWordTypesQueryParams({ childCode: 'PN' });
@@ -621,5 +658,32 @@ describe('buildWordTypesQueryParams — tableView', () => {
       WORD_TYPES_QUERY_KEYS.sort,
       WORD_TYPES_QUERY_KEYS.page,
     ]);
+  });
+});
+
+describe('parseWordTypesQueryParams presence flags (Feature 026)', () => {
+  it('defaults every flag to null for a pre-feature URL (backward compat)', () => {
+    const parsed = parseWordTypesQueryParams(params('type=noun&childCode=PN'));
+    expect(parsed.hasRoot).toBeNull();
+    expect(parsed.hasStem).toBeNull();
+    expect(parsed.hasLemma).toBeNull();
+  });
+
+  it('parses the true/false tri-state tokens', () => {
+    const parsed = parseWordTypesQueryParams(params('type=noun&childCode=PN&hasRoot=true&hasStem=false'));
+    expect(parsed.hasRoot).toBe(true);
+    expect(parsed.hasStem).toBe(false);
+    expect(parsed.hasLemma).toBeNull();
+  });
+
+  it('fails closed to null on any non-boolean token', () => {
+    const parsed = parseWordTypesQueryParams(params('type=noun&childCode=PN&hasRoot=maybe&hasLemma=1'));
+    expect(parsed.hasRoot).toBeNull();
+    expect(parsed.hasLemma).toBeNull();
+  });
+
+  it('serializes a flag change to its token', () => {
+    expect(buildWordTypesQueryParams({ hasRoot: true, hasStem: false, hasLemma: null }))
+      .toEqual({ hasRoot: 'true', hasStem: 'false', hasLemma: null });
   });
 });

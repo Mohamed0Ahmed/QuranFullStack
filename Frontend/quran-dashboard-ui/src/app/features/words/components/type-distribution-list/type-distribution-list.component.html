@@ -1,5 +1,5 @@
 <div class="type-distribution-list-shell">
-  <header class="type-distribution-list__header" aria-hidden="true">
+  <header class="type-distribution-list__header qd-detail-list__header" aria-hidden="true">
     <span class="type-distribution-list__header-type">{{ typeHeader }}</span>
     <span class="type-distribution-list__header-count">{{ countHeader }}</span>
   </header>
@@ -14,8 +14,8 @@
     @if (loading()) {
       <p class="qd-sr-only" role="status" aria-live="polite">{{ loadingLabel }}</p>
       @for (_ of [0, 1, 2, 3]; track $index) {
-        <div class="type-distribution-list__row type-distribution-list__row--loading" aria-hidden="true">
-          <span class="type-distribution-list__type">
+        <div class="type-distribution-list__row type-distribution-list__row--loading qd-detail-list__row qd-detail-list__row--loading" aria-hidden="true">
+          <span class="type-distribution-list__type qd-detail-list__text">
             <span class="qd-skeleton qd-skeleton--text type-distribution-list__loading-type"></span>
           </span>
           <span class="qd-skeleton qd-skeleton--rounded-md type-distribution-list__loading-count"></span>
@@ -28,14 +28,14 @@
     } @else {
       @for (row of rows(); track row.code) {
         <div
-          class="type-distribution-list__row"
+          class="type-distribution-list__row qd-detail-list__row"
           role="listitem"
           [class.qd-is-selected]="row.dominant"
           [attr.aria-current]="row.dominant ? 'true' : null"
           [attr.data-testid]="row.dominant ? 'type-distribution-dominant' : 'type-distribution-item'"
         >
-          <span class="type-distribution-list__type">{{ row.arabicLabel }}</span>
-          <span class="qd-badge type-distribution-list__count">{{ row.occurrencesCount }}</span>
+          <span class="type-distribution-list__type qd-detail-list__text">{{ row.arabicLabel }}</span>
+          <span class="qd-badge type-distribution-list__count qd-detail-list__count">{{ row.occurrencesCount }}</span>
         </div>
       }
     }

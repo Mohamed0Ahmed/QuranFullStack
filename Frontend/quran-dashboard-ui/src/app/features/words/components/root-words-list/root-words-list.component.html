@@ -1,5 +1,5 @@
 <div class="root-words-list" data-testid="root-words-list">
-  <header class="root-words-list__header">
+  <header class="root-words-list__header qd-detail-list__header">
     <span class="root-words-list__header-row-number">{{ rowNumberHeader }}</span>
     <span class="root-words-list__header-text">{{ displayHeader }}</span>
     <span class="root-words-list__header-count">{{ occurrencesHeader }}</span>
@@ -13,28 +13,28 @@
     @if (loading()) {
       <p class="qd-sr-only" role="status" aria-live="polite">{{ loadingLabel }}</p>
       @for (_ of loadingRowPlaceholders; track $index) {
-        <div class="root-words-list__row root-words-list__row--loading" aria-hidden="true">
-          <span class="root-words-list__row-number">
-            <span class="qd-skeleton qd-skeleton--text root-words-list__loading-number"></span>
+        <div class="root-words-list__row root-words-list__row--loading qd-detail-list__row qd-detail-list__row--loading" aria-hidden="true">
+          <span class="root-words-list__row-number qd-detail-list__row-number">
+            <span class="qd-skeleton qd-skeleton--text root-words-list__loading-number qd-detail-list__loading-number"></span>
           </span>
-          <span class="root-words-list__text">
+          <span class="root-words-list__text qd-detail-list__text">
             <span class="qd-skeleton qd-skeleton--text root-words-list__loading-word"></span>
           </span>
-          <span class="qd-skeleton qd-skeleton--rounded-md root-words-list__loading-badge"></span>
+          <span class="qd-skeleton qd-skeleton--rounded-md root-words-list__loading-badge qd-detail-list__loading-badge"></span>
         </div>
       }
     } @else {
       @for (row of rows(); track row.item.uniqueWordId; let i = $index) {
         <a
-          class="root-words-list__row qd-interactive-surface"
+          class="root-words-list__row qd-interactive-surface qd-detail-list__row"
           [attr.href]="row.uniqueWordHref"
           [attr.aria-label]="openUniqueWordLabel"
           target="_blank"
           rel="noopener"
           data-testid="root-word-link"
         >
-          <span class="root-words-list__row-number" aria-hidden="true">{{ rowNumber(i) }}</span>
-          <span class="root-words-list__text">{{ row.item.displayText }}</span>
+          <span class="root-words-list__row-number qd-detail-list__row-number" aria-hidden="true">{{ rowNumber(i) }}</span>
+          <span class="root-words-list__text qd-detail-list__text">{{ row.item.displayText }}</span>
           <span class="qd-badge">{{ row.item.occurrencesCount }}</span>
         </a>
       }

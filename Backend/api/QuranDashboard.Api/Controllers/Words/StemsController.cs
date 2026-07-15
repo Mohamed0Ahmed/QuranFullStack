@@ -1,4 +1,5 @@
 using QuranDashboard.Application.Abstractions.Common.Paging;
+using QuranDashboard.Application.Abstractions.Quran.Words.Stems;
 using QuranDashboard.Application.Abstractions.Quran.Words.Stems.Responses;
 using QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemAyahs;
 using QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemMissingSurahs;
@@ -42,6 +43,18 @@ public sealed class StemsController(
         [FromQuery(Name = "sort")] string? paramSort,
         [FromQuery] int? page,
         [FromQuery] int? pageSize,
+        [FromQuery] int? occMin,
+        [FromQuery] int? occMax,
+        [FromQuery] int? ayahsMin,
+        [FromQuery] int? ayahsMax,
+        [FromQuery] int? surahsMin,
+        [FromQuery] int? surahsMax,
+        [FromQuery] int? simpleWordsMin,
+        [FromQuery] int? simpleWordsMax,
+        [FromQuery] int? tashkeelWordsMin,
+        [FromQuery] int? tashkeelWordsMax,
+        [FromQuery] int? rootId,
+        [FromQuery] int? lemmaId,
         CancellationToken cancellationToken)
     {
         var outcome = await listHandler.HandleAsync(
@@ -49,7 +62,14 @@ public sealed class StemsController(
                 search,
                 paramSort,
                 page ?? DefaultPage,
-                pageSize ?? DefaultListPageSize),
+                pageSize ?? DefaultListPageSize,
+                StemsCountFilter.FromRaw(
+                    occMin, occMax,
+                    ayahsMin, ayahsMax,
+                    surahsMin, surahsMax,
+                    simpleWordsMin, simpleWordsMax,
+                    tashkeelWordsMin, tashkeelWordsMax),
+                StemsAssociationFilter.FromRaw(rootId, lemmaId)),
             cancellationToken);
 
         return outcome switch
@@ -60,6 +80,8 @@ public sealed class StemsController(
                 BadRequest(ApiResponse<PagedResult<StemListItemDto>>.Fail(ApiMessages.StemsInvalidSort)),
             GetStemsPageOutcome.InvalidPaging =>
                 BadRequest(ApiResponse<PagedResult<StemListItemDto>>.Fail(ApiMessages.StemsInvalidPaging)),
+            GetStemsPageOutcome.InvalidFilter =>
+                BadRequest(ApiResponse<PagedResult<StemListItemDto>>.Fail(ApiMessages.StemsInvalidFilter)),
             _ => throw new InvalidOperationException($"Unhandled {nameof(GetStemsPageOutcome)} variant."),
         };
     }

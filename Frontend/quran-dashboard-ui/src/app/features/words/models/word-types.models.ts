@@ -5,6 +5,9 @@ export type WordTypeVoice = 'all' | 'active' | 'passive';
 export type WordTypeSort = 'occurrences' | 'ayahs' | 'surahs' | 'mushaf-order' | 'alpha';
 export type WordTypeTableView = 'words' | 'roots' | 'stems' | 'lemmas';
 export type WordTypeDetailView = 'words' | 'ayahs' | 'surahs';
+// Presence-filter dimensions (Feature 026, US6): the three morphology associations a word-context row
+// may carry; each maps to its tri-state hasRoot/hasStem/hasLemma URL key.
+export type WordTypePresenceDimension = 'root' | 'stem' | 'lemma';
 export type WordTypesLoadStatus = 'idle' | 'loading' | 'selectPrompt' | 'success' | 'empty' | 'error' | 'notFound';
 
 import type {
@@ -14,6 +17,7 @@ import type {
   WordTypeFilterOptionDto,
   WordTypeLabelDto,
   WordTypeMissingSurahDto,
+  WordTypeScopeCountsDto,
   WordTypeSecondaryFilterDto as WordTypeSecondaryFilterWireDto,
   WordTypeSurahOccurrenceDto,
   WordTypeSurahsResponse as WordTypeSurahsResponseDto,
@@ -33,6 +37,7 @@ export type {
   WordTypeFilterOptionDto,
   WordTypeLabelDto,
   WordTypeMissingSurahDto,
+  WordTypeScopeCountsDto,
   WordTypeSurahOccurrenceDto,
   WordTypeSurahsResponseDto,
 };
@@ -107,6 +112,13 @@ export interface ParsedWordTypesQuery extends WordTypeRowIdentity {
   type: WordTypeMainType;
   childCode: string | null;
   tableView: WordTypeTableView;
+  // Word-identity search; part of the list scope (narrows all table views), fail-closed to null.
+  search: string | null;
+  // Tri-state presence flags (Feature 026, US6): null = any, true = has, false = missing. Part of the
+  // list scope — words + grouped views reshape together — fail-closed to null.
+  hasRoot: boolean | null;
+  hasStem: boolean | null;
+  hasLemma: boolean | null;
   sort: WordTypeSort;
   page: number;
   word: number | null;
@@ -134,6 +146,16 @@ export interface WordTypesListState {
   errorMessage: string;
 }
 
+// Scoped four-count summary (Feature 026, US8). The strip has its own load lifecycle, independent of the
+// table: 'idle' before a leaf scope is confirmed, then loading/success/error. Counts refetch on scope
+// change only (not tableView, not page); a counts failure never blocks the table.
+export type WordTypeScopeCountsStatus = 'idle' | 'loading' | 'success' | 'error';
+
+export interface WordTypesScopeCountsState {
+  status: WordTypeScopeCountsStatus;
+  counts: WordTypeScopeCountsDto | null;
+}
+
 export const WORD_TYPES_QUERY_KEYS = {
   type: 'type',
   childCode: 'childCode',
@@ -141,6 +163,10 @@ export const WORD_TYPES_QUERY_KEYS = {
   case: 'case',
   tense: 'tense',
   voice: 'voice',
+  search: 'search',
+  hasRoot: 'hasRoot',
+  hasStem: 'hasStem',
+  hasLemma: 'hasLemma',
   sort: 'sort',
   page: 'page',
   word: 'word',
@@ -192,11 +218,12 @@ export const DEFAULT_WORD_TYPE_VOICE: WordTypeVoice = 'all';
 export const DEFAULT_WORD_TYPE_SORT: WordTypeSort = 'occurrences';
 export const DEFAULT_WORD_TYPE_TABLE_VIEW: WordTypeTableView = 'words';
 export const DEFAULT_WORD_TYPES_PAGE = 1;
-export const WORD_TYPES_PAGE_SIZE = 25;
+// List reads serve up to 1000 rows per page (parity with the other explorers); detail lists 100.
+export const WORD_TYPES_PAGE_SIZE = 1000;
 export const DEFAULT_WORD_TYPES_DETAIL_VIEW: WordTypeDetailView = 'ayahs';
 export const DEFAULT_GROUPED_WORD_TYPES_DETAIL_VIEW: WordTypeDetailView = 'words';
 export const DEFAULT_WORD_TYPES_DETAIL_PAGE = 1;
-export const WORD_TYPES_DETAIL_PAGE_SIZE = 25;
+export const WORD_TYPES_DETAIL_PAGE_SIZE = 100;
 
 export function normalizeWordTableRow(row: WordTableRowDto): WordTypeRowDto {
   const { kind: _kind, case: caseValue, tense, voice, ...word } = row;

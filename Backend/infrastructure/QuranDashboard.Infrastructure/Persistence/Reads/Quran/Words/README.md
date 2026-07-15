@@ -32,6 +32,65 @@ and Unique Words. They back the `application/.../Quran/Words/**` query handlers 
 - Response shape/paging must stay aligned with `ReadPaging` and the API contract; changing
   a column or page shape is an API-contract change (update the controller + `API_GUIDELINES`
   expectations and any frontend model).
+- **Word Types word-identity search** (Feature 026) is one optional predicate on the shared
+  `BaseRowsSql` occurrence base (`SearchPredicate` in `EfWordTypesReader.Sql.cs`): a parameterized
+  `unique_word.search_text_normalized ILIKE @searchPattern` on the tashkeel-word join the base already
+  carries. It reuses the **same computed identity-search column** (`search_text_normalized`, a folded
+  `text_uthmani_simple || ' ' || text_imlaei_simple`) and the **same query normalizer**
+  (`ArabicSearchQueryNormalizer`, extracted from `EfUniqueWordsReader`) that Unique Words search uses, so
+  the two boxes fold diacritics/orthography identically. It matches **word identity text only** — never
+  `root_text`/`stem_text`/`lemma_text` — and, because it lives on the shared base, the words view, all
+  three grouped views, and their `TotalCount`s narrow together (list scope). The search term reaches SQL
+  only as a parameter value and is never logged (`hasSearch` boolean only). **Grouped-detail reads
+  (`.GroupedDetails.*`) take NO search term** — their identity is a numeric dimension id already scoped;
+  `ToGroupedReadContext` builds a search-free context, so the asymmetry is by construction.
+- **Count-range filters** (Feature 026, US5) narrow the four normal explorers by exactly the count
+  columns each list already displays — no recomputation, no count-family change. The shared
+  `CountRange`/`<page>CountFilter` value objects (Application.Abstractions) validate `Min >= 0` and
+  `Max >= Min` in the handlers (else a controlled 400 `InvalidFilter`); an open bound is allowed. Every
+  active range **ANDs** with search/sort. Execution follows each page's existing read mechanism: Unique
+  Words applies parameterized SQL predicates on `occurrences_count`/`ayahs_count`/`surahs_count` inside
+  `BuildListQuery` (identifiers allowlisted, bounds are parameter values only) and its list cache keys
+  gain the range fragment (absent ⇒ pre-feature key); Roots/Lemmas/Stems apply **in-memory** predicates
+  in their `*ListDerivation.FilterAndSort` over the cached whole-summary rows, so their backend cache
+  keys are unchanged. Ranges filter dimension entries (Roots/Lemmas/Stems) or unique-word identities
+  (Unique Words). The filtered `PagedResult.TotalCount` equals the filtered row count (the stat
+  contract), and ordering is untouched — the predicates are pure `Where`s.
+- **Association filters** (Feature 026, US7) narrow three normal explorers by a related dimension, always
+  by the SAME association the list row displays (so the filter and the displayed value can never disagree —
+  the chip⇔filter invariant, pinned by tests). **Unique Words** `primaryType` (POS code) and `rootId`
+  (positive int) are predicates in the base SQL of `BuildTashkeelQuery`/`BuildSimpleQuery`
+  (`EfUniqueWordsReader.BuildListQuery`): each is an `id IN (…)` over a `DISTINCT ON (unique_id)` winner
+  subquery that reproduces EXACTLY the primary-selection ordering `LoadPrimaryWordTypesAsync` /
+  `LoadPrimaryRootsAsync` use for the displayed chip (group the word's occurrences by POS code / root,
+  order by occurrence count DESC, earliest `quran_word` id ASC, then code/root id). Values reach SQL only
+  as parameters; the unique-id column is an allowlisted constant. `primaryType` is validated against the
+  POS catalogue (`quran_pos_tags` via `IPosTagCatalogueReader`) in the handler — an unknown code is a
+  controlled **400 InvalidFilter**, not a silent empty result; a nonpositive id is likewise 400. A
+  valid-but-unmatched id returns a **200 empty page** (`TotalCount = 0`), never a 404. Unique Words list
+  cache keys gain a `pt…:root…` segment (absent ⇒ pre-feature key). **Lemmas** `rootId` is an in-memory
+  predicate on the real FK `quran_lemmas.root_id` (`LemmasListDerivation.FilterAndSort`) — a true
+  belonging relation. **Stems** `rootId`/`lemmaId` are in-memory predicates on the derived **primary**
+  (dominant) association surfaced on the stem's list row (`StemsListDerivation.FilterAndSort`,
+  `DominantRootId`/`DominantLemmaId`). **This is a primary-not-sole filter: a stem whose primary root or
+  lemma differs is excluded even if it co-occurs with the filtered id** — the filter matches only the one
+  primary association, not all co-occurring associations. Roots/Lemmas/Stems derive over the cached whole
+  summary, so their backend cache keys are unchanged; ordering is untouched (the predicates are pure
+  `Where`s). All association params may be logged as booleans/ids (no user text).
+- **Word Types presence flags** (Feature 026, US6) are tri-state `hasRoot`/`hasStem`/`hasLemma`
+  (`bool?`: null = any, true = has, false = missing) threaded through `WordTypeFilter` →
+  `WordTypeReadContext` → `PresenceFilterPredicate` on the shared `BaseRowsSql`. The predicate is
+  allowlisted `m.root_id|stem_id|lemma_id IS [NOT] NULL` — no user text, no parameters. Because it lives
+  on the shared base, the words view, all three grouped views, and their `TotalCount`s narrow together
+  (list scope); grouped-detail reads (`.GroupedDetails.*`) never set the flags (same asymmetry as
+  search). `WordTypesCacheKeys.HashFilter` appends a flag component only when a flag is set (absent ⇒
+  pre-feature 5-part hash), so flagged and unflagged reads never cross-serve. Malformed direct-API flag
+  values are rejected by the `[ApiController]` bool binding (400); the frontend fails closed to absent.
+- **Word Types page-size caps** are split in `WordTypesHandlerValidation` (Feature 026): **list reads**
+  (`/words`, `/table`) accept `pageSize 1..1000` (`MaxListPageSize`, default 1000); **detail reads** (word
+  ayahs, grouped member words, grouped ayahs) keep `pageSize 1..100` (`MaxDetailPageSize`, default 100).
+  The former single 100 cap gated both; the split preserves the documented grouped-detail 1..100 contract
+  while unlocking 1000-row list parity. Grouped surahs stay single-shot.
 - **Word Types grouped table reads** (`EfWordTypesReader.GetTableRowsAsync` for
   `tableView=roots|stems|lemmas`) reuse the same scoped `BaseRowsSql` occurrence base as the
   word rows, verbatim — grouping by the numeric `root_id`/`stem_id`/`lemma_id`, excluding
@@ -42,6 +101,22 @@ and Unique Words. They back the `application/.../Quran/Words/**` query handlers 
   and friends) — never conflate the two. Grouped `alpha` sort reuses the Roots explorer's
   Arabic fold (`RootsListDerivation.ArabicFoldFrom`/`ArabicFoldTo`) with `COLLATE "C"`
   ordinal collation, tie-broken by the numeric dimension ID.
+- **Word Types scoped four-count summary** (Feature 026, US8, `EfWordTypesReader.GetScopeCountsAsync` in the
+  `.ScopeCounts.cs` partial) returns `WordTypeScopeCountsDto(WordsCount, RootsCount, StemsCount, LemmasCount)`
+  for the FULL active list scope (type, childCode, case, tense, voice, search, presence flags — the same
+  `WordTypeReadContext` the words/table reads build). It is **one SQL command**: a single CTE over the shared
+  scoped `BaseRowsSql` base (search predicate + presence flags included), then four aggregates that **reuse
+  the existing count formulas verbatim** rather than re-deriving them — words = the `RowsCountSql` formula
+  (`COUNT(DISTINCT (tashkeel_word_id, context_code))`, the row-constructor form of its `GROUP BY … COUNT(*)`),
+  and roots/stems/lemmas = the `GroupedRowsCountSql` formula (`COUNT(DISTINCT <dim>_id)`, which already
+  excludes NULLs). Because the base and the formulas are identical, each count **equals the corresponding
+  tableView's `PagedResult.TotalCount` for the identical scope** — the FR-016 equality contract, pinned by the
+  equality matrix in `WordTypesScopeCountsReadTests`. These are the **scoped word-context count family only**,
+  never the global `words_count`-backed aggregates. The search term reaches SQL only as a parameter value and
+  is never logged (`hasSearch` boolean only). `CachedWordTypesReader` caches it under
+  `WordTypesCacheKeys.ScopeCounts` — keyed by every scope input and nothing view/page (no `tableView`/`sort`/
+  `page`) — with the table read's entry options; a zero-row valid scope returns an all-zero DTO, an invalid
+  scope is a controlled 400 `InvalidFilter`.
 - **Word Types grouped detail reads** (`EfWordTypesReader.GetGroupedSummaryAsync`, Feature 023, in the
   `.GroupedDetails.*` partials) select from the **same scoped `BaseRowsSql` occurrence base** as the
   grouped table, then restrict it to a single allowlisted numeric column

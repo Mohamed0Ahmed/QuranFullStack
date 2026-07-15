@@ -15,6 +15,8 @@ import type {
   UniqueWordSurahsResponse as UniqueWordSurahsDto,
 } from '../../../core/api/generated/models';
 import type { PagedResultDto } from '../../../core/data-access/paged-result.model';
+import type { RangeFilters, RangeMetric } from '../state/words-range-filters';
+import { WORDS_SHARED_COUNT_COLUMNS } from './words-shared.labels';
 
 export type {
   AyahWordForHighlightDto,
@@ -101,10 +103,32 @@ export const UNIQUE_WORDS_QUERY_KEYS = {
   search: 'search',
   sort: 'sort',
   page: 'page',
+  primaryType: 'primaryType',
+  rootId: 'rootId',
   word: 'word',
   view: 'view',
   ayahPage: 'ap',
 } as const;
+
+// Association filters (Feature 026, US7): primary word type (POS code) and primary root. Both fail
+// closed in the URL and are absent by default (pre-feature URLs unchanged).
+export interface UniqueWordsAssociation {
+  readonly primaryType: string | null;
+  readonly rootId: number | null;
+}
+
+export const EMPTY_UNIQUE_WORDS_ASSOCIATION: UniqueWordsAssociation = { primaryType: null, rootId: null };
+
+export function isUniqueWordsAssociationActive(association: UniqueWordsAssociation): boolean {
+  return association.primaryType !== null || association.rootId !== null;
+}
+
+// Count-range filter metrics (Feature 026, US5) — the three count columns the Unique Words list shows.
+export const UNIQUE_WORDS_RANGE_METRICS: readonly RangeMetric[] = [
+  { key: 'occurrences', urlKey: 'occ', apiKey: 'occ', family: 'occurrences', labelAr: WORDS_SHARED_COUNT_COLUMNS.occurrences },
+  { key: 'ayahs', urlKey: 'ayahs', apiKey: 'ayahs', family: 'ayahsSurahs', labelAr: WORDS_SHARED_COUNT_COLUMNS.ayahs },
+  { key: 'surahs', urlKey: 'surahs', apiKey: 'surahs', family: 'ayahsSurahs', labelAr: WORDS_SHARED_COUNT_COLUMNS.surahs },
+];
 
 export const MODAL_QUERY_KEYS: readonly string[] = [
   UNIQUE_WORDS_QUERY_KEYS.word,
@@ -116,6 +140,8 @@ export interface ParsedUniqueWordsQuery {
   search: string;
   sort: UniqueWordSort;
   page: number;
+  ranges: RangeFilters;
+  association: UniqueWordsAssociation;
   wordId: number | null;
   view: WordDrilldownView | null;
   ayahPage: number | null;

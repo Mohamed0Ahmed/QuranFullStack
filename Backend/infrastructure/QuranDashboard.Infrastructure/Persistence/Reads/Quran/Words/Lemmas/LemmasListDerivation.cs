@@ -27,12 +27,14 @@ internal static class LemmasListDerivation
 
     public static PagedResult<LemmaListItemDto> ToPage(
         IReadOnlyList<LemmaSummaryRow> all,
+        LemmasCountFilter filter,
+        LemmasAssociationFilter association,
         string? search,
         LemmaSort sort,
         int page,
         int pageSize)
     {
-        var rows = FilterAndSort(all, search, sort);
+        var rows = FilterAndSort(all, filter, association, search, sort);
         var materialized = rows.ToList();
         var totalCount = materialized.Count;
         var skip = ReadPaging.CalculateSafeSkip(page, pageSize, totalCount);
@@ -58,6 +60,8 @@ internal static class LemmasListDerivation
 
     public static IEnumerable<LemmaSummaryRow> FilterAndSort(
         IReadOnlyList<LemmaSummaryRow> all,
+        LemmasCountFilter filter,
+        LemmasAssociationFilter association,
         string? search,
         LemmaSort sort)
     {
@@ -69,8 +73,30 @@ internal static class LemmasListDerivation
             rows = rows.Where(r => r.NormalizedLemmaText.Contains(normalizedSearch, StringComparison.Ordinal));
         }
 
+        if (filter.IsActive)
+        {
+            rows = rows.Where(r => MatchesFilter(r, filter));
+        }
+
+        // Root belonging via the real FK (Feature 026, US7). RootId is the same owned-root the list row
+        // displays, so the filter and the displayed root can never disagree.
+        if (association.RootId is int rootId)
+        {
+            rows = rows.Where(r => r.RootId == rootId);
+        }
+
         return ApplySort(rows, sort);
     }
+
+    // Count-range predicates (Feature 026, US5) compare against the same count values the list rows
+    // display; every active range ANDs with search/sort. Ranges filter lemma dimension entries.
+    private static bool MatchesFilter(LemmaSummaryRow row, LemmasCountFilter filter) =>
+        filter.Occurrences.Includes(row.OccurrencesCount)
+        && filter.Ayahs.Includes(row.AyahsCount)
+        && filter.Surahs.Includes(row.SurahsCount)
+        && filter.SimpleWords.Includes(row.SimpleWordsCount)
+        && filter.TashkeelWords.Includes(row.TashkeelWordsCount)
+        && filter.Stems.Includes(row.StemsCount);
 
     private static IEnumerable<LemmaSummaryRow> ApplySort(IEnumerable<LemmaSummaryRow> rows, LemmaSort sort) => sort switch
     {

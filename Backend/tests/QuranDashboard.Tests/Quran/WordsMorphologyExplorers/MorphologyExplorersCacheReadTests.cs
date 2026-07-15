@@ -108,13 +108,13 @@ public sealed class MorphologyExplorersCacheReadTests(MorphologyExplorersTestFix
         using var cache = new MemoryCache(new MemoryCacheOptions());
         var reader = new CachedLemmasReader(inner, cache);
 
-        await reader.GetLemmasPageAsync(null, LemmaSort.MushafOrder, 1, 50, CancellationToken.None);
+        await reader.GetLemmasPageAsync(null, LemmaSort.MushafOrder, LemmasCountFilter.None, LemmasAssociationFilter.None, 1, 50, CancellationToken.None);
         var initialCommandCount = interceptor.CommandCount;
         initialCommandCount.Should().BeGreaterThan(0, "the first catalogue read must reach the database");
 
         interceptor.Reset();
-        await reader.GetLemmasPageAsync("كلم", LemmaSort.Occurrences, 2, 10, CancellationToken.None);
-        await reader.GetLemmasPageAsync(null, LemmaSort.Alpha, 3, 5, CancellationToken.None);
+        await reader.GetLemmasPageAsync("كلم", LemmaSort.Occurrences, LemmasCountFilter.None, LemmasAssociationFilter.None, 2, 10, CancellationToken.None);
+        await reader.GetLemmasPageAsync(null, LemmaSort.Alpha, LemmasCountFilter.None, LemmasAssociationFilter.None, 3, 5, CancellationToken.None);
         await reader.GetLemmaSummaryAsync(LemmaId, CancellationToken.None);
         interceptor.CommandCount.Should().Be(0, "search/sort/page/summary changes must slice the cached whole summary without re-querying");
     }
@@ -237,12 +237,12 @@ public sealed class MorphologyExplorersCacheReadTests(MorphologyExplorersTestFix
         using var cache = new MemoryCache(new MemoryCacheOptions());
         var reader = new CachedStemsReader(inner, cache);
 
-        await reader.GetStemsPageAsync(null, StemSort.MushafOrder, 1, 50, CancellationToken.None);
+        await reader.GetStemsPageAsync(null, StemSort.MushafOrder, StemsCountFilter.None, StemsAssociationFilter.None, 1, 50, CancellationToken.None);
         interceptor.CommandCount.Should().BeGreaterThan(0);
 
         interceptor.Reset();
-        await reader.GetStemsPageAsync("علم", StemSort.Occurrences, 2, 10, CancellationToken.None);
-        await reader.GetStemsPageAsync(null, StemSort.Alpha, 3, 5, CancellationToken.None);
+        await reader.GetStemsPageAsync("علم", StemSort.Occurrences, StemsCountFilter.None, StemsAssociationFilter.None, 2, 10, CancellationToken.None);
+        await reader.GetStemsPageAsync(null, StemSort.Alpha, StemsCountFilter.None, StemsAssociationFilter.None, 3, 5, CancellationToken.None);
         interceptor.CommandCount.Should().Be(0, "search/sort/page changes must slice the cached whole summary without re-querying");
     }
 

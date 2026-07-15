@@ -1,32 +1,32 @@
 <div
-  class="unique-words-table"
+  class="unique-words-table qd-explorer-table"
   role="table"
   [attr.aria-label]="tableLabel"
   tabindex="0"
   (keydown)="onTableKeydown($event)"
 >
-  <div class="unique-words-table__header" role="rowgroup">
-    <div class="unique-words-table__header-row" role="row">
+  <div class="unique-words-table__header qd-explorer-table__header" role="rowgroup">
+    <div class="unique-words-table__header-row qd-explorer-table__header-row" role="row">
       <div
-        class="unique-words-table__header-cell unique-words-table__header-cell--numeric unique-words-table__header-cell--row-number"
+        class="unique-words-table__header-cell qd-explorer-table__header-cell unique-words-table__header-cell--numeric qd-explorer-table__header-cell--numeric unique-words-table__header-cell--row-number qd-explorer-table__header-cell--row-number"
         role="columnheader"
       >
         {{ rowNumberHeader }}
       </div>
-      <div class="unique-words-table__header-cell" role="columnheader">{{ wordHeader }}</div>
-      <div class="unique-words-table__header-cell unique-words-table__header-cell--type" role="columnheader">{{ typeHeader }}</div>
-      <div class="unique-words-table__header-cell unique-words-table__header-cell--root" role="columnheader">{{ rootHeader }}</div>
-      <div class="unique-words-table__header-cell unique-words-table__header-cell--numeric" role="columnheader">{{ occurrencesLabel }}</div>
-      <div class="unique-words-table__header-cell unique-words-table__header-cell--numeric" role="columnheader">{{ ayahsLabel }}</div>
-      <div class="unique-words-table__header-cell unique-words-table__header-cell--numeric" role="columnheader">{{ surahsLabel }}</div>
-      <div class="unique-words-table__header-cell unique-words-table__header-cell--numeric" role="columnheader">{{ missingLabel }}</div>
+      <div class="unique-words-table__header-cell qd-explorer-table__header-cell" role="columnheader">{{ wordHeader }}</div>
+      <div class="unique-words-table__header-cell qd-explorer-table__header-cell unique-words-table__header-cell--type" role="columnheader">{{ typeHeader }}</div>
+      <div class="unique-words-table__header-cell qd-explorer-table__header-cell unique-words-table__header-cell--root" role="columnheader">{{ rootHeader }}</div>
+      <div class="unique-words-table__header-cell qd-explorer-table__header-cell unique-words-table__header-cell--numeric qd-explorer-table__header-cell--numeric" role="columnheader">{{ occurrencesLabel }}</div>
+      <div class="unique-words-table__header-cell qd-explorer-table__header-cell unique-words-table__header-cell--numeric qd-explorer-table__header-cell--numeric" role="columnheader">{{ ayahsLabel }}</div>
+      <div class="unique-words-table__header-cell qd-explorer-table__header-cell unique-words-table__header-cell--numeric qd-explorer-table__header-cell--numeric" role="columnheader">{{ surahsLabel }}</div>
+      <div class="unique-words-table__header-cell qd-explorer-table__header-cell unique-words-table__header-cell--numeric qd-explorer-table__header-cell--numeric" role="columnheader">{{ missingLabel }}</div>
     </div>
-    <div class="unique-words-table__header-gutter" aria-hidden="true"></div>
+    <div class="unique-words-table__header-gutter qd-explorer-table__header-gutter" aria-hidden="true"></div>
   </div>
 
   @if (loading()) {
     <div
-      class="unique-words-table__body unique-words-table__body--loading"
+      class="unique-words-table__body qd-explorer-table__body unique-words-table__body--loading qd-explorer-table__body--loading"
       role="rowgroup"
       [attr.aria-label]="tableBodyLabel"
       aria-busy="true"
@@ -35,29 +35,29 @@
       <p class="qd-sr-only" role="status" aria-live="polite">{{ loadingLabel }}</p>
 
       @for (_ of loadingRowPlaceholders; track $index) {
-        <div class="unique-words-table__row" role="row" aria-hidden="true">
-          <div class="unique-words-table__cell unique-words-table__cell--row-number" role="cell">
+        <div class="unique-words-table__row qd-explorer-table__row" role="row" aria-hidden="true">
+          <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__cell--row-number qd-explorer-table__cell--row-number" role="cell">
             <span class="qd-skeleton qd-skeleton--text unique-words-table__loading-number"></span>
           </div>
-          <div class="unique-words-table__cell unique-words-table__word-cell" role="cell">
+          <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__word-cell" role="cell">
             <span class="qd-skeleton qd-skeleton--text unique-words-table__loading-word"></span>
           </div>
-          <div class="unique-words-table__cell unique-words-table__text-cell" role="cell">
+          <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__text-cell" role="cell">
             <span class="qd-skeleton qd-skeleton--text unique-words-table__loading-text"></span>
           </div>
-          <div class="unique-words-table__cell unique-words-table__text-cell" role="cell">
+          <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__text-cell" role="cell">
             <span class="qd-skeleton qd-skeleton--text unique-words-table__loading-text"></span>
           </div>
-          <div class="unique-words-table__cell unique-words-table__chip-cell" role="cell">
+          <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__chip-cell" role="cell">
             <span class="qd-skeleton qd-skeleton--rounded-md unique-words-table__loading-chip"></span>
           </div>
-          <div class="unique-words-table__cell unique-words-table__chip-cell" role="cell">
+          <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__chip-cell" role="cell">
             <span class="qd-skeleton qd-skeleton--rounded-md unique-words-table__loading-chip"></span>
           </div>
-          <div class="unique-words-table__cell unique-words-table__chip-cell" role="cell">
+          <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__chip-cell" role="cell">
             <span class="qd-skeleton qd-skeleton--rounded-md unique-words-table__loading-chip"></span>
           </div>
-          <div class="unique-words-table__cell unique-words-table__chip-cell" role="cell">
+          <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__chip-cell" role="cell">
             <span class="qd-skeleton qd-skeleton--rounded-md unique-words-table__loading-chip"></span>
           </div>
           <div class="qd-explorer-table-mobile-stats qd-explorer-table-mobile-stats--flex" role="cell" aria-hidden="true">
@@ -71,7 +71,7 @@
     </div>
   } @else if (useVirtualScroll) {
     <cdk-virtual-scroll-viewport
-      class="unique-words-table__body"
+      class="unique-words-table__body qd-explorer-table__body"
       [itemSize]="rowHeight()"
       [minBufferPx]="rowHeight() * 4"
       [maxBufferPx]="rowHeight() * 8"
@@ -80,16 +80,16 @@
     >
       <div
         *cdkVirtualFor="let row of rows(); let index = index; trackBy: trackRowById"
-        class="unique-words-table__row"
+        class="unique-words-table__row qd-explorer-table__row"
         role="row"
         [class.qd-is-selected]="isSelected(row)"
         [attr.aria-selected]="isSelected(row)"
         [attr.data-row-id]="row.id"
       >
-        <div class="unique-words-table__cell unique-words-table__cell--row-number" role="cell">
+        <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__cell--row-number qd-explorer-table__cell--row-number" role="cell">
           {{ rowNumber(index) }}
         </div>
-        <div class="unique-words-table__cell unique-words-table__word-cell" role="cell">
+        <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__word-cell" role="cell">
           <button
             type="button"
             class="unique-words-table__word qd-interactive-surface"
@@ -99,13 +99,13 @@
             <span class="unique-words-table__display">{{ row.displayText }}</span>
           </button>
         </div>
-        <div class="unique-words-table__cell unique-words-table__text-cell" role="cell">
+        <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__text-cell" role="cell">
           <span
             class="unique-words-table__text"
             [attr.data-word-type-code]="row.primaryWordTypeCode"
           >{{ wordTypeLabel(row) }}</span>
         </div>
-        <div class="unique-words-table__cell unique-words-table__text-cell" role="cell">
+        <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__text-cell" role="cell">
           @if (hasRoot(row)) {
             <a
               class="unique-words-table__root-link qd-interactive-surface"
@@ -119,7 +119,7 @@
           }
         </div>
 
-        <div class="unique-words-table__cell unique-words-table__chip-cell" role="cell">
+        <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__chip-cell" role="cell">
           <qd-word-count-chip
             [label]="occurrencesLabel"
             [count]="row.occurrencesCount"
@@ -127,7 +127,7 @@
             [disabled]="true"
           />
         </div>
-        <div class="unique-words-table__cell unique-words-table__chip-cell" role="cell">
+        <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__chip-cell" role="cell">
           <qd-word-count-chip
             [label]="ayahsLabel"
             [count]="row.ayahsCount"
@@ -137,7 +137,7 @@
             (chipClick)="openDrilldown(row, 'ayahs', 'ayahs')"
           />
         </div>
-        <div class="unique-words-table__cell unique-words-table__chip-cell" role="cell">
+        <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__chip-cell" role="cell">
           <qd-word-count-chip
             [label]="surahsLabel"
             [count]="row.surahsCount"
@@ -147,7 +147,7 @@
             (chipClick)="openDrilldown(row, 'surahs', 'surahs')"
           />
         </div>
-        <div class="unique-words-table__cell unique-words-table__chip-cell" role="cell">
+        <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__chip-cell" role="cell">
           <qd-word-count-chip
             [label]="missingLabel"
             [count]="row.missingSurahsCount"
@@ -161,19 +161,19 @@
       </div>
     </cdk-virtual-scroll-viewport>
   } @else {
-    <div class="unique-words-table__body" role="rowgroup" [attr.aria-label]="tableBodyLabel">
+    <div class="unique-words-table__body qd-explorer-table__body" role="rowgroup" [attr.aria-label]="tableBodyLabel">
       @for (row of rows(); track row.id; let index = $index) {
         <div
-          class="unique-words-table__row"
+          class="unique-words-table__row qd-explorer-table__row"
           role="row"
           [class.qd-is-selected]="isSelected(row)"
           [attr.aria-selected]="isSelected(row)"
           [attr.data-row-id]="row.id"
         >
-          <div class="unique-words-table__cell unique-words-table__cell--row-number" role="cell">
+          <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__cell--row-number qd-explorer-table__cell--row-number" role="cell">
             {{ rowNumber(index) }}
           </div>
-          <div class="unique-words-table__cell unique-words-table__word-cell" role="cell">
+          <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__word-cell" role="cell">
             <button
               type="button"
               class="unique-words-table__word qd-interactive-surface"
@@ -183,13 +183,13 @@
               <span class="unique-words-table__display">{{ row.displayText }}</span>
             </button>
           </div>
-          <div class="unique-words-table__cell unique-words-table__text-cell" role="cell">
+          <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__text-cell" role="cell">
             <span
               class="unique-words-table__text"
               [attr.data-word-type-code]="row.primaryWordTypeCode"
             >{{ wordTypeLabel(row) }}</span>
           </div>
-          <div class="unique-words-table__cell unique-words-table__text-cell" role="cell">
+          <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__text-cell" role="cell">
             @if (hasRoot(row)) {
               <a
                 class="unique-words-table__root-link qd-interactive-surface"
@@ -203,7 +203,7 @@
             }
           </div>
 
-          <div class="unique-words-table__cell unique-words-table__chip-cell" role="cell">
+          <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__chip-cell" role="cell">
             <qd-word-count-chip
               [label]="occurrencesLabel"
               [count]="row.occurrencesCount"
@@ -211,7 +211,7 @@
               [disabled]="true"
             />
           </div>
-          <div class="unique-words-table__cell unique-words-table__chip-cell" role="cell">
+          <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__chip-cell" role="cell">
             <qd-word-count-chip
               [label]="ayahsLabel"
               [count]="row.ayahsCount"
@@ -221,7 +221,7 @@
               (chipClick)="openDrilldown(row, 'ayahs', 'ayahs')"
             />
           </div>
-          <div class="unique-words-table__cell unique-words-table__chip-cell" role="cell">
+          <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__chip-cell" role="cell">
             <qd-word-count-chip
               [label]="surahsLabel"
               [count]="row.surahsCount"
@@ -231,7 +231,7 @@
               (chipClick)="openDrilldown(row, 'surahs', 'surahs')"
             />
           </div>
-          <div class="unique-words-table__cell unique-words-table__chip-cell" role="cell">
+          <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__chip-cell" role="cell">
             <qd-word-count-chip
               [label]="missingLabel"
               [count]="row.missingSurahsCount"

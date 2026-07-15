@@ -18,11 +18,13 @@
       </p>
     }
 
-    <nav class="selected-ayah-section__tabs" aria-label="تبويبات دراسة الآية">
+    <nav class="selected-ayah-section__tabs" role="tablist" aria-label="تبويبات دراسة الآية">
       <button
         type="button"
+        role="tab"
         class="selected-ayah-section__tab"
         [class.selected-ayah-section__tab--active]="activeTab() === 'tafsir'"
+        [attr.aria-selected]="activeTab() === 'tafsir'"
         [disabled]="loadState().isLoading"
         (click)="tabChange.emit('tafsir')"
       >
@@ -30,8 +32,10 @@
       </button>
       <button
         type="button"
+        role="tab"
         class="selected-ayah-section__tab"
         [class.selected-ayah-section__tab--active]="activeTab() === 'translation'"
+        [attr.aria-selected]="activeTab() === 'translation'"
         [disabled]="loadState().isLoading"
         (click)="tabChange.emit('translation')"
       >
@@ -39,8 +43,10 @@
       </button>
       <button
         type="button"
+        role="tab"
         class="selected-ayah-section__tab"
         [class.selected-ayah-section__tab--active]="activeTab() === 'full-i3rab'"
+        [attr.aria-selected]="activeTab() === 'full-i3rab'"
         [disabled]="loadState().isLoading"
         (click)="tabChange.emit('full-i3rab')"
       >
@@ -48,8 +54,10 @@
       </button>
       <button
         type="button"
+        role="tab"
         class="selected-ayah-section__tab"
         [class.selected-ayah-section__tab--active]="activeTab() === 'similar-ayahs'"
+        [attr.aria-selected]="activeTab() === 'similar-ayahs'"
         [disabled]="loadState().isLoading"
         data-testid="ayah-tab-similar-ayahs"
         (click)="tabChange.emit('similar-ayahs')"
@@ -63,8 +71,10 @@
       </button>
       <button
         type="button"
+        role="tab"
         class="selected-ayah-section__tab"
         [class.selected-ayah-section__tab--active]="activeTab() === 'mutashabihat'"
+        [attr.aria-selected]="activeTab() === 'mutashabihat'"
         [disabled]="loadState().isLoading"
         data-testid="ayah-tab-mutashabihat"
         (click)="tabChange.emit('mutashabihat')"

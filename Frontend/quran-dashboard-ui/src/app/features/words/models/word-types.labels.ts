@@ -4,6 +4,10 @@ import { ROW_NUMBER_HEADER } from './words-shared.labels';
 
 export const WORD_TYPES_PAGE_TITLE = 'أنواع الكلمات';
 export const WORD_TYPES_FILTER_LABEL = 'تصفية أنواع الكلمات';
+// Search runs over word identity text only; both label and placeholder name the word grain so grouped
+// views stay honest about what was searched (A1×C2 reconciliation).
+export const WORD_TYPES_SEARCH_LABEL = 'بحث في الكلمات';
+export const WORD_TYPES_SEARCH_PLACEHOLDER = 'ابحث في الكلمات';
 export const WORD_TYPES_NO_SUBTYPES_LABEL = 'لا توجد أنواع فرعية لهذا النوع';
 export const WORD_TYPES_SORT_LABEL = 'ترتيب';
 export const WORD_TYPES_LOADING_LABEL = 'جارٍ التحميل…';
@@ -18,6 +22,12 @@ export const WORD_TYPES_VOICE_FILTER_LABEL = 'الصيغة';
 export const WORD_TYPES_SUBTYPE_GROUP_LABEL = 'الأنواع الفرعية';
 export const WORD_TYPES_CURRENT_FILTER_LABEL = 'الحالي';
 export const WORD_TYPE_TABLE_VIEW_TABS_LABEL = 'عرض الجدول';
+
+// Scoped four-count summary strip (Feature 026, US8). The four count labels reuse the view tabs' SHORT
+// labels verbatim (WORD_TYPE_TABLE_VIEW_OPTIONS: كلمات | جذور | أصول | صيغ) — the tabs are not renamed.
+// These are only the strip's own aria/error copy; retry reuses WORD_TYPES_RETRY_LABEL.
+export const WORD_TYPES_SCOPE_COUNTS_LABEL = 'إحصاء النطاق';
+export const WORD_TYPES_SCOPE_COUNTS_ERROR_LABEL = 'تعذّر تحميل إحصاء النطاق';
 
 export const WORD_TYPE_TABLE_VIEW_OPTIONS = [
   { value: 'words', label: 'كلمات' },
@@ -155,6 +165,18 @@ export const WORD_TYPE_DETAIL_PRESENTATIONS: Record<WordTypeDetailSelectionKind,
 export const WORD_TYPES_DETAIL_SUMMARY_LABEL = 'ملخص التحديد';
 export const WORD_TYPES_MEMBER_WORDS_PAGINATION_LABEL = 'تنقّل الكلمات المرتبطة';
 export const WORD_TYPES_MEMBER_WORDS_EMPTY_LABEL = 'لا توجد كلمات مرتبطة بهذا التحديد';
+
+// Tri-state presence filter (Feature 026, US6). Dimension labels use the lock-D canonical terms; the
+// option labels are the tri-state choices (any / has / missing).
+export const WORD_TYPES_PRESENCE_FILTER_LABELS = {
+  sectionLabel: 'تصفية حسب الارتباط',
+  root: 'الجذر',
+  stem: 'الأصل الصرفي',
+  lemma: 'الصيغة المعجمية',
+  any: 'الكل',
+  present: 'موجود',
+  missing: 'غير موجود',
+} as const;
 
 export const WORD_TYPES_TABLE_HEADERS = {
   rowNumber: ROW_NUMBER_HEADER,

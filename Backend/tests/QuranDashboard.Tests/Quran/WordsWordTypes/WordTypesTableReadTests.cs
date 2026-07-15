@@ -280,7 +280,7 @@ public sealed class WordTypesTableReadTests(WordTypesTestFixture fixture)
         var handler = scope.ServiceProvider.GetRequiredService<GetWordTypeTableHandler>();
 
         var outcome = await handler.HandleAsync(
-            new GetWordTypeTableQuery("noun", null, null, null, null, null, "occurrences", 1, 25),
+            new GetWordTypeTableQuery("noun", null, null, null, null, null, null, "occurrences", 1, 25),
             CancellationToken.None);
 
         var success = outcome.Should().BeOfType<GetWordTypeTableOutcome.Success>().Subject;
@@ -294,7 +294,7 @@ public sealed class WordTypesTableReadTests(WordTypesTestFixture fixture)
         var handler = scope.ServiceProvider.GetRequiredService<GetWordTypeTableHandler>();
 
         var outcome = await handler.HandleAsync(
-            new GetWordTypeTableQuery("noun", null, null, null, null, "bogus", "occurrences", 1, 25),
+            new GetWordTypeTableQuery("noun", null, null, null, null, null, "bogus", "occurrences", 1, 25),
             CancellationToken.None);
 
         outcome.Should().BeOfType<GetWordTypeTableOutcome.InvalidTableView>();

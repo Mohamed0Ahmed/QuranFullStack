@@ -1,4 +1,5 @@
 using QuranDashboard.Application.Abstractions.Common.Paging;
+using QuranDashboard.Application.Abstractions.Quran.Words.Roots;
 using QuranDashboard.Application.Abstractions.Quran.Words.Roots.Responses;
 using QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootAyahs;
 using QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootLemmas;
@@ -43,6 +44,20 @@ public sealed class RootsController(
         [FromQuery(Name = "sort")] string? paramSort,
         [FromQuery] int? page,
         [FromQuery] int? pageSize,
+        [FromQuery] int? occMin,
+        [FromQuery] int? occMax,
+        [FromQuery] int? ayahsMin,
+        [FromQuery] int? ayahsMax,
+        [FromQuery] int? surahsMin,
+        [FromQuery] int? surahsMax,
+        [FromQuery] int? simpleWordsMin,
+        [FromQuery] int? simpleWordsMax,
+        [FromQuery] int? tashkeelWordsMin,
+        [FromQuery] int? tashkeelWordsMax,
+        [FromQuery] int? lemmasMin,
+        [FromQuery] int? lemmasMax,
+        [FromQuery] int? stemsMin,
+        [FromQuery] int? stemsMax,
         CancellationToken cancellationToken)
     {
         var outcome = await listHandler.HandleAsync(
@@ -50,7 +65,15 @@ public sealed class RootsController(
                 search,
                 paramSort,
                 page ?? DefaultPage,
-                pageSize ?? DefaultListPageSize),
+                pageSize ?? DefaultListPageSize,
+                RootsCountFilter.FromRaw(
+                    occMin, occMax,
+                    ayahsMin, ayahsMax,
+                    surahsMin, surahsMax,
+                    simpleWordsMin, simpleWordsMax,
+                    tashkeelWordsMin, tashkeelWordsMax,
+                    lemmasMin, lemmasMax,
+                    stemsMin, stemsMax)),
             cancellationToken);
 
         return outcome switch
@@ -61,6 +84,8 @@ public sealed class RootsController(
                 BadRequest(ApiResponse<PagedResult<RootListItemDto>>.Fail(ApiMessages.RootsInvalidSort)),
             GetRootsPageOutcome.InvalidPaging =>
                 BadRequest(ApiResponse<PagedResult<RootListItemDto>>.Fail(ApiMessages.RootsInvalidPaging)),
+            GetRootsPageOutcome.InvalidFilter =>
+                BadRequest(ApiResponse<PagedResult<RootListItemDto>>.Fail(ApiMessages.RootsInvalidFilter)),
             _ => throw new InvalidOperationException($"Unhandled {nameof(GetRootsPageOutcome)} variant."),
         };
     }

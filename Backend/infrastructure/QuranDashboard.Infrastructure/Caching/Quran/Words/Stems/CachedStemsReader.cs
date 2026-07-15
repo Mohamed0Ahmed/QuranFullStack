@@ -21,12 +21,14 @@ public sealed class CachedStemsReader(EfStemsReader efReader, IMemoryCache cache
     public async Task<PagedResult<StemListItemDto>> GetStemsPageAsync(
         string? search,
         StemSort sort,
+        StemsCountFilter filter,
+        StemsAssociationFilter association,
         int page,
         int pageSize,
         CancellationToken cancellationToken)
     {
         var all = await GetOrLoadWholeSummaryAsync(cancellationToken);
-        return StemsListDerivation.ToPage(all, search, sort, page, pageSize);
+        return StemsListDerivation.ToPage(all, filter, association, search, sort, page, pageSize);
     }
 
     public async Task<StemSummaryDto?> GetStemSummaryAsync(int id, CancellationToken cancellationToken)
