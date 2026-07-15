@@ -1,20 +1,20 @@
 <div class="missing-surahs-list-shell">
-  <header class="missing-surahs-list__header">
-    <span class="missing-surahs-list__header-row-number">{{ rowNumberHeader }}</span>
+  <header class="missing-surahs-list__header qd-detail-list__header">
+    <span class="missing-surahs-list__header-row-number qd-detail-list__row-number">{{ rowNumberHeader }}</span>
     <span class="missing-surahs-list__header-name">{{ surahNameHeader }}</span>
   </header>
 
   <div
-    class="missing-surahs-list"
+    class="missing-surahs-list qd-detail-list__viewport"
     [attr.aria-busy]="loading() ? true : null"
     [attr.data-testid]="loading() ? 'missing-surahs-list-loading' : 'missing-surahs-list'"
   >
     @if (loading()) {
       <p class="qd-sr-only" role="status" aria-live="polite">{{ loadingLabel }}</p>
       @for (_ of loadingRowPlaceholders; track $index) {
-        <div class="missing-surahs-list__row missing-surahs-list__row--loading" aria-hidden="true">
-          <span class="missing-surahs-list__row-number">
-            <span class="qd-skeleton qd-skeleton--text missing-surahs-list__loading-number"></span>
+        <div class="missing-surahs-list__row missing-surahs-list__row--loading qd-detail-list__row qd-detail-list__row--flat qd-detail-list__row--loading" aria-hidden="true">
+          <span class="missing-surahs-list__row-number qd-detail-list__row-number">
+            <span class="qd-skeleton qd-skeleton--text missing-surahs-list__loading-number qd-detail-list__loading-number"></span>
           </span>
           <span class="missing-surahs-list__name">
             <span class="qd-skeleton qd-skeleton--text missing-surahs-list__loading-name"></span>
@@ -23,8 +23,8 @@
       }
     } @else {
       @for (surah of surahs(); track surah.surahNumber; let index = $index) {
-        <div class="missing-surahs-list__row">
-          <span class="missing-surahs-list__row-number">{{ index + 1 }}</span>
+        <div class="missing-surahs-list__row qd-detail-list__row qd-detail-list__row--flat">
+          <span class="missing-surahs-list__row-number qd-detail-list__row-number">{{ index + 1 }}</span>
           <span class="missing-surahs-list__name">{{ surah.nameArabic }}</span>
         </div>
       }
