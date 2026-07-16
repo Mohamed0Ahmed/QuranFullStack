@@ -33,9 +33,15 @@ per-feature.
   push on entity append, replace on top-frame sub-state, close retains the stack in the
   URL, restore is a push; dialog Back uses browser Back only when history-state provenance
   proves the parent entry, else a deterministic replace; fresh deep links get their prefix
-  history seeded once), and `detail-overlay-link.directive.ts` (real copyable hrefs;
-  only unmodified primary clicks are intercepted). Core owns navigation semantics only —
-  entity rendering lives in `features/words/entity-detail-overlay/`.
+  history seeded once), `detail-overlay-link.directive.ts` (real copyable hrefs;
+  only unmodified primary clicks are intercepted), and
+  `detail-overlay-ayah-link.directive.ts` (B7 ayah continuity: `a[qdAyahOverlayLink]`
+  navigates the base route *underneath* the overlay via
+  `navigateBaseWithOverlay` — open overlay ⇒ replace-nav that carries the whole stack to
+  the new base; closed + a provided parent frame ⇒ push that promotes the source detail
+  to a one-frame stack; neither ⇒ plain push with overlay keys stripped). Core owns
+  navigation semantics only — entity rendering lives in
+  `features/words/entity-detail-overlay/`.
 - `theme/theme.service.ts` — light/dark theme.
 
 ## Gotchas / invariants

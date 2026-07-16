@@ -17,6 +17,7 @@
           [loading]="true"
           [page]="emptyAyahsPage"
           [currentPage]="panelState().detailPage"
+          [parentFrame]="frame()"
           data-testid="overlay-word-type-ayahs-view"
         />
       } @else if (effectiveView() === 'surahs') {
@@ -50,6 +51,7 @@
         <qd-ayah-matches-list
           [page]="ayahsPageForView()"
           [currentPage]="panelState().detailPage"
+          [parentFrame]="frame()"
           data-testid="overlay-word-type-ayahs-view"
           (pageChange)="onDetailPageChange($event)"
         />

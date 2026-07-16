@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, inject
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, Subscription, debounceTime } from 'rxjs';
 
+import { RootDetailFrame } from '../../../../core/navigation/detail-overlay/detail-overlay.models';
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
 import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
 import { AyahMatchesListComponent } from '../../components/ayah-matches-list/ayah-matches-list.component';
@@ -95,6 +96,21 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly ayahsPageForView = computed(() => {
     const page = this.panelState().ayahs;
     return page ? { ...page, items: page.items.map(mapRootAyahMatchToShared) } : this.emptyAyahsPage;
+  });
+  /** This panel's own typed frame (Feature 029 B7): an ayah click promotes it over the Mushaf. */
+  protected readonly ayahParentFrame = computed<RootDetailFrame | null>(() => {
+    const state = this.panelState();
+    if (state.selectedRootId === null) {
+      return null;
+    }
+    return {
+      kind: 'root',
+      id: state.selectedRootId,
+      view: state.view,
+      wordView: state.wordView,
+      surahView: state.surahView,
+      detailPage: state.detailPage,
+    };
   });
 
   protected get sortLabels() { return ROOTS_SORT_LABELS; }

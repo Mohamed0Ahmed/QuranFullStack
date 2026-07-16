@@ -40,10 +40,9 @@
           </header>
           <a
             class="ayah-matches-list__ayah-link qd-interactive-surface"
-            [attr.href]="row.mushafHref"
+            [qdAyahOverlayLink]="row.mushafTarget"
+            [qdAyahLinkParentFrame]="parentFrame()"
             [attr.aria-label]="openAyahInMushafLabel"
-            target="_blank"
-            rel="noopener noreferrer"
             data-testid="ayah-matches-open-mushaf"
           >
             <qd-highlighted-ayah [words]="row.match.words" [matchedQuranWordIds]="row.match.matchedQuranWordIds" />

@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, inject
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, Subscription, debounceTime } from 'rxjs';
 
+import { WordTypeDetailFrame } from '../../../../core/navigation/detail-overlay/detail-overlay.models';
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
 import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
 import { AyahMatchesListComponent } from '../../components/ayah-matches-list/ayah-matches-list.component';
@@ -191,6 +192,30 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly ayahsPageForView = computed(() => {
     const page = this.panelState().ayahs;
     return page ? { ...page, items: page.items.map(mapWordTypeAyahMatchToShared) } : this.emptyAyahsPage;
+  });
+
+  /**
+   * This panel's own typed frame (Feature 029 B7): an ayah click promotes it
+   * over the Mushaf. Only a word-kind selection has a serializable overlay
+   * identity — grouped root/stem/lemma selections have no frame grammar, so
+   * they pass null (plain page navigation).
+   */
+  protected readonly ayahParentFrame = computed<WordTypeDetailFrame | null>(() => {
+    const state = this.panelState();
+    if (state.selection === null || state.selection.kind !== 'word') {
+      return null;
+    }
+    const identity = state.selection.identity;
+    return {
+      kind: 'wordType',
+      tashkeelWordId: identity.tashkeelWordId,
+      contextCode: identity.contextCode,
+      case: identity.case,
+      tense: identity.tense,
+      voice: identity.voice,
+      view: state.view,
+      detailPage: state.detailPage,
+    };
   });
 
   protected get pageTitle() { return WORD_TYPES_PAGE_TITLE; }

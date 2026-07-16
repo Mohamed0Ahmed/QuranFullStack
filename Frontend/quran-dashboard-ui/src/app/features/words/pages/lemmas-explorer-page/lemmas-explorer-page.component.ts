@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, effect
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, Subscription, catchError, debounceTime, of, switchMap } from 'rxjs';
 
+import { LemmaDetailFrame } from '../../../../core/navigation/detail-overlay/detail-overlay.models';
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
 import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
 import { AyahMatchesListComponent } from '../../components/ayah-matches-list/ayah-matches-list.component';
@@ -110,6 +111,22 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly ayahsPageForView = computed(() => {
     const page = this.panelState().ayahs;
     return page ? { ...page, items: page.items.map(mapLemmaAyahMatchToShared) } : this.emptyAyahsPage;
+  });
+  /** This panel's own typed frame (Feature 029 B7): an ayah click promotes it over the Mushaf. */
+  protected readonly ayahParentFrame = computed<LemmaDetailFrame | null>(() => {
+    const state = this.panelState();
+    if (state.selectedLemmaId === null) {
+      return null;
+    }
+    return {
+      kind: 'lemma',
+      id: state.selectedLemmaId,
+      view: state.view,
+      wordView: state.wordView,
+      surahView: state.surahView,
+      detailPage: state.detailPage,
+      typeCode: state.view === 'ayahs' ? state.ayahTypeCode : null,
+    };
   });
 
   protected get sortLabels() { return LEMMAS_SORT_LABELS; }

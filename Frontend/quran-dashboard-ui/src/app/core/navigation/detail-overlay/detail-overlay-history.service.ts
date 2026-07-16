@@ -1,6 +1,6 @@
 import { Location } from '@angular/common';
 import { Injectable, Signal, computed, inject, signal } from '@angular/core';
-import { NavigationEnd, Router, UrlTree } from '@angular/router';
+import { NavigationEnd, Params, Router, UrlTree } from '@angular/router';
 
 import {
   CLOSED_DETAIL_OVERLAY_STATE,
@@ -186,6 +186,75 @@ export class DetailOverlayHistoryService {
     return this.router.serializeUrl(this.buildUrlTree({ visibility: 'open', stack }));
   }
 
+  /**
+   * Navigates the base route underneath the overlay (ayah continuity, B7):
+   *
+   * - Overlay OPEN: the new base replaces the current history entry while the
+   *   full stack and `qdDetailOpen=1` are kept, so the continuity step never
+   *   inserts a non-entity history step between modal frames. The provenance
+   *   record is re-written with kind `replace` and the new base signature —
+   *   dialog Back then uses the deterministic replace fallback on the new base.
+   * - Overlay CLOSED with `promoteFrame`: the source detail context is promoted
+   *   to a fresh one-frame stack over the new base as a history push, so
+   *   browser Back returns to the originating side panel/base entry.
+   * - Overlay CLOSED without `promoteFrame`: a plain push to the base with all
+   *   overlay keys stripped.
+   */
+  navigateBaseWithOverlay(basePath: string, baseQueryParams: Params, opts?: { promoteFrame?: DetailFrame }): void {
+    const current = this.state();
+
+    if (current.visibility === 'open' && current.stack.length > 0) {
+      const target: DetailOverlayUrlState = { visibility: 'open', stack: current.stack };
+      const existing = this.readProvenance();
+      const provenance: DetailOverlayProvenance = {
+        baseSignature: this.baseSignatureFor(basePath, baseQueryParams),
+        parentStackHash: existing?.parentStackHash ?? this.hashStack(current.stack.slice(0, -1)),
+        stackHash: this.hashStack(current.stack),
+        kind: 'replace',
+      };
+      void this.router.navigateByUrl(this.buildBaseUrlTree(basePath, baseQueryParams, target), {
+        replaceUrl: true,
+        state: { [PROVENANCE_STATE_KEY]: provenance },
+      });
+      return;
+    }
+
+    const promoteFrame = opts?.promoteFrame;
+    if (promoteFrame !== undefined) {
+      const target: DetailOverlayUrlState = { visibility: 'open', stack: [promoteFrame] };
+      const provenance: DetailOverlayProvenance = {
+        baseSignature: this.baseSignatureFor(basePath, baseQueryParams),
+        parentStackHash: this.hashStack([]),
+        stackHash: this.hashStack(target.stack),
+        kind: 'push',
+      };
+      void this.router.navigateByUrl(this.buildBaseUrlTree(basePath, baseQueryParams, target), {
+        state: { [PROVENANCE_STATE_KEY]: provenance },
+      });
+      return;
+    }
+
+    void this.router.navigateByUrl(this.buildBaseUrlTree(basePath, baseQueryParams, CLOSED_DETAIL_OVERLAY_STATE));
+  }
+
+  /**
+   * Real, copyable href with the same semantics an unmodified click on
+   * {@link navigateBaseWithOverlay} would apply over the current URL: open
+   * overlay → new base plus the current stack; closed with a promotable frame →
+   * new base plus that one-frame stack; otherwise the bare base.
+   */
+  buildBaseWithOverlayHref(basePath: string, baseQueryParams: Params, opts?: { promoteFrame?: DetailFrame }): string {
+    const current = this.state();
+    const stack =
+      current.visibility === 'open' && current.stack.length > 0
+        ? current.stack
+        : opts?.promoteFrame !== undefined
+          ? [opts.promoteFrame]
+          : [];
+    const target: DetailOverlayUrlState = stack.length > 0 ? { visibility: 'open', stack } : CLOSED_DETAIL_OVERLAY_STATE;
+    return this.router.serializeUrl(this.buildBaseUrlTree(basePath, baseQueryParams, target));
+  }
+
   private syncFromUrl(): void {
     const paramMap = this.router.routerState.snapshot.root.queryParamMap;
     const { state, isCanonical } = parseDetailOverlayParams(
@@ -290,6 +359,28 @@ export class DetailOverlayHistoryService {
       return null;
     }
     return { ...provenance, stackHash: this.hashStack(target.stack) };
+  }
+
+  /**
+   * URL tree for an explicit base (path + its complete own query params) plus
+   * the overlay keys of `state`. Unlike {@link buildUrlTree} this does not merge
+   * with the current URL: an ayah destination fully defines its base query.
+   */
+  private buildBaseUrlTree(basePath: string, baseQueryParams: Params, state: DetailOverlayUrlState): UrlTree {
+    const serialized = serializeDetailOverlayState(state);
+    const queryParams: Params = { ...baseQueryParams };
+    if (serialized.frames.length > 0) {
+      queryParams[DETAIL_OVERLAY_QUERY_KEYS.frame] = [...serialized.frames];
+    }
+    if (serialized.open !== null) {
+      queryParams[DETAIL_OVERLAY_QUERY_KEYS.open] = serialized.open;
+    }
+    return this.router.createUrlTree([basePath], { queryParams });
+  }
+
+  /** Base signature of an explicit destination: its URL with no overlay keys. */
+  private baseSignatureFor(basePath: string, baseQueryParams: Params): string {
+    return this.router.serializeUrl(this.buildBaseUrlTree(basePath, baseQueryParams, CLOSED_DETAIL_OVERLAY_STATE));
   }
 
   private buildUrlTree(state: DetailOverlayUrlState): UrlTree {

@@ -133,6 +133,7 @@
             <qd-word-drilldown-modal
               [state]="drilldownState()"
               [inline]="true"
+              [parentFrame]="ayahParentFrame()"
               (closeModal)="onDrilldownClose()"
               (viewChange)="onDrilldownViewChange($event)"
               (ayahPageChange)="onAyahPageChange($event)"
@@ -147,6 +148,7 @@
     <qd-word-drilldown-modal
       [state]="drilldownState()"
       [inline]="false"
+      [parentFrame]="ayahParentFrame()"
       (closeModal)="onDrilldownClose()"
       (viewChange)="onDrilldownViewChange($event)"
       (ayahPageChange)="onAyahPageChange($event)"

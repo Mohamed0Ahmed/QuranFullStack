@@ -249,6 +249,14 @@ describe('RootsExplorerPageComponent US2', () => {
     const matched = fixture.nativeElement.querySelector('.highlighted-ayah__word--matched');
     expect(matched).toBeTruthy();
     expect(fixture.nativeElement.querySelectorAll('.highlighted-ayah__word--matched')).toHaveLength(1);
+
+    // Feature 029 B7: the page threads its own panel frame into the ayah link,
+    // so an ayah click promotes this root detail over the Mushaf.
+    const mushafLink = fixture.nativeElement.querySelector(
+      '[data-testid="ayah-matches-open-mushaf"]',
+    ) as HTMLAnchorElement | null;
+    expect(mushafLink?.getAttribute('href')).toContain('qdDetail=v1~root~10~ayahs~simple~mentioned~1');
+    expect(mushafLink?.getAttribute('href')).toContain('qdDetailOpen=1');
   });
 
   it('panel scroll container is independent from the table region', async () => {

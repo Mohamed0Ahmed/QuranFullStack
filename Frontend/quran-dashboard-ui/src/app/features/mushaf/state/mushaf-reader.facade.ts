@@ -226,9 +226,12 @@ export class MushafReaderFacade {
         if (saved) {
           const restoredParams = mushafSnapshotToQueryParams(saved);
           if (Object.keys(restoredParams).length > 0) {
+            // Merge, don't replace: overlay-owned keys present on a bare entry
+            // (a retained detail stack) must survive session restoration.
             void this.router.navigate([], {
               relativeTo: route,
               queryParams: restoredParams,
+              queryParamsHandling: 'merge',
               replaceUrl: true,
             });
             return;

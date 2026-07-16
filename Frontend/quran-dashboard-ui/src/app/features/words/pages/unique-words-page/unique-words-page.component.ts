@@ -31,6 +31,7 @@ import { UniqueWordsTabsComponent } from '../../components/unique-words-tabs/uni
 import { ExplorerSearchRowComponent } from '../../components/explorer-search-row/explorer-search-row.component';
 import { UniqueWordsTableComponent } from '../../components/unique-words-table/unique-words-table.component';
 import { WordDrilldownModalComponent } from '../../components/word-drilldown-modal/word-drilldown-modal.component';
+import { UniqueDetailFrame } from '../../../../core/navigation/detail-overlay/detail-overlay.models';
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
 import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
 import {
@@ -160,6 +161,21 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
   protected readonly drilldownIsOpen = computed(
     () => this.tableFocus.focus() !== null || this.drilldownState().isOpen,
   );
+
+  /** This drilldown's own typed frame (Feature 029 B7): an ayah click promotes it over the Mushaf. */
+  protected readonly ayahParentFrame = computed<UniqueDetailFrame | null>(() => {
+    const state = this.drilldownState();
+    if (!state.isOpen || state.selectedWordId === null) {
+      return null;
+    }
+    return {
+      kind: 'unique',
+      mode: this.facade.mode(),
+      id: state.selectedWordId,
+      view: state.view,
+      ayahPage: state.ayahPage,
+    };
+  });
 
   constructor() {
     effect(() => {

@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import { A11yModule } from '@angular/cdk/a11y';
 import { ScrollingModule } from '@angular/cdk/scrolling';
 
+import { DetailFrame } from '../../../../core/navigation/detail-overlay/detail-overlay.models';
 import { ModalScrollLockDirective } from '../../../../shared/ui/modal-scroll-lock/modal-scroll-lock.directive';
 
 import { ExplorerPanelSkeletonComponent } from '../../../../shared/ui/explorer-panel-skeleton/explorer-panel-skeleton.component';
@@ -50,6 +51,13 @@ export class WordDrilldownModalComponent {
    * dialog chrome. When false, the inline/modal branches behave as before.
    */
   readonly frameless = input(false);
+  /**
+   * The drilldown's own typed unique frame (Feature 029, B7), threaded into the
+   * ayah list so an ayah click keeps/promotes the detail context over the
+   * Mushaf. The render site builds it: the page knows its route mode, the
+   * overlay adapter passes its frame.
+   */
+  readonly parentFrame = input<DetailFrame | null>(null);
 
   readonly closeModal = output<void>();
   readonly viewChange = output<WordDrilldownView>();

@@ -53,6 +53,7 @@
                 <qd-ayah-matches-list
                   [page]="ayahs"
                   [currentPage]="state().ayahPage"
+                  [parentFrame]="parentFrame()"
                   (pageChange)="ayahPageChange.emit($event)"
                 />
               }

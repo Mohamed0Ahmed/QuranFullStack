@@ -72,8 +72,16 @@ Shared across explorers: `utils/explorer-table-*` (focus/keyboard-nav/scroll/col
   `DETAIL_OVERLAY_LINK_MODE` token: overlay adapters provide `'append'` (push onto the
   stack), side panels get the `'start'` default (new one-frame stack that never touches
   the panel's own selection — proven by `entity-detail-overlay-invariant.spec.ts`).
-  Modifier clicks/copy-link keep native browser behavior. `ayah-matches-list` links and
-  `word-type-grouped-words-list` (display-only) are unchanged. Table links outside a
+  Modifier clicks/copy-link keep native browser behavior.
+- **Ayah continuity** (plan §5.2, B7): `ayah-matches-list` renders its Mushaf link as
+  `a[qdAyahOverlayLink]` (core `detail-overlay-ayah-link.directive.ts`) instead of a
+  forced new tab. With the overlay open the click is a replace-navigation that carries
+  the whole frame stack onto the Mushaf base; from a side panel the render site passes
+  the panel's own typed frame as `parentFrame`, which is promoted to a one-frame stack
+  over the Mushaf (all 5 overlay adapters pass `frame()`; the four explorer pages and
+  `word-drilldown-modal` build frames from their own state — the Word Types page passes
+  `null` for grouped root/stem/lemma selections, which have no frame grammar).
+  `word-type-grouped-words-list` (display-only) is unchanged. Table links outside a
   detail surface keep page navigation (locked invariant).
 
 ## Gotchas / invariants (read before changing)

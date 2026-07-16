@@ -11,6 +11,7 @@
     data-testid="overlay-unique-drilldown"
     [frameless]="true"
     [state]="drilldownState()"
+    [parentFrame]="frame()"
     (viewChange)="onViewChange($event)"
     (ayahPageChange)="onAyahPageChange($event)"
   />

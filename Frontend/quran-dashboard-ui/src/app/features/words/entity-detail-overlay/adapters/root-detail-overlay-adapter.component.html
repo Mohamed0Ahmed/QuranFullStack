@@ -58,6 +58,7 @@
           [loading]="true"
           [page]="ayahsPageForView()"
           [currentPage]="panelState().detailPage"
+          [parentFrame]="frame()"
           data-testid="overlay-roots-ayahs-view"
         />
       } @else if (frame().view === 'words') {
@@ -112,6 +113,7 @@
         <qd-ayah-matches-list
           [page]="ayahsPageForView()"
           [currentPage]="panelState().detailPage"
+          [parentFrame]="frame()"
           data-testid="overlay-roots-ayahs-view"
           (pageChange)="onDetailPageChange($event)"
         />

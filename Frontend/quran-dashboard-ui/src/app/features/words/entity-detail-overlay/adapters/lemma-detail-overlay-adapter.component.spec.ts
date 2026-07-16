@@ -101,7 +101,7 @@ describe('LemmaDetailOverlayAdapterComponent (Feature 029 B4)', () => {
       providers: [
         EntityDetailOverlayTitleStore,
         { provide: LemmasApi, useValue: apiStub },
-        { provide: DetailOverlayHistoryService, useValue: { replaceTopFrame, urlEpoch: () => 0, buildFrameHref: () => '/SYNTH_OVERLAY_HREF' } },
+        { provide: DetailOverlayHistoryService, useValue: { replaceTopFrame, urlEpoch: () => 0, buildFrameHref: () => '/SYNTH_OVERLAY_HREF', buildBaseWithOverlayHref: () => '/SYNTH_AYAH_HREF', navigateBaseWithOverlay: () => undefined } },
       ],
       teardown: { destroyAfterEach: true },
     });

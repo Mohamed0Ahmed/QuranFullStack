@@ -234,6 +234,7 @@
               [loading]="true"
               [page]="emptyAyahsPage"
               [currentPage]="panelState().detailPage"
+              [parentFrame]="ayahParentFrame()"
               data-testid="stems-ayahs-view"
             />
           } @else if (activeView() === 'surahs' && panelState().surahView === 'mentioned') {
@@ -277,6 +278,7 @@
             <qd-ayah-matches-list
               [page]="ayahsPageForView()"
               [currentPage]="panelState().detailPage"
+              [parentFrame]="ayahParentFrame()"
               data-testid="stems-ayahs-view"
               (pageChange)="onDetailPageChange($event)"
             />

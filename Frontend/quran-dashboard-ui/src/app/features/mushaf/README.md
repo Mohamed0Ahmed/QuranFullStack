@@ -63,7 +63,11 @@ ayahs, and متشابهات groups. State (page, selected ayah/word, source sele
   Quran text rendering stay feature-owned and unchanged.
 - **jsdom lacks `matchMedia` / `ResizeObserver`** under the vitest builder — guard them and
   default to desktop (many components use responsive/observer logic).
-- URL-state (`mushaf-url-sync`) is a shareable contract — keep params stable.
+- URL-state (`mushaf-url-sync`) is a shareable contract — keep params stable. The global
+  detail overlay's `qdDetail*` keys are a different owner riding the same URL (Feature
+  029, B7): `isBareMushafEntry` treats a URL whose only params are overlay keys as bare
+  (session restore still fires), and the facade's session-restore navigation merges query
+  params so a retained overlay stack survives restoration.
 
 ## Related
 

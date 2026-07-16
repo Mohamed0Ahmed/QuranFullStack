@@ -81,6 +81,7 @@
           [loading]="true"
           [page]="ayahsPageForView()"
           [currentPage]="panelState().detailPage"
+          [parentFrame]="frame()"
           data-testid="overlay-lemmas-ayahs-view"
         />
       } @else if (frame().view === 'surahs' && panelState().surahView === 'mentioned') {
@@ -129,6 +130,7 @@
         <qd-ayah-matches-list
           [page]="ayahsPageForView()"
           [currentPage]="panelState().detailPage"
+          [parentFrame]="frame()"
           data-testid="overlay-lemmas-ayahs-view"
           (pageChange)="onDetailPageChange($event)"
         />

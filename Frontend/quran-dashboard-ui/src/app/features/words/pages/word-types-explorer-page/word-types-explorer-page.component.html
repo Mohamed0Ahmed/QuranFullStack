@@ -133,6 +133,7 @@
                   [page]="emptyAyahsPage"
                   [currentPage]="panelState().detailPage"
                   [loading]="true"
+                  [parentFrame]="ayahParentFrame()"
                 />
               } @else if (panelState().view === 'surahs') {
                 <qd-surah-occurrences-list [surahs]="[]" [loading]="true" />
@@ -170,6 +171,7 @@
                   [page]="ayahsPageForView()"
                   [currentPage]="panelState().detailPage"
                   [loading]="false"
+                  [parentFrame]="ayahParentFrame()"
                   (pageChange)="onDetailPageChange($event)"
                 />
               }

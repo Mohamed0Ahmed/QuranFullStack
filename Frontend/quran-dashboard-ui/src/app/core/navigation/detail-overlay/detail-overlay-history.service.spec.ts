@@ -345,6 +345,125 @@ describe('DetailOverlayHistoryService', () => {
     expect(service.isRetainedClosed()).toBe(true);
     expect(service.state().stack).toHaveLength(1);
   });
+
+  describe('navigateBaseWithOverlay (B7 ayah continuity)', () => {
+    const mushafParams = { page: '92', ayah: '4:57', focusAyah: '4:57', panel: 'ayah' };
+
+    it('keeps the open stack over the new base with replace semantics (no extra history entry)', async () => {
+      await startAt('/dashboard/words/roots?root=5');
+      service.startStack(rootFrame);
+      await settle();
+      service.appendFrame(lemmaFrame);
+      await settle();
+
+      const replaceSpy = vi.spyOn(location, 'replaceState');
+      service.navigateBaseWithOverlay('/dashboard/mushaf', mushafParams);
+      await settle();
+
+      expect(replaceSpy).toHaveBeenCalled();
+      expect(location.path()).toContain('/dashboard/mushaf');
+      expect(location.path()).toContain('page=92');
+      expect(location.path()).toContain('panel=ayah');
+      // The source page's own query never rides along; the stack does, still open.
+      expect(location.path()).not.toContain('root=5');
+      expect(location.path()).toContain(`qdDetail=${encodeURIComponent(ROOT_SERIALIZED)}`);
+      expect(location.path()).toContain(`qdDetail=${encodeURIComponent(LEMMA_SERIALIZED)}`);
+      expect(location.path()).toContain('qdDetailOpen=1');
+      expect(service.isOpen()).toBe(true);
+      expect(service.state().stack).toHaveLength(2);
+
+      // Continuity replaced the top entry: browser Back pops the entity frame
+      // together with its historical base, not an intermediate ayah step.
+      location.back();
+      await settle();
+      expect(location.path()).toContain('/dashboard/words/roots');
+      expect(location.path()).toContain('root=5');
+      expect(service.state().stack).toHaveLength(1);
+    });
+
+    it('re-writes provenance as replace so dialog Back falls back deterministically on the new base', async () => {
+      await startAt('/dashboard/words/roots');
+      service.startStack(rootFrame);
+      await settle();
+      service.appendFrame(lemmaFrame);
+      await settle();
+
+      service.navigateBaseWithOverlay('/dashboard/mushaf', mushafParams);
+      await settle();
+
+      const backSpy = vi.spyOn(location, 'back');
+      service.back();
+      await settle();
+
+      expect(backSpy).not.toHaveBeenCalled();
+      expect(location.path()).toContain('/dashboard/mushaf');
+      expect(service.state().stack.map((frame) => frame.kind)).toEqual(['root']);
+      expect(service.isOpen()).toBe(true);
+    });
+
+    it('promotes a side-panel frame to a fresh one-frame stack as a push when the overlay is closed', async () => {
+      await startAt('/dashboard/words/roots?root=5');
+
+      service.navigateBaseWithOverlay('/dashboard/mushaf', mushafParams, { promoteFrame: rootFrame });
+      await settle();
+
+      expect(location.path()).toContain('/dashboard/mushaf');
+      expect(location.path()).toContain(`qdDetail=${encodeURIComponent(ROOT_SERIALIZED)}`);
+      expect(location.path()).toContain('qdDetailOpen=1');
+      expect(service.isOpen()).toBe(true);
+      expect(service.state().stack).toHaveLength(1);
+
+      // Push semantics: browser Back returns to the originating side-panel entry.
+      location.back();
+      await settle();
+      expect(location.path()).toBe('/dashboard/words/roots?root=5');
+      expect(service.state().stack).toHaveLength(0);
+    });
+
+    it('navigates plainly with all overlay keys stripped when closed and no frame is promoted', async () => {
+      await startAt('/dashboard/words/roots?qdDetail=' + encodeURIComponent(ROOT_SERIALIZED));
+      expect(service.isRetainedClosed()).toBe(true);
+
+      service.navigateBaseWithOverlay('/dashboard/mushaf', mushafParams);
+      await settle();
+
+      expect(location.path()).toContain('/dashboard/mushaf');
+      expect(location.path()).toContain('page=92');
+      expect(location.path()).not.toContain('qdDetail');
+      expect(service.state().stack).toHaveLength(0);
+
+      // Plain push: Back returns to the retained-closed entry.
+      location.back();
+      await settle();
+      expect(service.isRetainedClosed()).toBe(true);
+    });
+
+    it('builds base hrefs mirroring click semantics for open, promotable, and bare cases', async () => {
+      await startAt('/dashboard/words/roots?root=5');
+
+      const bareHref = service.buildBaseWithOverlayHref('/dashboard/mushaf', mushafParams);
+      expect(bareHref).toContain('/dashboard/mushaf');
+      expect(bareHref).toContain('page=92');
+      expect(bareHref).not.toContain('qdDetail');
+      expect(bareHref).not.toContain('root=5');
+
+      const promotedHref = service.buildBaseWithOverlayHref('/dashboard/mushaf', mushafParams, {
+        promoteFrame: rootFrame,
+      });
+      expect(promotedHref).toContain(`qdDetail=${encodeURIComponent(ROOT_SERIALIZED)}`);
+      expect(promotedHref).toContain('qdDetailOpen=1');
+
+      service.startStack(lemmaFrame);
+      await settle();
+      // Open overlay: the current stack wins over the promote option.
+      const openHref = service.buildBaseWithOverlayHref('/dashboard/mushaf', mushafParams, {
+        promoteFrame: rootFrame,
+      });
+      expect(openHref).toContain(`qdDetail=${encodeURIComponent(LEMMA_SERIALIZED)}`);
+      expect(openHref).not.toContain(`qdDetail=${encodeURIComponent(ROOT_SERIALIZED)}`);
+      expect(openHref).toContain('qdDetailOpen=1');
+    });
+  });
 });
 
 type _FrameCheck = DetailFrame;

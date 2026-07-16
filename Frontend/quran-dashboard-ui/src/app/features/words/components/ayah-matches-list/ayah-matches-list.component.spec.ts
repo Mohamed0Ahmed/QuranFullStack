@@ -1,6 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { describe, expect, it } from 'vitest';
+import { provideLocationMocks } from '@angular/common/testing';
+import { Router, provideRouter } from '@angular/router';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { DetailOverlayHistoryService } from '../../../../core/navigation/detail-overlay/detail-overlay-history.service';
+import { RootDetailFrame } from '../../../../core/navigation/detail-overlay/detail-overlay.models';
 import { AyahMatchesListComponent } from './ayah-matches-list.component';
 import { AyahMatchDto, PagedResultDto } from '../../models/unique-words.models';
 
@@ -27,6 +31,17 @@ const PAGE: PagedResultDto<AyahMatchDto> = {
   ],
 };
 
+const PARENT_FRAME: RootDetailFrame = {
+  kind: 'root',
+  id: 999,
+  view: 'ayahs',
+  wordView: 'simple',
+  surahView: 'mentioned',
+  detailPage: 1,
+};
+
+const ROOT_FRAME_SERIALIZED = 'v1~root~999~ayahs~simple~mentioned~1';
+
 function setInputs(
   fixture: ComponentFixture<AyahMatchesListComponent>,
   inputs: { page: PagedResultDto<AyahMatchDto>; currentPage: number },
@@ -37,7 +52,14 @@ function setInputs(
 }
 
 describe('AyahMatchesListComponent', () => {
-  it('opens the matching ayah in Mushaf in a new tab when the ayah text is clicked', () => {
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [provideRouter([]), provideLocationMocks()],
+    });
+    TestBed.inject(Router).initialNavigation();
+  });
+
+  it('renders the ayah link as a same-tab overlay-continuity anchor to the Mushaf', () => {
     const fixture = TestBed.createComponent(AyahMatchesListComponent);
     setInputs(fixture, { page: PAGE, currentPage: 1 });
 
@@ -46,13 +68,49 @@ describe('AyahMatchesListComponent', () => {
       '[data-testid="ayah-matches-open-mushaf"]',
     ) as HTMLAnchorElement | null;
 
-    expect(actionLink?.getAttribute('href')).toBe(
-      '/dashboard/mushaf?page=92&ayah=4:57&focusAyah=4:57&panel=ayah',
-    );
+    const href = actionLink?.getAttribute('href') ?? '';
+    expect(href).toContain('/dashboard/mushaf');
+    expect(href).toContain('page=92');
+    expect(href).toContain('ayah=4:57');
+    expect(href).toContain('focusAyah=4:57');
+    expect(href).toContain('panel=ayah');
+    // No parent frame provided: the destination carries no overlay keys.
+    expect(href).not.toContain('qdDetail');
     expect(actionLink?.getAttribute('aria-label')).toBe('فتح الآية في المصحف');
-    expect(actionLink?.getAttribute('target')).toBe('_blank');
-    expect(actionLink?.getAttribute('rel')).toBe('noopener noreferrer');
+    expect(actionLink?.getAttribute('target')).toBeNull();
+    expect(actionLink?.getAttribute('rel')).toBeNull();
     expect(actionLink?.querySelector('[data-testid="highlighted-ayah"]')).not.toBeNull();
+  });
+
+  it('promotes the provided parent frame into the href and the intercepted click', () => {
+    const fixture = TestBed.createComponent(AyahMatchesListComponent);
+    fixture.componentRef.setInput('parentFrame', PARENT_FRAME);
+    setInputs(fixture, { page: PAGE, currentPage: 1 });
+
+    const link = (fixture.nativeElement as HTMLElement).querySelector(
+      '[data-testid="ayah-matches-open-mushaf"]',
+    ) as HTMLAnchorElement;
+    const href = link.getAttribute('href')!;
+    expect(href).toContain(`qdDetail=${encodeURIComponent(ROOT_FRAME_SERIALIZED)}`);
+    expect(href).toContain('qdDetailOpen=1');
+
+    const navigateSpy = vi
+      .spyOn(TestBed.inject(DetailOverlayHistoryService), 'navigateBaseWithOverlay')
+      .mockReturnValue(undefined);
+    const plainClick = new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 });
+    link.dispatchEvent(plainClick);
+
+    expect(plainClick.defaultPrevented).toBe(true);
+    expect(navigateSpy).toHaveBeenCalledWith(
+      '/dashboard/mushaf',
+      { page: '92', ayah: '4:57', focusAyah: '4:57', panel: 'ayah' },
+      { promoteFrame: PARENT_FRAME },
+    );
+
+    const modifiedClick = new MouseEvent('click', { bubbles: true, cancelable: true, button: 0, ctrlKey: true });
+    link.dispatchEvent(modifiedClick);
+    expect(modifiedClick.defaultPrevented).toBe(false);
+    expect(navigateSpy).toHaveBeenCalledTimes(1);
   });
 
   it('renders every Word Type-shaped row when all rows share ayahId 0 (stable verseKey tracking)', () => {
