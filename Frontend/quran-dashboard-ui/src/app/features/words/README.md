@@ -75,7 +75,10 @@ Shared across explorers: `utils/explorer-table-*` (focus/keyboard-nav/scroll/col
   `<prefix>Min`/`<prefix>Max` only for active bounds; frontend list cache keys gain a deterministic
   range fragment (absent ⇒ pre-feature key). The headline stat reflects the filtered `totalCount` by
   construction. `*_RANGE_METRICS` and the range-filter labels are read via **TDZ-safe getters**, never
-  `readonly` fields (they resolve to `undefined` in the bundled test build otherwise).
+  `readonly` fields (they resolve to `undefined` in the bundled test build otherwise). Layout
+  (Feature 029, U2): the shared filter host is a **full-width second row** of
+  `.qd-explorer-controls-secondary` (`flex: 1 1 100%` on the component host) below the sort control
+  on all four pages, so expanding the `<details>` panel grows its own row and never moves the sort.
 - **Association filters** (Feature 026, US7) narrow three of the normal explorers by a related dimension,
   using the shared presentational `explorer-association-filter` search-select (an inline search field whose
   input opens a focus-driven popover holding the options list, with the current selection shown as a badge
@@ -115,7 +118,11 @@ Shared across explorers: `utils/explorer-table-*` (focus/keyboard-nav/scroll/col
 - Tests: obey the repo test-command rule (see `../../../../README.md`) — the vitest worker
   cap and jsdom observer guards apply here.
 - **Word Types has table-view tabs** (`tableView=words|roots|stems|lemmas`, default `words`,
-  RTL order كلمات | جذور | أصول | صيغ). Grouped views are grouped and counted server-side before
+  RTL order كلمات | جذور | أصول | صيغ). Placement (Feature 029, U3): the tab strip is the **first
+  child of the split layout**, directly above the table column only (desktop pins tabs/table to
+  grid column 1 rows 1/2 and the details panel to column 2 row 2, so the panel top aligns with the
+  table; below desktop DOM flow gives tabs → table → panel). The semantic order
+  filters → scope summary → tabs → table and the mounted-shell invariant are unchanged. Grouped views are grouped and counted server-side before
   pagination, and their identity is the numeric `rootId`/`stemId`/`lemmaId`, never display text. The
   **table-view strip, table shell, and details host stay mounted** through every browse/list/filter/
   sort/view/loading/empty/error transition; the table owns prompt/loading/empty/error-with-retry.

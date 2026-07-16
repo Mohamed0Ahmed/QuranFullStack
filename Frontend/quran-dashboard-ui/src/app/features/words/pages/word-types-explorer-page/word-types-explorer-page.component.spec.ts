@@ -391,6 +391,18 @@ describe('WordTypesExplorerPageComponent', () => {
     expect(requestsFor('scopeCounts')).toHaveLength(1);
   });
 
+  it('renders the view tabs as the first layout child immediately preceding the table column (U3)', async () => {
+    const fixture = await createPage();
+    const root = fixture.nativeElement as HTMLElement;
+
+    const layout = root.querySelector('.word-types-page__layout')!;
+    const tabs = layout.querySelector('qd-word-type-table-view-tabs');
+    expect(tabs).not.toBeNull();
+    expect(layout.firstElementChild).toBe(tabs);
+    expect(tabs!.classList.contains('word-types-page__tabs')).toBe(true);
+    expect(tabs!.nextElementSibling).toBe(layout.querySelector('main.word-types-page__main'));
+  });
+
   it('does not refetch the scope counts on a tableView or page change (US8)', async () => {
     queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'N' }));
     const fixture = await createPage();

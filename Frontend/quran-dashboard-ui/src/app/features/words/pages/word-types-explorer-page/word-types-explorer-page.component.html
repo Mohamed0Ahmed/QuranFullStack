@@ -63,16 +63,19 @@
       (retryRequested)="onScopeCountsRetry()"
     />
 
+  </div>
+
+  <div class="word-types-page__layout qd-explorer-layout">
+    <!-- View tabs live in the table column (Feature 029, U3): first layout child so they
+         sit directly above the table, never spanning the details-panel column. -->
     @if (listState().tree) {
       <qd-word-type-table-view-tabs
+        class="word-types-page__tabs"
         [selectedView]="listState().query.tableView"
         [disabled]="listState().status === 'loading'"
         (viewSelected)="selectTableView($event)"
       />
     }
-  </div>
-
-  <div class="word-types-page__layout qd-explorer-layout">
     <main
       class="word-types-page__main qd-explorer-layout__table"
       [attr.aria-busy]="listState().status === 'loading' ? true : null"

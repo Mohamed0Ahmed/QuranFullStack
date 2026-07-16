@@ -1,5 +1,10 @@
+// Full-width second row of `.qd-explorer-controls-secondary` (Feature 029, U2): the
+// filter wraps below the sort control on all four explorers, so opening the
+// <details> panel grows this row only and never re-centers the sort.
 :host {
   display: block;
+  flex: 1 1 100%;
+  min-inline-size: 0;
 }
 
 .range-filter {
