@@ -101,6 +101,24 @@ export class MushafReaderFacade {
   private mutashabihatRequestToken = 0;
   private peekFlashClearTimer: ReturnType<typeof setTimeout> | null = null;
 
+  /**
+   * F2: guards `loadStudySourceCatalog` so it fires GET /api/mushaf/study-sources at
+   * most once per successful load. `loaded` flips only on a genuine success (even an
+   * empty-but-successful catalogue counts) so it is distinguishable from "not loaded
+   * yet"; a failure never sets `loaded`, so the next mount can retry.
+   */
+  private studySourceCatalogLoaded = false;
+  private studySourceCatalogLoading = false;
+
+  /**
+   * F1: set true by {@link bindToRoute} and consumed by the first URL hydration after a
+   * (re)bind. Only that first hydration may treat a still-loading ayah-study/word-analysis
+   * resource as a stranded load to recover (reload). Later in-place URL patches on the same
+   * binding (e.g. switching a study tab while a request is in flight) must NOT restart the
+   * in-flight request or re-arm its debounce.
+   */
+  private rebindRecoveryPending = false;
+
   private readonly wordAnalysisLoadRunner = new WordAnalysisLoadRunner({
     getPage: () => this._page(),
     setAnalysis: (value) => this._wordAnalysis.set(value),
@@ -200,6 +218,7 @@ export class MushafReaderFacade {
 
   bindToRoute(route: ActivatedRoute): void {
     this.activeRoute = route;
+    this.rebindRecoveryPending = true;
     this.routeSubscription?.unsubscribe();
     this.routeSubscription = route.queryParamMap.subscribe((params) => {
       if (isBareMushafEntry(params)) {
@@ -370,15 +389,23 @@ export class MushafReaderFacade {
   }
 
   loadStudySourceCatalog(): void {
+    if (this.studySourceCatalogLoaded || this.studySourceCatalogLoading) {
+      return;
+    }
+
+    this.studySourceCatalogLoading = true;
     subscribeToApiLoad(this.studySourceCatalogApi.getCatalog(), {
       onSuccess: (data) => {
+        this.studySourceCatalogLoaded = true;
         this._tafsirSourceOptions.set(data.tafsirSources.map(tafsirCatalogItemToOption));
         this._translationSourceOptions.set(
           data.translationSources.map(translationCatalogItemToOption),
         );
         this._fullI3rabSourceOptions.set(data.fullI3rabSources.map(fullI3rabCatalogItemToOption));
       },
-      onSettled: () => undefined,
+      onSettled: () => {
+        this.studySourceCatalogLoading = false;
+      },
       emptyMessage: 'تعذّر تحميل كتالوج مصادر الدراسة.',
       notFoundMessage: 'تعذّر تحميل كتالوج مصادر الدراسة.',
       connectionMessage: 'تعذّر الاتصال بالخادم.',
@@ -490,12 +517,17 @@ export class MushafReaderFacade {
       'panel' | 'ayah' | 'word' | 'segment' | 'ayahTab' | 'wordTab' | 'sources'
     >,
   ): void {
+    const recovering = this.rebindRecoveryPending;
+    this.rebindRecoveryPending = false;
+
     applyAuthoritativeUrlSnapshot(
       snapshot,
       {
         selectedAyahKey: this._selectedAyahKey(),
         selectedWordLocation: this._selectedWordLocation(),
         urlExplicitSources: this._urlExplicitSources(),
+        ayahStudyIsLoading: recovering && this._ayahStudyLoadState().isLoading,
+        wordAnalysisIsLoading: recovering && this._wordAnalysisLoadState().isLoading,
       },
       {
         setUiState: (panel, ayahTab, wordTab, segmentLocation) => {
