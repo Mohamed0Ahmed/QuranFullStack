@@ -99,6 +99,10 @@ export class UniqueWordsFacade {
   unbindFromRoute(): void {
     this.routeSub?.unsubscribe();
     this.routeSub = undefined;
+    // Perf finding F3: the drilldown facade is a root singleton whose summary/detail HTTP
+    // subscriptions must not keep running (and mutating offscreen state) after this page unbinds.
+    // Cancelling here preserves the URL selection needed to reload cleanly on return.
+    this.drilldown.cancelPendingWork();
   }
 
   loadList(): void {

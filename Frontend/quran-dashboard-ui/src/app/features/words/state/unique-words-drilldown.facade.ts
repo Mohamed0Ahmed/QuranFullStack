@@ -129,12 +129,25 @@ export class UniqueWordsDrilldownFacade {
   }
 
   closeDrilldown(): void {
+    this.cancelPendingWork();
+    this._drilldown.set(INITIAL_DRILLDOWN);
+  }
+
+  /**
+   * Disposes any in-flight summary/detail HTTP subscription without touching the currently-held
+   * drilldown state (perf finding F3). Called on page/facade unbind (component destroy or
+   * navigation away) so a request that outlives the page can no longer mutate this root-singleton's
+   * state offscreen. `activeModalUrlState` is cleared so that returning to the SAME URL is never
+   * short-circuited by the "unchanged selection" fast path — it always re-drives a real reload
+   * (which itself may resolve from the detail cache, preserving that behavior) instead of leaving
+   * the state stuck mid-load.
+   */
+  cancelPendingWork(): void {
     this.summarySub?.unsubscribe();
     this.summarySub = undefined;
     this.drilldownSub?.unsubscribe();
     this.drilldownSub = undefined;
     this.activeModalUrlState = null;
-    this._drilldown.set(INITIAL_DRILLDOWN);
   }
 
   restoreFromUrl(

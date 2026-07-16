@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, of } from 'rxjs';
-import { catchError, map, shareReplay } from 'rxjs/operators';
+import { catchError, map } from 'rxjs/operators';
 
 import { AssociationOption } from '../state/words-association-filters';
 import { RootsApi } from './roots.api';
@@ -8,6 +8,7 @@ import { LemmasApi } from './lemmas.api';
 import { WordTypesApi } from './word-types.api';
 import { RootsCache } from '../state/roots-cache';
 import { LemmasCache } from '../state/lemmas-cache';
+import { WordTypesCache, WordTypesCacheKeys } from '../state/word-types-cache';
 
 /**
  * Loads association-filter picker options (Feature 026, US7) by REUSING the existing reads — no new
@@ -16,6 +17,11 @@ import { LemmasCache } from '../state/lemmas-cache';
  * flattening the noun and particle POS-leaf children (the "POS child catalogue"). Verb and muqatta'at
  * are represented non-granularly in the tree (by tense / as a main type) and so are not offered as
  * granular primary-type options here.
+ *
+ * The tree read is shared with the Word Types explorer through `WordTypesCache` /
+ * `WordTypesCacheKeys.tree` (a root-scoped singleton cache) instead of a second browser-session
+ * stream, so `GET /api/words/word-types/tree` is fetched at most once per browser session no matter
+ * which of the two features is visited first (perf finding F2).
  */
 @Injectable({ providedIn: 'root' })
 export class WordsAssociationOptionsService {
@@ -24,9 +30,9 @@ export class WordsAssociationOptionsService {
   private readonly wordTypesApi = inject(WordTypesApi);
   private readonly rootsCache = inject(RootsCache);
   private readonly lemmasCache = inject(LemmasCache);
+  private readonly wordTypesCache = inject(WordTypesCache);
 
   private static readonly PickerPageSize = 30;
-  private wordTypeOptions$?: Observable<readonly AssociationOption[]>;
 
   searchRoots(term: string): Observable<readonly AssociationOption[]> {
     const key = `roots:picker:${term.trim()}`;
@@ -61,20 +67,20 @@ export class WordsAssociationOptionsService {
   }
 
   wordTypeOptions(): Observable<readonly AssociationOption[]> {
-    this.wordTypeOptions$ ??= this.wordTypesApi.getTree().pipe(
-      map((response) => {
-        if (!response.isSuccess || !response.data) {
-          return [];
-        }
-        return response.data.mainTypes
-          .filter((node) => node.code === 'noun' || node.code === 'particle')
-          .flatMap((node) =>
-            node.children.map((child) => ({ id: child.code, label: child.label.ar })),
-          );
-      }),
-      catchError(() => of<readonly AssociationOption[]>([])),
-      shareReplay(1),
-    );
-    return this.wordTypeOptions$;
+    return this.wordTypesCache
+      .getOrLoad(WordTypesCacheKeys.tree, () => this.wordTypesApi.getTree())
+      .pipe(
+        map((response) => {
+          if (!response.isSuccess || !response.data) {
+            return [];
+          }
+          return response.data.mainTypes
+            .filter((node) => node.code === 'noun' || node.code === 'particle')
+            .flatMap((node) =>
+              node.children.map((child) => ({ id: child.code, label: child.label.ar })),
+            );
+        }),
+        catchError(() => of<readonly AssociationOption[]>([])),
+      );
   }
 }
