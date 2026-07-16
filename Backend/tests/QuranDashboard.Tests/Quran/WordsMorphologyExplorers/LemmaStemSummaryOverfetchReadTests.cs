@@ -63,6 +63,7 @@ public sealed class LemmaStemSummaryOverfetchReadTests(MorphologyExplorersTestFi
 
         occurrenceGrain.Should().BeGreaterThan(distinctGroups, "the seed must exercise per-(lemma,POS) fan-out or this test proves nothing");
         interceptor.MaxReadCount.Should().BeLessThan(occurrenceGrain, "the type distribution is grouped server-side, so no command transfers occurrence-grain rows");
+        interceptor.ReadCounts.Should().HaveCount(2, "the cold load is a fixed catalogue + grouped-distribution pair; a per-lemma (N+1) split would satisfy the per-command bound above while still reading occurrence grain");
         rows.Should().NotBeEmpty();
     }
 
@@ -124,6 +125,7 @@ public sealed class LemmaStemSummaryOverfetchReadTests(MorphologyExplorersTestFi
 
         occurrenceGrain.Should().BeGreaterThan(distinctPosGroups, "the seed must exercise per-(stem,POS) fan-out or this test proves nothing");
         interceptor.MaxReadCount.Should().BeLessThan(occurrenceGrain, "distribution/winner inputs are grouped server-side, so no command transfers occurrence-grain rows");
+        interceptor.ReadCounts.Should().HaveCount(4, "the cold load is a fixed catalogue + distribution + dominant-lemma + dominant-root set; a per-stem (N+1) split would satisfy the per-command bound above while still reading occurrence grain");
         rows.Should().NotBeEmpty();
     }
 
