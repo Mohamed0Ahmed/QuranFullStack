@@ -50,21 +50,15 @@ public sealed class CachedStemsReader(EfStemsReader efReader, IMemoryCache cache
         return summary;
     }
 
-    public Task<PagedResult<StemWordItemDto>?> GetStemWordsAsync(
+    public async Task<PagedResult<StemWordItemDto>?> GetStemWordsAsync(
         int id,
         StemWordKind wordKind,
         int page,
         int pageSize,
         CancellationToken cancellationToken)
     {
-        var key = StemsCacheKeys.Words(id, wordKind, page, pageSize);
-
-        if (_cache.TryGetValue(key, out PagedResult<StemWordItemDto>? cached))
-        {
-            return Task.FromResult<PagedResult<StemWordItemDto>?>(cached);
-        }
-
-        return GetAndCacheWordsAsync(id, wordKind, page, pageSize, cancellationToken, key);
+        var all = await GetOrLoadWordGroupsAsync(id, wordKind, cancellationToken);
+        return all is null ? null : EfStemsReader.SliceStemWordsPage(all, page, pageSize);
     }
 
     public Task<PagedResult<StemAyahMatchDto>?> GetStemAyahMatchesAsync(
@@ -155,21 +149,30 @@ public sealed class CachedStemsReader(EfStemsReader efReader, IMemoryCache cache
         return ayahs;
     }
 
-    private async Task<PagedResult<StemWordItemDto>?> GetAndCacheWordsAsync(
+    /// <summary>
+    /// Caches the complete grouped word list once per (stem, kind) identity, mirroring
+    /// the catalogue whole-summary pattern. Every page (including out-of-range pages)
+    /// then slices this single cached list in memory instead of re-issuing the full
+    /// occurrence query per page (performance review finding B6).
+    /// </summary>
+    private async Task<IReadOnlyList<StemWordItemDto>?> GetOrLoadWordGroupsAsync(
         int id,
         StemWordKind wordKind,
-        int page,
-        int pageSize,
-        CancellationToken cancellationToken,
-        string key)
+        CancellationToken cancellationToken)
     {
-        var words = await _ef.GetStemWordsAsync(id, wordKind, page, pageSize, cancellationToken);
-        if (words is { Items.Count: > 0 })
+        var key = StemsCacheKeys.WordsAll(id, wordKind);
+        if (_cache.TryGetValue(key, out IReadOnlyList<StemWordItemDto>? cached))
         {
-            _cache.Set(key, words, StemsCacheEntryOptions.PagedWords());
+            return cached;
         }
 
-        return words;
+        var rows = await _ef.LoadStemWordGroupsAsync(id, wordKind, cancellationToken);
+        if (rows is not null)
+        {
+            _cache.Set(key, rows, StemsCacheEntryOptions.GroupedWords());
+        }
+
+        return rows;
     }
 
     private async Task<StemSurahsResponse?> GetAndCacheMentionedSurahsAsync(

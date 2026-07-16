@@ -301,11 +301,17 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
             ? $"{firstSurahNumber}:{firstAyahNumber}"
             : string.Empty;
 
-    private async Task<PagedResult<StemWordItemDto>?> GetStemWordsPageAsync(
+    /// <summary>
+    /// Loads the complete grouped, ordered word list for a stem/word-kind pair in one
+    /// bounded pass: existence check, every matching occurrence row, then the same
+    /// in-memory group/order derivation the page used to repeat per page. Returns
+    /// <c>null</c> when the stem does not exist. This is the identity-grain unit the
+    /// cache decorator caches once (mirrors the catalogue whole-summary pattern) so
+    /// paging never re-issues the full occurrence query (performance review finding B6).
+    /// </summary>
+    internal async Task<IReadOnlyList<StemWordItemDto>?> LoadStemWordGroupsAsync(
         int id,
         StemWordKind wordKind,
-        int page,
-        int pageSize,
         CancellationToken cancellationToken)
     {
         var stemExists = await _db.QuranStems
@@ -320,7 +326,7 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
             ? await LoadStemWordRowsAsync(id, useSimpleWordIds: true, cancellationToken)
             : await LoadStemWordRowsAsync(id, useSimpleWordIds: false, cancellationToken);
 
-        var grouped = rows
+        return rows
             .Where(r => r.UniqueWordId.HasValue)
             .GroupBy(r => r.UniqueWordId!.Value)
             .Select(g =>
@@ -344,24 +350,42 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
             .ThenBy(x => x.FirstAyahNumber)
             .ThenBy(x => x.FirstWordNumber)
             .ThenBy(x => x.UniqueWordId)
-            .ToList();
-
-        var skip = ReadPaging.CalculateSafeSkip(page, pageSize, grouped.Count);
-        if (skip is null)
-        {
-            return new PagedResult<StemWordItemDto>(page, pageSize, grouped.Count, []);
-        }
-
-        var items = grouped
-            .Skip(skip.Value)
-            .Take(pageSize)
             .Select(row => new StemWordItemDto(
                 row.UniqueWordId,
                 row.DisplayText,
                 row.OccurrencesCount))
             .ToList();
+    }
 
-        return new PagedResult<StemWordItemDto>(page, pageSize, grouped.Count, items);
+    /// <summary>
+    /// Slices an already-loaded, already-ordered whole word-group list into one page.
+    /// Shared by the uncached page read below and by <c>CachedStemsReader</c>, which
+    /// slices the identity-grain cached list instead of re-loading it per page.
+    /// </summary>
+    internal static PagedResult<StemWordItemDto> SliceStemWordsPage(
+        IReadOnlyList<StemWordItemDto> all,
+        int page,
+        int pageSize)
+    {
+        var skip = ReadPaging.CalculateSafeSkip(page, pageSize, all.Count);
+        if (skip is null)
+        {
+            return new PagedResult<StemWordItemDto>(page, pageSize, all.Count, []);
+        }
+
+        var items = all.Skip(skip.Value).Take(pageSize).ToList();
+        return new PagedResult<StemWordItemDto>(page, pageSize, all.Count, items);
+    }
+
+    private async Task<PagedResult<StemWordItemDto>?> GetStemWordsPageAsync(
+        int id,
+        StemWordKind wordKind,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken)
+    {
+        var grouped = await LoadStemWordGroupsAsync(id, wordKind, cancellationToken);
+        return grouped is null ? null : SliceStemWordsPage(grouped, page, pageSize);
     }
 
     private async Task<IReadOnlyList<StemWordOccurrenceRow>> LoadStemWordRowsAsync(

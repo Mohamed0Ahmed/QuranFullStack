@@ -406,11 +406,17 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
             ? $"{firstSurahNumber}:{firstAyahNumber}"
             : string.Empty;
 
-    private async Task<PagedResult<LemmaWordItemDto>?> GetLemmaWordsPageAsync(
+    /// <summary>
+    /// Loads the complete grouped, ordered word list for a lemma/word-kind pair in one
+    /// bounded pass: existence check, every matching occurrence row, then the same
+    /// in-memory group/order derivation the page used to repeat per page. Returns
+    /// <c>null</c> when the lemma does not exist. This is the identity-grain unit the
+    /// cache decorator caches once (mirrors the catalogue whole-summary pattern) so
+    /// paging never re-issues the full occurrence query (performance review finding B6).
+    /// </summary>
+    internal async Task<IReadOnlyList<LemmaWordItemDto>?> LoadLemmaWordGroupsAsync(
         int id,
         LemmaWordKind wordKind,
-        int page,
-        int pageSize,
         CancellationToken cancellationToken)
     {
         var lemmaExists = await _db.QuranLemmas
@@ -425,7 +431,7 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
             ? await LoadLemmaWordRowsAsync(id, useSimpleWordIds: true, cancellationToken)
             : await LoadLemmaWordRowsAsync(id, useSimpleWordIds: false, cancellationToken);
 
-        var grouped = rows
+        return rows
             .Where(r => r.UniqueWordId.HasValue)
             .GroupBy(r => r.UniqueWordId!.Value)
             .Select(g =>
@@ -449,24 +455,42 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
             .ThenBy(x => x.FirstAyahNumber)
             .ThenBy(x => x.FirstWordNumber)
             .ThenBy(x => x.UniqueWordId)
-            .ToList();
-
-        var skip = ReadPaging.CalculateSafeSkip(page, pageSize, grouped.Count);
-        if (skip is null)
-        {
-            return new PagedResult<LemmaWordItemDto>(page, pageSize, grouped.Count, []);
-        }
-
-        var items = grouped
-            .Skip(skip.Value)
-            .Take(pageSize)
             .Select(row => new LemmaWordItemDto(
                 row.UniqueWordId,
                 row.DisplayTextUthmani,
                 row.OccurrencesCount))
             .ToList();
+    }
 
-        return new PagedResult<LemmaWordItemDto>(page, pageSize, grouped.Count, items);
+    /// <summary>
+    /// Slices an already-loaded, already-ordered whole word-group list into one page.
+    /// Shared by the uncached page read below and by <c>CachedLemmasReader</c>, which
+    /// slices the identity-grain cached list instead of re-loading it per page.
+    /// </summary>
+    internal static PagedResult<LemmaWordItemDto> SliceLemmaWordsPage(
+        IReadOnlyList<LemmaWordItemDto> all,
+        int page,
+        int pageSize)
+    {
+        var skip = ReadPaging.CalculateSafeSkip(page, pageSize, all.Count);
+        if (skip is null)
+        {
+            return new PagedResult<LemmaWordItemDto>(page, pageSize, all.Count, []);
+        }
+
+        var items = all.Skip(skip.Value).Take(pageSize).ToList();
+        return new PagedResult<LemmaWordItemDto>(page, pageSize, all.Count, items);
+    }
+
+    private async Task<PagedResult<LemmaWordItemDto>?> GetLemmaWordsPageAsync(
+        int id,
+        LemmaWordKind wordKind,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken)
+    {
+        var grouped = await LoadLemmaWordGroupsAsync(id, wordKind, cancellationToken);
+        return grouped is null ? null : SliceLemmaWordsPage(grouped, page, pageSize);
     }
 
     private async Task<IReadOnlyList<LemmaWordOccurrenceRow>> LoadLemmaWordRowsAsync(

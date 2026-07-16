@@ -71,8 +71,8 @@ public sealed class MorphologyExplorersCacheReadTests(MorphologyExplorersTestFix
         AssertSecondReadHitsCache((reader, ct) => reader.GetLemmaWordsAsync(LemmaId, kind, 1, 50, ct));
 
     [Fact]
-    public Task Lemma_words_out_of_range_pages_are_not_cached() =>
-        AssertSecondOutOfRangePageStillQueriesDb(
+    public Task Lemma_words_out_of_range_pages_are_served_from_identity_cache() =>
+        AssertSecondOutOfRangePageServedFromCache(
             (db, cache, ct) => new CachedLemmasReader(new EfLemmasReader(db), cache)
                 .GetLemmaWordsAsync(LemmaId, LemmaWordKind.Simple, 999, 50, ct));
 
@@ -176,8 +176,8 @@ public sealed class MorphologyExplorersCacheReadTests(MorphologyExplorersTestFix
         AssertSecondReadHitsCache((reader, ct) => reader.GetStemWordsAsync(StemId, kind, 1, 50, ct));
 
     [Fact]
-    public Task Stem_words_out_of_range_pages_are_not_cached() =>
-        AssertSecondOutOfRangePageStillQueriesDb(
+    public Task Stem_words_out_of_range_pages_are_served_from_identity_cache() =>
+        AssertSecondOutOfRangePageServedFromCache(
             (db, cache, ct) => new CachedStemsReader(new EfStemsReader(db), cache)
                 .GetStemWordsAsync(StemId, StemWordKind.Simple, 999, 50, ct));
 
@@ -399,5 +399,38 @@ public sealed class MorphologyExplorersCacheReadTests(MorphologyExplorersTestFix
         second!.Items.Should().BeEmpty();
         interceptor.CommandCount.Should().BeGreaterThan(0,
             "empty paged detail results must not be cached");
+    }
+
+    /// <summary>
+    /// B6: Lemma/Stem word pages cache the whole grouped word list once per (id, kind)
+    /// identity and slice it in memory. Any later page — including an out-of-range page —
+    /// is therefore a free in-memory slice, unlike the ayah-matches path which still caches
+    /// per page and re-queries on a fresh page key.
+    /// </summary>
+    private async Task AssertSecondOutOfRangePageServedFromCache<TItem>(
+        Func<QuranDashboardDbContext, IMemoryCache, CancellationToken, Task<PagedResult<TItem>?>> read)
+    {
+        var interceptor = new SqlCommandCountInterceptor();
+        var options = new DbContextOptionsBuilder<QuranDashboardDbContext>()
+            .UseNpgsql(fixture.ConnectionString)
+            .AddInterceptors(interceptor)
+            .Options;
+
+        await using var dbContext = new QuranDashboardDbContext(options);
+        using var cache = new MemoryCache(new MemoryCacheOptions());
+
+        var first = await read(dbContext, cache, CancellationToken.None);
+        first.Should().NotBeNull();
+        first!.Items.Should().BeEmpty();
+        interceptor.CommandCount.Should().BeGreaterThan(0,
+            "the first out-of-range page must load and cache the whole identity-grain word list");
+
+        interceptor.Reset();
+
+        var second = await read(dbContext, cache, CancellationToken.None);
+        second.Should().NotBeNull();
+        second!.Items.Should().BeEmpty();
+        interceptor.CommandCount.Should().Be(0,
+            "the whole grouped word list is cached once per identity, so a later out-of-range page is a free in-memory slice");
     }
 }
