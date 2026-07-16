@@ -7,6 +7,13 @@ namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.MushafReader;
 
 public sealed class EfMushafPageReader(QuranDashboardDbContext db) : IMushafPageReader
 {
+    // Closed set of marker types carried by the API contract; kept as constants so a typo
+    // cannot silently change a published marker value.
+    private const string JuzMarkerType = "juz";
+    private const string HizbMarkerType = "hizb";
+    private const string RubMarkerType = "rub";
+    private const string SajdaMarkerType = "sajda";
+
     public async Task<MushafPageResponse?> GetPageAsync(int pageNumber, CancellationToken ct)
     {
         // The line read doubles as the page-existence check: a page with no lines is
@@ -133,17 +140,17 @@ public sealed class EfMushafPageReader(QuranDashboardDbContext db) : IMushafPage
         var juzRows = db.QuranJuzs
             .AsNoTracking()
             .Where(j => ayahIds.Contains(j.FirstAyahId))
-            .Select(j => new { MarkerType = "juz", MarkerNumber = j.JuzNumber, AyahId = j.FirstAyahId });
+            .Select(j => new { MarkerType = JuzMarkerType, MarkerNumber = j.JuzNumber, AyahId = j.FirstAyahId });
 
         var hizbRows = db.QuranHizbs
             .AsNoTracking()
             .Where(h => ayahIds.Contains(h.FirstAyahId))
-            .Select(h => new { MarkerType = "hizb", MarkerNumber = h.HizbNumber, AyahId = h.FirstAyahId });
+            .Select(h => new { MarkerType = HizbMarkerType, MarkerNumber = h.HizbNumber, AyahId = h.FirstAyahId });
 
         var rubRows = db.QuranRubs
             .AsNoTracking()
             .Where(r => ayahIds.Contains(r.FirstAyahId))
-            .Select(r => new { MarkerType = "rub", MarkerNumber = r.RubNumber, AyahId = r.FirstAyahId });
+            .Select(r => new { MarkerType = RubMarkerType, MarkerNumber = r.RubNumber, AyahId = r.FirstAyahId });
 
         var numberedMarkers = await juzRows.Concat(hizbRows).Concat(rubRows).ToListAsync(ct);
         markers.AddRange(numberedMarkers.Select(m =>
@@ -154,7 +161,7 @@ public sealed class EfMushafPageReader(QuranDashboardDbContext db) : IMushafPage
             .Where(s => ayahIds.Contains(s.AyahId))
             .ToListAsync(ct);
         markers.AddRange(sajdaMarkers.Select(s =>
-            ToMarker("sajda", s.SajdahNumber, s.AyahId, ayahFirstWord, MapSajdahType(s.SajdahType))));
+            ToMarker(SajdaMarkerType, s.SajdahNumber, s.AyahId, ayahFirstWord, MapSajdahType(s.SajdahType))));
 
         return markers
             .OrderBy(m => m.LineNumber)
