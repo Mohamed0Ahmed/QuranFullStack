@@ -35,7 +35,13 @@ import {
 } from '../utils/unique-words-drilldown.state';
 import { UniqueWordsCache, UniqueWordsCacheKeys } from './unique-words-cache';
 
+/**
+ * Identity of the drilldown modal as expressed by the URL. `mode` is part of the identity:
+ * simple and tashkeel are separate word spaces, so the same `wordId` denotes a different word
+ * in each and a held summary from one mode must never be reused for the other.
+ */
 interface ModalUrlState {
+  readonly mode: UniqueWordKind;
   readonly wordId: number;
   readonly view: WordDrilldownView;
   readonly ayahPage: number;
@@ -71,6 +77,7 @@ export class UniqueWordsDrilldownFacade {
   openDrilldown(word: UniqueWordListItemDto, view: WordDrilldownView): void {
     const summary = toUniqueWordSummary(word);
     this.activeModalUrlState = {
+      mode: word.kind,
       wordId: word.id,
       view,
       ayahPage: DEFAULT_AYAH_PAGE,
@@ -99,6 +106,7 @@ export class UniqueWordsDrilldownFacade {
 
     const nextAyahPage = view === 'ayahs' ? current.ayahPage : DEFAULT_AYAH_PAGE;
     this.activeModalUrlState = {
+      mode: current.summary.kind,
       wordId: current.selectedWordId,
       view,
       ayahPage: nextAyahPage,
@@ -120,6 +128,7 @@ export class UniqueWordsDrilldownFacade {
     }
 
     this.activeModalUrlState = {
+      mode: current.summary.kind,
       wordId: current.selectedWordId,
       view: 'ayahs',
       ayahPage: page,
@@ -162,6 +171,7 @@ export class UniqueWordsDrilldownFacade {
     }
 
     const nextState: ModalUrlState = {
+      mode,
       wordId,
       view: view ?? 'surahs',
       ayahPage: view === 'ayahs' ? ayahPage ?? DEFAULT_AYAH_PAGE : DEFAULT_AYAH_PAGE,
@@ -172,15 +182,21 @@ export class UniqueWordsDrilldownFacade {
     }
 
     this.activeModalUrlState = nextState;
-    this.restoreOrUpdateModal(mode, nextState);
+    this.restoreOrUpdateModal(nextState);
   }
 
-  private restoreOrUpdateModal(mode: UniqueWordKind, nextState: ModalUrlState): void {
+  /**
+   * Reuses the held summary only when it describes the very word the URL now asks for. The
+   * summary's own `kind` must match the requested mode: `selectedWordId` alone is ambiguous
+   * across modes, so matching on it would serve the previous mode's word and details.
+   */
+  private restoreOrUpdateModal(nextState: ModalUrlState): void {
     const current = this._drilldown();
     if (
       current.isOpen &&
       current.selectedWordId === nextState.wordId &&
-      current.summary !== null
+      current.summary !== null &&
+      current.summary.kind === nextState.mode
     ) {
       this._drilldown.update((s) => ({
         ...s,
@@ -198,7 +214,7 @@ export class UniqueWordsDrilldownFacade {
       return;
     }
 
-    this.loadSummaryAndRestore(mode, nextState);
+    this.loadSummaryAndRestore(nextState.mode, nextState);
   }
 
   private loadSummaryAndRestore(mode: UniqueWordKind, nextState: ModalUrlState): void {
@@ -269,6 +285,7 @@ export class UniqueWordsDrilldownFacade {
   ): boolean {
     return (
       current !== null &&
+      current.mode === next.mode &&
       current.wordId === next.wordId &&
       current.view === next.view &&
       current.ayahPage === next.ayahPage

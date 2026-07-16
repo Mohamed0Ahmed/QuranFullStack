@@ -99,6 +99,11 @@ export class UniqueWordsFacade {
   unbindFromRoute(): void {
     this.routeSub?.unsubscribe();
     this.routeSub = undefined;
+    // The route-driven list request is cancelled by the switchMap above, but a manual one
+    // (retry / explicit reload) has no such guard: its late response would write list state
+    // belonging to whatever binding replaced this one.
+    this.manualLoadSub?.unsubscribe();
+    this.manualLoadSub = undefined;
     // Perf finding F3: the drilldown facade is a root singleton whose summary/detail HTTP
     // subscriptions must not keep running (and mutating offscreen state) after this page unbinds.
     // Cancelling here preserves the URL selection needed to reload cleanly on return.
