@@ -43,6 +43,13 @@ import { mapUniqueWordSummaryDisplayText } from '../../utils/unique-words-displa
 export class WordDrilldownModalComponent {
   readonly state = input.required<WordDrilldownState>();
   readonly inline = input(false);
+  /**
+   * Content-only mode (Feature 029, Change B4): render just the view tablist +
+   * drilldown body in a plain wrapper — no card section, no dialog/backdrop, no
+   * header/close. Used inside the global detail overlay shell, which owns the
+   * dialog chrome. When false, the inline/modal branches behave as before.
+   */
+  readonly frameless = input(false);
 
   readonly closeModal = output<void>();
   readonly viewChange = output<WordDrilldownView>();

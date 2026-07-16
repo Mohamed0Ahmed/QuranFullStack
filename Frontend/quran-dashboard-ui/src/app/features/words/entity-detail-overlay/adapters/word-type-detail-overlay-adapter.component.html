@@ -1,0 +1,68 @@
+<!-- The panel's own notFound input stays unbound: in the overlay the adapter
+     owns the notFound branch (overlay-word-type-not-found) inside the projected
+     content, mirroring the root reference adapter. -->
+<qd-word-type-details-panel
+  [inline]="true"
+  [frameless]="true"
+  [kind]="'word'"
+  [view]="effectiveView()"
+  [selectionTitle]="panelState().summary?.displayText ?? ''"
+  [loading]="panelState().status === 'loading'"
+  (viewChange)="onViewChange($event)"
+>
+  @switch (panelState().status) {
+    @case ('loading') {
+      @if (effectiveView() === 'ayahs') {
+        <qd-ayah-matches-list
+          [loading]="true"
+          [page]="emptyAyahsPage"
+          [currentPage]="panelState().detailPage"
+          data-testid="overlay-word-type-ayahs-view"
+        />
+      } @else if (effectiveView() === 'surahs') {
+        <qd-surah-occurrences-list
+          [loading]="true"
+          [surahs]="[]"
+          data-testid="overlay-word-type-mentioned-surahs-view"
+        />
+        <qd-missing-surahs-list
+          [loading]="true"
+          [surahs]="[]"
+          data-testid="overlay-word-type-missing-surahs-view"
+        />
+      }
+    }
+    @case ('error') {
+      <div class="qd-error-state" role="alert" data-testid="overlay-word-type-panel-error">
+        {{ panelState().errorMessage }}
+      </div>
+    }
+    @case ('notFound') {
+      <div class="qd-empty-state" role="status" data-testid="overlay-word-type-not-found">
+        {{ panelState().errorMessage || notFoundLabel }}
+      </div>
+    }
+    @case ('empty') {
+      <div class="qd-empty-state" data-testid="overlay-word-type-panel-empty">{{ emptyViewLabel() }}</div>
+    }
+    @case ('success') {
+      @if (effectiveView() === 'ayahs') {
+        <qd-ayah-matches-list
+          [page]="ayahsPageForView()"
+          [currentPage]="panelState().detailPage"
+          data-testid="overlay-word-type-ayahs-view"
+          (pageChange)="onDetailPageChange($event)"
+        />
+      } @else if (effectiveView() === 'surahs') {
+        <qd-surah-occurrences-list
+          [surahs]="mentionedSurahs()"
+          data-testid="overlay-word-type-mentioned-surahs-view"
+        />
+        <qd-missing-surahs-list
+          [surahs]="missingSurahs()"
+          data-testid="overlay-word-type-missing-surahs-view"
+        />
+      }
+    }
+  }
+</qd-word-type-details-panel>

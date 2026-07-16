@@ -1,12 +1,16 @@
 import { Component, computed, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
-import { deepLinkToHref } from '../../../../shared/url/deep-link-href';
+import { DetailOverlayLinkDirective } from '../../../../core/navigation/detail-overlay/detail-overlay-link.directive';
+import {
+  LemmaDetailFrame,
+  RootDetailFrame,
+  StemDetailFrame,
+  UniqueDetailFrame,
+  WordTypeDetailFrame,
+} from '../../../../core/navigation/detail-overlay/detail-overlay.models';
 import { ResourceLoadState, WordAnalysisViewModel } from '../../models/mushaf.models';
-import { buildLemmasDeepLink } from '../../../words/state/lemmas-url-sync';
-import { buildUniqueWordsDeepLink } from '../../../words/state/unique-words-url-sync';
-import { buildStemsDeepLink } from '../../../words/state/stems-url-sync';
-import { buildRootsDeepLink } from '../../../words/state/roots-url-sync';
+import { wordTypeDetailFrameFromAnalysis } from '../../utils/word-type-detail-frame.adapter';
 import { SegmentDataRowsComponent } from '../segment-data-rows/segment-data-rows.component';
 import { SegmentRenderedWordComponent } from '../segment-rendered-word/segment-rendered-word.component';
 import { WordMorphologySummaryComponent } from '../word-morphology-summary/word-morphology-summary.component';
@@ -16,6 +20,7 @@ import { WordMorphologySummaryComponent } from '../word-morphology-summary/word-
   standalone: true,
   imports: [
     CommonModule,
+    DetailOverlayLinkDirective,
     SegmentRenderedWordComponent,
     WordMorphologySummaryComponent,
     SegmentDataRowsComponent,
@@ -36,63 +41,77 @@ export class SelectedWordSectionComponent {
 
   protected readonly loadingSegmentPlaceholders = [0, 1, 2] as const;
 
-  protected readonly rootExplorerHref = computed(() => {
+  // Detail-overlay frames (Feature 029, Change B): every identity link is a
+  // real anchor that opens a one-frame overlay stack over the Mushaf base.
+  protected readonly rootFrame = computed<RootDetailFrame | null>(() => {
     const rootId = this.analysis()?.morphology.root?.id;
 
     if (!rootId) {
-      return '';
+      return null;
     }
 
-    return deepLinkToHref(buildRootsDeepLink({ rootId }));
+    return { kind: 'root', id: rootId, view: 'words', wordView: 'simple', surahView: 'mentioned', detailPage: 1 };
   });
 
-  protected readonly lemmaExplorerHref = computed(() => {
+  protected readonly lemmaFrame = computed<LemmaDetailFrame | null>(() => {
     const lemmaId = this.analysis()?.morphology.lemma?.id;
 
     if (!lemmaId) {
-      return '';
+      return null;
     }
 
-    return deepLinkToHref(buildLemmasDeepLink({ lemmaId, view: 'words', wordView: 'simple' }));
+    return {
+      kind: 'lemma',
+      id: lemmaId,
+      view: 'words',
+      wordView: 'simple',
+      surahView: 'mentioned',
+      detailPage: 1,
+      typeCode: null,
+    };
   });
 
-  protected readonly stemExplorerHref = computed(() => {
+  protected readonly stemFrame = computed<StemDetailFrame | null>(() => {
     const stemId = this.analysis()?.morphology.stem?.id;
 
     if (!stemId) {
-      return '';
+      return null;
     }
 
-    return deepLinkToHref(buildStemsDeepLink({ stemId, view: 'words', wordView: 'simple' }));
+    return {
+      kind: 'stem',
+      id: stemId,
+      view: 'words',
+      wordView: 'simple',
+      surahView: 'mentioned',
+      detailPage: 1,
+      typeCode: null,
+    };
   });
 
-  protected readonly tashkeelIdentityHref = computed(() => {
+  protected readonly tashkeelIdentityFrame = computed<UniqueDetailFrame | null>(() => {
     const analysis = this.analysis();
 
     if (!analysis) {
-      return '';
+      return null;
     }
 
-    return deepLinkToHref(
-      buildUniqueWordsDeepLink('tashkeel', {
-        wordId: analysis.identity.uniqueTashkeel.id,
-        view: 'ayahs',
-      }),
-    );
+    return { kind: 'unique', mode: 'tashkeel', id: analysis.identity.uniqueTashkeel.id, view: 'ayahs', ayahPage: 1 };
   });
 
-  protected readonly simpleIdentityHref = computed(() => {
+  protected readonly simpleIdentityFrame = computed<UniqueDetailFrame | null>(() => {
     const analysis = this.analysis();
 
     if (!analysis) {
-      return '';
+      return null;
     }
 
-    return deepLinkToHref(
-      buildUniqueWordsDeepLink('simple', {
-        wordId: analysis.identity.uniqueSimple.id,
-        view: 'ayahs',
-      }),
-    );
+    return { kind: 'unique', mode: 'simple', id: analysis.identity.uniqueSimple.id, view: 'ayahs', ayahPage: 1 };
+  });
+
+  protected readonly wordTypeFrame = computed<WordTypeDetailFrame | null>(() => {
+    const analysis = this.analysis();
+
+    return analysis === null ? null : wordTypeDetailFrameFromAnalysis(analysis);
   });
 }

@@ -1,21 +1,4 @@
-<ng-template #panelChrome>
-  <header class="explorer-panel-header root-details-panel__header">
-    <h2 class="explorer-panel-header__label" data-testid="root-details-panel-label">{{ rootsPanelLabel }}</h2>
-    <span class="explorer-panel-header__entity" data-testid="root-details-panel-entity">{{ selectionTitle() }}</span>
-    <div class="explorer-panel-header__end">
-      @if (hasSelection()) {
-        <button
-          type="button"
-          class="qd-btn qd-btn-ghost root-details-panel__close"
-          data-testid="root-details-panel-close"
-          (click)="close.emit()"
-        >
-          {{ closeLabel }}
-        </button>
-      }
-    </div>
-  </header>
-
+<ng-template #panelBody>
   <div
     class="explorer-detail-panel__toolbar explorer-detail-panel__toolbar--grid-5 root-details-panel__tabs"
     role="tablist"
@@ -63,7 +46,35 @@
   </div>
 </ng-template>
 
-@if (inline()) {
+<ng-template #panelChrome>
+  <header class="explorer-panel-header root-details-panel__header">
+    <h2 class="explorer-panel-header__label" data-testid="root-details-panel-label">{{ rootsPanelLabel }}</h2>
+    <span class="explorer-panel-header__entity" data-testid="root-details-panel-entity">{{ selectionTitle() }}</span>
+    <div class="explorer-panel-header__end">
+      @if (hasSelection()) {
+        <button
+          type="button"
+          class="qd-btn qd-btn-ghost root-details-panel__close"
+          data-testid="root-details-panel-close"
+          (click)="close.emit()"
+        >
+          {{ closeLabel }}
+        </button>
+      }
+    </div>
+  </header>
+
+  <ng-container *ngTemplateOutlet="panelBody" />
+</ng-template>
+
+@if (frameless()) {
+  <div
+    class="root-details-panel root-details-panel--frameless"
+    data-testid="root-details-panel-frameless"
+  >
+    <ng-container *ngTemplateOutlet="panelBody" />
+  </div>
+} @else if (inline()) {
   <section
     class="qd-card explorer-detail-panel root-details-panel"
     [attr.aria-label]="rootsPanelLabel"

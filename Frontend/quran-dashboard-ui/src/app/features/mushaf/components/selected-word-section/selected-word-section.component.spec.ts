@@ -1,6 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideLocationMocks } from '@angular/common/testing';
+import { Router, provideRouter } from '@angular/router';
 
+import { DetailOverlayHistoryService } from '../../../../core/navigation/detail-overlay/detail-overlay-history.service';
 import { SelectedWordSectionComponent } from './selected-word-section.component';
 import { ResourceLoadState, WordAnalysisViewModel } from '../../models/mushaf.models';
 import { segmentSlotToColor } from '../../state/segment-color-palette';
@@ -12,6 +16,9 @@ const I3RAB_PLACEHOLDER = 'إعراب-تجريبي-١';
 const WORD_KEY_PLACEHOLDER = 'مفتاح-كلمة-تجريبي';
 
 const IDLE: ResourceLoadState = { isLoading: false, isEmpty: false, errorMessage: null };
+
+@Component({ standalone: true, template: '' })
+class BlankPageComponent {}
 
 function buildWordAnalysisViewModel(): WordAnalysisViewModel {
   return {
@@ -88,6 +95,17 @@ function setInputs(
 }
 
 describe('SelectedWordSectionComponent — stable loading (UI-001)', () => {
+  beforeEach(async () => {
+    TestBed.configureTestingModule({
+      providers: [provideRouter([{ path: '**', component: BlankPageComponent }]), provideLocationMocks()],
+    });
+    const router = TestBed.inject(Router);
+    sessionStorage.clear();
+    router.initialNavigation();
+    await router.navigateByUrl('/dashboard/mushaf?page=5');
+    TestBed.inject(DetailOverlayHistoryService).start();
+  });
+
   it('keeps the shell + static labels mounted and shows structured block skeletons while loading', () => {
     const fixture = TestBed.createComponent(SelectedWordSectionComponent);
     setInputs(fixture, {
@@ -205,7 +223,7 @@ describe('SelectedWordSectionComponent — stable loading (UI-001)', () => {
     expect(root.querySelectorAll('.qd-skeleton').length).toBe(0);
   });
 
-  it('opens the root explorer in a new tab when morphology includes a root id', () => {
+  it('renders the root anchor as a detail-overlay link when morphology includes a root id', () => {
     const fixture = TestBed.createComponent(SelectedWordSectionComponent);
     const analysis = buildWordAnalysisViewModel();
     analysis.morphology = {
@@ -223,12 +241,16 @@ describe('SelectedWordSectionComponent — stable loading (UI-001)', () => {
       '[data-testid="word-morphology-root-link"]',
     ) as HTMLAnchorElement | null;
 
-    expect(rootLink?.getAttribute('href')).toBe('/dashboard/words/roots?root=999');
-    expect(rootLink?.getAttribute('target')).toBe('_blank');
-    expect(rootLink?.getAttribute('rel')).toBe('noopener noreferrer');
+    const href = rootLink?.getAttribute('href') ?? '';
+    expect(href).toContain('/dashboard/mushaf');
+    expect(href).toContain('page=5');
+    expect(href).toContain(`qdDetail=${encodeURIComponent('v1~root~999~words~simple~mentioned~1')}`);
+    expect(href).toContain('qdDetailOpen=1');
+    expect(rootLink?.getAttribute('target')).toBeNull();
+    expect(rootLink?.getAttribute('rel')).toBeNull();
   });
 
-  it('opens the root, lemma, and stem explorers in new tabs when morphology includes ids', () => {
+  it('renders root, lemma, and stem detail-overlay links over the Mushaf base when morphology includes ids', () => {
     const fixture = TestBed.createComponent(SelectedWordSectionComponent);
     const analysis = buildWordAnalysisViewModel();
     analysis.morphology = {
@@ -248,17 +270,96 @@ describe('SelectedWordSectionComponent — stable loading (UI-001)', () => {
     const lemmaLink = root.querySelector('[data-testid="word-morphology-lemma-link"]') as HTMLAnchorElement | null;
     const stemLink = root.querySelector('[data-testid="word-morphology-stem-link"]') as HTMLAnchorElement | null;
 
-    expect(rootLink?.getAttribute('href')).toBe('/dashboard/words/roots?root=999');
-    expect(rootLink?.getAttribute('target')).toBe('_blank');
-    expect(rootLink?.getAttribute('rel')).toBe('noopener noreferrer');
+    expect(rootLink?.getAttribute('href')).toContain(
+      `qdDetail=${encodeURIComponent('v1~root~999~words~simple~mentioned~1')}`,
+    );
+    expect(rootLink?.getAttribute('target')).toBeNull();
+    expect(rootLink?.getAttribute('rel')).toBeNull();
 
-    expect(lemmaLink?.getAttribute('href')).toBe('/dashboard/words/lemmas?lemma=555&view=words&wordView=simple');
-    expect(lemmaLink?.getAttribute('target')).toBe('_blank');
-    expect(lemmaLink?.getAttribute('rel')).toBe('noopener noreferrer');
+    expect(lemmaLink?.getAttribute('href')).toContain(
+      `qdDetail=${encodeURIComponent('v1~lemma~555~words~simple~mentioned~1~-')}`,
+    );
+    expect(lemmaLink?.getAttribute('href')).toContain('qdDetailOpen=1');
+    expect(lemmaLink?.getAttribute('target')).toBeNull();
+    expect(lemmaLink?.getAttribute('rel')).toBeNull();
 
-    expect(stemLink?.getAttribute('href')).toBe('/dashboard/words/stems?stem=777&view=words&wordView=simple');
-    expect(stemLink?.getAttribute('target')).toBe('_blank');
-    expect(stemLink?.getAttribute('rel')).toBe('noopener noreferrer');
+    expect(stemLink?.getAttribute('href')).toContain(
+      `qdDetail=${encodeURIComponent('v1~stem~777~words~simple~mentioned~1~-')}`,
+    );
+    expect(stemLink?.getAttribute('href')).toContain('qdDetailOpen=1');
+    expect(stemLink?.getAttribute('target')).toBeNull();
+    expect(stemLink?.getAttribute('rel')).toBeNull();
+  });
+
+  it('renders the type label as a word-type detail-overlay link for a verb with a tense', () => {
+    const fixture = TestBed.createComponent(SelectedWordSectionComponent);
+    setInputs(fixture, {
+      analysis: buildWordAnalysisViewModel(),
+      loadState: IDLE,
+      selectedWordLocation: '2:25:3',
+    });
+
+    const root = fixture.nativeElement as HTMLElement;
+    const typeLink = root.querySelector(
+      '[data-testid="word-morphology-type-link"]',
+    ) as HTMLAnchorElement | null;
+
+    const href = typeLink?.getAttribute('href') ?? '';
+    expect(href).toContain('/dashboard/mushaf');
+    expect(href).toContain(`qdDetail=${encodeURIComponent('v1~wordType~101~past~all~all~all~ayahs~1')}`);
+    expect(href).toContain('qdDetailOpen=1');
+    expect(typeLink?.getAttribute('target')).toBeNull();
+    expect(typeLink?.getAttribute('rel')).toBeNull();
+    expect(typeLink?.textContent).toContain('فعل');
+  });
+
+  it('derives the word-type context from head POS for a non-verb', () => {
+    const fixture = TestBed.createComponent(SelectedWordSectionComponent);
+    const analysis = buildWordAnalysisViewModel();
+    analysis.morphology = {
+      ...analysis.morphology,
+      headPos: 'N',
+      headPosLabel: { ar: 'اسم', en: 'Noun' },
+      isVerb: false,
+      verbTense: null,
+      verbVoice: null,
+    };
+    setInputs(fixture, {
+      analysis,
+      loadState: IDLE,
+      selectedWordLocation: '2:25:3',
+    });
+
+    const typeLink = (fixture.nativeElement as HTMLElement).querySelector(
+      '[data-testid="word-morphology-type-link"]',
+    ) as HTMLAnchorElement | null;
+
+    expect(typeLink?.getAttribute('href')).toContain(
+      `qdDetail=${encodeURIComponent('v1~wordType~101~N~all~all~all~ayahs~1')}`,
+    );
+  });
+
+  it('keeps the type column as plain text when no word-type identity can be derived', () => {
+    const fixture = TestBed.createComponent(SelectedWordSectionComponent);
+    const analysis = buildWordAnalysisViewModel();
+    analysis.morphology = {
+      ...analysis.morphology,
+      headPos: '',
+      headPosLabel: { ar: 'اسم', en: 'Noun' },
+      isVerb: false,
+      verbTense: null,
+      verbVoice: null,
+    };
+    setInputs(fixture, {
+      analysis,
+      loadState: IDLE,
+      selectedWordLocation: '2:25:3',
+    });
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('[data-testid="word-morphology-type-link"]')).toBeNull();
+    const summary = root.querySelector('[data-testid="word-morphology-summary"]');
+    expect(summary?.textContent).toContain('نوع الكلمة');
   });
 
   it('does not render a root explorer link when morphology has no root id', () => {
@@ -273,7 +374,7 @@ describe('SelectedWordSectionComponent — stable loading (UI-001)', () => {
     expect(root.querySelector('[data-testid="word-morphology-root-link"]')).toBeNull();
   });
 
-  it('opens both unique-word identity rows in a new tab using their nested ids', () => {
+  it('renders both unique-word identity rows as detail-overlay links using their nested ids', () => {
     const fixture = TestBed.createComponent(SelectedWordSectionComponent);
     setInputs(fixture, {
       analysis: buildWordAnalysisViewModel(),
@@ -289,17 +390,19 @@ describe('SelectedWordSectionComponent — stable loading (UI-001)', () => {
       '[data-testid="word-identity-simple-link"]',
     ) as HTMLAnchorElement | null;
 
-    expect(tashkeelLink?.getAttribute('href')).toBe(
-      '/dashboard/words/unique/tashkeel?word=101&view=ayahs',
-    );
-    expect(tashkeelLink?.getAttribute('target')).toBe('_blank');
-    expect(tashkeelLink?.getAttribute('rel')).toBe('noopener noreferrer');
+    const tashkeelHref = tashkeelLink?.getAttribute('href') ?? '';
+    expect(tashkeelHref).toContain('/dashboard/mushaf');
+    expect(tashkeelHref).toContain('page=5');
+    expect(tashkeelHref).toContain(`qdDetail=${encodeURIComponent('v1~unique~tashkeel~101~ayahs~1')}`);
+    expect(tashkeelHref).toContain('qdDetailOpen=1');
+    expect(tashkeelLink?.getAttribute('target')).toBeNull();
+    expect(tashkeelLink?.getAttribute('rel')).toBeNull();
 
-    expect(simpleLink?.getAttribute('href')).toBe(
-      '/dashboard/words/unique/simple?word=202&view=ayahs',
-    );
-    expect(simpleLink?.getAttribute('target')).toBe('_blank');
-    expect(simpleLink?.getAttribute('rel')).toBe('noopener noreferrer');
+    const simpleHref = simpleLink?.getAttribute('href') ?? '';
+    expect(simpleHref).toContain(`qdDetail=${encodeURIComponent('v1~unique~simple~202~ayahs~1')}`);
+    expect(simpleHref).toContain('qdDetailOpen=1');
+    expect(simpleLink?.getAttribute('target')).toBeNull();
+    expect(simpleLink?.getAttribute('rel')).toBeNull();
   });
 
   it('renders the empty "select a word" state when no word is selected', () => {

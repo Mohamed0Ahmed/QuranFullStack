@@ -6,7 +6,7 @@ import { Router, provideRouter } from '@angular/router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { DetailOverlayHistoryService } from './detail-overlay-history.service';
-import { DetailOverlayLinkDirective } from './detail-overlay-link.directive';
+import { DETAIL_OVERLAY_LINK_MODE, DetailOverlayLinkDirective } from './detail-overlay-link.directive';
 import { RootDetailFrame } from './detail-overlay.models';
 
 const rootFrame: RootDetailFrame = {
@@ -35,6 +35,19 @@ class LinkHostComponent {
   frame = rootFrame;
 }
 
+@Component({
+  standalone: true,
+  imports: [DetailOverlayLinkDirective],
+  providers: [{ provide: DETAIL_OVERLAY_LINK_MODE, useValue: 'append' }],
+  template: `
+    <a [qdDetailLink]="frame" data-testid="context-default-link">SYNTH_CONTEXT_LINK</a>
+    <a [qdDetailLink]="frame" qdDetailLinkMode="start" data-testid="context-override-link">SYNTH_OVERRIDE_LINK</a>
+  `,
+})
+class AppendContextHostComponent {
+  frame = rootFrame;
+}
+
 describe('DetailOverlayLinkDirective', () => {
   let router: Router;
   let service: DetailOverlayHistoryService;
@@ -50,10 +63,10 @@ describe('DetailOverlayLinkDirective', () => {
     router.initialNavigation();
   });
 
-  async function createHost() {
+  async function createHost(component: typeof LinkHostComponent | typeof AppendContextHostComponent = LinkHostComponent) {
     await router.navigateByUrl('/dashboard/words/roots?root=5');
     service.start();
-    const fixture = TestBed.createComponent(LinkHostComponent);
+    const fixture = TestBed.createComponent(component);
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();
@@ -94,6 +107,32 @@ describe('DetailOverlayLinkDirective', () => {
 
     expect(event.defaultPrevented).toBe(true);
     expect(appendSpy).toHaveBeenCalledWith(rootFrame);
+  });
+
+  it('uses append as the default mode when the component tree provides the mode token', async () => {
+    const fixture = await createHost(AppendContextHostComponent);
+    const appendSpy = vi.spyOn(service, 'appendFrame').mockReturnValue(true);
+    const startSpy = vi.spyOn(service, 'startStack').mockReturnValue(undefined);
+
+    const event = new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 });
+    query(fixture, 'context-default-link').dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(appendSpy).toHaveBeenCalledWith(rootFrame);
+    expect(startSpy).not.toHaveBeenCalled();
+  });
+
+  it('lets an explicit mode input beat the provided mode token', async () => {
+    const fixture = await createHost(AppendContextHostComponent);
+    const appendSpy = vi.spyOn(service, 'appendFrame').mockReturnValue(true);
+    const startSpy = vi.spyOn(service, 'startStack').mockReturnValue(undefined);
+
+    const event = new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 });
+    query(fixture, 'context-override-link').dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(startSpy).toHaveBeenCalledWith(rootFrame);
+    expect(appendSpy).not.toHaveBeenCalled();
   });
 
   it.each([

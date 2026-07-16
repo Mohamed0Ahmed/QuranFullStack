@@ -12,6 +12,43 @@
     (closeRequested)="overlay.close()"
     (restoreRequested)="overlay.restore()"
   >
-    <!-- Lazy entity adapters (root/lemma/stem/unique/wordType) mount here in B4. -->
+    <!-- Each adapter is a deferred dependency: its code stays out of the eager bundle. -->
+    @switch (topFrame()?.kind) {
+      @case ('root') {
+        @if (rootFrame(); as frame) {
+          @defer (on immediate) {
+            <qd-root-detail-overlay-adapter [frame]="frame" />
+          }
+        }
+      }
+      @case ('lemma') {
+        @if (lemmaFrame(); as frame) {
+          @defer (on immediate) {
+            <qd-lemma-detail-overlay-adapter [frame]="frame" />
+          }
+        }
+      }
+      @case ('stem') {
+        @if (stemFrame(); as frame) {
+          @defer (on immediate) {
+            <qd-stem-detail-overlay-adapter [frame]="frame" />
+          }
+        }
+      }
+      @case ('unique') {
+        @if (uniqueFrame(); as frame) {
+          @defer (on immediate) {
+            <qd-unique-detail-overlay-adapter [frame]="frame" />
+          }
+        }
+      }
+      @case ('wordType') {
+        @if (wordTypeFrame(); as frame) {
+          @defer (on immediate) {
+            <qd-word-type-detail-overlay-adapter [frame]="frame" />
+          }
+        }
+      }
+    }
   </qd-detail-modal-shell>
 }

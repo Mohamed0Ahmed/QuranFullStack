@@ -31,6 +31,51 @@ Shared across explorers: `utils/explorer-table-*` (focus/keyboard-nav/scroll/col
 `utils/explorer-keyboard-nav.scheduler.ts`, `utils/verse-key.ts`, and the
 `components/` table + list + panel set.
 
+## Global entity-detail overlay (Feature 029, Change B)
+
+- `entity-detail-overlay/` owns the persistent global detail overlay: the host component
+  (mounted once beside `qd-app-shell` in `app.ts`) binds the URL-authoritative
+  `core/navigation/detail-overlay` coordinator to the shared `qd-detail-modal-shell` and
+  mounts one lazy adapter per top-frame kind inside `@defer` blocks. Adapters must stay
+  out of the eager bundle — the production build must show one lazy chunk per adapter.
+- **Route-independent detail controllers**: `state/roots-detail.controller.ts` is the
+  reference pattern — an `@Injectable()` (NOT root-provided) controller with
+  constructor-injected api/cache/view-loader that owns the panel signal state, all loads,
+  and stale-response cancellation, with a route-free `applyUrlState(...)` entry point.
+  `RootsDetailFacade` stays the page's thin route adapter over its own private controller
+  instance; each overlay adapter provides its OWN component-scoped controller, so overlay
+  activity can never mutate the page panel. The root-scoped API/cache/view-loader services
+  stay shared, so the side panel and the overlay de-duplicate the same reads
+  (`RootsCacheKeys` unchanged).
+- **Overlay adapters never call the Router** and never push view/page changes into the
+  controller directly: every tab/sub-view/pagination change goes through
+  `DetailOverlayHistoryService.replaceTopFrame(...)`; the URL sync feeds the new frame back
+  into the adapter's `frame` input, which re-drives the controller (`applyUrlState` runs
+  `untracked` so panel-state reads don't retrigger the effect).
+- All five entity panels expose a `frameless` input that renders only the view tablist +
+  tabpanel body (no card, no header/close, no dialog/backdrop) for composition inside the
+  global shell, which owns all dialog chrome. Overlay content testids are prefixed
+  `overlay-<entity>-*` (page testids unchanged). All five adapters are fully implemented:
+  root/lemma/stem (controllers extracted from their facades — lemma/stem identity includes
+  the ayahs `typeCode`), unique (drilldown controller extracted; `(mode, wordId, view,
+  ayahPage)` is one identity), and wordType (word-kind-only controller sharing
+  `WordTypesCacheKeys`; a frame `view` of `words` is clamped to `ayahs` since member-words
+  exists only for grouped selections — the page facade keeps grouped logic and was not
+  refactored).
+- The shell heading uses the host-provided `EntityDetailOverlayTitleStore`: the active
+  adapter publishes its loaded entity title and clears it on destroy; while empty the host
+  falls back to the generic kind label.
+- **Cross-entity links** (plan §5.2): the seven detail-list link components
+  (root-words/lemmas/stems, lemma-words/stems, stem-words/lemmas) render real
+  `a[qdDetailLink]` anchors carrying fully-explicit frames instead of forced-new-tab
+  explorer deep links. Context decides the click semantics via the
+  `DETAIL_OVERLAY_LINK_MODE` token: overlay adapters provide `'append'` (push onto the
+  stack), side panels get the `'start'` default (new one-frame stack that never touches
+  the panel's own selection — proven by `entity-detail-overlay-invariant.spec.ts`).
+  Modifier clicks/copy-link keep native browser behavior. `ayah-matches-list` links and
+  `word-type-grouped-words-list` (display-only) are unchanged. Table links outside a
+  detail surface keep page navigation (locked invariant).
+
 ## Gotchas / invariants (read before changing)
 
 - **Table/list visuals are centralized** (`UI_STYLE_SYSTEM.md` §17): all 5 explorer

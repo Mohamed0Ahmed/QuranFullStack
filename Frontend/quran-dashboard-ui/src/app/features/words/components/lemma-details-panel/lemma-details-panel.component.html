@@ -1,21 +1,4 @@
-<ng-template #panelChrome>
-  <header class="explorer-panel-header lemma-details-panel__header">
-    <h2 class="explorer-panel-header__label" data-testid="lemma-details-panel-label">{{ panelLabel }}</h2>
-    <span class="explorer-panel-header__entity" data-testid="lemma-details-panel-entity">{{ selectionTitle() }}</span>
-    <div class="explorer-panel-header__end">
-      @if (hasSelection()) {
-        <button
-          type="button"
-          class="qd-btn qd-btn-ghost lemma-details-panel__close"
-          data-testid="lemma-details-panel-close"
-          (click)="close.emit()"
-        >
-          {{ closeLabel }}
-        </button>
-      }
-    </div>
-  </header>
-
+<ng-template #panelBody>
   @if (!notFound()) {
     <div
       class="explorer-detail-panel__toolbar explorer-detail-panel__toolbar--grid-4 lemma-details-panel__tabs"
@@ -69,7 +52,35 @@
   </div>
 </ng-template>
 
-@if (inline()) {
+<ng-template #panelChrome>
+  <header class="explorer-panel-header lemma-details-panel__header">
+    <h2 class="explorer-panel-header__label" data-testid="lemma-details-panel-label">{{ panelLabel }}</h2>
+    <span class="explorer-panel-header__entity" data-testid="lemma-details-panel-entity">{{ selectionTitle() }}</span>
+    <div class="explorer-panel-header__end">
+      @if (hasSelection()) {
+        <button
+          type="button"
+          class="qd-btn qd-btn-ghost lemma-details-panel__close"
+          data-testid="lemma-details-panel-close"
+          (click)="close.emit()"
+        >
+          {{ closeLabel }}
+        </button>
+      }
+    </div>
+  </header>
+
+  <ng-container *ngTemplateOutlet="panelBody" />
+</ng-template>
+
+@if (frameless()) {
+  <div
+    class="lemma-details-panel lemma-details-panel--frameless"
+    data-testid="lemma-details-panel-frameless"
+  >
+    <ng-container *ngTemplateOutlet="panelBody" />
+  </div>
+} @else if (inline()) {
   <section
     class="qd-card explorer-detail-panel lemma-details-panel"
     [attr.aria-label]="panelLabel"

@@ -86,9 +86,10 @@
             <qd-segment-data-rows [segments]="analysis()!.segments" />
             <qd-word-morphology-summary
               [morphology]="analysis()!.morphology"
-              [rootExplorerHref]="rootExplorerHref()"
-              [lemmaExplorerHref]="lemmaExplorerHref()"
-              [stemExplorerHref]="stemExplorerHref()"
+              [wordTypeFrame]="wordTypeFrame()"
+              [rootFrame]="rootFrame()"
+              [lemmaFrame]="lemmaFrame()"
+              [stemFrame]="stemFrame()"
             />
           </div>
         </section>
@@ -97,9 +98,7 @@
           <div class="selected-word-section__identity" data-testid="word-identity-summary" role="group" aria-label="تكرار الكلمة">
             <a
               class="selected-word-section__identity-row qd-interactive-surface"
-              [attr.href]="tashkeelIdentityHref()"
-              target="_blank"
-              rel="noopener noreferrer"
+              [qdDetailLink]="tashkeelIdentityFrame()!"
               data-testid="word-identity-tashkeel-link"
             >
               <span class="selected-word-section__identity-label">التكرار (بالتشكيل)</span>
@@ -110,9 +109,7 @@
             </a>
             <a
               class="selected-word-section__identity-row qd-interactive-surface"
-              [attr.href]="simpleIdentityHref()"
-              target="_blank"
-              rel="noopener noreferrer"
+              [qdDetailLink]="simpleIdentityFrame()!"
               data-testid="word-identity-simple-link"
             >
               <span class="selected-word-section__identity-label">التكرار (مبسّط)</span>

@@ -1,21 +1,4 @@
-<ng-template #panelChrome>
-  <header class="explorer-panel-header word-drilldown-modal__header">
-    <h2 class="explorer-panel-header__label" data-testid="word-drilldown-panel-label">{{ drilldownPanelTitle }}</h2>
-    <span class="explorer-panel-header__entity" data-testid="word-drilldown-entity">{{ entityTitle() }}</span>
-    <div class="explorer-panel-header__end">
-      @if (inline() ? state().isOpen : true) {
-        <button
-          type="button"
-          class="qd-btn qd-btn-ghost"
-          data-testid="word-drilldown-close"
-          (click)="closeModal.emit()"
-        >
-          {{ closeLabel }}
-        </button>
-      }
-    </div>
-  </header>
-
+<ng-template #panelBody>
   <nav class="explorer-detail-panel__toolbar word-drilldown-modal__views" [attr.aria-label]="drilldownViewTablistLabel">
     @for (viewKey of drilldownViews; track viewKey) {
       <button
@@ -81,7 +64,35 @@
   </div>
 </ng-template>
 
-@if (inline()) {
+<ng-template #panelChrome>
+  <header class="explorer-panel-header word-drilldown-modal__header">
+    <h2 class="explorer-panel-header__label" data-testid="word-drilldown-panel-label">{{ drilldownPanelTitle }}</h2>
+    <span class="explorer-panel-header__entity" data-testid="word-drilldown-entity">{{ entityTitle() }}</span>
+    <div class="explorer-panel-header__end">
+      @if (inline() ? state().isOpen : true) {
+        <button
+          type="button"
+          class="qd-btn qd-btn-ghost"
+          data-testid="word-drilldown-close"
+          (click)="closeModal.emit()"
+        >
+          {{ closeLabel }}
+        </button>
+      }
+    </div>
+  </header>
+
+  <ng-container *ngTemplateOutlet="panelBody" />
+</ng-template>
+
+@if (frameless()) {
+  <div
+    class="word-drilldown-modal--frameless"
+    data-testid="word-drilldown-frameless"
+  >
+    <ng-container *ngTemplateOutlet="panelBody" />
+  </div>
+} @else if (inline()) {
   <section class="qd-card explorer-detail-panel word-drilldown-panel" [attr.aria-label]="drilldownPanelTitle">
     <ng-container *ngTemplateOutlet="panelChrome" />
   </section>

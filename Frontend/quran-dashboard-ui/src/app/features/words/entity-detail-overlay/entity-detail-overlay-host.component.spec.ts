@@ -1,14 +1,17 @@
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideLocationMocks } from '@angular/common/testing';
 import { Router, provideRouter } from '@angular/router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { App } from '../../../app';
 import { DetailOverlayHistoryService } from '../../../core/navigation/detail-overlay/detail-overlay-history.service';
-import { RootDetailFrame } from '../../../core/navigation/detail-overlay/detail-overlay.models';
+import {
+  DetailFrame,
+  RootDetailFrame,
+} from '../../../core/navigation/detail-overlay/detail-overlay.models';
 import { ENTITY_DETAIL_KIND_TITLES } from './entity-detail-overlay.labels';
 
 const rootFrame: RootDetailFrame = {
@@ -17,6 +20,45 @@ const rootFrame: RootDetailFrame = {
   view: 'words',
   wordView: 'simple',
   surahView: 'mentioned',
+  detailPage: 1,
+};
+
+const lemmaFrame: DetailFrame = {
+  kind: 'lemma',
+  id: 55,
+  view: 'ayahs',
+  wordView: 'simple',
+  surahView: 'mentioned',
+  detailPage: 1,
+  typeCode: null,
+};
+
+const stemFrame: DetailFrame = {
+  kind: 'stem',
+  id: 66,
+  view: 'ayahs',
+  wordView: 'simple',
+  surahView: 'mentioned',
+  detailPage: 1,
+  typeCode: null,
+};
+
+const uniqueFrame: DetailFrame = {
+  kind: 'unique',
+  mode: 'simple',
+  id: 77,
+  view: 'ayahs',
+  ayahPage: 1,
+};
+
+const wordTypeFrame: DetailFrame = {
+  kind: 'wordType',
+  tashkeelWordId: 88,
+  contextCode: 'noun',
+  case: 'all',
+  tense: 'all',
+  voice: 'all',
+  view: 'ayahs',
   detailPage: 1,
 };
 
@@ -142,6 +184,107 @@ describe('EntityDetailOverlayHostComponent (composition root)', () => {
     expect(service.state().stack).toHaveLength(1);
     expect(root.querySelector('[data-testid="detail-modal-back"]')).toBeNull();
     expect(root.querySelector('[data-testid="detail-modal-shell"]')).not.toBeNull();
+  });
+
+  /** Deferred adapter chunks load asynchronously; poll until the selector renders. */
+  async function waitForSelector(fixture: { detectChanges: () => void; nativeElement: unknown }, selector: string): Promise<void> {
+    await vi.waitFor(
+      () => {
+        fixture.detectChanges();
+        if ((fixture.nativeElement as HTMLElement).querySelector(selector) === null) {
+          throw new Error(`still waiting for ${selector}`);
+        }
+      },
+      { timeout: 5000, interval: 25 },
+    );
+  }
+
+  it('mounts the root adapter frameless inside the shell (no nested dialog chrome)', async () => {
+    const fixture = await createApp();
+    service.startStack(rootFrame);
+    await settle();
+    await waitForSelector(fixture, 'qd-root-detail-overlay-adapter');
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('qd-root-detail-overlay-adapter')).not.toBeNull();
+    expect(root.querySelector('[data-testid="root-details-panel-frameless"]')).not.toBeNull();
+    // The shell owns the single dialog: the panel contributes no chrome of its own.
+    expect(root.querySelectorAll('[role="dialog"]')).toHaveLength(1);
+    expect(root.querySelector('[data-testid="root-details-modal"]')).toBeNull();
+    expect(root.querySelector('[data-testid="root-details-panel-close"]')).toBeNull();
+    expect(root.querySelector('[data-testid="root-details-panel-label"]')).toBeNull();
+  });
+
+  it('mounts the matching real adapter for each non-root frame kind', async () => {
+    const fixture = await createApp();
+    const root = fixture.nativeElement as HTMLElement;
+    const cases: readonly { frame: DetailFrame; selector: string }[] = [
+      { frame: lemmaFrame, selector: 'qd-lemma-detail-overlay-adapter' },
+      { frame: stemFrame, selector: 'qd-stem-detail-overlay-adapter' },
+      { frame: uniqueFrame, selector: 'qd-unique-detail-overlay-adapter' },
+      { frame: wordTypeFrame, selector: 'qd-word-type-detail-overlay-adapter' },
+    ];
+
+    service.startStack(lemmaFrame);
+    for (const { frame, selector } of cases) {
+      if (frame !== lemmaFrame) {
+        service.appendFrame(frame);
+      }
+      await settle();
+      await waitForSelector(fixture, selector);
+      expect(root.querySelector(selector)).not.toBeNull();
+      // The shell stays the single dialog regardless of the mounted adapter.
+      expect(root.querySelectorAll('[role="dialog"]')).toHaveLength(1);
+    }
+  });
+
+  it('shows the loaded entity title and falls back to the kind label after a frame change', async () => {
+    const fixture = await createApp();
+    const httpMock = TestBed.inject(HttpTestingController);
+    service.startStack(rootFrame);
+    await settle();
+    await waitForSelector(fixture, 'qd-root-detail-overlay-adapter');
+
+    const summaryRequest = httpMock.expectOne((req) => req.url.endsWith('/api/words/roots/999'));
+    summaryRequest.flush({
+      isSuccess: true,
+      data: {
+        id: 999,
+        rootText: 'كتب',
+        occurrencesCount: 5,
+        ayahsCount: 4,
+        surahsCount: 3,
+        simpleWordsCount: 2,
+        tashkeelWordsCount: 2,
+        lemmasCount: 1,
+        stemsCount: 1,
+      },
+      message: null,
+      errors: null,
+    });
+    await settle();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const title = () => root.querySelector('.detail-modal-shell__title')?.textContent ?? '';
+    await vi.waitFor(
+      () => {
+        fixture.detectChanges();
+        if (!title().includes('كتب')) {
+          throw new Error('still waiting for the loaded entity title');
+        }
+      },
+      { timeout: 5000, interval: 25 },
+    );
+    expect(title()).toContain('كتب');
+
+    // A cross-entity append destroys the root adapter, which clears its title;
+    // the lemma adapter starts its own summary load (left pending here), so the
+    // heading falls back to the lemma kind label.
+    service.appendFrame(lemmaFrame);
+    await settle();
+    await waitForSelector(fixture, 'qd-lemma-detail-overlay-adapter');
+    expect(title()).toContain(ENTITY_DETAIL_KIND_TITLES.lemma);
+    expect(title()).not.toContain('كتب');
   });
 
   it('announces the Arabic cap status when a ninth append is refused', async () => {

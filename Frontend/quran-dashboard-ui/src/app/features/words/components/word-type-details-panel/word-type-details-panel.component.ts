@@ -32,6 +32,14 @@ export class WordTypeDetailsPanelComponent {
   readonly view = input.required<WordTypeDetailView>();
   readonly kind = input<WordTypeDetailSelectionKind>('word');
   readonly inline = input(true);
+  /**
+   * Content-only mode (Feature 029, Change B4): render just the kind-aware view
+   * tablist + tabpanel body in a plain wrapper — no card section, no
+   * dialog/backdrop, no header/close. Used inside the global detail overlay
+   * shell, which owns the dialog chrome (the composer also owns the notFound
+   * rendering there). When false, the inline/modal branches behave as before.
+   */
+  readonly frameless = input(false);
   readonly emptySelection = input(false);
   readonly selectionTitle = input('');
   readonly loading = input(false);

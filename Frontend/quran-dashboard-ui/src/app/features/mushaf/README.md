@@ -46,6 +46,15 @@ ayahs, and متشابهات groups. State (page, selected ayah/word, source sele
   Mushaf font.
 - **Display text is Uthmani**; segment slicing/highlighting operates on the Uthmani string.
   Search/normalize is a separate concern (`arabic-search-normalize`).
+- **Selected-word identity links open the global detail overlay** (Feature 029, Change B):
+  the root/lemma/stem/unique anchors in `selected-word-section` / `word-morphology-summary`
+  and the new word-type link are real `a[qdDetailLink]` anchors carrying typed `v1~…`
+  frames over the current Mushaf base (no more forced new tabs; modifier clicks keep
+  browser behavior). The word-type frame comes from the pure
+  `utils/word-type-detail-frame.adapter.ts` (locked §5.7 mapping: `contextCode` =
+  verb tense (`'unspecified'` when null) for verbs / `headPos` otherwise, always
+  `case=tense=voice=all`, view `ayahs` — the complete type row, never the clicked
+  occurrence's narrowed features; underivable identity ⇒ plain non-interactive label).
 - **Ayah-shaped list items use the shared `qdAyahCard` frame** (Feature 029, Change A):
   Similar Ayahs items and Mutashabihat occurrences compose `shared/ui/ayah-card` for the flat
   surface/hairline/radius/padding frame (the Mutashabihat selected occurrence layers a

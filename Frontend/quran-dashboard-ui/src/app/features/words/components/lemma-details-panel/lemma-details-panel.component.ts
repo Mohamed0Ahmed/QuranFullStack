@@ -48,6 +48,13 @@ import { LEMMA_VIEW_KEYS, LemmaView } from '../../models/lemmas.models';
 export class LemmaDetailsPanelComponent {
   readonly view = input.required<LemmaView>();
   readonly inline = input(true);
+  /**
+   * Content-only mode (Feature 029, Change B4): render just the view tablist +
+   * tabpanel body in a plain wrapper — no card section, no dialog/backdrop, no
+   * header/close. Used inside the global detail overlay shell, which owns the
+   * dialog chrome. When false, the inline/modal branches behave as before.
+   */
+  readonly frameless = input(false);
   readonly emptySelection = input(false);
   readonly selectionTitle = input('');
   readonly loading = input(false);

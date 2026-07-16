@@ -24,3 +24,6 @@ export function entityDetailRestoreAriaLabel(title: string): string {
 }
 
 export const ENTITY_DETAIL_CAP_STATUS_MESSAGE = 'لا يمكن فتح أكثر من ثماني بطاقات تفاصيل.';
+
+/** Placeholder body for adapters whose full detail rendering lands in a later phase. */
+export const ENTITY_DETAIL_STUB_PLACEHOLDER = 'سيتوفر عرض هذه التفاصيل هنا لاحقًا.';

@@ -1,7 +1,18 @@
-import { Directive, computed, inject, input } from '@angular/core';
+import { Directive, InjectionToken, computed, inject, input } from '@angular/core';
 
 import { DetailOverlayHistoryService } from './detail-overlay-history.service';
 import { DetailFrame } from './detail-overlay.models';
+
+export type DetailOverlayLinkMode = 'start' | 'append';
+
+/**
+ * Context default for `qdDetailLinkMode`. Overlay adapters provide `'append'`
+ * once at their component root so every entity link rendered inside the open
+ * overlay pushes onto the stack, while the same list components rendered in an
+ * explorer side panel (no provider) keep the `'start'` default and open a new
+ * one-frame stack. An explicit `qdDetailLinkMode` input always wins.
+ */
+export const DETAIL_OVERLAY_LINK_MODE = new InjectionToken<DetailOverlayLinkMode>('DETAIL_OVERLAY_LINK_MODE');
 
 /**
  * Real, copyable entity link into the detail overlay (Feature 029, Change B).
@@ -13,7 +24,8 @@ import { DetailFrame } from './detail-overlay.models';
  *
  * `start` mode (default) opens a new one-frame stack — explorer side panels and
  * Mushaf entity links. `append` mode pushes onto the open stack — cross-entity
- * links inside an overlay detail.
+ * links inside an overlay detail. The effective mode is the explicit input if
+ * set, else the component-tree `DETAIL_OVERLAY_LINK_MODE` token, else `start`.
  */
 @Directive({
   selector: 'a[qdDetailLink]',
@@ -25,13 +37,18 @@ import { DetailFrame } from './detail-overlay.models';
 })
 export class DetailOverlayLinkDirective {
   private readonly history = inject(DetailOverlayHistoryService);
+  private readonly contextMode = inject(DETAIL_OVERLAY_LINK_MODE, { optional: true });
 
   readonly qdDetailLink = input.required<DetailFrame>();
-  readonly qdDetailLinkMode = input<'start' | 'append'>('start');
+  readonly qdDetailLinkMode = input<DetailOverlayLinkMode | null>(null);
+
+  private readonly mode = computed<DetailOverlayLinkMode>(
+    () => this.qdDetailLinkMode() ?? this.contextMode ?? 'start',
+  );
 
   protected readonly href = computed(() => {
     this.history.urlEpoch();
-    return this.history.buildFrameHref(this.qdDetailLink(), this.qdDetailLinkMode());
+    return this.history.buildFrameHref(this.qdDetailLink(), this.mode());
   });
 
   protected onClick(event: MouseEvent): void {
@@ -40,7 +57,7 @@ export class DetailOverlayLinkDirective {
     }
     event.preventDefault();
 
-    if (this.qdDetailLinkMode() === 'append') {
+    if (this.mode() === 'append') {
       this.history.appendFrame(this.qdDetailLink());
       return;
     }

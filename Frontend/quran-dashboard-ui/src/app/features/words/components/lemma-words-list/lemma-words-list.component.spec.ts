@@ -1,7 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
+import { provideLocationMocks } from '@angular/common/testing';
+import { provideRouter } from '@angular/router';
 
 import { LemmaWordsListComponent } from './lemma-words-list.component';
+import { DetailOverlayHistoryService } from '../../../../core/navigation/detail-overlay/detail-overlay-history.service';
 import { LemmaWordItemDto } from '../../models/lemmas.models';
 
 function wordItem(uniqueWordId: number): LemmaWordItemDto {
@@ -12,14 +15,19 @@ function wordItem(uniqueWordId: number): LemmaWordItemDto {
   };
 }
 
+async function setup(): Promise<void> {
+  await TestBed.configureTestingModule({
+    imports: [LemmaWordsListComponent],
+    providers: [provideRouter([]), provideLocationMocks()],
+  }).compileComponents();
+}
+
 describe('LemmaWordsListComponent', () => {
   it.each([
     { wordView: 'simple' as const, uniqueWordId: 1003 },
     { wordView: 'tashkeel' as const, uniqueWordId: 2003 },
-  ])('builds the correct unique-words deep link for $wordView rows', async ({ wordView, uniqueWordId }) => {
-    await TestBed.configureTestingModule({
-      imports: [LemmaWordsListComponent],
-    }).compileComponents();
+  ])('renders an overlay entity link mirroring the old $wordView deep link', async ({ wordView, uniqueWordId }) => {
+    await setup();
 
     const fixture = TestBed.createComponent(LemmaWordsListComponent);
     fixture.componentRef.setInput('page', {
@@ -34,17 +42,14 @@ describe('LemmaWordsListComponent', () => {
 
     const link = fixture.nativeElement.querySelector('[data-testid="lemma-word-link"]') as HTMLAnchorElement;
     expect(link).toBeTruthy();
-    expect(link.getAttribute('href')).toContain(`/dashboard/words/unique/${wordView}`);
-    expect(link.getAttribute('href')).toContain(`word=${uniqueWordId}`);
-    expect(link.getAttribute('href')).toContain('view=ayahs');
-    expect(link.getAttribute('target')).toBe('_blank');
-    expect(link.getAttribute('rel')).toBe('noopener noreferrer');
+    expect(link.getAttribute('href')).toContain(`qdDetail=v1~unique~${wordView}~${uniqueWordId}~ayahs~1`);
+    expect(link.getAttribute('href')).toContain('qdDetailOpen=1');
+    expect(link.getAttribute('target')).toBeNull();
+    expect(link.getAttribute('rel')).toBeNull();
   });
 
   it('renders without a nested tablist', async () => {
-    await TestBed.configureTestingModule({
-      imports: [LemmaWordsListComponent],
-    }).compileComponents();
+    await setup();
 
     const fixture = TestBed.createComponent(LemmaWordsListComponent);
     fixture.componentRef.setInput('page', {
@@ -60,10 +65,8 @@ describe('LemmaWordsListComponent', () => {
     expect(fixture.nativeElement.querySelector('[role="tablist"]')).toBeNull();
   });
 
-  it('renders scoped counts, exact unique-word anchors, and pagination changes', async () => {
-    await TestBed.configureTestingModule({
-      imports: [LemmaWordsListComponent],
-    }).compileComponents();
+  it('renders scoped counts, in-app overlay anchors, and pagination changes', async () => {
+    await setup();
 
     const fixture = TestBed.createComponent(LemmaWordsListComponent);
     fixture.componentRef.setInput('page', {
@@ -77,11 +80,10 @@ describe('LemmaWordsListComponent', () => {
     fixture.detectChanges();
 
     const link = fixture.nativeElement.querySelector('[data-testid="lemma-word-link"]') as HTMLAnchorElement;
-    expect(link.getAttribute('href')).toContain('/dashboard/words/unique/simple');
-    expect(link.getAttribute('href')).toContain('word=1003');
+    expect(link.getAttribute('href')).toContain('qdDetail=v1~unique~simple~1003~ayahs~1');
     expect(link.getAttribute('href')).not.toContain('كلمة');
-    expect(link.getAttribute('target')).toBe('_blank');
-    expect(link.getAttribute('rel')).toBe('noopener noreferrer');
+    expect(link.getAttribute('target')).toBeNull();
+    expect(link.getAttribute('rel')).toBeNull();
     expect(fixture.nativeElement.querySelector('.qd-badge')?.textContent?.trim()).toBe('2');
 
     const emitted: number[] = [];
@@ -91,5 +93,35 @@ describe('LemmaWordsListComponent', () => {
     nextButton?.click();
 
     expect(emitted).toEqual([2]);
+  });
+
+  it('intercepts an unmodified click in-app and leaves a modifier click to the browser', async () => {
+    await setup();
+
+    const fixture = TestBed.createComponent(LemmaWordsListComponent);
+    fixture.componentRef.setInput('page', {
+      page: 1,
+      pageSize: 100,
+      totalCount: 1,
+      items: [wordItem(1003)],
+    });
+    fixture.componentRef.setInput('currentPage', 1);
+    fixture.componentRef.setInput('kind', 'simple');
+    fixture.detectChanges();
+
+    const startSpy = vi
+      .spyOn(TestBed.inject(DetailOverlayHistoryService), 'startStack')
+      .mockReturnValue(undefined);
+    const link = fixture.nativeElement.querySelector('[data-testid="lemma-word-link"]') as HTMLAnchorElement;
+
+    const plainClick = new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 });
+    link.dispatchEvent(plainClick);
+    expect(plainClick.defaultPrevented).toBe(true);
+    expect(startSpy).toHaveBeenCalledWith({ kind: 'unique', mode: 'simple', id: 1003, view: 'ayahs', ayahPage: 1 });
+
+    const modifiedClick = new MouseEvent('click', { bubbles: true, cancelable: true, button: 0, ctrlKey: true });
+    link.dispatchEvent(modifiedClick);
+    expect(modifiedClick.defaultPrevented).toBe(false);
+    expect(startSpy).toHaveBeenCalledTimes(1);
   });
 });
