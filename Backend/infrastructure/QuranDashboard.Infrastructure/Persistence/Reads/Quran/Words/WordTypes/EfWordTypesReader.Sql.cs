@@ -149,7 +149,10 @@ public sealed partial class EfWordTypesReader
             g.occurrences_count AS "{nameof(WordTypeRowSqlResult.OccurrencesCount)}",
             g.ayahs_count AS "{nameof(WordTypeRowSqlResult.AyahsCount)}",
             g.surahs_count AS "{nameof(WordTypeRowSqlResult.SurahsCount)}",
-            g.first_word_order_in_mushaf AS "{nameof(WordTypeRowSqlResult.FirstWordOrderInMushaf)}"
+            g.first_word_order_in_mushaf AS "{nameof(WordTypeRowSqlResult.FirstWordOrderInMushaf)}",
+            -- Window count over the scoped grouped set (1:1 winner joins never fan out), so page + total
+            -- come from ONE command; equals RowsCountSql's COUNT(*) FROM grouped for the identical scope.
+            COUNT(*) OVER()::int AS "{nameof(WordTypeRowSqlResult.TotalCount)}"
         FROM grouped g
         LEFT JOIN root_winners ON root_winners.tashkeel_word_id = g.tashkeel_word_id AND root_winners.context_code = g.context_code
         LEFT JOIN lemma_winners ON lemma_winners.tashkeel_word_id = g.tashkeel_word_id AND lemma_winners.context_code = g.context_code
@@ -277,7 +280,10 @@ public sealed partial class EfWordTypesReader
             occurrences_count AS "{nameof(GroupedRowSqlResult.OccurrencesCount)}",
             ayahs_count AS "{nameof(GroupedRowSqlResult.AyahsCount)}",
             surahs_count AS "{nameof(GroupedRowSqlResult.SurahsCount)}",
-            first_word_order_in_mushaf AS "{nameof(GroupedRowSqlResult.FirstWordOrderInMushaf)}"
+            first_word_order_in_mushaf AS "{nameof(GroupedRowSqlResult.FirstWordOrderInMushaf)}",
+            -- Window count over the distinct non-null dimension rows, so page + total come from ONE
+            -- command; equals GroupedRowsCountSql's COUNT(DISTINCT {idColumn}) for the identical scope.
+            COUNT(*) OVER()::int AS "{nameof(GroupedRowSqlResult.TotalCount)}"
         FROM grouped
         ORDER BY {GroupedOrderBy(sort)}
         OFFSET @skip LIMIT @take
@@ -558,7 +564,10 @@ public sealed partial class EfWordTypesReader
         int OccurrencesCount,
         int AyahsCount,
         int SurahsCount,
-        int FirstWordOrderInMushaf)
+        int FirstWordOrderInMushaf,
+        // Whole-scope total from COUNT(*) OVER(); identical on every row, ignored by ToDto (the reader
+        // reads it once off the first row to build PagedResult.TotalCount without a separate COUNT command).
+        int TotalCount)
     {
         public WordTypeRowDto ToDto() => new(
             TashkeelWordId,
@@ -582,7 +591,9 @@ public sealed partial class EfWordTypesReader
         int OccurrencesCount,
         int AyahsCount,
         int SurahsCount,
-        int FirstWordOrderInMushaf)
+        int FirstWordOrderInMushaf,
+        // Whole-scope total from COUNT(*) OVER(); identical on every row, ignored by ToDto.
+        int TotalCount)
     {
         public WordTypeTableRowDto ToDto(WordTypeTableView view) => view switch
         {

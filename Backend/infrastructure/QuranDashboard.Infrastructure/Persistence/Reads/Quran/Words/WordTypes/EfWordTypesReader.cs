@@ -85,24 +85,30 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
         var type = NormalizeType(filter.Type);
         var childCode = NormalizeChildCode(filter.ChildCode);
         var context = new WordTypeReadContext(type, childCode, filter.Case, filter.Tense, filter.Voice, ArabicSearchQueryNormalizer.Normalize(filter.Search), filter.HasRoot, filter.HasStem, filter.HasLemma);
-        var totalCount = await CountRowsAsync(context, cancellationToken);
-        var skip = ReadPaging.CalculateSafeSkip(page, pageSize, totalCount);
-        if (skip is null)
+
+        // B1: page + total come from ONE scoped command via COUNT(*) OVER(). The count-only fallback runs
+        // only for an empty page (out-of-range or empty scope), where the window count has no row to carry it.
+        var offset = ReadPaging.CalculatePageOffset(page, pageSize);
+        if (offset is null)
         {
-            return new PagedResult<WordTypeRowDto>(page, pageSize, totalCount, []);
+            return new PagedResult<WordTypeRowDto>(page, pageSize, await CountRowsAsync(context, cancellationToken), []);
         }
 
-        var parameters = BuildRowsParameters(context, skip.Value, pageSize);
-
+        var parameters = BuildRowsParameters(context, offset.Value, pageSize);
         var rows = await _dbContext.Database.SqlQueryRaw<WordTypeRowSqlResult>(
             RowsSql(context, sort),
             parameters)
             .ToListAsync(cancellationToken);
 
+        if (rows.Count == 0)
+        {
+            return new PagedResult<WordTypeRowDto>(page, pageSize, await CountRowsAsync(context, cancellationToken), []);
+        }
+
         return new PagedResult<WordTypeRowDto>(
             page,
             pageSize,
-            totalCount,
+            rows[0].TotalCount,
             rows.Select(row => row.ToDto()).ToList());
     }
 
@@ -127,23 +133,30 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
         var type = NormalizeType(filter.Type);
         var childCode = NormalizeChildCode(filter.ChildCode);
         var context = new WordTypeReadContext(type, childCode, filter.Case, filter.Tense, filter.Voice, ArabicSearchQueryNormalizer.Normalize(filter.Search), filter.HasRoot, filter.HasStem, filter.HasLemma);
-        var totalCount = await CountGroupedRowsAsync(context, tableView, cancellationToken);
-        var skip = ReadPaging.CalculateSafeSkip(page, pageSize, totalCount);
-        if (skip is null)
+
+        // B1: same single-command window-count path as the words view, with the count-only fallback reserved
+        // for the exceptional empty page.
+        var offset = ReadPaging.CalculatePageOffset(page, pageSize);
+        if (offset is null)
         {
-            return new PagedResult<WordTypeTableRowDto>(page, pageSize, totalCount, []);
+            return new PagedResult<WordTypeTableRowDto>(page, pageSize, await CountGroupedRowsAsync(context, tableView, cancellationToken), []);
         }
 
-        var parameters = BuildGroupedRowsParameters(context, sort, skip.Value, pageSize);
+        var parameters = BuildGroupedRowsParameters(context, sort, offset.Value, pageSize);
         var rows = await _dbContext.Database.SqlQueryRaw<GroupedRowSqlResult>(
             GroupedRowsSql(context, tableView, sort),
             parameters)
             .ToListAsync(cancellationToken);
 
+        if (rows.Count == 0)
+        {
+            return new PagedResult<WordTypeTableRowDto>(page, pageSize, await CountGroupedRowsAsync(context, tableView, cancellationToken), []);
+        }
+
         return new PagedResult<WordTypeTableRowDto>(
             page,
             pageSize,
-            totalCount,
+            rows[0].TotalCount,
             rows.Select(row => row.ToDto(tableView)).ToList());
     }
 
@@ -253,20 +266,18 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
             return null;
         }
 
-        if (!await MatchedMorphologyQuery(identity).AnyAsync(cancellationToken))
+        // One matched-word projection, reused for the distinct-ayah set and the page's matched rows.
+        var matchedWords = MatchedWordsQuery(identity);
+        var matchedAyahIds = matchedWords.Select(word => word.AyahId).Distinct();
+
+        // B3: the distinct-ayah count doubles as the existence check (zero → identity absent → null),
+        // so the preliminary AnyAsync probe is gone.
+        var totalCount = await matchedAyahIds.CountAsync(cancellationToken);
+        if (totalCount == 0)
         {
             return null;
         }
 
-        var matchedAyahIds = MatchedMorphologyQuery(identity)
-            .Join(
-                _dbContext.QuranWords.AsNoTracking(),
-                morphology => morphology.QuranWordId,
-                word => word.Id,
-                (_, word) => word.AyahId)
-            .Distinct();
-
-        var totalCount = await matchedAyahIds.CountAsync(cancellationToken);
         var skip = ReadPaging.CalculateSafeSkip(page, pageSize, totalCount);
         if (skip is null)
         {
@@ -293,12 +304,7 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
 
         var ayahIds = pageAyahs.Select(ayah => ayah.AyahId).ToList();
 
-        var matchedRows = await MatchedMorphologyQuery(identity)
-            .Join(
-                _dbContext.QuranWords.AsNoTracking(),
-                morphology => morphology.QuranWordId,
-                word => word.Id,
-                (_, word) => word)
+        var matchedRows = await matchedWords
             .Where(word => ayahIds.Contains(word.AyahId))
             .OrderBy(word => word.SurahNumber)
             .ThenBy(word => word.AyahNumber)
@@ -363,52 +369,51 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
             return null;
         }
 
-        if (!await MatchedMorphologyQuery(identity).AnyAsync(cancellationToken))
+        // B3: mirror the grouped surahs read. One server-side aggregate groups the scoped occurrences by
+        // surah; zero rows means the identity is absent from the scope (not found) and short-circuits before
+        // the catalogue read — the aggregate doubles as the existence check, replacing the AnyAsync probe.
+        var occurrences = await MatchedWordsQuery(identity)
+            .GroupBy(word => word.SurahNumber)
+            .Select(group => new SurahOccurrenceRow(group.Key, group.Count()))
+            .ToListAsync(cancellationToken);
+        if (occurrences.Count == 0)
         {
             return null;
         }
 
-        var matchedWords = await MatchedMorphologyQuery(identity)
-            .Join(
-                _dbContext.QuranWords.AsNoTracking(),
-                morphology => morphology.QuranWordId,
-                word => word.Id,
-                (_, word) => word.SurahNumber)
-            .ToListAsync(cancellationToken);
+        var occurrencesByNumber = occurrences.ToDictionary(row => row.SurahNumber, row => row.OccurrencesCount);
 
-        var surahGroups = matchedWords
-            .GroupBy(surahNumber => surahNumber)
-            .Select(group => new SurahOccurrenceRow(group.Key, group.Count()))
-            .OrderBy(row => row.SurahNumber)
-            .ToList();
-
-        var mentionedNumbers = surahGroups.Select(row => row.SurahNumber).ToList();
-        var surahNames = await _dbContext.QuranSurahs
+        // One bounded catalogue read supplies every surah number/name once; mentioned and missing lists are
+        // derived in memory in numeric order — never a second catalogue query per occurrence.
+        var catalogue = await _dbContext.QuranSurahs
             .AsNoTracking()
-            .ToDictionaryAsync(surah => surah.SurahNumber, surah => surah.NameArabic, cancellationToken);
-
-        var surahs = surahGroups
-            .Select(row => new WordTypeSurahOccurrenceDto(
-                (int)row.SurahNumber,
-                surahNames[row.SurahNumber],
-                row.OccurrencesCount))
-            .ToList();
-
-        var missingSurahs = await _dbContext.QuranSurahs
-            .AsNoTracking()
-            .Where(surah => !mentionedNumbers.Contains(surah.SurahNumber))
             .OrderBy(surah => surah.SurahNumber)
-            .Select(surah => new WordTypeMissingSurahDto((int)surah.SurahNumber, surah.NameArabic))
+            .Select(surah => new SurahCatalogueRow((int)surah.SurahNumber, surah.NameArabic))
             .ToListAsync(cancellationToken);
+
+        var surahs = new List<WordTypeSurahOccurrenceDto>();
+        var missingSurahs = new List<WordTypeMissingSurahDto>();
+        foreach (var surah in catalogue)
+        {
+            if (occurrencesByNumber.TryGetValue((short)surah.SurahNumber, out var occurrencesCount))
+            {
+                surahs.Add(new WordTypeSurahOccurrenceDto(surah.SurahNumber, surah.NameArabic, occurrencesCount));
+            }
+            else
+            {
+                missingSurahs.Add(new WordTypeMissingSurahDto(surah.SurahNumber, surah.NameArabic));
+            }
+        }
 
         return new WordTypeSurahsResponse(surahs, missingSurahs);
     }
 
+    // Filters through the QuranWord navigation (not an explicit second join) so a matched-word projection
+    // (MatchedWordsQuery) reuses this single quran_words join instead of re-joining on the same key.
     private IQueryable<Domain.Quran.Words.Morphology.WordMorphology> MatchedMorphologyQuery(WordTypeRowIdentity identity) =>
         from morphology in _dbContext.WordMorphologies.AsNoTracking()
-        join word in _dbContext.QuranWords.AsNoTracking() on morphology.QuranWordId equals word.Id
-        where !word.IsAyahMarker
-            && word.UniqueTashkeelWordId == identity.TashkeelWordId
+        where !morphology.QuranWord.IsAyahMarker
+            && morphology.QuranWord.UniqueTashkeelWordId == identity.TashkeelWordId
             && (
                 (identity.ContextCode == "past"
                     || identity.ContextCode == "present"
@@ -427,6 +432,12 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
                 || identity.Voice == "all"
                 || morphology.VerbVoice == identity.Voice)
         select morphology;
+
+    // Matched head words for this row identity, projected once from the shared morphology scope so callers
+    // reuse a single quran_words join (via the QuranWord navigation) instead of re-joining it per read.
+    // Returns the word entities themselves so each consumer composes its own aggregate/projection.
+    private IQueryable<Domain.Quran.Words.QuranWord> MatchedWordsQuery(WordTypeRowIdentity identity) =>
+        MatchedMorphologyQuery(identity).Select(morphology => morphology.QuranWord);
 
     private async Task<int> CountRowsAsync(WordTypeReadContext context, CancellationToken cancellationToken)
     {
