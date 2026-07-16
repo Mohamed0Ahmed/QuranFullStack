@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Observable, map, catchError, throwError } from 'rxjs';
+import { Observable, map, catchError, shareReplay, throwError } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import { ApiResponse } from './api-response.model';
@@ -12,9 +12,20 @@ class UserFacingApiError extends Error {}
 export class SystemApi {
   private readonly baseUrl = environment.apiBaseUrl;
 
+  // Successful dashboard info is cached for the browser APPLICATION LIFETIME on this root-scoped
+  // singleton (perf finding F2): repeated dashboard mounts reuse it instead of re-fetching, and a
+  // full page reload/deploy naturally clears it. A failure clears the held stream so the next call
+  // (e.g. the dashboard's retry action) issues a fresh request rather than replaying the same error.
+  private dashboardInfo$?: Observable<AppInfo>;
+
   constructor(private http: HttpClient) {}
 
   getDashboardInfo(): Observable<AppInfo> {
+    this.dashboardInfo$ ??= this.fetchDashboardInfo();
+    return this.dashboardInfo$;
+  }
+
+  private fetchDashboardInfo(): Observable<AppInfo> {
     const fallbackMessage = 'تعذر تحميل بيانات التطبيق. حاول مرة أخرى.';
 
     return this.http
@@ -26,9 +37,11 @@ export class SystemApi {
           }
           throw new UserFacingApiError(response.message ?? fallbackMessage);
         }),
-        catchError((error) =>
-          throwError(() => new Error(this.resolveErrorMessage(error, fallbackMessage)))
-        )
+        catchError((error) => {
+          this.dashboardInfo$ = undefined;
+          return throwError(() => new Error(this.resolveErrorMessage(error, fallbackMessage)));
+        }),
+        shareReplay(1)
       );
   }
 

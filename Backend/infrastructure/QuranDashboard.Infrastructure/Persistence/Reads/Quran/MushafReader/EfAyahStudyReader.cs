@@ -59,15 +59,14 @@ public sealed class EfAyahStudyReader(QuranDashboardDbContext db) : IAyahStudyRe
             similaritySummary);
     }
 
+    /// <summary>
+    /// Similar-ayah count, mutashabihat group count, and mutashabihat occurrence count are three
+    /// independent aggregates over unrelated tables. They are combined into one projection (one
+    /// round trip) instead of two-or-three sequential count commands; occurrence count naturally
+    /// evaluates to 0 when there are no groups, so the prior "skip when group count is 0" branch
+    /// is preserved in effect without needing a second command.
+    /// </summary>
     private async Task<SimilaritySummaryDto> LoadSimilaritySummaryAsync(int ayahId, CancellationToken ct)
-    {
-        var similarAyahCount = await CountDistinctSimilarAyahsAsync(ayahId, ct);
-        var (groupCount, occurrenceCount) = await CountMutashabihatAsync(ayahId, ct);
-
-        return new SimilaritySummaryDto(similarAyahCount, groupCount, occurrenceCount);
-    }
-
-    private async Task<int> CountDistinctSimilarAyahsAsync(int ayahId, CancellationToken ct)
     {
         var outgoing = db.SimilarAyahLinks
             .AsNoTracking()
@@ -79,31 +78,31 @@ public sealed class EfAyahStudyReader(QuranDashboardDbContext db) : IAyahStudyRe
             .Where(link => link.TargetAyahId == ayahId)
             .Select(link => link.SourceAyahId);
 
-        return await outgoing.Union(incoming).Distinct().CountAsync(ct);
-    }
+        var similarAyahIds = outgoing.Union(incoming).Distinct();
 
-    private async Task<(int GroupCount, int OccurrenceCount)> CountMutashabihatAsync(
-        int ayahId,
-        CancellationToken ct)
-    {
         var groupIds = db.MutashabihatOccurrences
             .AsNoTracking()
             .Where(occurrence => occurrence.AyahId == ayahId)
             .Select(occurrence => occurrence.GroupId)
             .Distinct();
 
-        var groupCount = await groupIds.CountAsync(ct);
-        if (groupCount == 0)
-        {
-            return (0, 0);
-        }
-
-        var occurrenceCount = await db.MutashabihatOccurrences
+        var summary = await db.QuranAyahs
             .AsNoTracking()
-            .Where(occurrence => groupIds.Contains(occurrence.GroupId))
-            .CountAsync(ct);
+            .Where(a => a.Id == ayahId)
+            .Select(a => new
+            {
+                SimilarAyahCount = similarAyahIds.Count(),
+                GroupCount = groupIds.Count(),
+                OccurrenceCount = db.MutashabihatOccurrences
+                    .AsNoTracking()
+                    .Count(occurrence => groupIds.Contains(occurrence.GroupId)),
+            })
+            .FirstOrDefaultAsync(ct);
 
-        return (groupCount, occurrenceCount);
+        return new SimilaritySummaryDto(
+            summary?.SimilarAyahCount ?? 0,
+            summary?.GroupCount ?? 0,
+            summary?.OccurrenceCount ?? 0);
     }
 
     private static AyahCoreDto MapAyahCore(Ayah ayah, Sajda? sajda) => new(
@@ -125,133 +124,208 @@ public sealed class EfAyahStudyReader(QuranDashboardDbContext db) : IAyahStudyRe
                 sajda.VerseKey,
                 MapSajdahType(sajda.SajdahType)));
 
+    /// <summary>
+    /// Tafsir is source -> mapping -> text. Instead of three sequential lookups, one LEFT-JOIN
+    /// projection resolves the source, its ayah mapping, and the shared text row together. A
+    /// missing mapping or missing text row both surface as null joined columns, which collapses
+    /// to the same "resolved key, null block" outcome the sequential version produced.
+    /// </summary>
     private async Task<ResolvedSource<TafsirEntryDto>> LoadTafsirAsync(int ayahId, string sourceKey, CancellationToken ct)
     {
-        var source = await db.TafsirSources
-            .AsNoTracking()
-            .FirstOrDefaultAsync(s => s.SourceKey == sourceKey, ct);
+        var projection = await (
+            from source in db.TafsirSources.AsNoTracking()
+            where source.SourceKey == sourceKey
+            join ae in db.TafsirAyahEntries.AsNoTracking()
+                on new { SourceId = source.Id, AyahId = ayahId } equals new { ae.SourceId, ae.AyahId }
+                into ayahEntryGroup
+            from ayahEntry in ayahEntryGroup.DefaultIfEmpty()
+            join te in db.TafsirEntries.AsNoTracking()
+                on ayahEntry.TafsirEntryId equals te.Id
+                into entryGroup
+            from entry in entryGroup.DefaultIfEmpty()
+            select new TafsirProjection(
+                source.SourceKey,
+                source.DisplayNameAr,
+                source.ShortNameAr,
+                source.LanguageCode,
+                source.Direction,
+                source.TafsirKind,
+                ayahEntry != null ? ayahEntry.SourceValueKind : null,
+                ayahEntry != null ? ayahEntry.SourceLeaderVerseKey : null,
+                ayahEntry != null ? (bool?)ayahEntry.IsGroupLeader : null,
+                entry != null ? (short?)entry.CoveredAyahCount : null,
+                entry != null ? entry.CoveredAyahKeys : null,
+                entry != null ? entry.TafsirText : null))
+            .FirstOrDefaultAsync(ct);
 
-        if (source is null)
+        if (projection is null)
         {
             return ResolvedSource<TafsirEntryDto>.NoSource;
         }
 
-        var ayahEntry = await db.TafsirAyahEntries
-            .AsNoTracking()
-            .FirstOrDefaultAsync(e => e.SourceId == source.Id && e.AyahId == ayahId, ct);
-
-        if (ayahEntry is null)
+        if (projection.TafsirText is null)
         {
-            return new ResolvedSource<TafsirEntryDto>(source.SourceKey, null);
-        }
-
-        var entry = await db.TafsirEntries
-            .AsNoTracking()
-            .FirstOrDefaultAsync(e => e.Id == ayahEntry.TafsirEntryId, ct);
-
-        if (entry is null)
-        {
-            return new ResolvedSource<TafsirEntryDto>(source.SourceKey, null);
+            return new ResolvedSource<TafsirEntryDto>(projection.SourceKey, null);
         }
 
         var dto = new TafsirEntryDto(
-            source.SourceKey,
-            source.DisplayNameAr,
-            string.IsNullOrWhiteSpace(source.ShortNameAr) ? null : source.ShortNameAr,
-            source.LanguageCode,
-            source.Direction,
-            source.TafsirKind,
-            ayahEntry.SourceValueKind,
-            ayahEntry.SourceLeaderVerseKey,
-            ayahEntry.IsGroupLeader,
-            entry.CoveredAyahCount,
-            ParseCoveredAyahKeys(entry.CoveredAyahKeys),
-            entry.TafsirText);
+            projection.SourceKey,
+            projection.DisplayNameAr,
+            string.IsNullOrWhiteSpace(projection.ShortNameAr) ? null : projection.ShortNameAr,
+            projection.LanguageCode,
+            projection.Direction,
+            projection.TafsirKind,
+            projection.SourceValueKind!,
+            projection.SourceLeaderVerseKey!,
+            projection.IsGroupLeader!.Value,
+            projection.CoveredAyahCount!.Value,
+            ParseCoveredAyahKeys(projection.CoveredAyahKeys!),
+            projection.TafsirText);
 
-        return new ResolvedSource<TafsirEntryDto>(source.SourceKey, dto);
+        return new ResolvedSource<TafsirEntryDto>(projection.SourceKey, dto);
     }
 
+    /// <summary>
+    /// Translation is source -> mapping only. One LEFT-JOIN projection replaces the two
+    /// sequential lookups; a missing mapping surfaces as a null joined text column.
+    /// </summary>
     private async Task<ResolvedSource<TranslationEntryDto>> LoadTranslationAsync(int ayahId, string sourceKey, CancellationToken ct)
     {
-        var source = await db.TranslationSources
-            .AsNoTracking()
-            .FirstOrDefaultAsync(s => s.SourceKey == sourceKey, ct);
+        var projection = await (
+            from source in db.TranslationSources.AsNoTracking()
+            where source.SourceKey == sourceKey
+            join ae in db.TranslationAyahEntries.AsNoTracking()
+                on new { SourceId = source.Id, AyahId = ayahId } equals new { ae.SourceId, ae.AyahId }
+                into ayahEntryGroup
+            from ayahEntry in ayahEntryGroup.DefaultIfEmpty()
+            select new TranslationProjection(
+                source.SourceKey,
+                source.DisplayNameAr,
+                source.DisplayNameEn,
+                source.LanguageCode,
+                source.Direction,
+                source.TranslationType,
+                source.ContainsHtmlMarkup,
+                ayahEntry != null ? ayahEntry.Text : null))
+            .FirstOrDefaultAsync(ct);
 
-        if (source is null)
+        if (projection is null)
         {
             return ResolvedSource<TranslationEntryDto>.NoSource;
         }
 
-        var ayahEntry = await db.TranslationAyahEntries
-            .AsNoTracking()
-            .FirstOrDefaultAsync(e => e.SourceId == source.Id && e.AyahId == ayahId, ct);
-
-        if (ayahEntry is null)
+        if (projection.Text is null)
         {
-            return new ResolvedSource<TranslationEntryDto>(source.SourceKey, null);
+            return new ResolvedSource<TranslationEntryDto>(projection.SourceKey, null);
         }
 
         var dto = new TranslationEntryDto(
-            source.SourceKey,
-            string.IsNullOrWhiteSpace(source.DisplayNameAr) ? null : source.DisplayNameAr,
-            string.IsNullOrWhiteSpace(source.DisplayNameEn) ? null : source.DisplayNameEn,
-            source.LanguageCode,
-            source.Direction,
-            source.TranslationType,
-            source.ContainsHtmlMarkup,
-            ayahEntry.Text);
+            projection.SourceKey,
+            string.IsNullOrWhiteSpace(projection.DisplayNameAr) ? null : projection.DisplayNameAr,
+            string.IsNullOrWhiteSpace(projection.DisplayNameEn) ? null : projection.DisplayNameEn,
+            projection.LanguageCode,
+            projection.Direction,
+            projection.TranslationType,
+            projection.ContainsHtmlMarkup,
+            projection.Text);
 
-        return new ResolvedSource<TranslationEntryDto>(source.SourceKey, dto);
+        return new ResolvedSource<TranslationEntryDto>(projection.SourceKey, dto);
     }
 
+    /// <summary>
+    /// Full i3rab is source -> mapping -> text, mirroring tafsir's shape via its own tables.
+    /// </summary>
     private async Task<ResolvedSource<FullI3rabEntryDto>> LoadFullI3rabAsync(int ayahId, string sourceKey, CancellationToken ct)
     {
-        var source = await db.FullI3rabSources
-            .AsNoTracking()
-            .FirstOrDefaultAsync(s => s.SourceKey == sourceKey, ct);
+        var projection = await (
+            from source in db.FullI3rabSources.AsNoTracking()
+            where source.SourceKey == sourceKey
+            join ae in db.FullI3rabAyahEntries.AsNoTracking()
+                on new { SourceId = source.Id, AyahId = ayahId } equals new { ae.SourceId, ae.AyahId }
+                into ayahEntryGroup
+            from ayahEntry in ayahEntryGroup.DefaultIfEmpty()
+            join fe in db.FullI3rabEntries.AsNoTracking()
+                on ayahEntry.EntryId equals fe.Id
+                into entryGroup
+            from entry in entryGroup.DefaultIfEmpty()
+            select new FullI3rabProjection(
+                source.SourceKey,
+                source.DisplayNameAr,
+                source.ShortNameAr,
+                source.MarkupFormat,
+                ayahEntry != null ? ayahEntry.SourceValueKind : null,
+                ayahEntry != null ? ayahEntry.SourceLeaderVerseKey : null,
+                ayahEntry != null ? (bool?)ayahEntry.IsGroupLeader : null,
+                entry != null ? (short?)entry.CoveredAyahCount : null,
+                entry != null ? entry.CoveredAyahKeys : null,
+                entry != null ? entry.I3rabHtml : null))
+            .FirstOrDefaultAsync(ct);
 
-        if (source is null)
+        if (projection is null)
         {
             return ResolvedSource<FullI3rabEntryDto>.NoSource;
         }
 
-        var ayahEntry = await db.FullI3rabAyahEntries
-            .AsNoTracking()
-            .FirstOrDefaultAsync(e => e.SourceId == source.Id && e.AyahId == ayahId, ct);
-
-        if (ayahEntry is null)
+        if (projection.I3rabHtml is null)
         {
-            return new ResolvedSource<FullI3rabEntryDto>(source.SourceKey, null);
-        }
-
-        var entry = await db.FullI3rabEntries
-            .AsNoTracking()
-            .FirstOrDefaultAsync(e => e.Id == ayahEntry.EntryId, ct);
-
-        if (entry is null)
-        {
-            return new ResolvedSource<FullI3rabEntryDto>(source.SourceKey, null);
+            return new ResolvedSource<FullI3rabEntryDto>(projection.SourceKey, null);
         }
 
         var dto = new FullI3rabEntryDto(
-            source.SourceKey,
-            source.DisplayNameAr,
-            string.IsNullOrWhiteSpace(source.ShortNameAr) ? null : source.ShortNameAr,
-            source.MarkupFormat,
-            ayahEntry.SourceValueKind,
-            ayahEntry.SourceLeaderVerseKey,
-            ayahEntry.IsGroupLeader,
-            entry.CoveredAyahCount,
-            ParseCoveredAyahKeys(entry.CoveredAyahKeys),
-            entry.I3rabHtml);
+            projection.SourceKey,
+            projection.DisplayNameAr,
+            string.IsNullOrWhiteSpace(projection.ShortNameAr) ? null : projection.ShortNameAr,
+            projection.MarkupFormat,
+            projection.SourceValueKind!,
+            projection.SourceLeaderVerseKey!,
+            projection.IsGroupLeader!.Value,
+            projection.CoveredAyahCount!.Value,
+            ParseCoveredAyahKeys(projection.CoveredAyahKeys!),
+            projection.I3rabHtml);
 
-        return new ResolvedSource<FullI3rabEntryDto>(source.SourceKey, dto);
+        return new ResolvedSource<FullI3rabEntryDto>(projection.SourceKey, dto);
     }
 
     private sealed record ResolvedSource<T>(string? ResolvedKey, T? Entry)
     {
         public static ResolvedSource<T> NoSource => new(null, default);
     }
+
+    private sealed record TafsirProjection(
+        string SourceKey,
+        string DisplayNameAr,
+        string ShortNameAr,
+        string LanguageCode,
+        string Direction,
+        string TafsirKind,
+        string? SourceValueKind,
+        string? SourceLeaderVerseKey,
+        bool? IsGroupLeader,
+        short? CoveredAyahCount,
+        string? CoveredAyahKeys,
+        string? TafsirText);
+
+    private sealed record TranslationProjection(
+        string SourceKey,
+        string DisplayNameAr,
+        string DisplayNameEn,
+        string LanguageCode,
+        string Direction,
+        string TranslationType,
+        bool ContainsHtmlMarkup,
+        string? Text);
+
+    private sealed record FullI3rabProjection(
+        string SourceKey,
+        string DisplayNameAr,
+        string ShortNameAr,
+        string MarkupFormat,
+        string? SourceValueKind,
+        string? SourceLeaderVerseKey,
+        bool? IsGroupLeader,
+        short? CoveredAyahCount,
+        string? CoveredAyahKeys,
+        string? I3rabHtml);
 
     private static IReadOnlyList<string> ParseCoveredAyahKeys(string json)
     {

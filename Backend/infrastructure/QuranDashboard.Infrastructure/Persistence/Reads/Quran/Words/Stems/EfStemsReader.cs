@@ -9,8 +9,9 @@ namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Stems;
 
 /// <summary>
 /// EF Core read model for the Stems Explorer (Feature 016). All queries are
-/// read-only and <c>AsNoTracking</c>. The catalogue/summary methods are loaded
-/// in one bounded whole-summary aggregation and the later detail methods remain
+/// read-only and <c>AsNoTracking</c>. The catalogue/summary is loaded in a bounded
+/// whole-summary aggregation plus compact server-grouped distribution/winner reads
+/// (see <see cref="LoadWholeSummaryAsync"/>); the later detail methods remain
 /// stubbed for subsequent phases. Ayah and words detail are implemented in the
 /// corresponding Feature 016 story phases.
 /// </summary>
@@ -254,108 +255,63 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
         return new StemLemmasResponse(lemmas);
     }
 
-    private static StemRelationRow? BuildDominantLemma(IReadOnlyList<StemTypeOccurrenceRow> rows)
-    {
-        return rows
-            .Where(r => r.LemmaId.HasValue)
-            .GroupBy(r => r.LemmaId!.Value)
-            .Select(g =>
-            {
-                var first = g
-                    .OrderBy(x => x.SurahNumber)
-                    .ThenBy(x => x.AyahNumber)
-                    .ThenBy(x => x.WordNumber)
-                    .ThenBy(x => x.QuranWordId)
-                    .First();
-
-                return new StemRelationRow(
-                    g.Key,
-                    first.LemmaText ?? string.Empty,
-                    first.LemmaBuckwalter,
-                    g.Count(),
-                    first.SurahNumber,
-                    first.AyahNumber,
-                    first.WordNumber);
-            })
+    // Picks the dominant relation (lemma or root) from the server-grouped per-(stem, relation) rows:
+    // occurrence count descending, then earliest Mushaf occurrence ascending (surah/ayah/word), then id —
+    // identical to the previous in-memory selection. Relation text coalesces null to empty, mirroring the
+    // prior behavior for a relation id whose row is absent.
+    private static StemRelationRow? PickDominantRelation(IEnumerable<StemRelationGroupSqlRow> groups) =>
+        groups
+            .Select(r => new StemRelationRow(
+                r.RelationId,
+                r.Text ?? string.Empty,
+                r.Buckwalter,
+                r.OccurrencesCount,
+                r.FirstSurahNumber,
+                r.FirstAyahNumber,
+                r.FirstWordNumber))
             .OrderByDescending(r => r.OccurrencesCount)
             .ThenBy(r => r.FirstSurahNumber)
             .ThenBy(r => r.FirstAyahNumber)
             .ThenBy(r => r.FirstWordNumber)
             .ThenBy(r => r.Id)
             .FirstOrDefault();
-    }
 
-    private static StemRelationRow? BuildDominantRoot(IReadOnlyList<StemTypeOccurrenceRow> rows)
-    {
-        return rows
-            .Where(r => r.RootId.HasValue)
-            .GroupBy(r => r.RootId!.Value)
-            .Select(g =>
-            {
-                var first = g
-                    .OrderBy(x => x.SurahNumber)
-                    .ThenBy(x => x.AyahNumber)
-                    .ThenBy(x => x.WordNumber)
-                    .ThenBy(x => x.QuranWordId)
-                    .First();
-
-                return new StemRelationRow(
-                    g.Key,
-                    first.RootText ?? string.Empty,
-                    first.RootBuckwalter,
-                    g.Count(),
-                    first.SurahNumber,
-                    first.AyahNumber,
-                    first.WordNumber);
-            })
-            .OrderByDescending(r => r.OccurrencesCount)
-            .ThenBy(r => r.FirstSurahNumber)
-            .ThenBy(r => r.FirstAyahNumber)
-            .ThenBy(r => r.FirstWordNumber)
-            .ThenBy(r => r.Id)
-            .FirstOrDefault();
-    }
-
-    private static IReadOnlyList<StemTypeDistributionRow> MaterializeTypeDistribution(IReadOnlyList<StemTypeOccurrenceRow> rows)
-    {
-        return rows
-            .GroupBy(r => r.Code)
-            .Select(g =>
-            {
-                var first = g
-                    .OrderBy(x => x.SurahNumber)
-                    .ThenBy(x => x.AyahNumber)
-                    .ThenBy(x => x.WordNumber)
-                    .ThenBy(x => x.QuranWordId)
-                    .First();
-
-                return new StemTypeDistributionRow(
-                    g.Key,
-                    first.ArabicLabel,
-                    first.EnglishLabel,
-                    g.Count(),
-                    first.SurahNumber,
-                    first.AyahNumber,
-                    first.WordNumber);
-            })
+    // Orders the server-grouped per-(stem, POS) rows into the final distribution: count descending, then
+    // earliest Mushaf occurrence ascending (surah/ayah/word), then POS code — identical to the previous
+    // in-memory ordering.
+    private static IReadOnlyList<StemTypeDistributionRow> OrderTypeDistribution(IEnumerable<StemTypeDistributionSqlRow> rows) =>
+        rows
+            .Select(r => new StemTypeDistributionRow(
+                r.Code,
+                r.ArabicLabel,
+                r.EnglishLabel,
+                r.OccurrencesCount,
+                r.FirstSurahNumber,
+                r.FirstAyahNumber,
+                r.FirstWordNumber))
             .OrderByDescending(r => r.OccurrencesCount)
             .ThenBy(r => r.FirstSurahNumber)
             .ThenBy(r => r.FirstAyahNumber)
             .ThenBy(r => r.FirstWordNumber)
             .ThenBy(r => r.Code, StringComparer.Ordinal)
             .ToList();
-    }
 
     private static string BuildFirstVerseKey(int? firstSurahNumber, int? firstAyahNumber) =>
         firstSurahNumber is > 0 && firstAyahNumber is > 0
             ? $"{firstSurahNumber}:{firstAyahNumber}"
             : string.Empty;
 
-    private async Task<PagedResult<StemWordItemDto>?> GetStemWordsPageAsync(
+    /// <summary>
+    /// Loads the complete grouped, ordered word list for a stem/word-kind pair in one
+    /// bounded pass: existence check, every matching occurrence row, then the same
+    /// in-memory group/order derivation the page used to repeat per page. Returns
+    /// <c>null</c> when the stem does not exist. This is the identity-grain unit the
+    /// cache decorator caches once (mirrors the catalogue whole-summary pattern) so
+    /// paging never re-issues the full occurrence query (performance review finding B6).
+    /// </summary>
+    internal async Task<IReadOnlyList<StemWordItemDto>?> LoadStemWordGroupsAsync(
         int id,
         StemWordKind wordKind,
-        int page,
-        int pageSize,
         CancellationToken cancellationToken)
     {
         var stemExists = await _db.QuranStems
@@ -370,7 +326,7 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
             ? await LoadStemWordRowsAsync(id, useSimpleWordIds: true, cancellationToken)
             : await LoadStemWordRowsAsync(id, useSimpleWordIds: false, cancellationToken);
 
-        var grouped = rows
+        return rows
             .Where(r => r.UniqueWordId.HasValue)
             .GroupBy(r => r.UniqueWordId!.Value)
             .Select(g =>
@@ -394,24 +350,42 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
             .ThenBy(x => x.FirstAyahNumber)
             .ThenBy(x => x.FirstWordNumber)
             .ThenBy(x => x.UniqueWordId)
-            .ToList();
-
-        var skip = ReadPaging.CalculateSafeSkip(page, pageSize, grouped.Count);
-        if (skip is null)
-        {
-            return new PagedResult<StemWordItemDto>(page, pageSize, grouped.Count, []);
-        }
-
-        var items = grouped
-            .Skip(skip.Value)
-            .Take(pageSize)
             .Select(row => new StemWordItemDto(
                 row.UniqueWordId,
                 row.DisplayText,
                 row.OccurrencesCount))
             .ToList();
+    }
 
-        return new PagedResult<StemWordItemDto>(page, pageSize, grouped.Count, items);
+    /// <summary>
+    /// Slices an already-loaded, already-ordered whole word-group list into one page.
+    /// Shared by the uncached page read below and by <c>CachedStemsReader</c>, which
+    /// slices the identity-grain cached list instead of re-loading it per page.
+    /// </summary>
+    internal static PagedResult<StemWordItemDto> SliceStemWordsPage(
+        IReadOnlyList<StemWordItemDto> all,
+        int page,
+        int pageSize)
+    {
+        var skip = ReadPaging.CalculateSafeSkip(page, pageSize, all.Count);
+        if (skip is null)
+        {
+            return new PagedResult<StemWordItemDto>(page, pageSize, all.Count, []);
+        }
+
+        var items = all.Skip(skip.Value).Take(pageSize).ToList();
+        return new PagedResult<StemWordItemDto>(page, pageSize, all.Count, items);
+    }
+
+    private async Task<PagedResult<StemWordItemDto>?> GetStemWordsPageAsync(
+        int id,
+        StemWordKind wordKind,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken)
+    {
+        var grouped = await LoadStemWordGroupsAsync(id, wordKind, cancellationToken);
+        return grouped is null ? null : SliceStemWordsPage(grouped, page, pageSize);
     }
 
     private async Task<IReadOnlyList<StemWordOccurrenceRow>> LoadStemWordRowsAsync(
@@ -459,22 +433,6 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
         int? FirstAyahNumber,
         int? FirstWordNumber,
         int FirstWordOrderInMushaf);
-
-    private sealed record StemTypeOccurrenceRow(
-        int StemId,
-        int QuranWordId,
-        int? LemmaId,
-        string? LemmaText,
-        string? LemmaBuckwalter,
-        int? RootId,
-        string? RootText,
-        string? RootBuckwalter,
-        string Code,
-        string ArabicLabel,
-        string EnglishLabel,
-        int SurahNumber,
-        int AyahNumber,
-        int WordNumber);
 
     private sealed record StemRelationRow(
         int Id,

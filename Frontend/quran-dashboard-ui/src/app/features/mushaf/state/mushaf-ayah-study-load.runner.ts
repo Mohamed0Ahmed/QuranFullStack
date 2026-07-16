@@ -1,3 +1,5 @@
+import { Subscription } from 'rxjs';
+
 import { MushafAyahStudyApi } from '../data-access/mushaf-ayah-study.api';
 import {
   AyahStudyDto,
@@ -24,6 +26,7 @@ export interface AyahStudyLoadBindings {
 
 export class AyahStudyLoadRunner {
   private timer: ReturnType<typeof setTimeout> | null = null;
+  private activeSubscription: Subscription | null = null;
 
   constructor(private readonly bindings: AyahStudyLoadBindings) {}
 
@@ -54,6 +57,11 @@ export class AyahStudyLoadRunner {
       this.timer = null;
     }
 
+    if (this.activeSubscription !== null) {
+      this.activeSubscription.unsubscribe();
+      this.activeSubscription = null;
+    }
+
     this.bindings.bumpRequestToken();
   }
 
@@ -81,7 +89,7 @@ export class AyahStudyLoadRunner {
 
     const sources = this.bindings.getUrlExplicitSources();
     const cacheKey = MushafReaderCacheKeys.ayahStudy(verseKey, sources);
-    subscribeToApiLoad(
+    this.activeSubscription = subscribeToApiLoad(
       this.bindings.readerCache.getOrLoad(cacheKey, () =>
         this.bindings.ayahStudyApi.getAyahStudy(verseKey, sources),
       ),
@@ -99,6 +107,8 @@ export class AyahStudyLoadRunner {
           });
         },
         onSettled: (loadState) => {
+          this.activeSubscription = null;
+
           if (this.bindings.getRequestToken() !== requestToken) {
             return;
           }

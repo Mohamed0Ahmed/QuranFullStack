@@ -1,3 +1,5 @@
+import { Subscription } from 'rxjs';
+
 import { MushafWordAnalysisApi } from '../data-access/mushaf-word-analysis.api';
 import { ResourceLoadState, WordAnalysisDto, WordAnalysisViewModel } from '../models/mushaf.models';
 import { subscribeToApiLoad } from './mushaf-api-load.helpers';
@@ -20,6 +22,7 @@ export interface WordAnalysisLoadBindings {
 
 export class WordAnalysisLoadRunner {
   private timer: ReturnType<typeof setTimeout> | null = null;
+  private activeSubscription: Subscription | null = null;
 
   constructor(private readonly bindings: WordAnalysisLoadBindings) {}
 
@@ -48,6 +51,11 @@ export class WordAnalysisLoadRunner {
     if (this.timer !== null) {
       clearTimeout(this.timer);
       this.timer = null;
+    }
+
+    if (this.activeSubscription !== null) {
+      this.activeSubscription.unsubscribe();
+      this.activeSubscription = null;
     }
 
     this.bindings.bumpRequestToken();
@@ -83,7 +91,7 @@ export class WordAnalysisLoadRunner {
 
     this.bindings.setLoadState({ isLoading: true, isEmpty: false, errorMessage: null });
 
-    subscribeToApiLoad(
+    this.activeSubscription = subscribeToApiLoad(
       this.bindings.readerCache.getOrLoad(
         MushafReaderCacheKeys.wordAnalysis(wordLocation),
         () => this.bindings.wordAnalysisApi.getWordAnalysis(wordLocation),
@@ -97,6 +105,8 @@ export class WordAnalysisLoadRunner {
           this.bindings.setAnalysis(toWordAnalysisViewModel(data));
         },
         onSettled: (loadState) => {
+          this.activeSubscription = null;
+
           if (this.bindings.getRequestToken() !== requestToken) {
             return;
           }

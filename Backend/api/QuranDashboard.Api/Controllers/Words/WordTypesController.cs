@@ -55,6 +55,9 @@ public sealed class WordTypesController(
     /// <param name="sort">مفتاح الفرز (اختياري).</param>
     /// <param name="page">رقم الصفحة (الافتراضي 1).</param>
     /// <param name="pageSize">حجم الصفحة (الافتراضي 1000).</param>
+    /// <param name="hasRoot">مرشّح وجود الجذر ثلاثي الحالة (اختياري).</param>
+    /// <param name="hasStem">مرشّح وجود الأصل الصرفي ثلاثي الحالة (اختياري).</param>
+    /// <param name="hasLemma">مرشّح وجود الصيغة المعجمية ثلاثي الحالة (اختياري).</param>
     /// <param name="cancellationToken">رمز إلغاء الطلب.</param>
     /// <response code="200">تم تحميل صفوف الكلمات بنجاح.</response>
     /// <response code="400">مرشّح أو فرز أو تقسيم صفحات غير صالح.</response>
@@ -105,6 +108,9 @@ public sealed class WordTypesController(
     /// <param name="sort">مفتاح الفرز (اختياري).</param>
     /// <param name="page">رقم الصفحة (الافتراضي 1).</param>
     /// <param name="pageSize">حجم الصفحة (الافتراضي 1000).</param>
+    /// <param name="hasRoot">مرشّح وجود الجذر ثلاثي الحالة (اختياري).</param>
+    /// <param name="hasStem">مرشّح وجود الأصل الصرفي ثلاثي الحالة (اختياري).</param>
+    /// <param name="hasLemma">مرشّح وجود الصيغة المعجمية ثلاثي الحالة (اختياري).</param>
     /// <param name="cancellationToken">رمز إلغاء الطلب.</param>
     /// <response code="200">تم تحميل صفوف الجدول بنجاح.</response>
     /// <response code="400">تبويب عرض أو مرشّح أو فرز أو تقسيم صفحات غير صالح.</response>

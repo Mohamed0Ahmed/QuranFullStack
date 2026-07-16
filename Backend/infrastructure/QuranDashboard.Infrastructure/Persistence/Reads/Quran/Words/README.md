@@ -95,7 +95,14 @@ and Unique Words. They back the `application/.../Quran/Words/**` query handlers 
   `tableView=roots|stems|lemmas`) reuse the same scoped `BaseRowsSql` occurrence base as the
   word rows, verbatim — grouping by the numeric `root_id`/`stem_id`/`lemma_id`, excluding
   nulls, with grouping and total counting happening **before** pagination
-  (`GroupedRowsSql`/`GroupedRowsCountSql` in `EfWordTypesReader.Sql.cs`). These grouped
+  (`GroupedRowsSql`/`GroupedRowsCountSql` in `EfWordTypesReader.Sql.cs`). **Single-command
+  window count:** the words view (`GetRowsAsync`) and the grouped table views return the page
+  **and** the `PagedResult.TotalCount` from ONE scoped command — `GroupedRowsSql`/`RowsSql`
+  project `COUNT(*) OVER()` over the grouped set (the winner joins are 1:1, so it equals the
+  matching `RowsCountSql`/`GroupedRowsCountSql` for the identical scope). The separate
+  count-only command (`CountRowsAsync`/`CountGroupedRowsAsync`) runs **only** for an empty page
+  (out-of-range or empty scope), where the window count has no row to carry it; the scope-count
+  read (`.ScopeCounts.cs`) stays its own one-command contract, untouched. These grouped
   counts are a **separate family** from the Roots/Lemmas/Stems explorers' global,
   unscoped, segment/`words_count`-backed aggregates (`EfRootsReader.LoadWholeSummaryAsync`
   and friends) — never conflate the two. Grouped `alpha` sort reuses the Roots explorer's

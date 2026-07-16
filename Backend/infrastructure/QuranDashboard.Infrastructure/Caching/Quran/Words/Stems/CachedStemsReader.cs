@@ -50,21 +50,15 @@ public sealed class CachedStemsReader(EfStemsReader efReader, IMemoryCache cache
         return summary;
     }
 
-    public Task<PagedResult<StemWordItemDto>?> GetStemWordsAsync(
+    public async Task<PagedResult<StemWordItemDto>?> GetStemWordsAsync(
         int id,
         StemWordKind wordKind,
         int page,
         int pageSize,
         CancellationToken cancellationToken)
     {
-        var key = StemsCacheKeys.Words(id, wordKind, page, pageSize);
-
-        if (_cache.TryGetValue(key, out PagedResult<StemWordItemDto>? cached))
-        {
-            return Task.FromResult<PagedResult<StemWordItemDto>?>(cached);
-        }
-
-        return GetAndCacheWordsAsync(id, wordKind, page, pageSize, cancellationToken, key);
+        var all = await GetOrLoadWordGroupsAsync(id, wordKind, cancellationToken);
+        return all is null ? null : EfStemsReader.SliceStemWordsPage(all, page, pageSize);
     }
 
     public Task<PagedResult<StemAyahMatchDto>?> GetStemAyahMatchesAsync(
@@ -155,22 +149,23 @@ public sealed class CachedStemsReader(EfStemsReader efReader, IMemoryCache cache
         return ayahs;
     }
 
-    private async Task<PagedResult<StemWordItemDto>?> GetAndCacheWordsAsync(
+    /// <summary>
+    /// Caches the complete grouped word list once per (stem, kind) identity, mirroring
+    /// the catalogue whole-summary pattern. Every page (including out-of-range pages)
+    /// then slices this single cached list in memory instead of re-issuing the full
+    /// occurrence query per page (performance review finding B6). Concurrent cold callers
+    /// for the same identity share one load rather than each materializing the full list.
+    /// </summary>
+    private Task<IReadOnlyList<StemWordItemDto>?> GetOrLoadWordGroupsAsync(
         int id,
         StemWordKind wordKind,
-        int page,
-        int pageSize,
-        CancellationToken cancellationToken,
-        string key)
-    {
-        var words = await _ef.GetStemWordsAsync(id, wordKind, page, pageSize, cancellationToken);
-        if (words is { Items.Count: > 0 })
-        {
-            _cache.Set(key, words, StemsCacheEntryOptions.PagedWords());
-        }
-
-        return words;
-    }
+        CancellationToken cancellationToken) =>
+        CacheLoadGate.GetOrLoadAsync(
+            _cache,
+            StemsCacheKeys.WordsAll(id, wordKind),
+            ct => _ef.LoadStemWordGroupsAsync(id, wordKind, ct),
+            StemsCacheEntryOptions.GroupedWords,
+            cancellationToken);
 
     private async Task<StemSurahsResponse?> GetAndCacheMentionedSurahsAsync(
         int id,

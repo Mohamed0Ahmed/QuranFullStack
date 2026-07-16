@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
 
 import { ApiResponse } from '../../../core/data-access/api-response.model';
 import { ResourceLoadState } from '../models/mushaf.models';
@@ -61,8 +61,8 @@ export function subscribeToApiLoad<T>(
     notFoundMessage: string;
     connectionMessage: string;
   },
-): void {
-  request$.subscribe({
+): Subscription {
+  return request$.subscribe({
     next: (response) => {
       handlers.onSettled(
         mapApiResponseToLoadState(response, { emptyMessage: handlers.emptyMessage }, handlers.onSuccess),

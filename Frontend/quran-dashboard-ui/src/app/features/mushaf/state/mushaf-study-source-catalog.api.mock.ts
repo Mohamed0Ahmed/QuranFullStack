@@ -4,7 +4,7 @@ import { of } from 'rxjs';
 import { MushafStudySourceCatalogApi } from '../data-access/mushaf-study-sources.api';
 import { MushafSimilarAyahsApi } from '../data-access/mushaf-similar-ayahs.api';
 import { MushafAyahMutashabihatApi } from '../data-access/mushaf-ayah-mutashabihat.api';
-import { AyahStudyDto } from '../models/mushaf.models';
+import { AyahStudyDto, StudySourceCatalogItemDto } from '../models/mushaf.models';
 
 export const ayahStudyDtoMock: AyahStudyDto = {
   ayah: {
@@ -34,6 +34,22 @@ export const ayahStudyDtoMock: AyahStudyDto = {
     mutashabihatGroupCount: 2,
     mutashabihatOccurrenceCount: 3,
   },
+};
+
+/**
+ * The single fixture for study-source catalogue metadata in mushaf specs. Source keys and
+ * display names describe real study sources, so they are declared here once and imported
+ * rather than re-typed per spec, where a drifting copy could not be traced back to anything.
+ */
+export const studySourceCatalogItemMock: StudySourceCatalogItemDto = {
+  direction: 'rtl',
+  displayNameAr: 'التفسير الميسر',
+  displayNameEn: null,
+  languageCode: 'ar',
+  languageNameAr: 'العربية',
+  sourceKey: 'ar-muyassar',
+  tafsirKind: 'brief',
+  translationType: null,
 };
 
 export const mushafStudySourceCatalogApiProvider = {
