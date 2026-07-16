@@ -41,6 +41,15 @@ ayahs, and متشابهات groups. State (page, selected ayah/word, source sele
   `role="status"` pattern ("جارٍ تحميل دراسة الآية...", "جارٍ تحميل تحليل الكلمة..."). All
   three skeletons are **loading chrome only** — they never approximate or touch Quran
   text, ayah glyphs, word-segment rendering, or `--qd-font-quran`.
+- **Selected-word loading reserves its natural size** (Feature 029, U1): while word
+  analysis loads, `selected-word-section` holds `min-block-size: max(baseline, last
+  natural)` so the divider/next section below it never moves. The last successful
+  block size and segment count are recorded by a guarded `ResizeObserver` (numeric
+  geometry only — old text/Quran DOM is never retained), the skeleton renders that
+  segment count (fallback 3 on first load) with geometry matched to the loaded
+  cells, and the responsive baseline is measured, not invented (333px wide bands /
+  495px under the 768px morphology-grid breakpoint). Reservation clears on
+  success/error/empty; loaded content always sizes itself.
 - **Mushaf font is Amiri** (`public/fonts/` + `assets/fonts/quran/`) — **not**
   `UthmanicHafs_V22`, which mis-renders mark **U+06DF** as baseline dots. Do not swap the
   Mushaf font.

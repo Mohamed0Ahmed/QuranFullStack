@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideLocationMocks } from '@angular/common/testing';
@@ -460,6 +460,164 @@ describe('SelectedWordSectionComponent — stable loading (UI-001)', () => {
 
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('.qd-empty-state')?.textContent).toContain('تعذّر');
+  });
+
+  describe('loading layout reservation (U1, Feature 029)', () => {
+    class FakeResizeObserver {
+      static instances: FakeResizeObserver[] = [];
+
+      private observed: Element[] = [];
+
+      constructor(private readonly callback: ResizeObserverCallback) {
+        FakeResizeObserver.instances.push(this);
+      }
+
+      observe(element: Element): void {
+        this.observed.push(element);
+      }
+
+      unobserve(element: Element): void {
+        this.observed = this.observed.filter((observedElement) => observedElement !== element);
+      }
+
+      disconnect(): void {
+        this.observed = [];
+      }
+
+      trigger(width: number, height: number): void {
+        const target = this.observed[this.observed.length - 1];
+        if (!target) {
+          throw new Error('FakeResizeObserver.trigger called before observe');
+        }
+        vi.spyOn(target, 'getBoundingClientRect').mockReturnValue({
+          width,
+          height,
+          top: 0,
+          left: 0,
+          right: width,
+          bottom: height,
+          x: 0,
+          y: 0,
+          toJSON: () => ({}),
+        } as DOMRect);
+        this.callback([{ target } as unknown as ResizeObserverEntry], this as unknown as ResizeObserver);
+      }
+    }
+
+    beforeEach(() => {
+      FakeResizeObserver.instances = [];
+      vi.stubGlobal('ResizeObserver', FakeResizeObserver);
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    function lastObserver(): FakeResizeObserver {
+      const observer = FakeResizeObserver.instances[FakeResizeObserver.instances.length - 1];
+      expect(observer).toBeTruthy();
+      return observer;
+    }
+
+    function sectionOf(fixture: ComponentFixture<SelectedWordSectionComponent>): HTMLElement {
+      return fixture.nativeElement.querySelector('[data-testid="selected-word-section"]') as HTMLElement;
+    }
+
+    it('reserves the last successful natural block size while loading, with no stale loaded DOM', () => {
+      const fixture = TestBed.createComponent(SelectedWordSectionComponent);
+      setInputs(fixture, {
+        analysis: buildWordAnalysisViewModel(),
+        loadState: IDLE,
+        selectedWordLocation: '2:25:3',
+      });
+      lastObserver().trigger(600, 420);
+      fixture.detectChanges();
+
+      setInputs(fixture, {
+        analysis: null,
+        loadState: { isLoading: true, isEmpty: false, errorMessage: null },
+        selectedWordLocation: '2:25:4',
+      });
+
+      const section = sectionOf(fixture);
+      expect(section.classList.contains('selected-word-section--loading')).toBe(true);
+      expect(section.style.getPropertyValue('--qd-selected-word-reserved-block-size')).toBe('420px');
+
+      const root = fixture.nativeElement as HTMLElement;
+      expect(root.querySelector('qd-segment-rendered-word')).toBeNull();
+      expect(root.querySelector('qd-segment-data-rows')).toBeNull();
+      expect(root.querySelector('[data-testid="word-identity-summary"]')).toBeNull();
+      expect(root.textContent).not.toContain(WORD_TEXT_PLACEHOLDER);
+    });
+
+    it('clears the loading reservation on the next successful render and updates the segment-count metadata', () => {
+      const fixture = TestBed.createComponent(SelectedWordSectionComponent);
+      setInputs(fixture, {
+        analysis: buildWordAnalysisViewModel(),
+        loadState: IDLE,
+        selectedWordLocation: '2:25:3',
+      });
+      lastObserver().trigger(600, 420);
+      fixture.detectChanges();
+
+      const twoSegments = buildWordAnalysisViewModel();
+      twoSegments.segments = [
+        twoSegments.segments[0],
+        { ...twoSegments.segments[0], segmentNumber: 2, segmentLocation: '2:25:3:2', segmentColorSlot: 2 },
+      ];
+      setInputs(fixture, {
+        analysis: twoSegments,
+        loadState: IDLE,
+        selectedWordLocation: '2:25:4',
+      });
+
+      const section = sectionOf(fixture);
+      expect(section.classList.contains('selected-word-section--loading')).toBe(false);
+      expect(section.style.getPropertyValue('--qd-selected-word-reserved-block-size')).toBe('');
+
+      setInputs(fixture, {
+        analysis: null,
+        loadState: { isLoading: true, isEmpty: false, errorMessage: null },
+        selectedWordLocation: '2:25:5',
+      });
+      expect(fixture.nativeElement.querySelectorAll('.selected-word-section__segment-skeleton')).toHaveLength(2);
+    });
+
+    it('drops a stale reservation when the available width changes mid-loading', () => {
+      const fixture = TestBed.createComponent(SelectedWordSectionComponent);
+      setInputs(fixture, {
+        analysis: buildWordAnalysisViewModel(),
+        loadState: IDLE,
+        selectedWordLocation: '2:25:3',
+      });
+      lastObserver().trigger(600, 420);
+      fixture.detectChanges();
+
+      setInputs(fixture, {
+        analysis: null,
+        loadState: { isLoading: true, isEmpty: false, errorMessage: null },
+        selectedWordLocation: '2:25:4',
+      });
+      expect(sectionOf(fixture).style.getPropertyValue('--qd-selected-word-reserved-block-size')).toBe('420px');
+
+      lastObserver().trigger(300, 480);
+      fixture.detectChanges();
+
+      expect(sectionOf(fixture).style.getPropertyValue('--qd-selected-word-reserved-block-size')).toBe('');
+      expect(sectionOf(fixture).classList.contains('selected-word-section--loading')).toBe(true);
+    });
+
+    it('keeps the first-load fallback of three segment placeholders before any successful render', () => {
+      const fixture = TestBed.createComponent(SelectedWordSectionComponent);
+      setInputs(fixture, {
+        analysis: null,
+        loadState: { isLoading: true, isEmpty: false, errorMessage: null },
+        selectedWordLocation: '2:25:3',
+      });
+
+      expect(fixture.nativeElement.querySelectorAll('.selected-word-section__segment-skeleton')).toHaveLength(3);
+      expect(sectionOf(fixture).style.getPropertyValue('--qd-selected-word-reserved-block-size')).toBe('');
+    });
   });
 
   it('applies segment accent tint on loaded rows and matches skeleton min-height', () => {
