@@ -42,21 +42,23 @@ is empty or the branch is ambiguous, say so.
    git diff --cached --stat
    ```
 
-2. **Base branch.** Default to `main`. Only ask the user if you genuinely can't
-   infer it — e.g. the branch's upstream tracks something other than `main`, or
+2. **Base branch.** Default to `dev` — feature branches PR into `dev`, never into
+   `main`. Use `main` as the base only for an explicit `dev → main` release or
+   emergency hotfix the user requests. Otherwise ask only if you genuinely can't
+   infer it — e.g. the branch's upstream tracks something other than `dev`, or
    there are stacked branches. Confirm with:
 
    ```bash
-   git merge-base --fork-point main HEAD   # sanity check the base
+   git merge-base --fork-point dev HEAD   # sanity check the base
    ```
 
 3. **The diff.** Use the three-dot form so you compare against the merge base, not
-   a moving `main`:
+   a moving `dev`:
 
    ```bash
-   git diff --name-status main...HEAD
-   git diff --stat        main...HEAD
-   git log --oneline      main..HEAD
+   git diff --name-status dev...HEAD
+   git diff --stat        dev...HEAD
+   git log --oneline      dev..HEAD
    ```
 
 Only claim a file changed when it appears in this output. Related unchanged files
@@ -241,7 +243,8 @@ Be consistent so the labels mean something.
 - Prep/review only — do not edit code, commit, push, or open the PR.
 - Read from the real diff/status; never invent files, paths, specs, or reports.
 - Do not claim tests/build passed without evidence; say "not yet run" instead.
-- Ask for the base branch only when you truly cannot infer it (default `main`).
+- Ask for the base branch only when you truly cannot infer it (default `dev`;
+  `main` only for an explicit `dev → main` release or hotfix).
 - Keep output copy-paste-ready; prefer tight bullets over prose.
 - Flag any Quran text/source/import mutation at the top, every time.
 - Staging, commit planning, and push readiness -> use `commit-workflow`.
