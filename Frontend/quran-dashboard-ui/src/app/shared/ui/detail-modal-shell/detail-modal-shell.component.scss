@@ -1,0 +1,81 @@
+// Dialog geometry only — surface/hairline/radius/floating shadow come from the
+// global `.qd-modal` / `.qd-modal-backdrop` primitives (the floating dialog is
+// the one layer that carries the floating shadow under the flat doctrine).
+.detail-modal-shell {
+  display: flex;
+  flex-direction: column;
+  inline-size: min(100%, 46rem);
+  max-block-size: min(92dvh, 44rem);
+}
+
+.detail-modal-shell__header {
+  display: flex;
+  align-items: center;
+  gap: var(--qd-space-2);
+  padding-block-end: var(--qd-space-2);
+  border-block-end: 1px solid var(--qd-border);
+}
+
+.detail-modal-shell__title {
+  flex: 1;
+  min-inline-size: 0;
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--qd-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  &:focus-visible {
+    outline: 2px solid var(--qd-focus-ring);
+    outline-offset: 2px;
+  }
+}
+
+.detail-modal-shell__back-icon {
+  display: inline-block;
+}
+
+.detail-modal-shell__body {
+  flex: 1;
+  min-block-size: 0;
+  overflow-y: auto;
+  padding-block-start: var(--qd-space-3);
+}
+
+// Restore control: fixed at the physical top-left (inline-end in RTL). It is a
+// floating layer, so it carries the floating shadow.
+.detail-modal-shell__restore {
+  position: fixed;
+  inset-block-start: calc(var(--qd-space-4) + 3.5rem);
+  inset-inline-end: var(--qd-space-4);
+  z-index: 40;
+  padding: var(--qd-space-2) var(--qd-space-3);
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-md);
+  background: var(--qd-surface);
+  color: var(--qd-accent-text);
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--qd-floating-shadow, var(--qd-shadow-lg));
+
+  &:hover {
+    background: var(--qd-surface-hover);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--qd-focus-ring);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .detail-modal-shell,
+  .detail-modal-shell__restore {
+    transition: none;
+    animation: none;
+  }
+}

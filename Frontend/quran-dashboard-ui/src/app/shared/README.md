@@ -29,7 +29,16 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   (`'lines' | 'rows' | 'panel'`; default `'lines'` reproduces the original six-line panel
   skeleton). The `qd-explorer-panel-skeleton` selector is kept as a thin alias on the same
   component for existing call-sites.
-- `ui/modal-scroll-lock/` — directive that locks body scrolling while a modal is mounted.
+- `ui/detail-modal-shell/` — `qd-detail-modal-shell`, the presentation-only accessible
+  dialog shell of the global detail overlay (Feature 029): RTL `role="dialog"` +
+  `aria-modal`, labelled heading, CDK focus trap with auto-capture, Escape/backdrop
+  dismissal, Back (depth > 1)/Close header actions, the fixed restore control shown while
+  a retained stack is closed (focused after Close), polite live regions for title/status,
+  and reference-counted scroll locking. It owns no entity, API, URL, or history state.
+- `ui/modal-scroll-lock/` — `qdModalScrollLock` directive + `ScrollLockService`, the
+  **reference-counted** body scroll lock (Feature 029): overlapping layers (responsive
+  drawer + global overlay) each acquire/release; the body unlocks only when the last
+  holder releases. Never lock `document.body` directly.
 - `ui/pagination/` — reusable pagination component, windowing helpers, labels, and tests.
 - `ui/placeholder-page/` — generic placeholder page that reads its title from route data.
 - `ui/safe-html/` — HTML sanitizing pipe for trusted API-backed markup display.

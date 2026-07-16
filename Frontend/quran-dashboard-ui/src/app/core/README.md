@@ -24,6 +24,18 @@ per-feature.
   same idea; keep the key strategy consistent).
 - `layout/` — `app-shell`, `top-navbar`, `footer`, `shell-layout.model.ts`.
 - `navigation/` — `route-paths.ts` (canonical route constants) + `nav-items.ts`.
+- `navigation/detail-overlay/` — the app-wide floating detail-overlay navigation layer
+  (Feature 029, Change B): `detail-overlay.models.ts` (versioned `v1~…` frame union — the
+  URL contract, deliberately decoupled from Words models), `detail-overlay-url-codec.ts`
+  (strict parse/serialize/canonicalize; repeated `qdDetail` values bottom→top plus
+  `qdDetailOpen=1`; invalid first frame ⇒ no overlay, malformed later frame truncates,
+  eight-frame cap), `detail-overlay-history.service.ts` (URL-authoritative state machine:
+  push on entity append, replace on top-frame sub-state, close retains the stack in the
+  URL, restore is a push; dialog Back uses browser Back only when history-state provenance
+  proves the parent entry, else a deterministic replace; fresh deep links get their prefix
+  history seeded once), and `detail-overlay-link.directive.ts` (real copyable hrefs;
+  only unmodified primary clicks are intercepted). Core owns navigation semantics only —
+  entity rendering lives in `features/words/entity-detail-overlay/`.
 - `theme/theme.service.ts` — light/dark theme.
 
 ## Gotchas / invariants

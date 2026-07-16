@@ -1,0 +1,17 @@
+@if (hasStack()) {
+  <qd-detail-modal-shell
+    [visibility]="visibility()"
+    [titleText]="title()"
+    [depth]="depth()"
+    [backLabel]="backLabel"
+    [closeLabel]="closeLabel"
+    [restoreLabel]="restoreLabel"
+    [restoreAriaLabel]="restoreAriaLabel()"
+    [statusMessage]="capStatus()"
+    (backRequested)="overlay.back()"
+    (closeRequested)="overlay.close()"
+    (restoreRequested)="overlay.restore()"
+  >
+    <!-- Lazy entity adapters (root/lemma/stem/unique/wordType) mount here in B4. -->
+  </qd-detail-modal-shell>
+}

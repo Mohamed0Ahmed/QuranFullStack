@@ -1,10 +1,25 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { AppShellComponent } from './core/layout/app-shell/app-shell.component';
+import { DetailOverlayHistoryService } from './core/navigation/detail-overlay/detail-overlay-history.service';
+import { EntityDetailOverlayHostComponent } from './features/words/entity-detail-overlay/entity-detail-overlay-host.component';
 
+/**
+ * Application composition root: the routed shell plus the persistent
+ * entity-detail overlay host (Feature 029, Change B). The shell becomes inert
+ * while the overlay dialog is open, so the sibling dialog stays the only
+ * interactive surface; this is the one allowed composition point of core
+ * layout and the Words-owned overlay host.
+ */
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [AppShellComponent],
-  template: '<qd-app-shell />',
+  imports: [AppShellComponent, EntityDetailOverlayHostComponent],
+  template: `
+    <qd-app-shell [attr.inert]="overlayOpen() ? '' : null" [attr.aria-hidden]="overlayOpen() ? true : null" />
+    <qd-entity-detail-overlay-host />
+  `,
 })
-export class App {}
+export class App {
+  private readonly overlay = inject(DetailOverlayHistoryService);
+  protected readonly overlayOpen = this.overlay.isOpen;
+}
