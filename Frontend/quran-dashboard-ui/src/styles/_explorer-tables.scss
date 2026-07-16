@@ -88,6 +88,9 @@
 
 .qd-explorer-table__row.qd-is-selected {
   background: var(--qd-selected-bg);
+  /* the green thread: 2px "current" edge on the inline-start side (app is RTL-only,
+     so the physical right edge is inline-start; inset shadow avoids layout shift) */
+  box-shadow: inset -2px 0 0 var(--qd-accent);
 }
 
 .qd-explorer-table__row:hover:not(.qd-is-selected, .qd-explorer-table__row--loading) {

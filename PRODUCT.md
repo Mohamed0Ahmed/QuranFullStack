@@ -37,38 +37,51 @@ emotional goal is confidence and sustained focus.
 
 ## Visual Identity
 
-The official visual identity is the **Real Pages prototype** (`/projects/Real
-Pages`, brand reference "الباحث القرآني"), adopted **with adaptation** as the
-visual source of truth. See the extraction report
-`Frontend/quran-dashboard-ui/report/ui/real-pages-visual-system-extraction-report.md`.
+The official visual identity is the **flat parchment + single scholarly-green**
+direction, locked in the approved static comps under `docs/design-preview/`
+(read its `README.md`; the divergence list there is the record of what changed).
+`DESIGN.md` is the design system of record, with the token contract in
+`Frontend/quran-dashboard-ui/.architecture/UI_STYLE_SYSTEM.md`.
 
-The identity is **navy + gold + parchment**:
+> **Superseded (historical).** The previous visual source of truth was the
+> **Real Pages prototype** (`/projects/Real Pages`, brand reference
+> "الباحث القرآني"): a navy + gold + parchment identity with soft card
+> elevation and hover lifts, which itself superseded an earlier exploratory
+> green / teal / petrol chrome direction. Its extraction report remains at
+> `Frontend/quran-dashboard-ui/report/ui/real-pages-visual-system-extraction-report.md`
+> as historical reference.
+
+The identity is **flat parchment + ink + one scholarly green**:
 
 - **Warm parchment light mode.** A calm Quranic research workspace on a warm
-  parchment canvas, with near-white elevated content cards lifting off it.
-- **Deep navy structural identity.** Navy carries the structural/primary role
-  (primary buttons, brand mark) and the footer.
-- **Restrained gold accent.** A single muted gold accent for active states, links,
-  icon highlights, and section eyebrows — used sparingly, never as decoration.
-- **Premium dark footer / dark anchor sections.** The footer is a deep navy anchor
-  with warm off-white text and gold accents; dark anchor surfaces give the page an
-  end-cap and visual weight.
-- **Subtle card elevation and hover movement.** Cards rest with a soft shadow and
-  lift slightly on hover (small translate + stronger shadow/border). Controlled
-  soft shadows are part of the identity, not an exception.
-- **Clean light navbar.** The top bar stays light/near-white and clearly distinct
-  from content, never a heavy colored bar.
+  parchment canvas with near-white content cards — structure carried by
+  hairline borders, not elevation.
+- **Fully flat in light.** No resting card shadows, no hover lifts, no
+  gradients, no navbar blur. A single shadow exists only on floating layers
+  (dropdowns, popovers, modals, drawers).
+- **One scholarly green.** A single muted green is both the structural/primary
+  color (primary buttons, brand mark) and the accent (focus ring, selection,
+  active states, links, icon highlights). Gold is retired; the old
+  restrained-gold discipline carries over as an allowed-green list — green is
+  used sparingly for state and emphasis, never as decoration.
+- **The green thread.** A 2px green line or edge means "current" everywhere:
+  the active tab, the selected row's inline-start edge, the selected mushaf
+  word.
+- **Navy is footer-only.** The footer remains the one deep-navy anchor — flat,
+  with warm off-white text and a sage accent. Navy appears nowhere else in the
+  light theme.
+- **Clean flat navbar.** The top bar is an opaque light surface with a hairline
+  bottom border — never a heavy colored bar, never translucent or blurred.
 - **Calm, non-distracting motion.** Quick, subtle transitions only; no bounce, no
   showy animation; reduced-motion respected.
 - **Quran text rendering stays sacred and stable.** Quran/Mushaf glyph fonts and
   rendering are unchanged and are **never animated**.
 
-This supersedes any earlier exploratory color direction (including the
-green / teal / petrol chrome exploration): the official direction is now the
-prototype's navy + gold + parchment. The Angular app stays **light + dark** only
-(prototype *ivory* → light, *midnight* → dark; *sage* is not adopted). Implementation
-details and the future token contract live in
-`Frontend/quran-dashboard-ui/.architecture/UI_STYLE_SYSTEM.md` and `DESIGN.md`.
+The Angular app stays **light + dark** only. The dark theme still runs the
+previous navy + gold values and remains functional; reconciling dark to the
+green direction is a deliberately deferred later task. Theme-neutral shape and
+motion changes (flat navbar/footer geometry, lift removal, crisper radii)
+already apply to dark.
 
 ## Anti-references
 
@@ -78,9 +91,10 @@ This should NOT look like any of the following:
   stat cards, cookie-cutter dashboard layouts.
 - **Kitschy religious decor.** Gold *filigree*, crescent moons, mosque clipart,
   overwrought ornamentation. Reverence comes from restraint, not decoration. (Note:
-  this bans decorative gold *ornament*. The restrained gold *accent color* in the
-  Visual Identity above is a different thing and is allowed — it is used sparingly
-  for state and emphasis, never as applied decoration.)
+  this bans decorative gold *ornament*. Gold no longer appears as an accent color
+  either — the restrained *accent color* in the Visual Identity above is now a
+  single scholarly green, used sparingly for state and emphasis, never as applied
+  decoration.)
 - **Consumer / gamified.** Bright playful palettes, emoji, badges, reward-style
   UI. This is professional curation work.
 - **Dense enterprise greige.** Cramped gray-on-gray tables with no breathing

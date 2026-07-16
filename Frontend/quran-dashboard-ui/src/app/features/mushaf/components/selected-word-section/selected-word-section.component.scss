@@ -56,7 +56,7 @@
 
     ::ng-deep .segment-rendered-word {
       justify-content: center;
-      font-size: 1.5rem;
+      font-size: 1.9rem;
       font-weight: 600;
       line-height: 1.8;
     }
@@ -134,8 +134,7 @@
     padding: calc(var(--qd-space-2) + 0.45 * var(--qd-space-1));
     border: 1px solid var(--qd-border);
     border-radius: var(--qd-radius-sm);
-    /* one-off: 4% navy-tinted quiet-card wash, not hover/selected/border role */
-    background: color-mix(in oklch, var(--qd-primary) 4%, var(--qd-surface));
+    background: var(--qd-section-bg);
     text-align: center;
 
     dt {
@@ -185,15 +184,14 @@
     align-items: center;
     gap: var(--qd-space-1);
     min-width: 0;
-    padding: var(--qd-space-2);
+    padding: var(--qd-space-3);
     border: 1px solid var(--qd-border);
     border-radius: var(--qd-radius-sm);
     background: var(--qd-section-bg);
-    font-size: 0.875rem;
+    font-size: 0.9375rem;
     color: inherit;
     text-decoration: none;
     text-align: center;
-    box-shadow: var(--qd-shadow-sm);
   }
 
   &__identity-label {

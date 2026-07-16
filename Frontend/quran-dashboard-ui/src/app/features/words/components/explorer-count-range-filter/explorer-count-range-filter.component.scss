@@ -54,14 +54,18 @@
 }
 
 .range-filter__chips {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: var(--qd-space-2);
 }
 
 .range-filter__chip {
   cursor: pointer;
   font-variant-numeric: tabular-nums;
+  justify-content: center;
+  text-align: center;
+  min-width: 0;
+  white-space: nowrap;
 
   &:disabled {
     cursor: default;
@@ -78,6 +82,12 @@
     outline: 2px solid var(--qd-focus-ring);
     outline-offset: 2px;
   }
+}
+
+// مخصص always sits in the last track, so it lines up vertically across every metric row
+// regardless of how many buckets that row has.
+.range-filter__chip--custom {
+  grid-column: -2;
 }
 
 .range-filter__custom {
@@ -103,11 +113,11 @@
   align-self: flex-start;
 }
 
-// "Quiet cards" treatment: metrics laid out as a three-column grid of soft labeled
-// cells on a lifted near-white card, with an eyebrow label per cell.
+// "Aligned rows" treatment: each metric is a full-width row — a fixed-width label
+// column followed by a shared 6-track chip grid, so chip columns (and مخصص) line up
+// vertically across the occurrences/ayahs/surahs rows.
 .range-filter--cards {
   background: var(--qd-surface);
-  box-shadow: var(--qd-shadow-sm);
 
   .range-filter__summary {
     border-block-end: 1px solid var(--qd-border);
@@ -119,22 +129,29 @@
   }
 
   .range-filter__body {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: var(--qd-space-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--qd-space-2);
   }
 
   .range-filter__metric {
-    gap: var(--qd-space-2);
-    padding: 0.6rem 0.7rem;
+    display: grid;
+    grid-template-columns: 7.5rem minmax(0, 1fr);
+    align-items: center;
+    gap: var(--qd-space-2) var(--qd-space-3);
+    padding: 0.45rem 0.7rem;
     background: var(--qd-section-bg);
     border: 1px solid var(--qd-border);
     border-radius: var(--qd-radius-sm);
   }
 
   .range-filter__metric-label {
-    font-size: 0.72rem;
-    letter-spacing: 0.02em;
+    font-size: 0.78rem;
+  }
+
+  .range-filter__custom {
+    grid-column: 2;
+    margin-block-start: 0;
   }
 
   .range-filter__chip {
@@ -148,7 +165,20 @@
   }
 
   .range-filter__clear {
-    grid-column: 1 / -1;
     justify-self: start;
+  }
+
+  @media (max-width: 767px) {
+    .range-filter__metric {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .range-filter__custom {
+      grid-column: 1;
+    }
+
+    .range-filter__chips {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
   }
 }

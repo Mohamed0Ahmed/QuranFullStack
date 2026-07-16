@@ -11,14 +11,11 @@
 .qd-card--hover,
 .qd-interactive-surface {
   cursor: pointer;
-  transition: border-color var(--qd-t-fast), box-shadow var(--qd-t-fast),
-              transform var(--qd-t-fast);
+  transition: border-color var(--qd-t-fast), background-color var(--qd-t-fast);
 }
 .qd-card--hover:hover,
 .qd-interactive-surface:hover {
   border-color: var(--qd-border-strong);
-  box-shadow: var(--qd-shadow);
-  transform: translateY(-2px);
 }
 
 .qd-interactive-surface:focus-visible {
@@ -45,12 +42,9 @@ button.qd-interactive-surface {
   border-radius: var(--qd-radius-lg);
   padding: var(--qd-space-5);
 }
-.qd-card--feature.qd-card--hover:hover { transform: none; box-shadow: var(--qd-shadow); }
-
 .qd-card--mini { padding: var(--qd-space-3); }
 .qd-card--mini.qd-card--hover:hover {
   border-color: var(--qd-accent-soft);
-  transform: translateY(-1px);
 }
 
 .qd-btn {
@@ -596,14 +590,6 @@ button.qd-interactive-surface {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .qd-card--hover,
-  .qd-interactive-surface {
-    transition: border-color var(--qd-t-fast), box-shadow var(--qd-t-fast);
-  }
-  .qd-card--hover:hover,
-  .qd-card--mini.qd-card--hover:hover,
-  .qd-interactive-surface:hover { transform: none; }
-
   .qd-btn {
     transition: background-color var(--qd-t-fast), border-color var(--qd-t-fast),
                 color var(--qd-t-fast);
