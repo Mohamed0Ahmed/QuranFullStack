@@ -13,201 +13,230 @@ public sealed class EfWordAnalysisReader(QuranDashboardDbContext db) : IWordAnal
 
     public async Task<WordAnalysisOutcome> GetWordAnalysisAsync(string wordLocation, CancellationToken ct)
     {
-        var word = await db.QuranWords
-            .AsNoTracking()
-            .FirstOrDefaultAsync(w => w.Location == wordLocation, ct);
+        var core = await LoadCoreAsync(wordLocation, ct);
 
-        if (word is null)
+        if (core is null)
         {
             return new WordAnalysisOutcome.NotFound();
         }
 
-        if (word.IsAyahMarker)
+        if (core.IsAyahMarker)
         {
             return new WordAnalysisOutcome.NotAnalyzable();
         }
 
-        var morphology = await db.WordMorphologies
-            .AsNoTracking()
-            .FirstOrDefaultAsync(m => m.QuranWordId == word.Id, ct);
-
-        var orderedTashkeel = await db.QuranWordsOrderedTashkeel
-            .AsNoTracking()
-            .FirstOrDefaultAsync(r => r.QuranWordId == word.Id, ct);
-
-        var orderedSimple = await db.QuranWordsOrderedSimple
-            .AsNoTracking()
-            .FirstOrDefaultAsync(r => r.QuranWordId == word.Id, ct);
-
-        var uniqueTashkeel = word.UniqueTashkeelWordId is int tashkeelId
-            ? await db.QuranWordsUniqueTashkeel
-                .AsNoTracking()
-                .FirstOrDefaultAsync(r => r.Id == tashkeelId, ct)
-            : null;
-
-        var uniqueSimple = word.UniqueSimpleWordId is int simpleId
-            ? await db.QuranWordsUniqueSimple
-                .AsNoTracking()
-                .FirstOrDefaultAsync(r => r.Id == simpleId, ct)
-            : null;
-
-        if (morphology is null
-            || orderedTashkeel is null
-            || orderedSimple is null
-            || word.UniqueTashkeelWordId is null
-            || uniqueTashkeel is null
-            || word.UniqueSimpleWordId is null
-            || uniqueSimple is null)
+        if (core.HeadPos is null
+            || core.OrderedTashkeelOccurrencesCount is null
+            || core.OrderedSimpleOccurrencesCount is null
+            || core.WordUniqueTashkeelWordId is null
+            || core.UniqueTashkeelOccurrencesCount is null
+            || core.WordUniqueSimpleWordId is null
+            || core.UniqueSimpleOccurrencesCount is null)
         {
             return new WordAnalysisOutcome.IncompleteData();
         }
 
-        var segments = await db.WordMorphologySegments
+        var headPosTag = await db.PosTags
             .AsNoTracking()
-            .Where(s => s.QuranWordId == word.Id)
-            .OrderBy(s => s.SegmentNumber)
-            .ToListAsync(ct);
+            .FirstOrDefaultAsync(p => p.Code == core.HeadPos, ct);
+
+        var segments = await LoadSegmentsAsync(core.WordId, ct);
 
         if (segments.Count == 0)
         {
             return new WordAnalysisOutcome.IncompleteData();
         }
 
-        var posCodes = new HashSet<string>(StringComparer.Ordinal);
-        posCodes.Add(morphology.HeadPos);
-
-        foreach (var segment in segments)
-        {
-            posCodes.Add(segment.Pos);
-        }
-
-        var posTags = await db.PosTags
-            .AsNoTracking()
-            .Where(p => posCodes.Contains(p.Code))
-            .ToDictionaryAsync(p => p.Code, ct);
-
-        QuranDashboard.Domain.Quran.Words.Morphology.QuranRoot? root = null;
-        QuranDashboard.Domain.Quran.Words.Morphology.QuranLemma? lemma = null;
-        QuranDashboard.Domain.Quran.Words.Morphology.QuranStem? stem = null;
-
-        if (morphology.RootId is int rootId)
-        {
-            root = await db.QuranRoots.AsNoTracking().FirstOrDefaultAsync(r => r.Id == rootId, ct);
-        }
-
-        if (morphology.LemmaId is int lemmaId)
-        {
-            lemma = await db.QuranLemmas.AsNoTracking().FirstOrDefaultAsync(l => l.Id == lemmaId, ct);
-        }
-
-        if (morphology.StemId is int stemId)
-        {
-            stem = await db.QuranStems.AsNoTracking().FirstOrDefaultAsync(s => s.Id == stemId, ct);
-        }
-
-        var ruleIds = segments
-            .Where(s => s.I3rabRuleId is not null)
-            .Select(s => s.I3rabRuleId!.Value)
-            .Distinct()
-            .ToList();
-
-        var i3rabRules = ruleIds.Count == 0
-            ? new Dictionary<int, QuranDashboard.Domain.Quran.Words.Morphology.Irab.QuranI3rabRule>()
-            : await db.QuranI3rabRules
-                .AsNoTracking()
-                .Where(r => ruleIds.Contains(r.Id))
-                .ToDictionaryAsync(r => r.Id, ct);
-
         var response = new WordAnalysisResponse(
-            MapWord(word),
-            MapIdentity(orderedTashkeel, orderedSimple, uniqueTashkeel, uniqueSimple),
-            MapMorphology(morphology, root, lemma, stem, posTags),
-            MapSegments(segments, posTags, i3rabRules));
+            MapWord(core),
+            MapIdentity(core),
+            MapMorphology(core, headPosTag),
+            MapSegments(segments));
 
         return new WordAnalysisOutcome.Found(response);
     }
 
-    private static WordOccurrenceDto MapWord(Domain.Quran.Words.QuranWord word) => new(
-        word.Id,
-        word.Location,
-        $"{word.SurahNumber}:{word.AyahNumber}",
-        word.SurahNumber,
-        word.AyahNumber,
-        word.WordNumber,
-        word.PageNumber,
-        word.LineNumber,
-        word.LineWordOrder,
-        word.TextUthmani,
-        word.TextUthmaniSimple,
-        word.TextImlaeiSimple,
-        word.QpcGlyph);
-
-    private static WordIdentityDto MapIdentity(
-        Domain.Quran.Words.Display.OrderedTashkeelWord orderedTashkeel,
-        Domain.Quran.Words.Display.OrderedSimpleWord orderedSimple,
-        Domain.Quran.Words.Display.UniqueTashkeelWord uniqueTashkeel,
-        Domain.Quran.Words.Display.UniqueSimpleWord uniqueSimple) => new(
-        new WordCountSummary(
-            orderedTashkeel.OccurrencesCount,
-            orderedTashkeel.AyahsCount,
-            orderedTashkeel.SurahsCount),
-        new WordCountSummary(
-            orderedSimple.OccurrencesCount,
-            orderedSimple.AyahsCount,
-            orderedSimple.SurahsCount),
-        new UniqueWordCountSummary(
-            uniqueTashkeel.Id,
-            uniqueTashkeel.OccurrencesCount,
-            uniqueTashkeel.AyahsCount,
-            uniqueTashkeel.SurahsCount),
-        new UniqueSimpleWordCountSummary(
-            uniqueSimple.Id,
-            uniqueSimple.OccurrencesCount,
-            uniqueSimple.AyahsCount,
-            uniqueSimple.SurahsCount,
-            uniqueSimple.WordKeyImlaeiSimple));
-
-    private static WordMorphologyDto MapMorphology(
-        Domain.Quran.Words.Morphology.WordMorphology morphology,
-        Domain.Quran.Words.Morphology.QuranRoot? root,
-        Domain.Quran.Words.Morphology.QuranLemma? lemma,
-        Domain.Quran.Words.Morphology.QuranStem? stem,
-        IReadOnlyDictionary<string, Domain.Quran.Words.Morphology.PosTag> posTags)
+    /// <summary>
+    /// Word, morphology, its root/lemma/stem dimensions, and the four identity summary rows
+    /// (ordered tashkeel/simple, unique tashkeel/simple) are six point-lookups keyed either
+    /// directly off the word row or off a nullable FK carried on it or on morphology. They are
+    /// collapsed into one LEFT-JOIN projection instead of up to six sequential round trips.
+    /// A missing morphology/identity row surfaces as null joined columns, preserving the
+    /// existing incomplete-data checks exactly.
+    /// </summary>
+    private async Task<WordCoreProjection?> LoadCoreAsync(string wordLocation, CancellationToken ct)
     {
-        posTags.TryGetValue(morphology.HeadPos, out var headPosTag);
-
-        return new WordMorphologyDto(
-            morphology.HeadPos,
-            new LocalizedLabel(
-                headPosTag?.ArabicLabel ?? morphology.HeadPos,
-                headPosTag?.EnglishLabel ?? morphology.HeadPos),
-            root is null
-                ? null
-                : new WordMorphologyRoot(root.Id, root.RootText, root.RootBuckwalter),
-            lemma is null
-                ? null
-                : new WordMorphologyLemma(lemma.Id, lemma.LemmaText, lemma.LemmaBuckwalter),
-            stem is null
-                ? null
-                : new WordMorphologyStem(stem.Id, stem.StemText),
-            morphology.IsVerb,
-            morphology.VerbTense,
-            morphology.VerbVoice,
-            morphology.CaseFeature);
+        return await (
+            from word in db.QuranWords.AsNoTracking()
+            where word.Location == wordLocation
+            join m in db.WordMorphologies.AsNoTracking()
+                on word.Id equals m.QuranWordId into morphologyGroup
+            from morphology in morphologyGroup.DefaultIfEmpty()
+            join r in db.QuranRoots.AsNoTracking()
+                on morphology.RootId equals (int?)r.Id into rootGroup
+            from root in rootGroup.DefaultIfEmpty()
+            join l in db.QuranLemmas.AsNoTracking()
+                on morphology.LemmaId equals (int?)l.Id into lemmaGroup
+            from lemma in lemmaGroup.DefaultIfEmpty()
+            join st in db.QuranStems.AsNoTracking()
+                on morphology.StemId equals (int?)st.Id into stemGroup
+            from stem in stemGroup.DefaultIfEmpty()
+            join ot in db.QuranWordsOrderedTashkeel.AsNoTracking()
+                on word.Id equals ot.QuranWordId into orderedTashkeelGroup
+            from orderedTashkeel in orderedTashkeelGroup.DefaultIfEmpty()
+            join os in db.QuranWordsOrderedSimple.AsNoTracking()
+                on word.Id equals os.QuranWordId into orderedSimpleGroup
+            from orderedSimple in orderedSimpleGroup.DefaultIfEmpty()
+            join ut in db.QuranWordsUniqueTashkeel.AsNoTracking()
+                on word.UniqueTashkeelWordId equals (int?)ut.Id into uniqueTashkeelGroup
+            from uniqueTashkeel in uniqueTashkeelGroup.DefaultIfEmpty()
+            join us in db.QuranWordsUniqueSimple.AsNoTracking()
+                on word.UniqueSimpleWordId equals (int?)us.Id into uniqueSimpleGroup
+            from uniqueSimple in uniqueSimpleGroup.DefaultIfEmpty()
+            select new WordCoreProjection(
+                word.Id,
+                word.Location,
+                word.SurahNumber,
+                word.AyahNumber,
+                word.WordNumber,
+                word.PageNumber,
+                word.LineNumber,
+                word.LineWordOrder,
+                word.TextUthmani,
+                word.TextUthmaniSimple,
+                word.TextImlaeiSimple,
+                word.QpcGlyph,
+                word.IsAyahMarker,
+                word.UniqueTashkeelWordId,
+                word.UniqueSimpleWordId,
+                morphology != null ? morphology.HeadPos : null,
+                morphology != null ? (bool?)morphology.IsVerb : null,
+                morphology != null ? morphology.VerbTense : null,
+                morphology != null ? morphology.VerbVoice : null,
+                morphology != null ? morphology.CaseFeature : null,
+                root != null ? (int?)root.Id : null,
+                root != null ? root.RootText : null,
+                root != null ? root.RootBuckwalter : null,
+                lemma != null ? (int?)lemma.Id : null,
+                lemma != null ? lemma.LemmaText : null,
+                lemma != null ? lemma.LemmaBuckwalter : null,
+                stem != null ? (int?)stem.Id : null,
+                stem != null ? stem.StemText : null,
+                orderedTashkeel != null ? (int?)orderedTashkeel.OccurrencesCount : null,
+                orderedTashkeel != null ? (short?)orderedTashkeel.AyahsCount : null,
+                orderedTashkeel != null ? (short?)orderedTashkeel.SurahsCount : null,
+                orderedSimple != null ? (int?)orderedSimple.OccurrencesCount : null,
+                orderedSimple != null ? (short?)orderedSimple.AyahsCount : null,
+                orderedSimple != null ? (short?)orderedSimple.SurahsCount : null,
+                uniqueTashkeel != null ? (int?)uniqueTashkeel.Id : null,
+                uniqueTashkeel != null ? (int?)uniqueTashkeel.OccurrencesCount : null,
+                uniqueTashkeel != null ? (short?)uniqueTashkeel.AyahsCount : null,
+                uniqueTashkeel != null ? (short?)uniqueTashkeel.SurahsCount : null,
+                uniqueSimple != null ? (int?)uniqueSimple.Id : null,
+                uniqueSimple != null ? (int?)uniqueSimple.OccurrencesCount : null,
+                uniqueSimple != null ? (short?)uniqueSimple.AyahsCount : null,
+                uniqueSimple != null ? (short?)uniqueSimple.SurahsCount : null,
+                uniqueSimple != null ? uniqueSimple.WordKeyImlaeiSimple : null))
+            .FirstOrDefaultAsync(ct);
     }
 
-    private static IReadOnlyList<RenderedSegmentDto> MapSegments(
-        IReadOnlyList<Domain.Quran.Words.Morphology.WordMorphologySegment> segments,
-        IReadOnlyDictionary<string, Domain.Quran.Words.Morphology.PosTag> posTags,
-        IReadOnlyDictionary<int, Domain.Quran.Words.Morphology.Irab.QuranI3rabRule> i3rabRules)
+    /// <summary>
+    /// Ordered segments joined to their POS tag and i3rab rule in one projection, replacing the
+    /// prior segment fetch plus separate POS-code and rule-id lookups.
+    /// </summary>
+    private async Task<IReadOnlyList<SegmentProjection>> LoadSegmentsAsync(int wordId, CancellationToken ct)
+    {
+        return await (
+            from segment in db.WordMorphologySegments.AsNoTracking()
+            where segment.QuranWordId == wordId
+            join pt in db.PosTags.AsNoTracking()
+                on segment.Pos equals pt.Code into posGroup
+            from posTag in posGroup.DefaultIfEmpty()
+            join rule in db.QuranI3rabRules.AsNoTracking()
+                on segment.I3rabRuleId equals (int?)rule.Id into ruleGroup
+            from i3rabRule in ruleGroup.DefaultIfEmpty()
+            orderby segment.SegmentNumber
+            select new SegmentProjection(
+                segment.SegmentLocation,
+                segment.SegmentNumber,
+                segment.Kind,
+                segment.FormArabicNormalized,
+                segment.Pos,
+                posTag != null ? posTag.ArabicLabel : null,
+                posTag != null ? posTag.EnglishLabel : null,
+                segment.I3rabArabic,
+                segment.I3rabRuleId,
+                i3rabRule != null ? i3rabRule.SignatureKey : null,
+                i3rabRule != null ? i3rabRule.RuleFamily : null,
+                segment.I3rabStatus,
+                segment.FeaturesRaw,
+                segment.FeaturesJson))
+            .ToListAsync(ct);
+    }
+
+    private static WordOccurrenceDto MapWord(WordCoreProjection core) => new(
+        core.WordId,
+        core.Location,
+        $"{core.SurahNumber}:{core.AyahNumber}",
+        core.SurahNumber,
+        core.AyahNumber,
+        core.WordNumber,
+        core.PageNumber,
+        core.LineNumber,
+        core.LineWordOrder,
+        core.TextUthmani,
+        core.TextUthmaniSimple,
+        core.TextImlaeiSimple,
+        core.QpcGlyph);
+
+    private static WordIdentityDto MapIdentity(WordCoreProjection core) => new(
+        new WordCountSummary(
+            core.OrderedTashkeelOccurrencesCount!.Value,
+            core.OrderedTashkeelAyahsCount!.Value,
+            core.OrderedTashkeelSurahsCount!.Value),
+        new WordCountSummary(
+            core.OrderedSimpleOccurrencesCount!.Value,
+            core.OrderedSimpleAyahsCount!.Value,
+            core.OrderedSimpleSurahsCount!.Value),
+        new UniqueWordCountSummary(
+            core.UniqueTashkeelRowId!.Value,
+            core.UniqueTashkeelOccurrencesCount!.Value,
+            core.UniqueTashkeelAyahsCount!.Value,
+            core.UniqueTashkeelSurahsCount!.Value),
+        new UniqueSimpleWordCountSummary(
+            core.UniqueSimpleRowId!.Value,
+            core.UniqueSimpleOccurrencesCount!.Value,
+            core.UniqueSimpleAyahsCount!.Value,
+            core.UniqueSimpleSurahsCount!.Value,
+            core.UniqueSimpleWordKeyImlaeiSimple!));
+
+    private static WordMorphologyDto MapMorphology(
+        WordCoreProjection core,
+        Domain.Quran.Words.Morphology.PosTag? headPosTag) => new(
+        core.HeadPos!,
+        new LocalizedLabel(
+            headPosTag?.ArabicLabel ?? core.HeadPos!,
+            headPosTag?.EnglishLabel ?? core.HeadPos!),
+        core.RootId is null
+            ? null
+            : new WordMorphologyRoot(core.RootId.Value, core.RootText!, core.RootBuckwalter),
+        core.LemmaId is null
+            ? null
+            : new WordMorphologyLemma(core.LemmaId.Value, core.LemmaText!, core.LemmaBuckwalter),
+        core.StemId is null
+            ? null
+            : new WordMorphologyStem(core.StemId.Value, core.StemText!),
+        core.IsVerb!.Value,
+        core.VerbTense,
+        core.VerbVoice,
+        core.CaseFeature);
+
+    private static IReadOnlyList<RenderedSegmentDto> MapSegments(IReadOnlyList<SegmentProjection> segments)
     {
         var rendered = new List<RenderedSegmentDto>(segments.Count);
 
         foreach (var segment in segments)
         {
-            posTags.TryGetValue(segment.Pos, out var posTag);
-            i3rabRules.TryGetValue(segment.I3rabRuleId ?? -1, out var rule);
-
             var hasDisplayText = !string.IsNullOrWhiteSpace(segment.FormArabicNormalized);
 
             rendered.Add(new RenderedSegmentDto(
@@ -219,12 +248,12 @@ public sealed class EfWordAnalysisReader(QuranDashboardDbContext db) : IWordAnal
                 hasDisplayText ? "available" : "missing",
                 segment.Pos,
                 new LocalizedLabel(
-                    posTag?.ArabicLabel ?? segment.Pos,
-                    posTag?.EnglishLabel ?? segment.Pos),
+                    segment.PosArabicLabel ?? segment.Pos,
+                    segment.PosEnglishLabel ?? segment.Pos),
                 segment.I3rabArabic,
                 segment.I3rabRuleId,
-                rule?.SignatureKey,
-                rule?.RuleFamily,
+                segment.RuleSignatureKey,
+                segment.RuleFamily,
                 segment.I3rabStatus,
                 MapSegmentFeatures(segment)));
         }
@@ -232,8 +261,7 @@ public sealed class EfWordAnalysisReader(QuranDashboardDbContext db) : IWordAnal
         return rendered;
     }
 
-    private static SegmentFeaturesDto? MapSegmentFeatures(
-        Domain.Quran.Words.Morphology.WordMorphologySegment segment)
+    private static SegmentFeaturesDto? MapSegmentFeatures(SegmentProjection segment)
     {
         if (string.IsNullOrWhiteSpace(segment.FeaturesRaw) && string.IsNullOrWhiteSpace(segment.FeaturesJson))
         {
@@ -260,4 +288,65 @@ public sealed class EfWordAnalysisReader(QuranDashboardDbContext db) : IWordAnal
             return [];
         }
     }
+
+    private sealed record WordCoreProjection(
+        int WordId,
+        string Location,
+        short SurahNumber,
+        short AyahNumber,
+        short WordNumber,
+        short PageNumber,
+        short LineNumber,
+        short LineWordOrder,
+        string TextUthmani,
+        string TextUthmaniSimple,
+        string TextImlaeiSimple,
+        string QpcGlyph,
+        bool IsAyahMarker,
+        int? WordUniqueTashkeelWordId,
+        int? WordUniqueSimpleWordId,
+        string? HeadPos,
+        bool? IsVerb,
+        string? VerbTense,
+        string? VerbVoice,
+        string? CaseFeature,
+        int? RootId,
+        string? RootText,
+        string? RootBuckwalter,
+        int? LemmaId,
+        string? LemmaText,
+        string? LemmaBuckwalter,
+        int? StemId,
+        string? StemText,
+        int? OrderedTashkeelOccurrencesCount,
+        short? OrderedTashkeelAyahsCount,
+        short? OrderedTashkeelSurahsCount,
+        int? OrderedSimpleOccurrencesCount,
+        short? OrderedSimpleAyahsCount,
+        short? OrderedSimpleSurahsCount,
+        int? UniqueTashkeelRowId,
+        int? UniqueTashkeelOccurrencesCount,
+        short? UniqueTashkeelAyahsCount,
+        short? UniqueTashkeelSurahsCount,
+        int? UniqueSimpleRowId,
+        int? UniqueSimpleOccurrencesCount,
+        short? UniqueSimpleAyahsCount,
+        short? UniqueSimpleSurahsCount,
+        string? UniqueSimpleWordKeyImlaeiSimple);
+
+    private sealed record SegmentProjection(
+        string SegmentLocation,
+        short SegmentNumber,
+        string Kind,
+        string? FormArabicNormalized,
+        string Pos,
+        string? PosArabicLabel,
+        string? PosEnglishLabel,
+        string? I3rabArabic,
+        int? I3rabRuleId,
+        string? RuleSignatureKey,
+        string? RuleFamily,
+        string? I3rabStatus,
+        string FeaturesRaw,
+        string? FeaturesJson);
 }

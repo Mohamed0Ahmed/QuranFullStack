@@ -9,15 +9,9 @@ public sealed class EfMushafPageReader(QuranDashboardDbContext db) : IMushafPage
 {
     public async Task<MushafPageResponse?> GetPageAsync(int pageNumber, CancellationToken ct)
     {
-        var pageExists = await db.QuranMushafPages
-            .AsNoTracking()
-            .AnyAsync(p => p.PageNumber == pageNumber, ct);
-
-        if (!pageExists)
-        {
-            return null;
-        }
-
+        // The line read doubles as the page-existence check: a page with no lines is
+        // indistinguishable from a page that does not exist, so the prior separate
+        // AnyAsync existence probe is redundant and has been removed.
         var lines = await db.QuranMushafLines
             .AsNoTracking()
             .Where(l => l.PageNumber == pageNumber)
@@ -59,6 +53,7 @@ public sealed class EfMushafPageReader(QuranDashboardDbContext db) : IMushafPage
         var surahNames = await db.QuranSurahs
             .AsNoTracking()
             .Where(s => surahNumbers.Contains(s.SurahNumber))
+            .Select(s => new { s.SurahNumber, s.NameArabic })
             .ToDictionaryAsync(s => s.SurahNumber, s => s.NameArabic, ct);
 
         var surahs = surahNumbers
@@ -129,23 +124,30 @@ public sealed class EfMushafPageReader(QuranDashboardDbContext db) : IMushafPage
 
         var markers = new List<PageMarkerDto>();
 
-        var juzMarkers = await db.QuranJuzs
+        // Juz, hizb, and rub markers share an identical shape (a number keyed by first_ayah_id),
+        // so they are combined into one UNION ALL projection instead of three separate reads.
+        // Sajda markers carry an extra SajdahType column with its own value-converted storage
+        // representation, so they are kept as their own read rather than folded into the union;
+        // that keeps sajda type/number semantics exactly as they were, at the cost of one extra
+        // command, per the "smallest safe reduction" guidance for this finding.
+        var juzRows = db.QuranJuzs
             .AsNoTracking()
             .Where(j => ayahIds.Contains(j.FirstAyahId))
-            .ToListAsync(ct);
-        markers.AddRange(juzMarkers.Select(j => ToMarker("juz", j.JuzNumber, j.FirstAyahId, ayahFirstWord, null)));
+            .Select(j => new { MarkerType = "juz", MarkerNumber = j.JuzNumber, AyahId = j.FirstAyahId });
 
-        var hizbMarkers = await db.QuranHizbs
+        var hizbRows = db.QuranHizbs
             .AsNoTracking()
             .Where(h => ayahIds.Contains(h.FirstAyahId))
-            .ToListAsync(ct);
-        markers.AddRange(hizbMarkers.Select(h => ToMarker("hizb", h.HizbNumber, h.FirstAyahId, ayahFirstWord, null)));
+            .Select(h => new { MarkerType = "hizb", MarkerNumber = h.HizbNumber, AyahId = h.FirstAyahId });
 
-        var rubMarkers = await db.QuranRubs
+        var rubRows = db.QuranRubs
             .AsNoTracking()
             .Where(r => ayahIds.Contains(r.FirstAyahId))
-            .ToListAsync(ct);
-        markers.AddRange(rubMarkers.Select(r => ToMarker("rub", r.RubNumber, r.FirstAyahId, ayahFirstWord, null)));
+            .Select(r => new { MarkerType = "rub", MarkerNumber = r.RubNumber, AyahId = r.FirstAyahId });
+
+        var numberedMarkers = await juzRows.Concat(hizbRows).Concat(rubRows).ToListAsync(ct);
+        markers.AddRange(numberedMarkers.Select(m =>
+            ToMarker(m.MarkerType, m.MarkerNumber, m.AyahId, ayahFirstWord, null)));
 
         var sajdaMarkers = await db.QuranSajdas
             .AsNoTracking()
