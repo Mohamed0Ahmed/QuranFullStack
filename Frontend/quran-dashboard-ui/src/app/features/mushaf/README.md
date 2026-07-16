@@ -46,6 +46,12 @@ ayahs, and متشابهات groups. State (page, selected ayah/word, source sele
   Mushaf font.
 - **Display text is Uthmani**; segment slicing/highlighting operates on the Uthmani string.
   Search/normalize is a separate concern (`arabic-search-normalize`).
+- **Ayah-shaped list items use the shared `qdAyahCard` frame** (Feature 029, Change A):
+  Similar Ayahs items and Mutashabihat occurrences compose `shared/ui/ayah-card` for the flat
+  surface/hairline/radius/padding frame (the Mutashabihat selected occurrence layers a
+  `--qd-border-accent` hairline on top). The frame is presentation-only — the
+  `toStudyAyahDisplayText` display mapping, verse-key display, `ayahNavigate` outputs, and all
+  Quran text rendering stay feature-owned and unchanged.
 - **jsdom lacks `matchMedia` / `ResizeObserver`** under the vitest builder — guard them and
   default to desktop (many components use responsive/observer logic).
 - URL-state (`mushaf-url-sync`) is a shareable contract — keep params stable.

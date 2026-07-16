@@ -1,5 +1,5 @@
-@use '../study-card.shared';
-
+// Each item composes the shared `qdAyahCard` frame (Feature 029, Change A); this file
+// keeps only inner metadata/text layout.
 .similar-ayahs-card {
   &__list {
     display: flex;
@@ -8,12 +8,6 @@
     margin: 0;
     padding: 0;
     list-style: none;
-  }
-
-  &__item {
-    display: flex;
-    flex-direction: column;
-    gap: var(--qd-space-2);
   }
 
   &__meta {

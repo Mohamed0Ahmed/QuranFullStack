@@ -714,6 +714,22 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   families share one visual language.
 - Compose, do not re-style.
 
+### `qdAyahCard` (shared ayah-card frame)
+- **Purpose:** the one flat frame for ayah-shaped list items — Words ayah matches
+  (loaded + loading), Mushaf Similar Ayahs items, Mutashabihat occurrences.
+- **Shape:** attribute component (`shared/ui/ayah-card`, host class `qd-ayah-card`)
+  applied to the caller's own semantic wrapper (`article`/`li`). It owns only:
+  `--qd-surface` background, 1px `--qd-border` hairline, `--qd-radius-sm`, compact
+  logical padding/gap. No shadow, no alternating fill, no hover lift (flat doctrine
+  §16.2). Selected occurrences layer a `--qd-border-accent` hairline on the frame.
+- **Sacred-rendering boundary:** the frame accepts no Quran/domain model, text,
+  word array, match ID, formatter, route, or output, and sets no Quran font. Quran
+  text normalization, marker filtering, matched-word calculation, and display
+  mapping stay with the consumer (`HighlightedAyahComponent`,
+  `toStudyAyahDisplayText`) — never move them into the frame.
+- Compose, do not re-style — a consumer needing a different surface/border is a
+  signal to extend this contract, not fork it.
+
 ### Loading/skeleton system
 - **Purpose:** the one loading representation app-wide — no bespoke text-only
   loading states.

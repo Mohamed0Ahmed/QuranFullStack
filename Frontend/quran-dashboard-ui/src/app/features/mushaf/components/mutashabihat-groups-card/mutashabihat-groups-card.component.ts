@@ -7,6 +7,7 @@ import {
   output,
 } from '@angular/core';
 
+import { AyahCardComponent } from '../../../../shared/ui/ayah-card/ayah-card.component';
 import {
   AyahMutashabihatDto,
   AyahNavigationTarget,
@@ -38,6 +39,7 @@ type MutashabihatGroupView = MutashabihatGroupDto & {
 @Component({
   selector: 'qd-mutashabihat-groups-card',
   standalone: true,
+  imports: [AyahCardComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './mutashabihat-groups-card.component.html',
   styleUrls: ['./mutashabihat-groups-card.component.scss'],

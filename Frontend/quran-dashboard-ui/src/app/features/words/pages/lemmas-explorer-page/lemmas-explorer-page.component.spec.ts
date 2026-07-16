@@ -308,7 +308,7 @@ describe('LemmasExplorerPageComponent US1', () => {
     expect(root.querySelector('[data-testid="lemma-ayah-type-filter-N"]')?.getAttribute('aria-pressed')).toBe('true');
     expect(root.querySelector('qd-ayah-matches-list')).toBeTruthy();
     expect(root.querySelector('[data-testid="lemmas-ayahs-view"]')).toBeTruthy();
-    expect(root.querySelectorAll('.ayah-matches-list__card')).toHaveLength(1);
+    expect(root.querySelectorAll('[data-testid="ayah-match-card"]')).toHaveLength(1);
     expect(root.querySelectorAll('.highlighted-ayah__word--matched')).toHaveLength(1);
     expect((root.querySelector('[data-testid="ayah-matches-open-mushaf"]') as HTMLAnchorElement).getAttribute('href')).toContain('page=92');
   });

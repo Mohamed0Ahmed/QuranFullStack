@@ -307,7 +307,7 @@ describe('StemsExplorerPageComponent US2', () => {
 
     expect(root.querySelector('qd-ayah-matches-list')).toBeTruthy();
     expect(root.querySelector('[data-testid="stems-ayahs-view"]')).toBeTruthy();
-    expect(root.querySelectorAll('.ayah-matches-list__card')).toHaveLength(1);
+    expect(root.querySelectorAll('[data-testid="ayah-match-card"]')).toHaveLength(1);
   });
 
   it('loads only the word detail endpoint and renders the simple/tashkeel list when view=words', async () => {
@@ -358,7 +358,7 @@ describe('StemsExplorerPageComponent US2', () => {
     expect(root.querySelector('[data-testid="stem-ayah-type-filter-N"]')?.getAttribute('aria-pressed')).toBe('true');
     expect(root.querySelector('qd-ayah-matches-list')).toBeTruthy();
     expect(root.querySelector('[data-testid="stems-ayahs-view"]')).toBeTruthy();
-    expect(root.querySelectorAll('.ayah-matches-list__card')).toHaveLength(1);
+    expect(root.querySelectorAll('[data-testid="ayah-match-card"]')).toHaveLength(1);
   });
 
   it('updates URL with typeCode and resets detail page when a type filter is selected', async () => {

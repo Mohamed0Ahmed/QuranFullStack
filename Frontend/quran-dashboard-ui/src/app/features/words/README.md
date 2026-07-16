@@ -115,6 +115,12 @@ Shared across explorers: `utils/explorer-table-*` (focus/keyboard-nav/scroll/col
   `.uw-toolbar-recess` (unclipped, RTL-anchored under the field, viewport-aware height limit). **Unchanged:**
   every URL query key, the url-sync contract, all data-testids, search debounce/semantics, and the
   association-filter public inputs/outputs.
+- **Ayah match cards use the shared `qdAyahCard` frame** (Feature 029, Change A): loaded and
+  loading cards in `ayah-matches-list` compose `shared/ui/ayah-card` (no `qd-card`, no
+  alternating row fill, no per-context recolors in `_explorer-detail-lists.scss`). Rows are
+  **tracked by `verseKey`**, never `ayahId` — Word Type ayah rows all carry `ayahId: 0`.
+  `HighlightedAyahComponent` (marker filtering, matched-ID set, untouched `textUthmani` spans,
+  Quran font) stays feature-owned and unchanged.
 - Tests: obey the repo test-command rule (see `../../../../README.md`) — the vitest worker
   cap and jsdom observer guards apply here.
 - **Word Types has table-view tabs** (`tableView=words|roots|stems|lemmas`, default `words`,

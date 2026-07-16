@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 
 import { deepLinkToHref } from '../../../../shared/url/deep-link-href';
+import { AyahCardComponent } from '../../../../shared/ui/ayah-card/ayah-card.component';
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
 import { HighlightedAyahComponent } from '../highlighted-ayah/highlighted-ayah.component';
 import { WORDS_AYAHS_PAGINATION_LABEL, WORDS_LOADING_LABEL } from '../../models/words.labels';
@@ -21,7 +22,7 @@ interface AyahMatchRowViewModel {
 @Component({
   selector: 'qd-ayah-matches-list',
   standalone: true,
-  imports: [HighlightedAyahComponent, PaginationComponent],
+  imports: [AyahCardComponent, HighlightedAyahComponent, PaginationComponent],
   templateUrl: './ayah-matches-list.component.html',
   styleUrl: './ayah-matches-list.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

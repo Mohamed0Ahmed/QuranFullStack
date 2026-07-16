@@ -61,17 +61,10 @@
     list-style: none;
   }
 
-  &__occurrence {
-    display: flex;
-    flex-direction: column;
-    gap: var(--qd-space-2);
-    padding: var(--qd-space-3);
-    border-radius: var(--qd-radius-md);
-    background: var(--qd-surface-recessed);
-
-    &--selected {
-      border: 1px solid var(--qd-border);
-    }
+  // Occurrences compose the shared `qdAyahCard` frame (Feature 029, Change A); the
+  // selected state stays feature-owned as an accent hairline layered on that frame.
+  &__occurrence--selected {
+    border-color: var(--qd-border-accent);
   }
 
   &__occurrence-meta {

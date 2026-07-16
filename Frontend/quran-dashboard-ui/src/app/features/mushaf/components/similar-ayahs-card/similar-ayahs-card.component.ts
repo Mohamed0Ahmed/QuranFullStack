@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 
+import { AyahCardComponent } from '../../../../shared/ui/ayah-card/ayah-card.component';
 import {
   AyahNavigationTarget,
   ResourceLoadState,
@@ -18,6 +19,7 @@ type SimilarAyahDisplayItem = SimilarAyahItemDto & {
 @Component({
   selector: 'qd-similar-ayahs-card',
   standalone: true,
+  imports: [AyahCardComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './similar-ayahs-card.component.html',
   styleUrls: ['./similar-ayahs-card.component.scss'],

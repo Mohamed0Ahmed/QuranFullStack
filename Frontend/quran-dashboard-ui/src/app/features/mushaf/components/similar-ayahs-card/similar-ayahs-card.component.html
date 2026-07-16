@@ -18,7 +18,7 @@
 } @else {
   <ul class="similar-ayahs-card__list" data-testid="similar-ayahs-list">
     @for (item of displayItems(); track item.targetVerseKey) {
-      <li class="similar-ayahs-card__item study-card qd-card" data-testid="similar-ayah-item">
+      <li qdAyahCard class="similar-ayahs-card__item" data-testid="similar-ayah-item">
         <header class="similar-ayahs-card__meta">
           <span class="similar-ayahs-card__reference" data-testid="similar-ayah-reference">
             {{ item.surahNameArabic }} — {{ item.ayahNumber }}
