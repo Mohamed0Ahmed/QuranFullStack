@@ -142,27 +142,19 @@ public sealed class CachedLemmasReader(EfLemmasReader efReader, IMemoryCache cac
     /// Caches the complete grouped word list once per (lemma, kind) identity, mirroring
     /// the catalogue whole-summary pattern. Every page (including out-of-range pages)
     /// then slices this single cached list in memory instead of re-issuing the full
-    /// occurrence query per page (performance review finding B6).
+    /// occurrence query per page (performance review finding B6). Concurrent cold callers
+    /// for the same identity share one load rather than each materializing the full list.
     /// </summary>
-    private async Task<IReadOnlyList<LemmaWordItemDto>?> GetOrLoadWordGroupsAsync(
+    private Task<IReadOnlyList<LemmaWordItemDto>?> GetOrLoadWordGroupsAsync(
         int id,
         LemmaWordKind wordKind,
-        CancellationToken cancellationToken)
-    {
-        var key = LemmasCacheKeys.WordsAll(id, wordKind);
-        if (_cache.TryGetValue(key, out IReadOnlyList<LemmaWordItemDto>? cached))
-        {
-            return cached;
-        }
-
-        var rows = await _ef.LoadLemmaWordGroupsAsync(id, wordKind, cancellationToken);
-        if (rows is not null)
-        {
-            _cache.Set(key, rows, LemmasCacheEntryOptions.GroupedWords());
-        }
-
-        return rows;
-    }
+        CancellationToken cancellationToken) =>
+        CacheLoadGate.GetOrLoadAsync(
+            _cache,
+            LemmasCacheKeys.WordsAll(id, wordKind),
+            ct => _ef.LoadLemmaWordGroupsAsync(id, wordKind, ct),
+            LemmasCacheEntryOptions.GroupedWords,
+            cancellationToken);
 
     private async Task<LemmaSurahsResponse?> GetAndCacheMentionedSurahsAsync(
         int id,

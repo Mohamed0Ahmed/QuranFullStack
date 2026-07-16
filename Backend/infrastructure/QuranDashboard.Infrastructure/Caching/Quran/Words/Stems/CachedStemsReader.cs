@@ -153,27 +153,19 @@ public sealed class CachedStemsReader(EfStemsReader efReader, IMemoryCache cache
     /// Caches the complete grouped word list once per (stem, kind) identity, mirroring
     /// the catalogue whole-summary pattern. Every page (including out-of-range pages)
     /// then slices this single cached list in memory instead of re-issuing the full
-    /// occurrence query per page (performance review finding B6).
+    /// occurrence query per page (performance review finding B6). Concurrent cold callers
+    /// for the same identity share one load rather than each materializing the full list.
     /// </summary>
-    private async Task<IReadOnlyList<StemWordItemDto>?> GetOrLoadWordGroupsAsync(
+    private Task<IReadOnlyList<StemWordItemDto>?> GetOrLoadWordGroupsAsync(
         int id,
         StemWordKind wordKind,
-        CancellationToken cancellationToken)
-    {
-        var key = StemsCacheKeys.WordsAll(id, wordKind);
-        if (_cache.TryGetValue(key, out IReadOnlyList<StemWordItemDto>? cached))
-        {
-            return cached;
-        }
-
-        var rows = await _ef.LoadStemWordGroupsAsync(id, wordKind, cancellationToken);
-        if (rows is not null)
-        {
-            _cache.Set(key, rows, StemsCacheEntryOptions.GroupedWords());
-        }
-
-        return rows;
-    }
+        CancellationToken cancellationToken) =>
+        CacheLoadGate.GetOrLoadAsync(
+            _cache,
+            StemsCacheKeys.WordsAll(id, wordKind),
+            ct => _ef.LoadStemWordGroupsAsync(id, wordKind, ct),
+            StemsCacheEntryOptions.GroupedWords,
+            cancellationToken);
 
     private async Task<StemSurahsResponse?> GetAndCacheMentionedSurahsAsync(
         int id,

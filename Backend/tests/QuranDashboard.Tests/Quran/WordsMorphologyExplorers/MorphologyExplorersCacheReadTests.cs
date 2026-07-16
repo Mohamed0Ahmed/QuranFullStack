@@ -71,10 +71,20 @@ public sealed class MorphologyExplorersCacheReadTests(MorphologyExplorersTestFix
         AssertSecondReadHitsCache((reader, ct) => reader.GetLemmaWordsAsync(LemmaId, kind, 1, 50, ct));
 
     [Fact]
-    public Task Lemma_words_out_of_range_pages_are_served_from_identity_cache() =>
+    public Task Lemma_words_concurrent_cold_reads_load_the_identity_once() =>
+        AssertConcurrentColdReadsLoadOnce(
+            (db, cache, ct) => new CachedLemmasReader(new EfLemmasReader(db), cache)
+                .GetLemmaWordsAsync(LemmaId, LemmaWordKind.Simple, 1, 50, ct));
+
+    [Theory]
+    [InlineData(LemmaWordKind.Simple)]
+    [InlineData(LemmaWordKind.Tashkeel)]
+    public Task Lemma_words_out_of_range_pages_are_served_from_identity_cache(LemmaWordKind kind) =>
         AssertSecondOutOfRangePageServedFromCache(
             (db, cache, ct) => new CachedLemmasReader(new EfLemmasReader(db), cache)
-                .GetLemmaWordsAsync(LemmaId, LemmaWordKind.Simple, 999, 50, ct));
+                .GetLemmaWordsAsync(LemmaId, kind, 999, 50, ct),
+            (db, cache, ct) => new CachedLemmasReader(new EfLemmasReader(db), cache)
+                .GetLemmaWordsAsync(LemmaId, kind, 1000, 50, ct));
 
     [Fact]
     public Task Lemma_ayahs_out_of_range_pages_are_not_cached() =>
@@ -176,10 +186,20 @@ public sealed class MorphologyExplorersCacheReadTests(MorphologyExplorersTestFix
         AssertSecondReadHitsCache((reader, ct) => reader.GetStemWordsAsync(StemId, kind, 1, 50, ct));
 
     [Fact]
-    public Task Stem_words_out_of_range_pages_are_served_from_identity_cache() =>
+    public Task Stem_words_concurrent_cold_reads_load_the_identity_once() =>
+        AssertConcurrentColdReadsLoadOnce(
+            (db, cache, ct) => new CachedStemsReader(new EfStemsReader(db), cache)
+                .GetStemWordsAsync(StemId, StemWordKind.Simple, 1, 50, ct));
+
+    [Theory]
+    [InlineData(StemWordKind.Simple)]
+    [InlineData(StemWordKind.Tashkeel)]
+    public Task Stem_words_out_of_range_pages_are_served_from_identity_cache(StemWordKind kind) =>
         AssertSecondOutOfRangePageServedFromCache(
             (db, cache, ct) => new CachedStemsReader(new EfStemsReader(db), cache)
-                .GetStemWordsAsync(StemId, StemWordKind.Simple, 999, 50, ct));
+                .GetStemWordsAsync(StemId, kind, 999, 50, ct),
+            (db, cache, ct) => new CachedStemsReader(new EfStemsReader(db), cache)
+                .GetStemWordsAsync(StemId, kind, 1000, 50, ct));
 
     [Fact]
     public Task Stem_ayahs_out_of_range_pages_are_not_cached() =>
@@ -402,13 +422,63 @@ public sealed class MorphologyExplorersCacheReadTests(MorphologyExplorersTestFix
     }
 
     /// <summary>
+    /// Concurrent cold callers for one identity must produce the same SQL as a single cold
+    /// caller: plain cache-aside lets every concurrent miss run its own full grouped-word
+    /// load, which defeats the "load the identity once" cache (B6). Each caller gets its own
+    /// DbContext — as it would per request — because a DbContext is not thread-safe; the
+    /// cache is shared, which is what the gate coordinates on.
+    /// </summary>
+    private async Task AssertConcurrentColdReadsLoadOnce<TItem>(
+        Func<QuranDashboardDbContext, IMemoryCache, CancellationToken, Task<PagedResult<TItem>?>> read)
+    {
+        var interceptor = new SqlCommandCountInterceptor();
+        var options = new DbContextOptionsBuilder<QuranDashboardDbContext>()
+            .UseNpgsql(fixture.ConnectionString)
+            .AddInterceptors(interceptor)
+            .Options;
+
+        // Baseline: what one cold caller costs, measured rather than hard-coded.
+        int singleCallerCommands;
+        await using (var soloDb = new QuranDashboardDbContext(options))
+        using (var soloCache = new MemoryCache(new MemoryCacheOptions()))
+        {
+            interceptor.Reset();
+            (await read(soloDb, soloCache, CancellationToken.None)).Should().NotBeNull();
+            singleCallerCommands = interceptor.CommandCount;
+        }
+
+        singleCallerCommands.Should().BeGreaterThan(0, "a cold read must actually query the database");
+
+        await using var firstDb = new QuranDashboardDbContext(options);
+        await using var secondDb = new QuranDashboardDbContext(options);
+        using var sharedCache = new MemoryCache(new MemoryCacheOptions());
+
+        interceptor.Reset();
+        var results = await Task.WhenAll(
+            read(firstDb, sharedCache, CancellationToken.None),
+            read(secondDb, sharedCache, CancellationToken.None));
+
+        results.Should().AllSatisfy(page => page.Should().NotBeNull());
+        results[1]!.Items.Should().BeEquivalentTo(
+            results[0]!.Items,
+            options => options.WithStrictOrdering(),
+            "both callers must observe the same identity list, whichever of them loaded it");
+        interceptor.CommandCount.Should().Be(
+            singleCallerCommands,
+            "concurrent cold callers for one identity share a single load instead of each materializing the full list");
+    }
+
+    /// <summary>
     /// B6: Lemma/Stem word pages cache the whole grouped word list once per (id, kind)
     /// identity and slice it in memory. Any later page — including an out-of-range page —
     /// is therefore a free in-memory slice, unlike the ayah-matches path which still caches
-    /// per page and re-queries on a fresh page key.
+    /// per page and re-queries on a fresh page key. The second read asks for a *different*
+    /// out-of-range page on purpose: repeating the first page would also pass under a
+    /// per-page cache and so would not prove the cache is keyed by identity.
     /// </summary>
     private async Task AssertSecondOutOfRangePageServedFromCache<TItem>(
-        Func<QuranDashboardDbContext, IMemoryCache, CancellationToken, Task<PagedResult<TItem>?>> read)
+        Func<QuranDashboardDbContext, IMemoryCache, CancellationToken, Task<PagedResult<TItem>?>> firstRead,
+        Func<QuranDashboardDbContext, IMemoryCache, CancellationToken, Task<PagedResult<TItem>?>> secondRead)
     {
         var interceptor = new SqlCommandCountInterceptor();
         var options = new DbContextOptionsBuilder<QuranDashboardDbContext>()
@@ -419,7 +489,7 @@ public sealed class MorphologyExplorersCacheReadTests(MorphologyExplorersTestFix
         await using var dbContext = new QuranDashboardDbContext(options);
         using var cache = new MemoryCache(new MemoryCacheOptions());
 
-        var first = await read(dbContext, cache, CancellationToken.None);
+        var first = await firstRead(dbContext, cache, CancellationToken.None);
         first.Should().NotBeNull();
         first!.Items.Should().BeEmpty();
         interceptor.CommandCount.Should().BeGreaterThan(0,
@@ -427,10 +497,10 @@ public sealed class MorphologyExplorersCacheReadTests(MorphologyExplorersTestFix
 
         interceptor.Reset();
 
-        var second = await read(dbContext, cache, CancellationToken.None);
+        var second = await secondRead(dbContext, cache, CancellationToken.None);
         second.Should().NotBeNull();
         second!.Items.Should().BeEmpty();
         interceptor.CommandCount.Should().Be(0,
-            "the whole grouped word list is cached once per identity, so a later out-of-range page is a free in-memory slice");
+            "the whole grouped word list is cached once per identity, so a different later page is a free in-memory slice");
     }
 }
