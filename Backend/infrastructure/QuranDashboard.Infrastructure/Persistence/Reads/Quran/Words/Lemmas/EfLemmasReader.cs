@@ -328,43 +328,36 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
             return [];
         }
 
-        // Load raw occurrence rows and aggregate in C# so the per-type "first
-        // occurrence" is the coordinate tuple of the earliest matching word
-        // (ordered by quran_word_id, the monotonic mushaf key), not three
-        // independent minimums that could form a non-existent coordinate.
-        var rawRows = await (
-            from s in _db.WordMorphologySegments.AsNoTracking()
-            join w in _db.QuranWords.AsNoTracking() on s.QuranWordId equals w.Id
-            join t in _db.PosTags.AsNoTracking() on s.Pos equals t.Code
-            where s.LemmaId != null
-            select new
-            {
-                LemmaId = s.LemmaId!.Value,
-                s.QuranWordId,
-                t.Code,
-                t.ArabicLabel,
-                t.EnglishLabel,
-                w.SurahNumber,
-                w.AyahNumber,
-                w.WordNumber,
-            })
+        // B2: load the per-(lemma, POS) type distribution already grouped in the database (summary grain)
+        // instead of transferring every lemma-bearing occurrence into memory. The per-type "first
+        // occurrence" stays the coordinate tuple of the earliest matching word by quran_word_id (the
+        // monotonic Mushaf key): ARRAY_AGG(... ORDER BY s.quran_word_id)[1] pins all three coordinate
+        // parts to that same earliest row, never three independent minimums that could form a
+        // non-existent coordinate.
+        var distributionSql = $"""
+            SELECT
+                s.lemma_id AS "{nameof(LemmaTypeDistributionSqlRow.LemmaId)}",
+                s.pos AS "{nameof(LemmaTypeDistributionSqlRow.Code)}",
+                t.arabic_label AS "{nameof(LemmaTypeDistributionSqlRow.ArabicLabel)}",
+                t.english_label AS "{nameof(LemmaTypeDistributionSqlRow.EnglishLabel)}",
+                COUNT(*)::int AS "{nameof(LemmaTypeDistributionSqlRow.OccurrencesCount)}",
+                ((ARRAY_AGG(w.surah_number ORDER BY s.quran_word_id))[1])::int AS "{nameof(LemmaTypeDistributionSqlRow.FirstSurahNumber)}",
+                ((ARRAY_AGG(w.ayah_number ORDER BY s.quran_word_id))[1])::int AS "{nameof(LemmaTypeDistributionSqlRow.FirstAyahNumber)}",
+                ((ARRAY_AGG(w.word_number ORDER BY s.quran_word_id))[1])::int AS "{nameof(LemmaTypeDistributionSqlRow.FirstWordNumber)}"
+            FROM quran_word_morphology_segments s
+            JOIN quran_words w ON w.id = s.quran_word_id
+            JOIN quran_pos_tags t ON t.code = s.pos
+            WHERE s.lemma_id IS NOT NULL
+            GROUP BY s.lemma_id, s.pos, t.arabic_label, t.english_label
+            """;
+
+        var distributionRows = await _db.Database
+            .SqlQueryRaw<LemmaTypeDistributionSqlRow>(distributionSql)
             .ToListAsync(cancellationToken);
 
-        var occurrenceRows = rawRows
-            .Select(r => new LemmaTypeOccurrenceRow(
-                r.LemmaId,
-                r.QuranWordId,
-                r.Code,
-                r.ArabicLabel,
-                r.EnglishLabel,
-                r.SurahNumber,
-                r.AyahNumber,
-                r.WordNumber))
-            .ToList();
-
-        var typesByLemma = occurrenceRows
+        var typesByLemma = distributionRows
             .GroupBy(r => r.LemmaId)
-            .ToDictionary(g => g.Key, g => (IReadOnlyList<LemmaTypeDistributionRow>)MaterializeTypeDistribution(g));
+            .ToDictionary(g => g.Key, g => OrderTypeDistribution(g));
 
         return aggregates
             .Select(a => new LemmaSummaryRow(
@@ -387,32 +380,26 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
             .ToList();
     }
 
-    private static IReadOnlyList<LemmaTypeDistributionRow> MaterializeTypeDistribution(
-        IEnumerable<LemmaTypeOccurrenceRow> rows)
-    {
-        // Group by POS code; for each group, the dominant first-occurrence
-        // coordinate is the one of the earliest matching word by quran_word_id.
-        return rows
-            .GroupBy(r => r.Code)
-            .Select(g =>
-            {
-                var first = g.OrderBy(x => x.QuranWordId).First();
-                return new LemmaTypeDistributionRow(
-                    g.Key,
-                    first.ArabicLabel,
-                    first.EnglishLabel,
-                    g.Count(),
-                    first.SurahNumber,
-                    first.AyahNumber,
-                    first.WordNumber);
-            })
+    // Orders the server-grouped per-(lemma, POS) rows into the final distribution: count descending, then
+    // earliest Mushaf occurrence ascending (surah/ayah/word), then POS code — identical to the previous
+    // in-memory ordering, so the dominant type is always the first entry.
+    private static IReadOnlyList<LemmaTypeDistributionRow> OrderTypeDistribution(
+        IEnumerable<LemmaTypeDistributionSqlRow> rows) =>
+        rows
+            .Select(r => new LemmaTypeDistributionRow(
+                r.Code,
+                r.ArabicLabel,
+                r.EnglishLabel,
+                r.OccurrencesCount,
+                r.FirstSurahNumber,
+                r.FirstAyahNumber,
+                r.FirstWordNumber))
             .OrderByDescending(r => r.OccurrencesCount)
             .ThenBy(r => r.FirstSurahNumber)
             .ThenBy(r => r.FirstAyahNumber)
             .ThenBy(r => r.FirstWordNumber)
             .ThenBy(r => r.Code, StringComparer.Ordinal)
             .ToList();
-    }
 
     private static string BuildFirstVerseKey(int? firstSurahNumber, int? firstAyahNumber) =>
         firstSurahNumber is > 0 && firstAyahNumber is > 0
@@ -533,15 +520,17 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
         int? FirstWordNumber,
         int FirstWordOrderInMushaf);
 
-    private sealed record LemmaTypeOccurrenceRow(
+    // One server-grouped (lemma, POS) distribution row: per-group occurrence count and the first-occurrence
+    // coordinate of the earliest matching word by quran_word_id.
+    private sealed record LemmaTypeDistributionSqlRow(
         int LemmaId,
-        int QuranWordId,
         string Code,
         string ArabicLabel,
         string EnglishLabel,
-        int SurahNumber,
-        int AyahNumber,
-        int WordNumber);
+        int OccurrencesCount,
+        int FirstSurahNumber,
+        int FirstAyahNumber,
+        int FirstWordNumber);
 
     private sealed record AyahMetaRow(
         int AyahId,

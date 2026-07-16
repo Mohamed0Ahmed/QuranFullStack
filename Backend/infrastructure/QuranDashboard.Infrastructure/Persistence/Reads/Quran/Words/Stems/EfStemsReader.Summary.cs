@@ -6,10 +6,19 @@ namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Stems;
 
 public sealed partial class EfStemsReader
 {
+    // Shared Mushaf-order tiebreak for the per-group first-occurrence coordinate: earliest matching word
+    // by (surah, ayah, word) then quran_word_id. ARRAY_AGG(... ORDER BY ...)[1] pins all three coordinate
+    // parts to that same earliest row, so it is the real earliest coordinate, never independent minimums.
+    private const string StemFirstOccurrenceOrder = "w.surah_number, w.ayah_number, w.word_number, seg.quran_word_id";
+
+    private const string StemMatchingSegmentPredicate =
+        "seg.kind = 'STEM' AND seg.stem_id IS NOT NULL AND NOT w.is_ayah_marker";
+
     /// <summary>
-    /// Loads the complete stem summary list in a bounded aggregation: identity,
-    /// nullable dominant lemma/root relationships, derived counts, first verse
-    /// key, and the ordered per-stem POS distribution.
+    /// Loads the complete stem summary list in a bounded aggregation: identity, nullable
+    /// dominant lemma/root relationships, derived counts, first verse key, and the ordered
+    /// per-stem POS distribution. The distribution and the dominant lemma/root winner inputs are grouped
+    /// in the database (summary grain), so the read never transfers occurrence-grain rows (B2).
     /// </summary>
     internal async Task<IReadOnlyList<StemSummaryRow>> LoadWholeSummaryAsync(CancellationToken cancellationToken)
     {
@@ -59,43 +68,35 @@ public sealed partial class EfStemsReader
             return [];
         }
 
-        var occurrenceRows = await (
-            from s in _db.WordMorphologySegments.AsNoTracking()
-            join w in _db.QuranWords.AsNoTracking() on s.QuranWordId equals w.Id
-            join t in _db.PosTags.AsNoTracking() on s.Pos equals t.Code
-            join l in _db.QuranLemmas.AsNoTracking() on s.LemmaId equals l.Id into lemmaJoin
-            from l in lemmaJoin.DefaultIfEmpty()
-            join r in _db.QuranRoots.AsNoTracking() on s.RootId equals r.Id into rootJoin
-            from r in rootJoin.DefaultIfEmpty()
-            where s.Kind == "STEM" && s.StemId != null && !w.IsAyahMarker
-            select new StemTypeOccurrenceRow(
-                s.StemId!.Value,
-                s.QuranWordId,
-                s.LemmaId,
-                l == null ? null : l.LemmaText,
-                l == null ? null : l.LemmaBuckwalter,
-                s.RootId,
-                r == null ? null : r.RootText,
-                r == null ? null : r.RootBuckwalter,
-                t.Code,
-                t.ArabicLabel,
-                t.EnglishLabel,
-                w.SurahNumber,
-                w.AyahNumber,
-                w.WordNumber))
+        // Three compact grouped commands over the same STEM-segment base: one per dimension (POS,
+        // dominant-lemma inputs, dominant-root inputs). Each returns one row per (stem, dimension) group,
+        // never one row per occurrence.
+        var distributionRows = await _db.Database
+            .SqlQueryRaw<StemTypeDistributionSqlRow>(StemTypeDistributionSql)
+            .ToListAsync(cancellationToken);
+        var lemmaGroups = await _db.Database
+            .SqlQueryRaw<StemRelationGroupSqlRow>(StemRelationGroupSql("lemma_id", "quran_lemmas", "lemma_text", "lemma_buckwalter"))
+            .ToListAsync(cancellationToken);
+        var rootGroups = await _db.Database
+            .SqlQueryRaw<StemRelationGroupSqlRow>(StemRelationGroupSql("root_id", "quran_roots", "root_text", "root_buckwalter"))
             .ToListAsync(cancellationToken);
 
-        var rowsByStem = occurrenceRows
+        var distributionByStem = distributionRows
             .GroupBy(r => r.StemId)
-            .ToDictionary(g => g.Key, g => (IReadOnlyList<StemTypeOccurrenceRow>)g.ToList());
+            .ToDictionary(g => g.Key, g => OrderTypeDistribution(g));
+        var dominantLemmaByStem = lemmaGroups
+            .GroupBy(r => r.StemId)
+            .ToDictionary(g => g.Key, g => PickDominantRelation(g));
+        var dominantRootByStem = rootGroups
+            .GroupBy(r => r.StemId)
+            .ToDictionary(g => g.Key, g => PickDominantRelation(g));
 
         return aggregates
             .Select(a =>
             {
-                var rows = rowsByStem.GetValueOrDefault(a.Id, []);
-                var dominantLemma = BuildDominantLemma(rows);
-                var dominantRoot = BuildDominantRoot(rows);
-                var typeDistribution = MaterializeTypeDistribution(rows);
+                var dominantLemma = dominantLemmaByStem.GetValueOrDefault(a.Id);
+                var dominantRoot = dominantRootByStem.GetValueOrDefault(a.Id);
+                var typeDistribution = distributionByStem.GetValueOrDefault(a.Id, []);
 
                 return new StemSummaryRow(
                     a.Id,
@@ -118,4 +119,63 @@ public sealed partial class EfStemsReader
             })
             .ToList();
     }
+
+    // Per-(stem, POS) distribution: occurrence count and the earliest-occurrence coordinate per group.
+    private static string StemTypeDistributionSql => $"""
+        SELECT
+            seg.stem_id AS "{nameof(StemTypeDistributionSqlRow.StemId)}",
+            seg.pos AS "{nameof(StemTypeDistributionSqlRow.Code)}",
+            t.arabic_label AS "{nameof(StemTypeDistributionSqlRow.ArabicLabel)}",
+            t.english_label AS "{nameof(StemTypeDistributionSqlRow.EnglishLabel)}",
+            COUNT(*)::int AS "{nameof(StemTypeDistributionSqlRow.OccurrencesCount)}",
+            ((ARRAY_AGG(w.surah_number ORDER BY {StemFirstOccurrenceOrder}))[1])::int AS "{nameof(StemTypeDistributionSqlRow.FirstSurahNumber)}",
+            ((ARRAY_AGG(w.ayah_number ORDER BY {StemFirstOccurrenceOrder}))[1])::int AS "{nameof(StemTypeDistributionSqlRow.FirstAyahNumber)}",
+            ((ARRAY_AGG(w.word_number ORDER BY {StemFirstOccurrenceOrder}))[1])::int AS "{nameof(StemTypeDistributionSqlRow.FirstWordNumber)}"
+        FROM quran_word_morphology_segments seg
+        JOIN quran_words w ON w.id = seg.quran_word_id
+        JOIN quran_pos_tags t ON t.code = seg.pos
+        WHERE {StemMatchingSegmentPredicate}
+        GROUP BY seg.stem_id, seg.pos, t.arabic_label, t.english_label
+        """;
+
+    // Per-(stem, relation) winner inputs (relation = lemma or root): occurrence count, relation text/
+    // buckwalter, and the earliest-occurrence coordinate per group. The relation column/table names are
+    // fixed constants (never user input). LEFT JOIN + coalesce-in-C# mirrors the previous behavior for a
+    // relation id whose row is absent.
+    private static string StemRelationGroupSql(string idColumn, string relationTable, string textColumn, string buckwalterColumn) => $"""
+        SELECT
+            seg.stem_id AS "{nameof(StemRelationGroupSqlRow.StemId)}",
+            seg.{idColumn} AS "{nameof(StemRelationGroupSqlRow.RelationId)}",
+            rel.{textColumn} AS "{nameof(StemRelationGroupSqlRow.Text)}",
+            rel.{buckwalterColumn} AS "{nameof(StemRelationGroupSqlRow.Buckwalter)}",
+            COUNT(*)::int AS "{nameof(StemRelationGroupSqlRow.OccurrencesCount)}",
+            ((ARRAY_AGG(w.surah_number ORDER BY {StemFirstOccurrenceOrder}))[1])::int AS "{nameof(StemRelationGroupSqlRow.FirstSurahNumber)}",
+            ((ARRAY_AGG(w.ayah_number ORDER BY {StemFirstOccurrenceOrder}))[1])::int AS "{nameof(StemRelationGroupSqlRow.FirstAyahNumber)}",
+            ((ARRAY_AGG(w.word_number ORDER BY {StemFirstOccurrenceOrder}))[1])::int AS "{nameof(StemRelationGroupSqlRow.FirstWordNumber)}"
+        FROM quran_word_morphology_segments seg
+        JOIN quran_words w ON w.id = seg.quran_word_id
+        LEFT JOIN {relationTable} rel ON rel.id = seg.{idColumn}
+        WHERE {StemMatchingSegmentPredicate} AND seg.{idColumn} IS NOT NULL
+        GROUP BY seg.stem_id, seg.{idColumn}, rel.{textColumn}, rel.{buckwalterColumn}
+        """;
+
+    private sealed record StemTypeDistributionSqlRow(
+        int StemId,
+        string Code,
+        string ArabicLabel,
+        string EnglishLabel,
+        int OccurrencesCount,
+        int FirstSurahNumber,
+        int FirstAyahNumber,
+        int FirstWordNumber);
+
+    private sealed record StemRelationGroupSqlRow(
+        int StemId,
+        int RelationId,
+        string? Text,
+        string? Buckwalter,
+        int OccurrencesCount,
+        int FirstSurahNumber,
+        int FirstAyahNumber,
+        int FirstWordNumber);
 }
