@@ -16,7 +16,7 @@ function appInfoResponse(): ApiResponse<AppInfo> {
   return {
     isSuccess: true,
     message: 'تم',
-    data: { appName: 'لوحة المنهج القرآني', environment: 'test', version: '1.0.0' },
+    data: { appName: 'test-app', environment: 'test', version: '1.0.0' },
   };
 }
 

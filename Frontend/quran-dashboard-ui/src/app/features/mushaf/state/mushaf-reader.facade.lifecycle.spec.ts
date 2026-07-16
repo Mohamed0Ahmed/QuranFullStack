@@ -12,6 +12,7 @@ import { AYAH_STUDY_SWITCH_DELAY_MS } from './mushaf-ayah-study-load.runner';
 import { WORD_ANALYSIS_SWITCH_DELAY_MS } from './mushaf-word-analysis-load.runner';
 import { MushafReaderFacade } from './mushaf-reader.facade';
 import {
+  ayahStudyDtoMock,
   mushafAyahMutashabihatApiProvider,
   mushafSimilarAyahsApiProvider,
   mushafStudySourceCatalogApiProvider,
@@ -49,29 +50,10 @@ const pageDto = {
   markers: [],
 };
 
+// Reuses the shared ayah-study fixture rather than re-declaring its ayah/source metadata here;
+// only the similarity counts differ, and these tests never assert on them.
 const ayahStudyDto: AyahStudyDto = {
-  ayah: {
-    verseKey: '2:25',
-    surahNumber: 2,
-    surahNameArabic: 'البقرة',
-    ayahNumber: 25,
-    textUthmani: 'نص تجريبي للآية',
-    wordsCount: 5,
-    pageFrom: 5,
-    pageTo: 5,
-    juzNumber: 1,
-    hizbNumber: 1,
-    rubNumber: 1,
-    sajda: null,
-  },
-  selectedSources: {
-    tafsirSource: 'ar-muyassar',
-    translationSource: 'en-sahih-international',
-    fullI3rabSource: 'muyassar',
-  },
-  tafsir: null,
-  translation: null,
-  fullI3rab: null,
+  ...ayahStudyDtoMock,
   similaritySummary: {
     similarAyahCount: 0,
     mutashabihatGroupCount: 0,

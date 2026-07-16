@@ -8,32 +8,22 @@ import { MushafAyahStudyApi } from '../data-access/mushaf-ayah-study.api';
 import { MushafPagesApi } from '../data-access/mushaf-pages.api';
 import { MushafStudySourceCatalogApi } from '../data-access/mushaf-study-sources.api';
 import { MushafWordAnalysisApi } from '../data-access/mushaf-word-analysis.api';
-import { MushafStudySourceCatalogDto, StudySourceCatalogItemDto } from '../models/mushaf.models';
+import { MushafStudySourceCatalogDto } from '../models/mushaf.models';
 import { MushafReaderFacade } from './mushaf-reader.facade';
 import {
   mushafAyahMutashabihatApiProvider,
   mushafSimilarAyahsApiProvider,
+  studySourceCatalogItemMock,
 } from './mushaf-study-source-catalog.api.mock';
 
 // F2 regression coverage: loadStudySourceCatalog must not refetch on every mount, must
 // treat an empty-but-successful catalogue as "loaded" (not "not loaded"), and must keep
 // a failed load retryable.
 
-const catalogItem: StudySourceCatalogItemDto = {
-  direction: 'rtl',
-  displayNameAr: 'التفسير الميسر',
-  displayNameEn: null,
-  languageCode: 'ar',
-  languageNameAr: 'العربية',
-  sourceKey: 'ar-muyassar',
-  tafsirKind: 'brief',
-  translationType: null,
-};
-
 const populatedCatalogDto: MushafStudySourceCatalogDto = {
-  tafsirSources: [catalogItem],
-  translationSources: [catalogItem],
-  fullI3rabSources: [catalogItem],
+  tafsirSources: [studySourceCatalogItemMock],
+  translationSources: [studySourceCatalogItemMock],
+  fullI3rabSources: [studySourceCatalogItemMock],
 };
 
 const emptyCatalogDto: MushafStudySourceCatalogDto = {
