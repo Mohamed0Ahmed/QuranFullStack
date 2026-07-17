@@ -7,6 +7,7 @@
   --qd-section-bg: oklch(0.979 0.011 89.7);
   --qd-surface-recessed: oklch(0.945 0.015 94.2);
   --qd-surface-hover: oklch(0.945 0.015 94.2);        /* single hover fill (== light recessed tone) */
+  --qd-ayah-card-bg: oklch(0.958 0.013 92);           /* shared qdAyahCard: a warm tone recessed below --qd-surface so an ayah card reads as a distinct card on the near-white surfaces it sits on (Quran text 12.7:1, muted meta 4.69:1 AA). Dark overrides to --qd-surface. */
 
   --qd-explorer-detail-bg: oklch(0.979 0.011 89.7);
   --qd-explorer-detail-header-bg: oklch(0.994 0.007 88.6);

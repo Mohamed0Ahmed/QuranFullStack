@@ -5,6 +5,7 @@
   --qd-section-bg: oklch(0.265 0.039 262.7);
   --qd-surface-recessed: oklch(0.302 0.045 264.3);
   --qd-surface-hover: oklch(0.265 0.039 262.7);       /* == dark section-bg tone */
+  --qd-ayah-card-bg: var(--qd-surface);               /* dark reconciliation deferred: the card keeps its current dark surface tone */
 
   --qd-explorer-detail-bg: oklch(0.281 0.032 262);
   --qd-explorer-detail-header-bg: oklch(0.252 0.034 265.3);

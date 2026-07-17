@@ -14,8 +14,10 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
 - `ui/chip/` — `qd-chip`, the one selectable/informational chip (button or anchor, optional
   trailing count). See `UI_STYLE_SYSTEM.md` §17.
 - `ui/ayah-card/` — `qdAyahCard` (attribute component, host class `qd-ayah-card`), the one
-  presentation-only flat frame for ayah-shaped list items (surface, hairline border, control
-  radius, compact padding/gap; no shadow, no alternating fill). It takes no domain model, text,
+  presentation-only flat frame for ayah-shaped list items (recessed warm card background
+  `--qd-ayah-card-bg`, hairline border, control radius, compact padding/gap; no shadow, no
+  alternating fill — the recessed tone makes the card read as a distinct card on the near-white
+  surfaces it sits on; dark keeps its current surface tone). It takes no domain model, text,
   formatter, route, or output — callers keep their own semantic wrapper (article/li), Quran
   renderer, and navigation. Consumers: Words `ayah-matches-list`, Mushaf `similar-ayahs-card`
   items and `mutashabihat-groups-card` occurrences. See `UI_STYLE_SYSTEM.md` §17.
