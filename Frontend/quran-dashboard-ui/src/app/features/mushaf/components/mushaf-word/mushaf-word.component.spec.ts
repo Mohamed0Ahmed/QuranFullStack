@@ -119,6 +119,97 @@ describe('MushafWordComponent', () => {
     expect(fixture.componentInstance.word().textUthmani).toBe(SYNTHETIC_AYAH_DIGIT);
   });
 
+  it('applies the hovered-ayah wash to every word whose verseKey matches', () => {
+    const fixture = TestBed.createComponent(MushafWordComponent);
+    fixture.componentRef.setInput('word', buildWord({ wordLocation: '99:1:3', verseKey: '99:1' }));
+    fixture.componentRef.setInput('hoveredVerseKey', '99:1');
+    fixture.detectChanges();
+
+    const button = fixture.nativeElement.querySelector('button') as HTMLButtonElement;
+    expect(button.classList.contains('mushaf-word--hovered-ayah')).toBe(true);
+  });
+
+  it('does not apply the hovered-ayah wash to a word of another ayah', () => {
+    const fixture = TestBed.createComponent(MushafWordComponent);
+    fixture.componentRef.setInput('word', buildWord({ wordLocation: '99:2:1', verseKey: '99:2' }));
+    fixture.componentRef.setInput('hoveredVerseKey', '99:1');
+    fixture.detectChanges();
+
+    const button = fixture.nativeElement.querySelector('button') as HTMLButtonElement;
+    expect(button.classList.contains('mushaf-word--hovered-ayah')).toBe(false);
+  });
+
+  it('excludes the ayah-marker glyph from the hovered-ayah wash', () => {
+    const fixture = TestBed.createComponent(MushafWordComponent);
+    fixture.componentRef.setInput(
+      'word',
+      buildWord({
+        wordLocation: '99:1:9',
+        verseKey: '99:1',
+        textUthmani: SYNTHETIC_AYAH_DIGIT,
+        isAyahMarker: true,
+      }),
+    );
+    fixture.componentRef.setInput('hoveredVerseKey', '99:1');
+    fixture.detectChanges();
+
+    const button = fixture.nativeElement.querySelector('button') as HTMLButtonElement;
+    expect(button.classList.contains('mushaf-word--hovered-ayah')).toBe(false);
+  });
+
+  it('keeps both classes when the hovered ayah contains the selected word, letting selection win', () => {
+    const fixture = TestBed.createComponent(MushafWordComponent);
+    fixture.componentRef.setInput('word', buildWord({ wordLocation: '99:1:3', verseKey: '99:1' }));
+    fixture.componentRef.setInput('hoveredVerseKey', '99:1');
+    fixture.componentRef.setInput('selectedWordLocation', '99:1:3');
+    fixture.detectChanges();
+
+    const button = fixture.nativeElement.querySelector('button') as HTMLButtonElement;
+    expect(button.classList.contains('mushaf-word--hovered-ayah')).toBe(true);
+    expect(button.classList.contains('mushaf-word--selected-word')).toBe(true);
+  });
+
+  it.each([
+    { event: 'pointerenter', expected: '99:1' },
+    { event: 'focus', expected: '99:1' },
+    { event: 'pointerleave', expected: null },
+    { event: 'blur', expected: null },
+  ])('emits $expected on $event of a clickable word', ({ event, expected }) => {
+    const fixture = TestBed.createComponent(MushafWordComponent);
+    fixture.componentRef.setInput('word', buildWord({ wordLocation: '99:1:3', verseKey: '99:1' }));
+    fixture.detectChanges();
+
+    const ayahHover = vi.fn();
+    fixture.componentInstance.ayahHover.subscribe(ayahHover);
+
+    const button = fixture.nativeElement.querySelector('button') as HTMLButtonElement;
+    button.dispatchEvent(new Event(event));
+
+    expect(ayahHover).toHaveBeenCalledWith(expected);
+  });
+
+  it('does not emit ayahHover for ayah-end markers', () => {
+    const fixture = TestBed.createComponent(MushafWordComponent);
+    fixture.componentRef.setInput(
+      'word',
+      buildWord({
+        wordLocation: '99:1:9',
+        verseKey: '99:1',
+        textUthmani: SYNTHETIC_AYAH_DIGIT,
+        isAyahMarker: true,
+      }),
+    );
+    fixture.detectChanges();
+
+    const ayahHover = vi.fn();
+    fixture.componentInstance.ayahHover.subscribe(ayahHover);
+
+    const button = fixture.nativeElement.querySelector('button') as HTMLButtonElement;
+    button.dispatchEvent(new Event('pointerenter'));
+
+    expect(ayahHover).not.toHaveBeenCalled();
+  });
+
   it('does not emit wordSelect for ayah-end markers', () => {
     const fixture = TestBed.createComponent(MushafWordComponent);
     fixture.componentRef.setInput(

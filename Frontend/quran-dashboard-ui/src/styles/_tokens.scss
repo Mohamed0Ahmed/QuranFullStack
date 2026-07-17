@@ -75,6 +75,14 @@
   --qd-navbar-block-size: 3.5rem;
   --qd-mushaf-panel-height: calc(100dvh - var(--qd-navbar-block-size));
   --qd-mushaf-word-selection-indicator: var(--qd-accent);
+  /* Ayah-hover wash — the ONE documented exception to the single hover fill (§16.1):
+     --qd-surface-hover is imperceptible on the parchment reading canvas (ΔL≈0.022 vs
+     --qd-bg). Shares the selection indicator's hue family so it reads as "pre-selection"
+     and sits below the 16% selected-word wash in the intensity ladder. The ladder is
+     approximate — selection mixes into --qd-surface, hover into --qd-bg — so the 10%
+     is calibrated live in the 8–12% band, not proven by the percentages alone.
+     Derived from theme vars: resolves automatically per theme (10% gold-into-navy in dark). */
+  --qd-mushaf-ayah-hover-bg: color-mix(in oklch, var(--qd-mushaf-word-selection-indicator) 10%, var(--qd-bg));
   --qd-mushaf-ayah-marker-font-size: 1.5rem;
   --qd-mushaf-ayah-marker-color: var(--qd-text-muted);
   --qd-mushaf-sticky-top: var(--qd-space-3);

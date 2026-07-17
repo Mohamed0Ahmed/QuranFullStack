@@ -145,6 +145,45 @@ describe('MushafPageViewComponent', () => {
     expect(root.textContent).toContain('سورة سورة-تجريبية-١، سورة-تجريبية-٢');
   });
 
+  function wordButtons(): HTMLButtonElement[] {
+    return Array.from(fixture.nativeElement.querySelectorAll('button.mushaf-word'));
+  }
+
+  function hoveredWordLocations(): string[] {
+    return wordButtons()
+      .filter((button) => button.classList.contains('mushaf-word--hovered-ayah'))
+      .map((button) => button.dataset['wordLocation'] ?? '');
+  }
+
+  it('washes every word of the hovered ayah and no word of another ayah', () => {
+    wordButtons()[0].dispatchEvent(new Event('pointerenter'));
+    fixture.detectChanges();
+
+    expect(hoveredWordLocations()).toEqual(['2:25:1', '2:25:2']);
+  });
+
+  it('clears the wash when the pointer leaves the word', () => {
+    const first = wordButtons()[0];
+    first.dispatchEvent(new Event('pointerenter'));
+    fixture.detectChanges();
+    first.dispatchEvent(new Event('pointerleave'));
+    fixture.detectChanges();
+
+    expect(hoveredWordLocations()).toEqual([]);
+  });
+
+  it('resets the hovered ayah on page change so no phantom wash survives', () => {
+    wordButtons()[0].dispatchEvent(new Event('pointerenter'));
+    fixture.detectChanges();
+    expect(hoveredWordLocations()).not.toEqual([]);
+
+    // Same verse keys on the next page (an ayah may span pages) — the reset must still win.
+    fixture.componentRef.setInput('page', { ...pageFixture, pageNumber: 6 });
+    fixture.detectChanges();
+
+    expect(hoveredWordLocations()).toEqual([]);
+  });
+
   it('renders a centered page jump trigger below the lines', () => {
     const trigger = fixture.nativeElement.querySelector(
       '[data-testid="mushaf-page-jump-trigger"]',

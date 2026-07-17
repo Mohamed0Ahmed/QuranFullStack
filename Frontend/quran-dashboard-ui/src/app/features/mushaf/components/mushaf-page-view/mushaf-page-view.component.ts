@@ -4,6 +4,7 @@ import {
   ElementRef,
   computed,
   input,
+  linkedSignal,
   output,
   signal,
   viewChild,
@@ -40,6 +41,16 @@ export class MushafPageViewComponent {
 
   protected readonly isPageEditing = signal(false);
   protected readonly pageDraft = signal('');
+
+  /**
+   * Ayah-hover state is component-local presentation only — never the facade, never the URL
+   * (`focusAyah` semantics and URL/cache identity stay untouched). Verse keys are global, so
+   * this resets on page change: a stale key would paint a phantom wash on the next page.
+   */
+  protected readonly hoveredVerseKey = linkedSignal<number, string | null>({
+    source: () => this.page().pageNumber,
+    computation: () => null,
+  });
 
   protected readonly displaySurahs = computed(() => this.page().surahs);
 

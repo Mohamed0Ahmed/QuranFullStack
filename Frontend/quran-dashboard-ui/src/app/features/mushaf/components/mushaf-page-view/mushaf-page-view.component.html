@@ -43,9 +43,11 @@
         [markers]="page().markers"
         [surahNameArabic]="lineView.surahNameArabic"
         [highlightedVerseKey]="highlightedVerseKey()"
+        [hoveredVerseKey]="hoveredVerseKey()"
         [selectedWordLocation]="selectedWordLocation()"
         (ayahSelect)="ayahSelect.emit($event)"
         (wordSelect)="wordSelect.emit($event)"
+        (ayahHover)="hoveredVerseKey.set($event)"
       />
     }
 

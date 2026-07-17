@@ -50,6 +50,17 @@ ayahs, and متشابهات groups. State (page, selected ayah/word, source sele
   cells, and the responsive baseline is measured, not invented (333px wide bands /
   495px under the 768px morphology-grid breakpoint). Reservation clears on
   success/error/empty; loaded content always sizes itself.
+- **Ayah hover is component-local, never URL-synced** (Feature 030, N7): hovering (or
+  keyboard-focusing) any word paints `--qd-mushaf-ayah-hover-bg` behind every word of that
+  ayah. The `hoveredVerseKey` signal is owned by `mushaf-page-view` and flows down the
+  existing input chain (page-view → line → word) with an `ayahHover` output back up — it is
+  **never** in the facade and **never** in the URL; `focusAyah` (the click/URL-synced
+  `--highlighted-ayah` text-color state) keeps its own semantics and cache identity. The
+  signal **resets on page change** (verse keys are global, so a stale key would paint a
+  phantom wash on the next page). The wash is **background-color + radius only** — it never
+  touches glyphs, fonts, padding, or line metrics — is gated behind `@media (hover: hover)`
+  so a touch tap can't stick it, excludes the ayah-marker glyph (mirrors the
+  `isHighlightedAyahWord` exclusion), and always loses to the selected-word wash.
 - **Mushaf font is Amiri** (`public/fonts/` + `assets/fonts/quran/`) — **not**
   `UthmanicHafs_V22`, which mis-renders mark **U+06DF** as baseline dots. Do not swap the
   Mushaf font.

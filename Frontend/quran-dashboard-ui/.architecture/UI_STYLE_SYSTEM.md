@@ -561,7 +561,7 @@ existing call-site onto this doctrine was a phased migration tracked in
 | Selected/active label | `--qd-accent-text` (deep green) | `--qd-accent-text` (gold, interim) | must hit AA on the tint |
 | Selected/active edge | 1px `--qd-accent` or `--qd-border-accent` | same | hairline, not a fill |
 | Solid-accent indicator (dot / 2px bar) | `--qd-accent` fill + `--qd-accent-fg` ink | same | the ONLY solid accent behind pixels |
-| Hover fill | `--qd-surface-hover` | same | one token, everywhere |
+| Hover fill | `--qd-surface-hover` | same | one token, everywhere — **one documented exception**: the mushaf ayah-hover wash uses `--qd-mushaf-ayah-hover-bg`, because `--qd-surface-hover` is imperceptible on the parchment reading canvas (ΔL≈0.022 vs `--qd-bg`) |
 | Resting control border | `--qd-border` | `--qd-border` | no accent at rest |
 | Primary action | `--qd-primary` + `--qd-primary-fg` (green) | gold-primary, interim pending dark reconciliation | green is also the structural color in light |
 | Danger / success / warning text | `--qd-danger` / `--qd-success` / `--qd-warning` on the matching `*-tint` | same tokens | AA-verified, see below |
@@ -634,8 +634,11 @@ Green (`--qd-accent` / `--qd-accent-soft`) may appear **only** as:
 4. **Text** emphasis via `--qd-accent-text` (active nav, links, soft/selected
    labels, section eyebrows) — never raw `--qd-accent` as small text on light.
 5. Footer sage (`--qd-footer-accent`) headings and link-hover.
-6. Icon highlights and the mushaf word-selection indicator
-   (`--qd-mushaf-word-selection-indicator`).
+6. Icon highlights, the mushaf word-selection indicator
+   (`--qd-mushaf-word-selection-indicator`), and the mushaf ayah-hover wash it tints
+   (`--qd-mushaf-ayah-hover-bg` — a 10% tint of that indicator, never a solid fill;
+   the one exception to the single hover fill, since `--qd-surface-hover` is
+   imperceptible on the reading canvas).
 7. The primary action button (`--qd-primary` + `--qd-primary-fg`) — green is now
    also the structural/primary color.
 

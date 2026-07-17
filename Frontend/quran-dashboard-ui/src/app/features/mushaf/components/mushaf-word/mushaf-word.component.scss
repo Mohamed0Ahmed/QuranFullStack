@@ -1,3 +1,10 @@
+/* Ayah-hover wash: background + radius ONLY — never glyph metrics, font, or spacing.
+   Kept in one place so the pointer-gated and focus rules below cannot drift apart. */
+@mixin ayah-hover-wash {
+  background-color: var(--qd-mushaf-ayah-hover-bg);
+  border-radius: var(--qd-radius-sm);
+}
+
 .mushaf-word {
   display: inline;
   font-family: var(--qd-font-quran);
@@ -10,21 +17,33 @@
   margin: 0;
   color: inherit;
   cursor: pointer;
+  /* Colour-only transition — deliberately kept under prefers-reduced-motion
+     (precedent: styles/_components.scss reduced-motion block). */
+  transition: background-color var(--qd-t-fast);
 
   &:disabled {
     cursor: default;
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--qd-focus-ring);
-    outline-offset: 2px;
-    border-radius: 0.2rem;
   }
 
   &--marker {
     font-family: var(--qd-font-quran-ayah-marker);
     font-size: var(--qd-mushaf-ayah-marker-font-size);
     color: var(--qd-mushaf-ayah-marker-color);
+  }
+
+  /* Hover-capable devices only: the gate is what stops a touch tap sticking the wash.
+     Ordered above --selected-word and :not()-excluded from it so selection always wins. */
+  @media (hover: hover) {
+    &--hovered-ayah:not(.mushaf-word--selected-word) {
+      @include ayah-hover-wash;
+    }
+  }
+
+  /* Keyboard parity, ungated: hover must never be the only indicator (WCAG). Covers the
+     focused word on (hover: none) devices driving a keyboard, where the gate above is off.
+     :focus-visible (not :focus) keeps a touch tap from painting it. */
+  &--hovered-ayah:not(.mushaf-word--selected-word):focus-visible {
+    @include ayah-hover-wash;
   }
 
   &--selected-word {
@@ -35,6 +54,17 @@
     );
     box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--qd-mushaf-word-selection-indicator) 32%, transparent);
     border-radius: var(--qd-radius-sm);
+    /* Selection predates the hover wash and appeared instantly; the base
+       transition above must not start fading it. */
+    transition: none;
+  }
+
+  /* Last, so the resting focus-ring radius keeps winning over the wash rules above
+     exactly as it already won over --selected-word. */
+  &:focus-visible {
+    outline: 2px solid var(--qd-focus-ring);
+    outline-offset: 2px;
+    border-radius: 0.2rem;
   }
 
   &--highlighted-ayah {
