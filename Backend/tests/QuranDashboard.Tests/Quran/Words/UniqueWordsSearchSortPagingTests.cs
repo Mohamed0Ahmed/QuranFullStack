@@ -165,8 +165,10 @@ public sealed class UniqueWordsSearchSortPagingTests(UniqueWordsTestFixture fixt
 
     // Five seeded tashkeel words share occurrences_count = 1, so this pins the tie-break chain against
     // real seeded data: the tie group orders by first_word_order_in_mushaf ASCENDING in BOTH
-    // directions, while only the primary count flips. (Id never enters: first_word_order_in_mushaf
-    // carries a UNIQUE index on both unique-word tables, so it always resolves the tie first.)
+    // directions, while only the primary count flips. (Id cannot enter HERE: first_word_order_in_mushaf
+    // carries a UNIQUE index on both unique-word tables, so it always resolves the tie first. The
+    // reader's final Id rung is still part of the contract and is proved in
+    // UniqueWordsOrderingContractTests, which opens a seam the seeded slice cannot reach.)
     [Theory]
     [InlineData("occurrences", new[] { 1002, 1001, 2003, 1003, 1004, 1202, 31001, 60041 })]
     [InlineData("occurrences-asc", new[] { 1003, 1004, 1202, 31001, 60041, 2003, 1001, 1002 })]
