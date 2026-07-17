@@ -45,7 +45,7 @@ public sealed class GetStemsPageHandler(
                 FeatureName,
                 OperationName,
                 "invalidPaging",
-                GetSortKey(sort),
+                sort.CanonicalToken(),
                 query.Page,
                 query.PageSize,
                 HasSearch(query.Search));
@@ -62,7 +62,7 @@ public sealed class GetStemsPageHandler(
                 FeatureName,
                 OperationName,
                 "invalidFilter",
-                GetSortKey(sort),
+                sort.CanonicalToken(),
                 query.Page,
                 query.PageSize,
                 HasSearch(query.Search));
@@ -84,7 +84,7 @@ public sealed class GetStemsPageHandler(
             "Completed {feature} {operation} {sort} {pageNumber} {pageSize} {totalCount} {itemCount} {hasSearch}",
             FeatureName,
             OperationName,
-            GetSortKey(sort),
+            sort.CanonicalToken(),
             query.Page,
             query.PageSize,
             page.TotalCount,
@@ -93,14 +93,6 @@ public sealed class GetStemsPageHandler(
 
         return new GetStemsPageOutcome.Success(page);
     }
-
-    private static string GetSortKey(StemSort sort) => sort switch
-    {
-        StemSort.MushafOrder => StemSortKeys.MushafOrder,
-        StemSort.Occurrences => StemSortKeys.Occurrences,
-        StemSort.Alpha => StemSortKeys.Alpha,
-        _ => throw new InvalidOperationException($"Unhandled {nameof(StemSort)} value."),
-    };
 
     private static bool HasSearch(string? search) => !string.IsNullOrWhiteSpace(search);
 }

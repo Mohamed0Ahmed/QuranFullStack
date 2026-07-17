@@ -23,7 +23,7 @@ public sealed class WordTypesMainReadTests(WordTypesTestFixture fixture)
         {
             var rows = await reader.GetRowsAsync(
                 new WordTypeFilter(mainType.Code, null, null, null, null),
-                WordTypeSort.Occurrences,
+                WordTypeSortSpec.Default,
                 page: 1,
                 pageSize: 100,
                 CancellationToken.None);
@@ -44,7 +44,7 @@ public sealed class WordTypesMainReadTests(WordTypesTestFixture fixture)
 
         var rows = await reader.GetRowsAsync(
             new WordTypeFilter(type, null, null, null, null),
-            WordTypeSort.Occurrences,
+            WordTypeSortSpec.Default,
             page: 1,
             pageSize: 25,
             CancellationToken.None);
@@ -64,13 +64,13 @@ public sealed class WordTypesMainReadTests(WordTypesTestFixture fixture)
 
         var particleRows = await reader.GetRowsAsync(
             new WordTypeFilter("particle", null, null, null, null),
-            WordTypeSort.Occurrences,
+            WordTypeSortSpec.Default,
             1,
             25,
             CancellationToken.None);
         var inlRows = await reader.GetRowsAsync(
             new WordTypeFilter("inl", null, null, null, null),
-            WordTypeSort.Occurrences,
+            WordTypeSortSpec.Default,
             1,
             25,
             CancellationToken.None);
@@ -89,13 +89,13 @@ public sealed class WordTypesMainReadTests(WordTypesTestFixture fixture)
 
         var nounRows = await reader.GetRowsAsync(
             new WordTypeFilter("noun", null, null, null, null),
-            WordTypeSort.Occurrences,
+            WordTypeSortSpec.Default,
             1,
             25,
             CancellationToken.None);
         var particleRows = await reader.GetRowsAsync(
             new WordTypeFilter("particle", null, null, null, null),
-            WordTypeSort.Occurrences,
+            WordTypeSortSpec.Default,
             1,
             25,
             CancellationToken.None);
@@ -113,7 +113,7 @@ public sealed class WordTypesMainReadTests(WordTypesTestFixture fixture)
 
         var rows = await reader.GetRowsAsync(
             new WordTypeFilter("verb", null, null, null, null),
-            WordTypeSort.Occurrences,
+            WordTypeSortSpec.Default,
             1,
             25,
             CancellationToken.None);
@@ -130,7 +130,7 @@ public sealed class WordTypesMainReadTests(WordTypesTestFixture fixture)
 
         var rows = await reader.GetRowsAsync(
             new WordTypeFilter("verb", null, null, null, null),
-            WordTypeSort.MushafOrder,
+            WordTypeSortSpec.Natural(WordTypeSortColumn.MushafOrder),
             1,
             25,
             CancellationToken.None);

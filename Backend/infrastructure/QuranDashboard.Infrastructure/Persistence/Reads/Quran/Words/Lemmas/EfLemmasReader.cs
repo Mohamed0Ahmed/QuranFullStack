@@ -23,7 +23,7 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
 
     public async Task<PagedResult<LemmaListItemDto>> GetLemmasPageAsync(
         string? search,
-        LemmaSort sort,
+        LemmaSortSpec sort,
         LemmasCountFilter filter,
         LemmasAssociationFilter association,
         int page,

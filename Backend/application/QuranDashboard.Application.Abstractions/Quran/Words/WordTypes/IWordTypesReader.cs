@@ -9,7 +9,7 @@ public interface IWordTypesReader
 
     Task<PagedResult<WordTypeRowDto>> GetRowsAsync(
         WordTypeFilter filter,
-        WordTypeSort sort,
+        WordTypeSortSpec sort,
         int page,
         int pageSize,
         CancellationToken cancellationToken);
@@ -17,7 +17,7 @@ public interface IWordTypesReader
     Task<PagedResult<WordTypeTableRowDto>> GetTableRowsAsync(
         WordTypeFilter filter,
         WordTypeTableView tableView,
-        WordTypeSort sort,
+        WordTypeSortSpec sort,
         int page,
         int pageSize,
         CancellationToken cancellationToken);

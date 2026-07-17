@@ -19,13 +19,13 @@ public sealed class WordTypesPresenceFilterReadTests(WordTypesTestFixture fixtur
 
         var all = await reader.GetRowsAsync(
             new WordTypeFilter("noun", null, null, null, null),
-            WordTypeSort.Occurrences, 1, 1000, CancellationToken.None);
+            WordTypeSortSpec.Default, 1, 1000, CancellationToken.None);
         var present = await reader.GetRowsAsync(
             new WordTypeFilter("noun", null, null, null, null, HasRoot: true),
-            WordTypeSort.Occurrences, 1, 1000, CancellationToken.None);
+            WordTypeSortSpec.Default, 1, 1000, CancellationToken.None);
         var missing = await reader.GetRowsAsync(
             new WordTypeFilter("noun", null, null, null, null, HasRoot: false),
-            WordTypeSort.Occurrences, 1, 1000, CancellationToken.None);
+            WordTypeSortSpec.Default, 1, 1000, CancellationToken.None);
 
         present.Items.Should().OnlyContain(row => row.RootText != null);
         present.Items.Should().NotContain(row => row.DisplayText == "مُثَل");
@@ -58,8 +58,8 @@ public sealed class WordTypesPresenceFilterReadTests(WordTypesTestFixture fixtur
             _ => throw new ArgumentOutOfRangeException(nameof(view)),
         };
 
-        var grouped = await reader.GetTableRowsAsync(filter, view, WordTypeSort.Occurrences, 1, 1000, CancellationToken.None);
-        var words = await reader.GetTableRowsAsync(filter, WordTypeTableView.Words, WordTypeSort.Occurrences, 1, 1000, CancellationToken.None);
+        var grouped = await reader.GetTableRowsAsync(filter, view, WordTypeSortSpec.Default, 1, 1000, CancellationToken.None);
+        var words = await reader.GetTableRowsAsync(filter, WordTypeTableView.Words, WordTypeSortSpec.Default, 1, 1000, CancellationToken.None);
 
         grouped.TotalCount.Should().Be(0);
         grouped.Items.Should().BeEmpty();
@@ -76,10 +76,10 @@ public sealed class WordTypesPresenceFilterReadTests(WordTypesTestFixture fixtur
 
         var unfiltered = await reader.GetTableRowsAsync(
             new WordTypeFilter("noun", null, null, null, null),
-            WordTypeTableView.Roots, WordTypeSort.Occurrences, 1, 1000, CancellationToken.None);
+            WordTypeTableView.Roots, WordTypeSortSpec.Default, 1, 1000, CancellationToken.None);
         var hasRoot = await reader.GetTableRowsAsync(
             new WordTypeFilter("noun", null, null, null, null, HasRoot: true),
-            WordTypeTableView.Roots, WordTypeSort.Occurrences, 1, 1000, CancellationToken.None);
+            WordTypeTableView.Roots, WordTypeSortSpec.Default, 1, 1000, CancellationToken.None);
 
         hasRoot.TotalCount.Should().Be(unfiltered.TotalCount);
         hasRoot.TotalCount.Should().BeGreaterThan(0);
@@ -94,18 +94,18 @@ public sealed class WordTypesPresenceFilterReadTests(WordTypesTestFixture fixtur
         // مُثَل matches search "مثل" and is rootless: requiring a root drops it, requiring none keeps it.
         var mithalHasRoot = await reader.GetRowsAsync(
             new WordTypeFilter("noun", null, null, null, null, "مثل", HasRoot: true),
-            WordTypeSort.Occurrences, 1, 1000, CancellationToken.None);
+            WordTypeSortSpec.Default, 1, 1000, CancellationToken.None);
         var mithalNoRoot = await reader.GetRowsAsync(
             new WordTypeFilter("noun", null, null, null, null, "مثل", HasRoot: false),
-            WordTypeSort.Occurrences, 1, 1000, CancellationToken.None);
+            WordTypeSortSpec.Default, 1, 1000, CancellationToken.None);
 
         // كَلِمَة matches search "كلم" and is root-bearing: requiring no root drops it.
         var kalimaNoRoot = await reader.GetRowsAsync(
             new WordTypeFilter("noun", null, null, null, null, "كلم", HasRoot: false),
-            WordTypeSort.Occurrences, 1, 1000, CancellationToken.None);
+            WordTypeSortSpec.Default, 1, 1000, CancellationToken.None);
         var kalimaHasRoot = await reader.GetRowsAsync(
             new WordTypeFilter("noun", null, null, null, null, "كلم", HasRoot: true),
-            WordTypeSort.Occurrences, 1, 1000, CancellationToken.None);
+            WordTypeSortSpec.Default, 1, 1000, CancellationToken.None);
 
         mithalHasRoot.TotalCount.Should().Be(0);
         mithalNoRoot.TotalCount.Should().BeGreaterThan(0);
@@ -124,13 +124,13 @@ public sealed class WordTypesPresenceFilterReadTests(WordTypesTestFixture fixtur
 
         var all = await reader.GetRowsAsync(
             new WordTypeFilter("noun", null, "nominative", null, null),
-            WordTypeSort.Occurrences, 1, 1000, CancellationToken.None);
+            WordTypeSortSpec.Default, 1, 1000, CancellationToken.None);
         var hasRoot = await reader.GetRowsAsync(
             new WordTypeFilter("noun", null, "nominative", null, null, HasRoot: true),
-            WordTypeSort.Occurrences, 1, 1000, CancellationToken.None);
+            WordTypeSortSpec.Default, 1, 1000, CancellationToken.None);
         var noRoot = await reader.GetRowsAsync(
             new WordTypeFilter("noun", null, "nominative", null, null, HasRoot: false),
-            WordTypeSort.Occurrences, 1, 1000, CancellationToken.None);
+            WordTypeSortSpec.Default, 1, 1000, CancellationToken.None);
 
         all.TotalCount.Should().Be(2);
         hasRoot.Items.Should().OnlyContain(row => row.RootText != null && row.CaseOrFeature == "nominative");
@@ -152,13 +152,13 @@ public sealed class WordTypesPresenceFilterReadTests(WordTypesTestFixture fixtur
 
         var all = await reader.GetRowsAsync(
             new WordTypeFilter("verb", null, null, "present", null),
-            WordTypeSort.Occurrences, 1, 1000, CancellationToken.None);
+            WordTypeSortSpec.Default, 1, 1000, CancellationToken.None);
         var hasRoot = await reader.GetRowsAsync(
             new WordTypeFilter("verb", null, null, "present", null, HasRoot: true),
-            WordTypeSort.Occurrences, 1, 1000, CancellationToken.None);
+            WordTypeSortSpec.Default, 1, 1000, CancellationToken.None);
         var noRoot = await reader.GetRowsAsync(
             new WordTypeFilter("verb", null, null, "present", null, HasRoot: false),
-            WordTypeSort.Occurrences, 1, 1000, CancellationToken.None);
+            WordTypeSortSpec.Default, 1, 1000, CancellationToken.None);
 
         all.TotalCount.Should().BeGreaterThan(0);
         hasRoot.Items.Should().OnlyContain(row => row.RootText != null && row.ContextCode == "present");
@@ -175,21 +175,21 @@ public sealed class WordTypesPresenceFilterReadTests(WordTypesTestFixture fixtur
         var noFlags = new WordTypeFilter("noun", null, null, null, null);
         var explicitlyNoFlags = new WordTypeFilter("noun", null, null, null, null, null, null, null, null);
 
-        var noFlagsKey = WordTypesCacheKeys.Rows(noFlags, WordTypeSort.Occurrences, 1, 1000);
-        WordTypesCacheKeys.Rows(explicitlyNoFlags, WordTypeSort.Occurrences, 1, 1000).Should().Be(noFlagsKey);
+        var noFlagsKey = WordTypesCacheKeys.Rows(noFlags, WordTypeSortSpec.Default, 1, 1000);
+        WordTypesCacheKeys.Rows(explicitlyNoFlags, WordTypeSortSpec.Default, 1, 1000).Should().Be(noFlagsKey);
 
         var keys = new[]
         {
             noFlagsKey,
-            WordTypesCacheKeys.Rows(new WordTypeFilter("noun", null, null, null, null, HasRoot: true), WordTypeSort.Occurrences, 1, 1000),
-            WordTypesCacheKeys.Rows(new WordTypeFilter("noun", null, null, null, null, HasRoot: false), WordTypeSort.Occurrences, 1, 1000),
-            WordTypesCacheKeys.Rows(new WordTypeFilter("noun", null, null, null, null, HasStem: true), WordTypeSort.Occurrences, 1, 1000),
-            WordTypesCacheKeys.Rows(new WordTypeFilter("noun", null, null, null, null, HasLemma: false), WordTypeSort.Occurrences, 1, 1000),
+            WordTypesCacheKeys.Rows(new WordTypeFilter("noun", null, null, null, null, HasRoot: true), WordTypeSortSpec.Default, 1, 1000),
+            WordTypesCacheKeys.Rows(new WordTypeFilter("noun", null, null, null, null, HasRoot: false), WordTypeSortSpec.Default, 1, 1000),
+            WordTypesCacheKeys.Rows(new WordTypeFilter("noun", null, null, null, null, HasStem: true), WordTypeSortSpec.Default, 1, 1000),
+            WordTypesCacheKeys.Rows(new WordTypeFilter("noun", null, null, null, null, HasLemma: false), WordTypeSortSpec.Default, 1, 1000),
         };
         keys.Should().OnlyHaveUniqueItems();
 
-        var noFlagsTable = WordTypesCacheKeys.Table(noFlags, WordTypeTableView.Roots, WordTypeSort.Occurrences, 1, 1000);
-        WordTypesCacheKeys.Table(new WordTypeFilter("noun", null, null, null, null, HasRoot: true), WordTypeTableView.Roots, WordTypeSort.Occurrences, 1, 1000)
+        var noFlagsTable = WordTypesCacheKeys.Table(noFlags, WordTypeTableView.Roots, WordTypeSortSpec.Default, 1, 1000);
+        WordTypesCacheKeys.Table(new WordTypeFilter("noun", null, null, null, null, HasRoot: true), WordTypeTableView.Roots, WordTypeSortSpec.Default, 1, 1000)
             .Should().NotBe(noFlagsTable);
     }
 }

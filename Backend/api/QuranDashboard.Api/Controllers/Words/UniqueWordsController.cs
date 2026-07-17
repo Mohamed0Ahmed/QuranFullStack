@@ -26,6 +26,31 @@ public sealed class UniqueWordsController(
     /// يُرجع صفحة واحدة من الكلمات الفريدة للنوع المحدد (<c>tashkeel</c> أو
     /// <c>simple</c>) مع بحث عربي مُطبّع (contains) وخيارات ترتيب وتصفّح.
     /// </summary>
+    /// <param name="kind">نوع الهوية: <c>tashkeel</c> أو <c>simple</c>.</param>
+    /// <param name="search">نص البحث العربي المُطبّع (contains، اختياري).</param>
+    /// <param name="paramSort">
+    /// مفتاح الترتيب (اختياري، الافتراضي <c>mushaf-order</c>). الصيغة:
+    /// <c>عمود</c> أو <c>عمود-asc</c> أو <c>عمود-desc</c>.
+    /// الأعمدة المتاحة: <c>alpha</c> (تصاعدي طبيعيًا)، و<c>occurrences</c> و<c>ayahs</c>
+    /// و<c>surahs</c> (تنازلية طبيعيًا).
+    /// المفتاح المجرّد يعني الاتجاه الطبيعي للعمود، لذا <c>occurrences</c> ≡
+    /// <c>occurrences-desc</c> و<c>alpha</c> ≡ <c>alpha-asc</c>.
+    /// و<c>mushaf-order</c> هو ترتيب المصحف التصاعدي فقط ولا يقبل لاحقة اتجاه.
+    /// أي مفتاح آخر يُرجع 400.
+    /// </param>
+    /// <param name="page">رقم الصفحة (الافتراضي 1).</param>
+    /// <param name="pageSize">حجم الصفحة (الافتراضي 1000).</param>
+    /// <param name="occMin">الحد الأدنى لعدد المواضع (اختياري).</param>
+    /// <param name="occMax">الحد الأعلى لعدد المواضع (اختياري).</param>
+    /// <param name="ayahsMin">الحد الأدنى لعدد الآيات (اختياري).</param>
+    /// <param name="ayahsMax">الحد الأعلى لعدد الآيات (اختياري).</param>
+    /// <param name="surahsMin">الحد الأدنى لعدد السور (اختياري).</param>
+    /// <param name="surahsMax">الحد الأعلى لعدد السور (اختياري).</param>
+    /// <param name="primaryType">مرشّح نوع الكلمة الأساسي برمز POS (اختياري).</param>
+    /// <param name="rootId">مرشّح الجذر الأساسي (اختياري).</param>
+    /// <param name="cancellationToken">رمز إلغاء الطلب.</param>
+    /// <response code="200">تم تحميل صفحة الكلمات الفريدة بنجاح.</response>
+    /// <response code="400">نوع أو مفتاح ترتيب أو مرشّح أو تقسيم صفحات غير صالح.</response>
     [HttpGet("{kind}")]
     public async Task<ActionResult<ApiResponse<PagedResult<UniqueWordListItemDto>>>> Get(
         string kind,

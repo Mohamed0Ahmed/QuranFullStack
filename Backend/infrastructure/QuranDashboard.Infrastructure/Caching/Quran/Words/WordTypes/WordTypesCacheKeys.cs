@@ -9,10 +9,10 @@ public static class WordTypesCacheKeys
 {
     public const string Tree = "wordtypes:tree";
 
-    public static string Rows(WordTypeFilter filter, WordTypeSort sort, int page, int pageSize) =>
+    public static string Rows(WordTypeFilter filter, WordTypeSortSpec sort, int page, int pageSize) =>
         $"wordtypes:rows:{HashFilter(filter)}:sort:{SortKey(sort)}:p{page}:s{pageSize}";
 
-    public static string Table(WordTypeFilter filter, WordTypeTableView tableView, WordTypeSort sort, int page, int pageSize) =>
+    public static string Table(WordTypeFilter filter, WordTypeTableView tableView, WordTypeSortSpec sort, int page, int pageSize) =>
         $"wordtypes:table:{HashFilter(filter)}:view:{TableViewKey(tableView)}:sort:{SortKey(sort)}:p{page}:s{pageSize}";
 
     // Scoped four-count summary (Feature 026, US8). The key folds in EVERY scope input via HashFilter
@@ -116,13 +116,9 @@ public static class WordTypesCacheKeys
         _ => tableView.ToString(),
     };
 
-    private static string SortKey(WordTypeSort sort) => sort switch
-    {
-        WordTypeSort.Occurrences => WordTypeSortKeys.Occurrences,
-        WordTypeSort.Ayahs => WordTypeSortKeys.Ayahs,
-        WordTypeSort.Surahs => WordTypeSortKeys.Surahs,
-        WordTypeSort.MushafOrder => WordTypeSortKeys.MushafOrder,
-        WordTypeSort.Alpha => WordTypeSortKeys.Alpha,
-        _ => sort.ToString(),
-    };
+    // The CANONICAL token, so alias and canonical spellings of one ordering share ONE entry
+    // ("occurrences-desc" keys as "occurrences") and every pre-feature key stays byte-identical.
+    // Deliberately not a ToString() fallback: an unmapped value must fail loudly rather than silently
+    // fork the cache under a second key for the same rows.
+    private static string SortKey(WordTypeSortSpec sort) => sort.CanonicalToken();
 }

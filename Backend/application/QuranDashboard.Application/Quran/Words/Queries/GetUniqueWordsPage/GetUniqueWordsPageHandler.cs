@@ -63,7 +63,7 @@ public sealed class GetUniqueWordsPageHandler(
                 OperationName,
                 "invalidPaging",
                 GetKindKey(kind),
-                GetSortKey(sort),
+                sort.CanonicalToken(),
                 query.Page,
                 query.PageSize,
                 HasSearch(query.Search));
@@ -83,7 +83,7 @@ public sealed class GetUniqueWordsPageHandler(
                 OperationName,
                 "invalidFilter",
                 GetKindKey(kind),
-                GetSortKey(sort),
+                sort.CanonicalToken(),
                 query.Page,
                 query.PageSize,
                 HasSearch(query.Search));
@@ -107,7 +107,7 @@ public sealed class GetUniqueWordsPageHandler(
             FeatureName,
             OperationName,
             GetKindKey(kind),
-            GetSortKey(sort),
+            sort.CanonicalToken(),
             query.Page,
             query.PageSize,
             page.TotalCount,
@@ -121,15 +121,6 @@ public sealed class GetUniqueWordsPageHandler(
         kind == UniqueWordKind.Tashkeel
             ? UniqueWordKindKeys.Tashkeel
             : UniqueWordKindKeys.Simple;
-
-    private static string GetSortKey(UniqueWordSort sort) =>
-        sort switch
-        {
-            UniqueWordSort.MushafOrder => UniqueWordSortKeys.MushafOrder,
-            UniqueWordSort.Occurrences => UniqueWordSortKeys.Occurrences,
-            UniqueWordSort.Alpha => UniqueWordSortKeys.Alpha,
-            _ => throw new InvalidOperationException($"Unhandled {nameof(UniqueWordSort)} value."),
-        };
 
     private static bool HasSearch(string? search) => !string.IsNullOrWhiteSpace(search);
 

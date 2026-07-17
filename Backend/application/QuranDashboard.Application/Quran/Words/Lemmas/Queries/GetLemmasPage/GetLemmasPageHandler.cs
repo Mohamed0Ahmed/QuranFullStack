@@ -45,7 +45,7 @@ public sealed class GetLemmasPageHandler(
                 FeatureName,
                 OperationName,
                 "invalidPaging",
-                GetSortKey(sort),
+                sort.CanonicalToken(),
                 query.Page,
                 query.PageSize,
                 HasSearch(query.Search));
@@ -62,7 +62,7 @@ public sealed class GetLemmasPageHandler(
                 FeatureName,
                 OperationName,
                 "invalidFilter",
-                GetSortKey(sort),
+                sort.CanonicalToken(),
                 query.Page,
                 query.PageSize,
                 HasSearch(query.Search));
@@ -84,7 +84,7 @@ public sealed class GetLemmasPageHandler(
             "Completed {feature} {operation} {sort} {pageNumber} {pageSize} {totalCount} {itemCount} {hasSearch}",
             FeatureName,
             OperationName,
-            GetSortKey(sort),
+            sort.CanonicalToken(),
             query.Page,
             query.PageSize,
             page.TotalCount,
@@ -93,14 +93,6 @@ public sealed class GetLemmasPageHandler(
 
         return new GetLemmasPageOutcome.Success(page);
     }
-
-    private static string GetSortKey(LemmaSort sort) => sort switch
-    {
-        LemmaSort.MushafOrder => LemmaSortKeys.MushafOrder,
-        LemmaSort.Occurrences => LemmaSortKeys.Occurrences,
-        LemmaSort.Alpha => LemmaSortKeys.Alpha,
-        _ => throw new InvalidOperationException($"Unhandled {nameof(LemmaSort)} value."),
-    };
 
     private static bool HasSearch(string? search) => !string.IsNullOrWhiteSpace(search);
 }

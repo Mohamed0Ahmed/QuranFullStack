@@ -439,16 +439,79 @@ public sealed class LemmasListReadTests(MorphologyExplorersTestFixture fixture)
         var cache = new MemoryCache(new MemoryCacheOptions());
         var reader = new CachedLemmasReader(inner, cache);
 
-        await reader.GetLemmasPageAsync(null, LemmaSort.MushafOrder, LemmasCountFilter.None, LemmasAssociationFilter.None, 1, 50, CancellationToken.None);
+        await reader.GetLemmasPageAsync(null, LemmaSortSpec.Natural(LemmaSortColumn.MushafOrder), LemmasCountFilter.None, LemmasAssociationFilter.None, 1, 50, CancellationToken.None);
 
         interceptor.Reset();
-        await reader.GetLemmasPageAsync(null, LemmaSort.Occurrences, LemmasCountFilter.None, LemmasAssociationFilter.None, 2, 2, CancellationToken.None);
+        await reader.GetLemmasPageAsync(null, LemmaSortSpec.Natural(LemmaSortColumn.Occurrences), LemmasCountFilter.None, LemmasAssociationFilter.None, 2, 2, CancellationToken.None);
         interceptor.CommandCount.Should().Be(0, "the whole summary is cached once; sort/page are in-memory");
+    }
+
+    // Sorting is ORDER BY only: it may reorder the page but must never change the scope or the total.
+    [Theory]
+    [InlineData("mushaf-order")]
+    [InlineData("alpha")]
+    [InlineData("alpha-desc")]
+    [InlineData("occurrences")]
+    [InlineData("occurrences-asc")]
+    [InlineData("ayahs")]
+    [InlineData("ayahs-asc")]
+    [InlineData("surahs")]
+    [InlineData("surahs-asc")]
+    [InlineData("simple")]
+    [InlineData("simple-asc")]
+    [InlineData("tashkeel")]
+    [InlineData("tashkeel-asc")]
+    [InlineData("stems")]
+    [InlineData("stems-asc")]
+    public async Task GetLemmasPage_every_sort_token_preserves_total_count_and_row_set(string sort)
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetLemmasPageHandler>();
+
+        var defaultOutcome = await handler.HandleAsync(
+            new GetLemmasPageQuery(null, null, 1, 50),
+            CancellationToken.None);
+        var defaultIds = defaultOutcome.Should().BeOfType<GetLemmasPageOutcome.Success>().Subject.Page.Items.Select(i => i.Id);
+
+        var outcome = await handler.HandleAsync(
+            new GetLemmasPageQuery(null, sort, 1, 50),
+            CancellationToken.None);
+        var page = outcome.Should().BeOfType<GetLemmasPageOutcome.Success>().Subject.Page;
+
+        page.TotalCount.Should().Be(SeededLemmaCount);
+        page.Items.Select(i => i.Id).Should().BeEquivalentTo(defaultIds);
+    }
+
+    // The acceptance bar: a legacy token and its canonical alias are ONE ordering.
+    [Theory]
+    [InlineData("occurrences", "occurrences-desc")]
+    [InlineData("alpha", "alpha-asc")]
+    public async Task GetLemmasPage_legacy_token_and_its_alias_return_the_identical_sequence(string legacy, string alias)
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetLemmasPageHandler>();
+
+        var legacyOutcome = await handler.HandleAsync(
+            new GetLemmasPageQuery(null, legacy, 1, 50),
+            CancellationToken.None);
+        var aliasOutcome = await handler.HandleAsync(
+            new GetLemmasPageQuery(null, alias, 1, 50),
+            CancellationToken.None);
+
+        var legacyIds = legacyOutcome.Should().BeOfType<GetLemmasPageOutcome.Success>().Subject.Page.Items.Select(i => i.Id);
+        var aliasIds = aliasOutcome.Should().BeOfType<GetLemmasPageOutcome.Success>().Subject.Page.Items.Select(i => i.Id);
+
+        aliasIds.Should().Equal(legacyIds);
     }
 
     [Theory]
     [InlineData("relevance")]
     [InlineData("")]
+    // mushaf-order is the release order, not a column: ascending-only, bare token only.
+    [InlineData("mushaf-order-asc")]
+    [InlineData("mushaf-order-desc")]
+    // Lemmas does not allowlist the `lemmas` column that Roots offers.
+    [InlineData("lemmas")]
     public async Task GetLemmasPage_invalid_sort_returns_validation_outcome(string? sort)
     {
         await using var scope = fixture.CreateScope();

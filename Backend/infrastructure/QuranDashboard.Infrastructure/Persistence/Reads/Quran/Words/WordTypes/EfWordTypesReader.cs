@@ -77,7 +77,7 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
 
     public async Task<PagedResult<WordTypeRowDto>> GetRowsAsync(
         WordTypeFilter filter,
-        WordTypeSort sort,
+        WordTypeSortSpec sort,
         int page,
         int pageSize,
         CancellationToken cancellationToken)
@@ -115,7 +115,7 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
     public async Task<PagedResult<WordTypeTableRowDto>> GetTableRowsAsync(
         WordTypeFilter filter,
         WordTypeTableView tableView,
-        WordTypeSort sort,
+        WordTypeSortSpec sort,
         int page,
         int pageSize,
         CancellationToken cancellationToken)
