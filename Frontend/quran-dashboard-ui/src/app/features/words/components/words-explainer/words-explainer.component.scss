@@ -1,0 +1,66 @@
+// Local layout only for the explainer hero frame. The shared visual primitives used by each
+// page's projected example region (`.qd-explainer-*` example/word/note/mini/seg/type/benefit)
+// live in the global partial `styles/_words-explainer.scss`, because projected `<ng-content>`
+// keeps the page's encapsulation, not this component's. Flat doctrine: no shadow, no lift.
+:host {
+  display: block;
+}
+
+.qd-explainer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qd-space-3);
+  margin-block-start: var(--qd-space-3);
+  padding-block-start: var(--qd-space-3);
+  // A hairline inside the intro band, separating the page title above from its explanation.
+  border-block-start: 1px solid var(--qd-border);
+}
+
+.qd-explainer__kicker {
+  display: flex;
+  align-items: center;
+  gap: var(--qd-space-2);
+  flex-wrap: wrap;
+}
+
+.qd-explainer__ordinal {
+  font-family: var(--qd-font-quran);
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1;
+  // A decorative numeral is not a green use (allowed-green list); keep it muted.
+  color: var(--qd-text-muted);
+}
+
+.qd-explainer__eyebrow {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--qd-accent-text); // allowed-green #4: section eyebrow via the AA text shade
+}
+
+.qd-explainer__toggle {
+  margin-inline-start: auto; // pin to the inline-end, RTL-safe
+  flex-shrink: 0;
+}
+
+.qd-explainer__tagline {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 500;
+  line-height: 1.7;
+  color: var(--qd-text);
+}
+
+.qd-explainer__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qd-space-3);
+}
+
+.qd-explainer__body-text {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.9;
+  color: var(--qd-text);
+}

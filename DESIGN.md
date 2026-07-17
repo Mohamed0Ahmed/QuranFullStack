@@ -151,6 +151,11 @@ appear **only** as:
    one word under the pointer — never a solid fill, never an ayah-wide fill.
 7. The primary action button (`--qd-primary` + `--qd-primary-fg`) — green is now
    also the structural/primary color.
+8. The Words explainer benefit callout (`الفائدة`): a soft informational panel using
+   `--qd-accent-tint` background + a 1px `--qd-border-accent` edge + `--qd-accent-text`
+   label/body (6.74:1 on the tint, AA). It is the one non-selection tinted-green panel,
+   scoped to the Words explainer hero (`.qd-explainer-benefit`). Not a solid fill; do not
+   reuse it elsewhere without amending this list.
 
 Everything else — chip fills, badge fills, count fills, range badges, selected-row
 fills, resting borders — stays banned as solid green: use a tint,
