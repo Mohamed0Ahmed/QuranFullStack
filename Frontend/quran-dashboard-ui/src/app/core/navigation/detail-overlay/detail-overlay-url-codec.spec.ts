@@ -91,6 +91,11 @@ describe('detail-overlay-url-codec', () => {
       ['zero id', 'v1~root~0~words~simple~mentioned~1'],
       ['negative id', 'v1~root~-3~words~simple~mentioned~1'],
       ['non-numeric id', 'v1~root~abc~words~simple~mentioned~1'],
+      ['an id just above Number.MAX_SAFE_INTEGER', 'v1~root~9007199254740993~words~simple~mentioned~1'],
+      ['an id from a very long digit run', `v1~root~${'9'.repeat(400)}~words~simple~mentioned~1`],
+      ['an unsafe page', 'v1~root~999~words~simple~mentioned~9007199254740993'],
+      ['an unsafe unique id', 'v1~unique~simple~9007199254740993~ayahs~3'],
+      ['an unsafe tashkeel word id', `v1~wordType~${'1'.repeat(30)}~past~all~all~all~ayahs~1`],
       ['invalid view enum', 'v1~root~999~sentences~simple~mentioned~1'],
       ['invalid wordView enum', 'v1~root~999~words~uthmani~mentioned~1'],
       ['invalid page', 'v1~root~999~words~simple~mentioned~0'],
@@ -103,6 +108,14 @@ describe('detail-overlay-url-codec', () => {
       ['malformed percent-encoding', 'v1~wordType~1~%E0%A4%A~all~all~all~ayahs~1'],
     ] as const)('rejects a frame with %s', (_label, raw) => {
       expect(parseDetailFrame(raw)).toBeNull();
+    });
+
+    it('still accepts the largest exactly-representable id and preserves it', () => {
+      const parsed = parseDetailFrame(`v1~root~${Number.MAX_SAFE_INTEGER}~words~simple~mentioned~1`);
+      expect(parsed).not.toBeNull();
+      expect((parsed as RootDetailFrame).id).toBe(Number.MAX_SAFE_INTEGER);
+      // The id must survive the round trip exactly, not round to a neighbouring entity.
+      expect(serializeDetailFrame(parsed as DetailFrame)).toBe(`v1~root~${Number.MAX_SAFE_INTEGER}~words~simple~mentioned~1`);
     });
   });
 
@@ -128,6 +141,22 @@ describe('detail-overlay-url-codec', () => {
     it('truncates the stack immediately before a malformed later frame', () => {
       const { state, isCanonical } = parseDetailOverlayParams([validRoot, 'v1~root~x', validUnique], '1');
       expect(state.stack.map((frame) => frame.kind)).toEqual(['root']);
+      expect(isCanonical).toBe(false);
+    });
+
+    it('truncates the stack before a frame whose id exceeds the safe-integer range', () => {
+      const { state, isCanonical } = parseDetailOverlayParams(
+        [validRoot, 'v1~root~9007199254740993~words~simple~mentioned~1', validUnique],
+        '1',
+      );
+      expect(state.stack.map((frame) => frame.kind)).toEqual(['root']);
+      expect(isCanonical).toBe(false);
+    });
+
+    it('yields no overlay when the only frame carries an unsafe id', () => {
+      const { state, isCanonical } = parseDetailOverlayParams(['v1~root~9007199254740993~words~simple~mentioned~1'], '1');
+      expect(state.visibility).toBe('closed');
+      expect(state.stack).toHaveLength(0);
       expect(isCanonical).toBe(false);
     });
 

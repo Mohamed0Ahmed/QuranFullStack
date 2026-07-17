@@ -60,8 +60,18 @@ function decodeField(raw: string): string | null {
   }
 }
 
+/**
+ * Decimal syntax alone is not enough: a digit run above `Number.MAX_SAFE_INTEGER`
+ * would round to a different integer (or to `Infinity`), so a shared URL could
+ * silently resolve to another entity. The parsed value must survive the round trip
+ * exactly, hence the safe-integer guard.
+ */
 function parsePositiveInt(raw: string): number | null {
-  return /^[1-9]\d*$/.test(raw) ? Number(raw) : null;
+  if (!/^[1-9]\d*$/.test(raw)) {
+    return null;
+  }
+  const parsed = Number(raw);
+  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
 }
 
 function parseEnum<T extends string>(raw: string, allowed: readonly T[]): T | null {
