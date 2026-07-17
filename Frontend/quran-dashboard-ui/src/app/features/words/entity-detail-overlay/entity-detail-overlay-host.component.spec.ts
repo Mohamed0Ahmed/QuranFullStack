@@ -366,6 +366,93 @@ describe('EntityDetailOverlayHostComponent (composition root)', () => {
     expect(count().classList.contains('detail-modal-shell__count--visible')).toBe(false);
   });
 
+  describe('retained-closed hydration (Feature 030, L2)', () => {
+    const ROOT_SERIALIZED = 'v1~root~999~words~simple~mentioned~1';
+
+    async function createAppAt(url: string) {
+      await router.navigateByUrl(url);
+      const fixture = TestBed.createComponent(App);
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+      await settle();
+      fixture.detectChanges();
+      return fixture;
+    }
+
+    const isRootRead = (req: { url: string }) => req.url.includes('/api/words/roots/');
+
+    it('issues no detail request for a shared URL whose stack is retained closed', async () => {
+      const fixture = await createAppAt(
+        '/dashboard/words/roots?qdDetail=' + encodeURIComponent(ROOT_SERIALIZED),
+      );
+      const httpMock = TestBed.inject(HttpTestingController);
+      const root = fixture.nativeElement as HTMLElement;
+
+      expect(service.isRetainedClosed()).toBe(true);
+      expect(root.querySelector('[data-testid="detail-modal-restore"]')).not.toBeNull();
+      // The dialog nobody is looking at does no hidden summary/detail work.
+      httpMock.expectNone(isRootRead);
+    });
+
+    it('hydrates on restore, and a normal close then restore costs no new read', async () => {
+      const fixture = await createAppAt(
+        '/dashboard/words/roots?qdDetail=' + encodeURIComponent(ROOT_SERIALIZED),
+      );
+      const httpMock = TestBed.inject(HttpTestingController);
+      const root = fixture.nativeElement as HTMLElement;
+
+      (root.querySelector('[data-testid="detail-modal-restore"]') as HTMLButtonElement).click();
+      await settle();
+      await waitForSelector(fixture, 'qd-root-detail-overlay-adapter');
+
+      httpMock.expectOne((req) => req.url.endsWith('/api/words/roots/999')).flush({
+        isSuccess: true,
+        data: {
+          id: 999,
+          rootText: 'كتب',
+          occurrencesCount: 5,
+          ayahsCount: 4,
+          surahsCount: 3,
+          simpleWordsCount: 2,
+          tashkeelWordsCount: 2,
+          lemmasCount: 1,
+          stemsCount: 1,
+        },
+        message: null,
+        errors: null,
+      });
+      await settle();
+      fixture.detectChanges();
+
+      // Settle the view read this hydration also started, so anything seen after
+      // the close/restore round trip is genuinely new work.
+      for (const detail of httpMock.match(isRootRead)) {
+        detail.flush({
+          isSuccess: true,
+          data: { page: 1, pageSize: 100, totalCount: 0, items: [] },
+          message: null,
+          errors: null,
+        });
+      }
+      await settle();
+      fixture.detectChanges();
+
+      // The loaded adapter survives a normal Close (`@defer` never reverts), so
+      // Restore re-shows the held state instead of re-reading it.
+      service.close();
+      await settle();
+      fixture.detectChanges();
+      expect(service.isRetainedClosed()).toBe(true);
+
+      service.restore();
+      await settle();
+      await waitForSelector(fixture, 'qd-root-detail-overlay-adapter');
+      expect(service.isOpen()).toBe(true);
+      httpMock.expectNone(isRootRead);
+    });
+  });
+
   it('announces the Arabic cap status when a ninth append is refused', async () => {
     const fixture = await createApp();
     service.startStack(rootFrame);

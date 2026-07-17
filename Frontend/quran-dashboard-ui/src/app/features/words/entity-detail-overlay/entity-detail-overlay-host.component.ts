@@ -59,6 +59,18 @@ export class EntityDetailOverlayHostComponent {
   }
 
   protected readonly hasStack = computed(() => this.overlay.state().stack.length > 0);
+
+  /**
+   * Hydration trigger for the adapter `@defer` blocks (Feature 030, L2). A
+   * retained CLOSED stack keeps its frames in the URL but shows no dialog, so
+   * its adapter must not load; `@defer` never reverts once triggered, so the
+   * loaded adapter survives a normal Close and Restore re-shows it for free.
+   * While a never-opened stack is closed, the restore control falls back to the
+   * kind title, exactly as {@link title} already specifies for an unloaded
+   * summary.
+   */
+  protected readonly isOverlayOpen = this.overlay.isOpen;
+
   protected readonly depth = computed(() => this.overlay.state().stack.length);
   protected readonly visibility = computed(() => (this.overlay.isOpen() ? 'open' : 'closed') as 'open' | 'closed');
   protected readonly topFrame = this.overlay.topFrame;
