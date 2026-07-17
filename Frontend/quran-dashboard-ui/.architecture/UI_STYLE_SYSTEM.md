@@ -561,7 +561,7 @@ existing call-site onto this doctrine was a phased migration tracked in
 | Selected/active label | `--qd-accent-text` (deep green) | `--qd-accent-text` (gold, interim) | must hit AA on the tint |
 | Selected/active edge | 1px `--qd-accent` or `--qd-border-accent` | same | hairline, not a fill |
 | Solid-accent indicator (dot / 2px bar) | `--qd-accent` fill + `--qd-accent-fg` ink | same | the ONLY solid accent behind pixels |
-| Hover fill | `--qd-surface-hover` | same | one token, everywhere — **one documented exception**: the mushaf ayah-hover wash uses `--qd-mushaf-ayah-hover-bg`, because `--qd-surface-hover` is imperceptible on the parchment reading canvas (ΔL≈0.022 vs `--qd-bg`) |
+| Hover fill | `--qd-surface-hover` | same | one token, everywhere — **one documented exception**: the mushaf word-hover wash uses `--qd-mushaf-word-hover-bg`, because `--qd-surface-hover` is imperceptible on the parchment reading canvas (ΔL≈0.022 vs `--qd-bg`) |
 | Resting control border | `--qd-border` | `--qd-border` | no accent at rest |
 | Primary action | `--qd-primary` + `--qd-primary-fg` (green) | gold-primary, interim pending dark reconciliation | green is also the structural color in light |
 | Danger / success / warning text | `--qd-danger` / `--qd-success` / `--qd-warning` on the matching `*-tint` | same tokens | AA-verified, see below |
@@ -635,10 +635,12 @@ Green (`--qd-accent` / `--qd-accent-soft`) may appear **only** as:
    labels, section eyebrows) — never raw `--qd-accent` as small text on light.
 5. Footer sage (`--qd-footer-accent`) headings and link-hover.
 6. Icon highlights, the mushaf word-selection indicator
-   (`--qd-mushaf-word-selection-indicator`), and the mushaf ayah-hover wash it tints
-   (`--qd-mushaf-ayah-hover-bg` — an 8% tint of that indicator, never a solid fill;
-   the one exception to the single hover fill, since `--qd-surface-hover` is
-   imperceptible on the reading canvas).
+   (`--qd-mushaf-word-selection-indicator`), and the two washes it tints — the
+   word-hover wash (`--qd-mushaf-word-hover-bg`, 8%; the one exception to the single
+   hover fill, since `--qd-surface-hover` is imperceptible on the reading canvas) and
+   the selected-word wash (`--qd-mushaf-word-selection-bg`, 28%, with a
+   `--qd-mushaf-word-selection-ring` hairline). Both are tints of that indicator on the
+   one word under the pointer — never a solid fill, never an ayah-wide fill.
 7. The primary action button (`--qd-primary` + `--qd-primary-fg`) — green is now
    also the structural/primary color.
 

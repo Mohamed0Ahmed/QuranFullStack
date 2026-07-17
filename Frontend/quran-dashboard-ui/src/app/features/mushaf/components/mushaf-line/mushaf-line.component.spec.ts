@@ -123,30 +123,6 @@ describe('MushafLineComponent', () => {
     expect(getComputedStyle(line).justifyContent).toBe('center');
   });
 
-  it('passes hoveredVerseKey through to its words', () => {
-    const fixture = TestBed.createComponent(MushafLineComponent);
-    fixture.componentRef.setInput('line', buildLine());
-    fixture.componentRef.setInput('hoveredVerseKey', '99:1');
-    fixture.detectChanges();
-
-    const word = fixture.nativeElement.querySelector('button.mushaf-word') as HTMLButtonElement;
-    expect(word.classList.contains('mushaf-word--hovered-ayah')).toBe(true);
-  });
-
-  it('re-emits ayahHover from its words', () => {
-    const fixture = TestBed.createComponent(MushafLineComponent);
-    fixture.componentRef.setInput('line', buildLine());
-    fixture.detectChanges();
-
-    const emitted: (string | null)[] = [];
-    fixture.componentInstance.ayahHover.subscribe((verseKey) => emitted.push(verseKey));
-
-    const word = fixture.nativeElement.querySelector('button.mushaf-word') as HTMLButtonElement;
-    word.dispatchEvent(new Event('pointerenter'));
-    word.dispatchEvent(new Event('pointerleave'));
-
-    expect(emitted).toEqual(['99:1', null]);
-  });
 
   it.each([
     { markerType: 'juz' as const, label: 'جزء 1' },

@@ -79,17 +79,24 @@ ayahs, and متشابهات groups. State (page, selected ayah/word, source sele
   and can never reserve *less* than the loaded floor. Accepted trade (as in U1):
   reserving the previous ayah's height while a **different** ayah loads holds stale
   geometry.
-- **Ayah hover is component-local, never URL-synced** (Feature 030, N7): hovering (or
-  keyboard-focusing) any word paints `--qd-mushaf-ayah-hover-bg` behind every word of that
-  ayah. The `hoveredVerseKey` signal is owned by `mushaf-page-view` and flows down the
-  existing input chain (page-view → line → word) with an `ayahHover` output back up — it is
-  **never** in the facade and **never** in the URL; `focusAyah` (the click/URL-synced
-  `--highlighted-ayah` text-color state) keeps its own semantics and cache identity. The
-  signal **resets on page change** (verse keys are global, so a stale key would paint a
-  phantom wash on the next page). The wash is **background-color + radius only** — it never
-  touches glyphs, fonts, padding, or line metrics — is gated behind `@media (hover: hover)`
-  so a touch tap can't stick it, excludes the ayah-marker glyph (mirrors the
-  `isHighlightedAyahWord` exclusion), and always loses to the selected-word wash.
+- **Word hover is CSS-only and word-scoped** (Feature 030 N7, rescoped by M1): hovering (or
+  keyboard-focusing) a word paints `--qd-mushaf-word-hover-bg` behind **that one word** — it
+  does **not** fan out across the ayah. There is deliberately **no hover state in TypeScript**:
+  it is the word button's own `:hover` / `:focus-visible`, so there is no `hoveredVerseKey`
+  signal, no `ayahHover` output, and nothing to reset on page change. Do not re-lift it into a
+  signal — the ayah-wide version (030 N7) is exactly what M1 removed, because an 8%
+  ayah-wide wash sat only ΔL 0.016 from the selected word and buried it among its neighbours.
+  `focusAyah` (the click/URL-synced `--highlighted-ayah` text-color state) is a separate
+  concern and keeps its own semantics and cache identity. The wash is **background-color +
+  radius only** — it never touches glyphs, fonts, padding, or line metrics — is gated behind
+  `@media (hover: hover)` so a touch tap can't stick it, excludes the ayah-marker glyph via
+  `:not(:disabled)`, and always loses to the selected word.
+- **The selected word is the page's one persistent mark** (M1): it paints
+  `--qd-mushaf-word-selection-bg` + a `--qd-mushaf-word-selection-ring` hairline and is
+  excluded from the hover wash, so it never dims or animates while the pointer moves. Its
+  `transition: none` is load-bearing — a transition here reads as a flash. The
+  canvas < hover < selection ladder is calibrated in-browser and documented in
+  `styles/_tokens.scss`; re-measure there rather than nudging percentages by eye.
 - **Mushaf font is Amiri** (`public/fonts/` + `assets/fonts/quran/`) — **not**
   `UthmanicHafs_V22`, which mis-renders mark **U+06DF** as baseline dots. Do not swap the
   Mushaf font.

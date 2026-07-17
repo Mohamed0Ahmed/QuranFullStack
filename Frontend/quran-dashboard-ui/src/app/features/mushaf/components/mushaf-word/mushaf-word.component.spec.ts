@@ -79,6 +79,20 @@ describe('MushafWordComponent', () => {
     expect(button.classList.contains('mushaf-word--selected')).toBe(false);
   });
 
+  it('paints the selected word from the interaction ladder tokens', () => {
+    const fixture = TestBed.createComponent(MushafWordComponent);
+    fixture.componentRef.setInput('word', buildWord({ wordLocation: '99:1:3' }));
+    fixture.componentRef.setInput('selectedWordLocation', '99:1:3');
+    fixture.detectChanges();
+
+    const button = fixture.nativeElement.querySelector('button') as HTMLButtonElement;
+    const style = getComputedStyle(button);
+    expect(style.backgroundColor).toBe('var(--qd-mushaf-word-selection-bg)');
+    expect(style.boxShadow).toBe('inset 0 0 0 1px var(--qd-mushaf-word-selection-ring)');
+    // Selection is persistent and instant; a transition here would fade it in like a flash.
+    expect(style.transition).toBe('none');
+  });
+
   it('does not apply ayah background styling on the word button', () => {
     const fixture = TestBed.createComponent(MushafWordComponent);
     fixture.componentRef.setInput('word', buildWord({ wordLocation: '99:1:3', verseKey: '99:1' }));
@@ -119,76 +133,12 @@ describe('MushafWordComponent', () => {
     expect(fixture.componentInstance.word().textUthmani).toBe(SYNTHETIC_AYAH_DIGIT);
   });
 
-  it('applies the hovered-ayah wash to every word whose verseKey matches', () => {
-    const fixture = TestBed.createComponent(MushafWordComponent);
-    fixture.componentRef.setInput('word', buildWord({ wordLocation: '99:1:3', verseKey: '99:1' }));
-    fixture.componentRef.setInput('hoveredVerseKey', '99:1');
-    fixture.detectChanges();
-
-    const button = fixture.nativeElement.querySelector('button') as HTMLButtonElement;
-    expect(button.classList.contains('mushaf-word--hovered-ayah')).toBe(true);
-  });
-
-  it('does not apply the hovered-ayah wash to a word of another ayah', () => {
-    const fixture = TestBed.createComponent(MushafWordComponent);
-    fixture.componentRef.setInput('word', buildWord({ wordLocation: '99:2:1', verseKey: '99:2' }));
-    fixture.componentRef.setInput('hoveredVerseKey', '99:1');
-    fixture.detectChanges();
-
-    const button = fixture.nativeElement.querySelector('button') as HTMLButtonElement;
-    expect(button.classList.contains('mushaf-word--hovered-ayah')).toBe(false);
-  });
-
-  it('excludes the ayah-marker glyph from the hovered-ayah wash', () => {
-    const fixture = TestBed.createComponent(MushafWordComponent);
-    fixture.componentRef.setInput(
-      'word',
-      buildWord({
-        wordLocation: '99:1:9',
-        verseKey: '99:1',
-        textUthmani: SYNTHETIC_AYAH_DIGIT,
-        isAyahMarker: true,
-      }),
-    );
-    fixture.componentRef.setInput('hoveredVerseKey', '99:1');
-    fixture.detectChanges();
-
-    const button = fixture.nativeElement.querySelector('button') as HTMLButtonElement;
-    expect(button.classList.contains('mushaf-word--hovered-ayah')).toBe(false);
-  });
-
-  it('keeps both classes when the hovered ayah contains the selected word, letting selection win', () => {
-    const fixture = TestBed.createComponent(MushafWordComponent);
-    fixture.componentRef.setInput('word', buildWord({ wordLocation: '99:1:3', verseKey: '99:1' }));
-    fixture.componentRef.setInput('hoveredVerseKey', '99:1');
-    fixture.componentRef.setInput('selectedWordLocation', '99:1:3');
-    fixture.detectChanges();
-
-    const button = fixture.nativeElement.querySelector('button') as HTMLButtonElement;
-    expect(button.classList.contains('mushaf-word--hovered-ayah')).toBe(true);
-    expect(button.classList.contains('mushaf-word--selected-word')).toBe(true);
-  });
-
-  it.each([
-    { event: 'pointerenter', expected: '99:1' },
-    { event: 'focus', expected: '99:1' },
-    { event: 'pointerleave', expected: null },
-    { event: 'blur', expected: null },
-  ])('emits $expected on $event of a clickable word', ({ event, expected }) => {
-    const fixture = TestBed.createComponent(MushafWordComponent);
-    fixture.componentRef.setInput('word', buildWord({ wordLocation: '99:1:3', verseKey: '99:1' }));
-    fixture.detectChanges();
-
-    const ayahHover = vi.fn();
-    fixture.componentInstance.ayahHover.subscribe(ayahHover);
-
-    const button = fixture.nativeElement.querySelector('button') as HTMLButtonElement;
-    button.dispatchEvent(new Event(event));
-
-    expect(ayahHover).toHaveBeenCalledWith(expected);
-  });
-
-  it('does not emit ayahHover for ayah-end markers', () => {
+  /* The hover wash is the word's own `:hover` / `:focus-visible` state, so its scoping is a
+     CSS-engine guarantee and is verified in a real browser, not here. What this spec still
+     owns is the DOM contract those selectors hang off: `:not(:disabled)` is the ONLY thing
+     keeping the wash off the ayah-marker glyph, so un-disabling a marker would silently
+     start painting it. */
+  it('disables the ayah-marker glyph, which is what excludes it from the hover wash', () => {
     const fixture = TestBed.createComponent(MushafWordComponent);
     fixture.componentRef.setInput(
       'word',
@@ -201,13 +151,17 @@ describe('MushafWordComponent', () => {
     );
     fixture.detectChanges();
 
-    const ayahHover = vi.fn();
-    fixture.componentInstance.ayahHover.subscribe(ayahHover);
+    const button = fixture.nativeElement.querySelector('button') as HTMLButtonElement;
+    expect(button.disabled).toBe(true);
+  });
+
+  it('leaves a clickable word enabled so it can take the hover wash', () => {
+    const fixture = TestBed.createComponent(MushafWordComponent);
+    fixture.componentRef.setInput('word', buildWord({ wordLocation: '99:1:3', verseKey: '99:1' }));
+    fixture.detectChanges();
 
     const button = fixture.nativeElement.querySelector('button') as HTMLButtonElement;
-    button.dispatchEvent(new Event('pointerenter'));
-
-    expect(ayahHover).not.toHaveBeenCalled();
+    expect(button.disabled).toBe(false);
   });
 
   it('does not emit wordSelect for ayah-end markers', () => {

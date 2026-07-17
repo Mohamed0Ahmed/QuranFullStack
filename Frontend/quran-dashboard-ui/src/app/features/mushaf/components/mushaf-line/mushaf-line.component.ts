@@ -21,13 +21,11 @@ export class MushafLineComponent {
   readonly line = input.required<MushafLineDto>();
   readonly markers = input<PageMarkerDto[]>([]);
   readonly highlightedVerseKey = input<string | null>(null);
-  readonly hoveredVerseKey = input<string | null>(null);
   readonly selectedWordLocation = input<string | null>(null);
   readonly surahNameArabic = input<string | null>(null);
 
   readonly ayahSelect = output<string>();
   readonly wordSelect = output<string>();
-  readonly ayahHover = output<string | null>();
 
   basmallahText(): string {
     return MUSHAF_BASMALLAH_DISPLAY_TEXT;

@@ -143,10 +143,12 @@ appear **only** as:
    section eyebrows) — never raw `--qd-accent` as small text on light.
 5. Footer sage (`--qd-footer-accent`) headings and link-hover.
 6. Icon highlights, the mushaf word-selection indicator
-   (`--qd-mushaf-word-selection-indicator`), and the mushaf ayah-hover wash it tints
-   (`--qd-mushaf-ayah-hover-bg` — an 8% tint of that indicator, never a solid fill;
-   the one exception to the single hover fill, since `--qd-surface-hover` is
-   imperceptible on the reading canvas).
+   (`--qd-mushaf-word-selection-indicator`), and the two washes it tints — the
+   word-hover wash (`--qd-mushaf-word-hover-bg`, 8%; the one exception to the single
+   hover fill, since `--qd-surface-hover` is imperceptible on the reading canvas) and
+   the selected-word wash (`--qd-mushaf-word-selection-bg`, 28%, with a
+   `--qd-mushaf-word-selection-ring` hairline). Both are tints of that indicator on the
+   one word under the pointer — never a solid fill, never an ayah-wide fill.
 7. The primary action button (`--qd-primary` + `--qd-primary-fg`) — green is now
    also the structural/primary color.
 
