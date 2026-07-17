@@ -14,6 +14,7 @@ import { ModalScrollLockDirective } from '../../../../shared/ui/modal-scroll-loc
 
 import {
   ROOTS_EMPTY_SELECTION_LABEL,
+  ROOTS_NOT_FOUND_LABEL,
   ROOTS_PANEL_LABEL,
   ROOTS_PANEL_TAB_ARIA,
   ROOTS_PANEL_TAB_LABELS,
@@ -43,6 +44,8 @@ export class RootDetailsPanelComponent {
   readonly selectionTitle = input('');
   readonly loading = input(false);
   readonly notFound = input(false);
+  /** Server-supplied not-found text; falls back to the generic label when absent. */
+  readonly notFoundMessage = input('');
 
   readonly viewChange = output<RootView>();
   readonly close = output<void>();
@@ -57,6 +60,10 @@ export class RootDetailsPanelComponent {
 
   protected get emptySelectionLabel() {
     return ROOTS_EMPTY_SELECTION_LABEL;
+  }
+
+  protected get notFoundLabel() {
+    return ROOTS_NOT_FOUND_LABEL;
   }
 
   protected readonly surfaceDomId = 'root-details-panel-surface';

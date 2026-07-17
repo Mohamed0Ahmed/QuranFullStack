@@ -128,13 +128,19 @@ describe('UniqueWordsPageComponent', () => {
 
   it('shows the Arabic empty state when status is empty', async () => {
     const root = await render({ status: 'empty', items: [], totalCount: 0 });
-    expect(root.querySelector('[data-testid="unique-words-empty"]')).toBeTruthy();
+    // Feature 030, N3 row 5: the list's own states render inside the table shell, not above the grid.
+    expect(
+      root.querySelector('[data-testid="unique-words-empty"]')?.closest('.qd-explorer-table'),
+    ).toBeTruthy();
     expect(root.querySelector('[data-testid="unique-words-loading"]')).toBeNull();
   });
 
   it('shows the error message when status is error', async () => {
     const root = await render({ status: 'error', items: [], errorMessage: 'خطأ تجريبي' });
-    expect(root.querySelector('[data-testid="unique-words-error"]')?.textContent).toContain('خطأ تجريبي');
+    // Feature 030, N3 row 5: the list's own states render inside the table shell, not above the grid.
+    const error = root.querySelector('[data-testid="unique-words-error"]');
+    expect(error?.textContent).toContain('خطأ تجريبي');
+    expect(error?.closest('.qd-explorer-table')).toBeTruthy();
   });
 
   it('shows the loading state when status is loading', async () => {

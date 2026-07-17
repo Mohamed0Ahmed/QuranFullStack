@@ -564,7 +564,10 @@ describe('LemmasExplorerPageComponent US1', () => {
     );
 
     const fixture = await initLifecycle();
-    expect(fixture.nativeElement.querySelector('[data-testid="lemmas-list-error"]')).toBeTruthy();
+    // Feature 030, N3 row 5: the list's own states render inside the table shell, not above the grid.
+    expect(
+      fixture.nativeElement.querySelector('[data-testid="lemmas-list-error"]')?.closest('.qd-explorer-table'),
+    ).toBeTruthy();
 
     lemmasApi.getLemmasList.mockReturnValue(
       of<ApiResponse<{ page: number; pageSize: number; totalCount: number; items: LemmaListItemViewModel[] }>>({
@@ -577,7 +580,9 @@ describe('LemmasExplorerPageComponent US1', () => {
     queryParamMap$.next(convertToParamMap({}));
     vi.mocked(router.navigate).mockClear();
     const emptyFixture = await initLifecycle();
-    expect(emptyFixture.nativeElement.querySelector('[data-testid="lemmas-list-no-results"]')).toBeTruthy();
+    expect(
+      emptyFixture.nativeElement.querySelector('[data-testid="lemmas-list-no-results"]')?.closest('.qd-explorer-table'),
+    ).toBeTruthy();
   });
 
   describe('sorting (Feature 030, N8)', () => {
@@ -952,8 +957,13 @@ describe('LemmasExplorerPageComponent US8 — restore and navigate exact state',
     expect(lemmasApi.getLemmasList).toHaveBeenCalled();
 
     const root = fixture.nativeElement as HTMLElement;
-    expect(root.querySelector('[data-testid="lemmas-restored-not-found"]')).toBeTruthy();
-    expect(root.querySelector('[data-testid="lemma-details-not-found"]')).toBeTruthy();
+    // Feature 030, N3 row 5: notFound is a PANEL/selection state — it renders inside the details
+    // panel (a mounted shell), never as a page-level banner above the table+panel grid.
+    const notFound = root.querySelector('[data-testid="lemma-details-not-found"]');
+    expect(notFound).toBeTruthy();
+    expect(notFound?.getAttribute('role')).toBe('status');
+    expect(notFound?.closest('qd-lemma-details-panel')).toBeTruthy();
+    expect(root.querySelector('[data-testid="lemmas-restored-not-found"]')).toBeNull();
     expect(root.querySelectorAll('[data-lemma-tab]')).toHaveLength(0);
     expect(root.querySelector('qd-lemmas-table')).toBeTruthy();
   });
@@ -977,7 +987,7 @@ describe('LemmasExplorerPageComponent US8 — restore and navigate exact state',
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('[data-testid="lemmas-restored-not-found"]')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('[data-testid="lemma-details-not-found"]')).toBeTruthy();
     expect(lemmasApi.getLemmasList.mock.calls.length).toBe(listCallsBefore);
   });
 
@@ -1118,7 +1128,6 @@ describe('LemmasExplorerPageComponent US8 — restore and navigate exact state',
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('[data-testid="lemmas-restored-not-found"]')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('[data-testid="lemma-details-not-found"]')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('[data-testid="lemmas-panel-error"]')).toBeFalsy();
   });

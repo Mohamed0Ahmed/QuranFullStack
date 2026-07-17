@@ -77,26 +77,9 @@
       </div>
     </div>
 
-    @switch (listState().status) {
-      @case ('error') {
-        <div class="qd-error-state" role="alert" data-testid="stems-list-error">
-          {{ listState().errorMessage }}
-        </div>
-      }
-      @case ('empty') {
-        <div class="qd-empty-state" data-testid="stems-list-no-results">{{ noResultsLabel }}</div>
-      }
-    }
-
-    @if (panelState().status === 'notFound') {
-      <div
-        class="qd-empty-state stems-explorer__restored-not-found"
-        role="status"
-        data-testid="stems-restored-not-found"
-      >
-        {{ panelState().errorMessage || notFoundLabel }}
-      </div>
-    }
+    <!-- Feature 030, N3 row 5: the list error/no-results states now render inside the table shell
+         and the restored-not-found state inside the details panel — both are mounted shells, so
+         neither can push the table+panel grid down the way these page-level banners did. -->
   </div>
 
   @switch (listState().status) {
@@ -106,6 +89,8 @@
           <qd-stems-table
             [rows]="listState().items"
             [loading]="listState().status === 'loading'"
+            [status]="listState().status"
+            [errorMessage]="listState().errorMessage"
             [selectedStemId]="selectedStemId()"
             [currentPage]="listState().page"
             [pageSize]="listState().pageSize"
@@ -137,6 +122,7 @@
               [selectionTitle]="panelState().summary?.stemText ?? ''"
               [loading]="panelState().status === 'loading'"
               [notFound]="panelState().status === 'notFound'"
+              [notFoundMessage]="panelState().errorMessage"
               (viewChange)="onPanelViewChange($event)"
               (close)="onClearSelection()"
             >
@@ -154,6 +140,7 @@
           [selectionTitle]="panelState().summary?.stemText ?? ''"
           [loading]="panelState().status === 'loading'"
           [notFound]="panelState().status === 'notFound'"
+          [notFoundMessage]="panelState().errorMessage"
           (viewChange)="onPanelViewChange($event)"
           (close)="onClearSelection()"
         >

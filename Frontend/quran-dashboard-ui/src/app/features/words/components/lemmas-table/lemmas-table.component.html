@@ -56,6 +56,15 @@
         </div>
       }
     </div>
+  } @else if (status() === 'error') {
+    <!-- List states live INSIDE the mounted shell (Feature 030, N3 row 5 / §17 mounted-shell
+         doctrine): as a page-level banner they inserted above the fixed table+panel grid and
+         pushed it down ~4.5rem. They replace the body, so the shell keeps its footprint. -->
+    <div class="lemmas-table__state qd-error-state" role="alert" data-testid="lemmas-list-error">
+      {{ errorMessage() }}
+    </div>
+  } @else if (status() === 'empty') {
+    <p class="lemmas-table__state qd-empty-state" data-testid="lemmas-list-no-results">{{ noResultsLabel }}</p>
   } @else if (useVirtualScroll) {
     <cdk-virtual-scroll-viewport
       class="lemmas-table__body qd-explorer-table__body"

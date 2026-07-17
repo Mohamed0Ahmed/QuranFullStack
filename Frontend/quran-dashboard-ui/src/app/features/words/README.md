@@ -100,6 +100,31 @@ Shared across explorers: `utils/explorer-table-*` (focus/keyboard-nav/scroll/col
   hairline `--qd-border-accent` edge or indicator — **never** a solid gold fill.
   Hover is always `--qd-surface-hover`. A component needing a visual rule beyond
   columns/selected-state is a signal to extend the shared base, not fork it.
+- **List states render in the table shell, selection states in the detail panel** (Feature 030, N3
+  row 5 — the §17 mounted-shell doctrine). The four normal explorers used to insert `error` /
+  `empty` / `notFound` as page-level banners **above** the fixed table+panel grid, which pushed the
+  whole grid down ~4.5rem whenever one appeared. They are now placed by **owner**, not by
+  convenience: `error` and `empty` come from `listState()` — the table genuinely has no rows — so
+  they render **inside the table shell** (`.<x>-table__state`), standing in for the body and keeping
+  the shell's footprint (`min-block-size: min(70vh, 40rem)` in the ≤1023px band, matching the body
+  it replaces; `flex: 1 1 auto` inside the desktop card). `notFound` comes from `panelState()` — a
+  restored deep-link selection is missing **while the list is fine and populated** — so it renders
+  **inside the details panel**, which is a fixed-height aside on desktop and the fixed
+  `.qd-modal.explorer-detail-modal` at ≤1023px. Putting `notFound` in the table shell would hide a
+  populated table and is **not** an option. Testids follow the new homes: the list states keep
+  `<x>-list-error` / `<x>-list-no-results` (Unique Words: `unique-words-error` /
+  `unique-words-empty`) inside the table; not-found is the panel's own `<x>-details-not-found`, and
+  the former page-level `<x>-restored-not-found` testids are **gone** on Roots/Lemmas/Stems (on
+  Lemmas/Stems they had been double-rendering the same message alongside the panel's). Overlay
+  adapters keep owning their own `overlay-<x>-not-found` branch inside the projected content and
+  leave the panel's `notFound` input **unbound** — binding it would make the panel swallow the
+  adapter's branch.
+- **Unique Words is the exception for `notFound`**: its drilldown builds restored-not-found with
+  `isOpen: false` (`utils/unique-words-drilldown.state.ts`), so at ≤1023px the drilldown modal does
+  not render at all and on desktop the inline panel shows its select-a-word prompt. Its
+  `unique-words-restored-not-found` and `unique-words-restored-error` banners therefore **stay at
+  page level** (and still shift the grid) until that state contract is revisited; only its list
+  states moved into the table shell.
 - **Labels use the TDZ getter pattern.** Read `*.labels.ts` consts via **getters**, not
   `readonly` fields — otherwise they resolve to `undefined` (temporal dead zone) in the
   test bundle. **Do not revert the getters.**
@@ -151,7 +176,7 @@ Shared across explorers: `utils/explorer-table-*` (focus/keyboard-nav/scroll/col
   phrasing **"عدد الـ…: N"** (عدد الكلمات / عدد الجذور / عدد الصيغ المعجمية / عدد الأصول الصرفية) from the
   page's existing `listState().totalCount` — no new backend read or aggregation. It sits in the toolbar
   recess beside search/sort. States: list loading → non-interactive skeleton; list error → renders nothing
-  (the page's own error state owns the message); zero results → "0". Because the total is the filtered
+  (the table shell's own error state owns the message); zero results → "0". Because the total is the filtered
   query's own count, the stat reflects search/filters by construction and never disagrees with pagination.
   Word Types uses the separate four-count scope summary, not this stat.
 - **Count-range filters** (Feature 026, US5; chips reshaped in Feature 030, N4) on the four normal

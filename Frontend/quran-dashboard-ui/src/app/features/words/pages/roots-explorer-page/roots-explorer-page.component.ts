@@ -18,7 +18,7 @@ import { RootWordsListComponent } from '../../components/root-words-list/root-wo
 import { RootCountOpenedEvent, RootsTableComponent } from '../../components/roots-table/roots-table.component';
 import { SurahOccurrencesListComponent } from '../../components/surah-occurrences-list/surah-occurrences-list.component';
 import { sortQueryValue } from '../../models/explorer-sort';
-import { ROOTS_EMPTY_SELECTION_LABEL, ROOTS_EMPTY_VIEW_LABEL, ROOTS_LIST_PAGINATION_LABEL, ROOTS_NO_RESULTS_LABEL, ROOTS_NOT_FOUND_LABEL, ROOTS_PAGE_TITLE, ROOTS_PANEL_LABEL, ROOTS_RESULT_COUNT_LABEL, ROOTS_SEARCH_LABEL, ROOTS_SEARCH_PLACEHOLDER, ROOTS_SORT_LABELS, ROOTS_SORT_OPTIONS, ROOTS_SURAHS_TABLIST_LABEL, ROOTS_SURAHS_VIEW_LABELS, ROOTS_TABLE_LABEL, ROOTS_WORDS_TABLIST_LABEL, ROOTS_WORD_VIEW_LABELS } from '../../models/roots.labels';
+import { ROOTS_EMPTY_SELECTION_LABEL, ROOTS_EMPTY_VIEW_LABEL, ROOTS_LIST_PAGINATION_LABEL, ROOTS_PAGE_TITLE, ROOTS_PANEL_LABEL, ROOTS_RESULT_COUNT_LABEL, ROOTS_SEARCH_LABEL, ROOTS_SEARCH_PLACEHOLDER, ROOTS_SORT_LABELS, ROOTS_SORT_OPTIONS, ROOTS_SURAHS_TABLIST_LABEL, ROOTS_SURAHS_VIEW_LABELS, ROOTS_TABLE_LABEL, ROOTS_WORDS_TABLIST_LABEL, ROOTS_WORD_VIEW_LABELS } from '../../models/roots.labels';
 import { DEFAULT_ROOT_SORT, DEFAULT_ROOT_VIEW, PagedResultDto, ROOTS_RANGE_METRICS, ROOT_DETAIL_PAGE_SIZE, RootListItemViewModel, RootSort, RootSurahView, RootView, RootWordItemDto, RootWordView, normalizeRootSort, toRootSummary } from '../../models/roots.models';
 import { AyahMatchDto } from '../../models/unique-words.models';
 import { RootsDetailFacade } from '../../state/roots-detail.facade';
@@ -68,8 +68,6 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly pageTitle = ROOTS_PAGE_TITLE;
   protected readonly emptySelectionLabel = ROOTS_EMPTY_SELECTION_LABEL;
   protected readonly emptyViewLabel = ROOTS_EMPTY_VIEW_LABEL;
-  protected readonly notFoundLabel = ROOTS_NOT_FOUND_LABEL;
-  protected readonly noResultsLabel = ROOTS_NO_RESULTS_LABEL;
   protected readonly searchLabel = ROOTS_SEARCH_LABEL;
   protected readonly searchPlaceholder = ROOTS_SEARCH_PLACEHOLDER;
   protected get resultCountLabel(): string { return ROOTS_RESULT_COUNT_LABEL; }

@@ -44,7 +44,7 @@
       </div>
     } @else if (notFound()) {
       <div class="qd-empty-state" role="status" data-testid="lemma-details-not-found">
-        {{ notFoundLabel }}
+        {{ notFoundMessage() || notFoundLabel }}
       </div>
     } @else {
       <ng-content />

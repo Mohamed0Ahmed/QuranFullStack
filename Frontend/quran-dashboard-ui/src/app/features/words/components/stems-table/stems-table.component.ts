@@ -3,8 +3,8 @@ import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRe
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
 
 import { WordCountChipComponent } from '../word-count-chip/word-count-chip.component';
-import { STEMS_COLUMN_COUNT_LABELS, STEMS_COLUMN_HEADERS, STEMS_LEMMA_LINK_PREFIX, STEMS_LEMMA_MISSING_ARIA, STEMS_LEMMA_MISSING_LABEL, STEMS_LOADING_LABEL, STEMS_ROOT_LINK_PREFIX, STEMS_ROOT_MISSING_ARIA, STEMS_ROOT_MISSING_LABEL, STEMS_TABLE_BODY_LABEL, STEMS_TABLE_LABEL } from '../../models/stems.labels';
-import { DEFAULT_STEM_SORT, STEMS_LIST_PAGE_SIZE, STEM_SORT_COLUMNS, StemListItemViewModel, StemSort, StemSurahView, StemView, StemWordView, normalizeStemSort } from '../../models/stems.models';
+import { STEMS_COLUMN_COUNT_LABELS, STEMS_COLUMN_HEADERS, STEMS_LEMMA_LINK_PREFIX, STEMS_LEMMA_MISSING_ARIA, STEMS_LEMMA_MISSING_LABEL, STEMS_LOADING_LABEL, STEMS_NO_RESULTS_LABEL, STEMS_ROOT_LINK_PREFIX, STEMS_ROOT_MISSING_ARIA, STEMS_ROOT_MISSING_LABEL, STEMS_TABLE_BODY_LABEL, STEMS_TABLE_LABEL } from '../../models/stems.labels';
+import { DEFAULT_STEM_SORT, LoadStatus, STEMS_LIST_PAGE_SIZE, STEM_SORT_COLUMNS, StemListItemViewModel, StemSort, StemSurahView, StemView, StemWordView, normalizeStemSort } from '../../models/stems.models';
 import { isMorphologyCountActive, MorphologyColumnKey, resolveMorphologyActiveColumn } from '../../utils/explorer-count-active';
 import { ExplorerInteractionSource, handleExplorerTableKeydown } from '../../utils/explorer-table-keydown';
 import { ExplorerTableSortController } from '../../utils/explorer-table-sort.controller';
@@ -54,6 +54,13 @@ export class StemsTableComponent {
 
   readonly rows = input.required<readonly StemListItemViewModel[]>();
   readonly loading = input(false);
+  /**
+   * The list's own status, so the error / no-results states render INSIDE this mounted shell
+   * instead of above the page grid (Feature 030, N3 row 5). `loading` still drives the skeleton
+   * body — this input is only consulted for the states that replace the body.
+   */
+  readonly status = input<LoadStatus>('idle');
+  readonly errorMessage = input('');
   readonly selectedStemId = input<number | null>(null);
   readonly currentPage = input(1);
   readonly pageSize = input(STEMS_LIST_PAGE_SIZE);
@@ -81,6 +88,9 @@ export class StemsTableComponent {
   protected readonly loadingLabel = STEMS_LOADING_LABEL;
   protected readonly tableLabel = STEMS_TABLE_LABEL;
   protected readonly tableBodyLabel = STEMS_TABLE_BODY_LABEL;
+  protected get noResultsLabel(): string {
+    return STEMS_NO_RESULTS_LABEL;
+  }
   protected readonly lemmaLinkPrefix = STEMS_LEMMA_LINK_PREFIX;
   protected readonly rootLinkPrefix = STEMS_ROOT_LINK_PREFIX;
   protected readonly loadingRowPlaceholders = Array.from({ length: 12 });

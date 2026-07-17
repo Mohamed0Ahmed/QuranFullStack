@@ -77,15 +77,11 @@
       </div>
     </div>
 
-    @switch (listState().status) {
-      @case ('error') {
-        <div class="qd-error-state" data-testid="unique-words-error">{{ listState().errorMessage }}</div>
-      }
-      @case ('empty') {
-        <div class="qd-empty-state" data-testid="unique-words-empty">{{ emptyLabel }}</div>
-      }
-    }
-
+    <!-- Feature 030, N3 row 5: the list error/no-results states moved into the table shell. The two
+         drilldown banners below CANNOT follow them: a restored-not-found word sets `isOpen: false`
+         (utils/unique-words-drilldown.state.ts), so the ≤1023px drilldown modal does not render at
+         all and the desktop inline panel shows its select-a-word prompt — hosting them there would
+         drop the message below desktop. They stay here until that state contract is revisited. -->
     @if (drilldownState().status === 'notFound') {
       <div
         class="qd-empty-state unique-words-restored-not-found"
@@ -114,6 +110,8 @@
           <qd-unique-words-table
             [rows]="listState().items"
             [loading]="listState().status === 'loading'"
+            [status]="listState().status"
+            [errorMessage]="listState().errorMessage"
             [selectedWordId]="selectedWordId()"
             [currentPage]="listState().page"
             [pageSize]="listState().pageSize"

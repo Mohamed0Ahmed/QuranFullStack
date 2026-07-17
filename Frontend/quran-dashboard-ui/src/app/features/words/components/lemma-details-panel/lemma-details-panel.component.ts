@@ -59,6 +59,8 @@ export class LemmaDetailsPanelComponent {
   readonly selectionTitle = input('');
   readonly loading = input(false);
   readonly notFound = input(false);
+  /** Server-supplied not-found text; falls back to the generic label when absent. */
+  readonly notFoundMessage = input('');
 
   readonly viewChange = output<LemmaView>();
   readonly close = output<void>();

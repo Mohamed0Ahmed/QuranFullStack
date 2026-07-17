@@ -594,7 +594,10 @@ describe('StemsExplorerPageComponent US2', () => {
     );
 
     const fixture = await initLifecycle();
-    expect(fixture.nativeElement.querySelector('[data-testid="stems-list-error"]')).toBeTruthy();
+    // Feature 030, N3 row 5: the list's own states render inside the table shell, not above the grid.
+    expect(
+      fixture.nativeElement.querySelector('[data-testid="stems-list-error"]')?.closest('.qd-explorer-table'),
+    ).toBeTruthy();
 
     stemsApi.getStemsList.mockReturnValue(
       of<ApiResponse<{ page: number; pageSize: number; totalCount: number; items: StemListItemViewModel[] }>>({
@@ -607,7 +610,9 @@ describe('StemsExplorerPageComponent US2', () => {
     queryParamMap$.next(convertToParamMap({}));
     vi.mocked(router.navigate).mockClear();
     const emptyFixture = await initLifecycle();
-    expect(emptyFixture.nativeElement.querySelector('[data-testid="stems-list-no-results"]')).toBeTruthy();
+    expect(
+      emptyFixture.nativeElement.querySelector('[data-testid="stems-list-no-results"]')?.closest('.qd-explorer-table'),
+    ).toBeTruthy();
   });
 
   describe('sorting (Feature 030, N8)', () => {
@@ -981,8 +986,13 @@ describe('StemsExplorerPageComponent US8 — restore and navigate exact state', 
     expect(stemsApi.getStemsList).toHaveBeenCalled();
 
     const root = fixture.nativeElement as HTMLElement;
-    expect(root.querySelector('[data-testid="stems-restored-not-found"]')).toBeTruthy();
-    expect(root.querySelector('[data-testid="stem-details-not-found"]')).toBeTruthy();
+    // Feature 030, N3 row 5: notFound is a PANEL/selection state — it renders inside the details
+    // panel (a mounted shell), never as a page-level banner above the table+panel grid.
+    const notFound = root.querySelector('[data-testid="stem-details-not-found"]');
+    expect(notFound).toBeTruthy();
+    expect(notFound?.getAttribute('role')).toBe('status');
+    expect(notFound?.closest('qd-stem-details-panel')).toBeTruthy();
+    expect(root.querySelector('[data-testid="stems-restored-not-found"]')).toBeNull();
     expect(root.querySelectorAll('[data-stem-tab]')).toHaveLength(0);
     expect(root.querySelector('qd-stems-table')).toBeTruthy();
   });
@@ -1006,7 +1016,7 @@ describe('StemsExplorerPageComponent US8 — restore and navigate exact state', 
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('[data-testid="stems-restored-not-found"]')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('[data-testid="stem-details-not-found"]')).toBeTruthy();
     expect(stemsApi.getStemsList.mock.calls.length).toBe(listCallsBefore);
   });
 
@@ -1119,7 +1129,6 @@ describe('StemsExplorerPageComponent US8 — restore and navigate exact state', 
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('[data-testid="stems-restored-not-found"]')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('[data-testid="stem-details-not-found"]')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('[data-testid="stems-panel-error"]')).toBeFalsy();
   });

@@ -274,7 +274,7 @@ Verdicts: **SHIFTS** = layout moves; STABLE = verified holds footprint.
 | 2 | Word Types view tabs insertion | `word-types-explorer-page.component.html:71-78` | **SHIFTS** (first load only): tabs gated on `listState().tree`. Fix: reserved slot (or render disabled — open decision N3-c) |
 | 3 | Word Types pagination unmount on view switch | `word-types-explorer-page.component.html:98-107`; facade nulls rows on view change | **SHIFTS**: ~2.75rem bar unmount/remount. Fix: reserved slot |
 | 4 | Detail-list pagination unmounts (5 lists) | `ayah-matches-list.component.html:65-73`, `root-words-list.component.html:42-50`, lemma-words-list, stem-words-list, `word-type-grouped-words-list.component.html:52-60` | **SHIFTS** inside panel bodies + overlay. Fix: always-rendered `__pagination-slot` wrapper `min-block-size: 2.75rem` (shared rule in `_explorer-detail-lists.scss`); do NOT keep `qd-pagination` mounted (it self-hides when `totalCount<=pageSize`, `pagination.component.ts:64`) |
-| 5 | Explorer page-level error/empty/notFound banners | `roots-explorer-page.component.html:51-70` (+ lemmas 64-83, stems ~76-93, unique-words 76-103) | **SHIFTS**: banner inserts ABOVE the fixed table+panel grid (~4.5rem push). Fix: open decision N3-b — reserved status slot (minimal diff) vs move states into table shells (mounted-shell doctrine, larger) |
+| 5 | Explorer page-level error/empty/notFound banners | `roots-explorer-page.component.html:51-70` (+ lemmas 64-83, stems ~76-93, unique-words 76-103) | **SHIFTS**: banner inserts ABOVE the fixed table+panel grid (~4.5rem push). Fix: open decision N3-b — reserved status slot (minimal diff) vs move states into table shells (mounted-shell doctrine, larger). **SHIPPED (2026-07-17): table-shell variant, with one documented residual — see N3-b below.** |
 | 6 | `explorer-result-count` | `.component.html:1-24`, `.scss:26-30` | **SHIFTS** on error (renders nothing); ~1.4px loading residual. Fix: same-height muted line on error + align line boxes |
 | 7 | word-types-table resolution states ≤1023px | `word-types-table.component.html:106-121`, `.scss:156-158`, `_words-explorer-layout.scss:120-123` | **SHIFTS** ≤tablet only (card ~40rem → ~5rem on empty/error/selectPrompt). Fix: `min-block-size: min(70vh, 40rem)` on `__state` in the tablet band |
 | 8 | word-type-filter first load | `word-type-filter.component.html:2,105-107` | **SHIFTS** (initial): one-line placeholder → multi-card toolbar. Fix: skeleton toolbar mirroring trigger cards + static per-breakpoint baseline; ONLY escalation candidate for full U1 ResizeObserver if wrap variance proves it |
@@ -324,10 +324,27 @@ Order inside the phase: row 1 (confirmed defect) → rows 4, 6, 14 (one-liners) 
   `selected-ayah-section` as a local copy, or extract a shared directive/utility used
   by both mushaf sections? Recommend local copy first (keeps the U1 precedent file
   untouched), extract on third consumer.
-- **N3-b (page banners):** reserved status slot (minimal diff, permanent ~4.5rem
-  empty strip) vs moving error/empty into the 4 table shells (mounted-shell doctrine
-  §17, bigger diff). Recommend the table-shell variant; ship slot-reservation if the
-  batch wants minimal risk.
+- **N3-b (page banners): DECIDED + SHIPPED (user, 2026-07-17) — the table-shell
+  variant** (mounted-shell doctrine §17); the reserved slot was rejected because its
+  permanent ~4.5rem empty strip is wasted UI. What implementation proved, and the
+  decision text did not anticipate:
+  - The three states have **different owners**. `error`/`empty` come from
+    `listState()` — list states, so the table shell is their correct home. `notFound`
+    comes from `panelState()` — a restored deep-link *selection* missing while the
+    list is fine and populated. Putting it in the table shell would **hide a populated
+    table**, so it belongs in the detail panel instead.
+  - On lemmas/stems the panel **already rendered** notFound, so the page banner was a
+    duplicate `role="status"` — deleting it removed a double announcement rather than
+    moving a message.
+  - Shells hold their footprint ≤1023px via the row-7 precedent (`min-block-size` on
+    the `__state` box in the tablet band).
+  - **Residual, deliberately deferred:** unique-words `notFound`/`restored-error` stay
+    page-level and still shift. `buildRestoredWordNotFound` sets `isOpen: false`
+    (`utils/unique-words-drilldown.state.ts:81-87`), so the ≤1023px modal does not
+    render and the desktop inline panel shows the select-a-word prompt — hosting the
+    message there would silently drop it below desktop. Closing it means flipping that
+    `isOpen` state contract (beyond N3's template/SCSS-only scope) and would pop a
+    modal backdrop for a word that does not exist. Revisit as its own item.
 - **N3-c:** Word Types view tabs — reserved slot vs render-disabled pre-tree.
 - **N3-d:** align word-types-table to 12 skeleton rows for parity while touching it.
 - **N3-e:** route-level loading placeholder = new scope; deferred out of this batch.

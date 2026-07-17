@@ -23,7 +23,7 @@ import { StemCountOpenedEvent, StemsTableComponent } from '../../components/stem
 import { StemWordsListComponent } from '../../components/stem-words-list/stem-words-list.component';
 import { SurahOccurrencesListComponent } from '../../components/surah-occurrences-list/surah-occurrences-list.component';
 import { sortQueryValue } from '../../models/explorer-sort';
-import { STEMS_EMPTY_SELECTION_LABEL, STEMS_EMPTY_VIEW_LABEL, STEMS_LIST_PAGINATION_LABEL, STEMS_LOADING_LABEL, STEMS_NO_RESULTS_LABEL, STEMS_NOT_FOUND_LABEL, STEMS_PAGE_TITLE, STEMS_PANEL_SURFACE_LABEL, STEMS_PRIMARY_LEMMA_FILTER_LABEL, STEMS_PRIMARY_LEMMA_FILTER_PLACEHOLDER, STEMS_PRIMARY_ROOT_FILTER_LABEL, STEMS_PRIMARY_ROOT_FILTER_PLACEHOLDER, STEMS_RESULT_COUNT_LABEL, STEMS_SEARCH_LABEL, STEMS_SEARCH_PLACEHOLDER, STEMS_SORT_LABELS, STEMS_SORT_OPTIONS, STEMS_SURAHS_TABLIST_LABEL, STEMS_SURAHS_VIEW_LABELS, STEMS_TABLE_LABEL, STEMS_WORDS_TABLIST_LABEL, STEMS_WORD_VIEW_LABELS } from '../../models/stems.labels';
+import { STEMS_EMPTY_SELECTION_LABEL, STEMS_EMPTY_VIEW_LABEL, STEMS_LIST_PAGINATION_LABEL, STEMS_LOADING_LABEL, STEMS_PAGE_TITLE, STEMS_PANEL_SURFACE_LABEL, STEMS_PRIMARY_LEMMA_FILTER_LABEL, STEMS_PRIMARY_LEMMA_FILTER_PLACEHOLDER, STEMS_PRIMARY_ROOT_FILTER_LABEL, STEMS_PRIMARY_ROOT_FILTER_PLACEHOLDER, STEMS_RESULT_COUNT_LABEL, STEMS_SEARCH_LABEL, STEMS_SEARCH_PLACEHOLDER, STEMS_SORT_LABELS, STEMS_SORT_OPTIONS, STEMS_SURAHS_TABLIST_LABEL, STEMS_SURAHS_VIEW_LABELS, STEMS_TABLE_LABEL, STEMS_WORDS_TABLIST_LABEL, STEMS_WORD_VIEW_LABELS } from '../../models/stems.labels';
 import { DEFAULT_STEM_SORT, DEFAULT_STEM_VIEW, PagedResultDto, STEMS_RANGE_METRICS, STEM_DETAIL_PAGE_SIZE, StemListItemViewModel, StemSort, StemSurahView, StemView, StemWordItemDto, StemWordView, normalizeStemSort } from '../../models/stems.models';
 import { AyahMatchDto, PagedResultDto as SharedPagedResultDto } from '../../models/unique-words.models';
 import { StemsDetailFacade } from '../../state/stems-detail.facade';
@@ -78,8 +78,6 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly pageTitle = STEMS_PAGE_TITLE;
   protected readonly emptySelectionLabel = STEMS_EMPTY_SELECTION_LABEL;
   protected readonly emptyViewLabel = STEMS_EMPTY_VIEW_LABEL;
-  protected readonly notFoundLabel = STEMS_NOT_FOUND_LABEL;
-  protected readonly noResultsLabel = STEMS_NO_RESULTS_LABEL;
   protected readonly searchLabel = STEMS_SEARCH_LABEL;
   protected readonly searchPlaceholder = STEMS_SEARCH_PLACEHOLDER;
   protected get resultCountLabel(): string { return STEMS_RESULT_COUNT_LABEL; }

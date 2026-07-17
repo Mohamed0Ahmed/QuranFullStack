@@ -3,6 +3,7 @@ import { getTestBed, TestBed } from '@angular/core/testing';
 
 import { RootDetailsPanelComponent } from './root-details-panel.component';
 import { ROOT_VIEW_KEYS, RootView } from '../../models/roots.models';
+import { ROOTS_NOT_FOUND_LABEL, ROOTS_PANEL_LABEL } from '../../models/roots.labels';
 
 describe('RootDetailsPanelComponent a11y (T070)', () => {
   afterEach(() => {
@@ -39,6 +40,39 @@ describe('RootDetailsPanelComponent a11y (T070)', () => {
     for (const tab of Array.from(tabs)) {
       expect(tab.getAttribute('aria-controls')).toBe('root-details-panel-surface');
     }
+  });
+
+  // Feature 030, N3 row 5: notFound is a PANEL/selection state (the list is fine and populated), so
+  // it renders here — a mounted, fixed-height shell — instead of a page banner that pushed the grid.
+  it('renders controlled not-found content without detail tabs', () => {
+    const fixture = createPanel('words');
+    fixture.componentRef.setInput('notFound', true);
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    const notFound = host.querySelector('[data-testid="root-details-not-found"]');
+    expect(notFound).toBeTruthy();
+    expect(notFound?.getAttribute('role')).toBe('status');
+    expect(notFound?.textContent?.trim()).toBe(ROOTS_NOT_FOUND_LABEL);
+    expect(host.querySelector('[role="tablist"]')).toBeNull();
+    expect(host.querySelectorAll('[role="tab"]')).toHaveLength(0);
+  });
+
+  it('prefers the server not-found message and keeps the tabpanel named once the tabs are gone', () => {
+    const fixture = createPanel('words');
+    fixture.componentRef.setInput('notFound', true);
+    fixture.componentRef.setInput('notFoundMessage', 'الجذر غير موجود');
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelector('[data-testid="root-details-not-found"]')?.textContent?.trim()).toBe(
+      'الجذر غير موجود',
+    );
+
+    // the tablist is gone, so aria-labelledby would dangle — the panel names itself instead
+    const panel = host.querySelector('[role="tabpanel"]') as HTMLElement;
+    expect(panel.getAttribute('aria-labelledby')).toBeNull();
+    expect(panel.getAttribute('aria-label')).toBe(ROOTS_PANEL_LABEL);
   });
 
   it('marks the active tab selected with roving tabindex and labels the panel', () => {

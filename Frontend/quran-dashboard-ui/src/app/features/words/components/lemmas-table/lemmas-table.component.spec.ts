@@ -3,6 +3,7 @@ import { getTestBed, TestBed } from '@angular/core/testing';
 
 import { LemmasTableComponent } from './lemmas-table.component';
 import { LemmaListItemViewModel } from '../../models/lemmas.models';
+import { LEMMAS_NO_RESULTS_LABEL } from '../../models/lemmas.labels';
 
 function row(id: number, overrides: Partial<LemmaListItemViewModel> = {}): LemmaListItemViewModel {
   return {
@@ -303,4 +304,55 @@ describe('LemmasTableComponent', () => {
       expect(button().getAttribute('aria-label')).toBe('إلغاء الترتيب حسب الصيغة المعجمية');
     });
   });
+
+  // Feature 030, N3 row 5: these states used to be page-level banners that inserted above the fixed
+  // table+panel grid and pushed it down ~4.5rem. They now stand in for the body INSIDE the mounted
+  // shell. jsdom does no layout, so the geometry itself is pinned in SCSS (`.lemmas-table__state`
+  // matches the body it replaces in every band) — these assert the structure that SCSS keys off.
+  describe('in-shell list states (Feature 030, N3 row 5)', () => {
+    it('renders the error state inside the table shell, replacing the body', () => {
+      const fixture = setup([], { status: 'error', errorMessage: 'تعذر تحميل الصيغ' });
+      const root = fixture.nativeElement as HTMLElement;
+
+      const state = root.querySelector('[data-testid="lemmas-list-error"]');
+      expect(state).toBeTruthy();
+      expect(state?.getAttribute('role')).toBe('alert');
+      expect(state?.textContent?.trim()).toBe('تعذر تحميل الصيغ');
+      expect(state?.closest('.qd-explorer-table')).toBeTruthy();
+      expect(state?.classList.contains('lemmas-table__state')).toBe(true);
+      // it REPLACES the body (rather than stacking above it) and the shell stays mounted
+      expect(root.querySelector('.qd-explorer-table__body')).toBeNull();
+      expect(root.querySelector('.qd-explorer-table__header')).toBeTruthy();
+    });
+
+    it('renders the no-results state inside the table shell, replacing the body', () => {
+      const fixture = setup([], { status: 'empty' });
+      const root = fixture.nativeElement as HTMLElement;
+
+      const state = root.querySelector('[data-testid="lemmas-list-no-results"]');
+      expect(state).toBeTruthy();
+      expect(state?.textContent?.trim()).toBe(LEMMAS_NO_RESULTS_LABEL);
+      expect(state?.closest('.qd-explorer-table')).toBeTruthy();
+      expect(state?.classList.contains('lemmas-table__state')).toBe(true);
+      expect(root.querySelector('.qd-explorer-table__body')).toBeNull();
+      expect(root.querySelector('.qd-explorer-table__header')).toBeTruthy();
+    });
+
+    it('shows the skeleton body and no state box while loading', () => {
+      const fixture = setup([], { loading: true, status: 'loading' });
+      const root = fixture.nativeElement as HTMLElement;
+
+      expect(root.querySelector('[data-testid="lemmas-table-loading"]')).toBeTruthy();
+      expect(root.querySelector('.lemmas-table__state')).toBeNull();
+    });
+
+    it('renders the body and no state box on success', () => {
+      const fixture = setup([row(1)], { status: 'success' });
+      const root = fixture.nativeElement as HTMLElement;
+
+      expect(root.querySelector('.lemmas-table__state')).toBeNull();
+      expect(root.querySelector('.qd-explorer-table__body')).toBeTruthy();
+    });
+  });
+
 });

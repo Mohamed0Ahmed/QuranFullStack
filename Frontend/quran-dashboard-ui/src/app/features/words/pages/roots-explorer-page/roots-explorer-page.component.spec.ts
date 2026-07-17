@@ -952,8 +952,17 @@ describe('RootsExplorerPageComponent state matrix (T073)', () => {
 
     const host = fixture.nativeElement as HTMLElement;
     expect(TestBed.inject(RootsDetailFacade).status()).toBe('notFound');
-    expect(host.querySelector('[data-testid="roots-restored-not-found"]')).toBeTruthy();
 
+    // Feature 030, N3 row 5: notFound is a PANEL/selection state, so it renders inside the details
+    // panel (a mounted shell) and never as a page-level banner that pushes the table+panel grid down.
+    const notFound = host.querySelector('[data-testid="root-details-not-found"]');
+    expect(notFound).toBeTruthy();
+    expect(notFound?.getAttribute('role')).toBe('status');
+    expect(notFound?.textContent?.trim()).toBe('الجذر غير موجود');
+    expect(notFound?.closest('qd-root-details-panel')).toBeTruthy();
+    expect(host.querySelector('[data-testid="roots-restored-not-found"]')).toBeNull();
+
+    // the list is fine and populated — a missing selection must never hide the table
     expect(host.querySelector('qd-roots-table')).toBeTruthy();
     expect(host.querySelector('[data-testid="roots-table-root-button"]')).toBeTruthy();
   });
@@ -975,7 +984,11 @@ describe('RootsExplorerPageComponent state matrix (T073)', () => {
     fixture.detectChanges();
 
     expect(TestBed.inject(RootsExplorerFacade).status()).toBe('empty');
-    expect(fixture.nativeElement.querySelector('[data-testid="roots-list-no-results"]')).toBeTruthy();
+
+    // Feature 030, N3 row 5: the list's own states render inside the table shell, not above the grid.
+    const noResults = fixture.nativeElement.querySelector('[data-testid="roots-list-no-results"]');
+    expect(noResults).toBeTruthy();
+    expect(noResults.closest('.qd-explorer-table')).toBeTruthy();
   });
 });
 

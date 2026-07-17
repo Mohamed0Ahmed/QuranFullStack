@@ -23,7 +23,7 @@ import { LemmaCountOpenedEvent, LemmasTableComponent } from '../../components/le
 import { MissingSurahsListComponent } from '../../components/missing-surahs-list/missing-surahs-list.component';
 import { SurahOccurrencesListComponent } from '../../components/surah-occurrences-list/surah-occurrences-list.component';
 import { sortQueryValue } from '../../models/explorer-sort';
-import { LEMMAS_EMPTY_SELECTION_LABEL, LEMMAS_EMPTY_VIEW_LABEL, LEMMAS_LIST_PAGINATION_LABEL, LEMMAS_LOADING_LABEL, LEMMAS_NO_RESULTS_LABEL, LEMMAS_NOT_FOUND_LABEL, LEMMAS_PAGE_TITLE, LEMMAS_PANEL_SURFACE_LABEL, LEMMAS_RESULT_COUNT_LABEL, LEMMAS_ROOT_FILTER_LABEL, LEMMAS_ROOT_FILTER_PLACEHOLDER, LEMMAS_SEARCH_LABEL, LEMMAS_SEARCH_PLACEHOLDER, LEMMAS_SORT_LABELS, LEMMAS_SORT_OPTIONS, LEMMAS_SURAHS_TABLIST_LABEL, LEMMAS_SURAHS_VIEW_LABELS, LEMMAS_TABLE_LABEL, LEMMAS_WORDS_TABLIST_LABEL, LEMMAS_WORD_VIEW_LABELS } from '../../models/lemmas.labels';
+import { LEMMAS_EMPTY_SELECTION_LABEL, LEMMAS_EMPTY_VIEW_LABEL, LEMMAS_LIST_PAGINATION_LABEL, LEMMAS_LOADING_LABEL, LEMMAS_PAGE_TITLE, LEMMAS_PANEL_SURFACE_LABEL, LEMMAS_RESULT_COUNT_LABEL, LEMMAS_ROOT_FILTER_LABEL, LEMMAS_ROOT_FILTER_PLACEHOLDER, LEMMAS_SEARCH_LABEL, LEMMAS_SEARCH_PLACEHOLDER, LEMMAS_SORT_LABELS, LEMMAS_SORT_OPTIONS, LEMMAS_SURAHS_TABLIST_LABEL, LEMMAS_SURAHS_VIEW_LABELS, LEMMAS_TABLE_LABEL, LEMMAS_WORDS_TABLIST_LABEL, LEMMAS_WORD_VIEW_LABELS } from '../../models/lemmas.labels';
 import { DEFAULT_LEMMA_SORT, DEFAULT_LEMMA_VIEW, LEMMAS_RANGE_METRICS, LEMMA_DETAIL_PAGE_SIZE, LemmaListItemViewModel, LemmaSort, LemmaSurahView, LemmaView, LemmaWordItemDto, LemmaWordView, PagedResultDto, normalizeLemmaSort } from '../../models/lemmas.models';
 import { AyahMatchDto, PagedResultDto as SharedPagedResultDto } from '../../models/unique-words.models';
 import { LemmasDetailFacade } from '../../state/lemmas-detail.facade';
@@ -76,8 +76,6 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly pageTitle = LEMMAS_PAGE_TITLE;
   protected readonly emptySelectionLabel = LEMMAS_EMPTY_SELECTION_LABEL;
   protected readonly emptyViewLabel = LEMMAS_EMPTY_VIEW_LABEL;
-  protected readonly notFoundLabel = LEMMAS_NOT_FOUND_LABEL;
-  protected readonly noResultsLabel = LEMMAS_NO_RESULTS_LABEL;
   protected readonly searchLabel = LEMMAS_SEARCH_LABEL;
   protected readonly searchPlaceholder = LEMMAS_SEARCH_PLACEHOLDER;
   protected get resultCountLabel(): string { return LEMMAS_RESULT_COUNT_LABEL; }

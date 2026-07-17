@@ -59,6 +59,8 @@ export class StemDetailsPanelComponent {
   readonly selectionTitle = input('');
   readonly loading = input(false);
   readonly notFound = input(false);
+  /** Server-supplied not-found text; falls back to the generic label when absent. */
+  readonly notFoundMessage = input('');
 
   readonly viewChange = output<StemView>();
   readonly close = output<void>();

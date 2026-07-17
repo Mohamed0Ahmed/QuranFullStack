@@ -15,6 +15,7 @@ import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrollin
 
 import { WordCountChipComponent } from '../word-count-chip/word-count-chip.component';
 import {
+  EMPTY_LIST_LABEL,
   LOADING_LABEL,
   OCCURRENCES_CHIP_LABEL,
   ROW_NUMBER_HEADER,
@@ -28,6 +29,7 @@ import {
 } from '../../models/unique-words.labels';
 import {
   DEFAULT_UNIQUE_WORD_SORT,
+  LoadStatus,
   UNIQUE_WORDS_PAGE_SIZE,
   UNIQUE_WORD_SORT_COLUMNS,
   UniqueWordListItemViewModel,
@@ -86,6 +88,13 @@ export class UniqueWordsTableComponent {
 
   readonly rows = input.required<readonly UniqueWordListItemViewModel[]>();
   readonly loading = input(false);
+  /**
+   * The list's own status, so the error / no-results states render INSIDE this mounted shell
+   * instead of above the page grid (Feature 030, N3 row 5). `loading` still drives the skeleton
+   * body — this input is only consulted for the states that replace the body.
+   */
+  readonly status = input<LoadStatus>('idle');
+  readonly errorMessage = input('');
   readonly selectedWordId = input<number | null>(null);
   readonly currentPage = input(1);
   readonly pageSize = input(UNIQUE_WORDS_PAGE_SIZE);
@@ -180,6 +189,10 @@ export class UniqueWordsTableComponent {
 
   protected get tableLabel(): string {
     return UNIQUE_WORD_TABLE_LABEL;
+  }
+
+  protected get noResultsLabel(): string {
+    return EMPTY_LIST_LABEL;
   }
 
   protected get tableBodyLabel(): string {

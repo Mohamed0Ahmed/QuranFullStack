@@ -3,8 +3,8 @@ import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRe
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
 
 import { WordCountChipComponent } from '../word-count-chip/word-count-chip.component';
-import { LEMMAS_COLUMN_COUNT_LABELS, LEMMAS_COLUMN_HEADERS, LEMMAS_LOADING_LABEL, LEMMAS_ROOT_MISSING_ARIA, LEMMAS_ROOT_MISSING_LABEL, LEMMAS_ROOT_LINK_PREFIX, LEMMAS_TABLE_BODY_LABEL, LEMMAS_TABLE_LABEL } from '../../models/lemmas.labels';
-import { DEFAULT_LEMMA_SORT, LEMMAS_LIST_PAGE_SIZE, LEMMA_SORT_COLUMNS, LemmaListItemViewModel, LemmaSort, LemmaSurahView, LemmaView, LemmaWordView, normalizeLemmaSort } from '../../models/lemmas.models';
+import { LEMMAS_COLUMN_COUNT_LABELS, LEMMAS_COLUMN_HEADERS, LEMMAS_LOADING_LABEL, LEMMAS_NO_RESULTS_LABEL, LEMMAS_ROOT_MISSING_ARIA, LEMMAS_ROOT_MISSING_LABEL, LEMMAS_ROOT_LINK_PREFIX, LEMMAS_TABLE_BODY_LABEL, LEMMAS_TABLE_LABEL } from '../../models/lemmas.labels';
+import { DEFAULT_LEMMA_SORT, LEMMAS_LIST_PAGE_SIZE, LEMMA_SORT_COLUMNS, LemmaListItemViewModel, LemmaSort, LemmaSurahView, LemmaView, LemmaWordView, LoadStatus, normalizeLemmaSort } from '../../models/lemmas.models';
 import { isMorphologyCountActive, MorphologyColumnKey, resolveMorphologyActiveColumn } from '../../utils/explorer-count-active';
 import { ExplorerInteractionSource, handleExplorerTableKeydown } from '../../utils/explorer-table-keydown';
 import { ExplorerTableSortController } from '../../utils/explorer-table-sort.controller';
@@ -64,6 +64,13 @@ export class LemmasTableComponent {
 
   readonly rows = input.required<readonly LemmaListItemViewModel[]>();
   readonly loading = input(false);
+  /**
+   * The list's own status, so the error / no-results states render INSIDE this mounted shell
+   * instead of above the page grid (Feature 030, N3 row 5). `loading` still drives the skeleton
+   * body — this input is only consulted for the states that replace the body.
+   */
+  readonly status = input<LoadStatus>('idle');
+  readonly errorMessage = input('');
   readonly selectedLemmaId = input<number | null>(null);
   readonly currentPage = input(1);
   readonly pageSize = input(LEMMAS_LIST_PAGE_SIZE);
@@ -90,6 +97,9 @@ export class LemmasTableComponent {
   protected readonly loadingLabel = LEMMAS_LOADING_LABEL;
   protected readonly tableLabel = LEMMAS_TABLE_LABEL;
   protected readonly tableBodyLabel = LEMMAS_TABLE_BODY_LABEL;
+  protected get noResultsLabel(): string {
+    return LEMMAS_NO_RESULTS_LABEL;
+  }
   protected readonly rootLinkPrefix = LEMMAS_ROOT_LINK_PREFIX;
   protected readonly rootMissingAria = LEMMAS_ROOT_MISSING_ARIA;
   protected readonly rootMissingLabel = LEMMAS_ROOT_MISSING_LABEL;

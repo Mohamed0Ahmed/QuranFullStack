@@ -1,37 +1,40 @@
 <ng-template #panelBody>
-  <div
-    class="explorer-detail-panel__toolbar explorer-detail-panel__toolbar--grid-5 root-details-panel__tabs"
-    role="tablist"
-    [attr.aria-label]="rootsPanelLabel"
-    #tabList
-  >
-    @for (tab of tabs; track tab.key) {
-      <button
-        type="button"
-        class="qd-btn qd-btn-secondary root-details-panel__tab"
-        role="tab"
-        [id]="tabDomId(tab.key)"
-        [attr.data-root-tab]="tab.key"
-        [attr.data-testid]="'root-details-tab-' + tab.key"
-        [attr.aria-controls]="surfaceDomId"
-        [attr.aria-selected]="isActive(tab.key) && hasSelection()"
-        [attr.aria-label]="tab.aria"
-        [attr.tabindex]="isActive(tab.key) && hasSelection() ? 0 : -1"
-        [class.qd-is-selected]="isActive(tab.key) && hasSelection()"
-        [disabled]="emptySelection()"
-        (click)="selectView(tab.key)"
-        (keydown)="onTabKeydown($event, tab.key)"
-      >
-        {{ tab.label }}
-      </button>
-    }
-  </div>
+  @if (!notFound()) {
+    <div
+      class="explorer-detail-panel__toolbar explorer-detail-panel__toolbar--grid-5 root-details-panel__tabs"
+      role="tablist"
+      [attr.aria-label]="rootsPanelLabel"
+      #tabList
+    >
+      @for (tab of tabs; track tab.key) {
+        <button
+          type="button"
+          class="qd-btn qd-btn-secondary root-details-panel__tab"
+          role="tab"
+          [id]="tabDomId(tab.key)"
+          [attr.data-root-tab]="tab.key"
+          [attr.data-testid]="'root-details-tab-' + tab.key"
+          [attr.aria-controls]="surfaceDomId"
+          [attr.aria-selected]="isActive(tab.key) && hasSelection()"
+          [attr.aria-label]="tab.aria"
+          [attr.tabindex]="isActive(tab.key) && hasSelection() ? 0 : -1"
+          [class.qd-is-selected]="isActive(tab.key) && hasSelection()"
+          [disabled]="emptySelection()"
+          (click)="selectView(tab.key)"
+          (keydown)="onTabKeydown($event, tab.key)"
+        >
+          {{ tab.label }}
+        </button>
+      }
+    </div>
+  }
 
   <div
     class="explorer-detail-panel__body root-details-panel__surface"
     role="tabpanel"
     [id]="surfaceDomId"
-    [attr.aria-labelledby]="tabDomId(view())"
+    [attr.aria-labelledby]="notFound() ? null : tabDomId(view())"
+    [attr.aria-label]="notFound() ? rootsPanelLabel : null"
     [attr.aria-busy]="loading() ? true : null"
     tabindex="0"
     data-testid="root-details-panel-surface"
@@ -39,6 +42,10 @@
     @if (emptySelection()) {
       <div class="qd-empty-state" data-testid="root-details-empty-selection">
         {{ emptySelectionLabel }}
+      </div>
+    } @else if (notFound()) {
+      <div class="qd-empty-state" role="status" data-testid="root-details-not-found">
+        {{ notFoundMessage() || notFoundLabel }}
       </div>
     } @else {
       <ng-content />

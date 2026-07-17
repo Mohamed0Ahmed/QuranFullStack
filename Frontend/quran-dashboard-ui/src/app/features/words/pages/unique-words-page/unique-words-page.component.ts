@@ -37,7 +37,6 @@ import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
 import { sortQueryValue } from '../../models/explorer-sort';
 import {
   ACTIVE_HUB_SECTION,
-  EMPTY_LIST_LABEL,
   RESTORED_WORD_NOT_FOUND_LABEL,
   SEARCH_LABEL,
   SEARCH_PLACEHOLDER,
@@ -117,7 +116,6 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
 
   protected readonly listState = this.facade.listState;
   protected readonly drilldownState = this.facade.drilldownState;
-  protected readonly emptyLabel = EMPTY_LIST_LABEL;
   protected readonly restoredNotFoundLabel = RESTORED_WORD_NOT_FOUND_LABEL;
   protected readonly pageTitle = ACTIVE_HUB_SECTION.labelAr;
   protected readonly listPaginationLabel = UNIQUE_WORD_LIST_PAGINATION_LABEL;
