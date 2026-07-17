@@ -101,12 +101,18 @@ export function currentExplorerRowId(
   return Number.isFinite(rowId) ? rowId : null;
 }
 
+// Column headers own their own controls (the N8 sort buttons, and anything added there later),
+// so arrow keys from a header must never reach row/detail navigation. Row count chips are NOT
+// blocked — arrowing out of a focused chip is the intended way to move between counts and rows.
+const BLOCKED_EXPLORER_KEYBOARD_ANCESTORS =
+  '.qd-pagination, .qd-explorer-table__sort-button, th, [role="columnheader"]';
+
 export function isBlockedExplorerKeyboardTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) {
     return false;
   }
 
-  if (target.closest('.qd-pagination')) {
+  if (target.closest(BLOCKED_EXPLORER_KEYBOARD_ANCESTORS)) {
     return true;
   }
 

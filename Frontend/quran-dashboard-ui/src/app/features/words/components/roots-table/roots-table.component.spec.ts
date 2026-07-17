@@ -219,6 +219,55 @@ describe('RootsTableComponent', () => {
     });
   });
 
+  it('leaves arrow keys to a focused sort header instead of moving the selected row', () => {
+    const fixture = setup([row(1), row(2)], {
+      selectedRootId: 1,
+      activeView: 'ayahs',
+      activeColumn: 'ayahs',
+    });
+    const emitted: unknown[] = [];
+    fixture.componentInstance.countOpened.subscribe((event) => emitted.push(event));
+
+    const sortButton = fixture.nativeElement.querySelector(
+      '[data-testid="roots-table-sort-surahs"]',
+    ) as HTMLElement;
+    const event = new KeyboardEvent('keydown', {
+      key: 'ArrowDown',
+      bubbles: true,
+      cancelable: true,
+    });
+    sortButton.dispatchEvent(event);
+    fixture.detectChanges();
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(emitted).toEqual([]);
+  });
+
+  it('still navigates on arrow keys pressed from a row count chip', () => {
+    const fixture = setup([row(1), row(2)], {
+      selectedRootId: 1,
+      activeView: 'ayahs',
+      activeColumn: 'ayahs',
+    });
+    const emitted: { root: RootListItemViewModel; column?: string; source?: string }[] = [];
+    fixture.componentInstance.countOpened.subscribe((event) => emitted.push(event));
+
+    const chipButton = fixture.nativeElement.querySelector(
+      'qd-word-count-chip button',
+    ) as HTMLElement;
+    const event = new KeyboardEvent('keydown', {
+      key: 'ArrowDown',
+      bubbles: true,
+      cancelable: true,
+    });
+    chipButton.dispatchEvent(event);
+    fixture.detectChanges();
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(emitted).toHaveLength(1);
+    expect(emitted[0]).toMatchObject({ root: row(2), column: 'ayahs', source: 'keyboard' });
+  });
+
   describe('column-header sorting (Feature 030, N8)', () => {
     function headerCellFor(root: HTMLElement, key: string): HTMLElement {
       const button = root.querySelector(`[data-testid="roots-table-sort-${key}"]`) as HTMLElement;
