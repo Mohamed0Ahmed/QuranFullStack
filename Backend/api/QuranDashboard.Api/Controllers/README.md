@@ -21,6 +21,22 @@ and the `ApiResponse<T>` envelope; application handlers own use-case logic.
   and expose no paging parameter. Invalid kind/id/filter/paging → `400`, an absent scoped group → `404`,
   and an out-of-range page → `200` with an empty page.
 
+## Splitting an oversized controller
+
+Controllers have a 300-line hard limit (`../../../.architecture/BACKEND_STRUCTURE.md`). Two shapes
+are in use, and they are not interchangeable:
+
+- **A new route family → a new controller class.** `WordTypeGroupedDetailsController` is the
+  precedent: it shares the `…/word-types/table` route base without growing `WordTypesController`.
+- **An existing endpoint group → a `partial` part of the same class.** `RootsController` (list) +
+  `RootsController.Details.cs` (per-root detail/drilldown) and `WordTypesController`
+  (tree/words/table/scope-counts) + `WordTypesController.Details.cs` (per-word detail) follow this.
+  Swashbuckle derives each operation's OpenAPI `tags` from the controller **class name**, so moving
+  *existing* actions to a *new class* would retag them and change the exported spec. Keep the class
+  name and the split is invisible to `swagger.json`. The part carrying the primary constructor owns
+  the shared handlers, the `[ApiController]`/`[Route]` attributes, and the paging defaults; the other
+  parts declare only `public sealed partial class <Name>` and their actions.
+
 ## Boundary
 
 - Controllers delegate to Application handlers under `../../../application/`; they do not
