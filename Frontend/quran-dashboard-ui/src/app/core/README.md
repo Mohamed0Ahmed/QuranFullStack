@@ -23,7 +23,11 @@ per-feature.
 - `caching/api-response-cache.ts` — shared response cache (feature caches build on the
   same idea; keep the key strategy consistent).
 - `layout/` — `app-shell`, `top-navbar`, `footer`, `shell-layout.model.ts`.
-- `navigation/` — `route-paths.ts` (canonical route constants) + `nav-items.ts`.
+- `navigation/` — `route-paths.ts` (canonical route constants, plus `navLabel(key)` for a
+  nav item's Arabic label) + `nav-items.ts` + `app-title.strategy.ts` (the `TitleStrategy`
+  registered in `app.config.ts`: browser-tab title = `<route title> — المنهج القرآني`, and
+  the brand alone on the titleless `dashboard`/home route; each route supplies its own
+  `title` from its nav label or explorer page-title constant).
 - `navigation/detail-overlay/` — the app-wide floating detail-overlay navigation layer
   (Feature 029, Change B): `detail-overlay.models.ts` (versioned `v1~…` frame union — the
   URL contract, deliberately decoupled from Words models), `detail-overlay-url-codec.ts`

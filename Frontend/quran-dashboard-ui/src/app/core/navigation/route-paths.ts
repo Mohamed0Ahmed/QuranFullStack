@@ -1,11 +1,20 @@
-import { NAV_ITEMS } from './nav-items';
+import { NAV_ITEMS, NavItem } from './nav-items';
 
-function navRoute(key: string): string {
-  const item = NAV_ITEMS.find((navItem) => navItem.key === key);
+function navItem(key: string): NavItem {
+  const item = NAV_ITEMS.find((candidate) => candidate.key === key);
   if (!item) {
     throw new Error(`Unknown navigation key: ${key}`);
   }
-  return item.route;
+  return item;
+}
+
+function navRoute(key: string): string {
+  return navItem(key).route;
+}
+
+/** Arabic display label for a nav item — the source of truth for that route's tab title. */
+export function navLabel(key: string): string {
+  return navItem(key).labelAr;
 }
 
 export const MUSHAF_ROUTE_PATH = navRoute('mushaf');

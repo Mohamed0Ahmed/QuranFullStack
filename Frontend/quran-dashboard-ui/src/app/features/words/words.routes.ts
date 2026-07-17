@@ -7,6 +7,12 @@ import {
   WORDS_TYPES_SEGMENT,
   WORDS_UNIQUE_MODE_SEGMENT,
 } from '../../core/navigation/route-paths';
+// Tab titles reuse each explorer's own page-title label (its <h1>) so the two never drift.
+import { LEMMAS_PAGE_TITLE } from './models/lemmas.labels';
+import { ROOTS_PAGE_TITLE } from './models/roots.labels';
+import { STEMS_PAGE_TITLE } from './models/stems.labels';
+import { ACTIVE_HUB_SECTION } from './models/unique-words.labels';
+import { WORD_TYPES_PAGE_TITLE } from './models/word-types.labels';
 
 const loadWordsHubPage = () =>
   import('./pages/words-hub-page/words-hub-page.component').then(
@@ -46,26 +52,31 @@ export const WORDS_HUB_ROUTE = {
 export const WORDS_UNIQUE_MODE_ROUTE = {
   path: WORDS_UNIQUE_MODE_SEGMENT,
   loadComponent: loadUniqueWordsPage,
+  title: ACTIVE_HUB_SECTION.labelAr,
 } as const;
 
 export const WORDS_ROOTS_ROUTE = {
   path: WORDS_ROOTS_SEGMENT,
   loadComponent: loadRootsExplorerPage,
+  title: ROOTS_PAGE_TITLE,
 } as const;
 
 export const WORDS_LEMMAS_ROUTE = {
   path: WORDS_LEMMAS_SEGMENT,
   loadComponent: loadLemmasExplorerPage,
+  title: LEMMAS_PAGE_TITLE,
 } as const;
 
 export const WORDS_STEMS_ROUTE = {
   path: WORDS_STEMS_SEGMENT,
   loadComponent: loadStemsExplorerPage,
+  title: STEMS_PAGE_TITLE,
 } as const;
 
 export const WORDS_TYPES_ROUTE = {
   path: WORDS_TYPES_SEGMENT,
   loadComponent: loadWordTypesExplorerPage,
+  title: WORD_TYPES_PAGE_TITLE,
 } as const;
 
 export const WORDS_ROUTES: Routes = [
