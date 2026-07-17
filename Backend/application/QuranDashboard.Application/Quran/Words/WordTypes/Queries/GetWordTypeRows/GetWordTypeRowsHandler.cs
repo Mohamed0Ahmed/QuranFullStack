@@ -75,7 +75,7 @@ public sealed class GetWordTypeRowsHandler(
             filter.Search is not null,
             query.Page,
             query.PageSize,
-            sortValue,
+            sort.CanonicalToken(),
             page.TotalCount,
             page.Items.Count);
 
