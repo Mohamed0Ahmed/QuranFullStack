@@ -389,6 +389,52 @@ describe('StemsExplorerPageComponent US2', () => {
     });
   });
 
+  it('does not navigate or refetch when the already-active single type chip is clicked', async () => {
+    stemsApi.getStemAyahMatches.mockReturnValue(successAyahsResponse());
+    queryParamMap$.next(convertToParamMap({ stem: '500', view: 'ayahs', detailPage: '1' }));
+
+    const fixture = await initLifecycle();
+    const chip = fixture.nativeElement.querySelector('[data-testid="stem-ayah-type-filter-N"]') as HTMLButtonElement;
+    expect(chip.getAttribute('aria-pressed')).toBe('true');
+
+    vi.mocked(router.navigate).mockClear();
+    const ayahCallsBeforeClick = stemsApi.getStemAyahMatches.mock.calls.length;
+
+    chip.click();
+    await fixture.whenStable();
+
+    expect(router.navigate).not.toHaveBeenCalled();
+    expect(stemsApi.getStemAyahMatches.mock.calls.length).toBe(ayahCallsBeforeClick);
+  });
+
+  it('does not navigate or refetch when the already-active عرض الكل chip is clicked', async () => {
+    stemsApi.getStemSummary.mockReturnValue(
+      of<ApiResponse<StemSummaryDto>>({
+        isSuccess: true,
+        data: { ...listRow(500), typeDistribution: multiTypeSummary() },
+        message: null,
+        errors: null,
+      }),
+    );
+    stemsApi.getStemAyahMatches.mockReturnValue(successAyahsResponse());
+    queryParamMap$.next(convertToParamMap({ stem: '500', view: 'ayahs', detailPage: '1' }));
+
+    const fixture = await initLifecycle();
+    const allChip = fixture.nativeElement.querySelector(
+      '[data-testid="stem-ayah-type-filter-all"]',
+    ) as HTMLButtonElement;
+    expect(allChip.getAttribute('aria-pressed')).toBe('true');
+
+    vi.mocked(router.navigate).mockClear();
+    const ayahCallsBeforeClick = stemsApi.getStemAyahMatches.mock.calls.length;
+
+    allChip.click();
+    await fixture.whenStable();
+
+    expect(router.navigate).not.toHaveBeenCalled();
+    expect(stemsApi.getStemAyahMatches.mock.calls.length).toBe(ayahCallsBeforeClick);
+  });
+
   it('clears typeCode when عرض الكل is selected', async () => {
     stemsApi.getStemSummary.mockReturnValue(
       of<ApiResponse<StemSummaryDto>>({

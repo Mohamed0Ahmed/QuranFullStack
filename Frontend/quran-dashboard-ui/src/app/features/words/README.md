@@ -132,9 +132,20 @@ Shared across explorers: `utils/explorer-table-*` (focus/keyboard-nav/scroll/col
   (Feature 029, U2): the shared filter host is a **full-width second row** of
   `.qd-explorer-controls-secondary` (`flex: 1 1 100%` on the component host) below the sort control
   on all four pages, so expanding the `<details>` panel grows its own row and never moves the sort.
+- **Ayah type chips** (lemmas and stems only — roots have none, Word Types detail is per-type by
+  construction, and `type-distribution-list` is display-only) narrow the ayahs tab by `typeCode`, and
+  render at four sites: the two explorer pages and their two overlay adapters. **Clicking a chip that
+  already renders active (`aria-pressed="true"`) is a complete no-op** (Feature 030, N1): the guard sits
+  in the chip components' `selectTypeCode`, ahead of the emit, so no state call, no URL write, and no HTTP
+  request happen from any of the four sites. The downstream page/adapter guards are kept as defense in
+  depth. **The single-type chip and `عرض الكل` render active while `selectedTypeCode()` is `null`, and
+  that active state is VISUAL ONLY** — the only-type code is deliberately never written to state or the
+  URL, because shared-URL identity and the `aria-pressed` contract tests depend on the convention; do not
+  "normalize" it away. Accepted consequence (N1-a): re-clicking the active type while on detail page > 1
+  no longer resets to page 1 — pagination owns page navigation.
 - **Association filters** (Feature 026, US7) narrow three of the normal explorers by a related dimension,
   using the shared presentational `explorer-association-filter` search-select (an inline search field whose
-  input opens a focus-driven popover holding the options list, with the current selection shown as a badge
+  input opens a popover holding the options list, with the current selection shown as a badge
   plus a clear affordance; RTL, `aria`; options stay plain `aria-pressed` buttons, not a listbox — see the
   Feature 027 controls-layout bullet below for the popover interaction). URL keys (all optional,
   additive, parsed **fail-closed**): Unique Words `primaryType` (POS code) + `rootId`; Lemmas `rootId`;
@@ -159,12 +170,17 @@ Shared across explorers: `utils/explorer-table-*` (focus/keyboard-nav/scroll/col
   the sort `<select>` plus `explorer-count-range-filter`; the headline result-count stat stays visible. The
   former `qd-unique-words-search-bar` is retired — its input is now the shared row's main input, its sort
   select a page-level secondary-row `<select>` — with the `unique-words-search-input`/`unique-words-sort-select`
-  testids preserved. `explorer-association-filter`'s popover is now focus-driven rather than a `<details>`
-  disclosure: it opens on field focus or typing and closes on Escape (focus restored to the field),
-  outside-click, focus leaving the component (`focusout`), or selecting an option, with no focus trap and
-  single-open behavior (focusing a sibling field closes the previous); `aria-expanded`/`aria-controls`/
-  `aria-haspopup="true"` sit on the field, and options stay plain Tab-reachable `aria-pressed` buttons, not a
-  listbox (no arrow-key/`aria-activedescendant` model, deliberate). The panel floats above
+  testids preserved. `explorer-association-filter`'s popover is field-driven rather than a `<details>`
+  disclosure (Feature 030, N5): it opens on typing, on `ArrowDown`/`Alt+ArrowDown` (which also moves focus
+  to the first option), or on field focus **only when the field already carries a selection or a query** —
+  an empty, unselected field stays closed on focus, and `ArrowDown` is the keyboard route in. It closes on
+  Escape (focus restored to the field, with the reopen guard), outside-click, focus leaving the component
+  (`focusout`), or selecting an option, with no focus trap and single-open behavior (focusing a sibling
+  field closes the previous); `aria-expanded`/`aria-controls`/`aria-haspopup="true"` sit on the field, and
+  options stay plain Tab-reachable `aria-pressed` buttons, not a listbox (no roving arrow-key/
+  `aria-activedescendant` model, deliberate). Re-opening on a selection never re-fetches, so a URL-restored
+  server-searched picker may open with no options until the user types (accepted; `searchChange` stays
+  typing-driven). The panel floats above
   `.uw-toolbar-recess` (unclipped, RTL-anchored under the field, viewport-aware height limit). **Unchanged:**
   every URL query key, the url-sync contract, all data-testids, search debounce/semantics, and the
   association-filter public inputs/outputs.

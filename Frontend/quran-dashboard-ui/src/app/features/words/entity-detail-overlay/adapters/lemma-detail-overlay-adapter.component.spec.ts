@@ -257,6 +257,36 @@ describe('LemmaDetailOverlayAdapterComponent (Feature 029 B4)', () => {
     });
   });
 
+  it('does not replace the frame or refetch when the already-active type chip is clicked', async () => {
+    const fixture = await createAdapter(frameOf({ view: 'ayahs', typeCode: 'V', detailPage: 2 }));
+    const host = fixture.nativeElement as HTMLElement;
+
+    const chip = host.querySelector('[data-testid="lemma-ayah-type-filter-V"]') as HTMLButtonElement;
+    expect(chip.getAttribute('aria-pressed')).toBe('true');
+    const ayahCallsBeforeClick = apiStub.getLemmaAyahMatches.mock.calls.length;
+
+    chip.click();
+    await fixture.whenStable();
+
+    expect(replaceTopFrame).not.toHaveBeenCalled();
+    expect(apiStub.getLemmaAyahMatches.mock.calls.length).toBe(ayahCallsBeforeClick);
+  });
+
+  it('does not replace the frame or refetch when the already-active عرض الكل chip is clicked', async () => {
+    const fixture = await createAdapter(frameOf({ view: 'ayahs', typeCode: null, detailPage: 2 }));
+    const host = fixture.nativeElement as HTMLElement;
+
+    const allChip = host.querySelector('[data-testid="lemma-ayah-type-filter-all"]') as HTMLButtonElement;
+    expect(allChip.getAttribute('aria-pressed')).toBe('true');
+    const ayahCallsBeforeClick = apiStub.getLemmaAyahMatches.mock.calls.length;
+
+    allChip.click();
+    await fixture.whenStable();
+
+    expect(replaceTopFrame).not.toHaveBeenCalled();
+    expect(apiStub.getLemmaAyahMatches.mock.calls.length).toBe(ayahCallsBeforeClick);
+  });
+
   it('re-drives its own controller from a frame input change (URL sync loop)', async () => {
     const fixture = await createAdapter(frameOf({ view: 'words', wordView: 'simple' }));
 

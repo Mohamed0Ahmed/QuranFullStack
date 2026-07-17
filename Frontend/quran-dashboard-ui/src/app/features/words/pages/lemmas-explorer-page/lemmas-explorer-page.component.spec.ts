@@ -314,6 +314,14 @@ describe('LemmasExplorerPageComponent US1', () => {
   });
 
   it('updates URL with typeCode and resets detail page when a type filter is selected', async () => {
+    lemmasApi.getLemmaSummary.mockReturnValue(
+      of<ApiResponse<LemmaSummaryDto>>({
+        isSuccess: true,
+        data: { ...listRow(500), typeDistribution: multiTypeSummary() },
+        message: null,
+        errors: null,
+      }),
+    );
     lemmasApi.getLemmaAyahMatches.mockReturnValue(successAyahsResponse());
     queryParamMap$.next(convertToParamMap({ lemma: '500', view: 'ayahs', detailPage: '1' }));
 
@@ -331,6 +339,54 @@ describe('LemmasExplorerPageComponent US1', () => {
       }),
       queryParamsHandling: 'merge',
     });
+  });
+
+  it('does not navigate or refetch when the already-active single type chip is clicked', async () => {
+    lemmasApi.getLemmaAyahMatches.mockReturnValue(successAyahsResponse());
+    queryParamMap$.next(convertToParamMap({ lemma: '500', view: 'ayahs', detailPage: '1' }));
+
+    const fixture = await initLifecycle();
+    const chip = fixture.nativeElement.querySelector(
+      '[data-testid="lemma-ayah-type-filter-N"]',
+    ) as HTMLButtonElement;
+    expect(chip.getAttribute('aria-pressed')).toBe('true');
+
+    vi.mocked(router.navigate).mockClear();
+    const ayahCallsBeforeClick = lemmasApi.getLemmaAyahMatches.mock.calls.length;
+
+    chip.click();
+    await fixture.whenStable();
+
+    expect(router.navigate).not.toHaveBeenCalled();
+    expect(lemmasApi.getLemmaAyahMatches.mock.calls.length).toBe(ayahCallsBeforeClick);
+  });
+
+  it('does not navigate or refetch when the already-active عرض الكل chip is clicked', async () => {
+    lemmasApi.getLemmaSummary.mockReturnValue(
+      of<ApiResponse<LemmaSummaryDto>>({
+        isSuccess: true,
+        data: { ...listRow(500), typeDistribution: multiTypeSummary() },
+        message: null,
+        errors: null,
+      }),
+    );
+    lemmasApi.getLemmaAyahMatches.mockReturnValue(successAyahsResponse());
+    queryParamMap$.next(convertToParamMap({ lemma: '500', view: 'ayahs', detailPage: '1' }));
+
+    const fixture = await initLifecycle();
+    const allChip = fixture.nativeElement.querySelector(
+      '[data-testid="lemma-ayah-type-filter-all"]',
+    ) as HTMLButtonElement;
+    expect(allChip.getAttribute('aria-pressed')).toBe('true');
+
+    vi.mocked(router.navigate).mockClear();
+    const ayahCallsBeforeClick = lemmasApi.getLemmaAyahMatches.mock.calls.length;
+
+    allChip.click();
+    await fixture.whenStable();
+
+    expect(router.navigate).not.toHaveBeenCalled();
+    expect(lemmasApi.getLemmaAyahMatches.mock.calls.length).toBe(ayahCallsBeforeClick);
   });
 
   it('clears typeCode when عرض الكل is selected', async () => {

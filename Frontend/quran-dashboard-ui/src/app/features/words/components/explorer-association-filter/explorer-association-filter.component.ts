@@ -27,7 +27,7 @@ let nextPanelId = 0;
 
 /**
  * Presentational association-filter picker (Feature 026 US7, Feature 027 popover refactor). A
- * labeled search field whose input doubles as the anchor for a FOCUS-driven popover panel; used for
+ * labeled search field whose input doubles as the anchor for a popover panel; used for
  * the Unique Words primary type / primary root, Lemmas root, and Stems primary root/lemma filters.
  * It owns no data: the page supplies <c>options</c> (loaded via the existing roots/lemmas apis or the
  * word-types tree read) and reacts to <c>searchChange</c>; selecting an option emits
@@ -36,10 +36,12 @@ let nextPanelId = 0;
  * - <c>clientFilter</c> = true (small static lists, e.g. the type select): filters options locally.
  * - <c>clientFilter</c> = false (roots/lemmas): the page server-searches and passes the results in.
  *
- * Popover model: the field input opens the panel on focus (see <c>onFieldFocus</c>) or on typing (see
- * <c>onQueryInput</c>). It closes on Escape, an outside click, focus leaving the whole component, or a
- * selection — never via a separate disclosure trigger. There is no focus trap and no arrow-key/listbox
- * model: options stay plain Tab-reachable buttons (see the template comment above the options list).
+ * Popover model: the panel opens on typing (see <c>onQueryInput</c>), on ArrowDown (see
+ * <c>onFieldKeydown</c>), or on focus only when the field already carries a selection or a query (see
+ * <c>onFieldFocus</c>) — a plain empty field stays closed. It closes on Escape, an outside click, focus
+ * leaving the whole component, or a selection — never via a separate disclosure trigger. There is no
+ * focus trap and no roving arrow-key/listbox model: ArrowDown only opens the panel and hands focus to
+ * the first option, which stays a plain Tab-reachable button (see the template comment above the list).
  */
 @Component({
   selector: 'qd-explorer-association-filter',
@@ -155,11 +157,29 @@ export class ExplorerAssociationFilterComponent {
     }
   }
 
+  // Focus alone opens the panel only when there is something to show back: an active selection (so the
+  // user can revise it) or a query already in the field. An empty, unselected field stays closed —
+  // ArrowDown (see onFieldKeydown) is the keyboard route in.
   protected onFieldFocus(): void {
     if (this.reopenSuppressed) {
       return;
     }
+    if (!this.hasSelection() && this.query().trim().length === 0) {
+      return;
+    }
     this.openPanel();
+  }
+
+  // ArrowDown (bare or Alt+ArrowDown, both key === 'ArrowDown') is the combobox escape hatch: it opens
+  // the panel even from an empty field and hands focus to the first option, so keyboard users can browse
+  // without typing.
+  protected onFieldKeydown(event: KeyboardEvent): void {
+    if (event.key !== 'ArrowDown') {
+      return;
+    }
+    event.preventDefault();
+    this.openPanel();
+    requestAnimationFrame(() => this.focusFirstOption());
   }
 
   protected onFieldBlur(): void {
@@ -196,6 +216,12 @@ export class ExplorerAssociationFilterComponent {
   private openPanel(): void {
     this.panelOpen.set(true);
     requestAnimationFrame(() => this.applyPanelMaxHeight());
+  }
+
+  private focusFirstOption(): void {
+    this.panelRef()
+      ?.nativeElement.querySelector<HTMLButtonElement>('.association-filter__option')
+      ?.focus();
   }
 
   private applyPanelMaxHeight(): void {
