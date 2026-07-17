@@ -78,11 +78,18 @@
   /* Ayah-hover wash — the ONE documented exception to the single hover fill (§16.1):
      --qd-surface-hover is imperceptible on the parchment reading canvas (ΔL≈0.022 vs
      --qd-bg). Shares the selection indicator's hue family so it reads as "pre-selection"
-     and sits below the 16% selected-word wash in the intensity ladder. The ladder is
-     approximate — selection mixes into --qd-surface, hover into --qd-bg — so the 10%
-     is calibrated live in the 8–12% band, not proven by the percentages alone.
-     Derived from theme vars: resolves automatically per theme (10% gold-into-navy in dark). */
-  --qd-mushaf-ayah-hover-bg: color-mix(in oklch, var(--qd-mushaf-word-selection-indicator) 10%, var(--qd-bg));
+     and sits below the selected-word wash in the intensity ladder.
+     8% is CALIBRATED, not guessed (N7-b, measured in-browser on the real canvas): the
+     ladder cannot be read off the percentages, because selection mixes 16% into
+     --qd-surface (L 0.994) while hover mixes into --qd-bg (L 0.967), and the different
+     bases very nearly cancel the gap. Measured against the real selected-word wash
+     (L 0.913): 10% lands at ΔL 0.006 — indistinguishable from selection — and 12%, the
+     top of the sanctioned band, INVERTS the ladder (hover darker than selection). 8%
+     keeps hover perceptible against the canvas (ΔL 0.038, ~1.7x the 0.022 baseline)
+     while staying visibly below selection (ΔL 0.016). Re-measure if either base tone,
+     the indicator, or the 16% selection mix changes.
+     Derived from theme vars: resolves automatically per theme (8% gold-into-navy in dark). */
+  --qd-mushaf-ayah-hover-bg: color-mix(in oklch, var(--qd-mushaf-word-selection-indicator) 8%, var(--qd-bg));
   --qd-mushaf-ayah-marker-font-size: 1.5rem;
   --qd-mushaf-ayah-marker-color: var(--qd-text-muted);
   --qd-mushaf-sticky-top: var(--qd-space-3);
