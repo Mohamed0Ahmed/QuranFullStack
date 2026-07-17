@@ -15,10 +15,30 @@ import {
 } from '../models/word-types.models';
 import { WordTypesCache, WordTypesCacheKeys } from './word-types-cache';
 import { WordTypesDetailController, WordTypesWordDetailUrlState } from './word-types-detail.controller';
-import { WordTypesDetailViewLoader } from './word-types-detail-view.loader';
+import { WordTypesDetailViewHandlers, WordTypesDetailViewLoader } from './word-types-detail-view.loader';
 
 function identityOf(overrides: Partial<WordTypeRowIdentity> = {}): WordTypeRowIdentity {
   return { tashkeelWordId: 7, contextCode: 'noun', case: 'all', tense: 'all', voice: 'all', ...overrides };
+}
+
+/** Unmistakably synthetic, non-scriptural ayah-match rows for detail-response fixtures. */
+function ayahsPageOf(wordText: string): PagedResultDto<WordTypeAyahMatchDto> {
+  return {
+    page: 1,
+    pageSize: 100,
+    totalCount: 1,
+    items: [
+      {
+        ayahNumber: 1,
+        verseKey: '1:1',
+        pageNumber: 1,
+        surahNumber: 1,
+        matchedWordIds: [1],
+        matchedWordPositions: [1],
+        words: [{ quranWordId: 1, textUthmani: wordText, isAyahMarker: false }],
+      },
+    ],
+  };
 }
 
 function summaryOf(identity: WordTypeRowIdentity): WordTypeSummaryDto {
@@ -221,6 +241,151 @@ describe('WordTypesDetailController (route-independent, Feature 029 B4)', () => 
     expect(panel.errorMessage).toBe(WORD_TYPES_ERROR_LABEL);
     expect(loadActiveView).not.toHaveBeenCalled();
   });
+
+  describe('stale DETAIL responses across a composite word identity transition (Feature 030, C1)', () => {
+    // The SAME tashkeel word id under two different contexts: two distinct composite
+    // identities that must never cross-serve each other's detail responses.
+    const nounContext = identityOf({ tashkeelWordId: 5, contextCode: 'noun' });
+    const verbContext = identityOf({ tashkeelWordId: 5, contextCode: 'past' });
+
+    /**
+     * Selects the noun-context row (summary resolves, so its detail load is
+     * registered and left in flight), then selects the same word id under the verb
+     * context, whose summary stays pending. Returns the noun row's captured detail
+     * handlers so the test can land its response late.
+     */
+    function selectNounContextThenPendingVerbContext(): {
+      controller: WordTypesDetailController;
+      staleHandlers: WordTypesDetailViewHandlers;
+      verbContextSummary: Subject<ApiResponse<WordTypeSummaryDto>>;
+    } {
+      const verbContextSummary = new Subject<ApiResponse<WordTypeSummaryDto>>();
+      const { controller, loadActiveView } = createController({
+        summary: (identity) =>
+          identity.contextCode === 'noun' ? of(ok(summaryOf(nounContext))) : verbContextSummary.asObservable(),
+      });
+
+      controller.applyUrlState(urlState(nounContext));
+      const staleHandlers = loadActiveView.mock.calls[0][1] as WordTypesDetailViewHandlers;
+
+      controller.applyUrlState(urlState(verbContext));
+      expect(controller.panelState().selectedRow).toEqual(verbContext);
+
+      return { controller, staleHandlers, verbContextSummary };
+    }
+
+    it('ignores the previous identity detail response while the new identity summary is pending', () => {
+      const { controller, staleHandlers } = selectNounContextThenPendingVerbContext();
+
+      staleHandlers.onAyahs(ok(ayahsPageOf('كلمة-اختبار-١')));
+
+      const panel = controller.panelState();
+      expect(panel.selectedRow).toEqual(verbContext);
+      expect(panel.ayahs).toBeNull();
+      expect(panel.status).toBe('loading');
+    });
+
+    it('ignores the previous identity detail response after the new identity summary succeeds', () => {
+      const { controller, staleHandlers, verbContextSummary } = selectNounContextThenPendingVerbContext();
+
+      verbContextSummary.next(ok(summaryOf(verbContext)));
+      verbContextSummary.complete();
+      staleHandlers.onAyahs(ok(ayahsPageOf('كلمة-اختبار-١')));
+
+      const panel = controller.panelState();
+      expect(panel.summary?.displayText).toBe(summaryOf(verbContext).displayText);
+      expect(panel.ayahs).toBeNull();
+    });
+
+    it('ignores the previous identity detail response after the new identity summary 404s', () => {
+      const { controller, staleHandlers, verbContextSummary } = selectNounContextThenPendingVerbContext();
+
+      verbContextSummary.error(new HttpErrorResponse({ status: 404 }));
+      expect(controller.panelState().status).toBe('notFound');
+
+      staleHandlers.onAyahs(ok(ayahsPageOf('كلمة-اختبار-١')));
+
+      const panel = controller.panelState();
+      expect(panel.status).toBe('notFound');
+      expect(panel.selectedRow).toEqual(verbContext);
+      expect(panel.ayahs).toBeNull();
+    });
+
+    it('ignores the previous identity detail response after the new identity summary fails in transport', () => {
+      const { controller, staleHandlers, verbContextSummary } = selectNounContextThenPendingVerbContext();
+
+      verbContextSummary.error(new HttpErrorResponse({ status: 500 }));
+      expect(controller.panelState().status).toBe('error');
+
+      staleHandlers.onError(new HttpErrorResponse({ status: 503 }));
+      staleHandlers.onAyahs(ok(ayahsPageOf('كلمة-اختبار-١')));
+
+      const panel = controller.panelState();
+      expect(panel.status).toBe('error');
+      expect(panel.selectedRow).toEqual(verbContext);
+      expect(panel.errorMessage).toBe(WORD_TYPES_ERROR_LABEL);
+      expect(panel.ayahs).toBeNull();
+    });
+  });
+
+  describe('retryCurrentIdentity (Feature 030, M3)', () => {
+    it('recovers from a summary transport error and loads the same identity on retry', () => {
+      let attempt = 0;
+      const { controller, loadActiveView } = createController({
+        summary: (identity) => {
+          attempt += 1;
+          return attempt === 1
+            ? throwError(() => new HttpErrorResponse({ status: 500 }))
+            : of(ok(summaryOf(identity)));
+        },
+      });
+      const identity = identityOf({ tashkeelWordId: 4 });
+
+      controller.applyUrlState(urlState(identity));
+      expect(controller.panelState().status).toBe('error');
+
+      controller.retryCurrentIdentity();
+
+      const panel = controller.panelState();
+      expect(panel.status).toBe('loading');
+      expect(panel.summary?.displayText).toBe(summaryOf(identity).displayText);
+      expect(loadActiveView).toHaveBeenCalledTimes(1);
+      expect(loadActiveView).toHaveBeenCalledWith(
+        expect.objectContaining({ view: 'ayahs', detailPage: 1 }),
+        expect.anything(),
+      );
+    });
+
+    it('recovers from a detail transport error by reloading the view without re-reading the summary', () => {
+      const { controller, api, loadActiveView } = createController({
+        summary: (identity) => of(ok(summaryOf(identity))),
+      });
+
+      controller.applyUrlState(urlState(identityOf({ tashkeelWordId: 4 })));
+      const handlers = loadActiveView.mock.calls[0][1] as WordTypesDetailViewHandlers;
+      handlers.onError(new HttpErrorResponse({ status: 500 }));
+      expect(controller.panelState().status).toBe('error');
+
+      controller.retryCurrentIdentity();
+      const retryHandlers = loadActiveView.mock.calls[1][1] as WordTypesDetailViewHandlers;
+      retryHandlers.onAyahs(ok(ayahsPageOf('كلمة-اختبار-٢')));
+
+      const panel = controller.panelState();
+      expect(panel.status).toBe('success');
+      expect(panel.ayahs?.items[0].words[0].textUthmani).toBe('كلمة-اختبار-٢');
+      expect(api.getSummary).toHaveBeenCalledTimes(1);
+      expect(loadActiveView).toHaveBeenCalledTimes(2);
+    });
+
+    it('is a no-op without a selected identity', () => {
+      const { controller, api } = createController({ summary: (identity) => of(ok(summaryOf(identity))) });
+
+      controller.retryCurrentIdentity();
+
+      expect(api.getSummary).not.toHaveBeenCalled();
+      expect(controller.panelState().status).toBe('idle');
+    });
+  });
 });
 
 describe('WordTypesDetailController cache keys (existing WordTypesCacheKeys)', () => {
@@ -270,7 +435,7 @@ describe('WordTypesDetailController cache keys (existing WordTypesCacheKeys)', (
           surahNumber: 2,
           matchedWordIds: [1],
           matchedWordPositions: [1],
-          words: [{ quranWordId: 1, textUthmani: 'ٱلْكِتَـٰبُ', isAyahMarker: false }],
+          words: [{ quranWordId: 1, textUthmani: 'كلمة-اختبار', isAyahMarker: false }],
         },
       ],
     };

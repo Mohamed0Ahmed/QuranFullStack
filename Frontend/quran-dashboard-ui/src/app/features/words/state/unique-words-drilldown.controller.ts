@@ -1,6 +1,6 @@
 import { Injectable, OnDestroy, computed, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Subscription, of } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 
 import { ApiResponse } from '../../../core/data-access/api-response.model';
@@ -13,13 +13,9 @@ import {
 import {
   DEFAULT_AYAH_PAGE,
   DEFAULT_AYAH_PAGE_SIZE,
-  PagedResultDto,
-  UniqueWordAyahMatchDto,
   UniqueWordKind,
   UniqueWordListItemDto,
-  UniqueWordMissingSurahsDto,
   UniqueWordSummaryDto,
-  UniqueWordSurahsDto,
   WordDrilldownState,
   WordDrilldownView,
 } from '../models/unique-words.models';
@@ -33,6 +29,7 @@ import {
   buildSurahsDrilldownUpdate,
   extractDrilldownMessage,
 } from '../utils/unique-words-drilldown.state';
+import { DetailRequestLifecycle } from './detail-request-lifecycle';
 import { UniqueWordsCache, UniqueWordsCacheKeys } from './unique-words-cache';
 
 /**
@@ -76,13 +73,18 @@ const INITIAL_DRILLDOWN: WordDrilldownState = {
 /**
  * Route-independent unique-word drilldown controller (Feature 029, Change B4).
  *
- * Owns the drilldown signal state, the summary/detail subscriptions, and every
+ * Owns the drilldown signal state, the summary/drilldown requests, and every
  * load path — with zero knowledge of routes or URLs. Consumers drive it either
  * through `applyUrlState` (the route-free entry point: the page facade forwards
  * parsed query state, the overlay adapter forwards its typed frame) or through
  * the direct drilldown methods. The root-scoped `UniqueWordsApi`/
  * `UniqueWordsCache` collaborators stay shared, so the page drilldown and the
  * global overlay de-duplicate the same reads (`UniqueWordsCacheKeys` unchanged).
+ *
+ * Every complete-identity transition abandons BOTH the summary and the drilldown
+ * request and opens a new generation, so a late response from the previously
+ * selected word can never populate or overwrite this one — see
+ * {@link DetailRequestLifecycle}.
  *
  * Not `providedIn: 'root'`: the page facade owns one instance, and each overlay
  * adapter provides its own component-scoped instance (destroyed with the
@@ -92,9 +94,7 @@ const INITIAL_DRILLDOWN: WordDrilldownState = {
 export class UniqueWordsDrilldownController implements OnDestroy {
   private readonly _drilldown = signal<WordDrilldownState>(INITIAL_DRILLDOWN);
 
-  private drilldownSub?: Subscription;
-  private summarySub?: Subscription;
-
+  private readonly requests = new DetailRequestLifecycle();
   private activeModalUrlState: ModalUrlState | null = null;
 
   readonly drilldownState = computed(() => this._drilldown());
@@ -109,7 +109,7 @@ export class UniqueWordsDrilldownController implements OnDestroy {
   }
 
   openDrilldown(word: UniqueWordListItemDto, view: WordDrilldownView): void {
-    const summary = toUniqueWordSummary(word);
+    const token = this.requests.beginTransition();
     this.activeModalUrlState = {
       mode: word.kind,
       wordId: word.id,
@@ -121,11 +121,11 @@ export class UniqueWordsDrilldownController implements OnDestroy {
       isOpen: true,
       selectedWordId: word.id,
       view,
-      summary,
+      summary: toUniqueWordSummary(word),
       ayahPage: DEFAULT_AYAH_PAGE,
       status: 'loading',
     });
-    this.loadDrilldownView(view, word.kind, word.id, DEFAULT_AYAH_PAGE);
+    this.loadDrilldownView(view, word.kind, word.id, DEFAULT_AYAH_PAGE, token);
   }
 
   setDrilldownView(view: WordDrilldownView): void {
@@ -139,6 +139,7 @@ export class UniqueWordsDrilldownController implements OnDestroy {
     }
 
     const nextAyahPage = view === 'ayahs' ? current.ayahPage : DEFAULT_AYAH_PAGE;
+    const token = this.requests.beginTransition();
     this.activeModalUrlState = {
       mode: current.summary.kind,
       wordId: current.selectedWordId,
@@ -152,7 +153,7 @@ export class UniqueWordsDrilldownController implements OnDestroy {
       errorMessage: '',
       ayahPage: nextAyahPage,
     }));
-    this.loadDrilldownView(view, current.summary.kind, current.selectedWordId, this._drilldown().ayahPage);
+    this.loadDrilldownView(view, current.summary.kind, current.selectedWordId, nextAyahPage, token);
   }
 
   setAyahPage(page: number): void {
@@ -161,6 +162,7 @@ export class UniqueWordsDrilldownController implements OnDestroy {
       return;
     }
 
+    const token = this.requests.beginTransition();
     this.activeModalUrlState = {
       mode: current.summary.kind,
       wordId: current.selectedWordId,
@@ -168,7 +170,7 @@ export class UniqueWordsDrilldownController implements OnDestroy {
       ayahPage: page,
     };
     this._drilldown.update((s) => ({ ...s, ayahPage: page, status: 'loading', errorMessage: '' }));
-    this.loadDrilldownView('ayahs', current.summary.kind, current.selectedWordId, page);
+    this.loadDrilldownView('ayahs', current.summary.kind, current.selectedWordId, page, token);
   }
 
   closeDrilldown(): void {
@@ -177,7 +179,7 @@ export class UniqueWordsDrilldownController implements OnDestroy {
   }
 
   /**
-   * Disposes any in-flight summary/detail HTTP subscription without touching the currently-held
+   * Disposes any in-flight summary/drilldown HTTP subscription without touching the currently-held
    * drilldown state (perf finding F3). Called on page/facade unbind (component destroy or
    * navigation away) so a request that outlives the page can no longer mutate held state
    * offscreen. `activeModalUrlState` is cleared so that returning to the SAME URL is never
@@ -186,10 +188,7 @@ export class UniqueWordsDrilldownController implements OnDestroy {
    * the state stuck mid-load.
    */
   cancelPendingWork(): void {
-    this.summarySub?.unsubscribe();
-    this.summarySub = undefined;
-    this.drilldownSub?.unsubscribe();
-    this.drilldownSub = undefined;
+    this.requests.cancelAll();
     this.activeModalUrlState = null;
   }
 
@@ -216,17 +215,40 @@ export class UniqueWordsDrilldownController implements OnDestroy {
       return;
     }
 
-    this.activeModalUrlState = nextState;
-    this.restoreOrUpdateModal(nextState);
+    this.applyIdentity(nextState);
   }
 
   /**
-   * Reuses the held summary only when it describes the very word the URL now asks for. The
+   * Re-drives the current complete identity after a failed load (Feature 030,
+   * M3). The identity is unchanged, so {@link applyUrlState} would short-circuit
+   * it; retry re-enters the load path directly. A failed read is never cached,
+   * so this issues a real request, while an intact summary still resolves from
+   * the held state and only the drilldown view reloads. `cancelPendingWork()`
+   * clears the identity, so a retry after unbind is correctly a no-op.
+   */
+  retryCurrentIdentity(): void {
+    const state = this.activeModalUrlState;
+    if (state === null) {
+      return;
+    }
+
+    this.applyIdentity(state);
+  }
+
+  /**
+   * Drives a complete identity: abandons the previous identity's summary and
+   * drilldown requests, then either reloads only the active view or reloads the
+   * summary first.
+   *
+   * The held summary is reused only when it describes the very word the URL now asks for. The
    * summary's own `kind` must match the requested mode: `selectedWordId` alone is ambiguous
    * across modes, so matching on it would serve the previous mode's word and details.
    */
-  private restoreOrUpdateModal(nextState: ModalUrlState): void {
+  private applyIdentity(nextState: ModalUrlState): void {
+    const token = this.requests.beginTransition();
+    this.activeModalUrlState = nextState;
     const current = this._drilldown();
+
     if (
       current.isOpen &&
       current.selectedWordId === nextState.wordId &&
@@ -245,15 +267,15 @@ export class UniqueWordsDrilldownController implements OnDestroy {
         current.summary.kind,
         nextState.wordId,
         nextState.ayahPage,
+        token,
       );
       return;
     }
 
-    this.loadSummaryAndRestore(nextState.mode, nextState);
+    this.loadSummaryAndRestore(nextState.mode, nextState, token);
   }
 
-  private loadSummaryAndRestore(mode: UniqueWordKind, nextState: ModalUrlState): void {
-    this.summarySub?.unsubscribe();
+  private loadSummaryAndRestore(mode: UniqueWordKind, nextState: ModalUrlState, token: number): void {
     this._drilldown.set({
       ...INITIAL_DRILLDOWN,
       isOpen: true,
@@ -263,36 +285,45 @@ export class UniqueWordsDrilldownController implements OnDestroy {
       status: 'loading',
     });
 
-    this.summarySub = this.cache
-      .getOrLoad(UniqueWordsCacheKeys.summary(mode, nextState.wordId), () =>
-        this.api.getSummary(mode, nextState.wordId),
-      )
-      .pipe(
-        tap((response) => {
-          if (!response.isSuccess || !response.data) {
-            this.handleRestoredWordNotFound(response.message ?? '');
-            return;
-          }
-          this.openRestoredDrilldown(response.data, nextState);
-        }),
-        catchError((err) => {
-          if (err instanceof HttpErrorResponse && err.status === 404) {
-            const message = this.extractErrorMessage(err, RESTORED_WORD_NOT_FOUND_LABEL);
-            this.handleRestoredWordNotFound(message);
-            return of(undefined);
-          }
+    this.requests.trackSummary(
+      this.cache
+        .getOrLoad(UniqueWordsCacheKeys.summary(mode, nextState.wordId), () =>
+          this.api.getSummary(mode, nextState.wordId),
+        )
+        .pipe(
+          tap((response) => {
+            if (!this.requests.isCurrent(token)) {
+              return;
+            }
 
-          const message = this.extractErrorMessage(err, RESTORED_WORD_LOAD_ERROR_LABEL);
-          this.handleRestoredWordLoadError(message);
-          return of(undefined);
-        }),
-      )
-      .subscribe();
+            if (!response.isSuccess || !response.data) {
+              this.handleRestoredWordNotFound(response.message ?? '');
+              return;
+            }
+            this.openRestoredDrilldown(response.data, nextState, token);
+          }),
+          catchError((err) => {
+            if (!this.requests.isCurrent(token)) {
+              return of(undefined);
+            }
+
+            if (err instanceof HttpErrorResponse && err.status === 404) {
+              this.handleRestoredWordNotFound(this.extractErrorMessage(err, RESTORED_WORD_NOT_FOUND_LABEL));
+              return of(undefined);
+            }
+
+            this.handleRestoredWordLoadError(this.extractErrorMessage(err, RESTORED_WORD_LOAD_ERROR_LABEL));
+            return of(undefined);
+          }),
+        )
+        .subscribe(),
+    );
   }
 
   private openRestoredDrilldown(
     summary: UniqueWordSummaryDto,
     nextState: ModalUrlState,
+    token: number,
   ): void {
     this._drilldown.update((s) => ({
       ...s,
@@ -301,7 +332,7 @@ export class UniqueWordsDrilldownController implements OnDestroy {
       ayahPage: nextState.ayahPage,
       status: 'loading',
     }));
-    this.loadDrilldownView(nextState.view, summary.kind, summary.id, nextState.ayahPage);
+    this.loadDrilldownView(nextState.view, summary.kind, summary.id, nextState.ayahPage, token);
   }
 
   private handleRestoredWordNotFound(message: string): void {
@@ -330,81 +361,84 @@ export class UniqueWordsDrilldownController implements OnDestroy {
     kind: UniqueWordKind,
     wordId: number,
     ayahPage: number,
+    token: number,
   ): void {
-    this.drilldownSub?.unsubscribe();
-
     if (view === 'surahs') {
-      this.drilldownSub = this.cache
-        .getOrLoad(UniqueWordsCacheKeys.surahs(kind, wordId), () =>
+      this.trackDrilldownRead(
+        this.cache.getOrLoad(UniqueWordsCacheKeys.surahs(kind, wordId), () =>
           this.api.getMentionedSurahs(kind, wordId),
-        )
-        .pipe(
-          tap((response) => this.handleSurahsResponse(response)),
-          catchError((err) => {
-            this.handleDrilldownError(err);
-            return of(undefined);
-          }),
-        )
-        .subscribe();
+        ),
+        token,
+        buildSurahsDrilldownUpdate,
+      );
       return;
     }
 
     if (view === 'missing') {
-      const current = this._drilldown();
-      if (current.missingSurahs !== null) {
-        const missingSurahs = current.missingSurahs;
-        this._drilldown.update((s) => ({
+      // Already-held missing surahs answer synchronously, so there is no subscription to
+      // cancel — only the generation guard keeps this off a newer word's panel.
+      const heldMissingSurahs = this._drilldown().missingSurahs;
+      if (heldMissingSurahs !== null) {
+        this.requests.trackDetail(undefined);
+        this.applyIfCurrent(token, (s) => ({
           ...s,
-          missingSurahs,
-          status: missingSurahs.surahs.length === 0 ? 'empty' : 'success',
+          missingSurahs: heldMissingSurahs,
+          status: heldMissingSurahs.surahs.length === 0 ? 'empty' : 'success',
           errorMessage: '',
         }));
         return;
       }
 
-      this.drilldownSub = this.cache
-        .getOrLoad(UniqueWordsCacheKeys.missing(kind, wordId), () =>
+      this.trackDrilldownRead(
+        this.cache.getOrLoad(UniqueWordsCacheKeys.missing(kind, wordId), () =>
           this.api.getMissingSurahs(kind, wordId),
-        )
-        .pipe(
-          tap((response) => this.handleMissingSurahsResponse(response)),
-          catchError((err) => {
-            this.handleDrilldownError(err);
-            return of(undefined);
-          }),
-        )
-        .subscribe();
+        ),
+        token,
+        buildMissingSurahsDrilldownUpdate,
+      );
       return;
     }
 
-    this.drilldownSub = this.cache
-      .getOrLoad(UniqueWordsCacheKeys.ayahs(kind, wordId, ayahPage), () =>
+    this.trackDrilldownRead(
+      this.cache.getOrLoad(UniqueWordsCacheKeys.ayahs(kind, wordId, ayahPage), () =>
         this.api.getAyahMatches(kind, wordId, ayahPage, DEFAULT_AYAH_PAGE_SIZE),
-      )
-      .pipe(
-        tap((response) => this.handleAyahsResponse(response)),
-        catchError((err) => {
-          this.handleDrilldownError(err);
-          return of(undefined);
-        }),
-      )
-      .subscribe();
+      ),
+      token,
+      buildAyahsDrilldownUpdate,
+    );
   }
 
-  private handleSurahsResponse(response: ApiResponse<UniqueWordSurahsDto>): void {
-    this._drilldown.update((s) => ({ ...s, ...buildSurahsDrilldownUpdate(response) }));
+  /**
+   * Registers one drilldown view read as the current generation's detail request and routes both
+   * its response and its failure through the generation guard.
+   */
+  private trackDrilldownRead<T>(
+    read$: Observable<ApiResponse<T>>,
+    token: number,
+    buildUpdate: (response: ApiResponse<T>) => Partial<WordDrilldownState>,
+  ): void {
+    this.requests.trackDetail(
+      read$
+        .pipe(
+          tap((response) => this.applyIfCurrent(token, (s) => ({ ...s, ...buildUpdate(response) }))),
+          catchError((err) => {
+            this.handleDrilldownError(err, token);
+            return of(undefined);
+          }),
+        )
+        .subscribe(),
+    );
   }
 
-  private handleMissingSurahsResponse(response: ApiResponse<UniqueWordMissingSurahsDto>): void {
-    this._drilldown.update((s) => ({ ...s, ...buildMissingSurahsDrilldownUpdate(response) }));
+  /** Applies a drilldown update only while `token` still owns the panel. */
+  private applyIfCurrent(token: number, update: (state: WordDrilldownState) => WordDrilldownState): void {
+    if (this.requests.isCurrent(token)) {
+      this._drilldown.update(update);
+    }
   }
 
-  private handleAyahsResponse(response: ApiResponse<PagedResultDto<UniqueWordAyahMatchDto>>): void {
-    this._drilldown.update((s) => ({ ...s, ...buildAyahsDrilldownUpdate(response) }));
-  }
-
-  private handleDrilldownError(err: unknown): void {
-    this._drilldown.update((s) => ({ ...s, ...buildDrilldownErrorUpdate(err, DRILLDOWN_ERROR_LABEL) }));
+  private handleDrilldownError(err: unknown, token: number): void {
+    this.applyIfCurrent(token, (s) => ({ ...s, ...buildDrilldownErrorUpdate(err, DRILLDOWN_ERROR_LABEL) }));
   }
 
   private extractErrorMessage(err: unknown, fallback: string): string {

@@ -1,7 +1,7 @@
 import { Injectable, OnDestroy, computed, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Observable, Subscription, of } from 'rxjs';
-import { catchError, map, tap } from 'rxjs/operators';
+import { of } from 'rxjs';
+import { catchError, tap } from 'rxjs/operators';
 
 import { RootsApi } from '../data-access/roots.api';
 import {
@@ -20,6 +20,7 @@ import {
   RootsPanelState,
   isPaginatedRootView,
 } from '../models/roots.models';
+import { DetailRequestLifecycle } from './detail-request-lifecycle';
 import { RootsCache, RootsCacheKeys } from './roots-cache';
 import {
   buildAyahsPanelUpdate,
@@ -88,17 +89,18 @@ export function rootsDetailUrlStatesEqual(
  * `RootsApi`/`RootsCache`/`RootsDetailViewLoader` collaborators stay shared, so
  * the explorer side panel and the global overlay de-duplicate the same reads.
  *
- * Every identity transition cancels the prior summary/detail subscription so a
- * stale response can never overwrite a newer state. Not `providedIn: 'root'`:
- * the page facade owns one instance, and each overlay adapter provides its own
- * component-scoped instance (destroyed with the adapter).
+ * Every complete-identity transition abandons BOTH the summary and the detail
+ * request and opens a new generation, so a late response from the previously
+ * selected root can never populate or overwrite this one — see
+ * {@link DetailRequestLifecycle}. Not `providedIn: 'root'`: the page facade owns
+ * one instance, and each overlay adapter provides its own component-scoped
+ * instance (destroyed with the adapter).
  */
 @Injectable()
 export class RootsDetailController implements OnDestroy {
   private readonly _panel = signal<RootsPanelState>(INITIAL_PANEL);
 
-  private summarySub?: Subscription;
-  private detailSub?: Subscription;
+  private readonly requests = new DetailRequestLifecycle();
   private activeUrlState: RootsDetailUrlState | null = null;
 
   readonly panelState = computed(() => this._panel());
@@ -116,39 +118,44 @@ export class RootsDetailController implements OnDestroy {
   /**
    * Route-free entry point: synchronize the panel to a complete detail state
    * (`null` clears the selection). Identical states short-circuit via complete
-   * identity comparison; a same-root sub-state change reuses the loaded summary
-   * and reloads only the active view; a new root cancels the pending summary
-   * load before starting its own.
+   * identity comparison, leaving an in-flight load for that identity alone.
    */
   applyUrlState(state: RootsDetailUrlState | null): void {
-    this.summarySub?.unsubscribe();
-    this.summarySub = this.syncFromUrlState(state).subscribe();
+    if (state === null) {
+      this.clearSelection();
+      return;
+    }
+
+    if (rootsDetailUrlStatesEqual(this.activeUrlState, state)) {
+      return;
+    }
+
+    this.applyIdentity(state);
+  }
+
+  /**
+   * Re-drives the current complete identity after a failed load (Feature 030,
+   * M3). The identity is unchanged, so {@link applyUrlState} would short-circuit
+   * it; retry re-enters the load path directly. A failed read is never cached,
+   * so this issues a real request, while an intact summary still resolves from
+   * cache and only the detail view reloads.
+   */
+  retryCurrentIdentity(): void {
+    const state = this.activeUrlState;
+    if (state === null) {
+      return;
+    }
+
+    this.applyIdentity(state);
   }
 
   /** Cancels the pending summary/detail loads without resetting panel state. */
   cancelPendingLoads(): void {
-    this.summarySub?.unsubscribe();
-    this.detailSub?.unsubscribe();
-    this.summarySub = undefined;
-    this.detailSub = undefined;
+    this.requests.cancelAll();
   }
 
   selectRoot(summary: RootSummaryDto, view: RootView = DEFAULT_ROOT_VIEW): void {
-    this.activeUrlState = {
-      rootId: summary.id,
-      view,
-      wordView: DEFAULT_ROOT_WORD_VIEW,
-      surahView: DEFAULT_ROOT_SURAHS_VIEW,
-      detailPage: DEFAULT_ROOT_DETAIL_PAGE,
-    };
-    this._panel.set({
-      ...INITIAL_PANEL,
-      selectedRootId: summary.id,
-      summary,
-      view,
-      status: 'loading',
-    });
-    this.loadActiveView(summary.id, view, DEFAULT_ROOT_WORD_VIEW, DEFAULT_ROOT_SURAHS_VIEW, DEFAULT_ROOT_DETAIL_PAGE);
+    this.selectRootWithPanel(summary, view);
   }
 
   selectRootWithPanel(
@@ -158,6 +165,7 @@ export class RootsDetailController implements OnDestroy {
     surahView: RootSurahView = DEFAULT_ROOT_SURAHS_VIEW,
     detailPage: number = DEFAULT_ROOT_DETAIL_PAGE,
   ): void {
+    const token = this.requests.beginTransition();
     this.activeUrlState = { rootId: summary.id, view, wordView, surahView, detailPage };
     this._panel.set({
       ...INITIAL_PANEL,
@@ -169,14 +177,11 @@ export class RootsDetailController implements OnDestroy {
       detailPage,
       status: 'loading',
     });
-    this.loadActiveView(summary.id, view, wordView, surahView, detailPage);
+    this.loadActiveView(summary.id, view, wordView, surahView, detailPage, token);
   }
 
   clearSelection(): void {
-    this.summarySub?.unsubscribe();
-    this.detailSub?.unsubscribe();
-    this.summarySub = undefined;
-    this.detailSub = undefined;
+    this.requests.cancelAll();
     this.activeUrlState = null;
     this._panel.set(INITIAL_PANEL);
   }
@@ -191,6 +196,7 @@ export class RootsDetailController implements OnDestroy {
     const wordView = view === 'words' ? current.wordView : DEFAULT_ROOT_WORD_VIEW;
     const surahView = view === 'surahs' ? current.surahView : DEFAULT_ROOT_SURAHS_VIEW;
 
+    const token = this.requests.beginTransition();
     this.activeUrlState = {
       rootId: current.selectedRootId,
       view,
@@ -207,7 +213,7 @@ export class RootsDetailController implements OnDestroy {
       status: 'loading',
       errorMessage: '',
     }));
-    this.loadActiveView(current.selectedRootId, view, wordView, surahView, detailPage);
+    this.loadActiveView(current.selectedRootId, view, wordView, surahView, detailPage, token);
   }
 
   setWordView(wordView: RootWordView): void {
@@ -221,6 +227,7 @@ export class RootsDetailController implements OnDestroy {
       return;
     }
 
+    const token = this.requests.beginTransition();
     this.activeUrlState = {
       rootId: current.selectedRootId,
       view: 'words',
@@ -235,7 +242,14 @@ export class RootsDetailController implements OnDestroy {
       status: 'loading',
       errorMessage: '',
     }));
-    this.loadActiveView(current.selectedRootId, 'words', wordView, current.surahView, DEFAULT_ROOT_DETAIL_PAGE);
+    this.loadActiveView(
+      current.selectedRootId,
+      'words',
+      wordView,
+      current.surahView,
+      DEFAULT_ROOT_DETAIL_PAGE,
+      token,
+    );
   }
 
   setSurahView(surahView: RootSurahView): void {
@@ -249,6 +263,7 @@ export class RootsDetailController implements OnDestroy {
       return;
     }
 
+    const token = this.requests.beginTransition();
     this.activeUrlState = {
       rootId: current.selectedRootId,
       view: 'surahs',
@@ -262,7 +277,7 @@ export class RootsDetailController implements OnDestroy {
       status: 'loading',
       errorMessage: '',
     }));
-    this.loadActiveView(current.selectedRootId, 'surahs', current.wordView, surahView, current.detailPage);
+    this.loadActiveView(current.selectedRootId, 'surahs', current.wordView, surahView, current.detailPage, token);
   }
 
   setDetailPage(page: number): void {
@@ -275,6 +290,7 @@ export class RootsDetailController implements OnDestroy {
       return;
     }
 
+    const token = this.requests.beginTransition();
     this.activeUrlState = {
       rootId: current.selectedRootId,
       view: current.view,
@@ -294,19 +310,17 @@ export class RootsDetailController implements OnDestroy {
       current.wordView,
       current.surahView,
       page,
+      token,
     );
   }
 
-  private syncFromUrlState(state: RootsDetailUrlState | null): Observable<void> {
-    if (state === null) {
-      this.clearSelection();
-      return of(undefined);
-    }
-
-    if (rootsDetailUrlStatesEqual(this.activeUrlState, state)) {
-      return of(undefined);
-    }
-
+  /**
+   * Drives a complete identity: abandons the previous identity's summary and
+   * detail requests, then either reloads only the active view (same root, loaded
+   * summary) or reloads the summary first.
+   */
+  private applyIdentity(state: RootsDetailUrlState): void {
+    const token = this.requests.beginTransition();
     this.activeUrlState = state;
     const current = this._panel();
 
@@ -320,15 +334,14 @@ export class RootsDetailController implements OnDestroy {
         status: 'loading',
         errorMessage: '',
       }));
-      this.loadActiveView(state.rootId, state.view, state.wordView, state.surahView, state.detailPage);
-      return of(undefined);
+      this.loadActiveView(state.rootId, state.view, state.wordView, state.surahView, state.detailPage, token);
+      return;
     }
 
-    return this.loadSummaryAndRestore(state);
+    this.loadSummaryAndRestore(state, token);
   }
 
-  private loadSummaryAndRestore(state: RootsDetailUrlState): Observable<void> {
-    this.summarySub?.unsubscribe();
+  private loadSummaryAndRestore(state: RootsDetailUrlState, token: number): void {
     this._panel.set({
       ...INITIAL_PANEL,
       selectedRootId: state.rootId,
@@ -339,42 +352,51 @@ export class RootsDetailController implements OnDestroy {
       status: 'loading',
     });
 
-    return this.cache
-      .getOrLoad(RootsCacheKeys.summary(state.rootId), () =>
-        this.api.getRootSummary(state.rootId),
-      )
-      .pipe(
-        tap((response) => {
-          if (!response.isSuccess || !response.data) {
-            this.handleRestoredRootNotFound(response.message ?? '');
-            return;
-          }
+    this.requests.trackSummary(
+      this.cache
+        .getOrLoad(RootsCacheKeys.summary(state.rootId), () => this.api.getRootSummary(state.rootId))
+        .pipe(
+          tap((response) => {
+            if (!this.requests.isCurrent(token)) {
+              return;
+            }
 
-          const summary = response.data;
-          this._panel.update((s) => ({
-            ...s,
-            summary,
-            status: 'loading',
-          }));
-          this.loadActiveView(
-            state.rootId,
-            state.view,
-            state.wordView,
-            state.surahView,
-            state.detailPage,
-          );
-        }),
-        catchError((err) => {
-          if (err instanceof HttpErrorResponse && err.status === 404) {
-            this.handleRestoredRootNotFound(this.extractErrorMessage(err, ROOTS_NOT_FOUND_LABEL));
+            if (!response.isSuccess || !response.data) {
+              this.handleRestoredRootNotFound(response.message ?? '', state);
+              return;
+            }
+
+            const summary = response.data;
+            this._panel.update((s) => ({
+              ...s,
+              summary,
+              status: 'loading',
+            }));
+            this.loadActiveView(
+              state.rootId,
+              state.view,
+              state.wordView,
+              state.surahView,
+              state.detailPage,
+              token,
+            );
+          }),
+          catchError((err) => {
+            if (!this.requests.isCurrent(token)) {
+              return of(undefined);
+            }
+
+            if (err instanceof HttpErrorResponse && err.status === 404) {
+              this.handleRestoredRootNotFound(this.extractErrorMessage(err, ROOTS_NOT_FOUND_LABEL), state);
+              return of(undefined);
+            }
+
+            this.handleRestoredRootLoadError(this.extractErrorMessage(err, ROOTS_ERROR_LABEL), state);
             return of(undefined);
-          }
-
-          this.handleRestoredRootLoadError(this.extractErrorMessage(err, ROOTS_ERROR_LABEL));
-          return of(undefined);
-        }),
-        map(() => undefined),
-      );
+          }),
+        )
+        .subscribe(),
+    );
   }
 
   private loadActiveView(
@@ -383,44 +405,50 @@ export class RootsDetailController implements OnDestroy {
     wordView: RootWordView,
     surahView: RootSurahView,
     detailPage: number,
+    token: number,
   ): void {
-    this.detailSub?.unsubscribe();
-
     const current = this._panel();
-    this.detailSub = this.viewLoader.loadActiveView(
-      {
-        rootId,
-        view,
-        wordView,
-        surahView,
-        detailPage,
-        cachedMissingSurahs: current.missingSurahs,
-      },
-      {
-        onAyahs: (response) => this._panel.update((s) => ({ ...s, ...buildAyahsPanelUpdate(response) })),
-        onWords: (response) => this._panel.update((s) => ({ ...s, ...buildWordsPanelUpdate(response) })),
-        onMentionedSurahs: (response) =>
-          this._panel.update((s) => ({ ...s, ...buildMentionedSurahsPanelUpdate(response) })),
-        onMissingSurahs: (response) =>
-          this._panel.update((s) => ({ ...s, ...buildMissingSurahsPanelUpdate(response) })),
-        onLemmas: (response) => this._panel.update((s) => ({ ...s, ...buildLemmasPanelUpdate(response) })),
-        onStems: (response) => this._panel.update((s) => ({ ...s, ...buildStemsPanelUpdate(response) })),
-        onError: (err) =>
-          this._panel.update((s) => ({ ...s, ...buildDetailErrorUpdate(err, ROOTS_ERROR_LABEL) })),
-      },
+    this.requests.trackDetail(
+      this.viewLoader.loadActiveView(
+        {
+          rootId,
+          view,
+          wordView,
+          surahView,
+          detailPage,
+          cachedMissingSurahs: current.missingSurahs,
+        },
+        {
+          onAyahs: (response) => this.applyIfCurrent(token, (s) => ({ ...s, ...buildAyahsPanelUpdate(response) })),
+          onWords: (response) => this.applyIfCurrent(token, (s) => ({ ...s, ...buildWordsPanelUpdate(response) })),
+          onMentionedSurahs: (response) =>
+            this.applyIfCurrent(token, (s) => ({ ...s, ...buildMentionedSurahsPanelUpdate(response) })),
+          onMissingSurahs: (response) =>
+            this.applyIfCurrent(token, (s) => ({ ...s, ...buildMissingSurahsPanelUpdate(response) })),
+          onLemmas: (response) => this.applyIfCurrent(token, (s) => ({ ...s, ...buildLemmasPanelUpdate(response) })),
+          onStems: (response) => this.applyIfCurrent(token, (s) => ({ ...s, ...buildStemsPanelUpdate(response) })),
+          onError: (err) =>
+            this.applyIfCurrent(token, (s) => ({ ...s, ...buildDetailErrorUpdate(err, ROOTS_ERROR_LABEL) })),
+        },
+      ),
     );
   }
 
-  private handleRestoredRootNotFound(message: string): void {
-    this._panel.set(
-      restoredRootNotFoundUpdate(message, ROOTS_NOT_FOUND_LABEL, this.activeUrlState?.rootId ?? null),
-    );
+  /** Applies a panel update only while `token` still owns the panel. */
+  private applyIfCurrent(token: number, update: (state: RootsPanelState) => RootsPanelState): void {
+    if (this.requests.isCurrent(token)) {
+      this._panel.update(update);
+    }
   }
 
-  private handleRestoredRootLoadError(message: string): void {
+  private handleRestoredRootNotFound(message: string, state: RootsDetailUrlState): void {
+    this._panel.set(restoredRootNotFoundUpdate(message, ROOTS_NOT_FOUND_LABEL, state.rootId));
+  }
+
+  private handleRestoredRootLoadError(message: string, state: RootsDetailUrlState): void {
     this._panel.set({
       ...INITIAL_PANEL,
-      selectedRootId: this.activeUrlState?.rootId ?? null,
+      selectedRootId: state.rootId,
       status: 'error',
       errorMessage: message || ROOTS_ERROR_LABEL,
     });

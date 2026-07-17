@@ -14,7 +14,17 @@ import {
 } from '../models/stems.models';
 import { StemsCache, StemsCacheKeys } from './stems-cache';
 import { StemsDetailController, StemsDetailUrlState } from './stems-detail.controller';
-import { StemsDetailViewLoader } from './stems-detail-view.loader';
+import { StemsDetailViewHandlers, StemsDetailViewLoader } from './stems-detail-view.loader';
+
+/** Unmistakably synthetic, non-scriptural word rows for detail-response fixtures. */
+function wordsPageOf(displayText: string): PagedResultDto<StemWordItemDto> {
+  return {
+    page: 1,
+    pageSize: 100,
+    totalCount: 1,
+    items: [{ displayText, occurrencesCount: 1, uniqueWordId: 1 }],
+  };
+}
 
 function summaryOf(id: number): StemSummaryDto {
   return {
@@ -188,6 +198,138 @@ describe('StemsDetailController (route-independent, Feature 029 B4)', () => {
     expect(panel.errorMessage).toBe(STEMS_ERROR_LABEL);
     expect(loadActiveView).not.toHaveBeenCalled();
   });
+
+  describe('stale DETAIL responses across a stem transition (Feature 030, C1)', () => {
+    /**
+     * Selects stem 1 (summary resolves, so its detail load is registered and left
+     * in flight), then selects stem 2 whose summary stays pending. Returns stem 1's
+     * captured detail handlers so the test can land its response late.
+     */
+    function selectStemOneThenPendingStemTwo(): {
+      controller: StemsDetailController;
+      staleHandlers: StemsDetailViewHandlers;
+      stemTwoSummary: Subject<ApiResponse<StemSummaryDto>>;
+    } {
+      const stemTwoSummary = new Subject<ApiResponse<StemSummaryDto>>();
+      const { controller, loadActiveView } = createController({
+        summary: (id) => (id === 1 ? of(ok(summaryOf(1))) : stemTwoSummary.asObservable()),
+      });
+
+      controller.applyUrlState(urlState(1));
+      const staleHandlers = loadActiveView.mock.calls[0][1] as StemsDetailViewHandlers;
+
+      controller.applyUrlState(urlState(2));
+      expect(controller.panelState().selectedStemId).toBe(2);
+
+      return { controller, staleHandlers, stemTwoSummary };
+    }
+
+    it('ignores the previous stem detail response while the new stem summary is pending', () => {
+      const { controller, staleHandlers } = selectStemOneThenPendingStemTwo();
+
+      staleHandlers.onWords(ok(wordsPageOf('كلمة-اختبار-١')));
+
+      const panel = controller.panelState();
+      expect(panel.selectedStemId).toBe(2);
+      expect(panel.words).toBeNull();
+      expect(panel.status).toBe('loading');
+    });
+
+    it('ignores the previous stem detail response after the new stem summary succeeds', () => {
+      const { controller, staleHandlers, stemTwoSummary } = selectStemOneThenPendingStemTwo();
+
+      stemTwoSummary.next(ok(summaryOf(2)));
+      stemTwoSummary.complete();
+      staleHandlers.onWords(ok(wordsPageOf('كلمة-اختبار-١')));
+
+      const panel = controller.panelState();
+      expect(panel.summary?.id).toBe(2);
+      expect(panel.words).toBeNull();
+    });
+
+    it('ignores the previous stem detail response after the new stem summary 404s', () => {
+      const { controller, staleHandlers, stemTwoSummary } = selectStemOneThenPendingStemTwo();
+
+      stemTwoSummary.error(new HttpErrorResponse({ status: 404 }));
+      expect(controller.panelState().status).toBe('notFound');
+
+      staleHandlers.onWords(ok(wordsPageOf('كلمة-اختبار-١')));
+
+      const panel = controller.panelState();
+      expect(panel.status).toBe('notFound');
+      expect(panel.selectedStemId).toBe(2);
+      expect(panel.words).toBeNull();
+    });
+
+    it('ignores the previous stem detail response after the new stem summary fails in transport', () => {
+      const { controller, staleHandlers, stemTwoSummary } = selectStemOneThenPendingStemTwo();
+
+      stemTwoSummary.error(new HttpErrorResponse({ status: 500 }));
+      expect(controller.panelState().status).toBe('error');
+
+      staleHandlers.onError(new HttpErrorResponse({ status: 503 }));
+      staleHandlers.onWords(ok(wordsPageOf('كلمة-اختبار-١')));
+
+      const panel = controller.panelState();
+      expect(panel.status).toBe('error');
+      expect(panel.selectedStemId).toBe(2);
+      expect(panel.errorMessage).toBe(STEMS_ERROR_LABEL);
+      expect(panel.words).toBeNull();
+    });
+  });
+
+  describe('retryCurrentIdentity (Feature 030, M3)', () => {
+    it('recovers from a summary transport error and loads the same identity on retry', () => {
+      let attempt = 0;
+      const { controller, loadActiveView } = createController({
+        summary: (id) => {
+          attempt += 1;
+          return attempt === 1
+            ? throwError(() => new HttpErrorResponse({ status: 500 }))
+            : of(ok(summaryOf(id)));
+        },
+      });
+
+      controller.applyUrlState(urlState(4));
+      expect(controller.panelState().status).toBe('error');
+
+      controller.retryCurrentIdentity();
+
+      const panel = controller.panelState();
+      expect(panel.status).toBe('loading');
+      expect(panel.summary?.id).toBe(4);
+      expect(loadActiveView).toHaveBeenCalledTimes(1);
+      expect(loadActiveView).toHaveBeenCalledWith(expect.objectContaining({ stemId: 4 }), expect.anything());
+    });
+
+    it('recovers from a detail transport error by reloading the view without re-reading the summary', () => {
+      const { controller, api, loadActiveView } = createController({ summary: (id) => of(ok(summaryOf(id))) });
+
+      controller.applyUrlState(urlState(4));
+      const handlers = loadActiveView.mock.calls[0][1] as StemsDetailViewHandlers;
+      handlers.onError(new HttpErrorResponse({ status: 500 }));
+      expect(controller.panelState().status).toBe('error');
+
+      controller.retryCurrentIdentity();
+      const retryHandlers = loadActiveView.mock.calls[1][1] as StemsDetailViewHandlers;
+      retryHandlers.onWords(ok(wordsPageOf('كلمة-اختبار-٢')));
+
+      const panel = controller.panelState();
+      expect(panel.status).toBe('success');
+      expect(panel.words?.items[0].displayText).toBe('كلمة-اختبار-٢');
+      expect(api.getStemSummary).toHaveBeenCalledTimes(1);
+      expect(loadActiveView).toHaveBeenCalledTimes(2);
+    });
+
+    it('is a no-op without a selected identity', () => {
+      const { controller, api } = createController({ summary: (id) => of(ok(summaryOf(id))) });
+
+      controller.retryCurrentIdentity();
+
+      expect(api.getStemSummary).not.toHaveBeenCalled();
+      expect(controller.panelState().status).toBe('idle');
+    });
+  });
 });
 
 describe('StemsDetailController cache keys (existing StemsCacheKeys)', () => {
@@ -242,7 +384,7 @@ describe('StemsDetailController cache keys (existing StemsCacheKeys)', () => {
           pageNumber: 2,
           surahNameArabic: 'البقرة',
           verseKey: '2:2',
-          words: [{ textUthmani: 'ٱلْكِتَـٰبُ', isMatched: true }],
+          words: [{ textUthmani: 'كلمة-اختبار', isMatched: true }],
         },
       ],
     };

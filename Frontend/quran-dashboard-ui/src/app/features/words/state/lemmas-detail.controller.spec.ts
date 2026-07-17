@@ -14,7 +14,17 @@ import {
 } from '../models/lemmas.models';
 import { LemmasCache, LemmasCacheKeys } from './lemmas-cache';
 import { LemmasDetailController, LemmasDetailUrlState } from './lemmas-detail.controller';
-import { LemmasDetailViewLoader } from './lemmas-detail-view.loader';
+import { LemmasDetailViewHandlers, LemmasDetailViewLoader } from './lemmas-detail-view.loader';
+
+/** Unmistakably synthetic, non-scriptural word rows for detail-response fixtures. */
+function wordsPageOf(displayText: string): PagedResultDto<LemmaWordItemDto> {
+  return {
+    page: 1,
+    pageSize: 100,
+    totalCount: 1,
+    items: [{ displayText, occurrencesCount: 1, uniqueWordId: 1 }],
+  };
+}
 
 function summaryOf(id: number): LemmaSummaryDto {
   return {
@@ -187,6 +197,138 @@ describe('LemmasDetailController (route-independent, Feature 029 B4)', () => {
     expect(panel.errorMessage).toBe(LEMMAS_ERROR_LABEL);
     expect(loadActiveView).not.toHaveBeenCalled();
   });
+
+  describe('stale DETAIL responses across a lemma transition (Feature 030, C1)', () => {
+    /**
+     * Selects lemma 1 (summary resolves, so its detail load is registered and left
+     * in flight), then selects lemma 2 whose summary stays pending. Returns lemma
+     * 1's captured detail handlers so the test can land its response late.
+     */
+    function selectLemmaOneThenPendingLemmaTwo(): {
+      controller: LemmasDetailController;
+      staleHandlers: LemmasDetailViewHandlers;
+      lemmaTwoSummary: Subject<ApiResponse<LemmaSummaryDto>>;
+    } {
+      const lemmaTwoSummary = new Subject<ApiResponse<LemmaSummaryDto>>();
+      const { controller, loadActiveView } = createController({
+        summary: (id) => (id === 1 ? of(ok(summaryOf(1))) : lemmaTwoSummary.asObservable()),
+      });
+
+      controller.applyUrlState(urlState(1));
+      const staleHandlers = loadActiveView.mock.calls[0][1] as LemmasDetailViewHandlers;
+
+      controller.applyUrlState(urlState(2));
+      expect(controller.panelState().selectedLemmaId).toBe(2);
+
+      return { controller, staleHandlers, lemmaTwoSummary };
+    }
+
+    it('ignores the previous lemma detail response while the new lemma summary is pending', () => {
+      const { controller, staleHandlers } = selectLemmaOneThenPendingLemmaTwo();
+
+      staleHandlers.onWords(ok(wordsPageOf('كلمة-اختبار-١')));
+
+      const panel = controller.panelState();
+      expect(panel.selectedLemmaId).toBe(2);
+      expect(panel.words).toBeNull();
+      expect(panel.status).toBe('loading');
+    });
+
+    it('ignores the previous lemma detail response after the new lemma summary succeeds', () => {
+      const { controller, staleHandlers, lemmaTwoSummary } = selectLemmaOneThenPendingLemmaTwo();
+
+      lemmaTwoSummary.next(ok(summaryOf(2)));
+      lemmaTwoSummary.complete();
+      staleHandlers.onWords(ok(wordsPageOf('كلمة-اختبار-١')));
+
+      const panel = controller.panelState();
+      expect(panel.summary?.id).toBe(2);
+      expect(panel.words).toBeNull();
+    });
+
+    it('ignores the previous lemma detail response after the new lemma summary 404s', () => {
+      const { controller, staleHandlers, lemmaTwoSummary } = selectLemmaOneThenPendingLemmaTwo();
+
+      lemmaTwoSummary.error(new HttpErrorResponse({ status: 404 }));
+      expect(controller.panelState().status).toBe('notFound');
+
+      staleHandlers.onWords(ok(wordsPageOf('كلمة-اختبار-١')));
+
+      const panel = controller.panelState();
+      expect(panel.status).toBe('notFound');
+      expect(panel.selectedLemmaId).toBe(2);
+      expect(panel.words).toBeNull();
+    });
+
+    it('ignores the previous lemma detail response after the new lemma summary fails in transport', () => {
+      const { controller, staleHandlers, lemmaTwoSummary } = selectLemmaOneThenPendingLemmaTwo();
+
+      lemmaTwoSummary.error(new HttpErrorResponse({ status: 500 }));
+      expect(controller.panelState().status).toBe('error');
+
+      staleHandlers.onError(new HttpErrorResponse({ status: 503 }));
+      staleHandlers.onWords(ok(wordsPageOf('كلمة-اختبار-١')));
+
+      const panel = controller.panelState();
+      expect(panel.status).toBe('error');
+      expect(panel.selectedLemmaId).toBe(2);
+      expect(panel.errorMessage).toBe(LEMMAS_ERROR_LABEL);
+      expect(panel.words).toBeNull();
+    });
+  });
+
+  describe('retryCurrentIdentity (Feature 030, M3)', () => {
+    it('recovers from a summary transport error and loads the same identity on retry', () => {
+      let attempt = 0;
+      const { controller, loadActiveView } = createController({
+        summary: (id) => {
+          attempt += 1;
+          return attempt === 1
+            ? throwError(() => new HttpErrorResponse({ status: 500 }))
+            : of(ok(summaryOf(id)));
+        },
+      });
+
+      controller.applyUrlState(urlState(4));
+      expect(controller.panelState().status).toBe('error');
+
+      controller.retryCurrentIdentity();
+
+      const panel = controller.panelState();
+      expect(panel.status).toBe('loading');
+      expect(panel.summary?.id).toBe(4);
+      expect(loadActiveView).toHaveBeenCalledTimes(1);
+      expect(loadActiveView).toHaveBeenCalledWith(expect.objectContaining({ lemmaId: 4 }), expect.anything());
+    });
+
+    it('recovers from a detail transport error by reloading the view without re-reading the summary', () => {
+      const { controller, api, loadActiveView } = createController({ summary: (id) => of(ok(summaryOf(id))) });
+
+      controller.applyUrlState(urlState(4));
+      const handlers = loadActiveView.mock.calls[0][1] as LemmasDetailViewHandlers;
+      handlers.onError(new HttpErrorResponse({ status: 500 }));
+      expect(controller.panelState().status).toBe('error');
+
+      controller.retryCurrentIdentity();
+      const retryHandlers = loadActiveView.mock.calls[1][1] as LemmasDetailViewHandlers;
+      retryHandlers.onWords(ok(wordsPageOf('كلمة-اختبار-٢')));
+
+      const panel = controller.panelState();
+      expect(panel.status).toBe('success');
+      expect(panel.words?.items[0].displayText).toBe('كلمة-اختبار-٢');
+      expect(api.getLemmaSummary).toHaveBeenCalledTimes(1);
+      expect(loadActiveView).toHaveBeenCalledTimes(2);
+    });
+
+    it('is a no-op without a selected identity', () => {
+      const { controller, api } = createController({ summary: (id) => of(ok(summaryOf(id))) });
+
+      controller.retryCurrentIdentity();
+
+      expect(api.getLemmaSummary).not.toHaveBeenCalled();
+      expect(controller.panelState().status).toBe('idle');
+    });
+  });
 });
 
 describe('LemmasDetailController cache keys (existing LemmasCacheKeys)', () => {
@@ -241,7 +383,7 @@ describe('LemmasDetailController cache keys (existing LemmasCacheKeys)', () => {
           pageNumber: 2,
           surahNameArabic: 'البقرة',
           verseKey: '2:2',
-          words: [{ textUthmani: 'ٱلْكِتَـٰبُ', isMatched: true }],
+          words: [{ textUthmani: 'كلمة-اختبار', isMatched: true }],
         },
       ],
     };

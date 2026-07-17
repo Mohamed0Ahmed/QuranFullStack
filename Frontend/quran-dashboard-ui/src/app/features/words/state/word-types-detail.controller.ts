@@ -1,7 +1,7 @@
 import { Injectable, OnDestroy, computed, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Observable, Subscription, of } from 'rxjs';
-import { catchError, map, tap } from 'rxjs/operators';
+import { of } from 'rxjs';
+import { catchError, tap } from 'rxjs/operators';
 
 import { WordTypesApi } from '../data-access/word-types.api';
 import { WORD_TYPES_ERROR_LABEL, WORD_TYPES_NOT_FOUND_LABEL } from '../models/word-types.labels';
@@ -13,6 +13,7 @@ import {
   WordTypeRowIdentity,
 } from '../models/word-types.models';
 import { WordTypeDetailSelection, WordTypesDetailState } from '../models/word-types-detail.models';
+import { DetailRequestLifecycle } from './detail-request-lifecycle';
 import { WordTypesCache, WordTypesCacheKeys } from './word-types-cache';
 import {
   buildAyahsPanelUpdate,
@@ -109,17 +110,18 @@ function wordSelectionOf(identity: WordTypeRowIdentity): WordTypeDetailSelection
  * `WordTypesDetailViewLoader` collaborators stay shared, so the page panel and
  * the overlay de-duplicate the same reads (`WordTypesCacheKeys` unchanged).
  *
- * Every identity transition cancels the prior summary/detail subscription so a
- * stale response can never overwrite a newer state. Not `providedIn: 'root'`:
- * each overlay adapter provides its own component-scoped instance (destroyed
- * with the adapter), so overlay activity can never mutate the page panel.
+ * Every complete-identity transition abandons BOTH the summary and the detail
+ * request and opens a new generation, so a late response from the previously
+ * selected composite identity can never populate or overwrite this one — see
+ * {@link DetailRequestLifecycle}. Not `providedIn: 'root'`: each overlay adapter
+ * provides its own component-scoped instance (destroyed with the adapter), so
+ * overlay activity can never mutate the page panel.
  */
 @Injectable()
 export class WordTypesDetailController implements OnDestroy {
   private readonly _panel = signal<WordTypesDetailState>(INITIAL_PANEL);
 
-  private summarySub?: Subscription;
-  private detailSub?: Subscription;
+  private readonly requests = new DetailRequestLifecycle();
   private activeUrlState: WordTypesWordDetailUrlState | null = null;
 
   readonly panelState = computed(() => this._panel());
@@ -137,39 +139,56 @@ export class WordTypesDetailController implements OnDestroy {
   /**
    * Route-free entry point: synchronize the panel to a complete word-kind
    * detail state (`null` clears the selection). Identical states short-circuit
-   * via complete identity comparison; a same-identity sub-state change reuses
-   * the loaded summary and reloads only the active view; a new identity cancels
-   * the pending summary load before starting its own.
+   * via complete identity comparison, leaving an in-flight load for that
+   * identity alone.
    */
   applyUrlState(state: WordTypesWordDetailUrlState | null): void {
-    this.summarySub?.unsubscribe();
-    this.summarySub = this.syncFromUrlState(state).subscribe();
+    if (state === null) {
+      this.clearSelection();
+      return;
+    }
+
+    if (wordTypesWordDetailUrlStatesEqual(this.activeUrlState, state)) {
+      return;
+    }
+
+    this.applyIdentity(state);
+  }
+
+  /**
+   * Re-drives the current complete identity after a failed load (Feature 030,
+   * M3). The identity is unchanged, so {@link applyUrlState} would short-circuit
+   * it; retry re-enters the load path directly. A failed read is never cached,
+   * so this issues a real request, while an intact summary still resolves from
+   * cache and only the detail view reloads.
+   */
+  retryCurrentIdentity(): void {
+    const state = this.activeUrlState;
+    if (state === null) {
+      return;
+    }
+
+    this.applyIdentity(state);
   }
 
   /** Cancels the pending summary/detail loads without resetting panel state. */
   cancelPendingLoads(): void {
-    this.summarySub?.unsubscribe();
-    this.detailSub?.unsubscribe();
-    this.summarySub = undefined;
-    this.detailSub = undefined;
+    this.requests.cancelAll();
   }
 
   private clearSelection(): void {
-    this.cancelPendingLoads();
+    this.requests.cancelAll();
     this.activeUrlState = null;
     this._panel.set(INITIAL_PANEL);
   }
 
-  private syncFromUrlState(state: WordTypesWordDetailUrlState | null): Observable<void> {
-    if (state === null) {
-      this.clearSelection();
-      return of(undefined);
-    }
-
-    if (wordTypesWordDetailUrlStatesEqual(this.activeUrlState, state)) {
-      return of(undefined);
-    }
-
+  /**
+   * Drives a complete identity: abandons the previous identity's summary and
+   * detail requests, then either reloads only the active view (same composite
+   * word identity, loaded summary) or reloads the summary first.
+   */
+  private applyIdentity(state: WordTypesWordDetailUrlState): void {
+    const token = this.requests.beginTransition();
     this.activeUrlState = state;
     const current = this._panel();
 
@@ -187,14 +206,14 @@ export class WordTypesDetailController implements OnDestroy {
         status: 'loading',
         errorMessage: '',
       }));
-      this.loadActiveView(selection, state.view, state.detailPage);
-      return of(undefined);
+      this.loadActiveView(selection, state.view, state.detailPage, token);
+      return;
     }
 
-    return this.loadSummaryAndRestore(state);
+    this.loadSummaryAndRestore(state, token);
   }
 
-  private loadSummaryAndRestore(state: WordTypesWordDetailUrlState): Observable<void> {
+  private loadSummaryAndRestore(state: WordTypesWordDetailUrlState, token: number): void {
     const selection = wordSelectionOf(state.identity);
     this._panel.set({
       ...INITIAL_PANEL,
@@ -206,58 +225,77 @@ export class WordTypesDetailController implements OnDestroy {
       status: 'loading',
     });
 
-    return this.cache
-      .getOrLoad(WordTypesCacheKeys.summary(state.identity), () =>
-        this.api.getSummary(state.identity),
-      )
-      .pipe(
-        tap((response) => {
-          if (!response.isSuccess || !response.data) {
-            this.applySelectionNotFound(state, response.message ?? '');
-            return;
-          }
+    this.requests.trackSummary(
+      this.cache
+        .getOrLoad(WordTypesCacheKeys.summary(state.identity), () => this.api.getSummary(state.identity))
+        .pipe(
+          tap((response) => {
+            if (!this.requests.isCurrent(token)) {
+              return;
+            }
 
-          const summary = response.data;
-          this._panel.update((panel) => ({
-            ...panel,
-            summary,
-            groupedSummary: null,
-            status: 'loading',
-          }));
-          this.loadActiveView(selection, state.view, state.detailPage);
-        }),
-        catchError((err) => {
-          if (err instanceof HttpErrorResponse && err.status === 404) {
-            this.applySelectionNotFound(state, extractPanelErrorMessage(err, WORD_TYPES_NOT_FOUND_LABEL));
+            if (!response.isSuccess || !response.data) {
+              this.applySelectionNotFound(state, response.message ?? '');
+              return;
+            }
+
+            const summary = response.data;
+            this._panel.update((panel) => ({
+              ...panel,
+              summary,
+              groupedSummary: null,
+              status: 'loading',
+            }));
+            this.loadActiveView(selection, state.view, state.detailPage, token);
+          }),
+          catchError((err) => {
+            if (!this.requests.isCurrent(token)) {
+              return of(undefined);
+            }
+
+            if (err instanceof HttpErrorResponse && err.status === 404) {
+              this.applySelectionNotFound(state, extractPanelErrorMessage(err, WORD_TYPES_NOT_FOUND_LABEL));
+              return of(undefined);
+            }
+
+            this.applySelectionError(state, extractPanelErrorMessage(err, WORD_TYPES_ERROR_LABEL));
             return of(undefined);
-          }
-
-          this.applySelectionError(state, extractPanelErrorMessage(err, WORD_TYPES_ERROR_LABEL));
-          return of(undefined);
-        }),
-        map(() => undefined),
-      );
+          }),
+        )
+        .subscribe(),
+    );
   }
 
   private loadActiveView(
     selection: WordTypeDetailSelection,
     view: WordTypeDetailView,
     detailPage: number,
+    token: number,
   ): void {
-    this.detailSub?.unsubscribe();
-
-    this.detailSub = this.viewLoader.loadActiveView(
-      { selection, view, detailPage },
-      {
-        // Unreachable for a word-kind selection (the loader no-ops 'words'
-        // there); wired for handler-contract completeness.
-        onWords: (response) => this._panel.update((panel) => ({ ...panel, ...buildWordsPanelUpdate(response) })),
-        onAyahs: (response) => this._panel.update((panel) => ({ ...panel, ...buildAyahsPanelUpdate(response) })),
-        onSurahs: (response) => this._panel.update((panel) => ({ ...panel, ...buildSurahsPanelUpdate(response) })),
-        onError: (err) =>
-          this._panel.update((panel) => ({ ...panel, ...buildDetailErrorUpdate(err, WORD_TYPES_ERROR_LABEL) })),
-      },
+    this.requests.trackDetail(
+      this.viewLoader.loadActiveView(
+        { selection, view, detailPage },
+        {
+          // Unreachable for a word-kind selection (the loader no-ops 'words'
+          // there); wired for handler-contract completeness.
+          onWords: (response) =>
+            this.applyIfCurrent(token, (panel) => ({ ...panel, ...buildWordsPanelUpdate(response) })),
+          onAyahs: (response) =>
+            this.applyIfCurrent(token, (panel) => ({ ...panel, ...buildAyahsPanelUpdate(response) })),
+          onSurahs: (response) =>
+            this.applyIfCurrent(token, (panel) => ({ ...panel, ...buildSurahsPanelUpdate(response) })),
+          onError: (err) =>
+            this.applyIfCurrent(token, (panel) => ({ ...panel, ...buildDetailErrorUpdate(err, WORD_TYPES_ERROR_LABEL) })),
+        },
+      ),
     );
+  }
+
+  /** Applies a panel update only while `token` still owns the panel. */
+  private applyIfCurrent(token: number, update: (state: WordTypesDetailState) => WordTypesDetailState): void {
+    if (this.requests.isCurrent(token)) {
+      this._panel.update(update);
+    }
   }
 
   private applySelectionNotFound(state: WordTypesWordDetailUrlState, message: string): void {

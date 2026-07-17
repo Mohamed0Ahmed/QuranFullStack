@@ -44,6 +44,11 @@ export class UniqueWordsDrilldownFacade {
     this.controller.closeDrilldown();
   }
 
+  /** See `UniqueWordsDrilldownController.retryCurrentIdentity` (Feature 030, M3). */
+  retryCurrentIdentity(): void {
+    this.controller.retryCurrentIdentity();
+  }
+
   /** See `UniqueWordsDrilldownController.cancelPendingWork` (perf finding F3). */
   cancelPendingWork(): void {
     this.controller.cancelPendingWork();
