@@ -297,10 +297,14 @@ describe('Entity detail overlay ayah continuity (B7/B8)', () => {
     const lastChange = location.urlChanges.at(-1) ?? '';
     expect(lastChange.startsWith('replace: /dashboard/mushaf')).toBe(true);
 
-    // Dialog Back pops to the previous frame, staying on the Mushaf base.
+    // Dialog Back converges with browser Back (B7/B8): the continuity step
+    // replaced this entry without moving the one below it, so the parent card is
+    // still adjacent and Back pops to it together with its historical Words base
+    // — it does not strand the user on the Mushaf.
     click(shellQuery(fixture, '[data-testid="detail-modal-back"]'));
     await loadStep(fixture);
-    expect(router.url).toContain('/dashboard/mushaf');
+    expect(router.url).toContain('/dashboard/words/roots');
+    expect(router.url).not.toContain('/dashboard/mushaf');
     expect(router.url).toContain(encodeURIComponent(LEMMA_STEMS_SERIALIZED));
     expect(router.url).not.toContain(encodeURIComponent(STEM_AYAHS_SERIALIZED));
     expect(overlay.state().stack.map((frame) => frame.kind)).toEqual(['root', 'lemma']);

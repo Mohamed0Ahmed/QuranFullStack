@@ -10,22 +10,14 @@ import {
   DetailOverlayUrlState,
   detailFramesEqual,
 } from './detail-overlay.models';
-import { parseDetailOverlayParams, serializeDetailFrame, serializeDetailOverlayState } from './detail-overlay-url-codec';
-
-/**
- * History-state provenance for app-created overlay navigations. Dialog Back
- * calls browser Back only when this record proves the immediately previous
- * entry is the parent card on the same base; anything else (shared URL,
- * intervening base navigation) uses the deterministic replace fallback.
- */
-interface DetailOverlayProvenance {
-  readonly baseSignature: string;
-  readonly parentStackHash: string;
-  readonly stackHash: string;
-  readonly kind: 'push' | 'restore' | 'replace' | 'seed';
-}
-
-const PROVENANCE_STATE_KEY = 'qdDetailNav';
+import { parseDetailOverlayParams, serializeDetailOverlayState } from './detail-overlay-url-codec';
+import {
+  DetailOverlayProvenance,
+  PROVENANCE_STATE_KEY,
+  SeededChainLedger,
+  hashDetailStack,
+  readDetailOverlayProvenance,
+} from './detail-overlay-provenance';
 
 type OverlayQueryParams = {
   [DETAIL_OVERLAY_QUERY_KEYS.frame]: readonly string[] | null;
@@ -45,7 +37,11 @@ export class DetailOverlayHistoryService {
   private readonly _state = signal<DetailOverlayUrlState>(CLOSED_DETAIL_OVERLAY_STATE);
   private readonly _urlEpoch = signal(0);
   private readonly _capRejectionCount = signal(0);
+  private readonly chainLedger = new SeededChainLedger();
   private started = false;
+
+  /** True until this document's own URL has been synchronized once. */
+  private isDocumentLoadSync = true;
 
   /** Parsed overlay state of the current URL. */
   readonly state: Signal<DetailOverlayUrlState> = this._state.asReadonly();
@@ -191,9 +187,14 @@ export class DetailOverlayHistoryService {
    *
    * - Overlay OPEN: the new base replaces the current history entry while the
    *   full stack and `qdDetailOpen=1` are kept, so the continuity step never
-   *   inserts a non-entity history step between modal frames. The provenance
-   *   record is re-written with kind `replace` and the new base signature —
-   *   dialog Back then uses the deterministic replace fallback on the new base.
+   *   inserts a non-entity history step between modal frames. The entry's
+   *   parent provenance is PRESERVED and only its base signature is re-stamped:
+   *   replacing this entry does not move the entry below it, so the immediate
+   *   parent card — and the historical base it sits on — is still adjacent.
+   *   Dialog Back therefore keeps proving its parent and calls browser Back, and
+   *   the two controls converge on the same parent frame and base (B7/B8). An
+   *   entry we do not own has nothing to preserve and stays on the replace
+   *   fallback.
    * - Overlay CLOSED with `promoteFrame`: the source detail context is promoted
    *   to a fresh one-frame stack over the new base as a history push, so
    *   browser Back returns to the originating side panel/base entry.
@@ -210,7 +211,7 @@ export class DetailOverlayHistoryService {
         baseSignature: this.baseSignatureFor(basePath, baseQueryParams),
         parentStackHash: existing?.parentStackHash ?? this.hashStack(current.stack.slice(0, -1)),
         stackHash: this.hashStack(current.stack),
-        kind: 'replace',
+        kind: existing?.kind ?? 'replace',
       };
       void this.router.navigateByUrl(this.buildBaseUrlTree(basePath, baseQueryParams, target), {
         replaceUrl: true,
@@ -272,42 +273,83 @@ export class DetailOverlayHistoryService {
       return;
     }
 
-    this.seedDeepLinkHistoryOnce(state);
+    const isDocumentLoad = this.isDocumentLoadSync;
+    this.isDocumentLoadSync = false;
+    this.reconcileHistoryOwnership(state, isDocumentLoad);
   }
 
   /**
-   * A freshly loaded shared URL has no owned history provenance, so browser
-   * Back would leave the application instead of popping the stack. Materialize
-   * its prefixes once: replace the current entry with the bare base, then add
-   * each stack prefix with `Location.go`, ending at the original URL. Entries
-   * are marked in `history.state`, and the seeded URL is remembered per session
-   * because the router's initial navigation rewrites `history.state` on reload —
-   * the prefix entries themselves survive the reload, so seeding again would
-   * duplicate them.
+   * Decides what this history entry is, and seeds it when its parent chain
+   * cannot be proved.
+   *
+   * A shared URL has no owned provenance, so browser Back would leave the
+   * application instead of popping the stack; {@link seedChain} materializes the
+   * prefixes below it. That must happen once per ENTRY, not once per URL: the
+   * same shared URL can be visited again later in the same tab, on top of
+   * unrelated history, and granting it `seed` provenance there would send Back
+   * out of the app (H1). Conversely the prefixes survive a reload, so re-seeding
+   * the entry we already seeded would duplicate them.
+   *
+   * Ownership is therefore established in three steps, and only a URL the live
+   * chain still contains may skip seeding. When in doubt we re-seed: that can
+   * only duplicate entries, never exit to unrelated history.
    */
-  private seedDeepLinkHistoryOnce(state: DetailOverlayUrlState): void {
-    if (state.stack.length === 0 || state.visibility !== 'open' || this.readProvenance() !== null) {
+  private reconcileHistoryOwnership(state: DetailOverlayUrlState, isDocumentLoad: boolean): void {
+    const url = this.location.path();
+    const isOwned = this.readProvenance() !== null;
+
+    if (state.stack.length === 0 || state.visibility !== 'open') {
+      if (!isOwned && !this.chainLedger.has(url)) {
+        // A bare entry outside the chain: the app has left it, so nothing below
+        // a later same-URL revisit is provable any more.
+        this.chainLedger.clear();
+      }
       return;
     }
 
-    const baseSignature = this.currentBaseSignature();
-    const originalUrl = this.location.path();
-    if (this.wasSeededThisSession(originalUrl)) {
-      // Reload of an already-seeded entry: restore the provenance marker the
-      // router's initial navigation clobbered, without adding history entries.
-      const provenance: DetailOverlayProvenance = {
-        baseSignature,
-        parentStackHash: this.hashStack(state.stack.slice(0, -1)),
-        stackHash: this.hashStack(state.stack),
-        kind: 'seed',
-      };
-      this.location.replaceState(originalUrl, '', { [PROVENANCE_STATE_KEY]: provenance });
+    if (isOwned) {
+      // We wrote this entry. Keep the ledger current across an owned top-frame
+      // replacement, whose new URL must still be recognized after a reload.
+      this.chainLedger.remember(url);
       return;
     }
-    this.markSeededThisSession(originalUrl);
+
+    if (this.chainLedger.has(url) && (!isDocumentLoad || this.isRestoredDocument())) {
+      this.restoreChainProvenance(state, url);
+      return;
+    }
+
+    this.seedChain(state, url);
+  }
+
+  /**
+   * Re-stamps the provenance marker on an entry of the live chain whose
+   * `history.state` was rewritten underneath us — the router does this during a
+   * reload's initial navigation, and when it re-commits a popstate. The prefix
+   * entries still exist, so this adds no history.
+   */
+  private restoreChainProvenance(state: DetailOverlayUrlState, url: string): void {
+    const provenance: DetailOverlayProvenance = {
+      baseSignature: this.currentBaseSignature(),
+      parentStackHash: this.hashStack(state.stack.slice(0, -1)),
+      stackHash: this.hashStack(state.stack),
+      kind: 'seed',
+    };
+    this.location.replaceState(url, '', { [PROVENANCE_STATE_KEY]: provenance });
+  }
+
+  /**
+   * Materializes the prefixes of an unowned open stack: replace the current
+   * entry with the bare base, then add each stack prefix with `Location.go`,
+   * ending back at the original URL. Every entry is marked in `history.state`
+   * and recorded as the new live chain.
+   */
+  private seedChain(state: DetailOverlayUrlState, originalUrl: string): void {
+    const baseSignature = this.currentBaseSignature();
     const baseUrl = this.router.serializeUrl(this.buildUrlTree(CLOSED_DETAIL_OVERLAY_STATE));
     this.location.replaceState(baseUrl);
 
+    const chainUrls = [baseUrl];
     for (let depth = 1; depth <= state.stack.length; depth += 1) {
       const prefix = state.stack.slice(0, depth);
       const url = this.router.serializeUrl(this.buildUrlTree({ visibility: 'open', stack: prefix }));
@@ -318,6 +360,32 @@ export class DetailOverlayHistoryService {
         kind: 'seed',
       };
       this.location.go(url, '', { [PROVENANCE_STATE_KEY]: provenance });
+      chainUrls.push(url);
+    }
+
+    this.chainLedger.reset(chainUrls);
+    if (chainUrls.at(-1) !== originalUrl) {
+      // The stack round-trips through the codec, so the seeded tail is the
+      // canonical spelling of the URL we arrived on; remember both.
+      this.chainLedger.remember(originalUrl);
+    }
+  }
+
+  /**
+   * True when this document was produced by reloading the current history entry
+   * or restoring it via Back/Forward, rather than by navigating to a new one.
+   * The ledger is per-tab and outlives the document, so only a restored document
+   * may conclude that the chain it names still sits below THIS entry; a fresh
+   * navigation to a previously-seeded URL must not inherit it. Unknown reads
+   * fail closed to `false`, which re-seeds.
+   */
+  private isRestoredDocument(): boolean {
+    try {
+      const [entry] = performance.getEntriesByType('navigation');
+      const type = (entry as PerformanceNavigationTiming | undefined)?.type;
+      return type === 'reload' || type === 'back_forward';
+    } catch {
+      return false;
     }
   }
 
@@ -394,42 +462,12 @@ export class DetailOverlayHistoryService {
     });
   }
 
-  private wasSeededThisSession(url: string): boolean {
-    try {
-      return sessionStorage.getItem(`${PROVENANCE_STATE_KEY}:seeded:${url}`) === '1';
-    } catch {
-      return false;
-    }
-  }
-
-  private markSeededThisSession(url: string): void {
-    try {
-      sessionStorage.setItem(`${PROVENANCE_STATE_KEY}:seeded:${url}`, '1');
-    } catch {
-      // Session storage unavailable: seeding stays correct, only reload dedup is lost.
-    }
-  }
-
   private readProvenance(): DetailOverlayProvenance | null {
-    const historyState = this.location.getState();
-    if (historyState === null || typeof historyState !== 'object') {
-      return null;
-    }
-    const record = (historyState as Record<string, unknown>)[PROVENANCE_STATE_KEY];
-    if (record === null || typeof record !== 'object') {
-      return null;
-    }
-    const candidate = record as Partial<DetailOverlayProvenance>;
-    return typeof candidate.baseSignature === 'string' &&
-      typeof candidate.parentStackHash === 'string' &&
-      typeof candidate.stackHash === 'string' &&
-      (candidate.kind === 'push' || candidate.kind === 'restore' || candidate.kind === 'replace' || candidate.kind === 'seed')
-      ? (candidate as DetailOverlayProvenance)
-      : null;
+    return readDetailOverlayProvenance(this.location);
   }
 
   private hashStack(stack: readonly DetailFrame[]): string {
-    return stack.map(serializeDetailFrame).join('|');
+    return hashDetailStack(stack);
   }
 
   /** The current URL with overlay-owned keys removed: the base an overlay sits on. */

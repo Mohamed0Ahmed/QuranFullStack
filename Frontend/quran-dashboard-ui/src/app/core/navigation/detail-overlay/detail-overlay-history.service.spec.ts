@@ -305,6 +305,56 @@ describe('DetailOverlayHistoryService', () => {
     expect(state['qdDetailNav']).toBeTruthy();
   });
 
+  it('does not reseed on reload after a top-frame replacement changed the entry URL (H1)', async () => {
+    const deepLink = '/dashboard/words/roots?qdDetail=' + encodeURIComponent(ROOT_SERIALIZED) + '&qdDetailOpen=1';
+    await startAt(deepLink);
+
+    // A tab/sub-view change rewrites the entry's URL in place; the seeded chain
+    // below it is untouched, so a reload of the NEW url must not seed again.
+    service.replaceTopFrame({ ...rootFrame, view: 'ayahs', detailPage: 2 });
+    await settle();
+    const replacedUrl = location.path();
+    expect(replacedUrl).not.toBe(deepLink);
+
+    location.replaceState(replacedUrl);
+    const goSpy = vi.spyOn(location, 'go');
+    await router.navigateByUrl(replacedUrl, { onSameUrlNavigation: 'reload' });
+    await settle();
+
+    expect(goSpy).not.toHaveBeenCalled();
+    expect((location.getState() as Record<string, unknown>)['qdDetailNav']).toBeTruthy();
+  });
+
+  it('re-seeds a same-URL revisit that arrives on top of unrelated history (H1)', async () => {
+    const deepLink =
+      '/dashboard/words/roots?qdDetail=' + encodeURIComponent(ROOT_SERIALIZED) + '&qdDetailOpen=1';
+
+    // An external predecessor, then the shared URL: seeding materializes its prefix.
+    await startAt('/dashboard/words/roots?root=5');
+    await router.navigateByUrl(deepLink);
+    await settle();
+    expect(service.state().stack).toHaveLength(1);
+
+    // Leave the chain entirely, then arrive at the identical URL again. This entry
+    // sits on unrelated history and has no prefix below it, so the seed must repeat.
+    await router.navigateByUrl('/dashboard/words/roots?root=9');
+    await settle();
+
+    const goSpy = vi.spyOn(location, 'go');
+    await router.navigateByUrl(deepLink);
+    await settle();
+
+    expect(goSpy).toHaveBeenCalled();
+    expect(service.state().stack).toHaveLength(1);
+    expect(service.isOpen()).toBe(true);
+
+    // Back pops the modal stack instead of leaving to the unrelated predecessor.
+    location.back();
+    await settle();
+    expect(location.path()).not.toContain('root=9');
+    expect(service.state().stack).toHaveLength(0);
+  });
+
   it('canonicalizes corrupted overlay params once with replace semantics', async () => {
     await startAt('/dashboard/words/roots?qdDetail=v1~garbage&qdDetailOpen=1');
 
@@ -381,8 +431,8 @@ describe('DetailOverlayHistoryService', () => {
       expect(service.state().stack).toHaveLength(1);
     });
 
-    it('re-writes provenance as replace so dialog Back falls back deterministically on the new base', async () => {
-      await startAt('/dashboard/words/roots');
+    it('preserves parent provenance so dialog Back and browser Back converge on the same parent frame and base', async () => {
+      await startAt('/dashboard/words/roots?root=5');
       service.startStack(rootFrame);
       await settle();
       service.appendFrame(lemmaFrame);
@@ -391,14 +441,35 @@ describe('DetailOverlayHistoryService', () => {
       service.navigateBaseWithOverlay('/dashboard/mushaf', mushafParams);
       await settle();
 
+      // Dialog Back proves its parent across the base replacement, so it uses
+      // browser Back — the one mechanism both controls now share (B7/B8).
       const backSpy = vi.spyOn(location, 'back');
       service.back();
       await settle();
 
-      expect(backSpy).not.toHaveBeenCalled();
-      expect(location.path()).toContain('/dashboard/mushaf');
-      expect(service.state().stack.map((frame) => frame.kind)).toEqual(['root']);
+      expect(backSpy).toHaveBeenCalledTimes(1);
+      const dialogBackPath = location.path();
+      const dialogBackStack = service.state().stack.map((frame) => frame.kind);
+      expect(dialogBackStack).toEqual(['root']);
+      expect(dialogBackPath).toContain('/dashboard/words/roots');
+      expect(dialogBackPath).toContain('root=5');
+      expect(dialogBackPath).not.toContain('/dashboard/mushaf');
       expect(service.isOpen()).toBe(true);
+
+      // Browser Back over the identical sequence lands on the very same entry.
+      await startAt('/dashboard/words/roots?root=5');
+      service.startStack(rootFrame);
+      await settle();
+      service.appendFrame(lemmaFrame);
+      await settle();
+      service.navigateBaseWithOverlay('/dashboard/mushaf', mushafParams);
+      await settle();
+
+      location.back();
+      await settle();
+
+      expect(location.path()).toBe(dialogBackPath);
+      expect(service.state().stack.map((frame) => frame.kind)).toEqual(dialogBackStack);
     });
 
     it('promotes a side-panel frame to a fresh one-frame stack as a push when the overlay is closed', async () => {
