@@ -16,14 +16,29 @@
   gap: var(--qd-space-2);
 }
 
-.word-section-card__heading {
+.word-section-card__kicker {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--qd-space-2);
-  flex-wrap: wrap;
+  margin: 0;
 }
 
-.word-section-card__title--disabled {
-  opacity: 0.7;
+.word-section-card__ordinal {
+  font-family: var(--qd-font-quran);
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--qd-text-muted); // a decorative numeral is not a green use
+}
+
+.word-section-card__eyebrow {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--qd-accent-text); // allowed-green list #4: section eyebrow via the AA text shade
+}
+
+.word-section-card__desc {
+  margin: 0;
+  line-height: 1.7;
 }

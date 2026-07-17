@@ -1,36 +1,28 @@
 <div class="qd-page">
   <div class="qd-container">
-    <div class="qd-page-header">
+    <div class="qd-page-header words-hub-header">
       <h1 class="qd-page-title" data-testid="words-hub-title">{{ title }}</h1>
-      <p class="qd-text-muted" data-testid="words-hub-subtitle">{{ subtitle }}</p>
+      <p class="qd-text-muted words-hub-subtitle" data-testid="words-hub-subtitle">{{ subtitle }}</p>
+
+      <p class="words-hub-chain" data-testid="words-hub-chain">
+        @for (node of chain; track node.label) {
+          <span class="words-hub-chain__node">{{ node.label }}</span>
+          @if (node.connector) {
+            <span class="words-hub-chain__sep" aria-hidden="true">{{ node.connector === 'arrow' ? '←' : '+' }}</span>
+          }
+        }
+      </p>
     </div>
 
     <section class="words-hub-grid" [attr.aria-label]="sectionsLabel">
-      <qd-word-section-card
-        data-testid="words-hub-card--active"
-        [labelAr]="activeCard.labelAr"
-        [descriptionAr]="activeCard.descriptionAr"
-        [route]="activeCard.route"
-        [disabled]="activeCard.disabled"
-      />
-
-      @for (card of additionalActiveCards; track card.labelAr) {
+      @for (card of cards; track card.key) {
         <qd-word-section-card
-          [attr.data-testid]="'words-hub-card--' + card.labelAr"
-          [labelAr]="card.labelAr"
-          [descriptionAr]="card.descriptionAr"
+          [attr.data-testid]="'words-hub-card--' + card.key"
+          [ordinal]="card.ordinal"
+          [eyebrow]="card.eyebrow"
+          [title]="card.title"
+          [description]="card.description"
           [route]="card.route"
-          [disabled]="card.disabled"
-        />
-      }
-
-      @for (card of comingSoonCards; track card.labelAr) {
-        <qd-word-section-card
-          data-testid="words-hub-card--disabled"
-          [labelAr]="card.labelAr"
-          [descriptionAr]="card.descriptionAr"
-          [disabled]="card.disabled"
-          [comingSoonLabel]="comingSoonBadge"
         />
       }
     </section>
