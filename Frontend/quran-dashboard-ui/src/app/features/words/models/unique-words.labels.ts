@@ -1,4 +1,9 @@
-import { UniqueWordKind, UniqueWordSort, WordDrilldownView } from './unique-words.models';
+import { explorerSortOptions } from './explorer-sort';
+import {
+  UNIQUE_WORD_SORT_COLUMN_LIST,
+  UniqueWordKind,
+  WordDrilldownView,
+} from './unique-words.models';
 import { lemmasRoutePath, rootsRoutePath, stemsRoutePath, wordTypesRoutePath } from '../../../core/navigation/route-paths';
 import {
   ROW_NUMBER_HEADER,
@@ -53,11 +58,16 @@ export const UNIQUE_WORD_KIND_LABELS: Record<UniqueWordKind, string> = {
   simple: WORDS_SHARED_WORD_VIEWS.simple,
 };
 
-export const UNIQUE_WORD_SORT_LABELS: Record<UniqueWordSort, string> = {
-  'mushaf-order': 'ترتيب المصحف',
-  occurrences: 'الأكثر تكرارًا',
-  alpha: 'أبجدي',
-};
+export const UNIQUE_WORDS_MUSHAF_ORDER_LABEL = 'ترتيب المصحف';
+
+/**
+ * Options for the ≤1023px fallback sort select (Feature 030, N8): the default release order plus
+ * every sortable column in both directions. ≥1024px sorts through the table column headers.
+ */
+export const UNIQUE_WORD_SORT_OPTIONS = explorerSortOptions(
+  UNIQUE_WORD_SORT_COLUMN_LIST,
+  UNIQUE_WORDS_MUSHAF_ORDER_LABEL,
+);
 
 export const WORD_DRILLDOWN_VIEW_LABELS: Record<WordDrilldownView, string> = {
   surahs: WORDS_SHARED_HEADERS.surahs,

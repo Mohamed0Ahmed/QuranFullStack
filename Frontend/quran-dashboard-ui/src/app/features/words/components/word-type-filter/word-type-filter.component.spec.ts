@@ -268,4 +268,65 @@ describe('WordTypeFilterComponent', () => {
       expect(emitted).toEqual(['passive']);
     });
   });
+
+  // N3 row 8: before the tree landed the filter was a single text line, so the multi-card toolbar and the
+  // fixed-height panel both appeared on first load and shoved the page down.
+  describe('first-load mirror', () => {
+    function renderLoading() {
+      const fixture = TestBed.createComponent(WordTypeFilterComponent);
+      fixture.componentRef.setInput('tree', null);
+      fixture.componentRef.setInput('loading', true);
+      fixture.detectChanges();
+      return fixture.nativeElement as HTMLElement;
+    }
+
+    it('mirrors the loaded toolbar and panel structure while the tree loads', () => {
+      const loading = renderLoading();
+
+      const loadedFixture = TestBed.createComponent(WordTypeFilterComponent);
+      loadedFixture.componentRef.setInput('tree', tree);
+      loadedFixture.detectChanges();
+      const loaded = loadedFixture.nativeElement as HTMLElement;
+
+      expect(loading.querySelector('[data-testid="word-type-filter-skeleton"]')).not.toBeNull();
+      // Same toolbar, same card count, same panel box: the mirror reuses the real classes those elements
+      // are sized by, so it wraps exactly like the loaded strip at any width.
+      expect(loading.querySelectorAll('.word-type-filter__toolbar').length).toBe(1);
+      expect(loading.querySelectorAll('.word-type-filter__trigger').length)
+        .toBe(loaded.querySelectorAll('.word-type-filter__trigger').length);
+      expect(loading.querySelectorAll('.word-type-filter__panel').length).toBe(1);
+
+      for (const card of Array.from(loading.querySelectorAll('.word-type-filter__trigger'))) {
+        expect(card.classList.contains('qd-card')).toBe(true);
+        expect(card.querySelector('.word-type-filter__button')).not.toBeNull();
+        expect(card.querySelector('.word-type-filter__label-row')).not.toBeNull();
+        // The hidden badge is what reserves the selected trigger's (taller) row height.
+        expect(card.querySelector('.word-type-filter__skeleton-badge')?.classList.contains('qd-badge')).toBe(true);
+      }
+    });
+
+    it('stays inert and announces once through the panel skeleton', () => {
+      const loading = renderLoading();
+
+      // Non-interactive: no button, no select, nothing focusable.
+      expect(loading.querySelector('button')).toBeNull();
+      expect(loading.querySelector('select')).toBeNull();
+      // One live region only — the toolbar mirror is decorative, qd-panel-skeleton owns the announcement.
+      expect(loading.querySelector('.word-type-filter__toolbar')?.getAttribute('aria-hidden')).toBe('true');
+      expect(loading.querySelectorAll('[role="status"]').length).toBe(1);
+      expect(loading.querySelector('.qd-sr-only')?.textContent?.trim()).toBeTruthy();
+    });
+
+    it('keeps the plain placeholder when there is no tree and no load in flight', () => {
+      const fixture = TestBed.createComponent(WordTypeFilterComponent);
+      fixture.componentRef.setInput('tree', null);
+      fixture.componentRef.setInput('loading', false);
+      fixture.detectChanges();
+      const root = fixture.nativeElement as HTMLElement;
+
+      // A failed tree must not shimmer forever: the page's own error state owns that case.
+      expect(root.querySelector('[data-testid="word-type-filter-skeleton"]')).toBeNull();
+      expect(root.querySelector('.word-type-filter__placeholder')).not.toBeNull();
+    });
+  });
 });

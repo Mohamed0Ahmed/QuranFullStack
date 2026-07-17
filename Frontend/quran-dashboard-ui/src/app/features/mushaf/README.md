@@ -41,6 +41,22 @@ ayahs, and متشابهات groups. State (page, selected ayah/word, source sele
   `role="status"` pattern ("جارٍ تحميل دراسة الآية...", "جارٍ تحميل تحليل الكلمة..."). All
   three skeletons are **loading chrome only** — they never approximate or touch Quran
   text, ayah glyphs, word-segment rendering, or `--qd-font-quran`.
+- **Loading never moves the layout** (Feature 030, N3). Every loading state in the reader
+  repaints inside the box its loaded content will occupy; reservations apply **only while
+  loading** — loaded content always sizes itself.
+  - `mushaf-page-area` reserves a **static measured** block size below the 1024px panel
+    breakpoint (above it the panel is already fixed), and the panel skeleton stretches to
+    fill it instead of collapsing to a 3rem bar. The baseline is derived from the Madani
+    page being a structural constant (15 non-wrapping lines over
+    `--qd-mushaf-text-column-width`) — see the provenance comment in its `.scss`. Same
+    accepted risk as the U1 baselines: it invalidates silently if the Quran font metrics
+    or the column-width token change. Pages 1–2 over-reserve slightly.
+  - `similar-ayahs-card` / `mutashabihat-groups-card` render **count-driven, card-shaped**
+    placeholders (`expectedItemCount` / `expectedGroupCount` + `expectedOccurrenceCount`,
+    fed from the already-loaded `study.similaritySummary`, `0` = unknown ⇒ fixed
+    fallback). They compose the real `qdAyahCard` frame and the real meta/text classes, so
+    the placeholder geometry cannot drift from the loaded geometry. Multi-line ayah text
+    is unknowable before the load and still grows its card (accepted).
 - **Selected-word loading reserves its natural size** (Feature 029, U1): while word
   analysis loads, `selected-word-section` holds `min-block-size: max(baseline, last
   natural)` so the divider/next section below it never moves. The last successful
@@ -50,6 +66,19 @@ ayahs, and متشابهات groups. State (page, selected ayah/word, source sele
   cells, and the responsive baseline is measured, not invented (333px wide bands /
   495px under the 768px morphology-grid breakpoint). Reservation clears on
   success/error/empty; loaded content always sizes itself.
+  `selected-word-section.component.spec.ts` is the **regression guard** for this
+  pattern — keep it passing untouched.
+- **Selected-ayah loading reserves its natural size too** (Feature 030, N3 row 10):
+  a loaded tafsir/translation/إعراب has an arbitrary height, so `selected-ayah-section`
+  runs the same pattern as a **local port** (decision N3-a: no shared utility until a
+  third consumer). Same guarded `ResizeObserver`, same numeric-geometry-only rule, same
+  `--loading` class scoping — the scoping is load-bearing, because the reservation sits
+  over three layered min-heights (the component's own, the `<1024px`/`<768px` embedded
+  overrides in `styles/_components.scss`, and the reserved var). Its per-band baseline
+  resolves through `--qd-ayah-study-min-height`, so it follows each band's study floor
+  and can never reserve *less* than the loaded floor. Accepted trade (as in U1):
+  reserving the previous ayah's height while a **different** ayah loads holds stale
+  geometry.
 - **Ayah hover is component-local, never URL-synced** (Feature 030, N7): hovering (or
   keyboard-focusing) any word paints `--qd-mushaf-ayah-hover-bg` behind every word of that
   ayah. The `hoveredVerseKey` signal is owned by `mushaf-page-view` and flows down the

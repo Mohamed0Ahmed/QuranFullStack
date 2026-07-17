@@ -6,7 +6,6 @@ import { parsePositiveIntParam } from './words-association-filters';
 
 import {
   DEFAULT_STEM_DETAIL_PAGE,
-  DEFAULT_STEM_SORT,
   DEFAULT_STEM_SURAHS_VIEW,
   DEFAULT_STEM_VIEW,
   DEFAULT_STEM_WORD_VIEW,
@@ -20,16 +19,16 @@ import {
   StemWordView,
   ParsedStemsQuery,
   isPaginatedStemView,
-  isStemSort,
+  normalizeStemSort,
   isStemSurahView,
   isStemView,
   isStemWordView,
 } from '../models/stems.models';
 
 export function parseStemsQueryParams(queryParams: ParamMap): ParsedStemsQuery {
-  const sortRaw = queryParams.get(STEMS_QUERY_KEYS.sort);
-  const sort: StemSort =
-    sortRaw !== null && isStemSort(sortRaw) ? sortRaw : DEFAULT_STEM_SORT;
+  // Canonicalizes legacy aliases in (occurrences-desc → occurrences) and fails closed to the
+  // default on anything unknown, so one ordering can never be cached under two tokens.
+  const sort: StemSort = normalizeStemSort(queryParams.get(STEMS_QUERY_KEYS.sort));
 
   const page = parsePositiveInt(queryParams.get(STEMS_QUERY_KEYS.page)) ?? DEFAULT_STEMS_LIST_PAGE;
 

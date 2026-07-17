@@ -50,18 +50,22 @@
       />
 
       <div class="qd-explorer-controls-secondary">
-        <label class="qd-sr-only" for="unique-words-sort">{{ sortLabel }}</label>
-        <select
-          id="unique-words-sort"
-          class="qd-select"
-          data-testid="unique-words-sort-select"
-          [value]="listState().sort"
-          (change)="onSortChange($any($event.target).value)"
-        >
-          @for (option of sortOptions; track option.key) {
-            <option [value]="option.key">{{ option.labelAr }}</option>
-          }
-        </select>
+        <!-- ≤1023px fallback (Feature 030, N8): the table header row is display:none on phone AND
+             tablet, so the header cycle is unreachable there. Same URL contract as the headers. -->
+        <div class="qd-explorer-sort-fallback">
+          <label class="qd-sr-only" for="unique-words-sort">{{ sortLabel }}</label>
+          <select
+            id="unique-words-sort"
+            class="qd-select"
+            data-testid="unique-words-sort-select"
+            [value]="listState().sort"
+            (change)="onSortSelect($any($event.target).value)"
+          >
+            @for (option of sortOptions; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
+        </div>
 
         <qd-explorer-count-range-filter
           data-testid="unique-words-range-filter"
@@ -115,8 +119,10 @@
             [pageSize]="listState().pageSize"
             [drilldownIsOpen]="drilldownIsOpen()"
             [activeColumn]="activeColumn()"
+            [sort]="listState().sort"
             (rowSelected)="onRowSelected($event)"
             (drilldownOpen)="onDrilldownOpen($event)"
+            (sortChange)="onSortChange($event)"
           />
           <qd-pagination
             [currentPage]="listState().page"

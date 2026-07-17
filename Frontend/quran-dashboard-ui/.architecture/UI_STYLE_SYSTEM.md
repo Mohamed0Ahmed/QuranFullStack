@@ -706,6 +706,38 @@ fills, resting borders — stays **banned as solid green**: use a tint,
 - Compose, do not re-style — a table needing a rule beyond
   `grid-template-columns` is a signal to extend the base, not fork it.
 
+#### Column-header sorting (Feature 030, N8)
+- **Backing classes (styled once on the base, never per table):**
+  `.qd-explorer-table__sort-button` (+ `.qd-is-sorted`),
+  `.qd-explorer-table__sort-label`, `.qd-explorer-table__sort-glyph`.
+- **Markup:** a native `<button>` **inside** the `role="columnheader"` element —
+  the button gives Enter/Space for free. Non-sortable columns stay **plain text**:
+  no button, no `aria-sort`, nothing focusable.
+- **Active visual:** `--qd-accent-text` label + a direction glyph (▲/▼) only —
+  **no** 2px green-thread bar here (N8-d), no fill, no shadow (flat doctrine
+  §16.2, allowed-green list §16.3 #4). Hover = `--qd-surface-hover`;
+  `:focus-visible` = the standard ring. The glyph is a separate `aria-hidden`
+  span, so it never enters the accessible name; up/down glyphs carry no
+  horizontal direction and stay correct under RTL.
+- **A11y:** `aria-sort="ascending"|"descending"` on the columnheader, **absent**
+  when the column is inactive. The button's Arabic `aria-label` names the column
+  **and the state the next click moves to** (`ترتيب حسب X تصاعديًا` /
+  `تنازليًا` / `إلغاء الترتيب حسب X`) — it describes the action, while
+  `aria-sort` reports the current state.
+- **Cycle (3-state, per column):** natural direction → opposite → release
+  (param absent = the explorer's default). Counts are naturally descending, text
+  naturally ascending. Word Types is the exception: its default IS `occurrences`
+  desc, so that header renders active-desc in the default state and its cycle
+  collapses to desc ⇄ asc.
+- **Behavior/URL live in the feature, not here:** the token grammar, cycle, and
+  fail-closed guards are `features/words/models/explorer-sort.ts` +
+  `utils/explorer-table-sort.controller.ts`; see the words README for the URL
+  contract. Tables stay presentational and emit the next token (or `null`).
+- **≤1023px:** the header row is `display: none` in all five table SCSS files, so
+  sorting is unreachable there. A compact `<select>` under
+  `.qd-explorer-sort-fallback` (hidden ≥1024px) carries the same URL contract.
+  Do not delete it, and do not add a second sort control at ≥1024px.
+
 ### `.qd-detail-list`
 - **Purpose:** the one detail-list implementation for all 10 explorer detail-list
   panels (root/lemma/stem word lists, cross-links, missing-surahs, occurrences,
@@ -795,5 +827,17 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   'rows' | 'panel'`, default reproduces today's six-line panel skeleton).
 - **Roles:** all skeletons are non-interactive, `aria-busy="true"` + `role="status"`
   with an sr-only label, and static under `prefers-reduced-motion`.
+- **`shape="panel"` fills its host** (Feature 030, N3): it stands in for a whole
+  panel body, so given a host with a block size (a fixed-height panel, or a flex
+  slot) the block stretches into it rather than stranding a 3rem bar in a tall box.
+  A host with an auto block size is unaffected — it keeps the 3rem default. The
+  consumer supplies the slot (flex/height); the skeleton's internals stay the
+  primitive's business.
+- **No layout shift** (§N3 doctrine): a skeleton must occupy the box its loaded
+  content will occupy — same padding, gaps, line boxes and item count. Build the
+  mirror out of the **real** loaded classes (and, where the count is knowable
+  before the load, the real count) so the two cannot drift; do not hand-derive a
+  parallel set of numbers. Reservations apply **only while loading** — loaded
+  content always sizes itself.
 - Compose, do not re-style — a new loading state is a `shape`/`rowTemplate` input,
   not a new component.

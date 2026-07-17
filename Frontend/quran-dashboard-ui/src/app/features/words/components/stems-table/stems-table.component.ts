@@ -4,9 +4,10 @@ import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrollin
 
 import { WordCountChipComponent } from '../word-count-chip/word-count-chip.component';
 import { STEMS_COLUMN_COUNT_LABELS, STEMS_COLUMN_HEADERS, STEMS_LEMMA_LINK_PREFIX, STEMS_LEMMA_MISSING_ARIA, STEMS_LEMMA_MISSING_LABEL, STEMS_LOADING_LABEL, STEMS_ROOT_LINK_PREFIX, STEMS_ROOT_MISSING_ARIA, STEMS_ROOT_MISSING_LABEL, STEMS_TABLE_BODY_LABEL, STEMS_TABLE_LABEL } from '../../models/stems.labels';
-import { STEMS_LIST_PAGE_SIZE, StemListItemViewModel, StemSurahView, StemView, StemWordView } from '../../models/stems.models';
+import { DEFAULT_STEM_SORT, STEMS_LIST_PAGE_SIZE, STEM_SORT_COLUMNS, StemListItemViewModel, StemSort, StemSurahView, StemView, StemWordView, normalizeStemSort } from '../../models/stems.models';
 import { isMorphologyCountActive, MorphologyColumnKey, resolveMorphologyActiveColumn } from '../../utils/explorer-count-active';
 import { ExplorerInteractionSource, handleExplorerTableKeydown } from '../../utils/explorer-table-keydown';
+import { ExplorerTableSortController } from '../../utils/explorer-table-sort.controller';
 import { ExplorerRowNavDirection, scrollExplorerRowIntoView } from '../../utils/explorer-table-scroll';
 import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
 import { syncTableScrollbarGutter } from '../../utils/table-scrollbar-gutter-sync';
@@ -60,10 +61,20 @@ export class StemsTableComponent {
   readonly activeWordView = input<StemWordView | null>(null);
   readonly activeSurahView = input<StemSurahView | null>(null);
   readonly activeColumn = input<StemTableColumnKey | null>(null);
+  readonly sort = input<StemSort>(DEFAULT_STEM_SORT);
 
   readonly rowSelected = output<StemListItemViewModel>();
   readonly countOpened = output<StemCountOpenedEvent>();
+  /** null = release the sort param back to the default (ترتيب المصحف). */
+  readonly sortChange = output<StemSort | null>();
 
+  protected readonly sortControl = new ExplorerTableSortController<StemSort>(
+    () => this.sort(),
+    (value) => normalizeStemSort(value),
+    (sort) => this.sortChange.emit(sort),
+  );
+
+  protected get sortColumns(): typeof STEM_SORT_COLUMNS { return STEM_SORT_COLUMNS; }
   protected get headers() { return STEMS_COLUMN_HEADERS; }
   protected get countLabels() { return STEMS_COLUMN_COUNT_LABELS; }
 

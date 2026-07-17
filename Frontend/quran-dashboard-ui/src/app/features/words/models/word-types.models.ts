@@ -2,7 +2,23 @@ export type WordTypeMainType = 'noun' | 'verb' | 'particle' | 'inl';
 export type WordTypeCase = 'all' | 'nominative' | 'accusative' | 'genitive' | 'null';
 export type WordTypeTense = 'all' | 'past' | 'present' | 'imperative';
 export type WordTypeVoice = 'all' | 'active' | 'passive';
-export type WordTypeSort = 'occurrences' | 'ayahs' | 'surahs' | 'mushaf-order' | 'alpha';
+/**
+ * The Word Types sort allowlist (shared by the words view and the three grouped views), split by
+ * column class because that decides the natural direction a bare token means. Unlike the other
+ * four explorers the DEFAULT is `occurrences` desc, not `mushaf-order` — `mushaf-order` is still
+ * an allowlisted ordering here, just not the default and not a column header.
+ * النوع/الجذر/الأصل/الصيغة are related-entity text columns and render as plain headers.
+ */
+type WordTypeCountSortColumn = 'occurrences' | 'ayahs' | 'surahs';
+type WordTypeTextSortColumn = 'alpha';
+export type WordTypeSortColumnKey = WordTypeCountSortColumn | WordTypeTextSortColumn;
+
+/** The canonical token set: `occurrences`/`occurrences-asc`, `alpha`/`alpha-desc`, … */
+export type WordTypeSort =
+  | MushafOrderSort
+  | CanonicalSortTokens<WordTypeCountSortColumn, 'desc'>
+  | CanonicalSortTokens<WordTypeTextSortColumn, 'asc'>;
+
 export type WordTypeTableView = 'words' | 'roots' | 'stems' | 'lemmas';
 export type WordTypeDetailView = 'words' | 'ayahs' | 'surahs';
 // Presence-filter dimensions (Feature 026, US6): the three morphology associations a word-context row
@@ -28,6 +44,15 @@ import type {
   WordTableRowDto as WordTableRowWireDto,
 } from '../../../core/api/generated/models';
 import type { PagedResultDto } from '../../../core/data-access/paged-result.model';
+import {
+  CanonicalSortTokens,
+  ExplorerSortColumn,
+  MUSHAF_ORDER_SORT,
+  MushafOrderSort,
+  canonicalSortTokens,
+  canonicalizeSortToken,
+} from './explorer-sort';
+import { WORDS_SHARED_HEADERS } from './words-shared.labels';
 
 export type {
   AyahWordForHighlightDto,
@@ -206,7 +231,28 @@ export const WORD_TYPE_MAIN_TYPES = ['noun', 'verb', 'particle', 'inl'] as const
 export const WORD_TYPE_CASES = ['all', 'nominative', 'accusative', 'genitive', 'null'] as const satisfies readonly WordTypeCase[];
 export const WORD_TYPE_TENSES = ['all', 'past', 'present', 'imperative'] as const satisfies readonly WordTypeTense[];
 export const WORD_TYPE_VOICES = ['all', 'active', 'passive'] as const satisfies readonly WordTypeVoice[];
-export const WORD_TYPE_SORTS = ['occurrences', 'ayahs', 'surahs', 'mushaf-order', 'alpha'] as const satisfies readonly WordTypeSort[];
+/**
+ * The sortable Word Types columns, shared by all four table views.
+ *
+ * `alpha` is the dimension text column, whose header text CHANGES per view (الكلمة in the words
+ * view, الجذر/الأصل الصرفي/الصيغة المعجمية in the grouped ones — N8-f). The label here is the
+ * view-neutral wording the ≤1023px fallback select needs, since that select spans every view; the
+ * table overrides it per view with the real dimension header.
+ */
+export const WORD_TYPE_SORT_COLUMNS = {
+  alpha: { key: 'alpha', natural: 'asc', label: 'أبجدي' },
+  occurrences: { key: 'occurrences', natural: 'desc', label: WORDS_SHARED_HEADERS.occurrences },
+  ayahs: { key: 'ayahs', natural: 'desc', label: WORDS_SHARED_HEADERS.ayahs },
+  surahs: { key: 'surahs', natural: 'desc', label: WORDS_SHARED_HEADERS.surahs },
+} as const satisfies Record<WordTypeSortColumnKey, ExplorerSortColumn<WordTypeSortColumnKey>>;
+
+export const WORD_TYPE_SORT_COLUMN_LIST: readonly ExplorerSortColumn<WordTypeSortColumnKey>[] =
+  Object.values(WORD_TYPE_SORT_COLUMNS);
+
+export const WORD_TYPE_SORTS: readonly WordTypeSort[] = [
+  MUSHAF_ORDER_SORT,
+  ...canonicalSortTokens(WORD_TYPE_SORT_COLUMN_LIST),
+] as readonly WordTypeSort[];
 export const WORD_TYPE_TABLE_VIEWS = ['words', 'roots', 'stems', 'lemmas'] as const satisfies readonly WordTypeTableView[];
 export const WORD_TYPE_DETAIL_VIEW_KEYS = ['ayahs', 'surahs'] as const satisfies readonly WordTypeDetailView[];
 export const WORD_TYPE_DETAIL_VIEWS = ['words', 'ayahs', 'surahs'] as const satisfies readonly WordTypeDetailView[];
@@ -251,8 +297,21 @@ export function isWordTypeVoice(value: unknown): value is WordTypeVoice {
   return (WORD_TYPE_VOICES as readonly string[]).includes(value as string);
 }
 
+/** True only for a CANONICAL token — the legacy alias spellings normalize instead (see roots). */
 export function isWordTypeSort(value: unknown): value is WordTypeSort {
-  return (WORD_TYPE_SORTS as readonly string[]).includes(value as string);
+  return (
+    typeof value === 'string' && canonicalizeSortToken(value, WORD_TYPE_SORT_COLUMN_LIST) === value
+  );
+}
+
+/**
+ * Canonicalizes aliases in and fails closed to the default on anything unknown. The default here
+ * is `occurrences` (desc), not `mushaf-order` — Word Types is the one explorer that browses by
+ * frequency, so an unknown token lands on المواضع.
+ */
+export function normalizeWordTypeSort(value: string | null | undefined): WordTypeSort {
+  const canonical = canonicalizeSortToken(value, WORD_TYPE_SORT_COLUMN_LIST);
+  return canonical !== null && isWordTypeSort(canonical) ? canonical : DEFAULT_WORD_TYPE_SORT;
 }
 
 export function isWordTypeTableView(value: unknown): value is WordTypeTableView {

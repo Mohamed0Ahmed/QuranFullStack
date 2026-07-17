@@ -153,9 +153,29 @@
     }
   }
 
-  &__skeleton {
-    display: flex;
-    flex-direction: column;
-    gap: var(--qd-space-2);
+  // N3 row 12: the loading placeholders reuse the real group / `qdAyahCard` frames
+  // and the real title / meta / text classes, so every padding, gap, hairline and
+  // line box comes from the loaded rules — never a parallel set of numbers. Each
+  // bar IS its line box (`auto` height around an `&nbsp;`), inheriting font-size and
+  // line-height from the very rule that sizes the loaded text, so restyling a loaded
+  // group moves the placeholder with it. Residual: multi-line phrases or ayah texts,
+  // and the expand toggle on groups above the preview count, still grow their group
+  // on settle (accepted — neither is knowable before the load).
+  &__group--skeleton .qd-skeleton {
+    --qd-skeleton-h: auto;
+  }
+
+  &__phrase-skeleton {
+    --qd-skeleton-w: 70%;
+    margin-inline: auto;
+  }
+
+  &__group-meta-skeleton {
+    --qd-skeleton-w: 40%;
+    margin-inline: auto;
+  }
+
+  &__occurrence-meta-skeleton {
+    --qd-skeleton-w: 10rem;
   }
 }

@@ -1,4 +1,17 @@
-export type StemSort = 'mushaf-order' | 'occurrences' | 'alpha';
+/**
+ * The Stems sort allowlist, split by column class because that decides the natural direction a
+ * bare token means (counts descend, text ascends). `mushaf-order` is the default and is not a
+ * column; the dominant الجذر/الصيغة text columns are related-entity columns, not sortable in v1.
+ */
+type StemCountSortColumn = 'occurrences' | 'ayahs' | 'surahs' | 'simple' | 'tashkeel';
+type StemTextSortColumn = 'alpha';
+export type StemSortColumnKey = StemCountSortColumn | StemTextSortColumn;
+
+/** The canonical token set: `occurrences`/`occurrences-asc`, `alpha`/`alpha-desc`, … */
+export type StemSort =
+  | MushafOrderSort
+  | CanonicalSortTokens<StemCountSortColumn, 'desc'>
+  | CanonicalSortTokens<StemTextSortColumn, 'asc'>;
 
 export type StemWordView = 'simple' | 'tashkeel';
 
@@ -22,8 +35,16 @@ import type {
 } from '../../../core/api/generated/models';
 import type { PagedResultDto } from '../../../core/data-access/paged-result.model';
 import type { RangeFilters, RangeMetric } from '../state/words-range-filters';
+import {
+  CanonicalSortTokens,
+  ExplorerSortColumn,
+  MUSHAF_ORDER_SORT,
+  MushafOrderSort,
+  canonicalSortTokens,
+  canonicalizeSortToken,
+} from './explorer-sort';
 import { SURAHS_RANGE_THRESHOLD } from './words-filter-presets';
-import { WORDS_SHARED_COUNT_COLUMNS } from './words-shared.labels';
+import { WORDS_SHARED_COUNT_COLUMNS, WORDS_SHARED_HEADERS } from './words-shared.labels';
 
 export type {
   MissingSurahItemDto,
@@ -131,14 +152,40 @@ export const DEFAULT_STEM_DETAIL_PAGE = 1;
 export const STEM_DETAIL_PAGE_SIZE = 100;
 export const TOTAL_SURAHS = 114;
 
-export const STEM_SORT_KEYS = ['mushaf-order', 'occurrences', 'alpha'] as const satisfies readonly StemSort[];
+/**
+ * The sortable Stems columns, in table-header order. The dominant الصيغة المعجمية / الجذر text
+ * columns are excluded: they are related-entity columns and render as plain headers.
+ */
+export const STEM_SORT_COLUMNS = {
+  alpha: { key: 'alpha', natural: 'asc', label: WORDS_SHARED_HEADERS.stem },
+  occurrences: { key: 'occurrences', natural: 'desc', label: WORDS_SHARED_HEADERS.occurrences },
+  ayahs: { key: 'ayahs', natural: 'desc', label: WORDS_SHARED_HEADERS.ayahs },
+  surahs: { key: 'surahs', natural: 'desc', label: WORDS_SHARED_HEADERS.surahs },
+  simple: { key: 'simple', natural: 'desc', label: WORDS_SHARED_HEADERS.simpleWords },
+  tashkeel: { key: 'tashkeel', natural: 'desc', label: WORDS_SHARED_HEADERS.tashkeelWords },
+} as const satisfies Record<StemSortColumnKey, ExplorerSortColumn<StemSortColumnKey>>;
+
+export const STEM_SORT_COLUMN_LIST: readonly ExplorerSortColumn<StemSortColumnKey>[] =
+  Object.values(STEM_SORT_COLUMNS);
+
+export const STEM_SORT_KEYS: readonly StemSort[] = [
+  MUSHAF_ORDER_SORT,
+  ...canonicalSortTokens(STEM_SORT_COLUMN_LIST),
+] as readonly StemSort[];
 export const STEM_WORD_VIEW_KEYS = ['simple', 'tashkeel'] as const satisfies readonly StemWordView[];
 export const STEM_SURAHS_VIEW_KEYS = ['mentioned', 'missing'] as const satisfies readonly StemSurahView[];
 export const STEM_VIEW_KEYS = ['words', 'ayahs', 'surahs', 'lemmas'] as const satisfies readonly StemView[];
 export const PAGINATED_STEM_VIEWS: readonly StemView[] = ['ayahs', 'words'];
 
+/** True only for a CANONICAL token — the legacy alias spellings normalize instead (see roots). */
 export function isStemSort(value: unknown): value is StemSort {
-  return (STEM_SORT_KEYS as readonly string[]).includes(value as string);
+  return typeof value === 'string' && canonicalizeSortToken(value, STEM_SORT_COLUMN_LIST) === value;
+}
+
+/** Canonicalizes aliases in and fails closed to the default on anything unknown. */
+export function normalizeStemSort(value: string | null | undefined): StemSort {
+  const canonical = canonicalizeSortToken(value, STEM_SORT_COLUMN_LIST);
+  return canonical !== null && isStemSort(canonical) ? canonical : DEFAULT_STEM_SORT;
 }
 
 export function isStemWordView(value: unknown): value is StemWordView {

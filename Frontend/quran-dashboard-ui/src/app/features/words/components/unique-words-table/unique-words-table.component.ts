@@ -27,9 +27,13 @@ import {
   WORD_DRILLDOWN_VIEW_LABELS,
 } from '../../models/unique-words.labels';
 import {
+  DEFAULT_UNIQUE_WORD_SORT,
   UNIQUE_WORDS_PAGE_SIZE,
+  UNIQUE_WORD_SORT_COLUMNS,
   UniqueWordListItemViewModel,
+  UniqueWordSort,
   WordDrilldownView,
+  normalizeUniqueWordSort,
 } from '../../models/unique-words.models';
 import {
   isUniqueWordCountActive,
@@ -43,6 +47,7 @@ import {
   ExplorerRowNavDirection,
   scrollExplorerRowIntoView,
 } from '../../utils/explorer-table-scroll';
+import { ExplorerTableSortController } from '../../utils/explorer-table-sort.controller';
 import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
 import { syncTableScrollbarGutter } from '../../utils/table-scrollbar-gutter-sync';
 import { buildRootsDeepLink } from '../../state/roots-url-sync';
@@ -86,9 +91,22 @@ export class UniqueWordsTableComponent {
   readonly pageSize = input(UNIQUE_WORDS_PAGE_SIZE);
   readonly drilldownIsOpen = input(false);
   readonly activeColumn = input<UniqueWordsColumnKey | null>(null);
+  readonly sort = input<UniqueWordSort>(DEFAULT_UNIQUE_WORD_SORT);
 
   readonly rowSelected = output<UniqueWordListItemViewModel>();
   readonly drilldownOpen = output<UniqueWordsDrilldownOpenEvent>();
+  /** null = release the sort param back to the default (ترتيب المصحف). */
+  readonly sortChange = output<UniqueWordSort | null>();
+
+  protected readonly sortControl = new ExplorerTableSortController<UniqueWordSort>(
+    () => this.sort(),
+    (value) => normalizeUniqueWordSort(value),
+    (sort) => this.sortChange.emit(sort),
+  );
+
+  protected get sortColumns(): typeof UNIQUE_WORD_SORT_COLUMNS {
+    return UNIQUE_WORD_SORT_COLUMNS;
+  }
 
   protected readonly loadingRowPlaceholders = Array.from({ length: 12 });
   protected readonly rowHeight = signal(ROW_HEIGHT_DESKTOP);

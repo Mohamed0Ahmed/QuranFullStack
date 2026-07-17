@@ -7,7 +7,7 @@ import {
   buildLemmasQueryParams,
   parseLemmasQueryParams,
 } from './lemmas-url-sync';
-import { LEMMAS_QUERY_KEYS, LemmaSort, LemmaView } from '../models/lemmas.models';
+import { LEMMAS_QUERY_KEYS, LEMMA_SORT_KEYS, LemmaSort, LemmaView } from '../models/lemmas.models';
 
 function params(query: string): ParamMap {
   return convertToParamMap(query ? Object.fromEntries(new URLSearchParams(query)) : {});
@@ -344,5 +344,40 @@ describe('parseLemmasQueryParams count ranges (Feature 026)', () => {
     const parsed = parseLemmasQueryParams(params('occ=9..2&surahs=1..50'));
     expect(parsed.ranges).toEqual({ surahs: { min: 1, max: 50 } });
     expect(parsed.page).toBe(1);
+  });
+});
+
+describe('parseLemmasQueryParams sort tokens (Feature 030, N8)', () => {
+  it.each(LEMMA_SORT_KEYS)('parses the canonical token "%s" verbatim', (sort) => {
+    expect(parseLemmasQueryParams(params(`sort=${sort}`)).sort).toBe(sort);
+  });
+
+  it.each([
+    ['occurrences-desc', 'occurrences'],
+    ['ayahs-desc', 'ayahs'],
+    ['stems-desc', 'stems'],
+    ['alpha-asc', 'alpha'],
+  ])('canonicalizes the legacy alias "%s" to "%s"', (alias, canonical) => {
+    // An old shared link must not fork the ordering into a second URL/cache spelling.
+    expect(parseLemmasQueryParams(params(`sort=${alias}`)).sort).toBe(canonical);
+  });
+
+  it.each([
+    'relevance',
+    'relevance-asc',
+    'lemmas',
+    'mushaf-order-asc',
+    'mushaf-order-desc',
+    '-asc',
+  ])('fails closed to the default on the unsupported token "%s"', (sort) => {
+    expect(parseLemmasQueryParams(params(`sort=${sort}`)).sort).toBe('mushaf-order');
+  });
+
+  it('round-trips a suffixed token through build', () => {
+    expect(buildLemmasQueryParams({ sort: 'occurrences-asc' })).toEqual({ sort: 'occurrences-asc' });
+  });
+
+  it('removes the param on release, so the default order stays param-free', () => {
+    expect(buildLemmasQueryParams({ sort: null, page: null })).toEqual({ sort: null, page: null });
   });
 });

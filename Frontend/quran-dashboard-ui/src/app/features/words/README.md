@@ -105,6 +105,46 @@ Shared across explorers: `utils/explorer-table-*` (focus/keyboard-nav/scroll/col
   test bundle. **Do not revert the getters.**
 - **URL-state is a contract.** `*-url-sync.ts` param names/shape are user-facing (shareable
   links) and spec'd; changing them is a contract change — update the spec and tests too.
+- **`sort` is one param with a suffix grammar** (Feature 030, N8 — cross-stack; the backend
+  half is the authority, see the reads README's ordering contract). `token := column |
+  column "-asc" | column "-desc"`. A **bare token means the column's natural direction** —
+  counts descend, text ascends — so every pre-030 token keeps its exact meaning as an alias:
+  `occurrences` ≡ `occurrences-desc`, `alpha` ≡ `alpha-asc`. The **bare form is canonical**
+  for the natural direction and the suffixed form only for the opposite one, so a count
+  column's canonical set is `{ occurrences, occurrences-asc }` and `occurrences-desc`
+  canonicalizes **out** on the way in — one ordering can never be cached or shared under two
+  spellings. `mushaf-order` is ascending-only and **bare-only** (`mushaf-order-asc/-desc` are
+  rejected here and 400 on the backend). **The default is the param's ABSENCE** — never
+  `sort=mushaf-order` — and releasing a header cycle writes `{ sort: null, page: null }`;
+  changing the ordering always resets `page`. There is **no `dir` param and no new query
+  key** (the `column` key is unrelated — it is detail focus). Client list cache keys keep the
+  token in the same opaque slot (`roots:list:<sort>:…`, `wordtypes:table:…:sort:<sort>:…`) —
+  no key-format change. The grammar, the 3-state cycle, `aria-sort`, the glyph and the
+  aria-label live in `models/explorer-sort.ts` + `utils/explorer-table-sort.controller.ts`;
+  each explorer owns its column allowlist (`*_SORT_COLUMNS`) and a `normalize*Sort` guard that
+  **fails closed to the default** on anything unknown. Matching is **exact** — unlike the
+  backend parser the frontend does not trim or case-fold, so `?sort=ALPHA` falls back to the
+  default (pre-existing, spec'd). Sortable columns: Roots `alpha` + all 7 counts; Lemmas
+  `alpha` + 6 counts; Stems `alpha` + 5 counts; Unique Words / Word Types `alpha`,
+  `occurrences`, `ayahs`, `surahs`. **Related-entity text columns are deliberately NOT
+  sortable** (lemmas' الجذر, stems' dominant الجذور/الصيغ, unique-words' نوع الكلمة/الجذر,
+  word-types' النوع/الجذر/الأصل/الصيغة) and neither is unique-words' لم يذكر فيها (computed
+  post-page; ordering by it is just the inverse of السور) — they render as plain headers.
+  **Word Types is the exception on defaults**: it defaults to `occurrences` desc, so its
+  المواضع header renders actively sorted in the default state and its cycle collapses to
+  desc(default) ⇄ asc with no release step, while `mushaf-order` stays an ordinary offered
+  ordering there rather than the release state. Its `alpha` column is the **dimension text
+  column**, whose header text follows `tableView` (الكلمة / الجذر / الأصل الصرفي / الصيغة
+  المعجمية) even though the token is identical across all four views.
+- **Sorting is column-headers at ≥1024px, a `<select>` at ≤1023px** (Feature 030, N8). The
+  top ترتيب dropdown is gone from every layout where the table header row is visible. Because
+  all five table SCSS files set the header row to `display: none` at ≤1023px, a compact
+  fallback select stays under `.qd-explorer-sort-fallback` (CSS-hidden ≥1024px) on **phone AND
+  tablet** — deleting it would make sorting unreachable below desktop. It offers the default
+  order plus every sortable column × both directions and drives the **same** URL contract, so
+  picking the explorer's default releases the param instead of spelling it out. The
+  `*-sort-select` testids are preserved. Visuals/a11y for the headers: `UI_STYLE_SYSTEM.md`
+  §17 (`.qd-explorer-table` → column-header sorting).
 - **Identity is clean imlaei-simple** (display Uthmani) — mirrors the backend read models.
 - **Headline result-count stat** (Feature 026, US4) on the four "normal" explorers (Unique Words, Roots,
   Lemmas, Stems): the shared presentational `explorer-result-count` component renders the label-prefix

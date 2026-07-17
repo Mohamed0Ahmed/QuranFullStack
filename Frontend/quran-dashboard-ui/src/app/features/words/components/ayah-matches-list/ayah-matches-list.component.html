@@ -62,13 +62,16 @@
     }
   </div>
 
-  @if (!loading()) {
-    <qd-pagination
-      [currentPage]="currentPage()"
-      [pageSize]="page().pageSize"
-      [totalCount]="page().totalCount"
-      [ariaLabel]="paginationLabel"
-      (pageChange)="pageChange.emit($event)"
-    />
-  }
+  <!-- Always-rendered slot: reserves the pagination row through loading (N3 row 4). -->
+  <div class="qd-detail-list__pagination-slot" data-testid="ayah-matches-pagination-slot">
+    @if (!loading()) {
+      <qd-pagination
+        [currentPage]="currentPage()"
+        [pageSize]="page().pageSize"
+        [totalCount]="page().totalCount"
+        [ariaLabel]="paginationLabel"
+        (pageChange)="pageChange.emit($event)"
+      />
+    }
+  </div>
 </div>

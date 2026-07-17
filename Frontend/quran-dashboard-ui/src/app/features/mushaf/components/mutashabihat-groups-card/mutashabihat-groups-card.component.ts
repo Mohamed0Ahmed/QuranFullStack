@@ -22,6 +22,19 @@ import { buildCollapsedOccurrencePreview } from './mutashabihat-occurrence-previ
 
 const OCCURRENCE_PREVIEW_COUNT = 5;
 
+/**
+ * N3 row 12 — loading layout reservation. The placeholder groups mirror the shape
+ * of the groups that are about to arrive, so the tab body does not grow on settle.
+ * Both counts come from the ayah study's similarity summary, which is already
+ * loaded before this tab can be opened; `0` means "unknown" (no summary yet, e.g.
+ * a deep link still resolving) and falls back to a fixed count. Occurrences per
+ * placeholder group are the summary's own average — never an invented depth — and
+ * are clamped to the preview count each loaded group collapses to.
+ */
+const FALLBACK_GROUP_PLACEHOLDER_COUNT = 2;
+const FALLBACK_OCCURRENCES_PER_GROUP = 2;
+const MAX_GROUP_PLACEHOLDER_COUNT = 4;
+
 type MutashabihatOccurrenceView = MutashabihatOccurrenceDto & {
   displayText: string;
   navigateLabel: string;
@@ -47,11 +60,35 @@ type MutashabihatGroupView = MutashabihatGroupDto & {
 export class MutashabihatGroupsCardComponent {
   readonly mutashabihat = input<AyahMutashabihatDto | null>(null);
   readonly loadState = input.required<ResourceLoadState>();
+  /** Group count known before this list loads; `0` = unknown (see the constants above). */
+  readonly expectedGroupCount = input(0);
+  /** Total occurrence count across those groups; `0` = unknown. */
+  readonly expectedOccurrenceCount = input(0);
 
   readonly ayahNavigate = output<AyahNavigationTarget>();
 
   protected readonly emptyMessage = MUTASHABIHAT_EMPTY_MESSAGE;
   protected readonly loadingMessage = MUTASHABIHAT_LOADING_MESSAGE;
+
+  protected readonly loadingGroupPlaceholders = computed<readonly number[]>(() => {
+    const expected = this.expectedGroupCount();
+    const count =
+      expected > 0
+        ? Math.min(expected, MAX_GROUP_PLACEHOLDER_COUNT)
+        : FALLBACK_GROUP_PLACEHOLDER_COUNT;
+    return Array.from({ length: count }, (_, index) => index);
+  });
+
+  protected readonly loadingOccurrencePlaceholders = computed<readonly number[]>(() => {
+    const groups = this.expectedGroupCount();
+    const occurrences = this.expectedOccurrenceCount();
+    const averagePerGroup =
+      groups > 0 && occurrences > 0
+        ? Math.round(occurrences / groups)
+        : FALLBACK_OCCURRENCES_PER_GROUP;
+    const count = Math.min(Math.max(averagePerGroup, 1), OCCURRENCE_PREVIEW_COUNT);
+    return Array.from({ length: count }, (_, index) => index);
+  });
 
   private readonly expandedGroupKeys = linkedSignal<
     AyahMutashabihatDto | null,

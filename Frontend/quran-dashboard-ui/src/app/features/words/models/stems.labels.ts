@@ -1,4 +1,5 @@
-import { StemView, StemWordView, StemSurahView } from './stems.models';
+import { explorerSortOptions } from './explorer-sort';
+import { STEM_SORT_COLUMN_LIST, StemView, StemWordView, StemSurahView } from './stems.models';
 import {
   ROW_NUMBER_HEADER,
   WORDS_SHARED_COUNT_COLUMNS,
@@ -106,9 +107,16 @@ export const STEMS_AYAH_TYPE_ALL_LABEL = 'عرض الكل';
 export const STEMS_SORT_LABELS = {
   label: 'الترتيب',
   'mushaf-order': 'ترتيب المصحف',
-  occurrences: 'الأكثر ورودًا',
-  alpha: 'أبجدي',
 } as const;
+
+/**
+ * Options for the ≤1023px fallback sort select (Feature 030, N8): the default release order plus
+ * every sortable column in both directions. ≥1024px sorts through the table column headers.
+ */
+export const STEMS_SORT_OPTIONS = explorerSortOptions(
+  STEM_SORT_COLUMN_LIST,
+  STEMS_SORT_LABELS['mushaf-order'],
+);
 
 export function stemsAdditionalTypesAria(count: number): string {
   return count === 1 ? 'نوع إضافي واحد' : `${count} أنواع إضافية`;

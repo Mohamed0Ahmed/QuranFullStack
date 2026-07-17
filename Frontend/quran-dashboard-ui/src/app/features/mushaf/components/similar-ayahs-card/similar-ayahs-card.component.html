@@ -6,11 +6,25 @@
   <p class="qd-sr-only" role="status" aria-live="polite" data-testid="similar-ayahs-loading">
     {{ loadingMessage }}
   </p>
-  <div class="similar-ayahs-card__skeleton qd-skeleton-group" aria-busy="true">
-    <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-50"></span>
-    <span class="qd-skeleton qd-skeleton--text"></span>
-    <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-90"></span>
-  </div>
+  <!-- aria-hidden: the sr-only status above is the single announcement. No aria-busy here —
+       it would be inert on a node that is out of the accessibility tree. -->
+  <ul
+    class="similar-ayahs-card__list"
+    data-testid="similar-ayahs-skeleton"
+    aria-hidden="true"
+  >
+    @for (placeholder of loadingPlaceholders(); track placeholder) {
+      <li qdAyahCard class="similar-ayahs-card__item similar-ayahs-card__item--skeleton">
+        <div class="similar-ayahs-card__meta">
+          <span class="qd-skeleton similar-ayahs-card__reference-skeleton">&nbsp;</span>
+          <span class="qd-skeleton similar-ayahs-card__page-skeleton">&nbsp;</span>
+        </div>
+        <p class="similar-ayahs-card__text">
+          <span class="qd-skeleton">&nbsp;</span>
+        </p>
+      </li>
+    }
+  </ul>
 } @else if (loadState().isEmpty || !similarAyahs() || similarAyahs()!.count === 0) {
   <div class="qd-empty-state" role="status" data-testid="similar-ayahs-empty">
     <span>{{ emptyMessage }}</span>

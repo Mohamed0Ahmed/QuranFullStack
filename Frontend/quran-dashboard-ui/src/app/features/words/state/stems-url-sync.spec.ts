@@ -7,7 +7,7 @@ import {
   buildStemsQueryParams,
   parseStemsQueryParams,
 } from './stems-url-sync';
-import { STEMS_QUERY_KEYS, StemSort, StemView } from '../models/stems.models';
+import { STEMS_QUERY_KEYS, STEM_SORT_KEYS, StemSort, StemView } from '../models/stems.models';
 
 function params(query: string): ParamMap {
   return convertToParamMap(query ? Object.fromEntries(new URLSearchParams(query)) : {});
@@ -366,5 +366,41 @@ describe('parseStemsQueryParams count ranges (Feature 026)', () => {
     const parsed = parseStemsQueryParams(params('occ=9..2&surahs=1..50'));
     expect(parsed.ranges).toEqual({ surahs: { min: 1, max: 50 } });
     expect(parsed.page).toBe(1);
+  });
+});
+
+describe('parseStemsQueryParams sort tokens (Feature 030, N8)', () => {
+  it.each(STEM_SORT_KEYS)('parses the canonical token "%s" verbatim', (sort) => {
+    expect(parseStemsQueryParams(params(`sort=${sort}`)).sort).toBe(sort);
+  });
+
+  it.each([
+    ['occurrences-desc', 'occurrences'],
+    ['ayahs-desc', 'ayahs'],
+    ['surahs-desc', 'surahs'],
+    ['alpha-asc', 'alpha'],
+  ])('canonicalizes the legacy alias "%s" to "%s"', (alias, canonical) => {
+    // An old shared link must not fork the ordering into a second URL/cache spelling.
+    expect(parseStemsQueryParams(params(`sort=${alias}`)).sort).toBe(canonical);
+  });
+
+  it.each([
+    'relevance',
+    'relevance-asc',
+    'stems',
+    'lemmas',
+    'mushaf-order-asc',
+    'mushaf-order-desc',
+    '-asc',
+  ])('fails closed to the default on the unsupported token "%s"', (sort) => {
+    expect(parseStemsQueryParams(params(`sort=${sort}`)).sort).toBe('mushaf-order');
+  });
+
+  it('round-trips a suffixed token through build', () => {
+    expect(buildStemsQueryParams({ sort: 'occurrences-asc' })).toEqual({ sort: 'occurrences-asc' });
+  });
+
+  it('removes the param on release, so the default order stays param-free', () => {
+    expect(buildStemsQueryParams({ sort: null, page: null })).toEqual({ sort: null, page: null });
   });
 });

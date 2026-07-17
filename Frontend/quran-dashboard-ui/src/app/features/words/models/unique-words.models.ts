@@ -1,6 +1,20 @@
 export type UniqueWordKind = 'tashkeel' | 'simple';
 
-export type UniqueWordSort = 'mushaf-order' | 'occurrences' | 'alpha';
+/**
+ * The Unique Words sort allowlist, split by column class because that decides the natural
+ * direction a bare token means (counts descend, text ascends). `mushaf-order` is the default and
+ * is not a column; نوع الكلمة/الجذر (page-only enrichments) and لم يذكر فيها (computed post-page,
+ * and merely the inverse of السور) are excluded — see the reads README's ordering contract.
+ */
+type UniqueWordCountSortColumn = 'occurrences' | 'ayahs' | 'surahs';
+type UniqueWordTextSortColumn = 'alpha';
+export type UniqueWordSortColumnKey = UniqueWordCountSortColumn | UniqueWordTextSortColumn;
+
+/** The canonical token set: `occurrences`/`occurrences-asc`, `alpha`/`alpha-desc`, … */
+export type UniqueWordSort =
+  | MushafOrderSort
+  | CanonicalSortTokens<UniqueWordCountSortColumn, 'desc'>
+  | CanonicalSortTokens<UniqueWordTextSortColumn, 'asc'>;
 
 export type WordDrilldownView = 'surahs' | 'missing' | 'ayahs';
 
@@ -16,8 +30,16 @@ import type {
 } from '../../../core/api/generated/models';
 import type { PagedResultDto } from '../../../core/data-access/paged-result.model';
 import type { RangeFilters, RangeMetric } from '../state/words-range-filters';
+import {
+  CanonicalSortTokens,
+  ExplorerSortColumn,
+  MUSHAF_ORDER_SORT,
+  MushafOrderSort,
+  canonicalSortTokens,
+  canonicalizeSortToken,
+} from './explorer-sort';
 import { SURAHS_RANGE_THRESHOLD } from './words-filter-presets';
-import { WORDS_SHARED_COUNT_COLUMNS } from './words-shared.labels';
+import { WORDS_SHARED_COUNT_COLUMNS, WORDS_SHARED_HEADERS } from './words-shared.labels';
 
 export type {
   AyahWordForHighlightDto,
@@ -76,7 +98,21 @@ export interface WordDrilldownState {
 }
 
 export const UNIQUE_WORD_KIND_KEYS = ['tashkeel', 'simple'] as const satisfies readonly UniqueWordKind[];
-export const UNIQUE_WORD_SORT_KEYS = ['mushaf-order', 'occurrences', 'alpha'] as const satisfies readonly UniqueWordSort[];
+/** The sortable Unique Words columns, in table-header order. */
+export const UNIQUE_WORD_SORT_COLUMNS = {
+  alpha: { key: 'alpha', natural: 'asc', label: WORDS_SHARED_HEADERS.word },
+  occurrences: { key: 'occurrences', natural: 'desc', label: WORDS_SHARED_HEADERS.occurrences },
+  ayahs: { key: 'ayahs', natural: 'desc', label: WORDS_SHARED_HEADERS.ayahs },
+  surahs: { key: 'surahs', natural: 'desc', label: WORDS_SHARED_HEADERS.surahs },
+} as const satisfies Record<UniqueWordSortColumnKey, ExplorerSortColumn<UniqueWordSortColumnKey>>;
+
+export const UNIQUE_WORD_SORT_COLUMN_LIST: readonly ExplorerSortColumn<UniqueWordSortColumnKey>[] =
+  Object.values(UNIQUE_WORD_SORT_COLUMNS);
+
+export const UNIQUE_WORD_SORT_KEYS: readonly UniqueWordSort[] = [
+  MUSHAF_ORDER_SORT,
+  ...canonicalSortTokens(UNIQUE_WORD_SORT_COLUMN_LIST),
+] as readonly UniqueWordSort[];
 export const WORD_DRILLDOWN_VIEW_KEYS = ['surahs', 'missing', 'ayahs'] as const satisfies readonly WordDrilldownView[];
 
 export const DEFAULT_UNIQUE_WORD_KIND: UniqueWordKind = 'tashkeel';
@@ -92,8 +128,18 @@ export function isUniqueWordKind(value: unknown): value is UniqueWordKind {
   return value === 'tashkeel' || value === 'simple';
 }
 
+/** True only for a CANONICAL token — the legacy alias spellings normalize instead (see roots). */
 export function isUniqueWordSort(value: unknown): value is UniqueWordSort {
-  return value === 'mushaf-order' || value === 'occurrences' || value === 'alpha';
+  return (
+    typeof value === 'string' &&
+    canonicalizeSortToken(value, UNIQUE_WORD_SORT_COLUMN_LIST) === value
+  );
+}
+
+/** Canonicalizes aliases in and fails closed to the default on anything unknown. */
+export function normalizeUniqueWordSort(value: string | null | undefined): UniqueWordSort {
+  const canonical = canonicalizeSortToken(value, UNIQUE_WORD_SORT_COLUMN_LIST);
+  return canonical !== null && isUniqueWordSort(canonical) ? canonical : DEFAULT_UNIQUE_WORD_SORT;
 }
 
 export function isWordDrilldownView(value: unknown): value is WordDrilldownView {

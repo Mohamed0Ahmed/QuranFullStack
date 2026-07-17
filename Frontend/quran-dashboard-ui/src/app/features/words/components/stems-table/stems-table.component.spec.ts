@@ -160,4 +160,133 @@ describe('StemsTableComponent', () => {
     expect(buttons[1]?.hasAttribute('disabled')).toBe(true);
     expect(buttons[3]?.hasAttribute('disabled')).toBe(true);
   });
+
+  describe('column-header sorting (Feature 030, N8)', () => {
+    function headerCellFor(root: HTMLElement, key: string): HTMLElement {
+      const button = root.querySelector(`[data-testid="stems-table-sort-${key}"]`) as HTMLElement;
+      return button.closest('[role="columnheader"]') as HTMLElement;
+    }
+
+    it('renders a sort button on every allowlisted column and none anywhere else', () => {
+      const fixture = setup([]);
+      const root = fixture.nativeElement as HTMLElement;
+
+      const ids = Array.from(root.querySelectorAll('[data-testid^="stems-table-sort-"]')).map(
+        (button) => button.getAttribute('data-testid'),
+      );
+      expect(ids).toEqual([
+        'stems-table-sort-alpha',
+        'stems-table-sort-occurrences',
+        'stems-table-sort-ayahs',
+        'stems-table-sort-surahs',
+        'stems-table-sort-simple',
+        'stems-table-sort-tashkeel',
+      ]);
+    });
+
+    it('leaves the row-number and dominant الصيغة/الجذر headers plain — no button, no aria-sort', () => {
+      const fixture = setup([]);
+      const root = fixture.nativeElement as HTMLElement;
+      const plainHeaders = Array.from(
+        root.querySelectorAll('[role="columnheader"]'),
+      ).filter((header) => header.querySelector('.qd-explorer-table__sort-button') === null);
+
+      expect(plainHeaders.length).toBeGreaterThan(0);
+      for (const header of plainHeaders) {
+        expect(header.querySelector('button')).toBeNull();
+        expect(header.hasAttribute('aria-sort')).toBe(false);
+      }
+      expect(
+        plainHeaders.map((header) => header.textContent?.trim()),
+      ).toEqual(['م', 'الصيغ', 'الجذور']);
+    });
+
+    it('cycles a count column: natural desc → asc → release', () => {
+      const emitted: (string | null)[] = [];
+      const fixture = setup([], { sort: 'mushaf-order' });
+      fixture.componentInstance.sortChange.subscribe((sort) => emitted.push(sort));
+      const root = fixture.nativeElement as HTMLElement;
+      const button = () =>
+        root.querySelector('[data-testid="stems-table-sort-occurrences"]') as HTMLButtonElement;
+
+      button().click();
+      fixture.componentRef.setInput('sort', 'occurrences');
+      fixture.detectChanges();
+      button().click();
+      fixture.componentRef.setInput('sort', 'occurrences-asc');
+      fixture.detectChanges();
+      button().click();
+
+      expect(emitted).toEqual(['occurrences', 'occurrences-asc', null]);
+    });
+
+    it('cycles the text column alpha the other way: natural asc → desc → release', () => {
+      const emitted: (string | null)[] = [];
+      const fixture = setup([], { sort: 'mushaf-order' });
+      fixture.componentInstance.sortChange.subscribe((sort) => emitted.push(sort));
+      const root = fixture.nativeElement as HTMLElement;
+      const button = () =>
+        root.querySelector('[data-testid="stems-table-sort-alpha"]') as HTMLButtonElement;
+
+      button().click();
+      fixture.componentRef.setInput('sort', 'alpha');
+      fixture.detectChanges();
+      button().click();
+      fixture.componentRef.setInput('sort', 'alpha-desc');
+      fixture.detectChanges();
+      button().click();
+
+      expect(emitted).toEqual(['alpha', 'alpha-desc', null]);
+    });
+
+    it('carries aria-sort only on the active column, and drops it on release', () => {
+      const fixture = setup([], { sort: 'occurrences' });
+      const root = fixture.nativeElement as HTMLElement;
+
+      expect(headerCellFor(root, 'occurrences').getAttribute('aria-sort')).toBe('descending');
+      expect(headerCellFor(root, 'alpha').hasAttribute('aria-sort')).toBe(false);
+
+      fixture.componentRef.setInput('sort', 'occurrences-asc');
+      fixture.detectChanges();
+      expect(headerCellFor(root, 'occurrences').getAttribute('aria-sort')).toBe('ascending');
+
+      fixture.componentRef.setInput('sort', 'mushaf-order');
+      fixture.detectChanges();
+      expect(headerCellFor(root, 'occurrences').hasAttribute('aria-sort')).toBe(false);
+    });
+
+    it('renders the direction glyph as an aria-hidden span, and none when inactive', () => {
+      const fixture = setup([], { sort: 'occurrences' });
+      const root = fixture.nativeElement as HTMLElement;
+      const button = root.querySelector(
+        '[data-testid="stems-table-sort-occurrences"]',
+      ) as HTMLElement;
+      const glyph = button.querySelector('.qd-explorer-table__sort-glyph') as HTMLElement;
+
+      expect(glyph.getAttribute('aria-hidden')).toBe('true');
+      expect(glyph.textContent?.trim()).toBe('▼');
+      expect(
+        root
+          .querySelector('[data-testid="stems-table-sort-alpha"]')
+          ?.querySelector('.qd-explorer-table__sort-glyph'),
+      ).toBeNull();
+    });
+
+    it('names the column and the next cycle state in the Arabic aria-label', () => {
+      const fixture = setup([], { sort: 'mushaf-order' });
+      const root = fixture.nativeElement as HTMLElement;
+      const button = () =>
+        root.querySelector('[data-testid="stems-table-sort-alpha"]') as HTMLElement;
+
+      expect(button().getAttribute('aria-label')).toBe('ترتيب حسب الأصل الصرفي تصاعديًا');
+
+      fixture.componentRef.setInput('sort', 'alpha');
+      fixture.detectChanges();
+      expect(button().getAttribute('aria-label')).toBe('ترتيب حسب الأصل الصرفي تنازليًا');
+
+      fixture.componentRef.setInput('sort', 'alpha-desc');
+      fixture.detectChanges();
+      expect(button().getAttribute('aria-label')).toBe('إلغاء الترتيب حسب الأصل الصرفي');
+    });
+  });
 });

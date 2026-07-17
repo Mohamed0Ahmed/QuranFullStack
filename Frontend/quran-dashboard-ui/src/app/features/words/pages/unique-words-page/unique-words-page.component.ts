@@ -34,6 +34,7 @@ import { WordDrilldownModalComponent } from '../../components/word-drilldown-mod
 import { UniqueDetailFrame } from '../../../../core/navigation/detail-overlay/detail-overlay.models';
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
 import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
+import { sortQueryValue } from '../../models/explorer-sort';
 import {
   ACTIVE_HUB_SECTION,
   EMPTY_LIST_LABEL,
@@ -49,11 +50,12 @@ import {
   UNIQUE_WORD_KIND_LABELS,
   UNIQUE_WORD_LIST_PAGINATION_LABEL,
   UNIQUE_WORD_PANEL_SURFACE_LABEL,
-  UNIQUE_WORD_SORT_LABELS,
+  UNIQUE_WORD_SORT_OPTIONS,
 } from '../../models/unique-words.labels';
 import {
   UNIQUE_WORDS_RANGE_METRICS,
-  UNIQUE_WORD_SORT_KEYS,
+  DEFAULT_UNIQUE_WORD_SORT,
+  normalizeUniqueWordSort,
   UniqueWordKind,
   UniqueWordSort,
   WordDrilldownView,
@@ -111,9 +113,7 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
   protected get searchLabel(): string { return SEARCH_LABEL; }
   protected get searchPlaceholder(): string { return SEARCH_PLACEHOLDER; }
   protected get sortLabel(): string { return SORT_LABEL; }
-  protected get sortOptions(): readonly { key: UniqueWordSort; labelAr: string }[] {
-    return UNIQUE_WORD_SORT_KEYS.map((key) => ({ key, labelAr: UNIQUE_WORD_SORT_LABELS[key] }));
-  }
+  protected get sortOptions() { return UNIQUE_WORD_SORT_OPTIONS; }
 
   protected readonly listState = this.facade.listState;
   protected readonly drilldownState = this.facade.drilldownState;
@@ -251,9 +251,15 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
     this.searchInput.next(value);
   }
 
-  protected onSortChange(sort: UniqueWordSort): void {
+  /** A header cycle step (token) or its release (null). Changing the ordering always resets page. */
+  protected onSortChange(sort: UniqueWordSort | null): void {
     this.clearTableFocus();
-    this.updateQueryParams({ sort, page: null });
+    this.updateQueryParams(buildUniqueWordsQueryParams({ sort, page: null }));
+  }
+
+  /** The ≤1023px fallback select drives the same contract; the default order stays param-absent. */
+  protected onSortSelect(value: string): void {
+    this.onSortChange(sortQueryValue(normalizeUniqueWordSort(value), DEFAULT_UNIQUE_WORD_SORT));
   }
 
   protected onRangesChange(ranges: RangeFilters): void {

@@ -1,4 +1,5 @@
-import { LemmaView, LemmaWordView, LemmaSurahView } from './lemmas.models';
+import { explorerSortOptions } from './explorer-sort';
+import { LEMMA_SORT_COLUMN_LIST, LemmaView, LemmaWordView, LemmaSurahView } from './lemmas.models';
 import {
   ROW_NUMBER_HEADER,
   WORDS_SHARED_COUNT_COLUMNS,
@@ -98,6 +99,13 @@ export const LEMMAS_ROOT_MISSING_LABEL = '—';
 export const LEMMAS_SORT_LABELS = {
   label: 'الترتيب',
   'mushaf-order': 'ترتيب المصحف',
-  occurrences: 'الأكثر ورودًا',
-  alpha: 'أبجدي',
 } as const;
+
+/**
+ * Options for the ≤1023px fallback sort select (Feature 030, N8): the default release order plus
+ * every sortable column in both directions. ≥1024px sorts through the table column headers.
+ */
+export const LEMMAS_SORT_OPTIONS = explorerSortOptions(
+  LEMMA_SORT_COLUMN_LIST,
+  LEMMAS_SORT_LABELS['mushaf-order'],
+);

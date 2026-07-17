@@ -1,8 +1,10 @@
 import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, input, linkedSignal, output } from '@angular/core';
 
-import { WORD_TYPES_CASE_FILTER_LABEL, WORD_TYPES_CURRENT_FILTER_LABEL, WORD_TYPES_FILTER_LABEL, WORD_TYPES_NO_SUBTYPES_LABEL, WORD_TYPES_SUBTYPE_GROUP_LABEL, WORD_TYPES_TENSE_FILTER_LABEL, WORD_TYPES_VOICE_FILTER_LABEL, WORD_TYPE_CASE_LABELS, WORD_TYPE_TENSE_LABELS, WORD_TYPE_VOICE_LABELS } from '../../models/word-types.labels';
+import { ExplorerPanelSkeletonComponent } from '../../../../shared/ui/explorer-panel-skeleton/explorer-panel-skeleton.component';
+import { WORD_TYPES_CASE_FILTER_LABEL, WORD_TYPES_CURRENT_FILTER_LABEL, WORD_TYPES_FILTER_LABEL, WORD_TYPES_LOADING_LABEL, WORD_TYPES_NO_SUBTYPES_LABEL, WORD_TYPES_SUBTYPE_GROUP_LABEL, WORD_TYPES_TENSE_FILTER_LABEL, WORD_TYPES_VOICE_FILTER_LABEL, WORD_TYPE_CASE_LABELS, WORD_TYPE_TENSE_LABELS, WORD_TYPE_VOICE_LABELS } from '../../models/word-types.labels';
 import {
   WORD_TYPE_CASES,
+  WORD_TYPE_MAIN_TYPES,
   WORD_TYPE_TENSES,
   WORD_TYPE_VOICES,
   WordTypeCase,
@@ -23,12 +25,22 @@ export interface WordTypeScopeSelectedEvent {
 @Component({
   selector: 'qd-word-type-filter',
   standalone: true,
+  imports: [ExplorerPanelSkeletonComponent],
   templateUrl: './word-type-filter.component.html',
   styleUrl: './word-type-filter.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WordTypeFilterComponent {
   private readonly host = inject(ElementRef<HTMLElement>);
+
+  // The first-load mirror renders one trigger card per main type. The set is the fixed domain list, not
+  // tree data, so the mirror's card count — and therefore its wrap — always matches the loaded toolbar
+  // (Feature 030, N3 row 8).
+  // TDZ-safe getter (see words README), like the labels below: as a readonly field this const resolves
+  // to undefined in the bundled test build, and the mirror then renders zero cards and reserves nothing.
+  protected get skeletonTriggers() {
+    return WORD_TYPE_MAIN_TYPES;
+  }
 
   readonly tree = input<WordTypeTreeDto | null>(null);
   readonly selectedType = input<WordTypeMainType>('noun');
@@ -44,6 +56,10 @@ export class WordTypeFilterComponent {
 
   protected get filterLabel() {
     return WORD_TYPES_FILTER_LABEL;
+  }
+
+  protected get loadingLabel() {
+    return WORD_TYPES_LOADING_LABEL;
   }
 
   protected get caseFilterLabel() {

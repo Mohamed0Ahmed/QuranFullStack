@@ -117,7 +117,9 @@ describe('WordTypesTableComponent', () => {
     const tableRow = root.querySelector('.word-types-table__row') as HTMLElement;
     const countButtons = root.querySelectorAll('[data-testid="word-count-chip"]') as NodeListOf<HTMLButtonElement>;
 
-    expect(headers).toEqual(['م', 'الكلمة', 'النوع', 'الجذر', 'الأصل', 'الصيغة', 'المواضع', 'الآيات', 'السور']);
+    // المواضع carries the ▼ glyph with no sort input set: it IS this explorer's default order, so it
+    // renders actively sorted descending in the default state (Feature 030, N8).
+    expect(headers).toEqual(['م', 'الكلمة', 'النوع', 'الجذر', 'الأصل', 'الصيغة', 'المواضع▼', 'الآيات', 'السور']);
     expect(root.textContent).toContain('SYNTH_WORD_TEXT');
     expect(root.textContent).toContain('—');
     expect(root.textContent).not.toContain('191001');
@@ -163,7 +165,9 @@ describe('WordTypesTableComponent', () => {
       const countButtons = root.querySelectorAll('[data-testid="word-count-chip"]') as NodeListOf<HTMLButtonElement>;
 
       expect(root.querySelector('[role="table"]')?.getAttribute('aria-label')).toBe(tableLabel);
-      expect(headers).toEqual(['م', dimensionHeader, 'المواضع', 'الآيات', 'السور']);
+      // المواضع carries the ▼ glyph with no sort input set: it IS this explorer's default order,
+      // so it renders actively sorted descending in the default state (Feature 030, N8).
+      expect(headers).toEqual(['م', dimensionHeader, 'المواضع▼', 'الآيات', 'السور']);
       expect(groupedTableRow).not.toBeNull();
       expect(groupedTableRow.getAttribute('tabindex')).toBeNull();
       expect(groupedTableRow.getAttribute('data-word-types-row')).toBe(rowDomId);
@@ -423,5 +427,172 @@ describe('WordTypesTableComponent', () => {
     fixture.componentRef.setInput('selectedRow', null);
     fixture.detectChanges();
     expect(Array.from(rows).every((item) => !item.classList.contains('qd-is-selected'))).toBe(true);
+  });
+
+  // N3-d: this table shimmered 5 skeleton rows while its four sibling explorer tables shimmered 12,
+  // so a Word Types load painted a visibly shorter body than every other explorer.
+  it('shimmers 12 skeleton rows, matching the sibling explorer tables', () => {
+    const fixture = TestBed.createComponent(WordTypesTableComponent);
+    fixture.componentRef.setInput('loading', true);
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelectorAll('.word-types-table__row--loading').length).toBe(12);
+  });
+
+  // N3 row 7: below desktop nothing pins the shell height, so these states collapsed the ~40rem card to
+  // ~5rem. They all render through the one `__state` box the tablet-band reservation keys on.
+  it.each([
+    ['error', 'word-types-table-error'],
+    ['empty', 'word-types-table-empty'],
+    ['selectPrompt', 'word-types-select-subtype'],
+  ] as const)('renders the %s state inside the shared table-state shell', (status, testid) => {
+    const fixture = TestBed.createComponent(WordTypesTableComponent);
+    fixture.componentRef.setInput('status', status);
+    fixture.componentRef.setInput('errorLabel', 'SYNTH_ERROR');
+    fixture.componentRef.setInput('emptyLabel', 'SYNTH_EMPTY');
+    fixture.componentRef.setInput('selectPromptLabel', 'SYNTH_PROMPT');
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const state = root.querySelector(`[data-testid="${testid}"]`);
+    expect(state).not.toBeNull();
+    expect(state!.classList.contains('word-types-table__state')).toBe(true);
+    // The state replaces the body inside the mounted shell — it never replaces the shell itself.
+    expect(root.querySelector('.word-types-table.qd-explorer-table')!.contains(state)).toBe(true);
+  });
+
+  describe('column-header sorting (Feature 030, N8)', () => {
+    function sortFixture(sort?: string) {
+      const fixture = TestBed.createComponent(WordTypesTableComponent);
+      fixture.componentRef.setInput('rows', page([word()]));
+      if (sort !== undefined) {
+        fixture.componentRef.setInput('sort', sort);
+      }
+      fixture.detectChanges();
+      return fixture;
+    }
+
+    function headerCellFor(root: HTMLElement, key: string): HTMLElement {
+      const button = root.querySelector(`[data-testid="word-types-table-sort-${key}"]`) as HTMLElement;
+      return button.closest('[role="columnheader"]') as HTMLElement;
+    }
+
+    it('renders a sort button on the dimension + three count columns and nowhere else', () => {
+      const root = sortFixture().nativeElement as HTMLElement;
+
+      const ids = Array.from(root.querySelectorAll('[data-testid^="word-types-table-sort-"]')).map(
+        (button) => button.getAttribute('data-testid'),
+      );
+      expect(ids).toEqual([
+        'word-types-table-sort-alpha',
+        'word-types-table-sort-occurrences',
+        'word-types-table-sort-ayahs',
+        'word-types-table-sort-surahs',
+      ]);
+    });
+
+    it('leaves the row-number and related-entity headers plain — no button, no aria-sort', () => {
+      const root = sortFixture().nativeElement as HTMLElement;
+      const plainHeaders = Array.from(root.querySelectorAll('[role="columnheader"]')).filter(
+        (header) => header.querySelector('.qd-explorer-table__sort-button') === null,
+      );
+
+      for (const header of plainHeaders) {
+        expect(header.querySelector('button')).toBeNull();
+        expect(header.hasAttribute('aria-sort')).toBe(false);
+      }
+      expect(plainHeaders.map((header) => header.textContent?.trim())).toEqual([
+        'م',
+        'النوع',
+        'الجذر',
+        'الأصل',
+        'الصيغة',
+      ]);
+    });
+
+    // The WORD-TYPES QUIRK: المواضع IS the default order here, so it renders active-desc with the
+    // param absent and its cycle has no release step — it collapses to desc(default) ⇄ asc.
+    it('renders المواضع as actively sorted descending in the default state', () => {
+      const root = sortFixture().nativeElement as HTMLElement;
+
+      expect(headerCellFor(root, 'occurrences').getAttribute('aria-sort')).toBe('descending');
+      expect(
+        root
+          .querySelector('[data-testid="word-types-table-sort-occurrences"]')
+          ?.classList.contains('qd-is-sorted'),
+      ).toBe(true);
+    });
+
+    it('collapses the المواضع cycle to desc(default) ⇄ asc, never an unsorted third state', () => {
+      const emitted: (string | null)[] = [];
+      const fixture = sortFixture('occurrences');
+      fixture.componentInstance.sortChange.subscribe((sort) => emitted.push(sort));
+      const root = fixture.nativeElement as HTMLElement;
+      const button = () =>
+        root.querySelector('[data-testid="word-types-table-sort-occurrences"]') as HTMLButtonElement;
+
+      button().click();
+      fixture.componentRef.setInput('sort', 'occurrences-asc');
+      fixture.detectChanges();
+      // Releasing from asc lands back on the default, which IS occurrences desc.
+      button().click();
+
+      expect(emitted).toEqual(['occurrences-asc', null]);
+    });
+
+    it('walks all three states on a NON-default column (الآيات)', () => {
+      const emitted: (string | null)[] = [];
+      const fixture = sortFixture('occurrences');
+      fixture.componentInstance.sortChange.subscribe((sort) => emitted.push(sort));
+      const root = fixture.nativeElement as HTMLElement;
+      const button = () =>
+        root.querySelector('[data-testid="word-types-table-sort-ayahs"]') as HTMLButtonElement;
+
+      button().click();
+      fixture.componentRef.setInput('sort', 'ayahs');
+      fixture.detectChanges();
+      button().click();
+      fixture.componentRef.setInput('sort', 'ayahs-asc');
+      fixture.detectChanges();
+      button().click();
+
+      expect(emitted).toEqual(['ayahs', 'ayahs-asc', null]);
+    });
+
+    it('renders the direction glyph as an aria-hidden span, and none when inactive', () => {
+      const fixture = sortFixture('occurrences');
+      const root = fixture.nativeElement as HTMLElement;
+      const glyph = root
+        .querySelector('[data-testid="word-types-table-sort-occurrences"]')
+        ?.querySelector('.qd-explorer-table__sort-glyph') as HTMLElement;
+
+      expect(glyph.getAttribute('aria-hidden')).toBe('true');
+      expect(glyph.textContent?.trim()).toBe('▼');
+      expect(
+        root
+          .querySelector('[data-testid="word-types-table-sort-ayahs"]')
+          ?.querySelector('.qd-explorer-table__sort-glyph'),
+      ).toBeNull();
+    });
+
+    it.each([
+      ['words', 'الكلمة'],
+      ['roots', 'الجذر'],
+      ['stems', 'الأصل'],
+      ['lemmas', 'الصيغة'],
+    ])('labels the alpha header with the %s view dimension (N8-f)', (tableView, label) => {
+      const fixture = TestBed.createComponent(WordTypesTableComponent);
+      fixture.componentRef.setInput('rows', page([]));
+      fixture.componentRef.setInput('tableView', tableView as WordTypeTableView);
+      fixture.componentRef.setInput('loading', true);
+      fixture.detectChanges();
+      const root = fixture.nativeElement as HTMLElement;
+
+      // One sort token across all four views; only the header text follows the view.
+      const button = root.querySelector('[data-testid="word-types-table-sort-alpha"]') as HTMLElement;
+      expect(button.querySelector('.qd-explorer-table__sort-label')?.textContent?.trim()).toBe(label);
+      expect(button.getAttribute('aria-label')).toBe(`ترتيب حسب ${label} تصاعديًا`);
+    });
   });
 });

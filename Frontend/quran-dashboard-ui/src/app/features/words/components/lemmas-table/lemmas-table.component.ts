@@ -4,9 +4,10 @@ import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrollin
 
 import { WordCountChipComponent } from '../word-count-chip/word-count-chip.component';
 import { LEMMAS_COLUMN_COUNT_LABELS, LEMMAS_COLUMN_HEADERS, LEMMAS_LOADING_LABEL, LEMMAS_ROOT_MISSING_ARIA, LEMMAS_ROOT_MISSING_LABEL, LEMMAS_ROOT_LINK_PREFIX, LEMMAS_TABLE_BODY_LABEL, LEMMAS_TABLE_LABEL } from '../../models/lemmas.labels';
-import { LEMMAS_LIST_PAGE_SIZE, LemmaListItemViewModel, LemmaSurahView, LemmaView, LemmaWordView } from '../../models/lemmas.models';
+import { DEFAULT_LEMMA_SORT, LEMMAS_LIST_PAGE_SIZE, LEMMA_SORT_COLUMNS, LemmaListItemViewModel, LemmaSort, LemmaSurahView, LemmaView, LemmaWordView, normalizeLemmaSort } from '../../models/lemmas.models';
 import { isMorphologyCountActive, MorphologyColumnKey, resolveMorphologyActiveColumn } from '../../utils/explorer-count-active';
 import { ExplorerInteractionSource, handleExplorerTableKeydown } from '../../utils/explorer-table-keydown';
+import { ExplorerTableSortController } from '../../utils/explorer-table-sort.controller';
 import { ExplorerRowNavDirection, scrollExplorerRowIntoView } from '../../utils/explorer-table-scroll';
 import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
 import { syncTableScrollbarGutter } from '../../utils/table-scrollbar-gutter-sync';
@@ -70,10 +71,20 @@ export class LemmasTableComponent {
   readonly activeWordView = input<LemmaWordView | null>(null);
   readonly activeSurahView = input<LemmaSurahView | null>(null);
   readonly activeColumn = input<LemmaTableColumnKey | null>(null);
+  readonly sort = input<LemmaSort>(DEFAULT_LEMMA_SORT);
 
   readonly rowSelected = output<LemmaListItemViewModel>();
   readonly countOpened = output<LemmaCountOpenedEvent>();
+  /** null = release the sort param back to the default (ترتيب المصحف). */
+  readonly sortChange = output<LemmaSort | null>();
 
+  protected readonly sortControl = new ExplorerTableSortController<LemmaSort>(
+    () => this.sort(),
+    (value) => normalizeLemmaSort(value),
+    (sort) => this.sortChange.emit(sort),
+  );
+
+  protected get sortColumns(): typeof LEMMA_SORT_COLUMNS { return LEMMA_SORT_COLUMNS; }
   protected get headers() { return LEMMAS_COLUMN_HEADERS; }
   protected get countLabels() { return LEMMAS_COLUMN_COUNT_LABELS; }
   protected readonly loadingLabel = LEMMAS_LOADING_LABEL;

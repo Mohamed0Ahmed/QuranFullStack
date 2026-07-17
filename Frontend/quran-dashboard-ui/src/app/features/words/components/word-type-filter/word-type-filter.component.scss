@@ -2,7 +2,10 @@
   display: block;
 }
 
-.word-type-filter {
+.word-type-filter,
+// The first-load mirror stands in for `.word-type-filter`'s own toolbar + panel grid, so it must lay
+// its two children out identically (Feature 030, N3 row 8).
+.word-type-filter__skeleton {
   display: grid;
   gap: 0.75rem;
 }
@@ -57,6 +60,32 @@
 
 .word-type-filter__button:disabled {
   cursor: wait;
+}
+
+// The mirror's trigger reuses the real button box for its padding/flex metrics on an inert span; only
+// the click affordance has to go.
+.word-type-filter__button--skeleton {
+  cursor: default;
+}
+
+// Width only: the hidden badge below sets the mirrored row's height, so this bar keeps the
+// shared --qd-skeleton-h default rather than carrying a height of its own.
+.word-type-filter__skeleton-label {
+  --qd-skeleton-w: 5rem;
+}
+
+.word-type-filter__skeleton-count {
+  --qd-skeleton-w: 2.5rem;
+  --qd-skeleton-h: 1.125rem;
+  flex-shrink: 0;
+  border-radius: var(--qd-radius-pill);
+}
+
+// Reserves geometry only. Kept as a real `.qd-badge` so the mirrored label row inherits the badge's
+// actual line box — the loaded row is always this tall, because exactly one trigger is always selected
+// once the tree lands and the badge is taller than the label beside it.
+.word-type-filter__skeleton-badge {
+  visibility: hidden;
 }
 
 .word-type-filter__button:focus-visible,

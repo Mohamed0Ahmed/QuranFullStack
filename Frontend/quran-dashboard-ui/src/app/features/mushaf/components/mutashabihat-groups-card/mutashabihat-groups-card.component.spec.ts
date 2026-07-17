@@ -173,15 +173,21 @@ function buildLargeGroupWithLateSelectedAyah(): AyahMutashabihatDto {
   };
 };
 
+const LOADING: ResourceLoadState = { isLoading: true, isEmpty: false, errorMessage: null };
+
 function render(
   fixture: ComponentFixture<MutashabihatGroupsCardComponent>,
   options: {
     mutashabihat?: AyahMutashabihatDto | null;
     loadState?: ResourceLoadState;
+    expectedGroupCount?: number;
+    expectedOccurrenceCount?: number;
   } = {},
 ): HTMLElement {
   fixture.componentRef.setInput('mutashabihat', options.mutashabihat ?? null);
   fixture.componentRef.setInput('loadState', options.loadState ?? IDLE);
+  fixture.componentRef.setInput('expectedGroupCount', options.expectedGroupCount ?? 0);
+  fixture.componentRef.setInput('expectedOccurrenceCount', options.expectedOccurrenceCount ?? 0);
   fixture.detectChanges();
   return fixture.nativeElement as HTMLElement;
 }
@@ -353,6 +359,118 @@ describe('MutashabihatGroupsCardComponent (US3)', () => {
     expect(groupTitle?.textContent).toContain('كلمات 3–5');
     expect(groupTitle?.textContent).toContain('2:25');
     expect(root.querySelector('.mutashabihat-groups-card__phrase')).toBeNull();
+  });
+
+  describe('loading placeholders mirror the loaded groups (N3 row 12)', () => {
+    it('renders one group-shaped placeholder per group the summary says is coming', () => {
+      const fixture = TestBed.createComponent(MutashabihatGroupsCardComponent);
+      const root = render(fixture, {
+        loadState: LOADING,
+        expectedGroupCount: 3,
+        expectedOccurrenceCount: 6,
+      });
+
+      expect(
+        root.querySelectorAll('[data-testid="mutashabihat-skeleton"] .mutashabihat-groups-card__group'),
+      ).toHaveLength(3);
+    });
+
+    it('sizes each placeholder group by the summary\'s own occurrences-per-group average', () => {
+      const fixture = TestBed.createComponent(MutashabihatGroupsCardComponent);
+      const root = render(fixture, {
+        loadState: LOADING,
+        expectedGroupCount: 2,
+        expectedOccurrenceCount: 6,
+      });
+
+      const groups = root.querySelectorAll('[data-testid="mutashabihat-skeleton"] .mutashabihat-groups-card__group');
+      expect(groups).toHaveLength(2);
+      for (const group of groups) {
+        expect(group.querySelectorAll('.qd-ayah-card')).toHaveLength(3);
+      }
+    });
+
+    it('clamps placeholder occurrences to the preview count a loaded group collapses to', () => {
+      const fixture = TestBed.createComponent(MutashabihatGroupsCardComponent);
+      const root = render(fixture, {
+        loadState: LOADING,
+        expectedGroupCount: 1,
+        expectedOccurrenceCount: 40,
+      });
+
+      expect(
+        root.querySelectorAll('[data-testid="mutashabihat-skeleton"] .qd-ayah-card'),
+      ).toHaveLength(5);
+    });
+
+    it('builds each placeholder from the same frames and line boxes as a loaded group', () => {
+      const loadingFixture = TestBed.createComponent(MutashabihatGroupsCardComponent);
+      const loadingRoot = render(loadingFixture, {
+        loadState: LOADING,
+        expectedGroupCount: 1,
+        expectedOccurrenceCount: 2,
+      });
+
+      const loadedFixture = TestBed.createComponent(MutashabihatGroupsCardComponent);
+      const loadedRoot = render(loadedFixture, { mutashabihat: SAMPLE_MUTASHABIHAT, loadState: IDLE });
+
+      expect(loadingRoot.querySelector('[data-testid="mutashabihat-skeleton"]')?.classList).toContain(
+        'mutashabihat-groups-card__groups',
+      );
+
+      const placeholderGroup = loadingRoot.querySelector('.mutashabihat-groups-card__group');
+      const loadedGroup = loadedRoot.querySelector('[data-testid="mutashabihat-group"]');
+      expect(loadedGroup?.classList).toContain('qd-card');
+      expect(placeholderGroup?.classList).toContain('qd-card');
+
+      expect(placeholderGroup?.querySelector('.mutashabihat-groups-card__group-header')).toBeTruthy();
+      expect(placeholderGroup?.querySelector('.mutashabihat-groups-card__group-title')).toBeTruthy();
+      expect(placeholderGroup?.querySelector('.mutashabihat-groups-card__group-meta')).toBeTruthy();
+      expect(placeholderGroup?.querySelector('.mutashabihat-groups-card__occurrences')).toBeTruthy();
+
+      const placeholderOccurrence = placeholderGroup?.querySelector('.qd-ayah-card');
+      expect(placeholderOccurrence?.classList).toContain('mutashabihat-groups-card__occurrence');
+      expect(placeholderOccurrence?.querySelector('.mutashabihat-groups-card__occurrence-meta')).toBeTruthy();
+      expect(placeholderOccurrence?.querySelector('.mutashabihat-groups-card__text')).toBeTruthy();
+    });
+
+    it('falls back to fixed placeholder counts when no summary counts are known yet', () => {
+      const fixture = TestBed.createComponent(MutashabihatGroupsCardComponent);
+      const root = render(fixture, { loadState: LOADING });
+
+      const groups = root.querySelectorAll('[data-testid="mutashabihat-skeleton"] .mutashabihat-groups-card__group');
+      expect(groups).toHaveLength(2);
+      for (const group of groups) {
+        expect(group.querySelectorAll('.qd-ayah-card')).toHaveLength(2);
+      }
+    });
+
+    it('caps the placeholder run so a very long group list cannot reserve screens of shimmer', () => {
+      const fixture = TestBed.createComponent(MutashabihatGroupsCardComponent);
+      const root = render(fixture, {
+        loadState: LOADING,
+        expectedGroupCount: 30,
+        expectedOccurrenceCount: 60,
+      });
+
+      expect(
+        root.querySelectorAll('[data-testid="mutashabihat-skeleton"] .mutashabihat-groups-card__group'),
+      ).toHaveLength(4);
+    });
+
+    it('keeps the sr-only status announcement and hides the placeholder run from a11y', () => {
+      const fixture = TestBed.createComponent(MutashabihatGroupsCardComponent);
+      const root = render(fixture, { loadState: LOADING, expectedGroupCount: 2, expectedOccurrenceCount: 4 });
+
+      const status = root.querySelector('[data-testid="mutashabihat-loading"]');
+      expect(status?.getAttribute('role')).toBe('status');
+
+      // The status line is the single announcement; the placeholders stay out of the
+      // accessibility tree entirely, so they must not also claim aria-busy (inert there).
+      const skeleton = root.querySelector('[data-testid="mutashabihat-skeleton"]');
+      expect(skeleton?.getAttribute('aria-hidden')).toBe('true');
+      expect(skeleton?.hasAttribute('aria-busy')).toBe(false);
+    });
   });
 
   it('shows the scoped error state when mutashabihat loading fails', () => {

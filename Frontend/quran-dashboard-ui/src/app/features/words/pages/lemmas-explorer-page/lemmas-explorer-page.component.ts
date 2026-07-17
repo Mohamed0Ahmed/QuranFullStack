@@ -22,8 +22,9 @@ import { LemmaWordsListComponent } from '../../components/lemma-words-list/lemma
 import { LemmaCountOpenedEvent, LemmasTableComponent } from '../../components/lemmas-table/lemmas-table.component';
 import { MissingSurahsListComponent } from '../../components/missing-surahs-list/missing-surahs-list.component';
 import { SurahOccurrencesListComponent } from '../../components/surah-occurrences-list/surah-occurrences-list.component';
-import { LEMMAS_EMPTY_SELECTION_LABEL, LEMMAS_EMPTY_VIEW_LABEL, LEMMAS_LIST_PAGINATION_LABEL, LEMMAS_LOADING_LABEL, LEMMAS_NO_RESULTS_LABEL, LEMMAS_NOT_FOUND_LABEL, LEMMAS_PAGE_TITLE, LEMMAS_PANEL_SURFACE_LABEL, LEMMAS_RESULT_COUNT_LABEL, LEMMAS_ROOT_FILTER_LABEL, LEMMAS_ROOT_FILTER_PLACEHOLDER, LEMMAS_SEARCH_LABEL, LEMMAS_SEARCH_PLACEHOLDER, LEMMAS_SORT_LABELS, LEMMAS_SURAHS_TABLIST_LABEL, LEMMAS_SURAHS_VIEW_LABELS, LEMMAS_TABLE_LABEL, LEMMAS_WORDS_TABLIST_LABEL, LEMMAS_WORD_VIEW_LABELS } from '../../models/lemmas.labels';
-import { DEFAULT_LEMMA_VIEW, LEMMAS_RANGE_METRICS, LEMMA_DETAIL_PAGE_SIZE, LemmaListItemViewModel, LemmaSort, LemmaSurahView, LemmaView, LemmaWordItemDto, LemmaWordView, PagedResultDto } from '../../models/lemmas.models';
+import { sortQueryValue } from '../../models/explorer-sort';
+import { LEMMAS_EMPTY_SELECTION_LABEL, LEMMAS_EMPTY_VIEW_LABEL, LEMMAS_LIST_PAGINATION_LABEL, LEMMAS_LOADING_LABEL, LEMMAS_NO_RESULTS_LABEL, LEMMAS_NOT_FOUND_LABEL, LEMMAS_PAGE_TITLE, LEMMAS_PANEL_SURFACE_LABEL, LEMMAS_RESULT_COUNT_LABEL, LEMMAS_ROOT_FILTER_LABEL, LEMMAS_ROOT_FILTER_PLACEHOLDER, LEMMAS_SEARCH_LABEL, LEMMAS_SEARCH_PLACEHOLDER, LEMMAS_SORT_LABELS, LEMMAS_SORT_OPTIONS, LEMMAS_SURAHS_TABLIST_LABEL, LEMMAS_SURAHS_VIEW_LABELS, LEMMAS_TABLE_LABEL, LEMMAS_WORDS_TABLIST_LABEL, LEMMAS_WORD_VIEW_LABELS } from '../../models/lemmas.labels';
+import { DEFAULT_LEMMA_SORT, DEFAULT_LEMMA_VIEW, LEMMAS_RANGE_METRICS, LEMMA_DETAIL_PAGE_SIZE, LemmaListItemViewModel, LemmaSort, LemmaSurahView, LemmaView, LemmaWordItemDto, LemmaWordView, PagedResultDto, normalizeLemmaSort } from '../../models/lemmas.models';
 import { AyahMatchDto, PagedResultDto as SharedPagedResultDto } from '../../models/unique-words.models';
 import { LemmasDetailFacade } from '../../state/lemmas-detail.facade';
 import { LemmasExplorerFacade } from '../../state/lemmas-explorer.facade';
@@ -86,7 +87,7 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly panelSurfaceLabel = LEMMAS_PANEL_SURFACE_LABEL;
   protected readonly wordsTablistLabel = LEMMAS_WORDS_TABLIST_LABEL;
   protected readonly surahsTablistLabel = LEMMAS_SURAHS_TABLIST_LABEL;
-  protected readonly sortOptions: readonly LemmaSort[] = ['mushaf-order', 'occurrences', 'alpha'];
+  protected get sortOptions() { return LEMMAS_SORT_OPTIONS; }
   protected readonly wordViewOptions: readonly LemmaWordView[] = ['simple', 'tashkeel'];
   protected readonly surahViewOptions: readonly LemmaSurahView[] = ['mentioned', 'missing'];
   protected readonly emptyAyahsPage: SharedPagedResultDto<AyahMatchDto> = { page: 1, pageSize: LEMMA_DETAIL_PAGE_SIZE, totalCount: 0, items: [] };
@@ -190,7 +191,16 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
     this.selectedRootLabel.set(option?.label ?? null);
     this.updateQueryParams({ rootId: option === null ? null : String(option.id), page: null });
   }
-  protected onSortChange(sort: LemmaSort): void { this.clearTableFocus(); this.updateQueryParams({ sort, page: null }); }
+  /** A header cycle step (token) or its release (null). Changing the ordering always resets page. */
+  protected onSortChange(sort: LemmaSort | null): void {
+    this.clearTableFocus();
+    this.updateQueryParams(buildLemmasQueryParams({ sort, page: null }));
+  }
+
+  /** The ≤1023px fallback select drives the same contract; the default order stays param-absent. */
+  protected onSortSelect(value: string): void {
+    this.onSortChange(sortQueryValue(normalizeLemmaSort(value), DEFAULT_LEMMA_SORT));
+  }
   protected onPageChange(page: number): void { if (page !== this.listState().page) { this.clearTableFocus(); this.updateQueryParams(buildLemmasQueryParams({ page })); } }
   protected onDetailPageChange(page: number): void { if (page !== this.panelState().detailPage) { this.tableFocus.cancel(); this.detailFacade.setDetailPage(page); this.updateQueryParams(buildLemmasQueryParams({ detailPage: page })); } }
 

@@ -17,8 +17,9 @@ import { RootStemsListComponent } from '../../components/root-stems-list/root-st
 import { RootWordsListComponent } from '../../components/root-words-list/root-words-list.component';
 import { RootCountOpenedEvent, RootsTableComponent } from '../../components/roots-table/roots-table.component';
 import { SurahOccurrencesListComponent } from '../../components/surah-occurrences-list/surah-occurrences-list.component';
-import { ROOTS_EMPTY_SELECTION_LABEL, ROOTS_EMPTY_VIEW_LABEL, ROOTS_LIST_PAGINATION_LABEL, ROOTS_NO_RESULTS_LABEL, ROOTS_NOT_FOUND_LABEL, ROOTS_PAGE_TITLE, ROOTS_PANEL_LABEL, ROOTS_RESULT_COUNT_LABEL, ROOTS_SEARCH_LABEL, ROOTS_SEARCH_PLACEHOLDER, ROOTS_SORT_LABELS, ROOTS_SURAHS_TABLIST_LABEL, ROOTS_SURAHS_VIEW_LABELS, ROOTS_TABLE_LABEL, ROOTS_WORDS_TABLIST_LABEL, ROOTS_WORD_VIEW_LABELS } from '../../models/roots.labels';
-import { DEFAULT_ROOT_VIEW, PagedResultDto, ROOTS_RANGE_METRICS, ROOT_DETAIL_PAGE_SIZE, RootListItemViewModel, RootSort, RootSurahView, RootView, RootWordItemDto, RootWordView, toRootSummary } from '../../models/roots.models';
+import { sortQueryValue } from '../../models/explorer-sort';
+import { ROOTS_EMPTY_SELECTION_LABEL, ROOTS_EMPTY_VIEW_LABEL, ROOTS_LIST_PAGINATION_LABEL, ROOTS_NO_RESULTS_LABEL, ROOTS_NOT_FOUND_LABEL, ROOTS_PAGE_TITLE, ROOTS_PANEL_LABEL, ROOTS_RESULT_COUNT_LABEL, ROOTS_SEARCH_LABEL, ROOTS_SEARCH_PLACEHOLDER, ROOTS_SORT_LABELS, ROOTS_SORT_OPTIONS, ROOTS_SURAHS_TABLIST_LABEL, ROOTS_SURAHS_VIEW_LABELS, ROOTS_TABLE_LABEL, ROOTS_WORDS_TABLIST_LABEL, ROOTS_WORD_VIEW_LABELS } from '../../models/roots.labels';
+import { DEFAULT_ROOT_SORT, DEFAULT_ROOT_VIEW, PagedResultDto, ROOTS_RANGE_METRICS, ROOT_DETAIL_PAGE_SIZE, RootListItemViewModel, RootSort, RootSurahView, RootView, RootWordItemDto, RootWordView, normalizeRootSort, toRootSummary } from '../../models/roots.models';
 import { AyahMatchDto } from '../../models/unique-words.models';
 import { RootsDetailFacade } from '../../state/roots-detail.facade';
 import { RootsExplorerFacade } from '../../state/roots-explorer.facade';
@@ -72,7 +73,7 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly searchLabel = ROOTS_SEARCH_LABEL;
   protected readonly searchPlaceholder = ROOTS_SEARCH_PLACEHOLDER;
   protected get resultCountLabel(): string { return ROOTS_RESULT_COUNT_LABEL; }
-  protected readonly sortOptions: readonly RootSort[] = ['mushaf-order', 'occurrences', 'alpha'];
+  protected get sortOptions() { return ROOTS_SORT_OPTIONS; }
   protected readonly wordViewOptions: readonly RootWordView[] = ['simple', 'tashkeel'];
   protected readonly surahViewOptions: readonly RootSurahView[] = ['mentioned', 'missing'];
   protected readonly emptyAyahsPage: PagedResultDto<AyahMatchDto> = { page: 1, pageSize: ROOT_DETAIL_PAGE_SIZE, totalCount: 0, items: [] };
@@ -147,7 +148,16 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
     this.clearTableFocus();
     this.updateQueryParams({ ...buildRangeQueryParams(ranges, ROOTS_RANGE_METRICS), page: null });
   }
-  protected onSortChange(sort: RootSort): void { this.clearTableFocus(); this.updateQueryParams({ sort, page: null }); }
+  /** A header cycle step (token) or its release (null). Changing the ordering always resets page. */
+  protected onSortChange(sort: RootSort | null): void {
+    this.clearTableFocus();
+    this.updateQueryParams(buildRootsQueryParams({ sort, page: null }));
+  }
+
+  /** The ≤1023px fallback select drives the same contract; the default order stays param-absent. */
+  protected onSortSelect(value: string): void {
+    this.onSortChange(sortQueryValue(normalizeRootSort(value), DEFAULT_ROOT_SORT));
+  }
   protected onPageChange(page: number): void { if (page !== this.listState().page) { this.clearTableFocus(); this.updateQueryParams(buildRootsQueryParams({ page })); } }
 
   protected onRowSelected(root: RootListItemViewModel): void {

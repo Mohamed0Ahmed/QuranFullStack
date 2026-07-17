@@ -95,4 +95,27 @@ describe('RootWordsListComponent US3', () => {
     expect(root.querySelectorAll('.root-words-list__row--loading').length).toBeGreaterThan(0);
     expect(root.querySelector('qd-pagination')).toBeNull();
   });
+
+  // N3 row 4: the pagination bar unmounted while loading and the panel body sprang up under it.
+  it('keeps the pagination slot rendered while loading and once loaded', async () => {
+    await setup();
+
+    const fixture = TestBed.createComponent(RootWordsListComponent);
+    fixture.componentRef.setInput('page', { page: 1, pageSize: 100, totalCount: 1, items: [wordItem(1003, 'simple')] });
+    fixture.componentRef.setInput('currentPage', 1);
+    fixture.componentRef.setInput('wordView', 'simple');
+    fixture.componentRef.setInput('loading', true);
+    fixture.detectChanges();
+    const host = fixture.nativeElement as HTMLElement;
+
+    const slot = () => host.querySelector('[data-testid="root-words-pagination-slot"]');
+    expect(slot()).toBeTruthy();
+    // While loading the slot is deliberately empty — it reserves the row, it does not render the bar.
+    expect(slot()!.querySelector('qd-pagination')).toBeNull();
+
+    fixture.componentRef.setInput('loading', false);
+    fixture.detectChanges();
+    expect(slot()).toBeTruthy();
+    expect(slot()!.querySelector('qd-pagination')).toBeTruthy();
+  });
 });

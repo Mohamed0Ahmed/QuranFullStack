@@ -21,11 +21,15 @@ import {
   ROOTS_TABLE_LABEL,
 } from '../../models/roots.labels';
 import {
+  DEFAULT_ROOT_SORT,
   ROOTS_LIST_PAGE_SIZE,
+  ROOT_SORT_COLUMNS,
   RootListItemViewModel,
+  RootSort,
   RootSurahView,
   RootView,
   RootWordView,
+  normalizeRootSort,
 } from '../../models/roots.models';
 import { WORDS_LOADING_LABEL } from '../../models/words.labels';
 import {
@@ -37,6 +41,7 @@ import {
   ExplorerInteractionSource,
   handleExplorerTableKeydown,
 } from '../../utils/explorer-table-keydown';
+import { ExplorerTableSortController } from '../../utils/explorer-table-sort.controller';
 import {
   ExplorerRowNavDirection,
   scrollExplorerRowIntoView,
@@ -90,9 +95,22 @@ export class RootsTableComponent {
   readonly activeWordView = input<RootWordView | null>(null);
   readonly activeSurahView = input<RootSurahView | null>(null);
   readonly activeColumn = input<RootTableColumnKey | null>(null);
+  readonly sort = input<RootSort>(DEFAULT_ROOT_SORT);
 
   readonly rowSelected = output<RootListItemViewModel>();
   readonly countOpened = output<RootCountOpenedEvent>();
+  /** null = release the sort param back to the default (ترتيب المصحف). */
+  readonly sortChange = output<RootSort | null>();
+
+  protected readonly sortControl = new ExplorerTableSortController<RootSort>(
+    () => this.sort(),
+    (value) => normalizeRootSort(value),
+    (sort) => this.sortChange.emit(sort),
+  );
+
+  protected get sortColumns(): typeof ROOT_SORT_COLUMNS {
+    return ROOT_SORT_COLUMNS;
+  }
 
   protected get headers() {
     return ROOTS_COLUMN_HEADERS;

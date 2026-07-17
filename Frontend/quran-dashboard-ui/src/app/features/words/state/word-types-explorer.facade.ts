@@ -229,7 +229,11 @@ export class WordTypesExplorerFacade {
     });
   }
 
-  changeSort(sort: WordTypeSort): void {
+  /**
+   * A header cycle step (token) or its release (null → param absent, i.e. back to المواضع desc).
+   * Either way the list page resets.
+   */
+  changeSort(sort: WordTypeSort | null): void {
     this.navigate(buildWordTypesQueryParams({ sort, page: DEFAULT_WORD_TYPES_PAGE }));
   }
 

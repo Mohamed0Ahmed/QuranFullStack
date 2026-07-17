@@ -4,7 +4,6 @@ import { wordTypesRoutePath } from '../../../core/navigation/route-paths';
 import {
   DEFAULT_WORD_TYPE,
   DEFAULT_WORD_TYPE_CASE,
-  DEFAULT_WORD_TYPE_SORT,
   DEFAULT_WORD_TYPE_TABLE_VIEW,
   DEFAULT_WORD_TYPE_TENSE,
   DEFAULT_WORD_TYPE_VOICE,
@@ -24,7 +23,7 @@ import {
   isWordTypeCase,
   isWordTypeDetailView,
   isWordTypeMainType,
-  isWordTypeSort,
+  normalizeWordTypeSort,
   isWordTypeTableView,
   isWordTypeTense,
   isWordTypeVoice,
@@ -72,7 +71,9 @@ export function parseWordTypesQueryParams(queryParams: ParamMap): ParsedWordType
     hasRoot: parseTriState(queryParams.get(WORD_TYPES_QUERY_KEYS.hasRoot)),
     hasStem: parseTriState(queryParams.get(WORD_TYPES_QUERY_KEYS.hasStem)),
     hasLemma: parseTriState(queryParams.get(WORD_TYPES_QUERY_KEYS.hasLemma)),
-    sort: normalizeSort(queryParams.get(WORD_TYPES_QUERY_KEYS.sort)),
+    // Canonicalizes legacy aliases in (occurrences-desc → occurrences) and fails closed to the
+    // default on anything unknown, so one ordering can never be cached under two tokens.
+    sort: normalizeWordTypeSort(queryParams.get(WORD_TYPES_QUERY_KEYS.sort)),
     page: parsePositiveInt(queryParams.get(WORD_TYPES_QUERY_KEYS.page)) ?? DEFAULT_WORD_TYPES_PAGE,
     word: parsedIdentity.word,
     root: parsedIdentity.root,
@@ -307,10 +308,6 @@ function normalizeTense(type: WordTypeMainType, value: string | null): WordTypeT
 
 function normalizeVoice(type: WordTypeMainType, value: string | null): WordTypeVoice {
   return type === 'verb' && value !== null && isWordTypeVoice(value) ? value : DEFAULT_WORD_TYPE_VOICE;
-}
-
-function normalizeSort(value: string | null): WordTypeSort {
-  return value !== null && isWordTypeSort(value) ? value : DEFAULT_WORD_TYPE_SORT;
 }
 
 function normalizeTableView(value: string | null): WordTypeTableView {

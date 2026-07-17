@@ -1,4 +1,24 @@
-export type RootSort = 'mushaf-order' | 'occurrences' | 'alpha';
+/**
+ * The Roots sort allowlist, split by column class because that decides the natural direction a
+ * bare token means (counts descend, text ascends). `mushaf-order` is the default and is not a
+ * column — see `explorer-sort.ts` for the token grammar.
+ */
+type RootCountSortColumn =
+  | 'occurrences'
+  | 'ayahs'
+  | 'surahs'
+  | 'simple'
+  | 'tashkeel'
+  | 'lemmas'
+  | 'stems';
+type RootTextSortColumn = 'alpha';
+export type RootSortColumnKey = RootCountSortColumn | RootTextSortColumn;
+
+/** The canonical token set: `occurrences`/`occurrences-asc`, `alpha`/`alpha-desc`, … */
+export type RootSort =
+  | MushafOrderSort
+  | CanonicalSortTokens<RootCountSortColumn, 'desc'>
+  | CanonicalSortTokens<RootTextSortColumn, 'asc'>;
 
 export type RootWordView = 'simple' | 'tashkeel';
 
@@ -23,8 +43,16 @@ import type {
 } from '../../../core/api/generated/models';
 import type { PagedResultDto } from '../../../core/data-access/paged-result.model';
 import type { RangeFilters, RangeMetric } from '../state/words-range-filters';
+import {
+  CanonicalSortTokens,
+  ExplorerSortColumn,
+  MUSHAF_ORDER_SORT,
+  MushafOrderSort,
+  canonicalSortTokens,
+  canonicalizeSortToken,
+} from './explorer-sort';
 import { SURAHS_RANGE_THRESHOLD } from './words-filter-presets';
-import { WORDS_SHARED_COUNT_COLUMNS } from './words-shared.labels';
+import { WORDS_SHARED_COUNT_COLUMNS, WORDS_SHARED_HEADERS } from './words-shared.labels';
 
 export type {
   MissingSurahItemDto,
@@ -136,14 +164,52 @@ export const DEFAULT_ROOT_DETAIL_PAGE = 1;
 export const ROOT_DETAIL_PAGE_SIZE = 100;
 export const TOTAL_SURAHS = 114;
 
-export const ROOT_SORT_KEYS = ['mushaf-order', 'occurrences', 'alpha'] as const satisfies readonly RootSort[];
+/**
+ * The sortable Roots columns, in table-header order. Every one is a value the backend already has
+ * on the summary row at the sort point. The related-entity text columns are deliberately absent —
+ * they render as plain headers (see the reads README's ordering contract).
+ */
+export const ROOT_SORT_COLUMNS = {
+  alpha: { key: 'alpha', natural: 'asc', label: WORDS_SHARED_HEADERS.root },
+  occurrences: { key: 'occurrences', natural: 'desc', label: WORDS_SHARED_HEADERS.occurrences },
+  ayahs: { key: 'ayahs', natural: 'desc', label: WORDS_SHARED_HEADERS.ayahs },
+  surahs: { key: 'surahs', natural: 'desc', label: WORDS_SHARED_HEADERS.surahs },
+  simple: { key: 'simple', natural: 'desc', label: WORDS_SHARED_HEADERS.simpleWords },
+  tashkeel: { key: 'tashkeel', natural: 'desc', label: WORDS_SHARED_HEADERS.tashkeelWords },
+  lemmas: { key: 'lemmas', natural: 'desc', label: WORDS_SHARED_HEADERS.lemmas },
+  stems: { key: 'stems', natural: 'desc', label: WORDS_SHARED_HEADERS.stems },
+} as const satisfies Record<RootSortColumnKey, ExplorerSortColumn<RootSortColumnKey>>;
+
+export const ROOT_SORT_COLUMN_LIST: readonly ExplorerSortColumn<RootSortColumnKey>[] =
+  Object.values(ROOT_SORT_COLUMNS);
+
+export const ROOT_SORT_KEYS: readonly RootSort[] = [
+  MUSHAF_ORDER_SORT,
+  ...canonicalSortTokens(ROOT_SORT_COLUMN_LIST),
+] as readonly RootSort[];
 export const ROOT_WORD_VIEW_KEYS = ['simple', 'tashkeel'] as const satisfies readonly RootWordView[];
 export const ROOT_SURAHS_VIEW_KEYS = ['mentioned', 'missing'] as const satisfies readonly RootSurahView[];
 export const ROOT_VIEW_KEYS = ['words', 'ayahs', 'surahs', 'lemmas', 'stems'] as const satisfies readonly RootView[];
 export const PAGINATED_ROOT_VIEWS: readonly RootView[] = ['ayahs', 'words'];
 
+/**
+ * True only for a CANONICAL token. Canonicalization is idempotent, so a value that survives it
+ * unchanged was already canonical — which rejects the legacy alias spellings (`occurrences-desc`)
+ * that `normalizeRootSort` collapses instead.
+ */
 export function isRootSort(value: unknown): value is RootSort {
-  return (ROOT_SORT_KEYS as readonly string[]).includes(value as string);
+  return (
+    typeof value === 'string' && canonicalizeSortToken(value, ROOT_SORT_COLUMN_LIST) === value
+  );
+}
+
+/**
+ * The URL/DOM entry point: canonicalizes aliases in, and fails closed to the default on anything
+ * unknown, so the frontend never emits a token the backend would 400 on.
+ */
+export function normalizeRootSort(value: string | null | undefined): RootSort {
+  const canonical = canonicalizeSortToken(value, ROOT_SORT_COLUMN_LIST);
+  return canonical !== null && isRootSort(canonical) ? canonical : DEFAULT_ROOT_SORT;
 }
 
 export function isRootWordView(value: unknown): value is RootWordView {

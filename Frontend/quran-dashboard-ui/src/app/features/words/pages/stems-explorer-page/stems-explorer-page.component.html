@@ -50,18 +50,22 @@
       />
 
       <div class="qd-explorer-controls-secondary">
-        <label class="qd-sr-only" for="stems-sort">{{ sortLabels.label }}</label>
-        <select
-          id="stems-sort"
-          class="qd-select stems-explorer__sort qd-explorer__sort"
-          data-testid="stems-sort-select"
-          [value]="listState().sort"
-          (change)="onSortChange($any($event.target).value)"
-        >
-          @for (option of sortOptions; track option) {
-            <option [value]="option">{{ sortLabels[option] }}</option>
-          }
-        </select>
+        <!-- ≤1023px fallback (Feature 030, N8): the table header row is display:none on phone AND
+             tablet, so the header cycle is unreachable there. Same URL contract as the headers. -->
+        <div class="qd-explorer-sort-fallback">
+          <label class="qd-sr-only" for="stems-sort">{{ sortLabels.label }}</label>
+          <select
+            id="stems-sort"
+            class="qd-select stems-explorer__sort qd-explorer__sort"
+            data-testid="stems-sort-select"
+            [value]="listState().sort"
+            (change)="onSortSelect($any($event.target).value)"
+          >
+            @for (option of sortOptions; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
+        </div>
 
         <qd-explorer-count-range-filter
           data-testid="stems-range-filter"
@@ -109,8 +113,10 @@
             [activeWordView]="activeWordView()"
             [activeSurahView]="activeSurahView()"
             [activeColumn]="activeColumn()"
+            [sort]="listState().sort"
             (rowSelected)="onRowSelected($event)"
             (countOpened)="onCountOpened($event)"
+            (sortChange)="onSortChange($event)"
           />
           <qd-pagination
             [currentPage]="listState().page"

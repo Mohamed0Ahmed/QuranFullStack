@@ -5,7 +5,6 @@ import { parseRangeFilters } from './words-range-filters';
 
 import {
   DEFAULT_ROOT_DETAIL_PAGE,
-  DEFAULT_ROOT_SORT,
   DEFAULT_ROOT_SURAHS_VIEW,
   DEFAULT_ROOT_VIEW,
   DEFAULT_ROOT_WORD_VIEW,
@@ -19,16 +18,16 @@ import {
   RootView,
   RootWordView,
   isPaginatedRootView,
-  isRootSort,
   isRootSurahView,
   isRootView,
   isRootWordView,
+  normalizeRootSort,
 } from '../models/roots.models';
 
 export function parseRootsQueryParams(queryParams: ParamMap): ParsedRootsQuery {
-  const sortRaw = queryParams.get(ROOTS_QUERY_KEYS.sort);
-  const sort: RootSort =
-    sortRaw !== null && isRootSort(sortRaw) ? sortRaw : DEFAULT_ROOT_SORT;
+  // Canonicalizes legacy aliases in (occurrences-desc → occurrences) and fails closed to the
+  // default on anything unknown, so one ordering can never be cached under two tokens.
+  const sort: RootSort = normalizeRootSort(queryParams.get(ROOTS_QUERY_KEYS.sort));
 
   const page = parsePositiveInt(queryParams.get(ROOTS_QUERY_KEYS.page)) ?? DEFAULT_ROOTS_LIST_PAGE;
 

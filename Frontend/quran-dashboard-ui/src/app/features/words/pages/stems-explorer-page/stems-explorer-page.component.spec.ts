@@ -609,6 +609,93 @@ describe('StemsExplorerPageComponent US2', () => {
     const emptyFixture = await initLifecycle();
     expect(emptyFixture.nativeElement.querySelector('[data-testid="stems-list-no-results"]')).toBeTruthy();
   });
+
+  describe('sorting (Feature 030, N8)', () => {
+    it('has no desktop sort dropdown: the only select sits in the ≤1023px fallback wrapper', async () => {
+      const fixture = await initLifecycle();
+      const root = fixture.nativeElement as HTMLElement;
+
+      // ≥1024px the table header row is visible and owns sorting, so the fallback is CSS-hidden
+      // there; below that the header row is display:none and this select is the only way in.
+      const select = root.querySelector('[data-testid="stems-sort-select"]') as HTMLElement;
+      expect(select).toBeTruthy();
+      expect(select.closest('.qd-explorer-sort-fallback')).not.toBeNull();
+    });
+
+    it('offers the default order plus every sortable column in both directions', async () => {
+      const fixture = await initLifecycle();
+      const root = fixture.nativeElement as HTMLElement;
+      const values = Array.from(
+        root.querySelectorAll('[data-testid="stems-sort-select"] option'),
+      ).map((option) => option.getAttribute('value'));
+
+      expect(values[0]).toBe('mushaf-order');
+      expect(values).toContain('alpha');
+      expect(values).toContain('alpha-desc');
+      expect(values).toContain('occurrences');
+      expect(values).toContain('occurrences-asc');
+    });
+
+    it('navigates { sort: token, page: null } when a header cycle step is emitted', async () => {
+      const fixture = await initLifecycle();
+      const root = fixture.nativeElement as HTMLElement;
+
+      (root.querySelector('[data-testid="stems-table-sort-occurrences"]') as HTMLButtonElement).click();
+
+      expect(router.navigate).toHaveBeenCalledWith([], {
+        relativeTo: expect.anything(),
+        queryParams: expect.objectContaining({ sort: 'occurrences', page: null }),
+        queryParamsHandling: 'merge',
+      });
+    });
+
+    it('navigates { sort: null, page: null } when the cycle releases', async () => {
+      queryParamMap$.next(convertToParamMap({ sort: 'occurrences-asc' }));
+      const fixture = await initLifecycle();
+      const root = fixture.nativeElement as HTMLElement;
+
+      (root.querySelector('[data-testid="stems-table-sort-occurrences"]') as HTMLButtonElement).click();
+
+      // Release removes the param entirely — the default order is never spelled out in the URL.
+      expect(router.navigate).toHaveBeenCalledWith([], {
+        relativeTo: expect.anything(),
+        queryParams: expect.objectContaining({ sort: null, page: null }),
+        queryParamsHandling: 'merge',
+      });
+    });
+
+    it('drives the same URL contract from the fallback select', async () => {
+      const fixture = await initLifecycle();
+      const root = fixture.nativeElement as HTMLElement;
+      const select = root.querySelector('[data-testid="stems-sort-select"]') as HTMLSelectElement;
+
+      select.value = 'alpha-desc';
+      select.dispatchEvent(new Event('change'));
+
+      expect(router.navigate).toHaveBeenCalledWith([], {
+        relativeTo: expect.anything(),
+        queryParams: expect.objectContaining({ sort: 'alpha-desc', page: null }),
+        queryParamsHandling: 'merge',
+      });
+    });
+
+    it('releases the param when the fallback select picks the default order', async () => {
+      queryParamMap$.next(convertToParamMap({ sort: 'alpha' }));
+      const fixture = await initLifecycle();
+      const root = fixture.nativeElement as HTMLElement;
+      const select = root.querySelector('[data-testid="stems-sort-select"]') as HTMLSelectElement;
+
+      select.value = 'mushaf-order';
+      select.dispatchEvent(new Event('change'));
+
+      expect(router.navigate).toHaveBeenCalledWith([], {
+        relativeTo: expect.anything(),
+        queryParams: expect.objectContaining({ sort: null, page: null }),
+        queryParamsHandling: 'merge',
+      });
+    });
+  });
+
 });
 
 describe('StemsExplorerPageComponent US5', () => {

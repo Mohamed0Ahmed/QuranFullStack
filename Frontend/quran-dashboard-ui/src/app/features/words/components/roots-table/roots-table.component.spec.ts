@@ -217,4 +217,152 @@ describe('RootsTableComponent', () => {
       source: 'keyboard',
     });
   });
+
+  describe('column-header sorting (Feature 030, N8)', () => {
+    function headerCellFor(root: HTMLElement, key: string): HTMLElement {
+      const button = root.querySelector(`[data-testid="roots-table-sort-${key}"]`) as HTMLElement;
+      return button.closest('[role="columnheader"]') as HTMLElement;
+    }
+
+    it('renders a sort button on every allowlisted column and none anywhere else', () => {
+      const fixture = setup([]);
+      const root = fixture.nativeElement as HTMLElement;
+
+      const keys = Array.from(root.querySelectorAll('[data-testid^="roots-table-sort-"]')).map(
+        (button) => button.getAttribute('data-testid'),
+      );
+      expect(keys).toEqual([
+        'roots-table-sort-alpha',
+        'roots-table-sort-occurrences',
+        'roots-table-sort-ayahs',
+        'roots-table-sort-surahs',
+        'roots-table-sort-simple',
+        'roots-table-sort-tashkeel',
+        'roots-table-sort-lemmas',
+        'roots-table-sort-stems',
+      ]);
+    });
+
+    it('leaves the row-number header plain — no button, no aria-sort', () => {
+      const fixture = setup([]);
+      const root = fixture.nativeElement as HTMLElement;
+      const rowNumber = root.querySelector(
+        '.qd-explorer-table__header-cell--row-number',
+      ) as HTMLElement;
+
+      expect(rowNumber.querySelector('button')).toBeNull();
+      expect(rowNumber.hasAttribute('aria-sort')).toBe(false);
+    });
+
+    it.each([
+      ['occurrences', 'occurrences', 'occurrences-asc'],
+      ['ayahs', 'ayahs', 'ayahs-asc'],
+      ['stems', 'stems', 'stems-asc'],
+    ])('cycles the count column %s: natural desc → asc → release', (key, natural, opposite) => {
+      const emitted: (string | null)[] = [];
+      const fixture = setup([], { sort: 'mushaf-order' });
+      fixture.componentInstance.sortChange.subscribe((sort) => emitted.push(sort));
+      const root = fixture.nativeElement as HTMLElement;
+      const button = () =>
+        root.querySelector(`[data-testid="roots-table-sort-${key}"]`) as HTMLButtonElement;
+
+      button().click();
+      fixture.componentRef.setInput('sort', natural);
+      fixture.detectChanges();
+      button().click();
+      fixture.componentRef.setInput('sort', opposite);
+      fixture.detectChanges();
+      button().click();
+
+      expect(emitted).toEqual([natural, opposite, null]);
+    });
+
+    it('cycles the text column alpha the other way: natural asc → desc → release', () => {
+      const emitted: (string | null)[] = [];
+      const fixture = setup([], { sort: 'mushaf-order' });
+      fixture.componentInstance.sortChange.subscribe((sort) => emitted.push(sort));
+      const root = fixture.nativeElement as HTMLElement;
+      const button = () =>
+        root.querySelector('[data-testid="roots-table-sort-alpha"]') as HTMLButtonElement;
+
+      button().click();
+      fixture.componentRef.setInput('sort', 'alpha');
+      fixture.detectChanges();
+      button().click();
+      fixture.componentRef.setInput('sort', 'alpha-desc');
+      fixture.detectChanges();
+      button().click();
+
+      expect(emitted).toEqual(['alpha', 'alpha-desc', null]);
+    });
+
+    it('starts a fresh cycle at the natural direction when another column was active', () => {
+      const emitted: (string | null)[] = [];
+      const fixture = setup([], { sort: 'alpha-desc' });
+      fixture.componentInstance.sortChange.subscribe((sort) => emitted.push(sort));
+      const root = fixture.nativeElement as HTMLElement;
+
+      (root.querySelector('[data-testid="roots-table-sort-surahs"]') as HTMLButtonElement).click();
+
+      expect(emitted).toEqual(['surahs']);
+    });
+
+    it('carries aria-sort only on the active column, and drops it on release', () => {
+      const fixture = setup([], { sort: 'occurrences' });
+      const root = fixture.nativeElement as HTMLElement;
+
+      expect(headerCellFor(root, 'occurrences').getAttribute('aria-sort')).toBe('descending');
+      expect(headerCellFor(root, 'alpha').hasAttribute('aria-sort')).toBe(false);
+
+      fixture.componentRef.setInput('sort', 'occurrences-asc');
+      fixture.detectChanges();
+      expect(headerCellFor(root, 'occurrences').getAttribute('aria-sort')).toBe('ascending');
+
+      fixture.componentRef.setInput('sort', 'mushaf-order');
+      fixture.detectChanges();
+      expect(headerCellFor(root, 'occurrences').hasAttribute('aria-sort')).toBe(false);
+    });
+
+    it('renders the direction glyph as an aria-hidden span beside the label', () => {
+      const fixture = setup([], { sort: 'occurrences' });
+      const root = fixture.nativeElement as HTMLElement;
+      const button = root.querySelector(
+        '[data-testid="roots-table-sort-occurrences"]',
+      ) as HTMLElement;
+      const glyph = button.querySelector('.qd-explorer-table__sort-glyph') as HTMLElement;
+
+      expect(glyph.getAttribute('aria-hidden')).toBe('true');
+      expect(glyph.textContent?.trim()).toBe('▼');
+
+      fixture.componentRef.setInput('sort', 'occurrences-asc');
+      fixture.detectChanges();
+      expect(
+        button.querySelector('.qd-explorer-table__sort-glyph')?.textContent?.trim(),
+      ).toBe('▲');
+
+      // Inactive column: no glyph at all.
+      expect(
+        root
+          .querySelector('[data-testid="roots-table-sort-alpha"]')
+          ?.querySelector('.qd-explorer-table__sort-glyph'),
+      ).toBeNull();
+    });
+
+    it('names the column and the next cycle state in the Arabic aria-label', () => {
+      const fixture = setup([], { sort: 'mushaf-order' });
+      const root = fixture.nativeElement as HTMLElement;
+      const button = () =>
+        root.querySelector('[data-testid="roots-table-sort-occurrences"]') as HTMLElement;
+
+      expect(button().getAttribute('aria-label')).toBe('ترتيب حسب المواضع تنازليًا');
+
+      fixture.componentRef.setInput('sort', 'occurrences');
+      fixture.detectChanges();
+      expect(button().getAttribute('aria-label')).toBe('ترتيب حسب المواضع تصاعديًا');
+
+      fixture.componentRef.setInput('sort', 'occurrences-asc');
+      fixture.detectChanges();
+      expect(button().getAttribute('aria-label')).toBe('إلغاء الترتيب حسب المواضع');
+    });
+  });
 });

@@ -10,14 +10,14 @@
       <div class="roots-table__header-cell qd-explorer-table__header-cell roots-table__header-cell--row-number qd-explorer-table__header-cell--row-number" role="columnheader">
         {{ headers.rowNumber }}
       </div>
-      <div class="roots-table__header-cell qd-explorer-table__header-cell" role="columnheader">{{ headers.root }}</div>
-      <div class="roots-table__header-cell qd-explorer-table__header-cell roots-table__header-cell--numeric qd-explorer-table__header-cell--numeric" role="columnheader">{{ headers.occurrences }}</div>
-      <div class="roots-table__header-cell qd-explorer-table__header-cell roots-table__header-cell--numeric qd-explorer-table__header-cell--numeric" role="columnheader">{{ headers.ayahs }}</div>
-      <div class="roots-table__header-cell qd-explorer-table__header-cell roots-table__header-cell--numeric qd-explorer-table__header-cell--numeric" role="columnheader">{{ headers.surahs }}</div>
-      <div class="roots-table__header-cell qd-explorer-table__header-cell roots-table__header-cell--numeric qd-explorer-table__header-cell--numeric" role="columnheader">{{ headers.simpleWords }}</div>
-      <div class="roots-table__header-cell qd-explorer-table__header-cell roots-table__header-cell--numeric qd-explorer-table__header-cell--numeric" role="columnheader">{{ headers.tashkeelWords }}</div>
-      <div class="roots-table__header-cell qd-explorer-table__header-cell roots-table__header-cell--numeric qd-explorer-table__header-cell--numeric" role="columnheader">{{ headers.lemmas }}</div>
-      <div class="roots-table__header-cell qd-explorer-table__header-cell roots-table__header-cell--numeric qd-explorer-table__header-cell--numeric" role="columnheader">{{ headers.stems }}</div>
+      <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.alpha, numeric: false }" />
+      <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.occurrences, numeric: true }" />
+      <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.ayahs, numeric: true }" />
+      <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.surahs, numeric: true }" />
+      <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.simple, numeric: true }" />
+      <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.tashkeel, numeric: true }" />
+      <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.lemmas, numeric: true }" />
+      <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.stems, numeric: true }" />
     </div>
     <div class="roots-table__header-gutter qd-explorer-table__header-gutter" aria-hidden="true"></div>
   </div>
@@ -117,6 +117,32 @@
       }
     </div>
   }
+
+  <!-- One sortable column header (Feature 030, N8). aria-sort carries the current state and lives on
+       the columnheader; the button's aria-label names the column + the state the next click gives. -->
+  <ng-template #sortHeader let-column="column" let-numeric="numeric">
+    <div
+      class="roots-table__header-cell qd-explorer-table__header-cell"
+      [class.roots-table__header-cell--numeric]="numeric"
+      [class.qd-explorer-table__header-cell--numeric]="numeric"
+      role="columnheader"
+      [attr.aria-sort]="sortControl.ariaSort(column)"
+    >
+      <button
+        type="button"
+        class="qd-explorer-table__sort-button"
+        [class.qd-is-sorted]="sortControl.isSorted(column)"
+        [attr.data-testid]="'roots-table-sort-' + column.key"
+        [attr.aria-label]="sortControl.actionAria(column)"
+        (click)="sortControl.cycle(column)"
+      >
+        <span class="qd-explorer-table__sort-label">{{ column.label }}</span>
+        @if (sortControl.glyph(column); as glyph) {
+          <span class="qd-explorer-table__sort-glyph" aria-hidden="true">{{ glyph }}</span>
+        }
+      </button>
+    </div>
+  </ng-template>
 
   <ng-template #chipCells let-row="row">
     <div class="roots-table__cell qd-explorer-table__cell roots-table__chip-cell" role="cell">
