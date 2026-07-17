@@ -231,7 +231,7 @@ public sealed class WordTypesScopeCountsReadTests(WordTypesTestFixture fixture)
 
     private static async Task<int> TableTotalAsync(EfWordTypesReader reader, WordTypeFilter filter, WordTypeTableView view)
     {
-        var page = await reader.GetTableRowsAsync(filter, view, WordTypeSort.Occurrences, 1, 1000, CancellationToken.None);
+        var page = await reader.GetTableRowsAsync(filter, view, WordTypeSortSpec.Default, 1, 1000, CancellationToken.None);
         return page.TotalCount;
     }
 

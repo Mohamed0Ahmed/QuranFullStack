@@ -1,4 +1,5 @@
 using Npgsql;
+using QuranDashboard.Application.Abstractions.Quran.Words;
 using QuranDashboard.Application.Abstractions.Quran.Words.WordTypes;
 using QuranDashboard.Application.Abstractions.Quran.Words.WordTypes.Responses;
 using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Roots;
@@ -64,7 +65,7 @@ public sealed partial class EfWordTypesReader
         FROM grouped
         """;
 
-    private static string RowsSql(WordTypeReadContext context, WordTypeSort sort, WordTypeGroupedDimensionKind? groupedDimension = null) => $"""
+    private static string RowsSql(WordTypeReadContext context, WordTypeSortSpec sort, WordTypeGroupedDimensionKind? groupedDimension = null) => $"""
         WITH base AS (
             {BaseRowsSql(context, groupedDimension)}
         ), grouped AS (
@@ -250,11 +251,10 @@ public sealed partial class EfWordTypesReader
 
     // Grouped table views (roots/stems/lemmas) reuse BaseRowsSql verbatim and group by the numeric
     // dimension ID, excluding nulls. Grouping and total counting happen before pagination.
-    private static string GroupedRowsSql(WordTypeReadContext context, WordTypeTableView view, WordTypeSort sort)
+    private static string GroupedRowsSql(WordTypeReadContext context, WordTypeTableView view, WordTypeSortSpec sort)
     {
         var (idColumn, textColumn) = DimensionColumns(view);
-        var needsFold = sort == WordTypeSort.Alpha;
-        var normTextColumn = needsFold
+        var normTextColumn = NeedsFold(sort)
             ? $", replace(translate(lower(MIN({textColumn})), @foldFrom, @foldTo), ' ', '') AS norm_text"
             : string.Empty;
 
@@ -290,6 +290,12 @@ public sealed partial class EfWordTypesReader
         """;
     }
 
+    // THE single fold predicate. The grouped alpha ORDER BY reads the folded `norm_text` column, which
+    // only exists when GroupedRowsSql projects it AND @foldFrom/@foldTo are bound. Both sites gate on
+    // this one method: if they ever disagree, the query either sorts on a missing column or Npgsql
+    // rejects an unbound parameter — at RUNTIME. Alpha in EITHER direction folds.
+    private static bool NeedsFold(WordTypeSortSpec sort) => sort.Column == WordTypeSortColumn.Alpha;
+
     // Grouped totalCount = distinct non-null dimension IDs over the scoped base, measured before paging.
     private static string GroupedRowsCountSql(WordTypeReadContext context, WordTypeTableView view)
     {
@@ -304,13 +310,21 @@ public sealed partial class EfWordTypesReader
         """;
     }
 
-    private static string GroupedOrderBy(WordTypeSort sort) => sort switch
+    // Grouped-view ORDER BY. Same constant-only rule as OrderBy above. The alpha arms read the folded
+    // norm_text column that NeedsFold gates into the CTE.
+    private static string GroupedOrderBy(WordTypeSortSpec sort) => (sort.Column, sort.Direction) switch
     {
-        WordTypeSort.Ayahs => "ayahs_count DESC, first_word_order_in_mushaf, dimension_id",
-        WordTypeSort.Surahs => "surahs_count DESC, first_word_order_in_mushaf, dimension_id",
-        WordTypeSort.MushafOrder => "first_word_order_in_mushaf, dimension_id",
-        WordTypeSort.Alpha => "norm_text COLLATE \"C\", dimension_id",
-        _ => "occurrences_count DESC, first_word_order_in_mushaf, dimension_id",
+        (WordTypeSortColumn.Occurrences, WordSortDirection.Descending) => "occurrences_count DESC, first_word_order_in_mushaf, dimension_id",
+        (WordTypeSortColumn.Occurrences, WordSortDirection.Ascending) => "occurrences_count, first_word_order_in_mushaf, dimension_id",
+        (WordTypeSortColumn.Ayahs, WordSortDirection.Descending) => "ayahs_count DESC, first_word_order_in_mushaf, dimension_id",
+        (WordTypeSortColumn.Ayahs, WordSortDirection.Ascending) => "ayahs_count, first_word_order_in_mushaf, dimension_id",
+        (WordTypeSortColumn.Surahs, WordSortDirection.Descending) => "surahs_count DESC, first_word_order_in_mushaf, dimension_id",
+        (WordTypeSortColumn.Surahs, WordSortDirection.Ascending) => "surahs_count, first_word_order_in_mushaf, dimension_id",
+        (WordTypeSortColumn.Alpha, WordSortDirection.Ascending) => "norm_text COLLATE \"C\", dimension_id",
+        (WordTypeSortColumn.Alpha, WordSortDirection.Descending) => "norm_text COLLATE \"C\" DESC, dimension_id",
+        // mushaf-order is ascending-only by contract (the parser rejects any suffix on it).
+        (WordTypeSortColumn.MushafOrder, _) => "first_word_order_in_mushaf, dimension_id",
+        _ => throw new InvalidOperationException($"Unhandled {nameof(WordTypeSortSpec)} value."),
     };
 
     private static (string IdColumn, string TextColumn) DimensionColumns(WordTypeTableView view) => view switch
@@ -321,7 +335,7 @@ public sealed partial class EfWordTypesReader
         _ => throw new ArgumentOutOfRangeException(nameof(view), view, "Grouped dimension columns are only defined for roots/stems/lemmas."),
     };
 
-    private static object[] BuildGroupedRowsParameters(WordTypeReadContext context, WordTypeSort sort, int skip, int take)
+    private static object[] BuildGroupedRowsParameters(WordTypeReadContext context, WordTypeSortSpec sort, int skip, int take)
     {
         var parameters = new List<object>
         {
@@ -332,7 +346,8 @@ public sealed partial class EfWordTypesReader
         AddSecondaryFilterParameters(context, parameters);
         AddSearchParameter(context, parameters);
 
-        if (sort == WordTypeSort.Alpha)
+        // Same NeedsFold gate as the SQL shape — the fold pair stays parameterized, never interpolated.
+        if (NeedsFold(sort))
         {
             parameters.Add(new NpgsqlParameter<string>("foldFrom", RootsListDerivation.ArabicFoldFrom));
             parameters.Add(new NpgsqlParameter<string>("foldTo", RootsListDerivation.ArabicFoldTo));
@@ -498,13 +513,23 @@ public sealed partial class EfWordTypesReader
         return "NULL::text";
     }
 
-    private static string OrderBy(WordTypeSort sort) => sort switch
+    // Words-view ORDER BY. Every arm returns a compiler-known CONSTANT selected by an enum switch —
+    // the direction is baked into each constant, so no request text ever reaches the SQL string. The
+    // per-view tie chain (Mushaf order, then the identity pair) is identical in BOTH directions, so
+    // reversing a column never reshuffles its ties.
+    private static string OrderBy(WordTypeSortSpec sort) => (sort.Column, sort.Direction) switch
     {
-        WordTypeSort.Ayahs => "g.ayahs_count DESC, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
-        WordTypeSort.Surahs => "g.surahs_count DESC, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
-        WordTypeSort.MushafOrder => "g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
-        WordTypeSort.Alpha => "g.display_text, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
-        _ => "g.occurrences_count DESC, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
+        (WordTypeSortColumn.Occurrences, WordSortDirection.Descending) => "g.occurrences_count DESC, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
+        (WordTypeSortColumn.Occurrences, WordSortDirection.Ascending) => "g.occurrences_count, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
+        (WordTypeSortColumn.Ayahs, WordSortDirection.Descending) => "g.ayahs_count DESC, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
+        (WordTypeSortColumn.Ayahs, WordSortDirection.Ascending) => "g.ayahs_count, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
+        (WordTypeSortColumn.Surahs, WordSortDirection.Descending) => "g.surahs_count DESC, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
+        (WordTypeSortColumn.Surahs, WordSortDirection.Ascending) => "g.surahs_count, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
+        (WordTypeSortColumn.Alpha, WordSortDirection.Ascending) => "g.display_text, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
+        (WordTypeSortColumn.Alpha, WordSortDirection.Descending) => "g.display_text DESC, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
+        // mushaf-order is ascending-only by contract (the parser rejects any suffix on it).
+        (WordTypeSortColumn.MushafOrder, _) => "g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
+        _ => throw new InvalidOperationException($"Unhandled {nameof(WordTypeSortSpec)} value."),
     };
 
     private static string ResolveBroadLabel(string type) => type switch

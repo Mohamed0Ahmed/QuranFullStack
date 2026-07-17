@@ -52,7 +52,17 @@ public sealed class WordTypesController(
     /// <param name="tense">مرشّح الزمن (اختياري).</param>
     /// <param name="voice">مرشّح البناء للمعلوم/المجهول (اختياري).</param>
     /// <param name="search">نص البحث في هوية الكلمة (اختياري).</param>
-    /// <param name="sort">مفتاح الفرز (اختياري).</param>
+    /// <param name="sort">
+    /// مفتاح الفرز (اختياري، الافتراضي <c>occurrences</c> تنازليًا — بخلاف بقية المستكشفات).
+    /// الصيغة: <c>عمود</c> أو <c>عمود-asc</c> أو <c>عمود-desc</c>.
+    /// الأعمدة المتاحة: <c>alpha</c> (تصاعدي طبيعيًا)، و<c>occurrences</c> و<c>ayahs</c>
+    /// و<c>surahs</c> (تنازلية طبيعيًا). تنطبق المفاتيح ذاتها على عرض الكلمات وعلى عروض
+    /// الجذور/الأصول/الصيغ المجمّعة.
+    /// المفتاح المجرّد يعني الاتجاه الطبيعي للعمود، لذا <c>occurrences</c> ≡
+    /// <c>occurrences-desc</c> و<c>alpha</c> ≡ <c>alpha-asc</c>.
+    /// و<c>mushaf-order</c> هو ترتيب المصحف التصاعدي فقط ولا يقبل لاحقة اتجاه.
+    /// أي مفتاح آخر يُرجع 400.
+    /// </param>
     /// <param name="page">رقم الصفحة (الافتراضي 1).</param>
     /// <param name="pageSize">حجم الصفحة (الافتراضي 1000).</param>
     /// <param name="hasRoot">مرشّح وجود الجذر ثلاثي الحالة (اختياري).</param>
@@ -105,7 +115,17 @@ public sealed class WordTypesController(
     /// <param name="tense">مرشّح الزمن (اختياري).</param>
     /// <param name="voice">مرشّح البناء للمعلوم/المجهول (اختياري).</param>
     /// <param name="search">نص البحث في هوية الكلمة (اختياري).</param>
-    /// <param name="sort">مفتاح الفرز (اختياري).</param>
+    /// <param name="sort">
+    /// مفتاح الفرز (اختياري، الافتراضي <c>occurrences</c> تنازليًا — بخلاف بقية المستكشفات).
+    /// الصيغة: <c>عمود</c> أو <c>عمود-asc</c> أو <c>عمود-desc</c>.
+    /// الأعمدة المتاحة: <c>alpha</c> (تصاعدي طبيعيًا)، و<c>occurrences</c> و<c>ayahs</c>
+    /// و<c>surahs</c> (تنازلية طبيعيًا). تنطبق المفاتيح ذاتها على عرض الكلمات وعلى عروض
+    /// الجذور/الأصول/الصيغ المجمّعة.
+    /// المفتاح المجرّد يعني الاتجاه الطبيعي للعمود، لذا <c>occurrences</c> ≡
+    /// <c>occurrences-desc</c> و<c>alpha</c> ≡ <c>alpha-asc</c>.
+    /// و<c>mushaf-order</c> هو ترتيب المصحف التصاعدي فقط ولا يقبل لاحقة اتجاه.
+    /// أي مفتاح آخر يُرجع 400.
+    /// </param>
     /// <param name="page">رقم الصفحة (الافتراضي 1).</param>
     /// <param name="pageSize">حجم الصفحة (الافتراضي 1000).</param>
     /// <param name="hasRoot">مرشّح وجود الجذر ثلاثي الحالة (اختياري).</param>

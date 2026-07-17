@@ -102,6 +102,36 @@ public sealed class WordTypesLoggingTests(WordTypesTestFixture fixture)
         AssertNoSensitivePayload(entry);
     }
 
+    // GetWordTypeRows was the one explorer handler that returned InvalidSort WITHOUT a warning; N8
+    // aligned it with the other four. The rejected token is reported only as a constant reason — the
+    // raw request value is never echoed into the log.
+    [Fact]
+    public async Task RowsHandler_LogsInvalidSortWarning_WithStructuredFields_AndNeverTheRejectedToken()
+    {
+        await using var scope = fixture.CreateScope();
+        fixture.LoggingProvider.Clear();
+        var handler = scope.ServiceProvider.GetRequiredService<GetWordTypeRowsHandler>();
+        const string rejectedToken = "mushaf-order-desc";
+
+        var outcome = await handler.HandleAsync(
+            new GetWordTypeRowsQuery("noun", null, null, null, null, null, rejectedToken, 1, 25),
+            CancellationToken.None);
+
+        outcome.Should().BeOfType<GetWordTypeRowsOutcome.InvalidSort>();
+        var entry = SingleEntryFor<GetWordTypeRowsHandler>(LogLevel.Warning);
+        entry.FieldNames().Should().BeEquivalentTo(["feature", "operation", "reason", "type", "childCode"]);
+        entry.GetValue<string>("feature").Should().Be("WordTypes");
+        entry.GetValue<string>("operation").Should().Be("GetWordTypeRows");
+        entry.GetValue<string>("reason").Should().Be("invalidSort");
+        entry.GetValue<string>("type").Should().Be("noun");
+        entry.StructuredFields()
+            .Select(pair => pair.Value)
+            .OfType<string>()
+            .Append(entry.Message)
+            .Should().OnlyContain(value => !value.Contains(rejectedToken, StringComparison.Ordinal));
+        AssertNoSensitivePayload(entry);
+    }
+
     [Theory]
     [InlineData(typeof(GetWordTypeSummaryHandler), 0, "N", "invalidIdentity")]
     [InlineData(typeof(GetWordTypeAyahsHandler), 0, "PN", "invalidIdentity")]

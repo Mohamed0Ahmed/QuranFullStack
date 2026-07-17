@@ -12,7 +12,7 @@ public sealed class CachedRootsReader(EfRootsReader efReader, IMemoryCache cache
 
     public async Task<PagedResult<RootListItemDto>> GetRootsPageAsync(
         string? search,
-        RootSort sort,
+        RootSortSpec sort,
         RootsCountFilter filter,
         int page,
         int pageSize,

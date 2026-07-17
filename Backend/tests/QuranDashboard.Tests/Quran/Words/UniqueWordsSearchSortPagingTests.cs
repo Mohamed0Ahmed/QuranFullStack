@@ -163,6 +163,90 @@ public sealed class UniqueWordsSearchSortPagingTests(UniqueWordsTestFixture fixt
         page.Items.Select(i => i.Id).Should().Equal([2003, 1003, 1004, 1002, 31001, 1001, 60041, 1202]);
     }
 
+    // Five seeded tashkeel words share occurrences_count = 1, so this pins the tie-break chain against
+    // real seeded data: the tie group orders by first_word_order_in_mushaf ASCENDING in BOTH
+    // directions, while only the primary count flips. (Id never enters: first_word_order_in_mushaf
+    // carries a UNIQUE index on both unique-word tables, so it always resolves the tie first.)
+    [Theory]
+    [InlineData("occurrences", new[] { 1002, 1001, 2003, 1003, 1004, 1202, 31001, 60041 })]
+    [InlineData("occurrences-asc", new[] { 1003, 1004, 1202, 31001, 60041, 2003, 1001, 1002 })]
+    public async Task Sort_by_occurrences_ties_keep_mushaf_order_in_both_directions(string sort, int[] expectedIds)
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetUniqueWordsPageHandler>();
+
+        var outcome = await handler.HandleAsync(
+            new GetUniqueWordsPageQuery("tashkeel", null, sort, 1, 50),
+            CancellationToken.None);
+        var page = outcome.Should().BeOfType<GetUniqueWordsPageOutcome.Success>().Subject.Page;
+
+        page.Items.Select(i => i.Id).Should().Equal(expectedIds);
+    }
+
+    // The exact reverse of the ascending pin above: the eight seeded words carry distinct search
+    // texts, so no alpha tie engages and DESC simply mirrors the sequence.
+    [Fact]
+    public async Task Sort_by_alpha_descending_reverses_the_ascending_order()
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetUniqueWordsPageHandler>();
+
+        var outcome = await handler.HandleAsync(
+            new GetUniqueWordsPageQuery("tashkeel", null, "alpha-desc", 1, 50),
+            CancellationToken.None);
+        var page = outcome.Should().BeOfType<GetUniqueWordsPageOutcome.Success>().Subject.Page;
+
+        page.Items.Select(i => i.Id).Should().Equal([1202, 60041, 1001, 31001, 1002, 1004, 1003, 2003]);
+    }
+
+    // The acceptance bar: a legacy token and its canonical alias are ONE ordering.
+    [Theory]
+    [InlineData("occurrences", "occurrences-desc")]
+    [InlineData("alpha", "alpha-asc")]
+    public async Task Legacy_sort_token_and_its_alias_return_the_identical_sequence(string legacy, string alias)
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetUniqueWordsPageHandler>();
+
+        var legacyOutcome = await handler.HandleAsync(
+            new GetUniqueWordsPageQuery("tashkeel", null, legacy, 1, 50),
+            CancellationToken.None);
+        var aliasOutcome = await handler.HandleAsync(
+            new GetUniqueWordsPageQuery("tashkeel", null, alias, 1, 50),
+            CancellationToken.None);
+
+        var legacyIds = legacyOutcome.Should().BeOfType<GetUniqueWordsPageOutcome.Success>().Subject.Page.Items.Select(i => i.Id);
+        var aliasIds = aliasOutcome.Should().BeOfType<GetUniqueWordsPageOutcome.Success>().Subject.Page.Items.Select(i => i.Id);
+
+        aliasIds.Should().Equal(legacyIds);
+    }
+
+    // Sorting is ORDER BY only: it runs before Count/Skip/Take, but must never change WHICH rows are
+    // in scope or what totalCount reports.
+    [Theory]
+    [InlineData("mushaf-order")]
+    [InlineData("alpha")]
+    [InlineData("alpha-desc")]
+    [InlineData("occurrences")]
+    [InlineData("occurrences-asc")]
+    [InlineData("ayahs")]
+    [InlineData("ayahs-asc")]
+    [InlineData("surahs")]
+    [InlineData("surahs-asc")]
+    public async Task Every_sort_token_preserves_total_count_and_row_set(string sort)
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetUniqueWordsPageHandler>();
+
+        var outcome = await handler.HandleAsync(
+            new GetUniqueWordsPageQuery("tashkeel", null, sort, 1, 50),
+            CancellationToken.None);
+        var page = outcome.Should().BeOfType<GetUniqueWordsPageOutcome.Success>().Subject.Page;
+
+        page.TotalCount.Should().Be(8);
+        page.Items.Select(i => i.Id).Should().BeEquivalentTo([1001, 1002, 1003, 1004, 1202, 2003, 31001, 60041]);
+    }
+
     [Fact]
     public async Task Paging_returns_second_slice_for_smaller_page_size()
     {

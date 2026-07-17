@@ -8,7 +8,7 @@ public interface IUniqueWordsReader
     Task<PagedResult<UniqueWordListItemDto>> GetUniqueWordsPageAsync(
         UniqueWordKind kind,
         string? search,
-        UniqueWordSort sort,
+        UniqueWordSortSpec sort,
         UniqueWordsCountFilter filter,
         UniqueWordsAssociationFilter association,
         int page,

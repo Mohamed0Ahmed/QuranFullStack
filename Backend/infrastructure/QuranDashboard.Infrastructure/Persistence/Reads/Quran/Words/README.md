@@ -26,6 +26,46 @@ and Unique Words. They back the `application/.../Quran/Words/**` query handlers 
   words that differ only by tashkeel/Uthmani orthography are the same identity.
 - **Ordering is part of the contract** — related-item and list ordering is deterministic
   via `MorphologyRelatedItemsOrdering` / `*ListDerivation`; do not reorder casually.
+- **List `sort` token grammar** (Feature 030, N8) — the five explorers share ONE opaque `sort` query
+  param (there is deliberately **no `dir` param**) whose grammar is
+  `token := column | column "-asc" | column "-desc"` (`WordSortToken`, Application.Abstractions).
+  A **bare token means the column's NATURAL direction** — counts descend, text ascends — so every
+  pre-feature token keeps its exact meaning as an **alias**: `occurrences` ≡ `occurrences-desc`,
+  `alpha` ≡ `alpha-asc`, word-types `ayahs`/`surahs` ≡ their `-desc` forms. **`mushaf-order` is
+  ascending-only and matches the BARE token only** — it is the release/default order, not a column, so
+  `mushaf-order-asc`/`-desc` are **rejected (400)**. **Canonical serialization:** the bare form is
+  canonical for the natural direction, the suffixed form only for the opposite one (canonical Roots
+  المواضع set = `occurrences`, `occurrences-asc`; `occurrences-desc` parses but canonicalizes OUT to
+  `occurrences`). `*SortSpec.CanonicalToken()` is the single source of that mapping and is what the
+  cache `SortKey()` and the handler logs emit, so aliases collapse onto ONE cache entry and every
+  pre-feature key/URL stays byte-identical. Allowlisted columns per explorer (defaults in bold):
+  **Roots** `alpha` · `occurrences` · `ayahs` · `surahs` · `simple` · `tashkeel` · `lemmas` · `stems`
+  · **`mushaf-order`**; **Lemmas** the same minus `lemmas`; **Stems** minus `lemmas`/`stems`;
+  **Unique Words** `alpha` · `occurrences` · `ayahs` · `surahs` · **`mushaf-order`**; **Word Types**
+  (words AND all three grouped views) `alpha` · `ayahs` · `surahs` · `mushaf-order` ·
+  **`occurrences`** — word-types is the one explorer that defaults to `occurrences` (desc), not Mushaf
+  order. Related-entity TEXT columns (lemmas' root, stems' dominant root/lemma, unique's type/root,
+  word-types' type/root/stem/lemma) and unique-words' missing-surahs (post-page computed; the monotone
+  inverse of السور) are **deliberately not sortable**; grouped member-word detail reads take no sort at
+  all. An unknown/unlisted token is a controlled **400 InvalidSort**, never a silent fallback.
+- **Sort tie-break contract** (Feature 030, N8) — sorting changes ORDER BY only (never the filter, so
+  `TotalCount` and the row multiset are invariant across every token), and **each column's tie chain is
+  identical in BOTH directions**, so reversing a column never reshuffles its ties:
+  - **count columns** (both directions): count → `FirstWordOrderInMushaf` → `Id`.
+  - **`alpha` on Roots/Lemmas/Stems** (both directions): text → `Id`, with **NO Mushaf tie-break** —
+    this is a deliberate EXCEPTION preserving the exact row order existing `sort=alpha` links already
+    return (pinned by `StemsListReadTests`' alpha sequence). Do not "harmonize" it.
+  - **`alpha` on Unique Words** keeps its own pre-existing chain: `SearchText` → `FirstWordOrderInMushaf`
+    → `Id`.
+  - **`mushaf-order`**: `FirstWordOrderInMushaf` → `Id`.
+  - **Unique Words** now appends `.ThenBy(Id)` to EVERY branch — pure hardening, no order change
+    (`FirstWordOrderInMushaf` is already effectively unique), closing a DB-side non-determinism gap that
+    the in-memory explorers never had (LINQ-to-Objects sorts are stable; a SQL `ORDER BY` is not).
+  - **Word Types** keeps its existing per-view tie chains in both directions
+    (`g.tashkeel_word_id, g.context_code` for the words view; `dimension_id` for grouped).
+  Directions are **allowlisted, never interpolated**: controllers hand the raw string only to the
+  Application parser, SQL/LINQ only ever see a parsed `(column, direction)` pair, and the word-types
+  ORDER BY strings stay compiler-known CONSTANTS selected by an enum switch with the direction baked in.
 - **Word Types tree parent counts use row-count semantics** — each parent count equals the
   unscoped grouped word-context row total returned for that main type, not the number of visible children.
 - **Read-only + `AsNoTracking`** semantics; these readers must not mutate state.
@@ -107,7 +147,14 @@ and Unique Words. They back the `application/.../Quran/Words/**` query handlers 
   unscoped, segment/`words_count`-backed aggregates (`EfRootsReader.LoadWholeSummaryAsync`
   and friends) — never conflate the two. Grouped `alpha` sort reuses the Roots explorer's
   Arabic fold (`RootsListDerivation.ArabicFoldFrom`/`ArabicFoldTo`) with `COLLATE "C"`
-  ordinal collation, tie-broken by the numeric dimension ID.
+  ordinal collation, tie-broken by the numeric dimension ID — in **both directions**
+  (`alpha` = `norm_text COLLATE "C"`, `alpha-desc` = `norm_text COLLATE "C" DESC`). The folded
+  `norm_text` column is projected into the grouped CTE **only** for alpha, and the `@foldFrom`/`@foldTo`
+  pair (always SQL **parameters**, never interpolated) is bound under the SAME condition: both the SQL
+  shape (`GroupedRowsSql`) and the parameter list (`BuildGroupedRowsParameters`) gate on the single
+  `NeedsFold(sort)` predicate. **Keep them on that one predicate** — if the two ever disagree the query
+  either orders by a column that was never projected or Npgsql rejects an unbound parameter, and both
+  fail only at RUNTIME.
 - **Word Types scoped four-count summary** (Feature 026, US8, `EfWordTypesReader.GetScopeCountsAsync` in the
   `.ScopeCounts.cs` partial) returns `WordTypeScopeCountsDto(WordsCount, RootsCount, StemsCount, LemmasCount)`
   for the FULL active list scope (type, childCode, case, tense, voice, search, presence flags — the same

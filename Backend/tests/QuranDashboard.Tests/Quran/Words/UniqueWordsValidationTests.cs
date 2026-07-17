@@ -25,6 +25,14 @@ public sealed class UniqueWordsValidationTests(UniqueWordsTestFixture fixture)
     [Theory]
     [InlineData("bogus")]
     [InlineData("relevance")]
+    // mushaf-order is the release order, not a column: ascending-only, bare token only.
+    [InlineData("mushaf-order-asc")]
+    [InlineData("mushaf-order-desc")]
+    // Columns other explorers offer are still unlisted here.
+    [InlineData("simple")]
+    [InlineData("tashkeel")]
+    [InlineData("lemmas")]
+    [InlineData("stems")]
     public async Task Invalid_sort_returns_validation_outcome(string sort)
     {
         await using var scope = fixture.CreateScope();

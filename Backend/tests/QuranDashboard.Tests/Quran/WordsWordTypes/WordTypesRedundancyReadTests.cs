@@ -25,7 +25,7 @@ public sealed class WordTypesRedundancyReadTests(WordTypesTestFixture fixture)
         var reader = new EfWordTypesReader(dbContext);
 
         interceptor.Reset();
-        var page = await reader.GetRowsAsync(NounScope, WordTypeSort.Occurrences, 1, 25, CancellationToken.None);
+        var page = await reader.GetRowsAsync(NounScope, WordTypeSortSpec.Default, 1, 25, CancellationToken.None);
 
         interceptor.CommandCount.Should().Be(1);
         page.TotalCount.Should().Be(4);
@@ -41,7 +41,7 @@ public sealed class WordTypesRedundancyReadTests(WordTypesTestFixture fixture)
 
         interceptor.Reset();
         var page = await reader.GetTableRowsAsync(
-            NounScope, WordTypeTableView.Roots, WordTypeSort.Occurrences, 1, 25, CancellationToken.None);
+            NounScope, WordTypeTableView.Roots, WordTypeSortSpec.Default, 1, 25, CancellationToken.None);
 
         interceptor.CommandCount.Should().Be(1);
         page.TotalCount.Should().Be(1);
@@ -55,8 +55,8 @@ public sealed class WordTypesRedundancyReadTests(WordTypesTestFixture fixture)
         await using var scope = fixture.CreateScope();
         var reader = scope.ServiceProvider.GetRequiredService<EfWordTypesReader>();
 
-        var page1 = await reader.GetRowsAsync(NounScope, WordTypeSort.Occurrences, 1, 2, CancellationToken.None);
-        var page2 = await reader.GetRowsAsync(NounScope, WordTypeSort.Occurrences, 2, 2, CancellationToken.None);
+        var page1 = await reader.GetRowsAsync(NounScope, WordTypeSortSpec.Default, 1, 2, CancellationToken.None);
+        var page2 = await reader.GetRowsAsync(NounScope, WordTypeSortSpec.Default, 2, 2, CancellationToken.None);
 
         page1.TotalCount.Should().Be(4);
         page2.TotalCount.Should().Be(4);
@@ -75,7 +75,7 @@ public sealed class WordTypesRedundancyReadTests(WordTypesTestFixture fixture)
         await using var scope = fixture.CreateScope();
         var reader = scope.ServiceProvider.GetRequiredService<EfWordTypesReader>();
 
-        var page = await reader.GetRowsAsync(NounScope, WordTypeSort.Occurrences, 5, 25, CancellationToken.None);
+        var page = await reader.GetRowsAsync(NounScope, WordTypeSortSpec.Default, 5, 25, CancellationToken.None);
 
         page.TotalCount.Should().Be(4);
         page.Items.Should().BeEmpty();
@@ -91,7 +91,7 @@ public sealed class WordTypesRedundancyReadTests(WordTypesTestFixture fixture)
 
         var page = await reader.GetRowsAsync(
             new WordTypeFilter("noun", null, null, null, null, "مثل", HasRoot: true),
-            WordTypeSort.Occurrences, 1, 25, CancellationToken.None);
+            WordTypeSortSpec.Default, 1, 25, CancellationToken.None);
 
         page.TotalCount.Should().Be(0);
         page.Items.Should().BeEmpty();
@@ -107,7 +107,7 @@ public sealed class WordTypesRedundancyReadTests(WordTypesTestFixture fixture)
 
         var page = await reader.GetTableRowsAsync(
             new WordTypeFilter("noun", null, null, null, null, "مثل"),
-            WordTypeTableView.Roots, WordTypeSort.Occurrences, 1, 1000, CancellationToken.None);
+            WordTypeTableView.Roots, WordTypeSortSpec.Default, 1, 1000, CancellationToken.None);
 
         page.TotalCount.Should().Be(0);
         page.Items.Should().BeEmpty();
@@ -121,7 +121,7 @@ public sealed class WordTypesRedundancyReadTests(WordTypesTestFixture fixture)
         await using var scope = fixture.CreateScope();
         var reader = scope.ServiceProvider.GetRequiredService<EfWordTypesReader>();
 
-        var page = await reader.GetRowsAsync(NounScope, WordTypeSort.MushafOrder, 1, 25, CancellationToken.None);
+        var page = await reader.GetRowsAsync(NounScope, WordTypeSortSpec.Natural(WordTypeSortColumn.MushafOrder), 1, 25, CancellationToken.None);
 
         var kalimaNoun = page.Items.Single(row => row.TashkeelWordId == KalimaTashkeelId && row.ContextCode == "N");
         kalimaNoun.RootText.Should().Be("ك ل م");
