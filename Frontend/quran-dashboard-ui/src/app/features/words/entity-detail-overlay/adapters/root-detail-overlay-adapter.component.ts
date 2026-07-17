@@ -41,6 +41,8 @@ import {
 import { AyahMatchDto } from '../../models/unique-words.models';
 import { RootsDetailController } from '../../state/roots-detail.controller';
 import { mapRootAyahMatchToShared } from '../../utils/root-ayah-match.mapper';
+import { WORDS_DETAIL_RETRY_LABEL } from '../../models/words-shared.labels';
+import { QdStateComponent } from '../../../../shared/ui/state/state.component';
 import { EntityDetailOverlayTitleStore } from '../entity-detail-overlay-title.store';
 
 /**
@@ -61,6 +63,7 @@ import { EntityDetailOverlayTitleStore } from '../entity-detail-overlay-title.st
   imports: [
     AyahMatchesListComponent,
     MissingSurahsListComponent,
+    QdStateComponent,
     RootDetailsPanelComponent,
     RootLemmasListComponent,
     RootStemsListComponent,
@@ -85,6 +88,8 @@ export class RootDetailOverlayAdapterComponent {
 
   /** Entity-level ayah count for the shell header meta (null while the summary loads). */
   readonly entityAyahCount = computed(() => this.panelState().summary?.ayahsCount ?? null);
+
+  protected readonly retryLabel = WORDS_DETAIL_RETRY_LABEL;
 
   protected readonly wordViewOptions: readonly RootWordView[] = ['simple', 'tashkeel'];
   protected readonly surahViewOptions: readonly RootSurahView[] = ['mentioned', 'missing'];
@@ -140,6 +145,16 @@ export class RootDetailOverlayAdapterComponent {
     effect(() => this.titleStore?.setTitle(this.entityTitle()));
     effect(() => this.titleStore?.setAyahCount(this.entityAyahCount()));
     inject(DestroyRef).onDestroy(() => this.titleStore?.clear());
+  }
+
+  /**
+   * Re-drives the current frame after a failed load (Feature 030, M3). The frame
+   * is unchanged, so this never touches the URL — recovery is a controller
+   * concern, and routing an identical frame through the history service would be
+   * a no-op replace.
+   */
+  protected onRetry(): void {
+    this.controller.retryCurrentIdentity();
   }
 
   protected onViewChange(view: RootView): void {

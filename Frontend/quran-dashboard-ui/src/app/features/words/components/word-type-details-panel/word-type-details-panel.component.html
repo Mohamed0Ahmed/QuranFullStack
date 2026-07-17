@@ -101,7 +101,7 @@
       class="qd-modal explorer-detail-modal word-type-details-modal"
       role="dialog"
       aria-modal="true"
-      cdkTrapFocus
+      [cdkTrapFocus]="drawerTrapEnabled()"
       cdkTrapFocusAutoCapture
       [attr.aria-label]="panelLabel"
       data-testid="word-type-details-modal"

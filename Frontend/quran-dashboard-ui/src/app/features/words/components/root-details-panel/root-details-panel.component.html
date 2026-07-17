@@ -102,7 +102,7 @@
       #panelRoot
       role="dialog"
       aria-modal="true"
-      cdkTrapFocus
+      [cdkTrapFocus]="drawerTrapEnabled()"
       cdkTrapFocusAutoCapture
       [attr.aria-label]="rootsPanelLabel"
       data-testid="root-details-modal"

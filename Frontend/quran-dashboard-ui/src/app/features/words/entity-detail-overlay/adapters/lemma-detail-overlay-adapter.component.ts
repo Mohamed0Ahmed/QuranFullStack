@@ -42,6 +42,8 @@ import {
 import { AyahMatchDto } from '../../models/unique-words.models';
 import { LemmasDetailController } from '../../state/lemmas-detail.controller';
 import { mapLemmaAyahMatchToShared } from '../../utils/lemma-ayah-match.mapper';
+import { WORDS_DETAIL_RETRY_LABEL } from '../../models/words-shared.labels';
+import { QdStateComponent } from '../../../../shared/ui/state/state.component';
 import { EntityDetailOverlayTitleStore } from '../entity-detail-overlay-title.store';
 
 /**
@@ -68,6 +70,7 @@ import { EntityDetailOverlayTitleStore } from '../entity-detail-overlay-title.st
     LemmaStemsListComponent,
     LemmaWordsListComponent,
     MissingSurahsListComponent,
+    QdStateComponent,
     SurahOccurrencesListComponent,
   ],
   providers: [LemmasDetailController, { provide: DETAIL_OVERLAY_LINK_MODE, useValue: 'append' }],
@@ -80,6 +83,18 @@ export class LemmaDetailOverlayAdapterComponent {
   private readonly titleStore = inject(EntityDetailOverlayTitleStore, { optional: true });
 
   readonly frame = input.required<LemmaDetailFrame>();
+
+  protected readonly retryLabel = WORDS_DETAIL_RETRY_LABEL;
+
+  /**
+   * Re-drives the current frame after a failed load (Feature 030, M3). The frame
+   * is unchanged, so this never touches the URL — recovery is a controller
+   * concern, and routing an identical frame through the history service would be
+   * a no-op replace.
+   */
+  protected onRetry(): void {
+    this.controller.retryCurrentIdentity();
+  }
 
   protected readonly panelState = this.controller.panelState;
 

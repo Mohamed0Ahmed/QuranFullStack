@@ -1,5 +1,7 @@
 import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 import { getTestBed, TestBed } from '@angular/core/testing';
+import { provideLocationMocks } from '@angular/common/testing';
+import { provideRouter } from '@angular/router';
 
 import { WordTypeDetailsPanelComponent } from './word-type-details-panel.component';
 import { WORD_TYPE_DETAIL_VIEW_KEYS, WordTypeDetailView } from '../../models/word-types.models';
@@ -70,6 +72,9 @@ describe('WordTypeDetailsPanelComponent', () => {
   function createPanel(view: WordTypeDetailView = 'ayahs', kind: WordTypeDetailSelectionKind = 'word') {
     TestBed.configureTestingModule({
       imports: [WordTypeDetailsPanelComponent],
+      // The drawer suspends its focus trap from the router-backed
+      // detail-overlay history service.
+      providers: [provideRouter([]), provideLocationMocks()],
       teardown: { destroyAfterEach: true },
     });
     const fixture = TestBed.createComponent(WordTypeDetailsPanelComponent);

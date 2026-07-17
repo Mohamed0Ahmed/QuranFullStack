@@ -101,7 +101,7 @@
       #panelRoot
       role="dialog"
       aria-modal="true"
-      cdkTrapFocus
+      [cdkTrapFocus]="drawerTrapEnabled()"
       cdkTrapFocusAutoCapture
       [attr.aria-label]="panelLabel"
       data-testid="lemma-details-modal"

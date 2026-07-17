@@ -19,6 +19,9 @@ import { LemmasDetailFacade } from '../../state/lemmas-detail.facade';
 import { EntityDetailOverlayTitleStore } from '../entity-detail-overlay-title.store';
 import { LemmaDetailOverlayAdapterComponent } from './lemma-detail-overlay-adapter.component';
 
+/** Synthetic, non-scriptural Arabic placeholder: keeps RTL rendering real without faking Quranic text. */
+const SYNTHETIC_WORD_TEXT = 'كلمة-اختبار';
+
 const LEMMA_SUMMARY: LemmaSummaryDto = {
   id: 999,
   lemmaText: 'كِتَاب',
@@ -56,7 +59,7 @@ const AYAHS_PAGE: PagedResultDto<LemmaAyahMatchDto> = {
       pageNumber: 2,
       surahNameArabic: 'البقرة',
       verseKey: '2:2',
-      words: [{ textUthmani: 'ٱلْكِتَـٰبُ', isMatched: true }],
+      words: [{ textUthmani: SYNTHETIC_WORD_TEXT, isMatched: true }],
     },
   ],
 };

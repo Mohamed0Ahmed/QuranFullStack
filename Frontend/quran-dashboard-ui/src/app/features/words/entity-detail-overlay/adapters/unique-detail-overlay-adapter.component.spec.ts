@@ -19,6 +19,9 @@ import { UniqueWordsDrilldownFacade } from '../../state/unique-words-drilldown.f
 import { EntityDetailOverlayTitleStore } from '../entity-detail-overlay-title.store';
 import { UniqueDetailOverlayAdapterComponent } from './unique-detail-overlay-adapter.component';
 
+/** Synthetic, non-scriptural Arabic placeholder: keeps RTL rendering real without faking Quranic text. */
+const SYNTHETIC_WORD_TEXT = 'كلمة-اختبار';
+
 function summaryOf(mode: UniqueWordKind, id: number): UniqueWordSummaryDto {
   return {
     id,
@@ -43,7 +46,7 @@ const AYAHS_PAGE: PagedResultDto<UniqueWordAyahMatchDto> = {
       surahNameArabic: 'البقرة',
       verseKey: '2:2',
       matchedQuranWordIds: [0],
-      words: [{ quranWordId: 0, textUthmani: 'ٱلْكِتَـٰبُ', isAyahMarker: false }],
+      words: [{ quranWordId: 0, textUthmani: SYNTHETIC_WORD_TEXT, isAyahMarker: false }],
     },
   ],
 };

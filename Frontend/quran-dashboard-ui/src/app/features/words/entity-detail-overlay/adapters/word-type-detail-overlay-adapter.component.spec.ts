@@ -19,6 +19,9 @@ import { WordTypesDetailFacade } from '../../state/word-types-detail.facade';
 import { EntityDetailOverlayTitleStore } from '../entity-detail-overlay-title.store';
 import { WordTypeDetailOverlayAdapterComponent } from './word-type-detail-overlay-adapter.component';
 
+/** Synthetic, non-scriptural Arabic placeholder: keeps RTL rendering real without faking Quranic text. */
+const SYNTHETIC_WORD_TEXT = 'كلمة-اختبار';
+
 const IDENTITY: WordTypeRowIdentity = {
   tashkeelWordId: 42,
   contextCode: 'noun',
@@ -29,7 +32,7 @@ const IDENTITY: WordTypeRowIdentity = {
 
 const SUMMARY: WordTypeSummaryDto = {
   ...IDENTITY,
-  displayText: 'ٱلْكِتَـٰبُ',
+  displayText: SYNTHETIC_WORD_TEXT,
   typeCode: 'noun',
   typeLabel: { ar: 'اسم' },
   broadLabel: { ar: 'اسم' },
@@ -54,7 +57,7 @@ const AYAHS_PAGE: PagedResultDto<WordTypeAyahMatchDto> = {
       surahNumber: 2,
       matchedWordIds: [1],
       matchedWordPositions: [1],
-      words: [{ quranWordId: 1, textUthmani: 'ٱلْكِتَـٰبُ', isAyahMarker: false }],
+      words: [{ quranWordId: 1, textUthmani: SYNTHETIC_WORD_TEXT, isAyahMarker: false }],
     },
   ],
 };
@@ -137,14 +140,14 @@ describe('WordTypeDetailOverlayAdapterComponent (Feature 029 B4)', () => {
     expect(host.querySelectorAll('[role="tab"]').length).toBe(2);
     expect(host.querySelector('[data-testid="word-type-details-tab-words"]')).toBeNull();
     expect(host.querySelector('[data-testid="overlay-word-type-ayahs-view"]')).not.toBeNull();
-    expect(host.textContent).toContain('ٱلْكِتَـٰبُ');
+    expect(host.textContent).toContain(SYNTHETIC_WORD_TEXT);
   });
 
   it('publishes the loaded summary display text and ayah count to the shared store and clears them on destroy', async () => {
     const store = TestBed.inject(EntityDetailOverlayTitleStore);
     const fixture = await createAdapter(frameOf());
 
-    expect(store.title()).toBe('ٱلْكِتَـٰبُ');
+    expect(store.title()).toBe(SYNTHETIC_WORD_TEXT);
     expect(store.ayahCount()).toBe(4);
 
     fixture.destroy();

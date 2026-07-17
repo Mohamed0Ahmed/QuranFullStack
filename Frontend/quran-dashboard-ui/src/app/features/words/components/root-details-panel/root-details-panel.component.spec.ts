@@ -1,5 +1,7 @@
 import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 import { getTestBed, TestBed } from '@angular/core/testing';
+import { provideLocationMocks } from '@angular/common/testing';
+import { provideRouter } from '@angular/router';
 
 import { RootDetailsPanelComponent } from './root-details-panel.component';
 import { ROOT_VIEW_KEYS, RootView } from '../../models/roots.models';
@@ -13,6 +15,9 @@ describe('RootDetailsPanelComponent a11y (T070)', () => {
   function createPanel(view: RootView = 'ayahs') {
     TestBed.configureTestingModule({
       imports: [RootDetailsPanelComponent],
+      // The drawer suspends its focus trap from the router-backed
+      // detail-overlay history service.
+      providers: [provideRouter([]), provideLocationMocks()],
       teardown: { destroyAfterEach: true },
     });
     const fixture = TestBed.createComponent(RootDetailsPanelComponent);
@@ -117,6 +122,9 @@ describe('RootDetailsPanelComponent a11y (T070)', () => {
   it('renders the empty-selection state with header, disabled tabs, and empty message', () => {
     TestBed.configureTestingModule({
       imports: [RootDetailsPanelComponent],
+      // The drawer suspends its focus trap from the router-backed
+      // detail-overlay history service.
+      providers: [provideRouter([]), provideLocationMocks()],
       teardown: { destroyAfterEach: true },
     });
     const fixture = TestBed.createComponent(RootDetailsPanelComponent);

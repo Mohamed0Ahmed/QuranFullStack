@@ -25,7 +25,13 @@
           <qd-explorer-panel-skeleton [loadingLabel]="loadingLabel" data-testid="word-drilldown-loading" />
         }
         @case ('error') {
-          <div class="qd-error-state" data-testid="word-drilldown-error">{{ state().errorMessage }}</div>
+          <qd-state
+            variant="error"
+            [message]="state().errorMessage"
+            [actionLabel]="retryLabel"
+            (action)="retry.emit()"
+            data-testid="word-drilldown-error"
+          />
         }
         @case ('empty') {
           <div class="qd-empty-state" data-testid="word-drilldown-empty">
@@ -109,7 +115,7 @@
       class="qd-modal explorer-detail-modal word-drilldown-modal"
       role="dialog"
       aria-modal="true"
-      cdkTrapFocus
+      [cdkTrapFocus]="drawerTrapEnabled()"
       cdkTrapFocusAutoCapture
       [attr.aria-label]="drilldownPanelTitle"
       data-testid="word-drilldown-modal"

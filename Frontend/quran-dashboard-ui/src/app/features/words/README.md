@@ -15,6 +15,12 @@ with all selection/filter/paging state reflected in the URL.
 Per explorer `X` in {roots, lemmas, stems, word-types, unique-words}:
 
 - `pages/X-explorer-page/` — routed smart component (unique-words: `unique-words-page`).
+  Word Types additionally keeps
+  `pages/word-types-explorer-page/word-types-detail-panel.view-model.ts` — the pure
+  derivations that turn `WordTypesDetailFacade.panelState()` into what the details panel
+  renders (active summary, the words/ayahs pages incl. the empty-while-loading pages, the
+  B7 ayah parent frame, mentioned/missing surah rows). The page component only wires them
+  into computed signals.
 - `state/X-explorer.facade.ts` (+ `X-detail.facade.ts`) — orchestrates load/select.
 - `state/X-cache.ts` — client cache of fetched pages/details.
 - `state/X-url-sync.ts` — URL ⇄ state (the URL-state contract; keep params stable).
@@ -47,6 +53,11 @@ Shared across explorers: `utils/explorer-table-*` (focus/keyboard-nav/scroll/col
   activity can never mutate the page panel. The root-scoped API/cache/view-loader services
   stay shared, so the side panel and the overlay de-duplicate the same reads
   (`RootsCacheKeys` unchanged).
+- **Only the top layer traps focus**: the five mobile detail drawers
+  (`root`/`lemma`/`stem`/`word-type-details-panel`, `word-drilldown-modal`) bind
+  `[cdkTrapFocus]` to `!DetailOverlayHistoryService.isOpen()`. While the global dialog is
+  open they sit inside the inert app shell, so their traps stand down and exactly one trap
+  is enabled (`app.nested-layers.spec.ts`). Never re-add an unconditional `cdkTrapFocus`.
 - **Overlay adapters never call the Router** and never push view/page changes into the
   controller directly: every tab/sub-view/pagination change goes through
   `DetailOverlayHistoryService.replaceTopFrame(...)`; the URL sync feeds the new frame back
@@ -123,8 +134,12 @@ Shared across explorers: `utils/explorer-table-*` (focus/keyboard-nav/scroll/col
   `isOpen: false` (`utils/unique-words-drilldown.state.ts`), so at ≤1023px the drilldown modal does
   not render at all and on desktop the inline panel shows its select-a-word prompt. Its
   `unique-words-restored-not-found` and `unique-words-restored-error` banners therefore **stay at
-  page level** (and still shift the grid) until that state contract is revisited; only its list
-  states moved into the table shell.
+  page level** — the panel would drop the message below desktop and the table shell would hide a
+  populated table — until that state contract is revisited. They no longer shift the grid: they
+  live in `.unique-words-restored-slot`, rendered in **every** drilldown state, which reserves one
+  compact banner row from first paint (the two states are mutually exclusive). Keep the banners
+  inside that slot and keep them one line; a banner taller than the reservation grows it. Only the
+  list states moved into the table shell.
 - **Labels use the TDZ getter pattern.** Read `*.labels.ts` consts via **getters**, not
   `readonly` fields — otherwise they resolve to `undefined` (temporal dead zone) in the
   test bundle. **Do not revert the getters.**

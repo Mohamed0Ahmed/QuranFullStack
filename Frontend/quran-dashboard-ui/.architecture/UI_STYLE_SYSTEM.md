@@ -689,8 +689,14 @@ fills, resting borders — stays **banned as solid green**: use a tint,
 
 ### `qd-state`
 - **Purpose:** the one empty / loading / error presentation.
-- **Inputs / roles:** `variant: 'empty' | 'loading' | 'error'`, `message`; loading
-  is non-interactive `role="status"`.
+- **Inputs / roles:** `variant: 'empty' | 'loading' | 'error'`, `message`, optional
+  `actionLabel` + `action` output; loading is non-interactive `role="status"`,
+  error is `role="alert"`.
+- **Recovery action:** an `error` may offer **exactly one** action (Feature 030,
+  M3) by supplying an Arabic `actionLabel` — the retry affordance for transient
+  transport failures. Without a label the error stays plain text. `empty` and
+  `loading` are never interactive. The control is the global `.qd-button`; do not
+  hand-roll a retry beside a `.qd-error-state`.
 - **Visuals:** error uses `--qd-danger` on `--qd-danger-tint` (§16.1), calm per §11
   — not visually aggressive; empty/loading stay on the neutral surface ladder, no
   status color.

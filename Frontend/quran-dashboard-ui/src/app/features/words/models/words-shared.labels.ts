@@ -81,3 +81,13 @@ export const WORDS_RESULT_COUNT_LABELS = {
   loading: 'جارٍ التحميل…',
   unavailable: '—',
 } as const;
+
+/**
+ * The single recovery action offered on a failed detail load (Feature 030, M3),
+ * shared by all five detail surfaces (roots, lemmas, stems, word types, and the
+ * unique-word drilldown) in both the side panel and the global overlay.
+ * Retrying re-drives the current complete identity, so a transient
+ * network/server failure no longer leaves the retained detail unusable until the
+ * user changes identity or reloads the page.
+ */
+export const WORDS_DETAIL_RETRY_LABEL = 'إعادة المحاولة';

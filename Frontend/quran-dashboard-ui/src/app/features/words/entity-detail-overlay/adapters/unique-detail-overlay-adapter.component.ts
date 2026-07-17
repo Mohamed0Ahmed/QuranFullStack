@@ -82,6 +82,16 @@ export class UniqueDetailOverlayAdapterComponent {
     inject(DestroyRef).onDestroy(() => this.titleStore?.clear());
   }
 
+  /**
+   * Re-drives the current frame after a failed load (Feature 030, M3). The frame
+   * is unchanged, so this never touches the URL — recovery is a controller
+   * concern, and routing an identical frame through the history service would be
+   * a no-op replace.
+   */
+  protected onRetry(): void {
+    this.controller.retryCurrentIdentity();
+  }
+
   protected onViewChange(view: WordDrilldownView): void {
     const frame = this.frame();
     if (view === frame.view) {

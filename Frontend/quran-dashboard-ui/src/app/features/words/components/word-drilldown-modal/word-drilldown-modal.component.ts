@@ -1,8 +1,9 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { A11yModule } from '@angular/cdk/a11y';
 import { ScrollingModule } from '@angular/cdk/scrolling';
 
+import { DetailOverlayHistoryService } from '../../../../core/navigation/detail-overlay/detail-overlay-history.service';
 import { DetailFrame } from '../../../../core/navigation/detail-overlay/detail-overlay.models';
 import { ModalScrollLockDirective } from '../../../../shared/ui/modal-scroll-lock/modal-scroll-lock.directive';
 
@@ -22,6 +23,8 @@ import {
   WORD_DRILLDOWN_VIEW_LABELS,
 } from '../../models/unique-words.labels';
 import { WordDrilldownState, WordDrilldownView } from '../../models/unique-words.models';
+import { WORDS_DETAIL_RETRY_LABEL } from '../../models/words-shared.labels';
+import { QdStateComponent } from '../../../../shared/ui/state/state.component';
 import { mapUniqueWordSummaryDisplayText } from '../../utils/unique-words-display.mapper';
 
 @Component({
@@ -33,6 +36,7 @@ import { mapUniqueWordSummaryDisplayText } from '../../utils/unique-words-displa
     NgTemplateOutlet,
     ScrollingModule,
     ExplorerPanelSkeletonComponent,
+    QdStateComponent,
     SurahOccurrencesListComponent,
     MissingSurahsListComponent,
     AyahMatchesListComponent,
@@ -42,6 +46,15 @@ import { mapUniqueWordSummaryDisplayText } from '../../utils/unique-words-displa
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WordDrilldownModalComponent {
+  private readonly detailOverlayHistory = inject(DetailOverlayHistoryService);
+
+  /**
+   * Only the top layer may trap focus (Feature 029 §5.9). While the global
+   * detail overlay is open this drawer sits inside the inert app shell, so its
+   * own trap stands down and the dialog's trap is the only enabled one.
+   */
+  protected readonly drawerTrapEnabled = computed(() => !this.detailOverlayHistory.isOpen());
+
   readonly state = input.required<WordDrilldownState>();
   readonly inline = input(false);
   /**
@@ -62,6 +75,15 @@ export class WordDrilldownModalComponent {
   readonly closeModal = output<void>();
   readonly viewChange = output<WordDrilldownView>();
   readonly ayahPageChange = output<number>();
+
+  /**
+   * The failed drilldown's single recovery action (Feature 030, M3). This
+   * component is presentation-only: each render site re-drives its own
+   * controller's current identity.
+   */
+  readonly retry = output<void>();
+
+  protected readonly retryLabel = WORDS_DETAIL_RETRY_LABEL;
 
   protected get closeLabel() {
     return CLOSE_LABEL;

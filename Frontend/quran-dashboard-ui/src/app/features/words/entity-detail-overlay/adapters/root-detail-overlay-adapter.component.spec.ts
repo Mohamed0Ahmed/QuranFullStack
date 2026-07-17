@@ -18,6 +18,9 @@ import { RootsDetailFacade } from '../../state/roots-detail.facade';
 import { EntityDetailOverlayTitleStore } from '../entity-detail-overlay-title.store';
 import { RootDetailOverlayAdapterComponent } from './root-detail-overlay-adapter.component';
 
+/** Synthetic, non-scriptural Arabic placeholder: keeps RTL rendering real without faking Quranic text. */
+const SYNTHETIC_WORD_TEXT = 'كلمة-اختبار';
+
 const ROOT_SUMMARY: RootSummaryDto = {
   id: 999,
   rootText: 'كتب',
@@ -50,7 +53,7 @@ const AYAHS_PAGE: PagedResultDto<RootAyahMatchDto> = {
       pageNumber: 2,
       surahNameArabic: 'البقرة',
       verseKey: '2:2',
-      words: [{ textUthmani: 'ٱلْكِتَـٰبُ', isMatched: true }],
+      words: [{ textUthmani: SYNTHETIC_WORD_TEXT, isMatched: true }],
     },
   ],
 };

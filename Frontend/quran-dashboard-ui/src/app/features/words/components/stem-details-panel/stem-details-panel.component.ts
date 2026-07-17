@@ -4,12 +4,14 @@ import {
   Component,
   ElementRef,
   computed,
+  inject,
   input,
   output,
   viewChild,
 } from '@angular/core';
 import { A11yModule } from '@angular/cdk/a11y';
 
+import { DetailOverlayHistoryService } from '../../../../core/navigation/detail-overlay/detail-overlay-history.service';
 import { ModalScrollLockDirective } from '../../../../shared/ui/modal-scroll-lock/modal-scroll-lock.directive';
 
 import {
@@ -46,6 +48,15 @@ import { STEM_VIEW_KEYS, StemView } from '../../models/stems.models';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StemDetailsPanelComponent {
+  private readonly detailOverlayHistory = inject(DetailOverlayHistoryService);
+
+  /**
+   * Only the top layer may trap focus (Feature 029 §5.9). While the global
+   * detail overlay is open this drawer sits inside the inert app shell, so its
+   * own trap stands down and the dialog's trap is the only enabled one.
+   */
+  protected readonly drawerTrapEnabled = computed(() => !this.detailOverlayHistory.isOpen());
+
   readonly view = input.required<StemView>();
   readonly inline = input(true);
   /**
