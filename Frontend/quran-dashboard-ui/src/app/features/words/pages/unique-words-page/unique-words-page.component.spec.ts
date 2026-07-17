@@ -79,6 +79,21 @@ describe('UniqueWordsPageComponent', () => {
     expect(root.querySelector('[data-testid="unique-words-page-title"]')?.textContent).toContain('الكلمات الفريدة');
   });
 
+  it('mounts the explainer hero inside the intro band, after the mode line and above the toolbar (Feature 031)', async () => {
+    const root = await render();
+
+    const band = root.querySelector('.uw-intro-band') as HTMLElement;
+    const header = band.querySelector('.qd-page-header') as HTMLElement;
+    const hero = band.querySelector('[data-testid="words-explainer--unique"]');
+    expect(hero).toBeTruthy();
+    // The mode line stays adjacent to the title it qualifies; the hero follows the whole header.
+    expect(band.querySelector('[data-testid="unique-words-page-mode"]')).toBeTruthy();
+    expect(header.compareDocumentPosition(hero!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // The toolbar recess stays below the band, unchanged.
+    expect(root.querySelector('.uw-toolbar-recess')).toBeTruthy();
+    expect(band.querySelector('.uw-toolbar-recess')).toBeNull();
+  });
+
   it('renders the mode tabs', async () => {
     const root = await render();
     expect(root.querySelector('[data-testid="unique-words-tab--tashkeel"]')).toBeTruthy();

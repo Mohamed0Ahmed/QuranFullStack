@@ -17,7 +17,10 @@ import { RootStemsListComponent } from '../../components/root-stems-list/root-st
 import { RootWordsListComponent } from '../../components/root-words-list/root-words-list.component';
 import { RootCountOpenedEvent, RootsTableComponent } from '../../components/roots-table/roots-table.component';
 import { SurahOccurrencesListComponent } from '../../components/surah-occurrences-list/surah-occurrences-list.component';
+import { WordsExplainerComponent } from '../../components/words-explainer/words-explainer.component';
 import { sortQueryValue } from '../../models/explorer-sort';
+import { WORDS_EXPLAINER_CONTENT } from '../../models/words-explainer.content';
+import { WordsExplainerPreference } from '../../state/words-explainer-preference';
 import { ROOTS_EMPTY_SELECTION_LABEL, ROOTS_EMPTY_VIEW_LABEL, ROOTS_LIST_PAGINATION_LABEL, ROOTS_PAGE_TITLE, ROOTS_PANEL_LABEL, ROOTS_RESULT_COUNT_LABEL, ROOTS_SEARCH_LABEL, ROOTS_SEARCH_PLACEHOLDER, ROOTS_SORT_LABELS, ROOTS_SORT_OPTIONS, ROOTS_SURAHS_TABLIST_LABEL, ROOTS_SURAHS_VIEW_LABELS, ROOTS_TABLE_LABEL, ROOTS_WORDS_TABLIST_LABEL, ROOTS_WORD_VIEW_LABELS } from '../../models/roots.labels';
 import { DEFAULT_ROOT_SORT, DEFAULT_ROOT_VIEW, PagedResultDto, ROOTS_RANGE_METRICS, ROOT_DETAIL_PAGE_SIZE, RootListItemViewModel, RootSort, RootSurahView, RootView, RootWordItemDto, RootWordView, normalizeRootSort, toRootSummary } from '../../models/roots.models';
 import { AyahMatchDto } from '../../models/unique-words.models';
@@ -36,7 +39,7 @@ type RootCountTarget = RootCountOpenedEvent & { column: RootTableColumnKey };
 @Component({
   selector: 'qd-roots-explorer-page',
   standalone: true,
-  imports: [AyahMatchesListComponent, ExplorerCountRangeFilterComponent, ExplorerResultCountComponent, ExplorerSearchRowComponent, MissingSurahsListComponent, NgTemplateOutlet, PaginationComponent, RootDetailsPanelComponent, RootLemmasListComponent, RootStemsListComponent, RootWordsListComponent, RootsTableComponent, SurahOccurrencesListComponent],
+  imports: [AyahMatchesListComponent, ExplorerCountRangeFilterComponent, ExplorerResultCountComponent, ExplorerSearchRowComponent, MissingSurahsListComponent, NgTemplateOutlet, PaginationComponent, RootDetailsPanelComponent, RootLemmasListComponent, RootStemsListComponent, RootWordsListComponent, RootsTableComponent, SurahOccurrencesListComponent, WordsExplainerComponent],
   templateUrl: './roots-explorer-page.component.html',
   styleUrl: './roots-explorer-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -46,6 +49,7 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
   private readonly detailFacade = inject(RootsDetailFacade);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly explainerPreference = inject(WordsExplainerPreference);
   private readonly restoredColumn = signal<RootTableColumnKey | null>(null);
   private readonly searchInput = new Subject<string>();
   private searchSub?: Subscription;
@@ -66,6 +70,10 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
   });
 
   protected readonly pageTitle = ROOTS_PAGE_TITLE;
+  // Read the content via a TDZ-safe getter (words/README label rule). The collapse state is seeded
+  // synchronously from storage so the FIRST render reflects it — no expand-then-collapse shift.
+  protected get explainer() { return WORDS_EXPLAINER_CONTENT.roots; }
+  protected readonly explainerExpanded = signal(this.explainerPreference.isExpanded('roots'));
   protected readonly emptySelectionLabel = ROOTS_EMPTY_SELECTION_LABEL;
   protected readonly emptyViewLabel = ROOTS_EMPTY_VIEW_LABEL;
   protected readonly searchLabel = ROOTS_SEARCH_LABEL;
@@ -190,6 +198,11 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
   }
 
   protected onClearSelection(): void { this.clearTableFocus(); this.detailFacade.clearSelection(); this.updateQueryParams(buildClearSelectionQueryParams()); }
+
+  protected onExplainerToggled(expanded: boolean): void {
+    this.explainerExpanded.set(expanded);
+    this.explainerPreference.setExpanded('roots', expanded);
+  }
 
   private updateQueryParams(changes: Record<string, string | null>): void {
     void this.router.navigate([], { relativeTo: this.route, queryParams: changes, queryParamsHandling: 'merge' });

@@ -22,7 +22,10 @@ import { StemLemmasListComponent } from '../../components/stem-lemmas-list/stem-
 import { StemCountOpenedEvent, StemsTableComponent } from '../../components/stems-table/stems-table.component';
 import { StemWordsListComponent } from '../../components/stem-words-list/stem-words-list.component';
 import { SurahOccurrencesListComponent } from '../../components/surah-occurrences-list/surah-occurrences-list.component';
+import { WordsExplainerComponent } from '../../components/words-explainer/words-explainer.component';
 import { sortQueryValue } from '../../models/explorer-sort';
+import { WORDS_EXPLAINER_CONTENT } from '../../models/words-explainer.content';
+import { WordsExplainerPreference } from '../../state/words-explainer-preference';
 import { STEMS_EMPTY_SELECTION_LABEL, STEMS_EMPTY_VIEW_LABEL, STEMS_LIST_PAGINATION_LABEL, STEMS_LOADING_LABEL, STEMS_PAGE_TITLE, STEMS_PANEL_SURFACE_LABEL, STEMS_PRIMARY_LEMMA_FILTER_LABEL, STEMS_PRIMARY_LEMMA_FILTER_PLACEHOLDER, STEMS_PRIMARY_ROOT_FILTER_LABEL, STEMS_PRIMARY_ROOT_FILTER_PLACEHOLDER, STEMS_RESULT_COUNT_LABEL, STEMS_SEARCH_LABEL, STEMS_SEARCH_PLACEHOLDER, STEMS_SORT_LABELS, STEMS_SORT_OPTIONS, STEMS_SURAHS_TABLIST_LABEL, STEMS_SURAHS_VIEW_LABELS, STEMS_TABLE_LABEL, STEMS_WORDS_TABLIST_LABEL, STEMS_WORD_VIEW_LABELS } from '../../models/stems.labels';
 import { DEFAULT_STEM_SORT, DEFAULT_STEM_VIEW, PagedResultDto, STEMS_RANGE_METRICS, STEM_DETAIL_PAGE_SIZE, StemListItemViewModel, StemSort, StemSurahView, StemView, StemWordItemDto, StemWordView, normalizeStemSort } from '../../models/stems.models';
 import { AyahMatchDto, PagedResultDto as SharedPagedResultDto } from '../../models/unique-words.models';
@@ -41,7 +44,7 @@ type StemCountTarget = StemCountOpenedEvent & { column: StemTableColumnKey };
 @Component({
   selector: 'qd-stems-explorer-page',
   standalone: true,
-  imports: [AyahMatchesListComponent, ExplorerCountRangeFilterComponent, ExplorerAssociationFilterComponent, ExplorerResultCountComponent, ExplorerSearchRowComponent, MissingSurahsListComponent, NgTemplateOutlet, PaginationComponent, StemAyahTypeFiltersComponent, StemDetailsPanelComponent, StemLemmasListComponent, StemsTableComponent, StemWordsListComponent, SurahOccurrencesListComponent],
+  imports: [AyahMatchesListComponent, ExplorerCountRangeFilterComponent, ExplorerAssociationFilterComponent, ExplorerResultCountComponent, ExplorerSearchRowComponent, MissingSurahsListComponent, NgTemplateOutlet, PaginationComponent, StemAyahTypeFiltersComponent, StemDetailsPanelComponent, StemLemmasListComponent, StemsTableComponent, StemWordsListComponent, SurahOccurrencesListComponent, WordsExplainerComponent],
   templateUrl: './stems-explorer-page.component.html',
   styleUrl: './stems-explorer-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -51,6 +54,7 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
   private readonly detailFacade = inject(StemsDetailFacade);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly explainerPreference = inject(WordsExplainerPreference);
   private readonly associationOptions = inject(WordsAssociationOptionsService);
   private readonly restoredColumn = signal<StemTableColumnKey | null>(null);
   private readonly searchInput = new Subject<string>();
@@ -76,6 +80,9 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
   });
 
   protected readonly pageTitle = STEMS_PAGE_TITLE;
+  // TDZ-safe content getter + synchronous collapse restore (no first-paint shift).
+  protected get explainer() { return WORDS_EXPLAINER_CONTENT.stems; }
+  protected readonly explainerExpanded = signal(this.explainerPreference.isExpanded('stems'));
   protected readonly emptySelectionLabel = STEMS_EMPTY_SELECTION_LABEL;
   protected readonly emptyViewLabel = STEMS_EMPTY_VIEW_LABEL;
   protected readonly searchLabel = STEMS_SEARCH_LABEL;
@@ -263,6 +270,11 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
   }
 
   protected onClearSelection(): void { this.clearTableFocus(); this.detailFacade.clearSelection(); this.updateQueryParams(buildClearSelectionQueryParams()); }
+
+  protected onExplainerToggled(expanded: boolean): void {
+    this.explainerExpanded.set(expanded);
+    this.explainerPreference.setExpanded('stems', expanded);
+  }
 
   private updateQueryParams(changes: Record<string, string | null>): void {
     void this.router.navigate([], { relativeTo: this.route, queryParams: changes, queryParamsHandling: 'merge' });

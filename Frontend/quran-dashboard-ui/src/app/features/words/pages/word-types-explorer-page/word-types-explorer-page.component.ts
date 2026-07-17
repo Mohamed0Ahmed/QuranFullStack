@@ -12,6 +12,7 @@ import { WordTypeFilterComponent, WordTypeScopeSelectedEvent } from '../../compo
 import { WordTypeGroupedWordsListComponent } from '../../components/word-type-grouped-words-list/word-type-grouped-words-list.component';
 import { WordTypeScopeCountsComponent } from '../../components/word-type-scope-counts/word-type-scope-counts.component';
 import { WordTypeTableViewTabsComponent } from '../../components/word-type-table-view-tabs/word-type-table-view-tabs.component';
+import { WordsExplainerComponent } from '../../components/words-explainer/words-explainer.component';
 import {
   WordTypePresenceFlagChange,
   WordTypesPresenceFilterComponent,
@@ -35,6 +36,8 @@ import {
   WORD_TYPES_SORT_LABEL,
 } from '../../models/word-types.labels';
 import { sortQueryValue } from '../../models/explorer-sort';
+import { WORDS_EXPLAINER_CONTENT } from '../../models/words-explainer.content';
+import { WordsExplainerPreference } from '../../state/words-explainer-preference';
 import {
   DEFAULT_WORD_TYPES_DETAIL_PAGE,
   DEFAULT_WORD_TYPE_SORT,
@@ -100,6 +103,7 @@ const DETAIL_KIND_BY_TABLE_VIEW: Record<WordTypeTableView, WordTypeDetailSelecti
     WordTypeTableViewTabsComponent,
     WordTypesPresenceFilterComponent,
     WordTypesTableComponent,
+    WordsExplainerComponent,
   ],
   templateUrl: './word-types-explorer-page.component.html',
   styleUrl: './word-types-explorer-page.component.scss',
@@ -110,6 +114,7 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly explorerFacade = inject(WordTypesExplorerFacade);
   private readonly detailFacade = inject(WordTypesDetailFacade);
+  private readonly explainerPreference = inject(WordsExplainerPreference);
 
   private desktopQuery?: MediaQueryList;
   private readonly onDesktopChange = (event: MediaQueryListEvent): void => this.isDesktop.set(event.matches);
@@ -174,6 +179,9 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly ayahParentFrame = computed(() => wordTypeAyahParentFrame(this.panelState()));
 
   protected get pageTitle() { return WORD_TYPES_PAGE_TITLE; }
+  // TDZ-safe content getter + synchronous collapse restore (no first-paint shift).
+  protected get explainer() { return WORDS_EXPLAINER_CONTENT['word-types']; }
+  protected readonly explainerExpanded = signal(this.explainerPreference.isExpanded('word-types'));
   protected get emptyLabel() { return WORD_TYPE_TABLE_VIEW_EMPTY_LABELS[this.listState().query.tableView]; }
   protected get selectSubtypeLabel() { return WORD_TYPES_SELECT_SUBTYPE_LABEL; }
   protected get errorLabel() { return WORD_TYPES_ERROR_LABEL; }
@@ -186,6 +194,11 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
 
   protected onPresenceFlagChange(change: WordTypePresenceFlagChange): void {
     this.explorerFacade.selectPresenceFlag(change.dimension, change.value);
+  }
+
+  protected onExplainerToggled(expanded: boolean): void {
+    this.explainerExpanded.set(expanded);
+    this.explainerPreference.setExpanded('word-types', expanded);
   }
 
   protected onScopeCountsRetry(): void {

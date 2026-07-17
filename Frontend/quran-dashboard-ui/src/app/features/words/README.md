@@ -290,6 +290,26 @@ Shared across explorers: `utils/explorer-table-*` (focus/keyboard-nav/scroll/col
   **tracked by `verseKey`**, never `ayahId` — Word Type ayah rows all carry `ayahId: 0`.
   `HighlightedAyahComponent` (marker filtering, matched-ID set, untouched `textUthmani` spans,
   Quran font) stays feature-owned and unchanged.
+- **Words explainer hero + hub** (Feature 031, presentation-only, no backend/URL/cache change): each
+  explorer page mounts the shared `qd-words-explainer` **inside `.uw-intro-band`, after
+  `.qd-page-header` and above `.uw-toolbar-recess`**. It renders ordinal + eyebrow + tagline + body +
+  `الفائدة` benefit callout from the single approved content source
+  `models/words-explainer.content.ts` and projects each page's `مثال` example region via
+  `<ng-content>`; it does **not** re-render the page title (the existing `<h1>` owns it; the section
+  is named by `aria-label`). The hero is **static-height prose** — it never conditions on
+  `listState()`/`panelState()`, has no loading/skeleton, and renders **above and outside** every
+  mounted shell the invariants govern, so it cannot move the table+panel grid. Collapse is **per-page
+  memory** (`state/words-explainer-preference.ts`, storage key `qd-words-explainer`, value =
+  comma-joined collapsed keys), restored **synchronously** (a field-initialiser read, the
+  `ThemeService` pattern) so the **first paint already reflects stored state** — never read the
+  preference in an `effect()`/`ngOnInit`, which reintroduces the Feature 030 N3 expand-then-collapse
+  shift. No height animation. The hub (`words-hub-page`) reads the same five content records for its
+  numbered nav cards (card description = the page's tagline, so the two cannot drift) plus the
+  orientation chain (`WORDS_HUB_CHAIN`, all-neutral nodes); card testids are **stable slugs**
+  `words-hub-card--<key>` (never Arabic-label-derived), and the coming-soon scaffolding is removed
+  (every explorer has shipped). The example words are illustrative `مثال` morphology in the Amiri
+  face, never Quran data or queryable counts. The green callout is the one tinted-green panel,
+  sanctioned in the allowed-green list (DESIGN.md §2 / UI_STYLE_SYSTEM.md §16.3, item 8).
 - Tests: obey the repo test-command rule (see `../../../../README.md`) — the vitest worker
   cap and jsdom observer guards apply here.
 - **Word Types has table-view tabs** (`tableView=words|roots|stems|lemmas`, default `words`,

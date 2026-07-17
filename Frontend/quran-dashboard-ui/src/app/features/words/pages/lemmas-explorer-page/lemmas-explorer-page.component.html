@@ -4,6 +4,24 @@
       <div class="qd-page-header">
         <h1 class="qd-page-title" data-testid="lemmas-explorer-page-title">{{ pageTitle }}</h1>
       </div>
+
+      <qd-words-explainer
+        [content]="explainer"
+        [expanded]="explainerExpanded()"
+        (toggled)="onExplainerToggled($event)"
+      >
+        <h3 class="qd-explainer-h3">ماذا تجمع الصيغة؟</h3>
+        <div class="qd-explainer-example">
+          <span class="qd-explainer-example__label">مثال · الصيغة «كِتَاب» (تحت الجذر ك ت ب)</span>
+          <div class="qd-explainer-deriv">
+            <span class="qd-explainer-word">كِتَابٌ</span>
+            <span class="qd-explainer-word">الكِتَابُ</span>
+            <span class="qd-explainer-word">كِتَابًا</span>
+            <span class="qd-explainer-word">كِتَابِهِ</span>
+          </div>
+          <p class="qd-explainer-note">كلها الصيغة نفسها «كِتَاب» بمعنى واحد، تختلف بالإعراب والإضافة فقط.</p>
+        </div>
+      </qd-words-explainer>
     </div>
 
     <div class="uw-toolbar-recess">

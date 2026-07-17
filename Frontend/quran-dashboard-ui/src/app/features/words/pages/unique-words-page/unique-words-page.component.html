@@ -5,6 +5,32 @@
         <h1 class="qd-page-title" data-testid="unique-words-page-title">{{ pageTitle }}</h1>
         <p class="qd-text-muted" data-testid="unique-words-page-mode">{{ modeLabel() }}</p>
       </div>
+
+      <qd-words-explainer
+        [content]="explainer"
+        [expanded]="explainerExpanded()"
+        (toggled)="onExplainerToggled($event)"
+      >
+        <div class="qd-explainer-two">
+          <div class="qd-explainer-mini">
+            <div class="qd-explainer-mini__title">بالتشكيل</div>
+            <div class="qd-explainer-mini__desc">تُميّز الكلمات التي تختلف في الحركات فقط. مفيدة لمّا الضبط بيغيّر المعنى.</div>
+          </div>
+          <div class="qd-explainer-mini">
+            <div class="qd-explainer-mini__title">بدون تشكيل</div>
+            <div class="qd-explainer-mini__desc">الرسم المجرّد من الحركات، فتتجمّع كل صور الكلمة تحت رسم واحد. مفيدة للبحث الأوسع.</div>
+          </div>
+        </div>
+        <div class="qd-explainer-example">
+          <span class="qd-explainer-example__label">مثال</span>
+          <div class="qd-explainer-deriv">
+            <span class="qd-explainer-word">عَلِمَ<small>معلوم</small></span>
+            <span class="qd-explainer-word">عُلِمَ<small>مجهول</small></span>
+            <span class="qd-explainer-note">نفس الرسم «علم» — <b>بالتشكيل</b> كلمتان مختلفتان؛ <b>بدون تشكيل</b> يتجمّعان تحت رسم واحد.</span>
+          </div>
+        </div>
+        <p class="qd-explainer-note">متى أستخدم أيهما؟ <b>بالتشكيل</b> لمّا تحتاج الصورة المنطوقة الدقيقة وتمييز المعنى بالحركة؛ <b>بدون تشكيل</b> لمّا تدوّر على الكلمة بغضّ النظر عن ضبطها أو تحسب الرسم.</p>
+      </qd-words-explainer>
     </div>
 
     <div class="uw-toolbar-recess uw-toolbar-recess--stacked">

@@ -22,7 +22,10 @@ import { LemmaWordsListComponent } from '../../components/lemma-words-list/lemma
 import { LemmaCountOpenedEvent, LemmasTableComponent } from '../../components/lemmas-table/lemmas-table.component';
 import { MissingSurahsListComponent } from '../../components/missing-surahs-list/missing-surahs-list.component';
 import { SurahOccurrencesListComponent } from '../../components/surah-occurrences-list/surah-occurrences-list.component';
+import { WordsExplainerComponent } from '../../components/words-explainer/words-explainer.component';
 import { sortQueryValue } from '../../models/explorer-sort';
+import { WORDS_EXPLAINER_CONTENT } from '../../models/words-explainer.content';
+import { WordsExplainerPreference } from '../../state/words-explainer-preference';
 import { LEMMAS_EMPTY_SELECTION_LABEL, LEMMAS_EMPTY_VIEW_LABEL, LEMMAS_LIST_PAGINATION_LABEL, LEMMAS_LOADING_LABEL, LEMMAS_PAGE_TITLE, LEMMAS_PANEL_SURFACE_LABEL, LEMMAS_RESULT_COUNT_LABEL, LEMMAS_ROOT_FILTER_LABEL, LEMMAS_ROOT_FILTER_PLACEHOLDER, LEMMAS_SEARCH_LABEL, LEMMAS_SEARCH_PLACEHOLDER, LEMMAS_SORT_LABELS, LEMMAS_SORT_OPTIONS, LEMMAS_SURAHS_TABLIST_LABEL, LEMMAS_SURAHS_VIEW_LABELS, LEMMAS_TABLE_LABEL, LEMMAS_WORDS_TABLIST_LABEL, LEMMAS_WORD_VIEW_LABELS } from '../../models/lemmas.labels';
 import { DEFAULT_LEMMA_SORT, DEFAULT_LEMMA_VIEW, LEMMAS_RANGE_METRICS, LEMMA_DETAIL_PAGE_SIZE, LemmaListItemViewModel, LemmaSort, LemmaSurahView, LemmaView, LemmaWordItemDto, LemmaWordView, PagedResultDto, normalizeLemmaSort } from '../../models/lemmas.models';
 import { AyahMatchDto, PagedResultDto as SharedPagedResultDto } from '../../models/unique-words.models';
@@ -41,7 +44,7 @@ type LemmaCountTarget = LemmaCountOpenedEvent & { column: LemmaTableColumnKey };
 @Component({
   selector: 'qd-lemmas-explorer-page',
   standalone: true,
-  imports: [NgTemplateOutlet, AyahMatchesListComponent, ExplorerCountRangeFilterComponent, ExplorerAssociationFilterComponent, ExplorerResultCountComponent, ExplorerSearchRowComponent, LemmaAyahTypeFiltersComponent, LemmaDetailsPanelComponent, LemmaStemsListComponent, LemmaWordsListComponent, LemmasTableComponent, MissingSurahsListComponent, PaginationComponent, SurahOccurrencesListComponent],
+  imports: [NgTemplateOutlet, AyahMatchesListComponent, ExplorerCountRangeFilterComponent, ExplorerAssociationFilterComponent, ExplorerResultCountComponent, ExplorerSearchRowComponent, LemmaAyahTypeFiltersComponent, LemmaDetailsPanelComponent, LemmaStemsListComponent, LemmaWordsListComponent, LemmasTableComponent, MissingSurahsListComponent, PaginationComponent, SurahOccurrencesListComponent, WordsExplainerComponent],
   templateUrl: './lemmas-explorer-page.component.html',
   styleUrl: './lemmas-explorer-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -51,6 +54,7 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
   private readonly detailFacade = inject(LemmasDetailFacade);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly explainerPreference = inject(WordsExplainerPreference);
   private readonly associationOptions = inject(WordsAssociationOptionsService);
   private readonly restoredColumn = signal<LemmaTableColumnKey | null>(null);
   private readonly searchInput = new Subject<string>();
@@ -74,6 +78,9 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
   });
 
   protected readonly pageTitle = LEMMAS_PAGE_TITLE;
+  // TDZ-safe content getter + synchronous collapse restore (no first-paint shift).
+  protected get explainer() { return WORDS_EXPLAINER_CONTENT.lemmas; }
+  protected readonly explainerExpanded = signal(this.explainerPreference.isExpanded('lemmas'));
   protected readonly emptySelectionLabel = LEMMAS_EMPTY_SELECTION_LABEL;
   protected readonly emptyViewLabel = LEMMAS_EMPTY_VIEW_LABEL;
   protected readonly searchLabel = LEMMAS_SEARCH_LABEL;
@@ -240,6 +247,11 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
   }
 
   protected onClearSelection(): void { this.clearTableFocus(); this.detailFacade.clearSelection(); this.updateQueryParams(buildClearSelectionQueryParams()); }
+
+  protected onExplainerToggled(expanded: boolean): void {
+    this.explainerExpanded.set(expanded);
+    this.explainerPreference.setExpanded('lemmas', expanded);
+  }
 
   private updateQueryParams(changes: Record<string, string | null>): void {
     void this.router.navigate([], { relativeTo: this.route, queryParams: changes, queryParamsHandling: 'merge' });

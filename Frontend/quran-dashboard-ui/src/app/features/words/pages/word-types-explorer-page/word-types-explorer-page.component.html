@@ -4,6 +4,40 @@
       <div class="qd-page-header">
         <h1 class="qd-page-title">{{ pageTitle }}</h1>
       </div>
+
+      <qd-words-explainer
+        [content]="explainer"
+        [expanded]="explainerExpanded()"
+        (toggled)="onExplainerToggled($event)"
+      >
+        <h3 class="qd-explainer-h3">الأنواع الأربعة</h3>
+        <div class="qd-explainer-types">
+          <div class="qd-explainer-type">
+            <div class="qd-explainer-type__name">اسم</div>
+            <div class="qd-explainer-type__examples">كِتَاب · رَبّ · مُؤْمِن</div>
+            <div class="qd-explainer-note">مع الحالة: مرفوع (رَبُّ) · منصوب (رَبَّ) · مجرور (رَبِّ)</div>
+          </div>
+          <div class="qd-explainer-type">
+            <div class="qd-explainer-type__name">فعل</div>
+            <div class="qd-explainer-type__examples">خَلَقَ <small>ماضٍ</small> · يَعْلَمُ <small>مضارع</small> · اذْكُرُوا <small>أمر</small></div>
+            <div class="qd-explainer-note">مع الصوت: معلوم (خَلَقَ) · مجهول (خُلِقَ)</div>
+          </div>
+          <div class="qd-explainer-type">
+            <div class="qd-explainer-type__name">حرف وأداة</div>
+            <div class="qd-explainer-type__examples">فِي · مِنْ · إِنَّ · لَا</div>
+            <div class="qd-explainer-note">حروف الجر والتوكيد والنفي والأدوات</div>
+          </div>
+          <div class="qd-explainer-type">
+            <div class="qd-explainer-type__name">حروف مقطّعة</div>
+            <div class="qd-explainer-type__examples">الم · الر · يس · طه</div>
+            <div class="qd-explainer-note">فواتح بعض السور</div>
+          </div>
+        </div>
+        <div class="qd-explainer-example">
+          <span class="qd-explainer-example__label">أمثلة على الاستعلام</span>
+          <p class="qd-explainer-note">«الأسماء المنصوبة» · «الأفعال المضارعة المجهولة» · «الحروف التي بلا جذر» — تعرف فورًا كم كلمة وجذر وأصل وصيغة في كل نطاق.</p>
+        </div>
+      </qd-words-explainer>
     </div>
 
     <div class="uw-toolbar-recess uw-toolbar-recess--stacked uw-toolbar-recess--kinetic">

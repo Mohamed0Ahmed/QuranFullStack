@@ -4,6 +4,26 @@
       <div class="qd-page-header">
         <h1 class="qd-page-title" data-testid="roots-explorer-page-title">{{ pageTitle }}</h1>
       </div>
+
+      <qd-words-explainer
+        [content]="explainer"
+        [expanded]="explainerExpanded()"
+        (toggled)="onExplainerToggled($event)"
+      >
+        <h3 class="qd-explainer-h3">ماذا يخرج من الجذر؟</h3>
+        <div class="qd-explainer-example">
+          <span class="qd-explainer-example__label">مثال · الجذر «ح م د» (معناه العام: الثناء)</span>
+          <div class="qd-explainer-deriv">
+            <span class="qd-explainer-word">الحَمْد<small>اسم</small></span>
+            <span class="qd-explainer-word">حامِد<small>اسم فاعل</small></span>
+            <span class="qd-explainer-word">محمود<small>اسم مفعول</small></span>
+            <span class="qd-explainer-word">أحمَد<small>اسم</small></span>
+            <span class="qd-explainer-word">حَمِدَ<small>فعل ماضٍ</small></span>
+            <span class="qd-explainer-word">يَحمَد<small>فعل مضارع</small></span>
+          </div>
+          <p class="qd-explainer-note">جذر واحد يُنتج أسماءً وأفعالًا كثيرة — والصفحة تعرضها كلها في مكان واحد مع أعدادها.</p>
+        </div>
+      </qd-words-explainer>
     </div>
 
     <div class="uw-toolbar-recess">

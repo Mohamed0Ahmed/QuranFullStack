@@ -31,6 +31,9 @@ import { UniqueWordsTabsComponent } from '../../components/unique-words-tabs/uni
 import { ExplorerSearchRowComponent } from '../../components/explorer-search-row/explorer-search-row.component';
 import { UniqueWordsTableComponent } from '../../components/unique-words-table/unique-words-table.component';
 import { WordDrilldownModalComponent } from '../../components/word-drilldown-modal/word-drilldown-modal.component';
+import { WordsExplainerComponent } from '../../components/words-explainer/words-explainer.component';
+import { WORDS_EXPLAINER_CONTENT } from '../../models/words-explainer.content';
+import { WordsExplainerPreference } from '../../state/words-explainer-preference';
 import { UniqueDetailFrame } from '../../../../core/navigation/detail-overlay/detail-overlay.models';
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
 import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
@@ -78,6 +81,7 @@ type UniqueWordsDrilldownState = ReturnType<UniqueWordsFacade['drilldownState']>
     UniqueWordsTableComponent,
     PaginationComponent,
     WordDrilldownModalComponent,
+    WordsExplainerComponent,
   ],
   templateUrl: './unique-words-page.component.html',
   styleUrl: './unique-words-page.component.scss',
@@ -88,6 +92,7 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly associationOptions = inject(WordsAssociationOptionsService);
+  private readonly explainerPreference = inject(WordsExplainerPreference);
 
   private readonly searchInput = new Subject<string>();
   private readonly rootSearchInput = new Subject<string>();
@@ -118,6 +123,9 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
   protected readonly drilldownState = this.facade.drilldownState;
   protected readonly restoredNotFoundLabel = RESTORED_WORD_NOT_FOUND_LABEL;
   protected readonly pageTitle = ACTIVE_HUB_SECTION.labelAr;
+  // TDZ-safe content getter + synchronous collapse restore (no first-paint shift).
+  protected get explainer() { return WORDS_EXPLAINER_CONTENT.unique; }
+  protected readonly explainerExpanded = signal(this.explainerPreference.isExpanded('unique'));
   protected readonly listPaginationLabel = UNIQUE_WORD_LIST_PAGINATION_LABEL;
   protected readonly panelSurfaceLabel = UNIQUE_WORD_PANEL_SURFACE_LABEL;
   protected get resultCountLabel(): string { return UNIQUE_WORDS_RESULT_COUNT_LABEL; }
@@ -339,6 +347,11 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
 
     this.clearTableFocus();
     this.updateQueryParams(buildUniqueWordsQueryParams({ page }));
+  }
+
+  protected onExplainerToggled(expanded: boolean): void {
+    this.explainerExpanded.set(expanded);
+    this.explainerPreference.setExpanded('unique', expanded);
   }
 
   private updateQueryParams(changes: Record<string, string | null>): void {

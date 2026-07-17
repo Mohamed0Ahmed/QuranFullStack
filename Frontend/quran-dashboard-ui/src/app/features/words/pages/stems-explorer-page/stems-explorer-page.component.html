@@ -4,6 +4,20 @@
       <div class="qd-page-header">
         <h1 class="qd-page-title" data-testid="stems-explorer-page-title">{{ pageTitle }}</h1>
       </div>
+
+      <qd-words-explainer
+        [content]="explainer"
+        [expanded]="explainerExpanded()"
+        (toggled)="onExplainerToggled($event)"
+      >
+        <h3 class="qd-explainer-h3">التقسيم الصرفي</h3>
+        <div class="qd-explainer-example">
+          <span class="qd-explainer-example__label">مثال · الكلمة «وَالْمُؤْمِنُونَ»</span>
+          <div class="qd-explainer-seg">وَالْ<b> مُؤْمِن </b>ونَ</div>
+          <p class="qd-explainer-note">سابقة «وَالْ» + الأصل الصرفي <b>«مُؤْمِن»</b> + لاحقة «ونَ». الأصل «مُؤْمِن» هو ما يعرضه هذا القسم، ويجمع كل الكلمات التي أصلها الصرفي واحد.</p>
+        </div>
+        <p class="qd-explainer-note">الفرق عن الصيغة: الصيغة = المدخل القاموسي الموحّد؛ الأصل الصرفي = الجزء الصرفي الفعلي في الكلمة — طبقتان مترابطتان لكن غير متطابقتين.</p>
+      </qd-words-explainer>
     </div>
 
     <div class="uw-toolbar-recess">

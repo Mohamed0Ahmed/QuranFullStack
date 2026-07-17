@@ -137,6 +137,38 @@ describe('RootsExplorerPageComponent US2', () => {
     return fixture;
   }
 
+  it('mounts the explainer hero inside the intro band, above the toolbar (Feature 031)', async () => {
+    const fixture = await initLifecycle();
+    const root = fixture.nativeElement as HTMLElement;
+
+    const band = root.querySelector('.uw-intro-band') as HTMLElement;
+    expect(band.querySelector('[data-testid="words-explainer--roots"]')).toBeTruthy();
+    // The toolbar recess is a sibling of the band (unchanged), never a parent of the hero.
+    expect(band.querySelector('.uw-toolbar-recess')).toBeNull();
+    expect(root.querySelector('.uw-toolbar-recess')).toBeTruthy();
+    expect(root.querySelector('.uw-toolbar-recess [data-testid="words-explainer--roots"]')).toBeNull();
+  });
+
+  it('reflects a stored collapsed state on the first render (synchronous, no layout shift)', async () => {
+    localStorage.setItem('qd-words-explainer', 'roots');
+    try {
+      const fixture = TestBed.createComponent(RootsExplorerPageComponent);
+      fixture.componentInstance.ngOnInit();
+      fixture.detectChanges(); // FIRST render — no whenStable / effect / second tick
+
+      const root = fixture.nativeElement as HTMLElement;
+      expect(root.querySelector('[data-testid="words-explainer-body"]')).toBeNull();
+      expect(
+        root.querySelector('[data-testid="words-explainer-toggle--roots"]')?.getAttribute('aria-expanded'),
+      ).toBe('false');
+      // The intro band + toolbar are still present — nothing expanded then collapsed them.
+      expect(root.querySelector('.uw-intro-band [data-testid="words-explainer--roots"]')).toBeTruthy();
+      expect(root.querySelector('.uw-toolbar-recess')).toBeTruthy();
+    } finally {
+      localStorage.clear();
+    }
+  });
+
   it('shows the headline result count equal to the list totalCount (US4)', async () => {
     const fixture = await initLifecycle();
     await fixture.whenStable();
