@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { DetailOverlayHistoryService } from './detail-overlay-history.service';
 import { DetailFrame, RootDetailFrame, LemmaDetailFrame, StemDetailFrame } from './detail-overlay.models';
+import { PROVENANCE_STATE_KEY, hashDetailStack } from './detail-overlay-provenance';
 
 @Component({ standalone: true, template: '' })
 class BlankPageComponent {}
@@ -289,70 +290,73 @@ describe('DetailOverlayHistoryService', () => {
     expect(service.isOpen()).toBe(true);
   });
 
-  it('does not reseed on reload even after the router rewrites history.state (reload idempotence)', async () => {
-    const deepLink = '/dashboard/words/roots?qdDetail=' + encodeURIComponent(ROOT_SERIALIZED) + '&qdDetailOpen=1';
-    await startAt(deepLink);
-
-    // Simulate a reload: the initial navigation clobbers our history.state marker.
-    location.replaceState(location.path());
-    const goSpy = vi.spyOn(location, 'go');
-    await router.navigateByUrl(location.path(), { onSameUrlNavigation: 'reload' });
-    await settle();
-
-    expect(goSpy).not.toHaveBeenCalled();
-    // The provenance marker is restored so dialog Back proves its parent again.
-    const state = location.getState() as Record<string, unknown>;
-    expect(state['qdDetailNav']).toBeTruthy();
-  });
-
-  it('does not reseed on reload after a top-frame replacement changed the entry URL (H1)', async () => {
-    const deepLink = '/dashboard/words/roots?qdDetail=' + encodeURIComponent(ROOT_SERIALIZED) + '&qdDetailOpen=1';
-    await startAt(deepLink);
-
-    // A tab/sub-view change rewrites the entry's URL in place; the seeded chain
-    // below it is untouched, so a reload of the NEW url must not seed again.
-    service.replaceTopFrame({ ...rootFrame, view: 'ayahs', detailPage: 2 });
-    await settle();
-    const replacedUrl = location.path();
-    expect(replacedUrl).not.toBe(deepLink);
-
-    location.replaceState(replacedUrl);
-    const goSpy = vi.spyOn(location, 'go');
-    await router.navigateByUrl(replacedUrl, { onSameUrlNavigation: 'reload' });
-    await settle();
-
-    expect(goSpy).not.toHaveBeenCalled();
-    expect((location.getState() as Record<string, unknown>)['qdDetailNav']).toBeTruthy();
-  });
-
-  it('re-seeds a same-URL revisit that arrives on top of unrelated history (H1)', async () => {
+  it('re-seeds a remembered two-frame URL revisited from its bare seeded base (H1)', async () => {
     const deepLink =
-      '/dashboard/words/roots?qdDetail=' + encodeURIComponent(ROOT_SERIALIZED) + '&qdDetailOpen=1';
+      '/dashboard/words/roots?qdDetail=' +
+      encodeURIComponent(ROOT_SERIALIZED) +
+      '&qdDetail=' +
+      encodeURIComponent(LEMMA_SERIALIZED) +
+      '&qdDetailOpen=1';
 
-    // An external predecessor, then the shared URL: seeding materializes its prefix.
-    await startAt('/dashboard/words/roots?root=5');
-    await router.navigateByUrl(deepLink);
-    await settle();
-    expect(service.state().stack).toHaveLength(1);
-
-    // Leave the chain entirely, then arrive at the identical URL again. This entry
-    // sits on unrelated history and has no prefix below it, so the seed must repeat.
-    await router.navigateByUrl('/dashboard/words/roots?root=9');
-    await settle();
-
-    const goSpy = vi.spyOn(location, 'go');
-    await router.navigateByUrl(deepLink);
-    await settle();
-
-    expect(goSpy).toHaveBeenCalled();
-    expect(service.state().stack).toHaveLength(1);
-    expect(service.isOpen()).toBe(true);
-
-    // Back pops the modal stack instead of leaving to the unrelated predecessor.
+    await startAt(deepLink);
     location.back();
     await settle();
-    expect(location.path()).not.toContain('root=9');
+    location.back();
+    await settle();
     expect(service.state().stack).toHaveLength(0);
+    expect(location.path()).toBe('/dashboard/words/roots');
+
+    // The identical URL is now a new entry whose immediate predecessor is the
+    // bare base, not the remembered one-frame prefix.
+    const goSpy = vi.spyOn(location, 'go');
+    await router.navigateByUrl(deepLink);
+    await settle();
+
+    const seededCalls = goSpy.mock.calls.filter(([, , state]) => {
+      const record = state as Record<string, unknown> | undefined;
+      return record?.[PROVENANCE_STATE_KEY] !== undefined;
+    });
+    expect(seededCalls).toHaveLength(2);
+    expect(service.state().stack.map((frame) => frame.kind)).toEqual(['root', 'lemma']);
+    expect(service.isOpen()).toBe(true);
+
+    service.back();
+    await settle();
+    expect(service.state().stack.map((frame) => frame.kind)).toEqual(['root']);
+  });
+
+  it.each([
+    {
+      mismatch: 'base signature',
+      provenance: {
+        baseSignature: '/dashboard/mushaf',
+        parentStackHash: '',
+        stackHash: hashDetailStack([rootFrame]),
+        kind: 'seed' as const,
+      },
+    },
+    {
+      mismatch: 'stack hash',
+      provenance: {
+        baseSignature: '/dashboard/words/roots',
+        parentStackHash: '',
+        stackHash: hashDetailStack([lemmaFrame]),
+        kind: 'seed' as const,
+      },
+    },
+  ])('re-seeds when the entry provenance has a mismatched $mismatch', async ({ provenance }) => {
+    const deepLink =
+      '/dashboard/words/roots?qdDetail=' + encodeURIComponent(ROOT_SERIALIZED) + '&qdDetailOpen=1';
+    await router.navigateByUrl(deepLink, {
+      state: { [PROVENANCE_STATE_KEY]: provenance },
+    });
+    const goSpy = vi.spyOn(location, 'go');
+
+    service.start();
+    await settle();
+
+    expect(goSpy).toHaveBeenCalledTimes(1);
+    expect(service.state().stack.map((frame) => frame.kind)).toEqual(['root']);
   });
 
   it('canonicalizes corrupted overlay params once with replace semantics', async () => {
@@ -470,6 +474,48 @@ describe('DetailOverlayHistoryService', () => {
 
       expect(location.path()).toBe(dialogBackPath);
       expect(service.state().stack.map((frame) => frame.kind)).toEqual(dialogBackStack);
+    });
+
+    it('makes dialog Back and browser Back converge after Close, Restore, and a base replacement', async () => {
+      await startAt('/dashboard/words/roots?root=5');
+      service.startStack(rootFrame);
+      await settle();
+      service.appendFrame(lemmaFrame);
+      await settle();
+      service.close();
+      await settle();
+      service.restore();
+      await settle();
+
+      const replaceSpy = vi.spyOn(location, 'replaceState');
+      service.navigateBaseWithOverlay('/dashboard/mushaf', mushafParams);
+      await settle();
+
+      expect(replaceSpy).toHaveBeenCalled();
+      expect(location.path()).toContain('/dashboard/mushaf');
+      expect(service.state().stack.map((frame) => frame.kind)).toEqual(['root', 'lemma']);
+
+      location.back();
+      await settle();
+      const browserBackPath = location.path();
+      expect(browserBackPath).toContain('/dashboard/words/roots');
+      expect(browserBackPath).toContain('root=5');
+      expect(service.state().visibility).toBe('open');
+      expect(service.state().stack.map((frame) => frame.kind)).toEqual(['root']);
+
+      location.forward();
+      await settle();
+      expect(location.path()).toContain('/dashboard/mushaf');
+      expect(service.state().visibility).toBe('open');
+
+      const backSpy = vi.spyOn(location, 'back');
+      service.back();
+      await settle();
+
+      expect(backSpy).toHaveBeenCalledTimes(1);
+      expect(location.path()).toBe(browserBackPath);
+      expect(service.state().visibility).toBe('open');
+      expect(service.state().stack.map((frame) => frame.kind)).toEqual(['root']);
     });
 
     it('promotes a side-panel frame to a fresh one-frame stack as a push when the overlay is closed', async () => {

@@ -29,11 +29,16 @@ per-feature.
   URL contract, deliberately decoupled from Words models), `detail-overlay-url-codec.ts`
   (strict parse/serialize/canonicalize; repeated `qdDetail` values bottom→top plus
   `qdDetailOpen=1`; invalid first frame ⇒ no overlay, malformed later frame truncates,
-  eight-frame cap), `detail-overlay-history.service.ts` (URL-authoritative state machine:
-  push on entity append, replace on top-frame sub-state, close retains the stack in the
-  URL, restore is a push; dialog Back uses browser Back only when history-state provenance
-  proves the parent entry, else a deterministic replace; fresh deep links get their prefix
-  history seeded once), `detail-overlay-link.directive.ts` (real copyable hrefs;
+  eight-frame cap), `detail-overlay-provenance.ts` (entry-bound history ownership; the
+  live base and stack must match before provenance is trusted), and
+  `detail-overlay-history.service.ts` (URL-authoritative state machine: push on entity
+  append, replace on top-frame sub-state, close retains the stack in the URL, restore is
+  a push; dialog Back uses browser Back only when entry provenance proves the parent,
+  else a deterministic replace; fresh or markerless same-URL entries seed their prefix
+  history, while reload keeps Angular-preserved entry provenance and does not duplicate
+  it; a Restore-derived Mushaf base transition re-materializes a missing parent prefix
+  before its final replace so browser and dialog Back return to the same historical
+  parent), `detail-overlay-link.directive.ts` (real copyable hrefs;
   only unmodified primary clicks are intercepted), and
   `detail-overlay-ayah-link.directive.ts` (B7 ayah continuity: `a[qdAyahOverlayLink]`
   navigates the base route *underneath* the overlay via

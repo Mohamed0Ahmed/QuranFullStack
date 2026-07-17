@@ -341,5 +341,38 @@ describe('Entity detail overlay ayah continuity (B7/B8)', () => {
     expect(overlay.isOpen()).toBe(true);
     expect(overlay.state().stack).toHaveLength(2);
     expect(shellQuery(fixture, '[data-testid="detail-modal-shell"]')).not.toBeNull();
+
+    // A base replacement after Restore has no adjacent parent entry until the
+    // coordinator re-materializes the prefixes. Browser Back must still reach
+    // the open root parent on its historical Words base.
+    overlay.navigateBaseWithOverlay('/dashboard/mushaf', {
+      page: '92',
+      ayah: '4:57',
+      focusAyah: '4:57',
+      panel: 'ayah',
+    });
+    await loadStep(fixture);
+    expect(router.url).toContain('/dashboard/mushaf');
+    expect(overlay.state().stack.map((frame) => frame.kind)).toEqual(['root', 'lemma']);
+
+    location.back();
+    await loadStep(fixture);
+    const browserBackUrl = router.url;
+    expect(browserBackUrl).toContain('/dashboard/words/roots');
+    expect(browserBackUrl).toContain(encodeURIComponent(ROOT_SERIALIZED));
+    expect(browserBackUrl).not.toContain(encodeURIComponent(LEMMA_STEMS_SERIALIZED));
+    expect(overlay.state().stack.map((frame) => frame.kind)).toEqual(['root']);
+    expect(overlay.isOpen()).toBe(true);
+
+    // Re-run the same Back from the restored Mushaf entry through the dialog
+    // control; it must use native Back and reach the identical parent URL.
+    location.forward();
+    await loadStep(fixture);
+    expect(router.url).toContain('/dashboard/mushaf');
+    click(shellQuery(fixture, '[data-testid="detail-modal-back"]'));
+    await loadStep(fixture);
+    expect(router.url).toBe(browserBackUrl);
+    expect(overlay.state().stack.map((frame) => frame.kind)).toEqual(['root']);
+    expect(overlay.isOpen()).toBe(true);
   }, 30000);
 });
