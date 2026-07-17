@@ -32,6 +32,7 @@
         [attr.aria-controls]="panelOpen() ? panelId : null"
         data-testid="association-filter-search"
         (input)="onQueryInput($any($event.target).value)"
+        (keydown)="onFieldKeydown($event)"
         (focus)="onFieldFocus()"
         (blur)="onFieldBlur()"
       />

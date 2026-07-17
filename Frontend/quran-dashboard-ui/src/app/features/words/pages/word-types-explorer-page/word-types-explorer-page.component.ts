@@ -12,6 +12,7 @@ import { WordTypeFilterComponent, WordTypeScopeSelectedEvent } from '../../compo
 import { WordTypeGroupedWordsListComponent } from '../../components/word-type-grouped-words-list/word-type-grouped-words-list.component';
 import { WordTypeScopeCountsComponent } from '../../components/word-type-scope-counts/word-type-scope-counts.component';
 import { WordTypeTableViewTabsComponent } from '../../components/word-type-table-view-tabs/word-type-table-view-tabs.component';
+import { WordsExplainerComponent } from '../../components/words-explainer/words-explainer.component';
 import {
   WordTypePresenceFlagChange,
   WordTypesPresenceFilterComponent,
@@ -34,12 +35,15 @@ import {
   WORD_TYPES_SELECT_SUBTYPE_LABEL,
   WORD_TYPES_SORT_LABEL,
 } from '../../models/word-types.labels';
+import { sortQueryValue } from '../../models/explorer-sort';
+import { WORDS_EXPLAINER_CONTENT } from '../../models/words-explainer.content';
+import { WordsExplainerPreference } from '../../state/words-explainer-preference';
 import {
   DEFAULT_WORD_TYPES_DETAIL_PAGE,
+  DEFAULT_WORD_TYPE_SORT,
   LemmaTableRowDto,
   RootTableRowDto,
   StemTableRowDto,
-  WORD_TYPES_DETAIL_PAGE_SIZE,
   WORD_TYPES_PAGE_SIZE,
   WordTableRowDto,
   WordTypeCase,
@@ -50,14 +54,13 @@ import {
   WordTypeTense,
   WordTypeVoice,
   normalizeWordTableRow,
+  normalizeWordTypeSort,
 } from '../../models/word-types.models';
 import {
   WordTypeDetailScope,
   WordTypeDetailSelection,
   WordTypeDetailSelectionKind,
-  WordTypeGroupedMemberWordDto,
 } from '../../models/word-types-detail.models';
-import { AyahMatchDto, PagedResultDto as SharedPagedResultDto } from '../../models/unique-words.models';
 import { WordTypesDetailFacade } from '../../state/word-types-detail.facade';
 import { WordTypesExplorerFacade } from '../../state/word-types-explorer.facade';
 import {
@@ -67,7 +70,16 @@ import {
   clearWordTypesSelection,
   parseWordTypesQueryParams,
 } from '../../state/word-types-url-sync';
-import { mapWordTypeAyahMatchToShared } from '../../utils/word-type-ayah-match.mapper';
+import {
+  EMPTY_WORD_TYPE_AYAHS_PAGE,
+  EMPTY_WORD_TYPE_MEMBER_WORDS_PAGE,
+  wordTypeAyahParentFrame,
+  wordTypeAyahsPageView,
+  wordTypeDetailSummaryView,
+  wordTypeMemberWordsPageView,
+  wordTypeMentionedSurahViews,
+  wordTypeMissingSurahViews,
+} from './word-types-detail-panel.view-model';
 
 const DETAIL_KIND_BY_TABLE_VIEW: Record<WordTypeTableView, WordTypeDetailSelectionKind> = {
   words: 'word',
@@ -91,6 +103,7 @@ const DETAIL_KIND_BY_TABLE_VIEW: Record<WordTypeTableView, WordTypeDetailSelecti
     WordTypeTableViewTabsComponent,
     WordTypesPresenceFilterComponent,
     WordTypesTableComponent,
+    WordsExplainerComponent,
   ],
   templateUrl: './word-types-explorer-page.component.html',
   styleUrl: './word-types-explorer-page.component.scss',
@@ -101,6 +114,7 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly explorerFacade = inject(WordTypesExplorerFacade);
   private readonly detailFacade = inject(WordTypesDetailFacade);
+  private readonly explainerPreference = inject(WordsExplainerPreference);
 
   private desktopQuery?: MediaQueryList;
   private readonly onDesktopChange = (event: MediaQueryListEvent): void => this.isDesktop.set(event.matches);
@@ -157,43 +171,17 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
     WORD_TYPE_DETAIL_PRESENTATIONS[this.detailKind()].emptyViewLabels[this.panelState().view],
   );
 
-  // A word summary and a grouped summary share the same measure shape; the panel renders whichever
-  // one the active selection produced.
-  protected readonly activeSummary = computed(() => {
-    const panel = this.panelState();
-    const summary = panel.summary ?? panel.groupedSummary;
-    return summary
-      ? {
-          label: summary.displayText,
-          occurrences: summary.occurrencesCount,
-          ayahs: summary.ayahsCount,
-          surahs: summary.surahsCount,
-        }
-      : null;
-  });
-
-  protected readonly emptyAyahsPage: SharedPagedResultDto<AyahMatchDto> = {
-    page: 1,
-    pageSize: WORD_TYPES_DETAIL_PAGE_SIZE,
-    totalCount: 0,
-    items: [],
-  };
-
-  protected readonly emptyMemberWordsPage: SharedPagedResultDto<WordTypeGroupedMemberWordDto> = {
-    page: 1,
-    pageSize: WORD_TYPES_DETAIL_PAGE_SIZE,
-    totalCount: 0,
-    items: [],
-  };
-
-  protected readonly memberWordsForView = computed(() => this.panelState().words ?? this.emptyMemberWordsPage);
-
-  protected readonly ayahsPageForView = computed(() => {
-    const page = this.panelState().ayahs;
-    return page ? { ...page, items: page.items.map(mapWordTypeAyahMatchToShared) } : this.emptyAyahsPage;
-  });
+  protected readonly emptyAyahsPage = EMPTY_WORD_TYPE_AYAHS_PAGE;
+  protected readonly emptyMemberWordsPage = EMPTY_WORD_TYPE_MEMBER_WORDS_PAGE;
+  protected readonly activeSummary = computed(() => wordTypeDetailSummaryView(this.panelState()));
+  protected readonly memberWordsForView = computed(() => wordTypeMemberWordsPageView(this.panelState()));
+  protected readonly ayahsPageForView = computed(() => wordTypeAyahsPageView(this.panelState()));
+  protected readonly ayahParentFrame = computed(() => wordTypeAyahParentFrame(this.panelState()));
 
   protected get pageTitle() { return WORD_TYPES_PAGE_TITLE; }
+  // TDZ-safe content getter + synchronous collapse restore (no first-paint shift).
+  protected get explainer() { return WORDS_EXPLAINER_CONTENT['word-types']; }
+  protected readonly explainerExpanded = signal(this.explainerPreference.isExpanded('word-types'));
   protected get emptyLabel() { return WORD_TYPE_TABLE_VIEW_EMPTY_LABELS[this.listState().query.tableView]; }
   protected get selectSubtypeLabel() { return WORD_TYPES_SELECT_SUBTYPE_LABEL; }
   protected get errorLabel() { return WORD_TYPES_ERROR_LABEL; }
@@ -206,6 +194,11 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
 
   protected onPresenceFlagChange(change: WordTypePresenceFlagChange): void {
     this.explorerFacade.selectPresenceFlag(change.dimension, change.value);
+  }
+
+  protected onExplainerToggled(expanded: boolean): void {
+    this.explainerExpanded.set(expanded);
+    this.explainerPreference.setExpanded('word-types', expanded);
   }
 
   protected onScopeCountsRetry(): void {
@@ -352,8 +345,18 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
     this.filter()?.focusSelectedType();
   }
 
-  protected changeSort(event: Event): void {
-    this.explorerFacade.changeSort((event.target as HTMLSelectElement).value as WordTypeSort);
+  /** A header cycle step (token) or its release (null). The facade resets the list page either way. */
+  protected onSortChange(sort: WordTypeSort | null): void {
+    this.explorerFacade.changeSort(sort);
+  }
+
+  /**
+   * The ≤1023px fallback select drives the same contract. Selecting المواضع — this explorer's
+   * default — releases the param rather than writing `sort=occurrences`, so the default state stays
+   * param-free and matches what a header release produces.
+   */
+  protected onSortSelect(value: string): void {
+    this.onSortChange(sortQueryValue(normalizeWordTypeSort(value), DEFAULT_WORD_TYPE_SORT));
   }
 
   protected changePage(page: number): void {
@@ -377,20 +380,11 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
   }
 
   protected mentionedSurahs() {
-    const surahs = this.panelState().surahs?.surahs ?? [];
-    return surahs.map((surah) => ({
-      surahNumber: surah.surahNumber,
-      nameArabic: surah.nameArabic,
-      occurrencesInSurah: surah.occurrencesCount,
-    }));
+    return wordTypeMentionedSurahViews(this.panelState());
   }
 
   protected missingSurahs() {
-    const surahs = this.panelState().surahs?.missingSurahs ?? [];
-    return surahs.map((surah) => ({
-      surahNumber: surah.surahNumber,
-      nameArabic: surah.nameArabic,
-    }));
+    return wordTypeMissingSurahViews(this.panelState());
   }
 
   private updateQueryParams(queryParams: Record<string, string | null>): void {

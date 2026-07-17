@@ -18,6 +18,23 @@ If a task touches both Backend and Frontend, read all relevant instruction files
 
 If a project-specific instruction conflicts with a root instruction, follow the more specific project instruction unless it would violate a root safety or product rule.
 
+## Branching workflow
+
+This repository follows a `dev`-based Git-Flow model. Two long-lived branches:
+
+- **`main` — stable / production.** Railway auto-deploys from it, and it is
+  protected. It receives merges ONLY from `dev` (releases, roughly every ~5
+  features) plus explicit emergency hotfixes. Never commit to `main` directly.
+- **`dev` — long-lived integration branch**, branched off `main` and kept in sync
+  with `main` after each release or hotfix.
+
+Rules for all work:
+
+- ALL new work branches off `dev`, never off `main`.
+- Feature branches open pull requests into `dev`. NEVER open a PR against `main`.
+- `dev → main` merges are the release boundary and happen ONLY on explicit
+  request from the user. The same applies to emergency hotfixes targeting `main`.
+
 ## Workspace Path Conventions
 
 Canonical workspace paths:

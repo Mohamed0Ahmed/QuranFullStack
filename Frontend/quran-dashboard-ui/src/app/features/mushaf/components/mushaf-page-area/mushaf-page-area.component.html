@@ -1,6 +1,7 @@
 <section class="mushaf-page-area" aria-label="منطقة المصحف" data-testid="mushaf-page-area">
   @if (loadState().isLoading) {
     <qd-panel-skeleton
+      class="mushaf-page-area__page-skeleton"
       shape="panel"
       loadingLabel="جارٍ تحميل الصفحة..."
       data-testid="mushaf-page-loading"

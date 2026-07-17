@@ -16,6 +16,17 @@
   box-shadow: var(--qd-shadow-sm);
 }
 
+// N3 row 9: the loading skeleton replaces BOTH the header nav and the page view
+// (neither can mount without the page model), so it must occupy their combined
+// box rather than collapse to a bar. On desktop the panel is already a fixed
+// height and this simply stretches the skeleton into it; below 1024px the area's
+// own reserved height (see the media query) is what it fills. The skeleton's own
+// internals are the primitive's business — this only places it in the column.
+.mushaf-page-area__page-skeleton {
+  flex: 1;
+  min-block-size: 0;
+}
+
 @media (max-width: 1023px) {
   :host {
     flex: none;
@@ -24,7 +35,27 @@
 
   .mushaf-page-area {
     flex: none;
-    min-height: auto;
+
+    /* N3 row 9 — reserved page-area height below the 1024px panel breakpoint,
+       where nothing else fixes this column's height and a collapsing page area
+       shoves the study section up.
+
+       Provenance — a Madani page is a structural constant (15 lines, never
+       wrapping: .mushaf-line is `flex-wrap: nowrap` over a text column pinned to
+       --qd-mushaf-text-column-width), so the loaded height is derived, not guessed:
+         header nav deck  ~3.13rem  (2rem control row + zone/deck padding + hairline)
+         page-view padding   2rem   (1rem block each side)
+         chrome-top        2.75rem  (2rem min-height + 0.75rem padding-block-end)
+         15 mushaf lines  ~42rem    (1.35rem word text at line-height 1.9 = 2.565rem,
+                                     + 0.1rem padding-block; lines carrying the
+                                     1.5rem ayah marker run ~0.29rem taller)
+         chrome-bottom    ~2.56rem  (0.75rem padding-block-start + the page trigger)
+
+       Same accepted risk as the shipped U1 baselines: this invalidates silently if
+       the Quran font metrics or --qd-mushaf-text-column-width change. Pages 1–2
+       (Al-Fatiha / the opening of Al-Baqarah) hold fewer lines and therefore
+       over-reserve slightly — a little slack at the bottom, never a shift. */
+    min-block-size: 52rem;
   }
 }
 

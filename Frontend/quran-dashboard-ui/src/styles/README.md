@@ -9,7 +9,12 @@ Compiled through `../styles.scss`; component-specific styling stays beside each 
   Mushaf, and explorer variables. Includes the color-doctrine role tokens
   (`--qd-accent-fg`, `--qd-border-accent`, `--qd-surface-hover`, `--qd-selected-bg`,
   `--qd-danger-tint`, `--qd-success-tint`, `--qd-warning-tint`) — see
-  `.architecture/UI_STYLE_SYSTEM.md` §16 for the role→color contract these back.
+  `.architecture/UI_STYLE_SYSTEM.md` §16 for the role→color contract these back. Also holds the
+  shared control geometry (`--qd-btn-*` → `--qd-control-block-size`, and
+  `--qd-pagination-margin-block-start` → `--qd-pagination-slot-block-size`): `.qd-btn` and
+  `qd-pagination` are built from these values and the reserved slots that stand in for a
+  not-yet-mounted control row are sized from the same ones, so a reservation can never drift from
+  its control. Size a new reserved slot from these tokens; never re-measure the control by hand.
 - `_themes.scss` — dark-theme overrides for the same token surface (`--qd-accent-fg` and
   `--qd-selected-bg` are intentionally theme-invariant and not overridden here).
 - `_typography.scss` — font-face declarations and shared Arabic-first type classes.

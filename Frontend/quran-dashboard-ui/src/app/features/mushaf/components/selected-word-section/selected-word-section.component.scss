@@ -15,6 +15,11 @@
   flex-direction: column;
   gap: var(--qd-space-3);
 
+  // U1 first-load baseline: measured natural loaded block size per responsive
+  // band (Feature 029 §7 — desktop/tablet load to a structure-constant 333px;
+  // below the 768px morphology-grid breakpoint the 1-segment floor is 495px).
+  --qd-selected-word-baseline-block-size: 20.8125rem;
+
   min-height: 14rem;
   height: 100%;
   padding: var(--qd-space-3);
@@ -32,6 +37,22 @@
     box-shadow: none;
   }
 
+  // U1 loading reservation: while loading, hold the greater of the last
+  // successful natural block size and the responsive baseline so the following
+  // divider/section does not move. Cleared with the modifier on success/error/
+  // empty — loaded content always determines its own natural height. The extra
+  // class keeps this ahead of the <1024px embedded reset in _components.scss,
+  // which zeroes the shell minimums.
+  &.selected-word-section--loading {
+    :host &,
+    :host.qd-selected-word-section--embedded & {
+      min-block-size: max(
+        var(--qd-selected-word-baseline-block-size),
+        var(--qd-selected-word-reserved-block-size, 0rem)
+      );
+    }
+  }
+
   &__header {
     display: flex;
     justify-content: center;
@@ -43,9 +64,10 @@
   }
 
   &__word-skeleton {
-
     width: 11rem;
-    height: 2.7rem;
+    // One rendered-word line box: 1.9rem font at 1.8 line-height (see
+    // &__rendered-word) — the skeleton must occupy the same header height.
+    height: calc(1.9rem * 1.8);
     border-radius: var(--qd-radius-md);
   }
 
@@ -56,7 +78,7 @@
 
     ::ng-deep .segment-rendered-word {
       justify-content: center;
-      font-size: 1.5rem;
+      font-size: 1.9rem;
       font-weight: 600;
       line-height: 1.8;
     }
@@ -116,6 +138,9 @@
     width: 75%;
   }
 
+  // Skeleton geometry mirrors the loaded word-morphology-summary cells
+  // (padding/gaps/label/value line boxes) so the loading shell occupies the
+  // natural loaded layout instead of a smaller stand-in (U1).
   &__morphology-skeleton {
     display: flex;
     flex-direction: row;
@@ -131,17 +156,16 @@
     align-items: center;
     gap: calc(var(--qd-space-1) * 0.82);
     min-width: 7.4rem;
-    padding: calc(var(--qd-space-2) + 0.45 * var(--qd-space-1));
+    padding: var(--qd-space-3);
     border: 1px solid var(--qd-border);
     border-radius: var(--qd-radius-sm);
-    /* one-off: 4% navy-tinted quiet-card wash, not hover/selected/border role */
-    background: color-mix(in oklch, var(--qd-primary) 4%, var(--qd-surface));
+    background: var(--qd-section-bg);
     text-align: center;
 
     dt {
       margin: 0;
       color: var(--qd-text-muted);
-      font-size: 0.75rem;
+      font-size: 0.78rem;
       font-weight: 500;
       letter-spacing: 0.01em;
       width: 100%;
@@ -153,7 +177,8 @@
       justify-content: center;
       margin: 0;
 
-      min-height: 1.3rem;
+      // Loaded value line box: 0.9375rem font at 1.45 line-height.
+      min-height: calc(0.9375rem * 1.45);
       width: 100%;
     }
   }
@@ -185,15 +210,14 @@
     align-items: center;
     gap: var(--qd-space-1);
     min-width: 0;
-    padding: var(--qd-space-2);
+    padding: var(--qd-space-3);
     border: 1px solid var(--qd-border);
     border-radius: var(--qd-radius-sm);
     background: var(--qd-section-bg);
-    font-size: 0.875rem;
+    font-size: 0.9375rem;
     color: inherit;
     text-decoration: none;
     text-align: center;
-    box-shadow: var(--qd-shadow-sm);
   }
 
   &__identity-label {
@@ -213,6 +237,28 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 1.3rem;
+
+    // Loaded identity value line box: 0.9375rem font at the default 1.5.
+    min-height: calc(0.9375rem * 1.5);
+  }
+}
+
+@media (max-width: 767px) {
+  .selected-word-section {
+    // Measured 1-segment natural floor at phone widths (U1 baseline).
+    --qd-selected-word-baseline-block-size: 30.9375rem;
+
+    // The loaded morphology summary becomes a two-column grid at this
+    // breakpoint — mirror it so the skeleton wraps identically.
+    &__morphology-skeleton {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      overflow-x: visible;
+    }
+
+    &__morphology-skeleton-cell {
+      flex: unset;
+      min-width: 0;
+    }
   }
 }

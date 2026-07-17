@@ -192,6 +192,111 @@ public sealed class StemsListReadTests(MorphologyExplorersTestFixture fixture)
         page.Items.Select(i => i.Id).Should().Equal(604, 606, 602, 600, 601, 605);
     }
 
+    // The exact reverse of the ascending pin above: the six seeded stems carry distinct normalized
+    // texts, so no alpha tie engages and DESC simply mirrors the sequence.
+    [Fact]
+    public async Task GetStemsPage_alpha_descending_reverses_the_ascending_order()
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetStemsPageHandler>();
+
+        var outcome = await handler.HandleAsync(
+            new GetStemsPageQuery(null, "alpha-desc", 1, 50),
+            CancellationToken.None);
+        var page = outcome.Should().BeOfType<GetStemsPageOutcome.Success>().Subject.Page;
+
+        page.Items.Select(i => i.Id).Should().Equal(605, 601, 600, 602, 606, 604);
+    }
+
+    // Stems allowlists neither `lemmas` nor `stems` — a column another explorer offers is still a 400
+    // here — and mushaf-order is bare-only. This suite had no invalid-sort coverage before N8.
+    [Theory]
+    [InlineData("relevance")]
+    [InlineData("bogus")]
+    [InlineData("mushaf-order-asc")]
+    [InlineData("mushaf-order-desc")]
+    [InlineData("lemmas")]
+    [InlineData("stems")]
+    public async Task GetStemsPage_invalid_sort_returns_validation_outcome(string sort)
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetStemsPageHandler>();
+
+        var outcome = await handler.HandleAsync(
+            new GetStemsPageQuery(null, sort, 1, 50),
+            CancellationToken.None);
+
+        outcome.Should().BeOfType<GetStemsPageOutcome.InvalidSort>();
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task GetStemsPage_blank_sort_defaults_to_mushaf_order(string? sort)
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetStemsPageHandler>();
+
+        var outcome = await handler.HandleAsync(
+            new GetStemsPageQuery(null, sort, 1, 50),
+            CancellationToken.None);
+        var page = outcome.Should().BeOfType<GetStemsPageOutcome.Success>().Subject.Page;
+
+        page.Items.Select(i => i.Id).Should().Equal(600, 605, 604, 601, 602, 606);
+    }
+
+    // The acceptance bar: a legacy token and its canonical alias are ONE ordering.
+    [Theory]
+    [InlineData("occurrences", "occurrences-desc")]
+    [InlineData("alpha", "alpha-asc")]
+    public async Task GetStemsPage_legacy_token_and_its_alias_return_the_identical_sequence(string legacy, string alias)
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetStemsPageHandler>();
+
+        var legacyOutcome = await handler.HandleAsync(
+            new GetStemsPageQuery(null, legacy, 1, 50),
+            CancellationToken.None);
+        var aliasOutcome = await handler.HandleAsync(
+            new GetStemsPageQuery(null, alias, 1, 50),
+            CancellationToken.None);
+
+        var legacyIds = legacyOutcome.Should().BeOfType<GetStemsPageOutcome.Success>().Subject.Page.Items.Select(i => i.Id);
+        var aliasIds = aliasOutcome.Should().BeOfType<GetStemsPageOutcome.Success>().Subject.Page.Items.Select(i => i.Id);
+
+        aliasIds.Should().Equal(legacyIds);
+    }
+
+    // Sorting is ORDER BY only: it may reorder the page but must never change the scope or the total.
+    [Theory]
+    [InlineData("mushaf-order")]
+    [InlineData("alpha")]
+    [InlineData("alpha-desc")]
+    [InlineData("occurrences")]
+    [InlineData("occurrences-asc")]
+    [InlineData("ayahs")]
+    [InlineData("ayahs-asc")]
+    [InlineData("surahs")]
+    [InlineData("surahs-asc")]
+    [InlineData("simple")]
+    [InlineData("simple-asc")]
+    [InlineData("tashkeel")]
+    [InlineData("tashkeel-asc")]
+    public async Task GetStemsPage_every_sort_token_preserves_total_count_and_row_set(string sort)
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetStemsPageHandler>();
+
+        var outcome = await handler.HandleAsync(
+            new GetStemsPageQuery(null, sort, 1, 50),
+            CancellationToken.None);
+        var page = outcome.Should().BeOfType<GetStemsPageOutcome.Success>().Subject.Page;
+
+        page.TotalCount.Should().Be(SeededStemCount);
+        page.Items.Select(i => i.Id).Should().BeEquivalentTo([600, 601, 602, 604, 605, 606]);
+    }
+
     [Fact]
     public async Task GetStemsPage_mushaf_order_sort_orders_by_first_word_order_in_mushaf()
     {
@@ -341,7 +446,7 @@ public sealed class StemsListReadTests(MorphologyExplorersTestFixture fixture)
         var cache = new MemoryCache(new MemoryCacheOptions());
         var reader = new CachedStemsReader(inner, cache);
 
-        await reader.GetStemsPageAsync(null, StemSort.MushafOrder, StemsCountFilter.None, StemsAssociationFilter.None, 1, 50, CancellationToken.None);
+        await reader.GetStemsPageAsync(null, StemSortSpec.Natural(StemSortColumn.MushafOrder), StemsCountFilter.None, StemsAssociationFilter.None, 1, 50, CancellationToken.None);
 
         interceptor.Reset();
         await reader.GetStemSummaryAsync(ExactTieStemId, CancellationToken.None);

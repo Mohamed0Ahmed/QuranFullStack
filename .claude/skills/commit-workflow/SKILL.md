@@ -6,7 +6,7 @@ description: >-
   committed, or asks about commit order. It inspects the single repository from
   its root, plans explicit path-based staging, keeps commits focused by concern,
   suggests concise messages, and surfaces unrelated-file and push-readiness
-  warnings. Includes a post-PR sync-to-main workflow, but only after the user
+  warnings. Includes a post-PR sync-to-dev workflow, but only after the user
   explicitly says the PR was merged. Never run destructive Git
   commands and never push unless asked.
 ---
@@ -31,12 +31,19 @@ Run Git commands from the repository root. `git -C Backend` and
 `git -C Frontend/quran-dashboard-ui` still resolve to the same root repository;
 they do not inspect independent repositories.
 
+### Branch model
+
+`dev` is the long-lived integration branch; `main` is stable/production and
+protected. Create every new branch off `dev`, and treat `dev` as the base for
+commit ranges and pushes. Never commit directly to `main`. See the "Branching
+workflow" section of the root `CLAUDE.md`.
+
 ## Which workflow to use
 
 | Phase | When | What to run |
 |-------|------|-------------|
 | **A - Feature work** | Default. User is implementing on a feature branch. | Sections 1-6 only. |
-| **B - Open PR** | User explicitly asks to open a PR. | Prepare and open the PR; do not run section 7. |
+| **B - Open PR** | User explicitly asks to open a PR. | Prepare and open the PR against `dev`; do not run section 7. |
 | **C - After PR merged** | User explicitly confirms the PR was merged. | Section 7 only, plus push rules if requested. |
 
 Never run post-merge synchronization before the user confirms the PR was merged.
@@ -112,12 +119,13 @@ Before committing:
 Before pushing:
 
 - Confirm the working tree contains no unintended changes.
-- Confirm local commits are the intended range over the upstream/base branch.
+- Confirm local commits are the intended range over the upstream/base branch
+  (`dev` for feature work).
 - If a PR branch contains unsquashed subtree imports, require GitHub's **merge
   commit** strategy. Squash or rebase merging would make imported source commits
   cease to be ancestors of `main`.
 
-## 7. Post-PR sync to main
+## 7. Post-PR sync to dev
 
 Run only after the user explicitly confirms the PR was merged:
 
@@ -128,26 +136,29 @@ git status --short --branch
 Stop if this preflight shows uncommitted paths. Only with a clean worktree, run:
 
 ```bash
-git switch main
-git pull --ff-only origin main
+git switch dev
+git pull --ff-only origin dev
 git status --short --branch
 ```
 
 For any PR that imported unsquashed subtree history, rerun every ancestor check
-recorded in the PR package against `main`:
+recorded in the PR package against `dev`:
 
 ```bash
-git merge-base --is-ancestor <imported-tip> main
+git merge-base --is-ancestor <imported-tip> dev
 ```
 
 Healthy state:
 
-- local `main` equals `origin/main`;
+- local `dev` equals `origin/dev`;
 - working tree is clean, except intentional new work;
-- every imported subtree tip remains an ancestor of `main`, when applicable;
+- every imported subtree tip remains an ancestor of `dev`, when applicable;
 - no submodule initialization or pointer synchronization is required.
 
-Start the next feature branch from updated `main`.
+Start the next feature branch from updated `dev`.
+
+Do not switch to or sync `main` here. `main` only moves on an explicit
+`dev → main` release or emergency hotfix the user requests.
 
 ## Output format
 

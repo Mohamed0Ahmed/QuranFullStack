@@ -1,0 +1,36 @@
+<section
+  class="qd-explainer"
+  [attr.aria-label]="content().title"
+  [attr.data-testid]="'words-explainer--' + content().key"
+>
+  <div class="qd-explainer__kicker">
+    <span class="qd-explainer__ordinal" aria-hidden="true">{{ content().ordinal }}</span>
+    <span class="qd-explainer__eyebrow">{{ content().eyebrow }}</span>
+
+    <button
+      type="button"
+      class="qd-btn qd-btn-ghost qd-explainer__toggle"
+      [attr.aria-expanded]="expanded()"
+      [attr.aria-controls]="bodyId()"
+      [attr.data-testid]="'words-explainer-toggle--' + content().key"
+      (click)="onToggle()"
+    >
+      {{ toggleLabel() }}
+    </button>
+  </div>
+
+  <p class="qd-explainer__tagline">{{ content().tagline }}</p>
+
+  @if (expanded()) {
+    <div class="qd-explainer__body" [id]="bodyId()" data-testid="words-explainer-body">
+      <p class="qd-explainer__body-text">{{ content().body }}</p>
+
+      <ng-content />
+
+      <div class="qd-explainer-benefit" data-testid="words-explainer-benefit">
+        <span class="qd-explainer-benefit__label">{{ benefitLabel }}</span>
+        <span class="qd-explainer-benefit__text">{{ content().benefit }}</span>
+      </div>
+    </div>
+  }
+</section>

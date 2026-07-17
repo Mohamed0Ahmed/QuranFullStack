@@ -4,12 +4,14 @@ import {
   Component,
   ElementRef,
   computed,
+  inject,
   input,
   output,
   viewChild,
 } from '@angular/core';
 import { A11yModule } from '@angular/cdk/a11y';
 
+import { DetailOverlayHistoryService } from '../../../../core/navigation/detail-overlay/detail-overlay-history.service';
 import { ModalScrollLockDirective } from '../../../../shared/ui/modal-scroll-lock/modal-scroll-lock.directive';
 import { CLOSE_LABEL } from '../../models/unique-words.labels';
 import { WORD_TYPE_DETAIL_PRESENTATIONS } from '../../models/word-types.labels';
@@ -20,6 +22,14 @@ import {
 } from '../../models/word-types.models';
 import { WordTypeDetailSelectionKind } from '../../models/word-types-detail.models';
 
+/**
+ * Per-instance id seed. The active overlay copy of this panel can be mounted at
+ * the same time as the inert drawer; a shared id would make the overlay tabs'
+ * `aria-controls` / surface `aria-labelledby` resolve to the wrong (inert) panel.
+ * Each instance takes a distinct prefix so its ARIA relationships stay local.
+ */
+let nextWordTypeDetailsPanelInstanceId = 0;
+
 @Component({
   selector: 'qd-word-type-details-panel',
   standalone: true,
@@ -29,9 +39,26 @@ import { WordTypeDetailSelectionKind } from '../../models/word-types-detail.mode
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WordTypeDetailsPanelComponent {
+  private readonly detailOverlayHistory = inject(DetailOverlayHistoryService);
+
+  /**
+   * Only the top layer may trap focus (Feature 029 §5.9). While the global
+   * detail overlay is open this drawer sits inside the inert app shell, so its
+   * own trap stands down and the dialog's trap is the only enabled one.
+   */
+  protected readonly drawerTrapEnabled = computed(() => !this.detailOverlayHistory.isOpen());
+
   readonly view = input.required<WordTypeDetailView>();
   readonly kind = input<WordTypeDetailSelectionKind>('word');
   readonly inline = input(true);
+  /**
+   * Content-only mode (Feature 029, Change B4): render just the kind-aware view
+   * tablist + tabpanel body in a plain wrapper — no card section, no
+   * dialog/backdrop, no header/close. Used inside the global detail overlay
+   * shell, which owns the dialog chrome (the composer also owns the notFound
+   * rendering there). When false, the inline/modal branches behave as before.
+   */
+  readonly frameless = input(false);
   readonly emptySelection = input(false);
   readonly selectionTitle = input('');
   readonly loading = input(false);
@@ -44,7 +71,8 @@ export class WordTypeDetailsPanelComponent {
   protected get closeLabel() { return CLOSE_LABEL; }
   protected get emptySelectionLabel() { return this.presentation.emptySelectionLabel; }
   protected get notFoundLabel() { return this.presentation.notFoundLabel; }
-  protected readonly surfaceDomId = 'word-type-details-panel-surface';
+  private readonly instanceIdPrefix = `word-type-details-panel-${nextWordTypeDetailsPanelInstanceId++}`;
+  protected readonly surfaceDomId = `${this.instanceIdPrefix}-surface`;
 
   private get presentation() { return WORD_TYPE_DETAIL_PRESENTATIONS[this.kind()]; }
 
@@ -64,7 +92,7 @@ export class WordTypeDetailsPanelComponent {
   protected readonly hasSelection = computed(() => !this.emptySelection());
 
   protected tabDomId(key: WordTypeDetailView): string {
-    return `word-type-details-tabbtn-${key}`;
+    return `${this.instanceIdPrefix}-tabbtn-${key}`;
   }
 
   protected isActive(key: WordTypeDetailView): boolean {

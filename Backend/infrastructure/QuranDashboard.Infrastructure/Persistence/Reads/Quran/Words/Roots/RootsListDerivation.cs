@@ -1,4 +1,5 @@
 using QuranDashboard.Application.Abstractions.Common.Paging;
+using QuranDashboard.Application.Abstractions.Quran.Words;
 using QuranDashboard.Application.Abstractions.Quran.Words.Roots;
 using QuranDashboard.Application.Abstractions.Quran.Words.Roots.Responses;
 
@@ -14,7 +15,7 @@ internal static class RootsListDerivation
         IReadOnlyList<RootSummaryRow> all,
         RootsCountFilter filter,
         string? search,
-        RootSort sort,
+        RootSortSpec sort,
         int page,
         int pageSize)
     {
@@ -40,7 +41,7 @@ internal static class RootsListDerivation
         IReadOnlyList<RootSummaryRow> all,
         RootsCountFilter filter,
         string? search,
-        RootSort sort)
+        RootSortSpec sort)
     {
         var normalizedSearch = NormalizeArabicQuery(search);
 
@@ -69,19 +70,46 @@ internal static class RootsListDerivation
         && filter.Lemmas.Includes(row.LemmasCount)
         && filter.Stems.Includes(row.StemsCount);
 
-    private static IEnumerable<RootSummaryRow> ApplySort(IEnumerable<RootSummaryRow> rows, RootSort sort) => sort switch
+    // Ordering is part of the read contract (see the reads README). Every allowlisted column is already
+    // on the row, so no branch costs a join, and each tie-break chain is identical in BOTH directions —
+    // reversing a column never reshuffles its ties, which keeps paging deterministic.
+    private static IEnumerable<RootSummaryRow> ApplySort(IEnumerable<RootSummaryRow> rows, RootSortSpec sort) => sort.Column switch
     {
-        RootSort.Occurrences => rows
-            .OrderByDescending(r => r.OccurrencesCount)
-            .ThenBy(r => r.FirstWordOrderInMushaf)
-            .ThenBy(r => r.Id),
-        RootSort.Alpha => rows
-            .OrderBy(r => r.NormalizedRootText, StringComparer.Ordinal)
-            .ThenBy(r => r.Id),
-        _ => rows
+        RootSortColumn.Alpha => ByText(rows, r => r.NormalizedRootText, sort.Direction),
+        RootSortColumn.Occurrences => ByCount(rows, r => r.OccurrencesCount, sort.Direction),
+        RootSortColumn.Ayahs => ByCount(rows, r => r.AyahsCount, sort.Direction),
+        RootSortColumn.Surahs => ByCount(rows, r => r.SurahsCount, sort.Direction),
+        RootSortColumn.SimpleWords => ByCount(rows, r => r.SimpleWordsCount, sort.Direction),
+        RootSortColumn.TashkeelWords => ByCount(rows, r => r.TashkeelWordsCount, sort.Direction),
+        RootSortColumn.Lemmas => ByCount(rows, r => r.LemmasCount, sort.Direction),
+        RootSortColumn.Stems => ByCount(rows, r => r.StemsCount, sort.Direction),
+        RootSortColumn.MushafOrder => rows
             .OrderBy(r => r.FirstWordOrderInMushaf)
             .ThenBy(r => r.Id),
+        // Explicit, so a column added without an arm here fails loudly instead of silently
+        // serving Mushaf order (mirrors the word-types SQL switches).
+        _ => throw new InvalidOperationException($"Unhandled {nameof(RootSortColumn)} value: {sort.Column}."),
     };
+
+    // Count columns tie-break on Mushaf order then Id.
+    private static IOrderedEnumerable<RootSummaryRow> ByCount(
+        IEnumerable<RootSummaryRow> rows,
+        Func<RootSummaryRow, int> count,
+        WordSortDirection direction) =>
+        (direction == WordSortDirection.Ascending ? rows.OrderBy(count) : rows.OrderByDescending(count))
+            .ThenBy(r => r.FirstWordOrderInMushaf)
+            .ThenBy(r => r.Id);
+
+    // Alpha ties break on Id ALONE — deliberately no Mushaf tie-break, preserving the exact row order
+    // existing sort=alpha links already return.
+    private static IOrderedEnumerable<RootSummaryRow> ByText(
+        IEnumerable<RootSummaryRow> rows,
+        Func<RootSummaryRow, string> text,
+        WordSortDirection direction) =>
+        (direction == WordSortDirection.Ascending
+            ? rows.OrderBy(text, StringComparer.Ordinal)
+            : rows.OrderByDescending(text, StringComparer.Ordinal))
+            .ThenBy(r => r.Id);
 
     private static RootListItemDto ToListItem(RootSummaryRow row) =>
         new(

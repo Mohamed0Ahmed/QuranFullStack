@@ -57,6 +57,65 @@ describe('StemAyahTypeFiltersComponent', () => {
     expect(root.textContent).not.toContain('عرض الكل');
   });
 
+  it('does not emit when the only type chip is clicked', () => {
+    const fixture = TestBed.createComponent(StemAyahTypeFiltersComponent);
+    fixture.componentRef.setInput('items', [nounType]);
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const emitted: (string | null)[] = [];
+    fixture.componentInstance.typeCodeChange.subscribe((value) => emitted.push(value));
+
+    (root.querySelector('[data-testid="stem-ayah-type-filter-N"]') as HTMLButtonElement).click();
+
+    expect(emitted).toEqual([]);
+  });
+
+  it('does not emit when the active chip of a multi-type set is clicked', () => {
+    const fixture = TestBed.createComponent(StemAyahTypeFiltersComponent);
+    fixture.componentRef.setInput('items', [nounType, verbType]);
+    fixture.componentRef.setInput('selectedTypeCode', 'N');
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const emitted: (string | null)[] = [];
+    fixture.componentInstance.typeCodeChange.subscribe((value) => emitted.push(value));
+
+    (root.querySelector('[data-testid="stem-ayah-type-filter-N"]') as HTMLButtonElement).click();
+
+    expect(emitted).toEqual([]);
+  });
+
+  it('does not emit when the active عرض الكل chip is clicked', () => {
+    const fixture = TestBed.createComponent(StemAyahTypeFiltersComponent);
+    fixture.componentRef.setInput('items', [nounType, verbType]);
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const emitted: (string | null)[] = [];
+    fixture.componentInstance.typeCodeChange.subscribe((value) => emitted.push(value));
+
+    (root.querySelector('[data-testid="stem-ayah-type-filter-all"]') as HTMLButtonElement).click();
+
+    expect(emitted).toEqual([]);
+  });
+
+  it('still emits when a non-active chip is clicked', () => {
+    const fixture = TestBed.createComponent(StemAyahTypeFiltersComponent);
+    fixture.componentRef.setInput('items', [nounType, verbType]);
+    fixture.componentRef.setInput('selectedTypeCode', 'N');
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const emitted: (string | null)[] = [];
+    fixture.componentInstance.typeCodeChange.subscribe((value) => emitted.push(value));
+
+    (root.querySelector('[data-testid="stem-ayah-type-filter-V"]') as HTMLButtonElement).click();
+    (root.querySelector('[data-testid="stem-ayah-type-filter-all"]') as HTMLButtonElement).click();
+
+    expect(emitted).toEqual(['V', null]);
+  });
+
   it('shows skeleton chips while loading', () => {
     const fixture = TestBed.createComponent(StemAyahTypeFiltersComponent);
     fixture.componentRef.setInput('items', []);

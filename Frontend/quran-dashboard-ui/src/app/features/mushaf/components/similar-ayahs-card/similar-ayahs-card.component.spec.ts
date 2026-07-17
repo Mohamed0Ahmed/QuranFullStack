@@ -45,11 +45,14 @@ const SAMPLE_SIMILAR_AYAHS = {
   ],
 };
 
+const LOADING: ResourceLoadState = { isLoading: true, isEmpty: false, errorMessage: null };
+
 function render(
   fixture: ComponentFixture<SimilarAyahsCardComponent>,
   options: {
     similarAyahs?: typeof SAMPLE_SIMILAR_AYAHS | null;
     loadState?: ResourceLoadState;
+    expectedItemCount?: number | null;
   } = {},
 ): HTMLElement {
   fixture.componentRef.setInput('similarAyahs', options.similarAyahs ?? null);
@@ -57,8 +60,14 @@ function render(
     'loadState',
     options.loadState ?? IDLE,
   );
+  fixture.componentRef.setInput('expectedItemCount', options.expectedItemCount ?? null);
   fixture.detectChanges();
   return fixture.nativeElement as HTMLElement;
+}
+
+/** The reserved skeleton rows, addressed by the list-item semantics rather than a design-system frame class. */
+function skeletonRows(root: HTMLElement): NodeListOf<Element> {
+  return root.querySelectorAll('[data-testid="similar-ayahs-skeleton"] li');
 }
 
 describe('SimilarAyahsCardComponent (US2)', () => {
@@ -130,6 +139,74 @@ describe('SimilarAyahsCardComponent (US2)', () => {
     expect(ayahNavigate).toHaveBeenCalledWith({
       verseKey: '2:26',
       pageNumber: 5,
+    });
+  });
+
+  describe('loading placeholders mirror the loaded list (N3 row 11)', () => {
+    it('reserves one placeholder row per item the summary says is coming', () => {
+      const fixture = TestBed.createComponent(SimilarAyahsCardComponent);
+      const root = render(fixture, { loadState: LOADING, expectedItemCount: 5 });
+
+      expect(skeletonRows(root)).toHaveLength(5);
+    });
+
+    it('reserves one shimmering row per incoming item, matching the loaded list length', () => {
+      const loadingFixture = TestBed.createComponent(SimilarAyahsCardComponent);
+      const loadingRoot = render(loadingFixture, {
+        loadState: LOADING,
+        expectedItemCount: SAMPLE_SIMILAR_AYAHS.items.length,
+      });
+
+      const loadedFixture = TestBed.createComponent(SimilarAyahsCardComponent);
+      const loadedRoot = render(loadedFixture, { similarAyahs: SAMPLE_SIMILAR_AYAHS, loadState: IDLE });
+
+      const placeholders = skeletonRows(loadingRoot);
+      const loadedItems = loadedRoot.querySelectorAll('[data-testid="similar-ayah-item"]');
+
+      // The skeleton reserves exactly as many rows as will arrive, so the tab body
+      // neither grows nor collapses when the list settles.
+      expect(placeholders).toHaveLength(loadedItems.length);
+      // Each reserved row visibly shimmers rather than sitting as a blank gap.
+      for (const placeholder of Array.from(placeholders)) {
+        expect(placeholder.querySelector('.qd-skeleton')).not.toBeNull();
+      }
+    });
+
+    it('falls back to a fixed placeholder count when no summary count is known yet', () => {
+      const fixture = TestBed.createComponent(SimilarAyahsCardComponent);
+      const root = render(fixture, { loadState: LOADING, expectedItemCount: null });
+
+      expect(skeletonRows(root)).toHaveLength(3);
+    });
+
+    it('reserves nothing when the summary already says the list is empty', () => {
+      const fixture = TestBed.createComponent(SimilarAyahsCardComponent);
+      const root = render(fixture, { loadState: LOADING, expectedItemCount: 0 });
+
+      // A known zero is not "unknown": reserving the fallback run here would paint a tall
+      // shimmer that collapses into the short empty state the moment the load settles.
+      expect(skeletonRows(root)).toHaveLength(0);
+    });
+
+    it('caps the placeholder run so a very long list cannot reserve screens of shimmer', () => {
+      const fixture = TestBed.createComponent(SimilarAyahsCardComponent);
+      const root = render(fixture, { loadState: LOADING, expectedItemCount: 40 });
+
+      expect(skeletonRows(root)).toHaveLength(8);
+    });
+
+    it('keeps the sr-only status announcement and hides the placeholder run from a11y', () => {
+      const fixture = TestBed.createComponent(SimilarAyahsCardComponent);
+      const root = render(fixture, { loadState: LOADING, expectedItemCount: 2 });
+
+      const status = root.querySelector('[data-testid="similar-ayahs-loading"]');
+      expect(status?.getAttribute('role')).toBe('status');
+
+      // The status line is the single announcement; the placeholders stay out of the
+      // accessibility tree entirely, so they must not also claim aria-busy (inert there).
+      const skeleton = root.querySelector('[data-testid="similar-ayahs-skeleton"]');
+      expect(skeleton?.getAttribute('aria-hidden')).toBe('true');
+      expect(skeleton?.hasAttribute('aria-busy')).toBe(false);
     });
   });
 

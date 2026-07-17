@@ -219,18 +219,18 @@ describe('LemmasExplorerPageComponent US1', () => {
     ).toBe('1');
   });
 
-  it('serializes a count-range bucket to the URL and resets the page (US5)', async () => {
+  it('serializes a count-range chip to the URL and resets the page (US5)', async () => {
     const fixture = await initLifecycle();
     await fixture.whenStable();
     fixture.detectChanges();
 
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('[data-testid="lemmas-range-filter"]')).toBeTruthy();
-    (root.querySelector('[data-testid="range-filter-bucket-occurrences-11–100"]') as HTMLButtonElement).click();
+    (root.querySelector('[data-testid="range-filter-chip-occurrences-gt"]') as HTMLButtonElement).click();
 
     expect(router.navigate).toHaveBeenCalledWith([], {
       relativeTo: expect.anything(),
-      queryParams: expect.objectContaining({ occ: '11..100', page: null }),
+      queryParams: expect.objectContaining({ occ: '101..', page: null }),
       queryParamsHandling: 'merge',
     });
   });
@@ -308,12 +308,20 @@ describe('LemmasExplorerPageComponent US1', () => {
     expect(root.querySelector('[data-testid="lemma-ayah-type-filter-N"]')?.getAttribute('aria-pressed')).toBe('true');
     expect(root.querySelector('qd-ayah-matches-list')).toBeTruthy();
     expect(root.querySelector('[data-testid="lemmas-ayahs-view"]')).toBeTruthy();
-    expect(root.querySelectorAll('.ayah-matches-list__card')).toHaveLength(1);
+    expect(root.querySelectorAll('[data-testid="ayah-match-card"]')).toHaveLength(1);
     expect(root.querySelectorAll('.highlighted-ayah__word--matched')).toHaveLength(1);
     expect((root.querySelector('[data-testid="ayah-matches-open-mushaf"]') as HTMLAnchorElement).getAttribute('href')).toContain('page=92');
   });
 
   it('updates URL with typeCode and resets detail page when a type filter is selected', async () => {
+    lemmasApi.getLemmaSummary.mockReturnValue(
+      of<ApiResponse<LemmaSummaryDto>>({
+        isSuccess: true,
+        data: { ...listRow(500), typeDistribution: multiTypeSummary() },
+        message: null,
+        errors: null,
+      }),
+    );
     lemmasApi.getLemmaAyahMatches.mockReturnValue(successAyahsResponse());
     queryParamMap$.next(convertToParamMap({ lemma: '500', view: 'ayahs', detailPage: '1' }));
 
@@ -331,6 +339,54 @@ describe('LemmasExplorerPageComponent US1', () => {
       }),
       queryParamsHandling: 'merge',
     });
+  });
+
+  it('does not navigate or refetch when the already-active single type chip is clicked', async () => {
+    lemmasApi.getLemmaAyahMatches.mockReturnValue(successAyahsResponse());
+    queryParamMap$.next(convertToParamMap({ lemma: '500', view: 'ayahs', detailPage: '1' }));
+
+    const fixture = await initLifecycle();
+    const chip = fixture.nativeElement.querySelector(
+      '[data-testid="lemma-ayah-type-filter-N"]',
+    ) as HTMLButtonElement;
+    expect(chip.getAttribute('aria-pressed')).toBe('true');
+
+    vi.mocked(router.navigate).mockClear();
+    const ayahCallsBeforeClick = lemmasApi.getLemmaAyahMatches.mock.calls.length;
+
+    chip.click();
+    await fixture.whenStable();
+
+    expect(router.navigate).not.toHaveBeenCalled();
+    expect(lemmasApi.getLemmaAyahMatches.mock.calls.length).toBe(ayahCallsBeforeClick);
+  });
+
+  it('does not navigate or refetch when the already-active عرض الكل chip is clicked', async () => {
+    lemmasApi.getLemmaSummary.mockReturnValue(
+      of<ApiResponse<LemmaSummaryDto>>({
+        isSuccess: true,
+        data: { ...listRow(500), typeDistribution: multiTypeSummary() },
+        message: null,
+        errors: null,
+      }),
+    );
+    lemmasApi.getLemmaAyahMatches.mockReturnValue(successAyahsResponse());
+    queryParamMap$.next(convertToParamMap({ lemma: '500', view: 'ayahs', detailPage: '1' }));
+
+    const fixture = await initLifecycle();
+    const allChip = fixture.nativeElement.querySelector(
+      '[data-testid="lemma-ayah-type-filter-all"]',
+    ) as HTMLButtonElement;
+    expect(allChip.getAttribute('aria-pressed')).toBe('true');
+
+    vi.mocked(router.navigate).mockClear();
+    const ayahCallsBeforeClick = lemmasApi.getLemmaAyahMatches.mock.calls.length;
+
+    allChip.click();
+    await fixture.whenStable();
+
+    expect(router.navigate).not.toHaveBeenCalled();
+    expect(lemmasApi.getLemmaAyahMatches.mock.calls.length).toBe(ayahCallsBeforeClick);
   });
 
   it('clears typeCode when عرض الكل is selected', async () => {
@@ -508,7 +564,10 @@ describe('LemmasExplorerPageComponent US1', () => {
     );
 
     const fixture = await initLifecycle();
-    expect(fixture.nativeElement.querySelector('[data-testid="lemmas-list-error"]')).toBeTruthy();
+    // Feature 030, N3 row 5: the list's own states render inside the table shell, not above the grid.
+    expect(
+      fixture.nativeElement.querySelector('[data-testid="lemmas-list-error"]')?.closest('.qd-explorer-table'),
+    ).toBeTruthy();
 
     lemmasApi.getLemmasList.mockReturnValue(
       of<ApiResponse<{ page: number; pageSize: number; totalCount: number; items: LemmaListItemViewModel[] }>>({
@@ -521,8 +580,97 @@ describe('LemmasExplorerPageComponent US1', () => {
     queryParamMap$.next(convertToParamMap({}));
     vi.mocked(router.navigate).mockClear();
     const emptyFixture = await initLifecycle();
-    expect(emptyFixture.nativeElement.querySelector('[data-testid="lemmas-list-no-results"]')).toBeTruthy();
+    expect(
+      emptyFixture.nativeElement.querySelector('[data-testid="lemmas-list-no-results"]')?.closest('.qd-explorer-table'),
+    ).toBeTruthy();
   });
+
+  describe('sorting (Feature 030, N8)', () => {
+    it('has no desktop sort dropdown: the only select sits in the ≤1023px fallback wrapper', async () => {
+      const fixture = await initLifecycle();
+      const root = fixture.nativeElement as HTMLElement;
+
+      // ≥1024px the table header row is visible and owns sorting, so the fallback is CSS-hidden
+      // there; below that the header row is display:none and this select is the only way in.
+      const select = root.querySelector('[data-testid="lemmas-sort-select"]') as HTMLElement;
+      expect(select).toBeTruthy();
+      expect(select.closest('.qd-explorer-sort-fallback')).not.toBeNull();
+    });
+
+    it('offers the default order plus every sortable column in both directions', async () => {
+      const fixture = await initLifecycle();
+      const root = fixture.nativeElement as HTMLElement;
+      const values = Array.from(
+        root.querySelectorAll('[data-testid="lemmas-sort-select"] option'),
+      ).map((option) => option.getAttribute('value'));
+
+      expect(values[0]).toBe('mushaf-order');
+      expect(values).toContain('alpha');
+      expect(values).toContain('alpha-desc');
+      expect(values).toContain('occurrences');
+      expect(values).toContain('occurrences-asc');
+    });
+
+    it('navigates { sort: token, page: null } when a header cycle step is emitted', async () => {
+      const fixture = await initLifecycle();
+      const root = fixture.nativeElement as HTMLElement;
+
+      (root.querySelector('[data-testid="lemmas-table-sort-occurrences"]') as HTMLButtonElement).click();
+
+      expect(router.navigate).toHaveBeenCalledWith([], {
+        relativeTo: expect.anything(),
+        queryParams: expect.objectContaining({ sort: 'occurrences', page: null }),
+        queryParamsHandling: 'merge',
+      });
+    });
+
+    it('navigates { sort: null, page: null } when the cycle releases', async () => {
+      queryParamMap$.next(convertToParamMap({ sort: 'occurrences-asc' }));
+      const fixture = await initLifecycle();
+      const root = fixture.nativeElement as HTMLElement;
+
+      (root.querySelector('[data-testid="lemmas-table-sort-occurrences"]') as HTMLButtonElement).click();
+
+      // Release removes the param entirely — the default order is never spelled out in the URL.
+      expect(router.navigate).toHaveBeenCalledWith([], {
+        relativeTo: expect.anything(),
+        queryParams: expect.objectContaining({ sort: null, page: null }),
+        queryParamsHandling: 'merge',
+      });
+    });
+
+    it('drives the same URL contract from the fallback select', async () => {
+      const fixture = await initLifecycle();
+      const root = fixture.nativeElement as HTMLElement;
+      const select = root.querySelector('[data-testid="lemmas-sort-select"]') as HTMLSelectElement;
+
+      select.value = 'alpha-desc';
+      select.dispatchEvent(new Event('change'));
+
+      expect(router.navigate).toHaveBeenCalledWith([], {
+        relativeTo: expect.anything(),
+        queryParams: expect.objectContaining({ sort: 'alpha-desc', page: null }),
+        queryParamsHandling: 'merge',
+      });
+    });
+
+    it('releases the param when the fallback select picks the default order', async () => {
+      queryParamMap$.next(convertToParamMap({ sort: 'alpha' }));
+      const fixture = await initLifecycle();
+      const root = fixture.nativeElement as HTMLElement;
+      const select = root.querySelector('[data-testid="lemmas-sort-select"]') as HTMLSelectElement;
+
+      select.value = 'mushaf-order';
+      select.dispatchEvent(new Event('change'));
+
+      expect(router.navigate).toHaveBeenCalledWith([], {
+        relativeTo: expect.anything(),
+        queryParams: expect.objectContaining({ sort: null, page: null }),
+        queryParamsHandling: 'merge',
+      });
+    });
+  });
+
 });
 
 describe('LemmasExplorerPageComponent US5', () => {
@@ -809,8 +957,13 @@ describe('LemmasExplorerPageComponent US8 — restore and navigate exact state',
     expect(lemmasApi.getLemmasList).toHaveBeenCalled();
 
     const root = fixture.nativeElement as HTMLElement;
-    expect(root.querySelector('[data-testid="lemmas-restored-not-found"]')).toBeTruthy();
-    expect(root.querySelector('[data-testid="lemma-details-not-found"]')).toBeTruthy();
+    // Feature 030, N3 row 5: notFound is a PANEL/selection state — it renders inside the details
+    // panel (a mounted shell), never as a page-level banner above the table+panel grid.
+    const notFound = root.querySelector('[data-testid="lemma-details-not-found"]');
+    expect(notFound).toBeTruthy();
+    expect(notFound?.getAttribute('role')).toBe('status');
+    expect(notFound?.closest('qd-lemma-details-panel')).toBeTruthy();
+    expect(root.querySelector('[data-testid="lemmas-restored-not-found"]')).toBeNull();
     expect(root.querySelectorAll('[data-lemma-tab]')).toHaveLength(0);
     expect(root.querySelector('qd-lemmas-table')).toBeTruthy();
   });
@@ -834,7 +987,7 @@ describe('LemmasExplorerPageComponent US8 — restore and navigate exact state',
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('[data-testid="lemmas-restored-not-found"]')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('[data-testid="lemma-details-not-found"]')).toBeTruthy();
     expect(lemmasApi.getLemmasList.mock.calls.length).toBe(listCallsBefore);
   });
 
@@ -975,7 +1128,6 @@ describe('LemmasExplorerPageComponent US8 — restore and navigate exact state',
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('[data-testid="lemmas-restored-not-found"]')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('[data-testid="lemma-details-not-found"]')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('[data-testid="lemmas-panel-error"]')).toBeFalsy();
   });

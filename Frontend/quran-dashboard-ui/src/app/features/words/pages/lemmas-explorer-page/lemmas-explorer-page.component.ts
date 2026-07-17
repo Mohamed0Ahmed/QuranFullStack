@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, effect
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, Subscription, catchError, debounceTime, of, switchMap } from 'rxjs';
 
+import { LemmaDetailFrame } from '../../../../core/navigation/detail-overlay/detail-overlay.models';
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
 import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
 import { AyahMatchesListComponent } from '../../components/ayah-matches-list/ayah-matches-list.component';
@@ -21,8 +22,12 @@ import { LemmaWordsListComponent } from '../../components/lemma-words-list/lemma
 import { LemmaCountOpenedEvent, LemmasTableComponent } from '../../components/lemmas-table/lemmas-table.component';
 import { MissingSurahsListComponent } from '../../components/missing-surahs-list/missing-surahs-list.component';
 import { SurahOccurrencesListComponent } from '../../components/surah-occurrences-list/surah-occurrences-list.component';
-import { LEMMAS_EMPTY_SELECTION_LABEL, LEMMAS_EMPTY_VIEW_LABEL, LEMMAS_LIST_PAGINATION_LABEL, LEMMAS_LOADING_LABEL, LEMMAS_NO_RESULTS_LABEL, LEMMAS_NOT_FOUND_LABEL, LEMMAS_PAGE_TITLE, LEMMAS_PANEL_SURFACE_LABEL, LEMMAS_RESULT_COUNT_LABEL, LEMMAS_ROOT_FILTER_LABEL, LEMMAS_ROOT_FILTER_PLACEHOLDER, LEMMAS_SEARCH_LABEL, LEMMAS_SEARCH_PLACEHOLDER, LEMMAS_SORT_LABELS, LEMMAS_SURAHS_TABLIST_LABEL, LEMMAS_SURAHS_VIEW_LABELS, LEMMAS_TABLE_LABEL, LEMMAS_WORDS_TABLIST_LABEL, LEMMAS_WORD_VIEW_LABELS } from '../../models/lemmas.labels';
-import { DEFAULT_LEMMA_VIEW, LEMMAS_RANGE_METRICS, LEMMA_DETAIL_PAGE_SIZE, LemmaListItemViewModel, LemmaSort, LemmaSurahView, LemmaView, LemmaWordItemDto, LemmaWordView, PagedResultDto } from '../../models/lemmas.models';
+import { WordsExplainerComponent } from '../../components/words-explainer/words-explainer.component';
+import { sortQueryValue } from '../../models/explorer-sort';
+import { WORDS_EXPLAINER_CONTENT } from '../../models/words-explainer.content';
+import { WordsExplainerPreference } from '../../state/words-explainer-preference';
+import { LEMMAS_EMPTY_SELECTION_LABEL, LEMMAS_EMPTY_VIEW_LABEL, LEMMAS_LIST_PAGINATION_LABEL, LEMMAS_LOADING_LABEL, LEMMAS_PAGE_TITLE, LEMMAS_PANEL_SURFACE_LABEL, LEMMAS_RESULT_COUNT_LABEL, LEMMAS_ROOT_FILTER_LABEL, LEMMAS_ROOT_FILTER_PLACEHOLDER, LEMMAS_SEARCH_LABEL, LEMMAS_SEARCH_PLACEHOLDER, LEMMAS_SORT_LABELS, LEMMAS_SORT_OPTIONS, LEMMAS_SURAHS_TABLIST_LABEL, LEMMAS_SURAHS_VIEW_LABELS, LEMMAS_TABLE_LABEL, LEMMAS_WORDS_TABLIST_LABEL, LEMMAS_WORD_VIEW_LABELS } from '../../models/lemmas.labels';
+import { DEFAULT_LEMMA_SORT, DEFAULT_LEMMA_VIEW, LEMMAS_RANGE_METRICS, LEMMA_DETAIL_PAGE_SIZE, LemmaListItemViewModel, LemmaSort, LemmaSurahView, LemmaView, LemmaWordItemDto, LemmaWordView, PagedResultDto, normalizeLemmaSort } from '../../models/lemmas.models';
 import { AyahMatchDto, PagedResultDto as SharedPagedResultDto } from '../../models/unique-words.models';
 import { LemmasDetailFacade } from '../../state/lemmas-detail.facade';
 import { LemmasExplorerFacade } from '../../state/lemmas-explorer.facade';
@@ -39,7 +44,7 @@ type LemmaCountTarget = LemmaCountOpenedEvent & { column: LemmaTableColumnKey };
 @Component({
   selector: 'qd-lemmas-explorer-page',
   standalone: true,
-  imports: [NgTemplateOutlet, AyahMatchesListComponent, ExplorerCountRangeFilterComponent, ExplorerAssociationFilterComponent, ExplorerResultCountComponent, ExplorerSearchRowComponent, LemmaAyahTypeFiltersComponent, LemmaDetailsPanelComponent, LemmaStemsListComponent, LemmaWordsListComponent, LemmasTableComponent, MissingSurahsListComponent, PaginationComponent, SurahOccurrencesListComponent],
+  imports: [NgTemplateOutlet, AyahMatchesListComponent, ExplorerCountRangeFilterComponent, ExplorerAssociationFilterComponent, ExplorerResultCountComponent, ExplorerSearchRowComponent, LemmaAyahTypeFiltersComponent, LemmaDetailsPanelComponent, LemmaStemsListComponent, LemmaWordsListComponent, LemmasTableComponent, MissingSurahsListComponent, PaginationComponent, SurahOccurrencesListComponent, WordsExplainerComponent],
   templateUrl: './lemmas-explorer-page.component.html',
   styleUrl: './lemmas-explorer-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -49,6 +54,7 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
   private readonly detailFacade = inject(LemmasDetailFacade);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly explainerPreference = inject(WordsExplainerPreference);
   private readonly associationOptions = inject(WordsAssociationOptionsService);
   private readonly restoredColumn = signal<LemmaTableColumnKey | null>(null);
   private readonly searchInput = new Subject<string>();
@@ -72,10 +78,11 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
   });
 
   protected readonly pageTitle = LEMMAS_PAGE_TITLE;
+  // TDZ-safe content getter + synchronous collapse restore (no first-paint shift).
+  protected get explainer() { return WORDS_EXPLAINER_CONTENT.lemmas; }
+  protected readonly explainerExpanded = signal(this.explainerPreference.isExpanded('lemmas'));
   protected readonly emptySelectionLabel = LEMMAS_EMPTY_SELECTION_LABEL;
   protected readonly emptyViewLabel = LEMMAS_EMPTY_VIEW_LABEL;
-  protected readonly notFoundLabel = LEMMAS_NOT_FOUND_LABEL;
-  protected readonly noResultsLabel = LEMMAS_NO_RESULTS_LABEL;
   protected readonly searchLabel = LEMMAS_SEARCH_LABEL;
   protected readonly searchPlaceholder = LEMMAS_SEARCH_PLACEHOLDER;
   protected get resultCountLabel(): string { return LEMMAS_RESULT_COUNT_LABEL; }
@@ -85,7 +92,7 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly panelSurfaceLabel = LEMMAS_PANEL_SURFACE_LABEL;
   protected readonly wordsTablistLabel = LEMMAS_WORDS_TABLIST_LABEL;
   protected readonly surahsTablistLabel = LEMMAS_SURAHS_TABLIST_LABEL;
-  protected readonly sortOptions: readonly LemmaSort[] = ['mushaf-order', 'occurrences', 'alpha'];
+  protected get sortOptions() { return LEMMAS_SORT_OPTIONS; }
   protected readonly wordViewOptions: readonly LemmaWordView[] = ['simple', 'tashkeel'];
   protected readonly surahViewOptions: readonly LemmaSurahView[] = ['mentioned', 'missing'];
   protected readonly emptyAyahsPage: SharedPagedResultDto<AyahMatchDto> = { page: 1, pageSize: LEMMA_DETAIL_PAGE_SIZE, totalCount: 0, items: [] };
@@ -110,6 +117,22 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly ayahsPageForView = computed(() => {
     const page = this.panelState().ayahs;
     return page ? { ...page, items: page.items.map(mapLemmaAyahMatchToShared) } : this.emptyAyahsPage;
+  });
+  /** This panel's own typed frame (Feature 029 B7): an ayah click promotes it over the Mushaf. */
+  protected readonly ayahParentFrame = computed<LemmaDetailFrame | null>(() => {
+    const state = this.panelState();
+    if (state.selectedLemmaId === null) {
+      return null;
+    }
+    return {
+      kind: 'lemma',
+      id: state.selectedLemmaId,
+      view: state.view,
+      wordView: state.wordView,
+      surahView: state.surahView,
+      detailPage: state.detailPage,
+      typeCode: state.view === 'ayahs' ? state.ayahTypeCode : null,
+    };
   });
 
   protected get sortLabels() { return LEMMAS_SORT_LABELS; }
@@ -173,7 +196,16 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
     this.selectedRootLabel.set(option?.label ?? null);
     this.updateQueryParams({ rootId: option === null ? null : String(option.id), page: null });
   }
-  protected onSortChange(sort: LemmaSort): void { this.clearTableFocus(); this.updateQueryParams({ sort, page: null }); }
+  /** A header cycle step (token) or its release (null). Changing the ordering always resets page. */
+  protected onSortChange(sort: LemmaSort | null): void {
+    this.clearTableFocus();
+    this.updateQueryParams(buildLemmasQueryParams({ sort, page: null }));
+  }
+
+  /** The ≤1023px fallback select drives the same contract; the default order stays param-absent. */
+  protected onSortSelect(value: string): void {
+    this.onSortChange(sortQueryValue(normalizeLemmaSort(value), DEFAULT_LEMMA_SORT));
+  }
   protected onPageChange(page: number): void { if (page !== this.listState().page) { this.clearTableFocus(); this.updateQueryParams(buildLemmasQueryParams({ page })); } }
   protected onDetailPageChange(page: number): void { if (page !== this.panelState().detailPage) { this.tableFocus.cancel(); this.detailFacade.setDetailPage(page); this.updateQueryParams(buildLemmasQueryParams({ detailPage: page })); } }
 
@@ -215,6 +247,11 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
   }
 
   protected onClearSelection(): void { this.clearTableFocus(); this.detailFacade.clearSelection(); this.updateQueryParams(buildClearSelectionQueryParams()); }
+
+  protected onExplainerToggled(expanded: boolean): void {
+    this.explainerExpanded.set(expanded);
+    this.explainerPreference.setExpanded('lemmas', expanded);
+  }
 
   private updateQueryParams(changes: Record<string, string | null>): void {
     void this.router.navigate([], { relativeTo: this.route, queryParams: changes, queryParamsHandling: 'merge' });

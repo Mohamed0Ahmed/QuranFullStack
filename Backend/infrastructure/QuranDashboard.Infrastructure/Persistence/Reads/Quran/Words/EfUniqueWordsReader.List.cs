@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using QuranDashboard.Application.Abstractions.Common.Filtering;
 using QuranDashboard.Application.Abstractions.Quran.Words;
 
@@ -167,16 +168,32 @@ public sealed partial class EfUniqueWordsReader
         }
     }
 
-    private static IQueryable<UniqueWordListRow> ApplySort(IQueryable<UniqueWordListRow> rows, UniqueWordSort sort) => sort switch
+    // Ordering is part of the read contract (see the reads README) and runs BEFORE Count/Skip/Take, so it
+    // decides paging. Every branch now ends on Id: FirstWordOrderInMushaf is already effectively unique,
+    // so this changes no existing result — it closes a DB-side non-determinism gap (unlike the in-memory
+    // explorers, a LINQ-to-SQL ORDER BY has no stable-sort net). Each tie-break chain is identical in
+    // BOTH directions, so reversing a column never reshuffles its ties.
+    private static IQueryable<UniqueWordListRow> ApplySort(IQueryable<UniqueWordListRow> rows, UniqueWordSortSpec sort) => sort.Column switch
     {
-        UniqueWordSort.Occurrences => rows
-            .OrderByDescending(r => r.OccurrencesCount)
-            .ThenBy(r => r.FirstWordOrderInMushaf),
-        UniqueWordSort.Alpha => rows
-            .OrderBy(r => r.SearchText)
-            .ThenBy(r => r.FirstWordOrderInMushaf),
-        _ => rows.OrderBy(r => r.FirstWordOrderInMushaf),
+        UniqueWordSortColumn.Alpha => Ordered(rows, r => r.SearchText, sort.Direction),
+        UniqueWordSortColumn.Occurrences => Ordered(rows, r => r.OccurrencesCount, sort.Direction),
+        UniqueWordSortColumn.Ayahs => Ordered(rows, r => r.AyahsCount, sort.Direction),
+        UniqueWordSortColumn.Surahs => Ordered(rows, r => r.SurahsCount, sort.Direction),
+        UniqueWordSortColumn.MushafOrder => rows
+            .OrderBy(r => r.FirstWordOrderInMushaf)
+            .ThenBy(r => r.Id),
+        // Explicit, so a column added without an arm here fails loudly instead of silently
+        // serving Mushaf order (mirrors the word-types SQL switches).
+        _ => throw new InvalidOperationException($"Unhandled {nameof(UniqueWordSortColumn)} value: {sort.Column}."),
     };
+
+    private static IQueryable<UniqueWordListRow> Ordered<TKey>(
+        IQueryable<UniqueWordListRow> rows,
+        Expression<Func<UniqueWordListRow, TKey>> key,
+        WordSortDirection direction) =>
+        (direction == WordSortDirection.Ascending ? rows.OrderBy(key) : rows.OrderByDescending(key))
+            .ThenBy(r => r.FirstWordOrderInMushaf)
+            .ThenBy(r => r.Id);
 
     private sealed record UniqueWordListRow(
         int Id,

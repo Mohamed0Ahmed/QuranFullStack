@@ -102,6 +102,44 @@
         }
       }
     </div>
+  } @else if (loading()) {
+    <!--
+      First-load mirror (Feature 030, N3 row 8). The tree-less state used to be a single text line, so
+      the toolbar's trigger cards and the fixed-height panel both appeared at once and shoved the whole
+      page down. This mirrors the loaded structure exactly rather than approximating it: one card per
+      main type (the set is the fixed WORD_TYPE_MAIN_TYPES domain list, not tree data) reusing the real
+      trigger/card/button/label-row classes and flex sizing, so the strip wraps identically at every
+      width, plus the panel box, whose height is already fixed in CSS.
+      `qd-panel-skeleton` owns the role="status" announcement (§17); the toolbar mirror stays aria-hidden
+      so there is only one live region.
+    -->
+    <div class="word-type-filter__skeleton" data-testid="word-type-filter-skeleton">
+      <div class="word-type-filter__toolbar" aria-hidden="true">
+        @for (code of skeletonTriggers; track code) {
+          <div class="word-type-filter__trigger qd-card">
+            <span class="word-type-filter__button word-type-filter__button--skeleton">
+              <span class="word-type-filter__button-content">
+                <span class="word-type-filter__label-row">
+                  <span class="qd-skeleton word-type-filter__skeleton-label"></span>
+                  <!-- Reserves the badge line box on the trigger that will carry it: the loaded
+                       markup badges the SELECTED trigger only (see `:23-28` above). Mirroring it on
+                       every trigger made the non-selected ones taller than they land, so each
+                       wrapped flex line shrank when the tree arrived. -->
+                  @if (code === selectedType()) {
+                    <span class="qd-badge word-type-filter__state word-type-filter__skeleton-badge">&nbsp;</span>
+                  }
+                </span>
+              </span>
+              <span class="qd-skeleton word-type-filter__skeleton-count"></span>
+            </span>
+          </div>
+        }
+      </div>
+
+      <div class="word-type-filter__panel">
+        <qd-panel-skeleton [loadingLabel]="loadingLabel" />
+      </div>
+    </div>
   } @else {
     <p class="word-type-filter__placeholder">{{ filterLabel }}</p>
   }

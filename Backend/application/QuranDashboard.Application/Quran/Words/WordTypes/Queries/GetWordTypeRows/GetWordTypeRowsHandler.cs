@@ -49,6 +49,14 @@ public sealed class GetWordTypeRowsHandler(
         var sortValue = string.IsNullOrWhiteSpace(query.Sort) ? WordTypesHandlerValidation.DefaultSort : query.Sort;
         if (!WordTypeSortParser.TryParse(sortValue, out var sort))
         {
+            logger.LogWarning(
+                "Rejected {feature} {operation} {reason} {type} {childCode}",
+                FeatureName,
+                OperationName,
+                "invalidSort",
+                filter.Type,
+                filter.ChildCode);
+
             return new GetWordTypeRowsOutcome.InvalidSort();
         }
 
@@ -67,7 +75,7 @@ public sealed class GetWordTypeRowsHandler(
             filter.Search is not null,
             query.Page,
             query.PageSize,
-            sortValue,
+            sort.CanonicalToken(),
             page.TotalCount,
             page.Items.Count);
 

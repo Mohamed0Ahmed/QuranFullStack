@@ -6,7 +6,6 @@ import { parsePositiveIntParam } from './words-association-filters';
 
 import {
   DEFAULT_LEMMA_DETAIL_PAGE,
-  DEFAULT_LEMMA_SORT,
   DEFAULT_LEMMA_SURAHS_VIEW,
   DEFAULT_LEMMA_VIEW,
   DEFAULT_LEMMA_WORD_VIEW,
@@ -20,16 +19,16 @@ import {
   LemmaWordView,
   ParsedLemmasQuery,
   isPaginatedLemmaView,
-  isLemmaSort,
+  normalizeLemmaSort,
   isLemmaSurahView,
   isLemmaView,
   isLemmaWordView,
 } from '../models/lemmas.models';
 
 export function parseLemmasQueryParams(queryParams: ParamMap): ParsedLemmasQuery {
-  const sortRaw = queryParams.get(LEMMAS_QUERY_KEYS.sort);
-  const sort: LemmaSort =
-    sortRaw !== null && isLemmaSort(sortRaw) ? sortRaw : DEFAULT_LEMMA_SORT;
+  // Canonicalizes legacy aliases in (occurrences-desc → occurrences) and fails closed to the
+  // default on anything unknown, so one ordering can never be cached under two tokens.
+  const sort: LemmaSort = normalizeLemmaSort(queryParams.get(LEMMAS_QUERY_KEYS.sort));
 
   const page = parsePositiveInt(queryParams.get(LEMMAS_QUERY_KEYS.page)) ?? DEFAULT_LEMMAS_LIST_PAGE;
 

@@ -1,5 +1,7 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import { getTestBed, TestBed } from '@angular/core/testing';
+import { provideLocationMocks } from '@angular/common/testing';
+import { provideRouter } from '@angular/router';
 
 import { WordDrilldownModalComponent } from './word-drilldown-modal.component';
 import {
@@ -58,6 +60,9 @@ async function createFixture(initialState: WordDrilldownState) {
   getTestBed().resetTestingModule();
   await TestBed.configureTestingModule({
     imports: [WordDrilldownModalComponent],
+    // The ayah list's overlay-continuity links resolve hrefs through the
+    // router-backed detail-overlay history service.
+    providers: [provideRouter([]), provideLocationMocks()],
     teardown: { destroyAfterEach: true },
   }).compileComponents();
 

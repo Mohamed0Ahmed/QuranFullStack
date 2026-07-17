@@ -75,6 +75,7 @@
           {
             "name": "search",
             "in": "query",
+            "description": "نص البحث العربي المُطبّع (contains، اختياري).",
             "schema": {
               "type": "string"
             }
@@ -82,6 +83,7 @@
           {
             "name": "sort",
             "in": "query",
+            "description": "مفتاح الترتيب (اختياري، الافتراضي `mushaf-order`). الصيغة:\n`عمود` أو `عمود-asc` أو `عمود-desc`.\nالأعمدة المتاحة: `alpha` (تصاعدي طبيعيًا)، و`occurrences` و`ayahs`\nو`surahs` و`simple` و`tashkeel` و`stems` (تنازلية طبيعيًا).\nالمفتاح المجرّد يعني الاتجاه الطبيعي للعمود، لذا `occurrences` ≡\n`occurrences-desc` و`alpha` ≡ `alpha-asc`.\nو`mushaf-order` هو ترتيب المصحف التصاعدي فقط ولا يقبل لاحقة اتجاه.\nأي مفتاح آخر يُرجع 400.",
             "schema": {
               "type": "string"
             }
@@ -89,6 +91,7 @@
           {
             "name": "page",
             "in": "query",
+            "description": "رقم الصفحة (الافتراضي 1).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -97,6 +100,7 @@
           {
             "name": "pageSize",
             "in": "query",
+            "description": "حجم الصفحة (الافتراضي 1000).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -105,6 +109,7 @@
           {
             "name": "occMin",
             "in": "query",
+            "description": "الحد الأدنى لعدد المواضع (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -113,6 +118,7 @@
           {
             "name": "occMax",
             "in": "query",
+            "description": "الحد الأعلى لعدد المواضع (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -121,6 +127,7 @@
           {
             "name": "ayahsMin",
             "in": "query",
+            "description": "الحد الأدنى لعدد الآيات (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -129,6 +136,7 @@
           {
             "name": "ayahsMax",
             "in": "query",
+            "description": "الحد الأعلى لعدد الآيات (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -137,6 +145,7 @@
           {
             "name": "surahsMin",
             "in": "query",
+            "description": "الحد الأدنى لعدد السور (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -145,6 +154,7 @@
           {
             "name": "surahsMax",
             "in": "query",
+            "description": "الحد الأعلى لعدد السور (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -153,6 +163,7 @@
           {
             "name": "simpleWordsMin",
             "in": "query",
+            "description": "الحد الأدنى لعدد الكلمات بدون تشكيل (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -161,6 +172,7 @@
           {
             "name": "simpleWordsMax",
             "in": "query",
+            "description": "الحد الأعلى لعدد الكلمات بدون تشكيل (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -169,6 +181,7 @@
           {
             "name": "tashkeelWordsMin",
             "in": "query",
+            "description": "الحد الأدنى لعدد الكلمات بالتشكيل (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -177,6 +190,7 @@
           {
             "name": "tashkeelWordsMax",
             "in": "query",
+            "description": "الحد الأعلى لعدد الكلمات بالتشكيل (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -185,6 +199,7 @@
           {
             "name": "stemsMin",
             "in": "query",
+            "description": "الحد الأدنى لعدد الأصول الصرفية (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -193,6 +208,7 @@
           {
             "name": "stemsMax",
             "in": "query",
+            "description": "الحد الأعلى لعدد الأصول الصرفية (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -201,6 +217,7 @@
           {
             "name": "rootId",
             "in": "query",
+            "description": "مرشّح الجذر المملوك (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -209,7 +226,7 @@
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "تم تحميل صفحة الصيغ المعجمية بنجاح.",
             "content": {
               "text/plain": {
                 "schema": {
@@ -227,6 +244,9 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "مفتاح ترتيب أو مرشّح أو تقسيم صفحات غير صالح."
           }
         }
       }
@@ -853,6 +873,7 @@
           {
             "name": "search",
             "in": "query",
+            "description": "نص البحث العربي المُطبّع (contains، اختياري).",
             "schema": {
               "type": "string"
             }
@@ -860,6 +881,7 @@
           {
             "name": "sort",
             "in": "query",
+            "description": "مفتاح الترتيب (اختياري، الافتراضي `mushaf-order`). الصيغة:\n`عمود` أو `عمود-asc` أو `عمود-desc`.\nالأعمدة المتاحة: `alpha` (تصاعدي طبيعيًا)، و`occurrences` و`ayahs`\nو`surahs` و`simple` و`tashkeel` و`lemmas` و`stems` (تنازلية طبيعيًا).\nالمفتاح المجرّد يعني الاتجاه الطبيعي للعمود، لذا `occurrences` ≡\n`occurrences-desc` و`alpha` ≡ `alpha-asc`.\nو`mushaf-order` هو ترتيب المصحف التصاعدي فقط ولا يقبل لاحقة اتجاه.\nأي مفتاح آخر يُرجع 400.",
             "schema": {
               "type": "string"
             }
@@ -867,6 +889,7 @@
           {
             "name": "page",
             "in": "query",
+            "description": "رقم الصفحة (الافتراضي 1).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -875,6 +898,7 @@
           {
             "name": "pageSize",
             "in": "query",
+            "description": "حجم الصفحة (الافتراضي 1000).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -883,6 +907,7 @@
           {
             "name": "occMin",
             "in": "query",
+            "description": "الحد الأدنى لعدد المواضع (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -891,6 +916,7 @@
           {
             "name": "occMax",
             "in": "query",
+            "description": "الحد الأعلى لعدد المواضع (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -899,6 +925,7 @@
           {
             "name": "ayahsMin",
             "in": "query",
+            "description": "الحد الأدنى لعدد الآيات (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -907,6 +934,7 @@
           {
             "name": "ayahsMax",
             "in": "query",
+            "description": "الحد الأعلى لعدد الآيات (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -915,6 +943,7 @@
           {
             "name": "surahsMin",
             "in": "query",
+            "description": "الحد الأدنى لعدد السور (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -923,6 +952,7 @@
           {
             "name": "surahsMax",
             "in": "query",
+            "description": "الحد الأعلى لعدد السور (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -931,6 +961,7 @@
           {
             "name": "simpleWordsMin",
             "in": "query",
+            "description": "الحد الأدنى لعدد الكلمات بدون تشكيل (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -939,6 +970,7 @@
           {
             "name": "simpleWordsMax",
             "in": "query",
+            "description": "الحد الأعلى لعدد الكلمات بدون تشكيل (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -947,6 +979,7 @@
           {
             "name": "tashkeelWordsMin",
             "in": "query",
+            "description": "الحد الأدنى لعدد الكلمات بالتشكيل (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -955,6 +988,7 @@
           {
             "name": "tashkeelWordsMax",
             "in": "query",
+            "description": "الحد الأعلى لعدد الكلمات بالتشكيل (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -963,6 +997,7 @@
           {
             "name": "lemmasMin",
             "in": "query",
+            "description": "الحد الأدنى لعدد الصيغ المعجمية (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -971,6 +1006,7 @@
           {
             "name": "lemmasMax",
             "in": "query",
+            "description": "الحد الأعلى لعدد الصيغ المعجمية (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -979,6 +1015,7 @@
           {
             "name": "stemsMin",
             "in": "query",
+            "description": "الحد الأدنى لعدد الأصول الصرفية (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -987,6 +1024,7 @@
           {
             "name": "stemsMax",
             "in": "query",
+            "description": "الحد الأعلى لعدد الأصول الصرفية (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -995,7 +1033,7 @@
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "تم تحميل صفحة الجذور بنجاح.",
             "content": {
               "text/plain": {
                 "schema": {
@@ -1013,6 +1051,9 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "مفتاح ترتيب أو مرشّح أو تقسيم صفحات غير صالح."
           }
         }
       }
@@ -1354,6 +1395,7 @@
           {
             "name": "search",
             "in": "query",
+            "description": "نص البحث العربي المُطبّع (contains، اختياري).",
             "schema": {
               "type": "string"
             }
@@ -1361,6 +1403,7 @@
           {
             "name": "sort",
             "in": "query",
+            "description": "مفتاح الترتيب (اختياري، الافتراضي `mushaf-order`). الصيغة:\n`عمود` أو `عمود-asc` أو `عمود-desc`.\nالأعمدة المتاحة: `alpha` (تصاعدي طبيعيًا)، و`occurrences` و`ayahs`\nو`surahs` و`simple` و`tashkeel` (تنازلية طبيعيًا).\nالمفتاح المجرّد يعني الاتجاه الطبيعي للعمود، لذا `occurrences` ≡\n`occurrences-desc` و`alpha` ≡ `alpha-asc`.\nو`mushaf-order` هو ترتيب المصحف التصاعدي فقط ولا يقبل لاحقة اتجاه.\nأي مفتاح آخر يُرجع 400.",
             "schema": {
               "type": "string"
             }
@@ -1368,6 +1411,7 @@
           {
             "name": "page",
             "in": "query",
+            "description": "رقم الصفحة (الافتراضي 1).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1376,6 +1420,7 @@
           {
             "name": "pageSize",
             "in": "query",
+            "description": "حجم الصفحة (الافتراضي 1000).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1384,6 +1429,7 @@
           {
             "name": "occMin",
             "in": "query",
+            "description": "الحد الأدنى لعدد المواضع (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1392,6 +1438,7 @@
           {
             "name": "occMax",
             "in": "query",
+            "description": "الحد الأعلى لعدد المواضع (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1400,6 +1447,7 @@
           {
             "name": "ayahsMin",
             "in": "query",
+            "description": "الحد الأدنى لعدد الآيات (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1408,6 +1456,7 @@
           {
             "name": "ayahsMax",
             "in": "query",
+            "description": "الحد الأعلى لعدد الآيات (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1416,6 +1465,7 @@
           {
             "name": "surahsMin",
             "in": "query",
+            "description": "الحد الأدنى لعدد السور (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1424,6 +1474,7 @@
           {
             "name": "surahsMax",
             "in": "query",
+            "description": "الحد الأعلى لعدد السور (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1432,6 +1483,7 @@
           {
             "name": "simpleWordsMin",
             "in": "query",
+            "description": "الحد الأدنى لعدد الكلمات بدون تشكيل (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1440,6 +1492,7 @@
           {
             "name": "simpleWordsMax",
             "in": "query",
+            "description": "الحد الأعلى لعدد الكلمات بدون تشكيل (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1448,6 +1501,7 @@
           {
             "name": "tashkeelWordsMin",
             "in": "query",
+            "description": "الحد الأدنى لعدد الكلمات بالتشكيل (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1456,6 +1510,7 @@
           {
             "name": "tashkeelWordsMax",
             "in": "query",
+            "description": "الحد الأعلى لعدد الكلمات بالتشكيل (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1464,6 +1519,7 @@
           {
             "name": "rootId",
             "in": "query",
+            "description": "مرشّح الجذر الغالب (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1472,6 +1528,7 @@
           {
             "name": "lemmaId",
             "in": "query",
+            "description": "مرشّح الصيغة المعجمية الغالبة (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1480,7 +1537,7 @@
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "تم تحميل صفحة الأصول الصرفية بنجاح.",
             "content": {
               "text/plain": {
                 "schema": {
@@ -1498,6 +1555,9 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "مفتاح ترتيب أو مرشّح أو تقسيم صفحات غير صالح."
           }
         }
       }
@@ -1805,6 +1865,7 @@
           {
             "name": "kind",
             "in": "path",
+            "description": "نوع الهوية: `tashkeel` أو `simple`.",
             "required": true,
             "schema": {
               "type": "string"
@@ -1813,6 +1874,7 @@
           {
             "name": "search",
             "in": "query",
+            "description": "نص البحث العربي المُطبّع (contains، اختياري).",
             "schema": {
               "type": "string"
             }
@@ -1820,6 +1882,7 @@
           {
             "name": "sort",
             "in": "query",
+            "description": "مفتاح الترتيب (اختياري، الافتراضي `mushaf-order`). الصيغة:\n`عمود` أو `عمود-asc` أو `عمود-desc`.\nالأعمدة المتاحة: `alpha` (تصاعدي طبيعيًا)، و`occurrences` و`ayahs`\nو`surahs` (تنازلية طبيعيًا).\nالمفتاح المجرّد يعني الاتجاه الطبيعي للعمود، لذا `occurrences` ≡\n`occurrences-desc` و`alpha` ≡ `alpha-asc`.\nو`mushaf-order` هو ترتيب المصحف التصاعدي فقط ولا يقبل لاحقة اتجاه.\nأي مفتاح آخر يُرجع 400.",
             "schema": {
               "type": "string"
             }
@@ -1827,6 +1890,7 @@
           {
             "name": "page",
             "in": "query",
+            "description": "رقم الصفحة (الافتراضي 1).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1835,6 +1899,7 @@
           {
             "name": "pageSize",
             "in": "query",
+            "description": "حجم الصفحة (الافتراضي 1000).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1843,6 +1908,7 @@
           {
             "name": "occMin",
             "in": "query",
+            "description": "الحد الأدنى لعدد المواضع (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1851,6 +1917,7 @@
           {
             "name": "occMax",
             "in": "query",
+            "description": "الحد الأعلى لعدد المواضع (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1859,6 +1926,7 @@
           {
             "name": "ayahsMin",
             "in": "query",
+            "description": "الحد الأدنى لعدد الآيات (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1867,6 +1935,7 @@
           {
             "name": "ayahsMax",
             "in": "query",
+            "description": "الحد الأعلى لعدد الآيات (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1875,6 +1944,7 @@
           {
             "name": "surahsMin",
             "in": "query",
+            "description": "الحد الأدنى لعدد السور (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1883,6 +1953,7 @@
           {
             "name": "surahsMax",
             "in": "query",
+            "description": "الحد الأعلى لعدد السور (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1891,6 +1962,7 @@
           {
             "name": "primaryType",
             "in": "query",
+            "description": "مرشّح نوع الكلمة الأساسي برمز POS (اختياري).",
             "schema": {
               "type": "string"
             }
@@ -1898,6 +1970,7 @@
           {
             "name": "rootId",
             "in": "query",
+            "description": "مرشّح الجذر الأساسي (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1906,7 +1979,7 @@
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "تم تحميل صفحة الكلمات الفريدة بنجاح.",
             "content": {
               "text/plain": {
                 "schema": {
@@ -1924,6 +1997,9 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "نوع أو مفتاح ترتيب أو مرشّح أو تقسيم صفحات غير صالح."
           }
         }
       }
@@ -2652,7 +2728,7 @@
           {
             "name": "sort",
             "in": "query",
-            "description": "مفتاح الفرز (اختياري).",
+            "description": "مفتاح الفرز (اختياري، الافتراضي `occurrences` تنازليًا — بخلاف بقية المستكشفات).\nالصيغة: `عمود` أو `عمود-asc` أو `عمود-desc`.\nالأعمدة المتاحة: `alpha` (تصاعدي طبيعيًا)، و`occurrences` و`ayahs`\nو`surahs` (تنازلية طبيعيًا)، و`mushaf-order`. تنطبق المفاتيح ذاتها على عرض الكلمات وعلى عروض\nالجذور/الأصول/الصيغ المجمّعة.\nالمفتاح المجرّد يعني الاتجاه الطبيعي للعمود، لذا `occurrences` ≡\n`occurrences-desc` و`alpha` ≡ `alpha-asc`.\nو`mushaf-order` هو ترتيب المصحف التصاعدي فقط ولا يقبل لاحقة اتجاه.\nأي مفتاح آخر يُرجع 400.",
             "schema": {
               "type": "string"
             }
@@ -2678,6 +2754,7 @@
           {
             "name": "hasRoot",
             "in": "query",
+            "description": "مرشّح وجود الجذر ثلاثي الحالة (اختياري).",
             "schema": {
               "type": "boolean"
             }
@@ -2685,6 +2762,7 @@
           {
             "name": "hasStem",
             "in": "query",
+            "description": "مرشّح وجود الأصل الصرفي ثلاثي الحالة (اختياري).",
             "schema": {
               "type": "boolean"
             }
@@ -2692,6 +2770,7 @@
           {
             "name": "hasLemma",
             "in": "query",
+            "description": "مرشّح وجود الصيغة المعجمية ثلاثي الحالة (اختياري).",
             "schema": {
               "type": "boolean"
             }
@@ -2790,7 +2869,7 @@
           {
             "name": "sort",
             "in": "query",
-            "description": "مفتاح الفرز (اختياري).",
+            "description": "مفتاح الفرز (اختياري، الافتراضي `occurrences` تنازليًا — بخلاف بقية المستكشفات).\nالصيغة: `عمود` أو `عمود-asc` أو `عمود-desc`.\nالأعمدة المتاحة: `alpha` (تصاعدي طبيعيًا)، و`occurrences` و`ayahs`\nو`surahs` (تنازلية طبيعيًا)، و`mushaf-order`. تنطبق المفاتيح ذاتها على عرض الكلمات وعلى عروض\nالجذور/الأصول/الصيغ المجمّعة.\nالمفتاح المجرّد يعني الاتجاه الطبيعي للعمود، لذا `occurrences` ≡\n`occurrences-desc` و`alpha` ≡ `alpha-asc`.\nو`mushaf-order` هو ترتيب المصحف التصاعدي فقط ولا يقبل لاحقة اتجاه.\nأي مفتاح آخر يُرجع 400.",
             "schema": {
               "type": "string"
             }
@@ -2816,6 +2895,7 @@
           {
             "name": "hasRoot",
             "in": "query",
+            "description": "مرشّح وجود الجذر ثلاثي الحالة (اختياري).",
             "schema": {
               "type": "boolean"
             }
@@ -2823,6 +2903,7 @@
           {
             "name": "hasStem",
             "in": "query",
+            "description": "مرشّح وجود الأصل الصرفي ثلاثي الحالة (اختياري).",
             "schema": {
               "type": "boolean"
             }
@@ -2830,6 +2911,7 @@
           {
             "name": "hasLemma",
             "in": "query",
+            "description": "مرشّح وجود الصيغة المعجمية ثلاثي الحالة (اختياري).",
             "schema": {
               "type": "boolean"
             }

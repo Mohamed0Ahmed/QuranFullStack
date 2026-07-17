@@ -23,13 +23,17 @@
   font-variant-numeric: tabular-nums;
 }
 
-.explorer-result-count--loading {
-  min-block-size: 1.35rem;
-  display: flex;
-  align-items: center;
+// The number is unavailable, not wrong: muted like the label prefix, never danger-colored (§11 — error
+// states stay calm, and the page's own error state carries the actual message).
+.explorer-result-count__value--unavailable {
+  color: var(--qd-text-muted);
 }
 
+// The loading bar fills the SAME line box as the loaded number rather than sitting inside a taller
+// flex row: `--qd-skeleton-h: auto` hands its height to the `&nbsp;` line box it inherits from
+// `.explorer-result-count` (font-size × line-height above), which is exactly the loaded line's height.
 .explorer-result-count__skeleton {
-  inline-size: 6.5rem;
-  block-size: 0.9375rem;
+  --qd-skeleton-w: 6.5rem;
+  --qd-skeleton-h: auto;
+  color: transparent;
 }

@@ -12,23 +12,23 @@
         <span class="range-filter__metric-label">{{ metric.labelAr }}</span>
 
         <div class="range-filter__chips" role="group" [attr.aria-label]="metric.labelAr">
-          @for (bucket of bucketsFor(metric); track bucket.labelAr) {
+          @for (chip of chipsFor(metric); track chip.kind) {
             <button
               type="button"
               class="qd-badge range-filter__chip"
-              [class.qd-is-selected]="isBucketActive(metric, bucket)"
-              [attr.aria-pressed]="isBucketActive(metric, bucket)"
+              [class.qd-is-selected]="isChipActive(metric, chip)"
+              [attr.aria-pressed]="isChipActive(metric, chip)"
               [disabled]="disabled()"
-              [attr.data-testid]="'range-filter-bucket-' + metric.key + '-' + bucket.labelAr"
-              (click)="onBucketToggle(metric, bucket)"
+              [attr.data-testid]="'range-filter-chip-' + metric.key + '-' + chip.kind"
+              (click)="onChipToggle(metric, chip)"
             >
-              {{ bucket.labelAr }}
+              {{ chipLabel(chip) }}
             </button>
           }
 
           <button
             type="button"
-            class="qd-badge range-filter__chip range-filter__chip--custom"
+            class="qd-badge range-filter__chip"
             [class.qd-is-selected]="isCustomActive(metric)"
             [attr.aria-pressed]="isCustomActive(metric)"
             [disabled]="disabled()"
@@ -49,10 +49,12 @@
                 min="0"
                 class="qd-input range-filter__custom-input"
                 [attr.placeholder]="labels.min"
-                [value]="minValue(metric)"
+                [value]="draftMin(metric)"
                 [disabled]="disabled()"
                 [attr.data-testid]="'range-filter-min-' + metric.key"
-                (input)="onMinInput(metric, $any($event.target).value)"
+                (input)="onMinDraft(metric, $any($event.target).value)"
+                (keydown.enter)="onCustomCommit(metric, $event)"
+                (keydown.escape)="onCustomRevert(metric)"
               />
             </label>
             <span class="range-filter__custom-sep" aria-hidden="true">–</span>
@@ -64,12 +66,24 @@
                 min="0"
                 class="qd-input range-filter__custom-input"
                 [attr.placeholder]="labels.max"
-                [value]="maxValue(metric)"
+                [value]="draftMax(metric)"
                 [disabled]="disabled()"
                 [attr.data-testid]="'range-filter-max-' + metric.key"
-                (input)="onMaxInput(metric, $any($event.target).value)"
+                (input)="onMaxDraft(metric, $any($event.target).value)"
+                (keydown.enter)="onCustomCommit(metric, $event)"
+                (keydown.escape)="onCustomRevert(metric)"
               />
             </label>
+            <button
+              type="button"
+              class="qd-btn qd-btn-secondary range-filter__custom-apply"
+              [disabled]="disabled()"
+              [attr.aria-label]="labels.apply + ' — ' + metric.labelAr"
+              [attr.data-testid]="'range-filter-apply-' + metric.key"
+              (click)="onCustomCommit(metric)"
+            >
+              {{ labels.apply }}
+            </button>
           </div>
         }
       </div>

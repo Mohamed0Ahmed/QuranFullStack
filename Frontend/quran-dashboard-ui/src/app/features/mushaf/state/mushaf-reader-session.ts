@@ -1,5 +1,6 @@
 import { ParamMap } from '@angular/router';
 
+import { DETAIL_OVERLAY_QUERY_KEYS } from '../../../core/navigation/detail-overlay/detail-overlay.models';
 import {
   DEFAULT_MUSHAF_READER_STATE,
   MUSHAF_URL_KEYS,
@@ -19,8 +20,16 @@ type MushafQueryParams = Partial<
   Record<(typeof MUSHAF_URL_KEYS)[keyof typeof MUSHAF_URL_KEYS], string | number | null>
 >;
 
+const OVERLAY_OWNED_QUERY_KEYS: ReadonlySet<string> = new Set(Object.values(DETAIL_OVERLAY_QUERY_KEYS));
+
+/**
+ * A Mushaf entry is bare when it carries no reader-owned query state. The
+ * global detail overlay's keys (`qdDetail*`) belong to a different owner, so a
+ * URL whose only params are overlay frames still counts as bare and must not
+ * suppress session restoration (Feature 029, B7).
+ */
 export function isBareMushafEntry(params: ParamMap): boolean {
-  return params.keys.length === 0;
+  return params.keys.every((key) => OVERLAY_OWNED_QUERY_KEYS.has(key));
 }
 
 export function mushafSnapshotToQueryParams(snapshot: MushafUrlSnapshot): MushafQueryParams {

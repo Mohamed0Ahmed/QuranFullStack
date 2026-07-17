@@ -1,4 +1,15 @@
-import { Component, computed, input, output } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  ElementRef,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 import {
@@ -19,6 +30,8 @@ import { TranslationCardComponent } from '../translation-card/translation-card.c
 import { FullI3rabCardComponent } from '../full-i3rab-card/full-i3rab-card.component';
 import { toStudyAyahDisplayText } from '../../utils/mushaf-verse-key-display';
 
+const RESERVATION_INLINE_SIZE_TOLERANCE_PX = 1;
+
 @Component({
   selector: 'qd-selected-ayah-section',
   standalone: true,
@@ -38,6 +51,8 @@ import { toStudyAyahDisplayText } from '../../utils/mushaf-verse-key-display';
   },
 })
 export class SelectedAyahSectionComponent {
+  private readonly destroyRef = inject(DestroyRef);
+
   readonly study = input<AyahStudyViewModel | null>(null);
   readonly loadState = input.required<ResourceLoadState>();
   readonly similarAyahs = input<SimilarAyahsDto | null>(null);
@@ -67,6 +82,74 @@ export class SelectedAyahSectionComponent {
   readonly sectionFocus = output<void>();
   readonly ayahNavigate = output<AyahNavigationTarget>();
 
+  private readonly sectionElement = viewChild<ElementRef<HTMLElement>>('ayahSection');
+
+  // N3 row 10 (Feature 030): loading layout reservation, a local port of the U1
+  // pattern in selected-word-section (decision N3-a — extract a shared utility
+  // only on a third consumer). A loaded tafsir/translation/إعراب has an arbitrary
+  // height, so the only honest predictor of the next one is the last one; without
+  // this the section collapses to the skeleton and the page jumps. Only numeric
+  // geometry is retained — never prior text or Quran DOM.
+  private readonly lastNaturalSize = signal<{ blockSize: number; inlineSize: number } | null>(null);
+
+  /** Last successful natural block size, applied only while loading (px string for the CSS hook). */
+  protected readonly reservedBlockSize = computed<string | null>(() => {
+    const natural = this.lastNaturalSize();
+    return this.loadState().isLoading && natural !== null ? `${natural.blockSize}px` : null;
+  });
+
+  private readonly isLoadedSuccessfully = computed(() => {
+    const state = this.loadState();
+    return (
+      !state.isLoading &&
+      !state.isEmpty &&
+      state.errorMessage === null &&
+      this.selectedVerseKey() !== null &&
+      this.study() !== null
+    );
+  });
+
+  constructor() {
+    if (typeof ResizeObserver !== 'undefined') {
+      const observer = new ResizeObserver((entries) => this.onSectionResize(entries));
+      this.destroyRef.onDestroy(() => observer.disconnect());
+      effect(() => {
+        const element = this.sectionElement()?.nativeElement;
+        if (element) {
+          observer.disconnect();
+          observer.observe(element);
+        }
+      });
+    }
+  }
+
+  /**
+   * Records the loaded natural geometry, and drops a stale reservation when the
+   * available inline size changes mid-loading (a wide measurement must never be
+   * imposed on a narrower layout, or vice versa).
+   */
+  private onSectionResize(entries: ResizeObserverEntry[]): void {
+    const target = entries[entries.length - 1]?.target;
+    if (!target) {
+      return;
+    }
+    const rect = target.getBoundingClientRect();
+
+    if (this.isLoadedSuccessfully()) {
+      this.lastNaturalSize.set({ blockSize: rect.height, inlineSize: rect.width });
+      return;
+    }
+
+    const natural = this.lastNaturalSize();
+    if (
+      this.loadState().isLoading &&
+      natural !== null &&
+      Math.abs(natural.inlineSize - rect.width) > RESERVATION_INLINE_SIZE_TOLERANCE_PX
+    ) {
+      this.lastNaturalSize.set(null);
+    }
+  }
+
   protected readonly displayAyahText = computed(() => {
     const text = this.study()?.ayah.textUthmani;
     return text ? toStudyAyahDisplayText(text) : '';
@@ -74,12 +157,19 @@ export class SelectedAyahSectionComponent {
 
   protected readonly tabLabels = AYAH_STUDY_TAB_LABELS;
 
-  protected readonly similarAyahCount = computed(
-    () => this.study()?.similaritySummary.similarAyahCount ?? 0,
+  // The summary's counts are what the child cards reserve their loading geometry from, so an
+  // absent study must stay `null` ("unknown", fall back) and never collapse into a `0` the cards
+  // would read as "known empty" (Feature 030, N3 rows 11-12).
+  protected readonly similarAyahCount = computed<number | null>(
+    () => this.study()?.similaritySummary.similarAyahCount ?? null,
   );
 
-  protected readonly mutashabihatGroupCount = computed(
-    () => this.study()?.similaritySummary.mutashabihatGroupCount ?? 0,
+  protected readonly mutashabihatGroupCount = computed<number | null>(
+    () => this.study()?.similaritySummary.mutashabihatGroupCount ?? null,
+  );
+
+  protected readonly mutashabihatOccurrenceCount = computed<number | null>(
+    () => this.study()?.similaritySummary.mutashabihatOccurrenceCount ?? null,
   );
 
   protected tabCount(tab: AyahStudyTab): number | null {

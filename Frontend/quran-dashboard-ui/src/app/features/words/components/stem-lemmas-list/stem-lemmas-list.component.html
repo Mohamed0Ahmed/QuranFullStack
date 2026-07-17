@@ -38,9 +38,7 @@
           class="stem-lemmas-list__row qd-interactive-surface qd-detail-list__row"
           role="listitem"
           data-testid="stem-lemmas-list-link"
-          [href]="row.href"
-          target="_blank"
-          rel="noopener noreferrer"
+          [qdDetailLink]="row.frame"
           [attr.aria-label]="'الصيغة المعجمية: ' + row.lemma.lemmaText"
         >
           <span class="stem-lemmas-list__row-number qd-detail-list__row-number" aria-hidden="true">{{ index + 1 }}</span>

@@ -10,7 +10,7 @@ public static class UniqueWordsCacheKeys
     // association segment so filtered and unfiltered reads never cross-serve.
     public static string List(
         UniqueWordKind kind,
-        UniqueWordSort sort,
+        UniqueWordSortSpec sort,
         int page,
         int pageSize,
         UniqueWordsCountFilter? filter = null,
@@ -56,11 +56,9 @@ public static class UniqueWordsCacheKeys
         _ => kind.ToString(),
     };
 
-    private static string SortKey(UniqueWordSort sort) => sort switch
-    {
-        UniqueWordSort.MushafOrder => UniqueWordSortKeys.MushafOrder,
-        UniqueWordSort.Occurrences => UniqueWordSortKeys.Occurrences,
-        UniqueWordSort.Alpha => UniqueWordSortKeys.Alpha,
-        _ => sort.ToString(),
-    };
+    // The CANONICAL token, so alias and canonical spellings of one ordering share ONE entry
+    // ("occurrences-desc" keys as "occurrences") and every pre-feature key stays byte-identical.
+    // Deliberately not a ToString() fallback: an unmapped value must fail loudly rather than silently
+    // fork the cache under a second key for the same rows.
+    private static string SortKey(UniqueWordSortSpec sort) => sort.CanonicalToken();
 }

@@ -17,7 +17,7 @@ public sealed class CachedUniqueWordsReaderTests
         var first = await reader.GetUniqueWordsPageAsync(
             UniqueWordKind.Tashkeel,
             null,
-            UniqueWordSort.MushafOrder,
+            UniqueWordSortSpec.Natural(UniqueWordSortColumn.MushafOrder),
             UniqueWordsCountFilter.None,
             UniqueWordsAssociationFilter.None,
             page: 1,
@@ -26,7 +26,7 @@ public sealed class CachedUniqueWordsReaderTests
         var second = await reader.GetUniqueWordsPageAsync(
             UniqueWordKind.Tashkeel,
             null,
-            UniqueWordSort.MushafOrder,
+            UniqueWordSortSpec.Natural(UniqueWordSortColumn.MushafOrder),
             UniqueWordsCountFilter.None,
             UniqueWordsAssociationFilter.None,
             page: 1,
@@ -47,7 +47,7 @@ public sealed class CachedUniqueWordsReaderTests
         await reader.GetUniqueWordsPageAsync(
             UniqueWordKind.Simple,
             "synthetic-search",
-            UniqueWordSort.Alpha,
+            UniqueWordSortSpec.Natural(UniqueWordSortColumn.Alpha),
             UniqueWordsCountFilter.None,
             UniqueWordsAssociationFilter.None,
             page: 1,
@@ -56,7 +56,7 @@ public sealed class CachedUniqueWordsReaderTests
         await reader.GetUniqueWordsPageAsync(
             UniqueWordKind.Simple,
             "synthetic-search",
-            UniqueWordSort.Alpha,
+            UniqueWordSortSpec.Natural(UniqueWordSortColumn.Alpha),
             UniqueWordsCountFilter.None,
             UniqueWordsAssociationFilter.None,
             page: 1,
@@ -65,6 +65,81 @@ public sealed class CachedUniqueWordsReaderTests
 
         inner.PageCalls.Should().Be(2);
     }
+
+    // The cache-identity acceptance bar: "occurrences-desc" is an ALIAS of "occurrences", so both must
+    // canonicalize onto ONE key and the second read must be served from the cache. If SortKey ever
+    // stopped canonicalizing, this would silently fork into two entries for one ordering.
+    [Fact]
+    public async Task GetUniqueWordsPageAsync_alias_and_canonical_sort_token_share_one_cache_entry()
+    {
+        using var cache = CreateCache();
+        var inner = new FakeUniqueWordsReader();
+        var reader = new CachedUniqueWordsReader(inner, cache);
+
+        UniqueWordSortParser.TryParse("occurrences", out var canonical).Should().BeTrue();
+        UniqueWordSortParser.TryParse("occurrences-desc", out var alias).Should().BeTrue();
+
+        var first = await ReadPageAsync(reader, canonical);
+        var second = await ReadPageAsync(reader, alias);
+
+        inner.PageCalls.Should().Be(1, "the alias names the same ordering as the canonical token");
+        second.Should().BeSameAs(first);
+    }
+
+    // The other half of the same contract: two DIFFERENT orderings must never cross-serve.
+    [Fact]
+    public async Task GetUniqueWordsPageAsync_opposite_directions_of_one_column_never_cross_serve()
+    {
+        using var cache = CreateCache();
+        var inner = new FakeUniqueWordsReader();
+        var reader = new CachedUniqueWordsReader(inner, cache);
+
+        UniqueWordSortParser.TryParse("occurrences", out var descending).Should().BeTrue();
+        UniqueWordSortParser.TryParse("occurrences-asc", out var ascending).Should().BeTrue();
+
+        var first = await ReadPageAsync(reader, descending);
+        var second = await ReadPageAsync(reader, ascending);
+
+        inner.PageCalls.Should().Be(2, "opposite directions are two distinct orderings");
+        second.Should().NotBeSameAs(first);
+    }
+
+    // Every canonical token must key its own entry — no two orderings may collapse together.
+    [Fact]
+    public void ListCacheKeys_are_distinct_per_canonical_token_and_carry_it_verbatim()
+    {
+        var specs = Enum.GetValues<UniqueWordSortColumn>()
+            .SelectMany(column => Enum.GetValues<WordSortDirection>()
+                .Select(direction => new UniqueWordSortSpec(column, direction)))
+            .Where(spec => spec.Column != UniqueWordSortColumn.MushafOrder
+                || spec.Direction == WordSortDirection.Ascending)
+            .ToArray();
+
+        specs.Select(spec => spec.CanonicalToken()).Should().OnlyHaveUniqueItems();
+
+        var keysByToken = specs.ToDictionary(
+            spec => spec.CanonicalToken(),
+            spec => UniqueWordsCacheKeys.List(UniqueWordKind.Tashkeel, spec, 1, 50));
+
+        keysByToken.Values.Should().OnlyHaveUniqueItems();
+        foreach (var (token, key) in keysByToken)
+        {
+            key.Should().Be($"words:tashkeel:list:{token}:p1:s50");
+        }
+    }
+
+    private static Task<PagedResult<UniqueWordListItemDto>> ReadPageAsync(
+        CachedUniqueWordsReader reader,
+        UniqueWordSortSpec sort) =>
+        reader.GetUniqueWordsPageAsync(
+            UniqueWordKind.Tashkeel,
+            null,
+            sort,
+            UniqueWordsCountFilter.None,
+            UniqueWordsAssociationFilter.None,
+            page: 1,
+            pageSize: 50,
+            CancellationToken.None);
 
     [Fact]
     public async Task GetUniqueWordSummaryAsync_does_not_cache_null_result()
@@ -100,7 +175,7 @@ public sealed class CachedUniqueWordsReaderTests
         public Task<PagedResult<UniqueWordListItemDto>> GetUniqueWordsPageAsync(
             UniqueWordKind kind,
             string? search,
-            UniqueWordSort sort,
+            UniqueWordSortSpec sort,
             UniqueWordsCountFilter filter,
             UniqueWordsAssociationFilter association,
             int page,

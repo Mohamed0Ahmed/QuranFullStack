@@ -1,4 +1,13 @@
-<section class="selected-word-section" aria-label="تحليل الكلمة المحددة" data-testid="selected-word-section" tabindex="0" (focus)="sectionFocus.emit()">
+<section
+  #wordSection
+  class="selected-word-section"
+  [class.selected-word-section--loading]="loadState().isLoading"
+  [style.--qd-selected-word-reserved-block-size]="reservedBlockSize()"
+  aria-label="تحليل الكلمة المحددة"
+  data-testid="selected-word-section"
+  tabindex="0"
+  (focus)="sectionFocus.emit()"
+>
   @if (loadState().errorMessage) {
     <div class="qd-error-state" role="alert" data-testid="word-analysis-error">
       <span>{{ loadState().errorMessage }}</span>
@@ -38,7 +47,7 @@
         <section class="selected-word-section__section" aria-label="قطع الكلمة والإعراب" aria-busy="true">
           <div class="selected-word-section__segments-block">
             <div class="selected-word-section__segment-skeletons" data-testid="segment-skeletons" aria-hidden="true">
-              @for (placeholder of loadingSegmentPlaceholders; track placeholder) {
+              @for (placeholder of loadingSegmentPlaceholders(); track placeholder) {
                 <div class="selected-word-section__segment-skeleton">
                   <span class="qd-skeleton qd-skeleton--text selected-word-section__segment-skeleton-form"></span>
                   <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-50 selected-word-section__segment-skeleton-meta"></span>
@@ -86,9 +95,10 @@
             <qd-segment-data-rows [segments]="analysis()!.segments" />
             <qd-word-morphology-summary
               [morphology]="analysis()!.morphology"
-              [rootExplorerHref]="rootExplorerHref()"
-              [lemmaExplorerHref]="lemmaExplorerHref()"
-              [stemExplorerHref]="stemExplorerHref()"
+              [wordTypeFrame]="wordTypeFrame()"
+              [rootFrame]="rootFrame()"
+              [lemmaFrame]="lemmaFrame()"
+              [stemFrame]="stemFrame()"
             />
           </div>
         </section>
@@ -97,9 +107,7 @@
           <div class="selected-word-section__identity" data-testid="word-identity-summary" role="group" aria-label="تكرار الكلمة">
             <a
               class="selected-word-section__identity-row qd-interactive-surface"
-              [attr.href]="tashkeelIdentityHref()"
-              target="_blank"
-              rel="noopener noreferrer"
+              [qdDetailLink]="tashkeelIdentityFrame()!"
               data-testid="word-identity-tashkeel-link"
             >
               <span class="selected-word-section__identity-label">التكرار (بالتشكيل)</span>
@@ -110,9 +118,7 @@
             </a>
             <a
               class="selected-word-section__identity-row qd-interactive-surface"
-              [attr.href]="simpleIdentityHref()"
-              target="_blank"
-              rel="noopener noreferrer"
+              [qdDetailLink]="simpleIdentityFrame()!"
               data-testid="word-identity-simple-link"
             >
               <span class="selected-word-section__identity-label">التكرار (مبسّط)</span>

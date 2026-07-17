@@ -16,7 +16,7 @@ public sealed class WordTypesCacheReadTests(WordTypesTestFixture fixture)
         var filter = new WordTypeFilter("noun", "PN", "genitive", null, null);
         var identity = new WordTypeRowIdentity(191001, "PN", "genitive", null, null);
 
-        var rowsKey = WordTypesCacheKeys.Rows(filter, WordTypeSort.Occurrences, 2, 25);
+        var rowsKey = WordTypesCacheKeys.Rows(filter, WordTypeSortSpec.Default, 2, 25);
         var summaryKey = WordTypesCacheKeys.Summary(identity);
         var ayahsKey = WordTypesCacheKeys.Ayahs(identity, 3, 10);
         var surahsKey = WordTypesCacheKeys.Surahs(identity);
@@ -56,23 +56,23 @@ public sealed class WordTypesCacheReadTests(WordTypesTestFixture fixture)
         var searchedEquivalent = new WordTypeFilter("noun", null, null, null, null, "كَلِم");
         var searchedOther = new WordTypeFilter("noun", null, null, null, null, "مثل");
 
-        var noSearchRows = WordTypesCacheKeys.Rows(noSearch, WordTypeSort.Occurrences, 1, 1000);
+        var noSearchRows = WordTypesCacheKeys.Rows(noSearch, WordTypeSortSpec.Default, 1, 1000);
 
         // Empty/whitespace search normalizes away → identical key to no search at all.
-        WordTypesCacheKeys.Rows(blankSearch, WordTypeSort.Occurrences, 1, 1000).Should().Be(noSearchRows);
+        WordTypesCacheKeys.Rows(blankSearch, WordTypeSortSpec.Default, 1, 1000).Should().Be(noSearchRows);
 
         // A real search isolates the entry; two terms that normalize to the same skeleton collide.
-        var searchedRows = WordTypesCacheKeys.Rows(searched, WordTypeSort.Occurrences, 1, 1000);
+        var searchedRows = WordTypesCacheKeys.Rows(searched, WordTypeSortSpec.Default, 1, 1000);
         searchedRows.Should().NotBe(noSearchRows);
-        WordTypesCacheKeys.Rows(searchedEquivalent, WordTypeSort.Occurrences, 1, 1000).Should().Be(searchedRows);
-        WordTypesCacheKeys.Rows(searchedOther, WordTypeSort.Occurrences, 1, 1000).Should().NotBe(searchedRows);
+        WordTypesCacheKeys.Rows(searchedEquivalent, WordTypeSortSpec.Default, 1, 1000).Should().Be(searchedRows);
+        WordTypesCacheKeys.Rows(searchedOther, WordTypeSortSpec.Default, 1, 1000).Should().NotBe(searchedRows);
 
         // The raw search text never leaks into the key.
         searchedRows.Should().NotContain("كلم");
 
         // Same isolation on the table key.
-        var noSearchTable = WordTypesCacheKeys.Table(noSearch, WordTypeTableView.Roots, WordTypeSort.Occurrences, 1, 1000);
-        WordTypesCacheKeys.Table(searched, WordTypeTableView.Roots, WordTypeSort.Occurrences, 1, 1000)
+        var noSearchTable = WordTypesCacheKeys.Table(noSearch, WordTypeTableView.Roots, WordTypeSortSpec.Default, 1, 1000);
+        WordTypesCacheKeys.Table(searched, WordTypeTableView.Roots, WordTypeSortSpec.Default, 1, 1000)
             .Should().NotBe(noSearchTable);
     }
 
@@ -101,9 +101,9 @@ public sealed class WordTypesCacheReadTests(WordTypesTestFixture fixture)
         var filter = new WordTypeFilter("noun", null, null, null, null);
 
         interceptor.Reset();
-        var firstRows = await reader.GetRowsAsync(filter, WordTypeSort.Occurrences, 1, 25, CancellationToken.None);
+        var firstRows = await reader.GetRowsAsync(filter, WordTypeSortSpec.Default, 1, 25, CancellationToken.None);
         var rowsCommandCount = interceptor.CommandCount;
-        var secondRows = await reader.GetRowsAsync(filter, WordTypeSort.Occurrences, 1, 25, CancellationToken.None);
+        var secondRows = await reader.GetRowsAsync(filter, WordTypeSortSpec.Default, 1, 25, CancellationToken.None);
 
         secondRows.Should().BeSameAs(firstRows);
         interceptor.CommandCount.Should().Be(rowsCommandCount);
@@ -217,8 +217,8 @@ public sealed class WordTypesCacheReadTests(WordTypesTestFixture fixture)
         var secondTree = await reader.GetTreeAsync(CancellationToken.None);
 
         var filter = new WordTypeFilter("noun", null, null, null, null);
-        var firstRows = await reader.GetRowsAsync(filter, WordTypeSort.Occurrences, 1, 25, CancellationToken.None);
-        var secondRows = await reader.GetRowsAsync(filter, WordTypeSort.Occurrences, 1, 25, CancellationToken.None);
+        var firstRows = await reader.GetRowsAsync(filter, WordTypeSortSpec.Default, 1, 25, CancellationToken.None);
+        var secondRows = await reader.GetRowsAsync(filter, WordTypeSortSpec.Default, 1, 25, CancellationToken.None);
 
         secondTree.Should().BeSameAs(firstTree);
         secondRows.Should().BeSameAs(firstRows);

@@ -22,7 +22,7 @@ public sealed class CachedLemmasReader(EfLemmasReader efReader, IMemoryCache cac
 
     public async Task<PagedResult<LemmaListItemDto>> GetLemmasPageAsync(
         string? search,
-        LemmaSort sort,
+        LemmaSortSpec sort,
         LemmasCountFilter filter,
         LemmasAssociationFilter association,
         int page,

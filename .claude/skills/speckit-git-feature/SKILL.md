@@ -30,6 +30,10 @@ If the user explicitly provided `GIT_BRANCH_NAME` (e.g., via environment variabl
 
 - Verify Git is available by running `git rev-parse --is-inside-work-tree 2>/dev/null`
 - If Git is not available, warn the user and skip branch creation
+- The script branches off the current HEAD, so switch to the up-to-date `dev`
+  integration branch first (`git switch dev && git pull --ff-only origin dev`).
+  Feature branches must never be cut from `main`; see the "Branching workflow"
+  section of the root `CLAUDE.md`.
 
 ## Branch Numbering Mode
 

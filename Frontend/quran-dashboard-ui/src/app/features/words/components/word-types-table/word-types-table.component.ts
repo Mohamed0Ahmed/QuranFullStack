@@ -10,15 +10,22 @@ import {
   WORD_TYPES_TABLE_HEADERS,
   WORD_TYPE_TABLE_VIEW_TABLE_LABELS,
 } from '../../models/word-types.labels';
+import { ExplorerSortColumn } from '../../models/explorer-sort';
 import {
+  DEFAULT_WORD_TYPE_SORT,
   PagedResultDto,
+  WORD_TYPE_SORT_COLUMNS,
   WordTypeDetailView,
+  WordTypeSort,
+  WordTypeSortColumnKey,
   WordTypeTableRowDto,
   WordTypeTableView,
   WordTypesLoadStatus,
   groupedTableRowId,
   normalizeWordTableRow,
+  normalizeWordTypeSort,
 } from '../../models/word-types.models';
+import { ExplorerTableSortController } from '../../utils/explorer-table-sort.controller';
 import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
 import { syncTableScrollbarGutter } from '../../utils/table-scrollbar-gutter-sync';
 
@@ -56,10 +63,23 @@ export class WordTypesTableComponent {
   readonly errorLabel = input('');
   readonly retryLabel = input('');
   readonly selectedRow = input<WordTypeTableRowDto | null>(null);
+  readonly sort = input<WordTypeSort>(DEFAULT_WORD_TYPE_SORT);
   readonly countOpened = output<WordTypeCountOpenedEvent>();
   readonly retry = output<void>();
+  /**
+   * null = release the sort param. Unlike the other four explorers that lands on المواضع desc, not
+   * Mushaf order — Word Types defaults to `occurrences`.
+   */
+  readonly sortChange = output<WordTypeSort | null>();
 
-  protected readonly loadingRowPlaceholders = [0, 1, 2, 3, 4] as const;
+  protected readonly sortControl = new ExplorerTableSortController<WordTypeSort>(
+    () => this.sort(),
+    (value) => normalizeWordTypeSort(value),
+    (sort) => this.sortChange.emit(sort),
+  );
+
+  // 12 rows, matching the four sibling explorer tables (Feature 030, N3-d) — this table showed 5.
+  protected readonly loadingRowPlaceholders = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] as const;
 
   // Virtual scrolling keeps the 1000-row list bounded (mirrors the other explorer tables). It is guarded
   // on ResizeObserver so the jsdom test builder falls back to plain rendering.
@@ -150,6 +170,19 @@ export class WordTypesTableComponent {
       case 'words': return this.headers.word;
     }
   }
+
+  protected get sortColumns(): typeof WORD_TYPE_SORT_COLUMNS { return WORD_TYPE_SORT_COLUMNS; }
+
+  /**
+   * The dimension text column IS the `alpha` sort column (N8-f), but its header text changes per
+   * view — الكلمة in the words view, الجذر/الأصل الصرفي/الصيغة المعجمية in the grouped ones. The
+   * sort token is identical across all four; only the label (and so the aria-label) follows the
+   * view, so the header always names the column the user is actually looking at.
+   */
+  protected readonly alphaSortColumn = computed<ExplorerSortColumn<WordTypeSortColumnKey>>(() => ({
+    ...WORD_TYPE_SORT_COLUMNS.alpha,
+    label: this.dimensionHeader(),
+  }));
 
   protected isSelected(row: WordTypeTableRowDto): boolean {
     const selected = this.selectedRow();

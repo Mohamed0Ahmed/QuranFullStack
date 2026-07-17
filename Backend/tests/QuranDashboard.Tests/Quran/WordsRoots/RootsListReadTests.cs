@@ -198,16 +198,108 @@ public sealed class RootsListReadTests(RootsExplorerTestFixture fixture)
         var cache = new MemoryCache(new MemoryCacheOptions());
         var reader = new CachedRootsReader(inner, cache);
 
-        await reader.GetRootsPageAsync(null, RootSort.MushafOrder, RootsCountFilter.None, 1, 50, CancellationToken.None);
+        await reader.GetRootsPageAsync(null, RootSortSpec.Natural(RootSortColumn.MushafOrder), RootsCountFilter.None, 1, 50, CancellationToken.None);
 
         interceptor.Reset();
-        await reader.GetRootsPageAsync(null, RootSort.Occurrences, RootsCountFilter.None, 2, 2, CancellationToken.None);
+        await reader.GetRootsPageAsync(null, RootSortSpec.Natural(RootSortColumn.Occurrences), RootsCountFilter.None, 2, 2, CancellationToken.None);
         interceptor.CommandCount.Should().Be(0, "the whole summary is cached once; sort/page are in-memory");
+    }
+
+    // Every canonical token the Roots parser can emit must reach the reader. Seeded roots: R10 (occ 5,
+    // surahs 2), R20 (occ 2, surahs 2), R30 (occ 9, surahs 9) — see roots-explorer-seed.sql.
+    public static TheoryData<string> CanonicalSortTokens =>
+    [
+        "mushaf-order",
+        "alpha", "alpha-desc",
+        "occurrences", "occurrences-asc",
+        "ayahs", "ayahs-asc",
+        "surahs", "surahs-asc",
+        "simple", "simple-asc",
+        "tashkeel", "tashkeel-asc",
+        "lemmas", "lemmas-asc",
+        "stems", "stems-asc",
+    ];
+
+    // Sorting is ORDER BY only: it may reorder the page but must never change WHICH rows are in scope
+    // or what totalCount reports.
+    [Theory]
+    [MemberData(nameof(CanonicalSortTokens))]
+    public async Task GetRootsPage_every_sort_token_preserves_total_count_and_row_set(string sort)
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetRootsPageHandler>();
+
+        var outcome = await handler.HandleAsync(
+            new GetRootsPageQuery(null, sort, 1, 50),
+            CancellationToken.None);
+        var page = outcome.Should().BeOfType<GetRootsPageOutcome.Success>().Subject.Page;
+
+        page.TotalCount.Should().Be(SeededRootCount);
+        page.Items.Select(i => i.Id).Should().BeEquivalentTo([10, 20, 30]);
+    }
+
+    [Fact]
+    public async Task GetRootsPage_occurrences_ascending_reverses_the_descending_order()
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetRootsPageHandler>();
+
+        var outcome = await handler.HandleAsync(
+            new GetRootsPageQuery(null, "occurrences-asc", 1, 50),
+            CancellationToken.None);
+        var page = outcome.Should().BeOfType<GetRootsPageOutcome.Success>().Subject.Page;
+
+        // R20 (2) < R10 (5) < R30 (9) — all distinct, so ascending is the exact reverse.
+        page.Items.Select(i => i.Id).Should().Equal(20, 10, 30);
+    }
+
+    // R10 and R20 BOTH cover 2 surahs, so this pins the tie-break chain against real seeded data:
+    // the tie group orders by Mushaf order (R10 @1003 before R20 @5010) in BOTH directions, while
+    // only the primary count flips.
+    [Theory]
+    [InlineData("surahs", new[] { 30, 10, 20 })]
+    [InlineData("surahs-asc", new[] { 10, 20, 30 })]
+    public async Task GetRootsPage_surahs_tie_keeps_mushaf_order_in_both_directions(string sort, int[] expectedIds)
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetRootsPageHandler>();
+
+        var outcome = await handler.HandleAsync(
+            new GetRootsPageQuery(null, sort, 1, 50),
+            CancellationToken.None);
+        var page = outcome.Should().BeOfType<GetRootsPageOutcome.Success>().Subject.Page;
+
+        page.Items.Select(i => i.Id).Should().Equal(expectedIds);
+    }
+
+    // The acceptance bar: a legacy token and its canonical alias are ONE ordering. Existing
+    // sort=occurrences / sort=alpha links must keep returning the exact sequence they always did.
+    [Theory]
+    [InlineData("occurrences", "occurrences-desc")]
+    [InlineData("alpha", "alpha-asc")]
+    public async Task GetRootsPage_legacy_token_and_its_alias_return_the_identical_sequence(string legacy, string alias)
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetRootsPageHandler>();
+
+        var legacyOutcome = await handler.HandleAsync(
+            new GetRootsPageQuery(null, legacy, 1, 50),
+            CancellationToken.None);
+        var aliasOutcome = await handler.HandleAsync(
+            new GetRootsPageQuery(null, alias, 1, 50),
+            CancellationToken.None);
+
+        var legacyIds = legacyOutcome.Should().BeOfType<GetRootsPageOutcome.Success>().Subject.Page.Items.Select(i => i.Id);
+        var aliasIds = aliasOutcome.Should().BeOfType<GetRootsPageOutcome.Success>().Subject.Page.Items.Select(i => i.Id);
+
+        aliasIds.Should().Equal(legacyIds);
     }
 
     [Theory]
     [InlineData("relevance")]
     [InlineData("")]
+    [InlineData("mushaf-order-asc")]
+    [InlineData("mushaf-order-desc")]
     public async Task GetRootsPage_invalid_sort_returns_validation_outcome(string? sort)
     {
         await using var scope = fixture.CreateScope();

@@ -21,6 +21,9 @@ export type QdPanelSkeletonShape = 'lines' | 'rows' | 'panel';
   templateUrl: './explorer-panel-skeleton.component.html',
   styleUrl: './explorer-panel-skeleton.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    '[class.qd-panel-skeleton--panel-shape]': "shape() === 'panel'",
+  },
 })
 export class ExplorerPanelSkeletonComponent {
   readonly loadingLabel = input('جارٍ التحميل…');

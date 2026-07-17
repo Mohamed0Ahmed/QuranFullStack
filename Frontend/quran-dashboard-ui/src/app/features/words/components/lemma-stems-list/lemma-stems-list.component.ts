@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
-import { deepLinkToHref } from '../../../../shared/url/deep-link-href';
-import { buildStemsDeepLink } from '../../state/stems-url-sync';
+import { DetailOverlayLinkDirective } from '../../../../core/navigation/detail-overlay/detail-overlay-link.directive';
+import { StemDetailFrame } from '../../../../core/navigation/detail-overlay/detail-overlay.models';
 import { LemmaStemItemDto } from '../../models/lemmas.models';
 import {
   LEMMAS_STEMS_LIST_EMPTY_LABEL,
@@ -14,12 +14,13 @@ import { ROW_NUMBER_HEADER } from '../../models/unique-words.labels';
 
 interface LemmaStemRow {
   stem: LemmaStemItemDto;
-  href: string;
+  frame: StemDetailFrame;
 }
 
 @Component({
   selector: 'qd-lemma-stems-list',
   standalone: true,
+  imports: [DetailOverlayLinkDirective],
   templateUrl: './lemma-stems-list.component.html',
   styleUrl: './lemma-stems-list.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -35,12 +36,20 @@ export class LemmaStemsListComponent {
   protected readonly loadingLabel = LEMMAS_STEMS_LIST_LOADING_LABEL;
   protected readonly emptyLabel = LEMMAS_STEMS_LIST_EMPTY_LABEL;
 
+  // Mirrors the retired stem explorer deep link (words view, simple word
+  // view); frame defaults are serialized explicitly per the URL contract.
   protected readonly rows = computed<readonly LemmaStemRow[]>(() =>
     this.stems().map((stem) => ({
       stem,
-      href: deepLinkToHref(
-        buildStemsDeepLink({ stemId: stem.stemId, view: 'words', wordView: 'simple' }),
-      ),
+      frame: {
+        kind: 'stem',
+        id: stem.stemId,
+        view: 'words',
+        wordView: 'simple',
+        surahView: 'mentioned',
+        detailPage: 1,
+        typeCode: null,
+      },
     })),
   );
 

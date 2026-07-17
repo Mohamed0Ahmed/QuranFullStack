@@ -20,7 +20,7 @@ public sealed class CachedStemsReader(EfStemsReader efReader, IMemoryCache cache
 
     public async Task<PagedResult<StemListItemDto>> GetStemsPageAsync(
         string? search,
-        StemSort sort,
+        StemSortSpec sort,
         StemsCountFilter filter,
         StemsAssociationFilter association,
         int page,

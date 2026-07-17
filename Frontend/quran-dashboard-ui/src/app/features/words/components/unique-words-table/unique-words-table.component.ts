@@ -15,6 +15,7 @@ import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrollin
 
 import { WordCountChipComponent } from '../word-count-chip/word-count-chip.component';
 import {
+  EMPTY_LIST_LABEL,
   LOADING_LABEL,
   OCCURRENCES_CHIP_LABEL,
   ROW_NUMBER_HEADER,
@@ -27,9 +28,14 @@ import {
   WORD_DRILLDOWN_VIEW_LABELS,
 } from '../../models/unique-words.labels';
 import {
+  DEFAULT_UNIQUE_WORD_SORT,
+  LoadStatus,
   UNIQUE_WORDS_PAGE_SIZE,
+  UNIQUE_WORD_SORT_COLUMNS,
   UniqueWordListItemViewModel,
+  UniqueWordSort,
   WordDrilldownView,
+  normalizeUniqueWordSort,
 } from '../../models/unique-words.models';
 import {
   isUniqueWordCountActive,
@@ -43,6 +49,7 @@ import {
   ExplorerRowNavDirection,
   scrollExplorerRowIntoView,
 } from '../../utils/explorer-table-scroll';
+import { ExplorerTableSortController } from '../../utils/explorer-table-sort.controller';
 import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
 import { syncTableScrollbarGutter } from '../../utils/table-scrollbar-gutter-sync';
 import { buildRootsDeepLink } from '../../state/roots-url-sync';
@@ -81,14 +88,34 @@ export class UniqueWordsTableComponent {
 
   readonly rows = input.required<readonly UniqueWordListItemViewModel[]>();
   readonly loading = input(false);
+  /**
+   * The list's own status, so the error / no-results states render INSIDE this mounted shell
+   * instead of above the page grid (Feature 030, N3 row 5). `loading` still drives the skeleton
+   * body — this input is only consulted for the states that replace the body.
+   */
+  readonly status = input<LoadStatus>('idle');
+  readonly errorMessage = input('');
   readonly selectedWordId = input<number | null>(null);
   readonly currentPage = input(1);
   readonly pageSize = input(UNIQUE_WORDS_PAGE_SIZE);
   readonly drilldownIsOpen = input(false);
   readonly activeColumn = input<UniqueWordsColumnKey | null>(null);
+  readonly sort = input<UniqueWordSort>(DEFAULT_UNIQUE_WORD_SORT);
 
   readonly rowSelected = output<UniqueWordListItemViewModel>();
   readonly drilldownOpen = output<UniqueWordsDrilldownOpenEvent>();
+  /** null = release the sort param back to the default (ترتيب المصحف). */
+  readonly sortChange = output<UniqueWordSort | null>();
+
+  protected readonly sortControl = new ExplorerTableSortController<UniqueWordSort>(
+    () => this.sort(),
+    (value) => normalizeUniqueWordSort(value),
+    (sort) => this.sortChange.emit(sort),
+  );
+
+  protected get sortColumns(): typeof UNIQUE_WORD_SORT_COLUMNS {
+    return UNIQUE_WORD_SORT_COLUMNS;
+  }
 
   protected readonly loadingRowPlaceholders = Array.from({ length: 12 });
   protected readonly rowHeight = signal(ROW_HEIGHT_DESKTOP);
@@ -162,6 +189,10 @@ export class UniqueWordsTableComponent {
 
   protected get tableLabel(): string {
     return UNIQUE_WORD_TABLE_LABEL;
+  }
+
+  protected get noResultsLabel(): string {
+    return EMPTY_LIST_LABEL;
   }
 
   protected get tableBodyLabel(): string {

@@ -25,7 +25,7 @@ public sealed class WordTypesGroupedSummaryReadTests(WordTypesTestFixture fixtur
         var reader = scope.ServiceProvider.GetRequiredService<IWordTypesReader>();
 
         var tablePage = await reader.GetTableRowsAsync(
-            NounScope, view, WordTypeSort.Occurrences, 1, 25, CancellationToken.None);
+            NounScope, view, WordTypeSortSpec.Default, 1, 25, CancellationToken.None);
         var row = ExtractGroupedRow(tablePage.Items.Single());
 
         var summary = await reader.GetGroupedSummaryAsync(
@@ -125,7 +125,7 @@ public sealed class WordTypesGroupedSummaryReadTests(WordTypesTestFixture fixtur
             new WordTypeGroupedSelection(WordTypeGroupedDimensionKind.Lemma, 190500, NounScope),
             CancellationToken.None);
         var wordsPage = await reader.GetTableRowsAsync(
-            NounScope, WordTypeTableView.Words, WordTypeSort.Occurrences, 1, 25, CancellationToken.None);
+            NounScope, WordTypeTableView.Words, WordTypeSortSpec.Default, 1, 25, CancellationToken.None);
         var wordsOccurrenceSum = wordsPage.Items.Cast<WordTableRowDto>().Sum(item => item.OccurrencesCount);
 
         lemmaSummary.Should().NotBeNull();

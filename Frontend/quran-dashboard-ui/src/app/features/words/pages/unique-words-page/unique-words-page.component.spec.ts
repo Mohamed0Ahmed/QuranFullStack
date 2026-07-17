@@ -79,6 +79,21 @@ describe('UniqueWordsPageComponent', () => {
     expect(root.querySelector('[data-testid="unique-words-page-title"]')?.textContent).toContain('الكلمات الفريدة');
   });
 
+  it('mounts the explainer hero inside the intro band, after the mode line and above the toolbar (Feature 031)', async () => {
+    const root = await render();
+
+    const band = root.querySelector('.uw-intro-band') as HTMLElement;
+    const header = band.querySelector('.qd-page-header') as HTMLElement;
+    const hero = band.querySelector('[data-testid="words-explainer--unique"]');
+    expect(hero).toBeTruthy();
+    // The mode line stays adjacent to the title it qualifies; the hero follows the whole header.
+    expect(band.querySelector('[data-testid="unique-words-page-mode"]')).toBeTruthy();
+    expect(header.compareDocumentPosition(hero!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // The toolbar recess stays below the band, unchanged.
+    expect(root.querySelector('.uw-toolbar-recess')).toBeTruthy();
+    expect(band.querySelector('.uw-toolbar-recess')).toBeNull();
+  });
+
   it('renders the mode tabs', async () => {
     const root = await render();
     expect(root.querySelector('[data-testid="unique-words-tab--tashkeel"]')).toBeTruthy();
@@ -128,13 +143,19 @@ describe('UniqueWordsPageComponent', () => {
 
   it('shows the Arabic empty state when status is empty', async () => {
     const root = await render({ status: 'empty', items: [], totalCount: 0 });
-    expect(root.querySelector('[data-testid="unique-words-empty"]')).toBeTruthy();
+    // Feature 030, N3 row 5: the list's own states render inside the table shell, not above the grid.
+    expect(
+      root.querySelector('[data-testid="unique-words-empty"]')?.closest('.qd-explorer-table'),
+    ).toBeTruthy();
     expect(root.querySelector('[data-testid="unique-words-loading"]')).toBeNull();
   });
 
   it('shows the error message when status is error', async () => {
     const root = await render({ status: 'error', items: [], errorMessage: 'خطأ تجريبي' });
-    expect(root.querySelector('[data-testid="unique-words-error"]')?.textContent).toContain('خطأ تجريبي');
+    // Feature 030, N3 row 5: the list's own states render inside the table shell, not above the grid.
+    const error = root.querySelector('[data-testid="unique-words-error"]');
+    expect(error?.textContent).toContain('خطأ تجريبي');
+    expect(error?.closest('.qd-explorer-table')).toBeTruthy();
   });
 
   it('shows the loading state when status is loading', async () => {
@@ -173,15 +194,15 @@ describe('UniqueWordsPageComponent', () => {
     expect(root.querySelector('[data-testid="qd-pagination-prev"]')).toBeNull();
   });
 
-  it('serializes a count-range bucket to the URL and resets the page (US5)', async () => {
+  it('serializes a count-range chip to the URL and resets the page (US5)', async () => {
     const root = await render();
 
     expect(root.querySelector('[data-testid="unique-words-range-filter"]')).toBeTruthy();
-    (root.querySelector('[data-testid="range-filter-bucket-occurrences-11–100"]') as HTMLButtonElement).click();
+    (root.querySelector('[data-testid="range-filter-chip-occurrences-gt"]') as HTMLButtonElement).click();
 
     expect(router.navigate).toHaveBeenCalledWith([], {
       relativeTo: expect.anything(),
-      queryParams: expect.objectContaining({ occ: '11..100', page: null }),
+      queryParams: expect.objectContaining({ occ: '101..', page: null }),
       queryParamsHandling: 'merge',
     });
   });
@@ -234,6 +255,90 @@ describe('UniqueWordsPageComponent', () => {
       relativeTo: expect.anything(),
       queryParams: expect.objectContaining({ word: '1', view: 'missing', ap: null }),
       queryParamsHandling: 'merge',
+    });
+  });
+
+  describe('sorting (Feature 030, N8)', () => {
+    it('has no desktop sort dropdown: the only select sits in the ≤1023px fallback wrapper', async () => {
+      const root = await render();
+
+      // ≥1024px the table header row is visible and owns sorting, so the fallback is CSS-hidden
+      // there; below that the header row is display:none and this select is the only way in.
+      const select = root.querySelector('[data-testid="unique-words-sort-select"]') as HTMLElement;
+      expect(select).toBeTruthy();
+      expect(select.closest('.qd-explorer-sort-fallback')).not.toBeNull();
+    });
+
+    it('offers the default order plus every sortable column in both directions', async () => {
+      const root = await render();
+      const values = Array.from(
+        root.querySelectorAll('[data-testid="unique-words-sort-select"] option'),
+      ).map((option) => option.getAttribute('value'));
+
+      expect(values).toEqual([
+        'mushaf-order',
+        'alpha',
+        'alpha-desc',
+        'occurrences',
+        'occurrences-asc',
+        'ayahs',
+        'ayahs-asc',
+        'surahs',
+        'surahs-asc',
+      ]);
+    });
+
+    it('navigates { sort: token, page: null } when a header cycle step is emitted', async () => {
+      const root = await render();
+
+      (root.querySelector('[data-testid="unique-words-table-sort-occurrences"]') as HTMLButtonElement).click();
+
+      expect(router.navigate).toHaveBeenCalledWith([], {
+        relativeTo: expect.anything(),
+        queryParams: expect.objectContaining({ sort: 'occurrences', page: null }),
+        queryParamsHandling: 'merge',
+      });
+    });
+
+    it('navigates { sort: null, page: null } when the cycle releases', async () => {
+      const root = await render({ sort: 'occurrences-asc' });
+
+      (root.querySelector('[data-testid="unique-words-table-sort-occurrences"]') as HTMLButtonElement).click();
+
+      // Release removes the param entirely — the default order is never spelled out in the URL.
+      expect(router.navigate).toHaveBeenCalledWith([], {
+        relativeTo: expect.anything(),
+        queryParams: expect.objectContaining({ sort: null, page: null }),
+        queryParamsHandling: 'merge',
+      });
+    });
+
+    it('drives the same URL contract from the fallback select', async () => {
+      const root = await render();
+      const select = root.querySelector('[data-testid="unique-words-sort-select"]') as HTMLSelectElement;
+
+      select.value = 'alpha-desc';
+      select.dispatchEvent(new Event('change'));
+
+      expect(router.navigate).toHaveBeenCalledWith([], {
+        relativeTo: expect.anything(),
+        queryParams: expect.objectContaining({ sort: 'alpha-desc', page: null }),
+        queryParamsHandling: 'merge',
+      });
+    });
+
+    it('releases the param when the fallback select picks the default order', async () => {
+      const root = await render({ sort: 'alpha' });
+      const select = root.querySelector('[data-testid="unique-words-sort-select"]') as HTMLSelectElement;
+
+      select.value = 'mushaf-order';
+      select.dispatchEvent(new Event('change'));
+
+      expect(router.navigate).toHaveBeenCalledWith([], {
+        relativeTo: expect.anything(),
+        queryParams: expect.objectContaining({ sort: null, page: null }),
+        queryParamsHandling: 'merge',
+      });
     });
   });
 });

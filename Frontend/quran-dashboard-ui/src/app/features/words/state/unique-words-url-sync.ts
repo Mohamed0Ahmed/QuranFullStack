@@ -7,7 +7,6 @@ import { parsePosCodeParam, parsePositiveIntParam } from './words-association-fi
 import {
   DEFAULT_AYAH_PAGE,
   DEFAULT_LIST_PAGE,
-  DEFAULT_UNIQUE_WORD_SORT,
   MODAL_QUERY_KEYS,
   ParsedUniqueWordsQuery,
   UNIQUE_WORDS_QUERY_KEYS,
@@ -15,14 +14,16 @@ import {
   UniqueWordKind,
   UniqueWordSort,
   WordDrilldownView,
-  isUniqueWordSort,
+  normalizeUniqueWordSort,
   isWordDrilldownView,
 } from '../models/unique-words.models';
 
 export function parseUniqueWordsQueryParams(queryParams: ParamMap): ParsedUniqueWordsQuery {
-  const sortRaw = queryParams.get(UNIQUE_WORDS_QUERY_KEYS.sort);
-  const sort: UniqueWordSort =
-    sortRaw !== null && isUniqueWordSort(sortRaw) ? sortRaw : DEFAULT_UNIQUE_WORD_SORT;
+  // Canonicalizes legacy aliases in (occurrences-desc → occurrences) and fails closed to the
+  // default on anything unknown, so one ordering can never be cached under two tokens.
+  const sort: UniqueWordSort = normalizeUniqueWordSort(
+    queryParams.get(UNIQUE_WORDS_QUERY_KEYS.sort),
+  );
 
   const page = parsePositiveInt(queryParams.get(UNIQUE_WORDS_QUERY_KEYS.page)) ?? DEFAULT_LIST_PAGE;
 
