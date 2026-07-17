@@ -108,13 +108,18 @@ public sealed class CachedUniqueWordsReaderTests
     [Fact]
     public void ListCacheKeys_are_distinct_per_canonical_token_and_carry_it_verbatim()
     {
-        var keysByToken = Enum.GetValues<UniqueWordSortColumn>()
+        var specs = Enum.GetValues<UniqueWordSortColumn>()
             .SelectMany(column => Enum.GetValues<WordSortDirection>()
                 .Select(direction => new UniqueWordSortSpec(column, direction)))
-            .ToLookup(spec => spec.CanonicalToken())
-            .ToDictionary(
-                group => group.Key,
-                group => UniqueWordsCacheKeys.List(UniqueWordKind.Tashkeel, group.First(), 1, 50));
+            .Where(spec => spec.Column != UniqueWordSortColumn.MushafOrder
+                || spec.Direction == WordSortDirection.Ascending)
+            .ToArray();
+
+        specs.Select(spec => spec.CanonicalToken()).Should().OnlyHaveUniqueItems();
+
+        var keysByToken = specs.ToDictionary(
+            spec => spec.CanonicalToken(),
+            spec => UniqueWordsCacheKeys.List(UniqueWordKind.Tashkeel, spec, 1, 50));
 
         keysByToken.Values.Should().OnlyHaveUniqueItems();
         foreach (var (token, key) in keysByToken)
