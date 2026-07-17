@@ -2,8 +2,11 @@
 
 - **Branch:** `restyle/flat-green-light` (contains the flat-green restyle + Feature 029).
 - **Status:** PLAN ONLY — read-only analysis performed 2026-07-17; no code changed.
-- **Scope:** frontend-only. No backend, DTO, DB, import, or cache-key-format changes.
-  Anything requiring one is FLAGGED and stops there (see N8).
+- **Scope:** frontend-only for C1/N1–N7. **N8 is cross-stack by user decision
+  (2026-07-17):** full asc/desc column sorting requires the backend sort-direction
+  change designed in §N8 — the batch's single sanctioned backend change. No DB
+  schema, import, or cache-key-FORMAT changes anywhere (cache-key VALUE sets extend
+  in N8).
 - **Doctrine inputs:** `DESIGN.md` (flat parchment + green, hairline structure, one
   floating-layer shadow, allowed-green list), `PRODUCT.md`,
   `Frontend/quran-dashboard-ui/.architecture/UI_STYLE_SYSTEM.md` §16/§17,
@@ -26,7 +29,7 @@ Frontend root shorthand: `FE = Frontend/quran-dashboard-ui/src`.
 | N5 search dropdown gating | Exactly ONE focus-opened dropdown exists (shared association filter, 5 instances); 1-component fix + ArrowDown opener | S |
 | N6 modal header context | Kind label + ayah count; `ayahsCount` already in every summary DTO — pure wiring, zero new requests | S |
 | N7 ayah hover | **No ayah hover exists today** — introduce word→line→page-view hover chain; recommended variant is a flat accent tint (NO shadow needed) | M |
-| N8 header sorting | Backend supports ONE baked direction per sort key (asc/desc toggle = out-of-scope backend gap); ship 2-state cycle (natural ⇄ default) + mobile fallback; dropdown removed on desktop | XL |
+| N8 header sorting | **CROSS-STACK (decided):** backend gains asc/desc per allowlisted column (suffix token grammar, legacy tokens = natural-direction aliases, stable tie-breakers); frontend 3-state header cycle (asc ⇄ desc ⇄ مصحف default); dropdown removed where headers render, ≤tablet fallback kept; BE phase before FE phase | XXL |
 
 ---
 
@@ -592,139 +595,313 @@ reset on page change).
 
 ---
 
-## N8 — Column-header sorting; remove top sort dropdown (all explorers)
+## N8 — Column-header sorting with FULL asc/desc (CROSS-STACK: backend + frontend)
 
-### Backend contract verdict (decision input — inspected read-only, both sides)
+> **DECISION (user, 2026-07-17):** full ascending/descending sorting on the explorer
+> table columns. This supersedes the earlier frontend-only 2-state v1 in this plan.
+> The backend sort-direction gap proven below is now **closed by design, in scope** —
+> N8 is the batch's single sanctioned backend change. Everything else in Feature 030
+> stays frontend-only.
 
-**The read contract supports exactly ONE baked-in direction per sort key. No
-direction parameter exists anywhere.** Unknown sort values → HTTP 400 InvalidSort
-(`RootsController.cs:44,83-84`; strict `TryParse` switches in `RootSort.cs:27-40` and
-siblings).
+### Proven baseline (carried forward from the read-only analysis)
 
-| Explorer(s) | Key | Direction shipped | Opposite | Evidence |
-|---|---|---|---|---|
-| roots/lemmas/stems/unique | `mushaf-order` (default) | ASC | **NO** | `RootsListDerivation.cs:81-83` + mirrors, `EfUniqueWordsReader.List.cs:178` |
-| roots/lemmas/stems/unique | `occurrences` | DESC | **NO** | `RootsListDerivation.cs:74-77` + mirrors |
-| roots/lemmas/stems/unique | `alpha` | ASC (ordinal) | **NO** | `RootsListDerivation.cs:78-80` + mirrors |
-| word-types | `occurrences`/`ayahs`/`surahs` | DESC | **NO** | `EfWordTypesReader.Sql.cs:501-508, 307-314` (DESC baked into SQL strings) |
-| word-types | `mushaf-order`/`alpha` | ASC | **NO** | same |
-| roots/lemmas/stems/unique | count columns آيات/سور/بدون تشكيل/بالتشكيل/الصيغ/الأصول | — | **NO KEY AT ALL** | parsers accept only the 3 keys; columns visible `roots-table.component.html:14-20` |
+The current contract supports exactly ONE baked direction per sort key and no
+direction parameter anywhere; unknown tokens → HTTP 400 InvalidSort
+(`RootsController.cs:44,83-84`; strict parsers `RootSort.cs:27-40` + siblings;
+directions baked in `RootsListDerivation.cs:72-84`, `LemmasListDerivation.cs:101-113`,
+`StemsListDerivation.cs:101-113`, `EfUniqueWordsReader.List.cs:170-179`,
+`EfWordTypesReader.Sql.cs:307-314,501-508`). Client-side re-sorting of a fetched page
+remains REJECTED (server pagination at 1000 rows/page — reversing one page corrupts
+global order).
 
-Server defaults: roots/lemmas/stems/unique = `mushaf-order` ASC when param absent
-(`GetRootsPageHandler.cs:17,25` + siblings) — this IS ترتيب المصحف and is also an
-ordinary parseable key (explicit return-to-default is safe). **Word Types default =
-`occurrences` DESC** (`WordTypesHandlerValidation.cs:18`), not mushaf order.
+New pipeline facts (verified read-only, both stacks) that the design builds on:
 
-**FLAGGED OUT OF SCOPE (backend gaps, no backend change planned):** opposite
-directions for every key (occurrences-asc, alpha-desc, reverse-mushaf, ayahs-asc,
-surahs-asc) and sort keys for the six unkeyed count columns. Client-side re-sorting of
-the fetched page is NOT a substitute (server pagination at 1000 rows/page — reversing
-one page corrupts global order) and is rejected. Backend cache keys also embed the
-sort value (`WordTypesCacheKeys.cs:12-16`), confirming direction support is a
-coordinated backend feature (enum + parser + derivations + SQL + cache keys + tests).
+- **Roots/Lemmas/Stems sort in-memory** over one whole cached summary list
+  (`CachedRootsReader.cs:13-23,161-167`; keys are `roots:summary:all` etc.,
+  `RootsCacheKeys.cs:7`, `LemmasCacheKeys.cs:12`, `StemsCacheKeys.cs:13`) — **sort
+  never appears in their backend cache keys**; new sort columns/directions cost
+  nothing in cache identity there.
+- **Every displayed statistic already exists on the row at the sort point** — no new
+  joins or aggregation for any candidate column:
+  `RootSummaryRow` (all 8 counts + `NormalizedRootText` + `FirstWordOrderInMushaf` +
+  `Id`, `RootSummaryRow.cs:3-14`); `LemmaSummaryRow` (6 counts + normalized text +
+  root text, `LemmasSummaryRow.cs:11-27`); `StemSummaryRow` (5 counts,
+  `StemsSummaryRow.cs:8-25`); unique `UniqueWordListRow` (occ/ayahs/surahs +
+  `SearchText` + `FirstWordOrderInMushaf` + `Id`, `EfUniqueWordsReader.List.cs:181-188`,
+  an `IQueryable` from `SqlQueryRaw`); word-types CTEs carry
+  `occurrences_count`/`ayahs_count`/`surahs_count`/`display_text`/
+  `first_word_order_in_mushaf` in BOTH views (`EfWordTypesReader.Sql.cs:70-82,264-276`).
+- **Not available at the sort point** (excluded columns below): unique-words
+  `MissingSurahsCount` (computed post-page as `TotalSurahs - SurahsCount`,
+  `EfUniqueWordsReader.cs:61` — monotone inverse of السور) and unique-words
+  type/root chips (page-only enrichment, `EfUniqueWordsReader.cs:45-47,288-383`).
+- **Asymmetries to preserve, not fix, in this item:** unique-words `ApplySort` lacks
+  the `Id` tie-breaker the other explorers have (add it — see determinism); three
+  alpha semantics coexist (in-memory `StringComparer.Ordinal` on pre-normalized text;
+  word-types words view raw `g.display_text` on DB collation; grouped views folded
+  `norm_text COLLATE "C"`) — direction support reverses each as-is, normalization is
+  out of scope (flagged).
 
-### Current frontend state (evidence)
+### Wire contract (locked design)
 
-- Dropdown is per-page hand-rendered native `<select>` (not shared):
-  `roots-explorer-page.component.html:27-39` (+ lemmas 41-52, stems 53-64,
-  unique-words 52-64, word-types 39-46 visible-label variant). Handlers are pure URL
-  navigations: `onSortChange → updateQueryParams({ sort, page: null })`
-  (`roots-explorer-page.component.ts:150` + mirrors); word-types via
-  `explorerFacade.changeSort` (facade:232-233).
-- Option sets: roots/lemmas/stems `mushaf-order | occurrences | alpha`
-  (labels e.g. `ROOTS_SORT_LABELS`, `roots.labels.ts:89-94`); unique-words same keys;
-  word-types adds `ayahs`, `surahs` (`word-types.labels.ts:81-87`).
-- Header cells today are plain non-interactive `role="columnheader"` divs
-  (`roots-table.component.html:8-23` + 4 mirrors); zero `aria-sort` anywhere in the app.
-- **Mobile hazard:** the entire header row is `display: none` ≤tablet in all five
-  table SCSS files (`roots-table.component.scss:93-96` et al.) — the dropdown is
-  currently the ONLY sort control there.
-- URL/cache identity: param name `sort`, validate-or-default parse
-  (`roots-url-sync.ts:28-31,86-88` + mirrors; `word-types-url-sync.ts:75,312-314`);
-  cache keys embed sort as an opaque string slot (`roots-cache.ts:8-10`:
-  `roots:list:${sort}:${search}:p${page}`; word-types
-  `wordtypes:table:…:sort:${sort}:p${page}`; scope-counts key deliberately omits sort
-  — guarded by `word-types-cache.spec.ts:95-99`).
+Single existing `sort` query param on the same 5 read endpoints. Token grammar,
+allowlisted per explorer:
 
-### Target (v1, frontend-only — works entirely on existing keys)
+```
+token := column | column "-asc" | column "-desc"
+```
 
-- Sortable header cells render a real full-cell `<button type="button">`; click (or
-  Enter/Space, native) **cycles 2 states: column's natural direction ⇄ default
-  (ترتيب المصحف / param absent)**. The third (opposite-direction) step of the ideal
-  asc→desc→default cycle is BLOCKED on the backend gap above; the cycle function is
-  written to accept it later without rework (open decision N8-c fixes the future wire
-  format as suffixed values of the existing `sort` param, e.g. `occurrences-asc` —
-  never a new `dir` param, which would change URL/cache-key composition).
-- Column ↔ key map (existing wire values only): roots — الجذر→`alpha`,
-  المواضع→`occurrences`; lemmas — الصيغة المعجمية→`alpha`, المواضع→`occurrences`;
-  stems — الأصل الصرفي→`alpha`, المواضع→`occurrences`; unique-words —
-  الكلمة→`alpha`, المواضع→`occurrences`; word-types — الكلمة/dimension column→`alpha`,
-  المواضع→`occurrences`, الآيات→`ayahs`, السور→`surahs`. `mushaf-order` maps to the
-  no-active-column release state ⇒ **no dropdown option loses functionality** (verified
-  against all 5 option sets). All other columns stay plain text (no backend key — see
-  flagged gap).
-- Active sort header per §16 doctrine: label `--qd-accent-text` + trailing direction
-  glyph ▲/▼ (separate `aria-hidden` span; fixed direction per key — ▼ on count
-  columns, ▲ on text/mushaf); hover `--qd-surface-hover`; `:focus-visible` ring;
-  optional 2px `--qd-accent` bottom indicator (green thread, §16.1 row 3 — open
-  decision N8-d); NO solid green fill, no shadow.
-- A11y: `aria-sort="ascending"|"descending"` on the `role="columnheader"` element
-  (absent when inactive); Arabic `aria-label` on the button naming column + next
-  action; RTL-safe (logical `text-align: start`, vertical arrows).
-- Styling added ONCE on the `.qd-explorer-table` base (`_explorer-tables.scss`:
-  new `__sort-button` + `.qd-is-sorted`) — extend the base per §17, never fork per
-  table. UI_STYLE_SYSTEM.md §17 updated in the same change.
-- Top dropdown block (label + select) deleted from all 5 desktop layouts along with
-  `sortOptions`/`sortLabels`/`onSortChange` plumbing, `.qd-explorer__sort`
-  (`_words-explorer-layout.scss:77-79`) and the `.qd-explorer-controls-secondary
-  .qd-select` width fix (194-215); `.qd-explorer-controls-secondary` itself STAYS
-  (hosts the count-range filter).
-- **Mobile (≤tablet):** keep a compact sort affordance — recommended: the existing
-  `<select>` markup retained inside a tablet-max-only wrapper, same URL contract
-  (open decision N8-e for a nicer chip/menu later). Sorting must not silently
-  disappear on phone. **Explicit deviation from the verbatim "REMOVE the dropdown
-  entirely":** the header row — the replacement control — is `display:none` ≤tablet,
-  so full removal would delete the only mobile sort control; the dropdown is removed
-  from all desktop layouts and survives only ≤tablet. Needs user sign-off (N8-e).
-- URL + cache identity preserved by construction: param stays `sort`, existing values
-  verbatim, default stays param-absent, cache keys absorb values as opaque strings.
-  Wire: pages keep `updateQueryParams({ sort: nextOrNull, page: null })`; word-types
-  keeps `facade.changeSort`.
+- **Legacy tokens keep their exact meaning as natural-direction aliases**:
+  `occurrences` ≡ `occurrences-desc`; `alpha` ≡ `alpha-asc`; word-types `ayahs` ≡
+  `ayahs-desc`, `surahs` ≡ `surahs-desc`. `mushaf-order` stays ascending-only — it is
+  the release/default state, not a column; `mushaf-order-asc`/`-desc` are REJECTED.
+- **Natural direction per column class:** counts → desc; text (alpha) → asc.
+- **Canonical serialization:** the bare token IS the canonical form for a column's
+  natural direction; the suffixed form is canonical only for the opposite direction
+  (e.g. canonical set for roots المواضع = `occurrences`, `occurrences-asc`). Backend
+  `SortKey()` and the frontend URL serializer both canonicalize aliases
+  (`occurrences-desc` in → `occurrences` out) so neither cache layer ever
+  double-caches one ordering.
+- **Byte-identity of every existing state:** default URLs stay param-free;
+  `sort=occurrences` / `sort=alpha` / word-types `sort=ayahs|surahs` parse and cache
+  exactly as today. Old shared links unchanged.
+- Unknown token / unlisted column / direction on `mushaf-order` → the existing
+  InvalidSort → 400 `ApiResponse.Fail` path, unchanged.
+- A separate `dir` param is REJECTED (two-param invalid combos; would change URL and
+  frontend cache-key composition; the suffix grammar keeps one opaque slot).
 
-### Open decisions
+### Sortable columns per explorer (allowlist + defaults)
 
-- **N8-a (product):** Word Types default stays `occurrences` (its release state
-  returns to occurrences-desc and المواضع shows active-by-default — one page whose
-  default is not mushaf order) vs changing the default to `mushaf-order` for
-  cross-page consistency (changes what the parameterless URL returns — scope change).
-  Recommend: keep `occurrences` in this batch; flag the consistency question.
-- **N8-b:** ship v1 2-state cycle now (recommended) vs block the whole item on a
-  future backend direction feature.
-- **N8-c:** freeze the future direction wire format with the backend owner before
-  extending key lists (`occurrences-asc` suffix style recommended).
-- **N8-d:** active header = accent-text + arrow only, or + 2px green-thread bar (both
-  doctrine-legal; pick one for all 5 tables).
-- **N8-e:** mobile fallback shape (keep select ≤tablet — cheapest — vs compact chip/menu).
-- **N8-f:** word-types grouped views — confirm the dimension header is the
-  alpha-mapped column there (`GroupedOrderBy` sorts dimension `norm_text`,
-  `EfWordTypesReader.Sql.cs:312`).
+First click applies the column's natural direction; second click the opposite; third
+releases to the default order. Tie-breakers (always ascending, both directions):
+`FirstWordOrderInMushaf`, then `Id` (word-types: the existing per-view tie chains).
 
-**Affected files:** ~59 (5 tables html/ts/spec, 5 pages html/ts/spec, 5 models,
-5 labels, 5 url-sync + specs, word-types facade + spec + cache spec, 2 style partials,
-shared labels, UI_STYLE_SYSTEM.md, words README).
-**Risks:** page specs drive sorting through select testids (must be rewritten);
-`word-types-cache.spec.ts:95-99` scope-counts no-sort guard must stay green; table
-container `tabindex=0` keyboard-nav (`roots-table.component.html:5-6`) must not
-conflict with header buttons entering the tab order; `column` URL param namespace
-already used for detail focus (`roots.models.ts:102`) — sort state stays inside the
-`sort` value.
-**Tests:** table specs (button only on mapped columns; emits `sortToggled`;
-`aria-sort` lifecycle; plain headers stay plain; RTL glyph span aria-hidden); page
-specs (first toggle navigates `{sort: key, page: null}`, release navigates
-`{sort: null, page: null}`; dropdown gone from desktop / moved under mobile wrapper);
-url-sync specs (existing default-fallback + verbatim tests stay green); word-types
-facade spec (changeSort resets page); a11y label assertions.
-**Phase:** P6.
+| Explorer | Sortable columns (token, natural) | Default (param absent) |
+|---|---|---|
+| Roots | الجذر `alpha` asc · المواضع `occurrences` desc · الآيات `ayahs` desc · السور `surahs` desc · بدون تشكيل `simple` desc · بالتشكيل `tashkeel` desc · الصيغ `lemmas` desc · الأصول `stems` desc | ترتيب المصحف (`mushaf-order`) |
+| Lemmas | الصيغة المعجمية `alpha` asc · المواضع `occurrences` desc · الآيات `ayahs` desc · السور `surahs` desc · بدون تشكيل `simple` desc · بالتشكيل `tashkeel` desc · الأصول `stems` desc | ترتيب المصحف |
+| Stems | الأصل الصرفي `alpha` asc · المواضع `occurrences` desc · الآيات `ayahs` desc · السور `surahs` desc · بدون تشكيل `simple` desc · بالتشكيل `tashkeel` desc | ترتيب المصحف |
+| Unique Words | الكلمة `alpha` asc · المواضع `occurrences` desc · الآيات `ayahs` desc · السور `surahs` desc | ترتيب المصحف |
+| Word Types (words + grouped views, same keys) | الكلمة / dimension text `alpha` asc · المواضع `occurrences` desc · الآيات `ayahs` desc · السور `surahs` desc | **`occurrences` desc (kept — N8-a decision)** |
+
+**Excluded columns (rendered as plain, non-sortable headers):**
+
+- Related-entity text columns — lemmas' الجذر, stems' dominant الجذور/الصيغ,
+  unique-words' نوع الكلمة/الجذر, word-types' النوع/الجذر/الأصل/الصيغة. Unique-words'
+  are page-only enrichments (not at the sort point); lemmas/stems DO carry the text at
+  the sort point (`LemmasSummaryRow.RootText`, `StemSummaryRow.Dominant*Text`), so
+  those two are a cheap follow-up if wanted (open N8-h) — excluded from v1 to bound
+  scope.
+- Unique-words لم يذكر فيها (missing-surahs): post-page computed; ordering by it ≡
+  inverse of السور — use the السور header.
+- Word-types grouped member-words detail stays hardwired to occurrences
+  (`EfWordTypesReader.GroupedDetails.cs:65`; grouped-detail endpoints take no sort —
+  `WordTypeGroupedDetailsController.cs:69,123`) — detail views are not explorer lists.
+
+### Backend design
+
+**Contract layer (Abstractions)** — per explorer, replace the single direction-baked
+enum with a parsed pair:
+
+- Shared `WordSortDirection { Ascending, Descending }` next to the existing sort
+  types under `QuranDashboard.Application.Abstractions/Quran/Words/`.
+- Per explorer `XSortColumn` enum (roots: MushafOrder, Alpha, Occurrences, Ayahs,
+  Surahs, SimpleWords, TashkeelWords, Lemmas, Stems; lemmas/stems/unique/word-types
+  per the allowlist table) + parser returning `(XSortColumn, WordSortDirection)`:
+  same trim + `ToLowerInvariant()` + switch-on-constants style as today
+  (`RootSort.cs:3-42` pattern) — first match the full token against the alias table,
+  else split a trailing `-asc`/`-desc` and allowlist the stem; `mushaf-order`
+  matches only bare. Never regex, never reflection, never pass-through.
+- Handlers keep today's shape: blank → default (`GetRootsPageHandler.cs:17,25`
+  pattern; word-types default stays `Occurrences`,
+  `WordTypesHandlerValidation.cs:18`); parse failure → InvalidSort outcome → 400
+  (`RootsController.cs:83-84` mapping untouched). While touching:
+  `GetWordTypeRowsHandler.cs:49-53` is the one variant that returns InvalidSort
+  WITHOUT `LogWarning` — align it with the other four.
+- Controllers: binding unchanged (`[FromQuery(Name = "sort")] string?` /
+  word-types `[FromQuery] string? sort`, `WordTypesController.cs:72,126`) — the API
+  layer stays a thin boundary per API_GUIDELINES §1/§7 (Application owns the
+  validation); update the Swagger param descriptions to the new token vocabulary
+  (§9), and report per the §15 DoD.
+
+**Ordering implementations:**
+
+- Roots/Lemmas/Stems (in-memory `ApplySort` over summary rows):
+  switch (column) → key selector; `direction == Ascending ? OrderBy : OrderByDescending`;
+  ALWAYS append `.ThenBy(FirstWordOrderInMushaf).ThenBy(Id)` — the deterministic
+  paging contract in both directions. Alpha keeps `StringComparer.Ordinal` on the
+  normalized text. Per-request in-memory ordering cost is today's cost class (roots
+  1,642 / lemmas 4,790 / stems 12,108 rows — DB inventory).
+- Unique Words (`IQueryable` `ApplySort`, `EfUniqueWordsReader.List.cs:170-179`):
+  same switch/direction; **add the missing `.ThenBy(Id)`** after
+  `FirstWordOrderInMushaf` (parity + hard determinism). Sort applies before
+  `CountAsync`/`Skip/Take` exactly as now (`EfUniqueWordsReader.cs:36-43`).
+- Word Types (raw SQL): extend `OrderBy(sort)` (`Sql.cs:501-508`) and
+  `GroupedOrderBy(sort)` (`Sql.cs:307-314`) to switch on `(column, direction)` and
+  return **constant strings only** — direction is baked into each selected constant
+  (e.g. Alpha desc words view: `"g.display_text DESC, g.first_word_order_in_mushaf,
+  g.tashkeel_word_id, g.context_code"`); the value interpolated into SQL remains a
+  compiler-known constant chosen by an enum switch, never request text. Grouped
+  alpha: the `needsFold` gate (`Sql.cs:256-259`) extends to BOTH alpha directions;
+  fold pair stays parameterized (`@foldFrom/@foldTo`, `Sql.cs:335-339`); desc variant
+  = `norm_text COLLATE "C" DESC, dimension_id`. All candidate count sorts already
+  have CTE columns in both views — no SQL shape change beyond the ORDER BY constants.
+
+**Cache identity:**
+
+- Roots/Lemmas/Stems: zero change (sort not in any key — whole-summary caching).
+- Unique Words / Word Types: `SortKey()` (`UniqueWordsCacheKeys.cs:59-65`,
+  `WordTypesCacheKeys.cs:119-127`) maps the parsed pair to the **canonical token** —
+  key template strings unchanged, value set extended; aliases collapse to one entry.
+- `WordTypesCacheKeys.ScopeCounts` and all grouped-detail keys continue to omit sort
+  (`WordTypesCacheKeys.cs:19-22,37-48`) — guarded by the existing frontend spec too.
+
+**No count/scope drift:** sorting is applied after filtering and changes ORDER BY
+only; `totalCount` derivation is untouched (unique: `CountAsync` on the same filtered
+query; word-types: window `TotalCount` in the SQL result rows). Tests assert
+invariance explicitly.
+
+**Docs to update in the same backend change (API-contract rule):**
+`Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/README.md`
+("Ordering is part of the contract" §, :27-28 — new token vocabulary, direction
+rules, tie-break contract), `docs/contracts/words-explorers.md` pointer, Swagger
+descriptions. Frontend consumers update in the FE phase (same feature, contract rule
+satisfied across the two phases of one feature).
+
+### Frontend design
+
+- **Header cycle (3-state, per column):** click/Enter/Space on a sortable header
+  cycles natural direction → opposite direction → default release (param absent =
+  ترتيب المصحف on 4 explorers; word-types release = its `occurrences` default).
+  Word-types quirk spelled out: المواضع IS the default order there, so its column
+  header shows as actively sorted desc in the default state and its cycle
+  effectively collapses to desc(default) ⇄ asc; the other word-types columns cycle
+  through all three states.
+- **Visuals per §16 doctrine (unchanged from v1):** active header label
+  `--qd-accent-text` + direction glyph ▲/▼ (separate `aria-hidden` span, RTL-safe);
+  hover `--qd-surface-hover`; `:focus-visible` ring; optional 2px green-thread bar
+  (open N8-d); no solid fill, no shadow. Styling once on the `.qd-explorer-table`
+  base (`_explorer-tables.scss`: `__sort-button`, `.qd-is-sorted`); §17 updated.
+- **A11y:** `aria-sort="ascending"|"descending"` on the `role="columnheader"`
+  element (absent when inactive); Arabic `aria-label` naming column + next state in
+  the cycle; non-sortable headers stay plain text.
+- **URL + cache identity:** the `sort` param carries the canonical tokens above.
+  Existing states stay byte-identical (default param-free; `occurrences`/`alpha`/
+  word-types `ayahs`/`surahs` verbatim). Frontend sort type unions
+  (`RootSort` etc.) extend to the canonical token sets; url-sync guards
+  (`isRootSort`/`normalizeSort`) keep failing closed to the default on unknown
+  values; client cache keys absorb the tokens as today's opaque slot
+  (`roots:list:${sort}:…`, `wordtypes:table:…:sort:${sort}:…`) — no format change.
+  No `dir` param, no new query keys (the `column` URL key namespace for detail focus
+  stays untouched, `roots.models.ts:102`).
+- **Dropdown removal + small-screen fallback (flagged deviations):** the top
+  ترتيب dropdown (label+select) is deleted from every layout where the table header
+  row is visible (≥1024px). The header row is `display:none` at ≤1023px in all five
+  table SCSS files (`roots-table.component.scss:93-96` et al.), so a fallback sort
+  control must remain there. **Two flags:** (1) deviation from the verbatim "REMOVE
+  the dropdown entirely" — a compact `<select>` (same URL contract, options = default
+  + each sortable column ×2 directions with Arabic ↑/↓ labels) stays under a
+  ≤tablet-only wrapper; (2) the directive said "keep a *mobile* sort control", but
+  headers are hidden on TABLET too (768–1023px) — the fallback covers ≤1023px, unless
+  the alternative (open N8-e′: show table headers at tablet) is chosen instead.
+- **Compatibility ordering (hard gate):** the new frontend emits tokens the old
+  backend 400s on — **backend phase MUST deploy/merge before the frontend phase**.
+  The old frontend against the new backend is safe (legacy tokens are aliases).
+
+### Tests
+
+Backend (project `Backend/tests/QuranDashboard.Tests/`; extend the located suites):
+
+- Parse theories per explorer (`RootsListReadTests.cs:121-137,208-227` pattern;
+  `LemmasListReadTests.cs:166,452-467`; StemsListReadTests — which currently has NO
+  invalid-sort test, gap filled here; `UniqueWordsValidationTests.cs:25-38`;
+  `WordTypesMainReadTests.cs:141-160`): every canonical token + every legacy alias →
+  expected (column, direction); unknown token, unlisted column, `mushaf-order-asc`/
+  `-desc` → InvalidSort; blank → default.
+- Ordering per column per direction: correct primary order; **tie-break
+  determinism** — equal primary values order by mushaf order then Id in BOTH
+  directions (extend `StemsListReadTests.cs:182` alpha-tie pattern); unique-words
+  new `Id` tie-break covered.
+- **Scope invariance:** same filter set → identical `totalCount` (and identical row
+  ID multiset) across every sort token.
+- Cache keys: distinct entries per canonical token; alias and canonical token hit
+  ONE entry (`CachedUniqueWordsReaderTests.cs`, `WordTypesTableReadTests.cs:335-357`
+  per-(view,sort) isolation pattern); scope-counts key still sort-free
+  (`WordTypesCacheKeys` guard).
+- Word-types SQL: grouped alpha asc AND desc both fold (`needsFold` gate) —
+  extend `WordTypesTableReadTests.cs:158`.
+
+Frontend (extends the v1 test list):
+
+- Table specs ×5: header button only on allowlisted columns; 3-state cycle emits
+  the right token sequence (natural → opposite → null); `aria-sort` lifecycle;
+  word-types المواضع default-active collapse; direction glyph `aria-hidden`; plain
+  headers stay plain.
+- Page specs ×5: cycle navigates `{sort: token, page: null}` / release
+  `{sort: null, page: null}`; desktop dropdown gone; fallback select present only
+  ≤1023px and drives the same URL contract.
+- url-sync specs ×5: new tokens parse verbatim; aliases/unknowns fail closed to
+  default; existing default-fallback tests stay green.
+- `word-types-explorer.facade.spec.ts` (changeSort resets page) and
+  `word-types-cache.spec.ts:95-99` (scope-counts no-sort guard) stay green.
+
+### Risks + mitigations
+
+- **SQL injection via sort:** impossible by construction — controllers pass the raw
+  string only to Application parsers; SQL/LINQ sees a parsed enum pair; word-types
+  ORDER BY strings remain switch-selected constants; grouped fold arguments remain
+  SQL parameters. Tests reject every non-allowlisted token with 400. NEVER
+  interpolate the request value.
+- **Non-deterministic paging:** mandatory tie-breaker chain
+  (`FirstWordOrderInMushaf`, `Id`) asserted in both directions per column; the
+  unique-words missing `Id` tie-break is added, not left as-is.
+- **Count/scope drift:** ORDER-BY-only change; totalCount/row-set invariance tests
+  per explorer; scope-counts and grouped-detail caches stay sort-free.
+- **Contract mismatch between stacks:** one feature, two ordered phases — BE lands
+  first (new tokens additive, old FE unaffected), FE second; frontend guards fail
+  closed if ever pointed at an old backend. Contract-change rule satisfied by
+  updating DTO/parsers + handlers + readers/SQL + cache keys + controllers/Swagger +
+  backend tests + reads README + contracts pointer in the BE phase, and api
+  services/models/url-sync/cache/specs + frontend READMEs + §17 in the FE phase.
+- **Alpha semantics asymmetry** (ordinal vs raw collation vs folded): pre-existing;
+  direction reverses each as-is; normalizing them is flagged out of scope.
+- **In-memory sort cost** (roots/lemmas/stems): unchanged cost class — per-request
+  ordering over 1.6k–12k cached rows, same as today for every existing sort.
+
+### Affected files
+
+Backend (~30): 5 sort contract files (+ shared direction enum), 5 handlers (+
+word-types second handler), 4 derivations/readers (`RootsListDerivation`,
+`LemmasListDerivation`, `StemsListDerivation`, `EfUniqueWordsReader.List`),
+`EfWordTypesReader.Sql`, 2 cache-key classes, 5 controllers (Swagger descriptions),
+~8 test files, reads README, `docs/contracts/words-explorers.md`.
+
+Frontend (~59, unchanged from v1 list): 5 tables + 5 pages (+specs), 5 models,
+5 labels, 5 url-sync (+specs), word-types facade (+spec, cache spec), 2 style
+partials, shared labels, UI_STYLE_SYSTEM.md §17, words README.
+
+### Phase note
+
+**P6 = N8-BE** (contract, ordering, cache keys, tests, backend docs — merge/deploy
+gate) → **P7 = N8-FE** (headers, cycle, dropdown removal + ≤tablet fallback, URL
+unions, specs, frontend docs). See the integrated order.
+
+### Open decisions (N8, revised)
+
+- **N8-d:** active-header indicator — accent-text + arrow only (recommended) vs +
+  2px green-thread bar.
+- **N8-e:** ≤1023px fallback shape — keep compact `<select>` with direction options
+  (recommended) vs new chip/menu; **N8-e′** alternative: unhide table headers at
+  tablet instead.
+- **N8-f:** confirm the grouped-view dimension header is the alpha column
+  (`GroupedOrderBy` sorts `norm_text`, `Sql.cs:312`) — expected yes.
+- **N8-g (branching):** backend half on this `restyle/flat-green-light` branch vs a
+  dedicated feature branch off `dev` per the repo Git-Flow rule (backend work on a
+  frontend restyle branch is atypical; release flow unaffected either way since both
+  merge via dev). Needs user call before P6 starts.
+- **N8-h (follow-up, not v1):** lemmas' الجذر and stems' dominant-lemma/root text
+  columns are sortable-capable today (text present at the sort point) — separate
+  follow-up if wanted.
 
 ---
 
@@ -747,8 +924,10 @@ facade spec (changeSort resets page); a11y label assertions.
    Option B, that ONE inset hairline ring ships with the explicit §16.2 exception
    sentence — nothing else may cite it as precedent.
 6. **URL + HTTP-cache identity** — N1 prevents a spurious param; N4 commits only on
-   Enter with unchanged grammar; N8 reuses the `sort` param and values verbatim; N5/N7
-   never touch the URL; no cache-key format changes anywhere.
+   Enter with unchanged grammar; N8 keeps the `sort` param and every EXISTING value
+   byte-identical (default stays param-absent) and only extends the allowlisted value
+   set, with canonicalized tokens on both cache layers; N5/N7 never touch the URL; no
+   cache-key FORMAT changes anywhere.
 7. **Docs-in-same-change rule** — words README (N1 behavior, N4 chips, N5 contract,
    N8 URL contract), mushaf README (N7, N3 mushaf reservations), UI_STYLE_SYSTEM.md
    §16/§17 (N6 shell contract, N7 doctrine note + DESIGN.md mirror, N8 table
@@ -763,18 +942,20 @@ facade spec (changeSort resets page); a11y label assertions.
 
 | Phase | Items | Rationale | Commit |
 |---|---|---|---|
-| P0 | Decisions | Resolve open decisions (min. N4-a, N7-a, N8-a/b/e; rest have recommended defaults) | — |
+| P0 | Decisions | Resolve remaining open decisions (N3-b, N8-d/e/g; N4-a and N7-a already decided; rest have recommended defaults) | — |
 | P1 | N1 + N5 | Two small behavior guards, independent, immediately user-visible; no visual redesign | `fix(words): active-chip no-op + association dropdown focus gating (N1, N5)` |
 | P2 | N2 + N6 | One shared component (shell) owns both; fixed geometry also closes N3 row 13 before the N3 sweep starts | `feat(overlay): fixed modal geometry + kind/count header (N2, N6)` |
-| P3 | N4 | Filter chips + Enter commit; depends only on the N4-a decision | `feat(words): 3-chip count ranges + Enter-commit custom bounds (N4)` |
+| P3 | N4 | Filter chips + Enter commit (thresholds per the decided per-metric table) | `feat(words): 3-chip count ranges + Enter-commit custom bounds (N4)` |
 | P4 | N3 | App-wide loading reservations, ordered inside the phase: confirmed defect → one-liners → mushaf U1 port → banner decision | `fix(ui): loading states hold layout footprint app-wide (N3)` |
-| P5 | N7 | Hover chain + token + doctrine mirror edits | `feat(mushaf): ayah hover wash (N7)` |
-| P6 | N8 | Largest structural change last; lands on a stable base; includes dropdown removal + mobile fallback | `feat(words): column-header sorting, sort dropdown removed (N8)` |
-| P7 | Final guard | C1 verification pass (both themes, 3 consumers); full suite; production build; browser matrix (1440/768/390, RTL, keyboard, light+dark, reduced motion, layout-shift overlay for N3/U1 gates); README/doc diff check | `docs(feature-030): verification record` |
+| P5 | N7 | Hover chain + token (decided: flat tint) + doctrine mirror edits | `feat(mushaf): ayah hover wash (N7)` |
+| P6 | **N8-BE** | Backend sort-direction contract FIRST: parsers, derivations/SQL, cache SortKey, tests, reads README + contracts pointer. Hard gate: must land before P7 (new FE tokens 400 on the old BE; old FE unaffected — legacy tokens are aliases) | `feat(words-api): asc/desc sort per allowlisted explorer column (N8-BE)` |
+| P7 | **N8-FE** | Column-header 3-state cycle, dropdown removal + ≤tablet fallback, URL/type unions, specs, frontend docs | `feat(words): column-header asc/desc sorting, sort dropdown removed (N8-FE)` |
+| P8 | Final guard | C1 verification pass (both themes, 3 consumers); full FE suite + backend test suite; production build; browser matrix (1440/768/390, RTL, keyboard, light+dark, reduced motion, layout-shift overlay for N3/U1 gates); README/doc diff check | `docs(feature-030): verification record` |
 
 Phases are commit-sized and independently revertible; P1–P3 and P5 have no
 inter-dependencies and can reorder freely if a decision stalls. P4 should follow P2
-(shell geometry settled). P6 last (touches the most files).
+(shell geometry settled). **P6 → P7 ordering is a hard dependency** (backend contract
+before the frontend that emits its new tokens); both land last as the largest change.
 
 ---
 
@@ -782,19 +963,19 @@ inter-dependencies and can reorder freely if a decision stalls. P4 should follow
 
 **Required before the affected phase starts:**
 
-1. **N4-a — per-metric thresholds** (blocks P3): proposed table
-   {مواضع 100, آيات 100, سور 50, كلمات ١٠, صيغ ١٠, أصول ١٠} vs fixed 100. Evidence
-   says fixed-100 creates dead ">100" chips on 5 of 7 metrics. → recommend the table.
-2. **N7-a — hover form** (blocks P5): flat accent tint 10% (recommended, no doctrine
-   exception beyond a hover-fill note) vs inset-ring shadow variant (requires the
-   §16.2 exception sentence). N7-b calibration happens live either way.
-3. **N8-a/b — Word Types default + cycle depth** (blocks P6): keep occurrences
-   default (recommended) + ship 2-state cycle now (recommended, backend gap flagged) —
-   the full asc→desc→default cycle needs a future backend feature (N8-c wire format to
-   be frozen with the backend owner; NOT in this batch).
-4. **N8-e — mobile sort fallback** (blocks P6): keep the select ≤tablet (recommended)
-   vs new compact control.
-5. **N3-b — page-level banners** (blocks the last step of P4): reserved status slot
+1. **N4-a — per-metric thresholds: DECIDED** — the per-metric table
+   {مواضع 100, آيات 100, سور 50, كلمات ١٠, صيغ ١٠, أصول ١٠} is adopted (user,
+   2026-07-17). P3 unblocked.
+2. **N7-a — hover form: DECIDED** — flat accent tint (Option A, no shadow; only the
+   hover-fill doctrine note needed). N7-b calibration happens live. P5 unblocked.
+3. **N8 — asc/desc: DECIDED cross-stack** — full ascending/descending per column via
+   the backend change designed in §N8 (suffix token grammar on the existing `sort`
+   param; legacy tokens = natural-direction aliases; Word Types keeps its
+   `occurrences` default). Remaining N8 calls before P6/P7: **N8-g** branching for
+   the backend half (this branch vs feature branch off `dev` — Git-Flow rule),
+   **N8-d** active-header indicator form, **N8-e/e′** ≤1023px fallback shape (compact
+   select recommended) vs unhiding headers at tablet.
+4. **N3-b — page-level banners** (blocks the last step of P4): reserved status slot
    vs mounted-shell table states (recommended).
 
 **Defaults proposed (override only if disagreed):** N1-a drop the page>1 re-click
@@ -803,18 +984,18 @@ N3-a local U1 copy; N3-c reserved tabs slot; N3-d 12 skeleton rows; N3-e route-l
 placeholder deferred; N5-a no fetch on reopen; N5-b keep roles; N5-c uniform
 behavior; N4-b strict boundaries (100 via مخصّص); N4-c Latin digits + slug testids;
 N4-d include تطبيق button; N7-c marker excluded; N8-d accent-text + arrow (no bar);
-N8-f dimension header is the alpha column in grouped views; C1-a leave panel tone as
-is.
+N8-f dimension header is the alpha column in grouped views; N8-h related-text-column
+sorting stays a follow-up; C1-a leave panel tone as is.
 
 ---
 
 ## Explicitly flagged out of scope (do not implement in this batch)
 
-- **Backend sort directions + new sort keys** (N8): opposite-direction variants and
-  keys for the six unkeyed count columns — a coordinated backend feature (enums,
-  parsers, derivations, SQL, backend cache keys, tests). Frontend v1 ships the
-  2-state cycle on existing keys only; client-side page re-sorting rejected as
-  incorrect under server pagination.
+- **N8 leftovers** (the backend direction feature itself is now IN scope, §N8):
+  client-side page re-sorting stays rejected; related-entity text-column sorting
+  (N8-h) is a follow-up; the word-types grouped member-words detail order stays
+  hardwired; normalizing the three alpha-collation semantics is a separate item;
+  `mushaf-order` remains ascending-only (no reverse-mushaf token).
 - **Route-level lazy-load placeholder** (N3-e): a gap, not a shift; new scope.
 - **`--qd-explorer-detail-bg` panel-tone unification** (C1-a) and the
   `.study-context-section` `--qd-shadow-sm` hygiene nit: separate items if wanted.
