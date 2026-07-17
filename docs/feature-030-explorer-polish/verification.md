@@ -4,6 +4,16 @@
 - **Date:** 2026-07-17.
 - **Scope:** the 9 planned items (C1, N1–N8). N8 was cross-stack; everything else frontend-only.
 
+> **Partly superseded the same day by M1/M2** (`8333bc0`, `de4366b`) — this file is the
+> evidence as it stood at 030, not current truth. Two N7 rows below no longer describe the
+> shipped UI: the hover wash is now scoped to the **one word** under the pointer, not the
+> whole ayah, and the selected word moved 16% → 28%. The ayah-wide wash turned out to sit
+> only ΔL 0.0157 from the 16% selection, burying the selected word among its neighbours —
+> the defect M1 fixed. The **dark-theme gap listed under "Outstanding"** is now closed for
+> the mushaf ladder (measured: canvas 0.189 → hover 0.235 → selection 0.381, text 8.43:1);
+> the rest of that section still stands. Current truth: `features/mushaf/README.md` +
+> `styles/_tokens.scss`.
+
 ## Commits (one per phase, in plan order)
 
 | Phase | Commit | Items |
