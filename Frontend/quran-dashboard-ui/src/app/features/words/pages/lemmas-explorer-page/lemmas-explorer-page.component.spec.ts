@@ -219,18 +219,18 @@ describe('LemmasExplorerPageComponent US1', () => {
     ).toBe('1');
   });
 
-  it('serializes a count-range bucket to the URL and resets the page (US5)', async () => {
+  it('serializes a count-range chip to the URL and resets the page (US5)', async () => {
     const fixture = await initLifecycle();
     await fixture.whenStable();
     fixture.detectChanges();
 
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('[data-testid="lemmas-range-filter"]')).toBeTruthy();
-    (root.querySelector('[data-testid="range-filter-bucket-occurrences-11–100"]') as HTMLButtonElement).click();
+    (root.querySelector('[data-testid="range-filter-chip-occurrences-gt"]') as HTMLButtonElement).click();
 
     expect(router.navigate).toHaveBeenCalledWith([], {
       relativeTo: expect.anything(),
-      queryParams: expect.objectContaining({ occ: '11..100', page: null }),
+      queryParams: expect.objectContaining({ occ: '101..', page: null }),
       queryParamsHandling: 'merge',
     });
   });

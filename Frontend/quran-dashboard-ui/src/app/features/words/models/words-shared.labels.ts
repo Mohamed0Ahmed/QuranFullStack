@@ -51,10 +51,15 @@ export const WORDS_SHARED_COUNT_COLUMNS = {
   stems: 'الأصول الصرفية',
 } as const;
 
-// UI labels for the shared count-range filter (Feature 026, US5).
+// UI labels for the shared count-range filter (Feature 026, US5; chips reshaped in Feature 030, N4).
+// greaterThan/lessThan prefix the metric's threshold to form the two shortcut chip labels; apply is the
+// touch-friendly twin of pressing Enter in the مخصّص inputs.
 export const WORDS_RANGE_FILTER_LABELS = {
   sectionLabel: 'تصفية حسب الأعداد',
+  greaterThan: 'أكثر من',
+  lessThan: 'أقل من',
   custom: 'مخصّص',
+  apply: 'تطبيق',
   min: 'من',
   max: 'إلى',
   clearAll: 'مسح كل عوامل التصفية',

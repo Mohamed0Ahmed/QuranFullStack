@@ -114,13 +114,25 @@ Shared across explorers: `utils/explorer-table-*` (focus/keyboard-nav/scroll/col
   (the page's own error state owns the message); zero results → "0". Because the total is the filtered
   query's own count, the stat reflects search/filters by construction and never disagrees with pagination.
   Word Types uses the separate four-count scope summary, not this stat.
-- **Count-range filters** (Feature 026, US5) on the four normal explorers: the shared
-  `explorer-count-range-filter` component offers preset bucket chips (`aria-pressed`, RTL) plus a
-  "مخصّص" min/max panel per metric — exactly the count columns each page already shows (Unique Words:
-  occurrences/ayahs/surahs; Roots: + simple/tashkeel words + lemmas + stems; Lemmas: + simple/tashkeel
-  + stems; Stems: + simple/tashkeel). Presets live in `models/words-filter-presets.ts` (config, not
-  labels); per-page metric descriptors (`*_RANGE_METRICS`) map each metric to its URL key, backend API
-  prefix, and bucket family. The **URL grammar is `min..max`** (either bound omissible), parsed
+- **Count-range filters** (Feature 026, US5; chips reshaped in Feature 030, N4) on the four normal
+  explorers: the shared `explorer-count-range-filter` component offers exactly **three chips per
+  metric** — `أكثر من N` / `أقل من N` / `مخصّص` (`aria-pressed`, RTL) — over exactly the count columns each
+  page already shows (Unique Words: occurrences/ayahs/surahs; Roots: + simple/tashkeel words + lemmas +
+  stems; Lemmas: + simple/tashkeel + stems; Stems: + simple/tashkeel). **N is per metric**: المواضع 100,
+  الآيات 100, السور **50** (a surah count can never exceed 114, so the family's 100 would be a dead chip),
+  and every sub-count metric (كلمات بدون تشكيل/بالتشكيل, الصيغ المعجمية, الأصول الصرفية) 10. It resolves as a
+  family default (`RANGE_FAMILY_THRESHOLDS`) **plus** an optional per-metric `RangeMetric.threshold`
+  override — required because ayahs and surahs share the `ayahsSurahs` family and would otherwise be
+  forced onto one N; السور reads the shared `SURAHS_RANGE_THRESHOLD` const so its chips cannot drift apart
+  across the four explorers. Both chip bounds are **strict** (`أكثر من 100` ⇒ `101..`, `أقل من 100` ⇒
+  `..99`), leaving exactly N reachable only through مخصّص. Chips are **presentation-only**: the URL stores
+  the actual range, never a chip identity, so a shared link carrying any other range — including a
+  pre-030 bucket link such as `occ=11..100` — still parses and simply reopens as an active مخصّص. Chip
+  testids are stable slugs (`range-filter-chip-<metric>-gt|lt`), never derived from the Arabic label or
+  its digits. Presets live in `models/words-filter-presets.ts` (config, not labels — the chip copy lives
+  in `WORDS_RANGE_FILTER_LABELS`); per-page metric descriptors (`*_RANGE_METRICS`) map each metric to its
+  URL key, backend API prefix, family, and optional threshold. The **URL grammar is `min..max`** (either
+  bound omissible), parsed
   **fail-closed** (malformed / min>max ⇒ that filter absent, page still loads) by the shared
   `parseCountRange`/`words-range-filters` helpers. URL keys per page: Unique Words / Lemmas / Stems /
   Roots share `occ`, `ayahs`, `surahs`; Roots/Lemmas/Stems add `simple`, `tashkeel`; Roots/Lemmas add
@@ -132,6 +144,14 @@ Shared across explorers: `utils/explorer-table-*` (focus/keyboard-nav/scroll/col
   (Feature 029, U2): the shared filter host is a **full-width second row** of
   `.qd-explorer-controls-secondary` (`flex: 1 1 100%` on the component host) below the sort control
   on all four pages, so expanding the `<details>` panel grows its own row and never moves the sort.
+- **مخصّص commits on Enter, never per keystroke** (Feature 030, N4): typing in the min/max inputs writes
+  only component-local draft signals — no emit, therefore **no navigation, no history entry and no
+  fetch** (a range used to cost one of each per keystroke). `Enter` (preventing the default) or the
+  touch-friendly `تطبيق` button commits the normalized draft through the ordinary emit path; `Escape`
+  reverts the draft to the last committed value; blur is a no-op (the draft persists). Drafts re-sync
+  from `ranges()` whenever it changes outside the component (URL restore, Back/Forward, clear-all). The
+  `parseBound`/`normalize` guards (non-numeric or negative ⇒ open bound; min > max ⇒ fail-open by
+  dropping the max) run at **commit** time, not per keystroke.
 - **Ayah type chips** (lemmas and stems only — roots have none, Word Types detail is per-type by
   construction, and `type-distribution-list` is display-only) narrow the ayahs tab by `typeCode`, and
   render at four sites: the two explorer pages and their two overlay adapters. **Clicking a chip that

@@ -23,6 +23,7 @@ import type {
 } from '../../../core/api/generated/models';
 import type { PagedResultDto } from '../../../core/data-access/paged-result.model';
 import type { RangeFilters, RangeMetric } from '../state/words-range-filters';
+import { SURAHS_RANGE_THRESHOLD } from './words-filter-presets';
 import { WORDS_SHARED_COUNT_COLUMNS } from './words-shared.labels';
 
 export type {
@@ -109,7 +110,7 @@ export const ROOTS_QUERY_KEYS = {
 export const ROOTS_RANGE_METRICS: readonly RangeMetric[] = [
   { key: 'occurrences', urlKey: 'occ', apiKey: 'occ', family: 'occurrences', labelAr: WORDS_SHARED_COUNT_COLUMNS.occurrences },
   { key: 'ayahs', urlKey: 'ayahs', apiKey: 'ayahs', family: 'ayahsSurahs', labelAr: WORDS_SHARED_COUNT_COLUMNS.ayahs },
-  { key: 'surahs', urlKey: 'surahs', apiKey: 'surahs', family: 'ayahsSurahs', labelAr: WORDS_SHARED_COUNT_COLUMNS.surahs },
+  { key: 'surahs', urlKey: 'surahs', apiKey: 'surahs', family: 'ayahsSurahs', labelAr: WORDS_SHARED_COUNT_COLUMNS.surahs, threshold: SURAHS_RANGE_THRESHOLD },
   { key: 'simpleWords', urlKey: 'simple', apiKey: 'simpleWords', family: 'subCount', labelAr: WORDS_SHARED_COUNT_COLUMNS.simpleWords },
   { key: 'tashkeelWords', urlKey: 'tashkeel', apiKey: 'tashkeelWords', family: 'subCount', labelAr: WORDS_SHARED_COUNT_COLUMNS.tashkeelWords },
   { key: 'lemmas', urlKey: 'lemmas', apiKey: 'lemmas', family: 'subCount', labelAr: WORDS_SHARED_COUNT_COLUMNS.lemmas },
