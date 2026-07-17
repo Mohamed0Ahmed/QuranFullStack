@@ -8,3 +8,22 @@
   gap: var(--qd-space-2);
   padding-block: var(--qd-space-2);
 }
+
+// shape="panel" stands in for a whole panel body, so it fills a host that has a
+// block size (e.g. the reader's fixed-height page panel) instead of leaving a
+// short bar stranded in a tall box (N3 row 9). A host with an auto block size is
+// unaffected: `flex: 1` resolves against content, and .qd-skeleton--block's own
+// 3rem min-height still floors it, so the default panel skeleton is unchanged.
+:host(.qd-panel-skeleton--panel-shape) {
+  display: flex;
+  flex-direction: column;
+}
+
+.explorer-panel-skeleton--panel {
+  flex: 1;
+  min-block-size: 0;
+
+  .qd-skeleton--block {
+    flex: 1;
+  }
+}

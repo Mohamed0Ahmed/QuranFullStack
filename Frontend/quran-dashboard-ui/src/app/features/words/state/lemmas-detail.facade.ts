@@ -1,97 +1,58 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
-import { HttpErrorResponse } from '@angular/common/http';
+import { Injectable, computed, inject } from '@angular/core';
 import { ActivatedRoute, ParamMap } from '@angular/router';
-import { Observable, Subscription, of } from 'rxjs';
-import { catchError, distinctUntilChanged, map, switchMap, tap } from 'rxjs/operators';
+import { Subscription } from 'rxjs';
+import { distinctUntilChanged, map } from 'rxjs/operators';
 
-import { ApiResponse } from '../../../core/data-access/api-response.model';
 import { LemmasApi } from '../data-access/lemmas.api';
-import { LEMMAS_ERROR_LABEL, LEMMAS_NOT_FOUND_LABEL } from '../models/lemmas.labels';
 import {
-  DEFAULT_LEMMA_DETAIL_PAGE,
-  DEFAULT_LEMMA_SURAHS_VIEW,
   DEFAULT_LEMMA_VIEW,
-  DEFAULT_LEMMA_WORD_VIEW,
   LemmaSummaryDto,
   LemmaSurahView,
   LemmaView,
   LemmaWordView,
-  LemmasPanelState,
-  isPaginatedLemmaView,
 } from '../models/lemmas.models';
 import { parseLemmasQueryParams } from './lemmas-url-sync';
-import { LemmasCache, LemmasCacheKeys } from './lemmas-cache';
+import { LemmasCache } from './lemmas-cache';
 import {
-  buildAyahsPanelUpdate,
-  buildDetailErrorUpdate,
-  buildMentionedSurahsPanelUpdate,
-  buildMissingSurahsPanelUpdate,
-  buildStemsPanelUpdate,
-  buildWordsPanelUpdate,
-  extractPanelErrorMessage,
-  restoredLemmaNotFoundUpdate,
-} from './lemmas-detail-panel.updates';
+  LemmasDetailController,
+  LemmasDetailUrlState,
+  lemmasDetailUrlStatesEqual,
+} from './lemmas-detail.controller';
 import { LemmasDetailViewLoader } from './lemmas-detail-view.loader';
 
-const INITIAL_PANEL: LemmasPanelState = {
-  selectedLemmaId: null,
-  summary: null,
-  view: DEFAULT_LEMMA_VIEW,
-  wordView: DEFAULT_LEMMA_WORD_VIEW,
-  surahView: DEFAULT_LEMMA_SURAHS_VIEW,
-  ayahTypeCode: null,
-  detailPage: DEFAULT_LEMMA_DETAIL_PAGE,
-  ayahs: null,
-  words: null,
-  mentionedSurahs: null,
-  missingSurahs: null,
-  stems: null,
-  status: 'idle',
-  errorMessage: '',
-};
-
-interface PanelUrlState {
-  readonly lemmaId: number;
-  readonly view: LemmaView;
-  readonly wordView: LemmaWordView;
-  readonly surahView: LemmaSurahView;
-  readonly detailPage: number;
-  readonly typeCode: string | null;
-}
-
 /**
- * Lemmas Explorer detail panel facade (Feature 016). Sibling of
- * `RootsDetailFacade`. Owns selected summary, active view/sub-view, detail
- * pagination, per-session cache, and not-found. The skeleton wires route
- * hydration and the view loader; live reads are exercised from US1 onward once
- * the lemma catalogue and summary endpoints exist.
+ * Thin route adapter over `LemmasDetailController` (Feature 029, Change B4).
+ *
+ * The facade keeps the lemmas explorer page contract — bind/unbind to the
+ * page's `ActivatedRoute` query state plus the direct selection methods — and
+ * delegates all panel state and load orchestration to its own private
+ * controller instance. The global overlay adapters use their own
+ * component-scoped `LemmasDetailController` instances, so overlay activity can
+ * never mutate this page facade's state.
  */
 @Injectable({ providedIn: 'root' })
 export class LemmasDetailFacade {
-  private readonly api = inject(LemmasApi);
-  private readonly cache = inject(LemmasCache);
-  private readonly viewLoader = inject(LemmasDetailViewLoader);
-
-  private readonly _panel = signal<LemmasPanelState>(INITIAL_PANEL);
+  private readonly controller = new LemmasDetailController(
+    inject(LemmasApi),
+    inject(LemmasCache),
+    inject(LemmasDetailViewLoader),
+  );
 
   private routeSub?: Subscription;
-  private detailSub?: Subscription;
-  private summarySub?: Subscription;
-  private activeUrlState: PanelUrlState | null = null;
 
-  readonly panelState = computed(() => this._panel());
+  readonly panelState = this.controller.panelState;
 
-  readonly selectedLemmaId = computed(() => this._panel().selectedLemmaId);
-  readonly view = computed(() => this._panel().view);
-  readonly wordView = computed(() => this._panel().wordView);
-  readonly surahView = computed(() => this._panel().surahView);
-  readonly status = computed(() => this._panel().status);
-  readonly ayahs = computed(() => this._panel().ayahs);
-  readonly words = computed(() => this._panel().words);
-  readonly mentionedSurahs = computed(() => this._panel().mentionedSurahs);
-  readonly missingSurahs = computed(() => this._panel().missingSurahs);
-  readonly stems = computed(() => this._panel().stems);
-  readonly detailPage = computed(() => this._panel().detailPage);
+  readonly selectedLemmaId = computed(() => this.panelState().selectedLemmaId);
+  readonly view = computed(() => this.panelState().view);
+  readonly wordView = computed(() => this.panelState().wordView);
+  readonly surahView = computed(() => this.panelState().surahView);
+  readonly status = computed(() => this.panelState().status);
+  readonly ayahs = computed(() => this.panelState().ayahs);
+  readonly words = computed(() => this.panelState().words);
+  readonly mentionedSurahs = computed(() => this.panelState().mentionedSurahs);
+  readonly missingSurahs = computed(() => this.panelState().missingSurahs);
+  readonly stems = computed(() => this.panelState().stems);
+  readonly detailPage = computed(() => this.panelState().detailPage);
 
   bindToRoute(route: ActivatedRoute): void {
     this.unbindFromRoute();
@@ -99,238 +60,57 @@ export class LemmasDetailFacade {
     this.routeSub = route.queryParamMap
       .pipe(
         map((params) => this.toPanelUrlState(params)),
-        distinctUntilChanged((a, b) => this.isSamePanelUrlState(a, b)),
-        switchMap((state) => this.syncFromUrlState(state)),
+        distinctUntilChanged((a, b) => lemmasDetailUrlStatesEqual(a, b)),
       )
-      .subscribe();
+      .subscribe((state) => this.controller.applyUrlState(state));
   }
 
   unbindFromRoute(): void {
     this.routeSub?.unsubscribe();
     this.routeSub = undefined;
-    this.summarySub?.unsubscribe();
-    this.detailSub?.unsubscribe();
-    this.summarySub = undefined;
-    this.detailSub = undefined;
+    this.controller.cancelPendingLoads();
   }
 
   selectLemma(summary: LemmaSummaryDto, view: LemmaView = DEFAULT_LEMMA_VIEW): void {
-    this.activeUrlState = {
-      lemmaId: summary.id,
-      view,
-      wordView: DEFAULT_LEMMA_WORD_VIEW,
-      surahView: DEFAULT_LEMMA_SURAHS_VIEW,
-      detailPage: DEFAULT_LEMMA_DETAIL_PAGE,
-      typeCode: null,
-    };
-    this._panel.set({
-      ...INITIAL_PANEL,
-      selectedLemmaId: summary.id,
-      summary,
-      view,
-      status: 'loading',
-    });
-    this.loadActiveView(
-      summary.id,
-      view,
-      DEFAULT_LEMMA_WORD_VIEW,
-      DEFAULT_LEMMA_SURAHS_VIEW,
-      DEFAULT_LEMMA_DETAIL_PAGE,
-      null,
-    );
+    this.controller.selectLemma(summary, view);
   }
 
   selectLemmaWithPanel(
     summary: LemmaSummaryDto,
     view: LemmaView,
-    wordView: LemmaWordView = DEFAULT_LEMMA_WORD_VIEW,
-    surahView: LemmaSurahView = DEFAULT_LEMMA_SURAHS_VIEW,
-    detailPage: number = DEFAULT_LEMMA_DETAIL_PAGE,
+    wordView?: LemmaWordView,
+    surahView?: LemmaSurahView,
+    detailPage?: number,
     ayahTypeCode: string | null = null,
   ): void {
-    this.activeUrlState = { lemmaId: summary.id, view, wordView, surahView, detailPage, typeCode: ayahTypeCode };
-    this._panel.set({
-      ...INITIAL_PANEL,
-      selectedLemmaId: summary.id,
-      summary,
-      view,
-      wordView,
-      surahView,
-      ayahTypeCode,
-      detailPage,
-      status: 'loading',
-    });
-    this.loadActiveView(summary.id, view, wordView, surahView, detailPage, ayahTypeCode);
+    this.controller.selectLemmaWithPanel(summary, view, wordView, surahView, detailPage, ayahTypeCode);
   }
 
   clearSelection(): void {
-    this.summarySub?.unsubscribe();
-    this.detailSub?.unsubscribe();
-    this.summarySub = undefined;
-    this.detailSub = undefined;
-    this.activeUrlState = null;
-    this._panel.set(INITIAL_PANEL);
+    this.controller.clearSelection();
   }
 
   setAyahTypeCode(typeCode: string | null): void {
-    const current = this._panel();
-    if (current.selectedLemmaId === null || current.summary === null || current.view !== 'ayahs') {
-      return;
-    }
-
-    const normalizedTypeCode = this.normalizeTypeCode(typeCode);
-    if (normalizedTypeCode === current.ayahTypeCode && current.detailPage === DEFAULT_LEMMA_DETAIL_PAGE) {
-      return;
-    }
-
-    this.activeUrlState = {
-      lemmaId: current.selectedLemmaId,
-      view: 'ayahs',
-      wordView: current.wordView,
-      surahView: current.surahView,
-      detailPage: DEFAULT_LEMMA_DETAIL_PAGE,
-      typeCode: normalizedTypeCode,
-    };
-    this._panel.update((s) => ({
-      ...s,
-      ayahTypeCode: normalizedTypeCode,
-      detailPage: DEFAULT_LEMMA_DETAIL_PAGE,
-      status: 'loading',
-      errorMessage: '',
-    }));
-    this.loadActiveView(
-      current.selectedLemmaId,
-      'ayahs',
-      current.wordView,
-      current.surahView,
-      DEFAULT_LEMMA_DETAIL_PAGE,
-      normalizedTypeCode,
-    );
+    this.controller.setAyahTypeCode(typeCode);
   }
 
   setView(view: LemmaView): void {
-    const current = this._panel();
-    if (current.selectedLemmaId === null || current.summary === null || view === current.view) {
-      return;
-    }
-
-    const detailPage = DEFAULT_LEMMA_DETAIL_PAGE;
-    const wordView = view === 'words' ? current.wordView : DEFAULT_LEMMA_WORD_VIEW;
-    const surahView = view === 'surahs' ? current.surahView : DEFAULT_LEMMA_SURAHS_VIEW;
-
-    this.activeUrlState = {
-      lemmaId: current.selectedLemmaId,
-      view,
-      wordView,
-      surahView,
-      detailPage,
-      typeCode: null,
-    };
-    this._panel.update((s) => ({
-      ...s,
-      view,
-      wordView,
-      surahView,
-      ayahTypeCode: null,
-      detailPage,
-      status: 'loading',
-      errorMessage: '',
-    }));
-    this.loadActiveView(current.selectedLemmaId, view, wordView, surahView, detailPage, null);
+    this.controller.setView(view);
   }
 
   setWordView(wordView: LemmaWordView): void {
-    const current = this._panel();
-    if (
-      current.selectedLemmaId === null ||
-      current.summary === null ||
-      current.view !== 'words' ||
-      wordView === current.wordView
-    ) {
-      return;
-    }
-
-    this.activeUrlState = {
-      lemmaId: current.selectedLemmaId,
-      view: 'words',
-      wordView,
-      surahView: current.surahView,
-      detailPage: DEFAULT_LEMMA_DETAIL_PAGE,
-      typeCode: null,
-    };
-    this._panel.update((s) => ({
-      ...s,
-      wordView,
-      detailPage: DEFAULT_LEMMA_DETAIL_PAGE,
-      status: 'loading',
-      errorMessage: '',
-    }));
-    this.loadActiveView(current.selectedLemmaId, 'words', wordView, current.surahView, DEFAULT_LEMMA_DETAIL_PAGE, null);
+    this.controller.setWordView(wordView);
   }
 
   setSurahView(surahView: LemmaSurahView): void {
-    const current = this._panel();
-    if (
-      current.selectedLemmaId === null ||
-      current.summary === null ||
-      current.view !== 'surahs' ||
-      surahView === current.surahView
-    ) {
-      return;
-    }
-
-    this.activeUrlState = {
-      lemmaId: current.selectedLemmaId,
-      view: 'surahs',
-      wordView: current.wordView,
-      surahView,
-      detailPage: current.detailPage,
-      typeCode: null,
-    };
-    this._panel.update((s) => ({
-      ...s,
-      surahView,
-      status: 'loading',
-      errorMessage: '',
-    }));
-    this.loadActiveView(current.selectedLemmaId, 'surahs', current.wordView, surahView, current.detailPage, null);
+    this.controller.setSurahView(surahView);
   }
 
   setDetailPage(page: number): void {
-    const current = this._panel();
-    if (current.selectedLemmaId === null || current.summary === null || page < 1) {
-      return;
-    }
-
-    if (!isPaginatedLemmaView(current.view)) {
-      return;
-    }
-
-    this.activeUrlState = {
-      lemmaId: current.selectedLemmaId,
-      view: current.view,
-      wordView: current.wordView,
-      surahView: current.surahView,
-      detailPage: page,
-      typeCode: current.view === 'ayahs' ? current.ayahTypeCode : null,
-    };
-    this._panel.update((s) => ({
-      ...s,
-      detailPage: page,
-      status: 'loading',
-      errorMessage: '',
-    }));
-    this.loadActiveView(
-      current.selectedLemmaId,
-      current.view,
-      current.wordView,
-      current.surahView,
-      page,
-      current.view === 'ayahs' ? current.ayahTypeCode : null,
-    );
+    this.controller.setDetailPage(page);
   }
 
-  private toPanelUrlState(params: ParamMap): PanelUrlState | null {
+  private toPanelUrlState(params: ParamMap): LemmasDetailUrlState | null {
     const parsed = parseLemmasQueryParams(params);
     if (parsed.lemmaId === null) {
       return null;
@@ -344,167 +124,5 @@ export class LemmasDetailFacade {
       detailPage: parsed.detailPage,
       typeCode: parsed.typeCode,
     };
-  }
-
-  private syncFromUrlState(state: PanelUrlState | null): Observable<void> {
-    if (state === null) {
-      this.clearSelection();
-      return of(undefined);
-    }
-
-    if (this.isSamePanelUrlState(this.activeUrlState, state)) {
-      return of(undefined);
-    }
-
-    this.activeUrlState = state;
-    const current = this._panel();
-
-    if (current.selectedLemmaId === state.lemmaId && current.summary !== null) {
-      this._panel.update((s) => ({
-        ...s,
-        view: state.view,
-        wordView: state.wordView,
-        surahView: state.surahView,
-        ayahTypeCode: state.typeCode,
-        detailPage: state.detailPage,
-        status: 'loading',
-        errorMessage: '',
-      }));
-      this.loadActiveView(
-        state.lemmaId,
-        state.view,
-        state.wordView,
-        state.surahView,
-        state.detailPage,
-        state.typeCode,
-      );
-      return of(undefined);
-    }
-
-    return this.loadSummaryAndRestore(state);
-  }
-
-  private loadSummaryAndRestore(state: PanelUrlState): Observable<void> {
-    this.summarySub?.unsubscribe();
-    this._panel.set({
-      ...INITIAL_PANEL,
-      selectedLemmaId: state.lemmaId,
-      view: state.view,
-      wordView: state.wordView,
-      surahView: state.surahView,
-      ayahTypeCode: state.typeCode,
-      detailPage: state.detailPage,
-      status: 'loading',
-    });
-
-    return this.cache
-      .getOrLoad(LemmasCacheKeys.summary(state.lemmaId), () => this.api.getLemmaSummary(state.lemmaId))
-      .pipe(
-        tap((response) => {
-          if (!response.isSuccess || !response.data) {
-            this.handleRestoredLemmaNotFound(response.message ?? '');
-            return;
-          }
-
-          const summary = response.data;
-          this._panel.update((s) => ({
-            ...s,
-            summary,
-            ayahTypeCode: state.typeCode,
-            status: 'loading',
-          }));
-          this.loadActiveView(
-            state.lemmaId,
-            state.view,
-            state.wordView,
-            state.surahView,
-            state.detailPage,
-            state.typeCode,
-          );
-        }),
-        catchError((err) => {
-          if (err instanceof HttpErrorResponse && err.status === 404) {
-            this.handleRestoredLemmaNotFound(this.extractErrorMessage(err, LEMMAS_NOT_FOUND_LABEL));
-            return of(undefined);
-          }
-
-          this.handleRestoredLemmaLoadError(this.extractErrorMessage(err, LEMMAS_ERROR_LABEL));
-          return of(undefined);
-        }),
-        map(() => undefined),
-      );
-  }
-
-  private loadActiveView(
-    lemmaId: number,
-    view: LemmaView,
-    wordView: LemmaWordView,
-    surahView: LemmaSurahView,
-    detailPage: number,
-    ayahTypeCode: string | null,
-  ): void {
-    this.detailSub?.unsubscribe();
-
-    const current = this._panel();
-    this.detailSub = this.viewLoader.loadActiveView(
-      {
-        lemmaId,
-        view,
-        wordView,
-        surahView,
-        ayahTypeCode,
-        detailPage,
-        cachedMissingSurahs: current.missingSurahs,
-      },
-      {
-        onAyahs: (response) => this._panel.update((s) => ({ ...s, ...buildAyahsPanelUpdate(response) })),
-        onWords: (response) => this._panel.update((s) => ({ ...s, ...buildWordsPanelUpdate(response) })),
-        onMentionedSurahs: (response) =>
-          this._panel.update((s) => ({ ...s, ...buildMentionedSurahsPanelUpdate(response) })),
-        onMissingSurahs: (response) =>
-          this._panel.update((s) => ({ ...s, ...buildMissingSurahsPanelUpdate(response) })),
-        onStems: (response) => this._panel.update((s) => ({ ...s, ...buildStemsPanelUpdate(response) })),
-        onError: (err) =>
-          this._panel.update((s) => ({ ...s, ...buildDetailErrorUpdate(err, LEMMAS_ERROR_LABEL) })),
-      },
-    );
-  }
-
-  private handleRestoredLemmaNotFound(message: string): void {
-    this._panel.set(
-      restoredLemmaNotFoundUpdate(message, LEMMAS_NOT_FOUND_LABEL, this.activeUrlState?.lemmaId ?? null),
-    );
-  }
-
-  private handleRestoredLemmaLoadError(message: string): void {
-    this._panel.set({
-      ...INITIAL_PANEL,
-      selectedLemmaId: this.activeUrlState?.lemmaId ?? null,
-      status: 'error',
-      errorMessage: message || LEMMAS_ERROR_LABEL,
-    });
-  }
-
-  private extractErrorMessage(err: unknown, fallback: string): string {
-    return extractPanelErrorMessage(err, fallback);
-  }
-
-  private isSamePanelUrlState(current: PanelUrlState | null, next: PanelUrlState | null): boolean {
-    if (current === null || next === null) {
-      return current === next;
-    }
-
-    return (
-      current.lemmaId === next.lemmaId &&
-      current.view === next.view &&
-      current.wordView === next.wordView &&
-      current.surahView === next.surahView &&
-      current.detailPage === next.detailPage &&
-      current.typeCode === next.typeCode
-    );
-  }
-
-  private normalizeTypeCode(typeCode: string | null): string | null {
-    return typeCode === null || typeCode.trim().length === 0 ? null : typeCode.trim();
   }
 }

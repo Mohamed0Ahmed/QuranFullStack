@@ -145,6 +145,10 @@ describe('MushafPageViewComponent', () => {
     expect(root.textContent).toContain('سورة سورة-تجريبية-١، سورة-تجريبية-٢');
   });
 
+  function wordButtons(): HTMLButtonElement[] {
+    return Array.from(fixture.nativeElement.querySelectorAll('button.mushaf-word'));
+  }
+
   it('renders a centered page jump trigger below the lines', () => {
     const trigger = fixture.nativeElement.querySelector(
       '[data-testid="mushaf-page-jump-trigger"]',

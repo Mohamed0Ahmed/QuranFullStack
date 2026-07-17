@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
-import { deepLinkToHref } from '../../../../shared/url/deep-link-href';
-import { buildLemmasDeepLink } from '../../state/lemmas-url-sync';
+import { DetailOverlayLinkDirective } from '../../../../core/navigation/detail-overlay/detail-overlay-link.directive';
+import { LemmaDetailFrame } from '../../../../core/navigation/detail-overlay/detail-overlay.models';
 
 import {
   ROOTS_LEMMA_TEXT_HEADER,
@@ -14,12 +14,13 @@ import { ROW_NUMBER_HEADER } from '../../models/unique-words.labels';
 
 interface RootLemmaRowViewModel {
   item: RootLemmaItemDto;
-  href: string;
+  frame: LemmaDetailFrame;
 }
 
 @Component({
   selector: 'qd-root-lemmas-list',
   standalone: true,
+  imports: [DetailOverlayLinkDirective],
   templateUrl: './root-lemmas-list.component.html',
   styleUrl: './root-lemmas-list.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -36,10 +37,20 @@ export class RootLemmasListComponent {
   protected readonly loadingLabel = WORDS_LOADING_LABEL;
   protected readonly openLemmaLabel = ROOTS_OPEN_LEMMA_LABEL;
 
+  // Mirrors the retired lemma explorer deep link, which opened the default
+  // words view; frame defaults are serialized explicitly per the URL contract.
   protected readonly rows = computed((): readonly RootLemmaRowViewModel[] =>
     this.lemmas().map((item) => ({
       item,
-      href: deepLinkToHref(buildLemmasDeepLink({ lemmaId: item.lemmaId })),
+      frame: {
+        kind: 'lemma',
+        id: item.lemmaId,
+        view: 'words',
+        wordView: 'simple',
+        surahView: 'mentioned',
+        detailPage: 1,
+        typeCode: null,
+      },
     })),
   );
 }

@@ -22,7 +22,7 @@ public sealed class CachedWordTypesReader(EfWordTypesReader efReader, IMemoryCac
         return tree;
     }
 
-    public async Task<PagedResult<WordTypeRowDto>> GetRowsAsync(WordTypeFilter filter, WordTypeSort sort, int page, int pageSize, CancellationToken cancellationToken)
+    public async Task<PagedResult<WordTypeRowDto>> GetRowsAsync(WordTypeFilter filter, WordTypeSortSpec sort, int page, int pageSize, CancellationToken cancellationToken)
     {
         var key = WordTypesCacheKeys.Rows(filter, sort, page, pageSize);
         if (_cache.TryGetValue(key, out PagedResult<WordTypeRowDto>? cached))
@@ -35,7 +35,7 @@ public sealed class CachedWordTypesReader(EfWordTypesReader efReader, IMemoryCac
         return rows;
     }
 
-    public async Task<PagedResult<WordTypeTableRowDto>> GetTableRowsAsync(WordTypeFilter filter, WordTypeTableView tableView, WordTypeSort sort, int page, int pageSize, CancellationToken cancellationToken)
+    public async Task<PagedResult<WordTypeTableRowDto>> GetTableRowsAsync(WordTypeFilter filter, WordTypeTableView tableView, WordTypeSortSpec sort, int page, int pageSize, CancellationToken cancellationToken)
     {
         var key = WordTypesCacheKeys.Table(filter, tableView, sort, page, pageSize);
         if (_cache.TryGetValue(key, out PagedResult<WordTypeTableRowDto>? cached))

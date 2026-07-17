@@ -1,0 +1,19 @@
+<!-- A restored notFound closes the drilldown state (isOpen=false), so the
+     drilldown component would render nothing: the adapter owns the in-panel
+     notFound branch instead. Every other status renders through the existing
+     drilldown content in frameless mode (tabs + body; shell owns the chrome). -->
+@if (drilldownState().status === 'notFound') {
+  <div class="qd-empty-state" role="status" data-testid="overlay-unique-not-found">
+    {{ drilldownState().errorMessage || notFoundLabel }}
+  </div>
+} @else {
+  <qd-word-drilldown-modal
+    data-testid="overlay-unique-drilldown"
+    [frameless]="true"
+    [state]="drilldownState()"
+    [parentFrame]="frame()"
+    (viewChange)="onViewChange($event)"
+    (ayahPageChange)="onAyahPageChange($event)"
+    (retry)="onRetry()"
+  />
+}

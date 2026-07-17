@@ -137,6 +137,38 @@ describe('RootsExplorerPageComponent US2', () => {
     return fixture;
   }
 
+  it('mounts the explainer hero inside the intro band, above the toolbar (Feature 031)', async () => {
+    const fixture = await initLifecycle();
+    const root = fixture.nativeElement as HTMLElement;
+
+    const band = root.querySelector('.uw-intro-band') as HTMLElement;
+    expect(band.querySelector('[data-testid="words-explainer--roots"]')).toBeTruthy();
+    // The toolbar recess is a sibling of the band (unchanged), never a parent of the hero.
+    expect(band.querySelector('.uw-toolbar-recess')).toBeNull();
+    expect(root.querySelector('.uw-toolbar-recess')).toBeTruthy();
+    expect(root.querySelector('.uw-toolbar-recess [data-testid="words-explainer--roots"]')).toBeNull();
+  });
+
+  it('reflects a stored collapsed state on the first render (synchronous, no layout shift)', async () => {
+    localStorage.setItem('qd-words-explainer', 'roots');
+    try {
+      const fixture = TestBed.createComponent(RootsExplorerPageComponent);
+      fixture.componentInstance.ngOnInit();
+      fixture.detectChanges(); // FIRST render — no whenStable / effect / second tick
+
+      const root = fixture.nativeElement as HTMLElement;
+      expect(root.querySelector('[data-testid="words-explainer-body"]')).toBeNull();
+      expect(
+        root.querySelector('[data-testid="words-explainer-toggle--roots"]')?.getAttribute('aria-expanded'),
+      ).toBe('false');
+      // The intro band + toolbar are still present — nothing expanded then collapsed them.
+      expect(root.querySelector('.uw-intro-band [data-testid="words-explainer--roots"]')).toBeTruthy();
+      expect(root.querySelector('.uw-toolbar-recess')).toBeTruthy();
+    } finally {
+      localStorage.clear();
+    }
+  });
+
   it('shows the headline result count equal to the list totalCount (US4)', async () => {
     const fixture = await initLifecycle();
     await fixture.whenStable();
@@ -171,7 +203,7 @@ describe('RootsExplorerPageComponent US2', () => {
     expect(root.querySelector('[data-testid="roots-result-count"] [data-testid="explorer-result-count"]')).toBeNull();
   });
 
-  it('serializes a count-range bucket to the URL and resets the page (US5)', async () => {
+  it('serializes a count-range chip to the URL and resets the page (US5)', async () => {
     const fixture = await initLifecycle();
     await fixture.whenStable();
     fixture.detectChanges();
@@ -180,11 +212,11 @@ describe('RootsExplorerPageComponent US2', () => {
     const filter = root.querySelector('[data-testid="roots-range-filter"]');
     expect(filter).toBeTruthy();
 
-    (root.querySelector('[data-testid="range-filter-bucket-occurrences-11–100"]') as HTMLButtonElement).click();
+    (root.querySelector('[data-testid="range-filter-chip-occurrences-gt"]') as HTMLButtonElement).click();
 
     expect(router.navigate).toHaveBeenCalledWith([], {
       relativeTo: expect.anything(),
-      queryParams: expect.objectContaining({ occ: '11..100', page: null }),
+      queryParams: expect.objectContaining({ occ: '101..', page: null }),
       queryParamsHandling: 'merge',
     });
   });
@@ -249,6 +281,14 @@ describe('RootsExplorerPageComponent US2', () => {
     const matched = fixture.nativeElement.querySelector('.highlighted-ayah__word--matched');
     expect(matched).toBeTruthy();
     expect(fixture.nativeElement.querySelectorAll('.highlighted-ayah__word--matched')).toHaveLength(1);
+
+    // Feature 029 B7: the page threads its own panel frame into the ayah link,
+    // so an ayah click promotes this root detail over the Mushaf.
+    const mushafLink = fixture.nativeElement.querySelector(
+      '[data-testid="ayah-matches-open-mushaf"]',
+    ) as HTMLAnchorElement | null;
+    expect(mushafLink?.getAttribute('href')).toContain('qdDetail=v1~root~10~ayahs~simple~mentioned~1');
+    expect(mushafLink?.getAttribute('href')).toContain('qdDetailOpen=1');
   });
 
   it('panel scroll container is independent from the table region', async () => {
@@ -381,6 +421,93 @@ describe('RootsExplorerPageComponent US2', () => {
     expect(listFacade.sort()).toBe('alpha');
     expect(listFacade.page()).toBe(2);
   });
+
+  describe('sorting (Feature 030, N8)', () => {
+    it('has no desktop sort dropdown: the only select sits in the ≤1023px fallback wrapper', async () => {
+      const fixture = await initLifecycle();
+      const root = fixture.nativeElement as HTMLElement;
+
+      // ≥1024px the table header row is visible and owns sorting, so the fallback is CSS-hidden
+      // there; below that the header row is display:none and this select is the only way in.
+      const select = root.querySelector('[data-testid="roots-sort-select"]') as HTMLElement;
+      expect(select).toBeTruthy();
+      expect(select.closest('.qd-explorer-sort-fallback')).not.toBeNull();
+    });
+
+    it('offers the default order plus every sortable column in both directions', async () => {
+      const fixture = await initLifecycle();
+      const root = fixture.nativeElement as HTMLElement;
+      const values = Array.from(
+        root.querySelectorAll('[data-testid="roots-sort-select"] option'),
+      ).map((option) => option.getAttribute('value'));
+
+      expect(values[0]).toBe('mushaf-order');
+      expect(values).toContain('alpha');
+      expect(values).toContain('alpha-desc');
+      expect(values).toContain('occurrences');
+      expect(values).toContain('occurrences-asc');
+    });
+
+    it('navigates { sort: token, page: null } when a header cycle step is emitted', async () => {
+      const fixture = await initLifecycle();
+      const root = fixture.nativeElement as HTMLElement;
+
+      (root.querySelector('[data-testid="roots-table-sort-occurrences"]') as HTMLButtonElement).click();
+
+      expect(router.navigate).toHaveBeenCalledWith([], {
+        relativeTo: expect.anything(),
+        queryParams: expect.objectContaining({ sort: 'occurrences', page: null }),
+        queryParamsHandling: 'merge',
+      });
+    });
+
+    it('navigates { sort: null, page: null } when the cycle releases', async () => {
+      queryParamMap$.next(convertToParamMap({ sort: 'occurrences-asc' }));
+      const fixture = await initLifecycle();
+      const root = fixture.nativeElement as HTMLElement;
+
+      (root.querySelector('[data-testid="roots-table-sort-occurrences"]') as HTMLButtonElement).click();
+
+      // Release removes the param entirely — the default order is never spelled out in the URL.
+      expect(router.navigate).toHaveBeenCalledWith([], {
+        relativeTo: expect.anything(),
+        queryParams: expect.objectContaining({ sort: null, page: null }),
+        queryParamsHandling: 'merge',
+      });
+    });
+
+    it('drives the same URL contract from the fallback select', async () => {
+      const fixture = await initLifecycle();
+      const root = fixture.nativeElement as HTMLElement;
+      const select = root.querySelector('[data-testid="roots-sort-select"]') as HTMLSelectElement;
+
+      select.value = 'alpha-desc';
+      select.dispatchEvent(new Event('change'));
+
+      expect(router.navigate).toHaveBeenCalledWith([], {
+        relativeTo: expect.anything(),
+        queryParams: expect.objectContaining({ sort: 'alpha-desc', page: null }),
+        queryParamsHandling: 'merge',
+      });
+    });
+
+    it('releases the param when the fallback select picks the default order', async () => {
+      queryParamMap$.next(convertToParamMap({ sort: 'alpha' }));
+      const fixture = await initLifecycle();
+      const root = fixture.nativeElement as HTMLElement;
+      const select = root.querySelector('[data-testid="roots-sort-select"]') as HTMLSelectElement;
+
+      select.value = 'mushaf-order';
+      select.dispatchEvent(new Event('change'));
+
+      expect(router.navigate).toHaveBeenCalledWith([], {
+        relativeTo: expect.anything(),
+        queryParams: expect.objectContaining({ sort: null, page: null }),
+        queryParamsHandling: 'merge',
+      });
+    });
+  });
+
 });
 
 describe('RootsExplorerPageComponent US3', () => {
@@ -857,8 +984,17 @@ describe('RootsExplorerPageComponent state matrix (T073)', () => {
 
     const host = fixture.nativeElement as HTMLElement;
     expect(TestBed.inject(RootsDetailFacade).status()).toBe('notFound');
-    expect(host.querySelector('[data-testid="roots-restored-not-found"]')).toBeTruthy();
 
+    // Feature 030, N3 row 5: notFound is a PANEL/selection state, so it renders inside the details
+    // panel (a mounted shell) and never as a page-level banner that pushes the table+panel grid down.
+    const notFound = host.querySelector('[data-testid="root-details-not-found"]');
+    expect(notFound).toBeTruthy();
+    expect(notFound?.getAttribute('role')).toBe('status');
+    expect(notFound?.textContent?.trim()).toBe('الجذر غير موجود');
+    expect(notFound?.closest('qd-root-details-panel')).toBeTruthy();
+    expect(host.querySelector('[data-testid="roots-restored-not-found"]')).toBeNull();
+
+    // the list is fine and populated — a missing selection must never hide the table
     expect(host.querySelector('qd-roots-table')).toBeTruthy();
     expect(host.querySelector('[data-testid="roots-table-root-button"]')).toBeTruthy();
   });
@@ -880,7 +1016,11 @@ describe('RootsExplorerPageComponent state matrix (T073)', () => {
     fixture.detectChanges();
 
     expect(TestBed.inject(RootsExplorerFacade).status()).toBe('empty');
-    expect(fixture.nativeElement.querySelector('[data-testid="roots-list-no-results"]')).toBeTruthy();
+
+    // Feature 030, N3 row 5: the list's own states render inside the table shell, not above the grid.
+    const noResults = fixture.nativeElement.querySelector('[data-testid="roots-list-no-results"]');
+    expect(noResults).toBeTruthy();
+    expect(noResults.closest('.qd-explorer-table')).toBeTruthy();
   });
 });
 

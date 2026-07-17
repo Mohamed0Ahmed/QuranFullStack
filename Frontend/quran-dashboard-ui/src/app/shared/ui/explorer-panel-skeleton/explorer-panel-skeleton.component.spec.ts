@@ -74,6 +74,28 @@ describe('ExplorerPanelSkeletonComponent (qd-panel-skeleton)', () => {
     expect(root.querySelectorAll('[role="status"]')).toHaveLength(1);
   });
 
+  it('shape="panel" marks host and container so the block fills a host with a block size', () => {
+    const fixture = render({ shape: 'panel' });
+    const host = fixture.nativeElement as HTMLElement;
+
+    // A panel skeleton stands in for a whole panel body, so it must be able to
+    // stretch into a fixed-height host instead of leaving a 3rem bar in a tall box.
+    expect(host.classList.contains('qd-panel-skeleton--panel-shape')).toBe(true);
+    expect(
+      host.querySelector('[data-testid="explorer-panel-skeleton"]')?.classList,
+    ).toContain('explorer-panel-skeleton--panel');
+  });
+
+  it('leaves the default "lines" shape unstretched', () => {
+    const fixture = render();
+    const host = fixture.nativeElement as HTMLElement;
+
+    expect(host.classList.contains('qd-panel-skeleton--panel-shape')).toBe(false);
+    expect(
+      host.querySelector('[data-testid="explorer-panel-skeleton"]')?.classList,
+    ).not.toContain('explorer-panel-skeleton--panel');
+  });
+
   it('is static under reduced motion (no inline transform set by the component)', () => {
     const fixture = render();
     const root = fixture.nativeElement as HTMLElement;

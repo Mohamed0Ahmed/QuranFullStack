@@ -1,5 +1,6 @@
 using System.Text;
 using QuranDashboard.Application.Abstractions.Common.Paging;
+using QuranDashboard.Application.Abstractions.Quran.Words;
 using QuranDashboard.Application.Abstractions.Quran.Words.Morphology.Responses;
 using QuranDashboard.Application.Abstractions.Quran.Words.Stems;
 using QuranDashboard.Application.Abstractions.Quran.Words.Stems.Responses;
@@ -25,7 +26,7 @@ internal static class StemsListDerivation
         StemsCountFilter filter,
         StemsAssociationFilter association,
         string? search,
-        StemSort sort,
+        StemSortSpec sort,
         int page,
         int pageSize)
     {
@@ -58,7 +59,7 @@ internal static class StemsListDerivation
         StemsCountFilter filter,
         StemsAssociationFilter association,
         string? search,
-        StemSort sort)
+        StemSortSpec sort)
     {
         var normalizedSearch = NormalizeArabicQuery(search);
 
@@ -98,19 +99,44 @@ internal static class StemsListDerivation
         && filter.SimpleWords.Includes(row.SimpleWordsCount)
         && filter.TashkeelWords.Includes(row.TashkeelWordsCount);
 
-    private static IEnumerable<StemSummaryRow> ApplySort(IEnumerable<StemSummaryRow> rows, StemSort sort) => sort switch
+    // Ordering is part of the read contract (see the reads README). Every allowlisted column is already
+    // on the row, so no branch costs a join, and each tie-break chain is identical in BOTH directions —
+    // reversing a column never reshuffles its ties, which keeps paging deterministic.
+    private static IEnumerable<StemSummaryRow> ApplySort(IEnumerable<StemSummaryRow> rows, StemSortSpec sort) => sort.Column switch
     {
-        StemSort.Occurrences => rows
-            .OrderByDescending(r => r.OccurrencesCount)
-            .ThenBy(r => r.FirstWordOrderInMushaf)
-            .ThenBy(r => r.Id),
-        StemSort.Alpha => rows
-            .OrderBy(r => r.NormalizedStemText, StringComparer.Ordinal)
-            .ThenBy(r => r.Id),
-        _ => rows
+        StemSortColumn.Alpha => ByText(rows, r => r.NormalizedStemText, sort.Direction),
+        StemSortColumn.Occurrences => ByCount(rows, r => r.OccurrencesCount, sort.Direction),
+        StemSortColumn.Ayahs => ByCount(rows, r => r.AyahsCount, sort.Direction),
+        StemSortColumn.Surahs => ByCount(rows, r => r.SurahsCount, sort.Direction),
+        StemSortColumn.SimpleWords => ByCount(rows, r => r.SimpleWordsCount, sort.Direction),
+        StemSortColumn.TashkeelWords => ByCount(rows, r => r.TashkeelWordsCount, sort.Direction),
+        StemSortColumn.MushafOrder => rows
             .OrderBy(r => r.FirstWordOrderInMushaf)
             .ThenBy(r => r.Id),
+        // Explicit, so a column added without an arm here fails loudly instead of silently
+        // serving Mushaf order (mirrors the word-types SQL switches).
+        _ => throw new InvalidOperationException($"Unhandled {nameof(StemSortColumn)} value: {sort.Column}."),
     };
+
+    // Count columns tie-break on Mushaf order then Id.
+    private static IOrderedEnumerable<StemSummaryRow> ByCount(
+        IEnumerable<StemSummaryRow> rows,
+        Func<StemSummaryRow, int> count,
+        WordSortDirection direction) =>
+        (direction == WordSortDirection.Ascending ? rows.OrderBy(count) : rows.OrderByDescending(count))
+            .ThenBy(r => r.FirstWordOrderInMushaf)
+            .ThenBy(r => r.Id);
+
+    // Alpha ties break on Id ALONE — deliberately no Mushaf tie-break, preserving the exact row order
+    // existing sort=alpha links already return (pinned by StemsListReadTests' alpha sequence).
+    private static IOrderedEnumerable<StemSummaryRow> ByText(
+        IEnumerable<StemSummaryRow> rows,
+        Func<StemSummaryRow, string> text,
+        WordSortDirection direction) =>
+        (direction == WordSortDirection.Ascending
+            ? rows.OrderBy(text, StringComparer.Ordinal)
+            : rows.OrderByDescending(text, StringComparer.Ordinal))
+            .ThenBy(r => r.Id);
 
     private static StemListItemDto ToListItem(StemSummaryRow row) =>
         new(

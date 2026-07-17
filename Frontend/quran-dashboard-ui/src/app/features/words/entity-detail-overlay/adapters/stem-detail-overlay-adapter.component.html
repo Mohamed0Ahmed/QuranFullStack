@@ -1,0 +1,154 @@
+<qd-stem-details-panel
+  [inline]="true"
+  [frameless]="true"
+  [view]="frame().view"
+  [selectionTitle]="panelState().summary?.stemText ?? ''"
+  [loading]="panelState().status === 'loading'"
+  (viewChange)="onViewChange($event)"
+>
+  @if (frame().view === 'ayahs' && (panelState().summary || panelState().status === 'loading')) {
+    <qd-stem-ayah-type-filters
+      [items]="panelState().summary?.typeDistribution ?? []"
+      [selectedTypeCode]="frame().typeCode"
+      [loading]="panelState().status === 'loading' && !panelState().summary"
+      data-testid="overlay-stems-ayah-type-filters"
+      (typeCodeChange)="onAyahTypeCodeChange($event)"
+    />
+  }
+
+  @if (frame().view === 'words') {
+    <nav
+      class="qd-explorer-subtabs"
+      role="tablist"
+      [attr.aria-label]="wordsTablistLabel"
+      data-testid="overlay-stems-word-view-tabs"
+    >
+      @for (option of wordViewOptions; track option) {
+        <button
+          type="button"
+          class="qd-btn qd-btn-secondary"
+          role="tab"
+          [attr.data-testid]="'overlay-stems-word-view-' + option"
+          [attr.aria-selected]="frame().wordView === option"
+          [class.qd-is-selected]="frame().wordView === option"
+          (click)="onWordViewChange(option)"
+        >
+          {{ wordViewLabels[option] }}
+        </button>
+      }
+    </nav>
+  } @else if (frame().view === 'surahs') {
+    <nav
+      class="qd-explorer-subtabs"
+      role="tablist"
+      [attr.aria-label]="surahsTablistLabel"
+      data-testid="overlay-stems-surah-view-tabs"
+    >
+      @for (option of surahViewOptions; track option) {
+        <button
+          type="button"
+          class="qd-btn qd-btn-secondary"
+          role="tab"
+          [attr.data-testid]="'overlay-stems-surah-view-' + option"
+          [attr.aria-selected]="frame().surahView === option"
+          [class.qd-is-selected]="frame().surahView === option"
+          (click)="onSurahViewChange(option)"
+        >
+          {{ surahViewLabels[option] }}
+        </button>
+      }
+    </nav>
+  } @else if (frame().view === 'lemmas' && panelState().status !== 'error' && panelState().status !== 'notFound') {
+    <qd-stem-lemmas-list
+      [loading]="panelState().status === 'loading'"
+      [lemmas]="panelState().lemmas?.lemmas ?? []"
+      data-testid="overlay-stems-lemmas-view"
+    />
+  }
+
+  @switch (panelState().status) {
+    @case ('loading') {
+      @if (frame().view === 'words') {
+        <qd-stem-words-list
+          [loading]="true"
+          [page]="emptyWordsPage"
+          [wordView]="panelState().wordView"
+          [currentPage]="panelState().detailPage"
+          data-testid="overlay-stems-words-view"
+        />
+      } @else if (frame().view === 'ayahs') {
+        <qd-ayah-matches-list
+          [loading]="true"
+          [page]="ayahsPageForView()"
+          [currentPage]="panelState().detailPage"
+          [parentFrame]="frame()"
+          data-testid="overlay-stems-ayahs-view"
+        />
+      } @else if (frame().view === 'surahs' && panelState().surahView === 'mentioned') {
+        <qd-surah-occurrences-list
+          [loading]="true"
+          [surahs]="[]"
+          data-testid="overlay-stems-mentioned-surahs-view"
+        />
+      } @else if (frame().view === 'surahs' && panelState().surahView === 'missing') {
+        <qd-missing-surahs-list
+          [loading]="true"
+          [surahs]="[]"
+          data-testid="overlay-stems-missing-surahs-view"
+        />
+      } @else {
+        <p class="qd-sr-only" role="status" aria-live="polite" data-testid="overlay-stems-panel-loading">
+          {{ panelLoadingLabel }}
+        </p>
+      }
+    }
+    @case ('error') {
+      <qd-state
+        variant="error"
+        [message]="panelState().errorMessage"
+        [actionLabel]="retryLabel"
+        (action)="onRetry()"
+        data-testid="overlay-stems-panel-error"
+      />
+    }
+    @case ('notFound') {
+      <div class="qd-empty-state" role="status" data-testid="overlay-stems-not-found">
+        {{ panelState().errorMessage || notFoundLabel }}
+      </div>
+    }
+    @case ('empty') {
+      @if (frame().view !== 'lemmas') {
+        <div class="qd-empty-state" data-testid="overlay-stems-panel-empty">{{ emptyViewLabel }}</div>
+      }
+    }
+    @case ('success') {
+      @if (frame().view === 'words' && panelState().words; as wordsPage) {
+        <qd-stem-words-list
+          [page]="wordsPage"
+          [wordView]="panelState().wordView"
+          [currentPage]="panelState().detailPage"
+          data-testid="overlay-stems-words-view"
+          (pageChange)="onDetailPageChange($event)"
+        />
+      } @else if (frame().view === 'ayahs' && panelState().ayahs) {
+        <qd-ayah-matches-list
+          [page]="ayahsPageForView()"
+          [currentPage]="panelState().detailPage"
+          [parentFrame]="frame()"
+          data-testid="overlay-stems-ayahs-view"
+          (pageChange)="onDetailPageChange($event)"
+        />
+      } @else if (frame().view === 'surahs' && panelState().surahView === 'mentioned' && panelState().mentionedSurahs; as surahs) {
+        <qd-surah-occurrences-list
+          [surahs]="surahs.surahs"
+          data-testid="overlay-stems-mentioned-surahs-view"
+        />
+      } @else if (frame().view === 'surahs' && panelState().surahView === 'missing' && panelState().missingSurahs; as missing) {
+        <qd-missing-surahs-list
+          [surahs]="missing.surahs"
+          data-testid="overlay-stems-missing-surahs-view"
+        />
+      }
+    }
+  }
+</qd-stem-details-panel>

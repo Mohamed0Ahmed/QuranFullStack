@@ -1,10 +1,13 @@
 using Npgsql;
+using QuranDashboard.Application.Abstractions.Quran.Words;
 using QuranDashboard.Application.Abstractions.Quran.Words.WordTypes;
 using QuranDashboard.Application.Abstractions.Quran.Words.WordTypes.Responses;
-using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Roots;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.WordTypes;
 
+// Shared base rows/predicates/parameters and the Words-view reads. The grouped table-view
+// (roots/stems/lemmas) SQL lives in EfWordTypesReader.GroupedTable.Sql.cs; the scoped grouped
+// detail reads live in EfWordTypesReader.GroupedDetails.Sql.cs.
 public sealed partial class EfWordTypesReader
 {
     private static string TreeChildCountsSql()
@@ -64,7 +67,7 @@ public sealed partial class EfWordTypesReader
         FROM grouped
         """;
 
-    private static string RowsSql(WordTypeReadContext context, WordTypeSort sort, WordTypeGroupedDimensionKind? groupedDimension = null) => $"""
+    private static string RowsSql(WordTypeReadContext context, WordTypeSortSpec sort, WordTypeGroupedDimensionKind? groupedDimension = null) => $"""
         WITH base AS (
             {BaseRowsSql(context, groupedDimension)}
         ), grouped AS (
@@ -248,99 +251,6 @@ public sealed partial class EfWordTypesReader
             ? string.Empty
             : $"AND m.{GroupedDimensionColumns(groupedDimension.Value).IdColumn} = @dimensionId";
 
-    // Grouped table views (roots/stems/lemmas) reuse BaseRowsSql verbatim and group by the numeric
-    // dimension ID, excluding nulls. Grouping and total counting happen before pagination.
-    private static string GroupedRowsSql(WordTypeReadContext context, WordTypeTableView view, WordTypeSort sort)
-    {
-        var (idColumn, textColumn) = DimensionColumns(view);
-        var needsFold = sort == WordTypeSort.Alpha;
-        var normTextColumn = needsFold
-            ? $", replace(translate(lower(MIN({textColumn})), @foldFrom, @foldTo), ' ', '') AS norm_text"
-            : string.Empty;
-
-        return $"""
-        WITH base AS (
-            {BaseRowsSql(context)}
-        ), grouped AS (
-            SELECT
-                {idColumn} AS dimension_id,
-                MIN({textColumn}) AS display_text,
-                MIN(quran_word_id) AS first_word_order_in_mushaf,
-                COUNT(*)::int AS occurrences_count,
-                COUNT(DISTINCT ayah_id)::int AS ayahs_count,
-                COUNT(DISTINCT surah_number)::int AS surahs_count
-                {normTextColumn}
-            FROM base
-            WHERE {idColumn} IS NOT NULL
-            GROUP BY {idColumn}
-        )
-        SELECT
-            dimension_id AS "{nameof(GroupedRowSqlResult.DimensionId)}",
-            display_text AS "{nameof(GroupedRowSqlResult.DisplayText)}",
-            occurrences_count AS "{nameof(GroupedRowSqlResult.OccurrencesCount)}",
-            ayahs_count AS "{nameof(GroupedRowSqlResult.AyahsCount)}",
-            surahs_count AS "{nameof(GroupedRowSqlResult.SurahsCount)}",
-            first_word_order_in_mushaf AS "{nameof(GroupedRowSqlResult.FirstWordOrderInMushaf)}",
-            -- Window count over the distinct non-null dimension rows, so page + total come from ONE
-            -- command; equals GroupedRowsCountSql's COUNT(DISTINCT {idColumn}) for the identical scope.
-            COUNT(*) OVER()::int AS "{nameof(GroupedRowSqlResult.TotalCount)}"
-        FROM grouped
-        ORDER BY {GroupedOrderBy(sort)}
-        OFFSET @skip LIMIT @take
-        """;
-    }
-
-    // Grouped totalCount = distinct non-null dimension IDs over the scoped base, measured before paging.
-    private static string GroupedRowsCountSql(WordTypeReadContext context, WordTypeTableView view)
-    {
-        var (idColumn, _) = DimensionColumns(view);
-        return $"""
-        WITH base AS (
-            {BaseRowsSql(context)}
-        )
-        SELECT COUNT(DISTINCT {idColumn})::int AS "{nameof(CountRow.Count)}"
-        FROM base
-        WHERE {idColumn} IS NOT NULL
-        """;
-    }
-
-    private static string GroupedOrderBy(WordTypeSort sort) => sort switch
-    {
-        WordTypeSort.Ayahs => "ayahs_count DESC, first_word_order_in_mushaf, dimension_id",
-        WordTypeSort.Surahs => "surahs_count DESC, first_word_order_in_mushaf, dimension_id",
-        WordTypeSort.MushafOrder => "first_word_order_in_mushaf, dimension_id",
-        WordTypeSort.Alpha => "norm_text COLLATE \"C\", dimension_id",
-        _ => "occurrences_count DESC, first_word_order_in_mushaf, dimension_id",
-    };
-
-    private static (string IdColumn, string TextColumn) DimensionColumns(WordTypeTableView view) => view switch
-    {
-        WordTypeTableView.Roots => ("root_id", "root_text"),
-        WordTypeTableView.Stems => ("stem_id", "stem_text"),
-        WordTypeTableView.Lemmas => ("lemma_id", "lemma_text"),
-        _ => throw new ArgumentOutOfRangeException(nameof(view), view, "Grouped dimension columns are only defined for roots/stems/lemmas."),
-    };
-
-    private static object[] BuildGroupedRowsParameters(WordTypeReadContext context, WordTypeSort sort, int skip, int take)
-    {
-        var parameters = new List<object>
-        {
-            new NpgsqlParameter<int>("skip", skip),
-            new NpgsqlParameter<int>("take", take),
-        };
-        AddChildCodeParameter(context, parameters);
-        AddSecondaryFilterParameters(context, parameters);
-        AddSearchParameter(context, parameters);
-
-        if (sort == WordTypeSort.Alpha)
-        {
-            parameters.Add(new NpgsqlParameter<string>("foldFrom", RootsListDerivation.ArabicFoldFrom));
-            parameters.Add(new NpgsqlParameter<string>("foldTo", RootsListDerivation.ArabicFoldTo));
-        }
-
-        return [.. parameters];
-    }
-
     private static string TypePredicate(WordTypeReadContext context)
     {
         var typePredicate = context.Type switch
@@ -498,13 +408,23 @@ public sealed partial class EfWordTypesReader
         return "NULL::text";
     }
 
-    private static string OrderBy(WordTypeSort sort) => sort switch
+    // Words-view ORDER BY. Every arm returns a compiler-known CONSTANT selected by an enum switch —
+    // the direction is baked into each constant, so no request text ever reaches the SQL string. The
+    // per-view tie chain (Mushaf order, then the identity pair) is identical in BOTH directions, so
+    // reversing a column never reshuffles its ties.
+    private static string OrderBy(WordTypeSortSpec sort) => (sort.Column, sort.Direction) switch
     {
-        WordTypeSort.Ayahs => "g.ayahs_count DESC, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
-        WordTypeSort.Surahs => "g.surahs_count DESC, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
-        WordTypeSort.MushafOrder => "g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
-        WordTypeSort.Alpha => "g.display_text, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
-        _ => "g.occurrences_count DESC, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
+        (WordTypeSortColumn.Occurrences, WordSortDirection.Descending) => "g.occurrences_count DESC, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
+        (WordTypeSortColumn.Occurrences, WordSortDirection.Ascending) => "g.occurrences_count, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
+        (WordTypeSortColumn.Ayahs, WordSortDirection.Descending) => "g.ayahs_count DESC, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
+        (WordTypeSortColumn.Ayahs, WordSortDirection.Ascending) => "g.ayahs_count, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
+        (WordTypeSortColumn.Surahs, WordSortDirection.Descending) => "g.surahs_count DESC, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
+        (WordTypeSortColumn.Surahs, WordSortDirection.Ascending) => "g.surahs_count, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
+        (WordTypeSortColumn.Alpha, WordSortDirection.Ascending) => "g.display_text, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
+        (WordTypeSortColumn.Alpha, WordSortDirection.Descending) => "g.display_text DESC, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
+        // mushaf-order is ascending-only by contract (the parser rejects any suffix on it).
+        (WordTypeSortColumn.MushafOrder, _) => "g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
+        _ => throw new InvalidOperationException($"Unhandled {nameof(WordTypeSortSpec)} value."),
     };
 
     private static string ResolveBroadLabel(string type) => type switch
@@ -583,24 +503,5 @@ public sealed partial class EfWordTypesReader
             OccurrencesCount,
             AyahsCount,
             SurahsCount);
-    }
-
-    private sealed record GroupedRowSqlResult(
-        int DimensionId,
-        string DisplayText,
-        int OccurrencesCount,
-        int AyahsCount,
-        int SurahsCount,
-        int FirstWordOrderInMushaf,
-        // Whole-scope total from COUNT(*) OVER(); identical on every row, ignored by ToDto.
-        int TotalCount)
-    {
-        public WordTypeTableRowDto ToDto(WordTypeTableView view) => view switch
-        {
-            WordTypeTableView.Roots => new RootTableRowDto(DimensionId, DisplayText, OccurrencesCount, AyahsCount, SurahsCount),
-            WordTypeTableView.Stems => new StemTableRowDto(DimensionId, DisplayText, OccurrencesCount, AyahsCount, SurahsCount),
-            WordTypeTableView.Lemmas => new LemmaTableRowDto(DimensionId, DisplayText, OccurrencesCount, AyahsCount, SurahsCount),
-            _ => throw new ArgumentOutOfRangeException(nameof(view), view, "Grouped mapping is only defined for roots/stems/lemmas."),
-        };
     }
 }

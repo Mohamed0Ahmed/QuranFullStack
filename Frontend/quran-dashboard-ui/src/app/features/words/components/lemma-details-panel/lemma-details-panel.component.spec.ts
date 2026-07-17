@@ -1,5 +1,7 @@
 import { describe, expect, it, afterEach } from 'vitest';
 import { getTestBed, TestBed } from '@angular/core/testing';
+import { provideLocationMocks } from '@angular/common/testing';
+import { provideRouter } from '@angular/router';
 
 import { LemmaDetailsPanelComponent } from './lemma-details-panel.component';
 import { LEMMA_VIEW_KEYS, LemmaView } from '../../models/lemmas.models';
@@ -12,6 +14,9 @@ describe('LemmaDetailsPanelComponent a11y (T087)', () => {
   function createPanel(view: LemmaView = 'surahs') {
     TestBed.configureTestingModule({
       imports: [LemmaDetailsPanelComponent],
+      // The drawer suspends its focus trap from the router-backed
+      // detail-overlay history service.
+      providers: [provideRouter([]), provideLocationMocks()],
       teardown: { destroyAfterEach: true },
     });
 
@@ -83,6 +88,9 @@ describe('LemmaDetailsPanelComponent a11y (T087)', () => {
   it('renders the empty-selection state with header, disabled tabs, and empty message', () => {
     TestBed.configureTestingModule({
       imports: [LemmaDetailsPanelComponent],
+      // The drawer suspends its focus trap from the router-backed
+      // detail-overlay history service.
+      providers: [provideRouter([]), provideLocationMocks()],
       teardown: { destroyAfterEach: true },
     });
 
@@ -126,6 +134,9 @@ describe('LemmaDetailsPanelComponent modal drawer mode (T118)', () => {
   function createModalPanel() {
     TestBed.configureTestingModule({
       imports: [LemmaDetailsPanelComponent],
+      // The drawer suspends its focus trap from the router-backed
+      // detail-overlay history service.
+      providers: [provideRouter([]), provideLocationMocks()],
       teardown: { destroyAfterEach: true },
     });
 
@@ -205,6 +216,9 @@ describe('LemmaDetailsPanelComponent modal drawer mode (T118)', () => {
   it('renders no modal chrome when empty selection even in modal mode', () => {
     TestBed.configureTestingModule({
       imports: [LemmaDetailsPanelComponent],
+      // The drawer suspends its focus trap from the router-backed
+      // detail-overlay history service.
+      providers: [provideRouter([]), provideLocationMocks()],
       teardown: { destroyAfterEach: true },
     });
 

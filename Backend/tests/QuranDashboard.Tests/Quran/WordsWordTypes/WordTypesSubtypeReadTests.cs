@@ -53,7 +53,7 @@ public sealed class WordTypesSubtypeReadTests(WordTypesTestFixture fixture)
         var tree = await reader.GetTreeAsync(CancellationToken.None);
         var rows = await reader.GetRowsAsync(
             new WordTypeFilter("noun", childCode, null, null, null),
-            WordTypeSort.Occurrences,
+            WordTypeSortSpec.Default,
             1,
             25,
             CancellationToken.None);
@@ -81,7 +81,7 @@ public sealed class WordTypesSubtypeReadTests(WordTypesTestFixture fixture)
         var tree = await reader.GetTreeAsync(CancellationToken.None);
         var rows = await reader.GetRowsAsync(
             new WordTypeFilter("verb", childCode, null, null, null),
-            WordTypeSort.Occurrences,
+            WordTypeSortSpec.Default,
             1,
             25,
             CancellationToken.None);
@@ -103,13 +103,13 @@ public sealed class WordTypesSubtypeReadTests(WordTypesTestFixture fixture)
 
         var parentRows = await reader.GetRowsAsync(
             new WordTypeFilter("noun", null, null, null, null),
-            WordTypeSort.Occurrences,
+            WordTypeSortSpec.Default,
             1,
             25,
             CancellationToken.None);
         var childRows = await reader.GetRowsAsync(
             new WordTypeFilter("noun", "PN", null, null, null),
-            WordTypeSort.Occurrences,
+            WordTypeSortSpec.Default,
             1,
             25,
             CancellationToken.None);
@@ -127,7 +127,7 @@ public sealed class WordTypesSubtypeReadTests(WordTypesTestFixture fixture)
 
         var rows = await reader.GetRowsAsync(
             new WordTypeFilter("noun", "PN", null, null, null),
-            WordTypeSort.Occurrences,
+            WordTypeSortSpec.Default,
             1,
             25,
             CancellationToken.None);
@@ -195,7 +195,7 @@ public sealed class WordTypesSubtypeReadTests(WordTypesTestFixture fixture)
 
         var unfilteredRows = await reader.GetRowsAsync(
             new WordTypeFilter("noun", "N", null, null, null),
-            WordTypeSort.Occurrences,
+            WordTypeSortSpec.Default,
             1,
             25,
             CancellationToken.None);

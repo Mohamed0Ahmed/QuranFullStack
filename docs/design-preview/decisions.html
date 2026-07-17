@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>قرارات التصميم والتنقّل — المنهج القرآني</title>
+<style>
+  :root{
+    --bg:#f6f4ee; --surface:#fffdf8; --ink:#2b2a26; --muted:#6f6b62;
+    --accent:#2f6d5f; --line:#e7e2d7;
+    --feat-bg:#eaf2ee; --feat-ink:#2f6d5f; --feat-line:#bfe0cc;
+    --ui-bg:#eef1f4; --ui-ink:#4d5b6b; --ui-line:#cdd6df;
+    --now-bg:#fbefef; --now-ink:#a33a3a; --now-line:#eecaca;
+    --new-bg:#ecf5ef; --new-ink:#2f6d4f; --new-line:#c4e2ce;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--bg); color:var(--ink);
+    font-family:"Segoe UI","Noto Naskh Arabic",Tahoma,Arial,sans-serif; line-height:1.85; font-size:16.5px}
+  .wrap{max-width:920px; margin:0 auto; padding:40px 22px 80px}
+  header.hero{text-align:center; padding:24px 0 14px; border-bottom:1px solid var(--line); margin-bottom:24px}
+  .hero h1{font-size:28px; margin:0 0 6px}
+  .hero .sub{color:var(--muted); font-size:15px}
+
+  .flow{display:flex; flex-wrap:wrap; gap:8px; justify-content:center; align-items:center; margin:20px 0 8px; font-size:14px}
+  .flow .step{background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:7px 14px}
+  .flow .step b{color:var(--accent); font-weight:600}
+  .flow .arw{color:var(--muted)}
+
+  .stats{display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:22px 0 30px}
+  .stat{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:14px 12px; text-align:center}
+  .stat .num{font-size:24px; font-weight:600; color:var(--accent)}
+  .stat .lbl{font-size:12.5px; color:var(--muted); margin-top:2px}
+
+  .card{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:18px 20px; margin:15px 0}
+  .card h3{margin:0 0 4px; font-size:18px; display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+  .badge{display:inline-block; border-radius:6px; padding:1px 9px; font-size:12px; font-weight:700}
+  .b-feat{background:var(--feat-bg); color:var(--feat-ink); border:1px solid var(--feat-line)}
+  .b-ui{background:var(--ui-bg); color:var(--ui-ink); border:1px solid var(--ui-line)}
+  .card .code{font-family:"SF Mono",Consolas,monospace; direction:ltr; unicode-bidi:isolate; font-size:12px; color:var(--muted); margin-bottom:10px}
+
+  .cmp{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px}
+  @media(max-width:640px){.cmp{grid-template-columns:1fr} .stats{grid-template-columns:1fr}}
+  .box{border-radius:10px; padding:12px 14px; font-size:14px}
+  .box .tag{font-size:11.5px; font-weight:700; display:block; margin-bottom:6px}
+  .now{background:var(--now-bg)} .now .tag{color:var(--now-ink)}
+  .new{background:var(--new-bg)} .new .tag{color:var(--new-ink)}
+  .box ul{margin:6px 0 0; padding-inline-start:18px}
+  .box li{margin:3px 0}
+
+  h2.section{font-size:19px; margin:34px 0 12px; padding-right:12px; border-right:4px solid var(--accent)}
+  .note{background:#f0efe8; border:1px solid var(--line); border-radius:12px; padding:16px 20px; font-size:14.5px}
+  .note li{margin:5px 0}
+  footer{margin-top:34px; text-align:center; color:var(--muted); font-size:13px; border-top:1px solid var(--line); padding-top:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <h1>قرارات التصميم والتنقّل</h1>
+    <div class="sub">الوضع الحالي مقابل الجديد · قبل التنفيذ · يوليو 2026</div>
+  </header>
+
+  <div class="flow">
+    <span class="step"><b>Sol Ultra</b> — تقرير + بلان (قراءة‑فقط)</span>
+    <span class="arw">←</span>
+    <span class="step">مراجعة وقفل القرارات</span>
+    <span class="arw">←</span>
+    <span class="step"><b>Fable</b> — تنفيذ workflow</span>
+    <span class="arw">←</span>
+    <span class="step">مراجعة قبل الـ commit · فرع من <span style="direction:ltr">dev</span></span>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="num">5</div><div class="lbl">تغييرات (٢ مميزات · ٣ UI)</div></div>
+    <div class="stat"><div class="num">0</div><div class="lbl">مساس ببيانات القرآن أو الأعداد</div></div>
+    <div class="stat"><div class="num">✔</div><div class="lbl">عرض القرآن وRTL محفوظين</div></div>
+  </div>
+
+  <h2 class="section">المميزات</h2>
+
+  <div class="card">
+    <h3><span class="badge b-feat">ميزة A</span> توحيد ستايل كارت الآية</h3>
+    <div class="cmp">
+      <div class="box now"><span class="tag">الوضع الحالي</span>
+        كارت الآية في المصحف (المتشابهات/الآيات القريبة) ليه ستايل، وكروت الآيات في تفاصيل صفحات الكلمات ليها ستايل مختلف.
+      </div>
+      <div class="box new"><span class="tag">الوضع الجديد</span>
+        ستايل كارت المصحف (الباكجراوند + الإطار) يتطبّق في تفاصيل صفحات الكلمات — كومبوننت آية واحد مشترك، مع إبقاء تظليل الكلمة المطابِقة.
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3><span class="badge b-feat">ميزة B</span> تنقّل المودال العائم</h3>
+    <div class="cmp">
+      <div class="box now"><span class="tag">الوضع الحالي</span>
+        <ul>
+          <li>الضغط على تفصيلة (جذر/لِمّة/جذع/نوع) من المصحف → يفتح <b>صفحة جديدة</b>.</li>
+          <li>الروابط المتقاطعة بين الكيانات بتفتح صفحات.</li>
+          <li>الآية بتفتح المصحف في صفحة.</li>
+        </ul>
+      </div>
+      <div class="box new"><span class="tag">الوضع الجديد</span>
+        <ul>
+          <li>اللوحة الجانبية <b>تفضل</b> للاختيار الأساسي في المستكشفات.</li>
+          <li>التفاصيل من المصحف + الروابط المتقاطعة → <b>مودال عائم</b> (مش صفحة).</li>
+          <li>جوّه المودال: كيان مرتبط → نفس المودال (<b>ستاك</b>) + زرار <b>Back</b>.</li>
+          <li>الآية: لو على المصحف → يحدّث المصحف و<b>المودال يفضل مفتوح</b>؛ لو مش عليه → يروح المصحف والمودال يفضل فوقه.</li>
+          <li>قفل المودال → زرار <b>أعلى يسار</b> يفتحه تاني بحالته.</li>
+          <li>حالة المودال <b>منعكسة في الـ URL</b> (مشاركة + back المتصفح).</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <h2 class="section">إصلاحات الواجهة</h2>
+
+  <div class="card">
+    <h3><span class="badge b-ui">UI · U1</span> تصغير كارت التفاصيل وقت اللودنج</h3>
+    <div class="cmp">
+      <div class="box now"><span class="tag">الوضع الحالي</span>
+        الـ skeleton أصغر من الحجم الطبيعي، فبيحصل قفزة/تصغير للكارت (layout shift).
+      </div>
+      <div class="box new"><span class="tag">الوضع الجديد</span>
+        الـ skeleton يحجز نفس الحجم الطبيعي — مفيش قفزة ولا تصغير.
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3><span class="badge b-ui">UI · U2</span> موضع بانل "تصفية حسب الأعداد"</h3>
+    <div class="cmp">
+      <div class="box now"><span class="tag">الوضع الحالي</span>
+        فتح البانل بيزحزح "ترتيب المصحف" ويغيّر مكانه.
+      </div>
+      <div class="box new"><span class="tag">الوضع الجديد</span>
+        البانل يفتح <b>تحت السطر</b> فمكان "ترتيب المصحف" يفضل ثابت — في <b>كل الصفحات</b> (كومبوننت مشترك).
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3><span class="badge b-ui">UI · U3</span> تابات صفحة أنواع الكلمات</h3>
+    <div class="cmp">
+      <div class="box now"><span class="tag">الوضع الحالي</span>
+        التابات الأربعة مش فوق الجدول بالظبط.
+      </div>
+      <div class="box new"><span class="tag">الوضع الجديد</span>
+        التابات الأربعة (صيغ / أصول / جذور / كلمات) <b>فوق الجدول مباشرة</b>.
+      </div>
+    </div>
+  </div>
+
+  <h2 class="section">ثوابت محفوظة</h2>
+  <div class="note">
+    <ul>
+      <li>عرض القرآن (Amiri + ميداليات الأرقام + الـ ligatures) ثابت ومقدّس — مفيش تحريك للنص القرآني.</li>
+      <li>عربي أولًا / RTL، وتباين WCAG AA على قماشة الـ parchment.</li>
+      <li>سلوك الجداول: scroll داخلي بـ max-height زي ما هو؛ اللوحات الجانبية للاختيار الأساسي زي ما هي.</li>
+      <li>مفيش تغيير في البيانات أو الأعداد أو الباك اند — ده شغل واجهة بالكامل.</li>
+      <li>كل الشغل على فرع من <span style="direction:ltr">dev</span>، ومراجعة قبل أي commit.</li>
+    </ul>
+  </div>
+
+  <footer>
+    الخطوة الجاية: تقرير + بلان من Sol Ultra (قراءة‑فقط) → نراجع → تنفيذ Fable workflow.
+  </footer>
+
+</div>
+</body>
+</html>

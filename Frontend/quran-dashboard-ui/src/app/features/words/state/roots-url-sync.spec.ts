@@ -7,7 +7,7 @@ import {
   buildRootsQueryParams,
   parseRootsQueryParams,
 } from './roots-url-sync';
-import { ROOTS_QUERY_KEYS } from '../models/roots.models';
+import { ROOTS_QUERY_KEYS, ROOT_SORT_KEYS } from '../models/roots.models';
 
 function params(query: string): ParamMap {
   return convertToParamMap(query ? Object.fromEntries(new URLSearchParams(query)) : {});
@@ -233,6 +233,41 @@ describe('buildRootsDeepLink', () => {
       path: '/dashboard/words/roots',
       queryParams: { root: '42' },
     });
+  });
+});
+
+describe('parseRootsQueryParams sort tokens (Feature 030, N8)', () => {
+  it.each(ROOT_SORT_KEYS)('parses the canonical token "%s" verbatim', (sort) => {
+    expect(parseRootsQueryParams(params(`sort=${sort}`)).sort).toBe(sort);
+  });
+
+  it.each([
+    ['occurrences-desc', 'occurrences'],
+    ['ayahs-desc', 'ayahs'],
+    ['stems-desc', 'stems'],
+    ['alpha-asc', 'alpha'],
+  ])('canonicalizes the legacy alias "%s" to "%s"', (alias, canonical) => {
+    // An old shared link must not fork the ordering into a second URL/cache spelling.
+    expect(parseRootsQueryParams(params(`sort=${alias}`)).sort).toBe(canonical);
+  });
+
+  it.each([
+    'relevance',
+    'relevance-asc',
+    'lemma',
+    'mushaf-order-asc',
+    'mushaf-order-desc',
+    '-asc',
+  ])('fails closed to the default on the unsupported token "%s"', (sort) => {
+    expect(parseRootsQueryParams(params(`sort=${sort}`)).sort).toBe('mushaf-order');
+  });
+
+  it('round-trips a suffixed token through build', () => {
+    expect(buildRootsQueryParams({ sort: 'occurrences-asc' })).toEqual({ sort: 'occurrences-asc' });
+  });
+
+  it('removes the param on release, so the default order stays param-free', () => {
+    expect(buildRootsQueryParams({ sort: null, page: null })).toEqual({ sort: null, page: null });
   });
 });
 

@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
-import { deepLinkToHref } from '../../../../shared/url/deep-link-href';
-import { buildStemsDeepLink } from '../../state/stems-url-sync';
+import { DetailOverlayLinkDirective } from '../../../../core/navigation/detail-overlay/detail-overlay-link.directive';
+import { StemDetailFrame } from '../../../../core/navigation/detail-overlay/detail-overlay.models';
 
 import {
   ROOTS_OPEN_STEM_LABEL,
@@ -14,12 +14,13 @@ import { ROW_NUMBER_HEADER } from '../../models/unique-words.labels';
 
 interface RootStemRowViewModel {
   item: RootStemItemDto;
-  href: string;
+  frame: StemDetailFrame;
 }
 
 @Component({
   selector: 'qd-root-stems-list',
   standalone: true,
+  imports: [DetailOverlayLinkDirective],
   templateUrl: './root-stems-list.component.html',
   styleUrl: './root-stems-list.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -36,10 +37,20 @@ export class RootStemsListComponent {
   protected readonly loadingLabel = WORDS_LOADING_LABEL;
   protected readonly openStemLabel = ROOTS_OPEN_STEM_LABEL;
 
+  // Mirrors the retired stem explorer deep link, which opened the default
+  // words view; frame defaults are serialized explicitly per the URL contract.
   protected readonly rows = computed((): readonly RootStemRowViewModel[] =>
     this.stems().map((item) => ({
       item,
-      href: deepLinkToHref(buildStemsDeepLink({ stemId: item.stemId })),
+      frame: {
+        kind: 'stem',
+        id: item.stemId,
+        view: 'words',
+        wordView: 'simple',
+        surahView: 'mentioned',
+        detailPage: 1,
+        typeCode: null,
+      },
     })),
   );
 }

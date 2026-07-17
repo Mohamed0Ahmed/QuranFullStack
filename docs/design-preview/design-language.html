@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>لغة التصميم — معاينة التصميم</title>
+<link rel="stylesheet" href="assets/preview.css">
+<style>
+  .dl-section { margin-bottom: 40px; }
+  .dl-section > h2 {
+    font-family: var(--pv-naskh); font-weight: 700; font-size: 23px;
+    margin: 0 0 4px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .dl-section > h2::after { content: ''; flex: 1; height: 1px; background: var(--pv-border); }
+  .dl-note { color: var(--pv-muted); font-size: 12.5px; margin: 0 0 16px; max-width: 80ch; }
+  .dl-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .dl-stack { display: flex; flex-direction: column; gap: 10px; }
+  .dl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .dl-swatch { border: 1px solid var(--pv-border); border-radius: var(--pv-r-ctl); overflow: hidden; background: var(--pv-surface); }
+  .dl-swatch__color { height: 56px; border-bottom: 1px solid var(--pv-border); }
+  .dl-swatch__meta { padding: 7px 10px; font-size: 11.5px; color: var(--pv-muted); line-height: 1.5; }
+  .dl-swatch__meta b { display: block; color: var(--pv-ink); font-size: 12px; }
+  .dl-specimen { padding: 14px 18px; border: 1px solid var(--pv-border); border-radius: var(--pv-r-card); background: var(--pv-surface); }
+  .dl-specimen + .dl-specimen { margin-top: 10px; }
+  .dl-label { font-size: 11px; font-weight: 700; color: var(--pv-faint); margin-bottom: 6px; display: block; }
+  .dl-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+  @media (max-width: 900px) { .dl-two-col { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="pv-shell">
+
+<header class="pv-nav"><div class="pv-container pv-nav__row">
+  <a class="pv-brand" href="#"><span class="pv-brand__mark"></span><span class="pv-brand__name">المنهج القرآني</span></a>
+  <nav aria-label="التنقل الرئيسي"><ul class="pv-nav__links">
+    <li><a class="pv-nav__link is-active" href="#">لوحة التحكم</a></li>
+    <li><a class="pv-nav__link" href="mushaf.html">قارئ المصحف</a></li>
+    <li><a class="pv-nav__link" href="word-types.html">الكلمات والجذور</a></li>
+    <li><a class="pv-nav__link" href="#">التفاسير</a></li>
+    <li><a class="pv-nav__link" href="#">الأبواب</a></li>
+    <li><a class="pv-nav__link" href="#">المصادر</a></li>
+    <li><button class="pv-nav__link" type="button">المزيد <span class="pv-nav__caret">▾</span></button></li>
+  </ul></nav>
+  <div class="pv-nav__side">
+    <button class="pv-icon-btn" type="button" aria-label="الوضع الداكن">◐</button>
+    <a class="pv-nav__link" href="#">الإعدادات</a>
+  </div>
+</div></header>
+
+<main class="pv-main"><div class="pv-container">
+
+<div class="pv-page-head">
+  <p class="pv-page-head__eyebrow">معاينة التصميم — الاتجاه المسطّح</p>
+  <h1 class="pv-page-title">لغة التصميم</h1>
+  <p class="pv-page-sub">
+    النظام المشترك لكل صفحات المعاينة: رقّ دافئ، حبر هادئ، ولون أخضر علمي واحد يحمل كل معاني «الحالي».
+    مسطّح بالكامل — الحدود الشعرية تحمل البنية، والظلال محفوظة للطبقات العائمة فقط، والكحلي للتذييل وحده.
+  </p>
+</div>
+
+<!-- ===================== الألوان ===================== -->
+<section class="dl-section">
+  <h2>الألوان</h2>
+  <p class="dl-note">سلّم رقّي دافئ للأسطح + أخضر واحد. لا كحلي خارج التذييل، ولا ذهبي إطلاقًا.</p>
+  <div class="dl-grid">
+    <div class="dl-swatch"><div class="dl-swatch__color" style="background:#f6f4ee"></div><div class="dl-swatch__meta"><b>الخلفية — رقّ</b><bdo dir="ltr">#f6f4ee</bdo></div></div>
+    <div class="dl-swatch"><div class="dl-swatch__color" style="background:#fffdf8"></div><div class="dl-swatch__meta"><b>السطح — بطاقات</b><bdo dir="ltr">#fffdf8</bdo></div></div>
+    <div class="dl-swatch"><div class="dl-swatch__color" style="background:#fbf8f0"></div><div class="dl-swatch__meta"><b>ورق القراءة</b><bdo dir="ltr">#fbf8f0</bdo></div></div>
+    <div class="dl-swatch"><div class="dl-swatch__color" style="background:#f0ede2"></div><div class="dl-swatch__meta"><b>التجويف — أدوات</b><bdo dir="ltr">#f0ede2</bdo></div></div>
+    <div class="dl-swatch"><div class="dl-swatch__color" style="background:#e7e2d7"></div><div class="dl-swatch__meta"><b>الحدود الشعرية</b><bdo dir="ltr">#e7e2d7</bdo></div></div>
+    <div class="dl-swatch"><div class="dl-swatch__color" style="background:#2b2a26"></div><div class="dl-swatch__meta"><b>الحبر</b><bdo dir="ltr">#2b2a26</bdo></div></div>
+    <div class="dl-swatch"><div class="dl-swatch__color" style="background:#6f6b62"></div><div class="dl-swatch__meta"><b>حبر ثانوي</b><bdo dir="ltr">#6f6b62</bdo></div></div>
+    <div class="dl-swatch"><div class="dl-swatch__color" style="background:#2f6d5f"></div><div class="dl-swatch__meta"><b>الأخضر — اللون الواحد</b><bdo dir="ltr">#2f6d5f</bdo></div></div>
+    <div class="dl-swatch"><div class="dl-swatch__color" style="background:#eaf2ee"></div><div class="dl-swatch__meta"><b>مسحة الأخضر — تحديد</b><bdo dir="ltr">#eaf2ee</bdo></div></div>
+    <div class="dl-swatch"><div class="dl-swatch__color" style="background:#fbf1dc"></div><div class="dl-swatch__meta"><b>كهرماني — حالة</b><bdo dir="ltr">#fbf1dc / #96660f</bdo></div></div>
+    <div class="dl-swatch"><div class="dl-swatch__color" style="background:#f9ece8"></div><div class="dl-swatch__meta"><b>خطأ هادئ</b><bdo dir="ltr">#f9ece8 / #a44a3f</bdo></div></div>
+    <div class="dl-swatch"><div class="dl-swatch__color" style="background:#13253a"></div><div class="dl-swatch__meta"><b>كحلي — التذييل فقط</b><bdo dir="ltr">#13253a</bdo></div></div>
+  </div>
+</section>
+
+<!-- ===================== الخطوط ===================== -->
+<section class="dl-section">
+  <h2>الخطوط</h2>
+  <p class="dl-note">
+    «أميري» يحمل صوت الصفحة: العناوين والنص القرآني. «IBM Plex Sans Arabic» يحمل الواجهة العاملة.
+    خطوط المصحف (Uthmanic Hafs لأرقام الآيات، Mushaf Common وSurah Name للزخارف الوظيفية) تبقى كما هي في التطبيق — لا تُستبدل ولا تُحرّك أبدًا.
+  </p>
+  <div class="dl-specimen">
+    <span class="dl-label">عنوان صفحة — أميري ٧٠٠</span>
+    <p class="pv-page-title" style="margin:0;">الجذور</p>
+  </div>
+  <div class="dl-specimen">
+    <span class="dl-label">نص واجهة — Plex Arabic ٤٠٠ / تسمية ٧٠٠</span>
+    <p style="margin:0 0 4px;">لوحة تحكم لتنظيم ومراجعة بيانات البحث القرآني وإعدادها للنشر.</p>
+    <p style="margin:0; font-weight:700; font-size:12px; color:var(--pv-muted);">عدد الجذور: 1642</p>
+  </div>
+  <div class="dl-specimen" style="background:var(--pv-paper);">
+    <span class="dl-label">نص المصحف — أميري (الكلمات) + Uthmanic Hafs (رقم الآية)</span>
+    <p style="margin:0; font-family:var(--pv-naskh); font-size:1.35rem; line-height:1.9; text-align:center;">
+      بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ <span style="font-family:'Uthmanic Hafs'; font-size:1.5rem; color:var(--pv-muted);">١</span>
+    </p>
+    <p style="margin:6px 0 0; text-align:center;"><span class="pv-basmallah">﷽</span></p>
+    <div class="pv-surah-title" style="margin-top:4px;" role="img" aria-label="سورة يس">
+      <span class="pv-surah-title__frame" aria-hidden="true">header</span>
+      <span class="pv-surah-title__name" aria-hidden="true">surah036</span>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== الأزرار ===================== -->
+<section class="dl-section">
+  <h2>الأزرار</h2>
+  <p class="dl-note">مسطّحة تمامًا: الأساسي أخضر مصمت، الثانوي حدّ شعري، الخافت بلا حدّ. لا ظلال ولا تدرّجات.</p>
+  <div class="dl-row">
+    <button type="button" class="pv-btn pv-btn--primary">حفظ التغييرات</button>
+    <button type="button" class="pv-btn pv-btn--secondary">إعادة المحاولة</button>
+    <button type="button" class="pv-btn pv-btn--soft">عرض الكل</button>
+    <button type="button" class="pv-btn pv-btn--ghost">إغلاق</button>
+    <button type="button" class="pv-btn pv-btn--primary pv-btn--sm">انتقل</button>
+    <button type="button" class="pv-btn pv-btn--secondary pv-btn--sm" disabled>السابق</button>
+  </div>
+</section>
+
+<!-- ===================== الحقول ===================== -->
+<section class="dl-section">
+  <h2>الحقول</h2>
+  <p class="dl-note">حدّ شعري في السكون، حدّ أخضر + هالة مسطّحة عند التركيز.</p>
+  <div class="dl-row" style="align-items:flex-end;">
+    <div style="display:flex; flex-direction:column;">
+      <label class="pv-field-label" for="dl-search">بحث في الجذور</label>
+      <input id="dl-search" class="pv-input" type="search" placeholder="اكتب جذرًا…" style="width:220px;">
+    </div>
+    <div style="display:flex; flex-direction:column;">
+      <label class="pv-field-label" for="dl-sort">الترتيب</label>
+      <select id="dl-sort" class="pv-select" style="width:170px;">
+        <option>ترتيب المصحف</option>
+        <option>الأكثر ورودًا</option>
+        <option>أبجدي</option>
+      </select>
+    </div>
+    <div style="display:flex; flex-direction:column;">
+      <span class="pv-field-label">الجذر الأساسي — تصفية نشطة</span>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span class="pv-assoc-badge">ا ل ه <span class="pv-assoc-badge__x" role="button" aria-label="مسح التصفية: ا ل ه">×</span></span>
+        <input class="pv-input" type="search" placeholder="ابحث عن جذر…" style="width:150px;">
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== الرقائق والتبويبات ===================== -->
+<section class="dl-section">
+  <h2>الرقائق والتبويبات</h2>
+  <p class="dl-note">الرقيقة المحددة: مسحة خضراء + حدّ أخضر + خط عريض. التبويب الحالي يحمل «الخيط الأخضر» — شرطة ٢px تعني «الحالي» في كل النظام.</p>
+  <div class="dl-stack">
+    <div class="dl-row">
+      <button type="button" class="pv-chip is-selected" aria-pressed="true">الكل</button>
+      <button type="button" class="pv-chip" aria-pressed="false">موجود</button>
+      <button type="button" class="pv-chip" aria-pressed="false">غير موجود</button>
+      <button type="button" class="pv-chip" aria-pressed="false">اسم <span class="pv-chip__count">12364</span></button>
+      <button type="button" class="pv-chip is-selected" aria-pressed="true">فعل <span class="pv-chip__count">8544</span></button>
+      <button type="button" class="pv-chip" aria-pressed="false">حرف وأداة <span class="pv-chip__count">800</span></button>
+    </div>
+    <div class="pv-tabs" role="tablist" aria-label="مثال التبويبات">
+      <button type="button" role="tab" aria-selected="true" class="pv-tab is-selected">الكلمات</button>
+      <button type="button" role="tab" aria-selected="false" class="pv-tab">الآيات</button>
+      <button type="button" role="tab" aria-selected="false" class="pv-tab">السور</button>
+      <button type="button" role="tab" aria-selected="false" class="pv-tab">الصيغ <span class="pv-tab__count">3</span></button>
+      <button type="button" role="tab" aria-selected="false" class="pv-tab">الأصول <span class="pv-tab__count">21</span></button>
+    </div>
+    <div class="dl-row">
+      <span class="pv-badge">قريبًا</span>
+      <span class="pv-badge pv-badge--green">الحالي</span>
+      <span class="pv-badge pv-badge--amber">قيد المراجعة</span>
+      <button type="button" class="pv-count-chip">2851</button>
+      <button type="button" class="pv-count-chip is-selected">1879</button>
+      <button type="button" class="pv-count-chip" disabled>0</button>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== الجداول ===================== -->
+<section class="dl-section">
+  <h2>الجداول</h2>
+  <p class="dl-note">رأس على التجويف، فواصل شعرية، صفّ محدد بمسحة خضراء وخيط أخضر على حافة البداية. بيانات حقيقية: أوائل الجذور بترتيب المصحف.</p>
+  <div class="pv-table-wrap"><div class="pv-table-scroll">
+    <table class="pv-table" aria-label="جدول الجذور — عيّنة">
+      <thead><tr>
+        <th>م</th><th>الجذر</th><th>المواضع</th><th>الآيات</th><th>السور</th><th>بدون تشكيل</th><th>بالتشكيل</th><th>الصيغ</th><th>الأصول</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="pv-td-rownum">1</td><td class="pv-td-arabic"><button type="button">س م و</button></td>
+          <td><button type="button" class="pv-count-chip">381</button></td><td><button type="button" class="pv-count-chip">352</button></td><td><button type="button" class="pv-count-chip">81</button></td>
+          <td><button type="button" class="pv-count-chip">26</button></td><td><button type="button" class="pv-count-chip">52</button></td><td><button type="button" class="pv-count-chip">6</button></td><td><button type="button" class="pv-count-chip">29</button></td>
+        </tr>
+        <tr class="is-selected" aria-selected="true">
+          <td class="pv-td-rownum">2</td><td class="pv-td-arabic"><button type="button">ا ل ه</button></td>
+          <td><button type="button" class="pv-count-chip is-selected">2851</button></td><td><button type="button" class="pv-count-chip">1879</button></td><td><button type="button" class="pv-count-chip">86</button></td>
+          <td><button type="button" class="pv-count-chip">31</button></td><td><button type="button" class="pv-count-chip">81</button></td><td><button type="button" class="pv-count-chip">3</button></td><td><button type="button" class="pv-count-chip">21</button></td>
+        </tr>
+        <tr>
+          <td class="pv-td-rownum">3</td><td class="pv-td-arabic"><button type="button">ر ح م</button></td>
+          <td><button type="button" class="pv-count-chip">339</button></td><td><button type="button" class="pv-count-chip">313</button></td><td><button type="button" class="pv-count-chip">62</button></td>
+          <td><button type="button" class="pv-count-chip">47</button></td><td><button type="button" class="pv-count-chip">107</button></td><td><button type="button" class="pv-count-chip">9</button></td><td><button type="button" class="pv-count-chip">41</button></td>
+        </tr>
+        <tr>
+          <td class="pv-td-rownum">4</td><td class="pv-td-arabic"><button type="button">ح م د</button></td>
+          <td><button type="button" class="pv-count-chip">63</button></td><td><button type="button" class="pv-count-chip">61</button></td><td><button type="button" class="pv-count-chip">40</button></td>
+          <td><button type="button" class="pv-count-chip">11</button></td><td><button type="button" class="pv-count-chip">16</button></td><td><button type="button" class="pv-count-chip">5</button></td><td><button type="button" class="pv-count-chip">10</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <nav class="pv-pagination" aria-label="تصفّح الجذور">
+    <button type="button" class="pv-page-btn" disabled>السابق</button>
+    <button type="button" class="pv-page-btn is-current" aria-current="page">1</button>
+    <button type="button" class="pv-page-btn">2</button>
+    <button type="button" class="pv-page-btn">3</button>
+    <span style="color:var(--pv-faint);">…</span>
+    <button type="button" class="pv-page-btn">55</button>
+    <button type="button" class="pv-page-btn">التالي</button>
+    <span class="pv-page-jump"><input class="pv-input" type="number" placeholder="…" aria-label="رقم الصفحة"><button type="button" class="pv-btn pv-btn--secondary pv-btn--sm">انتقل</button></span>
+  </nav>
+  </div>
+</section>
+
+<!-- ===================== قوائم التفاصيل وبطاقات الآيات ===================== -->
+<section class="dl-section">
+  <h2>قوائم التفاصيل وبطاقات الآيات</h2>
+  <p class="dl-note">قائمة «م | نص | عدد» المشتركة، وبطاقة آية بكلمة مُطابقة تحتها الخيط الأخضر. نص الآية قرآني حقيقي ولا يُحرّك.</p>
+  <div class="dl-two-col">
+    <div class="pv-detail-panel">
+      <div class="pv-detail-panel__head">
+        <div><p class="pv-detail-panel__label">تفاصيل الجذر</p><p class="pv-detail-panel__title">ا ل ه</p></div>
+        <button type="button" class="pv-btn pv-btn--ghost pv-btn--sm pv-detail-panel__close">إغلاق</button>
+      </div>
+      <div class="pv-detail-panel__body">
+        <ul class="pv-detail-list">
+          <li class="is-selected"><span class="rownum">1</span><span class="arabic">ٱللَّهِ</span><button type="button" class="pv-count-chip is-selected">665</button></li>
+          <li><span class="rownum">2</span><span class="arabic">لِلَّهِ</span><button type="button" class="pv-count-chip">86</button></li>
+          <li><span class="rownum">3</span><span class="arabic">ٱللَّهُ</span><button type="button" class="pv-count-chip">660</button></li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="pv-ayah-card">
+        <div class="pv-ayah-card__meta"><b>الفاتحة</b><span>آية 1</span><span>ص 1</span></div>
+        <p class="pv-ayah-card__text">بِسۡمِ <mark>ٱللَّهِ</mark> ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ <span style="font-family:'Uthmanic Hafs'; color:var(--pv-muted);">١</span></p>
+      </div>
+      <div class="pv-pop" style="padding:6px; max-width:230px; margin-top:10px;">
+        <span class="dl-label" style="padding:4px 8px 0;">طبقة عائمة — الاستثناء الوحيد للظل</span>
+        <button type="button" class="pv-btn pv-btn--ghost pv-btn--sm" style="width:100%; justify-content:flex-start;">الإعراب</button>
+        <button type="button" class="pv-btn pv-btn--ghost pv-btn--sm" style="width:100%; justify-content:flex-start;">الترجمات</button>
+        <button type="button" class="pv-btn pv-btn--ghost pv-btn--sm" style="width:100%; justify-content:flex-start; background:var(--pv-accent-tint); color:var(--pv-accent-ink);">المتشابهات</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== الحالات ===================== -->
+<section class="dl-section">
+  <h2>الحالات</h2>
+  <p class="dl-note">تحميل بهيكل صامت، فراغ بدعوة هادئة، خطأ واضح غير صارخ.</p>
+  <div class="dl-two-col">
+    <div class="dl-stack">
+      <div class="dl-specimen">
+        <span class="dl-label">تحميل — هيكل</span>
+        <div class="dl-stack" role="status" aria-label="جارٍ التحميل…" style="gap:8px;">
+          <span class="pv-skeleton" style="width:88%;"></span>
+          <span class="pv-skeleton" style="width:70%;"></span>
+          <span class="pv-skeleton" style="width:79%;"></span>
+        </div>
+      </div>
+      <div class="dl-specimen" style="padding:0;">
+        <p class="pv-state" style="margin:0;">اختر جذرًا لعرض تفاصيله</p>
+      </div>
+    </div>
+    <div class="dl-stack">
+      <p class="pv-state pv-state--error" style="margin:0;">تعذّر تحميل الجذور. تحقّق من الاتصال ثم أعد المحاولة.</p>
+      <div class="dl-row">
+        <span class="pv-badge pv-badge--amber">قيد المراجعة</span>
+        <span style="font-size:12px; color:var(--pv-muted);">حالة المراجعة تُميَّز بالشكل والنص معًا، لا باللون وحده.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+</div></main>
+
+<footer class="pv-footer"><div class="pv-container">
+  <div class="pv-footer__grid">
+    <div>
+      <p class="pv-footer__brand">المنهج القرآني</p>
+      <p class="pv-footer__tag">لوحة تحكم لتنظيم ومراجعة بيانات البحث القرآني</p>
+    </div>
+    <div>
+      <p class="pv-footer__h">حالة النظام</p>
+      <div class="pv-health">
+        <div class="pv-health__row"><span class="pv-health__dot"></span><span>الحالة: سليم</span></div>
+        <div class="pv-health__row"><span class="pv-health__dot"></span><span>قاعدة البيانات: سليم</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="pv-footer__base">
+    <span>المنهج القرآني © 2026</span>
+    <span>معاينة تصميم — بيانات حقيقية من قاعدة البيانات المحلية</span>
+  </div>
+</div></footer>
+
+</div>
+</body>
+</html>

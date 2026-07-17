@@ -16,13 +16,13 @@ public sealed class WordTypesSecondaryFilterReadTests(WordTypesTestFixture fixtu
 
         var nominative = await reader.GetRowsAsync(
             new WordTypeFilter("noun", null, "nominative", null, null),
-            WordTypeSort.Occurrences,
+            WordTypeSortSpec.Default,
             1,
             25,
             CancellationToken.None);
         var genitive = await reader.GetRowsAsync(
             new WordTypeFilter("noun", null, "genitive", null, null),
-            WordTypeSort.Occurrences,
+            WordTypeSortSpec.Default,
             1,
             25,
             CancellationToken.None);
@@ -43,7 +43,7 @@ public sealed class WordTypesSecondaryFilterReadTests(WordTypesTestFixture fixtu
 
         var unspecified = await reader.GetRowsAsync(
             new WordTypeFilter("noun", null, "null", null, null),
-            WordTypeSort.Occurrences,
+            WordTypeSortSpec.Default,
             1,
             25,
             CancellationToken.None);
@@ -65,7 +65,7 @@ public sealed class WordTypesSecondaryFilterReadTests(WordTypesTestFixture fixtu
 
         var filteredRows = await reader.GetRowsAsync(
             new WordTypeFilter("noun", null, "nominative", null, null),
-            WordTypeSort.Occurrences,
+            WordTypeSortSpec.Default,
             1,
             25,
             CancellationToken.None);
@@ -83,7 +83,7 @@ public sealed class WordTypesSecondaryFilterReadTests(WordTypesTestFixture fixtu
 
         var past = await reader.GetRowsAsync(
             new WordTypeFilter("verb", null, null, "past", null),
-            WordTypeSort.Occurrences,
+            WordTypeSortSpec.Default,
             1,
             25,
             CancellationToken.None);
@@ -100,7 +100,7 @@ public sealed class WordTypesSecondaryFilterReadTests(WordTypesTestFixture fixtu
 
         var passive = await reader.GetRowsAsync(
             new WordTypeFilter("verb", null, null, null, "passive"),
-            WordTypeSort.Occurrences,
+            WordTypeSortSpec.Default,
             1,
             25,
             CancellationToken.None);
@@ -118,13 +118,13 @@ public sealed class WordTypesSecondaryFilterReadTests(WordTypesTestFixture fixtu
 
         var presentPassive = await reader.GetRowsAsync(
             new WordTypeFilter("verb", null, null, "present", "passive"),
-            WordTypeSort.Occurrences,
+            WordTypeSortSpec.Default,
             1,
             25,
             CancellationToken.None);
         var presentActive = await reader.GetRowsAsync(
             new WordTypeFilter("verb", null, null, "present", "active"),
-            WordTypeSort.Occurrences,
+            WordTypeSortSpec.Default,
             1,
             25,
             CancellationToken.None);

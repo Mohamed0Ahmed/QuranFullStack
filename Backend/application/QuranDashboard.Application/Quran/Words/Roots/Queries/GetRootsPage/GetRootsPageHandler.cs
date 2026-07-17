@@ -46,7 +46,7 @@ public sealed class GetRootsPageHandler(
                 FeatureName,
                 OperationName,
                 "invalidPaging",
-                GetSortKey(sort),
+                sort.CanonicalToken(),
                 query.Page,
                 query.PageSize,
                 HasSearch(query.Search));
@@ -62,7 +62,7 @@ public sealed class GetRootsPageHandler(
                 FeatureName,
                 OperationName,
                 "invalidFilter",
-                GetSortKey(sort),
+                sort.CanonicalToken(),
                 query.Page,
                 query.PageSize,
                 HasSearch(query.Search));
@@ -83,7 +83,7 @@ public sealed class GetRootsPageHandler(
             "Completed {feature} {operation} {sort} {pageNumber} {pageSize} {totalCount} {itemCount} {hasSearch}",
             FeatureName,
             OperationName,
-            GetSortKey(sort),
+            sort.CanonicalToken(),
             query.Page,
             query.PageSize,
             page.TotalCount,
@@ -92,14 +92,6 @@ public sealed class GetRootsPageHandler(
 
         return new GetRootsPageOutcome.Success(page);
     }
-
-    private static string GetSortKey(RootSort sort) => sort switch
-    {
-        RootSort.MushafOrder => RootSortKeys.MushafOrder,
-        RootSort.Occurrences => RootSortKeys.Occurrences,
-        RootSort.Alpha => RootSortKeys.Alpha,
-        _ => throw new InvalidOperationException($"Unhandled {nameof(RootSort)} value."),
-    };
 
     private static bool HasSearch(string? search) => !string.IsNullOrWhiteSpace(search);
 }

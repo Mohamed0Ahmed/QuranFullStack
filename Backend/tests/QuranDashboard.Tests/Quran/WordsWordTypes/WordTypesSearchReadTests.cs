@@ -20,10 +20,10 @@ public sealed class WordTypesSearchReadTests(WordTypesTestFixture fixture)
 
         var unfiltered = await reader.GetRowsAsync(
             new WordTypeFilter("noun", null, null, null, null),
-            WordTypeSort.Occurrences, 1, 1000, CancellationToken.None);
+            WordTypeSortSpec.Default, 1, 1000, CancellationToken.None);
         var searched = await reader.GetRowsAsync(
             new WordTypeFilter("noun", null, null, null, null, "كَلِم"),
-            WordTypeSort.Occurrences, 1, 1000, CancellationToken.None);
+            WordTypeSortSpec.Default, 1, 1000, CancellationToken.None);
 
         unfiltered.TotalCount.Should().Be(4);
         searched.TotalCount.Should().Be(3);
@@ -45,13 +45,13 @@ public sealed class WordTypesSearchReadTests(WordTypesTestFixture fixture)
 
         var bearing = await reader.GetTableRowsAsync(
             new WordTypeFilter("noun", null, null, null, null, "كلم"),
-            view, WordTypeSort.Occurrences, 1, 1000, CancellationToken.None);
+            view, WordTypeSortSpec.Default, 1, 1000, CancellationToken.None);
         var rootless = await reader.GetTableRowsAsync(
             new WordTypeFilter("noun", null, null, null, null, "مثل"),
-            view, WordTypeSort.Occurrences, 1, 1000, CancellationToken.None);
+            view, WordTypeSortSpec.Default, 1, 1000, CancellationToken.None);
         var rootlessWords = await reader.GetTableRowsAsync(
             new WordTypeFilter("noun", null, null, null, null, "مثل"),
-            WordTypeTableView.Words, WordTypeSort.Occurrences, 1, 1000, CancellationToken.None);
+            WordTypeTableView.Words, WordTypeSortSpec.Default, 1, 1000, CancellationToken.None);
 
         bearing.TotalCount.Should().Be(1);
         bearing.Items.Should().HaveCount(1);
@@ -70,7 +70,7 @@ public sealed class WordTypesSearchReadTests(WordTypesTestFixture fixture)
 
         var byRootText = await reader.GetRowsAsync(
             new WordTypeFilter("noun", null, null, null, null, "ك ل م"),
-            WordTypeSort.Occurrences, 1, 1000, CancellationToken.None);
+            WordTypeSortSpec.Default, 1, 1000, CancellationToken.None);
 
         byRootText.TotalCount.Should().Be(0);
         byRootText.Items.Should().BeEmpty();
@@ -90,19 +90,19 @@ public sealed class WordTypesSearchReadTests(WordTypesTestFixture fixture)
 
         var diacritizedRows = await wordTypes.GetRowsAsync(
             new WordTypeFilter("verb", null, null, null, null, diacritizedTerm),
-            WordTypeSort.Occurrences, 1, 1000, CancellationToken.None);
+            WordTypeSortSpec.Default, 1, 1000, CancellationToken.None);
         var bareRows = await wordTypes.GetRowsAsync(
             new WordTypeFilter("verb", null, null, null, null, "علم"),
-            WordTypeSort.Occurrences, 1, 1000, CancellationToken.None);
+            WordTypeSortSpec.Default, 1, 1000, CancellationToken.None);
 
         diacritizedRows.Items.Select(row => (row.TashkeelWordId, row.ContextCode))
             .Should().BeEquivalentTo(bareRows.Items.Select(row => (row.TashkeelWordId, row.ContextCode)));
         diacritizedRows.Items.Should().NotBeEmpty();
 
         var diacritizedUnique = await uniqueWords.GetUniqueWordsPageAsync(
-            UniqueWordKind.Tashkeel, diacritizedTerm, UniqueWordSort.Occurrences, UniqueWordsCountFilter.None, UniqueWordsAssociationFilter.None, 1, 1000, CancellationToken.None);
+            UniqueWordKind.Tashkeel, diacritizedTerm, UniqueWordSortSpec.Natural(UniqueWordSortColumn.Occurrences), UniqueWordsCountFilter.None, UniqueWordsAssociationFilter.None, 1, 1000, CancellationToken.None);
         var bareUnique = await uniqueWords.GetUniqueWordsPageAsync(
-            UniqueWordKind.Tashkeel, "علم", UniqueWordSort.Occurrences, UniqueWordsCountFilter.None, UniqueWordsAssociationFilter.None, 1, 1000, CancellationToken.None);
+            UniqueWordKind.Tashkeel, "علم", UniqueWordSortSpec.Natural(UniqueWordSortColumn.Occurrences), UniqueWordsCountFilter.None, UniqueWordsAssociationFilter.None, 1, 1000, CancellationToken.None);
 
         diacritizedUnique.Items.Select(item => item.Id)
             .Should().BeEquivalentTo(bareUnique.Items.Select(item => item.Id));

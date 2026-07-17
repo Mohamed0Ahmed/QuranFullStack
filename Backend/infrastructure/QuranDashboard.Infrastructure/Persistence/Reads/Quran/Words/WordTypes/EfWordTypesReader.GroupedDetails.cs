@@ -62,7 +62,7 @@ public sealed partial class EfWordTypesReader
 
         var parameters = BuildRowsParameters(context, skip.Value, pageSize, selection.DimensionId);
         var rows = await _dbContext.Database
-            .SqlQueryRaw<WordTypeRowSqlResult>(RowsSql(context, WordTypeSort.Occurrences, selection.Kind), parameters)
+            .SqlQueryRaw<WordTypeRowSqlResult>(RowsSql(context, WordTypeSortSpec.Natural(WordTypeSortColumn.Occurrences), selection.Kind), parameters)
             .ToListAsync(cancellationToken);
 
         return new PagedResult<WordTypeGroupedMemberWordDto>(

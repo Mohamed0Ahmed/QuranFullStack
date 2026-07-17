@@ -27,10 +27,8 @@
       @for (row of rows(); track row.item.uniqueWordId; let i = $index) {
         <a
           class="stem-words-list__row qd-interactive-surface qd-detail-list__row"
-          [attr.href]="row.uniqueWordHref"
+          [qdDetailLink]="row.frame"
           [attr.aria-label]="uniqueWordLabel(row.item.displayText)"
-          target="_blank"
-          rel="noopener noreferrer"
           data-testid="stem-word-link"
         >
           <span class="stem-words-list__row-number qd-detail-list__row-number" aria-hidden="true">{{ rowNumber(i) }}</span>
@@ -41,13 +39,16 @@
     }
   </div>
 
-  @if (!loading()) {
-    <qd-pagination
-      [currentPage]="currentPage()"
-      [pageSize]="page().pageSize"
-      [totalCount]="page().totalCount"
-      [ariaLabel]="paginationLabel"
-      (pageChange)="pageChange.emit($event)"
-    />
-  }
+  <!-- Always-rendered slot: reserves the pagination row through loading (N3 row 4). -->
+  <div class="qd-detail-list__pagination-slot" data-testid="stem-words-pagination-slot">
+    @if (!loading()) {
+      <qd-pagination
+        [currentPage]="currentPage()"
+        [pageSize]="page().pageSize"
+        [totalCount]="page().totalCount"
+        [ariaLabel]="paginationLabel"
+        (pageChange)="pageChange.emit($event)"
+      />
+    }
+  </div>
 </div>

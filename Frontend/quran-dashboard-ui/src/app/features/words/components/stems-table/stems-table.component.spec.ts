@@ -3,6 +3,7 @@ import { getTestBed, TestBed } from '@angular/core/testing';
 
 import { StemsTableComponent } from './stems-table.component';
 import { StemListItemViewModel } from '../../models/stems.models';
+import { STEMS_NO_RESULTS_LABEL } from '../../models/stems.labels';
 
 function row(id: number, overrides: Partial<StemListItemViewModel> = {}): StemListItemViewModel {
     return {
@@ -160,4 +161,184 @@ describe('StemsTableComponent', () => {
     expect(buttons[1]?.hasAttribute('disabled')).toBe(true);
     expect(buttons[3]?.hasAttribute('disabled')).toBe(true);
   });
+
+  describe('column-header sorting (Feature 030, N8)', () => {
+    function headerCellFor(root: HTMLElement, key: string): HTMLElement {
+      const button = root.querySelector(`[data-testid="stems-table-sort-${key}"]`) as HTMLElement;
+      return button.closest('[role="columnheader"]') as HTMLElement;
+    }
+
+    it('renders a sort button on every allowlisted column and none anywhere else', () => {
+      const fixture = setup([]);
+      const root = fixture.nativeElement as HTMLElement;
+
+      const ids = Array.from(root.querySelectorAll('[data-testid^="stems-table-sort-"]')).map(
+        (button) => button.getAttribute('data-testid'),
+      );
+      expect(ids).toEqual([
+        'stems-table-sort-alpha',
+        'stems-table-sort-occurrences',
+        'stems-table-sort-ayahs',
+        'stems-table-sort-surahs',
+        'stems-table-sort-simple',
+        'stems-table-sort-tashkeel',
+      ]);
+    });
+
+    it('leaves the row-number and dominant الصيغة/الجذر headers plain — no button, no aria-sort', () => {
+      const fixture = setup([]);
+      const root = fixture.nativeElement as HTMLElement;
+      const plainHeaders = Array.from(
+        root.querySelectorAll('[role="columnheader"]'),
+      ).filter((header) => header.querySelector('.qd-explorer-table__sort-button') === null);
+
+      expect(plainHeaders.length).toBeGreaterThan(0);
+      for (const header of plainHeaders) {
+        expect(header.querySelector('button')).toBeNull();
+        expect(header.hasAttribute('aria-sort')).toBe(false);
+      }
+      expect(
+        plainHeaders.map((header) => header.textContent?.trim()),
+      ).toEqual(['م', 'الصيغ', 'الجذور']);
+    });
+
+    it('cycles a count column: natural desc → asc → release', () => {
+      const emitted: (string | null)[] = [];
+      const fixture = setup([], { sort: 'mushaf-order' });
+      fixture.componentInstance.sortChange.subscribe((sort) => emitted.push(sort));
+      const root = fixture.nativeElement as HTMLElement;
+      const button = () =>
+        root.querySelector('[data-testid="stems-table-sort-occurrences"]') as HTMLButtonElement;
+
+      button().click();
+      fixture.componentRef.setInput('sort', 'occurrences');
+      fixture.detectChanges();
+      button().click();
+      fixture.componentRef.setInput('sort', 'occurrences-asc');
+      fixture.detectChanges();
+      button().click();
+
+      expect(emitted).toEqual(['occurrences', 'occurrences-asc', null]);
+    });
+
+    it('cycles the text column alpha the other way: natural asc → desc → release', () => {
+      const emitted: (string | null)[] = [];
+      const fixture = setup([], { sort: 'mushaf-order' });
+      fixture.componentInstance.sortChange.subscribe((sort) => emitted.push(sort));
+      const root = fixture.nativeElement as HTMLElement;
+      const button = () =>
+        root.querySelector('[data-testid="stems-table-sort-alpha"]') as HTMLButtonElement;
+
+      button().click();
+      fixture.componentRef.setInput('sort', 'alpha');
+      fixture.detectChanges();
+      button().click();
+      fixture.componentRef.setInput('sort', 'alpha-desc');
+      fixture.detectChanges();
+      button().click();
+
+      expect(emitted).toEqual(['alpha', 'alpha-desc', null]);
+    });
+
+    it('carries aria-sort only on the active column, and drops it on release', () => {
+      const fixture = setup([], { sort: 'occurrences' });
+      const root = fixture.nativeElement as HTMLElement;
+
+      expect(headerCellFor(root, 'occurrences').getAttribute('aria-sort')).toBe('descending');
+      expect(headerCellFor(root, 'alpha').hasAttribute('aria-sort')).toBe(false);
+
+      fixture.componentRef.setInput('sort', 'occurrences-asc');
+      fixture.detectChanges();
+      expect(headerCellFor(root, 'occurrences').getAttribute('aria-sort')).toBe('ascending');
+
+      fixture.componentRef.setInput('sort', 'mushaf-order');
+      fixture.detectChanges();
+      expect(headerCellFor(root, 'occurrences').hasAttribute('aria-sort')).toBe(false);
+    });
+
+    it('renders the direction glyph as an aria-hidden span, and none when inactive', () => {
+      const fixture = setup([], { sort: 'occurrences' });
+      const root = fixture.nativeElement as HTMLElement;
+      const button = root.querySelector(
+        '[data-testid="stems-table-sort-occurrences"]',
+      ) as HTMLElement;
+      const glyph = button.querySelector('.qd-explorer-table__sort-glyph') as HTMLElement;
+
+      expect(glyph.getAttribute('aria-hidden')).toBe('true');
+      expect(glyph.textContent?.trim()).toBe('▼');
+      expect(
+        root
+          .querySelector('[data-testid="stems-table-sort-alpha"]')
+          ?.querySelector('.qd-explorer-table__sort-glyph'),
+      ).toBeNull();
+    });
+
+    it('names the column and the next cycle state in the Arabic aria-label', () => {
+      const fixture = setup([], { sort: 'mushaf-order' });
+      const root = fixture.nativeElement as HTMLElement;
+      const button = () =>
+        root.querySelector('[data-testid="stems-table-sort-alpha"]') as HTMLElement;
+
+      expect(button().getAttribute('aria-label')).toBe('ترتيب حسب الأصل الصرفي تصاعديًا');
+
+      fixture.componentRef.setInput('sort', 'alpha');
+      fixture.detectChanges();
+      expect(button().getAttribute('aria-label')).toBe('ترتيب حسب الأصل الصرفي تنازليًا');
+
+      fixture.componentRef.setInput('sort', 'alpha-desc');
+      fixture.detectChanges();
+      expect(button().getAttribute('aria-label')).toBe('إلغاء الترتيب حسب الأصل الصرفي');
+    });
+  });
+
+  // Feature 030, N3 row 5: these states used to be page-level banners that inserted above the fixed
+  // table+panel grid and pushed it down ~4.5rem. They now stand in for the body INSIDE the mounted
+  // shell. jsdom does no layout, so the geometry itself is pinned in SCSS (`.stems-table__state`
+  // matches the body it replaces in every band) — these assert the structure that SCSS keys off.
+  describe('in-shell list states (Feature 030, N3 row 5)', () => {
+    it('renders the error state inside the table shell, replacing the body', () => {
+      const fixture = setup([], { status: 'error', errorMessage: 'تعذر تحميل الأصول' });
+      const root = fixture.nativeElement as HTMLElement;
+
+      const state = root.querySelector('[data-testid="stems-list-error"]');
+      expect(state).toBeTruthy();
+      expect(state?.getAttribute('role')).toBe('alert');
+      expect(state?.textContent?.trim()).toBe('تعذر تحميل الأصول');
+      expect(state?.closest('.qd-explorer-table')).toBeTruthy();
+      expect(state?.classList.contains('stems-table__state')).toBe(true);
+      // it REPLACES the body (rather than stacking above it) and the shell stays mounted
+      expect(root.querySelector('.qd-explorer-table__body')).toBeNull();
+      expect(root.querySelector('.qd-explorer-table__header')).toBeTruthy();
+    });
+
+    it('renders the no-results state inside the table shell, replacing the body', () => {
+      const fixture = setup([], { status: 'empty' });
+      const root = fixture.nativeElement as HTMLElement;
+
+      const state = root.querySelector('[data-testid="stems-list-no-results"]');
+      expect(state).toBeTruthy();
+      expect(state?.textContent?.trim()).toBe(STEMS_NO_RESULTS_LABEL);
+      expect(state?.closest('.qd-explorer-table')).toBeTruthy();
+      expect(state?.classList.contains('stems-table__state')).toBe(true);
+      expect(root.querySelector('.qd-explorer-table__body')).toBeNull();
+      expect(root.querySelector('.qd-explorer-table__header')).toBeTruthy();
+    });
+
+    it('shows the skeleton body and no state box while loading', () => {
+      const fixture = setup([], { loading: true, status: 'loading' });
+      const root = fixture.nativeElement as HTMLElement;
+
+      expect(root.querySelector('[data-testid="stems-table-loading"]')).toBeTruthy();
+      expect(root.querySelector('.stems-table__state')).toBeNull();
+    });
+
+    it('renders the body and no state box on success', () => {
+      const fixture = setup([row(1)], { status: 'success' });
+      const root = fixture.nativeElement as HTMLElement;
+
+      expect(root.querySelector('.stems-table__state')).toBeNull();
+      expect(root.querySelector('.qd-explorer-table__body')).toBeTruthy();
+    });
+  });
+
 });

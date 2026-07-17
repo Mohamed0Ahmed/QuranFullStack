@@ -17,15 +17,21 @@ import { WordCountChipComponent } from '../word-count-chip/word-count-chip.compo
 import {
   ROOTS_COLUMN_COUNT_LABELS,
   ROOTS_COLUMN_HEADERS,
+  ROOTS_NO_RESULTS_LABEL,
   ROOTS_TABLE_BODY_LABEL,
   ROOTS_TABLE_LABEL,
 } from '../../models/roots.labels';
 import {
+  DEFAULT_ROOT_SORT,
+  LoadStatus,
   ROOTS_LIST_PAGE_SIZE,
+  ROOT_SORT_COLUMNS,
   RootListItemViewModel,
+  RootSort,
   RootSurahView,
   RootView,
   RootWordView,
+  normalizeRootSort,
 } from '../../models/roots.models';
 import { WORDS_LOADING_LABEL } from '../../models/words.labels';
 import {
@@ -37,6 +43,7 @@ import {
   ExplorerInteractionSource,
   handleExplorerTableKeydown,
 } from '../../utils/explorer-table-keydown';
+import { ExplorerTableSortController } from '../../utils/explorer-table-sort.controller';
 import {
   ExplorerRowNavDirection,
   scrollExplorerRowIntoView,
@@ -83,6 +90,13 @@ export class RootsTableComponent {
 
   readonly rows = input.required<readonly RootListItemViewModel[]>();
   readonly loading = input(false);
+  /**
+   * The list's own status, so the error / no-results states render INSIDE this mounted shell
+   * instead of above the page grid (Feature 030, N3 row 5). `loading` still drives the skeleton
+   * body — this input is only consulted for the states that replace the body.
+   */
+  readonly status = input<LoadStatus>('idle');
+  readonly errorMessage = input('');
   readonly selectedRootId = input<number | null>(null);
   readonly currentPage = input(1);
   readonly pageSize = input(ROOTS_LIST_PAGE_SIZE);
@@ -90,9 +104,22 @@ export class RootsTableComponent {
   readonly activeWordView = input<RootWordView | null>(null);
   readonly activeSurahView = input<RootSurahView | null>(null);
   readonly activeColumn = input<RootTableColumnKey | null>(null);
+  readonly sort = input<RootSort>(DEFAULT_ROOT_SORT);
 
   readonly rowSelected = output<RootListItemViewModel>();
   readonly countOpened = output<RootCountOpenedEvent>();
+  /** null = release the sort param back to the default (ترتيب المصحف). */
+  readonly sortChange = output<RootSort | null>();
+
+  protected readonly sortControl = new ExplorerTableSortController<RootSort>(
+    () => this.sort(),
+    (value) => normalizeRootSort(value),
+    (sort) => this.sortChange.emit(sort),
+  );
+
+  protected get sortColumns(): typeof ROOT_SORT_COLUMNS {
+    return ROOT_SORT_COLUMNS;
+  }
 
   protected get headers() {
     return ROOTS_COLUMN_HEADERS;
@@ -103,6 +130,9 @@ export class RootsTableComponent {
   protected readonly tableLabel = ROOTS_TABLE_LABEL;
   protected readonly tableBodyLabel = ROOTS_TABLE_BODY_LABEL;
   protected readonly loadingLabel = WORDS_LOADING_LABEL;
+  protected get noResultsLabel(): string {
+    return ROOTS_NO_RESULTS_LABEL;
+  }
   protected readonly loadingRowPlaceholders = Array.from({ length: 12 });
   protected readonly rowHeight = signal(ROW_HEIGHT_DESKTOP);
   protected readonly useVirtualScroll = HAS_RESIZE_OBSERVER;

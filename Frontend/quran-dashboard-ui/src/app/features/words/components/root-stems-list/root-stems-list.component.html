@@ -27,10 +27,8 @@
       @for (row of rows(); track row.item.stemId; let index = $index) {
         <a
           class="root-stems-list__row qd-interactive-surface qd-detail-list__row"
-          [attr.href]="row.href"
+          [qdDetailLink]="row.frame"
           [attr.aria-label]="openStemLabel"
-          target="_blank"
-          rel="noopener noreferrer"
           data-testid="root-stem-item"
         >
           <span class="root-stems-list__row-number qd-detail-list__row-number" aria-hidden="true">{{ index + 1 }}</span>

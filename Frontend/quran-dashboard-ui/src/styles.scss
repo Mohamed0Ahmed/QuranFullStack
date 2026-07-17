@@ -4,6 +4,7 @@
 @use 'styles/layout';
 @use 'styles/components';
 @use 'styles/words-explorer-layout';
+@use 'styles/words-explainer';
 @use 'styles/explorer-tables';
 @use 'styles/explorer-detail-lists';
 @use 'styles/forms';
@@ -17,6 +18,17 @@ html,
 body {
   margin: 0;
   min-height: 100%;
+}
+
+/* The modal scroll lock sets `body { overflow: hidden }`, which propagates to the viewport
+   and takes the scrollbar with it. Reserving the gutter permanently means locking removes a
+   scrollbar that was never occupying layout, so the page cannot jolt sideways on open or
+   close. Deliberately preferred over padding the body while locked: the gutter follows the
+   scrollbar to the inline-start edge under RTL on its own, whereas a padding compensation
+   would have to know the document direction to pick a side. Costs nothing where scrollbars
+   are overlays (touch, macOS), because there the gutter is 0. */
+html {
+  scrollbar-gutter: stable;
 }
 
 body {

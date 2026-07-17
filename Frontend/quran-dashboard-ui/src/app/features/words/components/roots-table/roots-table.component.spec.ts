@@ -3,6 +3,7 @@ import { getTestBed, TestBed } from '@angular/core/testing';
 
 import { RootsTableComponent } from './roots-table.component';
 import { RootListItemViewModel } from '../../models/roots.models';
+import { ROOTS_NO_RESULTS_LABEL } from '../../models/roots.labels';
 
 function row(id: number, overrides: Partial<RootListItemViewModel> = {}): RootListItemViewModel {
   return {
@@ -217,4 +218,252 @@ describe('RootsTableComponent', () => {
       source: 'keyboard',
     });
   });
+
+  it('leaves arrow keys to a focused sort header instead of moving the selected row', () => {
+    const fixture = setup([row(1), row(2)], {
+      selectedRootId: 1,
+      activeView: 'ayahs',
+      activeColumn: 'ayahs',
+    });
+    const emitted: unknown[] = [];
+    fixture.componentInstance.countOpened.subscribe((event) => emitted.push(event));
+
+    const sortButton = fixture.nativeElement.querySelector(
+      '[data-testid="roots-table-sort-surahs"]',
+    ) as HTMLElement;
+    const event = new KeyboardEvent('keydown', {
+      key: 'ArrowDown',
+      bubbles: true,
+      cancelable: true,
+    });
+    sortButton.dispatchEvent(event);
+    fixture.detectChanges();
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(emitted).toEqual([]);
+  });
+
+  it('still navigates on arrow keys pressed from a row count chip', () => {
+    const fixture = setup([row(1), row(2)], {
+      selectedRootId: 1,
+      activeView: 'ayahs',
+      activeColumn: 'ayahs',
+    });
+    const emitted: { root: RootListItemViewModel; column?: string; source?: string }[] = [];
+    fixture.componentInstance.countOpened.subscribe((event) => emitted.push(event));
+
+    const chipButton = fixture.nativeElement.querySelector(
+      'qd-word-count-chip button',
+    ) as HTMLElement;
+    const event = new KeyboardEvent('keydown', {
+      key: 'ArrowDown',
+      bubbles: true,
+      cancelable: true,
+    });
+    chipButton.dispatchEvent(event);
+    fixture.detectChanges();
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(emitted).toHaveLength(1);
+    expect(emitted[0]).toMatchObject({ root: row(2), column: 'ayahs', source: 'keyboard' });
+  });
+
+  describe('column-header sorting (Feature 030, N8)', () => {
+    function headerCellFor(root: HTMLElement, key: string): HTMLElement {
+      const button = root.querySelector(`[data-testid="roots-table-sort-${key}"]`) as HTMLElement;
+      return button.closest('[role="columnheader"]') as HTMLElement;
+    }
+
+    it('renders a sort button on every allowlisted column and none anywhere else', () => {
+      const fixture = setup([]);
+      const root = fixture.nativeElement as HTMLElement;
+
+      const keys = Array.from(root.querySelectorAll('[data-testid^="roots-table-sort-"]')).map(
+        (button) => button.getAttribute('data-testid'),
+      );
+      expect(keys).toEqual([
+        'roots-table-sort-alpha',
+        'roots-table-sort-occurrences',
+        'roots-table-sort-ayahs',
+        'roots-table-sort-surahs',
+        'roots-table-sort-simple',
+        'roots-table-sort-tashkeel',
+        'roots-table-sort-lemmas',
+        'roots-table-sort-stems',
+      ]);
+    });
+
+    it('leaves the row-number header plain — no button, no aria-sort', () => {
+      const fixture = setup([]);
+      const root = fixture.nativeElement as HTMLElement;
+      const rowNumber = root.querySelector(
+        '.qd-explorer-table__header-cell--row-number',
+      ) as HTMLElement;
+
+      expect(rowNumber.querySelector('button')).toBeNull();
+      expect(rowNumber.hasAttribute('aria-sort')).toBe(false);
+    });
+
+    it.each([
+      ['occurrences', 'occurrences', 'occurrences-asc'],
+      ['ayahs', 'ayahs', 'ayahs-asc'],
+      ['stems', 'stems', 'stems-asc'],
+    ])('cycles the count column %s: natural desc → asc → release', (key, natural, opposite) => {
+      const emitted: (string | null)[] = [];
+      const fixture = setup([], { sort: 'mushaf-order' });
+      fixture.componentInstance.sortChange.subscribe((sort) => emitted.push(sort));
+      const root = fixture.nativeElement as HTMLElement;
+      const button = () =>
+        root.querySelector(`[data-testid="roots-table-sort-${key}"]`) as HTMLButtonElement;
+
+      button().click();
+      fixture.componentRef.setInput('sort', natural);
+      fixture.detectChanges();
+      button().click();
+      fixture.componentRef.setInput('sort', opposite);
+      fixture.detectChanges();
+      button().click();
+
+      expect(emitted).toEqual([natural, opposite, null]);
+    });
+
+    it('cycles the text column alpha the other way: natural asc → desc → release', () => {
+      const emitted: (string | null)[] = [];
+      const fixture = setup([], { sort: 'mushaf-order' });
+      fixture.componentInstance.sortChange.subscribe((sort) => emitted.push(sort));
+      const root = fixture.nativeElement as HTMLElement;
+      const button = () =>
+        root.querySelector('[data-testid="roots-table-sort-alpha"]') as HTMLButtonElement;
+
+      button().click();
+      fixture.componentRef.setInput('sort', 'alpha');
+      fixture.detectChanges();
+      button().click();
+      fixture.componentRef.setInput('sort', 'alpha-desc');
+      fixture.detectChanges();
+      button().click();
+
+      expect(emitted).toEqual(['alpha', 'alpha-desc', null]);
+    });
+
+    it('starts a fresh cycle at the natural direction when another column was active', () => {
+      const emitted: (string | null)[] = [];
+      const fixture = setup([], { sort: 'alpha-desc' });
+      fixture.componentInstance.sortChange.subscribe((sort) => emitted.push(sort));
+      const root = fixture.nativeElement as HTMLElement;
+
+      (root.querySelector('[data-testid="roots-table-sort-surahs"]') as HTMLButtonElement).click();
+
+      expect(emitted).toEqual(['surahs']);
+    });
+
+    it('carries aria-sort only on the active column, and drops it on release', () => {
+      const fixture = setup([], { sort: 'occurrences' });
+      const root = fixture.nativeElement as HTMLElement;
+
+      expect(headerCellFor(root, 'occurrences').getAttribute('aria-sort')).toBe('descending');
+      expect(headerCellFor(root, 'alpha').hasAttribute('aria-sort')).toBe(false);
+
+      fixture.componentRef.setInput('sort', 'occurrences-asc');
+      fixture.detectChanges();
+      expect(headerCellFor(root, 'occurrences').getAttribute('aria-sort')).toBe('ascending');
+
+      fixture.componentRef.setInput('sort', 'mushaf-order');
+      fixture.detectChanges();
+      expect(headerCellFor(root, 'occurrences').hasAttribute('aria-sort')).toBe(false);
+    });
+
+    it('renders the direction glyph as an aria-hidden span beside the label', () => {
+      const fixture = setup([], { sort: 'occurrences' });
+      const root = fixture.nativeElement as HTMLElement;
+      const button = root.querySelector(
+        '[data-testid="roots-table-sort-occurrences"]',
+      ) as HTMLElement;
+      const glyph = button.querySelector('.qd-explorer-table__sort-glyph') as HTMLElement;
+
+      expect(glyph.getAttribute('aria-hidden')).toBe('true');
+      expect(glyph.textContent?.trim()).toBe('▼');
+
+      fixture.componentRef.setInput('sort', 'occurrences-asc');
+      fixture.detectChanges();
+      expect(
+        button.querySelector('.qd-explorer-table__sort-glyph')?.textContent?.trim(),
+      ).toBe('▲');
+
+      // Inactive column: no glyph at all.
+      expect(
+        root
+          .querySelector('[data-testid="roots-table-sort-alpha"]')
+          ?.querySelector('.qd-explorer-table__sort-glyph'),
+      ).toBeNull();
+    });
+
+    it('names the column and the next cycle state in the Arabic aria-label', () => {
+      const fixture = setup([], { sort: 'mushaf-order' });
+      const root = fixture.nativeElement as HTMLElement;
+      const button = () =>
+        root.querySelector('[data-testid="roots-table-sort-occurrences"]') as HTMLElement;
+
+      expect(button().getAttribute('aria-label')).toBe('ترتيب حسب المواضع تنازليًا');
+
+      fixture.componentRef.setInput('sort', 'occurrences');
+      fixture.detectChanges();
+      expect(button().getAttribute('aria-label')).toBe('ترتيب حسب المواضع تصاعديًا');
+
+      fixture.componentRef.setInput('sort', 'occurrences-asc');
+      fixture.detectChanges();
+      expect(button().getAttribute('aria-label')).toBe('إلغاء الترتيب حسب المواضع');
+    });
+  });
+
+  // Feature 030, N3 row 5: these states used to be page-level banners that inserted above the fixed
+  // table+panel grid and pushed it down ~4.5rem. They now stand in for the body INSIDE the mounted
+  // shell. jsdom does no layout, so the geometry itself is pinned in SCSS (`.roots-table__state`
+  // matches the body it replaces in every band) — these assert the structure that SCSS keys off.
+  describe('in-shell list states (Feature 030, N3 row 5)', () => {
+    it('renders the error state inside the table shell, replacing the body', () => {
+      const fixture = setup([], { status: 'error', errorMessage: 'تعذر تحميل الجذور' });
+      const root = fixture.nativeElement as HTMLElement;
+
+      const state = root.querySelector('[data-testid="roots-list-error"]');
+      expect(state).toBeTruthy();
+      expect(state?.getAttribute('role')).toBe('alert');
+      expect(state?.textContent?.trim()).toBe('تعذر تحميل الجذور');
+      expect(state?.closest('.qd-explorer-table')).toBeTruthy();
+      expect(state?.classList.contains('roots-table__state')).toBe(true);
+      // it REPLACES the body (rather than stacking above it) and the shell stays mounted
+      expect(root.querySelector('.qd-explorer-table__body')).toBeNull();
+      expect(root.querySelector('.qd-explorer-table__header')).toBeTruthy();
+    });
+
+    it('renders the no-results state inside the table shell, replacing the body', () => {
+      const fixture = setup([], { status: 'empty' });
+      const root = fixture.nativeElement as HTMLElement;
+
+      const state = root.querySelector('[data-testid="roots-list-no-results"]');
+      expect(state).toBeTruthy();
+      expect(state?.textContent?.trim()).toBe(ROOTS_NO_RESULTS_LABEL);
+      expect(state?.closest('.qd-explorer-table')).toBeTruthy();
+      expect(state?.classList.contains('roots-table__state')).toBe(true);
+      expect(root.querySelector('.qd-explorer-table__body')).toBeNull();
+      expect(root.querySelector('.qd-explorer-table__header')).toBeTruthy();
+    });
+
+    it('shows the skeleton body and no state box while loading', () => {
+      const fixture = setup([], { loading: true, status: 'loading' });
+      const root = fixture.nativeElement as HTMLElement;
+
+      expect(root.querySelector('[data-testid="roots-table-loading"]')).toBeTruthy();
+      expect(root.querySelector('.roots-table__state')).toBeNull();
+    });
+
+    it('renders the body and no state box on success', () => {
+      const fixture = setup([row(1)], { status: 'success' });
+      const root = fixture.nativeElement as HTMLElement;
+
+      expect(root.querySelector('.roots-table__state')).toBeNull();
+      expect(root.querySelector('.qd-explorer-table__body')).toBeTruthy();
+    });
+  });
+
 });

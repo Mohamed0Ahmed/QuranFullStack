@@ -37,15 +37,19 @@ palette, fonts, and "Quiet Scriptorium" character — are owned by the product a
 design context. Read those first and treat them as the source of truth:
 
 - `../../PRODUCT.md` — register, users, principles, anti-references, Visual Identity
-- `../../DESIGN.md` — visual system (navy + gold + parchment, typography, elevation,
-  motion, rules)
+- `../../DESIGN.md` — visual system (flat parchment + scholarly green, typography,
+  flat elevation doctrine, motion, rules)
 
-The official visual identity is the **Real Pages prototype**, adopted **with
-adaptation**: **navy + gold + parchment**, a soft surface + shadow ladder, light
-navbar, dark navy footer, subtle card hover motion. The app stays **light + dark**
-(prototype *ivory* → light, *midnight* → dark; *sage* not adopted). Section 15 below
-defines the prototype-derived implementation contract; the extraction reference is
-`../report/ui/real-pages-visual-system-extraction-report.md`.
+The official visual identity is the **flat parchment + single scholarly-green**
+direction, approved as static comps in `../../docs/design-preview/` (read its README
+first — it carries the point-by-point divergence list from the previous identity):
+warm parchment surfaces structured by **hairline borders**, fully flat in light (no
+resting card shadows, no hover lifts, no gradients, no navbar blur — shadows exist
+only on floating layers), **one green accent that is also the primary color**, and
+**navy demoted to the footer only**. The app stays **light + dark**: light implements
+this direction; dark interim-runs the previous navy + gold values pending a
+deliberate later reconciliation. Section 15 below is the superseded navy + gold
+prototype contract, retained as history; §16/§17 are the live contract.
 
 When this file and `DESIGN.md` describe the same thing, `DESIGN.md` wins on the
 visual choice; this file governs how that choice is implemented and reused.
@@ -128,8 +132,9 @@ Rules:
 
 Use **CSS variables** as the base source of truth for themeable values.
 
-Required token categories (the navy + gold + parchment role set; see Section 15B for
-the authoritative role list and reference values):
+Required token categories (the flat parchment + green role set; the authoritative
+live values are `_tokens.scss` / `_themes.scss`, governed by §16 — §15B is the
+superseded prototype reference):
 
 - page / app background
 - section / quiet background
@@ -139,15 +144,17 @@ the authoritative role list and reference values):
 - muted text
 - border
 - border-strong
-- primary (navy structural) / primary foreground
-- accent (gold) / accent-hover / accent-soft / accent-tint
-- footer: footer-bg / footer-bg-2 / footer-text / footer-muted / footer-accent /
-  footer-border
+- primary (scholarly green — same hue as accent in light) / primary foreground
+- accent (scholarly green) / accent-hover / accent-soft / accent-tint /
+  accent-text / accent-fg
+- footer: footer-bg / footer-bg-2 / footer-text / footer-muted / footer-accent
+  (sage) / footer-accent-hover / footer-border
 - danger
 - warning
 - success
 - focus ring
-- shadow / elevation ladder (resting `sm`, hover, floating `lg`)
+- shadow (flat in light: resting `sm` and hover are `none`; one floating shadow —
+  `lg` / `floating`)
 - motion durations (fast ~140ms, base ~220ms)
 - radius
 - spacing scale
@@ -179,20 +186,23 @@ resolved in `DESIGN.md`):
 Rules:
 
 - Components **must** use CSS variables or shared classes.
-- Avoid hardcoded colors in component SCSS; re-author adopted prototype values as
-  OKLCH `--qd-*` tokens (never paste prototype hex/inline styles).
-- Use the shared **elevation ladder** and **motion duration** tokens; avoid one-off
-  shadows, borders, radii, and transition timings unless justified.
+- Avoid hardcoded colors in component SCSS; re-author adopted design/comp values as
+  OKLCH `--qd-*` tokens (never paste comp or prototype hex/inline styles).
+- Use the shared **shadow** and **motion duration** tokens; avoid one-off shadows,
+  borders, radii, and transition timings unless justified — in light the only real
+  shadow is the floating-layer shadow.
 - The page **canvas** stays warm parchment (tinted, never pure white); pure `#000`
-  is not used. Per the revised Warm Neutral Rule in `DESIGN.md`, **near-white/white
-  elevated cards are allowed** when paired with the parchment background, a border,
-  and a soft shadow. Depth comes from the **surface ladder + hairline borders +
-  controlled soft shadows together** (the Soft-Elevation Rule) — controlled soft
-  shadows are required for elevation, not banned.
-- The **gold accent** token is used sparingly — active state, links, icon
-  highlights, section eyebrows, and review/publish state (the One Voice Rule), never
-  as decoration. **Navy** is the structural/primary color (primary buttons, brand,
-  footer) and may appear more, but still calmly.
+  is not used. Near-white cards are allowed when paired with the parchment
+  background and a hairline border. Structure comes from the **surface ladder +
+  hairline borders alone** (the flat doctrine): no resting or hover card shadows,
+  no hover lifts, no gradients, no navbar blur — shadows exist **only** on floating
+  layers (dropdowns, popovers, modals, drawers).
+- The **green accent** token is used sparingly per the allowed-green list (§16.3) —
+  focus ring, selection indicators, `--qd-accent-text` text emphasis, icon
+  highlights, primary action — never as decoration. Green is also the
+  **structural/primary** color in light (`--qd-primary` and `--qd-accent` share the
+  same green). **Navy is footer-only** (`--qd-footer-*`); it appears nowhere else
+  in light.
 
 ## 5. Light / Dark Themes
 
@@ -360,19 +370,32 @@ Any future style system change should report:
 - RTL impact
 - build status
 
-## 15. Prototype-Derived Implementation Contract (Navy + Gold + Parchment)
+## 15. Prototype-Derived Implementation Contract (Navy + Gold + Parchment — superseded)
 
 This section was the **implementation contract** for adopting the Real Pages
-prototype as the visual source of truth. **Status: implemented — see §16/§17
-below**, which are the live, authoritative contract for color roles and shared
-component APIs going forward. This section is retained as the historical record of
-the phased rollout (phases A–H) and the prototype's reference values; do not treat
-its "future" language as current — where it conflicts with §16/§17, §16/§17 wins.
-Reference values are the prototype's; the extraction reference is
+prototype (navy + gold + parchment) as the visual source of truth. **Status:
+superseded.** The identity this contract implemented has been replaced by the
+**flat parchment + scholarly-green** direction (approved comps:
+`../../docs/design-preview/` — its README carries the point-by-point divergence
+list). The live truth is `_tokens.scss` / `_themes.scss` plus §16/§17 below and
+`DESIGN.md`; wherever this section conflicts with them — the B color tables, the
+translucent/blurred navbar (C), the gold footer accent and gradient hairline (D),
+card shadows and hover lifts (E), gold-accent buttons and states (G) — **§16/§17
+and `DESIGN.md` win**. The typography roles (A) and the two-token motion contract
+(F) remain in force (minus card lifts, which are gone with the flat doctrine). This
+section is retained as the historical record of the phased rollout (phases A–H) and
+the prototype's reference values; do not rewrite those reference values to green.
+The extraction reference is
 `../report/ui/real-pages-visual-system-extraction-report.md`.
 
-App themes remain **light + dark** (prototype *ivory* → light, *midnight* → dark;
-*sage* not adopted). Every adopted token **must** be defined for both themes.
+App themes remain **light + dark**, and every token **must** be defined for both
+themes. Light fully implements the green direction; **dark interim-runs the
+prototype-derived navy + gold values** (functional; full dark reconciliation to
+green is a deliberately deferred later task). Two minimal dark changes shipped with
+the restyle: `--qd-accent-fg` is now overridden in dark (navy ink — the dark accent
+is still gold), and dark `--qd-chrome-bg` became opaque (blur removed globally).
+Shape/motion changes (lift removal, radii, flat navbar/footer geometry) are
+theme-neutral and apply to dark too; dark keeps its shadow values.
 
 ### A. Typography
 
@@ -535,28 +558,31 @@ existing call-site onto this doctrine was a phased migration tracked in
 | Role | Light | Dark | Notes |
 |------|-------|------|-------|
 | Selected/active background | `--qd-selected-bg` (= `--qd-accent-tint`) | same token | never a solid fill |
-| Selected/active label | `--qd-accent-text` (navy) | `--qd-accent-text` (gold) | must hit AA on the tint |
+| Selected/active label | `--qd-accent-text` (deep green) | `--qd-accent-text` (gold, interim) | must hit AA on the tint |
 | Selected/active edge | 1px `--qd-accent` or `--qd-border-accent` | same | hairline, not a fill |
-| Solid-accent indicator (dot / 2px bar) | `--qd-accent` fill + `--qd-accent-fg` ink | same | the ONLY solid gold behind pixels |
-| Hover fill | `--qd-surface-hover` | same | one token, everywhere |
-| Resting control border | `--qd-border` | `--qd-border` | no gold at rest |
-| Primary action | `--qd-primary` + `--qd-primary-fg` | gold-primary per `DESIGN.md` dark theme | structural navy in light |
+| Solid-accent indicator (dot / 2px bar) | `--qd-accent` fill + `--qd-accent-fg` ink | same | the ONLY solid accent behind pixels |
+| Hover fill | `--qd-surface-hover` | same | one token, everywhere — **one documented exception**: the mushaf word-hover wash uses `--qd-mushaf-word-hover-bg`, because `--qd-surface-hover` is imperceptible on the parchment reading canvas (ΔL≈0.022 vs `--qd-bg`) |
+| Resting control border | `--qd-border` | `--qd-border` | no accent at rest |
+| Primary action | `--qd-primary` + `--qd-primary-fg` (green) | gold-primary, interim pending dark reconciliation | green is also the structural color in light |
 | Danger / success / warning text | `--qd-danger` / `--qd-success` / `--qd-warning` on the matching `*-tint` | same tokens | AA-verified, see below |
 
-`--qd-accent-fg` is **navy ink in both themes** (defined once in `:root`,
-deliberately not overridden in dark) — it exists so a solid-accent indicator never
-borrows `--qd-primary` for ink, because `--qd-primary` is gold in dark and gold ink
-on a gold indicator is unreadable. Never use `--qd-accent-fg` as running text; it is
-ink for a rare *filled* indicator only.
+The 2px solid-accent indicator is the signature **green thread**: one green edge
+means *current* everywhere — the active tab, the selected row's inline-start edge,
+the mushaf word-selection indicator.
 
-**AA verification (P1 gate, both themes, all pass ≥4.5:1):** `--qd-accent-text` on
-`--qd-selected-bg`, `--qd-danger` on `--qd-danger-tint`, `--qd-success` on
-`--qd-success-tint`, `--qd-accent-fg` on `--qd-accent`. One tint was retuned to
-pass: the light `--qd-success-tint` draft value (`oklch(0.945 0.028 163)`) measured
-4.10:1 against `--qd-success` and failed AA; it ships as
-`oklch(0.982 0.020 163)` (4.58:1) instead. All other tokens ship at the values in
-`_tokens.scss`/`_themes.scss` exactly as specified. Numbers are recorded in the P1
-commit; re-verify whenever a token in this table changes.
+`--qd-accent-fg` is ink for a rare *filled* indicator only — never running text. In
+light it is near-white on the solid green (`oklch(0.980 0.007 164.9)`); dark
+**overrides it to navy ink**, because the dark accent is still gold (interim) and
+gold ink on a gold indicator is unreadable. It exists so a solid-accent indicator
+never borrows `--qd-primary` for ink.
+
+**AA verification (green palette, light, all pairs ≥4.5:1):** `--qd-accent-text` on
+`--qd-selected-bg` 6.75:1; `--qd-danger` on `--qd-danger-tint` 5.01:1;
+`--qd-success` on `--qd-success-tint` 4.58:1; `--qd-warning` on `--qd-warning-tint`
+4.58:1; `--qd-accent-fg` on `--qd-accent` 5.72:1. Dark keeps the previously
+verified navy + gold pairs (the P1 gate of the color-doctrine plan) until dark
+reconciliation. Tokens ship at the values in `_tokens.scss`/`_themes.scss` exactly
+as specified; re-verify whenever a token in this table changes.
 
 ### 16.2 Grading / ladder
 
@@ -568,15 +594,20 @@ a ladder step. `--qd-surface-elevated` (the legacy alias that used to equal
 `--qd-section-bg`) is **retired** as of P6 of the color-doctrine plan — it no longer
 exists in `_tokens.scss`/`_themes.scss`; do not reintroduce it.
 
-**Shadow ladder:** `--qd-shadow-sm` (card resting) → `--qd-shadow` (card hover) →
-`--qd-shadow-lg` (floating layers — dropdowns, popovers, modals, drawers). Dark mode
-re-tunes these heavier/darker; that does not change the ladder order.
+**Shadow doctrine (flat):** light has no elevation shadows — `--qd-shadow-sm` and
+`--qd-shadow` are `none`; cards rest and hover flat, structured by hairline borders
+only, with no lifts. `--qd-shadow-lg` and `--qd-floating-shadow` are the **single
+floating-layer shadow**, reserved for dropdowns, popovers, modals, and drawers.
+Dark keeps its previous three-step shadow values pending dark reconciliation; new
+code must still treat `sm`/hover as non-elevating and reach for the floating shadow
+only on floating layers.
 
 **Elevation direction across themes (R1, resolved in P6).** `--qd-surface-recessed`
-is the *darkest*/most-inset step in light (`L≈0.921`, darker than `--qd-section-bg`
-at `L≈0.955`) and the *brightest* step in dark (`L≈0.302`, brighter than
-`--qd-section-bg` at `L≈0.265`) — those two raw values were **deliberately left
-unchanged** in P6 because they already match `DESIGN.md` §2's dark palette, and no
+is the *darkest*/most-inset step in light (`L≈0.945`, darker than `--qd-section-bg`
+at `L≈0.979`) and the *brightest* step in dark (`L≈0.302`, brighter than
+`--qd-section-bg` at `L≈0.265`) — that cross-theme inversion was **deliberately
+left in place** in P6 (the dark values match `DESIGN.md` §2's dark palette; the
+light L values shown are the current flat-parchment tones), and no
 shipped consumer places `--qd-surface-recessed` directly against `--qd-section-bg`
 as a literal "more/less recessed" visual comparison (each consumer nests it one
 step below its own local parent surface, not against the ladder's other steps).
@@ -592,9 +623,9 @@ lift from `--qd-shadow-lg` + the dimmed backdrop (R1 **Option B**, locked) — *
 `--qd-surface-recessed`/`--qd-section-bg` remains an option if a consumer ever needs
 a direct cross-theme comparison between those two steps; none does today.
 
-### 16.3 The allowed-gold list (locked)
+### 16.3 The allowed-green list (locked)
 
-Gold (`--qd-accent` / `--qd-accent-soft`) may appear **only** as:
+Green (`--qd-accent` / `--qd-accent-soft`) may appear **only** as:
 
 1. `:focus-visible` ring/halo (`--qd-focus-ring` / `--qd-ring`).
 2. The 2px selection **indicator** bar or the selected **dot** (fill), with
@@ -602,23 +633,35 @@ Gold (`--qd-accent` / `--qd-accent-soft`) may appear **only** as:
 3. A **1px selected/active border** (`--qd-accent` or `--qd-border-accent`).
 4. **Text** emphasis via `--qd-accent-text` (active nav, links, soft/selected
    labels, section eyebrows) — never raw `--qd-accent` as small text on light.
-5. Footer gold (`--qd-footer-accent`) headings and link-hover.
-6. Icon highlights and the mushaf word-selection indicator
-   (`--qd-mushaf-word-selection-indicator`).
+5. Footer sage (`--qd-footer-accent`) headings and link-hover.
+6. Icon highlights, the mushaf word-selection indicator
+   (`--qd-mushaf-word-selection-indicator`), and the two washes it tints — the
+   word-hover wash (`--qd-mushaf-word-hover-bg`, 8%; the one exception to the single
+   hover fill, since `--qd-surface-hover` is imperceptible on the reading canvas) and
+   the selected-word wash (`--qd-mushaf-word-selection-bg`, 28%, with a
+   `--qd-mushaf-word-selection-ring` hairline). Both are tints of that indicator on the
+   one word under the pointer — never a solid fill, never an ayah-wide fill.
+7. The primary action button (`--qd-primary` + `--qd-primary-fg`) — green is now
+   also the structural/primary color.
+8. The Words explainer benefit callout (`الفائدة`): a soft informational panel using
+   `--qd-accent-tint` background + a 1px `--qd-border-accent` edge + `--qd-accent-text`
+   label/body (6.74:1 on the tint, AA). It is the one non-selection tinted-green panel,
+   scoped to the Words explainer hero (`.qd-explainer-benefit`). Not a solid fill; do not
+   reuse it elsewhere without amending this list.
 
 Everything else — chip fills, badge fills, count fills, range badges, selected-row
-fills, `qd-select` resting border — is **banned gold**: use a tint,
+fills, resting borders — stays **banned as solid green**: use a tint,
 `--qd-accent-text`, or a hairline border instead. This list is mirrored in
-`DESIGN.md` §2 (One Voice Rule) — keep the two in sync if either changes.
+`DESIGN.md` §2 — keep the two word-identical if either changes.
 
 ## 17. Component contracts ("never hand-write these again")
 
-> **Status: implemented.** This section is the **live contract** for six shared
-> primitives. `qd-tabs`, `qd-chip`, `qd-state`, and the skeleton primitives
+> **Status: implemented.** This section is the **live contract** for the shared
+> primitives below. `qd-tabs`, `qd-chip`, `qd-state`, and the skeleton primitives
 > (`qd-skeleton-rows`, `qd-panel-skeleton`) are Angular components shipped in P2 of
 > `docs/feature-028-color-doctrine-unification/plan.md`; `.qd-explorer-table` and
 > `.qd-detail-list` are CSS class-family collapses shipped in P3/P4. Chip/tab
-> call-sites and the gold-fill ban landed in P5; density/motion/radius/ladder
+> call-sites and the solid-accent-fill ban landed in P5; density/motion/radius/ladder
 > cleanup in P6; the remaining ad-hoc text-loading states (dashboard-home,
 > mushaf-page-area) moved onto `qd-skeleton-rows`/`qd-panel-skeleton` in P7 — the
 > `selected-ayah-section` and `selected-word-section` loading states already used
@@ -644,15 +687,21 @@ fills, `qd-select` resting border — is **banned gold**: use a tint,
 - **Inputs / roles:** `selected`, `disabled`, `as?='button'|'a'`, optional
   trailing `count`.
 - **Selected / hover / disabled:** selected = `--qd-selected-bg` +
-  `--qd-accent-text` + `--qd-border-accent` (§16.1) — **no gold fill**; hover =
-  `--qd-surface-hover`; disabled is visually muted and non-interactive.
+  `--qd-accent-text` + `--qd-border-accent` (§16.1) — **no solid green fill**;
+  hover = `--qd-surface-hover`; disabled is visually muted and non-interactive.
 - **Backing classes:** `.qd-chip`, `.qd-chip--pill`, `.qd-chip.qd-is-selected`,
   `.qd-chip__count`. Compose, do not re-style.
 
 ### `qd-state`
 - **Purpose:** the one empty / loading / error presentation.
-- **Inputs / roles:** `variant: 'empty' | 'loading' | 'error'`, `message`; loading
-  is non-interactive `role="status"`.
+- **Inputs / roles:** `variant: 'empty' | 'loading' | 'error'`, `message`, optional
+  `actionLabel` + `action` output; loading is non-interactive `role="status"`,
+  error is `role="alert"`.
+- **Recovery action:** an `error` may offer **exactly one** action (Feature 030,
+  M3) by supplying an Arabic `actionLabel` — the retry affordance for transient
+  transport failures. Without a label the error stays plain text. `empty` and
+  `loading` are never interactive. The control is the global `.qd-button`; do not
+  hand-roll a retry beside a `.qd-error-state`.
 - **Visuals:** error uses `--qd-danger` on `--qd-danger-tint` (§16.1), calm per §11
   — not visually aggressive; empty/loading stay on the neutral surface ladder, no
   status color.
@@ -670,6 +719,38 @@ fills, `qd-select` resting border — is **banned gold**: use a tint,
 - Compose, do not re-style — a table needing a rule beyond
   `grid-template-columns` is a signal to extend the base, not fork it.
 
+#### Column-header sorting (Feature 030, N8)
+- **Backing classes (styled once on the base, never per table):**
+  `.qd-explorer-table__sort-button` (+ `.qd-is-sorted`),
+  `.qd-explorer-table__sort-label`, `.qd-explorer-table__sort-glyph`.
+- **Markup:** a native `<button>` **inside** the `role="columnheader"` element —
+  the button gives Enter/Space for free. Non-sortable columns stay **plain text**:
+  no button, no `aria-sort`, nothing focusable.
+- **Active visual:** `--qd-accent-text` label + a direction glyph (▲/▼) only —
+  **no** 2px green-thread bar here (N8-d), no fill, no shadow (flat doctrine
+  §16.2, allowed-green list §16.3 #4). Hover = `--qd-surface-hover`;
+  `:focus-visible` = the standard ring. The glyph is a separate `aria-hidden`
+  span, so it never enters the accessible name; up/down glyphs carry no
+  horizontal direction and stay correct under RTL.
+- **A11y:** `aria-sort="ascending"|"descending"` on the columnheader, **absent**
+  when the column is inactive. The button's Arabic `aria-label` names the column
+  **and the state the next click moves to** (`ترتيب حسب X تصاعديًا` /
+  `تنازليًا` / `إلغاء الترتيب حسب X`) — it describes the action, while
+  `aria-sort` reports the current state.
+- **Cycle (3-state, per column):** natural direction → opposite → release
+  (param absent = the explorer's default). Counts are naturally descending, text
+  naturally ascending. Word Types is the exception: its default IS `occurrences`
+  desc, so that header renders active-desc in the default state and its cycle
+  collapses to desc ⇄ asc.
+- **Behavior/URL live in the feature, not here:** the token grammar, cycle, and
+  fail-closed guards are `features/words/models/explorer-sort.ts` +
+  `utils/explorer-table-sort.controller.ts`; see the words README for the URL
+  contract. Tables stay presentational and emit the next token (or `null`).
+- **≤1023px:** the header row is `display: none` in all five table SCSS files, so
+  sorting is unreachable there. A compact `<select>` under
+  `.qd-explorer-sort-fallback` (hidden ≥1024px) carries the same URL contract.
+  Do not delete it, and do not add a second sort control at ≥1024px.
+
 ### `.qd-detail-list`
 - **Purpose:** the one detail-list implementation for all 10 explorer detail-list
   panels (root/lemma/stem word lists, cross-links, missing-surahs, occurrences,
@@ -680,6 +761,73 @@ fills, `qd-select` resting border — is **banned gold**: use a tint,
 - **Selected / hover:** same tokens as `.qd-explorer-table` (§16.1) — the two class
   families share one visual language.
 - Compose, do not re-style.
+
+### `qdAyahCard` (shared ayah-card frame)
+- **Purpose:** the one flat frame for ayah-shaped list items — Words ayah matches
+  (loaded + loading), Mushaf Similar Ayahs items, Mutashabihat occurrences.
+- **Shape:** attribute component (`shared/ui/ayah-card`, host class `qd-ayah-card`)
+  applied to the caller's own semantic wrapper (`article`/`li`). It owns only:
+  `--qd-surface` background, 1px `--qd-border` hairline, `--qd-radius-sm`, compact
+  logical padding/gap. No shadow, no alternating fill, no hover lift (flat doctrine
+  §16.2). Selected occurrences layer a `--qd-border-accent` hairline on the frame.
+- **Sacred-rendering boundary:** the frame accepts no Quran/domain model, text,
+  word array, match ID, formatter, route, or output, and sets no Quran font. Quran
+  text normalization, marker filtering, matched-word calculation, and display
+  mapping stay with the consumer (`HighlightedAyahComponent`,
+  `toStudyAyahDisplayText`) — never move them into the frame.
+- Compose, do not re-style — a consumer needing a different surface/border is a
+  signal to extend this contract, not fork it.
+
+### `qd-detail-modal-shell` (global detail-overlay dialog shell)
+- **Purpose:** the one dialog shell of the global entity-detail overlay — dialog
+  semantics (RTL `role="dialog"`/`aria-modal`, labelled heading, focus trap,
+  Escape/backdrop dismissal), the header actions, the closed-state restore
+  control, and reference-counted scroll locking. It owns no entity, API, URL, or
+  history state; the host decides what the actions mean.
+- **Geometry (fixed, both axes):** `inline-size: min(100%, 46rem)` and
+  `block-size: min(92dvh, 44rem)` — a *fixed* block-size, never `max-block-size`.
+  Switching tabs, paginating, and every loading/empty/not-found pass must repaint
+  inside a dialog that does not resize around its flex-centered backdrop. `__body`
+  is the **only** scroller (`flex: 1; min-block-size: 0; overflow-y: auto`);
+  `__header` is `flex-shrink: 0`. Phone (≤ `$qd-bp-phone-max`) goes
+  near-fullscreen: backdrop padding `--qd-space-2`, dialog padding `--qd-space-3`,
+  `block-size: min(94dvh, 44rem)`. Shallow states (skeleton, not-found) therefore
+  render a tall dialog with empty space — the accepted trade for zero resize. Body
+  scroll is locked while open, so a dvh height cannot trap content.
+- **Header order (inline-start → inline-end):** Back (depth > 1) · kind chip ·
+  `h2` title (`flex: 1`, ellipsis) · ayah-count meta · Close. Back and Close are
+  `flex-shrink: 0` + `nowrap` and are the row's anchors: **nothing may move or
+  reflow them**. The title is the only shrinkable item, so a count wider than its
+  reservation steals width from the title, which its ellipsis absorbs.
+- **Header priority is Back/Close > title > count > kind.** The row cannot hold
+  every element at phone widths (at 390px the content box is ~326px while
+  Back + kind + a 6rem count + Close + gaps need ~378px), so on
+  ≤ `$qd-bp-phone-max` the kind marker is `display: none` and the count
+  reservation tightens to `4.5rem`. The `h2` still names the entity, and the count
+  box stays reserved, so the zero-shift contract below survives. Adding a new
+  header element means re-checking this budget at 390px with `depth > 1`.
+- **Kind chip (`kindLabel`, optional, `''` = omitted):** hairline `--qd-border` +
+  `--qd-text-muted` text, no fill, no shadow (flat doctrine §16.2). Deliberately
+  **not** `qd-chip` — that contract carries selectable/interactive semantics, and
+  this marker is informational.
+- **Count meta (`countText`, optional, `''` = reserved but blank):** the box is
+  **always** rendered with a reserved `min-inline-size` (~6rem) and
+  `tabular-nums`; only its text fades in (opacity only, static under
+  `prefers-reduced-motion`). The box must never appear/disappear — that
+  reservation is the whole point, so a count arriving mid-load causes zero layout
+  shift. Latin digits, matching the explorer tables.
+- **Count a11y (do not "simplify"):** the count lives **outside** the `h2` and
+  **outside** both polite live regions — the title live region already re-announces
+  on load, so inlining the count into either would double-announce it. The dialog
+  is `aria-describedby` the count element instead.
+- **Count semantics:** the header count is the **entity-level** ayah count from the
+  entity summary, and is entity-stable — it does **not** track the ayah-tab
+  `typeCode` filter. On a narrowed lemma/stem ayah tab the visible list total is
+  therefore smaller than the header count; that is intended, not a bug. Never
+  source it from the tab/filter-dependent `ayahs.totalCount`.
+- Both header inputs stay optional with `''` defaults so the shell remains
+  presentation-only and callers that supply neither stay valid. Compose, do not
+  re-style.
 
 ### Loading/skeleton system
 - **Purpose:** the one loading representation app-wide — no bespoke text-only
@@ -692,5 +840,17 @@ fills, `qd-select` resting border — is **banned gold**: use a tint,
   'rows' | 'panel'`, default reproduces today's six-line panel skeleton).
 - **Roles:** all skeletons are non-interactive, `aria-busy="true"` + `role="status"`
   with an sr-only label, and static under `prefers-reduced-motion`.
+- **`shape="panel"` fills its host** (Feature 030, N3): it stands in for a whole
+  panel body, so given a host with a block size (a fixed-height panel, or a flex
+  slot) the block stretches into it rather than stranding a 3rem bar in a tall box.
+  A host with an auto block size is unaffected — it keeps the 3rem default. The
+  consumer supplies the slot (flex/height); the skeleton's internals stay the
+  primitive's business.
+- **No layout shift** (§N3 doctrine): a skeleton must occupy the box its loaded
+  content will occupy — same padding, gaps, line boxes and item count. Build the
+  mirror out of the **real** loaded classes (and, where the count is knowable
+  before the load, the real count) so the two cannot drift; do not hand-derive a
+  parallel set of numbers. Reservations apply **only while loading** — loaded
+  content always sizes itself.
 - Compose, do not re-style — a new loading state is a `shape`/`rowTemplate` input,
   not a new component.

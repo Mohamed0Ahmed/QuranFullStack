@@ -1,0 +1,83 @@
+@if (visibility() === 'open') {
+  <div class="qd-modal-backdrop detail-modal-shell__backdrop" data-testid="detail-modal-backdrop" (click)="onBackdropClick($event)">
+    <section
+      class="qd-modal detail-modal-shell"
+      role="dialog"
+      aria-modal="true"
+      dir="rtl"
+      [attr.aria-labelledby]="headingId"
+      [attr.aria-describedby]="countId"
+      cdkTrapFocus
+      cdkTrapFocusAutoCapture
+      data-testid="detail-modal-shell"
+      (keydown.escape)="onEscape($event)"
+      (focusin)="onDialogFocusIn($event)"
+    >
+      <header class="detail-modal-shell__header">
+        @if (depth() > 1) {
+          <button
+            #backButton
+            type="button"
+            class="qd-btn qd-btn-ghost detail-modal-shell__back"
+            data-testid="detail-modal-back"
+            (click)="backRequested.emit()"
+          >
+            <span class="detail-modal-shell__back-icon" aria-hidden="true">&#8594;</span>
+            {{ backLabel() }}
+          </button>
+        }
+        @if (kindLabel()) {
+          <span class="detail-modal-shell__kind" data-testid="detail-modal-kind">{{ kindLabel() }}</span>
+        }
+        <h2 #dialogHeading class="detail-modal-shell__title" [id]="headingId" tabindex="-1">{{ titleText() }}</h2>
+        <!--
+          Always rendered so its reserved box never appears/disappears: only the
+          text fades in when the count arrives. It sits outside the h2 AND outside
+          the polite live regions below — inlining it into either would
+          double-announce the count on load.
+        -->
+        <span
+          class="detail-modal-shell__count"
+          [class.detail-modal-shell__count--visible]="countText() !== ''"
+          [id]="countId"
+          data-testid="detail-modal-count"
+          >{{ countText() }}</span
+        >
+        <button
+          #closeButton
+          type="button"
+          class="qd-btn qd-btn-ghost detail-modal-shell__close"
+          data-testid="detail-modal-close"
+          (click)="closeRequested.emit()"
+        >
+          {{ closeLabel() }}
+        </button>
+      </header>
+
+      <div class="detail-modal-shell__body">
+        <ng-content />
+      </div>
+
+      <p class="qd-sr-only" role="status" aria-live="polite" data-testid="detail-modal-live-title">
+        {{ titleText() }}
+      </p>
+      @if (statusMessage()) {
+        <p class="qd-sr-only" role="status" aria-live="polite" data-testid="detail-modal-live-status">
+          {{ statusMessage() }}
+        </p>
+      }
+    </section>
+  </div>
+} @else {
+  <button
+    #restoreButton
+    type="button"
+    class="detail-modal-shell__restore"
+    dir="rtl"
+    data-testid="detail-modal-restore"
+    [attr.aria-label]="restoreAriaLabel()"
+    (click)="restoreRequested.emit()"
+  >
+    {{ restoreLabel() }}
+  </button>
+}

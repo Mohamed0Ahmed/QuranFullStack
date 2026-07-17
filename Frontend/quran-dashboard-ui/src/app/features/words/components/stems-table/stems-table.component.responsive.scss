@@ -19,7 +19,8 @@
     min-block-size: unset;
   }
 
-  :host-context(.qd-explorer-layout__table) .stems-table__body {
+  :host-context(.qd-explorer-layout__table) .stems-table__body,
+  :host-context(.qd-explorer-layout__table) .stems-table__state {
     flex: 1 1 auto;
     min-block-size: 0;
   }
@@ -36,6 +37,13 @@
 
   .stems-table__body {
     block-size: min(70vh, 40rem);
+  }
+
+  // Below desktop nothing pins the shell's height (the `.qd-explorer-layout__table > *` card height
+  // is a desktop-only rule), so an in-shell state box would resize the shell it replaced the body in.
+  // Match that body, exactly as the word-types table does (Feature 030, N3 row 7).
+  .stems-table__state {
+    min-block-size: min(70vh, 40rem);
   }
 
   .stems-table__row {

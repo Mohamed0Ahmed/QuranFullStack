@@ -123,6 +123,7 @@ describe('MushafLineComponent', () => {
     expect(getComputedStyle(line).justifyContent).toBe('center');
   });
 
+
   it.each([
     { markerType: 'juz' as const, label: 'جزء 1' },
     { markerType: 'rub' as const, label: 'ربع 2' },

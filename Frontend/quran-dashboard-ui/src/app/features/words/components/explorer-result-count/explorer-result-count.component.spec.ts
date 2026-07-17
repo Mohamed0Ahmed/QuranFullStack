@@ -52,12 +52,38 @@ describe('ExplorerResultCountComponent', () => {
     expect(root.querySelector('a')).toBeNull();
   });
 
-  it('renders nothing when the list errored', () => {
+  // N3 row 6: the stat used to render nothing on error and the toolbar collapsed by a full line.
+  it('holds its line with a muted placeholder when the list errored, without announcing it', () => {
     const root = render({ count: 42, labelPrefix: 'عدد الكلمات', hasError: true });
 
+    const error = root.querySelector('[data-testid="explorer-result-count-error"]');
+    expect(error).toBeTruthy();
+    // Same line box as the loaded stat: the label prefix plus a value slot, not a bare message.
+    expect(error?.querySelector('.explorer-result-count__label')?.textContent).toContain('عدد الكلمات');
+    expect(error?.querySelector('.explorer-result-count__value--unavailable')?.textContent?.trim()).toBe('—');
+    // The stale count must never leak, and the page's own role="alert" stays the only announcement.
+    expect(error?.textContent).not.toContain('42');
+    expect(error?.getAttribute('aria-hidden')).toBe('true');
+    expect(error?.getAttribute('role')).toBeNull();
     expect(root.querySelector('[data-testid="explorer-result-count"]')).toBeNull();
     expect(root.querySelector('[data-testid="explorer-result-count-skeleton"]')).toBeNull();
-    expect(root.textContent?.trim()).toBe('');
+  });
+
+  it('renders every state as the same single line box', () => {
+    const lineBox = (root: HTMLElement) => {
+      const line = root.querySelector('.explorer-result-count');
+      expect(line).toBeTruthy();
+      // One structural line per state — never a taller flex row wrapping a short bar.
+      return line!.tagName;
+    };
+
+    const loaded = render({ count: 1642, labelPrefix: 'عدد الجذور' });
+    const loading = render({ count: 0, labelPrefix: 'عدد الجذور', loading: true });
+    const errored = render({ count: 0, labelPrefix: 'عدد الجذور', hasError: true });
+
+    expect([lineBox(loaded), lineBox(loading), lineBox(errored)]).toEqual(['P', 'P', 'P']);
+    // The loading bar is the line itself, not a fixed-height chip inside a padded row.
+    expect(loading.querySelector('.explorer-result-count__skeleton')?.classList.contains('qd-skeleton')).toBe(true);
   });
 
   it('renders 0 for an empty scope', () => {

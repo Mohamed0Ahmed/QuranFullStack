@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 
-import { deepLinkToHref } from '../../../../shared/url/deep-link-href';
+import { DetailOverlayLinkDirective } from '../../../../core/navigation/detail-overlay/detail-overlay-link.directive';
+import { UniqueDetailFrame } from '../../../../core/navigation/detail-overlay/detail-overlay.models';
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
 import {
   LEMMAS_LOADING_LABEL,
@@ -11,18 +12,17 @@ import {
 } from '../../models/lemmas.labels';
 import { LemmaWordItemDto, LemmaWordView, PagedResultDto } from '../../models/lemmas.models';
 import { ROW_NUMBER_HEADER } from '../../models/unique-words.labels';
-import { buildUniqueWordsDeepLink } from '../../state/unique-words-url-sync';
 import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
 
 interface LemmaWordRowViewModel {
   item: LemmaWordItemDto;
-  uniqueWordHref: string;
+  frame: UniqueDetailFrame;
 }
 
 @Component({
   selector: 'qd-lemma-words-list',
   standalone: true,
-  imports: [PaginationComponent],
+  imports: [DetailOverlayLinkDirective, PaginationComponent],
   templateUrl: './lemma-words-list.component.html',
   styleUrl: './lemma-words-list.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -43,15 +43,18 @@ export class LemmaWordsListComponent {
   protected readonly paginationLabel = LEMMAS_WORDS_PAGINATION_LABEL;
   protected readonly loadingRowPlaceholders = Array.from({ length: 8 });
 
+  // Mirrors the retired unique-words explorer deep link (same mode + ayahs
+  // view); frame defaults are serialized explicitly per the URL contract.
   protected readonly rows = computed((): readonly LemmaWordRowViewModel[] =>
     this.page().items.map((item) => ({
       item,
-      uniqueWordHref: deepLinkToHref(
-        buildUniqueWordsDeepLink(this.kind(), {
-          wordId: item.uniqueWordId,
-          view: 'ayahs',
-        }),
-      ),
+      frame: {
+        kind: 'unique',
+        mode: this.kind(),
+        id: item.uniqueWordId,
+        view: 'ayahs',
+        ayahPage: 1,
+      },
     })),
   );
 

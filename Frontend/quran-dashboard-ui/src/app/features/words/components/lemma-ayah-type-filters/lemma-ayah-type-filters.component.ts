@@ -29,6 +29,11 @@ export class LemmaAyahTypeFiltersComponent {
   protected readonly loadingChipPlaceholders = [0, 1, 2, 3] as const;
 
   protected selectTypeCode(typeCode: string | null): void {
+    const alreadyActive = typeCode === null ? this.isAllSelected() : this.isSelected(typeCode);
+    if (alreadyActive) {
+      return;
+    }
+
     this.typeCodeChange.emit(typeCode);
   }
 

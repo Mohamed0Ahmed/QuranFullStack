@@ -35,9 +35,7 @@
           class="lemma-stems-list__row qd-interactive-surface qd-detail-list__row"
           role="listitem"
           data-testid="lemma-stems-list-link"
-          [href]="row.href"
-          target="_blank"
-          rel="noopener noreferrer"
+          [qdDetailLink]="row.frame"
           [attr.aria-label]="'الأصل الصرفي: ' + row.stem.stemText"
         >
           <span class="lemma-stems-list__row-number qd-detail-list__row-number" aria-hidden="true">{{ index + 1 }}</span>

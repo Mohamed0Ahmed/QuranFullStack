@@ -12,7 +12,7 @@ public sealed class EfRootsReader(QuranDashboardDbContext db) : IRootsReader
 
     public async Task<PagedResult<RootListItemDto>> GetRootsPageAsync(
         string? search,
-        RootSort sort,
+        RootSortSpec sort,
         RootsCountFilter filter,
         int page,
         int pageSize,

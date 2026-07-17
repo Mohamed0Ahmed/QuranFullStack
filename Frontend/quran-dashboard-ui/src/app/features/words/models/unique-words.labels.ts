@@ -1,4 +1,9 @@
-import { UniqueWordKind, UniqueWordSort, WordDrilldownView } from './unique-words.models';
+import { explorerSortOptions } from './explorer-sort';
+import {
+  UNIQUE_WORD_SORT_COLUMN_LIST,
+  UniqueWordKind,
+  WordDrilldownView,
+} from './unique-words.models';
 import { lemmasRoutePath, rootsRoutePath, stemsRoutePath, wordTypesRoutePath } from '../../../core/navigation/route-paths';
 import {
   ROW_NUMBER_HEADER,
@@ -8,14 +13,18 @@ import {
   WORDS_SHARED_WORD_VIEWS,
 } from './words-shared.labels';
 
+// Feature 031: hub card text now comes from WORDS_EXPLAINER_CONTENT and the hub title/subtitle from
+// WORDS_HUB_INTRO (models/words-explainer.content.ts). These two consts remain only as stable
+// fixtures — ACTIVE_HUB_SECTION.labelAr is the Unique Words page title, and
+// ADDITIONAL_ACTIVE_HUB_SECTIONS is the hub-route invariant (label → route) the explorers assert
+// against. Their invented descriptions and the coming-soon scaffolding (every explorer has shipped)
+// were removed with the redesign.
 export interface WordSectionCardLabel {
   labelAr: string;
-  descriptionAr: string;
 }
 
 export const ACTIVE_HUB_SECTION: WordSectionCardLabel = {
   labelAr: 'الكلمات الفريدة',
-  descriptionAr: 'استعراض الكلمات القرآنية الفريدة وتوزيعها',
 };
 
 export interface ActiveHubSection extends WordSectionCardLabel {
@@ -23,29 +32,12 @@ export interface ActiveHubSection extends WordSectionCardLabel {
 }
 
 export const ADDITIONAL_ACTIVE_HUB_SECTIONS: readonly ActiveHubSection[] = [
-  { labelAr: 'الجذور', descriptionAr: 'استكشاف جذور الكلمات القرآنية', route: rootsRoutePath() },
-  {
-    labelAr: 'الصيغ المعجمية',
-    descriptionAr: 'استكشاف الصيغ المعجمية للكلمات',
-    route: lemmasRoutePath(),
-  },
-  {
-    labelAr: 'الأصول الصرفية',
-    descriptionAr: 'استكشاف الأصول الصرفية للكلمات',
-    route: stemsRoutePath(),
-  },
-  {
-    labelAr: 'أنواع الكلمات',
-    descriptionAr: 'استكشاف أنواع الكلمات من حيث الاسم والفعل والحرف',
-    route: wordTypesRoutePath(),
-  },
+  { labelAr: 'الجذور', route: rootsRoutePath() },
+  { labelAr: 'الصيغ المعجمية', route: lemmasRoutePath() },
+  { labelAr: 'الأصول الصرفية', route: stemsRoutePath() },
+  { labelAr: 'أنواع الكلمات', route: wordTypesRoutePath() },
 ];
 
-export const COMING_SOON_HUB_SECTIONS: readonly WordSectionCardLabel[] = [];
-
-export const COMING_SOON_BADGE = 'قريبًا';
-export const WORDS_HUB_TITLE = 'الكلمات';
-export const WORDS_HUB_SUBTITLE = 'أقسام دراسة الكلمات القرآنية';
 export const WORDS_HUB_SECTIONS_LABEL = 'أقسام الكلمات';
 
 export const UNIQUE_WORD_KIND_LABELS: Record<UniqueWordKind, string> = {
@@ -53,11 +45,16 @@ export const UNIQUE_WORD_KIND_LABELS: Record<UniqueWordKind, string> = {
   simple: WORDS_SHARED_WORD_VIEWS.simple,
 };
 
-export const UNIQUE_WORD_SORT_LABELS: Record<UniqueWordSort, string> = {
-  'mushaf-order': 'ترتيب المصحف',
-  occurrences: 'الأكثر تكرارًا',
-  alpha: 'أبجدي',
-};
+export const UNIQUE_WORDS_MUSHAF_ORDER_LABEL = 'ترتيب المصحف';
+
+/**
+ * Options for the ≤1023px fallback sort select (Feature 030, N8): the default release order plus
+ * every sortable column in both directions. ≥1024px sorts through the table column headers.
+ */
+export const UNIQUE_WORD_SORT_OPTIONS = explorerSortOptions(
+  UNIQUE_WORD_SORT_COLUMN_LIST,
+  UNIQUE_WORDS_MUSHAF_ORDER_LABEL,
+);
 
 export const WORD_DRILLDOWN_VIEW_LABELS: Record<WordDrilldownView, string> = {
   surahs: WORDS_SHARED_HEADERS.surahs,

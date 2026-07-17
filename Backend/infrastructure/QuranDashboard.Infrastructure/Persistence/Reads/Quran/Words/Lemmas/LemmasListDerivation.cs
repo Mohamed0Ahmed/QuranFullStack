@@ -1,4 +1,5 @@
 using QuranDashboard.Application.Abstractions.Common.Paging;
+using QuranDashboard.Application.Abstractions.Quran.Words;
 using QuranDashboard.Application.Abstractions.Quran.Words.Lemmas;
 using QuranDashboard.Application.Abstractions.Quran.Words.Lemmas.Responses;
 using QuranDashboard.Application.Abstractions.Quran.Words.Morphology.Responses;
@@ -30,7 +31,7 @@ internal static class LemmasListDerivation
         LemmasCountFilter filter,
         LemmasAssociationFilter association,
         string? search,
-        LemmaSort sort,
+        LemmaSortSpec sort,
         int page,
         int pageSize)
     {
@@ -63,7 +64,7 @@ internal static class LemmasListDerivation
         LemmasCountFilter filter,
         LemmasAssociationFilter association,
         string? search,
-        LemmaSort sort)
+        LemmaSortSpec sort)
     {
         var normalizedSearch = NormalizeArabicQuery(search);
 
@@ -98,19 +99,45 @@ internal static class LemmasListDerivation
         && filter.TashkeelWords.Includes(row.TashkeelWordsCount)
         && filter.Stems.Includes(row.StemsCount);
 
-    private static IEnumerable<LemmaSummaryRow> ApplySort(IEnumerable<LemmaSummaryRow> rows, LemmaSort sort) => sort switch
+    // Ordering is part of the read contract (see the reads README). Every allowlisted column is already
+    // on the row, so no branch costs a join, and each tie-break chain is identical in BOTH directions —
+    // reversing a column never reshuffles its ties, which keeps paging deterministic.
+    private static IEnumerable<LemmaSummaryRow> ApplySort(IEnumerable<LemmaSummaryRow> rows, LemmaSortSpec sort) => sort.Column switch
     {
-        LemmaSort.Occurrences => rows
-            .OrderByDescending(r => r.OccurrencesCount)
-            .ThenBy(r => r.FirstWordOrderInMushaf)
-            .ThenBy(r => r.Id),
-        LemmaSort.Alpha => rows
-            .OrderBy(r => r.NormalizedLemmaText, StringComparer.Ordinal)
-            .ThenBy(r => r.Id),
-        _ => rows
+        LemmaSortColumn.Alpha => ByText(rows, r => r.NormalizedLemmaText, sort.Direction),
+        LemmaSortColumn.Occurrences => ByCount(rows, r => r.OccurrencesCount, sort.Direction),
+        LemmaSortColumn.Ayahs => ByCount(rows, r => r.AyahsCount, sort.Direction),
+        LemmaSortColumn.Surahs => ByCount(rows, r => r.SurahsCount, sort.Direction),
+        LemmaSortColumn.SimpleWords => ByCount(rows, r => r.SimpleWordsCount, sort.Direction),
+        LemmaSortColumn.TashkeelWords => ByCount(rows, r => r.TashkeelWordsCount, sort.Direction),
+        LemmaSortColumn.Stems => ByCount(rows, r => r.StemsCount, sort.Direction),
+        LemmaSortColumn.MushafOrder => rows
             .OrderBy(r => r.FirstWordOrderInMushaf)
             .ThenBy(r => r.Id),
+        // Explicit, so a column added without an arm here fails loudly instead of silently
+        // serving Mushaf order (mirrors the word-types SQL switches).
+        _ => throw new InvalidOperationException($"Unhandled {nameof(LemmaSortColumn)} value: {sort.Column}."),
     };
+
+    // Count columns tie-break on Mushaf order then Id.
+    private static IOrderedEnumerable<LemmaSummaryRow> ByCount(
+        IEnumerable<LemmaSummaryRow> rows,
+        Func<LemmaSummaryRow, int> count,
+        WordSortDirection direction) =>
+        (direction == WordSortDirection.Ascending ? rows.OrderBy(count) : rows.OrderByDescending(count))
+            .ThenBy(r => r.FirstWordOrderInMushaf)
+            .ThenBy(r => r.Id);
+
+    // Alpha ties break on Id ALONE — deliberately no Mushaf tie-break, preserving the exact row order
+    // existing sort=alpha links already return.
+    private static IOrderedEnumerable<LemmaSummaryRow> ByText(
+        IEnumerable<LemmaSummaryRow> rows,
+        Func<LemmaSummaryRow, string> text,
+        WordSortDirection direction) =>
+        (direction == WordSortDirection.Ascending
+            ? rows.OrderBy(text, StringComparer.Ordinal)
+            : rows.OrderByDescending(text, StringComparer.Ordinal))
+            .ThenBy(r => r.Id);
 
     private static LemmaListItemDto ToListItem(LemmaSummaryRow row) =>
         new(

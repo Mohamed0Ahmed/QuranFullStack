@@ -10,7 +10,7 @@ import {
   parseWordTypesQueryParams,
   WordTypesQueryChange,
 } from './word-types-url-sync';
-import { WORD_TYPES_QUERY_KEYS } from '../models/word-types.models';
+import { WORD_TYPES_QUERY_KEYS, WORD_TYPE_SORTS } from '../models/word-types.models';
 import { WordTypeDetailSelection } from '../models/word-types-detail.models';
 
 function params(query: string): ParamMap {
@@ -685,5 +685,41 @@ describe('parseWordTypesQueryParams presence flags (Feature 026)', () => {
   it('serializes a flag change to its token', () => {
     expect(buildWordTypesQueryParams({ hasRoot: true, hasStem: false, hasLemma: null }))
       .toEqual({ hasRoot: 'true', hasStem: 'false', hasLemma: null });
+  });
+});
+
+describe('parseWordTypesQueryParams sort tokens (Feature 030, N8)', () => {
+  it.each(WORD_TYPE_SORTS)('parses the canonical token "%s" verbatim', (sort) => {
+    expect(parseWordTypesQueryParams(params(`type=noun&sort=${sort}`)).sort).toBe(sort);
+  });
+
+  it.each([
+    ['occurrences-desc', 'occurrences'],
+    ['ayahs-desc', 'ayahs'],
+    ['surahs-desc', 'surahs'],
+    ['alpha-asc', 'alpha'],
+  ])('canonicalizes the legacy alias "%s" to "%s"', (alias, canonical) => {
+    // An old shared link must not fork the ordering into a second URL/cache spelling.
+    expect(parseWordTypesQueryParams(params(`type=noun&sort=${alias}`)).sort).toBe(canonical);
+  });
+
+  it.each([
+    'relevance',
+    'relevance-asc',
+    'simple',
+    'mushaf-order-asc',
+    'mushaf-order-desc',
+    '-asc',
+  ])('fails closed to the occurrences default on the unsupported token "%s"', (sort) => {
+    // Word Types is the one explorer whose default is المواضع desc, not Mushaf order.
+    expect(parseWordTypesQueryParams(params(`type=noun&sort=${sort}`)).sort).toBe('occurrences');
+  });
+
+  it('round-trips a suffixed token through build', () => {
+    expect(buildWordTypesQueryParams({ sort: 'occurrences-asc' })).toEqual({ sort: 'occurrences-asc' });
+  });
+
+  it('removes the param on release, so the default (occurrences desc) stays param-free', () => {
+    expect(buildWordTypesQueryParams({ sort: null })).toEqual({ sort: null });
   });
 });

@@ -5,6 +5,32 @@
         <h1 class="qd-page-title" data-testid="unique-words-page-title">{{ pageTitle }}</h1>
         <p class="qd-text-muted" data-testid="unique-words-page-mode">{{ modeLabel() }}</p>
       </div>
+
+      <qd-words-explainer
+        [content]="explainer"
+        [expanded]="explainerExpanded()"
+        (toggled)="onExplainerToggled($event)"
+      >
+        <div class="qd-explainer-two">
+          <div class="qd-explainer-mini">
+            <div class="qd-explainer-mini__title">بالتشكيل</div>
+            <div class="qd-explainer-mini__desc">تُميّز الكلمات التي تختلف في الحركات فقط. مفيدة لمّا الضبط بيغيّر المعنى.</div>
+          </div>
+          <div class="qd-explainer-mini">
+            <div class="qd-explainer-mini__title">بدون تشكيل</div>
+            <div class="qd-explainer-mini__desc">الرسم المجرّد من الحركات، فتتجمّع كل صور الكلمة تحت رسم واحد. مفيدة للبحث الأوسع.</div>
+          </div>
+        </div>
+        <div class="qd-explainer-example">
+          <span class="qd-explainer-example__label">مثال</span>
+          <div class="qd-explainer-deriv">
+            <span class="qd-explainer-word">عَلِمَ<small>معلوم</small></span>
+            <span class="qd-explainer-word">عُلِمَ<small>مجهول</small></span>
+            <span class="qd-explainer-note">نفس الرسم «علم» — <b>بالتشكيل</b> كلمتان مختلفتان؛ <b>بدون تشكيل</b> يتجمّعان تحت رسم واحد.</span>
+          </div>
+        </div>
+        <p class="qd-explainer-note">متى أستخدم أيهما؟ <b>بالتشكيل</b> لمّا تحتاج الصورة المنطوقة الدقيقة وتمييز المعنى بالحركة؛ <b>بدون تشكيل</b> لمّا تدوّر على الكلمة بغضّ النظر عن ضبطها أو تحسب الرسم.</p>
+      </qd-words-explainer>
     </div>
 
     <div class="uw-toolbar-recess uw-toolbar-recess--stacked">
@@ -50,18 +76,22 @@
       />
 
       <div class="qd-explorer-controls-secondary">
-        <label class="qd-sr-only" for="unique-words-sort">{{ sortLabel }}</label>
-        <select
-          id="unique-words-sort"
-          class="qd-select"
-          data-testid="unique-words-sort-select"
-          [value]="listState().sort"
-          (change)="onSortChange($any($event.target).value)"
-        >
-          @for (option of sortOptions; track option.key) {
-            <option [value]="option.key">{{ option.labelAr }}</option>
-          }
-        </select>
+        <!-- ≤1023px fallback (Feature 030, N8): the table header row is display:none on phone AND
+             tablet, so the header cycle is unreachable there. Same URL contract as the headers. -->
+        <div class="qd-explorer-sort-fallback">
+          <label class="qd-sr-only" for="unique-words-sort">{{ sortLabel }}</label>
+          <select
+            id="unique-words-sort"
+            class="qd-select"
+            data-testid="unique-words-sort-select"
+            [value]="listState().sort"
+            (change)="onSortSelect($any($event.target).value)"
+          >
+            @for (option of sortOptions; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
+        </div>
 
         <qd-explorer-count-range-filter
           data-testid="unique-words-range-filter"
@@ -73,34 +103,38 @@
       </div>
     </div>
 
-    @switch (listState().status) {
-      @case ('error') {
-        <div class="qd-error-state" data-testid="unique-words-error">{{ listState().errorMessage }}</div>
-      }
-      @case ('empty') {
-        <div class="qd-empty-state" data-testid="unique-words-empty">{{ emptyLabel }}</div>
-      }
-    }
+    <!-- Feature 030, N3 row 5: the list error/no-results states moved into the table shell. The two
+         drilldown banners below CANNOT follow them: a restored-not-found word sets `isOpen: false`
+         (utils/unique-words-drilldown.state.ts), so the ≤1023px drilldown modal does not render at
+         all and the desktop inline panel shows its select-a-word prompt — hosting them there would
+         drop the message below desktop; and the table shell is out of the question because the list
+         is fine and populated, so they would hide it. Page level is their only home.
 
-    @if (drilldownState().status === 'notFound') {
-      <div
-        class="qd-empty-state unique-words-restored-not-found"
-        role="status"
-        data-testid="unique-words-restored-not-found"
-      >
-        {{ restoredNotFoundLabel }}
-      </div>
-    }
+         The slot is therefore rendered in EVERY drilldown state and reserves one banner row from
+         first paint, so a banner appearing or clearing no longer pushes the table+panel grid below
+         it (Feature 030, N3 zero-outer-layout-shift). The two states are mutually exclusive — one
+         `status` value — so one row is the whole reservation. -->
+    <div class="unique-words-restored-slot">
+      @if (drilldownState().status === 'notFound') {
+        <div
+          class="qd-empty-state unique-words-restored-banner unique-words-restored-not-found"
+          role="status"
+          data-testid="unique-words-restored-not-found"
+        >
+          {{ restoredNotFoundLabel }}
+        </div>
+      }
 
-    @if (drilldownState().status === 'error' && !drilldownState().isOpen) {
-      <div
-        class="qd-error-state unique-words-restored-error"
-        role="status"
-        data-testid="unique-words-restored-error"
-      >
-        {{ drilldownState().errorMessage }}
-      </div>
-    }
+      @if (drilldownState().status === 'error' && !drilldownState().isOpen) {
+        <div
+          class="qd-error-state unique-words-restored-banner unique-words-restored-error"
+          role="status"
+          data-testid="unique-words-restored-error"
+        >
+          {{ drilldownState().errorMessage }}
+        </div>
+      }
+    </div>
   </div>
 
   @switch (listState().status) {
@@ -110,13 +144,17 @@
           <qd-unique-words-table
             [rows]="listState().items"
             [loading]="listState().status === 'loading'"
+            [status]="listState().status"
+            [errorMessage]="listState().errorMessage"
             [selectedWordId]="selectedWordId()"
             [currentPage]="listState().page"
             [pageSize]="listState().pageSize"
             [drilldownIsOpen]="drilldownIsOpen()"
             [activeColumn]="activeColumn()"
+            [sort]="listState().sort"
             (rowSelected)="onRowSelected($event)"
             (drilldownOpen)="onDrilldownOpen($event)"
+            (sortChange)="onSortChange($event)"
           />
           <qd-pagination
             [currentPage]="listState().page"
@@ -133,9 +171,11 @@
             <qd-word-drilldown-modal
               [state]="drilldownState()"
               [inline]="true"
+              [parentFrame]="ayahParentFrame()"
               (closeModal)="onDrilldownClose()"
               (viewChange)="onDrilldownViewChange($event)"
               (ayahPageChange)="onAyahPageChange($event)"
+              (retry)="onDrilldownRetry()"
             />
           </aside>
         }
@@ -147,9 +187,11 @@
     <qd-word-drilldown-modal
       [state]="drilldownState()"
       [inline]="false"
+      [parentFrame]="ayahParentFrame()"
       (closeModal)="onDrilldownClose()"
       (viewChange)="onDrilldownViewChange($event)"
       (ayahPageChange)="onAyahPageChange($event)"
+      (retry)="onDrilldownRetry()"
     />
   }
 </div>

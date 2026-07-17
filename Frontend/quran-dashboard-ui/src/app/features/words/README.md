@@ -15,6 +15,12 @@ with all selection/filter/paging state reflected in the URL.
 Per explorer `X` in {roots, lemmas, stems, word-types, unique-words}:
 
 - `pages/X-explorer-page/` — routed smart component (unique-words: `unique-words-page`).
+  Word Types additionally keeps
+  `pages/word-types-explorer-page/word-types-detail-panel.view-model.ts` — the pure
+  derivations that turn `WordTypesDetailFacade.panelState()` into what the details panel
+  renders (active summary, the words/ayahs pages incl. the empty-while-loading pages, the
+  B7 ayah parent frame, mentioned/missing surah rows). The page component only wires them
+  into computed signals.
 - `state/X-explorer.facade.ts` (+ `X-detail.facade.ts`) — orchestrates load/select.
 - `state/X-cache.ts` — client cache of fetched pages/details.
 - `state/X-url-sync.ts` — URL ⇄ state (the URL-state contract; keep params stable).
@@ -30,6 +36,64 @@ Per explorer `X` in {roots, lemmas, stems, word-types, unique-words}:
 Shared across explorers: `utils/explorer-table-*` (focus/keyboard-nav/scroll/column-nav),
 `utils/explorer-keyboard-nav.scheduler.ts`, `utils/verse-key.ts`, and the
 `components/` table + list + panel set.
+
+## Global entity-detail overlay (Feature 029, Change B)
+
+- `entity-detail-overlay/` owns the persistent global detail overlay: the host component
+  (mounted once beside `qd-app-shell` in `app.ts`) binds the URL-authoritative
+  `core/navigation/detail-overlay` coordinator to the shared `qd-detail-modal-shell` and
+  mounts one lazy adapter per top-frame kind inside `@defer` blocks. Adapters must stay
+  out of the eager bundle — the production build must show one lazy chunk per adapter.
+- **Route-independent detail controllers**: `state/roots-detail.controller.ts` is the
+  reference pattern — an `@Injectable()` (NOT root-provided) controller with
+  constructor-injected api/cache/view-loader that owns the panel signal state, all loads,
+  and stale-response cancellation, with a route-free `applyUrlState(...)` entry point.
+  `RootsDetailFacade` stays the page's thin route adapter over its own private controller
+  instance; each overlay adapter provides its OWN component-scoped controller, so overlay
+  activity can never mutate the page panel. The root-scoped API/cache/view-loader services
+  stay shared, so the side panel and the overlay de-duplicate the same reads
+  (`RootsCacheKeys` unchanged).
+- **Only the top layer traps focus**: the five mobile detail drawers
+  (`root`/`lemma`/`stem`/`word-type-details-panel`, `word-drilldown-modal`) bind
+  `[cdkTrapFocus]` to `!DetailOverlayHistoryService.isOpen()`. While the global dialog is
+  open they sit inside the inert app shell, so their traps stand down and exactly one trap
+  is enabled (`app.nested-layers.spec.ts`). Never re-add an unconditional `cdkTrapFocus`.
+- **Overlay adapters never call the Router** and never push view/page changes into the
+  controller directly: every tab/sub-view/pagination change goes through
+  `DetailOverlayHistoryService.replaceTopFrame(...)`; the URL sync feeds the new frame back
+  into the adapter's `frame` input, which re-drives the controller (`applyUrlState` runs
+  `untracked` so panel-state reads don't retrigger the effect).
+- All five entity panels expose a `frameless` input that renders only the view tablist +
+  tabpanel body (no card, no header/close, no dialog/backdrop) for composition inside the
+  global shell, which owns all dialog chrome. Overlay content testids are prefixed
+  `overlay-<entity>-*` (page testids unchanged). All five adapters are fully implemented:
+  root/lemma/stem (controllers extracted from their facades — lemma/stem identity includes
+  the ayahs `typeCode`), unique (drilldown controller extracted; `(mode, wordId, view,
+  ayahPage)` is one identity), and wordType (word-kind-only controller sharing
+  `WordTypesCacheKeys`; a frame `view` of `words` is clamped to `ayahs` since member-words
+  exists only for grouped selections — the page facade keeps grouped logic and was not
+  refactored).
+- The shell heading uses the host-provided `EntityDetailOverlayTitleStore`: the active
+  adapter publishes its loaded entity title and clears it on destroy; while empty the host
+  falls back to the generic kind label.
+- **Cross-entity links** (plan §5.2): the seven detail-list link components
+  (root-words/lemmas/stems, lemma-words/stems, stem-words/lemmas) render real
+  `a[qdDetailLink]` anchors carrying fully-explicit frames instead of forced-new-tab
+  explorer deep links. Context decides the click semantics via the
+  `DETAIL_OVERLAY_LINK_MODE` token: overlay adapters provide `'append'` (push onto the
+  stack), side panels get the `'start'` default (new one-frame stack that never touches
+  the panel's own selection — proven by `entity-detail-overlay-invariant.spec.ts`).
+  Modifier clicks/copy-link keep native browser behavior.
+- **Ayah continuity** (plan §5.2, B7): `ayah-matches-list` renders its Mushaf link as
+  `a[qdAyahOverlayLink]` (core `detail-overlay-ayah-link.directive.ts`) instead of a
+  forced new tab. With the overlay open the click is a replace-navigation that carries
+  the whole frame stack onto the Mushaf base; from a side panel the render site passes
+  the panel's own typed frame as `parentFrame`, which is promoted to a one-frame stack
+  over the Mushaf (all 5 overlay adapters pass `frame()`; the four explorer pages and
+  `word-drilldown-modal` build frames from their own state — the Word Types page passes
+  `null` for grouped root/stem/lemma selections, which have no frame grammar).
+  `word-type-grouped-words-list` (display-only) is unchanged. Table links outside a
+  detail surface keep page navigation (locked invariant).
 
 ## Gotchas / invariants (read before changing)
 
@@ -47,27 +111,108 @@ Shared across explorers: `utils/explorer-table-*` (focus/keyboard-nav/scroll/col
   hairline `--qd-border-accent` edge or indicator — **never** a solid gold fill.
   Hover is always `--qd-surface-hover`. A component needing a visual rule beyond
   columns/selected-state is a signal to extend the shared base, not fork it.
+- **List states render in the table shell, selection states in the detail panel** (Feature 030, N3
+  row 5 — the §17 mounted-shell doctrine). The four normal explorers used to insert `error` /
+  `empty` / `notFound` as page-level banners **above** the fixed table+panel grid, which pushed the
+  whole grid down ~4.5rem whenever one appeared. They are now placed by **owner**, not by
+  convenience: `error` and `empty` come from `listState()` — the table genuinely has no rows — so
+  they render **inside the table shell** (`.<x>-table__state`), standing in for the body and keeping
+  the shell's footprint (`min-block-size: min(70vh, 40rem)` in the ≤1023px band, matching the body
+  it replaces; `flex: 1 1 auto` inside the desktop card). `notFound` comes from `panelState()` — a
+  restored deep-link selection is missing **while the list is fine and populated** — so it renders
+  **inside the details panel**, which is a fixed-height aside on desktop and the fixed
+  `.qd-modal.explorer-detail-modal` at ≤1023px. Putting `notFound` in the table shell would hide a
+  populated table and is **not** an option. Testids follow the new homes: the list states keep
+  `<x>-list-error` / `<x>-list-no-results` (Unique Words: `unique-words-error` /
+  `unique-words-empty`) inside the table; not-found is the panel's own `<x>-details-not-found`, and
+  the former page-level `<x>-restored-not-found` testids are **gone** on Roots/Lemmas/Stems (on
+  Lemmas/Stems they had been double-rendering the same message alongside the panel's). Overlay
+  adapters keep owning their own `overlay-<x>-not-found` branch inside the projected content and
+  leave the panel's `notFound` input **unbound** — binding it would make the panel swallow the
+  adapter's branch.
+- **Unique Words is the exception for `notFound`**: its drilldown builds restored-not-found with
+  `isOpen: false` (`utils/unique-words-drilldown.state.ts`), so at ≤1023px the drilldown modal does
+  not render at all and on desktop the inline panel shows its select-a-word prompt. Its
+  `unique-words-restored-not-found` and `unique-words-restored-error` banners therefore **stay at
+  page level** — the panel would drop the message below desktop and the table shell would hide a
+  populated table — until that state contract is revisited. They no longer shift the grid: they
+  live in `.unique-words-restored-slot`, rendered in **every** drilldown state, which reserves one
+  compact banner row from first paint (the two states are mutually exclusive). Keep the banners
+  inside that slot and keep them one line; a banner taller than the reservation grows it. Only the
+  list states moved into the table shell.
 - **Labels use the TDZ getter pattern.** Read `*.labels.ts` consts via **getters**, not
   `readonly` fields — otherwise they resolve to `undefined` (temporal dead zone) in the
   test bundle. **Do not revert the getters.**
 - **URL-state is a contract.** `*-url-sync.ts` param names/shape are user-facing (shareable
   links) and spec'd; changing them is a contract change — update the spec and tests too.
+- **`sort` is one param with a suffix grammar** (Feature 030, N8 — cross-stack; the backend
+  half is the authority, see the reads README's ordering contract). `token := column |
+  column "-asc" | column "-desc"`. A **bare token means the column's natural direction** —
+  counts descend, text ascends — so every pre-030 token keeps its exact meaning as an alias:
+  `occurrences` ≡ `occurrences-desc`, `alpha` ≡ `alpha-asc`. The **bare form is canonical**
+  for the natural direction and the suffixed form only for the opposite one, so a count
+  column's canonical set is `{ occurrences, occurrences-asc }` and `occurrences-desc`
+  canonicalizes **out** on the way in — one ordering can never be cached or shared under two
+  spellings. `mushaf-order` is ascending-only and **bare-only** (`mushaf-order-asc/-desc` are
+  rejected here and 400 on the backend). **The default is the param's ABSENCE** — never
+  `sort=mushaf-order` — and releasing a header cycle writes `{ sort: null, page: null }`;
+  changing the ordering always resets `page`. There is **no `dir` param and no new query
+  key** (the `column` key is unrelated — it is detail focus). Client list cache keys keep the
+  token in the same opaque slot (`roots:list:<sort>:…`, `wordtypes:table:…:sort:<sort>:…`) —
+  no key-format change. The grammar, the 3-state cycle, `aria-sort`, the glyph and the
+  aria-label live in `models/explorer-sort.ts` + `utils/explorer-table-sort.controller.ts`;
+  each explorer owns its column allowlist (`*_SORT_COLUMNS`) and a `normalize*Sort` guard that
+  **fails closed to the default** on anything unknown. Matching is **exact** — unlike the
+  backend parser the frontend does not trim or case-fold, so `?sort=ALPHA` falls back to the
+  default (pre-existing, spec'd). Sortable columns: Roots `alpha` + all 7 counts; Lemmas
+  `alpha` + 6 counts; Stems `alpha` + 5 counts; Unique Words / Word Types `alpha`,
+  `occurrences`, `ayahs`, `surahs`. **Related-entity text columns are deliberately NOT
+  sortable** (lemmas' الجذر, stems' dominant الجذور/الصيغ, unique-words' نوع الكلمة/الجذر,
+  word-types' النوع/الجذر/الأصل/الصيغة) and neither is unique-words' لم يذكر فيها (computed
+  post-page; ordering by it is just the inverse of السور) — they render as plain headers.
+  **Word Types is the exception on defaults**: it defaults to `occurrences` desc, so its
+  المواضع header renders actively sorted in the default state and its cycle collapses to
+  desc(default) ⇄ asc with no release step, while `mushaf-order` stays an ordinary offered
+  ordering there rather than the release state. Its `alpha` column is the **dimension text
+  column**, whose header text follows `tableView` (الكلمة / الجذر / الأصل الصرفي / الصيغة
+  المعجمية) even though the token is identical across all four views.
+- **Sorting is column-headers at ≥1024px, a `<select>` at ≤1023px** (Feature 030, N8). The
+  top ترتيب dropdown is gone from every layout where the table header row is visible. Because
+  all five table SCSS files set the header row to `display: none` at ≤1023px, a compact
+  fallback select stays under `.qd-explorer-sort-fallback` (CSS-hidden ≥1024px) on **phone AND
+  tablet** — deleting it would make sorting unreachable below desktop. It offers the default
+  order plus every sortable column × both directions and drives the **same** URL contract, so
+  picking the explorer's default releases the param instead of spelling it out. The
+  `*-sort-select` testids are preserved. Visuals/a11y for the headers: `UI_STYLE_SYSTEM.md`
+  §17 (`.qd-explorer-table` → column-header sorting).
 - **Identity is clean imlaei-simple** (display Uthmani) — mirrors the backend read models.
 - **Headline result-count stat** (Feature 026, US4) on the four "normal" explorers (Unique Words, Roots,
   Lemmas, Stems): the shared presentational `explorer-result-count` component renders the label-prefix
   phrasing **"عدد الـ…: N"** (عدد الكلمات / عدد الجذور / عدد الصيغ المعجمية / عدد الأصول الصرفية) from the
   page's existing `listState().totalCount` — no new backend read or aggregation. It sits in the toolbar
   recess beside search/sort. States: list loading → non-interactive skeleton; list error → renders nothing
-  (the page's own error state owns the message); zero results → "0". Because the total is the filtered
+  (the table shell's own error state owns the message); zero results → "0". Because the total is the filtered
   query's own count, the stat reflects search/filters by construction and never disagrees with pagination.
   Word Types uses the separate four-count scope summary, not this stat.
-- **Count-range filters** (Feature 026, US5) on the four normal explorers: the shared
-  `explorer-count-range-filter` component offers preset bucket chips (`aria-pressed`, RTL) plus a
-  "مخصّص" min/max panel per metric — exactly the count columns each page already shows (Unique Words:
-  occurrences/ayahs/surahs; Roots: + simple/tashkeel words + lemmas + stems; Lemmas: + simple/tashkeel
-  + stems; Stems: + simple/tashkeel). Presets live in `models/words-filter-presets.ts` (config, not
-  labels); per-page metric descriptors (`*_RANGE_METRICS`) map each metric to its URL key, backend API
-  prefix, and bucket family. The **URL grammar is `min..max`** (either bound omissible), parsed
+- **Count-range filters** (Feature 026, US5; chips reshaped in Feature 030, N4) on the four normal
+  explorers: the shared `explorer-count-range-filter` component offers exactly **three chips per
+  metric** — `أكثر من N` / `أقل من N` / `مخصّص` (`aria-pressed`, RTL) — over exactly the count columns each
+  page already shows (Unique Words: occurrences/ayahs/surahs; Roots: + simple/tashkeel words + lemmas +
+  stems; Lemmas: + simple/tashkeel + stems; Stems: + simple/tashkeel). **N is per metric**: المواضع 100,
+  الآيات 100, السور **50** (a surah count can never exceed 114, so the family's 100 would be a dead chip),
+  and every sub-count metric (كلمات بدون تشكيل/بالتشكيل, الصيغ المعجمية, الأصول الصرفية) 10. It resolves as a
+  family default (`RANGE_FAMILY_THRESHOLDS`) **plus** an optional per-metric `RangeMetric.threshold`
+  override — required because ayahs and surahs share the `ayahsSurahs` family and would otherwise be
+  forced onto one N; السور reads the shared `SURAHS_RANGE_THRESHOLD` const so its chips cannot drift apart
+  across the four explorers. Both chip bounds are **strict** (`أكثر من 100` ⇒ `101..`, `أقل من 100` ⇒
+  `..99`), leaving exactly N reachable only through مخصّص. Chips are **presentation-only**: the URL stores
+  the actual range, never a chip identity, so a shared link carrying any other range — including a
+  pre-030 bucket link such as `occ=11..100` — still parses and simply reopens as an active مخصّص. Chip
+  testids are stable slugs (`range-filter-chip-<metric>-gt|lt`), never derived from the Arabic label or
+  its digits. Presets live in `models/words-filter-presets.ts` (config, not labels — the chip copy lives
+  in `WORDS_RANGE_FILTER_LABELS`); per-page metric descriptors (`*_RANGE_METRICS`) map each metric to its
+  URL key, backend API prefix, family, and optional threshold. The **URL grammar is `min..max`** (either
+  bound omissible), parsed
   **fail-closed** (malformed / min>max ⇒ that filter absent, page still loads) by the shared
   `parseCountRange`/`words-range-filters` helpers. URL keys per page: Unique Words / Lemmas / Stems /
   Roots share `occ`, `ayahs`, `surahs`; Roots/Lemmas/Stems add `simple`, `tashkeel`; Roots/Lemmas add
@@ -75,10 +220,32 @@ Shared across explorers: `utils/explorer-table-*` (focus/keyboard-nav/scroll/col
   `<prefix>Min`/`<prefix>Max` only for active bounds; frontend list cache keys gain a deterministic
   range fragment (absent ⇒ pre-feature key). The headline stat reflects the filtered `totalCount` by
   construction. `*_RANGE_METRICS` and the range-filter labels are read via **TDZ-safe getters**, never
-  `readonly` fields (they resolve to `undefined` in the bundled test build otherwise).
+  `readonly` fields (they resolve to `undefined` in the bundled test build otherwise). Layout
+  (Feature 029, U2): the shared filter host is a **full-width second row** of
+  `.qd-explorer-controls-secondary` (`flex: 1 1 100%` on the component host) below the sort control
+  on all four pages, so expanding the `<details>` panel grows its own row and never moves the sort.
+- **مخصّص commits on Enter, never per keystroke** (Feature 030, N4): typing in the min/max inputs writes
+  only component-local draft signals — no emit, therefore **no navigation, no history entry and no
+  fetch** (a range used to cost one of each per keystroke). `Enter` (preventing the default) or the
+  touch-friendly `تطبيق` button commits the normalized draft through the ordinary emit path; `Escape`
+  reverts the draft to the last committed value; blur is a no-op (the draft persists). Drafts re-sync
+  from `ranges()` whenever it changes outside the component (URL restore, Back/Forward, clear-all). The
+  `parseBound`/`normalize` guards (non-numeric or negative ⇒ open bound; min > max ⇒ fail-open by
+  dropping the max) run at **commit** time, not per keystroke.
+- **Ayah type chips** (lemmas and stems only — roots have none, Word Types detail is per-type by
+  construction, and `type-distribution-list` is display-only) narrow the ayahs tab by `typeCode`, and
+  render at four sites: the two explorer pages and their two overlay adapters. **Clicking a chip that
+  already renders active (`aria-pressed="true"`) is a complete no-op** (Feature 030, N1): the guard sits
+  in the chip components' `selectTypeCode`, ahead of the emit, so no state call, no URL write, and no HTTP
+  request happen from any of the four sites. The downstream page/adapter guards are kept as defense in
+  depth. **The single-type chip and `عرض الكل` render active while `selectedTypeCode()` is `null`, and
+  that active state is VISUAL ONLY** — the only-type code is deliberately never written to state or the
+  URL, because shared-URL identity and the `aria-pressed` contract tests depend on the convention; do not
+  "normalize" it away. Accepted consequence (N1-a): re-clicking the active type while on detail page > 1
+  no longer resets to page 1 — pagination owns page navigation.
 - **Association filters** (Feature 026, US7) narrow three of the normal explorers by a related dimension,
   using the shared presentational `explorer-association-filter` search-select (an inline search field whose
-  input opens a focus-driven popover holding the options list, with the current selection shown as a badge
+  input opens a popover holding the options list, with the current selection shown as a badge
   plus a clear affordance; RTL, `aria`; options stay plain `aria-pressed` buttons, not a listbox — see the
   Feature 027 controls-layout bullet below for the popover interaction). URL keys (all optional,
   additive, parsed **fail-closed**): Unique Words `primaryType` (POS code) + `rootId`; Lemmas `rootId`;
@@ -103,19 +270,54 @@ Shared across explorers: `utils/explorer-table-*` (focus/keyboard-nav/scroll/col
   the sort `<select>` plus `explorer-count-range-filter`; the headline result-count stat stays visible. The
   former `qd-unique-words-search-bar` is retired — its input is now the shared row's main input, its sort
   select a page-level secondary-row `<select>` — with the `unique-words-search-input`/`unique-words-sort-select`
-  testids preserved. `explorer-association-filter`'s popover is now focus-driven rather than a `<details>`
-  disclosure: it opens on field focus or typing and closes on Escape (focus restored to the field),
-  outside-click, focus leaving the component (`focusout`), or selecting an option, with no focus trap and
-  single-open behavior (focusing a sibling field closes the previous); `aria-expanded`/`aria-controls`/
-  `aria-haspopup="true"` sit on the field, and options stay plain Tab-reachable `aria-pressed` buttons, not a
-  listbox (no arrow-key/`aria-activedescendant` model, deliberate). The panel floats above
+  testids preserved. `explorer-association-filter`'s popover is field-driven rather than a `<details>`
+  disclosure (Feature 030, N5): it opens on typing, on `ArrowDown`/`Alt+ArrowDown` (which also moves focus
+  to the first option), or on field focus **only when the field already carries a selection or a query** —
+  an empty, unselected field stays closed on focus, and `ArrowDown` is the keyboard route in. It closes on
+  Escape (focus restored to the field, with the reopen guard), outside-click, focus leaving the component
+  (`focusout`), or selecting an option, with no focus trap and single-open behavior (focusing a sibling
+  field closes the previous); `aria-expanded`/`aria-controls`/`aria-haspopup="true"` sit on the field, and
+  options stay plain Tab-reachable `aria-pressed` buttons, not a listbox (no roving arrow-key/
+  `aria-activedescendant` model, deliberate). Re-opening on a selection never re-fetches, so a URL-restored
+  server-searched picker may open with no options until the user types (accepted; `searchChange` stays
+  typing-driven). The panel floats above
   `.uw-toolbar-recess` (unclipped, RTL-anchored under the field, viewport-aware height limit). **Unchanged:**
   every URL query key, the url-sync contract, all data-testids, search debounce/semantics, and the
   association-filter public inputs/outputs.
+- **Ayah match cards use the shared `qdAyahCard` frame** (Feature 029, Change A): loaded and
+  loading cards in `ayah-matches-list` compose `shared/ui/ayah-card` (no `qd-card`, no
+  alternating row fill, no per-context recolors in `_explorer-detail-lists.scss`). Rows are
+  **tracked by `verseKey`**, never `ayahId` — Word Type ayah rows all carry `ayahId: 0`.
+  `HighlightedAyahComponent` (marker filtering, matched-ID set, untouched `textUthmani` spans,
+  Quran font) stays feature-owned and unchanged.
+- **Words explainer hero + hub** (Feature 031, presentation-only, no backend/URL/cache change): each
+  explorer page mounts the shared `qd-words-explainer` **inside `.uw-intro-band`, after
+  `.qd-page-header` and above `.uw-toolbar-recess`**. It renders ordinal + eyebrow + tagline + body +
+  `الفائدة` benefit callout from the single approved content source
+  `models/words-explainer.content.ts` and projects each page's `مثال` example region via
+  `<ng-content>`; it does **not** re-render the page title (the existing `<h1>` owns it; the section
+  is named by `aria-label`). The hero is **static-height prose** — it never conditions on
+  `listState()`/`panelState()`, has no loading/skeleton, and renders **above and outside** every
+  mounted shell the invariants govern, so it cannot move the table+panel grid. Collapse is **per-page
+  memory** (`state/words-explainer-preference.ts`, storage key `qd-words-explainer`, value =
+  comma-joined collapsed keys), restored **synchronously** (a field-initialiser read, the
+  `ThemeService` pattern) so the **first paint already reflects stored state** — never read the
+  preference in an `effect()`/`ngOnInit`, which reintroduces the Feature 030 N3 expand-then-collapse
+  shift. No height animation. The hub (`words-hub-page`) reads the same five content records for its
+  numbered nav cards (card description = the page's tagline, so the two cannot drift) plus the
+  orientation chain (`WORDS_HUB_CHAIN`, all-neutral nodes); card testids are **stable slugs**
+  `words-hub-card--<key>` (never Arabic-label-derived), and the coming-soon scaffolding is removed
+  (every explorer has shipped). The example words are illustrative `مثال` morphology in the Amiri
+  face, never Quran data or queryable counts. The green callout is the one tinted-green panel,
+  sanctioned in the allowed-green list (DESIGN.md §2 / UI_STYLE_SYSTEM.md §16.3, item 8).
 - Tests: obey the repo test-command rule (see `../../../../README.md`) — the vitest worker
   cap and jsdom observer guards apply here.
 - **Word Types has table-view tabs** (`tableView=words|roots|stems|lemmas`, default `words`,
-  RTL order كلمات | جذور | أصول | صيغ). Grouped views are grouped and counted server-side before
+  RTL order كلمات | جذور | أصول | صيغ). Placement (Feature 029, U3): the tab strip is the **first
+  child of the split layout**, directly above the table column only (desktop pins tabs/table to
+  grid column 1 rows 1/2 and the details panel to column 2 row 2, so the panel top aligns with the
+  table; below desktop DOM flow gives tabs → table → panel). The semantic order
+  filters → scope summary → tabs → table and the mounted-shell invariant are unchanged. Grouped views are grouped and counted server-side before
   pagination, and their identity is the numeric `rootId`/`stemId`/`lemmaId`, never display text. The
   **table-view strip, table shell, and details host stay mounted** through every browse/list/filter/
   sort/view/loading/empty/error transition; the table owns prompt/loading/empty/error-with-retry.

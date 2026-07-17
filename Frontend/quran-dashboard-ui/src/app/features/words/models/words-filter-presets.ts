@@ -9,36 +9,53 @@ export interface CountRange {
   readonly max: number | null;
 }
 
-/** Bucket families map to the metric groups from the spec Clarifications (disjoint boundaries). */
-export type BucketFamily = 'occurrences' | 'ayahsSurahs' | 'subCount';
+/** Metric families map to the metric groups from the spec Clarifications (one count scale each). */
+export type RangeFamily = 'occurrences' | 'ayahsSurahs' | 'subCount';
 
-export interface RangeBucket {
-  readonly labelAr: string;
+/**
+ * The "big vs small" chip threshold each family defaults to (Feature 030, N4-a). `ayahsSurahs` carries
+ * the high-count 100 that ayahs needs; surahs overrides it per-metric because that metric is hard-capped
+ * at 114, where a ">100" chip would match almost nothing.
+ */
+export const RANGE_FAMILY_THRESHOLDS: Record<RangeFamily, number> = {
+  occurrences: 100,
+  ayahsSurahs: 100,
+  subCount: 10,
+};
+
+/**
+ * The السور override, shared by every explorer that lists the metric so their chips cannot drift apart.
+ * A surah count can never exceed 114, which is why it cannot take its family's 100.
+ */
+export const SURAHS_RANGE_THRESHOLD = 50;
+
+/** The two shortcut chips a metric offers. The kind is the stable testid suffix and the `@for` track. */
+export type RangeChipKind = 'gt' | 'lt';
+
+/** A preset chip: presentation config that resolves to an ordinary range, never to a URL identity. */
+export interface RangeChip {
+  readonly kind: RangeChipKind;
+  readonly threshold: number;
   readonly min: number | null;
   readonly max: number | null;
 }
 
-export const RANGE_BUCKETS: Record<BucketFamily, readonly RangeBucket[]> = {
-  occurrences: [
-    { labelAr: '1', min: 1, max: 1 },
-    { labelAr: '2–10', min: 2, max: 10 },
-    { labelAr: '11–100', min: 11, max: 100 },
-    { labelAr: '101–1000', min: 101, max: 1000 },
-    { labelAr: '1001+', min: 1001, max: null },
-  ],
-  ayahsSurahs: [
-    { labelAr: '1', min: 1, max: 1 },
-    { labelAr: '2–10', min: 2, max: 10 },
-    { labelAr: '11–50', min: 11, max: 50 },
-    { labelAr: '51+', min: 51, max: null },
-  ],
-  subCount: [
-    { labelAr: '1', min: 1, max: 1 },
-    { labelAr: '2–5', min: 2, max: 5 },
-    { labelAr: '6–20', min: 6, max: 20 },
-    { labelAr: '21+', min: 21, max: null },
-  ],
-};
+/** Resolves a metric's chip threshold — an explicit per-metric override wins over its family default. */
+export function resolveRangeThreshold(family: RangeFamily, override?: number | null): number {
+  return override ?? RANGE_FAMILY_THRESHOLDS[family];
+}
+
+/**
+ * Builds the `أكثر من N` / `أقل من N` chips for a metric. Both bounds are strict, so exactly N stays
+ * reachable only through the مخصّص panel (decision N4-b).
+ */
+export function buildRangeChips(family: RangeFamily, override?: number | null): readonly RangeChip[] {
+  const threshold = resolveRangeThreshold(family, override);
+  return [
+    { kind: 'gt', threshold, min: threshold + 1, max: null },
+    { kind: 'lt', threshold, min: null, max: threshold - 1 },
+  ];
+}
 
 const RANGE_SEPARATOR = '..';
 const NON_NEGATIVE_INT = /^\d+$/;
@@ -87,7 +104,7 @@ export function serializeCountRange(range: CountRange | null | undefined): strin
   return `${range.min ?? ''}${RANGE_SEPARATOR}${range.max ?? ''}`;
 }
 
-/** True when two ranges denote the same filter (used to toggle bucket selection). */
+/** True when two ranges denote the same filter (used to toggle chip selection). */
 export function countRangesEqual(a: CountRange | null | undefined, b: CountRange | null | undefined): boolean {
   const left = isRangeActive(a) ? a : null;
   const right = isRangeActive(b) ? b : null;

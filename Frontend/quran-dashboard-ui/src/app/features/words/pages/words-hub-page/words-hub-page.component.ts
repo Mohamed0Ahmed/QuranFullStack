@@ -1,23 +1,39 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 
 import { WordSectionCardComponent } from '../../components/word-section-card/word-section-card.component';
+import { WORDS_HUB_SECTIONS_LABEL } from '../../models/unique-words.labels';
 import {
-  ACTIVE_HUB_SECTION,
-  ADDITIONAL_ACTIVE_HUB_SECTIONS,
-  COMING_SOON_BADGE,
-  COMING_SOON_HUB_SECTIONS,
-  WORDS_HUB_SECTIONS_LABEL,
-  WORDS_HUB_SUBTITLE,
-  WORDS_HUB_TITLE,
-  WordSectionCardLabel,
-} from '../../models/unique-words.labels';
+  WORDS_EXPLAINER_CONTENT,
+  WORDS_EXPLAINER_ORDER,
+  WORDS_HUB_CHAIN,
+  WORDS_HUB_INTRO,
+  WordsExplainerKey,
+} from '../../models/words-explainer.content';
+import {
+  lemmasRoutePath,
+  rootsRoutePath,
+  stemsRoutePath,
+  uniqueWordsRoutePath,
+  wordTypesRoutePath,
+} from '../../../../core/navigation/route-paths';
 
-interface WordSectionCardViewModel {
-  labelAr: string;
-  descriptionAr: string;
-  route: string | null;
-  disabled: boolean;
+interface WordsHubCardViewModel {
+  key: WordsExplainerKey;
+  ordinal: string;
+  eyebrow: string;
+  title: string;
+  description: string;
+  route: string;
 }
+
+// Unique Words opens on its tashkeel mode (the default explorer entry); the others are single routes.
+const HUB_CARD_ROUTES: Record<WordsExplainerKey, string> = {
+  unique: uniqueWordsRoutePath('tashkeel'),
+  roots: rootsRoutePath(),
+  lemmas: lemmasRoutePath(),
+  stems: stemsRoutePath(),
+  'word-types': wordTypesRoutePath(),
+};
 
 @Component({
   selector: 'qd-words-hub-page',
@@ -28,31 +44,35 @@ interface WordSectionCardViewModel {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WordsHubPageComponent {
-  protected readonly title = WORDS_HUB_TITLE;
-  protected readonly subtitle = WORDS_HUB_SUBTITLE;
-  protected readonly sectionsLabel = WORDS_HUB_SECTIONS_LABEL;
-  protected readonly comingSoonBadge = COMING_SOON_BADGE;
+  private cardsCache?: readonly WordsHubCardViewModel[];
 
-  protected readonly activeCard: WordSectionCardViewModel = {
-    labelAr: ACTIVE_HUB_SECTION.labelAr,
-    descriptionAr: ACTIVE_HUB_SECTION.descriptionAr,
-    route: '/dashboard/words/unique',
-    disabled: false,
-  };
+  // Content is read through TDZ-safe getters (words/README rule), never readonly field initialisers.
+  protected get title(): string {
+    return WORDS_HUB_INTRO.title;
+  }
+  protected get subtitle(): string {
+    return WORDS_HUB_INTRO.subtitle;
+  }
+  protected get sectionsLabel(): string {
+    return WORDS_HUB_SECTIONS_LABEL;
+  }
+  protected get chain() {
+    return WORDS_HUB_CHAIN;
+  }
 
-  protected readonly additionalActiveCards: readonly WordSectionCardViewModel[] =
-    ADDITIONAL_ACTIVE_HUB_SECTIONS.map((section) => ({
-      labelAr: section.labelAr,
-      descriptionAr: section.descriptionAr,
-      route: section.route,
-      disabled: false,
+  // One content source feeds both the hub card and the page hero — a card's description IS its
+  // page's tagline, so the two can never drift.
+  protected get cards(): readonly WordsHubCardViewModel[] {
+    return (this.cardsCache ??= WORDS_EXPLAINER_ORDER.map((key) => {
+      const content = WORDS_EXPLAINER_CONTENT[key];
+      return {
+        key,
+        ordinal: content.ordinal,
+        eyebrow: content.eyebrow,
+        title: content.title,
+        description: content.tagline,
+        route: HUB_CARD_ROUTES[key],
+      };
     }));
-
-  protected readonly comingSoonCards: readonly WordSectionCardViewModel[] =
-    COMING_SOON_HUB_SECTIONS.map((section: WordSectionCardLabel) => ({
-      labelAr: section.labelAr,
-      descriptionAr: section.descriptionAr,
-      route: null,
-      disabled: true,
-    }));
+  }
 }

@@ -13,6 +13,19 @@ import { ayahStudyDtoMock, mushafAyahMutashabihatApiProvider, mushafSimilarAyahs
 
 const ayahStudyDto = ayahStudyDtoMock;
 
+/**
+ * Minimal Router stub: `navigate` for the facade's URL sync, plus the URL-tree
+ * pair the detail-overlay link directive uses to render real hrefs inside the
+ * selected-word section (Feature 029, Change B).
+ */
+function buildRouterStub() {
+  return {
+    navigate: vi.fn().mockResolvedValue(true),
+    createUrlTree: vi.fn(() => ({})),
+    serializeUrl: vi.fn(() => '/dashboard/mushaf?page=5'),
+  };
+}
+
 const wordAnalysisDto = {
   word: {
     quranWordId: 2003,
@@ -69,7 +82,7 @@ describe('MushafReaderPageComponent study layout', () => {
         },
         {
           provide: Router,
-          useValue: { navigate: vi.fn().mockResolvedValue(true) },
+          useValue: buildRouterStub(),
         },
         {
           provide: MushafPagesApi,
@@ -150,7 +163,7 @@ describe('MushafReaderPageComponent study layout', () => {
         },
         {
           provide: Router,
-          useValue: { navigate: vi.fn().mockResolvedValue(true) },
+          useValue: buildRouterStub(),
         },
         {
           provide: MushafPagesApi,
@@ -228,7 +241,7 @@ describe('MushafReaderPageComponent study layout', () => {
         },
         {
           provide: Router,
-          useValue: { navigate: vi.fn().mockResolvedValue(true) },
+          useValue: buildRouterStub(),
         },
         {
           provide: MushafPagesApi,
@@ -309,7 +322,7 @@ describe('MushafReaderPageComponent study layout', () => {
         },
         {
           provide: Router,
-          useValue: { navigate: vi.fn().mockResolvedValue(true) },
+          useValue: buildRouterStub(),
         },
         {
           provide: MushafPagesApi,

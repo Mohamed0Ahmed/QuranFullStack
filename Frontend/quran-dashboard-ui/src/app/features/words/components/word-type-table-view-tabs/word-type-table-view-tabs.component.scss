@@ -1,8 +1,10 @@
 @use '../../../../../styles/breakpoints' as bp;
 
+// The bottom margin lives on `.qd-explorer-layout__tabs-slot`, not here: the slot reserves this strip's
+// row before the tree lands (Feature 030, N3 row 2), and a margin on the host would sit outside that
+// reservation and re-introduce the shift it exists to remove.
 :host {
   display: block;
-  margin-block-end: var(--qd-space-3);
 }
 
 .word-type-table-view-tabs {
@@ -13,6 +15,8 @@
   border: 1px solid var(--qd-border);
   border-radius: var(--qd-radius-md);
   background: var(--qd-surface-recessed);
+  // Pinned to the same token the slot reserves, so the strip and its reservation are one number.
+  min-block-size: var(--qd-explorer-view-tabs-height, 3.5625rem);
 }
 
 .word-type-table-view-tabs__tab {

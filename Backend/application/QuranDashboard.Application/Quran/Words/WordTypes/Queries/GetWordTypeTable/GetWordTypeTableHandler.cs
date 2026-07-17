@@ -94,7 +94,7 @@ public sealed class GetWordTypeTableHandler(
             query.TableView,
             query.Page,
             query.PageSize,
-            sortValue,
+            sort.CanonicalToken(),
             page.TotalCount,
             page.Items.Count);
 
