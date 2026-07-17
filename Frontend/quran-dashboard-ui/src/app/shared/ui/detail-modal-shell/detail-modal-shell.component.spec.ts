@@ -12,6 +12,8 @@ import { ScrollLockService } from '../modal-scroll-lock/scroll-lock.service';
     <qd-detail-modal-shell
       [visibility]="visibility()"
       [titleText]="title()"
+      [kindLabel]="kindLabel()"
+      [countText]="countText()"
       [depth]="depth()"
       backLabel="SYNTH_BACK"
       closeLabel="SYNTH_CLOSE"
@@ -29,6 +31,8 @@ import { ScrollLockService } from '../modal-scroll-lock/scroll-lock.service';
 class ShellHostComponent {
   readonly visibility = signal<'open' | 'closed'>('open');
   readonly title = signal('SYNTH_TITLE');
+  readonly kindLabel = signal('');
+  readonly countText = signal('');
   readonly depth = signal(1);
   readonly status = signal('');
   readonly events: string[] = [];
@@ -132,6 +136,64 @@ describe('DetailModalShellComponent', () => {
     host.status.set('SYNTH_CAP_STATUS');
     detect();
     expect(root.querySelector('[data-testid="detail-modal-live-status"]')?.textContent).toContain('SYNTH_CAP_STATUS');
+  });
+
+  it('renders the kind chip only when a label is supplied', () => {
+    expect(root.querySelector('[data-testid="detail-modal-kind"]')).toBeNull();
+
+    host.kindLabel.set('SYNTH_KIND');
+    detect();
+    expect(root.querySelector('[data-testid="detail-modal-kind"]')?.textContent).toContain('SYNTH_KIND');
+  });
+
+  it('keeps the count box mounted while empty and only fades its text in on arrival', () => {
+    const countBox = () => root.querySelector('[data-testid="detail-modal-count"]');
+
+    // The box must never appear/disappear: it holds its reserved width from the
+    // first render so the arriving count cannot shift the header.
+    expect(countBox()).not.toBeNull();
+    expect(countBox()!.textContent?.trim()).toBe('');
+    expect(countBox()!.classList.contains('detail-modal-shell__count--visible')).toBe(false);
+
+    host.countText.set('SYNTH_COUNT: 42');
+    detect();
+    expect(countBox()).not.toBeNull();
+    expect(countBox()!.textContent).toContain('SYNTH_COUNT: 42');
+    expect(countBox()!.classList.contains('detail-modal-shell__count--visible')).toBe(true);
+  });
+
+  it('describes the dialog by the count without placing it in either live region', () => {
+    host.countText.set('SYNTH_COUNT: 42');
+    host.status.set('SYNTH_CAP_STATUS');
+    detect();
+
+    const dialog = root.querySelector('[data-testid="detail-modal-shell"]')!;
+    const count = root.querySelector('[data-testid="detail-modal-count"]')!;
+    expect(dialog.getAttribute('aria-describedby')).toBe(count.id);
+    expect(count.id).not.toBe(dialog.getAttribute('aria-labelledby'));
+
+    // Inlining the count into the heading or a live region would double-announce
+    // it on load, so it must live outside both.
+    expect(count.closest('[aria-live]')).toBeNull();
+    expect(count.closest('h2')).toBeNull();
+    expect(root.querySelector('[data-testid="detail-modal-live-title"]')!.textContent).not.toContain('SYNTH_COUNT');
+    expect(root.querySelector('[data-testid="detail-modal-live-status"]')!.textContent).not.toContain('SYNTH_COUNT');
+  });
+
+  // jsdom cannot lay out, so the fixed block-size itself is a browser check. These
+  // guard the structure that fixed geometry depends on: the body is the only
+  // scroll region, and the geometry-bearing classes still exist to be styled.
+  it('keeps the body as the single scroll region under the fixed-geometry classes', () => {
+    const dialog = root.querySelector('[data-testid="detail-modal-shell"]')!;
+    const body = root.querySelector('.detail-modal-shell__body');
+    const header = root.querySelector('.detail-modal-shell__header');
+
+    expect(dialog.classList.contains('qd-modal')).toBe(true);
+    expect(dialog.classList.contains('detail-modal-shell')).toBe(true);
+    expect(header).not.toBeNull();
+    expect(body).not.toBeNull();
+    expect(body!.contains(header)).toBe(false);
+    expect(root.querySelectorAll('.detail-modal-shell__body').length).toBe(1);
   });
 
   it('traps focus inside the open dialog', () => {

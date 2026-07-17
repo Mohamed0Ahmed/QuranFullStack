@@ -67,6 +67,9 @@ export class WordTypeDetailOverlayAdapterComponent {
   /** Loaded entity title for the shell heading ('' while the summary loads). */
   readonly entityTitle = computed(() => this.panelState().summary?.displayText ?? '');
 
+  /** Entity-level ayah count for the shell header meta (null while the summary loads). */
+  readonly entityAyahCount = computed(() => this.panelState().summary?.ayahsCount ?? null);
+
   /**
    * A word-kind Word Type detail has no member-words view — 'words' exists only
    * for grouped root/stem/lemma selections (`WordTypesDetailViewLoader` no-ops
@@ -134,6 +137,7 @@ export class WordTypeDetailOverlayAdapterComponent {
     });
 
     effect(() => this.titleStore?.setTitle(this.entityTitle()));
+    effect(() => this.titleStore?.setAyahCount(this.entityAyahCount()));
     inject(DestroyRef).onDestroy(() => this.titleStore?.clear());
   }
 

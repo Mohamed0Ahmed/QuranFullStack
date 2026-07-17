@@ -45,12 +45,18 @@ export class DetailModalShellComponent {
   readonly restoreAriaLabel = input.required<string>();
   /** Polite status text (e.g. the eight-frame cap refusal); announced when set. */
   readonly statusMessage = input('');
+  /** Entity-kind chip beside the title; the chip is omitted while empty. */
+  readonly kindLabel = input('');
+  /** Header count meta; its box stays reserved while this is empty. */
+  readonly countText = input('');
 
   readonly backRequested = output<void>();
   readonly closeRequested = output<void>();
   readonly restoreRequested = output<void>();
 
-  protected readonly headingId = `qd-detail-modal-title-${nextShellId++}`;
+  private readonly shellId = nextShellId++;
+  protected readonly headingId = `qd-detail-modal-title-${this.shellId}`;
+  protected readonly countId = `qd-detail-modal-count-${this.shellId}`;
 
   private readonly restoreButton = viewChild<ElementRef<HTMLButtonElement>>('restoreButton');
   private previousVisibility: 'open' | 'closed' | null = null;

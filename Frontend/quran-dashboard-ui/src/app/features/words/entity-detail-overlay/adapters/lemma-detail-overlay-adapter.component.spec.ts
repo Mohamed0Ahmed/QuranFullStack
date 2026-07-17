@@ -137,14 +137,16 @@ describe('LemmaDetailOverlayAdapterComponent (Feature 029 B4)', () => {
     expect(host.textContent).toContain('كتاب');
   });
 
-  it('publishes the loaded entity title to the shared store and clears it on destroy', async () => {
+  it('publishes the loaded entity title and ayah count to the shared store and clears them on destroy', async () => {
     const store = TestBed.inject(EntityDetailOverlayTitleStore);
     const fixture = await createAdapter(frameOf());
 
     expect(store.title()).toBe('كِتَاب');
+    expect(store.ayahCount()).toBe(4);
 
     fixture.destroy();
     expect(store.title()).toBe('');
+    expect(store.ayahCount()).toBeNull();
   });
 
   it('routes a view tab change through replaceTopFrame with setView reset semantics', async () => {

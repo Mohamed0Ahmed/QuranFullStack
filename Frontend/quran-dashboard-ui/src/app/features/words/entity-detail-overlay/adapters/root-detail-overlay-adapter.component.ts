@@ -83,6 +83,9 @@ export class RootDetailOverlayAdapterComponent {
   /** Loaded entity title for the shell heading ('' while the summary loads). */
   readonly entityTitle = computed(() => this.panelState().summary?.rootText ?? '');
 
+  /** Entity-level ayah count for the shell header meta (null while the summary loads). */
+  readonly entityAyahCount = computed(() => this.panelState().summary?.ayahsCount ?? null);
+
   protected readonly wordViewOptions: readonly RootWordView[] = ['simple', 'tashkeel'];
   protected readonly surahViewOptions: readonly RootSurahView[] = ['mentioned', 'missing'];
   protected readonly emptyAyahsPage: PagedResultDto<AyahMatchDto> = { page: 1, pageSize: ROOT_DETAIL_PAGE_SIZE, totalCount: 0, items: [] };
@@ -135,6 +138,7 @@ export class RootDetailOverlayAdapterComponent {
     });
 
     effect(() => this.titleStore?.setTitle(this.entityTitle()));
+    effect(() => this.titleStore?.setAyahCount(this.entityAyahCount()));
     inject(DestroyRef).onDestroy(() => this.titleStore?.clear());
   }
 

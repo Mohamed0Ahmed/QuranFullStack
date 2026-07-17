@@ -118,14 +118,16 @@ describe('UniqueDetailOverlayAdapterComponent (Feature 029 B4)', () => {
     expect(host.textContent).toContain('الفاتحة');
   });
 
-  it('publishes the loaded summary display text to the shared store and clears it on destroy', async () => {
+  it('publishes the loaded summary display text and ayah count to the shared store and clears them on destroy', async () => {
     const store = TestBed.inject(EntityDetailOverlayTitleStore);
     const fixture = await createAdapter(frameOf());
 
     expect(store.title()).toBe('كلمة-tashkeel-5');
+    expect(store.ayahCount()).toBe(5);
 
     fixture.destroy();
     expect(store.title()).toBe('');
+    expect(store.ayahCount()).toBeNull();
   });
 
   it('routes a view tab change through replaceTopFrame with an ayah-page reset', async () => {

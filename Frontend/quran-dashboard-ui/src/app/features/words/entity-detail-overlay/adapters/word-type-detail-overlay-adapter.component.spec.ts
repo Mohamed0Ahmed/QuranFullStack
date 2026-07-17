@@ -140,14 +140,16 @@ describe('WordTypeDetailOverlayAdapterComponent (Feature 029 B4)', () => {
     expect(host.textContent).toContain('ٱلْكِتَـٰبُ');
   });
 
-  it('publishes the loaded summary display text to the shared store and clears it on destroy', async () => {
+  it('publishes the loaded summary display text and ayah count to the shared store and clears them on destroy', async () => {
     const store = TestBed.inject(EntityDetailOverlayTitleStore);
     const fixture = await createAdapter(frameOf());
 
     expect(store.title()).toBe('ٱلْكِتَـٰبُ');
+    expect(store.ayahCount()).toBe(4);
 
     fixture.destroy();
     expect(store.title()).toBe('');
+    expect(store.ayahCount()).toBeNull();
   });
 
   it('applies the full composite identity from the frame to its controller loads', async () => {

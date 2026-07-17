@@ -13,6 +13,28 @@ export const ENTITY_DETAIL_KIND_TITLES: Record<DetailFrameKind, string> = {
   wordType: 'تفاصيل كلمة النوع',
 };
 
+/**
+ * Short kind labels for the dialog header chip. Unlike `ENTITY_DETAIL_KIND_TITLES`
+ * these are not a title fallback: the chip names the entity kind beside the real
+ * title, so it stays synchronous with the frame and never waits on a load.
+ */
+export const ENTITY_DETAIL_KIND_LABELS: Record<DetailFrameKind, string> = {
+  root: 'جذر',
+  lemma: 'صيغة معجمية',
+  stem: 'أصل صرفي',
+  unique: 'كلمة',
+  wordType: 'نوع الكلمة',
+};
+
+/**
+ * Header meta for the entity's ayah count. Latin digits match the explorer
+ * tables. The count is entity-level and does not track the ayah-tab `typeCode`
+ * filter (Feature 030, N6-b).
+ */
+export function entityDetailAyahCountText(count: number): string {
+  return `الآيات: ${count}`;
+}
+
 export const ENTITY_DETAIL_BACK_LABEL = 'رجوع';
 
 export const ENTITY_DETAIL_CLOSE_LABEL = 'إغلاق';

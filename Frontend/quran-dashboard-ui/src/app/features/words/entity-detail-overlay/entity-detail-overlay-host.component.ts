@@ -19,8 +19,10 @@ import {
   ENTITY_DETAIL_BACK_LABEL,
   ENTITY_DETAIL_CAP_STATUS_MESSAGE,
   ENTITY_DETAIL_CLOSE_LABEL,
+  ENTITY_DETAIL_KIND_LABELS,
   ENTITY_DETAIL_KIND_TITLES,
   ENTITY_DETAIL_RESTORE_LABEL,
+  entityDetailAyahCountText,
   entityDetailRestoreAriaLabel,
 } from './entity-detail-overlay.labels';
 
@@ -94,6 +96,18 @@ export class EntityDetailOverlayHostComponent {
     }
     const entityTitle = this.titleStore.title();
     return entityTitle !== '' ? entityTitle : ENTITY_DETAIL_KIND_TITLES[top.kind];
+  });
+
+  /** Kind chip text — known from the frame, so it never waits on a summary load. */
+  protected readonly kindLabel = computed(() => {
+    const top = this.topFrame();
+    return top === null ? '' : ENTITY_DETAIL_KIND_LABELS[top.kind];
+  });
+
+  /** Header ayah-count meta; '' until the active adapter publishes its summary count. */
+  protected readonly countText = computed(() => {
+    const count = this.titleStore.ayahCount();
+    return count === null ? '' : entityDetailAyahCountText(count);
   });
 
   /** Announced once through the shell's polite live region when the cap refuses an append. */

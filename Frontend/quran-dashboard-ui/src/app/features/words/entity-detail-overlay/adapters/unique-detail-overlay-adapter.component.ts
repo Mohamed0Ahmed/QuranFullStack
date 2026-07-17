@@ -54,6 +54,9 @@ export class UniqueDetailOverlayAdapterComponent {
     return summary ? mapUniqueWordSummaryDisplayText(summary).displayText : '';
   });
 
+  /** Entity-level ayah count for the shell header meta (null while the summary loads). */
+  readonly entityAyahCount = computed(() => this.drilldownState().summary?.ayahsCount ?? null);
+
   protected get notFoundLabel() {
     return RESTORED_WORD_NOT_FOUND_LABEL;
   }
@@ -75,6 +78,7 @@ export class UniqueDetailOverlayAdapterComponent {
     });
 
     effect(() => this.titleStore?.setTitle(this.entityTitle()));
+    effect(() => this.titleStore?.setAyahCount(this.entityAyahCount()));
     inject(DestroyRef).onDestroy(() => this.titleStore?.clear());
   }
 

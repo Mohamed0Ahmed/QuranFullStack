@@ -12,7 +12,7 @@ import {
   DetailFrame,
   RootDetailFrame,
 } from '../../../core/navigation/detail-overlay/detail-overlay.models';
-import { ENTITY_DETAIL_KIND_TITLES } from './entity-detail-overlay.labels';
+import { ENTITY_DETAIL_KIND_LABELS, ENTITY_DETAIL_KIND_TITLES } from './entity-detail-overlay.labels';
 
 const rootFrame: RootDetailFrame = {
   kind: 'root',
@@ -285,6 +285,85 @@ describe('EntityDetailOverlayHostComponent (composition root)', () => {
     await waitForSelector(fixture, 'qd-lemma-detail-overlay-adapter');
     expect(title()).toContain(ENTITY_DETAIL_KIND_TITLES.lemma);
     expect(title()).not.toContain('كتب');
+  });
+
+  it('labels the header chip from the top frame kind, synchronously for every kind', async () => {
+    const fixture = await createApp();
+    const root = fixture.nativeElement as HTMLElement;
+    const kindChip = () => root.querySelector('[data-testid="detail-modal-kind"]')?.textContent?.trim() ?? '';
+    const cases: readonly { frame: DetailFrame; label: string }[] = [
+      { frame: rootFrame, label: ENTITY_DETAIL_KIND_LABELS.root },
+      { frame: lemmaFrame, label: ENTITY_DETAIL_KIND_LABELS.lemma },
+      { frame: stemFrame, label: ENTITY_DETAIL_KIND_LABELS.stem },
+      { frame: uniqueFrame, label: ENTITY_DETAIL_KIND_LABELS.unique },
+      { frame: wordTypeFrame, label: ENTITY_DETAIL_KIND_LABELS.wordType },
+    ];
+
+    service.startStack(rootFrame);
+    for (const { frame, label } of cases) {
+      if (frame !== rootFrame) {
+        service.appendFrame(frame);
+      }
+      await settle();
+      fixture.detectChanges();
+      // No summary is ever flushed here: the chip comes from the frame alone.
+      expect(kindChip()).toBe(label);
+    }
+  });
+
+  it('keeps the count box reserved while loading, fills it from the summary count, and clears it on frame change', async () => {
+    const fixture = await createApp();
+    const httpMock = TestBed.inject(HttpTestingController);
+    service.startStack(rootFrame);
+    await settle();
+    await waitForSelector(fixture, 'qd-root-detail-overlay-adapter');
+
+    const root = fixture.nativeElement as HTMLElement;
+    const count = () => root.querySelector('[data-testid="detail-modal-count"]')!;
+
+    // Reserved but text-less while the summary is in flight.
+    expect(count()).not.toBeNull();
+    expect(count().textContent?.trim()).toBe('');
+    expect(count().classList.contains('detail-modal-shell__count--visible')).toBe(false);
+
+    httpMock.expectOne((req) => req.url.endsWith('/api/words/roots/999')).flush({
+      isSuccess: true,
+      data: {
+        id: 999,
+        rootText: 'كتب',
+        occurrencesCount: 5,
+        ayahsCount: 4,
+        surahsCount: 3,
+        simpleWordsCount: 2,
+        tashkeelWordsCount: 2,
+        lemmasCount: 1,
+        stemsCount: 1,
+      },
+      message: null,
+      errors: null,
+    });
+    await settle();
+
+    await vi.waitFor(
+      () => {
+        fixture.detectChanges();
+        if (!count().textContent?.includes('4')) {
+          throw new Error('still waiting for the entity ayah count');
+        }
+      },
+      { timeout: 5000, interval: 25 },
+    );
+    expect(count().textContent).toContain('الآيات: 4');
+    expect(count().classList.contains('detail-modal-shell__count--visible')).toBe(true);
+
+    // A cross-entity append destroys the root adapter, which clears the count;
+    // the box stays mounted with its text hidden while the lemma summary loads.
+    service.appendFrame(lemmaFrame);
+    await settle();
+    await waitForSelector(fixture, 'qd-lemma-detail-overlay-adapter');
+    expect(count()).not.toBeNull();
+    expect(count().textContent?.trim()).toBe('');
+    expect(count().classList.contains('detail-modal-shell__count--visible')).toBe(false);
   });
 
   it('announces the Arabic cap status when a ninth append is refused', async () => {

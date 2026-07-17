@@ -6,6 +6,7 @@
       aria-modal="true"
       dir="rtl"
       [attr.aria-labelledby]="headingId"
+      [attr.aria-describedby]="countId"
       cdkTrapFocus
       cdkTrapFocusAutoCapture
       data-testid="detail-modal-shell"
@@ -23,7 +24,23 @@
             {{ backLabel() }}
           </button>
         }
+        @if (kindLabel()) {
+          <span class="detail-modal-shell__kind" data-testid="detail-modal-kind">{{ kindLabel() }}</span>
+        }
         <h2 class="detail-modal-shell__title" [id]="headingId" tabindex="-1">{{ titleText() }}</h2>
+        <!--
+          Always rendered so its reserved box never appears/disappears: only the
+          text fades in when the count arrives. It sits outside the h2 AND outside
+          the polite live regions below — inlining it into either would
+          double-announce the count on load.
+        -->
+        <span
+          class="detail-modal-shell__count"
+          [class.detail-modal-shell__count--visible]="countText() !== ''"
+          [id]="countId"
+          data-testid="detail-modal-count"
+          >{{ countText() }}</span
+        >
         <button
           type="button"
           class="qd-btn qd-btn-ghost detail-modal-shell__close"

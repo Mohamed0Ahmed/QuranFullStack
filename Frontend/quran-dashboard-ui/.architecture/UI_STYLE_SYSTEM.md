@@ -646,8 +646,8 @@ fills, resting borders — stays **banned as solid green**: use a tint,
 
 ## 17. Component contracts ("never hand-write these again")
 
-> **Status: implemented.** This section is the **live contract** for six shared
-> primitives. `qd-tabs`, `qd-chip`, `qd-state`, and the skeleton primitives
+> **Status: implemented.** This section is the **live contract** for the shared
+> primitives below. `qd-tabs`, `qd-chip`, `qd-state`, and the skeleton primitives
 > (`qd-skeleton-rows`, `qd-panel-skeleton`) are Angular components shipped in P2 of
 > `docs/feature-028-color-doctrine-unification/plan.md`; `.qd-explorer-table` and
 > `.qd-detail-list` are CSS class-family collapses shipped in P3/P4. Chip/tab
@@ -729,6 +729,57 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   `toStudyAyahDisplayText`) — never move them into the frame.
 - Compose, do not re-style — a consumer needing a different surface/border is a
   signal to extend this contract, not fork it.
+
+### `qd-detail-modal-shell` (global detail-overlay dialog shell)
+- **Purpose:** the one dialog shell of the global entity-detail overlay — dialog
+  semantics (RTL `role="dialog"`/`aria-modal`, labelled heading, focus trap,
+  Escape/backdrop dismissal), the header actions, the closed-state restore
+  control, and reference-counted scroll locking. It owns no entity, API, URL, or
+  history state; the host decides what the actions mean.
+- **Geometry (fixed, both axes):** `inline-size: min(100%, 46rem)` and
+  `block-size: min(92dvh, 44rem)` — a *fixed* block-size, never `max-block-size`.
+  Switching tabs, paginating, and every loading/empty/not-found pass must repaint
+  inside a dialog that does not resize around its flex-centered backdrop. `__body`
+  is the **only** scroller (`flex: 1; min-block-size: 0; overflow-y: auto`);
+  `__header` is `flex-shrink: 0`. Phone (≤ `$qd-bp-phone-max`) goes
+  near-fullscreen: backdrop padding `--qd-space-2`, dialog padding `--qd-space-3`,
+  `block-size: min(94dvh, 44rem)`. Shallow states (skeleton, not-found) therefore
+  render a tall dialog with empty space — the accepted trade for zero resize. Body
+  scroll is locked while open, so a dvh height cannot trap content.
+- **Header order (inline-start → inline-end):** Back (depth > 1) · kind chip ·
+  `h2` title (`flex: 1`, ellipsis) · ayah-count meta · Close. Back and Close are
+  `flex-shrink: 0` + `nowrap` and are the row's anchors: **nothing may move or
+  reflow them**. The title is the only shrinkable item, so a count wider than its
+  reservation steals width from the title, which its ellipsis absorbs.
+- **Header priority is Back/Close > title > count > kind.** The row cannot hold
+  every element at phone widths (at 390px the content box is ~326px while
+  Back + kind + a 6rem count + Close + gaps need ~378px), so on
+  ≤ `$qd-bp-phone-max` the kind marker is `display: none` and the count
+  reservation tightens to `4.5rem`. The `h2` still names the entity, and the count
+  box stays reserved, so the zero-shift contract below survives. Adding a new
+  header element means re-checking this budget at 390px with `depth > 1`.
+- **Kind chip (`kindLabel`, optional, `''` = omitted):** hairline `--qd-border` +
+  `--qd-text-muted` text, no fill, no shadow (flat doctrine §16.2). Deliberately
+  **not** `qd-chip` — that contract carries selectable/interactive semantics, and
+  this marker is informational.
+- **Count meta (`countText`, optional, `''` = reserved but blank):** the box is
+  **always** rendered with a reserved `min-inline-size` (~6rem) and
+  `tabular-nums`; only its text fades in (opacity only, static under
+  `prefers-reduced-motion`). The box must never appear/disappear — that
+  reservation is the whole point, so a count arriving mid-load causes zero layout
+  shift. Latin digits, matching the explorer tables.
+- **Count a11y (do not "simplify"):** the count lives **outside** the `h2` and
+  **outside** both polite live regions — the title live region already re-announces
+  on load, so inlining the count into either would double-announce it. The dialog
+  is `aria-describedby` the count element instead.
+- **Count semantics:** the header count is the **entity-level** ayah count from the
+  entity summary, and is entity-stable — it does **not** track the ayah-tab
+  `typeCode` filter. On a narrowed lemma/stem ayah tab the visible list total is
+  therefore smaller than the header count; that is intended, not a bug. Never
+  source it from the tab/filter-dependent `ayahs.totalCount`.
+- Both header inputs stay optional with `''` defaults so the shell remains
+  presentation-only and callers that supply neither stay valid. Compose, do not
+  re-style.
 
 ### Loading/skeleton system
 - **Purpose:** the one loading representation app-wide — no bespoke text-only

@@ -86,6 +86,9 @@ export class StemDetailOverlayAdapterComponent {
   /** Loaded entity title for the shell heading ('' while the summary loads). */
   readonly entityTitle = computed(() => this.panelState().summary?.stemText ?? '');
 
+  /** Entity-level ayah count for the shell header meta (null while the summary loads). */
+  readonly entityAyahCount = computed(() => this.panelState().summary?.ayahsCount ?? null);
+
   protected readonly wordViewOptions: readonly StemWordView[] = ['simple', 'tashkeel'];
   protected readonly surahViewOptions: readonly StemSurahView[] = ['mentioned', 'missing'];
   protected readonly emptyAyahsPage: PagedResultDto<AyahMatchDto> = { page: 1, pageSize: STEM_DETAIL_PAGE_SIZE, totalCount: 0, items: [] };
@@ -143,6 +146,7 @@ export class StemDetailOverlayAdapterComponent {
     });
 
     effect(() => this.titleStore?.setTitle(this.entityTitle()));
+    effect(() => this.titleStore?.setAyahCount(this.entityAyahCount()));
     inject(DestroyRef).onDestroy(() => this.titleStore?.clear());
   }
 

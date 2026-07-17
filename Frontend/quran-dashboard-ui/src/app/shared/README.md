@@ -32,9 +32,14 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
 - `ui/detail-modal-shell/` — `qd-detail-modal-shell`, the presentation-only accessible
   dialog shell of the global detail overlay (Feature 029): RTL `role="dialog"` +
   `aria-modal`, labelled heading, CDK focus trap with auto-capture, Escape/backdrop
-  dismissal, Back (depth > 1)/Close header actions, the fixed restore control shown while
+  dismissal, Back (depth > 1)/Close header actions, the optional `kindLabel` chip and
+  `countText` meta beside the title (Feature 030), the fixed restore control shown while
   a retained stack is closed (focused after Close), polite live regions for title/status,
   and reference-counted scroll locking. It owns no entity, API, URL, or history state.
+  Its geometry is fixed on both axes and the count's box is always reserved, so no state
+  change resizes the dialog or shifts the header; the count sits outside the heading and
+  both live regions (it would otherwise double-announce) and is wired via
+  `aria-describedby`. See `.architecture/UI_STYLE_SYSTEM.md` §17 for the full contract.
 - `ui/modal-scroll-lock/` — `qdModalScrollLock` directive + `ScrollLockService`, the
   **reference-counted** body scroll lock (Feature 029): overlapping layers (responsive
   drawer + global overlay) each acquire/release; the body unlocks only when the last
