@@ -52,7 +52,7 @@ function render(
   options: {
     similarAyahs?: typeof SAMPLE_SIMILAR_AYAHS | null;
     loadState?: ResourceLoadState;
-    expectedItemCount?: number;
+    expectedItemCount?: number | null;
   } = {},
 ): HTMLElement {
   fixture.componentRef.setInput('similarAyahs', options.similarAyahs ?? null);
@@ -60,7 +60,7 @@ function render(
     'loadState',
     options.loadState ?? IDLE,
   );
-  fixture.componentRef.setInput('expectedItemCount', options.expectedItemCount ?? 0);
+  fixture.componentRef.setInput('expectedItemCount', options.expectedItemCount ?? null);
   fixture.detectChanges();
   return fixture.nativeElement as HTMLElement;
 }
@@ -170,11 +170,22 @@ describe('SimilarAyahsCardComponent (US2)', () => {
 
     it('falls back to a fixed placeholder count when no summary count is known yet', () => {
       const fixture = TestBed.createComponent(SimilarAyahsCardComponent);
-      const root = render(fixture, { loadState: LOADING, expectedItemCount: 0 });
+      const root = render(fixture, { loadState: LOADING, expectedItemCount: null });
 
       expect(
         root.querySelectorAll('[data-testid="similar-ayahs-skeleton"] .qd-ayah-card'),
       ).toHaveLength(3);
+    });
+
+    it('reserves nothing when the summary already says the list is empty', () => {
+      const fixture = TestBed.createComponent(SimilarAyahsCardComponent);
+      const root = render(fixture, { loadState: LOADING, expectedItemCount: 0 });
+
+      // A known zero is not "unknown": reserving the fallback run here would paint a tall
+      // shimmer that collapses into the short empty state the moment the load settles.
+      expect(
+        root.querySelectorAll('[data-testid="similar-ayahs-skeleton"] .qd-ayah-card'),
+      ).toHaveLength(0);
     });
 
     it('caps the placeholder run so a very long list cannot reserve screens of shimmer', () => {

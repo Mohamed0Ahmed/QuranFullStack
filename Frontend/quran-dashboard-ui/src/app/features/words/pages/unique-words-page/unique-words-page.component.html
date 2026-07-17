@@ -81,26 +81,34 @@
          drilldown banners below CANNOT follow them: a restored-not-found word sets `isOpen: false`
          (utils/unique-words-drilldown.state.ts), so the ≤1023px drilldown modal does not render at
          all and the desktop inline panel shows its select-a-word prompt — hosting them there would
-         drop the message below desktop. They stay here until that state contract is revisited. -->
-    @if (drilldownState().status === 'notFound') {
-      <div
-        class="qd-empty-state unique-words-restored-not-found"
-        role="status"
-        data-testid="unique-words-restored-not-found"
-      >
-        {{ restoredNotFoundLabel }}
-      </div>
-    }
+         drop the message below desktop; and the table shell is out of the question because the list
+         is fine and populated, so they would hide it. Page level is their only home.
 
-    @if (drilldownState().status === 'error' && !drilldownState().isOpen) {
-      <div
-        class="qd-error-state unique-words-restored-error"
-        role="status"
-        data-testid="unique-words-restored-error"
-      >
-        {{ drilldownState().errorMessage }}
-      </div>
-    }
+         The slot is therefore rendered in EVERY drilldown state and reserves one banner row from
+         first paint, so a banner appearing or clearing no longer pushes the table+panel grid below
+         it (Feature 030, N3 zero-outer-layout-shift). The two states are mutually exclusive — one
+         `status` value — so one row is the whole reservation. -->
+    <div class="unique-words-restored-slot">
+      @if (drilldownState().status === 'notFound') {
+        <div
+          class="qd-empty-state unique-words-restored-banner unique-words-restored-not-found"
+          role="status"
+          data-testid="unique-words-restored-not-found"
+        >
+          {{ restoredNotFoundLabel }}
+        </div>
+      }
+
+      @if (drilldownState().status === 'error' && !drilldownState().isOpen) {
+        <div
+          class="qd-error-state unique-words-restored-banner unique-words-restored-error"
+          role="status"
+          data-testid="unique-words-restored-error"
+        >
+          {{ drilldownState().errorMessage }}
+        </div>
+      }
+    </div>
   </div>
 
   @switch (listState().status) {
@@ -141,6 +149,7 @@
               (closeModal)="onDrilldownClose()"
               (viewChange)="onDrilldownViewChange($event)"
               (ayahPageChange)="onAyahPageChange($event)"
+              (retry)="onDrilldownRetry()"
             />
           </aside>
         }
@@ -156,6 +165,7 @@
       (closeModal)="onDrilldownClose()"
       (viewChange)="onDrilldownViewChange($event)"
       (ayahPageChange)="onAyahPageChange($event)"
+      (retry)="onDrilldownRetry()"
     />
   }
 </div>

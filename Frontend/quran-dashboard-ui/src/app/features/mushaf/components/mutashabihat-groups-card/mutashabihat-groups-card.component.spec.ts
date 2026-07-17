@@ -180,14 +180,14 @@ function render(
   options: {
     mutashabihat?: AyahMutashabihatDto | null;
     loadState?: ResourceLoadState;
-    expectedGroupCount?: number;
-    expectedOccurrenceCount?: number;
+    expectedGroupCount?: number | null;
+    expectedOccurrenceCount?: number | null;
   } = {},
 ): HTMLElement {
   fixture.componentRef.setInput('mutashabihat', options.mutashabihat ?? null);
   fixture.componentRef.setInput('loadState', options.loadState ?? IDLE);
-  fixture.componentRef.setInput('expectedGroupCount', options.expectedGroupCount ?? 0);
-  fixture.componentRef.setInput('expectedOccurrenceCount', options.expectedOccurrenceCount ?? 0);
+  fixture.componentRef.setInput('expectedGroupCount', options.expectedGroupCount ?? null);
+  fixture.componentRef.setInput('expectedOccurrenceCount', options.expectedOccurrenceCount ?? null);
   fixture.detectChanges();
   return fixture.nativeElement as HTMLElement;
 }
@@ -436,13 +436,33 @@ describe('MutashabihatGroupsCardComponent (US3)', () => {
 
     it('falls back to fixed placeholder counts when no summary counts are known yet', () => {
       const fixture = TestBed.createComponent(MutashabihatGroupsCardComponent);
-      const root = render(fixture, { loadState: LOADING });
+      const root = render(fixture, {
+        loadState: LOADING,
+        expectedGroupCount: null,
+        expectedOccurrenceCount: null,
+      });
 
       const groups = root.querySelectorAll('[data-testid="mutashabihat-skeleton"] .mutashabihat-groups-card__group');
       expect(groups).toHaveLength(2);
       for (const group of groups) {
         expect(group.querySelectorAll('.qd-ayah-card')).toHaveLength(2);
       }
+    });
+
+    it('reserves nothing when the summary already says there are no groups', () => {
+      const fixture = TestBed.createComponent(MutashabihatGroupsCardComponent);
+      const root = render(fixture, {
+        loadState: LOADING,
+        expectedGroupCount: 0,
+        expectedOccurrenceCount: 0,
+      });
+
+      // A known zero is not "unknown": reserving the fallback groups here would paint tall
+      // shimmer that collapses into the short empty state the moment the load settles.
+      expect(
+        root.querySelectorAll('[data-testid="mutashabihat-skeleton"] .mutashabihat-groups-card__group'),
+      ).toHaveLength(0);
+      expect(root.querySelectorAll('[data-testid="mutashabihat-skeleton"] .qd-ayah-card')).toHaveLength(0);
     });
 
     it('caps the placeholder run so a very long group list cannot reserve screens of shimmer', () => {

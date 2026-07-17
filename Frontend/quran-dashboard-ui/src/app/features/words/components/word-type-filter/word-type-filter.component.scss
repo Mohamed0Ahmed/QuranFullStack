@@ -68,10 +68,13 @@
   cursor: default;
 }
 
-// Width only: the hidden badge below sets the mirrored row's height, so this bar keeps the
-// shared --qd-skeleton-h default rather than carrying a height of its own.
+// Only the selected trigger carries the badge below, so on every other trigger this bar is what
+// stands in for the loaded `.word-type-filter__label` — and it must occupy that label's line box,
+// not the shared --qd-skeleton-h default, or the badge-less lines would grow on settle. `1lh` is
+// that line box: the bar inherits the same font as the label it replaces.
 .word-type-filter__skeleton-label {
   --qd-skeleton-w: 5rem;
+  --qd-skeleton-h: 1lh;
 }
 
 .word-type-filter__skeleton-count {
@@ -81,9 +84,9 @@
   border-radius: var(--qd-radius-pill);
 }
 
-// Reserves geometry only. Kept as a real `.qd-badge` so the mirrored label row inherits the badge's
-// actual line box — the loaded row is always this tall, because exactly one trigger is always selected
-// once the tree lands and the badge is taller than the label beside it.
+// Reserves geometry only, and only on the trigger the loaded markup badges — the selected one. Kept
+// as a real `.qd-badge` so that row inherits the badge's actual line box, which is taller than the
+// label beside it.
 .word-type-filter__skeleton-badge {
   visibility: hidden;
 }

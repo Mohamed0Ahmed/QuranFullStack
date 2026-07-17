@@ -157,16 +157,19 @@ export class SelectedAyahSectionComponent {
 
   protected readonly tabLabels = AYAH_STUDY_TAB_LABELS;
 
-  protected readonly similarAyahCount = computed(
-    () => this.study()?.similaritySummary.similarAyahCount ?? 0,
+  // The summary's counts are what the child cards reserve their loading geometry from, so an
+  // absent study must stay `null` ("unknown", fall back) and never collapse into a `0` the cards
+  // would read as "known empty" (Feature 030, N3 rows 11-12).
+  protected readonly similarAyahCount = computed<number | null>(
+    () => this.study()?.similaritySummary.similarAyahCount ?? null,
   );
 
-  protected readonly mutashabihatGroupCount = computed(
-    () => this.study()?.similaritySummary.mutashabihatGroupCount ?? 0,
+  protected readonly mutashabihatGroupCount = computed<number | null>(
+    () => this.study()?.similaritySummary.mutashabihatGroupCount ?? null,
   );
 
-  protected readonly mutashabihatOccurrenceCount = computed(
-    () => this.study()?.similaritySummary.mutashabihatOccurrenceCount ?? 0,
+  protected readonly mutashabihatOccurrenceCount = computed<number | null>(
+    () => this.study()?.similaritySummary.mutashabihatOccurrenceCount ?? null,
   );
 
   protected tabCount(tab: AyahStudyTab): number | null {

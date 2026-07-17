@@ -52,13 +52,15 @@ button.qd-interactive-surface {
   align-items: center;
   justify-content: center;
   gap: var(--qd-space-2);
-  padding: var(--qd-space-2) var(--qd-space-4);
-  border: 1px solid var(--qd-border);
+  /* The block-axis half of this box comes from tokens (_tokens.scss): reserved slots that must
+     hold a not-yet-mounted control row compute their height from the same values. */
+  padding: var(--qd-btn-padding-block) var(--qd-space-4);
+  border: var(--qd-btn-border-width) solid var(--qd-border);
   border-radius: var(--qd-radius-sm);
   font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
-  font-size: 0.9375rem;
+  font-size: var(--qd-btn-font-size);
   font-weight: 500;
-  line-height: 1.5;
+  line-height: var(--qd-btn-line-height);
   cursor: pointer;
   background: var(--qd-surface);
   color: var(--qd-text);

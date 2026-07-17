@@ -3,7 +3,9 @@
   flex-direction: column;
   align-items: center;
   gap: var(--qd-space-2);
-  margin-top: var(--qd-space-3);
+  /* Tokenized (_tokens.scss): the reserved slots that stand in for this bar while it is unmounted
+     add the same margin to the control row they reserve, so the two cannot drift apart. */
+  margin-top: var(--qd-pagination-margin-block-start);
 }
 
 .qd-pagination__controls {
@@ -81,7 +83,7 @@
 
 @media (max-width: 767px) {
   .qd-pagination {
-    margin-top: var(--qd-space-2);
+    /* The phone value of the margin token lives with the token itself, so the slot follows. */
     gap: var(--qd-space-1);
   }
 

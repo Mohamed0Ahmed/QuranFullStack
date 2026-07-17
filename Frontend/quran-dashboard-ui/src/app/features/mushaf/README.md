@@ -20,7 +20,12 @@ ayahs, and متشابهات groups. State (page, selected ayah/word, source sele
 - `state/`: `mushaf-reader.facade.ts` + `mushaf-reader-session.ts` +
   `mushaf-url-hydration.ts` / `mushaf-url-sync.ts` + per-concern load runners
   (ayah-study, mutashabihat, similar-ayahs, word-analysis) + `mushaf-reader-cache.ts` +
-  `mushaf-reader-view-mappers.ts` + `segment-color-palette.ts`.
+  `mushaf-reader-view-mappers.ts` + `segment-color-palette.ts` +
+  `mushaf-study-source-catalog.store.ts`. The catalogue store owns the reader-wide
+  tafsir/translation/full-إعراب option lists and their load-once guard — reference data
+  outside the reader's URL state machine. The facade delegates
+  `loadStudySourceCatalog()` / `*SourceOptions` to it and stays its only consumer, so the
+  page keeps reading them off `MushafReaderFacade`.
 - `utils/`: `segment-uthmani-slices`, `segment-word-highlights`, `mushaf-word-display-text`,
   `morphology-display.labels`, `arabic-search-normalize`, `study-source-catalog.*`,
   `mushaf-verse-key-display`, `mushaf-location-keys`, `surah-jump-catalog.helpers`.
@@ -53,8 +58,12 @@ ayahs, and متشابهات groups. State (page, selected ayah/word, source sele
     or the column-width token change. Pages 1–2 over-reserve slightly.
   - `similar-ayahs-card` / `mutashabihat-groups-card` render **count-driven, card-shaped**
     placeholders (`expectedItemCount` / `expectedGroupCount` + `expectedOccurrenceCount`,
-    fed from the already-loaded `study.similaritySummary`, `0` = unknown ⇒ fixed
-    fallback). They compose the real `qdAyahCard` frame and the real meta/text classes, so
+    fed from the already-loaded `study.similaritySummary`). The counts are `number | null`
+    and the two states are **not** interchangeable: `null` = unknown (no summary yet, e.g.
+    a deep link still resolving) ⇒ fixed fallback run, `0` = known empty ⇒ **no**
+    placeholders, so a real zero cannot paint tall shimmer and then collapse into the
+    short empty state. An absent study must pass `null`, never `0`.
+    They compose the real `qdAyahCard` frame and the real meta/text classes, so
     the placeholder geometry cannot drift from the loaded geometry. Multi-line ayah text
     is unknowable before the load and still grows its card (accepted).
 - **Selected-word loading reserves its natural size** (Feature 029, U1): while word

@@ -1,3 +1,5 @@
+@use 'breakpoints' as bp;
+
 :root {
 
   --qd-bg: oklch(0.967 0.008 91.5);
@@ -124,5 +126,34 @@
   --qd-space-5: 1.5rem;
   --qd-space-6: 2rem;
 
+  /* Shared control geometry. `.qd-btn` in `_components.scss` is built from these values, and the
+     reserved slots that have to hold a not-yet-mounted control row derive their height from the
+     same ones — so a slot can never drift from the control it reserves. Change the button box here
+     and every reservation follows. */
+  --qd-btn-font-size: 0.9375rem;
+  --qd-btn-line-height: 1.5;
+  --qd-btn-padding-block: var(--qd-space-2);
+  --qd-btn-border-width: 1px;
+  --qd-control-block-size: calc(
+    var(--qd-btn-font-size) * var(--qd-btn-line-height) + 2 * var(--qd-btn-padding-block) + 2 *
+      var(--qd-btn-border-width)
+  );
+
+  /* `.qd-pagination`'s own leading margin (pagination.component.scss consumes this token, so the
+     two cannot diverge). A mounted pagination bar is one `.qd-btn` row plus this margin — that sum
+     is what `--qd-pagination-slot-block-size` reserves. */
+  --qd-pagination-margin-block-start: var(--qd-space-3);
+  --qd-pagination-slot-block-size: calc(
+    var(--qd-control-block-size) + var(--qd-pagination-margin-block-start)
+  );
+
   --qd-segment-card-min-height: 5.6rem;
+}
+
+/* The bar tightens its own leading margin on phones; the token carries that so the reserved slot
+   tightens with it instead of leaving a dead strip. */
+@media (max-width: bp.$qd-bp-phone-max) {
+  :root {
+    --qd-pagination-margin-block-start: var(--qd-space-2);
+  }
 }

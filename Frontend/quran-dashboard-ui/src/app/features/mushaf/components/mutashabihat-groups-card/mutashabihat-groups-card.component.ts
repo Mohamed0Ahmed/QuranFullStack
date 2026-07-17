@@ -26,10 +26,12 @@ const OCCURRENCE_PREVIEW_COUNT = 5;
  * N3 row 12 — loading layout reservation. The placeholder groups mirror the shape
  * of the groups that are about to arrive, so the tab body does not grow on settle.
  * Both counts come from the ayah study's similarity summary, which is already
- * loaded before this tab can be opened; `0` means "unknown" (no summary yet, e.g.
- * a deep link still resolving) and falls back to a fixed count. Occurrences per
- * placeholder group are the summary's own average — never an invented depth — and
- * are clamped to the preview count each loaded group collapses to.
+ * loaded before this tab can be opened. `null` means "unknown" (no summary yet,
+ * e.g. a deep link still resolving) and falls back to the counts below; a known `0`
+ * is an empty result and reserves no groups, so a genuinely empty result no longer
+ * paints tall shimmer and then collapses. Occurrences per placeholder group are the
+ * summary's own average — never an invented depth — and are clamped to the preview
+ * count each loaded group collapses to.
  */
 const FALLBACK_GROUP_PLACEHOLDER_COUNT = 2;
 const FALLBACK_OCCURRENCES_PER_GROUP = 2;
@@ -60,10 +62,13 @@ type MutashabihatGroupView = MutashabihatGroupDto & {
 export class MutashabihatGroupsCardComponent {
   readonly mutashabihat = input<AyahMutashabihatDto | null>(null);
   readonly loadState = input.required<ResourceLoadState>();
-  /** Group count known before this list loads; `0` = unknown (see the constants above). */
-  readonly expectedGroupCount = input(0);
-  /** Total occurrence count across those groups; `0` = unknown. */
-  readonly expectedOccurrenceCount = input(0);
+  /**
+   * Group count known before this list loads: `null` = unknown, `0` = known empty
+   * (see the constants above).
+   */
+  readonly expectedGroupCount = input<number | null>(null);
+  /** Total occurrence count across those groups: `null` = unknown, `0` = known empty. */
+  readonly expectedOccurrenceCount = input<number | null>(null);
 
   readonly ayahNavigate = output<AyahNavigationTarget>();
 
@@ -73,9 +78,9 @@ export class MutashabihatGroupsCardComponent {
   protected readonly loadingGroupPlaceholders = computed<readonly number[]>(() => {
     const expected = this.expectedGroupCount();
     const count =
-      expected > 0
-        ? Math.min(expected, MAX_GROUP_PLACEHOLDER_COUNT)
-        : FALLBACK_GROUP_PLACEHOLDER_COUNT;
+      expected === null
+        ? FALLBACK_GROUP_PLACEHOLDER_COUNT
+        : Math.min(Math.max(expected, 0), MAX_GROUP_PLACEHOLDER_COUNT);
     return Array.from({ length: count }, (_, index) => index);
   });
 
@@ -83,7 +88,7 @@ export class MutashabihatGroupsCardComponent {
     const groups = this.expectedGroupCount();
     const occurrences = this.expectedOccurrenceCount();
     const averagePerGroup =
-      groups > 0 && occurrences > 0
+      groups !== null && groups > 0 && occurrences !== null && occurrences > 0
         ? Math.round(occurrences / groups)
         : FALLBACK_OCCURRENCES_PER_GROUP;
     const count = Math.min(Math.max(averagePerGroup, 1), OCCURRENCE_PREVIEW_COUNT);

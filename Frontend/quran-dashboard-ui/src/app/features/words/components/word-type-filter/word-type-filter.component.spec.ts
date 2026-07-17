@@ -272,12 +272,26 @@ describe('WordTypeFilterComponent', () => {
   // N3 row 8: before the tree landed the filter was a single text line, so the multi-card toolbar and the
   // fixed-height panel both appeared on first load and shoved the page down.
   describe('first-load mirror', () => {
-    function renderLoading() {
+    function renderLoading(selectedType: WordTypeMainType = 'noun') {
       const fixture = TestBed.createComponent(WordTypeFilterComponent);
       fixture.componentRef.setInput('tree', null);
       fixture.componentRef.setInput('loading', true);
+      fixture.componentRef.setInput('selectedType', selectedType);
       fixture.detectChanges();
       return fixture.nativeElement as HTMLElement;
+    }
+
+    function renderLoaded(selectedType: WordTypeMainType) {
+      const fixture = TestBed.createComponent(WordTypeFilterComponent);
+      fixture.componentRef.setInput('tree', tree);
+      fixture.componentRef.setInput('selectedType', selectedType);
+      fixture.detectChanges();
+      return fixture.nativeElement as HTMLElement;
+    }
+
+    function triggerIndexOf(root: HTMLElement, badge: Element | null | undefined): number {
+      const triggers = Array.from(root.querySelectorAll('.word-type-filter__trigger'));
+      return triggers.findIndex((trigger) => trigger.contains(badge ?? null));
     }
 
     it('mirrors the loaded toolbar and panel structure while the tree loads', () => {
@@ -300,8 +314,33 @@ describe('WordTypeFilterComponent', () => {
         expect(card.classList.contains('qd-card')).toBe(true);
         expect(card.querySelector('.word-type-filter__button')).not.toBeNull();
         expect(card.querySelector('.word-type-filter__label-row')).not.toBeNull();
-        // The hidden badge is what reserves the selected trigger's (taller) row height.
-        expect(card.querySelector('.word-type-filter__skeleton-badge')?.classList.contains('qd-badge')).toBe(true);
+      }
+    });
+
+    it('reserves the badge on the one trigger the loaded toolbar badges', () => {
+      const loading = renderLoading('verb');
+      const loaded = renderLoaded('verb');
+
+      // The loaded toolbar badges the selected trigger only, so the mirror must too: a badge on
+      // every trigger reserved a row height the loaded strip never takes, and each wrapped flex
+      // line without the selected card then shrank when the tree landed.
+      const loadedBadges = loaded.querySelectorAll('.word-type-filter__state');
+      const mirrorBadges = loading.querySelectorAll('.word-type-filter__skeleton-badge');
+      expect(loadedBadges).toHaveLength(1);
+      expect(mirrorBadges).toHaveLength(1);
+      // ...and on the trigger in the same position, so the same wrapped line is the tall one.
+      expect(triggerIndexOf(loading, mirrorBadges[0])).toBe(triggerIndexOf(loaded, loadedBadges[0]));
+      expect(mirrorBadges[0].classList.contains('qd-badge')).toBe(true);
+    });
+
+    it('moves the reserved badge with the restored selection', () => {
+      // A deep link can restore any main type, and that trigger is the one that lands taller.
+      for (const selectedType of ['noun', 'verb', 'particle', 'inl'] as const) {
+        const loading = renderLoading(selectedType);
+        const loaded = renderLoaded(selectedType);
+
+        expect(triggerIndexOf(loading, loading.querySelector('.word-type-filter__skeleton-badge')))
+          .toBe(triggerIndexOf(loaded, loaded.querySelector('.word-type-filter__state')));
       }
     });
 

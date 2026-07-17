@@ -125,13 +125,15 @@
   margin-block-end: var(--qd-space-3);
 }
 
-// Holds a pagination row whose bar unmounts mid-load. Sized to the real control row; note the bar also
-// self-hides when `totalCount <= pageSize`, so only the slot can reserve anything.
+// Holds a pagination row whose bar unmounts mid-load; note the bar also self-hides when
+// `totalCount <= pageSize`, so only the slot can reserve anything. Sized from the real control:
+// `--qd-pagination-slot-block-size` (_tokens.scss) is one shared `.qd-btn` row plus the bar's own
+// leading margin, so the slot cannot drift from the geometry it stands in for.
 .qd-explorer-layout__pagination-slot {
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  min-block-size: 2.75rem;
+  min-block-size: var(--qd-pagination-slot-block-size);
 }
 
 @media (min-width: bp.$qd-bp-desktop-min) {

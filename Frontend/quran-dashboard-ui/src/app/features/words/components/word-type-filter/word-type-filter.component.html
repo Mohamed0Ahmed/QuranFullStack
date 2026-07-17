@@ -121,10 +121,13 @@
               <span class="word-type-filter__button-content">
                 <span class="word-type-filter__label-row">
                   <span class="qd-skeleton word-type-filter__skeleton-label"></span>
-                  <!-- Reserves the selected trigger's badge line box: exactly one trigger is always
-                       selected once the tree lands, and the badge — not the label — is what sets the
-                       loaded row's height. -->
-                  <span class="qd-badge word-type-filter__state word-type-filter__skeleton-badge">&nbsp;</span>
+                  <!-- Reserves the badge line box on the trigger that will carry it: the loaded
+                       markup badges the SELECTED trigger only (see `:23-28` above). Mirroring it on
+                       every trigger made the non-selected ones taller than they land, so each
+                       wrapped flex line shrank when the tree arrived. -->
+                  @if (code === selectedType()) {
+                    <span class="qd-badge word-type-filter__state word-type-filter__skeleton-badge">&nbsp;</span>
+                  }
                 </span>
               </span>
               <span class="qd-skeleton word-type-filter__skeleton-count"></span>

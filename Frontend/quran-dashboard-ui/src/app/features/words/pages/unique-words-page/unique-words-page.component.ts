@@ -311,6 +311,14 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
     this.updateQueryParams(buildModalCloseQueryParams());
   }
 
+  /**
+   * Re-drives the current drilldown identity after a failed load (Feature 030,
+   * M3). The identity is unchanged, so the URL is untouched.
+   */
+  protected onDrilldownRetry(): void {
+    this.facade.retryDrilldown();
+  }
+
   protected onDrilldownViewChange(view: WordDrilldownView): void {
     this.tableFocus.cancel();
     this.syncTableFocusToView(view);
