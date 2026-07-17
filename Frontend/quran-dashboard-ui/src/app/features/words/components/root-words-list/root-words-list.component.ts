@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 
-import { deepLinkToHref } from '../../../../shared/url/deep-link-href';
+import { DetailOverlayLinkDirective } from '../../../../core/navigation/detail-overlay/detail-overlay-link.directive';
+import { UniqueDetailFrame } from '../../../../core/navigation/detail-overlay/detail-overlay.models';
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
 import {
   ROOTS_OPEN_UNIQUE_WORD_LABEL,
@@ -11,18 +12,17 @@ import {
 import { PagedResultDto, RootWordItemDto, RootWordView } from '../../models/roots.models';
 import { WORDS_LOADING_LABEL } from '../../models/words.labels';
 import { ROW_NUMBER_HEADER } from '../../models/unique-words.labels';
-import { buildUniqueWordsDeepLink } from '../../state/unique-words-url-sync';
 import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
 
 interface RootWordRowViewModel {
   item: RootWordItemDto;
-  uniqueWordHref: string;
+  frame: UniqueDetailFrame;
 }
 
 @Component({
   selector: 'qd-root-words-list',
   standalone: true,
-  imports: [PaginationComponent],
+  imports: [DetailOverlayLinkDirective, PaginationComponent],
   templateUrl: './root-words-list.component.html',
   styleUrl: './root-words-list.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -44,16 +44,19 @@ export class RootWordsListComponent {
   protected readonly loadingLabel = WORDS_LOADING_LABEL;
   protected readonly paginationLabel = ROOTS_WORDS_PAGINATION_LABEL;
 
+  // Mirrors the retired unique-words explorer deep link (same mode + ayahs
+  // view); frame defaults are serialized explicitly per the URL contract.
   protected readonly rows = computed((): readonly RootWordRowViewModel[] => {
     const wordView = this.wordView();
     return this.page().items.map((item) => ({
       item,
-      uniqueWordHref: deepLinkToHref(
-        buildUniqueWordsDeepLink(wordView, {
-          wordId: item.uniqueWordId,
-          view: 'ayahs',
-        }),
-      ),
+      frame: {
+        kind: 'unique',
+        mode: wordView,
+        id: item.uniqueWordId,
+        view: 'ayahs',
+        ayahPage: 1,
+      },
     }));
   });
 

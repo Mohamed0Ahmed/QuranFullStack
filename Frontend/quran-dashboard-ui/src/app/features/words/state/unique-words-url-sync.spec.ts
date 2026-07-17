@@ -7,7 +7,7 @@ import {
   buildUniqueWordsQueryParams,
   parseUniqueWordsQueryParams,
 } from './unique-words-url-sync';
-import { UNIQUE_WORDS_QUERY_KEYS } from '../models/unique-words.models';
+import { UNIQUE_WORDS_QUERY_KEYS, UNIQUE_WORD_SORT_KEYS } from '../models/unique-words.models';
 
 function params(query: string): ParamMap {
   return convertToParamMap(query ? Object.fromEntries(new URLSearchParams(query)) : {});
@@ -230,5 +230,41 @@ describe('parseUniqueWordsQueryParams count ranges (Feature 026)', () => {
     const parsed = parseUniqueWordsQueryParams(params('occ=9..2&ayahs=2..10'));
     expect(parsed.ranges).toEqual({ ayahs: { min: 2, max: 10 } });
     expect(parsed.page).toBe(1);
+  });
+});
+
+describe('parseUniqueWordsQueryParams sort tokens (Feature 030, N8)', () => {
+  it.each(UNIQUE_WORD_SORT_KEYS)('parses the canonical token "%s" verbatim', (sort) => {
+    expect(parseUniqueWordsQueryParams(params(`sort=${sort}`)).sort).toBe(sort);
+  });
+
+  it.each([
+    ['occurrences-desc', 'occurrences'],
+    ['ayahs-desc', 'ayahs'],
+    ['surahs-desc', 'surahs'],
+    ['alpha-asc', 'alpha'],
+  ])('canonicalizes the legacy alias "%s" to "%s"', (alias, canonical) => {
+    // An old shared link must not fork the ordering into a second URL/cache spelling.
+    expect(parseUniqueWordsQueryParams(params(`sort=${alias}`)).sort).toBe(canonical);
+  });
+
+  it.each([
+    'relevance',
+    'relevance-asc',
+    'missing',
+    'simple',
+    'mushaf-order-asc',
+    'mushaf-order-desc',
+    '-asc',
+  ])('fails closed to the default on the unsupported token "%s"', (sort) => {
+    expect(parseUniqueWordsQueryParams(params(`sort=${sort}`)).sort).toBe('mushaf-order');
+  });
+
+  it('round-trips a suffixed token through build', () => {
+    expect(buildUniqueWordsQueryParams({ sort: 'occurrences-asc' })).toEqual({ sort: 'occurrences-asc' });
+  });
+
+  it('removes the param on release, so the default order stays param-free', () => {
+    expect(buildUniqueWordsQueryParams({ sort: null, page: null })).toEqual({ sort: null, page: null });
   });
 });

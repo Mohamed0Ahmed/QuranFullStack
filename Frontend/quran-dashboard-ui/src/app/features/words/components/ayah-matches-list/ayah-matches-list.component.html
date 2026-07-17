@@ -7,7 +7,7 @@
     @if (loading()) {
       <p class="qd-sr-only" role="status" aria-live="polite">{{ loadingLabel }}</p>
       @for (_ of loadingCardPlaceholders; track $index) {
-        <article class="qd-card ayah-matches-list__card ayah-matches-list__card--loading" aria-hidden="true">
+        <article qdAyahCard class="ayah-matches-list__card ayah-matches-list__card--loading" aria-hidden="true">
           <header class="ayah-matches-list__meta-row">
             <span class="ayah-matches-list__row-number">
               <span class="qd-skeleton qd-skeleton--text ayah-matches-list__loading-number"></span>
@@ -20,11 +20,10 @@
         </article>
       }
     } @else {
-      @for (row of rows(); track row.match.ayahId; let i = $index) {
-        <article
-          class="qd-card ayah-matches-list__card"
-          [class.ayah-matches-list__card--alt]="i % 2 === 1"
-        >
+      <!-- Tracked by verseKey: Word Type ayah rows all carry ayahId 0, so ayahId is not a
+           stable row identity across consumers. -->
+      @for (row of rows(); track row.match.verseKey; let i = $index) {
+        <article qdAyahCard class="ayah-matches-list__card" data-testid="ayah-match-card">
           <header class="ayah-matches-list__meta-row">
             <span class="ayah-matches-list__row-number" aria-hidden="true">{{ rowNumber(i) }}</span>
             <div class="ayah-matches-list__meta">
@@ -41,10 +40,9 @@
           </header>
           <a
             class="ayah-matches-list__ayah-link qd-interactive-surface"
-            [attr.href]="row.mushafHref"
+            [qdAyahOverlayLink]="row.mushafTarget"
+            [qdAyahLinkParentFrame]="parentFrame()"
             [attr.aria-label]="openAyahInMushafLabel"
-            target="_blank"
-            rel="noopener noreferrer"
             data-testid="ayah-matches-open-mushaf"
           >
             <qd-highlighted-ayah [words]="row.match.words" [matchedQuranWordIds]="row.match.matchedQuranWordIds" />
@@ -64,13 +62,16 @@
     }
   </div>
 
-  @if (!loading()) {
-    <qd-pagination
-      [currentPage]="currentPage()"
-      [pageSize]="page().pageSize"
-      [totalCount]="page().totalCount"
-      [ariaLabel]="paginationLabel"
-      (pageChange)="pageChange.emit($event)"
-    />
-  }
+  <!-- Always-rendered slot: reserves the pagination row through loading (N3 row 4). -->
+  <div class="qd-detail-list__pagination-slot" data-testid="ayah-matches-pagination-slot">
+    @if (!loading()) {
+      <qd-pagination
+        [currentPage]="currentPage()"
+        [pageSize]="page().pageSize"
+        [totalCount]="page().totalCount"
+        [ariaLabel]="paginationLabel"
+        (pageChange)="pageChange.emit($event)"
+      />
+    }
+  </div>
 </div>

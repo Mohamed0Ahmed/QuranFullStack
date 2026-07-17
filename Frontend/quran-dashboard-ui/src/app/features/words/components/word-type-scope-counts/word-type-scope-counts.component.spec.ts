@@ -33,6 +33,48 @@ describe('WordTypeScopeCountsComponent', () => {
     expect(root.querySelector('[data-testid="word-type-scope-counts"]')).toBeNull();
   });
 
+  // N3 row 1: the strip shifted −16.5px per filter change because the skeleton was a flat bar and the
+  // error/idle/tableFailed branches collapsed the host to ~0. The metric mirror below is what reserves
+  // the loaded geometry in every state; these tests assert the structure that carries that reservation.
+  const states: readonly WordTypesScopeCountsState[] = [
+    { status: 'idle', counts: null },
+    { status: 'loading', counts: null },
+    { status: 'error', counts: null },
+    { status: 'success', counts: { wordsCount: 40, rootsCount: 12, stemsCount: 8, lemmasCount: 5 } },
+  ];
+
+  it.each(states.map((state) => [state.status, state] as const))(
+    'keeps the invisible metric mirror of the loaded item box in the %s state',
+    (_status, state) => {
+      const root = render(state).nativeElement as HTMLElement;
+
+      const mirror = root.querySelector('.word-type-scope-counts--metric');
+      expect(mirror).toBeTruthy();
+      expect(mirror?.getAttribute('aria-hidden')).toBe('true');
+      // One item box per view, each carrying the same two real line boxes as the loaded dt/dd — that is
+      // what makes the reservation track the real height rather than a hardcoded one.
+      const mirrorItems = mirror!.querySelectorAll('.word-type-scope-counts__item');
+      expect(mirrorItems.length).toBe(WORD_TYPE_TABLE_VIEW_OPTIONS.length);
+      for (const item of Array.from(mirrorItems)) {
+        expect(item.querySelector('.word-type-scope-counts__line--label')).toBeTruthy();
+        expect(item.querySelector('.word-type-scope-counts__line--value')).toBeTruthy();
+      }
+      // The mirror must never be mistaken for content: no numbers, no testids, no skeleton paint.
+      expect(mirror!.querySelectorAll('.qd-skeleton').length).toBe(0);
+      expect(mirror!.querySelector('[data-testid]')).toBeNull();
+    },
+  );
+
+  it('keeps the metric mirror reserved when the table failed and the numbers are hidden', () => {
+    const root = render(
+      { status: 'success', counts: { wordsCount: 40, rootsCount: 12, stemsCount: 8, lemmasCount: 5 } },
+      true,
+    ).nativeElement as HTMLElement;
+
+    expect(root.querySelectorAll('.word-type-scope-counts--metric .word-type-scope-counts__item').length)
+      .toBe(WORD_TYPE_TABLE_VIEW_OPTIONS.length);
+  });
+
   it('renders four counts reusing the view tabs SHORT labels verbatim, in tab order', () => {
     const root = render({
       status: 'success',
@@ -71,11 +113,34 @@ describe('WordTypeScopeCountsComponent', () => {
     expect(skeleton?.getAttribute('aria-busy')).toBe('true');
     expect(skeleton?.getAttribute('aria-hidden')).toBeNull();
     expect(skeleton?.querySelector('.qd-sr-only')?.textContent?.trim()).toBeTruthy();
-    for (const bar of Array.from(skeleton!.querySelectorAll('.qd-skeleton'))) {
-      expect(bar.getAttribute('aria-hidden')).toBe('true');
-    }
     expect(root.querySelector('[data-testid="word-type-scope-counts"]')).toBeNull();
     expect(root.querySelector('button')).toBeNull();
+  });
+
+  it('mirrors the loaded two-line item box while loading, so the strip keeps its height', () => {
+    const loading = render({ status: 'loading', counts: null }).nativeElement as HTMLElement;
+    const loaded = render({
+      status: 'success',
+      counts: { wordsCount: 40, rootsCount: 12, stemsCount: 8, lemmasCount: 5 },
+    }).nativeElement as HTMLElement;
+
+    const skeleton = loading.querySelector('[data-testid="word-type-scope-counts-skeleton"]')!;
+    const skeletonItems = skeleton.querySelectorAll('.word-type-scope-counts__item');
+    const loadedItems = loaded.querySelectorAll('[data-testid="word-type-scope-counts"] .word-type-scope-counts__item');
+
+    // Same box, same count: the skeleton is the loaded item grid, not a flat bar strip.
+    expect(skeletonItems.length).toBe(loadedItems.length);
+    expect(skeletonItems.length).toBe(WORD_TYPE_TABLE_VIEW_OPTIONS.length);
+
+    for (const item of Array.from(skeletonItems)) {
+      // The whole item box is hidden from AT — the sr-only label inside role="status" is the announcement.
+      expect(item.getAttribute('aria-hidden')).toBe('true');
+      // Two real line boxes (label + value), each painted as a skeleton: the loaded item's two lines.
+      const label = item.querySelector('.word-type-scope-counts__line--label');
+      const value = item.querySelector('.word-type-scope-counts__line--value');
+      expect(label?.classList.contains('qd-skeleton')).toBe(true);
+      expect(value?.classList.contains('qd-skeleton')).toBe(true);
+    }
   });
 
   it('renders a compact error (role="alert") whose retry emits retryRequested for a counts-only refetch', () => {

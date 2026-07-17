@@ -4,18 +4,16 @@ import { provideRouter } from '@angular/router';
 
 import { WordSectionCardComponent } from './word-section-card.component';
 
-const COMING_SOON_BADGE = 'قريبًا';
-
 interface CardInputs {
-  labelAr: string;
-  descriptionAr: string;
-  route?: string | null;
-  disabled?: boolean;
+  ordinal: string;
+  eyebrow: string;
+  title: string;
+  description: string;
+  route: string;
 }
 
 describe('WordSectionCardComponent', () => {
   beforeEach(() => {
-
     getTestBed().resetTestingModule();
     TestBed.configureTestingModule({
       providers: [provideRouter([])],
@@ -25,64 +23,42 @@ describe('WordSectionCardComponent', () => {
 
   function setup(inputs: CardInputs): HTMLElement {
     const fixture = TestBed.createComponent(WordSectionCardComponent);
-    fixture.componentRef.setInput('labelAr', inputs.labelAr);
-    fixture.componentRef.setInput('descriptionAr', inputs.descriptionAr);
-    if (inputs.route !== undefined) {
-      fixture.componentRef.setInput('route', inputs.route);
-    }
-    if (inputs.disabled !== undefined) {
-      fixture.componentRef.setInput('disabled', inputs.disabled);
-    }
+    fixture.componentRef.setInput('ordinal', inputs.ordinal);
+    fixture.componentRef.setInput('eyebrow', inputs.eyebrow);
+    fixture.componentRef.setInput('title', inputs.title);
+    fixture.componentRef.setInput('description', inputs.description);
+    fixture.componentRef.setInput('route', inputs.route);
     fixture.detectChanges();
     return fixture.nativeElement as HTMLElement;
   }
 
-  it('renders the active card as a navigable router link when not disabled', () => {
-    const root = setup({
-      labelAr: 'الكلمات الفريدة',
-      descriptionAr: 'استعراض الكلمات القرآنية الفريدة',
-      route: '/dashboard/words/unique',
-      disabled: false,
-    });
+  const ROOTS: CardInputs = {
+    ordinal: '٠٢',
+    eyebrow: 'أوسع تجميع صرفي',
+    title: 'الجذور',
+    description: 'النواة التي تخرج منها الأسماء والأفعال جميعًا.',
+    route: '/dashboard/words/roots',
+  };
 
-    const link = root.querySelector('a[data-testid="word-section-card"]');
+  it('renders an active navigable router link carrying the ordinal, eyebrow, title, and description', () => {
+    const root = setup(ROOTS);
+
+    const link = root.querySelector('a[data-testid="word-section-card"]') as HTMLAnchorElement;
     expect(link).toBeTruthy();
+    expect(link.getAttribute('href')).toContain('/dashboard/words/roots');
 
+    expect(root.querySelector('.word-section-card__ordinal')?.textContent?.trim()).toBe(ROOTS.ordinal);
+    expect(root.querySelector('.word-section-card__eyebrow')?.textContent?.trim()).toBe(ROOTS.eyebrow);
+    expect(root.querySelector('.qd-card-title')?.textContent?.trim()).toBe(ROOTS.title);
+    expect(root.querySelector('.word-section-card__desc')?.textContent?.trim()).toBe(ROOTS.description);
+  });
+
+  it('marks the decorative ordinal aria-hidden and exposes no coming-soon branch', () => {
+    const root = setup(ROOTS);
+
+    expect(root.querySelector('.word-section-card__ordinal')?.getAttribute('aria-hidden')).toBe('true');
     expect(root.querySelector('[data-testid="word-section-coming-soon"]')).toBeNull();
-  });
-
-  it('renders the disabled card as a non-navigable element without a router link', () => {
-    const root = setup({
-      labelAr: 'الجذور',
-      descriptionAr: 'استكشاف جذور الكلمات',
-      disabled: true,
-    });
-
-    expect(root.querySelector('a')).toBeNull();
-    expect(root.querySelector('[data-testid="word-section-card"]')).toBeTruthy();
-  });
-
-  it('shows the coming-soon badge only on disabled cards', () => {
-    const root = setup({
-      labelAr: 'الصيغة المعجمية',
-      descriptionAr: 'استكشاف الصيغ المعجمية',
-      disabled: true,
-    });
-
-    const badge = root.querySelector('[data-testid="word-section-coming-soon"]');
-    expect(badge?.textContent).toContain(COMING_SOON_BADGE);
-  });
-
-  it('marks the disabled card with aria-disabled and keeps it keyboard-safe', () => {
-    const root = setup({
-      labelAr: 'الأصل الصرفي',
-      descriptionAr: 'استكشاف الأصول الصرفية',
-      disabled: true,
-    });
-
-    const card = root.querySelector('[data-testid="word-section-card"]') as HTMLElement;
-    expect(card.getAttribute('aria-disabled')).toBe('true');
-
-    expect(root.querySelector<HTMLAnchorElement>('a[href]')).toBeNull();
+    // Always an active link — never a disabled group.
+    expect(root.querySelector('[aria-disabled="true"]')).toBeNull();
   });
 });

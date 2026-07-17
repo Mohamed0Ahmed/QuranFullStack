@@ -31,11 +31,15 @@ import { UniqueWordsTabsComponent } from '../../components/unique-words-tabs/uni
 import { ExplorerSearchRowComponent } from '../../components/explorer-search-row/explorer-search-row.component';
 import { UniqueWordsTableComponent } from '../../components/unique-words-table/unique-words-table.component';
 import { WordDrilldownModalComponent } from '../../components/word-drilldown-modal/word-drilldown-modal.component';
+import { WordsExplainerComponent } from '../../components/words-explainer/words-explainer.component';
+import { WORDS_EXPLAINER_CONTENT } from '../../models/words-explainer.content';
+import { WordsExplainerPreference } from '../../state/words-explainer-preference';
+import { UniqueDetailFrame } from '../../../../core/navigation/detail-overlay/detail-overlay.models';
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
 import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
+import { sortQueryValue } from '../../models/explorer-sort';
 import {
   ACTIVE_HUB_SECTION,
-  EMPTY_LIST_LABEL,
   RESTORED_WORD_NOT_FOUND_LABEL,
   SEARCH_LABEL,
   SEARCH_PLACEHOLDER,
@@ -48,11 +52,12 @@ import {
   UNIQUE_WORD_KIND_LABELS,
   UNIQUE_WORD_LIST_PAGINATION_LABEL,
   UNIQUE_WORD_PANEL_SURFACE_LABEL,
-  UNIQUE_WORD_SORT_LABELS,
+  UNIQUE_WORD_SORT_OPTIONS,
 } from '../../models/unique-words.labels';
 import {
   UNIQUE_WORDS_RANGE_METRICS,
-  UNIQUE_WORD_SORT_KEYS,
+  DEFAULT_UNIQUE_WORD_SORT,
+  normalizeUniqueWordSort,
   UniqueWordKind,
   UniqueWordSort,
   WordDrilldownView,
@@ -76,6 +81,7 @@ type UniqueWordsDrilldownState = ReturnType<UniqueWordsFacade['drilldownState']>
     UniqueWordsTableComponent,
     PaginationComponent,
     WordDrilldownModalComponent,
+    WordsExplainerComponent,
   ],
   templateUrl: './unique-words-page.component.html',
   styleUrl: './unique-words-page.component.scss',
@@ -86,6 +92,7 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly associationOptions = inject(WordsAssociationOptionsService);
+  private readonly explainerPreference = inject(WordsExplainerPreference);
 
   private readonly searchInput = new Subject<string>();
   private readonly rootSearchInput = new Subject<string>();
@@ -110,15 +117,15 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
   protected get searchLabel(): string { return SEARCH_LABEL; }
   protected get searchPlaceholder(): string { return SEARCH_PLACEHOLDER; }
   protected get sortLabel(): string { return SORT_LABEL; }
-  protected get sortOptions(): readonly { key: UniqueWordSort; labelAr: string }[] {
-    return UNIQUE_WORD_SORT_KEYS.map((key) => ({ key, labelAr: UNIQUE_WORD_SORT_LABELS[key] }));
-  }
+  protected get sortOptions() { return UNIQUE_WORD_SORT_OPTIONS; }
 
   protected readonly listState = this.facade.listState;
   protected readonly drilldownState = this.facade.drilldownState;
-  protected readonly emptyLabel = EMPTY_LIST_LABEL;
   protected readonly restoredNotFoundLabel = RESTORED_WORD_NOT_FOUND_LABEL;
   protected readonly pageTitle = ACTIVE_HUB_SECTION.labelAr;
+  // TDZ-safe content getter + synchronous collapse restore (no first-paint shift).
+  protected get explainer() { return WORDS_EXPLAINER_CONTENT.unique; }
+  protected readonly explainerExpanded = signal(this.explainerPreference.isExpanded('unique'));
   protected readonly listPaginationLabel = UNIQUE_WORD_LIST_PAGINATION_LABEL;
   protected readonly panelSurfaceLabel = UNIQUE_WORD_PANEL_SURFACE_LABEL;
   protected get resultCountLabel(): string { return UNIQUE_WORDS_RESULT_COUNT_LABEL; }
@@ -160,6 +167,21 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
   protected readonly drilldownIsOpen = computed(
     () => this.tableFocus.focus() !== null || this.drilldownState().isOpen,
   );
+
+  /** This drilldown's own typed frame (Feature 029 B7): an ayah click promotes it over the Mushaf. */
+  protected readonly ayahParentFrame = computed<UniqueDetailFrame | null>(() => {
+    const state = this.drilldownState();
+    if (!state.isOpen || state.selectedWordId === null) {
+      return null;
+    }
+    return {
+      kind: 'unique',
+      mode: this.facade.mode(),
+      id: state.selectedWordId,
+      view: state.view,
+      ayahPage: state.ayahPage,
+    };
+  });
 
   constructor() {
     effect(() => {
@@ -235,9 +257,15 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
     this.searchInput.next(value);
   }
 
-  protected onSortChange(sort: UniqueWordSort): void {
+  /** A header cycle step (token) or its release (null). Changing the ordering always resets page. */
+  protected onSortChange(sort: UniqueWordSort | null): void {
     this.clearTableFocus();
-    this.updateQueryParams({ sort, page: null });
+    this.updateQueryParams(buildUniqueWordsQueryParams({ sort, page: null }));
+  }
+
+  /** The ≤1023px fallback select drives the same contract; the default order stays param-absent. */
+  protected onSortSelect(value: string): void {
+    this.onSortChange(sortQueryValue(normalizeUniqueWordSort(value), DEFAULT_UNIQUE_WORD_SORT));
   }
 
   protected onRangesChange(ranges: RangeFilters): void {
@@ -291,6 +319,14 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
     this.updateQueryParams(buildModalCloseQueryParams());
   }
 
+  /**
+   * Re-drives the current drilldown identity after a failed load (Feature 030,
+   * M3). The identity is unchanged, so the URL is untouched.
+   */
+  protected onDrilldownRetry(): void {
+    this.facade.retryDrilldown();
+  }
+
   protected onDrilldownViewChange(view: WordDrilldownView): void {
     this.tableFocus.cancel();
     this.syncTableFocusToView(view);
@@ -311,6 +347,11 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
 
     this.clearTableFocus();
     this.updateQueryParams(buildUniqueWordsQueryParams({ page }));
+  }
+
+  protected onExplainerToggled(expanded: boolean): void {
+    this.explainerExpanded.set(expanded);
+    this.explainerPreference.setExpanded('unique', expanded);
   }
 
   private updateQueryParams(changes: Record<string, string | null>): void {

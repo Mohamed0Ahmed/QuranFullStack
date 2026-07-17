@@ -1,4 +1,13 @@
-<section class="selected-ayah-section" aria-label="دراسة الآية المحددة" data-testid="selected-ayah-section" tabindex="0" (focus)="sectionFocus.emit()">
+<section
+  #ayahSection
+  class="selected-ayah-section"
+  [class.selected-ayah-section--loading]="loadState().isLoading"
+  [style.--qd-selected-ayah-reserved-block-size]="reservedBlockSize()"
+  aria-label="دراسة الآية المحددة"
+  data-testid="selected-ayah-section"
+  tabindex="0"
+  (focus)="sectionFocus.emit()"
+>
   @if (!selectedVerseKey()) {
     <div class="qd-empty-state" role="status">
       <span>اختر آية من المصحف لعرض سياق الدراسة.</span>
@@ -183,6 +192,7 @@
             <qd-similar-ayahs-card
               [similarAyahs]="similarAyahs()"
               [loadState]="similarAyahsLoadState()"
+              [expectedItemCount]="similarAyahCount()"
               (ayahNavigate)="ayahNavigate.emit($event)"
             />
           }
@@ -190,6 +200,8 @@
             <qd-mutashabihat-groups-card
               [mutashabihat]="mutashabihat()"
               [loadState]="mutashabihatLoadState()"
+              [expectedGroupCount]="mutashabihatGroupCount()"
+              [expectedOccurrenceCount]="mutashabihatOccurrenceCount()"
               (ayahNavigate)="ayahNavigate.emit($event)"
             />
           }

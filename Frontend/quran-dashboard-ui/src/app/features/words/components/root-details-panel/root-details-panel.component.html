@@ -1,3 +1,58 @@
+<ng-template #panelBody>
+  @if (!notFound()) {
+    <div
+      class="explorer-detail-panel__toolbar explorer-detail-panel__toolbar--grid-5 root-details-panel__tabs"
+      role="tablist"
+      [attr.aria-label]="rootsPanelLabel"
+      #tabList
+    >
+      @for (tab of tabs; track tab.key) {
+        <button
+          type="button"
+          class="qd-btn qd-btn-secondary root-details-panel__tab"
+          role="tab"
+          [id]="tabDomId(tab.key)"
+          [attr.data-root-tab]="tab.key"
+          [attr.data-testid]="'root-details-tab-' + tab.key"
+          [attr.aria-controls]="surfaceDomId"
+          [attr.aria-selected]="isActive(tab.key) && hasSelection()"
+          [attr.aria-label]="tab.aria"
+          [attr.tabindex]="isActive(tab.key) && hasSelection() ? 0 : -1"
+          [class.qd-is-selected]="isActive(tab.key) && hasSelection()"
+          [disabled]="emptySelection()"
+          (click)="selectView(tab.key)"
+          (keydown)="onTabKeydown($event, tab.key)"
+        >
+          {{ tab.label }}
+        </button>
+      }
+    </div>
+  }
+
+  <div
+    class="explorer-detail-panel__body root-details-panel__surface"
+    role="tabpanel"
+    [id]="surfaceDomId"
+    [attr.aria-labelledby]="notFound() ? null : tabDomId(view())"
+    [attr.aria-label]="notFound() ? rootsPanelLabel : null"
+    [attr.aria-busy]="loading() ? true : null"
+    tabindex="0"
+    data-testid="root-details-panel-surface"
+  >
+    @if (emptySelection()) {
+      <div class="qd-empty-state" data-testid="root-details-empty-selection">
+        {{ emptySelectionLabel }}
+      </div>
+    } @else if (notFound()) {
+      <div class="qd-empty-state" role="status" data-testid="root-details-not-found">
+        {{ notFoundMessage() || notFoundLabel }}
+      </div>
+    } @else {
+      <ng-content />
+    }
+  </div>
+</ng-template>
+
 <ng-template #panelChrome>
   <header class="explorer-panel-header root-details-panel__header">
     <h2 class="explorer-panel-header__label" data-testid="root-details-panel-label">{{ rootsPanelLabel }}</h2>
@@ -16,54 +71,17 @@
     </div>
   </header>
 
-  <div
-    class="explorer-detail-panel__toolbar explorer-detail-panel__toolbar--grid-5 root-details-panel__tabs"
-    role="tablist"
-    [attr.aria-label]="rootsPanelLabel"
-    #tabList
-  >
-    @for (tab of tabs; track tab.key) {
-      <button
-        type="button"
-        class="qd-btn qd-btn-secondary root-details-panel__tab"
-        role="tab"
-        [id]="tabDomId(tab.key)"
-        [attr.data-root-tab]="tab.key"
-        [attr.data-testid]="'root-details-tab-' + tab.key"
-        [attr.aria-controls]="surfaceDomId"
-        [attr.aria-selected]="isActive(tab.key) && hasSelection()"
-        [attr.aria-label]="tab.aria"
-        [attr.tabindex]="isActive(tab.key) && hasSelection() ? 0 : -1"
-        [class.qd-is-selected]="isActive(tab.key) && hasSelection()"
-        [disabled]="emptySelection()"
-        (click)="selectView(tab.key)"
-        (keydown)="onTabKeydown($event, tab.key)"
-      >
-        {{ tab.label }}
-      </button>
-    }
-  </div>
-
-  <div
-    class="explorer-detail-panel__body root-details-panel__surface"
-    role="tabpanel"
-    [id]="surfaceDomId"
-    [attr.aria-labelledby]="tabDomId(view())"
-    [attr.aria-busy]="loading() ? true : null"
-    tabindex="0"
-    data-testid="root-details-panel-surface"
-  >
-    @if (emptySelection()) {
-      <div class="qd-empty-state" data-testid="root-details-empty-selection">
-        {{ emptySelectionLabel }}
-      </div>
-    } @else {
-      <ng-content />
-    }
-  </div>
+  <ng-container *ngTemplateOutlet="panelBody" />
 </ng-template>
 
-@if (inline()) {
+@if (frameless()) {
+  <div
+    class="root-details-panel root-details-panel--frameless"
+    data-testid="root-details-panel-frameless"
+  >
+    <ng-container *ngTemplateOutlet="panelBody" />
+  </div>
+} @else if (inline()) {
   <section
     class="qd-card explorer-detail-panel root-details-panel"
     [attr.aria-label]="rootsPanelLabel"
@@ -84,7 +102,7 @@
       #panelRoot
       role="dialog"
       aria-modal="true"
-      cdkTrapFocus
+      [cdkTrapFocus]="drawerTrapEnabled()"
       cdkTrapFocusAutoCapture
       [attr.aria-label]="rootsPanelLabel"
       data-testid="root-details-modal"

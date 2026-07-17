@@ -11,14 +11,11 @@
 .qd-card--hover,
 .qd-interactive-surface {
   cursor: pointer;
-  transition: border-color var(--qd-t-fast), box-shadow var(--qd-t-fast),
-              transform var(--qd-t-fast);
+  transition: border-color var(--qd-t-fast), background-color var(--qd-t-fast);
 }
 .qd-card--hover:hover,
 .qd-interactive-surface:hover {
   border-color: var(--qd-border-strong);
-  box-shadow: var(--qd-shadow);
-  transform: translateY(-2px);
 }
 
 .qd-interactive-surface:focus-visible {
@@ -45,12 +42,9 @@ button.qd-interactive-surface {
   border-radius: var(--qd-radius-lg);
   padding: var(--qd-space-5);
 }
-.qd-card--feature.qd-card--hover:hover { transform: none; box-shadow: var(--qd-shadow); }
-
 .qd-card--mini { padding: var(--qd-space-3); }
 .qd-card--mini.qd-card--hover:hover {
   border-color: var(--qd-accent-soft);
-  transform: translateY(-1px);
 }
 
 .qd-btn {
@@ -58,13 +52,15 @@ button.qd-interactive-surface {
   align-items: center;
   justify-content: center;
   gap: var(--qd-space-2);
-  padding: var(--qd-space-2) var(--qd-space-4);
-  border: 1px solid var(--qd-border);
+  /* The block-axis half of this box comes from tokens (_tokens.scss): reserved slots that must
+     hold a not-yet-mounted control row compute their height from the same values. */
+  padding: var(--qd-btn-padding-block) var(--qd-space-4);
+  border: var(--qd-btn-border-width) solid var(--qd-border);
   border-radius: var(--qd-radius-sm);
   font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
-  font-size: 0.9375rem;
+  font-size: var(--qd-btn-font-size);
   font-weight: 500;
-  line-height: 1.5;
+  line-height: var(--qd-btn-line-height);
   cursor: pointer;
   background: var(--qd-surface);
   color: var(--qd-text);
@@ -596,14 +592,6 @@ button.qd-interactive-surface {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .qd-card--hover,
-  .qd-interactive-surface {
-    transition: border-color var(--qd-t-fast), box-shadow var(--qd-t-fast);
-  }
-  .qd-card--hover:hover,
-  .qd-card--mini.qd-card--hover:hover,
-  .qd-interactive-surface:hover { transform: none; }
-
   .qd-btn {
     transition: background-color var(--qd-t-fast), border-color var(--qd-t-fast),
                 color var(--qd-t-fast);
@@ -622,7 +610,11 @@ button.qd-interactive-surface {
   qd-selected-ayah-section.qd-selected-ayah-section--embedded {
     --qd-ayah-study-min-height: min(50vh, 30rem);
     --qd-ayah-content-min-height: min(42vh, 22rem);
-    --qd-ayah-content-min-height-loading: min(48vh, 24rem);
+    /* N3 row 10: the loading reservation must never resolve below this band's own
+       study floor, or the shell would shrink while loading and grow back on
+       settle. Raising the component's :host baseline (rather than declaring it on
+       the section) is what keeps the max() honest per breakpoint. */
+    --qd-selected-ayah-baseline-block-size: var(--qd-ayah-study-min-height);
     flex: none;
     min-height: var(--qd-ayah-study-min-height);
     height: auto;
@@ -645,9 +637,10 @@ button.qd-interactive-surface {
     overflow: visible;
   }
 
-  qd-selected-ayah-section.qd-selected-ayah-section--embedded .selected-ayah-section__content--loading {
-    min-height: var(--qd-ayah-content-min-height-loading);
-  }
+  /* N3 row 10: the loading floor used to be TALLER than the loaded floor
+     (48vh/24rem vs 42vh/22rem), so the content box shrank by ~2rem the moment a
+     study settled. The two floors are now one — the base rule above covers the
+     loading state too, and the shell's own reservation handles holding height. */
 
   qd-selected-ayah-section.qd-selected-ayah-section--embedded .selected-ayah-section__content--flow {
     overflow: visible;
@@ -688,10 +681,13 @@ button.qd-interactive-surface {
 }
 
 @media (max-width: 767px) {
+  /* Phone band. --qd-selected-ayah-baseline-block-size is not redeclared here: it
+     resolves through --qd-ayah-study-min-height, so it follows this band's floor
+     automatically (N3 row 10). The separate loading floor this block used to carry
+     was, like the tablet one, taller than its loaded floor and is gone with it. */
   qd-selected-ayah-section.qd-selected-ayah-section--embedded {
     --qd-ayah-study-min-height: min(55vh, 26rem);
     --qd-ayah-content-min-height: min(48vh, 20rem);
-    --qd-ayah-content-min-height-loading: min(52vh, 22rem);
   }
 
   .selected-word-section__morphology-skeleton {

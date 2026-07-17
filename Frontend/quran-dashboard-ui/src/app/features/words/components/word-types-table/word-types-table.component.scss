@@ -157,6 +157,14 @@
     block-size: min(70vh, 40rem);
   }
 
+  // Below desktop nothing pins the shell's height (the `.qd-explorer-layout__table > *` card height is a
+  // desktop-only rule), so the empty / error / select-prompt states collapsed the ~40rem card to ~5rem
+  // and jumped everything under it (Feature 030, N3 row 7). Match the body they replace, so the shell
+  // holds its footprint across every state in this band.
+  .word-types-table__state {
+    min-block-size: min(70vh, 40rem);
+  }
+
   .word-types-table__row {
     grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: var(--qd-space-2);

@@ -1,6 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 
-import { deepLinkToHref } from '../../../../shared/url/deep-link-href';
+import {
+  DetailOverlayAyahLinkDirective,
+  DetailOverlayBaseTarget,
+} from '../../../../core/navigation/detail-overlay/detail-overlay-ayah-link.directive';
+import { DetailFrame } from '../../../../core/navigation/detail-overlay/detail-overlay.models';
+import { AyahCardComponent } from '../../../../shared/ui/ayah-card/ayah-card.component';
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
 import { HighlightedAyahComponent } from '../highlighted-ayah/highlighted-ayah.component';
 import { WORDS_AYAHS_PAGINATION_LABEL, WORDS_LOADING_LABEL } from '../../models/words.labels';
@@ -15,13 +20,13 @@ import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-displ
 
 interface AyahMatchRowViewModel {
   match: AyahMatchDto;
-  mushafHref: string;
+  mushafTarget: DetailOverlayBaseTarget;
 }
 
 @Component({
   selector: 'qd-ayah-matches-list',
   standalone: true,
-  imports: [HighlightedAyahComponent, PaginationComponent],
+  imports: [AyahCardComponent, DetailOverlayAyahLinkDirective, HighlightedAyahComponent, PaginationComponent],
   templateUrl: './ayah-matches-list.component.html',
   styleUrl: './ayah-matches-list.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -32,6 +37,14 @@ export class AyahMatchesListComponent {
   readonly loading = input(false);
   readonly showAnalysisAction = input(false);
   readonly analysisActionLabel = input('');
+  /**
+   * The source detail's own typed frame (Feature 029, B7). With the overlay
+   * closed (explorer side panels) it is promoted to a one-frame stack over the
+   * Mushaf so the scholarly context stays open; with the overlay already open
+   * the current stack rides along regardless. The render site must provide it —
+   * this shared list never infers a parent from generic route keys.
+   */
+  readonly parentFrame = input<DetailFrame | null>(null);
 
   readonly pageChange = output<number>();
   readonly analysisRequested = output<string>();
@@ -39,17 +52,18 @@ export class AyahMatchesListComponent {
   protected readonly loadingCardPlaceholders = Array.from({ length: 4 });
 
   protected readonly rows = computed((): readonly AyahMatchRowViewModel[] =>
-    this.page().items.map((match) => ({
-      match,
-      mushafHref: deepLinkToHref(
-        buildMushafDeepLink({
-          pageNumber: match.pageNumber,
-          ayah: match.verseKey,
-          focusAyah: match.verseKey,
-          panel: 'ayah',
-        }),
-      ),
-    })),
+    this.page().items.map((match) => {
+      const deepLink = buildMushafDeepLink({
+        pageNumber: match.pageNumber,
+        ayah: match.verseKey,
+        focusAyah: match.verseKey,
+        panel: 'ayah',
+      });
+      return {
+        match,
+        mushafTarget: { basePath: deepLink.path, queryParams: deepLink.queryParams },
+      };
+    }),
   );
 
   protected get ayahRefLabel() {

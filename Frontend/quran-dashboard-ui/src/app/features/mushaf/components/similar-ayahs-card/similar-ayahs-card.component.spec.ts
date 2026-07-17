@@ -45,11 +45,14 @@ const SAMPLE_SIMILAR_AYAHS = {
   ],
 };
 
+const LOADING: ResourceLoadState = { isLoading: true, isEmpty: false, errorMessage: null };
+
 function render(
   fixture: ComponentFixture<SimilarAyahsCardComponent>,
   options: {
     similarAyahs?: typeof SAMPLE_SIMILAR_AYAHS | null;
     loadState?: ResourceLoadState;
+    expectedItemCount?: number | null;
   } = {},
 ): HTMLElement {
   fixture.componentRef.setInput('similarAyahs', options.similarAyahs ?? null);
@@ -57,6 +60,7 @@ function render(
     'loadState',
     options.loadState ?? IDLE,
   );
+  fixture.componentRef.setInput('expectedItemCount', options.expectedItemCount ?? null);
   fixture.detectChanges();
   return fixture.nativeElement as HTMLElement;
 }
@@ -130,6 +134,81 @@ describe('SimilarAyahsCardComponent (US2)', () => {
     expect(ayahNavigate).toHaveBeenCalledWith({
       verseKey: '2:26',
       pageNumber: 5,
+    });
+  });
+
+  describe('loading placeholders mirror the loaded list (N3 row 11)', () => {
+    it('renders one card-shaped placeholder per item the summary says is coming', () => {
+      const fixture = TestBed.createComponent(SimilarAyahsCardComponent);
+      const root = render(fixture, { loadState: LOADING, expectedItemCount: 5 });
+
+      const placeholders = root.querySelectorAll('[data-testid="similar-ayahs-skeleton"] .qd-ayah-card');
+      expect(placeholders).toHaveLength(5);
+    });
+
+    it('builds each placeholder from the same frame and line boxes as a loaded item', () => {
+      const loadingFixture = TestBed.createComponent(SimilarAyahsCardComponent);
+      const loadingRoot = render(loadingFixture, { loadState: LOADING, expectedItemCount: 2 });
+
+      const loadedFixture = TestBed.createComponent(SimilarAyahsCardComponent);
+      const loadedRoot = render(loadedFixture, { similarAyahs: SAMPLE_SIMILAR_AYAHS, loadState: IDLE });
+
+      const placeholder = loadingRoot.querySelector('[data-testid="similar-ayahs-skeleton"] .qd-ayah-card');
+      const loadedItem = loadedRoot.querySelector('[data-testid="similar-ayah-item"]');
+
+      // Same list wrapper, same card frame, same meta/text rules — so padding, gap,
+      // hairline and both line boxes are shared, not re-derived.
+      expect(loadingRoot.querySelector('[data-testid="similar-ayahs-skeleton"]')?.classList).toContain(
+        'similar-ayahs-card__list',
+      );
+      expect(loadedItem?.classList).toContain('qd-ayah-card');
+      expect(placeholder?.classList).toContain('similar-ayahs-card__item');
+      expect(placeholder?.querySelector('.similar-ayahs-card__meta')).toBeTruthy();
+      expect(placeholder?.querySelector('.similar-ayahs-card__text')).toBeTruthy();
+      expect(placeholder?.querySelectorAll('.qd-skeleton').length).toBeGreaterThan(0);
+    });
+
+    it('falls back to a fixed placeholder count when no summary count is known yet', () => {
+      const fixture = TestBed.createComponent(SimilarAyahsCardComponent);
+      const root = render(fixture, { loadState: LOADING, expectedItemCount: null });
+
+      expect(
+        root.querySelectorAll('[data-testid="similar-ayahs-skeleton"] .qd-ayah-card'),
+      ).toHaveLength(3);
+    });
+
+    it('reserves nothing when the summary already says the list is empty', () => {
+      const fixture = TestBed.createComponent(SimilarAyahsCardComponent);
+      const root = render(fixture, { loadState: LOADING, expectedItemCount: 0 });
+
+      // A known zero is not "unknown": reserving the fallback run here would paint a tall
+      // shimmer that collapses into the short empty state the moment the load settles.
+      expect(
+        root.querySelectorAll('[data-testid="similar-ayahs-skeleton"] .qd-ayah-card'),
+      ).toHaveLength(0);
+    });
+
+    it('caps the placeholder run so a very long list cannot reserve screens of shimmer', () => {
+      const fixture = TestBed.createComponent(SimilarAyahsCardComponent);
+      const root = render(fixture, { loadState: LOADING, expectedItemCount: 40 });
+
+      expect(
+        root.querySelectorAll('[data-testid="similar-ayahs-skeleton"] .qd-ayah-card'),
+      ).toHaveLength(8);
+    });
+
+    it('keeps the sr-only status announcement and hides the placeholder run from a11y', () => {
+      const fixture = TestBed.createComponent(SimilarAyahsCardComponent);
+      const root = render(fixture, { loadState: LOADING, expectedItemCount: 2 });
+
+      const status = root.querySelector('[data-testid="similar-ayahs-loading"]');
+      expect(status?.getAttribute('role')).toBe('status');
+
+      // The status line is the single announcement; the placeholders stay out of the
+      // accessibility tree entirely, so they must not also claim aria-busy (inert there).
+      const skeleton = root.querySelector('[data-testid="similar-ayahs-skeleton"]');
+      expect(skeleton?.getAttribute('aria-hidden')).toBe('true');
+      expect(skeleton?.hasAttribute('aria-busy')).toBe(false);
     });
   });
 

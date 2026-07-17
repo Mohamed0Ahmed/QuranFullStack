@@ -1,28 +1,24 @@
-import { Directive, OnDestroy, OnInit, PLATFORM_ID, inject } from '@angular/core';
-import { isPlatformBrowser } from '@angular/common';
+import { Directive, OnDestroy, OnInit, inject } from '@angular/core';
 
+import { ScrollLockService } from './scroll-lock.service';
+
+/**
+ * Locks body scrolling while mounted. Delegates to the reference-counted
+ * {@link ScrollLockService} so overlapping layers (a responsive drawer under
+ * the global detail overlay) cannot unlock each other's scroll lock.
+ */
 @Directive({
   selector: '[qdModalScrollLock]',
   standalone: true,
 })
 export class ModalScrollLockDirective implements OnInit, OnDestroy {
-  private readonly platformId = inject(PLATFORM_ID);
-  private previousOverflow = '';
+  private readonly scrollLock = inject(ScrollLockService);
 
   ngOnInit(): void {
-    if (!isPlatformBrowser(this.platformId)) {
-      return;
-    }
-
-    this.previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    this.scrollLock.acquire();
   }
 
   ngOnDestroy(): void {
-    if (!isPlatformBrowser(this.platformId)) {
-      return;
-    }
-
-    document.body.style.overflow = this.previousOverflow;
+    this.scrollLock.release();
   }
 }

@@ -1,4 +1,5 @@
-import { WORD_TYPE_SORTS, WordTypeCase, WordTypeDetailView, WordTypeMainType, WordTypeSort, WordTypeTableView, WordTypeTense, WordTypeVoice } from './word-types.models';
+import { explorerSortOptions } from './explorer-sort';
+import { WORD_TYPE_SORT_COLUMN_LIST, WordTypeCase, WordTypeDetailView, WordTypeMainType, WordTypeTableView, WordTypeTense, WordTypeVoice } from './word-types.models';
 import type { WordTypeDetailSelectionKind } from './word-types-detail.models';
 import { ROW_NUMBER_HEADER } from './words-shared.labels';
 
@@ -78,18 +79,18 @@ export const WORD_TYPE_VOICE_LABELS: Record<WordTypeVoice, string> = {
   passive: 'مجهول',
 };
 
-export const WORD_TYPE_SORT_LABELS: Record<WordTypeSort, string> = {
-  occurrences: 'الأكثر ورودًا',
-  ayahs: 'الأكثر آيات',
-  surahs: 'الأكثر سورًا',
-  'mushaf-order': 'ترتيب المصحف',
-  alpha: 'أبجدي',
-};
+export const WORD_TYPES_MUSHAF_ORDER_LABEL = 'ترتيب المصحف';
 
-export const WORD_TYPE_SORT_OPTIONS = WORD_TYPE_SORTS.map((value) => ({
-  value,
-  label: WORD_TYPE_SORT_LABELS[value],
-}));
+/**
+ * Options for the ≤1023px fallback sort select (Feature 030, N8): every sortable column in both
+ * directions, plus `mushaf-order`. Unlike the other four explorers `mushaf-order` is NOT the
+ * default here (المواضع desc is), so it stays an ordinary offered ordering rather than the release
+ * state. ≥1024px sorts through the table column headers.
+ */
+export const WORD_TYPE_SORT_OPTIONS = explorerSortOptions(
+  WORD_TYPE_SORT_COLUMN_LIST,
+  WORD_TYPES_MUSHAF_ORDER_LABEL,
+);
 
 export interface WordTypeDetailPresentation {
   readonly panelLabel: string;

@@ -49,11 +49,23 @@ describe('ExplorerAssociationFilterComponent', () => {
     return root.querySelector<HTMLInputElement>('[data-testid="association-filter-search"]')!;
   }
 
-  // The option list now lives in a popover panel that only renders while open (FOCUS-driven), unlike
-  // the old <details> disclosure whose children stayed in the DOM even when closed.
+  // The option list lives in a popover panel that only renders while open. Focus alone no longer opens
+  // it (an empty, unselected field stays closed), so the generic opener here is the ArrowDown escape
+  // hatch: it opens from any state without touching the query or emitting searchChange.
   function openPanel(fixture: ReturnType<typeof render>): void {
-    searchField(fixture.nativeElement as HTMLElement).dispatchEvent(new FocusEvent('focus'));
+    searchField(fixture.nativeElement as HTMLElement).dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowDown' }),
+    );
     fixture.detectChanges();
+  }
+
+  // openPanel defers focusing the first option to a rAF, mirroring the panel's own layout pass.
+  function flushPanelLayout(): Promise<void> {
+    return new Promise((resolve) => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => resolve());
+      });
+    });
   }
 
   it('renders the label and one option button per option once the panel is open', () => {
@@ -170,17 +182,67 @@ describe('ExplorerAssociationFilterComponent', () => {
     expect(hint.textContent).toContain(WORDS_ASSOCIATION_FILTER_LABELS.loading);
   });
 
-  it('opens the panel on field focus and reflects it via aria-expanded', () => {
+  it('does NOT open the panel when an empty, unselected field receives focus', () => {
     const fixture = render();
     const root = fixture.nativeElement as HTMLElement;
     const input = searchField(root);
+
+    input.dispatchEvent(new FocusEvent('focus'));
+    fixture.detectChanges();
+
     expect(input.getAttribute('aria-expanded')).toBe('false');
     expect(root.querySelector('[data-testid="association-filter-option-PN"]')).toBeNull();
+  });
 
-    openPanel(fixture);
+  it('re-opens the options on focus while a selection is active', () => {
+    const fixture = render({ selectedId: 'PN' });
+    const root = fixture.nativeElement as HTMLElement;
+    const input = searchField(root);
+
+    input.dispatchEvent(new FocusEvent('focus'));
+    fixture.detectChanges();
 
     expect(input.getAttribute('aria-expanded')).toBe('true');
     expect(root.querySelector('[data-testid="association-filter-option-PN"]')).toBeTruthy();
+  });
+
+  it.each([
+    ['ArrowDown', false],
+    ['Alt+ArrowDown', true],
+  ])('opens the panel from an empty field on %s and moves focus to the first option', async (_key, altKey) => {
+    const fixture = render();
+    const root = fixture.nativeElement as HTMLElement;
+    const input = searchField(root);
+
+    const event = new KeyboardEvent('keydown', { key: 'ArrowDown', altKey, cancelable: true });
+    input.dispatchEvent(event);
+    fixture.detectChanges();
+
+    // preventDefault keeps the key from scrolling the toolbar instead of opening the panel.
+    expect(event.defaultPrevented).toBe(true);
+    expect(input.getAttribute('aria-expanded')).toBe('true');
+
+    await flushPanelLayout();
+    expect(document.activeElement).toBe(
+      root.querySelector('[data-testid="association-filter-option-PN"]'),
+    );
+  });
+
+  it('keeps the panel closed on focus once the selection has been cleared', () => {
+    const fixture = render({ selectedId: 'PN' });
+    const root = fixture.nativeElement as HTMLElement;
+
+    root.querySelector<HTMLButtonElement>('[data-testid="association-filter-clear"]')!.click();
+    // The page owns selectedId, so the clear is only real once it flows back in.
+    fixture.componentRef.setInput('selectedId', null);
+    fixture.detectChanges();
+
+    const input = searchField(root);
+    input.dispatchEvent(new FocusEvent('focus'));
+    fixture.detectChanges();
+
+    expect(input.getAttribute('aria-expanded')).toBe('false');
+    expect(root.querySelector('[data-testid="association-filter-option-PN"]')).toBeNull();
   });
 
   it('opens the panel when typing, even without a prior focus event', () => {
@@ -216,7 +278,9 @@ describe('ExplorerAssociationFilterComponent', () => {
   });
 
   it('closes the panel on Escape and suppresses the immediate reopen from the focus restore', () => {
-    const fixture = render();
+    // A selection is active on purpose: focus would otherwise re-open the panel, which is what makes
+    // the suppression guard observable at all.
+    const fixture = render({ selectedId: 'PN' });
     const root = fixture.nativeElement as HTMLElement;
     const input = searchField(root);
     openPanel(fixture);

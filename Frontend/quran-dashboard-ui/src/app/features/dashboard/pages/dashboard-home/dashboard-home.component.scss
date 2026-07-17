@@ -18,11 +18,26 @@
   text-decoration: none;
 }
 
+/* N3 row 14: the loading row and the loaded badge strip must occupy the same box,
+   so the cards below never shift on settle. One shared margin declaration keeps the
+   two from drifting apart. */
+.app-meta,
+.app-meta-skeleton {
+  margin-block-start: var(--qd-space-2);
+}
+
 .app-meta {
   display: flex;
   flex-wrap: wrap;
   gap: var(--qd-space-2);
-  margin-top: var(--qd-space-2);
+}
+
+/* Mirrors the loaded .qd-badge line box (styles/_components.scss): padding-block
+   (2 × --qd-space-1) + 0.75rem text at 1.4 line-height + the 1px hairline both
+   sides. Derived from the badge rule, not hardcoded, so a badge restyle stays
+   one edit away from being reflected here. */
+.app-meta-skeleton {
+  --qd-skeleton-h: calc(2 * var(--qd-space-1) + 0.75rem * 1.4 + 2px);
 }
 
 .app-meta-error {

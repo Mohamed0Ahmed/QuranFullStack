@@ -1,0 +1,160 @@
+@use '../../../../styles/breakpoints' as bp;
+
+// Dialog geometry only — surface/hairline/radius/floating shadow come from the
+// global `.qd-modal` / `.qd-modal-backdrop` primitives (the floating dialog is
+// the one layer that carries the floating shadow under the flat doctrine).
+//
+// Both axes are FIXED, not content-driven: tab switches, pagination, and loading
+// passes must repaint inside a dialog that never resizes around its
+// flex-centered backdrop. `__body` is the only scroller; body scroll is locked
+// while open (ScrollLockService), so a dvh block-size cannot trap content.
+.detail-modal-shell {
+  display: flex;
+  flex-direction: column;
+  inline-size: min(100%, 46rem);
+  block-size: min(92dvh, 44rem);
+}
+
+.detail-modal-shell__header {
+  display: flex;
+  align-items: center;
+  gap: var(--qd-space-2);
+  padding-block-end: var(--qd-space-2);
+  border-block-end: 1px solid var(--qd-border);
+  flex-shrink: 0;
+}
+
+.detail-modal-shell__title {
+  flex: 1;
+  min-inline-size: 0;
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--qd-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  &:focus-visible {
+    outline: 2px solid var(--qd-focus-ring);
+    outline-offset: 2px;
+  }
+}
+
+// Informational kind marker, not an interactive chip — hairline + muted text
+// only (flat doctrine: no fill, no shadow). Deliberately NOT `.qd-chip`, whose
+// contract carries selectable/interactive semantics.
+.detail-modal-shell__kind {
+  flex-shrink: 0;
+  padding-block: var(--qd-space-1);
+  padding-inline: var(--qd-space-2);
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-sm);
+  color: var(--qd-text-muted);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+// The box is reserved at all times so the count's arrival never moves the
+// title, Back, or Close; only the text fades in. A count wider than the
+// reservation grows the box and the flex:1 title ellipsis absorbs it.
+.detail-modal-shell__count {
+  flex-shrink: 0;
+  min-inline-size: 6rem;
+  color: var(--qd-text-muted);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity var(--qd-t-fast);
+}
+
+.detail-modal-shell__count--visible {
+  opacity: 1;
+}
+
+// Back/Close anchor the header: they never shrink and never wrap, so a long
+// title, a wide count, or the kind chip can never move or reflow them. Overflow
+// is absorbed by the title's ellipsis instead (it is the only shrinkable item).
+.detail-modal-shell__back,
+.detail-modal-shell__close {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.detail-modal-shell__back-icon {
+  display: inline-block;
+}
+
+.detail-modal-shell__body {
+  flex: 1;
+  min-block-size: 0;
+  overflow-y: auto;
+  padding-block-start: var(--qd-space-3);
+}
+
+// Restore control: fixed at the physical top-left (inline-end in RTL). It is a
+// floating layer, so it carries the floating shadow.
+.detail-modal-shell__restore {
+  position: fixed;
+  inset-block-start: calc(var(--qd-space-4) + 3.5rem);
+  inset-inline-end: var(--qd-space-4);
+  z-index: 40;
+  padding: var(--qd-space-2) var(--qd-space-3);
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-md);
+  background: var(--qd-surface);
+  color: var(--qd-accent-text);
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--qd-floating-shadow, var(--qd-shadow-lg));
+
+  &:hover {
+    background: var(--qd-surface-hover);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--qd-focus-ring);
+    outline-offset: 2px;
+  }
+}
+
+// Phone: near-fullscreen. The reduced backdrop and dialog padding buy the dialog
+// the width and height the small viewport cannot spare.
+//
+// The header row cannot hold every element at phone widths: at 390px the content
+// box is ~326px, while Back + kind + a 6rem count + Close + gaps need ~378px —
+// which would collapse the title to nothing and then push Back/Close. Header
+// priority is Back/Close > title > count > kind, so the kind marker drops here
+// (the h2 still names the entity) and the count reservation tightens. The count
+// box stays reserved, so N6's zero-shift-on-arrival contract still holds.
+@media (max-width: bp.$qd-bp-phone-max) {
+  .detail-modal-shell__backdrop {
+    padding: var(--qd-space-2);
+  }
+
+  .detail-modal-shell {
+    block-size: min(94dvh, 44rem);
+    padding: var(--qd-space-3);
+  }
+
+  .detail-modal-shell__kind {
+    display: none;
+  }
+
+  .detail-modal-shell__count {
+    min-inline-size: 4.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .detail-modal-shell,
+  .detail-modal-shell__count,
+  .detail-modal-shell__restore {
+    transition: none;
+    animation: none;
+  }
+}

@@ -4,6 +4,40 @@
       <div class="qd-page-header">
         <h1 class="qd-page-title">{{ pageTitle }}</h1>
       </div>
+
+      <qd-words-explainer
+        [content]="explainer"
+        [expanded]="explainerExpanded()"
+        (toggled)="onExplainerToggled($event)"
+      >
+        <h3 class="qd-explainer-h3">الأنواع الأربعة</h3>
+        <div class="qd-explainer-types">
+          <div class="qd-explainer-type">
+            <div class="qd-explainer-type__name">اسم</div>
+            <div class="qd-explainer-type__examples">كِتَاب · رَبّ · مُؤْمِن</div>
+            <div class="qd-explainer-note">مع الحالة: مرفوع (رَبُّ) · منصوب (رَبَّ) · مجرور (رَبِّ)</div>
+          </div>
+          <div class="qd-explainer-type">
+            <div class="qd-explainer-type__name">فعل</div>
+            <div class="qd-explainer-type__examples">خَلَقَ <small>ماضٍ</small> · يَعْلَمُ <small>مضارع</small> · اذْكُرُوا <small>أمر</small></div>
+            <div class="qd-explainer-note">مع الصوت: معلوم (خَلَقَ) · مجهول (خُلِقَ)</div>
+          </div>
+          <div class="qd-explainer-type">
+            <div class="qd-explainer-type__name">حرف وأداة</div>
+            <div class="qd-explainer-type__examples">فِي · مِنْ · إِنَّ · لَا</div>
+            <div class="qd-explainer-note">حروف الجر والتوكيد والنفي والأدوات</div>
+          </div>
+          <div class="qd-explainer-type">
+            <div class="qd-explainer-type__name">حروف مقطّعة</div>
+            <div class="qd-explainer-type__examples">الم · الر · يس · طه</div>
+            <div class="qd-explainer-note">فواتح بعض السور</div>
+          </div>
+        </div>
+        <div class="qd-explainer-example">
+          <span class="qd-explainer-example__label">أمثلة على الاستعلام</span>
+          <p class="qd-explainer-note">«الأسماء المنصوبة» · «الأفعال المضارعة المجهولة» · «الحروف التي بلا جذر» — تعرف فورًا كم كلمة وجذر وأصل وصيغة في كل نطاق.</p>
+        </div>
+      </qd-words-explainer>
     </div>
 
     <div class="uw-toolbar-recess uw-toolbar-recess--stacked uw-toolbar-recess--kinetic">
@@ -36,14 +70,23 @@
           (input)="onSearchInput($any($event.target).value)"
         />
 
-        <label class="word-types-page__sort">
-          <span>{{ sortLabel }}</span>
-          <select class="qd-select" [value]="listState().query.sort" (change)="changeSort($event)">
-            @for (option of sortOptions; track option.value) {
-              <option [value]="option.value">{{ option.label }}</option>
-            }
-          </select>
-        </label>
+        <!-- ≤1023px fallback (Feature 030, N8): the table header row is display:none on phone AND
+             tablet, so the header cycle is unreachable there. Same URL contract as the headers. -->
+        <div class="qd-explorer-sort-fallback">
+          <label class="word-types-page__sort">
+            <span>{{ sortLabel }}</span>
+            <select
+              class="qd-select"
+              data-testid="word-types-sort-select"
+              [value]="listState().query.sort"
+              (change)="onSortSelect($any($event.target).value)"
+            >
+              @for (option of sortOptions; track option.value) {
+                <option [value]="option.value">{{ option.label }}</option>
+              }
+            </select>
+          </label>
+        </div>
       </div>
 
       <qd-word-types-presence-filter
@@ -63,16 +106,23 @@
       (retryRequested)="onScopeCountsRetry()"
     />
 
-    @if (listState().tree) {
-      <qd-word-type-table-view-tabs
-        [selectedView]="listState().query.tableView"
-        [disabled]="listState().status === 'loading'"
-        (viewSelected)="selectTableView($event)"
-      />
-    }
   </div>
 
   <div class="word-types-page__layout qd-explorer-layout">
+    <!-- View tabs live in the table column (Feature 029, U3): first layout child so they
+         sit directly above the table, never spanning the details-panel column.
+         The slot — not the tabs — is that layout child and carries the U3 placement, because the tabs
+         mount only once the tree lands: gating the grid item itself made their whole row appear on first
+         load and pushed the table + panel grid down (Feature 030, N3 row 2). -->
+    <div class="word-types-page__tabs qd-explorer-layout__tabs-slot">
+      @if (listState().tree) {
+        <qd-word-type-table-view-tabs
+          [selectedView]="listState().query.tableView"
+          [disabled]="listState().status === 'loading'"
+          (viewSelected)="selectTableView($event)"
+        />
+      }
+    </div>
     <main
       class="word-types-page__main qd-explorer-layout__table"
       [attr.aria-busy]="listState().status === 'loading' ? true : null"
@@ -88,20 +138,27 @@
         [errorLabel]="errorLabel"
         [retryLabel]="retryLabel"
         [selectedRow]="selectedRow()"
+        [sort]="listState().query.sort"
         (countOpened)="onCountOpened($event)"
         (retry)="retryList()"
+        (sortChange)="onSortChange($event)"
       />
 
-      @if (listState().rows; as page) {
-        <qd-pagination
-          [currentPage]="page.page"
-          [pageSize]="page.pageSize"
-          [totalCount]="page.totalCount"
-          [disabled]="listState().status === 'loading'"
-          [ariaLabel]="tableLabel"
-          (pageChange)="changePage($event)"
-        />
-      }
+      <!-- Reserved slot: the facade nulls `rows` on a view switch, which unmounted the ~2.75rem bar and
+           jumped the table column (Feature 030, N3 row 3). The slot holds the row; the bar still mounts
+           only when there is a page to paginate. -->
+      <div class="qd-explorer-layout__pagination-slot" data-testid="word-types-pagination-slot">
+        @if (listState().rows; as page) {
+          <qd-pagination
+            [currentPage]="page.page"
+            [pageSize]="page.pageSize"
+            [totalCount]="page.totalCount"
+            [disabled]="listState().status === 'loading'"
+            [ariaLabel]="tableLabel"
+            (pageChange)="changePage($event)"
+          />
+        }
+      </div>
     </main>
 
     <qd-word-type-details-panel
@@ -130,6 +187,7 @@
                   [page]="emptyAyahsPage"
                   [currentPage]="panelState().detailPage"
                   [loading]="true"
+                  [parentFrame]="ayahParentFrame()"
                 />
               } @else if (panelState().view === 'surahs') {
                 <qd-surah-occurrences-list [surahs]="[]" [loading]="true" />
@@ -167,6 +225,7 @@
                   [page]="ayahsPageForView()"
                   [currentPage]="panelState().detailPage"
                   [loading]="false"
+                  [parentFrame]="ayahParentFrame()"
                   (pageChange)="onDetailPageChange($event)"
                 />
               }

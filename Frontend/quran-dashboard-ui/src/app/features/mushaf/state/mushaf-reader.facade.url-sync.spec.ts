@@ -940,6 +940,32 @@ describe('MushafReaderFacade URL sync', () => {
     expect(facade.panel()).toBe('word');
   });
 
+  it('restores a saved session on an overlay-only URL and merges (keeps) the overlay params', () => {
+    saveMushafReaderSession(savedSessionSnapshot);
+    const { facade, route, navigate } = createFacadeTestBed({
+      qdDetail: 'v1~root~999~ayahs~simple~mentioned~1',
+      qdDetailOpen: '1',
+    });
+
+    facade.bindToRoute(route);
+
+    // Overlay-only params count as bare: the session redirect still fires, and
+    // it must merge so the retained overlay stack survives the restoration.
+    expect(navigate).toHaveBeenCalledTimes(1);
+    expect(navigate).toHaveBeenCalledWith(
+      [],
+      expect.objectContaining({
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      }),
+    );
+    const restoredParams = vi.mocked(navigate).mock.calls[0][1]?.queryParams as Record<string, unknown>;
+    expect(restoredParams['page']).toBe(12);
+    // The redirect writes only reader-owned keys; merge preserves overlay keys untouched.
+    expect(restoredParams['qdDetail']).toBeUndefined();
+    expect(restoredParams['qdDetailOpen']).toBeUndefined();
+  });
+
   it('defaults to page 1 on a bare entry when no saved session exists', () => {
     const { facade, route, navigate } = createFacadeTestBed({});
 

@@ -9,18 +9,18 @@
     <div class="word-types-table__header qd-explorer-table__header" role="rowgroup">
       <div class="word-types-table__header-row qd-explorer-table__header-row" role="row">
         <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--row-number qd-explorer-table__header-cell--row-number" role="columnheader">{{ headers.rowNumber }}</span>
+        <!-- The dimension text column is the alpha sort column in every view (N8-f). -->
+        <ng-container *ngTemplateOutlet="sortHeader; context: { column: alphaSortColumn(), variant: 'word' }" />
         @if (isWordView()) {
-          <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--word" role="columnheader">{{ headers.word }}</span>
+          <!-- النوع/الجذر/الأصل/الصيغة are related-entity text columns: plain headers (N8). -->
           <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--meta" role="columnheader">{{ headers.type }}</span>
           <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--meta" role="columnheader">{{ headers.root }}</span>
           <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--meta" role="columnheader">{{ headers.stem }}</span>
           <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--meta" role="columnheader">{{ headers.lemma }}</span>
-        } @else {
-          <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--word" role="columnheader">{{ dimensionHeader() }}</span>
         }
-        <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--count qd-explorer-table__header-cell--numeric" role="columnheader">{{ headers.occurrences }}</span>
-        <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--count qd-explorer-table__header-cell--numeric" role="columnheader">{{ headers.ayahs }}</span>
-        <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--count qd-explorer-table__header-cell--numeric" role="columnheader">{{ headers.surahs }}</span>
+        <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.occurrences, variant: 'count' }" />
+        <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.ayahs, variant: 'count' }" />
+        <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.surahs, variant: 'count' }" />
       </div>
       <div class="word-types-table__header-gutter qd-explorer-table__header-gutter" aria-hidden="true"></div>
     </div>
@@ -176,6 +176,35 @@
           (chipClick)="openCount(row, 'surahs')"
         />
       </span>
+    </span>
+  </ng-template>
+
+  <!-- One sortable column header (Feature 030, N8). aria-sort carries the current state and lives on
+       the columnheader; the button's aria-label names the column + the state the next click gives.
+       المواضع is this explorer's DEFAULT order, so it renders actively sorted descending even with no
+       sort param — its cycle collapses to desc(default) ⇄ asc and has no unsorted third state. -->
+  <ng-template #sortHeader let-column="column" let-variant="variant">
+    <span
+      class="word-types-table__header-cell qd-explorer-table__header-cell"
+      [class.word-types-table__header-cell--word]="variant === 'word'"
+      [class.word-types-table__header-cell--count]="variant === 'count'"
+      [class.qd-explorer-table__header-cell--numeric]="variant === 'count'"
+      role="columnheader"
+      [attr.aria-sort]="sortControl.ariaSort(column)"
+    >
+      <button
+        type="button"
+        class="qd-explorer-table__sort-button"
+        [class.qd-is-sorted]="sortControl.isSorted(column)"
+        [attr.data-testid]="'word-types-table-sort-' + column.key"
+        [attr.aria-label]="sortControl.actionAria(column)"
+        (click)="sortControl.cycle(column)"
+      >
+        <span class="qd-explorer-table__sort-label">{{ column.label }}</span>
+        @if (sortControl.glyph(column); as glyph) {
+          <span class="qd-explorer-table__sort-glyph" aria-hidden="true">{{ glyph }}</span>
+        }
+      </button>
     </span>
   </ng-template>
 </section>

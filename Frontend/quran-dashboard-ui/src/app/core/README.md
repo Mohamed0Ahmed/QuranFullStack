@@ -24,6 +24,29 @@ per-feature.
   same idea; keep the key strategy consistent).
 - `layout/` — `app-shell`, `top-navbar`, `footer`, `shell-layout.model.ts`.
 - `navigation/` — `route-paths.ts` (canonical route constants) + `nav-items.ts`.
+- `navigation/detail-overlay/` — the app-wide floating detail-overlay navigation layer
+  (Feature 029, Change B): `detail-overlay.models.ts` (versioned `v1~…` frame union — the
+  URL contract, deliberately decoupled from Words models), `detail-overlay-url-codec.ts`
+  (strict parse/serialize/canonicalize; repeated `qdDetail` values bottom→top plus
+  `qdDetailOpen=1`; invalid first frame ⇒ no overlay, malformed later frame truncates,
+  eight-frame cap), `detail-overlay-provenance.ts` (entry-bound history ownership; the
+  live base and stack must match before provenance is trusted), and
+  `detail-overlay-history.service.ts` (URL-authoritative state machine: push on entity
+  append, replace on top-frame sub-state, close retains the stack in the URL, restore is
+  a push; dialog Back uses browser Back only when entry provenance proves the parent,
+  else a deterministic replace; fresh or markerless same-URL entries seed their prefix
+  history, while reload keeps Angular-preserved entry provenance and does not duplicate
+  it; a Restore-derived Mushaf base transition re-materializes a missing parent prefix
+  before its final replace so browser and dialog Back return to the same historical
+  parent), `detail-overlay-link.directive.ts` (real copyable hrefs;
+  only unmodified primary clicks are intercepted), and
+  `detail-overlay-ayah-link.directive.ts` (B7 ayah continuity: `a[qdAyahOverlayLink]`
+  navigates the base route *underneath* the overlay via
+  `navigateBaseWithOverlay` — open overlay ⇒ replace-nav that carries the whole stack to
+  the new base; closed + a provided parent frame ⇒ push that promotes the source detail
+  to a one-frame stack; neither ⇒ plain push with overlay keys stripped). Core owns
+  navigation semantics only — entity rendering lives in
+  `features/words/entity-detail-overlay/`.
 - `theme/theme.service.ts` — light/dark theme.
 
 ## Gotchas / invariants

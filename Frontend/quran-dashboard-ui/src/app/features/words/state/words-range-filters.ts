@@ -2,8 +2,8 @@ import { HttpParams } from '@angular/common/http';
 import { ParamMap } from '@angular/router';
 
 import {
-  BucketFamily,
   CountRange,
+  RangeFamily,
   isRangeActive,
   parseCountRange,
   serializeCountRange,
@@ -12,14 +12,16 @@ import {
 /**
  * Describes one count-range-filterable metric for an explorer (Feature 026, US5). The URL key is the
  * shareable contract; the API prefix maps to the backend `<prefix>Min`/`<prefix>Max` params; the
- * family selects the preset bucket set; the label names the metric in the filter UI.
+ * family selects the preset chip scale; the label names the metric in the filter UI.
  */
 export interface RangeMetric {
   readonly key: string;
   readonly urlKey: string;
   readonly apiKey: string;
-  readonly family: BucketFamily;
+  readonly family: RangeFamily;
   readonly labelAr: string;
+  /** Overrides the family's default chip threshold. Presentation only — the URL still stores the range. */
+  readonly threshold?: number;
 }
 
 /** Active ranges keyed by metric key; absent metrics are omitted (pre-feature identity when empty). */

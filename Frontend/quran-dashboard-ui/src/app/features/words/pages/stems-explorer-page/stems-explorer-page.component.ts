@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, effect
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, Subscription, catchError, debounceTime, of, switchMap } from 'rxjs';
 
+import { StemDetailFrame } from '../../../../core/navigation/detail-overlay/detail-overlay.models';
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
 import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
 import { AyahMatchesListComponent } from '../../components/ayah-matches-list/ayah-matches-list.component';
@@ -21,8 +22,12 @@ import { StemLemmasListComponent } from '../../components/stem-lemmas-list/stem-
 import { StemCountOpenedEvent, StemsTableComponent } from '../../components/stems-table/stems-table.component';
 import { StemWordsListComponent } from '../../components/stem-words-list/stem-words-list.component';
 import { SurahOccurrencesListComponent } from '../../components/surah-occurrences-list/surah-occurrences-list.component';
-import { STEMS_EMPTY_SELECTION_LABEL, STEMS_EMPTY_VIEW_LABEL, STEMS_LIST_PAGINATION_LABEL, STEMS_LOADING_LABEL, STEMS_NO_RESULTS_LABEL, STEMS_NOT_FOUND_LABEL, STEMS_PAGE_TITLE, STEMS_PANEL_SURFACE_LABEL, STEMS_PRIMARY_LEMMA_FILTER_LABEL, STEMS_PRIMARY_LEMMA_FILTER_PLACEHOLDER, STEMS_PRIMARY_ROOT_FILTER_LABEL, STEMS_PRIMARY_ROOT_FILTER_PLACEHOLDER, STEMS_RESULT_COUNT_LABEL, STEMS_SEARCH_LABEL, STEMS_SEARCH_PLACEHOLDER, STEMS_SORT_LABELS, STEMS_SURAHS_TABLIST_LABEL, STEMS_SURAHS_VIEW_LABELS, STEMS_TABLE_LABEL, STEMS_WORDS_TABLIST_LABEL, STEMS_WORD_VIEW_LABELS } from '../../models/stems.labels';
-import { DEFAULT_STEM_VIEW, PagedResultDto, STEMS_RANGE_METRICS, STEM_DETAIL_PAGE_SIZE, StemListItemViewModel, StemSort, StemSurahView, StemView, StemWordItemDto, StemWordView } from '../../models/stems.models';
+import { WordsExplainerComponent } from '../../components/words-explainer/words-explainer.component';
+import { sortQueryValue } from '../../models/explorer-sort';
+import { WORDS_EXPLAINER_CONTENT } from '../../models/words-explainer.content';
+import { WordsExplainerPreference } from '../../state/words-explainer-preference';
+import { STEMS_EMPTY_SELECTION_LABEL, STEMS_EMPTY_VIEW_LABEL, STEMS_LIST_PAGINATION_LABEL, STEMS_LOADING_LABEL, STEMS_PAGE_TITLE, STEMS_PANEL_SURFACE_LABEL, STEMS_PRIMARY_LEMMA_FILTER_LABEL, STEMS_PRIMARY_LEMMA_FILTER_PLACEHOLDER, STEMS_PRIMARY_ROOT_FILTER_LABEL, STEMS_PRIMARY_ROOT_FILTER_PLACEHOLDER, STEMS_RESULT_COUNT_LABEL, STEMS_SEARCH_LABEL, STEMS_SEARCH_PLACEHOLDER, STEMS_SORT_LABELS, STEMS_SORT_OPTIONS, STEMS_SURAHS_TABLIST_LABEL, STEMS_SURAHS_VIEW_LABELS, STEMS_TABLE_LABEL, STEMS_WORDS_TABLIST_LABEL, STEMS_WORD_VIEW_LABELS } from '../../models/stems.labels';
+import { DEFAULT_STEM_SORT, DEFAULT_STEM_VIEW, PagedResultDto, STEMS_RANGE_METRICS, STEM_DETAIL_PAGE_SIZE, StemListItemViewModel, StemSort, StemSurahView, StemView, StemWordItemDto, StemWordView, normalizeStemSort } from '../../models/stems.models';
 import { AyahMatchDto, PagedResultDto as SharedPagedResultDto } from '../../models/unique-words.models';
 import { StemsDetailFacade } from '../../state/stems-detail.facade';
 import { StemsExplorerFacade } from '../../state/stems-explorer.facade';
@@ -39,7 +44,7 @@ type StemCountTarget = StemCountOpenedEvent & { column: StemTableColumnKey };
 @Component({
   selector: 'qd-stems-explorer-page',
   standalone: true,
-  imports: [AyahMatchesListComponent, ExplorerCountRangeFilterComponent, ExplorerAssociationFilterComponent, ExplorerResultCountComponent, ExplorerSearchRowComponent, MissingSurahsListComponent, NgTemplateOutlet, PaginationComponent, StemAyahTypeFiltersComponent, StemDetailsPanelComponent, StemLemmasListComponent, StemsTableComponent, StemWordsListComponent, SurahOccurrencesListComponent],
+  imports: [AyahMatchesListComponent, ExplorerCountRangeFilterComponent, ExplorerAssociationFilterComponent, ExplorerResultCountComponent, ExplorerSearchRowComponent, MissingSurahsListComponent, NgTemplateOutlet, PaginationComponent, StemAyahTypeFiltersComponent, StemDetailsPanelComponent, StemLemmasListComponent, StemsTableComponent, StemWordsListComponent, SurahOccurrencesListComponent, WordsExplainerComponent],
   templateUrl: './stems-explorer-page.component.html',
   styleUrl: './stems-explorer-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -49,6 +54,7 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
   private readonly detailFacade = inject(StemsDetailFacade);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly explainerPreference = inject(WordsExplainerPreference);
   private readonly associationOptions = inject(WordsAssociationOptionsService);
   private readonly restoredColumn = signal<StemTableColumnKey | null>(null);
   private readonly searchInput = new Subject<string>();
@@ -74,10 +80,11 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
   });
 
   protected readonly pageTitle = STEMS_PAGE_TITLE;
+  // TDZ-safe content getter + synchronous collapse restore (no first-paint shift).
+  protected get explainer() { return WORDS_EXPLAINER_CONTENT.stems; }
+  protected readonly explainerExpanded = signal(this.explainerPreference.isExpanded('stems'));
   protected readonly emptySelectionLabel = STEMS_EMPTY_SELECTION_LABEL;
   protected readonly emptyViewLabel = STEMS_EMPTY_VIEW_LABEL;
-  protected readonly notFoundLabel = STEMS_NOT_FOUND_LABEL;
-  protected readonly noResultsLabel = STEMS_NO_RESULTS_LABEL;
   protected readonly searchLabel = STEMS_SEARCH_LABEL;
   protected readonly searchPlaceholder = STEMS_SEARCH_PLACEHOLDER;
   protected get resultCountLabel(): string { return STEMS_RESULT_COUNT_LABEL; }
@@ -87,7 +94,7 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly panelSurfaceLabel = STEMS_PANEL_SURFACE_LABEL;
   protected readonly wordsTablistLabel = STEMS_WORDS_TABLIST_LABEL;
   protected readonly surahsTablistLabel = STEMS_SURAHS_TABLIST_LABEL;
-  protected readonly sortOptions: readonly StemSort[] = ['mushaf-order', 'occurrences', 'alpha'];
+  protected get sortOptions() { return STEMS_SORT_OPTIONS; }
   protected readonly wordViewOptions: readonly StemWordView[] = ['simple', 'tashkeel'];
   protected readonly surahViewOptions: readonly StemSurahView[] = ['mentioned', 'missing'];
   protected readonly emptyAyahsPage: SharedPagedResultDto<AyahMatchDto> = { page: 1, pageSize: STEM_DETAIL_PAGE_SIZE, totalCount: 0, items: [] };
@@ -95,6 +102,22 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly ayahsPageForView = computed(() => {
     const page = this.panelState().ayahs;
     return page ? { ...page, items: page.items.map(mapStemAyahMatchToShared) } : this.emptyAyahsPage;
+  });
+  /** This panel's own typed frame (Feature 029 B7): an ayah click promotes it over the Mushaf. */
+  protected readonly ayahParentFrame = computed<StemDetailFrame | null>(() => {
+    const state = this.panelState();
+    if (state.selectedStemId === null) {
+      return null;
+    }
+    return {
+      kind: 'stem',
+      id: state.selectedStemId,
+      view: state.view,
+      wordView: state.wordView,
+      surahView: state.surahView,
+      detailPage: state.detailPage,
+      typeCode: state.view === 'ayahs' ? state.ayahTypeCode : null,
+    };
   });
   protected readonly searchDraft = signal('');
   protected readonly ranges = signal<RangeFilters>(EMPTY_RANGE_FILTERS);
@@ -196,7 +219,16 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
     this.selectedLemmaLabel.set(option?.label ?? null);
     this.updateQueryParams({ lemmaId: option === null ? null : String(option.id), page: null });
   }
-  protected onSortChange(sort: StemSort): void { this.clearTableFocus(); this.updateQueryParams({ sort, page: null }); }
+  /** A header cycle step (token) or its release (null). Changing the ordering always resets page. */
+  protected onSortChange(sort: StemSort | null): void {
+    this.clearTableFocus();
+    this.updateQueryParams(buildStemsQueryParams({ sort, page: null }));
+  }
+
+  /** The ≤1023px fallback select drives the same contract; the default order stays param-absent. */
+  protected onSortSelect(value: string): void {
+    this.onSortChange(sortQueryValue(normalizeStemSort(value), DEFAULT_STEM_SORT));
+  }
   protected onPageChange(page: number): void { if (page !== this.listState().page) { this.clearTableFocus(); this.updateQueryParams(buildStemsQueryParams({ page })); } }
   protected onDetailPageChange(page: number): void { if (page !== this.panelState().detailPage) { this.tableFocus.cancel(); this.detailFacade.setDetailPage(page); this.updateQueryParams(buildStemsQueryParams({ detailPage: page })); } }
 
@@ -238,6 +270,11 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
   }
 
   protected onClearSelection(): void { this.clearTableFocus(); this.detailFacade.clearSelection(); this.updateQueryParams(buildClearSelectionQueryParams()); }
+
+  protected onExplainerToggled(expanded: boolean): void {
+    this.explainerExpanded.set(expanded);
+    this.explainerPreference.setExpanded('stems', expanded);
+  }
 
   private updateQueryParams(changes: Record<string, string | null>): void {
     void this.router.navigate([], { relativeTo: this.route, queryParams: changes, queryParamsHandling: 'merge' });

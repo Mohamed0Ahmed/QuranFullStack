@@ -131,6 +131,11 @@ export class UniqueWordsFacade {
     this.drilldown.closeDrilldown();
   }
 
+  /** See `UniqueWordsDrilldownController.retryCurrentIdentity` (Feature 030, M3). */
+  retryDrilldown(): void {
+    this.drilldown.retryCurrentIdentity();
+  }
+
   private applyRouteState(params: ParamMap, queryParams: ParamMap): void {
     const modeParam = params.get('mode');
     const nextMode = modeParam === 'simple' || modeParam === 'tashkeel' ? modeParam : DEFAULT_UNIQUE_WORD_KIND;

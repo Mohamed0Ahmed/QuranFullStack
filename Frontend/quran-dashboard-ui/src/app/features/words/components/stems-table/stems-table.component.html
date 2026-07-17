@@ -10,24 +10,15 @@
       <div class="stems-table__header-cell qd-explorer-table__header-cell stems-table__header-cell--row-number qd-explorer-table__header-cell--row-number" role="columnheader">
         {{ headers.rowNumber }}
       </div>
-      <div class="stems-table__header-cell qd-explorer-table__header-cell" role="columnheader">{{ headers.stem }}</div>
+      <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.alpha, numeric: false }" />
+      <!-- Dominant الصيغة/الجذر are related-entity text columns: plain headers, no aria-sort (N8). -->
       <div class="stems-table__header-cell qd-explorer-table__header-cell" role="columnheader">{{ headers.lemma }}</div>
       <div class="stems-table__header-cell qd-explorer-table__header-cell" role="columnheader">{{ headers.root }}</div>
-      <div class="stems-table__header-cell qd-explorer-table__header-cell stems-table__header-cell--numeric qd-explorer-table__header-cell--numeric" role="columnheader">
-        {{ headers.occurrences }}
-      </div>
-      <div class="stems-table__header-cell qd-explorer-table__header-cell stems-table__header-cell--numeric qd-explorer-table__header-cell--numeric" role="columnheader">
-        {{ headers.ayahs }}
-      </div>
-      <div class="stems-table__header-cell qd-explorer-table__header-cell stems-table__header-cell--numeric qd-explorer-table__header-cell--numeric" role="columnheader">
-        {{ headers.surahs }}
-      </div>
-      <div class="stems-table__header-cell qd-explorer-table__header-cell stems-table__header-cell--numeric qd-explorer-table__header-cell--numeric" role="columnheader">
-        {{ headers.simpleWords }}
-      </div>
-      <div class="stems-table__header-cell qd-explorer-table__header-cell stems-table__header-cell--numeric qd-explorer-table__header-cell--numeric" role="columnheader">
-        {{ headers.tashkeelWords }}
-      </div>
+      <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.occurrences, numeric: true }" />
+      <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.ayahs, numeric: true }" />
+      <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.surahs, numeric: true }" />
+      <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.simple, numeric: true }" />
+      <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.tashkeel, numeric: true }" />
     </div>
     <div class="stems-table__header-gutter qd-explorer-table__header-gutter" aria-hidden="true"></div>
   </div>
@@ -68,6 +59,15 @@
         </div>
       }
     </div>
+  } @else if (status() === 'error') {
+    <!-- List states live INSIDE the mounted shell (Feature 030, N3 row 5 / §17 mounted-shell
+         doctrine): as a page-level banner they inserted above the fixed table+panel grid and
+         pushed it down ~4.5rem. They replace the body, so the shell keeps its footprint. -->
+    <div class="stems-table__state qd-error-state" role="alert" data-testid="stems-list-error">
+      {{ errorMessage() }}
+    </div>
+  } @else if (status() === 'empty') {
+    <p class="stems-table__state qd-empty-state" data-testid="stems-list-no-results">{{ noResultsLabel }}</p>
   } @else if (useVirtualScroll) {
     <cdk-virtual-scroll-viewport
       class="stems-table__body qd-explorer-table__body"
@@ -285,4 +285,30 @@
       </button>
     </div>
   </ng-template>
+  <!-- One sortable column header (Feature 030, N8). aria-sort carries the current state and lives on
+       the columnheader; the button's aria-label names the column + the state the next click gives. -->
+  <ng-template #sortHeader let-column="column" let-numeric="numeric">
+    <div
+      class="stems-table__header-cell qd-explorer-table__header-cell"
+      [class.stems-table__header-cell--numeric]="numeric"
+      [class.qd-explorer-table__header-cell--numeric]="numeric"
+      role="columnheader"
+      [attr.aria-sort]="sortControl.ariaSort(column)"
+    >
+      <button
+        type="button"
+        class="qd-explorer-table__sort-button"
+        [class.qd-is-sorted]="sortControl.isSorted(column)"
+        [attr.data-testid]="'stems-table-sort-' + column.key"
+        [attr.aria-label]="sortControl.actionAria(column)"
+        (click)="sortControl.cycle(column)"
+      >
+        <span class="qd-explorer-table__sort-label">{{ column.label }}</span>
+        @if (sortControl.glyph(column); as glyph) {
+          <span class="qd-explorer-table__sort-glyph" aria-hidden="true">{{ glyph }}</span>
+        }
+      </button>
+    </div>
+  </ng-template>
+
 </div>

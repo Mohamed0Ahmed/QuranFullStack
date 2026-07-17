@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { SelectedAyahSectionComponent } from './selected-ayah-section.component';
@@ -352,6 +352,186 @@ describe('SelectedAyahSectionComponent — stable loading (UI-001)', () => {
     expect(root.querySelector('.qd-empty-state')).toBeTruthy();
     expect(root.querySelector('.qd-skeleton')).toBeNull();
     expect(root.querySelector('[data-testid="ayah-study-loading"]')).toBeNull();
+  });
+});
+
+describe('SelectedAyahSectionComponent — loading layout reservation (N3 row 10, Feature 030)', () => {
+  class FakeResizeObserver {
+    static instances: FakeResizeObserver[] = [];
+
+    private observed: Element[] = [];
+
+    constructor(private readonly callback: ResizeObserverCallback) {
+      FakeResizeObserver.instances.push(this);
+    }
+
+    observe(element: Element): void {
+      this.observed.push(element);
+    }
+
+    unobserve(element: Element): void {
+      this.observed = this.observed.filter((observedElement) => observedElement !== element);
+    }
+
+    disconnect(): void {
+      this.observed = [];
+    }
+
+    trigger(width: number, height: number): void {
+      const target = this.observed[this.observed.length - 1];
+      if (!target) {
+        throw new Error('FakeResizeObserver.trigger called before observe');
+      }
+      vi.spyOn(target, 'getBoundingClientRect').mockReturnValue({
+        width,
+        height,
+        top: 0,
+        left: 0,
+        right: width,
+        bottom: height,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      } as DOMRect);
+      this.callback([{ target } as unknown as ResizeObserverEntry], this as unknown as ResizeObserver);
+    }
+  }
+
+  beforeEach(() => {
+    FakeResizeObserver.instances = [];
+    vi.stubGlobal('ResizeObserver', FakeResizeObserver);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  function lastObserver(): FakeResizeObserver {
+    const observer = FakeResizeObserver.instances[FakeResizeObserver.instances.length - 1];
+    expect(observer).toBeTruthy();
+    return observer;
+  }
+
+  function sectionOf(fixture: ComponentFixture<SelectedAyahSectionComponent>): HTMLElement {
+    return fixture.nativeElement.querySelector('[data-testid="selected-ayah-section"]') as HTMLElement;
+  }
+
+  it('reserves the last successful natural block size while loading, with no stale loaded DOM', () => {
+    const fixture = TestBed.createComponent(SelectedAyahSectionComponent);
+    setInputs(fixture, {
+      study: buildAyahStudyViewModel('2:25'),
+      loadState: IDLE,
+      selectedVerseKey: '2:25',
+    });
+    lastObserver().trigger(600, 940);
+    fixture.detectChanges();
+
+    setInputs(fixture, {
+      study: null,
+      loadState: { isLoading: true, isEmpty: false, errorMessage: null },
+      selectedVerseKey: '2:26',
+    });
+
+    const section = sectionOf(fixture);
+    expect(section.classList.contains('selected-ayah-section--loading')).toBe(true);
+    expect(section.style.getPropertyValue('--qd-selected-ayah-reserved-block-size')).toBe('940px');
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('qd-tafsir-card')).toBeNull();
+    expect(root.querySelector('[data-testid="selected-ayah-section-ayah"]')).toBeNull();
+    expect(root.textContent).not.toContain(AYAH_TEXT_PLACEHOLDER);
+  });
+
+  it('clears the loading reservation on the next successful render', () => {
+    const fixture = TestBed.createComponent(SelectedAyahSectionComponent);
+    setInputs(fixture, {
+      study: buildAyahStudyViewModel('2:25'),
+      loadState: IDLE,
+      selectedVerseKey: '2:25',
+    });
+    lastObserver().trigger(600, 940);
+    fixture.detectChanges();
+
+    setInputs(fixture, {
+      study: null,
+      loadState: { isLoading: true, isEmpty: false, errorMessage: null },
+      selectedVerseKey: '2:26',
+    });
+    expect(sectionOf(fixture).style.getPropertyValue('--qd-selected-ayah-reserved-block-size')).toBe('940px');
+
+    setInputs(fixture, {
+      study: buildAyahStudyViewModel('2:26'),
+      loadState: IDLE,
+      selectedVerseKey: '2:26',
+    });
+
+    const section = sectionOf(fixture);
+    expect(section.classList.contains('selected-ayah-section--loading')).toBe(false);
+    expect(section.style.getPropertyValue('--qd-selected-ayah-reserved-block-size')).toBe('');
+  });
+
+  it('drops a stale reservation when the available width changes mid-loading', () => {
+    const fixture = TestBed.createComponent(SelectedAyahSectionComponent);
+    setInputs(fixture, {
+      study: buildAyahStudyViewModel('2:25'),
+      loadState: IDLE,
+      selectedVerseKey: '2:25',
+    });
+    lastObserver().trigger(600, 940);
+    fixture.detectChanges();
+
+    setInputs(fixture, {
+      study: null,
+      loadState: { isLoading: true, isEmpty: false, errorMessage: null },
+      selectedVerseKey: '2:26',
+    });
+    expect(sectionOf(fixture).style.getPropertyValue('--qd-selected-ayah-reserved-block-size')).toBe('940px');
+
+    lastObserver().trigger(300, 1200);
+    fixture.detectChanges();
+
+    expect(sectionOf(fixture).style.getPropertyValue('--qd-selected-ayah-reserved-block-size')).toBe('');
+    expect(sectionOf(fixture).classList.contains('selected-ayah-section--loading')).toBe(true);
+  });
+
+  it('reserves nothing before any successful render, falling back to the CSS baseline', () => {
+    const fixture = TestBed.createComponent(SelectedAyahSectionComponent);
+    setInputs(fixture, {
+      study: null,
+      loadState: { isLoading: true, isEmpty: false, errorMessage: null },
+      selectedVerseKey: '2:25',
+    });
+
+    const section = sectionOf(fixture);
+    expect(section.classList.contains('selected-ayah-section--loading')).toBe(true);
+    expect(section.style.getPropertyValue('--qd-selected-ayah-reserved-block-size')).toBe('');
+  });
+
+  it('does not record a failed or empty render as the natural size to reserve', () => {
+    const fixture = TestBed.createComponent(SelectedAyahSectionComponent);
+    setInputs(fixture, {
+      study: buildAyahStudyViewModel('2:25'),
+      loadState: IDLE,
+      selectedVerseKey: '2:25',
+    });
+    lastObserver().trigger(600, 940);
+    fixture.detectChanges();
+
+    setInputs(fixture, {
+      study: null,
+      loadState: { isLoading: false, isEmpty: true, errorMessage: null },
+      selectedVerseKey: '2:26',
+    });
+    lastObserver().trigger(600, 120);
+    fixture.detectChanges();
+
+    setInputs(fixture, {
+      study: null,
+      loadState: { isLoading: true, isEmpty: false, errorMessage: null },
+      selectedVerseKey: '2:27',
+    });
+
+    expect(sectionOf(fixture).style.getPropertyValue('--qd-selected-ayah-reserved-block-size')).toBe('940px');
   });
 });
 

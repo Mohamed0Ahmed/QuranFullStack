@@ -349,6 +349,11 @@ describe('WordTypesExplorerPageComponent', () => {
     return fixture;
   }
 
+  function lastQueryParams(routerRef: Router): Record<string, unknown> {
+    const calls = (routerRef.navigate as ReturnType<typeof vi.fn>).mock.calls;
+    return calls[calls.length - 1][1].queryParams as Record<string, unknown>;
+  }
+
   it('defaults route state to type=noun, loads tree only, and shows the select prompt', async () => {
     const fixture = await createPage();
     const root = fixture.nativeElement as HTMLElement;
@@ -389,6 +394,47 @@ describe('WordTypesExplorerPageComponent', () => {
     // Placement: filters → scope summary → tabs → table (the tabs follow the strip in document order).
     expect(strip!.compareDocumentPosition(tabs!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(requestsFor('scopeCounts')).toHaveLength(1);
+  });
+
+  it('renders the view tabs as the first layout child immediately preceding the table column (U3)', async () => {
+    const fixture = await createPage();
+    const root = fixture.nativeElement as HTMLElement;
+
+    const layout = root.querySelector('.word-types-page__layout')!;
+    const tabs = layout.querySelector('qd-word-type-table-view-tabs');
+    expect(tabs).not.toBeNull();
+    // The slot is the layout child that carries the U3 placement (N3 row 2); the tabs live inside it.
+    const slot = layout.firstElementChild!;
+    expect(slot.classList.contains('word-types-page__tabs')).toBe(true);
+    expect(slot.contains(tabs)).toBe(true);
+    expect(slot.nextElementSibling).toBe(layout.querySelector('main.word-types-page__main'));
+  });
+
+  // N3 row 2: the tabs are gated on the tree, so their whole row appeared on first load and pushed the
+  // table + panel grid down. N3 row 3: the facade nulls `rows` on a view switch, unmounting the bar.
+  it('keeps the tabs and pagination slots rendered before the tree and rows land (N3 rows 2-3)', async () => {
+    // Hold the tree request open so the page paints its pre-tree state.
+    respond('tree', PENDING);
+    const fixture = await createPage();
+    const root = fixture.nativeElement as HTMLElement;
+
+    const tabsSlot = () => root.querySelector('.qd-explorer-layout__tabs-slot');
+    const paginationSlot = () => root.querySelector('[data-testid="word-types-pagination-slot"]');
+    expect(tabsSlot()).not.toBeNull();
+    expect(paginationSlot()).not.toBeNull();
+    // Both slots are deliberately empty here: they reserve the rows, they do not render the controls.
+    expect(tabsSlot()!.querySelector('qd-word-type-table-view-tabs')).toBeNull();
+    expect(paginationSlot()!.querySelector('qd-pagination')).toBeNull();
+
+    // Once the tree lands the tabs mount into the same slot that was already holding their row.
+    takePending('tree').flush(ok(tree));
+    flushPendingRequests();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(tabsSlot()).not.toBeNull();
+    expect(tabsSlot()!.querySelector('qd-word-type-table-view-tabs')).not.toBeNull();
+    expect(paginationSlot()).not.toBeNull();
   });
 
   it('does not refetch the scope counts on a tableView or page change (US8)', async () => {
@@ -1493,5 +1539,110 @@ describe('WordTypesExplorerPageComponent', () => {
       labelAr: 'أنواع الكلمات',
       route: '/dashboard/words/types',
     }));
+  });
+
+  describe('sorting (Feature 030, N8)', () => {
+    async function pageWithRows() {
+      respond('table', ok<PagedResultDto<WordTypeTableRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [groupedRootRow] }));
+      queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'PN', tableView: 'roots' }));
+      return createPage();
+    }
+
+    it('has no desktop sort dropdown: the only select sits in the ≤1023px fallback wrapper', async () => {
+      const fixture = await pageWithRows();
+      const root = fixture.nativeElement as HTMLElement;
+
+      // ≥1024px the table header row is visible and owns sorting, so the fallback is CSS-hidden
+      // there; below that the header row is display:none and this select is the only way in.
+      const select = root.querySelector('[data-testid="word-types-sort-select"]') as HTMLElement;
+      expect(select).toBeTruthy();
+      expect(select.closest('.qd-explorer-sort-fallback')).not.toBeNull();
+    });
+
+    it('navigates { sort: token, page: 1 } when a header cycle step is emitted', async () => {
+      const fixture = await pageWithRows();
+      const root = fixture.nativeElement as HTMLElement;
+
+      (root.querySelector('[data-testid="word-types-table-sort-ayahs"]') as HTMLButtonElement).click();
+
+      expect(lastQueryParams(router)).toEqual(
+        expect.objectContaining({ sort: 'ayahs', page: '1' }),
+      );
+    });
+
+    it('navigates { sort: null } when a non-default column releases', async () => {
+      respond('table', ok<PagedResultDto<WordTypeTableRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [groupedRootRow] }));
+      queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'PN', tableView: 'roots', sort: 'ayahs-asc' }));
+      const fixture = await createPage();
+      const root = fixture.nativeElement as HTMLElement;
+
+      (root.querySelector('[data-testid="word-types-table-sort-ayahs"]') as HTMLButtonElement).click();
+
+      // Release removes the param, landing on this explorer's default: المواضع desc.
+      expect(lastQueryParams(router)).toEqual(expect.objectContaining({ sort: null, page: '1' }));
+    });
+
+    // The WORD-TYPES QUIRK: المواضع IS the default, so its cycle collapses to desc(default) ⇄ asc —
+    // the two halves of that collapse, from each starting state.
+    it('moves المواضع from its default desc straight to asc (no unsorted step first)', async () => {
+      const fixture = await pageWithRows();
+      const root = fixture.nativeElement as HTMLElement;
+
+      (root.querySelector('[data-testid="word-types-table-sort-occurrences"]') as HTMLButtonElement).click();
+
+      expect(lastQueryParams(router)).toEqual(
+        expect.objectContaining({ sort: 'occurrences-asc', page: '1' }),
+      );
+    });
+
+    it('returns المواضع from asc to the param-free default, closing the 2-state collapse', async () => {
+      respond('table', ok<PagedResultDto<WordTypeTableRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [groupedRootRow] }));
+      queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'PN', tableView: 'roots', sort: 'occurrences-asc' }));
+      const fixture = await createPage();
+      const root = fixture.nativeElement as HTMLElement;
+
+      (root.querySelector('[data-testid="word-types-table-sort-occurrences"]') as HTMLButtonElement).click();
+
+      expect(lastQueryParams(router)).toEqual(expect.objectContaining({ sort: null, page: '1' }));
+    });
+
+    it('drives the same URL contract from the fallback select', async () => {
+      const fixture = await pageWithRows();
+      const root = fixture.nativeElement as HTMLElement;
+      const select = root.querySelector('[data-testid="word-types-sort-select"]') as HTMLSelectElement;
+
+      select.value = 'surahs-asc';
+      select.dispatchEvent(new Event('change'));
+
+      expect(lastQueryParams(router)).toEqual(
+        expect.objectContaining({ sort: 'surahs-asc', page: '1' }),
+      );
+    });
+
+    it('releases the param when the fallback select picks المواضع, this explorer\'s default', async () => {
+      respond('table', ok<PagedResultDto<WordTypeTableRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [groupedRootRow] }));
+      queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'PN', tableView: 'roots', sort: 'alpha' }));
+      const fixture = await createPage();
+      const root = fixture.nativeElement as HTMLElement;
+      const select = root.querySelector('[data-testid="word-types-sort-select"]') as HTMLSelectElement;
+
+      select.value = 'occurrences';
+      select.dispatchEvent(new Event('change'));
+
+      expect(lastQueryParams(router)).toEqual(expect.objectContaining({ sort: null, page: '1' }));
+    });
+
+    it('still offers mushaf-order, which is an ordinary ordering here rather than the default', async () => {
+      const fixture = await pageWithRows();
+      const root = fixture.nativeElement as HTMLElement;
+      const select = root.querySelector('[data-testid="word-types-sort-select"]') as HTMLSelectElement;
+
+      select.value = 'mushaf-order';
+      select.dispatchEvent(new Event('change'));
+
+      expect(lastQueryParams(router)).toEqual(
+        expect.objectContaining({ sort: 'mushaf-order', page: '1' }),
+      );
+    });
   });
 });
