@@ -74,13 +74,13 @@
 
 // Reserved pagination slot (Feature 030, N3 row 4) — shared by the 5 paginated detail lists
 // (ayah-matches, root/lemma/stem words, word-type grouped words).
-//
+
 // The slot, not `qd-pagination`, is what reserves the bar: the component self-hides whenever
 // `totalCount <= pageSize` (`pagination.component.ts`), so merely keeping it mounted through a load
 // reserves nothing. This wrapper is rendered in EVERY list state, so a load/refetch repaints the list
 // without the bar unmounting and dragging the panel body up under it. Flex-column so the mounted
 // `qd-pagination` stays a blockified flex item, as it was when it was a direct child of the list.
-//
+
 // The reservation is derived, never eyeballed: `--qd-pagination-slot-block-size` (_tokens.scss) is one
 // shared `.qd-btn` row plus the bar's own leading margin — the bar's real mounted minimum — so the slot
 // tracks the control instead of drifting from it.

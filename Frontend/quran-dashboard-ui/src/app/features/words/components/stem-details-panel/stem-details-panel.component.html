@@ -31,9 +31,10 @@
 
   <div
     class="explorer-detail-panel__body stem-details-panel__surface"
-    role="tabpanel"
+    [attr.role]="notFound() ? 'region' : 'tabpanel'"
     [id]="surfaceDomId"
-    [attr.aria-labelledby]="tabDomId(view())"
+    [attr.aria-labelledby]="notFound() ? null : tabDomId(view())"
+    [attr.aria-label]="notFound() ? panelLabel : null"
     [attr.aria-busy]="loading() ? true : null"
     tabindex="0"
     data-testid="stem-details-panel-surface"

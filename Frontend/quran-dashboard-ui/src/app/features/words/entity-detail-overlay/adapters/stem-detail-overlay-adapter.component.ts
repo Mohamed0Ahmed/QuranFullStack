@@ -219,7 +219,9 @@ export class StemDetailOverlayAdapterComponent {
     }
 
     const normalizedTypeCode = this.normalizeTypeCode(typeCode);
-    if (normalizedTypeCode === frame.typeCode && frame.detailPage === DEFAULT_STEM_DETAIL_PAGE) {
+    if (normalizedTypeCode === frame.typeCode) {
+      // Re-selecting the already-active filter is a no-op on every page: it must
+      // not replace the frame or reset pagination just because detailPage > 1.
       return;
     }
 

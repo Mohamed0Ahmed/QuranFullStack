@@ -24,6 +24,14 @@ import {
 import { CLOSE_LABEL } from '../../models/unique-words.labels';
 import { ROOT_VIEW_KEYS, RootView } from '../../models/roots.models';
 
+/**
+ * Per-instance id seed. A frameless overlay copy of this panel can be mounted at
+ * the same time as the inert background panel; a shared id would make both tabs'
+ * `aria-controls` and the surface `aria-labelledby` resolve ambiguously. Each
+ * instance takes a distinct prefix so its ARIA relationships stay self-contained.
+ */
+let nextRootDetailsPanelInstanceId = 0;
+
 @Component({
   selector: 'qd-root-details-panel',
   standalone: true,
@@ -77,7 +85,8 @@ export class RootDetailsPanelComponent {
     return ROOTS_NOT_FOUND_LABEL;
   }
 
-  protected readonly surfaceDomId = 'root-details-panel-surface';
+  private readonly instanceIdPrefix = `root-details-panel-${nextRootDetailsPanelInstanceId++}`;
+  protected readonly surfaceDomId = `${this.instanceIdPrefix}-surface`;
 
   protected readonly tabs = ROOT_VIEW_KEYS.map((key) => ({
     key,
@@ -90,7 +99,7 @@ export class RootDetailsPanelComponent {
   protected readonly hasSelection = computed(() => !this.emptySelection());
 
   protected tabDomId(key: RootView): string {
-    return `root-details-tabbtn-${key}`;
+    return `${this.instanceIdPrefix}-tabbtn-${key}`;
   }
 
   protected isActive(key: RootView): boolean {

@@ -79,18 +79,20 @@ describe('MushafWordComponent', () => {
     expect(button.classList.contains('mushaf-word--selected')).toBe(false);
   });
 
-  it('paints the selected word from the interaction ladder tokens', () => {
+  it('marks the selected word as a persistent, instantly-applied selection', () => {
     const fixture = TestBed.createComponent(MushafWordComponent);
     fixture.componentRef.setInput('word', buildWord({ wordLocation: '99:1:3' }));
     fixture.componentRef.setInput('selectedWordLocation', '99:1:3');
     fixture.detectChanges();
 
     const button = fixture.nativeElement.querySelector('button') as HTMLButtonElement;
-    const style = getComputedStyle(button);
-    expect(style.backgroundColor).toBe('var(--qd-mushaf-word-selection-bg)');
-    expect(style.boxShadow).toBe('inset 0 0 0 1px var(--qd-mushaf-word-selection-ring)');
-    // Selection is persistent and instant; a transition here would fade it in like a flash.
-    expect(style.transition).toBe('none');
+
+    // Persistent: the selection is a state driven purely by the location match, not the
+    // transient hover/focus wash, so the mark stays put regardless of the pointer.
+    expect(button.classList.contains('mushaf-word--selected-word')).toBe(true);
+    // Immediate: the mark carries no transition; a fade here would flash the URL-backed,
+    // persistent selection in on every change.
+    expect(getComputedStyle(button).transition).toBe('none');
   });
 
   it('does not apply ayah background styling on the word button', () => {

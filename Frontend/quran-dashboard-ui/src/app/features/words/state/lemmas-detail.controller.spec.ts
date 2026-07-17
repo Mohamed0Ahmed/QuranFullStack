@@ -12,7 +12,7 @@ import {
   LemmaWordItemDto,
   PagedResultDto,
 } from '../models/lemmas.models';
-import { LemmasCache, LemmasCacheKeys } from './lemmas-cache';
+import { LemmasCache } from './lemmas-cache';
 import { LemmasDetailController, LemmasDetailUrlState } from './lemmas-detail.controller';
 import { LemmasDetailViewHandlers, LemmasDetailViewLoader } from './lemmas-detail-view.loader';
 
@@ -23,6 +23,24 @@ function wordsPageOf(displayText: string): PagedResultDto<LemmaWordItemDto> {
     pageSize: 100,
     totalCount: 1,
     items: [{ displayText, occurrencesCount: 1, uniqueWordId: 1 }],
+  };
+}
+
+/** Unmistakably synthetic ayah-match rows; the marker rides in the (non-scriptural) word text. */
+function ayahsPageOf(marker: string): PagedResultDto<LemmaAyahMatchDto> {
+  return {
+    page: 1,
+    pageSize: 100,
+    totalCount: 1,
+    items: [
+      {
+        ayahId: 1,
+        pageNumber: 1,
+        surahNameArabic: 'سورة-اختبار',
+        verseKey: '0:0',
+        words: [{ textUthmani: marker, isMatched: true }],
+      },
+    ],
   };
 }
 
@@ -331,88 +349,68 @@ describe('LemmasDetailController (route-independent, Feature 029 B4)', () => {
   });
 });
 
-describe('LemmasDetailController cache keys (existing LemmasCacheKeys)', () => {
+describe('LemmasDetailController identity/filter read reuse (real cache + view loader)', () => {
   beforeEach(() => {
     getTestBed().resetTestingModule();
   });
 
-  it('reads the summary and active words view through the existing LemmasCacheKeys', () => {
-    const wordsPage: PagedResultDto<LemmaWordItemDto> = {
-      page: 2,
-      pageSize: 100,
-      totalCount: 101,
-      items: [{ displayText: 'كتاب', occurrencesCount: 3, uniqueWordId: 11 }],
-    };
-    TestBed.configureTestingModule({
-      providers: [
-        {
-          provide: LemmasApi,
-          useValue: {
-            getLemmaSummary: vi.fn(() => of(ok(summaryOf(7)))),
-            getLemmaWords: vi.fn(() => of(ok(wordsPage))),
-          },
-        },
-      ],
-    });
-
-    const cache = TestBed.inject(LemmasCache);
-    const getOrLoad = vi.spyOn(cache, 'getOrLoad');
-    const controller = new LemmasDetailController(
+  /**
+   * Wires a controller onto the REAL LemmasCache and LemmasDetailViewLoader that
+   * the page panel and overlay share, so an identity/filter transition either
+   * issues a real API read or reuses a cached observable — the behaviour the
+   * per-identity/per-filter cache keys exist to produce, asserted through API call
+   * counts and panel data instead of the internal key strings.
+   */
+  function wireController(apiStub: object): LemmasDetailController {
+    TestBed.configureTestingModule({ providers: [{ provide: LemmasApi, useValue: apiStub }] });
+    return new LemmasDetailController(
       TestBed.inject(LemmasApi),
-      cache,
+      TestBed.inject(LemmasCache),
       TestBed.inject(LemmasDetailViewLoader),
     );
+  }
+
+  it('reads an identity summary and words view once, then reuses both when the identity is re-applied', () => {
+    const spies = {
+      getLemmaSummary: vi.fn(() => of(ok(summaryOf(7)))),
+      getLemmaWords: vi.fn(() => of(ok(wordsPageOf('كلمة-اختبار-٧')))),
+    };
+    const controller = wireController(spies);
 
     controller.applyUrlState(urlState(7, { view: 'words', wordView: 'tashkeel', detailPage: 2 }));
-
-    const usedKeys = getOrLoad.mock.calls.map(([key]) => key);
-    expect(usedKeys).toContain(LemmasCacheKeys.summary(7));
-    expect(usedKeys).toContain(LemmasCacheKeys.words(7, 'tashkeel', 2));
     expect(controller.panelState().status).toBe('success');
-    expect(controller.panelState().words?.items[0].displayText).toBe('كتاب');
+    expect(controller.panelState().words?.items[0].displayText).toBe('كلمة-اختبار-٧');
+
+    // Leave the panel and return to the SAME identity: both reads are served from cache.
+    controller.applyUrlState(null);
+    controller.applyUrlState(urlState(7, { view: 'words', wordView: 'tashkeel', detailPage: 2 }));
+
+    expect(spies.getLemmaSummary).toHaveBeenCalledTimes(1);
+    expect(spies.getLemmaWords).toHaveBeenCalledTimes(1);
+    expect(controller.panelState().status).toBe('success');
+    expect(controller.panelState().words?.items[0].displayText).toBe('كلمة-اختبار-٧');
   });
 
-  it('keys the ayahs view by typeCode so a filter change is a distinct cache identity', () => {
-    const ayahsPage: PagedResultDto<LemmaAyahMatchDto> = {
-      page: 2,
-      pageSize: 100,
-      totalCount: 250,
-      items: [
-        {
-          ayahId: 1,
-          pageNumber: 2,
-          surahNameArabic: 'البقرة',
-          verseKey: '2:2',
-          words: [{ textUthmani: 'كلمة-اختبار', isMatched: true }],
-        },
-      ],
+  it('reads the ayahs view once per typeCode filter and reuses each filter on return without cross-serving', () => {
+    const spies = {
+      getLemmaSummary: vi.fn(() => of(ok(summaryOf(7)))),
+      getLemmaAyahMatches: vi.fn((_id: number, _page: number, _size: number, typeCode: string | null) =>
+        of(ok(ayahsPageOf(typeCode ?? 'all'))),
+      ),
     };
-    TestBed.configureTestingModule({
-      providers: [
-        {
-          provide: LemmasApi,
-          useValue: {
-            getLemmaSummary: vi.fn(() => of(ok(summaryOf(7)))),
-            getLemmaAyahMatches: vi.fn(() => of(ok(ayahsPage))),
-          },
-        },
-      ],
-    });
+    const controller = wireController(spies);
 
-    const cache = TestBed.inject(LemmasCache);
-    const getOrLoad = vi.spyOn(cache, 'getOrLoad');
-    const controller = new LemmasDetailController(
-      TestBed.inject(LemmasApi),
-      cache,
-      TestBed.inject(LemmasDetailViewLoader),
-    );
+    controller.applyUrlState(urlState(7, { view: 'ayahs', detailPage: 2, typeCode: null }));
+    expect(controller.panelState().ayahs?.items[0].words[0].textUthmani).toBe('all');
 
     controller.applyUrlState(urlState(7, { view: 'ayahs', detailPage: 2, typeCode: 'V' }));
+    expect(controller.panelState().ayahs?.items[0].words[0].textUthmani).toBe('V');
+    expect(spies.getLemmaAyahMatches).toHaveBeenCalledTimes(2);
 
-    const usedKeys = getOrLoad.mock.calls.map(([key]) => key);
-    expect(usedKeys).toContain(LemmasCacheKeys.summary(7));
-    expect(usedKeys).toContain(LemmasCacheKeys.ayahs(7, 2, 100, 'V'));
-    expect(controller.panelState().status).toBe('success');
-    expect(controller.panelState().ayahs?.totalCount).toBe(250);
+    // Returning to the unfiltered read reuses its cache and never serves the 'V' filter's data.
+    controller.applyUrlState(urlState(7, { view: 'ayahs', detailPage: 2, typeCode: null }));
+    expect(spies.getLemmaAyahMatches).toHaveBeenCalledTimes(2);
+    expect(controller.panelState().ayahs?.items[0].words[0].textUthmani).toBe('all');
+    expect(spies.getLemmaSummary).toHaveBeenCalledTimes(1);
   });
 });

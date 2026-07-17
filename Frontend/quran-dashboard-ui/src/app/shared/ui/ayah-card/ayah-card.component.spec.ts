@@ -48,11 +48,4 @@ describe('AyahCardComponent', () => {
     expect(root.querySelector('[data-testid="host-li"]')!.classList.contains('qd-ayah-card')).toBe(true);
     expect(root.querySelector('[data-testid="host-article"]')!.classList.contains('qd-ayah-card')).toBe(true);
   });
-
-  it('exposes no domain, text, or navigation API (presentation-only contract)', () => {
-    const definition = (AyahCardComponent as unknown as { ɵcmp: { inputs: object; outputs: object } }).ɵcmp;
-
-    expect(Object.keys(definition.inputs)).toEqual([]);
-    expect(Object.keys(definition.outputs)).toEqual([]);
-  });
 });

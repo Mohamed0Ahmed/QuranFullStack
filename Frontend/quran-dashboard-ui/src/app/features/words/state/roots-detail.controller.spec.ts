@@ -7,7 +7,7 @@ import { ApiResponse } from '../../../core/data-access/api-response.model';
 import { RootsApi } from '../data-access/roots.api';
 import { ROOTS_ERROR_LABEL, ROOTS_NOT_FOUND_LABEL } from '../models/roots.labels';
 import { PagedResultDto, RootSummaryDto, RootWordItemDto } from '../models/roots.models';
-import { RootsCache, RootsCacheKeys } from './roots-cache';
+import { RootsCache } from './roots-cache';
 import { RootsDetailController, RootsDetailUrlState } from './roots-detail.controller';
 import { RootsDetailViewHandlers, RootsDetailViewLoader } from './roots-detail-view.loader';
 
@@ -301,44 +301,44 @@ describe('RootsDetailController (route-independent, Feature 029 B4)', () => {
   });
 });
 
-describe('RootsDetailController cache keys (existing RootsCacheKeys)', () => {
+describe('RootsDetailController identity read reuse (real cache + view loader)', () => {
   beforeEach(() => {
     getTestBed().resetTestingModule();
   });
 
-  it('reads the summary and active view through the existing RootsCacheKeys', () => {
-    const wordsPage: PagedResultDto<RootWordItemDto> = {
-      page: 2,
-      pageSize: 100,
-      totalCount: 101,
-      items: [{ displayText: 'كتاب', kind: 'tashkeel', occurrencesCount: 3, uniqueWordId: 11 }],
-    };
-    TestBed.configureTestingModule({
-      providers: [
-        {
-          provide: RootsApi,
-          useValue: {
-            getRootSummary: vi.fn(() => of(ok(summaryOf(7)))),
-            getRootWords: vi.fn(() => of(ok(wordsPage))),
-          },
-        },
-      ],
-    });
-
-    const cache = TestBed.inject(RootsCache);
-    const getOrLoad = vi.spyOn(cache, 'getOrLoad');
-    const controller = new RootsDetailController(
+  /**
+   * Wires a controller onto the REAL RootsCache and RootsDetailViewLoader the page
+   * panel and overlay share, so an identity re-apply either issues a real API read
+   * or reuses a cached observable — asserted through API call counts and panel data
+   * rather than the internal cache-key strings.
+   */
+  function wireController(apiStub: object): RootsDetailController {
+    TestBed.configureTestingModule({ providers: [{ provide: RootsApi, useValue: apiStub }] });
+    return new RootsDetailController(
       TestBed.inject(RootsApi),
-      cache,
+      TestBed.inject(RootsCache),
       TestBed.inject(RootsDetailViewLoader),
     );
+  }
+
+  it('reads an identity summary and words view once, then reuses both when the identity is re-applied', () => {
+    const spies = {
+      getRootSummary: vi.fn(() => of(ok(summaryOf(7)))),
+      getRootWords: vi.fn(() => of(ok(wordsPageOf('كلمة-اختبار-٧')))),
+    };
+    const controller = wireController(spies);
 
     controller.applyUrlState(urlState(7, { view: 'words', wordView: 'tashkeel', detailPage: 2 }));
-
-    const usedKeys = getOrLoad.mock.calls.map(([key]) => key);
-    expect(usedKeys).toContain(RootsCacheKeys.summary(7));
-    expect(usedKeys).toContain(RootsCacheKeys.words(7, 'tashkeel', 2));
     expect(controller.panelState().status).toBe('success');
-    expect(controller.panelState().words?.items[0].displayText).toBe('كتاب');
+    expect(controller.panelState().words?.items[0].displayText).toBe('كلمة-اختبار-٧');
+
+    // Leave the panel and return to the SAME identity: both reads are served from cache.
+    controller.applyUrlState(null);
+    controller.applyUrlState(urlState(7, { view: 'words', wordView: 'tashkeel', detailPage: 2 }));
+
+    expect(spies.getRootSummary).toHaveBeenCalledTimes(1);
+    expect(spies.getRootWords).toHaveBeenCalledTimes(1);
+    expect(controller.panelState().status).toBe('success');
+    expect(controller.panelState().words?.items[0].displayText).toBe('كلمة-اختبار-٧');
   });
 });

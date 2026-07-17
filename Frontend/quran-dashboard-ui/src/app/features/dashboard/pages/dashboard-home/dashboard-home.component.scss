@@ -34,10 +34,18 @@
 
 /* Mirrors the loaded .qd-badge line box (styles/_components.scss): padding-block
    (2 × --qd-space-1) + 0.75rem text at 1.4 line-height + the 1px hairline both
-   sides. Derived from the badge rule, not hardcoded, so a badge restyle stays
-   one edit away from being reflected here. */
+   sides. There is no shared badge line-box token yet, so the badge's text metrics
+   live here as named locals composed into one height instead of repeated literals;
+   mirror any .qd-badge restyle here. */
+$badge-line-font-size: 0.75rem;
+$badge-line-height: 1.4;
+$badge-line-border-width: 1px;
+
 .app-meta-skeleton {
-  --qd-skeleton-h: calc(2 * var(--qd-space-1) + 0.75rem * 1.4 + 2px);
+  --qd-skeleton-h: calc(
+    2 * var(--qd-space-1) + #{$badge-line-font-size} * #{$badge-line-height} +
+      2 * #{$badge-line-border-width}
+  );
 }
 
 .app-meta-error {

@@ -69,19 +69,27 @@ describe('ExplorerResultCountComponent', () => {
     expect(root.querySelector('[data-testid="explorer-result-count-skeleton"]')).toBeNull();
   });
 
-  it('renders every state as the same single line box', () => {
-    const lineBox = (root: HTMLElement) => {
-      const line = root.querySelector('.explorer-result-count');
-      expect(line).toBeTruthy();
-      // One structural line per state — never a taller flex row wrapping a short bar.
-      return line!.tagName;
+  it('renders every state as the same single shared line box', () => {
+    const line = (root: HTMLElement) => {
+      const lines = root.querySelectorAll('.explorer-result-count');
+      // Exactly one line element per state — never two stacked lines, never a bare
+      // message with no line box — so every state occupies the one constant line box.
+      expect(lines).toHaveLength(1);
+      return lines[0];
     };
 
     const loaded = render({ count: 1642, labelPrefix: 'عدد الجذور' });
     const loading = render({ count: 0, labelPrefix: 'عدد الجذور', loading: true });
     const errored = render({ count: 0, labelPrefix: 'عدد الجذور', hasError: true });
 
-    expect([lineBox(loaded), lineBox(loading), lineBox(errored)]).toEqual(['P', 'P', 'P']);
+    const lines = [line(loaded), line(loading), line(errored)];
+    // Every state carries the one shared line class and uses the same element type, so
+    // the three boxes are structurally identical and the toolbar never changes height on
+    // a load or a failure — without pinning the box to one specific tag name.
+    for (const el of lines) {
+      expect(el.classList.contains('explorer-result-count')).toBe(true);
+    }
+    expect(new Set(lines.map((el) => el.tagName)).size).toBe(1);
     // The loading bar is the line itself, not a fixed-height chip inside a padded row.
     expect(loading.querySelector('.explorer-result-count__skeleton')?.classList.contains('qd-skeleton')).toBe(true);
   });

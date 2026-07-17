@@ -212,6 +212,19 @@ describe('WordTypeDetailOverlayAdapterComponent (Feature 029 B4)', () => {
     expect(
       host.querySelector('[data-testid="word-type-details-tab-ayahs"]')?.getAttribute('aria-selected'),
     ).toBe('true');
+
+    // The unsupported `words` top frame is canonicalized in the URL to the word
+    // detail default 'ayahs', so a shared/hand-edited `view=words` never sticks.
+    expect(replaceTopFrame).toHaveBeenCalledWith({
+      kind: 'wordType',
+      tashkeelWordId: 42,
+      contextCode: 'noun',
+      case: 'all',
+      tense: 'all',
+      voice: 'all',
+      view: 'ayahs',
+      detailPage: 1,
+    });
   });
 
   it('re-drives its own controller from a frame input change (URL sync loop)', async () => {

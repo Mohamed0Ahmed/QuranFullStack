@@ -22,6 +22,14 @@ import {
 } from '../../models/word-types.models';
 import { WordTypeDetailSelectionKind } from '../../models/word-types-detail.models';
 
+/**
+ * Per-instance id seed. The active overlay copy of this panel can be mounted at
+ * the same time as the inert drawer; a shared id would make the overlay tabs'
+ * `aria-controls` / surface `aria-labelledby` resolve to the wrong (inert) panel.
+ * Each instance takes a distinct prefix so its ARIA relationships stay local.
+ */
+let nextWordTypeDetailsPanelInstanceId = 0;
+
 @Component({
   selector: 'qd-word-type-details-panel',
   standalone: true,
@@ -63,7 +71,8 @@ export class WordTypeDetailsPanelComponent {
   protected get closeLabel() { return CLOSE_LABEL; }
   protected get emptySelectionLabel() { return this.presentation.emptySelectionLabel; }
   protected get notFoundLabel() { return this.presentation.notFoundLabel; }
-  protected readonly surfaceDomId = 'word-type-details-panel-surface';
+  private readonly instanceIdPrefix = `word-type-details-panel-${nextWordTypeDetailsPanelInstanceId++}`;
+  protected readonly surfaceDomId = `${this.instanceIdPrefix}-surface`;
 
   private get presentation() { return WORD_TYPE_DETAIL_PRESENTATIONS[this.kind()]; }
 
@@ -83,7 +92,7 @@ export class WordTypeDetailsPanelComponent {
   protected readonly hasSelection = computed(() => !this.emptySelection());
 
   protected tabDomId(key: WordTypeDetailView): string {
-    return `word-type-details-tabbtn-${key}`;
+    return `${this.instanceIdPrefix}-tabbtn-${key}`;
   }
 
   protected isActive(key: WordTypeDetailView): boolean {

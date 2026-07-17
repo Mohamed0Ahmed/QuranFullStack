@@ -94,8 +94,39 @@ describe('WordTypeDetailsPanelComponent', () => {
     const host = fixture.nativeElement as HTMLElement;
 
     expect(host.querySelectorAll('[role="tab"]')).toHaveLength(2);
-    expect(host.querySelector('[role="tabpanel"]')?.id).toBe('word-type-details-panel-surface');
+    // The surface id is per-instance (not a shared constant); the tabs must resolve to it.
+    const panel = host.querySelector('[role="tabpanel"]') as HTMLElement;
+    expect(panel.id).toBeTruthy();
+    for (const tab of Array.from(host.querySelectorAll('[role="tab"]'))) {
+      expect(tab.getAttribute('aria-controls')).toBe(panel.id);
+    }
     expect(host.querySelector('[data-word-type-tab="analysis"]')).toBeNull();
+  });
+
+  it('gives each panel instance distinct surface and tab ids', () => {
+    TestBed.configureTestingModule({
+      imports: [WordTypeDetailsPanelComponent],
+      providers: [provideRouter([]), provideLocationMocks()],
+      teardown: { destroyAfterEach: true },
+    });
+
+    const makeSurface = () => {
+      const fixture = TestBed.createComponent(WordTypeDetailsPanelComponent);
+      fixture.componentRef.setInput('view', 'ayahs');
+      fixture.componentRef.setInput('kind', 'word');
+      fixture.componentRef.setInput('emptySelection', false);
+      fixture.detectChanges();
+      return (fixture.nativeElement as HTMLElement).querySelector(
+        '[data-testid="word-type-details-panel-surface"]',
+      ) as HTMLElement;
+    };
+
+    const firstSurface = makeSurface();
+    const secondSurface = makeSurface();
+
+    expect(firstSurface.id).toBeTruthy();
+    expect(secondSurface.id).toBeTruthy();
+    expect(firstSurface.id).not.toBe(secondSurface.id);
   });
 
   it('marks the active tab selected with roving tabindex', () => {

@@ -38,13 +38,39 @@ describe('RootDetailsPanelComponent a11y (T070)', () => {
     expect(tabs).toHaveLength(5);
 
     const panel = host.querySelector('[role="tabpanel"]') as HTMLElement;
-    expect(panel.id).toBe('root-details-panel-surface');
+    // The surface id is per-instance (not a shared constant); the tabs must resolve to it.
+    expect(panel.id).toBeTruthy();
 
     expect(panel.getAttribute('tabindex')).toBe('0');
 
     for (const tab of Array.from(tabs)) {
-      expect(tab.getAttribute('aria-controls')).toBe('root-details-panel-surface');
+      expect(tab.getAttribute('aria-controls')).toBe(panel.id);
     }
+  });
+
+  it('gives each panel instance distinct surface and tab ids', () => {
+    TestBed.configureTestingModule({
+      imports: [RootDetailsPanelComponent],
+      providers: [provideRouter([]), provideLocationMocks()],
+      teardown: { destroyAfterEach: true },
+    });
+
+    const makeSurface = () => {
+      const fixture = TestBed.createComponent(RootDetailsPanelComponent);
+      fixture.componentRef.setInput('view', 'ayahs');
+      fixture.componentRef.setInput('emptySelection', false);
+      fixture.detectChanges();
+      return (fixture.nativeElement as HTMLElement).querySelector(
+        '[data-testid="root-details-panel-surface"]',
+      ) as HTMLElement;
+    };
+
+    const firstSurface = makeSurface();
+    const secondSurface = makeSurface();
+
+    expect(firstSurface.id).toBeTruthy();
+    expect(secondSurface.id).toBeTruthy();
+    expect(firstSurface.id).not.toBe(secondSurface.id);
   });
 
   // Feature 030, N3 row 5: notFound is a PANEL/selection state (the list is fine and populated), so
@@ -63,7 +89,7 @@ describe('RootDetailsPanelComponent a11y (T070)', () => {
     expect(host.querySelectorAll('[role="tab"]')).toHaveLength(0);
   });
 
-  it('prefers the server not-found message and keeps the tabpanel named once the tabs are gone', () => {
+  it('prefers the server not-found message and drops tabpanel semantics once the tabs are gone', () => {
     const fixture = createPanel('words');
     fixture.componentRef.setInput('notFound', true);
     fixture.componentRef.setInput('notFoundMessage', 'الجذر غير موجود');
@@ -74,10 +100,13 @@ describe('RootDetailsPanelComponent a11y (T070)', () => {
       'الجذر غير موجود',
     );
 
-    // the tablist is gone, so aria-labelledby would dangle — the panel names itself instead
-    const panel = host.querySelector('[role="tabpanel"]') as HTMLElement;
-    expect(panel.getAttribute('aria-labelledby')).toBeNull();
-    expect(panel.getAttribute('aria-label')).toBe(ROOTS_PANEL_LABEL);
+    // No tablist is rendered, so exposing a tabpanel would orphan it: the surface
+    // becomes a self-labelled region instead of a tabpanel pointing at a missing tab.
+    expect(host.querySelector('[role="tabpanel"]')).toBeNull();
+    const surface = host.querySelector('[data-testid="root-details-panel-surface"]') as HTMLElement;
+    expect(surface.getAttribute('role')).toBe('region');
+    expect(surface.getAttribute('aria-labelledby')).toBeNull();
+    expect(surface.getAttribute('aria-label')).toBe(ROOTS_PANEL_LABEL);
   });
 
   it('marks the active tab selected with roving tabindex and labels the panel', () => {
@@ -91,8 +120,10 @@ describe('RootDetailsPanelComponent a11y (T070)', () => {
       expect(tab.getAttribute('tabindex')).toBe(isActive ? '0' : '-1');
     }
 
+    const activeTab = host.querySelector('[data-root-tab="ayahs"]') as HTMLElement;
     const panel = host.querySelector('[role="tabpanel"]') as HTMLElement;
-    expect(panel.getAttribute('aria-labelledby')).toBe('root-details-tabbtn-ayahs');
+    expect(activeTab.id).toBeTruthy();
+    expect(panel.getAttribute('aria-labelledby')).toBe(activeTab.id);
   });
 
   it('moves selection forward in RTL reading order on ArrowLeft', () => {

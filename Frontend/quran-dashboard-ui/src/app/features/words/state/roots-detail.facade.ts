@@ -69,7 +69,12 @@ export class RootsDetailFacade {
   unbindFromRoute(): void {
     this.routeSub?.unsubscribe();
     this.routeSub = undefined;
-    this.controller.cancelPendingLoads();
+    // Reset the active identity as well as cancelling in-flight loads: a bare
+    // cancel leaves the controller's last identity set, so re-binding to the
+    // SAME query params would short-circuit in applyUrlState() and strand the
+    // panel in its cancelled `loading` state. Clearing forces a real reload on
+    // re-entry.
+    this.controller.clearSelection();
   }
 
   selectRoot(summary: RootSummaryDto, view: RootView = DEFAULT_ROOT_VIEW): void {

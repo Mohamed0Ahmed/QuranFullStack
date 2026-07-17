@@ -123,6 +123,14 @@ describe('StemDetailsPanelComponent a11y (T087)', () => {
     expect(host.querySelector('[data-testid="stem-details-not-found"]')).toBeTruthy();
     expect(host.querySelector('[role="tablist"]')).toBeNull();
     expect(host.querySelectorAll('[role="tab"]')).toHaveLength(0);
+
+    // No tablist is rendered, so the surface must not keep a tabpanel pointing at a
+    // missing tab: it drops the dangling aria-labelledby and becomes a labelled region.
+    expect(host.querySelector('[role="tabpanel"]')).toBeNull();
+    const surface = host.querySelector('[data-testid="stem-details-panel-surface"]') as HTMLElement;
+    expect(surface.getAttribute('role')).toBe('region');
+    expect(surface.getAttribute('aria-labelledby')).toBeNull();
+    expect(surface.getAttribute('aria-label')).toBe('تفاصيل الأصل الصرفي');
   });
 });
 

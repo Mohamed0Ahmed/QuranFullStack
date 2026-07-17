@@ -3,8 +3,6 @@ import { getTestBed, TestBed } from '@angular/core/testing';
 
 import { WordsExplainerPreference } from './words-explainer-preference';
 
-const STORAGE_KEY = 'qd-words-explainer';
-
 /** A fresh service instance so each test exercises the constructor-time (synchronous) restore. */
 function freshService(): WordsExplainerPreference {
   getTestBed().resetTestingModule();
@@ -26,17 +24,22 @@ describe('WordsExplainerPreference', () => {
     expect(pref.isExpanded('word-types')).toBe(true);
   });
 
-  it('persists a collapse and reflects it', () => {
+  it('persists a collapse and reflects it after the service is recreated', () => {
     const pref = freshService();
 
     pref.setExpanded('roots', false);
-
     expect(pref.isExpanded('roots')).toBe(false);
-    expect(localStorage.getItem(STORAGE_KEY)).toContain('roots');
+
+    // A fresh instance restores the persisted collapse through the service's own API —
+    // no assertion on the storage encoding.
+    const reloaded = freshService();
+    expect(reloaded.isExpanded('roots')).toBe(false);
   });
 
-  it('restores a stored collapsed state on the FIRST read (synchronous, before any paint)', () => {
-    localStorage.setItem(STORAGE_KEY, 'roots,stems');
+  it('restores a persisted collapsed state on the FIRST read (synchronous, before any paint)', () => {
+    const seed = freshService();
+    seed.setExpanded('roots', false);
+    seed.setExpanded('stems', false);
 
     const pref = freshService();
 
@@ -56,14 +59,18 @@ describe('WordsExplainerPreference', () => {
     expect(pref.isExpanded('word-types')).toBe(true);
   });
 
-  it('re-expanding removes the key from storage', () => {
-    localStorage.setItem(STORAGE_KEY, 'roots');
+  it('re-expanding clears the persisted collapse (a fresh instance defaults back to expanded)', () => {
+    const seed = freshService();
+    seed.setExpanded('roots', false);
+
     const pref = freshService();
+    expect(pref.isExpanded('roots')).toBe(false);
 
     pref.setExpanded('roots', true);
 
-    expect(pref.isExpanded('roots')).toBe(true);
-    expect(localStorage.getItem(STORAGE_KEY) ?? '').not.toContain('roots');
+    // The cleared collapse must not survive into a new instance.
+    const reloaded = freshService();
+    expect(reloaded.isExpanded('roots')).toBe(true);
   });
 
   // A single real boundary (localStorage) is the only sanctioned mock here (plan §8). Both failure

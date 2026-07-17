@@ -93,6 +93,7 @@
   --qd-explorer-table-card-height: calc(
     var(--qd-explorer-table-header-height) + var(--qd-explorer-table-body-height)
   );
+
   // Word Types view-tabs strip box (Feature 030, N3 row 2): four tabs on one row —
   // tab 2.4375rem + strip padding 1rem + hairline 0.125rem. This is the ONE source for the strip's
   // height: `.word-type-table-view-tabs` pins itself to it and `.qd-explorer-layout__tabs-slot`

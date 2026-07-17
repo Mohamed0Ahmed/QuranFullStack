@@ -26,6 +26,38 @@ function renderWith(dashboardInfo$: Observable<AppInfo>): HTMLElement {
   return fixture.nativeElement as HTMLElement;
 }
 
+const REM_FALLBACK_PX = 16;
+
+function rootLength(property: string, fallback: string): string {
+  const declared = getComputedStyle(document.documentElement).getPropertyValue(property).trim();
+  return declared === '' ? fallback : declared;
+}
+
+/** Resolves a single calc() factor — a bare number, a rem/px length, or var(--qd-space-1) — to px. */
+function factorToPx(factor: string): number {
+  const token = factor.trim().replace('var(--qd-space-1)', rootLength('--qd-space-1', '0.25rem'));
+  if (token.endsWith('rem')) {
+    const remPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || REM_FALLBACK_PX;
+    return parseFloat(token) * remPx;
+  }
+  return parseFloat(token); // px length or a bare multiplier
+}
+
+/**
+ * Resolves a `calc(A * B + C * D + …)` line-box expression to pixels so the test measures
+ * the reserved box height rather than asserting a CSS custom property is merely present.
+ */
+function reservedBoxHeightPx(expression: string): number {
+  return expression
+    .replace(/^\s*calc\(/, '')
+    .replace(/\)\s*$/, '')
+    .split('+')
+    .reduce(
+      (sum, term) => sum + term.split('*').reduce((product, factor) => product * factorToPx(factor), 1),
+      0,
+    );
+}
+
 describe('DashboardHomeComponent — stable app-meta loading (N3 row 14)', () => {
   it('renders the badge strip once the app info arrives', () => {
     const root = renderWith(of(APP_INFO));
@@ -37,17 +69,23 @@ describe('DashboardHomeComponent — stable app-meta loading (N3 row 14)', () =>
     expect(badges).toEqual(['المنهج القرآني', 'الإصدار 1.0.0', 'Development']);
   });
 
-  it('reserves the badge strip box while loading, so the cards below do not shift on settle', () => {
+  it('reserves the loaded badge line box while loading, so the cards below do not shift on settle', () => {
     // A never-emitting source holds the component in its loading state.
     const loadingRoot = renderWith(new Observable<AppInfo>());
     const skeleton = loadingRoot.querySelector<HTMLElement>('[data-testid="dashboard-app-meta-loading"]');
     expect(skeleton).toBeTruthy();
 
-    // The badge line box must be reserved: without a --qd-skeleton-h the row would
-    // fall back to the 0.75rem text-skeleton default and come up ~1.3rem short.
-    const reservedHeight = getComputedStyle(skeleton!).getPropertyValue('--qd-skeleton-h').trim();
-    expect(reservedHeight).not.toBe('');
-    expect(reservedHeight).not.toBe('0.75rem');
+    // Measured box-size invariant: the reserved skeleton height must resolve to the loaded
+    // .qd-badge line box — padding-block (2 × --qd-space-1) + 0.75rem text at 1.4 line-height
+    // + a 1px hairline both sides — not merely "the --qd-skeleton-h token is present".
+    const reservedHeightPx = reservedBoxHeightPx(
+      getComputedStyle(skeleton!).getPropertyValue('--qd-skeleton-h'),
+    );
+    const badgeLineBoxPx = 2 * factorToPx('var(--qd-space-1)') + factorToPx('0.75rem') * 1.4 + 2 * 1;
+    expect(reservedHeightPx).toBeCloseTo(badgeLineBoxPx, 5);
+    // Guard against the token silently falling back to the 0.75rem text-skeleton default,
+    // which would come up ~1.3rem short and drift the cards on settle.
+    expect(reservedHeightPx).toBeGreaterThan(factorToPx('0.75rem'));
 
     TestBed.resetTestingModule();
     const loadedRoot = renderWith(of(APP_INFO));

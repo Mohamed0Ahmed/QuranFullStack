@@ -136,7 +136,7 @@ export class WordTypeDetailOverlayAdapterComponent {
     // every load-state change (cancelling in-flight summary loads).
     effect(() => {
       const frame = this.frame();
-      untracked(() =>
+      untracked(() => {
         this.controller.applyUrlState({
           identity: {
             tashkeelWordId: frame.tashkeelWordId,
@@ -147,8 +147,17 @@ export class WordTypeDetailOverlayAdapterComponent {
           },
           view: this.effectiveView(),
           detailPage: frame.detailPage,
-        }),
-      );
+        });
+
+        // Canonicalize an unsupported `words` top frame: the controller renders
+        // `ayahs` for it, so rewrite the URL to the word detail default rather
+        // than leave `view=words` (a hand-edited or shared URL) in the address
+        // bar. The replaced frame (view 'ayahs') re-enters this effect and
+        // short-circuits in the controller, so this never loops.
+        if (frame.view === 'words') {
+          this.overlay.replaceTopFrame({ ...frame, view: DEFAULT_WORD_TYPES_DETAIL_VIEW });
+        }
+      });
     });
 
     effect(() => this.titleStore?.setTitle(this.entityTitle()));

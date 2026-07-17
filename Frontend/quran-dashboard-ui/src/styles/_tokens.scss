@@ -136,8 +136,8 @@
   --qd-btn-padding-block: var(--qd-space-2);
   --qd-btn-border-width: 1px;
   --qd-control-block-size: calc(
-    var(--qd-btn-font-size) * var(--qd-btn-line-height) + 2 * var(--qd-btn-padding-block) + 2 *
-      var(--qd-btn-border-width)
+    var(--qd-btn-font-size) * var(--qd-btn-line-height) + 2 * var(--qd-btn-padding-block) + 2
+      * var(--qd-btn-border-width)
   );
 
   /* `.qd-pagination`'s own leading margin (pagination.component.scss consumes this token, so the

@@ -388,83 +388,100 @@ describe('WordTypesDetailController (route-independent, Feature 029 B4)', () => 
   });
 });
 
-describe('WordTypesDetailController cache keys (existing WordTypesCacheKeys)', () => {
+describe('WordTypesDetailController identity/page read isolation (real cache + view loader)', () => {
   beforeEach(() => {
     getTestBed().resetTestingModule();
   });
 
-  function configure(identity: WordTypeRowIdentity, options: {
-    ayahs?: PagedResultDto<WordTypeAyahMatchDto>;
-    surahs?: WordTypeSurahsResponseDto;
-  } = {}) {
-    TestBed.configureTestingModule({
-      providers: [
-        {
-          provide: WordTypesApi,
-          useValue: {
-            getSummary: vi.fn(() => of(ok(summaryOf(identity)))),
-            getAyahMatches: vi.fn(() => of(ok(options.ayahs ?? { page: 1, pageSize: 100, totalCount: 0, items: [] }))),
-            getSurahs: vi.fn(() => of(ok(options.surahs ?? { surahs: [], missingSurahs: [] }))),
-          },
-        },
-      ],
-    });
-
-    const cache = TestBed.inject(WordTypesCache);
-    const getOrLoad = vi.spyOn(cache, 'getOrLoad');
-    const controller = new WordTypesDetailController(
+  /**
+   * Wires a controller onto the REAL WordTypesCache and WordTypesDetailViewLoader
+   * the page panel and overlay share. Colliding composite identities and distinct
+   * pages must never cross-serve each other's reads, and a re-applied identity/page
+   * is served from cache — asserted through response ISOLATION and API call counts
+   * rather than the internal cache-key strings (key formatting is a cache concern).
+   */
+  function wireController(apiStub: object): WordTypesDetailController {
+    TestBed.configureTestingModule({ providers: [{ provide: WordTypesApi, useValue: apiStub }] });
+    return new WordTypesDetailController(
       TestBed.inject(WordTypesApi),
-      cache,
+      TestBed.inject(WordTypesCache),
       TestBed.inject(WordTypesDetailViewLoader),
     );
-
-    return { cache, controller, getOrLoad };
   }
 
-  it('reads the summary and paged ayahs through keys carrying the full composite identity', () => {
-    const identity = identityOf({ tashkeelWordId: 9, contextCode: 'past', case: 'null', tense: 'past', voice: 'passive' });
-    const ayahsPage: PagedResultDto<WordTypeAyahMatchDto> = {
-      page: 2,
-      pageSize: 100,
-      totalCount: 101,
-      items: [
-        {
-          ayahNumber: 2,
-          verseKey: '2:2',
-          pageNumber: 2,
-          surahNumber: 2,
-          matchedWordIds: [1],
-          matchedWordPositions: [1],
-          words: [{ quranWordId: 1, textUthmani: 'كلمة-اختبار', isAyahMarker: false }],
-        },
-      ],
+  it('isolates two colliding composite identities (same word id, different case) across summary and ayahs', () => {
+    const nominal = identityOf({ tashkeelWordId: 5, case: 'all' });
+    const accusative = identityOf({ tashkeelWordId: 5, case: 'accusative' });
+    const spies = {
+      getSummary: vi.fn((identity: WordTypeRowIdentity) => of(ok(summaryOf(identity)))),
+      getAyahMatches: vi.fn((identity: WordTypeRowIdentity) => of(ok(ayahsPageOf(`كلمة-اختبار-${identity.case}`)))),
     };
-    const { controller, getOrLoad } = configure(identity, { ayahs: ayahsPage });
+    const controller = wireController(spies);
 
-    controller.applyUrlState(urlState(identity, { view: 'ayahs', detailPage: 2 }));
+    controller.applyUrlState(urlState(nominal, { view: 'ayahs', detailPage: 1 }));
+    expect(controller.panelState().summary?.displayText).toBe(summaryOf(nominal).displayText);
+    expect(controller.panelState().ayahs?.items[0].words[0].textUthmani).toBe('كلمة-اختبار-all');
 
-    const usedKeys = getOrLoad.mock.calls.map(([key]) => key);
-    expect(usedKeys).toContain(WordTypesCacheKeys.summary(identity));
-    expect(usedKeys).toContain(WordTypesCacheKeys.ayahs(identity, 2));
-    expect(controller.panelState().status).toBe('success');
-    expect(controller.panelState().ayahs?.items).toHaveLength(1);
+    controller.applyUrlState(urlState(accusative, { view: 'ayahs', detailPage: 1 }));
+    expect(controller.panelState().summary?.displayText).toBe(summaryOf(accusative).displayText);
+    expect(controller.panelState().ayahs?.items[0].words[0].textUthmani).toBe('كلمة-اختبار-accusative');
+    expect(spies.getSummary).toHaveBeenCalledTimes(2);
+    expect(spies.getAyahMatches).toHaveBeenCalledTimes(2);
+
+    // Return to the first identity: both reads come from cache and never cross-serve the second.
+    controller.applyUrlState(urlState(nominal, { view: 'ayahs', detailPage: 1 }));
+    expect(spies.getSummary).toHaveBeenCalledTimes(2);
+    expect(spies.getAyahMatches).toHaveBeenCalledTimes(2);
+    expect(controller.panelState().summary?.displayText).toBe(summaryOf(nominal).displayText);
+    expect(controller.panelState().ayahs?.items[0].words[0].textUthmani).toBe('كلمة-اختبار-all');
   });
 
-  it('reads the single-shot surahs view through the identity-complete surahs key', () => {
+  it('isolates ayahs pages for one identity and reuses a page already read', () => {
+    const identity = identityOf({ tashkeelWordId: 9, contextCode: 'past', case: 'null', tense: 'past', voice: 'passive' });
+    const spies = {
+      getSummary: vi.fn(() => of(ok(summaryOf(identity)))),
+      getAyahMatches: vi.fn((_identity: WordTypeRowIdentity, page: number) =>
+        of(ok(ayahsPageOf(`كلمة-اختبار-p${page}`))),
+      ),
+    };
+    const controller = wireController(spies);
+
+    controller.applyUrlState(urlState(identity, { view: 'ayahs', detailPage: 1 }));
+    expect(controller.panelState().ayahs?.items[0].words[0].textUthmani).toBe('كلمة-اختبار-p1');
+
+    controller.applyUrlState(urlState(identity, { view: 'ayahs', detailPage: 2 }));
+    expect(controller.panelState().ayahs?.items[0].words[0].textUthmani).toBe('كلمة-اختبار-p2');
+    expect(spies.getAyahMatches).toHaveBeenCalledTimes(2);
+
+    // Page 1 was already read: returning to it reuses its cache, never page 2's data.
+    controller.applyUrlState(urlState(identity, { view: 'ayahs', detailPage: 1 }));
+    expect(spies.getAyahMatches).toHaveBeenCalledTimes(2);
+    expect(controller.panelState().ayahs?.items[0].words[0].textUthmani).toBe('كلمة-اختبار-p1');
+    expect(spies.getSummary).toHaveBeenCalledTimes(1);
+  });
+
+  it('reads the single-shot surahs view once and reuses it on return', () => {
     const identity = identityOf({ tashkeelWordId: 11, contextCode: 'noun', case: 'genitive' });
     const surahs: WordTypeSurahsResponseDto = {
-      surahs: [{ surahNumber: 1, nameArabic: 'الفاتحة', occurrencesCount: 2 }],
-      missingSurahs: [{ surahNumber: 9, nameArabic: 'التوبة' }],
+      surahs: [{ surahNumber: 1, nameArabic: 'سورة-اختبار', occurrencesCount: 2 }],
+      missingSurahs: [{ surahNumber: 9, nameArabic: 'سورة-اختبار-٢' }],
     };
-    const { controller, getOrLoad } = configure(identity, { surahs });
+    const spies = {
+      getSummary: vi.fn(() => of(ok(summaryOf(identity)))),
+      getSurahs: vi.fn(() => of(ok(surahs))),
+    };
+    const controller = wireController(spies);
 
     controller.applyUrlState(urlState(identity, { view: 'surahs', detailPage: 1 }));
-
-    const usedKeys = getOrLoad.mock.calls.map(([key]) => key);
-    expect(usedKeys).toContain(WordTypesCacheKeys.summary(identity));
-    expect(usedKeys).toContain(WordTypesCacheKeys.surahs(identity));
     expect(controller.panelState().status).toBe('success');
     expect(controller.panelState().surahs?.surahs).toHaveLength(1);
     expect(controller.panelState().surahs?.missingSurahs).toHaveLength(1);
+
+    // Leave and return: the single-shot surahs read is served from cache.
+    controller.applyUrlState(null);
+    controller.applyUrlState(urlState(identity, { view: 'surahs', detailPage: 1 }));
+    expect(spies.getSurahs).toHaveBeenCalledTimes(1);
+    expect(spies.getSummary).toHaveBeenCalledTimes(1);
+    expect(controller.panelState().surahs?.surahs).toHaveLength(1);
   });
 });
