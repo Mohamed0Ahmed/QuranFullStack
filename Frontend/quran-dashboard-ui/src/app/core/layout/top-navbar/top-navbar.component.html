@@ -5,16 +5,71 @@
 
   <ul class="nav-links desktop-nav">
     @for (item of primaryItems; track item.route) {
-      <li class="nav-item">
-        <a
-          class="qd-btn qd-btn-ghost nav-link"
-          [routerLink]="item.route"
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{ exact: item.route === '/dashboard' }"
+      @if (item.key === 'words') {
+        <li
+          class="nav-item words-dropdown"
+          [class.open]="wordsOpen"
+          (mouseenter)="openWords()"
+          (mouseleave)="closeWords()"
         >
-          {{ item.labelAr }}
-        </a>
-      </li>
+          <button
+            class="qd-btn qd-btn-ghost nav-link"
+            [class.active]="isWordsActive()"
+            type="button"
+            (click)="toggleWords()"
+            aria-haspopup="true"
+            aria-controls="words-menu"
+            [attr.aria-expanded]="wordsOpen"
+          >
+            {{ item.labelAr }}
+            <svg
+              class="chevron"
+              width="12"
+              height="12"
+              viewBox="0 0 12 12"
+              fill="none"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path
+                d="M3 4.5L6 7.5L9 4.5"
+                stroke="currentColor"
+                stroke-width="1.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          @if (wordsOpen) {
+            <ul id="words-menu" class="dropdown-menu">
+              @for (sub of wordsMenuItems; track sub.route) {
+                <li>
+                  <a
+                    class="qd-btn qd-btn-ghost dropdown-link"
+                    [routerLink]="sub.route"
+                    routerLinkActive="active"
+                    [routerLinkActiveOptions]="{ exact: sub.route === wordsHubRoute }"
+                    (click)="closeWords()"
+                  >
+                    {{ sub.labelAr }}
+                  </a>
+                </li>
+              }
+            </ul>
+          }
+        </li>
+      } @else {
+        <li class="nav-item">
+          <a
+            class="qd-btn qd-btn-ghost nav-link"
+            [routerLink]="item.route"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: item.route === '/dashboard' }"
+          >
+            {{ item.labelAr }}
+          </a>
+        </li>
+      }
     }
     <li class="nav-item more-dropdown" [class.open]="moreOpen">
       <button

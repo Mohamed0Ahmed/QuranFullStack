@@ -27,7 +27,9 @@ per-feature.
   nav item's Arabic label) + `nav-items.ts` + `app-title.strategy.ts` (the `TitleStrategy`
   registered in `app.config.ts`: browser-tab title = `<route title> — المنهج القرآني`, and
   the brand alone on the titleless `dashboard`/home route; each route supplies its own
-  `title` from its nav label or explorer page-title constant).
+  `title` from its nav label or explorer page-title constant) + `words-nav-items.ts`
+  (`WORDS_MENU_ITEMS` — the Words-section sub-nav rendered as the top-navbar
+  "الكلمات والجذور" dropdown; routes from `route-paths`, labels owned here in core).
 - `navigation/detail-overlay/` — the app-wide floating detail-overlay navigation layer
   (Feature 029, Change B): `detail-overlay.models.ts` (versioned `v1~…` frame union — the
   URL contract, deliberately decoupled from Words models), `detail-overlay-url-codec.ts`

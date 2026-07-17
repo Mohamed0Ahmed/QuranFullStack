@@ -2,6 +2,8 @@ import { Component, ElementRef, HostListener, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { NAV_ITEMS, NavItem } from '../../navigation/nav-items';
+import { WORDS_ROUTE_PATH } from '../../navigation/route-paths';
+import { WORDS_MENU_ITEMS } from '../../navigation/words-nav-items';
 import { ThemeService } from '../../theme/theme.service';
 
 @Component({
@@ -21,7 +23,12 @@ export class TopNavbarComponent {
   readonly moreItems = NAV_ITEMS.filter((i) => i.group === 'more');
   readonly actionItems = NAV_ITEMS.filter((i) => i.group === 'actions');
 
+  /** The primary "words" item renders as a dropdown of the Words-section pages. */
+  readonly wordsMenuItems = WORDS_MENU_ITEMS;
+  readonly wordsHubRoute = WORDS_ROUTE_PATH;
+
   moreOpen = false;
+  wordsOpen = false;
   mobileOpen = false;
 
   protected readonly isDark = toSignal(this.themeService.isDark$, { initialValue: false });
@@ -31,6 +38,9 @@ export class TopNavbarComponent {
     if (this.moreOpen) {
       this.closeMore();
     }
+    if (this.wordsOpen) {
+      this.closeWords();
+    }
     if (this.mobileOpen) {
       this.closeMobile();
     }
@@ -38,33 +48,54 @@ export class TopNavbarComponent {
 
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
-    if (this.moreOpen) {
-      const el = this.elementRef.nativeElement as HTMLElement;
-      const target = event.target as HTMLElement | null;
-      if (target && !el.querySelector('.more-dropdown')?.contains(target)) {
-        this.closeMore();
-      }
+    const el = this.elementRef.nativeElement as HTMLElement;
+    const target = event.target as HTMLElement | null;
+    if (!target) {
+      return;
+    }
+    if (this.moreOpen && !el.querySelector('.more-dropdown')?.contains(target)) {
+      this.closeMore();
+    }
+    if (this.wordsOpen && !el.querySelector('.words-dropdown')?.contains(target)) {
+      this.closeWords();
     }
   }
 
   toggleMore(): void {
     this.moreOpen = !this.moreOpen;
+    this.wordsOpen = false;
   }
 
   closeMore(): void {
     this.moreOpen = false;
   }
 
+  toggleWords(): void {
+    this.wordsOpen = !this.wordsOpen;
+    this.moreOpen = false;
+  }
+
+  openWords(): void {
+    this.wordsOpen = true;
+    this.moreOpen = false;
+  }
+
+  closeWords(): void {
+    this.wordsOpen = false;
+  }
+
   toggleMobile(): void {
     this.mobileOpen = !this.mobileOpen;
     if (!this.mobileOpen) {
       this.moreOpen = false;
+      this.wordsOpen = false;
     }
   }
 
   closeMobile(): void {
     this.mobileOpen = false;
     this.moreOpen = false;
+    this.wordsOpen = false;
   }
 
   toggleTheme(): void {
@@ -80,5 +111,14 @@ export class TopNavbarComponent {
         matrixParams: 'ignored',
       }),
     );
+  }
+
+  isWordsActive(): boolean {
+    return this.router.isActive(this.wordsHubRoute, {
+      paths: 'subset',
+      queryParams: 'ignored',
+      fragment: 'ignored',
+      matrixParams: 'ignored',
+    });
   }
 }

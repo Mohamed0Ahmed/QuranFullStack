@@ -41,7 +41,8 @@
   color: var(--qd-accent-text);
 }
 
-.more-dropdown {
+.more-dropdown,
+.words-dropdown {
   position: relative;
 }
 
@@ -50,7 +51,8 @@
   transition: transform var(--qd-t-fast);
 }
 
-.more-dropdown.open .chevron {
+.more-dropdown.open .chevron,
+.words-dropdown.open .chevron {
   transform: rotate(180deg);
 }
 
