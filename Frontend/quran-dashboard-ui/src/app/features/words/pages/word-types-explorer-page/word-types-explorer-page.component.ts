@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, inject
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, Subscription, debounceTime } from 'rxjs';
 
-import { WordTypeDetailFrame } from '../../../../core/navigation/detail-overlay/detail-overlay.models';
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
 import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
 import { AyahMatchesListComponent } from '../../components/ayah-matches-list/ayah-matches-list.component';
@@ -42,7 +41,6 @@ import {
   LemmaTableRowDto,
   RootTableRowDto,
   StemTableRowDto,
-  WORD_TYPES_DETAIL_PAGE_SIZE,
   WORD_TYPES_PAGE_SIZE,
   WordTableRowDto,
   WordTypeCase,
@@ -59,9 +57,7 @@ import {
   WordTypeDetailScope,
   WordTypeDetailSelection,
   WordTypeDetailSelectionKind,
-  WordTypeGroupedMemberWordDto,
 } from '../../models/word-types-detail.models';
-import { AyahMatchDto, PagedResultDto as SharedPagedResultDto } from '../../models/unique-words.models';
 import { WordTypesDetailFacade } from '../../state/word-types-detail.facade';
 import { WordTypesExplorerFacade } from '../../state/word-types-explorer.facade';
 import {
@@ -71,7 +67,16 @@ import {
   clearWordTypesSelection,
   parseWordTypesQueryParams,
 } from '../../state/word-types-url-sync';
-import { mapWordTypeAyahMatchToShared } from '../../utils/word-type-ayah-match.mapper';
+import {
+  EMPTY_WORD_TYPE_AYAHS_PAGE,
+  EMPTY_WORD_TYPE_MEMBER_WORDS_PAGE,
+  wordTypeAyahParentFrame,
+  wordTypeAyahsPageView,
+  wordTypeDetailSummaryView,
+  wordTypeMemberWordsPageView,
+  wordTypeMentionedSurahViews,
+  wordTypeMissingSurahViews,
+} from './word-types-detail-panel.view-model';
 
 const DETAIL_KIND_BY_TABLE_VIEW: Record<WordTypeTableView, WordTypeDetailSelectionKind> = {
   words: 'word',
@@ -161,65 +166,12 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
     WORD_TYPE_DETAIL_PRESENTATIONS[this.detailKind()].emptyViewLabels[this.panelState().view],
   );
 
-  // A word summary and a grouped summary share the same measure shape; the panel renders whichever
-  // one the active selection produced.
-  protected readonly activeSummary = computed(() => {
-    const panel = this.panelState();
-    const summary = panel.summary ?? panel.groupedSummary;
-    return summary
-      ? {
-          label: summary.displayText,
-          occurrences: summary.occurrencesCount,
-          ayahs: summary.ayahsCount,
-          surahs: summary.surahsCount,
-        }
-      : null;
-  });
-
-  protected readonly emptyAyahsPage: SharedPagedResultDto<AyahMatchDto> = {
-    page: 1,
-    pageSize: WORD_TYPES_DETAIL_PAGE_SIZE,
-    totalCount: 0,
-    items: [],
-  };
-
-  protected readonly emptyMemberWordsPage: SharedPagedResultDto<WordTypeGroupedMemberWordDto> = {
-    page: 1,
-    pageSize: WORD_TYPES_DETAIL_PAGE_SIZE,
-    totalCount: 0,
-    items: [],
-  };
-
-  protected readonly memberWordsForView = computed(() => this.panelState().words ?? this.emptyMemberWordsPage);
-
-  protected readonly ayahsPageForView = computed(() => {
-    const page = this.panelState().ayahs;
-    return page ? { ...page, items: page.items.map(mapWordTypeAyahMatchToShared) } : this.emptyAyahsPage;
-  });
-
-  /**
-   * This panel's own typed frame (Feature 029 B7): an ayah click promotes it
-   * over the Mushaf. Only a word-kind selection has a serializable overlay
-   * identity — grouped root/stem/lemma selections have no frame grammar, so
-   * they pass null (plain page navigation).
-   */
-  protected readonly ayahParentFrame = computed<WordTypeDetailFrame | null>(() => {
-    const state = this.panelState();
-    if (state.selection === null || state.selection.kind !== 'word') {
-      return null;
-    }
-    const identity = state.selection.identity;
-    return {
-      kind: 'wordType',
-      tashkeelWordId: identity.tashkeelWordId,
-      contextCode: identity.contextCode,
-      case: identity.case,
-      tense: identity.tense,
-      voice: identity.voice,
-      view: state.view,
-      detailPage: state.detailPage,
-    };
-  });
+  protected readonly emptyAyahsPage = EMPTY_WORD_TYPE_AYAHS_PAGE;
+  protected readonly emptyMemberWordsPage = EMPTY_WORD_TYPE_MEMBER_WORDS_PAGE;
+  protected readonly activeSummary = computed(() => wordTypeDetailSummaryView(this.panelState()));
+  protected readonly memberWordsForView = computed(() => wordTypeMemberWordsPageView(this.panelState()));
+  protected readonly ayahsPageForView = computed(() => wordTypeAyahsPageView(this.panelState()));
+  protected readonly ayahParentFrame = computed(() => wordTypeAyahParentFrame(this.panelState()));
 
   protected get pageTitle() { return WORD_TYPES_PAGE_TITLE; }
   protected get emptyLabel() { return WORD_TYPE_TABLE_VIEW_EMPTY_LABELS[this.listState().query.tableView]; }
@@ -415,20 +367,11 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
   }
 
   protected mentionedSurahs() {
-    const surahs = this.panelState().surahs?.surahs ?? [];
-    return surahs.map((surah) => ({
-      surahNumber: surah.surahNumber,
-      nameArabic: surah.nameArabic,
-      occurrencesInSurah: surah.occurrencesCount,
-    }));
+    return wordTypeMentionedSurahViews(this.panelState());
   }
 
   protected missingSurahs() {
-    const surahs = this.panelState().surahs?.missingSurahs ?? [];
-    return surahs.map((surah) => ({
-      surahNumber: surah.surahNumber,
-      nameArabic: surah.nameArabic,
-    }));
+    return wordTypeMissingSurahViews(this.panelState());
   }
 
   private updateQueryParams(queryParams: Record<string, string | null>): void {

@@ -6,7 +6,6 @@ import { MushafAyahStudyApi } from '../data-access/mushaf-ayah-study.api';
 import { MushafPagesApi } from '../data-access/mushaf-pages.api';
 import { MushafSimilarAyahsApi } from '../data-access/mushaf-similar-ayahs.api';
 import { MushafAyahMutashabihatApi } from '../data-access/mushaf-ayah-mutashabihat.api';
-import { MushafStudySourceCatalogApi } from '../data-access/mushaf-study-sources.api';
 import { MushafWordAnalysisApi } from '../data-access/mushaf-word-analysis.api';
 import {
   MUSHAF_SURAH_JUZ_GROUPS,
@@ -24,7 +23,6 @@ import {
   ResourceLoadState,
   SimilarAyahsDto,
   AyahMutashabihatDto,
-  SourceOption,
   WordAnalysisTab,
   WordAnalysisViewModel,
 } from '../models/mushaf.models';
@@ -39,13 +37,9 @@ import {
   saveMushafReaderSession,
 } from './mushaf-reader-session';
 import { toPageViewModel } from './mushaf-reader-view-mappers';
+import { MushafStudySourceCatalogStore } from './mushaf-study-source-catalog.store';
 import { applyAuthoritativeUrlSnapshot } from './mushaf-url-hydration';
 import { verseKeyFromWordLocation } from '../utils/mushaf-location-keys';
-import {
-  fullI3rabCatalogItemToOption,
-  tafsirCatalogItemToOption,
-  translationCatalogItemToOption,
-} from '../utils/study-source-catalog.labels';
 import {
   MushafUrlSnapshot,
   buildUrlEnumCorrections,
@@ -63,7 +57,7 @@ export class MushafReaderFacade {
   private readonly ayahStudyApi = inject(MushafAyahStudyApi);
   private readonly similarAyahsApi = inject(MushafSimilarAyahsApi);
   private readonly mutashabihatApi = inject(MushafAyahMutashabihatApi);
-  private readonly studySourceCatalogApi = inject(MushafStudySourceCatalogApi);
+  private readonly studySourceCatalog = inject(MushafStudySourceCatalogStore);
   private readonly wordAnalysisApi = inject(MushafWordAnalysisApi);
   private readonly readerCache = inject(MushafReaderCache);
   private readonly router = inject(Router);
@@ -91,24 +85,12 @@ export class MushafReaderFacade {
   private readonly _wordAnalysis = signal<WordAnalysisViewModel | null>(null);
   private readonly _surahCatalogByJuz =
     signal<readonly MushafSurahJuzGroupDto[]>(MUSHAF_SURAH_JUZ_GROUPS);
-  private readonly _tafsirSourceOptions = signal<SourceOption[]>([]);
-  private readonly _translationSourceOptions = signal<SourceOption[]>([]);
-  private readonly _fullI3rabSourceOptions = signal<SourceOption[]>([]);
 
   private wordAnalysisRequestToken = 0;
   private ayahStudyRequestToken = 0;
   private similarAyahsRequestToken = 0;
   private mutashabihatRequestToken = 0;
   private peekFlashClearTimer: ReturnType<typeof setTimeout> | null = null;
-
-  /**
-   * F2: guards `loadStudySourceCatalog` so it fires GET /api/mushaf/study-sources at
-   * most once per successful load. `loaded` flips only on a genuine success (even an
-   * empty-but-successful catalogue counts) so it is distinguishable from "not loaded
-   * yet"; a failure never sets `loaded`, so the next mount can retry.
-   */
-  private studySourceCatalogLoaded = false;
-  private studySourceCatalogLoading = false;
 
   /**
    * F1: set true by {@link bindToRoute} and consumed by the first URL hydration after a
@@ -188,9 +170,9 @@ export class MushafReaderFacade {
   readonly mutashabihat = this._mutashabihat.asReadonly();
   readonly wordAnalysis = this._wordAnalysis.asReadonly();
   readonly surahCatalogByJuz = this._surahCatalogByJuz.asReadonly();
-  readonly tafsirSourceOptions = this._tafsirSourceOptions.asReadonly();
-  readonly translationSourceOptions = this._translationSourceOptions.asReadonly();
-  readonly fullI3rabSourceOptions = this._fullI3rabSourceOptions.asReadonly();
+  readonly tafsirSourceOptions = this.studySourceCatalog.tafsirSourceOptions;
+  readonly translationSourceOptions = this.studySourceCatalog.translationSourceOptions;
+  readonly fullI3rabSourceOptions = this.studySourceCatalog.fullI3rabSourceOptions;
 
   readonly pageLoadState = this._pageLoadState.asReadonly();
   readonly ayahStudyLoadState = this._ayahStudyLoadState.asReadonly();
@@ -392,27 +374,7 @@ export class MushafReaderFacade {
   }
 
   loadStudySourceCatalog(): void {
-    if (this.studySourceCatalogLoaded || this.studySourceCatalogLoading) {
-      return;
-    }
-
-    this.studySourceCatalogLoading = true;
-    subscribeToApiLoad(this.studySourceCatalogApi.getCatalog(), {
-      onSuccess: (data) => {
-        this.studySourceCatalogLoaded = true;
-        this._tafsirSourceOptions.set(data.tafsirSources.map(tafsirCatalogItemToOption));
-        this._translationSourceOptions.set(
-          data.translationSources.map(translationCatalogItemToOption),
-        );
-        this._fullI3rabSourceOptions.set(data.fullI3rabSources.map(fullI3rabCatalogItemToOption));
-      },
-      onSettled: () => {
-        this.studySourceCatalogLoading = false;
-      },
-      emptyMessage: 'تعذّر تحميل كتالوج مصادر الدراسة.',
-      notFoundMessage: 'تعذّر تحميل كتالوج مصادر الدراسة.',
-      connectionMessage: 'تعذّر الاتصال بالخادم.',
-    });
+    this.studySourceCatalog.load();
   }
 
   resolveSurahStartPage(surahNumber: number): number | null {
