@@ -35,7 +35,11 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   dismissal, Back (depth > 1)/Close header actions, the optional `kindLabel` chip and
   `countText` meta beside the title (Feature 030), the fixed restore control shown while
   a retained stack is closed (focused after Close), polite live regions for title/status,
-  and reference-counted scroll locking. It owns no entity, API, URL, or history state.
+  and reference-counted scroll locking. It is the only enabled focus trap while it is
+  open: the Words drawers suspend theirs off `DetailOverlayHistoryService.isOpen`. Back
+  never leaves focus on the document — a pop restores the invoking link inside the dialog
+  when it survived the re-render, else Close, else the heading.
+  It owns no entity, API, URL, or history state.
   Its geometry is fixed on both axes and the count's box is always reserved, so no state
   change resizes the dialog or shifts the header; the count sits outside the heading and
   both live regions (it would otherwise double-announce) and is wired via

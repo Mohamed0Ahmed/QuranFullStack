@@ -15,7 +15,8 @@ import { RootsExplorerPageComponent } from './features/words/pages/roots-explore
  * with a responsive explorer drawer open UNDER the global detail overlay,
  * body scroll stays locked while either layer lives (reference-counted
  * ScrollLockService), and only the top dialog is interactive — the drawer sits
- * inside the inert app-shell subtree while the dialog is a shell sibling.
+ * inside the inert app-shell subtree while the dialog is a shell sibling, and
+ * exactly one focus trap is enabled at a time.
  */
 
 function ok<T>(data: T) {
@@ -219,6 +220,26 @@ describe('App nested layers on mobile (drawer under global overlay)', () => {
     click(query(fixture, '[data-testid="detail-modal-close"]'));
     await loadStep(fixture);
     expect(query(fixture, 'qd-app-shell')!.getAttribute('inert')).toBeNull();
+  });
+
+  it('leaves exactly one focus trap enabled — the dialog\'s — and hands it back to the drawer on close', async () => {
+    const fixture = await mountWithDrawerAndOverlay();
+    const host = fixture.nativeElement as HTMLElement;
+
+    // A live CDK trap makes its two anchors tabbable; a suspended trap drops the
+    // tabindex, so Tab can never wander into the layer underneath.
+    const enabledAnchors = () => Array.from(host.querySelectorAll('.cdk-focus-trap-anchor[tabindex="0"]'));
+    const trapped = (element: HTMLElement) =>
+      enabledAnchors().length === 2 && enabledAnchors().every((anchor) => anchor.parentElement === element.parentElement);
+
+    expect(trapped(query(fixture, '[data-testid="detail-modal-shell"]')!)).toBe(true);
+    expect(trapped(query(fixture, '[data-testid="root-details-modal"]')!)).toBe(false);
+
+    click(query(fixture, '[data-testid="detail-modal-close"]'));
+    await loadStep(fixture);
+
+    expect(query(fixture, '[data-testid="detail-modal-shell"]')).toBeNull();
+    expect(trapped(query(fixture, '[data-testid="root-details-modal"]')!)).toBe(true);
   });
 
   it('holds the body scroll lock until BOTH layers close: dialog first, then drawer', async () => {

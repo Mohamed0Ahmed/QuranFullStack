@@ -11,10 +11,12 @@
       cdkTrapFocusAutoCapture
       data-testid="detail-modal-shell"
       (keydown.escape)="onEscape($event)"
+      (focusin)="onDialogFocusIn($event)"
     >
       <header class="detail-modal-shell__header">
         @if (depth() > 1) {
           <button
+            #backButton
             type="button"
             class="qd-btn qd-btn-ghost detail-modal-shell__back"
             data-testid="detail-modal-back"
@@ -27,7 +29,7 @@
         @if (kindLabel()) {
           <span class="detail-modal-shell__kind" data-testid="detail-modal-kind">{{ kindLabel() }}</span>
         }
-        <h2 class="detail-modal-shell__title" [id]="headingId" tabindex="-1">{{ titleText() }}</h2>
+        <h2 #dialogHeading class="detail-modal-shell__title" [id]="headingId" tabindex="-1">{{ titleText() }}</h2>
         <!--
           Always rendered so its reserved box never appears/disappears: only the
           text fades in when the count arrives. It sits outside the h2 AND outside
@@ -42,6 +44,7 @@
           >{{ countText() }}</span
         >
         <button
+          #closeButton
           type="button"
           class="qd-btn qd-btn-ghost detail-modal-shell__close"
           data-testid="detail-modal-close"

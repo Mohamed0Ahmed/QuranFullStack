@@ -25,6 +25,9 @@ import { ScrollLockService } from '../modal-scroll-lock/scroll-lock.service';
       (restoreRequested)="events.push('restore')"
     >
       <p data-testid="projected-detail">SYNTH_DETAIL_CONTENT</p>
+      @if (showOpener()) {
+        <button type="button" data-testid="synth-opener">SYNTH_OPEN_NESTED</button>
+      }
     </qd-detail-modal-shell>
   `,
 })
@@ -35,6 +38,8 @@ class ShellHostComponent {
   readonly countText = signal('');
   readonly depth = signal(1);
   readonly status = signal('');
+  /** Stands in for the projected link that pushed the next frame. */
+  readonly showOpener = signal(true);
   readonly events: string[] = [];
 }
 
@@ -194,6 +199,84 @@ describe('DetailModalShellComponent', () => {
     expect(body).not.toBeNull();
     expect(body!.contains(header)).toBe(false);
     expect(root.querySelectorAll('.detail-modal-shell__body').length).toBe(1);
+  });
+
+  // The last Back destroys the Back button itself, so the dialog must choose a
+  // new focus target or focus falls out of the still-open dialog onto the body.
+  describe('focus after the final Back (depth 2 → 1)', () => {
+    const settleFocus = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+    async function pushThenPopToDepthOne(): Promise<HTMLButtonElement> {
+      // Let the trap's auto-capture finish before we stage our own focus.
+      await settleFocus();
+      const opener = root.querySelector('[data-testid="synth-opener"]') as HTMLButtonElement;
+      opener.focus();
+      expect(document.activeElement).toBe(opener);
+
+      host.depth.set(2);
+      detect();
+      (root.querySelector('[data-testid="detail-modal-back"]') as HTMLButtonElement).focus();
+      return opener;
+    }
+
+    it('returns focus to the invoking link when it survived the pop', async () => {
+      const opener = await pushThenPopToDepthOne();
+
+      host.depth.set(1);
+      detect();
+      await settleFocus();
+
+      const dialog = root.querySelector('[data-testid="detail-modal-shell"]')!;
+      expect(document.activeElement).toBe(opener);
+      expect(dialog.contains(document.activeElement)).toBe(true);
+    });
+
+    it('falls back to Close, still inside the dialog, when the invoking link is gone', async () => {
+      await pushThenPopToDepthOne();
+
+      // The parent frame re-rendered without the link that opened frame two.
+      host.showOpener.set(false);
+      host.depth.set(1);
+      detect();
+      await settleFocus();
+
+      const dialog = root.querySelector('[data-testid="detail-modal-shell"]')!;
+      expect(document.activeElement).toBe(root.querySelector('[data-testid="detail-modal-close"]'));
+      expect(dialog.contains(document.activeElement)).toBe(true);
+    });
+  });
+
+  describe('focus after a push (depth 1 → 2)', () => {
+    const settleFocus = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+    it('moves focus to Back when the activated link no longer exists in the new frame', async () => {
+      await settleFocus();
+      const opener = root.querySelector('[data-testid="synth-opener"]') as HTMLButtonElement;
+      opener.focus();
+
+      // The pushed frame replaces the content that held the link the user activated.
+      host.showOpener.set(false);
+      host.depth.set(2);
+      detect();
+      await settleFocus();
+
+      const dialog = root.querySelector('[data-testid="detail-modal-shell"]')!;
+      expect(document.activeElement).toBe(root.querySelector('[data-testid="detail-modal-back"]'));
+      expect(dialog.contains(document.activeElement)).toBe(true);
+      expect(document.activeElement).not.toBe(document.body);
+    });
+
+    it('leaves focus alone when it survived inside the dialog', async () => {
+      await settleFocus();
+      const close = root.querySelector('[data-testid="detail-modal-close"]') as HTMLButtonElement;
+      close.focus();
+
+      host.depth.set(2);
+      detect();
+      await settleFocus();
+
+      expect(document.activeElement).toBe(close);
+    });
   });
 
   it('traps focus inside the open dialog', () => {
