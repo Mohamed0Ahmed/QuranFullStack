@@ -54,6 +54,10 @@ are in use, and they are not interchangeable:
 - Validation failures map to `400`, missing resources to `404`, and successful reads to `200`.
 - Unhandled exceptions should stay outside controllers and flow through the global exception
   handler so the API still returns the shared envelope.
+- Rate-limited requests are rejected by middleware **before** reaching a controller and return
+  `429` with the same `ApiResponse` failure envelope plus a `Retry-After` header. The limiter is
+  per-client-IP with separate general and health profiles; see `../README.md` (Rate Limiting) and
+  `../../../.architecture/API_GUIDELINES.md` §14.
 
 ## Generated contract artifacts
 

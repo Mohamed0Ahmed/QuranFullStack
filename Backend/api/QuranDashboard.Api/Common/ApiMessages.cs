@@ -7,6 +7,7 @@ public static class ApiMessages
     public const string DashboardInfo = "تم جلب معلومات التطبيق";
     public const string UnexpectedError = "حدث خطأ غير متوقع";
     public const string OperationSuccess = "تمت العملية بنجاح";
+    public const string TooManyRequests = "عدد كبير من الطلبات. يرجى المحاولة بعد قليل.";
 
     public const string NotFound = "المورد غير موجود";
 

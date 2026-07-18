@@ -129,6 +129,9 @@ Rules:
 - Property names stay **English** (`isSuccess`, `message`, `data`, `errors`).
 - User-facing `message` values are **localized** (Arabic by default).
 - Arabic is the default language; English must be supportable later.
+- Error statuses reuse this same failure envelope. A rate-limited request returns
+  **`429 Too Many Requests`** with the failure shape (`isSuccess:false`, Arabic
+  `message`, `errors:[]`) plus a `Retry-After` header — see section 14.
 - Do not scatter hardcoded repeated user-facing messages across
   controllers/handlers/services.
 - Use message keys/resources/constants close to the owning feature when possible.
@@ -228,6 +231,37 @@ Do not implement versioning now.
 - CORS, auth, rate limiting, Swagger, exception handling, and health checks should
   be configured **centrally and consistently**.
 - SignalR hubs (later) should be thin and delegate real logic to Application.
+
+### Rate limiting
+
+Configured centrally in `RateLimiting/` (options, IP resolver, request classifier,
+rejection writer, registration) and wired via `AddRateLimiting` + `UseRateLimiter`
+(after CORS, in the reserved pre-auth slot). Two per-client-IP profiles, selected by a
+single global partitioner with **namespaced partition keys** so the two profiles for the
+same IP never share a cached limiter:
+
+- **General** — token bucket over **all non-exempt requests except `/api/health*`**.
+  Default `TokenLimit=30`, `TokensPerPeriod=30`, `ReplenishmentPeriodSeconds=15`,
+  `QueueLimit=0` → sustained **120 req/min/IP**, burst 30. Key `general:{ip}`.
+- **Health** — fixed window over `/api/health*` only (it runs a DB health check, so it is
+  bounded per-IP rather than fully exempt). Default `HealthPermitLimit=300` /
+  `HealthWindowSeconds=60`. Key `health:{ip}`.
+
+Rules and invariants:
+
+- **Client IP** comes from the configurable single-valued `ClientIpHeaderName` (default
+  Railway `X-Real-IP`) → `RemoteIpAddress` → `"unknown"`. No `X-Forwarded-For` list
+  parsing; no `ForwardedHeaders` middleware.
+- **Exemptions (no limiter):** any `OPTIONS`, and `/swagger*` in Development only.
+- **Rejections** return `429` with the shared `ApiResponse` failure envelope and a
+  `Retry-After` header (section 5).
+- **Secure by default:** `RateLimiting:Enabled` ships **`false`** in base, Development,
+  and Production `appsettings`; it is enabled via environment override only after the
+  deploy-time `X-Real-IP` trust and health-probe verification gates. Invalid config
+  **fails fast** at startup.
+- **Per-instance:** the limiter is in-memory per process; with N Railway instances the
+  effective limits are N× the configured values (acceptable at single-instance; a
+  distributed store is future work).
 
 ## 15. Definition of Done for API Changes
 

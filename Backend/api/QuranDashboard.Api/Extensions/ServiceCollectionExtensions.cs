@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.OpenApi;
 using QuranDashboard.Api.Middleware;
+using QuranDashboard.Api.RateLimiting;
 using QuranDashboard.Api.Swagger;
 using QuranDashboard.Infrastructure.Persistence;
 
@@ -78,6 +79,7 @@ public static class ServiceCollectionExtensions
                     .AllowCredentials();
             });
         });
+        services.AddRateLimiting(configuration);
 
         return services;
     }
