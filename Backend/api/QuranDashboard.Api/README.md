@@ -18,6 +18,55 @@ dotnet user-secrets set "ConnectionStrings:QuranDashboardDb" "Host=localhost;Por
 export ConnectionStrings__QuranDashboardDb="Host=localhost;Port=5432;Database=quran_dashboard;Username=postgres;Password=<your-password>"
 ```
 
+## Authentication
+
+Logto access-token authentication lives in `Authentication/` and is wired via
+`AddApiAuthentication` (DI) + `UseAuthentication` / `UseAuthorization` (pipeline, after CORS,
+before the rate limiter). It uses the standard `JwtBearer` handler to validate a Logto **access
+token** (not the ID token):
+
+- **Issuer & signing keys** are auto-discovered from the `Auth:Authority` OIDC metadata
+  (`jwks_uri`) — no manual key handling.
+- **Audience** must equal `Auth:Audience`, the registered Logto **API resource** indicator.
+- Raw claims are preserved (`MapInboundClaims = false`) so the Logto `sub` — the identity key —
+  survives unchanged.
+- A missing/invalid token yields `401 Unauthorized` with the shared `ApiResponse` failure
+  envelope (`isSuccess:false`, Arabic `message`, `errors:[]`) instead of the framework's default
+  empty body.
+
+**Phase 1 scope:** the first protected endpoint is live — `GET /api/access/me` carries `[Authorize]`
+and, on first login, **get-or-create provisions** the local user keyed by the Logto `sub`. The user's
+email is **verified server-side via the Logto Management API** (the inbound access token cannot call
+userinfo), never taken from the client; a new user starts `Pending` with no role. There is still **no
+global fallback policy**, so every other endpoint remains anonymous. Roles and deny-by-default arrive
+in Phase 2.
+
+### Configuration (`Auth` section)
+
+| Key | Meaning |
+|---|---|
+| `Authority` | Logto issuer, e.g. `https://<tenant>.logto.app/oidc`. Used for OIDC metadata/JWKS discovery. |
+| `Audience` | The exact Logto API resource indicator every access token must target. |
+| `ManagementApi:Endpoint` | Logto tenant endpoint, e.g. `https://<tenant>.logto.app`. |
+| `ManagementApi:Resource` | Management API resource indicator, typically `https://<tenant-id>.logto.app/api`. |
+| `ManagementApi:AppId` | Machine-to-machine application id for the client-credentials token. |
+| `ManagementApi:AppSecret` | Machine-to-machine application secret. **Secret — never commit; set via user-secrets/env.** |
+
+`Authority`/`Audience` and the `ManagementApi` endpoint/resource ship as **placeholder values**
+(`REPLACE-WITH-YOUR-…`) in `appsettings*.json`; the deployment owner replaces them with real Logto
+tenant values. Invalid `Auth` values (blank, or an `Authority` that is not an absolute `https` URI)
+**fail fast** at startup. The `ManagementApi` credentials are **not** validated at startup (the secret
+is legitimately absent on a fresh clone); they are validated on first use of `/api/access/me` with an
+actionable error naming any missing keys.
+
+Set the machine-to-machine credentials via User Secrets (do not put the secret in `appsettings*.json`):
+
+```sh
+cd api/QuranDashboard.Api
+dotnet user-secrets set "Auth:ManagementApi:AppId" "<your-m2m-app-id>"
+dotnet user-secrets set "Auth:ManagementApi:AppSecret" "<your-m2m-app-secret>"
+```
+
 ## Rate Limiting
 
 A global, per-client-IP rate limiter lives in `RateLimiting/` and is wired via

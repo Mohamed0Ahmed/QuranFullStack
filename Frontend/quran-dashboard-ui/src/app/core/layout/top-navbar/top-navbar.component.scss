@@ -116,7 +116,9 @@
 
 .mobile-theme-toggle {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
+  gap: var(--qd-space-2);
   padding: var(--qd-space-2) var(--qd-space-4);
   border-bottom: 1px solid var(--qd-border);
 }

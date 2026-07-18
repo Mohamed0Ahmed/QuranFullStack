@@ -8,6 +8,7 @@ public static class ApiMessages
     public const string UnexpectedError = "حدث خطأ غير متوقع";
     public const string OperationSuccess = "تمت العملية بنجاح";
     public const string TooManyRequests = "عدد كبير من الطلبات. يرجى المحاولة بعد قليل.";
+    public const string Unauthorized = "يجب تسجيل الدخول للوصول إلى هذا المورد";
 
     public const string NotFound = "المورد غير موجود";
 
@@ -100,4 +101,6 @@ public static class ApiMessages
     public const string WordTypesInvalidGroupedKind = "نوع التجميع غير صالح";
     public const string WordTypesInvalidGroupedId = "معرّف التجميع غير صالح";
     public const string WordTypesGroupedNotFound = "التجميع المحدد غير موجود";
+
+    public const string CurrentUserLoaded = "تم تحميل بيانات المستخدم الحالي";
 }

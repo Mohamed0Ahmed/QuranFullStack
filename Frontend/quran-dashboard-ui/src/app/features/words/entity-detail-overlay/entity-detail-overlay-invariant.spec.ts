@@ -6,6 +6,7 @@ import { Router, provideRouter } from '@angular/router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { App } from '../../../app';
+import { provideAuthTesting } from '../../../core/auth/auth.testing';
 import { QD_BP_DESKTOP_MIN_QUERY } from '../../../shared/layout/breakpoints';
 import { RootsExplorerPageComponent } from '../pages/roots-explorer-page/roots-explorer-page.component';
 import { RootsDetailFacade } from '../state/roots-detail.facade';
@@ -84,6 +85,7 @@ describe('Entity detail overlay explorer invariant', () => {
         provideLocationMocks(),
         provideHttpClient(),
         provideHttpClientTesting(),
+        provideAuthTesting(),
       ],
     });
     router = TestBed.inject(Router);

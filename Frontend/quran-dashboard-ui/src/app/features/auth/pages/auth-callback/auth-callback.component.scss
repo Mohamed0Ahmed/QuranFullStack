@@ -1,0 +1,12 @@
+:host {
+  display: block;
+}
+
+// Calm, centered status line — no spinner, no ornament (DESIGN.md: reverence through
+// restraint). The redirect is near-instant, so this is a brief, quiet transitional state.
+.auth-callback {
+  display: flex;
+  justify-content: center;
+  padding-block: var(--qd-space-6);
+  text-align: center;
+}

@@ -170,6 +170,23 @@
         {{ item.labelAr }}
       </a>
     }
+    @if (isAuthenticated()) {
+      <button
+        class="qd-btn qd-btn-ghost nav-link"
+        type="button"
+        (click)="signOut()"
+      >
+        تسجيل الخروج
+      </button>
+    } @else {
+      <button
+        class="qd-btn qd-btn-ghost nav-link"
+        type="button"
+        (click)="signIn()"
+      >
+        تسجيل الدخول
+      </button>
+    }
   </div>
 
   <button
@@ -244,6 +261,23 @@
             </svg>
           }
         </button>
+        @if (isAuthenticated()) {
+          <button
+            class="qd-btn qd-btn-ghost nav-link"
+            type="button"
+            (click)="signOut()"
+          >
+            تسجيل الخروج
+          </button>
+        } @else {
+          <button
+            class="qd-btn qd-btn-ghost nav-link"
+            type="button"
+            (click)="signIn()"
+          >
+            تسجيل الدخول
+          </button>
+        }
       </div>
       <ul class="mobile-menu-list">
         @for (item of allItems; track item.route) {

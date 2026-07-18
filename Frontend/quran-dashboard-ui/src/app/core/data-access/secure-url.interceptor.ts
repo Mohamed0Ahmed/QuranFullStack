@@ -34,8 +34,15 @@ function isAllowedApiUrl(url: string): boolean {
   return isUrlUnderApiBase(url, environment.apiBaseUrl);
 }
 
+// angular-auth-oidc-client performs OIDC discovery/token calls through Angular's HttpClient,
+// so the identity provider's origin must pass this guard. It is exempt from the block only —
+// the Bearer token still attaches exclusively to `apiBaseUrl` (authInterceptor `secureRoutes`).
+function isIdentityProviderUrl(url: string): boolean {
+  return isUrlUnderApiBase(url, environment.logto.endpoint);
+}
+
 export const secureUrlInterceptor: HttpInterceptorFn = (req, next) => {
-  if (!isAllowedApiUrl(req.url)) {
+  if (!isAllowedApiUrl(req.url) && !isIdentityProviderUrl(req.url)) {
     return throwError(() => new SecureUrlBlockedError(req.url));
   }
 

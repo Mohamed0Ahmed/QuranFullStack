@@ -5,6 +5,9 @@ and the `ApiResponse<T>` envelope; application handlers own use-case logic.
 
 ## Route families
 
+- `Access/` — `api/access/me`; the authenticated caller's provisioned user. Carries `[Authorize]`
+  and get-or-create provisions the local user on first login (email verified server-side via the
+  Logto Management API). This is the only endpoint that requires authentication in Phase 1.
 - `Dashboard/` — `api/dashboard/info` for app/version/environment metadata.
 - `MushafReader/Ayahs/` — `api/mushaf/ayahs/{verseKey}/study`, `/similar-ayahs`, and `/mutashabihat`.
 - `MushafReader/Catalogs/` — `api/mushaf/surahs` and `api/mushaf/study-sources` catalogs.

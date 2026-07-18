@@ -18,7 +18,8 @@ public static class WebApplicationExtensions
 
         app.UseHttpsRedirection();
         app.UseCors("AngularDev");
-        // ── future auth slot: app.UseAuthentication(); app.UseAuthorization(); ──
+        app.UseAuthentication();
+        app.UseAuthorization();
         // UseRateLimiter sits after CORS (so preflight is handled by CORS and a 429 carries CORS
         // headers) and after the reserved auth slot (so per-user keying can read claims later).
         app.UseRateLimiter();

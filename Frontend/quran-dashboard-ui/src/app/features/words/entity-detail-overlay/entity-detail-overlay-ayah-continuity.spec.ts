@@ -8,6 +8,7 @@ import { Router, provideRouter } from '@angular/router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { App } from '../../../app';
+import { provideAuthTesting } from '../../../core/auth/auth.testing';
 import { DetailOverlayHistoryService } from '../../../core/navigation/detail-overlay/detail-overlay-history.service';
 import { RootDetailFrame } from '../../../core/navigation/detail-overlay/detail-overlay.models';
 import { QD_BP_DESKTOP_MIN_QUERY } from '../../../shared/layout/breakpoints';
@@ -149,6 +150,7 @@ describe('Entity detail overlay ayah continuity (B7/B8)', () => {
         provideLocationMocks(),
         provideHttpClient(),
         provideHttpClientTesting(),
+        provideAuthTesting(),
       ],
     });
     router = TestBed.inject(Router);

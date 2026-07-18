@@ -6,6 +6,7 @@ import { Router, provideRouter } from '@angular/router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { App } from './app';
+import { provideAuthTesting } from './core/auth/auth.testing';
 import { DetailOverlayHistoryService } from './core/navigation/detail-overlay/detail-overlay-history.service';
 import { LemmaDetailFrame } from './core/navigation/detail-overlay/detail-overlay.models';
 import { RootsExplorerPageComponent } from './features/words/pages/roots-explorer-page/roots-explorer-page.component';
@@ -109,6 +110,7 @@ describe('App nested layers on mobile (drawer under global overlay)', () => {
         provideLocationMocks(),
         provideHttpClient(),
         provideHttpClientTesting(),
+        provideAuthTesting(),
       ],
     });
     router = TestBed.inject(Router);

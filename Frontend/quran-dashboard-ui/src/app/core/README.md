@@ -16,14 +16,29 @@ per-feature.
     intentionally not generated).
   - `paged-result.model.ts` — the shared `PagedResultDto<T>` generic (hand-written wrapper
     over generated payload models).
-  - `secure-url.interceptor.ts` — forces/validates the API base URL.
+  - `secure-url.interceptor.ts` — forces/validates the API base URL; also lets the Logto
+    IdP origin (`environment.logto.endpoint`) pass through un-blocked (the OIDC library uses
+    `HttpClient` for discovery/token calls), while every other foreign origin stays blocked.
   - `dev-latency.interceptor.ts` + `dev-api-latency.ts` — dev-only injected latency.
   - `system.api.ts` / `system.models.ts` — health/system info (models re-export generated
     types with UI narrowing).
 - `caching/api-response-cache.ts` — shared response cache (feature caches build on the
   same idea; keep the key strategy consistent).
+- `auth/` — Logto authentication (Feature 033, Phase 1):
+  - `auth.guard.ts` — `authGuard` (functional `CanActivateFn`) protecting the `/dashboard`
+    subtree. Phase-1 behavior is authentication-only: reads `isAuthenticated$` once
+    (settled by the app-initializer auth check) → authenticated activates, otherwise it
+    calls `authorize()` (Logto redirect) and blocks. No role/status logic yet (Phase 2).
+  - `access.api.ts` — `AccessApi.getMe()` → `GET /api/access/me`, returning the raw
+    `ApiResponse<CurrentUserDto>` envelope (thin, like `system.api.ts`).
+  - `current-user.model.ts` — `CurrentUser` (== `CurrentUserDto`; the backend `me`
+    contract: `sub`, `email`, `displayName`, `status`, `roleId`).
+  - `current-user.store.ts` — `CurrentUserStore`: minimal signal store (`currentUser`,
+    `errorMessage`); `load()` is fired post-callback and never crashes the flow. Phase 2
+    consumes it for the pending-activation gate.
 - `layout/` — `app-shell`, `top-navbar`, `footer`, `shell-layout.model.ts`.
-- `navigation/` — `route-paths.ts` (canonical route constants, plus `navLabel(key)` for a
+- `navigation/` — `route-paths.ts` (canonical route constants — incl. `DASHBOARD_ROUTE_PATH`
+  and `CALLBACK_PATH` for the Feature-033 landing route — plus `navLabel(key)` for a
   nav item's Arabic label) + `nav-items.ts` + `app-title.strategy.ts` (the `TitleStrategy`
   registered in `app.config.ts`: browser-tab title = `<route title> — المنهج القرآني`, and
   the brand alone on the titleless `dashboard`/home route; each route supplies its own
@@ -61,8 +76,15 @@ per-feature.
   in features.
 - **Route strings live in `route-paths.ts`** — reference the constants, don't hardcode paths
   in components/routes.
-- Interceptor order matters (secure-url before dev-latency); keep registration order in
-  `app.config.ts`.
+- **Guarded route tree (Feature 033)** — `/dashboard` is one guarded parent
+  (`canActivate: [authGuard]`) with `''` (home), `mushaf`, and `words` children; the URLs are
+  unchanged. `/callback` (`CALLBACK_PATH`, the `features/auth/` landing page) is **public** and
+  sits before the `**` wildcard in `app.routes.ts`. The placeholder nav routes (e.g. `/tafsirs`,
+  `/gates`) stay top-level and unguarded in Phase 1.
+- Interceptor order matters (`secureUrlInterceptor`, then `authInterceptor()`, then
+  `devLatencyInterceptor`); keep registration order in `app.config.ts`. `authInterceptor()`
+  (from `angular-auth-oidc-client`) attaches the Logto Bearer token only to requests under
+  `apiBaseUrl` via the `secureRoutes` config, and must run after `secureUrlInterceptor`.
 
 ## Related
 
