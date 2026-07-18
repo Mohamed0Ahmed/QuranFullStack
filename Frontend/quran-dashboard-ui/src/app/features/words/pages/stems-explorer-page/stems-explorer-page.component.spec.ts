@@ -26,9 +26,9 @@ import { StemsExplorerFacade } from '../../state/stems-explorer.facade';
 import { StemsExplorerPageComponent } from './stems-explorer-page.component';
 
 const STUB_ASSOCIATION_OPTIONS = {
-  searchRoots: () => of([]),
-  searchLemmas: () => of([]),
-  wordTypeOptions: () => of([]),
+  searchRoots: () => of({ status: 'success' as const, options: [] }),
+  searchLemmas: () => of({ status: 'success' as const, options: [] }),
+  wordTypeOptions: () => of({ status: 'success' as const, options: [] }),
 };
 
 function listRow(id: number, overrides: Partial<StemListItemViewModel> = {}): StemListItemViewModel {
@@ -191,6 +191,10 @@ describe('StemsExplorerPageComponent US2', () => {
     queryParamMap$.next(convertToParamMap({}));
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   async function initLifecycle(): Promise<ReturnType<typeof TestBed.createComponent<StemsExplorerPageComponent>>> {
     const fixture = TestBed.createComponent(StemsExplorerPageComponent);
     fixture.componentInstance.ngOnInit();
@@ -265,6 +269,36 @@ describe('StemsExplorerPageComponent US2', () => {
       queryParams: expect.objectContaining({ lemmaId: '502', page: null }),
       queryParamsHandling: 'merge',
     });
+  });
+
+  // M32/M43 + M74: a picker load failure must show a distinct error state, not a silently-empty
+  // options list indistinguishable from a genuine zero-match search.
+  it('shows the root-picker error state when the root search fails, not a silently-empty picker', async () => {
+    vi.useFakeTimers();
+    try {
+      const associationOptions = TestBed.inject(WordsAssociationOptionsService);
+      vi.spyOn(associationOptions, 'searchRoots').mockReturnValue(of({ status: 'error' as const }));
+
+      const fixture = await initLifecycle();
+
+      fixture.componentInstance['onRootSearch']('غير موجود');
+      vi.advanceTimersByTime(300);
+      fixture.detectChanges();
+
+      const root = fixture.nativeElement as HTMLElement;
+      const field = root.querySelector<HTMLInputElement>(
+        '[data-testid="stems-root-filter"] [data-testid="association-filter-search"]',
+      )!;
+      field.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
+      fixture.detectChanges();
+
+      expect(
+        root.querySelector('[data-testid="stems-root-filter"] [data-testid="association-filter-error"]'),
+      ).toBeTruthy();
+      expect(root.querySelector('[data-testid="stems-root-filter"] .association-filter__options')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('renders the catalogue table with the locked stem headers', async () => {

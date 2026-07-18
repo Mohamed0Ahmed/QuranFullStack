@@ -13,8 +13,11 @@ export class SecureUrlBlockedError extends Error {
 }
 
 export function isUrlUnderApiBase(url: string, apiBaseUrl: string): boolean {
+  // Fail closed: an empty apiBaseUrl is a misconfiguration, not "same origin for
+  // everything". Both environments always set apiBaseUrl, so allowing every origin
+  // here would silently defeat this guard on the most likely misconfiguration.
   if (!apiBaseUrl) {
-    return true;
+    return false;
   }
 
   let requestUrl: URL;

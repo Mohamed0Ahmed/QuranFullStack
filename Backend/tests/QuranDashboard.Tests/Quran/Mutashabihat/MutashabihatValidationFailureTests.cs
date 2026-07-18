@@ -141,9 +141,10 @@ public sealed class MutashabihatValidationFailureTests(MutashabihatImportTestFix
                 sp.GetRequiredService<SourceChangedAfterLoadMutashabihatImportSource>());
         }).CreateAsyncScope();
 
+        var reportOutDir = Path.Combine(Path.GetTempPath(), $"mutashabihat-report-{Guid.NewGuid():N}");
         var handler = scope.ServiceProvider.GetRequiredService<ImportMutashabihatHandler>();
         var result = await handler.HandleAsync(
-            new ImportMutashabihatCommand(sourcePath, false, SyntheticExpected),
+            new ImportMutashabihatCommand(sourcePath, false, SyntheticExpected, reportOutDir),
             CancellationToken.None);
 
         result.Succeeded.Should().BeFalse();

@@ -1,3 +1,5 @@
+@use '../../../../../styles/breakpoints' as bp;
+
 :host {
   display: flex;
   flex-direction: column;
@@ -7,6 +9,12 @@
   &.qd-selected-word-section--embedded {
     height: auto;
     flex-shrink: 0;
+
+    // Relocated from _components.scss (UI_STYLE_SYSTEM.md §2 / styles/README.md
+    // boundary — component internals belong in the owning component's SCSS).
+    @media (max-width: bp.$qd-bp-tablet-max) {
+      min-height: auto;
+    }
   }
 }
 
@@ -35,14 +43,18 @@
     border: none;
     border-radius: 0;
     box-shadow: none;
+
+    @media (max-width: bp.$qd-bp-tablet-max) {
+      min-height: auto;
+    }
   }
 
   // U1 loading reservation: while loading, hold the greater of the last
   // successful natural block size and the responsive baseline so the following
   // divider/section does not move. Cleared with the modifier on success/error/
   // empty — loaded content always determines its own natural height. The extra
-  // class keeps this ahead of the <1024px embedded reset in _components.scss,
-  // which zeroes the shell minimums.
+  // class keeps this ahead of the <1024px embedded reset above, which zeroes
+  // the shell minimums.
   &.selected-word-section--loading {
     :host &,
     :host.qd-selected-word-section--embedded & {
@@ -95,6 +107,10 @@
     :host.qd-selected-word-section--embedded .selected-word-section & {
       flex: none;
       overflow: visible;
+
+      @media (max-width: bp.$qd-bp-tablet-max) {
+        min-height: auto;
+      }
     }
   }
 

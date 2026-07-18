@@ -140,6 +140,45 @@ public sealed class AccessMeEndpointTests(AccessTestFixture fixture)
         (await fixture.GetUsersAsync()).Should().BeEmpty();
     }
 
+    [Fact]
+    public async Task EmailCollidesWithDifferentSub_Returns409ConflictEnvelope()
+    {
+        await fixture.ResetAsync();
+        const string existingSub = "logto-user-me-email-conflict-existing";
+        const string newSub = "logto-user-me-email-conflict-new";
+        var conflictingEmail = FakeExternalUserProfileSource.EmailFor(existingSub);
+
+        // Seed a pre-existing user under a DIFFERENT sub with the email the new caller's token will
+        // present — simulating a subject deleted+recreated in Logto (new sub, same verified email).
+        await fixture.InsertUserAsync(new User
+        {
+            LogtoSub = existingSub,
+            Email = conflictingEmail,
+            Status = UserStatus.Pending,
+            CreatedAtUtc = DateTimeOffset.UtcNow,
+            UpdatedAtUtc = DateTimeOffset.UtcNow,
+        });
+        fixture.ProfileSource.ReturnEmailFor(newSub, conflictingEmail);
+        var token = TestJwtTokens.Mint(newSub);
+        using var client = fixture.CreateApiClient();
+
+        using var response = await GetMeAsync(client, token);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        response.Content.Headers.ContentType!.MediaType.Should().Be("application/json");
+
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var envelope = document.RootElement;
+        envelope.EnumerateObject().Select(property => property.Name).Should().BeEquivalentTo(EnvelopeKeys);
+        envelope.GetProperty("isSuccess").GetBoolean().Should().BeFalse();
+        envelope.GetProperty("message").GetString().Should().Be(ApiMessages.EmailAlreadyRegistered);
+        envelope.GetProperty("data").ValueKind.Should().Be(JsonValueKind.Null);
+        envelope.GetProperty("errors").GetArrayLength().Should().Be(0);
+
+        // The failed insert under the new sub leaves no partial row; only the pre-existing user remains.
+        (await fixture.GetUsersAsync()).Should().ContainSingle(u => u.LogtoSub == existingSub);
+    }
+
     public static TheoryData<string> PublicRoutes =>
     [
         // The health check and a real browse endpoint both answer WITHOUT an Authorization header:

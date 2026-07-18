@@ -16,7 +16,7 @@ and Unique Words. They back the `application/.../Quran/Words/**` query handlers 
   stems readers are **partial-split by size** (summary vs list/SQL vs grouped-details); keep the split
   when adding to them.
 - `*ListDerivation` / `*SummaryRow` — how list rows and summary aggregates are derived.
-- `WordTypes/WordTypeIdentityMatcher.cs`, `WordTypeGrouping.cs` — POS/type identity + grouping.
+- `WordTypes/WordTypeIdentityMatcher.cs` — POS/type identity matching.
 - `MorphologyRelatedItemsOrdering.cs` — shared ordering for related lemmas/stems/roots.
 - `ReadPaging.cs` — the paging contract shared by all list endpoints.
 

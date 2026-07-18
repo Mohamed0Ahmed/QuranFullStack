@@ -14,8 +14,7 @@ namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Lemmas;
 /// implemented in T032/T033 as a single bounded whole-summary aggregation with
 /// owned-root (<c>quran_lemmas.root_id</c>) semantics, ordered type distribution,
 /// normalized Arabic contains search, deterministic sort, and in-memory paging.
-/// Ayah and words detail are implemented in the corresponding Feature 016 story
-/// phases; the remaining detail methods stay stubbed for later story phases.
+/// Ayah and words detail are fully implemented as well.
 /// </summary>
 public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
 {

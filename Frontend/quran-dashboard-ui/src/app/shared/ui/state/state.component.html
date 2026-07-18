@@ -8,7 +8,7 @@
     <div class="qd-error-state" role="alert" data-testid="qd-state-error">
       <span>{{ message() }}</span>
       @if (actionLabel(); as label) {
-        <button type="button" class="qd-button qd-state__action" data-testid="qd-state-action" (click)="action.emit()">
+        <button type="button" class="qd-btn qd-btn-secondary qd-state__action" data-testid="qd-state-action" (click)="action.emit()">
           {{ label }}
         </button>
       }

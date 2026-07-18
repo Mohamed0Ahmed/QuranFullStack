@@ -98,8 +98,8 @@ Rules:
 > pulls in Tailwind layers plus the `src/styles/` partials, which exist today:
 > `_tokens.scss`, `_themes.scss`, `_typography.scss`, `_breakpoints.scss`,
 > `_layout.scss`, `_components.scss`, `_words-explorer-layout.scss`,
-> `_explorer-tables.scss`, `_explorer-detail-lists.scss`, `_forms.scss`,
-> `_utilities.scss` — see `src/styles/README.md` for the exact import order and
+> `_words-explainer.scss`, `_explorer-tables.scss`, `_explorer-detail-lists.scss`,
+> `_forms.scss`, `_utilities.scss` — see `src/styles/README.md` for the exact import order and
 > boundary. §16 (color doctrine) and §17 (component contracts) below are the live
 > contract for how these partials are consumed; this section still governs file
 > organization. Only add a new global partial when it holds a genuinely reusable,
@@ -700,8 +700,9 @@ fills, resting borders — stays **banned as solid green**: use a tint,
 - **Recovery action:** an `error` may offer **exactly one** action (Feature 030,
   M3) by supplying an Arabic `actionLabel` — the retry affordance for transient
   transport failures. Without a label the error stays plain text. `empty` and
-  `loading` are never interactive. The control is the global `.qd-button`; do not
-  hand-roll a retry beside a `.qd-error-state`.
+  `loading` are never interactive. The control is the global `.qd-btn` (with the
+  `.qd-btn-secondary` variant); do not hand-roll a retry beside a
+  `.qd-error-state`.
 - **Visuals:** error uses `--qd-danger` on `--qd-danger-tint` (§16.1), calm per §11
   — not visually aggressive; empty/loading stay on the neutral surface ladder, no
   status color.
@@ -767,9 +768,11 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   (loaded + loading), Mushaf Similar Ayahs items, Mutashabihat occurrences.
 - **Shape:** attribute component (`shared/ui/ayah-card`, host class `qd-ayah-card`)
   applied to the caller's own semantic wrapper (`article`/`li`). It owns only:
-  `--qd-surface` background, 1px `--qd-border` hairline, `--qd-radius-sm`, compact
-  logical padding/gap. No shadow, no alternating fill, no hover lift (flat doctrine
-  §16.2). Selected occurrences layer a `--qd-border-accent` hairline on the frame.
+  `--qd-ayah-card-bg` background (a dedicated tone recessed below `--qd-surface`, so
+  the card reads as a distinct card on the near-white surfaces it sits on), 1px
+  `--qd-border` hairline, `--qd-radius-sm`, compact logical padding/gap. No shadow,
+  no alternating fill, no hover lift (flat doctrine §16.2). Selected occurrences
+  layer a `--qd-border-accent` hairline on the frame.
 - **Sacred-rendering boundary:** the frame accepts no Quran/domain model, text,
   word array, match ID, formatter, route, or output, and sets no Quran font. Quran
   text normalization, marker filtering, matched-word calculation, and display

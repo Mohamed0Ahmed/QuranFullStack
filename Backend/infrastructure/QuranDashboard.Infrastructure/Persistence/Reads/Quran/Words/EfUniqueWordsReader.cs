@@ -178,6 +178,11 @@ public sealed partial class EfUniqueWordsReader(QuranDashboardDbContext db) : IU
         var matchedAyahIds = ReadableMatchesQuery(kind, id).Select(w => w.AyahId).Distinct();
 
         var totalCount = await matchedAyahIds.CountAsync(cancellationToken);
+        var skip = ReadPaging.CalculateSafeSkip(page, pageSize, totalCount);
+        if (skip is null)
+        {
+            return new PagedResult<UniqueWordAyahMatchDto>(page, pageSize, totalCount, []);
+        }
 
         var pageAyahs = await (
             from ayah in _db.QuranAyahs.AsNoTracking()
@@ -190,7 +195,7 @@ public sealed partial class EfUniqueWordsReader(QuranDashboardDbContext db) : IU
                 ayah.VerseKey,
                 ayah.AyahNumber,
                 surah.NameArabic))
-            .Skip((page - 1) * pageSize)
+            .Skip(skip.Value)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
 

@@ -106,13 +106,14 @@ const wordAnalysisDto: WordAnalysisDto = {
 function createFacadeTestBed(
   queryParams: Record<string, string>,
   overrides: {
+    getPage?: ReturnType<typeof vi.fn>;
     getAyahStudy?: ReturnType<typeof vi.fn>;
     getWordAnalysis?: ReturnType<typeof vi.fn>;
   } = {},
 ) {
   const queryParamMap$ = new BehaviorSubject(convertToParamMap(queryParams));
   const navigate = vi.fn().mockResolvedValue(true);
-  const getPage = vi.fn(() => of({ isSuccess: true, message: 'ok', data: pageDto }));
+  const getPage = overrides.getPage ?? vi.fn(() => of({ isSuccess: true, message: 'ok', data: pageDto }));
   const getAyahStudy = overrides.getAyahStudy ?? vi.fn();
   const getWordAnalysis = overrides.getWordAnalysis ?? vi.fn();
 
@@ -134,6 +135,7 @@ function createFacadeTestBed(
     facade: TestBed.inject(MushafReaderFacade),
     route: TestBed.inject(ActivatedRoute),
     queryParamMap$,
+    getPage,
     getAyahStudy,
     getWordAnalysis,
   };
@@ -379,5 +381,88 @@ describe('MushafReaderFacade lifecycle (F1 leave-while-loading recovery)', () =>
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+// M18 regression coverage: loadPage had no per-request staleness guard and never cancelled
+// its subscription on unbind, so an earlier page request resolving after a later one could
+// render the wrong Mushaf page, and leaving the reader mid-load leaked the HTTP subscription.
+describe('MushafReaderFacade lifecycle (M18 loadPage staleness guard)', () => {
+  const pageDtoPageEight = {
+    ...pageDto,
+    pageNumber: 8,
+    ayahRange: { firstVerseKey: '3:1', lastVerseKey: '3:2' },
+    lines: [
+      {
+        ...pageDto.lines[0],
+        words: [
+          {
+            ...pageDto.lines[0].words[0],
+            wordLocation: '3:1:1',
+            verseKey: '3:1',
+            textUthmani: 'كلمة-الصفحة-الثامنة',
+          },
+        ],
+      },
+    ],
+  };
+
+  it('renders the later requested page when an earlier in-flight page request resolves last', () => {
+    const pageSubjects: Subject<ApiResponse<typeof pageDto>>[] = [];
+    const getPage = vi.fn(subjectFactory(pageSubjects));
+
+    const { facade } = createFacadeTestBed({}, { getPage });
+
+    // Request page 5, then move on to page 8 before the first request resolves.
+    facade.loadPage(5);
+    expect(getPage).toHaveBeenCalledTimes(1);
+    expect(facade.pageLoadState().isLoading).toBe(true);
+
+    facade.loadPage(8);
+    expect(getPage).toHaveBeenCalledTimes(2);
+    expect(facade.pageNumber()).toBe(8);
+    expect(facade.pageLoadState().isLoading).toBe(true);
+
+    // The LATER request (page 8) resolves first...
+    pageSubjects[1].next({ isSuccess: true, message: 'ok', data: pageDtoPageEight });
+    pageSubjects[1].complete();
+
+    expect(facade.pageNumber()).toBe(8);
+    expect(facade.page()?.pageNumber).toBe(8);
+    expect(facade.pageLoadState().isLoading).toBe(false);
+
+    // ...and the EARLIER request (page 5) resolves after it. It must be treated as stale and
+    // must not overwrite the already-resolved page 8.
+    pageSubjects[0].next({ isSuccess: true, message: 'stale', data: pageDto });
+    pageSubjects[0].complete();
+
+    expect(facade.pageNumber()).toBe(8);
+    expect(facade.page()?.pageNumber).toBe(8);
+    expect(facade.page()?.lines[0].words[0].textUthmani).toBe('كلمة-الصفحة-الثامنة');
+    expect(facade.pageLoadState().isLoading).toBe(false);
+  });
+
+  it('disposes the in-flight page subscription on unbindFromRoute and applies no state after it', () => {
+    const pageSubjects: Subject<ApiResponse<typeof pageDto>>[] = [];
+    const getPage = vi.fn(subjectFactory(pageSubjects));
+
+    const { facade } = createFacadeTestBed({}, { getPage });
+
+    facade.loadPage(5);
+    expect(facade.pageLoadState().isLoading).toBe(true);
+    expect(pageSubjects[0].observed).toBe(true);
+
+    // Leave the reader while the page request is still in flight.
+    facade.unbindFromRoute();
+
+    // The in-flight HTTP subscription is disposed on teardown.
+    expect(pageSubjects[0].observed).toBe(false);
+
+    // A late response arriving after unbind must not mutate any state.
+    pageSubjects[0].next({ isSuccess: true, message: 'stale', data: pageDto });
+    pageSubjects[0].complete();
+
+    expect(facade.page()).toBeNull();
+    expect(facade.pageLoadState().isLoading).toBe(true);
   });
 });

@@ -20,7 +20,7 @@ public sealed class ImportReconstructionTests
         var handler = await fixture.CreateHandlerAsync();
 
         var result = await handler.HandleAsync(
-            new ImportQuranFoundationCommand(fixture.SourceRoot, ReportOutDir: null),
+            new ImportQuranFoundationCommand(fixture.SourceRoot, ReportOutDir: ImportSourceTestHelpers.TempReportDir()),
             CancellationToken.None);
 
         result.Succeeded.Should().BeTrue(result.Message);

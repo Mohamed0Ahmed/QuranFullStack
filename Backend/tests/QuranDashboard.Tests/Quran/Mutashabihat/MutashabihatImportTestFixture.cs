@@ -67,6 +67,7 @@ public sealed class MutashabihatImportTestFixture : IAsyncLifetime
         MutashabihatExpectedCounts? expectedCounts = null,
         string? reportOutDir = null)
     {
+        reportOutDir ??= Path.Combine(Path.GetTempPath(), $"mutashabihat-report-{Guid.NewGuid():N}");
         await using var scope = CreateServiceProvider(services => services.AddMutashabihatImportServices())
             .CreateAsyncScope();
         var handler = scope.ServiceProvider.GetRequiredService<ImportMutashabihatHandler>();

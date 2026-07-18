@@ -15,9 +15,6 @@ internal static class LemmasCacheEntryOptions
     public static MemoryCacheEntryOptions GroupedWords() =>
         new() { SlidingExpiration = DetailSlidingExpiration };
 
-    public static MemoryCacheEntryOptions PagedWords() =>
-        new() { SlidingExpiration = DetailSlidingExpiration };
-
     public static MemoryCacheEntryOptions PagedDetail() =>
         new() { SlidingExpiration = DetailSlidingExpiration };
 

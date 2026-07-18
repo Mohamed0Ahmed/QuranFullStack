@@ -14,6 +14,7 @@ namespace QuranDashboard.Tests.Api.Access;
 public sealed class FakeExternalUserProfileSource : IExternalUserProfileSource
 {
     private readonly ConcurrentDictionary<string, int> _callsBySub = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, string> _emailOverridesBySub = new(StringComparer.Ordinal);
     private int _totalCalls;
     private volatile string? _blankEmailSub;
 
@@ -35,10 +36,18 @@ public sealed class FakeExternalUserProfileSource : IExternalUserProfileSource
     /// <summary>Designates one subject whose profile carries a blank email (Logto held no primary email).</summary>
     public void ReturnBlankEmailFor(string sub) => _blankEmailSub = sub;
 
-    /// <summary>Clears call counters and any blank-email designation for per-test isolation.</summary>
+    /// <summary>
+    /// Overrides the profile email reported for one subject — e.g. to simulate a subject deleted and
+    /// recreated in the identity provider, which presents a new <c>sub</c> whose server-verified email
+    /// collides with an existing, different local user's email.
+    /// </summary>
+    public void ReturnEmailFor(string sub, string email) => _emailOverridesBySub[sub] = email;
+
+    /// <summary>Clears call counters and any blank-email/email-override designation for per-test isolation.</summary>
     public void Reset()
     {
         _callsBySub.Clear();
+        _emailOverridesBySub.Clear();
         Interlocked.Exchange(ref _totalCalls, 0);
         _blankEmailSub = null;
     }
@@ -50,7 +59,7 @@ public sealed class FakeExternalUserProfileSource : IExternalUserProfileSource
 
         var email = string.Equals(logtoSub, _blankEmailSub, StringComparison.Ordinal)
             ? null
-            : EmailFor(logtoSub);
+            : _emailOverridesBySub.GetValueOrDefault(logtoSub, EmailFor(logtoSub));
 
         return Task.FromResult(new ExternalUserProfile(email, UserNameFor(logtoSub), DisplayNameFor(logtoSub)));
     }

@@ -30,7 +30,6 @@ public sealed class RebuildDisplayWordsHandler
         {
             var result = await rebuilder.RebuildAsync(command.Force, command.ExpectedReadableWords, ct);
             var reportDir = ResolveReportOutDir(command);
-            Directory.CreateDirectory(reportDir);
             await reportWriter.WriteAsync(result, reportDir, ct);
 
             return string.Equals(result.Verdict, "pass", StringComparison.Ordinal)
@@ -45,7 +44,7 @@ public sealed class RebuildDisplayWordsHandler
         {
             return RebuildDisplayWordsResult.Refused(ex.Message);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException)
         {
             return RebuildDisplayWordsResult.Failure(ex.Message);
         }
@@ -53,31 +52,12 @@ public sealed class RebuildDisplayWordsHandler
 
     private static string ResolveReportOutDir(RebuildDisplayWordsCommand command)
     {
-        if (!string.IsNullOrWhiteSpace(command.ReportOutDir))
+        if (string.IsNullOrWhiteSpace(command.ReportOutDir))
         {
-            return Path.GetFullPath(command.ReportOutDir);
+            throw new InvalidOperationException(
+                "A report output directory must be provided by the caller.");
         }
 
-        return Path.GetFullPath(Path.Combine(ResolveRepositoryRoot(), "resources", "report", "words-display"));
-    }
-
-    private static string ResolveRepositoryRoot()
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-
-        while (directory is not null)
-        {
-            var resourcesPath = Path.Combine(directory.FullName, "resources");
-            var backendPath = Path.Combine(directory.FullName, "Backend");
-
-            if (Directory.Exists(resourcesPath) && Directory.Exists(backendPath))
-            {
-                return directory.FullName;
-            }
-
-            directory = directory.Parent;
-        }
-
-        throw new InvalidOperationException("Could not resolve the repository root directory.");
+        return Path.GetFullPath(command.ReportOutDir);
     }
 }

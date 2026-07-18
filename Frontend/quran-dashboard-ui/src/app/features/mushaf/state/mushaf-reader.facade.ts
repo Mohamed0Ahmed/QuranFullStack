@@ -90,6 +90,8 @@ export class MushafReaderFacade {
   private ayahStudyRequestToken = 0;
   private similarAyahsRequestToken = 0;
   private mutashabihatRequestToken = 0;
+  private pageRequestToken = 0;
+  private pageSub: Subscription | null = null;
   private peekFlashClearTimer: ReturnType<typeof setTimeout> | null = null;
 
   /**
@@ -238,6 +240,8 @@ export class MushafReaderFacade {
     this.ayahStudyLoadRunner.clearPending();
     this.similarAyahsLoadRunner.clearPending();
     this.mutashabihatLoadRunner.clearPending();
+    this.pageSub?.unsubscribe();
+    this.pageSub = null;
     this.routeSubscription?.unsubscribe();
     this.routeSubscription = null;
     this.activeRoute = null;
@@ -391,12 +395,18 @@ export class MushafReaderFacade {
     this._pageNumber.set(clamped);
     this._pageLoadState.set({ isLoading: true, isEmpty: false, errorMessage: null });
 
-    subscribeToApiLoad(
+    const token = ++this.pageRequestToken;
+
+    this.pageSub = subscribeToApiLoad(
       this.readerCache.getOrLoad(MushafReaderCacheKeys.page(clamped), () =>
         this.pagesApi.getPage(clamped),
       ),
       {
         onSuccess: (data) => {
+          if (token !== this.pageRequestToken) {
+            return;
+          }
+
           this._page.set(toPageViewModel(data));
           prefetchAdjacentMushafPages(
             data.previousPageNumber,
@@ -409,6 +419,12 @@ export class MushafReaderFacade {
           }
         },
         onSettled: (loadState) => {
+          if (token !== this.pageRequestToken) {
+            return;
+          }
+
+          this.pageSub = null;
+
           if (loadState.isEmpty) {
             this._page.set(null);
           }

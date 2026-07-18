@@ -22,6 +22,7 @@ public sealed class DisplayWordsIdempotencyTests
         var secondReportDir = Path.Combine(Path.GetTempPath(), $"words-display-idem-2-{Guid.NewGuid():N}");
         var command = new RebuildDisplayWordsCommand(
             Force: true,
+            ReportOutDir: firstReportDir,
             ExpectedReadableWords: DisplayWordsSyntheticSeed.ReadableWordCount);
 
         var firstResult = await fixture.CreateHandler().HandleAsync(

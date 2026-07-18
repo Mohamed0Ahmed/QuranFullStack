@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using QuranDashboard.Application.Abstractions.Quran.MushafReader;
 using QuranDashboard.Application.Abstractions.Quran.MushafReader.Responses;
 using QuranDashboard.Domain.Quran.Ayahs;
@@ -6,7 +7,7 @@ using QuranDashboard.Domain.Quran.Navigation;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.MushafReader;
 
-public sealed class EfAyahStudyReader(QuranDashboardDbContext db) : IAyahStudyReader
+public sealed class EfAyahStudyReader(QuranDashboardDbContext db, ILogger<EfAyahStudyReader> logger) : IAyahStudyReader
 {
     private static readonly JsonSerializerOptions CoveredKeysJsonOptions = new()
     {
@@ -37,13 +38,13 @@ public sealed class EfAyahStudyReader(QuranDashboardDbContext db) : IAyahStudyRe
         var ayahCore = MapAyahCore(ayah, sajda);
 
         var tafsir = tafsirSourceKey is not null
-            ? await LoadTafsirAsync(ayah.Id, tafsirSourceKey, ct)
+            ? await LoadTafsirAsync(ayah.Id, verseKey, tafsirSourceKey, ct)
             : ResolvedSource<TafsirEntryDto>.NoSource;
         var translation = translationSourceKey is not null
             ? await LoadTranslationAsync(ayah.Id, translationSourceKey, ct)
             : ResolvedSource<TranslationEntryDto>.NoSource;
         var fullI3rab = fullI3rabSourceKey is not null
-            ? await LoadFullI3rabAsync(ayah.Id, fullI3rabSourceKey, ct)
+            ? await LoadFullI3rabAsync(ayah.Id, verseKey, fullI3rabSourceKey, ct)
             : ResolvedSource<FullI3rabEntryDto>.NoSource;
         var similaritySummary = await LoadSimilaritySummaryAsync(ayah.Id, ct);
 
@@ -130,7 +131,7 @@ public sealed class EfAyahStudyReader(QuranDashboardDbContext db) : IAyahStudyRe
     /// missing mapping or missing text row both surface as null joined columns, which collapses
     /// to the same "resolved key, null block" outcome the sequential version produced.
     /// </summary>
-    private async Task<ResolvedSource<TafsirEntryDto>> LoadTafsirAsync(int ayahId, string sourceKey, CancellationToken ct)
+    private async Task<ResolvedSource<TafsirEntryDto>> LoadTafsirAsync(int ayahId, string verseKey, string sourceKey, CancellationToken ct)
     {
         var projection = await (
             from source in db.TafsirSources.AsNoTracking()
@@ -179,7 +180,7 @@ public sealed class EfAyahStudyReader(QuranDashboardDbContext db) : IAyahStudyRe
             projection.SourceLeaderVerseKey!,
             projection.IsGroupLeader!.Value,
             projection.CoveredAyahCount!.Value,
-            ParseCoveredAyahKeys(projection.CoveredAyahKeys!),
+            ParseCoveredAyahKeys(projection.CoveredAyahKeys!, verseKey, sourceKey),
             projection.TafsirText);
 
         return new ResolvedSource<TafsirEntryDto>(projection.SourceKey, dto);
@@ -235,7 +236,7 @@ public sealed class EfAyahStudyReader(QuranDashboardDbContext db) : IAyahStudyRe
     /// <summary>
     /// Full i3rab is source -> mapping -> text, mirroring tafsir's shape via its own tables.
     /// </summary>
-    private async Task<ResolvedSource<FullI3rabEntryDto>> LoadFullI3rabAsync(int ayahId, string sourceKey, CancellationToken ct)
+    private async Task<ResolvedSource<FullI3rabEntryDto>> LoadFullI3rabAsync(int ayahId, string verseKey, string sourceKey, CancellationToken ct)
     {
         var projection = await (
             from source in db.FullI3rabSources.AsNoTracking()
@@ -280,7 +281,7 @@ public sealed class EfAyahStudyReader(QuranDashboardDbContext db) : IAyahStudyRe
             projection.SourceLeaderVerseKey!,
             projection.IsGroupLeader!.Value,
             projection.CoveredAyahCount!.Value,
-            ParseCoveredAyahKeys(projection.CoveredAyahKeys!),
+            ParseCoveredAyahKeys(projection.CoveredAyahKeys!, verseKey, sourceKey),
             projection.I3rabHtml);
 
         return new ResolvedSource<FullI3rabEntryDto>(projection.SourceKey, dto);
@@ -327,7 +328,13 @@ public sealed class EfAyahStudyReader(QuranDashboardDbContext db) : IAyahStudyRe
         string? CoveredAyahKeys,
         string? I3rabHtml);
 
-    private static IReadOnlyList<string> ParseCoveredAyahKeys(string json)
+    /// <summary>
+    /// M15 (quran-safety rule 3): corrupt covered_ayah_keys JSON must not be swallowed silently.
+    /// The return contract is unchanged (still empty on failure) — a "coverage unavailable"
+    /// marker would be a DTO/contract change and is out of scope here — but a corrupt row now
+    /// logs a Warning naming the ayah and source so the underlying data issue stays visible.
+    /// </summary>
+    private IReadOnlyList<string> ParseCoveredAyahKeys(string json, string verseKey, string sourceKey)
     {
         if (string.IsNullOrWhiteSpace(json))
         {
@@ -338,8 +345,13 @@ public sealed class EfAyahStudyReader(QuranDashboardDbContext db) : IAyahStudyRe
         {
             return JsonSerializer.Deserialize<string[]>(json, CoveredKeysJsonOptions) ?? [];
         }
-        catch (JsonException)
+        catch (JsonException ex)
         {
+            logger.LogWarning(
+                ex,
+                "Corrupt covered_ayah_keys JSON for ayah {verseKey} source {sourceKey}; treating as empty",
+                verseKey,
+                sourceKey);
             return [];
         }
     }
@@ -348,6 +360,6 @@ public sealed class EfAyahStudyReader(QuranDashboardDbContext db) : IAyahStudyRe
     {
         SajdahType.Required => "required",
         SajdahType.Optional => "optional",
-        _ => "required",
+        _ => throw new ArgumentOutOfRangeException(nameof(sajdahType), sajdahType, "Unknown sajdah type."),
     };
 }

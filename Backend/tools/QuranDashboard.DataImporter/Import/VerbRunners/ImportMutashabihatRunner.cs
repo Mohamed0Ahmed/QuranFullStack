@@ -30,6 +30,7 @@ internal static class ImportMutashabihatRunner
         var handler = scope.ServiceProvider.GetRequiredService<ImportMutashabihatHandler>();
 
         sourcePath ??= DataImporterDefaults.ResolveDefaultMutashabihatSourcePath();
+        reportOutDir ??= DataImporterDefaults.ResolveDefaultMutashabihatReportDir();
 
         var result = await handler.HandleAsync(
             new ImportMutashabihatCommand(

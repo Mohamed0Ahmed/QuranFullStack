@@ -557,7 +557,7 @@ public sealed class MorphologyValidationFailureTests(MorphologyImportTestFixture
 
         var forced = await fixture.RunImportAsync(badSource, force: true);
         forced.Succeeded.Should().BeFalse();
-        forced.ExitCode.Should().Be(ImportMorphologyResult.RefusedExitCode);
+        forced.ExitCode.Should().Be(ImportMorphologyResult.FailureExitCode);
         forced.ReportOutDir.Should().BeNull();
 
         var snapshotAfter = await fixture.CaptureTableSnapshotAsync();

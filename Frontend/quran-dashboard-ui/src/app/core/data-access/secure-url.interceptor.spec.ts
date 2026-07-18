@@ -20,9 +20,9 @@ import { environment } from '../../../environments/environment';
 const devApiBaseUrl = 'https://localhost:5015';
 
 describe('isUrlUnderApiBase', () => {
-  it('allows any URL when apiBaseUrl is empty (production same-origin)', () => {
-    expect(isUrlUnderApiBase('http://any-host.example/api/foo', '')).toBe(true);
-    expect(isUrlUnderApiBase('https://evil.example/', '')).toBe(true);
+  it('fails closed (blocks every URL) when apiBaseUrl is empty, a misconfiguration', () => {
+    expect(isUrlUnderApiBase('http://any-host.example/api/foo', '')).toBe(false);
+    expect(isUrlUnderApiBase('https://evil.example/', '')).toBe(false);
   });
 
   it('allows URLs on the exact API origin', () => {

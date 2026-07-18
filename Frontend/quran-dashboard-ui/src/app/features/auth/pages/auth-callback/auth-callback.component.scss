@@ -2,8 +2,9 @@
   display: block;
 }
 
-// Calm, centered status line — no spinner, no ornament (DESIGN.md: reverence through
-// restraint). The redirect is near-instant, so this is a brief, quiet transitional state.
+// Calm, centered status — no spinner, no ornament (DESIGN.md: reverence through
+// restraint). Pending is a brief, quiet transitional state; a failed login instead
+// settles here with a single retry action (both rendered via the shared qd-state).
 .auth-callback {
   display: flex;
   justify-content: center;

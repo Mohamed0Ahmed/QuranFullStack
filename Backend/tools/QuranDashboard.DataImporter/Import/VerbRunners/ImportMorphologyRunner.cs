@@ -47,6 +47,7 @@ internal static class ImportMorphologyRunner
         sourcePath ??= enrichedRequested
             ? DataImporterDefaults.ResolveDefaultEnrichedMorphologySourcePath()
             : DataImporterDefaults.ResolveDefaultMorphologySourcePath();
+        reportOutDir ??= DataImporterDefaults.ResolveDefaultMorphologyReportDir();
 
         var host = createHost();
         await using var scope = host.Services.CreateAsyncScope();

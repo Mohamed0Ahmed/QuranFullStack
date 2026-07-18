@@ -11,9 +11,9 @@ import { UniqueWordKind, UniqueWordListItemViewModel, UniqueWordsAssociation, Un
 import { UNIQUE_WORDS_RESULT_COUNT_LABEL } from '../../models/unique-words.labels';
 
 const STUB_ASSOCIATION_OPTIONS = {
-  searchRoots: () => of([]),
-  searchLemmas: () => of([]),
-  wordTypeOptions: () => of([]),
+  searchRoots: () => of({ status: 'success' as const, options: [] }),
+  searchLemmas: () => of({ status: 'success' as const, options: [] }),
+  wordTypeOptions: () => of({ status: 'success' as const, options: [] }),
 };
 
 const CLOSED_DRILLDOWN: WordDrilldownState = { isOpen: false, selectedWordId: null, view: 'surahs', summary: null, surahs: null, missingSurahs: null, ayahs: null, ayahPage: 1, status: 'idle', errorMessage: '' };

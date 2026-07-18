@@ -61,6 +61,7 @@
           [selectedId]="association().rootId"
           [selectedLabel]="selectedRootLabel()"
           [loading]="rootOptionsLoading()"
+          [error]="rootOptionsError()"
           [disabled]="listState().status === 'loading'"
           (searchChange)="onRootSearch($event)"
           (selectionChange)="onPrimaryRootChange($event)"

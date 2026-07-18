@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 
-import { AssociationOption } from '../state/words-association-filters';
+import { AssociationOptionsResult } from '../state/words-association-filters';
 import { RootsApi } from './roots.api';
 import { LemmasApi } from './lemmas.api';
 import { WordTypesApi } from './word-types.api';
@@ -34,53 +34,60 @@ export class WordsAssociationOptionsService {
 
   private static readonly PickerPageSize = 30;
 
-  searchRoots(term: string): Observable<readonly AssociationOption[]> {
+  searchRoots(term: string): Observable<AssociationOptionsResult> {
     const key = `roots:picker:${term.trim()}`;
     return this.rootsCache
       .getOrLoad(key, () =>
         this.rootsApi.getRootsList(term, 'occurrences', 1, WordsAssociationOptionsService.PickerPageSize),
       )
       .pipe(
-        map((response) =>
+        map((response): AssociationOptionsResult =>
           response.isSuccess && response.data
-            ? response.data.items.map((root) => ({ id: root.id, label: root.rootText }))
-            : [],
+            ? {
+                status: 'success',
+                options: response.data.items.map((root) => ({ id: root.id, label: root.rootText })),
+              }
+            : { status: 'error' },
         ),
-        catchError(() => of<readonly AssociationOption[]>([])),
+        catchError(() => of<AssociationOptionsResult>({ status: 'error' })),
       );
   }
 
-  searchLemmas(term: string): Observable<readonly AssociationOption[]> {
+  searchLemmas(term: string): Observable<AssociationOptionsResult> {
     const key = `lemmas:picker:${term.trim()}`;
     return this.lemmasCache
       .getOrLoad(key, () =>
         this.lemmasApi.getLemmasList(term, 'occurrences', 1, WordsAssociationOptionsService.PickerPageSize),
       )
       .pipe(
-        map((response) =>
+        map((response): AssociationOptionsResult =>
           response.isSuccess && response.data
-            ? response.data.items.map((lemma) => ({ id: lemma.id, label: lemma.lemmaText }))
-            : [],
+            ? {
+                status: 'success',
+                options: response.data.items.map((lemma) => ({ id: lemma.id, label: lemma.lemmaText })),
+              }
+            : { status: 'error' },
         ),
-        catchError(() => of<readonly AssociationOption[]>([])),
+        catchError(() => of<AssociationOptionsResult>({ status: 'error' })),
       );
   }
 
-  wordTypeOptions(): Observable<readonly AssociationOption[]> {
+  wordTypeOptions(): Observable<AssociationOptionsResult> {
     return this.wordTypesCache
       .getOrLoad(WordTypesCacheKeys.tree, () => this.wordTypesApi.getTree())
       .pipe(
-        map((response) => {
+        map((response): AssociationOptionsResult => {
           if (!response.isSuccess || !response.data) {
-            return [];
+            return { status: 'error' };
           }
-          return response.data.mainTypes
+          const options = response.data.mainTypes
             .filter((node) => node.code === 'noun' || node.code === 'particle')
             .flatMap((node) =>
               node.children.map((child) => ({ id: child.code, label: child.label.ar })),
             );
+          return { status: 'success', options };
         }),
-        catchError(() => of<readonly AssociationOption[]>([])),
+        catchError(() => of<AssociationOptionsResult>({ status: 'error' })),
       );
   }
 }

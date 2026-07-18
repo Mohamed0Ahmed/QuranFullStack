@@ -2,6 +2,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using QuranDashboard.Application.Quran.DataPipelines.Words.SimpleI3rabGeneration;
 using QuranDashboard.DataImporter.Import.ArgumentParsing;
+using QuranDashboard.DataImporter.Import.DefaultPaths;
 
 namespace QuranDashboard.DataImporter.Import.VerbRunners;
 
@@ -15,6 +16,8 @@ internal static class GenerateI3rabRunner
             printUsage();
             return GenerateI3rabResult.FailureExitCode;
         }
+
+        reportOutDir ??= DataImporterDefaults.ResolveDefaultSimpleI3rabReportDir();
 
         try
         {

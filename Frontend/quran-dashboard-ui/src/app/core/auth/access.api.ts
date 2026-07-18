@@ -9,10 +9,14 @@ import { CurrentUserDto } from './current-user.model';
 /**
  * API boundary for the backend `Access/` bounded context (Feature 033).
  *
- * Thin by contract (mirrors `core/data-access/system.api.ts`): it types the call and
+ * Thin per `.architecture/API_INTEGRATION_GUIDELINES.md`: it types the call and
  * returns the raw `ApiResponse<T>` envelope. Unwrapping `isSuccess` / `data` / `message`
- * and mapping failures is the store's job (`current-user.store.ts`), per
- * `.architecture/API_INTEGRATION_GUIDELINES.md`.
+ * and mapping failures is the store's job (`current-user.store.ts`), not this service's.
+ *
+ * Note: this does NOT mirror `core/data-access/system.api.ts` — `SystemApi` is a
+ * documented exception to the guideline (it unwraps the envelope, throws on
+ * `isSuccess: false`, and holds cache state itself). `AccessApi` follows the
+ * guideline's default shape instead.
  */
 @Injectable({ providedIn: 'root' })
 export class AccessApi {

@@ -11,9 +11,8 @@ namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Stems;
 /// EF Core read model for the Stems Explorer (Feature 016). All queries are
 /// read-only and <c>AsNoTracking</c>. The catalogue/summary is loaded in a bounded
 /// whole-summary aggregation plus compact server-grouped distribution/winner reads
-/// (see <see cref="LoadWholeSummaryAsync"/>); the later detail methods remain
-/// stubbed for subsequent phases. Ayah and words detail are implemented in the
-/// corresponding Feature 016 story phases.
+/// (see <see cref="LoadWholeSummaryAsync"/>). Ayah and words detail are fully
+/// implemented as well.
 /// </summary>
 public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsReader
 {

@@ -99,7 +99,7 @@ public sealed class UserProvisioningService(
             }
             return Project(user, ownerRole?.Name);
         }
-        catch (DbUpdateException)
+        catch (DbUpdateException ex)
         {
             // A concurrent first login for the same subject won the unique-index race. Detach our
             // failed insert and return the row that landed first; rethrow if it was some other failure.
@@ -110,6 +110,15 @@ public sealed class UserProvisioningService(
                 .SingleOrDefaultAsync(u => u.LogtoSub == logtoSub, ct);
             if (winner is null)
             {
+                // No row under our sub means the unique-index hit wasn't the same-sub race above — the
+                // sub index would have produced a winner. It is the email unique index instead: a
+                // subject deleted+recreated in Logto now presents a new sub with an already-registered
+                // email. That is an expected business conflict, not a server fault.
+                if (ex.InnerException is PostgresException { SqlState: "23505" })
+                {
+                    throw new UserProvisioningEmailConflictException(profile.Email!);
+                }
+
                 throw;
             }
             return Project(winner, winner.Role?.Name);

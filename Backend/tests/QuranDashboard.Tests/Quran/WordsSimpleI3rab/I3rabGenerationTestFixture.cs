@@ -70,6 +70,7 @@ public sealed class I3rabGenerationTestFixture : IAsyncLifetime
         string? reportOutDir = null,
         Action<IServiceCollection>? configure = null)
     {
+        reportOutDir ??= Path.Combine(Path.GetTempPath(), $"simple-i3rab-report-{Guid.NewGuid():N}");
         await using var scope = CreateServiceProvider(expectedCounts, configure).CreateAsyncScope();
         var handler = scope.ServiceProvider.GetRequiredService<GenerateI3rabHandler>();
         return await handler.HandleAsync(new GenerateI3rabCommand(force, reportOutDir), CancellationToken.None);

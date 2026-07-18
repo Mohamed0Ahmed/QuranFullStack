@@ -10,7 +10,8 @@ public sealed class HealthController(HealthCheckService healthCheckService) : Co
     /// يُرجع الحالة الصحية للتطبيق واعتمادياته (قاعدة البيانات) مع حالة كل فحص على حدة.
     /// </summary>
     /// <param name="cancellationToken">رمز إلغاء الطلب.</param>
-    /// <response code="200">تم تنفيذ فحوصات الحالة؛ الحالة الكلية ضمن البيانات (healthy أو degraded أو unhealthy).</response>
+    /// <response code="200">تم تنفيذ فحوصات الحالة؛ الحالة الكلية ضمن البيانات (healthy أو degraded).</response>
+    /// <response code="503">الحالة الكلية unhealthy؛ البيانات (بما فيها فحص كل اعتمادية) لا تزال مُرفقة.</response>
     [HttpGet]
     public async Task<ActionResult<ApiResponse<HealthReportData>>> Get(CancellationToken cancellationToken)
     {
@@ -25,10 +26,26 @@ public sealed class HealthController(HealthCheckService healthCheckService) : Co
         var message = report.Status switch
         {
             HealthStatus.Healthy => ApiMessages.HealthOk,
-            _ => ApiMessages.HealthDegraded
+            HealthStatus.Degraded => ApiMessages.HealthDegraded,
+            _ => ApiMessages.HealthUnhealthy
         };
 
         var data = new HealthReportData(overallStatus, checks);
+
+        if (report.Status == HealthStatus.Unhealthy)
+        {
+            // Railway/infra probes key on HTTP status, so an unhealthy dependency must not report 200.
+            // ApiResponse.Fail carries no data, so the failure envelope is built inline to still carry
+            // the per-check detail probes/consumers need.
+            var failureEnvelope = new ApiResponse<HealthReportData>
+            {
+                IsSuccess = false,
+                Message = message,
+                Data = data
+            };
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, failureEnvelope);
+        }
+
         return Ok(ApiResponse<HealthReportData>.Ok(data, message));
     }
 

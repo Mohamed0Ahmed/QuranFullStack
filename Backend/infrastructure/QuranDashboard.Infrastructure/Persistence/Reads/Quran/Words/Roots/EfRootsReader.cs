@@ -3,6 +3,7 @@ using QuranDashboard.Application.Abstractions.Common.Paging;
 using QuranDashboard.Application.Abstractions.Quran.Words.Responses;
 using QuranDashboard.Application.Abstractions.Quran.Words.Roots;
 using QuranDashboard.Application.Abstractions.Quran.Words.Roots.Responses;
+using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Roots;
 
@@ -137,6 +138,11 @@ public sealed class EfRootsReader(QuranDashboardDbContext db) : IRootsReader
             .Distinct();
 
         var totalCount = await matchedAyahIds.CountAsync(cancellationToken);
+        var skip = ReadPaging.CalculateSafeSkip(page, pageSize, totalCount);
+        if (skip is null)
+        {
+            return new PagedResult<RootAyahMatchDto>(page, pageSize, totalCount, []);
+        }
 
         var pageAyahs = await (
             from ayah in _db.QuranAyahs.AsNoTracking()
@@ -150,7 +156,7 @@ public sealed class EfRootsReader(QuranDashboardDbContext db) : IRootsReader
                 ayah.SurahNumber,
                 ayah.AyahNumber,
                 surah.NameArabic))
-            .Skip((page - 1) * pageSize)
+            .Skip(skip.Value)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
 
@@ -352,12 +358,12 @@ public sealed class EfRootsReader(QuranDashboardDbContext db) : IRootsReader
                 r.root_text AS "{nameof(RootSummaryRow.RootText)}",
                 replace(translate(lower(r.root_text), @foldFrom, @foldTo), ' ', '') AS "{nameof(RootSummaryRow.NormalizedRootText)}",
                 r.words_count AS "{nameof(RootSummaryRow.OccurrencesCount)}",
-                agg.ayahs_count AS "{nameof(RootSummaryRow.AyahsCount)}",
-                agg.surahs_count AS "{nameof(RootSummaryRow.SurahsCount)}",
-                agg.simple_words_count AS "{nameof(RootSummaryRow.SimpleWordsCount)}",
-                agg.tashkeel_words_count AS "{nameof(RootSummaryRow.TashkeelWordsCount)}",
+                COALESCE(agg.ayahs_count, 0) AS "{nameof(RootSummaryRow.AyahsCount)}",
+                COALESCE(agg.surahs_count, 0) AS "{nameof(RootSummaryRow.SurahsCount)}",
+                COALESCE(agg.simple_words_count, 0) AS "{nameof(RootSummaryRow.SimpleWordsCount)}",
+                COALESCE(agg.tashkeel_words_count, 0) AS "{nameof(RootSummaryRow.TashkeelWordsCount)}",
                 COALESCE(agg.distinct_lemmas_count, r.distinct_lemmas_count) AS "{nameof(RootSummaryRow.LemmasCount)}",
-                agg.stems_count AS "{nameof(RootSummaryRow.StemsCount)}",
+                COALESCE(agg.stems_count, 0) AS "{nameof(RootSummaryRow.StemsCount)}",
                 r.first_word_order_in_mushaf AS "{nameof(RootSummaryRow.FirstWordOrderInMushaf)}"
             FROM quran_roots r
             LEFT JOIN (

@@ -1,7 +1,7 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subject, Subscription, catchError, debounceTime, of, switchMap } from 'rxjs';
+import { Subject, Subscription, debounceTime, switchMap } from 'rxjs';
 
 import { LemmaDetailFrame } from '../../../../core/navigation/detail-overlay/detail-overlay.models';
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
@@ -103,6 +103,8 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly association = this.listFacade.association;
   protected readonly rootOptions = signal<readonly AssociationOption[]>([]);
   protected readonly rootOptionsLoading = signal(false);
+  // M32/M43 + M74: a picker load failure must be distinguishable from a genuine empty result.
+  protected readonly rootOptionsError = signal(false);
   protected readonly selectedRootLabel = signal<string | null>(null);
   protected get rootFilterLabel(): string { return LEMMAS_ROOT_FILTER_LABEL; }
   protected get rootFilterPlaceholder(): string { return LEMMAS_ROOT_FILTER_PLACEHOLDER; }
@@ -162,10 +164,11 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
     this.rootSearchSub = this.rootSearchInput
       .pipe(
         debounceTime(300),
-        switchMap((term) => this.associationOptions.searchRoots(term).pipe(catchError(() => of([])))),
+        switchMap((term) => this.associationOptions.searchRoots(term)),
       )
-      .subscribe((options) => {
-        this.rootOptions.set(options);
+      .subscribe((result) => {
+        this.rootOptions.set(result.status === 'success' ? result.options : []);
+        this.rootOptionsError.set(result.status === 'error');
         this.rootOptionsLoading.set(false);
       });
     if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {

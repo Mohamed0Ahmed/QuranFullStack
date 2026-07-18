@@ -46,6 +46,14 @@
           <span aria-hidden="true">…</span>
           <span class="qd-sr-only">{{ labels.loading }}</span>
         </p>
+      } @else if (error()) {
+        <p class="association-filter__hint" data-testid="association-filter-error" role="status">
+          {{ labels.error }}
+        </p>
+      } @else if (visibleOptions().length === 0) {
+        <p class="association-filter__hint" data-testid="association-filter-no-results" role="status">
+          {{ labels.noResults }}
+        </p>
       } @else {
         <!-- Plain list semantics on purpose: options are ordinary buttons reachable by Tab. No listbox
              role is claimed because no arrow-key/listbox keyboard model is implemented. -->

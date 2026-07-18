@@ -422,6 +422,22 @@ describe('RootsExplorerPageComponent US2', () => {
     expect(listFacade.page()).toBe(2);
   });
 
+  it('restores searchDraft into the toolbar input from the URL and clears it when the param is removed (M25)', async () => {
+    queryParamMap$.next(convertToParamMap({ search: 'رحم' }));
+    const fixture = await initLifecycle();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const searchInput = () =>
+      fixture.nativeElement.querySelector('[data-testid="roots-search-input"]') as HTMLInputElement;
+    // A shared deep link / refresh must show the filtered term in the input, not an empty box.
+    expect(searchInput().value).toBe('رحم');
+
+    queryParamMap$.next(convertToParamMap({}));
+    fixture.detectChanges();
+    expect(searchInput().value).toBe('');
+  });
+
   describe('sorting (Feature 030, N8)', () => {
     it('has no desktop sort dropdown: the only select sits in the ≤1023px fallback wrapper', async () => {
       const fixture = await initLifecycle();

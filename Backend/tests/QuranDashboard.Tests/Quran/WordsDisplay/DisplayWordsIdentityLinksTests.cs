@@ -76,6 +76,7 @@ public sealed class DisplayWordsIdentityLinksTests
         await fixture.SeedDefaultSyntheticDataAsync();
         var command = new RebuildDisplayWordsCommand(
             Force: true,
+            ReportOutDir: Path.Combine(Path.GetTempPath(), $"words-display-links-idem-0-{Guid.NewGuid():N}"),
             ExpectedReadableWords: DisplayWordsSyntheticSeed.ReadableWordCount);
 
         var firstResult = await fixture.CreateHandler().HandleAsync(

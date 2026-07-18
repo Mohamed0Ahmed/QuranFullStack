@@ -71,6 +71,10 @@ export const WORDS_ASSOCIATION_FILTER_LABELS = {
   activeFilter: 'مرشَّح نشط',
   clear: 'مسح التصفية',
   loading: 'جارٍ التحميل…',
+  // M32/M43 + M74: a load failure must read as a calm error hint, distinct from both the
+  // loading state and a genuine zero-match empty result.
+  error: 'تعذّر تحميل الخيارات',
+  noResults: 'لا توجد نتائج',
 } as const;
 
 // UI labels for the shared result-count stat (Feature 026, US4). loading is the sr-only text
