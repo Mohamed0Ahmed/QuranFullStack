@@ -50,6 +50,7 @@ public sealed class QuranDashboardDbContext(DbContextOptions<QuranDashboardDbCon
     public DbSet<FullI3rabAyahEntry> FullI3rabAyahEntries => Set<FullI3rabAyahEntry>();
 
     public DbSet<User> AccessUsers => Set<User>();
+    public DbSet<Role> AccessRoles => Set<Role>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

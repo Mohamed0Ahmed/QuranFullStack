@@ -9,8 +9,12 @@ public sealed class User
     public string? DisplayName { get; set; }
     public string? Title { get; set; }
 
-    // Plain column in Phase 1; the FK constraint to Roles (and its navigation) arrives in Phase 2.
+    // Nullable FK → Roles: a fresh user has no role until an Owner assigns one. The Owner-bootstrap
+    // user is the sole exception (created directly with the Owner role).
     public int? RoleId { get; set; }
+
+    /// <summary>Optional navigation to the assigned <see cref="Role"/>; null when <see cref="RoleId"/> is null.</summary>
+    public Role? Role { get; set; }
 
     public UserStatus Status { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }

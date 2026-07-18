@@ -5,6 +5,7 @@ export interface CurrentUserResponse {
   displayName: string | null;
   email: string;
   roleId: number | null;
+  roleName: string | null;
   status: string;
   sub: string;
 }

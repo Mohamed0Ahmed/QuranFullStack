@@ -35,9 +35,16 @@
   provisioned on first login (as `Pending`, `RoleId = null`). Enforcement is **minimal
   and non-breaking** — authentication is wired but the global deny-by-default lockdown and
   role gating are **not** switched on, so currently-anonymous endpoints keep working.
-- **Phase 2 — Roles & role-based authorization.** Introduce the `Roles` table + seed
-  (fixed set incl. Owner), Owner-by-email bootstrap, the deny-by-default fallback policy,
-  role checks, the pending/activation gate, and Owner role-assignment + user-management.
+- **Phase 2 — Roles infrastructure & public browse (REVISED posture).** Introduce the
+  `Roles` table + seed (fixed set incl. Owner), Owner-by-email bootstrap, role loading
+  into claims (`IClaimsTransformation` + short-TTL cache, reflected by `/api/access/me`),
+  and role-based named policies **registered but applied to NOTHING** (**no** global
+  deny-by-default fallback; everything stays public). The Phase-1 blanket frontend
+  `authGuard` on the `/dashboard` browse tree is **removed** — anonymous browsing is
+  the default; a reusable role guard exists but is attached to nothing. The **admin
+  surface** (user-management endpoints + page, pending-activation page, any
+  `[Authorize(Policy=…)]` application, 403 writer) is **deferred to future admin
+  features**.
 
 **Why Owner bootstrap is in Phase 2 (dependency, resolved):** the Owner bootstrap assigns
 the **Owner role**, which requires the `Roles` table — that table lands in Phase 2.
@@ -105,7 +112,9 @@ endpoints keep working.
 
 ## Non-goals (out — deferred to Phase 2)
 - `Roles` table, role seed, Owner-by-email bootstrap (owner is `Pending`/`null` in P1).
-- Global **deny-by-default** fallback policy and any `[Authorize(Policy=...)]` role checks.
+- Role policies / any `[Authorize(Policy=...)]` checks (opt-in, admin-only — Phase 2;
+  the originally planned global deny-by-default fallback was **dropped** in the revised
+  posture).
 - `IClaimsTransformation` role loading + cache (no roles to load yet).
 - Pending/activation **page** and the authenticated-but-no-role redirect.
 - User-management page and role assignment.
@@ -148,16 +157,20 @@ one migration. Owner reviews. Do not open against `main`.
 
 ---
 
-# Phase 2 — Roles & role-based authorization
+# Phase 2 — Roles infrastructure & public browse (REVISED posture)
 
 ## Objective & final behavior
-The system enforces **role-based, deny-by-default** authorization. A fixed set of `Roles`
-(incl. `Owner`) is seeded. The owner email is bootstrapped to `Owner`/`Active`. An
-authenticated user with **no role / non-Active status** is blocked from all admin pages
-and sees a **pending activation** page; the API rejects them with 403 (envelope). The
-Owner sees a **user-management page** listing pending/all users and **assigns a role**;
-the change takes effect immediately (cache eviction). Role capabilities are enforced in
-.NET by role name.
+The product is **public-browse by default with an admin layer on top**; the admin layer
+itself arrives with **future admin features**. After Phase 2: browsing needs **no
+login** — the Phase-1 blanket route guard is gone and anonymous users navigate every
+route freely; login stays available on-demand via the navbar. A fixed set of `Roles`
+(incl. `Owner`) is seeded. The owner email is bootstrapped to `Owner`/`Active` on
+provisioning (idempotent). The authenticated user's role is loaded into claims via
+`IClaimsTransformation` (short-TTL cache keyed by `sub`, idempotent, evicted
+immediately on role change) and is reflected by `GET /api/access/me` (`roleName`).
+Role-based named policies are **registered but applied to nothing** — no endpoint or
+route is protected in this phase. Role capabilities remain enforced-in-code by role
+name once admin surfaces attach the policies/guards.
 
 ## Scope (in)
 - **BE — `Roles`.** Domain `Access/` `Role` entity; EF `RoleConfiguration`
@@ -173,22 +186,23 @@ the change takes effect immediately (cache eviction). Role capabilities are enfo
   `sub` into claims, backed by a **short-TTL cache** keyed by `sub`; **idempotent** (no
   duplicate claims across multiple per-request invocations); **evict immediately** on role
   change.
-- **BE — deny-by-default (E2/D6).** Global **fallback authorization policy** requiring an
-  authenticated user **with a role**; `AddAuthorization` fallback + named role policies
-  registered next to the Phase-1 auth registration. Explicit `[AllowAnonymous]` on health,
-  `/callback`-related, login, and the pending/activation endpoint(s). `[Authorize(Policy=…)]`
-  applied to the admin/data controllers.
-- **BE — 403 envelope (F2).** `JwtBearerEvents.OnForbidden` (and policy failure) writes
-  `ApiResponse<object>.Fail(ApiMessages.Forbidden)`; add the Arabic `ApiMessages.Forbidden`.
-- **BE — user management.** Use cases + endpoints (Owner-only policy) to **list users**
-  (esp. `Pending`) and **assign/change a user's role** (and optionally set `Status`); on
-  assignment, evict that user's role cache (E1).
-- **FE — gating (G1 completion).** Tighten `authGuard`: authenticated **but no role /
-  `Pending`** → redirect to the **pending activation page** (new public/authenticated
-  route registered before the `**` wildcard). Add the pending page (Arabic).
-- **FE — user-management page.** Owner-only page listing pending/all users with a
-  role-assignment control, consuming the new endpoints; surfaced via a nav entry
-  (`nav-items.ts` `actions`/appropriate group) visible to the Owner role.
+- **BE — policies registered, applied to NOTHING (E2/D6 REVISED).** **NO global
+  fallback authorization policy.** Named role policies (incl. `Owner`) registered next
+  to the Phase-1 auth registration, ready for future admin endpoints. **No
+  `[Authorize(Policy=…)]` is applied anywhere in this phase.** All endpoints stay
+  public (the Phase-1 `[Authorize]` on `api/access/me` remains — auth-only, no role).
+- **BE — `me` reflects the role.** `ProvisionedUser`/`CurrentUserResponse` gain
+  `roleName` (null when no role) so the SPA can read the caller's role.
+- **FE — public browse (G1 REVISED).** **Remove** the Phase-1 blanket `authGuard` from
+  the `/dashboard` browse tree — the app is browsable **without** login; navbar
+  sign-in/out stays (login on demand). Provide a reusable **auth+role guard** that
+  future admin routes will attach — **attached to nothing** in this phase. Surface
+  `roleName` in the frontend current-user model (regenerated API models + mapping).
+
+**Deferred to future admin features** (was in the pre-revision Phase-2 scope): 403
+`OnForbidden` envelope writer + `ApiMessages.Forbidden`; user-management use cases,
+endpoints, and page; the pending-activation route/page; attaching the role guard; any
+`[Authorize(Policy=…)]` application; Owner-only nav entry.
 
 ## Non-goals (out)
 - `permissions` / `role_permissions` tables, per-user grants, multi-role (I1–I2 —
@@ -205,32 +219,38 @@ E1 (`IClaimsTransformation` + cache + eviction), E2 (deny-by-default), F2–F3 (
 provisioning, JwtBearer, pipeline slot).
 
 ## Tests
-- **BE**: role seed present after migration; owner-email login yields `Owner`/`Active`;
-  non-owner stays `Pending`/`null`. Deny-by-default: authenticated **no-role** → **403**
-  envelope on a protected endpoint; `[AllowAnonymous]` endpoints (health, pending) reachable
-  without a role. `IClaimsTransformation` **idempotency** (invoked twice → single role
-  claim) and **immediate eviction** (assign role → next request sees the new role without
-  waiting for TTL). Owner-only endpoints reject non-owner roles (403).
-- **FE**: authenticated-but-no-role is routed to the pending page and cannot reach admin
-  routes; an Active-with-role user reaches the dashboard; user-management assign flow calls
-  the endpoint and reflects the new state.
+- **BE**: role seed present after migration; owner-email login yields `Owner`/`Active`
+  (idempotent across logins) and `me` returns `roleName: "Owner"`; non-owner stays
+  `Pending`/`null` with `roleName: null`. **Public endpoints reachable WITHOUT any
+  token** (health + a browse endpoint). `IClaimsTransformation` **idempotency**
+  (invoked twice → single role claim), role claim only for `Active` users, and
+  **immediate eviction** (role change → next request sees the new role without waiting
+  for TTL; bootstrap upgrade evicts). Named policies resolvable from
+  `IAuthorizationPolicyProvider`; **no endpoint carries a policy**.
+- **FE**: anonymous user reaches **all** routes (no guard on the browse tree); the
+  reusable role guard behaves correctly in isolation (anonymous → login redirect;
+  authenticated-without-required-role → safe redirect; role present → pass) while
+  attached to no route; `roleName` mapped into the current-user model.
 
 ## Acceptance criteria
-- Fixed roles seeded; owner (`mahmmaad96@gmail.com`) is `Owner`/`Active` after login.
-- A new user lands on the **pending activation** page and the API denies admin access with
-  a 403 envelope.
-- Owner assigns a role from the user-management page; the user gains access on their next
-  request (no stale cache).
-- All admin/data controllers enforce `[Authorize(Policy=…)]`; `[AllowAnonymous]` set only
-  on health, login/callback, and pending endpoints.
+- Fixed roles seeded; owner (`mahmmaad96@gmail.com`) is `Owner`/`Active` after login,
+  with the role visible in claims and in `GET /api/access/me`; non-owner users stay
+  `Pending`/`null`.
+- Anonymous users browse the **whole app without login**; nothing prompts for auth;
+  navbar sign-in/out still works on demand.
+- **No endpoint and no route is protected**: named policies exist in DI only; the role
+  guard exists in code only; **no global fallback policy exists**.
+- Role changes take effect immediately (cache evicted on change — proven via the
+  bootstrap upgrade path and resolver tests).
 - `dotnet build` + tests green; FE build + tests green; migration(s) applied locally only,
   production apply is a deliberate manual `scripts/update-db` step (H1).
 
 ## Commit / PR boundary
-**One PR** into `dev` titled ~`feat(auth): Phase 2 — roles & deny-by-default authorization`.
-Includes `Access.Roles` + seed + `Users.RoleId` migration, Owner bootstrap,
-`IClaimsTransformation` + cache, deny-by-default policies, 403 envelope, user-management
-endpoints + page, FE pending gate. Owner reviews. Never against `main`.
+**One PR** into `dev` titled ~`feat(auth): Phase 2 — roles infrastructure & public browse`.
+Includes `Access.Roles` + seed + `Users.RoleId` FK migration, Owner bootstrap,
+`IClaimsTransformation` + cache + eviction, named role policies (registered, applied to
+nothing), `me.roleName`, FE blanket-guard removal + unattached reusable role guard.
+Owner reviews. Never against `main`.
 
 ---
 

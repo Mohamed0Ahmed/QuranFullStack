@@ -1,7 +1,6 @@
 import { Routes } from '@angular/router';
 import { NAV_ITEMS } from './core/navigation/nav-items';
 import { CALLBACK_PATH, navLabel } from './core/navigation/route-paths';
-import { authGuard } from './core/auth/auth.guard';
 
 const loadPlaceholderPage = () =>
   import('./shared/ui/placeholder-page/placeholder-page.component').then(
@@ -26,11 +25,14 @@ export const routes: Routes = [
     redirectTo: 'dashboard',
   },
   {
-    // One guarded parent covers the whole `/dashboard` subtree (Feature 033, G1). URLs are
-    // unchanged: parent `dashboard` + child `''`/`mushaf`/`words` still resolve to
-    // `/dashboard`, `/dashboard/mushaf`, `/dashboard/words`.
+    // One parent covers the whole `/dashboard` subtree (Feature 033). Public-browse by
+    // default (Phase 2, decision record §G1): the Phase-1 blanket `authGuard` was removed —
+    // anonymous users navigate the entire app freely and login stays on-demand via the
+    // navbar. A reusable `roleGuard` exists (core/auth/role.guard.ts) but is attached to
+    // nothing until the first admin feature. URLs are unchanged: parent `dashboard` + child
+    // `''`/`mushaf`/`words` still resolve to `/dashboard`, `/dashboard/mushaf`,
+    // `/dashboard/words`.
     path: 'dashboard',
-    canActivate: [authGuard],
     children: [
       {
         // The dashboard home intentionally sets no title → brand-only tab (AppTitleStrategy

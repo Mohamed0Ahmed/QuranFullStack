@@ -1,26 +1,34 @@
+using Microsoft.Extensions.Options;
 using QuranDashboard.Application.Abstractions.Security;
 using QuranDashboard.Domain.Access;
 
 namespace QuranDashboard.Infrastructure.Access;
 
 /// <summary>
-/// EF-backed first-login provisioning keyed by the Logto <c>sub</c>. An already-provisioned subject is
-/// returned unchanged (Phase 1 does not refresh fields); a first-time subject is created only from a
-/// server-verified email obtained via <see cref="IExternalUserProfileSource"/> — never a client-supplied
-/// value — with <see cref="UserStatus.Pending"/> status and no role.
+/// EF-backed first-login provisioning keyed by the Logto <c>sub</c>. A first-time subject is created only
+/// from a server-verified email obtained via <see cref="IExternalUserProfileSource"/> — never a
+/// client-supplied value. The default new user is <see cref="UserStatus.Pending"/> with no role; the sole
+/// exception is the configured Owner email (<see cref="OwnerBootstrapOptions"/>), which is provisioned
+/// directly as Owner/Active. An already-provisioned subject is returned unchanged, except the Owner-email
+/// upgrade path: a pre-existing user (e.g. provisioned Pending/null under Phase 1) whose email matches the
+/// bootstrap email is promoted to Owner/Active. Any role/status change here evicts the subject's cached
+/// role (via <see cref="IUserRoleResolver.Evict"/>) so the claims transformation observes it immediately.
 /// </summary>
 public sealed class UserProvisioningService(
     QuranDashboardDbContext db,
-    IExternalUserProfileSource profileSource) : IUserProvisioningService
+    IExternalUserProfileSource profileSource,
+    IUserRoleResolver roleResolver,
+    IOptions<OwnerBootstrapOptions> bootstrapOptions) : IUserProvisioningService
 {
     public async Task<ProvisionedUser> GetOrCreateAsync(string logtoSub, CancellationToken ct)
     {
         var existing = await db.AccessUsers
             .AsNoTracking()
+            .Include(u => u.Role)
             .SingleOrDefaultAsync(u => u.LogtoSub == logtoSub, ct);
         if (existing is not null)
         {
-            return Project(existing);
+            return await ReconcileExistingAsync(existing, logtoSub, ct);
         }
 
         var profile = await profileSource.GetProfileAsync(logtoSub, ct);
@@ -31,16 +39,51 @@ public sealed class UserProvisioningService(
                 "without a server-verified email, and a client-supplied value must never be substituted.");
         }
 
+        return await CreateAsync(logtoSub, profile, ct);
+    }
+
+    /// <summary>
+    /// Returns an already-provisioned subject unchanged, unless it is the configured Owner email sitting
+    /// below Owner/Active (the Phase-1-owner upgrade path), in which case it is promoted and its cached
+    /// role evicted.
+    /// </summary>
+    private async Task<ProvisionedUser> ReconcileExistingAsync(User existing, string logtoSub, CancellationToken ct)
+    {
+        if (!IsConfiguredOwner(existing.Email))
+        {
+            return Project(existing, existing.Role?.Name);
+        }
+
+        var ownerRole = await GetOwnerRoleAsync(ct);
+        if (ownerRole is null || (existing.RoleId == ownerRole.Id && existing.Status == UserStatus.Active))
+        {
+            return Project(existing, existing.Role?.Name);
+        }
+
+        var tracked = await db.AccessUsers.SingleAsync(u => u.Id == existing.Id, ct);
+        tracked.RoleId = ownerRole.Id;
+        tracked.Status = UserStatus.Active;
+        tracked.UpdatedAtUtc = DateTimeOffset.UtcNow;
+        await db.SaveChangesAsync(ct);
+
+        roleResolver.Evict(logtoSub);
+        return Project(tracked, ownerRole.Name);
+    }
+
+    private async Task<ProvisionedUser> CreateAsync(string logtoSub, ExternalUserProfile profile, CancellationToken ct)
+    {
+        var ownerRole = IsConfiguredOwner(profile.Email!) ? await GetOwnerRoleAsync(ct) : null;
+
         var now = DateTimeOffset.UtcNow;
         var user = new User
         {
             LogtoSub = logtoSub,
-            Email = profile.Email,
+            Email = profile.Email!,
             UserName = profile.UserName,
             DisplayName = profile.DisplayName,
             Title = null,
-            RoleId = null,
-            Status = UserStatus.Pending,
+            RoleId = ownerRole?.Id,
+            Status = ownerRole is not null ? UserStatus.Active : UserStatus.Pending,
             CreatedAtUtc = now,
             UpdatedAtUtc = now,
         };
@@ -49,7 +92,12 @@ public sealed class UserProvisioningService(
         try
         {
             await db.SaveChangesAsync(ct);
-            return Project(user);
+            if (ownerRole is not null)
+            {
+                // A negative role may have been cached for this subject before the row existed; drop it.
+                roleResolver.Evict(logtoSub);
+            }
+            return Project(user, ownerRole?.Name);
         }
         catch (DbUpdateException)
         {
@@ -58,15 +106,26 @@ public sealed class UserProvisioningService(
             db.Entry(user).State = EntityState.Detached;
             var winner = await db.AccessUsers
                 .AsNoTracking()
+                .Include(u => u.Role)
                 .SingleOrDefaultAsync(u => u.LogtoSub == logtoSub, ct);
             if (winner is null)
             {
                 throw;
             }
-            return Project(winner);
+            return Project(winner, winner.Role?.Name);
         }
     }
 
-    private static ProvisionedUser Project(User user)
-        => new(user.LogtoSub, user.Email, user.DisplayName, user.Status, user.RoleId);
+    private bool IsConfiguredOwner(string email)
+    {
+        var ownerEmail = bootstrapOptions.Value.BootstrapOwnerEmail;
+        return !string.IsNullOrWhiteSpace(ownerEmail)
+            && string.Equals(email, ownerEmail, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private Task<Role?> GetOwnerRoleAsync(CancellationToken ct)
+        => db.AccessRoles.AsNoTracking().SingleOrDefaultAsync(r => r.Name == RoleNames.Owner, ct);
+
+    private static ProvisionedUser Project(User user, string? roleName)
+        => new(user.LogtoSub, user.Email, user.DisplayName, user.Status, user.RoleId, roleName);
 }

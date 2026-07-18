@@ -24,18 +24,23 @@ per-feature.
     types with UI narrowing).
 - `caching/api-response-cache.ts` — shared response cache (feature caches build on the
   same idea; keep the key strategy consistent).
-- `auth/` — Logto authentication (Feature 033, Phase 1):
-  - `auth.guard.ts` — `authGuard` (functional `CanActivateFn`) protecting the `/dashboard`
-    subtree. Phase-1 behavior is authentication-only: reads `isAuthenticated$` once
-    (settled by the app-initializer auth check) → authenticated activates, otherwise it
-    calls `authorize()` (Logto redirect) and blocks. No role/status logic yet (Phase 2).
+- `auth/` — Logto authentication + roles (Feature 033):
+  - `role.guard.ts` — `roleGuard(requiredRole)` factory (a functional `CanActivateFn`).
+    Not authenticated → `authorize()` (Logto redirect) and block; authenticated → await
+    `CurrentUserStore.ensureLoaded()`, then activate iff `status === 'active'` and
+    `roleName === requiredRole`, else redirect to `/`. **Attached to nothing in Phase 2**
+    (public browse, roles infrastructure only, decision record §G1/§I4) — the hook a
+    future admin feature wires onto its admin routes. Supersedes the Phase-1 `authGuard`.
   - `access.api.ts` — `AccessApi.getMe()` → `GET /api/access/me`, returning the raw
     `ApiResponse<CurrentUserDto>` envelope (thin, like `system.api.ts`).
   - `current-user.model.ts` — `CurrentUser` (== `CurrentUserDto`; the backend `me`
-    contract: `sub`, `email`, `displayName`, `status`, `roleId`).
+    contract: `sub`, `email`, `displayName`, `status`, `roleId`, `roleName`). `roleName`
+    is `null` until the account holds a role (the bootstrapped Owner is `active` /
+    `roleName: 'Owner'`).
   - `current-user.store.ts` — `CurrentUserStore`: minimal signal store (`currentUser`,
-    `errorMessage`); `load()` is fired post-callback and never crashes the flow. Phase 2
-    consumes it for the pending-activation gate.
+    `errorMessage`); `load()` is fired post-callback (fresh each call) and never crashes
+    the flow; `ensureLoaded()` is the awaitable, load-once path (single cached
+    `GET /api/access/me`) the `roleGuard` uses.
 - `layout/` — `app-shell`, `top-navbar`, `footer`, `shell-layout.model.ts`.
 - `navigation/` — `route-paths.ts` (canonical route constants — incl. `DASHBOARD_ROUTE_PATH`
   and `CALLBACK_PATH` for the Feature-033 landing route — plus `navLabel(key)` for a
@@ -76,11 +81,14 @@ per-feature.
   in features.
 - **Route strings live in `route-paths.ts`** — reference the constants, don't hardcode paths
   in components/routes.
-- **Guarded route tree (Feature 033)** — `/dashboard` is one guarded parent
-  (`canActivate: [authGuard]`) with `''` (home), `mushaf`, and `words` children; the URLs are
-  unchanged. `/callback` (`CALLBACK_PATH`, the `features/auth/` landing page) is **public** and
-  sits before the `**` wildcard in `app.routes.ts`. The placeholder nav routes (e.g. `/tafsirs`,
-  `/gates`) stay top-level and unguarded in Phase 1.
+- **Public-browse route tree (Feature 033, Phase 2)** — `/dashboard` is one **unguarded**
+  parent with `''` (home), `mushaf`, and `words` children; the whole app is browsable
+  anonymously (the Phase-1 blanket `authGuard` was removed, decision record §G1). URLs are
+  unchanged. `/callback` (`CALLBACK_PATH`, the `features/auth/` landing page) is public and
+  sits before the `**` wildcard in `app.routes.ts`. The placeholder nav routes (e.g.
+  `/tafsirs`, `/gates`) stay top-level and unguarded. Nothing is protected in this phase:
+  the reusable `roleGuard` exists but is attached to no route — a future admin feature
+  wires it onto its own admin routes.
 - Interceptor order matters (`secureUrlInterceptor`, then `authInterceptor()`, then
   `devLatencyInterceptor`); keep registration order in `app.config.ts`. `authInterceptor()`
   (from `angular-auth-oidc-client`) attaches the Logto Bearer token only to requests under

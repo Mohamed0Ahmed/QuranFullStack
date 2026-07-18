@@ -34,12 +34,30 @@ token** (not the ID token):
   envelope (`isSuccess:false`, Arabic `message`, `errors:[]`) instead of the framework's default
   empty body.
 
-**Phase 1 scope:** the first protected endpoint is live — `GET /api/access/me` carries `[Authorize]`
-and, on first login, **get-or-create provisions** the local user keyed by the Logto `sub`. The user's
-email is **verified server-side via the Logto Management API** (the inbound access token cannot call
-userinfo), never taken from the client; a new user starts `Pending` with no role. There is still **no
-global fallback policy**, so every other endpoint remains anonymous. Roles and deny-by-default arrive
-in Phase 2.
+`GET /api/access/me` carries `[Authorize]` (authenticated-only) and, on first login,
+**get-or-create provisions** the local user keyed by the Logto `sub`. The user's email is **verified
+server-side via the Logto Management API** (the inbound access token cannot call userinfo), never taken
+from the client; a new user starts `Pending` with no role. This is the only endpoint that requires
+authentication — there is **no global fallback policy**, so every other endpoint stays anonymous.
+
+### Roles (Phase 2 — infrastructure only)
+
+A fixed, seeded role set (`Owner` / `Admin` / `Editor`, seeded with Arabic display names via the
+`AddAccessRoles` migration) backs authorization; `Users.RoleId` is a nullable FK → `roles`. Capabilities
+are enforced in code keyed by the role **name** (`RoleNames`); roles are never created from the UI.
+
+- **Owner bootstrap** (`Auth:BootstrapOwnerEmail`): on first login, a user whose identity-verified email
+  equals this value is provisioned directly as `Owner`/`Active` instead of `Pending`/no-role; an existing
+  matching user below `Owner`/`Active` is upgraded (idempotent). An **empty** value disables bootstrap.
+- **Role loading:** `RoleClaimsTransformation` (`IClaimsTransformation`) loads the caller's active role
+  into a `ClaimTypes.Role` claim, resolved by `sub` via a short-TTL (`30s`) cached `IUserRoleResolver`.
+  It is idempotent (never duplicates the claim) and the role/status write path evicts the subject's cache
+  entry so a change is observed immediately, not after the TTL.
+- **`GET /api/access/me`** returns `roleName` (null when no role) alongside `roleId`/`status`.
+- **Named policies registered, applied to nothing:** one policy per role
+  (`AuthorizationPolicyNames.Owner`/`Admin`/`Editor`, each `RequireAuthenticatedUser().RequireRole(name)`)
+  is registered ready for future admin surfaces. **No `[Authorize(Policy = …)]` is applied to any
+  endpoint**, and there is still no global fallback policy — the whole product remains publicly browsable.
 
 ### Configuration (`Auth` section)
 
@@ -47,6 +65,7 @@ in Phase 2.
 |---|---|
 | `Authority` | Logto issuer, e.g. `https://<tenant>.logto.app/oidc`. Used for OIDC metadata/JWKS discovery. |
 | `Audience` | The exact Logto API resource indicator every access token must target. |
+| `BootstrapOwnerEmail` | Email bootstrapped to `Owner`/`Active` on login. **Empty disables bootstrap** (valid, no startup failure); a non-empty value is format-validated fail-fast. |
 | `ManagementApi:Endpoint` | Logto tenant endpoint, e.g. `https://<tenant>.logto.app`. |
 | `ManagementApi:Resource` | Management API resource indicator, typically `https://<tenant-id>.logto.app/api`. |
 | `ManagementApi:AppId` | Machine-to-machine application id for the client-credentials token. |
@@ -54,8 +73,10 @@ in Phase 2.
 
 `Authority`/`Audience` and the `ManagementApi` endpoint/resource ship as **placeholder values**
 (`REPLACE-WITH-YOUR-…`) in `appsettings*.json`; the deployment owner replaces them with real Logto
-tenant values. Invalid `Auth` values (blank, or an `Authority` that is not an absolute `https` URI)
-**fail fast** at startup. The `ManagementApi` credentials are **not** validated at startup (the secret
+tenant values. `BootstrapOwnerEmail` ships **empty** in `appsettings.json` (bootstrap disabled by
+default); production must supply the owner address via environment configuration
+(`Auth__BootstrapOwnerEmail`) to enable owner bootstrap. Invalid `Auth` values (blank `Authority`/
+`Audience`, or an `Authority` that is not an absolute `https` URI) **fail fast** at startup. The `ManagementApi` credentials are **not** validated at startup (the secret
 is legitimately absent on a fresh clone); they are validated on first use of `/api/access/me` with an
 actionable error naming any missing keys.
 

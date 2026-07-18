@@ -44,6 +44,8 @@ public sealed class AccessMeEndpointTests(AccessTestFixture fixture)
         data.GetProperty("displayName").GetString().Should().Be(FakeExternalUserProfileSource.DisplayNameFor(sub));
         data.GetProperty("status").GetString().Should().Be("pending");
         data.GetProperty("roleId").ValueKind.Should().Be(JsonValueKind.Null);
+        // A non-owner first login carries no role.
+        data.GetProperty("roleName").ValueKind.Should().Be(JsonValueKind.Null);
 
         var users = await fixture.GetUsersAsync();
         users.Should().ContainSingle();
@@ -138,14 +140,22 @@ public sealed class AccessMeEndpointTests(AccessTestFixture fixture)
         (await fixture.GetUsersAsync()).Should().BeEmpty();
     }
 
-    [Fact]
-    public async Task PublicEndpoint_WithoutToken_StillOk()
+    public static TheoryData<string> PublicRoutes =>
+    [
+        // The health check and a real browse endpoint both answer WITHOUT an Authorization header:
+        // named role policies are registered but applied to nothing, and there is no fallback policy.
+        "/api/health",
+        "/api/dashboard/info",
+    ];
+
+    [Theory]
+    [MemberData(nameof(PublicRoutes))]
+    public async Task PublicEndpoint_WithoutToken_StillOk(string route)
     {
         using var client = fixture.CreateApiClient();
 
-        using var response = await client.GetAsync("/api/health");
+        using var response = await client.GetAsync(route);
 
-        // No fallback authorization policy: the public health endpoint answers without a token.
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 

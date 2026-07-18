@@ -5,6 +5,17 @@
 - **Status**: **LOCKED** — authoritative. `plan.md` and every Spec Kit artifact
   (`specs/033-*`) derive from this record and must not silently rework it.
 - **Date**: 2026-07-18
+- **Revision (2026-07-18, owner-directed)**: the authorization **posture** changed from
+  "admin-only dashboard, deny-by-default" to **public-browse by default with an admin
+  layer on top**. Additionally, the **admin surface itself is deferred**: there are no
+  admin endpoints/pages in the product yet — the user-management page + endpoints, the
+  pending-activation page, and **any** application of `[Authorize(Policy = …)]` arrive
+  with future admin features. **Phase 2 ships roles infrastructure only** (entity +
+  seed + FK, owner bootstrap, claims transformation + cache, policies registered but
+  applied to nothing, public browsing without login). This revision supersedes the
+  original §0 framing, **B4/B5 delivery**, **E2 (D6)**, **F2 (403 path)**, **G1 (D8)**,
+  and the Phase-2 scope in `plan.md`. The roles-only model, owner bootstrap, claims
+  transformation, and envelope contract are unchanged as decisions.
 - **Grounded in**: the feature-033 read-only inspection report (this session). Repo
   paths/line refs below were verified in that report; steady-state truth is the code +
   nearest README per workspace conventions.
@@ -13,9 +24,13 @@
 
 Logto is the external OIDC IdP and is used for **login + social sign-in ONLY**. The
 application **owns** its Users and Roles in its own PostgreSQL and **enforces
-authorization in .NET**. The dashboard is **admin-only**. Sign-up is **open** (anyone
-can register through Logto); access is gated inside the app by **deny-by-default** plus
-an Owner-driven activation step.
+authorization in .NET**. The product is **public-browse by default with an admin layer
+on top**: browsing requires **no login** — anonymous users navigate freely; login (+ a
+role) is required **only** for specific admin pages and admin actions. Sign-up is
+**open** (anyone can register through Logto); **admin** access is gated inside the app
+by **opt-in protection on the admin surfaces** plus an Owner-driven activation step.
+There is **no global deny-by-default fallback**. Admin surfaces themselves do **not**
+exist yet — they arrive with future admin features; until then **nothing is protected**.
 
 ### Quran-data safety (confirmed)
 This feature touches **NO Quran data**. It adds a new, additive `Access/` bounded
@@ -60,11 +75,16 @@ yet referenced and must be added in Phase 1 (not in this planning pass).
   `Auth:BootstrapOwnerEmail` (value: `mahmmaad96@gmail.com`), provision as the **Owner**
   role with `Status = Active`. The owner email lives in **configuration**, not
   hard-coded.
-- **B4 — No role ⇒ zero access.** A user with `RoleId = null` (or non-Active status) has
-  **zero permissions**, cannot enter any dashboard admin page, and sees only a
-  **"pending activation"** page.
+- **B4 (REVISED) — No role ⇒ no ADMIN access; browsing stays open.** A user with
+  `RoleId = null` (or non-Active status) has **no admin permissions**: they cannot enter
+  any **admin** page or perform admin actions once those exist. Public browsing is
+  unaffected — they browse exactly like an anonymous visitor. The **"pending
+  activation"** page (Arabic, shown when a role-less logged-in user opens an admin
+  route) is **deferred** to the first admin feature — no admin routes exist yet.
 - **B5 — Activation is Owner-driven.** The Owner reviews pending users and **assigns a
   role** from a user-management page. The Owner does **not** create roles from the UI.
+  **Delivery deferred**: the user-management page + its endpoints ship with a future
+  admin feature, not in Phase 2.
 
 ## C. Authorization model (role-only, fixed set)
 
@@ -109,10 +129,14 @@ yet referenced and must be added in Phase 1 (not in this planning pass).
   MUST be **idempotent** (it may run multiple times per request — never duplicate
   claims). MUST **evict the cached entry immediately** when a user's role changes (e.g.
   Owner assigns/changes a role).
-- **E2 (D6) — Deny-by-default.** A **global fallback authorization policy** requires an
-  authenticated user **with a role**. Explicit `[AllowAnonymous]` on: health, `/callback`
-  (server side if any), the pending/activation endpoint(s), and any login-related
-  endpoint.
+- **E2 (D6, REVISED) — Public-by-default, opt-in protection.** There is **NO global
+  fallback authorization policy**. Endpoints are **public by default**; protection is
+  **opt-in** via explicit `[Authorize(Policy = "…")]` applied **only where needed** —
+  future admin endpoints. All existing read/browse endpoints **stay public**: no
+  `[Authorize]`, and no `[AllowAnonymous]` is needed because nothing falls back to a
+  policy. **In Phase 2 the role-based named policies are REGISTERED but applied to
+  NOTHING** — the first `[Authorize(Policy = …)]` application lands with the first
+  admin feature.
 - **E3 — Pipeline insertion.** Insert `app.UseAuthentication();` then
   `app.UseAuthorization();` at the **reserved slot**
   `Backend/api/QuranDashboard.Api/Extensions/WebApplicationExtensions.cs:21` — **after**
@@ -135,7 +159,9 @@ yet referenced and must be added in Phase 1 (not in this planning pass).
   in `Backend/.architecture/API_GUIDELINES.md:132-134` and status rules `:93-94`.
 - **F2 — Wiring.** Via `JwtBearerEvents`: `OnChallenge` (401) MUST call
   `ctx.HandleResponse()` to suppress the default empty body, then write the envelope;
-  `OnForbidden` (403) writes the envelope directly. Mirror the 429 writer shape
+  `OnForbidden` (403) writes the envelope directly. **403 wiring deferred**: with no
+  policy applied anywhere (E2 revised) no 403 path exists — the `OnForbidden` writer +
+  `ApiMessages.Forbidden` land with the first protected endpoint. Mirror the 429 writer shape
   (`Backend/api/QuranDashboard.Api/RateLimiting/RateLimitRejectionWriter.cs:17-34`):
   `HasStarted` guard → `StatusCode` → `ContentType="application/json"` →
   `WriteAsJsonAsync(ApiResponse<object>.Fail(...))`.
@@ -146,13 +172,14 @@ yet referenced and must be added in Phase 1 (not in this planning pass).
 
 ## G. Frontend integration (Angular 20, standalone)
 
-- **G1 (D8) — Guarded route tree.** Refactor `/dashboard` into a **guarded parent**:
-  `{ path: 'dashboard', canActivate: [authGuard], children: [...] }` so one guard covers
-  the subtree (today it is three sibling top-level paths —
-  `Frontend/quran-dashboard-ui/src/app/app.routes.ts:21-53`). Add a **public `/callback`**
-  route and the **pending page** route **before** the `**` wildcard (`:49-52`, which
-  otherwise swallows them). Behavior: unauthenticated → Logto; authenticated-but-no-role
-  → pending page.
+- **G1 (D8, REVISED) — Public routes by default; guard ONLY admin routes.** The general
+  `/dashboard` browse routes carry **no auth guard** — the app is browsable without
+  login (the Phase-1 blanket `authGuard` on the `/dashboard` parent is **removed** in
+  Phase 2). A reusable **auth+role guard** exists but is **attached to nothing** —
+  future admin routes (user management) attach it. Keep the **public `/callback`**
+  route registered **before** the `**` wildcard. The pending-activation route/page is
+  **deferred** with the admin surface. Anonymous users are never prompted to log in
+  while browsing; login stays on-demand via the navbar sign-in.
 - **G2 (D9) — Bearer via library interceptor.** Attach the token with
   `angular-auth-oidc-client`'s functional `authInterceptor()` + `secureRoutes: [apiBaseUrl]`.
   Interceptor order in `app.config.ts:15`:
@@ -192,3 +219,8 @@ yet referenced and must be added in Phase 1 (not in this planning pass).
 - **I2 —** No per-user direct grants/overrides (role-only).
 - **I3 —** No per-user rate limiting (the reserved rationale mentions future per-user
   keying; out of scope).
+- **I4 (added by the 2026-07-18 revision) —** The **admin surface** is deferred to
+  future admin features: user-management endpoints + page, the pending-activation
+  route/page, any `[Authorize(Policy = …)]` application, and the 403 `OnForbidden`
+  envelope writer + `ApiMessages.Forbidden`. Phase 2 delivers the roles infrastructure
+  those features will attach to.

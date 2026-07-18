@@ -14,10 +14,11 @@ import { DASHBOARD_ROUTE_PATH } from '../../../../core/navigation/route-paths';
  * authenticated, fire the current-user load (non-blocking) before landing on the
  * dashboard.
  *
- * An abandoned login is intentionally simple in Phase 1: if the visitor is not
- * authenticated here, we still navigate to `/dashboard`, where `authGuard` restarts the
- * Logto redirect — the visitor simply returns to Logto. Deep-link return-URL
- * preservation is out of scope for Phase 1; login always lands on the dashboard.
+ * An abandoned login is intentionally simple: if the visitor is not authenticated here,
+ * we still navigate to `/dashboard`. Browsing is public (Feature 033, Phase 2), so the
+ * visitor simply lands on the dashboard as an anonymous browser — nothing forces a
+ * re-login. Deep-link return-URL preservation is out of scope; login always lands on the
+ * dashboard.
  */
 @Component({
   selector: 'qd-auth-callback',

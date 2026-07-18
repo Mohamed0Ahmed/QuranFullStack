@@ -35,6 +35,12 @@ public sealed class AccessTestFixture : IAsyncLifetime
 
     public string ConnectionString { get; private set; } = string.Empty;
 
+    /// <summary>The subject whose fake profile email matches the configured Owner-bootstrap email.</summary>
+    public const string OwnerSub = "logto-owner";
+
+    /// <summary>The configured Owner-bootstrap email (the fake profile email for <see cref="OwnerSub"/>).</summary>
+    public static string OwnerEmail => FakeExternalUserProfileSource.EmailFor(OwnerSub);
+
     public async Task InitializeAsync()
     {
         await _container.StartAsync();
@@ -63,27 +69,53 @@ public sealed class AccessTestFixture : IAsyncLifetime
 
     public HttpClient CreateApiClient()
     {
-        // Guard the lazy init so concurrent callers reuse the single factory instead of racing to
-        // construct (and leak) multiple WebApplicationFactory instances.
-        WebApplicationFactory<AccessController> factory;
-        lock (_apiFactoryLock)
-        {
-            factory = _apiFactory ??= BuildApiFactory();
-        }
-
-        return factory.CreateClient(new WebApplicationFactoryClientOptions
+        return Factory.CreateClient(new WebApplicationFactoryClientOptions
         {
             BaseAddress = new Uri("https://localhost"),
         });
     }
 
-    /// <summary>Removes every provisioned user and resets the fake, giving each test a clean slate.</summary>
+    /// <summary>
+    /// The API host's root service provider — for resolving pipeline services (e.g.
+    /// <c>IUserRoleResolver</c> or <c>IAuthorizationPolicyProvider</c>) in tests. Services resolved here
+    /// share the host's singletons (notably the one <c>IMemoryCache</c> the request pipeline uses), so the
+    /// cache primed/evicted through the pipeline is the same instance a test observes.
+    /// </summary>
+    public IServiceProvider ApiServices => Factory.Services;
+
+    private WebApplicationFactory<AccessController> Factory
+    {
+        get
+        {
+            // Guard the lazy init so concurrent callers reuse the single factory instead of racing to
+            // construct (and leak) multiple WebApplicationFactory instances.
+            lock (_apiFactoryLock)
+            {
+                return _apiFactory ??= BuildApiFactory();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Removes every provisioned user and resets the fake, giving each test a clean slate. The seeded
+    /// roles table is left intact. The owner subject reuses a fixed <c>sub</c> across tests (only its email
+    /// triggers bootstrap), so its entry in the pipeline's shared role cache is evicted too — otherwise a
+    /// prior test's cached role would leak past the truncation.
+    /// </summary>
     public async Task ResetAsync()
     {
         await using var scope = QueryProvider.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         await db.Database.ExecuteSqlRawAsync("TRUNCATE users RESTART IDENTITY CASCADE;");
         ProfileSource.Reset();
+        EvictRoleCache(OwnerSub);
+    }
+
+    /// <summary>Evicts a subject's cached role from the pipeline's shared cache (role-cache test isolation).</summary>
+    public void EvictRoleCache(string logtoSub)
+    {
+        using var scope = ApiServices.CreateScope();
+        scope.ServiceProvider.GetRequiredService<IUserRoleResolver>().Evict(logtoSub);
     }
 
     /// <summary>Reads the persisted users via an independent DbContext (never the pipeline's own instance).</summary>
@@ -92,6 +124,32 @@ public sealed class AccessTestFixture : IAsyncLifetime
         await using var scope = QueryProvider.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         return await db.AccessUsers.AsNoTracking().OrderBy(u => u.Id).ToListAsync();
+    }
+
+    /// <summary>Reads the seeded roles via an independent DbContext.</summary>
+    public async Task<IReadOnlyList<Role>> GetRolesAsync()
+    {
+        await using var scope = QueryProvider.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+        return await db.AccessRoles.AsNoTracking().OrderBy(r => r.Id).ToListAsync();
+    }
+
+    /// <summary>Reads a single persisted user by its Logto <c>sub</c>, or null when absent.</summary>
+    public async Task<User?> GetUserBySubAsync(string logtoSub)
+    {
+        await using var scope = QueryProvider.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+        return await db.AccessUsers.AsNoTracking().SingleOrDefaultAsync(u => u.LogtoSub == logtoSub);
+    }
+
+    /// <summary>Inserts a pre-provisioned user directly (bypassing the pipeline) and returns its id.</summary>
+    public async Task<int> InsertUserAsync(User user)
+    {
+        await using var scope = QueryProvider.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+        db.AccessUsers.Add(user);
+        await db.SaveChangesAsync();
+        return user.Id;
     }
 
     private ServiceProvider QueryProvider => _queryProvider
@@ -111,6 +169,8 @@ public sealed class AccessTestFixture : IAsyncLifetime
                         // fetched from it because JwtBearerOptions.Configuration is seeded below.
                         ["Auth:Authority"] = "https://test-issuer.example/oidc",
                         ["Auth:Audience"] = TestJwtTokens.TestAudience,
+                        // Enables the Owner-bootstrap path for OwnerSub only (its fake profile email).
+                        ["Auth:BootstrapOwnerEmail"] = OwnerEmail,
                         ["Cors:AllowedOrigins:0"] = "https://localhost",
                     }));
 

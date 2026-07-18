@@ -11,7 +11,8 @@ public sealed class AccessController(ProvisionCurrentUserHandler provisionCurren
 {
     /// <summary>
     /// يُرجع بيانات المستخدم الحالي بعد التحقق من هويته، ويُنشئ سجلّه محليًا عند أول دخول (البريد
-    /// مُتحقَّق منه من مزوّد الهوية). المستخدم الجديد يبدأ بحالة "قيد المراجعة" وبدون دور.
+    /// مُتحقَّق منه من مزوّد الهوية). المستخدم الجديد يبدأ بحالة "قيد المراجعة" وبدون دور، ما لم يكن بريده
+    /// هو بريد المالك المُهيّأ فيُنشأ بدور "المالك" وحالة "نشط".
     /// </summary>
     /// <param name="cancellationToken">رمز إلغاء الطلب.</param>
     /// <response code="200">تم تحميل بيانات المستخدم الحالي.</response>
@@ -26,7 +27,8 @@ public sealed class AccessController(ProvisionCurrentUserHandler provisionCurren
             user.Email,
             user.DisplayName,
             MapStatus(user.Status),
-            user.RoleId);
+            user.RoleId,
+            user.RoleName);
 
         return Ok(ApiResponse<CurrentUserResponse>.Ok(data, ApiMessages.CurrentUserLoaded));
     }
@@ -40,4 +42,10 @@ public sealed class AccessController(ProvisionCurrentUserHandler provisionCurren
     };
 }
 
-public sealed record CurrentUserResponse(string Sub, string Email, string? DisplayName, string Status, int? RoleId);
+public sealed record CurrentUserResponse(
+    string Sub,
+    string Email,
+    string? DisplayName,
+    string Status,
+    int? RoleId,
+    string? RoleName);
