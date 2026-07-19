@@ -1,6 +1,3 @@
-using System.Net;
-using QuranDashboard.Api.Common;
-
 namespace QuranDashboard.Tests.Api.ApiBehavior;
 
 /// <summary>

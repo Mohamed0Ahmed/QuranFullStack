@@ -1,6 +1,4 @@
-using System.Net;
 using Microsoft.Extensions.Options;
-using QuranDashboard.Api.Common;
 
 namespace QuranDashboard.Tests.Api.RateLimiting;
 

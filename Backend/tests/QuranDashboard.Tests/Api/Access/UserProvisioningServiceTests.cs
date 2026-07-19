@@ -1,4 +1,3 @@
-using QuranDashboard.Application.Abstractions.Security;
 using QuranDashboard.Domain.Access;
 
 namespace QuranDashboard.Tests.Api.Access;

@@ -1,5 +1,3 @@
-using QuranDashboard.Infrastructure.Persistence;
-
 namespace QuranDashboard.Tests.Quran.WordsRoots;
 
 public sealed class RootsExplorerTestFixture : IAsyncLifetime

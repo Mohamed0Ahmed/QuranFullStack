@@ -1,7 +1,5 @@
-using Microsoft.EntityFrameworkCore;
 using QuranDashboard.Application.Abstractions.Quran.Words;
 using QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordAyahs;
-using QuranDashboard.Infrastructure.Persistence;
 using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words;
 
 namespace QuranDashboard.Tests.Quran.Words;

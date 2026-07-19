@@ -1,5 +1,4 @@
 using QuranDashboard.Application.Abstractions.Common.Filtering;
-using QuranDashboard.Application.Abstractions.Common.Paging;
 using QuranDashboard.Application.Abstractions.Quran.Words;
 using QuranDashboard.Application.Abstractions.Quran.Words.Responses;
 using QuranDashboard.Domain.Quran.Words;

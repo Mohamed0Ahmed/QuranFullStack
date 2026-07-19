@@ -1,11 +1,8 @@
-using Microsoft.EntityFrameworkCore;
-using QuranDashboard.Application.Abstractions.Common.Paging;
 using QuranDashboard.Application.Abstractions.Quran.Words.Roots;
 using QuranDashboard.Application.Abstractions.Quran.Words.Roots.Responses;
 using QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootsPage;
 using QuranDashboard.Infrastructure.Caching.Quran.Words.Roots;
 using QuranDashboard.Tests.Quran.Words;
-using QuranDashboard.Infrastructure.Persistence;
 using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Roots;
 
 namespace QuranDashboard.Tests.Quran.WordsRoots;

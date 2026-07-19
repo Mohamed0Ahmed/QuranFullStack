@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using QuranDashboard.Application.Abstractions.Common.Paging;
 using QuranDashboard.Application.Abstractions.Quran.Words.Stems;
 using QuranDashboard.Application.Abstractions.Quran.Words.Stems.Responses;
 using QuranDashboard.Application.Abstractions.Quran.Words.Responses;

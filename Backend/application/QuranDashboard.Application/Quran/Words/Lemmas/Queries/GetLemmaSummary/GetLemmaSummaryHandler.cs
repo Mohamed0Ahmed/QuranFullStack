@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using QuranDashboard.Application.Abstractions.Quran.Words.Lemmas;
 
 namespace QuranDashboard.Application.Quran.Words.Lemmas.Queries.GetLemmaSummary;

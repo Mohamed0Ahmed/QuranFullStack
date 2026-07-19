@@ -1,5 +1,3 @@
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.DependencyInjection;
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.FullI3rab;
 using QuranDashboard.Application.Quran.DataPipelines.FullI3rab;
 using QuranDashboard.DataImporter.Import.ArgumentParsing;

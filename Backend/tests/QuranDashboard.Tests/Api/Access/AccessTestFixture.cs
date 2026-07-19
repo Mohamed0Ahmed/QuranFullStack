@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using QuranDashboard.Api.Controllers.Access;
-using QuranDashboard.Application.Abstractions.Security;
 using QuranDashboard.Domain.Access;
 
 namespace QuranDashboard.Tests.Api.Access;

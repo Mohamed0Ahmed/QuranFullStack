@@ -1,7 +1,3 @@
-using System.Net;
-using System.Text.Json;
-using QuranDashboard.Api.Common;
-
 namespace QuranDashboard.Tests.Quran.WordsWordTypes;
 
 [Collection(nameof(WordTypesCollection))]

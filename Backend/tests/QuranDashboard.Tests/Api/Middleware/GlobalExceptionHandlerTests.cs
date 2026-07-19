@@ -1,10 +1,7 @@
 using System.Diagnostics;
 using System.Text;
-using System.Text.Json;
 using Microsoft.AspNetCore.Http;
-using QuranDashboard.Api.Common;
 using QuranDashboard.Api.Middleware;
-using QuranDashboard.Application.Abstractions.Security;
 
 namespace QuranDashboard.Tests.Api.Middleware;
 

@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using QuranDashboard.Application.Abstractions.Quran.Words.Stems;
 
 namespace QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemSummary;

@@ -1,6 +1,5 @@
 namespace QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting.Corrections;
 
-using System.Text.Json.Serialization;
 
 // One curated secondary-STEM segment decision from segment-stem-corrected-arabic.json.
 // `review_decision` is either "approved" (reviewed_stem_text set, bound to a quran_stems row by text)

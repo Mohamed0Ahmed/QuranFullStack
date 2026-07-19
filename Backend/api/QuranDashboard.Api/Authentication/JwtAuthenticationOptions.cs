@@ -1,5 +1,3 @@
-using Microsoft.Extensions.Options;
-
 namespace QuranDashboard.Api.Authentication;
 
 /// <summary>

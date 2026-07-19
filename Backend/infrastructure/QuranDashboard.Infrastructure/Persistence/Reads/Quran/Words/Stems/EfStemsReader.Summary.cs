@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Npgsql;
 using QuranDashboard.Application.Abstractions.Quran.Words.Stems.Responses;
 using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words;
 

@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Navigation;
 using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Foundation;
 

@@ -1,9 +1,3 @@
-using System.Data;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Npgsql;
-using QuranDashboard.Infrastructure.Persistence;
-
 namespace QuranDashboard.Tests.Quran.FullI3rab;
 
 [Collection(nameof(FullI3rabSchemaTestCollection))]

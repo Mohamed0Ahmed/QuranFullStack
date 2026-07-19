@@ -1,6 +1,5 @@
 using System.Security.Claims;
 using QuranDashboard.Api.Authentication;
-using QuranDashboard.Application.Abstractions.Security;
 
 namespace QuranDashboard.Tests.Api.Access;
 
