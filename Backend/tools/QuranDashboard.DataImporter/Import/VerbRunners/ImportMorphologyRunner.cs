@@ -50,8 +50,7 @@ internal static class ImportMorphologyRunner
         var host = createHost();
         await using var scope = host.Services.CreateAsyncScope();
 
-        // Resolve the keyed source matching the selector and build the handler against it. Both pathways
-        // share the same writer/report, so only the source binding differs.
+        // Both pathways share the same writer/report, so only the source binding differs.
         var sourceKey = enrichedRequested
             ? MorphologyImportSourceKeys.Enriched
             : MorphologyImportSourceKeys.Legacy;

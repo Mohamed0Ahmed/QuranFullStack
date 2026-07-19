@@ -36,11 +36,9 @@ export const ayahStudyDtoMock: AyahStudyDto = {
   },
 };
 
-/**
- * The single fixture for study-source catalogue metadata in mushaf specs. Source keys and
- * display names describe real study sources, so they are declared here once and imported
- * rather than re-typed per spec, where a drifting copy could not be traced back to anything.
- */
+// Single shared fixture for study-source catalogue metadata: the source keys and display names
+// describe real study sources, so they are declared once and imported rather than re-typed per
+// spec, where a drifting copy could not be traced back to anything.
 export const studySourceCatalogItemMock: StudySourceCatalogItemDto = {
   direction: 'rtl',
   displayNameAr: 'التفسير الميسر',

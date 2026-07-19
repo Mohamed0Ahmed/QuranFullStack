@@ -2,12 +2,7 @@ using QuranDashboard.Application.Abstractions.Common.Filtering;
 
 namespace QuranDashboard.Application.Abstractions.Quran.Words.Stems;
 
-/// <summary>
-/// Count-range filter for the Stems list (Feature 026, US5). Filters stem dimension
-/// entries by exactly the five count columns the page already shows (occurrences,
-/// ayahs, surahs, simple words, tashkeel words). Predicates run in memory over the
-/// cached whole-summary rows (no backend cache-key change).
-/// </summary>
+// Predicates run in memory over the cached whole-summary rows (no backend cache-key change).
 public sealed record StemsCountFilter(
     CountRange Occurrences,
     CountRange Ayahs,

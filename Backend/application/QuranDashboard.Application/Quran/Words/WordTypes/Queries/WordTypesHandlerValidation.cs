@@ -7,8 +7,8 @@ internal static class WordTypesHandlerValidation
     public const int MinPage = 1;
     public const int MinPageSize = 1;
 
-    // Split cap (research R3): list reads (words/table) serve up to 1000 rows; every detail read
-    // (word ayahs, grouped member words, grouped ayahs) keeps the documented 1..100 contract.
+    // Split cap: list reads (words/table) serve up to 1000 rows; every detail read (word ayahs, grouped
+    // member words, grouped ayahs) keeps the 1..100 contract.
     public const int MaxListPageSize = 1000;
     public const int MaxDetailPageSize = 100;
 
@@ -23,8 +23,7 @@ internal static class WordTypesHandlerValidation
 
     private static readonly HashSet<string> AllowedTypes = ["noun", "verb", "particle", "inl"];
 
-    // Catalogue-defined noun head-POS child codes (research R4 / data-model §2). These mirror
-    // quran_pos_tags noun-category rows.
+    // Noun head-POS child codes; these mirror the quran_pos_tags noun-category rows.
     private static readonly HashSet<string> NounChildCodes = new(StringComparer.Ordinal)
     {
         "N", "PN", "ADJ", "PRON", "REL", "DEM", "T", "LOC", "TIM", "IMPN",
@@ -59,19 +58,17 @@ internal static class WordTypesHandlerValidation
                 && IsValidChildCode(filter.Type, filter.ChildCode)
                 && IsValidSecondaryFilter(filter.Type, filter.Case, filter.Tense, filter.Voice)));
 
-    // Search is optional; when present, only its length is bounded here (the value itself is a free
-    // word-identity fragment normalized in Infrastructure). Over-length input maps to InvalidFilter.
+    // Only the length is bounded here (the value is a free word-identity fragment normalized in
+    // Infrastructure); over-length input maps to InvalidFilter.
     public static bool IsValidSearch(string? search) =>
         search is null || search.Length <= MaxSearchLength;
 
-    // Trims the raw search term and collapses empty/whitespace to null. The over-length check stays in
-    // IsValidFilter so a too-long term produces a controlled InvalidFilter (400) rather than silent
-    // truncation. The value is never logged (handlers log only a hasSearch boolean).
+    // Over-length is deferred to IsValidFilter (controlled 400) rather than truncated here; the value is
+    // never logged (handlers log only a hasSearch boolean).
     public static string? NormalizeSearch(string? search) =>
         string.IsNullOrWhiteSpace(search) ? null : search.Trim();
 
-    // A child code is valid only when it belongs to the selected parent. particle now accepts
-    // catalogue child codes; inl remains a leaf with no child nodes.
+    // inl is a leaf (no child nodes), so it is intentionally absent from this parent/child check.
     public static bool IsValidChildCode(string? type, string? childCode) =>
         string.IsNullOrWhiteSpace(childCode)
         || (type == NounType && NounChildCodes.Contains(childCode))
@@ -106,8 +103,7 @@ internal static class WordTypesHandlerValidation
         return true;
     }
 
-    // "all" is the frontend's explicit no-filter sentinel; everything else is a concrete filter that
-    // must be validated against its value set.
+    // "all" is the frontend's no-filter sentinel, not a concrete filter.
     private static bool HasConcreteFilter(string? value) =>
         !string.IsNullOrWhiteSpace(value) && value != "all";
 
@@ -123,8 +119,7 @@ internal static class WordTypesHandlerValidation
     public static string NormalizeType(string? type) =>
         string.IsNullOrWhiteSpace(type) ? DefaultType : type.Trim().ToLowerInvariant();
 
-    // Shared filter construction so every grouped-detail handler builds the identical WordTypeFilter
-    // (normalized type, trimmed/null-collapsed child and secondary values) before calling IsValidFilter.
+    // Shared so every grouped-detail handler builds the identical WordTypeFilter before IsValidFilter.
     public static WordTypeFilter NormalizeFilter(string? type, string? childCode, string? @case, string? tense, string? voice) =>
         new(
             NormalizeType(type),
@@ -136,11 +131,9 @@ internal static class WordTypesHandlerValidation
     private static string? NormalizeOptional(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
-    // List reads (words/table) accept up to MaxListPageSize (1000).
     public static bool IsValidListPaging(int page, int pageSize) =>
         page >= MinPage && pageSize >= MinPageSize && pageSize <= MaxListPageSize;
 
-    // Detail reads (word ayahs, grouped member words, grouped ayahs) keep the 1..MaxDetailPageSize (100) cap.
     public static bool IsValidDetailPaging(int page, int pageSize) =>
         page >= MinPage && pageSize >= MinPageSize && pageSize <= MaxDetailPageSize;
 }

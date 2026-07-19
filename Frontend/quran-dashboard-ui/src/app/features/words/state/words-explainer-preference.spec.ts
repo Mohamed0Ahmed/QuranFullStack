@@ -3,7 +3,7 @@ import { getTestBed, TestBed } from '@angular/core/testing';
 
 import { WordsExplainerPreference } from './words-explainer-preference';
 
-/** A fresh service instance so each test exercises the constructor-time (synchronous) restore. */
+// A fresh service instance so each test exercises the constructor-time (synchronous) restore.
 function freshService(): WordsExplainerPreference {
   getTestBed().resetTestingModule();
   TestBed.configureTestingModule({});

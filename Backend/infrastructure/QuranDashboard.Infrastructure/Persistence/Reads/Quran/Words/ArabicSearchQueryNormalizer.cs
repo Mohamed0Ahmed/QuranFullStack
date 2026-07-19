@@ -1,28 +1,15 @@
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words;
 
-// Shared Arabic search-query normalization for the Words explorers. Extracted verbatim from
-// EfUniqueWordsReader so the Unique Words and Word Types search boxes fold diacritics and
-// orthography identically (research R2). Behavior is unchanged from the original private method:
-// diacritics/tatweel are stripped, a fixed hamza/alef/taa-marbuta/alef-maqsura/yaa fold is applied,
-// and the result is lower-cased. Whitespace-only or diacritics-only input normalizes to null.
-//
-// decision 5 (DRY): FoldFrom/FoldTo are also the single source for the Roots/Lemmas/Stems/Word-Types
-// reader SQL @foldFrom/@foldTo parameter values (see EfRootsReader, EfLemmasReader,
-// EfStemsReader.Summary, EfWordTypesReader.GroupedTable.Sql) — do not re-declare this fold map
-// per-derivation.
+// FoldFrom/FoldTo are the single source of the Arabic fold map: the Roots/Lemmas/Stems/Word-Types
+// reader SQL @foldFrom/@foldTo parameters reuse these same constants, so the fold must not be
+// re-declared per-derivation (decision 5, DRY).
 internal static class ArabicSearchQueryNormalizer
 {
     public const string FoldFrom = "أإآٱؤئةىي";
     public const string FoldTo = "ااااواهيي";
 
-    /// <summary>
-    /// Normalizes an Arabic search query: strips diacritics/tatweel, folds hamza/alef/taa-marbuta/
-    /// alef-maqsura/yaa variants, and lower-cases. Interior spaces are kept by default (matching the
-    /// original Unique Words/Word Types behavior). Pass <paramref name="stripWhitespace"/> true to also
-    /// remove whitespace (the Roots/Lemmas/Stems explorers' behavior, decision 5 (DRY) consolidation of
-    /// their formerly-duplicated <c>NormalizeArabicQuery</c> copies). Whitespace/diacritics-only input
-    /// normalizes to null either way.
-    /// </summary>
+    // stripWhitespace=false keeps interior spaces (Unique Words/Word Types default); the
+    // Roots/Lemmas/Stems explorers pass true. Whitespace/diacritics-only input normalizes to null.
     public static string? Normalize(string? search, bool stripWhitespace = false)
     {
         if (string.IsNullOrWhiteSpace(search))

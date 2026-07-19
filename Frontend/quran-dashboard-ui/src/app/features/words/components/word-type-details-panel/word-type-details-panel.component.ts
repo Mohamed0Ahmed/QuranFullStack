@@ -22,12 +22,8 @@ import {
 } from '../../models/word-types.models';
 import { WordTypeDetailSelectionKind } from '../../models/word-types-detail.models';
 
-/**
- * Per-instance id seed. The active overlay copy of this panel can be mounted at
- * the same time as the inert drawer; a shared id would make the overlay tabs'
- * `aria-controls` / surface `aria-labelledby` resolve to the wrong (inert) panel.
- * Each instance takes a distinct prefix so its ARIA relationships stay local.
- */
+// Per-instance id seed: the overlay copy and the inert drawer can be mounted at once, and a shared id
+// would make ARIA (aria-controls / aria-labelledby) resolve to the wrong (inert) panel.
 let nextWordTypeDetailsPanelInstanceId = 0;
 
 @Component({
@@ -41,23 +37,15 @@ let nextWordTypeDetailsPanelInstanceId = 0;
 export class WordTypeDetailsPanelComponent {
   private readonly detailOverlayHistory = inject(DetailOverlayHistoryService);
 
-  /**
-   * Only the top layer may trap focus (Feature 029 §5.9). While the global
-   * detail overlay is open this drawer sits inside the inert app shell, so its
-   * own trap stands down and the dialog's trap is the only enabled one.
-   */
+  // Only the top layer may trap focus: while the detail overlay is open this drawer sits in the inert
+  // app shell, so its own trap stands down and the dialog's is the only one enabled.
   protected readonly drawerTrapEnabled = computed(() => !this.detailOverlayHistory.isOpen());
 
   readonly view = input.required<WordTypeDetailView>();
   readonly kind = input<WordTypeDetailSelectionKind>('word');
   readonly inline = input(true);
-  /**
-   * Content-only mode (Feature 029, Change B4): render just the kind-aware view
-   * tablist + tabpanel body in a plain wrapper — no card section, no
-   * dialog/backdrop, no header/close. Used inside the global detail overlay
-   * shell, which owns the dialog chrome (the composer also owns the notFound
-   * rendering there). When false, the inline/modal branches behave as before.
-   */
+  // Content-only mode: renders just the tablist + tabpanel body, no dialog chrome. Used inside the
+  // global detail overlay shell, which owns the dialog chrome and the notFound rendering.
   readonly frameless = input(false);
   readonly emptySelection = input(false);
   readonly selectionTitle = input('');

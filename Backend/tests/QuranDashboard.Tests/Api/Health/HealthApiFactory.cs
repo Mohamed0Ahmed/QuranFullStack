@@ -6,12 +6,6 @@ using QuranDashboard.Api.Controllers.System;
 
 namespace QuranDashboard.Tests.Api.Health;
 
-/// <summary>
-/// Dedicated <see cref="WebApplicationFactory{TEntryPoint}"/> for the health-endpoint status-code tests.
-/// The real DB-backed health check is replaced with a stub that always reports a configured
-/// <see cref="HealthStatus"/>, so each test can force healthy/degraded/unhealthy without a real database.
-/// Mirrors <c>RateLimitingApiFactory</c>'s health-check stubbing approach.
-/// </summary>
 public sealed class HealthApiFactory(HealthStatus stubStatus) : WebApplicationFactory<HealthController>
 {
     public HttpClient CreateApiClient()

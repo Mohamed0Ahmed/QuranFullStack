@@ -1,6 +1,5 @@
 namespace QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.MorphologyImporting;
 
-// Summary of applying the word-level lemma normalization artifact to an in-memory raw QUL lemma map.
 // Lives in Application.Abstractions so Application can reference it without depending on Infrastructure.
 public sealed record WordLemmaNormalizationSpotCheck(
     string Location,

@@ -51,7 +51,7 @@ const INITIAL_PANEL: RootsPanelState = {
   errorMessage: '',
 };
 
-/** Complete root detail identity: every field participates in equality. */
+// Complete root detail identity: every field participates in equality (see rootsDetailUrlStatesEqual).
 export interface RootsDetailUrlState {
   readonly rootId: number;
   readonly view: RootView;
@@ -77,26 +77,10 @@ export function rootsDetailUrlStatesEqual(
   );
 }
 
-/**
- * Route-independent root detail controller (Feature 029, Change B4;
- * consolidated onto `AbstractDetailController` in Feature 033, decision 5
- * (DRY) — see that class for the shared load-path skeleton).
- *
- * Owns the root detail panel signal state, the summary/detail subscriptions,
- * and every load path — with zero knowledge of routes or URLs. Consumers drive
- * it either through `applyUrlState` (the route-free entry point: the page
- * facade forwards parsed query state, an overlay adapter forwards its typed
- * frame) or through the direct selection methods. The root-scoped
- * `RootsApi`/`RootsCache`/`RootsDetailViewLoader` collaborators stay shared, so
- * the explorer side panel and the global overlay de-duplicate the same reads.
- *
- * Every complete-identity transition abandons BOTH the summary and the detail
- * request and opens a new generation, so a late response from the previously
- * selected root can never populate or overwrite this one — see
- * {@link DetailRequestLifecycle}. Not `providedIn: 'root'`: the page facade owns
- * one instance, and each overlay adapter provides its own component-scoped
- * instance (destroyed with the adapter).
- */
+// Not providedIn: 'root': the page facade owns one instance and each overlay adapter provides
+// its own component-scoped instance (destroyed with the adapter), so their panel state stays isolated.
+// Every complete-identity transition abandons both the in-flight summary and detail request (new
+// generation), so a late response from a previously selected root can never overwrite this one.
 @Injectable()
 export class RootsDetailController extends AbstractDetailController<
   RootsPanelState,

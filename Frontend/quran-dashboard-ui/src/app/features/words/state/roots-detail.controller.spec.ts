@@ -11,7 +11,7 @@ import { RootsCache } from './roots-cache';
 import { RootsDetailController, RootsDetailUrlState } from './roots-detail.controller';
 import { RootsDetailViewHandlers, RootsDetailViewLoader } from './roots-detail-view.loader';
 
-/** Unmistakably synthetic, non-scriptural word rows for detail-response fixtures. */
+// Deliberately synthetic, non-scriptural word rows — keep detail-response fixtures source-safe.
 function wordsPageOf(displayText: string): PagedResultDto<RootWordItemDto> {
   return {
     page: 1,
@@ -169,11 +169,6 @@ describe('RootsDetailController (route-independent, Feature 029 B4)', () => {
   });
 
   describe('stale DETAIL responses across a root transition (Feature 030, C1)', () => {
-    /**
-     * Selects root 1 (summary resolves, so its detail load is registered and left
-     * in flight), then selects root 2 whose summary stays pending. Returns root 1's
-     * captured detail handlers so the test can land its response late.
-     */
     function selectRootOneThenPendingRootTwo(): {
       controller: RootsDetailController;
       staleHandlers: RootsDetailViewHandlers;
@@ -306,12 +301,6 @@ describe('RootsDetailController identity read reuse (real cache + view loader)',
     getTestBed().resetTestingModule();
   });
 
-  /**
-   * Wires a controller onto the REAL RootsCache and RootsDetailViewLoader the page
-   * panel and overlay share, so an identity re-apply either issues a real API read
-   * or reuses a cached observable — asserted through API call counts and panel data
-   * rather than the internal cache-key strings.
-   */
   function wireController(apiStub: object): RootsDetailController {
     TestBed.configureTestingModule({ providers: [{ provide: RootsApi, useValue: apiStub }] });
     return new RootsDetailController(

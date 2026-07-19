@@ -52,7 +52,6 @@ describe('WordsExplainerComponent', () => {
 
     const section = root.querySelector('[data-testid="words-explainer--roots"]') as HTMLElement;
     expect(section.getAttribute('aria-label')).toBe(RECORD.title);
-    // The component renders no heading element of its own.
     expect(root.querySelector('h1, h2, h3')).toBeNull();
   });
 

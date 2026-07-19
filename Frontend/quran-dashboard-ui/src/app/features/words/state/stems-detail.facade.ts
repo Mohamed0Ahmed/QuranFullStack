@@ -19,18 +19,6 @@ import {
 } from './stems-detail.controller';
 import { StemsDetailViewLoader } from './stems-detail-view.loader';
 
-/**
- * Thin route adapter over `StemsDetailController` (Feature 029, Change B4;
- * consolidated onto `AbstractRouteDetailFacade` in Feature 033, decision 5
- * (DRY)).
- *
- * The facade keeps the stems explorer page contract — bind/unbind to the
- * page's `ActivatedRoute` query state plus the direct selection methods — and
- * delegates all panel state and load orchestration to its own private
- * controller instance. The global overlay adapters use their own
- * component-scoped `StemsDetailController` instances, so overlay activity can
- * never mutate this page facade's state.
- */
 @Injectable({ providedIn: 'root' })
 export class StemsDetailFacade extends AbstractRouteDetailFacade<
   StemsDetailUrlState,
@@ -38,6 +26,8 @@ export class StemsDetailFacade extends AbstractRouteDetailFacade<
   StemWordView,
   StemSurahView
 > {
+  // Per-facade controller instance keeps this page's panel state isolated from the
+  // component-scoped controllers the global overlay adapters use.
   protected readonly controller = new StemsDetailController(
     inject(StemsApi),
     inject(StemsCache),

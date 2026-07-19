@@ -2,9 +2,7 @@
   display: block;
 }
 
-// Calm, centered status — no spinner, no ornament (DESIGN.md: reverence through
-// restraint). Pending is a brief, quiet transitional state; a failed login instead
-// settles here with a single retry action (both rendered via the shared qd-state).
+// Calm, centered status — no spinner, no ornament (DESIGN.md: reverence through restraint).
 .auth-callback {
   display: flex;
   justify-content: center;

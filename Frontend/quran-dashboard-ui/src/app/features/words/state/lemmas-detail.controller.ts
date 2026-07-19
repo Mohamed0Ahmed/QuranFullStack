@@ -50,11 +50,9 @@ const INITIAL_PANEL: LemmasPanelState = {
   errorMessage: '',
 };
 
-/**
- * Complete lemma detail identity: every field participates in equality. Unlike
- * roots, the ayahs view carries a `typeCode` filter, so it is part of the
- * identity (and of `LemmasCacheKeys.ayahs`).
- */
+// Complete lemma detail identity: every field participates in equality. Unlike
+// roots, the ayahs view carries a `typeCode` filter, so it is part of the identity
+// (and of LemmasCacheKeys.ayahs).
 export interface LemmasDetailUrlState {
   readonly lemmaId: number;
   readonly view: LemmaView;
@@ -82,28 +80,12 @@ export function lemmasDetailUrlStatesEqual(
   );
 }
 
-/**
- * Route-independent lemma detail controller (Feature 029, Change B4;
- * consolidated onto `AbstractDetailController` in Feature 033, decision 5
- * (DRY)). Sibling of `RootsDetailController` — see that class and
- * `AbstractDetailController` for the pattern rationale.
- *
- * Owns the lemma detail panel signal state, the summary/detail subscriptions,
- * and every load path — with zero knowledge of routes or URLs. Consumers drive
- * it either through `applyUrlState` (the route-free entry point: the page
- * facade forwards parsed query state, an overlay adapter forwards its typed
- * frame) or through the direct selection methods. The root-scoped
- * `LemmasApi`/`LemmasCache`/`LemmasDetailViewLoader` collaborators stay shared,
- * so the explorer side panel and the global overlay de-duplicate the same
- * reads.
- *
- * Every complete-identity transition abandons BOTH the summary and the detail
- * request and opens a new generation, so a late response from the previously
- * selected lemma can never populate or overwrite this one — see
- * {@link DetailRequestLifecycle}. Not `providedIn: 'root'`: the page facade owns
- * one instance, and each overlay adapter provides its own component-scoped
- * instance (destroyed with the adapter).
- */
+// Lemma detail controller (Feature 029 B4; consolidated onto
+// AbstractDetailController in Feature 033 DRY). Sibling of RootsDetailController.
+// The root-scoped LemmasApi/LemmasCache/LemmasDetailViewLoader collaborators stay
+// shared, so the explorer side panel and the global overlay de-duplicate the same
+// reads. Not providedIn 'root': the page facade owns one instance, and each
+// overlay adapter provides its own component-scoped instance (destroyed with it).
 @Injectable()
 export class LemmasDetailController extends AbstractDetailController<
   LemmasPanelState,

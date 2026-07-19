@@ -6,13 +6,6 @@ using QuranDashboard.Tests.Quran.Words;
 
 namespace QuranDashboard.Tests.Quran.MushafReader;
 
-/// <summary>
-/// Regression coverage for performance-review finding B4 (word analysis): the word core,
-/// morphology, identity, and dimension lookups are now one projected query (plus one small
-/// head-POS-tag lookup), and segments/POS/rules are one projected query, instead of up to
-/// twelve sequential point queries. These tests pin both the reduced EF command count and the
-/// exact response shape for a fully populated word and for a word with no morphology row.
-/// </summary>
 [Collection(nameof(MushafReaderCollection))]
 public sealed class WordAnalysisRedundancyReadTests(MushafReaderTestFixture fixture)
 {

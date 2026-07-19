@@ -1,10 +1,5 @@
 namespace QuranDashboard.Tests.Api.ApiBehavior;
 
-/// <summary>
-/// Asserts that a malformed typed query parameter (a non-integer value bound to an <c>int?</c> route
-/// parameter) produces the shared <c>ApiResponse</c> failure envelope — not ASP.NET's default English
-/// <c>ValidationProblemDetails</c> — via <c>ConfigureApiBehaviorOptions</c>.
-/// </summary>
 public sealed class ModelBindingFailureTests
 {
     [Fact]

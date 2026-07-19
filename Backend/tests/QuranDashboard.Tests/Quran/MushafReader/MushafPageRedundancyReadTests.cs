@@ -4,15 +4,6 @@ using QuranDashboard.Tests.Quran.Words;
 
 namespace QuranDashboard.Tests.Quran.MushafReader;
 
-/// <summary>
-/// Regression coverage for performance-review finding B5 (cold Mushaf page): the separate
-/// page-existence probe is folded into the line read, the surah-name lookup is projected instead
-/// of loading full surah rows, and the juz/hizb/rub marker reads (identical shape, no
-/// value-converted columns) are combined into one UNION ALL projection. Sajda markers keep their
-/// own read unchanged, since their SajdahType column uses a value converter that would add real
-/// translation risk to a combined union — see EfMushafPageReader for the reasoning. These tests
-/// pin both the reduced EF command count and the exact page/line/word/marker output.
-/// </summary>
 [Collection(nameof(MushafReaderCollection))]
 public sealed class MushafPageRedundancyReadTests(MushafReaderTestFixture fixture)
 {

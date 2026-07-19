@@ -3,13 +3,9 @@ import { AppShellComponent } from './core/layout/app-shell/app-shell.component';
 import { DetailOverlayHistoryService } from './core/navigation/detail-overlay/detail-overlay-history.service';
 import { EntityDetailOverlayHostComponent } from './features/words/entity-detail-overlay/entity-detail-overlay-host.component';
 
-/**
- * Application composition root: the routed shell plus the persistent
- * entity-detail overlay host (Feature 029, Change B). The shell becomes inert
- * while the overlay dialog is open, so the sibling dialog stays the only
- * interactive surface; this is the one allowed composition point of core
- * layout and the Words-owned overlay host.
- */
+// The shell goes inert while the overlay dialog is open so the sibling dialog is the only
+// interactive surface (Feature 029, Change B). This is the one sanctioned composition point of
+// core layout and the Words-owned overlay host.
 @Component({
   selector: 'app-root',
   standalone: true,

@@ -115,8 +115,6 @@ export class WordTypesExplorerFacade {
       switchMap(() => this.loadList()),
     ).subscribe();
 
-    // Counts are scope-level: a distinct scope key (excludes tableView, page, sort) is the only trigger,
-    // so switching tabs or paging never refetches them.
     this.scopeCountsSub = route.queryParamMap.pipe(
       map((params) => parseWordTypesQueryParams(params)),
       distinctUntilChanged((a, b) => this.scopeKey(a) === this.scopeKey(b)),
@@ -147,8 +145,7 @@ export class WordTypesExplorerFacade {
     this.scopeCountsRetrySub = this.fetchScopeCounts(query).subscribe();
   }
 
-  // Re-issues the current list load after a transport error. Failed reads are never cached, so a
-  // retry always re-fetches; the cancellable subscription prevents overlapping retries.
+  // Failed reads are never cached, so a retry always re-fetches; the cancellable subscription prevents overlapping retries.
   retryList(): void {
     this.cancelRetry();
     this.retrySub = this.loadList().subscribe();
@@ -229,10 +226,7 @@ export class WordTypesExplorerFacade {
     });
   }
 
-  /**
-   * A header cycle step (token) or its release (null → param absent, i.e. back to المواضع desc).
-   * Either way the list page resets.
-   */
+  // null releases the sort (param absent → back to المواضع desc); either way the list page resets.
   changeSort(sort: WordTypeSort | null): void {
     this.navigate(buildWordTypesQueryParams({ sort, page: DEFAULT_WORD_TYPES_PAGE }));
   }

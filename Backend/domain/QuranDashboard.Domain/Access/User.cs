@@ -13,7 +13,6 @@ public sealed class User
     // user is the sole exception (created directly with the Owner role).
     public int? RoleId { get; set; }
 
-    /// <summary>Optional navigation to the assigned <see cref="Role"/>; null when <see cref="RoleId"/> is null.</summary>
     public Role? Role { get; set; }
 
     public UserStatus Status { get; set; }

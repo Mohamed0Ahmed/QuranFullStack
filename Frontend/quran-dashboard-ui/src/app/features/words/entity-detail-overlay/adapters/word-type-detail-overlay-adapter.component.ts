@@ -31,19 +31,6 @@ import { WORDS_DETAIL_RETRY_LABEL } from '../../models/words-shared.labels';
 import { QdStateComponent } from '../../../../shared/ui/state/state.component';
 import { EntityDetailOverlayTitleStore } from '../entity-detail-overlay-title.store';
 
-/**
- * Overlay adapter for Word Type frames (Feature 029, Change B4), following the
- * root reference implementation. It owns a component-scoped
- * `WordTypesDetailController` (never the page facade), maps every `frame` input
- * change onto `applyUrlState` with the full composite word identity, and
- * renders the existing word-kind detail content in frameless mode inside the
- * global dialog shell.
- *
- * All view/page changes go to the URL through
- * `DetailOverlayHistoryService.replaceTopFrame(...)` — never to the Router and
- * never directly into controller state. The URL sync feeds the new frame back
- * into this component, which re-drives the controller.
- */
 @Component({
   selector: 'qd-word-type-detail-overlay-adapter',
   standalone: true,
@@ -67,30 +54,21 @@ export class WordTypeDetailOverlayAdapterComponent {
 
   protected readonly retryLabel = WORDS_DETAIL_RETRY_LABEL;
 
-  /**
-   * Re-drives the current frame after a failed load (Feature 030, M3). The frame
-   * is unchanged, so this never touches the URL — recovery is a controller
-   * concern, and routing an identical frame through the history service would be
-   * a no-op replace.
-   */
+  // Retry re-drives the unchanged frame directly through the controller: it never
+  // touches the URL, since replacing an identical frame would be a no-op.
   protected onRetry(): void {
     this.controller.retryCurrentIdentity();
   }
 
   protected readonly panelState = this.controller.panelState;
 
-  /** Loaded entity title for the shell heading ('' while the summary loads). */
   readonly entityTitle = computed(() => this.panelState().summary?.displayText ?? '');
 
-  /** Entity-level ayah count for the shell header meta (null while the summary loads). */
   readonly entityAyahCount = computed(() => this.panelState().summary?.ayahsCount ?? null);
 
-  /**
-   * A word-kind Word Type detail has no member-words view — 'words' exists only
-   * for grouped root/stem/lemma selections (`WordTypesDetailViewLoader` no-ops
-   * it for kind 'word'). A frame carrying view 'words' (a hand-edited or shared
-   * URL) is therefore clamped to the word detail default, 'ayahs'.
-   */
+  // A word-kind Word Type detail has no member-words view ('words' exists only for
+  // grouped root/stem/lemma selections; the view loader no-ops it for kind 'word'),
+  // so a frame carrying view 'words' (a hand-edited or shared URL) is clamped to 'ayahs'.
   protected readonly effectiveView = computed<WordTypeDetailView>(() =>
     this.frame().view === 'words' ? DEFAULT_WORD_TYPES_DETAIL_VIEW : this.frame().view,
   );

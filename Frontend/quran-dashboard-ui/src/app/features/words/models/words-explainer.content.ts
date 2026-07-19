@@ -19,17 +19,13 @@ export type WordsExplainerKey = 'unique' | 'roots' | 'lemmas' | 'stems' | 'word-
 export interface WordsExplainerContent {
   /** Stable slug — drives testids and the collapse-memory storage key (never the Arabic label). */
   readonly key: WordsExplainerKey;
-  /** Decorative Arabic-Indic ordinal (`٠١`…`٠٥`); rendered `aria-hidden`. */
   readonly ordinal: string;
-  /** The small section eyebrow above the title. */
   readonly eyebrow: string;
   /** MUST equal the explorer page's own `pageTitle` (asserted in the content spec). */
   readonly title: string;
   /** The one-liner — shown under the title AND as the hub card's description. */
   readonly tagline: string;
-  /** The descriptive paragraph. */
   readonly body: string;
-  /** The `الفائدة` benefit callout text. */
   readonly benefit: string;
 }
 
@@ -96,9 +92,8 @@ export const WORDS_EXPLAINER_CONTENT: Readonly<Record<WordsExplainerKey, WordsEx
 };
 
 /**
- * The hub's own intro band (approved comp intro `:73-74`) — replaces the pre-031 invented
- * `WORDS_HUB_TITLE` / `WORDS_HUB_SUBTITLE` pair. The "دليل الأدمن" eyebrow is intentionally
- * dropped: the whole app is the admin dashboard (plan D8).
+ * The hub's own intro band (approved comp intro `:73-74`). The "دليل الأدمن" eyebrow is
+ * intentionally dropped: the whole app is the admin dashboard (plan D8).
  */
 export const WORDS_HUB_INTRO = {
   title: 'أقسام دراسة الكلمات القرآنية',

@@ -39,17 +39,7 @@ export interface LemmaCountOpenedEvent {
   source?: ExplorerInteractionSource;
 }
 
-/**
- * Lemmas Explorer nine-column catalogue grid (Feature 016, US1). Sibling of
- * `RootsTableComponent`. Columns: row number, lemma text, owned root (safe
- * new-tab anchor or a non-interactive dash when `rootId` is null), and six count
- * chips.
- *
- * Technical lemma/root IDs are navigation fields and are never rendered as
- * visible labels. The owned-root anchor opens the Roots Explorer in a new tab
- * with `rel="noopener noreferrer"`. Zero-count count controls remain enabled and
- * emit the same mapped detail event as non-zero counts.
- */
+// Technical lemma/root IDs are navigation fields, never rendered as visible labels.
 @Component({
   selector: 'qd-lemmas-table',
   standalone: true,
@@ -64,11 +54,8 @@ export class LemmasTableComponent {
 
   readonly rows = input.required<readonly LemmaListItemViewModel[]>();
   readonly loading = input(false);
-  /**
-   * The list's own status, so the error / no-results states render INSIDE this mounted shell
-   * instead of above the page grid (Feature 030, N3 row 5). `loading` still drives the skeleton
-   * body — this input is only consulted for the states that replace the body.
-   */
+  // Drives the error / no-results states that render INSIDE this mounted shell (replacing the body),
+  // separate from `loading`, which drives the skeleton body.
   readonly status = input<LoadStatus>('idle');
   readonly errorMessage = input('');
   readonly selectedLemmaId = input<number | null>(null);
@@ -82,7 +69,7 @@ export class LemmasTableComponent {
 
   readonly rowSelected = output<LemmaListItemViewModel>();
   readonly countOpened = output<LemmaCountOpenedEvent>();
-  /** null = release the sort param back to the default (ترتيب المصحف). */
+  // null = release the sort param back to the default (ترتيب المصحف).
   readonly sortChange = output<LemmaSort | null>();
 
   protected readonly sortControl = new ExplorerTableSortController<LemmaSort>(
@@ -178,10 +165,7 @@ export class LemmasTableComponent {
     });
   }
 
-  /**
-   * Owned-root deep link into the Roots Explorer. Only rendered when the lemma
-   * has a non-null owned `rootId`; uses numeric identity, never text lookup.
-   */
+  // Owned-root deep link into the Roots Explorer; uses numeric identity, never text lookup.
   protected rootHref(rootId: number): string {
     return deepLinkToHref(
       buildRootsDeepLink({ rootId, view: 'words', wordView: 'simple' }),

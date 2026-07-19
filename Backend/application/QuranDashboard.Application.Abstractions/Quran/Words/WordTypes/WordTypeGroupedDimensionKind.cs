@@ -9,8 +9,8 @@ public enum WordTypeGroupedDimensionKind
 
 public static class WordTypeGroupedDimensionKindKeys
 {
-    // Plural route keys used on the URL (…/table/{kind}/{dimensionId}); the DTO discriminator stays
-    // singular to match the WordTypeTableRowDto `kind` values (root|stem|lemma).
+    // Plural route keys for the URL; the DTO discriminator stays singular to match the
+    // WordTypeTableRowDto `kind` values (root|stem|lemma).
     public const string Roots = "roots";
     public const string Stems = "stems";
     public const string Lemmas = "lemmas";
@@ -22,8 +22,8 @@ public static class WordTypeGroupedDimensionKindKeys
 
 public static class WordTypeGroupedDimensionKindParser
 {
-    // Only the plural route keys are accepted; a missing/blank/unknown value is a controlled failure so
-    // the caller MUST check the bool (same contract as WordTypeSortParser/WordTypeTableViewParser).
+    // Only the plural route keys are accepted; a missing/blank/unknown value fails, so the caller MUST
+    // check the bool.
     public static bool TryParse(string? value, out WordTypeGroupedDimensionKind kind)
     {
         kind = default;

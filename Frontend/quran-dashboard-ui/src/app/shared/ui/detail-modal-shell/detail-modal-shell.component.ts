@@ -15,14 +15,6 @@ import { ScrollLockService } from '../modal-scroll-lock/scroll-lock.service';
 
 let nextShellId = 0;
 
-/**
- * Presentation-only accessible dialog shell for the global detail overlay
- * (Feature 029, Change B). It owns dialog semantics (role/aria-modal/RTL,
- * labelled heading, focus trap, Escape/backdrop dismissal), the Back/Close
- * header actions, the closed-state restore control, focus restoration across
- * close and Back, and reference-counted body scroll locking. It owns no entity,
- * API, URL, or history state — the host decides what the actions mean.
- */
 @Component({
   selector: 'qd-detail-modal-shell',
   standalone: true,
@@ -43,11 +35,8 @@ export class DetailModalShellComponent {
   readonly closeLabel = input.required<string>();
   readonly restoreLabel = input.required<string>();
   readonly restoreAriaLabel = input.required<string>();
-  /** Polite status text (e.g. the eight-frame cap refusal); announced when set. */
   readonly statusMessage = input('');
-  /** Entity-kind chip beside the title; the chip is omitted while empty. */
   readonly kindLabel = input('');
-  /** Header count meta; its box stays reserved while this is empty. */
   readonly countText = input('');
 
   readonly backRequested = output<void>();

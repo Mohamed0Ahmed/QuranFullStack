@@ -5,14 +5,8 @@ using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.WordTypes;
 
-// Grouped table-view (roots/stems/lemmas) SQL: the query/count shapes, the alpha fold gate, the
-// ORDER BY, the dimension column map, the parameter builder, and the row record. Split out of
-// EfWordTypesReader.Sql.cs, which keeps the shared base and the Words-view reads. Behaviour is
-// unchanged — these members were moved verbatim.
 public sealed partial class EfWordTypesReader
 {
-    // Grouped table views (roots/stems/lemmas) reuse BaseRowsSql verbatim and group by the numeric
-    // dimension ID, excluding nulls. Grouping and total counting happen before pagination.
     private static string GroupedRowsSql(WordTypeReadContext context, WordTypeTableView view, WordTypeSortSpec sort)
     {
         var (idColumn, textColumn) = DimensionColumns(view);
@@ -58,7 +52,6 @@ public sealed partial class EfWordTypesReader
     // rejects an unbound parameter — at RUNTIME. Alpha in EITHER direction folds.
     private static bool NeedsFold(WordTypeSortSpec sort) => sort.Column == WordTypeSortColumn.Alpha;
 
-    // Grouped totalCount = distinct non-null dimension IDs over the scoped base, measured before paging.
     private static string GroupedRowsCountSql(WordTypeReadContext context, WordTypeTableView view)
     {
         var (idColumn, _) = DimensionColumns(view);
@@ -125,7 +118,6 @@ public sealed partial class EfWordTypesReader
         int AyahsCount,
         int SurahsCount,
         int FirstWordOrderInMushaf,
-        // Whole-scope total from COUNT(*) OVER(); identical on every row, ignored by ToDto.
         int TotalCount)
     {
         public WordTypeTableRowDto ToDto(WordTypeTableView view) => view switch

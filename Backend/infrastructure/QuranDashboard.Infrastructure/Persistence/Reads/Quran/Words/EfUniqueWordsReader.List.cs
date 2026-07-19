@@ -4,9 +4,6 @@ using QuranDashboard.Application.Abstractions.Quran.Words;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words;
 
-// List-query building for the Unique Words list read: the raw SELECTs per kind, the composed
-// WHERE clause (search + count ranges + association winner predicates), and the list sort.
-// Split out of EfUniqueWordsReader.cs by size (same partial convention as EfStemsReader).
 public sealed partial class EfUniqueWordsReader
 {
     // Allowlisted foreign-key columns on quran_words that link a readable word to its unique identity;
@@ -48,11 +45,10 @@ public sealed partial class EfUniqueWordsReader
         return BuildListQuery(sql, SimpleIdColumn, normalizedSearch, filter, association);
     }
 
-    // Composes the optional search predicate, the count-range predicates (Feature 026, US5) and the
-    // association predicates (Feature 026, US7) into a single WHERE clause. Column identifiers are
-    // hardcoded/allowlisted; the search fragment, every range bound, and the association values reach
-    // SQL only as parameter values. Both unique tables expose the same
-    // occurrences_count/ayahs_count/surahs_count columns and the search_text_normalized identity column.
+    // Column identifiers are hardcoded/allowlisted; the search fragment, every range bound (Feature 026,
+    // US5) and the association values (US7) reach SQL only as parameter values (SQL-injection safety).
+    // Both unique tables expose the same occurrences_count/ayahs_count/surahs_count and
+    // search_text_normalized columns, so one WHERE composition serves both.
     private IQueryable<UniqueWordListRow> BuildListQuery(
         string sql,
         string uniqueIdColumn,

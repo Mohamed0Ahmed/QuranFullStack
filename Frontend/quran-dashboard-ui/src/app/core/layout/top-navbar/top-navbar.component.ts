@@ -26,7 +26,7 @@ export class TopNavbarComponent {
   readonly moreItems = NAV_ITEMS.filter((i) => i.group === 'more');
   readonly actionItems = NAV_ITEMS.filter((i) => i.group === 'actions');
 
-  /** The primary "words" item renders as a dropdown of the Words-section pages. */
+  // The primary "words" item renders as a dropdown of the Words-section pages.
   readonly wordsMenuItems = WORDS_MENU_ITEMS;
   readonly wordsHubRoute = WORDS_ROUTE_PATH;
 
@@ -36,7 +36,7 @@ export class TopNavbarComponent {
 
   protected readonly isDark = toSignal(this.themeService.isDark$, { initialValue: false });
 
-  /** Drives the sign-in ⇄ sign-out swap in the actions area (Feature 033). */
+  // Drives the sign-in ⇄ sign-out swap in the actions area (Feature 033).
   protected readonly isAuthenticated = toSignal(
     this.oidcSecurityService.isAuthenticated$.pipe(map((result) => result.isAuthenticated)),
     { initialValue: false },

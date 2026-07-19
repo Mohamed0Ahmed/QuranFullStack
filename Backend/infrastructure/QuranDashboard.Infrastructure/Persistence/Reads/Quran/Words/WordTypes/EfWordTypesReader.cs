@@ -34,8 +34,6 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
             .GroupBy(row => row.Type)
             .ToDictionary(group => group.Key, group => group.Sum(row => row.Count));
 
-        // Catalogue-driven noun children: every noun-category POS code ordered by SortOrder,
-        // each carrying its distinct word-context row count (0 when no rows exist).
         var nounCatalogue = await _dbContext.PosTags.AsNoTracking()
             .Where(pos => pos.Category == NounType)
             .OrderBy(pos => pos.SortOrder)
@@ -47,13 +45,11 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
             .Where(child => child.Count > 0)
             .ToList();
 
-        // Verb tense children are a fixed v1 set; counts come from the grouped base rows.
         var verbChildren = VerbTenseChildren
             .Select(tense => ChildNode(tense.ChildCode, tense.Label, verbChildCounts.GetValueOrDefault(tense.ChildCode)))
             .Where(child => child.Count > 0)
             .ToList();
 
-        // Particle children are catalogue-driven too; INL stays split into its own main type.
         var particleCatalogue = await _dbContext.PosTags.AsNoTracking()
             .Where(pos => pos.Category == ParticleType && pos.Code != InlPos)
             .OrderBy(pos => pos.SortOrder)
@@ -544,7 +540,6 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
 
     private sealed record PosCatalogueRow(string Code, string ArabicLabel);
 
-    // Verb tense child nodes are a fixed v1 set (noun children are catalogue-driven).
     private static readonly (string ChildCode, string Label)[] VerbTenseChildren =
     [
         ("past", "ماض"),

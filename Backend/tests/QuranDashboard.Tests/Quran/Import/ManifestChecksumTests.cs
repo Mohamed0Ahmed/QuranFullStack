@@ -2,9 +2,6 @@ using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Foundation;
 
 namespace QuranDashboard.Tests.Quran.Import;
 
-// ManifestChecksum is the shared SHA-256 helper extracted from the 8 manifest readers under
-// DataPipelines/ (decision 5, DRY). Each reader keeps its own throw-vs-CheckResult shell; this
-// only covers the shared computation + comparison it now delegates to.
 public sealed class ManifestChecksumTests
 {
     [Fact]

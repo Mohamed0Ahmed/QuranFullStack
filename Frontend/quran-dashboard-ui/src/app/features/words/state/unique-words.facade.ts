@@ -131,7 +131,6 @@ export class UniqueWordsFacade {
     this.drilldown.closeDrilldown();
   }
 
-  /** See `UniqueWordsDrilldownController.retryCurrentIdentity` (Feature 030, M3). */
   retryDrilldown(): void {
     this.drilldown.retryCurrentIdentity();
   }

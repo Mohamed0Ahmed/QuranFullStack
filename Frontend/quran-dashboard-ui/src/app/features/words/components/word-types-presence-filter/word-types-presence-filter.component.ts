@@ -8,11 +8,7 @@ export interface WordTypePresenceFlagChange {
   readonly value: boolean | null;
 }
 
-/**
- * Tri-state presence filter for the Word Types list scope (Feature 026, US6). Presentational only:
- * renders a three-option chip group (any / has / missing) per dimension (root/stem/lemma, labels per
- * lock D) and emits the chosen flag; the page owns URL serialization and page reset.
- */
+// Presentational only: emits the chosen presence flag; the page owns URL serialization and page reset.
 @Component({
   selector: 'qd-word-types-presence-filter',
   standalone: true,

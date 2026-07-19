@@ -1,12 +1,6 @@
-/**
- * Detail-overlay URL contract (Feature 029, Change B).
- *
- * These types are the serialized vocabulary of the global floating-detail
- * overlay: a typed, versioned frame union carried in the URL. They are
- * deliberately *not* imported from Words feature models — the URL grammar is a
- * shareable contract (old links must keep meaning), while feature models may
- * evolve. Words-side adapters map frames onto their own types.
- */
+// Serialized vocabulary of the detail overlay: a typed, versioned frame union carried in
+// the URL. Deliberately NOT imported from Words feature models — the URL grammar is a
+// shareable contract (old links must keep meaning) while feature models may evolve.
 
 export const DETAIL_OVERLAY_QUERY_KEYS = {
   /** Repeated query key; values are ordered bottom → top of the stack. */
@@ -107,10 +101,8 @@ export const CLOSED_DETAIL_OVERLAY_STATE: DetailOverlayUrlState = {
   stack: [],
 };
 
-/**
- * Complete-identity frame equality (every identity *and* view field). A push of
- * the complete current top frame is a no-op; never compare by numeric id alone.
- */
+// Complete-identity equality (every identity AND view field): never compare by numeric id
+// alone, so a push of the identical current top frame is correctly treated as a no-op.
 export function detailFramesEqual(a: DetailFrame, b: DetailFrame): boolean {
   if (a.kind !== b.kind) {
     return false;

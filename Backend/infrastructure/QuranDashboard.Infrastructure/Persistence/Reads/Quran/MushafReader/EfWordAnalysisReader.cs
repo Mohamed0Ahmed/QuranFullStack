@@ -56,14 +56,9 @@ public sealed class EfWordAnalysisReader(QuranDashboardDbContext db, ILogger<EfW
         return new WordAnalysisOutcome.Found(response);
     }
 
-    /// <summary>
-    /// Word, morphology, its root/lemma/stem dimensions, and the four identity summary rows
-    /// (ordered tashkeel/simple, unique tashkeel/simple) are six point-lookups keyed either
-    /// directly off the word row or off a nullable FK carried on it or on morphology. They are
-    /// collapsed into one LEFT-JOIN projection instead of up to six sequential round trips.
-    /// A missing morphology/identity row surfaces as null joined columns, preserving the
-    /// existing incomplete-data checks exactly.
-    /// </summary>
+    // Word, morphology, its root/lemma/stem dimensions, and the four identity summary rows are
+    // collapsed into one LEFT-JOIN projection instead of up to six sequential round trips; a missing
+    // morphology/identity row surfaces as null joined columns, preserving the incomplete-data checks.
     private async Task<WordCoreProjection?> LoadCoreAsync(string wordLocation, CancellationToken ct)
     {
         return await (
@@ -140,10 +135,8 @@ public sealed class EfWordAnalysisReader(QuranDashboardDbContext db, ILogger<EfW
             .FirstOrDefaultAsync(ct);
     }
 
-    /// <summary>
-    /// Ordered segments joined to their POS tag and i3rab rule in one projection, replacing the
-    /// prior segment fetch plus separate POS-code and rule-id lookups.
-    /// </summary>
+    // Ordered segments joined to their POS tag and i3rab rule in one projection, replacing the prior
+    // segment fetch plus separate POS-code and rule-id lookups.
     private async Task<IReadOnlyList<SegmentProjection>> LoadSegmentsAsync(int wordId, CancellationToken ct)
     {
         return await (
@@ -273,12 +266,9 @@ public sealed class EfWordAnalysisReader(QuranDashboardDbContext db, ILogger<EfW
             ParseFeaturesJson(segment.FeaturesJson, segment.SegmentLocation));
     }
 
-    /// <summary>
-    /// M82 (quran-safety rule 3): corrupt features_json must not be swallowed silently. The
-    /// return contract is unchanged (still empty on failure) — a "coverage unavailable" marker
-    /// would be a DTO/contract change and is out of scope here — but a corrupt row now logs a
-    /// Warning naming the segment so the underlying data issue stays visible.
-    /// </summary>
+    // quran-safety rule 3: corrupt features_json must not be swallowed silently. The return contract
+    // is unchanged (still empty on failure), but a corrupt row logs a Warning naming the segment so
+    // the underlying data issue stays visible.
     private IReadOnlyList<JsonElement> ParseFeaturesJson(string? featuresJson, string segmentLocation)
     {
         if (string.IsNullOrWhiteSpace(featuresJson))

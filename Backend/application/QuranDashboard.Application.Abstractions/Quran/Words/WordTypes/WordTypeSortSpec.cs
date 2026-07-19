@@ -1,11 +1,7 @@
 namespace QuranDashboard.Application.Abstractions.Quran.Words.WordTypes;
 
-/// <summary>
-/// The allowlisted Word Types sort columns, shared by the words view and the three grouped
-/// (roots/stems/lemmas) views. Every member maps to a column both CTEs already project. The
-/// type/root/stem/lemma label columns are deliberately excluded (see the reads README's ordering
-/// contract), and the grouped member-word detail read takes no sort at all.
-/// </summary>
+// Every member maps to a column both CTEs already project. The label columns are deliberately excluded
+// (see the reads README's ordering contract), and the grouped member-word detail read takes no sort.
 public enum WordTypeSortColumn
 {
     Occurrences,
@@ -24,26 +20,14 @@ public static class WordTypeSortKeys
     public const string Alpha = "alpha";
 }
 
-/// <summary>
-/// A parsed Word Types ordering: an allowlisted column plus its direction. The pair travels together
-/// from the parser to the reader and the cache key so the two halves can never drift apart.
-/// <para>
-/// Unlike the other four explorers, Word Types defaults to <c>occurrences</c> (descending) rather than
-/// Mushaf order.
-/// </para>
-/// </summary>
+// Unlike the other four explorers, Word Types defaults to occurrences (descending) rather than Mushaf order.
 public readonly record struct WordTypeSortSpec(WordTypeSortColumn Column, WordSortDirection Direction)
 {
-    /// <summary>The ordering used when the request carries no sort token.</summary>
     public static WordTypeSortSpec Default { get; } = Natural(WordTypeSortColumn.Occurrences);
 
-    /// <summary>The column at its natural direction — what a bare token means.</summary>
     public static WordTypeSortSpec Natural(WordTypeSortColumn column) => new(column, NaturalDirectionOf(column));
 
-    /// <summary>
-    /// Counts read most-first, so their natural direction is descending; text and the Mushaf release
-    /// order read forward.
-    /// </summary>
+    // Counts read most-first (descending natural); text and the Mushaf release order read forward.
     public static WordSortDirection NaturalDirectionOf(WordTypeSortColumn column) => column switch
     {
         WordTypeSortColumn.MushafOrder => WordSortDirection.Ascending,
@@ -54,10 +38,8 @@ public readonly record struct WordTypeSortSpec(WordTypeSortColumn Column, WordSo
         _ => throw new InvalidOperationException($"Unhandled {nameof(WordTypeSortColumn)} value."),
     };
 
-    /// <summary>
-    /// The canonical wire/cache token: bare for the column's natural direction, suffixed for the
-    /// opposite one. mushaf-order is ascending-only by contract and never carries a suffix.
-    /// </summary>
+    // Canonical wire/cache token: bare for the natural direction, suffixed for the opposite one.
+    // mushaf-order is ascending-only by contract and never carries a suffix.
     public string CanonicalToken() => Column == WordTypeSortColumn.MushafOrder
         ? WordTypeSortKeys.MushafOrder
         : WordSortToken.Canonical(ColumnKey(Column), Direction, NaturalDirectionOf(Column));
@@ -75,10 +57,6 @@ public readonly record struct WordTypeSortSpec(WordTypeSortColumn Column, WordSo
 
 public static class WordTypeSortParser
 {
-    /// <summary>
-    /// Parses a raw request token against the Word Types column allowlist. An unknown column, or any
-    /// direction suffix on mushaf-order, fails — the caller maps that to a controlled 400.
-    /// </summary>
     public static bool TryParse(string? value, out WordTypeSortSpec spec)
     {
         spec = default;

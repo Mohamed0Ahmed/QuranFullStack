@@ -347,7 +347,6 @@ describe('WordTypeFilterComponent', () => {
     it('stays inert and announces once through the panel skeleton', () => {
       const loading = renderLoading();
 
-      // Non-interactive: no button, no select, nothing focusable.
       expect(loading.querySelector('button')).toBeNull();
       expect(loading.querySelector('select')).toBeNull();
       // One live region only — the toolbar mirror is decorative, qd-panel-skeleton owns the announcement.

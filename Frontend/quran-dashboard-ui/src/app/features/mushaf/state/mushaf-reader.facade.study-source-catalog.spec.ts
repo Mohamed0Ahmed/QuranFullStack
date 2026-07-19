@@ -59,12 +59,10 @@ describe('MushafReaderFacade.loadStudySourceCatalog (F2)', () => {
     );
     const facade = createFacadeTestBed(getCatalog);
 
-    // First mount.
     facade.loadStudySourceCatalog();
     expect(getCatalog).toHaveBeenCalledTimes(1);
     expect(facade.tafsirSourceOptions()).toHaveLength(1);
 
-    // Second mount (e.g. navigating away and back to the Mushaf page).
     facade.loadStudySourceCatalog();
     expect(getCatalog).toHaveBeenCalledTimes(1);
     expect(facade.tafsirSourceOptions()).toHaveLength(1);

@@ -5,13 +5,6 @@ using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Stems;
 
-/// <summary>
-/// EF Core read model for the Stems Explorer (Feature 016). All queries are
-/// read-only and <c>AsNoTracking</c>. The catalogue/summary is loaded in a bounded
-/// whole-summary aggregation plus compact server-grouped distribution/winner reads
-/// (see <see cref="LoadWholeSummaryAsync"/>). Ayah and words detail are fully
-/// implemented as well.
-/// </summary>
 public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsReader
 {
     private readonly QuranDashboardDbContext _db = db;
@@ -234,10 +227,6 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
         return new StemLemmasResponse(lemmas);
     }
 
-    // Picks the dominant relation (lemma or root) from the server-grouped per-(stem, relation) rows:
-    // occurrence count descending, then earliest Mushaf occurrence ascending (surah/ayah/word), then id —
-    // identical to the previous in-memory selection. Relation text coalesces null to empty, mirroring the
-    // prior behavior for a relation id whose row is absent.
     private static StemRelationRow? PickDominantRelation(IEnumerable<StemRelationGroupSqlRow> groups) =>
         groups
             .Select(r => new StemRelationRow(
@@ -255,9 +244,6 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
             .ThenBy(r => r.Id)
             .FirstOrDefault();
 
-    // Orders the server-grouped per-(stem, POS) rows into the final distribution: count descending, then
-    // earliest Mushaf occurrence ascending (surah/ayah/word), then POS code — identical to the previous
-    // in-memory ordering.
     private static IReadOnlyList<StemTypeDistributionRow> OrderTypeDistribution(IEnumerable<StemTypeDistributionSqlRow> rows) =>
         rows
             .Select(r => new StemTypeDistributionRow(
@@ -280,14 +266,9 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
             ? $"{firstSurahNumber}:{firstAyahNumber}"
             : string.Empty;
 
-    /// <summary>
-    /// Loads the complete grouped, ordered word list for a stem/word-kind pair in one
-    /// bounded pass: existence check, every matching occurrence row, then the same
-    /// in-memory group/order derivation the page used to repeat per page. Returns
-    /// <c>null</c> when the stem does not exist. This is the identity-grain unit the
-    /// cache decorator caches once (mirrors the catalogue whole-summary pattern) so
-    /// paging never re-issues the full occurrence query (performance review finding B6).
-    /// </summary>
+    // Loads the whole grouped/ordered word list in one pass (null when the stem is absent). This is the
+    // identity-grain unit CachedStemsReader caches once, so paging slices the cached list instead of
+    // re-issuing the full occurrence query (perf finding B6).
     internal async Task<IReadOnlyList<StemWordItemDto>?> LoadStemWordGroupsAsync(
         int id,
         StemWordKind wordKind,
@@ -336,11 +317,6 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
             .ToList();
     }
 
-    /// <summary>
-    /// Slices an already-loaded, already-ordered whole word-group list into one page.
-    /// Shared by the uncached page read below and by <c>CachedStemsReader</c>, which
-    /// slices the identity-grain cached list instead of re-loading it per page.
-    /// </summary>
     internal static PagedResult<StemWordItemDto> SliceStemWordsPage(
         IReadOnlyList<StemWordItemDto> all,
         int page,

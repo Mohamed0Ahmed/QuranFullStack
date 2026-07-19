@@ -426,7 +426,6 @@ describe('WordTypesExplorerPageComponent', () => {
     expect(tabsSlot()!.querySelector('qd-word-type-table-view-tabs')).toBeNull();
     expect(paginationSlot()!.querySelector('qd-pagination')).toBeNull();
 
-    // Once the tree lands the tabs mount into the same slot that was already holding their row.
     takePending('tree').flush(ok(tree));
     flushPendingRequests();
     await fixture.whenStable();
@@ -451,7 +450,6 @@ describe('WordTypesExplorerPageComponent', () => {
     fixture.detectChanges();
     flushPendingRequests();
 
-    // Only the initial scope load fetched counts; tab + page changes did not.
     expect(requestsFor('scopeCounts')).toHaveLength(1);
   });
 
@@ -466,8 +464,6 @@ describe('WordTypesExplorerPageComponent', () => {
     const initialDetails = detailsHost();
     expect(fixture.nativeElement.querySelector('[data-word-types-row="root:190700"]')).not.toBeNull();
 
-    // Return to a parent scope (no leaf). The previous leaf's grouped row must disappear and the
-    // in-table subtype prompt must appear, while the strip/table/details hosts keep their identity.
     queryParamMap$.next(convertToParamMap({ type: 'verb', tableView: 'roots' }));
     await fixture.whenStable();
     fixture.detectChanges();

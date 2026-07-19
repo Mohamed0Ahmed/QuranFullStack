@@ -8,15 +8,6 @@ namespace QuranDashboard.Api.Controllers.MushafReader.Pages;
 [Route("api/mushaf/pages")]
 public sealed class MushafPagesController(GetMushafPageHandler handler) : ControllerBase
 {
-    /// <summary>
-    /// يُرجع صفحة مصحف واحدة مرقّمة (1–604): الأسطر والكلمات بترتيب المصحف،
-    /// سياق السور والجزء والحزب والربع، وعلامات السجدة/التقسيم بقاعدة السطر الأول.
-    /// </summary>
-    /// <param name="pageNumber">رقم الصفحة (1–604).</param>
-    /// <param name="cancellationToken">رمز إلغاء الطلب.</param>
-    /// <response code="200">تم تحميل الصفحة بنجاح.</response>
-    /// <response code="400">رقم صفحة غير صالح.</response>
-    /// <response code="404">الصفحة غير موجودة في قاعدة البيانات.</response>
     [HttpGet("{pageNumber}")]
     public async Task<ActionResult<ApiResponse<MushafPageResponse>>> Get(
         string pageNumber,

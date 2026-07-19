@@ -9,14 +9,11 @@ import { CurrentUser, RoleName } from './current-user.model';
 import { CurrentUserStore } from './current-user.store';
 import { roleGuard } from './role.guard';
 
-/**
- * `roleGuard` factory (Feature 033, Phase 2). It is intentionally attached to no route in
- * this phase, so it is verified in isolation. Its real injection boundaries are
- * `OidcSecurityService` (auth state + login redirect), `CurrentUserStore` (the loaded
- * account), and `Router` (the redirect UrlTree); each gets a lightweight boundary stand-in,
- * while the account itself is a real `CurrentUser`. A real `Router` (via `provideRouter`)
- * builds the redirect so we can assert an actual `UrlTree` pointing at `/`.
- */
+// `roleGuard` verified in isolation since it is attached to no route (Feature 033, Phase 2). Its
+// injection boundaries — `OidcSecurityService` (auth state + login redirect), `CurrentUserStore`
+// (loaded account), `Router` (redirect UrlTree) — get lightweight stand-ins, while the account
+// itself is a real `CurrentUser` and a real `Router` builds the redirect so we can assert an actual
+// `UrlTree` pointing at `/`.
 function ownerUser(overrides: Partial<CurrentUser> = {}): CurrentUser {
   return {
     sub: 'logto-subject-1',

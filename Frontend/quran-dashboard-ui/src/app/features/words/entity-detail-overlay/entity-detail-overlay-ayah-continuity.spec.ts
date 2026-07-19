@@ -14,14 +14,6 @@ import { RootDetailFrame } from '../../../core/navigation/detail-overlay/detail-
 import { QD_BP_DESKTOP_MIN_QUERY } from '../../../shared/layout/breakpoints';
 import { RootsExplorerPageComponent } from '../pages/roots-explorer-page/roots-explorer-page.component';
 
-/**
- * End-to-end overlay/ayah-continuity integration (Feature 029, B7/B8, plan
- * §5.8/§5.12 item 10): a three-frame stack built over an explorer page rides an
- * ayah click onto the Mushaf base with replace semantics, then dialog Back,
- * Close, Restore, and browser Back/Forward all behave per provenance. Asserted
- * via the router URL and the persistent overlay host DOM.
- */
-
 @Component({ standalone: true, template: '' })
 class BlankMushafPageComponent {}
 
@@ -171,7 +163,7 @@ describe('Entity detail overlay ayah continuity (B7/B8)', () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
   }
 
-  /** Deferred adapter chunks load asynchronously; poll until the selector renders. */
+  // Deferred adapter chunks load asynchronously; poll until the selector renders.
   async function waitForSelector(
     fixture: { detectChanges: () => void; nativeElement: unknown },
     selector: string,
@@ -187,7 +179,7 @@ describe('Entity detail overlay ayah continuity (B7/B8)', () => {
     );
   }
 
-  /** Flushes every outstanding request against the fixture catalogue (cache hits simply match nothing). */
+  // Flushes every outstanding request against the catalogue; cache hits simply match nothing.
   function flushPending(): void {
     for (const request of httpMock.match(() => true)) {
       const url = request.request.url;
@@ -244,25 +236,21 @@ describe('Entity detail overlay ayah continuity (B7/B8)', () => {
     await fixture.whenStable();
     await loadStep(fixture);
 
-    // Open a root overlay (the same API a Mushaf entity link invokes).
     overlay.startStack(ROOT_FRAME);
     await loadStep(fixture);
     await waitForSelector(fixture, 'qd-root-detail-overlay-adapter');
     await loadStep(fixture);
 
-    // While the dialog is open, the app shell is inert and the dialog is outside it.
     const shellElement = shellQuery(fixture, 'qd-app-shell')!;
     const dialog = shellQuery(fixture, '[data-testid="detail-modal-shell"]')!;
     expect(shellElement.getAttribute('inert')).not.toBeNull();
     expect(shellElement.contains(dialog)).toBe(false);
 
-    // Append a lemma frame via the real overlay anchor (append mode).
     click(shellQuery(fixture, '[data-testid="detail-modal-shell"] [data-testid="root-lemma-item"]'));
     await loadStep(fixture);
     await waitForSelector(fixture, 'qd-lemma-detail-overlay-adapter');
     await loadStep(fixture);
 
-    // Switch the lemma detail to its stems view and append a stem frame.
     click(shellQuery(fixture, '[data-testid="lemma-details-tab-stems"]'));
     await loadStep(fixture);
     click(shellQuery(fixture, '[data-testid="detail-modal-shell"] [data-testid="lemma-stems-list-link"]'));
@@ -270,7 +258,6 @@ describe('Entity detail overlay ayah continuity (B7/B8)', () => {
     await waitForSelector(fixture, 'qd-stem-detail-overlay-adapter');
     await loadStep(fixture);
 
-    // Open the stem's ayahs view: the ayah continuity link renders inside the detail.
     click(shellQuery(fixture, '[data-testid="stem-details-tab-ayahs"]'));
     await loadStep(fixture);
     await waitForSelector(fixture, '[data-testid="ayah-matches-open-mushaf"]');
@@ -280,7 +267,6 @@ describe('Entity detail overlay ayah continuity (B7/B8)', () => {
     expect(router.url).toContain(encodeURIComponent(LEMMA_STEMS_SERIALIZED));
     expect(router.url).toContain(encodeURIComponent(STEM_AYAHS_SERIALIZED));
 
-    // Click the ayah link: land on the Mushaf base with the SAME stack, open.
     click(shellQuery(fixture, '[data-testid="ayah-matches-open-mushaf"]'));
     await loadStep(fixture);
 
@@ -312,7 +298,6 @@ describe('Entity detail overlay ayah continuity (B7/B8)', () => {
     expect(overlay.state().stack.map((frame) => frame.kind)).toEqual(['root', 'lemma']);
     expect(overlay.isOpen()).toBe(true);
 
-    // Close keeps the retained stack in the URL and shows the restore control.
     click(shellQuery(fixture, '[data-testid="detail-modal-close"]'));
     await loadStep(fixture);
     expect(router.url).toContain(encodeURIComponent(LEMMA_STEMS_SERIALIZED));
@@ -322,7 +307,6 @@ describe('Entity detail overlay ayah continuity (B7/B8)', () => {
     expect(shellQuery(fixture, '[data-testid="detail-modal-restore"]')).not.toBeNull();
     expect(shellQuery(fixture, 'qd-app-shell')!.getAttribute('inert')).toBeNull();
 
-    // Restore reopens the exact stack as a push.
     click(shellQuery(fixture, '[data-testid="detail-modal-restore"]'));
     await loadStep(fixture);
     expect(overlay.isOpen()).toBe(true);
@@ -330,14 +314,13 @@ describe('Entity detail overlay ayah continuity (B7/B8)', () => {
     expect(router.url).toContain('qdDetailOpen=1');
     expect(shellQuery(fixture, '[data-testid="detail-modal-shell"]')).not.toBeNull();
 
-    // Browser Back returns to the closed/restorable entry (restore was a push)...
+    // Browser Back returns to the closed/restorable entry (restore was a push).
     location.back();
     await loadStep(fixture);
     expect(overlay.isRetainedClosed()).toBe(true);
     expect(shellQuery(fixture, '[data-testid="detail-modal-shell"]')).toBeNull();
     expect(shellQuery(fixture, '[data-testid="detail-modal-restore"]')).not.toBeNull();
 
-    // ...and browser Forward converges back onto the open state.
     location.forward();
     await loadStep(fixture);
     expect(overlay.isOpen()).toBe(true);

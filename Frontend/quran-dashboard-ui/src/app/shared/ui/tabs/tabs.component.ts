@@ -14,15 +14,10 @@ import { QdTabDirective } from './tab.directive';
 
 export type QdTabsOrientation = 'horizontal' | 'vertical';
 
-/**
- * The one tab-strip implementation app-wide (UI_STYLE_SYSTEM.md §17 `qd-tabs`).
- *
- * `qd-tabs` does not own selection: consumers project their own `<a routerLink>`
- * or `<button>` tab elements marked with the `qdTab` directive and their own
- * `[selected]` flag, click handler, or routerLink. This component only supplies
- * the `role="tablist"` wrapper and RTL-aware roving-tabindex keyboard navigation
- * (ArrowLeft/ArrowRight/Home/End) over the projected `qdTab` children.
- */
+// The app-wide tab-strip (UI_STYLE_SYSTEM.md §17 `qd-tabs`). It does not own
+// selection: consumers project their own `qdTab` elements with their `[selected]`
+// flag and click/routerLink handling. This only supplies the `role="tablist"`
+// wrapper and RTL-aware roving-tabindex keyboard nav (Arrow/Home/End).
 @Component({
   selector: 'qd-tabs',
   standalone: true,
@@ -128,7 +123,6 @@ export class QdTabsComponent {
     this.tabs()[index]?.focus();
   }
 
-  /** Reads the nearest ancestor `dir` attribute; defaults to `ltr` when none is set. */
   private resolveDirection(): 'ltr' | 'rtl' {
     const dirHost = this.elementRef.nativeElement.closest('[dir]');
     return dirHost?.getAttribute('dir') === 'rtl' ? 'rtl' : 'ltr';

@@ -13,7 +13,6 @@ type LemmaCountSortColumn =
 type LemmaTextSortColumn = 'alpha';
 export type LemmaSortColumnKey = LemmaCountSortColumn | LemmaTextSortColumn;
 
-/** The canonical token set: `occurrences`/`occurrences-asc`, `alpha`/`alpha-desc`, … */
 export type LemmaSort =
   | MushafOrderSort
   | CanonicalSortTokens<LemmaCountSortColumn, 'desc'>
@@ -127,7 +126,6 @@ export function isLemmasAssociationActive(association: LemmasAssociation): boole
   return association.rootId !== null;
 }
 
-// Count-range filter metrics (Feature 026, US5) — the six count columns the Lemmas list shows.
 export const LEMMAS_RANGE_METRICS: readonly RangeMetric[] = [
   { key: 'occurrences', urlKey: 'occ', apiKey: 'occ', family: 'occurrences', labelAr: WORDS_SHARED_COUNT_COLUMNS.occurrences },
   { key: 'ayahs', urlKey: 'ayahs', apiKey: 'ayahs', family: 'ayahsSurahs', labelAr: WORDS_SHARED_COUNT_COLUMNS.ayahs },
@@ -190,7 +188,6 @@ export function isLemmaSort(value: unknown): value is LemmaSort {
   );
 }
 
-/** Canonicalizes aliases in and fails closed to the default on anything unknown. */
 export function normalizeLemmaSort(value: string | null | undefined): LemmaSort {
   const canonical = canonicalizeSortToken(value, LEMMA_SORT_COLUMN_LIST);
   return canonical !== null && isLemmaSort(canonical) ? canonical : DEFAULT_LEMMA_SORT;

@@ -55,20 +55,6 @@ public static class ServiceCollectionExtensions
                 AdditionalPropertiesAllowed = true
             });
             options.SchemaFilter<AllPropertiesRequiredSchemaFilter>();
-
-            var xmlFiles = new[]
-            {
-                $"{Assembly.GetExecutingAssembly().GetName().Name}.xml",
-                "QuranDashboard.Application.Abstractions.xml"
-            };
-            foreach (var xmlFile in xmlFiles)
-            {
-                var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-                if (File.Exists(xmlPath))
-                {
-                    options.IncludeXmlComments(xmlPath);
-                }
-            }
         });
         services.AddHealthChecks()
             .AddDbContextCheck<QuranDashboardDbContext>("database");

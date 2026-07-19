@@ -32,11 +32,7 @@ import {
 import { DetailRequestLifecycle } from './detail-request-lifecycle';
 import { UniqueWordsCache, UniqueWordsCacheKeys } from './unique-words-cache';
 
-/**
- * Drilldown identity as expressed by a URL (page query or overlay frame).
- * `wordId: null` means "no selection" and closes the drilldown; `view`/`ayahPage`
- * are normalized to their defaults exactly like the historical page behavior.
- */
+// `wordId: null` means "no selection" and closes the drilldown.
 export interface UniqueWordsDrilldownUrlState {
   readonly mode: UniqueWordKind;
   readonly wordId: number | null;
@@ -44,12 +40,9 @@ export interface UniqueWordsDrilldownUrlState {
   readonly ayahPage: number | null;
 }
 
-/**
- * Normalized one-identity of the drilldown. `mode` is part of the identity:
- * simple and tashkeel are separate word spaces, so the same `wordId` denotes a
- * different word in each and a held summary from one mode must never be reused
- * for the other.
- */
+// `mode` is part of the identity: simple and tashkeel are separate word spaces, so the same
+// `wordId` denotes a different word in each and a held summary from one mode must never be
+// reused for the other.
 interface ModalUrlState {
   readonly mode: UniqueWordKind;
   readonly wordId: number;
@@ -70,26 +63,11 @@ const INITIAL_DRILLDOWN: WordDrilldownState = {
   errorMessage: '',
 };
 
-/**
- * Route-independent unique-word drilldown controller (Feature 029, Change B4).
- *
- * Owns the drilldown signal state, the summary/drilldown requests, and every
- * load path — with zero knowledge of routes or URLs. Consumers drive it either
- * through `applyUrlState` (the route-free entry point: the page facade forwards
- * parsed query state, the overlay adapter forwards its typed frame) or through
- * the direct drilldown methods. The root-scoped `UniqueWordsApi`/
- * `UniqueWordsCache` collaborators stay shared, so the page drilldown and the
- * global overlay de-duplicate the same reads (`UniqueWordsCacheKeys` unchanged).
- *
- * Every complete-identity transition abandons BOTH the summary and the drilldown
- * request and opens a new generation, so a late response from the previously
- * selected word can never populate or overwrite this one — see
- * {@link DetailRequestLifecycle}.
- *
- * Not `providedIn: 'root'`: the page facade owns one instance, and each overlay
- * adapter provides its own component-scoped instance (destroyed with the
- * adapter), so overlay activity can never mutate the page drilldown.
- */
+// Every complete-identity transition abandons both the summary and the drilldown request and
+// opens a new generation (see DetailRequestLifecycle), so a late response from the previously
+// selected word can never overwrite this one.
+// Not `providedIn: 'root'`: each overlay adapter provides its own component-scoped instance, so
+// overlay activity can never mutate the page drilldown.
 @Injectable()
 export class UniqueWordsDrilldownController implements OnDestroy {
   private readonly _drilldown = signal<WordDrilldownState>(INITIAL_DRILLDOWN);
@@ -178,26 +156,15 @@ export class UniqueWordsDrilldownController implements OnDestroy {
     this._drilldown.set(INITIAL_DRILLDOWN);
   }
 
-  /**
-   * Disposes any in-flight summary/drilldown HTTP subscription without touching the currently-held
-   * drilldown state (perf finding F3). Called on page/facade unbind (component destroy or
-   * navigation away) so a request that outlives the page can no longer mutate held state
-   * offscreen. `activeModalUrlState` is cleared so that returning to the SAME URL is never
-   * short-circuited by the "unchanged selection" fast path — it always re-drives a real reload
-   * (which itself may resolve from the detail cache, preserving that behavior) instead of leaving
-   * the state stuck mid-load.
-   */
+  // Disposes in-flight HTTP without touching held state, so a request that outlives the page
+  // can't mutate it offscreen (perf finding F3). Clearing `activeModalUrlState` makes a return
+  // to the SAME URL re-drive a real reload instead of being short-circuited by the
+  // "unchanged selection" fast path.
   cancelPendingWork(): void {
     this.requests.cancelAll();
     this.activeModalUrlState = null;
   }
 
-  /**
-   * Route-free entry point: synchronize the drilldown to a complete URL state.
-   * Identical states short-circuit via complete (mode, wordId, view, ayahPage)
-   * identity comparison; a same-word sub-state change reuses the loaded summary
-   * (same mode only) and reloads just the active view.
-   */
   applyUrlState(state: UniqueWordsDrilldownUrlState): void {
     if (state.wordId === null) {
       this.closeDrilldown();
@@ -218,14 +185,9 @@ export class UniqueWordsDrilldownController implements OnDestroy {
     this.applyIdentity(nextState);
   }
 
-  /**
-   * Re-drives the current complete identity after a failed load (Feature 030,
-   * M3). The identity is unchanged, so {@link applyUrlState} would short-circuit
-   * it; retry re-enters the load path directly. A failed read is never cached,
-   * so this issues a real request, while an intact summary still resolves from
-   * the held state and only the drilldown view reloads. `cancelPendingWork()`
-   * clears the identity, so a retry after unbind is correctly a no-op.
-   */
+  // Identity is unchanged, so applyUrlState would short-circuit it; retry re-enters the load
+  // path directly. A failed read is never cached, so this re-fetches; an intact summary still
+  // resolves from held state. A no-op after unbind, which clears the identity.
   retryCurrentIdentity(): void {
     const state = this.activeModalUrlState;
     if (state === null) {
@@ -235,15 +197,9 @@ export class UniqueWordsDrilldownController implements OnDestroy {
     this.applyIdentity(state);
   }
 
-  /**
-   * Drives a complete identity: abandons the previous identity's summary and
-   * drilldown requests, then either reloads only the active view or reloads the
-   * summary first.
-   *
-   * The held summary is reused only when it describes the very word the URL now asks for. The
-   * summary's own `kind` must match the requested mode: `selectedWordId` alone is ambiguous
-   * across modes, so matching on it would serve the previous mode's word and details.
-   */
+  // The held summary is reused only when it describes the very word the URL now asks for. Its
+  // `kind` must match the requested mode: `selectedWordId` alone is ambiguous across modes, so
+  // matching on it would serve the previous mode's word and details.
   private applyIdentity(nextState: ModalUrlState): void {
     const token = this.requests.beginTransition();
     this.activeModalUrlState = nextState;
@@ -408,10 +364,6 @@ export class UniqueWordsDrilldownController implements OnDestroy {
     );
   }
 
-  /**
-   * Registers one drilldown view read as the current generation's detail request and routes both
-   * its response and its failure through the generation guard.
-   */
   private trackDrilldownRead<T>(
     read$: Observable<ApiResponse<T>>,
     token: number,
@@ -430,7 +382,6 @@ export class UniqueWordsDrilldownController implements OnDestroy {
     );
   }
 
-  /** Applies a drilldown update only while `token` still owns the panel. */
   private applyIfCurrent(token: number, update: (state: WordDrilldownState) => WordDrilldownState): void {
     if (this.requests.isCurrent(token)) {
       this._drilldown.update(update);

@@ -24,11 +24,6 @@ public sealed partial class WordTypesController(
     private const int DefaultListPageSize = 1000;
     private const int DefaultDetailPageSize = 100;
 
-    /// <summary>
-    /// يُرجع شجرة أنواع الكلمات: الأنواع الرئيسية (اسم/فعل/حرف) وفروعها مع عدّاداتها.
-    /// </summary>
-    /// <param name="cancellationToken">رمز إلغاء الطلب.</param>
-    /// <response code="200">تم تحميل شجرة الأنواع بنجاح.</response>
     [HttpGet("tree")]
     public async Task<ActionResult<ApiResponse<WordTypeTreeDto>>> GetTree(CancellationToken cancellationToken)
     {
@@ -42,34 +37,6 @@ public sealed partial class WordTypesController(
         };
     }
 
-    /// <summary>
-    /// يُرجع صفوف الكلمات ضمن نطاق نوع محدّد، مقسّمة إلى صفحات مع دعم الفرز ومرشّحات الحالة والزمن والبناء.
-    /// </summary>
-    /// <param name="type">رمز النوع الرئيسي (مطلوب لتحديد النطاق).</param>
-    /// <param name="childCode">رمز النوع الفرعي إن وجد.</param>
-    /// <param name="caseFilter">مرشّح الحالة الإعرابية (اختياري).</param>
-    /// <param name="tense">مرشّح الزمن (اختياري).</param>
-    /// <param name="voice">مرشّح البناء للمعلوم/المجهول (اختياري).</param>
-    /// <param name="search">نص البحث في هوية الكلمة (اختياري).</param>
-    /// <param name="sort">
-    /// مفتاح الفرز (اختياري، الافتراضي <c>occurrences</c> تنازليًا — بخلاف بقية المستكشفات).
-    /// الصيغة: <c>عمود</c> أو <c>عمود-asc</c> أو <c>عمود-desc</c>.
-    /// الأعمدة المتاحة: <c>alpha</c> (تصاعدي طبيعيًا)، و<c>occurrences</c> و<c>ayahs</c>
-    /// و<c>surahs</c> (تنازلية طبيعيًا). تنطبق المفاتيح ذاتها على عرض الكلمات وعلى عروض
-    /// الجذور/الأصول/الصيغ المجمّعة.
-    /// المفتاح المجرّد يعني الاتجاه الطبيعي للعمود، لذا <c>occurrences</c> ≡
-    /// <c>occurrences-desc</c> و<c>alpha</c> ≡ <c>alpha-asc</c>.
-    /// و<c>mushaf-order</c> هو ترتيب المصحف التصاعدي فقط ولا يقبل لاحقة اتجاه.
-    /// أي مفتاح آخر يُرجع 400.
-    /// </param>
-    /// <param name="page">رقم الصفحة (الافتراضي 1).</param>
-    /// <param name="pageSize">حجم الصفحة (الافتراضي 1000).</param>
-    /// <param name="hasRoot">مرشّح وجود الجذر ثلاثي الحالة (اختياري).</param>
-    /// <param name="hasStem">مرشّح وجود الأصل الصرفي ثلاثي الحالة (اختياري).</param>
-    /// <param name="hasLemma">مرشّح وجود الصيغة المعجمية ثلاثي الحالة (اختياري).</param>
-    /// <param name="cancellationToken">رمز إلغاء الطلب.</param>
-    /// <response code="200">تم تحميل صفوف الكلمات بنجاح.</response>
-    /// <response code="400">مرشّح أو فرز أو تقسيم صفحات غير صالح.</response>
     [HttpGet("words")]
     public async Task<ActionResult<ApiResponse<PagedResult<WordTypeRowDto>>>> GetRows(
         [FromQuery] string? type,
@@ -104,35 +71,6 @@ public sealed partial class WordTypesController(
         };
     }
 
-    /// <summary>
-    /// يُرجع صفوف عرض الجدول ضمن نطاق نوع محدّد بحسب تبويب العرض (كلمات/جذور/أصول/صيغ)، مقسّمة إلى صفحات ومجمّعة ومعدودة على الخادم.
-    /// </summary>
-    /// <param name="tableView">تبويب العرض: words أو roots أو stems أو lemmas (الافتراضي words).</param>
-    /// <param name="type">رمز النوع الرئيسي (مطلوب لتحديد النطاق).</param>
-    /// <param name="childCode">رمز النوع الفرعي إن وجد.</param>
-    /// <param name="caseFilter">مرشّح الحالة الإعرابية (اختياري).</param>
-    /// <param name="tense">مرشّح الزمن (اختياري).</param>
-    /// <param name="voice">مرشّح البناء للمعلوم/المجهول (اختياري).</param>
-    /// <param name="search">نص البحث في هوية الكلمة (اختياري).</param>
-    /// <param name="sort">
-    /// مفتاح الفرز (اختياري، الافتراضي <c>occurrences</c> تنازليًا — بخلاف بقية المستكشفات).
-    /// الصيغة: <c>عمود</c> أو <c>عمود-asc</c> أو <c>عمود-desc</c>.
-    /// الأعمدة المتاحة: <c>alpha</c> (تصاعدي طبيعيًا)، و<c>occurrences</c> و<c>ayahs</c>
-    /// و<c>surahs</c> (تنازلية طبيعيًا). تنطبق المفاتيح ذاتها على عرض الكلمات وعلى عروض
-    /// الجذور/الأصول/الصيغ المجمّعة.
-    /// المفتاح المجرّد يعني الاتجاه الطبيعي للعمود، لذا <c>occurrences</c> ≡
-    /// <c>occurrences-desc</c> و<c>alpha</c> ≡ <c>alpha-asc</c>.
-    /// و<c>mushaf-order</c> هو ترتيب المصحف التصاعدي فقط ولا يقبل لاحقة اتجاه.
-    /// أي مفتاح آخر يُرجع 400.
-    /// </param>
-    /// <param name="page">رقم الصفحة (الافتراضي 1).</param>
-    /// <param name="pageSize">حجم الصفحة (الافتراضي 1000).</param>
-    /// <param name="hasRoot">مرشّح وجود الجذر ثلاثي الحالة (اختياري).</param>
-    /// <param name="hasStem">مرشّح وجود الأصل الصرفي ثلاثي الحالة (اختياري).</param>
-    /// <param name="hasLemma">مرشّح وجود الصيغة المعجمية ثلاثي الحالة (اختياري).</param>
-    /// <param name="cancellationToken">رمز إلغاء الطلب.</param>
-    /// <response code="200">تم تحميل صفوف الجدول بنجاح.</response>
-    /// <response code="400">تبويب عرض أو مرشّح أو فرز أو تقسيم صفحات غير صالح.</response>
     [HttpGet("table")]
     public async Task<ActionResult<ApiResponse<PagedResult<WordTypeTableRowDto>>>> GetTable(
         [FromQuery] string? tableView,
@@ -170,21 +108,6 @@ public sealed partial class WordTypesController(
         };
     }
 
-    /// <summary>
-    /// يُرجع الإحصاء الرباعي لنطاق النوع النشط: عدد الكلمات والجذور والأصول والصيغ ضمن النطاق ذاته الذي يعرضه الجدول.
-    /// </summary>
-    /// <param name="type">رمز النوع الرئيسي (مطلوب لتحديد النطاق).</param>
-    /// <param name="childCode">رمز النوع الفرعي إن وجد.</param>
-    /// <param name="caseFilter">مرشّح الحالة الإعرابية (اختياري).</param>
-    /// <param name="tense">مرشّح الزمن (اختياري).</param>
-    /// <param name="voice">مرشّح البناء للمعلوم/المجهول (اختياري).</param>
-    /// <param name="search">نص البحث في هوية الكلمة (اختياري).</param>
-    /// <param name="hasRoot">مرشّح وجود الجذر ثلاثي الحالة (اختياري).</param>
-    /// <param name="hasStem">مرشّح وجود الأصل الصرفي ثلاثي الحالة (اختياري).</param>
-    /// <param name="hasLemma">مرشّح وجود الصيغة المعجمية ثلاثي الحالة (اختياري).</param>
-    /// <param name="cancellationToken">رمز إلغاء الطلب.</param>
-    /// <response code="200">تم تحميل إحصاء النطاق بنجاح (نطاق بلا نتائج يُرجع أصفارًا).</response>
-    /// <response code="400">مرشّح غير صالح.</response>
     [HttpGet("scope-counts")]
     public async Task<ActionResult<ApiResponse<WordTypeScopeCountsDto>>> GetScopeCounts(
         [FromQuery] string? type,

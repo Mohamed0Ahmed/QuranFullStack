@@ -18,7 +18,7 @@ import { RootsDetailFacade } from '../../state/roots-detail.facade';
 import { EntityDetailOverlayTitleStore } from '../entity-detail-overlay-title.store';
 import { RootDetailOverlayAdapterComponent } from './root-detail-overlay-adapter.component';
 
-/** Synthetic, non-scriptural Arabic placeholder: keeps RTL rendering real without faking Quranic text. */
+// Synthetic, non-scriptural Arabic placeholder: keeps RTL rendering real without faking Quranic text.
 const SYNTHETIC_WORD_TEXT = 'كلمة-اختبار';
 
 const ROOT_SUMMARY: RootSummaryDto = {

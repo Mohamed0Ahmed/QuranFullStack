@@ -5,38 +5,24 @@ using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.WordTypes;
 
 namespace QuranDashboard.Tests.Quran.WordsWordTypes;
 
-/// <summary>
-/// The Word Types COUNT-column ORDER BY contract (Feature 030, N8), proved against real PostgreSQL for
-/// both the words view and the grouped view.
-/// <para>
-/// WordTypesTableReadTests already pins the exact order of the mushaf-order and alpha columns. The count
-/// columns were checked there only as a row set plus a total count, so a reversed — or column-swapped —
-/// count arm stayed green. Every case below asserts the FULL ordered id sequence instead.
-/// </para>
-/// <para>
-/// The shared fixture slice cannot prove this on its own: it has no scope in which occurrences, ayahs and
-/// surahs disagree with each other, so an arm reading a neighbouring count column is invisible there.
-/// Each test therefore seeds its own rows inside a transaction that is ALWAYS rolled back (the
-/// <c>await using</c> disposal rolls back even when an assertion throws), leaving the slice every other
-/// suite asserts on byte-identical.
-/// </para>
-/// <para>
-/// The seeded rows are explicitly synthetic structural placeholders at non-canonical coordinates: ASCII
-/// payloads and Arabic labels that name themselves as non-Quranic. They exist only to give the ORDER BY
-/// distinguishable keys.
-/// </para>
-/// <para>
-/// <b>On the final identity tie-break.</b> The locked contract chains equal primary values through mushaf
-/// order and then Id. In Word Types that last rung is unreachable by construction, so no seam can force
-/// it: both views derive <c>first_word_order_in_mushaf</c> as <c>MIN(quran_word_id)</c> over a GROUP BY
-/// partition of <c>base</c>, and <c>base</c> holds exactly one row per word (quran_word_morphology is
-/// keyed by quran_word_id and every join is on a PK, so nothing fans out). Distinct groups are therefore
-/// disjoint sets of word ids and can never share a minimum. Unlike Unique Words — whose mushaf key is a
-/// stored column guarded by a droppable UNIQUE index — there is no schema toggle that unlocks the rung.
-/// The mushaf key alone already totally orders every tie group, which is exactly what
-/// <see cref="Equal_counts_fall_through_to_mushaf_order_in_both_directions"/> proves.
-/// </para>
-/// </summary>
+// The Word Types COUNT-column ORDER BY contract, proved against real PostgreSQL for both the words view
+// and the grouped view. WordTypesTableReadTests only checked the count columns as a row set plus a total,
+// so a reversed — or column-swapped — count arm stayed green; every case below asserts the FULL ordered
+// id sequence instead.
+//
+// The shared fixture slice cannot prove this: it has no scope where occurrences, ayahs and surahs
+// disagree, so an arm reading a neighbouring count column is invisible there. Each test seeds its own rows
+// inside a transaction that is ALWAYS rolled back (the `await using` disposal rolls back even when an
+// assertion throws), leaving the slice every other suite asserts on byte-identical. The seeded rows are
+// explicitly synthetic structural placeholders at non-canonical coordinates.
+//
+// The final identity tie-break rung is unreachable by construction: both views derive
+// first_word_order_in_mushaf as MIN(quran_word_id) over a GROUP BY partition of base, and base holds
+// exactly one row per word (every join is on a PK, so nothing fans out). Distinct groups are disjoint sets
+// of word ids and can never share a minimum, so the mushaf key alone totally orders every tie group —
+// which Equal_counts_fall_through_to_mushaf_order_in_both_directions proves. Unlike Unique Words (whose
+// mushaf key is a stored column guarded by a droppable UNIQUE index) there is no schema toggle that
+// unlocks the rung.
 [Collection(nameof(WordTypesCollection))]
 public sealed class WordTypesOrderingContractTests(WordTypesTestFixture fixture)
 {

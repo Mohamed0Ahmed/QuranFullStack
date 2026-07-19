@@ -5,26 +5,10 @@ using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeSurahs
 
 namespace QuranDashboard.Api.Controllers.Words;
 
-// Per-word detail endpoints under the same api/words/word-types base; word identity is the
-// tashkeel word id plus its context code. Split out of the tree/list/table part in
-// WordTypesController.cs, which declares the shared handlers, route attribute, and paging
-// defaults. Same class by design — a second controller class would retag these endpoints in the
-// generated OpenAPI document. (Scoped root/stem/lemma grouped details are a different route
-// family and live in WordTypeGroupedDetailsController.)
+// Same partial class as WordTypesController.cs by design: a second controller class would retag
+// these endpoints in the generated OpenAPI document.
 public sealed partial class WordTypesController
 {
-    /// <summary>
-    /// يُرجع ملخّص كلمة واحدة ضمن نطاق النوع؛ هوية الكلمة هي معرّف الكلمة المشكولة مع رمز السياق.
-    /// </summary>
-    /// <param name="tashkeelWordId">معرّف الكلمة المشكولة.</param>
-    /// <param name="contextCode">رمز السياق الصرفي (جزء من الهوية).</param>
-    /// <param name="caseFilter">مرشّح الحالة الإعرابية (اختياري).</param>
-    /// <param name="tense">مرشّح الزمن (اختياري).</param>
-    /// <param name="voice">مرشّح البناء للمعلوم/المجهول (اختياري).</param>
-    /// <param name="cancellationToken">رمز إلغاء الطلب.</param>
-    /// <response code="200">تم تحميل ملخّص الكلمة بنجاح.</response>
-    /// <response code="400">هوية كلمة غير صالحة.</response>
-    /// <response code="404">الكلمة غير موجودة ضمن النطاق المحدّد.</response>
     [HttpGet("words/{tashkeelWordId:int}")]
     public async Task<ActionResult<ApiResponse<WordTypeSummaryDto>>> GetSummary(
         int tashkeelWordId,
@@ -50,20 +34,6 @@ public sealed partial class WordTypesController
         };
     }
 
-    /// <summary>
-    /// يُرجع آيات ورود الكلمة ضمن نطاق النوع، مقسّمة إلى صفحات بترتيب المصحف مع مواضع التطابق.
-    /// </summary>
-    /// <param name="tashkeelWordId">معرّف الكلمة المشكولة.</param>
-    /// <param name="contextCode">رمز السياق الصرفي (جزء من الهوية).</param>
-    /// <param name="caseFilter">مرشّح الحالة الإعرابية (اختياري).</param>
-    /// <param name="tense">مرشّح الزمن (اختياري).</param>
-    /// <param name="voice">مرشّح البناء للمعلوم/المجهول (اختياري).</param>
-    /// <param name="page">رقم الصفحة (الافتراضي 1).</param>
-    /// <param name="pageSize">حجم الصفحة (الافتراضي 100).</param>
-    /// <param name="cancellationToken">رمز إلغاء الطلب.</param>
-    /// <response code="200">تم تحميل آيات الكلمة بنجاح.</response>
-    /// <response code="400">هوية كلمة أو تقسيم صفحات غير صالح.</response>
-    /// <response code="404">الكلمة غير موجودة ضمن النطاق المحدّد.</response>
     [HttpGet("words/{tashkeelWordId:int}/ayahs")]
     public async Task<ActionResult<ApiResponse<PagedResult<WordTypeAyahMatchDto>>>> GetAyahs(
         int tashkeelWordId,
@@ -93,18 +63,6 @@ public sealed partial class WordTypesController
         };
     }
 
-    /// <summary>
-    /// يُرجع سور ورود الكلمة ضمن نطاق النوع: قائمتا السور الواردة والمفقودة دون تقسيم صفحات.
-    /// </summary>
-    /// <param name="tashkeelWordId">معرّف الكلمة المشكولة.</param>
-    /// <param name="contextCode">رمز السياق الصرفي (جزء من الهوية).</param>
-    /// <param name="caseFilter">مرشّح الحالة الإعرابية (اختياري).</param>
-    /// <param name="tense">مرشّح الزمن (اختياري).</param>
-    /// <param name="voice">مرشّح البناء للمعلوم/المجهول (اختياري).</param>
-    /// <param name="cancellationToken">رمز إلغاء الطلب.</param>
-    /// <response code="200">تم تحميل سور الكلمة بنجاح.</response>
-    /// <response code="400">هوية كلمة غير صالحة.</response>
-    /// <response code="404">الكلمة غير موجودة ضمن النطاق المحدّد.</response>
     [HttpGet("words/{tashkeelWordId:int}/surahs")]
     public async Task<ActionResult<ApiResponse<WordTypeSurahsResponse>>> GetSurahs(
         int tashkeelWordId,

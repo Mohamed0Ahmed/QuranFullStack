@@ -3,15 +3,6 @@ using QuranDashboard.Api.Authentication;
 
 namespace QuranDashboard.Tests.Api.Access;
 
-/// <summary>
-/// Unit tests for <see cref="RoleClaimsTransformation"/> with a fake <see cref="IUserRoleResolver"/> (the
-/// only real boundary). They pin the transformation's contract: it adds exactly one
-/// <see cref="ClaimTypes.Role"/> claim on a dedicated identity when a role resolves; its idempotency keys
-/// off that marked identity — so a repeat invocation adds nothing, and a token-borne
-/// <see cref="ClaimTypes.Role"/> claim neither short-circuits the database role load nor is mistaken for the
-/// transformation's own output; it leaves an unauthenticated principal untouched; and it adds no claim when
-/// no role resolves.
-/// </summary>
 public sealed class RoleClaimsTransformationTests
 {
     [Fact]
@@ -30,7 +21,7 @@ public sealed class RoleClaimsTransformationTests
     // identity: the database role load runs exactly once and exactly one marked identity is added.
     public static TheoryData<string?> TokenBorneRoleClaimCases => new()
     {
-        { null },              // clean token: no role claim of its own
+        { null },
         { "SmuggledAdmin" },   // token smuggles a ClaimTypes.Role claim (MapInboundClaims = false)
     };
 

@@ -37,8 +37,8 @@ internal static class MorphologyImportDependencyInjection
         services.AddSingleton<ISegmentStemCorrectionReader, SegmentStemCorrectionReader>();
         services.AddSingleton<MorphologyAssembler>();
 
-        // Enriched pathway (Feature 020). Streaming reader + manifest reader + value-based dimension
-        // builder; reuses the unchanged writer/handler/report via the shared MorphologySourceData DTO.
+        // Enriched pathway (Feature 020) reuses the unchanged writer/handler/report via the shared
+        // MorphologySourceData DTO.
         services.AddSingleton<EnrichedMorphologyManifestReader>();
         services.AddSingleton<EnrichedMorphologyReader>();
         services.AddSingleton<EnrichedDimensionBuilder>();

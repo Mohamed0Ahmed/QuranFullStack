@@ -55,8 +55,6 @@ internal static class RootsListDerivation
         return ApplySort(rows, sort);
     }
 
-    // Count-range predicates (Feature 026, US5) compare against the same count values the list rows
-    // display; every active range ANDs with search/sort. Ranges filter root dimension entries.
     private static bool MatchesFilter(RootSummaryRow row, RootsCountFilter filter) =>
         filter.Occurrences.Includes(row.OccurrencesCount)
         && filter.Ayahs.Includes(row.AyahsCount)
@@ -87,7 +85,6 @@ internal static class RootsListDerivation
         _ => throw new InvalidOperationException($"Unhandled {nameof(RootSortColumn)} value: {sort.Column}."),
     };
 
-    // Count columns tie-break on Mushaf order then Id.
     private static IOrderedEnumerable<RootSummaryRow> ByCount(
         IEnumerable<RootSummaryRow> rows,
         Func<RootSummaryRow, int> count,

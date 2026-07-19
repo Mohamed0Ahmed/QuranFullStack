@@ -73,6 +73,22 @@ Before any implementation work, read and follow:
 
 These principles apply to the whole FullStack workspace. Project-specific instruction files may add more detailed rules for Backend or Frontend work.
 
+### Comment sparingly
+
+Comment only the non-obvious WHY — rationale, gotchas, invariants, decisions, local
+security/fail-closed choices — tied to the specific line it explains. Do NOT narrate
+WHAT the code does, restate obvious logic, or duplicate a README. This applies to both
+Backend and Frontend.
+
+- No `///`/XML-doc comments on controllers, endpoints, or DTOs/models (internal solo
+  project; no Swagger/API-doc consumer reads them). Keep XML-doc only for the rare case
+  where it carries genuine non-obvious WHY, and prefer a short plain `//` comment there.
+- Frontend: no boilerplate JSDoc (`/** */`) narrating a component/service; no
+  step-narrating `//`, `<!-- -->`, or SCSS comments that restate the code/markup/style.
+- Area-level explanation (WHAT an area does, its boundaries/invariants) belongs in the
+  nearest `README.md`, not in per-line comments. If a spot seems to need many comments
+  to be understood, add or expand that README instead.
+
 ### Clean-code self-check before delivery
 
 Before delivering implementation code, run a quick clean-code guard self-check against

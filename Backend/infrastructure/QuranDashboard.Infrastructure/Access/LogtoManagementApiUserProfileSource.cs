@@ -5,15 +5,11 @@ using QuranDashboard.Application.Abstractions.Security;
 
 namespace QuranDashboard.Infrastructure.Access;
 
-/// <summary>
-/// Resolves a user's server-verified profile (email/username/name/email-verified) from the Logto
-/// Management API. The API's inbound access token (audience = our API resource) cannot call Logto's
-/// userinfo endpoint, so the trusted email source is the Management API: a machine-to-machine
-/// client-credentials token — cached in memory until just before expiry — authorizes
-/// <c>GET /api/users/{sub}</c>. Every returned value originates from Logto and is never client-supplied.
-/// decision 3: email verification is derived from linked identities (see <see cref="GetProfileAsync"/>)
-/// because this endpoint has no dedicated verified-email field.
-/// </summary>
+// Resolves a user's server-verified profile from the Logto Management API. The inbound access token
+// (audience = our API resource) cannot call Logto's userinfo endpoint, so the trusted source is the
+// Management API, authorized by an M2M client-credentials token cached until just before expiry. Every
+// returned value originates from Logto and is never client-supplied; email verification is derived from
+// linked identities (see GetProfileAsync) because the endpoint has no dedicated verified-email field.
 public sealed class LogtoManagementApiUserProfileSource(
     HttpClient httpClient,
     IMemoryCache cache,

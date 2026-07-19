@@ -3,14 +3,9 @@ using QuranDashboard.Infrastructure.Persistence.Reads.Quran.MushafReader;
 
 namespace QuranDashboard.Tests.Quran.MushafReader;
 
-/// <summary>
-/// Regression coverage for engineering-review finding M82 (quran-safety rule 3: never hide
-/// invalid data). A morphology segment's features_json can be syntactically valid JSON with the
-/// wrong shape (an object instead of an array). ParseFeaturesJson keeps its existing contract —
-/// it still returns an empty list on failure, unchanged from before the fix — but it must no
-/// longer swallow the corruption silently: it now logs a Warning naming the segment so the
-/// underlying data issue stays visible instead of reading as "segment has no features".
-/// </summary>
+// quran-safety rule 3 (never hide invalid data): corrupt features_json (valid JSON, wrong shape)
+// still returns an empty list (unchanged contract), but must now log a Warning naming the segment
+// instead of swallowing it silently as "segment has no features".
 [Collection(nameof(MushafReaderCollection))]
 public sealed class WordAnalysisCorruptFeaturesJsonTests(MushafReaderTestFixture fixture)
 {

@@ -11,13 +11,6 @@ import { QD_BP_DESKTOP_MIN_QUERY } from '../../../shared/layout/breakpoints';
 import { RootsExplorerPageComponent } from '../pages/roots-explorer-page/roots-explorer-page.component';
 import { RootsDetailFacade } from '../state/roots-detail.facade';
 
-/**
- * Explorer invariant (Feature 029, Change B5 / plan §5.12 item 5): opening a
- * global overlay stack from an entity link inside an explorer side panel must
- * NOT change the page's own selection, issue any additional page list/detail
- * requests, or drop the page's selection query keys from the URL.
- */
-
 function ok<T>(data: T) {
   return { isSuccess: true, data, message: null, errors: null };
 }
@@ -104,7 +97,7 @@ describe('Entity detail overlay explorer invariant', () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
   }
 
-  /** Deferred adapter chunks load asynchronously; poll until the selector renders. */
+  // Deferred adapter chunks load asynchronously; poll until the selector renders.
   async function waitForSelector(
     fixture: { detectChanges: () => void; nativeElement: unknown },
     selector: string,
@@ -150,7 +143,6 @@ describe('Entity detail overlay explorer invariant', () => {
     expect(panelBefore.view).toBe('lemmas');
     expect(httpMock.match(() => true).map((request) => request.request.url)).toEqual([]);
 
-    // Click the lemma entity link inside the page side panel (start mode).
     const lemmaLink = root.querySelector('[data-testid="root-lemma-item"]') as HTMLAnchorElement;
     expect(lemmaLink).toBeTruthy();
     expect(lemmaLink.getAttribute('target')).toBeNull();

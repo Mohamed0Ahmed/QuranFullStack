@@ -46,7 +46,6 @@ export type MushafOrderSort = typeof MUSHAF_ORDER_SORT;
 const ASCENDING_SUFFIX = '-asc';
 const DESCENDING_SUFFIX = '-desc';
 
-/** A sortable column: one allowlisted header, its natural direction, and its Arabic label. */
 export interface ExplorerSortColumn<TColumn extends string = string> {
   readonly key: TColumn;
   readonly natural: ExplorerSortDirection;
@@ -63,7 +62,6 @@ export function oppositeDirection(direction: ExplorerSortDirection): ExplorerSor
   return direction === 'asc' ? 'desc' : 'asc';
 }
 
-/** The canonical token for a column at a direction: bare when natural, suffixed otherwise. */
 export function sortTokenFor(
   column: ExplorerSortColumn,
   direction: ExplorerSortDirection,
@@ -101,7 +99,6 @@ export function canonicalizeSortToken(
   return column === undefined ? null : sortTokenFor(column, direction ?? column.natural);
 }
 
-/** The direction `sort` gives `column`, or null when it orders some other column. */
 export function sortDirectionOf(
   sort: string,
   column: ExplorerSortColumn,
@@ -133,7 +130,6 @@ export function nextSortToken(sort: string, column: ExplorerSortColumn): string 
     : null;
 }
 
-/** `aria-sort` for the column's `role="columnheader"` — null (absent attribute) when inactive. */
 export function ariaSortOf(
   sort: string,
   column: ExplorerSortColumn,
@@ -145,7 +141,6 @@ export function ariaSortOf(
   return active === 'asc' ? 'ascending' : 'descending';
 }
 
-/** Every canonical token the columns can produce, natural direction first. */
 export function canonicalSortTokens(columns: readonly ExplorerSortColumn[]): readonly string[] {
   return columns.flatMap((column) => [
     sortTokenFor(column, column.natural),

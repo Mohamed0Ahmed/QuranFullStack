@@ -6,11 +6,6 @@ using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Stems;
 
-/// <summary>
-/// In-memory catalogue derivation for the Stems Explorer (Feature 016). Mirrors
-/// the Lemmas pattern: normalized Arabic contains search, deterministic sort,
-/// and paging over the cached whole-summary list.
-/// </summary>
 internal static class StemsListDerivation
 {
     internal static readonly TypeSummaryDto NoType = new(string.Empty, "غير محدَّد", 0);
@@ -84,8 +79,6 @@ internal static class StemsListDerivation
         return ApplySort(rows, sort);
     }
 
-    // Count-range predicates (Feature 026, US5) compare against the same count values the list rows
-    // display; every active range ANDs with search/sort. Ranges filter stem dimension entries.
     private static bool MatchesFilter(StemSummaryRow row, StemsCountFilter filter) =>
         filter.Occurrences.Includes(row.OccurrencesCount)
         && filter.Ayahs.Includes(row.AyahsCount)
@@ -112,7 +105,6 @@ internal static class StemsListDerivation
         _ => throw new InvalidOperationException($"Unhandled {nameof(StemSortColumn)} value: {sort.Column}."),
     };
 
-    // Count columns tie-break on Mushaf order then Id.
     private static IOrderedEnumerable<StemSummaryRow> ByCount(
         IEnumerable<StemSummaryRow> rows,
         Func<StemSummaryRow, int> count,

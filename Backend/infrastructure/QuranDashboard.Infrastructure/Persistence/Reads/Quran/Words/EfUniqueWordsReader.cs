@@ -5,8 +5,6 @@ using QuranDashboard.Domain.Quran.Words;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words;
 
-// The list-query building (raw SELECTs, WHERE composition, winner predicates, list sort) lives in the
-// EfUniqueWordsReader.List.cs partial — split by size, matching the EfStemsReader partial convention.
 public sealed partial class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWordsReader
 {
     private const int TotalSurahs = 114;

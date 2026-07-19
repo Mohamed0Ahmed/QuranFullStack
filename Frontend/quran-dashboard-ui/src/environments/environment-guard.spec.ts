@@ -3,11 +3,6 @@ import { describe, expect, it } from 'vitest';
 import { assertProductionAuthConfigured } from './environment-guard';
 import type { Environment } from './environment.model';
 
-/**
- * Guards against a production bundle silently shipping the placeholder Logto config
- * (MAJOR-2, Feature 033). Owner-flagged: kept minimal since the owner may keep or drop
- * this at review, but it must behave correctly while it exists.
- */
 describe('assertProductionAuthConfigured', () => {
   function environment(overrides: Partial<Environment>): Environment {
     return {

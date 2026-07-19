@@ -5,12 +5,6 @@ using QuranDashboard.Api.Authentication;
 
 namespace QuranDashboard.Tests.Api.Access;
 
-/// <summary>
-/// Verifies the Phase-2 authorization posture at the DI level: one named role policy per
-/// <c>AuthorizationPolicyNames</c> value is registered (each requiring an authenticated caller in that
-/// role), and there is NO global fallback policy. The policies exist only in DI here — no endpoint
-/// carries one — which is asserted behaviourally by the public-route tests elsewhere in this suite.
-/// </summary>
 [Collection(nameof(AccessCollection))]
 public sealed class AuthorizationPolicyRegistrationTests(AccessTestFixture fixture)
 {

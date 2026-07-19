@@ -3,12 +3,6 @@ using QuranDashboard.Domain.Access;
 
 namespace QuranDashboard.Tests.Api.Access;
 
-/// <summary>
-/// Behavioural tests for the Phase-2 roles infrastructure exercised through the real pipeline and
-/// Postgres: the seeded role set, the Owner-by-email bootstrap on first login, its idempotency, and the
-/// Phase-1-owner upgrade path (a pre-existing Pending/no-role owner is promoted, with the role cache
-/// evicted so the new role is visible immediately rather than after the TTL).
-/// </summary>
 [Collection(nameof(AccessCollection))]
 public sealed class AccessRolesTests(AccessTestFixture fixture)
 {

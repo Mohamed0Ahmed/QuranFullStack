@@ -25,24 +25,9 @@ const PANEL_ABOVE_CLASS = 'association-filter__panel--above';
 
 let nextPanelId = 0;
 
-/**
- * Presentational association-filter picker (Feature 026 US7, Feature 027 popover refactor). A
- * labeled search field whose input doubles as the anchor for a popover panel; used for
- * the Unique Words primary type / primary root, Lemmas root, and Stems primary root/lemma filters.
- * It owns no data: the page supplies <c>options</c> (loaded via the existing roots/lemmas apis or the
- * word-types tree read) and reacts to <c>searchChange</c>; selecting an option emits
- * <c>selectionChange</c>.
- *
- * - <c>clientFilter</c> = true (small static lists, e.g. the type select): filters options locally.
- * - <c>clientFilter</c> = false (roots/lemmas): the page server-searches and passes the results in.
- *
- * Popover model: the panel opens on typing (see <c>onQueryInput</c>), on ArrowDown (see
- * <c>onFieldKeydown</c>), or on focus only when the field already carries a selection or a query (see
- * <c>onFieldFocus</c>) — a plain empty field stays closed. It closes on Escape, an outside click, focus
- * leaving the whole component, or a selection — never via a separate disclosure trigger. There is no
- * focus trap and no roving arrow-key/listbox model: ArrowDown only opens the panel and hands focus to
- * the first option, which stays a plain Tab-reachable button (see the template comment above the list).
- */
+// Presentational picker: owns no data — the page supplies options and reacts to searchChange;
+// selecting an option emits selectionChange. clientFilter=true filters the given options locally
+// (small static lists); clientFilter=false lets the page server-search and feed results back in.
 @Component({
   selector: 'qd-explorer-association-filter',
   standalone: true,
@@ -62,9 +47,8 @@ export class ExplorerAssociationFilterComponent {
   readonly selectedId = input<string | number | null>(null);
   readonly selectedLabel = input<string | null>(null);
   readonly loading = input<boolean>(false);
-  /** True when the last options load failed (transport error or a backend isSuccess:false
-   *  response) — distinct from a genuine zero-match result, so the panel can show a calm error
-   *  hint instead of silently looking empty (M32/M43 + M74). */
+  // True when the last options load failed — distinct from a genuine zero-match result, so the panel
+  // can show a calm error hint instead of silently looking empty (M32/M43 + M74).
   readonly error = input<boolean>(false);
   readonly disabled = input<boolean>(false);
   readonly clientFilter = input<boolean>(false);
@@ -239,7 +223,6 @@ export class ExplorerAssociationFilterComponent {
     const spaceBelow = window.innerHeight - fieldRect.bottom - PANEL_VIEWPORT_PADDING_PX;
     const spaceAbove = fieldRect.top - PANEL_VIEWPORT_PADDING_PX;
 
-    // Flip above only when there is too little room below AND more room above; otherwise stay below.
     const openAbove = spaceBelow < PANEL_FLIP_THRESHOLD_PX && spaceAbove > spaceBelow;
     // Cap the height to the chosen side's actual space so the panel never overflows the viewport.
     const available = Math.max(0, openAbove ? spaceAbove : spaceBelow);

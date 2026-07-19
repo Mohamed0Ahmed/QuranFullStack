@@ -2,12 +2,8 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace QuranDashboard.Tests.Api.Health;
 
-/// <summary>
-/// Behavioural tests for <c>GET /api/health</c> covering all three overall statuses: <c>healthy</c> and
-/// <c>degraded</c> must both answer <c>200</c> (existing behaviour), while <c>unhealthy</c> must answer
-/// <c>503</c> so infra/Railway probes keyed on HTTP status correctly detect a dead dependency — the
-/// response body still carries the full <c>data</c> (status + per-check detail) either way.
-/// </summary>
+// unhealthy must answer 503 (healthy/degraded both stay 200) so infra/Railway probes keyed on HTTP
+// status detect a dead dependency; the 503 body still carries the full data (status + per-check detail).
 public sealed class HealthEndpointTests
 {
     private const string HealthPath = "/api/health";

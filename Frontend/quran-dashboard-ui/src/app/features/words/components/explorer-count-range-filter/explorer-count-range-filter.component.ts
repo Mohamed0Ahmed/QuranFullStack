@@ -26,17 +26,11 @@ function boundText(bound: number | null): string {
   return bound === null ? '' : String(bound);
 }
 
-/**
- * Shared count-range filter (Feature 026, US5; chips reshaped in Feature 030, N4) for the four normal
- * explorers. Each metric row offers exactly three chips — `أكثر من N` / `أقل من N` / `مخصّص` — where N is
- * the metric's threshold. The chips are presentation-only shortcuts that emit ordinary ranges, so the URL
- * grammar, API params and cache key are untouched and a link carrying any other range simply reopens as
- * an active مخصّص. The مخصّص inputs are draft-local: typing changes nothing outside the component, and only
- * Enter or تطبيق commits, so a range costs one navigation and one fetch instead of one per keystroke.
- * RTL, disabled while the list is loading. It is a controlled component: `ranges` is the source of truth
- * and every commit emits the full, canonical ranges map for the page's url-sync to serialize (with the
- * list page reset).
- */
+// Chips are presentation-only shortcuts that emit ordinary ranges, so the URL grammar, API params and
+// cache key stay untouched — a link carrying any other range just reopens as an active مخصّص. The مخصّص
+// inputs are draft-local: typing changes nothing outside the component, only Enter or تطبيق commits, so
+// a range costs one navigation/fetch instead of one per keystroke. Controlled: `ranges` is the source of
+// truth and every commit emits the full canonical ranges map.
 @Component({
   selector: 'qd-explorer-count-range-filter',
   standalone: true,
