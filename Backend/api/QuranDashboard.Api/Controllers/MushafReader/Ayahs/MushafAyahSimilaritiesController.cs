@@ -7,15 +7,6 @@ namespace QuranDashboard.Api.Controllers.MushafReader.Ayahs;
 [Route("api/mushaf/ayahs")]
 public sealed class MushafAyahSimilaritiesController(GetSimilarAyahsHandler handler) : ControllerBase
 {
-    /// <summary>
-    /// يُرجع قائمة مسطّحة بالآيات القريبة في المعنى للآية المحددة، مع دمج
-    /// الروابط الصادرة والواردة وإزالة التكرار ثنائي الاتجاه.
-    /// </summary>
-    /// <param name="verseKey">مفتاح الآية بصيغة <c>surah:ayah</c> (مثل <c>2:25</c>).</param>
-    /// <param name="cancellationToken">رمز إلغاء الطلب.</param>
-    /// <response code="200">تم تحميل الآيات القريبة في المعنى بنجاح، بما في ذلك القائمة الفارغة.</response>
-    /// <response code="400">مفتاح آية غير صالح.</response>
-    /// <response code="404">الآية غير موجودة.</response>
     [HttpGet("{verseKey}/similar-ayahs")]
     public async Task<ActionResult<ApiResponse<SimilarAyahsResponse>>> GetSimilarAyahs(
         string verseKey,

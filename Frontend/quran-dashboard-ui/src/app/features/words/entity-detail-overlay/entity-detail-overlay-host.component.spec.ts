@@ -188,7 +188,7 @@ describe('EntityDetailOverlayHostComponent (composition root)', () => {
     expect(root.querySelector('[data-testid="detail-modal-shell"]')).not.toBeNull();
   });
 
-  /** Deferred adapter chunks load asynchronously; poll until the selector renders. */
+  // Deferred adapter chunks load asynchronously; poll until the selector renders.
   async function waitForSelector(fixture: { detectChanges: () => void; nativeElement: unknown }, selector: string): Promise<void> {
     await vi.waitFor(
       () => {

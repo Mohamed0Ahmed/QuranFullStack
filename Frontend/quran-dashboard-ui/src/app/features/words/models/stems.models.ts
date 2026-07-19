@@ -7,7 +7,6 @@ type StemCountSortColumn = 'occurrences' | 'ayahs' | 'surahs' | 'simple' | 'tash
 type StemTextSortColumn = 'alpha';
 export type StemSortColumnKey = StemCountSortColumn | StemTextSortColumn;
 
-/** The canonical token set: `occurrences`/`occurrences-asc`, `alpha`/`alpha-desc`, … */
 export type StemSort =
   | MushafOrderSort
   | CanonicalSortTokens<StemCountSortColumn, 'desc'>
@@ -123,7 +122,6 @@ export function isStemsAssociationActive(association: StemsAssociation): boolean
   return association.rootId !== null || association.lemmaId !== null;
 }
 
-// Count-range filter metrics (Feature 026, US5) — the five count columns the Stems list shows.
 export const STEMS_RANGE_METRICS: readonly RangeMetric[] = [
   { key: 'occurrences', urlKey: 'occ', apiKey: 'occ', family: 'occurrences', labelAr: WORDS_SHARED_COUNT_COLUMNS.occurrences },
   { key: 'ayahs', urlKey: 'ayahs', apiKey: 'ayahs', family: 'ayahsSurahs', labelAr: WORDS_SHARED_COUNT_COLUMNS.ayahs },
@@ -182,7 +180,6 @@ export function isStemSort(value: unknown): value is StemSort {
   return typeof value === 'string' && canonicalizeSortToken(value, STEM_SORT_COLUMN_LIST) === value;
 }
 
-/** Canonicalizes aliases in and fails closed to the default on anything unknown. */
 export function normalizeStemSort(value: string | null | undefined): StemSort {
   const canonical = canonicalizeSortToken(value, STEM_SORT_COLUMN_LIST);
   return canonical !== null && isStemSort(canonical) ? canonical : DEFAULT_STEM_SORT;

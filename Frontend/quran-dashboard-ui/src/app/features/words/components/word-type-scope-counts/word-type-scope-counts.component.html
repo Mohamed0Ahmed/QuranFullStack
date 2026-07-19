@@ -15,12 +15,8 @@
   }
 </div>
 
-<!--
-  Renders nothing when the table failed (scope unconfirmed) or before a leaf scope is confirmed
-  (status 'idle'), keeping the strip host mounted but numberless. Otherwise: a non-interactive skeleton
-  while loading, a compact error + retry (refetches counts only) on failure, or the four labeled counts
-  (0 renders as 0 for an all-zero scope).
--->
+<!-- Numberless (host stays mounted) when the table failed (scope unconfirmed) or before a leaf scope
+     is confirmed ('idle'). -->
 @if (!tableFailed()) {
   @switch (state().status) {
     @case ('loading') {

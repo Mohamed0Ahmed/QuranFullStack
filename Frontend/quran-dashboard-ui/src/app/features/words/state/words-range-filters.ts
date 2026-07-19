@@ -9,27 +9,20 @@ import {
   serializeCountRange,
 } from '../models/words-filter-presets';
 
-/**
- * Describes one count-range-filterable metric for an explorer (Feature 026, US5). The URL key is the
- * shareable contract; the API prefix maps to the backend `<prefix>Min`/`<prefix>Max` params; the
- * family selects the preset chip scale; the label names the metric in the filter UI.
- */
 export interface RangeMetric {
   readonly key: string;
   readonly urlKey: string;
   readonly apiKey: string;
   readonly family: RangeFamily;
   readonly labelAr: string;
-  /** Overrides the family's default chip threshold. Presentation only — the URL still stores the range. */
+  // Presentation only — the URL still stores the range.
   readonly threshold?: number;
 }
 
-/** Active ranges keyed by metric key; absent metrics are omitted (pre-feature identity when empty). */
 export type RangeFilters = Readonly<Record<string, CountRange>>;
 
 export const EMPTY_RANGE_FILTERS: RangeFilters = {};
 
-/** Parses every metric's URL value fail-closed; only active ranges are kept. */
 export function parseRangeFilters(queryParams: ParamMap, metrics: readonly RangeMetric[]): RangeFilters {
   const result: Record<string, CountRange> = {};
   for (const metric of metrics) {
@@ -41,10 +34,7 @@ export function parseRangeFilters(queryParams: ParamMap, metrics: readonly Range
   return result;
 }
 
-/**
- * Builds a full set of URL param changes for the given ranges — every metric key is emitted (active
- * ⇒ serialized, absent ⇒ null so a cleared metric drops its key). Callers merge this into the router.
- */
+// Emits every metric key: active ⇒ serialized, cleared ⇒ null so a merge drops the key from the URL.
 export function buildRangeQueryParams(
   ranges: RangeFilters,
   metrics: readonly RangeMetric[],
@@ -56,7 +46,7 @@ export function buildRangeQueryParams(
   return params;
 }
 
-/** Appends `<apiKey>Min`/`<apiKey>Max` only for active ranges (absent ⇒ pre-feature request). */
+// Appends <apiKey>Min/<apiKey>Max only for active ranges — absent ⇒ pre-feature request.
 export function appendRangeApiParams(
   params: HttpParams,
   ranges: RangeFilters,
@@ -78,10 +68,7 @@ export function appendRangeApiParams(
   return next;
 }
 
-/**
- * Deterministic cache-key fragment for the active ranges. Empty ⇒ '' so an unfiltered read keeps its
- * pre-feature cache key byte-identical.
- */
+// Empty ⇒ '' so an unfiltered read keeps its pre-feature cache key byte-identical.
 export function serializeRangeFiltersKey(ranges: RangeFilters, metrics: readonly RangeMetric[]): string {
   return metrics
     .map((metric) => {
@@ -92,7 +79,6 @@ export function serializeRangeFiltersKey(ranges: RangeFilters, metrics: readonly
     .join(',');
 }
 
-/** True when any metric has an active range (drives the "filters active" affordances). */
 export function hasActiveRanges(ranges: RangeFilters): boolean {
   return Object.values(ranges).some((range) => isRangeActive(range));
 }

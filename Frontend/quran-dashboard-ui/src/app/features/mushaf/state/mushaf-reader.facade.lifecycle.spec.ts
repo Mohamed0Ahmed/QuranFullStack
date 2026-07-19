@@ -165,14 +165,11 @@ describe('MushafReaderFacade lifecycle (F1 leave-while-loading recovery)', () =>
     expect(facade.ayahStudyLoadState().isLoading).toBe(true);
     expect(ayahStudySubjects[0].observed).toBe(true);
 
-    // Leave while loading: route teardown (ngOnDestroy).
     facade.unbindFromRoute();
 
-    // (a) the in-flight HTTP subscription is disposed on teardown.
     expect(ayahStudySubjects[0].observed).toBe(false);
     expect(facade.ayahStudyLoadState().isLoading).toBe(true);
 
-    // (b) a late/stale response arriving after teardown is still suppressed.
     ayahStudySubjects[0].next({
       isSuccess: true,
       message: 'stale',
@@ -186,14 +183,12 @@ describe('MushafReaderFacade lifecycle (F1 leave-while-loading recovery)', () =>
     // previous load never resolved, so this must reload rather than stay stuck.
     facade.bindToRoute(route);
 
-    // (c) same-URL re-entry reloads cleanly.
     expect(getAyahStudy).toHaveBeenCalledTimes(2);
     expect(ayahStudySubjects[1].observed).toBe(true);
 
     ayahStudySubjects[1].next({ isSuccess: true, message: 'ok', data: ayahStudyDto });
     ayahStudySubjects[1].complete();
 
-    // (c) ...and reaches a resolved state, not stuck loading.
     expect(facade.ayahStudyLoadState().isLoading).toBe(false);
     expect(facade.ayahStudy()?.ayah.verseKey).toBe('2:25');
     expect(facade.ayahStudy()?.ayah.textUthmani).toBe('نص تجريبي للآية');
@@ -217,14 +212,11 @@ describe('MushafReaderFacade lifecycle (F1 leave-while-loading recovery)', () =>
       expect(facade.wordAnalysisLoadState().isLoading).toBe(true);
       expect(wordAnalysisSubjects[0].observed).toBe(true);
 
-      // Leave while loading.
       facade.unbindFromRoute();
 
-      // (a) disposed on teardown.
       expect(wordAnalysisSubjects[0].observed).toBe(false);
       expect(facade.wordAnalysisLoadState().isLoading).toBe(true);
 
-      // (b) late response suppressed.
       wordAnalysisSubjects[0].next({ isSuccess: true, message: 'stale', data: wordAnalysisDto });
       wordAnalysisSubjects[0].complete();
       expect(facade.wordAnalysis()).toBeNull();
@@ -238,7 +230,6 @@ describe('MushafReaderFacade lifecycle (F1 leave-while-loading recovery)', () =>
 
       vi.advanceTimersByTime(WORD_ANALYSIS_SWITCH_DELAY_MS);
 
-      // (c) same-URL re-entry reloads cleanly and reaches a resolved state.
       expect(getWordAnalysis).toHaveBeenCalledTimes(2);
       expect(wordAnalysisSubjects[1].observed).toBe(true);
 
@@ -296,7 +287,6 @@ describe('MushafReaderFacade lifecycle (F1 leave-while-loading recovery)', () =>
     expect(facade.ayahStudyLoadState().errorMessage).toBe('تعذّر الاتصال بالخادم.');
     expect(facade.ayahStudy()).toBeNull();
 
-    // Explicit retry (e.g. a retry action re-issuing the same load).
     facade.loadAyahStudy('2:25');
     expect(getAyahStudy).toHaveBeenCalledTimes(2);
     expect(facade.ayahStudyLoadState().isLoading).toBe(false);
@@ -326,13 +316,11 @@ describe('MushafReaderFacade lifecycle (F1 leave-while-loading recovery)', () =>
     // ayah and the selected sources are untouched, and the request is still in flight.
     queryParamMap$.next(convertToParamMap({ page: '5', ayah: '2:25', ayahTab: 'translation' }));
 
-    // The original in-flight request must be left alone: not cancelled, not restarted.
     expect(getAyahStudy).toHaveBeenCalledTimes(1);
     expect(ayahStudySubjects).toHaveLength(1);
     expect(ayahStudySubjects[0].observed).toBe(true);
     expect(facade.ayahStudyLoadState().isLoading).toBe(true);
 
-    // It still resolves normally from that single original request.
     ayahStudySubjects[0].next({ isSuccess: true, message: 'ok', data: ayahStudyDto });
     ayahStudySubjects[0].complete();
     expect(facade.ayahStudyLoadState().isLoading).toBe(false);
@@ -373,7 +361,6 @@ describe('MushafReaderFacade lifecycle (F1 leave-while-loading recovery)', () =>
       vi.advanceTimersByTime(WORD_ANALYSIS_SWITCH_DELAY_MS);
       expect(getWordAnalysis).toHaveBeenCalledTimes(1);
 
-      // The single original request still resolves cleanly.
       wordAnalysisSubjects[0].next({ isSuccess: true, message: 'ok', data: wordAnalysisDto });
       wordAnalysisSubjects[0].complete();
       expect(facade.wordAnalysisLoadState().isLoading).toBe(false);
@@ -413,7 +400,6 @@ describe('MushafReaderFacade lifecycle (M18 loadPage staleness guard)', () => {
 
     const { facade } = createFacadeTestBed({}, { getPage });
 
-    // Request page 5, then move on to page 8 before the first request resolves.
     facade.loadPage(5);
     expect(getPage).toHaveBeenCalledTimes(1);
     expect(facade.pageLoadState().isLoading).toBe(true);
@@ -452,13 +438,10 @@ describe('MushafReaderFacade lifecycle (M18 loadPage staleness guard)', () => {
     expect(facade.pageLoadState().isLoading).toBe(true);
     expect(pageSubjects[0].observed).toBe(true);
 
-    // Leave the reader while the page request is still in flight.
     facade.unbindFromRoute();
 
-    // The in-flight HTTP subscription is disposed on teardown.
     expect(pageSubjects[0].observed).toBe(false);
 
-    // A late response arriving after unbind must not mutate any state.
     pageSubjects[0].next({ isSuccess: true, message: 'stale', data: pageDto });
     pageSubjects[0].complete();
 

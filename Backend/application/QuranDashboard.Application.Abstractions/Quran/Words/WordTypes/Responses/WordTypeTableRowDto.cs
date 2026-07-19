@@ -9,8 +9,6 @@ namespace QuranDashboard.Application.Abstractions.Quran.Words.WordTypes.Response
 [JsonDerivedType(typeof(LemmaTableRowDto), "lemma")]
 public abstract record WordTypeTableRowDto;
 
-// Word variant — carries the existing full composite identity (TashkeelWordId + ContextCode + Case +
-// Tense + Voice) directly in the payload, a superset of the preserved WordTypeRowDto (/words).
 public sealed record WordTableRowDto(
     int TashkeelWordId,
     string ContextCode,
@@ -29,7 +27,6 @@ public sealed record WordTableRowDto(
     int AyahsCount,
     int SurahsCount) : WordTypeTableRowDto;
 
-// Grouped variants carry the numeric stable identity used to open their scoped detail views.
 public sealed record RootTableRowDto(
     int RootId,
     string DisplayText,

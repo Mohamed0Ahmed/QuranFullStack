@@ -40,12 +40,9 @@ const INITIAL_PANEL: WordTypesDetailState = {
   errorMessage: '',
 };
 
-/**
- * Complete word-kind detail identity: the full composite row identity
- * (`tashkeelWordId, contextCode, case, tense, voice`) plus view and page all
- * participate in equality — the same tashkeel word id under a different
- * context/case/tense/voice is a DIFFERENT detail and must never cross-serve.
- */
+// The full composite row identity (tashkeelWordId, contextCode, case, tense, voice) plus view
+// and page all participate in equality: the same tashkeel word id under a different
+// context/case/tense/voice is a DIFFERENT detail and must never cross-serve.
 export interface WordTypesWordDetailUrlState {
   readonly identity: WordTypeRowIdentity;
   readonly view: WordTypeDetailView;
@@ -96,27 +93,13 @@ function wordSelectionOf(identity: WordTypeRowIdentity): WordTypeDetailSelection
   };
 }
 
-/**
- * Route-independent WORD-kind Word Type detail controller (Feature 029, Change
- * B4), following the `RootsDetailController` reference pattern.
- *
- * The global overlay only ever shows word-kind details (the frame carries the
- * full composite row identity), never grouped root/stem/lemma selections —
- * grouped-selection logic stays in `WordTypesDetailFacade`, which remains the
- * page's route-bound owner of both kinds. This controller owns the word-kind
- * panel signal state, the summary/detail subscriptions, and the two word detail
- * views (ayahs are paged; surahs single-shot) — with zero knowledge of routes
- * or URLs. The root-scoped `WordTypesApi`/`WordTypesCache`/
- * `WordTypesDetailViewLoader` collaborators stay shared, so the page panel and
- * the overlay de-duplicate the same reads (`WordTypesCacheKeys` unchanged).
- *
- * Every complete-identity transition abandons BOTH the summary and the detail
- * request and opens a new generation, so a late response from the previously
- * selected composite identity can never populate or overwrite this one — see
- * {@link DetailRequestLifecycle}. Not `providedIn: 'root'`: each overlay adapter
- * provides its own component-scoped instance (destroyed with the adapter), so
- * overlay activity can never mutate the page panel.
- */
+// Handles ONLY word-kind details (the overlay's frame carries the full composite row identity);
+// grouped root/stem/lemma selections stay in WordTypesDetailFacade.
+// Every complete-identity transition abandons both the summary and the detail request and opens
+// a new generation (see DetailRequestLifecycle), so a late response from the previously selected
+// composite identity can never overwrite this one.
+// Not `providedIn: 'root'`: each overlay adapter provides its own component-scoped instance, so
+// overlay activity can never mutate the page panel.
 @Injectable()
 export class WordTypesDetailController implements OnDestroy {
   private readonly _panel = signal<WordTypesDetailState>(INITIAL_PANEL);
@@ -136,12 +119,6 @@ export class WordTypesDetailController implements OnDestroy {
     this.cancelPendingLoads();
   }
 
-  /**
-   * Route-free entry point: synchronize the panel to a complete word-kind
-   * detail state (`null` clears the selection). Identical states short-circuit
-   * via complete identity comparison, leaving an in-flight load for that
-   * identity alone.
-   */
   applyUrlState(state: WordTypesWordDetailUrlState | null): void {
     if (state === null) {
       this.clearSelection();
@@ -155,13 +132,9 @@ export class WordTypesDetailController implements OnDestroy {
     this.applyIdentity(state);
   }
 
-  /**
-   * Re-drives the current complete identity after a failed load (Feature 030,
-   * M3). The identity is unchanged, so {@link applyUrlState} would short-circuit
-   * it; retry re-enters the load path directly. A failed read is never cached,
-   * so this issues a real request, while an intact summary still resolves from
-   * cache and only the detail view reloads.
-   */
+  // Identity is unchanged, so applyUrlState would short-circuit it; retry re-enters the load
+  // path directly. A failed read is never cached, so this re-fetches; an intact summary still
+  // resolves from cache and only the detail view reloads.
   retryCurrentIdentity(): void {
     const state = this.activeUrlState;
     if (state === null) {
@@ -171,7 +144,7 @@ export class WordTypesDetailController implements OnDestroy {
     this.applyIdentity(state);
   }
 
-  /** Cancels the pending summary/detail loads without resetting panel state. */
+  // Cancels the pending summary/detail loads without resetting panel state.
   cancelPendingLoads(): void {
     this.requests.cancelAll();
   }
@@ -182,11 +155,6 @@ export class WordTypesDetailController implements OnDestroy {
     this._panel.set(INITIAL_PANEL);
   }
 
-  /**
-   * Drives a complete identity: abandons the previous identity's summary and
-   * detail requests, then either reloads only the active view (same composite
-   * word identity, loaded summary) or reloads the summary first.
-   */
   private applyIdentity(state: WordTypesWordDetailUrlState): void {
     const token = this.requests.beginTransition();
     this.activeUrlState = state;
@@ -291,7 +259,6 @@ export class WordTypesDetailController implements OnDestroy {
     );
   }
 
-  /** Applies a panel update only while `token` still owns the panel. */
   private applyIfCurrent(token: number, update: (state: WordTypesDetailState) => WordTypesDetailState): void {
     if (this.requests.isCurrent(token)) {
       this._panel.update(update);

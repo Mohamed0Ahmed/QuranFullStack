@@ -8,17 +8,6 @@ using QuranDashboard.Domain.Access;
 
 namespace QuranDashboard.Tests.Api.Access;
 
-/// <summary>
-/// Shared fixture for the <c>/api/access/me</c> integration tests. Spins up a real
-/// <c>postgres:16-alpine</c> container and applies the REAL EF Core migrations against a fresh database,
-/// which proves the <c>AddAccessUsers</c> migration applies cleanly. A single
-/// <see cref="WebApplicationFactory{TEntryPoint}"/> hosts the real API pipeline pointed at that
-/// container, with exactly two swaps: the DbContext is repointed at the container, and the external
-/// identity boundary (<see cref="IExternalUserProfileSource"/>) is replaced by the in-memory
-/// <see cref="FakeExternalUserProfileSource"/>. Token validation is made fully offline by seeding the
-/// trusted signing key and issuer into the JwtBearer options, so no metadata is ever fetched from the
-/// configured (fake) authority.
-/// </summary>
 public sealed class AccessTestFixture : IAsyncLifetime
 {
     private readonly PostgreSqlContainer _container = new PostgreSqlBuilder()
@@ -29,15 +18,14 @@ public sealed class AccessTestFixture : IAsyncLifetime
     private WebApplicationFactory<AccessController>? _apiFactory;
     private ServiceProvider? _queryProvider;
 
-    /// <summary>The fake identity boundary, shared as a singleton so its call counters survive across requests.</summary>
+    // Shared as a singleton so its call counters survive across requests.
     public FakeExternalUserProfileSource ProfileSource { get; } = new();
 
     public string ConnectionString { get; private set; } = string.Empty;
 
-    /// <summary>The subject whose fake profile email matches the configured Owner-bootstrap email.</summary>
+    // This sub's fake profile email matches the configured Owner-bootstrap email, so it drives the owner path.
     public const string OwnerSub = "logto-owner";
 
-    /// <summary>The configured Owner-bootstrap email (the fake profile email for <see cref="OwnerSub"/>).</summary>
     public static string OwnerEmail => FakeExternalUserProfileSource.EmailFor(OwnerSub);
 
     public async Task InitializeAsync()
@@ -74,12 +62,8 @@ public sealed class AccessTestFixture : IAsyncLifetime
         });
     }
 
-    /// <summary>
-    /// The API host's root service provider — for resolving pipeline services (e.g.
-    /// <c>IUserRoleResolver</c> or <c>IAuthorizationPolicyProvider</c>) in tests. Services resolved here
-    /// share the host's singletons (notably the one <c>IMemoryCache</c> the request pipeline uses), so the
-    /// cache primed/evicted through the pipeline is the same instance a test observes.
-    /// </summary>
+    // Resolving here shares the host's singletons (notably the one IMemoryCache the request pipeline uses),
+    // so the cache primed/evicted through the pipeline is the same instance a test observes.
     public IServiceProvider ApiServices => Factory.Services;
 
     private WebApplicationFactory<AccessController> Factory
@@ -95,12 +79,8 @@ public sealed class AccessTestFixture : IAsyncLifetime
         }
     }
 
-    /// <summary>
-    /// Removes every provisioned user and resets the fake, giving each test a clean slate. The seeded
-    /// roles table is left intact. The owner subject reuses a fixed <c>sub</c> across tests (only its email
-    /// triggers bootstrap), so its entry in the pipeline's shared role cache is evicted too — otherwise a
-    /// prior test's cached role would leak past the truncation.
-    /// </summary>
+    // The owner sub is fixed across tests (only its email triggers bootstrap), so its entry in the shared
+    // role cache is evicted too — otherwise a prior test's cached role would leak past the truncation.
     public async Task ResetAsync()
     {
         await using var scope = QueryProvider.CreateAsyncScope();
@@ -110,14 +90,13 @@ public sealed class AccessTestFixture : IAsyncLifetime
         EvictRoleCache(OwnerSub);
     }
 
-    /// <summary>Evicts a subject's cached role from the pipeline's shared cache (role-cache test isolation).</summary>
     public void EvictRoleCache(string logtoSub)
     {
         using var scope = ApiServices.CreateScope();
         scope.ServiceProvider.GetRequiredService<IUserRoleResolver>().Evict(logtoSub);
     }
 
-    /// <summary>Reads the persisted users via an independent DbContext (never the pipeline's own instance).</summary>
+    // Reads via an independent DbContext, never the pipeline's own instance (test isolation).
     public async Task<IReadOnlyList<User>> GetUsersAsync()
     {
         await using var scope = QueryProvider.CreateAsyncScope();
@@ -125,7 +104,6 @@ public sealed class AccessTestFixture : IAsyncLifetime
         return await db.AccessUsers.AsNoTracking().OrderBy(u => u.Id).ToListAsync();
     }
 
-    /// <summary>Reads the seeded roles via an independent DbContext.</summary>
     public async Task<IReadOnlyList<Role>> GetRolesAsync()
     {
         await using var scope = QueryProvider.CreateAsyncScope();
@@ -133,7 +111,6 @@ public sealed class AccessTestFixture : IAsyncLifetime
         return await db.AccessRoles.AsNoTracking().OrderBy(r => r.Id).ToListAsync();
     }
 
-    /// <summary>Reads a single persisted user by its Logto <c>sub</c>, or null when absent.</summary>
     public async Task<User?> GetUserBySubAsync(string logtoSub)
     {
         await using var scope = QueryProvider.CreateAsyncScope();
@@ -141,7 +118,6 @@ public sealed class AccessTestFixture : IAsyncLifetime
         return await db.AccessUsers.AsNoTracking().SingleOrDefaultAsync(u => u.LogtoSub == logtoSub);
     }
 
-    /// <summary>Inserts a pre-provisioned user directly (bypassing the pipeline) and returns its id.</summary>
     public async Task<int> InsertUserAsync(User user)
     {
         await using var scope = QueryProvider.CreateAsyncScope();

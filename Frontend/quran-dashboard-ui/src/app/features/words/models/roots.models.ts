@@ -14,7 +14,6 @@ type RootCountSortColumn =
 type RootTextSortColumn = 'alpha';
 export type RootSortColumnKey = RootCountSortColumn | RootTextSortColumn;
 
-/** The canonical token set: `occurrences`/`occurrences-asc`, `alpha`/`alpha-desc`, … */
 export type RootSort =
   | MushafOrderSort
   | CanonicalSortTokens<RootCountSortColumn, 'desc'>
@@ -134,7 +133,6 @@ export const ROOTS_QUERY_KEYS = {
   detailPage: 'detailPage',
 } as const;
 
-// Count-range filter metrics (Feature 026, US5) — exactly the seven count columns the Roots list shows.
 export const ROOTS_RANGE_METRICS: readonly RangeMetric[] = [
   { key: 'occurrences', urlKey: 'occ', apiKey: 'occ', family: 'occurrences', labelAr: WORDS_SHARED_COUNT_COLUMNS.occurrences },
   { key: 'ayahs', urlKey: 'ayahs', apiKey: 'ayahs', family: 'ayahsSurahs', labelAr: WORDS_SHARED_COUNT_COLUMNS.ayahs },

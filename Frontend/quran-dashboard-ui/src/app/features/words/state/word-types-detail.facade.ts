@@ -116,8 +116,7 @@ export class WordTypesDetailFacade {
     this.activeUrlState = null;
   }
 
-  // Optimistic word selection from a table row: the row already carries its summary, so only the
-  // active detail view is fetched.
+  // The row already carries its summary, so only the active detail view is fetched.
   selectRow(
     row: WordTypeRowDto,
     scope: WordTypeDetailScope,
@@ -196,8 +195,7 @@ export class WordTypesDetailFacade {
     this.loadActiveView(current.selection, current.view, page);
   }
 
-  // Reloads the summary when it never arrived, otherwise reloads the active view. Failed reads are
-  // never cached, so a retry always re-issues the request.
+  // Failed reads are never cached, so a retry always re-issues the request.
   retry(): void {
     const current = this._panel();
     const state = this.activeUrlState;

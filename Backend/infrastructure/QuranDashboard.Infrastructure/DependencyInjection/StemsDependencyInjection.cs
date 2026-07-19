@@ -6,12 +6,6 @@ namespace QuranDashboard.Infrastructure.ServiceRegistration;
 
 internal static class StemsDependencyInjection
 {
-    /// <summary>
-    /// Registers the read-only Stems Explorer (Feature 016): the EF reader as
-    /// scoped, and <see cref="IStemsReader"/> as a factory wrapping it in the
-    /// bounded <see cref="CachedStemsReader"/> using the existing shared
-    /// <see cref="IMemoryCache"/>. No global cache configuration is applied.
-    /// </summary>
     public static IServiceCollection AddStems(this IServiceCollection services)
     {
         services.AddScoped<EfStemsReader>();

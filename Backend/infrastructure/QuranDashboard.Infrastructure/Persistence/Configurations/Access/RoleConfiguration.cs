@@ -2,11 +2,6 @@ using QuranDashboard.Domain.Access;
 
 namespace QuranDashboard.Infrastructure.Persistence.Configurations.Access;
 
-/// <summary>
-/// Maps the fixed <see cref="Role"/> set to the snake_case <c>roles</c> table (mirroring
-/// <see cref="UserConfiguration"/>) and seeds the closed row set with pinned ids. Ids are fixed so the
-/// <c>users.role_id</c> FK and the in-code <see cref="RoleNames"/> stay stable across environments.
-/// </summary>
 public sealed class RoleConfiguration : IEntityTypeConfiguration<Role>
 {
     public void Configure(EntityTypeBuilder<Role> builder)

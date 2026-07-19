@@ -22,12 +22,6 @@ import {
 import { EMPTY_RANGE_FILTERS, RangeFilters, appendRangeApiParams } from '../state/words-range-filters';
 import { appendAssociationParam } from '../state/words-association-filters';
 
-/**
- * Typed HTTP client for the Lemmas Explorer (Feature 016). Endpoints live under
- * `/api/words/lemmas`. Returns the shared `ApiResponse<T>` envelope. Endpoints
- * are bound by the backend story phases; this service is consumed by the lemma
- * facades from US1 onward.
- */
 @Injectable({ providedIn: 'root' })
 export class LemmasApi {
   private readonly http = inject(HttpClient);

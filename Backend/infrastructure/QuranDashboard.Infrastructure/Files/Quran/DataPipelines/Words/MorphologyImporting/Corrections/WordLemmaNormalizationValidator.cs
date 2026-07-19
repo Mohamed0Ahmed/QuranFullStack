@@ -1,7 +1,5 @@
 namespace QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting.Corrections;
 
-// Schema validator for the word-level lemma normalization artifact. Fails closed on any malformed,
-// non-final, duplicated, or evidence-lacking entry before the artifact is applied to the lemma map.
 internal static class WordLemmaNormalizationValidator
 {
     public static void ValidateSchema(WordLemmaNormalizationLoaded loaded)
@@ -117,7 +115,6 @@ internal static class WordLemmaNormalizationValidator
                 && !WordLemmaProblemClasses.Known.Contains(entry.ProblemClass),
             $"{where}: unknown problemClass '{entry.ProblemClass}'.");
 
-        // Every entry must carry a human reason + arabicMappingEvidence where applicable.
         FailWhen(string.IsNullOrWhiteSpace(entry.Reason),
             $"{where}: missing reason/evidence.");
         FailWhen(entry.OperationKind is WordLemmaNormalizationOperationKind.Add
@@ -149,7 +146,7 @@ internal static class WordLemmaNormalizationValidator
 
             if (matched is not null)
             {
-                return; // Explicit curated evidence row — auto-reliable or below-threshold curated.
+                return;
             }
         }
 

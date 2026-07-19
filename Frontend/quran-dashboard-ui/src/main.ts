@@ -4,8 +4,7 @@ import { App } from './app/app';
 import { environment } from './environments/environment';
 import { assertProductionAuthConfigured } from './environments/environment-guard';
 
-// Fail loud before boot if a production bundle still carries placeholder Logto config
-// (MAJOR-2, Feature 033) — see environment-guard.ts.
+// Fail loud before boot if a production bundle still ships placeholder Logto config.
 assertProductionAuthConfigured(environment);
 
 bootstrapApplication(App, appConfig)

@@ -10,19 +10,12 @@ import { RootsCache } from '../state/roots-cache';
 import { LemmasCache } from '../state/lemmas-cache';
 import { WordTypesCache, WordTypesCacheKeys } from '../state/word-types-cache';
 
-/**
- * Loads association-filter picker options (Feature 026, US7) by REUSING the existing reads — no new
- * endpoint. Root/lemma pickers search the roots/lemmas list apis (cached through the shared explorer
- * caches under a distinct picker namespace); the type select is fed from the word-types tree read,
- * flattening the noun and particle POS-leaf children (the "POS child catalogue"). Verb and muqatta'at
- * are represented non-granularly in the tree (by tense / as a main type) and so are not offered as
- * granular primary-type options here.
- *
- * The tree read is shared with the Word Types explorer through `WordTypesCache` /
- * `WordTypesCacheKeys.tree` (a root-scoped singleton cache) instead of a second browser-session
- * stream, so `GET /api/words/word-types/tree` is fetched at most once per browser session no matter
- * which of the two features is visited first (perf finding F2).
- */
+// Association-filter picker options (Feature 026, US7) reuse existing reads — no new endpoint. Root/
+// lemma pickers hit the roots/lemmas list apis under a distinct picker cache namespace; the type select
+// flattens the noun and particle POS-leaf children (verb and muqatta'at are non-granular in the tree, so
+// they aren't offered as granular options). The tree read shares WordTypesCache / WordTypesCacheKeys.tree
+// with the Word Types explorer, so GET word-types/tree runs at most once per browser session whichever
+// feature is visited first (perf finding F2).
 @Injectable({ providedIn: 'root' })
 export class WordsAssociationOptionsService {
   private readonly rootsApi = inject(RootsApi);

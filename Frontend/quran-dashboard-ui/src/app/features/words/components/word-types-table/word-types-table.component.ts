@@ -66,10 +66,8 @@ export class WordTypesTableComponent {
   readonly sort = input<WordTypeSort>(DEFAULT_WORD_TYPE_SORT);
   readonly countOpened = output<WordTypeCountOpenedEvent>();
   readonly retry = output<void>();
-  /**
-   * null = release the sort param. Unlike the other four explorers that lands on المواضع desc, not
-   * Mushaf order — Word Types defaults to `occurrences`.
-   */
+  // null = release the sort param — unlike the other four explorers, this lands on المواضع desc (the
+  // Word Types default), not Mushaf order.
   readonly sortChange = output<WordTypeSort | null>();
 
   protected readonly sortControl = new ExplorerTableSortController<WordTypeSort>(
@@ -135,8 +133,6 @@ export class WordTypesTableComponent {
     return this.tableView() === 'words';
   }
 
-  // Defense-in-depth: a row renders only when its discriminant matches the active view exactly, so a
-  // stale/mismatched response can never paint (e.g.) a root row under the stems tab.
   protected matchesActiveView(row: WordTypeTableRowDto): boolean {
     switch (this.tableView()) {
       case 'words': return row.kind === 'word';
@@ -173,12 +169,8 @@ export class WordTypesTableComponent {
 
   protected get sortColumns(): typeof WORD_TYPE_SORT_COLUMNS { return WORD_TYPE_SORT_COLUMNS; }
 
-  /**
-   * The dimension text column IS the `alpha` sort column (N8-f), but its header text changes per
-   * view — الكلمة in the words view, الجذر/الأصل الصرفي/الصيغة المعجمية in the grouped ones. The
-   * sort token is identical across all four; only the label (and so the aria-label) follows the
-   * view, so the header always names the column the user is actually looking at.
-   */
+  // The dimension text column IS the `alpha` sort column (N8-f): one sort token across all four views,
+  // but the header label (and aria-label) follows the view so it names the column the user is viewing.
   protected readonly alphaSortColumn = computed<ExplorerSortColumn<WordTypeSortColumnKey>>(() => ({
     ...WORD_TYPE_SORT_COLUMNS.alpha,
     label: this.dimensionHeader(),

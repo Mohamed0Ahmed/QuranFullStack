@@ -2,12 +2,7 @@ using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words;
 
 namespace QuranDashboard.Tests.Quran.Words;
 
-/// <summary>
-/// Unit coverage for the shared Arabic search-query normalizer (decision 5 (DRY) consolidation of the
-/// Unique Words/Word Types normalizer and the formerly-duplicated Roots/Lemmas/Stems
-/// <c>NormalizeArabicQuery</c> copies). <c>ArabicSearchQueryNormalizer</c> is <c>internal</c>; visible here
-/// via <c>InternalsVisibleTo</c> on the Infrastructure project.
-/// </summary>
+// ArabicSearchQueryNormalizer is internal; visible here via InternalsVisibleTo on the Infrastructure project.
 public sealed class ArabicSearchQueryNormalizerTests
 {
     [Theory]

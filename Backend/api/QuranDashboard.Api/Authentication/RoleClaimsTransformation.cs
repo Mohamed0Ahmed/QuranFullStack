@@ -4,23 +4,10 @@ using QuranDashboard.Application.Abstractions.Security;
 
 namespace QuranDashboard.Api.Authentication;
 
-/// <summary>
-/// Loads the authenticated caller's application role into a <see cref="ClaimTypes.Role"/> claim so
-/// <c>[Authorize(Policy = …)]</c>/<c>RequireRole(…)</c> and <see cref="ClaimsPrincipal.IsInRole"/> work.
-/// The role is resolved by the Logto <c>sub</c> via <see cref="IUserRoleResolver"/> (short-TTL cached).
-/// This runs during authentication/authorization and MAY be invoked multiple times per request, so it is
-/// idempotent: the role lives on a dedicated identity tagged <see cref="RoleClaimsAuthenticationType"/>, and
-/// idempotency keys off that marked identity — never off the mere presence of a <see cref="ClaimTypes.Role"/>
-/// claim, which (with <c>MapInboundClaims = false</c>) a caller could smuggle in the token and thereby
-/// short-circuit the database role load. It never throws for an unauthenticated principal or a missing
-/// <c>sub</c> — it simply returns the principal unchanged.
-/// </summary>
 public sealed class RoleClaimsTransformation(IUserRoleResolver roleResolver) : IClaimsTransformation
 {
-    /// <summary>
-    /// Authentication type stamped on the identity this transformation adds, so a repeat invocation
-    /// recognizes its own prior work regardless of any token-borne role claim.
-    /// </summary>
+    // Stamped on the identity this transformation adds, so a repeat invocation recognizes its own
+    // prior work regardless of any token-borne role claim.
     public const string RoleClaimsAuthenticationType = "QuranDashboardRoleClaims";
 
     public async Task<ClaimsPrincipal> TransformAsync(ClaimsPrincipal principal)

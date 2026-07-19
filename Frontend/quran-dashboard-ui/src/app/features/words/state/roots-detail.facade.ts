@@ -19,18 +19,6 @@ import {
 } from './roots-detail.controller';
 import { RootsDetailViewLoader } from './roots-detail-view.loader';
 
-/**
- * Thin route adapter over `RootsDetailController` (Feature 029, Change B4;
- * consolidated onto `AbstractRouteDetailFacade` in Feature 033, decision 5
- * (DRY)).
- *
- * The facade keeps the roots explorer page contract — bind/unbind to the
- * page's `ActivatedRoute` query state plus the direct selection methods — and
- * delegates all panel state and load orchestration to its own private
- * controller instance. The global overlay adapters use their own
- * component-scoped `RootsDetailController` instances, so overlay activity can
- * never mutate this page facade's state.
- */
 @Injectable({ providedIn: 'root' })
 export class RootsDetailFacade extends AbstractRouteDetailFacade<
   RootsDetailUrlState,
@@ -38,6 +26,8 @@ export class RootsDetailFacade extends AbstractRouteDetailFacade<
   RootWordView,
   RootSurahView
 > {
+  // Per-facade controller instance keeps this page's panel state isolated from the
+  // component-scoped controllers the global overlay adapters use.
   protected readonly controller = new RootsDetailController(
     inject(RootsApi),
     inject(RootsCache),

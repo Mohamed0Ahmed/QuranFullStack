@@ -2,12 +2,6 @@ using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.Morpholo
 
 namespace QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting.Enriched;
 
-// In-memory dry validation for the enriched morphology pathway. Runs the §7 gates that can be checked
-// WITHOUT a DB: counts, uniqueness, boundary ayah coverage, corrected lemmas, POS resolution, and the
-// "no QUL word-level lemma truth" structural property (the enriched pathway builds lemma identity
-// value-based from Corpus lemmaBuckwalter, so no QUL location link can shift a lemma). This does NOT
-// touch Postgres and does NOT import anything — it consumes the MorphologySourceData already produced
-// by EnrichedMorphologyImportSource.LoadAsync.
 public sealed class EnrichedMorphologyDryValidator
 {
     public EnrichedMorphologyDryValidationResult Validate(
@@ -19,14 +13,12 @@ public sealed class EnrichedMorphologyDryValidator
 
         var checks = new List<EnrichedMorphologyDryCheck>();
 
-        // Gate 1: record count.
         checks.Add(new EnrichedMorphologyDryCheck(
             "ENRICHED-RECORD-COUNT",
             Expected: "77432",
             Observed: source.Words.Count.ToString(System.Globalization.CultureInfo.InvariantCulture),
             Passed: source.Words.Count == 77_432));
 
-        // Gate 2: segment count.
         var segmentCount = source.Words.Sum(word => word.Segments.Count);
         checks.Add(new EnrichedMorphologyDryCheck(
             "ENRICHED-SEGMENT-COUNT",
@@ -43,7 +35,6 @@ public sealed class EnrichedMorphologyDryValidator
             Observed: emptyWords.Count.ToString(System.Globalization.CultureInfo.InvariantCulture),
             Passed: emptyWords.Count == 0));
 
-        // Gate 5: no duplicate word locations.
         var duplicateLocations = source.Words
             .GroupBy(word => word.Location, StringComparer.Ordinal)
             .Where(group => group.Count() > 1)
@@ -56,7 +47,6 @@ public sealed class EnrichedMorphologyDryValidator
             Observed: duplicateLocations.Count.ToString(System.Globalization.CultureInfo.InvariantCulture),
             Passed: duplicateLocations.Count == 0));
 
-        // Gate 6: no duplicate (location, segmentNumber).
         var duplicateSegmentKeys = source.Words
             .SelectMany(word => word.Segments.Select(segment => $"{word.Location}:{segment.SegmentNumber}"))
             .GroupBy(key => key, StringComparer.Ordinal)
@@ -70,7 +60,6 @@ public sealed class EnrichedMorphologyDryValidator
             Observed: duplicateSegmentKeys.Count.ToString(System.Globalization.CultureInfo.InvariantCulture),
             Passed: duplicateSegmentKeys.Count == 0));
 
-        // Gate 10: boundary ayah coverage.
         foreach (var (ayah, expectedWordCount) in BoundaryAyahExpectedWordCounts)
         {
             var observed = source.Words.Count(word => word.Location.StartsWith(ayah + ":", StringComparison.Ordinal));
@@ -81,7 +70,6 @@ public sealed class EnrichedMorphologyDryValidator
                 Passed: observed == expectedWordCount));
         }
 
-        // Gate 10b: 8:6:12 has exactly 2 segments.
         var eightSixTwelve = source.Words.FirstOrDefault(word => word.Location == "8:6:12");
         checks.Add(new EnrichedMorphologyDryCheck(
             "ENRICHED-BOUNDARY-8:6:12-SEGMENTS",
@@ -89,7 +77,6 @@ public sealed class EnrichedMorphologyDryValidator
             Observed: eightSixTwelve?.Segments.Count.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "missing",
             Passed: eightSixTwelve is not null && eightSixTwelve.Segments.Count == 2));
 
-        // Gate 13: every pos resolves against PosTagSeed.
         checks.Add(new EnrichedMorphologyDryCheck(
             "ENRICHED-POS-RESOLVES",
             Expected: "0 unknown",

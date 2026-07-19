@@ -6,12 +6,10 @@ using QuranDashboard.Application.Abstractions.Quran.Words.WordTypes;
 
 namespace QuranDashboard.Tests.Quran.Words;
 
-/// <summary>
-/// The shared <c>sort</c> token contract (Feature 030, N8). Pure unit tests — no database.
-/// These pin the two properties the cache and every shared link depend on: a token parses to exactly
-/// one (column, direction) pair, and each pair serializes back to exactly one CANONICAL token. If
-/// canonicalization ever forked, aliases would silently double-cache the same ordering.
-/// </summary>
+// The shared sort token contract (Feature 030, N8). Pure unit tests — no database.
+// These pin the two properties the cache and every shared link depend on: a token parses to exactly
+// one (column, direction) pair, and each pair serializes back to exactly one CANONICAL token. If
+// canonicalization ever forked, aliases would silently double-cache the same ordering.
 public sealed class WordSortTokenContractTests
 {
     // Every canonical token round-trips: parse(token).CanonicalToken() == token. The bare form is
@@ -273,13 +271,10 @@ public sealed class WordSortTokenContractTests
 
     public static TheoryData<string> ExplorerNames => [.. Contracts.Keys];
 
-    /// <param name="Canonicalize">The explorer's parser, reduced to canonical token in / null when rejected.</param>
-    /// <param name="CanonicalTokens">Every canonical token the explorer can emit (column × direction).</param>
     private sealed record SortContract(
         Func<string?, string?> Canonicalize,
         IReadOnlyList<string> CanonicalTokens)
     {
-        /// <summary>The bare (natural-direction) tokens, excluding the suffix-free mushaf-order.</summary>
         public IEnumerable<string> BareColumnTokens => CanonicalTokens.Where(token =>
             token != WordSortKeysMushafOrder
             && !token.EndsWith(WordSortToken.AscendingSuffix, StringComparison.Ordinal)

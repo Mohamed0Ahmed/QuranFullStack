@@ -8,32 +8,13 @@ import { CurrentUserStore } from '../../../../core/auth/current-user.store';
 import { DASHBOARD_ROUTE_PATH } from '../../../../core/navigation/route-paths';
 import { QdStateComponent } from '../../../../shared/ui/state/state.component';
 
-/** Component-local status: `pending` while the callback settles, `error` on a failed login. */
 type AuthCallbackStatus = 'pending' | 'error';
 
-/**
- * Public OIDC landing page (Feature 033). The app-initializer
- * (`withAppInitializerAuthCheck()`) has already processed the Logto code/state by the
- * time this activates, so `isAuthenticated$` is settled: we read it once and, when
- * authenticated, fire the current-user load (non-blocking) before landing on the
- * dashboard.
- *
- * A settled-but-unauthenticated visit is either a genuine FAILURE or a benign
- * ABANDONMENT, distinguished by the callback URL's own query params (read via
- * `ActivatedRoute.snapshot`, still populated at this point — before `navigateByUrl`
- * replaces them):
- * - `error` present → Logto/OIDC returned an error response (denied consent, provider
- *   error, …) → FAILURE.
- * - `code` present but not authenticated → the code/state exchange ran and did not
- *   authenticate → FAILURE.
- * - neither present → the visitor never completed (or never started) a login →
- *   ABANDONMENT. Browsing is public (Feature 033, Phase 2), so we still navigate to
- *   `/dashboard` as an anonymous browser; nothing forces a re-login.
- *
- * On FAILURE we stay on this page and render a calm error state with a retry action
- * instead of navigating. Deep-link return-URL preservation is out of scope; a
- * successful login always lands on the dashboard.
- */
+// The app-initializer has already processed the Logto code/state, so `isAuthenticated$` is
+// settled by the time this activates. A settled-but-unauthenticated visit is a genuine
+// FAILURE (an `error` or a `code` query param is present — read before navigateByUrl replaces
+// them) versus a benign ABANDONMENT (neither param), which still navigates since browsing is
+// public. Only FAILURE stays here and renders the calm error state.
 @Component({
   selector: 'qd-auth-callback',
   standalone: true,
@@ -71,7 +52,6 @@ export class AuthCallbackComponent implements OnInit {
       });
   }
 
-  /** Restarts the login flow from the error state's single recovery action. */
   retry(): void {
     this.oidcSecurityService.authorize();
   }

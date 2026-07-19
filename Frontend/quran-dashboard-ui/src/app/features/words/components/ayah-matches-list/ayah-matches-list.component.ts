@@ -37,13 +37,9 @@ export class AyahMatchesListComponent {
   readonly loading = input(false);
   readonly showAnalysisAction = input(false);
   readonly analysisActionLabel = input('');
-  /**
-   * The source detail's own typed frame (Feature 029, B7). With the overlay
-   * closed (explorer side panels) it is promoted to a one-frame stack over the
-   * Mushaf so the scholarly context stays open; with the overlay already open
-   * the current stack rides along regardless. The render site must provide it —
-   * this shared list never infers a parent from generic route keys.
-   */
+  // The render site must provide the source detail's typed frame — this shared list never infers a
+  // parent from generic route keys. When set it is promoted to a one-frame stack over the Mushaf so
+  // the scholarly context stays open.
   readonly parentFrame = input<DetailFrame | null>(null);
 
   readonly pageChange = output<number>();

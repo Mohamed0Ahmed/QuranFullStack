@@ -12,7 +12,6 @@ function navRoute(key: string): string {
   return navItem(key).route;
 }
 
-/** Arabic display label for a nav item — the source of truth for that route's tab title. */
 export function navLabel(key: string): string {
   return navItem(key).labelAr;
 }

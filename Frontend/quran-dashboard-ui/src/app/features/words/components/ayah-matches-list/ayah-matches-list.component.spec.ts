@@ -74,7 +74,6 @@ describe('AyahMatchesListComponent', () => {
     expect(href).toContain('ayah=4:57');
     expect(href).toContain('focusAyah=4:57');
     expect(href).toContain('panel=ayah');
-    // No parent frame provided: the destination carries no overlay keys.
     expect(href).not.toContain('qdDetail');
     expect(actionLink?.getAttribute('aria-label')).toBe('فتح الآية في المصحف');
     expect(actionLink?.getAttribute('target')).toBeNull();

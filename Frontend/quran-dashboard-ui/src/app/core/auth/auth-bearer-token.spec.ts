@@ -24,29 +24,21 @@ import {
 } from '../data-access/secure-url.interceptor';
 import { devLatencyInterceptor } from '../data-access/dev-latency.interceptor';
 
-/**
- * Bearer-attach scope (Feature 033, Phase 1). These specs exercise the REAL interceptor
- * chain wired in `app.config.ts` — `[secureUrlInterceptor, authInterceptor(), devLatencyInterceptor]`
- * — to prove the Logto access token is attached ONLY to same-origin API requests and
- * never leaks to a foreign origin.
- *
- * Priming a token for the positive case:
- *   angular-auth-oidc-client v21 has no public token setter, so we override its published
- *   `AbstractSecurityStorage` DI token with an in-memory fake seeded with an auth blob. The
- *   library persists a whole config's data under one storage key (`configId`) whose JSON
- *   value maps the internal keys (`authzData` = access token, `authnResult.id_token`) to
- *   values (see `StoragePersistenceService`). `AuthStateService.getAccessToken()` returns
- *   the access token only when BOTH an access token and an id token are present, so we seed
- *   both. Overriding `AbstractSecurityStorage` is the library's sanctioned extension point,
- *   not a mock of internals, and we drive config activation through the public
- *   `OidcSecurityService.getConfiguration()` API rather than reaching into private services.
- */
+// Bearer-attach scope (Feature 033, Phase 1): exercises the REAL interceptor chain wired in
+// app.config.ts (`[secureUrlInterceptor, authInterceptor(), devLatencyInterceptor]`) to prove the
+// Logto access token attaches ONLY to same-origin API requests and never leaks to a foreign origin.
+//
+// Priming a token: angular-auth-oidc-client v21 has no public token setter, so we override its
+// `AbstractSecurityStorage` DI token (the library's sanctioned extension point, not a mock of
+// internals) with an in-memory fake. The library persists one config's data under a single
+// `configId` key whose JSON maps `authzData` (access token) and `authnResult.id_token`;
+// `getAccessToken()` returns the access token only when BOTH are present, so we seed both. Config
+// activation goes through the public `OidcSecurityService.getConfiguration()`.
 
 const TEST_CONFIG_ID = 'bearer-token-spec-config';
 const TEST_ACCESS_TOKEN = 'test-access-token-value';
 const IN_SCOPE_URL = `${environment.apiBaseUrl}/api/access/me`;
 
-/** In-memory {@link AbstractSecurityStorage}; the library reads/writes a per-configId JSON blob. */
 class InMemorySecurityStorage implements AbstractSecurityStorage {
   private readonly store = new Map<string, string>();
 
@@ -95,7 +87,7 @@ function provideTestAuth(secureRoutes: string[], storage: AbstractSecurityStorag
   ];
 }
 
-/** Force the static config into the library's active set so the interceptor can read it. */
+// Force the static config into the library's active set so the interceptor can read it.
 async function activateConfig(): Promise<void> {
   await firstValueFrom(TestBed.inject(OidcSecurityService).getConfiguration());
 }

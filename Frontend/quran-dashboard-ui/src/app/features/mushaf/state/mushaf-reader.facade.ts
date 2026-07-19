@@ -94,13 +94,11 @@ export class MushafReaderFacade {
   private pageSub: Subscription | null = null;
   private peekFlashClearTimer: ReturnType<typeof setTimeout> | null = null;
 
-  /**
-   * F1: set true by {@link bindToRoute} and consumed by the first URL hydration after a
-   * (re)bind. Only that first hydration may treat a still-loading ayah-study/word-analysis
-   * resource as a stranded load to recover (reload). Later in-place URL patches on the same
-   * binding (e.g. switching a study tab while a request is in flight) must NOT restart the
-   * in-flight request or re-arm its debounce.
-   */
+  // F1: set true by bindToRoute and consumed by the first URL hydration after a (re)bind. Only
+  // that first hydration may treat a still-loading ayah-study/word-analysis resource as a
+  // stranded load to recover (reload). Later in-place URL patches on the same binding (e.g.
+  // switching a study tab mid-flight) must NOT restart the in-flight request or re-arm its
+  // debounce.
   private rebindRecoveryPending = false;
 
   private readonly wordAnalysisLoadRunner = new WordAnalysisLoadRunner({

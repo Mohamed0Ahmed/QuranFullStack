@@ -1,7 +1,6 @@
-// The shared flat ayah-card frame: recessed warm surface + hairline + control radius
-// + compact spacing. No shadow, no alternating fill, no hover lift (flat doctrine,
-// §16.2). The background is `--qd-ayah-card-bg`, a tone recessed below `--qd-surface`
-// so the card reads as a distinct card on the near-white surfaces it sits on.
+// Flat doctrine (§16.2): no shadow, no alternating fill, no hover lift. The background is
+// --qd-ayah-card-bg, a tone recessed below --qd-surface so the card reads as distinct on the
+// near-white surfaces it sits on.
 :host {
   display: flex;
   flex-direction: column;

@@ -4,21 +4,11 @@ using QuranDashboard.Domain.Access;
 
 namespace QuranDashboard.Infrastructure.Access;
 
-/// <summary>
-/// EF-backed first-login provisioning keyed by the Logto <c>sub</c>. A first-time subject is created only
-/// from a server-verified email obtained via <see cref="IExternalUserProfileSource"/> — never a
-/// client-supplied value. The default new user is <see cref="UserStatus.Pending"/> with no role; the sole
-/// exception is the configured Owner email (<see cref="OwnerBootstrapOptions"/>), which is provisioned
-/// directly as Owner/Active — decision 3: only when the profile's email is also IdP-verified
-/// (<see cref="ExternalUserProfile.EmailVerified"/>); an unverified owner-email first login is provisioned
-/// exactly like a normal user (Pending, no role). An already-provisioned subject is returned unchanged,
-/// except the Owner-email upgrade path: a pre-existing user (e.g. provisioned Pending/null under Phase 1)
-/// whose email matches the bootstrap email is promoted to Owner/Active, again gated on the email being
-/// IdP-verified. decision 3: a <see cref="UserStatus.Disabled"/> user is never auto-revived or
-/// auto-promoted by login, regardless of email or role — that guard runs before any promotion check. Any
-/// role/status change here evicts the subject's cached role (via <see cref="IUserRoleResolver.Evict"/>) so
-/// the claims transformation observes it immediately.
-/// </summary>
+// First-login provisioning keyed by the Logto sub (decision 3). A new subject is created only from a
+// server-verified email (never a client-supplied value) as Pending/no-role; the configured Owner email
+// is the sole exception, provisioned or promoted to Owner/Active only when the email is also
+// IdP-verified. A Disabled user is never auto-revived or promoted by login. Any role/status change here
+// evicts the subject's cached role so the claims transformation observes it immediately.
 public sealed class UserProvisioningService(
     QuranDashboardDbContext db,
     IExternalUserProfileSource profileSource,
@@ -47,12 +37,6 @@ public sealed class UserProvisioningService(
         return await CreateAsync(logtoSub, profile, ct);
     }
 
-    /// <summary>
-    /// Returns an already-provisioned subject unchanged, unless it is the configured Owner email sitting
-    /// below Owner/Active (the Phase-1-owner upgrade path) AND its email is IdP-verified, in which case it
-    /// is promoted and its cached role evicted. A <see cref="UserStatus.Disabled"/> user is never promoted
-    /// — decision 3: login must not auto-revive or auto-promote a disabled account.
-    /// </summary>
     private async Task<ProvisionedUser> ReconcileExistingAsync(User existing, string logtoSub, CancellationToken ct)
     {
         if (!IsConfiguredOwner(existing.Email))

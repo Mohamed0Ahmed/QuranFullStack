@@ -4,13 +4,6 @@ using Microsoft.AspNetCore.RateLimiting;
 
 namespace QuranDashboard.Api.RateLimiting;
 
-/// <summary>
-/// Writes the <c>429 Too Many Requests</c> response for rejected requests, mirroring
-/// <see cref="Middleware.GlobalExceptionHandler"/>: the shared <see cref="ApiResponse{T}"/>
-/// envelope plus a <c>Retry-After</c> header. Options-aware — reads
-/// <see cref="RateLimitingOptions"/> for the <c>Retry-After</c> fallback when the lease
-/// exposes no <see cref="MetadataName.RetryAfter"/> metadata.
-/// </summary>
 public sealed class RateLimitRejectionWriter(IOptions<RateLimitingOptions> options)
 {
     public async ValueTask WriteAsync(OnRejectedContext context, CancellationToken cancellationToken)

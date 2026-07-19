@@ -1,9 +1,5 @@
-/**
- * Typed shape for the app environment objects.
- *
- * Both `environment.ts` (production) and `environment.development.ts` must satisfy
- * this interface, so field drift between the two files is caught at build time.
- */
+// Both `environment.ts` (production) and `environment.development.ts` must satisfy
+// this, so field drift between the two files is caught at build time.
 export interface Environment {
   production: boolean;
   apiBaseUrl: string;

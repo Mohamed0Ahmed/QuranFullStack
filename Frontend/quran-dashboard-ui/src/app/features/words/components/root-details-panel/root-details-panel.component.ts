@@ -24,12 +24,9 @@ import {
 import { CLOSE_LABEL } from '../../models/unique-words.labels';
 import { ROOT_VIEW_KEYS, RootView } from '../../models/roots.models';
 
-/**
- * Per-instance id seed. A frameless overlay copy of this panel can be mounted at
- * the same time as the inert background panel; a shared id would make both tabs'
- * `aria-controls` and the surface `aria-labelledby` resolve ambiguously. Each
- * instance takes a distinct prefix so its ARIA relationships stay self-contained.
- */
+// Per-instance id seed: a frameless overlay copy can be mounted alongside the inert background
+// panel, so each instance needs a distinct prefix or their `aria-controls` / `aria-labelledby`
+// would resolve ambiguously.
 let nextRootDetailsPanelInstanceId = 0;
 
 @Component({
@@ -43,27 +40,20 @@ let nextRootDetailsPanelInstanceId = 0;
 export class RootDetailsPanelComponent {
   private readonly detailOverlayHistory = inject(DetailOverlayHistoryService);
 
-  /**
-   * Only the top layer may trap focus (Feature 029 §5.9). While the global
-   * detail overlay is open this drawer sits inside the inert app shell, so its
-   * own trap stands down and the dialog's trap is the only enabled one.
-   */
+  // Only the top layer may trap focus: while the global detail overlay is open this drawer sits in
+  // the inert app shell, so its own trap stands down and the dialog's trap is the only one enabled.
   protected readonly drawerTrapEnabled = computed(() => !this.detailOverlayHistory.isOpen());
 
   readonly view = input.required<RootView>();
   readonly inline = input(true);
-  /**
-   * Content-only mode (Feature 029, Change B4): render just the view tablist +
-   * tabpanel body in a plain wrapper — no card section, no dialog/backdrop, no
-   * header/close. Used inside the global detail overlay shell, which owns the
-   * dialog chrome. When false, the inline/modal branches behave as before.
-   */
+  // Content-only mode: renders just the tablist + tabpanel body; the global detail overlay shell
+  // owns the dialog chrome (no card/backdrop/header here).
   readonly frameless = input(false);
   readonly emptySelection = input(false);
   readonly selectionTitle = input('');
   readonly loading = input(false);
   readonly notFound = input(false);
-  /** Server-supplied not-found text; falls back to the generic label when absent. */
+  // Server-supplied not-found text; falls back to the generic label when absent.
   readonly notFoundMessage = input('');
 
   readonly viewChange = output<RootView>();

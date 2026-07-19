@@ -24,21 +24,6 @@ import {
 import { CLOSE_LABEL } from '../../models/unique-words.labels';
 import { LEMMA_VIEW_KEYS, LemmaView } from '../../models/lemmas.models';
 
-/**
- * Lemmas Explorer persistent detail panel shell (Feature 016). Sibling of
- * `RootDetailsPanelComponent`. Renders exactly four tabs — الكلمات / الآيات /
- * السور / الأصول الصرفية — with no overview tab. Pure chrome: receives the
- * active view and emits `viewChange`; the active view content is projected via
- * `<ng-content />` by the explorer page.
- *
- * Responsive drawer + focus handling (T117): on desktop the page renders the
- * panel inline via `inline=true`; below the desktop breakpoint the page renders
- * the panel as a modal drawer (`inline=false`) with `cdkTrapFocus` +
- * `cdkTrapFocusAutoCapture`, `role="dialog"`, `aria-modal="true"`, an explicit
- * backdrop click handler, and Escape-to-close. RTL is honoured through logical
- * CSS properties (padding-inline/padding-block/border-block-end) and the
- * tablist arrow keys (ArrowLeft moves forward in Arabic reading order).
- */
 @Component({
   selector: 'qd-lemma-details-panel',
   standalone: true,
@@ -50,27 +35,20 @@ import { LEMMA_VIEW_KEYS, LemmaView } from '../../models/lemmas.models';
 export class LemmaDetailsPanelComponent {
   private readonly detailOverlayHistory = inject(DetailOverlayHistoryService);
 
-  /**
-   * Only the top layer may trap focus (Feature 029 §5.9). While the global
-   * detail overlay is open this drawer sits inside the inert app shell, so its
-   * own trap stands down and the dialog's trap is the only enabled one.
-   */
+  // Only the top layer may trap focus: while the global detail overlay is open this drawer sits in
+  // the inert app shell, so its own trap stands down and the dialog's trap is the only one enabled.
   protected readonly drawerTrapEnabled = computed(() => !this.detailOverlayHistory.isOpen());
 
   readonly view = input.required<LemmaView>();
   readonly inline = input(true);
-  /**
-   * Content-only mode (Feature 029, Change B4): render just the view tablist +
-   * tabpanel body in a plain wrapper — no card section, no dialog/backdrop, no
-   * header/close. Used inside the global detail overlay shell, which owns the
-   * dialog chrome. When false, the inline/modal branches behave as before.
-   */
+  // Content-only mode: renders just the tablist + tabpanel body; the global detail overlay shell
+  // owns the dialog chrome (no card/backdrop/header here).
   readonly frameless = input(false);
   readonly emptySelection = input(false);
   readonly selectionTitle = input('');
   readonly loading = input(false);
   readonly notFound = input(false);
-  /** Server-supplied not-found text; falls back to the generic label when absent. */
+  // Server-supplied not-found text; falls back to the generic label when absent.
   readonly notFoundMessage = input('');
 
   readonly viewChange = output<LemmaView>();

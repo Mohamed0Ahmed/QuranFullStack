@@ -12,7 +12,6 @@
   gap: var(--qd-space-3);
   margin-block-start: var(--qd-space-3);
   padding-block-start: var(--qd-space-3);
-  // A hairline inside the intro band, separating the page title above from its explanation.
   border-block-start: 1px solid var(--qd-border);
 }
 
@@ -40,7 +39,7 @@
 }
 
 .qd-explainer__toggle {
-  margin-inline-start: auto; // pin to the inline-end, RTL-safe
+  margin-inline-start: auto;
   flex-shrink: 0;
 }
 

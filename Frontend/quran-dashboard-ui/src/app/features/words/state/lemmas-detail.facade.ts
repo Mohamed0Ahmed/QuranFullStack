@@ -19,18 +19,6 @@ import {
 } from './lemmas-detail.controller';
 import { LemmasDetailViewLoader } from './lemmas-detail-view.loader';
 
-/**
- * Thin route adapter over `LemmasDetailController` (Feature 029, Change B4;
- * consolidated onto `AbstractRouteDetailFacade` in Feature 033, decision 5
- * (DRY)).
- *
- * The facade keeps the lemmas explorer page contract — bind/unbind to the
- * page's `ActivatedRoute` query state plus the direct selection methods — and
- * delegates all panel state and load orchestration to its own private
- * controller instance. The global overlay adapters use their own
- * component-scoped `LemmasDetailController` instances, so overlay activity can
- * never mutate this page facade's state.
- */
 @Injectable({ providedIn: 'root' })
 export class LemmasDetailFacade extends AbstractRouteDetailFacade<
   LemmasDetailUrlState,
@@ -38,6 +26,8 @@ export class LemmasDetailFacade extends AbstractRouteDetailFacade<
   LemmaWordView,
   LemmaSurahView
 > {
+  // Per-facade controller instance keeps this page's panel state isolated from the
+  // component-scoped controllers the global overlay adapters use.
   protected readonly controller = new LemmasDetailController(
     inject(LemmasApi),
     inject(LemmasCache),

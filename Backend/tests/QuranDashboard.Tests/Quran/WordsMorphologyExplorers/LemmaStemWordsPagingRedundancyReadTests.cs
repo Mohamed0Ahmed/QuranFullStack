@@ -10,21 +10,13 @@ using QuranDashboard.Tests.Quran.Words;
 
 namespace QuranDashboard.Tests.Quran.WordsMorphologyExplorers;
 
-/// <summary>
-/// Regression coverage for performance-review finding B6 (Lemma/Stem word pages).
-/// Before the fix, every page of <c>GetLemmaWordsAsync</c>/<c>GetStemWordsAsync</c> re-issued
-/// the full existence-check + all-occurrence-rows query and re-grouped in memory, even when a
-/// prior page for the same (id, kind) had just done exactly that work. The fix caches the
-/// complete grouped, ordered word list once per (id, kind) identity — mirroring the existing
-/// catalogue whole-summary pattern via <c>LemmasCacheKeys.WordsAll</c>/<c>StemsCacheKeys.WordsAll</c>
-/// and <c>*CacheEntryOptions.GroupedWords()</c> — and slices it in memory for every page.
-///
-/// These tests pin two things: (1) a second, distinct page for the same identity issues zero
-/// EF commands once the first page has warmed the identity-grain cache entry, and (2) paged
-/// contents and <c>TotalCount</c> stay byte-identical to an independently re-implemented copy
-/// of the pre-fix algorithm (full load, in-memory group/order, then Skip/Take) across several
-/// pages, for both Simple and Tashkeel word kinds and for both a lemma and a stem.
-/// </summary>
+// B6 performance-review regression (Lemma/Stem word pages): before the fix every page of
+// GetLemmaWordsAsync/GetStemWordsAsync re-issued the full existence-check + all-occurrence query and
+// re-grouped in memory, even when a prior page for the same (id, kind) had just done that. The fix caches
+// the complete grouped, ordered word list once per (id, kind) identity and slices it in memory per page.
+// These tests pin: (1) a second distinct page for the same identity issues zero EF commands once the first
+// warmed the cache, and (2) paged contents and TotalCount stay byte-identical to an independent copy of the
+// pre-fix algorithm (full load, in-memory group/order, then Skip/Take).
 [Collection(nameof(MorphologyExplorersCollection))]
 public sealed class LemmaStemWordsPagingRedundancyReadTests(MorphologyExplorersTestFixture fixture)
 {
@@ -152,12 +144,9 @@ public sealed class LemmaStemWordsPagingRedundancyReadTests(MorphologyExplorersT
         }
     }
 
-    /// <summary>
-    /// Independent re-implementation of <c>EfLemmasReader</c>'s pre-fix
-    /// <c>GetLemmaWordsPageAsync</c> body (full occurrence load, in-memory group/order by
-    /// first Mushaf coordinate, then Skip/Take) — used as a differential oracle so the
-    /// refactor's byte-identity claim does not rely on the reworked production code.
-    /// </summary>
+    // Independent re-implementation of EfLemmasReader's pre-fix GetLemmaWordsPageAsync body (full occurrence
+    // load, in-memory group/order by first Mushaf coordinate, then Skip/Take) — a differential oracle so the
+    // refactor's byte-identity claim does not rely on the reworked production code.
     private static async Task<PagedResult<LemmaWordItemDto>> LoadLemmaWordsPageViaPreFixAlgorithmAsync(
         QuranDashboardDbContext db,
         int id,
@@ -187,11 +176,8 @@ public sealed class LemmaStemWordsPagingRedundancyReadTests(MorphologyExplorersT
             new LemmaWordItemDto(uniqueWordId, display, count));
     }
 
-    /// <summary>
-    /// Independent re-implementation of <c>EfStemsReader</c>'s pre-fix
-    /// <c>GetStemWordsPageAsync</c> body — the stem counterpart of
-    /// <see cref="LoadLemmaWordsPageViaPreFixAlgorithmAsync"/>.
-    /// </summary>
+    // Independent re-implementation of EfStemsReader's pre-fix GetStemWordsPageAsync body — the stem
+    // counterpart of LoadLemmaWordsPageViaPreFixAlgorithmAsync.
     private static async Task<PagedResult<StemWordItemDto>> LoadStemWordsPageViaPreFixAlgorithmAsync(
         QuranDashboardDbContext db,
         int id,

@@ -7,15 +7,6 @@ namespace QuranDashboard.Api.Controllers.MushafReader.Ayahs;
 [Route("api/mushaf/ayahs")]
 public sealed class MushafAyahMutashabihatController(GetAyahMutashabihatHandler handler) : ControllerBase
 {
-    /// <summary>
-    /// يُرجع المتشابهات اللفظية للآية المحددة مجمّعة حسب المجموعة، مع
-    /// حدوثات الآية المحددة وكل حدوثات المجموعة مرتبة بترتيب المصحف.
-    /// </summary>
-    /// <param name="verseKey">مفتاح الآية بصيغة <c>surah:ayah</c> (مثل <c>2:25</c>).</param>
-    /// <param name="cancellationToken">رمز إلغاء الطلب.</param>
-    /// <response code="200">تم تحميل المتشابهات اللفظية بنجاح، بما في ذلك القائمة الفارغة.</response>
-    /// <response code="400">مفتاح آية غير صالح.</response>
-    /// <response code="404">الآية غير موجودة.</response>
     [HttpGet("{verseKey}/mutashabihat")]
     public async Task<ActionResult<ApiResponse<AyahMutashabihatResponse>>> GetAyahMutashabihat(
         string verseKey,

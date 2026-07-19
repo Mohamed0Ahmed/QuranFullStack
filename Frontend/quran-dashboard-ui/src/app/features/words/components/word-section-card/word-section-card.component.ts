@@ -1,12 +1,8 @@
 import { Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
-/**
- * A single Words-hub navigation card (Feature 031). Every explorer has shipped, so this is always an
- * active router link — the pre-031 disabled / coming-soon branch is removed. Its text (ordinal,
- * eyebrow, title, description) comes from the shared `WordsExplainerContent`, so a card and its
- * page's hero can never drift. Presentation-only.
- */
+// Always an active router link — the pre-031 disabled / coming-soon branch is gone. Its text comes
+// from the shared WordsExplainerContent, so a card and its page's hero can't drift (Feature 031).
 @Component({
   selector: 'qd-word-section-card',
   standalone: true,

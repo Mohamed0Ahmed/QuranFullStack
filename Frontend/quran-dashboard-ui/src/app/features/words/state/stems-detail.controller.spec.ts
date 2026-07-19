@@ -16,7 +16,7 @@ import { StemsCache, StemsCacheKeys } from './stems-cache';
 import { StemsDetailController, StemsDetailUrlState } from './stems-detail.controller';
 import { StemsDetailViewHandlers, StemsDetailViewLoader } from './stems-detail-view.loader';
 
-/** Unmistakably synthetic, non-scriptural word rows for detail-response fixtures. */
+// Deliberately synthetic, non-scriptural word rows — keep detail-response fixtures source-safe.
 function wordsPageOf(displayText: string): PagedResultDto<StemWordItemDto> {
   return {
     page: 1,
@@ -200,11 +200,6 @@ describe('StemsDetailController (route-independent, Feature 029 B4)', () => {
   });
 
   describe('stale DETAIL responses across a stem transition (Feature 030, C1)', () => {
-    /**
-     * Selects stem 1 (summary resolves, so its detail load is registered and left
-     * in flight), then selects stem 2 whose summary stays pending. Returns stem 1's
-     * captured detail handlers so the test can land its response late.
-     */
     function selectStemOneThenPendingStemTwo(): {
       controller: StemsDetailController;
       staleHandlers: StemsDetailViewHandlers;

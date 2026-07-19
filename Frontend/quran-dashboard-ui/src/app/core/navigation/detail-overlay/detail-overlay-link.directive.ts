@@ -5,28 +5,14 @@ import { DetailFrame } from './detail-overlay.models';
 
 export type DetailOverlayLinkMode = 'start' | 'append';
 
-/**
- * Context default for `qdDetailLinkMode`. Overlay adapters provide `'append'`
- * once at their component root so every entity link rendered inside the open
- * overlay pushes onto the stack, while the same list components rendered in an
- * explorer side panel (no provider) keep the `'start'` default and open a new
- * one-frame stack. An explicit `qdDetailLinkMode` input always wins.
- */
+// Context default for `qdDetailLinkMode`: overlay adapters provide `'append'` at their
+// root so links inside the open overlay push onto the stack; the same lists in an explorer
+// side panel (no provider) keep the `'start'` default. An explicit input always wins.
 export const DETAIL_OVERLAY_LINK_MODE = new InjectionToken<DetailOverlayLinkMode>('DETAIL_OVERLAY_LINK_MODE');
 
-/**
- * Real, copyable entity link into the detail overlay (Feature 029, Change B).
- *
- * The anchor carries a canonical href over the current base URL, so copy-link,
- * modifier clicks (Ctrl/Cmd/Shift), middle-click, and the context menu keep
- * ordinary browser behavior. Only an unmodified primary click is intercepted
- * and turned into an in-app overlay navigation.
- *
- * `start` mode (default) opens a new one-frame stack — explorer side panels and
- * Mushaf entity links. `append` mode pushes onto the open stack — cross-entity
- * links inside an overlay detail. The effective mode is the explicit input if
- * set, else the component-tree `DETAIL_OVERLAY_LINK_MODE` token, else `start`.
- */
+// Real anchor with a canonical href so copy-link, modifier/middle clicks, and the context
+// menu keep native browser behavior; only an unmodified primary click is intercepted into
+// an in-app overlay navigation (start = new one-frame stack, append = push onto the stack).
 @Directive({
   selector: 'a[qdDetailLink]',
   standalone: true,

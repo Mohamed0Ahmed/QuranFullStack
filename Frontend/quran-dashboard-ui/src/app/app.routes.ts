@@ -25,19 +25,14 @@ export const routes: Routes = [
     redirectTo: 'dashboard',
   },
   {
-    // One parent covers the whole `/dashboard` subtree (Feature 033). Public-browse by
-    // default (Phase 2, decision record §G1): the Phase-1 blanket `authGuard` was removed —
-    // anonymous users navigate the entire app freely and login stays on-demand via the
-    // navbar. A reusable `roleGuard` exists (core/auth/role.guard.ts) but is attached to
-    // nothing until the first admin feature. URLs are unchanged: parent `dashboard` + child
-    // `''`/`mushaf`/`words` still resolve to `/dashboard`, `/dashboard/mushaf`,
-    // `/dashboard/words`.
+    // Public-browse by default (Feature 033, Phase 2, §G1): intentionally no guard here. A
+    // reusable `roleGuard` exists (core/auth/role.guard.ts) but is attached to nothing until the
+    // first admin feature. See core/README.md for the route-posture contract.
     path: 'dashboard',
     children: [
       {
-        // The dashboard home intentionally sets no title → brand-only tab (AppTitleStrategy
-        // renders the brand alone when no route in the tree carries a title). The mushaf/words
-        // children set their own titles below (words children override further; see words.routes.ts).
+        // No title here is intentional → brand-only tab (AppTitleStrategy shows the brand alone
+        // when no route in the tree carries a title).
         path: '',
         pathMatch: 'full',
         loadComponent: () =>
@@ -60,8 +55,7 @@ export const routes: Routes = [
     ],
   },
   {
-    // Public OIDC landing route (Feature 033) — no guard. Must sit before the `**` wildcard,
-    // which would otherwise swallow it.
+    // Must sit before the `**` wildcard, which would otherwise swallow this OIDC landing route.
     path: CALLBACK_PATH,
     title: 'تسجيل الدخول',
     loadComponent: () =>

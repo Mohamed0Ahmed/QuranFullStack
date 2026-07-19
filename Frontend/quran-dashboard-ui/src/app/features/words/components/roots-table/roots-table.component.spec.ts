@@ -390,7 +390,6 @@ describe('RootsTableComponent', () => {
         button.querySelector('.qd-explorer-table__sort-glyph')?.textContent?.trim(),
       ).toBe('▲');
 
-      // Inactive column: no glyph at all.
       expect(
         root
           .querySelector('[data-testid="roots-table-sort-alpha"]')

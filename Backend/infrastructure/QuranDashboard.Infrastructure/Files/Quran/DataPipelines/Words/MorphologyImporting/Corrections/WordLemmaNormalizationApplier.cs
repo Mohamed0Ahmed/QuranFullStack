@@ -2,8 +2,8 @@ namespace QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.Morpholo
 
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.MorphologyImporting;
 
-// Applies a validated word-level lemma normalization artifact to a copy of the raw QUL word-level
-// lemma map. Never mutates the input map; every approved mutating op must apply or the apply fails.
+// Never mutates the input map (works on a copy); every approved mutating op must apply or the whole
+// apply fails (all-or-nothing).
 internal static class WordLemmaNormalizationApplier
 {
     private static readonly IReadOnlySet<string> SpotCheckLocations = new HashSet<string>(StringComparer.Ordinal)

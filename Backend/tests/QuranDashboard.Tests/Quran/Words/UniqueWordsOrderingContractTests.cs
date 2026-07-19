@@ -3,27 +3,22 @@ using QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordsPage;
 
 namespace QuranDashboard.Tests.Quran.Words;
 
-/// <summary>
-/// The Unique Words ORDER BY contract (Feature 030, N8), proved against real PostgreSQL.
-/// <para>
-/// The seeded content slice cannot prove this on its own: every seeded row carries
-/// <c>occurrences_count == ayahs_count == surahs_count</c> and <c>first_word_order_in_mushaf == id</c>,
-/// so a count arm reading the wrong column — or a tie resolved by Id instead of Mushaf order — is
-/// invisible there. Each test below therefore inserts its own rows inside a transaction that is ALWAYS
-/// rolled back (the <c>await using</c> disposal rolls back even when an assertion throws), so the shared
-/// fixture slice every other suite asserts on is left byte-identical.
-/// </para>
-/// <para>
-/// The inserted rows are explicitly synthetic structural placeholders: ASCII labels, no Arabic and no
-/// Quranic content of any kind. They exist only to give the ORDER BY distinguishable keys.
-/// </para>
-/// <para>
-/// Each test claims its own occurrences band (100s / 200s / 300s) and scopes the read with a count
-/// filter over that band. That does two jobs at once: it isolates the assertion from the eight seeded
-/// rows, and — because the band is part of the list cache key — it stops the cached reader from
-/// cross-serving one test's rolled-back rows to another.
-/// </para>
-/// </summary>
+// The Unique Words ORDER BY contract (Feature 030, N8), proved against real PostgreSQL.
+//
+// The seeded content slice cannot prove this on its own: every seeded row carries
+// occurrences_count == ayahs_count == surahs_count and first_word_order_in_mushaf == id, so a count
+// arm reading the wrong column — or a tie resolved by Id instead of Mushaf order — is invisible there.
+// Each test below therefore inserts its own rows inside a transaction that is ALWAYS rolled back (the
+// await using disposal rolls back even when an assertion throws), so the shared fixture slice every
+// other suite asserts on is left byte-identical.
+//
+// The inserted rows are explicitly synthetic structural placeholders: ASCII labels, no Arabic and no
+// Quranic content of any kind. They exist only to give the ORDER BY distinguishable keys.
+//
+// Each test claims its own occurrences band (100s / 200s / 300s) and scopes the read with a count
+// filter over that band. That isolates the assertion from the eight seeded rows, and — because the band
+// is part of the list cache key — it stops the cached reader from cross-serving one test's rolled-back
+// rows to another.
 [Collection(nameof(UniqueWordsCollection))]
 public sealed class UniqueWordsOrderingContractTests(UniqueWordsTestFixture fixture)
 {

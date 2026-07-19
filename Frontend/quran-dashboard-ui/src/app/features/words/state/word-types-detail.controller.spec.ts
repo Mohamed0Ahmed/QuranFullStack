@@ -21,7 +21,7 @@ function identityOf(overrides: Partial<WordTypeRowIdentity> = {}): WordTypeRowId
   return { tashkeelWordId: 7, contextCode: 'noun', case: 'all', tense: 'all', voice: 'all', ...overrides };
 }
 
-/** Unmistakably synthetic, non-scriptural ayah-match rows for detail-response fixtures. */
+// Synthetic, non-scriptural fixture rows (Quranic-data source safety).
 function ayahsPageOf(wordText: string): PagedResultDto<WordTypeAyahMatchDto> {
   return {
     page: 1,
@@ -248,12 +248,8 @@ describe('WordTypesDetailController (route-independent, Feature 029 B4)', () => 
     const nounContext = identityOf({ tashkeelWordId: 5, contextCode: 'noun' });
     const verbContext = identityOf({ tashkeelWordId: 5, contextCode: 'past' });
 
-    /**
-     * Selects the noun-context row (summary resolves, so its detail load is
-     * registered and left in flight), then selects the same word id under the verb
-     * context, whose summary stays pending. Returns the noun row's captured detail
-     * handlers so the test can land its response late.
-     */
+    // Noun-context summary resolves so its detail load is left in flight; the verb-context
+    // summary stays pending. Returns the noun row's handlers to land its response late.
     function selectNounContextThenPendingVerbContext(): {
       controller: WordTypesDetailController;
       staleHandlers: WordTypesDetailViewHandlers;
@@ -393,13 +389,9 @@ describe('WordTypesDetailController identity/page read isolation (real cache + v
     getTestBed().resetTestingModule();
   });
 
-  /**
-   * Wires a controller onto the REAL WordTypesCache and WordTypesDetailViewLoader
-   * the page panel and overlay share. Colliding composite identities and distinct
-   * pages must never cross-serve each other's reads, and a re-applied identity/page
-   * is served from cache — asserted through response ISOLATION and API call counts
-   * rather than the internal cache-key strings (key formatting is a cache concern).
-   */
+  // Uses the REAL shared cache and view loader, asserting isolation and cache reuse through
+  // response content and API call counts rather than internal cache-key strings (key formatting
+  // is a cache concern).
   function wireController(apiStub: object): WordTypesDetailController {
     TestBed.configureTestingModule({ providers: [{ provide: WordTypesApi, useValue: apiStub }] });
     return new WordTypesDetailController(

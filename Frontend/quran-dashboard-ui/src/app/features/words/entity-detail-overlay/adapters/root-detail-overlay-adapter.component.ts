@@ -45,18 +45,6 @@ import { WORDS_DETAIL_RETRY_LABEL } from '../../models/words-shared.labels';
 import { QdStateComponent } from '../../../../shared/ui/state/state.component';
 import { EntityDetailOverlayTitleStore } from '../entity-detail-overlay-title.store';
 
-/**
- * Overlay adapter for root frames (Feature 029, Change B4): the reference
- * implementation of the route-independent detail pattern. It owns a
- * component-scoped `RootsDetailController` (never the page facade), maps every
- * `frame` input change onto `applyUrlState`, and renders the existing root
- * detail content in frameless mode inside the global dialog shell.
- *
- * All view/sub-view/page changes go to the URL through
- * `DetailOverlayHistoryService.replaceTopFrame(...)` — never to the Router and
- * never directly into controller state. The URL sync feeds the new frame back
- * into this component, which re-drives the controller.
- */
 @Component({
   selector: 'qd-root-detail-overlay-adapter',
   standalone: true,
@@ -83,10 +71,8 @@ export class RootDetailOverlayAdapterComponent {
 
   protected readonly panelState = this.controller.panelState;
 
-  /** Loaded entity title for the shell heading ('' while the summary loads). */
   readonly entityTitle = computed(() => this.panelState().summary?.rootText ?? '');
 
-  /** Entity-level ayah count for the shell header meta (null while the summary loads). */
   readonly entityAyahCount = computed(() => this.panelState().summary?.ayahsCount ?? null);
 
   protected readonly retryLabel = WORDS_DETAIL_RETRY_LABEL;
@@ -147,12 +133,8 @@ export class RootDetailOverlayAdapterComponent {
     inject(DestroyRef).onDestroy(() => this.titleStore?.clear());
   }
 
-  /**
-   * Re-drives the current frame after a failed load (Feature 030, M3). The frame
-   * is unchanged, so this never touches the URL — recovery is a controller
-   * concern, and routing an identical frame through the history service would be
-   * a no-op replace.
-   */
+  // Retry re-drives the unchanged frame directly through the controller: it never
+  // touches the URL, since replacing an identical frame would be a no-op.
   protected onRetry(): void {
     this.controller.retryCurrentIdentity();
   }

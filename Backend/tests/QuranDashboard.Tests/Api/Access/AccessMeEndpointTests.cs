@@ -3,13 +3,6 @@ using QuranDashboard.Domain.Access;
 
 namespace QuranDashboard.Tests.Api.Access;
 
-/// <summary>
-/// End-to-end behavioural tests for the authenticated <c>GET /api/access/me</c> endpoint and the
-/// unauthenticated public surface, exercised through the real HTTP pipeline (JwtBearer authentication,
-/// the exception handler, EF Core, and Postgres). The only test double is the external identity
-/// provider; every response is asserted against the shared <c>ApiResponse</c> envelope by its
-/// camelCase JSON shape.
-/// </summary>
 [Collection(nameof(AccessCollection))]
 public sealed class AccessMeEndpointTests(AccessTestFixture fixture)
 {
@@ -42,7 +35,6 @@ public sealed class AccessMeEndpointTests(AccessTestFixture fixture)
         data.GetProperty("displayName").GetString().Should().Be(FakeExternalUserProfileSource.DisplayNameFor(sub));
         data.GetProperty("status").GetString().Should().Be("pending");
         data.GetProperty("roleId").ValueKind.Should().Be(JsonValueKind.Null);
-        // A non-owner first login carries no role.
         data.GetProperty("roleName").ValueKind.Should().Be(JsonValueKind.Null);
 
         var users = await fixture.GetUsersAsync();

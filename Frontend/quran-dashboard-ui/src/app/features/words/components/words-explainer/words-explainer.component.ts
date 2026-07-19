@@ -2,16 +2,9 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 
 import { WordsExplainerContent } from '../../models/words-explainer.content';
 
-/**
- * Presentation-only Words explainer hero (Feature 031). Renders the invariant frame from
- * `content` (ordinal, eyebrow, tagline, body, benefit callout, collapse toggle, a11y wiring) and
- * projects each page's own example region through `<ng-content>`.
- *
- * It does NOT re-render the title: the explorer page's existing `<h1>` owns the visible title, and
- * the section is named by it via `aria-label` — so no heading is duplicated. It also does NOT own
- * the persisted collapse state: it renders `expanded` and emits `toggled`; the page wires storage
- * (kept out of a presentational). No `inject()`, no Router, no Quran-data logic.
- */
+// Presentational hero (Feature 031): renders no title of its own — the page's <h1> owns it and the
+// section is named via aria-label, so no heading is duplicated. It also does not own the persisted
+// collapse state: it renders `expanded` and emits `toggled`, leaving storage to the page.
 @Component({
   selector: 'qd-words-explainer',
   standalone: true,

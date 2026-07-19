@@ -366,8 +366,6 @@ function parsePositiveInt(value: string | null): number | null {
   return value !== null && /^[1-9]\d*$/.test(value) ? Number.parseInt(value, 10) : null;
 }
 
-// Tri-state presence flag: only the exact 'true'/'false' tokens are honored; anything else (including
-// absent) is treated as "any" (null), matching the fail-closed URL discipline.
 function parseTriState(value: string | null): boolean | null {
   if (value === 'true') {
     return true;

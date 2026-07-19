@@ -1,11 +1,7 @@
 namespace QuranDashboard.Domain.Access;
 
-/// <summary>
-/// Canonical role names. Each value is the identity of a seeded <see cref="Role"/> (persisted as
-/// <c>roles.name</c>), the key by which capabilities are enforced in code, and the value a role-based
-/// authorization policy requires. Changing a value is both a data and a contract change, so these are
-/// pinned string constants, not derived from anything.
-/// </summary>
+// Each value is a seeded role's persisted roles.name and the key auth policies match on; changing one
+// is both a data and a contract change, so they stay pinned string constants.
 public static class RoleNames
 {
     public const string Owner = "Owner";

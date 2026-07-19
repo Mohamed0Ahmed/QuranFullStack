@@ -2,10 +2,6 @@ using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.Morpholo
 
 namespace QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting.Enriched;
 
-// Builds the value-based root/lemma/stem dimensions for the enriched pathway AND projects the enriched
-// source records into the persistence-shape MorphologySourceData DTO consumed unchanged by
-// EfBulkMorphologyWriter.
-//
 // Identity rules (Feature 020, signed-off):
 //   - Root identity  = Corpus rootBuckwalter (unambiguous); rootArabic is the stored root_text.
 //   - Lemma identity = Corpus lemmaBuckwalter; primary lemmaArabic is the stored lemma_text; lemma→root
@@ -434,8 +430,6 @@ public sealed class EnrichedDimensionBuilder
         foreach (var (rootBuckwalter, entry) in rootIndex.OrderBy(entry => entry.Value.FirstWordOrder))
         {
             var distinctLemmas = rootLemmaMap.TryGetValue(rootBuckwalter, out var set) ? set.Count : 0;
-            // Root text is the bridge Arabic (rootArabic); root_buckwalter keeps the Corpus key. Both
-            // columns exist in quran_roots; the Arabic text is the displayed root_text.
             result.Add(new ResolvedRootDto(
                 entry.Id,
                 entry.RootArabic ?? rootBuckwalter,
@@ -456,8 +450,6 @@ public sealed class EnrichedDimensionBuilder
         foreach (var (lemmaText, entry) in lemmaTextIndex.OrderBy(entry => entry.Value.FirstWordOrder))
         {
             int? rootId = lemmaRootLinks.TryGetValue(lemmaText, out var link) ? link.RootId : null;
-            // lemma_text is the display key; lemma_buckwalter stores the representative variant's Corpus key
-            // (earliest occurrence). The full set of buckwalter variants lives in quran_lemma_analyses.
             result.Add(new ResolvedLemmaDto(
                 entry.Id,
                 entry.LemmaArabic ?? lemmaText,

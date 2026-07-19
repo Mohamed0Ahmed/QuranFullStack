@@ -4,9 +4,6 @@ using QuranDashboard.Application.Abstractions.Quran.Words.WordTypes.Responses;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.WordTypes;
 
-// Grouped (root/stem/lemma) scoped detail reads. Kept in a dedicated partial so the primary reader
-// stays under its size threshold. Every read reuses the same scoped BaseRowsSql occurrence base as the
-// word/table rows and restricts to a single numeric dimension ID at head-word grain.
 public sealed partial class EfWordTypesReader
 {
     public async Task<WordTypeGroupedSummaryDto?> GetGroupedSummaryAsync(
@@ -102,7 +99,6 @@ public sealed partial class EfWordTypesReader
             return new PagedResult<WordTypeAyahMatchDto>(page, pageSize, totalCount, []);
         }
 
-        // One grouped-page query returns the distinct page ayahs joined to their scoped matched words.
         var pageParameters = BuildRowsParameters(context, skip.Value, pageSize, selection.DimensionId);
         var matchRows = await _dbContext.Database
             .SqlQueryRaw<GroupedAyahMatchSqlRow>(GroupedAyahsPageSql(context, selection.Kind), pageParameters)
@@ -117,7 +113,6 @@ public sealed partial class EfWordTypesReader
             .GroupBy(row => row.AyahId)
             .ToDictionary(group => group.Key, group => group.ToList());
 
-        // One bounded hydration query loads every readable word (canonical Uthmani text) for the page ayahs.
         var items = await AyahWordHydration.ProjectAyahMatchesAsync(
             _dbContext,
             pageAyahs,
@@ -171,8 +166,6 @@ public sealed partial class EfWordTypesReader
 
         var occurrencesByNumber = occurrences.ToDictionary(row => row.SurahNumber, row => row.OccurrencesCount);
 
-        // One bounded catalogue read supplies every surah number/name once; mentioned and missing lists are
-        // derived in memory in numeric order — never one query per occurrence.
         var catalogue = await _dbContext.QuranSurahs
             .AsNoTracking()
             .OrderBy(surah => surah.SurahNumber)
@@ -210,8 +203,6 @@ public sealed partial class EfWordTypesReader
         return result.Count;
     }
 
-    // Member rows carry the active Case/Tense/Voice scope exactly as the Words table row does; the
-    // root/lemma/stem text stay projection-only display values.
     private static WordTypeGroupedMemberWordDto ToGroupedMemberWordDto(WordTypeRowSqlResult row, WordTypeFilter filter) => new(
         row.TashkeelWordId,
         row.ContextCode,
@@ -230,6 +221,5 @@ public sealed partial class EfWordTypesReader
         row.AyahsCount,
         row.SurahsCount);
 
-    // The 114-row surah catalogue projection used to derive the mentioned/missing split in a single read.
     private sealed record SurahCatalogueRow(int SurahNumber, string NameArabic);
 }

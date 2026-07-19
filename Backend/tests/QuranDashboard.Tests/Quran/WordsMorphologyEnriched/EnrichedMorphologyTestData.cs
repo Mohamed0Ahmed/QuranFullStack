@@ -7,8 +7,6 @@ namespace QuranDashboard.Tests.Quran.WordsMorphologyEnriched;
 // real artifact via a dedicated fixture, not from these synthetic builders.
 internal static class EnrichedMorphologyTestData
 {
-    // A minimal valid STEM record. Default values mirror the artifact's shape (buckwalter + bridge Arabic
-    // already merged); tests override only what they assert on.
     internal static EnrichedMorphologyRecord StemRecord(
         string location,
         int quranWordId,
@@ -50,8 +48,6 @@ internal static class EnrichedMorphologyTestData
             ]
         };
 
-    // A two-STEM word mirroring 8:6:12's shape (PREFIX + STEM + STEM + SUFFIX). Used to assert the
-    // boundary ayah carries 2 real segments per the artifact.
     internal static EnrichedMorphologyRecord MultiSegmentRecord(
         string location,
         int quranWordId,

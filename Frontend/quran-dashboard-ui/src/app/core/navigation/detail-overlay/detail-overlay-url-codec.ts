@@ -17,12 +17,8 @@ import {
   WordTypeFrameView,
 } from './detail-overlay.models';
 
-/**
- * Pure parse/serialize/canonicalize logic for the detail-overlay URL contract
- * (Feature 029, Change B). Strict on input (fail closed), explicit on output
- * (defaults are always serialized so future default changes cannot re-interpret
- * an old shared URL).
- */
+// Strict on input (fail closed), explicit on output: defaults are always serialized so a
+// future default change cannot re-interpret an old shared URL.
 
 const FIELD_SEPARATOR = '~';
 const NULL_SENTINEL = '-';
@@ -39,11 +35,8 @@ const WORD_TYPE_TENSES: readonly WordTypeFrameTense[] = ['all', 'past', 'present
 const WORD_TYPE_VOICES: readonly WordTypeFrameVoice[] = ['all', 'active', 'passive'];
 const WORD_TYPE_VIEWS: readonly WordTypeFrameView[] = ['words', 'ayahs', 'surahs'];
 
-/**
- * Encodes one string field. `~` is unreserved for `encodeURIComponent`, so it is
- * escaped explicitly to keep the separator unambiguous; a value that is exactly
- * the `-` sentinel is escaped so it cannot be misread as null.
- */
+// `~` is unreserved for encodeURIComponent, so escape it explicitly to keep the separator
+// unambiguous; a value equal to the `-` sentinel is escaped so it cannot be misread as null.
 function encodeField(value: string): string {
   const encoded = encodeURIComponent(value).replace(/~/g, '%7E');
   return encoded === NULL_SENTINEL ? '%2D' : encoded;
@@ -60,12 +53,9 @@ function decodeField(raw: string): string | null {
   }
 }
 
-/**
- * Decimal syntax alone is not enough: a digit run above `Number.MAX_SAFE_INTEGER`
- * would round to a different integer (or to `Infinity`), so a shared URL could
- * silently resolve to another entity. The parsed value must survive the round trip
- * exactly, hence the safe-integer guard.
- */
+// Decimal syntax alone is not enough: a digit run above Number.MAX_SAFE_INTEGER rounds to a
+// different integer (or Infinity), so a shared URL could silently resolve to another entity.
+// The safe-integer guard keeps the value exact across the round trip.
 function parsePositiveInt(raw: string): number | null {
   if (!/^[1-9]\d*$/.test(raw)) {
     return null;
@@ -242,14 +232,9 @@ export interface ParsedDetailOverlayParams {
   readonly isCanonical: boolean;
 }
 
-/**
- * Parses the raw repeated `qdDetail` values plus the raw `qdDetailOpen` value.
- *
- * - An invalid first frame means no overlay.
- * - A malformed later frame truncates the stack immediately before it.
- * - More than the cap keeps only the first `DETAIL_OVERLAY_MAX_FRAMES` frames.
- * - `qdDetailOpen=1` without a valid frame canonicalizes to closed/no overlay.
- */
+// Canonicalization rules: an invalid first frame means no overlay; a malformed later frame
+// truncates the stack before it; frames beyond the cap are dropped; `qdDetailOpen=1` without
+// a valid frame collapses to closed/no overlay.
 export function parseDetailOverlayParams(
   rawFrames: readonly string[],
   rawOpen: string | null,

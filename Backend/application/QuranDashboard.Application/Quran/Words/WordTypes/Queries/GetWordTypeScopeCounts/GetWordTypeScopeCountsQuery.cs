@@ -1,7 +1,7 @@
 namespace QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeScopeCounts;
 
-// The scope-counts query carries EXACTLY the Word Types list scope — nothing view- or page-related. The
-// four counts describe the scope, not a page, so there is no tableView/sort/paging here (contract §3).
+// Carries EXACTLY the Word Types list scope, nothing view- or page-related: the four counts describe the
+// scope, not a page, so there is no tableView/sort/paging here.
 public sealed record GetWordTypeScopeCountsQuery(
     string? Type,
     string? ChildCode,

@@ -171,7 +171,6 @@ public sealed class WordTypesCacheReadTests(WordTypesTestFixture fixture)
         summaryKeys.Concat(surahsKeys).Should().OnlyHaveUniqueItems();
     }
 
-    // A second read of every grouped view is served from the cache without issuing new SQL commands.
     [Fact]
     public async Task GroupedDetailsCachedReader_RepeatedReadsDoNotIssueExtraCommands()
     {

@@ -2,14 +2,9 @@ using QuranDashboard.Infrastructure.Persistence.Reads.Quran.MushafReader;
 
 namespace QuranDashboard.Tests.Quran.MushafReader;
 
-/// <summary>
-/// Regression coverage for engineering-review finding M15 (quran-safety rule 3: never hide
-/// invalid data). A tafsir entry's covered_ayah_keys can be syntactically valid JSON with the
-/// wrong shape (an object instead of a string array). ParseCoveredAyahKeys keeps its existing
-/// contract — it still returns an empty list on failure, unchanged from before the fix — but it
-/// must no longer swallow the corruption silently: it now logs a Warning naming the ayah and
-/// source so the underlying data issue stays visible instead of reading as "no coverage".
-/// </summary>
+// quran-safety rule 3 (never hide invalid data): corrupt covered_ayah_keys (valid JSON, wrong shape)
+// still returns an empty list (unchanged contract), but must now log a Warning naming the ayah+source
+// instead of swallowing it silently as "no coverage".
 [Collection(nameof(MushafReaderCollection))]
 public sealed class AyahStudyCorruptCoveredAyahKeysTests(MushafReaderTestFixture fixture)
 {

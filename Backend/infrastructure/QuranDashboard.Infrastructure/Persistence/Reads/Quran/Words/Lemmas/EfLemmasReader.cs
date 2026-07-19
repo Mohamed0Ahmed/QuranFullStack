@@ -5,14 +5,6 @@ using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Lemmas;
 
-/// <summary>
-/// EF Core read model for the Lemmas Explorer (Feature 016). All queries are
-/// read-only and <c>AsNoTracking</c>. The lemma catalogue (list/summary) is
-/// implemented in T032/T033 as a single bounded whole-summary aggregation with
-/// owned-root (<c>quran_lemmas.root_id</c>) semantics, ordered type distribution,
-/// normalized Arabic contains search, deterministic sort, and in-memory paging.
-/// Ayah and words detail are fully implemented as well.
-/// </summary>
 public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
 {
     private readonly QuranDashboardDbContext _db = db;
@@ -235,13 +227,6 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
         return new LemmaStemsResponse(stems);
     }
 
-    /// <summary>
-    /// Loads the complete lemma summary list in a bounded aggregation: identity,
-    /// owned root, segment-matched occurrence/ayah/surah counts, matched-word
-    /// simple/tashkeel/stem counts, first verse key, and the ordered per-lemma POS
-    /// distribution. Type ordering (count desc, earliest Mushaf occurrence asc)
-    /// is finalized in C# so the dominant type is always the first entry.
-    /// </summary>
     internal async Task<IReadOnlyList<LemmaSummaryRow>> LoadWholeSummaryAsync(CancellationToken cancellationToken)
     {
         var sql = $"""
@@ -359,9 +344,6 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
             .ToList();
     }
 
-    // Orders the server-grouped per-(lemma, POS) rows into the final distribution: count descending, then
-    // earliest Mushaf occurrence ascending (surah/ayah/word), then POS code — identical to the previous
-    // in-memory ordering, so the dominant type is always the first entry.
     private static IReadOnlyList<LemmaTypeDistributionRow> OrderTypeDistribution(
         IEnumerable<LemmaTypeDistributionSqlRow> rows) =>
         rows
@@ -385,14 +367,9 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
             ? $"{firstSurahNumber}:{firstAyahNumber}"
             : string.Empty;
 
-    /// <summary>
-    /// Loads the complete grouped, ordered word list for a lemma/word-kind pair in one
-    /// bounded pass: existence check, every matching occurrence row, then the same
-    /// in-memory group/order derivation the page used to repeat per page. Returns
-    /// <c>null</c> when the lemma does not exist. This is the identity-grain unit the
-    /// cache decorator caches once (mirrors the catalogue whole-summary pattern) so
-    /// paging never re-issues the full occurrence query (performance review finding B6).
-    /// </summary>
+    // Loads the whole grouped/ordered word list in one pass (null when the lemma is absent). This is the
+    // identity-grain unit CachedLemmasReader caches once, so paging slices the cached list instead of
+    // re-issuing the full occurrence query (perf finding B6).
     internal async Task<IReadOnlyList<LemmaWordItemDto>?> LoadLemmaWordGroupsAsync(
         int id,
         LemmaWordKind wordKind,
@@ -441,11 +418,6 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
             .ToList();
     }
 
-    /// <summary>
-    /// Slices an already-loaded, already-ordered whole word-group list into one page.
-    /// Shared by the uncached page read below and by <c>CachedLemmasReader</c>, which
-    /// slices the identity-grain cached list instead of re-loading it per page.
-    /// </summary>
     internal static PagedResult<LemmaWordItemDto> SliceLemmaWordsPage(
         IReadOnlyList<LemmaWordItemDto> all,
         int page,
@@ -523,8 +495,6 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
         int? FirstWordNumber,
         int FirstWordOrderInMushaf);
 
-    // One server-grouped (lemma, POS) distribution row: per-group occurrence count and the first-occurrence
-    // coordinate of the earliest matching word by quran_word_id.
     private sealed record LemmaTypeDistributionSqlRow(
         int LemmaId,
         string Code,

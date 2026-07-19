@@ -11,10 +11,8 @@ internal static class ImportSourceTestHelpers
         return tempDir;
     }
 
-    /// <summary>
-    /// Builds a per-test temp report directory so import tests never fall back to the
-    /// handler's default (canonical <c>resources/report/...</c>) report location.
-    /// </summary>
+    // Per-test temp report dir so import tests never fall back to the handler's default
+    // (canonical resources/report/...) report location.
     public static string TempReportDir() =>
         Path.Combine(Path.GetTempPath(), $"quran-foundation-report-{Guid.NewGuid():N}");
 

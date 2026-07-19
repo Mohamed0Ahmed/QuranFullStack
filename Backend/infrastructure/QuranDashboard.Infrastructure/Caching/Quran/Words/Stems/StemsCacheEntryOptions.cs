@@ -1,11 +1,6 @@
 
 namespace QuranDashboard.Infrastructure.Caching.Quran.Words.Stems;
 
-/// <summary>
-/// Bounded cache entry option factories for the Stems Explorer. Mirrors Roots:
-/// whole-summary entries have no expiration; detail entries use a 30-minute
-/// sliding expiration. No global cache configuration is applied here.
-/// </summary>
 internal static class StemsCacheEntryOptions
 {
     private static readonly TimeSpan DetailSlidingExpiration = TimeSpan.FromMinutes(30);

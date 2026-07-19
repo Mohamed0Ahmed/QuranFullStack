@@ -8,25 +8,6 @@ import { AuthCallbackComponent } from './auth-callback.component';
 import { CurrentUserStore } from '../../../../core/auth/current-user.store';
 import { DASHBOARD_ROUTE_PATH } from '../../../../core/navigation/route-paths';
 
-/**
- * Auth callback landing (Feature 033). On activation it reads Logto auth state once and
- * distinguishes three outcomes:
- * - authenticated → fires the (non-blocking) current-user load and navigates to
- *   `/dashboard`.
- * - not authenticated with an `error` or `code` query param on the callback URL → a
- *   genuine login FAILURE: stays on the page and renders the calm error state instead
- *   of navigating.
- * - not authenticated with neither param → an ABANDONED login: still navigates to
- *   `/dashboard` (browsing is public).
- *
- * `OidcSecurityService`, `CurrentUserStore`, `Router`, and `ActivatedRoute` are the
- * component's real injection boundaries; each is replaced with a boundary fake so the
- * tests assert observable behavior only (rendered DOM, load/navigate/authorize calls).
- *
- * The store's `load()` is fire-and-forget and never throws (its own spec covers the
- * failure envelopes), so a failed load can never block navigation here — the load spy
- * simply records the call.
- */
 describe('AuthCallbackComponent', () => {
   function mount(isAuthenticated: boolean, queryParams: Record<string, string> = {}) {
     const load = vi.fn();

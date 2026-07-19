@@ -591,15 +591,11 @@ describe('WordTypesDetailFacade — kind-aware orchestration', () => {
     const firstSummary = expectGroupedRequest(http, 'root', 190700);
     expect(facade.panelState().status).toBe('loading');
 
-    // Unbind while the summary request is still outstanding (it never flushed).
     facade.unbindFromRoute();
     expect(firstSummary.cancelled).toBe(true);
 
-    // Rebind to the exact same URL state (e.g. remounting the page).
     facade.bindToRoute(route.route);
 
-    // A real second request must be issued, and the panel must still be genuinely loading —
-    // not frozen on the first (cancelled) request's status with nothing pending.
     const secondSummary = expectGroupedRequest(http, 'root', 190700);
     expect(facade.panelState().status).toBe('loading');
 

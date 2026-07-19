@@ -33,14 +33,13 @@ function rootLength(property: string, fallback: string): string {
   return declared === '' ? fallback : declared;
 }
 
-/** Resolves a single calc() factor — a bare number, a rem/px length, or var(--qd-space-1) — to px. */
 function factorToPx(factor: string): number {
   const token = factor.trim().replace('var(--qd-space-1)', rootLength('--qd-space-1', '0.25rem'));
   if (token.endsWith('rem')) {
     const remPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || REM_FALLBACK_PX;
     return parseFloat(token) * remPx;
   }
-  return parseFloat(token); // px length or a bare multiplier
+  return parseFloat(token);
 }
 
 /**

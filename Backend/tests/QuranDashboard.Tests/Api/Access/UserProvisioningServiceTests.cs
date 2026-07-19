@@ -2,15 +2,6 @@ using QuranDashboard.Domain.Access;
 
 namespace QuranDashboard.Tests.Api.Access;
 
-/// <summary>
-/// Service-level Testcontainers tests for the email-unique-collision provisioning path, and for decision
-/// 3's verified-email gate on the Owner-bootstrap path: an owner-email login is only promoted to
-/// Owner/Active when the IdP-derived <see cref="ExternalUserProfile.EmailVerified"/> flag is true, and a
-/// <see cref="UserStatus.Disabled"/> owner-email user is never revived or promoted by login. Runs against
-/// the real Postgres container + migrations shared with the <c>/api/access/me</c> suite, resolving
-/// <see cref="IUserProvisioningService"/> straight from the pipeline's DI container so the real
-/// <c>UserProvisioningService</c> and its unique-index handling run for real.
-/// </summary>
 [Collection(nameof(AccessCollection))]
 public sealed class UserProvisioningServiceTests(AccessTestFixture fixture)
 {

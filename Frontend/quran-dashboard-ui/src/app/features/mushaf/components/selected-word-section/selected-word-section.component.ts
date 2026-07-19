@@ -67,7 +67,6 @@ export class SelectedWordSectionComponent {
     return Array.from({ length: count }, (_, index) => index);
   });
 
-  /** Last successful natural block size, applied only while loading (px string for the CSS hook). */
   protected readonly reservedBlockSize = computed<string | null>(() => {
     const natural = this.lastNaturalSize();
     return this.loadState().isLoading && natural !== null ? `${natural.blockSize}px` : null;

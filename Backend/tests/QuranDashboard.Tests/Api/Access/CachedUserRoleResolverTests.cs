@@ -3,22 +3,15 @@ using QuranDashboard.Infrastructure.Access;
 
 namespace QuranDashboard.Tests.Api.Access;
 
-/// <summary>
-/// Integration tests for <see cref="CachedUserRoleResolver"/> against the real Postgres container and a
-/// real <see cref="MemoryCache"/> (no mocked persistence — correctness of the query and the caching is
-/// the point). They pin the resolution contract (a role name only for an Active user with a role; null
-/// otherwise) and the caching contract (a result — including a negative one — is cached, and
-/// <see cref="CachedUserRoleResolver.Evict"/> makes a subsequent database change visible immediately).
-/// </summary>
 [Collection(nameof(AccessCollection))]
 public sealed class CachedUserRoleResolverTests(AccessTestFixture fixture)
 {
     public static TheoryData<UserStatus, bool, string?> RoleResolutionCases => new()
     {
-        { UserStatus.Active, true, RoleNames.Owner },   // Active + role → the role name
-        { UserStatus.Pending, true, null },             // not Active → null
-        { UserStatus.Disabled, true, null },            // not Active → null
-        { UserStatus.Active, false, null },             // Active but no role → null
+        { UserStatus.Active, true, RoleNames.Owner },
+        { UserStatus.Pending, true, null },
+        { UserStatus.Disabled, true, null },
+        { UserStatus.Active, false, null },
     };
 
     [Theory]

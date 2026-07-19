@@ -2,11 +2,8 @@ using QuranDashboard.Application.Abstractions.Quran.Words.Lemmas;
 
 namespace QuranDashboard.Infrastructure.Caching.Quran.Words.Lemmas;
 
-/// <summary>
-/// Bounded cache key builders for the Lemmas Explorer (Feature 016). Keys are
-/// bounded by resource identity, known view, kind, page, and size. No raw free-text
-/// search is included in any retained key.
-/// </summary>
+// Keys are bounded by resource identity, view, kind, page, and size; raw free-text search is never part
+// of a retained key, keeping the key space bounded.
 public static class LemmasCacheKeys
 {
     public static string SummaryAll => "lemmas:summary:all";

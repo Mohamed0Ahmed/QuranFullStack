@@ -2,9 +2,6 @@ using System.Reflection;
 
 namespace QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting.Corrections;
 
-// Loads the embedded segment-stem curated artifact (segment-stem-corrected-arabic.json), computes a
-// SHA-256 over the raw bytes, parses + schema-validates it, and indexes it into the two lookups the
-// assembler needs. Schema validation fails closed so a malformed artifact never imports silently.
 public sealed class SegmentStemCorrectionReader : ISegmentStemCorrectionReader
 {
     internal const string ArtifactResourceName =

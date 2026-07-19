@@ -12,13 +12,10 @@ import { ApiResponse } from '../data-access/api-response.model';
 import { CurrentUser } from './current-user.model';
 import { CurrentUserStore } from './current-user.store';
 
-/**
- * `CurrentUserStore.load()` (Feature 033, Phase 1). It unwraps the `GET /api/access/me`
- * envelope into the `currentUser` / `errorMessage` signals and must NEVER throw — a failure
- * (envelope-level or HTTP-level) resolves to a calm Arabic message with `currentUser` left
- * null, so it can never crash the post-login callback flow. The real `AccessApi` and a real
- * HTTP backend are wired so the store's mapping is exercised end to end.
- */
+// `CurrentUserStore.load()` (Feature 033, Phase 1) must NEVER throw — an envelope- or HTTP-level
+// failure resolves to a calm Arabic message with `currentUser` left null, so it can't crash the
+// post-login callback. Wired with the real `AccessApi` + a real HTTP backend so the store's mapping
+// is exercised end to end.
 const ME_URL = `${environment.apiBaseUrl}/api/access/me`;
 const FALLBACK_MESSAGE = 'تعذر تحميل بيانات المستخدم الحالي.';
 

@@ -15,8 +15,6 @@ public sealed class LemmaStemSummaryOverfetchReadTests(MorphologyExplorersTestFi
 {
     // ---- Lemmas ------------------------------------------------------------------------------------
 
-    // Byte-identical guard: for every seeded lemma the reader's type distribution equals the occurrence-
-    // grain oracle exactly — same POS set, per-POS counts, first-occurrence coordinate, and order.
     [Fact]
     public async Task LemmaSummary_TypeDistribution_MatchesOccurrenceGrainOracle()
     {
@@ -39,8 +37,6 @@ public sealed class LemmaStemSummaryOverfetchReadTests(MorphologyExplorersTestFi
         }
     }
 
-    // The cold whole-summary load must no longer materialize the occurrence-grain rows: no single command
-    // reads more rows than the (now grouped) second query would.
     [Fact]
     public async Task LemmaSummary_ColdLoad_DoesNotMaterializeOccurrenceGrain()
     {
@@ -69,8 +65,6 @@ public sealed class LemmaStemSummaryOverfetchReadTests(MorphologyExplorersTestFi
 
     // ---- Stems -------------------------------------------------------------------------------------
 
-    // Byte-identical guard: for every seeded stem the reader's dominant lemma, dominant root, and full
-    // type distribution equal the occurrence-grain oracle exactly.
     [Fact]
     public async Task StemSummary_DominantsAndDistribution_MatchOccurrenceGrainOracle()
     {

@@ -11,13 +11,10 @@ using QuranDashboard.Tests.Quran.Words;
 
 namespace QuranDashboard.Tests.Quran.WordsMorphologyExplorers;
 
-/// <summary>
-/// Consolidated Phase 11 (T116) cache + SQL command-count audit for Feature 016.
-/// Every bounded cache entry must be hit on repeat reads (zero new SQL commands),
-/// the catalogue must reuse the cached whole-summary list across search/sort/page
-/// changes, no cache key may embed raw free-text search, and the Lemmas/Stems DI
-/// must not register any global <see cref="IMemoryCache"/> configuration.
-/// </summary>
+// Cache + SQL command-count audit for Feature 016: every bounded cache entry must be hit on repeat reads
+// (zero new SQL commands), the catalogue must reuse the cached whole-summary list across search/sort/page
+// changes, no cache key may embed raw free-text search, and the Lemmas/Stems DI must not register any
+// global IMemoryCache configuration.
 [Collection(nameof(MorphologyExplorersCollection))]
 public sealed class MorphologyExplorersCacheReadTests(MorphologyExplorersTestFixture fixture)
 {
@@ -417,13 +414,10 @@ public sealed class MorphologyExplorersCacheReadTests(MorphologyExplorersTestFix
             "empty paged detail results must not be cached");
     }
 
-    /// <summary>
-    /// Concurrent cold callers for one identity must produce the same SQL as a single cold
-    /// caller: plain cache-aside lets every concurrent miss run its own full grouped-word
-    /// load, which defeats the "load the identity once" cache (B6). Each caller gets its own
-    /// DbContext — as it would per request — because a DbContext is not thread-safe; the
-    /// cache is shared, which is what the gate coordinates on.
-    /// </summary>
+    // Concurrent cold callers for one identity must produce the same SQL as a single cold caller: plain
+    // cache-aside lets every concurrent miss run its own full grouped-word load, which defeats the "load the
+    // identity once" cache (B6). Each caller gets its own DbContext — as it would per request — because a
+    // DbContext is not thread-safe; the shared cache is what the gate coordinates on.
     private async Task AssertConcurrentColdReadsLoadOnce<TItem>(
         Func<QuranDashboardDbContext, IMemoryCache, CancellationToken, Task<PagedResult<TItem>?>> read)
     {
@@ -464,14 +458,11 @@ public sealed class MorphologyExplorersCacheReadTests(MorphologyExplorersTestFix
             "concurrent cold callers for one identity share a single load instead of each materializing the full list");
     }
 
-    /// <summary>
-    /// B6: Lemma/Stem word pages cache the whole grouped word list once per (id, kind)
-    /// identity and slice it in memory. Any later page — including an out-of-range page —
-    /// is therefore a free in-memory slice, unlike the ayah-matches path which still caches
-    /// per page and re-queries on a fresh page key. The second read asks for a *different*
-    /// out-of-range page on purpose: repeating the first page would also pass under a
-    /// per-page cache and so would not prove the cache is keyed by identity.
-    /// </summary>
+    // B6: Lemma/Stem word pages cache the whole grouped word list once per (id, kind) identity and slice it
+    // in memory. Any later page — including an out-of-range page — is therefore a free in-memory slice, unlike
+    // the ayah-matches path which still caches per page and re-queries on a fresh page key. The second read
+    // asks for a *different* out-of-range page on purpose: repeating the first page would also pass under a
+    // per-page cache and so would not prove the cache is keyed by identity.
     private async Task AssertSecondOutOfRangePageServedFromCache<TItem>(
         Func<QuranDashboardDbContext, IMemoryCache, CancellationToken, Task<PagedResult<TItem>?>> firstRead,
         Func<QuranDashboardDbContext, IMemoryCache, CancellationToken, Task<PagedResult<TItem>?>> secondRead)

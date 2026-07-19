@@ -19,7 +19,7 @@ import { WordTypesDetailFacade } from '../../state/word-types-detail.facade';
 import { EntityDetailOverlayTitleStore } from '../entity-detail-overlay-title.store';
 import { WordTypeDetailOverlayAdapterComponent } from './word-type-detail-overlay-adapter.component';
 
-/** Synthetic, non-scriptural Arabic placeholder: keeps RTL rendering real without faking Quranic text. */
+// Synthetic, non-scriptural Arabic placeholder: keeps RTL rendering real without faking Quranic text.
 const SYNTHETIC_WORD_TEXT = 'كلمة-اختبار';
 
 const IDENTITY: WordTypeRowIdentity = {

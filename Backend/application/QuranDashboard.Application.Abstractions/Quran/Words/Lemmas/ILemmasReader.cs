@@ -3,13 +3,8 @@ using QuranDashboard.Application.Abstractions.Quran.Words.Lemmas.Responses;
 
 namespace QuranDashboard.Application.Abstractions.Quran.Words.Lemmas;
 
-/// <summary>
-/// Read-only Lemmas Explorer (Feature 016) data contract. Implemented by EF Core
-/// projections and wrapped by a bounded cache decorator. <c>null</c> from a
-/// selected-resource read means the positive identity does not exist; empty
-/// detail collections for an existing identity are successful non-null responses.
-/// All queries are <c>AsNoTracking</c> and perform no tracked mutation.
-/// </summary>
+// null from a selected-resource read means the identity does not exist; an empty detail collection
+// for an existing identity is a successful non-null response.
 public interface ILemmasReader
 {
     Task<PagedResult<LemmaListItemDto>> GetLemmasPageAsync(

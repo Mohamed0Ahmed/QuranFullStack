@@ -12,12 +12,8 @@ export interface WordsNavItem {
   route: string;
 }
 
-/**
- * Words-section sub-navigation shown in the top-navbar "الكلمات والجذور" dropdown. Routes
- * come from `route-paths` (the canonical source); labels are the menu section names, owned
- * here in core like `NAV_ITEMS`. `الرئيسية` is the Words hub landing; `unique` defaults to
- * the `tashkeel` mode so the link skips the redirect hop.
- */
+// Labels are the menu section names, owned here in core like `NAV_ITEMS`; routes come from
+// `route-paths`. `unique` points at the `tashkeel` mode so the link skips the redirect hop.
 export const WORDS_MENU_ITEMS: readonly WordsNavItem[] = [
   { labelAr: 'الرئيسية', route: WORDS_ROUTE_PATH },
   { labelAr: 'الكلمات الفريدة', route: uniqueWordsRoutePath('tashkeel') },

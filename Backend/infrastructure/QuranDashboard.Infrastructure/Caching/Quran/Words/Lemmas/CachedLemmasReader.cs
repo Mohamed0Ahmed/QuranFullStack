@@ -4,16 +4,8 @@ using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Lemmas;
 
 namespace QuranDashboard.Infrastructure.Caching.Quran.Words.Lemmas;
 
-/// <summary>
-/// Bounded cache decorator over <see cref="EfLemmasReader"/> for the Lemmas
-/// Explorer (Feature 016). Decorates the concrete EF reader and uses the existing
-/// shared <see cref="IMemoryCache"/>; no global cache configuration is applied.
-/// The lemma catalogue caches the whole summary list
-/// (<see cref="LemmasCacheKeys.SummaryAll"/>) once; search/sort/paging are
-/// applied in memory so sort/page changes issue no new SQL commands. Detail
-/// caches (ayahs/words/surahs/relationships) are layered in by later story
-/// phases (T056/T068/T080/T090).
-/// </summary>
+// Cache decorator over EfLemmasReader: the whole summary list is cached once and search/sort/paging run
+// in memory, so sort/page changes issue no new SQL.
 public sealed class CachedLemmasReader(EfLemmasReader efReader, IMemoryCache cache) : ILemmasReader
 {
     private readonly EfLemmasReader _ef = efReader;
@@ -137,13 +129,9 @@ public sealed class CachedLemmasReader(EfLemmasReader efReader, IMemoryCache cac
         return ayahs;
     }
 
-    /// <summary>
-    /// Caches the complete grouped word list once per (lemma, kind) identity, mirroring
-    /// the catalogue whole-summary pattern. Every page (including out-of-range pages)
-    /// then slices this single cached list in memory instead of re-issuing the full
-    /// occurrence query per page (performance review finding B6). Concurrent cold callers
-    /// for the same identity share one load rather than each materializing the full list.
-    /// </summary>
+    // Caches the complete grouped word list once per (lemma, kind); every page slices it in memory
+    // instead of re-issuing the full occurrence query per page (perf finding B6). Concurrent cold
+    // callers share one load via CacheLoadGate.
     private Task<IReadOnlyList<LemmaWordItemDto>?> GetOrLoadWordGroupsAsync(
         int id,
         LemmaWordKind wordKind,

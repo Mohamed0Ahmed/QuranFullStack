@@ -172,7 +172,7 @@
   font-weight: 700;
 }
 
-/* Selected-child dot indicator — §16 allowed-gold (solid selection indicator). */
+/* §16 allowed-gold: solid selection indicator. */
 .word-type-filter__child-button.qd-is-selected::before {
   content: '';
   position: absolute;

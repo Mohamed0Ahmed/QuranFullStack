@@ -1,10 +1,5 @@
 namespace QuranDashboard.Application.Abstractions.Quran.Words.Lemmas;
 
-/// <summary>
-/// The allowlisted Lemmas list sort columns. Every member maps to a value already present on the
-/// summary row at the sort point. The related root TEXT is deliberately excluded (see the reads
-/// README's ordering contract).
-/// </summary>
 public enum LemmaSortColumn
 {
     MushafOrder,
@@ -29,22 +24,14 @@ public static class LemmaSortKeys
     public const string Stems = "stems";
 }
 
-/// <summary>
-/// A parsed Lemmas ordering: an allowlisted column plus its direction. The pair travels together from
-/// the parser to the reader and the cache key so the two halves can never drift apart.
-/// </summary>
 public readonly record struct LemmaSortSpec(LemmaSortColumn Column, WordSortDirection Direction)
 {
-    /// <summary>The ordering used when the request carries no sort token.</summary>
     public static LemmaSortSpec Default { get; } = Natural(LemmaSortColumn.MushafOrder);
 
-    /// <summary>The column at its natural direction — what a bare token means.</summary>
     public static LemmaSortSpec Natural(LemmaSortColumn column) => new(column, NaturalDirectionOf(column));
 
-    /// <summary>
-    /// Counts read most-first, so their natural direction is descending; text and the Mushaf release
-    /// order read forward.
-    /// </summary>
+    // Counts read most-first, so their natural direction is descending; text and the Mushaf
+    // release order read forward.
     public static WordSortDirection NaturalDirectionOf(LemmaSortColumn column) => column switch
     {
         LemmaSortColumn.MushafOrder => WordSortDirection.Ascending,
@@ -58,10 +45,6 @@ public readonly record struct LemmaSortSpec(LemmaSortColumn Column, WordSortDire
         _ => throw new InvalidOperationException($"Unhandled {nameof(LemmaSortColumn)} value."),
     };
 
-    /// <summary>
-    /// The canonical wire/cache token: bare for the column's natural direction, suffixed for the
-    /// opposite one. mushaf-order is ascending-only by contract and never carries a suffix.
-    /// </summary>
     public string CanonicalToken() => Column == LemmaSortColumn.MushafOrder
         ? LemmaSortKeys.MushafOrder
         : WordSortToken.Canonical(ColumnKey(Column), Direction, NaturalDirectionOf(Column));
@@ -82,10 +65,6 @@ public readonly record struct LemmaSortSpec(LemmaSortColumn Column, WordSortDire
 
 public static class LemmaSortParser
 {
-    /// <summary>
-    /// Parses a raw request token against the Lemmas column allowlist. An unknown column, or any
-    /// direction suffix on mushaf-order, fails — the caller maps that to a controlled 400.
-    /// </summary>
     public static bool TryParse(string? value, out LemmaSortSpec spec)
     {
         spec = default;

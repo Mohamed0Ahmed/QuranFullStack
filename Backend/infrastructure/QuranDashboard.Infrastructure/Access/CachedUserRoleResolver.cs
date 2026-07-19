@@ -5,21 +5,11 @@ using QuranDashboard.Domain.Access;
 
 namespace QuranDashboard.Infrastructure.Access;
 
-/// <summary>
-/// <see cref="IUserRoleResolver"/> backed by the local database with a short-TTL <see cref="IMemoryCache"/>
-/// in front, keyed by the Logto <c>sub</c>. Only an Active user with an assigned role yields a role name;
-/// every other case (no user, not Active, no role) resolves to null and is cached too, so a role-less
-/// caller does not hit the database on every request. The TTL is deliberately short: a role/status
-/// change calls <see cref="Evict"/> for immediate correctness, so the window only bounds staleness for
-/// out-of-band edits (e.g. a direct database change) that never call <see cref="Evict"/>.
-/// <para>
-/// Immediate eviction is race-free even against a read whose query is in flight: every entry carries a
-/// per-subject <see cref="CancellationChangeToken"/> captured <em>before</em> the read. <see cref="Evict"/>
-/// cancels that token, so a concurrent read that fetched a now-stale value and returns after the eviction
-/// re-caches an entry whose expiration token is already cancelled — <see cref="IMemoryCache"/> drops it on
-/// the spot rather than serving the stale value for the TTL, and the next read hits the database.
-/// </para>
-/// </summary>
+// Short-TTL cache in front of the DB, keyed by the Logto sub. Only an Active user with an assigned role
+// yields a role name; every other case (no user, not Active, no role) resolves to null and is cached
+// too, so a role-less caller does not hit the DB on every request. The TTL only bounds staleness for
+// out-of-band DB edits that never call Evict — a role/status change calls Evict for immediate, race-free
+// correctness (see the eviction-token handling below).
 public sealed class CachedUserRoleResolver(IMemoryCache cache, QuranDashboardDbContext db) : IUserRoleResolver
 {
     private static readonly TimeSpan CacheTtl = TimeSpan.FromSeconds(30);
