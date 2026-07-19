@@ -6,11 +6,11 @@ export const environment: Environment = {
   devApiLatencyMs: 0,
 
   logto: {
-    endpoint: 'https://REPLACE-WITH-YOUR-TENANT.logto.app',
-    appId: 'REPLACE_WITH_LOGTO_SPA_APP_ID',
-    redirectUri: 'https://REPLACE-WITH-PRODUCTION-ORIGIN/callback',
-    postLogoutRedirectUri: 'https://REPLACE-WITH-PRODUCTION-ORIGIN',
+    endpoint: 'https://a8kvwi.logto.app',
+    appId: 'osfceu3so056z6r762sjs',
+    redirectUri: 'https://manhag-qurany-ui.vercel.app/callback',
+    postLogoutRedirectUri: 'https://manhag-qurany-ui.vercel.app/',
     scope: '',
-    resource: 'https://REPLACE-WITH-YOUR-API-RESOURCE-INDICATOR',
+    resource: 'https://quranfullstack-production.up.railway.app',
   },
 };

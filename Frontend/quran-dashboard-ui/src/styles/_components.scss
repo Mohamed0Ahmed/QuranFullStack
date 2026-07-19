@@ -59,7 +59,7 @@ button.qd-interactive-surface {
   border-radius: var(--qd-radius-sm);
   font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
   font-size: var(--qd-btn-font-size);
-  font-weight: 500;
+  font-weight: 400;
   line-height: var(--qd-btn-line-height);
   cursor: pointer;
   background: var(--qd-surface);
@@ -133,7 +133,7 @@ button.qd-interactive-surface {
   border-radius: var(--qd-radius-sm);
   font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
   font-size: 0.75rem;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 1.4;
   background: var(--qd-section-bg);
   color: var(--qd-text-muted);
@@ -176,7 +176,7 @@ button.qd-interactive-surface {
   color: var(--qd-text-muted);
   font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
   font-size: 0.9375rem;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 1.5;
   text-decoration: none;
   cursor: pointer;
@@ -215,7 +215,7 @@ button.qd-interactive-surface {
   background: var(--qd-surface-recessed);
   color: var(--qd-text-muted);
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
@@ -237,7 +237,7 @@ button.qd-interactive-surface {
   color: var(--qd-text);
   font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 1.4;
   cursor: pointer;
   text-decoration: none;
@@ -280,7 +280,7 @@ button.qd-interactive-surface {
   background: var(--qd-surface-recessed);
   color: var(--qd-text-muted);
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
@@ -315,7 +315,7 @@ button.qd-interactive-surface {
   justify-self: start;
   font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--qd-text);
 }
 

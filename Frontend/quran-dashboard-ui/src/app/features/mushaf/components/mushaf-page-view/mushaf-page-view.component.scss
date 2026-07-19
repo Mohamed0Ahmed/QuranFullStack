@@ -50,14 +50,14 @@
     font-family: var(--qd-font-mushaf-surah-name);
     font-size: 1.25rem;
     line-height: 1;
-    font-weight: 600;
+    font-weight: 700;
   }
 
   &__surah-sep {
     flex: 0 0 auto;
     color: var(--qd-text-muted);
     font-size: 0.9375rem;
-    font-weight: 600;
+    font-weight: 700;
     line-height: 1;
   }
 
@@ -66,7 +66,7 @@
     min-width: 0;
     font-family: var(--qd-font-mushaf-common);
     font-size: 0.9375rem;
-    font-weight: 600;
+    font-weight: 700;
     line-height: 1.4;
     text-align: end;
   }
@@ -86,7 +86,7 @@
     background: transparent;
     color: var(--qd-text-muted);
     font-size: 0.875rem;
-    font-weight: 600;
+    font-weight: 700;
     line-height: 1.35;
     cursor: pointer;
     transition:
@@ -114,7 +114,7 @@
     background: var(--qd-surface);
     color: var(--qd-text);
     font-size: 0.875rem;
-    font-weight: 600;
+    font-weight: 700;
     line-height: 1.35;
     text-align: center;
 

@@ -91,7 +91,7 @@
     ::ng-deep .segment-rendered-word {
       justify-content: center;
       font-size: 1.9rem;
-      font-weight: 600;
+      font-weight: 700;
       line-height: 1.8;
     }
   }
@@ -182,7 +182,7 @@
       margin: 0;
       color: var(--qd-text-muted);
       font-size: 0.78rem;
-      font-weight: 500;
+      font-weight: 400;
       letter-spacing: 0.01em;
       width: 100%;
     }
@@ -239,7 +239,7 @@
   &__identity-label {
     margin: 0;
     color: var(--qd-text-muted);
-    font-weight: 500;
+    font-weight: 400;
     width: 100%;
   }
 

@@ -22,7 +22,7 @@
     margin: 0;
     font-family: var(--qd-font-quran);
     font-size: 1.0625rem;
-    font-weight: 600;
+    font-weight: 700;
     line-height: 2;
     color: var(--qd-text);
   }
@@ -48,7 +48,7 @@
     background: var(--qd-surface);
     color: var(--qd-text);
     font-size: 0.75rem;
-    font-weight: 600;
+    font-weight: 700;
     line-height: 1.4;
   }
 
@@ -82,14 +82,14 @@
     min-width: 1.25rem;
     color: var(--qd-text-muted);
     font-size: 0.75rem;
-    font-weight: 600;
+    font-weight: 700;
     font-variant-numeric: tabular-nums;
     line-height: 1.4;
   }
 
   &__occurrence-reference {
     color: var(--qd-text);
-    font-weight: 600;
+    font-weight: 700;
   }
 
   &__occurrence-context {
@@ -135,7 +135,7 @@
     background: var(--qd-surface-recessed);
     color: var(--qd-text-muted);
     font-size: 0.8125rem;
-    font-weight: 600;
+    font-weight: 700;
     line-height: 1.4;
     cursor: pointer;
     transition:

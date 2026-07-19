@@ -400,9 +400,12 @@ theme-neutral and apply to dark too; dark keeps its shadow values.
 ### A. Typography
 
 - **UI font:** IBM Plex Sans Arabic for Arabic UI chrome; IBM Plex Sans for Latin UI.
-- **Weights:** use **400 / 500 / 600 / 700** where available. Mid-weights (500/600)
-  carry nav links, card titles, labels, and footer headings — ship them, do not rely
-  on only 400/700.
+- **Weights:** use **400 and 700 only**. The app bundles only 400/700 woff2 faces
+  for IBM Plex Sans Arabic and Amiri — no 500/600 (medium/semibold) faces exist.
+  Do not use `font-weight: 500` or `600`; the browser would fall back to the
+  nearest available face (400 or 700) anyway, so a mid-weight declaration is a
+  faux weight that does nothing but confuse the next reader. Nav links, card
+  titles, labels, and footer headings use 400 or 700.
 - **Quran/Mushaf fonts stay as currently implemented** (Amiri for verse text plus the
   existing ayah-marker face). **Do not replace or restyle Quran/Mushaf glyph fonts or
   Quran rendering.** Keep `--qd-font-quran` and related tokens unchanged.
