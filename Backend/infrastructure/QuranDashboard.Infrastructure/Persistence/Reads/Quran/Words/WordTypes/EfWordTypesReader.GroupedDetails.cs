@@ -117,32 +117,14 @@ public sealed partial class EfWordTypesReader
         var matchesByAyah = matchRows
             .GroupBy(row => row.AyahId)
             .ToDictionary(group => group.Key, group => group.ToList());
-        var ayahIds = pageAyahs.Select(ayah => ayah.AyahId).ToList();
 
         // One bounded hydration query loads every readable word (canonical Uthmani text) for the page ayahs.
-        var wordsByAyah = await _dbContext.QuranWords
-            .AsNoTracking()
-            .Where(word => ayahIds.Contains(word.AyahId) && !word.IsAyahMarker)
-            .OrderBy(word => word.SurahNumber)
-            .ThenBy(word => word.AyahNumber)
-            .ThenBy(word => word.WordNumber)
-            .Select(word => new AyahWordRow(
-                word.AyahId,
-                word.Id,
-                word.WordNumber,
-                word.PageNumber,
-                word.TextUthmani,
-                word.IsAyahMarker))
-            .ToListAsync(cancellationToken);
-
-        var wordsGrouped = wordsByAyah
-            .GroupBy(word => word.AyahId)
-            .ToDictionary(group => group.Key, group => group.ToList());
-
-        var items = pageAyahs
-            .Select(ayah =>
+        var items = await AyahWordHydration.ProjectAyahMatchesAsync(
+            _dbContext,
+            pageAyahs,
+            ayah => ayah.AyahId,
+            (ayah, words, pageNumber) =>
             {
-                var words = wordsGrouped.GetValueOrDefault(ayah.AyahId, []);
                 var matched = matchesByAyah.GetValueOrDefault(ayah.AyahId, []);
                 var matchedPositions = matched.Select(row => row.MatchedWordNumber).Distinct().OrderBy(number => number).ToList();
 
@@ -150,15 +132,15 @@ public sealed partial class EfWordTypesReader
                     ayah.VerseKey,
                     ayah.SurahNumber,
                     ayah.AyahNumber,
-                    ResolveAyahPageNumber(words),
+                    pageNumber,
                     matchedPositions,
                     matched.Select(row => row.MatchedWordId).Distinct().ToList(),
                     words.Select(word => new AyahWordForHighlightDto(
                         word.QuranWordId,
                         word.TextUthmani,
                         word.IsAyahMarker)).ToList());
-            })
-            .ToList();
+            },
+            cancellationToken);
 
         return new PagedResult<WordTypeAyahMatchDto>(page, pageSize, totalCount, items);
     }

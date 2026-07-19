@@ -1,7 +1,7 @@
 using QuranDashboard.Application.Abstractions.Quran.Words;
 using QuranDashboard.Application.Abstractions.Quran.Words.WordTypes;
 using QuranDashboard.Application.Abstractions.Quran.Words.WordTypes.Responses;
-using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Roots;
+using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.WordTypes;
 
@@ -111,8 +111,8 @@ public sealed partial class EfWordTypesReader
         // Same NeedsFold gate as the SQL shape — the fold pair stays parameterized, never interpolated.
         if (NeedsFold(sort))
         {
-            parameters.Add(new NpgsqlParameter<string>("foldFrom", RootsListDerivation.ArabicFoldFrom));
-            parameters.Add(new NpgsqlParameter<string>("foldTo", RootsListDerivation.ArabicFoldTo));
+            parameters.Add(new NpgsqlParameter<string>("foldFrom", ArabicSearchQueryNormalizer.FoldFrom));
+            parameters.Add(new NpgsqlParameter<string>("foldTo", ArabicSearchQueryNormalizer.FoldTo));
         }
 
         return [.. parameters];

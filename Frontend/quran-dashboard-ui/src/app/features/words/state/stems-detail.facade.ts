@@ -1,7 +1,5 @@
 import { Injectable, computed, inject } from '@angular/core';
-import { ActivatedRoute, ParamMap } from '@angular/router';
-import { Subscription } from 'rxjs';
-import { distinctUntilChanged, map } from 'rxjs/operators';
+import { ParamMap } from '@angular/router';
 
 import { StemsApi } from '../data-access/stems.api';
 import {
@@ -13,6 +11,7 @@ import {
 } from '../models/stems.models';
 import { parseStemsQueryParams } from './stems-url-sync';
 import { StemsCache } from './stems-cache';
+import { AbstractRouteDetailFacade } from './abstract-route-detail.facade';
 import {
   StemsDetailController,
   StemsDetailUrlState,
@@ -21,7 +20,9 @@ import {
 import { StemsDetailViewLoader } from './stems-detail-view.loader';
 
 /**
- * Thin route adapter over `StemsDetailController` (Feature 029, Change B4).
+ * Thin route adapter over `StemsDetailController` (Feature 029, Change B4;
+ * consolidated onto `AbstractRouteDetailFacade` in Feature 033, decision 5
+ * (DRY)).
  *
  * The facade keeps the stems explorer page contract — bind/unbind to the
  * page's `ActivatedRoute` query state plus the direct selection methods — and
@@ -31,14 +32,17 @@ import { StemsDetailViewLoader } from './stems-detail-view.loader';
  * never mutate this page facade's state.
  */
 @Injectable({ providedIn: 'root' })
-export class StemsDetailFacade {
-  private readonly controller = new StemsDetailController(
+export class StemsDetailFacade extends AbstractRouteDetailFacade<
+  StemsDetailUrlState,
+  StemView,
+  StemWordView,
+  StemSurahView
+> {
+  protected readonly controller = new StemsDetailController(
     inject(StemsApi),
     inject(StemsCache),
     inject(StemsDetailViewLoader),
   );
-
-  private routeSub?: Subscription;
 
   readonly panelState = this.controller.panelState;
 
@@ -54,28 +58,6 @@ export class StemsDetailFacade {
   readonly lemmas = computed(() => this.panelState().lemmas);
   readonly detailPage = computed(() => this.panelState().detailPage);
 
-  bindToRoute(route: ActivatedRoute): void {
-    this.unbindFromRoute();
-
-    this.routeSub = route.queryParamMap
-      .pipe(
-        map((params) => this.toPanelUrlState(params)),
-        distinctUntilChanged((a, b) => stemsDetailUrlStatesEqual(a, b)),
-      )
-      .subscribe((state) => this.controller.applyUrlState(state));
-  }
-
-  unbindFromRoute(): void {
-    this.routeSub?.unsubscribe();
-    this.routeSub = undefined;
-    // Reset the active identity as well as cancelling in-flight loads: a bare
-    // cancel leaves the controller's last identity set, so re-binding to the
-    // SAME query params would short-circuit in applyUrlState() and strand the
-    // panel in its cancelled `loading` state. Clearing forces a real reload on
-    // re-entry.
-    this.controller.clearSelection();
-  }
-
   selectStem(summary: StemSummaryDto, view: StemView = DEFAULT_STEM_VIEW): void {
     this.controller.selectStem(summary, view);
   }
@@ -90,31 +72,15 @@ export class StemsDetailFacade {
     this.controller.selectStemWithPanel(summary, view, wordView, surahView, detailPage);
   }
 
-  clearSelection(): void {
-    this.controller.clearSelection();
-  }
-
-  setView(view: StemView): void {
-    this.controller.setView(view);
-  }
-
-  setWordView(wordView: StemWordView): void {
-    this.controller.setWordView(wordView);
-  }
-
-  setSurahView(surahView: StemSurahView): void {
-    this.controller.setSurahView(surahView);
-  }
-
-  setDetailPage(page: number): void {
-    this.controller.setDetailPage(page);
-  }
-
   setAyahTypeCode(typeCode: string | null): void {
     this.controller.setAyahTypeCode(typeCode);
   }
 
-  private toPanelUrlState(params: ParamMap): StemsDetailUrlState | null {
+  protected urlStatesEqual(a: StemsDetailUrlState | null, b: StemsDetailUrlState | null): boolean {
+    return stemsDetailUrlStatesEqual(a, b);
+  }
+
+  protected toPanelUrlState(params: ParamMap): StemsDetailUrlState | null {
     const parsed = parseStemsQueryParams(params);
     if (parsed.stemId === null) {
       return null;

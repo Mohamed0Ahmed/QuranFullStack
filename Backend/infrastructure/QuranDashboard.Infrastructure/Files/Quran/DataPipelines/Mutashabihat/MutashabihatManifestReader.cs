@@ -1,4 +1,5 @@
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Mutashabihat;
+using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Foundation;
 
 namespace QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Mutashabihat;
 
@@ -210,8 +211,8 @@ public sealed class MutashabihatManifestReader
 
     private static void ValidateChecksum(string fullPath, string expectedSha256)
     {
-        var actual = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(fullPath)));
-        if (!string.Equals(actual, expectedSha256, StringComparison.OrdinalIgnoreCase))
+        var actual = ManifestChecksum.ComputeSha256Hex(fullPath);
+        if (!ManifestChecksum.Matches(actual, expectedSha256))
         {
             throw new MutashabihatSourceException($"Checksum mismatch for '{fullPath}'.");
         }

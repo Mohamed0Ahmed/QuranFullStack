@@ -1,4 +1,3 @@
-using System.Text;
 using QuranDashboard.Application.Abstractions.Common.Paging;
 using QuranDashboard.Application.Abstractions.Quran.Words;
 using QuranDashboard.Application.Abstractions.Quran.Words.Morphology.Responses;
@@ -15,10 +14,6 @@ namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Stems;
 /// </summary>
 internal static class StemsListDerivation
 {
-    internal const string ArabicFoldFrom = "أإآٱؤئةىي";
-
-    internal const string ArabicFoldTo = "ااااواهيي";
-
     internal static readonly TypeSummaryDto NoType = new(string.Empty, "غير محدَّد", 0);
 
     public static PagedResult<StemListItemDto> ToPage(
@@ -61,7 +56,7 @@ internal static class StemsListDerivation
         string? search,
         StemSortSpec sort)
     {
-        var normalizedSearch = NormalizeArabicQuery(search);
+        var normalizedSearch = ArabicSearchQueryNormalizer.Normalize(search, stripWhitespace: true);
 
         IEnumerable<StemSummaryRow> rows = all;
         if (!string.IsNullOrEmpty(normalizedSearch))
@@ -175,40 +170,4 @@ internal static class StemsListDerivation
 
     private static TypeSummaryDto ToTypeSummary(StemTypeDistributionRow row) =>
         new(row.Code, row.ArabicLabel, row.OccurrencesCount);
-
-    internal static string? NormalizeArabicQuery(string? search)
-    {
-        if (string.IsNullOrWhiteSpace(search))
-        {
-            return null;
-        }
-
-        var builder = new StringBuilder(search.Length);
-        foreach (var ch in search)
-        {
-            if (IsSkippable(ch) || char.IsWhiteSpace(ch))
-            {
-                continue;
-            }
-
-            builder.Append(Fold(ch));
-        }
-
-        var normalized = builder.ToString().ToLowerInvariant();
-        return string.IsNullOrEmpty(normalized) ? null : normalized;
-    }
-
-    private static bool IsSkippable(char ch) =>
-        ch == '\u0640' ||
-        ch is >= '\u0610' and <= '\u061A' ||
-        ch is >= '\u064B' and <= '\u065F' ||
-        ch == '\u0670' ||
-        ch is >= '\u06D6' and <= '\u06ED' ||
-        ch is >= '\u08D3' and <= '\u08FF';
-
-    private static char Fold(char ch)
-    {
-        var index = ArabicFoldFrom.IndexOf(ch);
-        return index >= 0 ? ArabicFoldTo[index] : ch;
-    }
 }

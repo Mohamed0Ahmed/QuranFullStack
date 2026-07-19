@@ -145,8 +145,9 @@ and Unique Words. They back the `application/.../Quran/Words/**` query handlers 
   read (`.ScopeCounts.cs`) stays its own one-command contract, untouched. These grouped
   counts are a **separate family** from the Roots/Lemmas/Stems explorers' global,
   unscoped, segment/`words_count`-backed aggregates (`EfRootsReader.LoadWholeSummaryAsync`
-  and friends) — never conflate the two. Grouped `alpha` sort reuses the Roots explorer's
-  Arabic fold (`RootsListDerivation.ArabicFoldFrom`/`ArabicFoldTo`) with `COLLATE "C"`
+  and friends) — never conflate the two. Grouped `alpha` sort reuses the shared
+  Arabic fold (`ArabicSearchQueryNormalizer.FoldFrom`/`FoldTo`, decision 5 (DRY) single
+  source for every Roots/Lemmas/Stems/Word-Types reader SQL fold parameter) with `COLLATE "C"`
   ordinal collation, tie-broken by the numeric dimension ID — in **both directions**
   (`alpha` = `norm_text COLLATE "C"`, `alpha-desc` = `norm_text COLLATE "C" DESC`). The folded
   `norm_text` column is projected into the grouped CTE **only** for alpha, and the `@foldFrom`/`@foldTo`

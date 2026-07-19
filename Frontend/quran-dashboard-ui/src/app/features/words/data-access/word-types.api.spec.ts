@@ -1,12 +1,17 @@
 import { describe, expect, it, beforeEach, afterEach } from 'vitest';
-import { TestBed, getTestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
-import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { HttpTestingController } from '@angular/common/http/testing';
 import { firstValueFrom } from 'rxjs';
 
-import { ApiResponse } from '../../../core/data-access/api-response.model';
-import { PagedResultDto, WordTypeRowDto, WordTypeTableRowDto } from '../models/word-types.models';
+import {
+  WordTypeAyahMatchDto,
+  WordTypeRowDto,
+  WordTypeScopeCountsDto,
+  WordTypeSurahsResponseDto,
+  WordTypeTableRowDto,
+} from '../models/word-types.models';
+import { WordTypeGroupedMemberWordDto, WordTypeGroupedSummaryDto } from '../models/word-types-detail.models';
 import { WordTypesApi } from './word-types.api';
+import { ok, page, setupApiTestBed, teardownApiTestBed } from './testing/api-test-bed';
 
 function matchTable(): RegExp {
   return /\/api\/words\/word-types\/table(\?.*)?$/;
@@ -25,17 +30,11 @@ describe('WordTypesApi', () => {
   let httpMock: HttpTestingController;
 
   beforeEach(() => {
-    getTestBed().resetTestingModule();
-    TestBed.configureTestingModule({
-      providers: [WordTypesApi, provideHttpClient(), provideHttpClientTesting()],
-    });
-    api = TestBed.inject(WordTypesApi);
-    httpMock = TestBed.inject(HttpTestingController);
+    ({ api, httpMock } = setupApiTestBed(WordTypesApi));
   });
 
   afterEach(() => {
-    httpMock.verify();
-    getTestBed().resetTestingModule();
+    teardownApiTestBed(httpMock);
   });
 
   it('calls the table endpoint with type/tableView/sort/page/pageSize params', async () => {
@@ -65,11 +64,7 @@ describe('WordTypesApi', () => {
     expect(req.request.params.has('childCode')).toBe(false);
     expect(req.request.params.has('search')).toBe(false);
 
-    const response: ApiResponse<PagedResultDto<WordTypeTableRowDto>> = {
-      isSuccess: true,
-      message: 'تم',
-      data: { page: 1, pageSize: 25, totalCount: 0, items: [] },
-    };
+    const response = page<WordTypeTableRowDto>([], 0, 1, 25);
     req.flush(response);
 
     await expect(promise).resolves.toEqual(response);
@@ -96,17 +91,13 @@ describe('WordTypesApi', () => {
     expect(req.request.params.get('childCode')).toBe('PN');
     expect(req.request.params.get('case')).toBe('nominative');
     expect(req.request.params.get('tableView')).toBe('words');
-    req.flush({ isSuccess: true, message: 'تم', data: { page: 2, pageSize: 25, totalCount: 0, items: [] } });
+    req.flush(page<WordTypeTableRowDto>([], 0, 2, 25));
 
     await promise;
   });
 
   it('retains getRows for the legacy words endpoint', async () => {
-    const response: ApiResponse<PagedResultDto<WordTypeRowDto>> = {
-      isSuccess: true,
-      message: 'تم',
-      data: { page: 2, pageSize: 25, totalCount: 0, items: [] },
-    };
+    const response = page<WordTypeRowDto>([], 0, 2, 25);
 
     const promise = firstValueFrom(api.getRows({
       type: 'noun',
@@ -140,7 +131,7 @@ describe('WordTypesApi', () => {
     }));
     const rowsReq = httpMock.expectOne((r) => matchRows().test(r.url));
     expect(rowsReq.request.params.get('search')).toBe('كلمة');
-    rowsReq.flush({ isSuccess: true, message: 'تم', data: { page: 1, pageSize: 1000, totalCount: 0, items: [] } });
+    rowsReq.flush(page<WordTypeRowDto>([], 0, 1, 1000));
     await rowsPromise;
 
     const tablePromise = firstValueFrom(api.getTableRows({
@@ -149,7 +140,7 @@ describe('WordTypesApi', () => {
     }));
     const tableReq = httpMock.expectOne((r) => matchTable().test(r.url));
     expect(tableReq.request.params.get('search')).toBe('كلمة');
-    tableReq.flush({ isSuccess: true, message: 'تم', data: { page: 1, pageSize: 1000, totalCount: 0, items: [] } });
+    tableReq.flush(page<WordTypeTableRowDto>([], 0, 1, 1000));
     await tablePromise;
   });
 
@@ -163,7 +154,7 @@ describe('WordTypesApi', () => {
     expect(req.request.params.get('hasRoot')).toBe('true');
     expect(req.request.params.get('hasStem')).toBe('false');
     expect(req.request.params.has('hasLemma')).toBe(false);
-    req.flush({ isSuccess: true, message: 'تم', data: { page: 1, pageSize: 1000, totalCount: 0, items: [] } });
+    req.flush(page<WordTypeRowDto>([], 0, 1, 1000));
 
     await promise;
   });
@@ -189,7 +180,7 @@ describe('WordTypesApi', () => {
     expect(req.request.params.has('page')).toBe(false);
     expect(req.request.params.has('pageSize')).toBe(false);
 
-    req.flush({ isSuccess: true, message: 'تم', data: { wordsCount: 3, rootsCount: 1, stemsCount: 1, lemmasCount: 1 } });
+    req.flush(ok<WordTypeScopeCountsDto>({ wordsCount: 3, rootsCount: 1, stemsCount: 1, lemmasCount: 1 }));
     await promise;
   });
 
@@ -205,7 +196,7 @@ describe('WordTypesApi', () => {
     expect(req.request.params.has('case')).toBe(false);
     expect(req.request.params.has('search')).toBe(false);
     expect(req.request.params.has('hasRoot')).toBe(false);
-    req.flush({ isSuccess: true, message: 'تم', data: { wordsCount: 0, rootsCount: 0, stemsCount: 0, lemmasCount: 0 } });
+    req.flush(ok<WordTypeScopeCountsDto>({ wordsCount: 0, rootsCount: 0, stemsCount: 0, lemmasCount: 0 }));
     await promise;
   });
 
@@ -235,11 +226,9 @@ describe('WordTypesApi', () => {
     expect(req.request.params.has('pageSize')).toBe(false);
     expect(req.request.params.has('detailPage')).toBe(false);
     expect(req.request.params.has('sort')).toBe(false);
-    req.flush({
-      isSuccess: true,
-      message: 'تم',
-      data: { kind, dimensionId, displayText: 'SYNTH_GROUP', occurrencesCount: 1, ayahsCount: 1, surahsCount: 1 },
-    });
+    req.flush(
+      ok<WordTypeGroupedSummaryDto>({ kind, dimensionId, displayText: 'SYNTH_GROUP', occurrencesCount: 1, ayahsCount: 1, surahsCount: 1 }),
+    );
 
     await promise;
   });
@@ -262,7 +251,7 @@ describe('WordTypesApi', () => {
     expect(req.request.params.get('page')).toBe('2');
     expect(req.request.params.get('pageSize')).toBe('25');
     expect(req.request.params.has('sort')).toBe(false);
-    req.flush({ isSuccess: true, message: 'تم', data: { page: 2, pageSize: 25, totalCount: 0, items: [] } });
+    req.flush(page<WordTypeGroupedMemberWordDto>([], 0, 2, 25));
 
     await promise;
   });
@@ -286,7 +275,7 @@ describe('WordTypesApi', () => {
     expect(req.request.params.get('page')).toBe('3');
     expect(req.request.params.get('pageSize')).toBe('10');
     expect(req.request.params.has('sort')).toBe(false);
-    req.flush({ isSuccess: true, message: 'تم', data: { page: 3, pageSize: 10, totalCount: 0, items: [] } });
+    req.flush(page<WordTypeAyahMatchDto>([], 0, 3, 10));
 
     await promise;
   });
@@ -310,7 +299,7 @@ describe('WordTypesApi', () => {
     expect(req.request.params.has('pageSize')).toBe(false);
     expect(req.request.params.has('detailPage')).toBe(false);
     expect(req.request.params.has('sort')).toBe(false);
-    req.flush({ isSuccess: true, message: 'تم', data: { surahs: [], missingSurahs: [] } });
+    req.flush(ok<WordTypeSurahsResponseDto>({ surahs: [], missingSurahs: [] }));
 
     await promise;
   });

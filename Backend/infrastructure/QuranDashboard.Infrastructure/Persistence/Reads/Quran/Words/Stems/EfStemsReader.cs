@@ -122,41 +122,23 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
             .GroupBy(r => r.AyahId)
             .ToDictionary(g => g.Key, g => g.Select(x => x.Id).ToHashSet());
 
-        var wordsByAyah = await _db.QuranWords
-            .AsNoTracking()
-            .Where(w => ayahIds.Contains(w.AyahId))
-            .Where(w => !w.IsAyahMarker)
-            .OrderBy(w => w.SurahNumber)
-            .ThenBy(w => w.AyahNumber)
-            .ThenBy(w => w.WordNumber)
-            .Select(w => new AyahWordRow(
-                w.AyahId,
-                w.Id,
-                w.WordNumber,
-                w.PageNumber,
-                w.TextUthmani,
-                w.IsAyahMarker))
-            .ToListAsync(cancellationToken);
-
-        var wordsGrouped = wordsByAyah
-            .GroupBy(w => w.AyahId)
-            .ToDictionary(g => g.Key, g => g.ToList());
-
-        var items = pageAyahs
-            .Select(ayah =>
+        var items = await AyahWordHydration.ProjectAyahMatchesAsync(
+            _db,
+            pageAyahs,
+            ayah => ayah.AyahId,
+            (ayah, words, pageNumber) =>
             {
-                var words = wordsGrouped.GetValueOrDefault(ayah.AyahId, []);
                 var matchedSet = matchedIdsByAyah.GetValueOrDefault(ayah.AyahId) ?? [];
                 return new StemAyahMatchDto(
                     ayah.AyahId,
                     ayah.VerseKey,
                     ayah.SurahNameArabic,
-                    ResolveAyahPageNumber(words),
+                    pageNumber,
                     words.Select(w => new StemAyahWordDto(
                         w.TextUthmani,
                         matchedSet.Contains(w.QuranWordId))).ToList());
-            })
-            .ToList();
+            },
+            cancellationToken);
 
         return new PagedResult<StemAyahMatchDto>(page, pageSize, totalCount, items);
     }
@@ -449,14 +431,6 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
         int AyahNumber,
         string SurahNameArabic);
 
-    private sealed record AyahWordRow(
-        int AyahId,
-        int QuranWordId,
-        int WordNumber,
-        short PageNumber,
-        string TextUthmani,
-        bool IsAyahMarker);
-
     private sealed record StemWordOccurrenceRow(
         int? UniqueWordId,
         string DisplayText,
@@ -474,15 +448,4 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
         int FirstWordNumber);
 
     private sealed record SurahOccurrenceRow(short SurahNumber, int OccurrencesInSurah);
-
-    private static short ResolveAyahPageNumber(IReadOnlyList<AyahWordRow> words)
-    {
-        var firstReadableWord = words.FirstOrDefault(w => !w.IsAyahMarker);
-        if (firstReadableWord is not null)
-        {
-            return firstReadableWord.PageNumber;
-        }
-
-        return words.FirstOrDefault()?.PageNumber ?? 0;
-    }
 }

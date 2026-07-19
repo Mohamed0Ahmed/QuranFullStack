@@ -178,39 +178,23 @@ public sealed class EfRootsReader(QuranDashboardDbContext db) : IRootsReader
             .GroupBy(r => r.AyahId)
             .ToDictionary(g => g.Key, g => (IReadOnlyList<int>)g.Select(x => x.Id).ToList());
 
-        var wordsByAyah = await _db.QuranWords
-            .AsNoTracking()
-            .Where(w => ayahIds.Contains(w.AyahId) && !w.IsAyahMarker)
-            .OrderBy(w => w.SurahNumber)
-            .ThenBy(w => w.AyahNumber)
-            .ThenBy(w => w.WordNumber)
-            .Select(w => new AyahWordRow(
-                w.AyahId,
-                w.Id,
-                w.WordNumber,
-                w.PageNumber,
-                w.TextUthmani))
-            .ToListAsync(cancellationToken);
-
-        var wordsGrouped = wordsByAyah
-            .GroupBy(w => w.AyahId)
-            .ToDictionary(g => g.Key, g => g.ToList());
-
-        var items = pageAyahs
-            .Select(ayah =>
+        var items = await AyahWordHydration.ProjectAyahMatchesAsync(
+            _db,
+            pageAyahs,
+            ayah => ayah.AyahId,
+            (ayah, words, pageNumber) =>
             {
-                var words = wordsGrouped.GetValueOrDefault(ayah.AyahId, []);
                 var matchedSet = matchedIdsByAyah.GetValueOrDefault(ayah.AyahId, []);
                 return new RootAyahMatchDto(
                     ayah.AyahId,
                     ayah.VerseKey,
                     ayah.SurahNameArabic,
-                    ResolveAyahPageNumber(words),
+                    pageNumber,
                     words.Select(w => new RootAyahWordDto(
                         w.TextUthmani,
                         matchedSet.Contains(w.QuranWordId))).ToList());
-            })
-            .ToList();
+            },
+            cancellationToken);
 
         return new PagedResult<RootAyahMatchDto>(page, pageSize, totalCount, items);
     }
@@ -384,25 +368,11 @@ public sealed class EfRootsReader(QuranDashboardDbContext db) : IRootsReader
 
         var rows = await _db.Database.SqlQueryRaw<RootSummaryRow>(
             sql,
-            new NpgsqlParameter("foldFrom", RootsListDerivation.ArabicFoldFrom),
-            new NpgsqlParameter("foldTo", RootsListDerivation.ArabicFoldTo))
+            new NpgsqlParameter("foldFrom", ArabicSearchQueryNormalizer.FoldFrom),
+            new NpgsqlParameter("foldTo", ArabicSearchQueryNormalizer.FoldTo))
             .ToListAsync(cancellationToken);
 
         return rows;
-    }
-
-    private static short ResolveAyahPageNumber(IReadOnlyList<AyahWordRow> words)
-    {
-        var firstReadable = words
-            .OrderBy(w => w.WordNumber)
-            .FirstOrDefault();
-
-        if (firstReadable is not null)
-        {
-            return firstReadable.PageNumber;
-        }
-
-        return words.FirstOrDefault()?.PageNumber ?? 0;
     }
 
     private sealed record AyahMetaRow(
@@ -411,13 +381,6 @@ public sealed class EfRootsReader(QuranDashboardDbContext db) : IRootsReader
         short SurahNumber,
         short AyahNumber,
         string SurahNameArabic);
-
-    private sealed record AyahWordRow(
-        int AyahId,
-        int QuranWordId,
-        short WordNumber,
-        short PageNumber,
-        string TextUthmani);
 
     private sealed record GroupedRootWordRow(
         int UniqueWordId,
