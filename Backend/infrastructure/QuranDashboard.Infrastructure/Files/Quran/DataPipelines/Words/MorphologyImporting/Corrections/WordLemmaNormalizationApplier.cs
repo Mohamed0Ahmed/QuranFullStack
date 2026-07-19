@@ -103,8 +103,8 @@ internal static class WordLemmaNormalizationApplier
                     break;
 
                 default:
+                    // Fail(true, ...) always throws, so this arm never returns normally.
                     Fail(true, $"{where}: invalid operationKind '{entry.OperationKind}'.");
-                    failed++;
                     break;
             }
 
@@ -125,7 +125,7 @@ internal static class WordLemmaNormalizationApplier
             AppliedReplace: replace,
             ReviewedKeep: keep,
             ReviewedException: exception,
-            FailedOrSkipped: failed,
+            FailedOrSkipped: failed, // Apply is all-or-nothing: any invalid entry throws, so this is always 0.
             SpotChecks: spotChecks)
         {
             ProblemClassCounts = BuildProblemClassCounts(artifact.Entries),

@@ -1,8 +1,6 @@
-using Microsoft.EntityFrameworkCore;
 using QuranDashboard.Application.Quran.Words.Lemmas.Queries.GetLemmaAyahs;
 using QuranDashboard.Application.Quran.Words.Lemmas.Queries.GetLemmaSummary;
 using QuranDashboard.Infrastructure.Caching.Quran.Words.Lemmas;
-using QuranDashboard.Infrastructure.Persistence;
 using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Lemmas;
 using QuranDashboard.Tests.Quran.Words;
 

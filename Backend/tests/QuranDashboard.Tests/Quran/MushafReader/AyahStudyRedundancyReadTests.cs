@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using QuranDashboard.Application.Abstractions.Quran.MushafReader.Responses;
 using QuranDashboard.Infrastructure.Persistence.Reads.Quran.MushafReader;
 using QuranDashboard.Tests.Quran.Words;
@@ -24,7 +25,7 @@ public sealed class AyahStudyRedundancyReadTests(MushafReaderTestFixture fixture
             .AddInterceptors(interceptor)
             .Options;
         await using var dbContext = new QuranDashboardDbContext(options);
-        var reader = new EfAyahStudyReader(dbContext);
+        var reader = new EfAyahStudyReader(dbContext, NullLogger<EfAyahStudyReader>.Instance);
 
         var response = await reader.GetAyahStudyAsync(
             "2:25", "ar-muyassar", "en-sahih-international", "muyassar", CancellationToken.None);
@@ -71,7 +72,7 @@ public sealed class AyahStudyRedundancyReadTests(MushafReaderTestFixture fixture
             .AddInterceptors(interceptor)
             .Options;
         await using var dbContext = new QuranDashboardDbContext(options);
-        var reader = new EfAyahStudyReader(dbContext);
+        var reader = new EfAyahStudyReader(dbContext, NullLogger<EfAyahStudyReader>.Instance);
 
         // 1:1 has no tafsir/translation/full-i3rab ayah mapping in the fixture, so every family's
         // LEFT JOIN resolves the source row but not the mapping/text rows.
@@ -96,7 +97,7 @@ public sealed class AyahStudyRedundancyReadTests(MushafReaderTestFixture fixture
             .AddInterceptors(interceptor)
             .Options;
         await using var dbContext = new QuranDashboardDbContext(options);
-        var reader = new EfAyahStudyReader(dbContext);
+        var reader = new EfAyahStudyReader(dbContext, NullLogger<EfAyahStudyReader>.Instance);
 
         var response = await reader.GetAyahStudyAsync(
             "2:25", null, null, "does-not-exist", CancellationToken.None);

@@ -2,7 +2,6 @@ namespace QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.Morpholo
 
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.MorphologyImporting;
 
-using System.Text.Json.Serialization;
 
 // Operation kinds supported by the word-level lemma normalization artifact.
 // Order mirrors the artifact spec (see word-level-lemma-full-normalization-implementation-plan.md §3.2).

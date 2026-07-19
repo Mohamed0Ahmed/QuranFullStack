@@ -4,6 +4,7 @@ global using Microsoft.Extensions.Caching.Memory;
 global using Microsoft.Extensions.DependencyInjection;
 global using Npgsql;
 global using NpgsqlTypes;
+global using QuranDashboard.Application.Abstractions.Common.Paging;
 global using QuranDashboard.Infrastructure.Persistence;
 global using System.Data;
 global using System.Globalization;

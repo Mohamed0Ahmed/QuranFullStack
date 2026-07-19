@@ -10,6 +10,8 @@ export type { AyahRange } from './models/ayah-range';
 export type { AyahStudyResponse } from './models/ayah-study-response';
 export type { AyahStudyResponseApiResponse } from './models/ayah-study-response-api-response';
 export type { AyahWordForHighlightDto } from './models/ayah-word-for-highlight-dto';
+export type { CurrentUserResponse } from './models/current-user-response';
+export type { CurrentUserResponseApiResponse } from './models/current-user-response-api-response';
 export type { FullI3RabEntryDto } from './models/full-i-3-rab-entry-dto';
 export type { HealthCheckItem } from './models/health-check-item';
 export type { HealthReportData } from './models/health-report-data';

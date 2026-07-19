@@ -1,8 +1,6 @@
-using Microsoft.EntityFrameworkCore;
 using QuranDashboard.Application.Abstractions.Quran.Words.Roots.Responses;
 using QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootAyahs;
 using QuranDashboard.Infrastructure.Caching.Quran.Words.Roots;
-using QuranDashboard.Infrastructure.Persistence;
 using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Roots;
 using QuranDashboard.Tests.Quran.Words;
 
@@ -68,6 +66,43 @@ public sealed class RootsAyahsReadTests(RootsExplorerTestFixture fixture)
         var secondPage = second.Should().BeOfType<GetRootAyahsOutcome.Success>().Subject.Page;
         secondPage.Items.Should().HaveCount(1);
         secondPage.Items[0].VerseKey.Should().Be("2:25");
+    }
+
+    // M25 regression: page far beyond the last one must return a controlled empty page, not error.
+    [Fact]
+    public async Task GetRootAyahs_positive_out_of_range_page_returns_successful_empty_page()
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetRootAyahsHandler>();
+
+        var outcome = await handler.HandleAsync(
+            new GetRootAyahsQuery(HighFrequencyRootId, 99, 50),
+            CancellationToken.None);
+        var page = outcome.Should().BeOfType<GetRootAyahsOutcome.Success>().Subject.Page;
+
+        page.Page.Should().Be(99);
+        page.TotalCount.Should().Be(3);
+        page.Items.Should().BeEmpty();
+    }
+
+    // M25 regression: `page * pageSize` computed in int arithmetic overflows negative for a large enough
+    // page, which PostgreSQL rejects as "OFFSET must not be negative" — an uncontrolled 500 on this
+    // publicly browsable endpoint. `ReadPaging.CalculateSafeSkip` does the math in long and must return
+    // the empty page instead.
+    [Fact]
+    public async Task GetRootAyahs_huge_positive_page_returns_empty_without_skip_overflow()
+    {
+        await using var scope = fixture.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<GetRootAyahsHandler>();
+
+        var outcome = await handler.HandleAsync(
+            new GetRootAyahsQuery(HighFrequencyRootId, int.MaxValue, 1000),
+            CancellationToken.None);
+        var page = outcome.Should().BeOfType<GetRootAyahsOutcome.Success>().Subject.Page;
+
+        page.Page.Should().Be(int.MaxValue);
+        page.TotalCount.Should().Be(3);
+        page.Items.Should().BeEmpty();
     }
 
     [Fact]

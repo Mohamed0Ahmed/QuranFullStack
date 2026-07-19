@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 import { NAV_ITEMS } from './core/navigation/nav-items';
-import { navLabel } from './core/navigation/route-paths';
+import { CALLBACK_PATH, navLabel } from './core/navigation/route-paths';
 
 const loadPlaceholderPage = () =>
   import('./shared/ui/placeholder-page/placeholder-page.component').then(
@@ -25,25 +25,49 @@ export const routes: Routes = [
     redirectTo: 'dashboard',
   },
   {
+    // One parent covers the whole `/dashboard` subtree (Feature 033). Public-browse by
+    // default (Phase 2, decision record §G1): the Phase-1 blanket `authGuard` was removed —
+    // anonymous users navigate the entire app freely and login stays on-demand via the
+    // navbar. A reusable `roleGuard` exists (core/auth/role.guard.ts) but is attached to
+    // nothing until the first admin feature. URLs are unchanged: parent `dashboard` + child
+    // `''`/`mushaf`/`words` still resolve to `/dashboard`, `/dashboard/mushaf`,
+    // `/dashboard/words`.
     path: 'dashboard',
+    children: [
+      {
+        // The dashboard home intentionally sets no title → brand-only tab (AppTitleStrategy
+        // renders the brand alone when no route in the tree carries a title). The mushaf/words
+        // children set their own titles below (words children override further; see words.routes.ts).
+        path: '',
+        pathMatch: 'full',
+        loadComponent: () =>
+          import('./features/dashboard/pages/dashboard-home/dashboard-home.component').then(
+            (m) => m.DashboardHomeComponent,
+          ),
+      },
+      {
+        path: 'mushaf',
+        title: navLabel('mushaf'),
+        loadChildren: () =>
+          import('./features/mushaf/mushaf.routes').then((m) => m.MUSHAF_ROUTES),
+      },
+      {
+        path: 'words',
+        title: navLabel('words'),
+        loadChildren: () =>
+          import('./features/words/words.routes').then((m) => m.WORDS_ROUTES),
+      },
+    ],
+  },
+  {
+    // Public OIDC landing route (Feature 033) — no guard. Must sit before the `**` wildcard,
+    // which would otherwise swallow it.
+    path: CALLBACK_PATH,
+    title: 'تسجيل الدخول',
     loadComponent: () =>
-      import('./features/dashboard/pages/dashboard-home/dashboard-home.component').then(
-        (m) => m.DashboardHomeComponent,
+      import('./features/auth/pages/auth-callback/auth-callback.component').then(
+        (m) => m.AuthCallbackComponent,
       ),
-  },
-  {
-    // `dashboard` (home) intentionally sets no title → brand-only tab. The mushaf/words
-    // children inherit these parent titles unless a child overrides (see words.routes.ts).
-    path: 'dashboard/mushaf',
-    title: navLabel('mushaf'),
-    loadChildren: () =>
-      import('./features/mushaf/mushaf.routes').then((m) => m.MUSHAF_ROUTES),
-  },
-  {
-    path: 'dashboard/words',
-    title: navLabel('words'),
-    loadChildren: () =>
-      import('./features/words/words.routes').then((m) => m.WORDS_ROUTES),
   },
   ...placeholderRoutes,
   {

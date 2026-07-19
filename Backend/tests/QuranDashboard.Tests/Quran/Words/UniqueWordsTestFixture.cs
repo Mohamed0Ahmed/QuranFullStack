@@ -1,5 +1,3 @@
-using QuranDashboard.Infrastructure.Persistence;
-
 namespace QuranDashboard.Tests.Quran.Words;
 
 public sealed class UniqueWordsTestFixture : IAsyncLifetime

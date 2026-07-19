@@ -1,4 +1,3 @@
-using QuranDashboard.Application.Abstractions.Common.Paging;
 using QuranDashboard.Application.Abstractions.Quran.Words.Roots.Responses;
 
 namespace QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootsPage;

@@ -1,0 +1,13 @@
+:host {
+  display: block;
+}
+
+// Calm, centered status — no spinner, no ornament (DESIGN.md: reverence through
+// restraint). Pending is a brief, quiet transitional state; a failed login instead
+// settles here with a single retry action (both rendered via the shared qd-state).
+.auth-callback {
+  display: flex;
+  justify-content: center;
+  padding-block: var(--qd-space-6);
+  text-align: center;
+}

@@ -1,5 +1,3 @@
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.DependencyInjection;
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.MorphologyImporting;
 using QuranDashboard.Application.Quran.DataPipelines.Words.MorphologyImporting;
 using QuranDashboard.DataImporter.Import.ArgumentParsing;
@@ -47,6 +45,7 @@ internal static class ImportMorphologyRunner
         sourcePath ??= enrichedRequested
             ? DataImporterDefaults.ResolveDefaultEnrichedMorphologySourcePath()
             : DataImporterDefaults.ResolveDefaultMorphologySourcePath();
+        reportOutDir ??= DataImporterDefaults.ResolveDefaultMorphologyReportDir();
 
         var host = createHost();
         await using var scope = host.Services.CreateAsyncScope();

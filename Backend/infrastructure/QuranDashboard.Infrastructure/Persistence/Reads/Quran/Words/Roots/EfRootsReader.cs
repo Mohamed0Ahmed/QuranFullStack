@@ -1,8 +1,7 @@
-using Microsoft.EntityFrameworkCore;
-using QuranDashboard.Application.Abstractions.Common.Paging;
 using QuranDashboard.Application.Abstractions.Quran.Words.Responses;
 using QuranDashboard.Application.Abstractions.Quran.Words.Roots;
 using QuranDashboard.Application.Abstractions.Quran.Words.Roots.Responses;
+using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Roots;
 
@@ -137,6 +136,11 @@ public sealed class EfRootsReader(QuranDashboardDbContext db) : IRootsReader
             .Distinct();
 
         var totalCount = await matchedAyahIds.CountAsync(cancellationToken);
+        var skip = ReadPaging.CalculateSafeSkip(page, pageSize, totalCount);
+        if (skip is null)
+        {
+            return new PagedResult<RootAyahMatchDto>(page, pageSize, totalCount, []);
+        }
 
         var pageAyahs = await (
             from ayah in _db.QuranAyahs.AsNoTracking()
@@ -150,7 +154,7 @@ public sealed class EfRootsReader(QuranDashboardDbContext db) : IRootsReader
                 ayah.SurahNumber,
                 ayah.AyahNumber,
                 surah.NameArabic))
-            .Skip((page - 1) * pageSize)
+            .Skip(skip.Value)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
 
@@ -172,39 +176,23 @@ public sealed class EfRootsReader(QuranDashboardDbContext db) : IRootsReader
             .GroupBy(r => r.AyahId)
             .ToDictionary(g => g.Key, g => (IReadOnlyList<int>)g.Select(x => x.Id).ToList());
 
-        var wordsByAyah = await _db.QuranWords
-            .AsNoTracking()
-            .Where(w => ayahIds.Contains(w.AyahId) && !w.IsAyahMarker)
-            .OrderBy(w => w.SurahNumber)
-            .ThenBy(w => w.AyahNumber)
-            .ThenBy(w => w.WordNumber)
-            .Select(w => new AyahWordRow(
-                w.AyahId,
-                w.Id,
-                w.WordNumber,
-                w.PageNumber,
-                w.TextUthmani))
-            .ToListAsync(cancellationToken);
-
-        var wordsGrouped = wordsByAyah
-            .GroupBy(w => w.AyahId)
-            .ToDictionary(g => g.Key, g => g.ToList());
-
-        var items = pageAyahs
-            .Select(ayah =>
+        var items = await AyahWordHydration.ProjectAyahMatchesAsync(
+            _db,
+            pageAyahs,
+            ayah => ayah.AyahId,
+            (ayah, words, pageNumber) =>
             {
-                var words = wordsGrouped.GetValueOrDefault(ayah.AyahId, []);
                 var matchedSet = matchedIdsByAyah.GetValueOrDefault(ayah.AyahId, []);
                 return new RootAyahMatchDto(
                     ayah.AyahId,
                     ayah.VerseKey,
                     ayah.SurahNameArabic,
-                    ResolveAyahPageNumber(words),
+                    pageNumber,
                     words.Select(w => new RootAyahWordDto(
                         w.TextUthmani,
                         matchedSet.Contains(w.QuranWordId))).ToList());
-            })
-            .ToList();
+            },
+            cancellationToken);
 
         return new PagedResult<RootAyahMatchDto>(page, pageSize, totalCount, items);
     }
@@ -352,12 +340,12 @@ public sealed class EfRootsReader(QuranDashboardDbContext db) : IRootsReader
                 r.root_text AS "{nameof(RootSummaryRow.RootText)}",
                 replace(translate(lower(r.root_text), @foldFrom, @foldTo), ' ', '') AS "{nameof(RootSummaryRow.NormalizedRootText)}",
                 r.words_count AS "{nameof(RootSummaryRow.OccurrencesCount)}",
-                agg.ayahs_count AS "{nameof(RootSummaryRow.AyahsCount)}",
-                agg.surahs_count AS "{nameof(RootSummaryRow.SurahsCount)}",
-                agg.simple_words_count AS "{nameof(RootSummaryRow.SimpleWordsCount)}",
-                agg.tashkeel_words_count AS "{nameof(RootSummaryRow.TashkeelWordsCount)}",
+                COALESCE(agg.ayahs_count, 0) AS "{nameof(RootSummaryRow.AyahsCount)}",
+                COALESCE(agg.surahs_count, 0) AS "{nameof(RootSummaryRow.SurahsCount)}",
+                COALESCE(agg.simple_words_count, 0) AS "{nameof(RootSummaryRow.SimpleWordsCount)}",
+                COALESCE(agg.tashkeel_words_count, 0) AS "{nameof(RootSummaryRow.TashkeelWordsCount)}",
                 COALESCE(agg.distinct_lemmas_count, r.distinct_lemmas_count) AS "{nameof(RootSummaryRow.LemmasCount)}",
-                agg.stems_count AS "{nameof(RootSummaryRow.StemsCount)}",
+                COALESCE(agg.stems_count, 0) AS "{nameof(RootSummaryRow.StemsCount)}",
                 r.first_word_order_in_mushaf AS "{nameof(RootSummaryRow.FirstWordOrderInMushaf)}"
             FROM quran_roots r
             LEFT JOIN (
@@ -378,25 +366,11 @@ public sealed class EfRootsReader(QuranDashboardDbContext db) : IRootsReader
 
         var rows = await _db.Database.SqlQueryRaw<RootSummaryRow>(
             sql,
-            new NpgsqlParameter("foldFrom", RootsListDerivation.ArabicFoldFrom),
-            new NpgsqlParameter("foldTo", RootsListDerivation.ArabicFoldTo))
+            new NpgsqlParameter("foldFrom", ArabicSearchQueryNormalizer.FoldFrom),
+            new NpgsqlParameter("foldTo", ArabicSearchQueryNormalizer.FoldTo))
             .ToListAsync(cancellationToken);
 
         return rows;
-    }
-
-    private static short ResolveAyahPageNumber(IReadOnlyList<AyahWordRow> words)
-    {
-        var firstReadable = words
-            .OrderBy(w => w.WordNumber)
-            .FirstOrDefault();
-
-        if (firstReadable is not null)
-        {
-            return firstReadable.PageNumber;
-        }
-
-        return words.FirstOrDefault()?.PageNumber ?? 0;
     }
 
     private sealed record AyahMetaRow(
@@ -405,13 +379,6 @@ public sealed class EfRootsReader(QuranDashboardDbContext db) : IRootsReader
         short SurahNumber,
         short AyahNumber,
         string SurahNameArabic);
-
-    private sealed record AyahWordRow(
-        int AyahId,
-        int QuranWordId,
-        short WordNumber,
-        short PageNumber,
-        string TextUthmani);
 
     private sealed record GroupedRootWordRow(
         int UniqueWordId,

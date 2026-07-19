@@ -1,5 +1,5 @@
-using System.Security.Cryptography;
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Navigation;
+using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Foundation;
 
 namespace QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Navigation;
 
@@ -300,9 +300,8 @@ public sealed class NavigationManifestReader
 
     private static NavigationCheckResult ValidateChecksum(string fullPath, string expectedSha256)
     {
-        using var stream = File.OpenRead(fullPath);
-        var actualSha256 = Convert.ToHexString(SHA256.HashData(stream));
-        var passed = string.Equals(actualSha256, expectedSha256, StringComparison.OrdinalIgnoreCase);
+        var actualSha256 = ManifestChecksum.ComputeSha256Hex(fullPath);
+        var passed = ManifestChecksum.Matches(actualSha256, expectedSha256);
 
         return NavigationValidationChecks.Hard(
             NavigationMetadataInvariants.CheckSourceHash,

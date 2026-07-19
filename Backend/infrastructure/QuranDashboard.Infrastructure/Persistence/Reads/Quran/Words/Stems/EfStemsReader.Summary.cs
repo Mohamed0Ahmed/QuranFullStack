@@ -1,6 +1,5 @@
-using Microsoft.EntityFrameworkCore;
-using Npgsql;
 using QuranDashboard.Application.Abstractions.Quran.Words.Stems.Responses;
+using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Stems;
 
@@ -59,8 +58,8 @@ public sealed partial class EfStemsReader
 
         var aggregates = await _db.Database.SqlQueryRaw<StemAggregationRow>(
             sql,
-            new NpgsqlParameter("foldFrom", StemsListDerivation.ArabicFoldFrom),
-            new NpgsqlParameter("foldTo", StemsListDerivation.ArabicFoldTo))
+            new NpgsqlParameter("foldFrom", ArabicSearchQueryNormalizer.FoldFrom),
+            new NpgsqlParameter("foldTo", ArabicSearchQueryNormalizer.FoldTo))
             .ToListAsync(cancellationToken);
 
         if (aggregates.Count == 0)
@@ -101,7 +100,7 @@ public sealed partial class EfStemsReader
                 return new StemSummaryRow(
                     a.Id,
                     a.StemText,
-                    StemsListDerivation.NormalizeArabicQuery(a.StemText) ?? string.Empty,
+                    ArabicSearchQueryNormalizer.Normalize(a.StemText, stripWhitespace: true) ?? string.Empty,
                     dominantLemma?.Id,
                     dominantLemma?.Text,
                     dominantLemma?.Buckwalter,

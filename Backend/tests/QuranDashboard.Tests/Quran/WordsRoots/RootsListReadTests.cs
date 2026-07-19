@@ -1,11 +1,8 @@
-using Microsoft.EntityFrameworkCore;
-using QuranDashboard.Application.Abstractions.Common.Paging;
 using QuranDashboard.Application.Abstractions.Quran.Words.Roots;
 using QuranDashboard.Application.Abstractions.Quran.Words.Roots.Responses;
 using QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootsPage;
 using QuranDashboard.Infrastructure.Caching.Quran.Words.Roots;
 using QuranDashboard.Tests.Quran.Words;
-using QuranDashboard.Infrastructure.Persistence;
 using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Roots;
 
 namespace QuranDashboard.Tests.Quran.WordsRoots;
@@ -181,6 +178,41 @@ public sealed class RootsListReadTests(RootsExplorerTestFixture fixture)
             CancellationToken.None);
         var secondPage = second.Should().BeOfType<GetRootsPageOutcome.Success>().Subject.Page;
         secondPage.Items.Should().HaveCount(1);
+    }
+
+    // M24 regression: a root with zero quran_word_morphology rows (a legitimate orphaned catalogue
+    // entry — e.g. a root awaiting re-import) must still read as zero counts, not throw. Every
+    // aggregate column in LoadWholeSummaryAsync's LEFT JOIN must be COALESCEd; before the fix, Npgsql
+    // threw materializing NULL into the non-nullable int columns of RootSummaryRow, 500ing the ENTIRE
+    // roots catalogue read. Seeded inside a transaction that is ALWAYS rolled back, so no other test in
+    // this collection ever sees the synthetic row.
+    [Fact]
+    public async Task GetRootsPage_root_with_no_morphology_rows_reads_zero_counts_without_throwing()
+    {
+        await using var scope = fixture.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+
+        await using var transaction = await dbContext.Database.BeginTransactionAsync();
+        await dbContext.Database.ExecuteSqlRawAsync(
+            """
+            INSERT INTO quran_roots (id, root_text, root_buckwalter, words_count, distinct_lemmas_count, first_word_order_in_mushaf)
+            VALUES (999901, 'جذر-اختبار-بلا-صرف', 'orphanTestRoot', 0, 0, 999901);
+            """);
+
+        // EfRootsReader, not IRootsReader: the cached decorator would cross-serve the rolled-back row.
+        // Resolving through the SAME scoped DbContext means the reader sees the uncommitted insert.
+        var reader = new EfRootsReader(dbContext);
+
+        var summary = await reader.LoadWholeSummaryAsync(CancellationToken.None);
+
+        var orphan = summary.Should().ContainSingle(r => r.Id == 999901).Subject;
+        orphan.OccurrencesCount.Should().Be(0);
+        orphan.AyahsCount.Should().Be(0);
+        orphan.SurahsCount.Should().Be(0);
+        orphan.SimpleWordsCount.Should().Be(0);
+        orphan.TashkeelWordsCount.Should().Be(0);
+        orphan.LemmasCount.Should().Be(0);
+        orphan.StemsCount.Should().Be(0);
     }
 
     [Fact]

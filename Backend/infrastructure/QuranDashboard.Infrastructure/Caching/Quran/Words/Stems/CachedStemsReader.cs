@@ -1,4 +1,3 @@
-using QuranDashboard.Application.Abstractions.Common.Paging;
 using QuranDashboard.Application.Abstractions.Quran.Words.Stems;
 using QuranDashboard.Application.Abstractions.Quran.Words.Stems.Responses;
 using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Stems;

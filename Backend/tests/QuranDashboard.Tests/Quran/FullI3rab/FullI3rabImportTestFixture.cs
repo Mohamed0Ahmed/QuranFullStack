@@ -1,14 +1,9 @@
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using System.Text;
-using QuranDashboard.Application;
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.FullI3rab;
 using QuranDashboard.Application.Quran.DataPipelines.FullI3rab;
 using QuranDashboard.Domain.Quran.Ayahs;
 using QuranDashboard.Domain.Quran.MushafPages;
 using QuranDashboard.Domain.Quran.Surahs;
-using QuranDashboard.Infrastructure;
-using QuranDashboard.Infrastructure.Persistence;
 
 namespace QuranDashboard.Tests.Quran.FullI3rab;
 

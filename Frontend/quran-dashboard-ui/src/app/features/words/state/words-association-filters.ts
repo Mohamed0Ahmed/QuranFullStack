@@ -14,6 +14,16 @@ export interface AssociationOption {
   readonly sublabel?: string;
 }
 
+/**
+ * Discriminated load result for an association-filter picker (M32/M43 + M74): a genuine
+ * zero-match response is `success` with an empty `options` array, while a backend failure
+ * (`isSuccess === false`) or a transport/unexpected HTTP error is `error` — the two must stay
+ * distinguishable so the picker can show a calm error hint instead of silently looking empty.
+ */
+export type AssociationOptionsResult =
+  | { readonly status: 'success'; readonly options: readonly AssociationOption[] }
+  | { readonly status: 'error' };
+
 /** Fail-closed positive-integer id parse (roots/lemmas). Non-numeric / zero / negative ⇒ null. */
 export function parsePositiveIntParam(value: string | null): number | null {
   if (value === null || !/^[1-9]\d*$/.test(value)) {

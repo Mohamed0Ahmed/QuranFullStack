@@ -1,8 +1,6 @@
-using Microsoft.EntityFrameworkCore;
 using QuranDashboard.Application.Quran.Words.Lemmas.Queries.GetLemmaMentionedSurahs;
 using QuranDashboard.Application.Quran.Words.Lemmas.Queries.GetLemmaMissingSurahs;
 using QuranDashboard.Infrastructure.Caching.Quran.Words.Lemmas;
-using QuranDashboard.Infrastructure.Persistence;
 using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Lemmas;
 using QuranDashboard.Tests.Quran.Words;
 

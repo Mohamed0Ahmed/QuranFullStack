@@ -116,15 +116,15 @@ public sealed class MorphologyRefusalForceTests(MorphologyImportTestFixture fixt
     }
 
     [Fact]
-    public async Task Source_Mismatch_Refuses_Early_No_Report()
+    public async Task Source_Mismatch_Fails_Early_No_Report_With_Specific_Message()
     {
         await fixture.SeedSyntheticWordsAsync();
         var sourcePath = await fixture.WriteSourceFolderWithChecksumMismatchAsync();
 
         var result = await fixture.RunImportAsync(sourcePath, force: false);
         result.Succeeded.Should().BeFalse();
-        result.ExitCode.Should().Be(ImportMorphologyResult.RefusedExitCode);
-        result.Message.Should().Be(MorphologyInvariants.SourceMismatch);
+        result.ExitCode.Should().Be(ImportMorphologyResult.FailureExitCode);
+        result.Message.Should().Contain("Checksum mismatch");
         result.ReportOutDir.Should().BeNull();
     }
 

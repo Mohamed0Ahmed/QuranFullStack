@@ -184,6 +184,7 @@ public sealed class DisplayWordsDeterministicIdTests : IDisposable
         await fixture.SeedDefaultSyntheticDataAsync();
         var command = new RebuildDisplayWordsCommand(
             Force: true,
+            ReportOutDir: CreateTempReportDir("detid-idem-0"),
             ExpectedReadableWords: DisplayWordsSyntheticSeed.ReadableWordCount);
 
         var firstResult = await fixture.CreateHandler().HandleAsync(

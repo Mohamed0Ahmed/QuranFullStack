@@ -52,14 +52,16 @@ public sealed class MorphologyImportTestFixture : IAsyncLifetime
     public async Task<ImportMorphologyResult> RunImportAsync(
         string sourcePath,
         bool force = false,
-        int? expectedReadableWords = null)
+        int? expectedReadableWords = null,
+        string? reportOutDir = null)
     {
+        reportOutDir ??= Path.Combine(Path.GetTempPath(), $"morph-report-{Guid.NewGuid():N}");
         await using var scope = CreateServiceProvider().CreateAsyncScope();
         var handler = scope.ServiceProvider.GetRequiredService<ImportMorphologyHandler>();
         var readableCount = expectedReadableWords ?? GetReadableWordCount();
 
         return await handler.HandleAsync(
-            new ImportMorphologyCommand(sourcePath, force, readableCount),
+            new ImportMorphologyCommand(sourcePath, force, readableCount, reportOutDir),
             CancellationToken.None);
     }
 

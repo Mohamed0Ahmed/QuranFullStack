@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using QuranDashboard.Application.Abstractions.Quran.Words.WordTypes;
 using QuranDashboard.Application.Abstractions.Quran.Words.WordTypes.Responses;
 

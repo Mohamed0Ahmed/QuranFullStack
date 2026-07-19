@@ -62,7 +62,6 @@ public sealed class ImportMutashabihatHandler
         var reportDir = ResolveReportOutDir(command);
         try
         {
-            Directory.CreateDirectory(reportDir);
             await reportWriter.WriteAsync(result, reportDir, ct);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -86,31 +85,12 @@ public sealed class ImportMutashabihatHandler
 
     private static string ResolveReportOutDir(ImportMutashabihatCommand command)
     {
-        if (!string.IsNullOrWhiteSpace(command.ReportOutDir))
+        if (string.IsNullOrWhiteSpace(command.ReportOutDir))
         {
-            return Path.GetFullPath(command.ReportOutDir);
+            throw new InvalidOperationException(
+                "A report output directory must be provided by the caller.");
         }
 
-        return Path.GetFullPath(Path.Combine(ResolveRepositoryRoot(), "resources", "report", "mutashabihat"));
-    }
-
-    private static string ResolveRepositoryRoot()
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-
-        while (directory is not null)
-        {
-            var resourcesPath = Path.Combine(directory.FullName, "resources");
-            var backendPath = Path.Combine(directory.FullName, "Backend");
-
-            if (Directory.Exists(resourcesPath) && Directory.Exists(backendPath))
-            {
-                return directory.FullName;
-            }
-
-            directory = directory.Parent;
-        }
-
-        throw new InvalidOperationException("Could not resolve the repository root directory.");
+        return Path.GetFullPath(command.ReportOutDir);
     }
 }

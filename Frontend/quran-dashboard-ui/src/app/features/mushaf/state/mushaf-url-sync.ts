@@ -41,7 +41,7 @@ export function clampMushafPageNumber(raw: string | null): number {
   if (!Number.isFinite(parsed)) {
     return 1;
   }
-  return Math.min(604, Math.max(1, parsed));
+  return Math.min(604, Math.max(1, Math.trunc(parsed)));
 }
 
 export function normalizePanelMode(value: string | null): PanelMode {

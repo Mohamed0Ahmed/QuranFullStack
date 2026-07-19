@@ -62,6 +62,10 @@ export class ExplorerAssociationFilterComponent {
   readonly selectedId = input<string | number | null>(null);
   readonly selectedLabel = input<string | null>(null);
   readonly loading = input<boolean>(false);
+  /** True when the last options load failed (transport error or a backend isSuccess:false
+   *  response) — distinct from a genuine zero-match result, so the panel can show a calm error
+   *  hint instead of silently looking empty (M32/M43 + M74). */
+  readonly error = input<boolean>(false);
   readonly disabled = input<boolean>(false);
   readonly clientFilter = input<boolean>(false);
   readonly testid = input<string>('explorer-association-filter');

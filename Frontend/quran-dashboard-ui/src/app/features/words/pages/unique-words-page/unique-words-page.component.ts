@@ -11,7 +11,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subscription, catchError, debounceTime, of, Subject, switchMap } from 'rxjs';
+import { Subscription, debounceTime, Subject, switchMap } from 'rxjs';
 
 import { UniqueWordsFacade } from '../../state/unique-words.facade';
 import {
@@ -108,6 +108,8 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
   protected readonly typeOptions = signal<readonly AssociationOption[]>([]);
   protected readonly rootOptions = signal<readonly AssociationOption[]>([]);
   protected readonly rootOptionsLoading = signal(false);
+  // M32/M43 + M74: a picker load failure must be distinguishable from a genuine empty result.
+  protected readonly rootOptionsError = signal(false);
   protected readonly selectedRootLabel = signal<string | null>(null);
   protected get primaryTypeLabel(): string { return UNIQUE_WORDS_PRIMARY_TYPE_FILTER_LABEL; }
   protected get primaryTypePlaceholder(): string { return UNIQUE_WORDS_PRIMARY_TYPE_FILTER_PLACEHOLDER; }
@@ -222,15 +224,16 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
 
     this.typeOptionsSub = this.associationOptions
       .wordTypeOptions()
-      .subscribe((options) => this.typeOptions.set(options));
+      .subscribe((result) => this.typeOptions.set(result.status === 'success' ? result.options : []));
 
     this.rootSearchSub = this.rootSearchInput
       .pipe(
         debounceTime(300),
-        switchMap((term) => this.associationOptions.searchRoots(term).pipe(catchError(() => of([])))),
+        switchMap((term) => this.associationOptions.searchRoots(term)),
       )
-      .subscribe((options) => {
-        this.rootOptions.set(options);
+      .subscribe((result) => {
+        this.rootOptions.set(result.status === 'success' ? result.options : []);
+        this.rootOptionsError.set(result.status === 'error');
         this.rootOptionsLoading.set(false);
       });
 

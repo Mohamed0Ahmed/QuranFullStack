@@ -1,14 +1,50 @@
 using System.Diagnostics;
 using System.Text;
-using System.Text.Json;
 using Microsoft.AspNetCore.Http;
-using QuranDashboard.Api.Common;
 using QuranDashboard.Api.Middleware;
 
 namespace QuranDashboard.Tests.Api.Middleware;
 
 public sealed class GlobalExceptionHandlerTests
 {
+    [Fact]
+    public async Task TryHandleAsync_UserProvisioningEmailConflictException_Returns409ConflictEnvelope_AndLogsWarning()
+    {
+        var logger = new TestLogger<GlobalExceptionHandler>();
+        var handler = new GlobalExceptionHandler(logger);
+        var httpContext = new DefaultHttpContext();
+        httpContext.TraceIdentifier = "request-conflict-1";
+        httpContext.Request.Method = HttpMethods.Get;
+        httpContext.Request.Path = "/api/access/me";
+        httpContext.Response.Body = new MemoryStream();
+
+        var exception = new UserProvisioningEmailConflictException("collision@example.test");
+
+        var handled = await handler.TryHandleAsync(httpContext, exception, CancellationToken.None);
+
+        handled.Should().BeTrue();
+        httpContext.Response.StatusCode.Should().Be(StatusCodes.Status409Conflict);
+
+        // An expected business conflict is logged at Warning, never Error — it is not a server fault.
+        logger.Entries.Should().ContainSingle();
+        logger.Entries[0].Level.Should().Be(LogLevel.Warning);
+
+        httpContext.Response.Body.Position = 0;
+        using var reader = new StreamReader(httpContext.Response.Body, Encoding.UTF8, leaveOpen: true);
+        var body = await reader.ReadToEndAsync();
+
+        // The conflicting email must never be echoed back to the caller.
+        body.Should().NotContain("collision@example.test");
+
+        using var document = JsonDocument.Parse(body);
+        var root = document.RootElement;
+
+        root.GetProperty("isSuccess").GetBoolean().Should().BeFalse();
+        root.GetProperty("message").GetString().Should().Be(ApiMessages.EmailAlreadyRegistered);
+        root.GetProperty("data").ValueKind.Should().Be(JsonValueKind.Null);
+        root.GetProperty("errors").EnumerateArray().Should().BeEmpty();
+    }
+
     [Fact]
     public async Task TryHandleAsync_LogsSafeFields_And_ReturnsSafe500Response()
     {

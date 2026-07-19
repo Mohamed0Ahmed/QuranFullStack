@@ -94,9 +94,10 @@ public sealed class DisplayWordsRealImportFixture : IAsyncLifetime
 
     private async Task ImportAndRebuildAsync()
     {
+        var importReportDir = Path.Combine(Path.GetTempPath(), $"quran-foundation-report-{Guid.NewGuid():N}");
         var importHandler = CreateServiceProvider().GetRequiredService<ImportQuranFoundationHandler>();
         var importResult = await importHandler.HandleAsync(
-            new ImportQuranFoundationCommand(CanonicalImportSourceTestGate.SourceRoot, ReportOutDir: null),
+            new ImportQuranFoundationCommand(CanonicalImportSourceTestGate.SourceRoot, ReportOutDir: importReportDir),
             CancellationToken.None);
         importResult.Succeeded.Should().BeTrue(importResult.Message);
         ImportRunCount++;

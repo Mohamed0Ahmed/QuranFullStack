@@ -1,6 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Npgsql;
-using QuranDashboard.Application.Abstractions.Common.Paging;
 using QuranDashboard.Application.Abstractions.Quran.Words.Lemmas;
 using QuranDashboard.Application.Abstractions.Quran.Words.Lemmas.Responses;
 using QuranDashboard.Application.Abstractions.Quran.Words.Responses;
@@ -14,8 +11,7 @@ namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Lemmas;
 /// implemented in T032/T033 as a single bounded whole-summary aggregation with
 /// owned-root (<c>quran_lemmas.root_id</c>) semantics, ordered type distribution,
 /// normalized Arabic contains search, deterministic sort, and in-memory paging.
-/// Ayah and words detail are implemented in the corresponding Feature 016 story
-/// phases; the remaining detail methods stay stubbed for later story phases.
+/// Ayah and words detail are fully implemented as well.
 /// </summary>
 public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
 {
@@ -120,40 +116,23 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
             .GroupBy(r => r.AyahId)
             .ToDictionary(g => g.Key, g => g.Select(x => x.Id).ToHashSet());
 
-        var wordsByAyah = await _db.QuranWords
-            .AsNoTracking()
-            .Where(w => ayahIds.Contains(w.AyahId) && !w.IsAyahMarker)
-            .OrderBy(w => w.SurahNumber)
-            .ThenBy(w => w.AyahNumber)
-            .ThenBy(w => w.WordNumber)
-            .Select(w => new AyahWordRow(
-                w.AyahId,
-                w.Id,
-                w.WordNumber,
-                w.PageNumber,
-                w.TextUthmani,
-                w.IsAyahMarker))
-            .ToListAsync(cancellationToken);
-
-        var wordsGrouped = wordsByAyah
-            .GroupBy(w => w.AyahId)
-            .ToDictionary(g => g.Key, g => g.ToList());
-
-        var items = pageAyahs
-            .Select(ayah =>
+        var items = await AyahWordHydration.ProjectAyahMatchesAsync(
+            _db,
+            pageAyahs,
+            ayah => ayah.AyahId,
+            (ayah, words, pageNumber) =>
             {
-                var words = wordsGrouped.GetValueOrDefault(ayah.AyahId, []);
                 var matchedSet = matchedIdsByAyah.GetValueOrDefault(ayah.AyahId, []);
                 return new LemmaAyahMatchDto(
                     ayah.AyahId,
                     ayah.VerseKey,
                     ayah.SurahNameArabic,
-                    ResolveAyahPageNumber(words),
+                    pageNumber,
                     words.Select(w => new LemmaAyahWordDto(
                         w.TextUthmani,
                         matchedSet.Contains(w.QuranWordId))).ToList());
-            })
-            .ToList();
+            },
+            cancellationToken);
 
         return new PagedResult<LemmaAyahMatchDto>(page, pageSize, totalCount, items);
     }
@@ -319,8 +298,8 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
 
         var aggregates = await _db.Database.SqlQueryRaw<LemmaAggregationRow>(
             sql,
-            new NpgsqlParameter("foldFrom", LemmasListDerivation.ArabicFoldFrom),
-            new NpgsqlParameter("foldTo", LemmasListDerivation.ArabicFoldTo))
+            new NpgsqlParameter("foldFrom", ArabicSearchQueryNormalizer.FoldFrom),
+            new NpgsqlParameter("foldTo", ArabicSearchQueryNormalizer.FoldTo))
             .ToListAsync(cancellationToken);
 
         if (aggregates.Count == 0)
@@ -364,7 +343,7 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
                 a.Id,
                 a.LemmaText,
                 a.LemmaBuckwalter,
-                LemmasListDerivation.NormalizeArabicQuery(a.LemmaText) ?? string.Empty,
+                ArabicSearchQueryNormalizer.Normalize(a.LemmaText, stripWhitespace: true) ?? string.Empty,
                 a.RootId,
                 a.RootText,
                 a.RootBuckwalter,
@@ -563,14 +542,6 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
         int AyahNumber,
         string SurahNameArabic);
 
-    private sealed record AyahWordRow(
-        int AyahId,
-        int QuranWordId,
-        int WordNumber,
-        short PageNumber,
-        string TextUthmani,
-        bool IsAyahMarker);
-
     private sealed record LemmaWordOccurrenceRow(
         int? UniqueWordId,
         string DisplayTextUthmani,
@@ -588,17 +559,6 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
         int FirstWordNumber);
 
     private sealed record SurahOccurrenceRow(short SurahNumber, int OccurrencesInSurah);
-
-    private static short ResolveAyahPageNumber(IReadOnlyList<AyahWordRow> words)
-    {
-        var firstReadableWord = words.FirstOrDefault(w => !w.IsAyahMarker);
-        if (firstReadableWord is not null)
-        {
-            return firstReadableWord.PageNumber;
-        }
-
-        return words.FirstOrDefault()?.PageNumber ?? 0;
-    }
 
     private static string? NormalizeTypeCode(string? typeCode) =>
         string.IsNullOrWhiteSpace(typeCode) ? null : typeCode.Trim();

@@ -24,6 +24,8 @@ Compiled through `../styles.scss`; component-specific styling stays beside each 
 - `_components.scss` — global cards, buttons, badges, modal, detail-panel, and skeleton patterns.
 - `_utilities.scss` — small utility classes such as screen-reader-only, flex, spacing, and stable scrollbars.
 - `_words-explorer-layout.scss` — shared layout pieces for words explorer intro/toolbar surfaces.
+- `_words-explainer.scss` — shared visual primitives for the Words explainer hero example regions
+  (global, not component-scoped, because pages project their own example markup via `<ng-content>`).
 - `_explorer-tables.scss` — responsive shared table/list rules for explorer pages.
 - `_explorer-detail-lists.scss` — shared detail-list layouts for roots/lemmas/stems/word-types panels.
 
@@ -37,12 +39,13 @@ Compiled through `../styles.scss`; component-specific styling stays beside each 
 4. `layout`
 5. `components`
 6. `words-explorer-layout`
-7. `explorer-tables`
-8. `explorer-detail-lists`
-9. `forms`
-10. `utilities`
-11. Tailwind base/components/utilities
-12. `html`/`body` base reset and body font/background colors
+7. `words-explainer`
+8. `explorer-tables`
+9. `explorer-detail-lists`
+10. `forms`
+11. `utilities`
+12. Tailwind base/components/utilities
+13. `html`/`body` base reset and body font/background colors
 
 `_breakpoints.scss` supports other partials but is not imported directly by `../styles.scss`.
 

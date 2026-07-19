@@ -36,7 +36,11 @@
   src: url('/assets/fonts/quran/UthmanicHafs_V22.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
-  font-display: swap;
+  /* Quran-safety: this face renders via ligature substitution, keyed off ASCII
+     trigger strings (ayah-marker glyphs). A swap window (or a failed woff2)
+     would paint the literal Latin trigger text inside the Mushaf page — never
+     acceptable, so this loads block instead of swap. */
+  font-display: block;
 }
 
 @font-face {
@@ -44,7 +48,9 @@
   src: url('/fonts/mushaf/surah-name-v1.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
-  font-display: swap;
+  /* Quran-safety: ligature-trigger font ('surah001', 'header', ...) — see the
+     'Uthmanic Hafs' block above for why this must not use font-display: swap. */
+  font-display: block;
 }
 
 @font-face {
@@ -52,7 +58,9 @@
   src: url('/fonts/mushaf/surah-name-v2.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
-  font-display: swap;
+  /* Quran-safety: ligature-trigger font ('makkah', 'madinah', ...) — see the
+     'Uthmanic Hafs' block above for why this must not use font-display: swap. */
+  font-display: block;
 }
 
 @font-face {
@@ -60,7 +68,9 @@
   src: url('/fonts/mushaf/quran-common.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
-  font-display: swap;
+  /* Quran-safety: ligature-trigger font ('j001', ...) — see the 'Uthmanic Hafs'
+     block above for why this must not use font-display: swap. */
+  font-display: block;
 }
 
 $font-naskh: 'Amiri', serif;

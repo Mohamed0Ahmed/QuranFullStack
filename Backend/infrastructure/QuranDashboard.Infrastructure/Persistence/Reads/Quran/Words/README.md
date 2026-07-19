@@ -16,7 +16,7 @@ and Unique Words. They back the `application/.../Quran/Words/**` query handlers 
   stems readers are **partial-split by size** (summary vs list/SQL vs grouped-details); keep the split
   when adding to them.
 - `*ListDerivation` / `*SummaryRow` — how list rows and summary aggregates are derived.
-- `WordTypes/WordTypeIdentityMatcher.cs`, `WordTypeGrouping.cs` — POS/type identity + grouping.
+- `WordTypes/WordTypeIdentityMatcher.cs` — POS/type identity matching.
 - `MorphologyRelatedItemsOrdering.cs` — shared ordering for related lemmas/stems/roots.
 - `ReadPaging.cs` — the paging contract shared by all list endpoints.
 
@@ -145,8 +145,9 @@ and Unique Words. They back the `application/.../Quran/Words/**` query handlers 
   read (`.ScopeCounts.cs`) stays its own one-command contract, untouched. These grouped
   counts are a **separate family** from the Roots/Lemmas/Stems explorers' global,
   unscoped, segment/`words_count`-backed aggregates (`EfRootsReader.LoadWholeSummaryAsync`
-  and friends) — never conflate the two. Grouped `alpha` sort reuses the Roots explorer's
-  Arabic fold (`RootsListDerivation.ArabicFoldFrom`/`ArabicFoldTo`) with `COLLATE "C"`
+  and friends) — never conflate the two. Grouped `alpha` sort reuses the shared
+  Arabic fold (`ArabicSearchQueryNormalizer.FoldFrom`/`FoldTo`, decision 5 (DRY) single
+  source for every Roots/Lemmas/Stems/Word-Types reader SQL fold parameter) with `COLLATE "C"`
   ordinal collation, tie-broken by the numeric dimension ID — in **both directions**
   (`alpha` = `norm_text COLLATE "C"`, `alpha-desc` = `norm_text COLLATE "C" DESC`). The folded
   `norm_text` column is projected into the grouped CTE **only** for alpha, and the `@foldFrom`/`@foldTo`

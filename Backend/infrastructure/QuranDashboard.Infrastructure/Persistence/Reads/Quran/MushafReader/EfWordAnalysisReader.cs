@@ -1,10 +1,10 @@
-using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using QuranDashboard.Application.Abstractions.Quran.MushafReader;
 using QuranDashboard.Application.Abstractions.Quran.MushafReader.Responses;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.MushafReader;
 
-public sealed class EfWordAnalysisReader(QuranDashboardDbContext db) : IWordAnalysisReader
+public sealed class EfWordAnalysisReader(QuranDashboardDbContext db, ILogger<EfWordAnalysisReader> logger) : IWordAnalysisReader
 {
     private static readonly JsonSerializerOptions FeaturesJsonOptions = new()
     {
@@ -231,7 +231,7 @@ public sealed class EfWordAnalysisReader(QuranDashboardDbContext db) : IWordAnal
         core.VerbVoice,
         core.CaseFeature);
 
-    private static IReadOnlyList<RenderedSegmentDto> MapSegments(IReadOnlyList<SegmentProjection> segments)
+    private IReadOnlyList<RenderedSegmentDto> MapSegments(IReadOnlyList<SegmentProjection> segments)
     {
         var rendered = new List<RenderedSegmentDto>(segments.Count);
 
@@ -261,17 +261,25 @@ public sealed class EfWordAnalysisReader(QuranDashboardDbContext db) : IWordAnal
         return rendered;
     }
 
-    private static SegmentFeaturesDto? MapSegmentFeatures(SegmentProjection segment)
+    private SegmentFeaturesDto? MapSegmentFeatures(SegmentProjection segment)
     {
         if (string.IsNullOrWhiteSpace(segment.FeaturesRaw) && string.IsNullOrWhiteSpace(segment.FeaturesJson))
         {
             return null;
         }
 
-        return new SegmentFeaturesDto(segment.FeaturesRaw, ParseFeaturesJson(segment.FeaturesJson));
+        return new SegmentFeaturesDto(
+            segment.FeaturesRaw,
+            ParseFeaturesJson(segment.FeaturesJson, segment.SegmentLocation));
     }
 
-    private static IReadOnlyList<JsonElement> ParseFeaturesJson(string? featuresJson)
+    /// <summary>
+    /// M82 (quran-safety rule 3): corrupt features_json must not be swallowed silently. The
+    /// return contract is unchanged (still empty on failure) — a "coverage unavailable" marker
+    /// would be a DTO/contract change and is out of scope here — but a corrupt row now logs a
+    /// Warning naming the segment so the underlying data issue stays visible.
+    /// </summary>
+    private IReadOnlyList<JsonElement> ParseFeaturesJson(string? featuresJson, string segmentLocation)
     {
         if (string.IsNullOrWhiteSpace(featuresJson))
         {
@@ -283,8 +291,12 @@ public sealed class EfWordAnalysisReader(QuranDashboardDbContext db) : IWordAnal
             var parsed = JsonSerializer.Deserialize<List<JsonElement>>(featuresJson, FeaturesJsonOptions);
             return parsed ?? (IReadOnlyList<JsonElement>)[];
         }
-        catch (JsonException)
+        catch (JsonException ex)
         {
+            logger.LogWarning(
+                ex,
+                "Corrupt features_json JSON for segment {segmentLocation}; treating as empty",
+                segmentLocation);
             return [];
         }
     }

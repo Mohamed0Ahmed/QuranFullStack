@@ -1,4 +1,3 @@
-using QuranDashboard.Application.Abstractions.Common.Paging;
 using QuranDashboard.Application.Abstractions.Quran.Words.Lemmas.Responses;
 
 namespace QuranDashboard.Application.Quran.Words.Lemmas.Queries.GetLemmaWords;

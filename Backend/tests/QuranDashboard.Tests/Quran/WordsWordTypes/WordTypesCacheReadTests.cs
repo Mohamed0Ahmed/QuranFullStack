@@ -1,7 +1,5 @@
-using Microsoft.EntityFrameworkCore;
 using QuranDashboard.Application.Abstractions.Quran.Words.WordTypes;
 using QuranDashboard.Infrastructure.Caching.Quran.Words.WordTypes;
-using QuranDashboard.Infrastructure.Persistence;
 using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.WordTypes;
 using QuranDashboard.Tests.Quran.Words;
 

@@ -1,0 +1,14 @@
+<div class="qd-page">
+  <div class="qd-container auth-callback">
+    @if (status() === 'error') {
+      <qd-state
+        variant="error"
+        message="تعذّر إكمال تسجيل الدخول"
+        actionLabel="إعادة المحاولة"
+        (action)="retry()"
+      />
+    } @else {
+      <qd-state variant="loading" message="جارٍ إكمال تسجيل الدخول…" />
+    }
+  </div>
+</div>

@@ -5,6 +5,12 @@ and the `ApiResponse<T>` envelope; application handlers own use-case logic.
 
 ## Route families
 
+- `Access/` — `api/access/me`; the authenticated caller's provisioned user. Carries `[Authorize]`
+  (authenticated-only) and get-or-create provisions the local user on first login (email verified
+  server-side via the Logto Management API). The response includes `roleName` (null when no role);
+  the configured owner email is bootstrapped to `Owner`/`Active`. This is the only endpoint that
+  requires authentication — role-based named policies are registered but applied to nothing, so every
+  other route stays publicly browsable. See `../README.md` (Authentication / Roles).
 - `Dashboard/` — `api/dashboard/info` for app/version/environment metadata.
 - `MushafReader/Ayahs/` — `api/mushaf/ayahs/{verseKey}/study`, `/similar-ayahs`, and `/mutashabihat`.
 - `MushafReader/Catalogs/` — `api/mushaf/surahs` and `api/mushaf/study-sources` catalogs.

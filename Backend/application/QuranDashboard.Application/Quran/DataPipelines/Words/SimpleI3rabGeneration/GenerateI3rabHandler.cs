@@ -42,35 +42,12 @@ public sealed class GenerateI3rabHandler(
 
     private static string ResolveReportOutDir(GenerateI3rabCommand command)
     {
-        if (!string.IsNullOrWhiteSpace(command.ReportOutDir))
+        if (string.IsNullOrWhiteSpace(command.ReportOutDir))
         {
-            return command.ReportOutDir;
+            throw new InvalidOperationException(
+                "A report output directory must be provided by the caller.");
         }
 
-        return Path.GetFullPath(Path.Combine(
-            ResolveRepositoryRoot(),
-            "resources",
-            "report",
-            "words-simple-i3rab"));
-    }
-
-    private static string ResolveRepositoryRoot()
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-
-        while (directory is not null)
-        {
-            var resourcesPath = Path.Combine(directory.FullName, "resources");
-            var backendPath = Path.Combine(directory.FullName, "Backend");
-
-            if (Directory.Exists(resourcesPath) && Directory.Exists(backendPath))
-            {
-                return directory.FullName;
-            }
-
-            directory = directory.Parent;
-        }
-
-        return Directory.GetCurrentDirectory();
+        return Path.GetFullPath(command.ReportOutDir);
     }
 }

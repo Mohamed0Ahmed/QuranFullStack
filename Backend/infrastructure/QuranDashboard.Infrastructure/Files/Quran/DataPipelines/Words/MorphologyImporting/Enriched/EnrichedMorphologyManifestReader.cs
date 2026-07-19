@@ -1,4 +1,5 @@
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.MorphologyImporting;
+using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Foundation;
 
 namespace QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting.Enriched;
 
@@ -210,9 +211,8 @@ public sealed class EnrichedMorphologyManifestReader
     private static async Task ValidateChecksumAsync(
         string fullPath, string expectedSha256, CancellationToken ct)
     {
-        await using var stream = File.OpenRead(fullPath);
-        var actual = Convert.ToHexString(await SHA256.HashDataAsync(stream, ct));
-        if (!string.Equals(actual, expectedSha256, StringComparison.OrdinalIgnoreCase))
+        var actual = await ManifestChecksum.ComputeSha256HexAsync(fullPath, ct);
+        if (!ManifestChecksum.Matches(actual, expectedSha256))
         {
             throw new InvalidDataException($"Checksum mismatch for '{fullPath}'.");
         }

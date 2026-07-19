@@ -19,6 +19,22 @@ describe('mushaf-url-sync', () => {
     expect(clampMushafPageNumber('5')).toBe(5);
   });
 
+  it('truncates a fractional page number to an integer instead of passing it through', () => {
+    expect(clampMushafPageNumber('5.7')).toBe(5);
+    expect(clampMushafPageNumber('abc')).toBe(1);
+    expect(clampMushafPageNumber('700')).toBe(604);
+    expect(clampMushafPageNumber('0')).toBe(1);
+  });
+
+  it('self-corrects a fractional page in the URL via buildUrlEnumCorrections', () => {
+    const snapshot = parseMushafUrlParams(convertToParamMap({ page: '5.7' }));
+    expect(snapshot.pageNumber).toBe(5);
+
+    const corrections = buildUrlEnumCorrections(convertToParamMap({ page: '5.7' }), snapshot);
+
+    expect(corrections).toEqual({ page: 5 });
+  });
+
   it('normalizes out-of-scope enum values to the nearest valid v1 value', () => {
     expect(normalizePanelMode('sources')).toBe('none');
     expect(normalizePanelMode('word')).toBe('word');

@@ -133,13 +133,13 @@
 
 .word-type-filter__children-eyebrow {
   font-size: 0.78rem;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--qd-accent-text, var(--qd-text-muted));
 }
 
 .word-type-filter__children-title {
   font-size: 0.98rem;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--qd-text);
 }
 
@@ -169,7 +169,7 @@
 
 .word-type-filter__child-button.qd-is-selected {
   padding-inline-start: 1.15rem;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 /* Selected-child dot indicator — §16 allowed-gold (solid selection indicator). */
@@ -191,12 +191,12 @@
 }
 
 .word-type-filter__label {
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .word-type-filter__child-label {
   min-inline-size: 0;
-  font-weight: 500;
+  font-weight: 400;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

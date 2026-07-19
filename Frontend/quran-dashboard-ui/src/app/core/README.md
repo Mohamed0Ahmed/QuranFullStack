@@ -16,14 +16,34 @@ per-feature.
     intentionally not generated).
   - `paged-result.model.ts` — the shared `PagedResultDto<T>` generic (hand-written wrapper
     over generated payload models).
-  - `secure-url.interceptor.ts` — forces/validates the API base URL.
+  - `secure-url.interceptor.ts` — forces/validates the API base URL; also lets the Logto
+    IdP origin (`environment.logto.endpoint`) pass through un-blocked (the OIDC library uses
+    `HttpClient` for discovery/token calls), while every other foreign origin stays blocked.
   - `dev-latency.interceptor.ts` + `dev-api-latency.ts` — dev-only injected latency.
   - `system.api.ts` / `system.models.ts` — health/system info (models re-export generated
     types with UI narrowing).
 - `caching/api-response-cache.ts` — shared response cache (feature caches build on the
   same idea; keep the key strategy consistent).
+- `auth/` — Logto authentication + roles (Feature 033):
+  - `role.guard.ts` — `roleGuard(requiredRole)` factory (a functional `CanActivateFn`).
+    Not authenticated → `authorize()` (Logto redirect) and block; authenticated → await
+    `CurrentUserStore.ensureLoaded()`, then activate iff `status === 'active'` and
+    `roleName === requiredRole`, else redirect to `/`. **Attached to nothing in Phase 2**
+    (public browse, roles infrastructure only, decision record §G1/§I4) — the hook a
+    future admin feature wires onto its admin routes. Supersedes the Phase-1 `authGuard`.
+  - `access.api.ts` — `AccessApi.getMe()` → `GET /api/access/me`, returning the raw
+    `ApiResponse<CurrentUserDto>` envelope (thin, like `system.api.ts`).
+  - `current-user.model.ts` — `CurrentUser` (== `CurrentUserDto`; the backend `me`
+    contract: `sub`, `email`, `displayName`, `status`, `roleId`, `roleName`). `roleName`
+    is `null` until the account holds a role (the bootstrapped Owner is `active` /
+    `roleName: 'Owner'`).
+  - `current-user.store.ts` — `CurrentUserStore`: minimal signal store (`currentUser`,
+    `errorMessage`); `load()` is fired post-callback (fresh each call) and never crashes
+    the flow; `ensureLoaded()` is the awaitable, load-once path (single cached
+    `GET /api/access/me`) the `roleGuard` uses.
 - `layout/` — `app-shell`, `top-navbar`, `footer`, `shell-layout.model.ts`.
-- `navigation/` — `route-paths.ts` (canonical route constants, plus `navLabel(key)` for a
+- `navigation/` — `route-paths.ts` (canonical route constants — incl. `DASHBOARD_ROUTE_PATH`
+  and `CALLBACK_PATH` for the Feature-033 landing route — plus `navLabel(key)` for a
   nav item's Arabic label) + `nav-items.ts` + `app-title.strategy.ts` (the `TitleStrategy`
   registered in `app.config.ts`: browser-tab title = `<route title> — المنهج القرآني`, and
   the brand alone on the titleless `dashboard`/home route; each route supplies its own
@@ -61,8 +81,18 @@ per-feature.
   in features.
 - **Route strings live in `route-paths.ts`** — reference the constants, don't hardcode paths
   in components/routes.
-- Interceptor order matters (secure-url before dev-latency); keep registration order in
-  `app.config.ts`.
+- **Public-browse route tree (Feature 033, Phase 2)** — `/dashboard` is one **unguarded**
+  parent with `''` (home), `mushaf`, and `words` children; the whole app is browsable
+  anonymously (the Phase-1 blanket `authGuard` was removed, decision record §G1). URLs are
+  unchanged. `/callback` (`CALLBACK_PATH`, the `features/auth/` landing page) is public and
+  sits before the `**` wildcard in `app.routes.ts`. The placeholder nav routes (e.g.
+  `/tafsirs`, `/gates`) stay top-level and unguarded. Nothing is protected in this phase:
+  the reusable `roleGuard` exists but is attached to no route — a future admin feature
+  wires it onto its own admin routes.
+- Interceptor order matters (`secureUrlInterceptor`, then `authInterceptor()`, then
+  `devLatencyInterceptor`); keep registration order in `app.config.ts`. `authInterceptor()`
+  (from `angular-auth-oidc-client`) attaches the Logto Bearer token only to requests under
+  `apiBaseUrl` via the `secureRoutes` config, and must run after `secureUrlInterceptor`.
 
 ## Related
 
