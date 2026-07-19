@@ -9,12 +9,15 @@ namespace QuranDashboard.Tests.Api.Access;
 /// pipeline, EF Core, Postgres). Profiles are deterministic per <c>sub</c> so a test can assert the
 /// persisted email came from this trusted source rather than anything the caller sent. Call counts are
 /// tracked so idempotency can be verified, and a single designated subject can be made to return a blank
-/// email to exercise the provisioning failure path.
+/// email to exercise the provisioning failure path. <see cref="ExternalUserProfile.EmailVerified"/>
+/// defaults to <c>true</c> for every subject (a normal profile is IdP-verified) so unrelated tests are
+/// unaffected; call <see cref="ReturnUnverifiedFor"/> to opt a specific subject into the unverified path.
 /// </summary>
 public sealed class FakeExternalUserProfileSource : IExternalUserProfileSource
 {
     private readonly ConcurrentDictionary<string, int> _callsBySub = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, string> _emailOverridesBySub = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, bool> _unverifiedSubs = new(StringComparer.Ordinal);
     private int _totalCalls;
     private volatile string? _blankEmailSub;
 
@@ -43,11 +46,21 @@ public sealed class FakeExternalUserProfileSource : IExternalUserProfileSource
     /// </summary>
     public void ReturnEmailFor(string sub, string email) => _emailOverridesBySub[sub] = email;
 
-    /// <summary>Clears call counters and any blank-email/email-override designation for per-test isolation.</summary>
+    /// <summary>
+    /// Designates one subject whose profile reports an IdP-UNVERIFIED email (decision 3: no linked
+    /// social/SSO identity backs it), to exercise the owner-gate-on-unverified-email paths.
+    /// </summary>
+    public void ReturnUnverifiedFor(string sub) => _unverifiedSubs[sub] = true;
+
+    /// <summary>
+    /// Clears call counters and any blank-email/email-override/unverified designation for per-test
+    /// isolation.
+    /// </summary>
     public void Reset()
     {
         _callsBySub.Clear();
         _emailOverridesBySub.Clear();
+        _unverifiedSubs.Clear();
         Interlocked.Exchange(ref _totalCalls, 0);
         _blankEmailSub = null;
     }
@@ -61,6 +74,11 @@ public sealed class FakeExternalUserProfileSource : IExternalUserProfileSource
             ? null
             : _emailOverridesBySub.GetValueOrDefault(logtoSub, EmailFor(logtoSub));
 
-        return Task.FromResult(new ExternalUserProfile(email, UserNameFor(logtoSub), DisplayNameFor(logtoSub)));
+        // decision 3: a blank email can never be "verified" — verification is a property of a specific
+        // email address, and there is none here.
+        var emailVerified = !string.IsNullOrWhiteSpace(email) && !_unverifiedSubs.ContainsKey(logtoSub);
+
+        return Task.FromResult(
+            new ExternalUserProfile(email, UserNameFor(logtoSub), DisplayNameFor(logtoSub), emailVerified));
     }
 }

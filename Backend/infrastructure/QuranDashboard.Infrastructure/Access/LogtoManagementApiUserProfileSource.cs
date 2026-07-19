@@ -6,11 +6,13 @@ using QuranDashboard.Application.Abstractions.Security;
 namespace QuranDashboard.Infrastructure.Access;
 
 /// <summary>
-/// Resolves a user's server-verified profile (email/username/name) from the Logto Management API.
-/// The API's inbound access token (audience = our API resource) cannot call Logto's userinfo endpoint,
-/// so the trusted email source is the Management API: a machine-to-machine client-credentials token —
-/// cached in memory until just before expiry — authorizes <c>GET /api/users/{sub}</c>. Every returned
-/// value originates from Logto and is never client-supplied.
+/// Resolves a user's server-verified profile (email/username/name/email-verified) from the Logto
+/// Management API. The API's inbound access token (audience = our API resource) cannot call Logto's
+/// userinfo endpoint, so the trusted email source is the Management API: a machine-to-machine
+/// client-credentials token — cached in memory until just before expiry — authorizes
+/// <c>GET /api/users/{sub}</c>. Every returned value originates from Logto and is never client-supplied.
+/// decision 3: email verification is derived from linked identities (see <see cref="GetProfileAsync"/>)
+/// because this endpoint has no dedicated verified-email field.
 /// </summary>
 public sealed class LogtoManagementApiUserProfileSource(
     HttpClient httpClient,
@@ -46,7 +48,14 @@ public sealed class LogtoManagementApiUserProfileSource(
             ?? throw new InvalidOperationException(
                 $"The Logto Management API returned an empty body for user '{logtoSub}'.");
 
-        return new ExternalUserProfile(user.PrimaryEmail, user.Username, user.Name);
+        // decision 3: Logto's Management API GET /api/users/{id} has no "email verified" field. Logto
+        // only ever syncs primaryEmail from a verified social or enterprise-SSO source, so the presence
+        // of at least one linked identity of either kind is treated as proof the primary email is
+        // IdP-verified. No linked identity (a password-only account) => fail closed, unverified.
+        var emailVerified = !string.IsNullOrWhiteSpace(user.PrimaryEmail)
+            && ((user.Identities?.Count > 0) || (user.SsoIdentities?.Length > 0));
+
+        return new ExternalUserProfile(user.PrimaryEmail, user.Username, user.Name, emailVerified);
     }
 
     private async Task<string> GetManagementTokenAsync(CancellationToken ct)
@@ -143,5 +152,7 @@ public sealed class LogtoManagementApiUserProfileSource(
     private sealed record LogtoUserResponse(
         [property: JsonPropertyName("primaryEmail")] string? PrimaryEmail,
         [property: JsonPropertyName("username")] string? Username,
-        [property: JsonPropertyName("name")] string? Name);
+        [property: JsonPropertyName("name")] string? Name,
+        [property: JsonPropertyName("identities")] Dictionary<string, JsonElement>? Identities,
+        [property: JsonPropertyName("ssoIdentities")] JsonElement[]? SsoIdentities);
 }

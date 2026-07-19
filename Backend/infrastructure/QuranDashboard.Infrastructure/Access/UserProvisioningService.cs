@@ -9,10 +9,15 @@ namespace QuranDashboard.Infrastructure.Access;
 /// from a server-verified email obtained via <see cref="IExternalUserProfileSource"/> — never a
 /// client-supplied value. The default new user is <see cref="UserStatus.Pending"/> with no role; the sole
 /// exception is the configured Owner email (<see cref="OwnerBootstrapOptions"/>), which is provisioned
-/// directly as Owner/Active. An already-provisioned subject is returned unchanged, except the Owner-email
-/// upgrade path: a pre-existing user (e.g. provisioned Pending/null under Phase 1) whose email matches the
-/// bootstrap email is promoted to Owner/Active. Any role/status change here evicts the subject's cached
-/// role (via <see cref="IUserRoleResolver.Evict"/>) so the claims transformation observes it immediately.
+/// directly as Owner/Active — decision 3: only when the profile's email is also IdP-verified
+/// (<see cref="ExternalUserProfile.EmailVerified"/>); an unverified owner-email first login is provisioned
+/// exactly like a normal user (Pending, no role). An already-provisioned subject is returned unchanged,
+/// except the Owner-email upgrade path: a pre-existing user (e.g. provisioned Pending/null under Phase 1)
+/// whose email matches the bootstrap email is promoted to Owner/Active, again gated on the email being
+/// IdP-verified. decision 3: a <see cref="UserStatus.Disabled"/> user is never auto-revived or
+/// auto-promoted by login, regardless of email or role — that guard runs before any promotion check. Any
+/// role/status change here evicts the subject's cached role (via <see cref="IUserRoleResolver.Evict"/>) so
+/// the claims transformation observes it immediately.
 /// </summary>
 public sealed class UserProvisioningService(
     QuranDashboardDbContext db,
@@ -44,8 +49,9 @@ public sealed class UserProvisioningService(
 
     /// <summary>
     /// Returns an already-provisioned subject unchanged, unless it is the configured Owner email sitting
-    /// below Owner/Active (the Phase-1-owner upgrade path), in which case it is promoted and its cached
-    /// role evicted.
+    /// below Owner/Active (the Phase-1-owner upgrade path) AND its email is IdP-verified, in which case it
+    /// is promoted and its cached role evicted. A <see cref="UserStatus.Disabled"/> user is never promoted
+    /// — decision 3: login must not auto-revive or auto-promote a disabled account.
     /// </summary>
     private async Task<ProvisionedUser> ReconcileExistingAsync(User existing, string logtoSub, CancellationToken ct)
     {
@@ -54,8 +60,22 @@ public sealed class UserProvisioningService(
             return Project(existing, existing.Role?.Name);
         }
 
+        // decision 3: never auto-revive or auto-promote a Disabled user on login.
+        if (existing.Status == UserStatus.Disabled)
+        {
+            return Project(existing, existing.Role?.Name);
+        }
+
         var ownerRole = await GetOwnerRoleAsync(ct);
         if (ownerRole is null || (existing.RoleId == ownerRole.Id && existing.Status == UserStatus.Active))
+        {
+            return Project(existing, existing.Role?.Name);
+        }
+
+        // decision 3: only promote a pre-existing owner-email user when their email is IdP-verified. This
+        // profile fetch runs only on this rare owner-upgrade path, not on every reconcile call.
+        var profile = await profileSource.GetProfileAsync(logtoSub, ct);
+        if (!profile.EmailVerified)
         {
             return Project(existing, existing.Role?.Name);
         }
@@ -72,7 +92,12 @@ public sealed class UserProvisioningService(
 
     private async Task<ProvisionedUser> CreateAsync(string logtoSub, ExternalUserProfile profile, CancellationToken ct)
     {
-        var ownerRole = IsConfiguredOwner(profile.Email!) ? await GetOwnerRoleAsync(ct) : null;
+        // decision 3: an owner-email first login is provisioned as Owner/Active only when the IdP also
+        // reports the email as verified; otherwise it is provisioned exactly like a normal user (Pending,
+        // no role) and can be promoted later once verified.
+        var ownerRole = IsConfiguredOwner(profile.Email!) && profile.EmailVerified
+            ? await GetOwnerRoleAsync(ct)
+            : null;
 
         var now = DateTimeOffset.UtcNow;
         var user = new User
