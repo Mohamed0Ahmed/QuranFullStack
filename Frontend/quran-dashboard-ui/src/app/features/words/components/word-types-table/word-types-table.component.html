@@ -121,9 +121,8 @@
     <p class="word-types-table__state qd-empty-state" role="status" data-testid="word-types-select-subtype">{{ selectPromptLabel() }}</p>
   }
 
-  <!-- Shared row cells for both the virtual and plain-render branches. Word rows carry the four
-       morphology-meta columns; grouped rows carry only the dimension label; both end in three
-       statistic chips, which are the only interactive elements in a row. -->
+  <!-- Shared row cells for both the virtual and plain-render branches; the three statistic chips are
+       the only interactive elements in a row. -->
   <ng-template #rowCells let-row="row" let-index="index">
     <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--row-number qd-explorer-table__cell--row-number" role="cell">{{ rowNumber(index) }}</span>
     @if (row.kind === 'word') {

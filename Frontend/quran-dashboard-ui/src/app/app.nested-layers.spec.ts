@@ -6,18 +6,15 @@ import { Router, provideRouter } from '@angular/router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { App } from './app';
+import { provideAuthTesting } from './core/auth/auth.testing';
 import { DetailOverlayHistoryService } from './core/navigation/detail-overlay/detail-overlay-history.service';
 import { LemmaDetailFrame } from './core/navigation/detail-overlay/detail-overlay.models';
 import { RootsExplorerPageComponent } from './features/words/pages/roots-explorer-page/roots-explorer-page.component';
 
-/**
- * Mobile nested-layer invariants (Feature 029, B8, plan §5.9/§5.12 item 9):
- * with a responsive explorer drawer open UNDER the global detail overlay,
- * body scroll stays locked while either layer lives (reference-counted
- * ScrollLockService), and only the top dialog is interactive — the drawer sits
- * inside the inert app-shell subtree while the dialog is a shell sibling, and
- * exactly one focus trap is enabled at a time.
- */
+// Feature 029 (B8, plan §5.9/§5.12): with a responsive explorer drawer open UNDER the global detail
+// overlay, the body scroll lock survives while either layer lives (reference-counted
+// ScrollLockService) and only the top dialog is interactive — the drawer sits inside the inert
+// app-shell subtree while the dialog is a shell sibling, and exactly one focus trap is enabled.
 
 function ok<T>(data: T) {
   return { isSuccess: true, data, message: null, errors: null };
@@ -109,6 +106,7 @@ describe('App nested layers on mobile (drawer under global overlay)', () => {
         provideLocationMocks(),
         provideHttpClient(),
         provideHttpClientTesting(),
+        provideAuthTesting(),
       ],
     });
     router = TestBed.inject(Router);
@@ -216,7 +214,6 @@ describe('App nested layers on mobile (drawer under global overlay)', () => {
     expect(shell.contains(drawer)).toBe(true);
     expect(shell.contains(dialog)).toBe(false);
 
-    // Closing the dialog lifts the inert state from the shell again.
     click(query(fixture, '[data-testid="detail-modal-close"]'));
     await loadStep(fixture);
     expect(query(fixture, 'qd-app-shell')!.getAttribute('inert')).toBeNull();

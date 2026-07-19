@@ -9,7 +9,6 @@ public sealed class QuranLemmaAnalysis
 {
     public int Id { get; set; }
 
-    // The collapsed display lemma this analysis belongs to.
     public int LemmaId { get; set; }
 
     // The distinct Corpus lemma key (internal/audit only, never displayed).

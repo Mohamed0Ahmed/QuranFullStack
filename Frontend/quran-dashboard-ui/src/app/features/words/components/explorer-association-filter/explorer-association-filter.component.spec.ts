@@ -31,6 +31,7 @@ describe('ExplorerAssociationFilterComponent', () => {
     selectedLabel: string | null;
     clientFilter: boolean;
     loading: boolean;
+    error: boolean;
     disabled: boolean;
   }> = {}) {
     const fixture = TestBed.createComponent(ExplorerAssociationFilterComponent);
@@ -40,6 +41,7 @@ describe('ExplorerAssociationFilterComponent', () => {
     if (inputs.selectedLabel !== undefined) fixture.componentRef.setInput('selectedLabel', inputs.selectedLabel);
     if (inputs.clientFilter !== undefined) fixture.componentRef.setInput('clientFilter', inputs.clientFilter);
     if (inputs.loading !== undefined) fixture.componentRef.setInput('loading', inputs.loading);
+    if (inputs.error !== undefined) fixture.componentRef.setInput('error', inputs.error);
     if (inputs.disabled !== undefined) fixture.componentRef.setInput('disabled', inputs.disabled);
     fixture.detectChanges();
     return fixture;
@@ -180,6 +182,40 @@ describe('ExplorerAssociationFilterComponent', () => {
     expect(hint.getAttribute('role')).toBe('status');
     expect(hint.getAttribute('aria-hidden')).toBeNull();
     expect(hint.textContent).toContain(WORDS_ASSOCIATION_FILTER_LABELS.loading);
+  });
+
+  // M32/M43 + M74: a load failure must render as its own distinct state, never collapse into a
+  // silently-empty options list.
+  it('renders a distinct error hint instead of an empty list when the options load failed', () => {
+    const fixture = render({ error: true, options: [] });
+    const root = fixture.nativeElement as HTMLElement;
+    openPanel(fixture);
+
+    const hint = root.querySelector('[data-testid="association-filter-error"]')!;
+    expect(hint.getAttribute('role')).toBe('status');
+    expect(hint.textContent).toContain(WORDS_ASSOCIATION_FILTER_LABELS.error);
+    expect(root.querySelector('[data-testid="association-filter-loading"]')).toBeNull();
+    expect(root.querySelector('.association-filter__options')).toBeNull();
+  });
+
+  it('prefers the error state over a loading options list when both are somehow set', () => {
+    const fixture = render({ error: true, loading: true, options: [] });
+    const root = fixture.nativeElement as HTMLElement;
+    openPanel(fixture);
+
+    expect(root.querySelector('[data-testid="association-filter-loading"]')).toBeTruthy();
+    expect(root.querySelector('[data-testid="association-filter-error"]')).toBeNull();
+  });
+
+  it('shows an explicit no-results hint for a genuine zero-match result (not loading, not error)', () => {
+    const fixture = render({ options: [] });
+    const root = fixture.nativeElement as HTMLElement;
+    openPanel(fixture);
+
+    const hint = root.querySelector('[data-testid="association-filter-no-results"]')!;
+    expect(hint.textContent).toContain(WORDS_ASSOCIATION_FILTER_LABELS.noResults);
+    expect(root.querySelector('[data-testid="association-filter-error"]')).toBeNull();
+    expect(root.querySelector('[data-testid="association-filter-loading"]')).toBeNull();
   });
 
   it('does NOT open the panel when an empty, unselected field receives focus', () => {

@@ -5,6 +5,39 @@
     "version": "v1"
   },
   "paths": {
+    "/api/access/me": {
+      "get": {
+        "tags": [
+          "Access"
+        ],
+        "summary": "يُرجع بيانات المستخدم الحالي بعد التحقق من هويته، ويُنشئ سجلّه محليًا عند أول دخول (البريد\nمُتحقَّق منه من مزوّد الهوية). المستخدم الجديد يبدأ بحالة \"قيد المراجعة\" وبدون دور، ما لم يكن بريده\nهو بريد المالك المُهيّأ فيُنشأ بدور \"المالك\" وحالة \"نشط\".",
+        "responses": {
+          "200": {
+            "description": "تم تحميل بيانات المستخدم الحالي.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentUserResponseApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentUserResponseApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentUserResponseApiResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "لم يُقدَّم رمز وصول صالح."
+          }
+        }
+      }
+    },
     "/api/dashboard/info": {
       "get": {
         "tags": [
@@ -2728,7 +2761,7 @@
           {
             "name": "sort",
             "in": "query",
-            "description": "مفتاح الفرز (اختياري، الافتراضي `occurrences` تنازليًا — بخلاف بقية المستكشفات).\nالصيغة: `عمود` أو `عمود-asc` أو `عمود-desc`.\nالأعمدة المتاحة: `alpha` (تصاعدي طبيعيًا)، و`occurrences` و`ayahs`\nو`surahs` (تنازلية طبيعيًا)، و`mushaf-order`. تنطبق المفاتيح ذاتها على عرض الكلمات وعلى عروض\nالجذور/الأصول/الصيغ المجمّعة.\nالمفتاح المجرّد يعني الاتجاه الطبيعي للعمود، لذا `occurrences` ≡\n`occurrences-desc` و`alpha` ≡ `alpha-asc`.\nو`mushaf-order` هو ترتيب المصحف التصاعدي فقط ولا يقبل لاحقة اتجاه.\nأي مفتاح آخر يُرجع 400.",
+            "description": "مفتاح الفرز (اختياري، الافتراضي `occurrences` تنازليًا — بخلاف بقية المستكشفات).\nالصيغة: `عمود` أو `عمود-asc` أو `عمود-desc`.\nالأعمدة المتاحة: `alpha` (تصاعدي طبيعيًا)، و`occurrences` و`ayahs`\nو`surahs` (تنازلية طبيعيًا). تنطبق المفاتيح ذاتها على عرض الكلمات وعلى عروض\nالجذور/الأصول/الصيغ المجمّعة.\nالمفتاح المجرّد يعني الاتجاه الطبيعي للعمود، لذا `occurrences` ≡\n`occurrences-desc` و`alpha` ≡ `alpha-asc`.\nو`mushaf-order` هو ترتيب المصحف التصاعدي فقط ولا يقبل لاحقة اتجاه.\nأي مفتاح آخر يُرجع 400.",
             "schema": {
               "type": "string"
             }
@@ -2869,7 +2902,7 @@
           {
             "name": "sort",
             "in": "query",
-            "description": "مفتاح الفرز (اختياري، الافتراضي `occurrences` تنازليًا — بخلاف بقية المستكشفات).\nالصيغة: `عمود` أو `عمود-asc` أو `عمود-desc`.\nالأعمدة المتاحة: `alpha` (تصاعدي طبيعيًا)، و`occurrences` و`ayahs`\nو`surahs` (تنازلية طبيعيًا)، و`mushaf-order`. تنطبق المفاتيح ذاتها على عرض الكلمات وعلى عروض\nالجذور/الأصول/الصيغ المجمّعة.\nالمفتاح المجرّد يعني الاتجاه الطبيعي للعمود، لذا `occurrences` ≡\n`occurrences-desc` و`alpha` ≡ `alpha-asc`.\nو`mushaf-order` هو ترتيب المصحف التصاعدي فقط ولا يقبل لاحقة اتجاه.\nأي مفتاح آخر يُرجع 400.",
+            "description": "مفتاح الفرز (اختياري، الافتراضي `occurrences` تنازليًا — بخلاف بقية المستكشفات).\nالصيغة: `عمود` أو `عمود-asc` أو `عمود-desc`.\nالأعمدة المتاحة: `alpha` (تصاعدي طبيعيًا)، و`occurrences` و`ayahs`\nو`surahs` (تنازلية طبيعيًا). تنطبق المفاتيح ذاتها على عرض الكلمات وعلى عروض\nالجذور/الأصول/الصيغ المجمّعة.\nالمفتاح المجرّد يعني الاتجاه الطبيعي للعمود، لذا `occurrences` ≡\n`occurrences-desc` و`alpha` ≡ `alpha-asc`.\nو`mushaf-order` هو ترتيب المصحف التصاعدي فقط ولا يقبل لاحقة اتجاه.\nأي مفتاح آخر يُرجع 400.",
             "schema": {
               "type": "string"
             }
@@ -3619,6 +3652,76 @@
           },
           "isAyahMarker": {
             "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CurrentUserResponse": {
+        "required": [
+          "displayName",
+          "email",
+          "roleId",
+          "roleName",
+          "status",
+          "sub"
+        ],
+        "type": "object",
+        "properties": {
+          "sub": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string"
+          },
+          "roleId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "roleName": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CurrentUserResponseApiResponse": {
+        "required": [
+          "data",
+          "errors",
+          "isSuccess",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CurrentUserResponse"
+              }
+            ],
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -8759,6 +8862,9 @@
     }
   },
   "tags": [
+    {
+      "name": "Access"
+    },
     {
       "name": "Dashboard"
     },

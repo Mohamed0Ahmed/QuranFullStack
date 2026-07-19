@@ -2,14 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 
 import { splitGridTemplateColumns } from './grid-template-columns';
 
-/**
- * Renders `count` skeleton rows, each a CSS grid using the caller-supplied
- * `rowTemplate`, so loading rows line up with the real, loaded row grid
- * exactly (UI_STYLE_SYSTEM.md §17 loading/skeleton system).
- *
- * Non-interactive: `aria-busy="true"` on the container plus a single
- * sr-only `role="status"` label; the per-row cells are `aria-hidden`.
- */
+// Rows reuse the caller's `rowTemplate` as their grid so loading rows line up with
+// the real, loaded row grid exactly.
 @Component({
   selector: 'qd-skeleton-rows',
   standalone: true,

@@ -17,8 +17,6 @@ public sealed class EnrichedMorphologyReader
         PropertyNameCaseInsensitive = true
     };
 
-    // Streams records lazily. Callers that need a materialized list can ToListAsync themselves; the
-    // dimension builder consumes the stream in a single forward pass with no need to hold all records.
     public async IAsyncEnumerable<EnrichedMorphologyRecord> ReadAsync(
         string fullPath,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
@@ -46,8 +44,6 @@ public sealed class EnrichedMorphologyReader
     }
 }
 
-// Source model — mirrors the dashboard-ready JSON shape (subset relevant to import + validation).
-// Persistence-shape projection (AlignedWordDto/AlignedSegmentDto) happens in EnrichedDimensionBuilder.
 public sealed class EnrichedMorphologyRecord
 {
     public string? Location { get; init; }

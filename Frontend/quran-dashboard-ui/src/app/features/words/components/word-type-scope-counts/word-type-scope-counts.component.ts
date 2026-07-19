@@ -9,19 +9,6 @@ import {
 } from '../../models/word-types.labels';
 import { WordTypeScopeCountsDto, WordTypeTableView, WordTypesScopeCountsState } from '../../models/word-types.models';
 
-/**
- * Scoped four-count summary strip for the Word Types page (Feature 026, US8). Sits between the filter
- * strip and the table-view tabs and shows how many words / roots / stems / lemmas the active scope
- * contains, reusing the view tabs' SHORT labels verbatim (كلمات | جذور | أصول | صيغ, same order and text
- * — the tabs are not renamed). Non-interactive apart from the error-state retry.
- *
- * Presentational strip: the page (via `WordTypesExplorerFacade`) owns the scope-counts load lifecycle
- * and passes it in as `state`; this component only renders it and emits `retryRequested` so the page can
- * trigger a counts-only refetch (page → facade → presentational-child boundary). Its load lifecycle is
- * fully independent of the table — a counts failure shows the strip's compact error + retry and never
- * blocks the table — while a `tableFailed` table read hides the strip numbers (the scope is unconfirmed).
- * The host stays mounted through every transition (mounted-shell invariant); only its inner content toggles.
- */
 @Component({
   selector: 'qd-word-type-scope-counts',
   standalone: true,

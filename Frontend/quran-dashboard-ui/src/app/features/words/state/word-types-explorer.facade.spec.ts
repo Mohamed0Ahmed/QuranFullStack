@@ -730,12 +730,10 @@ describe('WordTypesExplorerFacade — scope counts (US8)', () => {
     flushLeafList(http, { type: 'noun', childCode: 'PN', tableView: 'words' }, okRows([wordRow()]));
     expectScopeCountsRequest(http, { type: 'noun', childCode: 'PN' }).flush(okCounts());
 
-    // Tab switch: the table reloads, the counts do not.
     route.setQueryParams({ type: 'noun', childCode: 'PN', tableView: 'roots' });
     expectNoScopeCountsRequest(http);
     expectTableRequest(http, { type: 'noun', childCode: 'PN', tableView: 'roots' }).flush(okRows([rootRow()]));
 
-    // Page change: same — the table reloads, the counts do not.
     route.setQueryParams({ type: 'noun', childCode: 'PN', tableView: 'roots', page: '2' });
     expectNoScopeCountsRequest(http);
     expectTableRequest(http, { type: 'noun', childCode: 'PN', tableView: 'roots', page: 2 }).flush(okRows([]));

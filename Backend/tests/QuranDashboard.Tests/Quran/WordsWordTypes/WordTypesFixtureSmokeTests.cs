@@ -1,5 +1,3 @@
-using QuranDashboard.Infrastructure.Persistence;
-
 namespace QuranDashboard.Tests.Quran.WordsWordTypes;
 
 [Collection(nameof(WordTypesCollection))]

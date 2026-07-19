@@ -12,7 +12,6 @@
   gap: var(--qd-space-3);
   margin-block-start: var(--qd-space-3);
   padding-block-start: var(--qd-space-3);
-  // A hairline inside the intro band, separating the page title above from its explanation.
   border-block-start: 1px solid var(--qd-border);
 }
 
@@ -34,20 +33,20 @@
 
 .qd-explainer__eyebrow {
   font-size: 0.8125rem;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.01em;
   color: var(--qd-accent-text); // allowed-green #4: section eyebrow via the AA text shade
 }
 
 .qd-explainer__toggle {
-  margin-inline-start: auto; // pin to the inline-end, RTL-safe
+  margin-inline-start: auto;
   flex-shrink: 0;
 }
 
 .qd-explainer__tagline {
   margin: 0;
   font-size: 1.0625rem;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 1.7;
   color: var(--qd-text);
 }

@@ -6,13 +6,8 @@ public static class RootsCacheKeys
 {
     public static string SummaryAll => "roots:summary:all";
 
-    public static string Summary(int id) => $"roots:{id}:summary";
-
     public static string WordsAll(int id, RootWordKind kind) =>
         $"roots:{id}:words:{KindKey(kind)}:all";
-
-    public static string Words(int id, RootWordKind kind, int page, int pageSize) =>
-        $"roots:{id}:words:{KindKey(kind)}:p{page}:s{pageSize}";
 
     public static string Ayahs(int id, int page, int pageSize) =>
         $"roots:{id}:ayahs:p{page}:s{pageSize}";

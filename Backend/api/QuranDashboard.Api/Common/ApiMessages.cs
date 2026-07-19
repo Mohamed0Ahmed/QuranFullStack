@@ -4,10 +4,14 @@ public static class ApiMessages
 {
     public const string HealthOk = "الخدمة تعمل بشكل سليم";
     public const string HealthDegraded = "الخدمة تعمل مع وجود تنبيهات";
+    public const string HealthUnhealthy = "الخدمة غير سليمة أو تعذّر الوصول إلى إحدى اعتمادياتها";
     public const string DashboardInfo = "تم جلب معلومات التطبيق";
     public const string UnexpectedError = "حدث خطأ غير متوقع";
     public const string OperationSuccess = "تمت العملية بنجاح";
     public const string TooManyRequests = "عدد كبير من الطلبات. يرجى المحاولة بعد قليل.";
+    public const string Unauthorized = "يجب تسجيل الدخول للوصول إلى هذا المورد";
+    public const string ValidationFailed = "الطلب غير صالح";
+    public const string EmailAlreadyRegistered = "هذا البريد الإلكتروني مسجَّل بالفعل لحساب آخر";
 
     public const string NotFound = "المورد غير موجود";
 
@@ -100,4 +104,6 @@ public static class ApiMessages
     public const string WordTypesInvalidGroupedKind = "نوع التجميع غير صالح";
     public const string WordTypesInvalidGroupedId = "معرّف التجميع غير صالح";
     public const string WordTypesGroupedNotFound = "التجميع المحدد غير موجود";
+
+    public const string CurrentUserLoaded = "تم تحميل بيانات المستخدم الحالي";
 }

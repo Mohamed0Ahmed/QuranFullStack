@@ -1,16 +1,5 @@
-using QuranDashboard.Infrastructure.Persistence;
-
 namespace QuranDashboard.Tests.Quran.WordsMorphologyExplorers;
 
-/// <summary>
-/// Shared Testcontainers PostgreSQL fixture for the Feature 016 Lemmas &amp; Stems
-/// Explorer tests. Mirrors <see cref="QuranDashboard.Tests.Quran.WordsRoots.RootsExplorerTestFixture"/>:
-/// spins up a <c>postgres:16-alpine</c> container (or skips it when
-/// <c>MORPHOLOGY_EXPLORERS_REAL_DB_CONNECTION</c> is set), builds the production
-/// DI provider (<c>AddApplication</c> + <c>AddInfrastructure</c>), ensures the
-/// schema, and loads the committed source-safe seed slice. Exposes the shared
-/// <see cref="RecordingLoggerProvider"/> for structured-log assertions.
-/// </summary>
 public sealed class MorphologyExplorersTestFixture : IAsyncLifetime
 {
     private const string RealDbConnectionEnvKey = "MORPHOLOGY_EXPLORERS_REAL_DB_CONNECTION";

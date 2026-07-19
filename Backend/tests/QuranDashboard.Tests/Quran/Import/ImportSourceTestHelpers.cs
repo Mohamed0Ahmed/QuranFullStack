@@ -11,6 +11,11 @@ internal static class ImportSourceTestHelpers
         return tempDir;
     }
 
+    // Per-test temp report dir so import tests never fall back to the handler's default
+    // (canonical resources/report/...) report location.
+    public static string TempReportDir() =>
+        Path.Combine(Path.GetTempPath(), $"quran-foundation-report-{Guid.NewGuid():N}");
+
     public static void IntroduceDuplicateWordId(string sourceRoot)
     {
         var wordFiles = new[]

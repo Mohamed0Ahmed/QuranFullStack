@@ -1,13 +1,10 @@
 using QuranDashboard.Application.Abstractions.Common.Filtering;
-using QuranDashboard.Application.Abstractions.Common.Paging;
 using QuranDashboard.Application.Abstractions.Quran.Words;
 using QuranDashboard.Application.Abstractions.Quran.Words.Responses;
 using QuranDashboard.Domain.Quran.Words;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words;
 
-// The list-query building (raw SELECTs, WHERE composition, winner predicates, list sort) lives in the
-// EfUniqueWordsReader.List.cs partial — split by size, matching the EfStemsReader partial convention.
 public sealed partial class EfUniqueWordsReader(QuranDashboardDbContext db) : IUniqueWordsReader
 {
     private const int TotalSurahs = 114;
@@ -178,6 +175,11 @@ public sealed partial class EfUniqueWordsReader(QuranDashboardDbContext db) : IU
         var matchedAyahIds = ReadableMatchesQuery(kind, id).Select(w => w.AyahId).Distinct();
 
         var totalCount = await matchedAyahIds.CountAsync(cancellationToken);
+        var skip = ReadPaging.CalculateSafeSkip(page, pageSize, totalCount);
+        if (skip is null)
+        {
+            return new PagedResult<UniqueWordAyahMatchDto>(page, pageSize, totalCount, []);
+        }
 
         var pageAyahs = await (
             from ayah in _db.QuranAyahs.AsNoTracking()
@@ -190,7 +192,7 @@ public sealed partial class EfUniqueWordsReader(QuranDashboardDbContext db) : IU
                 ayah.VerseKey,
                 ayah.AyahNumber,
                 surah.NameArabic))
-            .Skip((page - 1) * pageSize)
+            .Skip(skip.Value)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
 

@@ -1,4 +1,3 @@
-using QuranDashboard.Application.Abstractions.Common.Paging;
 using QuranDashboard.Application.Abstractions.Quran.Words.Lemmas;
 using QuranDashboard.Application.Abstractions.Quran.Words.Lemmas.Responses;
 using QuranDashboard.Application.Quran.Words.Lemmas.Queries.GetLemmaAyahs;
@@ -11,12 +10,6 @@ using QuranDashboard.Application.Quran.Words.Lemmas.Queries.GetLemmaSummary;
 
 namespace QuranDashboard.Api.Controllers.Words;
 
-/// <summary>
-/// Lemmas Explorer (Feature 016) read-only endpoints under the existing Words
-/// area. Route base: <c>api/words/lemmas</c>. Sibling of Feature 015
-/// <c>RootsController</c>. Story-phase actions are added incrementally;
-/// US3/US4/US5/US6 handlers are injected when their actions land.
-/// </summary>
 [ApiController]
 [Route("api/words/lemmas")]
 public sealed class LemmasController(
@@ -32,39 +25,6 @@ public sealed class LemmasController(
     private const int DefaultListPageSize = 1000;
     private const int DefaultDetailPageSize = 100;
 
-    /// <summary>
-    /// يُرجع صفحة واحدة من الصيغ المعجمية مع بحث عربي مُطبّع (contains) وخيارات
-    /// ترتيب وتصفّح، وكل الأعداد لكل صيغة ومعرّف الجذر المملوك.
-    /// </summary>
-    /// <param name="search">نص البحث العربي المُطبّع (contains، اختياري).</param>
-    /// <param name="paramSort">
-    /// مفتاح الترتيب (اختياري، الافتراضي <c>mushaf-order</c>). الصيغة:
-    /// <c>عمود</c> أو <c>عمود-asc</c> أو <c>عمود-desc</c>.
-    /// الأعمدة المتاحة: <c>alpha</c> (تصاعدي طبيعيًا)، و<c>occurrences</c> و<c>ayahs</c>
-    /// و<c>surahs</c> و<c>simple</c> و<c>tashkeel</c> و<c>stems</c> (تنازلية طبيعيًا).
-    /// المفتاح المجرّد يعني الاتجاه الطبيعي للعمود، لذا <c>occurrences</c> ≡
-    /// <c>occurrences-desc</c> و<c>alpha</c> ≡ <c>alpha-asc</c>.
-    /// و<c>mushaf-order</c> هو ترتيب المصحف التصاعدي فقط ولا يقبل لاحقة اتجاه.
-    /// أي مفتاح آخر يُرجع 400.
-    /// </param>
-    /// <param name="page">رقم الصفحة (الافتراضي 1).</param>
-    /// <param name="pageSize">حجم الصفحة (الافتراضي 1000).</param>
-    /// <param name="occMin">الحد الأدنى لعدد المواضع (اختياري).</param>
-    /// <param name="occMax">الحد الأعلى لعدد المواضع (اختياري).</param>
-    /// <param name="ayahsMin">الحد الأدنى لعدد الآيات (اختياري).</param>
-    /// <param name="ayahsMax">الحد الأعلى لعدد الآيات (اختياري).</param>
-    /// <param name="surahsMin">الحد الأدنى لعدد السور (اختياري).</param>
-    /// <param name="surahsMax">الحد الأعلى لعدد السور (اختياري).</param>
-    /// <param name="simpleWordsMin">الحد الأدنى لعدد الكلمات بدون تشكيل (اختياري).</param>
-    /// <param name="simpleWordsMax">الحد الأعلى لعدد الكلمات بدون تشكيل (اختياري).</param>
-    /// <param name="tashkeelWordsMin">الحد الأدنى لعدد الكلمات بالتشكيل (اختياري).</param>
-    /// <param name="tashkeelWordsMax">الحد الأعلى لعدد الكلمات بالتشكيل (اختياري).</param>
-    /// <param name="stemsMin">الحد الأدنى لعدد الأصول الصرفية (اختياري).</param>
-    /// <param name="stemsMax">الحد الأعلى لعدد الأصول الصرفية (اختياري).</param>
-    /// <param name="rootId">مرشّح الجذر المملوك (اختياري).</param>
-    /// <param name="cancellationToken">رمز إلغاء الطلب.</param>
-    /// <response code="200">تم تحميل صفحة الصيغ المعجمية بنجاح.</response>
-    /// <response code="400">مفتاح ترتيب أو مرشّح أو تقسيم صفحات غير صالح.</response>
     [HttpGet]
     public async Task<ActionResult<ApiResponse<PagedResult<LemmaListItemDto>>>> Get(
         [FromQuery] string? search,
@@ -116,10 +76,6 @@ public sealed class LemmasController(
         };
     }
 
-    /// <summary>
-    /// يُرجع ملخّص الصيغة المعجمية المحددة (أعدادها وتوزيع الأنواع الكامل).
-    /// يُستخدم لاستعادة حالة لوحة التفاصيل من رابط المشاركة.
-    /// </summary>
     [HttpGet("{id:int}")]
     public async Task<ActionResult<ApiResponse<LemmaSummaryDto>>> GetSummary(
         int id,
@@ -141,10 +97,6 @@ public sealed class LemmasController(
         };
     }
 
-    /// <summary>
-    /// يُرجع صفحة من الكلمات المرتبطة بالصّيغة المعجمية المحددة بحسب نوعها
-    /// (بسيطة أو بالتشكيل)، مع عدد مرات الظهور في سياق هذه الصيغة.
-    /// </summary>
     [HttpGet("{id:int}/words/{wordKind}")]
     public async Task<ActionResult<ApiResponse<PagedResult<LemmaWordItemDto>>>> GetWords(
         int id,
@@ -177,10 +129,6 @@ public sealed class LemmasController(
         };
     }
 
-    /// <summary>
-    /// يُرجع صفحة من الآيات التي وردت فيها الصيغة المعجمية المحددة، مع معرّفات
-    /// الكلمات المطابقة للتمييز البصري.
-    /// </summary>
     [HttpGet("{id:int}/ayahs")]
     public async Task<ActionResult<ApiResponse<PagedResult<LemmaAyahMatchDto>>>> GetAyahs(
         int id,
@@ -214,10 +162,6 @@ public sealed class LemmasController(
     private static string? NormalizeTypeCode(string? typeCode) =>
         string.IsNullOrWhiteSpace(typeCode) ? null : typeCode.Trim();
 
-    /// <summary>
-    /// يُرجع السور التي وردت فيها الصيغة المعجمية المحددة مع عدد مرات الظهور
-    /// في كل سورة.
-    /// </summary>
     [HttpGet("{id:int}/surahs")]
     public async Task<ActionResult<ApiResponse<LemmaSurahsResponse>>> GetSurahs(
         int id,
@@ -239,9 +183,6 @@ public sealed class LemmasController(
         };
     }
 
-    /// <summary>
-    /// يُرجع السور التي لم ترد فيها الصيغة المعجمية المحددة.
-    /// </summary>
     [HttpGet("{id:int}/missing-surahs")]
     public async Task<ActionResult<ApiResponse<LemmaMissingSurahsResponse>>> GetMissingSurahs(
         int id,
@@ -263,10 +204,6 @@ public sealed class LemmasController(
         };
     }
 
-    /// <summary>
-    /// يُرجع الأصول الصرفية التي وردت فيها الصيغة المعجمية المحددة مع عدد
-    /// مرات الظهور في سياق كل أصل.
-    /// </summary>
     [HttpGet("{id:int}/stems")]
     public async Task<ActionResult<ApiResponse<LemmaStemsResponse>>> GetStems(
         int id,

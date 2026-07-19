@@ -166,8 +166,18 @@ Postgres (not Neon). **Do not cut frontend over yet.**
 - The canonical staged source packages under `resources/import-sources/` are present **locally** — they
   are local + gitignored, **not** in the repo or the container. Confirm they exist before starting.
 - The Railway Postgres is a **fresh empty** instance; `pg_trgm` is creatable (default superuser).
-**Do (every step runs LOCALLY, pointed at the Railway PUBLIC Postgres endpoint, `SSL Mode=Prefer`; keep
-the connection string in local user-secrets, never committed):**
+**Do (every step runs LOCALLY, pointed at the Railway PUBLIC Postgres endpoint; supply the connection
+string via the gitignored `Backend/api/QuranDashboard.Api/appsettings.Production.json` (the owner's chosen
+store — see the DB-credential decision; deliberately not moved to user-secrets) or the
+`ConnectionStrings__QuranDashboardDb` env var; never committed):**
+
+> **Migration governance (owner decision).** Schema migrations are applied **locally by the owner only** —
+> there is **no** startup auto-migrate (confirmed: `Program.cs`/DI call no `Migrate()`; only test fixtures do)
+> and **no** pre-deploy/CI migration step. The local apply is `dotnet ef database update` reading the Railway
+> **public-proxy** connection string from the gitignored `appsettings.Production.json`. The **deployed
+> container** never migrates on boot and connects via the Railway **internal** `DATABASE_URL` /
+> `ConnectionStrings__QuranDashboardDb` env var, which is distinct from the public-proxy string used for the
+> local apply. Do **not** introduce auto-migrate or a pre-deploy migrate step.
 1. **(d1) Migrate to 17.** Apply all migrations to the empty Railway DB to reach migration
    `20260704102858_AddQuranLemmaAnalyses` (17):
    `dotnet ef database update --project infrastructure/QuranDashboard.Infrastructure --startup-project api/QuranDashboard.Api --context QuranDashboardDbContext`,

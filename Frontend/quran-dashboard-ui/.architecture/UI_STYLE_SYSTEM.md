@@ -98,8 +98,8 @@ Rules:
 > pulls in Tailwind layers plus the `src/styles/` partials, which exist today:
 > `_tokens.scss`, `_themes.scss`, `_typography.scss`, `_breakpoints.scss`,
 > `_layout.scss`, `_components.scss`, `_words-explorer-layout.scss`,
-> `_explorer-tables.scss`, `_explorer-detail-lists.scss`, `_forms.scss`,
-> `_utilities.scss` — see `src/styles/README.md` for the exact import order and
+> `_words-explainer.scss`, `_explorer-tables.scss`, `_explorer-detail-lists.scss`,
+> `_forms.scss`, `_utilities.scss` — see `src/styles/README.md` for the exact import order and
 > boundary. §16 (color doctrine) and §17 (component contracts) below are the live
 > contract for how these partials are consumed; this section still governs file
 > organization. Only add a new global partial when it holds a genuinely reusable,
@@ -400,9 +400,12 @@ theme-neutral and apply to dark too; dark keeps its shadow values.
 ### A. Typography
 
 - **UI font:** IBM Plex Sans Arabic for Arabic UI chrome; IBM Plex Sans for Latin UI.
-- **Weights:** use **400 / 500 / 600 / 700** where available. Mid-weights (500/600)
-  carry nav links, card titles, labels, and footer headings — ship them, do not rely
-  on only 400/700.
+- **Weights:** use **400 and 700 only**. The app bundles only 400/700 woff2 faces
+  for IBM Plex Sans Arabic and Amiri — no 500/600 (medium/semibold) faces exist.
+  Do not use `font-weight: 500` or `600`; the browser would fall back to the
+  nearest available face (400 or 700) anyway, so a mid-weight declaration is a
+  faux weight that does nothing but confuse the next reader. Nav links, card
+  titles, labels, and footer headings use 400 or 700.
 - **Quran/Mushaf fonts stay as currently implemented** (Amiri for verse text plus the
   existing ayah-marker face). **Do not replace or restyle Quran/Mushaf glyph fonts or
   Quran rendering.** Keep `--qd-font-quran` and related tokens unchanged.
@@ -700,8 +703,9 @@ fills, resting borders — stays **banned as solid green**: use a tint,
 - **Recovery action:** an `error` may offer **exactly one** action (Feature 030,
   M3) by supplying an Arabic `actionLabel` — the retry affordance for transient
   transport failures. Without a label the error stays plain text. `empty` and
-  `loading` are never interactive. The control is the global `.qd-button`; do not
-  hand-roll a retry beside a `.qd-error-state`.
+  `loading` are never interactive. The control is the global `.qd-btn` (with the
+  `.qd-btn-secondary` variant); do not hand-roll a retry beside a
+  `.qd-error-state`.
 - **Visuals:** error uses `--qd-danger` on `--qd-danger-tint` (§16.1), calm per §11
   — not visually aggressive; empty/loading stay on the neutral surface ladder, no
   status color.
@@ -767,9 +771,11 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   (loaded + loading), Mushaf Similar Ayahs items, Mutashabihat occurrences.
 - **Shape:** attribute component (`shared/ui/ayah-card`, host class `qd-ayah-card`)
   applied to the caller's own semantic wrapper (`article`/`li`). It owns only:
-  `--qd-surface` background, 1px `--qd-border` hairline, `--qd-radius-sm`, compact
-  logical padding/gap. No shadow, no alternating fill, no hover lift (flat doctrine
-  §16.2). Selected occurrences layer a `--qd-border-accent` hairline on the frame.
+  `--qd-ayah-card-bg` background (a dedicated tone recessed below `--qd-surface`, so
+  the card reads as a distinct card on the near-white surfaces it sits on), 1px
+  `--qd-border` hairline, `--qd-radius-sm`, compact logical padding/gap. No shadow,
+  no alternating fill, no hover lift (flat doctrine §16.2). Selected occurrences
+  layer a `--qd-border-accent` hairline on the frame.
 - **Sacred-rendering boundary:** the frame accepts no Quran/domain model, text,
   word array, match ID, formatter, route, or output, and sets no Quran font. Quran
   text normalization, marker filtering, matched-word calculation, and display

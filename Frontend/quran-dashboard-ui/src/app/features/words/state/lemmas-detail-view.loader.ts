@@ -37,12 +37,6 @@ export interface LemmasDetailLoadContext {
   readonly cachedMissingSurahs: LemmaMissingSurahsDto | null;
 }
 
-/**
- * Lemmas Explorer detail view loader (Feature 016). Sibling of
- * `RootsDetailViewLoader`. Active-view loading is wired but is only invoked from
- * the story phases once the lemma catalogue and summary reads exist (US1+).
- * Phase 2 ships the typed skeleton so the facade can compile.
- */
 @Injectable({ providedIn: 'root' })
 export class LemmasDetailViewLoader {
   private readonly api = inject(LemmasApi);

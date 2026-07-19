@@ -1,7 +1,6 @@
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.DependencyInjection;
 using QuranDashboard.Application.Quran.DataPipelines.Words.DisplayRebuilding;
 using QuranDashboard.DataImporter.Import.ArgumentParsing;
+using QuranDashboard.DataImporter.Import.DefaultPaths;
 
 namespace QuranDashboard.DataImporter.Import.VerbRunners;
 
@@ -15,6 +14,8 @@ internal static class RebuildDisplayWordsRunner
             printUsage();
             return RebuildDisplayWordsResult.FailureExitCode;
         }
+
+        reportOutDir ??= DataImporterDefaults.ResolveDefaultDisplayWordsReportDir();
 
         var host = createHost();
         await using var scope = host.Services.CreateAsyncScope();

@@ -1,3 +1,5 @@
+using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Foundation;
+
 namespace QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting;
 
 public sealed class MorphologyManifestReader
@@ -217,8 +219,8 @@ public sealed class MorphologyManifestReader
 
     private static void ValidateChecksum(string fullPath, string expectedSha256)
     {
-        var actual = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(fullPath)));
-        if (!string.Equals(actual, expectedSha256, StringComparison.OrdinalIgnoreCase))
+        var actual = ManifestChecksum.ComputeSha256Hex(fullPath);
+        if (!ManifestChecksum.Matches(actual, expectedSha256))
         {
             throw new InvalidDataException($"Checksum mismatch for '{fullPath}'.");
         }

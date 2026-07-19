@@ -1,6 +1,5 @@
-using Microsoft.EntityFrameworkCore;
-using Npgsql;
 using QuranDashboard.Application.Abstractions.Quran.Words.Stems.Responses;
+using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Stems;
 
@@ -14,12 +13,6 @@ public sealed partial class EfStemsReader
     private const string StemMatchingSegmentPredicate =
         "seg.kind = 'STEM' AND seg.stem_id IS NOT NULL AND NOT w.is_ayah_marker";
 
-    /// <summary>
-    /// Loads the complete stem summary list in a bounded aggregation: identity, nullable
-    /// dominant lemma/root relationships, derived counts, first verse key, and the ordered
-    /// per-stem POS distribution. The distribution and the dominant lemma/root winner inputs are grouped
-    /// in the database (summary grain), so the read never transfers occurrence-grain rows (B2).
-    /// </summary>
     internal async Task<IReadOnlyList<StemSummaryRow>> LoadWholeSummaryAsync(CancellationToken cancellationToken)
     {
         var sql = $"""
@@ -59,8 +52,8 @@ public sealed partial class EfStemsReader
 
         var aggregates = await _db.Database.SqlQueryRaw<StemAggregationRow>(
             sql,
-            new NpgsqlParameter("foldFrom", StemsListDerivation.ArabicFoldFrom),
-            new NpgsqlParameter("foldTo", StemsListDerivation.ArabicFoldTo))
+            new NpgsqlParameter("foldFrom", ArabicSearchQueryNormalizer.FoldFrom),
+            new NpgsqlParameter("foldTo", ArabicSearchQueryNormalizer.FoldTo))
             .ToListAsync(cancellationToken);
 
         if (aggregates.Count == 0)
@@ -101,7 +94,7 @@ public sealed partial class EfStemsReader
                 return new StemSummaryRow(
                     a.Id,
                     a.StemText,
-                    StemsListDerivation.NormalizeArabicQuery(a.StemText) ?? string.Empty,
+                    ArabicSearchQueryNormalizer.Normalize(a.StemText, stripWhitespace: true) ?? string.Empty,
                     dominantLemma?.Id,
                     dominantLemma?.Text,
                     dominantLemma?.Buckwalter,
@@ -120,7 +113,6 @@ public sealed partial class EfStemsReader
             .ToList();
     }
 
-    // Per-(stem, POS) distribution: occurrence count and the earliest-occurrence coordinate per group.
     private static string StemTypeDistributionSql => $"""
         SELECT
             seg.stem_id AS "{nameof(StemTypeDistributionSqlRow.StemId)}",
@@ -138,10 +130,8 @@ public sealed partial class EfStemsReader
         GROUP BY seg.stem_id, seg.pos, t.arabic_label, t.english_label
         """;
 
-    // Per-(stem, relation) winner inputs (relation = lemma or root): occurrence count, relation text/
-    // buckwalter, and the earliest-occurrence coordinate per group. The relation column/table names are
-    // fixed constants (never user input). LEFT JOIN + coalesce-in-C# mirrors the previous behavior for a
-    // relation id whose row is absent.
+    // The relation column/table names are interpolated into this SQL and are fixed constants, never user
+    // input. LEFT JOIN + coalesce-in-C# keeps a relation id whose row is absent instead of dropping it.
     private static string StemRelationGroupSql(string idColumn, string relationTable, string textColumn, string buckwalterColumn) => $"""
         SELECT
             seg.stem_id AS "{nameof(StemRelationGroupSqlRow.StemId)}",

@@ -578,4 +578,34 @@ describe('WordTypesDetailFacade — kind-aware orchestration', () => {
     expect(facade.panelState().selection?.kind).toBe('root');
     facade.unbindFromRoute();
   });
+
+  // Finding M24: unbindFromRoute() used to call only cancelPendingLoads(), which left the
+  // facade's own `activeUrlState` set. Re-binding to the SAME query params then short-circuited
+  // inside syncFromUrlState() (isSamePanelUrlState matched) and never re-issued the load,
+  // stranding the panel on its cancelled 'loading' status with no request in flight.
+  it('re-issues the summary load on rebind to the same URL state after a mid-flight unbind', () => {
+    const { facade, http } = setup();
+    const route = controllableRoute(groupedDetailParams({ tableView: 'roots', type: 'noun', root: '190700' }));
+
+    facade.bindToRoute(route.route);
+    const firstSummary = expectGroupedRequest(http, 'root', 190700);
+    expect(facade.panelState().status).toBe('loading');
+
+    facade.unbindFromRoute();
+    expect(firstSummary.cancelled).toBe(true);
+
+    facade.bindToRoute(route.route);
+
+    const secondSummary = expectGroupedRequest(http, 'root', 190700);
+    expect(facade.panelState().status).toBe('loading');
+
+    secondSummary.flush(okGroupedSummary({ kind: 'root', dimensionId: 190700 }));
+    const wordsRequest = expectGroupedRequest(http, 'root', 190700, '/words');
+    wordsRequest.flush(okGroupedWords());
+
+    const state = facade.panelState();
+    expect(state.status).toBe('success');
+    expect(state.selection?.kind).toBe('root');
+    facade.unbindFromRoute();
+  });
 });

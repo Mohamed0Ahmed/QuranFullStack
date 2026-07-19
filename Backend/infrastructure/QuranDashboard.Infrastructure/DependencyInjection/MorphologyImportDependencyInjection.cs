@@ -7,15 +7,6 @@ using QuranDashboard.Infrastructure.Reports.Quran.DataPipelines.Words.Morphology
 
 namespace QuranDashboard.Infrastructure.ServiceRegistration;
 
-// Selects which morphology import source the handler resolves. Feature 020 introduces the enriched
-// (Corpus value-based) pathway alongside the legacy QUL-link assembler pathway. Both stay registered so
-// the two can be diffed before the Phase 2 cleanup that removes the old pathway.
-public enum MorphologySourceSelection
-{
-    Legacy,
-    Enriched
-}
-
 // Public keyed-service keys so the CLI host (a separate assembly) can resolve either import source
 // without depending on the internal DI registration class.
 public static class MorphologyImportSourceKeys
@@ -46,8 +37,8 @@ internal static class MorphologyImportDependencyInjection
         services.AddSingleton<ISegmentStemCorrectionReader, SegmentStemCorrectionReader>();
         services.AddSingleton<MorphologyAssembler>();
 
-        // Enriched pathway (Feature 020). Streaming reader + manifest reader + value-based dimension
-        // builder; reuses the unchanged writer/handler/report via the shared MorphologySourceData DTO.
+        // Enriched pathway (Feature 020) reuses the unchanged writer/handler/report via the shared
+        // MorphologySourceData DTO.
         services.AddSingleton<EnrichedMorphologyManifestReader>();
         services.AddSingleton<EnrichedMorphologyReader>();
         services.AddSingleton<EnrichedDimensionBuilder>();

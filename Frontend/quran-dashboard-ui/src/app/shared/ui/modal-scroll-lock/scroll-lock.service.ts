@@ -1,12 +1,9 @@
 import { isPlatformBrowser } from '@angular/common';
 import { Injectable, PLATFORM_ID, inject } from '@angular/core';
 
-/**
- * Reference-counted body scroll lock (Feature 029, Change B). Multiple stacked
- * layers (responsive explorer drawer + global detail overlay) may hold the lock
- * simultaneously; the body unlocks only when the last holder releases, and the
- * original overflow value is restored exactly once.
- */
+// Reference-counted so stacked layers (drawer + detail overlay) can hold the lock at
+// once: the body unlocks only when the last holder releases, restoring the original
+// overflow value exactly once.
 @Injectable({ providedIn: 'root' })
 export class ScrollLockService {
   private readonly platformId = inject(PLATFORM_ID);

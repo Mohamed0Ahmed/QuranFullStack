@@ -12,13 +12,16 @@ function navRoute(key: string): string {
   return navItem(key).route;
 }
 
-/** Arabic display label for a nav item — the source of truth for that route's tab title. */
 export function navLabel(key: string): string {
   return navItem(key).labelAr;
 }
 
+export const DASHBOARD_ROUTE_PATH = navRoute('dashboard');
 export const MUSHAF_ROUTE_PATH = navRoute('mushaf');
 export const WORDS_ROUTE_PATH = navRoute('words');
+
+/** Public OIDC redirect landing route segment (Feature 033); matches the `logto.redirectUri`. */
+export const CALLBACK_PATH = 'callback' as const;
 
 export const WORDS_UNIQUE_MODE_SEGMENT = 'unique/:mode' as const;
 

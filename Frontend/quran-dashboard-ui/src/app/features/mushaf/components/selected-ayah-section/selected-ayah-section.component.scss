@@ -1,3 +1,5 @@
+@use '../../../../../styles/breakpoints' as bp;
+
 :host {
   display: flex;
   flex-direction: column;
@@ -6,13 +8,35 @@
 
   // N3 row 10 first-load baseline: the floor the idle shell already holds, used
   // until a real load has been measured. Declared on :host (not on the section)
-  // so the <1024px band can raise it to its own study floor from
-  // _components.scss — an element-level declaration would shadow that.
+  // so the <1024px band below can raise it to its own study floor — an
+  // element-level declaration would shadow that.
   --qd-selected-ayah-baseline-block-size: 18rem;
 
   &.qd-selected-ayah-section--embedded {
     flex: 1;
     min-height: 0;
+
+    // Relocated from _components.scss (UI_STYLE_SYSTEM.md §2 / styles/README.md
+    // boundary — component internals belong in the owning component's SCSS).
+    @media (max-width: bp.$qd-bp-tablet-max) {
+      --qd-ayah-study-min-height: min(50vh, 30rem);
+      --qd-ayah-content-min-height: min(42vh, 22rem);
+      // N3 row 10: the loading reservation must never resolve below this
+      // band's own study floor, or the shell would shrink while loading and
+      // grow back on settle.
+      --qd-selected-ayah-baseline-block-size: var(--qd-ayah-study-min-height);
+      flex: none;
+      min-height: var(--qd-ayah-study-min-height);
+      height: auto;
+    }
+
+    // Phone band. --qd-selected-ayah-baseline-block-size is not redeclared
+    // here: it resolves through --qd-ayah-study-min-height, so it follows this
+    // band's floor automatically (N3 row 10).
+    @media (max-width: bp.$qd-bp-phone-max) {
+      --qd-ayah-study-min-height: min(55vh, 26rem);
+      --qd-ayah-content-min-height: min(48vh, 20rem);
+    }
   }
 }
 
@@ -38,6 +62,11 @@
     border: none;
     border-radius: 0;
     box-shadow: none;
+
+    @media (max-width: bp.$qd-bp-tablet-max) {
+      flex: none;
+      min-height: var(--qd-ayah-study-min-height);
+    }
   }
 
   // N3 row 10 loading reservation: while loading, hold the greater of the last
@@ -45,7 +74,7 @@
   // collapse around an arbitrarily tall tafsir and spring back on settle. Cleared
   // with the modifier on success/error/empty — loaded content always determines
   // its own height. The extra class keeps this ahead of the <1024px embedded
-  // overrides in _components.scss, which set this shell's floors.
+  // overrides above, which set this shell's floors.
   // (Scoping copied from selected-word-section.component.scss — U1 precedent.)
   &.selected-ayah-section--loading {
     :host &,
@@ -70,7 +99,7 @@
 
   &__source-loading-label {
     font-size: 0.8125rem;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--qd-text-muted);
   }
 
@@ -91,6 +120,13 @@
     background: var(--qd-section-bg);
     overflow-x: auto;
     scrollbar-width: thin;
+
+    @media (max-width: bp.$qd-bp-tablet-max) {
+      :host.qd-selected-ayah-section--embedded & {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        overflow-x: visible;
+      }
+    }
   }
 
   &__tab {
@@ -120,7 +156,12 @@
       background: var(--qd-accent-tint);
       border-color: var(--qd-accent);
       color: var(--qd-accent-text);
-      font-weight: 600;
+      font-weight: 700;
+
+      .selected-ayah-section__tab-count {
+        background: var(--qd-surface);
+        color: var(--qd-accent-text);
+      }
     }
 
     &:disabled {
@@ -135,8 +176,22 @@
     text-overflow: ellipsis;
   }
 
+  // Relocated from _components.scss (component-internal selector; see
+  // UI_STYLE_SYSTEM.md §2 / styles/README.md boundary). font-size stays
+  // 0.6875rem: that is the value this rule already rendered pre-move, since
+  // Angular's per-component scoping attribute gave it higher specificity than
+  // the former global rule's 0.75rem — folded into one rule instead of two
+  // competing ones.
   &__tab-count {
+    flex-shrink: 0;
+    min-width: 1.25rem;
+    padding: 0 calc(var(--qd-space-1) * 0.75);
+    border-radius: var(--qd-radius-pill, 999px);
+    background: var(--qd-surface-recessed);
+    color: var(--qd-text-muted);
     font-size: 0.6875rem;
+    font-weight: 700;
+    line-height: 1.4;
   }
 
   &__ayah {
@@ -230,6 +285,21 @@
       &--flow {
         overflow: visible;
         min-height: auto;
+
+        @media (max-width: bp.$qd-bp-tablet-max) {
+          min-height: var(--qd-ayah-content-min-height);
+        }
+      }
+
+      // N3 row 10: the loading floor used to be TALLER than the loaded floor
+      // (48vh/24rem vs 42vh/22rem), so the content box shrank by ~2rem the
+      // moment a study settled. The two floors are now one — the base rule
+      // above covers the loading state too, and the shell's own reservation
+      // handles holding height.
+      @media (max-width: bp.$qd-bp-tablet-max) {
+        flex: none;
+        min-height: var(--qd-ayah-content-min-height);
+        overflow: visible;
       }
     }
   }

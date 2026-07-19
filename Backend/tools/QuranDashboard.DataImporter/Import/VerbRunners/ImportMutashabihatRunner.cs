@@ -1,5 +1,3 @@
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.DependencyInjection;
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Mutashabihat;
 using QuranDashboard.Application.Quran.DataPipelines.Mutashabihat;
 using QuranDashboard.DataImporter.Import.ArgumentParsing;
@@ -30,6 +28,7 @@ internal static class ImportMutashabihatRunner
         var handler = scope.ServiceProvider.GetRequiredService<ImportMutashabihatHandler>();
 
         sourcePath ??= DataImporterDefaults.ResolveDefaultMutashabihatSourcePath();
+        reportOutDir ??= DataImporterDefaults.ResolveDefaultMutashabihatReportDir();
 
         var result = await handler.HandleAsync(
             new ImportMutashabihatCommand(

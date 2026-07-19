@@ -1,6 +1,5 @@
 namespace QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting.Corrections;
 
-// Canonical problemClass labels used by the word-level lemma normalization artifact.
 // Centralized so the hard checks select by the same value the validator gates on: a relabeled
 // problemClass is rejected at validation (fail-closed) instead of silently emptying a
 // problemClass-scoped hard check downstream (e.g. MORPH-WORD-LEMMA-MISSING-RECOVERY-CLEAN

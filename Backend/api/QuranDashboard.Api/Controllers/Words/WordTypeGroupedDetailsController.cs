@@ -1,4 +1,3 @@
-using QuranDashboard.Application.Abstractions.Common.Paging;
 using QuranDashboard.Application.Abstractions.Quran.Words.WordTypes.Responses;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeGroupedSummary;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeGroupedWords;
@@ -7,8 +6,6 @@ using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeGroupe
 
 namespace QuranDashboard.Api.Controllers.Words;
 
-// Scoped root/stem/lemma grouped detail reads. Shares the existing table route base without growing
-// WordTypesController. Route kind is the plural key (roots|stems|lemmas); an unknown value is a 400.
 [ApiController]
 [Route("api/words/word-types/table")]
 public sealed class WordTypeGroupedDetailsController(
@@ -20,20 +17,6 @@ public sealed class WordTypeGroupedDetailsController(
     private const int DefaultPage = 1;
     private const int DefaultDetailPageSize = 100;
 
-    /// <summary>
-    /// يُرجع ملخّص مجموعة (جذر أو أصل أو صيغة) ضمن نطاق نوع الكلمات المحدّد بالنص والعدّادات.
-    /// </summary>
-    /// <param name="kind">نوع المجموعة بصيغة الجمع في المسار: roots أو stems أو lemmas.</param>
-    /// <param name="dimensionId">معرّف البُعد (الجذر/الأصل/الصيغة).</param>
-    /// <param name="type">رمز النوع الرئيسي (مطلوب لتحديد النطاق).</param>
-    /// <param name="childCode">رمز النوع الفرعي إن وجد.</param>
-    /// <param name="caseFilter">مرشّح الحالة الإعرابية (اختياري).</param>
-    /// <param name="tense">مرشّح الزمن (اختياري).</param>
-    /// <param name="voice">مرشّح البناء للمعلوم/المجهول (اختياري).</param>
-    /// <param name="cancellationToken">رمز إلغاء الطلب.</param>
-    /// <response code="200">تم تحميل ملخّص المجموعة بنجاح.</response>
-    /// <response code="400">نوع مجموعة أو معرّف أو مرشّح غير صالح.</response>
-    /// <response code="404">المجموعة غير موجودة ضمن النطاق المحدّد.</response>
     [HttpGet("{kind}/{dimensionId:int}")]
     public async Task<ActionResult<ApiResponse<WordTypeGroupedSummaryDto>>> GetSummary(
         string kind,
@@ -65,24 +48,6 @@ public sealed class WordTypeGroupedDetailsController(
         };
     }
 
-    // Paged, display-only member words of the scoped group. Accepts the identical five-field scope plus
-    // page/pageSize; no sort (member order is the fixed occurrence order).
-    /// <summary>
-    /// يُرجع كلمات المجموعة ضمن النطاق، مقسّمة إلى صفحات بترتيب الورود الثابت دون فرز.
-    /// </summary>
-    /// <param name="kind">نوع المجموعة بصيغة الجمع في المسار: roots أو stems أو lemmas.</param>
-    /// <param name="dimensionId">معرّف البُعد (الجذر/الأصل/الصيغة).</param>
-    /// <param name="type">رمز النوع الرئيسي (مطلوب لتحديد النطاق).</param>
-    /// <param name="childCode">رمز النوع الفرعي إن وجد.</param>
-    /// <param name="caseFilter">مرشّح الحالة الإعرابية (اختياري).</param>
-    /// <param name="tense">مرشّح الزمن (اختياري).</param>
-    /// <param name="voice">مرشّح البناء للمعلوم/المجهول (اختياري).</param>
-    /// <param name="page">رقم الصفحة (الافتراضي 1).</param>
-    /// <param name="pageSize">حجم الصفحة (الافتراضي 100).</param>
-    /// <param name="cancellationToken">رمز إلغاء الطلب.</param>
-    /// <response code="200">تم تحميل كلمات المجموعة بنجاح.</response>
-    /// <response code="400">نوع مجموعة أو معرّف أو مرشّح أو تقسيم صفحات غير صالح.</response>
-    /// <response code="404">المجموعة غير موجودة ضمن النطاق المحدّد.</response>
     [HttpGet("{kind}/{dimensionId:int}/words")]
     public async Task<ActionResult<ApiResponse<PagedResult<WordTypeGroupedMemberWordDto>>>> GetWords(
         string kind,
@@ -120,24 +85,6 @@ public sealed class WordTypeGroupedDetailsController(
         };
     }
 
-    // Paged, scoped ayahs of the group. Accepts the identical five-field scope plus page/pageSize; no sort.
-    // Ayahs page in Mushaf order and carry canonical Uthmani text with the scoped matched word ids/positions.
-    /// <summary>
-    /// يُرجع آيات ورود المجموعة ضمن النطاق، مقسّمة إلى صفحات بترتيب المصحف مع مواضع التطابق.
-    /// </summary>
-    /// <param name="kind">نوع المجموعة بصيغة الجمع في المسار: roots أو stems أو lemmas.</param>
-    /// <param name="dimensionId">معرّف البُعد (الجذر/الأصل/الصيغة).</param>
-    /// <param name="type">رمز النوع الرئيسي (مطلوب لتحديد النطاق).</param>
-    /// <param name="childCode">رمز النوع الفرعي إن وجد.</param>
-    /// <param name="caseFilter">مرشّح الحالة الإعرابية (اختياري).</param>
-    /// <param name="tense">مرشّح الزمن (اختياري).</param>
-    /// <param name="voice">مرشّح البناء للمعلوم/المجهول (اختياري).</param>
-    /// <param name="page">رقم الصفحة (الافتراضي 1).</param>
-    /// <param name="pageSize">حجم الصفحة (الافتراضي 100).</param>
-    /// <param name="cancellationToken">رمز إلغاء الطلب.</param>
-    /// <response code="200">تم تحميل آيات المجموعة بنجاح.</response>
-    /// <response code="400">نوع مجموعة أو معرّف أو مرشّح أو تقسيم صفحات غير صالح.</response>
-    /// <response code="404">المجموعة غير موجودة ضمن النطاق المحدّد.</response>
     [HttpGet("{kind}/{dimensionId:int}/ayahs")]
     public async Task<ActionResult<ApiResponse<PagedResult<WordTypeAyahMatchDto>>>> GetAyahs(
         string kind,
@@ -175,22 +122,6 @@ public sealed class WordTypeGroupedDetailsController(
         };
     }
 
-    // Single-shot scoped surahs: mentioned + missing lists for the group. Accepts the identical five-field
-    // scope and never page/pageSize — surahs are not paged.
-    /// <summary>
-    /// يُرجع سور ورود المجموعة ضمن النطاق: قائمتا السور الواردة والمفقودة دون تقسيم صفحات.
-    /// </summary>
-    /// <param name="kind">نوع المجموعة بصيغة الجمع في المسار: roots أو stems أو lemmas.</param>
-    /// <param name="dimensionId">معرّف البُعد (الجذر/الأصل/الصيغة).</param>
-    /// <param name="type">رمز النوع الرئيسي (مطلوب لتحديد النطاق).</param>
-    /// <param name="childCode">رمز النوع الفرعي إن وجد.</param>
-    /// <param name="caseFilter">مرشّح الحالة الإعرابية (اختياري).</param>
-    /// <param name="tense">مرشّح الزمن (اختياري).</param>
-    /// <param name="voice">مرشّح البناء للمعلوم/المجهول (اختياري).</param>
-    /// <param name="cancellationToken">رمز إلغاء الطلب.</param>
-    /// <response code="200">تم تحميل سور المجموعة بنجاح.</response>
-    /// <response code="400">نوع مجموعة أو معرّف أو مرشّح غير صالح.</response>
-    /// <response code="404">المجموعة غير موجودة ضمن النطاق المحدّد.</response>
     [HttpGet("{kind}/{dimensionId:int}/surahs")]
     public async Task<ActionResult<ApiResponse<WordTypeSurahsResponse>>> GetSurahs(
         string kind,

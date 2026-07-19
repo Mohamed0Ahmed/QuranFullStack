@@ -16,17 +16,10 @@ type SimilarAyahDisplayItem = SimilarAyahItemDto & {
   navigateLabel: string;
 };
 
-/**
- * N3 row 11 — loading layout reservation. The placeholder list is card-shaped and
- * as long as the list that is about to arrive, so the tab body does not grow on
- * settle. `expectedItemCount` comes from the ayah study's similarity summary,
- * which is already loaded before this tab can be opened. `null` means "unknown"
- * (no summary yet, e.g. a deep link still resolving) and falls back to the count
- * below; a known `0` is an empty list and reserves nothing, so a genuinely empty
- * result no longer paints tall shimmer and then collapses. The cap keeps a very
- * long list from reserving multiple screens of shimmer — such a list still grows
- * on settle (accepted).
- */
+// Loading placeholders reserve the incoming list's height so the tab body does not jump on
+// settle. expectedItemCount comes from the already-loaded similarity summary: null = unknown
+// (fall back to FALLBACK_PLACEHOLDER_COUNT), a known 0 reserves nothing. MAX caps shimmer for
+// very long lists, which still grow on settle (accepted).
 const FALLBACK_PLACEHOLDER_COUNT = 3;
 const MAX_PLACEHOLDER_COUNT = 8;
 
@@ -41,10 +34,7 @@ const MAX_PLACEHOLDER_COUNT = 8;
 export class SimilarAyahsCardComponent {
   readonly similarAyahs = input<SimilarAyahsDto | null>(null);
   readonly loadState = input.required<ResourceLoadState>();
-  /**
-   * Item count known before this list loads: `null` = unknown, `0` = known empty
-   * (see the constants above).
-   */
+  // null = unknown, 0 = known empty (see the placeholder constants above).
   readonly expectedItemCount = input<number | null>(null);
 
   readonly ayahNavigate = output<AyahNavigationTarget>();

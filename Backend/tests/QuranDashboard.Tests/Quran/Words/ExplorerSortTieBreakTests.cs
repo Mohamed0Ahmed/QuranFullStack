@@ -8,18 +8,11 @@ using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Stems;
 
 namespace QuranDashboard.Tests.Quran.Words;
 
-/// <summary>
-/// The tie-break half of the ordering contract (Feature 030, N8) for the three in-memory explorers.
-/// Pure unit tests over the derivations — real Quranic slices cannot produce the exact ties this
-/// contract is about, so the rows here are explicitly synthetic and carry no Quranic content.
-/// <para>
-/// Two rules are pinned, and they are deliberately DIFFERENT:
-/// count columns tie-break on Mushaf order then Id; <b>alpha ties on Id ALONE</b> — no Mushaf
-/// tie-break, which is what keeps every pre-existing <c>sort=alpha</c> link byte-identical.
-/// Each chain must be identical in BOTH directions: reversing a column must never reshuffle its ties,
-/// or a page boundary could drop or repeat a row.
-/// </para>
-/// </summary>
+// Tie-break half of the ordering contract (Feature 030, N8). Two DIFFERENT rules are pinned: count
+// columns tie-break on Mushaf order then Id; alpha ties on Id ALONE (no Mushaf tie-break) — that is
+// what keeps every pre-existing sort=alpha link byte-identical. Each chain must be identical in BOTH
+// directions: reversing a column must never reshuffle its ties, or a page boundary could drop or
+// repeat a row. Rows are explicitly synthetic and carry no Quranic content.
 public sealed class ExplorerSortTieBreakTests
 {
     // Ids ascend while Mushaf order does NOT, so "tie-broke on Id" and "tie-broke on Mushaf order"

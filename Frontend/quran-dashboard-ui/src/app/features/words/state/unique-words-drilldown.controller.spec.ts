@@ -20,7 +20,7 @@ import {
   UniqueWordsDrilldownUrlState,
 } from './unique-words-drilldown.controller';
 
-/** Unmistakably synthetic, non-scriptural surah rows for drilldown-response fixtures. */
+// Synthetic, non-scriptural fixture rows (Quranic-data source safety).
 function surahsOf(nameArabic: string): UniqueWordSurahsDto {
   return { surahs: [{ nameArabic, occurrencesInSurah: 1, surahNumber: 1 }] };
 }
@@ -71,10 +71,8 @@ function createController(options: {
 
 describe('UniqueWordsDrilldownController (route-independent, Feature 029 B4)', () => {
   describe('stale DETAIL responses across a word transition (Feature 030, C1)', () => {
-    /**
-     * Keyed by (mode, wordId): the drilldown reads of the two word spaces are distinct
-     * identities, so each needs its own landing seam.
-     */
+    // Keyed by (mode, wordId): simple and tashkeel are distinct word spaces, so each needs
+    // its own landing seam.
     function surahSubjects(): {
       subjectFor: (mode: UniqueWordKind, id: number) => Subject<ApiResponse<UniqueWordSurahsDto>>;
       read: (mode: UniqueWordKind, id: number) => Observable<ApiResponse<UniqueWordSurahsDto>>;
@@ -89,11 +87,8 @@ describe('UniqueWordsDrilldownController (route-independent, Feature 029 B4)', (
       return { subjectFor, read: (mode, id) => subjectFor(mode, id).asObservable() };
     }
 
-    /**
-     * Opens word 1 (its summary resolves synchronously, so its surahs drilldown load is
-     * registered and left in flight), then applies word 2 whose summary stays pending.
-     * Returns word 1's drilldown seam so the test can land its response late.
-     */
+    // Word 1's summary resolves synchronously so its surahs drilldown load is left in flight;
+    // word 2's summary stays pending. Returns word 1's seam to land its response late.
     function openWordOneThenPendingWordTwo(): {
       controller: UniqueWordsDrilldownController;
       staleSurahs: Subject<ApiResponse<UniqueWordSurahsDto>>;

@@ -1,19 +1,11 @@
 import { WordTypeDetailFrame } from '../../../core/navigation/detail-overlay/detail-overlay.models';
 import { WordAnalysisViewModel } from '../models/mushaf.models';
 
-/**
- * Word Type identity adapter (Feature 029, Change B — locked decision §5.7).
- *
- * The Mushaf morphology DTO has no prebuilt Word Type identity, so the frame is
- * derived frontend-only: the backend matches verbs by tense context and
- * non-verbs by head POS. The optional filters stay `all` so the link opens the
- * complete existing Word Type row, never a silently narrowed view of the one
- * clicked occurrence. When the unique tashkeel ID or the required context code
- * cannot be formed, the caller must leave the label non-interactive — never
- * guess and never derive the context from the localized label.
- */
 const UNSPECIFIED_VERB_TENSE_CONTEXT = 'unspecified';
 
+// case/tense/voice stay 'all' so the link opens the whole existing Word Type row, never a narrowed
+// view of the single clicked occurrence; a missing tashkeel id or context code returns null so the
+// caller keeps the label non-interactive rather than guessing (the DTO carries no Word Type identity).
 export function wordTypeDetailFrameFromAnalysis(analysis: WordAnalysisViewModel): WordTypeDetailFrame | null {
   const tashkeelWordId = analysis.identity?.uniqueTashkeel?.id;
 

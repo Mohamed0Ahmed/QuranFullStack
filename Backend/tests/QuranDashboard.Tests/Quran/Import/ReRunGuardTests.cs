@@ -20,7 +20,7 @@ public sealed class ReRunGuardTests
         var handler = await fixture.CreateHandlerAsync();
 
         var firstResult = await handler.HandleAsync(
-            new ImportQuranFoundationCommand(fixture.SourceRoot, ReportOutDir: null),
+            new ImportQuranFoundationCommand(fixture.SourceRoot, ReportOutDir: ImportSourceTestHelpers.TempReportDir()),
             CancellationToken.None);
 
         firstResult.Succeeded.Should().BeTrue(firstResult.Message);
@@ -29,7 +29,7 @@ public sealed class ReRunGuardTests
 
         var secondHandler = fixture.CreateHandlerWithoutTruncate();
         var refusedResult = await secondHandler.HandleAsync(
-            new ImportQuranFoundationCommand(fixture.SourceRoot, ReportOutDir: null, Force: false),
+            new ImportQuranFoundationCommand(fixture.SourceRoot, ReportOutDir: ImportSourceTestHelpers.TempReportDir(), Force: false),
             CancellationToken.None);
 
         refusedResult.Succeeded.Should().BeFalse();

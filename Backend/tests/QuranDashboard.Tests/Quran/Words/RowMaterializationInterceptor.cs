@@ -3,10 +3,6 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace QuranDashboard.Tests.Quran.Words;
 
-/// <summary>
-/// Records how many rows each executed reader materialized (<see cref="DataReaderEventData.ReadCount"/>),
-/// so a test can prove a read no longer transfers occurrence-grain rows into memory.
-/// </summary>
 public sealed class RowMaterializationInterceptor : DbCommandInterceptor
 {
     private readonly List<int> _readCounts = [];

@@ -1,13 +1,7 @@
 using System.Reflection;
-using System.Security.Cryptography;
 
 namespace QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting.Corrections;
 
-// Loads the embedded word-level lemma normalization artifact and its companion Buckwalter→Arabic
-// mapping-evidence artifact, computes a SHA-256 over the raw artifact bytes, parses both into typed
-// records, and validates + applies the artifact to an in-memory raw QUL lemma map.
-//
-// Load + schema-validate + apply in-memory. Wired into MorphologyImportSource for normalization.
 public sealed class WordLemmaNormalizationReader : IWordLemmaNormalizationReader
 {
     internal const string ArtifactResourceName =
@@ -21,8 +15,7 @@ public sealed class WordLemmaNormalizationReader : IWordLemmaNormalizationReader
         PropertyNameCaseInsensitive = true,
     };
 
-    // Loaded + parsed artifact with computed hash and entry counts. Validation (ValidateSchema) is
-    // invoked eagerly so a malformed embedded artifact fails closed at load, before any apply.
+    // ValidateSchema is invoked eagerly so a malformed embedded artifact fails closed at load, before any apply.
     public WordLemmaNormalizationLoaded Load()
     {
         using var stream = OpenResource(ArtifactResourceName);
@@ -39,8 +32,6 @@ public sealed class WordLemmaNormalizationReader : IWordLemmaNormalizationReader
         return loaded;
     }
 
-    // Loaded mapping-evidence artifact only. Used directly by tests and by the validator when a
-    // custom (test) artifact is supplied.
     public IReadOnlyList<WordLemmaMappingEvidenceEntry> LoadEvidence()
     {
         using var stream = OpenResource(EvidenceResourceName);
@@ -49,8 +40,7 @@ public sealed class WordLemmaNormalizationReader : IWordLemmaNormalizationReader
         return ParseEvidence(memory.ToArray());
     }
 
-    // Validates + applies the loaded artifact to a copy of the raw QUL word-level lemma map.
-    // Never mutates `rawLemmas`. Fails closed on any expected-current mismatch or unapplied op.
+    // Never mutates `rawLemmas`; fails closed on any expected-current mismatch or unapplied op.
     //
     // `readableWordLocations` is the set of readable quran_words locations; when non-null, every
     // correction location must exist in it (defense against an artifact that drifts away from the
@@ -69,7 +59,6 @@ public sealed class WordLemmaNormalizationReader : IWordLemmaNormalizationReader
         var result = WordLemmaNormalizationApplier.Apply(
             rawLemmas, loaded.Artifact, readableWordLocations, rawLemmasSha256);
 
-        // Stamp the summary with the artifact hash now that apply succeeded.
         return result with
         {
             Summary = result.Summary with { ArtifactSha256 = loaded.ArtifactSha256 },
@@ -147,7 +136,6 @@ public sealed class WordLemmaNormalizationReader : IWordLemmaNormalizationReader
     }
 }
 
-// Result of Load(): parsed artifact, parsed mapping-evidence, raw artifact SHA-256, and entry counts.
 public sealed record WordLemmaNormalizationLoaded(
     WordLemmaNormalizationArtifact Artifact,
     IReadOnlyList<WordLemmaMappingEvidenceEntry> Evidence,

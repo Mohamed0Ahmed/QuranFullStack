@@ -1,4 +1,3 @@
-using QuranDashboard.Application.Abstractions.Common.Paging;
 using QuranDashboard.Application.Abstractions.Quran.Words;
 using QuranDashboard.Application.Abstractions.Quran.Words.Responses;
 using QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordAyahs;
@@ -22,35 +21,6 @@ public sealed class UniqueWordsController(
     private const int DefaultListPageSize = 1000;
     private const int DefaultAyahPageSize = 100;
 
-    /// <summary>
-    /// يُرجع صفحة واحدة من الكلمات الفريدة للنوع المحدد (<c>tashkeel</c> أو
-    /// <c>simple</c>) مع بحث عربي مُطبّع (contains) وخيارات ترتيب وتصفّح.
-    /// </summary>
-    /// <param name="kind">نوع الهوية: <c>tashkeel</c> أو <c>simple</c>.</param>
-    /// <param name="search">نص البحث العربي المُطبّع (contains، اختياري).</param>
-    /// <param name="paramSort">
-    /// مفتاح الترتيب (اختياري، الافتراضي <c>mushaf-order</c>). الصيغة:
-    /// <c>عمود</c> أو <c>عمود-asc</c> أو <c>عمود-desc</c>.
-    /// الأعمدة المتاحة: <c>alpha</c> (تصاعدي طبيعيًا)، و<c>occurrences</c> و<c>ayahs</c>
-    /// و<c>surahs</c> (تنازلية طبيعيًا).
-    /// المفتاح المجرّد يعني الاتجاه الطبيعي للعمود، لذا <c>occurrences</c> ≡
-    /// <c>occurrences-desc</c> و<c>alpha</c> ≡ <c>alpha-asc</c>.
-    /// و<c>mushaf-order</c> هو ترتيب المصحف التصاعدي فقط ولا يقبل لاحقة اتجاه.
-    /// أي مفتاح آخر يُرجع 400.
-    /// </param>
-    /// <param name="page">رقم الصفحة (الافتراضي 1).</param>
-    /// <param name="pageSize">حجم الصفحة (الافتراضي 1000).</param>
-    /// <param name="occMin">الحد الأدنى لعدد المواضع (اختياري).</param>
-    /// <param name="occMax">الحد الأعلى لعدد المواضع (اختياري).</param>
-    /// <param name="ayahsMin">الحد الأدنى لعدد الآيات (اختياري).</param>
-    /// <param name="ayahsMax">الحد الأعلى لعدد الآيات (اختياري).</param>
-    /// <param name="surahsMin">الحد الأدنى لعدد السور (اختياري).</param>
-    /// <param name="surahsMax">الحد الأعلى لعدد السور (اختياري).</param>
-    /// <param name="primaryType">مرشّح نوع الكلمة الأساسي برمز POS (اختياري).</param>
-    /// <param name="rootId">مرشّح الجذر الأساسي (اختياري).</param>
-    /// <param name="cancellationToken">رمز إلغاء الطلب.</param>
-    /// <response code="200">تم تحميل صفحة الكلمات الفريدة بنجاح.</response>
-    /// <response code="400">نوع أو مفتاح ترتيب أو مرشّح أو تقسيم صفحات غير صالح.</response>
     [HttpGet("{kind}")]
     public async Task<ActionResult<ApiResponse<PagedResult<UniqueWordListItemDto>>>> Get(
         string kind,
@@ -98,10 +68,6 @@ public sealed class UniqueWordsController(
         };
     }
 
-    /// <summary>
-    /// يُرجع ملخّص الكلمة الفريدة المحددة. يُستخدم لاستعادة حالة النافذة
-    /// المنبثقة من رابط مشاركة قبل قراءة التفصيل أو معها.
-    /// </summary>
     [HttpGet("{kind}/{id:int}")]
     public async Task<ActionResult<ApiResponse<UniqueWordSummaryDto>>> GetSummary(
         string kind,
@@ -126,7 +92,6 @@ public sealed class UniqueWordsController(
         };
     }
 
-    /// <summary>يُرجع السور التي وردت فيها الكلمة الفريدة المحددة.</summary>
     [HttpGet("{kind}/{id:int}/surahs")]
     public async Task<ActionResult<ApiResponse<UniqueWordSurahsResponse>>> GetSurahs(
         string kind,
@@ -151,7 +116,6 @@ public sealed class UniqueWordsController(
         };
     }
 
-    /// <summary>يُرجع السور التي لم ترد فيها الكلمة الفريدة المحددة.</summary>
     [HttpGet("{kind}/{id:int}/missing-surahs")]
     public async Task<ActionResult<ApiResponse<UniqueWordMissingSurahsResponse>>> GetMissingSurahs(
         string kind,
@@ -176,7 +140,6 @@ public sealed class UniqueWordsController(
         };
     }
 
-    /// <summary>يُرجع صفحة من الآيات التي وردت فيها الكلمة الفريدة المحددة.</summary>
     [HttpGet("{kind}/{id:int}/ayahs")]
     public async Task<ActionResult<ApiResponse<PagedResult<UniqueWordAyahMatchDto>>>> GetAyahs(
         string kind,

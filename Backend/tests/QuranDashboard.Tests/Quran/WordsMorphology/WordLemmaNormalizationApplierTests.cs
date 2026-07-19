@@ -149,7 +149,6 @@ public sealed class WordLemmaNormalizationApplierTests
         result.Summary.FailedOrSkipped.Should().Be(0);
         result.Summary.ArtifactSha256.Should().NotBeNullOrWhiteSpace();
 
-        // Concrete spot-checks against the corrected map.
         AssertSpot(result, "3:33:7", "إِبْرَاهِيم");
         AssertSpot(result, "21:51:3", "إِبْرَاهِيم");
         AssertSpot(result, "28:50:10", "أَضَلّ");

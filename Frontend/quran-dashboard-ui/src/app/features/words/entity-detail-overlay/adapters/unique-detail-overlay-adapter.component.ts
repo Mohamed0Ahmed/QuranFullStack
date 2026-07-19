@@ -19,18 +19,6 @@ import { UniqueWordsDrilldownController } from '../../state/unique-words-drilldo
 import { mapUniqueWordSummaryDisplayText } from '../../utils/unique-words-display.mapper';
 import { EntityDetailOverlayTitleStore } from '../entity-detail-overlay-title.store';
 
-/**
- * Overlay adapter for unique-word frames (Feature 029, Change B4), following
- * the root reference implementation. It owns a component-scoped
- * `UniqueWordsDrilldownController` (never the page facade), maps every `frame`
- * input change onto `applyUrlState`, and renders the existing drilldown content
- * in frameless mode inside the global dialog shell.
- *
- * All view/page changes go to the URL through
- * `DetailOverlayHistoryService.replaceTopFrame(...)` — never to the Router and
- * never directly into controller state. The URL sync feeds the new frame back
- * into this component, which re-drives the controller.
- */
 @Component({
   selector: 'qd-unique-detail-overlay-adapter',
   standalone: true,
@@ -48,13 +36,11 @@ export class UniqueDetailOverlayAdapterComponent {
 
   protected readonly drilldownState = this.controller.drilldownState;
 
-  /** Loaded entity title for the shell heading ('' while the summary loads). */
   readonly entityTitle = computed(() => {
     const summary = this.drilldownState().summary;
     return summary ? mapUniqueWordSummaryDisplayText(summary).displayText : '';
   });
 
-  /** Entity-level ayah count for the shell header meta (null while the summary loads). */
   readonly entityAyahCount = computed(() => this.drilldownState().summary?.ayahsCount ?? null);
 
   protected get notFoundLabel() {
@@ -82,12 +68,8 @@ export class UniqueDetailOverlayAdapterComponent {
     inject(DestroyRef).onDestroy(() => this.titleStore?.clear());
   }
 
-  /**
-   * Re-drives the current frame after a failed load (Feature 030, M3). The frame
-   * is unchanged, so this never touches the URL — recovery is a controller
-   * concern, and routing an identical frame through the history service would be
-   * a no-op replace.
-   */
+  // Retry re-drives the unchanged frame directly through the controller: it never
+  // touches the URL, since replacing an identical frame would be a no-op.
   protected onRetry(): void {
     this.controller.retryCurrentIdentity();
   }

@@ -1,22 +1,13 @@
-using Microsoft.Extensions.Options;
-
 namespace QuranDashboard.Api.RateLimiting;
 
-/// <summary>
-/// Bound configuration for the API rate limiter. Two profiles are exposed: a general
-/// token-bucket limiter (all non-exempt requests except health) and a fixed-window
-/// limiter dedicated to <c>/api/health*</c>. Secure by default: <see cref="Enabled"/>
-/// ships <c>false</c> everywhere and is turned on via environment override only after
-/// the deploy-time verification gates.
-/// </summary>
 public sealed class RateLimitingOptions
 {
     public const string SectionName = "RateLimiting";
 
-    /// <summary>Master switch. When <c>false</c> the partitioner returns a no-op limiter for every request.</summary>
+    // Secure by default: ships false everywhere; enabled via environment override only after the
+    // deploy-time verification gates. When false the partitioner returns a no-op limiter.
     public bool Enabled { get; set; }
 
-    /// <summary>Single-valued header carrying the true client IP behind the edge proxy (Railway: <c>X-Real-IP</c>).</summary>
     public string ClientIpHeaderName { get; set; } = "X-Real-IP";
 
     // General limiter (token bucket) — applies to every non-exempt request except /api/health*.
@@ -34,11 +25,8 @@ public sealed class RateLimitingOptions
     public int HealthWindowSeconds { get; set; } = 60;
 }
 
-/// <summary>
-/// Fail-fast validation of <see cref="RateLimitingOptions"/>. Registered with
-/// <c>ValidateOnStart()</c> so invalid configuration throws at startup rather than
-/// surfacing as runtime rate-limiter errors.
-/// </summary>
+// Registered with ValidateOnStart() so invalid configuration throws at startup, not as runtime
+// rate-limiter errors.
 internal sealed class RateLimitingOptionsValidator : IValidateOptions<RateLimitingOptions>
 {
     public ValidateOptionsResult Validate(string? name, RateLimitingOptions options)

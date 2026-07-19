@@ -3,11 +3,8 @@ using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Stems;
 
 namespace QuranDashboard.Infrastructure.Caching.Quran.Words.Stems;
 
-/// <summary>
-/// Bounded cache key builders for the Stems Explorer (Feature 016). Keys are
-/// bounded by resource identity, known view, kind, page, and size. No raw free-text
-/// search is included in any retained key.
-/// </summary>
+// No raw free-text search is ever folded into a retained cache key; keys stay bounded by resource
+// identity, view, kind, page, and size.
 public static class StemsCacheKeys
 {
     public static string SummaryAll => "stems:summary:all";

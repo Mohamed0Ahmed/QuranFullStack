@@ -1,16 +1,8 @@
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.Extensions.Options;
 
 namespace QuranDashboard.Api.RateLimiting;
 
-/// <summary>
-/// Registers the global, per-client-IP rate limiter: a token-bucket profile for general
-/// traffic and a fixed-window profile for <c>/api/health*</c>, selected by a single
-/// partitioner. Partition keys are namespaced (<c>general:{ip}</c> / <c>health:{ip}</c>) so
-/// the two profiles for the same IP never share a cached limiter. Options are validated
-/// fail-fast at startup.
-/// </summary>
 internal static class RateLimitingRegistration
 {
     private const string DisabledPartitionKey = "__disabled__";

@@ -1,8 +1,6 @@
 namespace QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting.Corrections;
 
-using System.Text.Json.Serialization;
 
-// One curated secondary-STEM segment decision from segment-stem-corrected-arabic.json.
 // `review_decision` is either "approved" (reviewed_stem_text set, bound to a quran_stems row by text)
 // or "unresolved_exception" (reviewed_stem_id null, reason set; left null on purpose this feature).
 public sealed record SegmentStemCorrectionEntry
@@ -16,8 +14,8 @@ public sealed record SegmentStemCorrectionEntry
     [JsonPropertyName("reason")] public string? Reason { get; init; }
 }
 
-// Top-level curated artifact. Only `mappings` is required for the importer; the other metadata fields
-// are carried for traceability and ignored during apply.
+// Only `mappings` is required for the importer; the other metadata fields are carried for
+// traceability and ignored during apply.
 public sealed record SegmentStemCorrectionArtifact
 {
     public const string ApprovedDecision = "approved";
@@ -29,12 +27,10 @@ public sealed record SegmentStemCorrectionArtifact
     [JsonPropertyName("mappings")] public required IReadOnlyList<SegmentStemCorrectionEntry> Mappings { get; init; }
 }
 
-// Counts of mappings by decision, computed by the reader.
 public sealed record SegmentStemCorrectionCounts(int Total, int Approved, int UnresolvedExceptions);
 
-// Result of Load(): parsed artifact, raw SHA-256, counts, and the two lookups the assembler needs:
-// approved secondary segment_location -> reviewed stem TEXT (bound to an id at import), and the set of
-// intentional unresolved-exception secondary locations (left null on purpose).
+// ApprovedStemTextByLocation holds reviewed stem TEXT per approved secondary segment_location (bound
+// to a stem id only at import); UnresolvedLocations holds the intentional unresolved-exception ones.
 public sealed record SegmentStemCorrectionLoaded(
     SegmentStemCorrectionArtifact Artifact,
     string ArtifactSha256,

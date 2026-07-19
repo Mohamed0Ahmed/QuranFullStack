@@ -59,7 +59,7 @@ button.qd-interactive-surface {
   border-radius: var(--qd-radius-sm);
   font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
   font-size: var(--qd-btn-font-size);
-  font-weight: 500;
+  font-weight: 400;
   line-height: var(--qd-btn-line-height);
   cursor: pointer;
   background: var(--qd-surface);
@@ -133,7 +133,7 @@ button.qd-interactive-surface {
   border-radius: var(--qd-radius-sm);
   font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
   font-size: 0.75rem;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 1.4;
   background: var(--qd-section-bg);
   color: var(--qd-text-muted);
@@ -176,7 +176,7 @@ button.qd-interactive-surface {
   color: var(--qd-text-muted);
   font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
   font-size: 0.9375rem;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 1.5;
   text-decoration: none;
   cursor: pointer;
@@ -215,7 +215,7 @@ button.qd-interactive-surface {
   background: var(--qd-surface-recessed);
   color: var(--qd-text-muted);
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
@@ -237,7 +237,7 @@ button.qd-interactive-surface {
   color: var(--qd-text);
   font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 1.4;
   cursor: pointer;
   text-decoration: none;
@@ -280,7 +280,7 @@ button.qd-interactive-surface {
   background: var(--qd-surface-recessed);
   color: var(--qd-text-muted);
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
@@ -315,7 +315,7 @@ button.qd-interactive-surface {
   justify-self: start;
   font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--qd-text);
 }
 
@@ -606,98 +606,8 @@ button.qd-interactive-surface {
   }
 }
 
-@media (max-width: 1023px) {
-  qd-selected-ayah-section.qd-selected-ayah-section--embedded {
-    --qd-ayah-study-min-height: min(50vh, 30rem);
-    --qd-ayah-content-min-height: min(42vh, 22rem);
-    /* N3 row 10: the loading reservation must never resolve below this band's own
-       study floor, or the shell would shrink while loading and grow back on
-       settle. Raising the component's :host baseline (rather than declaring it on
-       the section) is what keeps the max() honest per breakpoint. */
-    --qd-selected-ayah-baseline-block-size: var(--qd-ayah-study-min-height);
-    flex: none;
-    min-height: var(--qd-ayah-study-min-height);
-    height: auto;
-  }
-
-  qd-selected-ayah-section.qd-selected-ayah-section--embedded .selected-ayah-section {
-    flex: none;
-    min-height: var(--qd-ayah-study-min-height);
-  }
-
-  qd-selected-ayah-section.qd-selected-ayah-section--embedded .selected-ayah-section__tabs {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    overflow-x: visible;
-  }
-
-  qd-selected-ayah-section.qd-selected-ayah-section--embedded .selected-ayah-section__content {
-    flex: none;
-    min-height: var(--qd-ayah-content-min-height);
-    margin-block-end: var(--qd-space-2);
-    overflow: visible;
-  }
-
-  /* N3 row 10: the loading floor used to be TALLER than the loaded floor
-     (48vh/24rem vs 42vh/22rem), so the content box shrank by ~2rem the moment a
-     study settled. The two floors are now one — the base rule above covers the
-     loading state too, and the shell's own reservation handles holding height. */
-
-  qd-selected-ayah-section.qd-selected-ayah-section--embedded .selected-ayah-section__content--flow {
-    overflow: visible;
-    min-height: var(--qd-ayah-content-min-height);
-  }
-
-  qd-selected-word-section.qd-selected-word-section--embedded {
-    height: auto;
-    min-height: auto;
-  }
-
-  qd-selected-word-section.qd-selected-word-section--embedded .selected-word-section {
-    min-height: auto;
-  }
-
-  qd-selected-word-section.qd-selected-word-section--embedded .selected-word-section__content {
-    flex: none;
-    min-height: auto;
-    overflow: visible;
-  }
-}
-
-.selected-ayah-section__tab-count {
-  flex-shrink: 0;
-  min-width: 1.25rem;
-  padding: 0 calc(var(--qd-space-1) * 0.75);
-  border-radius: var(--qd-radius-pill, 999px);
-  background: var(--qd-surface-recessed);
-  color: var(--qd-text-muted);
-  font-size: 0.75rem;
-  font-weight: 600;
-  line-height: 1.4;
-}
-
-.selected-ayah-section__tab--active .selected-ayah-section__tab-count {
-  background: var(--qd-surface);
-  color: var(--qd-accent-text);
-}
-
-@media (max-width: 767px) {
-  /* Phone band. --qd-selected-ayah-baseline-block-size is not redeclared here: it
-     resolves through --qd-ayah-study-min-height, so it follows this band's floor
-     automatically (N3 row 10). The separate loading floor this block used to carry
-     was, like the tablet one, taller than its loaded floor and is gone with it. */
-  qd-selected-ayah-section.qd-selected-ayah-section--embedded {
-    --qd-ayah-study-min-height: min(55vh, 26rem);
-    --qd-ayah-content-min-height: min(48vh, 20rem);
-  }
-
-  .selected-word-section__morphology-skeleton {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    overflow-x: visible;
-  }
-
-  .selected-word-section__morphology-skeleton-cell {
-    flex: unset;
-    min-width: 0;
-  }
-}
+// Mushaf selected-ayah-section / selected-word-section responsive rules moved
+// to their owning component SCSS files (UI_STYLE_SYSTEM.md §2 / styles/README.md
+// boundary — component internals belong in the owning component's SCSS):
+// src/app/features/mushaf/components/selected-ayah-section/selected-ayah-section.component.scss
+// src/app/features/mushaf/components/selected-word-section/selected-word-section.component.scss

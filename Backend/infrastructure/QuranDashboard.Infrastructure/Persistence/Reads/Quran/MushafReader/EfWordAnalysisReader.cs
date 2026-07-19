@@ -1,10 +1,10 @@
-using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using QuranDashboard.Application.Abstractions.Quran.MushafReader;
 using QuranDashboard.Application.Abstractions.Quran.MushafReader.Responses;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.MushafReader;
 
-public sealed class EfWordAnalysisReader(QuranDashboardDbContext db) : IWordAnalysisReader
+public sealed class EfWordAnalysisReader(QuranDashboardDbContext db, ILogger<EfWordAnalysisReader> logger) : IWordAnalysisReader
 {
     private static readonly JsonSerializerOptions FeaturesJsonOptions = new()
     {
@@ -56,14 +56,9 @@ public sealed class EfWordAnalysisReader(QuranDashboardDbContext db) : IWordAnal
         return new WordAnalysisOutcome.Found(response);
     }
 
-    /// <summary>
-    /// Word, morphology, its root/lemma/stem dimensions, and the four identity summary rows
-    /// (ordered tashkeel/simple, unique tashkeel/simple) are six point-lookups keyed either
-    /// directly off the word row or off a nullable FK carried on it or on morphology. They are
-    /// collapsed into one LEFT-JOIN projection instead of up to six sequential round trips.
-    /// A missing morphology/identity row surfaces as null joined columns, preserving the
-    /// existing incomplete-data checks exactly.
-    /// </summary>
+    // Word, morphology, its root/lemma/stem dimensions, and the four identity summary rows are
+    // collapsed into one LEFT-JOIN projection instead of up to six sequential round trips; a missing
+    // morphology/identity row surfaces as null joined columns, preserving the incomplete-data checks.
     private async Task<WordCoreProjection?> LoadCoreAsync(string wordLocation, CancellationToken ct)
     {
         return await (
@@ -140,10 +135,8 @@ public sealed class EfWordAnalysisReader(QuranDashboardDbContext db) : IWordAnal
             .FirstOrDefaultAsync(ct);
     }
 
-    /// <summary>
-    /// Ordered segments joined to their POS tag and i3rab rule in one projection, replacing the
-    /// prior segment fetch plus separate POS-code and rule-id lookups.
-    /// </summary>
+    // Ordered segments joined to their POS tag and i3rab rule in one projection, replacing the prior
+    // segment fetch plus separate POS-code and rule-id lookups.
     private async Task<IReadOnlyList<SegmentProjection>> LoadSegmentsAsync(int wordId, CancellationToken ct)
     {
         return await (
@@ -231,7 +224,7 @@ public sealed class EfWordAnalysisReader(QuranDashboardDbContext db) : IWordAnal
         core.VerbVoice,
         core.CaseFeature);
 
-    private static IReadOnlyList<RenderedSegmentDto> MapSegments(IReadOnlyList<SegmentProjection> segments)
+    private IReadOnlyList<RenderedSegmentDto> MapSegments(IReadOnlyList<SegmentProjection> segments)
     {
         var rendered = new List<RenderedSegmentDto>(segments.Count);
 
@@ -261,17 +254,22 @@ public sealed class EfWordAnalysisReader(QuranDashboardDbContext db) : IWordAnal
         return rendered;
     }
 
-    private static SegmentFeaturesDto? MapSegmentFeatures(SegmentProjection segment)
+    private SegmentFeaturesDto? MapSegmentFeatures(SegmentProjection segment)
     {
         if (string.IsNullOrWhiteSpace(segment.FeaturesRaw) && string.IsNullOrWhiteSpace(segment.FeaturesJson))
         {
             return null;
         }
 
-        return new SegmentFeaturesDto(segment.FeaturesRaw, ParseFeaturesJson(segment.FeaturesJson));
+        return new SegmentFeaturesDto(
+            segment.FeaturesRaw,
+            ParseFeaturesJson(segment.FeaturesJson, segment.SegmentLocation));
     }
 
-    private static IReadOnlyList<JsonElement> ParseFeaturesJson(string? featuresJson)
+    // quran-safety rule 3: corrupt features_json must not be swallowed silently. The return contract
+    // is unchanged (still empty on failure), but a corrupt row logs a Warning naming the segment so
+    // the underlying data issue stays visible.
+    private IReadOnlyList<JsonElement> ParseFeaturesJson(string? featuresJson, string segmentLocation)
     {
         if (string.IsNullOrWhiteSpace(featuresJson))
         {
@@ -283,8 +281,12 @@ public sealed class EfWordAnalysisReader(QuranDashboardDbContext db) : IWordAnal
             var parsed = JsonSerializer.Deserialize<List<JsonElement>>(featuresJson, FeaturesJsonOptions);
             return parsed ?? (IReadOnlyList<JsonElement>)[];
         }
-        catch (JsonException)
+        catch (JsonException ex)
         {
+            logger.LogWarning(
+                ex,
+                "Corrupt features_json JSON for segment {segmentLocation}; treating as empty",
+                segmentLocation);
             return [];
         }
     }

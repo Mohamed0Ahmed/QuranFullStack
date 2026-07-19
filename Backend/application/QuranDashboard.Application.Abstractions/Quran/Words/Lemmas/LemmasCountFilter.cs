@@ -2,12 +2,6 @@ using QuranDashboard.Application.Abstractions.Common.Filtering;
 
 namespace QuranDashboard.Application.Abstractions.Quran.Words.Lemmas;
 
-/// <summary>
-/// Count-range filter for the Lemmas list (Feature 026, US5). Filters lemma dimension
-/// entries by exactly the six count columns the page already shows (occurrences,
-/// ayahs, surahs, simple words, tashkeel words, stems). Predicates run in memory over
-/// the cached whole-summary rows (no backend cache-key change).
-/// </summary>
 public sealed record LemmasCountFilter(
     CountRange Occurrences,
     CountRange Ayahs,

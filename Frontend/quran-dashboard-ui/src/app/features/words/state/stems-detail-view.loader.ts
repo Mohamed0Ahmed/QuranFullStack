@@ -37,12 +37,6 @@ export interface StemsDetailLoadContext {
   readonly cachedMissingSurahs: StemMissingSurahsDto | null;
 }
 
-/**
- * Stems Explorer detail view loader (Feature 016). Sibling of
- * `RootsDetailViewLoader`. Active-view loading is wired but is only invoked from
- * the story phases once the stem catalogue and summary reads exist (US2+).
- * Phase 2 ships the typed skeleton so the facade can compile.
- */
 @Injectable({ providedIn: 'root' })
 export class StemsDetailViewLoader {
   private readonly api = inject(StemsApi);

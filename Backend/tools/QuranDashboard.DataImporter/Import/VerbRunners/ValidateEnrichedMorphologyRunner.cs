@@ -1,15 +1,10 @@
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.MorphologyImporting;
 using QuranDashboard.DataImporter.Import.DefaultPaths;
 using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting.Enriched;
 
 namespace QuranDashboard.DataImporter.Import.VerbRunners;
 
-// Dry-validation verb for the enriched morphology pathway (Feature 020). Loads the staged artifact
-// through EnrichedMorphologyImportSource and runs EnrichedMorphologyDryValidator WITHOUT touching the
-// DB — no import, no truncate, no transaction. Use this to verify the §7 gates before the real
-// reset+import step.
+// Dry validation only: never touches the DB (no import/truncate/transaction); run before the real reset+import.
 internal static class ValidateEnrichedMorphologyRunner
 {
     internal const int SuccessExitCode = 0;

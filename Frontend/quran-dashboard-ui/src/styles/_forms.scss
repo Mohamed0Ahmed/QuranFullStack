@@ -33,6 +33,13 @@
   min-height: 2.375rem;
   padding: calc(var(--qd-space-2) * 0.85) var(--qd-space-3);
   padding-inline-end: calc(var(--qd-space-4) + 0.5rem);
+  /* This app is RTL-only (dir="rtl"): padding-inline-end reserves the gutter on
+     the physical LEFT, so the chevron below is drawn at a physical-left
+     background-position to land in that same gutter. appearance: none suppresses
+     the browser's own native arrow so only this custom chevron renders. */
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
   border: 1px solid var(--qd-border);
   border-radius: var(--qd-radius-md);
   background-color: var(--qd-surface);
@@ -40,14 +47,14 @@
     linear-gradient(45deg, transparent 50%, var(--qd-text-muted) 50%),
     linear-gradient(135deg, var(--qd-text-muted) 50%, transparent 50%);
   background-position:
-    calc(100% - calc(var(--qd-space-3) + 0.125rem)) calc(50% - 0.2rem),
-    calc(100% - var(--qd-space-3)) calc(50% - 0.2rem);
+    calc(var(--qd-space-3) + 0.125rem) calc(50% - 0.2rem),
+    var(--qd-space-3) calc(50% - 0.2rem);
   background-size: 0.35rem 0.35rem, 0.35rem 0.35rem;
   background-repeat: no-repeat;
   color: var(--qd-text);
   font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
   font-size: 0.9375rem;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 1.45;
   cursor: pointer;
   transition:

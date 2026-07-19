@@ -10,7 +10,6 @@ type UniqueWordCountSortColumn = 'occurrences' | 'ayahs' | 'surahs';
 type UniqueWordTextSortColumn = 'alpha';
 export type UniqueWordSortColumnKey = UniqueWordCountSortColumn | UniqueWordTextSortColumn;
 
-/** The canonical token set: `occurrences`/`occurrences-asc`, `alpha`/`alpha-desc`, … */
 export type UniqueWordSort =
   | MushafOrderSort
   | CanonicalSortTokens<UniqueWordCountSortColumn, 'desc'>
@@ -98,7 +97,6 @@ export interface WordDrilldownState {
 }
 
 export const UNIQUE_WORD_KIND_KEYS = ['tashkeel', 'simple'] as const satisfies readonly UniqueWordKind[];
-/** The sortable Unique Words columns, in table-header order. */
 export const UNIQUE_WORD_SORT_COLUMNS = {
   alpha: { key: 'alpha', natural: 'asc', label: WORDS_SHARED_HEADERS.word },
   occurrences: { key: 'occurrences', natural: 'desc', label: WORDS_SHARED_HEADERS.occurrences },
@@ -136,7 +134,6 @@ export function isUniqueWordSort(value: unknown): value is UniqueWordSort {
   );
 }
 
-/** Canonicalizes aliases in and fails closed to the default on anything unknown. */
 export function normalizeUniqueWordSort(value: string | null | undefined): UniqueWordSort {
   const canonical = canonicalizeSortToken(value, UNIQUE_WORD_SORT_COLUMN_LIST);
   return canonical !== null && isUniqueWordSort(canonical) ? canonical : DEFAULT_UNIQUE_WORD_SORT;
@@ -170,7 +167,6 @@ export function isUniqueWordsAssociationActive(association: UniqueWordsAssociati
   return association.primaryType !== null || association.rootId !== null;
 }
 
-// Count-range filter metrics (Feature 026, US5) — the three count columns the Unique Words list shows.
 export const UNIQUE_WORDS_RANGE_METRICS: readonly RangeMetric[] = [
   { key: 'occurrences', urlKey: 'occ', apiKey: 'occ', family: 'occurrences', labelAr: WORDS_SHARED_COUNT_COLUMNS.occurrences },
   { key: 'ayahs', urlKey: 'ayahs', apiKey: 'ayahs', family: 'ayahsSurahs', labelAr: WORDS_SHARED_COUNT_COLUMNS.ayahs },

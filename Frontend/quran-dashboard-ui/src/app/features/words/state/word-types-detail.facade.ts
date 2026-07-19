@@ -107,10 +107,16 @@ export class WordTypesDetailFacade {
     this.routeSub?.unsubscribe();
     this.routeSub = undefined;
     this.cancelPendingLoads();
+    // Reset the tracked URL identity (but keep the loaded panel data): a bare
+    // cancel leaves `activeUrlState` set, so re-binding to the SAME query
+    // params would short-circuit in syncFromUrlState() via
+    // isSamePanelUrlState() and strand the panel in its cancelled `loading`
+    // state. Nulling it forces a real reload on re-entry while still letting
+    // the loaded-state fast path (isSameSelection + hasSummary) apply.
+    this.activeUrlState = null;
   }
 
-  // Optimistic word selection from a table row: the row already carries its summary, so only the
-  // active detail view is fetched.
+  // The row already carries its summary, so only the active detail view is fetched.
   selectRow(
     row: WordTypeRowDto,
     scope: WordTypeDetailScope,
@@ -189,8 +195,7 @@ export class WordTypesDetailFacade {
     this.loadActiveView(current.selection, current.view, page);
   }
 
-  // Reloads the summary when it never arrived, otherwise reloads the active view. Failed reads are
-  // never cached, so a retry always re-issues the request.
+  // Failed reads are never cached, so a retry always re-issues the request.
   retry(): void {
     const current = this._panel();
     const state = this.activeUrlState;

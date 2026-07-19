@@ -17,8 +17,7 @@ import {
 // WORDS_HUB_INTRO (models/words-explainer.content.ts). These two consts remain only as stable
 // fixtures — ACTIVE_HUB_SECTION.labelAr is the Unique Words page title, and
 // ADDITIONAL_ACTIVE_HUB_SECTIONS is the hub-route invariant (label → route) the explorers assert
-// against. Their invented descriptions and the coming-soon scaffolding (every explorer has shipped)
-// were removed with the redesign.
+// against.
 export interface WordSectionCardLabel {
   labelAr: string;
 }
@@ -47,10 +46,6 @@ export const UNIQUE_WORD_KIND_LABELS: Record<UniqueWordKind, string> = {
 
 export const UNIQUE_WORDS_MUSHAF_ORDER_LABEL = 'ترتيب المصحف';
 
-/**
- * Options for the ≤1023px fallback sort select (Feature 030, N8): the default release order plus
- * every sortable column in both directions. ≥1024px sorts through the table column headers.
- */
 export const UNIQUE_WORD_SORT_OPTIONS = explorerSortOptions(
   UNIQUE_WORD_SORT_COLUMN_LIST,
   UNIQUE_WORDS_MUSHAF_ORDER_LABEL,
@@ -80,10 +75,8 @@ export const SURAH_NAME_HEADER = WORDS_SHARED_LIST_HEADERS.surahName;
 export const AYAH_REF_LABEL = 'آية';
 export const MUSHAF_PAGE_REF_LABEL = 'ص';
 
-// Headline result-count stat (Feature 026, US4): label-prefix "عدد الـ…: N".
 export const UNIQUE_WORDS_RESULT_COUNT_LABEL = 'عدد الكلمات';
 
-// Association filters (Feature 026, US7): primary word type + primary root (lock D terms).
 export const UNIQUE_WORDS_PRIMARY_TYPE_FILTER_LABEL = 'النوع الأساسي';
 export const UNIQUE_WORDS_PRIMARY_TYPE_FILTER_PLACEHOLDER = 'اختر نوعًا…';
 export const UNIQUE_WORDS_PRIMARY_ROOT_FILTER_LABEL = 'الجذر الأساسي';

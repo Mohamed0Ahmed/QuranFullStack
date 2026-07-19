@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using QuranDashboard.Application.Access.Commands.ProvisionCurrentUser;
 using QuranDashboard.Application.Quran.DataPipelines.Foundation;
 using QuranDashboard.Application.Quran.DataPipelines.Foundation.Validation;
 using QuranDashboard.Application.Quran.DataPipelines.Mutashabihat;
@@ -117,6 +118,8 @@ public static class DependencyInjection
         services.AddScoped<GetWordTypeGroupedSurahsHandler>();
         services.AddScoped<GetWordTypeAyahsHandler>();
         services.AddScoped<GetWordTypeSurahsHandler>();
+
+        services.AddScoped<ProvisionCurrentUserHandler>();
 
         return services;
     }

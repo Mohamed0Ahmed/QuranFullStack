@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.OpenApi;
+using QuranDashboard.Api.Authentication;
 using QuranDashboard.Api.Middleware;
 using QuranDashboard.Api.RateLimiting;
 using QuranDashboard.Api.Swagger;
@@ -14,7 +15,21 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddApiServices(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddControllers();
+        services.AddControllers().ConfigureApiBehaviorOptions(options =>
+        {
+            // [ApiController] auto-400s on bad typed model binding (e.g. ?page=abc). Left unconfigured
+            // this returns English ValidationProblemDetails instead of the shared ApiResponse failure
+            // envelope, so replace it with the envelope while keeping the per-field errors in English.
+            options.InvalidModelStateResponseFactory = context =>
+            {
+                var errors = context.ModelState
+                    .Where(entry => entry.Value is { Errors.Count: > 0 })
+                    .SelectMany(entry => entry.Value!.Errors.Select(error => $"{entry.Key}: {error.ErrorMessage}"))
+                    .ToArray();
+
+                return new BadRequestObjectResult(ApiResponse<object>.Fail(ApiMessages.ValidationFailed, errors));
+            };
+        });
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(options =>
         {
@@ -40,20 +55,6 @@ public static class ServiceCollectionExtensions
                 AdditionalPropertiesAllowed = true
             });
             options.SchemaFilter<AllPropertiesRequiredSchemaFilter>();
-
-            var xmlFiles = new[]
-            {
-                $"{Assembly.GetExecutingAssembly().GetName().Name}.xml",
-                "QuranDashboard.Application.Abstractions.xml"
-            };
-            foreach (var xmlFile in xmlFiles)
-            {
-                var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-                if (File.Exists(xmlPath))
-                {
-                    options.IncludeXmlComments(xmlPath);
-                }
-            }
         });
         services.AddHealthChecks()
             .AddDbContextCheck<QuranDashboardDbContext>("database");
@@ -79,6 +80,7 @@ public static class ServiceCollectionExtensions
                     .AllowCredentials();
             });
         });
+        services.AddApiAuthentication(configuration);
         services.AddRateLimiting(configuration);
 
         return services;

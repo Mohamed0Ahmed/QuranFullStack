@@ -2,16 +2,6 @@ using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.Morpholo
 
 namespace QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting.Enriched;
 
-// Enriched morphology import source (Feature 020). Reads the single Dashboard-ready artifact through the
-// streaming EnrichedMorphologyReader, validates sha256/size/recordCount/segmentCount via the manifest,
-// then builds value-based root/lemma/stem dimensions and projects the result onto the existing
-// MorphologySourceData DTO consumed unchanged by EfBulkMorphologyWriter.
-//
-// This pathway does NOT consult QUL word-level location links, does NOT apply the legacy
-// WordLemmaNormalization / SegmentStemCorrection / CuratedLemmaDisambiguation artifacts, and does NOT
-// use the old MorphologyAssembler. The old MorphologyImportSource + correction path stays registered in
-// parallel (selected via the CLI --enriched flag / DI selector) so parity diffing is possible before the
-// cut-over cleanup in Phase 2.
 public sealed class EnrichedMorphologyImportSource : IMorphologyImportSource
 {
     private readonly EnrichedMorphologyManifestReader manifestReader;
@@ -88,7 +78,6 @@ public sealed class EnrichedMorphologyImportSource : IMorphologyImportSource
             // WordLemmaNormalization. The report writer only renders that section when non-null.
             CorrectionSummary: null,
             SourceKind: MorphologyImportSourceKind.Enriched,
-            // Per-buckwalter analytical breakdown under each collapsed display lemma (Feature 020).
             LemmaAnalyses: build.ResolvedLemmaAnalyses);
     }
 

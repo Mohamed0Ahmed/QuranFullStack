@@ -9,16 +9,6 @@ import {
 import { UniqueWordsCache } from './unique-words-cache';
 import { UniqueWordsDrilldownController } from './unique-words-drilldown.controller';
 
-/**
- * Thin adapter over `UniqueWordsDrilldownController` (Feature 029, Change B4).
- *
- * The facade keeps the Unique Words page contract — the same drilldown methods
- * plus `restoreFromUrl`, which forwards parsed page query state — and delegates
- * all drilldown state and load orchestration to its own private controller
- * instance. The global overlay adapter uses its own component-scoped
- * `UniqueWordsDrilldownController` instance, so overlay activity can never
- * mutate this page facade's state.
- */
 @Injectable({ providedIn: 'root' })
 export class UniqueWordsDrilldownFacade {
   private readonly controller = new UniqueWordsDrilldownController(
@@ -44,12 +34,10 @@ export class UniqueWordsDrilldownFacade {
     this.controller.closeDrilldown();
   }
 
-  /** See `UniqueWordsDrilldownController.retryCurrentIdentity` (Feature 030, M3). */
   retryCurrentIdentity(): void {
     this.controller.retryCurrentIdentity();
   }
 
-  /** See `UniqueWordsDrilldownController.cancelPendingWork` (perf finding F3). */
   cancelPendingWork(): void {
     this.controller.cancelPendingWork();
   }

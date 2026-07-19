@@ -292,9 +292,10 @@ public sealed class MorphologySegmentRenderingTests(MorphologyImportTestFixture 
                     mutation));
         }).CreateAsyncScope();
 
+        var reportDir = Path.Combine(Path.GetTempPath(), $"morph-mutated-report-{Guid.NewGuid():N}");
         var handler = scope.ServiceProvider.GetRequiredService<ImportMorphologyHandler>();
         return await handler.HandleAsync(
-            new ImportMorphologyCommand(sourcePath, false, fixture.GetReadableWordCount()),
+            new ImportMorphologyCommand(sourcePath, false, fixture.GetReadableWordCount(), reportDir),
             CancellationToken.None);
     }
 

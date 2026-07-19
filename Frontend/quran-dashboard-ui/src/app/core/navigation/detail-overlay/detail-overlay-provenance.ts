@@ -3,17 +3,10 @@ import { Location } from '@angular/common';
 import { DetailFrame } from './detail-overlay.models';
 import { serializeDetailFrame } from './detail-overlay-url-codec';
 
-/**
- * History-state provenance for app-created overlay navigations. Dialog Back
- * calls browser Back only when this record proves the immediately previous
- * entry is the parent card; anything else (shared URL, unowned base
- * navigation) uses the deterministic replace fallback.
- *
- * `baseSignature` is the base THIS entry sits on. It is re-stamped by an owned
- * base replacement (ayah continuity, B7) and compared against the live base at
- * Back time, so it means "no unowned base navigation has happened since this
- * record was written" — not "the overlay may never change base".
- */
+// Dialog Back uses browser Back only when this record proves the previous entry is the
+// parent card; anything else falls back to a deterministic replace. `baseSignature` is the
+// base THIS entry sits on, re-stamped by an owned base replacement (ayah continuity) and
+// compared against the live base at Back time — it means "no unowned base navigation since".
 export interface DetailOverlayProvenance {
   readonly baseSignature: string;
   readonly parentStackHash: string;

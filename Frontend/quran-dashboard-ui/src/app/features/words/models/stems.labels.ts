@@ -11,9 +11,7 @@ import {
 } from './words-shared.labels';
 
 export const STEMS_PAGE_TITLE = 'الأصول الصرفية';
-// Headline result-count stat (Feature 026, US4): label-prefix "عدد الـ…: N".
 export const STEMS_RESULT_COUNT_LABEL = 'عدد الأصول الصرفية';
-// Association filters (Feature 026, US7): primary (dominant) root + lemma, labeled primary-not-sole.
 export const STEMS_PRIMARY_ROOT_FILTER_LABEL = 'الجذر الأساسي';
 export const STEMS_PRIMARY_ROOT_FILTER_PLACEHOLDER = 'ابحث عن جذر…';
 export const STEMS_PRIMARY_LEMMA_FILTER_LABEL = 'الصيغة المعجمية الأساسية';
@@ -109,10 +107,6 @@ export const STEMS_SORT_LABELS = {
   'mushaf-order': 'ترتيب المصحف',
 } as const;
 
-/**
- * Options for the ≤1023px fallback sort select (Feature 030, N8): the default release order plus
- * every sortable column in both directions. ≥1024px sorts through the table column headers.
- */
 export const STEMS_SORT_OPTIONS = explorerSortOptions(
   STEM_SORT_COLUMN_LIST,
   STEMS_SORT_LABELS['mushaf-order'],

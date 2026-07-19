@@ -1,8 +1,7 @@
-import { Injectable, OnDestroy, computed, signal } from '@angular/core';
-import { HttpErrorResponse } from '@angular/common/http';
-import { of } from 'rxjs';
-import { catchError, tap } from 'rxjs/operators';
+import { Injectable } from '@angular/core';
+import { Observable, Subscription } from 'rxjs';
 
+import { ApiResponse } from '../../../core/data-access/api-response.model';
 import { StemsApi } from '../data-access/stems.api';
 import {
   STEMS_ERROR_LABEL,
@@ -20,7 +19,7 @@ import {
   StemsPanelState,
   isPaginatedStemView,
 } from '../models/stems.models';
-import { DetailRequestLifecycle } from './detail-request-lifecycle';
+import { AbstractDetailController } from './abstract-detail.controller';
 import { StemsCache, StemsCacheKeys } from './stems-cache';
 import {
   buildAyahsPanelUpdate,
@@ -32,7 +31,7 @@ import {
   extractPanelErrorMessage,
   restoredStemNotFoundUpdate,
 } from './stems-detail-panel.updates';
-import { StemsDetailViewLoader } from './stems-detail-view.loader';
+import { StemsDetailViewHandlers, StemsDetailViewLoader } from './stems-detail-view.loader';
 
 const INITIAL_PANEL: StemsPanelState = {
   selectedStemId: null,
@@ -51,11 +50,8 @@ const INITIAL_PANEL: StemsPanelState = {
   errorMessage: '',
 };
 
-/**
- * Complete stem detail identity: every field participates in equality. Unlike
- * roots, the ayahs view carries a `typeCode` filter, so it is part of the
- * identity (and of `StemsCacheKeys.ayahs`).
- */
+// Complete stem detail identity: every field participates in equality. Unlike roots, the ayahs
+// view's typeCode filter is part of the identity (and of StemsCacheKeys.ayahs).
 export interface StemsDetailUrlState {
   readonly stemId: number;
   readonly view: StemView;
@@ -83,82 +79,23 @@ export function stemsDetailUrlStatesEqual(
   );
 }
 
-/**
- * Route-independent stem detail controller (Feature 029, Change B4). Sibling
- * of `RootsDetailController` — see that class for the pattern rationale.
- *
- * Owns the stem detail panel signal state, the summary/detail subscriptions,
- * and every load path — with zero knowledge of routes or URLs. Consumers drive
- * it either through `applyUrlState` (the route-free entry point: the page
- * facade forwards parsed query state, an overlay adapter forwards its typed
- * frame) or through the direct selection methods. The root-scoped
- * `StemsApi`/`StemsCache`/`StemsDetailViewLoader` collaborators stay shared,
- * so the explorer side panel and the global overlay de-duplicate the same
- * reads.
- *
- * Every complete-identity transition abandons BOTH the summary and the detail
- * request and opens a new generation, so a late response from the previously
- * selected stem can never populate or overwrite this one — see
- * {@link DetailRequestLifecycle}. Not `providedIn: 'root'`: the page facade owns
- * one instance, and each overlay adapter provides its own component-scoped
- * instance (destroyed with the adapter).
- */
+// Not providedIn: 'root': the page facade owns one instance and each overlay adapter provides
+// its own component-scoped instance (destroyed with the adapter), so their panel state stays isolated.
+// Every complete-identity transition abandons both the in-flight summary and detail request (new
+// generation), so a late response from a previously selected stem can never overwrite this one.
 @Injectable()
-export class StemsDetailController implements OnDestroy {
-  private readonly _panel = signal<StemsPanelState>(INITIAL_PANEL);
-
-  private readonly requests = new DetailRequestLifecycle();
-  private activeUrlState: StemsDetailUrlState | null = null;
-
-  readonly panelState = computed(() => this._panel());
-
+export class StemsDetailController extends AbstractDetailController<
+  StemsPanelState,
+  StemsDetailUrlState,
+  StemSummaryDto,
+  StemsDetailViewHandlers
+> {
   constructor(
     private readonly api: StemsApi,
     private readonly cache: StemsCache,
     private readonly viewLoader: StemsDetailViewLoader,
-  ) {}
-
-  ngOnDestroy(): void {
-    this.cancelPendingLoads();
-  }
-
-  /**
-   * Route-free entry point: synchronize the panel to a complete detail state
-   * (`null` clears the selection). Identical states short-circuit via complete
-   * identity comparison, leaving an in-flight load for that identity alone.
-   */
-  applyUrlState(state: StemsDetailUrlState | null): void {
-    if (state === null) {
-      this.clearSelection();
-      return;
-    }
-
-    if (stemsDetailUrlStatesEqual(this.activeUrlState, state)) {
-      return;
-    }
-
-    this.applyIdentity(state);
-  }
-
-  /**
-   * Re-drives the current complete identity after a failed load (Feature 030,
-   * M3). The identity is unchanged, so {@link applyUrlState} would short-circuit
-   * it; retry re-enters the load path directly. A failed read is never cached,
-   * so this issues a real request, while an intact summary still resolves from
-   * cache and only the detail view reloads.
-   */
-  retryCurrentIdentity(): void {
-    const state = this.activeUrlState;
-    if (state === null) {
-      return;
-    }
-
-    this.applyIdentity(state);
-  }
-
-  /** Cancels the pending summary/detail loads without resetting panel state. */
-  cancelPendingLoads(): void {
-    this.requests.cancelAll();
+  ) {
+    super(INITIAL_PANEL);
   }
 
   selectStem(summary: StemSummaryDto, view: StemView = DEFAULT_STEM_VIEW): void {
@@ -173,7 +110,15 @@ export class StemsDetailController implements OnDestroy {
     detailPage: number = DEFAULT_STEM_DETAIL_PAGE,
   ): void {
     const token = this.requests.beginTransition();
-    this.activeUrlState = { stemId: summary.id, view, wordView, surahView, detailPage, typeCode: null };
+    const nextState: StemsDetailUrlState = {
+      stemId: summary.id,
+      view,
+      wordView,
+      surahView,
+      detailPage,
+      typeCode: null,
+    };
+    this.activeUrlState = nextState;
     this._panel.set({
       ...INITIAL_PANEL,
       selectedStemId: summary.id,
@@ -184,13 +129,7 @@ export class StemsDetailController implements OnDestroy {
       detailPage,
       status: 'loading',
     });
-    this.loadActiveView(summary.id, view, wordView, surahView, detailPage, null, token);
-  }
-
-  clearSelection(): void {
-    this.requests.cancelAll();
-    this.activeUrlState = null;
-    this._panel.set(INITIAL_PANEL);
+    this.loadActiveView(nextState, token);
   }
 
   setView(view: StemView): void {
@@ -204,7 +143,7 @@ export class StemsDetailController implements OnDestroy {
     const surahView = view === 'surahs' ? current.surahView : DEFAULT_STEM_SURAHS_VIEW;
 
     const token = this.requests.beginTransition();
-    this.activeUrlState = {
+    const nextState: StemsDetailUrlState = {
       stemId: current.selectedStemId,
       view,
       wordView,
@@ -212,6 +151,7 @@ export class StemsDetailController implements OnDestroy {
       detailPage,
       typeCode: null,
     };
+    this.activeUrlState = nextState;
     this._panel.update((s) => ({
       ...s,
       view,
@@ -222,7 +162,7 @@ export class StemsDetailController implements OnDestroy {
       status: 'loading',
       errorMessage: '',
     }));
-    this.loadActiveView(current.selectedStemId, view, wordView, surahView, detailPage, null, token);
+    this.loadActiveView(nextState, token);
   }
 
   setWordView(wordView: StemWordView): void {
@@ -237,7 +177,7 @@ export class StemsDetailController implements OnDestroy {
     }
 
     const token = this.requests.beginTransition();
-    this.activeUrlState = {
+    const nextState: StemsDetailUrlState = {
       stemId: current.selectedStemId,
       view: 'words',
       wordView,
@@ -245,6 +185,7 @@ export class StemsDetailController implements OnDestroy {
       detailPage: DEFAULT_STEM_DETAIL_PAGE,
       typeCode: null,
     };
+    this.activeUrlState = nextState;
     this._panel.update((s) => ({
       ...s,
       wordView,
@@ -253,15 +194,7 @@ export class StemsDetailController implements OnDestroy {
       status: 'loading',
       errorMessage: '',
     }));
-    this.loadActiveView(
-      current.selectedStemId,
-      'words',
-      wordView,
-      current.surahView,
-      DEFAULT_STEM_DETAIL_PAGE,
-      null,
-      token,
-    );
+    this.loadActiveView(nextState, token);
   }
 
   setSurahView(surahView: StemSurahView): void {
@@ -276,7 +209,7 @@ export class StemsDetailController implements OnDestroy {
     }
 
     const token = this.requests.beginTransition();
-    this.activeUrlState = {
+    const nextState: StemsDetailUrlState = {
       stemId: current.selectedStemId,
       view: 'surahs',
       wordView: current.wordView,
@@ -284,6 +217,7 @@ export class StemsDetailController implements OnDestroy {
       detailPage: current.detailPage,
       typeCode: null,
     };
+    this.activeUrlState = nextState;
     this._panel.update((s) => ({
       ...s,
       surahView,
@@ -291,15 +225,7 @@ export class StemsDetailController implements OnDestroy {
       status: 'loading',
       errorMessage: '',
     }));
-    this.loadActiveView(
-      current.selectedStemId,
-      'surahs',
-      current.wordView,
-      surahView,
-      current.detailPage,
-      null,
-      token,
-    );
+    this.loadActiveView(nextState, token);
   }
 
   setDetailPage(page: number): void {
@@ -313,7 +239,7 @@ export class StemsDetailController implements OnDestroy {
     }
 
     const token = this.requests.beginTransition();
-    this.activeUrlState = {
+    const nextState: StemsDetailUrlState = {
       stemId: current.selectedStemId,
       view: current.view,
       wordView: current.wordView,
@@ -321,21 +247,14 @@ export class StemsDetailController implements OnDestroy {
       detailPage: page,
       typeCode: current.view === 'ayahs' ? current.ayahTypeCode : null,
     };
+    this.activeUrlState = nextState;
     this._panel.update((s) => ({
       ...s,
       detailPage: page,
       status: 'loading',
       errorMessage: '',
     }));
-    this.loadActiveView(
-      current.selectedStemId,
-      current.view,
-      current.wordView,
-      current.surahView,
-      page,
-      current.view === 'ayahs' ? current.ayahTypeCode : null,
-      token,
-    );
+    this.loadActiveView(nextState, token);
   }
 
   setAyahTypeCode(typeCode: string | null): void {
@@ -350,7 +269,7 @@ export class StemsDetailController implements OnDestroy {
     }
 
     const token = this.requests.beginTransition();
-    this.activeUrlState = {
+    const nextState: StemsDetailUrlState = {
       stemId: current.selectedStemId,
       view: 'ayahs',
       wordView: current.wordView,
@@ -358,6 +277,7 @@ export class StemsDetailController implements OnDestroy {
       detailPage: DEFAULT_STEM_DETAIL_PAGE,
       typeCode: normalizedTypeCode,
     };
+    this.activeUrlState = nextState;
     this._panel.update((s) => ({
       ...s,
       ayahTypeCode: normalizedTypeCode,
@@ -365,172 +285,88 @@ export class StemsDetailController implements OnDestroy {
       status: 'loading',
       errorMessage: '',
     }));
-    this.loadActiveView(
-      current.selectedStemId,
-      'ayahs',
-      current.wordView,
-      current.surahView,
-      DEFAULT_STEM_DETAIL_PAGE,
-      normalizedTypeCode,
-      token,
-    );
+    this.loadActiveView(nextState, token);
   }
 
-  /**
-   * Drives a complete identity: abandons the previous identity's summary and
-   * detail requests, then either reloads only the active view (same stem, loaded
-   * summary) or reloads the summary first.
-   */
-  private applyIdentity(state: StemsDetailUrlState): void {
-    const token = this.requests.beginTransition();
-    this.activeUrlState = state;
-    const current = this._panel();
+  protected override readonly notFoundLabel = STEMS_NOT_FOUND_LABEL;
+  protected override readonly errorLabel = STEMS_ERROR_LABEL;
 
-    if (current.selectedStemId === state.stemId && current.summary !== null) {
-      this._panel.update((s) => ({
-        ...s,
-        view: state.view,
-        wordView: state.wordView,
-        surahView: state.surahView,
-        ayahTypeCode: state.typeCode,
-        detailPage: state.detailPage,
-        status: 'loading',
-        errorMessage: '',
-      }));
-      this.loadActiveView(
-        state.stemId,
-        state.view,
-        state.wordView,
-        state.surahView,
-        state.detailPage,
-        state.typeCode,
-        token,
-      );
-      return;
-    }
-
-    this.loadSummaryAndRestore(state, token);
+  protected override urlStatesEqual(a: StemsDetailUrlState | null, b: StemsDetailUrlState | null): boolean {
+    return stemsDetailUrlStatesEqual(a, b);
   }
 
-  private loadSummaryAndRestore(state: StemsDetailUrlState, token: number): void {
-    this._panel.set({
-      ...INITIAL_PANEL,
+  protected override sameIdentity(current: StemsPanelState, state: StemsDetailUrlState): boolean {
+    return current.selectedStemId === state.stemId && current.summary !== null;
+  }
+
+  protected override applyUrlStateFields(panel: StemsPanelState, state: StemsDetailUrlState): StemsPanelState {
+    return {
+      ...panel,
       selectedStemId: state.stemId,
       view: state.view,
       wordView: state.wordView,
       surahView: state.surahView,
       ayahTypeCode: state.typeCode,
       detailPage: state.detailPage,
-      status: 'loading',
-    });
-
-    this.requests.trackSummary(
-      this.cache
-        .getOrLoad(StemsCacheKeys.summary(state.stemId), () => this.api.getStemSummary(state.stemId))
-        .pipe(
-          tap((response) => {
-            if (!this.requests.isCurrent(token)) {
-              return;
-            }
-
-            if (!response.isSuccess || !response.data) {
-              this.handleRestoredStemNotFound(response.message ?? '', state);
-              return;
-            }
-
-            const summary = response.data;
-            this._panel.update((s) => ({
-              ...s,
-              summary,
-              ayahTypeCode: state.typeCode,
-              status: 'loading',
-            }));
-            this.loadActiveView(
-              state.stemId,
-              state.view,
-              state.wordView,
-              state.surahView,
-              state.detailPage,
-              state.typeCode,
-              token,
-            );
-          }),
-          catchError((err) => {
-            if (!this.requests.isCurrent(token)) {
-              return of(undefined);
-            }
-
-            if (err instanceof HttpErrorResponse && err.status === 404) {
-              this.handleRestoredStemNotFound(this.extractErrorMessage(err, STEMS_NOT_FOUND_LABEL), state);
-              return of(undefined);
-            }
-
-            this.handleRestoredStemLoadError(this.extractErrorMessage(err, STEMS_ERROR_LABEL), state);
-            return of(undefined);
-          }),
-        )
-        .subscribe(),
-    );
+    };
   }
 
-  private loadActiveView(
-    stemId: number,
-    view: StemView,
-    wordView: StemWordView,
-    surahView: StemSurahView,
-    detailPage: number,
-    ayahTypeCode: string | null,
-    token: number,
-  ): void {
-    const current = this._panel();
-    this.requests.trackDetail(
-      this.viewLoader.loadActiveView(
-        {
-          stemId,
-          view,
-          wordView,
-          surahView,
-          ayahTypeCode,
-          detailPage,
-          cachedMissingSurahs: current.missingSurahs,
-        },
-        {
-          onAyahs: (response) => this.applyIfCurrent(token, (s) => ({ ...s, ...buildAyahsPanelUpdate(response) })),
-          onWords: (response) => this.applyIfCurrent(token, (s) => ({ ...s, ...buildWordsPanelUpdate(response) })),
-          onMentionedSurahs: (response) =>
-            this.applyIfCurrent(token, (s) => ({ ...s, ...buildMentionedSurahsPanelUpdate(response) })),
-          onMissingSurahs: (response) =>
-            this.applyIfCurrent(token, (s) => ({ ...s, ...buildMissingSurahsPanelUpdate(response) })),
-          onLemmas: (response) => this.applyIfCurrent(token, (s) => ({ ...s, ...buildLemmasPanelUpdate(response) })),
-          onError: (err) =>
-            this.applyIfCurrent(token, (s) => ({ ...s, ...buildDetailErrorUpdate(err, STEMS_ERROR_LABEL) })),
-        },
-      ),
-    );
+  protected override applySummary(state: StemsDetailUrlState, data: StemSummaryDto): Partial<StemsPanelState> {
+    return { summary: data, ayahTypeCode: state.typeCode };
   }
 
-  /** Applies a panel update only while `token` still owns the panel. */
-  private applyIfCurrent(token: number, update: (state: StemsPanelState) => StemsPanelState): void {
-    if (this.requests.isCurrent(token)) {
-      this._panel.update(update);
-    }
+  protected override loadSummary(state: StemsDetailUrlState): Observable<ApiResponse<StemSummaryDto>> {
+    return this.cache.getOrLoad(StemsCacheKeys.summary(state.stemId), () => this.api.getStemSummary(state.stemId));
   }
 
-  private handleRestoredStemNotFound(message: string, state: StemsDetailUrlState): void {
-    this._panel.set(restoredStemNotFoundUpdate(message, STEMS_NOT_FOUND_LABEL, state.stemId));
+  protected override notFoundPanel(state: StemsDetailUrlState, message: string): StemsPanelState {
+    return restoredStemNotFoundUpdate(message, STEMS_NOT_FOUND_LABEL, state.stemId);
   }
 
-  private handleRestoredStemLoadError(message: string, state: StemsDetailUrlState): void {
-    this._panel.set({
+  protected override errorPanel(state: StemsDetailUrlState, message: string): StemsPanelState {
+    return {
       ...INITIAL_PANEL,
       selectedStemId: state.stemId,
       status: 'error',
       errorMessage: message || STEMS_ERROR_LABEL,
-    });
+    };
   }
 
-  private extractErrorMessage(err: unknown, fallback: string): string {
+  protected override extractErrorMessage(err: unknown, fallback: string): string {
     return extractPanelErrorMessage(err, fallback);
+  }
+
+  protected override requestActiveView(
+    state: StemsDetailUrlState,
+    handlers: StemsDetailViewHandlers,
+  ): Subscription | undefined {
+    const current = this._panel();
+    return this.viewLoader.loadActiveView(
+      {
+        stemId: state.stemId,
+        view: state.view,
+        wordView: state.wordView,
+        surahView: state.surahView,
+        ayahTypeCode: state.typeCode,
+        detailPage: state.detailPage,
+        cachedMissingSurahs: current.missingSurahs,
+      },
+      handlers,
+    );
+  }
+
+  protected override buildViewHandlers(token: number): StemsDetailViewHandlers {
+    return {
+      onAyahs: (response) => this.applyIfCurrent(token, (s) => ({ ...s, ...buildAyahsPanelUpdate(response) })),
+      onWords: (response) => this.applyIfCurrent(token, (s) => ({ ...s, ...buildWordsPanelUpdate(response) })),
+      onMentionedSurahs: (response) =>
+        this.applyIfCurrent(token, (s) => ({ ...s, ...buildMentionedSurahsPanelUpdate(response) })),
+      onMissingSurahs: (response) =>
+        this.applyIfCurrent(token, (s) => ({ ...s, ...buildMissingSurahsPanelUpdate(response) })),
+      onLemmas: (response) => this.applyIfCurrent(token, (s) => ({ ...s, ...buildLemmasPanelUpdate(response) })),
+      onError: (err) =>
+        this.applyIfCurrent(token, (s) => ({ ...s, ...buildDetailErrorUpdate(err, STEMS_ERROR_LABEL) })),
+    };
   }
 
   private normalizeTypeCode(typeCode: string | null): string | null {

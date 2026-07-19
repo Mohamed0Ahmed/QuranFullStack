@@ -1,12 +1,8 @@
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.MorphologyImporting;
+using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Foundation;
 
 namespace QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting.Enriched;
 
-// Reads + validates the single-file enriched-morphology manifest (Feature 020). The enriched source is
-// intentionally distinct from the legacy multi-file MorphologyManifestReader: one self-contained
-// Dashboard-ready JSON, validated by sha256 + size + recordCount + segmentCount. Provenance and the
-// quranWordIdVerifiedAgainstDashboard fact are read here as import-provenance only — they never become
-// DB columns (the MorphologySourceData DTO has no members for them).
 public sealed class EnrichedMorphologyManifestReader
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -210,9 +206,8 @@ public sealed class EnrichedMorphologyManifestReader
     private static async Task ValidateChecksumAsync(
         string fullPath, string expectedSha256, CancellationToken ct)
     {
-        await using var stream = File.OpenRead(fullPath);
-        var actual = Convert.ToHexString(await SHA256.HashDataAsync(stream, ct));
-        if (!string.Equals(actual, expectedSha256, StringComparison.OrdinalIgnoreCase))
+        var actual = await ManifestChecksum.ComputeSha256HexAsync(fullPath, ct);
+        if (!ManifestChecksum.Matches(actual, expectedSha256))
         {
             throw new InvalidDataException($"Checksum mismatch for '{fullPath}'.");
         }

@@ -368,3 +368,87 @@ VALUES
   (1, 1, 25, 1, 2, TRUE),
   (2, 1, 26, 1, 1, FALSE),
   (3, 2, 25, 3, 4, TRUE);
+
+-- ======================================================================
+-- Fixture-only corrupt-JSON rows (engineering-review findings M15 / M82)
+-- Surah 114 (An-Nas) only has 6 real ayahs, so ayah_number 7/8 cannot
+-- collide with a real verse — these rows are unambiguously fixture-only,
+-- never mistakable for genuine Quran content.
+-- ======================================================================
+
+-- M15: a tafsir entry whose covered_ayah_keys is syntactically valid JSON
+-- but the wrong shape for string[] (an object, not an array) — regression
+-- coverage for EfAyahStudyReader.ParseCoveredAyahKeys logging on corruption.
+INSERT INTO quran_ayahs
+  (id, surah_number, ayah_number, verse_key, text_uthmani, words_count_source, words_count_real, page_from, page_to)
+VALUES
+  (9997, 114, 7, '114:7', '[FIXTURE — NOT QURAN TEXT]', 1, 1, 604, 604);
+
+INSERT INTO quran_tafsir_entries
+  (source_id, source_entry_key, leader_ayah_id, tafsir_text, covered_ayah_count, covered_ayah_keys, source_shape, text_hash)
+VALUES
+  ((SELECT id FROM quran_tafsir_sources WHERE source_key = 'ar-muyassar'),
+   'ar-muyassar:corrupt-covered-keys-fixture', 9997, 'نص اختباري لفحص معالجة JSON تالف.',
+   2, '{"not":"an array"}'::jsonb, 'flat', 'seed-tafsir-corrupt-1');
+
+INSERT INTO quran_tafsir_ayah_entries
+  (source_id, ayah_id, tafsir_entry_id, verse_key, source_value_kind, source_leader_verse_key, is_group_leader, sort_order)
+VALUES
+  ((SELECT id FROM quran_tafsir_sources WHERE source_key = 'ar-muyassar'),
+   9997,
+   (SELECT id FROM quran_tafsir_entries WHERE source_entry_key = 'ar-muyassar:corrupt-covered-keys-fixture'),
+   '114:7', 'flat', '114:7', TRUE, 1);
+
+-- M82: a word whose lone morphology segment has a features_json that is
+-- syntactically valid JSON but the wrong shape for a list (an object, not
+-- an array) — regression coverage for EfWordAnalysisReader.ParseFeaturesJson
+-- logging on corruption. Needs its own page because quran_words.page_number
+-- has a FK to quran_mushaf_pages.
+INSERT INTO quran_mushaf_pages
+  (page_number, first_surah_number, first_ayah_number, last_surah_number, last_ayah_number, lines_count)
+VALUES
+  (9999, 114, 8, 114, 8, 1);
+
+INSERT INTO quran_ayahs
+  (id, surah_number, ayah_number, verse_key, text_uthmani, words_count_source, words_count_real, page_from, page_to)
+VALUES
+  (9996, 114, 8, '114:8', '[FIXTURE — NOT QURAN TEXT]', 1, 1, 604, 604);
+
+INSERT INTO quran_words
+  (id, location, ayah_id, surah_number, ayah_number, word_number, page_number, line_number, line_word_order, qpc_glyph, text_uthmani, text_uthmani_simple, text_imlaei_simple, word_key_imlaei_simple, is_ayah_marker, unique_tashkeel_word_id, unique_simple_word_id)
+VALUES
+  (9998, '114:8:1', 9996, 114, 8, 1, 9999, 1, 1, 'gfixture9998', '[FIXTURE]', '[fixture]', '[fixture]', 'fixture-9998', FALSE, NULL, NULL);
+
+INSERT INTO quran_word_morphology
+  (quran_word_id, location, head_pos, segment_count, root_id, lemma_id, stem_id, is_verb, verb_tense, verb_voice, case_feature, head_features_json)
+VALUES
+  (9998, '114:8:1', 'V', 1, NULL, NULL, NULL, FALSE, NULL, NULL, NULL, NULL);
+
+INSERT INTO quran_word_morphology_segments
+  (quran_word_id, segment_location, segment_number, kind, pos, form_buckwalter, form_arabic_normalized, arabic_render_tier, arabic_render_source, root_buckwalter, lemma_buckwalter, features_raw, features_json, i3rab_arabic, i3rab_rule_id, i3rab_status, i3rab_review_reason)
+VALUES
+  (9998, '114:8:1:1', 1, 'STEM', 'V', 'fixture', '[FIXTURE]', 'primary', 'derived', NULL, NULL, 'POS=V', '{"not":"an array"}'::jsonb, NULL, NULL, 'approved', NULL);
+
+INSERT INTO quran_words_ordered_tashkeel
+  (word_order_in_mushaf, quran_word_id, location, verse_key, surah_number, ayah_number, page_number, line_number, word_order_in_ayah, word_order_in_surah, text_uthmani, text_uthmani_simple, text_imlaei_simple, occurrences_count, ayahs_count, surahs_count)
+VALUES
+  (9998, 9998, '114:8:1', '114:8', 114, 8, 9999, 1, 1, 1, '[FIXTURE]', '[fixture]', '[fixture]', 1, 1, 1);
+
+INSERT INTO quran_words_ordered_simple
+  (word_order_in_mushaf, quran_word_id, location, verse_key, surah_number, ayah_number, page_number, line_number, word_order_in_ayah, word_order_in_surah, word_key_imlaei_simple, text_uthmani_simple, text_imlaei_simple, occurrences_count, ayahs_count, surahs_count)
+VALUES
+  (9998, 9998, '114:8:1', '114:8', 114, 8, 9999, 1, 1, 1, 'fixture-9998', '[fixture]', '[fixture]', 1, 1, 1);
+
+INSERT INTO quran_words_unique_tashkeel
+  (id, text_uthmani, text_uthmani_simple, text_imlaei_simple, occurrences_count, ayahs_count, surahs_count, first_quran_word_id, first_location, first_surah_number, first_ayah_number, first_word_order_in_mushaf, first_page_number, first_line_number)
+VALUES
+  (9998, '[FIXTURE-9998-TASHKEEL]', '[fixture]', '[fixture]', 1, 1, 1, 9998, '114:8:1', 114, 8, 9998, 9999, 1);
+
+INSERT INTO quran_words_unique_simple
+  (id, word_key_imlaei_simple, text_uthmani, text_uthmani_simple, text_imlaei_simple, qpc_glyph, occurrences_count, ayahs_count, surahs_count, first_quran_word_id, first_location, first_surah_number, first_ayah_number, first_word_order_in_mushaf, first_page_number, first_line_number)
+VALUES
+  (9998, 'fixture-9998-simple', '[FIXTURE]', '[fixture]', '[fixture]', 'gfixture9998', 1, 1, 1, 9998, '114:8:1', 114, 8, 9998, 9999, 1);
+
+UPDATE quran_words
+SET unique_tashkeel_word_id = 9998, unique_simple_word_id = 9998
+WHERE id = 9998;

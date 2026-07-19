@@ -1,7 +1,5 @@
 import { Injectable, computed, inject } from '@angular/core';
-import { ActivatedRoute, ParamMap } from '@angular/router';
-import { Subscription } from 'rxjs';
-import { distinctUntilChanged, map } from 'rxjs/operators';
+import { ParamMap } from '@angular/router';
 
 import { LemmasApi } from '../data-access/lemmas.api';
 import {
@@ -13,6 +11,7 @@ import {
 } from '../models/lemmas.models';
 import { parseLemmasQueryParams } from './lemmas-url-sync';
 import { LemmasCache } from './lemmas-cache';
+import { AbstractRouteDetailFacade } from './abstract-route-detail.facade';
 import {
   LemmasDetailController,
   LemmasDetailUrlState,
@@ -20,25 +19,20 @@ import {
 } from './lemmas-detail.controller';
 import { LemmasDetailViewLoader } from './lemmas-detail-view.loader';
 
-/**
- * Thin route adapter over `LemmasDetailController` (Feature 029, Change B4).
- *
- * The facade keeps the lemmas explorer page contract — bind/unbind to the
- * page's `ActivatedRoute` query state plus the direct selection methods — and
- * delegates all panel state and load orchestration to its own private
- * controller instance. The global overlay adapters use their own
- * component-scoped `LemmasDetailController` instances, so overlay activity can
- * never mutate this page facade's state.
- */
 @Injectable({ providedIn: 'root' })
-export class LemmasDetailFacade {
-  private readonly controller = new LemmasDetailController(
+export class LemmasDetailFacade extends AbstractRouteDetailFacade<
+  LemmasDetailUrlState,
+  LemmaView,
+  LemmaWordView,
+  LemmaSurahView
+> {
+  // Per-facade controller instance keeps this page's panel state isolated from the
+  // component-scoped controllers the global overlay adapters use.
+  protected readonly controller = new LemmasDetailController(
     inject(LemmasApi),
     inject(LemmasCache),
     inject(LemmasDetailViewLoader),
   );
-
-  private routeSub?: Subscription;
 
   readonly panelState = this.controller.panelState;
 
@@ -53,23 +47,6 @@ export class LemmasDetailFacade {
   readonly missingSurahs = computed(() => this.panelState().missingSurahs);
   readonly stems = computed(() => this.panelState().stems);
   readonly detailPage = computed(() => this.panelState().detailPage);
-
-  bindToRoute(route: ActivatedRoute): void {
-    this.unbindFromRoute();
-
-    this.routeSub = route.queryParamMap
-      .pipe(
-        map((params) => this.toPanelUrlState(params)),
-        distinctUntilChanged((a, b) => lemmasDetailUrlStatesEqual(a, b)),
-      )
-      .subscribe((state) => this.controller.applyUrlState(state));
-  }
-
-  unbindFromRoute(): void {
-    this.routeSub?.unsubscribe();
-    this.routeSub = undefined;
-    this.controller.cancelPendingLoads();
-  }
 
   selectLemma(summary: LemmaSummaryDto, view: LemmaView = DEFAULT_LEMMA_VIEW): void {
     this.controller.selectLemma(summary, view);
@@ -86,31 +63,15 @@ export class LemmasDetailFacade {
     this.controller.selectLemmaWithPanel(summary, view, wordView, surahView, detailPage, ayahTypeCode);
   }
 
-  clearSelection(): void {
-    this.controller.clearSelection();
-  }
-
   setAyahTypeCode(typeCode: string | null): void {
     this.controller.setAyahTypeCode(typeCode);
   }
 
-  setView(view: LemmaView): void {
-    this.controller.setView(view);
+  protected urlStatesEqual(a: LemmasDetailUrlState | null, b: LemmasDetailUrlState | null): boolean {
+    return lemmasDetailUrlStatesEqual(a, b);
   }
 
-  setWordView(wordView: LemmaWordView): void {
-    this.controller.setWordView(wordView);
-  }
-
-  setSurahView(surahView: LemmaSurahView): void {
-    this.controller.setSurahView(surahView);
-  }
-
-  setDetailPage(page: number): void {
-    this.controller.setDetailPage(page);
-  }
-
-  private toPanelUrlState(params: ParamMap): LemmasDetailUrlState | null {
+  protected toPanelUrlState(params: ParamMap): LemmasDetailUrlState | null {
     const parsed = parseLemmasQueryParams(params);
     if (parsed.lemmaId === null) {
       return null;

@@ -1,5 +1,5 @@
-using System.Globalization;
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.FullI3rab;
+using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Foundation;
 
 namespace QuranDashboard.Infrastructure.Files.Quran.DataPipelines.FullI3rab;
 
@@ -327,8 +327,8 @@ public sealed class FullI3rabManifestReader
 
     private static FullI3rabCheckResult ValidateChecksum(string fullPath, string expectedSha256)
     {
-        var actual = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(fullPath)));
-        var passed = string.Equals(actual, expectedSha256, StringComparison.OrdinalIgnoreCase);
+        var actual = ManifestChecksum.ComputeSha256Hex(fullPath);
+        var passed = ManifestChecksum.Matches(actual, expectedSha256);
 
         return FullI3rabValidationChecks.Hard(
             FullI3rabInvariants.CheckSourceHash,

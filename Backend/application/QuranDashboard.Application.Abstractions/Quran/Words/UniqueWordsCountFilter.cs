@@ -2,12 +2,7 @@ using QuranDashboard.Application.Abstractions.Common.Filtering;
 
 namespace QuranDashboard.Application.Abstractions.Quran.Words;
 
-/// <summary>
-/// Count-range filter for the Unique Words list (Feature 026, US5). Filters unique
-/// word identities by exactly the count columns the page already shows:
-/// <c>occurrences_count</c>, <c>ayahs_count</c>, <c>surahs_count</c>. Ranges compose
-/// (AND) with each other and with search/sort. Predicates run in SQL.
-/// </summary>
+// Predicates run in SQL (unlike StemsCountFilter, which runs in memory); ranges AND together and with search/sort.
 public sealed record UniqueWordsCountFilter(
     CountRange Occurrences,
     CountRange Ayahs,

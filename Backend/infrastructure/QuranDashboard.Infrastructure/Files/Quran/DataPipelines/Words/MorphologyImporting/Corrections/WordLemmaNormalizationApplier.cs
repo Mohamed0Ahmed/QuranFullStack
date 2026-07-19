@@ -2,8 +2,8 @@ namespace QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.Morpholo
 
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.MorphologyImporting;
 
-// Applies a validated word-level lemma normalization artifact to a copy of the raw QUL word-level
-// lemma map. Never mutates the input map; every approved mutating op must apply or the apply fails.
+// Never mutates the input map (works on a copy); every approved mutating op must apply or the whole
+// apply fails (all-or-nothing).
 internal static class WordLemmaNormalizationApplier
 {
     private static readonly IReadOnlySet<string> SpotCheckLocations = new HashSet<string>(StringComparer.Ordinal)
@@ -103,8 +103,8 @@ internal static class WordLemmaNormalizationApplier
                     break;
 
                 default:
+                    // Fail(true, ...) always throws, so this arm never returns normally.
                     Fail(true, $"{where}: invalid operationKind '{entry.OperationKind}'.");
-                    failed++;
                     break;
             }
 
@@ -125,7 +125,7 @@ internal static class WordLemmaNormalizationApplier
             AppliedReplace: replace,
             ReviewedKeep: keep,
             ReviewedException: exception,
-            FailedOrSkipped: failed,
+            FailedOrSkipped: failed, // Apply is all-or-nothing: any invalid entry throws, so this is always 0.
             SpotChecks: spotChecks)
         {
             ProblemClassCounts = BuildProblemClassCounts(artifact.Entries),

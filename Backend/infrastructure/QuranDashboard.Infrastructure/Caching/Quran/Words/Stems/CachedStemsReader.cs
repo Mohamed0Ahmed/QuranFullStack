@@ -1,18 +1,11 @@
-using QuranDashboard.Application.Abstractions.Common.Paging;
 using QuranDashboard.Application.Abstractions.Quran.Words.Stems;
 using QuranDashboard.Application.Abstractions.Quran.Words.Stems.Responses;
 using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Stems;
 
 namespace QuranDashboard.Infrastructure.Caching.Quran.Words.Stems;
 
-/// <summary>
-/// Bounded cache decorator over <see cref="EfStemsReader"/> for the Stems
-/// Explorer (Feature 016). Decorates the concrete EF reader and uses the existing
-/// shared <see cref="IMemoryCache"/>; no global cache configuration is applied.
-/// The whole summary list is cached once and reused for both catalogue search/
-/// paging and selected-stem summary reads. Detail methods are still delegated to
-/// later story phases.
-/// </summary>
+// Cache decorator over EfStemsReader: the whole summary list is cached once and reused for both
+// catalogue search/paging and selected-stem summary reads.
 public sealed class CachedStemsReader(EfStemsReader efReader, IMemoryCache cache) : IStemsReader
 {
     private readonly EfStemsReader _ef = efReader;
@@ -149,13 +142,9 @@ public sealed class CachedStemsReader(EfStemsReader efReader, IMemoryCache cache
         return ayahs;
     }
 
-    /// <summary>
-    /// Caches the complete grouped word list once per (stem, kind) identity, mirroring
-    /// the catalogue whole-summary pattern. Every page (including out-of-range pages)
-    /// then slices this single cached list in memory instead of re-issuing the full
-    /// occurrence query per page (performance review finding B6). Concurrent cold callers
-    /// for the same identity share one load rather than each materializing the full list.
-    /// </summary>
+    // Caches the complete grouped word list once per (stem, kind); every page slices it in memory
+    // instead of re-issuing the full occurrence query per page (perf finding B6). Concurrent cold
+    // callers share one load via CacheLoadGate.
     private Task<IReadOnlyList<StemWordItemDto>?> GetOrLoadWordGroupsAsync(
         int id,
         StemWordKind wordKind,

@@ -1,6 +1,4 @@
-using System.Net;
 using Microsoft.Extensions.Options;
-using QuranDashboard.Api.Common;
 
 namespace QuranDashboard.Tests.Api.RateLimiting;
 
@@ -8,6 +6,7 @@ public sealed class RateLimitingIntegrationTests
 {
     private const string DashboardPath = "/api/dashboard/info";
     private const string HealthPath = "/api/health";
+    private const string AccessMePath = "/api/access/me";
 
     // Tiny permits + very long windows so no replenishment occurs mid-test (the inner
     // AutoReplenishment flag is forced false by the partition and is NOT a freeze lever).
@@ -139,6 +138,24 @@ public sealed class RateLimitingIntegrationTests
         {
             (await client.GetAsync(DashboardPath)).StatusCode.Should().Be(HttpStatusCode.OK);
         }
+    }
+
+    [Fact]
+    public async Task General_RunsBeforeAuthentication_UnauthenticatedCallerStillThrottled()
+    {
+        // decision 1: the limiter is wired pre-auth. `/api/access/me` is [Authorize]-protected, so
+        // under the OLD post-auth order, an unauthenticated caller is always challenged (401) by
+        // UseAuthorization before the pipeline ever reaches UseRateLimiter — the endpoint would
+        // never be throttled. Under the NEW pre-auth order, the limiter runs first: within budget
+        // the caller still gets the normal 401, but once the budget is spent the limiter rejects
+        // with 429 before authentication/authorization ever runs.
+        using var factory = new RateLimitingApiFactory(TightLimits());
+        using var client = factory.CreateClientForIp("203.0.113.21");
+
+        (await client.GetAsync(AccessMePath)).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        (await client.GetAsync(AccessMePath)).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+
+        (await client.GetAsync(AccessMePath)).StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
     }
 
     [Fact]

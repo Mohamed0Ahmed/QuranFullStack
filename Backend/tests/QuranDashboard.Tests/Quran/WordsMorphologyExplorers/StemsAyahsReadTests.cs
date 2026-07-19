@@ -1,7 +1,5 @@
-using Microsoft.EntityFrameworkCore;
 using QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemAyahs;
 using QuranDashboard.Infrastructure.Caching.Quran.Words.Stems;
-using QuranDashboard.Infrastructure.Persistence;
 using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Stems;
 using QuranDashboard.Tests.Quran.Words;
 

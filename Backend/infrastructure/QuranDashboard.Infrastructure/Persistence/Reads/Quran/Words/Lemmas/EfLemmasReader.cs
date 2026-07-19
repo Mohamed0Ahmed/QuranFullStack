@@ -1,6 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Npgsql;
-using QuranDashboard.Application.Abstractions.Common.Paging;
 using QuranDashboard.Application.Abstractions.Quran.Words.Lemmas;
 using QuranDashboard.Application.Abstractions.Quran.Words.Lemmas.Responses;
 using QuranDashboard.Application.Abstractions.Quran.Words.Responses;
@@ -8,15 +5,6 @@ using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Lemmas;
 
-/// <summary>
-/// EF Core read model for the Lemmas Explorer (Feature 016). All queries are
-/// read-only and <c>AsNoTracking</c>. The lemma catalogue (list/summary) is
-/// implemented in T032/T033 as a single bounded whole-summary aggregation with
-/// owned-root (<c>quran_lemmas.root_id</c>) semantics, ordered type distribution,
-/// normalized Arabic contains search, deterministic sort, and in-memory paging.
-/// Ayah and words detail are implemented in the corresponding Feature 016 story
-/// phases; the remaining detail methods stay stubbed for later story phases.
-/// </summary>
 public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
 {
     private readonly QuranDashboardDbContext _db = db;
@@ -120,40 +108,23 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
             .GroupBy(r => r.AyahId)
             .ToDictionary(g => g.Key, g => g.Select(x => x.Id).ToHashSet());
 
-        var wordsByAyah = await _db.QuranWords
-            .AsNoTracking()
-            .Where(w => ayahIds.Contains(w.AyahId) && !w.IsAyahMarker)
-            .OrderBy(w => w.SurahNumber)
-            .ThenBy(w => w.AyahNumber)
-            .ThenBy(w => w.WordNumber)
-            .Select(w => new AyahWordRow(
-                w.AyahId,
-                w.Id,
-                w.WordNumber,
-                w.PageNumber,
-                w.TextUthmani,
-                w.IsAyahMarker))
-            .ToListAsync(cancellationToken);
-
-        var wordsGrouped = wordsByAyah
-            .GroupBy(w => w.AyahId)
-            .ToDictionary(g => g.Key, g => g.ToList());
-
-        var items = pageAyahs
-            .Select(ayah =>
+        var items = await AyahWordHydration.ProjectAyahMatchesAsync(
+            _db,
+            pageAyahs,
+            ayah => ayah.AyahId,
+            (ayah, words, pageNumber) =>
             {
-                var words = wordsGrouped.GetValueOrDefault(ayah.AyahId, []);
                 var matchedSet = matchedIdsByAyah.GetValueOrDefault(ayah.AyahId, []);
                 return new LemmaAyahMatchDto(
                     ayah.AyahId,
                     ayah.VerseKey,
                     ayah.SurahNameArabic,
-                    ResolveAyahPageNumber(words),
+                    pageNumber,
                     words.Select(w => new LemmaAyahWordDto(
                         w.TextUthmani,
                         matchedSet.Contains(w.QuranWordId))).ToList());
-            })
-            .ToList();
+            },
+            cancellationToken);
 
         return new PagedResult<LemmaAyahMatchDto>(page, pageSize, totalCount, items);
     }
@@ -256,13 +227,6 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
         return new LemmaStemsResponse(stems);
     }
 
-    /// <summary>
-    /// Loads the complete lemma summary list in a bounded aggregation: identity,
-    /// owned root, segment-matched occurrence/ayah/surah counts, matched-word
-    /// simple/tashkeel/stem counts, first verse key, and the ordered per-lemma POS
-    /// distribution. Type ordering (count desc, earliest Mushaf occurrence asc)
-    /// is finalized in C# so the dominant type is always the first entry.
-    /// </summary>
     internal async Task<IReadOnlyList<LemmaSummaryRow>> LoadWholeSummaryAsync(CancellationToken cancellationToken)
     {
         var sql = $"""
@@ -319,8 +283,8 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
 
         var aggregates = await _db.Database.SqlQueryRaw<LemmaAggregationRow>(
             sql,
-            new NpgsqlParameter("foldFrom", LemmasListDerivation.ArabicFoldFrom),
-            new NpgsqlParameter("foldTo", LemmasListDerivation.ArabicFoldTo))
+            new NpgsqlParameter("foldFrom", ArabicSearchQueryNormalizer.FoldFrom),
+            new NpgsqlParameter("foldTo", ArabicSearchQueryNormalizer.FoldTo))
             .ToListAsync(cancellationToken);
 
         if (aggregates.Count == 0)
@@ -364,7 +328,7 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
                 a.Id,
                 a.LemmaText,
                 a.LemmaBuckwalter,
-                LemmasListDerivation.NormalizeArabicQuery(a.LemmaText) ?? string.Empty,
+                ArabicSearchQueryNormalizer.Normalize(a.LemmaText, stripWhitespace: true) ?? string.Empty,
                 a.RootId,
                 a.RootText,
                 a.RootBuckwalter,
@@ -380,9 +344,6 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
             .ToList();
     }
 
-    // Orders the server-grouped per-(lemma, POS) rows into the final distribution: count descending, then
-    // earliest Mushaf occurrence ascending (surah/ayah/word), then POS code — identical to the previous
-    // in-memory ordering, so the dominant type is always the first entry.
     private static IReadOnlyList<LemmaTypeDistributionRow> OrderTypeDistribution(
         IEnumerable<LemmaTypeDistributionSqlRow> rows) =>
         rows
@@ -406,14 +367,9 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
             ? $"{firstSurahNumber}:{firstAyahNumber}"
             : string.Empty;
 
-    /// <summary>
-    /// Loads the complete grouped, ordered word list for a lemma/word-kind pair in one
-    /// bounded pass: existence check, every matching occurrence row, then the same
-    /// in-memory group/order derivation the page used to repeat per page. Returns
-    /// <c>null</c> when the lemma does not exist. This is the identity-grain unit the
-    /// cache decorator caches once (mirrors the catalogue whole-summary pattern) so
-    /// paging never re-issues the full occurrence query (performance review finding B6).
-    /// </summary>
+    // Loads the whole grouped/ordered word list in one pass (null when the lemma is absent). This is the
+    // identity-grain unit CachedLemmasReader caches once, so paging slices the cached list instead of
+    // re-issuing the full occurrence query (perf finding B6).
     internal async Task<IReadOnlyList<LemmaWordItemDto>?> LoadLemmaWordGroupsAsync(
         int id,
         LemmaWordKind wordKind,
@@ -462,11 +418,6 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
             .ToList();
     }
 
-    /// <summary>
-    /// Slices an already-loaded, already-ordered whole word-group list into one page.
-    /// Shared by the uncached page read below and by <c>CachedLemmasReader</c>, which
-    /// slices the identity-grain cached list instead of re-loading it per page.
-    /// </summary>
     internal static PagedResult<LemmaWordItemDto> SliceLemmaWordsPage(
         IReadOnlyList<LemmaWordItemDto> all,
         int page,
@@ -544,8 +495,6 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
         int? FirstWordNumber,
         int FirstWordOrderInMushaf);
 
-    // One server-grouped (lemma, POS) distribution row: per-group occurrence count and the first-occurrence
-    // coordinate of the earliest matching word by quran_word_id.
     private sealed record LemmaTypeDistributionSqlRow(
         int LemmaId,
         string Code,
@@ -562,14 +511,6 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
         int SurahNumber,
         int AyahNumber,
         string SurahNameArabic);
-
-    private sealed record AyahWordRow(
-        int AyahId,
-        int QuranWordId,
-        int WordNumber,
-        short PageNumber,
-        string TextUthmani,
-        bool IsAyahMarker);
 
     private sealed record LemmaWordOccurrenceRow(
         int? UniqueWordId,
@@ -588,17 +529,6 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
         int FirstWordNumber);
 
     private sealed record SurahOccurrenceRow(short SurahNumber, int OccurrencesInSurah);
-
-    private static short ResolveAyahPageNumber(IReadOnlyList<AyahWordRow> words)
-    {
-        var firstReadableWord = words.FirstOrDefault(w => !w.IsAyahMarker);
-        if (firstReadableWord is not null)
-        {
-            return firstReadableWord.PageNumber;
-        }
-
-        return words.FirstOrDefault()?.PageNumber ?? 0;
-    }
 
     private static string? NormalizeTypeCode(string? typeCode) =>
         string.IsNullOrWhiteSpace(typeCode) ? null : typeCode.Trim();

@@ -1,7 +1,5 @@
-using Microsoft.EntityFrameworkCore;
 using QuranDashboard.Application.Abstractions.Quran.Words.WordTypes;
 using QuranDashboard.Infrastructure.Caching.Quran.Words.WordTypes;
-using QuranDashboard.Infrastructure.Persistence;
 using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.WordTypes;
 using QuranDashboard.Tests.Quran.Words;
 
@@ -173,7 +171,6 @@ public sealed class WordTypesCacheReadTests(WordTypesTestFixture fixture)
         summaryKeys.Concat(surahsKeys).Should().OnlyHaveUniqueItems();
     }
 
-    // A second read of every grouped view is served from the cache without issuing new SQL commands.
     [Fact]
     public async Task GroupedDetailsCachedReader_RepeatedReadsDoNotIssueExtraCommands()
     {

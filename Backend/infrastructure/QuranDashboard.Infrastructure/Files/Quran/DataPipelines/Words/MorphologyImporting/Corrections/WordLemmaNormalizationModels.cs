@@ -2,10 +2,7 @@ namespace QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.Morpholo
 
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.MorphologyImporting;
 
-using System.Text.Json.Serialization;
 
-// Operation kinds supported by the word-level lemma normalization artifact.
-// Order mirrors the artifact spec (see word-level-lemma-full-normalization-implementation-plan.md §3.2).
 [JsonConverter(typeof(WordLemmaOperationKindJsonConverter))]
 public enum WordLemmaNormalizationOperationKind
 {
@@ -16,9 +13,8 @@ public enum WordLemmaNormalizationOperationKind
     Exception,
 }
 
-// Final decision statuses permitted in the active (embedded) artifact.
 // `Candidate` and `NeedsReview` are draft-only: they parse so the validator can fail closed with a
-// precise message, but they must never appear in the active artifact.
+// precise message, but they must never appear in the active (embedded) artifact.
 [JsonConverter(typeof(WordLemmaDecisionStatusJsonConverter))]
 public enum WordLemmaNormalizationDecisionStatus
 {
@@ -28,7 +24,6 @@ public enum WordLemmaNormalizationDecisionStatus
     NeedsReview,
 }
 
-// One curated correction in the normalization artifact.
 // `expectedCurrentLemmaArabic`/`correctedLemmaArabic` nullability rules are enforced by the validator
 // per operation kind.
 public sealed record WordLemmaNormalizationEntry
@@ -53,7 +48,6 @@ public sealed record WordLemmaNormalizationEntry
     public string? SourceReportRef { get; init; }
 }
 
-// Top-level active normalization artifact (schema version 2).
 public sealed record WordLemmaNormalizationArtifact
 {
     public const int SupportedSchemaVersion = 2;
@@ -69,8 +63,7 @@ public sealed record WordLemmaNormalizationArtifact
     public required IReadOnlyList<WordLemmaNormalizationEntry> Entries { get; init; }
 }
 
-// One Buckwalter→Arabic lemma mapping evidence row from word-lemma-mapping-evidence.json.
-// Provenance fields stay for traceability; validator only requires a matching curated row for the
+// Provenance fields stay for traceability; the validator only requires a matching curated row for the
 // (buckwalter, arabicLemma) pair and does not enforce the evidence metadata fields.
 public sealed record WordLemmaMappingEvidenceEntry
 {
@@ -85,7 +78,6 @@ public sealed record WordLemmaMappingEvidenceEntry
     public string? Basis { get; init; }
 }
 
-// Counts of entries by operation kind and decision status, computed by the reader.
 public sealed record WordLemmaNormalizationCounts(
     int Total,
     int Add,
@@ -97,13 +89,10 @@ public sealed record WordLemmaNormalizationCounts(
     int AcceptedException,
     int CandidateOrNeedsReview);
 
-// Output of applying the artifact to an in-memory raw QUL lemma map.
 public sealed record WordLemmaNormalizationResult(
     IReadOnlyDictionary<string, string> CorrectedLemmas,
     WordLemmaCorrectionSummary Summary);
 
-// Reads JSON operationKind values verbatim (lowercase: add/remove/replace/keep/exception) and maps
-// them to the enum by name. Anything else throws -> fail-closed on an unknown kind.
 file sealed class WordLemmaOperationKindJsonConverter : JsonConverter<WordLemmaNormalizationOperationKind>
 {
     public override WordLemmaNormalizationOperationKind Read(
@@ -131,8 +120,6 @@ file sealed class WordLemmaOperationKindJsonConverter : JsonConverter<WordLemmaN
         writer.WriteStringValue(value.ToString().ToLowerInvariant());
 }
 
-// Reads JSON decisionStatus values: `approved`, `accepted-exception`, and the draft-only
-// `candidate` / `needs-review` (parsed so the validator can fail closed with a precise message).
 file sealed class WordLemmaDecisionStatusJsonConverter : JsonConverter<WordLemmaNormalizationDecisionStatus>
 {
     public override WordLemmaNormalizationDecisionStatus Read(

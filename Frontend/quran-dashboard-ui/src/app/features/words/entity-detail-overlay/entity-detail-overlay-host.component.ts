@@ -26,15 +26,6 @@ import {
   entityDetailRestoreAriaLabel,
 } from './entity-detail-overlay.labels';
 
-/**
- * Persistent host of the global entity-detail overlay (Feature 029, Change B).
- * Mounted once beside `qd-app-shell` at the application composition root, so it
- * survives every route change. It binds the URL-authoritative history
- * coordinator to the accessible dialog shell; Words owns which entities exist
- * and how their details render. The five entity adapters mount per top-frame
- * kind inside `@defer` blocks, keeping their detail code out of the eager
- * bundle — only this host, the shell, and the coordinator load eagerly.
- */
 @Component({
   selector: 'qd-entity-detail-overlay-host',
   standalone: true,
@@ -60,15 +51,6 @@ export class EntityDetailOverlayHostComponent {
 
   protected readonly hasStack = computed(() => this.overlay.state().stack.length > 0);
 
-  /**
-   * Hydration trigger for the adapter `@defer` blocks (Feature 030, L2). A
-   * retained CLOSED stack keeps its frames in the URL but shows no dialog, so
-   * its adapter must not load; `@defer` never reverts once triggered, so the
-   * loaded adapter survives a normal Close and Restore re-shows it for free.
-   * While a never-opened stack is closed, the restore control falls back to the
-   * kind title, exactly as {@link title} already specifies for an unloaded
-   * summary.
-   */
   protected readonly isOverlayOpen = this.overlay.isOpen;
 
   protected readonly depth = computed(() => this.overlay.state().stack.length);
@@ -100,7 +82,6 @@ export class EntityDetailOverlayHostComponent {
     return top !== null && top.kind === 'wordType' ? top : null;
   });
 
-  /** Real entity title from the active adapter when loaded; kind label fallback. */
   protected readonly title = computed(() => {
     const top = this.topFrame();
     if (top === null) {
@@ -110,19 +91,17 @@ export class EntityDetailOverlayHostComponent {
     return entityTitle !== '' ? entityTitle : ENTITY_DETAIL_KIND_TITLES[top.kind];
   });
 
-  /** Kind chip text — known from the frame, so it never waits on a summary load. */
+  // Kind chip text — known from the frame, so it never waits on a summary load.
   protected readonly kindLabel = computed(() => {
     const top = this.topFrame();
     return top === null ? '' : ENTITY_DETAIL_KIND_LABELS[top.kind];
   });
 
-  /** Header ayah-count meta; '' until the active adapter publishes its summary count. */
   protected readonly countText = computed(() => {
     const count = this.titleStore.ayahCount();
     return count === null ? '' : entityDetailAyahCountText(count);
   });
 
-  /** Announced once through the shell's polite live region when the cap refuses an append. */
   protected readonly capStatus = computed(() =>
     this.overlay.capRejectionCount() > 0 ? ENTITY_DETAIL_CAP_STATUS_MESSAGE : '',
   );

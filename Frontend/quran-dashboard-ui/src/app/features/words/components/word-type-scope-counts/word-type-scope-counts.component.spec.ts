@@ -88,7 +88,6 @@ describe('WordTypeScopeCountsComponent', () => {
     expect(labels).toEqual(WORD_TYPE_TABLE_VIEW_OPTIONS.map((option) => option.label));
     expect(labels).toEqual(['كلمات', 'جذور', 'أصول', 'صيغ']);
     expect(values).toEqual(['40', '12', '8', '5']);
-    // Non-interactive.
     expect(root.querySelector('button')).toBeNull();
   });
 

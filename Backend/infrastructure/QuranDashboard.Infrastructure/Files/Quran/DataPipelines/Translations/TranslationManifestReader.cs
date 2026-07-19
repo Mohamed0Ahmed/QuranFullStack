@@ -1,4 +1,5 @@
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Translations;
+using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Foundation;
 
 namespace QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Translations;
 
@@ -351,8 +352,8 @@ public sealed class TranslationManifestReader
 
     private static TranslationCheckResult ValidateChecksum(string fullPath, string expectedSha256)
     {
-        var actual = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(fullPath)));
-        var passed = string.Equals(actual, expectedSha256, StringComparison.OrdinalIgnoreCase);
+        var actual = ManifestChecksum.ComputeSha256Hex(fullPath);
+        var passed = ManifestChecksum.Matches(actual, expectedSha256);
 
         return TranslationValidationChecks.Hard(
             TranslationInvariants.CheckSourceHash,

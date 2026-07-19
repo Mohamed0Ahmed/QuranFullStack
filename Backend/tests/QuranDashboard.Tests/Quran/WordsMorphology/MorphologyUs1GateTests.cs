@@ -164,8 +164,8 @@ public sealed class MorphologyUs1GateTests(MorphologyImportTestFixture fixture)
             badSourcePath,
             expectedReadableWords: expectedReadableCount);
 
-        secondRun.ExitCode.Should().Be(ImportMorphologyResult.RefusedExitCode);
-        secondRun.Message.Should().Be(MorphologyInvariants.SourceMismatch);
+        secondRun.ExitCode.Should().Be(ImportMorphologyResult.FailureExitCode);
+        secondRun.Message.Should().Contain("Aligned corpus contains locations");
         secondRun.Message.Should().NotBe(MorphologyInvariants.TargetsNotEmpty);
     }
 }

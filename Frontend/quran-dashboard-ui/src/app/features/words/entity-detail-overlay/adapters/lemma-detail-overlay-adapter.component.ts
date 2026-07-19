@@ -46,20 +46,11 @@ import { WORDS_DETAIL_RETRY_LABEL } from '../../models/words-shared.labels';
 import { QdStateComponent } from '../../../../shared/ui/state/state.component';
 import { EntityDetailOverlayTitleStore } from '../entity-detail-overlay-title.store';
 
-/**
- * Overlay adapter for lemma frames (Feature 029, Change B4): replicates the
- * root reference implementation of the route-independent detail pattern. It
- * owns a component-scoped `LemmasDetailController` (never the page facade),
- * maps every `frame` input change onto `applyUrlState`, and renders the
- * existing lemma detail content in frameless mode inside the global dialog
- * shell. Unlike roots, the ayahs view carries a `typeCode` filter that is part
- * of the frame identity.
- *
- * All view/sub-view/page/type changes go to the URL through
- * `DetailOverlayHistoryService.replaceTopFrame(...)` — never to the Router and
- * never directly into controller state. The URL sync feeds the new frame back
- * into this component, which re-drives the controller.
- */
+// Overlay adapter for lemma frames (Feature 029, B4). Owns a component-scoped LemmasDetailController
+// (never the page facade) and maps every `frame` input change onto applyUrlState. All view/sub-view/
+// page/type changes route through DetailOverlayHistoryService.replaceTopFrame — never the Router or
+// controller state directly — and the URL sync feeds the new frame back in, re-driving the controller.
+// Unlike roots, the ayahs view's typeCode is part of the frame identity.
 @Component({
   selector: 'qd-lemma-detail-overlay-adapter',
   standalone: true,
@@ -86,22 +77,16 @@ export class LemmaDetailOverlayAdapterComponent {
 
   protected readonly retryLabel = WORDS_DETAIL_RETRY_LABEL;
 
-  /**
-   * Re-drives the current frame after a failed load (Feature 030, M3). The frame
-   * is unchanged, so this never touches the URL — recovery is a controller
-   * concern, and routing an identical frame through the history service would be
-   * a no-op replace.
-   */
+  // Re-drives the current frame after a failed load (Feature 030, M3). The frame is unchanged, so this
+  // never touches the URL — routing an identical frame through the history service would be a no-op.
   protected onRetry(): void {
     this.controller.retryCurrentIdentity();
   }
 
   protected readonly panelState = this.controller.panelState;
 
-  /** Loaded entity title for the shell heading ('' while the summary loads). */
   readonly entityTitle = computed(() => this.panelState().summary?.lemmaText ?? '');
 
-  /** Entity-level ayah count for the shell header meta (null while the summary loads). */
   readonly entityAyahCount = computed(() => this.panelState().summary?.ayahsCount ?? null);
 
   protected readonly wordViewOptions: readonly LemmaWordView[] = ['simple', 'tashkeel'];

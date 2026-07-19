@@ -6,12 +6,9 @@ using QuranDashboard.Api.Controllers.Dashboard;
 
 namespace QuranDashboard.Tests.Api.RateLimiting;
 
-/// <summary>
-/// Dedicated <see cref="WebApplicationFactory{TEntryPoint}"/> for the rate-limiting integration
-/// tests. Deliberately NOT the shared singleton fixture: each test constructs its own factory so
-/// limiter state never bleeds across cases. The DB-backed health check is mandatorily replaced with
-/// a healthy stub so <c>/api/health</c> never touches a real database.
-/// </summary>
+// Deliberately NOT the shared singleton fixture: each test constructs its own factory so limiter
+// state never bleeds across cases. The DB-backed health check is replaced with a healthy stub so
+// /api/health never touches a real database.
 public sealed class RateLimitingApiFactory(
     IReadOnlyDictionary<string, string?> overrides,
     string environment = "Development")

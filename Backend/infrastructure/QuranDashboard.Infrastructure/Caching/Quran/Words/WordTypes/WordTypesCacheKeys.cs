@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
 using QuranDashboard.Application.Abstractions.Quran.Words.WordTypes;
 using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words;
 

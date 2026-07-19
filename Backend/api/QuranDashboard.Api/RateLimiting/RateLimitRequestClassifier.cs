@@ -1,10 +1,6 @@
 namespace QuranDashboard.Api.RateLimiting;
 
-/// <summary>
-/// Single source of the health-path rule, shared by the partitioner (to select the health
-/// limiter) and the rejection writer (to pick the <c>Retry-After</c> fallback) so the rule is
-/// defined once (DRY).
-/// </summary>
+// Single source of the health-path rule, shared by the partitioner and the rejection writer (DRY).
 public static class RateLimitRequestClassifier
 {
     private const string HealthPathBase = "/api/health";

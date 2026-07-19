@@ -3,7 +3,6 @@
 // never breaks shared links (research R5/R6). This module is the single source of the grammar shared
 // by every explorer's url-sync/api/cache layers.
 
-/** An inclusive count range; either bound may be open (null). Absent filter = the whole thing is null. */
 export interface CountRange {
   readonly min: number | null;
   readonly max: number | null;
@@ -40,7 +39,6 @@ export interface RangeChip {
   readonly max: number | null;
 }
 
-/** Resolves a metric's chip threshold — an explicit per-metric override wins over its family default. */
 export function resolveRangeThreshold(family: RangeFamily, override?: number | null): number {
   return override ?? RANGE_FAMILY_THRESHOLDS[family];
 }
@@ -60,7 +58,6 @@ export function buildRangeChips(family: RangeFamily, override?: number | null): 
 const RANGE_SEPARATOR = '..';
 const NON_NEGATIVE_INT = /^\d+$/;
 
-/** True when at least one bound narrows the result. */
 export function isRangeActive(range: CountRange | null | undefined): range is CountRange {
   return !!range && (range.min !== null || range.max !== null);
 }
@@ -96,7 +93,6 @@ export function parseCountRange(raw: string | null | undefined): CountRange | nu
   return { min, max };
 }
 
-/** Serializes an active range to the `min..max` grammar; returns `null` for an absent/empty range. */
 export function serializeCountRange(range: CountRange | null | undefined): string | null {
   if (!isRangeActive(range)) {
     return null;
@@ -104,7 +100,6 @@ export function serializeCountRange(range: CountRange | null | undefined): strin
   return `${range.min ?? ''}${RANGE_SEPARATOR}${range.max ?? ''}`;
 }
 
-/** True when two ranges denote the same filter (used to toggle chip selection). */
 export function countRangesEqual(a: CountRange | null | undefined, b: CountRange | null | undefined): boolean {
   const left = isRangeActive(a) ? a : null;
   const right = isRangeActive(b) ? b : null;

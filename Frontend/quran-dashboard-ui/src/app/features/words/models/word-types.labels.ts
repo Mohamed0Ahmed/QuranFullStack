@@ -167,8 +167,6 @@ export const WORD_TYPES_DETAIL_SUMMARY_LABEL = 'ملخص التحديد';
 export const WORD_TYPES_MEMBER_WORDS_PAGINATION_LABEL = 'تنقّل الكلمات المرتبطة';
 export const WORD_TYPES_MEMBER_WORDS_EMPTY_LABEL = 'لا توجد كلمات مرتبطة بهذا التحديد';
 
-// Tri-state presence filter (Feature 026, US6). Dimension labels use the lock-D canonical terms; the
-// option labels are the tri-state choices (any / has / missing).
 export const WORD_TYPES_PRESENCE_FILTER_LABELS = {
   sectionLabel: 'تصفية حسب الارتباط',
   root: 'الجذر',

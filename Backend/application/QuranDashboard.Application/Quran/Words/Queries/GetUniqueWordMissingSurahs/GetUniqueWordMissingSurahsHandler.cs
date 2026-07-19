@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using QuranDashboard.Application.Abstractions.Quran.Words;
 
 namespace QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordMissingSurahs;

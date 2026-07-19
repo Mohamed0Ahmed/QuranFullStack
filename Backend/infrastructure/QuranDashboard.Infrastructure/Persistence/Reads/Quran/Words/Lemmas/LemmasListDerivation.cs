@@ -1,4 +1,3 @@
-using QuranDashboard.Application.Abstractions.Common.Paging;
 using QuranDashboard.Application.Abstractions.Quran.Words;
 using QuranDashboard.Application.Abstractions.Quran.Words.Lemmas;
 using QuranDashboard.Application.Abstractions.Quran.Words.Lemmas.Responses;
@@ -7,23 +6,9 @@ using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Lemmas;
 
-/// <summary>
-/// In-memory catalogue derivation for the Lemmas Explorer (Feature 016). Mirrors
-/// <c>RootsListDerivation</c>: normalized Arabic contains search, deterministic
-/// sort, and paging over the cached whole-summary list. The type distribution
-/// loaded per lemma is already ordered count descending then earliest Mushaf
-/// occurrence ascending.
-/// </summary>
 internal static class LemmasListDerivation
 {
-    internal const string ArabicFoldFrom = "أإآٱؤئةىي";
-
-    internal const string ArabicFoldTo = "ااااواهيي";
-
-    /// <summary>
-    /// Placeholder type summary when a lemma has no morphology rows. Labels are
-    /// controlled values; counts are zero so the distribution total is zero.
-    /// </summary>
+    // Fallback type summary for a lemma with no morphology rows (empty code, zero count).
     internal static readonly TypeSummaryDto NoType = new(string.Empty, "غير محدَّد", 0);
 
     public static PagedResult<LemmaListItemDto> ToPage(
@@ -66,7 +51,7 @@ internal static class LemmasListDerivation
         string? search,
         LemmaSortSpec sort)
     {
-        var normalizedSearch = NormalizeArabicQuery(search);
+        var normalizedSearch = ArabicSearchQueryNormalizer.Normalize(search, stripWhitespace: true);
 
         IEnumerable<LemmaSummaryRow> rows = all;
         if (!string.IsNullOrEmpty(normalizedSearch))
@@ -89,8 +74,6 @@ internal static class LemmasListDerivation
         return ApplySort(rows, sort);
     }
 
-    // Count-range predicates (Feature 026, US5) compare against the same count values the list rows
-    // display; every active range ANDs with search/sort. Ranges filter lemma dimension entries.
     private static bool MatchesFilter(LemmaSummaryRow row, LemmasCountFilter filter) =>
         filter.Occurrences.Includes(row.OccurrencesCount)
         && filter.Ayahs.Includes(row.AyahsCount)
@@ -119,7 +102,6 @@ internal static class LemmasListDerivation
         _ => throw new InvalidOperationException($"Unhandled {nameof(LemmaSortColumn)} value: {sort.Column}."),
     };
 
-    // Count columns tie-break on Mushaf order then Id.
     private static IOrderedEnumerable<LemmaSummaryRow> ByCount(
         IEnumerable<LemmaSummaryRow> rows,
         Func<LemmaSummaryRow, int> count,
@@ -174,40 +156,4 @@ internal static class LemmasListDerivation
 
     private static TypeSummaryDto ToTypeSummary(LemmaTypeDistributionRow row) =>
         new(row.Code, row.ArabicLabel, row.OccurrencesCount);
-
-    internal static string? NormalizeArabicQuery(string? search)
-    {
-        if (string.IsNullOrWhiteSpace(search))
-        {
-            return null;
-        }
-
-        var builder = new StringBuilder(search.Length);
-        foreach (var ch in search)
-        {
-            if (IsSkippable(ch) || char.IsWhiteSpace(ch))
-            {
-                continue;
-            }
-
-            builder.Append(Fold(ch));
-        }
-
-        var normalized = builder.ToString().ToLowerInvariant();
-        return string.IsNullOrEmpty(normalized) ? null : normalized;
-    }
-
-    private static bool IsSkippable(char ch) =>
-        ch == '\u0640' ||
-        ch is >= '\u0610' and <= '\u061A' ||
-        ch is >= '\u064B' and <= '\u065F' ||
-        ch == '\u0670' ||
-        ch is >= '\u06D6' and <= '\u06ED' ||
-        ch is >= '\u08D3' and <= '\u08FF';
-
-    private static char Fold(char ch)
-    {
-        var index = ArabicFoldFrom.IndexOf(ch);
-        return index >= 0 ? ArabicFoldTo[index] : ch;
-    }
 }

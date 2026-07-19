@@ -31,14 +31,6 @@ function toLemmaListItemViewModel(item: LemmaListItemDto): LemmaListItemViewMode
   return { ...item, displayText: item.lemmaText };
 }
 
-/**
- * Lemmas Explorer catalogue facade (Feature 016, US1). Sibling of
- * `RootsExplorerFacade`. Owns catalogue loading, `ApiResponse` mapping,
- * normalized search, sort/page actions, and the row selection default. The list
- * request cache key never embeds raw search in a retained server key — search,
- * sort, and paging are applied against the bounded whole-summary list. No eager
- * detail calls are issued on catalogue render.
- */
 @Injectable({ providedIn: 'root' })
 export class LemmasExplorerFacade {
   private readonly api = inject(LemmasApi);

@@ -7,6 +7,7 @@ import { Router, provideRouter } from '@angular/router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { App } from '../../../app';
+import { provideAuthTesting } from '../../../core/auth/auth.testing';
 import { DetailOverlayHistoryService } from '../../../core/navigation/detail-overlay/detail-overlay-history.service';
 import {
   DetailFrame,
@@ -91,6 +92,7 @@ describe('EntityDetailOverlayHostComponent (composition root)', () => {
         provideLocationMocks(),
         provideHttpClient(),
         provideHttpClientTesting(),
+        provideAuthTesting(),
       ],
     });
     router = TestBed.inject(Router);
@@ -186,7 +188,7 @@ describe('EntityDetailOverlayHostComponent (composition root)', () => {
     expect(root.querySelector('[data-testid="detail-modal-shell"]')).not.toBeNull();
   });
 
-  /** Deferred adapter chunks load asynchronously; poll until the selector renders. */
+  // Deferred adapter chunks load asynchronously; poll until the selector renders.
   async function waitForSelector(fixture: { detectChanges: () => void; nativeElement: unknown }, selector: string): Promise<void> {
     await vi.waitFor(
       () => {

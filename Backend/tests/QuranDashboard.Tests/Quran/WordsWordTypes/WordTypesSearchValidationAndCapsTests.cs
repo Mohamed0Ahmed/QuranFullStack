@@ -1,5 +1,3 @@
-using System.Net;
-using System.Text.Json;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeRows;
 

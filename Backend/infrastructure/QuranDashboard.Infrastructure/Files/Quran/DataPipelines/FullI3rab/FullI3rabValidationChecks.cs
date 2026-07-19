@@ -1,4 +1,3 @@
-using System.Globalization;
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.FullI3rab;
 
 namespace QuranDashboard.Infrastructure.Files.Quran.DataPipelines.FullI3rab;

@@ -1,4 +1,3 @@
-using System.Text.Json;
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Navigation;
 using QuranDashboard.Application.Quran.DataPipelines.Navigation;
 

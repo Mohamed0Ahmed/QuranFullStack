@@ -7,15 +7,6 @@ namespace QuranDashboard.Api.Controllers.MushafReader.Words;
 [Route("api/mushaf/words")]
 public sealed class MushafWordAnalysisController(GetWordAnalysisHandler handler) : ControllerBase
 {
-    /// <summary>
-    /// يُرجع تحليل كلمة قابلة للقراءة (ليست علامة نهاية آية): تكرارها،
-    /// صرفها الرئيسي، ومقاطعها المرتبة مع فتحات لون ثابتة وإعراب مبسّط.
-    /// </summary>
-    /// <param name="wordLocation">موقع الكلمة بصيغة <c>surah:ayah:word</c> (مثل <c>2:25:3</c>).</param>
-    /// <param name="cancellationToken">رمز إلغاء الطلب.</param>
-    /// <response code="200">تم تحميل تحليل الكلمة بنجاح.</response>
-    /// <response code="400">موقع غير صالح أو كلمة غير قابلة للتحليل (علامة آية).</response>
-    /// <response code="404">الكلمة غير موجودة أو بيانات التحليل ناقصة.</response>
     [HttpGet("{wordLocation}/analysis")]
     public async Task<ActionResult<ApiResponse<WordAnalysisResponse>>> GetAnalysis(
         string wordLocation,

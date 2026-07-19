@@ -1,13 +1,9 @@
-using Npgsql;
 using QuranDashboard.Application.Abstractions.Quran.Words;
 using QuranDashboard.Application.Abstractions.Quran.Words.WordTypes;
 using QuranDashboard.Application.Abstractions.Quran.Words.WordTypes.Responses;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.WordTypes;
 
-// Shared base rows/predicates/parameters and the Words-view reads. The grouped table-view
-// (roots/stems/lemmas) SQL lives in EfWordTypesReader.GroupedTable.Sql.cs; the scoped grouped
-// detail reads live in EfWordTypesReader.GroupedDetails.Sql.cs.
 public sealed partial class EfWordTypesReader
 {
     private static string TreeChildCountsSql()
@@ -269,7 +265,6 @@ public sealed partial class EfWordTypesReader
 
     private static string ChildCodePredicate(WordTypeReadContext context) => context.Type switch
     {
-        // Noun and particle children pin the head POS; verb children pin the tense.
         NounType or ParticleType => "m.head_pos = @childCode",
         VerbType => $"COALESCE(m.verb_tense, '{UnspecifiedContext}') = @childCode",
         _ => "FALSE",
@@ -435,11 +430,6 @@ public sealed partial class EfWordTypesReader
         _ => "اسم",
     };
 
-    /// <summary>
-    /// Bundles the normalized main type with the optional selected child code and active secondary
-    /// filters so the row/tree SQL builders thread every dimension consistently. <see cref="Unscoped"/>
-    /// is the no-child/no-secondary-filter baseline used by the tree reads (E1 counts stay unscoped).
-    /// </summary>
     private sealed record WordTypeReadContext(
         string Type,
         string? ChildCode,
@@ -485,8 +475,6 @@ public sealed partial class EfWordTypesReader
         int AyahsCount,
         int SurahsCount,
         int FirstWordOrderInMushaf,
-        // Whole-scope total from COUNT(*) OVER(); identical on every row, ignored by ToDto (the reader
-        // reads it once off the first row to build PagedResult.TotalCount without a separate COUNT command).
         int TotalCount)
     {
         public WordTypeRowDto ToDto() => new(

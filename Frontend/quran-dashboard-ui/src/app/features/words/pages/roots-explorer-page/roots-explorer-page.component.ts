@@ -130,6 +130,7 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
     this.searchSub = this.searchInput.pipe(debounceTime(300)).subscribe((value) => this.updateQueryParams({ search: value || null, page: null }));
     this.querySyncSub = this.route.queryParamMap.subscribe((params) => {
       const parsed = parseRootsQueryParams(params);
+      this.searchDraft.set(parsed.search);
       this.restoredColumn.set(parseMorphologyColumnKey(parsed.column));
       this.ranges.set(parsed.ranges);
     });

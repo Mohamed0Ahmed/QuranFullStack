@@ -1,8 +1,7 @@
-import { Injectable, OnDestroy, computed, signal } from '@angular/core';
-import { HttpErrorResponse } from '@angular/common/http';
-import { of } from 'rxjs';
-import { catchError, tap } from 'rxjs/operators';
+import { Injectable } from '@angular/core';
+import { Observable, Subscription } from 'rxjs';
 
+import { ApiResponse } from '../../../core/data-access/api-response.model';
 import { LemmasApi } from '../data-access/lemmas.api';
 import {
   LEMMAS_ERROR_LABEL,
@@ -20,7 +19,7 @@ import {
   LemmasPanelState,
   isPaginatedLemmaView,
 } from '../models/lemmas.models';
-import { DetailRequestLifecycle } from './detail-request-lifecycle';
+import { AbstractDetailController } from './abstract-detail.controller';
 import { LemmasCache, LemmasCacheKeys } from './lemmas-cache';
 import {
   buildAyahsPanelUpdate,
@@ -32,7 +31,7 @@ import {
   extractPanelErrorMessage,
   restoredLemmaNotFoundUpdate,
 } from './lemmas-detail-panel.updates';
-import { LemmasDetailViewLoader } from './lemmas-detail-view.loader';
+import { LemmasDetailViewHandlers, LemmasDetailViewLoader } from './lemmas-detail-view.loader';
 
 const INITIAL_PANEL: LemmasPanelState = {
   selectedLemmaId: null,
@@ -51,11 +50,9 @@ const INITIAL_PANEL: LemmasPanelState = {
   errorMessage: '',
 };
 
-/**
- * Complete lemma detail identity: every field participates in equality. Unlike
- * roots, the ayahs view carries a `typeCode` filter, so it is part of the
- * identity (and of `LemmasCacheKeys.ayahs`).
- */
+// Complete lemma detail identity: every field participates in equality. Unlike
+// roots, the ayahs view carries a `typeCode` filter, so it is part of the identity
+// (and of LemmasCacheKeys.ayahs).
 export interface LemmasDetailUrlState {
   readonly lemmaId: number;
   readonly view: LemmaView;
@@ -83,82 +80,25 @@ export function lemmasDetailUrlStatesEqual(
   );
 }
 
-/**
- * Route-independent lemma detail controller (Feature 029, Change B4). Sibling
- * of `RootsDetailController` — see that class for the pattern rationale.
- *
- * Owns the lemma detail panel signal state, the summary/detail subscriptions,
- * and every load path — with zero knowledge of routes or URLs. Consumers drive
- * it either through `applyUrlState` (the route-free entry point: the page
- * facade forwards parsed query state, an overlay adapter forwards its typed
- * frame) or through the direct selection methods. The root-scoped
- * `LemmasApi`/`LemmasCache`/`LemmasDetailViewLoader` collaborators stay shared,
- * so the explorer side panel and the global overlay de-duplicate the same
- * reads.
- *
- * Every complete-identity transition abandons BOTH the summary and the detail
- * request and opens a new generation, so a late response from the previously
- * selected lemma can never populate or overwrite this one — see
- * {@link DetailRequestLifecycle}. Not `providedIn: 'root'`: the page facade owns
- * one instance, and each overlay adapter provides its own component-scoped
- * instance (destroyed with the adapter).
- */
+// Lemma detail controller (Feature 029 B4; consolidated onto
+// AbstractDetailController in Feature 033 DRY). Sibling of RootsDetailController.
+// The root-scoped LemmasApi/LemmasCache/LemmasDetailViewLoader collaborators stay
+// shared, so the explorer side panel and the global overlay de-duplicate the same
+// reads. Not providedIn 'root': the page facade owns one instance, and each
+// overlay adapter provides its own component-scoped instance (destroyed with it).
 @Injectable()
-export class LemmasDetailController implements OnDestroy {
-  private readonly _panel = signal<LemmasPanelState>(INITIAL_PANEL);
-
-  private readonly requests = new DetailRequestLifecycle();
-  private activeUrlState: LemmasDetailUrlState | null = null;
-
-  readonly panelState = computed(() => this._panel());
-
+export class LemmasDetailController extends AbstractDetailController<
+  LemmasPanelState,
+  LemmasDetailUrlState,
+  LemmaSummaryDto,
+  LemmasDetailViewHandlers
+> {
   constructor(
     private readonly api: LemmasApi,
     private readonly cache: LemmasCache,
     private readonly viewLoader: LemmasDetailViewLoader,
-  ) {}
-
-  ngOnDestroy(): void {
-    this.cancelPendingLoads();
-  }
-
-  /**
-   * Route-free entry point: synchronize the panel to a complete detail state
-   * (`null` clears the selection). Identical states short-circuit via complete
-   * identity comparison, leaving an in-flight load for that identity alone.
-   */
-  applyUrlState(state: LemmasDetailUrlState | null): void {
-    if (state === null) {
-      this.clearSelection();
-      return;
-    }
-
-    if (lemmasDetailUrlStatesEqual(this.activeUrlState, state)) {
-      return;
-    }
-
-    this.applyIdentity(state);
-  }
-
-  /**
-   * Re-drives the current complete identity after a failed load (Feature 030,
-   * M3). The identity is unchanged, so {@link applyUrlState} would short-circuit
-   * it; retry re-enters the load path directly. A failed read is never cached,
-   * so this issues a real request, while an intact summary still resolves from
-   * cache and only the detail view reloads.
-   */
-  retryCurrentIdentity(): void {
-    const state = this.activeUrlState;
-    if (state === null) {
-      return;
-    }
-
-    this.applyIdentity(state);
-  }
-
-  /** Cancels the pending summary/detail loads without resetting panel state. */
-  cancelPendingLoads(): void {
-    this.requests.cancelAll();
+  ) {
+    super(INITIAL_PANEL);
   }
 
   selectLemma(summary: LemmaSummaryDto, view: LemmaView = DEFAULT_LEMMA_VIEW): void {
@@ -174,7 +114,15 @@ export class LemmasDetailController implements OnDestroy {
     ayahTypeCode: string | null = null,
   ): void {
     const token = this.requests.beginTransition();
-    this.activeUrlState = { lemmaId: summary.id, view, wordView, surahView, detailPage, typeCode: ayahTypeCode };
+    const nextState: LemmasDetailUrlState = {
+      lemmaId: summary.id,
+      view,
+      wordView,
+      surahView,
+      detailPage,
+      typeCode: ayahTypeCode,
+    };
+    this.activeUrlState = nextState;
     this._panel.set({
       ...INITIAL_PANEL,
       selectedLemmaId: summary.id,
@@ -186,13 +134,7 @@ export class LemmasDetailController implements OnDestroy {
       detailPage,
       status: 'loading',
     });
-    this.loadActiveView(summary.id, view, wordView, surahView, detailPage, ayahTypeCode, token);
-  }
-
-  clearSelection(): void {
-    this.requests.cancelAll();
-    this.activeUrlState = null;
-    this._panel.set(INITIAL_PANEL);
+    this.loadActiveView(nextState, token);
   }
 
   setAyahTypeCode(typeCode: string | null): void {
@@ -207,7 +149,7 @@ export class LemmasDetailController implements OnDestroy {
     }
 
     const token = this.requests.beginTransition();
-    this.activeUrlState = {
+    const nextState: LemmasDetailUrlState = {
       lemmaId: current.selectedLemmaId,
       view: 'ayahs',
       wordView: current.wordView,
@@ -215,6 +157,7 @@ export class LemmasDetailController implements OnDestroy {
       detailPage: DEFAULT_LEMMA_DETAIL_PAGE,
       typeCode: normalizedTypeCode,
     };
+    this.activeUrlState = nextState;
     this._panel.update((s) => ({
       ...s,
       ayahTypeCode: normalizedTypeCode,
@@ -222,15 +165,7 @@ export class LemmasDetailController implements OnDestroy {
       status: 'loading',
       errorMessage: '',
     }));
-    this.loadActiveView(
-      current.selectedLemmaId,
-      'ayahs',
-      current.wordView,
-      current.surahView,
-      DEFAULT_LEMMA_DETAIL_PAGE,
-      normalizedTypeCode,
-      token,
-    );
+    this.loadActiveView(nextState, token);
   }
 
   setView(view: LemmaView): void {
@@ -244,7 +179,7 @@ export class LemmasDetailController implements OnDestroy {
     const surahView = view === 'surahs' ? current.surahView : DEFAULT_LEMMA_SURAHS_VIEW;
 
     const token = this.requests.beginTransition();
-    this.activeUrlState = {
+    const nextState: LemmasDetailUrlState = {
       lemmaId: current.selectedLemmaId,
       view,
       wordView,
@@ -252,6 +187,7 @@ export class LemmasDetailController implements OnDestroy {
       detailPage,
       typeCode: null,
     };
+    this.activeUrlState = nextState;
     this._panel.update((s) => ({
       ...s,
       view,
@@ -262,7 +198,7 @@ export class LemmasDetailController implements OnDestroy {
       status: 'loading',
       errorMessage: '',
     }));
-    this.loadActiveView(current.selectedLemmaId, view, wordView, surahView, detailPage, null, token);
+    this.loadActiveView(nextState, token);
   }
 
   setWordView(wordView: LemmaWordView): void {
@@ -277,7 +213,7 @@ export class LemmasDetailController implements OnDestroy {
     }
 
     const token = this.requests.beginTransition();
-    this.activeUrlState = {
+    const nextState: LemmasDetailUrlState = {
       lemmaId: current.selectedLemmaId,
       view: 'words',
       wordView,
@@ -285,6 +221,7 @@ export class LemmasDetailController implements OnDestroy {
       detailPage: DEFAULT_LEMMA_DETAIL_PAGE,
       typeCode: null,
     };
+    this.activeUrlState = nextState;
     this._panel.update((s) => ({
       ...s,
       wordView,
@@ -292,15 +229,7 @@ export class LemmasDetailController implements OnDestroy {
       status: 'loading',
       errorMessage: '',
     }));
-    this.loadActiveView(
-      current.selectedLemmaId,
-      'words',
-      wordView,
-      current.surahView,
-      DEFAULT_LEMMA_DETAIL_PAGE,
-      null,
-      token,
-    );
+    this.loadActiveView(nextState, token);
   }
 
   setSurahView(surahView: LemmaSurahView): void {
@@ -315,7 +244,7 @@ export class LemmasDetailController implements OnDestroy {
     }
 
     const token = this.requests.beginTransition();
-    this.activeUrlState = {
+    const nextState: LemmasDetailUrlState = {
       lemmaId: current.selectedLemmaId,
       view: 'surahs',
       wordView: current.wordView,
@@ -323,21 +252,14 @@ export class LemmasDetailController implements OnDestroy {
       detailPage: current.detailPage,
       typeCode: null,
     };
+    this.activeUrlState = nextState;
     this._panel.update((s) => ({
       ...s,
       surahView,
       status: 'loading',
       errorMessage: '',
     }));
-    this.loadActiveView(
-      current.selectedLemmaId,
-      'surahs',
-      current.wordView,
-      surahView,
-      current.detailPage,
-      null,
-      token,
-    );
+    this.loadActiveView(nextState, token);
   }
 
   setDetailPage(page: number): void {
@@ -351,7 +273,7 @@ export class LemmasDetailController implements OnDestroy {
     }
 
     const token = this.requests.beginTransition();
-    this.activeUrlState = {
+    const nextState: LemmasDetailUrlState = {
       lemmaId: current.selectedLemmaId,
       view: current.view,
       wordView: current.wordView,
@@ -359,180 +281,97 @@ export class LemmasDetailController implements OnDestroy {
       detailPage: page,
       typeCode: current.view === 'ayahs' ? current.ayahTypeCode : null,
     };
+    this.activeUrlState = nextState;
     this._panel.update((s) => ({
       ...s,
       detailPage: page,
       status: 'loading',
       errorMessage: '',
     }));
-    this.loadActiveView(
-      current.selectedLemmaId,
-      current.view,
-      current.wordView,
-      current.surahView,
-      page,
-      current.view === 'ayahs' ? current.ayahTypeCode : null,
-      token,
-    );
+    this.loadActiveView(nextState, token);
   }
 
-  /**
-   * Drives a complete identity: abandons the previous identity's summary and
-   * detail requests, then either reloads only the active view (same lemma,
-   * loaded summary) or reloads the summary first.
-   */
-  private applyIdentity(state: LemmasDetailUrlState): void {
-    const token = this.requests.beginTransition();
-    this.activeUrlState = state;
-    const current = this._panel();
+  protected override readonly notFoundLabel = LEMMAS_NOT_FOUND_LABEL;
+  protected override readonly errorLabel = LEMMAS_ERROR_LABEL;
 
-    if (current.selectedLemmaId === state.lemmaId && current.summary !== null) {
-      this._panel.update((s) => ({
-        ...s,
-        view: state.view,
-        wordView: state.wordView,
-        surahView: state.surahView,
-        ayahTypeCode: state.typeCode,
-        detailPage: state.detailPage,
-        status: 'loading',
-        errorMessage: '',
-      }));
-      this.loadActiveView(
-        state.lemmaId,
-        state.view,
-        state.wordView,
-        state.surahView,
-        state.detailPage,
-        state.typeCode,
-        token,
-      );
-      return;
-    }
-
-    this.loadSummaryAndRestore(state, token);
+  protected override urlStatesEqual(a: LemmasDetailUrlState | null, b: LemmasDetailUrlState | null): boolean {
+    return lemmasDetailUrlStatesEqual(a, b);
   }
 
-  private loadSummaryAndRestore(state: LemmasDetailUrlState, token: number): void {
-    this._panel.set({
-      ...INITIAL_PANEL,
+  protected override sameIdentity(current: LemmasPanelState, state: LemmasDetailUrlState): boolean {
+    return current.selectedLemmaId === state.lemmaId && current.summary !== null;
+  }
+
+  protected override applyUrlStateFields(panel: LemmasPanelState, state: LemmasDetailUrlState): LemmasPanelState {
+    return {
+      ...panel,
       selectedLemmaId: state.lemmaId,
       view: state.view,
       wordView: state.wordView,
       surahView: state.surahView,
       ayahTypeCode: state.typeCode,
       detailPage: state.detailPage,
-      status: 'loading',
-    });
+    };
+  }
 
-    this.requests.trackSummary(
-      this.cache
-        .getOrLoad(LemmasCacheKeys.summary(state.lemmaId), () =>
-          this.api.getLemmaSummary(state.lemmaId),
-        )
-        .pipe(
-          tap((response) => {
-            if (!this.requests.isCurrent(token)) {
-              return;
-            }
+  protected override applySummary(state: LemmasDetailUrlState, data: LemmaSummaryDto): Partial<LemmasPanelState> {
+    return { summary: data, ayahTypeCode: state.typeCode };
+  }
 
-            if (!response.isSuccess || !response.data) {
-              this.handleRestoredLemmaNotFound(response.message ?? '', state);
-              return;
-            }
-
-            const summary = response.data;
-            this._panel.update((s) => ({
-              ...s,
-              summary,
-              ayahTypeCode: state.typeCode,
-              status: 'loading',
-            }));
-            this.loadActiveView(
-              state.lemmaId,
-              state.view,
-              state.wordView,
-              state.surahView,
-              state.detailPage,
-              state.typeCode,
-              token,
-            );
-          }),
-          catchError((err) => {
-            if (!this.requests.isCurrent(token)) {
-              return of(undefined);
-            }
-
-            if (err instanceof HttpErrorResponse && err.status === 404) {
-              this.handleRestoredLemmaNotFound(this.extractErrorMessage(err, LEMMAS_NOT_FOUND_LABEL), state);
-              return of(undefined);
-            }
-
-            this.handleRestoredLemmaLoadError(this.extractErrorMessage(err, LEMMAS_ERROR_LABEL), state);
-            return of(undefined);
-          }),
-        )
-        .subscribe(),
+  protected override loadSummary(state: LemmasDetailUrlState): Observable<ApiResponse<LemmaSummaryDto>> {
+    return this.cache.getOrLoad(LemmasCacheKeys.summary(state.lemmaId), () =>
+      this.api.getLemmaSummary(state.lemmaId),
     );
   }
 
-  private loadActiveView(
-    lemmaId: number,
-    view: LemmaView,
-    wordView: LemmaWordView,
-    surahView: LemmaSurahView,
-    detailPage: number,
-    ayahTypeCode: string | null,
-    token: number,
-  ): void {
-    const current = this._panel();
-    this.requests.trackDetail(
-      this.viewLoader.loadActiveView(
-        {
-          lemmaId,
-          view,
-          wordView,
-          surahView,
-          ayahTypeCode,
-          detailPage,
-          cachedMissingSurahs: current.missingSurahs,
-        },
-        {
-          onAyahs: (response) => this.applyIfCurrent(token, (s) => ({ ...s, ...buildAyahsPanelUpdate(response) })),
-          onWords: (response) => this.applyIfCurrent(token, (s) => ({ ...s, ...buildWordsPanelUpdate(response) })),
-          onMentionedSurahs: (response) =>
-            this.applyIfCurrent(token, (s) => ({ ...s, ...buildMentionedSurahsPanelUpdate(response) })),
-          onMissingSurahs: (response) =>
-            this.applyIfCurrent(token, (s) => ({ ...s, ...buildMissingSurahsPanelUpdate(response) })),
-          onStems: (response) => this.applyIfCurrent(token, (s) => ({ ...s, ...buildStemsPanelUpdate(response) })),
-          onError: (err) =>
-            this.applyIfCurrent(token, (s) => ({ ...s, ...buildDetailErrorUpdate(err, LEMMAS_ERROR_LABEL) })),
-        },
-      ),
-    );
+  protected override notFoundPanel(state: LemmasDetailUrlState, message: string): LemmasPanelState {
+    return restoredLemmaNotFoundUpdate(message, LEMMAS_NOT_FOUND_LABEL, state.lemmaId);
   }
 
-  /** Applies a panel update only while `token` still owns the panel. */
-  private applyIfCurrent(token: number, update: (state: LemmasPanelState) => LemmasPanelState): void {
-    if (this.requests.isCurrent(token)) {
-      this._panel.update(update);
-    }
-  }
-
-  private handleRestoredLemmaNotFound(message: string, state: LemmasDetailUrlState): void {
-    this._panel.set(restoredLemmaNotFoundUpdate(message, LEMMAS_NOT_FOUND_LABEL, state.lemmaId));
-  }
-
-  private handleRestoredLemmaLoadError(message: string, state: LemmasDetailUrlState): void {
-    this._panel.set({
+  protected override errorPanel(state: LemmasDetailUrlState, message: string): LemmasPanelState {
+    return {
       ...INITIAL_PANEL,
       selectedLemmaId: state.lemmaId,
       status: 'error',
       errorMessage: message || LEMMAS_ERROR_LABEL,
-    });
+    };
   }
 
-  private extractErrorMessage(err: unknown, fallback: string): string {
+  protected override extractErrorMessage(err: unknown, fallback: string): string {
     return extractPanelErrorMessage(err, fallback);
+  }
+
+  protected override requestActiveView(
+    state: LemmasDetailUrlState,
+    handlers: LemmasDetailViewHandlers,
+  ): Subscription | undefined {
+    const current = this._panel();
+    return this.viewLoader.loadActiveView(
+      {
+        lemmaId: state.lemmaId,
+        view: state.view,
+        wordView: state.wordView,
+        surahView: state.surahView,
+        ayahTypeCode: state.typeCode,
+        detailPage: state.detailPage,
+        cachedMissingSurahs: current.missingSurahs,
+      },
+      handlers,
+    );
+  }
+
+  protected override buildViewHandlers(token: number): LemmasDetailViewHandlers {
+    return {
+      onAyahs: (response) => this.applyIfCurrent(token, (s) => ({ ...s, ...buildAyahsPanelUpdate(response) })),
+      onWords: (response) => this.applyIfCurrent(token, (s) => ({ ...s, ...buildWordsPanelUpdate(response) })),
+      onMentionedSurahs: (response) =>
+        this.applyIfCurrent(token, (s) => ({ ...s, ...buildMentionedSurahsPanelUpdate(response) })),
+      onMissingSurahs: (response) =>
+        this.applyIfCurrent(token, (s) => ({ ...s, ...buildMissingSurahsPanelUpdate(response) })),
+      onStems: (response) => this.applyIfCurrent(token, (s) => ({ ...s, ...buildStemsPanelUpdate(response) })),
+      onError: (err) =>
+        this.applyIfCurrent(token, (s) => ({ ...s, ...buildDetailErrorUpdate(err, LEMMAS_ERROR_LABEL) })),
+    };
   }
 
   private normalizeTypeCode(typeCode: string | null): string | null {

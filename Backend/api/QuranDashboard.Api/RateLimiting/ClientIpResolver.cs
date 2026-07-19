@@ -1,14 +1,7 @@
 using System.Net;
-using Microsoft.Extensions.Options;
 
 namespace QuranDashboard.Api.RateLimiting;
 
-/// <summary>
-/// Resolves the client IP from the configured single-valued header (default <c>X-Real-IP</c>),
-/// falling back to the transport <see cref="ConnectionInfo.RemoteIpAddress"/>, then to the
-/// <c>"unknown"</c> sentinel. The header is single-valued (Railway <c>X-Real-IP</c>): there is
-/// no comma split and no leftmost-of-list logic.
-/// </summary>
 public sealed class ClientIpResolver(IOptions<RateLimitingOptions> options) : IClientIpResolver
 {
     public const string UnknownClient = "unknown";
@@ -19,6 +12,7 @@ public sealed class ClientIpResolver(IOptions<RateLimitingOptions> options) : IC
     {
         var headerName = _options.ClientIpHeaderName;
 
+        // Header is single-valued (Railway X-Real-IP): no comma split / leftmost-of-list logic.
         if (!string.IsNullOrWhiteSpace(headerName)
             && context.Request.Headers.TryGetValue(headerName, out var headerValues))
         {

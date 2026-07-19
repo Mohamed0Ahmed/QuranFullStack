@@ -1,4 +1,3 @@
-using QuranDashboard.Application.Abstractions.Common.Paging;
 using QuranDashboard.Application.Abstractions.Quran.Words.Roots.Responses;
 using QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootAyahs;
 using QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootLemmas;
@@ -10,16 +9,10 @@ using QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootWords;
 
 namespace QuranDashboard.Api.Controllers.Words;
 
-// Per-root detail and drilldown endpoints under the same api/words/roots base. Split out of the
-// list part in RootsController.cs; the shared handlers, route attribute, and paging defaults are
-// declared there. Same class by design — a second controller class would retag these endpoints in
-// the generated OpenAPI document.
+// Same partial class as RootsController.cs by design: a second controller class would retag these
+// endpoints in the generated OpenAPI document.
 public sealed partial class RootsController
 {
-    /// <summary>
-    /// يُرجع ملخّص الجذر المحدد (أعداده الثمانية). يُستخدم لاستعادة حالة لوحة
-    /// التفاصيل من رابط مشاركة.
-    /// </summary>
     [HttpGet("{id:int}")]
     public async Task<ActionResult<ApiResponse<RootSummaryDto>>> GetSummary(
         int id,
@@ -41,10 +34,6 @@ public sealed partial class RootsController
         };
     }
 
-    /// <summary>
-    /// يُرجع صفحة من الآيات التي ورد فيها الجذر المحدد، مع معرّفات الكلمات
-    /// المطابقة للتمييز البصري.
-    /// </summary>
     [HttpGet("{id:int}/ayahs")]
     public async Task<ActionResult<ApiResponse<PagedResult<RootAyahMatchDto>>>> GetAyahs(
         int id,
@@ -73,10 +62,6 @@ public sealed partial class RootsController
         };
     }
 
-    /// <summary>
-    /// يُرجع صفحة من الكلمات المميّزة (بدون تشكيل أو بالتشكيل) التي ورد فيها
-    /// الجذر المحدد، مع عدد مرات الظهور في سياق هذا الجذر.
-    /// </summary>
     [HttpGet("{id:int}/words/{wordKind}")]
     public async Task<ActionResult<ApiResponse<PagedResult<RootWordItemDto>>>> GetWords(
         int id,
@@ -109,9 +94,6 @@ public sealed partial class RootsController
         };
     }
 
-    /// <summary>
-    /// يُرجع السور التي ورد فيها الجذر المحدد مع عدد مرات الظهور في كل سورة.
-    /// </summary>
     [HttpGet("{id:int}/surahs")]
     public async Task<ActionResult<ApiResponse<RootSurahsResponse>>> GetSurahs(
         int id,
@@ -133,9 +115,6 @@ public sealed partial class RootsController
         };
     }
 
-    /// <summary>
-    /// يُرجع السور التي لم يرد فيها الجذر المحدد.
-    /// </summary>
     [HttpGet("{id:int}/missing-surahs")]
     public async Task<ActionResult<ApiResponse<RootMissingSurahsResponse>>> GetMissingSurahs(
         int id,
@@ -157,9 +136,6 @@ public sealed partial class RootsController
         };
     }
 
-    /// <summary>
-    /// يُرجع الصيغ المعجمية للجذر المحدد (تعايش عبر المورفولوجيا).
-    /// </summary>
     [HttpGet("{id:int}/lemmas")]
     public async Task<ActionResult<ApiResponse<RootLemmasResponse>>> GetLemmas(
         int id,
@@ -181,9 +157,6 @@ public sealed partial class RootsController
         };
     }
 
-    /// <summary>
-    /// يُرجع الأصول الصرفية للجذر المحدد (تعايش عبر المورفولوجيا).
-    /// </summary>
     [HttpGet("{id:int}/stems")]
     public async Task<ActionResult<ApiResponse<RootStemsResponse>>> GetStems(
         int id,

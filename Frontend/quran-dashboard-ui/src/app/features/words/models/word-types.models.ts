@@ -13,7 +13,6 @@ type WordTypeCountSortColumn = 'occurrences' | 'ayahs' | 'surahs';
 type WordTypeTextSortColumn = 'alpha';
 export type WordTypeSortColumnKey = WordTypeCountSortColumn | WordTypeTextSortColumn;
 
-/** The canonical token set: `occurrences`/`occurrences-asc`, `alpha`/`alpha-desc`, … */
 export type WordTypeSort =
   | MushafOrderSort
   | CanonicalSortTokens<WordTypeCountSortColumn, 'desc'>

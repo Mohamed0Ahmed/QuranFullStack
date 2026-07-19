@@ -1,20 +1,17 @@
 import { describe, expect, it, beforeEach, afterEach } from 'vitest';
-import { TestBed, getTestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
-import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { HttpTestingController } from '@angular/common/http/testing';
 import { firstValueFrom } from 'rxjs';
 
 import { environment } from '../../../../environments/environment';
 import { UniqueWordsApi } from './unique-words.api';
-import { ApiResponse } from '../../../core/data-access/api-response.model';
 import {
-  PagedResultDto,
   UniqueWordAyahMatchDto,
   UniqueWordListItemDto,
   UniqueWordMissingSurahsDto,
   UniqueWordSummaryDto,
   UniqueWordSurahsDto,
 } from '../models/unique-words.models';
+import { ok, page, setupApiTestBed, teardownApiTestBed } from './testing/api-test-bed';
 
 function matchUniqueWords(kind: string): RegExp {
   return new RegExp(`/api/words/unique/${kind}(\\?.*)?$`);
@@ -34,26 +31,16 @@ const SAMPLE_ITEM: UniqueWordListItemDto = {
   rootText: 'ك ل م',
 };
 
-function page(items: UniqueWordListItemDto[], totalCount: number): PagedResultDto<UniqueWordListItemDto> {
-  return { page: 1, pageSize: 50, totalCount, items };
-}
-
 describe('UniqueWordsApi.getList', () => {
   let api: UniqueWordsApi;
   let httpMock: HttpTestingController;
 
   beforeEach(() => {
-    getTestBed().resetTestingModule();
-    TestBed.configureTestingModule({
-      providers: [UniqueWordsApi, provideHttpClient(), provideHttpClientTesting()],
-    });
-    api = TestBed.inject(UniqueWordsApi);
-    httpMock = TestBed.inject(HttpTestingController);
+    ({ api, httpMock } = setupApiTestBed(UniqueWordsApi));
   });
 
   afterEach(() => {
-    httpMock.verify();
-    getTestBed().resetTestingModule();
+    teardownApiTestBed(httpMock);
   });
 
   it('builds the list URL for the tashkeel mode with sort/page/pageSize params', async () => {
@@ -65,17 +52,15 @@ describe('UniqueWordsApi.getList', () => {
     expect(req.request.params.get('page')).toBe('1');
     expect(req.request.params.get('pageSize')).toBe('50');
     expect(req.request.params.has('search')).toBe(false);
-    req.flush({ isSuccess: true, message: 'ok', data: page([], 0) });
 
-    await expect(promise).resolves.toEqual({ isSuccess: true, message: 'ok', data: page([], 0) });
+    const response = page<UniqueWordListItemDto>([], 0);
+    req.flush(response);
+
+    await expect(promise).resolves.toEqual(response);
   });
 
   it('includes the search param when search is non-blank', async () => {
-    const response: ApiResponse<PagedResultDto<UniqueWordListItemDto>> = {
-      isSuccess: true,
-      message: 'ok',
-      data: page([SAMPLE_ITEM], 1),
-    };
+    const response = page<UniqueWordListItemDto>([SAMPLE_ITEM], 1, 2, 25);
 
     const promise = firstValueFrom(api.getList('simple', 'اسم', 'alpha', 2, 25));
 
@@ -94,9 +79,11 @@ describe('UniqueWordsApi.getList', () => {
 
     const req = httpMock.expectOne((r) => matchUniqueWords('tashkeel').test(r.url));
     expect(req.request.params.has('search')).toBe(false);
-    req.flush({ isSuccess: true, message: 'ok', data: page([], 0) });
 
-    await expect(promise).resolves.toEqual({ isSuccess: true, message: 'ok', data: page([], 0) });
+    const response = page<UniqueWordListItemDto>([], 0);
+    req.flush(response);
+
+    await expect(promise).resolves.toEqual(response);
   });
 
   it('sends only the active count-range params (Feature 026)', async () => {
@@ -113,9 +100,11 @@ describe('UniqueWordsApi.getList', () => {
     expect(req.request.params.get('surahsMin')).toBe('1');
     expect(req.request.params.has('surahsMax')).toBe(false);
     expect(req.request.params.has('ayahsMin')).toBe(false);
-    req.flush({ isSuccess: true, message: 'ok', data: page([], 0) });
 
-    await expect(promise).resolves.toEqual({ isSuccess: true, message: 'ok', data: page([], 0) });
+    const response = page<UniqueWordListItemDto>([], 0);
+    req.flush(response);
+
+    await expect(promise).resolves.toEqual(response);
   });
 
   it('omits every range param for an unfiltered read (backward compat)', async () => {
@@ -125,17 +114,15 @@ describe('UniqueWordsApi.getList', () => {
     expect(req.request.params.has('occMin')).toBe(false);
     expect(req.request.params.has('ayahsMax')).toBe(false);
     expect(req.request.params.has('surahsMin')).toBe(false);
-    req.flush({ isSuccess: true, message: 'ok', data: page([], 0) });
 
-    await expect(promise).resolves.toEqual({ isSuccess: true, message: 'ok', data: page([], 0) });
+    const response = page<UniqueWordListItemDto>([], 0);
+    req.flush(response);
+
+    await expect(promise).resolves.toEqual(response);
   });
 
   it('returns the typed ApiResponse<PagedResultDto<UniqueWordListItemDto>> shape', async () => {
-    const response: ApiResponse<PagedResultDto<UniqueWordListItemDto>> = {
-      isSuccess: true,
-      message: 'تم',
-      data: page([SAMPLE_ITEM], 1),
-    };
+    const response = page<UniqueWordListItemDto>([SAMPLE_ITEM], 1);
 
     const promise = firstValueFrom(api.getList('tashkeel', '', 'mushaf-order', 1, 50));
 
@@ -153,27 +140,15 @@ describe('UniqueWordsApi drill-down HTTP', () => {
   let httpMock: HttpTestingController;
 
   beforeEach(() => {
-    getTestBed().resetTestingModule();
-    TestBed.configureTestingModule({
-      providers: [UniqueWordsApi, provideHttpClient(), provideHttpClientTesting()],
-    });
-    api = TestBed.inject(UniqueWordsApi);
-    httpMock = TestBed.inject(HttpTestingController);
+    ({ api, httpMock } = setupApiTestBed(UniqueWordsApi));
   });
 
   afterEach(() => {
-    httpMock.verify();
-    getTestBed().resetTestingModule();
+    teardownApiTestBed(httpMock);
   });
 
   it('getMentionedSurahs calls the surahs endpoint', async () => {
-    const response: ApiResponse<UniqueWordSurahsDto> = {
-      isSuccess: true,
-      message: 'تم',
-      data: {
-        surahs: [],
-      },
-    };
+    const response = ok<UniqueWordSurahsDto>({ surahs: [] });
 
     const promise = firstValueFrom(api.getMentionedSurahs('tashkeel', 1002));
     const req = httpMock.expectOne(`${environment.apiBaseUrl}/api/words/unique/tashkeel/1002/surahs`);
@@ -184,19 +159,15 @@ describe('UniqueWordsApi drill-down HTTP', () => {
   });
 
   it('getSummary calls the summary endpoint (kind/id, no suffix)', async () => {
-    const response: ApiResponse<UniqueWordSummaryDto> = {
-      isSuccess: true,
-      message: 'تم تحميل الكلمة الفريدة',
-      data: {
-        id: 1002,
-        kind: 'tashkeel',
-        displayText: 'كلمة-تجريبية',
-        occurrencesCount: 5,
-        ayahsCount: 5,
-        surahsCount: 5,
-        missingSurahsCount: 109,
-      },
-    };
+    const response = ok<UniqueWordSummaryDto>({
+      id: 1002,
+      kind: 'tashkeel',
+      displayText: 'كلمة-تجريبية',
+      occurrencesCount: 5,
+      ayahsCount: 5,
+      surahsCount: 5,
+      missingSurahsCount: 109,
+    });
 
     const promise = firstValueFrom(api.getSummary('tashkeel', 1002));
     const req = httpMock.expectOne(`${environment.apiBaseUrl}/api/words/unique/tashkeel/1002`);
@@ -207,13 +178,7 @@ describe('UniqueWordsApi drill-down HTTP', () => {
   });
 
   it('getMissingSurahs calls the missing-surahs endpoint', async () => {
-    const response: ApiResponse<UniqueWordMissingSurahsDto> = {
-      isSuccess: true,
-      message: 'تم',
-      data: {
-        surahs: [],
-      },
-    };
+    const response = ok<UniqueWordMissingSurahsDto>({ surahs: [] });
 
     const promise = firstValueFrom(api.getMissingSurahs('simple', 42));
     const req = httpMock.expectOne(`${environment.apiBaseUrl}/api/words/unique/simple/42/missing-surahs`);
@@ -224,11 +189,7 @@ describe('UniqueWordsApi drill-down HTTP', () => {
   });
 
   it('getAyahMatches calls the ayahs endpoint with page and pageSize', async () => {
-    const response: ApiResponse<PagedResultDto<UniqueWordAyahMatchDto>> = {
-      isSuccess: true,
-      message: 'تم',
-      data: { page: 2, pageSize: 10, totalCount: 0, items: [] },
-    };
+    const response = page<UniqueWordAyahMatchDto>([], 0, 2, 10);
 
     const promise = firstValueFrom(api.getAyahMatches('tashkeel', 2003, 2, 10));
     const req = httpMock.expectOne(

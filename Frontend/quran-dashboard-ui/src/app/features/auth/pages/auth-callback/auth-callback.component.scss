@@ -1,0 +1,11 @@
+:host {
+  display: block;
+}
+
+// Calm, centered status — no spinner, no ornament (DESIGN.md: reverence through restraint).
+.auth-callback {
+  display: flex;
+  justify-content: center;
+  padding-block: var(--qd-space-6);
+  text-align: center;
+}

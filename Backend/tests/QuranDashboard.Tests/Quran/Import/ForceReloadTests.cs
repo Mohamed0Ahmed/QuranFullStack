@@ -20,7 +20,7 @@ public sealed class ForceReloadTests
         var handler = await fixture.CreateHandlerAsync();
 
         var firstResult = await handler.HandleAsync(
-            new ImportQuranFoundationCommand(fixture.SourceRoot, ReportOutDir: null),
+            new ImportQuranFoundationCommand(fixture.SourceRoot, ReportOutDir: ImportSourceTestHelpers.TempReportDir()),
             CancellationToken.None);
 
         firstResult.Succeeded.Should().BeTrue(firstResult.Message);
@@ -29,7 +29,7 @@ public sealed class ForceReloadTests
 
         var secondHandler = fixture.CreateHandlerWithoutTruncate();
         var forceResult = await secondHandler.HandleAsync(
-            new ImportQuranFoundationCommand(fixture.SourceRoot, ReportOutDir: null, Force: true),
+            new ImportQuranFoundationCommand(fixture.SourceRoot, ReportOutDir: ImportSourceTestHelpers.TempReportDir(), Force: true),
             CancellationToken.None);
 
         forceResult.Succeeded.Should().BeTrue(forceResult.Message);

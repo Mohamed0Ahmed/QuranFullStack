@@ -1,6 +1,8 @@
 import { Component, ElementRef, HostListener, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { OidcSecurityService } from 'angular-auth-oidc-client';
+import { map } from 'rxjs';
 import { NAV_ITEMS, NavItem } from '../../navigation/nav-items';
 import { WORDS_ROUTE_PATH } from '../../navigation/route-paths';
 import { WORDS_MENU_ITEMS } from '../../navigation/words-nav-items';
@@ -17,13 +19,14 @@ export class TopNavbarComponent {
   private readonly router = inject(Router);
   private readonly elementRef = inject(ElementRef);
   private readonly themeService = inject(ThemeService);
+  private readonly oidcSecurityService = inject(OidcSecurityService);
 
   readonly allItems: NavItem[] = NAV_ITEMS;
   readonly primaryItems = NAV_ITEMS.filter((i) => i.group === 'primary');
   readonly moreItems = NAV_ITEMS.filter((i) => i.group === 'more');
   readonly actionItems = NAV_ITEMS.filter((i) => i.group === 'actions');
 
-  /** The primary "words" item renders as a dropdown of the Words-section pages. */
+  // The primary "words" item renders as a dropdown of the Words-section pages.
   readonly wordsMenuItems = WORDS_MENU_ITEMS;
   readonly wordsHubRoute = WORDS_ROUTE_PATH;
 
@@ -32,6 +35,12 @@ export class TopNavbarComponent {
   mobileOpen = false;
 
   protected readonly isDark = toSignal(this.themeService.isDark$, { initialValue: false });
+
+  // Drives the sign-in ⇄ sign-out swap in the actions area (Feature 033).
+  protected readonly isAuthenticated = toSignal(
+    this.oidcSecurityService.isAuthenticated$.pipe(map((result) => result.isAuthenticated)),
+    { initialValue: false },
+  );
 
   @HostListener('document:keydown.escape')
   onEscape(): void {
@@ -100,6 +109,15 @@ export class TopNavbarComponent {
 
   toggleTheme(): void {
     this.themeService.toggle();
+  }
+
+  signIn(): void {
+    this.oidcSecurityService.authorize();
+  }
+
+  signOut(): void {
+    // postLogoutRedirectUri is configured in app.config.ts; logoff() redirects there.
+    this.oidcSecurityService.logoff().subscribe();
   }
 
   isMoreActive(): boolean {

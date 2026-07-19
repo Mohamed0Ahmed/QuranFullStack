@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using QuranDashboard.Application.Abstractions.Quran.MushafReader;
 using QuranDashboard.Application.Abstractions.Quran.MushafReader.Responses;
 using QuranDashboard.Infrastructure.Persistence.Reads.Quran.MushafReader;
@@ -5,13 +6,6 @@ using QuranDashboard.Tests.Quran.Words;
 
 namespace QuranDashboard.Tests.Quran.MushafReader;
 
-/// <summary>
-/// Regression coverage for performance-review finding B4 (word analysis): the word core,
-/// morphology, identity, and dimension lookups are now one projected query (plus one small
-/// head-POS-tag lookup), and segments/POS/rules are one projected query, instead of up to
-/// twelve sequential point queries. These tests pin both the reduced EF command count and the
-/// exact response shape for a fully populated word and for a word with no morphology row.
-/// </summary>
 [Collection(nameof(MushafReaderCollection))]
 public sealed class WordAnalysisRedundancyReadTests(MushafReaderTestFixture fixture)
 {
@@ -24,7 +18,7 @@ public sealed class WordAnalysisRedundancyReadTests(MushafReaderTestFixture fixt
             .AddInterceptors(interceptor)
             .Options;
         await using var dbContext = new QuranDashboardDbContext(options);
-        var reader = new EfWordAnalysisReader(dbContext);
+        var reader = new EfWordAnalysisReader(dbContext, NullLogger<EfWordAnalysisReader>.Instance);
 
         var outcome = await reader.GetWordAnalysisAsync("2:25:3", CancellationToken.None);
 
@@ -64,7 +58,7 @@ public sealed class WordAnalysisRedundancyReadTests(MushafReaderTestFixture fixt
             .AddInterceptors(interceptor)
             .Options;
         await using var dbContext = new QuranDashboardDbContext(options);
-        var reader = new EfWordAnalysisReader(dbContext);
+        var reader = new EfWordAnalysisReader(dbContext, NullLogger<EfWordAnalysisReader>.Instance);
 
         // 2:25:1 has no morphology row in the fixture, so the core projection alone is enough to
         // detect incomplete data; the head-POS-tag and segment/POS/rule queries never run.

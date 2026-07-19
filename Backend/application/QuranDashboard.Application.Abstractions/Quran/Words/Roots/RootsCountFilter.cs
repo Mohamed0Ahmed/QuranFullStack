@@ -2,11 +2,6 @@ using QuranDashboard.Application.Abstractions.Common.Filtering;
 
 namespace QuranDashboard.Application.Abstractions.Quran.Words.Roots;
 
-/// <summary>
-/// Count-range filter for the Roots list (Feature 026, US5). Filters root dimension
-/// entries by exactly the seven count columns the page already shows. Predicates run
-/// in memory over the cached whole-summary rows (no backend cache-key change).
-/// </summary>
 public sealed record RootsCountFilter(
     CountRange Occurrences,
     CountRange Ayahs,
