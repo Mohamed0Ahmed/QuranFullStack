@@ -52,7 +52,6 @@ describe('mushaf-reader-session', () => {
       ),
     ).toBe(true);
     expect(isBareMushafEntry(convertToParamMap({ qdDetail: 'v1~root~999~ayahs~simple~mentioned~1' }))).toBe(true);
-    // Any reader-owned key alongside overlay keys means the entry is not bare.
     expect(
       isBareMushafEntry(convertToParamMap({ page: '5', qdDetail: 'v1~root~999~ayahs~simple~mentioned~1' })),
     ).toBe(false);

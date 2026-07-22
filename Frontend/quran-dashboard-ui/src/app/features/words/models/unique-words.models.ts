@@ -1,11 +1,5 @@
 export type UniqueWordKind = 'tashkeel' | 'simple';
 
-/**
- * The Unique Words sort allowlist, split by column class because that decides the natural
- * direction a bare token means (counts descend, text ascends). `mushaf-order` is the default and
- * is not a column; نوع الكلمة/الجذر (page-only enrichments) and لم يذكر فيها (computed post-page,
- * and merely the inverse of السور) are excluded — see the reads README's ordering contract.
- */
 type UniqueWordCountSortColumn = 'occurrences' | 'ayahs' | 'surahs';
 type UniqueWordTextSortColumn = 'alpha';
 export type UniqueWordSortColumnKey = UniqueWordCountSortColumn | UniqueWordTextSortColumn;
@@ -126,7 +120,6 @@ export function isUniqueWordKind(value: unknown): value is UniqueWordKind {
   return value === 'tashkeel' || value === 'simple';
 }
 
-/** True only for a CANONICAL token — the legacy alias spellings normalize instead (see roots). */
 export function isUniqueWordSort(value: unknown): value is UniqueWordSort {
   return (
     typeof value === 'string' &&
@@ -154,8 +147,6 @@ export const UNIQUE_WORDS_QUERY_KEYS = {
   ayahPage: 'ap',
 } as const;
 
-// Association filters (Feature 026, US7): primary word type (POS code) and primary root. Both fail
-// closed in the URL and are absent by default (pre-feature URLs unchanged).
 export interface UniqueWordsAssociation {
   readonly primaryType: string | null;
   readonly rootId: number | null;

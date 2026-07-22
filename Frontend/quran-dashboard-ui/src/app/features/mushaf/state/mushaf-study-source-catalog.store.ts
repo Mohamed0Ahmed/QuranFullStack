@@ -9,14 +9,6 @@ import {
 } from '../utils/study-source-catalog.labels';
 import { subscribeToApiLoad } from './mushaf-api-load.helpers';
 
-// Reader-wide study-source catalogue (tafsir / translation / full-إعراب). It is not part of
-// the reader's URL state machine and does not depend on the page/ayah/word selection, so it
-// loads and caches here rather than inside MushafReaderFacade.
-//
-// F2: load() guards the fetch so it fires GET /api/mushaf/study-sources at most once per
-// successful load. `loaded` flips only on a genuine success (an empty-but-successful catalogue
-// still counts) to distinguish it from "not loaded yet"; a failure never sets it, so the next
-// mount can retry.
 @Injectable({ providedIn: 'root' })
 export class MushafStudySourceCatalogStore {
   private readonly catalogApi = inject(MushafStudySourceCatalogApi);

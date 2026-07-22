@@ -66,8 +66,6 @@ export class WordTypesTableComponent {
   readonly sort = input<WordTypeSort>(DEFAULT_WORD_TYPE_SORT);
   readonly countOpened = output<WordTypeCountOpenedEvent>();
   readonly retry = output<void>();
-  // null = release the sort param — unlike the other four explorers, this lands on المواضع desc (the
-  // Word Types default), not Mushaf order.
   readonly sortChange = output<WordTypeSort | null>();
 
   protected readonly sortControl = new ExplorerTableSortController<WordTypeSort>(
@@ -76,16 +74,11 @@ export class WordTypesTableComponent {
     (sort) => this.sortChange.emit(sort),
   );
 
-  // 12 rows, matching the four sibling explorer tables (Feature 030, N3-d) — this table showed 5.
   protected readonly loadingRowPlaceholders = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] as const;
 
-  // Virtual scrolling keeps the 1000-row list bounded (mirrors the other explorer tables). It is guarded
-  // on ResizeObserver so the jsdom test builder falls back to plain rendering.
   protected readonly useVirtualScroll = HAS_RESIZE_OBSERVER;
   protected readonly rowHeight = signal(ROW_HEIGHT_DESKTOP);
 
-  // Only rows whose discriminant matches the active view render; a stale/mismatched response is dropped
-  // here (defense-in-depth) so it can never paint a root row under the stems tab, in either branch.
   protected readonly visibleRows = computed<readonly WordTypeTableRowDto[]>(() => {
     const page = this.rows();
     if (!page) {
@@ -116,11 +109,8 @@ export class WordTypesTableComponent {
     });
   }
 
-  // Arrow-function field, not a method: CDK's DefaultIterableDiffer invokes the virtual-scroll
-  // `trackBy` callback unbound (no `this`). A prototype method would dereference `this` as
-  // undefined and throw every change-detection cycle, rendering zero rows in the browser (the
-  // jsdom specs use the non-virtual `@for` fallback, so they never caught it). The arrow binds
-  // `this` lexically.
+  // Arrow field, not a method: CDK invokes the virtual-scroll trackBy unbound; a method would
+  // deref `this` as undefined and throw every change-detection cycle.
   protected readonly trackRowDomId = (_index: number, row: WordTypeTableRowDto): string =>
     this.rowDomId(row);
 
@@ -142,7 +132,6 @@ export class WordTypesTableComponent {
     }
   }
 
-  // Page-relative sequence shared across all four views; the persisted database ID is never shown.
   protected rowNumber(index: number): number {
     const page = this.rows();
     if (!page) {
@@ -151,8 +140,6 @@ export class WordTypesTableComponent {
     return pageRelativeRowNumber(page.page, page.pageSize, index);
   }
 
-  // The header and rows render only when there is real data or a load in flight. Prompt, empty, and
-  // error states render inside the same stable shell instead of replacing it.
   protected hasRows(): boolean {
     const page = this.rows();
     return page !== null && page.items.length > 0;
@@ -169,8 +156,6 @@ export class WordTypesTableComponent {
 
   protected get sortColumns(): typeof WORD_TYPE_SORT_COLUMNS { return WORD_TYPE_SORT_COLUMNS; }
 
-  // The dimension text column IS the `alpha` sort column (N8-f): one sort token across all four views,
-  // but the header label (and aria-label) follows the view so it names the column the user is viewing.
   protected readonly alphaSortColumn = computed<ExplorerSortColumn<WordTypeSortColumnKey>>(() => ({
     ...WORD_TYPE_SORT_COLUMNS.alpha,
     label: this.dimensionHeader(),

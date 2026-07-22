@@ -19,7 +19,6 @@ import { UniqueWordsDrilldownFacade } from '../../state/unique-words-drilldown.f
 import { EntityDetailOverlayTitleStore } from '../entity-detail-overlay-title.store';
 import { UniqueDetailOverlayAdapterComponent } from './unique-detail-overlay-adapter.component';
 
-// Synthetic, non-scriptural Arabic placeholder: keeps RTL rendering real without faking Quranic text.
 const SYNTHETIC_WORD_TEXT = 'كلمة-اختبار';
 
 function summaryOf(mode: UniqueWordKind, id: number): UniqueWordSummaryDto {
@@ -176,7 +175,6 @@ describe('UniqueDetailOverlayAdapterComponent (Feature 029 B4)', () => {
 
     expect(apiStub.getMissingSurahs).toHaveBeenCalledWith('tashkeel', 5);
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('التوبة');
-    // The summary is reused for the same word+mode: still exactly one summary read.
     expect(apiStub.getSummary).toHaveBeenCalledTimes(1);
   });
 

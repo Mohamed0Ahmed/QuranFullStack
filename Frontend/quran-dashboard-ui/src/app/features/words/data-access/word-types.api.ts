@@ -27,8 +27,6 @@ import {
   WordTypeGroupedSummaryDto,
 } from '../models/word-types-detail.models';
 
-// Appends the tri-state presence flags (Feature 026, US6) as `hasRoot=true|false` etc., only for a set
-// flag (null = any ⇒ param omitted, keeping the pre-feature request byte-identical).
 function appendPresenceFlags(
   params: HttpParams,
   flags: { hasRoot: boolean | null; hasStem: boolean | null; hasLemma: boolean | null },
@@ -123,10 +121,6 @@ export class WordTypesApi {
     return this.http.get<ApiResponse<PagedResultDto<WordTypeTableRowDto>>>(`${this.baseUrl}/api/words/word-types/table`, { params });
   }
 
-  // Scoped four-count summary (Feature 026, US8). Sends EXACTLY the list scope — no tableView, sort, or
-  // paging — so counts describe the scope, not a page. Optional scope inputs (childCode/search/flags/
-  // secondary filters) are appended only when set, keeping the request byte-identical to the table read's
-  // scope portion.
   getScopeCounts(options: {
     type: string;
     childCode: string | null;

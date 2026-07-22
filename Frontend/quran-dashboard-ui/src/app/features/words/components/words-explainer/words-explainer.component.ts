@@ -2,9 +2,6 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 
 import { WordsExplainerContent } from '../../models/words-explainer.content';
 
-// Presentational hero (Feature 031): renders no title of its own — the page's <h1> owns it and the
-// section is named via aria-label, so no heading is duplicated. It also does not own the persisted
-// collapse state: it renders `expanded` and emits `toggled`, leaving storage to the page.
 @Component({
   selector: 'qd-words-explainer',
   standalone: true,

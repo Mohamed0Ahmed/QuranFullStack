@@ -53,9 +53,6 @@
       }
     </div>
   } @else if (status() === 'error') {
-    <!-- List states live INSIDE the mounted shell (Feature 030, N3 row 5 / §17 mounted-shell
-         doctrine): as a page-level banner they inserted above the fixed table+panel grid and
-         pushed it down ~4.5rem. They replace the body, so the shell keeps its footprint. -->
     <div class="roots-table__state qd-error-state" role="alert" data-testid="roots-list-error">
       {{ errorMessage() }}
     </div>
@@ -127,8 +124,6 @@
     </div>
   }
 
-  <!-- One sortable column header (Feature 030, N8). aria-sort carries the current state and lives on
-       the columnheader; the button's aria-label names the column + the state the next click gives. -->
   <ng-template #sortHeader let-column="column" let-numeric="numeric">
     <div
       class="roots-table__header-cell qd-explorer-table__header-cell"

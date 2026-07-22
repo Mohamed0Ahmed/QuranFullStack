@@ -11,9 +11,6 @@
   margin-inline: auto;
 }
 
-// Orientation chain (Feature 031): الجذر ← الصيغة المعجمية ← الأصل الصرفي ← الكلمة + أنواع الكلمات.
-// Every node is neutral — the grammatical/morphological split is carried textually by the "(نحوي)"
-// marker, never by color (Green Thread / green budget).
 .words-hub-chain {
   display: flex;
   flex-wrap: wrap;
@@ -50,7 +47,6 @@
   }
 }
 
-// Richer cards want the width; a 2+2+1 layout reads calmer than a ragged 3+2 (plan D6).
 @media (min-width: 1024px) {
   .words-hub-grid {
     grid-template-columns: repeat(2, 1fr);

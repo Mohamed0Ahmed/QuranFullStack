@@ -54,16 +54,12 @@ export type WordTypeGroupedDetailSelection = Extract<WordTypeDetailSelection, { 
 
 export interface WordTypesDetailState {
   status: WordTypesLoadStatus;
-  // Kind-aware active selection and its discriminant. `selectedRow` remains the word-only compatibility
-  // projection; every kind's exact identity and stored scope live in `selection`.
   selection: WordTypeDetailSelection | null;
   kind: WordTypeDetailSelectionKind;
   selectedRow: WordTypeRowIdentity | null;
   view: WordTypeDetailView;
   detailPage: number;
   location: string | null;
-  // Word summaries populate `summary`; grouped summaries populate `groupedSummary`. Exactly one is
-  // non-null for an active selection.
   summary: WordTypeSummaryDto | null;
   groupedSummary: WordTypeGroupedSummaryDto | null;
   words: PagedResultDto<WordTypeGroupedMemberWordDto> | null;

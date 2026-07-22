@@ -24,14 +24,14 @@ describe('ScrollLockService', () => {
   });
 
   it('keeps the body locked while any of two simultaneous consumers holds the lock', () => {
-    service.acquire(); // responsive drawer
-    service.acquire(); // global overlay on top
+    service.acquire();
+    service.acquire();
     expect(document.body.style.overflow).toBe('hidden');
 
-    service.release(); // one layer goes away
+    service.release();
     expect(document.body.style.overflow).toBe('hidden');
 
-    service.release(); // last holder releases
+    service.release();
     expect(document.body.style.overflow).toBe('scroll');
   });
 

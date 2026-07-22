@@ -17,7 +17,6 @@ export class ExplorerResultCountComponent {
 
   protected readonly ariaLabel = computed(() => `${this.labelPrefix()}: ${this.count()}`);
 
-  // TDZ-safe getter (see words README): label consts read via readonly fields resolve to
-  // undefined in the bundled test build.
+  // TDZ-safe getter: label consts read via readonly fields resolve to undefined in the bundled test build.
   protected get labels() { return WORDS_RESULT_COUNT_LABELS; }
 }

@@ -46,11 +46,6 @@ import { WORDS_DETAIL_RETRY_LABEL } from '../../models/words-shared.labels';
 import { QdStateComponent } from '../../../../shared/ui/state/state.component';
 import { EntityDetailOverlayTitleStore } from '../entity-detail-overlay-title.store';
 
-// Overlay adapter for lemma frames (Feature 029, B4). Owns a component-scoped LemmasDetailController
-// (never the page facade) and maps every `frame` input change onto applyUrlState. All view/sub-view/
-// page/type changes route through DetailOverlayHistoryService.replaceTopFrame — never the Router or
-// controller state directly — and the URL sync feeds the new frame back in, re-driving the controller.
-// Unlike roots, the ayahs view's typeCode is part of the frame identity.
 @Component({
   selector: 'qd-lemma-detail-overlay-adapter',
   standalone: true,
@@ -77,8 +72,6 @@ export class LemmaDetailOverlayAdapterComponent {
 
   protected readonly retryLabel = WORDS_DETAIL_RETRY_LABEL;
 
-  // Re-drives the current frame after a failed load (Feature 030, M3). The frame is unchanged, so this
-  // never touches the URL — routing an identical frame through the history service would be a no-op.
   protected onRetry(): void {
     this.controller.retryCurrentIdentity();
   }
@@ -128,9 +121,8 @@ export class LemmaDetailOverlayAdapterComponent {
   }
 
   constructor() {
-    // Track ONLY the frame input: applyUrlState reads/writes the controller's
-    // panel signal internally, and tracking it would re-trigger this effect on
-    // every load-state change (cancelling in-flight summary loads).
+    // Track only frame(); untracked() keeps applyUrlState's own signal writes from
+    // re-triggering this effect and cancelling in-flight loads.
     effect(() => {
       const frame = this.frame();
       untracked(() =>

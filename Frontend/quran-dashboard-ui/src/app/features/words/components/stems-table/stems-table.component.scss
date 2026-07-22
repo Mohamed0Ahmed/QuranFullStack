@@ -134,9 +134,6 @@
   min-inline-size: 0;
 }
 
-// The in-shell error / no-results box (Feature 030, N3 row 5). It stands in for the body, so it
-// carries the body's geometry in every band — see the desktop/tablet rules in
-// `stems-table.component.responsive.scss`.
 .stems-table__state {
   margin: 0;
   gap: var(--qd-space-3);

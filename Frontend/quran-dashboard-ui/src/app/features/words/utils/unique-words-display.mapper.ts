@@ -4,8 +4,6 @@ import {
   UniqueWordSummaryDto,
 } from '../models/unique-words.models';
 
-// displayText is resolved by the backend, so this maps straight through. Kept as a thin seam so call
-// sites stay stable and future display derivation can centralize here.
 export function mapUniqueWordListItem(word: UniqueWordListItemDto): UniqueWordListItemViewModel {
   return word;
 }

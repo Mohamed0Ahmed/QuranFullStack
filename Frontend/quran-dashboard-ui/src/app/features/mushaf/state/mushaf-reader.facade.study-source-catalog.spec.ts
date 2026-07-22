@@ -16,10 +16,6 @@ import {
   studySourceCatalogItemMock,
 } from './mushaf-study-source-catalog.api.mock';
 
-// F2 regression coverage: loadStudySourceCatalog must not refetch on every mount, must
-// treat an empty-but-successful catalogue as "loaded" (not "not loaded"), and must keep
-// a failed load retryable.
-
 const populatedCatalogDto: MushafStudySourceCatalogDto = {
   tafsirSources: [studySourceCatalogItemMock],
   translationSources: [studySourceCatalogItemMock],
@@ -84,7 +80,6 @@ describe('MushafReaderFacade.loadStudySourceCatalog (F2)', () => {
     expect(facade.translationSourceOptions()).toEqual([]);
     expect(facade.fullI3rabSourceOptions()).toEqual([]);
 
-    // A second mount must still not refetch, even though the first result was empty.
     facade.loadStudySourceCatalog();
     expect(getCatalog).toHaveBeenCalledTimes(1);
   });
@@ -106,7 +101,6 @@ describe('MushafReaderFacade.loadStudySourceCatalog (F2)', () => {
     expect(getCatalog).toHaveBeenCalledTimes(1);
     expect(facade.tafsirSourceOptions()).toEqual([]);
 
-    // Retry after failure must issue a fresh request rather than staying cached as failed.
     facade.loadStudySourceCatalog();
     expect(getCatalog).toHaveBeenCalledTimes(2);
     expect(facade.tafsirSourceOptions()).toHaveLength(1);

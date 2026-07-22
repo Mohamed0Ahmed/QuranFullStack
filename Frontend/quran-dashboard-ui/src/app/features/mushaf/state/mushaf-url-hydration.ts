@@ -10,13 +10,9 @@ export interface MushafUrlHydrationCurrent {
   selectedAyahKey: string | null;
   selectedWordLocation: string | null;
   urlExplicitSources: MushafReaderSources;
-  // F1 stranded-load recovery. Callers MUST pass true ONLY on the first hydration after a route
-  // (re)bind while the resource is still loading — a prior load was interrupted by teardown and
-  // the selection identity did not change, so it would never resolve unless reloaded here. Keep
-  // it false for ordinary in-place URL patches on a live binding, or an unrelated patch (e.g. a
-  // study-tab switch) would cancel and restart an in-flight request. Defaults to false.
+  // Pass true ONLY on the first hydration after a route (re)bind while still loading (recover a
+  // stranded load); true on an ordinary patch restarts an in-flight request.
   ayahStudyIsLoading?: boolean;
-  // Same rebind-scoped stranded-load recovery signal as ayahStudyIsLoading, for word analysis.
   wordAnalysisIsLoading?: boolean;
 }
 

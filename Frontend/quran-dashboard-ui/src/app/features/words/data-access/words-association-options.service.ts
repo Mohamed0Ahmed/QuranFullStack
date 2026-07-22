@@ -10,12 +10,6 @@ import { RootsCache } from '../state/roots-cache';
 import { LemmasCache } from '../state/lemmas-cache';
 import { WordTypesCache, WordTypesCacheKeys } from '../state/word-types-cache';
 
-// Association-filter picker options (Feature 026, US7) reuse existing reads — no new endpoint. Root/
-// lemma pickers hit the roots/lemmas list apis under a distinct picker cache namespace; the type select
-// flattens the noun and particle POS-leaf children (verb and muqatta'at are non-granular in the tree, so
-// they aren't offered as granular options). The tree read shares WordTypesCache / WordTypesCacheKeys.tree
-// with the Word Types explorer, so GET word-types/tree runs at most once per browser session whichever
-// feature is visited first (perf finding F2).
 @Injectable({ providedIn: 'root' })
 export class WordsAssociationOptionsService {
   private readonly rootsApi = inject(RootsApi);

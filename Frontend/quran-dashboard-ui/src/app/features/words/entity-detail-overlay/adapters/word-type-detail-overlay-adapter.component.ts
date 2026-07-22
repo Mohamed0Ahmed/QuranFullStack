@@ -54,8 +54,6 @@ export class WordTypeDetailOverlayAdapterComponent {
 
   protected readonly retryLabel = WORDS_DETAIL_RETRY_LABEL;
 
-  // Retry re-drives the unchanged frame directly through the controller: it never
-  // touches the URL, since replacing an identical frame would be a no-op.
   protected onRetry(): void {
     this.controller.retryCurrentIdentity();
   }
@@ -66,9 +64,6 @@ export class WordTypeDetailOverlayAdapterComponent {
 
   readonly entityAyahCount = computed(() => this.panelState().summary?.ayahsCount ?? null);
 
-  // A word-kind Word Type detail has no member-words view ('words' exists only for
-  // grouped root/stem/lemma selections; the view loader no-ops it for kind 'word'),
-  // so a frame carrying view 'words' (a hand-edited or shared URL) is clamped to 'ayahs'.
   protected readonly effectiveView = computed<WordTypeDetailView>(() =>
     this.frame().view === 'words' ? DEFAULT_WORD_TYPES_DETAIL_VIEW : this.frame().view,
   );
@@ -109,9 +104,8 @@ export class WordTypeDetailOverlayAdapterComponent {
   }
 
   constructor() {
-    // Track ONLY the frame input: applyUrlState reads/writes the controller's
-    // panel signal internally, and tracking it would re-trigger this effect on
-    // every load-state change (cancelling in-flight summary loads).
+    // Track only frame(); untracked() keeps applyUrlState's own signal writes from
+    // re-triggering this effect and cancelling in-flight loads.
     effect(() => {
       const frame = this.frame();
       untracked(() => {
@@ -127,11 +121,8 @@ export class WordTypeDetailOverlayAdapterComponent {
           detailPage: frame.detailPage,
         });
 
-        // Canonicalize an unsupported `words` top frame: the controller renders
-        // `ayahs` for it, so rewrite the URL to the word detail default rather
-        // than leave `view=words` (a hand-edited or shared URL) in the address
-        // bar. The replaced frame (view 'ayahs') re-enters this effect and
-        // short-circuits in the controller, so this never loops.
+        // Canonicalize a hand-edited view=words in the URL to the default; the replaced
+        // frame re-enters this effect and short-circuits in the controller, so no loop.
         if (frame.view === 'words') {
           this.overlay.replaceTopFrame({ ...frame, view: DEFAULT_WORD_TYPES_DETAIL_VIEW });
         }
@@ -149,8 +140,6 @@ export class WordTypeDetailOverlayAdapterComponent {
       return;
     }
 
-    // Canonical frame: the surahs view is single-shot, so it always serializes
-    // detail page 1 — every tab switch resets the page.
     this.overlay.replaceTopFrame({ ...frame, view, detailPage: DEFAULT_WORD_TYPES_DETAIL_PAGE });
   }
 

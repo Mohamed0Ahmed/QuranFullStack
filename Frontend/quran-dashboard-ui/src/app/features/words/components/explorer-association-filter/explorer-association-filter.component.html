@@ -55,8 +55,6 @@
           {{ labels.noResults }}
         </p>
       } @else {
-        <!-- Plain list semantics on purpose: options are ordinary buttons reachable by Tab. No listbox
-             role is claimed because no arrow-key/listbox keyboard model is implemented. -->
         <ul class="association-filter__options">
           @for (option of visibleOptions(); track option.id) {
             <li>

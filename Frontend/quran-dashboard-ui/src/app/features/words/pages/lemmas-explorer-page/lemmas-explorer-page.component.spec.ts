@@ -564,7 +564,6 @@ describe('LemmasExplorerPageComponent US1', () => {
     );
 
     const fixture = await initLifecycle();
-    // Feature 030, N3 row 5: the list's own states render inside the table shell, not above the grid.
     expect(
       fixture.nativeElement.querySelector('[data-testid="lemmas-list-error"]')?.closest('.qd-explorer-table'),
     ).toBeTruthy();
@@ -590,8 +589,6 @@ describe('LemmasExplorerPageComponent US1', () => {
       const fixture = await initLifecycle();
       const root = fixture.nativeElement as HTMLElement;
 
-      // ≥1024px the table header row is visible and owns sorting, so the fallback is CSS-hidden
-      // there; below that the header row is display:none and this select is the only way in.
       const select = root.querySelector('[data-testid="lemmas-sort-select"]') as HTMLElement;
       expect(select).toBeTruthy();
       expect(select.closest('.qd-explorer-sort-fallback')).not.toBeNull();
@@ -631,7 +628,6 @@ describe('LemmasExplorerPageComponent US1', () => {
 
       (root.querySelector('[data-testid="lemmas-table-sort-occurrences"]') as HTMLButtonElement).click();
 
-      // Release removes the param entirely — the default order is never spelled out in the URL.
       expect(router.navigate).toHaveBeenCalledWith([], {
         relativeTo: expect.anything(),
         queryParams: expect.objectContaining({ sort: null, page: null }),
@@ -957,8 +953,6 @@ describe('LemmasExplorerPageComponent US8 — restore and navigate exact state',
     expect(lemmasApi.getLemmasList).toHaveBeenCalled();
 
     const root = fixture.nativeElement as HTMLElement;
-    // Feature 030, N3 row 5: notFound is a PANEL/selection state — it renders inside the details
-    // panel (a mounted shell), never as a page-level banner above the table+panel grid.
     const notFound = root.querySelector('[data-testid="lemma-details-not-found"]');
     expect(notFound).toBeTruthy();
     expect(notFound?.getAttribute('role')).toBe('status');

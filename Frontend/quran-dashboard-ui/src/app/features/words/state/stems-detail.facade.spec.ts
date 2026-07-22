@@ -37,10 +37,6 @@ describe('StemsDetailFacade cleanup', () => {
     expect(detailSubscription.unsubscribe).toHaveBeenCalledTimes(1);
   });
 
-  // Finding M24: unbindFromRoute() used to call only cancelPendingLoads(), which left the
-  // controller's activeUrlState set. Re-binding to the SAME query params then short-circuited
-  // inside applyUrlState() (stemsDetailUrlStatesEqual matched) and never re-issued the load,
-  // stranding the panel on its cancelled 'loading' status with no request in flight.
   it('re-issues the summary load on rebind to the same URL state after a mid-flight unbind', () => {
     const queryParamMap$ = new BehaviorSubject(convertToParamMap({ stem: '42', view: 'ayahs' }));
     const route = { queryParamMap: queryParamMap$.asObservable() } as unknown as ActivatedRoute;
@@ -63,10 +59,8 @@ describe('StemsDetailFacade cleanup', () => {
     expect(getStemSummary).toHaveBeenCalledTimes(1);
     expect(facade.panelState().status).toBe('loading');
 
-    // Unbind while the summary request is still in flight (it never emitted).
     facade.unbindFromRoute();
 
-    // Rebind to the exact same query params (e.g. remounting the page).
     facade.bindToRoute(route);
 
     expect(getStemSummary).toHaveBeenCalledTimes(2);

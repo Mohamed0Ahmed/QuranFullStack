@@ -19,7 +19,6 @@ import { WordTypesDetailFacade } from '../../state/word-types-detail.facade';
 import { EntityDetailOverlayTitleStore } from '../entity-detail-overlay-title.store';
 import { WordTypeDetailOverlayAdapterComponent } from './word-type-detail-overlay-adapter.component';
 
-// Synthetic, non-scriptural Arabic placeholder: keeps RTL rendering real without faking Quranic text.
 const SYNTHETIC_WORD_TEXT = 'كلمة-اختبار';
 
 const IDENTITY: WordTypeRowIdentity = {
@@ -136,7 +135,6 @@ describe('WordTypeDetailOverlayAdapterComponent (Feature 029 B4)', () => {
     expect(host.querySelector('.explorer-panel-header')).toBeNull();
     expect(host.querySelector('.qd-card')).toBeNull();
 
-    // Word-kind panel: exactly the ayahs/surahs tabs, no member-words tab.
     expect(host.querySelectorAll('[role="tab"]').length).toBe(2);
     expect(host.querySelector('[data-testid="word-type-details-tab-words"]')).toBeNull();
     expect(host.querySelector('[data-testid="overlay-word-type-ayahs-view"]')).not.toBeNull();
@@ -213,8 +211,6 @@ describe('WordTypeDetailOverlayAdapterComponent (Feature 029 B4)', () => {
       host.querySelector('[data-testid="word-type-details-tab-ayahs"]')?.getAttribute('aria-selected'),
     ).toBe('true');
 
-    // The unsupported `words` top frame is canonicalized in the URL to the word
-    // detail default 'ayahs', so a shared/hand-edited `view=words` never sticks.
     expect(replaceTopFrame).toHaveBeenCalledWith({
       kind: 'wordType',
       tashkeelWordId: 42,
@@ -241,7 +237,6 @@ describe('WordTypeDetailOverlayAdapterComponent (Feature 029 B4)', () => {
     expect(host.querySelector('[data-testid="overlay-word-type-missing-surahs-view"]')).not.toBeNull();
     expect(host.textContent).toContain('الفاتحة');
     expect(host.textContent).toContain('التوبة');
-    // The summary is reused for the same composite identity: one summary read.
     expect(apiStub.getSummary).toHaveBeenCalledTimes(1);
   });
 

@@ -55,7 +55,6 @@ describe('WordsHubPageComponent', () => {
       expect(root.querySelector(`[data-testid="words-hub-card--${key}"]`)).toBeTruthy();
     }
     expect(root.querySelectorAll('qd-word-section-card')).toHaveLength(5);
-    // No Arabic-label-derived testids and no coming-soon scaffolding remain.
     expect(root.querySelector('[data-testid="words-hub-card--الجذور"]')).toBeNull();
     expect(root.querySelector('[data-testid="words-hub-card--disabled"]')).toBeNull();
     expect(root.querySelectorAll('[data-testid="word-section-coming-soon"]')).toHaveLength(0);

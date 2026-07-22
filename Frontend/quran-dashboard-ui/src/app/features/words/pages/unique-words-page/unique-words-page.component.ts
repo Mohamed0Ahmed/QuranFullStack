@@ -108,7 +108,6 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
   protected readonly typeOptions = signal<readonly AssociationOption[]>([]);
   protected readonly rootOptions = signal<readonly AssociationOption[]>([]);
   protected readonly rootOptionsLoading = signal(false);
-  // M32/M43 + M74: a picker load failure must be distinguishable from a genuine empty result.
   protected readonly rootOptionsError = signal(false);
   protected readonly selectedRootLabel = signal<string | null>(null);
   protected get primaryTypeLabel(): string { return UNIQUE_WORDS_PRIMARY_TYPE_FILTER_LABEL; }
@@ -125,7 +124,6 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
   protected readonly drilldownState = this.facade.drilldownState;
   protected readonly restoredNotFoundLabel = RESTORED_WORD_NOT_FOUND_LABEL;
   protected readonly pageTitle = ACTIVE_HUB_SECTION.labelAr;
-  // TDZ-safe content getter + synchronous collapse restore (no first-paint shift).
   protected get explainer() { return WORDS_EXPLAINER_CONTENT.unique; }
   protected readonly explainerExpanded = signal(this.explainerPreference.isExpanded('unique'));
   protected readonly listPaginationLabel = UNIQUE_WORD_LIST_PAGINATION_LABEL;
@@ -170,7 +168,6 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
     () => this.tableFocus.focus() !== null || this.drilldownState().isOpen,
   );
 
-  /** This drilldown's own typed frame (Feature 029 B7): an ayah click promotes it over the Mushaf. */
   protected readonly ayahParentFrame = computed<UniqueDetailFrame | null>(() => {
     const state = this.drilldownState();
     if (!state.isOpen || state.selectedWordId === null) {
@@ -260,13 +257,11 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
     this.searchInput.next(value);
   }
 
-  /** A header cycle step (token) or its release (null). Changing the ordering always resets page. */
   protected onSortChange(sort: UniqueWordSort | null): void {
     this.clearTableFocus();
     this.updateQueryParams(buildUniqueWordsQueryParams({ sort, page: null }));
   }
 
-  /** The ≤1023px fallback select drives the same contract; the default order stays param-absent. */
   protected onSortSelect(value: string): void {
     this.onSortChange(sortQueryValue(normalizeUniqueWordSort(value), DEFAULT_UNIQUE_WORD_SORT));
   }
@@ -322,10 +317,6 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
     this.updateQueryParams(buildModalCloseQueryParams());
   }
 
-  /**
-   * Re-drives the current drilldown identity after a failed load (Feature 030,
-   * M3). The identity is unchanged, so the URL is untouched.
-   */
   protected onDrilldownRetry(): void {
     this.facade.retryDrilldown();
   }

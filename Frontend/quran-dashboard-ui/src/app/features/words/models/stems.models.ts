@@ -1,8 +1,3 @@
-/**
- * The Stems sort allowlist, split by column class because that decides the natural direction a
- * bare token means (counts descend, text ascends). `mushaf-order` is the default and is not a
- * column; the dominant الجذر/الصيغة text columns are related-entity columns, not sortable in v1.
- */
 type StemCountSortColumn = 'occurrences' | 'ayahs' | 'surahs' | 'simple' | 'tashkeel';
 type StemTextSortColumn = 'alpha';
 export type StemSortColumnKey = StemCountSortColumn | StemTextSortColumn;
@@ -110,7 +105,6 @@ export const STEMS_QUERY_KEYS = {
   typeCode: 'typeCode',
 } as const;
 
-// Association filters (Feature 026, US7): primary (dominant) root and primary lemma. Fail closed.
 export interface StemsAssociation {
   readonly rootId: number | null;
   readonly lemmaId: number | null;
@@ -150,10 +144,6 @@ export const DEFAULT_STEM_DETAIL_PAGE = 1;
 export const STEM_DETAIL_PAGE_SIZE = 100;
 export const TOTAL_SURAHS = 114;
 
-/**
- * The sortable Stems columns, in table-header order. The dominant الصيغة المعجمية / الجذر text
- * columns are excluded: they are related-entity columns and render as plain headers.
- */
 export const STEM_SORT_COLUMNS = {
   alpha: { key: 'alpha', natural: 'asc', label: WORDS_SHARED_HEADERS.stem },
   occurrences: { key: 'occurrences', natural: 'desc', label: WORDS_SHARED_HEADERS.occurrences },
@@ -175,7 +165,6 @@ export const STEM_SURAHS_VIEW_KEYS = ['mentioned', 'missing'] as const satisfies
 export const STEM_VIEW_KEYS = ['words', 'ayahs', 'surahs', 'lemmas'] as const satisfies readonly StemView[];
 export const PAGINATED_STEM_VIEWS: readonly StemView[] = ['ayahs', 'words'];
 
-/** True only for a CANONICAL token — the legacy alias spellings normalize instead (see roots). */
 export function isStemSort(value: unknown): value is StemSort {
   return typeof value === 'string' && canonicalizeSortToken(value, STEM_SORT_COLUMN_LIST) === value;
 }

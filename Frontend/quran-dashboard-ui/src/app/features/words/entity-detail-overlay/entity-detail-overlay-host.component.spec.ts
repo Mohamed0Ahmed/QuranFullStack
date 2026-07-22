@@ -71,7 +71,6 @@ describe('EntityDetailOverlayHostComponent (composition root)', () => {
   let service: DetailOverlayHistoryService;
 
   beforeEach(() => {
-    // jsdom lacks matchMedia; the app shell's theme service reads it on init.
     if (typeof window.matchMedia !== 'function') {
       Object.defineProperty(window, 'matchMedia', {
         configurable: true,
@@ -188,7 +187,6 @@ describe('EntityDetailOverlayHostComponent (composition root)', () => {
     expect(root.querySelector('[data-testid="detail-modal-shell"]')).not.toBeNull();
   });
 
-  // Deferred adapter chunks load asynchronously; poll until the selector renders.
   async function waitForSelector(fixture: { detectChanges: () => void; nativeElement: unknown }, selector: string): Promise<void> {
     await vi.waitFor(
       () => {
@@ -210,7 +208,6 @@ describe('EntityDetailOverlayHostComponent (composition root)', () => {
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('qd-root-detail-overlay-adapter')).not.toBeNull();
     expect(root.querySelector('[data-testid="root-details-panel-frameless"]')).not.toBeNull();
-    // The shell owns the single dialog: the panel contributes no chrome of its own.
     expect(root.querySelectorAll('[role="dialog"]')).toHaveLength(1);
     expect(root.querySelector('[data-testid="root-details-modal"]')).toBeNull();
     expect(root.querySelector('[data-testid="root-details-panel-close"]')).toBeNull();
@@ -235,7 +232,6 @@ describe('EntityDetailOverlayHostComponent (composition root)', () => {
       await settle();
       await waitForSelector(fixture, selector);
       expect(root.querySelector(selector)).not.toBeNull();
-      // The shell stays the single dialog regardless of the mounted adapter.
       expect(root.querySelectorAll('[role="dialog"]')).toHaveLength(1);
     }
   });
@@ -279,9 +275,6 @@ describe('EntityDetailOverlayHostComponent (composition root)', () => {
     );
     expect(title()).toContain('كتب');
 
-    // A cross-entity append destroys the root adapter, which clears its title;
-    // the lemma adapter starts its own summary load (left pending here), so the
-    // heading falls back to the lemma kind label.
     service.appendFrame(lemmaFrame);
     await settle();
     await waitForSelector(fixture, 'qd-lemma-detail-overlay-adapter');
@@ -308,7 +301,6 @@ describe('EntityDetailOverlayHostComponent (composition root)', () => {
       }
       await settle();
       fixture.detectChanges();
-      // No summary is ever flushed here: the chip comes from the frame alone.
       expect(kindChip()).toBe(label);
     }
   });
@@ -323,7 +315,6 @@ describe('EntityDetailOverlayHostComponent (composition root)', () => {
     const root = fixture.nativeElement as HTMLElement;
     const count = () => root.querySelector('[data-testid="detail-modal-count"]')!;
 
-    // Reserved but text-less while the summary is in flight.
     expect(count()).not.toBeNull();
     expect(count().textContent?.trim()).toBe('');
     expect(count().classList.contains('detail-modal-shell__count--visible')).toBe(false);
@@ -358,8 +349,6 @@ describe('EntityDetailOverlayHostComponent (composition root)', () => {
     expect(count().textContent).toContain('الآيات: 4');
     expect(count().classList.contains('detail-modal-shell__count--visible')).toBe(true);
 
-    // A cross-entity append destroys the root adapter, which clears the count;
-    // the box stays mounted with its text hidden while the lemma summary loads.
     service.appendFrame(lemmaFrame);
     await settle();
     await waitForSelector(fixture, 'qd-lemma-detail-overlay-adapter');
@@ -393,7 +382,6 @@ describe('EntityDetailOverlayHostComponent (composition root)', () => {
 
       expect(service.isRetainedClosed()).toBe(true);
       expect(root.querySelector('[data-testid="detail-modal-restore"]')).not.toBeNull();
-      // The dialog nobody is looking at does no hidden summary/detail work.
       httpMock.expectNone(isRootRead);
     });
 
@@ -427,8 +415,6 @@ describe('EntityDetailOverlayHostComponent (composition root)', () => {
       await settle();
       fixture.detectChanges();
 
-      // Settle the view read this hydration also started, so anything seen after
-      // the close/restore round trip is genuinely new work.
       for (const detail of httpMock.match(isRootRead)) {
         detail.flush({
           isSuccess: true,
@@ -440,8 +426,6 @@ describe('EntityDetailOverlayHostComponent (composition root)', () => {
       await settle();
       fixture.detectChanges();
 
-      // The loaded adapter survives a normal Close (`@defer` never reverts), so
-      // Restore re-shows the held state instead of re-reading it.
       service.close();
       await settle();
       fixture.detectChanges();

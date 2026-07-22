@@ -32,7 +32,6 @@ import {
 import { DetailRequestLifecycle } from './detail-request-lifecycle';
 import { UniqueWordsCache, UniqueWordsCacheKeys } from './unique-words-cache';
 
-// `wordId: null` means "no selection" and closes the drilldown.
 export interface UniqueWordsDrilldownUrlState {
   readonly mode: UniqueWordKind;
   readonly wordId: number | null;
@@ -40,9 +39,6 @@ export interface UniqueWordsDrilldownUrlState {
   readonly ayahPage: number | null;
 }
 
-// `mode` is part of the identity: simple and tashkeel are separate word spaces, so the same
-// `wordId` denotes a different word in each and a held summary from one mode must never be
-// reused for the other.
 interface ModalUrlState {
   readonly mode: UniqueWordKind;
   readonly wordId: number;
@@ -63,11 +59,6 @@ const INITIAL_DRILLDOWN: WordDrilldownState = {
   errorMessage: '',
 };
 
-// Every complete-identity transition abandons both the summary and the drilldown request and
-// opens a new generation (see DetailRequestLifecycle), so a late response from the previously
-// selected word can never overwrite this one.
-// Not `providedIn: 'root'`: each overlay adapter provides its own component-scoped instance, so
-// overlay activity can never mutate the page drilldown.
 @Injectable()
 export class UniqueWordsDrilldownController implements OnDestroy {
   private readonly _drilldown = signal<WordDrilldownState>(INITIAL_DRILLDOWN);
@@ -156,10 +147,8 @@ export class UniqueWordsDrilldownController implements OnDestroy {
     this._drilldown.set(INITIAL_DRILLDOWN);
   }
 
-  // Disposes in-flight HTTP without touching held state, so a request that outlives the page
-  // can't mutate it offscreen (perf finding F3). Clearing `activeModalUrlState` makes a return
-  // to the SAME URL re-drive a real reload instead of being short-circuited by the
-  // "unchanged selection" fast path.
+  // Dispose in-flight HTTP without touching held state (a request outliving the page must not mutate
+  // it offscreen). Clearing activeModalUrlState makes a return to the SAME URL re-drive a real reload.
   cancelPendingWork(): void {
     this.requests.cancelAll();
     this.activeModalUrlState = null;
@@ -185,9 +174,6 @@ export class UniqueWordsDrilldownController implements OnDestroy {
     this.applyIdentity(nextState);
   }
 
-  // Identity is unchanged, so applyUrlState would short-circuit it; retry re-enters the load
-  // path directly. A failed read is never cached, so this re-fetches; an intact summary still
-  // resolves from held state. A no-op after unbind, which clears the identity.
   retryCurrentIdentity(): void {
     const state = this.activeModalUrlState;
     if (state === null) {
@@ -197,9 +183,8 @@ export class UniqueWordsDrilldownController implements OnDestroy {
     this.applyIdentity(state);
   }
 
-  // The held summary is reused only when it describes the very word the URL now asks for. Its
-  // `kind` must match the requested mode: `selectedWordId` alone is ambiguous across modes, so
-  // matching on it would serve the previous mode's word and details.
+  // Reuse the held summary only when kind AND id match: selectedWordId alone is ambiguous across
+  // modes, so matching on id alone would serve the other mode's word.
   private applyIdentity(nextState: ModalUrlState): void {
     const token = this.requests.beginTransition();
     this.activeModalUrlState = nextState;
@@ -331,8 +316,6 @@ export class UniqueWordsDrilldownController implements OnDestroy {
     }
 
     if (view === 'missing') {
-      // Already-held missing surahs answer synchronously, so there is no subscription to
-      // cancel — only the generation guard keeps this off a newer word's panel.
       const heldMissingSurahs = this._drilldown().missingSurahs;
       if (heldMissingSurahs !== null) {
         this.requests.trackDetail(undefined);

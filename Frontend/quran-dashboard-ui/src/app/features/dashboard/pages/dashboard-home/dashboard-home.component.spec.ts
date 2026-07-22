@@ -42,10 +42,6 @@ function factorToPx(factor: string): number {
   return parseFloat(token);
 }
 
-/**
- * Resolves a `calc(A * B + C * D + …)` line-box expression to pixels so the test measures
- * the reserved box height rather than asserting a CSS custom property is merely present.
- */
 function reservedBoxHeightPx(expression: string): number {
   return expression
     .replace(/^\s*calc\(/, '')
@@ -69,21 +65,15 @@ describe('DashboardHomeComponent — stable app-meta loading (N3 row 14)', () =>
   });
 
   it('reserves the loaded badge line box while loading, so the cards below do not shift on settle', () => {
-    // A never-emitting source holds the component in its loading state.
     const loadingRoot = renderWith(new Observable<AppInfo>());
     const skeleton = loadingRoot.querySelector<HTMLElement>('[data-testid="dashboard-app-meta-loading"]');
     expect(skeleton).toBeTruthy();
 
-    // Measured box-size invariant: the reserved skeleton height must resolve to the loaded
-    // .qd-badge line box — padding-block (2 × --qd-space-1) + 0.75rem text at 1.4 line-height
-    // + a 1px hairline both sides — not merely "the --qd-skeleton-h token is present".
     const reservedHeightPx = reservedBoxHeightPx(
       getComputedStyle(skeleton!).getPropertyValue('--qd-skeleton-h'),
     );
     const badgeLineBoxPx = 2 * factorToPx('var(--qd-space-1)') + factorToPx('0.75rem') * 1.4 + 2 * 1;
     expect(reservedHeightPx).toBeCloseTo(badgeLineBoxPx, 5);
-    // Guard against the token silently falling back to the 0.75rem text-skeleton default,
-    // which would come up ~1.3rem short and drift the cards on settle.
     expect(reservedHeightPx).toBeGreaterThan(factorToPx('0.75rem'));
 
     TestBed.resetTestingModule();
@@ -91,8 +81,6 @@ describe('DashboardHomeComponent — stable app-meta loading (N3 row 14)', () =>
     const appMeta = loadedRoot.querySelector<HTMLElement>('.app-meta');
     expect(appMeta).toBeTruthy();
 
-    // The two states sit in the same slot, so they must carry the same leading
-    // margin — the original defect was the skeleton having none at all.
     const skeletonMargin = getComputedStyle(skeleton!).marginBlockStart;
     const loadedMargin = getComputedStyle(appMeta!).marginBlockStart;
     expect(skeletonMargin).not.toBe('0px');

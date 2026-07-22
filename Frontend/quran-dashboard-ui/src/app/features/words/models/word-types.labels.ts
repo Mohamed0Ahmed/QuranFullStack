@@ -5,8 +5,6 @@ import { ROW_NUMBER_HEADER } from './words-shared.labels';
 
 export const WORD_TYPES_PAGE_TITLE = 'أنواع الكلمات';
 export const WORD_TYPES_FILTER_LABEL = 'تصفية أنواع الكلمات';
-// Search runs over word identity text only; both label and placeholder name the word grain so grouped
-// views stay honest about what was searched (A1×C2 reconciliation).
 export const WORD_TYPES_SEARCH_LABEL = 'بحث في الكلمات';
 export const WORD_TYPES_SEARCH_PLACEHOLDER = 'ابحث في الكلمات';
 export const WORD_TYPES_NO_SUBTYPES_LABEL = 'لا توجد أنواع فرعية لهذا النوع';
@@ -24,9 +22,6 @@ export const WORD_TYPES_SUBTYPE_GROUP_LABEL = 'الأنواع الفرعية';
 export const WORD_TYPES_CURRENT_FILTER_LABEL = 'الحالي';
 export const WORD_TYPE_TABLE_VIEW_TABS_LABEL = 'عرض الجدول';
 
-// Scoped four-count summary strip (Feature 026, US8). The four count labels reuse the view tabs' SHORT
-// labels verbatim (WORD_TYPE_TABLE_VIEW_OPTIONS: كلمات | جذور | أصول | صيغ) — the tabs are not renamed.
-// These are only the strip's own aria/error copy; retry reuses WORD_TYPES_RETRY_LABEL.
 export const WORD_TYPES_SCOPE_COUNTS_LABEL = 'إحصاء النطاق';
 export const WORD_TYPES_SCOPE_COUNTS_ERROR_LABEL = 'تعذّر تحميل إحصاء النطاق';
 
@@ -81,12 +76,6 @@ export const WORD_TYPE_VOICE_LABELS: Record<WordTypeVoice, string> = {
 
 export const WORD_TYPES_MUSHAF_ORDER_LABEL = 'ترتيب المصحف';
 
-/**
- * Options for the ≤1023px fallback sort select (Feature 030, N8): every sortable column in both
- * directions, plus `mushaf-order`. Unlike the other four explorers `mushaf-order` is NOT the
- * default here (المواضع desc is), so it stays an ordinary offered ordering rather than the release
- * state. ≥1024px sorts through the table column headers.
- */
 export const WORD_TYPE_SORT_OPTIONS = explorerSortOptions(
   WORD_TYPE_SORT_COLUMN_LIST,
   WORD_TYPES_MUSHAF_ORDER_LABEL,

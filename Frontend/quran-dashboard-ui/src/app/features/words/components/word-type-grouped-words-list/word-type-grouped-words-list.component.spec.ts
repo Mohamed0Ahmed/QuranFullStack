@@ -95,7 +95,6 @@ describe('WordTypeGroupedWordsListComponent', () => {
     expect(labels).toEqual(['المواضع', 'الآيات', 'السور']);
   });
 
-  // N3 row 4: the pagination bar unmounted while loading and the panel body sprang up under it.
   it('keeps the pagination slot rendered while loading and once loaded', () => {
     const fixture = createList(page([member()]));
     fixture.componentRef.setInput('loading', true);
@@ -104,7 +103,6 @@ describe('WordTypeGroupedWordsListComponent', () => {
 
     const slot = () => host.querySelector('[data-testid="word-type-grouped-words-pagination-slot"]');
     expect(slot()).toBeTruthy();
-    // While loading the slot is deliberately empty — it reserves the row, it does not render the bar.
     expect(slot()!.querySelector('qd-pagination')).toBeNull();
 
     fixture.componentRef.setInput('loading', false);

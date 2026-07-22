@@ -94,11 +94,6 @@ export class MushafReaderFacade {
   private pageSub: Subscription | null = null;
   private peekFlashClearTimer: ReturnType<typeof setTimeout> | null = null;
 
-  // F1: set true by bindToRoute and consumed by the first URL hydration after a (re)bind. Only
-  // that first hydration may treat a still-loading ayah-study/word-analysis resource as a
-  // stranded load to recover (reload). Later in-place URL patches on the same binding (e.g.
-  // switching a study tab mid-flight) must NOT restart the in-flight request or re-arm its
-  // debounce.
   private rebindRecoveryPending = false;
 
   private readonly wordAnalysisLoadRunner = new WordAnalysisLoadRunner({
@@ -208,8 +203,7 @@ export class MushafReaderFacade {
         if (saved) {
           const restoredParams = mushafSnapshotToQueryParams(saved);
           if (Object.keys(restoredParams).length > 0) {
-            // Merge, don't replace: overlay-owned keys present on a bare entry
-            // (a retained detail stack) must survive session restoration.
+            // Merge (not replace) so overlay-owned keys on a bare entry survive session restoration.
             void this.router.navigate([], {
               relativeTo: route,
               queryParams: restoredParams,

@@ -43,7 +43,6 @@ describe('parseWordTypesQueryParams — child codes', () => {
   });
 
   it('clears a verb child code that is actually a noun POS code', () => {
-    // POS codes are not verb tense literals; the parser drops them under the verb type.
     const parsed = parseWordTypesQueryParams(params('type=verb&childCode=N'));
 
     expect(parsed.childCode).toBeNull();
@@ -83,7 +82,6 @@ describe('parseWordTypesQueryParams — search (list scope)', () => {
     const parsed = parseWordTypesQueryParams(params('type=noun&childCode=PN&tableView=roots&sort=alpha&page=3'));
 
     expect(parsed.search).toBeNull();
-    // Every pre-existing field is unaffected by the additive search key.
     expect(parsed.type).toBe('noun');
     expect(parsed.childCode).toBe('PN');
     expect(parsed.tableView).toBe('roots');
@@ -699,7 +697,6 @@ describe('parseWordTypesQueryParams sort tokens (Feature 030, N8)', () => {
     ['surahs-desc', 'surahs'],
     ['alpha-asc', 'alpha'],
   ])('canonicalizes the legacy alias "%s" to "%s"', (alias, canonical) => {
-    // An old shared link must not fork the ordering into a second URL/cache spelling.
     expect(parseWordTypesQueryParams(params(`type=noun&sort=${alias}`)).sort).toBe(canonical);
   });
 
@@ -711,7 +708,6 @@ describe('parseWordTypesQueryParams sort tokens (Feature 030, N8)', () => {
     'mushaf-order-desc',
     '-asc',
   ])('fails closed to the occurrences default on the unsupported token "%s"', (sort) => {
-    // Word Types is the one explorer whose default is المواضع desc, not Mushaf order.
     expect(parseWordTypesQueryParams(params(`type=noun&sort=${sort}`)).sort).toBe('occurrences');
   });
 

@@ -1,8 +1,3 @@
-/**
- * The Roots sort allowlist, split by column class because that decides the natural direction a
- * bare token means (counts descend, text ascends). `mushaf-order` is the default and is not a
- * column — see `explorer-sort.ts` for the token grammar.
- */
 type RootCountSortColumn =
   | 'occurrences'
   | 'ayahs'
@@ -162,11 +157,6 @@ export const DEFAULT_ROOT_DETAIL_PAGE = 1;
 export const ROOT_DETAIL_PAGE_SIZE = 100;
 export const TOTAL_SURAHS = 114;
 
-/**
- * The sortable Roots columns, in table-header order. Every one is a value the backend already has
- * on the summary row at the sort point. The related-entity text columns are deliberately absent —
- * they render as plain headers (see the reads README's ordering contract).
- */
 export const ROOT_SORT_COLUMNS = {
   alpha: { key: 'alpha', natural: 'asc', label: WORDS_SHARED_HEADERS.root },
   occurrences: { key: 'occurrences', natural: 'desc', label: WORDS_SHARED_HEADERS.occurrences },
@@ -190,21 +180,12 @@ export const ROOT_SURAHS_VIEW_KEYS = ['mentioned', 'missing'] as const satisfies
 export const ROOT_VIEW_KEYS = ['words', 'ayahs', 'surahs', 'lemmas', 'stems'] as const satisfies readonly RootView[];
 export const PAGINATED_ROOT_VIEWS: readonly RootView[] = ['ayahs', 'words'];
 
-/**
- * True only for a CANONICAL token. Canonicalization is idempotent, so a value that survives it
- * unchanged was already canonical — which rejects the legacy alias spellings (`occurrences-desc`)
- * that `normalizeRootSort` collapses instead.
- */
 export function isRootSort(value: unknown): value is RootSort {
   return (
     typeof value === 'string' && canonicalizeSortToken(value, ROOT_SORT_COLUMN_LIST) === value
   );
 }
 
-/**
- * The URL/DOM entry point: canonicalizes aliases in, and fails closed to the default on anything
- * unknown, so the frontend never emits a token the backend would 400 on.
- */
 export function normalizeRootSort(value: string | null | undefined): RootSort {
   const canonical = canonicalizeSortToken(value, ROOT_SORT_COLUMN_LIST);
   return canonical !== null && isRootSort(canonical) ? canonical : DEFAULT_ROOT_SORT;

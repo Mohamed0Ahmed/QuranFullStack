@@ -44,8 +44,6 @@ export class RootWordsListComponent {
   protected readonly loadingLabel = WORDS_LOADING_LABEL;
   protected readonly paginationLabel = ROOTS_WORDS_PAGINATION_LABEL;
 
-  // Mirrors the retired unique-words explorer deep link (same mode + ayahs
-  // view); frame defaults are serialized explicitly per the URL contract.
   protected readonly rows = computed((): readonly RootWordRowViewModel[] => {
     const wordView = this.wordView();
     return this.page().items.map((item) => ({

@@ -38,7 +38,6 @@ class ShellHostComponent {
   readonly countText = signal('');
   readonly depth = signal(1);
   readonly status = signal('');
-  /** Stands in for the projected link that pushed the next frame. */
   readonly showOpener = signal(true);
   readonly events: string[] = [];
 }
@@ -154,8 +153,6 @@ describe('DetailModalShellComponent', () => {
   it('keeps the count box mounted while empty and only fades its text in on arrival', () => {
     const countBox = () => root.querySelector('[data-testid="detail-modal-count"]');
 
-    // The box must never appear/disappear: it holds its reserved width from the
-    // first render so the arriving count cannot shift the header.
     expect(countBox()).not.toBeNull();
     expect(countBox()!.textContent?.trim()).toBe('');
     expect(countBox()!.classList.contains('detail-modal-shell__count--visible')).toBe(false);
@@ -177,17 +174,12 @@ describe('DetailModalShellComponent', () => {
     expect(dialog.getAttribute('aria-describedby')).toBe(count.id);
     expect(count.id).not.toBe(dialog.getAttribute('aria-labelledby'));
 
-    // Inlining the count into the heading or a live region would double-announce
-    // it on load, so it must live outside both.
     expect(count.closest('[aria-live]')).toBeNull();
     expect(count.closest('h2')).toBeNull();
     expect(root.querySelector('[data-testid="detail-modal-live-title"]')!.textContent).not.toContain('SYNTH_COUNT');
     expect(root.querySelector('[data-testid="detail-modal-live-status"]')!.textContent).not.toContain('SYNTH_COUNT');
   });
 
-  // jsdom cannot lay out, so the fixed block-size itself is a browser check. These
-  // guard the structure that fixed geometry depends on: the body is the only
-  // scroll region, and the geometry-bearing classes still exist to be styled.
   it('keeps the body as the single scroll region under the fixed-geometry classes', () => {
     const dialog = root.querySelector('[data-testid="detail-modal-shell"]')!;
     const body = root.querySelector('.detail-modal-shell__body');
@@ -201,13 +193,10 @@ describe('DetailModalShellComponent', () => {
     expect(root.querySelectorAll('.detail-modal-shell__body').length).toBe(1);
   });
 
-  // The last Back destroys the Back button itself, so the dialog must choose a
-  // new focus target or focus falls out of the still-open dialog onto the body.
   describe('focus after the final Back (depth 2 → 1)', () => {
     const settleFocus = () => new Promise((resolve) => setTimeout(resolve, 0));
 
     async function pushThenPopToDepthOne(): Promise<HTMLButtonElement> {
-      // Let the trap's auto-capture finish before we stage our own focus.
       await settleFocus();
       const opener = root.querySelector('[data-testid="synth-opener"]') as HTMLButtonElement;
       opener.focus();
@@ -234,7 +223,6 @@ describe('DetailModalShellComponent', () => {
     it('falls back to Close, still inside the dialog, when the invoking link is gone', async () => {
       await pushThenPopToDepthOne();
 
-      // The parent frame re-rendered without the link that opened frame two.
       host.showOpener.set(false);
       host.depth.set(1);
       detect();
@@ -254,7 +242,6 @@ describe('DetailModalShellComponent', () => {
       const opener = root.querySelector('[data-testid="synth-opener"]') as HTMLButtonElement;
       opener.focus();
 
-      // The pushed frame replaces the content that held the link the user activated.
       host.showOpener.set(false);
       host.depth.set(2);
       detect();
@@ -282,7 +269,6 @@ describe('DetailModalShellComponent', () => {
   it('traps focus inside the open dialog', () => {
     const dialog = root.querySelector('[data-testid="detail-modal-shell"]') as HTMLElement;
     expect(dialog.hasAttribute('cdktrapfocus')).toBe(true);
-    // CDK renders the trap anchors as tabindex sentinels around the dialog.
     const anchors = root.querySelectorAll('.cdk-focus-trap-anchor');
     expect(anchors.length).toBeGreaterThanOrEqual(2);
   });

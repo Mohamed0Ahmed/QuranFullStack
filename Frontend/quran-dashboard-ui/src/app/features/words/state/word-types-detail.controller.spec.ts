@@ -196,7 +196,6 @@ describe('WordTypesDetailController (route-independent, Feature 029 B4)', () => 
     controller.applyUrlState(urlState(first));
     controller.applyUrlState(urlState(second));
 
-    // The first identity's response arrives late — it must be a cancelled no-op.
     subjectFor(first).next(ok(summaryOf(first)));
     subjectFor(first).complete();
 
@@ -243,13 +242,9 @@ describe('WordTypesDetailController (route-independent, Feature 029 B4)', () => 
   });
 
   describe('stale DETAIL responses across a composite word identity transition (Feature 030, C1)', () => {
-    // The SAME tashkeel word id under two different contexts: two distinct composite
-    // identities that must never cross-serve each other's detail responses.
     const nounContext = identityOf({ tashkeelWordId: 5, contextCode: 'noun' });
     const verbContext = identityOf({ tashkeelWordId: 5, contextCode: 'past' });
 
-    // Noun-context summary resolves so its detail load is left in flight; the verb-context
-    // summary stays pending. Returns the noun row's handlers to land its response late.
     function selectNounContextThenPendingVerbContext(): {
       controller: WordTypesDetailController;
       staleHandlers: WordTypesDetailViewHandlers;
@@ -389,9 +384,6 @@ describe('WordTypesDetailController identity/page read isolation (real cache + v
     getTestBed().resetTestingModule();
   });
 
-  // Uses the REAL shared cache and view loader, asserting isolation and cache reuse through
-  // response content and API call counts rather than internal cache-key strings (key formatting
-  // is a cache concern).
   function wireController(apiStub: object): WordTypesDetailController {
     TestBed.configureTestingModule({ providers: [{ provide: WordTypesApi, useValue: apiStub }] });
     return new WordTypesDetailController(
@@ -420,7 +412,6 @@ describe('WordTypesDetailController identity/page read isolation (real cache + v
     expect(spies.getSummary).toHaveBeenCalledTimes(2);
     expect(spies.getAyahMatches).toHaveBeenCalledTimes(2);
 
-    // Return to the first identity: both reads come from cache and never cross-serve the second.
     controller.applyUrlState(urlState(nominal, { view: 'ayahs', detailPage: 1 }));
     expect(spies.getSummary).toHaveBeenCalledTimes(2);
     expect(spies.getAyahMatches).toHaveBeenCalledTimes(2);
@@ -445,7 +436,6 @@ describe('WordTypesDetailController identity/page read isolation (real cache + v
     expect(controller.panelState().ayahs?.items[0].words[0].textUthmani).toBe('كلمة-اختبار-p2');
     expect(spies.getAyahMatches).toHaveBeenCalledTimes(2);
 
-    // Page 1 was already read: returning to it reuses its cache, never page 2's data.
     controller.applyUrlState(urlState(identity, { view: 'ayahs', detailPage: 1 }));
     expect(spies.getAyahMatches).toHaveBeenCalledTimes(2);
     expect(controller.panelState().ayahs?.items[0].words[0].textUthmani).toBe('كلمة-اختبار-p1');
@@ -469,7 +459,6 @@ describe('WordTypesDetailController identity/page read isolation (real cache + v
     expect(controller.panelState().surahs?.surahs).toHaveLength(1);
     expect(controller.panelState().surahs?.missingSurahs).toHaveLength(1);
 
-    // Leave and return: the single-shot surahs read is served from cache.
     controller.applyUrlState(null);
     controller.applyUrlState(urlState(identity, { view: 'surahs', detailPage: 1 }));
     expect(spies.getSurahs).toHaveBeenCalledTimes(1);

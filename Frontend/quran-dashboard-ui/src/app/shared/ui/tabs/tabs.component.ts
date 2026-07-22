@@ -14,10 +14,6 @@ import { QdTabDirective } from './tab.directive';
 
 export type QdTabsOrientation = 'horizontal' | 'vertical';
 
-// The app-wide tab-strip (UI_STYLE_SYSTEM.md §17 `qd-tabs`). It does not own
-// selection: consumers project their own `qdTab` elements with their `[selected]`
-// flag and click/routerLink handling. This only supplies the `role="tablist"`
-// wrapper and RTL-aware roving-tabindex keyboard nav (Arrow/Home/End).
 @Component({
   selector: 'qd-tabs',
   standalone: true,
@@ -35,13 +31,8 @@ export class QdTabsComponent {
   private readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly tabs = contentChildren(QdTabDirective, { descendants: true });
 
-  /** Index the user last reached via arrow-key navigation, if any. */
   private readonly manualFocusIndex = signal<number | null>(null);
 
-  /**
-   * The single tab currently reachable via Tab: the manually-focused tab if
-   * still valid, otherwise the selected tab, otherwise the first enabled tab.
-   */
   private readonly rovingIndex = computed(() => {
     const tabs = this.tabs();
     if (tabs.length === 0) {

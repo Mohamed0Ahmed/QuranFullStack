@@ -1,6 +1,3 @@
-// Wire + view models for the Owner-only permission-administration surface (US5). Codes come from the shared
-// parity source `core/auth/permission-codes.ts`; these shapes mirror the backend `PermissionAdmin*` DTOs.
-
 export type PermissionTargetKind = 'Role' | 'Subject';
 
 export interface PermissionCatalogueEntry {
@@ -15,8 +12,7 @@ export interface PermissionAssignmentView {
   readonly targetKey: string;
   readonly permissionCode: string;
   readonly version: number;
-  // Revoked tombstones (isGranted=false) are returned so the client sends the correct expected version on a
-  // re-grant after revoke; the UI shows only granted rows.
+  // isGranted=false tombstones are still returned so a re-grant sends the correct expectedVersion (else 409); the UI shows only granted rows.
   readonly isGranted: boolean;
 }
 

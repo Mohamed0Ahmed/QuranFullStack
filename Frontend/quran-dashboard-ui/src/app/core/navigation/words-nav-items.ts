@@ -12,8 +12,6 @@ export interface WordsNavItem {
   route: string;
 }
 
-// Labels are the menu section names, owned here in core like `NAV_ITEMS`; routes come from
-// `route-paths`. `unique` points at the `tashkeel` mode so the link skips the redirect hop.
 export const WORDS_MENU_ITEMS: readonly WordsNavItem[] = [
   { labelAr: 'الرئيسية', route: WORDS_ROUTE_PATH },
   { labelAr: 'الكلمات الفريدة', route: uniqueWordsRoutePath('tashkeel') },

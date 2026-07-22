@@ -84,12 +84,6 @@ export class SelectedAyahSectionComponent {
 
   private readonly sectionElement = viewChild<ElementRef<HTMLElement>>('ayahSection');
 
-  // N3 row 10 (Feature 030): loading layout reservation, a local port of the U1
-  // pattern in selected-word-section (decision N3-a — extract a shared utility
-  // only on a third consumer). A loaded tafsir/translation/إعراب has an arbitrary
-  // height, so the only honest predictor of the next one is the last one; without
-  // this the section collapses to the skeleton and the page jumps. Only numeric
-  // geometry is retained — never prior text or Quran DOM.
   private readonly lastNaturalSize = signal<{ blockSize: number; inlineSize: number } | null>(null);
 
   protected readonly reservedBlockSize = computed<string | null>(() => {
@@ -122,11 +116,6 @@ export class SelectedAyahSectionComponent {
     }
   }
 
-  /**
-   * Records the loaded natural geometry, and drops a stale reservation when the
-   * available inline size changes mid-loading (a wide measurement must never be
-   * imposed on a narrower layout, or vice versa).
-   */
   private onSectionResize(entries: ResizeObserverEntry[]): void {
     const target = entries[entries.length - 1]?.target;
     if (!target) {
@@ -156,9 +145,6 @@ export class SelectedAyahSectionComponent {
 
   protected readonly tabLabels = AYAH_STUDY_TAB_LABELS;
 
-  // The summary's counts are what the child cards reserve their loading geometry from, so an
-  // absent study must stay `null` ("unknown", fall back) and never collapse into a `0` the cards
-  // would read as "known empty" (Feature 030, N3 rows 11-12).
   protected readonly similarAyahCount = computed<number | null>(
     () => this.study()?.similaritySummary.similarAyahCount ?? null,
   );

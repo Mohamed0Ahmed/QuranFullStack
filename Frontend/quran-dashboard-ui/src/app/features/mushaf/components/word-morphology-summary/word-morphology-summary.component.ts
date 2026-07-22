@@ -20,7 +20,6 @@ import { morphologyTextOrDash } from '../../utils/morphology-display.labels';
 })
 export class WordMorphologySummaryComponent {
   readonly morphology = input.required<WordMorphologyDto>();
-  // Detail-overlay frames (Feature 029, Change B); a null frame keeps its column non-interactive.
   readonly wordTypeFrame = input<WordTypeDetailFrame | null>(null);
   readonly rootFrame = input<RootDetailFrame | null>(null);
   readonly lemmaFrame = input<LemmaDetailFrame | null>(null);

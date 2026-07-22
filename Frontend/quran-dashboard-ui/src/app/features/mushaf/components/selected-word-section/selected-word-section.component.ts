@@ -57,8 +57,6 @@ export class SelectedWordSectionComponent {
 
   private readonly sectionElement = viewChild<ElementRef<HTMLElement>>('wordSection');
 
-  // U1 (Feature 029): loading layout reservation. Only numeric geometry and the
-  // previous segment count are retained — never prior text or Quran DOM.
   private readonly lastNaturalSize = signal<{ blockSize: number; inlineSize: number } | null>(null);
   private readonly lastSegmentCount = signal<number | null>(null);
 
@@ -103,11 +101,6 @@ export class SelectedWordSectionComponent {
     }
   }
 
-  /**
-   * Records the loaded natural geometry, and drops a stale reservation when the
-   * available inline size changes mid-loading (a wide measurement must never be
-   * imposed on a narrower layout, or vice versa).
-   */
   private onSectionResize(entries: ResizeObserverEntry[]): void {
     const target = entries[entries.length - 1]?.target;
     if (!target) {
@@ -130,8 +123,6 @@ export class SelectedWordSectionComponent {
     }
   }
 
-  // Detail-overlay frames (Feature 029, Change B): every identity link is a
-  // real anchor that opens a one-frame overlay stack over the Mushaf base.
   protected readonly rootFrame = computed<RootDetailFrame | null>(() => {
     const rootId = this.analysis()?.morphology.root?.id;
 

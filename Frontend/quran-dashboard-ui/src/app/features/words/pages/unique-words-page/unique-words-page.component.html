@@ -77,8 +77,6 @@
       />
 
       <div class="qd-explorer-controls-secondary">
-        <!-- ≤1023px fallback (Feature 030, N8): the table header row is display:none on phone AND
-             tablet, so the header cycle is unreachable there. Same URL contract as the headers. -->
         <div class="qd-explorer-sort-fallback">
           <label class="qd-sr-only" for="unique-words-sort">{{ sortLabel }}</label>
           <select
@@ -104,17 +102,6 @@
       </div>
     </div>
 
-    <!-- Feature 030, N3 row 5: the list error/no-results states moved into the table shell. The two
-         drilldown banners below CANNOT follow them: a restored-not-found word sets `isOpen: false`
-         (utils/unique-words-drilldown.state.ts), so the ≤1023px drilldown modal does not render at
-         all and the desktop inline panel shows its select-a-word prompt — hosting them there would
-         drop the message below desktop; and the table shell is out of the question because the list
-         is fine and populated, so they would hide it. Page level is their only home.
-
-         The slot is therefore rendered in EVERY drilldown state and reserves one banner row from
-         first paint, so a banner appearing or clearing no longer pushes the table+panel grid below
-         it (Feature 030, N3 zero-outer-layout-shift). The two states are mutually exclusive — one
-         `status` value — so one row is the whole reservation. -->
     <div class="unique-words-restored-slot">
       @if (drilldownState().status === 'notFound') {
         <div

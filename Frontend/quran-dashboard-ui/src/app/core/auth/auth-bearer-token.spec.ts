@@ -24,17 +24,6 @@ import {
 } from '../data-access/secure-url.interceptor';
 import { devLatencyInterceptor } from '../data-access/dev-latency.interceptor';
 
-// Bearer-attach scope (Feature 033, Phase 1): exercises the REAL interceptor chain wired in
-// app.config.ts (`[secureUrlInterceptor, authInterceptor(), devLatencyInterceptor]`) to prove the
-// Logto access token attaches ONLY to same-origin API requests and never leaks to a foreign origin.
-//
-// Priming a token: angular-auth-oidc-client v21 has no public token setter, so we override its
-// `AbstractSecurityStorage` DI token (the library's sanctioned extension point, not a mock of
-// internals) with an in-memory fake. The library persists one config's data under a single
-// `configId` key whose JSON maps `authzData` (access token) and `authnResult.id_token`;
-// `getAccessToken()` returns the access token only when BOTH are present, so we seed both. Config
-// activation goes through the public `OidcSecurityService.getConfiguration()`.
-
 const TEST_CONFIG_ID = 'bearer-token-spec-config';
 const TEST_ACCESS_TOKEN = 'test-access-token-value';
 const IN_SCOPE_URL = `${environment.apiBaseUrl}/api/access/me`;
@@ -87,7 +76,6 @@ function provideTestAuth(secureRoutes: string[], storage: AbstractSecurityStorag
   ];
 }
 
-// Force the static config into the library's active set so the interceptor can read it.
 async function activateConfig(): Promise<void> {
   await firstValueFrom(TestBed.inject(OidcSecurityService).getConfiguration());
 }
@@ -136,8 +124,6 @@ describe('Bearer-token attach — full interceptor chain', () => {
       },
     });
 
-    // The chain rejects the foreign origin before it can leave the browser, so no request
-    // (and therefore no bearer token) is ever emitted to it.
     expect(caughtError).toBeInstanceOf(SecureUrlBlockedError);
     httpTesting.expectNone(foreignUrl);
   });
@@ -147,9 +133,6 @@ describe('Bearer-token attach scope — secureRoutes gate (authInterceptor in is
   let httpClient: HttpClient;
   let httpTesting: HttpTestingController;
 
-  // Run authInterceptor WITHOUT secureUrlInterceptor so the out-of-scope request is allowed
-  // to leave and can be inspected — proving the attach decision is secureRoutes, not the
-  // upstream origin block, and not the mere absence of a token.
   const cases = [
     {
       name: 'a URL inside secureRoutes receives the token',

@@ -112,8 +112,6 @@ describe('DetailOverlayHistoryService bootstrap ownership', () => {
     expect(replacedUrl).not.toBe(deepLink);
     expect(persistedProvenance).toBeTruthy();
 
-    // Recreate both Router and coordinator, retain only the browser entry's URL
-    // and state, then use the production start-before-initial-navigation order.
     TestBed.resetTestingModule();
     configureHarness();
     location.replaceState(replacedUrl, '', persistedState);

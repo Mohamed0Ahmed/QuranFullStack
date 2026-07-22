@@ -80,7 +80,6 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
   });
 
   protected readonly pageTitle = STEMS_PAGE_TITLE;
-  // TDZ-safe content getter + synchronous collapse restore (no first-paint shift).
   protected get explainer() { return WORDS_EXPLAINER_CONTENT.stems; }
   protected readonly explainerExpanded = signal(this.explainerPreference.isExpanded('stems'));
   protected readonly emptySelectionLabel = STEMS_EMPTY_SELECTION_LABEL;
@@ -103,7 +102,6 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
     const page = this.panelState().ayahs;
     return page ? { ...page, items: page.items.map(mapStemAyahMatchToShared) } : this.emptyAyahsPage;
   });
-  /** This panel's own typed frame (Feature 029 B7): an ayah click promotes it over the Mushaf. */
   protected readonly ayahParentFrame = computed<StemDetailFrame | null>(() => {
     const state = this.panelState();
     if (state.selectedStemId === null) {
@@ -125,7 +123,6 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly association = this.listFacade.association;
   protected readonly rootOptions = signal<readonly AssociationOption[]>([]);
   protected readonly rootOptionsLoading = signal(false);
-  // M32/M43 + M74: a picker load failure must be distinguishable from a genuine empty result.
   protected readonly rootOptionsError = signal(false);
   protected readonly selectedRootLabel = signal<string | null>(null);
   protected readonly lemmaOptions = signal<readonly AssociationOption[]>([]);
@@ -224,13 +221,11 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
     this.selectedLemmaLabel.set(option?.label ?? null);
     this.updateQueryParams({ lemmaId: option === null ? null : String(option.id), page: null });
   }
-  /** A header cycle step (token) or its release (null). Changing the ordering always resets page. */
   protected onSortChange(sort: StemSort | null): void {
     this.clearTableFocus();
     this.updateQueryParams(buildStemsQueryParams({ sort, page: null }));
   }
 
-  /** The ≤1023px fallback select drives the same contract; the default order stays param-absent. */
   protected onSortSelect(value: string): void {
     this.onSortChange(sortQueryValue(normalizeStemSort(value), DEFAULT_STEM_SORT));
   }

@@ -45,8 +45,6 @@
       />
 
       <div class="qd-explorer-controls-secondary">
-        <!-- ≤1023px fallback (Feature 030, N8): the table header row is display:none on phone AND
-             tablet, so the header cycle is unreachable there. Same URL contract as the headers. -->
         <div class="qd-explorer-sort-fallback">
           <label class="qd-sr-only" for="roots-sort">{{ sortLabels.label }}</label>
           <select
@@ -72,9 +70,6 @@
       </div>
     </div>
 
-    <!-- Feature 030, N3 row 5: the list error/no-results states now render inside the table shell
-         and the restored-not-found state inside the details panel — both are mounted shells, so
-         neither can push the table+panel grid down the way these page-level banners did. -->
   </div>
 
   @switch (listState().status) {

@@ -244,7 +244,6 @@ describe('parseUniqueWordsQueryParams sort tokens (Feature 030, N8)', () => {
     ['surahs-desc', 'surahs'],
     ['alpha-asc', 'alpha'],
   ])('canonicalizes the legacy alias "%s" to "%s"', (alias, canonical) => {
-    // An old shared link must not fork the ordering into a second URL/cache spelling.
     expect(parseUniqueWordsQueryParams(params(`sort=${alias}`)).sort).toBe(canonical);
   });
 

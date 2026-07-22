@@ -7,8 +7,6 @@ import { PermissionsApi } from '../data-access/permissions.api';
 import { PermissionAdminView, PermissionMutationRequest } from '../models/permission.models';
 import { PermissionsFacade } from './permissions.facade';
 
-// Re-grant-after-revoke: a revoked tombstone (isGranted=false, version=2) is returned by List, so the facade
-// must compute expectedVersion=2 for the next grant — never a blind 0 that would perpetually 409.
 const VIEW: PermissionAdminView = {
   catalogue: [
     { code: 'attribution.manage', systemOwnerOnly: false, dashboardAdminBaseline: false, assignable: true },

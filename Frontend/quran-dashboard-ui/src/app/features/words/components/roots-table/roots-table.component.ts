@@ -90,8 +90,6 @@ export class RootsTableComponent {
 
   readonly rows = input.required<readonly RootListItemViewModel[]>();
   readonly loading = input(false);
-  // Separate from `loading` so error / no-results can render INSIDE the mounted shell rather than
-  // above the page grid (Feature 030, N3 row 5); `loading` still drives the skeleton body.
   readonly status = input<LoadStatus>('idle');
   readonly errorMessage = input('');
   readonly selectedRootId = input<number | null>(null);
@@ -105,7 +103,6 @@ export class RootsTableComponent {
 
   readonly rowSelected = output<RootListItemViewModel>();
   readonly countOpened = output<RootCountOpenedEvent>();
-  // null = release the sort param back to the default (ترتيب المصحف).
   readonly sortChange = output<RootSort | null>();
 
   protected readonly sortControl = new ExplorerTableSortController<RootSort>(

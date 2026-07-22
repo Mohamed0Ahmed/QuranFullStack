@@ -11,13 +11,6 @@ export interface DetailPanelStateBase {
   errorMessage: string;
 }
 
-// Shared route-independent detail controller skeleton (Feature 033 DRY),
-// extracted from the near-identical Roots/Lemmas/Stems controllers. Every
-// complete-identity transition abandons BOTH the summary and the detail request
-// and opens a new generation, so a late response from the previously selected
-// identity can never overwrite this one (see DetailRequestLifecycle). Entity-
-// specific selection methods stay on the concrete controller: hoisting them
-// would trade real duplication for accidental coupling.
 @Injectable()
 export abstract class AbstractDetailController<
   TPanel extends DetailPanelStateBase,
@@ -32,10 +25,8 @@ export abstract class AbstractDetailController<
   protected readonly requests = new DetailRequestLifecycle();
   protected activeUrlState: TUrlState | null = null;
 
-  // initialPanel comes through the constructor, not an abstract getter: TS rejects
-  // reading an abstract member during base-class construction (and the subclass's
-  // own field initializers have not run yet either), so the concrete controller
-  // passes its module-level INITIAL_PANEL up through super().
+  // initialPanel comes via constructor, not an abstract getter: TS forbids reading an abstract
+  // member during base-class construction.
   protected constructor(protected readonly initialPanel: TPanel) {
     this._panel = signal<TPanel>(initialPanel);
     this.panelState = computed(() => this._panel());
@@ -45,8 +36,6 @@ export abstract class AbstractDetailController<
     this.cancelPendingLoads();
   }
 
-  // Identical states short-circuit, leaving any in-flight load for that identity
-  // alone (they are not cancelled).
   applyUrlState(state: TUrlState | null): void {
     if (state === null) {
       this.clearSelection();
@@ -60,10 +49,6 @@ export abstract class AbstractDetailController<
     this.applyIdentity(state);
   }
 
-  // The identity is unchanged, so applyUrlState() would short-circuit it; retry
-  // re-enters the load path directly. A failed read is never cached, so this
-  // issues a real request, while an intact summary still resolves from cache and
-  // only the detail view reloads.
   retryCurrentIdentity(): void {
     const state = this.activeUrlState;
     if (state === null) {
@@ -169,16 +154,12 @@ export abstract class AbstractDetailController<
 
   protected abstract urlStatesEqual(a: TUrlState | null, b: TUrlState | null): boolean;
 
-  // True when `state` re-selects the entity already loaded in `current`, so only
-  // the view need reload (weaker than urlStatesEqual's complete-identity check).
   protected abstract sameIdentity(current: TPanel, state: TUrlState): boolean;
 
   protected abstract applyUrlStateFields(panel: TPanel, state: TUrlState): TPanel;
 
   protected abstract applySummary(state: TUrlState, data: TSummary): Partial<TPanel>;
 
-  // Reads the summary through its shared cache key, deduping with every other
-  // consumer of that cache (side panel + overlay).
   protected abstract loadSummary(state: TUrlState): Observable<ApiResponse<TSummary>>;
 
   protected abstract notFoundPanel(state: TUrlState, message: string): TPanel;

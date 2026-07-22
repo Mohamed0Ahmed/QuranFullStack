@@ -65,7 +65,6 @@ function render(
   return fixture.nativeElement as HTMLElement;
 }
 
-/** The reserved skeleton rows, addressed by the list-item semantics rather than a design-system frame class. */
 function skeletonRows(root: HTMLElement): NodeListOf<Element> {
   return root.querySelectorAll('[data-testid="similar-ayahs-skeleton"] li');
 }
@@ -163,10 +162,7 @@ describe('SimilarAyahsCardComponent (US2)', () => {
       const placeholders = skeletonRows(loadingRoot);
       const loadedItems = loadedRoot.querySelectorAll('[data-testid="similar-ayah-item"]');
 
-      // The skeleton reserves exactly as many rows as will arrive, so the tab body
-      // neither grows nor collapses when the list settles.
       expect(placeholders).toHaveLength(loadedItems.length);
-      // Each reserved row visibly shimmers rather than sitting as a blank gap.
       for (const placeholder of Array.from(placeholders)) {
         expect(placeholder.querySelector('.qd-skeleton')).not.toBeNull();
       }
@@ -183,8 +179,6 @@ describe('SimilarAyahsCardComponent (US2)', () => {
       const fixture = TestBed.createComponent(SimilarAyahsCardComponent);
       const root = render(fixture, { loadState: LOADING, expectedItemCount: 0 });
 
-      // A known zero is not "unknown": reserving the fallback run here would paint a tall
-      // shimmer that collapses into the short empty state the moment the load settles.
       expect(skeletonRows(root)).toHaveLength(0);
     });
 
@@ -202,8 +196,6 @@ describe('SimilarAyahsCardComponent (US2)', () => {
       const status = root.querySelector('[data-testid="similar-ayahs-loading"]');
       expect(status?.getAttribute('role')).toBe('status');
 
-      // The status line is the single announcement; the placeholders stay out of the
-      // accessibility tree entirely, so they must not also claim aria-busy (inert there).
       const skeleton = root.querySelector('[data-testid="similar-ayahs-skeleton"]');
       expect(skeleton?.getAttribute('aria-hidden')).toBe('true');
       expect(skeleton?.hasAttribute('aria-busy')).toBe(false);

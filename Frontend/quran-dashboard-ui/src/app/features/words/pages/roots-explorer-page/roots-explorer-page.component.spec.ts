@@ -143,7 +143,6 @@ describe('RootsExplorerPageComponent US2', () => {
 
     const band = root.querySelector('.uw-intro-band') as HTMLElement;
     expect(band.querySelector('[data-testid="words-explainer--roots"]')).toBeTruthy();
-    // The toolbar recess is a sibling of the band (unchanged), never a parent of the hero.
     expect(band.querySelector('.uw-toolbar-recess')).toBeNull();
     expect(root.querySelector('.uw-toolbar-recess')).toBeTruthy();
     expect(root.querySelector('.uw-toolbar-recess [data-testid="words-explainer--roots"]')).toBeNull();
@@ -154,14 +153,13 @@ describe('RootsExplorerPageComponent US2', () => {
     try {
       const fixture = TestBed.createComponent(RootsExplorerPageComponent);
       fixture.componentInstance.ngOnInit();
-      fixture.detectChanges(); // FIRST render — no whenStable / effect / second tick
+      fixture.detectChanges();
 
       const root = fixture.nativeElement as HTMLElement;
       expect(root.querySelector('[data-testid="words-explainer-body"]')).toBeNull();
       expect(
         root.querySelector('[data-testid="words-explainer-toggle--roots"]')?.getAttribute('aria-expanded'),
       ).toBe('false');
-      // The intro band + toolbar are still present — nothing expanded then collapsed them.
       expect(root.querySelector('.uw-intro-band [data-testid="words-explainer--roots"]')).toBeTruthy();
       expect(root.querySelector('.uw-toolbar-recess')).toBeTruthy();
     } finally {
@@ -282,8 +280,6 @@ describe('RootsExplorerPageComponent US2', () => {
     expect(matched).toBeTruthy();
     expect(fixture.nativeElement.querySelectorAll('.highlighted-ayah__word--matched')).toHaveLength(1);
 
-    // Feature 029 B7: the page threads its own panel frame into the ayah link,
-    // so an ayah click promotes this root detail over the Mushaf.
     const mushafLink = fixture.nativeElement.querySelector(
       '[data-testid="ayah-matches-open-mushaf"]',
     ) as HTMLAnchorElement | null;
@@ -430,7 +426,6 @@ describe('RootsExplorerPageComponent US2', () => {
 
     const searchInput = () =>
       fixture.nativeElement.querySelector('[data-testid="roots-search-input"]') as HTMLInputElement;
-    // A shared deep link / refresh must show the filtered term in the input, not an empty box.
     expect(searchInput().value).toBe('رحم');
 
     queryParamMap$.next(convertToParamMap({}));
@@ -443,8 +438,6 @@ describe('RootsExplorerPageComponent US2', () => {
       const fixture = await initLifecycle();
       const root = fixture.nativeElement as HTMLElement;
 
-      // ≥1024px the table header row is visible and owns sorting, so the fallback is CSS-hidden
-      // there; below that the header row is display:none and this select is the only way in.
       const select = root.querySelector('[data-testid="roots-sort-select"]') as HTMLElement;
       expect(select).toBeTruthy();
       expect(select.closest('.qd-explorer-sort-fallback')).not.toBeNull();
@@ -484,7 +477,6 @@ describe('RootsExplorerPageComponent US2', () => {
 
       (root.querySelector('[data-testid="roots-table-sort-occurrences"]') as HTMLButtonElement).click();
 
-      // Release removes the param entirely — the default order is never spelled out in the URL.
       expect(router.navigate).toHaveBeenCalledWith([], {
         relativeTo: expect.anything(),
         queryParams: expect.objectContaining({ sort: null, page: null }),
@@ -1001,8 +993,6 @@ describe('RootsExplorerPageComponent state matrix (T073)', () => {
     const host = fixture.nativeElement as HTMLElement;
     expect(TestBed.inject(RootsDetailFacade).status()).toBe('notFound');
 
-    // Feature 030, N3 row 5: notFound is a PANEL/selection state, so it renders inside the details
-    // panel (a mounted shell) and never as a page-level banner that pushes the table+panel grid down.
     const notFound = host.querySelector('[data-testid="root-details-not-found"]');
     expect(notFound).toBeTruthy();
     expect(notFound?.getAttribute('role')).toBe('status');
@@ -1010,7 +1000,6 @@ describe('RootsExplorerPageComponent state matrix (T073)', () => {
     expect(notFound?.closest('qd-root-details-panel')).toBeTruthy();
     expect(host.querySelector('[data-testid="roots-restored-not-found"]')).toBeNull();
 
-    // the list is fine and populated — a missing selection must never hide the table
     expect(host.querySelector('qd-roots-table')).toBeTruthy();
     expect(host.querySelector('[data-testid="roots-table-root-button"]')).toBeTruthy();
   });
@@ -1033,7 +1022,6 @@ describe('RootsExplorerPageComponent state matrix (T073)', () => {
 
     expect(TestBed.inject(RootsExplorerFacade).status()).toBe('empty');
 
-    // Feature 030, N3 row 5: the list's own states render inside the table shell, not above the grid.
     const noResults = fixture.nativeElement.querySelector('[data-testid="roots-list-no-results"]');
     expect(noResults).toBeTruthy();
     expect(noResults.closest('.qd-explorer-table')).toBeTruthy();

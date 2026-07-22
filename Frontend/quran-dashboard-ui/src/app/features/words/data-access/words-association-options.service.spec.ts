@@ -100,12 +100,9 @@ describe('WordsAssociationOptionsService.wordTypeOptions (shared word-types tree
     const getTree = vi.fn(() => of(treeResponse()));
     const { optionsService, cache } = setup(getTree);
 
-    // Simulate the Word Types explorer visiting first (word-types-explorer.facade.ts's own tree read),
-    // which goes through the identical WordTypesCache singleton and WordTypesCacheKeys.tree key.
     cache.getOrLoad(WordTypesCacheKeys.tree, () => getTree()).subscribe();
     expect(getTree).toHaveBeenCalledTimes(1);
 
-    // Now Unique Words asks for its type-picker options: it must hit the shared cache, not the network.
     let result: AssociationOptionsResult | undefined;
     optionsService.wordTypeOptions().subscribe((value) => (result = value));
 
@@ -125,7 +122,6 @@ describe('WordsAssociationOptionsService.wordTypeOptions (shared word-types tree
     expect(getTree).toHaveBeenCalledTimes(1);
   });
 
-  // M32/M43 + M74: a backend failure response must be distinguishable from a genuine empty list.
   it('yields an error result (not a silent empty list) on a backend isSuccess:false tree response', () => {
     const getTree = vi.fn(() =>
       of({ isSuccess: false, message: 'فشل', data: null } as ApiResponse<WordTypeTreeDto>),

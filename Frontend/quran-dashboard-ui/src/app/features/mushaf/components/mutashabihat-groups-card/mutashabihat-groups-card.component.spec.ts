@@ -457,8 +457,6 @@ describe('MutashabihatGroupsCardComponent (US3)', () => {
         expectedOccurrenceCount: 0,
       });
 
-      // A known zero is not "unknown": reserving the fallback groups here would paint tall
-      // shimmer that collapses into the short empty state the moment the load settles.
       expect(
         root.querySelectorAll('[data-testid="mutashabihat-skeleton"] .mutashabihat-groups-card__group'),
       ).toHaveLength(0);
@@ -485,8 +483,6 @@ describe('MutashabihatGroupsCardComponent (US3)', () => {
       const status = root.querySelector('[data-testid="mutashabihat-loading"]');
       expect(status?.getAttribute('role')).toBe('status');
 
-      // The status line is the single announcement; the placeholders stay out of the
-      // accessibility tree entirely, so they must not also claim aria-busy (inert there).
       const skeleton = root.querySelector('[data-testid="mutashabihat-skeleton"]');
       expect(skeleton?.getAttribute('aria-hidden')).toBe('true');
       expect(skeleton?.hasAttribute('aria-busy')).toBe(false);

@@ -12,10 +12,6 @@ import { ApiResponse } from '../data-access/api-response.model';
 import { CurrentUser } from './current-user.model';
 import { CurrentUserStore } from './current-user.store';
 
-// `CurrentUserStore.load()` (Feature 033, Phase 1) must NEVER throw — an envelope- or HTTP-level
-// failure resolves to a calm Arabic message with `currentUser` left null, so it can't crash the
-// post-login callback. Wired with the real `AccessApi` + a real HTTP backend so the store's mapping
-// is exercised end to end.
 const ME_URL = `${environment.apiBaseUrl}/api/access/me`;
 const FALLBACK_MESSAGE = 'تعذر تحميل بيانات المستخدم الحالي.';
 
@@ -62,7 +58,6 @@ describe('CurrentUserStore.load', () => {
     const response: ApiResponse<CurrentUser> = { isSuccess: true, message: 'تم', data: CURRENT_USER };
     httpTesting.expectOne(ME_URL).flush(response);
 
-    // CURRENT_USER carries `roleName: null` — the pending, role-less default.
     expect(store.currentUser()).toEqual(CURRENT_USER);
     expect(store.currentUser()?.roleName).toBeNull();
     expect(store.errorMessage()).toBeNull();
@@ -164,9 +159,6 @@ describe('CurrentUserStore.load', () => {
       expect(store.errorMessage()).toBe('حساب غير مُفعَّل');
     });
 
-    // A failed load is NOT cached (cache-success-only), so a guard that fired during a
-    // transient /api/access/me outage can retry on the next evaluation instead of being
-    // pinned to the failure until a full page reload.
     const retryFirstFailures: { name: string; fail: (req: TestRequest) => void }[] = [
       {
         name: 'an envelope failure',
@@ -202,8 +194,6 @@ describe('CurrentUserStore.load', () => {
       store.load();
       const guarded = store.ensureLoaded();
 
-      // expectOne asserts a single in-flight request; it throws if load() and ensureLoaded()
-      // each fired their own GET.
       httpTesting.expectOne(ME_URL).flush({ isSuccess: true, message: 'تم', data: OWNER_USER });
       await guarded;
 

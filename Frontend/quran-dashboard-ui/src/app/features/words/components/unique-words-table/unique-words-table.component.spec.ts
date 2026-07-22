@@ -102,7 +102,6 @@ describe('UniqueWordsTableComponent', () => {
     const root = fixture.nativeElement as HTMLElement;
 
     expect(root.querySelector('[data-testid="unique-words-table-root-link"]')).toBeNull();
-    // Two placeholder em-dashes: type cell + root cell.
     expect(root.querySelectorAll('.unique-words-table__text')).toHaveLength(2);
   });
 
@@ -315,10 +314,6 @@ describe('UniqueWordsTableComponent', () => {
     });
   });
 
-  // Feature 030, N3 row 5: these states used to be page-level banners that inserted above the fixed
-  // table+panel grid and pushed it down ~4.5rem. They now stand in for the body INSIDE the mounted
-  // shell. jsdom does no layout, so the geometry itself is pinned in SCSS (`.unique-words-table__state`
-  // matches the body it replaces in every band) — these assert the structure that SCSS keys off.
   describe('in-shell list states (Feature 030, N3 row 5)', () => {
     it('renders the error state inside the table shell, replacing the body', () => {
       const fixture = setup([], { status: 'error', errorMessage: 'تعذر تحميل الكلمات' });
@@ -330,7 +325,6 @@ describe('UniqueWordsTableComponent', () => {
       expect(state?.textContent?.trim()).toBe('تعذر تحميل الكلمات');
       expect(state?.closest('.qd-explorer-table')).toBeTruthy();
       expect(state?.classList.contains('unique-words-table__state')).toBe(true);
-      // it REPLACES the body (rather than stacking above it) and the shell stays mounted
       expect(root.querySelector('.qd-explorer-table__body')).toBeNull();
       expect(root.querySelector('.qd-explorer-table__header')).toBeTruthy();
     });

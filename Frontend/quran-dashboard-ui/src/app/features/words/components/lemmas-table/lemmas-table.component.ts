@@ -39,7 +39,6 @@ export interface LemmaCountOpenedEvent {
   source?: ExplorerInteractionSource;
 }
 
-// Technical lemma/root IDs are navigation fields, never rendered as visible labels.
 @Component({
   selector: 'qd-lemmas-table',
   standalone: true,
@@ -54,8 +53,6 @@ export class LemmasTableComponent {
 
   readonly rows = input.required<readonly LemmaListItemViewModel[]>();
   readonly loading = input(false);
-  // Drives the error / no-results states that render INSIDE this mounted shell (replacing the body),
-  // separate from `loading`, which drives the skeleton body.
   readonly status = input<LoadStatus>('idle');
   readonly errorMessage = input('');
   readonly selectedLemmaId = input<number | null>(null);
@@ -69,7 +66,6 @@ export class LemmasTableComponent {
 
   readonly rowSelected = output<LemmaListItemViewModel>();
   readonly countOpened = output<LemmaCountOpenedEvent>();
-  // null = release the sort param back to the default (ترتيب المصحف).
   readonly sortChange = output<LemmaSort | null>();
 
   protected readonly sortControl = new ExplorerTableSortController<LemmaSort>(
@@ -165,7 +161,6 @@ export class LemmasTableComponent {
     });
   }
 
-  // Owned-root deep link into the Roots Explorer; uses numeric identity, never text lookup.
   protected rootHref(rootId: number): string {
     return deepLinkToHref(
       buildRootsDeepLink({ rootId, view: 'words', wordView: 'simple' }),

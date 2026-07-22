@@ -72,8 +72,6 @@ describe('WordTypeDetailsPanelComponent', () => {
   function createPanel(view: WordTypeDetailView = 'ayahs', kind: WordTypeDetailSelectionKind = 'word') {
     TestBed.configureTestingModule({
       imports: [WordTypeDetailsPanelComponent],
-      // The drawer suspends its focus trap from the router-backed
-      // detail-overlay history service.
       providers: [provideRouter([]), provideLocationMocks()],
       teardown: { destroyAfterEach: true },
     });
@@ -94,7 +92,6 @@ describe('WordTypeDetailsPanelComponent', () => {
     const host = fixture.nativeElement as HTMLElement;
 
     expect(host.querySelectorAll('[role="tab"]')).toHaveLength(2);
-    // The surface id is per-instance (not a shared constant); the tabs must resolve to it.
     const panel = host.querySelector('[role="tabpanel"]') as HTMLElement;
     expect(panel.id).toBeTruthy();
     for (const tab of Array.from(host.querySelectorAll('[role="tab"]'))) {
@@ -166,7 +163,6 @@ describe('WordTypeDetailsPanelComponent', () => {
 
       const views: WordTypeDetailView[] = [];
       fixture.componentInstance.viewChange.subscribe((view) => views.push(view));
-      // RTL: ArrowLeft advances to the next tab in reading order.
       wordsTab.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
       fixture.detectChanges();
 

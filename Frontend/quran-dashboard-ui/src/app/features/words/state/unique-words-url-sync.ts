@@ -19,8 +19,7 @@ import {
 } from '../models/unique-words.models';
 
 export function parseUniqueWordsQueryParams(queryParams: ParamMap): ParsedUniqueWordsQuery {
-  // Canonicalizes legacy aliases in (occurrences-desc → occurrences) and fails closed to the
-  // default on anything unknown, so one ordering can never be cached under two tokens.
+  // Canonicalize legacy aliases + fail closed to default, so one ordering can't be cached under two tokens.
   const sort: UniqueWordSort = normalizeUniqueWordSort(
     queryParams.get(UNIQUE_WORDS_QUERY_KEYS.sort),
   );

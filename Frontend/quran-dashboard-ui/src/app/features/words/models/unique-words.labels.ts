@@ -13,11 +13,6 @@ import {
   WORDS_SHARED_WORD_VIEWS,
 } from './words-shared.labels';
 
-// Feature 031: hub card text now comes from WORDS_EXPLAINER_CONTENT and the hub title/subtitle from
-// WORDS_HUB_INTRO (models/words-explainer.content.ts). These two consts remain only as stable
-// fixtures — ACTIVE_HUB_SECTION.labelAr is the Unique Words page title, and
-// ADDITIONAL_ACTIVE_HUB_SECTIONS is the hub-route invariant (label → route) the explorers assert
-// against.
 export interface WordSectionCardLabel {
   labelAr: string;
 }

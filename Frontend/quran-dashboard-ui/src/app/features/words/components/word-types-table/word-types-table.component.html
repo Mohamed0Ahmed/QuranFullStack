@@ -9,10 +9,8 @@
     <div class="word-types-table__header qd-explorer-table__header" role="rowgroup">
       <div class="word-types-table__header-row qd-explorer-table__header-row" role="row">
         <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--row-number qd-explorer-table__header-cell--row-number" role="columnheader">{{ headers.rowNumber }}</span>
-        <!-- The dimension text column is the alpha sort column in every view (N8-f). -->
         <ng-container *ngTemplateOutlet="sortHeader; context: { column: alphaSortColumn(), variant: 'word' }" />
         @if (isWordView()) {
-          <!-- النوع/الجذر/الأصل/الصيغة are related-entity text columns: plain headers (N8). -->
           <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--meta" role="columnheader">{{ headers.type }}</span>
           <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--meta" role="columnheader">{{ headers.root }}</span>
           <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--meta" role="columnheader">{{ headers.stem }}</span>
@@ -121,8 +119,6 @@
     <p class="word-types-table__state qd-empty-state" role="status" data-testid="word-types-select-subtype">{{ selectPromptLabel() }}</p>
   }
 
-  <!-- Shared row cells for both the virtual and plain-render branches; the three statistic chips are
-       the only interactive elements in a row. -->
   <ng-template #rowCells let-row="row" let-index="index">
     <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--row-number qd-explorer-table__cell--row-number" role="cell">{{ rowNumber(index) }}</span>
     @if (row.kind === 'word') {
@@ -178,10 +174,6 @@
     </span>
   </ng-template>
 
-  <!-- One sortable column header (Feature 030, N8). aria-sort carries the current state and lives on
-       the columnheader; the button's aria-label names the column + the state the next click gives.
-       المواضع is this explorer's DEFAULT order, so it renders actively sorted descending even with no
-       sort param — its cycle collapses to desc(default) ⇄ asc and has no unsorted third state. -->
   <ng-template #sortHeader let-column="column" let-variant="variant">
     <span
       class="word-types-table__header-cell qd-explorer-table__header-cell"

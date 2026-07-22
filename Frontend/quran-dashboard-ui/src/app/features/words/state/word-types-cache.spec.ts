@@ -50,7 +50,6 @@ describe('WordTypesCacheKeys search isolation', () => {
   const searched: WordTypesCacheFilter = { ...filter, search: 'كلمة' };
 
   it('keeps the pre-feature key when search is absent', () => {
-    // A null search must not alter the key (warm entries stay valid).
     expect(WordTypesCacheKeys.rows(filter, 'occurrences', 1))
       .toBe(WordTypesCacheKeys.rows({ ...filter, search: null }, 'occurrences', 1));
     expect(WordTypesCacheKeys.table(filter, 'roots', 'occurrences', 1))

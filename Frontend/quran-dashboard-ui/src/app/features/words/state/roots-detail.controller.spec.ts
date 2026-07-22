@@ -123,7 +123,6 @@ describe('RootsDetailController (route-independent, Feature 029 B4)', () => {
     controller.applyUrlState(urlState(1));
     controller.applyUrlState(urlState(2));
 
-    // The first root's response arrives late — it must be a cancelled no-op.
     subjectFor(1).next(ok(summaryOf(1)));
     subjectFor(1).complete();
 
@@ -321,7 +320,6 @@ describe('RootsDetailController identity read reuse (real cache + view loader)',
     expect(controller.panelState().status).toBe('success');
     expect(controller.panelState().words?.items[0].displayText).toBe('كلمة-اختبار-٧');
 
-    // Leave the panel and return to the SAME identity: both reads are served from cache.
     controller.applyUrlState(null);
     controller.applyUrlState(urlState(7, { view: 'words', wordView: 'tashkeel', detailPage: 2 }));
 

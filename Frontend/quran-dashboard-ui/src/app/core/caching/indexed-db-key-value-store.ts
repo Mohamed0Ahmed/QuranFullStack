@@ -3,13 +3,9 @@ import { AsyncKeyValueStore } from './async-key-value-store';
 export interface IndexedDbKeyValueStoreOptions {
   readonly databaseName: string;
   readonly storeName: string;
-  // Injectable so tests (fake-indexeddb) and SSR can supply/withhold a factory; defaults to the browser's.
   readonly factory?: IDBFactory;
 }
 
-// Generic key/value store over a single IndexedDB object store. Values are keyed by string and persisted
-// through the browser's structured-clone, so anything clonable survives a reload. All keys live in one
-// store; namespacing is by database/store name, not by key prefix.
 export class IndexedDbKeyValueStore<V> implements AsyncKeyValueStore<V> {
   private readonly factory: IDBFactory;
   private readonly databaseName: string;
@@ -62,8 +58,7 @@ export class IndexedDbKeyValueStore<V> implements AsyncKeyValueStore<V> {
     }));
   }
 
-  // Resolves on transaction completion (not merely request success) so a caller awaiting a write is
-  // guaranteed the data is durable before continuing.
+  // Resolve on transaction completion, not request success, so an awaited write is durable.
   private async request<R>(
     mode: IDBTransactionMode,
     body: (store: IDBObjectStore) => IDBRequest<R>,

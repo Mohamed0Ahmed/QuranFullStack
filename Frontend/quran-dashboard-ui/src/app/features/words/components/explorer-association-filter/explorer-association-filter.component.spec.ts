@@ -51,9 +51,6 @@ describe('ExplorerAssociationFilterComponent', () => {
     return root.querySelector<HTMLInputElement>('[data-testid="association-filter-search"]')!;
   }
 
-  // The option list lives in a popover panel that only renders while open. Focus alone no longer opens
-  // it (an empty, unselected field stays closed), so the generic opener here is the ArrowDown escape
-  // hatch: it opens from any state without touching the query or emitting searchChange.
   function openPanel(fixture: ReturnType<typeof render>): void {
     searchField(fixture.nativeElement as HTMLElement).dispatchEvent(
       new KeyboardEvent('keydown', { key: 'ArrowDown' }),
@@ -61,7 +58,6 @@ describe('ExplorerAssociationFilterComponent', () => {
     fixture.detectChanges();
   }
 
-  // openPanel defers focusing the first option to a rAF, mirroring the panel's own layout pass.
   function flushPanelLayout(): Promise<void> {
     return new Promise((resolve) => {
       requestAnimationFrame(() => {
@@ -115,13 +111,11 @@ describe('ExplorerAssociationFilterComponent', () => {
     let searchEmitted = false;
     fixture.componentInstance.searchChange.subscribe(() => (searchEmitted = true));
 
-    // Typing opens the panel itself, so no separate focus dispatch is needed here.
     const input = searchField(root);
     input.value = 'علم';
     input.dispatchEvent(new Event('input'));
     fixture.detectChanges();
 
-    // "اسم علم" (PN) matches; "اسم" (N) does not.
     expect(root.querySelector('[data-testid="association-filter-option-PN"]')).toBeTruthy();
     expect(root.querySelector('[data-testid="association-filter-option-N"]')).toBeNull();
     expect(searchEmitted).toBe(false);
@@ -133,7 +127,6 @@ describe('ExplorerAssociationFilterComponent', () => {
 
     expect(root.querySelector('[data-testid="association-filter-value"]')?.textContent?.trim()).toBe('اسم علم');
 
-    // The clear affordance must announce a clear action, not just the filter name.
     const clear = root.querySelector<HTMLButtonElement>('[data-testid="association-filter-clear"]')!;
     expect(clear.getAttribute('aria-label')).toBe(`${WORDS_ASSOCIATION_FILTER_LABELS.clear}: النوع الأساسي`);
 
@@ -184,8 +177,6 @@ describe('ExplorerAssociationFilterComponent', () => {
     expect(hint.textContent).toContain(WORDS_ASSOCIATION_FILTER_LABELS.loading);
   });
 
-  // M32/M43 + M74: a load failure must render as its own distinct state, never collapse into a
-  // silently-empty options list.
   it('renders a distinct error hint instead of an empty list when the options load failed', () => {
     const fixture = render({ error: true, options: [] });
     const root = fixture.nativeElement as HTMLElement;
@@ -254,7 +245,6 @@ describe('ExplorerAssociationFilterComponent', () => {
     input.dispatchEvent(event);
     fixture.detectChanges();
 
-    // preventDefault keeps the key from scrolling the toolbar instead of opening the panel.
     expect(event.defaultPrevented).toBe(true);
     expect(input.getAttribute('aria-expanded')).toBe('true');
 
@@ -269,7 +259,6 @@ describe('ExplorerAssociationFilterComponent', () => {
     const root = fixture.nativeElement as HTMLElement;
 
     root.querySelector<HTMLButtonElement>('[data-testid="association-filter-clear"]')!.click();
-    // The page owns selectedId, so the clear is only real once it flows back in.
     fixture.componentRef.setInput('selectedId', null);
     fixture.detectChanges();
 
@@ -314,8 +303,6 @@ describe('ExplorerAssociationFilterComponent', () => {
   });
 
   it('closes the panel on Escape and suppresses the immediate reopen from the focus restore', () => {
-    // A selection is active on purpose: focus would otherwise re-open the panel, which is what makes
-    // the suppression guard observable at all.
     const fixture = render({ selectedId: 'PN' });
     const root = fixture.nativeElement as HTMLElement;
     const input = searchField(root);
@@ -327,12 +314,10 @@ describe('ExplorerAssociationFilterComponent', () => {
 
     expect(input.getAttribute('aria-expanded')).toBe('false');
 
-    // Escape restores focus to the field programmatically; that restore must not reopen the panel.
     input.dispatchEvent(new FocusEvent('focus'));
     fixture.detectChanges();
     expect(input.getAttribute('aria-expanded')).toBe('false');
 
-    // Once the field genuinely blurs, the guard clears and a fresh focus opens the panel again.
     input.dispatchEvent(new FocusEvent('blur'));
     input.dispatchEvent(new FocusEvent('focus'));
     fixture.detectChanges();

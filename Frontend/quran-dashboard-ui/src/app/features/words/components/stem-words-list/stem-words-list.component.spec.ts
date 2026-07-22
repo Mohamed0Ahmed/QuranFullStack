@@ -125,7 +125,6 @@ describe('StemWordsListComponent', () => {
     expect(startSpy).toHaveBeenCalledTimes(1);
   });
 
-  // N3 row 4: the pagination bar unmounted while loading and the panel body sprang up under it.
   it('keeps the pagination slot rendered while loading and once loaded', async () => {
     await setup();
 
@@ -139,7 +138,6 @@ describe('StemWordsListComponent', () => {
 
     const slot = () => host.querySelector('[data-testid="stem-words-pagination-slot"]');
     expect(slot()).toBeTruthy();
-    // While loading the slot is deliberately empty — it reserves the row, it does not render the bar.
     expect(slot()!.querySelector('qd-pagination')).toBeNull();
 
     fixture.componentRef.setInput('loading', false);

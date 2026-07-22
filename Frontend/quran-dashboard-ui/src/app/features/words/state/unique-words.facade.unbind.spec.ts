@@ -103,7 +103,6 @@ describe('UniqueWordsFacade unbind cancels drilldown work (perf finding F3)', ()
 
     facade.unbindFromRoute();
 
-    // The in-flight request finally resolves after the page/facade was torn down — it must be a no-op.
     summarySubject.next({ isSuccess: true, message: 'تم', data: summary(42) });
 
     expect(facade.drilldownState().summary).toBeNull();
@@ -128,8 +127,6 @@ describe('UniqueWordsFacade unbind cancels drilldown work (perf finding F3)', ()
 
     facade.unbindFromRoute();
 
-    // Returning to the exact same URL (same wordId/view/ayahPage) must re-drive a real reload,
-    // not be swallowed by the "unchanged selection" fast path.
     facade.bindToRoute(route);
 
     expect(getSummary).toHaveBeenCalledTimes(2);
@@ -147,8 +144,6 @@ describe('UniqueWordsFacade unbind cancels drilldown work (perf finding F3)', ()
     const facade = setup({ getList });
 
     facade.bindToRoute(routeController({ mode: 'tashkeel' }, {}));
-    // A manual retry while the route-driven load is still in flight: only this subscription
-    // keeps the request alive once the route subscription goes away.
     facade.loadList();
 
     facade.unbindFromRoute();
@@ -157,8 +152,6 @@ describe('UniqueWordsFacade unbind cancels drilldown work (perf finding F3)', ()
     expect(facade.items()).toHaveLength(1);
     expect(facade.items()[0].id).toBe(7);
 
-    // The abandoned request for the previous filters finally answers. The list on screen now
-    // belongs to a different binding, so this response must be discarded, not merged into it.
     staleList.next(listPage([listItem(1), listItem(2)]));
 
     expect(facade.items()).toHaveLength(1);
@@ -183,8 +176,6 @@ describe('UniqueWordsFacade unbind cancels drilldown work (perf finding F3)', ()
 
     facade.unbindFromRoute();
 
-    // Same word id, other mode: simple and tashkeel are separate word spaces, so id 42 is a
-    // different word here and the tashkeel summary must not be reused for it.
     facade.bindToRoute(routeController({ mode: 'simple' }, { word: '42', view: 'surahs' }));
 
     expect(facade.drilldownState().summary?.kind).toBe('simple');
@@ -215,8 +206,6 @@ describe('UniqueWordsFacade unbind cancels drilldown work (perf finding F3)', ()
     facade.unbindFromRoute();
     facade.bindToRoute(route);
 
-    // The selection had already resolved before unbind, so re-binding restores from the in-memory
-    // drilldown/detail cache — no repeat network call for either the summary or the surahs detail.
     expect(getSummary).toHaveBeenCalledTimes(1);
     expect(getMentionedSurahs).toHaveBeenCalledTimes(1);
     expect(facade.drilldownState().isOpen).toBe(true);

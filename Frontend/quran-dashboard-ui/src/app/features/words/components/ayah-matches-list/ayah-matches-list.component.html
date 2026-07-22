@@ -20,8 +20,7 @@
         </article>
       }
     } @else {
-      <!-- Tracked by verseKey: Word Type ayah rows all carry ayahId 0, so ayahId is not a
-           stable row identity across consumers. -->
+      <!-- Track by verseKey: Word Type rows all carry ayahId 0, so ayahId is not a stable identity. -->
       @for (row of rows(); track row.match.verseKey; let i = $index) {
         <article qdAyahCard class="ayah-matches-list__card" data-testid="ayah-match-card">
           <header class="ayah-matches-list__meta-row">
@@ -62,7 +61,6 @@
     }
   </div>
 
-  <!-- Always-rendered slot: reserves the pagination row through loading (N3 row 4). -->
   <div class="qd-detail-list__pagination-slot" data-testid="ayah-matches-pagination-slot">
     @if (!loading()) {
       <qd-pagination

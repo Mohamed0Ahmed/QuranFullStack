@@ -11,8 +11,6 @@
   overflow: hidden;
 }
 
-// Frameless content mode (global overlay shell owns the dialog chrome):
-// a plain flex column so the tabpanel body keeps its internal scrolling.
 .lemma-details-panel--frameless {
   display: flex;
   flex-direction: column;

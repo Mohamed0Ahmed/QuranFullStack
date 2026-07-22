@@ -50,9 +50,6 @@ const INITIAL_PANEL: LemmasPanelState = {
   errorMessage: '',
 };
 
-// Complete lemma detail identity: every field participates in equality. Unlike
-// roots, the ayahs view carries a `typeCode` filter, so it is part of the identity
-// (and of LemmasCacheKeys.ayahs).
 export interface LemmasDetailUrlState {
   readonly lemmaId: number;
   readonly view: LemmaView;
@@ -80,12 +77,6 @@ export function lemmasDetailUrlStatesEqual(
   );
 }
 
-// Lemma detail controller (Feature 029 B4; consolidated onto
-// AbstractDetailController in Feature 033 DRY). Sibling of RootsDetailController.
-// The root-scoped LemmasApi/LemmasCache/LemmasDetailViewLoader collaborators stay
-// shared, so the explorer side panel and the global overlay de-duplicate the same
-// reads. Not providedIn 'root': the page facade owns one instance, and each
-// overlay adapter provides its own component-scoped instance (destroyed with it).
 @Injectable()
 export class LemmasDetailController extends AbstractDetailController<
   LemmasPanelState,

@@ -5,14 +5,8 @@ import { DetailFrame } from './detail-overlay.models';
 
 export type DetailOverlayLinkMode = 'start' | 'append';
 
-// Context default for `qdDetailLinkMode`: overlay adapters provide `'append'` at their
-// root so links inside the open overlay push onto the stack; the same lists in an explorer
-// side panel (no provider) keep the `'start'` default. An explicit input always wins.
 export const DETAIL_OVERLAY_LINK_MODE = new InjectionToken<DetailOverlayLinkMode>('DETAIL_OVERLAY_LINK_MODE');
 
-// Real anchor with a canonical href so copy-link, modifier/middle clicks, and the context
-// menu keep native browser behavior; only an unmodified primary click is intercepted into
-// an in-app overlay navigation (start = new one-frame stack, append = push onto the stack).
 @Directive({
   selector: 'a[qdDetailLink]',
   standalone: true,

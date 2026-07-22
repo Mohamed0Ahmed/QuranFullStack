@@ -14,16 +14,11 @@ import {
 
 type LoadStatus = 'idle' | 'loading' | 'ready' | 'error';
 
-// The permission substrate keeps the product timeline at generation 0 (no restore boundary exists yet), so
-// grant/revoke carry generation 0 for the freshness contract; the backend still rejects a stale value.
 const SUBSTRATE_GENERATION = 0;
 const LOAD_ERROR = 'تعذّر تحميل الصلاحيات. يرجى المحاولة مجددًا.';
 const SUBMIT_ERROR = 'تعذّر تنفيذ العملية.';
 const CONFLICT_MESSAGE = 'تغيّرت حالة الصلاحية أثناء التعديل. تم تحديث القائمة، يرجى المحاولة مجددًا.';
 
-// Page-scoped facade: owns the catalogue/assignments load state and the grant/revoke submit state, and
-// unwraps the ApiResponse envelope so the page binds ready-made state. A 409 (optimistic-concurrency /
-// stale generation) is surfaced through AsyncAction's distinct `conflict` status.
 @Injectable()
 export class PermissionsFacade {
   private readonly api = inject(PermissionsApi);
@@ -35,7 +30,6 @@ export class PermissionsFacade {
   readonly loadStatus = this.loadStatusSignal.asReadonly();
   readonly loadMessage = this.loadMessageSignal.asReadonly();
   readonly catalogue = computed(() => this.viewSignal()?.catalogue ?? []);
-  // Full set (incl. revoked tombstones) drives the version lookup; the display shows only granted rows.
   readonly assignments = computed(() => this.viewSignal()?.assignments ?? []);
   readonly grantedAssignments = computed(() => this.assignments().filter((assignment) => assignment.isGranted));
   readonly assignableCodes = computed(() => this.catalogue().filter((entry) => entry.assignable));
@@ -92,8 +86,7 @@ export class PermissionsFacade {
       response = await firstValueFrom(call);
     } catch (error) {
       if (error instanceof HttpErrorResponse && error.status === 409) {
-        // Reload so the refreshed assignment versions drive the next attempt, then raise the shared
-        // concurrency marker so AsyncAction reports the distinct `conflict` status.
+        // Reload first so the next attempt uses refreshed versions, then signal the conflict.
         await this.load();
         throw new ConcurrencyConflictError<string>(String(request.expectedVersion), 'server');
       }

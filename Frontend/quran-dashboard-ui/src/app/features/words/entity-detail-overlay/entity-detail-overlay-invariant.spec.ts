@@ -57,8 +57,6 @@ describe('Entity detail overlay explorer invariant', () => {
   let httpMock: HttpTestingController;
 
   beforeEach(() => {
-    // jsdom lacks matchMedia; the roots page reads the desktop breakpoint (the
-    // side panel must render inline) and the theme service reads color-scheme.
     Object.defineProperty(window, 'matchMedia', {
       configurable: true,
       writable: true,
@@ -97,7 +95,6 @@ describe('Entity detail overlay explorer invariant', () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
   }
 
-  // Deferred adapter chunks load asynchronously; poll until the selector renders.
   async function waitForSelector(
     fixture: { detectChanges: () => void; nativeElement: unknown },
     selector: string,
@@ -120,13 +117,10 @@ describe('Entity detail overlay explorer invariant', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    // The app shell issues a one-time backend health probe; irrelevant to the
-    // invariant, so it is flushed and excluded from the request accounting.
     for (const health of httpMock.match((req) => req.url.endsWith('/api/health'))) {
       health.flush(ok({ status: 'healthy', checks: [] }));
     }
 
-    // Page load: roots list + selected-root summary, then the lemmas view.
     httpMock.expectOne((req) => req.url.endsWith('/api/words/roots')).flush(
       ok({ page: 1, pageSize: 100, totalCount: 1, items: [rootListItem] }),
     );
@@ -150,12 +144,9 @@ describe('Entity detail overlay explorer invariant', () => {
     await settle();
     await waitForSelector(fixture, 'qd-lemma-detail-overlay-adapter');
 
-    // (a) The overlay dialog opened with the lemma adapter mounted.
     expect(root.querySelector('[data-testid="detail-modal-shell"]')).not.toBeNull();
     expect(root.querySelector('qd-lemma-detail-overlay-adapter')).not.toBeNull();
 
-    // (c) Every new request belongs to the overlay's lemma detail — the page
-    // issued NO additional roots list/detail requests.
     const overlayRequests = httpMock.match(() => true);
     expect(overlayRequests.length).toBeGreaterThan(0);
     for (const request of overlayRequests) {
@@ -172,16 +163,12 @@ describe('Entity detail overlay explorer invariant', () => {
     await settle();
     fixture.detectChanges();
 
-    // (b) The page facade's panel state is untouched: same object identity,
-    // same selection, same view.
     expect(facade.panelState()).toBe(panelBefore);
     expect(facade.selectedRootId()).toBe(1);
     expect(facade.view()).toBe('lemmas');
 
-    // Still no page requests after the overlay finished loading.
     expect(httpMock.match((req) => req.url.includes('/api/words/roots'))).toHaveLength(0);
 
-    // (d) The page's selection query keys survive alongside the overlay keys.
     const url = router.url;
     expect(url).toContain('root=1');
     expect(url).toContain('view=lemmas');

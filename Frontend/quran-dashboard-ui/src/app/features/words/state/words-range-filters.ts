@@ -15,7 +15,6 @@ export interface RangeMetric {
   readonly apiKey: string;
   readonly family: RangeFamily;
   readonly labelAr: string;
-  // Presentation only — the URL still stores the range.
   readonly threshold?: number;
 }
 
@@ -34,7 +33,6 @@ export function parseRangeFilters(queryParams: ParamMap, metrics: readonly Range
   return result;
 }
 
-// Emits every metric key: active ⇒ serialized, cleared ⇒ null so a merge drops the key from the URL.
 export function buildRangeQueryParams(
   ranges: RangeFilters,
   metrics: readonly RangeMetric[],
@@ -46,7 +44,6 @@ export function buildRangeQueryParams(
   return params;
 }
 
-// Appends <apiKey>Min/<apiKey>Max only for active ranges — absent ⇒ pre-feature request.
 export function appendRangeApiParams(
   params: HttpParams,
   ranges: RangeFilters,
@@ -68,7 +65,6 @@ export function appendRangeApiParams(
   return next;
 }
 
-// Empty ⇒ '' so an unfiltered read keeps its pre-feature cache key byte-identical.
 export function serializeRangeFiltersKey(ranges: RangeFilters, metrics: readonly RangeMetric[]): string {
   return metrics
     .map((metric) => {

@@ -43,8 +43,6 @@ export class LemmaWordsListComponent {
   protected readonly paginationLabel = LEMMAS_WORDS_PAGINATION_LABEL;
   protected readonly loadingRowPlaceholders = Array.from({ length: 8 });
 
-  // Mirrors the retired unique-words explorer deep link (same mode + ayahs
-  // view); frame defaults are serialized explicitly per the URL contract.
   protected readonly rows = computed((): readonly LemmaWordRowViewModel[] =>
     this.page().items.map((item) => ({
       item,

@@ -2,10 +2,6 @@
   display: block;
 }
 
-// Reserved slot for the restored-drilldown banners (Feature 030, N3 zero-outer-layout-shift; see the
-// template comment for why page level is their only home). Rendered in every state, so the grid below
-// keeps its position whether or not a banner is showing. Sized from the same shared control geometry
-// the pagination slots use, so one banner row always fits inside the reservation.
 .unique-words-restored-slot {
   display: flex;
   flex-direction: column;
@@ -13,9 +9,6 @@
   min-block-size: var(--qd-control-block-size);
 }
 
-// The shared state blocks are sized to stand in for a panel body; at page level their --qd-space-6
-// padding would make the reservation above several rem of permanent dead space. Compact one-line form
-// instead, comfortably shorter than the slot that centres it, so it drops in without moving anything.
 .unique-words-restored-banner {
   padding: var(--qd-space-1) var(--qd-space-4);
 }

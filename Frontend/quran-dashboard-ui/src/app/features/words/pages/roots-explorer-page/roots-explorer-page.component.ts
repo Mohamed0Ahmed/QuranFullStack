@@ -70,8 +70,6 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
   });
 
   protected readonly pageTitle = ROOTS_PAGE_TITLE;
-  // Read the content via a TDZ-safe getter (words/README label rule). The collapse state is seeded
-  // synchronously from storage so the FIRST render reflects it — no expand-then-collapse shift.
   protected get explainer() { return WORDS_EXPLAINER_CONTENT.roots; }
   protected readonly explainerExpanded = signal(this.explainerPreference.isExpanded('roots'));
   protected readonly emptySelectionLabel = ROOTS_EMPTY_SELECTION_LABEL;
@@ -104,7 +102,6 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
     const page = this.panelState().ayahs;
     return page ? { ...page, items: page.items.map(mapRootAyahMatchToShared) } : this.emptyAyahsPage;
   });
-  /** This panel's own typed frame (Feature 029 B7): an ayah click promotes it over the Mushaf. */
   protected readonly ayahParentFrame = computed<RootDetailFrame | null>(() => {
     const state = this.panelState();
     if (state.selectedRootId === null) {
@@ -155,13 +152,11 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
     this.clearTableFocus();
     this.updateQueryParams({ ...buildRangeQueryParams(ranges, ROOTS_RANGE_METRICS), page: null });
   }
-  /** A header cycle step (token) or its release (null). Changing the ordering always resets page. */
   protected onSortChange(sort: RootSort | null): void {
     this.clearTableFocus();
     this.updateQueryParams(buildRootsQueryParams({ sort, page: null }));
   }
 
-  /** The ≤1023px fallback select drives the same contract; the default order stays param-absent. */
   protected onSortSelect(value: string): void {
     this.onSortChange(sortQueryValue(normalizeRootSort(value), DEFAULT_ROOT_SORT));
   }

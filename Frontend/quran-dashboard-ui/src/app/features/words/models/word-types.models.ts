@@ -2,13 +2,6 @@ export type WordTypeMainType = 'noun' | 'verb' | 'particle' | 'inl';
 export type WordTypeCase = 'all' | 'nominative' | 'accusative' | 'genitive' | 'null';
 export type WordTypeTense = 'all' | 'past' | 'present' | 'imperative';
 export type WordTypeVoice = 'all' | 'active' | 'passive';
-/**
- * The Word Types sort allowlist (shared by the words view and the three grouped views), split by
- * column class because that decides the natural direction a bare token means. Unlike the other
- * four explorers the DEFAULT is `occurrences` desc, not `mushaf-order` — `mushaf-order` is still
- * an allowlisted ordering here, just not the default and not a column header.
- * النوع/الجذر/الأصل/الصيغة are related-entity text columns and render as plain headers.
- */
 type WordTypeCountSortColumn = 'occurrences' | 'ayahs' | 'surahs';
 type WordTypeTextSortColumn = 'alpha';
 export type WordTypeSortColumnKey = WordTypeCountSortColumn | WordTypeTextSortColumn;
@@ -20,8 +13,6 @@ export type WordTypeSort =
 
 export type WordTypeTableView = 'words' | 'roots' | 'stems' | 'lemmas';
 export type WordTypeDetailView = 'words' | 'ayahs' | 'surahs';
-// Presence-filter dimensions (Feature 026, US6): the three morphology associations a word-context row
-// may carry; each maps to its tri-state hasRoot/hasStem/hasLemma URL key.
 export type WordTypePresenceDimension = 'root' | 'stem' | 'lemma';
 export type WordTypesLoadStatus = 'idle' | 'loading' | 'selectPrompt' | 'success' | 'empty' | 'error' | 'notFound';
 
@@ -136,10 +127,7 @@ export interface ParsedWordTypesQuery extends WordTypeRowIdentity {
   type: WordTypeMainType;
   childCode: string | null;
   tableView: WordTypeTableView;
-  // Word-identity search; part of the list scope (narrows all table views), fail-closed to null.
   search: string | null;
-  // Tri-state presence flags (Feature 026, US6): null = any, true = has, false = missing. Part of the
-  // list scope — words + grouped views reshape together — fail-closed to null.
   hasRoot: boolean | null;
   hasStem: boolean | null;
   hasLemma: boolean | null;
@@ -163,16 +151,11 @@ export interface ParsedWordTypesQuery extends WordTypeRowIdentity {
 export interface WordTypesListState {
   status: WordTypesLoadStatus;
   tree: WordTypeTreeDto | null;
-  // Preserve every discriminated /table variant (word rows and grouped root/stem/lemma rows) in
-  // feature state; the table component branches on `tableView` to render each kind.
   rows: PagedResultDto<WordTypeTableRowDto> | null;
   query: ParsedWordTypesQuery;
   errorMessage: string;
 }
 
-// Scoped four-count summary (Feature 026, US8). The strip has its own load lifecycle, independent of the
-// table: 'idle' before a leaf scope is confirmed, then loading/success/error. Counts refetch on scope
-// change only (not tableView, not page); a counts failure never blocks the table.
 export type WordTypeScopeCountsStatus = 'idle' | 'loading' | 'success' | 'error';
 
 export interface WordTypesScopeCountsState {
@@ -230,14 +213,6 @@ export const WORD_TYPE_MAIN_TYPES = ['noun', 'verb', 'particle', 'inl'] as const
 export const WORD_TYPE_CASES = ['all', 'nominative', 'accusative', 'genitive', 'null'] as const satisfies readonly WordTypeCase[];
 export const WORD_TYPE_TENSES = ['all', 'past', 'present', 'imperative'] as const satisfies readonly WordTypeTense[];
 export const WORD_TYPE_VOICES = ['all', 'active', 'passive'] as const satisfies readonly WordTypeVoice[];
-/**
- * The sortable Word Types columns, shared by all four table views.
- *
- * `alpha` is the dimension text column, whose header text CHANGES per view (الكلمة in the words
- * view, الجذر/الأصل الصرفي/الصيغة المعجمية in the grouped ones — N8-f). The label here is the
- * view-neutral wording the ≤1023px fallback select needs, since that select spans every view; the
- * table overrides it per view with the real dimension header.
- */
 export const WORD_TYPE_SORT_COLUMNS = {
   alpha: { key: 'alpha', natural: 'asc', label: 'أبجدي' },
   occurrences: { key: 'occurrences', natural: 'desc', label: WORDS_SHARED_HEADERS.occurrences },
@@ -263,7 +238,6 @@ export const DEFAULT_WORD_TYPE_VOICE: WordTypeVoice = 'all';
 export const DEFAULT_WORD_TYPE_SORT: WordTypeSort = 'occurrences';
 export const DEFAULT_WORD_TYPE_TABLE_VIEW: WordTypeTableView = 'words';
 export const DEFAULT_WORD_TYPES_PAGE = 1;
-// List reads serve up to 1000 rows per page (parity with the other explorers); detail lists 100.
 export const WORD_TYPES_PAGE_SIZE = 1000;
 export const DEFAULT_WORD_TYPES_DETAIL_VIEW: WordTypeDetailView = 'ayahs';
 export const DEFAULT_GROUPED_WORD_TYPES_DETAIL_VIEW: WordTypeDetailView = 'words';
@@ -296,18 +270,12 @@ export function isWordTypeVoice(value: unknown): value is WordTypeVoice {
   return (WORD_TYPE_VOICES as readonly string[]).includes(value as string);
 }
 
-/** True only for a CANONICAL token — the legacy alias spellings normalize instead (see roots). */
 export function isWordTypeSort(value: unknown): value is WordTypeSort {
   return (
     typeof value === 'string' && canonicalizeSortToken(value, WORD_TYPE_SORT_COLUMN_LIST) === value
   );
 }
 
-/**
- * Canonicalizes aliases in and fails closed to the default on anything unknown. The default here
- * is `occurrences` (desc), not `mushaf-order` — Word Types is the one explorer that browses by
- * frequency, so an unknown token lands on المواضع.
- */
 export function normalizeWordTypeSort(value: string | null | undefined): WordTypeSort {
   const canonical = canonicalizeSortToken(value, WORD_TYPE_SORT_COLUMN_LIST);
   return canonical !== null && isWordTypeSort(canonical) ? canonical : DEFAULT_WORD_TYPE_SORT;

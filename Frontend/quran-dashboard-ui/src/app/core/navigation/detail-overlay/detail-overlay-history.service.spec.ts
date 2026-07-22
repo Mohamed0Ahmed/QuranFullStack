@@ -62,13 +62,10 @@ describe('DetailOverlayHistoryService', () => {
     location = TestBed.inject(Location);
     service = TestBed.inject(DetailOverlayHistoryService);
     sessionStorage.clear();
-    // Wire the router's popstate listener so SpyLocation back/forward drive navigations.
     router.initialNavigation();
   });
 
   async function settle(): Promise<void> {
-    // The router schedules popstate-driven navigations in a setTimeout(0);
-    // yield a macrotask first so an about-to-start navigation is observable.
     await new Promise((resolve) => setTimeout(resolve, 10));
     await vi.waitFor(() => {
       if (router.getCurrentNavigation() !== null) {
@@ -162,7 +159,6 @@ describe('DetailOverlayHistoryService', () => {
     expect(service.state().stack).toHaveLength(1);
     expect((service.state().stack[0] as RootDetailFrame).view).toBe('ayahs');
 
-    // The replaced entry still proves its parent: dialog Back uses browser Back.
     service.appendFrame(lemmaFrame);
     await settle();
     const backSpy = vi.spyOn(location, 'back');
@@ -206,7 +202,6 @@ describe('DetailOverlayHistoryService', () => {
     expect(service.isOpen()).toBe(true);
     expect(service.state().stack).toHaveLength(2);
 
-    // Browser Back returns to the closed/restorable state.
     location.back();
     await settle();
     expect(service.isRetainedClosed()).toBe(true);
@@ -275,7 +270,6 @@ describe('DetailOverlayHistoryService', () => {
     service.start();
     await settle();
 
-    // One Location.go per stack prefix (depth 1 and depth 2), ending at the original URL.
     const seededUrls = goSpy.mock.calls.map(([url]) => url);
     expect(seededUrls).toHaveLength(2);
     expect(seededUrls[0]).toContain(encodeURIComponent(ROOT_SERIALIZED));
@@ -283,7 +277,6 @@ describe('DetailOverlayHistoryService', () => {
     expect(seededUrls[1]).toBe(location.path());
     expect(service.state().stack).toHaveLength(2);
 
-    // Browser Back now pops the deep-linked stack instead of leaving the app.
     location.back();
     await settle();
     expect(service.state().stack).toHaveLength(1);
@@ -306,8 +299,6 @@ describe('DetailOverlayHistoryService', () => {
     expect(service.state().stack).toHaveLength(0);
     expect(location.path()).toBe('/dashboard/words/roots');
 
-    // The identical URL is now a new entry whose immediate predecessor is the
-    // bare base, not the remembered one-frame prefix.
     const goSpy = vi.spyOn(location, 'go');
     await router.navigateByUrl(deepLink);
     await settle();
@@ -418,7 +409,6 @@ describe('DetailOverlayHistoryService', () => {
       expect(location.path()).toContain('/dashboard/mushaf');
       expect(location.path()).toContain('page=92');
       expect(location.path()).toContain('panel=ayah');
-      // The source page's own query never rides along; the stack does, still open.
       expect(location.path()).not.toContain('root=5');
       expect(location.path()).toContain(`qdDetail=${encodeURIComponent(ROOT_SERIALIZED)}`);
       expect(location.path()).toContain(`qdDetail=${encodeURIComponent(LEMMA_SERIALIZED)}`);
@@ -426,8 +416,6 @@ describe('DetailOverlayHistoryService', () => {
       expect(service.isOpen()).toBe(true);
       expect(service.state().stack).toHaveLength(2);
 
-      // Continuity replaced the top entry: browser Back pops the entity frame
-      // together with its historical base, not an intermediate ayah step.
       location.back();
       await settle();
       expect(location.path()).toContain('/dashboard/words/roots');
@@ -445,8 +433,6 @@ describe('DetailOverlayHistoryService', () => {
       service.navigateBaseWithOverlay('/dashboard/mushaf', mushafParams);
       await settle();
 
-      // Dialog Back proves its parent across the base replacement, so it uses
-      // browser Back — the one mechanism both controls now share (B7/B8).
       const backSpy = vi.spyOn(location, 'back');
       service.back();
       await settle();
@@ -460,7 +446,6 @@ describe('DetailOverlayHistoryService', () => {
       expect(dialogBackPath).not.toContain('/dashboard/mushaf');
       expect(service.isOpen()).toBe(true);
 
-      // Browser Back over the identical sequence lands on the very same entry.
       await startAt('/dashboard/words/roots?root=5');
       service.startStack(rootFrame);
       await settle();
@@ -530,7 +515,6 @@ describe('DetailOverlayHistoryService', () => {
       expect(service.isOpen()).toBe(true);
       expect(service.state().stack).toHaveLength(1);
 
-      // Push semantics: browser Back returns to the originating side-panel entry.
       location.back();
       await settle();
       expect(location.path()).toBe('/dashboard/words/roots?root=5');
@@ -549,7 +533,6 @@ describe('DetailOverlayHistoryService', () => {
       expect(location.path()).not.toContain('qdDetail');
       expect(service.state().stack).toHaveLength(0);
 
-      // Plain push: Back returns to the retained-closed entry.
       location.back();
       await settle();
       expect(service.isRetainedClosed()).toBe(true);
@@ -572,7 +555,6 @@ describe('DetailOverlayHistoryService', () => {
 
       service.startStack(lemmaFrame);
       await settle();
-      // Open overlay: the current stack wins over the promote option.
       const openHref = service.buildBaseWithOverlayHref('/dashboard/mushaf', mushafParams, {
         promoteFrame: rootFrame,
       });

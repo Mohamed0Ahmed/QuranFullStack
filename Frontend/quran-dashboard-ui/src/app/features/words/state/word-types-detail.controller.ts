@@ -40,9 +40,6 @@ const INITIAL_PANEL: WordTypesDetailState = {
   errorMessage: '',
 };
 
-// The full composite row identity (tashkeelWordId, contextCode, case, tense, voice) plus view
-// and page all participate in equality: the same tashkeel word id under a different
-// context/case/tense/voice is a DIFFERENT detail and must never cross-serve.
 export interface WordTypesWordDetailUrlState {
   readonly identity: WordTypeRowIdentity;
   readonly view: WordTypeDetailView;
@@ -74,11 +71,6 @@ function isSameWordIdentity(current: WordTypeRowIdentity, next: WordTypeRowIdent
   );
 }
 
-// A word-kind selection carries a WordTypeDetailScope only to satisfy the
-// shared selection shape: for kind 'word' the view loader and every cache key
-// read exclusively from `identity` (see WordTypesDetailViewLoader /
-// WordTypesCacheKeys), so this synthetic scope never reaches an API call or a
-// cache key. The overlay has no list scope to forward.
 function wordSelectionOf(identity: WordTypeRowIdentity): WordTypeDetailSelection {
   return {
     kind: 'word',
@@ -93,13 +85,6 @@ function wordSelectionOf(identity: WordTypeRowIdentity): WordTypeDetailSelection
   };
 }
 
-// Handles ONLY word-kind details (the overlay's frame carries the full composite row identity);
-// grouped root/stem/lemma selections stay in WordTypesDetailFacade.
-// Every complete-identity transition abandons both the summary and the detail request and opens
-// a new generation (see DetailRequestLifecycle), so a late response from the previously selected
-// composite identity can never overwrite this one.
-// Not `providedIn: 'root'`: each overlay adapter provides its own component-scoped instance, so
-// overlay activity can never mutate the page panel.
 @Injectable()
 export class WordTypesDetailController implements OnDestroy {
   private readonly _panel = signal<WordTypesDetailState>(INITIAL_PANEL);
@@ -132,9 +117,6 @@ export class WordTypesDetailController implements OnDestroy {
     this.applyIdentity(state);
   }
 
-  // Identity is unchanged, so applyUrlState would short-circuit it; retry re-enters the load
-  // path directly. A failed read is never cached, so this re-fetches; an intact summary still
-  // resolves from cache and only the detail view reloads.
   retryCurrentIdentity(): void {
     const state = this.activeUrlState;
     if (state === null) {
@@ -144,7 +126,6 @@ export class WordTypesDetailController implements OnDestroy {
     this.applyIdentity(state);
   }
 
-  // Cancels the pending summary/detail loads without resetting panel state.
   cancelPendingLoads(): void {
     this.requests.cancelAll();
   }
@@ -244,8 +225,6 @@ export class WordTypesDetailController implements OnDestroy {
       this.viewLoader.loadActiveView(
         { selection, view, detailPage },
         {
-          // Unreachable for a word-kind selection (the loader no-ops 'words'
-          // there); wired for handler-contract completeness.
           onWords: (response) =>
             this.applyIfCurrent(token, (panel) => ({ ...panel, ...buildWordsPanelUpdate(response) })),
           onAyahs: (response) =>

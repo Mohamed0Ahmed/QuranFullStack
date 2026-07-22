@@ -1,6 +1,3 @@
-// Full-width second row of `.qd-explorer-controls-secondary` (Feature 029, U2): the
-// filter wraps below the sort control on all four explorers, so opening the
-// <details> panel grows this row only and never re-centers the sort.
 :host {
   display: block;
   flex: 1 1 100%;
@@ -58,8 +55,6 @@
   color: var(--qd-text-muted);
 }
 
-// Three equal fixed-width tracks (أكثر من / أقل من / مخصّص) so the chip columns line up
-// vertically across every metric row, whatever threshold each row's label carries.
 .range-filter__chips {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 9rem));
@@ -116,9 +111,6 @@
   align-self: flex-start;
 }
 
-// "Aligned rows" treatment: each metric is a full-width row — a fixed-width label
-// column followed by the shared chip grid, so chip columns line up vertically across
-// the occurrences/ayahs/surahs rows.
 .range-filter--cards {
   background: var(--qd-surface);
 

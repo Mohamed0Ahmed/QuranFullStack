@@ -26,8 +26,6 @@ export class StemsDetailFacade extends AbstractRouteDetailFacade<
   StemWordView,
   StemSurahView
 > {
-  // Per-facade controller instance keeps this page's panel state isolated from the
-  // component-scoped controllers the global overlay adapters use.
   protected readonly controller = new StemsDetailController(
     inject(StemsApi),
     inject(StemsCache),

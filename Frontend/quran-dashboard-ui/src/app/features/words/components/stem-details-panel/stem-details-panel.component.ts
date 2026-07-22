@@ -24,9 +24,6 @@ import {
 import { CLOSE_LABEL } from '../../models/unique-words.labels';
 import { STEM_VIEW_KEYS, StemView } from '../../models/stems.models';
 
-// Pure chrome: the page projects the active view via <ng-content /> and drives `viewChange`.
-// Below the desktop breakpoint the page flips inline=false to render this as a modal drawer;
-// RTL tablist arrows move forward on ArrowLeft (Feature 016 / T117).
 @Component({
   selector: 'qd-stem-details-panel',
   standalone: true,
@@ -38,14 +35,10 @@ import { STEM_VIEW_KEYS, StemView } from '../../models/stems.models';
 export class StemDetailsPanelComponent {
   private readonly detailOverlayHistory = inject(DetailOverlayHistoryService);
 
-  // Only the top layer may trap focus (Feature 029 §5.9): while the global detail overlay is open
-  // this drawer sits inside the inert app shell, so its own trap must stand down.
   protected readonly drawerTrapEnabled = computed(() => !this.detailOverlayHistory.isOpen());
 
   readonly view = input.required<StemView>();
   readonly inline = input(true);
-  // Content-only mode (Feature 029, Change B4): render just the tablist + tabpanel body, no
-  // card/dialog/backdrop/header — for the global detail overlay shell that owns the chrome.
   readonly frameless = input(false);
   readonly emptySelection = input(false);
   readonly selectionTitle = input('');

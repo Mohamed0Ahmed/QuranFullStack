@@ -25,8 +25,7 @@ import {
 } from '../models/roots.models';
 
 export function parseRootsQueryParams(queryParams: ParamMap): ParsedRootsQuery {
-  // Canonicalizes legacy aliases in (occurrences-desc → occurrences) and fails closed to the
-  // default on anything unknown, so one ordering can never be cached under two tokens.
+  // Canonicalize legacy aliases + fail closed to default, so one ordering can't be cached under two tokens.
   const sort: RootSort = normalizeRootSort(queryParams.get(ROOTS_QUERY_KEYS.sort));
 
   const page = parsePositiveInt(queryParams.get(ROOTS_QUERY_KEYS.page)) ?? DEFAULT_ROOTS_LIST_PAGE;

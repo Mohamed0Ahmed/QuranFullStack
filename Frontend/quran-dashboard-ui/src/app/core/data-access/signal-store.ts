@@ -2,9 +2,6 @@ import { computed, signal } from '@angular/core';
 
 export type ResourceStatus = 'idle' | 'loading' | 'ready' | 'error';
 
-// Generic Signals base for a single-resource store, following the CurrentUserStore pattern: private
-// writable signals, public readonly projections, protected mutators for subclasses. It owns only the
-// value/status/error triad; feature stores subclass it and add their own load orchestration.
 export class SignalStore<T> {
   private readonly valueSignal = signal<T | null>(null);
   private readonly statusSignal = signal<ResourceStatus>('idle');

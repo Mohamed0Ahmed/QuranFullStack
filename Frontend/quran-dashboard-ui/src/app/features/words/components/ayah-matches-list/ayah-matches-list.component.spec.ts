@@ -113,7 +113,6 @@ describe('AyahMatchesListComponent', () => {
   });
 
   it('renders every Word Type-shaped row when all rows share ayahId 0 (stable verseKey tracking)', () => {
-    // Word Type ayah mapping supplies ayahId: 0 for every row; tracking must key on verseKey.
     const wordTypePage: PagedResultDto<AyahMatchDto> = {
       page: 1,
       pageSize: 10,
@@ -173,7 +172,6 @@ describe('AyahMatchesListComponent', () => {
     expect(emitted).toEqual(['4:57:3']);
   });
 
-  // N3 row 4: the pagination bar unmounted while loading and the panel body sprang up under it.
   it('keeps the pagination slot rendered while loading and once loaded', () => {
     const fixture = TestBed.createComponent(AyahMatchesListComponent);
     fixture.componentRef.setInput('page', PAGE);
@@ -184,7 +182,6 @@ describe('AyahMatchesListComponent', () => {
 
     const slot = () => host.querySelector('[data-testid="ayah-matches-pagination-slot"]');
     expect(slot()).toBeTruthy();
-    // While loading the slot is deliberately empty — it reserves the row, it does not render the bar.
     expect(slot()!.querySelector('qd-pagination')).toBeNull();
 
     fixture.componentRef.setInput('loading', false);

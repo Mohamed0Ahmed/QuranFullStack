@@ -11,7 +11,6 @@
         {{ headers.rowNumber }}
       </div>
       <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.alpha, numeric: false }" />
-      <!-- Dominant الصيغة/الجذر are related-entity text columns: plain headers, no aria-sort (N8). -->
       <div class="stems-table__header-cell qd-explorer-table__header-cell" role="columnheader">{{ headers.lemma }}</div>
       <div class="stems-table__header-cell qd-explorer-table__header-cell" role="columnheader">{{ headers.root }}</div>
       <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.occurrences, numeric: true }" />
@@ -60,9 +59,6 @@
       }
     </div>
   } @else if (status() === 'error') {
-    <!-- List states live INSIDE the mounted shell (Feature 030, N3 row 5 / §17 mounted-shell
-         doctrine): as a page-level banner they inserted above the fixed table+panel grid and
-         pushed it down ~4.5rem. They replace the body, so the shell keeps its footprint. -->
     <div class="stems-table__state qd-error-state" role="alert" data-testid="stems-list-error">
       {{ errorMessage() }}
     </div>
@@ -285,8 +281,6 @@
       </button>
     </div>
   </ng-template>
-  <!-- One sortable column header (Feature 030, N8). aria-sort carries the current state and lives on
-       the columnheader; the button's aria-label names the column + the state the next click gives. -->
   <ng-template #sortHeader let-column="column" let-numeric="numeric">
     <div
       class="stems-table__header-cell qd-explorer-table__header-cell"

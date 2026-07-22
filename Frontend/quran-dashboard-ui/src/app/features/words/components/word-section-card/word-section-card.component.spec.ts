@@ -58,7 +58,6 @@ describe('WordSectionCardComponent', () => {
 
     expect(root.querySelector('.word-section-card__ordinal')?.getAttribute('aria-hidden')).toBe('true');
     expect(root.querySelector('[data-testid="word-section-coming-soon"]')).toBeNull();
-    // Always an active link — never a disabled group.
     expect(root.querySelector('[aria-disabled="true"]')).toBeNull();
   });
 });

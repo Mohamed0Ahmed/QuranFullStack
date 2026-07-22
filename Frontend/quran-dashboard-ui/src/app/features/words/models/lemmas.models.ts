@@ -1,8 +1,3 @@
-/**
- * The Lemmas sort allowlist, split by column class because that decides the natural direction a
- * bare token means (counts descend, text ascends). `mushaf-order` is the default and is not a
- * column; الجذر is a related-entity text column and is deliberately NOT sortable in v1.
- */
 type LemmaCountSortColumn =
   | 'occurrences'
   | 'ayahs'
@@ -115,7 +110,6 @@ export const LEMMAS_QUERY_KEYS = {
   typeCode: 'typeCode',
 } as const;
 
-// Association filter (Feature 026, US7): owned root (real FK belonging). Fails closed in the URL.
 export interface LemmasAssociation {
   readonly rootId: number | null;
 }
@@ -155,10 +149,6 @@ export const DEFAULT_LEMMA_DETAIL_PAGE = 1;
 export const LEMMA_DETAIL_PAGE_SIZE = 100;
 export const TOTAL_SURAHS = 114;
 
-/**
- * The sortable Lemmas columns, in table-header order. الجذر (root text) is excluded: it is a
- * related-entity text column and renders as a plain header (see the reads README).
- */
 export const LEMMA_SORT_COLUMNS = {
   alpha: { key: 'alpha', natural: 'asc', label: WORDS_SHARED_HEADERS.lemma },
   occurrences: { key: 'occurrences', natural: 'desc', label: WORDS_SHARED_HEADERS.occurrences },
@@ -181,7 +171,6 @@ export const LEMMA_SURAHS_VIEW_KEYS = ['mentioned', 'missing'] as const satisfie
 export const LEMMA_VIEW_KEYS = ['words', 'ayahs', 'surahs', 'stems'] as const satisfies readonly LemmaView[];
 export const PAGINATED_LEMMA_VIEWS: readonly LemmaView[] = ['ayahs', 'words'];
 
-/** True only for a CANONICAL token — the legacy alias spellings normalize instead (see roots). */
 export function isLemmaSort(value: unknown): value is LemmaSort {
   return (
     typeof value === 'string' && canonicalizeSortToken(value, LEMMA_SORT_COLUMN_LIST) === value

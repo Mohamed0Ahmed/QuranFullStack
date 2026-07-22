@@ -154,7 +154,6 @@ describe('StemsDetailController (route-independent, Feature 029 B4)', () => {
     controller.applyUrlState(urlState(1));
     controller.applyUrlState(urlState(2));
 
-    // The first stem's response arrives late — it must be a cancelled no-op.
     subjectFor(1).next(ok(summaryOf(1)));
     subjectFor(1).complete();
 

@@ -3,8 +3,6 @@
 }
 
 .word-type-filter,
-// The first-load mirror stands in for `.word-type-filter`'s own toolbar + panel grid, so it must lay
-// its two children out identically (Feature 030, N3 row 8).
 .word-type-filter__skeleton {
   display: grid;
   gap: 0.75rem;
@@ -17,9 +15,6 @@
   align-items: stretch;
 }
 
-/* .qd-card qd-card--hover supplies border/background/shadow/hover/transition;
-   this trigger only needs its own flex sizing and to zero the card's padding
-   so the full-size inner button remains the click target. */
 .word-type-filter__trigger {
   display: flex;
   align-items: stretch;
@@ -62,16 +57,10 @@
   cursor: wait;
 }
 
-// The mirror's trigger reuses the real button box for its padding/flex metrics on an inert span; only
-// the click affordance has to go.
 .word-type-filter__button--skeleton {
   cursor: default;
 }
 
-// Only the selected trigger carries the badge below, so on every other trigger this bar is what
-// stands in for the loaded `.word-type-filter__label` — and it must occupy that label's line box,
-// not the shared --qd-skeleton-h default, or the badge-less lines would grow on settle. `1lh` is
-// that line box: the bar inherits the same font as the label it replaces.
 .word-type-filter__skeleton-label {
   --qd-skeleton-w: 5rem;
   --qd-skeleton-h: 1lh;
@@ -84,9 +73,6 @@
   border-radius: var(--qd-radius-pill);
 }
 
-// Reserves geometry only, and only on the trigger the loaded markup badges — the selected one. Kept
-// as a real `.qd-badge` so that row inherits the badge's actual line box, which is taller than the
-// label beside it.
 .word-type-filter__skeleton-badge {
   visibility: hidden;
 }
@@ -156,9 +142,6 @@
   min-inline-size: 0;
 }
 
-/* .qd-chip .qd-chip--pill supplies border/background/hover/selected/focus/
-   transition; this child only needs its list-item sizing plus the selected
-   dot indicator, which is genuinely local. */
 .word-type-filter__child-button {
   position: relative;
   justify-content: space-between;
@@ -172,7 +155,6 @@
   font-weight: 700;
 }
 
-/* §16 allowed-gold: solid selection indicator. */
 .word-type-filter__child-button.qd-is-selected::before {
   content: '';
   position: absolute;
@@ -207,8 +189,6 @@
   min-inline-size: 2.5rem;
 }
 
-/* The trigger isn't a .qd-chip, so it needs its own selected-count treatment;
-   the child gets this for free from .qd-chip.qd-is-selected .qd-chip__count. */
 .word-type-filter__trigger.qd-is-selected .qd-chip__count {
   background: var(--qd-surface);
   color: var(--qd-accent-text);

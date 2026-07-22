@@ -10,15 +10,10 @@ export interface ActionState<TResult> {
 
 const IDLE_STATE: ActionState<never> = { status: 'idle', result: null, error: null };
 
-// Recognizes the shared ConcurrencyConflictError by its stable `name` marker rather than importing the
-// class, so this core primitive stays decoupled from the shared concurrency module.
 function isConflict(error: unknown): boolean {
   return error instanceof Error && error.name === 'ConcurrencyConflictError';
 }
 
-// Generic Signals wrapper around a one-shot async operation. It exposes a status signal a template can bind
-// to and separates a concurrency conflict from a generic failure, so a form/command can surface the two
-// differently (e.g. reload-and-retry vs. show an error). Domain-free: the handler is caller-supplied.
 export class AsyncAction<TInput, TResult> {
   private readonly stateSignal = signal<ActionState<TResult>>(IDLE_STATE);
 

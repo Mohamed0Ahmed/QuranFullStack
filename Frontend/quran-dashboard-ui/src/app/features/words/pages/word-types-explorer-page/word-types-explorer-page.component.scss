@@ -10,9 +10,6 @@
   min-inline-size: 0;
 }
 
-// Desktop only (Feature 029, U3): the details panel aligns with the table row,
-// not the tabs. Below desktop the grid collapses to one column and DOM flow
-// (tabs → table → panel) takes over.
 @media (min-width: bp.$qd-bp-desktop-min) {
   .word-types-page__tabs {
     grid-column: 1;

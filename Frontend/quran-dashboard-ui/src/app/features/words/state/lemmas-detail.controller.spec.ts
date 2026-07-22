@@ -26,7 +26,7 @@ function wordsPageOf(displayText: string): PagedResultDto<LemmaWordItemDto> {
   };
 }
 
-/** Unmistakably synthetic ayah-match rows; the marker rides in the (non-scriptural) word text. */
+/** Unmistakably synthetic, non-scriptural ayah-match rows. */
 function ayahsPageOf(marker: string): PagedResultDto<LemmaAyahMatchDto> {
   return {
     page: 1,
@@ -171,7 +171,6 @@ describe('LemmasDetailController (route-independent, Feature 029 B4)', () => {
     controller.applyUrlState(urlState(1));
     controller.applyUrlState(urlState(2));
 
-    // The first lemma's response arrives late — it must be a cancelled no-op.
     subjectFor(1).next(ok(summaryOf(1)));
     subjectFor(1).complete();
 
@@ -217,11 +216,6 @@ describe('LemmasDetailController (route-independent, Feature 029 B4)', () => {
   });
 
   describe('stale DETAIL responses across a lemma transition (Feature 030, C1)', () => {
-    /**
-     * Selects lemma 1 (summary resolves, so its detail load is registered and left
-     * in flight), then selects lemma 2 whose summary stays pending. Returns lemma
-     * 1's captured detail handlers so the test can land its response late.
-     */
     function selectLemmaOneThenPendingLemmaTwo(): {
       controller: LemmasDetailController;
       staleHandlers: LemmasDetailViewHandlers;
@@ -354,13 +348,6 @@ describe('LemmasDetailController identity/filter read reuse (real cache + view l
     getTestBed().resetTestingModule();
   });
 
-  /**
-   * Wires a controller onto the REAL LemmasCache and LemmasDetailViewLoader that
-   * the page panel and overlay share, so an identity/filter transition either
-   * issues a real API read or reuses a cached observable — the behaviour the
-   * per-identity/per-filter cache keys exist to produce, asserted through API call
-   * counts and panel data instead of the internal key strings.
-   */
   function wireController(apiStub: object): LemmasDetailController {
     TestBed.configureTestingModule({ providers: [{ provide: LemmasApi, useValue: apiStub }] });
     return new LemmasDetailController(
@@ -381,7 +368,6 @@ describe('LemmasDetailController identity/filter read reuse (real cache + view l
     expect(controller.panelState().status).toBe('success');
     expect(controller.panelState().words?.items[0].displayText).toBe('كلمة-اختبار-٧');
 
-    // Leave the panel and return to the SAME identity: both reads are served from cache.
     controller.applyUrlState(null);
     controller.applyUrlState(urlState(7, { view: 'words', wordView: 'tashkeel', detailPage: 2 }));
 
@@ -407,7 +393,6 @@ describe('LemmasDetailController identity/filter read reuse (real cache + view l
     expect(controller.panelState().ayahs?.items[0].words[0].textUthmani).toBe('V');
     expect(spies.getLemmaAyahMatches).toHaveBeenCalledTimes(2);
 
-    // Returning to the unfiltered read reuses its cache and never serves the 'V' filter's data.
     controller.applyUrlState(urlState(7, { view: 'ayahs', detailPage: 2, typeCode: null }));
     expect(spies.getLemmaAyahMatches).toHaveBeenCalledTimes(2);
     expect(controller.panelState().ayahs?.items[0].words[0].textUthmani).toBe('all');

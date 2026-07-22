@@ -88,11 +88,6 @@ export class UniqueWordsTableComponent {
 
   readonly rows = input.required<readonly UniqueWordListItemViewModel[]>();
   readonly loading = input(false);
-  /**
-   * The list's own status, so the error / no-results states render INSIDE this mounted shell
-   * instead of above the page grid (Feature 030, N3 row 5). `loading` still drives the skeleton
-   * body — this input is only consulted for the states that replace the body.
-   */
   readonly status = input<LoadStatus>('idle');
   readonly errorMessage = input('');
   readonly selectedWordId = input<number | null>(null);
@@ -104,7 +99,6 @@ export class UniqueWordsTableComponent {
 
   readonly rowSelected = output<UniqueWordListItemViewModel>();
   readonly drilldownOpen = output<UniqueWordsDrilldownOpenEvent>();
-  /** null = release the sort param back to the default (ترتيب المصحف). */
   readonly sortChange = output<UniqueWordSort | null>();
 
   protected readonly sortControl = new ExplorerTableSortController<UniqueWordSort>(

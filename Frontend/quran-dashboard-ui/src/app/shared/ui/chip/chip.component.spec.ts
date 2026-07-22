@@ -53,10 +53,6 @@ describe('QdChipComponent', () => {
     ) as HTMLElement;
     expect(unselectedChip.classList.contains('qd-is-selected')).toBe(false);
 
-    // The component never writes an inline background/color style — the selected
-    // visual (tint + accent-text, no solid gold fill) comes entirely from the
-    // reviewed `.qd-chip.qd-is-selected` rule in _components.scss, so there is no
-    // per-instance way to smuggle in a raw `--qd-accent` fill.
     expect(selectedChip.getAttribute('style')).toBeNull();
   });
 

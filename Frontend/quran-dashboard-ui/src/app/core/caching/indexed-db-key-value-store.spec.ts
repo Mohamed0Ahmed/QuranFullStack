@@ -3,9 +3,6 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { IndexedDbKeyValueStore } from './indexed-db-key-value-store';
 
-// Exercised against fake-indexeddb, which runs the real IndexedDB algorithm (structured-clone writes,
-// versioned open, transaction semantics) in memory — so the adapter is proven against the same
-// behavior a browser gives, not a hand-rolled stub. A fresh factory per test isolates the databases.
 describe('IndexedDbKeyValueStore', () => {
   let factory: IDBFactory;
 
@@ -57,7 +54,6 @@ describe('IndexedDbKeyValueStore', () => {
   it('persists across a reopen of the same database', async () => {
     await newStore<string>().set('k', 'kept');
 
-    // A brand-new adapter instance over the same factory + database name must see the prior write.
     expect(await newStore<string>().get('k')).toBe('kept');
   });
 

@@ -12,8 +12,7 @@ export type QdChipElement = 'button' | 'a';
 export class QdChipComponent {
   readonly selected = input(false);
   readonly disabled = input(false);
-  // Aliased to `as` per the qd-chip contract; renamed internally because `as` is a
-  // reserved word in Angular template expressions and can't be called as `as()`.
+  // Renamed internally: `as` is reserved in Angular template expressions and can't be called as `as()`.
   readonly elementType = input<QdChipElement>('button', { alias: 'as' });
   readonly count = input<number | null>(null);
   readonly href = input<string | null>(null);

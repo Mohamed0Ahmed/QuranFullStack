@@ -26,8 +26,7 @@ import {
 } from '../models/stems.models';
 
 export function parseStemsQueryParams(queryParams: ParamMap): ParsedStemsQuery {
-  // Canonicalizes legacy aliases in (occurrences-desc → occurrences) and fails closed to the
-  // default on anything unknown, so one ordering can never be cached under two tokens.
+  // Canonicalize legacy aliases + fail closed to default, so one ordering can't be cached under two tokens.
   const sort: StemSort = normalizeStemSort(queryParams.get(STEMS_QUERY_KEYS.sort));
 
   const page = parsePositiveInt(queryParams.get(STEMS_QUERY_KEYS.page)) ?? DEFAULT_STEMS_LIST_PAGE;

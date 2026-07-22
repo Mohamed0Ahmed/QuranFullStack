@@ -3,12 +3,10 @@ import { isPlatformBrowser } from '@angular/common';
 
 import { WordsExplainerKey } from '../models/words-explainer.content';
 
-// Value is the comma-joined set of COLLAPSED keys; an absent/empty entry means every hero is expanded.
 const STORAGE_KEY = 'qd-words-explainer';
 
-// The collapsed set is read from localStorage in a field initialiser (not an effect/ngOnInit) so a
-// hero's stored state is known BEFORE first paint; an async read would render expanded then collapse —
-// the Feature 030 N3 layout jolt (plan §4.3). Keys are per page (plan §3.3); default is expanded (D2).
+// Read in a field initialiser (not an effect) so stored state is known BEFORE first paint;
+// an async read would render expanded then collapse (layout jolt).
 @Injectable({ providedIn: 'root' })
 export class WordsExplainerPreference {
   private readonly platformId = inject(PLATFORM_ID);

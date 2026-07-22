@@ -271,8 +271,6 @@ describe('StemsExplorerPageComponent US2', () => {
     });
   });
 
-  // M32/M43 + M74: a picker load failure must show a distinct error state, not a silently-empty
-  // options list indistinguishable from a genuine zero-match search.
   it('shows the root-picker error state when the root search fails, not a silently-empty picker', async () => {
     vi.useFakeTimers();
     try {
@@ -628,7 +626,6 @@ describe('StemsExplorerPageComponent US2', () => {
     );
 
     const fixture = await initLifecycle();
-    // Feature 030, N3 row 5: the list's own states render inside the table shell, not above the grid.
     expect(
       fixture.nativeElement.querySelector('[data-testid="stems-list-error"]')?.closest('.qd-explorer-table'),
     ).toBeTruthy();
@@ -654,8 +651,6 @@ describe('StemsExplorerPageComponent US2', () => {
       const fixture = await initLifecycle();
       const root = fixture.nativeElement as HTMLElement;
 
-      // ≥1024px the table header row is visible and owns sorting, so the fallback is CSS-hidden
-      // there; below that the header row is display:none and this select is the only way in.
       const select = root.querySelector('[data-testid="stems-sort-select"]') as HTMLElement;
       expect(select).toBeTruthy();
       expect(select.closest('.qd-explorer-sort-fallback')).not.toBeNull();
@@ -695,7 +690,6 @@ describe('StemsExplorerPageComponent US2', () => {
 
       (root.querySelector('[data-testid="stems-table-sort-occurrences"]') as HTMLButtonElement).click();
 
-      // Release removes the param entirely — the default order is never spelled out in the URL.
       expect(router.navigate).toHaveBeenCalledWith([], {
         relativeTo: expect.anything(),
         queryParams: expect.objectContaining({ sort: null, page: null }),
@@ -1020,8 +1014,6 @@ describe('StemsExplorerPageComponent US8 — restore and navigate exact state', 
     expect(stemsApi.getStemsList).toHaveBeenCalled();
 
     const root = fixture.nativeElement as HTMLElement;
-    // Feature 030, N3 row 5: notFound is a PANEL/selection state — it renders inside the details
-    // panel (a mounted shell), never as a page-level banner above the table+panel grid.
     const notFound = root.querySelector('[data-testid="stem-details-not-found"]');
     expect(notFound).toBeTruthy();
     expect(notFound?.getAttribute('role')).toBe('status');

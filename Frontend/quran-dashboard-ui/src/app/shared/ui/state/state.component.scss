@@ -2,8 +2,6 @@
   display: block;
 }
 
-/* Sits the error's single recovery action under its message. The button itself
-   is the global .qd-btn (+ .qd-btn-secondary); only this local placement belongs here. */
 .qd-state__action {
   margin-block-start: var(--qd-space-3);
 }

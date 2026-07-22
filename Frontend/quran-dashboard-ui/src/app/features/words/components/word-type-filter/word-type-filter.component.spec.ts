@@ -269,8 +269,6 @@ describe('WordTypeFilterComponent', () => {
     });
   });
 
-  // N3 row 8: before the tree landed the filter was a single text line, so the multi-card toolbar and the
-  // fixed-height panel both appeared on first load and shoved the page down.
   describe('first-load mirror', () => {
     function renderLoading(selectedType: WordTypeMainType = 'noun') {
       const fixture = TestBed.createComponent(WordTypeFilterComponent);
@@ -303,8 +301,6 @@ describe('WordTypeFilterComponent', () => {
       const loaded = loadedFixture.nativeElement as HTMLElement;
 
       expect(loading.querySelector('[data-testid="word-type-filter-skeleton"]')).not.toBeNull();
-      // Same toolbar, same card count, same panel box: the mirror reuses the real classes those elements
-      // are sized by, so it wraps exactly like the loaded strip at any width.
       expect(loading.querySelectorAll('.word-type-filter__toolbar').length).toBe(1);
       expect(loading.querySelectorAll('.word-type-filter__trigger').length)
         .toBe(loaded.querySelectorAll('.word-type-filter__trigger').length);
@@ -321,20 +317,15 @@ describe('WordTypeFilterComponent', () => {
       const loading = renderLoading('verb');
       const loaded = renderLoaded('verb');
 
-      // The loaded toolbar badges the selected trigger only, so the mirror must too: a badge on
-      // every trigger reserved a row height the loaded strip never takes, and each wrapped flex
-      // line without the selected card then shrank when the tree landed.
       const loadedBadges = loaded.querySelectorAll('.word-type-filter__state');
       const mirrorBadges = loading.querySelectorAll('.word-type-filter__skeleton-badge');
       expect(loadedBadges).toHaveLength(1);
       expect(mirrorBadges).toHaveLength(1);
-      // ...and on the trigger in the same position, so the same wrapped line is the tall one.
       expect(triggerIndexOf(loading, mirrorBadges[0])).toBe(triggerIndexOf(loaded, loadedBadges[0]));
       expect(mirrorBadges[0].classList.contains('qd-badge')).toBe(true);
     });
 
     it('moves the reserved badge with the restored selection', () => {
-      // A deep link can restore any main type, and that trigger is the one that lands taller.
       for (const selectedType of ['noun', 'verb', 'particle', 'inl'] as const) {
         const loading = renderLoading(selectedType);
         const loaded = renderLoaded(selectedType);
@@ -349,7 +340,6 @@ describe('WordTypeFilterComponent', () => {
 
       expect(loading.querySelector('button')).toBeNull();
       expect(loading.querySelector('select')).toBeNull();
-      // One live region only — the toolbar mirror is decorative, qd-panel-skeleton owns the announcement.
       expect(loading.querySelector('.word-type-filter__toolbar')?.getAttribute('aria-hidden')).toBe('true');
       expect(loading.querySelectorAll('[role="status"]').length).toBe(1);
       expect(loading.querySelector('.qd-sr-only')?.textContent?.trim()).toBeTruthy();
@@ -362,7 +352,6 @@ describe('WordTypeFilterComponent', () => {
       fixture.detectChanges();
       const root = fixture.nativeElement as HTMLElement;
 
-      // A failed tree must not shimmer forever: the page's own error state owns that case.
       expect(root.querySelector('[data-testid="word-type-filter-skeleton"]')).toBeNull();
       expect(root.querySelector('.word-type-filter__placeholder')).not.toBeNull();
     });

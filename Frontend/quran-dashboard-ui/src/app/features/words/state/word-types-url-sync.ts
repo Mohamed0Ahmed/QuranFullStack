@@ -65,14 +65,11 @@ export function parseWordTypesQueryParams(queryParams: ParamMap): ParsedWordType
     case: normalizeCase(type, queryParams.get(WORD_TYPES_QUERY_KEYS.case)),
     tense: normalizeTense(type, queryParams.get(WORD_TYPES_QUERY_KEYS.tense)),
     voice: normalizeVoice(type, queryParams.get(WORD_TYPES_QUERY_KEYS.voice)),
-    // Search is list-scope free text: trimmed, empty/whitespace collapses to null (fail-closed).
     search: normalizeOptionalText(queryParams.get(WORD_TYPES_QUERY_KEYS.search)),
-    // Presence flags are list-scope tri-state: 'true'/'false' only, anything else → null (fail-closed).
     hasRoot: parseTriState(queryParams.get(WORD_TYPES_QUERY_KEYS.hasRoot)),
     hasStem: parseTriState(queryParams.get(WORD_TYPES_QUERY_KEYS.hasStem)),
     hasLemma: parseTriState(queryParams.get(WORD_TYPES_QUERY_KEYS.hasLemma)),
-    // Canonicalizes legacy aliases in (occurrences-desc → occurrences) and fails closed to the
-    // default on anything unknown, so one ordering can never be cached under two tokens.
+    // Canonicalize legacy sort aliases so one ordering isn't cached under two tokens.
     sort: normalizeWordTypeSort(queryParams.get(WORD_TYPES_QUERY_KEYS.sort)),
     page: parsePositiveInt(queryParams.get(WORD_TYPES_QUERY_KEYS.page)) ?? DEFAULT_WORD_TYPES_PAGE,
     word: parsedIdentity.word,
@@ -231,9 +228,7 @@ function normalizeChildCode(type: WordTypeMainType, value: string | null): strin
     return null;
   }
 
-  // inl is the only leaf with no child dimension. Verb children are the fixed tense set and are
-  // validated here. Noun and particle children are catalogue POS codes the parser cannot enumerate,
-  // so they pass through; the backend validates them and rejects an unrecognized code with 400.
+  // Noun/particle child codes pass through unvalidated; the backend 400s an unknown code.
   if (type === 'inl') {
     return null;
   }

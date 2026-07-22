@@ -6,8 +6,6 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { ApiResponse } from '../../../../core/data-access/api-response.model';
 import { PagedResultDto } from '../../../../core/data-access/paged-result.model';
 
-// Shared HttpTestingController bootstrap for the Words data-access API specs: collapses the repeated
-// resetTestingModule + configureTestingModule + inject setup into one call (DRY, behavior-preserving).
 export interface ApiTestBed<T> {
   readonly api: T;
   readonly httpMock: HttpTestingController;

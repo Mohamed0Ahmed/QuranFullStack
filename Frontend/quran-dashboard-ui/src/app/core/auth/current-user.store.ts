@@ -6,10 +6,6 @@ import { AccessApi } from './access.api';
 import { CurrentUser } from './current-user.model';
 import { PermissionCode } from './permission-codes';
 
-// Holds the authenticated user's local account (Feature 033). `load()` is fire-and-forget, fired
-// post-callback, and never throws — a failure resolves to a calm Arabic `errorMessage` so it can't
-// crash the callback. `load()` and the roleGuard's `ensureLoaded()` share one cached
-// `GET /api/access/me` (one login = one request); the cache is success-only (see `fetchAndCache`).
 @Injectable({ providedIn: 'root' })
 export class CurrentUserStore {
   private static readonly fallbackMessage = 'تعذر تحميل بيانات المستخدم الحالي.';
@@ -23,8 +19,7 @@ export class CurrentUserStore {
   readonly currentUser = this.currentUserSignal.asReadonly();
   readonly errorMessage = this.errorMessageSignal.asReadonly();
 
-  // Effective permissions for non-authoritative UI hiding. `hasPermission` gates whether an action is
-  // SHOWN; the backend policy still authorizes the request regardless of what the UI renders.
+  // Non-authoritative UI hiding only; the backend policy still authorizes the request.
   readonly permissions = computed<readonly string[]>(() => this.currentUserSignal()?.permissions ?? []);
 
   hasPermission(code: PermissionCode): boolean {
@@ -39,9 +34,8 @@ export class CurrentUserStore {
     return (this.ensureLoadedPromise ??= this.fetchAndCache());
   }
 
-  // Cache-success-only: once the load settles with no user (envelope/HTTP failure), clear the
-  // cached promise so the next `ensureLoaded()` retries. The identity check keeps a newer in-flight
-  // load (e.g. a fresh `load()`) from being cleared by an earlier one.
+  // Success-only cache: clear the promise on failure so the next ensureLoaded() retries; the identity
+  // check keeps an earlier settled load from clobbering a newer in-flight one.
   private fetchAndCache(): Promise<void> {
     const settled = this.fetchIntoSignals();
     void settled.then(() => {

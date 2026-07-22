@@ -56,9 +56,6 @@ export function wordTypeAyahsPageView(panel: WordTypesDetailState): SharedPagedR
   return page ? { ...page, items: page.items.map(mapWordTypeAyahMatchToShared) } : EMPTY_WORD_TYPE_AYAHS_PAGE;
 }
 
-// Only a word-kind selection has a serializable overlay identity; grouped
-// root/stem/lemma selections have no frame grammar, so they yield null (plain
-// page navigation).
 export function wordTypeAyahParentFrame(panel: WordTypesDetailState): WordTypeDetailFrame | null {
   if (panel.selection === null || panel.selection.kind !== 'word') {
     return null;

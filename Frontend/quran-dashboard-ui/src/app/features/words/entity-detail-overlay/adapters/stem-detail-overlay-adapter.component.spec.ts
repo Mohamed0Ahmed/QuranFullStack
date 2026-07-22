@@ -19,7 +19,6 @@ import { StemsDetailFacade } from '../../state/stems-detail.facade';
 import { EntityDetailOverlayTitleStore } from '../entity-detail-overlay-title.store';
 import { StemDetailOverlayAdapterComponent } from './stem-detail-overlay-adapter.component';
 
-// Synthetic, non-scriptural Arabic placeholder: keeps RTL rendering real without faking Quranic text.
 const SYNTHETIC_WORD_TEXT = 'كلمة-اختبار';
 
 const STEM_SUMMARY: StemSummaryDto = {
@@ -306,7 +305,6 @@ describe('StemDetailOverlayAdapterComponent (Feature 029 B4)', () => {
       '[data-testid="overlay-stems-word-view-tashkeel"]',
     );
     expect(tashkeelTab?.getAttribute('aria-selected')).toBe('true');
-    // The summary is reused for the same stem: still exactly one summary read.
     expect(apiStub.getStemSummary).toHaveBeenCalledTimes(1);
   });
 

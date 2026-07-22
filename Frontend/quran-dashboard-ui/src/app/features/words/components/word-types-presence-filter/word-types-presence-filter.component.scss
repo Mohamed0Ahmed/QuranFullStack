@@ -34,11 +34,6 @@
 .presence-filter__chip {
   cursor: pointer;
 
-  /* Selected visual comes from the shared .qd-is-selected class (§16 color
-     doctrine: tint bg + accent border + accent-text label). This override
-     used to reinstate a higher-specificity solid-gold fill + --qd-primary
-     ink here, which is gold-on-gold and illegible in dark mode — removed. */
-
   &:disabled {
     cursor: default;
     opacity: 0.6;

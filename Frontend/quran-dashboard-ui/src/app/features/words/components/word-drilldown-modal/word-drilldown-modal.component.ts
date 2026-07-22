@@ -48,39 +48,17 @@ import { mapUniqueWordSummaryDisplayText } from '../../utils/unique-words-displa
 export class WordDrilldownModalComponent {
   private readonly detailOverlayHistory = inject(DetailOverlayHistoryService);
 
-  /**
-   * Only the top layer may trap focus (Feature 029 §5.9). While the global
-   * detail overlay is open this drawer sits inside the inert app shell, so its
-   * own trap stands down and the dialog's trap is the only enabled one.
-   */
   protected readonly drawerTrapEnabled = computed(() => !this.detailOverlayHistory.isOpen());
 
   readonly state = input.required<WordDrilldownState>();
   readonly inline = input(false);
-  /**
-   * Content-only mode (Feature 029, Change B4): render just the view tablist +
-   * drilldown body in a plain wrapper — no card section, no dialog/backdrop, no
-   * header/close. Used inside the global detail overlay shell, which owns the
-   * dialog chrome. When false, the inline/modal branches behave as before.
-   */
   readonly frameless = input(false);
-  /**
-   * The drilldown's own typed unique frame (Feature 029, B7), threaded into the
-   * ayah list so an ayah click keeps/promotes the detail context over the
-   * Mushaf. The render site builds it: the page knows its route mode, the
-   * overlay adapter passes its frame.
-   */
   readonly parentFrame = input<DetailFrame | null>(null);
 
   readonly closeModal = output<void>();
   readonly viewChange = output<WordDrilldownView>();
   readonly ayahPageChange = output<number>();
 
-  /**
-   * The failed drilldown's single recovery action (Feature 030, M3). This
-   * component is presentation-only: each render site re-drives its own
-   * controller's current identity.
-   */
   readonly retry = output<void>();
 
   protected readonly retryLabel = WORDS_DETAIL_RETRY_LABEL;

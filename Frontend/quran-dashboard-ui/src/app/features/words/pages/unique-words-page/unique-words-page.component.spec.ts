@@ -86,10 +86,8 @@ describe('UniqueWordsPageComponent', () => {
     const header = band.querySelector('.qd-page-header') as HTMLElement;
     const hero = band.querySelector('[data-testid="words-explainer--unique"]');
     expect(hero).toBeTruthy();
-    // The mode line stays adjacent to the title it qualifies; the hero follows the whole header.
     expect(band.querySelector('[data-testid="unique-words-page-mode"]')).toBeTruthy();
     expect(header.compareDocumentPosition(hero!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    // The toolbar recess stays below the band, unchanged.
     expect(root.querySelector('.uw-toolbar-recess')).toBeTruthy();
     expect(band.querySelector('.uw-toolbar-recess')).toBeNull();
   });
@@ -143,7 +141,6 @@ describe('UniqueWordsPageComponent', () => {
 
   it('shows the Arabic empty state when status is empty', async () => {
     const root = await render({ status: 'empty', items: [], totalCount: 0 });
-    // Feature 030, N3 row 5: the list's own states render inside the table shell, not above the grid.
     expect(
       root.querySelector('[data-testid="unique-words-empty"]')?.closest('.qd-explorer-table'),
     ).toBeTruthy();
@@ -152,7 +149,6 @@ describe('UniqueWordsPageComponent', () => {
 
   it('shows the error message when status is error', async () => {
     const root = await render({ status: 'error', items: [], errorMessage: 'خطأ تجريبي' });
-    // Feature 030, N3 row 5: the list's own states render inside the table shell, not above the grid.
     const error = root.querySelector('[data-testid="unique-words-error"]');
     expect(error?.textContent).toContain('خطأ تجريبي');
     expect(error?.closest('.qd-explorer-table')).toBeTruthy();
@@ -262,8 +258,6 @@ describe('UniqueWordsPageComponent', () => {
     it('has no desktop sort dropdown: the only select sits in the ≤1023px fallback wrapper', async () => {
       const root = await render();
 
-      // ≥1024px the table header row is visible and owns sorting, so the fallback is CSS-hidden
-      // there; below that the header row is display:none and this select is the only way in.
       const select = root.querySelector('[data-testid="unique-words-sort-select"]') as HTMLElement;
       expect(select).toBeTruthy();
       expect(select.closest('.qd-explorer-sort-fallback')).not.toBeNull();
@@ -305,7 +299,6 @@ describe('UniqueWordsPageComponent', () => {
 
       (root.querySelector('[data-testid="unique-words-table-sort-occurrences"]') as HTMLButtonElement).click();
 
-      // Release removes the param entirely — the default order is never spelled out in the URL.
       expect(router.navigate).toHaveBeenCalledWith([], {
         relativeTo: expect.anything(),
         queryParams: expect.objectContaining({ sort: null, page: null }),

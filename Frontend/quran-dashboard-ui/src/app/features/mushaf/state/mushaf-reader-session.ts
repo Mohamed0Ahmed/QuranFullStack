@@ -22,9 +22,6 @@ type MushafQueryParams = Partial<
 
 const OVERLAY_OWNED_QUERY_KEYS: ReadonlySet<string> = new Set(Object.values(DETAIL_OVERLAY_QUERY_KEYS));
 
-// A bare entry carries no reader-owned query state. Overlay-owned keys (qdDetail*) belong to a
-// different owner, so a URL whose only params are overlay frames still counts as bare and must
-// not suppress session restoration (Feature 029, B7).
 export function isBareMushafEntry(params: ParamMap): boolean {
   return params.keys.every((key) => OVERLAY_OWNED_QUERY_KEYS.has(key));
 }

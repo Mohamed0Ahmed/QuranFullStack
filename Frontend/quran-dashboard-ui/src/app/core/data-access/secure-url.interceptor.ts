@@ -13,9 +13,7 @@ export class SecureUrlBlockedError extends Error {
 }
 
 export function isUrlUnderApiBase(url: string, apiBaseUrl: string): boolean {
-  // Fail closed: an empty apiBaseUrl is a misconfiguration, not "same origin for
-  // everything". Both environments always set apiBaseUrl, so allowing every origin
-  // here would silently defeat this guard on the most likely misconfiguration.
+  // Fail closed: empty apiBaseUrl is a misconfiguration; allowing every origin would silently defeat this guard.
   if (!apiBaseUrl) {
     return false;
   }
@@ -37,9 +35,7 @@ function isAllowedApiUrl(url: string): boolean {
   return isUrlUnderApiBase(url, environment.apiBaseUrl);
 }
 
-// angular-auth-oidc-client performs OIDC discovery/token calls through Angular's HttpClient,
-// so the identity provider's origin must pass this guard. It is exempt from the block only —
-// the Bearer token still attaches exclusively to `apiBaseUrl` (authInterceptor `secureRoutes`).
+// The IdP origin is exempt from the block (OIDC uses HttpClient); the bearer token still attaches only to apiBaseUrl.
 function isIdentityProviderUrl(url: string): boolean {
   return isUrlUnderApiBase(url, environment.logto.endpoint);
 }

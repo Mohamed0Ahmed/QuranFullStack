@@ -24,7 +24,6 @@
   gap: var(--qd-space-3);
 }
 
-// Headline result-count stat slot inside a (non-stacked) toolbar recess (Feature 026, US4).
 .uw-toolbar-recess__stat {
   margin-block-start: var(--qd-space-3);
 }
@@ -59,7 +58,7 @@
   display: flex;
   flex-direction: column;
   gap: 0;
-  padding-block-end: calc(var(--qd-space-5) + (var(--qd-space-4) * 1.55)); // leaves room for mobile stat bars
+  padding-block-end: calc(var(--qd-space-5) + (var(--qd-space-4) * 1.55));
 }
 
 .qd-explorer-controls {
@@ -94,10 +93,6 @@
     var(--qd-explorer-table-header-height) + var(--qd-explorer-table-body-height)
   );
 
-  // Word Types view-tabs strip box (Feature 030, N3 row 2): four tabs on one row —
-  // tab 2.4375rem + strip padding 1rem + hairline 0.125rem. This is the ONE source for the strip's
-  // height: `.word-type-table-view-tabs` pins itself to it and `.qd-explorer-layout__tabs-slot`
-  // reserves it before the tree lands, so the mounted strip and its reservation cannot drift apart.
   --qd-explorer-view-tabs-height: 3.5625rem;
 
   display: grid;
@@ -112,13 +107,6 @@
   min-width: 0;
 }
 
-// ---------------------------------------------------------------------------
-// Reserved slots (Feature 030, N3 rows 2-3). Both hold a control row that mounts
-// later than the shell around it; flex-column so the mounted control stays a
-// blockified item and its margins cannot collapse out of the reservation.
-// ---------------------------------------------------------------------------
-
-// Holds the Word Types view-tabs row from first paint (the tabs mount with the tree).
 .qd-explorer-layout__tabs-slot {
   display: flex;
   flex-direction: column;
@@ -126,10 +114,6 @@
   margin-block-end: var(--qd-space-3);
 }
 
-// Holds a pagination row whose bar unmounts mid-load; note the bar also self-hides when
-// `totalCount <= pageSize`, so only the slot can reserve anything. Sized from the real control:
-// `--qd-pagination-slot-block-size` (_tokens.scss) is one shared `.qd-btn` row plus the bar's own
-// leading margin, so the slot cannot drift from the geometry it stands in for.
 .qd-explorer-layout__pagination-slot {
   display: flex;
   flex-direction: column;
@@ -153,7 +137,6 @@
     block-size: var(--qd-explorer-table-card-height);
   }
 
-  // The fixed card height above is for the table itself; the control rows below it size themselves.
   .qd-explorer-layout__table > qd-pagination,
   .qd-explorer-layout__table > .qd-explorer-layout__pagination-slot {
     block-size: auto;
@@ -189,17 +172,10 @@
 
 @media (max-width: bp.$qd-bp-phone-max) {
   .qd-explorer-layout {
-    // The tab strip drops to a 2×2 grid on phone: two tab rows 2.4375rem each + the 0.5rem row gap +
-    // strip padding 1rem + hairline 0.125rem. Re-declared per breakpoint so the slot's reservation
-    // tracks the strip's real wrap at every width (the strip consumes the same token).
     --qd-explorer-view-tabs-height: 6.5rem;
   }
 }
 
-// Shared search-row shell (Feature 027, Phase 1): a transparent flex LAYOUT container — no own
-// background/border/shadow — hosting each explorer's main search input plus its projected
-// association-filter fields (root/lemma/type). It lives inside `.uw-toolbar-recess`; elevation
-// belongs to the association-filter popover, not this row.
 .qd-explorer-search-row {
   display: flex;
   flex-wrap: wrap;
@@ -222,8 +198,6 @@
     flex-direction: column;
   }
 
-  // Full-width stacked fields on phone, preserving DOM order (main search first, then the
-  // projected association fields in their locked leading→trailing order).
   .qd-explorer-search-row > * {
     flex-basis: auto;
     width: 100%;
@@ -231,8 +205,6 @@
   }
 }
 
-// Secondary controls row (Feature 027, Phase 1): sort + count-range-filter live here in a later
-// phase, below the search row.
 .qd-explorer-controls-secondary {
   display: flex;
   flex-wrap: wrap;
@@ -248,19 +220,11 @@
   }
 }
 
-// Feature 027, Phase 4 — scoped sort-width fix. The global `.qd-select { width: 100% }` in
-// _forms.scss would stretch the sort select across the secondary controls row and force the
-// count-range-filter to wrap. Scope it back to content width here (globals stay untouched).
 .qd-explorer-controls-secondary .qd-select {
   inline-size: auto;
   flex: 0 0 auto;
 }
 
-// Feature 030, N8 — the ≤tablet sort fallback. From 1024px up, the explorer table renders its
-// column headers and sorting happens there, so the select would be a second control for one piece
-// of state. Below that the header row is `display: none` in all five table SCSS files, which would
-// leave sorting unreachable on phone AND tablet — hence the fallback covers the whole ≤1023px band,
-// not just phone.
 .qd-explorer-sort-fallback {
   display: contents;
 }

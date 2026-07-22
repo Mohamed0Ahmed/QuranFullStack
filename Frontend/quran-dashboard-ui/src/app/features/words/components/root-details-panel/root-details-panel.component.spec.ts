@@ -15,8 +15,6 @@ describe('RootDetailsPanelComponent a11y (T070)', () => {
   function createPanel(view: RootView = 'ayahs') {
     TestBed.configureTestingModule({
       imports: [RootDetailsPanelComponent],
-      // The drawer suspends its focus trap from the router-backed
-      // detail-overlay history service.
       providers: [provideRouter([]), provideLocationMocks()],
       teardown: { destroyAfterEach: true },
     });
@@ -38,7 +36,6 @@ describe('RootDetailsPanelComponent a11y (T070)', () => {
     expect(tabs).toHaveLength(5);
 
     const panel = host.querySelector('[role="tabpanel"]') as HTMLElement;
-    // The surface id is per-instance (not a shared constant); the tabs must resolve to it.
     expect(panel.id).toBeTruthy();
 
     expect(panel.getAttribute('tabindex')).toBe('0');
@@ -73,8 +70,6 @@ describe('RootDetailsPanelComponent a11y (T070)', () => {
     expect(firstSurface.id).not.toBe(secondSurface.id);
   });
 
-  // Feature 030, N3 row 5: notFound is a PANEL/selection state (the list is fine and populated), so
-  // it renders here — a mounted, fixed-height shell — instead of a page banner that pushed the grid.
   it('renders controlled not-found content without detail tabs', () => {
     const fixture = createPanel('words');
     fixture.componentRef.setInput('notFound', true);
@@ -100,8 +95,6 @@ describe('RootDetailsPanelComponent a11y (T070)', () => {
       'الجذر غير موجود',
     );
 
-    // No tablist is rendered, so exposing a tabpanel would orphan it: the surface
-    // becomes a self-labelled region instead of a tabpanel pointing at a missing tab.
     expect(host.querySelector('[role="tabpanel"]')).toBeNull();
     const surface = host.querySelector('[data-testid="root-details-panel-surface"]') as HTMLElement;
     expect(surface.getAttribute('role')).toBe('region');
@@ -153,8 +146,6 @@ describe('RootDetailsPanelComponent a11y (T070)', () => {
   it('renders the empty-selection state with header, disabled tabs, and empty message', () => {
     TestBed.configureTestingModule({
       imports: [RootDetailsPanelComponent],
-      // The drawer suspends its focus trap from the router-backed
-      // detail-overlay history service.
       providers: [provideRouter([]), provideLocationMocks()],
       teardown: { destroyAfterEach: true },
     });

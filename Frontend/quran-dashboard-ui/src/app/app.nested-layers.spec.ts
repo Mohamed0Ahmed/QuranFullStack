@@ -11,11 +11,6 @@ import { DetailOverlayHistoryService } from './core/navigation/detail-overlay/de
 import { LemmaDetailFrame } from './core/navigation/detail-overlay/detail-overlay.models';
 import { RootsExplorerPageComponent } from './features/words/pages/roots-explorer-page/roots-explorer-page.component';
 
-// Feature 029 (B8, plan §5.9/§5.12): with a responsive explorer drawer open UNDER the global detail
-// overlay, the body scroll lock survives while either layer lives (reference-counted
-// ScrollLockService) and only the top dialog is interactive — the drawer sits inside the inert
-// app-shell subtree while the dialog is a shell sibling, and exactly one focus trap is enabled.
-
 function ok<T>(data: T) {
   return { isSuccess: true, data, message: null, errors: null };
 }
@@ -76,8 +71,6 @@ describe('App nested layers on mobile (drawer under global overlay)', () => {
   let overlay: DetailOverlayHistoryService;
 
   beforeEach(() => {
-    // jsdom lacks matchMedia/ResizeObserver; stubbed BEFORE TestBed. No media
-    // query matches: the explorer renders its detail as a mobile drawer.
     Object.defineProperty(window, 'matchMedia', {
       configurable: true,
       writable: true,
@@ -163,7 +156,6 @@ describe('App nested layers on mobile (drawer under global overlay)', () => {
   }
 
   async function loadStep(fixture: { detectChanges: () => void; nativeElement: unknown }): Promise<void> {
-    // A flush can trigger a follow-up load (summary → view), so run three rounds.
     for (let round = 0; round < 3; round += 1) {
       await settle();
       fixture.detectChanges();
@@ -189,7 +181,6 @@ describe('App nested layers on mobile (drawer under global overlay)', () => {
     await fixture.whenStable();
     await loadStep(fixture);
 
-    // The mobile drawer is open and alone holds the body scroll lock.
     expect(query(fixture, '[data-testid="root-details-modal"]')).not.toBeNull();
     expect(document.body.style.overflow).toBe('hidden');
 
@@ -223,8 +214,6 @@ describe('App nested layers on mobile (drawer under global overlay)', () => {
     const fixture = await mountWithDrawerAndOverlay();
     const host = fixture.nativeElement as HTMLElement;
 
-    // A live CDK trap makes its two anchors tabbable; a suspended trap drops the
-    // tabindex, so Tab can never wander into the layer underneath.
     const enabledAnchors = () => Array.from(host.querySelectorAll('.cdk-focus-trap-anchor[tabindex="0"]'));
     const trapped = (element: HTMLElement) =>
       enabledAnchors().length === 2 && enabledAnchors().every((anchor) => anchor.parentElement === element.parentElement);
@@ -245,7 +234,6 @@ describe('App nested layers on mobile (drawer under global overlay)', () => {
     click(query(fixture, '[data-testid="detail-modal-close"]'));
     await loadStep(fixture);
     expect(query(fixture, '[data-testid="detail-modal-shell"]')).toBeNull();
-    // The drawer still lives: the reference-counted lock must survive.
     expect(query(fixture, '[data-testid="root-details-modal"]')).not.toBeNull();
     expect(document.body.style.overflow).toBe('hidden');
 
@@ -261,7 +249,6 @@ describe('App nested layers on mobile (drawer under global overlay)', () => {
     click(query(fixture, '[data-testid="root-details-panel-close"]'));
     await loadStep(fixture);
     expect(query(fixture, '[data-testid="root-details-modal"]')).toBeNull();
-    // The dialog still lives: the lock must survive the drawer teardown.
     expect(query(fixture, '[data-testid="detail-modal-shell"]')).not.toBeNull();
     expect(document.body.style.overflow).toBe('hidden');
 

@@ -80,15 +80,9 @@ export class WordTypesExplorerFacade {
   private route?: ActivatedRoute;
   private routeSub?: Subscription;
   private retrySub?: Subscription;
-  // Scope-counts (US8) load on a SEPARATE trigger from the list: only when the scope key changes
-  // (type/childCode/case/tense/voice/search/flags), never on a tableView or page change. lastScopeQuery
-  // holds the scope the strip currently describes so retry can refetch only the counts.
   private scopeCountsSub?: Subscription;
   private scopeCountsRetrySub?: Subscription;
   private lastScopeQuery: ParsedWordTypesQuery | null = null;
-  // Tracks which tableView the currently-stored rows belong to, so a tab switch can null the
-  // stale rows before the new page arrives without also clearing rows on ordinary filter changes
-  // (those intentionally keep prior rows visible while loading).
   private lastRowsTableView: WordTypeTableView | null = null;
   private readonly state = signal<WordTypesListState>({
     status: 'idle',
@@ -133,8 +127,6 @@ export class WordTypesExplorerFacade {
     this.route = undefined;
   }
 
-  // Refetches ONLY the counts after a strip error; the table is never touched. Failed reads are not
-  // cached, so this always re-issues the request.
   retryScopeCounts(): void {
     const query = this.lastScopeQuery;
     if (!query) {
@@ -145,7 +137,6 @@ export class WordTypesExplorerFacade {
     this.scopeCountsRetrySub = this.fetchScopeCounts(query).subscribe();
   }
 
-  // Failed reads are never cached, so a retry always re-fetches; the cancellable subscription prevents overlapping retries.
   retryList(): void {
     this.cancelRetry();
     this.retrySub = this.loadList().subscribe();
@@ -180,22 +171,14 @@ export class WordTypesExplorerFacade {
           : {}),
         page: DEFAULT_WORD_TYPES_PAGE,
       }),
-      // A new main type invalidates any open detail selection (the selected word/root/stem/lemma
-      // belongs to the previous type); browsing within the same type keeps it, matching the
-      // selection-clearing the secondary filters already perform.
       ...(typeChanged ? clearWordTypesSelection() : {}),
     });
   }
 
-  // The table aggregation is independent of an open detail selection. A tab change only replaces
-  // the displayed list and resets its page; route merging preserves every detail key unchanged.
   selectTableView(tableView: WordTypeTableView): void {
     this.navigate(buildWordTypesQueryParams({ tableView, page: DEFAULT_WORD_TYPES_PAGE }));
   }
 
-  // A secondary filter narrows the rows without crossing type boundaries. It resets the page, clears
-  // any selected row (the row may no longer exist under the narrowed context), and reloads rows. It
-  // never requests scoped tree counts — E1 counts stay unscoped by design.
   selectCase(caseValue: WordTypeCase): void {
     this.navigate({
       ...buildWordTypesQueryParams({ case: caseValue, page: DEFAULT_WORD_TYPES_PAGE }),
@@ -217,8 +200,6 @@ export class WordTypesExplorerFacade {
     });
   }
 
-  // A presence flag is part of the list scope like the secondary filters: it resets the page, clears
-  // any selected row (the row may fall out of the narrowed scope), and reshapes words + grouped views.
   selectPresenceFlag(dimension: WordTypePresenceDimension, value: boolean | null): void {
     this.navigate({
       ...buildWordTypesQueryParams({ [presenceKeyFor(dimension)]: value, page: DEFAULT_WORD_TYPES_PAGE }),
@@ -226,7 +207,6 @@ export class WordTypesExplorerFacade {
     });
   }
 
-  // null releases the sort (param absent → back to المواضع desc); either way the list page resets.
   changeSort(sort: WordTypeSort | null): void {
     this.navigate(buildWordTypesQueryParams({ sort, page: DEFAULT_WORD_TYPES_PAGE }));
   }
@@ -239,9 +219,6 @@ export class WordTypesExplorerFacade {
     const query = this.state().query;
     const tree$ = this.cache.getOrLoad(WordTypesCacheKeys.tree, () => this.api.getTree());
 
-    // Null out rows only when the tableView itself changed: previous-view rows must never paint
-    // under the new scope, but ordinary filter changes intentionally keep prior rows visible
-    // while the next page loads.
     const tableViewChanged = this.lastRowsTableView !== null && this.lastRowsTableView !== query.tableView;
     this.state.update((current) => ({
       ...current,
@@ -278,9 +255,6 @@ export class WordTypesExplorerFacade {
       () => this.api.getTableRows({ ...query, pageSize: WORD_TYPES_PAGE_SIZE }),
     );
 
-    // Each request settles to its response or `null` on a transport throw, so a rows-only failure
-    // cannot discard an already-successful tree: forkJoin still emits, and handleListResponse persists
-    // the tree so the table-view strip survives the failure.
     return forkJoin({
       tree: this.settle(tree$),
       rows: this.settle(rows$),
@@ -294,9 +268,6 @@ export class WordTypesExplorerFacade {
     return source.pipe(catchError(() => of(null)));
   }
 
-  // Loads the scoped four-count summary. Only a confirmed leaf scope (a selected child, or the inl leaf)
-  // has a table to count; a parent/prompt scope shows no strip numbers (status 'idle'), mirroring the
-  // table's own subtype prompt.
   private loadScopeCounts(query: ParsedWordTypesQuery): Observable<void> {
     const leafSelected = query.childCode !== null || query.type === 'inl';
     if (!leafSelected) {
@@ -316,7 +287,6 @@ export class WordTypesExplorerFacade {
       () => this.api.getScopeCounts(query),
     ).pipe(
       tap((response) => this.handleScopeCountsResponse(response)),
-      // A counts failure never blocks the table: the strip owns its own error state and retry.
       catchError(() => {
         this.scopeCounts.set({ status: 'error', counts: null });
         return of(undefined);
@@ -354,8 +324,6 @@ export class WordTypesExplorerFacade {
       return;
     }
 
-    // A parent scope fetches no rows, so the table shows the in-shell subtype prompt. Any rows from a
-    // previous leaf scope are cleared here so they never paint under the new parent.
     this.state.update((current) => ({
       ...current,
       status: 'selectPrompt',
@@ -375,8 +343,6 @@ export class WordTypesExplorerFacade {
     const rowsData = rows?.isSuccess ? rows.data ?? null : null;
 
     if (!treeData || !rowsData) {
-      // Persist any freshly-loaded tree (`treeData`) so the table-view strip stays visible after a
-      // rows-only transport failure; fall back to the previously loaded tree when this tree failed.
       this.state.update((current) => ({
         ...current,
         status: 'error',
@@ -430,8 +396,6 @@ export class WordTypesExplorerFacade {
     return [query.type, query.childCode, query.tableView, query.case, query.tense, query.voice, query.search, query.hasRoot, query.hasStem, query.hasLemma, query.sort, query.page].join('|');
   }
 
-  // The scope key deliberately omits tableView, sort, and page: the four counts describe the list scope,
-  // not a view or page, so only these fields retrigger a counts load.
   private scopeKey(query: ParsedWordTypesQuery): string {
     return [query.type, query.childCode, query.case, query.tense, query.voice, query.search, query.hasRoot, query.hasStem, query.hasLemma].join('|');
   }

@@ -13,11 +13,6 @@ import { LEMMAS_PAGE_TITLE } from './lemmas.labels';
 import { STEMS_PAGE_TITLE } from './stems.labels';
 import { WORD_TYPES_PAGE_TITLE } from './word-types.labels';
 
-/**
- * The content records are real approved data (plan P0): construct them, never mock them. These
- * assertions guard the two things that would silently break the feature — a hero title drifting
- * from its page's own title, and a non-canonical morphology term slipping into the copy.
- */
 describe('words-explainer.content', () => {
   it('covers exactly the five explorer keys, in canonical order', () => {
     expect(WORDS_EXPLAINER_ORDER).toEqual(['unique', 'roots', 'lemmas', 'stems', 'word-types']);

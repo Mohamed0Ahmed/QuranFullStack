@@ -44,7 +44,6 @@ export class WordTypesDetailViewLoader {
 
     switch (view) {
       case 'words':
-        // Member words exist only for a grouped selection; a word selection has no words view.
         return selection.kind === 'word'
           ? undefined
           : this.subscribe(this.loadGroupedWords(selection, detailPage), handlers.onWords, handlers.onError);
@@ -104,7 +103,6 @@ export class WordTypesDetailViewLoader {
   }
 }
 
-// Projects a grouped selection into the flat request shape shared by the API client and cache keys.
 export function toGroupedRequest(selection: WordTypeGroupedDetailSelection): WordTypeGroupedRequestParams {
   switch (selection.kind) {
     case 'root':

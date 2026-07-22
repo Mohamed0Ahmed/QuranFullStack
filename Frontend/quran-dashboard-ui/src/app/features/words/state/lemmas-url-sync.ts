@@ -26,8 +26,7 @@ import {
 } from '../models/lemmas.models';
 
 export function parseLemmasQueryParams(queryParams: ParamMap): ParsedLemmasQuery {
-  // Canonicalizes legacy aliases in (occurrences-desc → occurrences) and fails closed to the
-  // default on anything unknown, so one ordering can never be cached under two tokens.
+  // Canonicalize legacy aliases + fail closed to default, so one ordering can't be cached under two tokens.
   const sort: LemmaSort = normalizeLemmaSort(queryParams.get(LEMMAS_QUERY_KEYS.sort));
 
   const page = parsePositiveInt(queryParams.get(LEMMAS_QUERY_KEYS.page)) ?? DEFAULT_LEMMAS_LIST_PAGE;

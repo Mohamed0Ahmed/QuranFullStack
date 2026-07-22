@@ -87,11 +87,7 @@ describe('MushafWordComponent', () => {
 
     const button = fixture.nativeElement.querySelector('button') as HTMLButtonElement;
 
-    // Persistent: the selection is a state driven purely by the location match, not the
-    // transient hover/focus wash, so the mark stays put regardless of the pointer.
     expect(button.classList.contains('mushaf-word--selected-word')).toBe(true);
-    // Immediate: the mark carries no transition; a fade here would flash the URL-backed,
-    // persistent selection in on every change.
     expect(getComputedStyle(button).transition).toBe('none');
   });
 
@@ -135,11 +131,6 @@ describe('MushafWordComponent', () => {
     expect(fixture.componentInstance.word().textUthmani).toBe(SYNTHETIC_AYAH_DIGIT);
   });
 
-  /* The hover wash is the word's own `:hover` / `:focus-visible` state, so its scoping is a
-     CSS-engine guarantee and is verified in a real browser, not here. What this spec still
-     owns is the DOM contract those selectors hang off: `:not(:disabled)` is the ONLY thing
-     keeping the wash off the ayah-marker glyph, so un-disabling a marker would silently
-     start painting it. */
   it('disables the ayah-marker glyph, which is what excludes it from the hover wash', () => {
     const fixture = TestBed.createComponent(MushafWordComponent);
     fixture.componentRef.setInput(

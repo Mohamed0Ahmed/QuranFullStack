@@ -9,11 +9,6 @@ import { CurrentUser, RoleName } from './current-user.model';
 import { CurrentUserStore } from './current-user.store';
 import { roleGuard } from './role.guard';
 
-// `roleGuard` verified in isolation since it is attached to no route (Feature 033, Phase 2). Its
-// injection boundaries — `OidcSecurityService` (auth state + login redirect), `CurrentUserStore`
-// (loaded account), `Router` (redirect UrlTree) — get lightweight stand-ins, while the account
-// itself is a real `CurrentUser` and a real `Router` builds the redirect so we can assert an actual
-// `UrlTree` pointing at `/`.
 function ownerUser(overrides: Partial<CurrentUser> = {}): CurrentUser {
   return {
     sub: 'logto-subject-1',

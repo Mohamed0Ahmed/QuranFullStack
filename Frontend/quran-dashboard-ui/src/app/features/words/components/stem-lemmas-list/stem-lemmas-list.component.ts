@@ -36,8 +36,6 @@ export class StemLemmasListComponent {
   protected readonly loadingLabel = STEMS_LEMMAS_LIST_LOADING_LABEL;
   protected readonly emptyLabel = STEMS_LEMMAS_LIST_EMPTY_LABEL;
 
-  // Mirrors the retired lemma explorer deep link (words view, simple word
-  // view); frame defaults are serialized explicitly per the URL contract.
   protected readonly rows = computed<readonly StemLemmaRow[]>(() =>
     this.lemmas().map((lemma) => ({
       lemma,

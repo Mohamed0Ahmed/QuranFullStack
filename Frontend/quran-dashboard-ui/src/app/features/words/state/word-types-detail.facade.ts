@@ -81,8 +81,7 @@ export class WordTypesDetailFacade {
   private detailSub?: Subscription;
   private summarySub?: Subscription;
   private activeUrlState: PanelUrlState | null = null;
-  // Monotonic guard: only the newest summary/detail load may write state, so a late non-cancellable
-  // response cannot overwrite a newer kind/scope/view/page.
+  // Monotonic guard: only the newest load may write state (a late response must not overwrite newer).
   private generation = 0;
 
   readonly panelState = computed(() => this._panel());
@@ -107,16 +106,11 @@ export class WordTypesDetailFacade {
     this.routeSub?.unsubscribe();
     this.routeSub = undefined;
     this.cancelPendingLoads();
-    // Reset the tracked URL identity (but keep the loaded panel data): a bare
-    // cancel leaves `activeUrlState` set, so re-binding to the SAME query
-    // params would short-circuit in syncFromUrlState() via
-    // isSamePanelUrlState() and strand the panel in its cancelled `loading`
-    // state. Nulling it forces a real reload on re-entry while still letting
-    // the loaded-state fast path (isSameSelection + hasSummary) apply.
+    // Null the tracked URL identity so re-binding to the same params isn't short-circuited
+    // into the cancelled `loading` state (keeps the loaded panel data for the fast path).
     this.activeUrlState = null;
   }
 
-  // The row already carries its summary, so only the active detail view is fetched.
   selectRow(
     row: WordTypeRowDto,
     scope: WordTypeDetailScope,
@@ -195,7 +189,6 @@ export class WordTypesDetailFacade {
     this.loadActiveView(current.selection, current.view, page);
   }
 
-  // Failed reads are never cached, so a retry always re-issues the request.
   retry(): void {
     const current = this._panel();
     const state = this.activeUrlState;

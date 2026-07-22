@@ -2,8 +2,7 @@ import { Routes } from '@angular/router';
 
 import { permissionGuard } from '../../core/auth/permission.guard';
 
-// Owner-only permission-administration feature (US5). The route is gated client-side by permissionGuard —
-// non-authoritative hiding; the backend SystemOwner policy is the authority.
+// permissionGuard is non-authoritative client gating; the backend SystemOwner policy is the authority.
 export const PERMISSIONS_ROUTES: Routes = [
   {
     path: '',

@@ -37,9 +37,6 @@ export class AyahMatchesListComponent {
   readonly loading = input(false);
   readonly showAnalysisAction = input(false);
   readonly analysisActionLabel = input('');
-  // The render site must provide the source detail's typed frame — this shared list never infers a
-  // parent from generic route keys. When set it is promoted to a one-frame stack over the Mushaf so
-  // the scholarly context stays open.
   readonly parentFrame = input<DetailFrame | null>(null);
 
   readonly pageChange = output<number>();

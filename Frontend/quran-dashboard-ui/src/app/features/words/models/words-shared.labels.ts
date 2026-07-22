@@ -51,9 +51,6 @@ export const WORDS_SHARED_COUNT_COLUMNS = {
   stems: 'الأصول الصرفية',
 } as const;
 
-// UI labels for the shared count-range filter (Feature 026, US5; chips reshaped in Feature 030, N4).
-// greaterThan/lessThan prefix the metric's threshold to form the two shortcut chip labels; apply is the
-// touch-friendly twin of pressing Enter in the مخصّص inputs.
 export const WORDS_RANGE_FILTER_LABELS = {
   sectionLabel: 'تصفية حسب الأعداد',
   greaterThan: 'أكثر من',
@@ -65,33 +62,17 @@ export const WORDS_RANGE_FILTER_LABELS = {
   clearAll: 'مسح كل عوامل التصفية',
 } as const;
 
-// UI labels for the shared association filter picker (Feature 026, US7). activeFilter is the
-// neutral badge shown while a URL-restored selection's real label has not resolved yet.
 export const WORDS_ASSOCIATION_FILTER_LABELS = {
   activeFilter: 'مرشَّح نشط',
   clear: 'مسح التصفية',
   loading: 'جارٍ التحميل…',
-  // M32/M43 + M74: a load failure must read as a calm error hint, distinct from both the
-  // loading state and a genuine zero-match empty result.
   error: 'تعذّر تحميل الخيارات',
   noResults: 'لا توجد نتائج',
 } as const;
 
-// UI labels for the shared result-count stat (Feature 026, US4). loading is the sr-only text
-// announced by the skeleton's role="status" container. unavailable stands in for the number when the
-// list errored (Feature 030, N3 row 6): the stat holds its line instead of unmounting, while the
-// page's own error state stays the only place that explains the failure.
 export const WORDS_RESULT_COUNT_LABELS = {
   loading: 'جارٍ التحميل…',
   unavailable: '—',
 } as const;
 
-/**
- * The single recovery action offered on a failed detail load (Feature 030, M3),
- * shared by all five detail surfaces (roots, lemmas, stems, word types, and the
- * unique-word drilldown) in both the side panel and the global overlay.
- * Retrying re-drives the current complete identity, so a transient
- * network/server failure no longer leaves the retained detail unusable until the
- * user changes identity or reloads the page.
- */
 export const WORDS_DETAIL_RETRY_LABEL = 'إعادة المحاولة';

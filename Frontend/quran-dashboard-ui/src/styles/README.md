@@ -60,3 +60,5 @@ Compiled through `../styles.scss`; component-specific styling stays beside each 
 - Arabic-first typography and RTL-friendly spacing start here; do not swap shared font roles casually.
 - Keep breakpoint values synchronized between `_breakpoints.scss` and `../app/shared/layout/breakpoints.ts`.
 - Global explorer partials should stay generic across Roots, Lemmas, Stems, Word Types, and related detail panels.
+- Interactive detail-list rows keep a **≥44px touch-target floor** (`min-block-size: 44px` in
+  `_explorer-detail-lists.scss`); do not shrink tappable rows below it.

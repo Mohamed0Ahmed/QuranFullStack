@@ -35,20 +35,15 @@ import { LEMMA_VIEW_KEYS, LemmaView } from '../../models/lemmas.models';
 export class LemmaDetailsPanelComponent {
   private readonly detailOverlayHistory = inject(DetailOverlayHistoryService);
 
-  // Only the top layer may trap focus: while the global detail overlay is open this drawer sits in
-  // the inert app shell, so its own trap stands down and the dialog's trap is the only one enabled.
   protected readonly drawerTrapEnabled = computed(() => !this.detailOverlayHistory.isOpen());
 
   readonly view = input.required<LemmaView>();
   readonly inline = input(true);
-  // Content-only mode: renders just the tablist + tabpanel body; the global detail overlay shell
-  // owns the dialog chrome (no card/backdrop/header here).
   readonly frameless = input(false);
   readonly emptySelection = input(false);
   readonly selectionTitle = input('');
   readonly loading = input(false);
   readonly notFound = input(false);
-  // Server-supplied not-found text; falls back to the generic label when absent.
   readonly notFoundMessage = input('');
 
   readonly viewChange = output<LemmaView>();

@@ -391,7 +391,6 @@ describe('WordTypesExplorerPageComponent', () => {
     const values = Array.from(strip!.querySelectorAll('[data-testid="word-type-scope-count-value"]')).map((el) => el.textContent?.trim());
     expect(values).toEqual(['40', '12', '8', '5']);
 
-    // Placement: filters → scope summary → tabs → table (the tabs follow the strip in document order).
     expect(strip!.compareDocumentPosition(tabs!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(requestsFor('scopeCounts')).toHaveLength(1);
   });
@@ -403,17 +402,13 @@ describe('WordTypesExplorerPageComponent', () => {
     const layout = root.querySelector('.word-types-page__layout')!;
     const tabs = layout.querySelector('qd-word-type-table-view-tabs');
     expect(tabs).not.toBeNull();
-    // The slot is the layout child that carries the U3 placement (N3 row 2); the tabs live inside it.
     const slot = layout.firstElementChild!;
     expect(slot.classList.contains('word-types-page__tabs')).toBe(true);
     expect(slot.contains(tabs)).toBe(true);
     expect(slot.nextElementSibling).toBe(layout.querySelector('main.word-types-page__main'));
   });
 
-  // N3 row 2: the tabs are gated on the tree, so their whole row appeared on first load and pushed the
-  // table + panel grid down. N3 row 3: the facade nulls `rows` on a view switch, unmounting the bar.
   it('keeps the tabs and pagination slots rendered before the tree and rows land (N3 rows 2-3)', async () => {
-    // Hold the tree request open so the page paints its pre-tree state.
     respond('tree', PENDING);
     const fixture = await createPage();
     const root = fixture.nativeElement as HTMLElement;
@@ -422,7 +417,6 @@ describe('WordTypesExplorerPageComponent', () => {
     const paginationSlot = () => root.querySelector('[data-testid="word-types-pagination-slot"]');
     expect(tabsSlot()).not.toBeNull();
     expect(paginationSlot()).not.toBeNull();
-    // Both slots are deliberately empty here: they reserve the rows, they do not render the controls.
     expect(tabsSlot()!.querySelector('qd-word-type-table-view-tabs')).toBeNull();
     expect(paginationSlot()!.querySelector('qd-pagination')).toBeNull();
 
@@ -1452,8 +1446,6 @@ describe('WordTypesExplorerPageComponent', () => {
     const fixture = await createPage();
     const detailFacade = TestBed.inject(WordTypesDetailFacade);
 
-    // The grouped summary has not arrived, so activeSummary() is null; the panel must still show a
-    // visible loading state (not a blank surface) rather than gating everything behind the summary.
     expect(detailFacade.panelState().status).toBe('loading');
     expect(detailFacade.panelState().groupedSummary).toBeNull();
     const panel = fixture.nativeElement.querySelector('qd-word-type-details-panel') as HTMLElement;
@@ -1471,8 +1463,6 @@ describe('WordTypesExplorerPageComponent', () => {
     const fixture = await createPage();
     const detailFacade = TestBed.inject(WordTypesDetailFacade);
 
-    // A summary transport failure leaves no summary; the panel must surface a retryable error rather
-    // than a blank surface with no way forward.
     expect(detailFacade.panelState().status).toBe('error');
     expect(detailFacade.panelState().groupedSummary).toBeNull();
     const panel = fixture.nativeElement.querySelector('qd-word-type-details-panel') as HTMLElement;
@@ -1548,8 +1538,6 @@ describe('WordTypesExplorerPageComponent', () => {
       const fixture = await pageWithRows();
       const root = fixture.nativeElement as HTMLElement;
 
-      // ≥1024px the table header row is visible and owns sorting, so the fallback is CSS-hidden
-      // there; below that the header row is display:none and this select is the only way in.
       const select = root.querySelector('[data-testid="word-types-sort-select"]') as HTMLElement;
       expect(select).toBeTruthy();
       expect(select.closest('.qd-explorer-sort-fallback')).not.toBeNull();
@@ -1574,12 +1562,9 @@ describe('WordTypesExplorerPageComponent', () => {
 
       (root.querySelector('[data-testid="word-types-table-sort-ayahs"]') as HTMLButtonElement).click();
 
-      // Release removes the param, landing on this explorer's default: المواضع desc.
       expect(lastQueryParams(router)).toEqual(expect.objectContaining({ sort: null, page: '1' }));
     });
 
-    // The WORD-TYPES QUIRK: المواضع IS the default, so its cycle collapses to desc(default) ⇄ asc —
-    // the two halves of that collapse, from each starting state.
     it('moves المواضع from its default desc straight to asc (no unsorted step first)', async () => {
       const fixture = await pageWithRows();
       const root = fixture.nativeElement as HTMLElement;

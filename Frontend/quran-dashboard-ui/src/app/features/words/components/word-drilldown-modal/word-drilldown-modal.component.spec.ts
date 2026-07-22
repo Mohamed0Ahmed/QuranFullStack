@@ -60,8 +60,6 @@ async function createFixture(initialState: WordDrilldownState) {
   getTestBed().resetTestingModule();
   await TestBed.configureTestingModule({
     imports: [WordDrilldownModalComponent],
-    // The ayah list's overlay-continuity links resolve hrefs through the
-    // router-backed detail-overlay history service.
     providers: [provideRouter([]), provideLocationMocks()],
     teardown: { destroyAfterEach: true },
   }).compileComponents();

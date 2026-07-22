@@ -4,8 +4,6 @@ import { getTestBed, TestBed } from '@angular/core/testing';
 import { ExplorerCountRangeFilterComponent } from './explorer-count-range-filter.component';
 import { RangeFilters, RangeMetric } from '../../state/words-range-filters';
 
-// occurrences takes its family's default threshold (100); surahs overrides its shared ayahsSurahs
-// family down to 50, which is the split the component has to honor per metric rather than per family.
 const METRICS: readonly RangeMetric[] = [
   { key: 'occurrences', urlKey: 'occ', apiKey: 'occ', family: 'occurrences', labelAr: 'المواضع' },
   { key: 'surahs', urlKey: 'surahs', apiKey: 'surahs', family: 'ayahsSurahs', labelAr: 'السور', threshold: 50 },
@@ -42,7 +40,6 @@ describe('ExplorerCountRangeFilterComponent', () => {
     return root.querySelector<HTMLInputElement>(`[data-testid="range-filter-${bound}-${metricKey}"]`)!;
   }
 
-  // Mirrors a real keystroke: the browser updates the input, then Angular runs change detection.
   function type(fixture: ReturnType<typeof render>, input: HTMLInputElement, value: string): void {
     input.value = value;
     input.dispatchEvent(new Event('input'));
@@ -220,9 +217,6 @@ describe('ExplorerCountRangeFilterComponent', () => {
       expect(inputOf(root, 'max', 'surahs').value).toBe('30');
     });
 
-    // The pages re-`set` a freshly parsed ranges object on every navigation, so a draft must survive
-    // a sibling metric's commit — otherwise committing one metric silently wipes text the user is
-    // still typing in another open panel.
     it('keeps an uncommitted draft when a different metric commits and the ranges object is replaced', () => {
       const fixture = render({});
       const root = fixture.nativeElement as HTMLElement;
@@ -234,7 +228,6 @@ describe('ExplorerCountRangeFilterComponent', () => {
       press(inputOf(root, 'min', 'surahs'), 'Enter');
       fixture.detectChanges();
 
-      // The page navigates and feeds a new object back in; occurrences never committed.
       fixture.componentRef.setInput('ranges', { surahs: { min: 20, max: null } });
       fixture.detectChanges();
 

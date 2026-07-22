@@ -51,8 +51,6 @@ describe('QdStateComponent', () => {
     const el = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="qd-state-error"]');
 
     expect(el?.querySelector('button, a, input')).toBeNull();
-    // The danger-on-tint background comes from the shared .qd-error-state rule
-    // (extended in _components.scss); the component itself sets no inline color.
     expect(el?.getAttribute('style')).toBeNull();
   });
 

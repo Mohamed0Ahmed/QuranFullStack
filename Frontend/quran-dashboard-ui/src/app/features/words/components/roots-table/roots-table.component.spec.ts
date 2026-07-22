@@ -415,10 +415,6 @@ describe('RootsTableComponent', () => {
     });
   });
 
-  // Feature 030, N3 row 5: these states used to be page-level banners that inserted above the fixed
-  // table+panel grid and pushed it down ~4.5rem. They now stand in for the body INSIDE the mounted
-  // shell. jsdom does no layout, so the geometry itself is pinned in SCSS (`.roots-table__state`
-  // matches the body it replaces in every band) — these assert the structure that SCSS keys off.
   describe('in-shell list states (Feature 030, N3 row 5)', () => {
     it('renders the error state inside the table shell, replacing the body', () => {
       const fixture = setup([], { status: 'error', errorMessage: 'تعذر تحميل الجذور' });
@@ -430,7 +426,6 @@ describe('RootsTableComponent', () => {
       expect(state?.textContent?.trim()).toBe('تعذر تحميل الجذور');
       expect(state?.closest('.qd-explorer-table')).toBeTruthy();
       expect(state?.classList.contains('roots-table__state')).toBe(true);
-      // it REPLACES the body (rather than stacking above it) and the shell stays mounted
       expect(root.querySelector('.qd-explorer-table__body')).toBeNull();
       expect(root.querySelector('.qd-explorer-table__header')).toBeTruthy();
     });

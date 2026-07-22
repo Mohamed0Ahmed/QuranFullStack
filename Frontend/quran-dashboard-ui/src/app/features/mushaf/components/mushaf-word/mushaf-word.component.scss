@@ -1,5 +1,3 @@
-/* Word-hover wash: background + radius ONLY — never glyph metrics, font, or spacing.
-   Kept in one place so the pointer-gated and focus rules below cannot drift apart. */
 @mixin word-hover-wash {
   background-color: var(--qd-mushaf-word-hover-bg);
   border-radius: var(--qd-radius-sm);
@@ -17,8 +15,6 @@
   margin: 0;
   color: inherit;
   cursor: pointer;
-  /* Colour-only transition — deliberately kept under prefers-reduced-motion
-     (precedent: styles/_components.scss reduced-motion block). */
   transition: background-color var(--qd-t-fast);
 
   &:disabled {
@@ -31,19 +27,12 @@
     color: var(--qd-mushaf-ayah-marker-color);
   }
 
-  /* The wash is the word's OWN pointer state — no ayah-wide fan-out, so a neighbouring
-     word never paints and the selected word stays the only persistent mark in its ayah.
-     Hover-capable devices only: the gate is what stops a touch tap sticking the wash.
-     :disabled excludes the ayah-marker glyph; --selected-word is excluded so selection wins. */
   @media (hover: hover) {
     &:hover:not(:disabled):not(.mushaf-word--selected-word) {
       @include word-hover-wash;
     }
   }
 
-  /* Keyboard parity, ungated: hover must never be the only indicator (WCAG). Covers the
-     focused word on (hover: none) devices driving a keyboard, where the gate above is off.
-     :focus-visible (not :focus) keeps a touch tap from painting it. */
   &:focus-visible:not(:disabled):not(.mushaf-word--selected-word) {
     @include word-hover-wash;
   }
@@ -52,14 +41,9 @@
     background-color: var(--qd-mushaf-word-selection-bg);
     box-shadow: inset 0 0 0 1px var(--qd-mushaf-word-selection-ring);
     border-radius: var(--qd-radius-sm);
-    /* Selection is a persistent, URL-backed mark and has always appeared instantly; the
-       base transition above must not fade it in. */
     transition: none;
   }
 
-  /* No radius of its own: every focusable word carries one of the washes above (the focus
-     wash is ungated, and a selected word keeps its own), so the outline inherits that
-     radius and hugs the tint it surrounds instead of cutting a tighter corner than it. */
   &:focus-visible {
     outline: 2px solid var(--qd-focus-ring);
     outline-offset: 2px;

@@ -68,13 +68,9 @@
   text-align: center;
 }
 
-/* Column-header sorting (Feature 030, N8). Styled ONCE here for all five explorer tables —
-   a table needing more than grid-template-columns is a signal to extend this base, not fork it. */
 .qd-explorer-table__sort-button {
   display: inline-flex;
   align-items: center;
-  /* the cell's text-align cannot lay out a flex child — mirror it via justify-content instead,
-     so a sortable header sits exactly where the plain header text used to. */
   justify-content: flex-start;
   gap: 0.25rem;
   inline-size: 100%;
@@ -84,19 +80,13 @@
   padding: 0.125rem 0.25rem;
   border: 1px solid transparent;
   border-radius: var(--qd-radius-sm);
-  background: transparent; /* flat doctrine §16.2: no fill, no shadow — not even when sorted */
+  background: transparent;
   cursor: pointer;
   font: inherit;
   color: inherit;
   text-align: inherit;
   transition: background-color var(--qd-t-fast), color var(--qd-t-fast);
 
-  /* The doctrine hover fill is imperceptible HERE specifically: the header strip is
-     --qd-surface-recessed, and --qd-surface-hover resolves to that same tone in light
-     (and to the header's own section-bg tone in dark). So the affordance is carried by a
-     hairline instead — structure from hairline borders, per the flat doctrine — and the
-     fill is kept for the day those tones diverge. This is not a hover-fill exception:
-     --qd-surface-hover is still the only hover fill. */
   &:hover {
     background: var(--qd-surface-hover);
     border-color: var(--qd-border);
@@ -107,8 +97,6 @@
     outline-offset: 2px;
   }
 
-  /* active column: accent TEXT only (§16.3 allowed-green #4) plus the direction glyph — N8-d
-     decided against the optional 2px green-thread bar here. */
   &.qd-is-sorted {
     color: var(--qd-accent-text);
   }
@@ -156,8 +144,6 @@
 
 .qd-explorer-table__row.qd-is-selected {
   background: var(--qd-selected-bg);
-  /* the green thread: 2px "current" edge on the inline-start side (app is RTL-only,
-     so the physical right edge is inline-start; inset shadow avoids layout shift) */
   box-shadow: inset -2px 0 0 var(--qd-accent);
 }
 
@@ -193,7 +179,6 @@
     background: var(--qd-selected-bg);
     border-color: var(--qd-border-accent);
     color: var(--qd-accent-text);
-    /* one-off: subtle selected ring, distinct alpha from --qd-border-accent; not a fill, no role token fits a glow */
     box-shadow: 0 0 0 1px color-mix(in oklch, var(--qd-accent) 18%, transparent);
   }
 }
@@ -240,7 +225,6 @@
     background: var(--qd-surface-hover);
     border-color: var(--qd-border-accent);
     color: var(--qd-accent-text);
-    /* one-off: subtle hover ring, distinct alpha from --qd-border-accent; not a fill, no role token fits a glow */
     box-shadow: 0 0 0 1px color-mix(in oklch, var(--qd-accent) 18%, transparent);
   }
 

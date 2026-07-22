@@ -42,7 +42,6 @@ describe('SystemApi.getDashboardInfo (app-lifetime cache, perf finding F2)', () 
     httpTesting.expectOne(`${environment.apiBaseUrl}/api/dashboard/info`).flush(appInfoResponse());
     const firstResult = await firstCall;
 
-    // A second "mount" (e.g. revisiting the dashboard) must reuse the cached stream — no new request.
     const secondResult = await firstValueFrom(systemApi.getDashboardInfo());
     const thirdResult = await firstValueFrom(systemApi.getDashboardInfo());
 
@@ -70,7 +69,6 @@ describe('SystemApi.getDashboardInfo (app-lifetime cache, perf finding F2)', () 
 
     await expect(failingCall).rejects.toThrow();
 
-    // Retrying after a failure must issue a fresh request — the failed stream is not cached.
     const retryCall = firstValueFrom(systemApi.getDashboardInfo());
     httpTesting.expectOne(`${environment.apiBaseUrl}/api/dashboard/info`).flush(appInfoResponse());
 

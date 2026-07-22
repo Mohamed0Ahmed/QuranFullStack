@@ -9,9 +9,7 @@ import { PermissionsFacade } from '../../state/permissions.facade';
 const MANAGE_PERMISSION = 'permission.administer';
 const NOT_AUTHORIZED = 'لا تملك صلاحية إدارة الصلاحيات.';
 
-// Owner-only permission administration (US5): the first real Reactive-Forms surface. The route is gated by
-// permissionGuard, and this component ALSO hides the form when the caller lacks the manage permission — but
-// that hiding is non-authoritative (the backend policy rejects a direct call regardless).
+// Client-side hiding of the form is non-authoritative; the backend policy is the real gate.
 @Component({
   selector: 'qd-permissions-page',
   standalone: true,

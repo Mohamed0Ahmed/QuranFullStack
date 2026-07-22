@@ -14,8 +14,6 @@ describe('StemDetailsPanelComponent a11y (T087)', () => {
   function createPanel(view: StemView = 'surahs') {
     TestBed.configureTestingModule({
       imports: [StemDetailsPanelComponent],
-      // The drawer suspends its focus trap from the router-backed
-      // detail-overlay history service.
       providers: [provideRouter([]), provideLocationMocks()],
       teardown: { destroyAfterEach: true },
     });
@@ -88,8 +86,6 @@ describe('StemDetailsPanelComponent a11y (T087)', () => {
   it('renders the empty-selection state with header, disabled tabs, and empty message', () => {
     TestBed.configureTestingModule({
       imports: [StemDetailsPanelComponent],
-      // The drawer suspends its focus trap from the router-backed
-      // detail-overlay history service.
       providers: [provideRouter([]), provideLocationMocks()],
       teardown: { destroyAfterEach: true },
     });
@@ -124,8 +120,6 @@ describe('StemDetailsPanelComponent a11y (T087)', () => {
     expect(host.querySelector('[role="tablist"]')).toBeNull();
     expect(host.querySelectorAll('[role="tab"]')).toHaveLength(0);
 
-    // No tablist is rendered, so the surface must not keep a tabpanel pointing at a
-    // missing tab: it drops the dangling aria-labelledby and becomes a labelled region.
     expect(host.querySelector('[role="tabpanel"]')).toBeNull();
     const surface = host.querySelector('[data-testid="stem-details-panel-surface"]') as HTMLElement;
     expect(surface.getAttribute('role')).toBe('region');
@@ -142,8 +136,6 @@ describe('StemDetailsPanelComponent modal drawer mode (T118)', () => {
   function createModalPanel() {
     TestBed.configureTestingModule({
       imports: [StemDetailsPanelComponent],
-      // The drawer suspends its focus trap from the router-backed
-      // detail-overlay history service.
       providers: [provideRouter([]), provideLocationMocks()],
       teardown: { destroyAfterEach: true },
     });
@@ -224,8 +216,6 @@ describe('StemDetailsPanelComponent modal drawer mode (T118)', () => {
   it('renders no modal chrome when empty selection even in modal mode', () => {
     TestBed.configureTestingModule({
       imports: [StemDetailsPanelComponent],
-      // The drawer suspends its focus trap from the router-backed
-      // detail-overlay history service.
       providers: [provideRouter([]), provideLocationMocks()],
       teardown: { destroyAfterEach: true },
     });

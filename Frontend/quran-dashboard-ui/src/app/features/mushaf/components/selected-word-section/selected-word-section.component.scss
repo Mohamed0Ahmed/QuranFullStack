@@ -10,8 +10,6 @@
     height: auto;
     flex-shrink: 0;
 
-    // Relocated from _components.scss (UI_STYLE_SYSTEM.md §2 / styles/README.md
-    // boundary — component internals belong in the owning component's SCSS).
     @media (max-width: bp.$qd-bp-tablet-max) {
       min-height: auto;
     }
@@ -23,9 +21,6 @@
   flex-direction: column;
   gap: var(--qd-space-3);
 
-  // U1 first-load baseline: measured natural loaded block size per responsive
-  // band (Feature 029 §7 — desktop/tablet load to a structure-constant 333px;
-  // below the 768px morphology-grid breakpoint the 1-segment floor is 495px).
   --qd-selected-word-baseline-block-size: 20.8125rem;
 
   min-height: 14rem;
@@ -49,12 +44,6 @@
     }
   }
 
-  // U1 loading reservation: while loading, hold the greater of the last
-  // successful natural block size and the responsive baseline so the following
-  // divider/section does not move. Cleared with the modifier on success/error/
-  // empty — loaded content always determines its own natural height. The extra
-  // class keeps this ahead of the <1024px embedded reset above, which zeroes
-  // the shell minimums.
   &.selected-word-section--loading {
     :host &,
     :host.qd-selected-word-section--embedded & {
@@ -77,8 +66,6 @@
 
   &__word-skeleton {
     width: 11rem;
-    // One rendered-word line box: 1.9rem font at 1.8 line-height (see
-    // &__rendered-word) — the skeleton must occupy the same header height.
     height: calc(1.9rem * 1.8);
     border-radius: var(--qd-radius-md);
   }
@@ -154,9 +141,6 @@
     width: 75%;
   }
 
-  // Skeleton geometry mirrors the loaded word-morphology-summary cells
-  // (padding/gaps/label/value line boxes) so the loading shell occupies the
-  // natural loaded layout instead of a smaller stand-in (U1).
   &__morphology-skeleton {
     display: flex;
     flex-direction: row;
@@ -193,7 +177,6 @@
       justify-content: center;
       margin: 0;
 
-      // Loaded value line box: 0.9375rem font at 1.45 line-height.
       min-height: calc(0.9375rem * 1.45);
       width: 100%;
     }
@@ -254,18 +237,14 @@
     align-items: center;
     justify-content: center;
 
-    // Loaded identity value line box: 0.9375rem font at the default 1.5.
     min-height: calc(0.9375rem * 1.5);
   }
 }
 
 @media (max-width: 767px) {
   .selected-word-section {
-    // Measured 1-segment natural floor at phone widths (U1 baseline).
     --qd-selected-word-baseline-block-size: 30.9375rem;
 
-    // The loaded morphology summary becomes a two-column grid at this
-    // breakpoint — mirror it so the skeleton wraps identically.
     &__morphology-skeleton {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));

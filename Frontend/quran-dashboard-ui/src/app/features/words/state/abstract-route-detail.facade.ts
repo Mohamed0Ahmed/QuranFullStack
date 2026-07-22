@@ -2,10 +2,6 @@ import { ActivatedRoute, ParamMap } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { distinctUntilChanged, map } from 'rxjs/operators';
 
-// The subset of a concrete detail controller that AbstractRouteDetailFacade drives
-// directly. The concrete facade's own `controller` field keeps its full concrete
-// type, so entity-only members (e.g. setAyahTypeCode) stay reachable there even
-// though this base only calls the shared subset.
 export interface RouteDetailController<TUrlState, TView, TWordView, TSurahView> {
   applyUrlState(state: TUrlState | null): void;
   clearSelection(): void;
@@ -15,9 +11,6 @@ export interface RouteDetailController<TUrlState, TView, TWordView, TSurahView> 
   setDetailPage(page: number): void;
 }
 
-// Shared route-adapter skeleton (Feature 033 DRY) for the near-identical
-// Roots/Lemmas/Stems detail facades: binds the page's ActivatedRoute query state
-// to the entity's controller and delegates the shared view/page/clear methods.
 export abstract class AbstractRouteDetailFacade<TUrlState, TView, TWordView, TSurahView> {
   protected routeSub?: Subscription;
 
@@ -37,11 +30,8 @@ export abstract class AbstractRouteDetailFacade<TUrlState, TView, TWordView, TSu
   unbindFromRoute(): void {
     this.routeSub?.unsubscribe();
     this.routeSub = undefined;
-    // Reset the active identity as well as cancelling in-flight loads: a bare
-    // cancel leaves the controller's last identity set, so re-binding to the
-    // SAME query params would short-circuit in applyUrlState() and strand the
-    // panel in its cancelled `loading` state. Clearing forces a real reload on
-    // re-entry.
+    // Clear the identity, not just cancel in-flight loads: else re-binding the SAME query params
+    // short-circuits in applyUrlState() and strands the panel in a cancelled `loading` state.
     this.controller.clearSelection();
   }
 

@@ -949,8 +949,6 @@ describe('MushafReaderFacade URL sync', () => {
 
     facade.bindToRoute(route);
 
-    // Overlay-only params count as bare: the session redirect still fires, and
-    // it must merge so the retained overlay stack survives the restoration.
     expect(navigate).toHaveBeenCalledTimes(1);
     expect(navigate).toHaveBeenCalledWith(
       [],
@@ -961,7 +959,6 @@ describe('MushafReaderFacade URL sync', () => {
     );
     const restoredParams = vi.mocked(navigate).mock.calls[0][1]?.queryParams as Record<string, unknown>;
     expect(restoredParams['page']).toBe(12);
-    // The redirect writes only reader-owned keys; merge preserves overlay keys untouched.
     expect(restoredParams['qdDetail']).toBeUndefined();
     expect(restoredParams['qdDetailOpen']).toBeUndefined();
   });

@@ -3,9 +3,6 @@
   height: 100%;
 }
 
-// Frameless content mode (global overlay shell owns the dialog chrome):
-// a plain flex column so the drilldown body keeps its internal scrolling.
-// Scoped here so the inline/modal branches keep their existing geometry.
 .word-drilldown-modal--frameless {
   display: flex;
   flex-direction: column;

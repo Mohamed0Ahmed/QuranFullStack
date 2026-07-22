@@ -33,11 +33,7 @@ export interface WordTypeScopeSelectedEvent {
 export class WordTypeFilterComponent {
   private readonly host = inject(ElementRef<HTMLElement>);
 
-  // The first-load mirror renders one trigger card per main type. The set is the fixed domain list, not
-  // tree data, so the mirror's card count — and therefore its wrap — always matches the loaded toolbar
-  // (Feature 030, N3 row 8).
-  // TDZ-safe getter (see words README), like the labels below: as a readonly field this const resolves
-  // to undefined in the bundled test build, and the mirror then renders zero cards and reserves nothing.
+  // TDZ-safe getter, not a readonly field: as a field this const is undefined in the bundled test build.
   protected get skeletonTriggers() {
     return WORD_TYPE_MAIN_TYPES;
   }

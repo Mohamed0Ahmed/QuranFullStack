@@ -77,7 +77,6 @@ export function extractPanelErrorMessage(err: unknown, fallback: string): string
   return fallback;
 }
 
-// Words and ayahs are server-paged; surahs are single-shot and never receive a detailPage.
 export function isPaginatedWordTypeView(view: WordTypeDetailView): boolean {
   return view === 'words' || view === 'ayahs';
 }

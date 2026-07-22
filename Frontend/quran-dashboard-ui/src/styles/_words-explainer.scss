@@ -1,15 +1,5 @@
-// Shared visual primitives for the Words explainer hero example regions (Feature 031).
-
-// These are GLOBAL (not component-scoped) on purpose: each explorer page projects its own example
-// markup into `qd-words-explainer` via `<ng-content>`, and projected content keeps the PAGE's view
-// encapsulation — so the shared visuals cannot live in the component's scoped stylesheet. Pages
-// compose these classes; no page defines a color. All tokens map from the approved comp
-// `docs/design-preview/words-pages-hero.html` (no raw hex): recessed surfaces on the parchment
-// ladder, hairline borders, control radii, and the Amiri Quran face for the illustrative example
-// words. Flat doctrine: no shadow, no gradient, no lift.
 @use 'breakpoints' as bp;
 
-// Small green sub-heading inside an example region (allowed-green list #4: text via --qd-accent-text).
 .qd-explainer-h3 {
   margin: 0;
   font-size: 0.9rem;
@@ -17,7 +7,6 @@
   color: var(--qd-accent-text);
 }
 
-// The recessed example block (comp `.example`, #f6f4ee → --qd-bg): one step below the band.
 .qd-explainer-example {
   background: var(--qd-bg);
   border: 1px solid var(--qd-border);
@@ -28,7 +17,6 @@
   gap: var(--qd-space-2);
 }
 
-// The "مثال" / "أمثلة" marker (allowed-green list #4: small label via --qd-accent-text).
 .qd-explainer-example__label {
   font-size: 0.72rem;
   font-weight: 700;
@@ -36,7 +24,6 @@
   color: var(--qd-accent-text);
 }
 
-// A wrapping row of Amiri example chips + inline role notes (comp `.deriv`).
 .qd-explainer-deriv {
   display: flex;
   flex-wrap: wrap;
@@ -44,8 +31,6 @@
   gap: var(--qd-space-2);
 }
 
-// One illustrative example word rendered in the Quran face (comp `.word`). Copied verbatim with
-// tashkeel; a static morphology illustration, never rendered Quran data (plan D10).
 .qd-explainer-word {
   font-family: var(--qd-font-quran);
   font-size: 1.15rem;
@@ -63,7 +48,6 @@
   margin-inline-start: 0.35rem;
 }
 
-// A muted prose note under an example (comp `.note`).
 .qd-explainer-note {
   margin: 0;
   font-size: 0.82rem;
@@ -76,7 +60,6 @@
   font-weight: 700;
 }
 
-// Two-up grids of mini/type cards (comp `.two` / `.types`), collapsing to one column on phones.
 .qd-explainer-two,
 .qd-explainer-types {
   display: grid;
@@ -91,7 +74,6 @@
   }
 }
 
-// Mode mini-card (comp `.mini`, #f3f1ea → --qd-surface-recessed).
 .qd-explainer-mini {
   background: var(--qd-surface-recessed);
   border: 1px solid var(--qd-border);
@@ -112,8 +94,6 @@
   color: var(--qd-text-muted);
 }
 
-// A segmented word: prefix + emphasized core + suffix (comp `.seg`). The extracted stem core is
-// the teaching point — emphasized via --qd-accent-text (allowed-green list #4), not a fill.
 .qd-explainer-seg {
   font-family: var(--qd-font-quran);
   font-size: 1.35rem;
@@ -125,7 +105,6 @@
   font-weight: 700;
 }
 
-// Word-type card (comp `.type`, #f3f1ea → --qd-surface-recessed).
 .qd-explainer-type {
   background: var(--qd-surface-recessed);
   border: 1px solid var(--qd-border);
@@ -155,10 +134,6 @@
   margin-inline-start: 0.3rem;
 }
 
-// The "الفائدة" benefit callout — the ONE sanctioned tinted-green panel (allowed-green list #8,
-// added in the same change; see DESIGN.md §2 / UI_STYLE_SYSTEM.md §16.3). A soft accent-tint panel
-// with a hairline accent border and --qd-accent-text label/body (6.74:1 on the tint, AA). Not a
-// solid green fill; scoped to this hero.
 .qd-explainer-benefit {
   display: flex;
   gap: var(--qd-space-3);

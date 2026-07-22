@@ -247,7 +247,6 @@ describe('parseRootsQueryParams sort tokens (Feature 030, N8)', () => {
     ['stems-desc', 'stems'],
     ['alpha-asc', 'alpha'],
   ])('canonicalizes the legacy alias "%s" to "%s"', (alias, canonical) => {
-    // An old shared link must not fork the ordering into a second URL/cache spelling.
     expect(parseRootsQueryParams(params(`sort=${alias}`)).sort).toBe(canonical);
   });
 

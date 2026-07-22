@@ -7,7 +7,6 @@ import {
   WORDS_TYPES_SEGMENT,
   WORDS_UNIQUE_MODE_SEGMENT,
 } from '../../core/navigation/route-paths';
-// Tab titles reuse each explorer's own page-title label (its <h1>) so the two never drift.
 import { LEMMAS_PAGE_TITLE } from './models/lemmas.labels';
 import { ROOTS_PAGE_TITLE } from './models/roots.labels';
 import { STEMS_PAGE_TITLE } from './models/stems.labels';

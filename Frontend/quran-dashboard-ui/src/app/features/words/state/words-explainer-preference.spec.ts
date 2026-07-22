@@ -3,7 +3,6 @@ import { getTestBed, TestBed } from '@angular/core/testing';
 
 import { WordsExplainerPreference } from './words-explainer-preference';
 
-// A fresh service instance so each test exercises the constructor-time (synchronous) restore.
 function freshService(): WordsExplainerPreference {
   getTestBed().resetTestingModule();
   TestBed.configureTestingModule({});
@@ -30,8 +29,6 @@ describe('WordsExplainerPreference', () => {
     pref.setExpanded('roots', false);
     expect(pref.isExpanded('roots')).toBe(false);
 
-    // A fresh instance restores the persisted collapse through the service's own API —
-    // no assertion on the storage encoding.
     const reloaded = freshService();
     expect(reloaded.isExpanded('roots')).toBe(false);
   });
@@ -43,7 +40,6 @@ describe('WordsExplainerPreference', () => {
 
     const pref = freshService();
 
-    // No detectChanges / tick / effect: construction alone already knows the stored state.
     expect(pref.isExpanded('roots')).toBe(false);
     expect(pref.isExpanded('stems')).toBe(false);
     expect(pref.isExpanded('unique')).toBe(true);
@@ -68,13 +64,10 @@ describe('WordsExplainerPreference', () => {
 
     pref.setExpanded('roots', true);
 
-    // The cleared collapse must not survive into a new instance.
     const reloaded = freshService();
     expect(reloaded.isExpanded('roots')).toBe(true);
   });
 
-  // A single real boundary (localStorage) is the only sanctioned mock here (plan §8). Both failure
-  // directions are data-driven, not copy-pasted specs.
   const failures: ReadonlyArray<{ readonly op: 'getItem' | 'setItem' }> = [
     { op: 'getItem' },
     { op: 'setItem' },
@@ -89,7 +82,6 @@ describe('WordsExplainerPreference', () => {
 
       expect(pref.isExpanded('roots')).toBe(true);
       expect(() => pref.setExpanded('roots', false)).not.toThrow();
-      // The in-memory set still drives the current session even though the write was swallowed.
       expect(pref.isExpanded('roots')).toBe(false);
     });
   }

@@ -18,9 +18,6 @@ export const WordTypesCacheKeys = {
   table(filter: WordTypesCacheFilter, tableView: WordTypeTableView, sort: WordTypeSort, page: number): string {
     return `wordtypes:table:${filter.type}:${filter.childCode ?? 'all'}:${filter.case}:${filter.tense}:${filter.voice}${searchSegment(filter.search)}${presenceSegment(filter)}:view:${tableView}:sort:${sort}:p${page}`;
   },
-  // Scoped four-count summary (Feature 026, US8). Keyed by the FULL list scope and NOTHING view/page —
-  // the same components as the backend WordTypesCacheKeys.ScopeCounts key — so counts are shared across
-  // tab/page changes and refetched only when the scope changes.
   scopeCounts(filter: WordTypesCacheFilter): string {
     return `wordtypes:scope-counts:${filter.type}:${filter.childCode ?? 'all'}:${filter.case}:${filter.tense}:${filter.voice}${searchSegment(filter.search)}${presenceSegment(filter)}`;
   },
@@ -59,14 +56,10 @@ export interface WordTypesCacheFilter {
   hasLemma: boolean | null;
 }
 
-// Empty/absent search adds nothing, keeping the pre-feature key byte-identical (warm entries stay
-// valid); a non-empty term is encoded into its own segment so searched reads never cross-serve.
 function searchSegment(search: string | null): string {
   return search ? `:q:${encodeURIComponent(search)}` : '';
 }
 
-// Absent presence flags (all null) add nothing, keeping the pre-feature key byte-identical; any set
-// flag folds a compact tri-state segment so flagged reads never cross-serve unflagged ones (US6).
 function presenceSegment(filter: WordTypesCacheFilter): string {
   if (filter.hasRoot === null && filter.hasStem === null && filter.hasLemma === null) {
     return '';

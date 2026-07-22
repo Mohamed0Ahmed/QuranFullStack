@@ -1,8 +1,3 @@
-// Generic optimistic-concurrency primitives. They mirror the shape of a server-side revision/generation
-// check (an expected token vs the current one) but carry NO domain knowledge — no entity, endpoint, or
-// code string — so any feature can reuse them. The revision type is caller-chosen (a number, an ETag, a
-// composite key).
-
 export type Revision = string | number;
 
 export interface Revised<TRevision = Revision> {
@@ -19,8 +14,7 @@ export class ConcurrencyConflictError<TRevision = Revision> extends Error {
     readonly actual: TRevision,
   ) {
     super(`Concurrency conflict: expected revision ${String(expected)} but found ${String(actual)}.`);
-    // Stable name marker so callers (e.g. AsyncAction) can recognize a conflict without importing this
-    // class — keeps lower layers decoupled from this shared primitive.
+    // Stable name marker so callers can recognize a conflict without importing this class.
     this.name = 'ConcurrencyConflictError';
   }
 }
@@ -29,9 +23,6 @@ export function isConcurrencyConflict(error: unknown): error is ConcurrencyConfl
   return error instanceof ConcurrencyConflictError;
 }
 
-// Applies a change only when the caller's expected revision still matches the current one; otherwise it
-// reports a conflict and never runs `apply`. This is the client-side counterpart to a fail-before-mutation
-// concurrency guard.
 export function reconcile<T, TRevision = Revision>(
   expected: TRevision,
   current: Revised<TRevision>,

@@ -51,7 +51,6 @@ const INITIAL_PANEL: RootsPanelState = {
   errorMessage: '',
 };
 
-// Complete root detail identity: every field participates in equality (see rootsDetailUrlStatesEqual).
 export interface RootsDetailUrlState {
   readonly rootId: number;
   readonly view: RootView;
@@ -77,10 +76,6 @@ export function rootsDetailUrlStatesEqual(
   );
 }
 
-// Not providedIn: 'root': the page facade owns one instance and each overlay adapter provides
-// its own component-scoped instance (destroyed with the adapter), so their panel state stays isolated.
-// Every complete-identity transition abandons both the in-flight summary and detail request (new
-// generation), so a late response from a previously selected root can never overwrite this one.
 @Injectable()
 export class RootsDetailController extends AbstractDetailController<
   RootsPanelState,

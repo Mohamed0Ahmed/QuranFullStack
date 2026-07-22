@@ -12,10 +12,6 @@ class UserFacingApiError extends Error {}
 export class SystemApi {
   private readonly baseUrl = environment.apiBaseUrl;
 
-  // Successful dashboard info is cached for the browser APPLICATION LIFETIME on this root-scoped
-  // singleton (perf finding F2): repeated dashboard mounts reuse it instead of re-fetching, and a
-  // full page reload/deploy naturally clears it. A failure clears the held stream so the next call
-  // (e.g. the dashboard's retry action) issues a fresh request rather than replaying the same error.
   private dashboardInfo$?: Observable<AppInfo>;
 
   constructor(private http: HttpClient) {}

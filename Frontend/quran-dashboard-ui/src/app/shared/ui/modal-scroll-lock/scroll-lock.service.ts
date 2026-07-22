@@ -1,9 +1,7 @@
 import { isPlatformBrowser } from '@angular/common';
 import { Injectable, PLATFORM_ID, inject } from '@angular/core';
 
-// Reference-counted so stacked layers (drawer + detail overlay) can hold the lock at
-// once: the body unlocks only when the last holder releases, restoring the original
-// overflow value exactly once.
+// Ref-counted: the body unlocks only when the last holder releases, restoring overflow once.
 @Injectable({ providedIn: 'root' })
 export class ScrollLockService {
   private readonly platformId = inject(PLATFORM_ID);

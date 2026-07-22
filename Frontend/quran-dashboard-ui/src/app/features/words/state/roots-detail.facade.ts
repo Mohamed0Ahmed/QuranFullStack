@@ -26,8 +26,6 @@ export class RootsDetailFacade extends AbstractRouteDetailFacade<
   RootWordView,
   RootSurahView
 > {
-  // Per-facade controller instance keeps this page's panel state isolated from the
-  // component-scoped controllers the global overlay adapters use.
   protected readonly controller = new RootsDetailController(
     inject(RootsApi),
     inject(RootsCache),

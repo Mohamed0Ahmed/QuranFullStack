@@ -91,7 +91,6 @@ export class EntityDetailOverlayHostComponent {
     return entityTitle !== '' ? entityTitle : ENTITY_DETAIL_KIND_TITLES[top.kind];
   });
 
-  // Kind chip text — known from the frame, so it never waits on a summary load.
   protected readonly kindLabel = computed(() => {
     const top = this.topFrame();
     return top === null ? '' : ENTITY_DETAIL_KIND_LABELS[top.kind];

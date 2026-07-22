@@ -19,7 +19,6 @@ import { LemmasDetailFacade } from '../../state/lemmas-detail.facade';
 import { EntityDetailOverlayTitleStore } from '../entity-detail-overlay-title.store';
 import { LemmaDetailOverlayAdapterComponent } from './lemma-detail-overlay-adapter.component';
 
-/** Synthetic, non-scriptural Arabic placeholder: keeps RTL rendering real without faking Quranic text. */
 const SYNTHETIC_WORD_TEXT = 'كلمة-اختبار';
 
 const LEMMA_SUMMARY: LemmaSummaryDto = {
@@ -305,7 +304,6 @@ describe('LemmaDetailOverlayAdapterComponent (Feature 029 B4)', () => {
       '[data-testid="overlay-lemmas-word-view-tashkeel"]',
     );
     expect(tashkeelTab?.getAttribute('aria-selected')).toBe('true');
-    // The summary is reused for the same lemma: still exactly one summary read.
     expect(apiStub.getLemmaSummary).toHaveBeenCalledTimes(1);
   });
 

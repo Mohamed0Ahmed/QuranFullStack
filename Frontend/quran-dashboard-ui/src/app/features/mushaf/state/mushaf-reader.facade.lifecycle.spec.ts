@@ -18,10 +18,6 @@ import {
   mushafStudySourceCatalogApiProvider,
 } from './mushaf-study-source-catalog.api.mock';
 
-// F1 regression coverage: leave-while-loading then same-URL return must dispose the
-// stranded HTTP subscription, keep suppressing any late/stale response, and actually
-// reload/resolve instead of staying stuck in a loading state forever.
-
 const pageDto = {
   pageNumber: 5,
   previousPageNumber: 4,
@@ -50,8 +46,6 @@ const pageDto = {
   markers: [],
 };
 
-// Reuses the shared ayah-study fixture rather than re-declaring its ayah/source metadata here;
-// only the similarity counts differ, and these tests never assert on them.
 const ayahStudyDto: AyahStudyDto = {
   ...ayahStudyDtoMock,
   similaritySummary: {
@@ -179,8 +173,6 @@ describe('MushafReaderFacade lifecycle (F1 leave-while-loading recovery)', () =>
     expect(facade.ayahStudy()).toBeNull();
     expect(facade.ayahStudyLoadState().isLoading).toBe(true);
 
-    // Return to the exact same URL (ngOnInit re-mount): identity is unchanged, but the
-    // previous load never resolved, so this must reload rather than stay stuck.
     facade.bindToRoute(route);
 
     expect(getAyahStudy).toHaveBeenCalledTimes(2);
@@ -222,8 +214,6 @@ describe('MushafReaderFacade lifecycle (F1 leave-while-loading recovery)', () =>
       expect(facade.wordAnalysis()).toBeNull();
       expect(facade.wordAnalysisLoadState().isLoading).toBe(true);
 
-      // Return to the same URL. The word was already selected, so recovery reuses the
-      // existing debounced reselection path (schedule) rather than a fresh call site.
       facade.bindToRoute(route);
       expect(getWordAnalysis).toHaveBeenCalledTimes(1);
       expect(facade.wordAnalysisLoadState().isLoading).toBe(true);
@@ -294,10 +284,6 @@ describe('MushafReaderFacade lifecycle (F1 leave-while-loading recovery)', () =>
     expect(facade.ayahStudy()?.ayah.verseKey).toBe('2:25');
   });
 
-  // Rebind-scoping regression: the stranded-load recovery must fire ONLY on the first
-  // hydration after a (re)bind, never on an ordinary in-place URL patch that lands while a
-  // request is still in flight. Otherwise an unrelated patch cancels and restarts the live
-  // request (ayah study) or re-arms the debounce (word analysis).
   it('does NOT restart an in-flight ayah-study request when an unrelated in-place URL patch (study tab) lands mid-load', () => {
     const ayahStudySubjects: Subject<ApiResponse<AyahStudyDto>>[] = [];
     const getAyahStudy = vi.fn(subjectFactory(ayahStudySubjects));
@@ -312,8 +298,6 @@ describe('MushafReaderFacade lifecycle (F1 leave-while-loading recovery)', () =>
     expect(facade.ayahStudyLoadState().isLoading).toBe(true);
     expect(ayahStudySubjects[0].observed).toBe(true);
 
-    // Unrelated in-place patch on the SAME live binding: only the study tab changes; the
-    // ayah and the selected sources are untouched, and the request is still in flight.
     queryParamMap$.next(convertToParamMap({ page: '5', ayah: '2:25', ayahTab: 'translation' }));
 
     expect(getAyahStudy).toHaveBeenCalledTimes(1);
@@ -347,13 +331,10 @@ describe('MushafReaderFacade lifecycle (F1 leave-while-loading recovery)', () =>
       expect(facade.wordAnalysisLoadState().isLoading).toBe(true);
       expect(wordAnalysisSubjects[0].observed).toBe(true);
 
-      // Unrelated in-place patch while the word-analysis request is still in flight: only the
-      // word tab changes; the word location is unchanged.
       queryParamMap$.next(
         convertToParamMap({ page: '5', ayah: '2:25', word: '2:25:3', panel: 'word', wordTab: 'segments' }),
       );
 
-      // No new request, and the 700ms debounce must not be re-armed by the unrelated patch.
       expect(getWordAnalysis).toHaveBeenCalledTimes(1);
       expect(wordAnalysisSubjects).toHaveLength(1);
       expect(wordAnalysisSubjects[0].observed).toBe(true);
@@ -371,9 +352,6 @@ describe('MushafReaderFacade lifecycle (F1 leave-while-loading recovery)', () =>
   });
 });
 
-// M18 regression coverage: loadPage had no per-request staleness guard and never cancelled
-// its subscription on unbind, so an earlier page request resolving after a later one could
-// render the wrong Mushaf page, and leaving the reader mid-load leaked the HTTP subscription.
 describe('MushafReaderFacade lifecycle (M18 loadPage staleness guard)', () => {
   const pageDtoPageEight = {
     ...pageDto,
@@ -409,7 +387,6 @@ describe('MushafReaderFacade lifecycle (M18 loadPage staleness guard)', () => {
     expect(facade.pageNumber()).toBe(8);
     expect(facade.pageLoadState().isLoading).toBe(true);
 
-    // The LATER request (page 8) resolves first...
     pageSubjects[1].next({ isSuccess: true, message: 'ok', data: pageDtoPageEight });
     pageSubjects[1].complete();
 
@@ -417,8 +394,6 @@ describe('MushafReaderFacade lifecycle (M18 loadPage staleness guard)', () => {
     expect(facade.page()?.pageNumber).toBe(8);
     expect(facade.pageLoadState().isLoading).toBe(false);
 
-    // ...and the EARLIER request (page 5) resolves after it. It must be treated as stale and
-    // must not overwrite the already-resolved page 8.
     pageSubjects[0].next({ isSuccess: true, message: 'stale', data: pageDto });
     pageSubjects[0].complete();
 

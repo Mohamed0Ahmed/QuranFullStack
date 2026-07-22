@@ -61,9 +61,6 @@
     }
   }
 
-  // Popover panel: mirrors the surah-jump-picker anchor/positioning mechanic (see
-  // mushaf/components/surah-jump-picker) so it escapes the .uw-toolbar-recess surface unclipped.
-  // :host establishes the containing block; the panel anchors under the whole component.
   &__panel {
     position: absolute;
     inset-inline: 0;
@@ -80,9 +77,6 @@
     animation: association-filter-panel-in 140ms ease-out;
   }
 
-  // When there is more room above the field than below (e.g. near the viewport bottom, or with a
-  // mobile keyboard raising the fold), applyPanelMaxHeight() toggles this modifier so the panel opens
-  // upward instead of running off-screen.
   &__panel--above {
     top: auto;
     bottom: calc(100% + var(--qd-space-1));

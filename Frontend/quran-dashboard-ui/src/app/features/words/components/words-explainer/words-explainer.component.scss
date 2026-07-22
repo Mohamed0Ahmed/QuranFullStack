@@ -1,7 +1,3 @@
-// Local layout only for the explainer hero frame. The shared visual primitives used by each
-// page's projected example region (`.qd-explainer-*` example/word/note/mini/seg/type/benefit)
-// live in the global partial `styles/_words-explainer.scss`, because projected `<ng-content>`
-// keeps the page's encapsulation, not this component's. Flat doctrine: no shadow, no lift.
 :host {
   display: block;
 }
@@ -27,7 +23,6 @@
   font-size: 1.25rem;
   font-weight: 700;
   line-height: 1;
-  // A decorative numeral is not a green use (allowed-green list); keep it muted.
   color: var(--qd-text-muted);
 }
 
@@ -35,7 +30,7 @@
   font-size: 0.8125rem;
   font-weight: 700;
   letter-spacing: 0.01em;
-  color: var(--qd-accent-text); // allowed-green #4: section eyebrow via the AA text shade
+  color: var(--qd-accent-text);
 }
 
 .qd-explainer__toggle {

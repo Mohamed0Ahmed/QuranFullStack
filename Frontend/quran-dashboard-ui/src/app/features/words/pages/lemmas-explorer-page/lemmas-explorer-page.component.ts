@@ -78,7 +78,6 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
   });
 
   protected readonly pageTitle = LEMMAS_PAGE_TITLE;
-  // TDZ-safe content getter + synchronous collapse restore (no first-paint shift).
   protected get explainer() { return WORDS_EXPLAINER_CONTENT.lemmas; }
   protected readonly explainerExpanded = signal(this.explainerPreference.isExpanded('lemmas'));
   protected readonly emptySelectionLabel = LEMMAS_EMPTY_SELECTION_LABEL;
@@ -103,7 +102,6 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly association = this.listFacade.association;
   protected readonly rootOptions = signal<readonly AssociationOption[]>([]);
   protected readonly rootOptionsLoading = signal(false);
-  // M32/M43 + M74: a picker load failure must be distinguishable from a genuine empty result.
   protected readonly rootOptionsError = signal(false);
   protected readonly selectedRootLabel = signal<string | null>(null);
   protected get rootFilterLabel(): string { return LEMMAS_ROOT_FILTER_LABEL; }
@@ -120,7 +118,6 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
     const page = this.panelState().ayahs;
     return page ? { ...page, items: page.items.map(mapLemmaAyahMatchToShared) } : this.emptyAyahsPage;
   });
-  /** This panel's own typed frame (Feature 029 B7): an ayah click promotes it over the Mushaf. */
   protected readonly ayahParentFrame = computed<LemmaDetailFrame | null>(() => {
     const state = this.panelState();
     if (state.selectedLemmaId === null) {
@@ -199,13 +196,11 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
     this.selectedRootLabel.set(option?.label ?? null);
     this.updateQueryParams({ rootId: option === null ? null : String(option.id), page: null });
   }
-  /** A header cycle step (token) or its release (null). Changing the ordering always resets page. */
   protected onSortChange(sort: LemmaSort | null): void {
     this.clearTableFocus();
     this.updateQueryParams(buildLemmasQueryParams({ sort, page: null }));
   }
 
-  /** The ≤1023px fallback select drives the same contract; the default order stays param-absent. */
   protected onSortSelect(value: string): void {
     this.onSortChange(sortQueryValue(normalizeLemmaSort(value), DEFAULT_LEMMA_SORT));
   }

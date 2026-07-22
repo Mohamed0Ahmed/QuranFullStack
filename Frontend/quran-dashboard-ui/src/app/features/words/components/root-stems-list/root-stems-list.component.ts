@@ -37,8 +37,6 @@ export class RootStemsListComponent {
   protected readonly loadingLabel = WORDS_LOADING_LABEL;
   protected readonly openStemLabel = ROOTS_OPEN_STEM_LABEL;
 
-  // Mirrors the retired stem explorer deep link, which opened the default
-  // words view; frame defaults are serialized explicitly per the URL contract.
   protected readonly rows = computed((): readonly RootStemRowViewModel[] =>
     this.stems().map((item) => ({
       item,

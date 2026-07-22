@@ -15,16 +15,11 @@ export interface CacheEntry<V> {
 
 export interface PersistentCacheOptions<V> {
   readonly store: AsyncKeyValueStore<CacheEntry<V>>;
-  // 0/undefined = entries never expire; a positive value is the max age in ms since `storedAt`.
   readonly ttlMs?: number;
-  // 0/undefined = unbounded; a positive value caps the entry count, evicting the least-recently-accessed.
   readonly maxEntries?: number;
   readonly clock?: CacheClock;
 }
 
-// Generic persistent cache: TTL freshness + LRU capacity over any AsyncKeyValueStore, backed by IndexedDB
-// by default. It is intentionally value-only (no HTTP, no domain shape) — features compose it with their
-// own loaders. In-flight loads are deduped in memory so a burst of getOrLoad calls issues one load.
 export class PersistentCache<V> {
   private readonly store: AsyncKeyValueStore<CacheEntry<V>>;
   private readonly ttlMs: number;

@@ -14,12 +14,6 @@
     (closeRequested)="overlay.close()"
     (restoreRequested)="overlay.restore()"
   >
-    <!-- Each adapter is a deferred dependency: its code stays out of the eager
-         bundle, and it hydrates only once the overlay is actually visible
-         (Feature 030, L2) — a shared URL carrying a retained CLOSED stack must
-         not issue summary/detail requests for a dialog nobody is looking at.
-         `@defer` never reverts once triggered, so a normal Close keeps the
-         loaded adapter mounted and Restore costs no new request. -->
     @switch (topFrame()?.kind) {
       @case ('root') {
         @if (rootFrame(); as frame) {

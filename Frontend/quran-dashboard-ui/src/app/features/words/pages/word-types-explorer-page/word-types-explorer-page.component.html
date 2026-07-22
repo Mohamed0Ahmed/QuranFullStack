@@ -70,8 +70,6 @@
           (input)="onSearchInput($any($event.target).value)"
         />
 
-        <!-- ≤1023px fallback (Feature 030, N8): the table header row is display:none on phone AND
-             tablet, so the header cycle is unreachable there. Same URL contract as the headers. -->
         <div class="qd-explorer-sort-fallback">
           <label class="word-types-page__sort">
             <span>{{ sortLabel }}</span>
@@ -98,7 +96,6 @@
       />
     </div>
 
-    <!-- Host stays mounted; the table's failure hides its numbers (scope unconfirmed). -->
     <qd-word-type-scope-counts
       [state]="scopeCountsState()"
       [tableFailed]="listState().status === 'error'"
@@ -108,11 +105,6 @@
   </div>
 
   <div class="word-types-page__layout qd-explorer-layout">
-    <!-- View tabs live in the table column (Feature 029, U3): first layout child so they
-         sit directly above the table, never spanning the details-panel column.
-         The slot — not the tabs — is that layout child and carries the U3 placement, because the tabs
-         mount only once the tree lands: gating the grid item itself made their whole row appear on first
-         load and pushed the table + panel grid down (Feature 030, N3 row 2). -->
     <div class="word-types-page__tabs qd-explorer-layout__tabs-slot">
       @if (listState().tree) {
         <qd-word-type-table-view-tabs
@@ -143,9 +135,6 @@
         (sortChange)="onSortChange($event)"
       />
 
-      <!-- Reserved slot: the facade nulls `rows` on a view switch, which unmounted the ~2.75rem bar and
-           jumped the table column (Feature 030, N3 row 3). The slot holds the row; the bar still mounts
-           only when there is a page to paginate. -->
       <div class="qd-explorer-layout__pagination-slot" data-testid="word-types-pagination-slot">
         @if (listState().rows; as page) {
           <qd-pagination

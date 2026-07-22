@@ -6,8 +6,8 @@
   --qd-surface: oklch(0.994 0.007 88.6);
   --qd-section-bg: oklch(0.979 0.011 89.7);
   --qd-surface-recessed: oklch(0.945 0.015 94.2);
-  --qd-surface-hover: oklch(0.945 0.015 94.2);        /* single hover fill (== light recessed tone) */
-  --qd-ayah-card-bg: oklch(0.958 0.013 92);           /* shared qdAyahCard: a warm tone recessed below --qd-surface so an ayah card reads as a distinct card on the near-white surfaces it sits on (Quran text 12.7:1, muted meta 4.69:1 AA). Dark overrides to --qd-surface. */
+  --qd-surface-hover: oklch(0.945 0.015 94.2);
+  --qd-ayah-card-bg: oklch(0.958 0.013 92);
 
   --qd-explorer-detail-bg: oklch(0.979 0.011 89.7);
   --qd-explorer-detail-header-bg: oklch(0.994 0.007 88.6);
@@ -22,7 +22,7 @@
 
   --qd-border: oklch(0.914 0.016 86.4);
   --qd-border-strong: oklch(0.855 0.023 89.8);
-  --qd-border-accent: oklch(0.854 0.031 170.4);       /* one canonical soft-green border (selected/active edge) */
+  --qd-border-accent: oklch(0.854 0.031 170.4);
 
   --qd-primary: oklch(0.490 0.068 176.3);
   --qd-primary-fg: oklch(0.980 0.007 164.9);
@@ -32,32 +32,32 @@
   --qd-accent-hover: oklch(0.409 0.056 174.7);
   --qd-accent-soft: oklch(0.854 0.031 170.4);
   --qd-accent-tint: oklch(0.954 0.010 164.9);
-  --qd-accent-text: oklch(0.435 0.060 176.3);         /* deep AA green for text emphasis (7:1 range on light surfaces) */
-  --qd-accent-fg: oklch(0.980 0.007 164.9);           /* ink on ANY solid-accent indicator; near-white on green — dark overrides it (dark accent is gold, needs navy ink) */
-  --qd-selected-bg: var(--qd-accent-tint);            /* semantic alias — selected/active background */
+  --qd-accent-text: oklch(0.435 0.060 176.3);
+  --qd-accent-fg: oklch(0.980 0.007 164.9);
+  --qd-selected-bg: var(--qd-accent-tint);
 
   --qd-danger: oklch(0.522 0.122 28.9);
-  --qd-warning: oklch(0.540 0.111 75.1);              /* AA-tuned: 4.58:1 on --qd-warning-tint, 3.02:1 as dot on navy footer */
+  --qd-warning: oklch(0.540 0.111 75.1);
   --qd-success: oklch(0.546 0.062 162.7);
-  --qd-danger-tint: oklch(0.952 0.015 37.9);          /* danger wash; danger text hits 5.01:1 on it */
-  --qd-success-tint: oklch(0.982 0.020 163);          /* 4.58:1 against --qd-success, see UI_STYLE_SYSTEM §16 */
+  --qd-danger-tint: oklch(0.952 0.015 37.9);
+  --qd-success-tint: oklch(0.982 0.020 163);
   --qd-warning-tint: oklch(0.960 0.030 85.6);
 
   --qd-focus-ring: oklch(0.490 0.068 176.3);
   --qd-ring: 0 0 0 4px oklch(0.490 0.068 176.3 / 0.22);
 
   --qd-footer-bg: oklch(0.260 0.046 253.3);
-  --qd-footer-bg-2: oklch(0.260 0.046 253.3);         /* == footer-bg: the footer is flat; token kept for architecture */
+  --qd-footer-bg-2: oklch(0.260 0.046 253.3);
   --qd-footer-text: oklch(0.924 0.016 95.2);
   --qd-footer-muted: oklch(0.708 0.036 257.9);
   --qd-footer-accent: oklch(0.805 0.040 167.1);
   --qd-footer-accent-hover: oklch(0.854 0.031 170.4);
   --qd-footer-border: oklch(1 0 0 / 0.10);
 
-  --qd-chrome-bg: var(--qd-surface);                  /* opaque flat navbar; structure comes from the hairline border */
+  --qd-chrome-bg: var(--qd-surface);
 
-  --qd-shadow-sm: none;                               /* flat: no resting-card shadows */
-  --qd-shadow: none;                                  /* flat: no hover shadows */
+  --qd-shadow-sm: none;
+  --qd-shadow: none;
   --qd-shadow-lg: 0 14px 36px oklch(0.285 0.007 95.3 / 0.16), 0 2px 8px oklch(0.285 0.007 95.3 / 0.08);
   --qd-floating-shadow: 0 14px 36px oklch(0.285 0.007 95.3 / 0.16), 0 2px 8px oklch(0.285 0.007 95.3 / 0.08);
 
@@ -76,29 +76,6 @@
   --qd-navbar-block-size: 3.5rem;
   --qd-mushaf-panel-height: calc(100dvh - var(--qd-navbar-block-size));
   --qd-mushaf-word-selection-indicator: var(--qd-accent);
-  /* Mushaf word interaction ladder: canvas < hover < selection. Both washes tint the
-     selection indicator, so hover reads as "pre-selection" of the same word, and both are
-     scoped to the ONE word under the pointer — hover does NOT fan out across the ayah.
-     The hover wash is the ONE documented exception to the single hover fill (§16.1):
-     --qd-surface-hover is imperceptible on the parchment reading canvas (ΔL≈0.022 vs
-     --qd-bg).
-     The rungs CANNOT be read off the percentages, because hover mixes into --qd-bg while
-     selection mixes into --qd-surface, and the two bases work against the gap. Measured
-     in-browser on the real canvas (N7-b, then M1) — re-measure rather than nudging by eye:
-
-       light: canvas 0.967 -> hover 0.929 (ΔL 0.038) -> selection 0.853 (ΔL 0.076), text 9.23:1
-       dark:  canvas 0.189 -> hover 0.235 (ΔL 0.046) -> selection 0.381 (ΔL 0.145), text 8.43:1
-
-     Selection was 16% and is now 28% because 16% landed only ΔL 0.0157 below hover in
-     light — the selected word was invisible among the words around it, which is what made
-     it read as a brief flash rather than a persistent mark. Note the ladder is NOT
-     symmetric across themes: at 16% dark already sat ΔL 0.080 below hover (green is darker
-     than the light surface, so the mix darkens slowly; gold is much lighter than the dark
-     surface, so it lightens fast). Dark therefore runs ~2x light's gap at the shared 28%.
-     That is accepted deliberately — reviewed in-browser and still calm, and one shared
-     percentage beats a per-theme knob. If dark ever needs toning down, 16% is the value
-     that matches light's current gap.
-     Derived from theme vars: resolves automatically per theme (gold-into-navy in dark). */
   --qd-mushaf-word-hover-bg: color-mix(in oklch, var(--qd-mushaf-word-selection-indicator) 8%, var(--qd-bg));
   --qd-mushaf-word-selection-bg: color-mix(in oklch, var(--qd-mushaf-word-selection-indicator) 28%, var(--qd-surface));
   --qd-mushaf-word-selection-ring: color-mix(in oklch, var(--qd-mushaf-word-selection-indicator) 55%, transparent);
@@ -125,10 +102,6 @@
   --qd-space-5: 1.5rem;
   --qd-space-6: 2rem;
 
-  /* Shared control geometry. `.qd-btn` in `_components.scss` is built from these values, and the
-     reserved slots that have to hold a not-yet-mounted control row derive their height from the
-     same ones — so a slot can never drift from the control it reserves. Change the button box here
-     and every reservation follows. */
   --qd-btn-font-size: 0.9375rem;
   --qd-btn-line-height: 1.5;
   --qd-btn-padding-block: var(--qd-space-2);
@@ -138,9 +111,6 @@
       * var(--qd-btn-border-width)
   );
 
-  /* `.qd-pagination`'s own leading margin (pagination.component.scss consumes this token, so the
-     two cannot diverge). A mounted pagination bar is one `.qd-btn` row plus this margin — that sum
-     is what `--qd-pagination-slot-block-size` reserves. */
   --qd-pagination-margin-block-start: var(--qd-space-3);
   --qd-pagination-slot-block-size: calc(
     var(--qd-control-block-size) + var(--qd-pagination-margin-block-start)
@@ -149,8 +119,6 @@
   --qd-segment-card-min-height: 5.6rem;
 }
 
-/* The bar tightens its own leading margin on phones; the token carries that so the reserved slot
-   tightens with it instead of leaving a dead strip. */
 @media (max-width: bp.$qd-bp-phone-max) {
   :root {
     --qd-pagination-margin-block-start: var(--qd-space-2);

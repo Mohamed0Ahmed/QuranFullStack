@@ -136,7 +136,6 @@ describe('words-filter-presets chip thresholds', () => {
       expect(thresholdOf(ROOTS_RANGE_METRICS, key)).toBe(expected);
     });
 
-    // The shared ayahsSurahs family would otherwise force both metrics onto one N.
     it('keeps ayahs and surahs apart despite their shared family', () => {
       const ayahs = ROOTS_RANGE_METRICS.find((metric) => metric.key === 'ayahs')!;
       const surahs = ROOTS_RANGE_METRICS.find((metric) => metric.key === 'surahs')!;

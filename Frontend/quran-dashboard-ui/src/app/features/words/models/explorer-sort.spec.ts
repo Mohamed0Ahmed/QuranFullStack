@@ -15,7 +15,6 @@ import {
   sortTokenFor,
 } from './explorer-sort';
 
-// A count column (natural desc) and a text column (natural asc) — the two classes the grammar has.
 const OCCURRENCES: ExplorerSortColumn = { key: 'occurrences', natural: 'desc', label: 'المواضع' };
 const ALPHA: ExplorerSortColumn = { key: 'alpha', natural: 'asc', label: 'الجذر' };
 const COLUMNS: readonly ExplorerSortColumn[] = [ALPHA, OCCURRENCES];
@@ -28,7 +27,6 @@ describe('canonicalizeSortToken', () => {
   });
 
   it('canonicalizes the legacy natural-direction aliases OUT to the bare token', () => {
-    // The whole point: one ordering must have exactly one spelling in the URL and the cache key.
     expect(canonicalizeSortToken('occurrences-desc', COLUMNS)).toBe('occurrences');
     expect(canonicalizeSortToken('alpha-asc', COLUMNS)).toBe('alpha');
   });
@@ -43,7 +41,6 @@ describe('canonicalizeSortToken', () => {
   });
 
   it('rejects a direction suffix on mushaf-order, which is ascending-only and bare-only', () => {
-    // The backend 400s on these; the frontend must never emit them.
     expect(canonicalizeSortToken('mushaf-order-asc', COLUMNS)).toBeNull();
     expect(canonicalizeSortToken('mushaf-order-desc', COLUMNS)).toBeNull();
   });
@@ -142,7 +139,6 @@ describe('sortQueryValue', () => {
   it('drops the param for the default ordering and keeps every other token', () => {
     expect(sortQueryValue('mushaf-order', 'mushaf-order')).toBeNull();
     expect(sortQueryValue('occurrences', 'mushaf-order')).toBe('occurrences');
-    // Word Types: its default is occurrences, so THAT is the one that goes param-free.
     expect(sortQueryValue('occurrences', 'occurrences')).toBeNull();
     expect(sortQueryValue('mushaf-order', 'occurrences')).toBe('mushaf-order');
   });

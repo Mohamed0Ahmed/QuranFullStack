@@ -119,7 +119,6 @@ describe('Entity detail overlay ayah continuity (B7/B8)', () => {
   let overlay: DetailOverlayHistoryService;
 
   beforeEach(() => {
-    // jsdom lacks matchMedia; stubbed BEFORE TestBed so the shell/pages can read it.
     Object.defineProperty(window, 'matchMedia', {
       configurable: true,
       writable: true,
@@ -163,7 +162,6 @@ describe('Entity detail overlay ayah continuity (B7/B8)', () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
   }
 
-  // Deferred adapter chunks load asynchronously; poll until the selector renders.
   async function waitForSelector(
     fixture: { detectChanges: () => void; nativeElement: unknown },
     selector: string,
@@ -179,7 +177,6 @@ describe('Entity detail overlay ayah continuity (B7/B8)', () => {
     );
   }
 
-  // Flushes every outstanding request against the catalogue; cache hits simply match nothing.
   function flushPending(): void {
     for (const request of httpMock.match(() => true)) {
       const url = request.request.url;
@@ -210,7 +207,6 @@ describe('Entity detail overlay ayah continuity (B7/B8)', () => {
   }
 
   async function loadStep(fixture: { detectChanges: () => void; nativeElement: unknown }): Promise<void> {
-    // A flush can trigger a follow-up load (summary → view), so run three rounds.
     for (let round = 0; round < 3; round += 1) {
       await settle();
       fixture.detectChanges();
@@ -280,15 +276,9 @@ describe('Entity detail overlay ayah continuity (B7/B8)', () => {
     expect(overlay.isOpen()).toBe(true);
     expect(overlay.state().stack).toHaveLength(3);
 
-    // Replace semantics: the continuity step rewrote the current entry instead
-    // of pushing a new one (SpyLocation logs replaceState as 'replace: <url>').
     const lastChange = location.urlChanges.at(-1) ?? '';
     expect(lastChange.startsWith('replace: /dashboard/mushaf')).toBe(true);
 
-    // Dialog Back converges with browser Back (B7/B8): the continuity step
-    // replaced this entry without moving the one below it, so the parent card is
-    // still adjacent and Back pops to it together with its historical Words base
-    // — it does not strand the user on the Mushaf.
     click(shellQuery(fixture, '[data-testid="detail-modal-back"]'));
     await loadStep(fixture);
     expect(router.url).toContain('/dashboard/words/roots');
@@ -314,7 +304,6 @@ describe('Entity detail overlay ayah continuity (B7/B8)', () => {
     expect(router.url).toContain('qdDetailOpen=1');
     expect(shellQuery(fixture, '[data-testid="detail-modal-shell"]')).not.toBeNull();
 
-    // Browser Back returns to the closed/restorable entry (restore was a push).
     location.back();
     await loadStep(fixture);
     expect(overlay.isRetainedClosed()).toBe(true);
@@ -327,9 +316,6 @@ describe('Entity detail overlay ayah continuity (B7/B8)', () => {
     expect(overlay.state().stack).toHaveLength(2);
     expect(shellQuery(fixture, '[data-testid="detail-modal-shell"]')).not.toBeNull();
 
-    // A base replacement after Restore has no adjacent parent entry until the
-    // coordinator re-materializes the prefixes. Browser Back must still reach
-    // the open root parent on its historical Words base.
     overlay.navigateBaseWithOverlay('/dashboard/mushaf', {
       page: '92',
       ayah: '4:57',
@@ -349,8 +335,6 @@ describe('Entity detail overlay ayah continuity (B7/B8)', () => {
     expect(overlay.state().stack.map((frame) => frame.kind)).toEqual(['root']);
     expect(overlay.isOpen()).toBe(true);
 
-    // Re-run the same Back from the restored Mushaf entry through the dialog
-    // control; it must use native Back and reach the identical parent URL.
     location.forward();
     await loadStep(fixture);
     expect(router.url).toContain('/dashboard/mushaf');

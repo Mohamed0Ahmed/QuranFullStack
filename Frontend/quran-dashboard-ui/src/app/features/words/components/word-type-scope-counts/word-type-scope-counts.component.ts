@@ -17,16 +17,11 @@ import { WordTypeScopeCountsDto, WordTypeTableView, WordTypesScopeCountsState } 
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WordTypeScopeCountsComponent {
-  // The table's failure hides the strip's numbers (scope unconfirmed); the strip's own failure is owned
-  // by its error state and never propagates to the table.
   readonly tableFailed = input(false);
 
-  // The page owns the scope-counts load lifecycle (facade) and passes the current state in; retry is
-  // delegated back to the page via an output so this strip stays presentational.
   readonly state = input.required<WordTypesScopeCountsState>();
   readonly retryRequested = output<void>();
 
-  // The four labeled counts, in the tabs' RTL order, each reusing the tab's short label verbatim.
   protected readonly items = computed<readonly ScopeCountItem[]>(() => {
     const counts = this.state().counts;
     return WORD_TYPE_TABLE_VIEW_OPTIONS.map((option) => ({
@@ -36,8 +31,7 @@ export class WordTypeScopeCountsComponent {
     }));
   });
 
-  // TDZ-safe getters (see words README): label consts read via readonly fields resolve to undefined in
-  // the bundled test build.
+  // TDZ-safe getters, not readonly fields: as fields these consts are undefined in the bundled test build.
   protected get ariaLabel() { return WORD_TYPES_SCOPE_COUNTS_LABEL; }
   protected get errorLabel() { return WORD_TYPES_SCOPE_COUNTS_ERROR_LABEL; }
   protected get retryLabel() { return WORD_TYPES_RETRY_LABEL; }

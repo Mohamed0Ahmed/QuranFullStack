@@ -188,7 +188,6 @@ describe('detail-overlay-url-codec', () => {
     });
 
     it('flags a non-canonical frame encoding for a rewrite', () => {
-      // Same meaning, different spelling: contextCode 'past' written as '%70ast'.
       const { state, isCanonical } = parseDetailOverlayParams(['v1~wordType~191001~%70ast~all~all~all~ayahs~1'], '1');
       expect(state.stack).toHaveLength(1);
       expect(isCanonical).toBe(false);

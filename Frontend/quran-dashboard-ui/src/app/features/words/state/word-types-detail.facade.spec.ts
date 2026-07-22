@@ -579,10 +579,6 @@ describe('WordTypesDetailFacade — kind-aware orchestration', () => {
     facade.unbindFromRoute();
   });
 
-  // Finding M24: unbindFromRoute() used to call only cancelPendingLoads(), which left the
-  // facade's own `activeUrlState` set. Re-binding to the SAME query params then short-circuited
-  // inside syncFromUrlState() (isSamePanelUrlState matched) and never re-issued the load,
-  // stranding the panel on its cancelled 'loading' status with no request in flight.
   it('re-issues the summary load on rebind to the same URL state after a mid-flight unbind', () => {
     const { facade, http } = setup();
     const route = controllableRoute(groupedDetailParams({ tableView: 'roots', type: 'noun', root: '190700' }));

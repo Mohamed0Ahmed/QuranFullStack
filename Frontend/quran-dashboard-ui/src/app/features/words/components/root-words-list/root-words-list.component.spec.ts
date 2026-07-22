@@ -96,7 +96,6 @@ describe('RootWordsListComponent US3', () => {
     expect(root.querySelector('qd-pagination')).toBeNull();
   });
 
-  // N3 row 4: the pagination bar unmounted while loading and the panel body sprang up under it.
   it('keeps the pagination slot rendered while loading and once loaded', async () => {
     await setup();
 
@@ -110,7 +109,6 @@ describe('RootWordsListComponent US3', () => {
 
     const slot = () => host.querySelector('[data-testid="root-words-pagination-slot"]');
     expect(slot()).toBeTruthy();
-    // While loading the slot is deliberately empty — it reserves the row, it does not render the bar.
     expect(slot()!.querySelector('qd-pagination')).toBeNull();
 
     fixture.componentRef.setInput('loading', false);

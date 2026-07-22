@@ -22,8 +22,6 @@ import {
 } from '../../models/word-types.models';
 import { WordTypeDetailSelectionKind } from '../../models/word-types-detail.models';
 
-// Per-instance id seed: the overlay copy and the inert drawer can be mounted at once, and a shared id
-// would make ARIA (aria-controls / aria-labelledby) resolve to the wrong (inert) panel.
 let nextWordTypeDetailsPanelInstanceId = 0;
 
 @Component({
@@ -37,15 +35,11 @@ let nextWordTypeDetailsPanelInstanceId = 0;
 export class WordTypeDetailsPanelComponent {
   private readonly detailOverlayHistory = inject(DetailOverlayHistoryService);
 
-  // Only the top layer may trap focus: while the detail overlay is open this drawer sits in the inert
-  // app shell, so its own trap stands down and the dialog's is the only one enabled.
   protected readonly drawerTrapEnabled = computed(() => !this.detailOverlayHistory.isOpen());
 
   readonly view = input.required<WordTypeDetailView>();
   readonly kind = input<WordTypeDetailSelectionKind>('word');
   readonly inline = input(true);
-  // Content-only mode: renders just the tablist + tabpanel body, no dialog chrome. Used inside the
-  // global detail overlay shell, which owns the dialog chrome and the notFound rendering.
   readonly frameless = input(false);
   readonly emptySelection = input(false);
   readonly selectionTitle = input('');
@@ -64,7 +58,6 @@ export class WordTypeDetailsPanelComponent {
 
   private get presentation() { return WORD_TYPE_DETAIL_PRESENTATIONS[this.kind()]; }
 
-  // Word selections expose ayahs/surahs; grouped selections add the leading related-words tab.
   protected readonly tabKeys = computed<readonly WordTypeDetailView[]>(() =>
     this.kind() === 'word' ? WORD_TYPE_DETAIL_VIEW_KEYS : WORD_TYPE_DETAIL_VIEWS,
   );

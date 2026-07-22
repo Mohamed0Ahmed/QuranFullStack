@@ -8,11 +8,6 @@ import { MushafStudySourceCatalogApi } from '../data-access/mushaf-study-sources
 import { MushafStudySourceCatalogDto, StudySourceCatalogItemDto } from '../models/mushaf.models';
 import { MushafStudySourceCatalogStore } from './mushaf-study-source-catalog.store';
 
-// Focused lifecycle coverage for the catalogue store's load-once guard (F2): a fetch fires
-// GET /api/mushaf/study-sources at most once per successful load, an empty-but-successful
-// catalogue still counts as loaded (so it is never refetched), and a failed load stays
-// retryable. Every fixture row uses synthetic, non-Quranic placeholders.
-
 function placeholderItem(sourceKey: string, displayName: string): StudySourceCatalogItemDto {
   return {
     direction: 'rtl',
@@ -68,7 +63,7 @@ describe('MushafStudySourceCatalogStore lifecycle (F2)', () => {
     const store = createStore(getCatalog);
 
     store.load();
-    store.load(); // Second caller arrives before the first request settles.
+    store.load();
     expect(getCatalog).toHaveBeenCalledTimes(1);
 
     catalog$.next(successResponse(populatedCatalog));
@@ -89,7 +84,7 @@ describe('MushafStudySourceCatalogStore lifecycle (F2)', () => {
     expect(store.translationSourceOptions()).toEqual([]);
     expect(store.fullI3rabSourceOptions()).toEqual([]);
 
-    store.load(); // An empty catalogue is still a successful load, so no second request.
+    store.load();
     expect(getCatalog).toHaveBeenCalledTimes(1);
   });
 
@@ -104,7 +99,6 @@ describe('MushafStudySourceCatalogStore lifecycle (F2)', () => {
 
     store.load();
     expect(getCatalog).toHaveBeenCalledTimes(1);
-    // The cached options are reused as-is: the signal is not re-set on a no-op load.
     expect(store.tafsirSourceOptions()).toBe(firstOptions);
   });
 
@@ -119,7 +113,7 @@ describe('MushafStudySourceCatalogStore lifecycle (F2)', () => {
     expect(getCatalog).toHaveBeenCalledTimes(1);
     expect(store.tafsirSourceOptions()).toEqual([]);
 
-    store.load(); // A failure never latches `loaded`, so the next load issues a fresh request.
+    store.load();
     expect(getCatalog).toHaveBeenCalledTimes(2);
     expect(store.tafsirSourceOptions().map((option) => option.key)).toEqual(['placeholder-tafsir-a']);
   });

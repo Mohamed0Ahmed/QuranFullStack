@@ -4,8 +4,6 @@ import { ApiResponseCache } from '../../../core/caching/api-response-cache';
 import { UniqueWordKind, UniqueWordSort } from '../models/unique-words.models';
 
 export const UniqueWordsCacheKeys = {
-  // rangesKey/associationKey are '' for an unfiltered read, keeping the pre-feature cache key
-  // byte-identical (US5/US7).
   list(
     mode: UniqueWordKind,
     sort: UniqueWordSort,

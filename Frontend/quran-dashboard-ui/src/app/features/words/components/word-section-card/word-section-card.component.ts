@@ -1,8 +1,6 @@
 import { Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
-// Always an active router link — the pre-031 disabled / coming-soon branch is gone. Its text comes
-// from the shared WordsExplainerContent, so a card and its page's hero can't drift (Feature 031).
 @Component({
   selector: 'qd-word-section-card',
   standalone: true,

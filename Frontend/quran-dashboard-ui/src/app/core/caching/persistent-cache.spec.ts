@@ -76,7 +76,6 @@ describe('PersistentCache', () => {
     clock.advance(1);
     await cache.set('b', 2);
     clock.advance(1);
-    // Touch 'a' so 'b' becomes the least-recently-accessed entry.
     await cache.get('a');
     clock.advance(1);
     await cache.set('c', 3);

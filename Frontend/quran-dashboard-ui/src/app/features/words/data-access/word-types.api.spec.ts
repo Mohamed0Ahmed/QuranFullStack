@@ -174,7 +174,6 @@ describe('WordTypesApi', () => {
     expect(req.request.params.get('hasRoot')).toBe('true');
     expect(req.request.params.get('hasStem')).toBe('false');
     expect(req.request.params.has('hasLemma')).toBe(false);
-    // Scope-level only — the four counts describe the scope, not a view or page.
     expect(req.request.params.has('tableView')).toBe(false);
     expect(req.request.params.has('sort')).toBe(false);
     expect(req.request.params.has('page')).toBe(false);

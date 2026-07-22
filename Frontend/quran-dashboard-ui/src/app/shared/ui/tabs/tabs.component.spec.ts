@@ -120,7 +120,6 @@ describe('QdTabsComponent', () => {
     tabB.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }));
     fixture.detectChanges();
 
-    // Selection is consumer-owned and untouched by qd-tabs.
     expect(fixture.componentInstance.active()).toBe('b');
     expect(root.querySelector('[data-testid="tab-b"]')?.getAttribute('aria-selected')).toBe('true');
   });

@@ -26,8 +26,6 @@ export class LemmasDetailFacade extends AbstractRouteDetailFacade<
   LemmaWordView,
   LemmaSurahView
 > {
-  // Per-facade controller instance keeps this page's panel state isolated from the
-  // component-scoped controllers the global overlay adapters use.
   protected readonly controller = new LemmasDetailController(
     inject(LemmasApi),
     inject(LemmasCache),

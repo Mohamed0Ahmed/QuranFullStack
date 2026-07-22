@@ -71,8 +71,6 @@ function createController(options: {
 
 describe('UniqueWordsDrilldownController (route-independent, Feature 029 B4)', () => {
   describe('stale DETAIL responses across a word transition (Feature 030, C1)', () => {
-    // Keyed by (mode, wordId): simple and tashkeel are distinct word spaces, so each needs
-    // its own landing seam.
     function surahSubjects(): {
       subjectFor: (mode: UniqueWordKind, id: number) => Subject<ApiResponse<UniqueWordSurahsDto>>;
       read: (mode: UniqueWordKind, id: number) => Observable<ApiResponse<UniqueWordSurahsDto>>;
@@ -87,8 +85,6 @@ describe('UniqueWordsDrilldownController (route-independent, Feature 029 B4)', (
       return { subjectFor, read: (mode, id) => subjectFor(mode, id).asObservable() };
     }
 
-    // Word 1's summary resolves synchronously so its surahs drilldown load is left in flight;
-    // word 2's summary stays pending. Returns word 1's seam to land its response late.
     function openWordOneThenPendingWordTwo(): {
       controller: UniqueWordsDrilldownController;
       staleSurahs: Subject<ApiResponse<UniqueWordSurahsDto>>;
@@ -177,7 +173,6 @@ describe('UniqueWordsDrilldownController (route-independent, Feature 029 B4)', (
 
       controller.applyUrlState(urlState(1, { mode: 'tashkeel' }));
 
-      // The simple word's held summary must never be reused for the tashkeel word space.
       expect(api.getSummary).toHaveBeenCalledWith('tashkeel', 1);
       expect(controller.drilldownState().summary).toBeNull();
 

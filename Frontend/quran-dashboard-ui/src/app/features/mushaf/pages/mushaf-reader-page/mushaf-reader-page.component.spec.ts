@@ -13,9 +13,6 @@ import { ayahStudyDtoMock, mushafAyahMutashabihatApiProvider, mushafSimilarAyahs
 
 const ayahStudyDto = ayahStudyDtoMock;
 
-// Minimal Router stub: navigate for the facade's URL sync, plus the URL-tree pair the
-// detail-overlay link directive uses to render real hrefs inside the selected-word section
-// (Feature 029, Change B).
 function buildRouterStub() {
   return {
     navigate: vi.fn().mockResolvedValue(true),

@@ -334,8 +334,6 @@ describe('WordTypesExplorerFacade — tableView', () => {
 
     const params = lastQueryParams(router);
     expect(params).not.toHaveProperty('tableView');
-    // A cross-parent commit resets the secondary filters and page AND clears the stale detail
-    // selection (the open root/word detail belonged to the previous main type).
     expect(params).toEqual({
       type: 'noun',
       childCode: 'ADJ',
@@ -470,8 +468,6 @@ describe('WordTypesExplorerFacade — tableView', () => {
     expect(facade.listState().rows?.items).toEqual([rootRow()]);
     expect(facade.listState().status).toBe('success');
 
-    // Back to the parent (no leaf): the previous scope's rows must not linger under the new scope;
-    // the table shows the in-shell subtype prompt while the loaded tree keeps the strip visible.
     route.setQueryParams({ type: 'noun', tableView: 'roots' });
 
     http.expectNone((candidate) => candidate.url.endsWith('/api/words/word-types/table'));
@@ -573,8 +569,6 @@ describe('WordTypesExplorerFacade — tableView', () => {
     const loadedTree = facade.listState().tree;
     expect(loadedTree).not.toBeNull();
 
-    // Tree and detail/list responses share the bounded cache. Fill it so the parent transition must
-    // re-fetch the tree while the last valid tree remains available in facade state.
     const cache = TestBed.inject(WordTypesCache);
     for (let index = 0; index < 50; index++) {
       cache.store(`tree-eviction-fixture:${index}`, { isSuccess: true, message: null, data: { index } });
@@ -657,9 +651,6 @@ describe('WordTypesExplorerFacade — tableView', () => {
   });
 });
 
-// Feature 026 US8: the scoped four-count summary loads on a SEPARATE trigger from the table — only when
-// the scope changes (type/childCode/case/tense/voice/search/flags), never on a tableView or page change —
-// and its lifecycle is fully independent of the table (partial-failure isolation + counts-only retry).
 describe('WordTypesExplorerFacade — scope counts (US8)', () => {
   beforeEach(() => getTestBed().resetTestingModule());
   afterEach(() => {
@@ -685,7 +676,6 @@ describe('WordTypesExplorerFacade — scope counts (US8)', () => {
     expect(request.request.params.get('type')).toBe(expected.type);
     expect(request.request.params.get('childCode')).toBe(expected.childCode ?? null);
     expect(request.request.params.get('case')).toBe(expected.case ?? null);
-    // Scope-level only: never view/sort/paging params.
     expect(request.request.params.has('tableView')).toBe(false);
     expect(request.request.params.has('sort')).toBe(false);
     expect(request.request.params.has('page')).toBe(false);
@@ -764,13 +754,11 @@ describe('WordTypesExplorerFacade — scope counts (US8)', () => {
     facade.bindToRoute(route.route);
     flushLeafList(http, { type: 'inl', tableView: 'words' }, okRows([wordRow()]));
 
-    // Counts fail while the table succeeded: the table stays usable; the strip shows its own error.
     failTransport(expectScopeCountsRequest(http, { type: 'inl' }));
     expect(facade.scopeCountsState().status).toBe('error');
     expect(facade.scopeCountsState().counts).toBeNull();
     expect(facade.listState().status).toBe('success');
 
-    // Retry refetches ONLY the counts — no table request is issued.
     facade.retryScopeCounts();
     expect(facade.scopeCountsState().status).toBe('loading');
     const retry = expectScopeCountsRequest(http, { type: 'inl' });

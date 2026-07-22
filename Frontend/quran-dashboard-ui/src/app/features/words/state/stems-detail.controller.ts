@@ -50,8 +50,6 @@ const INITIAL_PANEL: StemsPanelState = {
   errorMessage: '',
 };
 
-// Complete stem detail identity: every field participates in equality. Unlike roots, the ayahs
-// view's typeCode filter is part of the identity (and of StemsCacheKeys.ayahs).
 export interface StemsDetailUrlState {
   readonly stemId: number;
   readonly view: StemView;
@@ -79,10 +77,6 @@ export function stemsDetailUrlStatesEqual(
   );
 }
 
-// Not providedIn: 'root': the page facade owns one instance and each overlay adapter provides
-// its own component-scoped instance (destroyed with the adapter), so their panel state stays isolated.
-// Every complete-identity transition abandons both the in-flight summary and detail request (new
-// generation), so a late response from a previously selected stem can never overwrite this one.
 @Injectable()
 export class StemsDetailController extends AbstractDetailController<
   StemsPanelState,

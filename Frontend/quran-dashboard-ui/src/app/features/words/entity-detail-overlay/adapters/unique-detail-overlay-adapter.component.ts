@@ -48,9 +48,8 @@ export class UniqueDetailOverlayAdapterComponent {
   }
 
   constructor() {
-    // Track ONLY the frame input: applyUrlState reads/writes the controller's
-    // drilldown signal internally, and tracking it would re-trigger this effect
-    // on every load-state change (cancelling in-flight summary loads).
+    // Track only frame(); untracked() keeps applyUrlState's own signal writes from
+    // re-triggering this effect and cancelling in-flight loads.
     effect(() => {
       const frame = this.frame();
       untracked(() =>
@@ -68,8 +67,6 @@ export class UniqueDetailOverlayAdapterComponent {
     inject(DestroyRef).onDestroy(() => this.titleStore?.clear());
   }
 
-  // Retry re-drives the unchanged frame directly through the controller: it never
-  // touches the URL, since replacing an identical frame would be a no-op.
   protected onRetry(): void {
     this.controller.retryCurrentIdentity();
   }

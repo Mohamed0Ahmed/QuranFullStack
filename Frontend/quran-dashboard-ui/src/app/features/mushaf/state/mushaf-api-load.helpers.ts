@@ -13,10 +13,6 @@ export function mapApiFailureToLoadState(
     const backendMessage =
       typeof body?.message === 'string' && body.message.length > 0 ? body.message : null;
 
-    // Only a genuine "not found" (404) or malformed-key (400) response means the
-    // Quran content itself is absent. Every other 4xx — 401/403 (auth), 429 (rate
-    // limit), etc. — is a client/auth failure, not a missing-content signal, and
-    // must never be shown to the user as "does not exist".
     if (err.status === 404 || err.status === 400) {
       return {
         isLoading: false,

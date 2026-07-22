@@ -72,8 +72,6 @@ export class StemDetailOverlayAdapterComponent {
 
   protected readonly retryLabel = WORDS_DETAIL_RETRY_LABEL;
 
-  // Retry re-drives the unchanged frame directly through the controller: it never
-  // touches the URL, since replacing an identical frame would be a no-op.
   protected onRetry(): void {
     this.controller.retryCurrentIdentity();
   }
@@ -123,9 +121,8 @@ export class StemDetailOverlayAdapterComponent {
   }
 
   constructor() {
-    // Track ONLY the frame input: applyUrlState reads/writes the controller's
-    // panel signal internally, and tracking it would re-trigger this effect on
-    // every load-state change (cancelling in-flight summary loads).
+    // Track only frame(); untracked() keeps applyUrlState's own signal writes from
+    // re-triggering this effect and cancelling in-flight loads.
     effect(() => {
       const frame = this.frame();
       untracked(() =>
@@ -200,8 +197,6 @@ export class StemDetailOverlayAdapterComponent {
 
     const normalizedTypeCode = this.normalizeTypeCode(typeCode);
     if (normalizedTypeCode === frame.typeCode) {
-      // Re-selecting the already-active filter is a no-op on every page: it must
-      // not replace the frame or reset pagination just because detailPage > 1.
       return;
     }
 

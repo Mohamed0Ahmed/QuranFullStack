@@ -52,8 +52,6 @@ button.qd-interactive-surface {
   align-items: center;
   justify-content: center;
   gap: var(--qd-space-2);
-  /* The block-axis half of this box comes from tokens (_tokens.scss): reserved slots that must
-     hold a not-yet-mounted control row compute their height from the same values. */
   padding: var(--qd-btn-padding-block) var(--qd-space-4);
   border: var(--qd-btn-border-width) solid var(--qd-border);
   border-radius: var(--qd-radius-sm);
@@ -152,8 +150,6 @@ button.qd-interactive-surface {
   color: var(--qd-accent-text);
 }
 
-/* --- qd-tabs (UI_STYLE_SYSTEM.md §17 qd-tabs) --- */
-
 .qd-tabs {
   display: inline-flex;
   align-items: center;
@@ -224,8 +220,6 @@ button.qd-interactive-surface {
   color: var(--qd-accent-text);
 }
 
-/* --- qd-chip (UI_STYLE_SYSTEM.md §17 qd-chip) --- */
-
 .qd-chip {
   display: inline-flex;
   align-items: center;
@@ -288,12 +282,6 @@ button.qd-interactive-surface {
   background: var(--qd-surface);
   color: var(--qd-accent-text);
 }
-
-/* --- qd-state (UI_STYLE_SYSTEM.md §17 loading/empty/error family) ---
-   Backed by the existing .qd-empty-state / .qd-loading-state / .qd-error-state
-   classes below (kept as-is); only .qd-error-state gains the danger-on-tint
-   surface the doctrine requires. Extending these shared classes in place also
-   improves every current ad-hoc consumer — no call-site edits needed. */
 
 .qd-error-state {
   background: var(--qd-danger-tint);
@@ -511,9 +499,6 @@ button.qd-interactive-surface {
 }
 
 .qd-modal {
-  /* Option B (R1, color-doctrine plan P6): elevation comes from --qd-shadow-lg
-     + the dimmed backdrop, not a distinct surface tone — the modal sits on the
-     same near-white card surface as everything else. */
   background: var(--qd-surface);
   border: 1px solid var(--qd-border);
   border-radius: var(--qd-radius-lg);
@@ -524,13 +509,8 @@ button.qd-interactive-surface {
 
 .qd-skeleton {
   display: block;
-  /* Parameterized sizing (UI_STYLE_SYSTEM.md §17 loading/skeleton system).
-     --text/--block/--w-* below stay as thin aliases that set these same vars,
-     so existing call-sites keep working unchanged. */
   width: var(--qd-skeleton-w, 100%);
   height: var(--qd-skeleton-h, 0.75rem);
-  /* one-off: shimmer-system base tone, kept (color-doctrine plan §11) — no role
-     token models a skeleton placeholder tint */
   background: color-mix(in oklch, var(--qd-surface) 78%, var(--qd-border));
   border-radius: var(--qd-radius-sm);
   position: relative;
@@ -571,8 +551,6 @@ button.qd-interactive-surface {
   position: absolute;
   inset: 0;
   transform: translateX(-100%);
-  /* one-off: shimmer-wave gradient, kept (color-doctrine plan §11 named
-     exception) — a moving highlight, not a role-derivable fill */
   background: linear-gradient(
     90deg,
     transparent 0%,
@@ -600,14 +578,7 @@ button.qd-interactive-surface {
 
   .qd-skeleton::after {
     animation: none;
-    /* one-off: static stand-in for the shimmer gradient above, same rationale */
     background: color-mix(in oklch, var(--qd-surface) 50%, var(--qd-text) 16%);
     transform: none;
   }
 }
-
-// Mushaf selected-ayah-section / selected-word-section responsive rules moved
-// to their owning component SCSS files (UI_STYLE_SYSTEM.md §2 / styles/README.md
-// boundary — component internals belong in the owning component's SCSS):
-// src/app/features/mushaf/components/selected-ayah-section/selected-ayah-section.component.scss
-// src/app/features/mushaf/components/selected-word-section/selected-word-section.component.scss

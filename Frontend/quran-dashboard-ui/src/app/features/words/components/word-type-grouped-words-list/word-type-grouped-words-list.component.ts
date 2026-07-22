@@ -10,8 +10,6 @@ import {
 } from '../../models/word-types.labels';
 import { PagedResultDto } from '../../models/word-types.models';
 
-// Display-only member words for a grouped selection. It intentionally exposes no row selection,
-// carries no Router dependency, and emits nothing but pagination.
 @Component({
   selector: 'qd-word-type-grouped-words-list',
   standalone: true,

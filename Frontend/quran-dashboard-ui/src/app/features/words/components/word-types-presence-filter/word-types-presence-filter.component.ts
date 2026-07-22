@@ -8,7 +8,6 @@ export interface WordTypePresenceFlagChange {
   readonly value: boolean | null;
 }
 
-// Presentational only: emits the chosen presence flag; the page owns URL serialization and page reset.
 @Component({
   selector: 'qd-word-types-presence-filter',
   standalone: true,
@@ -24,8 +23,7 @@ export class WordTypesPresenceFilterComponent {
 
   readonly flagChange = output<WordTypePresenceFlagChange>();
 
-  // TDZ-safe getters (see words README): label consts read via readonly fields resolve to undefined
-  // in the bundled test build.
+  // TDZ-safe getters, not readonly fields: as fields these consts are undefined in the bundled test build.
   protected get labels() { return WORD_TYPES_PRESENCE_FILTER_LABELS; }
   protected get dimensions(): readonly WordTypePresenceDimension[] { return ['root', 'stem', 'lemma']; }
 

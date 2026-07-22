@@ -1,35 +1,15 @@
-/**
- * Words-explainer content (Feature 031) — the single approved copy source that feeds BOTH
- * the per-page explorer heroes AND the hub navigation cards, so a card description and its
- * page's tagline can never drift.
- *
- * Copy is transcribed verbatim from the approved comp `docs/design-preview/words-pages-hero.html`
- * (intro at :71-82, five `<section class="hero">` at :85/:110/:134/:156/:174). Presentation-only:
- * no backend read, no count, no Quran-data logic. The example words rendered per page are clearly
- * labelled `مثال` illustrative morphology — never presented as Quranic quotations or queryable
- * counts (plan D10).
- *
- * Consumers read these records through TDZ-safe getters, never `readonly` field initialisers
- * (`words/README.md`: label/content consts resolve to `undefined` in the bundled test build
- * otherwise).
- */
-
 export type WordsExplainerKey = 'unique' | 'roots' | 'lemmas' | 'stems' | 'word-types';
 
 export interface WordsExplainerContent {
-  /** Stable slug — drives testids and the collapse-memory storage key (never the Arabic label). */
   readonly key: WordsExplainerKey;
   readonly ordinal: string;
   readonly eyebrow: string;
-  /** MUST equal the explorer page's own `pageTitle` (asserted in the content spec). */
   readonly title: string;
-  /** The one-liner — shown under the title AND as the hub card's description. */
   readonly tagline: string;
   readonly body: string;
   readonly benefit: string;
 }
 
-/** Canonical order (widest morphological grouping → narrowest, then the grammatical axis). */
 export const WORDS_EXPLAINER_ORDER: readonly WordsExplainerKey[] = [
   'unique',
   'roots',
@@ -91,24 +71,12 @@ export const WORDS_EXPLAINER_CONTENT: Readonly<Record<WordsExplainerKey, WordsEx
   },
 };
 
-/**
- * The hub's own intro band (approved comp intro `:73-74`). The "دليل الأدمن" eyebrow is
- * intentionally dropped: the whole app is the admin dashboard (plan D8).
- */
 export const WORDS_HUB_INTRO = {
   title: 'أقسام دراسة الكلمات القرآنية',
   subtitle:
     'خمسة مستكشفات، كل واحد يفحص القرآن من زاوية. السلسلة الصرفية من الأوسع للأضيق، بالإضافة إلى التصنيف النحوي.',
 } as const;
 
-/**
- * A single chain node in the hub orientation diagram (approved comp `:75-81`) — the clearest
- * single artifact explaining why there are five sections. `connector` is the separator rendered
- * AFTER this node (`arrow` `←` between the morphological layers, `plus` `+` before the grammatical
- * axis, `null` on the last node). The grammatical/morphological split is carried TEXTUALLY by the
- * `(نحوي)` marker in the last label — never by color (green-budget / Green Thread): every node
- * renders in the same neutral style.
- */
 export interface WordsHubChainNode {
   readonly label: string;
   readonly connector: 'arrow' | 'plus' | null;

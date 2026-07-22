@@ -89,7 +89,6 @@ describe('DetailOverlayAyahLinkDirective', () => {
     expect(href).toContain('page=92');
     expect(href).toContain('panel=ayah');
     expect(href).not.toContain('qdDetail');
-    // The destination base is explicit: the source page's own query never rides along.
     expect(href).not.toContain('root=999');
   });
 

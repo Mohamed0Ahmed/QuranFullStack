@@ -78,8 +78,6 @@ describe('ExplorerPanelSkeletonComponent (qd-panel-skeleton)', () => {
     const fixture = render({ shape: 'panel' });
     const host = fixture.nativeElement as HTMLElement;
 
-    // A panel skeleton stands in for a whole panel body, so it must be able to
-    // stretch into a fixed-height host instead of leaving a 3rem bar in a tall box.
     expect(host.classList.contains('qd-panel-skeleton--panel-shape')).toBe(true);
     expect(
       host.querySelector('[data-testid="explorer-panel-skeleton"]')?.classList,

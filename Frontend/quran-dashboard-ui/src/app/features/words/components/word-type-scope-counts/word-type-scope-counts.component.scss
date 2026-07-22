@@ -1,7 +1,3 @@
-// The loaded item's height is the sum of two REAL text line boxes (font-size × the inherited
-// preflight line-height) plus the item's padding/border/gap — it is deliberately never expressed as
-// a hardcoded height. These mixins are the single source of the two line-box font metrics, shared by
-// the loaded `dt`/`dd` and by the metric/skeleton lines that mirror them.
 @mixin scope-count-label-type {
   font-size: 0.8125rem;
   font-weight: 700;
@@ -12,9 +8,6 @@
   font-weight: 700;
 }
 
-// Every state (metric mirror, loading, error, success) occupies the same single grid cell, so the
-// strip's height is max(mirror, content) and never collapses on error or on the numberless
-// `tableFailed`/idle branches.
 :host {
   display: grid;
 }
@@ -59,9 +52,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-// Mirror lines: an `&nbsp;` establishes the same line box as the loaded text, so the item box
-// resolves to the loaded height with no measurement and no hardcoded value. `--qd-skeleton-h: auto`
-// hands sizing back to that line box when `.qd-skeleton` is also applied (loading state).
 .word-type-scope-counts__line {
   --qd-skeleton-h: auto;
   margin: 0;
@@ -78,7 +68,6 @@
   --qd-skeleton-w: 45%;
 }
 
-// Reserves geometry only — never painted, never announced, never hit-tested.
 .word-type-scope-counts--metric {
   visibility: hidden;
   pointer-events: none;

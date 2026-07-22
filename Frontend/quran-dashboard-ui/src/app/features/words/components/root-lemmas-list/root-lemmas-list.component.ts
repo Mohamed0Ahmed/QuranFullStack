@@ -37,8 +37,6 @@ export class RootLemmasListComponent {
   protected readonly loadingLabel = WORDS_LOADING_LABEL;
   protected readonly openLemmaLabel = ROOTS_OPEN_LEMMA_LABEL;
 
-  // Mirrors the retired lemma explorer deep link, which opened the default
-  // words view; frame defaults are serialized explicitly per the URL contract.
   protected readonly rows = computed((): readonly RootLemmaRowViewModel[] =>
     this.lemmas().map((item) => ({
       item,
