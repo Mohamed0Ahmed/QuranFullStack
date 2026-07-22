@@ -60,19 +60,19 @@ implementation.
 
 ### Tests for User Story 1 ⚠️ (write first, must fail)
 
-- [ ] T007 [P] [US1] Schema-compatibility assertion test (migrations yield a model-compatible schema, no pending model diff) in `Backend/tests/QuranDashboard.Tests/Abwab/Ci/SchemaCompatibilityTests.cs`
-- [ ] T008 [P] [US1] Contract-drift gate test (generated contracts match recorded snapshots) in `Backend/tests/QuranDashboard.Tests/Abwab/Ci/ContractDriftTests.cs`
+- [X] T007 [P] [US1] Schema-compatibility assertion test (migrations yield a model-compatible schema, no pending model diff) in `Backend/tests/QuranDashboard.Tests/Abwab/Ci/SchemaCompatibilityTests.cs`
+- [X] T008 [P] [US1] Contract-drift gate test (generated contracts match recorded snapshots) in `Backend/tests/QuranDashboard.Tests/Abwab/Ci/ContractDriftTests.cs`
 
 ### Implementation for User Story 1
 
-- [ ] T009 [US1] Establish the CI pipeline with a migration-based Testcontainers backend job in the repo CI workflow (`.github/workflows/`), applying migrations before tests
-- [ ] T010 [US1] Wire the schema-compatibility assertion into the CI workflow (`.github/workflows/`) so the build fails on schema/model drift
-- [ ] T011 [US1] Wire the contract-drift gate into the CI workflow (`.github/workflows/`) so the build fails when contracts drift
-- [ ] T012 [P] [US1] Add `@playwright/test` and a reusable Playwright harness covering the locked scenarios (RTL, keyboard navigation, focus restoration, ARIA basics, virtualization, critical dialogs — §15.2 gate 6) in `Frontend/quran-dashboard-ui/e2e/harness/` and `Frontend/quran-dashboard-ui/package.json`
-- [ ] T013 [P] [US1] Verify and lock the Vitest fork cap (`VITEST_MIN_FORKS=1 VITEST_MAX_FORKS=2`) in `Frontend/quran-dashboard-ui/package.json`; add a CI check asserting the env vars are present (because `vitest.config.ts` is ignored by `@angular/build:unit-test`)
-- [ ] T014 [US1] Enforce the staged source-package strategy in CI (imports read only from `resources/import-sources/`), documented in the CI workflow
-- [ ] T076 [US1] Frontend no-drag **source gate** (FR-041): a CI source test that rejects drag/drop packages, directives, handles, and event wiring anywhere under `Frontend/quran-dashboard-ui/src/`, wired into `.github/workflows/` (§15.2 gate 3, §3.2)
-- [ ] T077 [US1] Dependency/security-audit + secret/license CI check (FR-042): run a dependency/security audit and secret/license scan appropriate to the repo, wired into `.github/workflows/` (§15.2 gate 8)
+- [X] T009 [US1] Establish the CI pipeline with a migration-based Testcontainers backend job in the repo CI workflow (`.github/workflows/`), applying migrations before tests
+- [X] T010 [US1] Wire the schema-compatibility assertion into the CI workflow (`.github/workflows/`) so the build fails on schema/model drift
+- [X] T011 [US1] Wire the contract-drift gate into the CI workflow (`.github/workflows/`) so the build fails when contracts drift
+- [X] T012 [P] [US1] Add `@playwright/test` and a reusable Playwright harness covering the locked scenarios (RTL, keyboard navigation, focus restoration, ARIA basics, virtualization, critical dialogs — §15.2 gate 6) in `Frontend/quran-dashboard-ui/e2e/harness/` and `Frontend/quran-dashboard-ui/package.json`
+- [X] T013 [P] [US1] Verify and lock the Vitest fork cap (`VITEST_MIN_FORKS=1 VITEST_MAX_FORKS=2`) in `Frontend/quran-dashboard-ui/package.json`; add a CI check asserting the env vars are present (because `vitest.config.ts` is ignored by `@angular/build:unit-test`)
+- [X] T014 [US1] Enforce the staged source-package strategy in CI (imports read only from `resources/import-sources/`), documented in the CI workflow
+- [X] T076 [US1] Frontend no-drag **source gate** (FR-041): a CI source test that rejects drag/drop packages, directives, handles, and event wiring anywhere under `Frontend/quran-dashboard-ui/src/`, wired into `.github/workflows/` (§15.2 gate 3, §3.2)
+- [X] T077 [US1] Dependency/security-audit + secret/license CI check (FR-042): run a dependency/security audit and secret/license scan appropriate to the repo, wired into `.github/workflows/` (§15.2 gate 8)
 
 **Checkpoint**: Pipeline green; all later stages' tests can hang off it.
 

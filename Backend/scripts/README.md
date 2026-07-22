@@ -10,7 +10,9 @@ Short commands to build/run the backend API and Angular dev server from any dire
 | `qd-api` | `dotnet run --launch-profile https --no-build`; opens Swagger when the API is ready |
 | `qd-ui` | `npm run start:https` for the Angular dashboard |
 | `export-swagger` | Builds the API (Release) and writes the OpenAPI spec to `Frontend/quran-dashboard-ui/openapi/swagger.json` via the Swashbuckle CLI (`Backend/dotnet-tools.json` manifest); no running server or database needed |
-| `check-api-contract` | Runs `export-swagger`, regenerates the frontend API models (`npm run generate:api`) and the static API reference (`npm run docs:api`), then fails with `git diff --exit-code` if any committed generated output is stale |
+| `check-api-contract` | Runs `export-swagger`, regenerates the frontend API models (`npm run generate:api`) and the static API reference (`npm run docs:api`), then fails with `git diff --exit-code` if any committed generated output is stale. This is the authoritative contract-drift gate wired into CI (`.github/workflows/ci.yml`, `api-contract-drift` job) |
+| `check-import-source-strategy` | Source-level gate (no import runs): fails if any importer `ResolveDefault*SourcePath` resolver does not resolve under `resources/import-sources/`, or hard-codes an absolute source path. Wired into the CI `backend-tests` job |
+| `security-audit` | Dependency/security + secret/license gate. Blocking + **fail-closed** secret scan: `git grep -e` over tracked files (a git grep error aborts rather than passing), matching strong tokens (AWS/GitHub/Slack/Neon keys, private keys) plus `Password=<value>` filtered case-insensitively against dev-defaults/templates (`SET_VIA_USER_SECRETS`, `Password=postgres`, `<your-password>`, `***REDACTED***`); generated bundles (redoc HTML, ng-openapi models) and the lockfile are excluded, human-authored docs are not. Also blocking: forbidden strong-copyleft license check on frontend prod deps, and `dotnet list package --vulnerable`. Report-only: frontend `npm audit` (pre-existing transitive advisories are owned by the `dependency-audit` workflow). Wired into the CI `security-audit` job |
 
 Typical daily flow:
 

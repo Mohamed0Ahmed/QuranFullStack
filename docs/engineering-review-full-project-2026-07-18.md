@@ -84,7 +84,7 @@ Verification status legend: **CONFIRMED** = independently re-verified against so
 
 *category: api-guidelines · found by: be-api · verification: CONFIRMED*
 
-**Issue:** A live production Neon database owner credential (Username=neondb_owner;Password=npg_13ihUKfwGQaP) sits in plaintext in appsettings.Production.json. The file is gitignored (local-only), but the base appsettings.json convention is 'SET_VIA_USER_SECRETS' and this file is auto-loaded by ASP.NET and copied into bin/ publish output.
+**Issue:** A live production Neon database owner credential (Username=neondb_owner;Password=***REDACTED — ROTATE***) sits in plaintext in appsettings.Production.json. The file is gitignored (local-only), but the base appsettings.json convention is 'SET_VIA_USER_SECRETS' and this file is auto-loaded by ASP.NET and copied into bin/ publish output.
 
 **Why it matters:** A real production DB password in a plaintext workspace file leaks via local publishes (bin/Release exists), backups, screen shares, or any future .gitignore change — and it has now been exposed to this review. The project's own convention keeps secrets out of config files.
 
