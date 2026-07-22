@@ -23,6 +23,230 @@ namespace QuranDashboard.Infrastructure.Migrations
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "pg_trgm");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("QuranDashboard.Domain.Abwab.Audit.AuditEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ChangeSetId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("change_set_id");
+
+                    b.Property<int>("EventOrdinal")
+                        .HasColumnType("integer")
+                        .HasColumnName("event_ordinal");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("payload");
+
+                    b.Property<DateTimeOffset>("ServerTimestampUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("server_timestamp");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChangeSetId", "EventOrdinal")
+                        .IsUnique();
+
+                    b.ToTable("abwab_audit_events", (string)null);
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Abwab.Audit.ChangeSet", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ActorSubject")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("actor_subject");
+
+                    b.Property<long>("ChangeSetSequence")
+                        .HasColumnType("bigint")
+                        .HasColumnName("change_set_sequence");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("TimelineGeneration")
+                        .HasColumnType("bigint")
+                        .HasColumnName("timeline_generation");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChangeSetSequence")
+                        .IsUnique();
+
+                    b.ToTable("abwab_change_sets", (string)null);
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Abwab.Concurrency.AbwabWriteBarrier", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    b.Property<int>("State")
+                        .HasColumnType("integer")
+                        .HasColumnName("state");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("abwab_write_barrier", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_abwab_write_barrier_singleton", "id = 1");
+                        });
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            State = 0
+                        });
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Abwab.Notifications.NotificationReadState", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_read");
+
+                    b.Property<Guid>("NotificationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("notification_id");
+
+                    b.Property<DateTimeOffset?>("ReadAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("read_at");
+
+                    b.Property<string>("RecipientSubject")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("recipient_subject");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NotificationId", "RecipientSubject")
+                        .IsUnique();
+
+                    b.ToTable("abwab_notification_read_states", (string)null);
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Abwab.Notifications.NotificationRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("payload");
+
+                    b.Property<string>("RecipientSubject")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("recipient_subject");
+
+                    b.Property<string>("SourceIdentity")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("source_identity");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RecipientSubject");
+
+                    b.HasIndex("SourceIdentity")
+                        .IsUnique();
+
+                    b.ToTable("abwab_notification_records", (string)null);
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Abwab.Timeline.AbwabRevisionState", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    b.Property<long>("AuditHeadSequence")
+                        .HasColumnType("bigint")
+                        .HasColumnName("audit_head_sequence");
+
+                    b.Property<long>("TimelineGeneration")
+                        .HasColumnType("bigint")
+                        .HasColumnName("timeline_generation");
+
+                    b.Property<long>("TreeRevision")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tree_revision");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("abwab_revision_state", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_abwab_revision_state_singleton", "id = 1");
+                        });
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            AuditHeadSequence = 0L,
+                            TimelineGeneration = 0L,
+                            TreeRevision = 0L
+                        });
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Abwab.Timeline.TimelineGenerationBoundary", b =>
+                {
+                    b.Property<long>("Generation")
+                        .HasColumnType("bigint")
+                        .HasColumnName("generation");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<bool>("IsRoot")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_root");
+
+                    b.Property<string>("Reason")
+                        .HasColumnType("text")
+                        .HasColumnName("reason");
+
+                    b.HasKey("Generation");
+
+                    b.HasIndex("IsRoot")
+                        .IsUnique()
+                        .HasFilter("\"is_root\"");
+
+                    b.ToTable("abwab_timeline_generation_boundaries", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Generation = 0L,
+                            CreatedAtUtc = new DateTimeOffset(new DateTime(2026, 7, 22, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            IsRoot = true,
+                            Reason = "genesis"
+                        });
+                });
+
             modelBuilder.Entity("QuranDashboard.Domain.Access.Role", b =>
                 {
                     b.Property<int>("Id")
@@ -2222,6 +2446,192 @@ namespace QuranDashboard.Infrastructure.Migrations
                     b.ToTable("quran_words", (string)null);
                 });
 
+            modelBuilder.Entity("QuranDashboard.Domain.Security.Audit.SecurityAuditEvent", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("ActorSubject")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("actor_subject");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("event_type");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("payload");
+
+                    b.Property<DateTimeOffset>("ServerTimestampUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("server_timestamp");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("security_audit_events", (string)null);
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Security.Owners.SystemOwnerMembership", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset?>("DeactivatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deactivated_at");
+
+                    b.Property<bool>("IsAccountEnabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_account_enabled");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Issuer")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("issuer");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("subject");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Issuer", "Subject")
+                        .IsUnique();
+
+                    b.ToTable("system_owner_memberships", (string)null);
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Security.Permissions.PermissionAssignment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<bool>("IsGranted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_granted");
+
+                    b.Property<string>("PermissionCode")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("permission_code");
+
+                    b.Property<string>("TargetKey")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("target_key");
+
+                    b.Property<int>("TargetKind")
+                        .HasColumnType("integer")
+                        .HasColumnName("target_kind");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long>("Version")
+                        .HasColumnType("bigint")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TargetKind", "TargetKey", "PermissionCode")
+                        .IsUnique();
+
+                    b.ToTable("permission_assignments", (string)null);
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Security.Permissions.PermissionCode", b =>
+                {
+                    b.Property<string>("Code")
+                        .HasColumnType("text")
+                        .HasColumnName("code");
+
+                    b.Property<bool>("DashboardAdminBaseline")
+                        .HasColumnType("boolean")
+                        .HasColumnName("dashboard_admin_baseline");
+
+                    b.Property<bool>("SystemOwnerOnly")
+                        .HasColumnType("boolean")
+                        .HasColumnName("system_owner_only");
+
+                    b.HasKey("Code");
+
+                    b.ToTable("permission_codes", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Code = "attribution.view",
+                            DashboardAdminBaseline = true,
+                            SystemOwnerOnly = false
+                        },
+                        new
+                        {
+                            Code = "attribution.manage",
+                            DashboardAdminBaseline = false,
+                            SystemOwnerOnly = false
+                        },
+                        new
+                        {
+                            Code = "permission.administer",
+                            DashboardAdminBaseline = false,
+                            SystemOwnerOnly = true
+                        },
+                        new
+                        {
+                            Code = "audit.restore",
+                            DashboardAdminBaseline = false,
+                            SystemOwnerOnly = true
+                        },
+                        new
+                        {
+                            Code = "safetyPoint.manage",
+                            DashboardAdminBaseline = false,
+                            SystemOwnerOnly = true
+                        });
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Abwab.Audit.AuditEvent", b =>
+                {
+                    b.HasOne("QuranDashboard.Domain.Abwab.Audit.ChangeSet", null)
+                        .WithMany("Events")
+                        .HasForeignKey("ChangeSetId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Abwab.Notifications.NotificationReadState", b =>
+                {
+                    b.HasOne("QuranDashboard.Domain.Abwab.Notifications.NotificationRecord", null)
+                        .WithMany()
+                        .HasForeignKey("NotificationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("QuranDashboard.Domain.Access.User", b =>
                 {
                     b.HasOne("QuranDashboard.Domain.Access.Role", "Role")
@@ -2638,6 +3048,11 @@ namespace QuranDashboard.Infrastructure.Migrations
                     b.Navigation("Ayah");
 
                     b.Navigation("Page");
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Abwab.Audit.ChangeSet", b =>
+                {
+                    b.Navigation("Events");
                 });
 #pragma warning restore 612, 618
         }

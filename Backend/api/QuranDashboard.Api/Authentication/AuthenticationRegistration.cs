@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using QuranDashboard.Api.Security.Authorization;
 using QuranDashboard.Application.Abstractions.Security;
 using QuranDashboard.Domain.Access;
 
@@ -48,8 +49,8 @@ internal static class AuthenticationRegistration
                 };
             });
 
-        // One named policy per role, each requiring an authenticated caller in that role. Registered for
-        // future admin surfaces; NO global fallback policy and NOT applied to any endpoint in this phase.
+        // One named policy per role, each requiring an authenticated caller in that role. The SystemOwner
+        // policy and one policy per permission code (the "policy" parity layer) are added alongside.
         services.AddAuthorization(options =>
         {
             options.AddPolicy(AuthorizationPolicyNames.Owner, policy =>
@@ -58,7 +59,11 @@ internal static class AuthenticationRegistration
                 policy.RequireAuthenticatedUser().RequireRole(RoleNames.Admin));
             options.AddPolicy(AuthorizationPolicyNames.Editor, policy =>
                 policy.RequireAuthenticatedUser().RequireRole(RoleNames.Editor));
+
+            PermissionAuthorizationRegistration.AddPermissionPolicies(options);
         });
+
+        services.AddPermissionAuthorizationHandlers();
 
         return services;
     }

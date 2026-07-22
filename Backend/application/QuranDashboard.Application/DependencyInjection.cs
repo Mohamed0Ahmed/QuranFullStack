@@ -1,5 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using QuranDashboard.Application.Access.Commands.ProvisionCurrentUser;
+using QuranDashboard.Application.Security;
+using QuranDashboard.Application.Security.Owners;
+using QuranDashboard.Application.Security.Permissions;
 using QuranDashboard.Application.Quran.DataPipelines.Foundation;
 using QuranDashboard.Application.Quran.DataPipelines.Foundation.Validation;
 using QuranDashboard.Application.Quran.DataPipelines.Mutashabihat;
@@ -120,6 +123,10 @@ public static class DependencyInjection
         services.AddScoped<GetWordTypeSurahsHandler>();
 
         services.AddScoped<ProvisionCurrentUserHandler>();
+
+        services.AddScoped<EffectivePermissionResolver>();
+        services.AddScoped<PermissionAdministrationHandler>();
+        services.AddScoped<SystemOwnerAdministrationHandler>();
 
         return services;
     }

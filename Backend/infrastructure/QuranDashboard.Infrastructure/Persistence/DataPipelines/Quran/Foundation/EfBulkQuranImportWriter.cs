@@ -3,6 +3,7 @@ using QuranDashboard.Domain.Quran.Ayahs;
 using QuranDashboard.Domain.Quran.MushafPages;
 using QuranDashboard.Domain.Quran.Surahs;
 using QuranDashboard.Domain.Quran.Words;
+using QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Safety;
 
 namespace QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Foundation;
 
@@ -49,7 +50,7 @@ public sealed class EfBulkQuranImportWriter : IQuranImportWriter
         {
             if (force)
             {
-                await TruncateTargetTablesAsync(npgsqlConnection, ct);
+                await TruncateTargetTablesAsync(npgsqlConnection, transaction, ct);
             }
 
             await CopySurahsAsync(npgsqlConnection, data.Surahs, ct);
@@ -203,13 +204,16 @@ public sealed class EfBulkQuranImportWriter : IQuranImportWriter
         await importer.CompleteAsync(ct);
     }
 
-    private static async Task TruncateTargetTablesAsync(NpgsqlConnection connection, CancellationToken ct)
-    {
-        await using var command = connection.CreateCommand();
-        command.CommandText =
-            "TRUNCATE quran_words, quran_mushaf_lines, quran_mushaf_pages, quran_ayahs, quran_surahs RESTART IDENTITY CASCADE";
-        await command.ExecuteNonQueryAsync(ct);
-    }
+    private const string TruncateTargetTablesSql =
+        "TRUNCATE quran_words, quran_mushaf_lines, quran_mushaf_pages, quran_ayahs, quran_surahs RESTART IDENTITY CASCADE";
+
+    // Routed through the shared destructive guard: advisory lock + fail-closed FK-closure preflight
+    // before the CASCADE, so a future Abwab dependent can never be silently destroyed by a force import.
+    private static Task TruncateTargetTablesAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        CancellationToken ct) =>
+        QuranImportDestructiveGuard.ExecuteDestructiveAsync(connection, transaction, TruncateTargetTablesSql, ct);
 
     private static string ToRevelationPlaceValue(RevelationPlace value) => value switch
     {

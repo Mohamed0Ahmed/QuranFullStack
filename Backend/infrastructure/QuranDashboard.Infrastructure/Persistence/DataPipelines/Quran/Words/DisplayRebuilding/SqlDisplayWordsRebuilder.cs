@@ -1,4 +1,5 @@
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.DisplayRebuilding;
+using QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Safety;
 
 namespace QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Words.DisplayRebuilding;
 
@@ -69,7 +70,8 @@ public sealed class SqlDisplayWordsRebuilder : IDisplayWordsRebuilder
 
             if (force)
             {
-                await ExecuteNonQueryAsync(npgsqlConnection, transaction, DisplayWordsSql.TruncateDerivedTables, ct);
+                await QuranImportDestructiveGuard.ExecuteDestructiveAsync(
+                    npgsqlConnection, transaction, DisplayWordsSql.TruncateDerivedTables, ct);
             }
 
             await ExecuteNonQueryAsync(npgsqlConnection, transaction, DisplayWordsSql.InsertOrderedTashkeel, ct);

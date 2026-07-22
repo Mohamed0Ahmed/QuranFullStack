@@ -1,0 +1,119 @@
+name: CI
+
+# Section 15 fail-closed pipeline for the Abwab safety foundations (028). Every later safety guarantee
+# is proven here against real infrastructure: real PostgreSQL via migration-based Testcontainers and a
+# real browser via Playwright. Docker is preinstalled on ubuntu-latest runners, so Testcontainers works
+# without extra setup.
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_VERSION: '10.0.x'
+  NODE_VERSION: '20'
+  DOTNET_NOLOGO: 'true'
+  DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+
+jobs:
+  # T009/T010 + T008-companion: migration-based real-Postgres backend job. The Postgres fixture applies
+  # EF migrations before tests, so the schema-compatibility assertion (fails on model/migration drift)
+  # and the in-process contract-drift companion run here and fail the build on drift. T014 source gate
+  # runs alongside (source inspection only; no import executes).
+  backend-tests:
+    name: Backend tests (real Postgres)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Restore
+        run: dotnet restore Backend/QuranDashboard.sln
+      - name: Build
+        run: dotnet build Backend/QuranDashboard.sln -c Release --no-restore
+      - name: Test (xUnit + migration-based Testcontainers)
+        run: dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj -c Release --no-build
+      - name: Staged source-package strategy gate
+        run: Backend/scripts/check-import-source-strategy.sh
+
+  # T011: authoritative contract-drift gate. Regenerates swagger.json + the frontend API models + the
+  # static API reference from the real API and fails (git diff) on ANY drift. Needs both dotnet and node.
+  api-contract-drift:
+    name: API contract drift
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: Frontend/quran-dashboard-ui/package-lock.json
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: Frontend/quran-dashboard-ui
+      - name: Contract-drift gate
+        run: Backend/scripts/check-api-contract
+
+  # T012/T013/T076: frontend gates + real-browser Playwright harness. The Vitest fork cap lives in the
+  # package.json "test" script (vitest.config.ts is ignored by @angular/build:unit-test), so it is both
+  # enforced by `npm test` and asserted by the fork-cap gate.
+  frontend:
+    name: Frontend gates + Playwright
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Frontend/quran-dashboard-ui
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: Frontend/quran-dashboard-ui/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Vitest fork-cap gate
+        run: npm run check:fork-cap
+      - name: No-drag source gate
+        run: npm run check:no-drag
+      - name: Foundation boundary gate
+        run: npm run check:foundation-boundary
+      - name: Unit tests (Vitest, fork cap enforced)
+        run: npm test
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+      - name: Playwright harness
+        run: npm run e2e
+
+  # T077: dependency/security-audit + secret/license gate. Secret scan, license gate, and the backend
+  # vulnerable-package check are blocking; the frontend `npm audit` is report-only (pre-existing
+  # transitive advisories are owned by the dependency-audit workflow, not this feature).
+  security-audit:
+    name: Dependency/security + secret/license audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: Frontend/quran-dashboard-ui/package-lock.json
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: Frontend/quran-dashboard-ui
+      - name: Security audit
+        run: Backend/scripts/security-audit.sh

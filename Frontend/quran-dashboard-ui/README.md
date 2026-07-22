@@ -49,9 +49,21 @@ Local HTTPS needs `mkcert localhost` in the project root (see `Backend/scripts/R
 
 - **Keep the `VITEST_MAX_FORKS` cap on `npm test`** — without it the run OOMs/freezes the
   machine. **`vitest.config.ts` is ignored by the Angular unit-test builder**, so the cap
-  must be set the way `package.json` already sets it; do not "clean it up".
+  must be set the way `package.json` already sets it; do not "clean it up". `npm run check:fork-cap`
+  (a CI gate) fails if the env vars ever go missing.
 - **jsdom lacks `matchMedia` / `ResizeObserver`** under the builder — guard them in
   components and default to desktop.
+
+## E2E harness & source gates (CI)
+
+- **`npm run e2e`** (`playwright.config.ts`) runs the reusable Playwright harness under `e2e/harness/`
+  (RTL, keyboard, focus restoration, ARIA basics, virtualization, critical dialogs). Later specs
+  (029+) hang domain tests off these helpers; this feature ships scaffolding only, no domain tests.
+  Browsers install via `npx playwright install chromium`.
+- **`npm run check:no-drag`** — source gate; fails if any drag/drop package/directive/handle/event
+  wiring appears under `src/` (Abwab reordering is not drag-and-drop).
+- **`npm run check:licenses`** — fails on forbidden strong-copyleft licenses in production deps.
+- The CI pipeline lives at `.github/workflows/ci.yml`.
 
 ## Invariants
 

@@ -1,9 +1,10 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 
 import { ApiResponse } from '../data-access/api-response.model';
 import { AccessApi } from './access.api';
 import { CurrentUser } from './current-user.model';
+import { PermissionCode } from './permission-codes';
 
 // Holds the authenticated user's local account (Feature 033). `load()` is fire-and-forget, fired
 // post-callback, and never throws — a failure resolves to a calm Arabic `errorMessage` so it can't
@@ -21,6 +22,14 @@ export class CurrentUserStore {
 
   readonly currentUser = this.currentUserSignal.asReadonly();
   readonly errorMessage = this.errorMessageSignal.asReadonly();
+
+  // Effective permissions for non-authoritative UI hiding. `hasPermission` gates whether an action is
+  // SHOWN; the backend policy still authorizes the request regardless of what the UI renders.
+  readonly permissions = computed<readonly string[]>(() => this.currentUserSignal()?.permissions ?? []);
+
+  hasPermission(code: PermissionCode): boolean {
+    return this.permissions().includes(code);
+  }
 
   load(): void {
     this.ensureLoadedPromise = this.fetchAndCache();

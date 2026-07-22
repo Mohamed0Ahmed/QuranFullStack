@@ -1,0 +1,94 @@
+<section class="permissions" dir="rtl" data-testid="permissions-page">
+  <header class="permissions__header">
+    <h1 class="permissions__title">إدارة الصلاحيات</h1>
+    <p class="permissions__subtitle">إسناد الصلاحيات وإزالتها للأدوار والمستخدمين.</p>
+  </header>
+
+  @if (loadStatus() === 'loading') {
+    <qd-state variant="loading" message="جارٍ تحميل الصلاحيات…" />
+  } @else if (loadStatus() === 'error') {
+    <qd-state
+      variant="error"
+      [message]="loadMessage() ?? 'تعذّر تحميل الصلاحيات.'"
+      actionLabel="إعادة المحاولة"
+      (action)="retry()"
+    />
+  } @else {
+    @if (canManage()) {
+      <form class="permissions__form" [formGroup]="form" (ngSubmit)="grant()" data-testid="permission-form">
+        <div class="permissions__field">
+          <label class="permissions__label" for="targetKind">نوع الهدف</label>
+          <select id="targetKind" class="qd-select" formControlName="targetKind" data-testid="target-kind">
+            <option value="Role">دور</option>
+            <option value="Subject">مستخدم</option>
+          </select>
+        </div>
+
+        <div class="permissions__field">
+          <label class="permissions__label" for="targetKey">معرّف الهدف</label>
+          <input
+            id="targetKey"
+            class="qd-input"
+            type="text"
+            formControlName="targetKey"
+            autocomplete="off"
+            data-testid="target-key"
+          />
+          @if (form.controls.targetKey.touched && form.controls.targetKey.invalid) {
+            <p class="permissions__error" role="alert">هذا الحقل مطلوب.</p>
+          }
+        </div>
+
+        <div class="permissions__field">
+          <label class="permissions__label" for="permissionCode">الصلاحية</label>
+          <select id="permissionCode" class="qd-select" formControlName="permissionCode" data-testid="permission-code">
+            <option value="" disabled>اختر صلاحية…</option>
+            @for (entry of assignableCodes(); track entry.code) {
+              <option [value]="entry.code">{{ entry.code }}</option>
+            }
+          </select>
+          @if (form.controls.permissionCode.touched && form.controls.permissionCode.invalid) {
+            <p class="permissions__error" role="alert">يرجى اختيار صلاحية.</p>
+          }
+        </div>
+
+        <div class="permissions__actions">
+          <button type="submit" class="permissions__button" [disabled]="isSubmitting()" data-testid="grant">
+            إسناد
+          </button>
+          <button
+            type="button"
+            class="permissions__button permissions__button--ghost"
+            [disabled]="isSubmitting()"
+            (click)="revoke()"
+            data-testid="revoke"
+          >
+            إزالة
+          </button>
+        </div>
+
+        @if (submitMessage()) {
+          <p class="permissions__error" role="alert" data-testid="submit-message">{{ submitMessage() }}</p>
+        }
+      </form>
+    } @else {
+      <qd-state variant="empty" [message]="notAuthorizedMessage" data-testid="not-authorized" />
+    }
+
+    <section class="permissions__assignments" aria-label="الصلاحيات الحالية">
+      <h2 class="permissions__section-title">الصلاحيات الممنوحة</h2>
+      @if (grantedAssignments().length === 0) {
+        <p class="permissions__empty">لا توجد صلاحيات ممنوحة.</p>
+      } @else {
+        <ul class="permissions__list" data-testid="assignment-list">
+          @for (assignment of grantedAssignments(); track assignment.targetKind + assignment.targetKey + assignment.permissionCode) {
+            <li class="permissions__item">
+              <span class="permissions__item-target">{{ assignment.targetKind }} · {{ assignment.targetKey }}</span>
+              <span class="permissions__item-code">{{ assignment.permissionCode }}</span>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  }
+</section>

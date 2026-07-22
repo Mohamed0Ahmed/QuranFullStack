@@ -43,6 +43,24 @@ Running with no verb or an unknown verb prints usage and exits non-zero.
   `Corrections/` (see
   `../../infrastructure/QuranDashboard.Infrastructure/Files/Quran/DataPipelines/Words/MorphologyImporting/README.md`).
 
+### Destructive-import gate (feature 028 US2)
+
+Every force/source verb routes through `Import/Safety/DestructiveImportGate` before delegating to a
+handler:
+
+- **Environment restriction**: a `--force` (destructive) import is refused unless
+  `QURANDASHBOARD_ALLOW_DESTRUCTIVE_IMPORT=1` is set, and is always refused when
+  `DOTNET_ENVIRONMENT`/`ASPNETCORE_ENVIRONMENT` is `Production`. Set the opt-in explicitly for a real
+  force reload, e.g. `QURANDASHBOARD_ALLOW_DESTRUCTIVE_IMPORT=1 … import-foundation --source … --force`.
+- **Canonical source identity**: a staged package carrying a `source-identity.json` manifest is verified
+  against the pinned `CanonicalSourceRegistry`. A forbidden (un-pinned) source, a wrong canonical id, or
+  unstable (non-monotonic/duplicated) stable IDs is **refused**. A legacy package with **no** manifest
+  is allowed with a warning so existing staged packages keep importing while the manifest is rolled out.
+- The **race-safe advisory lock** and the **fail-closed FK-closure preflight** run deeper, at the
+  destructive SQL step, via `QuranImportDestructiveGuard`
+  (`../../infrastructure/QuranDashboard.Infrastructure/Persistence/DataPipelines/Quran/Safety/README.md`)
+  so a destructive import can never cascade into a future Abwab dependent.
+
 ## Related
 
 - Dev shortcut scripts: `Backend/scripts/README.md`.

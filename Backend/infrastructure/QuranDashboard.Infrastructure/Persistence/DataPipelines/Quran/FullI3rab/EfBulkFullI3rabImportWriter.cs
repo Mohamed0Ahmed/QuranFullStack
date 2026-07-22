@@ -1,4 +1,5 @@
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.FullI3rab;
+using QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Safety;
 
 namespace QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.FullI3rab;
 
@@ -58,7 +59,7 @@ public sealed class EfBulkFullI3rabImportWriter : IFullI3rabImportWriter
         {
             if (force)
             {
-                await FullI3rabCommandExecutor.ExecuteNonQueryAsync(
+                await QuranImportDestructiveGuard.ExecuteDestructiveAsync(
                     npgsqlConnection, transaction, FullI3rabSql.TruncateFullI3rabTables, ct);
             }
 

@@ -32,6 +32,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- US2 import-safety source-identity fixtures: staged next to the assembly so the verifier reads
+         them as real on-disk packages (actual fixtures, not mocks). -->
+    <None Include="Abwab\ImportSafety\_fixtures\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <EmbeddedResource Include="Quran\MushafReader\mushaf-reader-seed.sql" />
     <EmbeddedResource Include="Quran\Words\unique-words-seed.sql" />
     <EmbeddedResource Include="Quran\WordsRoots\roots-explorer-seed.sql" />

@@ -2,6 +2,7 @@ using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Mutashabihat;
 using QuranDashboard.Application.Quran.DataPipelines.Mutashabihat;
 using QuranDashboard.DataImporter.Import.ArgumentParsing;
 using QuranDashboard.DataImporter.Import.DefaultPaths;
+using QuranDashboard.DataImporter.Import.Safety;
 
 namespace QuranDashboard.DataImporter.Import.VerbRunners;
 
@@ -29,6 +30,18 @@ internal static class ImportMutashabihatRunner
 
         sourcePath ??= DataImporterDefaults.ResolveDefaultMutashabihatSourcePath();
         reportOutDir ??= DataImporterDefaults.ResolveDefaultMutashabihatReportDir();
+
+        var gate = DestructiveImportGate.Evaluate(force, sourcePath);
+        if (!gate.Allowed)
+        {
+            Console.Error.WriteLine(gate.Reason);
+            return ImportMutashabihatResult.FailureExitCode;
+        }
+
+        if (gate.Warning is not null)
+        {
+            Console.Error.WriteLine(gate.Warning);
+        }
 
         var result = await handler.HandleAsync(
             new ImportMutashabihatCommand(

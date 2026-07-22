@@ -1,0 +1,7 @@
+{
+  "sourceName": "quran-foundation",
+  "canonicalId": "quran-foundation@qpc-hafs-v1",
+  "revision": "2026-07-01",
+  "stableIdScheme": "monotonic-int",
+  "stableIds": [10, 20, 20, 15]
+}

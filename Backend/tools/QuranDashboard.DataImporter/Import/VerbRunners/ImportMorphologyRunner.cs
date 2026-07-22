@@ -2,6 +2,7 @@ using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.Morpholo
 using QuranDashboard.Application.Quran.DataPipelines.Words.MorphologyImporting;
 using QuranDashboard.DataImporter.Import.ArgumentParsing;
 using QuranDashboard.DataImporter.Import.DefaultPaths;
+using QuranDashboard.DataImporter.Import.Safety;
 using QuranDashboard.Infrastructure.ServiceRegistration;
 
 namespace QuranDashboard.DataImporter.Import.VerbRunners;
@@ -46,6 +47,18 @@ internal static class ImportMorphologyRunner
             ? DataImporterDefaults.ResolveDefaultEnrichedMorphologySourcePath()
             : DataImporterDefaults.ResolveDefaultMorphologySourcePath();
         reportOutDir ??= DataImporterDefaults.ResolveDefaultMorphologyReportDir();
+
+        var gate = DestructiveImportGate.Evaluate(force, sourcePath);
+        if (!gate.Allowed)
+        {
+            Console.Error.WriteLine(gate.Reason);
+            return ImportMorphologyResult.FailureExitCode;
+        }
+
+        if (gate.Warning is not null)
+        {
+            Console.Error.WriteLine(gate.Warning);
+        }
 
         var host = createHost();
         await using var scope = host.Services.CreateAsyncScope();

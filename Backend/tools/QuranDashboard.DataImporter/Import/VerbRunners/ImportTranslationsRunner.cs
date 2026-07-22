@@ -2,6 +2,7 @@ using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Translations;
 using QuranDashboard.Application.Quran.DataPipelines.Translations;
 using QuranDashboard.DataImporter.Import.ArgumentParsing;
 using QuranDashboard.DataImporter.Import.DefaultPaths;
+using QuranDashboard.DataImporter.Import.Safety;
 
 namespace QuranDashboard.DataImporter.Import.VerbRunners;
 
@@ -29,6 +30,18 @@ internal static class ImportTranslationsRunner
 
         sourcePath ??= DataImporterDefaults.ResolveDefaultTranslationSourcePath();
         reportOutDir ??= DataImporterDefaults.ResolveDefaultTranslationReportDir();
+
+        var gate = DestructiveImportGate.Evaluate(force, sourcePath);
+        if (!gate.Allowed)
+        {
+            Console.Error.WriteLine(gate.Reason);
+            return ImportTranslationsResult.FailureExitCode;
+        }
+
+        if (gate.Warning is not null)
+        {
+            Console.Error.WriteLine(gate.Warning);
+        }
 
         var result = await handler.HandleAsync(
             new ImportTranslationsCommand(

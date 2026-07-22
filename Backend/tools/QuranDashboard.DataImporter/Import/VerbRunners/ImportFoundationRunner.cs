@@ -1,5 +1,6 @@
 using QuranDashboard.Application.Quran.DataPipelines.Foundation;
 using QuranDashboard.DataImporter.Import.ArgumentParsing;
+using QuranDashboard.DataImporter.Import.Safety;
 
 namespace QuranDashboard.DataImporter.Import.VerbRunners;
 
@@ -19,6 +20,18 @@ internal static class ImportFoundationRunner
             Console.Error.WriteLine(errorMessage);
             printUsage();
             return ImportQuranFoundationResult.FailureExitCode;
+        }
+
+        var gate = DestructiveImportGate.Evaluate(force, sourceRoot);
+        if (!gate.Allowed)
+        {
+            Console.Error.WriteLine(gate.Reason);
+            return ImportQuranFoundationResult.FailureExitCode;
+        }
+
+        if (gate.Warning is not null)
+        {
+            Console.Error.WriteLine(gate.Warning);
         }
 
         var host = createHost();

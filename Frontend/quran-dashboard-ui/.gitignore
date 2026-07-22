@@ -46,6 +46,13 @@ testem.log
 /typings
 __screenshots__/
 
+# Playwright (e2e harness runtime artifacts)
+/test-results
+/playwright-report
+/blob-report
+/.playwright
+/playwright/.cache
+
 # Local HTTPS dev certs (mkcert localhost)
 localhost.pem
 localhost-key.pem

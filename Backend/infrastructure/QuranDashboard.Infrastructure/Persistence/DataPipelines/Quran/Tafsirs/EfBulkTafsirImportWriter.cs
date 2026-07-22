@@ -1,4 +1,5 @@
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Tafsirs;
+using QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Safety;
 
 namespace QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Tafsirs;
 
@@ -61,7 +62,7 @@ public sealed class EfBulkTafsirImportWriter : ITafsirImportWriter
         {
             if (force)
             {
-                await TafsirCommandExecutor.ExecuteNonQueryAsync(
+                await QuranImportDestructiveGuard.ExecuteDestructiveAsync(
                     npgsqlConnection, transaction, TafsirSql.TruncateTafsirTables, ct);
             }
 

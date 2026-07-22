@@ -1,6 +1,7 @@
 using QuranDashboard.Application.Quran.DataPipelines.Words.SimpleI3rabGeneration;
 using QuranDashboard.DataImporter.Import.ArgumentParsing;
 using QuranDashboard.DataImporter.Import.DefaultPaths;
+using QuranDashboard.DataImporter.Import.Safety;
 
 namespace QuranDashboard.DataImporter.Import.VerbRunners;
 
@@ -16,6 +17,13 @@ internal static class GenerateI3rabRunner
         }
 
         reportOutDir ??= DataImporterDefaults.ResolveDefaultSimpleI3rabReportDir();
+
+        var gate = DestructiveImportGate.Evaluate(force, sourcePath: null);
+        if (!gate.Allowed)
+        {
+            Console.Error.WriteLine(gate.Reason);
+            return GenerateI3rabResult.FailureExitCode;
+        }
 
         try
         {

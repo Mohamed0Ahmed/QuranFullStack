@@ -1,5 +1,6 @@
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Navigation;
 using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Navigation;
+using QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Safety;
 
 namespace QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Navigation;
 
@@ -102,6 +103,11 @@ public sealed class EfBulkNavigationMetadataImportWriter : INavigationMetadataIm
         {
             if (force)
             {
+                // Shared destructive guard (advisory lock + fail-closed FK-closure preflight) layered
+                // on top of the navigation-specific write-isolation guard already in ExecuteNonQueryAsync.
+                await QuranImportDestructiveGuard.AcquireDestructiveLockAsync(npgsqlConnection, transaction, ct);
+                await QuranImportDestructiveGuard.EnsureNoOutOfScopeDependentsAsync(
+                    npgsqlConnection, transaction, NavigationMetadataSql.ClearNavigationData, ct);
                 await NavigationMetadataCommandExecutor.ExecuteNonQueryAsync(
                     npgsqlConnection, transaction, NavigationMetadataSql.ClearNavigationData, ct);
             }
