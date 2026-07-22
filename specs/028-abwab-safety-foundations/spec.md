@@ -296,7 +296,13 @@ product audit/restore, and no notification UI/transport ownership is introduced.
 - **FR-003**: The system MUST preserve the Vitest fork-concurrency cap
   (`VITEST_MIN_FORKS`/`VITEST_MAX_FORKS` in `package.json`), because `vitest.config.ts` is
   ignored by the `@angular/build:unit-test` builder.
-- **FR-004**: The system MUST provide a reusable Playwright harness for browser tests.
+- **FR-004**: The system MUST provide a reusable Playwright harness for browser tests
+  covering the locked scenarios — RTL, keyboard navigation, focus restoration, ARIA basics,
+  virtualization, and critical dialogs (§15.2 gate 6, §6.9).
+- **FR-041**: The frontend source gate MUST reject drag/drop packages, directives, handles,
+  and event wiring anywhere under the application source tree (§15.2 gate 3, §3.2).
+- **FR-042**: CI MUST run a dependency/security-audit and secret/license check appropriate to
+  the repository (§15.2 gate 8).
 
 **Quran import safety (Story 2)**
 
@@ -340,14 +346,28 @@ product audit/restore, and no notification UI/transport ownership is introduced.
   the gate.
 - **FR-020**: Cache publication MUST occur only post-commit, and provider retries MUST be
   locked off for Abwab manual transactions.
+- **FR-036**: Audit atomicity — an injected audit/event failure MUST roll back all domain rows
+  in the same transaction, leaving **no half-written ChangeSet** (§6.1, §15.3 "Audit atomicity",
+  §18.2 exit).
+- **FR-037**: Audit-head monotonicity — concurrent audited commits MUST each receive **one
+  strictly increasing `AbwabRevisionState.AuditHeadSequence`**; a rollback MUST leave
+  `AuditHeadSequence`, `TimelineGeneration`, and `TreeRevision` unchanged (§6.2, §7.1, §15.3
+  "Audit head").
+- **FR-038**: A CI architecture/source test MUST fail the build when an Abwab writer namespace
+  references `ExecuteUpdate`, `ExecuteDelete`, `ExecuteSqlRaw`, `ExecuteSqlInterpolated`, raw
+  `DbCommand`, `NpgsqlConnection`, `NpgsqlCommand`, or binary COPY; a narrow reviewed allowlist
+  is permitted only for non-product, non-revertible infrastructure with an **owner and reason**.
+  This gate is **distinct** from the `SavingChanges` interceptor-skip guard in FR-011 (§6.1
+  layer 2, §15.2 gate 3, §15.3 "Bypass prevention", §3.2).
 
 **Shared frontend foundation (Story 4)**
 
 - **FR-021**: The system MUST implement only the §14.1 shared frontend ownership: stable
   DI/form conventions, generic cache/store/action/conflict primitives, IndexedDB, and the
   Playwright harness.
-- **FR-022**: The system MUST run a bounded synthetic-tree spike that records bounded
-  performance and browser behavior **without** freezing a domain DTO.
+- **FR-022**: The system MUST run a bounded synthetic-tree spike of **2,000–3,000 nodes** that
+  records bounded performance and browser behavior **without** freezing a domain DTO (§14.1,
+  §15.3).
 - **FR-023**: This stage MUST NOT install Forms as preparation, MUST NOT create domain
   mocks/HTTP adapters, and MUST NOT create an all-domain adapter.
 
@@ -376,6 +396,16 @@ product audit/restore, and no notification UI/transport ownership is introduced.
 - **FR-031**: The `attribution.view` baseline metadata/policy MUST be identical across
   seed/policy/`/me`/frontend, and attempts to remove the baseline MUST be rejected; actual
   Pending list/detail/count behavior remains owned by `032`.
+- **FR-039**: Permission and System Owner writes MUST use a **separate permanent append-only
+  security-audit unit of work** that does **NOT** advance `AbwabRevisionState.AuditHeadSequence`
+  and does **NOT** create Product-Restore-head events. They still take the `AbwabWriteBarrier`
+  and `AbwabRevisionState` locks and carry `ExpectedTimelineGeneration` for generation freshness,
+  but never advance the product timeline head (§6.1, §6.2, §6.7, §7.7, §8).
+- **FR-040**: The system MUST supply safe **ENABLED** rate-limiter defaults (the existing
+  limiter infrastructure is the base), with **separate stricter named policies** for
+  permission-administration and operational owner-bootstrap paths. Quotas MUST be positive,
+  bounded, and documented, and MUST be covered by startup/options and safe-429 tests (§20.1,
+  §4, §15).
 
 **Durable notification storage (Story 6)**
 
@@ -435,8 +465,9 @@ product audit/restore, and no notification UI/transport ownership is introduced.
   fail in 100% of cases.
 - **SC-007**: Permission codes are identical (0 drift) across all 5 catalogues (seed,
   policy, `/me`, frontend, test); list/grant/revoke parity, serialization, stale-version,
-  unauthorized, permanent-audit, and cache-invalidation tests all pass; frontend hiding is
-  demonstrably non-authoritative.
+  unauthorized, permanent-audit, cache-invalidation, **assignability (SystemOwnerOnly
+  rejection)**, and **stabilization (grant/revoke blocked when barrier=Stabilizing)** tests all
+  pass; frontend hiding is demonstrably non-authoritative.
 - **SC-008**: The stabilization registry test fails whenever any Abwab writer lacks the
   global `AbwabWriteBarrier` gate, and cache publication is observed only post-commit.
 - **SC-009**: Notification storage joins a caller's domain transaction and prevents
@@ -447,6 +478,25 @@ product audit/restore, and no notification UI/transport ownership is introduced.
   all-domain adapters; `@angular/forms` is present only from Story 5 onward.
 - **SC-011**: Every §18.2 exit/acceptance criterion passes in CI; the first Abwab Quran
   foreign key remains prohibited until this feature's exit is accepted.
+- **SC-012**: An injected audit/event failure rolls back all domain rows with **0 half-written
+  ChangeSets**; concurrent audited commits each receive a **strictly increasing**
+  `AuditHeadSequence`, and a rollback leaves `AuditHeadSequence`/`TimelineGeneration`/`TreeRevision`
+  unchanged (verified against real PostgreSQL) (§6.1–§6.2, §15.3).
+- **SC-013**: The bypass source/architecture gate fails CI in 100% of cases when an Abwab writer
+  namespace references any forbidden write API (`ExecuteUpdate`, `ExecuteDelete`, `ExecuteSqlRaw`,
+  `ExecuteSqlInterpolated`, raw `DbCommand`, `NpgsqlConnection`, `NpgsqlCommand`, or binary COPY);
+  the reviewed allowlist carries an owner and reason, and this gate is separate from the
+  interceptor-skip guard (§6.1, §15.2 gate 3, §15.3).
+- **SC-014**: Permission/SystemOwner grant/revoke/bootstrap commits produce permanent
+  security-audit events with **0 advances** of `AuditHeadSequence` and **0** Product-Restore-head
+  events, while still enforcing the barrier and generation-freshness locks (§6.1–§6.2, §6.7,
+  §7.7, §8).
+- **SC-015**: Rate-limiter defaults are **enabled** with positive, bounded, documented quotas;
+  stricter named policies apply to permission-administration and operational owner-bootstrap;
+  startup/options and safe-429 tests pass (§20.1).
+- **SC-016**: The frontend no-drag source gate fails CI on any drag/drop
+  package/directive/handle/event wiring, and the dependency/security-audit and secret/license
+  checks run in CI (§15.2 gates 3 and 8).
 
 ## Assumptions
 

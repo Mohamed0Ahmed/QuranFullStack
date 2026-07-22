@@ -68,9 +68,11 @@ implementation.
 - [ ] T009 [US1] Establish the CI pipeline with a migration-based Testcontainers backend job in the repo CI workflow (`.github/workflows/`), applying migrations before tests
 - [ ] T010 [US1] Wire the schema-compatibility assertion into the CI workflow (`.github/workflows/`) so the build fails on schema/model drift
 - [ ] T011 [US1] Wire the contract-drift gate into the CI workflow (`.github/workflows/`) so the build fails when contracts drift
-- [ ] T012 [P] [US1] Add `@playwright/test` and a reusable Playwright harness in `Frontend/quran-dashboard-ui/e2e/harness/` and `Frontend/quran-dashboard-ui/package.json`
+- [ ] T012 [P] [US1] Add `@playwright/test` and a reusable Playwright harness covering the locked scenarios (RTL, keyboard navigation, focus restoration, ARIA basics, virtualization, critical dialogs — §15.2 gate 6) in `Frontend/quran-dashboard-ui/e2e/harness/` and `Frontend/quran-dashboard-ui/package.json`
 - [ ] T013 [P] [US1] Verify and lock the Vitest fork cap (`VITEST_MIN_FORKS=1 VITEST_MAX_FORKS=2`) in `Frontend/quran-dashboard-ui/package.json`; add a CI check asserting the env vars are present (because `vitest.config.ts` is ignored by `@angular/build:unit-test`)
 - [ ] T014 [US1] Enforce the staged source-package strategy in CI (imports read only from `resources/import-sources/`), documented in the CI workflow
+- [ ] T076 [US1] Frontend no-drag **source gate** (FR-041): a CI source test that rejects drag/drop packages, directives, handles, and event wiring anywhere under `Frontend/quran-dashboard-ui/src/`, wired into `.github/workflows/` (§15.2 gate 3, §3.2)
+- [ ] T077 [US1] Dependency/security-audit + secret/license CI check (FR-042): run a dependency/security audit and secret/license scan appropriate to the repo, wired into `.github/workflows/` (§15.2 gate 8)
 
 **Checkpoint**: Pipeline green; all later stages' tests can hang off it.
 
@@ -120,15 +122,19 @@ implementation.
 - [ ] T030 [P] [US3] Append-only/TRUNCATE DB-defense + restricted-role test (real PG) in `Backend/tests/QuranDashboard.Tests/Abwab/Kernel/AppendOnlyDefenseTests.cs`
 - [ ] T031 [P] [US3] Contract/source coverage test: every mutation port/command + actionable read declares `ExpectedTimelineGeneration` in `Backend/tests/QuranDashboard.Tests/Abwab/Kernel/GenerationContractCoverageTests.cs`
 - [ ] T032 [P] [US3] Post-commit-only cache publication + provider-retries-off test in `Backend/tests/QuranDashboard.Tests/Abwab/Kernel/CachePublicationTests.cs`
+- [ ] T078 [P] [US3] `AbwabRevisionState` singleton seed test — seeded **exactly once** (`AuditHeadSequence=0`, generation-0, `TreeRevision=0`) and increments **monotonically under row-lock** (real PG) in `Backend/tests/QuranDashboard.Tests/Abwab/Kernel/RevisionStateSeedTests.cs` (FR-014/§7.1/§7.9)
+- [ ] T079 [P] [US3] Audit-atomicity rollback test (real PG) — an injected audit/event failure rolls back **all** domain rows with **no half-written ChangeSet** in `Backend/tests/QuranDashboard.Tests/Abwab/Kernel/AuditAtomicityTests.cs` (FR-036, §15.3 "Audit atomicity")
+- [ ] T080 [P] [US3] Audit-head monotonicity test (real PG) — concurrent audited commits receive **one strictly increasing** `AuditHeadSequence`; rollback leaves head/generation/tree unchanged in `Backend/tests/QuranDashboard.Tests/Abwab/Kernel/AuditHeadMonotonicityTests.cs` (FR-037, §15.3 "Audit head")
+- [ ] T081 [P] [US3] Forbidden-write-API **bypass source/architecture gate** test — fails when an Abwab writer namespace references `ExecuteUpdate`/`ExecuteDelete`/`ExecuteSqlRaw`/`ExecuteSqlInterpolated`/raw `DbCommand`/`NpgsqlConnection`/`NpgsqlCommand`/binary COPY; reviewed allowlist requires owner+reason; **distinct from the T037 interceptor-skip check** in `Backend/tests/QuranDashboard.Tests/Abwab/Kernel/ForbiddenWriteApiGateTests.cs` (FR-038, §6.1 layer 2, §15.2 gate 3, §15.3 "Bypass prevention")
 
 ### Implementation for User Story 3
 
 - [ ] T033 [P] [US3] ChangeSet + append-only AuditEvent domain types in `Backend/domain/QuranDashboard.Domain/Abwab/Audit/`
-- [ ] T034 [P] [US3] `TimelineGenerationBoundary` + singleton monotonic generation (`uint`/xmin) domain state in `Backend/domain/QuranDashboard.Domain/Abwab/Timeline/`
+- [ ] T034 [P] [US3] `TimelineGenerationBoundary` **plus the `AbwabRevisionState` singleton** (`AuditHeadSequence`, `TimelineGeneration`, `TreeRevision`, `Version`/xmin) domain state in `Backend/domain/QuranDashboard.Domain/Abwab/Timeline/`; `ChangeSetSequence` is assigned from `AuditHeadSequence` and `EventOrdinal` is per-operation (distinct coordinates, §6.1/§7.9)
 - [ ] T035 [P] [US3] `AbwabWriteBarrier` singleton (initial Writable) in `Backend/domain/QuranDashboard.Domain/Abwab/Concurrency/` + port in `Backend/application/QuranDashboard.Application.Abstractions/Abwab/`
 - [ ] T036 [P] [US3] Server clock abstraction + implementation (`IServerClock`) in `Backend/application/QuranDashboard.Application.Abstractions/Abwab/` and `Backend/infrastructure/QuranDashboard.Infrastructure/Abwab/`
 - [ ] T037 [US3] Tracked ChangeSet unit of work + `SavingChanges` guard (reject no-ChangeSet, reject physical delete, enforce soft-delete, sealed personal-delete exception) **plus the CI bypass check guarding the audit interceptor** (fails CI if the interceptor can be skipped) in `Backend/infrastructure/QuranDashboard.Infrastructure/Abwab/Persistence/`
-- [ ] T038 [US3] Generate (via EF tooling) the migration seeding exactly one immutable gen-zero boundary, immutable ChangeSet generation stamping, append-only/TRUNCATE DB defense, and restricted application role in `Backend/infrastructure/QuranDashboard.Infrastructure/` (report migration name + files after)
+- [ ] T038 [US3] Generate (via EF tooling) the migration seeding exactly one immutable gen-zero boundary, **the `AbwabRevisionState` singleton (`AuditHeadSequence=0`, generation-0, `TreeRevision=0`)**, **the `AbwabWriteBarrier` singleton row (initial `Writable`)**, immutable ChangeSet generation stamping, append-only/TRUNCATE DB defense, and restricted application role in `Backend/infrastructure/QuranDashboard.Infrastructure/` (report migration name + files after)
 - [ ] T039 [US3] `ExpectedTimelineGeneration` command/read contract + 409-before-mutation guard, mapped to the `abwab.*` 409 conflict codes at the API in `Backend/application/QuranDashboard.Application/Abwab/` and `Backend/api/QuranDashboard.Api/Abwab/`
 - [ ] T040 [US3] Stabilization middleware/command guard registering every Abwab writer against the barrier in `Backend/application/QuranDashboard.Application/Abwab/` and `Backend/api/QuranDashboard.Api/Abwab/`
 - [ ] T041 [US3] Post-commit cache publication + disable provider retries for Abwab manual transactions in `Backend/infrastructure/QuranDashboard.Infrastructure/Abwab/`
@@ -146,14 +152,14 @@ implementation.
 ### Tests for User Story 4 ⚠️ (write first, must fail)
 
 - [ ] T042 [P] [US4] Vitest unit tests for generic cache/store/action/conflict primitives in `Frontend/quran-dashboard-ui/src/app/core/data-access/*.spec.ts`
-- [ ] T043 [P] [US4] Playwright bounded synthetic-tree spike (records perf/browser behavior, no domain DTO) in `Frontend/quran-dashboard-ui/e2e/spikes/synthetic-tree.spec.ts`
+- [ ] T043 [P] [US4] Playwright bounded synthetic-tree spike of **2,000–3,000 nodes** (records perf/browser behavior, no domain DTO — §14.1/§15.3) in `Frontend/quran-dashboard-ui/e2e/spikes/synthetic-tree.spec.ts`
 
 ### Implementation for User Story 4
 
 - [ ] T044 [P] [US4] Stable DI + form **conventions** (tokens/providers, no Forms package) in `Frontend/quran-dashboard-ui/src/app/core/`
 - [ ] T045 [P] [US4] Generic cache primitive backed by IndexedDB in `Frontend/quran-dashboard-ui/src/app/core/caching/`
 - [ ] T046 [P] [US4] Generic store/action/conflict primitives in `Frontend/quran-dashboard-ui/src/app/core/data-access/` and `Frontend/quran-dashboard-ui/src/app/shared/`
-- [ ] T047 [US4] Bounded synthetic-tree spike implementation (perf harness) in `Frontend/quran-dashboard-ui/e2e/spikes/`
+- [ ] T047 [US4] Bounded synthetic-tree spike implementation (perf harness, **2,000–3,000 nodes**) in `Frontend/quran-dashboard-ui/e2e/spikes/`
 - [ ] T048 [US4] Boundary check: no domain mock/HTTP adapter, no all-domain adapter, `@angular/forms` absent (lint/check + note in `Frontend/quran-dashboard-ui/src/app/core/README.md`)
 
 **Checkpoint**: Generic frontend substrate ready; zero domain leakage.
@@ -174,6 +180,9 @@ implementation.
 - [ ] T052 [P] [US5] Grant/revoke serialization + stale-version + idempotent-no-audit + unauthorized + permanent-audit + cache-invalidation tests in `Backend/tests/QuranDashboard.Tests/Abwab/Permissions/GrantRevokeTests.cs`
 - [ ] T053 [P] [US5] `attribution.view` baseline identical across layers + removal-rejected test in `Backend/tests/QuranDashboard.Tests/Abwab/Permissions/BaselinePermissionTests.cs`
 - [ ] T054 [P] [US5] Frontend non-authoritative hiding test (hidden action still rejected by backend policy) in `Frontend/quran-dashboard-ui/e2e/permissions/non-authoritative.spec.ts`
+- [ ] T082 [P] [US5] Security-audit vs product-head **separation** test (real PG) — grant/revoke/bootstrap produce permanent **security-audit** events but do **NOT** advance `AuditHeadSequence` and **never** appear as Product-Restore-head events, while still taking the barrier + `AbwabRevisionState` locks and carrying `ExpectedTimelineGeneration` in `Backend/tests/QuranDashboard.Tests/Abwab/Permissions/SecurityAuditSeparationTests.cs` (FR-039, §6.1/§6.2/§6.7/§7.7/§8)
+- [ ] T083 [P] [US5] `SystemOwnerOnly` assignability-rejection test — granting a `SystemOwnerOnly` code (`permission.*`, `audit.restore`, `safetyPoint.*`) to an ordinary user is rejected with `abwab.permission_baseline_locked` in `Backend/tests/QuranDashboard.Tests/Abwab/Permissions/AssignabilityTests.cs` (SC-007, §5.2/§11)
+- [ ] T084 [P] [US5] Rate-limiter startup/options + safe-429 test — safe **enabled** defaults load; stricter named policies for permission-administration and owner-bootstrap; quotas positive/bounded/documented in `Backend/tests/QuranDashboard.Tests/Abwab/Permissions/RateLimiterDefaultsTests.cs` (FR-040, §20.1/§4/§15)
 
 ### Implementation for User Story 5
 
@@ -187,6 +196,7 @@ implementation.
 - [ ] T062 [US5] Add `@angular/forms` and build the Owner-only Reactive-Forms grant/revoke UI in `Frontend/quran-dashboard-ui/src/app/features/permissions/` (+ `package.json`)
 - [ ] T063 [US5] Frontend permission consumption from `/me` with non-authoritative hiding in `Frontend/quran-dashboard-ui/src/app/core/auth/`
 - [ ] T064 [US5] Verify Owner **membership** administration is never exposed in the dashboard (only permission admin); note boundary in `Backend/api/QuranDashboard.Api/Security/README.md`
+- [ ] T085 [US5] Rate-limiter safe-**enabled** defaults on the existing limiter infrastructure + **separate stricter named policies** for permission-administration and operational owner-bootstrap paths (positive/bounded/documented quotas) in `Backend/api/QuranDashboard.Api/` limiter configuration (FR-040, §20.1)
 
 **Checkpoint**: Ownership + permission slice proven end-to-end; backend authoritative, frontend hiding non-authoritative.
 

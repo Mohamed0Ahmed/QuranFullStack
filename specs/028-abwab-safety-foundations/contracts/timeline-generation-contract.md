@@ -9,8 +9,8 @@ Abwab timeline.
   `ExpectedTimelineGeneration`. A **foundation contract/source test fails** if any of them
   omits it (including representative security and personal commands).
 - On a mutation whose `ExpectedTimelineGeneration` no longer matches the current generation,
-  the system MUST return the **exact 409** conflict **before any row mutation** — no partial
-  write, no side effect.
+  the system MUST return the **exact 409** conflict `abwab.timeline_generation_stale` (§11)
+  **before any row mutation** — no partial write, no side effect.
 - This holds even when the command's **target row/revision was untouched** (a generation
   advance elsewhere still invalidates the command).
 
@@ -25,6 +25,7 @@ Abwab timeline.
 
 - Contract/source test: enumerate all mutation ports/commands + actionable reads → each must
   declare `ExpectedTimelineGeneration`.
-- Behavior test: advance generation, replay an old command → exact 409, **0 rows mutated**,
-  including a fixture whose target row/revision was never touched.
+- Behavior test: advance generation, replay an old command → exact 409
+  `abwab.timeline_generation_stale`, **0 rows mutated**, including a fixture whose target
+  row/revision was never touched.
 - Seed test: exactly 1 gen-zero root; root edit/delete/duplicate all fail.

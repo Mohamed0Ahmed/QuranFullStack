@@ -24,8 +24,10 @@ cd Frontend/quran-dashboard-ui && npm test            # VITEST_MIN_FORKS=1 VITES
 ```
 
 **Expect**: migration-based Testcontainers stand up; schema-compatibility assertion passes;
-contract-drift gate active; Playwright harness runs; the Vitest fork cap is present in
-`package.json` and enforced.
+contract-drift gate active; the Playwright harness runs the locked scenarios (RTL, keyboard,
+focus, ARIA, virtualization, dialog); the Vitest fork cap is present in `package.json` and
+enforced; the **frontend no-drag source gate** and the **dependency/security-audit +
+secret/license** checks run and fail on violation.
 
 ## Stage 2 — Quran import safety
 
@@ -41,11 +43,20 @@ Abwab Quran FK remains prohibited.
 - A write with **no ChangeSet** is rejected; a **physical delete** is rejected (soft-delete
   enforced); the sealed **default-deny personal-delete** exception is proven with
   foundation-only fixtures.
-- Exactly **one immutable gen-zero `TimelineGenerationBoundary`** after migration; root
+- Exactly **one immutable gen-zero `TimelineGenerationBoundary`** after migration; the
+  **`AbwabRevisionState` singleton** (`AuditHeadSequence=0`, gen-0, `TreeRevision=0`) and the
+  **`AbwabWriteBarrier` singleton** (`Writable`) are seeded exactly once; root
   edit/delete/duplicate fail.
-- A stale `ExpectedTimelineGeneration` returns the **exact 409 before any row mutation**
-  (including an untouched-row fixture); the contract test fails if any port/command/actionable
-  read omits it.
+- **Audit atomicity**: an injected audit/event failure rolls back all domain rows with **no
+  half-written ChangeSet**. **Audit-head monotonicity**: concurrent audited commits get one
+  strictly increasing `AuditHeadSequence`; a rollback leaves head/generation/tree unchanged.
+- The **forbidden-write-API bypass gate** fails CI when a writer namespace references
+  `ExecuteUpdate`/`ExecuteDelete`/`ExecuteSqlRaw`/`ExecuteSqlInterpolated`/raw
+  `DbCommand`/`NpgsqlConnection`/`NpgsqlCommand`/binary COPY (allowlist needs owner+reason;
+  distinct from the interceptor-skip check).
+- A stale `ExpectedTimelineGeneration` returns the **exact 409 `abwab.timeline_generation_stale`
+  before any row mutation** (including an untouched-row fixture); the contract test fails if any
+  port/command/actionable read omits it.
 - The **stabilization registry test fails** if any Abwab writer lacks the global
   `AbwabWriteBarrier`; cache publishes only post-commit; provider retries are off for manual
   transactions.
@@ -76,7 +87,15 @@ and **freezes no domain DTO**; **no** domain mock/HTTP adapter and **no** all-do
   list/grant/revoke parity, serialization, stale-version, unauthorized, permanent-audit,
   cache-invalidation, stabilization tests pass; `/me`, policy, cache, UI converge on the
   committed winner; frontend hiding is **non-authoritative**.
-- `attribution.view` baseline identical across layers; baseline removal rejected.
+- `attribution.view` baseline identical across layers; baseline removal rejected;
+  **`SystemOwnerOnly`** codes (`permission.*`/`audit.restore`/`safetyPoint.*`) are rejected for
+  ordinary users (`abwab.permission_baseline_locked`); grant/revoke are blocked during
+  `Stabilizing`.
+- **Security-audit separation**: grant/revoke/bootstrap produce permanent security-audit events
+  but do **not** advance `AuditHeadSequence` and never appear as Product-Restore-head events.
+- **Rate limiter**: safe **enabled** defaults load with positive/bounded/documented quotas;
+  stricter named policies for permission-administration and owner-bootstrap; startup/options and
+  safe-429 tests pass.
 - `@angular/forms` is added **here** (real Reactive Forms grant/revoke); Owner **membership**
   admin is **never** in the dashboard.
 
