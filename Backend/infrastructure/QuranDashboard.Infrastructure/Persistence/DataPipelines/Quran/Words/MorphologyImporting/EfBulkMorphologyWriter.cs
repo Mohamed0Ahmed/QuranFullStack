@@ -1,6 +1,7 @@
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.MorphologyImporting;
 using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting;
 using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting.Corrections;
+using QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Safety;
 
 namespace QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Words.MorphologyImporting;
 
@@ -77,7 +78,7 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
         {
             if (force)
             {
-                await MorphologyCommandExecutor.ExecuteNonQueryAsync(
+                await QuranImportDestructiveGuard.ExecuteDestructiveAsync(
                     npgsqlConnection, transaction, MorphologySql.TruncateMorphologyTables, ct);
             }
 

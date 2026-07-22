@@ -1,0 +1,7 @@
+{
+  "sourceName": "unpinned-external-source",
+  "canonicalId": "unpinned-external-source@unknown",
+  "revision": "2026-07-01",
+  "stableIdScheme": "monotonic-int",
+  "stableIds": [10, 20, 30]
+}

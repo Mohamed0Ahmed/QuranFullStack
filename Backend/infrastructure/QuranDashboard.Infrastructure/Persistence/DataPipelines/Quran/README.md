@@ -33,6 +33,10 @@ an `EfI3rabGenerationSource` + write-probe (`II3rabGenerationWriteProbe`).
 - Run reports follow `LOGGING_GUIDELINES.md`; do not invent a new report shape per domain.
 - **Do not hand-write migrations here** — schema comes from EF migrations under
   `../../Migrations/`; this area writes data, not DDL.
+- **Route every destructive step through the safety guard** — each domain's `--force` TRUNCATE/DELETE
+  goes through `QuranImportDestructiveGuard` (`Safety/README.md`): a transaction-scoped advisory lock
+  plus a fail-closed FK-closure preflight so a CASCADE can never reach a table outside the `quran_*`
+  domain (feature 028 US2). Add new force/reseed paths to that guard.
 
 ## Related
 

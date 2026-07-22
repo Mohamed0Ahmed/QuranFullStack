@@ -1,4 +1,5 @@
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Translations;
+using QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Safety;
 
 namespace QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Translations;
 
@@ -60,7 +61,7 @@ public sealed class EfBulkTranslationImportWriter : ITranslationImportWriter
         {
             if (force)
             {
-                await TranslationCommandExecutor.ExecuteNonQueryAsync(
+                await QuranImportDestructiveGuard.ExecuteDestructiveAsync(
                     npgsqlConnection, transaction, TranslationSql.TruncateTranslationTables, ct);
             }
 

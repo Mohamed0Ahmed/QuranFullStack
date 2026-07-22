@@ -88,18 +88,18 @@ implementation.
 
 ### Tests for User Story 2 ⚠️ (write first, must fail)
 
-- [ ] T015 [P] [US2] Forbidden-source refusal test with **actual forbidden-source fixtures** (real PG) in `Backend/tests/QuranDashboard.Tests/Abwab/ImportSafety/ForbiddenSourceRefusalTests.cs`
-- [ ] T016 [P] [US2] Wrong source-identity / unstable-ID refusal test in `Backend/tests/QuranDashboard.Tests/Abwab/ImportSafety/SourceIdentityTests.cs`
-- [ ] T017 [P] [US2] Concurrent-dependent-creation vs destructive-import fails-closed test (real PG), using **foundation-only / synthetic dependent fixtures** (no real Abwab domain rows — none exist until US3), in `Backend/tests/QuranDashboard.Tests/Abwab/ImportSafety/DestructiveRaceTests.cs`
+- [X] T015 [P] [US2] Forbidden-source refusal test with **actual forbidden-source fixtures** (real PG) in `Backend/tests/QuranDashboard.Tests/Abwab/ImportSafety/ForbiddenSourceRefusalTests.cs`
+- [X] T016 [P] [US2] Wrong source-identity / unstable-ID refusal test in `Backend/tests/QuranDashboard.Tests/Abwab/ImportSafety/SourceIdentityTests.cs`
+- [X] T017 [P] [US2] Concurrent-dependent-creation vs destructive-import fails-closed test (real PG), using **foundation-only / synthetic dependent fixtures** (no real Abwab domain rows — none exist until US3), in `Backend/tests/QuranDashboard.Tests/Abwab/ImportSafety/DestructiveRaceTests.cs`
 
 ### Implementation for User Story 2
 
-- [ ] T018 [US2] Enumerate and document every destructive/force/importer path in `Backend/report/feature-028-abwab-safety-foundations/destructive-path-inventory.md`
-- [ ] T019 [US2] Remove or prevent all `TRUNCATE ... CASCADE` effects that could reach Abwab (structural — no Abwab FK exists yet) in `Backend/tools/QuranDashboard.DataImporter/` and `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/DataPipelines/Quran/`
-- [ ] T020 [US2] Add a race-safe dependent lock/preflight before any destructive step (advisory/row lock) in `Backend/tools/QuranDashboard.DataImporter/`
-- [ ] T021 [P] [US2] Apply environment restrictions and restricted DB privileges to import paths (importer + `Backend/infrastructure/QuranDashboard.Infrastructure/` config)
-- [ ] T022 [P] [US2] Pin canonical source identity and verify stable IDs against the staged package in `Backend/tools/QuranDashboard.DataImporter/` (source read from `resources/import-sources/`)
-- [ ] T023 [US2] Confirm importer changes introduce no Abwab→Quran FK; keep the T006 prohibition guard green (`Backend/tests/QuranDashboard.Tests/Abwab/_Guards/NoPrematureQuranFkTests.cs`)
+- [X] T018 [US2] Enumerate and document every destructive/force/importer path in `Backend/report/feature-028-abwab-safety-foundations/destructive-path-inventory.md`
+- [X] T019 [US2] Remove or prevent all `TRUNCATE ... CASCADE` effects that could reach Abwab (structural — no Abwab FK exists yet) in `Backend/tools/QuranDashboard.DataImporter/` and `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/DataPipelines/Quran/`
+- [X] T020 [US2] Add a race-safe dependent lock/preflight before any destructive step (advisory/row lock) in `Backend/tools/QuranDashboard.DataImporter/`
+- [X] T021 [P] [US2] Apply environment restrictions and restricted DB privileges to import paths (importer + `Backend/infrastructure/QuranDashboard.Infrastructure/` config) — env restriction + privilege-agnostic closure guard here; the DB-privilege GRANT/REVOKE restricted role needs a migration and is deferred to US3/T038
+- [X] T022 [P] [US2] Pin canonical source identity and verify stable IDs against the staged package in `Backend/tools/QuranDashboard.DataImporter/` (source read from `resources/import-sources/`)
+- [X] T023 [US2] Confirm importer changes introduce no Abwab→Quran FK; keep the T006 prohibition guard green (`Backend/tests/QuranDashboard.Tests/Abwab/_Guards/NoPrematureQuranFkTests.cs`)
 
 **Checkpoint**: All destructive paths fail closed; first Quran FK still prohibited.
 

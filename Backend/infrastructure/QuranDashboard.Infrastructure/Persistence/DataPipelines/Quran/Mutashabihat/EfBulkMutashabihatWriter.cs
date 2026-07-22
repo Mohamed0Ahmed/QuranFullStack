@@ -1,4 +1,5 @@
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Mutashabihat;
+using QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Safety;
 
 namespace QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Mutashabihat;
 
@@ -60,7 +61,7 @@ public sealed class EfBulkMutashabihatWriter : IMutashabihatImportWriter
         {
             if (force)
             {
-                await MutashabihatCommandExecutor.ExecuteNonQueryAsync(
+                await QuranImportDestructiveGuard.ExecuteDestructiveAsync(
                     npgsqlConnection, transaction, MutashabihatSql.TruncateMutashabihatTables, ct);
             }
 

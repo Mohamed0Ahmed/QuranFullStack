@@ -2,6 +2,7 @@ using QuranDashboard.Application.Abstractions.Quran.DataPipelines.FullI3rab;
 using QuranDashboard.Application.Quran.DataPipelines.FullI3rab;
 using QuranDashboard.DataImporter.Import.ArgumentParsing;
 using QuranDashboard.DataImporter.Import.DefaultPaths;
+using QuranDashboard.DataImporter.Import.Safety;
 
 namespace QuranDashboard.DataImporter.Import.VerbRunners;
 
@@ -29,6 +30,18 @@ internal static class ImportFullI3rabRunner
 
         sourcePath ??= DataImporterDefaults.ResolveDefaultFullI3rabSourcePath();
         reportOutDir ??= DataImporterDefaults.ResolveDefaultFullI3rabReportDir();
+
+        var gate = DestructiveImportGate.Evaluate(force, sourcePath);
+        if (!gate.Allowed)
+        {
+            Console.Error.WriteLine(gate.Reason);
+            return ImportFullI3rabResult.FailureExitCode;
+        }
+
+        if (gate.Warning is not null)
+        {
+            Console.Error.WriteLine(gate.Warning);
+        }
 
         var result = await handler.HandleAsync(
             new ImportFullI3rabCommand(
