@@ -174,29 +174,29 @@ implementation.
 
 ### Tests for User Story 5 ⚠️ (write first, must fail)
 
-- [ ] T049 [P] [US5] Concurrent owner-removal keeps ≥1 active owner + observed-on-next-request test + **explicit no-email/role/runtime-fallback rejection assertion** (real PG) in `Backend/tests/QuranDashboard.Tests/Abwab/Ownership/FinalOwnerInvariantTests.cs`
-- [ ] T050 [P] [US5] Zero-to-one bootstrap atomic/idempotent/permanently-audited + wrong-issuer/unverified-email/disabled-account/duplicate-mismatch failure tests in `Backend/tests/QuranDashboard.Tests/Abwab/Ownership/BootstrapTests.cs`
-- [ ] T051 [P] [US5] Permission-code parity across seed/policy/`/me`/frontend/test test in `Backend/tests/QuranDashboard.Tests/Abwab/Permissions/PermissionParityTests.cs`
-- [ ] T052 [P] [US5] Grant/revoke serialization + stale-version + idempotent-no-audit + unauthorized + permanent-audit + cache-invalidation tests in `Backend/tests/QuranDashboard.Tests/Abwab/Permissions/GrantRevokeTests.cs`
-- [ ] T053 [P] [US5] `attribution.view` baseline identical across layers + removal-rejected test in `Backend/tests/QuranDashboard.Tests/Abwab/Permissions/BaselinePermissionTests.cs`
-- [ ] T054 [P] [US5] Frontend non-authoritative hiding test (hidden action still rejected by backend policy) in `Frontend/quran-dashboard-ui/e2e/permissions/non-authoritative.spec.ts`
-- [ ] T082 [P] [US5] Security-audit vs product-head **separation** test (real PG) — grant/revoke/bootstrap produce permanent **security-audit** events but do **NOT** advance `AuditHeadSequence` and **never** appear as Product-Restore-head events, while still taking the barrier + `AbwabRevisionState` locks and carrying `ExpectedTimelineGeneration` in `Backend/tests/QuranDashboard.Tests/Abwab/Permissions/SecurityAuditSeparationTests.cs` (FR-039, §6.1/§6.2/§6.7/§7.7/§8)
-- [ ] T083 [P] [US5] `SystemOwnerOnly` assignability-rejection test — granting a `SystemOwnerOnly` code (`permission.*`, `audit.restore`, `safetyPoint.*`) to an ordinary user is rejected with `abwab.permission_baseline_locked` in `Backend/tests/QuranDashboard.Tests/Abwab/Permissions/AssignabilityTests.cs` (SC-007, §5.2/§11)
-- [ ] T084 [P] [US5] Rate-limiter startup/options + safe-429 test — safe **enabled** defaults load; stricter named policies for permission-administration and owner-bootstrap; quotas positive/bounded/documented in `Backend/tests/QuranDashboard.Tests/Abwab/Permissions/RateLimiterDefaultsTests.cs` (FR-040, §20.1/§4/§15)
+- [X] T049 [P] [US5] Concurrent owner-removal keeps ≥1 active owner + observed-on-next-request test + **explicit no-email/role/runtime-fallback rejection assertion** (real PG) in `Backend/tests/QuranDashboard.Tests/Abwab/Ownership/FinalOwnerInvariantTests.cs`
+- [X] T050 [P] [US5] Zero-to-one bootstrap atomic/idempotent/permanently-audited + wrong-issuer/unverified-email/disabled-account/duplicate-mismatch failure tests in `Backend/tests/QuranDashboard.Tests/Abwab/Ownership/BootstrapTests.cs`
+- [X] T051 [P] [US5] Permission-code parity across seed/policy/`/me`/frontend/test test in `Backend/tests/QuranDashboard.Tests/Abwab/Permissions/PermissionParityTests.cs`
+- [X] T052 [P] [US5] Grant/revoke serialization + stale-version + idempotent-no-audit + unauthorized + permanent-audit + cache-invalidation tests in `Backend/tests/QuranDashboard.Tests/Abwab/Permissions/GrantRevokeTests.cs`
+- [X] T053 [P] [US5] `attribution.view` baseline identical across layers + removal-rejected test in `Backend/tests/QuranDashboard.Tests/Abwab/Permissions/BaselinePermissionTests.cs`
+- [X] T054 [P] [US5] Frontend non-authoritative hiding test (hidden action still rejected by backend policy) in `Frontend/quran-dashboard-ui/e2e/permissions/non-authoritative.spec.ts`
+- [X] T082 [P] [US5] Security-audit vs product-head **separation** test (real PG) — grant/revoke/bootstrap produce permanent **security-audit** events but do **NOT** advance `AuditHeadSequence` and **never** appear as Product-Restore-head events, while still taking the barrier + `AbwabRevisionState` locks and carrying `ExpectedTimelineGeneration` in `Backend/tests/QuranDashboard.Tests/Abwab/Permissions/SecurityAuditSeparationTests.cs` (FR-039, §6.1/§6.2/§6.7/§7.7/§8)
+- [X] T083 [P] [US5] `SystemOwnerOnly` assignability-rejection test — granting a `SystemOwnerOnly` code (`permission.*`, `audit.restore`, `safetyPoint.*`) to an ordinary user is rejected with `abwab.permission_baseline_locked` in `Backend/tests/QuranDashboard.Tests/Abwab/Permissions/AssignabilityTests.cs` (SC-007, §5.2/§11)
+- [X] T084 [P] [US5] Rate-limiter startup/options + safe-429 test — safe **enabled** defaults load; stricter named policies for permission-administration and owner-bootstrap; quotas positive/bounded/documented in `Backend/tests/QuranDashboard.Tests/Abwab/Permissions/RateLimiterDefaultsTests.cs` (FR-040, §20.1/§4/§15)
 
 ### Implementation for User Story 5
 
-- [ ] T055 [P] [US5] `SystemOwnerMembership` domain (immutable issuer/subject, enabled checks, final-owner invariant) in `Backend/domain/QuranDashboard.Domain/Security/Owners/`
-- [ ] T056 [US5] Serialized owner add/remove + atomic/idempotent, permanently-audited zero-to-one bootstrap handler in `Backend/application/QuranDashboard.Application/Security/Owners/`
-- [ ] T057 [P] [US5] Exact permission catalogue + seed (codes + metadata: `SystemOwnerOnly`, `DashboardAdminBaseline`) in `Backend/domain/QuranDashboard.Domain/Security/Permissions/` and Infrastructure seed
-- [ ] T058 [US5] `PermissionAssignment` (role/direct unique keys) + serialized race semantics + idempotent no-audit no-ops in `Backend/application/QuranDashboard.Application/Security/Permissions/` and `Backend/infrastructure/QuranDashboard.Infrastructure/`
-- [ ] T059 [US5] `/me` projection + cache invalidation + policy handlers in `Backend/application/QuranDashboard.Application/Security/` and `Backend/api/QuranDashboard.Api/Security/`
-- [ ] T060 [P] [US5] Permission-administration port + mock in `Backend/application/QuranDashboard.Application.Abstractions/Security/` (+ mock in tests)
-- [ ] T061 [US5] Owner-only list/grant/revoke backend + API returning the `ApiResponse` envelope and `abwab.*` 409 codes in `Backend/api/QuranDashboard.Api/Security/Permissions/`
-- [ ] T062 [US5] Add `@angular/forms` and build the Owner-only Reactive-Forms grant/revoke UI in `Frontend/quran-dashboard-ui/src/app/features/permissions/` (+ `package.json`)
-- [ ] T063 [US5] Frontend permission consumption from `/me` with non-authoritative hiding in `Frontend/quran-dashboard-ui/src/app/core/auth/`
-- [ ] T064 [US5] Verify Owner **membership** administration is never exposed in the dashboard (only permission admin); note boundary in `Backend/api/QuranDashboard.Api/Security/README.md`
-- [ ] T085 [US5] Rate-limiter safe-**enabled** defaults on the existing limiter infrastructure + **separate stricter named policies** for permission-administration and operational owner-bootstrap paths (positive/bounded/documented quotas) in `Backend/api/QuranDashboard.Api/` limiter configuration (FR-040, §20.1)
+- [X] T055 [P] [US5] `SystemOwnerMembership` domain (immutable issuer/subject, enabled checks, final-owner invariant) in `Backend/domain/QuranDashboard.Domain/Security/Owners/`
+- [X] T056 [US5] Serialized owner add/remove + atomic/idempotent, permanently-audited zero-to-one bootstrap handler in `Backend/application/QuranDashboard.Application/Security/Owners/`
+- [X] T057 [P] [US5] Exact permission catalogue + seed (codes + metadata: `SystemOwnerOnly`, `DashboardAdminBaseline`) in `Backend/domain/QuranDashboard.Domain/Security/Permissions/` and Infrastructure seed
+- [X] T058 [US5] `PermissionAssignment` (role/direct unique keys) + serialized race semantics + idempotent no-audit no-ops in `Backend/application/QuranDashboard.Application/Security/Permissions/` and `Backend/infrastructure/QuranDashboard.Infrastructure/`
+- [X] T059 [US5] `/me` projection + cache invalidation + policy handlers in `Backend/application/QuranDashboard.Application/Security/` and `Backend/api/QuranDashboard.Api/Security/`
+- [X] T060 [P] [US5] Permission-administration port + mock in `Backend/application/QuranDashboard.Application.Abstractions/Security/` (+ mock in tests)
+- [X] T061 [US5] Owner-only list/grant/revoke backend + API returning the `ApiResponse` envelope and `abwab.*` 409 codes in `Backend/api/QuranDashboard.Api/Security/Permissions/`
+- [X] T062 [US5] Add `@angular/forms` and build the Owner-only Reactive-Forms grant/revoke UI in `Frontend/quran-dashboard-ui/src/app/features/permissions/` (+ `package.json`)
+- [X] T063 [US5] Frontend permission consumption from `/me` with non-authoritative hiding in `Frontend/quran-dashboard-ui/src/app/core/auth/`
+- [X] T064 [US5] Verify Owner **membership** administration is never exposed in the dashboard (only permission admin); note boundary in `Backend/api/QuranDashboard.Api/Security/README.md`
+- [X] T085 [US5] Rate-limiter safe-**enabled** defaults on the existing limiter infrastructure + **separate stricter named policies** for permission-administration and operational owner-bootstrap paths (positive/bounded/documented quotas) in `Backend/api/QuranDashboard.Api/` limiter configuration (FR-040, §20.1)
 
 **Checkpoint**: Ownership + permission slice proven end-to-end; backend authoritative, frontend hiding non-authoritative.
 

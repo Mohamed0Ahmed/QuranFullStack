@@ -14,6 +14,9 @@ using QuranDashboard.Domain.Access;
 using QuranDashboard.Domain.Abwab.Audit;
 using QuranDashboard.Domain.Abwab.Concurrency;
 using QuranDashboard.Domain.Abwab.Timeline;
+using QuranDashboard.Domain.Security.Audit;
+using QuranDashboard.Domain.Security.Owners;
+using QuranDashboard.Domain.Security.Permissions;
 
 namespace QuranDashboard.Infrastructure.Persistence;
 
@@ -62,6 +65,13 @@ public sealed class QuranDashboardDbContext(DbContextOptions<QuranDashboardDbCon
     public DbSet<AbwabRevisionState> AbwabRevisionStates => Set<AbwabRevisionState>();
     public DbSet<TimelineGenerationBoundary> AbwabTimelineGenerationBoundaries => Set<TimelineGenerationBoundary>();
     public DbSet<AbwabWriteBarrier> AbwabWriteBarriers => Set<AbwabWriteBarrier>();
+
+    // Security substrate (028 US5): immutable System Owner membership, the permission catalogue/assignments,
+    // and the separate permanent security-audit stream. No Quran foreign key on any of these.
+    public DbSet<SystemOwnerMembership> SystemOwnerMemberships => Set<SystemOwnerMembership>();
+    public DbSet<PermissionCode> PermissionCodes => Set<PermissionCode>();
+    public DbSet<PermissionAssignment> PermissionAssignments => Set<PermissionAssignment>();
+    public DbSet<SecurityAuditEvent> SecurityAuditEvents => Set<SecurityAuditEvent>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -26,6 +26,7 @@ const CURRENT_USER: CurrentUser = {
   status: 'pending',
   roleId: null,
   roleName: null,
+  permissions: [],
 };
 
 const OWNER_USER: CurrentUser = {
@@ -35,6 +36,7 @@ const OWNER_USER: CurrentUser = {
   status: 'active',
   roleId: 1,
   roleName: 'Owner',
+  permissions: [],
 };
 
 describe('CurrentUserStore.load', () => {

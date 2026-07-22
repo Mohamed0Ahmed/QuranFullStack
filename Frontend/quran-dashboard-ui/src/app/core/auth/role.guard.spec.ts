@@ -22,6 +22,7 @@ function ownerUser(overrides: Partial<CurrentUser> = {}): CurrentUser {
     status: 'active',
     roleId: 1,
     roleName: 'Owner',
+    permissions: [],
     ...overrides,
   };
 }

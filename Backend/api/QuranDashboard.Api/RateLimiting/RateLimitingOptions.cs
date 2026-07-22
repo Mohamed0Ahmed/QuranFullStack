@@ -23,6 +23,16 @@ public sealed class RateLimitingOptions
     public int HealthPermitLimit { get; set; } = 300;
 
     public int HealthWindowSeconds { get; set; } = 60;
+
+    // Named security policies — ALWAYS enabled on their endpoints (not gated by Enabled). Stricter than the
+    // general limiter: permission administration and operational owner bootstrap are low-volume, high-value.
+    public int PermissionAdminPermitLimit { get; set; } = 20;
+
+    public int PermissionAdminWindowSeconds { get; set; } = 60;
+
+    public int OwnerBootstrapPermitLimit { get; set; } = 5;
+
+    public int OwnerBootstrapWindowSeconds { get; set; } = 60;
 }
 
 // Registered with ValidateOnStart() so invalid configuration throws at startup, not as runtime
@@ -66,6 +76,26 @@ internal sealed class RateLimitingOptionsValidator : IValidateOptions<RateLimiti
         if (options.HealthWindowSeconds <= 0)
         {
             failures.Add($"{RateLimitingOptions.SectionName}:{nameof(RateLimitingOptions.HealthWindowSeconds)} must be greater than 0.");
+        }
+
+        if (options.PermissionAdminPermitLimit <= 0)
+        {
+            failures.Add($"{RateLimitingOptions.SectionName}:{nameof(RateLimitingOptions.PermissionAdminPermitLimit)} must be greater than 0.");
+        }
+
+        if (options.PermissionAdminWindowSeconds <= 0)
+        {
+            failures.Add($"{RateLimitingOptions.SectionName}:{nameof(RateLimitingOptions.PermissionAdminWindowSeconds)} must be greater than 0.");
+        }
+
+        if (options.OwnerBootstrapPermitLimit <= 0)
+        {
+            failures.Add($"{RateLimitingOptions.SectionName}:{nameof(RateLimitingOptions.OwnerBootstrapPermitLimit)} must be greater than 0.");
+        }
+
+        if (options.OwnerBootstrapWindowSeconds <= 0)
+        {
+            failures.Add($"{RateLimitingOptions.SectionName}:{nameof(RateLimitingOptions.OwnerBootstrapWindowSeconds)} must be greater than 0.");
         }
 
         return failures.Count > 0

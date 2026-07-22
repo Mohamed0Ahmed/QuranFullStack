@@ -52,6 +52,13 @@ export const routes: Routes = [
         loadChildren: () =>
           import('./features/words/words.routes').then((m) => m.WORDS_ROUTES),
       },
+      {
+        // Owner-only admin surface (US5). The child route attaches permissionGuard; hiding is
+        // non-authoritative — the backend SystemOwner policy is the authority.
+        path: 'permissions',
+        loadChildren: () =>
+          import('./features/permissions/permissions.routes').then((m) => m.PERMISSIONS_ROUTES),
+      },
     ],
   },
   {

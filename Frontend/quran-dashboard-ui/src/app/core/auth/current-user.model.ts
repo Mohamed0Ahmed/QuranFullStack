@@ -8,6 +8,10 @@ export interface CurrentUser {
   status: 'pending' | 'active' | 'disabled';
   roleId: number | null;
   roleName: string | null;
+  // Effective permission codes projected by `/me` (US5). Used ONLY for non-authoritative UI hiding;
+  // the backend policy is the authority. Wire is `string[]` (tolerant of catalogue growth); the
+  // permission guard/helper narrow to the known `PermissionCode` union.
+  permissions: string[];
 }
 
 // Role names the app can guard on. Mirrors the backend `RoleNames` constants

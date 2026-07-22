@@ -818,6 +818,155 @@
         }
       }
     },
+    "/api/security/permissions": {
+      "get": {
+        "tags": [
+          "Permissions"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PermissionAdminViewDtoApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PermissionAdminViewDtoApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PermissionAdminViewDtoApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/security/permissions/grant": {
+      "post": {
+        "tags": [
+          "Permissions"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/GrantPermissionRequest"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/GrantPermissionRequest"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/GrantPermissionRequest"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/security/permissions/revoke": {
+      "post": {
+        "tags": [
+          "Permissions"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/RevokePermissionRequest"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/RevokePermissionRequest"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/RevokePermissionRequest"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/words/roots": {
       "get": {
         "tags": [
@@ -3361,6 +3510,7 @@
         "required": [
           "displayName",
           "email",
+          "permissions",
           "roleId",
           "roleName",
           "status",
@@ -3389,6 +3539,12 @@
           "roleName": {
             "type": "string",
             "nullable": true
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "additionalProperties": false
@@ -3477,6 +3633,36 @@
           },
           "html": {
             "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GrantPermissionRequest": {
+        "required": [
+          "expectedTimelineGeneration",
+          "expectedVersion",
+          "permissionCode",
+          "targetKey",
+          "targetKind"
+        ],
+        "type": "object",
+        "properties": {
+          "targetKind": {
+            "type": "string"
+          },
+          "targetKey": {
+            "type": "string"
+          },
+          "permissionCode": {
+            "type": "string"
+          },
+          "expectedTimelineGeneration": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
           }
         },
         "additionalProperties": false
@@ -4685,6 +4871,35 @@
         },
         "additionalProperties": false
       },
+      "ObjectApiResponse": {
+        "required": [
+          "data",
+          "errors",
+          "isSuccess",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "PageMarkerDto": {
         "required": [
           "lineNumber",
@@ -4748,6 +4963,115 @@
               "type": "integer",
               "format": "int32"
             }
+          }
+        },
+        "additionalProperties": false
+      },
+      "PermissionAdminViewDto": {
+        "required": [
+          "assignments",
+          "catalogue"
+        ],
+        "type": "object",
+        "properties": {
+          "catalogue": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PermissionCatalogueEntryDto"
+            }
+          },
+          "assignments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PermissionAssignmentDto"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "PermissionAdminViewDtoApiResponse": {
+        "required": [
+          "data",
+          "errors",
+          "isSuccess",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PermissionAdminViewDto"
+              }
+            ],
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "PermissionAssignmentDto": {
+        "required": [
+          "isGranted",
+          "permissionCode",
+          "targetKey",
+          "targetKind",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "targetKind": {
+            "type": "string"
+          },
+          "targetKey": {
+            "type": "string"
+          },
+          "permissionCode": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "isGranted": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PermissionCatalogueEntryDto": {
+        "required": [
+          "assignable",
+          "code",
+          "dashboardAdminBaseline",
+          "systemOwnerOnly"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "systemOwnerOnly": {
+            "type": "boolean"
+          },
+          "dashboardAdminBaseline": {
+            "type": "boolean"
+          },
+          "assignable": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -4833,6 +5157,36 @@
               }
             ],
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "RevokePermissionRequest": {
+        "required": [
+          "expectedTimelineGeneration",
+          "expectedVersion",
+          "permissionCode",
+          "targetKey",
+          "targetKind"
+        ],
+        "type": "object",
+        "properties": {
+          "targetKind": {
+            "type": "string"
+          },
+          "targetKey": {
+            "type": "string"
+          },
+          "permissionCode": {
+            "type": "string"
+          },
+          "expectedTimelineGeneration": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
           }
         },
         "additionalProperties": false
@@ -8595,6 +8949,9 @@
     },
     {
       "name": "MushafWordAnalysis"
+    },
+    {
+      "name": "Permissions"
     },
     {
       "name": "Roots"

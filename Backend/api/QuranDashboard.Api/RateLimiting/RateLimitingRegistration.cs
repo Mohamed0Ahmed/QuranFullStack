@@ -30,9 +30,41 @@ internal static class RateLimitingRegistration
                 var writer = context.HttpContext.RequestServices.GetRequiredService<RateLimitRejectionWriter>();
                 await writer.WriteAsync(context, cancellationToken);
             };
+
+            // Named security policies are ALWAYS enabled on their endpoints (independent of the global
+            // Enabled toggle): the permission-administration and operational owner-bootstrap surfaces are
+            // always rate-limited by a stricter per-IP fixed window (FR-040 safe enabled defaults).
+            limiterOptions.AddPolicy(RateLimitPolicyNames.PermissionAdmin, context => NamedPartition(
+                context,
+                RateLimitPolicyNames.PermissionAdmin,
+                static options => (options.PermissionAdminPermitLimit, options.PermissionAdminWindowSeconds)));
+            limiterOptions.AddPolicy(RateLimitPolicyNames.OwnerBootstrap, context => NamedPartition(
+                context,
+                RateLimitPolicyNames.OwnerBootstrap,
+                static options => (options.OwnerBootstrapPermitLimit, options.OwnerBootstrapWindowSeconds)));
         });
 
         return services;
+    }
+
+    private static RateLimitPartition<string> NamedPartition(
+        HttpContext context,
+        string policyName,
+        Func<RateLimitingOptions, (int PermitLimit, int WindowSeconds)> quota)
+    {
+        var services = context.RequestServices;
+        var options = services.GetRequiredService<IOptions<RateLimitingOptions>>().Value;
+        var clientIp = services.GetRequiredService<IClientIpResolver>().Resolve(context);
+        var (permitLimit, windowSeconds) = quota(options);
+
+        return RateLimitPartition.GetFixedWindowLimiter(
+            $"{policyName}:{clientIp}",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = permitLimit,
+                Window = TimeSpan.FromSeconds(windowSeconds),
+                QueueLimit = 0,
+            });
     }
 
     private static RateLimitPartition<string> CreatePartition(HttpContext context)

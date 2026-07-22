@@ -1,4 +1,6 @@
 using System.Reflection;
+using QuranDashboard.Application.Security.Owners;
+using QuranDashboard.Application.Security.Permissions;
 
 namespace QuranDashboard.Application.Abwab.Concurrency;
 
@@ -14,7 +16,16 @@ public static class AbwabWriterRegistrations
     {
         ArgumentNullException.ThrowIfNull(registry);
 
-        // No Abwab domain writers exist in 028. Register each 029+ writer here, e.g.:
-        //   registry.Register<CreateSectionCommandHandler>();
+        // US5 security writers. These are IAbwabMutationCommand writers: they route through the separate
+        // security-audit unit of work, which still takes the AbwabWriteBarrier + AbwabRevisionState locks
+        // and carries ExpectedTimelineGeneration (it just never advances the product head). Every one MUST
+        // be registered here or the startup fail-fast (and the registry test) rejects it as a bypass.
+        registry.Register<GrantPermissionCommand>();
+        registry.Register<RevokePermissionCommand>();
+        registry.Register<AddSystemOwnerCommand>();
+        registry.Register<RemoveSystemOwnerCommand>();
+        registry.Register<BootstrapSystemOwnerCommand>();
+
+        // Future 029+ domain writers are registered here as well.
     }
 }

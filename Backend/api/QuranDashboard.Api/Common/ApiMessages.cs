@@ -14,6 +14,15 @@ public static class ApiMessages
     public const string EmailAlreadyRegistered = "هذا البريد الإلكتروني مسجَّل بالفعل لحساب آخر";
     public const string AbwabTimelineGenerationStale = "تعذّرت العملية لأن حالة البيانات تغيّرت. يرجى تحديث الصفحة والمحاولة مجددًا.";
     public const string AbwabWriteBarrierClosed = "التعديلات متوقفة مؤقتًا أثناء عملية صيانة داخلية. يرجى المحاولة بعد قليل.";
+    public const string AbwabStabilizationActive = "العمليات الإدارية متوقفة مؤقتًا أثناء عملية داخلية. يرجى المحاولة بعد قليل.";
+    public const string AbwabPermissionAssignmentStale = "تعذّرت العملية لأن حالة الصلاحية تغيّرت. يرجى تحديث الصفحة والمحاولة مجددًا.";
+    public const string AbwabPermissionBaselineLocked = "لا يمكن إسناد هذه الصلاحية أو إزالتها لأنها محميّة.";
+    public const string AbwabLastSystemOwner = "لا يمكن إزالة آخر مالك فعّال للنظام؛ يجب بقاء مالك واحد على الأقل.";
+    public const string PermissionsLoaded = "تم تحميل الصلاحيات";
+    public const string PermissionGranted = "تم إسناد الصلاحية";
+    public const string PermissionRevoked = "تمت إزالة الصلاحية";
+    public const string UnknownPermissionCode = "رمز الصلاحية غير معروف";
+    public const string Forbidden = "لا تملك صلاحية الوصول إلى هذا المورد";
 
     public const string NotFound = "المورد غير موجود";
 

@@ -1,8 +1,10 @@
 #!/usr/bin/env node
-// FR-023 / SC-010 shared-frontend-foundation boundary gate (feature 028, US4).
-// The §14.1 foundation must stay GENERIC: no Forms package installed as preparation, and the foundation
-// primitives must not become a domain HTTP adapter or reference any Abwab/Quran domain vocabulary. This is
-// a pure source + manifest scan (no build/browser) so it runs anywhere CI runs, and it fails closed.
+// FR-023 / FR-030 / SC-010 shared-frontend-foundation boundary gate (feature 028, US4/US5).
+// The §14.1 foundation must stay GENERIC: the foundation primitives must not become a domain HTTP adapter,
+// import @angular/forms, or reference any Abwab/Quran domain vocabulary. @angular/forms is LEGITIMATELY
+// installed from US5 onward (the real Reactive-Forms grant/revoke feature imports it), so the gate no longer
+// forbids the package — it only forbids Forms/HTTP/domain leakage INTO the foundation scope below. This is a
+// pure source + manifest scan (no build/browser) so it runs anywhere CI runs, and it fails closed.
 
 import { readdir, readFile, stat } from 'node:fs/promises';
 import { join, dirname, relative } from 'node:path';
@@ -32,6 +34,10 @@ const domainPattern = new RegExp(`\\b(${domainTokens.join('|')})\\b`, 'i');
 // A generic primitive is not an HTTP/domain adapter; HttpClient anywhere in the foundation fails the gate.
 const httpPattern = /\b(HttpClient|@angular\/common\/http)\b/;
 
+// The foundation stays Forms-free even though @angular/forms is installed for the US5 permissions feature.
+// Matches a real module specifier (quoted import), not an incidental mention in a comment.
+const formsPattern = /['"]@angular\/forms['"]/;
+
 const violations = [];
 
 async function collectFiles(target) {
@@ -52,14 +58,8 @@ async function collectFiles(target) {
   return files;
 }
 
-// 1. @angular/forms MUST be absent (Forms arrives in US5, never as preparation here).
-const pkg = JSON.parse(await readFile(join(projectRoot, 'package.json'), 'utf8'));
-const allDeps = { ...(pkg.dependencies ?? {}), ...(pkg.devDependencies ?? {}) };
-if (Object.keys(allDeps).includes('@angular/forms')) {
-  violations.push('@angular/forms is installed — Forms must not be added until US5 (FR-023).');
-}
-
-// 2. Foundation primitives must be generic: no domain vocabulary, no HTTP adapter, no *.adapter.ts file.
+// Foundation primitives must be generic: no domain vocabulary, no HTTP adapter, no Forms import, no
+// *.adapter.ts file. (@angular/forms may be installed as a package from US5 — it just must not leak here.)
 for (const path of foundationPaths) {
   const absolute = join(projectRoot, path);
   let files;
@@ -81,6 +81,9 @@ for (const path of foundationPaths) {
       if (httpPattern.test(line)) {
         violations.push(`${rel}:${index + 1}: HttpClient/HTTP adapter in the generic foundation -> ${line.trim()}`);
       }
+      if (formsPattern.test(line)) {
+        violations.push(`${rel}:${index + 1}: @angular/forms import in the generic foundation -> ${line.trim()}`);
+      }
     });
   }
 }
@@ -93,4 +96,4 @@ if (violations.length > 0) {
   process.exit(1);
 }
 
-console.log('Foundation boundary gate passed: @angular/forms absent; foundation primitives are generic.');
+console.log('Foundation boundary gate passed: foundation primitives are generic (Forms/HTTP/domain-free).');

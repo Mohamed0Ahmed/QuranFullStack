@@ -3,6 +3,7 @@ using QuranDashboard.Application.Abstractions.Abwab;
 using QuranDashboard.Infrastructure.Abwab.Caching;
 using QuranDashboard.Infrastructure.Abwab.Persistence;
 using QuranDashboard.Tests.Abwab._Fixtures;
+using QuranDashboard.Tests.Abwab._Support;
 
 namespace QuranDashboard.Tests.Abwab.Kernel._Support;
 
@@ -36,22 +37,11 @@ internal static class AbwabKernelHarness
         return new AbwabKernelTestContext(options);
     }
 
-    public static async Task ResetKernelStateAsync(PostgresFixture fixture)
-    {
-        await using var connection = new NpgsqlConnection(fixture.ConnectionString);
-        await connection.OpenAsync();
-
-        // replica mode disables the append-only/root-protection triggers for this session only, so the
-        // test harness can wipe the append-only tables between tests. Production never does this.
-        await ExecuteAsync(connection, "SET session_replication_role = replica");
-        await ExecuteAsync(connection, "TRUNCATE abwab_audit_events, abwab_change_sets");
-        await ExecuteAsync(connection, "DELETE FROM abwab_timeline_generation_boundaries WHERE is_root = false");
-        await ExecuteAsync(
-            connection,
-            "UPDATE abwab_revision_state SET audit_head_sequence = 0, timeline_generation = 0, tree_revision = 0 WHERE id = 1");
-        await ExecuteAsync(connection, "UPDATE abwab_write_barrier SET state = 0 WHERE id = 1");
-        await ExecuteAsync(connection, "SET session_replication_role = origin");
-    }
+    // Routes through the ONE authoritative full-substrate reset (shared with the security harness) so every
+    // AbwabDbCollection class starts clean regardless of run order. It also clears the security-audit /
+    // owner / permission tables — harmless for the kernel tests, and it makes the shared serial DB
+    // order-independent for any current or future Abwab class.
+    public static Task ResetKernelStateAsync(PostgresFixture fixture) => AbwabSubstrateReset.FullResetAsync(fixture);
 
     public static async Task EnsureFixtureTableAsync(PostgresFixture fixture)
     {

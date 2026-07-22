@@ -2380,6 +2380,174 @@ namespace QuranDashboard.Infrastructure.Migrations
                     b.ToTable("quran_words", (string)null);
                 });
 
+            modelBuilder.Entity("QuranDashboard.Domain.Security.Audit.SecurityAuditEvent", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("ActorSubject")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("actor_subject");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("event_type");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("payload");
+
+                    b.Property<DateTimeOffset>("ServerTimestampUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("server_timestamp");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("security_audit_events", (string)null);
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Security.Owners.SystemOwnerMembership", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset?>("DeactivatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deactivated_at");
+
+                    b.Property<bool>("IsAccountEnabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_account_enabled");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Issuer")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("issuer");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("subject");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Issuer", "Subject")
+                        .IsUnique();
+
+                    b.ToTable("system_owner_memberships", (string)null);
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Security.Permissions.PermissionAssignment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<bool>("IsGranted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_granted");
+
+                    b.Property<string>("PermissionCode")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("permission_code");
+
+                    b.Property<string>("TargetKey")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("target_key");
+
+                    b.Property<int>("TargetKind")
+                        .HasColumnType("integer")
+                        .HasColumnName("target_kind");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long>("Version")
+                        .HasColumnType("bigint")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TargetKind", "TargetKey", "PermissionCode")
+                        .IsUnique();
+
+                    b.ToTable("permission_assignments", (string)null);
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Security.Permissions.PermissionCode", b =>
+                {
+                    b.Property<string>("Code")
+                        .HasColumnType("text")
+                        .HasColumnName("code");
+
+                    b.Property<bool>("DashboardAdminBaseline")
+                        .HasColumnType("boolean")
+                        .HasColumnName("dashboard_admin_baseline");
+
+                    b.Property<bool>("SystemOwnerOnly")
+                        .HasColumnType("boolean")
+                        .HasColumnName("system_owner_only");
+
+                    b.HasKey("Code");
+
+                    b.ToTable("permission_codes", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Code = "attribution.view",
+                            DashboardAdminBaseline = true,
+                            SystemOwnerOnly = false
+                        },
+                        new
+                        {
+                            Code = "attribution.manage",
+                            DashboardAdminBaseline = false,
+                            SystemOwnerOnly = false
+                        },
+                        new
+                        {
+                            Code = "permission.administer",
+                            DashboardAdminBaseline = false,
+                            SystemOwnerOnly = true
+                        },
+                        new
+                        {
+                            Code = "audit.restore",
+                            DashboardAdminBaseline = false,
+                            SystemOwnerOnly = true
+                        },
+                        new
+                        {
+                            Code = "safetyPoint.manage",
+                            DashboardAdminBaseline = false,
+                            SystemOwnerOnly = true
+                        });
+                });
+
             modelBuilder.Entity("QuranDashboard.Domain.Abwab.Audit.AuditEvent", b =>
                 {
                     b.HasOne("QuranDashboard.Domain.Abwab.Audit.ChangeSet", null)
