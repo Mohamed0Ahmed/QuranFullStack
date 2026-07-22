@@ -42,9 +42,6 @@ public sealed class WordTypesCacheReadTests(WordTypesTestFixture fixture)
         surahsKey.Should().NotContain("genitive");
     }
 
-    // Feature 026 US1: the normalized search folds into the rows/table cache key. An absent search keeps
-    // the pre-feature key (warm entries stay valid); two raw terms that normalize equally share one entry;
-    // a searched read never cross-serves an unsearched one.
     [Fact]
     public void RowsAndTableCacheKeys_FoldInNormalizedSearch_AndKeepEmptySearchStable()
     {
@@ -56,19 +53,15 @@ public sealed class WordTypesCacheReadTests(WordTypesTestFixture fixture)
 
         var noSearchRows = WordTypesCacheKeys.Rows(noSearch, WordTypeSortSpec.Default, 1, 1000);
 
-        // Empty/whitespace search normalizes away → identical key to no search at all.
         WordTypesCacheKeys.Rows(blankSearch, WordTypeSortSpec.Default, 1, 1000).Should().Be(noSearchRows);
 
-        // A real search isolates the entry; two terms that normalize to the same skeleton collide.
         var searchedRows = WordTypesCacheKeys.Rows(searched, WordTypeSortSpec.Default, 1, 1000);
         searchedRows.Should().NotBe(noSearchRows);
         WordTypesCacheKeys.Rows(searchedEquivalent, WordTypeSortSpec.Default, 1, 1000).Should().Be(searchedRows);
         WordTypesCacheKeys.Rows(searchedOther, WordTypeSortSpec.Default, 1, 1000).Should().NotBe(searchedRows);
 
-        // The raw search text never leaks into the key.
         searchedRows.Should().NotContain("كلم");
 
-        // Same isolation on the table key.
         var noSearchTable = WordTypesCacheKeys.Table(noSearch, WordTypeTableView.Roots, WordTypeSortSpec.Default, 1, 1000);
         WordTypesCacheKeys.Table(searched, WordTypeTableView.Roots, WordTypeSortSpec.Default, 1, 1000)
             .Should().NotBe(noSearchTable);
@@ -108,8 +101,6 @@ public sealed class WordTypesCacheReadTests(WordTypesTestFixture fixture)
         rowsCommandCount.Should().BeGreaterThan(0);
     }
 
-    // Grouped detail keys isolate kind, dimension ID, and the full five-field scope, and never share a
-    // view prefix. Paged views (words/ayahs) carry page/pageSize; single-shot views (summary/surahs) do not.
     [Fact]
     public void GroupedDetailsCacheKeys_IsolateKindIdScopeViewAndApplicablePage()
     {

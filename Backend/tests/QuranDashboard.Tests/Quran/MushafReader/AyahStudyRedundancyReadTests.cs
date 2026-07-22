@@ -22,12 +22,6 @@ public sealed class AyahStudyRedundancyReadTests(MushafReaderTestFixture fixture
         var response = await reader.GetAyahStudyAsync(
             "2:25", "ar-muyassar", "en-sahih-international", "muyassar", CancellationToken.None);
 
-        // Prior sequential fan-out: ayah(1) + sajda(1) + tafsir(source+mapping+text=3) +
-        // translation(source+mapping=2) + full i3rab(source+mapping+text=3) + similarity(2-3,
-        // this ayah has mutashabihat groups so 3) = 13 commands (matches the report's measured
-        // "13 commands for an ayah with mutashabihat groups"). The collapsed reader issues one
-        // projection per family plus one combined similarity-summary query: ayah(1) + sajda(1) +
-        // tafsir(1) + translation(1) + full i3rab(1) + similarity(1) = 6.
         interceptor.CommandCount.Should().Be(6);
 
         response.Should().NotBeNull();
@@ -66,8 +60,6 @@ public sealed class AyahStudyRedundancyReadTests(MushafReaderTestFixture fixture
         await using var dbContext = new QuranDashboardDbContext(options);
         var reader = new EfAyahStudyReader(dbContext, NullLogger<EfAyahStudyReader>.Instance);
 
-        // 1:1 has no tafsir/translation/full-i3rab ayah mapping in the fixture, so every family's
-        // LEFT JOIN resolves the source row but not the mapping/text rows.
         var response = await reader.GetAyahStudyAsync(
             "1:1", "ar-muyassar", "en-sahih-international", "muyassar", CancellationToken.None);
 
@@ -94,8 +86,6 @@ public sealed class AyahStudyRedundancyReadTests(MushafReaderTestFixture fixture
         var response = await reader.GetAyahStudyAsync(
             "2:25", null, null, "does-not-exist", CancellationToken.None);
 
-        // Tafsir/translation are skipped entirely (their source keys are null), so only the
-        // full-i3rab family, ayah, sajda, and similarity queries run.
         interceptor.CommandCount.Should().Be(4);
 
         response.Should().NotBeNull();

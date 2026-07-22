@@ -30,8 +30,6 @@ public sealed class EnrichedMorphologyManifestReader
 
         if (manifestDoc.Files.Count != 1)
         {
-            // The manifest schema allows a list, but the enriched source is exactly one artifact. This guard
-            // keeps the contract crisp rather than silently picking the first entry.
             throw new InvalidDataException(
                 $"Enriched morphology manifest must declare exactly one data file; observed {manifestDoc.Files.Count}.");
         }
@@ -108,10 +106,6 @@ public sealed class EnrichedMorphologyManifestReader
         return before.Equals(after);
     }
 
-    // Streams the artifact once and asserts the exact record + segment counts declared in the manifest,
-    // without buffering the whole 96 MB document into memory. Record count = top-level array length;
-    // segment count = sum of per-record "segments" array lengths. Called from the source so a structural
-    // mismatch fails fast at LoadAsync (before the writer opens a transaction).
     public async Task<EnrichedMorphologyCountResult> ValidateRecordAndSegmentCountsAsync(
         string fullPath, int expectedRecordCount, int expectedSegmentCount, CancellationToken ct)
     {
@@ -263,7 +257,6 @@ internal sealed class EnrichedMorphologyManifestFile
     public string? Role { get; init; }
     public string? RelativePath { get; init; }
 
-    // Alias accepted for compatibility with manifests keyed on "path".
     public string? Path { get; init; }
     public string? Sha256 { get; init; }
     public long? SizeBytes { get; init; }

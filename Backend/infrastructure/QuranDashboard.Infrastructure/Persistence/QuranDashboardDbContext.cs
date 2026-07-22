@@ -59,22 +59,18 @@ public sealed class QuranDashboardDbContext(DbContextOptions<QuranDashboardDbCon
     public DbSet<User> AccessUsers => Set<User>();
     public DbSet<Role> AccessRoles => Set<Role>();
 
-    // Abwab safety-foundation kernel substrate (028). No Quran foreign key exists on any of these until
-    // this feature's exit is accepted (FR-009).
+    // Abwab kernel substrate: no Quran foreign key on any of these.
     public DbSet<ChangeSet> AbwabChangeSets => Set<ChangeSet>();
     public DbSet<AuditEvent> AbwabAuditEvents => Set<AuditEvent>();
     public DbSet<AbwabRevisionState> AbwabRevisionStates => Set<AbwabRevisionState>();
     public DbSet<TimelineGenerationBoundary> AbwabTimelineGenerationBoundaries => Set<TimelineGenerationBoundary>();
     public DbSet<AbwabWriteBarrier> AbwabWriteBarriers => Set<AbwabWriteBarrier>();
 
-    // Notification storage substrate (028 US6): durable, transaction-joining, duplicate-safe notification
-    // records plus per-recipient read state. Storage only — no public port/endpoint/mock/HTTP/UI. Read state
-    // is a plain mutable table outside product audit/restore. No Quran foreign key on either.
+    // Notification storage substrate: no Quran foreign key on either.
     public DbSet<NotificationRecord> AbwabNotificationRecords => Set<NotificationRecord>();
     public DbSet<NotificationReadState> AbwabNotificationReadStates => Set<NotificationReadState>();
 
-    // Security substrate (028 US5): immutable System Owner membership, the permission catalogue/assignments,
-    // and the separate permanent security-audit stream. No Quran foreign key on any of these.
+    // Security substrate: no Quran foreign key on any of these.
     public DbSet<SystemOwnerMembership> SystemOwnerMemberships => Set<SystemOwnerMembership>();
     public DbSet<PermissionCode> PermissionCodes => Set<PermissionCode>();
     public DbSet<PermissionAssignment> PermissionAssignments => Set<PermissionAssignment>();

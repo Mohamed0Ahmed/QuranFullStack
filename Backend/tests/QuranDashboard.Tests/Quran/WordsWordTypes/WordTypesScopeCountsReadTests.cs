@@ -8,20 +8,11 @@ using QuranDashboard.Tests.Quran.Words;
 
 namespace QuranDashboard.Tests.Quran.WordsWordTypes;
 
-// Feature 026 US8: the scoped four-count summary. Its correctness contract (FR-016) is that each of the
-// four counts EQUALS the corresponding tableView's TotalCount for the identical scope — always. The read
-// reuses the same RowsCountSql / GroupedRowsCountSql formulas over the same shared BaseRowsSql base, so
-// this file's core gate is the equality matrix. It also pins the single-SQL-command budget, cache-key
-// isolation per scope input, the zero-row/invalid-scope outcomes, and the count-family (no words_count).
 [Collection(nameof(WordTypesCollection))]
 public sealed class WordTypesScopeCountsReadTests(WordTypesTestFixture fixture)
 {
-    // A matrix of valid scopes spanning each main type, a child, case/tense/voice sub-filters, ±search,
-    // ±presence flags, and search+flag composition. Every field is a serializable primitive; the test
-    // body reconstructs the WordTypeFilter. Each equals its own four tableView totals by construction.
     public static IEnumerable<object?[]> EqualityScopes()
     {
-        // type, childCode, case, tense, voice, search, hasRoot, hasStem, hasLemma
         yield return ["noun", null, null, null, null, null, null, null, null];
         yield return ["noun", "PN", null, null, null, null, null, null, null];
         yield return ["noun", null, "nominative", null, null, null, null, null, null];
@@ -65,8 +56,6 @@ public sealed class WordTypesScopeCountsReadTests(WordTypesTestFixture fixture)
         counts.LemmasCount.Should().Be(lemmasTotal, "the lemmas count is the lemmas-view TotalCount for the identical scope");
     }
 
-    // Guards the matrix against passing vacuously: the unscoped noun scope has real, non-zero counts on
-    // every dimension, so the equality assertions above are exercising live numbers, not all-zeros.
     [Fact]
     public async Task ScopeCounts_UnscopedNoun_HasNonZeroCountsAcrossEveryDimension()
     {
@@ -82,8 +71,6 @@ public sealed class WordTypesScopeCountsReadTests(WordTypesTestFixture fixture)
         counts.LemmasCount.Should().BeGreaterThan(0);
     }
 
-    // A valid scope that matches nothing (a well-formed search term absent from the corpus) returns an
-    // all-zero DTO — never null, never an error.
     [Fact]
     public async Task ScopeCounts_ZeroRowValidScope_ReturnsAllZeros()
     {
@@ -96,7 +83,6 @@ public sealed class WordTypesScopeCountsReadTests(WordTypesTestFixture fixture)
         counts.Should().Be(new Application.Abstractions.Quran.Words.WordTypes.Responses.WordTypeScopeCountsDto(0, 0, 0, 0));
     }
 
-    // The whole four-count summary is ONE SQL command per uncached call (contract §3, execution budget).
     [Fact]
     public async Task ScopeCounts_UsesSingleSqlCommand()
     {
@@ -116,8 +102,6 @@ public sealed class WordTypesScopeCountsReadTests(WordTypesTestFixture fixture)
         interceptor.CommandCount.Should().Be(1);
     }
 
-    // Count-family audit: the emitted SQL counts the scoped word-context family (COUNT(DISTINCT …) over the
-    // scoped base) and never touches a global words_count-backed aggregate.
     [Fact]
     public async Task ScopeCountsSql_UsesScopedCountFamily_NeverWordsCount()
     {
@@ -137,9 +121,6 @@ public sealed class WordTypesScopeCountsReadTests(WordTypesTestFixture fixture)
         sql.ToLowerInvariant().Should().Contain("count(distinct");
     }
 
-    // The scope-counts cache key folds in EVERY scope input and NOTHING else (no tableView/sort/page).
-    // Absent search + absent flags keep the pre-feature 5-part hash so warm entries stay valid; every
-    // distinct scope input isolates its own entry.
     [Fact]
     public void ScopeCountsCacheKey_IsolatesEveryScopeInput_AndKeepsAbsentStable()
     {
@@ -166,13 +147,11 @@ public sealed class WordTypesScopeCountsReadTests(WordTypesTestFixture fixture)
 
         scopes.Select(WordTypesCacheKeys.ScopeCounts).Should().OnlyHaveUniqueItems();
 
-        // Two raw terms that normalize to the same skeleton collide; the raw text never leaks.
         WordTypesCacheKeys.ScopeCounts(baseFilter with { Search = "كَلِم" })
             .Should().Be(WordTypesCacheKeys.ScopeCounts(baseFilter with { Search = "كلم" }));
         WordTypesCacheKeys.ScopeCounts(baseFilter with { Search = "كلم" }).Should().NotContain("كلم");
     }
 
-    // The cached reader serves a repeated scope-counts read from memory without issuing new SQL commands.
     [Fact]
     public async Task CachedScopeCounts_RepeatedRead_HitsCache()
     {
@@ -233,7 +212,6 @@ public sealed class WordTypesScopeCountsReadTests(WordTypesTestFixture fixture)
         return page.TotalCount;
     }
 
-    // Records the SQL command text of each executed reader so the count-family audit can inspect it.
     private sealed class CommandTextCapture : DbCommandInterceptor
     {
         private readonly List<string> _commandTexts = [];

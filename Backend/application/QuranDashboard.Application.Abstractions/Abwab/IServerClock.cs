@@ -1,7 +1,6 @@
 namespace QuranDashboard.Application.Abstractions.Abwab;
 
-// Server-authoritative time. Every ChangeSet/AuditEvent timestamp comes from here, never from client
-// input, so audit ordering and server stamps cannot be spoofed.
+// Server-authoritative time; audit timestamps come from here, never client input (anti-spoof).
 public interface IServerClock
 {
     DateTimeOffset UtcNow { get; }

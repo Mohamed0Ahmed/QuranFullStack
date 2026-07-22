@@ -26,9 +26,6 @@ public sealed class EnrichedMorphologyImportSource : IMorphologyImportSource
 
         var manifest = await manifestReader.ReadAsync(sourcePath, ct);
 
-        // Structural gate: refuse before opening the writer if the artifact's record/segment counts drift
-        // from the manifest. The check streams the JSON once (no full materialization) and runs ahead of
-        // the dimension build.
         await manifestReader.ValidateRecordAndSegmentCountsAsync(
             manifest.FullPath, manifest.RecordCount, manifest.SegmentCount, ct);
 
@@ -44,11 +41,6 @@ public sealed class EnrichedMorphologyImportSource : IMorphologyImportSource
                 $"observed={build.Words.Count}.");
         }
 
-        // The legacy MorphologySourceData carries roots/lemmas/stems maps (location -> value) that the
-        // old assembler populated from QUL files. The enriched pathway has no QUL location map; these
-        // maps are NOT consumed by EfBulkMorphologyWriter for the enriched DTO (resolved dimension lists
-        // are the source of truth). They are kept empty here so the DTO shape stays compatible without
-        // fabricating location-keyed QUL data the pathway explicitly rejects.
         var emptyLocationMap = new Dictionary<string, string>(StringComparer.Ordinal);
 
         var alignedWords = build.Words.Select(projection => projection.Word).ToList();
@@ -66,16 +58,10 @@ public sealed class EnrichedMorphologyImportSource : IMorphologyImportSource
             new MorphologyRenderStats(
                 build.WholeWordAgreementMatches,
                 alignedWords.Count,
-                // The enriched pathway does not produce review/multiword tiers (every form is display-clean
-                // from the artifact), so these lists are intentionally empty.
                 Array.Empty<string>(),
                 Array.Empty<string>(),
                 build.EmptyFormLocations),
-            // No segment-dimension issues: the enriched pathway resolves every STEM segment value-based
-            // against its own buckwalter; there is no QUL fanout to fail closed on.
             Array.Empty<SegmentDimensionIssue>(),
-            // No legacy word-lemma correction summary: the enriched pathway does not run
-            // WordLemmaNormalization. The report writer only renders that section when non-null.
             CorrectionSummary: null,
             SourceKind: MorphologyImportSourceKind.Enriched,
             LemmaAnalyses: build.ResolvedLemmaAnalyses);
@@ -89,7 +75,6 @@ public sealed class EnrichedMorphologyImportSource : IMorphologyImportSource
                 "Enriched source digest was not captured. Call LoadAsync first.");
         }
 
-        // Re-resolve the manifest so the source-path semantics match LoadAsync (sourcePath is a folder).
         var manifest = await manifestReader.ReadAsync(sourcePath, ct);
         return await manifestReader.VerifyDigestUnchangedAsync(manifest.FullPath, capturedDigest, ct);
     }

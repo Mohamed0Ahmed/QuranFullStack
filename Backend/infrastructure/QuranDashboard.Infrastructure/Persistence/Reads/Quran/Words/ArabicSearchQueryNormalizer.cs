@@ -1,15 +1,10 @@
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words;
 
-// FoldFrom/FoldTo are the single source of the Arabic fold map: the Roots/Lemmas/Stems/Word-Types
-// reader SQL @foldFrom/@foldTo parameters reuse these same constants, so the fold must not be
-// re-declared per-derivation (decision 5, DRY).
 internal static class ArabicSearchQueryNormalizer
 {
     public const string FoldFrom = "أإآٱؤئةىي";
     public const string FoldTo = "ااااواهيي";
 
-    // stripWhitespace=false keeps interior spaces (Unique Words/Word Types default); the
-    // Roots/Lemmas/Stems explorers pass true. Whitespace/diacritics-only input normalizes to null.
     public static string? Normalize(string? search, bool stripWhitespace = false)
     {
         if (string.IsNullOrWhiteSpace(search))

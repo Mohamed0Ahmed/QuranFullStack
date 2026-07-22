@@ -3,8 +3,6 @@ using QuranDashboard.Tests.Abwab.Kernel._Support;
 
 namespace QuranDashboard.Tests.Abwab.Kernel;
 
-// FR-015 / SC-004 (T027): exactly one immutable generation-zero root is seeded; root edit/delete/duplicate
-// all fail (real PG). Only 033's sealed restore transaction may insert non-root boundaries.
 [Collection(nameof(AbwabDbCollection))]
 public sealed class TimelineBoundarySeedTests(PostgresFixture fixture) : IAsyncLifetime
 {

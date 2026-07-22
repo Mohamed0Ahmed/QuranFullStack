@@ -19,10 +19,9 @@ public sealed class AbwabWriteBarrierConfiguration : IEntityTypeConfiguration<Ab
             .IsRequired()
             .HasColumnName("state");
 
-        // Pessimistic gate: the commit protocol locks this row FOR UPDATE (§6.2 step 3) before evaluating
-        // its state, holding the lock through commit.
+        // Pessimistic gate: the commit protocol locks this row FOR UPDATE before evaluating its state,
+        // holding the lock through commit.
 
-        // Exactly one row, seeded Writable at migration.
         builder.HasData(new AbwabWriteBarrier
         {
             Id = AbwabWriteBarrier.SingletonId,

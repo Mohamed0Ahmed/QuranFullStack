@@ -63,9 +63,6 @@ internal static class StemsListDerivation
             rows = rows.Where(r => MatchesFilter(r, filter));
         }
 
-        // Primary (dominant) association filters (Feature 026, US7). DominantRootId/DominantLemmaId are the
-        // same primary associations the list row displays; a stem whose primary differs is excluded even if
-        // it co-occurs with the filtered id (primary-not-sole — pinned by MorphologyAssociationFilterTests).
         if (association.RootId is int rootId)
         {
             rows = rows.Where(r => r.DominantRootId == rootId);
@@ -86,9 +83,6 @@ internal static class StemsListDerivation
         && filter.SimpleWords.Includes(row.SimpleWordsCount)
         && filter.TashkeelWords.Includes(row.TashkeelWordsCount);
 
-    // Ordering is part of the read contract (see the reads README). Every allowlisted column is already
-    // on the row, so no branch costs a join, and each tie-break chain is identical in BOTH directions —
-    // reversing a column never reshuffles its ties, which keeps paging deterministic.
     private static IEnumerable<StemSummaryRow> ApplySort(IEnumerable<StemSummaryRow> rows, StemSortSpec sort) => sort.Column switch
     {
         StemSortColumn.Alpha => ByText(rows, r => r.NormalizedStemText, sort.Direction),
@@ -100,8 +94,6 @@ internal static class StemsListDerivation
         StemSortColumn.MushafOrder => rows
             .OrderBy(r => r.FirstWordOrderInMushaf)
             .ThenBy(r => r.Id),
-        // Explicit, so a column added without an arm here fails loudly instead of silently
-        // serving Mushaf order (mirrors the word-types SQL switches).
         _ => throw new InvalidOperationException($"Unhandled {nameof(StemSortColumn)} value: {sort.Column}."),
     };
 
@@ -113,8 +105,6 @@ internal static class StemsListDerivation
             .ThenBy(r => r.FirstWordOrderInMushaf)
             .ThenBy(r => r.Id);
 
-    // Alpha ties break on Id ALONE — deliberately no Mushaf tie-break, preserving the exact row order
-    // existing sort=alpha links already return (pinned by StemsListReadTests' alpha sequence).
     private static IOrderedEnumerable<StemSummaryRow> ByText(
         IEnumerable<StemSummaryRow> rows,
         Func<StemSummaryRow, string> text,

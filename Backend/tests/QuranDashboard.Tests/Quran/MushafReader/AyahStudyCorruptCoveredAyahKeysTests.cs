@@ -2,9 +2,6 @@ using QuranDashboard.Infrastructure.Persistence.Reads.Quran.MushafReader;
 
 namespace QuranDashboard.Tests.Quran.MushafReader;
 
-// quran-safety rule 3 (never hide invalid data): corrupt covered_ayah_keys (valid JSON, wrong shape)
-// still returns an empty list (unchanged contract), but must now log a Warning naming the ayah+source
-// instead of swallowing it silently as "no coverage".
 [Collection(nameof(MushafReaderCollection))]
 public sealed class AyahStudyCorruptCoveredAyahKeysTests(MushafReaderTestFixture fixture)
 {

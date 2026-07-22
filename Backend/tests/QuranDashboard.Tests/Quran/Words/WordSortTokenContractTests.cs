@@ -6,14 +6,8 @@ using QuranDashboard.Application.Abstractions.Quran.Words.WordTypes;
 
 namespace QuranDashboard.Tests.Quran.Words;
 
-// The shared sort token contract (Feature 030, N8). Pure unit tests — no database.
-// These pin the two properties the cache and every shared link depend on: a token parses to exactly
-// one (column, direction) pair, and each pair serializes back to exactly one CANONICAL token. If
-// canonicalization ever forked, aliases would silently double-cache the same ordering.
 public sealed class WordSortTokenContractTests
 {
-    // Every canonical token round-trips: parse(token).CanonicalToken() == token. The bare form is
-    // canonical for the natural direction; only the opposite direction carries a suffix.
     [Theory]
     [InlineData("mushaf-order")]
     [InlineData("occurrences")]
@@ -38,8 +32,6 @@ public sealed class WordSortTokenContractTests
         spec.CanonicalToken().Should().Be(token);
     }
 
-    // The legacy tokens are natural-direction ALIASES, so the suffixed spelling of a natural direction
-    // parses to the same pair AND canonicalizes back OUT to the bare token — one cache entry, not two.
     [Theory]
     [InlineData("occurrences-desc", "occurrences")]
     [InlineData("alpha-asc", "alpha")]
@@ -76,7 +68,6 @@ public sealed class WordSortTokenContractTests
         spec.Direction.Should().Be(expectedDirection);
     }
 
-    // mushaf-order is the release order, not a column: ascending-only, bare token only.
     [Theory]
     [InlineData("mushaf-order-asc")]
     [InlineData("mushaf-order-desc")]
@@ -92,7 +83,6 @@ public sealed class WordSortTokenContractTests
         RootSortParser.TryParse(token, out _).Should().BeFalse();
     }
 
-    // Each explorer allowlists only its OWN columns; a column another explorer offers is still a 400.
     [Theory]
     [InlineData("lemmas")]
     [InlineData("stems")]
@@ -136,7 +126,6 @@ public sealed class WordSortTokenContractTests
         spec.Direction.Should().Be(expectedDirection);
     }
 
-    // Word Types is the one explorer whose default is occurrences (desc) rather than Mushaf order.
     [Fact]
     public void Default_spec_per_explorer_matches_its_documented_default_token()
     {
@@ -147,8 +136,6 @@ public sealed class WordSortTokenContractTests
         WordTypeSortSpec.Default.CanonicalToken().Should().Be("occurrences");
     }
 
-    // Guards the cache-key contract directly: CanonicalToken is total over every column × direction
-    // (no unmapped pair can slip through and fork a key), and it never emits a suffix on mushaf-order.
     [Fact]
     public void Canonical_token_is_defined_for_every_column_and_direction()
     {
@@ -166,12 +153,6 @@ public sealed class WordSortTokenContractTests
         }
     }
 
-    // ---------------------------------------------------------------------------------------------
-    // The same grammar rules, proven for EVERY explorer rather than for roots alone. Each explorer
-    // owns its own parser + allowlist, so a rule that holds for roots proves nothing about the other
-    // four; the descriptor below reduces the five parsers to one shape so each rule is stated once.
-    // ---------------------------------------------------------------------------------------------
-
     [Theory]
     [MemberData(nameof(ExplorerNames))]
     public void Every_canonical_token_parses_back_to_itself(string explorer)
@@ -187,9 +168,6 @@ public sealed class WordSortTokenContractTests
         }
     }
 
-    // The alias rule, per column: a column's two suffixed spellings both parse, and EXACTLY ONE of
-    // them — the natural direction — collapses back onto the bare token. That collapse is what keeps
-    // one ordering on one cache entry and every pre-feature link byte-identical.
     [Theory]
     [MemberData(nameof(ExplorerNames))]
     public void Each_column_has_exactly_one_direction_that_collapses_onto_its_bare_token(string explorer)
@@ -212,8 +190,6 @@ public sealed class WordSortTokenContractTests
         }
     }
 
-    // mushaf-order is the release order, not a column: ascending-only and bare-only on every explorer.
-    // Blank falls to the handler's default rather than parsing, so the parser must reject it too.
     [Theory]
     [MemberData(nameof(ExplorerNames))]
     public void Rejects_blank_unknown_and_direction_suffixed_mushaf_order(string explorer)
@@ -242,8 +218,6 @@ public sealed class WordSortTokenContractTests
         }
     }
 
-    // The acceptance bar for old shared links: every token that existed before N8 still parses to the
-    // exact ordering it always meant — counts descend, text ascends.
     [Fact]
     public void Legacy_tokens_keep_their_pre_feature_meaning_on_every_explorer()
     {
@@ -302,7 +276,6 @@ public sealed class WordSortTokenContractTests
             CanonicalTokensOf<WordTypeSortColumn>((column, direction) => new WordTypeSortSpec(column, direction).CanonicalToken())),
     };
 
-    // Distinct because mushaf-order canonicalizes to the same bare token in both directions.
     private static IReadOnlyList<string> CanonicalTokensOf<TColumn>(Func<TColumn, WordSortDirection, string> canonical)
         where TColumn : struct, Enum =>
         [.. Enum.GetValues<TColumn>()

@@ -22,8 +22,6 @@ public sealed class UserProvisioningServiceTests(AccessTestFixture fixture)
             UpdatedAtUtc = DateTimeOffset.UtcNow,
         });
 
-        // The new subject's server-verified email collides with the pre-existing user's email above,
-        // simulating a subject deleted+recreated in Logto (new sub, same verified email).
         fixture.ProfileSource.ReturnEmailFor(newSub, conflictingEmail);
 
         using var scope = fixture.ApiServices.CreateScope();
@@ -34,7 +32,6 @@ public sealed class UserProvisioningServiceTests(AccessTestFixture fixture)
         var thrown = await act.Should().ThrowAsync<UserProvisioningEmailConflictException>();
         thrown.Which.Email.Should().Be(conflictingEmail);
 
-        // No partial row leaks from the failed insert.
         (await fixture.GetUsersAsync()).Should().ContainSingle(u => u.LogtoSub == existingSub);
     }
 
@@ -42,8 +39,6 @@ public sealed class UserProvisioningServiceTests(AccessTestFixture fixture)
     public async Task GetOrCreateAsync_OwnerEmailFirstLogin_EmailUnverified_IsNotPromoted()
     {
         await fixture.ResetAsync();
-        // decision 3: the configured Owner email with no linked social/SSO identity behind it must be
-        // provisioned exactly like a normal user — Pending, no role — not Owner/Active.
         fixture.ProfileSource.ReturnUnverifiedFor(AccessTestFixture.OwnerSub);
 
         using var scope = fixture.ApiServices.CreateScope();
@@ -64,8 +59,6 @@ public sealed class UserProvisioningServiceTests(AccessTestFixture fixture)
     public async Task GetOrCreateAsync_OwnerEmailFirstLogin_EmailVerified_IsProvisionedOwnerActive()
     {
         await fixture.ResetAsync();
-        // The fake defaults every profile to IdP-verified, matching a real owner login backed by a
-        // linked social/SSO identity.
         using var scope = fixture.ApiServices.CreateScope();
         var provisioningService = scope.ServiceProvider.GetRequiredService<IUserProvisioningService>();
 
@@ -97,8 +90,6 @@ public sealed class UserProvisioningServiceTests(AccessTestFixture fixture)
         using var scope = fixture.ApiServices.CreateScope();
         var provisioningService = scope.ServiceProvider.GetRequiredService<IUserProvisioningService>();
 
-        // decision 3: login must never auto-revive or auto-promote a Disabled user, even for the
-        // configured Owner email with a verified profile.
         var result = await provisioningService.GetOrCreateAsync(AccessTestFixture.OwnerSub, CancellationToken.None);
 
         result.Status.Should().Be(UserStatus.Disabled);

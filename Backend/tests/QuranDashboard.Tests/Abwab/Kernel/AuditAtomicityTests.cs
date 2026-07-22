@@ -4,8 +4,6 @@ using QuranDashboard.Tests.Abwab.Kernel._Support;
 
 namespace QuranDashboard.Tests.Abwab.Kernel;
 
-// FR-036 / SC-012 (T079): an injected audit/event failure rolls back all rows — no half-written ChangeSet
-// and no orphan audit events — with the head unchanged (real PG).
 [Collection(nameof(AbwabDbCollection))]
 public sealed class AuditAtomicityTests(PostgresFixture fixture) : IAsyncLifetime
 {
@@ -16,8 +14,6 @@ public sealed class AuditAtomicityTests(PostgresFixture fixture) : IAsyncLifetim
     [Fact]
     public async Task InjectedEventFailure_RollsBackTheWholeCommit()
     {
-        // Duplicate EventOrdinal within one operation violates the unique (change_set_id, event_ordinal)
-        // constraint — a real audit-write failure inside the transaction.
         var request = new AbwabWriteRequest(
             ExpectedTimelineGeneration.Of(0),
             "tester",

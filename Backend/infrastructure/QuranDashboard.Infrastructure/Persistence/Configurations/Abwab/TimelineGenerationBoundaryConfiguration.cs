@@ -24,13 +24,10 @@ public sealed class TimelineGenerationBoundaryConfiguration : IEntityTypeConfigu
         builder.Property(b => b.Reason)
             .HasColumnName("reason");
 
-        // At most one root can ever exist: a duplicate gen-zero/root insert violates this partial index.
         builder.HasIndex(b => b.IsRoot)
             .IsUnique()
             .HasFilter("\"is_root\"");
 
-        // The single immutable generation-zero root, seeded at migration. Root edit/delete is additionally
-        // blocked at the DB by a trigger (added in the migration); only 033 inserts non-root boundaries.
         builder.HasData(new TimelineGenerationBoundary
         {
             Generation = TimelineGenerationBoundary.RootGeneration,

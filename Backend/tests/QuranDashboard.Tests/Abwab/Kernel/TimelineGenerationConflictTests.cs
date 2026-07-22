@@ -5,8 +5,6 @@ using QuranDashboard.Tests.Abwab.Kernel._Support;
 
 namespace QuranDashboard.Tests.Abwab.Kernel;
 
-// FR-017 / SC-003 (T028): a stale ExpectedTimelineGeneration fails with the exact 409
-// (abwab.timeline_generation_stale) BEFORE any row mutation, mapped through the ApiResponse envelope.
 [Collection(nameof(AbwabDbCollection))]
 public sealed class TimelineGenerationConflictTests(PostgresFixture fixture) : IAsyncLifetime
 {
@@ -17,8 +15,6 @@ public sealed class TimelineGenerationConflictTests(PostgresFixture fixture) : I
     [Fact]
     public async Task StaleGeneration_Fails_BeforeAnyRowMutation()
     {
-        // Simulate a generation advance elsewhere on the timeline. The command's own target row/revision is
-        // untouched, yet the advance still invalidates it.
         await AdvanceGenerationAsync();
 
         var act = () => AbwabKernelHarness.CommitAsync(fixture, AbwabKernelHarness.Request(expectedGeneration: 0));

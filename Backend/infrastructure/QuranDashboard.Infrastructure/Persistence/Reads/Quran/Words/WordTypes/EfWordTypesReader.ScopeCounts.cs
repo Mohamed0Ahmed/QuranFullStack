@@ -22,8 +22,6 @@ public sealed partial class EfWordTypesReader
             filter.HasStem,
             filter.HasLemma);
 
-        // No paging: BuildCountParameters binds exactly the base predicates' parameters (childCode,
-        // secondary filters, search) and nothing else, so the single command stays in sync.
         var parameters = BuildCountParameters(context);
         var result = await _dbContext.Database
             .SqlQueryRaw<ScopeCountsRow>(ScopeCountsSql(context), parameters)
@@ -36,10 +34,6 @@ public sealed partial class EfWordTypesReader
             result.LemmasCount);
     }
 
-    // Reuses BaseRowsSql (scoped base, search + flags) and ContextExpression (the words-view context grain)
-    // rather than re-deriving them. words = COUNT(DISTINCT (tashkeel_word_id, context_code)) is the row
-    // constructor form of RowsCountSql's GROUP BY (tashkeel_word_id, context_code) + COUNT(*); the three
-    // dimension counts are COUNT(DISTINCT <dim>_id), the GroupedRowsCountSql formula (NULLs excluded).
     private static string ScopeCountsSql(WordTypeReadContext context) => $"""
         WITH base AS (
             {BaseRowsSql(context)}

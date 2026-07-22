@@ -2,7 +2,6 @@ using QuranDashboard.Application.Abstractions.Common.Filtering;
 
 namespace QuranDashboard.Application.Abstractions.Quran.Words.Stems;
 
-// Predicates run in memory over the cached whole-summary rows (no backend cache-key change).
 public sealed record StemsCountFilter(
     CountRange Occurrences,
     CountRange Ayahs,

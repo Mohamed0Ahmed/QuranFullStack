@@ -2,20 +2,14 @@ using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyIm
 
 namespace QuranDashboard.Tests.Quran.WordsMorphology;
 
-// Schema-validation behaviour for the word-level lemma normalization artifact. Each test builds a
-// minimal valid artifact and mutates exactly one thing, asserting the validator fails closed with a
-// message that identifies the offending entry/location.
 public sealed class WordLemmaNormalizationValidatorTests
 {
     private static readonly IReadOnlyList<WordLemmaMappingEvidenceEntry> RealEvidence =
         new WordLemmaNormalizationReader().LoadEvidence();
 
-    // Auto-reliable mapping present in the embedded evidence artifact (-> أَضَلّ, 5/5 = 100%).
     private const string AutoReliableBuckwalter = ">aDal~";
     private const string AutoReliableArabic = "أَضَلّ";
 
-    // Below-threshold curated mapping present in the embedded evidence artifact
-    // (vuqifu -> ثُقِفُ, AllowAutoAddReplace = false, QUL-consistent).
     private const string CuratedBelowThresholdBuckwalter = "vuqifu";
     private const string CuratedBelowThresholdArabic = "ثُقِفُ";
 
@@ -203,7 +197,6 @@ public sealed class WordLemmaNormalizationValidatorTests
     [Fact]
     public void Add_without_any_mapping_evidence_fails()
     {
-        // A buckwalter/arabic pair that is NOT present in the embedded evidence artifact.
         var entry = AddEntry("WLN-1", "2:1:1", "ZZunmapped", "خَطَأ");
 
         var act = () => WordLemmaNormalizationValidator.ValidateSchema(Loaded(new[] { entry }));
@@ -225,9 +218,6 @@ public sealed class WordLemmaNormalizationValidatorTests
     [Fact]
     public void Curated_qul_consistent_mapping_replace_passes_for_vuqifu()
     {
-        // vuqifu -> ثُقِفُ is below-threshold (4/5 = 80%) but explicitly curated in the evidence
-        // artifact (AllowAutoAddReplace = false, QUL-consistent). It must pass — see the 33:61:3
-        // micro-check in report-summary.json.
         var entry = ReplaceEntry(
             "WLN-1", "33:61:3", "أَيْن",
             CuratedBelowThresholdBuckwalter, CuratedBelowThresholdArabic);
@@ -240,9 +230,6 @@ public sealed class WordLemmaNormalizationValidatorTests
     [Fact]
     public void Curated_below_threshold_mapping_add_passes_for_hil()
     {
-        // Hil~ -> حِلّ is below-threshold (2/2 = 50% dominance) but explicitly curated in the evidence
-        // artifact (AllowAutoAddReplace = false). It must pass — one of the two explicit below-threshold
-        // curated cases called out by the implementation rule.
         var entry = AddEntry("WLN-1", "5:5:9", "Hil~", "حِلّ");
 
         var act = () => WordLemmaNormalizationValidator.ValidateSchema(Loaded(new[] { entry }));
@@ -253,8 +240,6 @@ public sealed class WordLemmaNormalizationValidatorTests
     [Fact]
     public void Below_threshold_mapping_without_curated_evidence_fails()
     {
-        // Same below-threshold arabic lemma, but a buckwalter key that is NOT curated anywhere ->
-        // must fail even though the arabic text coincidentally matches a curated row.
         var entry = ReplaceEntry(
             "WLN-1", "33:61:3", "أَيْن",
             "ZZnotCurated", CuratedBelowThresholdArabic);

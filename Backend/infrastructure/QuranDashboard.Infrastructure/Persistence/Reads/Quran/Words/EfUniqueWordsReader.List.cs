@@ -6,8 +6,7 @@ namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words;
 
 public sealed partial class EfUniqueWordsReader
 {
-    // Allowlisted foreign-key columns on quran_words that link a readable word to its unique identity;
-    // chosen only by the two Build* call sites below, never from user input.
+    // Allowlisted column constants, chosen by the Build* call sites, never from user input (injection).
     private const string TashkeelIdColumn = "unique_tashkeel_word_id";
     private const string SimpleIdColumn = "unique_simple_word_id";
 
@@ -45,10 +44,8 @@ public sealed partial class EfUniqueWordsReader
         return BuildListQuery(sql, SimpleIdColumn, normalizedSearch, filter, association);
     }
 
-    // Column identifiers are hardcoded/allowlisted; the search fragment, every range bound (Feature 026,
-    // US5) and the association values (US7) reach SQL only as parameter values (SQL-injection safety).
-    // Both unique tables expose the same occurrences_count/ayahs_count/surahs_count and
-    // search_text_normalized columns, so one WHERE composition serves both.
+    // Column identifiers are allowlisted; search/range/association values reach SQL only as bound
+    // parameters (injection).
     private IQueryable<UniqueWordListRow> BuildListQuery(
         string sql,
         string uniqueIdColumn,
@@ -92,13 +89,7 @@ public sealed partial class EfUniqueWordsReader
             : _db.Database.SqlQueryRaw<UniqueWordListRow>(sql);
     }
 
-    // Keeps only unique words whose PRIMARY word type equals @primaryType. The winner is selected by the
-    // SAME rule LoadPrimaryWordTypesAsync (EfUniqueWordsReader.cs) uses for the displayed chip — group
-    // the word's occurrences by POS code, then order by occurrence count DESC, earliest quran_word id
-    // ASC, POS code (ordinal) — so the displayed primary type and the filter can never disagree (the
-    // chip⇔filter invariant, pinned by UniqueWordsAssociationFilterTests). LOCKSTEP: any change to the
-    // enrichment's selection rule MUST be mirrored here (and vice versa). uniqueIdColumn is an
-    // allowlisted constant, never user input.
+    // uniqueIdColumn is an allowlisted constant, never user input (injection); @primaryType is bound.
     private static string PrimaryWordTypeWinnerPredicate(string uniqueIdColumn) => $"""
         id IN (
             SELECT winner.unique_id
@@ -119,11 +110,7 @@ public sealed partial class EfUniqueWordsReader
         )
         """;
 
-    // Keeps only unique words whose PRIMARY root equals @assocRootId, selected by the SAME rule
-    // LoadPrimaryRootsAsync (EfUniqueWordsReader.cs) uses for the displayed chip (occurrence count DESC,
-    // earliest quran_word id ASC, root id ASC). LOCKSTEP: any change to the enrichment's selection rule
-    // MUST be mirrored here (and vice versa). uniqueIdColumn is an allowlisted constant, never user
-    // input.
+    // uniqueIdColumn is an allowlisted constant, never user input (injection); @assocRootId is bound.
     private static string PrimaryRootWinnerPredicate(string uniqueIdColumn) => $"""
         id IN (
             SELECT winner.unique_id
@@ -164,11 +151,6 @@ public sealed partial class EfUniqueWordsReader
         }
     }
 
-    // Ordering is part of the read contract (see the reads README) and runs BEFORE Count/Skip/Take, so it
-    // decides paging. Every branch now ends on Id: FirstWordOrderInMushaf is already effectively unique,
-    // so this changes no existing result — it closes a DB-side non-determinism gap (unlike the in-memory
-    // explorers, a LINQ-to-SQL ORDER BY has no stable-sort net). Each tie-break chain is identical in
-    // BOTH directions, so reversing a column never reshuffles its ties.
     private static IQueryable<UniqueWordListRow> ApplySort(IQueryable<UniqueWordListRow> rows, UniqueWordSortSpec sort) => sort.Column switch
     {
         UniqueWordSortColumn.Alpha => Ordered(rows, r => r.SearchText, sort.Direction),
@@ -178,8 +160,6 @@ public sealed partial class EfUniqueWordsReader
         UniqueWordSortColumn.MushafOrder => rows
             .OrderBy(r => r.FirstWordOrderInMushaf)
             .ThenBy(r => r.Id),
-        // Explicit, so a column added without an arm here fails loudly instead of silently
-        // serving Mushaf order (mirrors the word-types SQL switches).
         _ => throw new InvalidOperationException($"Unhandled {nameof(UniqueWordSortColumn)} value: {sort.Column}."),
     };
 

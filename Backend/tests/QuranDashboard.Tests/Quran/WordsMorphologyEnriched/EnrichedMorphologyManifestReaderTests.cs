@@ -16,7 +16,7 @@ public sealed class EnrichedMorphologyManifestReaderTests : IDisposable
 
     public void Dispose()
     {
-        try { Directory.Delete(tempRoot, recursive: true); } catch { /* test cleanup best-effort */ }
+        try { Directory.Delete(tempRoot, recursive: true); } catch { }
     }
 
     [Fact]
@@ -98,7 +98,6 @@ public sealed class EnrichedMorphologyManifestReaderTests : IDisposable
     [Fact]
     public async Task Throws_when_manifest_missing()
     {
-        // Empty temp root, no manifest.json.
         var act = async () => await reader.ReadAsync(tempRoot, CancellationToken.None);
 
         (await act.Should().ThrowAsync<FileNotFoundException>())
@@ -167,9 +166,6 @@ public sealed class EnrichedMorphologyManifestReaderTests : IDisposable
     {
         var artifactPath = Path.Combine(tempRoot, "corpus-based-enriched-morphology.dashboard-ready.json");
 
-        // Build a minimal valid artifact: a top-level array of records, each with the requested segment
-        // count. The exact record/segment JSON shape is not asserted here (the reader tests do that); this
-        // builder only needs to produce a valid array whose record/segment counts the manifest gate checks.
         var sb = new StringBuilder("[");
         for (var r = 0; r < recordCount; r++)
         {

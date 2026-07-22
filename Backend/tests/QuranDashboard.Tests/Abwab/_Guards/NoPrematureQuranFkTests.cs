@@ -3,14 +3,6 @@ using QuranDashboard.Tests.Abwab._Fixtures;
 
 namespace QuranDashboard.Tests.Abwab._Guards;
 
-// FR-009: the first Abwab->Quran foreign key MUST stay prohibited until this feature's exit is
-// accepted. This guard structurally enforces that FK prohibition (the normative requirement): it
-// reflects the REAL migrated EF model and fails the moment any Abwab entity is wired to a Quran
-// entity by a foreign key — 029's premature FK, or a mistaken 028 change. It stays green on 028's
-// own Quran-FK-free substrate (audit/timeline/concurrency). Per-writer barrier governance (that
-// every Abwab writer takes the write barrier) is a separate concern owned by the US3 write-barrier
-// registry test (T029), not this FK guard. A companion assertion proves the Quran side is actually
-// classified, so the boundary check can never pass vacuously.
 [Collection(nameof(AbwabDbCollection))]
 public sealed class NoPrematureQuranFkTests
 {
@@ -42,8 +34,6 @@ public sealed class NoPrematureQuranFkTests
     [Fact]
     public void AbwabEntitiesAreClassifiedSoTheGuardIsNotVacuous()
     {
-        // Symmetric companion: now that 028 maps real Abwab substrate entities, the guard's Abwab detection
-        // must see at least one, otherwise the cross-boundary FK check could pass vacuously from the Abwab side.
         _fixture.Model.GetEntityTypes().Where(IsAbwab).Should().NotBeEmpty(
             "the guard's Abwab detection must see real Abwab entities, otherwise the FK boundary check proves nothing");
     }

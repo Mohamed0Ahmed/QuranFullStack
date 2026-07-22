@@ -210,8 +210,6 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
             return null;
         }
 
-        // Segment rows do not carry stem_id; related stems come from the word-level
-        // morphology row for each Quran word that has at least one matching segment.
         var rows = await (
             from seg in _db.WordMorphologySegments.AsNoTracking()
             join m in _db.WordMorphologies.AsNoTracking() on seg.QuranWordId equals m.QuranWordId
@@ -292,12 +290,8 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
             return [];
         }
 
-        // B2: load the per-(lemma, POS) type distribution already grouped in the database (summary grain)
-        // instead of transferring every lemma-bearing occurrence into memory. The per-type "first
-        // occurrence" stays the coordinate tuple of the earliest matching word by quran_word_id (the
-        // monotonic Mushaf key): ARRAY_AGG(... ORDER BY s.quran_word_id)[1] pins all three coordinate
-        // parts to that same earliest row, never three independent minimums that could form a
-        // non-existent coordinate.
+        // ARRAY_AGG(... ORDER BY s.quran_word_id)[1] pins surah/ayah/word to the SAME earliest row —
+        // never three independent MINs, which could form a non-existent coordinate.
         var distributionSql = $"""
             SELECT
                 s.lemma_id AS "{nameof(LemmaTypeDistributionSqlRow.LemmaId)}",
@@ -367,9 +361,6 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
             ? $"{firstSurahNumber}:{firstAyahNumber}"
             : string.Empty;
 
-    // Loads the whole grouped/ordered word list in one pass (null when the lemma is absent). This is the
-    // identity-grain unit CachedLemmasReader caches once, so paging slices the cached list instead of
-    // re-issuing the full occurrence query (perf finding B6).
     internal async Task<IReadOnlyList<LemmaWordItemDto>?> LoadLemmaWordGroupsAsync(
         int id,
         LemmaWordKind wordKind,

@@ -5,14 +5,9 @@ using QuranDashboard.Tests.Abwab._Fixtures;
 
 namespace QuranDashboard.Tests.Abwab.Permissions;
 
-// FR-027 / SC-007 (T051): permission codes are identical (0 drift) across all 5 catalogues — seed (DB),
-// policy (registered policies), `/me` (projection universe), frontend (permission-codes.ts), and the test's
-// own independent expectation. Any drift in any leg fails this test.
 [Collection(nameof(AbwabDbCollection))]
 public sealed class PermissionParityTests(PostgresFixture fixture)
 {
-    // Leg 5: the test's own hardcoded expectation — an independent source that catches drift in the
-    // canonical catalogue itself.
     private static readonly HashSet<string> Expected = new(StringComparer.Ordinal)
     {
         "attribution.view",
@@ -55,8 +50,6 @@ public sealed class PermissionParityTests(PostgresFixture fixture)
     [Fact]
     public void MeProjection_Catalogue_MatchesTheExpectation()
     {
-        // The universe of codes `/me` can project = SystemOwnerOnly (owner implicit) ∪ every assignable code
-        // (baseline + direct/role grants). Recomputed independently from the catalogue partitions.
         var meUniverse = PermissionCatalogue.SystemOwnerOnlyCodes
             .Concat(PermissionCatalogue.All.Where(entry => entry.IsAssignable).Select(entry => entry.Code))
             .ToHashSet(StringComparer.Ordinal);

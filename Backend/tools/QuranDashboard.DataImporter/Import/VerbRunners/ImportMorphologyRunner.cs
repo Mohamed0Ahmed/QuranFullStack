@@ -11,10 +11,6 @@ internal static class ImportMorphologyRunner
 {
     internal static async Task<int> RunAsync(string[] args, Func<IHost> createHost, Action printUsage)
     {
-        // The morphology verb accepts one extra flag, --enriched, that the shared ImportArguments parser
-        // does not know about (it is morphology-only). Strip it here before delegating, and use it to
-        // select the import source pathway (Feature 020): legacy QUL-link assembler (default, unchanged
-        // behavior) vs enriched Corpus value-based pathway.
         var enrichedRequested = false;
         var remaining = new List<string>(args.Length);
         foreach (var arg in args)
@@ -63,7 +59,6 @@ internal static class ImportMorphologyRunner
         var host = createHost();
         await using var scope = host.Services.CreateAsyncScope();
 
-        // Both pathways share the same writer/report, so only the source binding differs.
         var sourceKey = enrichedRequested
             ? MorphologyImportSourceKeys.Enriched
             : MorphologyImportSourceKeys.Legacy;

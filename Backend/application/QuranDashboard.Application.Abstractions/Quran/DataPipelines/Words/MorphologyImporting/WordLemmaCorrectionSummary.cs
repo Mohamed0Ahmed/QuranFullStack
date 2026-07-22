@@ -1,6 +1,5 @@
 namespace QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.MorphologyImporting;
 
-// Lives in Application.Abstractions so Application can reference it without depending on Infrastructure.
 public sealed record WordLemmaNormalizationSpotCheck(
     string Location,
     string OperationKind,

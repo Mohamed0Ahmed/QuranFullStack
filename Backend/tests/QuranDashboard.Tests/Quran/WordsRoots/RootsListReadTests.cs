@@ -180,12 +180,6 @@ public sealed class RootsListReadTests(RootsExplorerTestFixture fixture)
         secondPage.Items.Should().HaveCount(1);
     }
 
-    // M24 regression: a root with zero quran_word_morphology rows (a legitimate orphaned catalogue
-    // entry — e.g. a root awaiting re-import) must still read as zero counts, not throw. Every
-    // aggregate column in LoadWholeSummaryAsync's LEFT JOIN must be COALESCEd; before the fix, Npgsql
-    // threw materializing NULL into the non-nullable int columns of RootSummaryRow, 500ing the ENTIRE
-    // roots catalogue read. Seeded inside a transaction that is ALWAYS rolled back, so no other test in
-    // this collection ever sees the synthetic row.
     [Fact]
     public async Task GetRootsPage_root_with_no_morphology_rows_reads_zero_counts_without_throwing()
     {
@@ -199,8 +193,6 @@ public sealed class RootsListReadTests(RootsExplorerTestFixture fixture)
             VALUES (999901, 'جذر-اختبار-بلا-صرف', 'orphanTestRoot', 0, 0, 999901);
             """);
 
-        // EfRootsReader, not IRootsReader: the cached decorator would cross-serve the rolled-back row.
-        // Resolving through the SAME scoped DbContext means the reader sees the uncommitted insert.
         var reader = new EfRootsReader(dbContext);
 
         var summary = await reader.LoadWholeSummaryAsync(CancellationToken.None);
@@ -237,8 +229,6 @@ public sealed class RootsListReadTests(RootsExplorerTestFixture fixture)
         interceptor.CommandCount.Should().Be(0, "the whole summary is cached once; sort/page are in-memory");
     }
 
-    // Every canonical token the Roots parser can emit must reach the reader. Seeded roots: R10 (occ 5,
-    // surahs 2), R20 (occ 2, surahs 2), R30 (occ 9, surahs 9) — see roots-explorer-seed.sql.
     public static TheoryData<string> CanonicalSortTokens =>
     [
         "mushaf-order",
@@ -252,8 +242,6 @@ public sealed class RootsListReadTests(RootsExplorerTestFixture fixture)
         "stems", "stems-asc",
     ];
 
-    // Sorting is ORDER BY only: it may reorder the page but must never change WHICH rows are in scope
-    // or what totalCount reports.
     [Theory]
     [MemberData(nameof(CanonicalSortTokens))]
     public async Task GetRootsPage_every_sort_token_preserves_total_count_and_row_set(string sort)
@@ -281,13 +269,9 @@ public sealed class RootsListReadTests(RootsExplorerTestFixture fixture)
             CancellationToken.None);
         var page = outcome.Should().BeOfType<GetRootsPageOutcome.Success>().Subject.Page;
 
-        // R20 (2) < R10 (5) < R30 (9) — all distinct, so ascending is the exact reverse.
         page.Items.Select(i => i.Id).Should().Equal(20, 10, 30);
     }
 
-    // R10 and R20 BOTH cover 2 surahs, so this pins the tie-break chain against real seeded data:
-    // the tie group orders by Mushaf order (R10 @1003 before R20 @5010) in BOTH directions, while
-    // only the primary count flips.
     [Theory]
     [InlineData("surahs", new[] { 30, 10, 20 })]
     [InlineData("surahs-asc", new[] { 10, 20, 30 })]
@@ -304,8 +288,6 @@ public sealed class RootsListReadTests(RootsExplorerTestFixture fixture)
         page.Items.Select(i => i.Id).Should().Equal(expectedIds);
     }
 
-    // The acceptance bar: a legacy token and its canonical alias are ONE ordering. Existing
-    // sort=occurrences / sort=alpha links must keep returning the exact sequence they always did.
     [Theory]
     [InlineData("occurrences", "occurrences-desc")]
     [InlineData("alpha", "alpha-asc")]

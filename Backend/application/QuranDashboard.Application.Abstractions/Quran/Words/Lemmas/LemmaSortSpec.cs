@@ -30,8 +30,6 @@ public readonly record struct LemmaSortSpec(LemmaSortColumn Column, WordSortDire
 
     public static LemmaSortSpec Natural(LemmaSortColumn column) => new(column, NaturalDirectionOf(column));
 
-    // Counts read most-first, so their natural direction is descending; text and the Mushaf
-    // release order read forward.
     public static WordSortDirection NaturalDirectionOf(LemmaSortColumn column) => column switch
     {
         LemmaSortColumn.MushafOrder => WordSortDirection.Ascending,
@@ -75,7 +73,6 @@ public static class LemmaSortParser
             return false;
         }
 
-        // mushaf-order is the release order, not a column: ascending-only, bare token only.
         if (column == LemmaSortColumn.MushafOrder && direction is not null)
         {
             return false;

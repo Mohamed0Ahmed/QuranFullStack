@@ -3,9 +3,6 @@ using QuranDashboard.Infrastructure.Persistence.Configurations.Abwab;
 
 namespace QuranDashboard.Tests.Abwab.Kernel._Support;
 
-// Minimal EF context for exercising the SavingChanges write guard against a foundation-only auditable
-// entity. It maps the migration-created audit tables plus a throwaway fixture table (created by the
-// harness), so the interceptor can observe a realistic tracked graph against real PostgreSQL.
 internal sealed class AbwabKernelTestContext(DbContextOptions<AbwabKernelTestContext> options)
     : DbContext(options)
 {

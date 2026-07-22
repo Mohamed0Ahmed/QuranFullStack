@@ -2,11 +2,6 @@ using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyIm
 
 namespace QuranDashboard.Tests.Quran.WordsMorphologyEnriched;
 
-// End-to-end validation against the real staged Dashboard-ready artifact. These tests are SKIPPED when
-// the 96 MB artifact is not present (it is gitignored and only staged locally for Feature 020). When the
-// artifact IS present, they enforce every signed-off count + boundary + corrected-lemma gate from the
-// implementation plan §7. No DB is touched: the assertions run on the in-memory MorphologySourceData
-// produced by EnrichedMorphologyImportSource.LoadAsync.
 public sealed class EnrichedMorphologyArtifactTests
 {
     public static IEnumerable<object[]> BoundaryLocations => new[]
@@ -142,7 +137,6 @@ public sealed class EnrichedMorphologyArtifactTests
         var word = data.Words.Single(word => word.Location == "11:29:17");
         var lemma = data.ResolvedLemmas.Single(lemma => lemma.AssignedId == word.LemmaId);
         lemma.LemmaText.Should().NotBe("ءَامَنَ");
-        // Corpus-derived lemma for root ل ق ي.
         lemma.LemmaText.Should().Be("مُّلَٰقُوا");
         lemma.LemmaBuckwalter.Should().Be("m~ula`quwA");
     }

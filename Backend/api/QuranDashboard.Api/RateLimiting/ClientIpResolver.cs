@@ -12,7 +12,6 @@ public sealed class ClientIpResolver(IOptions<RateLimitingOptions> options) : IC
     {
         var headerName = _options.ClientIpHeaderName;
 
-        // Header is single-valued (Railway X-Real-IP): no comma split / leftmost-of-list logic.
         if (!string.IsNullOrWhiteSpace(headerName)
             && context.Request.Headers.TryGetValue(headerName, out var headerValues))
         {

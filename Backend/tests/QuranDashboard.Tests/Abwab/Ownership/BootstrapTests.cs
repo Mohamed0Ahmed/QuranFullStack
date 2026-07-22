@@ -7,8 +7,6 @@ using QuranDashboard.Tests.Abwab._Support;
 
 namespace QuranDashboard.Tests.Abwab.Ownership;
 
-// FR-026 / SC-006 (T050): the zero-to-one bootstrap is atomic, idempotent, and permanently audited; wrong
-// issuer, unverified email, disabled account, and duplicate mismatched identity each fail closed (real PG).
 [Collection(nameof(AbwabDbCollection))]
 public sealed class BootstrapTests(PostgresFixture fixture) : IAsyncLifetime
 {

@@ -10,8 +10,6 @@ public sealed class WordTypesGroupedSummaryReadTests(WordTypesTestFixture fixtur
 {
     private static readonly WordTypeFilter NounScope = new("noun", null, null, null, null);
 
-    // Selecting a grouped root/stem/lemma row and opening its scoped summary must yield the exact
-    // same identity and three measures the grouped table row already displayed in the same scope.
     [Theory]
     [InlineData(WordTypeGroupedDimensionKind.Root, WordTypeTableView.Roots, 190700)]
     [InlineData(WordTypeGroupedDimensionKind.Stem, WordTypeTableView.Stems, 190600)]
@@ -41,16 +39,12 @@ public sealed class WordTypesGroupedSummaryReadTests(WordTypesTestFixture fixtur
         summary.SurahsCount.Should().Be(row.SurahsCount);
     }
 
-    // An active secondary filter must re-scope the base before aggregating, so the summary reports the
-    // filtered counts, never the dimension's global totals.
     [Fact]
     public async Task GroupedSummary_ActiveSecondaryFilter_RecomputesTheSameScopedCounts()
     {
         await using var scope = fixture.CreateScope();
         var reader = scope.ServiceProvider.GetRequiredService<IWordTypesReader>();
 
-        // Verb root 190701 (ع ل م) spans 3 occurrences overall (past/present/imperative); tense=past
-        // narrows the base to a single occurrence (1907001) in one ayah of one surah.
         var summary = await reader.GetGroupedSummaryAsync(
             new WordTypeGroupedSelection(
                 WordTypeGroupedDimensionKind.Root,
@@ -64,8 +58,6 @@ public sealed class WordTypesGroupedSummaryReadTests(WordTypesTestFixture fixtur
         summary.SurahsCount.Should().Be(1);
     }
 
-    // A dimension that only exists in a different scope must not resolve; the verb-only root 190701 has
-    // no rows once the base is narrowed to the noun scope.
     [Fact]
     public async Task GroupedSummary_DimensionOutsideScope_ReturnsNull()
     {
@@ -79,8 +71,6 @@ public sealed class WordTypesGroupedSummaryReadTests(WordTypesTestFixture fixtur
         summary.Should().BeNull();
     }
 
-    // Grouped membership comes from head-level quran_word_morphology only. The non-canonical structural
-    // word carries one head lemma and a different segment-only lemma; the segment must never become a group.
     [Fact]
     public async Task GroupedSummary_HeadDimensionIgnoresSecondarySegmentDimension()
     {
@@ -111,10 +101,6 @@ public sealed class WordTypesGroupedSummaryReadTests(WordTypesTestFixture fixtur
         headLemma!.OccurrencesCount.Should().Be(1);
     }
 
-    // Markers and null head dimensions must never contribute a grouped dimension. The noun WORDS view
-    // counts 4 word-context occurrences; the head-grain lemma grouping counts only the 3 real
-    // lemma-bearing rows, so the difference is exactly the excluded null-dimension occurrence (مُثَل)
-    // and the marker word 1903004 leaks nothing in.
     [Fact]
     public async Task GroupedSummary_MarkerAndNullDimensionsRemainExcluded()
     {
@@ -134,8 +120,6 @@ public sealed class WordTypesGroupedSummaryReadTests(WordTypesTestFixture fixtur
         (wordsOccurrenceSum - lemmaSummary.OccurrencesCount).Should().Be(1).And.NotBe(0);
     }
 
-    // The handler maps each failure mode to its own controlled outcome, validating in order:
-    // route kind, positive dimension ID, grammatical filter, then reader result.
     [Fact]
     public async Task GroupedSummaryHandler_InvalidKindIdFilterAndMissingGroup_MapToControlledOutcomes()
     {

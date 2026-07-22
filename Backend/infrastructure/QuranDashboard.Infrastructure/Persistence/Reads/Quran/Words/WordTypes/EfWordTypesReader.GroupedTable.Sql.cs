@@ -46,10 +46,6 @@ public sealed partial class EfWordTypesReader
         """;
     }
 
-    // THE single fold predicate. The grouped alpha ORDER BY reads the folded `norm_text` column, which
-    // only exists when GroupedRowsSql projects it AND @foldFrom/@foldTo are bound. Both sites gate on
-    // this one method: if they ever disagree, the query either sorts on a missing column or Npgsql
-    // rejects an unbound parameter — at RUNTIME. Alpha in EITHER direction folds.
     private static bool NeedsFold(WordTypeSortSpec sort) => sort.Column == WordTypeSortColumn.Alpha;
 
     private static string GroupedRowsCountSql(WordTypeReadContext context, WordTypeTableView view)
@@ -65,8 +61,6 @@ public sealed partial class EfWordTypesReader
         """;
     }
 
-    // Grouped-view ORDER BY. Same constant-only rule as OrderBy in EfWordTypesReader.Sql.cs. The alpha
-    // arms read the folded norm_text column that NeedsFold gates into the CTE.
     private static string GroupedOrderBy(WordTypeSortSpec sort) => (sort.Column, sort.Direction) switch
     {
         (WordTypeSortColumn.Occurrences, WordSortDirection.Descending) => "occurrences_count DESC, first_word_order_in_mushaf, dimension_id",
@@ -77,7 +71,6 @@ public sealed partial class EfWordTypesReader
         (WordTypeSortColumn.Surahs, WordSortDirection.Ascending) => "surahs_count, first_word_order_in_mushaf, dimension_id",
         (WordTypeSortColumn.Alpha, WordSortDirection.Ascending) => "norm_text COLLATE \"C\", dimension_id",
         (WordTypeSortColumn.Alpha, WordSortDirection.Descending) => "norm_text COLLATE \"C\" DESC, dimension_id",
-        // mushaf-order is ascending-only by contract (the parser rejects any suffix on it).
         (WordTypeSortColumn.MushafOrder, _) => "first_word_order_in_mushaf, dimension_id",
         _ => throw new InvalidOperationException($"Unhandled {nameof(WordTypeSortSpec)} value."),
     };
@@ -101,7 +94,7 @@ public sealed partial class EfWordTypesReader
         AddSecondaryFilterParameters(context, parameters);
         AddSearchParameter(context, parameters);
 
-        // Same NeedsFold gate as the SQL shape — the fold pair stays parameterized, never interpolated.
+        // Fold pair stays parameterized, never interpolated (injection).
         if (NeedsFold(sort))
         {
             parameters.Add(new NpgsqlParameter<string>("foldFrom", ArabicSearchQueryNormalizer.FoldFrom));

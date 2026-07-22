@@ -2,9 +2,6 @@ using QuranDashboard.Domain.Security.Audit;
 
 namespace QuranDashboard.Infrastructure.Persistence.Configurations.Security;
 
-// The permanent, append-only security-audit table. `Id` is a database identity advancing on its OWN
-// sequence — it never touches AbwabRevisionState.AuditHeadSequence. Append-only is enforced at the DB by a
-// trigger + restricted role added in the migration (like the product audit tables).
 public sealed class SecurityAuditEventConfiguration : IEntityTypeConfiguration<SecurityAuditEvent>
 {
     public void Configure(EntityTypeBuilder<SecurityAuditEvent> builder)

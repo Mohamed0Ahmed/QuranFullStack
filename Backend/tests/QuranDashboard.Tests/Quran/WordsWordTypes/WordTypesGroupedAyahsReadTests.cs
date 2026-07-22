@@ -6,23 +6,18 @@ using QuranDashboard.Tests.Quran.Words;
 
 namespace QuranDashboard.Tests.Quran.WordsWordTypes;
 
-// Grouped scoped ayahs: paged distinct ayahs of the selected numeric head root/stem/lemma, hydrated with
-// canonical quran_words Uthmani text and the scoped matched word ids/positions. Every read reuses the same
-// dimension-filtered BaseRowsSql base as the summary/member words at head-word grain.
 [Collection(nameof(WordTypesCollection))]
 public sealed class WordTypesGroupedAyahsReadTests(WordTypesTestFixture fixture)
 {
-    private const int FatihaAyah1Id = 190011;   // 1:1
-    private const int FatihaAyah2Id = 190012;   // 1:2
-    private const int MarkerWordId = 1903004;   // 1:2:2, is_ayah_marker
-    private const int KalimaNounWordId = 1903001;   // 1:1:1, root 190700 head
-    private const int KalimaProperNounWordId = 1903002; // 1:1:2, root 190700 head
+    private const int FatihaAyah1Id = 190011;
+    private const int FatihaAyah2Id = 190012;
+    private const int MarkerWordId = 1903004;
+    private const int KalimaNounWordId = 1903001;
+    private const int KalimaProperNounWordId = 1903002;
 
     private static readonly WordTypeFilter NounScope = new("noun", null, null, null, null);
     private static readonly WordTypeFilter VerbScope = new("verb", null, null, null, null);
 
-    // The same numeric head dimension resolves to the same scoped verse set regardless of kind, because
-    // root 190700 / stem 190600 / lemma 190500 all sit on the identical three noun-scope head words.
     [Theory]
     [InlineData(WordTypeGroupedDimensionKind.Root, 190700)]
     [InlineData(WordTypeGroupedDimensionKind.Stem, 190600)]
@@ -41,7 +36,6 @@ public sealed class WordTypesGroupedAyahsReadTests(WordTypesTestFixture fixture)
         page.Items.Select(item => item.VerseKey).Should().Equal("1:1", "1:2");
     }
 
-    // Secondary case/tense/voice narrow the base before the distinct-ayah paging, exactly like the table.
     [Fact]
     public async Task GroupedAyahs_ActiveCaseTenseAndVoiceFiltersPropagateToBase()
     {
@@ -64,7 +58,6 @@ public sealed class WordTypesGroupedAyahsReadTests(WordTypesTestFixture fixture)
         passive!.Items.Select(item => item.VerseKey).Should().Equal("2:25");
     }
 
-    // Paging slices distinct ayahs in Mushaf order; TotalCount is the distinct-ayah total and stays stable.
     [Fact]
     public async Task GroupedAyahs_PaginatesDistinctAyahsBeforeHydratingWords()
     {
@@ -81,8 +74,6 @@ public sealed class WordTypesGroupedAyahsReadTests(WordTypesTestFixture fixture)
         page3!.Items.Should().BeEmpty();
     }
 
-    // Words hydrate from canonical quran_words.text_uthmani in Mushaf order; matched ids/positions carry only
-    // the scoped head words, so a non-scoped word in the same ayah appears in Words but not in the matches.
     [Fact]
     public async Task GroupedAyahs_UsesQuranWordsUthmaniTextAndMatchedWordIdsForHighlighting()
     {
@@ -105,7 +96,6 @@ public sealed class WordTypesGroupedAyahsReadTests(WordTypesTestFixture fixture)
         firstAyah.MatchedWordPositions.Should().Equal(1, 2);
     }
 
-    // Ayah markers stay out of hydrated words, and verb-only dimensions never resolve in the noun scope.
     [Fact]
     public async Task GroupedAyahs_ExcludesMarkersAndOutOfScopeDimensions()
     {
@@ -150,8 +140,6 @@ public sealed class WordTypesGroupedAyahsReadTests(WordTypesTestFixture fixture)
             .Which.MatchedWordIds.Should().Equal(WordTypesSyntheticStructuralData.MushafFirstWordId);
     }
 
-    // An out-of-range page on an existing selection is a 200-empty page (correct TotalCount), never a 404;
-    // a positive dimension absent from the scope is null (404) instead.
     [Fact]
     public async Task GroupedAyahs_OutOfRangePageIsEmptyButExistingSelectionIsNotNotFound()
     {
@@ -167,8 +155,6 @@ public sealed class WordTypesGroupedAyahsReadTests(WordTypesTestFixture fixture)
         absent.Should().BeNull();
     }
 
-    // Page hydration is bounded: count + grouped page + one word-hydration query, independent of how many
-    // ayahs the page returns (a 1-ayah scope and a 2-ayah scope issue the identical fixed command count).
     [Fact]
     public async Task GroupedAyahs_PageHydrationUsesBoundedCommandCount()
     {

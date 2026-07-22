@@ -17,12 +17,10 @@ public sealed class RoleClaimsTransformationTests
         result.IsInRole("Owner").Should().BeTrue();
     }
 
-    // Whether or not the token itself carries a ClaimTypes.Role claim, idempotency must key off the marked
-    // identity: the database role load runs exactly once and exactly one marked identity is added.
     public static TheoryData<string?> TokenBorneRoleClaimCases => new()
     {
         { null },
-        { "SmuggledAdmin" },   // token smuggles a ClaimTypes.Role claim (MapInboundClaims = false)
+        { "SmuggledAdmin" },
     };
 
     [Theory]
@@ -36,9 +34,6 @@ public sealed class RoleClaimsTransformationTests
         var once = await transformation.TransformAsync(principal);
         var twice = await transformation.TransformAsync(once);
 
-        // The marked identity short-circuits the second pass, so the resolver is consulted exactly once and
-        // exactly one database-backed identity carrying the resolved role is present — the token-borne claim
-        // never short-circuits the load.
         resolver.Calls.Should().Be(1);
         MarkedIdentities(twice).Should().ContainSingle()
             .Which.FindFirst(ClaimTypes.Role)!.Value.Should().Be("Owner");

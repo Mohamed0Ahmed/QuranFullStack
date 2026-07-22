@@ -54,7 +54,6 @@ public sealed class WordTypesLoggingTests(WordTypesTestFixture fixture)
         AssertNoSensitivePayload(entry);
     }
 
-    // FR-006: an active search is recorded only as a hasSearch boolean; the term text never reaches the log.
     [Fact]
     public async Task RowsHandler_WithActiveSearch_LogsHasSearchBoolean_NeverTheTerm()
     {
@@ -97,14 +96,10 @@ public sealed class WordTypesLoggingTests(WordTypesTestFixture fixture)
         entry.GetValue<bool>("hasCaseFilter").Should().BeTrue();
         entry.GetValue<bool>("hasTenseFilter").Should().BeFalse();
         entry.GetValue<bool>("hasVoiceFilter").Should().BeFalse();
-        // Search presence is logged only as a boolean — the term text is never recorded (FR-006).
         entry.GetValue<bool>("hasSearch").Should().BeFalse();
         AssertNoSensitivePayload(entry);
     }
 
-    // GetWordTypeRows was the one explorer handler that returned InvalidSort WITHOUT a warning; N8
-    // aligned it with the other four. The rejected token is reported only as a constant reason — the
-    // raw request value is never echoed into the log.
     [Fact]
     public async Task RowsHandler_LogsInvalidSortWarning_WithStructuredFields_AndNeverTheRejectedToken()
     {
@@ -173,8 +168,6 @@ public sealed class WordTypesLoggingTests(WordTypesTestFixture fixture)
         AssertNoSensitivePayload(entry);
     }
 
-    // Each grouped detail handler logs a completion entry with safe kind/ID/scope metadata only — never
-    // display text, Quran text, SQL, or a payload.
     [Fact]
     public async Task GroupedDetailsHandlers_LogSafeStructuredFieldsWithoutTextPayloadOrSql()
     {

@@ -3,10 +3,6 @@ using QuranDashboard.Tests.Api.RateLimiting;
 
 namespace QuranDashboard.Tests.Abwab.Permissions;
 
-// FR-040 / SC-015 (T084): safe ENABLED rate-limiter defaults load; stricter named policies exist for
-// permission-administration and operational owner-bootstrap; quotas are positive, bounded, and documented;
-// bad quotas fail startup (the safe-429 envelope itself is the shared OnRejected writer, covered by the
-// RateLimiting integration suite).
 public sealed class RateLimiterDefaultsTests
 {
     [Fact]
@@ -19,7 +15,6 @@ public sealed class RateLimiterDefaultsTests
         options.OwnerBootstrapPermitLimit.Should().BeInRange(1, 1000);
         options.OwnerBootstrapWindowSeconds.Should().BeInRange(1, 3600);
 
-        // Stricter than the general limiter, and bootstrap the strictest of all.
         options.PermissionAdminPermitLimit.Should().BeLessThan(options.TokenLimit);
         options.OwnerBootstrapPermitLimit.Should().BeLessThan(options.PermissionAdminPermitLimit);
     }

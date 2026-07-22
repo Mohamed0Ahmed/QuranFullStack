@@ -6,7 +6,6 @@ using QuranDashboard.Tests.Abwab.Kernel._Support;
 
 namespace QuranDashboard.Tests.Abwab.Kernel;
 
-// FR-010 / SC-002 (T024): a write with no tracked ChangeSet is rejected at SavingChanges (real PG).
 [Collection(nameof(AbwabDbCollection))]
 public sealed class ChangeSetRequiredTests(PostgresFixture fixture) : IAsyncLifetime
 {

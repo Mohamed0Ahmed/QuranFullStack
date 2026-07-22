@@ -8,15 +8,8 @@ using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Stems;
 
 namespace QuranDashboard.Tests.Quran.Words;
 
-// Tie-break half of the ordering contract (Feature 030, N8). Two DIFFERENT rules are pinned: count
-// columns tie-break on Mushaf order then Id; alpha ties on Id ALONE (no Mushaf tie-break) — that is
-// what keeps every pre-existing sort=alpha link byte-identical. Each chain must be identical in BOTH
-// directions: reversing a column must never reshuffle its ties, or a page boundary could drop or
-// repeat a row. Rows are explicitly synthetic and carry no Quranic content.
 public sealed class ExplorerSortTieBreakTests
 {
-    // Ids ascend while Mushaf order does NOT, so "tie-broke on Id" and "tie-broke on Mushaf order"
-    // produce different sequences and the assertions below can tell the two apart.
     private const int TiedCount = 5;
     private const int HighestCount = 9;
     private const string TiedText = "synthetic-tie";
@@ -30,17 +23,12 @@ public sealed class ExplorerSortTieBreakTests
         (4, LastText, HighestCount, 400),
     ];
 
-    // Count DESC puts the distinct high count first; the tie group then follows in Mushaf order.
     private static readonly int[] CountDescendingIds = [4, 2, 3, 1];
 
-    // Count ASC flips only the PRIMARY: the tie group keeps the very same Mushaf-ascending order.
     private static readonly int[] CountAscendingIds = [2, 3, 1, 4];
 
-    // Alpha ASC: the tie group orders by Id alone. Were Mushaf order in this chain, it would read
-    // 2, 3, 1 instead — that difference is the whole point of this expectation.
     private static readonly int[] AlphaAscendingIds = [1, 2, 3, 4];
 
-    // Alpha DESC flips only the PRIMARY: the tie group still reads by Id ascending.
     private static readonly int[] AlphaDescendingIds = [4, 1, 2, 3];
 
     [Theory]
@@ -62,7 +50,6 @@ public sealed class ExplorerSortTieBreakTests
         RootSortColumn column,
         WordSortDirection direction)
     {
-        // Every count on the row carries the same value, so one row set proves every count column.
         var ordered = RootsListDerivation.FilterAndSort(
             RootRows(),
             RootsCountFilter.None,
@@ -94,8 +81,6 @@ public sealed class ExplorerSortTieBreakTests
     [InlineData(WordSortDirection.Descending)]
     public void Roots_mushaf_order_stays_ascending_whatever_direction_the_pair_carries(WordSortDirection direction)
     {
-        // mushaf-order is ascending-only by contract; the parser rejects any suffix, so the reader
-        // must stay on the release order whatever direction the pair happens to carry.
         var ordered = RootsListDerivation.FilterAndSort(
             RootRows(),
             RootsCountFilter.None,

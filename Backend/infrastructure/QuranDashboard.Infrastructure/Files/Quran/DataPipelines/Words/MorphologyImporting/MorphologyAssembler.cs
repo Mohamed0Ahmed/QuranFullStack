@@ -9,15 +9,8 @@ public sealed class MorphologyAssembler
     private static readonly HashSet<string> KnownPosCodes =
         PosTagSeed.GetAll().Select(tag => tag.Code).ToHashSet(StringComparer.Ordinal);
 
-    // Curated, source-traceable disambiguation for the handful of multi-STEM segments whose Buckwalter
-    // lemma key is a genuine homograph shared by two lemma rows, where the rendered segment form cannot
-    // be matched to a single lemma text by normalization alone. Each entry resolves a (segment POS,
-    // segment lemma_buckwalter) pair to the one linguistically-correct lemma text. Anything not listed
-    // here still fails closed via SEG-LEMMA-ID-NO-FANOUT (no silent lowest-id guessing).
-    //
-    // ('ACC', '>an~') -> 'أَنّ': the 10 affected segments are the accusative particle أَنَّ (fatha) in
-    // أَنَّمَا/أَلَّا compounds; Buckwalter '>an~' is shared with إِنَّ (kasra), but the ACC form here is
-    // always أَنَّ. See docs/feature-017-lexical-explorers-polish/segment-dimension-ids-implementation-plan.md.
+    // Curated homograph disambiguation for multi-STEM segments; anything not listed fails closed via
+    // SEG-LEMMA-ID-NO-FANOUT (no silent lowest-id guess).
     private static readonly IReadOnlyDictionary<(string Pos, string Buckwalter), string> CuratedLemmaDisambiguation =
         new Dictionary<(string Pos, string Buckwalter), string>
         {
@@ -308,11 +301,6 @@ public sealed class MorphologyAssembler
         return new SegmentDimensionResolutionResult(resolvedWords, issues);
     }
 
-    // Per-segment stem identity. Non-STEM => null. Single-STEM word, or the primary/head STEM of a
-    // two-STEM word => the word's head stem id (the QUL whole-word stem; head stays unchanged). The
-    // secondary STEM of a two-STEM word => the curated artifact's clean stem (bound by stem text), or
-    // null when the artifact left it as an intentional unresolved exception (and when not covered at
-    // all — coverage is enforced by the SEG-STEM-ID-* hard checks, not guessed here).
     private static int? ResolveStemId(
         AlignedSegmentDto segment,
         int? wordHeadStemId,

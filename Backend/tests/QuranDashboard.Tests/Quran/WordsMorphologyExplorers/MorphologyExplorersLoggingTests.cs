@@ -17,9 +17,6 @@ using QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemsPage;
 
 namespace QuranDashboard.Tests.Quran.WordsMorphologyExplorers;
 
-// Logging audit across all fourteen Feature 016 handlers: each must emit one structured log entry per call,
-// with safe fields only (IDs/counts/booleans/paging/sort/measured duration) and no Quran, lemma, stem, root,
-// Buckwalter, word, raw-search, SQL, or payload text.
 [Collection(nameof(MorphologyExplorersCollection))]
 public sealed class MorphologyExplorersLoggingTests(MorphologyExplorersTestFixture fixture)
 {

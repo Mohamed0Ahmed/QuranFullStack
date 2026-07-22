@@ -2,12 +2,8 @@ using System.Collections.Concurrent;
 
 namespace QuranDashboard.Infrastructure.Caching;
 
-// Single-flight gate: serializes concurrent cache-miss loads for the same key so a cold identity is
-// materialized once instead of once per concurrent caller. A null load is returned but never cached, so
-// a later call retries. Gates are held per key for the process lifetime, so the key space must stay
-// bounded (the finite lemma/stem catalogue); do not reuse this for unbounded or caller-supplied keys
-// without adding eviction. Cancellation is per-caller: a cancelled waiter leaves the in-flight load
-// alone, and if the gate holder cancels, the next waiter re-runs the load.
+// Per-key gate held for the process lifetime: only use with a BOUNDED key space (finite lemma/stem
+// catalogue), never caller-supplied keys, or add eviction.
 internal static class CacheLoadGate
 {
     private static readonly ConcurrentDictionary<string, SemaphoreSlim> Gates = new(StringComparer.Ordinal);

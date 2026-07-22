@@ -13,9 +13,6 @@ public static class WordTypesCacheKeys
     public static string Table(WordTypeFilter filter, WordTypeTableView tableView, WordTypeSortSpec sort, int page, int pageSize) =>
         $"wordtypes:table:{HashFilter(filter)}:view:{TableViewKey(tableView)}:sort:{SortKey(sort)}:p{page}:s{pageSize}";
 
-    // Scoped four-count summary (Feature 026, US8). The key folds in EVERY scope input via HashFilter
-    // (type, childCode, case, tense, voice, normalized search, presence flags) and NOTHING else — no
-    // tableView, no sort, no page — so counts are shared across tab/page changes but isolated per scope.
     public static string ScopeCounts(WordTypeFilter filter) =>
         $"wordtypes:scope-counts:{HashFilter(filter)}";
 
@@ -28,10 +25,6 @@ public static class WordTypesCacheKeys
     public static string Surahs(WordTypeRowIdentity identity) =>
         $"wordtypes:surahs:{HashIdentity(identity)}";
 
-    // Grouped detail keys expose only the kind/view labels in the readable prefix; the dimension ID and
-    // the full five-field scope are folded into the hash so different scopes never cross-serve. Each view
-    // carries its own segment (summary vs words vs …) so views never share a prefix; paged views append
-    // page/pageSize.
     public static string GroupedSummary(WordTypeGroupedSelection selection) =>
         $"wordtypes:grouped:{selection.Kind.ToRouteKey()}:summary:{HashGroupedSelection(selection)}";
 
@@ -41,7 +34,6 @@ public static class WordTypesCacheKeys
     public static string GroupedAyahs(WordTypeGroupedSelection selection, int page, int pageSize) =>
         $"wordtypes:grouped:{selection.Kind.ToRouteKey()}:ayahs:{HashGroupedSelection(selection)}:p{page}:s{pageSize}";
 
-    // Surahs are single-shot, so the key carries no page component (mirrors the summary key shape).
     public static string GroupedSurahs(WordTypeGroupedSelection selection) =>
         $"wordtypes:grouped:{selection.Kind.ToRouteKey()}:surahs:{HashGroupedSelection(selection)}";
 
@@ -53,13 +45,8 @@ public static class WordTypesCacheKeys
         selection.Filter.Tense,
         selection.Filter.Voice);
 
-    // Empty/absent search AND absent presence flags keep the pre-feature 5-part hash so warm rows/table
-    // entries stay valid. A non-empty NORMALIZED search appends a LABELLED component (same normalization
-    // the SQL predicate uses); any set presence flag (Feature 026, US6) appends a distinct LABELLED flag
-    // component. The distinct "search:"/"flags:" prefixes plus the delimiter escaping in HashParts stop a
-    // free-form search term (e.g. one that normalizes to "flags:1__" or embeds the '|' delimiter) from
-    // hashing to the same key as a different presence-flag scope — so searched/flagged reads never
-    // cross-serve their unsearched/unflagged counterparts.
+    // Labelled "search:"/"flags:" prefixes keep a crafted search value from occupying a flags scope's slot
+    // and cross-serving another scope's cached rows (with the HashParts delimiter escaping below).
     private static string HashFilter(WordTypeFilter filter)
     {
         var normalizedSearch = ArabicSearchQueryNormalizer.Normalize(filter.Search);
@@ -99,9 +86,8 @@ public static class WordTypesCacheKeys
         return Convert.ToHexString(bytes[..8]).ToLowerInvariant();
     }
 
-    // Escape the join delimiter (and its own escape char) so a part that contains '|' cannot split into
-    // extra slots and align with a different combination of parts. Absent/whitespace parts collapse to
-    // the reserved "_" placeholder, matching the pre-feature key shape for unfiltered reads.
+    // Escape '|' (and '\') so a part containing the delimiter can't split into extra slots and align with
+    // a different combination of parts (cross-serve collision).
     private static string EncodePart(string? part) =>
         string.IsNullOrWhiteSpace(part) ? "_" : part.Trim().Replace("\\", "\\\\").Replace("|", "\\|");
 
@@ -114,9 +100,5 @@ public static class WordTypesCacheKeys
         _ => tableView.ToString(),
     };
 
-    // The CANONICAL token, so alias and canonical spellings of one ordering share ONE entry
-    // ("occurrences-desc" keys as "occurrences") and every pre-feature key stays byte-identical.
-    // Deliberately not a ToString() fallback: an unmapped value must fail loudly rather than silently
-    // fork the cache under a second key for the same rows.
     private static string SortKey(WordTypeSortSpec sort) => sort.CanonicalToken();
 }

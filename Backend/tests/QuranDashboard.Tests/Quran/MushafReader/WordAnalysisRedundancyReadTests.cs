@@ -22,12 +22,6 @@ public sealed class WordAnalysisRedundancyReadTests(MushafReaderTestFixture fixt
 
         var outcome = await reader.GetWordAnalysisAsync("2:25:3", CancellationToken.None);
 
-        // Prior sequential fan-out: word(1) + morphology(1) + orderedTashkeel(1) +
-        // orderedSimple(1) + uniqueTashkeel(1) + uniqueSimple(1) + segments(1) + posTags(1) +
-        // root(1) + i3rabRules(1) = up to 12 commands for a word with root but no lemma/stem
-        // (matches the report's measured "12 commands for a fully populated word"). The
-        // collapsed reader issues one core/morphology/identity/dimension projection, one small
-        // head-POS-tag lookup, and one segment/POS/rule projection: 3 commands.
         interceptor.CommandCount.Should().Be(3);
 
         var response = outcome.Should().BeOfType<WordAnalysisOutcome.Found>().Subject.Response;
@@ -60,8 +54,6 @@ public sealed class WordAnalysisRedundancyReadTests(MushafReaderTestFixture fixt
         await using var dbContext = new QuranDashboardDbContext(options);
         var reader = new EfWordAnalysisReader(dbContext, NullLogger<EfWordAnalysisReader>.Instance);
 
-        // 2:25:1 has no morphology row in the fixture, so the core projection alone is enough to
-        // detect incomplete data; the head-POS-tag and segment/POS/rule queries never run.
         var outcome = await reader.GetWordAnalysisAsync("2:25:1", CancellationToken.None);
 
         interceptor.CommandCount.Should().Be(1, "a missing morphology row is detected from the core projection alone");

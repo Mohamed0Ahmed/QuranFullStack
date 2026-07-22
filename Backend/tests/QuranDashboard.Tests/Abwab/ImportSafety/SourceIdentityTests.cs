@@ -2,9 +2,6 @@ using QuranDashboard.DataImporter.Import.Safety;
 
 namespace QuranDashboard.Tests.Abwab.ImportSafety;
 
-// US2 / FR-008: pinned canonical source identity + stable-ID verification. A package whose declared
-// identity does not match the pinned canonical id (wrong identity), whose stable IDs are not stable
-// (duplicated / non-monotonic), or that carries no identity manifest at all, must be refused.
 public sealed class SourceIdentityTests
 {
     private static string FixtureDirectory(string name) =>

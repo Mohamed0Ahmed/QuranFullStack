@@ -3,8 +3,6 @@ using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyIm
 
 namespace QuranDashboard.Tests.Quran.WordsMorphologyEnriched;
 
-// Pure (no-DB) tests for EnrichedMorphologyImportSource. Exercises manifest validation + record/segment
-// count gates + dimension build + the existing MorphologySourceData DTO shape, without touching Postgres.
 public sealed class EnrichedMorphologyImportSourceTests : IDisposable
 {
     private readonly string tempRoot;
@@ -20,7 +18,7 @@ public sealed class EnrichedMorphologyImportSourceTests : IDisposable
 
     public void Dispose()
     {
-        try { Directory.Delete(tempRoot, recursive: true); } catch { /* best-effort */ }
+        try { Directory.Delete(tempRoot, recursive: true); } catch { }
     }
 
     [Fact]
@@ -79,8 +77,6 @@ public sealed class EnrichedMorphologyImportSourceTests : IDisposable
     [Fact]
     public async Task LoadAsync_refuses_on_record_count_mismatch()
     {
-        // Manifest declares 5 records; artifact contains 2. The record-count gate must fail at LoadAsync
-        // before any dimension build.
         await WriteArtifactAsync("[{\"location\":\"1:1:1\",\"quranWordId\":1,\"segments\":[]},{\"location\":\"1:1:2\",\"quranWordId\":2,\"segments\":[]}]", recordCount: 5, segmentCount: 0);
 
         var source = new EnrichedMorphologyImportSource(manifestReader, sourceReader, dimensionBuilder);

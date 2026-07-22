@@ -4,14 +4,12 @@ using QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootsPage;
 
 namespace QuranDashboard.Tests.Quran.WordsRoots;
 
-// Feature 026, US5 — count-range filters on the Roots list (in-memory predicates over the cached
-// whole-summary rows). Predicate assertions are data-driven from an unfiltered read.
 [Collection(nameof(RootsExplorerCollection))]
 public sealed class RootsCountRangeFilterTests(RootsExplorerTestFixture fixture)
 {
     [Theory]
-    [InlineData(5, 2)]     // min > max
-    [InlineData(-1, null)] // negative min
+    [InlineData(5, 2)]
+    [InlineData(-1, null)]
     public async Task Invalid_range_returns_invalid_filter(int? occMin, int? occMax)
     {
         await using var scope = fixture.CreateScope();

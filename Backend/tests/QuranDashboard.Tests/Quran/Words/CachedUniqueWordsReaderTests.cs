@@ -65,9 +65,6 @@ public sealed class CachedUniqueWordsReaderTests
         inner.PageCalls.Should().Be(2);
     }
 
-    // The cache-identity acceptance bar: "occurrences-desc" is an ALIAS of "occurrences", so both must
-    // canonicalize onto ONE key and the second read must be served from the cache. If SortKey ever
-    // stopped canonicalizing, this would silently fork into two entries for one ordering.
     [Fact]
     public async Task GetUniqueWordsPageAsync_alias_and_canonical_sort_token_share_one_cache_entry()
     {
@@ -85,7 +82,6 @@ public sealed class CachedUniqueWordsReaderTests
         second.Should().BeSameAs(first);
     }
 
-    // The other half of the same contract: two DIFFERENT orderings must never cross-serve.
     [Fact]
     public async Task GetUniqueWordsPageAsync_opposite_directions_of_one_column_never_cross_serve()
     {
@@ -103,7 +99,6 @@ public sealed class CachedUniqueWordsReaderTests
         second.Should().NotBeSameAs(first);
     }
 
-    // Every canonical token must key its own entry — no two orderings may collapse together.
     [Fact]
     public void ListCacheKeys_are_distinct_per_canonical_token_and_carry_it_verbatim()
     {

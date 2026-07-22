@@ -30,7 +30,6 @@ public sealed class AccessMeEndpointTests(AccessTestFixture fixture)
 
         var data = envelope.GetProperty("data");
         data.GetProperty("sub").GetString().Should().Be(sub);
-        // The email is populated from the trusted identity-provider source, never from the caller.
         data.GetProperty("email").GetString().Should().Be(FakeExternalUserProfileSource.EmailFor(sub));
         data.GetProperty("displayName").GetString().Should().Be(FakeExternalUserProfileSource.DisplayNameFor(sub));
         data.GetProperty("status").GetString().Should().Be("pending");
@@ -60,8 +59,6 @@ public sealed class AccessMeEndpointTests(AccessTestFixture fixture)
         first.StatusCode.Should().Be(HttpStatusCode.OK);
         second.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        // Get-or-create must short-circuit on the second call: still one row, and the external provider
-        // was consulted exactly once (only during the first-login create).
         (await fixture.GetUsersAsync()).Should().ContainSingle();
         fixture.ProfileSource.CallsFor(sub).Should().Be(1);
         fixture.ProfileSource.TotalCalls.Should().Be(1);
@@ -94,7 +91,6 @@ public sealed class AccessMeEndpointTests(AccessTestFixture fixture)
 
         using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         var envelope = document.RootElement;
-        // Assert the exact ApiResponse envelope, NOT ASP.NET problem-details.
         envelope.EnumerateObject().Select(property => property.Name).Should().BeEquivalentTo(EnvelopeKeys);
         envelope.GetProperty("isSuccess").GetBoolean().Should().BeFalse();
         envelope.GetProperty("message").GetString().Should().Be(ApiMessages.Unauthorized);
@@ -126,7 +122,6 @@ public sealed class AccessMeEndpointTests(AccessTestFixture fixture)
         envelope.GetProperty("data").ValueKind.Should().Be(JsonValueKind.Null);
         envelope.GetProperty("errors").GetArrayLength().Should().Be(0);
 
-        // Provisioning aborted before any insert, so no partial row leaks.
         (await fixture.GetUsersAsync()).Should().BeEmpty();
     }
 
@@ -138,8 +133,6 @@ public sealed class AccessMeEndpointTests(AccessTestFixture fixture)
         const string newSub = "logto-user-me-email-conflict-new";
         var conflictingEmail = FakeExternalUserProfileSource.EmailFor(existingSub);
 
-        // Seed a pre-existing user under a DIFFERENT sub with the email the new caller's token will
-        // present — simulating a subject deleted+recreated in Logto (new sub, same verified email).
         await fixture.InsertUserAsync(new User
         {
             LogtoSub = existingSub,
@@ -165,14 +158,11 @@ public sealed class AccessMeEndpointTests(AccessTestFixture fixture)
         envelope.GetProperty("data").ValueKind.Should().Be(JsonValueKind.Null);
         envelope.GetProperty("errors").GetArrayLength().Should().Be(0);
 
-        // The failed insert under the new sub leaves no partial row; only the pre-existing user remains.
         (await fixture.GetUsersAsync()).Should().ContainSingle(u => u.LogtoSub == existingSub);
     }
 
     public static TheoryData<string> PublicRoutes =>
     [
-        // The health check and a real browse endpoint both answer WITHOUT an Authorization header:
-        // named role policies are registered but applied to nothing, and there is no fallback policy.
         "/api/health",
         "/api/dashboard/info",
     ];

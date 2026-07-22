@@ -2,20 +2,6 @@ using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.Morpholo
 
 namespace QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting.Enriched;
 
-// Identity rules (Feature 020, signed-off):
-//   - Root identity  = Corpus rootBuckwalter (unambiguous); rootArabic is the stored root_text.
-//   - Lemma identity = Corpus lemmaBuckwalter; primary lemmaArabic is the stored lemma_text; lemma→root
-//                      link taken from the co-occurring root of the SAME segment (no QUL location join).
-//   - Stem identity  = persisted schema rule only: normalized stem_text (the STEM segment's formArabic).
-//                      stemBuckwalter is audit-only and MUST NOT create a separate persisted row
-//                      (quran_stems has no buckwalter column and ResolvedStemDto has no buckwalter member).
-//
-// Audit-only JSON fields (corpusPresent, provenance, *MappingStatus, *QulCanonical, stemBuckwalter,
-// quranWordIdVerifiedAgainstDashboard, boundaryAyah, boundaryHandling, text*) are intentionally not
-// projected onto the DTO — they have no DTO members and cannot land in the DB by accident.
-//
-// QUL word-level location links are NEVER consulted: dimension identity comes only from the Corpus
-// Buckwalter + bridge Arabic already merged into each enriched record upstream in SourceAudit.
 public sealed class EnrichedDimensionBuilder
 {
     private const string QuranicSmallYeh = "ۦ";
@@ -25,9 +11,6 @@ public sealed class EnrichedDimensionBuilder
 
     private static readonly string[] VerbTenseMarkers = ["PERF", "IMPF", "IMPV"];
 
-    // Render-quality constants. arabic_render_tier/source describe how the Arabic form was produced; they
-    // MUST NOT carry *MappingStatus (that audit axis is unstored). The enriched artifact already provides
-    // display-clean formArabic, so every enriched segment is tier "clean" from source "corpus_enriched_bridge".
     public const string EnrichedRenderTier = "clean";
     public const string EnrichedRenderSource = MorphologyInvariants.EnrichedRenderSource;
 
@@ -66,15 +49,11 @@ public sealed class EnrichedDimensionBuilder
         private readonly SortedSet<string> unknownPosCodes = new(StringComparer.Ordinal);
         private readonly List<string> emptyFormLocations = [];
         private readonly Dictionary<string, RootDimensionEntry> rootIndex = new(StringComparer.Ordinal);
-        // Display lemma dimension keyed by Arabic lemma_text: numeric-suffix buckwalter homographs that
-        // render to the same text collapse to ONE row here (honours UNIQUE(lemma_text)).
+        // Keyed by Arabic lemma_text: buckwalter homographs rendering to the same text collapse to ONE row (honours UNIQUE(lemma_text)).
         private readonly Dictionary<string, LemmaDimensionEntry> lemmaTextIndex = new(StringComparer.Ordinal);
-        // Per-buckwalter analytical breakdown keyed by lemma_buckwalter: preserves each Corpus variant's
-        // root/POS/first-occurrence under its display lemma.
         private readonly Dictionary<string, LemmaAnalysisEntry> lemmaAnalysisIndex = new(StringComparer.Ordinal);
         private readonly Dictionary<string, DimensionEntry> stemIndex = new(StringComparer.Ordinal);
         private readonly Dictionary<string, HashSet<string>> rootLemmaMap = new(StringComparer.Ordinal);
-        // Representative root per display lemma_text (the root at the lemma's first occurrence).
         private readonly Dictionary<string, (int RootId, int WordOrder)> lemmaRootLinks = new(StringComparer.Ordinal);
         private readonly List<EnrichedAlignedWordProjection> alignedWords;
 
@@ -104,8 +83,6 @@ public sealed class EnrichedDimensionBuilder
                 }
             }
 
-            // Resolve the head STEM segment for word-level head fields. HeadPos / IsVerb / verb features
-            // come from the primary (lowest-numbered) STEM segment, mirroring the legacy assembler.
             var stemSegments = projectedSegments
                 .Where(segment => string.Equals(segment.Kind, "STEM", StringComparison.Ordinal))
                 .ToList();
@@ -123,13 +100,8 @@ public sealed class EnrichedDimensionBuilder
                 : projectedSegments.First(segment => segment.SegmentNumber == headStemSegmentNumber).Pos;
             var isVerb = string.Equals(headPos, "V", StringComparison.Ordinal);
 
-            // PHASE 1 (mint): ONLY the head STEM segment mints new root/lemma/stem dimensions. Each word
-            // therefore mints at most one new row per dimension, stamped with this word's unique order as
-            // FirstWordOrder — so no two rows ever share a FirstWordOrder (the UNIQUE index on
-            // quran_{roots,lemmas,stems}.first_word_order_in_mushaf; this is the Phase 2A duplicate-key
-            // defect fixed). Segment-level ids are filled later by ResolveSegmentDimensions, once every
-            // word's head has minted, so a secondary STEM can reference a dimension whose head occurs later
-            // in word order.
+            // PHASE 1 mint: only the head STEM mints, stamping this word's unique order as FirstWordOrder
+            // (honours UNIQUE first_word_order_in_mushaf; prevents the duplicate-key defect). Segment ids resolve in phase 2.
             int? wordRootId = null;
             int? wordLemmaId = null;
             int? wordStemId = null;
@@ -144,7 +116,6 @@ public sealed class EnrichedDimensionBuilder
                 wordStemId = ResolveOrCreateStem(headStemSource, wordOrder, stemIndex, ref nextDimId);
             }
 
-            // Segments are stored with null dimension ids here; ResolveSegmentDimensions fills them in phase 2.
             alignedWords.Add(new EnrichedAlignedWordProjection(
                 new AlignedWordDto(
                     location,
@@ -181,13 +152,8 @@ public sealed class EnrichedDimensionBuilder
                 emptyFormLocations);
         }
 
-        // PHASE 2 (resolve): every word's head has now minted, so the root/lemma/stem indices are complete.
-        // Fill each segment's dimension ids by value-based lookup against those indices — STEM segments
-        // resolve root+lemma+stem, non-STEM segments resolve only a shared root (lemma/stem stay null so the
-        // STEM-only invariants hold). NOTHING is minted here, so the UNIQUE FirstWordOrder guarantee from
-        // phase 1 is preserved; a secondary STEM resolves to a dimension even when that dimension's head
-        // occurs later in word order. A value with no minted dimension (a buckwalter/stem_text that is never
-        // any word's head) stays null rather than fabricating a FirstWordOrder.
+        // PHASE 2 resolve: mints NOTHING (preserves phase-1 UNIQUE FirstWordOrder); a value that was never
+        // a word's head stays null rather than fabricating a FirstWordOrder.
         private List<EnrichedAlignedWordProjection> ResolveSegmentDimensions()
         {
             var resolved = new List<EnrichedAlignedWordProjection>(alignedWords.Count);
@@ -201,8 +167,6 @@ public sealed class EnrichedDimensionBuilder
                     segments.Add(segment with
                     {
                         RootId = LookupId(rootIndex, segment.RootBuckwalter),
-                        // Resolve to the collapsed display lemma via the segment's own buckwalter's analysis
-                        // (a buckwalter maps to exactly one display lemma).
                         LemmaId = isStem ? LookupLemmaId(segment.LemmaBuckwalter) : null,
                         StemId = isStem ? LookupId(stemIndex, NormalizeStemIdentity(segment.FormArabicNormalized)) : null,
                     });
@@ -225,9 +189,6 @@ public sealed class EnrichedDimensionBuilder
             return index.TryGetValue(key, out var entry) ? entry.Id : null;
         }
 
-        // Resolves a segment's lemma_buckwalter to the id of its COLLAPSED display lemma (quran_lemmas.id).
-        // The buckwalter's analysis carries the display lemma link; a buckwalter that was never any word's
-        // head has no analysis and stays null (mirrors the existing null-safe lemma rule).
         private int? LookupLemmaId(string? lemmaBuckwalter)
         {
             if (string.IsNullOrWhiteSpace(lemmaBuckwalter))
@@ -241,8 +202,6 @@ public sealed class EnrichedDimensionBuilder
 
     private static bool IsStem(AlignedSegmentDto segment) =>
         string.Equals(segment.Kind, "STEM", StringComparison.Ordinal);
-
-    // --- segment projection --------------------------------------------------------------
 
     private static List<AlignedSegmentDto> ProjectSegments(
         EnrichedMorphologyRecord record,
@@ -273,7 +232,6 @@ public sealed class EnrichedDimensionBuilder
                 string.IsNullOrEmpty(segment.Kind) ? string.Empty : segment.Kind,
                 pos,
                 formBuckwalter,
-                // formArabic arrives display-clean from the artifact; no further rendering is needed.
                 string.IsNullOrEmpty(segment.FormArabic) ? null : segment.FormArabic,
                 EnrichedRenderTier,
                 EnrichedRenderSource,
@@ -288,8 +246,6 @@ public sealed class EnrichedDimensionBuilder
 
         return result;
     }
-
-    // --- value-based dimension resolution ------------------------------------------------
 
     private static int? ResolveOrCreateRoot(
         EnrichedMorphologySegment segment,
@@ -315,11 +271,6 @@ public sealed class EnrichedDimensionBuilder
         return entry.Id;
     }
 
-    // Word-level lemma identity is the Arabic lemma_text (UNIQUE in quran_lemmas): numeric-suffix
-    // buckwalter homographs that render to the SAME text collapse to ONE display lemma, so no second
-    // quran_lemmas row can violate the unique index. Each distinct buckwalter still mints its own analysis
-    // row (quran_lemma_analyses) carrying its first-occurrence root/POS/location, so the Corpus
-    // distinctions are preserved rather than lost in the collapse.
     private static int? ResolveOrCreateLemma(
         EnrichedMorphologySegment segment,
         int wordOrder,
@@ -339,8 +290,6 @@ public sealed class EnrichedDimensionBuilder
             return null;
         }
 
-        // Fall back to the buckwalter as the display key only when the artifact carries no Arabic text
-        // (a buckwalter never collides with a real lemma_text).
         var lemmaText = string.IsNullOrWhiteSpace(segment.LemmaArabic) ? lemmaBuckwalter : segment.LemmaArabic;
         var normalizedHeadPos = string.IsNullOrEmpty(headPos) ? null : headPos;
 
@@ -355,14 +304,11 @@ public sealed class EnrichedDimensionBuilder
 
         if (rootId.HasValue)
         {
-            // Representative root of the display lemma = the root at its earliest occurrence; per-variant
-            // roots (which may differ, e.g. عَصَا) are preserved on the analysis rows below.
             if (!lemmaRootLinks.TryGetValue(lemmaText, out var existing) || wordOrder < existing.WordOrder)
             {
                 lemmaRootLinks[lemmaText] = (rootId.Value, wordOrder);
             }
 
-            // distinct_lemmas_count fans out on DISPLAY lemmas (text), so collapsed homographs count once.
             if (!string.IsNullOrWhiteSpace(segment.RootBuckwalter)
                 && rootLemmaMap.TryGetValue(segment.RootBuckwalter, out var lemmaSet))
             {
@@ -382,11 +328,8 @@ public sealed class EnrichedDimensionBuilder
         return lemmaEntry.Id;
     }
 
-    // Stem identity is the persisted schema rule ONLY: normalized stem_text (the STEM segment's formArabic
-    // under the enriched artifact). stemBuckwalter is audit-only and never mints a separate row —
-    // vocalization-distinct stems sharing stem_text collapse to one quran_stems row by design (no
-    // stem_buckwalter column exists). See plan §4. Quranic small yeh is render/provenance, not stem
-    // identity, so it is removed only for quran_stems keys/text; segment form_arabic_normalized keeps it.
+    // Stem identity = normalized stem_text only; stemBuckwalter never mints a row (no column). Quranic small
+    // yeh is stripped for stem keys/text but kept on segment form_arabic_normalized.
     private static int? ResolveOrCreateStem(
         EnrichedMorphologySegment segment,
         int wordOrder,
@@ -419,8 +362,6 @@ public sealed class EnrichedDimensionBuilder
         var normalized = stemText.Replace(QuranicSmallYeh, string.Empty, StringComparison.Ordinal);
         return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
     }
-
-    // --- resolved dimension lists --------------------------------------------------------
 
     private static List<ResolvedRootDto> BuildResolvedRoots(
         Dictionary<string, RootDimensionEntry> rootIndex,
@@ -497,8 +438,6 @@ public sealed class EnrichedDimensionBuilder
 
         return result;
     }
-
-    // --- feature mapping (mirrors the legacy assembler's pure logic) ---------------------
 
     private static HashSet<string> ParseFeatureTokens(string? featuresRaw)
     {
@@ -622,8 +561,6 @@ public sealed class EnrichedDimensionBuilder
 
         public string? LemmaArabic { get; }
 
-        // quran_lemmas.lemma_buckwalter for the collapsed display lemma = the buckwalter of its earliest
-        // occurrence (matches how first_word_order is chosen); deterministic under collapse.
         public string RepresentativeBuckwalter { get; private set; }
 
         public void ConsiderRepresentative(int wordOrder, string buckwalter)
@@ -636,9 +573,6 @@ public sealed class EnrichedDimensionBuilder
         }
     }
 
-    // One per distinct Corpus lemma_buckwalter. Links to its collapsed display lemma (LemmaId) and keeps
-    // the variant's first-occurrence root/POS/location/count so different-root or different-POS homographs
-    // are never analytically merged.
     private sealed class LemmaAnalysisEntry
     {
         public LemmaAnalysisEntry(
@@ -688,6 +622,4 @@ public sealed record EnrichedDimensionBuildResult(
     int WholeWordAgreementMatches,
     IReadOnlyList<string> EmptyFormLocations);
 
-// Carries the word-order (quran_words.id) alongside each AlignedWordDto so dry-validation can reason
-// about ordering without re-reading the DB.
 public sealed record EnrichedAlignedWordProjection(AlignedWordDto Word, int QuranWordId);

@@ -16,11 +16,9 @@ public sealed class NotificationRecordConfiguration : IEntityTypeConfiguration<N
         builder.Property(n => n.Payload).IsRequired().HasColumnName("payload");
         builder.Property(n => n.CreatedAtUtc).IsRequired().HasColumnName("created_at");
 
-        // Unique source identity is the idempotency key: it prevents duplicate notifications for the same
-        // source event, even under concurrency (FR-033) — the hard DB backstop behind the writer's dedup.
+        // Unique source_identity is the idempotency key: dedups duplicate notifications even under concurrency.
         builder.HasIndex(n => n.SourceIdentity).IsUnique();
 
-        // Recipient listings (032 surfaces / the read-state repository) filter on this.
         builder.HasIndex(n => n.RecipientSubject);
     }
 }

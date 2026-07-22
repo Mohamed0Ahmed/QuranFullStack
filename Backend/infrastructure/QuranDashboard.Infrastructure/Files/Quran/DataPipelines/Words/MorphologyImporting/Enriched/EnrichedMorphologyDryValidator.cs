@@ -26,8 +26,6 @@ public sealed class EnrichedMorphologyDryValidator
             Observed: segmentCount.ToString(System.Globalization.CultureInfo.InvariantCulture),
             Passed: segmentCount == 128_219));
 
-        // Gate 3: 0 fallback / pseudo-segments. The enriched pathway produces no marker rows; assert every
-        // word has at least one real segment (the artifact carries 0 fallback records).
         var emptyWords = source.Words.Where(word => word.Segments.Count == 0).ToList();
         checks.Add(new EnrichedMorphologyDryCheck(
             "ENRICHED-NO-FALLBACK-WORDS",
@@ -85,9 +83,6 @@ public sealed class EnrichedMorphologyDryValidator
                 : $"{source.UnknownPosCodes.Count} unknown: {string.Join(",", source.UnknownPosCodes)}",
             Passed: source.UnknownPosCodes.Count == 0));
 
-        // Gate 8: no QUL word-level lemma truth — structural assertion. The enriched pathway is the only
-        // IMorphologyImportSource implementation that produces value-based lemma identity; we assert the
-        // data came through it by checking the SourceArtifact provenance carried on the manifest.
         checks.Add(new EnrichedMorphologyDryCheck(
             "ENRICHED-NO-QUL-WORD-LEMMA-LINK",
             Expected: "corpus-bridge-enriched provenance; quranWordIdVerifiedAgainstDashboard=true",
@@ -95,8 +90,6 @@ public sealed class EnrichedMorphologyDryValidator
             Passed: manifest.QuranWordIdVerifiedAgainstDashboard
                 && string.Equals(manifest.Provenance, "corpus-bridge-enriched", StringComparison.Ordinal)));
 
-        // Corrected-lemma spot checks (gates 11a-d). Each must resolve to the Corpus-derived lemma, not
-        // the QUL-shifted value.
         foreach (var (location, forbidden, expectedLemma) in CorrectedLemmaSpotChecks)
         {
             var word = source.Words.FirstOrDefault(w => w.Location == location);
@@ -117,7 +110,6 @@ public sealed class EnrichedMorphologyDryValidator
         return new EnrichedMorphologyDryValidationResult(allPassed, checks);
     }
 
-    // Boundary ayahs from plan §5/§7 (gate 10).
     private static readonly (string Ayah, int ExpectedWordCount)[] BoundaryAyahExpectedWordCounts =
     [
         ("2:181", 14),
@@ -126,8 +118,6 @@ public sealed class EnrichedMorphologyDryValidator
         ("13:37", 20),
     ];
 
-    // Corrected-lemma spot checks from plan §7 (gates 11a-d). The expected lemma is the exact vocalized
-    // lemmaArabic the Corpus bridge produces for the corrected lemmaBuckwalter.
     private static readonly (string Location, string Forbidden, string ExpectedLemma)[] CorrectedLemmaSpotChecks =
     [
         ("41:44:16", "ءَامَنَ", "شِفَاء"),

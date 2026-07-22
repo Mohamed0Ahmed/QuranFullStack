@@ -13,8 +13,6 @@ public enum WordLemmaNormalizationOperationKind
     Exception,
 }
 
-// `Candidate` and `NeedsReview` are draft-only: they parse so the validator can fail closed with a
-// precise message, but they must never appear in the active (embedded) artifact.
 [JsonConverter(typeof(WordLemmaDecisionStatusJsonConverter))]
 public enum WordLemmaNormalizationDecisionStatus
 {
@@ -24,8 +22,6 @@ public enum WordLemmaNormalizationDecisionStatus
     NeedsReview,
 }
 
-// `expectedCurrentLemmaArabic`/`correctedLemmaArabic` nullability rules are enforced by the validator
-// per operation kind.
 public sealed record WordLemmaNormalizationEntry
 {
     public required string Id { get; init; }
@@ -63,8 +59,6 @@ public sealed record WordLemmaNormalizationArtifact
     public required IReadOnlyList<WordLemmaNormalizationEntry> Entries { get; init; }
 }
 
-// Provenance fields stay for traceability; the validator only requires a matching curated row for the
-// (buckwalter, arabicLemma) pair and does not enforce the evidence metadata fields.
 public sealed record WordLemmaMappingEvidenceEntry
 {
     public required string Buckwalter { get; init; }

@@ -47,10 +47,6 @@ public sealed partial class EfWordTypesReader
         """;
     }
 
-    // groupedDimension is null for the Words table/list reads and set only for grouped member-word
-    // reads, where it adds an allowlisted numeric root_id|stem_id|lemma_id = @dimensionId predicate to
-    // the shared base. Everything after the base — the (tashkeel_word_id, context_code) grouping — is
-    // identical, guaranteeing row-for-row Words-table parity.
     private static string RowsCountSql(WordTypeReadContext context, WordTypeGroupedDimensionKind? groupedDimension = null) => $"""
         WITH base AS (
             {BaseRowsSql(context, groupedDimension)}
@@ -198,22 +194,12 @@ public sealed partial class EfWordTypesReader
             {GroupedDimensionPredicate(groupedDimension)}
         """;
 
-    // Word-identity search reuses the unique-tashkeel join the base already carries and matches the
-    // same computed identity-search column Unique Words search uses (research R2 equivalence): the
-    // GIN-trgm-indexed search_text_normalized (a fold of text_uthmani_simple + text_imlaei_simple).
-    // Identity text only — never root/stem/lemma display text. The term is a parameter value, never
-    // interpolated; the tree (Unscoped) and grouped-detail contexts carry no search so this is empty
-    // for them, keeping the base byte-for-byte unchanged for existing callers.
+    // Search term is bound via @searchPattern, never interpolated (injection).
     private static string SearchPredicate(WordTypeReadContext context) =>
         context.HasSearch
             ? "AND unique_word.search_text_normalized ILIKE @searchPattern"
             : string.Empty;
 
-    // Tri-state presence flags (Feature 026, US6) narrow the shared base by whether the head morphology
-    // row carries a root/stem/lemma. Only the allowlisted numeric id columns and the IS [NOT] NULL
-    // operators appear — no user text, no parameters. Absent flags (list/table pre-feature callers,
-    // tree Unscoped, grouped-detail contexts) emit nothing, keeping the base byte-for-byte unchanged.
-    // Qualified with the morphology alias (m.) because the base FROM also joins quran_lemmas.
     private static string PresenceFilterPredicate(WordTypeReadContext context)
     {
         var fragments = new List<string>(3);
@@ -236,12 +222,7 @@ public sealed partial class EfWordTypesReader
         return fragments.Count == 0 ? string.Empty : "AND " + string.Join(" AND ", fragments);
     }
 
-    // Grouped member/detail reads restrict the shared base to a single numeric head dimension. Only the
-    // allowlisted id column may appear; the *_text columns are projection-only and never a membership
-    // predicate. Null (list/table reads) emits nothing, so the base stays byte-for-byte semantically
-    // unchanged for existing callers.
-    // Qualified with the morphology alias (m.) because the base FROM also joins quran_lemmas, which
-    // carries its own root_id; an unqualified column would be ambiguous.
+    // IdColumn is from a fixed allowlist (interpolated identifier); @dimensionId is bound (injection).
     private static string GroupedDimensionPredicate(WordTypeGroupedDimensionKind? groupedDimension) =>
         groupedDimension is null
             ? string.Empty
@@ -270,9 +251,6 @@ public sealed partial class EfWordTypesReader
         _ => "FALSE",
     };
 
-    // Secondary filters narrow base rows in place. Case applies only to nouns; tense/voice only to
-    // verbs. "null" is a real case value meaning غير محدد (NULL case_feature). The "all" sentinel is
-    // treated as no filter by the context and never reaches this predicate.
     private static string SecondaryFilterPredicate(WordTypeReadContext context)
     {
         var fragments = new List<string>(3);
@@ -297,8 +275,6 @@ public sealed partial class EfWordTypesReader
         return fragments.Count == 0 ? string.Empty : "AND " + string.Join(" AND ", fragments);
     }
 
-    // dimensionId is bound only for grouped member-word reads (where BaseRowsSql emits the numeric
-    // predicate). List/table callers pass null and the @dimensionId parameter is never added.
     private static object[] BuildRowsParameters(WordTypeReadContext context, int skip, int take, int? dimensionId = null)
     {
         var parameters = new List<object>
@@ -339,8 +315,6 @@ public sealed partial class EfWordTypesReader
         }
     }
 
-    // Each secondary filter parameter is added only when the corresponding predicate is emitted so the
-    // raw SQL and the parameter list stay in sync (Npgsql rejects unused/unbound names).
     private static void AddSecondaryFilterParameters(WordTypeReadContext context, List<object> parameters)
     {
         if (context.HasCaseFilter && context.Case != "null")
@@ -359,9 +333,6 @@ public sealed partial class EfWordTypesReader
         }
     }
 
-    // Context.Search is already normalized; the parameter is the escaped %contains% pattern, matching
-    // the Unique Words reader's `%EscapeLikePattern(normalized)%` + ILIKE shape exactly. Added only when
-    // the SearchPredicate is emitted so the SQL and parameter list stay in sync.
     private static void AddSearchParameter(WordTypeReadContext context, List<object> parameters)
     {
         if (context.HasSearch)
@@ -385,9 +356,6 @@ public sealed partial class EfWordTypesReader
 
     private static string CaseOrFeatureSelect(WordTypeReadContext context)
     {
-        // Verb rows always resolve to their tense context code. Noun rows only carry a case value
-        // when a secondary case filter pins the whole row to it (or to NULL for غير محدد); under the
-        // unfiltered noun parent a row aggregates multiple cases, so it stays null rather than unioning.
         if (context.Type == VerbType)
         {
             return "g.context_code";
@@ -395,18 +363,14 @@ public sealed partial class EfWordTypesReader
 
         if (context.Type == NounType && context.HasCaseFilter)
         {
-            // context.Case is allowlist-validated before SQL emission (same as type/child discriminators
-            // interpolated elsewhere in this file); the WHERE clause parameterizes @caseFilter instead.
+            // context.Case is allowlist-validated before interpolation (injection).
             return context.Case == "null" ? "NULL::text" : $"'{context.Case}'::text";
         }
 
         return "NULL::text";
     }
 
-    // Words-view ORDER BY. Every arm returns a compiler-known CONSTANT selected by an enum switch —
-    // the direction is baked into each constant, so no request text ever reaches the SQL string. The
-    // per-view tie chain (Mushaf order, then the identity pair) is identical in BOTH directions, so
-    // reversing a column never reshuffles its ties.
+    // Every arm is a compile-time constant; no request text reaches the interpolated ORDER BY (injection).
     private static string OrderBy(WordTypeSortSpec sort) => (sort.Column, sort.Direction) switch
     {
         (WordTypeSortColumn.Occurrences, WordSortDirection.Descending) => "g.occurrences_count DESC, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
@@ -417,7 +381,6 @@ public sealed partial class EfWordTypesReader
         (WordTypeSortColumn.Surahs, WordSortDirection.Ascending) => "g.surahs_count, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
         (WordTypeSortColumn.Alpha, WordSortDirection.Ascending) => "g.display_text, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
         (WordTypeSortColumn.Alpha, WordSortDirection.Descending) => "g.display_text DESC, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
-        // mushaf-order is ascending-only by contract (the parser rejects any suffix on it).
         (WordTypeSortColumn.MushafOrder, _) => "g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
         _ => throw new InvalidOperationException($"Unhandled {nameof(WordTypeSortSpec)} value."),
     };
@@ -445,14 +408,10 @@ public sealed partial class EfWordTypesReader
 
         public bool HasChildCode => !string.IsNullOrWhiteSpace(ChildCode);
 
-        // "all" is the frontend default meaning "no secondary filter applied"; only a concrete value
-        // (or "null" for case) narrows the rows. "null" is a real noun-case filter meaning غير محدد.
         public bool HasCaseFilter => !string.IsNullOrWhiteSpace(Case) && Case != "all";
         public bool HasTenseFilter => !string.IsNullOrWhiteSpace(Tense) && Tense != "all";
         public bool HasVoiceFilter => !string.IsNullOrWhiteSpace(Voice) && Voice != "all";
 
-        // Search holds the already-normalized identity fragment (empty/whitespace/diacritics-only
-        // collapsed to null in the reader), so a non-empty value always narrows the base.
         public bool HasSearch => !string.IsNullOrEmpty(Search);
     }
 

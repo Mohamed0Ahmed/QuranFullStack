@@ -38,6 +38,13 @@ Two source shapes are supported side-by-side (Feature 020):
   do not "simplify" it back to the raw source value.
 - **Lemma text collapse/collisions** are a known hazard — distinct lemmas must not
   collapse onto one text; corrections + collision detection guard this.
+- **Enriched dimension builder minting (`Enriched/EnrichedDimensionBuilder.cs`)** — value-based
+  identity with hard DB uniqueness. `lemma_text` homographs collapse to ONE row (honours
+  `UNIQUE(lemma_text)`). Minting is two-phase and order-sensitive: **phase 1** mints only head
+  dimensions with a unique `first_word_order`; **phase 2** resolves references and mints nothing —
+  a value that was never a head stays `null` rather than fabricating a `first_word_order` (fabricating
+  one reintroduces the phase-2 duplicate-key defect). Stem identity is the normalized `stem_text`
+  only: the small yeh is stripped for the stem key but kept on the segment display form.
 - **U+06DF dot-render offender** — certain marks render wrong with the wrong font/renderer;
   segment Arabic rendering must preserve them (see the frontend Mushaf README for the
   font side).

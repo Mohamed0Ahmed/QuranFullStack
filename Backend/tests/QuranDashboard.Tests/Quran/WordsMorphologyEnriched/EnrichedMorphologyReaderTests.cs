@@ -15,7 +15,7 @@ public sealed class EnrichedMorphologyReaderTests : IDisposable
 
     public void Dispose()
     {
-        try { Directory.Delete(tempDir, recursive: true); } catch { /* best-effort */ }
+        try { Directory.Delete(tempDir, recursive: true); } catch { }
     }
 
     [Fact]

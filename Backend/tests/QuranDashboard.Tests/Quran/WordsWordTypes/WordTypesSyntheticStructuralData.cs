@@ -2,8 +2,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 namespace QuranDashboard.Tests.Quran.WordsWordTypes;
 
-// Test-only structural rows. Every coordinate and payload is explicitly non-canonical, so this fixture
-// can exercise grouping and Arabic ordering without fabricating data at a real Quran location.
+// Test-only structural rows; every coordinate/payload is non-canonical, never real Quran data.
 internal static class WordTypesSyntheticStructuralData
 {
     public const string NounChildCode = "SYN";

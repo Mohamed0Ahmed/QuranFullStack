@@ -3,9 +3,6 @@ using QuranDashboard.Application.Abstractions.Abwab;
 
 namespace QuranDashboard.Application.Abwab.Concurrency;
 
-// The mechanism behind the stabilization registry test: discover every concrete IAbwabWriter and report
-// any that is not registered against the barrier. Fail-closed — an unregistered writer is a bypass of the
-// global AbwabWriteBarrier gate and must break the build.
 public static class AbwabWriterStabilizationGuard
 {
     public static IReadOnlyList<Type> DiscoverWriters(IEnumerable<Assembly> assemblies) =>

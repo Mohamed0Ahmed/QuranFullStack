@@ -1,14 +1,7 @@
 namespace QuranDashboard.Tests.Abwab.Notifications;
 
-// T070 / FR-035 / SC-009: a source/architecture gate proving 028 introduces notification STORAGE ONLY and
-// NO public notification surface. It fails if a notification controller/endpoint, an Application-layer port,
-// an HTTP adapter, a mock, or a frontend UI feature appears — 032 owns those surfaces and the event matrix,
-// 033 calls the storage writer for restore events. Distinct from the FK-prohibition guard (T006) and the
-// forbidden-write-API gate (T081): this one scopes the notification public surface, not FKs or write APIs.
 public sealed class NotificationBoundaryGuardTests
 {
-    // Layers where a public notification surface (port / endpoint / HTTP adapter) would live. 028 must add
-    // NOTHING notification-named here — its notification code is confined to Infrastructure storage.
     private static readonly string[] ForbiddenSurfaceRoots =
     [
         Path.Combine("application", "QuranDashboard.Application"),
@@ -16,8 +9,6 @@ public sealed class NotificationBoundaryGuardTests
         Path.Combine("api", "QuranDashboard.Api"),
     ];
 
-    // Tokens that would mark a public surface even inside the Infrastructure storage folder (an HTTP adapter,
-    // a controller/endpoint, a port interface, or a mock double).
     private static readonly string[] ForbiddenSurfaceTokens =
     [
         "Controller",
@@ -101,7 +92,6 @@ public sealed class NotificationBoundaryGuardTests
     [Fact]
     public void Scanner_DetectsASurfaceName()
     {
-        // Non-vacuity: the matcher must actually flag a would-be surface, otherwise the gate proves nothing.
         const string surfaceFile = "NotificationsController.cs";
         surfaceFile.Contains("Notification", StringComparison.OrdinalIgnoreCase).Should().BeTrue();
         ForbiddenSurfaceTokens.Any(token => surfaceFile.Contains(token, StringComparison.OrdinalIgnoreCase))

@@ -68,7 +68,6 @@ public sealed class RootsAyahsReadTests(RootsExplorerTestFixture fixture)
         secondPage.Items[0].VerseKey.Should().Be("2:25");
     }
 
-    // M25 regression: page far beyond the last one must return a controlled empty page, not error.
     [Fact]
     public async Task GetRootAyahs_positive_out_of_range_page_returns_successful_empty_page()
     {
@@ -85,10 +84,6 @@ public sealed class RootsAyahsReadTests(RootsExplorerTestFixture fixture)
         page.Items.Should().BeEmpty();
     }
 
-    // M25 regression: `page * pageSize` computed in int arithmetic overflows negative for a large enough
-    // page, which PostgreSQL rejects as "OFFSET must not be negative" — an uncontrolled 500 on this
-    // publicly browsable endpoint. `ReadPaging.CalculateSafeSkip` does the math in long and must return
-    // the empty page instead.
     [Fact]
     public async Task GetRootAyahs_huge_positive_page_returns_empty_without_skip_overflow()
     {

@@ -2,20 +2,14 @@ using QuranDashboard.DataImporter.Import.Safety;
 
 namespace QuranDashboard.Tests.Abwab.ImportSafety;
 
-// US2 / FR-007: environment restriction on destructive (`--force`) imports, plus the importer-side gate
-// that layers canonical source-identity verification on top. Pure (no DB), so exercised directly.
 public sealed class DestructiveImportPolicyTests
 {
     [Theory]
-    // non-force imports are never gated
     [InlineData(false, null, null, true)]
     [InlineData(false, "Production", null, true)]
-    // force in Production is refused even with the opt-in set
     [InlineData(true, "Production", "1", false)]
-    // force without the opt-in is refused
     [InlineData(true, "Development", null, false)]
     [InlineData(true, null, null, false)]
-    // force with the opt-in is allowed outside Production
     [InlineData(true, "Development", "1", true)]
     [InlineData(true, null, "true", true)]
     public void Evaluate_AppliesEnvironmentRestriction(
@@ -46,8 +40,6 @@ public sealed class DestructiveImportPolicyTests
     [Fact]
     public void Gate_AllowsMissingManifestSource_WithWarning()
     {
-        // Documented FR-008 accommodation: a legacy package predating the identity manifest is allowed
-        // to keep importing, but the gate surfaces a warning rather than silently trusting it.
         var result = DestructiveImportGate.Evaluate(
             force: true,
             FixtureDirectory("no-manifest-source"),

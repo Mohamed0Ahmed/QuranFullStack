@@ -5,9 +5,6 @@ namespace QuranDashboard.Infrastructure.Caching.Quran.Words;
 
 public static class UniqueWordsCacheKeys
 {
-    // An absent/empty count and association filter yields the pre-feature key byte-for-byte so warm
-    // entries stay valid (Feature 026, US5/US7); an active filter appends a deterministic range and/or
-    // association segment so filtered and unfiltered reads never cross-serve.
     public static string List(
         UniqueWordKind kind,
         UniqueWordSortSpec sort,
@@ -56,9 +53,5 @@ public static class UniqueWordsCacheKeys
         _ => kind.ToString(),
     };
 
-    // The CANONICAL token, so alias and canonical spellings of one ordering share ONE entry
-    // ("occurrences-desc" keys as "occurrences") and every pre-feature key stays byte-identical.
-    // Deliberately not a ToString() fallback: an unmapped value must fail loudly rather than silently
-    // fork the cache under a second key for the same rows.
     private static string SortKey(UniqueWordSortSpec sort) => sort.CanonicalToken();
 }

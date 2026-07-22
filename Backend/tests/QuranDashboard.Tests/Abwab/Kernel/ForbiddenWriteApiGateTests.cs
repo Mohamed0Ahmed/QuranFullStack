@@ -1,9 +1,5 @@
 namespace QuranDashboard.Tests.Abwab.Kernel;
 
-// FR-038 / SC-013 (T081): a source/architecture gate that fails the build when an Abwab writer namespace
-// references a forbidden write/bypass API. DISTINCT from the SavingChanges interceptor-skip guard (that is
-// a runtime interceptor; this is a build-time source scan). A reviewed allowlist entry requires an owner
-// and a reason.
 public sealed class ForbiddenWriteApiGateTests
 {
     private static readonly string[] ForbiddenApis =
@@ -19,8 +15,6 @@ public sealed class ForbiddenWriteApiGateTests
         "BeginBinaryExport",
     ];
 
-    // Narrow reviewed allowlist: non-product, non-revertible infrastructure only. Each entry MUST carry an
-    // owner and a reason. Empty in 028.
     private static readonly IReadOnlyList<AllowlistEntry> Allowlist = [];
 
     private static readonly string[] AbwabSourceRoots =
@@ -47,7 +41,6 @@ public sealed class ForbiddenWriteApiGateTests
     [Fact]
     public void Scanner_Detects_AForbiddenReference()
     {
-        // Non-vacuity: the detector must actually flag a forbidden token, otherwise the gate proves nothing.
         const string snippet = "var rows = context.Widgets.ExecuteDelete();";
         var hits = ForbiddenApis.Where(api => snippet.Contains(api, StringComparison.Ordinal)).ToList();
 

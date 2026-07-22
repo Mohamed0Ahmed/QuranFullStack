@@ -24,8 +24,6 @@ public sealed class WordTypesTableReadTests(WordTypesTestFixture fixture)
             25,
             CancellationToken.None);
 
-        // Noun scope root 190700 (ك ل م) covers 3 occurrences (1903001 N, 1903002 PN, 1903003 ADJ);
-        // مُثَل (1903011, N) carries no root and must be excluded.
         page.TotalCount.Should().Be(1);
         page.Items.Should().ContainSingle();
         var row = page.Items.Single().Should().BeOfType<RootTableRowDto>().Subject;
@@ -90,7 +88,6 @@ public sealed class WordTypesTableReadTests(WordTypesTestFixture fixture)
             25,
             CancellationToken.None);
 
-        // Verb root 190701 (ع ل م) has 3 total occurrences, but tense=past narrows to 1 (1907001).
         pastOnly.TotalCount.Should().Be(1);
         var row = pastOnly.Items.Single().Should().BeOfType<RootTableRowDto>().Subject;
         row.RootId.Should().Be(190701);
@@ -120,10 +117,6 @@ public sealed class WordTypesTableReadTests(WordTypesTestFixture fixture)
             25,
             CancellationToken.None);
 
-        // Noun scope: N/PN/ADJ (1903001-1903003, tashkeel 191001) share lemma_id 190500 (3 occurrences).
-        // مُثَل (1903011, N) has a NULL lemma_id and must be excluded from the lemmas grouping, so the
-        // words-view occurrence sum (4) must exceed the lemmas-view occurrence sum (3) by exactly the
-        // null-lemma row's own OccurrencesCount (1) -- a non-zero, checkable reconciliation.
         var wordsOccurrenceSum = wordsPage.Items.Sum(row => ((WordTableRowDto)row).OccurrencesCount);
         var lemmasOccurrenceSum = lemmasPage.Items.Sum(row => ((LemmaTableRowDto)row).OccurrencesCount);
         var muthalRow = wordsPage.Items.Cast<WordTableRowDto>().Single(row => row.DisplayText == "مُثَل");
@@ -202,14 +195,6 @@ public sealed class WordTypesTableReadTests(WordTypesTestFixture fixture)
             WordTypesSyntheticStructuralData.FoldFirstLemmaId);
     }
 
-    // Alpha DESC must fold too. Two guarantees are proven here at once:
-    //  (1) It RUNS. The folded `norm_text` column and the @foldFrom/@foldTo parameters are both gated
-    //      on NeedsFold; if that gate missed the descending arm, Postgres would reject the missing
-    //      column (or Npgsql the unbound parameter) at runtime rather than return rows.
-    //  (2) It FOLDS. Unfolded, the two fold-colliding lemmas are DISTINCT texts ('أ-هيكلي' < 'إ-هيكلي')
-    //      and would SWAP between ascending and descending. Folded, they collide onto one norm_text and
-    //      the dimension_id tie-break pins them in the same order in BOTH directions — so the pair NOT
-    //      flipping is exactly the evidence that the descending arm folds.
     [Fact]
     public async Task GroupedViews_Sort_ByAlphaDescending_AlsoFolds_AndKeepsTieOrder()
     {
@@ -244,7 +229,6 @@ public sealed class WordTypesTableReadTests(WordTypesTestFixture fixture)
             WordTypesSyntheticStructuralData.FoldFirstLemmaId,
             WordTypesSyntheticStructuralData.FoldSecondLemmaId);
 
-        // The fold-collided pair holds its dimension_id order under BOTH directions.
         ascendingIds.Should().ContainInOrder(
             WordTypesSyntheticStructuralData.FoldFirstLemmaId,
             WordTypesSyntheticStructuralData.FoldSecondLemmaId);
@@ -252,7 +236,6 @@ public sealed class WordTypesTableReadTests(WordTypesTestFixture fixture)
             WordTypesSyntheticStructuralData.FoldFirstLemmaId,
             WordTypesSyntheticStructuralData.FoldSecondLemmaId);
 
-        // Reversing a column must never reshuffle its ties, so DESC is NOT a mirror of ASC.
         descendingIds.Should().NotEqual(ascendingIds.Reverse());
     }
 
@@ -398,8 +381,6 @@ public sealed class WordTypesTableReadTests(WordTypesTestFixture fixture)
         stemsKey.Should().Contain(":view:stems:");
     }
 
-    // Every canonical token must key its own entry, and must appear in the key VERBATIM — the key
-    // template is unchanged by N8, only the value set is wider.
     [Fact]
     public void CacheKeys_ProduceDistinctKeys_PerCanonicalSortToken()
     {
@@ -419,8 +400,6 @@ public sealed class WordTypesTableReadTests(WordTypesTestFixture fixture)
         }
     }
 
-    // "occurrences-desc" is an ALIAS of "occurrences": one ordering, one cache entry, byte-identical
-    // to the key the pre-feature "occurrences" token already produced.
     [Theory]
     [InlineData("occurrences", "occurrences-desc")]
     [InlineData("alpha", "alpha-asc")]
@@ -438,8 +417,6 @@ public sealed class WordTypesTableReadTests(WordTypesTestFixture fixture)
             .Should().Be(WordTypesCacheKeys.Table(filter, WordTypeTableView.Words, canonicalSpec, 1, 25));
     }
 
-    // Scope counts and the grouped-detail reads describe a SCOPE, not an ordering: their keys take no
-    // sort and must never absorb one, or a wider sort vocabulary would start fragmenting them.
     [Fact]
     public void CacheKeys_ScopeCountsAndGroupedDetails_StaySortFree()
     {
@@ -454,13 +431,9 @@ public sealed class WordTypesTableReadTests(WordTypesTestFixture fixture)
             WordTypesCacheKeys.GroupedSurahs(selection),
         ];
 
-        // The ":sort:" segment is precisely what Rows/Table append and what a regression would add
-        // here. A bare token scan would false-positive: the grouped-ayahs key legitimately carries
-        // "ayahs" as its VIEW segment, which merely shares a name with the sort column.
         keys.Should().OnlyContain(key => !key.Contains(":sort:", StringComparison.Ordinal));
     }
 
-    // Grouped by canonical token: mushaf-order collapses both directions onto one token.
     private static ILookup<string, WordTypeSortSpec> CanonicalSortSpecs() =>
         Enum.GetValues<WordTypeSortColumn>()
             .SelectMany(column => Enum.GetValues<WordSortDirection>()
@@ -478,18 +451,12 @@ public sealed class WordTypesTableReadTests(WordTypesTestFixture fixture)
         var rootsSecond = await reader.GetTableRowsAsync(filter, WordTypeTableView.Roots, WordTypeSortSpec.Default, 1, 25, CancellationToken.None);
         var stems = await reader.GetTableRowsAsync(filter, WordTypeTableView.Stems, WordTypeSortSpec.Default, 1, 25, CancellationToken.None);
 
-        // Same (filter, tableView, sort, page, pageSize) must hit the cache (identical reference);
-        // a different tableView for the same filter must be a cache miss serving distinct content,
-        // proving roots/stems never cross-serve through the shared IMemoryCache instance.
         rootsSecond.Should().BeSameAs(rootsFirst);
         stems.Should().NotBeSameAs(rootsFirst);
         rootsFirst.Items.Should().OnlyContain(row => row is RootTableRowDto);
         stems.Items.Should().OnlyContain(row => row is StemTableRowDto);
     }
 
-    // Sorting is ORDER-ONLY: it is applied after filtering and touches ORDER BY alone, so no token may
-    // change which rows the scope contains. Compared against the default token's own result rather than
-    // a hardcoded expectation, so the assertion cannot drift with the seed.
     [Theory]
     [InlineData("occurrences-asc")]
     [InlineData("ayahs")]

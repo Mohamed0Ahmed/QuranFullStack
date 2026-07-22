@@ -2,8 +2,7 @@ namespace QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.Morpholo
 
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.MorphologyImporting;
 
-// Never mutates the input map (works on a copy); every approved mutating op must apply or the whole
-// apply fails (all-or-nothing).
+// All-or-nothing: works on a copy, never mutates the input map; any invalid op throws so partial corrections can't apply.
 internal static class WordLemmaNormalizationApplier
 {
     private static readonly IReadOnlySet<string> SpotCheckLocations = new HashSet<string>(StringComparer.Ordinal)
@@ -81,9 +80,6 @@ internal static class WordLemmaNormalizationApplier
                     break;
 
                 case WordLemmaNormalizationOperationKind.Keep:
-                    // Non-mutating. If the keep carries a non-null expected value, the raw lemma (when
-                    // present) must match it. Null/null keeps represent "valid null / absence accepted"
-                    // and impose no constraint on the raw map.
                     if (entry.ExpectedCurrentLemmaArabic is not null
                         && rawAtLocation is not null
                         && !string.Equals(rawAtLocation, entry.ExpectedCurrentLemmaArabic,
@@ -98,12 +94,10 @@ internal static class WordLemmaNormalizationApplier
                     break;
 
                 case WordLemmaNormalizationOperationKind.Exception:
-                    // Non-mutating; recorded only. Observed value, if any, is left as-is.
                     exception++;
                     break;
 
                 default:
-                    // Fail(true, ...) always throws, so this arm never returns normally.
                     Fail(true, $"{where}: invalid operationKind '{entry.OperationKind}'.");
                     break;
             }
@@ -117,7 +111,7 @@ internal static class WordLemmaNormalizationApplier
         }
 
         var summary = new WordLemmaCorrectionSummary(
-            ArtifactSha256: string.Empty, // Filled by caller (reader) when apply is invoked via Load+Apply.
+            ArtifactSha256: string.Empty,
             RawLemmasSha256: rawLemmasSha256,
             TotalEntries: artifact.Entries.Count,
             AppliedAdd: add,
@@ -125,7 +119,7 @@ internal static class WordLemmaNormalizationApplier
             AppliedReplace: replace,
             ReviewedKeep: keep,
             ReviewedException: exception,
-            FailedOrSkipped: failed, // Apply is all-or-nothing: any invalid entry throws, so this is always 0.
+            FailedOrSkipped: failed,
             SpotChecks: spotChecks)
         {
             ProblemClassCounts = BuildProblemClassCounts(artifact.Entries),

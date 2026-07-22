@@ -7,9 +7,6 @@ using QuranDashboard.Tests.Abwab._Support;
 
 namespace QuranDashboard.Tests.Abwab.Permissions;
 
-// FR-031 / SC-007 (T053): the attribution.view DashboardAdminBaseline is identical across layers and cannot
-// be removed. Baseline metadata (catalogue + seed), the always-on effective projection for Admin, and the
-// removal-rejection are all asserted (real PG).
 [Collection(nameof(AbwabDbCollection))]
 public sealed class BaselinePermissionTests(PostgresFixture fixture) : IAsyncLifetime
 {

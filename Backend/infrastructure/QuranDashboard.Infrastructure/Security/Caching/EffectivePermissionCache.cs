@@ -2,10 +2,6 @@ using QuranDashboard.Application.Abstractions.Security;
 
 namespace QuranDashboard.Infrastructure.Security.Caching;
 
-// Per-subject effective-permission cache over IMemoryCache. `Invalidate` swaps a generation stamp folded
-// into every cache key, so a single post-commit call cheaply drops all cached projections; the next `/me`
-// recomputes against the committed winner (FR-028). Registered as a singleton so the generation stamp is
-// process-wide.
 public sealed class EffectivePermissionCache(IMemoryCache cache) : IEffectivePermissionCache
 {
     private long _generation;

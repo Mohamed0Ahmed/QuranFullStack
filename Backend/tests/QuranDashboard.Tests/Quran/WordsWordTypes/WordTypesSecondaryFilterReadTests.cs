@@ -28,9 +28,7 @@ public sealed class WordTypesSecondaryFilterReadTests(WordTypesTestFixture fixtu
             CancellationToken.None);
 
         nominative.Items.Should().OnlyContain(row => row.CaseOrFeature == "nominative");
-        // N nominative occurrences: كَلِمَة (1903001) and مُثَل (1903011).
         nominative.TotalCount.Should().Be(2);
-        // PN genitive occurrence: كَلِمَة (1903002).
         genitive.TotalCount.Should().Be(1);
         genitive.Items.Should().OnlyContain(row => row.ContextCode == "PN");
     }
@@ -48,7 +46,6 @@ public sealed class WordTypesSecondaryFilterReadTests(WordTypesTestFixture fixtu
             25,
             CancellationToken.None);
 
-        // ADJ occurrence with NULL case_feature: كَلِمَة (1903003).
         unspecified.TotalCount.Should().Be(1);
         unspecified.Items.Should().OnlyContain(row => row.ContextCode == "ADJ");
         unspecified.Items.Should().OnlyContain(row => row.CaseOrFeature == null);
@@ -70,8 +67,6 @@ public sealed class WordTypesSecondaryFilterReadTests(WordTypesTestFixture fixtu
             25,
             CancellationToken.None);
 
-        // The E1 tree is intentionally unscoped by secondary filters, so an active case filter must
-        // narrow the table total below the static node count (FR-027 / data-model §4.3).
         filteredRows.TotalCount.Should().BeLessThan(nounNodeCount);
     }
 
@@ -105,7 +100,6 @@ public sealed class WordTypesSecondaryFilterReadTests(WordTypesTestFixture fixtu
             25,
             CancellationToken.None);
 
-        // Only عُلِمَ (1907002) is passive.
         passive.TotalCount.Should().Be(1);
         passive.Items.Should().OnlyContain(row => row.ContextCode == "present");
     }
@@ -165,7 +159,6 @@ public sealed class WordTypesSecondaryFilterReadTests(WordTypesTestFixture fixtu
         await using var scope = fixture.CreateScope();
         var handler = scope.ServiceProvider.GetRequiredService<GetWordTypeRowsHandler>();
 
-        // "all" is the frontend default; particle accepts it without a controlled failure.
         var outcome = await handler.HandleAsync(
             new GetWordTypeRowsQuery("particle", null, "all", "all", "all", null, "occurrences", 1, 25),
             CancellationToken.None);
@@ -179,7 +172,6 @@ public sealed class WordTypesSecondaryFilterReadTests(WordTypesTestFixture fixtu
         await using var scope = fixture.CreateScope();
         var reader = scope.ServiceProvider.GetRequiredService<IWordTypesReader>();
 
-        // The PN genitive row under كَلِمَة must reproduce via the summary identity carrying the case.
         var summary = await reader.GetSummaryAsync(
             new WordTypeRowIdentity(KalimaTashkeelId, "PN", "genitive", null, null),
             CancellationToken.None);
@@ -187,7 +179,6 @@ public sealed class WordTypesSecondaryFilterReadTests(WordTypesTestFixture fixtu
         summary.Should().NotBeNull();
         summary!.ContextCode.Should().Be("PN");
         summary.CaseOrFeature.Should().Be("genitive");
-        // Case pin narrows detail reads to the single genitive PN occurrence (1903002), not all three كَلِمَة rows.
         summary.OccurrencesCount.Should().Be(1);
         summary.AyahsCount.Should().Be(1);
         summary.SurahsCount.Should().Be(1);

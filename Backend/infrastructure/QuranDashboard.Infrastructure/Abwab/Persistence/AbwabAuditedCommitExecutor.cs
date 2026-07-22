@@ -5,25 +5,14 @@ using QuranDashboard.Domain.Abwab.Timeline;
 
 namespace QuranDashboard.Infrastructure.Abwab.Persistence;
 
-// The barrier-gated audited-commit protocol (§6.2). Every Abwab writer runs through here inside one
-// manual transaction with provider retries locked off (retrying a manual transaction would re-run
-// non-idempotent work). Order is load-bearing:
-//   1. row-lock + evaluate the AbwabWriteBarrier (fail closed if not Writable);
-//   2. row-lock the AbwabRevisionState singleton;
-//   3. verify ExpectedTimelineGeneration BEFORE any mutation → exact 409 with zero rows touched;
-//   4. advance the head by one and assign ChangeSetSequence FROM it (never the inverse);
-//   5. append the ChangeSet + its events, save, commit;
-//   6. publish caches ONLY after commit.
-// Both write locks are held through commit, so concurrent commits receive one strictly increasing head
-// and a rollback leaves head/generation/tree unchanged. Row locks use FromSqlRaw (a read API) — never a
-// forbidden write/bypass API — so the bypass-gate stays green.
+// Ordering is load-bearing: lock barrier, then revision head; verify ExpectedTimelineGeneration BEFORE mutating; advance head then assign ChangeSetSequence FROM it; publish caches only after commit.
+// One manual transaction with provider retries OFF (a retry would re-run non-idempotent work); both write locks held through commit.
 public sealed class AbwabAuditedCommitExecutor(
     QuranDashboardDbContext db,
     IServerClock clock,
     IAbwabCachePublisher cachePublisher) : IAbwabWriteExecutor
 {
-    // id = 1 is the seeded singleton row (AbwabWriteBarrier/AbwabRevisionState .SingletonId). FOR UPDATE
-    // takes the pessimistic row lock that serializes every audited commit.
+    // FOR UPDATE takes the pessimistic row lock that serializes every audited commit.
     private const string LockBarrierSql = "SELECT * FROM abwab_write_barrier WHERE id = 1 FOR UPDATE";
     private const string LockRevisionSql = "SELECT * FROM abwab_revision_state WHERE id = 1 FOR UPDATE";
 

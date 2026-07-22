@@ -10,10 +10,6 @@ using QuranDashboard.Tests.Abwab._Fixtures;
 
 namespace QuranDashboard.Tests.Abwab._Support;
 
-// Shared real-PG harness for the US5 security slice. Each operation runs on a FRESH DbContext/connection so
-// the barrier + AbwabRevisionState FOR UPDATE row locks genuinely serialize concurrent owner/permission
-// writes (a shared EF context would hide the cross-connection serialization the security-audit executor
-// depends on).
 internal static class SecurityTestHarness
 {
     public static readonly IServerClock Clock = new FixedClock(DateTimeOffset.UnixEpoch);
@@ -21,10 +17,6 @@ internal static class SecurityTestHarness
     public static QuranDashboardDbContext CreateContext(PostgresFixture fixture) =>
         new(new DbContextOptionsBuilder<QuranDashboardDbContext>().UseNpgsql(fixture.ConnectionString).Options);
 
-    // Restores a pristine substrate between tests. Routes through the ONE authoritative full-substrate reset
-    // so the security tests are order-independent from the US3 kernel classes that share this serial DB —
-    // notably it also clears the product change_sets/audit_events those classes commit, which the FR-039
-    // separation assertion (0 change_sets) depends on.
     public static Task ResetAsync(PostgresFixture fixture) => AbwabSubstrateReset.FullResetAsync(fixture);
 
     public static async Task SetBarrierStabilizingAsync(PostgresFixture fixture)
@@ -41,8 +33,6 @@ internal static class SecurityTestHarness
         await Exec(connection, $"UPDATE abwab_revision_state SET timeline_generation = {generation} WHERE id = 1");
     }
 
-    // Permission ops — each runs on a fresh context.
-
     public static async Task<SecurityAuditCommitResult> GrantAsync(
         PostgresFixture fixture, GrantPermissionCommand command, IEffectivePermissionCache? cache = null)
     {
@@ -56,8 +46,6 @@ internal static class SecurityTestHarness
         await using var db = CreateContext(fixture);
         return await BuildPermissions(db, cache).RevokeAsync(command, CancellationToken.None);
     }
-
-    // Owner ops — each runs on a fresh context.
 
     public static async Task<SecurityAuditCommitResult> AddOwnerAsync(PostgresFixture fixture, AddSystemOwnerCommand command)
     {
@@ -119,7 +107,6 @@ internal static class SecurityTestHarness
         public DateTimeOffset UtcNow { get; } = now;
     }
 
-    // Records Invalidate calls and stores per-subject projections for cache-invalidation assertions.
     public sealed class RecordingCache : IEffectivePermissionCache
     {
         private readonly Dictionary<string, IReadOnlyList<string>> _entries = new(StringComparer.Ordinal);

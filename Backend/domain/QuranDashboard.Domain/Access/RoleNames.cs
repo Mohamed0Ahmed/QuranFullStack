@@ -1,7 +1,6 @@
 namespace QuranDashboard.Domain.Access;
 
-// Each value is a seeded role's persisted roles.name and the key auth policies match on; changing one
-// is both a data and a contract change, so they stay pinned string constants.
+// Persisted roles.name, matched by auth policies — never rename in place.
 public static class RoleNames
 {
     public const string Owner = "Owner";

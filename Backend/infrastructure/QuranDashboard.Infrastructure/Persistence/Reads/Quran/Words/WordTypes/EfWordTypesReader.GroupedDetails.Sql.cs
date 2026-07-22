@@ -5,8 +5,6 @@ namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.WordTypes;
 
 public sealed partial class EfWordTypesReader
 {
-    // Head-level quran_word_morphology only — the segments table is deliberately never referenced by any
-    // grouped read. Scoped to one numeric dimension ID over the shared BaseRowsSql base.
     private static string GroupedSummarySql(WordTypeReadContext context, WordTypeGroupedDimensionKind kind)
     {
         var (idColumn, textColumn) = GroupedDimensionColumns(kind);
@@ -25,9 +23,6 @@ public sealed partial class EfWordTypesReader
         """;
     }
 
-    // Allowlisted numeric membership columns. The text columns are projection-only display fields and
-    // never participate in the membership predicate. Delegates to the shared DimensionColumns mapping
-    // (keyed by WordTypeTableView) so the root/stem/lemma column names live in exactly one place.
     private static (string IdColumn, string TextColumn) GroupedDimensionColumns(WordTypeGroupedDimensionKind kind) =>
         DimensionColumns(ToTableView(kind));
 
@@ -39,9 +34,6 @@ public sealed partial class EfWordTypesReader
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Grouped dimension columns are only defined for root/stem/lemma."),
     };
 
-    // Grouped detail reads apply the identical five-field scope as the table row, so they build the
-    // same WordTypeReadContext the list SQL uses — deliberately search-free: detail identity is the
-    // numeric dimension id, so the list-scope search never narrows grouped detail reads.
     private static WordTypeReadContext ToGroupedReadContext(WordTypeFilter filter) =>
         new(NormalizeType(filter.Type), NormalizeChildCode(filter.ChildCode), filter.Case, filter.Tense, filter.Voice);
 
@@ -56,8 +48,6 @@ public sealed partial class EfWordTypesReader
         return [.. parameters];
     }
 
-    // Distinct scoped ayah count over the dimension-filtered base. Zero rows means the positive dimension
-    // is absent from the scope (not found). Measured before paging so it is the stable TotalCount.
     private static string GroupedAyahsCountSql(WordTypeReadContext context, WordTypeGroupedDimensionKind kind) => $"""
         WITH base AS (
             {BaseRowsSql(context, kind)}
@@ -66,9 +56,6 @@ public sealed partial class EfWordTypesReader
         FROM base
         """;
 
-    // One page of distinct scoped ayahs in Mushaf order, joined back to the base so each row carries one
-    // matched (word id, position). Matches derive only from the scoped base at head grain — no segments
-    // table, no marker rows.
     private static string GroupedAyahsPageSql(WordTypeReadContext context, WordTypeGroupedDimensionKind kind) => $"""
         WITH base AS (
             {BaseRowsSql(context, kind)}
@@ -92,9 +79,6 @@ public sealed partial class EfWordTypesReader
         ORDER BY pa.surah_number, pa.ayah_number, b.word_number, b.quran_word_id
         """;
 
-    // Occurrence counts grouped by surah. Zero rows means the positive dimension is absent from the scope
-    // (not found). The mentioned/missing split is derived in memory against the surah catalogue, so no
-    // per-occurrence rows are hydrated. Head-level quran_word_morphology only — segments never referenced.
     private static string GroupedSurahsSql(WordTypeReadContext context, WordTypeGroupedDimensionKind kind) => $"""
         WITH base AS (
             {BaseRowsSql(context, kind)}

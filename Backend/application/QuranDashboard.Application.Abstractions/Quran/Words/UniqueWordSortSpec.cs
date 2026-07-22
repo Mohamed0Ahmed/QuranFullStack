@@ -1,8 +1,5 @@
 namespace QuranDashboard.Application.Abstractions.Quran.Words;
 
-// Every member maps to a column the list query already projects at the sort point. Page-only chips
-// and the after-paging missing-surahs count (monotone inverse of السور) are deliberately excluded;
-// see the reads README's ordering contract.
 public enum UniqueWordSortColumn
 {
     MushafOrder,
@@ -27,7 +24,6 @@ public readonly record struct UniqueWordSortSpec(UniqueWordSortColumn Column, Wo
 
     public static UniqueWordSortSpec Natural(UniqueWordSortColumn column) => new(column, NaturalDirectionOf(column));
 
-    // Counts read most-first (descending natural); text and the Mushaf release order read forward.
     public static WordSortDirection NaturalDirectionOf(UniqueWordSortColumn column) => column switch
     {
         UniqueWordSortColumn.MushafOrder => WordSortDirection.Ascending,
@@ -38,8 +34,6 @@ public readonly record struct UniqueWordSortSpec(UniqueWordSortColumn Column, Wo
         _ => throw new InvalidOperationException($"Unhandled {nameof(UniqueWordSortColumn)} value."),
     };
 
-    // Canonical wire/cache token: bare for the natural direction, suffixed for the opposite one.
-    // mushaf-order is ascending-only by contract and never carries a suffix.
     public string CanonicalToken() => Column == UniqueWordSortColumn.MushafOrder
         ? UniqueWordSortKeys.MushafOrder
         : WordSortToken.Canonical(ColumnKey(Column), Direction, NaturalDirectionOf(Column));
@@ -67,7 +61,6 @@ public static class UniqueWordSortParser
             return false;
         }
 
-        // mushaf-order is the release order, not a column: ascending-only, bare token only.
         if (column == UniqueWordSortColumn.MushafOrder && direction is not null)
         {
             return false;

@@ -3,8 +3,6 @@ using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Stems;
 
 namespace QuranDashboard.Infrastructure.Caching.Quran.Words.Stems;
 
-// No raw free-text search is ever folded into a retained cache key; keys stay bounded by resource
-// identity, view, kind, page, and size.
 public static class StemsCacheKeys
 {
     public static string SummaryAll => "stems:summary:all";

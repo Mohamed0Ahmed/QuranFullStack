@@ -4,8 +4,6 @@ using QuranDashboard.Tests.Abwab.Kernel._Support;
 
 namespace QuranDashboard.Tests.Abwab.Kernel;
 
-// FR-019 / SC-008 (T029): the stabilization registry test MUST fail if any Abwab writer lacks the barrier.
-// The mechanism is DISTINCT from the FK guard: it governs per-writer barrier registration, not schema FKs.
 public sealed class WriteBarrierRegistryTests
 {
     [Fact]
@@ -25,8 +23,6 @@ public sealed class WriteBarrierRegistryTests
     [Fact]
     public void Guard_ReportsAWriter_ThatLacksTheBarrier()
     {
-        // Non-vacuity: prove the guard actually fails when a discovered writer is not registered — this is
-        // the exact condition that breaks the build when a 029+ writer forgets the gate.
         var missing = AbwabWriterStabilizationGuard.FindWritersMissingBarrier(
             [typeof(FixtureWriterMissingGeneration)],
             new HashSet<Type>());

@@ -266,9 +266,6 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
             ? $"{firstSurahNumber}:{firstAyahNumber}"
             : string.Empty;
 
-    // Loads the whole grouped/ordered word list in one pass (null when the stem is absent). This is the
-    // identity-grain unit CachedStemsReader caches once, so paging slices the cached list instead of
-    // re-issuing the full occurrence query (perf finding B6).
     internal async Task<IReadOnlyList<StemWordItemDto>?> LoadStemWordGroupsAsync(
         int id,
         StemWordKind wordKind,

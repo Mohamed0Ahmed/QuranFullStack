@@ -7,20 +7,14 @@ using QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemsPage;
 
 namespace QuranDashboard.Tests.Quran.WordsMorphologyExplorers;
 
-// Feature 026, US7 — association filters on the Lemmas and Stems lists. Lemmas filter by the real
-// owned-root FK (quran_lemmas.root_id); Stems filter by the derived PRIMARY (dominant) root/lemma
-// association surfaced on their list rows. The primary-not-sole semantics are pinned from the seed's
-// S602 'عَلِمَ' (dominant root R701, but it also co-occurs with R702 once).
 [Collection(nameof(MorphologyExplorersCollection))]
 public sealed class MorphologyAssociationFilterTests(MorphologyExplorersTestFixture fixture)
 {
-    private const int OwnedRootWithLemmas = 701;   // R701 'ع ل م' — owned by lemmas L502 + L504
-    private const int CoOccurringNonDominantRoot = 702; // R702 'ك ت ب' — co-occurs on S602 but is not its primary
-    private const int MultiCandidateStemId = 602;  // S602 'عَلِمَ' — dominant root R701, dominant lemma L502
-    private const int DominantLemmaOfS602 = 502;   // L502 'عِلْم'
+    private const int OwnedRootWithLemmas = 701;
+    private const int CoOccurringNonDominantRoot = 702;
+    private const int MultiCandidateStemId = 602;
+    private const int DominantLemmaOfS602 = 502;
     private const int UnmatchedButValidId = 999_999;
-
-    // -- Lemmas: real FK belonging ------------------------------------------------------------------
 
     [Fact]
     public async Task GetLemmasPage_filters_by_owned_root_fk_and_agrees_with_displayed_root()
@@ -67,8 +61,6 @@ public sealed class MorphologyAssociationFilterTests(MorphologyExplorersTestFixt
         outcome.Should().BeOfType<GetLemmasPageOutcome.InvalidFilter>();
     }
 
-    // -- Stems: primary (dominant) association, primary-not-sole ------------------------------------
-
     [Fact]
     public async Task GetStemsPage_filters_by_primary_root_and_agrees_with_displayed_dominant_root()
     {
@@ -93,8 +85,6 @@ public sealed class MorphologyAssociationFilterTests(MorphologyExplorersTestFixt
         await using var scope = fixture.CreateScope();
         var handler = scope.ServiceProvider.GetRequiredService<GetStemsPageHandler>();
 
-        // S602 co-occurs with R702 (once) but its PRIMARY root is R701; filtering by the co-occurring,
-        // non-dominant root must exclude it — this is the primary-not-sole contract.
         var filtered = await ReadStemsAsync(handler, StemsAssociationFilter.FromRaw(CoOccurringNonDominantRoot, null));
 
         filtered.Items.Should().NotContain(s => s.Id == MultiCandidateStemId,

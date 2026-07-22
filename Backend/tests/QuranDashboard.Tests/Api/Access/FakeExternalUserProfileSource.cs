@@ -44,8 +44,6 @@ public sealed class FakeExternalUserProfileSource : IExternalUserProfileSource
             ? null
             : _emailOverridesBySub.GetValueOrDefault(logtoSub, EmailFor(logtoSub));
 
-        // decision 3: a blank email can never be "verified" — verification is a property of a specific
-        // email address, and there is none here.
         var emailVerified = !string.IsNullOrWhiteSpace(email) && !_unverifiedSubs.ContainsKey(logtoSub);
 
         return Task.FromResult(

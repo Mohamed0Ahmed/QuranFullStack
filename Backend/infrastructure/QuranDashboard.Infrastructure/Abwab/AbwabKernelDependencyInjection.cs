@@ -5,9 +5,6 @@ using QuranDashboard.Infrastructure.Abwab.Time;
 
 namespace QuranDashboard.Infrastructure.Abwab;
 
-// Infrastructure composition of the Abwab write kernel: server clock, the post-commit cache publisher,
-// and the barrier-gated audited-commit executor. The stabilization writer registry lives at the API
-// composition root (it must see the Application writer types, which Infrastructure does not reference).
 public static class AbwabKernelDependencyInjection
 {
     public static IServiceCollection AddAbwabKernel(this IServiceCollection services)

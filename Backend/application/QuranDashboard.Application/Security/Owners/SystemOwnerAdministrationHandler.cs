@@ -4,10 +4,8 @@ using QuranDashboard.Domain.Security.Owners;
 
 namespace QuranDashboard.Application.Security.Owners;
 
-// Operational (out-of-dashboard) System Owner add/remove and the zero-to-one bootstrap, all run through the
-// serialized security-audit unit of work. The final-owner invariant and the bootstrap rejections are
-// evaluated INSIDE the commit (after the barrier + generation gates), so concurrent removals are ordered and
-// can never leave zero active owners (SC-005). Membership carries no email/role/runtime fallback (FR-024).
+// The final-owner invariant runs INSIDE the serialized commit (after the barrier + generation gates), so
+// concurrent removals are ordered and can never leave zero active owners.
 public sealed class SystemOwnerAdministrationHandler(
     ISecurityAuditWriteExecutor executor,
     ISystemOwnerStore owners,
@@ -110,8 +108,6 @@ public sealed class SystemOwnerAdministrationHandler(
 
                 if (roster.Count > 0)
                 {
-                    // Zero-to-one: bootstrap only ever mints the FIRST owner. Re-running with the exact same
-                    // identity is an idempotent no-op; anything else is a duplicate mismatch.
                     var alreadyBootstrapped = roster.Count == 1 && roster[0].Identity == identity;
                     return alreadyBootstrapped
                         ? SecurityAuditOutcome.NoOp

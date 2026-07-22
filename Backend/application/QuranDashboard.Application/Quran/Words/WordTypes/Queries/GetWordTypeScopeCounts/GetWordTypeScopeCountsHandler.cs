@@ -15,9 +15,6 @@ public sealed class GetWordTypeScopeCountsHandler(
     {
         ArgumentNullException.ThrowIfNull(query);
 
-        // Same scope normalization + validation the rows/table handlers apply, so the four counts share
-        // the identical scope contract as the tableViews they must equal. Search is normalized/collapsed
-        // and only its presence (hasSearch) is ever logged — never the text.
         var search = WordTypesHandlerValidation.NormalizeSearch(query.Search);
         var filter = new WordTypeFilter(
             WordTypesHandlerValidation.NormalizeType(query.Type),

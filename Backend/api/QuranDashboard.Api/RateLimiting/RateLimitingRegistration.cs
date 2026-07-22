@@ -22,7 +22,6 @@ internal static class RateLimitingRegistration
 
         services.AddRateLimiter(limiterOptions =>
         {
-            // The built-in default is 503; the API contract requires 429.
             limiterOptions.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
             limiterOptions.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(CreatePartition);
             limiterOptions.OnRejected = static async (context, cancellationToken) =>
@@ -31,9 +30,6 @@ internal static class RateLimitingRegistration
                 await writer.WriteAsync(context, cancellationToken);
             };
 
-            // Named security policies are ALWAYS enabled on their endpoints (independent of the global
-            // Enabled toggle): the permission-administration and operational owner-bootstrap surfaces are
-            // always rate-limited by a stricter per-IP fixed window (FR-040 safe enabled defaults).
             limiterOptions.AddPolicy(RateLimitPolicyNames.PermissionAdmin, context => NamedPartition(
                 context,
                 RateLimitPolicyNames.PermissionAdmin,
@@ -91,9 +87,7 @@ internal static class RateLimitingRegistration
 
         var clientIp = services.GetRequiredService<IClientIpResolver>().Resolve(context);
 
-        // Namespaced keys: PartitionedRateLimiter caches the materialized limiter by key (first-wins),
-        // so a raw-IP key shared by both profiles would make whichever limiter is created first serve
-        // both health and general requests for that IP. The general:/health: prefixes keep them apart.
+        // Limiter is cached first-wins by key; a bare-IP key would collide health and general limits — keep the general:/health: prefixes.
         return RateLimitRequestClassifier.IsHealthRequest(context.Request.Path)
             ? RateLimitPartition.GetFixedWindowLimiter(
                 $"health:{clientIp}",
@@ -111,8 +105,6 @@ internal static class RateLimitingRegistration
                     TokensPerPeriod = options.TokensPerPeriod,
                     ReplenishmentPeriod = TimeSpan.FromSeconds(options.ReplenishmentPeriodSeconds),
                     QueueLimit = options.QueueLimit,
-                    // The partition forces AutoReplenishment=false and drives replenishment from its own
-                    // timer; setting it explicitly also avoids a redundant per-limiter timer allocation.
                     AutoReplenishment = false,
                 });
     }

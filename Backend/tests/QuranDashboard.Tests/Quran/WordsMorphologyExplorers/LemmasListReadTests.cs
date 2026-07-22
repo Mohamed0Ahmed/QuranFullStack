@@ -444,7 +444,6 @@ public sealed class LemmasListReadTests(MorphologyExplorersTestFixture fixture)
         interceptor.CommandCount.Should().Be(0, "the whole summary is cached once; sort/page are in-memory");
     }
 
-    // Sorting is ORDER BY only: it may reorder the page but must never change the scope or the total.
     [Theory]
     [InlineData("mushaf-order")]
     [InlineData("alpha")]
@@ -480,7 +479,6 @@ public sealed class LemmasListReadTests(MorphologyExplorersTestFixture fixture)
         page.Items.Select(i => i.Id).Should().BeEquivalentTo(defaultIds);
     }
 
-    // The acceptance bar: a legacy token and its canonical alias are ONE ordering.
     [Theory]
     [InlineData("occurrences", "occurrences-desc")]
     [InlineData("alpha", "alpha-asc")]
@@ -505,10 +503,8 @@ public sealed class LemmasListReadTests(MorphologyExplorersTestFixture fixture)
     [Theory]
     [InlineData("relevance")]
     [InlineData("")]
-    // mushaf-order is the release order, not a column: ascending-only, bare token only.
     [InlineData("mushaf-order-asc")]
     [InlineData("mushaf-order-desc")]
-    // Lemmas does not allowlist the `lemmas` column that Roots offers.
     [InlineData("lemmas")]
     public async Task GetLemmasPage_invalid_sort_returns_validation_outcome(string? sort)
     {

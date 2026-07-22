@@ -39,12 +39,6 @@ public sealed class EnrichedMorphologyWriterIntegrationTests(MorphologyImportTes
     [Fact]
     public async Task Multi_stem_word_with_distinct_lemmas_imports_without_violating_the_first_word_order_unique_index()
     {
-        // Reproduces the Phase 2A failure at the persistence layer: a two-STEM word (the مِنْ مَا compound
-        // shape) whose STEM segments carry DISTINCT lemma buckwalter values. Before the remediation the
-        // builder minted a fresh lemma for BOTH segments, both stamped FirstWordOrder = the word's order,
-        // and COPY quran_lemmas aborted with 23505 on IX_quran_lemmas_first_word_order_in_mushaf. After the
-        // remediation only the head STEM mints; the secondary STEM resolves lookup-only (here 'maA' is also
-        // the head of word 5), so the import completes and persists.
         await fixture.SeedSyntheticWordsAsync();
         var sourcePath = await WriteMultiStemEnrichedSourceFolderAsync();
         var reportOutDir = Path.Combine(Path.GetTempPath(), "enriched-morph-multistem-report-" + Guid.NewGuid().ToString("N"));
@@ -75,10 +69,6 @@ public sealed class EnrichedMorphologyWriterIntegrationTests(MorphologyImportTes
     [Fact]
     public async Task Colliding_lemma_text_variants_collapse_to_one_lemma_and_preserve_distinct_analyses()
     {
-        // Two DISTINCT head buckwalters (EaSaA2 / EaSaA — the عَصَا numeric-suffix homographs) render to the
-        // SAME Arabic lemma_text عَصَا. Before this fix the second COPY quran_lemmas row aborted with 23505
-        // on IX_quran_lemmas_lemma_text. Now they collapse to ONE display lemma while each buckwalter keeps
-        // its own analysis row, so the DIFFERENT roots (ع ص و vs ع ص ي) and POS (N vs V) survive.
         await fixture.SeedSyntheticWordsAsync();
         var sourcePath = await WriteCollidingLemmaEnrichedSourceFolderAsync();
         var reportOutDir = Path.Combine(Path.GetTempPath(), "enriched-morph-collision-report-" + Guid.NewGuid().ToString("N"));
@@ -227,8 +217,6 @@ public sealed class EnrichedMorphologyWriterIntegrationTests(MorphologyImportTes
         Directory.CreateDirectory(tempDir);
 
         var artifactPath = Path.Combine(tempDir, "corpus-based-enriched-morphology.dashboard-ready.json");
-        // Words 1 (1:1:1) and 5 (1:2:2) share lemma_text عَصَا via DISTINCT buckwalters with different roots
-        // and POS. Words 2-4 are unrelated single-STEM fillers. recordCount=5, segmentCount=5.
         await File.WriteAllTextAsync(artifactPath, """
             [
               {
@@ -369,9 +357,6 @@ public sealed class EnrichedMorphologyWriterIntegrationTests(MorphologyImportTes
         Directory.CreateDirectory(tempDir);
 
         var artifactPath = Path.Combine(tempDir, "corpus-based-enriched-morphology.dashboard-ready.json");
-        // Word 1 (1:1:1) is a two-STEM compound (min + maA) with a DISTINCT lemma buckwalter per STEM.
-        // Word 5 (1:2:2) is a standalone 'maA', so word 1's secondary STEM resolves against an existing
-        // head lemma instead of minting a colliding row. recordCount=5, segmentCount=6.
         await File.WriteAllTextAsync(artifactPath, """
             [
               {

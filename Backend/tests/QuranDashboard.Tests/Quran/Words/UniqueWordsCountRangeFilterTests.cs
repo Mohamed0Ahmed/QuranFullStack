@@ -4,16 +4,13 @@ using QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordsPage;
 
 namespace QuranDashboard.Tests.Quran.Words;
 
-// Feature 026, US5 — count-range filters on the Unique Words list (SQL predicates on
-// occurrences_count / ayahs_count / surahs_count). Predicate assertions are data-driven from an
-// unfiltered read so they stay robust to the seed's exact values.
 [Collection(nameof(UniqueWordsCollection))]
 public sealed class UniqueWordsCountRangeFilterTests(UniqueWordsTestFixture fixture)
 {
     [Theory]
-    [InlineData(5, 2, 0, 0, 0, 0)]   // occ min > max
-    [InlineData(-1, null, 0, 0, 0, 0)] // negative occ min
-    [InlineData(0, 0, 0, 0, 3, 1)]   // surahs min > max
+    [InlineData(5, 2, 0, 0, 0, 0)]
+    [InlineData(-1, null, 0, 0, 0, 0)]
+    [InlineData(0, 0, 0, 0, 3, 1)]
     public async Task Invalid_range_returns_invalid_filter(
         int? occMin, int? occMax, int? ayahsMin, int? ayahsMax, int? surahsMin, int? surahsMax)
     {
@@ -86,18 +83,15 @@ public sealed class UniqueWordsCountRangeFilterTests(UniqueWordsTestFixture fixt
         await using var scope = fixture.CreateScope();
         var handler = scope.ServiceProvider.GetRequiredService<GetUniqueWordsPageHandler>();
 
-        // "امنوا" reliably matches at least one seeded identity (existing search suite pins id 2003).
         var searched = (await ReadSearchAsync(handler, "امنوا", UniqueWordsCountFilter.None)).Items;
         searched.Should().NotBeEmpty();
         var maxOcc = searched.Max(i => i.OccurrencesCount);
 
-        // Inclusion: a range that admits every searched row keeps the whole search result.
         var kept = await ReadSearchAsync(
             handler, "امنوا", UniqueWordsCountFilter.FromRaw(null, maxOcc, null, null, null, null));
         kept.Items.Select(i => i.Id).Should().BeEquivalentTo(searched.Select(i => i.Id));
         kept.TotalCount.Should().Be(searched.Count);
 
-        // Exclusion: a range strictly above the max occurrence keeps nothing — the range and search AND.
         var dropped = await ReadSearchAsync(
             handler, "امنوا", UniqueWordsCountFilter.FromRaw(maxOcc + 1, null, null, null, null, null));
         dropped.Items.Should().BeEmpty();

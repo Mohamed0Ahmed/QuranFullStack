@@ -25,7 +25,6 @@ public sealed class GlobalExceptionHandlerTests
         handled.Should().BeTrue();
         httpContext.Response.StatusCode.Should().Be(StatusCodes.Status409Conflict);
 
-        // An expected business conflict is logged at Warning, never Error — it is not a server fault.
         logger.Entries.Should().ContainSingle();
         logger.Entries[0].Level.Should().Be(LogLevel.Warning);
 
@@ -33,7 +32,6 @@ public sealed class GlobalExceptionHandlerTests
         using var reader = new StreamReader(httpContext.Response.Body, Encoding.UTF8, leaveOpen: true);
         var body = await reader.ReadToEndAsync();
 
-        // The conflicting email must never be echoed back to the caller.
         body.Should().NotContain("collision@example.test");
 
         using var document = JsonDocument.Parse(body);

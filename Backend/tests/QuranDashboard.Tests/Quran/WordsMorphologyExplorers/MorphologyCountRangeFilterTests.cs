@@ -7,14 +7,12 @@ using QuranDashboard.Application.Quran.Words.Stems.Queries.GetStemsPage;
 
 namespace QuranDashboard.Tests.Quran.WordsMorphologyExplorers;
 
-// Feature 026, US5 — count-range filters on the Lemmas list (in-memory predicates over the cached
-// whole-summary rows). Predicate assertions are data-driven from an unfiltered read.
 [Collection(nameof(MorphologyExplorersCollection))]
 public sealed class LemmasCountRangeFilterTests(MorphologyExplorersTestFixture fixture)
 {
     [Theory]
-    [InlineData(9, 2)]     // min > max
-    [InlineData(-3, null)] // negative min
+    [InlineData(9, 2)]
+    [InlineData(-3, null)]
     public async Task Invalid_range_returns_invalid_filter(int? occMin, int? occMax)
     {
         await using var scope = fixture.CreateScope();
@@ -92,13 +90,12 @@ public sealed class LemmasCountRangeFilterTests(MorphologyExplorersTestFixture f
         .Should().BeOfType<GetLemmasPageOutcome.Success>().Subject.Page;
 }
 
-// Feature 026, US5 — count-range filters on the Stems list (five metrics, in-memory predicates).
 [Collection(nameof(MorphologyExplorersCollection))]
 public sealed class StemsCountRangeFilterTests(MorphologyExplorersTestFixture fixture)
 {
     [Theory]
-    [InlineData(9, 2)]     // min > max
-    [InlineData(null, -1)] // negative max
+    [InlineData(9, 2)]
+    [InlineData(null, -1)]
     public async Task Invalid_range_returns_invalid_filter(int? occMin, int? occMax)
     {
         await using var scope = fixture.CreateScope();

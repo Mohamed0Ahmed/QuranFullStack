@@ -4,10 +4,6 @@ using QuranDashboard.Domain.Security.Permissions;
 
 namespace QuranDashboard.Tests.Api.Security;
 
-// Integration coverage for the Owner-only permission-administration surface (T052/T061 / SC-007 +
-// contracts/permission-admin-api.md): proves the SystemOwner policy, the ApiResponse envelope, and the
-// exception -> 409 abwab.* mapping over the real HTTP pipeline against real PostgreSQL — the layer the
-// handler-level harness tests bypass.
 [Collection(nameof(SecurityApiCollection))]
 public sealed class PermissionsEndpointTests(SecurityApiFixture fixture)
 {
@@ -126,7 +122,6 @@ public sealed class PermissionsEndpointTests(SecurityApiFixture fixture)
         (await SendAsync(client, HttpMethod.Post, RevokePath, "owner-roundtrip",
             Body("Role", "Admin", code, expectedVersion: 1))).StatusCode.Should().Be(HttpStatusCode.OK);
 
-        // The admin List returns the revoked tombstone WITH its current version, so a client can re-grant.
         using var listResponse = await SendAsync(client, HttpMethod.Get, ListPath, "owner-roundtrip");
         var tombstone = (await ReadEnvelopeAsync(listResponse)).GetProperty("data").GetProperty("assignments")
             .EnumerateArray().Single(a => a.GetProperty("permissionCode").GetString() == code);

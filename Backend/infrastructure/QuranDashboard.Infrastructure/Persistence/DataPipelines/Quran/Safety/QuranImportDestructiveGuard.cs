@@ -1,29 +1,12 @@
 namespace QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Safety;
 
-// US2 (FR-005/006/007, SC-001): the single fail-closed guard every destructive Quran import step
-// routes through. It generalizes the navigation-only EnsureWriteIsolation into a schema-driven
-// defense so a TRUNCATE ... CASCADE (or DELETE) can never silently destroy a future Abwab dependent:
-//
-//   1. Advisory lock  — a transaction-scoped pg_advisory_xact_lock serializes destructive imports
-//      against any writer that cooperatively takes the same lock, so a dependent created concurrently
-//      cannot be lost to the CASCADE (it either serializes before and is seen by the preflight, or
-//      after and never overlaps the destructive window).
-//   2. Closure preflight — computes the transitive FK-dependent closure of the destructive targets
-//      from pg_catalog and FAILS CLOSED if any reached table is out of the Quran domain (not named
-//      `quran_*`). Today the closure is entirely Quran (guard passes); the moment an Abwab table
-//      gains an FK into a Quran table, that table appears in the closure and the import is refused.
-//
-// No Abwab table/FK exists yet, so this is a structural guarantee: it holds now and stays fail-closed
-// the instant the first Abwab->Quran FK is introduced.
 public static class QuranImportDestructiveGuard
 {
-    // Feature 028 (US2). Arbitrary but stable process-wide key; cooperating writers use the same key.
+    // Stable process-wide advisory-lock key; cooperating writers MUST use the same key.
     public const long DestructiveImportLockKey = 20280002L;
 
     private const int CommandTimeoutSeconds = 600;
 
-    // Reused from the navigation isolation guard: capture the comma-separated TRUNCATE table list and
-    // the single DELETE FROM target. Both stop naturally before trailing keywords (RESTART/CASCADE/…).
     private static readonly Regex TruncateTablesPattern = new(
         @"\bTRUNCATE\s+(?:TABLE\s+)?(?<tables>(?:ONLY\s+)?[a-z_][a-z0-9_]*(?:\s*,\s*(?:ONLY\s+)?[a-z_][a-z0-9_]*)*)",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
@@ -70,10 +53,8 @@ public static class QuranImportDestructiveGuard
         var targets = ExtractDestructiveTargets(destructiveSql);
         if (targets.Count == 0)
         {
-            // Fail closed rather than open: the target parser only recognizes unqualified lowercase
-            // identifiers, so a schema-qualified / quoted / CTE-based destructive statement yields zero
-            // targets. Executing it unpreflighted would defeat the whole US2 guarantee, so refuse it and
-            // require an explicitly parseable statement (or extend the parser) before it can run.
+            // Fail closed: zero parsed targets (schema-qualified/quoted/CTE statement) means the FK
+            // closure can't be verified, so refuse rather than run it unpreflighted.
             throw new QuranImportSafetyException(
                 "Destructive Quran import refused fail-closed: no destructive target table could be "
                 + "parsed from the statement, so its FK-dependent closure cannot be verified. "
@@ -119,9 +100,6 @@ public static class QuranImportDestructiveGuard
         IReadOnlyList<string> targets,
         CancellationToken ct)
     {
-        // Walk the FK graph from the destructive targets (principals) to their transitive dependents
-        // (referencing tables), then surface any dependent that is a persistent table outside the
-        // Quran domain — i.e. a table a TRUNCATE ... CASCADE would silently destroy.
         const string sql = """
             WITH RECURSIVE target(oid) AS (
                 SELECT c.oid

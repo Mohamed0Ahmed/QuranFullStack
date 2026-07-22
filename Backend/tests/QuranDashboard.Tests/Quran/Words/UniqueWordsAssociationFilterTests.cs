@@ -4,21 +4,11 @@ using QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordsPage;
 
 namespace QuranDashboard.Tests.Quran.Words;
 
-// Feature 026, US7 — association filters on the Unique Words list. The primaryType/rootId predicates
-// live in the base SQL and reproduce the exact primary-selection rule the displayed chip enrichment
-// uses, so for every filtered row the displayed primary value equals the filter (chip⇔filter).
-// Agreement tests are data-driven from an unfiltered read; the discrimination tests below pin the
-// seed's PRIMARY-vs-ANY scenarios, which fail under a naive "any occurrence matches" predicate
-// (the exact FR-009 regression this suite exists to catch).
 [Collection(nameof(UniqueWordsCollection))]
 public sealed class UniqueWordsAssociationFilterTests(UniqueWordsTestFixture fixture)
 {
     private const int UnmatchedButValidRootId = 999_999;
 
-    // Seed discrimination scenario (see unique-words-seed.sql): الله (1002) has primary type PN (×3)
-    // with a MINORITY N occurrence, and primary root 5001 'أ ل ه' (×3) with one SYNTHETIC minority
-    // co-occurrence of root 5003 'ر ح م'; آمنوا (2003) has primary type V with a MINORITY N
-    // occurrence. N and ADJ are catalogued but never primary anywhere in the slice.
     private const int AllahUniqueWordId = 1002;
     private const int AmanuUniqueWordId = 2003;
     private const int DominantRootOfAllah = 5001;
@@ -81,16 +71,12 @@ public sealed class UniqueWordsAssociationFilterTests(UniqueWordsTestFixture fix
         filtered.Items.Select(i => i.Id).OrderBy(id => id).Should().Equal(expected);
     }
 
-    // PRIMARY-vs-ANY discrimination (type): N occurs on الله and آمنوا but only as a minority —
-    // a naive "any occurrence matches" predicate would return both; the primary-selection winner
-    // predicate must return an EMPTY page.
     [Fact]
     public async Task PrimaryType_filter_excludes_words_where_the_code_is_only_a_minority_occurrence()
     {
         await using var scope = fixture.CreateScope();
         var handler = scope.ServiceProvider.GetRequiredService<GetUniqueWordsPageHandler>();
 
-        // Precondition: both words carry N occurrences, but neither displays N as its primary type.
         var all = (await ReadAsync(handler, UniqueWordsAssociationFilter.None)).Items;
         all.Single(i => i.Id == AllahUniqueWordId).PrimaryWordTypeCode.Should().Be("PN");
         all.Single(i => i.Id == AmanuUniqueWordId).PrimaryWordTypeCode.Should().Be("V");
@@ -106,9 +92,6 @@ public sealed class UniqueWordsAssociationFilterTests(UniqueWordsTestFixture fix
         filtered.Items.Should().BeEmpty();
     }
 
-    // PRIMARY-vs-ANY discrimination (root): الله co-occurs with the synthetic minority root 5003
-    // but its primary root is 5001 — filtering by the minority root must EXCLUDE it (empty page),
-    // while filtering by the dominant root keeps it.
     [Fact]
     public async Task PrimaryRoot_filter_excludes_word_co_occurring_with_a_minority_root()
     {
@@ -130,8 +113,6 @@ public sealed class UniqueWordsAssociationFilterTests(UniqueWordsTestFixture fix
         byDominant.Items.Should().OnlyContain(i => i.RootId == DominantRootOfAllah);
     }
 
-    // Catalogued-but-never-primary code: ADJ exists in the POS catalogue (validation passes) but has
-    // no occurrences in the slice → 200 empty page, never a 400.
     [Fact]
     public async Task Catalogued_but_never_primary_pos_code_returns_empty_page_not_error()
     {

@@ -1,7 +1,6 @@
 namespace QuranDashboard.Domain.Security.Permissions;
 
-// Values are pinned explicitly and persisted as-is; do not renumber (a shift would silently reassign
-// already-stored assignments).
+// Persisted as-is; do not renumber (would reassign already-stored assignments).
 public enum PermissionTargetKind
 {
     Role = 1,

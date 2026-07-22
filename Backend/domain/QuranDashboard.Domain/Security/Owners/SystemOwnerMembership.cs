@@ -1,13 +1,7 @@
 namespace QuranDashboard.Domain.Security.Owners;
 
-// Immutable issuer/subject System Owner membership (§7.7/§11). The (Issuer, Subject) identity is the ONLY
-// source of owner authority — there is no email/role/runtime fallback (FR-024). Membership state is
-// mutated through behaviour only (Deactivate / account-enabled), never by rewriting the identity, and an
-// owner counts as active for the final-owner invariant only while both the membership and the account are
-// enabled.
 public sealed class SystemOwnerMembership
 {
-    // EF materialization constructor.
     private SystemOwnerMembership()
     {
     }
@@ -44,8 +38,6 @@ public sealed class SystemOwnerMembership
 
     public DateTimeOffset? DeactivatedAtUtc { get; private set; }
 
-    // The observable authority: an owner is only active while the membership is live AND the account is
-    // enabled. A disabled account silently stops counting on the next sensitive request (FR-025).
     public bool IsActiveOwner => IsActive && IsAccountEnabled;
 
     public SystemOwnerIdentity Identity => new(Issuer, Subject);

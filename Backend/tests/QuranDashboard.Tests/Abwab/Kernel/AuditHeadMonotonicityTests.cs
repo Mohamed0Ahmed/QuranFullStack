@@ -4,8 +4,6 @@ using QuranDashboard.Tests.Abwab.Kernel._Support;
 
 namespace QuranDashboard.Tests.Abwab.Kernel;
 
-// FR-037 / SC-012 (T080): concurrent audited commits each receive one strictly increasing AuditHeadSequence;
-// a rollback leaves head/generation/tree unchanged (real PG).
 [Collection(nameof(AbwabDbCollection))]
 public sealed class AuditHeadMonotonicityTests(PostgresFixture fixture) : IAsyncLifetime
 {
@@ -28,7 +26,6 @@ public sealed class AuditHeadMonotonicityTests(PostgresFixture fixture) : IAsync
     [Fact]
     public async Task Rollback_LeavesHeadGenerationAndTreeUnchanged()
     {
-        // A commit whose event write fails (duplicate EventOrdinal) rolls back entirely.
         var request = new AbwabWriteRequest(
             ExpectedTimelineGeneration.Of(0),
             "tester",

@@ -1,8 +1,6 @@
 namespace QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting.Corrections;
 
 
-// `review_decision` is either "approved" (reviewed_stem_text set, bound to a quran_stems row by text)
-// or "unresolved_exception" (reviewed_stem_id null, reason set; left null on purpose this feature).
 public sealed record SegmentStemCorrectionEntry
 {
     [JsonPropertyName("segment_location")] public required string SegmentLocation { get; init; }
@@ -14,8 +12,6 @@ public sealed record SegmentStemCorrectionEntry
     [JsonPropertyName("reason")] public string? Reason { get; init; }
 }
 
-// Only `mappings` is required for the importer; the other metadata fields are carried for
-// traceability and ignored during apply.
 public sealed record SegmentStemCorrectionArtifact
 {
     public const string ApprovedDecision = "approved";
@@ -29,8 +25,6 @@ public sealed record SegmentStemCorrectionArtifact
 
 public sealed record SegmentStemCorrectionCounts(int Total, int Approved, int UnresolvedExceptions);
 
-// ApprovedStemTextByLocation holds reviewed stem TEXT per approved secondary segment_location (bound
-// to a stem id only at import); UnresolvedLocations holds the intentional unresolved-exception ones.
 public sealed record SegmentStemCorrectionLoaded(
     SegmentStemCorrectionArtifact Artifact,
     string ArtifactSha256,

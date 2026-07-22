@@ -31,9 +31,6 @@ public static class MorphologyInvariants
     public const string CheckSegRootConsistent = "SEG-ROOT-ID-CONSISTENT";
     public const string CheckSegDimNullSafe = "SEG-DIM-NULL-SAFE";
 
-    // Segment-level stem_id (Feature 018). Non-STEM => null; single-STEM and two-STEM primary segments
-    // reuse the word head stem; two-STEM secondary segments come from the curated artifact (479 approved
-    // clean-stem mappings + 4 intentional unresolved exceptions that stay null).
     public const string CheckSegStemStemOnly = "SEG-STEM-ID-STEM-ONLY";
     public const string CheckSegStemRequiredForStem = "SEG-STEM-ID-REQUIRED-FOR-STEM";
     public const string CheckSegStemHeadConsistent = "SEG-STEM-ID-HEAD-CONSISTENT";

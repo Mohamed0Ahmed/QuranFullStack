@@ -9,9 +9,6 @@ using QuranDashboard.Domain.Security.Permissions;
 
 namespace QuranDashboard.Api.Security.Permissions;
 
-// The ONLY security surface exposed to the dashboard: Owner-only permission administration. System Owner
-// MEMBERSHIP administration (add/remove/bootstrap) is deliberately NOT exposed here — see the area README.
-// Rejection is enforced by backend policy (SystemOwner); frontend hiding is non-authoritative.
 [ApiController]
 [Route("api/security/permissions")]
 [Authorize(Policy = AuthorizationPolicyNames.SystemOwner)]

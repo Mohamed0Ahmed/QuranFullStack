@@ -6,8 +6,6 @@ using QuranDashboard.Tests.Abwab._Support;
 
 namespace QuranDashboard.Tests.Abwab.Ownership;
 
-// FR-024/FR-025 / SC-005 (T049): concurrent owner removals always leave >= 1 active owner; removal/disable is
-// observed on the next request; owner authority has NO email/role/runtime fallback (real PG).
 [Collection(nameof(AbwabDbCollection))]
 public sealed class FinalOwnerInvariantTests(PostgresFixture fixture) : IAsyncLifetime
 {
@@ -67,8 +65,6 @@ public sealed class FinalOwnerInvariantTests(PostgresFixture fixture) : IAsyncLi
         await using var db = SecurityTestHarness.CreateContext(fixture);
         var store = new QuranDashboard.Infrastructure.Security.Persistence.SystemOwnerStore(db);
 
-        // A subject that is not an explicit membership row is NEVER an owner — there is no email, role, or
-        // runtime fallback that could confer ownership.
         (await store.IsActiveSystemOwnerAsync("not-a-member@example.com", CancellationToken.None)).Should().BeFalse();
         (await store.IsActiveSystemOwnerAsync("Owner", CancellationToken.None)).Should().BeFalse();
     }

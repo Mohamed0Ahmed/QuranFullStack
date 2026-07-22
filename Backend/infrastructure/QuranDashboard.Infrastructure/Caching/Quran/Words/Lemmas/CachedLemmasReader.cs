@@ -4,8 +4,6 @@ using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Lemmas;
 
 namespace QuranDashboard.Infrastructure.Caching.Quran.Words.Lemmas;
 
-// Cache decorator over EfLemmasReader: the whole summary list is cached once and search/sort/paging run
-// in memory, so sort/page changes issue no new SQL.
 public sealed class CachedLemmasReader(EfLemmasReader efReader, IMemoryCache cache) : ILemmasReader
 {
     private readonly EfLemmasReader _ef = efReader;
@@ -129,9 +127,6 @@ public sealed class CachedLemmasReader(EfLemmasReader efReader, IMemoryCache cac
         return ayahs;
     }
 
-    // Caches the complete grouped word list once per (lemma, kind); every page slices it in memory
-    // instead of re-issuing the full occurrence query per page (perf finding B6). Concurrent cold
-    // callers share one load via CacheLoadGate.
     private Task<IReadOnlyList<LemmaWordItemDto>?> GetOrLoadWordGroupsAsync(
         int id,
         LemmaWordKind wordKind,

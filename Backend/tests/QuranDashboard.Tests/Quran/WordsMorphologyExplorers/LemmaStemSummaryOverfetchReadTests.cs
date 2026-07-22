@@ -4,17 +4,9 @@ using QuranDashboard.Tests.Quran.Words;
 
 namespace QuranDashboard.Tests.Quran.WordsMorphologyExplorers;
 
-// B2 performance-review regression: the Lemma and Stem cold catalogues must build their type
-// distributions and dominant lemma/root winners from SERVER-SIDE grouped (summary-grain) rows instead of
-// transferring every matching morphology occurrence into memory. Every assertion pins byte-identical
-// output — winners, per-POS distribution, first-occurrence coordinate, and counts — against an
-// independent occurrence-grain oracle that reproduces the previous algorithm, so the refactor cannot
-// silently change any lemma or stem.
 [Collection(nameof(MorphologyExplorersCollection))]
 public sealed class LemmaStemSummaryOverfetchReadTests(MorphologyExplorersTestFixture fixture)
 {
-    // ---- Lemmas ------------------------------------------------------------------------------------
-
     [Fact]
     public async Task LemmaSummary_TypeDistribution_MatchesOccurrenceGrainOracle()
     {
@@ -62,8 +54,6 @@ public sealed class LemmaStemSummaryOverfetchReadTests(MorphologyExplorersTestFi
         interceptor.ReadCounts.Should().HaveCount(2, "the cold load is a fixed catalogue + grouped-distribution pair; a per-lemma (N+1) split would satisfy the per-command bound above while still reading occurrence grain");
         rows.Should().NotBeEmpty();
     }
-
-    // ---- Stems -------------------------------------------------------------------------------------
 
     [Fact]
     public async Task StemSummary_DominantsAndDistribution_MatchOccurrenceGrainOracle()
@@ -123,8 +113,6 @@ public sealed class LemmaStemSummaryOverfetchReadTests(MorphologyExplorersTestFi
         rows.Should().NotBeEmpty();
     }
 
-    // The catalogue set is unchanged: one summary row per catalogue entry (seed totals; the aggregate's
-    // FROM quran_lemmas / quran_stems is untouched, so the real-DB baselines 4,817 / 11,843 hold too).
     [Fact]
     public async Task Summary_CatalogueCounts_PreserveSeedTotals()
     {
@@ -139,8 +127,6 @@ public sealed class LemmaStemSummaryOverfetchReadTests(MorphologyExplorersTestFi
         lemmas.Should().HaveCount(9);
         stems.Should().HaveCount(6);
     }
-
-    // ---- Occurrence-grain oracle (independent reimplementation of the pre-B2 in-memory algorithm) -----
 
     private static IQueryable<LemmaOccurrence> LemmaOccurrenceGrainQuery(QuranDashboardDbContext db) =>
         from s in db.WordMorphologySegments.AsNoTracking()

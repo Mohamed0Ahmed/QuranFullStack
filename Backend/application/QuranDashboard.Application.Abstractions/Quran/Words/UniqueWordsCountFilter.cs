@@ -2,7 +2,6 @@ using QuranDashboard.Application.Abstractions.Common.Filtering;
 
 namespace QuranDashboard.Application.Abstractions.Quran.Words;
 
-// Predicates run in SQL (unlike StemsCountFilter, which runs in memory); ranges AND together and with search/sort.
 public sealed record UniqueWordsCountFilter(
     CountRange Occurrences,
     CountRange Ayahs,

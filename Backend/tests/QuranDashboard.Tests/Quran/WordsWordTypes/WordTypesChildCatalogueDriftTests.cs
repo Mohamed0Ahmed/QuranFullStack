@@ -3,12 +3,6 @@ using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyIm
 
 namespace QuranDashboard.Tests.Quran.WordsWordTypes;
 
-// Guards the duplicated noun child-code catalogue. Clean Architecture forbids the Application-layer
-// validation from referencing the Infrastructure PosTagSeed, so the allowed noun child codes are
-// hand-mirrored in WordTypesHandlerValidation. The E1 tree, however, renders noun children straight
-// from the live catalogue ordered by SortOrder. If the catalogue ever gains a noun-category code
-// that validation does not accept, that child would render as selectable yet be rejected with 400.
-// This pure unit test (no database) fails loudly the moment such drift is introduced.
 public sealed class WordTypesChildCatalogueDriftTests
 {
     [Fact]

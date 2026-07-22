@@ -1,13 +1,7 @@
 namespace QuranDashboard.DataImporter.Import.Safety;
 
-// A pinned canonical source identity: the source-package folder name the importer accepts, plus the
-// single canonical id it MUST declare. A staged package whose manifest declares any other id (or a
-// folder name absent from this registry) is refused. Identities are metadata only — no Quran content.
 public sealed record CanonicalSourceIdentity(string SourceName, string CanonicalId);
 
-// US2 (FR-008): the importer's allow-list of pinned canonical Quran source identities. New staged
-// packages carry a `source-identity.json` declaring their SourceName + CanonicalId; the verifier
-// refuses anything not pinned here (forbidden) or declaring a different id (wrong identity).
 public static class CanonicalSourceRegistry
 {
     public const string ManifestFileName = "source-identity.json";

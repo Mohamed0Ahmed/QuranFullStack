@@ -1,7 +1,5 @@
 namespace QuranDashboard.Application.Abstractions.Quran.Words.WordTypes;
 
-// Every member maps to a column both CTEs already project. The label columns are deliberately excluded
-// (see the reads README's ordering contract), and the grouped member-word detail read takes no sort.
 public enum WordTypeSortColumn
 {
     Occurrences,
@@ -20,14 +18,12 @@ public static class WordTypeSortKeys
     public const string Alpha = "alpha";
 }
 
-// Unlike the other four explorers, Word Types defaults to occurrences (descending) rather than Mushaf order.
 public readonly record struct WordTypeSortSpec(WordTypeSortColumn Column, WordSortDirection Direction)
 {
     public static WordTypeSortSpec Default { get; } = Natural(WordTypeSortColumn.Occurrences);
 
     public static WordTypeSortSpec Natural(WordTypeSortColumn column) => new(column, NaturalDirectionOf(column));
 
-    // Counts read most-first (descending natural); text and the Mushaf release order read forward.
     public static WordSortDirection NaturalDirectionOf(WordTypeSortColumn column) => column switch
     {
         WordTypeSortColumn.MushafOrder => WordSortDirection.Ascending,
@@ -38,8 +34,6 @@ public readonly record struct WordTypeSortSpec(WordTypeSortColumn Column, WordSo
         _ => throw new InvalidOperationException($"Unhandled {nameof(WordTypeSortColumn)} value."),
     };
 
-    // Canonical wire/cache token: bare for the natural direction, suffixed for the opposite one.
-    // mushaf-order is ascending-only by contract and never carries a suffix.
     public string CanonicalToken() => Column == WordTypeSortColumn.MushafOrder
         ? WordTypeSortKeys.MushafOrder
         : WordSortToken.Canonical(ColumnKey(Column), Direction, NaturalDirectionOf(Column));
@@ -67,7 +61,6 @@ public static class WordTypeSortParser
             return false;
         }
 
-        // mushaf-order is the release order, not a column: ascending-only, bare token only.
         if (column == WordTypeSortColumn.MushafOrder && direction is not null)
         {
             return false;

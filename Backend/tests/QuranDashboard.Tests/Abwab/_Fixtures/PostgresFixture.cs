@@ -2,9 +2,6 @@ using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace QuranDashboard.Tests.Abwab._Fixtures;
 
-// Shared real-PostgreSQL harness for the Abwab safety-foundation suite: it stands up a fresh
-// container and applies the EF *migrations* (never EnsureCreated), so every Abwab test observes
-// the real production schema/model instead of a synthesized one.
 public sealed class PostgresFixture : IAsyncLifetime
 {
     private readonly PostgreSqlContainer _container = new PostgreSqlBuilder()
@@ -15,7 +12,6 @@ public sealed class PostgresFixture : IAsyncLifetime
 
     public string ConnectionString { get; private set; } = string.Empty;
 
-    // Captured from the migrated context so reflection-based guards see the true production model.
     public IModel Model { get; private set; } = default!;
 
     public ServiceProvider Services => _provider

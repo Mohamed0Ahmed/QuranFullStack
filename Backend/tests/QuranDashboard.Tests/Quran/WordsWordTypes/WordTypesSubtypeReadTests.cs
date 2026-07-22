@@ -16,7 +16,6 @@ public sealed class WordTypesSubtypeReadTests(WordTypesTestFixture fixture)
         var tree = await reader.GetTreeAsync(CancellationToken.None);
 
         var noun = tree.MainTypes.Single(node => node.Code == "noun");
-        // Seed POS catalogue also has TIM, but the tree hides it because the count is zero.
         noun.Children.Select(child => child.Code).Should().Equal("N", "PN", "ADJ");
         noun.Children.Should().NotContain(child => child.ChildCode == "TIM");
         noun.Children.Should().OnlyContain(child => child.Code == child.ChildCode);
@@ -64,7 +63,6 @@ public sealed class WordTypesSubtypeReadTests(WordTypesTestFixture fixture)
         childNode.Count.Should().Be(expectedCount);
         rows.TotalCount.Should().Be(expectedCount);
         rows.Items.Should().HaveCount(expectedCount);
-        // A child node pins the head POS, so every row resolves to that exact subtype.
         rows.Items.Should().OnlyContain(row => row.TypeCode == childCode);
         rows.Items.Should().OnlyContain(row => row.ContextCode == childCode);
     }
@@ -187,8 +185,6 @@ public sealed class WordTypesSubtypeReadTests(WordTypesTestFixture fixture)
         await using var scope = fixture.CreateScope();
         var reader = scope.ServiceProvider.GetRequiredService<IWordTypesReader>();
 
-        // The E1 tree is intentionally unscoped by case/tense/voice; the noun N child carries the
-        // full N word-context row count regardless of any active secondary filter on the rows read.
         var tree = await reader.GetTreeAsync(CancellationToken.None);
         var nounN = tree.MainTypes.Single(node => node.Code == "noun").Children
             .Single(child => child.ChildCode == "N");

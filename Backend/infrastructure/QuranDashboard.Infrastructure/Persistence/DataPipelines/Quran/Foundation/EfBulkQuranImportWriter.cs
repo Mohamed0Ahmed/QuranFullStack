@@ -207,8 +207,8 @@ public sealed class EfBulkQuranImportWriter : IQuranImportWriter
     private const string TruncateTargetTablesSql =
         "TRUNCATE quran_words, quran_mushaf_lines, quran_mushaf_pages, quran_ayahs, quran_surahs RESTART IDENTITY CASCADE";
 
-    // Routed through the shared destructive guard: advisory lock + fail-closed FK-closure preflight
-    // before the CASCADE, so a future Abwab dependent can never be silently destroyed by a force import.
+    // Destructive guard: advisory lock + fail-closed FK-closure preflight before the CASCADE, so a force
+    // import can never silently destroy an out-of-scope dependent.
     private static Task TruncateTargetTablesAsync(
         NpgsqlConnection connection,
         NpgsqlTransaction transaction,

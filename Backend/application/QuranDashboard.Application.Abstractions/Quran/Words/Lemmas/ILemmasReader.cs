@@ -3,8 +3,6 @@ using QuranDashboard.Application.Abstractions.Quran.Words.Lemmas.Responses;
 
 namespace QuranDashboard.Application.Abstractions.Quran.Words.Lemmas;
 
-// null from a selected-resource read means the identity does not exist; an empty detail collection
-// for an existing identity is a successful non-null response.
 public interface ILemmasReader
 {
     Task<PagedResult<LemmaListItemDto>> GetLemmasPageAsync(

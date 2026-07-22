@@ -6,14 +6,8 @@ using QuranDashboard.Domain.Abwab.Persistence;
 
 namespace QuranDashboard.Infrastructure.Abwab.Persistence;
 
-// SavingChanges guard — layer 1 of the write kernel. Runs before every SaveChanges and enforces, on the
-// tracked graph:
-//   * no-ChangeSet write rejection — any IAbwabAuditable mutation requires a tracked ChangeSet in the
-//     same unit of work;
-//   * physical-delete rejection / soft-delete enforcement — an IAbwabAuditable in Deleted state is
-//     refused unless the sealed, default-deny personal-delete policy allows that exact type.
-// This is distinct from the forbidden-write-API bypass gate (a separate source/architecture test): this
-// guard runs at execution time; the gate runs at build time.
+// Fail-closed SavingChanges guard: an IAbwabAuditable mutation requires a tracked ChangeSet, and a physical
+// delete is refused unless the default-deny personal-delete policy allows that exact type.
 public sealed class AbwabWriteGuardInterceptor(AbwabPersonalDeletePolicy personalDeletePolicy) : SaveChangesInterceptor
 {
     private readonly AbwabPersonalDeletePolicy _personalDeletePolicy = personalDeletePolicy;
@@ -52,9 +46,6 @@ public sealed class AbwabWriteGuardInterceptor(AbwabPersonalDeletePolicy persona
             return;
         }
 
-        // A physical delete is rejected unless the sealed, default-deny personal-delete policy allows that
-        // exact type; a permitted personal delete is outside the product-audit envelope, so it is exempt
-        // from both this rejection and the ChangeSet requirement below.
         foreach (var deleted in auditableMutations.Where(entry => entry.State == EntityState.Deleted))
         {
             if (!_personalDeletePolicy.AllowsPhysicalDelete(deleted.Entity.GetType()))

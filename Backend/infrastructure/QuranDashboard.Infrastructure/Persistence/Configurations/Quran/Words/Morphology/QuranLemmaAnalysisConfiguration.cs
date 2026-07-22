@@ -39,7 +39,6 @@ public sealed class QuranLemmaAnalysisConfiguration : IEntityTypeConfiguration<Q
             .IsRequired()
             .HasColumnName("first_location");
 
-        // One analysis per distinct Corpus lemma_buckwalter.
         builder.HasIndex(a => a.LemmaBuckwalter).IsUnique();
         builder.HasIndex(a => a.LemmaId);
         builder.HasIndex(a => a.RootId);

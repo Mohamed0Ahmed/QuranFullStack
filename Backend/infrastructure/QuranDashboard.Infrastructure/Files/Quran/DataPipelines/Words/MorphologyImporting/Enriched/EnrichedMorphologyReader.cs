@@ -2,14 +2,6 @@ using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.Morpholo
 
 namespace QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting.Enriched;
 
-// Streams the Dashboard-ready enriched morphology artifact (one JSON array element per readable Quran
-// word) and yields EnrichedMorphologyRecord values. Uses DeserializeAsyncEnumerable so the 96 MB file
-// is consumed record-by-record instead of being buffered whole into memory. Audit-only fields present
-// on the JSON (corpusPresent, provenance, *MappingStatus, *QulCanonical, stemBuckwalter,
-// quranWordIdVerifiedAgainstDashboard, textUthmani/textImlaei/textUthmaniSimple, boundaryAyah,
-// boundaryHandling) are read into the record model for validation but are deliberately NOT carried
-// onto AlignedWordDto/AlignedSegmentDto — those have no members for them and the writer cannot persist
-// them. The EnrichedDimensionBuilder / EnrichedMorphologyImportSource project only schema-bound fields.
 public sealed class EnrichedMorphologyReader
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -52,8 +44,6 @@ public sealed class EnrichedMorphologyRecord
     public int? WordNumber { get; init; }
     public int? QuranWordId { get; init; }
 
-    // textUthmani/textImlaei/textUthmaniSimple are foundation-owned; read here only for the
-    // whole-word render agreement statistic. Never re-imported, never persisted by this pathway.
     public string? TextUthmani { get; init; }
 
     public bool CorpusPresent { get; init; }

@@ -42,8 +42,6 @@ public sealed partial class EfWordTypesReader
 
         var context = ToGroupedReadContext(selection.Filter);
 
-        // A dimension absent from the scope has zero grouped word-context rows → not found (null). An
-        // existing dimension with an out-of-range page falls through to a non-null empty page below.
         var totalCount = await CountGroupedMemberWordsAsync(context, selection.Kind, selection.DimensionId, cancellationToken);
         if (totalCount == 0)
         {
@@ -83,7 +81,6 @@ public sealed partial class EfWordTypesReader
 
         var context = ToGroupedReadContext(selection.Filter);
 
-        // The distinct-ayah count doubles as the existence check: zero scoped ayahs → dimension absent → null.
         var countParameters = BuildCountParameters(context, selection.DimensionId);
         var totalCount = (await _dbContext.Database
             .SqlQueryRaw<CountRow>(GroupedAyahsCountSql(context, selection.Kind), countParameters)
@@ -104,7 +101,6 @@ public sealed partial class EfWordTypesReader
             .SqlQueryRaw<GroupedAyahMatchSqlRow>(GroupedAyahsPageSql(context, selection.Kind), pageParameters)
             .ToListAsync(cancellationToken);
 
-        // Preserve the SQL's Mushaf order while collapsing the one-row-per-matched-word shape into ayahs.
         var pageAyahs = matchRows
             .GroupBy(row => row.AyahId)
             .Select(group => group.First())
@@ -153,9 +149,6 @@ public sealed partial class EfWordTypesReader
         var context = ToGroupedReadContext(selection.Filter);
         var parameters = BuildCountParameters(context, selection.DimensionId);
 
-        // One server-side aggregate groups occurrences by surah. Zero rows means the positive dimension is
-        // absent from the scope (not found) — the aggregate doubles as the existence check and short-circuits
-        // before the catalogue read.
         var occurrences = await _dbContext.Database
             .SqlQueryRaw<GroupedSurahOccurrenceRow>(GroupedSurahsSql(context, selection.Kind), parameters)
             .ToListAsync(cancellationToken);

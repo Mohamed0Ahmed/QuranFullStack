@@ -15,10 +15,6 @@ public sealed class WordTypesGroupedMemberWordsReadTests(WordTypesTestFixture fi
     private static readonly WordTypeFilter NounScope = new("noun", null, null, null, null);
     private static readonly WordTypeFilter VerbScope = new("verb", null, null, null, null);
 
-    // Member words are the Words table restricted to a single numeric head root/stem/lemma. Membership,
-    // grouping, and every measure must match a numeric-ID-scoped baseline row-for-row. The baseline is
-    // built from the same (unique_tashkeel_word_id, context_code) grouping the Words table uses, filtered
-    // only by the numeric dimension column — never by any *_text/*Text display label.
     [Theory]
     [InlineData(WordTypeGroupedDimensionKind.Root, 190700)]
     [InlineData(WordTypeGroupedDimensionKind.Stem, 190600)]
@@ -42,8 +38,6 @@ public sealed class WordTypesGroupedMemberWordsReadTests(WordTypesTestFixture fi
             .Equal(baseline.Select(row => (row.TashkeelWordId, row.ContextCode, row.OccurrencesCount, row.AyahsCount, row.SurahsCount)));
     }
 
-    // The same tashkeel word used as noun, proper noun, and adjective stays three separate member rows;
-    // grouping is by (tashkeel, head_pos), never a single distinct-word collapse.
     [Fact]
     public async Task GroupedMemberWords_NounParent_PreservesHeadPosUsageSplit()
     {
@@ -58,8 +52,6 @@ public sealed class WordTypesGroupedMemberWordsReadTests(WordTypesTestFixture fi
         kalimaRows.Should().OnlyContain(item => item.OccurrencesCount == 1);
     }
 
-    // Verb tense contexts also stay split: root 190701 spans past/present/imperative; narrowing the base
-    // by tense=past leaves only the past context, proving the filter re-scopes before grouping.
     [Fact]
     public async Task GroupedMemberWords_VerbParent_PreservesTenseUsageSplit()
     {
@@ -78,7 +70,6 @@ public sealed class WordTypesGroupedMemberWordsReadTests(WordTypesTestFixture fi
         pastOnly!.Items.Should().ContainSingle().Which.ContextCode.Should().Be("past");
     }
 
-    // An exact child code pins a single context without changing the grouping contract.
     [Fact]
     public async Task GroupedMemberWords_ExactChildPinsContextWithoutChangingGroupingContract()
     {
@@ -96,8 +87,6 @@ public sealed class WordTypesGroupedMemberWordsReadTests(WordTypesTestFixture fi
         single.ContextCode.Should().Be("PN");
     }
 
-    // The four measures stay distinct: morphology occurrences, member word-context rows, distinct ayahs,
-    // and distinct surahs are computed and reported separately (not aliases of one number).
     [Fact]
     public async Task GroupedMemberWords_ReportsOccurrenceRowAyahAndSurahMeasuresSeparately()
     {
@@ -117,8 +106,6 @@ public sealed class WordTypesGroupedMemberWordsReadTests(WordTypesTestFixture fi
         summary.AyahsCount.Should().NotBe(summary.OccurrencesCount);
     }
 
-    // Paging happens after word-context grouping: TotalCount is the grouped row count, each page slices
-    // the ordered rows, and an out-of-range page is a non-null empty page (not a 404).
     [Fact]
     public async Task GroupedMemberWords_PaginatesAfterWordContextGrouping()
     {
@@ -145,8 +132,6 @@ public sealed class WordTypesGroupedMemberWordsReadTests(WordTypesTestFixture fi
             .Should().OnlyHaveUniqueItems();
     }
 
-    // Markers, null head dimensions, and dimensions outside the active scope never appear. The verb-only
-    // root/lemma/stem IDs are absent from the noun scope, and real head members exclude marker/null rows.
     [Fact]
     public async Task GroupedMemberWords_MarkersNullAndOutOfScopeDimensionsNeverAppear()
     {
@@ -220,9 +205,6 @@ public sealed class WordTypesGroupedMemberWordsReadTests(WordTypesTestFixture fi
             pageSize,
             CancellationToken.None);
 
-    // Independent numeric-ID-scoped Words baseline. Applies the same type/child/secondary scope as the
-    // reader, filters by the allowlisted numeric dimension column ONLY, then groups by
-    // (unique_tashkeel_word_id, context_code) exactly like the Words table. No display text participates.
     private static async Task<IReadOnlyList<MemberWordBaselineRow>> LoadNumericDimensionWordsBaselineAsync(
         QuranDashboardDbContext db,
         WordTypeGroupedDimensionKind kind,

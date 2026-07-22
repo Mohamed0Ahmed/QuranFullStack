@@ -29,8 +29,6 @@ public sealed class AuditEventConfiguration : IEntityTypeConfiguration<AuditEven
             .IsRequired()
             .HasColumnName("server_timestamp");
 
-        // EventOrdinal is deterministic WITHIN one operation: uniqueness per ChangeSet enforces that and
-        // gives the audit-atomicity test a real constraint to trip (duplicate ordinal → insert fails).
         builder.HasIndex(e => new { e.ChangeSetId, e.EventOrdinal }).IsUnique();
     }
 }

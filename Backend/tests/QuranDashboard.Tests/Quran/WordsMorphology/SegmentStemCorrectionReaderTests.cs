@@ -2,8 +2,6 @@ using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyIm
 
 namespace QuranDashboard.Tests.Quran.WordsMorphology;
 
-// The embedded curated artifact (segment-stem-corrected-arabic.json) loads and indexes into exactly
-// 479 approved secondary mappings + 4 intentional unresolved exceptions = 483 total.
 public sealed class SegmentStemCorrectionReaderTests
 {
     private static readonly string[] ExpectedUnresolved =

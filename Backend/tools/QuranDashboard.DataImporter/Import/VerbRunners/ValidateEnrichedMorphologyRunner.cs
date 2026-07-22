@@ -4,7 +4,6 @@ using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyIm
 
 namespace QuranDashboard.DataImporter.Import.VerbRunners;
 
-// Dry validation only: never touches the DB (no import/truncate/transaction); run before the real reset+import.
 internal static class ValidateEnrichedMorphologyRunner
 {
     internal const int SuccessExitCode = 0;

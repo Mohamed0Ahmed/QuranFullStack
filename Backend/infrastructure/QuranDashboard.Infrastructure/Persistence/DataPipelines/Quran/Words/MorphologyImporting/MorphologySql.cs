@@ -253,10 +253,6 @@ internal static class MorphologySql
           AND kind <> 'STEM'
         """;
 
-    // Single-STEM segments, and the primary (first-by-segment_number) STEM of a multi-STEM word, must
-    // always carry stem_id (they reuse the word head stem). Secondary STEM segments are curation-gated
-    // and may be null (the 4 documented unresolved exceptions); their coverage is asserted separately
-    // by SEG-STEM-ID-MULTI-STEM-CURATED.
     internal const string CheckSegStemRequiredForStem = """
         WITH stem_segs AS (
           SELECT
@@ -272,8 +268,6 @@ internal static class MorphologySql
           AND (stem_count = 1 OR stem_rank = 1)
         """;
 
-    // Single-STEM words, and the primary (first-by-segment_number) STEM of a two-STEM word, must reuse
-    // the word's head stem_id. The head/word-level stem is unchanged by this feature.
     internal const string CheckSegStemHeadConsistent = """
         WITH stem_segs AS (
           SELECT
@@ -298,7 +292,6 @@ internal static class MorphologySql
           AND NOT EXISTS (SELECT 1 FROM quran_stems st WHERE st.id = s.stem_id)
         """;
 
-    // Secondary (second-by-segment_number) STEM segments of two-STEM words, for artifact-vs-DB coverage.
     internal const string SelectSecondaryStemSegments = """
         WITH stem_segs AS (
           SELECT

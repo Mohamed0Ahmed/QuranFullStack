@@ -3,9 +3,6 @@ using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyIm
 
 namespace QuranDashboard.Tests.Quran.WordsMorphologyEnriched;
 
-// Resolves the staged Dashboard-ready enriched artifact. The artifact is ~96 MB and lives under the
-// gitignored resources/ tree; it is staged locally (Feature 020 §1) but not guaranteed in every CI clone.
-// Tests that depend on it skip cleanly when it is absent rather than failing the build.
 public sealed class EnrichedMorphologyArtifactFixture
 {
     private const string ArtifactRelativePath =

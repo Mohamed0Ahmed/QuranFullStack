@@ -5,40 +5,14 @@ using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.WordTypes;
 
 namespace QuranDashboard.Tests.Quran.WordsWordTypes;
 
-// The Word Types COUNT-column ORDER BY contract, proved against real PostgreSQL for both the words view
-// and the grouped view. WordTypesTableReadTests only checked the count columns as a row set plus a total,
-// so a reversed — or column-swapped — count arm stayed green; every case below asserts the FULL ordered
-// id sequence instead.
-//
-// The shared fixture slice cannot prove this: it has no scope where occurrences, ayahs and surahs
-// disagree, so an arm reading a neighbouring count column is invisible there. Each test seeds its own rows
-// inside a transaction that is ALWAYS rolled back (the `await using` disposal rolls back even when an
-// assertion throws), leaving the slice every other suite asserts on byte-identical. The seeded rows are
-// explicitly synthetic structural placeholders at non-canonical coordinates.
-//
-// The final identity tie-break rung is unreachable by construction: both views derive
-// first_word_order_in_mushaf as MIN(quran_word_id) over a GROUP BY partition of base, and base holds
-// exactly one row per word (every join is on a PK, so nothing fans out). Distinct groups are disjoint sets
-// of word ids and can never share a minimum, so the mushaf key alone totally orders every tie group —
-// which Equal_counts_fall_through_to_mushaf_order_in_both_directions proves. Unlike Unique Words (whose
-// mushaf key is a stored column guarded by a droppable UNIQUE index) there is no schema toggle that
-// unlocks the rung.
 [Collection(nameof(WordTypesCollection))]
 public sealed class WordTypesOrderingContractTests(WordTypesTestFixture fixture)
 {
-    // Two synthetic noun POS codes, each its own scope. Filtering on the child code pins head_pos, so a
-    // test sees ONLY its own three rows and the two row sets below can share one seed without colliding.
     private const string DistinctCountsChildCode = "SYNO";
     private const string MushafTieChildCode = "SYNT";
 
     private const int ExpectedRowsPerScope = 3;
 
-    // Groups A/B/C, in that order. Counts are a rotation, so each column × direction has its OWN
-    // expected sequence: an arm reading a neighbouring count column lands somewhere else and fails.
-    //        occurrences  ayahs  surahs   MIN(quran_word_id)
-    //   A     6            2      2        194301
-    //   B     5            4      1        194311
-    //   C     4            3      3        194321
     private static readonly SyntheticGroup[] DistinctCountGroups =
     [
         new(TashkeelId: 194201, LemmaId: 194101),
@@ -46,12 +20,6 @@ public sealed class WordTypesOrderingContractTests(WordTypesTestFixture fixture)
         new(TashkeelId: 194203, LemmaId: 194103),
     ];
 
-    // Groups D/E/F, in that order. Every count is tied, so only the tie-break chain can order them, and
-    // the mushaf key deliberately contradicts Id order: an Id-first tie-break would read D, E, F.
-    //        occurrences  ayahs  surahs   MIN(quran_word_id)
-    //   D     2            2      2        194341
-    //   E     2            2      2        194331
-    //   F     2            2      2        194351
     private static readonly SyntheticGroup[] MushafTieGroups =
     [
         new(TashkeelId: 194211, LemmaId: 194111),
@@ -59,22 +27,18 @@ public sealed class WordTypesOrderingContractTests(WordTypesTestFixture fixture)
         new(TashkeelId: 194213, LemmaId: 194113),
     ];
 
-    // Mushaf order over the tie groups: E (194331) then D (194341) then F (194351).
     private static readonly int[] MushafTieExpectedOrder = [1, 0, 2];
 
-    // Every count column at both directions, with the group order each one must produce.
     private static readonly (string Sort, int[] GroupOrder)[] CountColumnExpectations =
     [
-        ("occurrences", [0, 1, 2]),      // 6 > 5 > 4
+        ("occurrences", [0, 1, 2]),
         ("occurrences-asc", [2, 1, 0]),
-        ("ayahs", [1, 2, 0]),            // 4 > 3 > 2
+        ("ayahs", [1, 2, 0]),
         ("ayahs-asc", [0, 2, 1]),
-        ("surahs", [2, 0, 1]),           // 3 > 2 > 1
+        ("surahs", [2, 0, 1]),
         ("surahs-asc", [1, 0, 2]),
     ];
 
-    // The words view has its own ORDER BY; roots/stems/lemmas share ONE GroupedOrderBy, so lemmas stands
-    // for the whole grouped arm.
     private static readonly WordTypeTableView[] OrderedViews =
     [
         WordTypeTableView.Words,
@@ -129,8 +93,6 @@ public sealed class WordTypesOrderingContractTests(WordTypesTestFixture fixture)
     {
         var ids = await OrderedRowIdsAsync(view, MushafTieChildCode, sort);
 
-        // Reversing the primary must never reshuffle a tie group, or a page boundary could drop or repeat
-        // a row — so the SAME mushaf-order sequence is expected ascending and descending.
         ids.Should().Equal(ExpectedIds(view, MushafTieGroups, MushafTieExpectedOrder));
     }
 
@@ -142,12 +104,8 @@ public sealed class WordTypesOrderingContractTests(WordTypesTestFixture fixture)
         await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
-        // Never committed: disposal rolls the seed back on every exit path.
         await using var transaction = await BeginSeededTransactionAsync(dbContext);
 
-        // EfWordTypesReader, not IWordTypesReader: the cached decorator would cross-serve one case's
-        // rolled-back rows to another. The reader resolves through the SAME scoped DbContext, so it reads
-        // inside this transaction and sees the uncommitted rows.
         var reader = scope.ServiceProvider.GetRequiredService<EfWordTypesReader>();
 
         WordTypeSortParser.TryParse(sort, out var spec).Should().BeTrue();
@@ -192,17 +150,12 @@ public sealed class WordTypesOrderingContractTests(WordTypesTestFixture fixture)
         }
     }
 
-    // One synthetic group == one unique-tashkeel word AND one lemma, seeded 1:1 so the words view and the
-    // grouped view partition the same rows into the same three groups with the same counts.
     private sealed record SyntheticGroup(int TashkeelId, int LemmaId)
     {
         public int RowIdFor(WordTypeTableView view) =>
             view == WordTypeTableView.Words ? TashkeelId : LemmaId;
     }
 
-    // Test-only structural rows at non-canonical coordinates. quran_words is inserted with a null
-    // unique_tashkeel_word_id and patched afterwards because the word and unique-word tables reference
-    // each other.
     private const string SeedSql = """
         INSERT INTO quran_surahs
           (surah_number, name_arabic, name_simple, name_transliteration, revelation_place,

@@ -2,9 +2,7 @@ using QuranDashboard.Domain.Abwab.Notifications;
 
 namespace QuranDashboard.Infrastructure.Persistence.Configurations.Abwab;
 
-// NotificationReadState is a plain MUTABLE table kept outside product audit/restore (FR-034): NO append-only
-// trigger, NO restricted-role revoke, and it is not IAbwabAuditable. The foreign key to notification_records
-// is a within-Abwab reference (never a Quran foreign key), so the FK-prohibition guard stays green.
+// FK to notification_records is within-Abwab, never a Quran foreign key (FK-prohibition guard).
 public sealed class NotificationReadStateConfiguration : IEntityTypeConfiguration<NotificationReadState>
 {
     public void Configure(EntityTypeBuilder<NotificationReadState> builder)
@@ -19,7 +17,6 @@ public sealed class NotificationReadStateConfiguration : IEntityTypeConfiguratio
         builder.Property(s => s.IsRead).IsRequired().HasColumnName("is_read");
         builder.Property(s => s.ReadAtUtc).HasColumnName("read_at");
 
-        // At most one read-state row per (notification, recipient).
         builder.HasIndex(s => new { s.NotificationId, s.RecipientSubject }).IsUnique();
 
         builder.HasOne<NotificationRecord>()

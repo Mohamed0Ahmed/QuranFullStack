@@ -192,8 +192,6 @@ public sealed class StemsListReadTests(MorphologyExplorersTestFixture fixture)
         page.Items.Select(i => i.Id).Should().Equal(604, 606, 602, 600, 601, 605);
     }
 
-    // The exact reverse of the ascending pin above: the six seeded stems carry distinct normalized
-    // texts, so no alpha tie engages and DESC simply mirrors the sequence.
     [Fact]
     public async Task GetStemsPage_alpha_descending_reverses_the_ascending_order()
     {
@@ -208,8 +206,6 @@ public sealed class StemsListReadTests(MorphologyExplorersTestFixture fixture)
         page.Items.Select(i => i.Id).Should().Equal(605, 601, 600, 602, 606, 604);
     }
 
-    // Stems allowlists neither `lemmas` nor `stems` — a column another explorer offers is still a 400
-    // here — and mushaf-order is bare-only. This suite had no invalid-sort coverage before N8.
     [Theory]
     [InlineData("relevance")]
     [InlineData("bogus")]
@@ -246,7 +242,6 @@ public sealed class StemsListReadTests(MorphologyExplorersTestFixture fixture)
         page.Items.Select(i => i.Id).Should().Equal(600, 605, 604, 601, 602, 606);
     }
 
-    // The acceptance bar: a legacy token and its canonical alias are ONE ordering.
     [Theory]
     [InlineData("occurrences", "occurrences-desc")]
     [InlineData("alpha", "alpha-asc")]
@@ -268,7 +263,6 @@ public sealed class StemsListReadTests(MorphologyExplorersTestFixture fixture)
         aliasIds.Should().Equal(legacyIds);
     }
 
-    // Sorting is ORDER BY only: it may reorder the page but must never change the scope or the total.
     [Theory]
     [InlineData("mushaf-order")]
     [InlineData("alpha")]

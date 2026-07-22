@@ -2,9 +2,6 @@ using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyIm
 
 namespace QuranDashboard.Tests.Quran.WordsMorphologyEnriched;
 
-// Pure, source-safe synthetic builders for the enriched pathway tests. No real Quranic assertions are
-// made on synthetic data; the special-word correction tests (41:44:16 etc.) read those records from the
-// real artifact via a dedicated fixture, not from these synthetic builders.
 internal static class EnrichedMorphologyTestData
 {
     internal static EnrichedMorphologyRecord StemRecord(

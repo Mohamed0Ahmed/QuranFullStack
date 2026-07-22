@@ -32,8 +32,6 @@ public readonly record struct RootSortSpec(RootSortColumn Column, WordSortDirect
 
     public static RootSortSpec Natural(RootSortColumn column) => new(column, NaturalDirectionOf(column));
 
-    // Counts read most-first, so their natural direction is descending; text and the Mushaf
-    // release order read forward.
     public static WordSortDirection NaturalDirectionOf(RootSortColumn column) => column switch
     {
         RootSortColumn.MushafOrder => WordSortDirection.Ascending,
@@ -79,7 +77,6 @@ public static class RootSortParser
             return false;
         }
 
-        // mushaf-order is the release order, not a column: ascending-only, bare token only.
         if (column == RootSortColumn.MushafOrder && direction is not null)
         {
             return false;

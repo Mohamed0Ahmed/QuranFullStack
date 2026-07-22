@@ -3,8 +3,6 @@ using QuranDashboard.Tests.Abwab.Kernel._Support;
 
 namespace QuranDashboard.Tests.Abwab.Kernel;
 
-// FR-011 / FR-012 / SC-002 (T030): a DB-level append-only/TRUNCATE defense plus a restricted application
-// role protect the audit tables even against direct SQL (real PG). No update/delete/truncate reaches them.
 [Collection(nameof(AbwabDbCollection))]
 public sealed class AppendOnlyDefenseTests(PostgresFixture fixture) : IAsyncLifetime
 {
@@ -19,7 +17,6 @@ public sealed class AppendOnlyDefenseTests(PostgresFixture fixture) : IAsyncLife
     [Fact]
     public async Task DirectUpdateDeleteTruncate_OnAuditTables_IsBlockedByTheTrigger()
     {
-        // Seed one committed audit row so update/delete have a target.
         await AbwabKernelHarness.CommitAsync(fixture, AbwabKernelHarness.Request(expectedGeneration: 0));
 
         await using var connection = new NpgsqlConnection(fixture.ConnectionString);

@@ -27,12 +27,9 @@ public sealed class AbwabRevisionStateConfiguration : IEntityTypeConfiguration<A
             .IsRequired()
             .HasColumnName("tree_revision");
 
-        // Concurrency is enforced pessimistically: the commit protocol takes a FOR UPDATE row lock on this
-        // singleton (§6.2 step 4) and holds it through commit, which serializes the head advance. (Npgsql 10
-        // no longer ships the xmin concurrency-token helper; the PostgreSQL row's xmin still exists at the DB
-        // and the row-lock is the guarantee the convention calls for.)
+        // Concurrency is pessimistic: the commit protocol takes a FOR UPDATE row lock on this singleton and
+        // holds it through commit, serializing the head advance.
 
-        // Exactly one row, seeded at migration: head/generation/tree all zero.
         builder.HasData(new AbwabRevisionState
         {
             Id = AbwabRevisionState.SingletonId,

@@ -5,7 +5,6 @@ using QuranDashboard.Tests.Abwab.Kernel._Support;
 
 namespace QuranDashboard.Tests.Abwab.Kernel;
 
-// FR-013 (T026): a sealed, default-deny personal-delete exception, proven with foundation-only fixtures.
 [Collection(nameof(AbwabDbCollection))]
 public sealed class PersonalDeleteExceptionTests(PostgresFixture fixture) : IAsyncLifetime
 {

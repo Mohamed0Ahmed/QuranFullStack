@@ -18,7 +18,6 @@ public static class WordTypeTableViewKeys
 
 public static class WordTypeTableViewParser
 {
-    // Missing/blank tableView defaults to Words; only a non-blank unknown value is a controlled failure.
     public static bool TryParse(string? value, out WordTypeTableView tableView)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -42,8 +41,6 @@ public static class WordTypeTableViewParser
                 tableView = WordTypeTableView.Lemmas;
                 return true;
             default:
-                // Same contract as WordTypeSortParser: callers MUST check the bool. `tableView` on
-                // failure is unspecified (currently Words, the enum's default) and must not be read.
                 tableView = default;
                 return false;
         }

@@ -55,7 +55,6 @@ public sealed class CachedUserRoleResolverTests(AccessTestFixture fixture)
 
         (await resolver.GetActiveRoleNameAsync(sub, CancellationToken.None)).Should().BeNull();
 
-        // Promote the row to Owner/Active directly in the database, bypassing the resolver's cache.
         await using (var mutate = NewDb())
         {
             var user = await mutate.AccessUsers.SingleAsync(u => u.LogtoSub == sub);

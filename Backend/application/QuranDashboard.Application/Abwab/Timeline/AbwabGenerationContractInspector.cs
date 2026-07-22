@@ -3,9 +3,6 @@ using QuranDashboard.Application.Abstractions.Abwab;
 
 namespace QuranDashboard.Application.Abwab.Timeline;
 
-// The mechanism behind the generation contract-coverage test: every Abwab writer and every actionable
-// read MUST carry ExpectedTimelineGeneration. Discover the candidates and report any that omit the
-// contract, so a command author who forgets the generation stamp breaks the build.
 public static class AbwabGenerationContractInspector
 {
     public static IReadOnlyList<Type> DiscoverActionableRequests(IEnumerable<Assembly> assemblies) =>

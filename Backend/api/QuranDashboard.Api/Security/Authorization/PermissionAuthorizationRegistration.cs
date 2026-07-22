@@ -4,9 +4,6 @@ using QuranDashboard.Domain.Security.Permissions;
 
 namespace QuranDashboard.Api.Security.Authorization;
 
-// Registers the authorization "policy" layer of the 5-catalogue parity check: exactly one policy per
-// permission code (derived from the single canonical PermissionCatalogue) plus the SystemOwner policy. The
-// per-code policy names ARE the catalogue codes, so the parity test can read them back and prove zero drift.
 public static class PermissionAuthorizationRegistration
 {
     public static IReadOnlyList<string> PermissionPolicyNames { get; } = PermissionCatalogue.Codes;

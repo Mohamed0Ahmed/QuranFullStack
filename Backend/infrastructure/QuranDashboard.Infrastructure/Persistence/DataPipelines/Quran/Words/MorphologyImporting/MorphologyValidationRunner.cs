@@ -769,12 +769,8 @@ internal static class MorphologyValidationRunner
         int ApprovedNotApplied,
         int UnresolvedSet)
     {
-        // Secondary segments whose location is covered by the curated artifact (approved or unresolved).
         private int CoveredPresent => ApprovedApplied + ApprovedNotApplied + UnresolvedNull + UnresolvedSet;
 
-        // Approved-but-null and unresolved-but-set are always violations. An uncovered secondary is a
-        // violation only once the artifact actually applies to this dataset (>=1 covered secondary) —
-        // that is the real Quran import; synthetic test data with no artifact locations is tolerated.
         public int Violations =>
             ApprovedNotApplied + UnresolvedSet + (CoveredPresent > 0 ? Uncovered : 0);
     }

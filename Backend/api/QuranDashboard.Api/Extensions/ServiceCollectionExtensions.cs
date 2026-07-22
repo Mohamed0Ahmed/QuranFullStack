@@ -17,9 +17,6 @@ public static class ServiceCollectionExtensions
     {
         services.AddControllers().ConfigureApiBehaviorOptions(options =>
         {
-            // [ApiController] auto-400s on bad typed model binding (e.g. ?page=abc). Left unconfigured
-            // this returns English ValidationProblemDetails instead of the shared ApiResponse failure
-            // envelope, so replace it with the envelope while keeping the per-field errors in English.
             options.InvalidModelStateResponseFactory = context =>
             {
                 var errors = context.ModelState

@@ -3,8 +3,6 @@ using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeRows;
 
 namespace QuranDashboard.Tests.Quran.WordsWordTypes;
 
-// Feature 026 US1/US2/US3: search-length bound (InvalidFilter), and the split page-size caps —
-// list reads 1..1000, detail reads 1..100 — plus the aligned controller defaults (list 1000, detail 100).
 [Collection(nameof(WordTypesCollection))]
 public sealed class WordTypesSearchValidationAndCapsTests(WordTypesTestFixture fixture)
 {
@@ -41,7 +39,6 @@ public sealed class WordTypesSearchValidationAndCapsTests(WordTypesTestFixture f
     public void NormalizeSearch_TrimsAndCollapsesEmptyToNull(string? raw, string? expected) =>
         WordTypesHandlerValidation.NormalizeSearch(raw).Should().Be(expected);
 
-    // (T009e) An over-length search maps to InvalidFilter (400); at the cap it is accepted.
     [Theory]
     [InlineData(65, typeof(GetWordTypeRowsOutcome.InvalidFilter))]
     [InlineData(64, typeof(GetWordTypeRowsOutcome.Success))]
@@ -57,7 +54,6 @@ public sealed class WordTypesSearchValidationAndCapsTests(WordTypesTestFixture f
         outcome.GetType().Should().Be(expectedOutcome);
     }
 
-    // (T019) List reads accept pageSize 1000 and reject 1001 with InvalidPaging.
     [Theory]
     [InlineData(1000, typeof(GetWordTypeRowsOutcome.Success))]
     [InlineData(1001, typeof(GetWordTypeRowsOutcome.InvalidPaging))]
@@ -73,8 +69,6 @@ public sealed class WordTypesSearchValidationAndCapsTests(WordTypesTestFixture f
         outcome.GetType().Should().Be(expectedOutcome);
     }
 
-    // (T019/T022) HTTP surface: list caps + defaults on /table and /words, detail cap + defaults on the
-    // grouped-words member read.
     [Theory]
     [InlineData("table?type=noun&pageSize=1000", HttpStatusCode.OK, null)]
     [InlineData("table?type=noun&pageSize=1001", HttpStatusCode.BadRequest, null)]

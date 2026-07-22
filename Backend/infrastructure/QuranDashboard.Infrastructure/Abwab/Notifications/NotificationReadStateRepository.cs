@@ -3,10 +3,6 @@ using QuranDashboard.Domain.Abwab.Notifications;
 
 namespace QuranDashboard.Infrastructure.Abwab.Notifications;
 
-// Low-level recipient/read-state repository (028 US6, FR-032/034). Read state is kept OUTSIDE product
-// audit/restore: these are plain mutable rows (read <-> unread), never routed through the ChangeSet/audit
-// kernel, so the mutating helpers save directly rather than joining a product transaction. Storage only —
-// no public port/endpoint/mock/HTTP/UI; 032 builds the notification surfaces on top of these primitives.
 public sealed class NotificationReadStateRepository(QuranDashboardDbContext db, IServerClock clock)
 {
     public async Task<IReadOnlyList<NotificationRecord>> ListForRecipientAsync(

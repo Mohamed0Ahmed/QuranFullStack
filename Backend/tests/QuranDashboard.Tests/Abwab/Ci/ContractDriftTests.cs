@@ -3,21 +3,6 @@ using QuranDashboard.Api.Extensions;
 
 namespace QuranDashboard.Tests.Abwab.Ci;
 
-// FR-002 / SC (§15) contract-drift gate.
-//
-// The authoritative, byte-exact drift gate is the CI mechanism `Backend/scripts/check-api-contract`
-// (export-swagger via the Swashbuckle CLI -> npm generate:api -> npm docs:api -> `git diff --exit-code`).
-// The recorded baseline lives in git: `Frontend/quran-dashboard-ui/openapi/swagger.json` plus the
-// generated frontend models and `docs/api-reference/`. That mechanism regenerates the contract from
-// the real API and fails the build on ANY drift; reproducing the Swashbuckle CLI's exact byte
-// serialization inside xUnit would be fragile, so it is owned by the CI job (T011), not this test.
-//
-// This test is the load-bearing in-process companion: it derives the live endpoint set directly from
-// the API's own ApiExplorer (the same source Swashbuckle builds the document from) and asserts the
-// committed swagger baseline describes EXACTLY that set of {method path} pairs. Adding, removing, or
-// re-routing an endpoint without regenerating the committed spec makes this go RED, independently of
-// the CI git-diff. It compares the endpoint SET (not formatting), so it is stable against cosmetic
-// serialization differences while still catching real contract changes.
 public sealed class ContractDriftTests
 {
     private const string BaselineRelativePath = "Frontend/quran-dashboard-ui/openapi/swagger.json";
@@ -59,7 +44,6 @@ public sealed class ContractDriftTests
             + string.Join(", ", staleInBaseline));
     }
 
-    // The live surface, straight from the API's ApiExplorer (the same feed Swashbuckle serializes).
     private static HashSet<string> ReadLiveEndpoints()
     {
         var services = new ServiceCollection();

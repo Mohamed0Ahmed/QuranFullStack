@@ -7,8 +7,6 @@ using QuranDashboard.Tests.Abwab._Support;
 
 namespace QuranDashboard.Tests.Abwab.Permissions;
 
-// SC-007 / §5.2/§11 (T083): granting a SystemOwnerOnly code (permission.*, audit.restore, safetyPoint.*) to
-// an ordinary user is rejected with abwab.permission_baseline_locked, and no assignment/audit is written.
 [Collection(nameof(AbwabDbCollection))]
 public sealed class AssignabilityTests(PostgresFixture fixture) : IAsyncLifetime
 {

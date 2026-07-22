@@ -59,8 +59,6 @@ public sealed class EfAyahStudyReader(QuranDashboardDbContext db, ILogger<EfAyah
             similaritySummary);
     }
 
-    // Three independent aggregates combined into one projection (one round trip); occurrence count is
-    // naturally 0 when there are no groups, preserving the prior skip-when-group-count-is-0 behavior.
     private async Task<SimilaritySummaryDto> LoadSimilaritySummaryAsync(int ayahId, CancellationToken ct)
     {
         var outgoing = db.SimilarAyahLinks
@@ -119,9 +117,6 @@ public sealed class EfAyahStudyReader(QuranDashboardDbContext db, ILogger<EfAyah
                 sajda.VerseKey,
                 MapSajdahType(sajda.SajdahType)));
 
-    // One LEFT-JOIN projection resolves source, ayah mapping, and shared text row together instead of
-    // three sequential lookups; a missing mapping or text row surfaces as null, giving the same
-    // resolved-key/null-block outcome as the sequential version.
     private async Task<ResolvedSource<TafsirEntryDto>> LoadTafsirAsync(int ayahId, string verseKey, string sourceKey, CancellationToken ct)
     {
         var projection = await (
@@ -177,8 +172,6 @@ public sealed class EfAyahStudyReader(QuranDashboardDbContext db, ILogger<EfAyah
         return new ResolvedSource<TafsirEntryDto>(projection.SourceKey, dto);
     }
 
-    // One LEFT-JOIN projection replaces the two sequential source -> mapping lookups; a missing
-    // mapping surfaces as a null joined text column.
     private async Task<ResolvedSource<TranslationEntryDto>> LoadTranslationAsync(int ayahId, string sourceKey, CancellationToken ct)
     {
         var projection = await (
@@ -222,7 +215,6 @@ public sealed class EfAyahStudyReader(QuranDashboardDbContext db, ILogger<EfAyah
         return new ResolvedSource<TranslationEntryDto>(projection.SourceKey, dto);
     }
 
-    // Source -> mapping -> text via one LEFT-JOIN projection, mirroring LoadTafsirAsync over its own tables.
     private async Task<ResolvedSource<FullI3rabEntryDto>> LoadFullI3rabAsync(int ayahId, string verseKey, string sourceKey, CancellationToken ct)
     {
         var projection = await (
@@ -315,9 +307,8 @@ public sealed class EfAyahStudyReader(QuranDashboardDbContext db, ILogger<EfAyah
         string? CoveredAyahKeys,
         string? I3rabHtml);
 
-    // quran-safety rule 3: corrupt covered_ayah_keys JSON must not be swallowed silently. The return
-    // contract is unchanged (still empty on failure), but a corrupt row logs a Warning naming the ayah
-    // and source so the underlying data issue stays visible.
+    // quran-safety: corrupt covered_ayah_keys JSON must not be swallowed silently — log a Warning
+    // (return stays empty) so the data issue stays visible.
     private IReadOnlyList<string> ParseCoveredAyahKeys(string json, string verseKey, string sourceKey)
     {
         if (string.IsNullOrWhiteSpace(json))

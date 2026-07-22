@@ -55,7 +55,6 @@ public sealed class AccessRolesTests(AccessTestFixture fixture)
         first.StatusCode.Should().Be(HttpStatusCode.OK);
         second.StatusCode.Should().Be(HttpStatusCode.OK);
         (await fixture.GetUsersAsync()).Should().ContainSingle();
-        // The already-Owner/Active row is returned untouched on the repeat login (no re-write).
         afterSecond!.Id.Should().Be(afterFirst!.Id);
         afterSecond.RoleId.Should().Be(afterFirst.RoleId);
         afterSecond.Status.Should().Be(UserStatus.Active);
@@ -78,7 +77,6 @@ public sealed class AccessRolesTests(AccessTestFixture fixture)
             UpdatedAtUtc = now,
         });
 
-        // Prime the role cache to the negative result while the row is still Pending/no-role.
         (await ResolveRoleAsync(AccessTestFixture.OwnerSub)).Should().BeNull();
 
         var token = TestJwtTokens.Mint(AccessTestFixture.OwnerSub);
@@ -94,7 +92,6 @@ public sealed class AccessRolesTests(AccessTestFixture fixture)
         upgraded!.Status.Should().Be(UserStatus.Active);
         upgraded.RoleId.Should().Be(await OwnerRoleIdAsync());
 
-        // Eviction (not the TTL) makes the new role visible on the very next resolve.
         (await ResolveRoleAsync(AccessTestFixture.OwnerSub)).Should().Be(RoleNames.Owner);
     }
 

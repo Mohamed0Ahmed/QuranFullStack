@@ -7,9 +7,6 @@ using QuranDashboard.Tests.Abwab._Support;
 
 namespace QuranDashboard.Tests.Abwab.Kernel._Support;
 
-// Shared helpers for the real-PG kernel tests: context construction on the migrated fixture DB, the
-// throwaway auditable-fixture table, and a pristine-state reset (the audit tables are append-only, so the
-// reset uses session_replication_role=replica to bypass the DB triggers for test teardown only).
 internal static class AbwabKernelHarness
 {
     public const string FixtureTable = "abwab_kernel_fixture";
@@ -37,10 +34,6 @@ internal static class AbwabKernelHarness
         return new AbwabKernelTestContext(options);
     }
 
-    // Routes through the ONE authoritative full-substrate reset (shared with the security harness) so every
-    // AbwabDbCollection class starts clean regardless of run order. It also clears the security-audit /
-    // owner / permission tables — harmless for the kernel tests, and it makes the shared serial DB
-    // order-independent for any current or future Abwab class.
     public static Task ResetKernelStateAsync(PostgresFixture fixture) => AbwabSubstrateReset.FullResetAsync(fixture);
 
     public static async Task EnsureFixtureTableAsync(PostgresFixture fixture)
@@ -54,8 +47,6 @@ internal static class AbwabKernelHarness
         await ExecuteAsync(connection, $"DELETE FROM {FixtureTable}");
     }
 
-    // Runs one audited commit against the real executor on a FRESH context/connection, so multi-commit and
-    // concurrency tests never share EF tracking state.
     public static async Task<AbwabCommitResult> CommitAsync(
         PostgresFixture fixture,
         AbwabWriteRequest request,

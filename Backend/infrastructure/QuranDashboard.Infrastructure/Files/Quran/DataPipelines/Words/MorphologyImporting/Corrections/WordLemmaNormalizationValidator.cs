@@ -47,7 +47,6 @@ internal static class WordLemmaNormalizationValidator
             $"{where}: non-final decisionStatus '{entry.DecisionStatus}' "
             + "(candidate/needs-review belong only in the draft artifact).");
 
-        // Operation shape rules (spec §3.2).
         switch (entry.OperationKind)
         {
             case WordLemmaNormalizationOperationKind.Add:
@@ -79,9 +78,6 @@ internal static class WordLemmaNormalizationValidator
                 break;
 
             case WordLemmaNormalizationOperationKind.Keep:
-                // Non-mutating: corrected must equal expected, or both may be null (a reviewed
-                // "valid null / absence accepted" decision where QUL has no lemma and Corpus has no
-                // reliable mapping). Any other mismatch is a forbidden mutation.
                 FailWhen(entry.CorrectedLemmaArabic is not null
                         && !string.Equals(entry.ExpectedCurrentLemmaArabic, entry.CorrectedLemmaArabic,
                             StringComparison.Ordinal),
@@ -91,8 +87,6 @@ internal static class WordLemmaNormalizationValidator
                 break;
 
             case WordLemmaNormalizationOperationKind.Exception:
-                // Non-mutating; observed value recorded. A corrected lemma, if present, must equal the
-                // observed value (no mutation).
                 FailWhen(entry.CorrectedLemmaArabic is not null
                         && entry.ExpectedCurrentLemmaArabic is not null
                         && !string.Equals(entry.ExpectedCurrentLemmaArabic, entry.CorrectedLemmaArabic,
@@ -108,9 +102,8 @@ internal static class WordLemmaNormalizationValidator
                 break;
         }
 
-        // problemClass, when present, must be a recognized label so a relabeled artifact fails
-        // closed here instead of silently emptying a problemClass-scoped hard check downstream
-        // (e.g. MORPH-WORD-LEMMA-MISSING-RECOVERY-CLEAN).
+        // Unknown problemClass fails closed here, else a relabeled artifact would silently empty a
+        // problemClass-scoped hard check downstream (vacuous pass over 0 entries).
         FailWhen(!string.IsNullOrWhiteSpace(entry.ProblemClass)
                 && !WordLemmaProblemClasses.Known.Contains(entry.ProblemClass),
             $"{where}: unknown problemClass '{entry.ProblemClass}'.");
@@ -123,9 +116,6 @@ internal static class WordLemmaNormalizationValidator
             $"{where}: add/replace must include arabicMappingEvidence.");
     }
 
-    // Accepts an add/replace corrected Arabic lemma only when a curated evidence row matches the
-    // (buckwalter, arabicLemma) pair. The evidence file carries extra provenance metadata, but this
-    // validator treats row membership as the gate.
     private static void RequireMappingEvidence(
         WordLemmaNormalizationEntry entry,
         IReadOnlyList<WordLemmaMappingEvidenceEntry> evidence,
@@ -134,7 +124,7 @@ internal static class WordLemmaNormalizationValidator
         var corrected = entry.CorrectedLemmaArabic;
         if (string.IsNullOrWhiteSpace(corrected))
         {
-            return; // Shape rules already flagged the missing corrected lemma.
+            return;
         }
 
         var buckwalter = entry.CorpusLemmaBuckwalter;
@@ -165,7 +155,6 @@ internal static class WordLemmaNormalizationValidator
         }
     }
 
-    // Location format is S:V:W with positive integers (surah:ayah:word).
     private static bool IsInvalidLocation(string location)
     {
         var parts = location.Split(':');

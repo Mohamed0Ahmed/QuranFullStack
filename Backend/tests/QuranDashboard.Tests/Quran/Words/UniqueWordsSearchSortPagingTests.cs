@@ -163,12 +163,6 @@ public sealed class UniqueWordsSearchSortPagingTests(UniqueWordsTestFixture fixt
         page.Items.Select(i => i.Id).Should().Equal([2003, 1003, 1004, 1002, 31001, 1001, 60041, 1202]);
     }
 
-    // Five seeded tashkeel words share occurrences_count = 1, so this pins the tie-break chain against
-    // real seeded data: the tie group orders by first_word_order_in_mushaf ASCENDING in BOTH
-    // directions, while only the primary count flips. (Id cannot enter HERE: first_word_order_in_mushaf
-    // carries a UNIQUE index on both unique-word tables, so it always resolves the tie first. The
-    // reader's final Id rung is still part of the contract and is proved in
-    // UniqueWordsOrderingContractTests, which opens a seam the seeded slice cannot reach.)
     [Theory]
     [InlineData("occurrences", new[] { 1002, 1001, 2003, 1003, 1004, 1202, 31001, 60041 })]
     [InlineData("occurrences-asc", new[] { 1003, 1004, 1202, 31001, 60041, 2003, 1001, 1002 })]
@@ -185,8 +179,6 @@ public sealed class UniqueWordsSearchSortPagingTests(UniqueWordsTestFixture fixt
         page.Items.Select(i => i.Id).Should().Equal(expectedIds);
     }
 
-    // The exact reverse of the ascending pin above: the eight seeded words carry distinct search
-    // texts, so no alpha tie engages and DESC simply mirrors the sequence.
     [Fact]
     public async Task Sort_by_alpha_descending_reverses_the_ascending_order()
     {
@@ -201,7 +193,6 @@ public sealed class UniqueWordsSearchSortPagingTests(UniqueWordsTestFixture fixt
         page.Items.Select(i => i.Id).Should().Equal([1202, 60041, 1001, 31001, 1002, 1004, 1003, 2003]);
     }
 
-    // The acceptance bar: a legacy token and its canonical alias are ONE ordering.
     [Theory]
     [InlineData("occurrences", "occurrences-desc")]
     [InlineData("alpha", "alpha-asc")]
@@ -223,8 +214,6 @@ public sealed class UniqueWordsSearchSortPagingTests(UniqueWordsTestFixture fixt
         aliasIds.Should().Equal(legacyIds);
     }
 
-    // Sorting is ORDER BY only: it runs before Count/Skip/Take, but must never change WHICH rows are
-    // in scope or what totalCount reports.
     [Theory]
     [InlineData("mushaf-order")]
     [InlineData("alpha")]

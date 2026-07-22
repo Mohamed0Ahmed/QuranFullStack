@@ -1,9 +1,5 @@
 namespace QuranDashboard.Domain.Security.Permissions;
 
-// A uniquely-keyed (target-kind, target-key, permission-code) assignment. `Version` increments on every
-// real state change and is the optimistic-concurrency token the grant/revoke commands carry: an absent
-// assignment is version 0, a present one is version >= 1. Grants and revokes are serialized by the
-// security-audit commit; an idempotent re-grant/re-revoke is a version-preserving no-op (no audit).
 public sealed class PermissionAssignment
 {
     private PermissionAssignment()

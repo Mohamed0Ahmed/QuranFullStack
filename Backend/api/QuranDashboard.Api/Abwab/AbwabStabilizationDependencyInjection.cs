@@ -2,9 +2,6 @@ using QuranDashboard.Application.Abwab.Concurrency;
 
 namespace QuranDashboard.Api.Abwab;
 
-// Stabilization composition root: builds the AbwabWriterRegistry from the explicit registration list and
-// fails fast at startup if any discovered IAbwabWriter was not registered against the barrier. This is the
-// runtime counterpart of the stabilization registry test.
 public static class AbwabStabilizationDependencyInjection
 {
     public static IServiceCollection AddAbwabStabilization(this IServiceCollection services)

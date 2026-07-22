@@ -28,8 +28,6 @@ public readonly record struct StemSortSpec(StemSortColumn Column, WordSortDirect
 
     public static StemSortSpec Natural(StemSortColumn column) => new(column, NaturalDirectionOf(column));
 
-    // Counts read most-first, so their natural direction is descending; text and the Mushaf
-    // release order read forward.
     public static WordSortDirection NaturalDirectionOf(StemSortColumn column) => column switch
     {
         StemSortColumn.MushafOrder => WordSortDirection.Ascending,
@@ -71,7 +69,6 @@ public static class StemSortParser
             return false;
         }
 
-        // mushaf-order is the release order, not a column: ascending-only, bare token only.
         if (column == StemSortColumn.MushafOrder && direction is not null)
         {
             return false;

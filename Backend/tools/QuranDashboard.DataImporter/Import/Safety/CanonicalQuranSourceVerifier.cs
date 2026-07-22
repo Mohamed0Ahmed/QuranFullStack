@@ -2,12 +2,6 @@ using System.Text.Json;
 
 namespace QuranDashboard.DataImporter.Import.Safety;
 
-// US2 (FR-008): verify a staged source package against its pinned canonical identity before any
-// import. A package carries a `source-identity.json` manifest declaring its SourceName, CanonicalId,
-// and stable IDs. It is refused when: no manifest is present (unverifiable), its SourceName is not
-// pinned in the registry (forbidden), its CanonicalId differs from the pinned value (wrong identity),
-// or its declared stable IDs are not stable (non-positive / duplicated / non-monotonic). The manifest
-// is metadata only — it never carries Quran text.
 public sealed class CanonicalQuranSourceVerifier
 {
     private static readonly JsonSerializerOptions JsonOptions = new()

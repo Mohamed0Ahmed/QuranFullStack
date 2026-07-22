@@ -92,7 +92,7 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
             await MorphologyBulkCopier.CopyPosTagsAsync(npgsqlConnection, ct);
             await MorphologyBulkCopier.CopyRootsAsync(npgsqlConnection, source, ct);
             await MorphologyBulkCopier.CopyLemmasAsync(npgsqlConnection, source, ct);
-            // After lemmas + roots (FK targets): per-buckwalter analytical breakdown under each display lemma.
+            // After lemmas + roots: lemma analyses FK-reference both.
             await MorphologyBulkCopier.CopyLemmaAnalysesAsync(npgsqlConnection, source, ct);
             await MorphologyBulkCopier.CopyStemsAsync(npgsqlConnection, source, ct);
             await MorphologyBulkCopier.CopyMorphologyAsync(npgsqlConnection, source, wordIdsByLocation, ct);

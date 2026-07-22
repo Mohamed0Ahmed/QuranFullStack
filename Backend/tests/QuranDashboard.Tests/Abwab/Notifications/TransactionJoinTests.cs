@@ -5,10 +5,6 @@ using QuranDashboard.Tests.Abwab.Notifications._Support;
 
 namespace QuranDashboard.Tests.Abwab.Notifications;
 
-// T065 / FR-033 / SC-009: the notification storage writer JOINS a caller's domain transaction — it writes
-// through the caller's DbContext and never opens, commits, or rolls back a transaction of its own. So a
-// rolled-back caller leaves NO notification row (a notification can never commit for a rolled-back action),
-// while a committed caller persists exactly one row. Proven against real PostgreSQL.
 [Collection(nameof(AbwabDbCollection))]
 public sealed class TransactionJoinTests
 {
@@ -29,7 +25,6 @@ public sealed class TransactionJoinTests
 
             outcome.Outcome.Should().Be(NotificationWriteOutcome.Stored);
 
-            // The caller — not the writer — owns the transaction boundary. Rolling back must undo the row.
             await transaction.RollbackAsync();
         }
 
@@ -75,8 +70,6 @@ public sealed class TransactionJoinTests
                 .WriteAsync(NotificationTestHarness.Request("source-standalone"), CancellationToken.None);
         }
 
-        // No caller-owned transaction: SaveChanges' own implicit unit of work commits the row. This proves the
-        // writer joins WHATEVER the caller provides rather than forcing its own transaction.
         (await NotificationTestHarness.CountRecordsAsync(_fixture)).Should().Be(1);
     }
 }

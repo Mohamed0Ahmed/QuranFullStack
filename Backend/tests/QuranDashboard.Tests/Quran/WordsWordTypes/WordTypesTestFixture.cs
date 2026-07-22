@@ -88,8 +88,7 @@ public sealed class WordTypesTestFixture : IAsyncLifetime
 
     public HttpClient CreateApiClient()
     {
-        // Guard the lazy init so concurrent callers reuse the single factory instead of racing to
-        // construct (and leak) multiple WebApplicationFactory instances.
+        // Lock so concurrent callers reuse one factory instead of racing to construct/leak duplicates.
         WebApplicationFactory<WordTypeGroupedDetailsController> factory;
         lock (_apiFactoryLock)
         {

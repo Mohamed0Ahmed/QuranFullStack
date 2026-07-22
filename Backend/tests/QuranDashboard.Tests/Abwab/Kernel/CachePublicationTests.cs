@@ -4,8 +4,6 @@ using QuranDashboard.Tests.Abwab.Kernel._Support;
 
 namespace QuranDashboard.Tests.Abwab.Kernel;
 
-// FR-020 / SC-008 (T032): cache publication happens only post-commit, and provider retries are locked off
-// for Abwab manual transactions (real PG).
 [Collection(nameof(AbwabDbCollection))]
 public sealed class CachePublicationTests(PostgresFixture fixture) : IAsyncLifetime
 {

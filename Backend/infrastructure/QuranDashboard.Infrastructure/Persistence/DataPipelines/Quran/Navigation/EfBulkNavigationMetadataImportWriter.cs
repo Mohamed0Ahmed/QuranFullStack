@@ -103,8 +103,7 @@ public sealed class EfBulkNavigationMetadataImportWriter : INavigationMetadataIm
         {
             if (force)
             {
-                // Shared destructive guard (advisory lock + fail-closed FK-closure preflight) layered
-                // on top of the navigation-specific write-isolation guard already in ExecuteNonQueryAsync.
+                // Destructive guard: advisory lock + fail-closed FK-closure preflight before the clear.
                 await QuranImportDestructiveGuard.AcquireDestructiveLockAsync(npgsqlConnection, transaction, ct);
                 await QuranImportDestructiveGuard.EnsureNoOutOfScopeDependentsAsync(
                     npgsqlConnection, transaction, NavigationMetadataSql.ClearNavigationData, ct);

@@ -2,9 +2,6 @@ using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyIm
 
 namespace QuranDashboard.Tests.Quran.WordsMorphology;
 
-// Apply behaviour for the word-level lemma normalization artifact against an in-memory raw QUL lemma
-// map. Synthetic-data tests assert each operation kind in isolation; the real-artifact spot-check
-// tests assert the well-known Phase 0F corrections resolve to their expected Arabic lemmas.
 public sealed class WordLemmaNormalizationApplierTests
 {
     private static readonly IReadOnlyList<WordLemmaMappingEvidenceEntry> RealEvidence =
@@ -117,7 +114,7 @@ public sealed class WordLemmaNormalizationApplierTests
     {
         var raw = EmptyMap();
         var entry = Add("WLN-1", "2:1:1", ">aDal~", "أَضَلّ");
-        var readable = new HashSet<string> { "1:1:1" }; // does NOT contain 2:1:1
+        var readable = new HashSet<string> { "1:1:1" };
 
         var act = () => ApplyAll(raw, entry, readable);
 
@@ -130,8 +127,6 @@ public sealed class WordLemmaNormalizationApplierTests
     {
         var loaded = new WordLemmaNormalizationReader().Load();
         var raw = BuildRawMapMatchingExpected(loaded.Artifact);
-        // The readable Quran word set must include every location referenced by the artifact, including
-        // add locations (which have no raw lemma) — mirroring the real readable quran_words population.
         var readable = new HashSet<string>(raw.Keys, StringComparer.Ordinal);
         foreach (var entry in loaded.Artifact.Entries)
         {
@@ -153,11 +148,11 @@ public sealed class WordLemmaNormalizationApplierTests
         AssertSpot(result, "21:51:3", "إِبْرَاهِيم");
         AssertSpot(result, "28:50:10", "أَضَلّ");
         AssertSpot(result, "28:50:11", "مِن");
-        AssertSpot(result, "33:61:3", "ثُقِفُ"); // below-threshold curated replace.
-        AssertSpot(result, "4:91:26", "ثُقِفُ"); // below-threshold curated add.
-        AssertSpot(result, "17:7:22", "عَلا"); // keep.
-        AssertSpot(result, "4:116:1", "إِنّ"); // keep.
-        AssertSpot(result, "33:61:2", "مَا"); // exception.
+        AssertSpot(result, "33:61:3", "ثُقِفُ");
+        AssertSpot(result, "4:91:26", "ثُقِفُ");
+        AssertSpot(result, "17:7:22", "عَلا");
+        AssertSpot(result, "4:116:1", "إِنّ");
+        AssertSpot(result, "33:61:2", "مَا");
     }
 
     private static void AssertSpot(WordLemmaNormalizationResult result, string location, string expected)
@@ -167,8 +162,6 @@ public sealed class WordLemmaNormalizationApplierTests
         actual.Should().Be(expected, $"spot-check location {location}");
     }
 
-    // Build a raw QUL-shaped map whose values exactly match every entry's expectedCurrentLemmaArabic
-    // (or absence for adds / null-expected keeps), so the real artifact applies cleanly.
     private static Dictionary<string, string> BuildRawMapMatchingExpected(WordLemmaNormalizationArtifact artifact)
     {
         var raw = new Dictionary<string, string>(StringComparer.Ordinal);

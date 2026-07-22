@@ -15,7 +15,7 @@ public sealed class WordLemmaNormalizationReader : IWordLemmaNormalizationReader
         PropertyNameCaseInsensitive = true,
     };
 
-    // ValidateSchema is invoked eagerly so a malformed embedded artifact fails closed at load, before any apply.
+    // Validate eagerly so a malformed embedded artifact fails closed at load, before any apply.
     public WordLemmaNormalizationLoaded Load()
     {
         using var stream = OpenResource(ArtifactResourceName);
@@ -40,11 +40,8 @@ public sealed class WordLemmaNormalizationReader : IWordLemmaNormalizationReader
         return ParseEvidence(memory.ToArray());
     }
 
-    // Never mutates `rawLemmas`; fails closed on any expected-current mismatch or unapplied op.
-    //
-    // `readableWordLocations` is the set of readable quran_words locations; when non-null, every
-    // correction location must exist in it (defense against an artifact that drifts away from the
-    // readable Quran word set).
+    // Never mutates `rawLemmas`; fails closed on mismatch. readableWordLocations (when non-null) gates
+    // every correction location against the readable Quran word set (rejects an artifact that drifts).
     public WordLemmaNormalizationResult Apply(
         IReadOnlyDictionary<string, string> rawLemmas,
         WordLemmaNormalizationLoaded loaded,

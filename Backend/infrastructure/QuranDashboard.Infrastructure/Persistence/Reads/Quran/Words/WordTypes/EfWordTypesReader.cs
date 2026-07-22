@@ -80,8 +80,6 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
         var childCode = NormalizeChildCode(filter.ChildCode);
         var context = new WordTypeReadContext(type, childCode, filter.Case, filter.Tense, filter.Voice, ArabicSearchQueryNormalizer.Normalize(filter.Search), filter.HasRoot, filter.HasStem, filter.HasLemma);
 
-        // B1: page + total come from ONE scoped command via COUNT(*) OVER(). The count-only fallback runs
-        // only for an empty page (out-of-range or empty scope), where the window count has no row to carry it.
         var offset = ReadPaging.CalculatePageOffset(page, pageSize);
         if (offset is null)
         {
@@ -128,8 +126,6 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
         var childCode = NormalizeChildCode(filter.ChildCode);
         var context = new WordTypeReadContext(type, childCode, filter.Case, filter.Tense, filter.Voice, ArabicSearchQueryNormalizer.Normalize(filter.Search), filter.HasRoot, filter.HasStem, filter.HasLemma);
 
-        // B1: same single-command window-count path as the words view, with the count-only fallback reserved
-        // for the exceptional empty page.
         var offset = ReadPaging.CalculatePageOffset(page, pageSize);
         if (offset is null)
         {
@@ -163,8 +159,6 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
         return result.Count;
     }
 
-    // The word variant's Case/Tense/Voice complete the composite identity using the active filter that
-    // scoped this page — the same values the detail endpoints (summary/ayahs/surahs) already accept.
     private static WordTableRowDto ToWordTableRowDto(WordTypeRowDto row, WordTypeFilter filter) => new(
         row.TashkeelWordId,
         row.ContextCode,
@@ -260,12 +254,9 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
             return null;
         }
 
-        // One matched-word projection, reused for the distinct-ayah set and the page's matched rows.
         var matchedWords = MatchedWordsQuery(identity);
         var matchedAyahIds = matchedWords.Select(word => word.AyahId).Distinct();
 
-        // B3: the distinct-ayah count doubles as the existence check (zero → identity absent → null),
-        // so the preliminary AnyAsync probe is gone.
         var totalCount = await matchedAyahIds.CountAsync(cancellationToken);
         if (totalCount == 0)
         {
@@ -346,9 +337,6 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
             return null;
         }
 
-        // B3: mirror the grouped surahs read. One server-side aggregate groups the scoped occurrences by
-        // surah; zero rows means the identity is absent from the scope (not found) and short-circuits before
-        // the catalogue read — the aggregate doubles as the existence check, replacing the AnyAsync probe.
         var occurrences = await MatchedWordsQuery(identity)
             .GroupBy(word => word.SurahNumber)
             .Select(group => new SurahOccurrenceRow(group.Key, group.Count()))
@@ -360,8 +348,6 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
 
         var occurrencesByNumber = occurrences.ToDictionary(row => row.SurahNumber, row => row.OccurrencesCount);
 
-        // One bounded catalogue read supplies every surah number/name once; mentioned and missing lists are
-        // derived in memory in numeric order — never a second catalogue query per occurrence.
         var catalogue = await _dbContext.QuranSurahs
             .AsNoTracking()
             .OrderBy(surah => surah.SurahNumber)
@@ -385,8 +371,6 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
         return new WordTypeSurahsResponse(surahs, missingSurahs);
     }
 
-    // Filters through the QuranWord navigation (not an explicit second join) so a matched-word projection
-    // (MatchedWordsQuery) reuses this single quran_words join instead of re-joining on the same key.
     private IQueryable<Domain.Quran.Words.Morphology.WordMorphology> MatchedMorphologyQuery(WordTypeRowIdentity identity) =>
         from morphology in _dbContext.WordMorphologies.AsNoTracking()
         where !morphology.QuranWord.IsAyahMarker
@@ -410,9 +394,6 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
                 || morphology.VerbVoice == identity.Voice)
         select morphology;
 
-    // Matched head words for this row identity, projected once from the shared morphology scope so callers
-    // reuse a single quran_words join (via the QuranWord navigation) instead of re-joining it per read.
-    // Returns the word entities themselves so each consumer composes its own aggregate/projection.
     private IQueryable<Domain.Quran.Words.QuranWord> MatchedWordsQuery(WordTypeRowIdentity identity) =>
         MatchedMorphologyQuery(identity).Select(morphology => morphology.QuranWord);
 
@@ -510,8 +491,6 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
 
     private static string NormalizeType(string? type) => string.IsNullOrWhiteSpace(type) ? NounType : type.Trim().ToLowerInvariant();
 
-    // Noun child codes are POS codes (uppercase); verb child codes are tense literals (lowercase).
-    // Preserve the raw value rather than lower-casing so noun POS codes like "PN" survive.
     private static string? NormalizeChildCode(string? childCode) =>
         string.IsNullOrWhiteSpace(childCode) ? null : childCode.Trim();
 

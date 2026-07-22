@@ -4,11 +4,6 @@ using QuranDashboard.Domain.Security.Permissions;
 
 namespace QuranDashboard.Application.Security.Permissions;
 
-// Owner-only grant/revoke, run through the separate security-audit unit of work. The catalogue/assignability
-// checks and the stale-version check run INSIDE the serialized commit (after the barrier + generation gates)
-// so first-grant and grant-vs-revoke are ordered. An idempotent re-grant/re-revoke is a no-op with no audit
-// and no cache invalidation; a real change is permanently audited and invalidates the effective-permission
-// cache post-commit.
 public sealed class PermissionAdministrationHandler(
     ISecurityAuditWriteExecutor executor,
     IPermissionAssignmentStore assignments,
@@ -25,7 +20,7 @@ public sealed class PermissionAdministrationHandler(
             command.ActorSubject,
             async operationToken =>
             {
-                // SystemOwnerOnly codes are never assignable to an ordinary user (SC-007 / §5.2).
+                // SystemOwnerOnly codes are never assignable to an ordinary user (authz).
                 if (code.SystemOwnerOnly)
                 {
                     throw new PermissionBaselineLockedException(command.PermissionCode);
@@ -70,7 +65,7 @@ public sealed class PermissionAdministrationHandler(
             command.ActorSubject,
             async operationToken =>
             {
-                // The DashboardAdminBaseline (attribution.view) cannot be removed (FR-031).
+                // The DashboardAdminBaseline (attribution.view) cannot be revoked (authz).
                 if (code.DashboardAdminBaseline)
                 {
                     throw new PermissionBaselineLockedException(command.PermissionCode);

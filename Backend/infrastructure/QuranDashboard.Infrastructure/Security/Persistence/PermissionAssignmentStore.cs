@@ -3,9 +3,6 @@ using QuranDashboard.Domain.Security.Permissions;
 
 namespace QuranDashboard.Infrastructure.Security.Persistence;
 
-// Shares the request-scoped DbContext with the security-audit executor. `FindTrackedAsync` returns a tracked
-// row so a grant/revoke mutation is persisted by the executor's SaveChanges; `ListGrantedAsync` is a
-// no-track read for `/me` and the admin list projection.
 public sealed class PermissionAssignmentStore(QuranDashboardDbContext db) : IPermissionAssignmentStore
 {
     public async Task<PermissionAssignment?> FindTrackedAsync(

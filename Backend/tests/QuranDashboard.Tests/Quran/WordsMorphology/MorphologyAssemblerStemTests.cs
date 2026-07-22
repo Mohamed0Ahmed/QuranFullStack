@@ -2,9 +2,6 @@ using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyIm
 
 namespace QuranDashboard.Tests.Quran.WordsMorphology;
 
-// Per-segment stem_id resolution (Feature 018). Non-STEM => null; single-STEM and two-STEM primary
-// segments reuse the word head stem; the two-STEM secondary segment uses the curated artifact (clean
-// stem by text) or stays null when not covered / intentionally unresolved.
 public sealed class MorphologyAssemblerStemTests
 {
     private static MorphologyAssembler CreateAssembler() =>
@@ -63,7 +60,6 @@ public sealed class MorphologyAssemblerStemTests
             new("1:1:2", "X2", [new AlignedCorpusSegment(1, "STEM", "REL", "maA", "STEM|POS:REL", null, null)]),
         };
         var ids = new Dictionary<string, int> { ["1:1:1"] = 1, ["1:1:2"] = 2 };
-        // word head stems: compound مِمَّا head = "MI"; standalone "MAA" supplies the clean target row.
         var stems = new Dictionary<string, string> { ["1:1:1"] = "MI", ["1:1:2"] = "MAA" };
         var corrections = new Dictionary<string, string> { ["1:1:1:2"] = "MAA" };
 

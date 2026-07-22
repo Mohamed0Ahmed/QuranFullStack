@@ -11,10 +11,6 @@ using QuranDashboard.Tests.Api.Access;
 
 namespace QuranDashboard.Tests.Api.Security;
 
-// Real-PG WebApplicationFactory harness for the Owner-only permission-administration endpoints. Mirrors the
-// Access auth-testing pattern (offline JWT via TestJwtTokens, migrated Testcontainers DB), but seeds System
-// Owner membership + permission assignments directly rather than provisioning users. The permission-admin
-// named rate-limit policy is always on, so the quota is raised here to keep multi-request tests deterministic.
 public sealed class SecurityApiFixture : IAsyncLifetime
 {
     public const string OwnerIssuer = "https://logto.test";
@@ -63,7 +59,6 @@ public sealed class SecurityApiFixture : IAsyncLifetime
         {
             BaseAddress = new Uri("https://localhost"),
         });
-        // A stable client IP keeps the always-on permission-admin limiter's partition consistent.
         client.DefaultRequestHeaders.Add("X-Real-IP", "203.0.113.7");
         return client;
     }
@@ -76,8 +71,7 @@ public sealed class SecurityApiFixture : IAsyncLifetime
         await using var scope = QueryProvider.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
-        // replica mode disables the append-only trigger so the security-audit table can be truncated for
-        // teardown only; production never does this. Run as one batch so it stays on a single connection.
+        // One batch keeps SET replica + TRUNCATE on the same connection.
         await db.Database.ExecuteSqlRawAsync(
             "SET session_replication_role = replica; TRUNCATE security_audit_events RESTART IDENTITY; SET session_replication_role = origin;");
         await db.Database.ExecuteSqlRawAsync("DELETE FROM permission_assignments;");
@@ -141,7 +135,6 @@ public sealed class SecurityApiFixture : IAsyncLifetime
                         ["Auth:Authority"] = TestJwtTokens.TestIssuer,
                         ["Auth:Audience"] = TestJwtTokens.TestAudience,
                         ["Cors:AllowedOrigins:0"] = "https://localhost",
-                        // Always-on named limiter: raise the quota so multi-request tests never hit 429.
                         ["RateLimiting:PermissionAdminPermitLimit"] = "100000",
                     }));
 
@@ -151,7 +144,6 @@ public sealed class SecurityApiFixture : IAsyncLifetime
                     services.RemoveAll<DbContextOptions<QuranDashboardDbContext>>();
                     services.AddDbContext<QuranDashboardDbContext>(options => options.UseNpgsql(ConnectionString));
 
-                    // Fully offline token validation: seed the trusted signing key + issuer directly.
                     services.PostConfigure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, options =>
                     {
                         options.Configuration = new OpenIdConnectConfiguration { Issuer = TestJwtTokens.TestIssuer };

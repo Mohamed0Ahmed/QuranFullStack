@@ -30,10 +30,6 @@ public sealed class UniqueSimpleWordConfiguration : IEntityTypeConfiguration<Uni
             .IsRequired()
             .HasColumnName("text_imlaei_simple");
 
-        // canonical fold map: ArabicSearchQueryNormalizer.FoldFrom/FoldTo (decision 5 (DRY)). The literal
-        // strings below are left as-is on purpose — they are part of the EF computed-column SQL captured in
-        // the migration/model snapshot; redirecting them to the shared consts would not change behavior but
-        // would still touch generated migration surface, which is out of scope for this refactor.
         builder.Property<string>("SearchTextNormalized")
             .HasColumnName("search_text_normalized")
             .HasComputedColumnSql("translate(lower(text_uthmani_simple || ' ' || text_imlaei_simple || ' ' || word_key_imlaei_simple), 'أإآٱؤئةىي', 'ااااواهيي')", stored: true);

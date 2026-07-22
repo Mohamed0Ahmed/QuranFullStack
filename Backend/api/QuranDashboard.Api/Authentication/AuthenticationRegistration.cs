@@ -22,8 +22,6 @@ internal static class AuthenticationRegistration
 
         services.AddScoped<IClaimsTransformation, RoleClaimsTransformation>();
 
-        // IOptions DI is not resolvable before the container is built, so bind the section locally to
-        // feed the JwtBearer setup. Values are still validated fail-fast via ValidateOnStart above.
         var authOptions = configuration.GetSection(JwtAuthenticationOptions.SectionName).Get<JwtAuthenticationOptions>()
             ?? new JwtAuthenticationOptions();
 
@@ -33,15 +31,13 @@ internal static class AuthenticationRegistration
                 options.Authority = authOptions.Authority;
                 options.TokenValidationParameters.ValidAudience = authOptions.Audience;
 
-                // Keep raw claim types (notably `sub`, the identity key). Logto issues RFC 9068
-                // `at+jwt` access tokens; the default inbound claim-type map would rename `sub`.
+                // MapInboundClaims=false keeps the raw "sub" (the identity key); the default map would rename it.
                 options.MapInboundClaims = false;
 
                 options.Events = new JwtBearerEvents
                 {
                     OnChallenge = static async context =>
                     {
-                        // Suppress the framework's default empty 401 and emit the shared failure envelope.
                         context.HandleResponse();
                         var writer = context.HttpContext.RequestServices.GetRequiredService<UnauthorizedRejectionWriter>();
                         await writer.WriteAsync(context.HttpContext, context.HttpContext.RequestAborted);
@@ -49,8 +45,6 @@ internal static class AuthenticationRegistration
                 };
             });
 
-        // One named policy per role, each requiring an authenticated caller in that role. The SystemOwner
-        // policy and one policy per permission code (the "policy" parity layer) are added alongside.
         services.AddAuthorization(options =>
         {
             options.AddPolicy(AuthorizationPolicyNames.Owner, policy =>

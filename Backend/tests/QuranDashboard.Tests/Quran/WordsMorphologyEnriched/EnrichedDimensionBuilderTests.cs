@@ -9,9 +9,6 @@ public sealed class EnrichedDimensionBuilderTests
     [Fact]
     public void Root_identity_is_value_based_on_root_buckwalter_not_qul_location()
     {
-        // Two words in DIFFERENT locations share the same Corpus rootBuckwalter; under value-based identity
-        // they MUST collapse to one root dimension. The legacy QUL-link pathway keyed on whole-word root
-        // text and could not guarantee this; the enriched pathway keys on rootBuckwalter directly.
         var records = new[]
         {
             EnrichedMorphologyTestData.StemRecord(
@@ -60,9 +57,6 @@ public sealed class EnrichedDimensionBuilderTests
     [Fact]
     public void Stem_identity_uses_stem_text_not_stem_buckwalter()
     {
-        // Two STEM segments with the SAME formArabic (stem_text) but DIFFERENT stemBuckwalter must collapse
-        // to ONE stem dimension row: quran_stems has no stem_buckwalter column, so stemBuckwalter cannot
-        // mint a separately-distinguishable row. This is the signed-off no-schema stem rule.
         var records = new[]
         {
             EnrichedMorphologyTestData.StemRecord(
@@ -235,9 +229,6 @@ public sealed class EnrichedDimensionBuilderTests
     [Fact]
     public void Audit_only_fields_are_dropped_from_persisted_dto()
     {
-        // stemBuckwalter, *MappingStatus, *QulCanonical, corpusPresent, quranWordIdVerifiedAgainstDashboard
-        // are read into the source model but must NOT appear on the persisted DTO. The DTO has no members
-        // for them, so this asserts the projection is clean by construction.
         var records = new[]
         {
             EnrichedMorphologyTestData.StemRecord(
@@ -252,8 +243,6 @@ public sealed class EnrichedDimensionBuilderTests
         var segment = result.Words.Single().Word.Segments.Single();
         segment.RenderTier.Should().Be(EnrichedDimensionBuilder.EnrichedRenderTier);
         segment.RenderSource.Should().Be(EnrichedDimensionBuilder.EnrichedRenderSource);
-        // No mapping-status / Qul-canonical / verified-against-dashboard field exists on AlignedSegmentDto;
-        // the type itself is the contract. Assert render-source is the only "audit" string carried.
         segment.RenderSource.Should().NotContain("MappingStatus");
         segment.RenderSource.Should().NotContain("QulCanonical");
     }
@@ -261,9 +250,6 @@ public sealed class EnrichedDimensionBuilderTests
     [Fact]
     public void No_buckwalter_in_arabic_display_fields()
     {
-        // Arabic display fields (FormArabicNormalized, root_text, lemma_text, stem_text) must never carry
-        // Buckwalter transliteration. Buckwalter stays only in form_buckwalter/root_buckwalter/lemma_buckwalter
-        // (internal/audit columns).
         var records = new[]
         {
             EnrichedMorphologyTestData.StemRecord(
@@ -304,11 +290,6 @@ public sealed class EnrichedDimensionBuilderTests
     [Fact]
     public void Segment_dimension_ids_resolve_value_based_per_segment()
     {
-        // A two-STEM word (PREFIX + STEM-primary + STEM-secondary + SUFFIX) mirroring 8:6:12. The head
-        // (lowest-numbered) STEM mints the word-level root/lemma/stem; the SECONDARY STEM resolves
-        // lookup-only and mints nothing, so — unless its value was already minted by another word's head —
-        // its dimension ids stay null. This is the multi-STEM safety rule that honours the UNIQUE
-        // first_word_order_in_mushaf index.
         var segments = new[]
         {
             EnrichedMorphologyTestData.Segment(1, "PREFIX", "CONJ", "prefixSyn", "بادئة تجريبية", "PREFIX|TEST"),
@@ -335,8 +316,6 @@ public sealed class EnrichedDimensionBuilderTests
         word.HeadPos.Should().Be("V", "primary STEM is the head");
         word.IsVerb.Should().BeTrue();
 
-        // The head STEM (segment 2) carries the word-level dimension ids; the SECONDARY STEM (segment 3)
-        // and the PREFIX segment stay null — secondary STEMs never mint, they resolve lookup-only.
         var primaryStem = word.Segments.Single(segment => segment.SegmentNumber == 2);
         var secondaryStem = word.Segments.Single(segment => segment.SegmentNumber == 3);
         var prefix = word.Segments.Single(segment => segment.SegmentNumber == 1);
@@ -379,13 +358,6 @@ public sealed class EnrichedDimensionBuilderTests
     [Fact]
     public void Multi_stem_word_never_mints_two_dimensions_sharing_a_first_word_order()
     {
-        // The مِنْ مَا-class compound shape (e.g. 2:3:6): ONE word, TWO STEM segments with DISTINCT
-        // root/lemma buckwalter and distinct stem_text. Before this remediation the builder minted a fresh
-        // dimension for BOTH STEM segments, stamping each with FirstWordOrder = the word's order — two rows
-        // sharing a FirstWordOrder, which violates the UNIQUE index on
-        // quran_{roots,lemmas,stems}.first_word_order_in_mushaf at COPY time (the Phase 2A failure).
-        // Word-level dimensions must be minted from the head (lowest-numbered) STEM only; the secondary
-        // STEM resolves lookup-only and mints nothing.
         var segments = new[]
         {
             EnrichedMorphologyTestData.Segment(
@@ -432,9 +404,6 @@ public sealed class EnrichedDimensionBuilderTests
     [Fact]
     public void Secondary_stem_dimension_reuses_an_already_minted_dimension()
     {
-        // Requirement 3: when a secondary STEM's lemma/root/stem WAS minted by another word's head, the
-        // secondary segment resolves (reuses) that dimension id rather than minting a new one. Here 'maA'
-        // is the head of the first word, then appears as the secondary STEM of the multi-STEM second word.
         var head = EnrichedMorphologyTestData.StemRecord(
             "1:1:1", quranWordId: 1,
             formBuckwalter: "maASyn", formArabic: "مَا",
@@ -472,9 +441,6 @@ public sealed class EnrichedDimensionBuilderTests
     }
 
     private static EnrichedMorphologyRecord[] AsaCollisionRecords() =>
-        // عَصَا: two DISTINCT Corpus lemma buckwalters (numeric-suffix homographs) that render to the SAME
-        // Arabic lemma_text عَصَا but carry DIFFERENT roots (ع ص و vs ع ص ي) and POS (N vs V). Mirrors the
-        // real collision inventory row for عَصَا.
         [
             EnrichedMorphologyTestData.StemRecord(
                 "2:60:7", quranWordId: 949,
@@ -492,8 +458,6 @@ public sealed class EnrichedDimensionBuilderTests
     [Fact]
     public void Colliding_lemma_text_variants_collapse_to_one_display_lemma_but_keep_distinct_analyses()
     {
-        // The UNIQUE(lemma_text) index rejects two quran_lemmas rows sharing عَصَا. Distinct buckwalters
-        // must therefore collapse to ONE display lemma while each buckwalter keeps its own analysis row.
         var result = CreateBuilder().Build(AsaCollisionRecords());
 
         result.ResolvedLemmas.Should().ContainSingle("both buckwalters share lemma_text عَصَا → one display lemma");
@@ -515,8 +479,6 @@ public sealed class EnrichedDimensionBuilderTests
     [Fact]
     public void Different_root_collision_variants_are_not_analytically_merged()
     {
-        // Requirement: عَصَا's two variants carry DIFFERENT roots and must never be merged into one
-        // analytical identity — each analysis keeps its own root_id.
         var result = CreateBuilder().Build(AsaCollisionRecords());
 
         result.ResolvedRoots.Should().HaveCount(2, "two distinct rootBuckwalter → two roots (ع ص و, ع ص ي)");
@@ -530,8 +492,6 @@ public sealed class EnrichedDimensionBuilderTests
     [Fact]
     public void Different_pos_collision_variants_preserve_head_pos_per_variant()
     {
-        // مَٰلِك: common noun (N) vs proper noun (PN) share lemma_text; head POS must survive per variant
-        // so a different-POS distinction is not lost when the display lemma collapses.
         var records = new[]
         {
             EnrichedMorphologyTestData.StemRecord(

@@ -282,11 +282,6 @@ public sealed partial class EfUniqueWordsReader(QuranDashboardDbContext db) : IU
             ? await _db.QuranWordsUniqueTashkeel.AsNoTracking().AnyAsync(w => w.Id == id, cancellationToken)
             : await _db.QuranWordsUniqueSimple.AsNoTracking().AnyAsync(w => w.Id == id, cancellationToken);
 
-    // LOCKSTEP WARNING (Feature 026, US7): this primary-selection rule (occurrence count DESC,
-    // earliest quran_word id ASC, POS code ordinal ASC) is REPRODUCED in SQL by
-    // PrimaryWordTypeWinnerPredicate in EfUniqueWordsReader.List.cs — the primaryType filter and the
-    // displayed chip must never disagree. Any change here MUST be mirrored there (and vice versa);
-    // UniqueWordsAssociationFilterTests pins the agreement.
     private async Task<IReadOnlyDictionary<int, PrimaryWordTypeRow>> LoadPrimaryWordTypesAsync(
         UniqueWordKind kind, IReadOnlyList<int?> uniqueWordIds, CancellationToken cancellationToken)
     {
@@ -333,11 +328,6 @@ public sealed partial class EfUniqueWordsReader(QuranDashboardDbContext db) : IU
                     .First());
     }
 
-    // LOCKSTEP WARNING (Feature 026, US7): this primary-selection rule (occurrence count DESC,
-    // earliest quran_word id ASC, root id ASC) is REPRODUCED in SQL by PrimaryRootWinnerPredicate in
-    // EfUniqueWordsReader.List.cs — the rootId filter and the displayed chip must never disagree. Any
-    // change here MUST be mirrored there (and vice versa); UniqueWordsAssociationFilterTests pins the
-    // agreement.
     private async Task<IReadOnlyDictionary<int, PrimaryRootRow>> LoadPrimaryRootsAsync(
         UniqueWordKind kind, IReadOnlyList<int?> uniqueWordIds, CancellationToken cancellationToken)
     {

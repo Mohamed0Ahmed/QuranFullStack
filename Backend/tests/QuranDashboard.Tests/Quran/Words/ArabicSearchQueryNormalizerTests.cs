@@ -6,11 +6,7 @@ namespace QuranDashboard.Tests.Quran.Words;
 public sealed class ArabicSearchQueryNormalizerTests
 {
     [Theory]
-    [InlineData("بِسْمِ", "بسم")] // diacritics (kasra/sukun) stripped
-    [InlineData("أإآ", "ااا")] // hamza/madda-alef fold (the canonical folding case)
-    [InlineData("ABC ابراهيم", "abc ابراهيم")] // lower-cased, interior space KEPT by default
-    [InlineData("قال الله", "قال الله")] // multi-word: interior space kept unchanged
-    public void Normalize_default_folds_strips_diacritics_lowercases_and_keeps_interior_spaces(
+    [InlineData("بِسْمِ", "بسم")]    [InlineData("أإآ", "ااا")]    [InlineData("ABC ابراهيم", "abc ابراهيم")]    [InlineData("قال الله", "قال الله")]    public void Normalize_default_folds_strips_diacritics_lowercases_and_keeps_interior_spaces(
         string input,
         string expected)
     {
@@ -20,9 +16,7 @@ public sealed class ArabicSearchQueryNormalizerTests
     }
 
     [Theory]
-    [InlineData("قال الله", "قالالله")] // interior space removed
-    [InlineData("بِسْمِ اللَّهِ", "بسمالله")] // diacritics stripped AND whitespace stripped together
-    public void Normalize_with_stripWhitespace_also_removes_interior_spaces(string input, string expected)
+    [InlineData("قال الله", "قالالله")]    [InlineData("بِسْمِ اللَّهِ", "بسمالله")]    public void Normalize_with_stripWhitespace_also_removes_interior_spaces(string input, string expected)
     {
         var result = ArabicSearchQueryNormalizer.Normalize(input, stripWhitespace: true);
 
@@ -33,9 +27,7 @@ public sealed class ArabicSearchQueryNormalizerTests
     [InlineData(null, false)]
     [InlineData(null, true)]
     [InlineData("", false)]
-    [InlineData("   ", true)] // whitespace-only
-    [InlineData("ًْ", false)] // diacritics-only (tanwin fath + sukun): empty after stripping
-    [InlineData("ًْ", true)]
+    [InlineData("   ", true)]    [InlineData("ًْ", false)]    [InlineData("ًْ", true)]
     public void Normalize_returns_null_for_diacritics_only_or_whitespace_only_input(
         string? input,
         bool stripWhitespace)

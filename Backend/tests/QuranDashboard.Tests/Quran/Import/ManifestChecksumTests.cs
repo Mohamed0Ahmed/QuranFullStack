@@ -7,7 +7,6 @@ public sealed class ManifestChecksumTests
     [Fact]
     public async Task ComputeSha256Hex_matches_known_hash_of_file_contents()
     {
-        // SHA-256("hello world") — a widely published test vector.
         const string expectedHex = "B94D27B9934D3E08A52E52D7DA7DABFAC484EFE37A5380EE9088F7ACE2EFCDE9";
         var path = await WriteTempFileAsync("hello world");
 

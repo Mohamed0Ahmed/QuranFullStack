@@ -24,8 +24,6 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
 
         if (exception is UserProvisioningEmailConflictException)
         {
-            // An expected business conflict (email already registered under a different Logto
-            // subject), not a server fault — log at Warning and map to 409, never the generic 500.
             logger.LogWarning(
                 "Provisioning email conflict while processing request {traceId} {requestId} {method} {path}",
                 traceId,
@@ -45,8 +43,6 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
 
         if (AbwabConflictResponses.TryMap(exception, out var abwabStatusCode, out var abwabResponse))
         {
-            // Expected Abwab concurrency conflict (stale generation / closed barrier) — a controlled 409
-            // carrying the exact abwab.* code, never the generic 500.
             logger.LogWarning(
                 "Abwab conflict while processing request {traceId} {requestId} {method} {path}",
                 traceId,

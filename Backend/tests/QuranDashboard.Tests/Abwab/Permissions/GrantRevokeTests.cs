@@ -8,8 +8,6 @@ using QuranDashboard.Tests.Abwab._Support;
 
 namespace QuranDashboard.Tests.Abwab.Permissions;
 
-// FR-027/FR-028 / SC-007 (T052): grant/revoke serialization, stale-version, idempotent no-audit no-ops,
-// permanent audit, and cache invalidation (real PG). Uses the assignable, non-baseline attribution.manage.
 [Collection(nameof(AbwabDbCollection))]
 public sealed class GrantRevokeTests(PostgresFixture fixture) : IAsyncLifetime
 {

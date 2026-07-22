@@ -20,11 +20,6 @@ public sealed class MushafPageRedundancyReadTests(MushafReaderTestFixture fixtur
 
         var response = await reader.GetPageAsync(1, CancellationToken.None);
 
-        // Prior reads: pageExists(1) + lines(1) + words(1) + surahNames(1) + juz(1) + hizb(1) +
-        // rub(1) + sajda(1) = 8 commands (matches the report's measured "8 commands"). The
-        // collapsed reader drops the existence probe (the line read doubles as it) and merges
-        // juz/hizb/rub into one UNION ALL: lines(1) + words(1) + surahNames(1) +
-        // juz+hizb+rub(1) + sajda(1) = 5.
         interceptor.CommandCount.Should().Be(5);
 
         response.Should().NotBeNull();
@@ -59,8 +54,6 @@ public sealed class MushafPageRedundancyReadTests(MushafReaderTestFixture fixtur
         await using var dbContext = new QuranDashboardDbContext(options);
         var reader = new EfMushafPageReader(dbContext);
 
-        // Page 1 carries juz #1, hizb #1, and rub #1, all anchored on ayah 1:1 (line 1, word
-        // 1:1:1) in the fixture, with no sajda on this page.
         var response = await reader.GetPageAsync(1, CancellationToken.None);
 
         response.Should().NotBeNull();
@@ -103,9 +96,6 @@ public sealed class MushafPageRedundancyReadTests(MushafReaderTestFixture fixtur
         await using var dbContext = new QuranDashboardDbContext(options);
         var reader = new EfMushafPageReader(dbContext);
 
-        // Page 5 carries only rub #2 (anchored on ayah 2:26), while juz #1, hizb #1, and rub #1
-        // are anchored on ayah 1:1 (page 1) and do not appear here — this proves the combined
-        // UNION ALL still scopes each marker table to the requested page's ayahs independently.
         var response = await reader.GetPageAsync(5, CancellationToken.None);
 
         response.Should().NotBeNull();

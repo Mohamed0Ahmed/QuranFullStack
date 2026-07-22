@@ -3,9 +3,6 @@ using QuranDashboard.Application.Abstractions.Security;
 
 namespace QuranDashboard.Api.Abwab;
 
-// Maps Abwab kernel concurrency conflicts to the shared ApiResponse failure envelope with an exact,
-// stable machine code (in `errors`) and a localized Arabic message. Owned here at the API boundary so
-// the abwab.* conflict codes have a single mapping point for every future 029+ writer endpoint.
 public static class AbwabConflictResponses
 {
     public static bool TryMap(Exception exception, out int statusCode, out ApiResponse<object> response)

@@ -2,8 +2,6 @@ using QuranDashboard.Application.Abstractions.Quran.Words.Lemmas;
 
 namespace QuranDashboard.Infrastructure.Caching.Quran.Words.Lemmas;
 
-// Keys are bounded by resource identity, view, kind, page, and size; raw free-text search is never part
-// of a retained key, keeping the key space bounded.
 public static class LemmasCacheKeys
 {
     public static string SummaryAll => "lemmas:summary:all";

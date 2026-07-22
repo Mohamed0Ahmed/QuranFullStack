@@ -56,8 +56,6 @@ public sealed class CachedWordTypesReader(EfWordTypesReader efReader, IMemoryCac
         }
 
         var counts = await _ef.GetScopeCountsAsync(filter, cancellationToken);
-        // Entry options mirror the table read's (PagedRows, 15 min): the scope counts describe the same
-        // list scope the table serves and should age out on the same cadence.
         _cache.Set(key, counts, WordTypesCacheEntryOptions.PagedRows());
         return counts;
     }

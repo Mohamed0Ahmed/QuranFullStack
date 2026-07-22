@@ -21,7 +21,6 @@ public sealed class ApiBehaviorTestFactory : WebApplicationFactory<UniqueWordsCo
         {
             configuration.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                // Dummy connection string: model binding fails before the action runs, so no request reaches the database.
                 ["ConnectionStrings:QuranDashboardDb"] =
                     "Host=localhost;Port=5432;Database=api_behavior_tests;Username=none;Password=none",
                 ["Cors:AllowedOrigins:0"] = "https://localhost",

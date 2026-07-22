@@ -6,17 +6,8 @@ using QuranDashboard.Domain.Security.Audit;
 
 namespace QuranDashboard.Infrastructure.Security.Persistence;
 
-// The separate permanent security-audit unit of work (FR-039). It mirrors the product commit protocol's
-// gates but NOT its head advance:
-//   1. row-lock + evaluate the AbwabWriteBarrier (fail closed → abwab.stabilization_active);
-//   2. row-lock the AbwabRevisionState singleton;
-//   3. verify ExpectedTimelineGeneration BEFORE any mutation → exact 409, zero rows touched;
-//   4. run the caller's domain operation (read + validate + stage) on the SAME scoped DbContext;
-//   5. append the permanent SecurityAuditEvent rows and commit.
-// It DELIBERATELY never touches AbwabRevisionState.AuditHeadSequence and never creates a product ChangeSet /
-// Restore-head event — the product timeline head is never advanced. Both singleton row locks are held
-// through commit, so concurrent owner/permission writes are serialized. Row locks use FromSqlRaw (a read
-// API), never a forbidden write/bypass API.
+// Both singleton row locks (barrier, revision) are held through commit, serializing concurrent owner/permission writes.
+// Generation is verified before any mutation (stale → 409, zero rows touched).
 public sealed class SecurityAuditedCommitExecutor(
     QuranDashboardDbContext db,
     IServerClock clock) : ISecurityAuditWriteExecutor
@@ -49,7 +40,6 @@ public sealed class SecurityAuditedCommitExecutor(
 
         if (outcome.IsNoOp)
         {
-            // Idempotent no-op: release the locks, change nothing, append no audit event.
             await transaction.CommitAsync(cancellationToken);
             return new SecurityAuditCommitResult(Audited: false, EventCount: 0);
         }

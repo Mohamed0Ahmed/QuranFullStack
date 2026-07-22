@@ -7,9 +7,6 @@ using QuranDashboard.Tests.Abwab._Support;
 
 namespace QuranDashboard.Tests.Abwab.Permissions;
 
-// FR-039 / SC-014 (T082): permission/owner writes produce permanent security-audit events but NEVER advance
-// AbwabRevisionState.AuditHeadSequence and NEVER create a product ChangeSet / Restore-head — while STILL
-// taking the barrier + AbwabRevisionState locks and carrying ExpectedTimelineGeneration (real PG).
 [Collection(nameof(AbwabDbCollection))]
 public sealed class SecurityAuditSeparationTests(PostgresFixture fixture) : IAsyncLifetime
 {
@@ -29,9 +26,7 @@ public sealed class SecurityAuditSeparationTests(PostgresFixture fixture) : IAsy
             PermissionTargetKind.Role, "Admin", PermissionCatalogue.AttributionManage,
             ExpectedTimelineGeneration.Of(0), 0, "actor"));
 
-        // Permanent security-audit events were written...
         (await SecurityTestHarness.ReadSecurityEventCountAsync(fixture)).Should().Be(2);
-        // ...but the product head never advanced and no product ChangeSet (Restore-head) was ever created.
         (await SecurityTestHarness.ReadAuditHeadAsync(fixture)).Should().Be(0);
         (await SecurityTestHarness.ReadChangeSetCountAsync(fixture)).Should().Be(0);
     }
@@ -39,8 +34,6 @@ public sealed class SecurityAuditSeparationTests(PostgresFixture fixture) : IAsy
     [Fact]
     public async Task StaleGeneration_IsRejected_BeforeAnyMutation()
     {
-        // The revision state moved on: a security write carrying a stale expected generation must fail with
-        // the exact 409 BEFORE any row is touched — proving it locked AbwabRevisionState and checked freshness.
         await SecurityTestHarness.SetGenerationAsync(fixture, 7);
 
         var act = () => SecurityTestHarness.GrantAsync(fixture, new GrantPermissionCommand(
@@ -56,8 +49,6 @@ public sealed class SecurityAuditSeparationTests(PostgresFixture fixture) : IAsy
     [Fact]
     public async Task BarrierStabilizing_RefusesSecurityWrites()
     {
-        // A non-Writable barrier is surfaced to the security surface as abwab.stabilization_active — proving
-        // the write took and evaluated the AbwabWriteBarrier first.
         await SecurityTestHarness.SetBarrierStabilizingAsync(fixture);
 
         var act = () => SecurityTestHarness.GrantAsync(fixture, new GrantPermissionCommand(

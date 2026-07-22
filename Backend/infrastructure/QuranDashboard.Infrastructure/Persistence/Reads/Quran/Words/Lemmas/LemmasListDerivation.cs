@@ -8,7 +8,6 @@ namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Lemmas;
 
 internal static class LemmasListDerivation
 {
-    // Fallback type summary for a lemma with no morphology rows (empty code, zero count).
     internal static readonly TypeSummaryDto NoType = new(string.Empty, "غير محدَّد", 0);
 
     public static PagedResult<LemmaListItemDto> ToPage(
@@ -64,8 +63,6 @@ internal static class LemmasListDerivation
             rows = rows.Where(r => MatchesFilter(r, filter));
         }
 
-        // Root belonging via the real FK (Feature 026, US7). RootId is the same owned-root the list row
-        // displays, so the filter and the displayed root can never disagree.
         if (association.RootId is int rootId)
         {
             rows = rows.Where(r => r.RootId == rootId);
@@ -82,9 +79,6 @@ internal static class LemmasListDerivation
         && filter.TashkeelWords.Includes(row.TashkeelWordsCount)
         && filter.Stems.Includes(row.StemsCount);
 
-    // Ordering is part of the read contract (see the reads README). Every allowlisted column is already
-    // on the row, so no branch costs a join, and each tie-break chain is identical in BOTH directions —
-    // reversing a column never reshuffles its ties, which keeps paging deterministic.
     private static IEnumerable<LemmaSummaryRow> ApplySort(IEnumerable<LemmaSummaryRow> rows, LemmaSortSpec sort) => sort.Column switch
     {
         LemmaSortColumn.Alpha => ByText(rows, r => r.NormalizedLemmaText, sort.Direction),
@@ -97,8 +91,6 @@ internal static class LemmasListDerivation
         LemmaSortColumn.MushafOrder => rows
             .OrderBy(r => r.FirstWordOrderInMushaf)
             .ThenBy(r => r.Id),
-        // Explicit, so a column added without an arm here fails loudly instead of silently
-        // serving Mushaf order (mirrors the word-types SQL switches).
         _ => throw new InvalidOperationException($"Unhandled {nameof(LemmaSortColumn)} value: {sort.Column}."),
     };
 
@@ -110,8 +102,6 @@ internal static class LemmasListDerivation
             .ThenBy(r => r.FirstWordOrderInMushaf)
             .ThenBy(r => r.Id);
 
-    // Alpha ties break on Id ALONE — deliberately no Mushaf tie-break, preserving the exact row order
-    // existing sort=alpha links already return.
     private static IOrderedEnumerable<LemmaSummaryRow> ByText(
         IEnumerable<LemmaSummaryRow> rows,
         Func<LemmaSummaryRow, string> text,

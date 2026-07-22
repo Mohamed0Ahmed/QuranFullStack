@@ -22,7 +22,6 @@ public sealed class HealthApiFactory(HealthStatus stubStatus) : WebApplicationFa
         {
             configuration.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                // Dummy connection string: the stub health check below never touches the database.
                 ["ConnectionStrings:QuranDashboardDb"] =
                     "Host=localhost;Port=5432;Database=health_tests;Username=none;Password=none",
                 ["Cors:AllowedOrigins:0"] = "https://localhost",

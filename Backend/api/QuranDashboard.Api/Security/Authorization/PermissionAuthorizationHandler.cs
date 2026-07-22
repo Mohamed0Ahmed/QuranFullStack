@@ -5,8 +5,6 @@ using QuranDashboard.Application.Security;
 
 namespace QuranDashboard.Api.Security.Authorization;
 
-// Resolves the caller's effective permissions (the same projection `/me` returns) and succeeds when the set
-// contains the required code, so policy, `/me`, cache, and UI converge on the committed winner.
 public sealed class PermissionAuthorizationHandler(
     ICurrentUser currentUser,
     EffectivePermissionResolver resolver) : AuthorizationHandler<PermissionRequirement>

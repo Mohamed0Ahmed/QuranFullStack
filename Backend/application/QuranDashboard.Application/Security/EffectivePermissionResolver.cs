@@ -4,11 +4,6 @@ using QuranDashboard.Domain.Security.Permissions;
 
 namespace QuranDashboard.Application.Security;
 
-// Computes a caller's effective permission codes for `/me` and the policy handlers, so all layers converge
-// on the committed winner (FR-028). Sources: granted direct (subject) assignments, granted role
-// assignments, the always-on DashboardAdminBaseline for the Admin role, and the implicit SystemOwnerOnly
-// codes held by an active System Owner. Cached per subject; the cache is invalidated post-commit on any real
-// grant/revoke.
 public sealed class EffectivePermissionResolver(
     IPermissionAssignmentStore assignments,
     ISystemOwnerStore owners,

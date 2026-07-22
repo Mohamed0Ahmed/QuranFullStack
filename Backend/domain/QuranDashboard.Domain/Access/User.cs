@@ -9,8 +9,6 @@ public sealed class User
     public string? DisplayName { get; set; }
     public string? Title { get; set; }
 
-    // Nullable FK → Roles: a fresh user has no role until an Owner assigns one. The Owner-bootstrap
-    // user is the sole exception (created directly with the Owner role).
     public int? RoleId { get; set; }
 
     public Role? Role { get; set; }

@@ -17,8 +17,6 @@ public sealed class AccessController(
     {
         var user = await provisionCurrentUserHandler.HandleAsync(cancellationToken);
 
-        // `/me` carries the caller's effective permissions so the UI, backend policy, and cache converge on
-        // the committed winner. Frontend hiding is UX only; the backend policy is the authority.
         var permissions = await effectivePermissionResolver.ResolveAsync(user.Sub, user.RoleName, cancellationToken);
 
         var data = new CurrentUserResponse(

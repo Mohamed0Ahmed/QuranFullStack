@@ -123,8 +123,6 @@ public sealed class GetUniqueWordsPageHandler(
 
     private static bool HasSearch(string? search) => !string.IsNullOrWhiteSpace(search);
 
-    // The primary-type filter value must exist in the POS catalogue; an unknown code is a controlled
-    // 400 (InvalidFilter), not a silent empty result. Absent/empty primaryType needs no lookup.
     private async Task<bool> IsAssociationTypeKnownAsync(
         UniqueWordsAssociationFilter association,
         CancellationToken cancellationToken)

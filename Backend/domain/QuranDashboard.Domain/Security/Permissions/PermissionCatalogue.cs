@@ -1,18 +1,12 @@
 namespace QuranDashboard.Domain.Security.Permissions;
 
-// The single canonical permission catalogue. Every other representation — the seeded `permission_codes`
-// rows, the registered authorization policies, the `/me` projection, the frontend `permission-codes.ts`
-// constant, and the parity test's own expectation — is checked against THIS list, so the 5-catalogue
-// parity test fails on any drift (SC-007). Codes are stable protocol identifiers: never rename in place.
+// Codes are stable protocol identifiers persisted in the DB and matched by auth policies — never rename in place.
 public static class PermissionCatalogue
 {
-    // DashboardAdminBaseline — always effective for the dashboard-admin baseline; cannot be revoked.
     public const string AttributionView = "attribution.view";
 
-    // Ordinary assignable dashboard permission (grant/revoke happy path).
     public const string AttributionManage = "attribution.manage";
 
-    // SystemOwnerOnly — held implicitly by System Owners, never assignable to an ordinary user.
     public const string PermissionAdminister = "permission.administer";
     public const string AuditRestore = "audit.restore";
     public const string SafetyPointManage = "safetyPoint.manage";

@@ -6,9 +6,6 @@ using QuranDashboard.Tests.Abwab.Notifications._Support;
 
 namespace QuranDashboard.Tests.Abwab.Notifications;
 
-// T066 / FR-032/033/034 / SC-009: unique source identity prevents duplicate notifications (writer-level
-// dedup plus a hard DB unique index), and notification read state is kept OUTSIDE product audit/restore —
-// a plain mutable table, never IAbwabAuditable, never routed through the ChangeSet/audit kernel.
 [Collection(nameof(AbwabDbCollection))]
 public sealed class DedupAndReadStateTests
 {
@@ -32,7 +29,6 @@ public sealed class DedupAndReadStateTests
         NotificationWriteResult second;
         await using (var db = NotificationTestHarness.CreateContext(_fixture))
         {
-            // Same source identity, different payload → must be deduplicated, not written a second time.
             second = await NotificationTestHarness.Writer(db)
                 .WriteAsync(NotificationTestHarness.Request("dup-source", payload: "second"), CancellationToken.None);
         }
@@ -53,8 +49,6 @@ public sealed class DedupAndReadStateTests
                 .WriteAsync(NotificationTestHarness.Request("index-source"), CancellationToken.None);
         }
 
-        // Bypass the writer's pre-check and hit the DB unique index directly: it is the hard backstop that
-        // holds even under concurrency, independent of the application-level dedup.
         var rawDuplicate = async () => await NotificationTestHarness.ExecuteRawAsync(
             _fixture,
             "INSERT INTO abwab_notification_records (id, recipient_subject, source_identity, payload, created_at) "
@@ -68,8 +62,6 @@ public sealed class DedupAndReadStateTests
     [Fact]
     public void NotificationEntities_AreNotPartOfTheProductAuditEnvelope()
     {
-        // Structural proof of FR-034: neither the record nor its read state is an audited write target, so
-        // neither requires a ChangeSet nor advances the timeline head.
         typeof(IAbwabAuditable).IsAssignableFrom(typeof(NotificationRecord)).Should().BeFalse();
         typeof(IAbwabAuditable).IsAssignableFrom(typeof(NotificationReadState)).Should().BeFalse();
     }
@@ -120,8 +112,6 @@ public sealed class DedupAndReadStateTests
             await NotificationTestHarness.ReadStates(db).MarkReadAsync(notificationId, "recipient-1", CancellationToken.None);
         }
 
-        // A raw UPDATE and DELETE succeed with no append-only trigger blocking them — the direct contrast with
-        // the abwab_audit_events / security_audit_events streams, proving read state is outside the audit defense.
         var mutate = async () =>
         {
             await NotificationTestHarness.ExecuteRawAsync(

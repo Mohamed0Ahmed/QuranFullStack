@@ -4,8 +4,6 @@ using QuranDashboard.Tests.Abwab.Kernel._Support;
 
 namespace QuranDashboard.Tests.Abwab.Kernel;
 
-// FR-016 / SC-003 (T031): every Abwab mutation port/command and every actionable read MUST declare
-// ExpectedTimelineGeneration; the foundation contract/source test fails if any omits it.
 public sealed class GenerationContractCoverageTests
 {
     [Fact]
@@ -13,8 +11,8 @@ public sealed class GenerationContractCoverageTests
     {
         var assemblies = new[]
         {
-            typeof(AbwabGenerationContractInspector).Assembly, // Application
-            typeof(AbwabConflictResponses).Assembly,           // Api
+            typeof(AbwabGenerationContractInspector).Assembly,
+            typeof(AbwabConflictResponses).Assembly,
         };
 
         var candidates = AbwabGenerationContractInspector.DiscoverActionableRequests(assemblies);
@@ -28,7 +26,6 @@ public sealed class GenerationContractCoverageTests
     [Fact]
     public void Inspector_Flags_ARequest_ThatOmitsGeneration()
     {
-        // Non-vacuity: a writer that forgot the generation contract is reported.
         var missing = AbwabGenerationContractInspector.FindRequestsMissingGeneration(
             [typeof(FixtureWriterMissingGeneration)]);
 

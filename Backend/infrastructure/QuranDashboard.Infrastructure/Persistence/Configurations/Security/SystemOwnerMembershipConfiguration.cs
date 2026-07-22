@@ -18,7 +18,6 @@ public sealed class SystemOwnerMembershipConfiguration : IEntityTypeConfiguratio
         builder.Property(o => o.CreatedAtUtc).IsRequired().HasColumnName("created_at");
         builder.Property(o => o.DeactivatedAtUtc).HasColumnName("deactivated_at");
 
-        // Immutable composite identity: at most one membership row per (issuer, subject).
         builder.HasIndex(o => new { o.Issuer, o.Subject }).IsUnique();
 
         builder.Ignore(o => o.Identity);

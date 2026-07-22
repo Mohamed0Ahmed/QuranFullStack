@@ -5,11 +5,6 @@ using QuranDashboard.Tests.Abwab._Support;
 
 namespace QuranDashboard.Tests.Abwab.Notifications._Support;
 
-// Shared real-PG harness for the US6 notification-storage tests. Each op runs on a FRESH DbContext/connection
-// so the transaction-join tests genuinely control their own transaction boundary (a shared context would hide
-// whether the writer commits or merely joins the caller's unit of work). Resets route through the ONE
-// authoritative full-substrate reset (extended to clear the notification tables), so this class stays
-// order-independent from the kernel/security classes that share the serial AbwabDbCollection database.
 internal static class NotificationTestHarness
 {
     public static readonly IServerClock Clock = new FixedClock(DateTimeOffset.UnixEpoch);

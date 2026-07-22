@@ -3,8 +3,6 @@ using QuranDashboard.Tests.Abwab.Kernel._Support;
 
 namespace QuranDashboard.Tests.Abwab.Kernel;
 
-// FR-014 / §7.1 (T078): the AbwabRevisionState singleton is seeded exactly once (0 / gen-0 / 0) and
-// increments monotonically under the commit protocol's row lock (real PG).
 [Collection(nameof(AbwabDbCollection))]
 public sealed class RevisionStateSeedTests(PostgresFixture fixture) : IAsyncLifetime
 {

@@ -6,9 +6,6 @@ using QuranDashboard.Api.Controllers.Dashboard;
 
 namespace QuranDashboard.Tests.Api.RateLimiting;
 
-// Deliberately NOT the shared singleton fixture: each test constructs its own factory so limiter
-// state never bleeds across cases. The DB-backed health check is replaced with a healthy stub so
-// /api/health never touches a real database.
 public sealed class RateLimitingApiFactory(
     IReadOnlyDictionary<string, string?> overrides,
     string environment = "Development")
@@ -32,8 +29,6 @@ public sealed class RateLimitingApiFactory(
         {
             configuration.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                // Dummy connection string: Npgsql never connects because no rate-limiting test path
-                // queries the database (dashboard is DB-free; the health check is stubbed below).
                 ["ConnectionStrings:QuranDashboardDb"] =
                     "Host=localhost;Port=5432;Database=ratelimit_tests;Username=none;Password=none",
                 ["Cors:AllowedOrigins:0"] = "https://localhost",
@@ -43,8 +38,6 @@ public sealed class RateLimitingApiFactory(
 
         builder.ConfigureTestServices(services =>
         {
-            // Replace the DB-backed health check with a healthy stub. The health limiter is the unit
-            // under test here, not the database.
             services.Configure<HealthCheckServiceOptions>(options =>
             {
                 options.Registrations.Clear();

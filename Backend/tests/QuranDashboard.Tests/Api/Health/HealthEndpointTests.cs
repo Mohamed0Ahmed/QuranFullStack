@@ -2,8 +2,6 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace QuranDashboard.Tests.Api.Health;
 
-// unhealthy must answer 503 (healthy/degraded both stay 200) so infra/Railway probes keyed on HTTP
-// status detect a dead dependency; the 503 body still carries the full data (status + per-check detail).
 public sealed class HealthEndpointTests
 {
     private const string HealthPath = "/api/health";
@@ -69,8 +67,6 @@ public sealed class HealthEndpointTests
         envelope.GetProperty("isSuccess").GetBoolean().Should().BeFalse();
         envelope.GetProperty("message").GetString().Should().Be(ApiMessages.HealthUnhealthy);
 
-        // The 503 body must still carry data (status + checks) so probes/consumers get detail —
-        // ApiResponse.Fail alone carries no data, which is exactly why the envelope is built inline.
         var data = envelope.GetProperty("data");
         data.GetProperty("status").GetString().Should().Be("unhealthy");
         data.GetProperty("checks").EnumerateArray()

@@ -3,9 +3,6 @@ using QuranDashboard.Infrastructure.Persistence.Reads.Quran.MushafReader;
 
 namespace QuranDashboard.Tests.Quran.MushafReader;
 
-// quran-safety rule 3 (never hide invalid data): corrupt features_json (valid JSON, wrong shape)
-// still returns an empty list (unchanged contract), but must now log a Warning naming the segment
-// instead of swallowing it silently as "segment has no features".
 [Collection(nameof(MushafReaderCollection))]
 public sealed class WordAnalysisCorruptFeaturesJsonTests(MushafReaderTestFixture fixture)
 {

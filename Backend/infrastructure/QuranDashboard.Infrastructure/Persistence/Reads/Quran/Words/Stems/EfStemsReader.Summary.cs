@@ -5,9 +5,8 @@ namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Stems;
 
 public sealed partial class EfStemsReader
 {
-    // Shared Mushaf-order tiebreak for the per-group first-occurrence coordinate: earliest matching word
-    // by (surah, ayah, word) then quran_word_id. ARRAY_AGG(... ORDER BY ...)[1] pins all three coordinate
-    // parts to that same earliest row, so it is the real earliest coordinate, never independent minimums.
+    // ARRAY_AGG(... ORDER BY ...)[1] pins all three coordinate parts to the same earliest row — never
+    // independent minimums, which could form a non-existent coordinate.
     private const string StemFirstOccurrenceOrder = "w.surah_number, w.ayah_number, w.word_number, seg.quran_word_id";
 
     private const string StemMatchingSegmentPredicate =
@@ -61,9 +60,6 @@ public sealed partial class EfStemsReader
             return [];
         }
 
-        // Three compact grouped commands over the same STEM-segment base: one per dimension (POS,
-        // dominant-lemma inputs, dominant-root inputs). Each returns one row per (stem, dimension) group,
-        // never one row per occurrence.
         var distributionRows = await _db.Database
             .SqlQueryRaw<StemTypeDistributionSqlRow>(StemTypeDistributionSql)
             .ToListAsync(cancellationToken);
@@ -130,8 +126,7 @@ public sealed partial class EfStemsReader
         GROUP BY seg.stem_id, seg.pos, t.arabic_label, t.english_label
         """;
 
-    // The relation column/table names are interpolated into this SQL and are fixed constants, never user
-    // input. LEFT JOIN + coalesce-in-C# keeps a relation id whose row is absent instead of dropping it.
+    // Relation column/table names are interpolated but fixed constants, never user input (injection).
     private static string StemRelationGroupSql(string idColumn, string relationTable, string textColumn, string buckwalterColumn) => $"""
         SELECT
             seg.stem_id AS "{nameof(StemRelationGroupSqlRow.StemId)}",

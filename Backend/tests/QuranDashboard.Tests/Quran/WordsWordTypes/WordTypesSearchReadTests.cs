@@ -4,14 +4,9 @@ using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.WordTypes;
 
 namespace QuranDashboard.Tests.Quran.WordsWordTypes;
 
-// Feature 026 US1: Word Types search over the clean word-identity text only. The predicate lives on the
-// shared BaseRowsSql occurrence base, so the words view, all three grouped views, and their TotalCounts
-// narrow together; grouped-detail reads never take a search term.
 [Collection(nameof(WordTypesCollection))]
 public sealed class WordTypesSearchReadTests(WordTypesTestFixture fixture)
 {
-    // (a) Search narrows the words view by word-identity text, tashkeel-insensitively. "كَلِم" (diacritized)
-    // matches only the كَلِمَة identity (191001) across its three noun contexts, never the مُثَل identity.
     [Fact]
     public async Task Search_NarrowsWordsView_ByIdentityText_TashkeelInsensitive()
     {
@@ -31,9 +26,6 @@ public sealed class WordTypesSearchReadTests(WordTypesTestFixture fixture)
         searched.Items.Select(row => row.ContextCode).Should().BeEquivalentTo(["N", "PN", "ADJ"]);
     }
 
-    // (b) The three grouped views AND their TotalCounts reflect the searched base. "كلم" keeps the
-    // root/lemma/stem-bearing كَلِمَة identity (each grouped view = 1); "مثل" keeps only the rootless مُثَل
-    // identity, so the words view has one row but every grouped view collapses to zero.
     [Theory]
     [InlineData(WordTypeTableView.Roots)]
     [InlineData(WordTypeTableView.Lemmas)]
@@ -60,8 +52,6 @@ public sealed class WordTypesSearchReadTests(WordTypesTestFixture fixture)
         rootlessWords.TotalCount.Should().Be(1);
     }
 
-    // (c) A term that is only present in dimension display text — the spaced root text "ك ل م", which is
-    // never a word identity — matches nothing, even though that root is in scope. Proves identity-only.
     [Fact]
     public async Task Search_ByDimensionDisplayText_MatchesNothing()
     {
@@ -76,9 +66,6 @@ public sealed class WordTypesSearchReadTests(WordTypesTestFixture fixture)
         byRootText.Items.Should().BeEmpty();
     }
 
-    // (d) Normalization equivalence with Unique Words search: the shared normalizer collapses diacritic
-    // variants to the same skeleton in BOTH explorers. Every variant of the علم skeleton returns the same
-    // Word Types verb rows as the bare form, and the same Unique Words tashkeel matches as the bare form.
     [Theory]
     [InlineData("عَلِمَ")]
     [InlineData("عُلِمَ")]
@@ -109,8 +96,6 @@ public sealed class WordTypesSearchReadTests(WordTypesTestFixture fixture)
         bareUnique.Items.Should().NotBeEmpty();
     }
 
-    // (g) Grouped-detail reads take no search term: a search set on the grouped selection's filter is
-    // ignored, so the member-word page is identical whether or not one is present.
     [Fact]
     public async Task GroupedDetailReads_IgnoreSearch()
     {

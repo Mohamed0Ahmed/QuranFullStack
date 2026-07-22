@@ -4,8 +4,6 @@ using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Stems;
 
 namespace QuranDashboard.Infrastructure.Caching.Quran.Words.Stems;
 
-// Cache decorator over EfStemsReader: the whole summary list is cached once and reused for both
-// catalogue search/paging and selected-stem summary reads.
 public sealed class CachedStemsReader(EfStemsReader efReader, IMemoryCache cache) : IStemsReader
 {
     private readonly EfStemsReader _ef = efReader;
@@ -142,9 +140,6 @@ public sealed class CachedStemsReader(EfStemsReader efReader, IMemoryCache cache
         return ayahs;
     }
 
-    // Caches the complete grouped word list once per (stem, kind); every page slices it in memory
-    // instead of re-issuing the full occurrence query per page (perf finding B6). Concurrent cold
-    // callers share one load via CacheLoadGate.
     private Task<IReadOnlyList<StemWordItemDto>?> GetOrLoadWordGroupsAsync(
         int id,
         StemWordKind wordKind,

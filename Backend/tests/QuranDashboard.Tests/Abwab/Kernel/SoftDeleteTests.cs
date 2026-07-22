@@ -6,7 +6,6 @@ using QuranDashboard.Tests.Abwab.Kernel._Support;
 
 namespace QuranDashboard.Tests.Abwab.Kernel;
 
-// FR-012 / SC-002 (T025): physical/hard delete is rejected and soft-delete is enforced (real PG).
 [Collection(nameof(AbwabDbCollection))]
 public sealed class SoftDeleteTests(PostgresFixture fixture) : IAsyncLifetime
 {
