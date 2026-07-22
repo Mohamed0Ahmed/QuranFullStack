@@ -44,9 +44,9 @@ implementation.
 
 **⚠️ CRITICAL**: Must complete before any user story. These are cross-cutting and not owned by a single stage.
 
-- [ ] T004 Add the shared Testcontainers PostgreSQL fixture (applies EF migrations to a fresh real DB) in `Backend/tests/QuranDashboard.Tests/Abwab/_Fixtures/PostgresFixture.cs`
-- [ ] T005 [P] Add the xUnit collection definition wiring the Postgres fixture in `Backend/tests/QuranDashboard.Tests/Abwab/_Fixtures/AbwabDbCollection.cs`
-- [ ] T006 [P] Add the cross-cutting prohibition guard test — fails if any Abwab→Quran foreign key or any Abwab domain writer exists before this feature's exit (FR-009) — in `Backend/tests/QuranDashboard.Tests/Abwab/_Guards/NoPrematureQuranFkTests.cs`
+- [X] T004 Add the shared Testcontainers PostgreSQL fixture (applies EF migrations to a fresh real DB) in `Backend/tests/QuranDashboard.Tests/Abwab/_Fixtures/PostgresFixture.cs`
+- [X] T005 [P] Add the xUnit collection definition wiring the Postgres fixture in `Backend/tests/QuranDashboard.Tests/Abwab/_Fixtures/AbwabDbCollection.cs`
+- [X] T006 [P] Add the cross-cutting prohibition guard test — fails if any Abwab→Quran foreign key or any Abwab domain writer exists before this feature's exit (FR-009) — in `Backend/tests/QuranDashboard.Tests/Abwab/_Guards/NoPrematureQuranFkTests.cs`
 
 **Checkpoint**: Shared real-PG harness ready; prohibition guard green.
 
