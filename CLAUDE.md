@@ -145,12 +145,3 @@ trustworthy structure, genuinely Arabic-first, earned familiarity. Avoid generic
 SaaS templates, kitschy religious decor, gamified/consumer UI, and dense
 enterprise greige.
 
-<!-- SPECKIT START -->
-
-## Active Spec Kit Feature
-
-- Feature: `026-words-explorers-enhancements` — Words explorers enhancements (Word Types parity, filters, statistics).
-- Plan: `specs/026-words-explorers-enhancements/plan.md` (spec, research, data-model, contracts/, quickstart alongside).
-- Decision record (locked, authoritative): `docs/feature-026-words-explorers-enhancements/plan.md`.
-
-<!-- SPECKIT END -->

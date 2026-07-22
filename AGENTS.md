@@ -4,19 +4,36 @@ This repository is the canonical FullStack monorepo. `Backend/` and
 `Frontend/quran-dashboard-ui/` are ordinary tracked directories, not separate
 repositories.
 
-The root `AGENTS.md` contains general instructions that apply to the whole workspace.
+The root `CLAUDE.md` contains general instructions that apply to the whole workspace.
 
 When working on the Backend project, also read and follow:
 
-- `Backend/AGENTS.md`
+- `Backend/CLAUDE.md`
 
 When working on the Frontend project, also read and follow:
 
-- `Frontend/quran-dashboard-ui/AGENTS.md`
+- `Frontend/quran-dashboard-ui/CLAUDE.md`
 
 If a task touches both Backend and Frontend, read all relevant instruction files before making changes.
 
 If a project-specific instruction conflicts with a root instruction, follow the more specific project instruction unless it would violate a root safety or product rule.
+
+## Branching workflow
+
+This repository follows a `dev`-based Git-Flow model. Two long-lived branches:
+
+- **`main` — stable / production.** Railway auto-deploys from it, and it is
+  protected. It receives merges ONLY from `dev` (releases, roughly every ~5
+  features) plus explicit emergency hotfixes. Never commit to `main` directly.
+- **`dev` — long-lived integration branch**, branched off `main` and kept in sync
+  with `main` after each release or hotfix.
+
+Rules for all work:
+
+- ALL new work branches off `dev`, never off `main`.
+- Feature branches open pull requests into `dev`. NEVER open a PR against `main`.
+- `dev → main` merges are the release boundary and happen ONLY on explicit
+  request from the user. The same applies to emergency hotfixes targeting `main`.
 
 ## Workspace Path Conventions
 
@@ -55,6 +72,22 @@ Before any implementation work, read and follow:
 - `CODING_PRINCIPLES.md`
 
 These principles apply to the whole FullStack workspace. Project-specific instruction files may add more detailed rules for Backend or Frontend work.
+
+### Comment sparingly
+
+Comment only the non-obvious WHY — rationale, gotchas, invariants, decisions, local
+security/fail-closed choices — tied to the specific line it explains. Do NOT narrate
+WHAT the code does, restate obvious logic, or duplicate a README. This applies to both
+Backend and Frontend.
+
+- No `///`/XML-doc comments on controllers, endpoints, or DTOs/models (internal solo
+  project; no Swagger/API-doc consumer reads them). Keep XML-doc only for the rare case
+  where it carries genuine non-obvious WHY, and prefer a short plain `//` comment there.
+- Frontend: no boilerplate JSDoc (`/** */`) narrating a component/service; no
+  step-narrating `//`, `<!-- -->`, or SCSS comments that restate the code/markup/style.
+- Area-level explanation (WHAT an area does, its boundaries/invariants) belongs in the
+  nearest `README.md`, not in per-line comments. If a spot seems to need many comments
+  to be understood, add or expand that README instead.
 
 ### Clean-code self-check before delivery
 
@@ -112,12 +145,3 @@ trustworthy structure, genuinely Arabic-first, earned familiarity. Avoid generic
 SaaS templates, kitschy religious decor, gamified/consumer UI, and dense
 enterprise greige.
 
-<!-- SPECKIT START -->
-
-## Active Spec Kit Feature
-
-- Feature: `026-words-explorers-enhancements` — Words explorers enhancements (Word Types parity, filters, statistics).
-- Plan: `specs/026-words-explorers-enhancements/plan.md` (spec, research, data-model, contracts/, quickstart alongside).
-- Decision record (locked, authoritative): `docs/feature-026-words-explorers-enhancements/plan.md`.
-
-<!-- SPECKIT END -->
