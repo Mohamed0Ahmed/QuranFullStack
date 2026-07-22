@@ -76,10 +76,10 @@ implementation.
 
 **Purpose**: Feature scaffolding shared by all four stages.
 
-- [ ] T001 [P] Create backend domain folders `Backend/domain/QuranDashboard.Domain/Abwab/Sections/`, `.../Abwab/Categories/`, `.../Abwab/Protection/`, `.../Abwab/Tree/`
-- [ ] T002 [P] Create application/abstraction folders `Backend/application/QuranDashboard.Application.Abstractions/Abwab/Core/` and `Backend/application/QuranDashboard.Application/Abwab/{Sections,Categories,Protection,Tree}/`
-- [ ] T003 [P] Create infrastructure folders `Backend/infrastructure/QuranDashboard.Infrastructure/Abwab/Restore/` and API folders `Backend/api/QuranDashboard.Api/Abwab/{Sections,Categories,Tree,Protection}/`
-- [ ] T004 [P] Create backend test folders `Backend/tests/QuranDashboard.Tests/Abwab/{Sections,Categories,Protection,Tree,Reads,RestoreAdapters}/` and the frontend feature/e2e folders `Frontend/quran-dashboard-ui/src/app/features/abwab/` and `Frontend/quran-dashboard-ui/e2e/abwab/`
+- [x] T001 [P] Create backend domain folders `Backend/domain/QuranDashboard.Domain/Abwab/Sections/`, `.../Abwab/Categories/`, `.../Abwab/Protection/`, `.../Abwab/Tree/`
+- [x] T002 [P] Create application/abstraction folders `Backend/application/QuranDashboard.Application.Abstractions/Abwab/Core/` and `Backend/application/QuranDashboard.Application/Abwab/{Sections,Categories,Protection,Tree}/`
+- [x] T003 [P] Create infrastructure folders `Backend/infrastructure/QuranDashboard.Infrastructure/Abwab/Restore/` and API folders `Backend/api/QuranDashboard.Api/Abwab/{Sections,Categories,Tree,Protection}/`
+- [x] T004 [P] Create backend test folders `Backend/tests/QuranDashboard.Tests/Abwab/{Sections,Categories,Protection,Tree,Reads,RestoreAdapters}/` and the frontend feature/e2e folders `Frontend/quran-dashboard-ui/src/app/features/abwab/` and `Frontend/quran-dashboard-ui/e2e/abwab/`
 
 ---
 
@@ -87,10 +87,10 @@ implementation.
 
 **⚠️ CRITICAL**: Must complete before US1. These are cross-cutting and used by every later stage.
 
-- [ ] T005 [P] Implement the **§5.1 Arabic normalization** function (NFC/UAX#15 Unicode 16.0; trim + collapse whitespace; remove tatweel; remove the frozen Arabic-mark scalar set; `أ/إ/آ/ٱ→ا`; `ى→ي`; do **not** map `ة→ه`; preserve display string) in `Backend/domain/QuranDashboard.Domain/Abwab/Tree/ArabicNameNormalizer.cs` — used by Section names, Category names, and aliases
-- [ ] T006 [P] Publish the single **canonical normalization fixture corpus** (input/output pairs covering every frozen mark-range boundary/gap, decomposed/composed forms, alef/maqsura mappings, tatweel, whitespace classes, `ة`, supplementary-plane scalars) in `Backend/tests/QuranDashboard.Tests/Abwab/_Fixtures/NormalizationCorpus.cs` (or `.json`) — the ONE corpus shared by backend/db/API/frontend parity tests (§5.1)
-- [ ] T007 [P] Add the normalizer unit test asserting the whole corpus round-trips (esp. `ة` NOT normalized to `ه`, and the exact mark set) in `Backend/tests/QuranDashboard.Tests/Abwab/Tree/ArabicNameNormalizerTests.cs`
-- [ ] T008 Add/keep the **no-Quran-FK guard** green for `029`: assert no Abwab→Quran foreign key exists and `RepresentativeQuranExcerpt` is a plain string column with no ayah validation, in `Backend/tests/QuranDashboard.Tests/Abwab/_Guards/NoQuranFkTests.cs` (extend the existing `028` guard)
+- [x] T005 [P] Implement the **§5.1 Arabic normalization** function (NFC/UAX#15 Unicode 16.0; trim + collapse whitespace; remove tatweel; remove the frozen Arabic-mark scalar set; `أ/إ/آ/ٱ→ا`; `ى→ي`; do **not** map `ة→ه`; preserve display string) in `Backend/domain/QuranDashboard.Domain/Abwab/Tree/ArabicNameNormalizer.cs` — used by Section names, Category names, and aliases
+- [x] T006 [P] Publish the single **canonical normalization fixture corpus** (input/output pairs covering every frozen mark-range boundary/gap, decomposed/composed forms, alef/maqsura mappings, tatweel, whitespace classes, `ة`, supplementary-plane scalars) in `Backend/tests/QuranDashboard.Tests/Abwab/_Fixtures/NormalizationCorpus.cs` (or `.json`) — the ONE corpus shared by backend/db/API/frontend parity tests (§5.1)
+- [x] T007 [P] Add the normalizer unit test asserting the whole corpus round-trips (esp. `ة` NOT normalized to `ه`, and the exact mark set) in `Backend/tests/QuranDashboard.Tests/Abwab/Tree/ArabicNameNormalizerTests.cs`
+- [x] T008 Add/keep the **no-Quran-FK guard** green for `029`: assert no Abwab→Quran foreign key exists and `RepresentativeQuranExcerpt` is a plain string column with no ayah validation, in `Backend/tests/QuranDashboard.Tests/Abwab/_Guards/NoQuranFkTests.cs` (extend the existing `028` guard)
 
 **Checkpoint**: normalizer + shared corpus green; no-Quran-FK guard green.
 
