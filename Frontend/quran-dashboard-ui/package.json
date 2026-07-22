@@ -12,6 +12,7 @@
     "e2e:list": "playwright test --list",
     "check:no-drag": "node scripts/check-no-drag.mjs",
     "check:fork-cap": "node scripts/check-fork-cap.mjs",
+    "check:foundation-boundary": "node scripts/check-foundation-boundary.mjs",
     "check:licenses": "node scripts/check-licenses.mjs",
     "generate:api": "ng-openapi-gen && node scripts/prune-generated-api.mjs",
     "docs:api": "redocly build-docs openapi/swagger.json --disableGoogleFont --output ../../docs/api-reference/index.html && node scripts/inline-redoc-bundle.mjs"
@@ -50,6 +51,7 @@
     "@playwright/test": "^1.61.1",
     "@redocly/cli": "2.39.0",
     "autoprefixer": "^10.5.0",
+    "fake-indexeddb": "^6.2.5",
     "jsdom": "^29.1.1",
     "ng-openapi-gen": "1.0.5",
     "postcss": "^8.5.15",

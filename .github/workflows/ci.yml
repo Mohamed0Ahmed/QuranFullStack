@@ -85,6 +85,8 @@ jobs:
         run: npm run check:fork-cap
       - name: No-drag source gate
         run: npm run check:no-drag
+      - name: Foundation boundary gate
+        run: npm run check:foundation-boundary
       - name: Unit tests (Vitest, fork cap enforced)
         run: npm test
       - name: Install Playwright browser

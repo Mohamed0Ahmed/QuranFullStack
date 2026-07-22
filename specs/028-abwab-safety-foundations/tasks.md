@@ -151,16 +151,16 @@ implementation.
 
 ### Tests for User Story 4 ⚠️ (write first, must fail)
 
-- [ ] T042 [P] [US4] Vitest unit tests for generic cache/store/action/conflict primitives in `Frontend/quran-dashboard-ui/src/app/core/data-access/*.spec.ts`
-- [ ] T043 [P] [US4] Playwright bounded synthetic-tree spike of **2,000–3,000 nodes** (records perf/browser behavior, no domain DTO — §14.1/§15.3) in `Frontend/quran-dashboard-ui/e2e/spikes/synthetic-tree.spec.ts`
+- [X] T042 [P] [US4] Vitest unit tests for generic cache/store/action/conflict primitives in `Frontend/quran-dashboard-ui/src/app/core/data-access/*.spec.ts`
+- [X] T043 [P] [US4] Playwright bounded synthetic-tree spike of **2,000–3,000 nodes** (records perf/browser behavior, no domain DTO — §14.1/§15.3) in `Frontend/quran-dashboard-ui/e2e/spikes/synthetic-tree.spec.ts`
 
 ### Implementation for User Story 4
 
-- [ ] T044 [P] [US4] Stable DI + form **conventions** (tokens/providers, no Forms package) in `Frontend/quran-dashboard-ui/src/app/core/`
-- [ ] T045 [P] [US4] Generic cache primitive backed by IndexedDB in `Frontend/quran-dashboard-ui/src/app/core/caching/`
-- [ ] T046 [P] [US4] Generic store/action/conflict primitives in `Frontend/quran-dashboard-ui/src/app/core/data-access/` and `Frontend/quran-dashboard-ui/src/app/shared/`
-- [ ] T047 [US4] Bounded synthetic-tree spike implementation (perf harness, **2,000–3,000 nodes**) in `Frontend/quran-dashboard-ui/e2e/spikes/`
-- [ ] T048 [US4] Boundary check: no domain mock/HTTP adapter, no all-domain adapter, `@angular/forms` absent (lint/check + note in `Frontend/quran-dashboard-ui/src/app/core/README.md`)
+- [X] T044 [P] [US4] Stable DI + form **conventions** (tokens/providers, no Forms package) in `Frontend/quran-dashboard-ui/src/app/core/`
+- [X] T045 [P] [US4] Generic cache primitive backed by IndexedDB in `Frontend/quran-dashboard-ui/src/app/core/caching/`
+- [X] T046 [P] [US4] Generic store/action/conflict primitives in `Frontend/quran-dashboard-ui/src/app/core/data-access/` and `Frontend/quran-dashboard-ui/src/app/shared/`
+- [X] T047 [US4] Bounded synthetic-tree spike implementation (perf harness, **2,000–3,000 nodes**) in `Frontend/quran-dashboard-ui/e2e/spikes/`
+- [X] T048 [US4] Boundary check: no domain mock/HTTP adapter, no all-domain adapter, `@angular/forms` absent (lint/check + note in `Frontend/quran-dashboard-ui/src/app/core/README.md`)
 
 **Checkpoint**: Generic frontend substrate ready; zero domain leakage.
 

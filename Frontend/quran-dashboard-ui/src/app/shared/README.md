@@ -54,6 +54,10 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
 - `ui/placeholder-page/` — generic placeholder page that reads its title from route data.
 - `ui/safe-html/` — HTML sanitizing pipe for trusted API-backed markup display.
 - `url/` — deep-link helpers; today `deep-link-href.ts` builds href strings from path + query params.
+- `concurrency/` — generic optimistic-concurrency primitives (Feature 028 §14.1):
+  `optimistic-concurrency.ts` provides `ConcurrencyConflictError` (+ `isConcurrencyConflict`
+  guard) and `reconcile()` — a client-side, domain-free expected-vs-current revision check that
+  mirrors the backend generation contract without referencing any domain.
 
 ## Boundary
 

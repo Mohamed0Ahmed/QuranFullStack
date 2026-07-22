@@ -22,8 +22,25 @@ per-feature.
   - `dev-latency.interceptor.ts` + `dev-api-latency.ts` — dev-only injected latency.
   - `system.api.ts` / `system.models.ts` — health/system info (models re-export generated
     types with UI narrowing).
-- `caching/api-response-cache.ts` — shared response cache (feature caches build on the
+  - `signal-store.ts` — `SignalStore<T>`, the generic Signals base (value/status/error triad)
+    later feature stores subclass; follows the `CurrentUserStore` pattern (Feature 028 §14.1).
+  - `async-action.ts` — `AsyncAction<TInput, TResult>`, a generic Signals wrapper for a one-shot
+    async command; separates a concurrency conflict from a generic failure (Feature 028 §14.1).
+- `foundation/` — the §14.1 shared DI + form **conventions** (Feature 028, US4), deliberately
+  free of `@angular/forms` (Forms arrives in US5, never here):
+  - `injection-token.ts` — `injectionToken<T>()`, the app-wide DI token-declaration convention.
+  - `form-conventions.ts` — framework-agnostic form contracts a later Reactive form adopts: the
+    `FieldError`/`SubmissionState` shapes, the `VALIDATION_MESSAGE_RESOLVER` token, and the
+    pristine/submitting/rejected transitions. No Forms package is imported.
+- `caching/api-response-cache.ts` — shared in-memory response cache (feature caches build on the
   same idea; keep the key strategy consistent).
+- `caching/` generic persistence primitives (Feature 028 §14.1) — separate from the in-memory
+  response cache above:
+  - `async-key-value-store.ts` — the narrow `AsyncKeyValueStore<V>` port + an `InMemoryKeyValueStore`.
+  - `indexed-db-key-value-store.ts` — `IndexedDbKeyValueStore<V>`, the port over IndexedDB with an
+    injectable `IDBFactory` (defaults to `globalThis.indexedDB`; tests inject fake-indexeddb).
+  - `persistent-cache.ts` — `PersistentCache<V>`, generic TTL + LRU cache over any store, IndexedDB
+    by default (`PersistentCache.backedByIndexedDb`). Value-only: no HTTP, no domain shape.
 - `auth/` — Logto authentication + roles (Feature 033):
   - `role.guard.ts` — `roleGuard(requiredRole)` factory (a functional `CanActivateFn`).
     Not authenticated → `authorize()` (Logto redirect) and block; authenticated → await
@@ -93,6 +110,13 @@ per-feature.
   `devLatencyInterceptor`); keep registration order in `app.config.ts`. `authInterceptor()`
   (from `angular-auth-oidc-client`) attaches the Logto Bearer token only to requests under
   `apiBaseUrl` via the `secureRoutes` config, and must run after `secureUrlInterceptor`.
+- **Foundation boundary (Feature 028, US4) — keep it generic.** The §14.1 primitives
+  (`foundation/`, the `caching/` persistence trio, `data-access/signal-store.ts` +
+  `async-action.ts`, and `shared/concurrency/`) must stay domain-free: no Abwab/Quran
+  vocabulary, no `HttpClient`/HTTP adapter, no domain mock, and no `@angular/forms` (Forms
+  is installed in US5, never as preparation). `npm run check:foundation-boundary`
+  (`scripts/check-foundation-boundary.mjs`) enforces this and fails closed (FR-023 / SC-010).
+  The synthetic-tree perf spike lives in `e2e/spikes/` and freezes no domain DTO.
 
 ## Related
 
