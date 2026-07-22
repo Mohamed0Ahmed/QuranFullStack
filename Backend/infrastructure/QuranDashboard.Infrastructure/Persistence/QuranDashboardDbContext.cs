@@ -11,6 +11,9 @@ using QuranDashboard.Domain.Quran.Tafsirs;
 using QuranDashboard.Domain.Quran.Translations;
 using QuranDashboard.Domain.Quran.Words.Morphology.Irab;
 using QuranDashboard.Domain.Access;
+using QuranDashboard.Domain.Abwab.Audit;
+using QuranDashboard.Domain.Abwab.Concurrency;
+using QuranDashboard.Domain.Abwab.Timeline;
 
 namespace QuranDashboard.Infrastructure.Persistence;
 
@@ -51,6 +54,14 @@ public sealed class QuranDashboardDbContext(DbContextOptions<QuranDashboardDbCon
 
     public DbSet<User> AccessUsers => Set<User>();
     public DbSet<Role> AccessRoles => Set<Role>();
+
+    // Abwab safety-foundation kernel substrate (028). No Quran foreign key exists on any of these until
+    // this feature's exit is accepted (FR-009).
+    public DbSet<ChangeSet> AbwabChangeSets => Set<ChangeSet>();
+    public DbSet<AuditEvent> AbwabAuditEvents => Set<AuditEvent>();
+    public DbSet<AbwabRevisionState> AbwabRevisionStates => Set<AbwabRevisionState>();
+    public DbSet<TimelineGenerationBoundary> AbwabTimelineGenerationBoundaries => Set<TimelineGenerationBoundary>();
+    public DbSet<AbwabWriteBarrier> AbwabWriteBarriers => Set<AbwabWriteBarrier>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

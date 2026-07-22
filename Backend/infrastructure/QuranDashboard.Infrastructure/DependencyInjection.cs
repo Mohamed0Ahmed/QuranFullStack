@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Configuration;
+using QuranDashboard.Infrastructure.Abwab;
 using QuranDashboard.Infrastructure.ServiceRegistration;
 
 namespace QuranDashboard.Infrastructure;
@@ -8,6 +9,7 @@ public static class DependencyInjection
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddPersistence(configuration);
+        services.AddAbwabKernel();
         services.AddAccess(configuration);
         services.AddMushafReader(configuration);
         services.AddUniqueWords();

@@ -12,6 +12,8 @@ public static class ApiMessages
     public const string Unauthorized = "يجب تسجيل الدخول للوصول إلى هذا المورد";
     public const string ValidationFailed = "الطلب غير صالح";
     public const string EmailAlreadyRegistered = "هذا البريد الإلكتروني مسجَّل بالفعل لحساب آخر";
+    public const string AbwabTimelineGenerationStale = "تعذّرت العملية لأن حالة البيانات تغيّرت. يرجى تحديث الصفحة والمحاولة مجددًا.";
+    public const string AbwabWriteBarrierClosed = "التعديلات متوقفة مؤقتًا أثناء عملية صيانة داخلية. يرجى المحاولة بعد قليل.";
 
     public const string NotFound = "المورد غير موجود";
 

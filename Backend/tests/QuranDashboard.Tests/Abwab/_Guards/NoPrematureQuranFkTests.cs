@@ -39,6 +39,15 @@ public sealed class NoPrematureQuranFkTests
             "the guard's Quran detection must see real Quran entities, otherwise the FK boundary check proves nothing");
     }
 
+    [Fact]
+    public void AbwabEntitiesAreClassifiedSoTheGuardIsNotVacuous()
+    {
+        // Symmetric companion: now that 028 maps real Abwab substrate entities, the guard's Abwab detection
+        // must see at least one, otherwise the cross-boundary FK check could pass vacuously from the Abwab side.
+        _fixture.Model.GetEntityTypes().Where(IsAbwab).Should().NotBeEmpty(
+            "the guard's Abwab detection must see real Abwab entities, otherwise the FK boundary check proves nothing");
+    }
+
     private static bool CrossesAbwabQuranBoundary(IForeignKey fk)
     {
         var dependent = fk.DeclaringEntityType;

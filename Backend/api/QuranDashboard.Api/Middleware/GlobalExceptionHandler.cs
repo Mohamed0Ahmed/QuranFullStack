@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Diagnostics;
 using System.Diagnostics;
+using QuranDashboard.Api.Abwab;
 using QuranDashboard.Application.Abstractions.Security;
 
 namespace QuranDashboard.Api.Middleware;
@@ -39,6 +40,25 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
             httpContext.Response.ContentType = "application/json";
 
             await httpContext.Response.WriteAsJsonAsync(conflictResponse, cancellationToken);
+            return true;
+        }
+
+        if (AbwabConflictResponses.TryMap(exception, out var abwabStatusCode, out var abwabResponse))
+        {
+            // Expected Abwab concurrency conflict (stale generation / closed barrier) — a controlled 409
+            // carrying the exact abwab.* code, never the generic 500.
+            logger.LogWarning(
+                "Abwab conflict while processing request {traceId} {requestId} {method} {path}",
+                traceId,
+                requestId,
+                method,
+                path);
+
+            httpContext.Response.Clear();
+            httpContext.Response.StatusCode = abwabStatusCode;
+            httpContext.Response.ContentType = "application/json";
+
+            await httpContext.Response.WriteAsJsonAsync(abwabResponse, cancellationToken);
             return true;
         }
 
