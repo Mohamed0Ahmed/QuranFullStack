@@ -41,7 +41,7 @@ internal static class SecurityTestHarness
         await Exec(connection, $"UPDATE abwab_revision_state SET timeline_generation = {generation} WHERE id = 1");
     }
 
-    // --- Permission ops (each on a fresh context) ---
+    // Permission ops — each runs on a fresh context.
 
     public static async Task<SecurityAuditCommitResult> GrantAsync(
         PostgresFixture fixture, GrantPermissionCommand command, IEffectivePermissionCache? cache = null)
@@ -57,7 +57,7 @@ internal static class SecurityTestHarness
         return await BuildPermissions(db, cache).RevokeAsync(command, CancellationToken.None);
     }
 
-    // --- Owner ops (each on a fresh context) ---
+    // Owner ops — each runs on a fresh context.
 
     public static async Task<SecurityAuditCommitResult> AddOwnerAsync(PostgresFixture fixture, AddSystemOwnerCommand command)
     {
@@ -85,8 +85,6 @@ internal static class SecurityTestHarness
 
     public static EffectivePermissionResolver BuildResolver(QuranDashboardDbContext db, IEffectivePermissionCache cache) =>
         new(new PermissionAssignmentStore(db), new SystemOwnerStore(db), cache);
-
-    // --- Read helpers ---
 
     public static async Task<long> ReadAuditHeadAsync(PostgresFixture fixture) =>
         await ScalarAsync<long>(fixture, "SELECT audit_head_sequence FROM abwab_revision_state WHERE id = 1");

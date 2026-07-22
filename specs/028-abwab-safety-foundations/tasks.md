@@ -226,11 +226,11 @@ implementation.
 
 ## Phase 9: Polish & Cross-Cutting Concerns
 
-- [ ] T071 [P] Run `quickstart.md` end-to-end validation across all §18.2 exit gates (`specs/028-abwab-safety-foundations/quickstart.md`)
-- [ ] T072 [P] Update nearest READMEs for every area touched (importer, persistence DataPipelines, frontend `core`/`shared`, API `Security`) per the repo README rule
-- [ ] T073 Run the clean-code guard and test-guard self-checks against delivered code and fix findings
-- [ ] T074 [P] Write the backend completion/validation report in `Backend/report/feature-028-abwab-safety-foundations/`
-- [ ] T075 Confirm the first Abwab Quran FK is still prohibited at exit and record the acceptance handoff to `029`
+- [X] T071 [P] Run `quickstart.md` end-to-end validation across all §18.2 exit gates (`specs/028-abwab-safety-foundations/quickstart.md`)
+- [X] T072 [P] Update nearest READMEs for every area touched (importer, persistence DataPipelines, frontend `core`/`shared`, API `Security`) per the repo README rule
+- [X] T073 Run the clean-code guard and test-guard self-checks against delivered code and fix findings
+- [X] T074 [P] Write the backend completion/validation report in `Backend/report/feature-028-abwab-safety-foundations/`
+- [X] T075 Confirm the first Abwab Quran FK is still prohibited at exit and record the acceptance handoff to `029`
 
 ---
 
