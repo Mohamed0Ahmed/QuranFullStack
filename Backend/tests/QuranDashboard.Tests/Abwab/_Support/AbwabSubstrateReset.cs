@@ -21,6 +21,9 @@ internal static class AbwabSubstrateReset
 
         await ExecuteAsync(connection, "SET session_replication_role = replica");
         await ExecuteAsync(connection, "TRUNCATE abwab_audit_events, abwab_change_sets, security_audit_events RESTART IDENTITY");
+        // Notification storage (US6): plain mutable tables, not append-only — cleared so notification classes
+        // stay order-independent on the shared serial DB. read_states first (FK -> records), or CASCADE.
+        await ExecuteAsync(connection, "TRUNCATE abwab_notification_read_states, abwab_notification_records CASCADE");
         await ExecuteAsync(connection, "DELETE FROM permission_assignments");
         await ExecuteAsync(connection, "DELETE FROM system_owner_memberships");
         await ExecuteAsync(connection, "DELETE FROM abwab_timeline_generation_boundaries WHERE is_root = false");

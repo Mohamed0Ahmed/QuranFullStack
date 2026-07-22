@@ -210,15 +210,15 @@ implementation.
 
 ### Tests for User Story 6 ⚠️ (write first, must fail)
 
-- [ ] T065 [P] [US6] Storage-writer joins caller transaction (rolled-back caller → no row) test (real PG) in `Backend/tests/QuranDashboard.Tests/Abwab/Notifications/TransactionJoinTests.cs`
-- [ ] T066 [P] [US6] Unique-source-identity dedup + read-state-outside-audit test in `Backend/tests/QuranDashboard.Tests/Abwab/Notifications/DedupAndReadStateTests.cs`
+- [X] T065 [P] [US6] Storage-writer joins caller transaction (rolled-back caller → no row) test (real PG) in `Backend/tests/QuranDashboard.Tests/Abwab/Notifications/TransactionJoinTests.cs`
+- [X] T066 [P] [US6] Unique-source-identity dedup + read-state-outside-audit test in `Backend/tests/QuranDashboard.Tests/Abwab/Notifications/DedupAndReadStateTests.cs`
 
 ### Implementation for User Story 6
 
-- [ ] T067 [US6] Generate (via EF tooling) the notification schema (recipient/source/idempotency) + read state migration in `Backend/infrastructure/QuranDashboard.Infrastructure/Abwab/Notifications/` (report migration name + files after)
-- [ ] T068 [US6] Transaction-capable persistence writer joining the caller's unit of work in `Backend/infrastructure/QuranDashboard.Infrastructure/Abwab/Notifications/`
-- [ ] T069 [P] [US6] Low-level recipient/read-state repository in `Backend/infrastructure/QuranDashboard.Infrastructure/Abwab/Notifications/`
-- [ ] T070 [US6] Boundary guard: confirm no public notification port/endpoint/mock/HTTP adapter/UI is introduced by `028` (note in `Backend/infrastructure/QuranDashboard.Infrastructure/Abwab/Notifications/README.md`)
+- [X] T067 [US6] Generate (via EF tooling) the notification schema (recipient/source/idempotency) + read state migration in `Backend/infrastructure/QuranDashboard.Infrastructure/Abwab/Notifications/` (report migration name + files after)
+- [X] T068 [US6] Transaction-capable persistence writer joining the caller's unit of work in `Backend/infrastructure/QuranDashboard.Infrastructure/Abwab/Notifications/`
+- [X] T069 [P] [US6] Low-level recipient/read-state repository in `Backend/infrastructure/QuranDashboard.Infrastructure/Abwab/Notifications/`
+- [X] T070 [US6] Boundary guard: confirm no public notification port/endpoint/mock/HTTP adapter/UI is introduced by `028` (note in `Backend/infrastructure/QuranDashboard.Infrastructure/Abwab/Notifications/README.md`)
 
 **Checkpoint**: Notification storage ready for `032` (surfaces) and `033` (restore events).
 

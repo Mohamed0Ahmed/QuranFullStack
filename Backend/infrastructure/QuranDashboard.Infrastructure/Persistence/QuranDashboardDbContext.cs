@@ -13,6 +13,7 @@ using QuranDashboard.Domain.Quran.Words.Morphology.Irab;
 using QuranDashboard.Domain.Access;
 using QuranDashboard.Domain.Abwab.Audit;
 using QuranDashboard.Domain.Abwab.Concurrency;
+using QuranDashboard.Domain.Abwab.Notifications;
 using QuranDashboard.Domain.Abwab.Timeline;
 using QuranDashboard.Domain.Security.Audit;
 using QuranDashboard.Domain.Security.Owners;
@@ -65,6 +66,12 @@ public sealed class QuranDashboardDbContext(DbContextOptions<QuranDashboardDbCon
     public DbSet<AbwabRevisionState> AbwabRevisionStates => Set<AbwabRevisionState>();
     public DbSet<TimelineGenerationBoundary> AbwabTimelineGenerationBoundaries => Set<TimelineGenerationBoundary>();
     public DbSet<AbwabWriteBarrier> AbwabWriteBarriers => Set<AbwabWriteBarrier>();
+
+    // Notification storage substrate (028 US6): durable, transaction-joining, duplicate-safe notification
+    // records plus per-recipient read state. Storage only — no public port/endpoint/mock/HTTP/UI. Read state
+    // is a plain mutable table outside product audit/restore. No Quran foreign key on either.
+    public DbSet<NotificationRecord> AbwabNotificationRecords => Set<NotificationRecord>();
+    public DbSet<NotificationReadState> AbwabNotificationReadStates => Set<NotificationReadState>();
 
     // Security substrate (028 US5): immutable System Owner membership, the permission catalogue/assignments,
     // and the separate permanent security-audit stream. No Quran foreign key on any of these.

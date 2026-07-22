@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using QuranDashboard.Infrastructure.Abwab;
+using QuranDashboard.Infrastructure.Abwab.Notifications;
 using QuranDashboard.Infrastructure.Security;
 using QuranDashboard.Infrastructure.ServiceRegistration;
 
@@ -12,6 +13,7 @@ public static class DependencyInjection
         services.AddPersistence(configuration);
         services.AddAbwabKernel();
         services.AddSecurity();
+        services.AddNotificationStorage();
         services.AddAccess(configuration);
         services.AddMushafReader(configuration);
         services.AddUniqueWords();
