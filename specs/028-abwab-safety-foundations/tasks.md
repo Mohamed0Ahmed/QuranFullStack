@@ -34,9 +34,9 @@ implementation.
 
 **Purpose**: Feature scaffolding shared by all stages.
 
-- [ ] T001 [P] Create the `Abwab` substrate folders across backend layers: `Backend/domain/QuranDashboard.Domain/Abwab/`, `Backend/application/QuranDashboard.Application.Abstractions/Abwab/`, `Backend/application/QuranDashboard.Application/Abwab/`, `Backend/infrastructure/QuranDashboard.Infrastructure/Abwab/`, `Backend/api/QuranDashboard.Api/Abwab/`
-- [ ] T002 [P] Create backend foundation test folders in `Backend/tests/QuranDashboard.Tests/Abwab/` with subfolders `_Fixtures/`, `_Guards/`, `Ci/`, `ImportSafety/`, `Kernel/`, `Ownership/`, `Permissions/`, `Notifications/`
-- [ ] T003 [P] Create the Playwright e2e scaffold directory `Frontend/quran-dashboard-ui/e2e/` (harness + spikes placeholders) without installing `@angular/forms`
+- [X] T001 [P] Create the `Abwab` substrate folders across backend layers: `Backend/domain/QuranDashboard.Domain/Abwab/`, `Backend/application/QuranDashboard.Application.Abstractions/Abwab/`, `Backend/application/QuranDashboard.Application/Abwab/`, `Backend/infrastructure/QuranDashboard.Infrastructure/Abwab/`, `Backend/api/QuranDashboard.Api/Abwab/`
+- [X] T002 [P] Create backend foundation test folders in `Backend/tests/QuranDashboard.Tests/Abwab/` with subfolders `_Fixtures/`, `_Guards/`, `Ci/`, `ImportSafety/`, `Kernel/`, `Ownership/`, `Permissions/`, `Notifications/`
+- [X] T003 [P] Create the Playwright e2e scaffold directory `Frontend/quran-dashboard-ui/e2e/` (harness + spikes placeholders) without installing `@angular/forms`
 
 ---
 
