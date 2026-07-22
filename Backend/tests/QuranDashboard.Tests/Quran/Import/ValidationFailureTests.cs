@@ -14,7 +14,7 @@ public sealed class ValidationFailureTests
         this.fixture = fixture;
     }
 
-    [Fact]
+    [CanonicalImportSourceFact]
     public async Task CorruptedSourceWithDuplicateWordId_AbortsImportAndPersistsNothing()
     {
         var corruptSourceRoot = ImportSourceTestHelpers.CopySourceToTemp(fixture.SourceRoot);

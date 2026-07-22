@@ -12,19 +12,19 @@ public sealed class ImportTestFixture : IAsyncLifetime
 
     public string SourceRoot { get; private set; } = string.Empty;
 
+    public bool IsUnavailable { get; private set; }
+
     public async Task InitializeAsync()
     {
-        await postgresContainer.StartAsync();
+        SourceRoot = CanonicalImportSourceTestGate.SourceRoot;
 
-        SourceRoot = Path.GetFullPath(Path.Combine(
-            AppContext.BaseDirectory,
-            "..", "..", "..", "..", "..", "..",
-            "resources", "import-sources", "quran-foundation"));
-
-        if (!Directory.Exists(SourceRoot))
+        if (CanonicalImportSourceTestGate.IsMissing)
         {
-            throw new DirectoryNotFoundException($"Import source staging tree was not found: {SourceRoot}");
+            IsUnavailable = true;
+            return;
         }
+
+        await postgresContainer.StartAsync();
 
         _rootProvider = BuildServiceProvider();
 

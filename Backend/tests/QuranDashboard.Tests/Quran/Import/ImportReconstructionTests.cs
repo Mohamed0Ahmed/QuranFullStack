@@ -14,7 +14,7 @@ public sealed class ImportReconstructionTests
         this.fixture = fixture;
     }
 
-    [Fact]
+    [CanonicalImportSourceFact]
     public async Task ImportIntoEmptyDatabase_ResolvesSampleWordAndPageOneLayout()
     {
         var handler = await fixture.CreateHandlerAsync();

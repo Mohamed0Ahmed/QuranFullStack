@@ -14,7 +14,7 @@ public sealed class ReRunGuardTests
         this.fixture = fixture;
     }
 
-    [Fact]
+    [CanonicalImportSourceFact]
     public async Task ReRunWithoutForce_OnPopulatedTables_RefusesAndChangesNothing()
     {
         var handler = await fixture.CreateHandlerAsync();

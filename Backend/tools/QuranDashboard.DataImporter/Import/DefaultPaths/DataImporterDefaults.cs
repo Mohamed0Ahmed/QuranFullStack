@@ -74,10 +74,12 @@ internal static class DataImporterDefaults
 
         while (directory is not null)
         {
-            var resourcesPath = Path.Combine(directory.FullName, "resources");
+            var solutionPath = Path.Combine(directory.FullName, "Backend", "QuranDashboard.sln");
+            var gitPath = Path.Combine(directory.FullName, ".git");
             var backendPath = Path.Combine(directory.FullName, "Backend");
 
-            if (Directory.Exists(resourcesPath) && Directory.Exists(backendPath))
+            if (File.Exists(solutionPath) ||
+                ((Directory.Exists(gitPath) || File.Exists(gitPath)) && Directory.Exists(backendPath)))
             {
                 return directory.FullName;
             }

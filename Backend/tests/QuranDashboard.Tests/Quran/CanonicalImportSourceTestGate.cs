@@ -1,4 +1,4 @@
-namespace QuranDashboard.Tests.Quran.WordsDisplay;
+namespace QuranDashboard.Tests.Quran;
 
 internal static class CanonicalImportSourceTestGate
 {

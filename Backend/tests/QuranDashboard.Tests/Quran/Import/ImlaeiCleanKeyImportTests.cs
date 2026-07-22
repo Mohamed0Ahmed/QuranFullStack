@@ -16,7 +16,7 @@ public sealed class ImlaeiCleanKeyImportTests
         this.fixture = fixture;
     }
 
-    [Fact]
+    [CanonicalImportSourceFact]
     public async Task Import_BindsCleanImlaeiKeyAndPreservesRawImlaeiText()
     {
         var handler = await fixture.CreateHandlerAsync();

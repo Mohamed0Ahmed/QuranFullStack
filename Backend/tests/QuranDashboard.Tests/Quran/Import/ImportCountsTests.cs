@@ -13,7 +13,7 @@ public sealed class ImportCountsTests
         this.fixture = fixture;
     }
 
-    [Fact]
+    [CanonicalImportSourceFact]
     public async Task ImportIntoEmptyDatabase_PersistsExpectedCounts()
     {
         var handler = await fixture.CreateHandlerAsync();

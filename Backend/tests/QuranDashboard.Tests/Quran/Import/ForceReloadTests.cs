@@ -14,7 +14,7 @@ public sealed class ForceReloadTests
         this.fixture = fixture;
     }
 
-    [Fact]
+    [CanonicalImportSourceFact]
     public async Task ForceReRun_ProducesTableStateIdenticalToFirstImport()
     {
         var handler = await fixture.CreateHandlerAsync();
