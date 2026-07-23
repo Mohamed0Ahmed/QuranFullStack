@@ -1,5 +1,6 @@
 using QuranDashboard.Domain.Abwab.Audit;
 using QuranDashboard.Domain.Abwab.Categories;
+using QuranDashboard.Domain.Abwab.Protection;
 using QuranDashboard.Domain.Abwab.Sections;
 using QuranDashboard.Domain.Abwab.Tree;
 using QuranDashboard.Infrastructure.Abwab.Persistence;
@@ -55,6 +56,21 @@ internal static class AbwabTreeSeeding
         CategoryId = categoryId,
         Value = value,
         NormalizedValue = ArabicNameNormalizer.Normalize(value),
+    };
+
+    public static ManualProtection NewManualProtection(
+        Guid categoryId,
+        ManualProtectionType type,
+        ManualProtectionScope scope,
+        string appliedBy = "tester",
+        DateTimeOffset? appliedAtUtc = null) => new()
+    {
+        ManualProtectionId = Guid.NewGuid(),
+        CategoryId = categoryId,
+        ProtectionType = type,
+        ProtectionScope = scope,
+        AppliedByActorSubject = appliedBy,
+        AppliedAtUtc = appliedAtUtc ?? DateTimeOffset.UnixEpoch,
     };
 
     public static async Task InsertAsync(PostgresFixture fixture, params object[] entities)

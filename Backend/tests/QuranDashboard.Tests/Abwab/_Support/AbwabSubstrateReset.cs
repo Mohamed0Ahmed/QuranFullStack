@@ -15,6 +15,7 @@ internal static class AbwabSubstrateReset
         await ExecuteAsync(connection, "TRUNCATE abwab_audit_events, abwab_change_sets, security_audit_events RESTART IDENTITY");
         await ExecuteAsync(connection, "TRUNCATE abwab_notification_read_states, abwab_notification_records CASCADE");
         await ExecuteAsync(connection, "DELETE FROM abwab_category_search_aliases");
+        await ExecuteAsync(connection, "DELETE FROM abwab_manual_protections");
         await ExecuteAsync(connection, "DELETE FROM abwab_categories");
         await ExecuteAsync(
             connection,

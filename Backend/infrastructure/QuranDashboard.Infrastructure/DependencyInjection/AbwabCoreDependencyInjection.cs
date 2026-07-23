@@ -8,6 +8,7 @@ internal static class AbwabCoreDependencyInjection
     public static IServiceCollection AddAbwabCoreReads(this IServiceCollection services)
     {
         services.AddScoped<IAbwabCoreReadPort, EfAbwabCoreReadPort>();
+        services.AddScoped<IManualProtectionReadPort, EfManualProtectionReadPort>();
 
         return services;
     }

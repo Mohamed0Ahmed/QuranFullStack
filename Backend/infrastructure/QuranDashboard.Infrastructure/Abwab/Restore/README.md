@@ -15,9 +15,8 @@ preview/planner/execution surface — that is `033`'s consumer.
   `GlobalOrder` round-trip as facets of this one adapter, never as a standalone "Order"
   adapter (§8: one adapter per persisted type; a standalone Order registration is a
   duplicate and must fail CI).
-
-`ManualProtection` is the third and last adapter for this feature; it is added in Story 2
-(`029` US2), before any protected category writer exists.
+- **`ManualProtectionRestoreAdapter`** — `ManualProtection` (type/scope, applied/lifted
+  actor+timestamps, soft-delete). This is the third and last adapter for this feature.
 
 ## Snapshot exclusions
 
@@ -28,5 +27,8 @@ current technical state, never inverse-restored (§6.3, §6.4, §8).
 ## Acceptance status
 
 Section and Category adapters are versioned and round-trip tested as of Story 1
-(`029-abwab-core`). Full acceptance for `033` (all three adapters, plus the §8 static
-registry test) is recorded once Story 3 completes.
+(`029-abwab-core`). The ManualProtection adapter is versioned and round-trip tested as of
+Story 2, and is **accepted here — before any protected category writer exists** (the §18.3
+order gate for `029` US2→US3). All three adapters (Section, Category, ManualProtection) are
+now registered; the §8 static registry test (Story 3, T082) still needs to run against all
+three together before the final `033`-acceptance note is recorded at feature exit.
