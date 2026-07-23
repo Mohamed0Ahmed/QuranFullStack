@@ -1,0 +1,34 @@
+.protection-panel__ordinary {
+  color: var(--qd-text-muted);
+  font-size: 0.875rem;
+}
+
+.protection-panel__types {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.protection-panel__type {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qd-space-2, 0.5rem);
+  padding-block: var(--qd-space-3, 0.75rem);
+  border-block-end: 1px solid var(--qd-border);
+}
+
+.protection-panel__type-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.protection-panel__apply,
+.protection-panel__preset {
+  display: flex;
+  gap: var(--qd-space-2, 0.5rem);
+}
+
+.protection-panel__preset {
+  margin-block-start: var(--qd-space-3, 0.75rem);
+}

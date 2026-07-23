@@ -1,0 +1,35 @@
+<div class="qd-card qd-card--bordered audit-render" data-testid="subtree-delete-render">
+  <h3 class="qd-section-title">
+    {{ payload().isRestored ? 'استرجاع باب فرعي' : 'حذف باب فرعي' }}: {{ payload().rootName }}
+  </h3>
+
+  <p class="audit-render__meta" data-testid="subtree-delete-operation-id">
+    رقم عملية الحذف: {{ payload().deletionOperationId }}
+  </p>
+
+  <p data-testid="subtree-delete-historical-path">
+    المسار وقت العملية: {{ payload().historicalPath.join(' ← ') }}
+  </p>
+
+  @if (payload().currentPath) {
+    <p data-testid="subtree-delete-current-path">المسار الحالي: {{ payload().currentPath!.join(' ← ') }}</p>
+  }
+
+  <p data-testid="subtree-delete-affected-count">
+    عدد الأبواب المتأثرة: {{ payload().affectedCategoryCount }}
+  </p>
+
+  @if (payload().dormantDependentCounts.length > 0) {
+    <section class="audit-render__dormant" data-testid="subtree-delete-dormant">
+      <h4 class="qd-section-title">عناصر مرتبطة أصبحت خاملة</h4>
+      <ul>
+        @for (entry of payload().dormantDependentCounts; track entry.label) {
+          <li data-testid="subtree-delete-dormant-entry">
+            <span class="qd-badge">خامل</span>
+            {{ entry.label }}: {{ entry.count }}
+          </li>
+        }
+      </ul>
+    </section>
+  }
+</div>

@@ -1,0 +1,53 @@
+<div class="qd-card qd-card--bordered audit-render" data-testid="bulk-move-render">
+  <h3 class="qd-section-title" data-testid="bulk-move-root-count">
+    نقل {{ payload().selectedRootCount }} من الأبواب الرئيسية
+  </h3>
+
+  @for (root of payload().roots; track root.categoryId) {
+    <article class="bulk-move-root" data-testid="bulk-move-root">
+      <header class="bulk-move-root__header">
+        <strong>{{ root.name }}</strong>
+        <span data-testid="bulk-move-descendant-count">{{ root.movedDescendantCount }} باب فرعي منقول معه</span>
+      </header>
+
+      <div class="bulk-move-root__diff">
+        <div>
+          <span class="bulk-move-root__label">قبل:</span>
+          {{ root.beforeSectionName }} — {{ root.beforePath.join(' ← ') }} (الترتيب: {{ root.beforeOrder ?? 'غير محدد' }})
+        </div>
+        <div>
+          <span class="bulk-move-root__label">بعد:</span>
+          {{ root.afterSectionName }} — {{ root.afterPath.join(' ← ') }} (الترتيب: {{ root.afterOrder ?? 'غير محدد' }})
+        </div>
+      </div>
+
+      @if (root.movedDescendantNames.length > 0) {
+        <details data-testid="bulk-move-descendant-details">
+          <summary>عرض الأبواب الفرعية المنقولة ({{ root.movedDescendantNames.length }})</summary>
+          <ul class="bulk-move-root__descendants">
+            @for (name of root.movedDescendantNames; track name) {
+              <li data-testid="bulk-move-descendant">{{ name }}</li>
+            }
+          </ul>
+        </details>
+      }
+    </article>
+  }
+
+  @if (payload().siblingOrderSideEffects.length > 0) {
+    <section class="bulk-move-side-effects" data-testid="bulk-move-side-effects">
+      <h4 class="qd-section-title">تأثيرات جانبية على الترتيب</h4>
+      @for (group of payload().siblingOrderSideEffects; track group.parentLabel + group.orderScopeLabel) {
+        <div class="bulk-move-side-effects__group" data-testid="bulk-move-side-effect-group">
+          <strong>{{ group.parentLabel }}</strong>
+          <span class="bulk-move-side-effects__scope">({{ group.orderScopeLabel }})</span>
+          <ul>
+            @for (entry of group.entries; track entry.categoryName) {
+              <li>{{ entry.categoryName }}: {{ entry.beforeOrder ?? 'غير محدد' }} ← {{ entry.afterOrder ?? 'غير محدد' }}</li>
+            }
+          </ul>
+        </div>
+      }
+    </section>
+  }
+</div>

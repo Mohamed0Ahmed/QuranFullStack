@@ -5,4 +5,5 @@ public sealed record SectionSnapshotDto(
     string Name,
     string NormalizedName,
     int SortOrder,
-    bool IsPermanentDefault);
+    bool IsPermanentDefault,
+    uint Version);

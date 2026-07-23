@@ -23,7 +23,7 @@ public static class AbwabProtectionSummaryProjector
         var candidateIds = new List<Guid>(category.AncestorIds) { category.CategoryId };
         var activeProtections = candidateIds
             .SelectMany(id => protectionsByCategory[id])
-            .Select(p => new ActiveManualProtectionRecordDto(p.CategoryId, p.ProtectionType, p.ProtectionScope))
+            .Select(p => new ActiveManualProtectionRecordDto(p.ManualProtectionId, p.CategoryId, p.ProtectionType, p.ProtectionScope, p.Version))
             .ToList();
 
         var resolutions = Enum.GetValues<ManualProtectionType>()

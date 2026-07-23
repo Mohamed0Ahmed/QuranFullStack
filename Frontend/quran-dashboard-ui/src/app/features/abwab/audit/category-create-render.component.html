@@ -1,0 +1,41 @@
+<div class="qd-card qd-card--bordered audit-render" data-testid="category-create-render">
+  <h3 class="qd-section-title">إنشاء باب: {{ payload().name }}</h3>
+
+  <dl class="audit-render__fields">
+    <dt>القسم</dt>
+    <dd data-testid="create-section">{{ payload().sectionName }}</dd>
+
+    <dt>المسار</dt>
+    <dd data-testid="create-path">
+      @if (payload().parentPath.length > 0) {
+        {{ payload().parentPath.join(' ← ') }}
+      } @else {
+        {{ formatValue(null) }}
+      }
+    </dd>
+
+    <dt>المقتطف التمثيلي</dt>
+    <dd data-testid="create-excerpt">{{ formatValue(payload().representativeQuranExcerpt) }}</dd>
+
+    <dt>الوصف</dt>
+    <dd data-testid="create-description">{{ formatValue(payload().description) }}</dd>
+
+    <dt>الأسماء البديلة</dt>
+    <dd data-testid="create-aliases">
+      @if (payload().aliases.length > 0) {
+        {{ payload().aliases.join('، ') }}
+      } @else {
+        {{ formatValue(null) }}
+      }
+    </dd>
+
+    <dt>الترتيب بين الإخوة</dt>
+    <dd data-testid="create-sibling-order">{{ formatOrder(payload().siblingOrder) }}</dd>
+
+    <dt>الترتيب داخل القسم</dt>
+    <dd data-testid="create-section-order">{{ formatOrder(payload().sectionOrder) }}</dd>
+
+    <dt>الترتيب العام</dt>
+    <dd data-testid="create-global-order">{{ formatOrder(payload().globalOrder) }}</dd>
+  </dl>
+</div>

@@ -8,8 +8,10 @@ export interface ManualProtectionResolutionDto {
   actionClassification: ProtectionActionClassification;
   isDirect: boolean;
   isProtected: boolean;
+  manualProtectionId: string | null;
   protectionType: ManualProtectionType;
   scope: ManualProtectionScope | null;
   serverTimeUtc: string;
   sourceCategoryId: string | null;
+  version: number | null;
 }

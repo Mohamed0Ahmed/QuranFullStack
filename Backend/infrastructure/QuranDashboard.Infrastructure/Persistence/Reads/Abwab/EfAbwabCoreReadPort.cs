@@ -21,7 +21,7 @@ public sealed class EfAbwabCoreReadPort(QuranDashboardDbContext db, IServerClock
             .AsNoTracking()
             .Where(s => !s.IsDeleted)
             .OrderBy(s => s.SortOrder)
-            .Select(s => new SectionSnapshotDto(s.SectionId, s.Name, s.NormalizedName, s.SortOrder, s.IsPermanentDefault))
+            .Select(s => new SectionSnapshotDto(s.SectionId, s.Name, s.NormalizedName, s.SortOrder, s.IsPermanentDefault, s.Version))
             .ToListAsync(cancellationToken);
 
         var categoryEntities = await db.AbwabCategories
@@ -35,8 +35,14 @@ public sealed class EfAbwabCoreReadPort(QuranDashboardDbContext db, IServerClock
             .ToListAsync(cancellationToken);
         var protectionsByCategory = protections.ToLookup(p => p.CategoryId);
 
+        var aliases = await db.AbwabCategorySearchAliases
+            .AsNoTracking()
+            .Where(a => !a.IsDeleted)
+            .ToListAsync(cancellationToken);
+        var aliasesByCategory = aliases.ToLookup(a => a.CategoryId);
+
         var categories = categoryEntities
-            .Select(c => ToSnapshot(c, protectionsByCategory, serverTimeUtc))
+            .Select(c => ToSnapshot(c, protectionsByCategory, aliasesByCategory, serverTimeUtc))
             .ToList();
 
         var allCategoriesProjection = categories
@@ -88,7 +94,13 @@ public sealed class EfAbwabCoreReadPort(QuranDashboardDbContext db, IServerClock
             .ToListAsync(cancellationToken);
         var protectionsByCategory = protections.ToLookup(p => p.CategoryId);
 
-        var matches = matchEntities.Select(c => ToSnapshot(c, protectionsByCategory, serverTimeUtc)).ToList();
+        var aliases = await db.AbwabCategorySearchAliases
+            .AsNoTracking()
+            .Where(a => !a.IsDeleted && matchedIds.Contains(a.CategoryId))
+            .ToListAsync(cancellationToken);
+        var aliasesByCategory = aliases.ToLookup(a => a.CategoryId);
+
+        var matches = matchEntities.Select(c => ToSnapshot(c, protectionsByCategory, aliasesByCategory, serverTimeUtc)).ToList();
 
         return new CategorySearchResultDto(ExpectedTimelineGeneration.Of(revision.TimelineGeneration), matches);
     }
@@ -96,6 +108,7 @@ public sealed class EfAbwabCoreReadPort(QuranDashboardDbContext db, IServerClock
     private static CategorySnapshotDto ToSnapshot(
         Category c,
         ILookup<Guid, ManualProtection> protectionsByCategory,
+        ILookup<Guid, CategorySearchAlias> aliasesByCategory,
         DateTimeOffset serverTimeUtc) =>
         new(
             c.CategoryId,
@@ -111,6 +124,8 @@ public sealed class EfAbwabCoreReadPort(QuranDashboardDbContext db, IServerClock
             c.AncestorIds,
             c.Depth,
             c.CategoryContentRevision,
+            c.Version,
+            aliasesByCategory[c.CategoryId].Select(a => new CategorySearchAliasDto(a.CategorySearchAliasId, a.Value, a.Version)).ToList(),
             AbwabProtectionSummaryProjector.Build(c, protectionsByCategory, serverTimeUtc));
 
     private async Task<AbwabRevisionState> GetRevisionStateAsync(CancellationToken cancellationToken) =>

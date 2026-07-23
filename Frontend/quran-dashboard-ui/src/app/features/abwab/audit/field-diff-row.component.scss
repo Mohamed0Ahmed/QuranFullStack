@@ -1,0 +1,25 @@
+.field-diff-row {
+  display: grid;
+  grid-template-columns: minmax(8rem, 1fr) 1fr 1fr;
+  gap: var(--qd-space-3, 0.75rem);
+  padding-block: var(--qd-space-2, 0.5rem);
+  border-bottom: 1px solid var(--qd-border);
+}
+
+.field-diff-row__label {
+  color: var(--qd-text-muted);
+}
+
+.field-diff-row__value--after {
+  font-weight: 600;
+}
+
+.field-diff-row--changed .field-diff-row__value--after {
+  color: var(--qd-success);
+}
+
+.field-diff-row__marker {
+  margin-inline-start: var(--qd-space-2, 0.5rem);
+  font-weight: 600;
+  color: var(--qd-success);
+}

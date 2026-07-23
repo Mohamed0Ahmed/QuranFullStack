@@ -1,0 +1,13 @@
+<div class="field-diff-row" [class.field-diff-row--changed]="diff().changed" data-testid="field-diff-row">
+  <span class="field-diff-row__label">{{ diff().label }}</span>
+  <span class="field-diff-row__value field-diff-row__value--before" data-testid="field-diff-before">
+    {{ formatValue(diff().before) }}
+  </span>
+  <span class="field-diff-row__value field-diff-row__value--after" data-testid="field-diff-after">
+    {{ formatValue(diff().after) }}
+    @if (diff().changed) {
+      <!-- Non-color diff marker: text, not color alone, so the change reads correctly without color. -->
+      <span class="field-diff-row__marker" data-testid="field-diff-marker" aria-hidden="false">▲ تغيير</span>
+    }
+  </span>
+</div>

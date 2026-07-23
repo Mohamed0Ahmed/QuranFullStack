@@ -1,0 +1,38 @@
+<div class="qd-card qd-card--bordered audit-render" data-testid="manual-protection-render">
+  <h3 class="qd-section-title">
+    حماية يدوية — {{ payload().targetCategoryName }}: {{ payload().protectionTypeLabel }}
+  </h3>
+
+  <dl class="audit-render__fields">
+    <dt>النطاق</dt>
+    <dd>{{ payload().scopeLabel }}</dd>
+
+    <dt>القائم بالإجراء</dt>
+    <dd data-testid="manual-protection-actor">{{ payload().actorSubject }}</dd>
+
+    <dt>الوقت</dt>
+    <dd>{{ payload().actedAtUtc }}</dd>
+
+    <dt>الحالة</dt>
+    <dd data-testid="manual-protection-before-after">
+      {{ payload().before === 'protected' ? 'محمي' : 'غير محمي' }}
+      ←
+      {{ payload().after === 'protected' ? 'محمي' : 'غير محمي' }}
+    </dd>
+  </dl>
+
+  @if (payload().effectChanges.length > 0) {
+    <section data-testid="manual-protection-effects">
+      <h4 class="qd-section-title">تأثيرات الحماية المباشرة والموروثة المتغيرة</h4>
+      <ul>
+        @for (effect of payload().effectChanges; track effect.categoryName) {
+          <li data-testid="manual-protection-effect-entry">
+            {{ effect.categoryName }}
+            <span class="qd-badge">{{ effect.isDirect ? 'مباشرة' : 'موروثة' }}</span>
+            — {{ effect.before === 'protected' ? 'محمي' : 'غير محمي' }} ← {{ effect.after === 'protected' ? 'محمي' : 'غير محمي' }}
+          </li>
+        }
+      </ul>
+    </section>
+  }
+</div>

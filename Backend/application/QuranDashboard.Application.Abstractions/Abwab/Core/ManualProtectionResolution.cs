@@ -29,7 +29,9 @@ public static class ManualProtectionResolution
                 categoryId,
                 direct.ProtectionScope,
                 ProtectionActionClassification.ManuallyProtected,
-                serverTimeUtc);
+                serverTimeUtc,
+                direct.ManualProtectionId,
+                direct.Version);
         }
 
         for (var i = ancestorIds.Count - 1; i >= 0; i--)
@@ -49,7 +51,9 @@ public static class ManualProtectionResolution
                     ancestorId,
                     inherited.ProtectionScope,
                     ProtectionActionClassification.ManuallyProtected,
-                    serverTimeUtc);
+                    serverTimeUtc,
+                    ManualProtectionId: null,
+                    Version: null);
             }
         }
 
@@ -57,6 +61,6 @@ public static class ManualProtectionResolution
             ? ProtectionActionClassification.OrdinaryWindowActive
             : ProtectionActionClassification.Unprotected;
 
-        return new ManualProtectionResolutionDto(protectionType, IsProtected: false, IsDirect: false, null, null, classification, serverTimeUtc);
+        return new ManualProtectionResolutionDto(protectionType, IsProtected: false, IsDirect: false, null, null, classification, serverTimeUtc, null, null);
     }
 }

@@ -1,0 +1,48 @@
+.abwab-tree-viewport {
+  block-size: 24rem;
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-md);
+}
+
+.abwab-tree-row {
+  display: flex;
+  align-items: center;
+  gap: var(--qd-space-2, 0.5rem);
+  block-size: 40px;
+  padding-inline-end: var(--qd-space-3, 0.75rem);
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--qd-focus-ring);
+    outline-offset: -2px;
+  }
+}
+
+.abwab-tree-row--selected {
+  background: var(--qd-selected-bg);
+}
+
+.abwab-tree-row__toggle {
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--qd-text-muted);
+}
+
+.abwab-tree-row__toggle-spacer {
+  inline-size: 1.5rem;
+}
+
+.abwab-tree-row__name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.abwab-tree-row__actions {
+  display: flex;
+  gap: var(--qd-space-2, 0.5rem);
+}

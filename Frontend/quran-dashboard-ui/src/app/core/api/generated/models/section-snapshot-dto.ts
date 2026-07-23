@@ -7,4 +7,5 @@ export interface SectionSnapshotDto {
   normalizedName: string;
   sectionId: string;
   sortOrder: number;
+  version: number;
 }

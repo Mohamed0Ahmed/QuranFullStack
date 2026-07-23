@@ -1,0 +1,54 @@
+<form class="qd-card qd-card--bordered category-editor" [formGroup]="form" (ngSubmit)="submit()" data-testid="category-editor">
+  <div class="category-editor__field">
+    <label for="abwab-category-name">الاسم</label>
+    <input id="abwab-category-name" class="qd-input" type="text" formControlName="name" data-testid="category-editor-name" [readOnly]="!canEdit()" />
+  </div>
+
+  <div class="category-editor__field">
+    <label for="abwab-category-description">الوصف</label>
+    <textarea id="abwab-category-description" class="qd-input" formControlName="description" data-testid="category-editor-description" [readOnly]="!canEdit()"></textarea>
+  </div>
+
+  <div class="category-editor__field">
+    <label for="abwab-category-excerpt">المقتطف التمثيلي</label>
+    <textarea id="abwab-category-excerpt" class="qd-input" formControlName="representativeQuranExcerpt" data-testid="category-editor-excerpt" [readOnly]="!canEdit()"></textarea>
+  </div>
+
+  @if (canEdit()) {
+    @if (category()?.aliases?.length) {
+      <fieldset class="category-editor__aliases" data-testid="category-editor-existing-aliases">
+        <legend>الأسماء البديلة الحالية</legend>
+        @for (alias of category()!.aliases; track alias.categorySearchAliasId) {
+          <div class="category-editor__alias-row" data-testid="category-editor-existing-alias-row">
+            <input class="qd-input" type="text" [formControl]="controlForAlias(alias.categorySearchAliasId)" data-testid="category-editor-existing-alias-input" />
+            <button type="button" class="qd-btn qd-btn-secondary" data-testid="category-editor-existing-alias-save" (click)="saveExistingAlias(alias)">
+              حفظ
+            </button>
+            <button type="button" class="qd-btn qd-btn-ghost" data-testid="category-editor-existing-alias-remove" (click)="deleteExistingAlias(alias)">
+              إزالة
+            </button>
+          </div>
+        }
+      </fieldset>
+    }
+
+    <fieldset class="category-editor__aliases" formArrayName="newAliases" data-testid="category-editor-aliases">
+      <legend>إضافة أسماء بديلة</legend>
+      @for (control of newAliasesArray.controls; track $index) {
+        <div class="category-editor__alias-row">
+          <input class="qd-input" type="text" [formControlName]="$index" data-testid="category-editor-new-alias-input" />
+          <button type="button" class="qd-btn qd-btn-ghost" data-testid="category-editor-new-alias-remove" (click)="removeAliasField($index)">
+            إزالة
+          </button>
+        </div>
+      }
+      <button type="button" class="qd-btn qd-btn-secondary" data-testid="category-editor-alias-add" (click)="addAliasField()">
+        + اسم بديل جديد
+      </button>
+    </fieldset>
+
+    <button type="submit" class="qd-btn qd-btn-primary" data-testid="category-editor-save" [disabled]="saving()">
+      حفظ
+    </button>
+  }
+</form>

@@ -23,6 +23,7 @@ export type { CategoryOrderScope } from './models/category-order-scope';
 export type { CategoryProtectionProfileDto } from './models/category-protection-profile-dto';
 export type { CategoryProtectionProfileDtoApiResponse } from './models/category-protection-profile-dto-api-response';
 export type { CategoryProtectionSummaryDto } from './models/category-protection-summary-dto';
+export type { CategorySearchAliasDto } from './models/category-search-alias-dto';
 export type { CategorySearchResultDto } from './models/category-search-result-dto';
 export type { CategorySearchResultDtoApiResponse } from './models/category-search-result-dto-api-response';
 export type { CategorySnapshotDto } from './models/category-snapshot-dto';

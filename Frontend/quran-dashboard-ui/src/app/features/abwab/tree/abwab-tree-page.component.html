@@ -1,0 +1,91 @@
+<section class="abwab-tree-page" dir="rtl" data-testid="abwab-tree-page">
+  <header class="abwab-tree-page__header">
+    <h1 class="qd-section-title">الأبواب</h1>
+  </header>
+
+  @if (!permissions.canViewTree()) {
+    <qd-state variant="empty" [message]="notAuthorizedMessage" data-testid="abwab-tree-not-authorized" />
+  } @else if (facade.status() === 'loading' && !facade.snapshot()) {
+    <qd-state variant="loading" message="جارٍ تحميل شجرة الأبواب…" />
+  } @else if (facade.status() === 'error') {
+    <qd-state variant="error" [message]="loadErrorMessage" actionLabel="إعادة المحاولة" (action)="retry()" />
+  } @else {
+    @if (conflictMessage(); as message) {
+      <p class="abwab-tree-page__conflict" role="alert" data-testid="abwab-tree-conflict">{{ message }}</p>
+    }
+
+    <div class="abwab-tree-page__toolbar">
+      <input
+        type="search"
+        class="qd-input"
+        placeholder="ابحث عن باب…"
+        data-testid="abwab-tree-search"
+        (input)="onSearch($event)"
+      />
+
+      @if (permissions.canAddCategory()) {
+        <form class="abwab-tree-page__new-root" [formGroup]="newRootCategoryForm" (ngSubmit)="submitNewRootCategory()">
+          <input class="qd-input" type="text" placeholder="اسم باب رئيسي جديد" formControlName="name" data-testid="abwab-tree-new-root-name" />
+          <button type="submit" class="qd-btn qd-btn-primary" data-testid="abwab-tree-new-root-submit">إضافة</button>
+        </form>
+      }
+    </div>
+
+    <div class="abwab-tree-page__body">
+      <qd-abwab-tree-view
+        [nodes]="visibleNodes()"
+        [selectedCategoryId]="facade.selectedCategoryId()"
+        [canReorder]="permissions.canReorderCategory()"
+        [canMove]="permissions.canMoveCategory()"
+        [canDelete]="permissions.canDeleteCategory()"
+        (select)="selectCategory($event)"
+        (toggleExpand)="toggleExpand($event)"
+        (moveUp)="moveUp($event)"
+        (moveDown)="moveDown($event)"
+        (moveRequested)="requestMove($event)"
+        (deleteRequested)="requestDelete($event)"
+      />
+
+      @if (facade.selectedCategory(); as selected) {
+        <aside class="abwab-tree-page__detail">
+          <qd-abwab-category-editor
+            [category]="selected"
+            [canEdit]="permissions.canEditCategory()"
+            [saving]="facade.mutationStatus() === 'pending'"
+            (save)="saveCategory($event)"
+            (editAlias)="editExistingAlias($event)"
+            (removeAlias)="removeExistingAlias($event)"
+          />
+
+          <qd-abwab-protection-panel
+            [profile]="protectionProfile()"
+            [canView]="permissions.canViewProtectionDetail()"
+            [canApply]="permissions.canApplyProtection()"
+            [canLift]="permissions.canLiftProtection()"
+            (apply)="applyProtection($event)"
+            (lift)="liftProtection($event)"
+            (applyFullPreset)="applyFullPreset($event)"
+          />
+        </aside>
+      }
+    </div>
+
+    @if (moveTargetCategoryId(); as movingId) {
+      <div class="abwab-tree-page__move-picker" data-testid="abwab-tree-move-picker">
+        <label for="abwab-move-destination">نقل إلى</label>
+        <select id="abwab-move-destination" class="qd-select" data-testid="abwab-tree-move-destination" #destinationSelect>
+          <option value="">— جعله بابًا رئيسيًا —</option>
+          @for (category of facade.categories(); track category.categoryId) {
+            @if (category.categoryId !== movingId) {
+              <option [value]="category.categoryId">{{ category.name }}</option>
+            }
+          }
+        </select>
+        <button type="button" class="qd-btn qd-btn-primary" data-testid="abwab-tree-move-confirm" (click)="confirmMove(destinationSelect.value || null)">
+          تأكيد النقل
+        </button>
+        <button type="button" class="qd-btn qd-btn-ghost" data-testid="abwab-tree-move-cancel" (click)="cancelMove()">إلغاء</button>
+      </div>
+    }
+  }
+</section>

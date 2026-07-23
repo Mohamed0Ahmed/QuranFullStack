@@ -46,6 +46,11 @@ public sealed class ProtectionResolverTests(PostgresFixture fixture) : IAsyncLif
         resolution.SourceCategoryId.Should().Be(leaf.CategoryId);
         resolution.Scope.Should().Be(ManualProtectionScope.CategoryOnly);
         resolution.ActionClassification.Should().Be(ProtectionActionClassification.ManuallyProtected);
+
+        // Blocker fix: a direct resolution carries the record's own identity + concurrency token, so
+        // the caller can source apply/lift/preset ExpectedVersion from this read instead of a 0.
+        resolution.ManualProtectionId.Should().Be(protection.ManualProtectionId);
+        resolution.Version.Should().NotBeNull().And.NotBe(0u);
     }
 
     [Fact]
@@ -61,6 +66,11 @@ public sealed class ProtectionResolverTests(PostgresFixture fixture) : IAsyncLif
         resolution.IsDirect.Should().BeFalse();
         resolution.SourceCategoryId.Should().Be(root.CategoryId);
         resolution.Scope.Should().Be(ManualProtectionScope.Subtree);
+
+        // An inherited resolution names the source ancestor but exposes no record identity/version
+        // for THIS category — the ancestor's own direct read is the place to source that.
+        resolution.ManualProtectionId.Should().BeNull();
+        resolution.Version.Should().BeNull();
     }
 
     [Fact]

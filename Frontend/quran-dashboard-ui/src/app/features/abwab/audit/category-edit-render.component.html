@@ -1,0 +1,12 @@
+<div class="qd-card qd-card--bordered audit-render" data-testid="category-edit-render">
+  <h3 class="qd-section-title">تعديل باب: {{ payload().categoryName }}</h3>
+
+  <div class="audit-render__diff-header">
+    <span>القيمة السابقة</span>
+    <span>القيمة الحالية</span>
+  </div>
+
+  @for (field of payload().fields; track field.key) {
+    <qd-abwab-field-diff-row [diff]="field" />
+  }
+</div>

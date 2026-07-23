@@ -1,0 +1,23 @@
+.category-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qd-space-3, 0.75rem);
+}
+
+.category-editor__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qd-space-1, 0.25rem);
+}
+
+.category-editor__aliases {
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-md);
+  padding: var(--qd-space-3, 0.75rem);
+}
+
+.category-editor__alias-row {
+  display: flex;
+  gap: var(--qd-space-2, 0.5rem);
+  margin-block-end: var(--qd-space-2, 0.5rem);
+}

@@ -14,4 +14,6 @@ public sealed record CategorySnapshotDto(
     IReadOnlyList<Guid> AncestorIds,
     int Depth,
     long CategoryContentRevision,
+    uint Version,
+    IReadOnlyList<CategorySearchAliasDto> Aliases,
     CategoryProtectionSummaryDto Protection);

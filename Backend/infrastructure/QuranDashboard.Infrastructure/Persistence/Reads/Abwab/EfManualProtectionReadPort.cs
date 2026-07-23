@@ -30,7 +30,7 @@ public sealed class EfManualProtectionReadPort(QuranDashboardDbContext db) : IMa
         var activeProtections = await db.AbwabManualProtections
             .AsNoTracking()
             .Where(p => !p.IsDeleted && candidateIds.Contains(p.CategoryId))
-            .Select(p => new ActiveManualProtectionRecordDto(p.CategoryId, p.ProtectionType, p.ProtectionScope))
+            .Select(p => new ActiveManualProtectionRecordDto(p.ManualProtectionId, p.CategoryId, p.ProtectionType, p.ProtectionScope, p.Version))
             .ToListAsync(cancellationToken);
 
         var revision = await db.AbwabRevisionStates

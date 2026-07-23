@@ -1,3 +1,4 @@
+using QuranDashboard.Application.Abstractions.Abwab;
 using QuranDashboard.Application.Abstractions.Abwab.Core;
 using QuranDashboard.Infrastructure.Persistence.Reads.Abwab;
 using QuranDashboard.Tests.Abwab._Fixtures;
@@ -106,6 +107,92 @@ public sealed class TreeSnapshotReadTests(PostgresFixture fixture) : IAsyncLifet
         var snapshot = await ReadSnapshotAsync();
 
         snapshot.Sections.Should().NotContain(s => s.SectionId == section.SectionId);
+    }
+
+    // Blocker fix: the live read DTOs must carry the row Version (xmin) a caller needs to source
+    // ExpectedVersion for its NEXT write — tree-read-contract.md line 11 forbids the caller
+    // "manufacturing" that expectation. Proven end-to-end: read it from the snapshot, then use it,
+    // unmodified, as ExpectedVersion on a real edit and assert the edit succeeds with no row_stale.
+    [Fact]
+    public async Task Snapshot_CategoryAndSectionVersion_IsUsableAsExpectedVersionForTheNextEdit_WithNoRowStale()
+    {
+        var (writePort, db) = AbwabWriterTestHarness.CreateWritePort(fixture);
+        await using var _ = db;
+        var readPort = AbwabWriterTestHarness.CreateReadPort(db);
+
+        var sectionId = await writePort.AddSectionAsync(
+            new AddSectionCommand("قسم اختبار الإصدار", 0, ExpectedTimelineGeneration.Of(0), "tester"), CancellationToken.None);
+        var categoryId = await writePort.AddCategoryAsync(
+            new AddCategoryCommand("باب اختبار الإصدار", null, null, null, sectionId, 1, ExpectedTimelineGeneration.Of(0), "tester"),
+            CancellationToken.None);
+
+        var snapshot = await readPort.GetTreeSnapshotAsync(CancellationToken.None);
+        var sectionDto = snapshot.Sections.Single(s => s.SectionId == sectionId);
+        var categoryDto = snapshot.Categories.Single(c => c.CategoryId == categoryId);
+
+        sectionDto.Version.Should().NotBe(0u);
+        categoryDto.Version.Should().NotBe(0u);
+
+        var treeRevision = await AbwabWriterTestHarness.CurrentTreeRevisionAsync(db);
+
+        var editSection = () => writePort.EditSectionAsync(
+            new EditSectionCommand(sectionId, "قسم اختبار الإصدار (معدّل)", sectionDto.Version, treeRevision, ExpectedTimelineGeneration.Of(0), "tester"),
+            CancellationToken.None);
+        await editSection.Should().NotThrowAsync("the snapshot-sourced Version is the real current xmin, not a manufactured 0");
+
+        var editCategory = () => writePort.EditCategoryAsync(
+            new EditCategoryCommand(categoryId, "باب اختبار الإصدار (معدّل)", null, null, categoryDto.Version, ExpectedTimelineGeneration.Of(0), "tester"),
+            CancellationToken.None);
+        await editCategory.Should().NotThrowAsync("the snapshot-sourced Version is the real current xmin, not a manufactured 0");
+    }
+
+    [Fact]
+    public async Task Snapshot_Category_CarriesActiveAliases_EachWithItsOwnVersionUsableForAnEdit()
+    {
+        var (writePort, db) = AbwabWriterTestHarness.CreateWritePort(fixture);
+        await using var _ = db;
+        var readPort = AbwabWriterTestHarness.CreateReadPort(db);
+
+        var categoryId = await writePort.AddCategoryAsync(
+            new AddCategoryCommand("باب اختبار الأسماء البديلة", null, null, null, null, 0, ExpectedTimelineGeneration.Of(0), "tester"),
+            CancellationToken.None);
+        var aliasId = await writePort.AddCategoryAliasAsync(
+            new AddCategoryAliasCommand(categoryId, "اسم بديل", ExpectedTimelineGeneration.Of(0), "tester"), CancellationToken.None);
+
+        var snapshot = await readPort.GetTreeSnapshotAsync(CancellationToken.None);
+        var categoryDto = snapshot.Categories.Single(c => c.CategoryId == categoryId);
+        var aliasDto = categoryDto.Aliases.Should().ContainSingle(a => a.CategorySearchAliasId == aliasId).Subject;
+
+        aliasDto.Value.Should().Be("اسم بديل");
+        aliasDto.Version.Should().NotBe(0u);
+
+        var editAlias = () => writePort.EditCategoryAliasAsync(
+            new EditCategoryAliasCommand(aliasId, "اسم بديل معدّل", aliasDto.Version, ExpectedTimelineGeneration.Of(0), "tester"),
+            CancellationToken.None);
+        await editAlias.Should().NotThrowAsync("the snapshot-sourced alias Version is the real current xmin, not a manufactured 0");
+    }
+
+    [Fact]
+    public async Task Snapshot_Category_ExcludesSoftDeletedAliases()
+    {
+        var (writePort, db) = AbwabWriterTestHarness.CreateWritePort(fixture);
+        await using var _ = db;
+        var readPort = AbwabWriterTestHarness.CreateReadPort(db);
+
+        var categoryId = await writePort.AddCategoryAsync(
+            new AddCategoryCommand("باب اختبار حذف الاسم البديل", null, null, null, null, 0, ExpectedTimelineGeneration.Of(0), "tester"),
+            CancellationToken.None);
+        var aliasId = await writePort.AddCategoryAliasAsync(
+            new AddCategoryAliasCommand(categoryId, "اسم بديل سيُحذف", ExpectedTimelineGeneration.Of(0), "tester"), CancellationToken.None);
+
+        var beforeRemoval = await readPort.GetTreeSnapshotAsync(CancellationToken.None);
+        var aliasVersion = beforeRemoval.Categories.Single(c => c.CategoryId == categoryId).Aliases.Single().Version;
+
+        await writePort.RemoveCategoryAliasAsync(
+            new RemoveCategoryAliasCommand(aliasId, aliasVersion, ExpectedTimelineGeneration.Of(0), "tester"), CancellationToken.None);
+
+        var afterRemoval = await readPort.GetTreeSnapshotAsync(CancellationToken.None);
+        afterRemoval.Categories.Single(c => c.CategoryId == categoryId).Aliases.Should().BeEmpty();
     }
 
     private async Task<AbwabTreeSnapshotDto> ReadSnapshotAsync()
