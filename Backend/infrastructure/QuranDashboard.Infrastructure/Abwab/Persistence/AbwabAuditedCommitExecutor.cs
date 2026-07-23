@@ -70,10 +70,78 @@ public sealed class AbwabAuditedCommitExecutor(
         return result;
     }
 
+    public async Task<AbwabAuditedOperationResult> ExecuteAsync(AbwabAuditedOperationRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+
+        var barrier = await LockSingletonAsync<AbwabWriteBarrier>(LockBarrierSql, cancellationToken);
+        if (barrier.State != AbwabWriteBarrierState.Writable)
+        {
+            throw new AbwabStabilizationActiveException(barrier.State);
+        }
+
+        var revision = await LockSingletonAsync<AbwabRevisionState>(LockRevisionSql, cancellationToken);
+
+        if (request.ExpectedGeneration.Generation != revision.TimelineGeneration)
+        {
+            throw new AbwabTimelineGenerationStaleException(
+                request.ExpectedGeneration.Generation,
+                revision.TimelineGeneration);
+        }
+
+        var outcome = await request.Operation(revision, cancellationToken);
+
+        if (outcome.IsNoOp)
+        {
+            await transaction.CommitAsync(cancellationToken);
+            return new AbwabAuditedOperationResult(false, null, null, revision.TimelineGeneration);
+        }
+
+        var stampedAt = clock.UtcNow;
+        revision.AuditHeadSequence += 1;
+
+        var changeSet = new ChangeSet
+        {
+            Id = Guid.NewGuid(),
+            TimelineGeneration = revision.TimelineGeneration,
+            ChangeSetSequence = revision.AuditHeadSequence,
+            ActorSubject = request.ActorSubject,
+            CreatedAtUtc = stampedAt,
+        };
+        db.Set<ChangeSet>().Add(changeSet);
+
+        foreach (var draft in outcome.Events)
+        {
+            db.Set<AuditEvent>().Add(new AuditEvent
+            {
+                Id = Guid.NewGuid(),
+                ChangeSetId = changeSet.Id,
+                EventOrdinal = draft.EventOrdinal,
+                Payload = draft.Payload,
+                ServerTimestampUtc = stampedAt,
+            });
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+
+        var commitResult = new AbwabCommitResult(changeSet.Id, changeSet.ChangeSetSequence, changeSet.TimelineGeneration);
+        await cachePublisher.PublishAsync(commitResult, cancellationToken);
+        return new AbwabAuditedOperationResult(true, changeSet.Id, changeSet.ChangeSetSequence, changeSet.TimelineGeneration);
+    }
+
+    // EF's identity resolution returns an already-tracked instance as-is, ignoring freshly queried column
+    // values — harmless across requests (each gets its own DbContext) but wrong if this same context issued
+    // an earlier write in the same scope, since the FOR UPDATE lock proves the row (and this is the ONLY
+    // place a caller can observe post-lock truth) — so force a reload after acquiring the lock.
     private async Task<T> LockSingletonAsync<T>(string sql, CancellationToken cancellationToken)
         where T : class
     {
         var rows = await db.Set<T>().FromSqlRaw(sql).ToListAsync(cancellationToken);
-        return rows.Single();
+        var entity = rows.Single();
+        await db.Entry(entity).ReloadAsync(cancellationToken);
+        return entity;
     }
 }

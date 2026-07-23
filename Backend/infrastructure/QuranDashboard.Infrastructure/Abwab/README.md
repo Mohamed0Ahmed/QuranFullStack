@@ -32,6 +32,19 @@ is a sibling sub-area with its own boundary — see `Notifications/README.md`.
   events, save, commit → publish caches **only** after commit. Both locks are held through
   commit, so concurrent commits get one strictly increasing head and a rollback leaves
   head/generation/tree unchanged.
+  - **`029` addition**: a second `ExecuteAsync(AbwabAuditedOperationRequest, ct)` overload runs a
+    caller-supplied operation delegate **inside** the same two locks, after the generation check
+    and before any ChangeSet is written. It hands the delegate the locked `AbwabRevisionState` so
+    a structural writer can validate/bump `TreeRevision` atomically with its own entity
+    mutations, and supports an idempotent `NoOp` outcome (protection apply at an unchanged scope)
+    that commits the transaction **without** writing a ChangeSet. The original single-shot
+    `ExecuteAsync(AbwabWriteRequest, ct)` is untouched.
+  - `LockSingletonAsync` reloads the barrier/revision entity after acquiring its lock. EF's
+    identity resolution otherwise returns an already-tracked instance's stale in-memory values
+    instead of the freshly locked row — harmless when each caller gets its own `DbContext`, but
+    wrong the moment one scope (e.g. a test harness, or a future multi-command flow) issues two
+    writes through the same context. The reload makes the lock's post-acquisition truth
+    observable regardless of prior tracking state.
 - `Time/ServerClock` — `IServerClock`, server-authoritative `UtcNow` (never client time).
 - `Caching/NullAbwabCachePublisher` — the post-commit publication seam. 028 has no Abwab caches
   to invalidate yet; the hook already exists (called only after commit) so `029`+ bind real
@@ -58,9 +71,16 @@ append-only/TRUNCATE trigger defense, and the restricted `abwab_app` role) is se
   convention, which Npgsql 10 removed — **not** about per-property xmin mapping. Ordinary
   per-row `029`+ entities (e.g. `Section`, `Category`, `CategorySearchAlias`) correctly carry a
   `uint Version` property mapped explicitly (`HasColumnName("xmin").HasColumnType("xid")
-  .ValueGeneratedOnAddOrUpdate().IsConcurrencyToken()`); this still works and is expected to
-  throw `DbUpdateConcurrencyException` on a stale write (exercised by the US3 concurrency tests,
-  T040). Do not add a bare `Version` property to
+  .ValueGeneratedOnAddOrUpdate().IsConcurrencyToken()`) and DOES throw
+  `DbUpdateConcurrencyException` if EF's own optimistic-concurrency check ever fires — but the
+  `029` US3 writers do not rely on that path for `abwab.row_stale`: because every writer already
+  runs inside the same global barrier/revision lock, a genuine concurrent write mid-operation is
+  impossible, so each handler instead does an **explicit** `entity.Version != ExpectedVersion`
+  comparison against the freshly loaded row (under the lock) and throws
+  `AbwabWriteConflictException(abwab.row_stale)` directly — a deliberate, simpler, race-safe
+  check, not a fallback (exercised by the US3 concurrency tests, T040). The `xmin` concurrency
+  token stays configured as defense-in-depth for any future code path that bypasses the handler
+  layer. Do not add a bare `Version` property to
   `AbwabRevisionState` expecting the same — its concurrency guarantee is the row-lock above.
 - **Row locks use a read API.** The `FOR UPDATE` locks go through `FromSqlRaw` (a read API), not
   a forbidden write/bypass API, so the bypass gate stays green. Keep it that way.

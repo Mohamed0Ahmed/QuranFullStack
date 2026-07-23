@@ -105,6 +105,10 @@ namespace QuranDashboard.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at");
 
+                    b.Property<Guid?>("DeletionOperationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("deletion_operation_id");
+
                     b.Property<int>("Depth")
                         .HasColumnType("integer")
                         .HasColumnName("depth");
@@ -166,6 +170,9 @@ namespace QuranDashboard.Infrastructure.Migrations
                         .HasColumnName("xmin");
 
                     b.HasKey("CategoryId");
+
+                    b.HasIndex("DeletionOperationId")
+                        .HasDatabaseName("ix_abwab_categories_deletion_operation_id");
 
                     b.HasIndex("NormalizedName")
                         .IsUnique()
@@ -2880,6 +2887,90 @@ namespace QuranDashboard.Infrastructure.Migrations
                             Code = "safetyPoint.manage",
                             DashboardAdminBaseline = false,
                             SystemOwnerOnly = true
+                        },
+                        new
+                        {
+                            Code = "section.view",
+                            DashboardAdminBaseline = false,
+                            SystemOwnerOnly = false
+                        },
+                        new
+                        {
+                            Code = "section.add",
+                            DashboardAdminBaseline = false,
+                            SystemOwnerOnly = false
+                        },
+                        new
+                        {
+                            Code = "section.edit",
+                            DashboardAdminBaseline = false,
+                            SystemOwnerOnly = false
+                        },
+                        new
+                        {
+                            Code = "section.reorder",
+                            DashboardAdminBaseline = false,
+                            SystemOwnerOnly = false
+                        },
+                        new
+                        {
+                            Code = "section.delete",
+                            DashboardAdminBaseline = false,
+                            SystemOwnerOnly = false
+                        },
+                        new
+                        {
+                            Code = "category.view",
+                            DashboardAdminBaseline = false,
+                            SystemOwnerOnly = false
+                        },
+                        new
+                        {
+                            Code = "category.add",
+                            DashboardAdminBaseline = false,
+                            SystemOwnerOnly = false
+                        },
+                        new
+                        {
+                            Code = "category.edit",
+                            DashboardAdminBaseline = false,
+                            SystemOwnerOnly = false
+                        },
+                        new
+                        {
+                            Code = "category.move",
+                            DashboardAdminBaseline = false,
+                            SystemOwnerOnly = false
+                        },
+                        new
+                        {
+                            Code = "category.reorder",
+                            DashboardAdminBaseline = false,
+                            SystemOwnerOnly = false
+                        },
+                        new
+                        {
+                            Code = "category.delete",
+                            DashboardAdminBaseline = false,
+                            SystemOwnerOnly = false
+                        },
+                        new
+                        {
+                            Code = "protection.view",
+                            DashboardAdminBaseline = false,
+                            SystemOwnerOnly = false
+                        },
+                        new
+                        {
+                            Code = "protection.apply",
+                            DashboardAdminBaseline = false,
+                            SystemOwnerOnly = false
+                        },
+                        new
+                        {
+                            Code = "protection.lift",
+                            DashboardAdminBaseline = false,
+                            SystemOwnerOnly = false
                         });
                 });
 

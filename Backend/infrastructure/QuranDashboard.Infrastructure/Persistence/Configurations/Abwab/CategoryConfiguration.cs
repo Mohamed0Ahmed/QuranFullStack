@@ -68,6 +68,12 @@ public sealed class CategoryConfiguration : IEntityTypeConfiguration<Category>
         builder.Property(c => c.DeletedAtUtc)
             .HasColumnName("deleted_at");
 
+        builder.Property(c => c.DeletionOperationId)
+            .HasColumnName("deletion_operation_id");
+
+        builder.HasIndex(c => c.DeletionOperationId)
+            .HasDatabaseName("ix_abwab_categories_deletion_operation_id");
+
         builder.Property(c => c.Version)
             .HasColumnName("xmin")
             .HasColumnType("xid")

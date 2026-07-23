@@ -29,6 +29,18 @@ current technical state, never inverse-restored (§6.3, §6.4, §8).
 Section and Category adapters are versioned and round-trip tested as of Story 1
 (`029-abwab-core`). The ManualProtection adapter is versioned and round-trip tested as of
 Story 2, and is **accepted here — before any protected category writer exists** (the §18.3
-order gate for `029` US2→US3). All three adapters (Section, Category, ManualProtection) are
-now registered; the §8 static registry test (Story 3, T082) still needs to run against all
-three together before the final `033`-acceptance note is recorded at feature exit.
+order gate for `029` US2→US3).
+
+**Story 3 (T062) acceptance note**: the Category adapter's snapshot now also round-trips
+`DeletionOperationId` — the correlation field the US3 subtree-delete/operation-restore
+handlers stamp on every category soft-deleted by the same atomic operation, cleared back to
+`null` on restore (still excluded: `xmin`, `TreeRevision`, `CategoryContentRevision`, cache
+state, realtime cursors). All **three** registered adapters — **Section**, **Category**
+(aggregate: Category + CategorySearchAlias + content + hierarchy/ancestry + all three orders
++ subtree delete/operation-restore + ordinary-protection actor/time), and
+**ManualProtection** — are versioned, round-trip tested, and **accepted for `033`**. The
+static §8 registry test (`Backend/tests/QuranDashboard.Tests/Abwab/RestoreAdapters/RestoreRegistryTests.cs`,
+T082) asserts the DI-registered adapter set is exactly `{Section, Category, ManualProtection}`
+and fails on a missing registration or a duplicate/standalone `Order` registration — Order
+remains a **facet** of Section (`SortOrder`) and Category (`SiblingOrder`/`SectionOrder`/
+`GlobalOrder`), never a fourth registration.

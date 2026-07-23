@@ -15,6 +15,20 @@ public sealed class PermissionParityTests(PostgresFixture fixture)
         "permission.administer",
         "audit.restore",
         "safetyPoint.manage",
+        "section.view",
+        "section.add",
+        "section.edit",
+        "section.reorder",
+        "section.delete",
+        "category.view",
+        "category.add",
+        "category.edit",
+        "category.move",
+        "category.reorder",
+        "category.delete",
+        "protection.view",
+        "protection.apply",
+        "protection.lift",
     };
 
     [Fact]

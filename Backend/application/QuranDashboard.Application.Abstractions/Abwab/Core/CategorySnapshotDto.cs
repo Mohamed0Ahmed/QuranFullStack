@@ -13,4 +13,5 @@ public sealed record CategorySnapshotDto(
     int? GlobalOrder,
     IReadOnlyList<Guid> AncestorIds,
     int Depth,
-    long CategoryContentRevision);
+    long CategoryContentRevision,
+    CategoryProtectionSummaryDto Protection);

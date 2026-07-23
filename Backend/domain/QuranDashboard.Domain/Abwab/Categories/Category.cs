@@ -38,6 +38,10 @@ public sealed class Category : IAbwabAuditable
 
     public DateTimeOffset? DeletedAtUtc { get; set; }
 
+    // Correlates every category soft-deleted by the same atomic subtree-delete operation, so
+    // operation-restore can find exactly that set; cleared back to null on restore.
+    public Guid? DeletionOperationId { get; set; }
+
     public uint Version { get; set; }
 
     public bool IsRoot => ParentCategoryId is null;

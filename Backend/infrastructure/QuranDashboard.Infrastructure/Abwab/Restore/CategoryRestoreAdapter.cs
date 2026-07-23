@@ -35,6 +35,7 @@ public sealed class CategoryRestoreAdapter : IAbwabRestoreAdapter<CategoryAggreg
             category.OrdinaryProtectionLastEditedAtUtc,
             category.IsDeleted,
             category.DeletedAtUtc,
+            category.DeletionOperationId,
             [.. product.Aliases.Select(CaptureAlias)]);
     }
 
@@ -58,6 +59,7 @@ public sealed class CategoryRestoreAdapter : IAbwabRestoreAdapter<CategoryAggreg
             OrdinaryProtectionLastEditedAtUtc = snapshot.OrdinaryProtectionLastEditedAtUtc,
             IsDeleted = snapshot.IsDeleted,
             DeletedAtUtc = snapshot.DeletedAtUtc,
+            DeletionOperationId = snapshot.DeletionOperationId,
         };
 
         var aliases = snapshot.Aliases.Select(a => ReconstructAlias(a, category.CategoryId)).ToList();

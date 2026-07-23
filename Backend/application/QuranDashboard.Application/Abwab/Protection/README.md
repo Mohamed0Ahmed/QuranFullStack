@@ -1,10 +1,39 @@
-# Abwab protection resolver (application) — `029` US2
+# Abwab protection (application) — `029` US2 resolver + US3 writers
 
 `ProtectionResolver` resolves `ManualProtection` (direct/inherited) and the ordinary
 24-hour protection window for a category, given raw context fetched through
 `IManualProtectionReadPort` (`Backend/application/QuranDashboard.Application.Abstractions/Abwab/Core/`).
-It builds no writer/mutation surface — read-only resolution only, consumed by `029` US3's
-writers and `031`+ protection UI.
+It is read-only; the direct/inherited inheritance rule itself now lives as the shared, pure
+`ManualProtectionResolution.Resolve(...)` in `Application.Abstractions/Abwab/Core/` so both this
+resolver (single-category, read-port-backed) and the Infrastructure-side batch composite-read
+projector (`AbwabProtectionSummaryProjector`, tree/search snapshot) apply the exact same rule
+without duplicating it across layers.
+
+## US3 writers (this folder)
+
+- `ManualProtectionWriterHandler` — apply/lift a single type. Same-scope apply is idempotent
+  (`AbwabAuditedOperationOutcome.NoOp`, no ChangeSet); a scope change requires the existing
+  record's Expected Version and becomes one audited edit; any mismatch (including a caller with
+  no version at all) maps to `abwab.manual_protection_scope_conflict` — never the generic
+  `abwab.row_stale` for this one operation (§11 gives it its own code). Lift requires the row's
+  Expected Version and maps a mismatch to `abwab.row_stale`.
+- `FullProtectionPresetHandler` — the five-type preset. One selected scope idempotently
+  upserts all five `ManualProtectionType` records for a category in one operation delegate (one
+  transaction): matching-scope records are untouched, missing types are inserted, differing-scope
+  records require their own Expected Version or the whole command rolls back
+  (`abwab.manual_protection_scope_conflict`) — nothing partially applies. All five already
+  matching is an idempotent no-ChangeSet success.
+- `CategoryProtectionGate` (`Application/Abwab/Categories/`) is the shared consumer: it calls
+  `ProtectionResolver` for the manual-protection block (`abwab.manual_protection`) and, for
+  direct-content edits/moves only, additionally checks the ordinary 24-hour window (last
+  protected editor or an active System Owner only, else `abwab.ordinary_protection`) and starts/
+  restarts that window on success. Pure reorder, subtree delete, and operation-restore never
+  consult or touch the ordinary window (§9) — only `CategoryProtectionGate.
+  EnsureNotManuallyProtectedAsync` (manual-only, no window) applies there.
+- Both writer commands (`ApplyManualProtectionCommand`, `LiftManualProtectionCommand`,
+  `ApplyFullProtectionPresetCommand`) live in `Application.Abstractions/Abwab/Core/Commands/`
+  alongside `IAbwabCoreWritePort`, not in this folder — the port contract is what the (future)
+  US4 frontend core mock mirrors for parity.
 
 ## Resolution
 

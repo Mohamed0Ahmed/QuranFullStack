@@ -29,6 +29,7 @@ authorizes another. No drag semantics — reorder is an explicit action.
 | `abwab.permanent_default_section` | rename/delete/duplicate of the permanent default section |
 | `abwab.stabilization_active` | any section add/edit/reorder/delete attempted before the exact two-hour end (§9 "Two-hour stabilization: Blocked") |
 | `abwab.timeline_generation_stale` / `abwab.row_stale` | stale generation / `xmin` |
+| `abwab.tree_revision_stale` | stale `TreeRevision` (§8 registry table: "Sections and section order" concurrency is `xmin` + `TreeRevision`, not `xmin` alone) — every section add/edit/reorder/delete carries `ExpectedTreeRevision` and bumps `TreeRevision` once |
 
 ## Tests
 

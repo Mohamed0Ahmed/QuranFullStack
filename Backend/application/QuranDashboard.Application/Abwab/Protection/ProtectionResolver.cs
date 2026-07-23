@@ -68,56 +68,12 @@ public sealed class ProtectionResolver(IManualProtectionReadPort readPort, IServ
         CategoryProtectionContextDto context,
         ManualProtectionType protectionType,
         OrdinaryProtectionResolutionDto ordinary,
-        DateTimeOffset serverTimeUtc)
-    {
-        var direct = context.ActiveProtections.FirstOrDefault(
-            p => p.CategoryId == context.CategoryId && p.ProtectionType == protectionType);
-
-        if (direct is not null)
-        {
-            return new ManualProtectionResolutionDto(
-                protectionType,
-                IsProtected: true,
-                IsDirect: true,
-                context.CategoryId,
-                direct.ProtectionScope,
-                ProtectionActionClassification.ManuallyProtected,
-                serverTimeUtc);
-        }
-
-        // AncestorIds is root-to-parent; walk from the end so the NEAREST ancestor's Subtree grant wins.
-        for (var i = context.AncestorIds.Count - 1; i >= 0; i--)
-        {
-            var ancestorId = context.AncestorIds[i];
-            var inherited = context.ActiveProtections.FirstOrDefault(p =>
-                p.CategoryId == ancestorId &&
-                p.ProtectionType == protectionType &&
-                p.ProtectionScope == ManualProtectionScope.Subtree);
-
-            if (inherited is not null)
-            {
-                return new ManualProtectionResolutionDto(
-                    protectionType,
-                    IsProtected: true,
-                    IsDirect: false,
-                    ancestorId,
-                    inherited.ProtectionScope,
-                    ProtectionActionClassification.ManuallyProtected,
-                    serverTimeUtc);
-            }
-        }
-
-        var classification = ordinary.IsActive
-            ? ProtectionActionClassification.OrdinaryWindowActive
-            : ProtectionActionClassification.Unprotected;
-
-        return new ManualProtectionResolutionDto(
+        DateTimeOffset serverTimeUtc) =>
+        ManualProtectionResolution.Resolve(
+            context.CategoryId,
+            context.AncestorIds,
+            context.ActiveProtections,
             protectionType,
-            IsProtected: false,
-            IsDirect: false,
-            SourceCategoryId: null,
-            Scope: null,
-            classification,
+            ordinary.IsActive,
             serverTimeUtc);
-    }
 }

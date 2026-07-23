@@ -18,4 +18,5 @@ public sealed record CategoryRestoreSnapshot(
     DateTimeOffset? OrdinaryProtectionLastEditedAtUtc,
     bool IsDeleted,
     DateTimeOffset? DeletedAtUtc,
+    Guid? DeletionOperationId,
     IReadOnlyList<CategorySearchAliasRestoreSnapshot> Aliases);

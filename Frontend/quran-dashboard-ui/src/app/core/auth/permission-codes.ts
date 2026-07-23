@@ -5,6 +5,20 @@ export const PERMISSION_CODES = [
   'permission.administer',
   'audit.restore',
   'safetyPoint.manage',
+  'section.view',
+  'section.add',
+  'section.edit',
+  'section.reorder',
+  'section.delete',
+  'category.view',
+  'category.add',
+  'category.edit',
+  'category.move',
+  'category.reorder',
+  'category.delete',
+  'protection.view',
+  'protection.apply',
+  'protection.lift',
 ] as const;
 
 export type PermissionCode = (typeof PERMISSION_CODES)[number];

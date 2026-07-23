@@ -1,17 +1,21 @@
-using System.Linq.Expressions;
 using QuranDashboard.Application.Abstractions.Abwab;
 using QuranDashboard.Application.Abstractions.Abwab.Core;
 using QuranDashboard.Domain.Abwab.Categories;
+using QuranDashboard.Domain.Abwab.Protection;
 using QuranDashboard.Domain.Abwab.Timeline;
 using QuranDashboard.Domain.Abwab.Tree;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Abwab;
 
+// Always reads the FULL product (protection detail included); redaction by caller permission is a
+// separate backend projection step (Application.Abwab.Tree.AbwabCompositeReadRedactor, T060) — this
+// port never redacts.
 public sealed class EfAbwabCoreReadPort(QuranDashboardDbContext db, IServerClock clock) : IAbwabCoreReadPort
 {
     public async Task<AbwabTreeSnapshotDto> GetTreeSnapshotAsync(CancellationToken cancellationToken)
     {
         var revision = await GetRevisionStateAsync(cancellationToken);
+        var serverTimeUtc = clock.UtcNow;
 
         var sections = await db.AbwabSections
             .AsNoTracking()
@@ -20,11 +24,20 @@ public sealed class EfAbwabCoreReadPort(QuranDashboardDbContext db, IServerClock
             .Select(s => new SectionSnapshotDto(s.SectionId, s.Name, s.NormalizedName, s.SortOrder, s.IsPermanentDefault))
             .ToListAsync(cancellationToken);
 
-        var categories = await db.AbwabCategories
+        var categoryEntities = await db.AbwabCategories
             .AsNoTracking()
             .Where(c => !c.IsDeleted)
-            .Select(ToSnapshot)
             .ToListAsync(cancellationToken);
+
+        var protections = await db.AbwabManualProtections
+            .AsNoTracking()
+            .Where(p => !p.IsDeleted)
+            .ToListAsync(cancellationToken);
+        var protectionsByCategory = protections.ToLookup(p => p.CategoryId);
+
+        var categories = categoryEntities
+            .Select(c => ToSnapshot(c, protectionsByCategory, serverTimeUtc))
+            .ToList();
 
         var allCategoriesProjection = categories
             .Where(c => c.ParentCategoryId is null)
@@ -35,7 +48,7 @@ public sealed class EfAbwabCoreReadPort(QuranDashboardDbContext db, IServerClock
             ExpectedTimelineGeneration.Of(revision.TimelineGeneration),
             revision.TreeRevision,
             AbwabTreeSnapshotDto.CurrentSchemaVersion,
-            clock.UtcNow,
+            serverTimeUtc,
             sections,
             categories,
             allCategoriesProjection);
@@ -63,17 +76,28 @@ public sealed class EfAbwabCoreReadPort(QuranDashboardDbContext db, IServerClock
 
         var matchedIds = await matchedByName.Union(matchedByAlias).ToListAsync(cancellationToken);
 
-        var matches = await db.AbwabCategories
+        var matchEntities = await db.AbwabCategories
             .AsNoTracking()
             .Where(c => !c.IsDeleted && matchedIds.Contains(c.CategoryId))
-            .Select(ToSnapshot)
             .ToListAsync(cancellationToken);
+
+        var serverTimeUtc = clock.UtcNow;
+        var protections = await db.AbwabManualProtections
+            .AsNoTracking()
+            .Where(p => !p.IsDeleted && matchedIds.Contains(p.CategoryId))
+            .ToListAsync(cancellationToken);
+        var protectionsByCategory = protections.ToLookup(p => p.CategoryId);
+
+        var matches = matchEntities.Select(c => ToSnapshot(c, protectionsByCategory, serverTimeUtc)).ToList();
 
         return new CategorySearchResultDto(ExpectedTimelineGeneration.Of(revision.TimelineGeneration), matches);
     }
 
-    private static readonly Expression<Func<Category, CategorySnapshotDto>> ToSnapshot =
-        c => new CategorySnapshotDto(
+    private static CategorySnapshotDto ToSnapshot(
+        Category c,
+        ILookup<Guid, ManualProtection> protectionsByCategory,
+        DateTimeOffset serverTimeUtc) =>
+        new(
             c.CategoryId,
             c.Name,
             c.NormalizedName,
@@ -86,7 +110,8 @@ public sealed class EfAbwabCoreReadPort(QuranDashboardDbContext db, IServerClock
             c.GlobalOrder,
             c.AncestorIds,
             c.Depth,
-            c.CategoryContentRevision);
+            c.CategoryContentRevision,
+            AbwabProtectionSummaryProjector.Build(c, protectionsByCategory, serverTimeUtc));
 
     private async Task<AbwabRevisionState> GetRevisionStateAsync(CancellationToken cancellationToken) =>
         await db.AbwabRevisionStates.AsNoTracking().SingleAsync(r => r.Id == AbwabRevisionState.SingletonId, cancellationToken);
