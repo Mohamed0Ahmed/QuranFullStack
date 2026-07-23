@@ -20,8 +20,7 @@ function text(element: Element): string {
   return element.textContent?.replace(/\s+/g, ' ').trim() ?? '';
 }
 
-// T065: §6.3 audit render payload tests (audit-render-contract.md). Synthetic Arabic fixture data
-// only (source-safe) — no real Quran text.
+// Synthetic Arabic fixture data only (source-safe) — no real Quran text.
 describe('Abwab §6.3 audit render payloads', () => {
   it('category create: renders the complete new state, with empty fields shown as غير محدد', () => {
     const fixture = TestBed.createComponent(CategoryCreateRenderComponent);

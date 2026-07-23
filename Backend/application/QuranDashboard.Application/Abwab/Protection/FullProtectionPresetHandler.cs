@@ -4,10 +4,6 @@ using QuranDashboard.Domain.Abwab.Protection;
 
 namespace QuranDashboard.Application.Abwab.Protection;
 
-// T058: one selected scope idempotently upserts all five typed ManualProtection records. Same-scope
-// records are left untouched; each different-scope record requires its own Expected Version; missing
-// types are inserted; all-matching is an idempotent no-ChangeSet success; any stale/conflict failure
-// rolls back all five because every mutation shares the one operation delegate / one transaction.
 public sealed class FullProtectionPresetHandler(
     IAbwabWriteExecutor executor,
     ICategoryTreeStore categories,

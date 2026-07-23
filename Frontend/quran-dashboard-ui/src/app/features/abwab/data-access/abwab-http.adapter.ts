@@ -37,10 +37,6 @@ import {
 
 const UNEXPECTED_ERROR = 'حدث خطأ غير متوقع.';
 
-// T068: HTTP adapter for the ONE versioned AbwabCorePort contract (abwab-core.port.ts). It maps the
-// backend's exact abwab.* 409 codes (AbwabConflictResponses.cs) to a typed AbwabConflictError and
-// never fabricates TimelineGeneration/TreeRevision on a mutation response — those come from the
-// server only via getTreeSnapshot()/search()/getProtectionProfile(), matching AbwabCoreMock exactly.
 @Injectable({ providedIn: 'root' })
 export class AbwabHttpAdapter implements AbwabCorePort {
   private readonly http = inject(HttpClient);

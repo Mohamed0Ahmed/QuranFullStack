@@ -10,10 +10,6 @@ public enum AbwabCompositeReadAccess
     Full = 2,
 }
 
-// T048/T060: backend DTO projection enforcing category.view/section.view/protection.view redaction.
-// Tree/search requires category.view AND section.view (else Denied — no partial response). Full manual
-// metadata (type/scope/actor/source-ancestor) additionally requires protection.view; without it only
-// the two generic flags on CategoryProtectionSummaryDto survive. Never done on the frontend.
 public static class AbwabCompositeReadRedactor
 {
     public static AbwabCompositeReadAccess Classify(IReadOnlySet<string> permissions)

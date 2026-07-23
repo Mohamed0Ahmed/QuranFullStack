@@ -5,9 +5,6 @@ using QuranDashboard.Application.Abwab.Sections;
 
 namespace QuranDashboard.Application.Abwab.Tree;
 
-// T050: the single Application-owned implementation of the core write port, composing the per-area
-// handlers (T052-T058). No business logic lives here — it is a thin, testable seam the API layer and
-// (in US4) the frontend core mock both target.
 public sealed class AbwabCoreWriteHandler(
     SectionWriterHandler sections,
     CategoryContentHandler categoryContent,

@@ -19,10 +19,6 @@ function conflictBody(code: string) {
   return { isSuccess: false, message: 'تعارض', errors: [code] };
 }
 
-// T063: mock ≡ HTTP parity. Both AbwabCoreMock and AbwabHttpAdapter implement the ONE AbwabCorePort
-// contract (abwab-core.port.ts); this suite drives the same scenarios through each and asserts
-// identical result shapes and identical abwab.* conflict codes, and that NEITHER fabricates
-// TimelineGeneration on a mutation result (only reads carry it, straight from the server/mock state).
 describe('AbwabCorePort mock <-> HTTP parity', () => {
   let httpTesting: HttpTestingController;
   let http: AbwabCorePort;

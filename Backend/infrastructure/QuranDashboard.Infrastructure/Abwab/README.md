@@ -49,6 +49,11 @@ is a sibling sub-area with its own boundary — see `Notifications/README.md`.
 - `Caching/NullAbwabCachePublisher` — the post-commit publication seam. 028 has no Abwab caches
   to invalidate yet; the hook already exists (called only after commit) so `029`+ bind real
   caches without moving it.
+- `Persistence/InertDeletionReservationChecker` — **`029` addition**: the default
+  `IDeletionReservationChecker` a subtree-delete handler consults before proceeding. Always reports
+  "not reserved" — `032` installs the Pending-aware replacement that can map to
+  `abwab.category_reserved_by_pending`; the seam exists precisely so that swap never touches the
+  delete handler itself.
 - `AbwabKernelDependencyInjection` — composes the clock, the null cache publisher, and the
   audited-commit executor. The **stabilization writer registry** (`AbwabWriterRegistry` /
   `AbwabWriterStabilizationGuard` in `Application/Abwab/Concurrency/`) is wired at the **API**
@@ -91,9 +96,12 @@ append-only/TRUNCATE trigger defense, and the restricted `abwab_app` role) is se
 
 ## Related
 
-- Domain: `QuranDashboard.Domain/Abwab/{Audit,Timeline,Concurrency,Persistence}/`.
-- Ports/contracts: `QuranDashboard.Application.Abstractions/Abwab/`.
+- Domain: `QuranDashboard.Domain/Abwab/README.md` (kernel types in `{Audit,Timeline,Concurrency,
+  Persistence}/`; the `029` product model in `{Sections,Categories,Protection,Tree}/`).
+- Ports/contracts: `QuranDashboard.Application.Abstractions/Abwab/README.md`.
 - Stabilization registry: `QuranDashboard.Application/Abwab/Concurrency/`.
+- `029` restore adapters (this project): `Restore/README.md`. `029` read ports:
+  `Persistence/Reads/Abwab/README.md`.
 - Security-audit separation (permission/owner writes): `Backend/api/QuranDashboard.Api/Security/README.md`.
 - Notification storage sub-area: `Notifications/README.md`.
 - Verified by real-PostgreSQL tests under `Backend/tests/QuranDashboard.Tests/Abwab/Kernel/`.

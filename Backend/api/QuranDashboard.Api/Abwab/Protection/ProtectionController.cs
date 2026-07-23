@@ -9,8 +9,6 @@ using QuranDashboard.Domain.Security.Permissions;
 
 namespace QuranDashboard.Api.Abwab.Protection;
 
-// T061: manual protection apply/lift/full-preset + the dedicated effective-protection read
-// (requires protection.view — the composite-read redaction table in tree-read-contract.md).
 [ApiController]
 [Route("api/abwab/protection")]
 public sealed class ProtectionController(

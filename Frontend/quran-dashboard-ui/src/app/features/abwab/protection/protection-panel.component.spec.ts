@@ -28,9 +28,6 @@ function render(inputs: { profile?: CategoryProtectionProfileDto | null; canView
   return fixture;
 }
 
-// T072 (protection UI) + the second half of T064 (composite-read visibility): this panel renders
-// type/scope/actor/source-ancestor data ONLY when protection.view is granted (canView) AND the
-// backend actually returned it; frontend hiding here is cosmetic, never the security boundary.
 describe('ProtectionPanelComponent', () => {
   it('renders nothing when canView is false, even though a profile was supplied', () => {
     const fixture = render({ canView: false });

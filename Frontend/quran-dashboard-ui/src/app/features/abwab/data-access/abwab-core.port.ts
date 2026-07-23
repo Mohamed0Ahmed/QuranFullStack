@@ -39,11 +39,8 @@ export interface SubtreeDeleteResult {
   readonly deletionOperationId: string;
 }
 
-// The ONE versioned core contract §11/§18.3 step 4 requires: both the in-memory mock (T067) and the
-// HTTP adapter (T068) implement this interface, so a parity suite (T063) can run the identical
-// operation against each and assert identical outcomes. Every read carries TimelineGeneration/
-// TreeRevision from the SERVER; no method here may synthesize one — see abwab-core.mock.ts and
-// abwab-http.adapter.ts for the "neither fabricates TimelineGeneration" invariant.
+// Every read carries TimelineGeneration/TreeRevision from the SERVER; no method here may
+// synthesize one — see abwab-core.mock.ts and abwab-http.adapter.ts.
 export interface AbwabCorePort {
   getTreeSnapshot(): Promise<AbwabTreeSnapshotDto>;
   search(query: string): Promise<CategorySearchResultDto>;

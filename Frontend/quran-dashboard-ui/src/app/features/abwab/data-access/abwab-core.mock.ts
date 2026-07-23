@@ -51,12 +51,6 @@ export interface AbwabCoreMockOptions {
   readonly clock?: MockClock;
 }
 
-// T067: in-memory implementation of the ONE versioned AbwabCorePort contract, standing in for the
-// backend during frontend development/testing. It re-derives its own TreeRevision/TimelineGeneration
-// internally and returns them ONLY from reads (getTreeSnapshot/search/getProtectionProfile) — mutation
-// methods never attach a generation/revision to their result, matching the real HTTP surface exactly
-// (see abwab-http.adapter.ts) so the parity suite (T063) holds.
-//
 // Not @Injectable(): it takes plain constructor options (actor/clock/id factory) rather than
 // injected services, so callers construct it directly or via a DI `useFactory`.
 export class AbwabCoreMock implements AbwabCorePort {

@@ -8,8 +8,6 @@ using QuranDashboard.Domain.Abwab.Tree;
 
 namespace QuranDashboard.Application.Abwab.Categories;
 
-// T053 (create/edit) + T059 (ordinary gate on direct-content edit) + T081 (CategoryContentRevision
-// bump-once on edit; a freshly created category starts at revision 0 — create does not bump).
 public sealed class CategoryContentHandler(
     IAbwabWriteExecutor executor,
     ICategoryTreeStore categories,

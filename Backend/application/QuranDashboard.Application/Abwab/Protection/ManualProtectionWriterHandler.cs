@@ -4,10 +4,6 @@ using QuranDashboard.Domain.Abwab.Protection;
 
 namespace QuranDashboard.Application.Abwab.Protection;
 
-// T057: apply/lift. Same-scope apply is idempotent with no ChangeSet; a scope change requires the
-// Expected Version of the existing record and returns abwab.manual_protection_scope_conflict on
-// mismatch (never abwab.row_stale — this entity/operation has its own dedicated code, §11). Stabilization
-// is enforced by the shared barrier check before this operation ever runs.
 public sealed class ManualProtectionWriterHandler(
     IAbwabWriteExecutor executor,
     ICategoryTreeStore categories,

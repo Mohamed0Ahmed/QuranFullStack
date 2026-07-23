@@ -12,11 +12,6 @@ export interface AbwabTreeCacheOptions {
   readonly clock?: CacheClock;
 }
 
-// T069: core cache rules for the Abwab tree snapshot, built on the reused 028 §14.1 primitive
-// (PersistentCache over an IndexedDB-backed AsyncKeyValueStore). The tree snapshot is cached under
-// ONE stable key (there is only one snapshot resource); every successful mutation and every
-// generation/revision conflict invalidates it, forcing the next read to go back to the server —
-// there is no client-side reconciliation of a stale snapshot.
 export class AbwabTreeCache {
   private readonly cache: PersistentCache<AbwabTreeSnapshotDto>;
 

@@ -24,10 +24,6 @@ function createPermissions(granted: string[]): { permissions: AbwabPermissions; 
   return { permissions: TestBed.inject(AbwabPermissions), store };
 }
 
-// T064: composite-read UI visibility mirrors the backend redaction table (tree-read-contract.md)
-// across every grant combination — frontend hiding is COSMETIC, the redacted DTO itself (not this
-// service) is what actually withholds type/scope/actor/source-ancestor data (see
-// protection-panel.component.spec.ts for the DTO-shape side of the invariant).
 describe('AbwabPermissions composite-read visibility (mirrors the backend redaction table)', () => {
   it('denies tree/search visibility when either category.view or section.view is missing', () => {
     expect(createPermissions([]).permissions.canViewTree()).toBe(false);

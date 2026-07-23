@@ -7,8 +7,6 @@ using QuranDashboard.Domain.Abwab.Protection;
 
 namespace QuranDashboard.Application.Abwab.Categories;
 
-// T054: single/bulk move (cycle/overlap/inactive guards, ancestry rewrite, global-order preservation,
-// one TreeRevision bump) and reorder (siblings/section-roots/global-roots, one TreeRevision bump).
 public sealed class CategoryOrderingHandler(
     IAbwabWriteExecutor executor,
     ICategoryTreeStore categories,

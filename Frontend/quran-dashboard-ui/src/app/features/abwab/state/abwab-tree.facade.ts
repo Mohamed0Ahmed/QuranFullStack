@@ -31,13 +31,10 @@ export type AbwabMutationStatus = 'idle' | 'pending' | 'success' | 'error' | 'co
 
 const LOAD_ERROR = 'تعذّر تحميل شجرة الأبواب. حاول مرة أخرى.';
 
-// T069/T070/T074 orchestration point: owns the tree snapshot, selection/expansion (post-mutation
-// context preservation), and every mutation. Every mutation runs through runMutation(), which is the
-// SINGLE place the 028 §14.1 cache rule lives: invalidate the cached snapshot after a successful
-// mutation, then reload from the server (the only source of a fresh TreeRevision/TimelineGeneration
-// — see abwab-core.port.ts). A conflict does the same invalidate+reload, which is this facade's
-// "rollback": since nothing is applied to the rendered snapshot ahead of server confirmation, a
-// conflict simply re-syncs the view to server truth instead of leaving a stale cached tree on screen.
+// Every mutation runs through runMutation(), the SINGLE place the cache-invalidate rule lives
+// (abwab-cache.ts): invalidate, then reload from the server. A conflict does the SAME invalidate +
+// reload — that IS this facade's "rollback": nothing is ever applied to the rendered snapshot ahead
+// of server confirmation, so a conflict simply re-syncs to server truth instead of undoing a change.
 @Injectable()
 export class AbwabTreeFacade {
   private readonly port = inject(ABWAB_CORE_PORT);

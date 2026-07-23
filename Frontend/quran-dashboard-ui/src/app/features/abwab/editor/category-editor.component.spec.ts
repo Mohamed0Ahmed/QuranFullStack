@@ -34,8 +34,6 @@ function render(canEdit = true, categoryValue: CategorySnapshotDto = category())
   return fixture;
 }
 
-// T071: reuses the 028 @angular/forms Reactive Forms package. Explicit save only, no edit-session
-// lock — opening/switching the editor never itself emits a mutation or calls any lock endpoint.
 describe('CategoryEditorComponent', () => {
   it('patches the form from the current category on open (no lock call, no emission)', () => {
     const fixture = render();

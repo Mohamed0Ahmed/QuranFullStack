@@ -7,8 +7,6 @@ using QuranDashboard.Domain.Security.Permissions;
 
 namespace QuranDashboard.Api.Abwab.Sections;
 
-// T061: explicit section actions only — no drag semantics. Every mutation carries
-// ExpectedTimelineGeneration (and expected xmin where the row is targeted directly).
 [ApiController]
 [Route("api/abwab/sections")]
 public sealed class SectionsController(IAbwabCoreWritePort writePort, ICurrentUser currentUser) : ControllerBase

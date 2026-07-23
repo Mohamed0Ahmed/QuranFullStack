@@ -18,12 +18,9 @@ export interface ApplyFullPresetEvent {
 
 const SCOPE_OPTIONS: readonly ManualProtectionScope[] = [0, 1];
 
-// T072: protection UI — view direct/inherited protection with the resolving source ancestor and the
-// server-derived expiry, and apply/lift/full-preset actions. Gated by protection.view: when canView
-// is false this component renders NOTHING protection-specific, matching the backend's composite-read
-// redaction (tree-read-contract.md) — the profile input is only ever populated by a caller that
-// already holds protection.view, so there is no type/scope/actor/source-ancestor for this component
-// to leak even if it were rendered.
+// Gated by protection.view: when canView is false this component renders NOTHING
+// protection-specific — safe by construction, since the profile input is only ever populated by a
+// caller that already holds protection.view (the backend never hands a redacted profile here).
 @Component({
   selector: 'qd-abwab-protection-panel',
   standalone: true,

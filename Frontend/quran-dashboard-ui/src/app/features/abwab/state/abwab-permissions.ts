@@ -2,11 +2,8 @@ import { Injectable, computed, inject } from '@angular/core';
 
 import { CurrentUserStore } from '../../../core/auth/current-user.store';
 
-// T074: frontend composite-read visibility wiring from /me permissions. This is COSMETIC ONLY — the
-// backend DTO projection (tree-read-contract.md §"Composite-read redaction") is the sole authority;
-// a hidden action invoked directly is still rejected server-side. Tree/search visibility requires
-// BOTH category.view and section.view (every result exposes section/path context); protection detail
-// requires protection.view on top of that, mirroring the redaction table exactly.
+// COSMETIC ONLY — the backend DTO projection (tree-read-contract.md §"Composite-read redaction") is
+// the sole authority; a hidden action invoked directly is still rejected server-side.
 @Injectable()
 export class AbwabPermissions {
   private readonly currentUser = inject(CurrentUserStore);

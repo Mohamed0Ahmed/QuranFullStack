@@ -7,9 +7,6 @@ using QuranDashboard.Domain.Security.Permissions;
 
 namespace QuranDashboard.Api.Abwab.Categories;
 
-// T061: explicit category actions only — no drag semantics. Move and reorder are distinct verbs;
-// subtree-delete/operation-restore are the atomic pair. Every mutation carries ExpectedTimelineGeneration
-// plus expected xmin/TreeRevision where structural.
 [ApiController]
 [Route("api/abwab/categories")]
 public sealed class CategoriesController(IAbwabCoreWritePort writePort, ICurrentUser currentUser) : ControllerBase

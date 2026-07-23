@@ -21,13 +21,8 @@ export interface ExistingAliasRemoveEvent {
   readonly expectedVersion: number;
 }
 
-// T071: category editor reusing the 028 @angular/forms Reactive Forms package. Explicit save only —
-// there is no autosave and no "start editing session" call, so opening this editor never locks the
-// category against other editors; the only thing that can conflict is the SAVE itself, via the usual
-// abwab.row_stale / abwab.timeline_generation_stale mutation conflict (facade-level).
-//
-// Existing-alias edit/remove each carry the ALIAS'S OWN Version (from CategorySnapshotDto.aliases,
-// blocker fix) as expectedVersion — never a manufactured value.
+// Existing-alias edit/remove each carry the ALIAS'S OWN Version (from CategorySnapshotDto.aliases)
+// as expectedVersion — never the category's.
 @Component({
   selector: 'qd-abwab-category-editor',
   standalone: true,

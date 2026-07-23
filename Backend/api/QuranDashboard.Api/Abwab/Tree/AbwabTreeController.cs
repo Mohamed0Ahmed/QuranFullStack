@@ -7,8 +7,6 @@ using QuranDashboard.Application.Security;
 
 namespace QuranDashboard.Api.Abwab.Tree;
 
-// T048/T060: composite-read redaction is enforced here as a backend DTO projection over the caller's
-// resolved permissions — never frontend hiding. Read/search/snapshot only; no mutation action here.
 [ApiController]
 [Route("api/abwab/tree")]
 public sealed class AbwabTreeController(

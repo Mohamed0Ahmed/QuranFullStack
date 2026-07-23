@@ -6,11 +6,6 @@ using QuranDashboard.Domain.Abwab.Protection;
 
 namespace QuranDashboard.Application.Abwab.Categories;
 
-// T055: atomic subtree soft-delete + parent-first operation-restore. One DeletionOperationId and one
-// TreeRevision bump per atomic operation; Deletion protection on every affected category, InternalStructure
-// on the surviving/restored parent; deterministic (CategoryId-ordered) processing; the reservation seam is
-// checked but stays inert in 029 (T047/T051); dependent dormancy is a generic RESTRICT/no-cascade property
-// of the schema, proven only by the core test fixture (no relationship/link schema here).
 public sealed class CategorySubtreeHandler(
     IAbwabWriteExecutor executor,
     ICategoryTreeStore categories,

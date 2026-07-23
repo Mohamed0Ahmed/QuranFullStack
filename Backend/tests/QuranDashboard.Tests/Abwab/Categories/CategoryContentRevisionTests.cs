@@ -5,9 +5,6 @@ using QuranDashboard.Tests.Abwab._Support;
 
 namespace QuranDashboard.Tests.Abwab.Categories;
 
-// T080/FR-032/SC-017: CategoryContentRevision bumps exactly once per direct-content operation and never
-// on a pure move/reorder (which bump TreeRevision instead); no dedicated §11 stale code exists for it —
-// content concurrency is xmin (abwab.row_stale) + ExpectedTimelineGeneration.
 [Collection(nameof(AbwabDbCollection))]
 public sealed class CategoryContentRevisionTests(PostgresFixture fixture) : IAsyncLifetime
 {

@@ -3,9 +3,6 @@ using QuranDashboard.Infrastructure.Abwab.Restore;
 
 namespace QuranDashboard.Tests.Abwab.RestoreAdapters;
 
-// T082/§8: a static registry test proving exactly one adapter per persisted 029 type — Section,
-// Category (all three orders + subtree delete/operation-restore as facets), ManualProtection — and
-// that a duplicate/standalone "Order" registration (or any missing registration) fails CI.
 public sealed class RestoreRegistryTests
 {
     private static readonly string[] ExpectedPersistedTypes = ["Section", "Category", "ManualProtection"];

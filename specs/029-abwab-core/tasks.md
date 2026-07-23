@@ -265,11 +265,11 @@ no-edit-session-lock, no-drag, post-mutation context preservation) passes.
 
 ## Phase 7: Polish & Cross-Cutting Concerns
 
-- [ ] T075 [P] Run `specs/029-abwab-core/quickstart.md` end-to-end across all §18.3 exit gates (real PG + Playwright)
-- [ ] T076 [P] Update nearest READMEs for every area touched (`Abwab` domain/protection/restore, API `Abwab`, frontend `features/abwab`) per the repo README rule; add the `Abwab/Restore/README.md` acceptance note
-- [ ] T077 Run the clean-code guard and test-guard self-checks against delivered code and fix findings
-- [ ] T078 [P] Write the backend completion/validation report in `Backend/report/feature-029-abwab-core/`
-- [ ] T079 Confirm at exit: **no** Quran FK exists (guard green); **no** relationship/template/attribution/workspace/audit-restore/realtime surface was built; the **three** restore adapters (Section, Category, ManualProtection) accepted for `033` with the §8 registry test green (Order verified as a facet, no duplicate registration); record the acceptance handoff to `030`/`031`
+- [x] T075 [P] Run `specs/029-abwab-core/quickstart.md` end-to-end across all §18.3 exit gates (real PG + Playwright)
+- [x] T076 [P] Update nearest READMEs for every area touched (`Abwab` domain/protection/restore, API `Abwab`, frontend `features/abwab`) per the repo README rule; add the `Abwab/Restore/README.md` acceptance note
+- [x] T077 Run the clean-code guard and test-guard self-checks against delivered code and fix findings
+- [x] T078 [P] Write the backend completion/validation report in `Backend/report/feature-029-abwab-core/`
+- [x] T079 Confirm at exit: **no** Quran FK exists (guard green); **no** relationship/template/attribution/workspace/audit-restore/realtime surface was built; the **three** restore adapters (Section, Category, ManualProtection) accepted for `033` with the §8 registry test green (Order verified as a facet, no duplicate registration); record the acceptance handoff to `030`/`031`
 
 ---
 

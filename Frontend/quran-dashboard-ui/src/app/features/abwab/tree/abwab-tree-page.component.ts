@@ -34,9 +34,6 @@ const PRESET_TYPE_KEYS: readonly (keyof ApplyFullProtectionPresetRequest['expect
 const NOT_AUTHORIZED_MESSAGE = 'لا تملك صلاحية عرض شجرة الأبواب.';
 const LOAD_ERROR_MESSAGE = 'تعذّر تحميل شجرة الأبواب.';
 
-// T070/T074 page shell: composes the tree view, category editor, and protection panel over the
-// facade, and wires composite-read visibility from /me permissions (AbwabPermissions) — cosmetic
-// only, the backend DTO projection is the real authority (see AbwabPermissions/ProtectionPanel docs).
 @Component({
   selector: 'qd-abwab-tree-page',
   standalone: true,

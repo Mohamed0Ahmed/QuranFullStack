@@ -5,9 +5,6 @@ using QuranDashboard.Application.Abstractions.Abwab;
 
 namespace QuranDashboard.Tests.Abwab._Support;
 
-// T049: every abwab.* code this feature uses must map identically across the core (AbwabConflictCodes),
-// the HTTP mapping (AbwabConflictResponses -> exact Arabic message, exact code echoed in Errors), and
-// the contract fixture list from tasks.md §5. No invented/renamed/remapped code.
 public sealed class ConflictCodeParityTests
 {
     private static readonly string[] ExpectedCodes =

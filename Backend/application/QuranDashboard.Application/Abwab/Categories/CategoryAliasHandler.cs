@@ -8,9 +8,6 @@ using QuranDashboard.Domain.Abwab.Tree;
 
 namespace QuranDashboard.Application.Abwab.Categories;
 
-// T056: alias add/edit/remove is category direct-content mutation under category.edit — never a
-// borrowed child add/delete verb; removal is tracked soft delete; physical delete is rejected by
-// the 028 SavingChanges guard. Ordinary-gated and bumps CategoryContentRevision once (T059/T081).
 public sealed class CategoryAliasHandler(
     IAbwabWriteExecutor executor,
     ICategoryTreeStore categories,

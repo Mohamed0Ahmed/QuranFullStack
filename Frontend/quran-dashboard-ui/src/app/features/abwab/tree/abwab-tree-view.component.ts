@@ -5,10 +5,6 @@ import { AbwabVisibleTreeNode } from './abwab-tree-node';
 
 const ROW_HEIGHT_PX = 40;
 
-// T070: RTL, keyboard-navigable, virtualized (large-tree) category tree. Every mutation is an
-// EXPLICIT action (buttons), never drag: expand/collapse, select, move-up/move-down (sibling
-// reorder), "move to…" (opens the destination picker in the page shell), and delete are all
-// discrete emitted events — see e2e/abwab/core-slice.spec.ts for the no-drag browser proof.
 @Component({
   selector: 'qd-abwab-tree-view',
   standalone: true,
