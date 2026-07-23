@@ -52,10 +52,16 @@ append-only/TRUNCATE trigger defense, and the restricted `abwab_app` role) is se
 - **Two layers, both required.** Never let an Abwab mutation reach the DB without both the
   `SavingChanges` guard (ChangeSet + soft-delete) and the audited-commit executor (barrier +
   generation + append-only head). Removing either is a fail-open regression.
-- **Row-lock, not xmin.** `AbwabRevisionState` concurrency is enforced by the mandated
-  `FOR UPDATE` row-lock, not an EF concurrency token. The data model lists `Version (xmin)`, but
-  Npgsql 10 removed `UseXminAsConcurrencyToken`; the row-lock is the live serialization
-  guarantee. Do not add a `Version` property expecting optimistic-concurrency behavior.
+- **Row-lock, not xmin, for `AbwabRevisionState` specifically.** Its concurrency is enforced by
+  the mandated `FOR UPDATE` row-lock, not an EF concurrency token; the singleton has no `Version`
+  property. This scoped rule is about the model-wide `UseXminAsConcurrencyToken()` convenience
+  convention, which Npgsql 10 removed — **not** about per-property xmin mapping. Ordinary
+  per-row `029`+ entities (e.g. `Section`, `Category`, `CategorySearchAlias`) correctly carry a
+  `uint Version` property mapped explicitly (`HasColumnName("xmin").HasColumnType("xid")
+  .ValueGeneratedOnAddOrUpdate().IsConcurrencyToken()`); this still works and is expected to
+  throw `DbUpdateConcurrencyException` on a stale write (exercised by the US3 concurrency tests,
+  T040). Do not add a bare `Version` property to
+  `AbwabRevisionState` expecting the same — its concurrency guarantee is the row-lock above.
 - **Row locks use a read API.** The `FOR UPDATE` locks go through `FromSqlRaw` (a read API), not
   a forbidden write/bypass API, so the bypass gate stays green. Keep it that way.
 - **Append-only is enforced in the DB.** The `abwab_app` role is NOLOGIN defense-in-depth; the

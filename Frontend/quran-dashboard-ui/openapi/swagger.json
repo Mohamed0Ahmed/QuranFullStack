@@ -5,6 +5,73 @@
     "version": "v1"
   },
   "paths": {
+    "/api/abwab/tree": {
+      "get": {
+        "tags": [
+          "AbwabTree"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabTreeSnapshotDtoApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabTreeSnapshotDtoApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabTreeSnapshotDtoApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/abwab/tree/search": {
+      "get": {
+        "tags": [
+          "AbwabTree"
+        ],
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategorySearchResultDtoApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategorySearchResultDtoApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategorySearchResultDtoApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/access/me": {
       "get": {
         "tags": [
@@ -3195,6 +3262,92 @@
   },
   "components": {
     "schemas": {
+      "AbwabTreeSnapshotDto": {
+        "required": [
+          "allCategoriesProjection",
+          "categories",
+          "expectedTimelineGeneration",
+          "schemaVersion",
+          "sections",
+          "serverTimeUtc",
+          "treeRevision"
+        ],
+        "type": "object",
+        "properties": {
+          "expectedTimelineGeneration": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ExpectedTimelineGeneration"
+              }
+            ]
+          },
+          "treeRevision": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "schemaVersion": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "serverTimeUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SectionSnapshotDto"
+            }
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CategorySnapshotDto"
+            }
+          },
+          "allCategoriesProjection": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CategorySnapshotDto"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "AbwabTreeSnapshotDtoApiResponse": {
+        "required": [
+          "data",
+          "errors",
+          "isSuccess",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AbwabTreeSnapshotDto"
+              }
+            ],
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "AppInfoData": {
         "required": [
           "appName",
@@ -3506,6 +3659,142 @@
         },
         "additionalProperties": false
       },
+      "CategorySearchResultDto": {
+        "required": [
+          "expectedTimelineGeneration",
+          "matches"
+        ],
+        "type": "object",
+        "properties": {
+          "expectedTimelineGeneration": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ExpectedTimelineGeneration"
+              }
+            ]
+          },
+          "matches": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CategorySnapshotDto"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "CategorySearchResultDtoApiResponse": {
+        "required": [
+          "data",
+          "errors",
+          "isSuccess",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CategorySearchResultDto"
+              }
+            ],
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CategorySnapshotDto": {
+        "required": [
+          "ancestorIds",
+          "categoryContentRevision",
+          "categoryId",
+          "depth",
+          "description",
+          "globalOrder",
+          "name",
+          "normalizedName",
+          "parentCategoryId",
+          "representativeQuranExcerpt",
+          "sectionId",
+          "sectionOrder",
+          "siblingOrder"
+        ],
+        "type": "object",
+        "properties": {
+          "categoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "normalizedName": {
+            "type": "string"
+          },
+          "representativeQuranExcerpt": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "parentCategoryId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "sectionId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "siblingOrder": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "sectionOrder": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "globalOrder": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "ancestorIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "depth": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "categoryContentRevision": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "additionalProperties": false
+      },
       "CurrentUserResponse": {
         "required": [
           "displayName",
@@ -3579,6 +3868,19 @@
               "type": "string"
             },
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ExpectedTimelineGeneration": {
+        "required": [
+          "generation"
+        ],
+        "type": "object",
+        "properties": {
+          "generation": {
+            "type": "integer",
+            "format": "int64"
           }
         },
         "additionalProperties": false
@@ -5914,6 +6216,36 @@
           },
           "sajdahType": {
             "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SectionSnapshotDto": {
+        "required": [
+          "isPermanentDefault",
+          "name",
+          "normalizedName",
+          "sectionId",
+          "sortOrder"
+        ],
+        "type": "object",
+        "properties": {
+          "sectionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "normalizedName": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isPermanentDefault": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -8917,6 +9249,9 @@
     }
   },
   "tags": [
+    {
+      "name": "AbwabTree"
+    },
     {
       "name": "Access"
     },

@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using QuranDashboard.Application.Abwab.Tree;
 using QuranDashboard.Application.Access.Commands.ProvisionCurrentUser;
 using QuranDashboard.Application.Security;
 using QuranDashboard.Application.Security.Owners;
@@ -127,6 +128,9 @@ public static class DependencyInjection
         services.AddScoped<EffectivePermissionResolver>();
         services.AddScoped<PermissionAdministrationHandler>();
         services.AddScoped<SystemOwnerAdministrationHandler>();
+
+        services.AddScoped<GetAbwabTreeSnapshotHandler>();
+        services.AddScoped<SearchAbwabCategoriesHandler>();
 
         return services;
     }

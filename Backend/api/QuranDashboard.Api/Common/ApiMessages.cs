@@ -117,4 +117,7 @@ public static class ApiMessages
     public const string WordTypesGroupedNotFound = "التجميع المحدد غير موجود";
 
     public const string CurrentUserLoaded = "تم تحميل بيانات المستخدم الحالي";
+
+    public const string AbwabTreeSnapshotLoaded = "تم تحميل شجرة الأبواب";
+    public const string AbwabCategorySearchLoaded = "تم تحميل نتائج البحث عن الأبواب";
 }
