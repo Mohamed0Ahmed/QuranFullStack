@@ -38,6 +38,27 @@ public sealed class NoPrematureQuranFkTests
             "the guard's Abwab detection must see real Abwab entities, otherwise the FK boundary check proves nothing");
     }
 
+    [Fact]
+    public void RepresentativeQuranExcerptIsAPlainStringWithNoAyahValidation()
+    {
+        var excerptProperties = _fixture.Model.GetEntityTypes()
+            .Where(IsAbwab)
+            .SelectMany(entity => entity.GetProperties())
+            .Where(property => property.Name == "RepresentativeQuranExcerpt")
+            .ToList();
+
+        foreach (var property in excerptProperties)
+        {
+            property.ClrType.Should().Be(typeof(string), "029 defines RepresentativeQuranExcerpt as a plain string, never an ayah reference type");
+        }
+
+        _fixture.Model.GetEntityTypes()
+            .Where(IsAbwab)
+            .SelectMany(entity => entity.GetForeignKeys())
+            .Where(fk => IsQuran(fk.PrincipalEntityType))
+            .Should().BeEmpty("RepresentativeQuranExcerpt must never become an ayah foreign key");
+    }
+
     private static bool CrossesAbwabQuranBoundary(IForeignKey fk)
     {
         var dependent = fk.DeclaringEntityType;

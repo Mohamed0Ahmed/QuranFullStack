@@ -1,4 +1,9 @@
 using Microsoft.Extensions.DependencyInjection;
+using QuranDashboard.Application.Abstractions.Abwab.Core;
+using QuranDashboard.Application.Abwab.Categories;
+using QuranDashboard.Application.Abwab.Protection;
+using QuranDashboard.Application.Abwab.Sections;
+using QuranDashboard.Application.Abwab.Tree;
 using QuranDashboard.Application.Access.Commands.ProvisionCurrentUser;
 using QuranDashboard.Application.Security;
 using QuranDashboard.Application.Security.Owners;
@@ -127,6 +132,19 @@ public static class DependencyInjection
         services.AddScoped<EffectivePermissionResolver>();
         services.AddScoped<PermissionAdministrationHandler>();
         services.AddScoped<SystemOwnerAdministrationHandler>();
+
+        services.AddScoped<GetAbwabTreeSnapshotHandler>();
+        services.AddScoped<SearchAbwabCategoriesHandler>();
+        services.AddScoped<ProtectionResolver>();
+
+        services.AddScoped<SectionWriterHandler>();
+        services.AddScoped<CategoryContentHandler>();
+        services.AddScoped<CategoryOrderingHandler>();
+        services.AddScoped<CategorySubtreeHandler>();
+        services.AddScoped<CategoryAliasHandler>();
+        services.AddScoped<ManualProtectionWriterHandler>();
+        services.AddScoped<FullProtectionPresetHandler>();
+        services.AddScoped<IAbwabCoreWritePort, AbwabCoreWriteHandler>();
 
         return services;
     }

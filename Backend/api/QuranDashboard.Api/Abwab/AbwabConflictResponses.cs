@@ -5,10 +5,35 @@ namespace QuranDashboard.Api.Abwab;
 
 public static class AbwabConflictResponses
 {
+    private static readonly IReadOnlyDictionary<string, string> WriteConflictMessages = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        [AbwabConflictCodes.SectionNameConflict] = ApiMessages.AbwabSectionNameConflict,
+        [AbwabConflictCodes.SectionNotEmpty] = ApiMessages.AbwabSectionNotEmpty,
+        [AbwabConflictCodes.PermanentDefaultSection] = ApiMessages.AbwabPermanentDefaultSection,
+        [AbwabConflictCodes.CategoryNameConflict] = ApiMessages.AbwabCategoryNameConflict,
+        [AbwabConflictCodes.CategoryAliasConflict] = ApiMessages.AbwabCategoryAliasConflict,
+        [AbwabConflictCodes.CategoryCycle] = ApiMessages.AbwabCategoryCycle,
+        [AbwabConflictCodes.CategoryOverlappingMove] = ApiMessages.AbwabCategoryOverlappingMove,
+        [AbwabConflictCodes.CategoryUnavailable] = ApiMessages.AbwabCategoryUnavailable,
+        [AbwabConflictCodes.CategoryReservedByPending] = ApiMessages.AbwabCategoryReservedByPending,
+        [AbwabConflictCodes.ManualProtection] = ApiMessages.AbwabManualProtection,
+        [AbwabConflictCodes.ManualProtectionScopeConflict] = ApiMessages.AbwabManualProtectionScopeConflict,
+        [AbwabConflictCodes.OrdinaryProtection] = ApiMessages.AbwabOrdinaryProtection,
+        [AbwabConflictCodes.RowStale] = ApiMessages.AbwabRowStale,
+        [AbwabConflictCodes.TreeRevisionStale] = ApiMessages.AbwabTreeRevisionStale,
+    };
+
     public static bool TryMap(Exception exception, out int statusCode, out ApiResponse<object> response)
     {
         switch (exception)
         {
+            case AbwabWriteConflictException writeConflict:
+                statusCode = StatusCodes.Status409Conflict;
+                response = ApiResponse<object>.Fail(
+                    WriteConflictMessages.GetValueOrDefault(writeConflict.Code, ApiMessages.UnexpectedError),
+                    [writeConflict.Code]);
+                return true;
+
             case AbwabTimelineGenerationStaleException stale:
                 statusCode = StatusCodes.Status409Conflict;
                 response = ApiResponse<object>.Fail(ApiMessages.AbwabTimelineGenerationStale, [stale.Code]);

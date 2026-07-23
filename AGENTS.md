@@ -73,21 +73,19 @@ Before any implementation work, read and follow:
 
 These principles apply to the whole FullStack workspace. Project-specific instruction files may add more detailed rules for Backend or Frontend work.
 
-### Comment sparingly
-
-Comment only the non-obvious WHY — rationale, gotchas, invariants, decisions, local
-security/fail-closed choices — tied to the specific line it explains. Do NOT narrate
-WHAT the code does, restate obvious logic, or duplicate a README. This applies to both
-Backend and Frontend.
-
-- No `///`/XML-doc comments on controllers, endpoints, or DTOs/models (internal solo
-  project; no Swagger/API-doc consumer reads them). Keep XML-doc only for the rare case
-  where it carries genuine non-obvious WHY, and prefer a short plain `//` comment there.
-- Frontend: no boilerplate JSDoc (`/** */`) narrating a component/service; no
-  step-narrating `//`, `<!-- -->`, or SCSS comments that restate the code/markup/style.
-- Area-level explanation (WHAT an area does, its boundaries/invariants) belongs in the
-  nearest `README.md`, not in per-line comments. If a spot seems to need many comments
-  to be understood, add or expand that README instead.
+### Comment sparingly (default: NO comment)
+Default to writing NO comment. Add an inline comment ONLY when it captures critical,
+non-obvious WHY that the code cannot show and whose loss would cause a real bug or a
+security / Quran-data-integrity mistake — e.g. a fail-closed decision, a data-safety
+invariant, a concurrency/commit-ordering rationale, or a genuine gotcha — tied to the exact
+line. If you want to explain WHAT the code does, an area’s behaviour/boundaries/invariants,
+or how to use it: do NOT comment — put it in the nearest README.md. Never narrate WHAT the
+code does, restate logic, add banner/separator comments, or write boilerplate ///-XML-doc or
+JSDoc on controllers, endpoints, DTOs, components, or services (no Swagger/doc consumer reads
+them). Frontend: no step-narrating //, <!-- -->, or SCSS comments restating markup/style.
+Keep only functional/directive comments (license headers, compiler/analyzer pragmas,
+lint-disable, tool markers). When in doubt, delete it; if the knowledge matters, add it to
+the nearest README.
 
 ### Clean-code self-check before delivery
 

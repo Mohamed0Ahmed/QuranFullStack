@@ -1,0 +1,12 @@
+.audit-render__diff-header {
+  display: grid;
+  grid-template-columns: minmax(8rem, 1fr) 1fr 1fr;
+  color: var(--qd-text-muted);
+  font-size: 0.875rem;
+  padding-block-end: var(--qd-space-2, 0.5rem);
+  border-bottom: 1px solid var(--qd-border-strong);
+}
+
+.audit-render__diff-header span:first-child {
+  grid-column: 2;
+}

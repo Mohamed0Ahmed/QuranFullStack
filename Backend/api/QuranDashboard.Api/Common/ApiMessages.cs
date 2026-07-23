@@ -117,4 +117,40 @@ public static class ApiMessages
     public const string WordTypesGroupedNotFound = "التجميع المحدد غير موجود";
 
     public const string CurrentUserLoaded = "تم تحميل بيانات المستخدم الحالي";
+
+    public const string AbwabTreeSnapshotLoaded = "تم تحميل شجرة الأبواب";
+    public const string AbwabCategorySearchLoaded = "تم تحميل نتائج البحث عن الأبواب";
+
+    public const string AbwabSectionNameConflict = "يوجد قسم آخر بهذا الاسم بالفعل";
+    public const string AbwabSectionNotEmpty = "لا يمكن حذف القسم لاحتوائه على أبواب رئيسية فعّالة";
+    public const string AbwabPermanentDefaultSection = "القسم الافتراضي الدائم يُعاد ترتيبه فقط، ولا يُعاد تسميته أو حذفه أو تكراره";
+    public const string AbwabCategoryNameConflict = "يوجد باب آخر بهذا الاسم في هذا النطاق بالفعل";
+    public const string AbwabCategoryAliasConflict = "يوجد مرادف مطابق فعّال لهذا الباب بالفعل";
+    public const string AbwabCategoryCycle = "لا يمكن نقل الباب إلى نفسه أو إلى أحد فروعه";
+    public const string AbwabCategoryOverlappingMove = "يحتوي طلب النقل على تداخل بين الأبواب المحددة";
+    public const string AbwabCategoryUnavailable = "الباب أو الوجهة غير متاحة";
+    public const string AbwabCategoryReservedByPending = "يوجد طلب معلّق يمنع حذف هذا الباب";
+    public const string AbwabManualProtection = "الباب محمي يدويًا، ولا يمكن تنفيذ هذا الإجراء";
+    public const string AbwabManualProtectionScopeConflict = "تغيّر نطاق الحماية اليدوية منذ آخر قراءة";
+    public const string AbwabOrdinaryProtection = "الباب داخل نافذة الحماية العادية (24 ساعة)";
+    public const string AbwabRowStale = "تغيّرت البيانات منذ آخر قراءة. يرجى تحديث الصفحة والمحاولة مجددًا.";
+    public const string AbwabTreeRevisionStale = "تغيّرت شجرة الأبواب منذ آخر قراءة. يرجى تحديث الصفحة والمحاولة مجددًا.";
+
+    public const string AbwabSectionAdded = "تمت إضافة القسم";
+    public const string AbwabSectionEdited = "تم تعديل القسم";
+    public const string AbwabSectionsReordered = "تم إعادة ترتيب الأقسام";
+    public const string AbwabSectionDeleted = "تم حذف القسم";
+    public const string AbwabCategoryAdded = "تمت إضافة الباب";
+    public const string AbwabCategoryEdited = "تم تعديل الباب";
+    public const string AbwabCategoriesMoved = "تم نقل الأبواب المحددة";
+    public const string AbwabCategoriesReordered = "تم إعادة ترتيب الأبواب";
+    public const string AbwabCategorySubtreeDeleted = "تم حذف الباب وفروعه";
+    public const string AbwabCategoryOperationRestored = "تمت استعادة عملية الحذف";
+    public const string AbwabCategoryAliasAdded = "تمت إضافة المرادف";
+    public const string AbwabCategoryAliasEdited = "تم تعديل المرادف";
+    public const string AbwabCategoryAliasRemoved = "تمت إزالة المرادف";
+    public const string AbwabManualProtectionApplied = "تم تطبيق الحماية اليدوية";
+    public const string AbwabManualProtectionLifted = "تم رفع الحماية اليدوية";
+    public const string AbwabFullProtectionPresetApplied = "تم تطبيق الحماية الكاملة على الأنواع الخمسة";
+    public const string AbwabCompositeReadDenied = "لا تملك الصلاحيات اللازمة لعرض شجرة الأبواب";
 }

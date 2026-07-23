@@ -1,0 +1,17 @@
+.audit-render__meta {
+  color: var(--qd-text-muted);
+  font-size: 0.875rem;
+}
+
+.audit-render__dormant ul {
+  margin: var(--qd-space-2, 0.5rem) 0 0;
+  padding-inline-start: var(--qd-space-4, 1rem);
+  list-style: none;
+}
+
+.audit-render__dormant li {
+  display: flex;
+  align-items: center;
+  gap: var(--qd-space-2, 0.5rem);
+  padding-block: var(--qd-space-1, 0.25rem);
+}

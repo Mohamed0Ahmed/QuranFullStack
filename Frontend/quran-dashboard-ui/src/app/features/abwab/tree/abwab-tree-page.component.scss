@@ -1,0 +1,42 @@
+.abwab-tree-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qd-space-4, 1rem);
+}
+
+.abwab-tree-page__toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--qd-space-3, 0.75rem);
+  flex-wrap: wrap;
+}
+
+.abwab-tree-page__new-root {
+  display: flex;
+  gap: var(--qd-space-2, 0.5rem);
+}
+
+.abwab-tree-page__body {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--qd-space-4, 1rem);
+}
+
+.abwab-tree-page__detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qd-space-4, 1rem);
+}
+
+.abwab-tree-page__conflict {
+  color: var(--qd-danger);
+}
+
+.abwab-tree-page__move-picker {
+  display: flex;
+  align-items: center;
+  gap: var(--qd-space-2, 0.5rem);
+  padding: var(--qd-space-3, 0.75rem);
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-md);
+}

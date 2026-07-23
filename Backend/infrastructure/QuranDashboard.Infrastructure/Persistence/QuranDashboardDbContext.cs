@@ -12,8 +12,11 @@ using QuranDashboard.Domain.Quran.Translations;
 using QuranDashboard.Domain.Quran.Words.Morphology.Irab;
 using QuranDashboard.Domain.Access;
 using QuranDashboard.Domain.Abwab.Audit;
+using QuranDashboard.Domain.Abwab.Categories;
 using QuranDashboard.Domain.Abwab.Concurrency;
 using QuranDashboard.Domain.Abwab.Notifications;
+using QuranDashboard.Domain.Abwab.Protection;
+using QuranDashboard.Domain.Abwab.Sections;
 using QuranDashboard.Domain.Abwab.Timeline;
 using QuranDashboard.Domain.Security.Audit;
 using QuranDashboard.Domain.Security.Owners;
@@ -69,6 +72,12 @@ public sealed class QuranDashboardDbContext(DbContextOptions<QuranDashboardDbCon
     // Notification storage substrate: no Quran foreign key on either.
     public DbSet<NotificationRecord> AbwabNotificationRecords => Set<NotificationRecord>();
     public DbSet<NotificationReadState> AbwabNotificationReadStates => Set<NotificationReadState>();
+
+    // Abwab category domain: no Quran foreign key on any of these.
+    public DbSet<Section> AbwabSections => Set<Section>();
+    public DbSet<Category> AbwabCategories => Set<Category>();
+    public DbSet<CategorySearchAlias> AbwabCategorySearchAliases => Set<CategorySearchAlias>();
+    public DbSet<ManualProtection> AbwabManualProtections => Set<ManualProtection>();
 
     // Security substrate: no Quran foreign key on any of these.
     public DbSet<SystemOwnerMembership> SystemOwnerMemberships => Set<SystemOwnerMembership>();

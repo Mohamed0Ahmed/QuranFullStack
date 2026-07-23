@@ -5,6 +5,7 @@ import { routes } from './app.routes';
 import { MUSHAF_ROUTES } from './features/mushaf/mushaf.routes';
 import { WORDS_ROUTES } from './features/words/words.routes';
 import { PERMISSIONS_ROUTES } from './features/permissions/permissions.routes';
+import { ABWAB_ROUTES } from './features/abwab/abwab.routes';
 
 const GUARD_KEYS = ['canActivate', 'canActivateChild', 'canMatch'] as const;
 
@@ -12,6 +13,7 @@ const STATIC_LAZY_ROUTE_ARRAYS: Readonly<Record<string, Routes>> = {
   mushaf: MUSHAF_ROUTES,
   words: WORDS_ROUTES,
   permissions: PERMISSIONS_ROUTES,
+  gates: ABWAB_ROUTES,
 };
 
 function flattenRoutes(routeList: Routes): Route[] {

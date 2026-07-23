@@ -1,0 +1,66 @@
+@if (canView() && profile(); as profileValue) {
+  <section class="qd-card qd-card--bordered protection-panel" dir="rtl" data-testid="protection-panel">
+    <h3 class="qd-section-title">الحماية اليدوية</h3>
+
+    <p class="protection-panel__ordinary" data-testid="protection-panel-ordinary">
+      @if (profileValue.ordinaryProtection.isActive) {
+        نافذة حماية اعتيادية سارية حتى {{ profileValue.ordinaryProtection.expiresAtUtc }}
+        (آخر تعديل: {{ profileValue.ordinaryProtection.actorSubject }})
+      } @else {
+        لا توجد نافذة حماية اعتيادية سارية حاليًا.
+      }
+    </p>
+
+    <ul class="protection-panel__types">
+      @for (resolution of profileValue.manualProtections; track resolution.protectionType) {
+        <li class="protection-panel__type" data-testid="protection-panel-type">
+          <div class="protection-panel__type-header">
+            <strong>{{ typeLabels[resolution.protectionType] }}</strong>
+            @if (resolution.isProtected) {
+              <span class="qd-badge" data-testid="protection-panel-status">
+                {{ resolution.isDirect ? 'محمي مباشرة' : 'محمي بالوراثة' }}
+                @if (resolution.scope !== null) {
+                  — {{ scopeLabels[resolution.scope] }}
+                }
+              </span>
+            } @else {
+              <span class="qd-badge" data-testid="protection-panel-status">غير محمي</span>
+            }
+          </div>
+
+          @if (resolution.isProtected && resolution.isDirect && canLift()) {
+            <button type="button" class="qd-btn qd-btn-ghost" data-testid="protection-panel-lift" (click)="liftType(resolution.protectionType)">
+              رفع الحماية
+            </button>
+          }
+
+          @if ((!resolution.isProtected || !resolution.isDirect) && canApply()) {
+            <div class="protection-panel__apply">
+              <select class="qd-select" [attr.data-testid]="'protection-panel-scope-' + resolution.protectionType" #scopeSelect>
+                @for (scope of scopeOptions; track scope) {
+                  <option [value]="scope">{{ scopeLabels[scope] }}</option>
+                }
+              </select>
+              <button type="button" class="qd-btn qd-btn-secondary" data-testid="protection-panel-apply" (click)="applyType(resolution.protectionType, scopeOf(scopeSelect))">
+                تطبيق الحماية
+              </button>
+            </div>
+          }
+        </li>
+      }
+    </ul>
+
+    @if (canApply()) {
+      <div class="protection-panel__preset">
+        <select class="qd-select" data-testid="protection-panel-preset-scope" #presetScopeSelect>
+          @for (scope of scopeOptions; track scope) {
+            <option [value]="scope">{{ scopeLabels[scope] }}</option>
+          }
+        </select>
+        <button type="button" class="qd-btn qd-btn-primary" data-testid="protection-panel-apply-preset" (click)="applyPreset(scopeOf(presetScopeSelect))">
+          تطبيق الحماية الكاملة (الأنواع الخمسة)
+        </button>
+      </div>
+    }
+  </section>
+}

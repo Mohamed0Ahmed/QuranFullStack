@@ -8,7 +8,7 @@ const loadPlaceholderPage = () =>
   );
 
 const placeholderRoutes: Routes = NAV_ITEMS.filter(
-  (item) => item.key !== 'dashboard' && item.key !== 'mushaf' && item.key !== 'words',
+  (item) => item.key !== 'dashboard' && item.key !== 'mushaf' && item.key !== 'words' && item.key !== 'gates',
 ).map(
   (item) => ({
     path: item.route.replace(/^\//, ''),
@@ -53,6 +53,11 @@ export const routes: Routes = [
           import('./features/permissions/permissions.routes').then((m) => m.PERMISSIONS_ROUTES),
       },
     ],
+  },
+  {
+    path: 'gates',
+    title: navLabel('gates'),
+    loadChildren: () => import('./features/abwab/abwab.routes').then((m) => m.ABWAB_ROUTES),
   },
   {
     path: CALLBACK_PATH,

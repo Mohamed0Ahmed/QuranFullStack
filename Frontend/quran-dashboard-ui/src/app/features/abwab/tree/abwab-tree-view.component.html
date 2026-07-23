@@ -1,0 +1,73 @@
+@if (nodes().length === 0) {
+  <div class="qd-empty-state" role="status" data-testid="abwab-tree-empty">لا توجد أبواب بعد.</div>
+} @else {
+  <cdk-virtual-scroll-viewport
+    #treeViewport
+    [itemSize]="rowHeight"
+    class="abwab-tree-viewport"
+    role="tree"
+    aria-label="شجرة الأبواب"
+    data-testid="abwab-tree-viewport"
+    [attr.data-total]="nodes().length"
+    (keydown)="onKeydown($event)"
+  >
+    <div
+      *cdkVirtualFor="let node of nodes(); trackBy: trackByCategoryId; let i = index"
+      class="abwab-tree-row"
+      [class.abwab-tree-row--selected]="node.category.categoryId === selectedCategoryId()"
+      [style.padding-inline-start.px]="node.depth * 20"
+      role="treeitem"
+      tabindex="0"
+      [attr.data-index]="i"
+      [attr.aria-selected]="node.category.categoryId === selectedCategoryId()"
+      [attr.aria-expanded]="node.hasChildren ? node.isExpanded : null"
+      data-testid="abwab-tree-row"
+      [attr.data-category-id]="node.category.categoryId"
+      (click)="onRowActivate(node)"
+      (focus)="focusedIndex.set(i)"
+    >
+      @if (node.hasChildren) {
+        <button
+          type="button"
+          class="abwab-tree-row__toggle"
+          data-testid="abwab-tree-toggle"
+          [attr.aria-label]="node.isExpanded ? 'طي' : 'توسيع'"
+          (click)="$event.stopPropagation(); toggleExpand.emit(node.category.categoryId)"
+        >
+          {{ node.isExpanded ? '▾' : '◂' }}
+        </button>
+      } @else {
+        <span class="abwab-tree-row__toggle-spacer"></span>
+      }
+
+      <span class="abwab-tree-row__name" data-testid="abwab-tree-row-name">{{ node.category.name }}</span>
+
+      @if (node.category.protection.isActionBlocked) {
+        <span class="qd-badge" data-testid="abwab-tree-row-protected">محمي</span>
+      }
+
+      @if (node.category.categoryId === selectedCategoryId()) {
+        <span class="abwab-tree-row__actions">
+          @if (canReorder()) {
+            <button type="button" class="qd-btn qd-btn-ghost" data-testid="abwab-tree-move-up" (click)="$event.stopPropagation(); moveUp.emit(node.category.categoryId)">
+              أعلى
+            </button>
+            <button type="button" class="qd-btn qd-btn-ghost" data-testid="abwab-tree-move-down" (click)="$event.stopPropagation(); moveDown.emit(node.category.categoryId)">
+              أسفل
+            </button>
+          }
+          @if (canMove()) {
+            <button type="button" class="qd-btn qd-btn-ghost" data-testid="abwab-tree-move-to" (click)="$event.stopPropagation(); moveRequested.emit(node.category.categoryId)">
+              نقل إلى…
+            </button>
+          }
+          @if (canDelete()) {
+            <button type="button" class="qd-btn qd-btn-ghost" data-testid="abwab-tree-delete" (click)="$event.stopPropagation(); deleteRequested.emit(node.category.categoryId)">
+              حذف
+            </button>
+          }
+        </span>
+      }
+    </div>
+  </cdk-virtual-scroll-viewport>
+}

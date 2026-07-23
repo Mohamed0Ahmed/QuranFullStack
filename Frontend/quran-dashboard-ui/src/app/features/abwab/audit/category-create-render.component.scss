@@ -1,0 +1,15 @@
+.audit-render__fields {
+  display: grid;
+  grid-template-columns: minmax(8rem, 1fr) 2fr;
+  row-gap: var(--qd-space-2, 0.5rem);
+  column-gap: var(--qd-space-3, 0.75rem);
+  margin: 0;
+}
+
+.audit-render__fields dt {
+  color: var(--qd-text-muted);
+}
+
+.audit-render__fields dd {
+  margin: 0;
+}
