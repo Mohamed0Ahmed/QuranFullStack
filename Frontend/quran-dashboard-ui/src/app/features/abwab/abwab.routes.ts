@@ -10,4 +10,10 @@ export const ABWAB_ROUTES: Routes = [
     title: 'الأبواب',
     loadComponent: () => import('./tree/abwab-tree-page.component').then((m) => m.AbwabTreePageComponent),
   },
+  {
+    path: 'relationships/:categoryId',
+    title: 'علاقات الباب',
+    loadComponent: () =>
+      import('./relationships/abwab-relationships-page.component').then((m) => m.AbwabRelationshipsPageComponent),
+  },
 ];

@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 
 import { ApplyFullProtectionPresetRequest, CategoryProtectionProfileDto, ManualProtectionType } from '../../../core/api/generated/models';
 import { QdStateComponent } from '../../../shared/ui/state/state.component';
@@ -37,7 +38,7 @@ const LOAD_ERROR_MESSAGE = 'تعذّر تحميل شجرة الأبواب.';
 @Component({
   selector: 'qd-abwab-tree-page',
   standalone: true,
-  imports: [ReactiveFormsModule, QdStateComponent, AbwabTreeViewComponent, CategoryEditorComponent, ProtectionPanelComponent],
+  imports: [ReactiveFormsModule, RouterLink, QdStateComponent, AbwabTreeViewComponent, CategoryEditorComponent, ProtectionPanelComponent],
   providers: [AbwabTreeFacade, AbwabPermissions],
   templateUrl: './abwab-tree-page.component.html',
   styleUrl: './abwab-tree-page.component.scss',

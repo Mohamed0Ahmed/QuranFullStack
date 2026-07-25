@@ -48,6 +48,16 @@
 
       @if (facade.selectedCategory(); as selected) {
         <aside class="abwab-tree-page__detail">
+          @if (permissions.canViewRelationship()) {
+            <a
+              class="qd-btn qd-btn-ghost"
+              data-testid="abwab-tree-relationships-link"
+              [routerLink]="['relationships', selected.categoryId]"
+            >
+              علاقات هذا الباب
+            </a>
+          }
+
           <qd-abwab-category-editor
             [category]="selected"
             [canEdit]="permissions.canEditCategory()"

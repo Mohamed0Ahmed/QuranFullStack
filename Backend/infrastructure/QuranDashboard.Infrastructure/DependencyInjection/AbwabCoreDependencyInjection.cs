@@ -1,4 +1,5 @@
 using QuranDashboard.Application.Abstractions.Abwab.Core;
+using QuranDashboard.Application.Abstractions.Abwab.Relationships;
 using QuranDashboard.Infrastructure.Persistence.Reads.Abwab;
 using QuranDashboard.Infrastructure.Persistence.Writes.Abwab;
 
@@ -15,6 +16,9 @@ internal static class AbwabCoreDependencyInjection
         services.AddScoped<ICategoryTreeStore, EfCategoryTreeStore>();
         services.AddScoped<ICategorySearchAliasWriteStore, EfCategorySearchAliasWriteStore>();
         services.AddScoped<IManualProtectionWriteStore, EfManualProtectionWriteStore>();
+
+        services.AddScoped<IAbwabRelationshipReadPort, EfAbwabRelationshipReadPort>();
+        services.AddScoped<ICategoryRelationshipStore, EfCategoryRelationshipStore>();
 
         return services;
     }

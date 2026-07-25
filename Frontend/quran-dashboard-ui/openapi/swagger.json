@@ -1915,6 +1915,324 @@
         }
       }
     },
+    "/api/abwab/relationships/{categoryId}": {
+      "get": {
+        "tags": [
+          "Relationships"
+        ],
+        "parameters": [
+          {
+            "name": "categoryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "includeDeleted",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryRelationshipListDtoApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryRelationshipListDtoApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryRelationshipListDtoApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/abwab/relationships": {
+      "post": {
+        "tags": [
+          "Relationships"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/AddRelationshipRequest"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/AddRelationshipRequest"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/AddRelationshipRequest"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/abwab/relationships/{relationshipId}": {
+      "put": {
+        "tags": [
+          "Relationships"
+        ],
+        "parameters": [
+          {
+            "name": "relationshipId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/EditRelationshipRequest"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/EditRelationshipRequest"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/EditRelationshipRequest"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Relationships"
+        ],
+        "parameters": [
+          {
+            "name": "relationshipId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/DeleteRelationshipRequest"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/DeleteRelationshipRequest"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/DeleteRelationshipRequest"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/abwab/relationships/{relationshipId}/restore": {
+      "post": {
+        "tags": [
+          "Relationships"
+        ],
+        "parameters": [
+          {
+            "name": "relationshipId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/RestoreRelationshipRequest"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/RestoreRelationshipRequest"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/RestoreRelationshipRequest"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/words/roots": {
       "get": {
         "tags": [
@@ -4550,6 +4868,37 @@
         },
         "additionalProperties": false
       },
+      "AddRelationshipRequest": {
+        "required": [
+          "expectedTimelineGeneration",
+          "firstCategoryId",
+          "relationshipType",
+          "secondCategoryId"
+        ],
+        "type": "object",
+        "properties": {
+          "relationshipType": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RelationshipType"
+              }
+            ]
+          },
+          "firstCategoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "secondCategoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expectedTimelineGeneration": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "additionalProperties": false
+      },
       "AddSectionRequest": {
         "required": [
           "expectedTimelineGeneration",
@@ -5126,6 +5475,156 @@
         },
         "additionalProperties": false
       },
+      "CategoryRelationshipDto": {
+        "required": [
+          "categoryRelationshipId",
+          "from",
+          "isDeleted",
+          "isDirectional",
+          "relationshipType",
+          "to",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "categoryRelationshipId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "relationshipType": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RelationshipType"
+              }
+            ]
+          },
+          "isDirectional": {
+            "type": "boolean"
+          },
+          "from": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CategoryRelationshipEndpointDto"
+              }
+            ]
+          },
+          "to": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CategoryRelationshipEndpointDto"
+              }
+            ]
+          },
+          "isDeleted": {
+            "type": "boolean"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CategoryRelationshipEndpointDto": {
+        "required": [
+          "categoryId",
+          "isDeleted",
+          "name",
+          "path"
+        ],
+        "type": "object",
+        "properties": {
+          "categoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "path": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "isDeleted": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CategoryRelationshipListDto": {
+        "required": [
+          "categoryId",
+          "expectedTimelineGeneration",
+          "relationships",
+          "schemaVersion",
+          "serverTimeUtc"
+        ],
+        "type": "object",
+        "properties": {
+          "schemaVersion": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "categoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expectedTimelineGeneration": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ExpectedTimelineGeneration"
+              }
+            ]
+          },
+          "serverTimeUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "relationships": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CategoryRelationshipDto"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "CategoryRelationshipListDtoApiResponse": {
+        "required": [
+          "data",
+          "errors",
+          "isSuccess",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CategoryRelationshipListDto"
+              }
+            ],
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "CategorySearchAliasDto": {
         "required": [
           "categorySearchAliasId",
@@ -5381,6 +5880,24 @@
         },
         "additionalProperties": false
       },
+      "DeleteRelationshipRequest": {
+        "required": [
+          "expectedTimelineGeneration",
+          "expectedVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "expectedTimelineGeneration": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "additionalProperties": false
+      },
       "DeleteSectionRequest": {
         "required": [
           "expectedTimelineGeneration",
@@ -5446,6 +5963,42 @@
           "representativeQuranExcerpt": {
             "type": "string",
             "nullable": true
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "expectedTimelineGeneration": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "additionalProperties": false
+      },
+      "EditRelationshipRequest": {
+        "required": [
+          "expectedTimelineGeneration",
+          "expectedVersion",
+          "firstCategoryId",
+          "relationshipType",
+          "secondCategoryId"
+        ],
+        "type": "object",
+        "properties": {
+          "relationshipType": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RelationshipType"
+              }
+            ]
+          },
+          "firstCategoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "secondCategoryId": {
+            "type": "string",
+            "format": "uuid"
           },
           "expectedVersion": {
             "type": "integer",
@@ -7173,6 +7726,15 @@
         "type": "integer",
         "format": "int32"
       },
+      "RelationshipType": {
+        "enum": [
+          0,
+          1,
+          2
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
       "RemoveCategoryAliasRequest": {
         "required": [
           "expectedTimelineGeneration",
@@ -7338,6 +7900,24 @@
           "expectedTreeRevision": {
             "type": "integer",
             "format": "int64"
+          },
+          "expectedTimelineGeneration": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "additionalProperties": false
+      },
+      "RestoreRelationshipRequest": {
+        "required": [
+          "expectedTimelineGeneration",
+          "expectedVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int32"
           },
           "expectedTimelineGeneration": {
             "type": "integer",
@@ -11227,6 +11807,9 @@
     },
     {
       "name": "Protection"
+    },
+    {
+      "name": "Relationships"
     },
     {
       "name": "Roots"

@@ -38,6 +38,10 @@ public static class AbwabConflictCodes
 
     public const string OrdinaryProtection = "abwab.ordinary_protection";
 
+    public const string RelationshipDuplicate = "abwab.relationship_duplicate";
+
+    public const string RelationshipCycle = "abwab.relationship_cycle";
+
     public const string RowStale = "abwab.row_stale";
 
     public const string TreeRevisionStale = "abwab.tree_revision_stale";

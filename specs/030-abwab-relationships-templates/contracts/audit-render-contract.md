@@ -17,6 +17,14 @@ eligible. The payload renders:
   changed values marked with colour **plus** a non-colour marker,
 - the manual-protection blockers that were effective, where applicable.
 
+  > **Ruling (recorded during Phase 3 review).** For relationships, "where applicable" resolves to
+  > **never**: applicable direct or inherited `Relationship` protection on **any** target aborts the
+  > whole mutation before a ChangeSet exists (§7.3, `relationships-api.md`), so no committed
+  > relationship audit event can carry a blocker. A blocked attempt surfaces to the operator as the
+  > `abwab.manual_protection` conflict, which is the §11-owned channel for it. The relationship
+  > payload therefore carries **no blocker facet** rather than a permanently empty one. This bullet
+  > still governs any later domain whose writer can commit while a protection was in effect.
+
 Direct structure actions show reviewer **«غير مطلوب»** (§6.3). Actor and action time appear together.
 
 ## 2. Template application payload (main product audit)

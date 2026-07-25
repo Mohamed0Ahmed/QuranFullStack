@@ -42,8 +42,18 @@ When a category subtree is soft-deleted by the `029` `CategorySubtreeHandler`:
    rows deleted, **0** relationship rows modified, **0** history rows lost; the rows read as dormant.
 2. Operation-restore the same subtree → **100%** of those rows visible again with identical IDs and
    identical history; **0** new rows created.
-3. Attempt a subtree delete where a **stored endpoint** carries direct or inherited `Relationship`
-   protection → blocked with `abwab.manual_protection`; likewise on the restore path.
+3. Attempt a **relationship** delete or restore whose **stored endpoint** carries direct or inherited
+   `Relationship` protection → blocked with `abwab.manual_protection`, **including while the row is
+   dormant** because that endpoint sits inside a soft-deleted subtree. The stored-endpoint target set
+   of §7.3 is enforced on the relationship write paths; the `029` `CategorySubtreeHandler` is **not**
+   modified to consult relationship protection.
+
+   > **Ruling (recorded during Phase 3 review).** An earlier draft of this item read "attempt a
+   > subtree delete … → blocked", which contradicted the **Mechanism** section above ("The `029`
+   > subtree handler is **not modified** to know about relationships") and `spec.md` FR-008 (`030`
+   > takes no ownership of the `029` subtree handler or its render component and changes none of its
+   > behaviour). Mechanism and FR-008 govern; the item is restated above to match them. No other part
+   > of the kit changes.
 4. Attempt a **physical** delete of a category still referenced by a relationship row → rejected by the
    RESTRICT FK (no cascade path exists).
 5. Delete only **one** endpoint of a relationship → the row is dormant while that endpoint is deleted

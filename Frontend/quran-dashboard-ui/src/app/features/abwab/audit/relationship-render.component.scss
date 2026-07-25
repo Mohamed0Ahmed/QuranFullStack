@@ -1,0 +1,42 @@
+.audit-render__meta {
+  color: var(--qd-text-muted);
+  font-size: 0.875rem;
+}
+
+.relationship-diff__row {
+  display: grid;
+  grid-template-columns: minmax(6rem, auto) 1fr 1fr;
+  gap: var(--qd-space-3, 0.75rem);
+  padding-block: var(--qd-space-2, 0.5rem);
+  border-bottom: 1px solid var(--qd-border);
+}
+
+.relationship-diff__row--header {
+  color: var(--qd-text-muted);
+  font-size: 0.875rem;
+  border-bottom: 1px solid var(--qd-border-strong);
+}
+
+.relationship-diff__label {
+  color: var(--qd-text-muted);
+}
+
+.relationship-diff__value--after {
+  font-weight: 600;
+}
+
+.relationship-diff__row--changed .relationship-diff__value--after {
+  color: var(--qd-success);
+}
+
+.relationship-diff__marker {
+  margin-inline-start: var(--qd-space-2, 0.5rem);
+  font-weight: 600;
+  color: var(--qd-success);
+}
+
+.audit-render__blockers ul {
+  margin: var(--qd-space-2, 0.5rem) 0 0;
+  padding-inline-start: var(--qd-space-4, 1rem);
+  list-style: none;
+}

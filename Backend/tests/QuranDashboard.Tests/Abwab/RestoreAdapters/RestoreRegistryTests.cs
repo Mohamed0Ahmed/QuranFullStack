@@ -5,10 +5,10 @@ namespace QuranDashboard.Tests.Abwab.RestoreAdapters;
 
 public sealed class RestoreRegistryTests
 {
-    private static readonly string[] ExpectedPersistedTypes = ["Section", "Category", "ManualProtection"];
+    private static readonly string[] ExpectedPersistedTypes = ["Section", "Category", "ManualProtection", "Relationship"];
 
     [Fact]
-    public void ExactlyThreeAdaptersAreRegistered()
+    public void ExactlyTheExpectedAdaptersAreRegistered()
     {
         var services = new ServiceCollection();
         services.AddAbwabRestoreAdapters();
@@ -16,11 +16,11 @@ public sealed class RestoreRegistryTests
 
         var descriptors = provider.GetServices<IAbwabRestoreAdapterDescriptor>().ToList();
 
-        descriptors.Should().HaveCount(3);
+        descriptors.Should().HaveCount(ExpectedPersistedTypes.Length);
     }
 
     [Fact]
-    public void RegisteredPersistedTypes_MatchExactlyTheThreePersisted029Types()
+    public void RegisteredPersistedTypes_MatchExactlyThePersistedAbwabTypes()
     {
         var services = new ServiceCollection();
         services.AddAbwabRestoreAdapters();
@@ -63,6 +63,7 @@ public sealed class RestoreRegistryTests
             new FakeDescriptor("Section"),
             new FakeDescriptor("Category"),
             new FakeDescriptor("ManualProtection"),
+            new FakeDescriptor("Relationship"),
             new FakeDescriptor("Order"),
         };
 
@@ -79,16 +80,17 @@ public sealed class RestoreRegistryTests
         {
             new FakeDescriptor("Section"),
             new FakeDescriptor("Category"),
+            new FakeDescriptor("ManualProtection"),
         };
 
         var isValid = ValidateRegistry(registered, out var reason);
 
         isValid.Should().BeFalse();
-        reason.Should().Contain("ManualProtection");
+        reason.Should().Contain("Relationship");
     }
 
     [Fact]
-    public void ValidateRegistry_Passes_ForTheRealThreeAdapterRegistration()
+    public void ValidateRegistry_Passes_ForTheRealAdapterRegistration()
     {
         var services = new ServiceCollection();
         services.AddAbwabRestoreAdapters();

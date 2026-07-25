@@ -1,7 +1,7 @@
-# Abwab domain — Sections, Categories, Protection, Tree (`029`)
+# Abwab domain — Sections, Categories, Protection, Tree (`029`), Relationships (`030`)
 
-**Layer:** Domain · **Feature:** `029-abwab-core` · **HOW rules:**
-`Backend/.architecture/CLEAN_ARCHITECTURE.md`
+**Layer:** Domain · **Features:** `029-abwab-core`, `030-abwab-relationships-templates` ·
+**HOW rules:** `Backend/.architecture/CLEAN_ARCHITECTURE.md`
 
 The category-tree product model: sections, the category tree itself, search aliases, and manual
 protection. The `028` write-kernel primitives (`Audit/`, `Concurrency/`, `Timeline/`, `Persistence/
@@ -31,6 +31,17 @@ that kernel) — every entity below is `IAbwabAuditable` and only ever mutates t
   protection record per `(CategoryId, ProtectionType)` (`CategoryData`, `InternalStructure`,
   `QuranContent`, `Deletion`, `Relationship`), scoped `CategoryOnly` or `Subtree`, with
   applied/lifted actor+timestamp and soft-delete.
+- `Relationships/CategoryRelationship.cs` + `RelationshipType` (`030`) — one typed row per
+  relationship between two categories. A row carries **exactly one shape**: the **mutual** pair
+  (`Similar`/`Opposite`) in canonical `LowerCategoryId < HigherCategoryId` order, **or** the
+  **directional** pair (`BroaderNarrower`, `SourceCategoryId` = broader, `TargetCategoryId` =
+  narrower). The shape is **bound to the type** by the `one_shape` CHECK, not merely mutually
+  exclusive: a mutual type may not occupy the directional columns, because such a row would join the
+  Broader/Narrower graph that cycle validation walks. Soft-delete metadata + `Version` (xmin).
+  `Canonicalize` is the single place a submitted pair becomes storable columns, which is what makes a
+  *reverse* duplicate collapse onto the same active unique-index key; `EndpointCategoryIds` is the
+  single place a stored row's endpoint pair is read, so no reader can pick the wrong shape's columns.
+  The Broader/Narrower **inverse label is derived for display**, never a second stored row.
 - `Tree/ArabicNameNormalizer.cs` — the §5.1 normalization used for every Section/Category/alias
   name: NFC (UAX#15, Unicode 16.0), trim + collapse whitespace, strip tatweel and the frozen
   Arabic-mark scalar set, fold `أ/إ/آ/ٱ → ا` and `ى → ي`. **`ة` is never folded to `ه`.** The display
@@ -55,6 +66,12 @@ that kernel) — every entity below is `IAbwabAuditable` and only ever mutates t
 - **One active `ManualProtection` per `(CategoryId, ProtectionType)`** is a DB-enforced filtered
   unique index (`Infrastructure/Persistence/Configurations/Abwab/ManualProtectionConfiguration.cs`),
   not just an application check.
+- **A relationship row is never cascade-deleted by a category delete.** All four endpoint FKs are
+  `RESTRICT`, and the row carries no deletion state of its own — **dormancy is derived on read** from
+  the endpoints' current deleted state, never a written flag, so a category operation-restore needs
+  no relationship-side write to reverse. Shape/canonical-order/no-self are DB CHECK constraints and
+  duplicate rejection is a filtered unique index over **active** rows only, so soft-deleted history
+  survives.
 
 ## Related
 

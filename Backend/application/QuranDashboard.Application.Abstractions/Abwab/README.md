@@ -42,6 +42,22 @@ under `Core/` and `Restore/`.
 - DTOs (`*SnapshotDto`, `*ProfileDto`, `*SummaryDto`, …) are the wire/contract shapes the frontend
   core mock and HTTP adapter both target for parity (`specs/029-abwab-core/contracts/`).
 
+## `Relationships/` — the `030` relationship contracts
+
+- **`IAbwabRelationshipWritePort`** — add/edit/delete/restore. Every command under
+  `RelationshipCommands.cs` carries `ExpectedTimelineGeneration`, and edit/delete/restore also carry
+  the relationship row's expected `xmin`; **add carries no row expectation** because no row exists
+  yet and endpoint validity/protection are revalidated under the transaction. `FirstCategoryId`/
+  `SecondCategoryId` are shape-relative: for `BroaderNarrower` First is the broader (source) and
+  Second the narrower (target); for the mutual types the writer canonicalizes the pair.
+- **`IAbwabRelationshipReadPort`** — the actionable per-category projection (which **filters dormant
+  rows**, i.e. any row with a soft-deleted endpoint) plus the dormant-count projection over an
+  affected-category set, which feeds the `029` subtree render payload's generic
+  `dormantDependentCounts` seam.
+- **`ICategoryRelationshipStore`** — the narrow persistence seam the writer uses instead of EF.
+  `GetActiveDirectionalTargetsAsync` returns **one breadth-first layer** of the broader→narrower
+  graph so cycle validation walks only the reachable subgraph.
+
 ## `Restore/` — the §8 registry contracts
 
 `IAbwabRestoreAdapter<TSnapshot>` (capture/reconstruct a versioned, schema-tagged snapshot) and

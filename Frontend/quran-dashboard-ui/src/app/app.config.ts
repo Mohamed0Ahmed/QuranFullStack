@@ -19,6 +19,8 @@ import { devLatencyInterceptor } from './core/data-access/dev-latency.intercepto
 import { secureUrlInterceptor } from './core/data-access/secure-url.interceptor';
 import { ABWAB_CORE_PORT } from './features/abwab/data-access/abwab-core.port';
 import { AbwabHttpAdapter } from './features/abwab/data-access/abwab-http.adapter';
+import { ABWAB_RELATIONSHIPS_PORT } from './features/abwab/data-access/abwab-relationships.port';
+import { AbwabRelationshipsHttpAdapter } from './features/abwab/data-access/abwab-relationships-http.adapter';
 
 const { endpoint, appId, redirectUri, postLogoutRedirectUri, scope, resource } = environment.logto;
 
@@ -47,5 +49,6 @@ export const appConfig: ApplicationConfig = {
     { provide: TitleStrategy, useClass: AppTitleStrategy },
     provideAuth({ config: oidcConfig }, withAppInitializerAuthCheck()),
     { provide: ABWAB_CORE_PORT, useExisting: AbwabHttpAdapter },
+    { provide: ABWAB_RELATIONSHIPS_PORT, useExisting: AbwabRelationshipsHttpAdapter },
   ],
 };

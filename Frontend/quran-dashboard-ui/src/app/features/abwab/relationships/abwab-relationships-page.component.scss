@@ -1,0 +1,57 @@
+.relationships-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qd-space-4, 1rem);
+}
+
+.relationships-page__subject {
+  color: var(--qd-text-muted);
+  font-weight: 400;
+}
+
+.relationships-page__conflict {
+  color: var(--qd-danger);
+  font-weight: 600;
+}
+
+.relationships-page__toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--qd-space-2, 0.5rem);
+  color: var(--qd-text-muted);
+}
+
+.relationships-page__form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--qd-space-2, 0.5rem);
+}
+
+.relationships-page__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.relationships-page__row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--qd-space-3, 0.75rem);
+  padding-block: var(--qd-space-3, 0.75rem);
+  border-block-end: 1px solid var(--qd-border);
+}
+
+.relationships-page__summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--qd-space-2, 0.5rem);
+}
+
+.relationships-page__actions {
+  display: flex;
+  gap: var(--qd-space-2, 0.5rem);
+}

@@ -1,7 +1,7 @@
-# Abwab application handlers — Sections, Categories, Tree (`029`)
+# Abwab application handlers — Sections, Categories, Tree (`029`), Relationships (`030`)
 
-**Layer:** Application · **Feature:** `029-abwab-core` · **HOW rules:**
-`Backend/.architecture/CLEAN_ARCHITECTURE.md`
+**Layer:** Application · **Features:** `029-abwab-core`, `030-abwab-relationships-templates` ·
+**HOW rules:** `Backend/.architecture/CLEAN_ARCHITECTURE.md`
 
 Use-case handlers implementing `IAbwabCoreReadPort`/`IAbwabCoreWritePort`
 (`Application.Abstractions/Abwab/Core/`). Manual protection (resolver + apply/lift/preset writers)
@@ -56,6 +56,51 @@ this file covers Sections, Categories, and Tree.
 - **`CategoryProtectionGate`** (shared by the handlers above) — see `Protection/README.md`.
 - **`CategoryTreeGuards`** — the pure cycle/overlap/inactive-destination/name-revalidation checks the
   ordering and subtree handlers share.
+
+## `Relationships/` (`030`)
+
+- **`RelationshipWriterHandler`** — the single `IAbwabRelationshipWritePort` implementation:
+  add/edit/delete/restore, each one audited ChangeSet on the `028` executor. It bumps **neither**
+  `TreeRevision` nor any content counter — a relationship is an adjunct, not tree structure.
+  Duplicate rejection (`abwab.relationship_duplicate`) and directional **cycle** rejection
+  (`abwab.relationship_cycle`) both run **inside** the transaction, after the barrier/revision lock;
+  because every Abwab writer serializes on that lock, the in-transaction check is the race-safe
+  guard and the filtered unique index is the DB backstop. An explicit direct **A→C stays legal**
+  alongside A→B→C — only reachability back to the proposed broader endpoint is refused. Restore
+  revalidates both, which is what makes a **restore collision** fail instead of producing a second
+  active row.
+- **`RelationshipProtectionGate`** — the §7.3 endpoint-protection gate over the resolved target set
+  (**proposed** on add, **current ∪ proposed** on edit, **stored** on delete/restore) resolved
+  through the `029` `ProtectionResolver` for `ManualProtectionType.Relationship`. Direct **or**
+  inherited protection on **any** target blocks the **entire** mutation, and it runs before any row
+  is touched — that is what stops an edit escaping protection by dropping the protected endpoint.
+- **`RelationshipShape`** — the one place a submitted `(type, first, second)` triple becomes storable
+  columns (mutual canonicalization / directional orientation).
+- **`RelationshipAuditViews` + `RelationshipEndpointViewBuilder`** — the §6.3 specialized relationship
+  payload: type/shape, both endpoints with their **historical** section/path frozen at operation
+  time, and before/after on an edit. The payload carries **structure only**; the Broader/Narrower
+  inverse label and the type labels are derived for display by the render component, never stored.
+  The payload carries **no protection-blocker facet**: applicable `Relationship` protection on any
+  target aborts the mutation before a ChangeSet exists, so no committed relationship event can carry
+  one. A blocked attempt surfaces as the `abwab.manual_protection` conflict, not as an audit row.
+
+### Relationship invariants (read before changing)
+
+- **The ordinary 24-hour window is never read, started, or restarted** by a relationship mutation
+  (§9, §2.1) — it is neither started by nor blocked by these writers.
+- A **targeted-row expectation failure** — stale `xmin` *or* an unaddressable relationship id — maps
+  to `abwab.row_stale`. Rows are never physically deleted, so a missing id can only come from a
+  forged/stale reference; §11 defines no separate relationship-not-found code and none is invented.
+- **A row that is already in the requested state is refused, never reported as done.** Editing a
+  soft-deleted relationship, deleting an already-deleted one, and restoring an already-active one all
+  map to `abwab.row_stale` and write no ChangeSet — answering success for a mutation that changed
+  nothing would report an action that never happened. The protection gate still runs first, so a
+  protected endpoint fails closed with `abwab.manual_protection` either way.
+- A **dormant** relationship (any endpoint soft-deleted) is **not actionable**: after the protection
+  gate, every mutation revalidates that all endpoints are active and otherwise fails with
+  `abwab.category_unavailable`.
+- The `029` `CategorySubtreeHandler` is **not modified** to know about relationships: dormancy falls
+  out of the RESTRICT schema property plus the read projection.
 
 ## Related
 

@@ -1,23 +1,25 @@
-# Abwab feature (الأبواب) — category tree, protection, audit renders
+# Abwab feature (الأبواب) — category tree, protection, relationships, audit renders
 
 **HOW rules:** `.architecture/FRONTEND_STRUCTURE.md`, `.architecture/API_INTEGRATION_GUIDELINES.md`
-(project root). This file is the WHAT (current truth + shared pattern). **Feature:** `029-abwab-core`.
+(project root). This file is the WHAT (current truth + shared pattern). **Features:**
+`029-abwab-core`, `030-abwab-relationships-templates`.
 
 ## What this feature does
 
 The domain frontend vertical slice for the category tree: a virtualized, RTL, keyboard-navigable
 tree of sections/categories; a category editor (name/description/excerpt/aliases); a protection
 panel (view direct/inherited protection, apply/lift/full-preset); and the §6.3 audit-render
-components. It is routed at `/dashboard/abwab` (`abwab.routes.ts`, unguarded — public-browse posture,
-composite-read visibility is in-page and cosmetic, see below).
+components. It is mounted at `/gates` (`app.routes.ts` → `abwab.routes.ts`, unguarded —
+public-browse posture, composite-read visibility is in-page and cosmetic, see below).
 
 ## Layout
 
-- `data-access/` — the core contract, its two implementations, cache, and conflict types.
-- `state/` — the tree facade (orchestration) and the composite-read permission mirror.
+- `data-access/` — the core and relationship contracts, their implementations, caches, and conflict types.
+- `state/` — the tree and relationship facades (orchestration) and the composite-read permission mirror.
 - `tree/` — the tree page shell and the virtualized tree view.
 - `editor/` — the category editor (Reactive Forms).
 - `protection/` — the protection panel.
+- `relationships/` — the relationship list/panel page (`030`).
 - `audit/` — the §6.3 audit-render components (presentational only).
 
 ## `data-access/` — the ONE versioned core contract
@@ -49,6 +51,76 @@ composite-read visibility is in-page and cosmetic, see below).
   one snapshot resource). `invalidate()` is called after every successful mutation and after every
   `abwab.tree_revision_stale`/`abwab.timeline_generation_stale`/`abwab.row_stale` conflict — there is
   no client-side reconciliation of a stale snapshot, only invalidate + re-fetch.
+
+## `data-access/` — the relationship contract (`030`)
+
+`030` gets its **own** port (§14.1) rather than extending `AbwabCorePort` — a mega-port is explicitly
+excluded. Same three-part shape and the same rules as the core contract:
+
+- **`abwab-relationships.port.ts`** (`AbwabRelationshipsPort`) — `getRelationships` (per category,
+  `includeDeleted` widens it to soft-deleted rows) plus add/edit/delete/restore. Reads carry the
+  server `TimelineGeneration`; a mutation result never synthesizes one.
+- **`abwab-relationships.mock.ts`** / **`abwab-relationships-http.adapter.ts`** — kept in step by
+  `abwab-relationships-parity.spec.ts`. Its `conflictScenarios` table drives **each** scenario through
+  **both** ports inside **one** test — the mock must actually *raise* the code the server stub
+  returns, so the two sides cannot drift into separately-maintained expectations. Codes covered:
+  `abwab.relationship_duplicate` (duplicate mutual pair **and** restore collision),
+  `abwab.relationship_cycle`, `abwab.manual_protection`, `abwab.category_unavailable`,
+  `abwab.row_stale`, `abwab.timeline_generation_stale`. The suite also asserts **key-set equality**
+  between a mock read and a flushed HTTP read, and exercises add/edit/delete/restore on both sides.
+  The mock canonicalizes a mutual pair the way `CategoryRelationship.Canonicalize` does and rejects a
+  self-link, and it mirrors **dormancy**: a relationship whose endpoint category is deleted
+  disappears from the actionable projection and returns untouched when that endpoint does.
+- **`abwab-response-unwrap.ts`** — the shared `ApiResponse` unwrap + `abwab.*` 409 → `AbwabConflictError`
+  mapping. The relationship adapter uses it so the mapping is not duplicated; the `029`
+  `abwab-http.adapter.ts` still carries its own copy and is untouched by `030`.
+- **`abwab-relationships-cache.ts`** — one cache key per `(categoryId, includeDeleted)` projection
+  (unlike the single tree snapshot). Both projections of a category invalidate together, because a
+  delete moves a row from one to the other (`abwab-relationships-cache.spec.ts`).
+
+## `state/abwab-relationships.facade.ts`
+
+Same single `runMutation()` cache rule as the tree facade: invalidate + reload from the server on
+success **and** on conflict, with nothing applied to the rendered list ahead of server confirmation.
+Selection survives a reload as long as the relationship is still in the fresh projection. Status is
+`idle | loading | ready | empty | error` so the page renders **distinct** loading/empty/error/retry
+states rather than a silent blank. `mutationError` carries **every** failed mutation — conflicts and
+non-conflicts alike — so a 400/500 can never render as a silent no-op. It also exposes
+`endpointCandidates` / `routedCategoryName`, read once from the `029` `allCategoriesProjection`, to
+back the endpoint picker; that read is best-effort and never moves the list out of its own state.
+Covered by `abwab-relationships.facade.spec.ts`.
+
+## `relationships/` — explicit actions, no drag
+
+`abwab-relationships-page.component.ts` is routed at `/gates/relationships/:categoryId`
+(`abwab.routes.ts` mounted under `path: 'gates'` in `app.routes.ts`). The tree page links to it from
+the selected category's detail panel. Add/edit/delete/restore are explicit buttons and Reactive Forms
+— never drag, never an implicit save. Visibility is filtered by
+`AbwabPermissions.canViewRelationship()` etc., which is **cosmetic only**: the backend
+`relationship.*` policies are the sole authority.
+
+Three form rules the page must not lose (`abwab-relationships-page.component.spec.ts` pins all
+three):
+
+- The `RelationshipType` `<select>` binds **`[ngValue]`**, never `[value]`. `RelationshipType` is an
+  **integer** on the wire and no `JsonStringEnumConverter` is registered, so a `[value]` binding
+  would hand the control the option's *string* and 400 every non-default type.
+- A `BroaderNarrower` edge is stored broader-first and read back in that order, so the form carries
+  an explicit **direction** control («هذا الباب هو الأعم / الأخص»). On edit it is seeded from the
+  stored `from`/`to`, which is what stops a no-op save from silently inverting the edge; it also
+  makes an **inbound** edge (the routed door as the narrower end) authorable.
+- The other endpoint is a **picker** over the `029` category projection, never a hand-typed GUID. It
+  excludes the routed door, so a self-link cannot be submitted; a group validator rejects one anyway.
+
+`includeDeleted` lives in the URL as `?includeDeleted=true` (`FRONTEND_STRUCTURE.md` "Tabs and URL
+State"), so refresh and sharing preserve it. `data-access/relationship-type-labels.ts` holds the
+frozen Arabic type labels — keyed by the wire constants from `abwab-relationships.port.ts`, so a
+label and its integer cannot drift — and derives the Broader/Narrower endpoint labels; the inverse is
+a **display derivation**, never a second stored row. Components read that module through **getters,
+never captured fields**: when a second spec bundle imports it the unit-test bundler hoists it into a
+shared chunk that is read before it is initialised, and a field initialiser then captures `undefined`
+— which renders the type `<select>` with zero options and no error. Add/edit forms are **separate
+`FormGroup`s** so opening the editor cannot discard an unsaved add draft.
 
 ## `state/abwab-tree.facade.ts` — orchestration, cache rule, and "rollback"
 
@@ -110,8 +182,25 @@ Pure view models + presentational components for the five §6.3 payloads
 `غير محدد`, order fields included), category **edit** (non-color field-diff marker, order fields
 included), bulk **move** (nested descendants, sibling-order side effects grouped by affected
 parent/order scope), subtree **delete/restore** (dormant-dependent labels/counts), and
-**manual-protection** (changed direct/inherited effects). **There is no standalone "ordering"
-render component** — ordering is folded into bulk-move and category-edit, per §6.3. `029` defines
+**manual-protection** (changed direct/inherited effects). `030` adds the **relationship** payload
+(`relationship-render.component.ts`): type/shape, the Broader/Narrower inverse label **derived for
+display**, and one diff row per field laid out `label | previous | current` — previous state
+right, current/result left in RTL. Both endpoints render their historical section/path **plus** the
+live current name/path/deleted state **on whichever side the payload carries**, so a `deleted`
+payload (before only) still shows live current state. A changed value carries colour **and** a
+non-colour «▲ تغيير» marker **inside the value itself**, following `field-diff-row.component.*` —
+never a detached marker block. The payload carries **no protection-blocker list** — applicable
+`Relationship` protection aborts the mutation before a ChangeSet exists, so a blocked attempt is an
+`abwab.manual_protection` conflict, never an audit row — and reviewer is
+«غير مطلوب». `relationship-dormant-counts.ts` is `030`'s **data contribution** to the `029`-owned
+subtree delete/restore payload: relationship counts feed the generic `dormantDependentCounts` seam.
+It takes the label map as an **argument** rather than importing it, so the shared label module never
+enters the audit chunk's module graph (see the getters in `abwab-relationships-page.component.ts`).
+It contributes the relationship **name only** (`علاقات (مشابه)`) — the `029` row stamps its own
+«خامل» badge, and the count is never labelled "deleted" (a subtree delete writes no relationship row
+at all). **There
+is no standalone "ordering" render component** — ordering is folded into bulk-move and
+category-edit, per §6.3. `029` defines
 and renders only the *shape* of these payloads over whatever changeset a caller supplies; it does
 not build the main audit page, pagination, or fetch real audit records — that read model is `033`'s.
 Fixture data in tests is synthetic Arabic only (source-safe) — never real Quran text.

@@ -15,6 +15,9 @@ public static class AbwabRestoreDependencyInjection
         services.AddSingleton<ManualProtectionRestoreAdapter>();
         services.AddSingleton<IAbwabRestoreAdapterDescriptor>(sp => sp.GetRequiredService<ManualProtectionRestoreAdapter>());
 
+        services.AddSingleton<RelationshipRestoreAdapter>();
+        services.AddSingleton<IAbwabRestoreAdapterDescriptor>(sp => sp.GetRequiredService<RelationshipRestoreAdapter>());
+
         return services;
     }
 }

@@ -31,6 +31,19 @@ public sealed class WriterStabilizationDiscoveryTests
             + string.Join(", ", missing.Select(type => type.FullName)));
     }
 
+    [Fact]
+    public void The030RelationshipWriterSet_IsNotEmpty_SoThisGuardCannotSilentlyBecomeVacuous()
+    {
+        var discoveredRelationshipWriters = AbwabWriterStabilizationGuard
+            .DiscoverWriters(AbwabWriterRegistrations.WriterAssemblies)
+            .Where(writer => writer.Name.Contains("Relationship", StringComparison.Ordinal))
+            .ToList();
+
+        discoveredRelationshipWriters.Should().NotBeEmpty(
+            "T027 registered the 030 relationship mutation command types, so a later namespace/filter change "
+            + "must not be able to reduce the coverage guard above to asserting nothing");
+    }
+
     private static bool IsA030RelationshipOrTemplateWriter(Type writer) =>
         (writer.Namespace ?? string.Empty).Contains(".Abwab.Relationships", StringComparison.Ordinal) ||
         (writer.Namespace ?? string.Empty).Contains(".Abwab.Templates", StringComparison.Ordinal) ||

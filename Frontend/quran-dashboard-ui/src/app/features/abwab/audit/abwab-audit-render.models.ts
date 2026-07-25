@@ -98,6 +98,33 @@ export interface ManualProtectionEffectChange {
   readonly after: ProtectionEffectState;
 }
 
+export type RelationshipAction = 'added' | 'edited' | 'deleted' | 'restored';
+
+export interface RelationshipEndpointRenderView {
+  readonly categoryId: string;
+  readonly name: string;
+  readonly sectionName: string | null;
+  readonly historicalPath: readonly string[];
+  readonly currentName: string | null;
+  readonly currentPath: readonly string[] | null;
+  readonly isCurrentlyDeleted: boolean;
+}
+
+export interface RelationshipStateRenderView {
+  readonly typeLabel: string;
+  readonly isDirectional: boolean;
+  readonly from: RelationshipEndpointRenderView;
+  readonly to: RelationshipEndpointRenderView;
+}
+
+export interface RelationshipRenderPayload {
+  readonly changeSetId: string;
+  readonly categoryRelationshipId: string;
+  readonly action: RelationshipAction;
+  readonly before: RelationshipStateRenderView | null;
+  readonly after: RelationshipStateRenderView | null;
+}
+
 export interface ManualProtectionRenderPayload {
   readonly changeSetId: string;
   readonly targetCategoryName: string;

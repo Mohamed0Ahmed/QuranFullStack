@@ -1,8 +1,10 @@
 using QuranDashboard.Application.Abstractions.Abwab;
 using QuranDashboard.Application.Abstractions.Abwab.Core;
 using QuranDashboard.Application.Abstractions.Security;
+using QuranDashboard.Application.Abstractions.Abwab.Relationships;
 using QuranDashboard.Application.Abwab.Categories;
 using QuranDashboard.Application.Abwab.Protection;
+using QuranDashboard.Application.Abwab.Relationships;
 using QuranDashboard.Application.Abwab.Sections;
 using QuranDashboard.Application.Abwab.Tree;
 using QuranDashboard.Infrastructure.Abwab.Caching;
@@ -51,6 +53,27 @@ internal static class AbwabWriterTestHarness
 
         return (writePort, db);
     }
+
+    public static (IAbwabRelationshipWritePort WritePort, QuranDashboardDbContext Db) CreateRelationshipWritePort(
+        PostgresFixture fixture,
+        IServerClock? clock = null)
+    {
+        var db = AbwabKernelHarness.CreateProductionContext(fixture, new AbwabWriteGuardInterceptor(AbwabPersonalDeletePolicy.Default));
+        var effectiveClock = clock ?? new FixedServerClock(DateTimeOffset.UnixEpoch);
+
+        var handler = new RelationshipWriterHandler(
+            new AbwabAuditedCommitExecutor(db, effectiveClock, new NullAbwabCachePublisher()),
+            new EfCategoryRelationshipStore(db),
+            new EfCategoryTreeStore(db),
+            new EfSectionWriteStore(db),
+            new ProtectionResolver(new EfManualProtectionReadPort(db), effectiveClock),
+            effectiveClock);
+
+        return (handler, db);
+    }
+
+    public static IAbwabRelationshipReadPort CreateRelationshipReadPort(QuranDashboardDbContext db, IServerClock? clock = null) =>
+        new EfAbwabRelationshipReadPort(db, clock ?? new FixedServerClock(DateTimeOffset.UnixEpoch));
 
     public static ProtectionResolver CreateProtectionResolver(QuranDashboardDbContext db, IServerClock? clock = null) =>
         new(new EfManualProtectionReadPort(db), clock ?? new FixedServerClock(DateTimeOffset.UnixEpoch));

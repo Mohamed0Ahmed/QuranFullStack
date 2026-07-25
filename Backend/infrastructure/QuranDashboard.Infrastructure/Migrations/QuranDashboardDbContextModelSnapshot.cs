@@ -387,6 +387,72 @@ namespace QuranDashboard.Infrastructure.Migrations
                     b.ToTable("abwab_manual_protections", (string)null);
                 });
 
+            modelBuilder.Entity("QuranDashboard.Domain.Abwab.Relationships.CategoryRelationship", b =>
+                {
+                    b.Property<Guid>("CategoryRelationshipId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<Guid?>("HigherCategoryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("higher_category_id");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<Guid?>("LowerCategoryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("lower_category_id");
+
+                    b.Property<int>("RelationshipType")
+                        .HasColumnType("integer")
+                        .HasColumnName("relationship_type");
+
+                    b.Property<Guid?>("SourceCategoryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("source_category_id");
+
+                    b.Property<Guid?>("TargetCategoryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("target_category_id");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("CategoryRelationshipId");
+
+                    b.HasIndex("HigherCategoryId");
+
+                    b.HasIndex("TargetCategoryId");
+
+                    b.HasIndex("SourceCategoryId", "TargetCategoryId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_abwab_category_relationships_directional_active")
+                        .HasFilter("is_deleted = false AND relationship_type = 2");
+
+                    b.HasIndex("LowerCategoryId", "HigherCategoryId", "RelationshipType")
+                        .IsUnique()
+                        .HasDatabaseName("ix_abwab_category_relationships_mutual_active")
+                        .HasFilter("is_deleted = false AND lower_category_id IS NOT NULL");
+
+                    b.ToTable("abwab_category_relationships", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_abwab_category_relationships_canonical_order", "lower_category_id IS NULL OR lower_category_id < higher_category_id");
+
+                            t.HasCheckConstraint("ck_abwab_category_relationships_no_self_link", "(lower_category_id IS NULL OR lower_category_id <> higher_category_id) AND (source_category_id IS NULL OR source_category_id <> target_category_id)");
+
+                            t.HasCheckConstraint("ck_abwab_category_relationships_one_shape", "(relationship_type <> 2 AND lower_category_id IS NOT NULL AND higher_category_id IS NOT NULL AND source_category_id IS NULL AND target_category_id IS NULL) OR (relationship_type = 2 AND lower_category_id IS NULL AND higher_category_id IS NULL AND source_category_id IS NOT NULL AND target_category_id IS NOT NULL)");
+                        });
+                });
+
             modelBuilder.Entity("QuranDashboard.Domain.Abwab.Sections.Section", b =>
                 {
                     b.Property<Guid>("SectionId")
@@ -2971,6 +3037,36 @@ namespace QuranDashboard.Infrastructure.Migrations
                             Code = "protection.lift",
                             DashboardAdminBaseline = false,
                             SystemOwnerOnly = false
+                        },
+                        new
+                        {
+                            Code = "relationship.view",
+                            DashboardAdminBaseline = false,
+                            SystemOwnerOnly = false
+                        },
+                        new
+                        {
+                            Code = "relationship.add",
+                            DashboardAdminBaseline = false,
+                            SystemOwnerOnly = false
+                        },
+                        new
+                        {
+                            Code = "relationship.edit",
+                            DashboardAdminBaseline = false,
+                            SystemOwnerOnly = false
+                        },
+                        new
+                        {
+                            Code = "relationship.delete",
+                            DashboardAdminBaseline = false,
+                            SystemOwnerOnly = false
+                        },
+                        new
+                        {
+                            Code = "relationship.restore",
+                            DashboardAdminBaseline = false,
+                            SystemOwnerOnly = false
                         });
                 });
 
@@ -3021,6 +3117,29 @@ namespace QuranDashboard.Infrastructure.Migrations
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Abwab.Relationships.CategoryRelationship", b =>
+                {
+                    b.HasOne("QuranDashboard.Domain.Abwab.Categories.Category", null)
+                        .WithMany()
+                        .HasForeignKey("HigherCategoryId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("QuranDashboard.Domain.Abwab.Categories.Category", null)
+                        .WithMany()
+                        .HasForeignKey("LowerCategoryId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("QuranDashboard.Domain.Abwab.Categories.Category", null)
+                        .WithMany()
+                        .HasForeignKey("SourceCategoryId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("QuranDashboard.Domain.Abwab.Categories.Category", null)
+                        .WithMany()
+                        .HasForeignKey("TargetCategoryId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("QuranDashboard.Domain.Access.User", b =>

@@ -1,11 +1,31 @@
 using QuranDashboard.Domain.Abwab.Categories;
 using QuranDashboard.Domain.Abwab.Protection;
+using QuranDashboard.Domain.Abwab.Relationships;
 using QuranDashboard.Tests.Abwab._Fixtures;
 
 namespace QuranDashboard.Tests.Abwab._Support;
 
 internal static class AbwabRelationshipTemplateSeeding
 {
+    public static CategoryRelationship NewMutualRelationship(
+        Guid lowerCategoryId,
+        Guid higherCategoryId,
+        RelationshipType relationshipType = RelationshipType.Similar) => new()
+    {
+        CategoryRelationshipId = Guid.NewGuid(),
+        RelationshipType = relationshipType,
+        LowerCategoryId = lowerCategoryId,
+        HigherCategoryId = higherCategoryId,
+    };
+
+    public static CategoryRelationship NewDirectionalRelationship(Guid broaderCategoryId, Guid narrowerCategoryId) => new()
+    {
+        CategoryRelationshipId = Guid.NewGuid(),
+        RelationshipType = RelationshipType.BroaderNarrower,
+        SourceCategoryId = broaderCategoryId,
+        TargetCategoryId = narrowerCategoryId,
+    };
+
     public static async Task<(Category Lower, Category Higher)> TwoCategoryEndpointsAsync(
         PostgresFixture fixture, string firstName = "باب أدنى", string secondName = "باب أعلى")
     {
@@ -15,6 +35,20 @@ internal static class AbwabRelationshipTemplateSeeding
         await AbwabTreeSeeding.InsertAsync(fixture, section, first, second);
 
         return first.CategoryId.CompareTo(second.CategoryId) < 0 ? (first, second) : (second, first);
+    }
+
+    public static async Task<IReadOnlyList<Category>> ManyCategoryEndpointsAsync(
+        PostgresFixture fixture, int count, string label = "طرف")
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(count);
+
+        var section = AbwabTreeSeeding.NewSection($"قسم أطراف {Guid.NewGuid():N}");
+        var endpoints = Enumerable.Range(0, count)
+            .Select(i => AbwabTreeSeeding.NewRootCategory($"{label} {i} {Guid.NewGuid():N}", section.SectionId, sectionOrder: i, globalOrder: i))
+            .ToList();
+
+        await AbwabTreeSeeding.InsertAsync(fixture, [section, .. endpoints]);
+        return endpoints;
     }
 
     public static async Task<(Category Category, ManualProtection Protection)> ProtectedCategoryAsync(

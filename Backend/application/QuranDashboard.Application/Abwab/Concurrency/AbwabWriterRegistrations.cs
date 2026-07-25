@@ -1,5 +1,6 @@
 using System.Reflection;
 using QuranDashboard.Application.Abstractions.Abwab.Core;
+using QuranDashboard.Application.Abstractions.Abwab.Relationships;
 using QuranDashboard.Application.Security.Owners;
 using QuranDashboard.Application.Security.Permissions;
 
@@ -39,5 +40,10 @@ public static class AbwabWriterRegistrations
         registry.Register<ApplyManualProtectionCommand>();
         registry.Register<LiftManualProtectionCommand>();
         registry.Register<ApplyFullProtectionPresetCommand>();
+
+        registry.Register<AddRelationshipCommand>();
+        registry.Register<EditRelationshipCommand>();
+        registry.Register<DeleteRelationshipCommand>();
+        registry.Register<RestoreRelationshipCommand>();
     }
 }
