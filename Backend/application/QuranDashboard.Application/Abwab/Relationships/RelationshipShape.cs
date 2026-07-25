@@ -36,9 +36,8 @@ internal readonly record struct RelationshipShape(
 
     public bool IsDirectional => RelationshipType == RelationshipType.BroaderNarrower;
 
-    public IReadOnlyList<Guid> EndpointCategoryIds => IsDirectional
-        ? [SourceCategoryId!.Value, TargetCategoryId!.Value]
-        : [LowerCategoryId!.Value, HigherCategoryId!.Value];
+    public IReadOnlyList<Guid> EndpointCategoryIds =>
+        CategoryRelationship.EndpointsOf(RelationshipType, LowerCategoryId, HigherCategoryId, SourceCategoryId, TargetCategoryId);
 
     public CategoryRelationship ToNewRow(Guid categoryRelationshipId)
     {

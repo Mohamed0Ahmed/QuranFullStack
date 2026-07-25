@@ -49,6 +49,7 @@ interface ConflictScenario {
   readonly mock: (port: AbwabRelationshipsMock) => Promise<unknown>;
   readonly http: (port: AbwabRelationshipsPort) => Promise<unknown>;
   readonly httpPath: string;
+  readonly note?: string;
 }
 
 const conflictScenarios: readonly ConflictScenario[] = [
@@ -143,6 +144,7 @@ const conflictScenarios: readonly ConflictScenario[] = [
   },
   {
     code: 'abwab.row_stale',
+    note: 'editing with a stale Version',
     mock: async (port) => {
       const relationshipId = await seedMutual(port);
       return port.editRelationship(relationshipId, {
@@ -192,6 +194,44 @@ const conflictScenarios: readonly ConflictScenario[] = [
     http: (port) => port.restoreRelationship('relationship-1', { expectedVersion: 2, expectedTimelineGeneration: 1 }),
     httpPath: '/relationship-1/restore',
   },
+  // State-based staleness, NOT a Version mismatch: both rows below carry the row's CURRENT version, so
+  // only the writer's "this row no longer supports this action" rule can raise the code. Answering
+  // «تم» to a delete/restore that changed nothing would report an action that never happened.
+  {
+    code: 'abwab.row_stale',
+    note: 'deleting an already-deleted row',
+    mock: async (port) => {
+      const relationshipId = await seedMutual(port);
+      const active = await port.getRelationships(categoryA);
+      await port.deleteRelationship(relationshipId, {
+        expectedVersion: active.relationships[0].version,
+        expectedTimelineGeneration: 1,
+      });
+
+      const deleted = await port.getRelationships(categoryA, true);
+      const soft = deleted.relationships.find((row) => row.categoryRelationshipId === relationshipId)!;
+      return port.deleteRelationship(relationshipId, {
+        expectedVersion: soft.version,
+        expectedTimelineGeneration: 1,
+      });
+    },
+    http: (port) => port.deleteRelationship('relationship-1', { expectedVersion: 2, expectedTimelineGeneration: 1 }),
+    httpPath: '/relationship-1',
+  },
+  {
+    code: 'abwab.row_stale',
+    note: 'restoring a row that is already active',
+    mock: async (port) => {
+      const relationshipId = await seedMutual(port);
+      const active = await port.getRelationships(categoryA);
+      return port.restoreRelationship(relationshipId, {
+        expectedVersion: active.relationships[0].version,
+        expectedTimelineGeneration: 1,
+      });
+    },
+    http: (port) => port.restoreRelationship('relationship-1', { expectedVersion: 1, expectedTimelineGeneration: 1 }),
+    httpPath: '/relationship-1/restore',
+  },
 ];
 
 describe('AbwabRelationshipsPort mock <-> HTTP parity', () => {
@@ -209,7 +249,7 @@ describe('AbwabRelationshipsPort mock <-> HTTP parity', () => {
   afterEach(() => httpTesting.verify());
 
   for (const scenario of conflictScenarios) {
-    it(`mock and HTTP both raise ${scenario.code} for the same scenario (${scenario.httpPath || 'add'})`, async () => {
+    it(`mock and HTTP both raise ${scenario.code} for the same scenario (${scenario.note ?? (scenario.httpPath || 'add')})`, async () => {
       const mock = newMock(
         scenario.code === 'abwab.manual_protection' ? { relationshipProtectedCategoryIds: [categoryB] } : {},
       );

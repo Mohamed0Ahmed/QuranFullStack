@@ -39,8 +39,10 @@ that kernel) — every entity below is `IAbwabAuditable` and only ever mutates t
   exclusive: a mutual type may not occupy the directional columns, because such a row would join the
   Broader/Narrower graph that cycle validation walks. Soft-delete metadata + `Version` (xmin).
   `Canonicalize` is the single place a submitted pair becomes storable columns, which is what makes a
-  *reverse* duplicate collapse onto the same active unique-index key; `EndpointCategoryIds` is the
-  single place a stored row's endpoint pair is read, so no reader can pick the wrong shape's columns.
+  *reverse* duplicate collapse onto the same active unique-index key; `EndpointsOf` is the single
+  place those columns become an ordered endpoint pair, so no reader can pick the wrong shape's
+  columns. `EndpointCategoryIds` (a stored row) and the application-side `RelationshipShape` (a
+  not-yet-stored submission) both delegate to it rather than repeating the rule.
   The Broader/Narrower **inverse label is derived for display**, never a second stored row.
 - `Tree/ArabicNameNormalizer.cs` — the §5.1 normalization used for every Section/Category/alias
   name: NFC (UAX#15, Unicode 16.0), trim + collapse whitespace, strip tatweel and the frozen

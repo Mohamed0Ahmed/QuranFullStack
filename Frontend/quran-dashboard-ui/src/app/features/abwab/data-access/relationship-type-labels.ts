@@ -7,8 +7,9 @@ import {
 } from './abwab-relationships.port';
 
 // The single source of the Arabic relationship-type labels, derived from the port's wire constants
-// so a label and its wire value cannot drift. Read it lazily from components — see the getters in
-// abwab-relationships-page.component.ts for why a module-level capture is unsafe here.
+// so a label and its wire value cannot drift. Never read these into a class-FIELD initialiser — see
+// the getters in abwab-relationships-page.component.ts for why that captures `undefined` under the
+// unit-test builder.
 export const RELATIONSHIP_TYPE_LABELS: Record<RelationshipType, string> = {
   [RELATIONSHIP_TYPE_SIMILAR]: 'مشابه',
   [RELATIONSHIP_TYPE_OPPOSITE]: 'مقابل',

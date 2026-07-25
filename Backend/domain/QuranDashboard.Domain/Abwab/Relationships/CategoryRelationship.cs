@@ -26,11 +26,21 @@ public sealed class CategoryRelationship : IAbwabAuditable
 
     public bool HasValidShape() => IsDirectional ? HasValidDirectionalShape() : HasValidMutualShape();
 
-    // The one place a stored row's endpoint pair is read, so a reader can never pick the columns of
-    // the wrong shape. Ordered: mutual is (lower, higher), directional is (broader, narrower).
-    public IReadOnlyList<Guid> EndpointCategoryIds => IsDirectional
-        ? [SourceCategoryId!.Value, TargetCategoryId!.Value]
-        : [LowerCategoryId!.Value, HigherCategoryId!.Value];
+    public IReadOnlyList<Guid> EndpointCategoryIds =>
+        EndpointsOf(RelationshipType, LowerCategoryId, HigherCategoryId, SourceCategoryId, TargetCategoryId);
+
+    // The one place the stored columns are turned into an endpoint pair, so no reader — row or
+    // application-side shape — can pick the columns of the wrong shape. Ordered: mutual is
+    // (lower, higher), directional is (broader, narrower).
+    public static IReadOnlyList<Guid> EndpointsOf(
+        RelationshipType relationshipType,
+        Guid? lowerCategoryId,
+        Guid? higherCategoryId,
+        Guid? sourceCategoryId,
+        Guid? targetCategoryId) =>
+        relationshipType == RelationshipType.BroaderNarrower
+            ? [sourceCategoryId!.Value, targetCategoryId!.Value]
+            : [lowerCategoryId!.Value, higherCategoryId!.Value];
 
     // Mutual endpoints are stored in canonical order so a reverse duplicate collapses onto the same
     // active unique-index key instead of becoming a second row for one relationship.

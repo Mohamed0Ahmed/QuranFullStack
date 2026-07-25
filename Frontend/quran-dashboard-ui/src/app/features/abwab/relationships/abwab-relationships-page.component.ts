@@ -67,11 +67,12 @@ export class AbwabRelationshipsPageComponent implements OnInit {
   protected readonly emptyMessage = EMPTY_MESSAGE;
   protected readonly loadingMessage = LOADING_MESSAGE;
   protected readonly retryLabel = RETRY_LABEL;
-  // Getters, not captured fields. When another spec bundle also imports relationship-type-labels.ts
-  // the unit-test bundler hoists it into a shared chunk this component's chunk reads BEFORE that
-  // chunk's body runs, so a field initialiser captures `undefined` and `@for` silently renders a
-  // <select> with zero options. Reading during change detection happens after every chunk is
-  // initialised. Verified by running this spec alongside audit/audit-render.spec.ts.
+  // Getters, because a class-FIELD initialiser must never read an IMPORTED binding here: under the
+  // unit-test builder esbuild emits shared modules as lazily-initialised chunks, and vite-node's SSR
+  // transform hoists an import referenced in class-field position into a module-top `const` snapshot
+  // that evaluates BEFORE that chunk's body — capturing `undefined`, which makes `@for` render a
+  // <select> with zero options and no error. Reads from a method/getter body, and from the
+  // @Component metadata, stay live property accesses and are unaffected.
   protected get typeLabels(): Record<RelationshipType, string> {
     return RELATIONSHIP_TYPE_LABELS;
   }

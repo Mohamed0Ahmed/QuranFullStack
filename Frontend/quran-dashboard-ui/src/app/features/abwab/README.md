@@ -66,7 +66,9 @@ excluded. Same three-part shape and the same rules as the core contract:
   returns, so the two sides cannot drift into separately-maintained expectations. Codes covered:
   `abwab.relationship_duplicate` (duplicate mutual pair **and** restore collision),
   `abwab.relationship_cycle`, `abwab.manual_protection`, `abwab.category_unavailable`,
-  `abwab.row_stale`, `abwab.timeline_generation_stale`. The suite also asserts **key-set equality**
+  `abwab.row_stale` (a stale `Version` **and** the state-based refusals — deleting an already-deleted
+  row, restoring an already-active one — which carry the row's current `Version`, so only the writer's
+  state rule can raise them), `abwab.timeline_generation_stale`. The suite also asserts **key-set equality**
   between a mock read and a flushed HTTP read, and exercises add/edit/delete/restore on both sides.
   The mock canonicalizes a mutual pair the way `CategoryRelationship.Canonicalize` does and rejects a
   self-link, and it mirrors **dormancy**: a relationship whose endpoint category is deleted
@@ -116,11 +118,20 @@ three):
 State"), so refresh and sharing preserve it. `data-access/relationship-type-labels.ts` holds the
 frozen Arabic type labels — keyed by the wire constants from `abwab-relationships.port.ts`, so a
 label and its integer cannot drift — and derives the Broader/Narrower endpoint labels; the inverse is
-a **display derivation**, never a second stored row. Components read that module through **getters,
-never captured fields**: when a second spec bundle imports it the unit-test bundler hoists it into a
-shared chunk that is read before it is initialised, and a field initialiser then captures `undefined`
-— which renders the type `<select>` with zero options and no error. Add/edit forms are **separate
-`FormGroup`s** so opening the editor cannot discard an unsaved add draft.
+a **display derivation**, never a second stored row. It is the one label source: the audit
+relationship payload carries the wire `RelationshipType` and `relationship-render.component.ts`
+derives its label from this module, so no caller can introduce a second wording.
+
+One narrow build rule applies to it, and only to it: **a class-FIELD initialiser must never read an
+imported binding.** Under the unit-test builder (`@angular/build:unit-test`) esbuild emits shared
+modules as lazily-initialised chunks, and vite-node's SSR transform hoists an import referenced in
+class-field position into a module-top `const` snapshot that evaluates *before* that chunk's body —
+capturing `undefined`, which renders the type `<select>` with zero options and no error. The page
+component therefore exposes `typeLabels`/`typeOptions` as **getters**. Everything else stays as
+written: reads from a method body (`buildRelationshipForm`'s `RELATIONSHIP_TYPE_SIMILAR` default,
+pinned by a spec assertion), from a getter, and from the `@Component` metadata (the cache provider)
+are live property accesses and are unaffected. Add/edit forms are **separate `FormGroup`s** so
+opening the editor cannot discard an unsaved add draft.
 
 ## `state/abwab-tree.facade.ts` — orchestration, cache rule, and "rollback"
 
@@ -183,8 +194,10 @@ Pure view models + presentational components for the five §6.3 payloads
 included), bulk **move** (nested descendants, sibling-order side effects grouped by affected
 parent/order scope), subtree **delete/restore** (dormant-dependent labels/counts), and
 **manual-protection** (changed direct/inherited effects). `030` adds the **relationship** payload
-(`relationship-render.component.ts`): type/shape, the Broader/Narrower inverse label **derived for
-display**, and one diff row per field laid out `label | previous | current` — previous state
+(`relationship-render.component.ts`): type/shape, the type label **and** the Broader/Narrower inverse
+label **derived for display** from `data-access/relationship-type-labels.ts` — the payload carries the
+wire `RelationshipType`, never Arabic text, so a `033` caller cannot pass a free-form label — and one
+diff row per field laid out `label | previous | current` — previous state
 right, current/result left in RTL. Both endpoints render their historical section/path **plus** the
 live current name/path/deleted state **on whichever side the payload carries**, so a `deleted`
 payload (before only) still shows live current state. A changed value carries colour **and** a
@@ -194,9 +207,8 @@ never a detached marker block. The payload carries **no protection-blocker list*
 `abwab.manual_protection` conflict, never an audit row — and reviewer is
 «غير مطلوب». `relationship-dormant-counts.ts` is `030`'s **data contribution** to the `029`-owned
 subtree delete/restore payload: relationship counts feed the generic `dormantDependentCounts` seam.
-It takes the label map as an **argument** rather than importing it, so the shared label module never
-enters the audit chunk's module graph (see the getters in `abwab-relationships-page.component.ts`).
-It contributes the relationship **name only** (`علاقات (مشابه)`) — the `029` row stamps its own
+It takes the label map as an **argument** rather than importing it, so the mapper stays a pure
+contribution to the `029`-owned seam with no wording of its own. It contributes the relationship **name only** (`علاقات (مشابه)`) — the `029` row stamps its own
 «خامل» badge, and the count is never labelled "deleted" (a subtree delete writes no relationship row
 at all). **There
 is no standalone "ordering" render component** — ordering is folded into bulk-move and

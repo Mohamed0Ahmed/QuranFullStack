@@ -16,6 +16,7 @@ import {
   ManualProtectionRenderPayload,
   RelationshipEndpointRenderView,
   RelationshipRenderPayload,
+  RelationshipStateRenderView,
   SubtreeDeleteRenderPayload,
 } from './abwab-audit-render.models';
 import { toDormantDependentCounts } from './relationship-dormant-counts';
@@ -205,23 +206,25 @@ describe('Abwab §6.3 audit render payloads', () => {
     return fixture.nativeElement as HTMLElement;
   }
 
-  const mutualBefore = {
-    typeLabel: 'مشابه',
+  const mutualBefore: RelationshipStateRenderView = {
+    relationshipType: RELATIONSHIP_TYPE_SIMILAR,
     isDirectional: false,
     from: endpoint('cat-1', 'باب الصبر'),
     to: endpoint('cat-2', 'باب الشكر'),
   };
 
-  const directionalState = {
-    typeLabel: 'أعم / أخص',
+  const directionalState: RelationshipStateRenderView = {
+    relationshipType: RELATIONSHIP_TYPE_BROADER_NARROWER,
     isDirectional: true,
     from: endpoint('cat-3', 'باب العبادات', { sectionName: 'أبواب الفقه', historicalPath: ['أبواب الفقه', 'باب العبادات'] }),
     to: endpoint('cat-4', 'باب الصلاة', { sectionName: 'أبواب الفقه', historicalPath: ['أبواب الفقه', 'باب الصلاة'] }),
   };
 
+  const mutualRetyped: RelationshipStateRenderView = { ...mutualBefore, relationshipType: RELATIONSHIP_TYPE_OPPOSITE };
+
   it.each([
     ['added', null, directionalState, 'إضافة علاقة'],
-    ['edited', mutualBefore, { ...mutualBefore, typeLabel: 'مقابل' }, 'تعديل علاقة'],
+    ['edited', mutualBefore, mutualRetyped, 'تعديل علاقة'],
     ['deleted', directionalState, null, 'حذف علاقة'],
     ['restored', null, mutualBefore, 'استعادة علاقة'],
   ] as const)(
@@ -246,7 +249,7 @@ describe('Abwab §6.3 audit render payloads', () => {
       categoryRelationshipId: 'relationship-1',
       action: 'edited',
       before: mutualBefore,
-      after: { ...mutualBefore, typeLabel: 'مقابل' },
+      after: mutualRetyped,
     });
 
     const afterTypeCell = root.querySelector('[data-testid=relationship-render-after-type]')!;

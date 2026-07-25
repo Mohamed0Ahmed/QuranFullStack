@@ -1,6 +1,7 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
+import { RELATIONSHIP_TYPE_LABELS } from '../data-access/relationship-type-labels';
 import {
   RelationshipAction,
   RelationshipEndpointRenderView,
@@ -27,9 +28,11 @@ export interface RelationshipDiffRow {
   readonly changed: boolean;
 }
 
-// The Broader/Narrower inverse label is DERIVED here for display — §7.3 stores one row per
-// relationship and never a reversed second row. Reviewer is «غير مطلوب» because a relationship
-// mutation is a direct audited structure action.
+// The payload carries the wire RelationshipType, never Arabic text: both the type label and the
+// Broader/Narrower inverse label are DERIVED here for display from the one label source, so a caller
+// cannot introduce a second wording and §7.3 still stores one row per relationship, never a reversed
+// second one. Reviewer is «غير مطلوب» because a relationship mutation is a direct audited structure
+// action.
 @Component({
   selector: 'qd-abwab-relationship-render',
   standalone: true,
@@ -66,8 +69,8 @@ export class RelationshipRenderComponent {
       label: TYPE_ROW_LABEL,
       before: null,
       after: null,
-      beforeText: before?.typeLabel ?? null,
-      afterText: after?.typeLabel ?? null,
+      beforeText: before ? RELATIONSHIP_TYPE_LABELS[before.relationshipType] : null,
+      afterText: after ? RELATIONSHIP_TYPE_LABELS[after.relationshipType] : null,
       changed: this.isChanged('type'),
     };
 
@@ -97,7 +100,7 @@ export class RelationshipRenderComponent {
       return false;
     }
     if (field === 'type') {
-      return before.typeLabel !== after.typeLabel || before.isDirectional !== after.isDirectional;
+      return before.relationshipType !== after.relationshipType || before.isDirectional !== after.isDirectional;
     }
     return before[field].categoryId !== after[field].categoryId;
   }

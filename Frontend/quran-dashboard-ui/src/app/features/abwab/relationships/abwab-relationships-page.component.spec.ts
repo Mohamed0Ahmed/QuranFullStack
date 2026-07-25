@@ -279,6 +279,16 @@ describe('AbwabRelationshipsPageComponent — wire contract of the relationship 
     expect(offered).toEqual(RELATIONSHIP_TYPE_OPTIONS.map((type) => RELATIONSHIP_TYPE_LABELS[type]));
   });
 
+  // Pins the one construction-time read of an imported binding left in the component. A class-field
+  // initialiser reading an import captures `undefined` under the unit-test builder; this default is
+  // read inside a method body instead, and an `undefined` here would otherwise pass silently.
+  it('the add form is built with the wire default RelationshipType, not an undefined one', async () => {
+    const { fixture } = await createPage();
+
+    expect(fixture.componentInstance['addForm'].getRawValue().relationshipType).toBe(RELATIONSHIP_TYPE_SIMILAR);
+    expect(fixture.componentInstance['editForm'].getRawValue().relationshipType).toBe(RELATIONSHIP_TYPE_SIMILAR);
+  });
+
   it('the direction control appears only for the directional type', async () => {
     const { fixture } = await createPage();
 

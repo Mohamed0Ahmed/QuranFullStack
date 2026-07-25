@@ -1,3 +1,5 @@
+import { RelationshipType } from '../../../core/api/generated/models';
+
 // §6.3 core audit render payloads published by 029 (audit-render-contract.md). These are pure view
 // models for the presentational components in this folder — 029 does not build the main audit page,
 // pagination, or fetch real audit records (033 owns that read model); it only defines and renders
@@ -111,7 +113,7 @@ export interface RelationshipEndpointRenderView {
 }
 
 export interface RelationshipStateRenderView {
-  readonly typeLabel: string;
+  readonly relationshipType: RelationshipType;
   readonly isDirectional: boolean;
   readonly from: RelationshipEndpointRenderView;
   readonly to: RelationshipEndpointRenderView;
