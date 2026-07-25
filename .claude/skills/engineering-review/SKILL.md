@@ -50,6 +50,8 @@ context for those.
 **Always read:**
 
 - `CODING_PRINCIPLES.md`
+- `TESTING_STRATEGY.md` — when judging whether the executed tests were sufficient
+  for the changed scope (the Verification Check below).
 
 **For deep code-quality review, also consult the clean-code reference pack** (naming
 and functions, comments and formatting, SOLID, DRY/KISS/YAGNI, and AI-generated-code
@@ -375,6 +377,17 @@ Keep this distinct from build/test verification below:
 - Data-related work includes a validation/report path.
 - Any skipped verification is clearly stated. If build/test status is unknown, say
   unknown — do not assume success.
+- Judge verification *sufficiency* against `TESTING_STRATEGY.md` (workspace root),
+  the single source of truth for test selection tiers:
+  - verify the executed tier matches the changed scope and risk;
+  - do not demand a full or exhaustive suite when the strategy accepts focused
+    (Tier A/B) evidence for the change under review;
+  - a Tier D pipeline trigger in the changed paths (DataPipelines code, importer
+    tools, pipeline tables/migrations, canonical resources, shared persistence
+    infrastructure) with no affected pipeline family run is a **BLOCKING** finding;
+  - skipped required canonical-source tests are missing evidence, not passes;
+  - evidence produced before the most recent code change is stale and does not
+    count.
 
 ## Severity Levels
 
@@ -479,7 +492,10 @@ changed, omit it. When present, report:
 
 ## 9. Verification Check
 
-Report build/test evidence if provided. If no build/test was run, say so clearly.
+Report build/test evidence if provided, and state the executed verification tier
+versus the tier `TESTING_STRATEGY.md` requires for the changed scope (sufficient /
+insufficient / stale). If no build/test was run, say so clearly. Skipped required
+canonical tests count as missing evidence.
 
 ## Commit workflow reminder
 

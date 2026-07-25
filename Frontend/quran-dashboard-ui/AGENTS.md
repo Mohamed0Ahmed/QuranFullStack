@@ -41,3 +41,14 @@ For product and visual context, also read:
 
 - `../../PRODUCT.md`
 - `../../DESIGN.md`
+
+## Testing Strategy
+
+Before selecting or running Frontend tests, read:
+
+- `../../TESTING_STRATEGY.md` (workspace root)
+
+Use the tier required by the changed scope: focused `--include` globs for
+ordinary phases, the full Frontend suite at milestones that complete a feature
+integration and in the pre-PR gate when Frontend code changed. Keep the Vitest
+fork cap. Required verification must be fresh against the final working tree.

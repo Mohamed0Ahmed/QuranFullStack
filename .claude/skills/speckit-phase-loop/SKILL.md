@@ -176,8 +176,10 @@ Read the nearest README.md files governing every area you modify. If the impleme
 documented behavior, boundary, or invariant, update that README — but only when the phase task or
 the required behavior justifies it. No unrelated documentation cleanup.
 
-Before returning, run the relevant build and tests and report the actual command output. Do not
-report success you have not observed.
+Before returning, run the relevant build and tests — selected per the workspace
+TESTING_STRATEGY.md (Tier A: focused, changed-scope; no full or data-pipeline suites unless the
+strategy's triggers apply) — and report the actual command output. Do not report success you have
+not observed.
 
 Return: completed task IDs, every file created/modified including untracked ones, migration names
 if any, build/test evidence, and anything you deliberately left undone with the reason.
@@ -257,10 +259,13 @@ the fix rounds, and in a split phase before the other half even landed — so by
 reviewer signs off, that evidence describes a tree that no longer exists. Evidence produced before
 the most recent code change is stale and cannot close a phase.
 
-Derive the verification commands from the phase tasks, `plan.md`, `quickstart.md`, the affected
-Backend/Frontend areas, and the implementation evidence — then run them yourself against the final
-working tree. Targeted and relevant beats exhaustive: the point is that the commands you run
-observe the code as it now stands.
+Derive the verification commands from `TESTING_STRATEGY.md` (workspace root) — ordinary phases run
+Tier A (focused, changed scope); a phase that completes a milestone/User Story may escalate to
+Tier B; Tier D pipeline families run only when the changed paths hit the strategy's triggers —
+combined with the phase tasks, `plan.md`, `quickstart.md`, the affected Backend/Frontend areas,
+and the implementation evidence. Then run them yourself against the final working tree. Targeted
+and relevant beats exhaustive: the point is that the commands you run observe the code as it now
+stands.
 
 If verification fails:
 
