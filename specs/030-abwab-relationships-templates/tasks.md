@@ -102,10 +102,10 @@ written **first** and must fail before implementation.
 
 **Purpose**: Feature scaffolding shared by both workstreams.
 
-- [ ] T001 [P] Create backend domain folders `Backend/domain/QuranDashboard.Domain/Abwab/Relationships/` and `Backend/domain/QuranDashboard.Domain/Abwab/Templates/`
-- [ ] T002 [P] Create abstraction/application folders `Backend/application/QuranDashboard.Application.Abstractions/Abwab/{Relationships,Templates}/` and `Backend/application/QuranDashboard.Application/Abwab/{Relationships,Templates}/`
-- [ ] T003 [P] Create infrastructure read folders `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Abwab/` (extend) and API folders `Backend/api/QuranDashboard.Api/Abwab/{Relationships,Templates}/`
-- [ ] T004 [P] Create backend test folders `Backend/tests/QuranDashboard.Tests/Abwab/{Relationships,Templates}/` and frontend folders `Frontend/quran-dashboard-ui/src/app/features/abwab/{relationships,templates}/`
+- [x] T001 [P] Create backend domain folders `Backend/domain/QuranDashboard.Domain/Abwab/Relationships/` and `Backend/domain/QuranDashboard.Domain/Abwab/Templates/`
+- [x] T002 [P] Create abstraction/application folders `Backend/application/QuranDashboard.Application.Abstractions/Abwab/{Relationships,Templates}/` and `Backend/application/QuranDashboard.Application/Abwab/{Relationships,Templates}/`
+- [x] T003 [P] Create infrastructure read folders `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Abwab/` (extend) and API folders `Backend/api/QuranDashboard.Api/Abwab/{Relationships,Templates}/`
+- [x] T004 [P] Create backend test folders `Backend/tests/QuranDashboard.Tests/Abwab/{Relationships,Templates}/` and frontend folders `Frontend/quran-dashboard-ui/src/app/features/abwab/{relationships,templates}/`
 
 ---
 
