@@ -1,0 +1,4 @@
+interface:
+  display_name: "Spec Kit Phase Loop"
+  short_description: "Implement a Spec Kit feature phase by phase, review-gated"
+  default_prompt: "Use $speckit-phase-loop to implement the live Spec Kit feature phase by phase, delegating each phase to implementer agents and gating each phase behind engineering-review before committing."
