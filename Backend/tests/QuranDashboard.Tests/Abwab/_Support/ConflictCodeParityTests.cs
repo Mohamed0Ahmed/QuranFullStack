@@ -23,6 +23,8 @@ public sealed class ConflictCodeParityTests
         "abwab.ordinary_protection",
         "abwab.relationship_duplicate",
         "abwab.relationship_cycle",
+        "abwab.template_cycle",
+        "abwab.template_revision_stale",
         "abwab.stabilization_active",
         "abwab.tree_revision_stale",
         "abwab.timeline_generation_stale",
@@ -65,6 +67,8 @@ public sealed class ConflictCodeParityTests
             AbwabConflictCodes.OrdinaryProtection,
             AbwabConflictCodes.RelationshipDuplicate,
             AbwabConflictCodes.RelationshipCycle,
+            AbwabConflictCodes.TemplateCycle,
+            AbwabConflictCodes.TemplateRevisionStale,
             AbwabConflictCodes.RowStale,
             AbwabConflictCodes.TreeRevisionStale,
         };
@@ -124,6 +128,7 @@ public sealed class ConflictCodeParityTests
         code.StartsWith("abwab.manual_protection", StringComparison.Ordinal) ||
         code.StartsWith("abwab.ordinary_protection", StringComparison.Ordinal) ||
         code.StartsWith("abwab.relationship_", StringComparison.Ordinal) ||
+        code.StartsWith("abwab.template_", StringComparison.Ordinal) ||
         code.StartsWith("abwab.tree_revision", StringComparison.Ordinal) ||
         code == AbwabConflictCodes.PermanentDefaultSection ||
         code == AbwabConflictCodes.RowStale;

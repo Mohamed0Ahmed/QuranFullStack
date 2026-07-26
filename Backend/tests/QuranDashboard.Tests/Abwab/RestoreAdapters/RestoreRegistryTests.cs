@@ -5,7 +5,7 @@ namespace QuranDashboard.Tests.Abwab.RestoreAdapters;
 
 public sealed class RestoreRegistryTests
 {
-    private static readonly string[] ExpectedPersistedTypes = ["Section", "Category", "ManualProtection", "Relationship"];
+    internal static readonly string[] ExpectedPersistedTypes = ["Section", "Category", "ManualProtection", "Relationship", "DoorTemplate"];
 
     [Fact]
     public void ExactlyTheExpectedAdaptersAreRegistered()
@@ -64,6 +64,7 @@ public sealed class RestoreRegistryTests
             new FakeDescriptor("Category"),
             new FakeDescriptor("ManualProtection"),
             new FakeDescriptor("Relationship"),
+            new FakeDescriptor("DoorTemplate"),
             new FakeDescriptor("Order"),
         };
 

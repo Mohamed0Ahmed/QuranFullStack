@@ -138,3 +138,86 @@ export interface ManualProtectionRenderPayload {
   readonly after: ProtectionEffectState;
   readonly effectChanges: readonly ManualProtectionEffectChange[];
 }
+
+// §6.3 template payloads published by `030`. The application payload is the FROZEN snapshot taken at
+// application time — a later template edit cannot change this rendering — and template CRUD renders
+// only in the separate template-history view, never as a main product-audit row.
+export interface TemplateNodeRenderView {
+  readonly templateNodeId: string;
+  readonly parentTemplateNodeId: string | null;
+  readonly name: string;
+  readonly representativeQuranExcerpt: string | null;
+  readonly description: string | null;
+  readonly siblingOrder: number;
+  readonly aliases: readonly string[];
+}
+
+export interface TemplateSnapshotRenderView {
+  readonly doorTemplateId: string;
+  readonly name: string;
+  readonly description: string | null;
+  readonly nodes: readonly TemplateNodeRenderView[];
+}
+
+export interface CreatedCategoryRenderView {
+  readonly categoryId: string;
+  readonly name: string;
+  readonly representativeQuranExcerpt: string | null;
+  readonly description: string | null;
+  readonly level: number;
+  readonly siblingOrder: number;
+  readonly aliases: readonly string[];
+  readonly children: readonly CreatedCategoryRenderView[];
+}
+
+export interface TemplateLevelCount {
+  readonly level: number;
+  readonly count: number;
+}
+
+export interface TemplateApplicationRenderPayload {
+  readonly changeSetId: string;
+  readonly doorTemplateId: string;
+  readonly templateName: string;
+  readonly templateSnapshot: TemplateSnapshotRenderView;
+  readonly targetCategoryId: string;
+  readonly targetPath: readonly string[];
+  readonly createdTree: readonly CreatedCategoryRenderView[];
+  readonly countsByLevel: readonly TemplateLevelCount[];
+}
+
+export type TemplateHistoryAction =
+  | 'created'
+  | 'edited'
+  | 'deleted'
+  | 'restored'
+  | 'node_added'
+  | 'node_edited'
+  | 'node_reparented'
+  | 'nodes_reordered'
+  | 'node_removed'
+  | 'alias_added'
+  | 'alias_edited'
+  | 'alias_removed'
+  | 'alias_restored';
+
+// Mirrors the stored `ChangedFields` facet of the template-history event: a null node id is the
+// template header itself. §6.3 requires the changed nodes AND the changed fields.
+export interface TemplateFieldChangeRenderView {
+  readonly templateNodeId: string | null;
+  readonly field: string;
+  readonly before: string | null;
+  readonly after: string | null;
+}
+
+export interface TemplateHistoryRenderPayload {
+  readonly changeSetId: string;
+  readonly doorTemplateId: string;
+  readonly action: TemplateHistoryAction;
+  readonly actorSubject: string;
+  readonly actedAtUtc: string;
+  readonly before: TemplateSnapshotRenderView | null;
+  readonly after: TemplateSnapshotRenderView | null;
+  readonly changedNodes: readonly TemplateNodeRenderView[];
+  readonly changedFields: readonly TemplateFieldChangeRenderView[];
+}

@@ -24,10 +24,31 @@ preview/planner/execution surface — that is `033`'s consumer.
   row whose canonical pair/edge is active again fails on the filtered unique index rather than
   persisting a second active row.
 
+- **`DoorTemplateRestoreAdapter`** (`030`) — the whole DoorTemplate aggregate (`DoorTemplate` +
+  `TemplateNode` + `TemplateNodeSearchAlias`), via `DoorTemplateAggregate`. Template identity/name/
+  normalized name/description, the full node tree with parent links and explicit `SiblingOrder`, node
+  excerpt/description, **alias history** (active and soft-deleted), and the aggregate soft-delete
+  state all round-trip on this **one** adapter — `TemplateNode` and `TemplateNodeSearchAlias` are
+  facets, never separate registrations (§8: "One Template aggregate adapter `030`"). `Reconstruct`
+  respects the writer's invariant: a snapshot whose parent links form a cycle **fails** rather than
+  producing a cyclic template, and it fails with the **same typed `abwab.template_cycle` conflict**
+  the writer raises, so the restore path and the writer path are one §11 channel rather than two.
+
+## Not an adapter: the application-event interpreter
+
+`TemplateApplicationEventInterpreter` (`030`) maps a template-application event to real-category
+inversion performed by the **single `029` `CategoryRestoreAdapter`** — template application creates
+ordinary Category aggregate rows, so §8 forbids a second "template-created category" adapter. It is
+registered as an **event-kind interpreter** (`IAbwabRestoreEventInterpreter`) and **never** as an
+`IAbwabRestoreAdapterDescriptor`, so it adds **zero** registry entries. It receives the Category
+adapter through `IAbwabRestoreAdapter<CategoryAggregate, CategoryRestoreSnapshot>` so its delegation
+is **observed** in a test rather than only asserted in prose
+(`Backend/tests/QuranDashboard.Tests/Abwab/RestoreAdapters/TemplateApplicationInterpreterTests.cs`).
+
 ## Snapshot exclusions
 
 Snapshots hold product state only. They exclude `xmin`, logical revision counters
-(`TreeRevision`, `CategoryContentRevision`), cache state, and realtime cursors — those are
+(`TreeRevision`, `CategoryContentRevision`, `TemplateRevision`), cache state, and realtime cursors — those are
 current technical state, never inverse-restored (§6.3, §6.4, §8).
 
 ## Acceptance status
@@ -54,6 +75,14 @@ remains a **facet** of Section (`SortOrder`) and Category (`SiblingOrder`/`Secti
 **`030` US1 (T031) acceptance note**: the **Relationship** adapter is versioned, round-trip tested
 (both shapes, soft-deleted state, duplicate-collision rejection) and **accepted for `033`**. The §8
 registry test's expected set is now exactly `{Section, Category, ManualProtection, Relationship}`;
-`030`'s US2 adds `DoorTemplate` and T077 finalizes the gate. Relationship endpoints are **not** a
+`030`'s US2 has now added `DoorTemplate`, so the expected set is
+`{Section, Category, ManualProtection, Relationship, DoorTemplate}`; T077 finalizes the gate. Relationship endpoints are **not** a
 registered persisted type — they are ordinary `Category` rows already covered by the Category
 adapter, so a relationship-endpoint adapter would be a §8 duplicate and must fail CI.
+
+**`030` US2 (T066/T067) acceptance note**: the **DoorTemplate aggregate** adapter is versioned and
+round-trip tested (node tree with parent links and explicit `SiblingOrder`, alias history including
+soft-deleted rows, aggregate soft-delete state, cyclic-restore rejection) and **accepted for `033`**,
+together with the **application-event interpreter** and its verified reuse of the `029` Category
+adapter. `030` therefore registers **exactly two** new adapters — Relationship and DoorTemplate — and
+the interpreter registers none.

@@ -18,6 +18,17 @@ public static class AbwabRestoreDependencyInjection
         services.AddSingleton<RelationshipRestoreAdapter>();
         services.AddSingleton<IAbwabRestoreAdapterDescriptor>(sp => sp.GetRequiredService<RelationshipRestoreAdapter>());
 
+        services.AddSingleton<DoorTemplateRestoreAdapter>();
+        services.AddSingleton<IAbwabRestoreAdapterDescriptor>(sp => sp.GetRequiredService<DoorTemplateRestoreAdapter>());
+
+        // The interpreter is registered as an event-kind interpreter ONLY — never as an adapter
+        // descriptor, so it adds zero entries to the §8 registry. The closed generic below resolves
+        // the ONE 029 Category adapter it delegates to and is likewise not a descriptor registration.
+        services.AddSingleton<IAbwabRestoreAdapter<CategoryAggregate, CategoryRestoreSnapshot>>(
+            sp => sp.GetRequiredService<CategoryRestoreAdapter>());
+        services.AddSingleton<TemplateApplicationEventInterpreter>();
+        services.AddSingleton<IAbwabRestoreEventInterpreter>(sp => sp.GetRequiredService<TemplateApplicationEventInterpreter>());
+
         return services;
     }
 }

@@ -24,6 +24,24 @@ EF-backed implementations of the two `029` read ports (`Application.Abstractions
   `includeDeleted` widens the list to soft-deleted relationships (needed to drive restore); dormancy
   filtering still applies on top of it.
 
+- **`EfAbwabTemplateReadPort`** (`030`) — `IAbwabTemplateReadPort`. Three projections over the
+  DoorTemplate aggregate: the template list (with active node counts), the template detail (nodes
+  ordered by explicit `SiblingOrder`, each with its aliases, plus the current `TreeRevision` the
+  apply command needs), and the **separate template-history** projection. History is deliberately its
+  own port method rather than a main product-audit read, because §6.3 keeps template CRUD out of the
+  main log entirely — it selects only events carrying the `template.history.` action prefix.
+  The history projection is **capped at `IAbwabTemplateReadPort.MaxHistoryEntries` (100)** and reports
+  truncation through `TemplateHistoryDto.HasMore` — never silently. One row beyond the cap is fetched
+  to decide that flag, so learning it costs no second scan. A template's history grows without bound
+  as it is edited and every entry carries a full before/after tree, so an uncapped read would return a
+  payload no caller can bound.
+  **Known cost, recorded not hidden**: that projection matches two substrings against the append-only
+  `abwab_audit_events.payload` text column, so the *scan* is unindexable and degrades as the log
+  grows even though the *response* is bounded. The fix is first-class indexed action-kind/aggregate-id
+  columns on the audit event, but that table is `028` kernel substrate and the audit read model is
+  `033`'s — neither is `030`'s to reshape. Frozen in T075's budget file (constant 2 queries, p95 6 ms)
+  and handed to `033` with that split stated.
+
 ## Query budget
 
 `EfManualProtectionReadPort.GetProtectionContextAsync` issues a constant **3 SQL queries** regardless

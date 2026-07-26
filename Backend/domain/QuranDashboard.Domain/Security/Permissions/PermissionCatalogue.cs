@@ -34,6 +34,13 @@ public static class PermissionCatalogue
     public const string RelationshipDelete = "relationship.delete";
     public const string RelationshipRestore = "relationship.restore";
 
+    public const string TemplateView = "template.view";
+    public const string TemplateAdd = "template.add";
+    public const string TemplateEdit = "template.edit";
+    public const string TemplateDelete = "template.delete";
+    public const string TemplateRestore = "template.restore";
+    public const string TemplateApply = "template.apply";
+
     public static IReadOnlyList<PermissionCode> All { get; } =
     [
         new(AttributionView, systemOwnerOnly: false, dashboardAdminBaseline: true),
@@ -60,6 +67,12 @@ public static class PermissionCatalogue
         new(RelationshipEdit, systemOwnerOnly: false, dashboardAdminBaseline: false),
         new(RelationshipDelete, systemOwnerOnly: false, dashboardAdminBaseline: false),
         new(RelationshipRestore, systemOwnerOnly: false, dashboardAdminBaseline: false),
+        new(TemplateView, systemOwnerOnly: false, dashboardAdminBaseline: false),
+        new(TemplateAdd, systemOwnerOnly: false, dashboardAdminBaseline: false),
+        new(TemplateEdit, systemOwnerOnly: false, dashboardAdminBaseline: false),
+        new(TemplateDelete, systemOwnerOnly: false, dashboardAdminBaseline: false),
+        new(TemplateRestore, systemOwnerOnly: false, dashboardAdminBaseline: false),
+        new(TemplateApply, systemOwnerOnly: false, dashboardAdminBaseline: false),
     ];
 
     public static IReadOnlyList<string> Codes { get; } = All.Select(entry => entry.Code).ToList();

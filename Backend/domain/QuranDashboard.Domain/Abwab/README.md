@@ -1,4 +1,4 @@
-# Abwab domain — Sections, Categories, Protection, Tree (`029`), Relationships (`030`)
+# Abwab domain — Sections, Categories, Protection, Tree (`029`), Relationships + Templates (`030`)
 
 **Layer:** Domain · **Features:** `029-abwab-core`, `030-abwab-relationships-templates` ·
 **HOW rules:** `Backend/.architecture/CLEAN_ARCHITECTURE.md`
@@ -44,6 +44,15 @@ that kernel) — every entity below is `IAbwabAuditable` and only ever mutates t
   columns. `EndpointCategoryIds` (a stored row) and the application-side `RelationshipShape` (a
   not-yet-stored submission) both delegate to it rather than repeating the rule.
   The Broader/Narrower **inverse label is derived for display**, never a second stored row.
+- `Templates/DoorTemplate.cs` + `TemplateNode.cs` + `TemplateNodeSearchAlias.cs` (`030`) — the door
+  template aggregate. `DoorTemplate` carries identity, `Name`/`NormalizedName`, optional
+  `Description`, the `TemplateRevision` aggregate counter, soft-delete metadata and `Version`.
+  `TemplateNode` carries template ownership, an optional `ParentTemplateNodeId` (null = template
+  root), `Name`/`NormalizedName`, an optional **plain-string** `RepresentativeQuranExcerpt`, optional
+  `Description`, an explicit `SiblingOrder`, soft-delete metadata and `Version`.
+  `TemplateNodeSearchAlias` mirrors `CategorySearchAlias`'s value/normalization/soft-delete contract
+  for a node. Templates are created and edited **only in the template editor** — no entity, command,
+  or service reads real categories into a template, and no template or node crosses doors (§7.4).
 - `Tree/ArabicNameNormalizer.cs` — the §5.1 normalization used for every Section/Category/alias
   name: NFC (UAX#15, Unicode 16.0), trim + collapse whitespace, strip tatweel and the frozen
   Arabic-mark scalar set, fold `أ/إ/آ/ٱ → ا` and `ى → ي`. **`ة` is never folded to `ه`.** The display
@@ -51,9 +60,15 @@ that kernel) — every entity below is `IAbwabAuditable` and only ever mutates t
 
 ## Invariants / caveats (read before changing)
 
-- **No Abwab→Quran foreign key.** `RepresentativeQuranExcerpt` stays a plain string column;
+- **No Abwab→Quran foreign key.** Both `Category.RepresentativeQuranExcerpt` and
+  `TemplateNode.RepresentativeQuranExcerpt` stay plain string columns;
   `Backend/tests/QuranDashboard.Tests/Abwab/_Guards/NoPrematureQuranFkTests.cs` asserts both the FK
   absence and the plain-string type — keep it green.
+- **`TemplateRevision` is the template aggregate's own counter**, bumped exactly once per grouped
+  **structural** node operation (add/reparent/reorder/remove) and never by a content edit or an alias
+  mutation. It is excluded from restore snapshots — it is current technical state, not product state.
+  A template carries **no name-uniqueness rule**: §7.4 defines none and §11 owns no conflict code for
+  one, so the normalized-name indexes on templates and nodes are lookup indexes, never unique.
 - **Two independent revision counters on `Category`, never conflated.** `TreeRevision` (on
   `AbwabRevisionState`, `028`) bumps once per atomic *structural* operation (move/reorder/subtree
   delete-restore). `CategoryContentRevision` (on the row) bumps once per *direct-content* operation

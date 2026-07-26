@@ -1,4 +1,4 @@
-# Abwab feature (الأبواب) — category tree, protection, relationships, audit renders
+# Abwab feature (الأبواب) — category tree, protection, relationships, door templates, audit renders
 
 **HOW rules:** `.architecture/FRONTEND_STRUCTURE.md`, `.architecture/API_INTEGRATION_GUIDELINES.md`
 (project root). This file is the WHAT (current truth + shared pattern). **Features:**
@@ -20,6 +20,7 @@ public-browse posture, composite-read visibility is in-page and cosmetic, see be
 - `editor/` — the category editor (Reactive Forms).
 - `protection/` — the protection panel.
 - `relationships/` — the relationship list/panel page (`030`).
+- `templates/` — the door-template editor page and the application panel (`030`).
 - `audit/` — the §6.3 audit-render components (presentational only).
 
 ## `data-access/` — the ONE versioned core contract
@@ -79,6 +80,94 @@ excluded. Same three-part shape and the same rules as the core contract:
 - **`abwab-relationships-cache.ts`** — one cache key per `(categoryId, includeDeleted)` projection
   (unlike the single tree snapshot). Both projections of a category invalidate together, because a
   delete moves a row from one to the other (`abwab-relationships-cache.spec.ts`).
+
+## `data-access/` — the template contract (`030`)
+
+Templates get their **own** port too — same three-part shape and the same rules as the core and
+relationship contracts:
+
+- **`abwab-templates.port.ts`** (`AbwabTemplatesPort`) — the template list/detail/history reads plus
+  aggregate CRUD, the node internals (add/edit/reparent/reorder/remove), the alias internals
+  (add/edit/remove/restore), and `applyTemplate`. Reads carry the server `TimelineGeneration` (and the
+  detail also carries the `TreeRevision` the apply request needs); a mutation result never synthesizes
+  one.
+- **`abwab-templates.mock.ts`** — the port surface and read projections only; the per-area rules live
+  in `abwab-templates-mock-{state,aggregate-ops,node-ops,alias-ops,apply-ops}.ts` over one shared
+  state object, following the `029` core-mock split. Kept in step with the adapter by
+  `abwab-templates-parity.spec.ts`, whose `conflictScenarios` table drives **each** scenario through
+  **both** ports inside **one** test. Codes covered: `abwab.template_cycle`,
+  `abwab.template_revision_stale`, `abwab.row_stale`, `abwab.timeline_generation_stale`,
+  `abwab.manual_protection`, `abwab.category_unavailable`, `abwab.tree_revision_stale`,
+  `abwab.category_name_conflict`. The suite also asserts key-set equality between a mock detail read
+  and a flushed HTTP read, and exercises application, alias soft delete/restore, and explicit
+  reordering on both sides. The mock mirrors the writer's rules rather than stubbing them: it bumps
+  `TemplateRevision` once per grouped structural operation, rejects a self/descendant reparent, and
+  changes no state when an application revalidation fails. `abwab-templates-cache.spec.ts` pins the
+  four-key invalidation, and `abwab-templates.facade.spec.ts` pins the invalidate-and-reload rule on
+  **both** outcomes against the real `runMutation()`.
+- **`abwab-templates-cache.ts`** — one key per list projection (`includeDeleted`) and one per
+  `(doorTemplateId, includeDeleted)` detail projection. A mutation invalidates **both** list
+  projections and both detail projections of the affected template together, because a delete moves a
+  template between the list projections and a node edit changes the detail — there is no client-side
+  reconciliation, only invalidate + re-fetch.
+
+## `state/abwab-templates.facade.ts`
+
+Same single `runMutation()` cache rule as the tree and relationship facades: invalidate + reload from
+the server on success **and** on conflict, with nothing applied to the rendered projection ahead of
+server confirmation. Status is `idle | loading | ready | empty | error` so the page renders
+**distinct** loading/empty/error/retry states; `mutationError` carries **every** failed mutation so a
+400/500 can never render as a silent no-op. Template selection survives a reload as long as the
+template is still in the fresh projection. It also exposes `targetCandidates`, read once from the
+`029` `allCategoriesProjection`, to back the application target picker; that read is best-effort and
+never moves the list out of its own state.
+
+A **failed detail read** keeps the selection, keeps the last cached detail rendered, and raises
+`detailErrorMessage` for the page's retry state (`retryDetail()`). A template that genuinely
+disappeared is **not** detected there: reads never return a conflict, so its absence from the fresh
+list projection is the only honest signal, and `pruneContextAfterReload` drops the selection before
+the detail read runs — including when another actor deleted it. A successful **application** also
+invalidates the `029` `AbwabTreeCache`, since it creates real categories that the cached tree
+snapshot would otherwise omit.
+
+## `templates/` — explicit save, explicit ordering, no drag
+
+`abwab-templates-page.component.ts` is routed at `/gates/templates` and carries the frozen §5 UI
+label **«قوالب الأبواب»**. The tree page's toolbar links to it (`abwab-tree-templates-link`, shown
+only with `template.view`) — templates are a global surface, not scoped to a selected category, which
+is why the link sits in the toolbar rather than in the category detail panel where the relationships
+link lives. It is the smart shell: it owns the template list and aggregate CRUD, and it
+is the ONLY layer that attaches concurrency expectations. The node half lives in
+`template-node-editor.component.ts` — a presentational child that owns the node forms, the depth-first
+row flattening, and the explicit row actions, and **emits intent** (`addNode`/`editNode`/
+`reparentNode`/`reorderNodes`/`removeNode`/`addAlias`/`editAlias`/`removeAlias`/`restoreAlias`)
+rather than driving a facade. Each row carries an **alias sub-editor** over `node.aliases` with
+add/edit/remove plus restore for a soft-deleted alias; every alias command sends **that alias row's
+own `version`** as `expectedVersion`, never the node's. A removed alias is only visible — and so only
+restorable — with the **«إظهار المحذوفة»** toggle on, because the detail read filters soft-deleted
+rows otherwise. That toggle is URL state (`?includeDeleted=true`), the same router round-trip the
+relationships page uses, and it is also what makes `template.restore` reachable at all.
+It reuses the `028` Reactive Forms package with **explicit save only** —
+there is no autosave and no "start editing session" call, so opening (or switching) the editor never
+itself emits a mutation or locks the template against another editor. Ordering and reparent are
+**explicit actions**: move-up/move-down recompute the whole ordered sibling list and post it, and a
+reparent names its destination parent from a picker. There is no drop target anywhere —
+`check:no-drag` is the static source gate and `e2e/abwab/templates-slice.spec.ts` is the browser
+proof. Visibility is filtered by `AbwabPermissions.canViewTemplate()` etc., which is **cosmetic
+only**: the backend `template.*` policies are the sole authority, and `template.add` grants nothing
+beyond creating the aggregate.
+
+`template-application-panel.component.ts` picks **one** target category and requires an **explicit
+confirm** before emitting. It takes `targetCandidates`/`mutationStatus`/`conflictMessage` as inputs and
+emits an `apply` output — it never receives the facade, so the expectations stay in the page. The
+chosen target survives a conflict: the form clears only when `mutationStatus` reaches `success`.
+
+Both children take a **scoped** `mutationStatus`, never the page-wide facade signal — the page keeps
+one status per sub-editor (apply, node/alias editor). Each discards the operator's typed input only
+when **its own** write was accepted, so an unrelated success cannot wipe a chosen apply target or
+close a node form mid-edit, and an unrelated conflict cannot render as that sub-editor's failure. For
+the same reason an apply failure is rendered **once**: the page-level banner recognises the apply
+panel's Error instance and stays silent.
 
 ## `state/abwab-relationships.facade.ts`
 
@@ -205,7 +294,18 @@ non-colour «▲ تغيير» marker **inside the value itself**, following `fie
 never a detached marker block. The payload carries **no protection-blocker list** — applicable
 `Relationship` protection aborts the mutation before a ChangeSet exists, so a blocked attempt is an
 `abwab.manual_protection` conflict, never an audit row — and reviewer is
-«غير مطلوب». `relationship-dormant-counts.ts` is `030`'s **data contribution** to the `029`-owned
+«غير مطلوب». `030` also adds the two **template** payloads: the
+**application** render (`template-application-render.component.ts`) shows the template identity, the
+**frozen** snapshot taken at application time — a later template edit cannot change this rendering —
+the target path, the complete created tree, all copied basic fields, and the counts by level; and the
+**template-history** render (`template-history-render.component.ts`) shows actor/time, action, the
+complete before/after template trees, the changed **nodes**, and the changed **fields**. The changed
+fields come from the stored `ChangedFields` facet (`TemplateFieldChangeRenderView`: a null
+`templateNodeId` is the template header) and render through the same `029` `FieldDiffRowComponent`, so
+they carry a colour **and** a non-colour «▲ تغيير» marker exactly like a category edit. The history
+render is deliberately **separate from the main product-audit render set**, because template CRUD
+produces no main-log row (§6.3).
+`relationship-dormant-counts.ts` is `030`'s **data contribution** to the `029`-owned
 subtree delete/restore payload: relationship counts feed the generic `dormantDependentCounts` seam.
 It takes the label map as an **argument** rather than importing it, so the mapper stays a pure
 contribution to the `029`-owned seam with no wording of its own. It contributes the relationship **name only** (`علاقات (مشابه)`) — the `029` row stamps its own

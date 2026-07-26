@@ -1,0 +1,19 @@
+.audit-render__meta {
+  color: var(--qd-text-muted);
+  font-size: 0.875rem;
+}
+
+.audit-render__subtitle {
+  margin-block: var(--qd-space-3, 0.75rem) var(--qd-space-1, 0.25rem);
+  font-size: 0.9375rem;
+}
+
+.template-render__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.template-render__list li {
+  padding-block: var(--qd-space-1, 0.25rem);
+}

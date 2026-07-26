@@ -31,6 +31,13 @@ export class AbwabPermissions {
   readonly canDeleteRelationship = computed(() => this.has('relationship.delete'));
   readonly canRestoreRelationship = computed(() => this.has('relationship.restore'));
 
+  readonly canViewTemplate = computed(() => this.has('template.view'));
+  readonly canAddTemplate = computed(() => this.has('template.add'));
+  readonly canEditTemplate = computed(() => this.has('template.edit'));
+  readonly canDeleteTemplate = computed(() => this.has('template.delete'));
+  readonly canRestoreTemplate = computed(() => this.has('template.restore'));
+  readonly canApplyTemplate = computed(() => this.has('template.apply'));
+
   private has(code: Parameters<CurrentUserStore['hasPermission']>[0]): boolean {
     return this.currentUser.hasPermission(code);
   }

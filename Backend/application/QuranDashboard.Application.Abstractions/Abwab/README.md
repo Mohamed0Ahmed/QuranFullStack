@@ -1,4 +1,4 @@
-# Abwab core contracts (application abstractions) — `029`
+# Abwab contracts (application abstractions) — `029` core, `030` relationships + templates
 
 **Layer:** Application.Abstractions · **Feature:** `029-abwab-core` · **HOW rules:**
 `Backend/.architecture/CLEAN_ARCHITECTURE.md`
@@ -58,11 +58,38 @@ under `Core/` and `Restore/`.
   `GetActiveDirectionalTargetsAsync` returns **one breadth-first layer** of the broader→narrower
   graph so cycle validation walks only the reachable subgraph.
 
+## `Templates/` — the `030` template contracts
+
+- **`IAbwabTemplateWritePort`** — aggregate CRUD, the node internals (add/edit/reparent/reorder/
+  remove), the alias internals (add/edit/remove/restore), and `apply`-to-one-category. Every command
+  in `TemplateCommands.cs` carries `ExpectedTimelineGeneration`. **Structural** node commands also
+  carry the expected `TemplateRevision`; content-only commands (node edit, every alias command) carry
+  the row's expected `xmin` alone, because they change no structure and bump no counter. `apply`
+  carries all four expectations: `TemplateRevision`, `TreeRevision`, the target category's `xmin`,
+  and the generation. **No command names a real category except `apply`'s target**, and none
+  references a second template — there is no create-from-real-door and no cross-door copy path.
+- **`IAbwabTemplateReadPort`** — the template list, the template detail (nodes + aliases + the
+  `TreeRevision` the apply command needs), and the **separate template-history** projection (§6.3:
+  template CRUD never appears in the main product-audit list). `MaxHistoryEntries` (100) caps that
+  projection; `TemplateHistoryDto.HasMore` reports truncation so a capped history is never mistaken
+  for the complete record.
+- **`TemplateNodeOrderRules`** — the single definition of a well-formed reorder list (non-empty, no
+  repeated id). The API request validates against it to produce the framework 400, and
+  `TemplateNodeHandler` re-checks it because the write port is reachable without the controller. Two
+  enforcement points, one rule: a repeated id would otherwise satisfy the sibling-count check while
+  leaving a real sibling un-reordered.
+- **`IDoorTemplateStore` / `ITemplateNodeStore` / `ITemplateNodeAliasStore`** — the narrow
+  persistence seams the handlers use instead of EF. `FindTrackedForTemplateAsync` returns the whole
+  template's nodes in one in-transaction read, which is what lets reparent/reorder validate the
+  parent chain and rewrite sibling orders without a query per level.
+
 ## `Restore/` — the §8 registry contracts
 
 `IAbwabRestoreAdapter<TSnapshot>` (capture/reconstruct a versioned, schema-tagged snapshot) and
 `IAbwabRestoreAdapterDescriptor` (the DI-discoverable `PersistedType`/`SnapshotSchemaVersion` used by
-the static registry test). Implementations, the registered adapter list, and the acceptance status
+the static registry test). `IAbwabRestoreEventInterpreter` (`030`) is deliberately **not** a
+descriptor: an event-kind interpreter owns no persisted type and adds **no** registry entry — it maps
+one audited event kind onto the adapters that already own the rows the event created. Implementations, the registered adapter list, and the acceptance status
 live in `Infrastructure/Abwab/Restore/README.md` — this folder only defines the shape.
 
 ## Related

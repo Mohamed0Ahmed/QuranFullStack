@@ -31,16 +31,18 @@ public sealed class WriterStabilizationDiscoveryTests
             + string.Join(", ", missing.Select(type => type.FullName)));
     }
 
-    [Fact]
-    public void The030RelationshipWriterSet_IsNotEmpty_SoThisGuardCannotSilentlyBecomeVacuous()
+    [Theory]
+    [InlineData("Relationship")]
+    [InlineData("Template")]
+    public void Each030WriterHalf_IsNotEmpty_SoThisGuardCannotSilentlyBecomeVacuous(string discriminator)
     {
-        var discoveredRelationshipWriters = AbwabWriterStabilizationGuard
+        var discovered = AbwabWriterStabilizationGuard
             .DiscoverWriters(AbwabWriterRegistrations.WriterAssemblies)
-            .Where(writer => writer.Name.Contains("Relationship", StringComparison.Ordinal))
+            .Where(writer => writer.Name.Contains(discriminator, StringComparison.Ordinal))
             .ToList();
 
-        discoveredRelationshipWriters.Should().NotBeEmpty(
-            "T027 registered the 030 relationship mutation command types, so a later namespace/filter change "
+        discovered.Should().NotBeEmpty(
+            $"T027/T064 registered the 030 {discriminator} mutation command types, so a later namespace/filter change "
             + "must not be able to reduce the coverage guard above to asserting nothing");
     }
 

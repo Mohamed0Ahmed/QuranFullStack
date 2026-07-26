@@ -34,6 +34,12 @@ public sealed class PermissionParityTests(PostgresFixture fixture)
         "relationship.edit",
         "relationship.delete",
         "relationship.restore",
+        "template.view",
+        "template.add",
+        "template.edit",
+        "template.delete",
+        "template.restore",
+        "template.apply",
     };
 
     [Fact]

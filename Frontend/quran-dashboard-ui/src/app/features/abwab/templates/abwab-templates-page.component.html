@@ -1,0 +1,155 @@
+<section class="templates-page" dir="rtl" data-testid="templates-page">
+  <h1 class="qd-page-title">{{ pageTitle }}</h1>
+
+  @if (!permissions.canViewTemplate()) {
+    <qd-state variant="empty" [message]="notAuthorizedMessage" data-testid="templates-not-authorized" />
+  } @else {
+    @if (conflictMessage(); as conflict) {
+      <p class="templates-page__conflict" role="alert" data-testid="templates-conflict">{{ conflict }}</p>
+    }
+
+    @if (mutationErrorMessage(); as mutationError) {
+      <p class="templates-page__conflict" role="alert" data-testid="templates-mutation-error">{{ mutationError }}</p>
+    }
+
+    <label class="templates-page__toggle">
+      <input
+        type="checkbox"
+        data-testid="templates-include-deleted"
+        [checked]="facade.includeDeleted()"
+        (change)="toggleIncludeDeleted(!facade.includeDeleted())"
+      />
+      إظهار المحذوفة
+    </label>
+
+    @if (permissions.canAddTemplate()) {
+      <form class="templates-page__form" [formGroup]="addTemplateForm" (ngSubmit)="submitAddTemplate()" data-testid="template-add-form">
+        <label for="template-name">اسم القالب</label>
+        <input id="template-name" class="qd-input" type="text" formControlName="name" data-testid="template-name" />
+
+        <label for="template-description">الوصف</label>
+        <input id="template-description" class="qd-input" type="text" formControlName="description" data-testid="template-description" />
+
+        <button type="submit" class="qd-btn qd-btn-primary" data-testid="template-add" [disabled]="addTemplateForm.invalid">
+          إضافة قالب
+        </button>
+      </form>
+    }
+
+    @switch (facade.status()) {
+      @case ('loading') {
+        <qd-state variant="loading" [message]="loadingMessage" data-testid="templates-loading" />
+      }
+      @case ('error') {
+        <qd-state
+          variant="error"
+          [message]="facade.errorMessage() ?? ''"
+          [actionLabel]="retryLabel"
+          (action)="reload()"
+          data-testid="templates-error"
+        />
+      }
+      @case ('empty') {
+        <qd-state variant="empty" [message]="emptyMessage" data-testid="templates-empty" />
+      }
+      @default {
+        <ul class="templates-page__list" data-testid="template-list">
+          @for (template of facade.templates(); track template.doorTemplateId) {
+            <li
+              class="templates-page__row"
+              data-testid="template-row"
+              [attr.data-id]="template.doorTemplateId"
+              [class.templates-page__row--selected]="facade.selectedTemplateId() === template.doorTemplateId"
+            >
+              <button type="button" class="qd-btn qd-btn-ghost" data-testid="template-select" (click)="selectTemplate(template.doorTemplateId)">
+                {{ template.name }}
+              </button>
+              <span class="qd-badge" data-testid="template-node-count">{{ template.nodeCount }} عقدة</span>
+              @if (template.isDeleted) {
+                <span class="qd-badge" data-testid="template-deleted-badge">محذوف</span>
+                @if (permissions.canRestoreTemplate()) {
+                  <button
+                    type="button"
+                    class="qd-btn qd-btn-secondary"
+                    data-testid="template-restore"
+                    (click)="restoreTemplate(template.doorTemplateId, template.version)"
+                  >
+                    استعادة
+                  </button>
+                }
+              }
+            </li>
+          }
+        </ul>
+      }
+    }
+
+    @if (facade.detailErrorMessage(); as detailError) {
+      <qd-state
+        variant="error"
+        [message]="detailError"
+        [actionLabel]="retryLabel"
+        (action)="retryDetail()"
+        data-testid="template-detail-error"
+      />
+    }
+
+    @if (facade.detail(); as detail) {
+      <section class="templates-page__detail" data-testid="template-detail">
+        <h2 class="qd-section-title">{{ detail.template.name }}</h2>
+
+        <div class="templates-page__actions">
+          @if (permissions.canEditTemplate() && editingTemplateId() === null) {
+            <button type="button" class="qd-btn qd-btn-ghost" data-testid="template-edit" (click)="beginEditTemplate()">تعديل القالب</button>
+          }
+          @if (permissions.canDeleteTemplate() && !detail.template.isDeleted) {
+            <button type="button" class="qd-btn qd-btn-ghost" data-testid="template-delete" (click)="deleteTemplate()">حذف القالب</button>
+          }
+        </div>
+
+        @if (editingTemplateId() === detail.template.doorTemplateId) {
+          <form class="templates-page__form" [formGroup]="editTemplateForm" (ngSubmit)="submitEditTemplate()" data-testid="template-edit-form">
+            <label for="template-edit-name">اسم القالب</label>
+            <input id="template-edit-name" class="qd-input" type="text" formControlName="name" data-testid="template-edit-name" />
+
+            <label for="template-edit-description">الوصف</label>
+            <input
+              id="template-edit-description"
+              class="qd-input"
+              type="text"
+              formControlName="description"
+              data-testid="template-edit-description"
+            />
+
+            <button type="submit" class="qd-btn qd-btn-primary" data-testid="template-edit-save" [disabled]="editTemplateForm.invalid">حفظ</button>
+            <button type="button" class="qd-btn qd-btn-ghost" data-testid="template-edit-cancel" (click)="cancelEditTemplate()">إلغاء</button>
+          </form>
+        }
+
+        <qd-abwab-template-node-editor
+          [nodes]="facade.nodes()"
+          [canEdit]="permissions.canEditTemplate()"
+          [mutationStatus]="editorStatus()"
+          (addNode)="onAddNode($event)"
+          (editNode)="onEditNode($event)"
+          (reparentNode)="onReparentNode($event)"
+          (reorderNodes)="onReorderNodes($event)"
+          (removeNode)="onRemoveNode($event)"
+          (addAlias)="onAddAlias($event)"
+          (editAlias)="onEditAlias($event)"
+          (removeAlias)="onRemoveAlias($event)"
+          (restoreAlias)="onRestoreAlias($event)"
+        />
+
+        @if (permissions.canApplyTemplate()) {
+          <qd-abwab-template-application-panel
+            [targetCandidates]="facade.targetCandidates()"
+            [mutationStatus]="applyStatus()"
+            [conflictMessage]="applyConflictMessage()"
+            (apply)="onApply($event)"
+          />
+        }
+      </section>
+    }
+  }
+</section>

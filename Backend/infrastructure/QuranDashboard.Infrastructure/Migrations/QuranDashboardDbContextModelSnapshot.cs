@@ -518,6 +518,162 @@ namespace QuranDashboard.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("QuranDashboard.Domain.Abwab.Templates.DoorTemplate", b =>
+                {
+                    b.Property<Guid>("DoorTemplateId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<string>("NormalizedName")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("normalized_name");
+
+                    b.Property<long>("TemplateRevision")
+                        .HasColumnType("bigint")
+                        .HasColumnName("template_revision");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("DoorTemplateId");
+
+                    b.HasIndex("NormalizedName")
+                        .HasDatabaseName("ix_abwab_door_templates_normalized_name")
+                        .HasFilter("is_deleted = false");
+
+                    b.ToTable("abwab_door_templates", (string)null);
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Abwab.Templates.TemplateNode", b =>
+                {
+                    b.Property<Guid>("TemplateNodeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<Guid>("DoorTemplateId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("door_template_id");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<string>("NormalizedName")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("normalized_name");
+
+                    b.Property<Guid?>("ParentTemplateNodeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("parent_template_node_id");
+
+                    b.Property<string>("RepresentativeQuranExcerpt")
+                        .HasColumnType("text")
+                        .HasColumnName("representative_quran_excerpt");
+
+                    b.Property<int>("SiblingOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sibling_order");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("TemplateNodeId");
+
+                    b.HasIndex("ParentTemplateNodeId");
+
+                    b.HasIndex("DoorTemplateId", "NormalizedName")
+                        .HasDatabaseName("ix_abwab_template_nodes_normalized_name");
+
+                    b.HasIndex("DoorTemplateId", "ParentTemplateNodeId")
+                        .HasDatabaseName("ix_abwab_template_nodes_template_parent");
+
+                    b.ToTable("abwab_template_nodes", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_abwab_template_nodes_no_self_parent", "parent_template_node_id IS NULL OR parent_template_node_id <> id");
+                        });
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Abwab.Templates.TemplateNodeSearchAlias", b =>
+                {
+                    b.Property<Guid>("TemplateNodeSearchAliasId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<string>("NormalizedValue")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("normalized_value");
+
+                    b.Property<Guid>("TemplateNodeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("template_node_id");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("value");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("TemplateNodeSearchAliasId");
+
+                    b.HasIndex("TemplateNodeId", "NormalizedValue")
+                        .HasDatabaseName("ix_abwab_template_node_search_aliases_normalized_value")
+                        .HasFilter("is_deleted = false");
+
+                    b.ToTable("abwab_template_node_search_aliases", (string)null);
+                });
+
             modelBuilder.Entity("QuranDashboard.Domain.Abwab.Timeline.AbwabRevisionState", b =>
                 {
                     b.Property<int>("Id")
@@ -3067,6 +3223,42 @@ namespace QuranDashboard.Infrastructure.Migrations
                             Code = "relationship.restore",
                             DashboardAdminBaseline = false,
                             SystemOwnerOnly = false
+                        },
+                        new
+                        {
+                            Code = "template.view",
+                            DashboardAdminBaseline = false,
+                            SystemOwnerOnly = false
+                        },
+                        new
+                        {
+                            Code = "template.add",
+                            DashboardAdminBaseline = false,
+                            SystemOwnerOnly = false
+                        },
+                        new
+                        {
+                            Code = "template.edit",
+                            DashboardAdminBaseline = false,
+                            SystemOwnerOnly = false
+                        },
+                        new
+                        {
+                            Code = "template.delete",
+                            DashboardAdminBaseline = false,
+                            SystemOwnerOnly = false
+                        },
+                        new
+                        {
+                            Code = "template.restore",
+                            DashboardAdminBaseline = false,
+                            SystemOwnerOnly = false
+                        },
+                        new
+                        {
+                            Code = "template.apply",
+                            DashboardAdminBaseline = false,
+                            SystemOwnerOnly = false
                         });
                 });
 
@@ -3140,6 +3332,29 @@ namespace QuranDashboard.Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("TargetCategoryId")
                         .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Abwab.Templates.TemplateNode", b =>
+                {
+                    b.HasOne("QuranDashboard.Domain.Abwab.Templates.DoorTemplate", null)
+                        .WithMany()
+                        .HasForeignKey("DoorTemplateId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("QuranDashboard.Domain.Abwab.Templates.TemplateNode", null)
+                        .WithMany()
+                        .HasForeignKey("ParentTemplateNodeId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Abwab.Templates.TemplateNodeSearchAlias", b =>
+                {
+                    b.HasOne("QuranDashboard.Domain.Abwab.Templates.TemplateNode", null)
+                        .WithMany()
+                        .HasForeignKey("TemplateNodeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("QuranDashboard.Domain.Access.User", b =>

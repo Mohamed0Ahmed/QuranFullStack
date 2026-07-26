@@ -11,6 +11,12 @@ export const ABWAB_ROUTES: Routes = [
     loadComponent: () => import('./tree/abwab-tree-page.component').then((m) => m.AbwabTreePageComponent),
   },
   {
+    path: 'templates',
+    title: 'قوالب الأبواب',
+    loadComponent: () =>
+      import('./templates/abwab-templates-page.component').then((m) => m.AbwabTemplatesPageComponent),
+  },
+  {
     path: 'relationships/:categoryId',
     title: 'علاقات الباب',
     loadComponent: () =>

@@ -1,0 +1,61 @@
+.templates-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qd-space-4, 1rem);
+}
+
+.templates-page__conflict {
+  color: var(--qd-danger);
+  font-weight: 600;
+}
+
+.templates-page__form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--qd-space-2, 0.5rem);
+}
+
+.templates-page__list,
+.templates-page__nodes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.templates-page__row,
+.templates-page__node {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--qd-space-3, 0.75rem);
+  padding-block: var(--qd-space-3, 0.75rem);
+  border-block-end: 1px solid var(--qd-border);
+}
+
+// Selection is marked by the tree's own token PLUS a non-colour inline-start accent, so it survives
+// a colour-blind or high-contrast reading (§16.1/§12).
+.templates-page__row--selected {
+  background: var(--qd-selected-bg);
+  border-inline-start: 3px solid var(--qd-focus-ring);
+  padding-inline-start: var(--qd-space-2, 0.5rem);
+}
+
+.templates-page__toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--qd-space-2, 0.5rem);
+}
+
+.templates-page__detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qd-space-4, 1rem);
+}
+
+.templates-page__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--qd-space-2, 0.5rem);
+}

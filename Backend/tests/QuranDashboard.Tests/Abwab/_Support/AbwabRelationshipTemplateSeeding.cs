@@ -1,6 +1,9 @@
 using QuranDashboard.Domain.Abwab.Categories;
 using QuranDashboard.Domain.Abwab.Protection;
 using QuranDashboard.Domain.Abwab.Relationships;
+using QuranDashboard.Domain.Abwab.Templates;
+using QuranDashboard.Domain.Abwab.Tree;
+using QuranDashboard.Infrastructure.Abwab.Restore;
 using QuranDashboard.Tests.Abwab._Fixtures;
 
 namespace QuranDashboard.Tests.Abwab._Support;
@@ -87,6 +90,115 @@ internal static class AbwabRelationshipTemplateSeeding
         }
 
         return chain;
+    }
+
+    public static DoorTemplate NewDoorTemplate(string name = "قالب باب", string? description = null) => new()
+    {
+        DoorTemplateId = Guid.NewGuid(),
+        Name = name,
+        NormalizedName = ArabicNameNormalizer.Normalize(name),
+        Description = description,
+    };
+
+    public static TemplateNode NewTemplateNode(
+        Guid doorTemplateId,
+        string name,
+        int siblingOrder,
+        Guid? parentTemplateNodeId = null,
+        string? representativeQuranExcerpt = null,
+        string? description = null) => new()
+    {
+        TemplateNodeId = Guid.NewGuid(),
+        DoorTemplateId = doorTemplateId,
+        ParentTemplateNodeId = parentTemplateNodeId,
+        Name = name,
+        NormalizedName = ArabicNameNormalizer.Normalize(name),
+        RepresentativeQuranExcerpt = representativeQuranExcerpt,
+        Description = description,
+        SiblingOrder = siblingOrder,
+    };
+
+    public static TemplateNodeSearchAlias NewTemplateNodeAlias(Guid templateNodeId, string value) => new()
+    {
+        TemplateNodeSearchAliasId = Guid.NewGuid(),
+        TemplateNodeId = templateNodeId,
+        Value = value,
+        NormalizedValue = ArabicNameNormalizer.Normalize(value),
+    };
+
+    // A template whose roots each carry `depth` levels of single children, so reparent/cycle and
+    // application tests share one deep-tree shape instead of hand-building it per file.
+    public static async Task<(DoorTemplate Template, IReadOnlyList<TemplateNode> Nodes)> DeepTemplateAsync(
+        PostgresFixture fixture,
+        int rootCount,
+        int depth,
+        string label = "عقدة")
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(rootCount);
+        ArgumentOutOfRangeException.ThrowIfNegative(depth);
+
+        var template = NewDoorTemplate($"قالب {label} {Guid.NewGuid():N}");
+        var nodes = new List<TemplateNode>();
+
+        for (var rootIndex = 0; rootIndex < rootCount; rootIndex++)
+        {
+            var root = NewTemplateNode(template.DoorTemplateId, $"{label} {rootIndex}", rootIndex);
+            nodes.Add(root);
+
+            var parent = root;
+            for (var level = 1; level <= depth; level++)
+            {
+                var child = NewTemplateNode(template.DoorTemplateId, $"{label} {rootIndex}-{level}", 0, parent.TemplateNodeId);
+                nodes.Add(child);
+                parent = child;
+            }
+        }
+
+        await AbwabTreeSeeding.InsertAsync(fixture, template);
+        await AbwabTreeSeeding.InsertAsync(fixture, [.. nodes.Cast<object>()]);
+
+        return (template, nodes);
+    }
+
+    // A parent ring cannot be inserted in one pass — EF orders inserts by foreign key and a
+    // self-referencing cycle has no valid order — so the ring is closed by a second write, which is
+    // also how a corrupted row would reach the database in the first place.
+    public static async Task<(DoorTemplate Template, IReadOnlyList<TemplateNode> Nodes)> CyclicTemplateAsync(
+        PostgresFixture fixture)
+    {
+        var template = NewDoorTemplate($"قالب دوري {Guid.NewGuid():N}");
+        var first = NewTemplateNode(template.DoorTemplateId, $"عقدة أولى {Guid.NewGuid():N}", 0);
+        var second = NewTemplateNode(template.DoorTemplateId, $"عقدة ثانية {Guid.NewGuid():N}", 0, first.TemplateNodeId);
+
+        await AbwabTreeSeeding.InsertAsync(fixture, template);
+        await AbwabTreeSeeding.InsertAsync(fixture, first, second);
+
+        await using (var db = SecurityTestHarness.CreateContext(fixture))
+        {
+            var tracked = await db.Set<TemplateNode>().SingleAsync(n => n.TemplateNodeId == first.TemplateNodeId);
+            tracked.ParentTemplateNodeId = second.TemplateNodeId;
+            await db.SaveChangesAsync();
+        }
+
+        first.ParentTemplateNodeId = second.TemplateNodeId;
+        return (template, [first, second]);
+    }
+
+    public static async Task<DoorTemplateAggregate> LoadTemplateAggregateAsync(PostgresFixture fixture, Guid doorTemplateId)
+    {
+        await using var db = SecurityTestHarness.CreateContext(fixture);
+
+        var template = await db.Set<DoorTemplate>().AsNoTracking().SingleAsync(t => t.DoorTemplateId == doorTemplateId);
+        var nodes = await db.Set<TemplateNode>().AsNoTracking()
+            .Where(n => n.DoorTemplateId == doorTemplateId)
+            .OrderBy(n => n.SiblingOrder)
+            .ToListAsync();
+        var nodeIds = nodes.Select(n => n.TemplateNodeId).ToList();
+        var aliases = await db.Set<TemplateNodeSearchAlias>().AsNoTracking()
+            .Where(a => nodeIds.Contains(a.TemplateNodeId))
+            .ToListAsync();
+
+        return new DoorTemplateAggregate(template, nodes, aliases);
     }
 
     public static async Task<(Category Root, IReadOnlyList<Category> Children)> CategorySubtreeAsync(

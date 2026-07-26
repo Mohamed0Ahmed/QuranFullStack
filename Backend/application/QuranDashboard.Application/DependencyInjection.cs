@@ -1,7 +1,9 @@
 using Microsoft.Extensions.DependencyInjection;
 using QuranDashboard.Application.Abstractions.Abwab.Core;
 using QuranDashboard.Application.Abstractions.Abwab.Relationships;
+using QuranDashboard.Application.Abstractions.Abwab.Templates;
 using QuranDashboard.Application.Abwab.Categories;
+using QuranDashboard.Application.Abwab.Templates;
 using QuranDashboard.Application.Abwab.Protection;
 using QuranDashboard.Application.Abwab.Relationships;
 using QuranDashboard.Application.Abwab.Sections;
@@ -149,6 +151,12 @@ public static class DependencyInjection
         services.AddScoped<IAbwabCoreWritePort, AbwabCoreWriteHandler>();
 
         services.AddScoped<IAbwabRelationshipWritePort, RelationshipWriterHandler>();
+
+        services.AddScoped<TemplateAggregateHandler>();
+        services.AddScoped<TemplateNodeHandler>();
+        services.AddScoped<TemplateAliasHandler>();
+        services.AddScoped<TemplateApplicationHandler>();
+        services.AddScoped<IAbwabTemplateWritePort, AbwabTemplateWriteHandler>();
 
         return services;
     }

@@ -29,6 +29,10 @@
           <button type="submit" class="qd-btn qd-btn-primary" data-testid="abwab-tree-new-root-submit">إضافة</button>
         </form>
       }
+
+      @if (permissions.canViewTemplate()) {
+        <a class="qd-btn qd-btn-ghost" data-testid="abwab-tree-templates-link" [routerLink]="['templates']">قوالب الأبواب</a>
+      }
     </div>
 
     <div class="abwab-tree-page__body">

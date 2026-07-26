@@ -1,0 +1,179 @@
+<section class="node-editor" dir="rtl" data-testid="template-node-editor">
+  @if (canEdit()) {
+    <form class="node-editor__form" [formGroup]="addForm" (ngSubmit)="submitAdd()" data-testid="template-node-add-form">
+      <label for="node-name">اسم العقدة</label>
+      <input id="node-name" class="qd-input" type="text" formControlName="name" data-testid="node-name" />
+
+      <label for="node-excerpt">المقطع التمثيلي</label>
+      <input id="node-excerpt" class="qd-input" type="text" formControlName="representativeQuranExcerpt" data-testid="node-excerpt" />
+
+      <label for="node-description">وصف العقدة</label>
+      <input id="node-description" class="qd-input" type="text" formControlName="description" data-testid="node-description" />
+
+      <label for="node-parent">العقدة الأصل</label>
+      <select id="node-parent" class="qd-select" formControlName="parentTemplateNodeId" data-testid="node-parent">
+        <option value="">— جذر القالب —</option>
+        @for (option of activeNodes(); track option.templateNodeId) {
+          <option [value]="option.templateNodeId">{{ option.name }}</option>
+        }
+      </select>
+
+      <button type="submit" class="qd-btn qd-btn-primary" data-testid="node-add" [disabled]="addForm.invalid">إضافة عقدة</button>
+    </form>
+  }
+
+  <ul class="node-editor__nodes" data-testid="template-node-list">
+    @for (row of rows(); track row.node.templateNodeId) {
+      <li
+        class="node-editor__node"
+        data-testid="template-node-row"
+        [attr.data-id]="row.node.templateNodeId"
+        [attr.data-depth]="row.depth"
+        [style.padding-inline-start.rem]="row.depth"
+      >
+        <span data-testid="node-name-label">{{ row.node.name }}</span>
+
+        @if (editingNodeId() === row.node.templateNodeId) {
+          <form class="node-editor__form" [formGroup]="editForm" (ngSubmit)="submitEdit(row.node)" data-testid="template-node-edit-form">
+            <label for="node-edit-name">اسم العقدة</label>
+            <input id="node-edit-name" class="qd-input" type="text" formControlName="name" data-testid="node-edit-name" />
+
+            <label for="node-edit-excerpt">المقطع التمثيلي</label>
+            <input
+              id="node-edit-excerpt"
+              class="qd-input"
+              type="text"
+              formControlName="representativeQuranExcerpt"
+              data-testid="node-edit-excerpt"
+            />
+
+            <label for="node-edit-description">وصف العقدة</label>
+            <input id="node-edit-description" class="qd-input" type="text" formControlName="description" data-testid="node-edit-description" />
+
+            <label for="node-edit-parent">العقدة الأصل</label>
+            <select id="node-edit-parent" class="qd-select" formControlName="parentTemplateNodeId" data-testid="node-edit-parent">
+              <option value="">— جذر القالب —</option>
+              @for (option of parentOptions(); track option.templateNodeId) {
+                <option [value]="option.templateNodeId">{{ option.name }}</option>
+              }
+            </select>
+
+            <button type="submit" class="qd-btn qd-btn-primary" data-testid="node-edit-save" [disabled]="editForm.invalid">حفظ</button>
+            <button type="button" class="qd-btn qd-btn-secondary" data-testid="node-reparent" (click)="submitReparent(row.node)">
+              نقل إلى العقدة المحددة
+            </button>
+            <button type="button" class="qd-btn qd-btn-ghost" data-testid="node-edit-cancel" (click)="cancelEdit()">إلغاء</button>
+          </form>
+        } @else if (canEdit()) {
+          <div class="node-editor__actions">
+            <button type="button" class="qd-btn qd-btn-ghost" data-testid="node-edit" (click)="beginEdit(row.node)">تعديل</button>
+            <button
+              type="button"
+              class="qd-btn qd-btn-ghost"
+              data-testid="node-move-up"
+              [disabled]="!row.canMoveUp"
+              (click)="move(row, -1)"
+            >
+              أعلى
+            </button>
+            <button
+              type="button"
+              class="qd-btn qd-btn-ghost"
+              data-testid="node-move-down"
+              [disabled]="!row.canMoveDown"
+              (click)="move(row, 1)"
+            >
+              أسفل
+            </button>
+            <button type="button" class="qd-btn qd-btn-ghost" data-testid="node-remove" (click)="remove(row.node)">إزالة</button>
+          </div>
+        }
+
+        <div class="node-editor__aliases" data-testid="node-aliases" [attr.data-node-id]="row.node.templateNodeId">
+          <h4 class="node-editor__aliases-title">المرادفات</h4>
+
+          <ul class="node-editor__alias-list" data-testid="node-alias-list">
+            @for (alias of row.node.aliases; track alias.templateNodeSearchAliasId) {
+              <li
+                class="node-editor__alias"
+                data-testid="node-alias-row"
+                [attr.data-id]="alias.templateNodeSearchAliasId"
+                [class.node-editor__alias--deleted]="alias.isDeleted"
+              >
+                @if (editingAliasId() === alias.templateNodeSearchAliasId) {
+                  <form
+                    class="node-editor__form"
+                    [formGroup]="aliasEditForm"
+                    (ngSubmit)="submitAliasEdit(alias)"
+                    data-testid="node-alias-edit-form"
+                  >
+                    <label for="node-alias-edit-value">قيمة المرادف</label>
+                    <input
+                      id="node-alias-edit-value"
+                      class="qd-input"
+                      type="text"
+                      formControlName="value"
+                      data-testid="node-alias-edit-value"
+                    />
+                    <button type="submit" class="qd-btn qd-btn-primary" data-testid="node-alias-edit-save" [disabled]="aliasEditForm.invalid">
+                      حفظ
+                    </button>
+                    <button type="button" class="qd-btn qd-btn-ghost" data-testid="node-alias-edit-cancel" (click)="cancelAliasEdit()">
+                      إلغاء
+                    </button>
+                  </form>
+                } @else {
+                  <span data-testid="node-alias-value">{{ alias.value }}</span>
+                  @if (alias.isDeleted) {
+                    <span class="qd-badge" data-testid="node-alias-deleted-badge">محذوف</span>
+                    @if (canEdit()) {
+                      <button
+                        type="button"
+                        class="qd-btn qd-btn-secondary"
+                        data-testid="node-alias-restore"
+                        (click)="restoreAlias.emit(alias)"
+                      >
+                        استعادة
+                      </button>
+                    }
+                  } @else if (canEdit()) {
+                    <button type="button" class="qd-btn qd-btn-ghost" data-testid="node-alias-edit" (click)="beginAliasEdit(alias)">
+                      تعديل
+                    </button>
+                    <button type="button" class="qd-btn qd-btn-ghost" data-testid="node-alias-remove" (click)="removeAlias.emit(alias)">
+                      إزالة
+                    </button>
+                  }
+                }
+              </li>
+            } @empty {
+              <li class="node-editor__alias-empty" data-testid="node-alias-empty">لا توجد مرادفات لهذه العقدة.</li>
+            }
+          </ul>
+
+          @if (canEdit()) {
+            @if (aliasAddingNodeId() === row.node.templateNodeId) {
+              <form
+                class="node-editor__form"
+                [formGroup]="aliasAddForm"
+                (ngSubmit)="submitAliasAdd(row.node)"
+                data-testid="node-alias-add-form"
+              >
+                <label for="node-alias-add-value">مرادف جديد</label>
+                <input id="node-alias-add-value" class="qd-input" type="text" formControlName="value" data-testid="node-alias-add-value" />
+                <button type="submit" class="qd-btn qd-btn-primary" data-testid="node-alias-add-save" [disabled]="aliasAddForm.invalid">
+                  حفظ المرادف
+                </button>
+                <button type="button" class="qd-btn qd-btn-ghost" data-testid="node-alias-add-cancel" (click)="cancelAliasAdd()">إلغاء</button>
+              </form>
+            } @else {
+              <button type="button" class="qd-btn qd-btn-ghost" data-testid="node-alias-add-open" (click)="beginAliasAdd(row.node)">
+                إضافة مرادف
+              </button>
+            }
+          }
+        </div>
+      </li>
+    }
+  </ul>
+</section>

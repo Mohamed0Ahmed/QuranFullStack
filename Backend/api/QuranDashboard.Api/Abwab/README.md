@@ -1,4 +1,4 @@
-# Abwab API — Sections, Categories, Tree, Protection (`029`), Relationships (`030`)
+# Abwab API — Sections, Categories, Tree, Protection (`029`), Relationships + Templates (`030`)
 
 **Layer:** Api · **Features:** `029-abwab-core`, `030-abwab-relationships-templates` ·
 **HOW rules:** `Backend/.architecture/API_GUIDELINES.md`
@@ -32,6 +32,18 @@ Thin controllers over the `029` Application ports (`IAbwabCoreReadPort`/`IAbwabC
   A **self-link** is malformed input and fails as the framework `400` produced by the
   `[ApiController]` validation convention (`RelationshipContracts.cs` implements
   `IValidatableObject`); no `abwab.*` body code exists for 400/403 and none is introduced.
+- **`Templates/TemplatesController`** (`030`) — the template editor and application surface:
+  aggregate CRUD, the node internals (`add`/`edit`/`reparent`/`reorder`/`remove`), the alias
+  internals (`add`/`edit`/`remove`/`restore`), the authorized reads (list/detail/history), and
+  `apply`-to-one-category. **Explicit action endpoints — no drag semantics:** a reparent names its
+  destination parent and a reorder posts the whole ordered sibling list. Every mutation carries
+  `ExpectedTimelineGeneration`, structural node operations also carry the expected
+  `TemplateRevision`, and row-targeted operations carry the row's expected `xmin`; `apply`
+  additionally carries the expected `TreeRevision` and the target category's `xmin`. Policies are the
+  §5.2-frozen set with **no borrowed verb**: `TemplateView` for reads, `TemplateAdd` for the
+  aggregate **only**, `TemplateEdit` for every node/alias internal, `TemplateDelete`/`TemplateRestore`
+  for aggregate lifecycle, and `TemplateApply` **alone** for application. There is **no**
+  create-from-real-door endpoint and **no** cross-door copy endpoint (§7.4).
 - **`Protection/ProtectionController`** — manual protection apply/lift/full-preset
   (`ProtectionApply`/`ProtectionLift`) plus the dedicated effective-protection read
   (`ProtectionView` — the composite-read redaction table in `tree-read-contract.md`).
@@ -43,7 +55,8 @@ Thin controllers over the `029` Application ports (`IAbwabCoreReadPort`/`IAbwabC
 same fixed set from `specs/029-abwab-core/tasks.md` §5 / `contracts/`
 (`abwab.section_name_conflict`, `abwab.category_cycle`, `abwab.manual_protection_scope_conflict`,
 `abwab.tree_revision_stale`, `abwab.timeline_generation_stale`, `abwab.row_stale`, …) plus `030`'s
-`abwab.relationship_duplicate` / `abwab.relationship_cycle`. Never
+`abwab.relationship_duplicate` / `abwab.relationship_cycle` / `abwab.template_cycle` /
+`abwab.template_revision_stale`. Never
 invent, rename, or remap a code; `Backend/tests/QuranDashboard.Tests/Abwab/_Support/ConflictCodeParityTests.cs`
 asserts this mapping identically across the core, the HTTP layer, and the contract fixture list.
 
