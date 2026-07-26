@@ -35,7 +35,9 @@ authenticated request.
 
 - `AuthorizationPolicyNames` exposes `Owner`/`Admin`/`Editor` constants whose values equal `RoleNames`
   (`Domain.Access`); policy name == seeded `roles.name`.
-- Three named policies are registered, each `RequireAuthenticatedUser().RequireRole(<role>)`.
+- Three named role policies are registered, each `RequireAuthenticatedUser().RequireRole(<role>)`, plus
+  the `SystemOwner` policy and one policy per permission code (registered by
+  `../Security/Authorization/PermissionAuthorizationRegistration.cs`).
 - No global fallback policy is configured.
 
 ## Failed-auth response
@@ -47,11 +49,22 @@ It is wired through `JwtBearerEvents.OnChallenge`, which suppresses the default 
 
 ## Boundary / current phase
 
-- The named policies are registered for future admin surfaces but are **not applied to any endpoint** in
-  this phase, and there is no fallback policy. Authentication is therefore enforced only where a
-  controller opts in with `[Authorize]` (today only `api/access/me`; see `../Controllers/README.md`).
+- There is no fallback policy: endpoints are anonymous unless a controller opts in. Applied today:
+  plain `[Authorize]` on `api/access/me`; `SystemOwner` (+ the `PermissionAdmin` rate-limit policy) on
+  `api/security/permissions/*`; per-action permission-code policies on all Abwab write surfaces
+  (sections, categories, relationships, templates, protection). The three role policies
+  (`Owner`/`Admin`/`Editor`) remain registered but are not applied to any endpoint by name.
 - This folder owns auth wiring only. User provisioning and role resolution live in Application /
   Infrastructure behind `ICurrentUser` and `IUserRoleResolver`.
+
+## Testing the pipeline
+
+The smoke harness (`Backend/tests/QuranDashboard.Tests/Smoke/`) exercises this wiring end to end with
+the REAL JwtBearer handler: fixtures `PostConfigure<JwtBearerOptions>` with a test issuer + RSA key and
+mint `sub`-only tokens (`TestJwtTokens`), so `MapInboundClaims = false`, the role transformation, and
+the `OnChallenge` 401 envelope all run unmodified. Personas are DB rows (never claims), matching how
+roles/permissions are resolved in production. A guard test asserts the scheme inventory stays exactly
+`["Bearer"]` with the JwtBearer handler.
 
 ## Related
 

@@ -79,14 +79,15 @@ Backend broad regression — the **no-pipeline** run (~45 s, 1,463 tests):
 ```bash
 dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
   --no-build \
-  --filter "FullyQualifiedName!~.Quran.Import.&FullyQualifiedName!~.Quran.WordsDisplay.&FullyQualifiedName!~.Quran.WordsMorphology.&FullyQualifiedName!~.Quran.WordsMorphologyEnriched.&FullyQualifiedName!~.Quran.WordsSimpleI3rab.&FullyQualifiedName!~.Quran.Mutashabihat.&FullyQualifiedName!~.Quran.Navigation.&FullyQualifiedName!~.Quran.Tafsirs.&FullyQualifiedName!~.Quran.Translations.&FullyQualifiedName!~.Quran.FullI3rab."
+  --filter "FullyQualifiedName!~.Quran.Import.&FullyQualifiedName!~.Quran.WordsDisplay.&FullyQualifiedName!~.Quran.WordsMorphology.&FullyQualifiedName!~.Quran.WordsMorphologyEnriched.&FullyQualifiedName!~.Quran.WordsSimpleI3rab.&FullyQualifiedName!~.Quran.Mutashabihat.&FullyQualifiedName!~.Quran.Navigation.&FullyQualifiedName!~.Quran.Tafsirs.&FullyQualifiedName!~.Quran.Translations.&FullyQualifiedName!~.Quran.FullI3rab.&FullyQualifiedName!~QuranDashboard.Tests.Smoke"
 ```
 
 Coverage statement (be accurate about this): this run keeps all Abwab, Api, and Quran
 explorer/read-model tests plus every unit test *outside* the ten excluded namespaces.
 It excludes those ten namespaces **completely — including the fast unit tests that
-live inside them** (~617 tests total). It is a fast broad regression tier, not full
-coverage; the excluded families run under Tier D/E gates.
+live inside them** (~617 tests total). It also excludes the `Tests.Smoke` namespace,
+which runs as its own suite (see "Smoke suite" below). It is a fast broad regression
+tier, not full coverage; the excluded families run under Tier D/E gates.
 
 Frontend at a milestone:
 
@@ -111,7 +112,7 @@ dotnet build Backend/QuranDashboard.sln
 
 dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
   --no-build \
-  --filter "FullyQualifiedName!~.Quran.Import.&FullyQualifiedName!~.Quran.WordsDisplay.&FullyQualifiedName!~.Quran.WordsMorphology.&FullyQualifiedName!~.Quran.WordsMorphologyEnriched.&FullyQualifiedName!~.Quran.WordsSimpleI3rab.&FullyQualifiedName!~.Quran.Mutashabihat.&FullyQualifiedName!~.Quran.Navigation.&FullyQualifiedName!~.Quran.Tafsirs.&FullyQualifiedName!~.Quran.Translations.&FullyQualifiedName!~.Quran.FullI3rab."
+  --filter "FullyQualifiedName!~.Quran.Import.&FullyQualifiedName!~.Quran.WordsDisplay.&FullyQualifiedName!~.Quran.WordsMorphology.&FullyQualifiedName!~.Quran.WordsMorphologyEnriched.&FullyQualifiedName!~.Quran.WordsSimpleI3rab.&FullyQualifiedName!~.Quran.Mutashabihat.&FullyQualifiedName!~.Quran.Navigation.&FullyQualifiedName!~.Quran.Tafsirs.&FullyQualifiedName!~.Quran.Translations.&FullyQualifiedName!~.Quran.FullI3rab.&FullyQualifiedName!~QuranDashboard.Tests.Smoke"
 ```
 
 ```bash
@@ -123,6 +124,35 @@ npm test
 Backend-only change → the Frontend commands are NOT required (and vice versa), unless
 an API contract or shared integration risk justifies them. Do not pad the gate with
 irrelevant commands.
+
+### Smoke suite — real-pipeline gate (namespace `QuranDashboard.Tests.Smoke`)
+
+Boots the REAL API composition (`WebApplicationFactory<Program>`, in-memory TestServer
+plus a Kestrel-on-port sentinel, environment `Testing`) over a Testcontainers
+PostgreSQL, and drives every registered route through routing, authorization, model
+binding, and serialization. A reflection parity test
+(`SmokeCoverageParityTests`) fails when any registered route lacks a
+`SmokeRouteCatalog` entry — adding an endpoint without a smoke entry fails CI.
+
+```bash
+# Full smoke suite (~35 s pipeline-only; +~80 s data-smoke on a staged machine):
+dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
+  --no-build \
+  --filter "FullyQualifiedName~QuranDashboard.Tests.Smoke"
+```
+
+Rules:
+
+- REQUIRED pre-PR for any change touching `Backend/api/` routes, request/response
+  contracts, authentication/authorization, middleware, or model binding.
+- Excluded from the Tier B/C no-pipeline filter by namespace (selection stays
+  namespace-based; no traits).
+- The data-smoke tier (`Tests.Smoke.Data`) restores the verified canonical Quran dump
+  from `resources/db-dumps/quran-canonical/` (produced by
+  `Backend/scripts/create-smoke-dump`; a derived cache of the canonical import, never
+  synthetic). It self-skips when the dump is absent — including in CI — but a PRESENT
+  dump that is corrupt or stale (sha256/migration mismatch) fails loud.
+- CI runs the suite as a dedicated `backend-tests` step; data-smoke rows skip there.
 
 ### Tier D — Slow pipeline / canonical acceptance (trigger-based)
 
@@ -200,6 +230,7 @@ canonical resources.
 | Canonical resource/artifact change | Relevant acceptance family | D/E | Yes |
 | Model-wide `QuranDashboardDbContext` / shared persistence change that can affect pipeline tables or execution | B | C + D | Yes |
 | Abwab-only entities, DbSets, mappings, or migrations (isolated from pipeline tables and shared persistence behavior) | A | C | No |
+| API endpoint added/changed, or auth/middleware/binding/contract change | A + Smoke suite | C + Smoke suite | No (data-smoke self-skips off staged machines) |
 | Release candidate (`dev → main`) | — | E | Yes (staged resources, zero unexplained skips) |
 
 ## 5. Backend command catalog (validated)
@@ -222,7 +253,11 @@ dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
 # Broad no-pipeline regression (~45 s, excludes the ten namespaces entirely):
 dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
   --no-build \
-  --filter "FullyQualifiedName!~.Quran.Import.&FullyQualifiedName!~.Quran.WordsDisplay.&FullyQualifiedName!~.Quran.WordsMorphology.&FullyQualifiedName!~.Quran.WordsMorphologyEnriched.&FullyQualifiedName!~.Quran.WordsSimpleI3rab.&FullyQualifiedName!~.Quran.Mutashabihat.&FullyQualifiedName!~.Quran.Navigation.&FullyQualifiedName!~.Quran.Tafsirs.&FullyQualifiedName!~.Quran.Translations.&FullyQualifiedName!~.Quran.FullI3rab."
+  --filter "FullyQualifiedName!~.Quran.Import.&FullyQualifiedName!~.Quran.WordsDisplay.&FullyQualifiedName!~.Quran.WordsMorphology.&FullyQualifiedName!~.Quran.WordsMorphologyEnriched.&FullyQualifiedName!~.Quran.WordsSimpleI3rab.&FullyQualifiedName!~.Quran.Mutashabihat.&FullyQualifiedName!~.Quran.Navigation.&FullyQualifiedName!~.Quran.Tafsirs.&FullyQualifiedName!~.Quran.Translations.&FullyQualifiedName!~.Quran.FullI3rab.&FullyQualifiedName!~QuranDashboard.Tests.Smoke"
+
+# Smoke suite (real pipeline over every registered route; data-smoke self-skips without the staged dump):
+dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
+  --no-build --filter "FullyQualifiedName~QuranDashboard.Tests.Smoke"
 
 # Full Backend suite (~5–5.5 min):
 dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj --no-build
@@ -238,9 +273,11 @@ dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
 ```
 
 `--no-build` requires a preceding `dotnet build Backend/QuranDashboard.sln` for the
-current code state (§7). The no-pipeline and all-pipeline filters partition the suite
-exactly (validated by test discovery: 1,435 + 603 listed = 2,038; theory expansion
-brings execution to 2,080).
+current code state (§7). The no-pipeline filter, the all-pipeline filter, and the
+Smoke namespace filter partition the suite by construction: no-pipeline excludes the
+ten pipeline namespaces AND `Tests.Smoke`; all-pipeline selects exactly the ten
+namespaces; Smoke selects exactly its own namespace. (Historical pre-Smoke discovery
+counts: 1,435 + 603 listed = 2,038; theory expansion brought execution to 2,080.)
 
 ## 6. Frontend command catalog
 
@@ -307,7 +344,12 @@ risk; MUST NOT demand full suites when this strategy accepts focused evidence; M
 block when a Tier D trigger existed but its tests were not run; treats skipped
 required canonical tests as missing evidence.
 
-**Pre-PR workflow** — applies Tier C; adds Tier D only when triggered.
+**Pre-PR workflow** — applies Tier C; adds Tier D only when triggered; adds the Smoke
+suite when the change touches API routes, contracts, auth, middleware, or binding.
+
+**Any implementer adding or changing an API route** — MUST add/update the matching
+`SmokeRouteCatalog` entry in the same change; `SmokeCoverageParityTests` fails CI
+otherwise.
 
 **Release workflow** — applies Tier E and verifies canonical tests actually ran (no
 unexplained skips).
@@ -331,3 +373,7 @@ Test implementation and fixture optimizations are separate, explicitly-requested
 safely reducing repeated canonical imports, introducing test traits/categories to
 replace namespace filters, and optional test consolidation. Do not perform them as a
 side effect of running or reviewing tests.
+
+The Smoke suite deliberately follows the existing namespace-selection convention
+(`FullyQualifiedName~QuranDashboard.Tests.Smoke`); it introduces no traits, so the
+trait deferral above still stands.

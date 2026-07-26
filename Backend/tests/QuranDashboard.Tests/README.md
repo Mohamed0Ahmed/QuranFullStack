@@ -16,6 +16,11 @@ Folders are clustered by Quran domain/use case, not by project layer.
   for Roots, Lemmas/Stems, and Word Types.
 - `Quran/WordsMorphology/`, `WordsMorphologyEnriched/`, `WordsSimpleI3rab/`, `WordsDisplay/` —
   morphology import, enriched morphology, generated simple i3rab, and display-word rebuild coverage.
+- `Smoke/` — real-pipeline smoke harness: boots the actual `Program` composition
+  (`WebApplicationFactory<Program>`, in-memory TestServer + Kestrel-on-port, environment `Testing`)
+  over Testcontainers PostgreSQL and drives EVERY registered route through routing, authorization,
+  model binding, and serialization. Owns the route-coverage parity gate (new endpoint without a
+  `SmokeRouteCatalog` entry fails CI) and the skip-gated canonical-dump data tier. See `Smoke/README.md`.
 - `TestSupport/` — shared helpers used across clusters; today this holds logging capture under
   `TestSupport/Logging/RecordingLoggerProvider.cs`.
 
