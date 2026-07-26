@@ -98,10 +98,10 @@ internal static class SmokeRouteCatalog
         AnonymousGet("api/words/word-types/words/{tashkeelWordId}", "api/words/word-types/words/1"),
         AnonymousGet("api/words/word-types/words/{tashkeelWordId}/ayahs", "api/words/word-types/words/1/ayahs"),
         AnonymousGet("api/words/word-types/words/{tashkeelWordId}/surahs", "api/words/word-types/words/1/surahs"),
-        AnonymousGet("api/words/word-types/table/{kind}/{dimensionId}", "api/words/word-types/table/pos/1"),
-        AnonymousGet("api/words/word-types/table/{kind}/{dimensionId}/words", "api/words/word-types/table/pos/1/words"),
-        AnonymousGet("api/words/word-types/table/{kind}/{dimensionId}/ayahs", "api/words/word-types/table/pos/1/ayahs"),
-        AnonymousGet("api/words/word-types/table/{kind}/{dimensionId}/surahs", "api/words/word-types/table/pos/1/surahs"),
+        AnonymousGet("api/words/word-types/table/{kind}/{dimensionId}", "api/words/word-types/table/roots/1"),
+        AnonymousGet("api/words/word-types/table/{kind}/{dimensionId}/words", "api/words/word-types/table/roots/1/words"),
+        AnonymousGet("api/words/word-types/table/{kind}/{dimensionId}/ayahs", "api/words/word-types/table/roots/1/ayahs"),
+        AnonymousGet("api/words/word-types/table/{kind}/{dimensionId}/surahs", "api/words/word-types/table/roots/1/surahs"),
 
         // ---- access / security ----
         new(HttpMethod.Get, "api/access/me", _ => "api/access/me", SmokeAuth.Authenticated),

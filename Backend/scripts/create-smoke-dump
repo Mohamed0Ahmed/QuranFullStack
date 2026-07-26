@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Produces the canonical Quran data dump the smoke-test data tier restores from:
+#   resources/db-dumps/quran-canonical/quran-canonical.dump  (pg_dump custom format, data-only, quran_* tables)
+#   resources/db-dumps/quran-canonical/manifest.json         (sha256, migration id, per-table row counts)
+# The dump is a derived cache of the verified canonical import (DataImporter chain) — never a data
+# source of its own. Run it only against a local DB seeded by the documented import runbook.
+# resources/ is gitignored: the dump never leaves this machine.
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+API_PROJECT="${REPO_ROOT}/Backend/api/QuranDashboard.Api"
+MIGRATIONS_DIR="${REPO_ROOT}/Backend/infrastructure/QuranDashboard.Infrastructure/Migrations"
+OUT_DIR="${REPO_ROOT}/resources/db-dumps/quran-canonical"
+DUMP_FILE="${OUT_DIR}/quran-canonical.dump"
+MANIFEST_FILE="${OUT_DIR}/manifest.json"
+
+HOST="${SMOKE_DUMP_HOST:-localhost}"
+PORT="${SMOKE_DUMP_PORT:-5432}"
+DATABASE="${SMOKE_DUMP_DATABASE:-quran_dashboard}"
+
+if [[ -z "${SMOKE_DUMP_USER:-}" || -z "${PGPASSWORD:-}" ]]; then
+  CONN="$(dotnet user-secrets list --project "${API_PROJECT}" 2>/dev/null \
+    | grep '^ConnectionStrings:QuranDashboardDb' | sed 's/^[^=]*= //')"
+  if [[ -z "${CONN}" ]]; then
+    echo "ERROR: no SMOKE_DUMP_USER/PGPASSWORD and no ConnectionStrings:QuranDashboardDb user-secret found." >&2
+    exit 1
+  fi
+  SMOKE_DUMP_USER="$(grep -oP 'Username=\K[^;]+' <<<"${CONN}")"
+  PGPASSWORD="$(grep -oP 'Password=\K[^;]+' <<<"${CONN}")"
+  export PGPASSWORD
+fi
+USER="${SMOKE_DUMP_USER}"
+
+run_sql() {
+  psql -h "${HOST}" -p "${PORT}" -U "${USER}" -d "${DATABASE}" -tA -c "$1"
+}
+
+echo "Preflight against ${HOST}:${PORT}/${DATABASE} ..."
+
+LATEST_REPO_MIGRATION="$(ls "${MIGRATIONS_DIR}"/*.cs | grep -v 'Designer\.cs$' | grep -v 'ModelSnapshot\.cs$' \
+  | xargs -n1 basename | sed 's/\.cs$//' | sort | tail -1)"
+LATEST_DB_MIGRATION="$(run_sql 'SELECT "MigrationId" FROM "__EFMigrationsHistory" ORDER BY "MigrationId" DESC LIMIT 1;')"
+if [[ "${LATEST_DB_MIGRATION}" != "${LATEST_REPO_MIGRATION}" ]]; then
+  echo "ERROR: DB migration '${LATEST_DB_MIGRATION}' does not match repo head '${LATEST_REPO_MIGRATION}'. Migrate first." >&2
+  exit 1
+fi
+
+SURAH_COUNT="$(run_sql 'SELECT count(*) FROM quran_surahs;')"
+AYAH_COUNT="$(run_sql 'SELECT count(*) FROM quran_ayahs;')"
+if [[ "${SURAH_COUNT}" != "114" || "${AYAH_COUNT}" != "6236" ]]; then
+  echo "ERROR: canonical invariants violated (quran_surahs=${SURAH_COUNT}, quran_ayahs=${AYAH_COUNT}); refusing to dump." >&2
+  exit 1
+fi
+
+mapfile -t TABLES < <(run_sql "SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename LIKE 'quran\\_%' ORDER BY tablename;")
+if [[ "${#TABLES[@]}" -eq 0 ]]; then
+  echo "ERROR: no quran_* tables found." >&2
+  exit 1
+fi
+
+mkdir -p "${OUT_DIR}"
+TABLE_ARGS=()
+for table in "${TABLES[@]}"; do
+  TABLE_ARGS+=("--table=public.${table}")
+done
+
+echo "Dumping ${#TABLES[@]} quran_* tables ..."
+START_SECONDS=${SECONDS}
+pg_dump -h "${HOST}" -p "${PORT}" -U "${USER}" -d "${DATABASE}" \
+  --data-only --format=custom --no-owner "${TABLE_ARGS[@]}" --file "${DUMP_FILE}"
+DUMP_SECONDS=$((SECONDS - START_SECONDS))
+
+SHA256="$(sha256sum "${DUMP_FILE}" | cut -d' ' -f1)"
+
+COUNTS_JSON="{}"
+for table in "${TABLES[@]}"; do
+  COUNT="$(run_sql "SELECT count(*) FROM ${table};")"
+  COUNTS_JSON="$(jq --arg t "${table}" --argjson c "${COUNT}" '. + {($t): $c}' <<<"${COUNTS_JSON}")"
+done
+
+jq -n \
+  --arg name "quran-canonical" \
+  --arg createdUtc "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+  --arg migrationId "${LATEST_DB_MIGRATION}" \
+  --arg dumpSha256 "${SHA256}" \
+  --argjson tables "${COUNTS_JSON}" \
+  '{name: $name, createdUtc: $createdUtc, migrationId: $migrationId, dumpSha256: $dumpSha256, tables: $tables}' \
+  > "${MANIFEST_FILE}"
+
+echo "Dump:     ${DUMP_FILE} ($(du -h "${DUMP_FILE}" | cut -f1), ${DUMP_SECONDS}s)"
+echo "Manifest: ${MANIFEST_FILE} (sha256 ${SHA256})"
