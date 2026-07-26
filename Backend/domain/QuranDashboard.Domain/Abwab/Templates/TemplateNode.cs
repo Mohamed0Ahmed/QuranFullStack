@@ -27,6 +27,4 @@ public sealed class TemplateNode : IAbwabAuditable
     public DateTimeOffset? DeletedAtUtc { get; set; }
 
     public uint Version { get; set; }
-
-    public bool IsRoot => ParentTemplateNodeId is null;
 }

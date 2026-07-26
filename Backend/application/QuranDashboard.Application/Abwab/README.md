@@ -6,7 +6,7 @@
 Use-case handlers implementing `IAbwabCoreReadPort`/`IAbwabCoreWritePort`
 (`Application.Abstractions/Abwab/Core/`). Manual protection (resolver + apply/lift/preset writers)
 has its own README — `Protection/README.md` — since it is the larger of the two US2/US3 concerns;
-this file covers Sections, Categories, and Tree.
+this file covers Sections, Categories, Tree, and `030`'s Templates and Relationships.
 
 ## `Tree/`
 
@@ -168,4 +168,6 @@ this file covers Sections, Categories, and Tree.
 - Manual protection resolver + writers: `Protection/README.md`.
 - API endpoints calling these handlers: `Api/Abwab/README.md`.
 - Contracts: `specs/029-abwab-core/contracts/sections-api.md`, `categories-api.md`,
-  `tree-read-contract.md`.
+  `tree-read-contract.md`; `specs/030-abwab-relationships-templates/contracts/relationships-api.md`,
+  `relationship-dormancy-contract.md`, `templates-api.md`, `template-application-contract.md`,
+  `audit-render-contract.md`.

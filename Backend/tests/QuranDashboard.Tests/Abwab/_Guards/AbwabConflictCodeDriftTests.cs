@@ -108,15 +108,15 @@ public sealed class AbwabConflictCodeDriftTests
     {
         var declared = DeclaredAbwabConflictCodesByName();
 
-        var expected = NewlyDeclaredCodesByConstantName
-            .Where(pair => declared.ContainsKey(pair.Key))
-            .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
+        declared.Keys.Should().Contain(NewlyDeclaredCodesByConstantName.Keys,
+            "030 declares each of these AbwabConflictCodes constants — deleting or renaming one must fail here "
+            + "rather than silently dropping it from the comparison below");
 
-        var actual = expected.Keys.ToDictionary(name => name, name => declared[name], StringComparer.Ordinal);
+        var actual = NewlyDeclaredCodesByConstantName.Keys
+            .ToDictionary(name => name, name => declared[name], StringComparer.Ordinal);
 
-        actual.Should().BeEquivalentTo(expected,
-            "each declared AbwabConflictCodes constant among the four new 030 codes must equal its exact frozen "
-            + "§11 string, never renamed/remapped (vacuous per-name until T027/T062 declare it)");
+        actual.Should().BeEquivalentTo(NewlyDeclaredCodesByConstantName,
+            "each of the four new 030 codes must equal its exact frozen §11 string, never renamed/remapped");
     }
 
     [Fact]

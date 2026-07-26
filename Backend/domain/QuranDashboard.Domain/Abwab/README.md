@@ -99,4 +99,7 @@ that kernel) — every entity below is `IAbwabAuditable` and only ever mutates t
   `Infrastructure/Abwab/Restore/README.md`.
 - API surface: `Api/Abwab/README.md`.
 - Contracts: `specs/029-abwab-core/contracts/` (`tree-read-contract.md`, `sections-api.md`,
-  `categories-api.md`, `manual-protection-contract.md`, `restore-adapters-contract.md`).
+  `categories-api.md`, `manual-protection-contract.md`, `restore-adapters-contract.md`) and
+  `specs/030-abwab-relationships-templates/contracts/` (`relationships-api.md`,
+  `relationship-dormancy-contract.md`, `templates-api.md`, `template-application-contract.md`,
+  `restore-adapters-contract.md`).

@@ -2,30 +2,6 @@ using QuranDashboard.Domain.Abwab.Templates;
 
 namespace QuranDashboard.Application.Abwab.Templates;
 
-// §6.3 payload types. Template CRUD is rendered in the SEPARATE template-history view and produces
-// no main product-audit row, so its action strings all carry the history prefix; only application is
-// main-log eligible.
-public static class TemplateAuditActions
-{
-    public const string HistoryPrefix = "template.history.";
-
-    public const string Created = HistoryPrefix + "created";
-    public const string Edited = HistoryPrefix + "edited";
-    public const string Deleted = HistoryPrefix + "deleted";
-    public const string Restored = HistoryPrefix + "restored";
-    public const string NodeAdded = HistoryPrefix + "node_added";
-    public const string NodeEdited = HistoryPrefix + "node_edited";
-    public const string NodeReparented = HistoryPrefix + "node_reparented";
-    public const string NodesReordered = HistoryPrefix + "nodes_reordered";
-    public const string NodeRemoved = HistoryPrefix + "node_removed";
-    public const string AliasAdded = HistoryPrefix + "alias_added";
-    public const string AliasEdited = HistoryPrefix + "alias_edited";
-    public const string AliasRemoved = HistoryPrefix + "alias_removed";
-    public const string AliasRestored = HistoryPrefix + "alias_restored";
-
-    public const string Applied = "template.applied";
-}
-
 public sealed record TemplateNodeAuditView(
     Guid TemplateNodeId,
     Guid? ParentTemplateNodeId,

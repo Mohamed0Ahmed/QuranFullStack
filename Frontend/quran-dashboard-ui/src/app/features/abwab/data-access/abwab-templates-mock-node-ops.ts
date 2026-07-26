@@ -26,6 +26,16 @@ export function addNode(
   assertGeneration(state, request.expectedTimelineGeneration);
   const template = requireActiveTemplate(state, doorTemplateId, request.expectedTemplateRevision);
 
+  // Mirrors the writer, which resolves the destination only within THIS template's tracked nodes: a
+  // missing, soft-deleted, or foreign-template parent would leave the new node unreachable. Diverging
+  // here would let the mock accept what the server rejects.
+  if (request.parentTemplateNodeId) {
+    const parent = state.nodes.get(request.parentTemplateNodeId);
+    if (!parent || parent.isDeleted || parent.doorTemplateId !== doorTemplateId) {
+      throw new AbwabConflictError('abwab.row_stale');
+    }
+  }
+
   const templateNodeId = idFactory();
   state.nodes.set(templateNodeId, {
     templateNodeId,

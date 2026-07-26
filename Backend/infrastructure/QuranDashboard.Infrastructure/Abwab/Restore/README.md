@@ -86,3 +86,15 @@ soft-deleted rows, aggregate soft-delete state, cyclic-restore rejection) and **
 together with the **application-event interpreter** and its verified reuse of the `029` Category
 adapter. `030` therefore registers **exactly two** new adapters — Relationship and DoorTemplate — and
 the interpreter registers none.
+
+**`030` Polish (T077) — the §8 registry gate is final.** `RestoreRegistryTests.cs` now asserts the
+DI-registered set is exactly `{Section, Category, ManualProtection, Relationship, DoorTemplate}` — one
+equality assertion that fails on a missing registration, an extra one, or a duplicate persisted type —
+plus explicit failing cases for every duplicate shape §8 names: a second "template-created category"
+adapter, a standalone `TemplateNode` or `TemplateNodeSearchAlias` adapter, a relationship-endpoint
+adapter, a standalone `Order` adapter, and the application-event interpreter registered as a
+descriptor. The interpreter's own gate is two-sided: it must resolve as the single
+`IAbwabRestoreEventInterpreter`, and `TemplateApplicationEventInterpreter` must not even be assignable
+to `IAbwabRestoreAdapterDescriptor`, so a mistaken registration cannot compile its way into the
+registry. **Both `030` adapters and the interpreter are accepted for `033`; the acceptance handoff is
+recorded in `Backend/report/feature-030-abwab-relationships-templates/001-completion-validation-report.md`.**

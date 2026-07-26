@@ -1,4 +1,5 @@
 using QuranDashboard.Application.Abstractions.Abwab.Restore;
+using QuranDashboard.Application.Abstractions.Abwab.Templates;
 
 namespace QuranDashboard.Infrastructure.Abwab.Restore;
 
@@ -9,7 +10,7 @@ namespace QuranDashboard.Infrastructure.Abwab.Restore;
 public sealed class TemplateApplicationEventInterpreter(
     IAbwabRestoreAdapter<CategoryAggregate, CategoryRestoreSnapshot> categoryAdapter) : IAbwabRestoreEventInterpreter
 {
-    public const string Kind = "template.applied";
+    public const string Kind = TemplateAuditActions.Applied;
 
     public const int Schema = 1;
 

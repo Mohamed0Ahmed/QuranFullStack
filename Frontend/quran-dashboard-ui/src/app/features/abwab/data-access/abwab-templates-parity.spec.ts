@@ -120,6 +120,66 @@ const conflictScenarios: readonly ConflictScenario[] = [
     httpPath: '/nodes/template-entity-2',
   },
   {
+    code: 'abwab.row_stale',
+    note: 'adding a node under a soft-deleted parent',
+    mock: async (port) => {
+      const { doorTemplateId, templateNodeId } = await seedTemplateWithRoot(port);
+      await port.removeNode(templateNodeId, {
+        expectedVersion: 1,
+        expectedTemplateRevision: 1,
+        expectedTimelineGeneration: 1,
+      });
+      return port.addNode(doorTemplateId, {
+        parentTemplateNodeId: templateNodeId,
+        name: 'ابن يتيم',
+        representativeQuranExcerpt: null,
+        description: null,
+        expectedTemplateRevision: 2,
+        expectedTimelineGeneration: 1,
+      });
+    },
+    http: (port) =>
+      port.addNode('template-entity-1', {
+        parentTemplateNodeId: 'template-entity-2',
+        name: 'ابن يتيم',
+        representativeQuranExcerpt: null,
+        description: null,
+        expectedTemplateRevision: 2,
+        expectedTimelineGeneration: 1,
+      }),
+    httpPath: '/template-entity-1/nodes',
+  },
+  {
+    code: 'abwab.row_stale',
+    note: "adding a node under a parent belonging to a DIFFERENT template",
+    mock: async (port) => {
+      const { templateNodeId } = await seedTemplateWithRoot(port);
+      const { doorTemplateId: otherTemplateId } = await port.addTemplate({
+        name: 'قالب آخر',
+        description: null,
+        expectedTimelineGeneration: 1,
+      });
+      return port.addNode(otherTemplateId, {
+        parentTemplateNodeId: templateNodeId,
+        name: 'ابن غريب',
+        representativeQuranExcerpt: null,
+        description: null,
+        expectedTemplateRevision: 0,
+        expectedTimelineGeneration: 1,
+      });
+    },
+    http: (port) =>
+      port.addNode('template-entity-3', {
+        parentTemplateNodeId: 'template-entity-2',
+        name: 'ابن غريب',
+        representativeQuranExcerpt: null,
+        description: null,
+        expectedTemplateRevision: 0,
+        expectedTimelineGeneration: 1,
+      }),
+    httpPath: '/template-entity-3/nodes',
+  },
+  {
     code: 'abwab.timeline_generation_stale',
     note: 'any write carrying a stale generation',
     mock: (port) => port.addTemplate({ name: 'قالب', description: null, expectedTimelineGeneration: 99 }),

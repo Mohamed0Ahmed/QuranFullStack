@@ -1,5 +1,6 @@
 using QuranDashboard.Application.Abstractions.Abwab;
 using QuranDashboard.Application.Abstractions.Abwab.Restore;
+using QuranDashboard.Application.Abstractions.Abwab.Templates;
 using QuranDashboard.Domain.Abwab.Templates;
 
 namespace QuranDashboard.Infrastructure.Abwab.Restore;
@@ -53,27 +54,16 @@ public sealed class DoorTemplateRestoreAdapter : IAbwabRestoreAdapter<DoorTempla
     }
 
     // A reconstruction that would produce a cyclic template fails rather than persisting an invalid
-    // structure — §7.4's "no cyclic template can be saved, applied, rendered, or restored".
+    // structure — §7.4's "no cyclic template can be saved, applied, rendered, or restored" — and it
+    // fails with the same §11 code the writer raises, so restore and write are one channel.
     private static void GuardAcyclic(IReadOnlyList<TemplateNodeRestoreSnapshot> nodes)
     {
-        var parentById = nodes.ToDictionary(node => node.TemplateNodeId, node => node.ParentTemplateNodeId);
-
-        foreach (var startId in parentById.Keys)
+        if (TemplateParentChainRules.FindCycleNodeId(
+                nodes.Select(node => (node.TemplateNodeId, node.ParentTemplateNodeId))) is { } cycleNodeId)
         {
-            var visited = new HashSet<Guid>();
-            var currentId = (Guid?)startId;
-
-            while (currentId is { } id && parentById.TryGetValue(id, out var parentId))
-            {
-                if (!visited.Add(id))
-                {
-                    throw new AbwabWriteConflictException(
-                        AbwabConflictCodes.TemplateCycle,
-                        $"The template snapshot forms a parent cycle at node {id}; a cyclic template can never be restored.");
-                }
-
-                currentId = parentId;
-            }
+            throw new AbwabWriteConflictException(
+                AbwabConflictCodes.TemplateCycle,
+                $"The template snapshot forms a parent cycle at node {cycleNodeId}; a cyclic template can never be restored.");
         }
     }
 

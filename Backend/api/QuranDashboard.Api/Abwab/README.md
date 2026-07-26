@@ -60,10 +60,28 @@ same fixed set from `specs/029-abwab-core/tasks.md` §5 / `contracts/`
 invent, rename, or remap a code; `Backend/tests/QuranDashboard.Tests/Abwab/_Support/ConflictCodeParityTests.cs`
 asserts this mapping identically across the core, the HTTP layer, and the contract fixture list.
 
+## Contract gates (CI)
+
+- **`Backend/scripts/check-api-contract`** regenerates the OpenAPI spec, the frontend API models, and
+  the static reference, then fails on any diff against the committed output. It is the authoritative
+  generation/drift gate for these controllers — run it after changing any endpoint, route, or
+  request/response contract here and commit the regenerated files in the same change.
+- **`Tests/Abwab/Ci/ContractDriftTests.cs`** keeps the committed spec's endpoint set equal to the live
+  `ApiExplorer` surface.
+- **`Tests/Abwab/Ci/AbwabConflictCodeContractParityTests.cs`** closes the same loop for `abwab.*`
+  codes across all five layers: both `030` endpoint families are present in the live surface (which,
+  with the whole-surface equality above, puts them in the **generated contract**); every code these
+  controllers can return is in the frontend's shared union (`abwab-conflict.ts`) with a message whose
+  **value** is asserted non-blank and Arabic; that union contains nothing the backend never emits; and
+  no file under `features/abwab` — mock, HTTP adapter, facade, or UI — names an `abwab.*` code outside
+  it. Both files share one `ApiContractSources` support type.
+
 ## Related
 
 - Application handlers: `Application/Abwab/README.md`.
 - Ports/commands: `Application.Abstractions/Abwab/README.md`.
 - Contracts: `specs/029-abwab-core/contracts/sections-api.md`, `categories-api.md`,
-  `manual-protection-contract.md`, `tree-read-contract.md`.
+  `manual-protection-contract.md`, `tree-read-contract.md`;
+  `specs/030-abwab-relationships-templates/contracts/relationships-api.md`, `templates-api.md`,
+  `template-application-contract.md`.
 - Permission policies: `Domain/Security/Permissions/PermissionCatalogue.cs`.

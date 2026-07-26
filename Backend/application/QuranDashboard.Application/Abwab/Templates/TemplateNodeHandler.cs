@@ -121,8 +121,9 @@ public sealed class TemplateNodeHandler(
                 var siblings = ActiveSiblings(working, command.ParentTemplateNodeId).ToList();
                 var requested = command.OrderedTemplateNodeIds;
 
-                // A duplicated id is malformed input that no retry can fix, so it fails as the
-                // framework HTTP 400 rather than an abwab.* conflict telling the operator to refresh.
+                // A duplicated id is malformed input that no retry can fix, so it is never an abwab.*
+                // conflict telling the operator to refresh. The controller's request contract turns it
+                // into the framework 400; this is the backstop for callers reaching the port directly.
                 if (!TemplateNodeOrderRules.IsWellFormedOrder(requested))
                 {
                     throw new ArgumentException(

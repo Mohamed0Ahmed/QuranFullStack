@@ -1,4 +1,5 @@
 using QuranDashboard.Application.Abstractions.Abwab;
+using QuranDashboard.Application.Abstractions.Abwab.Templates;
 using QuranDashboard.Domain.Abwab.Templates;
 
 namespace QuranDashboard.Application.Abwab.Templates;
@@ -67,22 +68,10 @@ internal static class TemplateTreeGuards
 
     public static void GuardAcyclic(IReadOnlyList<TemplateNode> templateNodes)
     {
-        var parentById = templateNodes.ToDictionary(node => node.TemplateNodeId, node => node.ParentTemplateNodeId);
-
-        foreach (var startId in parentById.Keys)
+        if (TemplateParentChainRules.FindCycleNodeId(
+                templateNodes.Select(node => (node.TemplateNodeId, node.ParentTemplateNodeId))) is not null)
         {
-            var visited = new HashSet<Guid>();
-            var currentId = (Guid?)startId;
-
-            while (currentId is { } id && parentById.TryGetValue(id, out var parentId))
-            {
-                if (!visited.Add(id))
-                {
-                    throw Cycle();
-                }
-
-                currentId = parentId;
-            }
+            throw Cycle();
         }
     }
 

@@ -38,6 +38,13 @@ public-browse posture, composite-read visibility is in-page and cosmetic, see be
 - **`abwab-http.adapter.ts`** (`AbwabHttpAdapter`) — maps the backend's exact `abwab.*` 409 codes
   (`AbwabConflictResponses.cs`) to a typed `AbwabConflictError` (`abwab-conflict.ts`), with the same
   "never fabricates a revision/generation on a mutation" rule.
+- **`abwab-conflict.ts` is the single shared code union for the whole feature.** Mocks, HTTP adapters,
+  facades, and UI all branch on it, and the message map is what the UI actually renders. It is
+  CI-enforced from the backend side by
+  `Backend/tests/QuranDashboard.Tests/Abwab/Ci/AbwabConflictCodeContractParityTests.cs`: every code the
+  backend can return is in the union **with** an Arabic message, the union holds nothing the backend
+  never emits, and **no** `.ts`/`.html` file under `features/abwab` may name an `abwab.*` code outside
+  it. Adding a code means adding it to the backend catalogue and to this file — never to a component.
 - **Mock ↔ HTTP parity** (`abwab-core-parity.spec.ts`) is a unit suite that drives the same
   scenarios through both implementations and asserts identical result shapes and identical
   `abwab.*` codes — this is what keeps the mock a safe stand-in for the backend during development.
@@ -322,6 +329,9 @@ Fixture data in tests is synthetic Arabic only (source-safe) — never real Qura
 - Backend: `Backend/api/QuranDashboard.Api/Abwab/README.md`,
   `Backend/application/QuranDashboard.Application/Abwab/README.md`.
 - Contracts: `specs/029-abwab-core/contracts/tree-read-contract.md`,
-  `audit-render-contract.md`, `manual-protection-contract.md`.
+  `audit-render-contract.md`, `manual-protection-contract.md`;
+  `specs/030-abwab-relationships-templates/contracts/relationships-api.md`, `templates-api.md`,
+  `template-application-contract.md`, `audit-render-contract.md`.
 - Reused `028` primitives: `../../core/README.md` (§14.1 cache/foundation), `../../shared/README.md`.
-- Playwright source suite: `e2e/abwab/core-slice.spec.ts`.
+- Playwright source suites: `e2e/abwab/core-slice.spec.ts`, `relationships-slice.spec.ts`,
+  `templates-slice.spec.ts`.

@@ -151,11 +151,17 @@ public sealed class NoCreateFromRealDoorTests
             .Where(type => type.IsClass && !type.IsAbstract && type.Name.EndsWith("Handler", StringComparison.Ordinal))
             .Where(type => type != typeof(TemplateApplicationHandler))];
 
-    private static IEnumerable<string> TemplateSourceFiles() =>
-        TemplateSourceRoots
-            .Select(root => Path.Combine(BackendRoot(), root))
-            .Where(Directory.Exists)
-            .SelectMany(root => Directory.EnumerateFiles(root, "*.cs", SearchOption.AllDirectories));
+    private static IEnumerable<string> TemplateSourceFiles()
+    {
+        var resolved = TemplateSourceRoots.Select(root => Path.Combine(BackendRoot(), root)).ToList();
+
+        // A renamed root must fail loudly: silently skipping it would leave this absence gate scanning
+        // less than it claims while the other roots keep it green.
+        resolved.Where(root => !Directory.Exists(root)).Should().BeEmpty(
+            "every declared template source root must exist so this gate actually visits it");
+
+        return resolved.SelectMany(root => Directory.EnumerateFiles(root, "*.cs", SearchOption.AllDirectories));
+    }
 
     private static string BackendRoot()
     {

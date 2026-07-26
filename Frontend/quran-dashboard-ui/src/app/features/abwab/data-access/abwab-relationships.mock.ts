@@ -239,7 +239,7 @@ export class AbwabRelationshipsMock implements AbwabRelationshipsPort {
             row.sourceCategoryId !== null &&
             frontier.includes(row.sourceCategoryId),
         )
-        .map((row) => row.targetCategoryId!)
+        .map((row) => row.targetCategoryId)
         .filter((id): id is string => id !== null);
 
       if (reached.includes(broader)) {

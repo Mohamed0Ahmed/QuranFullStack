@@ -9,8 +9,6 @@ public sealed class EfAbwabTemplateReadPort(QuranDashboardDbContext db, IServerC
 {
     public const int SchemaVersion = 1;
 
-    private const string TemplateHistoryActionPrefix = "template.history.";
-
     public async Task<DoorTemplateListDto> GetTemplatesAsync(bool includeDeleted, CancellationToken cancellationToken)
     {
         var templates = await db.AbwabDoorTemplates
@@ -87,7 +85,7 @@ public sealed class EfAbwabTemplateReadPort(QuranDashboardDbContext db, IServerC
         // query over the same unindexable predicate would double the scan cost to learn one bit.
         var page = await db.AbwabAuditEvents
             .AsNoTracking()
-            .Where(e => e.Payload.Contains(TemplateHistoryActionPrefix) && e.Payload.Contains(doorTemplateId.ToString()))
+            .Where(e => e.Payload.Contains(TemplateAuditActions.HistoryPrefix) && e.Payload.Contains(doorTemplateId.ToString()))
             .Join(
                 db.AbwabChangeSets.AsNoTracking(),
                 auditEvent => auditEvent.ChangeSetId,

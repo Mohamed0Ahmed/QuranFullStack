@@ -1,6 +1,7 @@
 # Abwab contracts (application abstractions) — `029` core, `030` relationships + templates
 
-**Layer:** Application.Abstractions · **Feature:** `029-abwab-core` · **HOW rules:**
+**Layer:** Application.Abstractions · **Features:** `029-abwab-core`,
+`030-abwab-relationships-templates` · **HOW rules:**
 `Backend/.architecture/CLEAN_ARCHITECTURE.md`
 
 Ports, commands, and DTOs the `029` core vertical is built from. This project has no
@@ -78,6 +79,20 @@ under `Core/` and `Restore/`.
   `TemplateNodeHandler` re-checks it because the write port is reachable without the controller. Two
   enforcement points, one rule: a repeated id would otherwise satisfy the sibling-count check while
   leaving a real sibling un-reordered.
+- **`TemplateAuditActions`** — the audited action strings for the whole template aggregate: the
+  `template.history.` prefix and its thirteen CRUD actions, plus the main-log-eligible
+  `template.applied`. They live here, not beside the writer, because **three** layers match on them —
+  the Application writer stamps them, the Infrastructure history read port filters on the prefix, and
+  the Infrastructure restore interpreter keys on the applied kind — and Infrastructure cannot
+  reference Application. A private copy on either side would drift silently: a changed prefix empties
+  every history read, a changed applied kind breaks application inversion, and neither fails to
+  compile.
+- **`TemplateParentChainRules`** — the single §7.4 acyclicity walk (`FindCycleNodeId`), shared by the
+  Application node writer (`TemplateTreeGuards.GuardAcyclic`) and the Infrastructure
+  `DoorTemplateRestoreAdapter`. Same "two enforcement points, one rule" reason as
+  `TemplateNodeOrderRules`: §7.4 requires that no cyclic template can be **saved, applied, rendered,
+  or restored**, so a walk that drifted on either side would let one path persist a structure the
+  other rejects. Each caller still raises its own message under the same `abwab.template_cycle` code.
 - **`IDoorTemplateStore` / `ITemplateNodeStore` / `ITemplateNodeAliasStore`** — the narrow
   persistence seams the handlers use instead of EF. `FindTrackedForTemplateAsync` returns the whole
   template's nodes in one in-transaction read, which is what lets reparent/reorder validate the

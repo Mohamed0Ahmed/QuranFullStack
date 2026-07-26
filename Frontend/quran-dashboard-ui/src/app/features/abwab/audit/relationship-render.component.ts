@@ -1,7 +1,7 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
-import { RELATIONSHIP_TYPE_LABELS } from '../data-access/relationship-type-labels';
+import { RELATIONSHIP_TYPE_LABELS, relationshipEndpointLabels } from '../data-access/relationship-type-labels';
 import {
   RelationshipAction,
   RelationshipEndpointRenderView,
@@ -88,10 +88,7 @@ export class RelationshipRenderComponent {
   });
 
   protected directionLabel(state: RelationshipStateRenderView, position: 'from' | 'to'): string {
-    if (!state.isDirectional) {
-      return 'الطرف';
-    }
-    return position === 'from' ? 'الأعم' : 'الأخص';
+    return relationshipEndpointLabels(state.isDirectional)[position];
   }
 
   private isChanged(field: 'type' | 'from' | 'to'): boolean {

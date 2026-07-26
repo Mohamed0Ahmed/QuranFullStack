@@ -8,99 +8,98 @@ public sealed class RestoreRegistryTests
     internal static readonly string[] ExpectedPersistedTypes = ["Section", "Category", "ManualProtection", "Relationship", "DoorTemplate"];
 
     [Fact]
-    public void ExactlyTheExpectedAdaptersAreRegistered()
+    public void RegisteredPersistedTypes_AreExactlyTheExpectedSet_NoMissingNoDuplicate()
     {
-        var services = new ServiceCollection();
-        services.AddAbwabRestoreAdapters();
-        using var provider = services.BuildServiceProvider();
+        var persistedTypes = ResolveRegisteredDescriptors().Select(d => d.PersistedType).ToList();
 
-        var descriptors = provider.GetServices<IAbwabRestoreAdapterDescriptor>().ToList();
-
-        descriptors.Should().HaveCount(ExpectedPersistedTypes.Length);
-    }
-
-    [Fact]
-    public void RegisteredPersistedTypes_MatchExactlyThePersistedAbwabTypes()
-    {
-        var services = new ServiceCollection();
-        services.AddAbwabRestoreAdapters();
-        using var provider = services.BuildServiceProvider();
-
-        var persistedTypes = provider.GetServices<IAbwabRestoreAdapterDescriptor>().Select(d => d.PersistedType).ToList();
-
-        persistedTypes.Should().BeEquivalentTo(ExpectedPersistedTypes);
-    }
-
-    [Fact]
-    public void EveryRegisteredAdapter_HasAUniquePersistedType_NoDuplicateRegistration()
-    {
-        var services = new ServiceCollection();
-        services.AddAbwabRestoreAdapters();
-        using var provider = services.BuildServiceProvider();
-
-        var descriptors = provider.GetServices<IAbwabRestoreAdapterDescriptor>().ToList();
-
-        descriptors.Select(d => d.PersistedType).Should().OnlyHaveUniqueItems();
-    }
-
-    [Fact]
-    public void OrderIsNeverARegisteredPersistedType_ItIsAFacetOfSectionAndCategory()
-    {
-        var services = new ServiceCollection();
-        services.AddAbwabRestoreAdapters();
-        using var provider = services.BuildServiceProvider();
-
-        var persistedTypes = provider.GetServices<IAbwabRestoreAdapterDescriptor>().Select(d => d.PersistedType).ToList();
-
-        persistedTypes.Should().NotContain("Order");
-    }
-
-    [Fact]
-    public void ValidateRegistry_FailsCi_WhenAStandaloneOrderAdapterIsAdded()
-    {
-        var registered = new List<IAbwabRestoreAdapterDescriptor>
-        {
-            new FakeDescriptor("Section"),
-            new FakeDescriptor("Category"),
-            new FakeDescriptor("ManualProtection"),
-            new FakeDescriptor("Relationship"),
-            new FakeDescriptor("DoorTemplate"),
-            new FakeDescriptor("Order"),
-        };
-
-        var isValid = ValidateRegistry(registered, out var reason);
-
-        isValid.Should().BeFalse();
-        reason.Should().Contain("Order");
-    }
-
-    [Fact]
-    public void ValidateRegistry_FailsCi_WhenARequiredPersistedTypeIsMissing()
-    {
-        var registered = new List<IAbwabRestoreAdapterDescriptor>
-        {
-            new FakeDescriptor("Section"),
-            new FakeDescriptor("Category"),
-            new FakeDescriptor("ManualProtection"),
-        };
-
-        var isValid = ValidateRegistry(registered, out var reason);
-
-        isValid.Should().BeFalse();
-        reason.Should().Contain("Relationship");
+        persistedTypes.Should().BeEquivalentTo(ExpectedPersistedTypes,
+            "§8 keys the registry by persisted type: the set must be exact, with no missing registration, "
+            + "no duplicate, and no standalone facet adapter (Order, TemplateNode, TemplateNodeSearchAlias)");
     }
 
     [Fact]
     public void ValidateRegistry_Passes_ForTheRealAdapterRegistration()
     {
-        var services = new ServiceCollection();
-        services.AddAbwabRestoreAdapters();
-        using var provider = services.BuildServiceProvider();
-        var registered = provider.GetServices<IAbwabRestoreAdapterDescriptor>().ToList();
+        var isValid = ValidateRegistry(ResolveRegisteredDescriptors(), out var reason);
+
+        isValid.Should().BeTrue(reason);
+    }
+
+    [Theory]
+    [InlineData("Order", "a standalone Order adapter — Order is a facet of Section and Category")]
+    [InlineData("TemplateNode", "a standalone TemplateNode adapter — a facet of the one DoorTemplate aggregate adapter")]
+    [InlineData("TemplateNodeSearchAlias", "a standalone alias adapter — a facet of the one DoorTemplate aggregate adapter")]
+    [InlineData("RelationshipEndpoint", "a relationship-endpoint adapter — endpoints are ordinary Category rows")]
+    [InlineData(nameof(TemplateApplicationEventInterpreter), "the application-event interpreter registered as an adapter descriptor")]
+    public void ValidateRegistry_FailsCi_WhenAnExtraAdapterIsRegistered(string extraPersistedType, string why)
+    {
+        var registered = ExpectedPersistedTypes
+            .Append(extraPersistedType)
+            .Select(type => new FakeDescriptor(type))
+            .ToList<IAbwabRestoreAdapterDescriptor>();
 
         var isValid = ValidateRegistry(registered, out var reason);
 
-        isValid.Should().BeTrue(reason);
+        isValid.Should().BeFalse(why);
+        reason.Should().Contain(extraPersistedType);
+    }
+
+    [Fact]
+    public void ValidateRegistry_FailsCi_WhenASecondTemplateCreatedCategoryAdapterIsRegistered()
+    {
+        var registered = ExpectedPersistedTypes
+            .Append("Category")
+            .Select(type => new FakeDescriptor(type))
+            .ToList<IAbwabRestoreAdapterDescriptor>();
+
+        var isValid = ValidateRegistry(registered, out var reason);
+
+        isValid.Should().BeFalse(
+            "template application creates ordinary Category rows, so a second \"template-created category\" "
+            + "adapter is a §8 duplicate");
+        reason.Should().Contain("Category");
+    }
+
+    [Theory]
+    [InlineData("Section")]
+    [InlineData("Category")]
+    [InlineData("ManualProtection")]
+    [InlineData("Relationship")]
+    [InlineData("DoorTemplate")]
+    public void ValidateRegistry_FailsCi_WhenARequiredPersistedTypeIsMissing(string missingPersistedType)
+    {
+        var registered = ExpectedPersistedTypes
+            .Where(type => type != missingPersistedType)
+            .Select(type => new FakeDescriptor(type))
+            .ToList<IAbwabRestoreAdapterDescriptor>();
+
+        var isValid = ValidateRegistry(registered, out var reason);
+
+        isValid.Should().BeFalse();
+        reason.Should().Contain(missingPersistedType);
+    }
+
+    [Fact]
+    public void TheApplicationEventInterpreter_IsRegisteredAsAnEventInterpreter_AndIsNotAnAdapterDescriptorAtAll()
+    {
+        var services = new ServiceCollection();
+        services.AddAbwabRestoreAdapters();
+        using var provider = services.BuildServiceProvider();
+
+        provider.GetServices<IAbwabRestoreEventInterpreter>()
+            .Should().ContainSingle().Which.Should().BeOfType<TemplateApplicationEventInterpreter>();
+        typeof(TemplateApplicationEventInterpreter).Should().NotBeAssignableTo<IAbwabRestoreAdapterDescriptor>(
+            "§8 forbids the interpreter from being an adapter at all — it delegates to the one 029 Category adapter, "
+            + "so it can never reach the registry even by a mistaken registration");
+    }
+
+    private static List<IAbwabRestoreAdapterDescriptor> ResolveRegisteredDescriptors()
+    {
+        var services = new ServiceCollection();
+        services.AddAbwabRestoreAdapters();
+        using var provider = services.BuildServiceProvider();
+
+        return [.. provider.GetServices<IAbwabRestoreAdapterDescriptor>()];
     }
 
     private static bool ValidateRegistry(IReadOnlyCollection<IAbwabRestoreAdapterDescriptor> registered, out string reason)
@@ -124,7 +123,7 @@ public sealed class RestoreRegistryTests
 
         if (extra.Count > 0)
         {
-            problems.Add($"unexpected/duplicate registration(s) (e.g. a standalone Order adapter): {string.Join(", ", extra)}");
+            problems.Add($"unexpected registration(s) — a standalone facet or interpreter adapter: {string.Join(", ", extra)}");
         }
 
         if (duplicates.Count > 0)
