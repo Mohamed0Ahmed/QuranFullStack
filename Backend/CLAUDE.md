@@ -13,6 +13,17 @@ Before adding or changing logging, exception handling, diagnostics, DataPipeline
 
 - `.architecture/LOGGING_GUIDELINES.md`
 
+## Testing Strategy
+
+Before selecting or running Backend tests, read:
+
+- `../TESTING_STRATEGY.md` (workspace root)
+
+Use the tier required by the changed scope. Do not run the full Backend suite
+or the slow Quran data-pipeline test families after every phase unless the
+strategy's triggers require them. Required verification must be fresh against
+the final working tree.
+
 ## Backend Local READMEs
 
 - Before touching a backend area, read the nearest `README.md` (e.g.

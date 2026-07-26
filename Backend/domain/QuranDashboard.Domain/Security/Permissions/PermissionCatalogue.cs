@@ -28,6 +28,19 @@ public static class PermissionCatalogue
     public const string ProtectionApply = "protection.apply";
     public const string ProtectionLift = "protection.lift";
 
+    public const string RelationshipView = "relationship.view";
+    public const string RelationshipAdd = "relationship.add";
+    public const string RelationshipEdit = "relationship.edit";
+    public const string RelationshipDelete = "relationship.delete";
+    public const string RelationshipRestore = "relationship.restore";
+
+    public const string TemplateView = "template.view";
+    public const string TemplateAdd = "template.add";
+    public const string TemplateEdit = "template.edit";
+    public const string TemplateDelete = "template.delete";
+    public const string TemplateRestore = "template.restore";
+    public const string TemplateApply = "template.apply";
+
     public static IReadOnlyList<PermissionCode> All { get; } =
     [
         new(AttributionView, systemOwnerOnly: false, dashboardAdminBaseline: true),
@@ -49,6 +62,17 @@ public static class PermissionCatalogue
         new(ProtectionView, systemOwnerOnly: false, dashboardAdminBaseline: false),
         new(ProtectionApply, systemOwnerOnly: false, dashboardAdminBaseline: false),
         new(ProtectionLift, systemOwnerOnly: false, dashboardAdminBaseline: false),
+        new(RelationshipView, systemOwnerOnly: false, dashboardAdminBaseline: false),
+        new(RelationshipAdd, systemOwnerOnly: false, dashboardAdminBaseline: false),
+        new(RelationshipEdit, systemOwnerOnly: false, dashboardAdminBaseline: false),
+        new(RelationshipDelete, systemOwnerOnly: false, dashboardAdminBaseline: false),
+        new(RelationshipRestore, systemOwnerOnly: false, dashboardAdminBaseline: false),
+        new(TemplateView, systemOwnerOnly: false, dashboardAdminBaseline: false),
+        new(TemplateAdd, systemOwnerOnly: false, dashboardAdminBaseline: false),
+        new(TemplateEdit, systemOwnerOnly: false, dashboardAdminBaseline: false),
+        new(TemplateDelete, systemOwnerOnly: false, dashboardAdminBaseline: false),
+        new(TemplateRestore, systemOwnerOnly: false, dashboardAdminBaseline: false),
+        new(TemplateApply, systemOwnerOnly: false, dashboardAdminBaseline: false),
     ];
 
     public static IReadOnlyList<string> Codes { get; } = All.Select(entry => entry.Code).ToList();

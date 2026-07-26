@@ -21,6 +21,10 @@ public sealed class ConflictCodeParityTests
         "abwab.manual_protection",
         "abwab.manual_protection_scope_conflict",
         "abwab.ordinary_protection",
+        "abwab.relationship_duplicate",
+        "abwab.relationship_cycle",
+        "abwab.template_cycle",
+        "abwab.template_revision_stale",
         "abwab.stabilization_active",
         "abwab.tree_revision_stale",
         "abwab.timeline_generation_stale",
@@ -61,6 +65,10 @@ public sealed class ConflictCodeParityTests
             AbwabConflictCodes.ManualProtection,
             AbwabConflictCodes.ManualProtectionScopeConflict,
             AbwabConflictCodes.OrdinaryProtection,
+            AbwabConflictCodes.RelationshipDuplicate,
+            AbwabConflictCodes.RelationshipCycle,
+            AbwabConflictCodes.TemplateCycle,
+            AbwabConflictCodes.TemplateRevisionStale,
             AbwabConflictCodes.RowStale,
             AbwabConflictCodes.TreeRevisionStale,
         };
@@ -108,15 +116,20 @@ public sealed class ConflictCodeParityTests
             .GetFields(BindingFlags.Public | BindingFlags.Static)
             .Where(f => f.FieldType == typeof(string))
             .Select(f => (string)f.GetValue(null)!)
-            .Where(code => code.StartsWith("abwab.category_") || code.StartsWith("abwab.section_") ||
-                code.StartsWith("abwab.manual_protection") || code.StartsWith("abwab.ordinary_protection") ||
-                code.StartsWith("abwab.tree_revision") || code == AbwabConflictCodes.PermanentDefaultSection ||
-                code == AbwabConflictCodes.RowStale)
+            .Where(IsDomainScopedCode)
             .ToList();
 
-        declaredValues.Should().BeEquivalentTo(ExpectedCodes.Where(c =>
-            c.StartsWith("abwab.category_") || c.StartsWith("abwab.section_") ||
-            c.StartsWith("abwab.manual_protection") || c.StartsWith("abwab.ordinary_protection") ||
-            c.StartsWith("abwab.tree_revision") || c == "abwab.permanent_default_section" || c == "abwab.row_stale"));
+        declaredValues.Should().BeEquivalentTo(ExpectedCodes.Where(IsDomainScopedCode));
     }
+
+    private static bool IsDomainScopedCode(string code) =>
+        code.StartsWith("abwab.category_", StringComparison.Ordinal) ||
+        code.StartsWith("abwab.section_", StringComparison.Ordinal) ||
+        code.StartsWith("abwab.manual_protection", StringComparison.Ordinal) ||
+        code.StartsWith("abwab.ordinary_protection", StringComparison.Ordinal) ||
+        code.StartsWith("abwab.relationship_", StringComparison.Ordinal) ||
+        code.StartsWith("abwab.template_", StringComparison.Ordinal) ||
+        code.StartsWith("abwab.tree_revision", StringComparison.Ordinal) ||
+        code == AbwabConflictCodes.PermanentDefaultSection ||
+        code == AbwabConflictCodes.RowStale;
 }

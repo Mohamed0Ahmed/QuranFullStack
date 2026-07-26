@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 
 import { environment } from '../../../../environments/environment';
@@ -26,7 +26,6 @@ import {
   ReorderSectionsRequest,
   SubtreeDeleteRequest,
 } from '../../../core/api/generated/models';
-import { AbwabConflictError, isAbwabConflictCode } from './abwab-conflict';
 import {
   AbwabCorePort,
   AddCategoryAliasResult,
@@ -34,8 +33,7 @@ import {
   AddSectionResult,
   SubtreeDeleteResult,
 } from './abwab-core.port';
-
-const UNEXPECTED_ERROR = 'حدث خطأ غير متوقع.';
+import { unwrapAbwabResponse } from './abwab-response-unwrap';
 
 @Injectable({ providedIn: 'root' })
 export class AbwabHttpAdapter implements AbwabCorePort {
@@ -119,53 +117,18 @@ export class AbwabHttpAdapter implements AbwabCorePort {
   }
 
   private async get<T>(path: string): Promise<T> {
-    return this.unwrap(firstValueFrom(this.http.get<ApiResponse<T>>(`${this.baseUrl}${path}`)));
+    return unwrapAbwabResponse(firstValueFrom(this.http.get<ApiResponse<T>>(`${this.baseUrl}${path}`)));
   }
 
   private async post<T>(path: string, body: unknown): Promise<T> {
-    return this.unwrap(firstValueFrom(this.http.post<ApiResponse<T>>(`${this.baseUrl}${path}`, body)));
+    return unwrapAbwabResponse(firstValueFrom(this.http.post<ApiResponse<T>>(`${this.baseUrl}${path}`, body)));
   }
 
   private async put<T>(path: string, body: unknown): Promise<T> {
-    return this.unwrap(firstValueFrom(this.http.put<ApiResponse<T>>(`${this.baseUrl}${path}`, body)));
+    return unwrapAbwabResponse(firstValueFrom(this.http.put<ApiResponse<T>>(`${this.baseUrl}${path}`, body)));
   }
 
   private async delete<T>(path: string, body: unknown): Promise<T> {
-    return this.unwrap(firstValueFrom(this.http.delete<ApiResponse<T>>(`${this.baseUrl}${path}`, { body })));
-  }
-
-  private async unwrap<T>(request: Promise<ApiResponse<T>>): Promise<T> {
-    let response: ApiResponse<T>;
-    try {
-      response = await request;
-    } catch (error) {
-      throw this.toDomainError(error);
-    }
-    if (!response.isSuccess) {
-      throw new Error(response.message ?? UNEXPECTED_ERROR);
-    }
-    return response.data as T;
-  }
-
-  private toDomainError(error: unknown): Error {
-    if (error instanceof HttpErrorResponse && error.status === 409) {
-      const code = this.readFirstErrorCode(error.error);
-      if (code && isAbwabConflictCode(code)) {
-        return new AbwabConflictError(code);
-      }
-    }
-    if (error instanceof HttpErrorResponse) {
-      const body = error.error as Partial<ApiResponse<unknown>> | undefined;
-      return new Error(body?.message ?? UNEXPECTED_ERROR);
-    }
-    return error instanceof Error ? error : new Error(UNEXPECTED_ERROR);
-  }
-
-  private readFirstErrorCode(body: unknown): string | null {
-    if (typeof body !== 'object' || body === null) {
-      return null;
-    }
-    const errors = (body as Partial<ApiResponse<unknown>>).errors;
-    return Array.isArray(errors) && typeof errors[0] === 'string' ? errors[0] : null;
+    return unwrapAbwabResponse(firstValueFrom(this.http.delete<ApiResponse<T>>(`${this.baseUrl}${path}`, { body })));
   }
 }

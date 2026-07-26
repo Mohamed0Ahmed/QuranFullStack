@@ -44,6 +44,7 @@ These live at the workspace root and apply across Backend + Frontend.
 | File | What it is for | Who/what reads it | When it matters |
 |------|----------------|-------------------|-----------------|
 | `CODING_PRINCIPLES.md` | General coding principles for the whole workspace: Clean Code, SOLID, DRY/KISS/YAGNI, separation of concerns, strong typing, focused changes, error handling, testing/verification, **Quranic Data Safety**, UI/product consistency, Definition of Done. Also points to the deeper `clean-code-guard` references and the `test-guard` skill. | Every agent/human before implementation; `engineering-review` (always reads it); `backend-structure-review` (always reads it). | All implementation and review work. |
+| `TESTING_STRATEGY.md` | Single source of truth for **test selection, verification depth, execution tiers (A–E), slow data-pipeline triggers, and the phase/milestone/PR/release gates**. Tier A focused per-phase, Tier B no-pipeline milestone regression, Tier C ordinary pre-PR, Tier D pipeline-triggered, Tier E release/canonical acceptance. | Every agent/human before selecting or running tests; `speckit-phase-loop` (final verification); `engineering-review` (verification sufficiency); `test-guard` (evidence tiers). | Whenever tests are selected, run, or verification evidence is judged. |
 | `PRODUCT.md` | Product strategy & context: register, users (Arabic-speaking admins/supervisors/teachers), product purpose (manage Quran research data, review ayah links, organize gates أبواب, publish), principles, anti-references. | Anyone doing user-facing/product or UI work. | Frontend/UX/product decisions and any backend change that affects user-facing behavior. |
 | `DESIGN.md` | Visual/design direction — the "Quiet Scriptorium" north star: Arabic-first RTL, restrained parchment/ink palette, calm typography; explicitly rejects generic SaaS, kitschy religious decor, gamified UI, enterprise greige. Currently a **seed/direction** doc (see §8). | Anyone doing UI/visual work. | Frontend visual/design tasks. For concrete tokens/classes use `UI_STYLE_SYSTEM.md`. |
 | `AGENTS.md` | Workspace entrypoint for non-Claude agents (Codex/OpenCode/etc.). Points to project instruction files, coding principles, the clean-code & test-code self-checks, and design context. | Non-Claude coding agents. | Loaded at session start for those agents. |
@@ -60,11 +61,13 @@ These live at the workspace root and apply across Backend + Frontend.
 
 ## 2. Current skills
 
-All custom skills live under `.claude/skills/`. Ten are workspace skills — the four
+All custom skills live under `.claude/skills/`. Twelve are workspace skills — the four
 review/commit skills detailed below (`engineering-review`, `test-guard`,
-`backend-structure-review`, `commit-workflow`) plus six operational skills
+`backend-structure-review`, `commit-workflow`) plus eight operational skills
 (`deploy-smoke`, `pr-context-prep`, `dependency-audit`, `performance-backend-review`,
-`performance-angular-review`, `backend-global-usings-cleanup`). There are also **14
+`performance-angular-review`, `backend-global-usings-cleanup`, `speckit-create-loop`,
+`speckit-phase-loop`).
+There are also **14
 `speckit-*` skills** (the Spec Kit command set: `specify`, `clarify`, `plan`, `tasks`,
 `analyze`, `implement`, `checklist`, `constitution`, the `git-*` helpers,
 `taskstoissues`) — the Spec Kit workflow commands referenced in §5.
@@ -83,6 +86,8 @@ review/commit skills detailed below (`engineering-review`, `test-guard`,
 | `performance-backend-review` | ✅ Yes (explicit-invoke) | ❌ No | **Backend / EF Core / Postgres perf audit** | Perf counterpart; not the general gate |
 | `performance-angular-review` | ✅ Yes (explicit-invoke) | ❌ No | **Angular frontend perf audit** | Perf counterpart; not the general gate |
 | `backend-global-usings-cleanup` | ❌ No — action skill | ✅ Edits C# global usings | **Backend global-usings consolidation** | Independent (mechanical cleanup) |
+| `speckit-create-loop` | ❌ No — orchestration skill | ❌ No — artifacts only, never code | **Spec Kit artifact preparation from a source plan** | Independent (runs before implementation; ends where phase-loop starts) |
+| `speckit-phase-loop` | ❌ No — orchestration skill | ✅ Via delegated subagents | **Phase-by-phase Spec Kit delivery, review-gated** | **Calls** engineering-review as the per-phase gate |
 | `clean-code-guard` | _Not a skill_ — reference pack | n/a | Deep clean-code references | Lives **inside** engineering-review |
 
 ### 2.1 `engineering-review` — the primary holistic review skill
@@ -190,6 +195,29 @@ review/commit skills detailed below (`engineering-review`, `test-guard`,
 - **Do not use when:** adding a single using, cleaning frontend/TypeScript imports, or touching C# `using` resource/disposal statements. Does **not** edit `BACKEND_STRUCTURE.md`.
 - **Review-only:** ❌ no — it modifies backend code (usings only), then builds to verify.
 
+### 2.11 `speckit-create-loop` — source-plan → implementation-ready Spec Kit artifacts (orchestration skill)
+
+- **Purpose:** prepare one Spec Kit feature from an explicitly supplied source plan and scope, and drive it to implementation-readiness. The main session runs every primary stage itself — `speckit-specify` → `speckit-clarify` (full workflow) → `speckit-plan` → `speckit-tasks` → `speckit-analyze` — and only remediation of analysis findings is delegated, to a single fixer subagent reused across rounds.
+- **Invocation contract:** `path` (source plan) and `scope` (`whole` | `phase N` | `phases N-M`) are both mandatory and never inferred; ranges must be contiguous; a multi-phase scope produces **one** feature.
+- **Sequence preflight:** before `speckit-specify`, prove contiguous coverage of every earlier source phase via `specs/<feature>/source-scope.yml` + a `tasks.md` whose real task rows are all `[X]`. Branch names, folder names, and commit messages locate candidates but never prove completion.
+- **Traceability:** each feature records `specs/<feature>/source-scope.yml` (plan path, scope, first/last phase, scope kind) — the canonical input to future preflights.
+- **Readiness gates:** tasks must be executable by a weaker downstream model with no access to the authoring session (exact locations, observable completion, no hidden conversational context, two-way requirement↔task traceability); implementation phases are sized for one implement→review→fix→verify cycle (>20 real tasks triggers a coherence review, ≥30 normally splits).
+- **What blocks:** any **actionable** analysis finding at any severity, LOW included. Completion requires a fresh main-session analyze run with zero actionable findings — never a report that predates the last edit.
+- **Best used when:** turning a master/source plan (e.g. `docs/feature-abwab-management/MASTER_PLAN.md`) into `specs/<feature>/` artifacts for a named phase, phase range, or the whole plan.
+- **Do not use when:** implementing tasks (`speckit-phase-loop`), reviewing code (`engineering-review`), or running a single Spec Kit stage directly.
+- **Review-only:** ❌ no — it writes Spec Kit artifacts, but never application code, commits, pushes, issues, or PRs; it stops at artifact preparation and hands off to `speckit-phase-loop`.
+
+### 2.12 `speckit-phase-loop` — review-gated phase-by-phase delivery (orchestration skill)
+
+- **Purpose:** drive a whole Spec Kit feature to completion one phase at a time. The main session orchestrates; each phase is delegated to implementer subagents that run `speckit-implement`, then gated by a reviewer subagent that runs `engineering-review`. Findings go back to the **same** implementer and are re-verdicted by the **same** reviewer. Then the orchestrator runs fresh verification, audits scope, marks the tasks `[X]`, and makes **exactly one commit** for the phase.
+- **Feature resolution:** `.specify/feature.json` → `feature_directory` is the only source of truth for which feature is live.
+- **Per-phase gates:** preflight (clean tree + captured `phase_base_sha`) → implement → review the full change set since that SHA (staged, unstaged **and** untracked) → fix loop → **fresh verification against the final tree** → scope audit → mark + commit → verify exactly one commit resulted.
+- **What blocks:** every **actionable** critical, major, and minor finding — minor included. Explicitly non-actionable notes do not block, and a note may never disguise a correctness, contract, security, Quran-data-safety, scope, or test problem. A phase closes only on *zero actionable findings + fresh passing verification + clean scope audit*.
+- **Best used when:** the user asks to implement all/remaining phases of a feature, to work through `tasks.md` phase by phase, or to run an implement → review → fix → commit loop.
+- **Do not use when:** implementing a single task or a one-off change (use `speckit-implement` directly), or when only a review is wanted (use `engineering-review`).
+- **Key invariants:** implementers never write `tasks.md` (a deliberate override of `speckit-implement`'s own "mark it `[X]`" step) and never commit; the reviewer never edits code; `tasks.md` is read-only apart from checkboxes the orchestrator sets once the gates pass; a phase never starts on top of unexplained working-tree changes, and unrelated edits are never absorbed into a phase commit; `[X]` alone is not proof of completion — resume reconciles checkboxes against the matching commit; the fix loop is capped at 3 rounds before escalating; the loop stops at the commit — never pushes or opens a PR.
+- **Review-only:** ❌ no — it orchestrates code changes, but only through delegated agents.
+
 ---
 
 ## Invocation & Reading Behavior
@@ -202,6 +230,7 @@ and what is **reference-only**. Use this to know when each item actually comes i
 | `CLAUDE.md` | Entry-point / auto-loaded context | **Auto** | Session start (Claude) | Claude Code | Points to principles, the clean-code & test-code self-checks, design context. |
 | `AGENTS.md` | Entry-point / auto-loaded context | **Auto** | Session start (non-Claude agents) | Codex / OpenCode / etc. | Mirror of `CLAUDE.md` for other agents. |
 | `CODING_PRINCIPLES.md` | Required project principle | **Mandated read** (not auto-injected) | Before any implementation or review | Every agent; **always** read by `engineering-review` & `backend-structure-review` | Core principles incl. **Quranic Data Safety**. Required by the entry-point files. |
+| `TESTING_STRATEGY.md` | Required project policy | **Mandated read** (not auto-injected) | Before selecting/running tests or judging verification evidence | Every agent; `speckit-phase-loop`, `engineering-review`, `test-guard` | Tiered test execution (A–E), pipeline-trigger rules, release canonical gate. Controls test *selection*; test *quality* stays with `test-guard`. |
 | `PRODUCT.md` | Conditional architecture doc | **Conditional** | Only when product / user-facing behavior is involved | Anyone doing product/UX/UI work | Product context (not under `.architecture`). **Not needed for backend-only work unless user-facing behavior is affected.** |
 | `DESIGN.md` | Conditional architecture doc | **Conditional** | Only for UI / visual work | Anyone doing UI work | Design direction (seed). For concrete tokens/classes use `UI_STYLE_SYSTEM.md`. **Not for backend-only work** unless user-facing. |
 | Backend `.architecture/*` (`BACKEND_STRUCTURE.md`, `CLEAN_ARCHITECTURE.md`, `API_GUIDELINES.md`) | Conditional architecture doc | **Conditional** | When backend files in the relevant area change | `engineering-review`, `backend-structure-review` (path-based) | **Not read on every command** — read only when the touched area matches. |
@@ -218,6 +247,8 @@ and what is **reference-only**. Use this to know when each item actually comes i
 | `performance-backend-review` | Perf-audit skill | **Manual (explicit)** | Explicit backend/DB performance review only | Invoked on request | Review-only; changed scope; never code fixes. Not the general gate. |
 | `performance-angular-review` | Perf-audit skill | **Manual (explicit)** | Explicit Angular/frontend performance review only | Invoked on request | Review-only; changed scope; never code fixes. Not the general gate. |
 | `backend-global-usings-cleanup` | Action skill | **Manual** | Repeated imports / sprawling `GlobalUsings.cs` in a Backend project | Invoked on request | **Edits code** (usings only); verifies with `dotnet build`. |
+| `speckit-create-loop` | Orchestration skill | **Manual** | "Prepare a Spec Kit for phase N of `<plan>`", source-plan → spec/plan/tasks preparation | Invoked on request with explicit `path` + `scope` | Runs specify → clarify → plan → tasks → analyze in the main session; delegates only remediation; stops at artifact readiness (no code, no commit). |
+| `speckit-phase-loop` | Orchestration skill | **Manual** | "Implement all/remaining phases", phase-by-phase delivery, delegate phases to agents | Invoked on request | Delegates `speckit-implement`; gates each phase with `engineering-review`; one commit per phase; stops at commit. |
 | Spec Kit skills (`speckit-*`: specify, clarify, plan, tasks, analyze, implement, …) | Spec Kit command | **Manual** (user-invoked slash commands) | Feature spec → clarify → plan → tasks → analyze → implement lifecycle | User invokes | 14 commands; see workflow §5A. |
 
 ### Practical rule of thumb
@@ -232,6 +263,8 @@ and what is **reference-only**. Use this to know when each item actually comes i
 - **Are our packages safe/current?** ask for `dependency-audit`.
 - **Backend/frontend feels slow:** ask (explicitly) for `performance-backend-review` / `performance-angular-review`.
 - **Imports repeated across a Backend project:** ask for `backend-global-usings-cleanup`.
+- **Turning a master plan into a Spec Kit feature:** ask for `speckit-create-loop` with an explicit plan path and scope (`whole` / `phase N` / `phases N-M`); it runs specify → clarify → plan → tasks → analyze and stops at implementation-ready artifacts.
+- **Implementing a whole Spec Kit feature:** ask for `speckit-phase-loop` (it runs implement → review → fix → commit per phase for you).
 
 ---
 
@@ -282,7 +315,9 @@ Location: `Frontend/quran-dashboard-ui/.architecture/`. Canonical frontend rules
 ### B. During implementation
 
 - Implement **by phase/chunk**, not all tasks at once (see §7).
+- For a full feature, `speckit-phase-loop` automates exactly that: it delegates each phase, gates it with `engineering-review`, and commits once per phase (§2.12). Steps C and F below then happen inside the loop rather than by hand.
 - Follow `AGENTS.md`/`CLAUDE.md` + `CODING_PRINCIPLES.md`.
+- Select test commands per `TESTING_STRATEGY.md` — Tier A (focused, changed scope) for ordinary phases; do not run full or pipeline suites unless its triggers require them.
 - Read the Backend/Frontend `.architecture/` docs **for the area you're touching** (§3, §4).
 - Run the **clean-code self-check before delivery** (in `CLAUDE.md`/`AGENTS.md`; backed by `clean-code-guard` references).
 - If writing tests, run the **test-code self-check** (in `CLAUDE.md`/`AGENTS.md`; backed by `test-guard`).
@@ -334,6 +369,7 @@ Location: `Frontend/quran-dashboard-ui/.architecture/`. Canonical frontend rules
 |-----------------|--------------------|-----|
 | "Review Phase 3 implementation from Spec Kit" | `engineering-review` + `SPEC_KIT_IMPLEMENTATION_REVIEW.md` | Holistic review + phase/task/contract compliance. |
 | "Review only new test files" | `test-guard` | Narrow test-code quality gate. |
+| "Which tests must I run for this change?" | `TESTING_STRATEGY.md` | Tiered test selection (A–E) by changed scope and pipeline triggers. |
 | "Where should `WordSortBy` enum live?" | `backend-structure-review` + `BACKEND_STRUCTURE.md` | Placement/foldering question. |
 | "Review API endpoint response shape" | `engineering-review` + `API_GUIDELINES.md` | API boundary & `ApiResponse` envelope. |
 | "Review Angular feature folder layout" | `engineering-review` + `FRONTEND_STRUCTURE.md` | Frontend structure/routeable pages. |
@@ -349,6 +385,8 @@ Location: `Frontend/quran-dashboard-ui/.architecture/`. Canonical frontend rules
 | "Deep clean-code issue in implementation" | `engineering-review` using `references/clean-code-guard/*` | Deep naming/SOLID/DRY/AI-failure-mode checks. |
 | "Is this layer dependency allowed?" | `backend-structure-review` + `CLEAN_ARCHITECTURE.md` | Dependency direction/layering. |
 | "Start a new feature" | `speckit-*` chain (§5A) | Spec → clarify → plan → tasks → analyze. |
+| "Prepare the Spec Kit for phase N of this master plan" | `speckit-create-loop` | Explicit `path` + `scope`; sequence preflight; main-session stages; analyze/remediate until zero actionable findings. |
+| "Implement all phases of this feature" | `speckit-phase-loop` | Per-phase delegate → `engineering-review` gate → fix loop → one commit per phase. |
 
 ---
 
@@ -368,7 +406,7 @@ Location: `Frontend/quran-dashboard-ui/.architecture/`. Canonical frontend rules
 
 **Inventory check (all present unless noted):**
 
-- Root docs: `CODING_PRINCIPLES.md`, `PRODUCT.md`, `DESIGN.md`, `AGENTS.md`, `CLAUDE.md` ✅
+- Root docs: `CODING_PRINCIPLES.md`, `TESTING_STRATEGY.md`, `PRODUCT.md`, `DESIGN.md`, `AGENTS.md`, `CLAUDE.md` ✅
 - Skills: `engineering-review/` (+ `SPEC_KIT_IMPLEMENTATION_REVIEW.md`, `references/clean-code-guard/`), `test-guard/` (+ `dotnet.md`, `jest.md`, `llm-app-testing.md`, `frontend-test-harness-constraints.md`), `backend-structure-review/`, `commit-workflow/`, `deploy-smoke/`, `pr-context-prep/`, `dependency-audit/`, `performance-backend-review/`, `performance-angular-review/`, `backend-global-usings-cleanup/` ✅; plus 14 `speckit-*` skills ✅
 - Backend `.architecture/`: `BACKEND_STRUCTURE.md`, `CLEAN_ARCHITECTURE.md`, `API_GUIDELINES.md` ✅
 - Frontend `.architecture/`: `FRONTEND_STRUCTURE.md`, `UI_STYLE_SYSTEM.md`, `API_INTEGRATION_GUIDELINES.md` ✅

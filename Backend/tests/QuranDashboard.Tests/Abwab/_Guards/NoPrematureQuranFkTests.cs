@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using QuranDashboard.Tests.Abwab._Fixtures;
 
@@ -43,13 +44,16 @@ public sealed class NoPrematureQuranFkTests
     {
         var excerptProperties = _fixture.Model.GetEntityTypes()
             .Where(IsAbwab)
-            .SelectMany(entity => entity.GetProperties())
-            .Where(property => property.Name == "RepresentativeQuranExcerpt")
+            .SelectMany(entity => entity.GetProperties().Select(property => (Entity: entity, Property: property)))
+            .Where(pair => pair.Property.Name == "RepresentativeQuranExcerpt")
             .ToList();
 
-        foreach (var property in excerptProperties)
+        foreach (var (entity, property) in excerptProperties)
         {
             property.ClrType.Should().Be(typeof(string), "029 defines RepresentativeQuranExcerpt as a plain string, never an ayah reference type");
+            property.GetValueConverter().Should().BeNull(
+                $"{entity.ShortName()}.RepresentativeQuranExcerpt must carry no value converter — a converter "
+                + "is how an ayah-validated type could sneak back in behind a plain-looking string column");
         }
 
         _fixture.Model.GetEntityTypes()
@@ -57,6 +61,58 @@ public sealed class NoPrematureQuranFkTests
             .SelectMany(entity => entity.GetForeignKeys())
             .Where(fk => IsQuran(fk.PrincipalEntityType))
             .Should().BeEmpty("RepresentativeQuranExcerpt must never become an ayah foreign key");
+
+        var designTimeModel = DesignTimeModel();
+        var excerptColumnNamesByEntity = excerptProperties
+            .ToDictionary(pair => pair.Entity.ShortName(), pair => pair.Property.GetColumnName(), StringComparer.Ordinal);
+
+        var checkConstraintOffenders = designTimeModel.GetEntityTypes()
+            .Where(entity => excerptColumnNamesByEntity.ContainsKey(entity.ShortName()))
+            .Where(entity => entity.GetCheckConstraints()
+                .Any(constraint => constraint.Sql.Contains(excerptColumnNamesByEntity[entity.ShortName()], StringComparison.OrdinalIgnoreCase)))
+            .Select(entity => entity.ShortName())
+            .ToList();
+
+        checkConstraintOffenders.Should().BeEmpty(
+            "RepresentativeQuranExcerpt must carry no CHECK constraint — validating ayah shape/format at the "
+            + "database level is exactly the premature coupling this guard forbids; offenders: "
+            + string.Join(", ", checkConstraintOffenders));
+    }
+
+    [Fact]
+    public void RelationshipsAndTemplatesIntroduceNoQuranForeignKeyAndKeepRepresentativeExcerptAPlainString()
+    {
+        var entities = _fixture.Model.GetEntityTypes()
+            .Where(entity => IsAbwab(entity) &&
+                (NamespaceHasSegment(entity, "Relationships") || NamespaceHasSegment(entity, "Templates")))
+            .ToList();
+
+        var foreignKeyOffenders = entities
+            .SelectMany(entity => entity.GetForeignKeys())
+            .Where(fk => IsQuran(fk.PrincipalEntityType))
+            .Select(Describe)
+            .ToList();
+
+        foreignKeyOffenders.Should().BeEmpty(
+            "030 (CategoryRelationship / DoorTemplate aggregate) must introduce no Abwab->Quran foreign key "
+            + "(vacuous until those entities land); offenders: " + string.Join("; ", foreignKeyOffenders));
+
+        var excerptOffenders = entities
+            .SelectMany(entity => entity.GetProperties().Select(property => (entity, property)))
+            .Where(pair => pair.property.Name == "RepresentativeQuranExcerpt" && pair.property.ClrType != typeof(string))
+            .Select(pair => pair.entity.ShortName())
+            .ToList();
+
+        excerptOffenders.Should().BeEmpty(
+            "TemplateNode.RepresentativeQuranExcerpt (data-model.md) must stay a plain string with no ayah "
+            + "validation; offenders: " + string.Join(", ", excerptOffenders));
+    }
+
+    private IModel DesignTimeModel()
+    {
+        using var context = new QuranDashboardDbContext(
+            new DbContextOptionsBuilder<QuranDashboardDbContext>().UseNpgsql(_fixture.ConnectionString).Options);
+        return context.GetService<IDesignTimeModel>().Model;
     }
 
     private static bool CrossesAbwabQuranBoundary(IForeignKey fk)

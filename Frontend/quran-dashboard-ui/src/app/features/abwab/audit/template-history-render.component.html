@@ -1,0 +1,59 @@
+<div class="qd-card qd-card--bordered audit-render" data-testid="template-history-render">
+  <h3 class="qd-section-title">{{ actionLabels[payload().action] }}</h3>
+
+  <p class="audit-render__meta" data-testid="template-history-render-actor">
+    المنفّذ: {{ payload().actorSubject }} — وقت التنفيذ: {{ payload().actedAtUtc }}
+  </p>
+
+  <h4 class="audit-render__subtitle" data-testid="template-history-render-before-heading">شجرة القالب السابقة</h4>
+  <ul class="template-render__list" data-testid="template-history-render-before">
+    @for (node of beforeNodes(); track node.templateNodeId) {
+      <li data-testid="template-history-render-before-node" [class.template-render__changed]="isChanged(node)">
+        {{ node.name }} — الترتيب: {{ node.siblingOrder }} — الوصف: {{ node.description ?? emptyValueLabel }}
+        @if (isChanged(node)) {
+          <span class="template-render__marker" data-testid="template-history-render-before-changed">▲ تغيير</span>
+        }
+      </li>
+    } @empty {
+      <li data-testid="template-history-render-before-empty">{{ emptyValueLabel }}</li>
+    }
+  </ul>
+
+  <h4 class="audit-render__subtitle" data-testid="template-history-render-after-heading">شجرة القالب الحالية</h4>
+  <ul class="template-render__list" data-testid="template-history-render-after">
+    @for (node of afterNodes(); track node.templateNodeId) {
+      <li data-testid="template-history-render-after-node" [class.template-render__changed]="isChanged(node)">
+        {{ node.name }} — الترتيب: {{ node.siblingOrder }} — الوصف: {{ node.description ?? emptyValueLabel }}
+        @if (isChanged(node)) {
+          <span class="template-render__marker" data-testid="template-history-render-after-changed">▲ تغيير</span>
+        }
+      </li>
+    } @empty {
+      <li data-testid="template-history-render-after-empty">{{ emptyValueLabel }}</li>
+    }
+  </ul>
+
+  <h4 class="audit-render__subtitle">العقد المتغيّرة</h4>
+  <ul class="template-render__list" data-testid="template-history-render-changed">
+    @for (node of payload().changedNodes; track node.templateNodeId) {
+      <li data-testid="template-history-render-changed-node">
+        {{ node.name }} — المقطع التمثيلي: {{ node.representativeQuranExcerpt ?? emptyValueLabel }} — الوصف:
+        {{ node.description ?? emptyValueLabel }} — الترتيب: {{ node.siblingOrder }}
+        @if (node.aliases.length > 0) {
+          — المرادفات: {{ node.aliases.join('، ') }}
+        }
+      </li>
+    } @empty {
+      <li data-testid="template-history-render-changed-empty">{{ emptyValueLabel }}</li>
+    }
+  </ul>
+
+  <h4 class="audit-render__subtitle">الحقول المتغيّرة</h4>
+  <div data-testid="template-history-render-changed-fields">
+    @for (diff of changedFieldDiffs(); track diff.key) {
+      <qd-abwab-field-diff-row [diff]="diff" />
+    } @empty {
+      <p data-testid="template-history-render-changed-fields-empty">{{ emptyValueLabel }}</p>
+    }
+  </div>
+</div>

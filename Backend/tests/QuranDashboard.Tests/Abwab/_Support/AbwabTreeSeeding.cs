@@ -11,7 +11,14 @@ namespace QuranDashboard.Tests.Abwab._Support;
 
 internal static class AbwabTreeSeeding
 {
-    private static long _changeSetSequence;
+    // Fixture ChangeSets are numbered far above anything a real audited write can reach. The executor
+    // allocates ChangeSetSequence from the revision head, which AbwabSubstrateReset returns to 0 for
+    // every test, so a fixture row numbered from 1 collides with the first real write of whichever
+    // test seeds before it writes — a failure that depends on how many tests ran earlier in the
+    // process, and therefore appears only in a filtered or reordered run.
+    private const long FixtureSequenceFloor = 1_000_000;
+
+    private static long _changeSetSequence = FixtureSequenceFloor;
 
     public static Section NewSection(string name, int sortOrder = 0, bool isPermanentDefault = false) => new()
     {

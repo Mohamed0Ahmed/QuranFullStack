@@ -70,15 +70,16 @@ public sealed class ManualProtectionRoundTripTests(PostgresFixture fixture) : IA
             .Should().NotContain(["Version", "Xmin", "TreeRevision", "CategoryContentRevision"]);
     }
 
+    // The exact registered SET is asserted once, in RestoreRegistryTests (§8 gate); this test owns only
+    // the ManualProtection adapter's own registration so the two do not drift as adapters are added.
     [Fact]
-    public void Adapter_IsRegistered_AsTheThirdAbwabRestoreAdapter()
+    public void Adapter_IsRegistered_ExactlyOnce_AndOrderIsNeverAStandaloneAdapter()
     {
         var services = new ServiceCollection().AddAbwabRestoreAdapters();
         using var provider = services.BuildServiceProvider();
 
         var descriptors = provider.GetServices<IAbwabRestoreAdapterDescriptor>().ToList();
 
-        descriptors.Select(d => d.PersistedType).Should().BeEquivalentTo(["Section", "Category", "ManualProtection"]);
         descriptors.Should().ContainSingle(d => d.PersistedType == "ManualProtection");
         descriptors.Should().NotContain(d => d.PersistedType == "Order", "order round-trips as a facet within Section/Category, never as a standalone adapter (§8)");
     }

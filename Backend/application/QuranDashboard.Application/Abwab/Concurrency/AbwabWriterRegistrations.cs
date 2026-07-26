@@ -1,5 +1,7 @@
 using System.Reflection;
 using QuranDashboard.Application.Abstractions.Abwab.Core;
+using QuranDashboard.Application.Abstractions.Abwab.Relationships;
+using QuranDashboard.Application.Abstractions.Abwab.Templates;
 using QuranDashboard.Application.Security.Owners;
 using QuranDashboard.Application.Security.Permissions;
 
@@ -39,5 +41,25 @@ public static class AbwabWriterRegistrations
         registry.Register<ApplyManualProtectionCommand>();
         registry.Register<LiftManualProtectionCommand>();
         registry.Register<ApplyFullProtectionPresetCommand>();
+
+        registry.Register<AddRelationshipCommand>();
+        registry.Register<EditRelationshipCommand>();
+        registry.Register<DeleteRelationshipCommand>();
+        registry.Register<RestoreRelationshipCommand>();
+
+        registry.Register<AddDoorTemplateCommand>();
+        registry.Register<EditDoorTemplateCommand>();
+        registry.Register<DeleteDoorTemplateCommand>();
+        registry.Register<RestoreDoorTemplateCommand>();
+        registry.Register<AddTemplateNodeCommand>();
+        registry.Register<EditTemplateNodeCommand>();
+        registry.Register<ReparentTemplateNodeCommand>();
+        registry.Register<ReorderTemplateNodesCommand>();
+        registry.Register<RemoveTemplateNodeCommand>();
+        registry.Register<AddTemplateNodeAliasCommand>();
+        registry.Register<EditTemplateNodeAliasCommand>();
+        registry.Register<RemoveTemplateNodeAliasCommand>();
+        registry.Register<RestoreTemplateNodeAliasCommand>();
+        registry.Register<ApplyDoorTemplateCommand>();
     }
 }

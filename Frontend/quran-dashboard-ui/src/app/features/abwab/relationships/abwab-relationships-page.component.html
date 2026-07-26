@@ -1,0 +1,137 @@
+<section class="relationships-page" dir="rtl" data-testid="relationships-page">
+  <h1 class="qd-page-title">
+    علاقات الباب
+    @if (facade.routedCategoryName(); as categoryName) {
+      <span class="relationships-page__subject" data-testid="relationships-category-name">: {{ categoryName }}</span>
+    }
+  </h1>
+
+  @if (!permissions.canViewRelationship()) {
+    <qd-state variant="empty" [message]="notAuthorizedMessage" data-testid="relationships-not-authorized" />
+  } @else {
+    @if (conflictMessage(); as conflict) {
+      <p class="relationships-page__conflict" role="alert" data-testid="relationships-conflict">{{ conflict }}</p>
+    }
+
+    @if (mutationErrorMessage(); as mutationError) {
+      <p class="relationships-page__conflict" role="alert" data-testid="relationships-mutation-error">{{ mutationError }}</p>
+    }
+
+    <label class="relationships-page__toggle">
+      <input
+        type="checkbox"
+        data-testid="relationships-include-deleted"
+        [checked]="facade.includeDeleted()"
+        (change)="toggleIncludeDeleted(!facade.includeDeleted())"
+      />
+      إظهار العلاقات المحذوفة
+    </label>
+
+    @if (permissions.canAddRelationship() && editingRelationshipId() === null) {
+      <form class="relationships-page__form" [formGroup]="addForm" (ngSubmit)="submitAdd()" data-testid="relationship-add-form">
+        <label for="relationship-type">نوع العلاقة</label>
+        <select id="relationship-type" class="qd-select" formControlName="relationshipType" data-testid="relationship-type">
+          @for (option of typeOptions; track option) {
+            <option [ngValue]="option">{{ typeLabels[option] }}</option>
+          }
+        </select>
+
+        @if (addIsDirectional()) {
+          <label for="relationship-direction">اتجاه العلاقة</label>
+          <select id="relationship-direction" class="qd-select" formControlName="direction" data-testid="relationship-direction">
+            @for (option of directionOptions; track option) {
+              <option [ngValue]="option">{{ directionLabels[option] }}</option>
+            }
+          </select>
+        }
+
+        <label for="relationship-endpoint">الباب الآخر</label>
+        <select id="relationship-endpoint" class="qd-select" formControlName="otherCategoryId" data-testid="relationship-endpoint">
+          <option [ngValue]="''" disabled>اختر بابًا…</option>
+          @for (category of facade.endpointCandidates(); track category.categoryId) {
+            <option [ngValue]="category.categoryId">{{ category.name }}</option>
+          }
+        </select>
+
+        <button type="submit" class="qd-btn qd-btn-primary" data-testid="relationship-add" [disabled]="addForm.invalid">
+          إضافة علاقة
+        </button>
+      </form>
+    }
+
+    @switch (facade.status()) {
+      @case ('loading') {
+        <qd-state variant="loading" [message]="loadingMessage" data-testid="relationships-loading" />
+      }
+      @case ('error') {
+        <qd-state
+          variant="error"
+          [message]="facade.errorMessage() ?? ''"
+          [actionLabel]="retryLabel"
+          (action)="reload()"
+          data-testid="relationships-error"
+        />
+      }
+      @case ('empty') {
+        <qd-state variant="empty" [message]="emptyMessage" data-testid="relationships-empty" />
+      }
+      @default {
+        <ul class="relationships-page__list" data-testid="relationship-list">
+          @for (relationship of facade.relationships(); track relationship.categoryRelationshipId) {
+            <li class="relationships-page__row" data-testid="relationship-row" [attr.data-id]="relationship.categoryRelationshipId">
+              <div class="relationships-page__summary">
+                <span class="qd-badge" data-testid="relationship-type-label">{{ typeLabels[relationship.relationshipType] }}</span>
+                <span data-testid="relationship-from">
+                  {{ endpointLabels(relationship.isDirectional).from }}: {{ relationship.from.name }}
+                </span>
+                <span data-testid="relationship-to">
+                  {{ endpointLabels(relationship.isDirectional).to }}: {{ relationship.to.name }}
+                </span>
+                @if (relationship.isDeleted) {
+                  <span class="qd-badge" data-testid="relationship-deleted-badge">محذوفة</span>
+                }
+              </div>
+
+              @if (editingRelationshipId() === relationship.categoryRelationshipId) {
+                <form class="relationships-page__form" [formGroup]="editForm" (ngSubmit)="submitEdit(relationship)" data-testid="relationship-edit-form">
+                  <select class="qd-select" formControlName="relationshipType" data-testid="relationship-edit-type">
+                    @for (option of typeOptions; track option) {
+                      <option [ngValue]="option">{{ typeLabels[option] }}</option>
+                    }
+                  </select>
+                  @if (editIsDirectional()) {
+                    <select class="qd-select" formControlName="direction" data-testid="relationship-edit-direction">
+                      @for (option of directionOptions; track option) {
+                        <option [ngValue]="option">{{ directionLabels[option] }}</option>
+                      }
+                    </select>
+                  }
+                  <select class="qd-select" formControlName="otherCategoryId" data-testid="relationship-edit-endpoint">
+                    <option [ngValue]="''" disabled>اختر بابًا…</option>
+                    @for (category of facade.endpointCandidates(); track category.categoryId) {
+                      <option [ngValue]="category.categoryId">{{ category.name }}</option>
+                    }
+                  </select>
+                  <button type="submit" class="qd-btn qd-btn-primary" data-testid="relationship-edit-save" [disabled]="editForm.invalid">حفظ</button>
+                  <button type="button" class="qd-btn qd-btn-ghost" data-testid="relationship-edit-cancel" (click)="cancelEdit()">إلغاء</button>
+                </form>
+              } @else {
+                <div class="relationships-page__actions">
+                  @if (permissions.canEditRelationship() && !relationship.isDeleted) {
+                    <button type="button" class="qd-btn qd-btn-ghost" data-testid="relationship-edit" (click)="beginEdit(relationship)">تعديل</button>
+                  }
+                  @if (permissions.canDeleteRelationship() && !relationship.isDeleted) {
+                    <button type="button" class="qd-btn qd-btn-ghost" data-testid="relationship-delete" (click)="remove(relationship)">حذف</button>
+                  }
+                  @if (permissions.canRestoreRelationship() && relationship.isDeleted) {
+                    <button type="button" class="qd-btn qd-btn-secondary" data-testid="relationship-restore" (click)="restore(relationship)">استعادة</button>
+                  }
+                </div>
+              }
+            </li>
+          }
+        </ul>
+      }
+    }
+  }
+</section>

@@ -133,16 +133,22 @@ split only unrelated concerns. Push the monorepo branch once after verification.
 
 ## Verification
 
-Before delivery, run the relevant verification commands when possible.
+Before selecting or running tests, read:
+
+- `TESTING_STRATEGY.md` (workspace root)
+
+Use the tier required by the changed scope. Do not run full or slow
+data-pipeline suites after every phase unless the strategy's triggers require
+them. Required verification must be fresh against the final working tree.
 
 ### Backend tests
 
 Run from `Backend/`:
 
 - Build: `dotnet build QuranDashboard.sln`
-- All tests: `dotnet test QuranDashboard.sln`
-- A subset: `dotnet test QuranDashboard.sln --filter "FullyQualifiedName~<ClassOrNamespace>"`
-- For import work, run the relevant import test filter if available.
+- Focused subset (normal per-phase tier): `dotnet test QuranDashboard.sln --filter "FullyQualifiedName~<ClassOrNamespace>"`
+- Full suite (`dotnet test QuranDashboard.sln`): only when `TESTING_STRATEGY.md` requires it (pipeline-triggered PRs, release).
+- For import/pipeline work, run the affected pipeline family filters from `TESTING_STRATEGY.md`.
 
 ### Frontend tests
 

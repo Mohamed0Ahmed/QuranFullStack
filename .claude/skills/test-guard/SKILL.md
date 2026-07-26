@@ -13,7 +13,7 @@ These rules exist because coding agents over-generate tests. The common failure 
 
 - **Project rules win.** When this skill conflicts with the project's own rules (`CLAUDE.md`, `AGENTS.md`, `CODING_PRINCIPLES.md`, the Backend/Frontend architecture docs, or a spec/contract), follow the project. In particular, Quranic data safety always applies to tests.
 - **`engineering-review` remains the primary holistic post-implementation review skill** — it owns production code, architecture, Spec Kit compliance, Quranic data safety, API contracts, frontend structure, UI/product checks, and the final verdict. It delegates the *test-code* portion of a review to this skill.
-- **`test-guard` owns only test-code quality** — *how* tests are written. It does not review production code and does not decide whether builds/tests were run.
+- **`test-guard` owns only test-code quality** — *how* tests are written. It does not review production code and does not run tests. Whether the *right* tests were run — the required verification tier for the changed scope — is judged against the workspace `TESTING_STRATEGY.md` (see "Verification tiers and evidence sufficiency" below).
 
 ## When this skill activates
 
@@ -116,10 +116,30 @@ Not all violations are equal. Use judgment:
 - [references/frontend-test-harness-constraints.md](references/frontend-test-harness-constraints.md) — this project's Angular/Vitest/jsdom harness: focused-run command + fork cap, the `--run` caveat, jsdom's missing browser APIs (matchMedia/ResizeObserver/layout/CDK virtual scroll), and safe patterns to preserve (words-labels TDZ getters)
 - [references/llm-app-testing.md](references/llm-app-testing.md) — three extra rules for LLM applications: prompt contracts, observability wiring, agent-flow transitions
 
+## Verification tiers and evidence sufficiency
+
+When reviewing test *evidence* (a claimed test run, a phase or PR verification
+report), judge sufficiency against the workspace policy:
+
+1. Read `TESTING_STRATEGY.md` (workspace root) — the single source of truth for test
+   selection and execution tiers.
+2. Derive the required tier from the changed paths and risk: Tier A focused
+   per-phase; Tier B no-pipeline milestone regression; Tier C ordinary pre-PR;
+   Tier D pipeline-triggered slow suites; Tier E release/canonical acceptance.
+3. Reject stale evidence — results produced before the most recent code change do
+   not count.
+4. Reject insufficient evidence — an unrelated broad suite does not substitute for
+   the focused tests covering the change, and unexplained skipped required tests
+   (especially canonical-source tests) are missing evidence, not passes.
+5. Do not require Tier D pipeline suites for work that does not hit a Tier D
+   trigger in the strategy.
+
 ## What this skill does NOT do
 
 - It does not run tests. Use the project's test runner for that.
 - It does not enforce code style — that's the linter's job.
-- It does not decide *what* to test — only *how* to test it.
+- It does not decide *what* to test — only *how* to test it, plus (per
+  `TESTING_STRATEGY.md`) whether the executed tier of tests was sufficient
+  evidence for the changed scope.
 - It does not review production code — that is `engineering-review`'s job.
 - It does not flag pre-existing violations in files you're not touching, unless asked to audit.

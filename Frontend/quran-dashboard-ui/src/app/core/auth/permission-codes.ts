@@ -19,6 +19,17 @@ export const PERMISSION_CODES = [
   'protection.view',
   'protection.apply',
   'protection.lift',
+  'relationship.view',
+  'relationship.add',
+  'relationship.edit',
+  'relationship.delete',
+  'relationship.restore',
+  'template.view',
+  'template.add',
+  'template.edit',
+  'template.delete',
+  'template.restore',
+  'template.apply',
 ] as const;
 
 export type PermissionCode = (typeof PERMISSION_CODES)[number];

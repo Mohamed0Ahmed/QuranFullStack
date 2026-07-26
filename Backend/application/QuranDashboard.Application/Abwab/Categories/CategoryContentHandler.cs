@@ -19,7 +19,7 @@ public sealed class CategoryContentHandler(
     public async Task<Guid> AddAsync(AddCategoryCommand command, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
-        var categoryId = Guid.NewGuid();
+        Category? category = null;
 
         var request = new AbwabAuditedOperationRequest(
             command.ExpectedTimelineGeneration,
@@ -27,69 +27,14 @@ public sealed class CategoryContentHandler(
             async (revision, operationToken) =>
             {
                 AbwabRevisionGuards.GuardTreeRevision(revision, command.ExpectedTreeRevision);
-                var normalized = ArabicNameNormalizer.Normalize(command.Name);
 
-                Category category;
-                if (command.ParentCategoryId is { } parentId)
-                {
-                    var parent = await categories.FindTrackedAsync(parentId, includeDeleted: false, operationToken)
-                        ?? throw Unavailable();
+                var creation = new CategoryGroupedCreation(categories, sections, protectionResolver);
+                var input = new CategoryCreationInput(command.Name, command.RepresentativeQuranExcerpt, command.Description);
 
-                    await CategoryProtectionGate.EnsureNotManuallyProtectedAsync(
-                        protectionResolver, parentId, ManualProtectionType.InternalStructure, operationToken);
+                category = command.ParentCategoryId is { } parentId
+                    ? await creation.AddChildAsync(parentId, input, operationToken)
+                    : await creation.AddRootAsync(command.SectionId, input, operationToken);
 
-                    await CategoryTreeGuards.GuardNameConflictAsync(categories, normalized, parentId, null, operationToken);
-
-                    var maxSibling = await categories.GetMaxSiblingOrderAsync(parentId, null, operationToken) ?? -1;
-
-                    category = new Category
-                    {
-                        CategoryId = categoryId,
-                        Name = command.Name,
-                        NormalizedName = normalized,
-                        Description = command.Description,
-                        RepresentativeQuranExcerpt = command.RepresentativeQuranExcerpt,
-                        ParentCategoryId = parentId,
-                        SectionId = null,
-                        SiblingOrder = maxSibling + 1,
-                        SectionOrder = null,
-                        GlobalOrder = null,
-                        AncestorIds = [.. parent.AncestorIds, parent.CategoryId],
-                        Depth = parent.AncestorIds.Count + 1,
-                    };
-                }
-                else
-                {
-                    var sectionId = command.SectionId ?? await sections.GetPermanentDefaultSectionIdAsync(operationToken);
-
-                    if (!await sections.ExistsActiveAsync(sectionId, operationToken))
-                    {
-                        throw Unavailable();
-                    }
-
-                    await CategoryTreeGuards.GuardNameConflictAsync(categories, normalized, null, null, operationToken);
-
-                    var maxSectionOrder = await categories.GetMaxSectionOrderAsync(sectionId, null, operationToken) ?? -1;
-                    var maxGlobalOrder = await categories.GetMaxGlobalOrderAsync(null, operationToken) ?? -1;
-
-                    category = new Category
-                    {
-                        CategoryId = categoryId,
-                        Name = command.Name,
-                        NormalizedName = normalized,
-                        Description = command.Description,
-                        RepresentativeQuranExcerpt = command.RepresentativeQuranExcerpt,
-                        ParentCategoryId = null,
-                        SectionId = sectionId,
-                        SiblingOrder = null,
-                        SectionOrder = maxSectionOrder + 1,
-                        GlobalOrder = maxGlobalOrder + 1,
-                        AncestorIds = [],
-                        Depth = 0,
-                    };
-                }
-
-                categories.Add(category);
                 revision.TreeRevision += 1;
 
                 return AbwabAuditedOperationOutcome.Audited(
@@ -103,7 +48,7 @@ public sealed class CategoryContentHandler(
             });
 
         await executor.ExecuteAsync(request, cancellationToken);
-        return categoryId;
+        return category?.CategoryId ?? throw new InvalidOperationException("The audited operation did not create a category.");
     }
 
     public async Task EditAsync(EditCategoryCommand command, CancellationToken cancellationToken)

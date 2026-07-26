@@ -1,0 +1,62 @@
+<div class="qd-card qd-card--bordered audit-render" data-testid="relationship-render">
+  <h3 class="qd-section-title">{{ actionLabels[payload().action] }}</h3>
+
+  <p class="audit-render__meta" data-testid="relationship-render-reviewer">المراجع: {{ reviewerLabel }}</p>
+
+  @if (inverseLabel(); as inverse) {
+    <p class="audit-render__meta" data-testid="relationship-render-inverse">الوصف العكسي: {{ inverse }}</p>
+  }
+
+  <div class="relationship-diff">
+    <div class="relationship-diff__row relationship-diff__row--header">
+      <span></span>
+      <span data-testid="relationship-render-before-heading">الحالة السابقة</span>
+      <span data-testid="relationship-render-after-heading">الحالة الحالية</span>
+    </div>
+
+    @for (row of rows(); track row.key) {
+      <div class="relationship-diff__row" [class.relationship-diff__row--changed]="row.changed">
+        <span class="relationship-diff__label">{{ row.label }}</span>
+
+        <span class="relationship-diff__value" [attr.data-testid]="'relationship-render-before-' + row.key">
+          @if (row.beforeText) {
+            {{ row.beforeText }}
+          }
+          @if (row.before; as endpoint) {
+            <ng-container *ngTemplateOutlet="endpointBlock; context: { $implicit: endpoint }" />
+          }
+        </span>
+
+        <span class="relationship-diff__value relationship-diff__value--after" [attr.data-testid]="'relationship-render-after-' + row.key">
+          @if (row.afterText) {
+            {{ row.afterText }}
+          }
+          @if (row.after; as endpoint) {
+            <ng-container *ngTemplateOutlet="endpointBlock; context: { $implicit: endpoint }" />
+          }
+          @if (row.changed) {
+            <span class="relationship-diff__marker" [attr.data-testid]="'relationship-render-changed-' + row.key">▲ تغيير</span>
+          }
+        </span>
+      </div>
+    }
+  </div>
+</div>
+
+<ng-template #endpointBlock let-endpoint>
+  <span data-testid="relationship-render-endpoint">
+    {{ endpoint.name }} — القسم وقت العملية: {{ endpoint.sectionName ?? 'غير محدد' }} — المسار وقت العملية:
+    {{ endpoint.historicalPath.join(' ← ') }}
+    @if (endpoint.currentName) {
+      <span data-testid="relationship-render-current">
+        — الاسم الحالي: {{ endpoint.currentName }}
+        @if (endpoint.currentPath) {
+          — المسار الحالي: {{ endpoint.currentPath.join(' ← ') }}
+        }
+        @if (endpoint.isCurrentlyDeleted) {
+          <span class="qd-badge" data-testid="relationship-render-current-deleted">محذوف حاليًا</span>
+        }
+      </span>
+    }
+  </span>
+</ng-template>

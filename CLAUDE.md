@@ -128,6 +128,19 @@ Notes:
 - `engineering-review` remains the formal post-implementation review skill.
 - `test-guard` is only for test-code quality.
 
+## Testing Strategy
+
+Before selecting or running tests, read:
+
+- `TESTING_STRATEGY.md`
+
+Use the tier required by the changed scope (Tier A focused per-phase, Tier B
+no-pipeline milestone regression, Tier C ordinary pre-PR, Tier D
+pipeline-triggered, Tier E release/canonical acceptance). Do not run full or
+slow Quran data-pipeline suites after every phase unless the strategy's
+triggers require them. Required verification must be fresh against the final
+working tree.
+
 ## Design Context
 
 This is an **Arabic-first (RTL)**, **scholarly and calm** product dashboard for

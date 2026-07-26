@@ -1,0 +1,35 @@
+<section class="application-panel" dir="rtl" data-testid="template-application-panel">
+  <h3 class="qd-section-title">تطبيق القالب على باب</h3>
+
+  @if (conflictMessage(); as conflict) {
+    <p class="application-panel__conflict" role="alert" data-testid="application-conflict">{{ conflict }}</p>
+  }
+
+  <form class="application-panel__form" [formGroup]="form" (ngSubmit)="beginConfirm()" data-testid="template-apply-form">
+    <label for="apply-target">الباب الهدف</label>
+    <select id="apply-target" class="qd-select" formControlName="targetCategoryId" data-testid="apply-target">
+      <option value="" disabled>اختر بابًا…</option>
+      @for (category of targetCandidates(); track category.categoryId) {
+        <option [value]="category.categoryId">{{ category.name }}</option>
+      }
+    </select>
+
+    <button type="submit" class="qd-btn qd-btn-primary" data-testid="apply-begin" [disabled]="form.invalid || isPending()">
+      تطبيق القالب
+    </button>
+  </form>
+
+  @if (confirming()) {
+    <div class="application-panel__confirm" role="alertdialog" data-testid="apply-confirm">
+      <p>سيتم إنشاء جذور القالب كأبواب فرعية مباشرة تحت الباب المحدد. هل تريد المتابعة؟</p>
+      <button type="button" class="qd-btn qd-btn-primary" data-testid="apply-confirm-yes" [disabled]="isPending()" (click)="confirmApply()">
+        تأكيد
+      </button>
+      <button type="button" class="qd-btn qd-btn-ghost" data-testid="apply-confirm-cancel" (click)="cancelConfirm()">إلغاء</button>
+    </div>
+  }
+
+  @if (isPending()) {
+    <p class="application-panel__pending" data-testid="apply-pending">جارٍ تطبيق القالب…</p>
+  }
+</section>

@@ -133,6 +133,11 @@ public static class ApiMessages
     public const string AbwabManualProtection = "الباب محمي يدويًا، ولا يمكن تنفيذ هذا الإجراء";
     public const string AbwabManualProtectionScopeConflict = "تغيّر نطاق الحماية اليدوية منذ آخر قراءة";
     public const string AbwabOrdinaryProtection = "الباب داخل نافذة الحماية العادية (24 ساعة)";
+    public const string AbwabRelationshipDuplicate = "توجد علاقة فعّالة بهذا النوع بين البابين بالفعل";
+    public const string AbwabRelationshipCycle = "لا يمكن إنشاء هذه العلاقة لأنها تُغلق دورة بين الأعم والأخص";
+    public const string AbwabRelationshipSelfLink = "لا يمكن ربط الباب بنفسه";
+    public const string AbwabTemplateCycle = "لا يمكن نقل العقدة إلى نفسها أو إلى أحد فروعها داخل القالب";
+    public const string AbwabTemplateRevisionStale = "تغيّر القالب منذ آخر قراءة. يرجى تحديث الصفحة والمحاولة مجددًا.";
     public const string AbwabRowStale = "تغيّرت البيانات منذ آخر قراءة. يرجى تحديث الصفحة والمحاولة مجددًا.";
     public const string AbwabTreeRevisionStale = "تغيّرت شجرة الأبواب منذ آخر قراءة. يرجى تحديث الصفحة والمحاولة مجددًا.";
 
@@ -153,4 +158,30 @@ public static class ApiMessages
     public const string AbwabManualProtectionLifted = "تم رفع الحماية اليدوية";
     public const string AbwabFullProtectionPresetApplied = "تم تطبيق الحماية الكاملة على الأنواع الخمسة";
     public const string AbwabCompositeReadDenied = "لا تملك الصلاحيات اللازمة لعرض شجرة الأبواب";
+
+    public const string AbwabRelationshipsLoaded = "تم تحميل علاقات الباب";
+    public const string AbwabRelationshipAdded = "تمت إضافة العلاقة";
+    public const string AbwabRelationshipEdited = "تم تعديل العلاقة";
+    public const string AbwabRelationshipDeleted = "تم حذف العلاقة";
+    public const string AbwabRelationshipRestored = "تمت استعادة العلاقة";
+
+    public const string AbwabTemplatesLoaded = "تم تحميل قوالب الأبواب";
+    public const string AbwabTemplateLoaded = "تم تحميل القالب";
+    public const string AbwabTemplateHistoryLoaded = "تم تحميل سجل القالب";
+    public const string AbwabTemplateNotFound = "القالب غير موجود";
+    public const string AbwabTemplateAdded = "تمت إضافة القالب";
+    public const string AbwabTemplateEdited = "تم تعديل القالب";
+    public const string AbwabTemplateDeleted = "تم حذف القالب";
+    public const string AbwabTemplateRestored = "تمت استعادة القالب";
+    public const string AbwabTemplateNodeAdded = "تمت إضافة العقدة";
+    public const string AbwabTemplateNodeEdited = "تم تعديل العقدة";
+    public const string AbwabTemplateNodeReparented = "تم نقل العقدة";
+    public const string AbwabTemplateNodesReordered = "تم إعادة ترتيب العقد";
+    public const string AbwabTemplateNodeRemoved = "تمت إزالة العقدة";
+    public const string AbwabTemplateAliasAdded = "تمت إضافة المرادف";
+    public const string AbwabTemplateAliasEdited = "تم تعديل المرادف";
+    public const string AbwabTemplateAliasRemoved = "تمت إزالة المرادف";
+    public const string AbwabTemplateAliasRestored = "تمت استعادة المرادف";
+    public const string AbwabTemplateApplied = "تم تطبيق القالب على الباب";
+    public const string AbwabTemplateReorderMalformed = "يجب أن تتضمّن قائمة الترتيب كل عقدة مرة واحدة فقط";
 }

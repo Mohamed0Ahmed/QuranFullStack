@@ -7,17 +7,120 @@ import { CategoryCreateRenderComponent } from './category-create-render.componen
 import { CategoryEditRenderComponent } from './category-edit-render.component';
 import { FieldDiffRowComponent } from './field-diff-row.component';
 import { ManualProtectionRenderComponent } from './manual-protection-render.component';
+import { RelationshipRenderComponent } from './relationship-render.component';
 import { SubtreeDeleteRenderComponent } from './subtree-delete-render.component';
+import { TemplateApplicationRenderComponent } from './template-application-render.component';
+import { TemplateHistoryRenderComponent } from './template-history-render.component';
 import {
   BulkMoveRenderPayload,
   CategoryCreateRenderPayload,
   CategoryEditRenderPayload,
   ManualProtectionRenderPayload,
+  RelationshipEndpointRenderView,
+  RelationshipRenderPayload,
+  RelationshipStateRenderView,
   SubtreeDeleteRenderPayload,
+  TemplateApplicationRenderPayload,
+  TemplateHistoryRenderPayload,
+  TemplateSnapshotRenderView,
 } from './abwab-audit-render.models';
+import { toDormantDependentCounts } from './relationship-dormant-counts';
+import {
+  RELATIONSHIP_TYPE_BROADER_NARROWER,
+  RELATIONSHIP_TYPE_OPPOSITE,
+  RELATIONSHIP_TYPE_SIMILAR,
+} from '../data-access/abwab-relationships.port';
+import { RELATIONSHIP_TYPE_LABELS } from '../data-access/relationship-type-labels';
 
 function text(element: Element): string {
   return element.textContent?.replace(/\s+/g, ' ').trim() ?? '';
+}
+
+
+function templateSnapshot(): TemplateSnapshotRenderView {
+  return {
+    doorTemplateId: 'template-1',
+    name: 'قالب الأبواب',
+    description: null,
+    nodes: [
+      {
+        templateNodeId: 'node-1',
+        parentTemplateNodeId: null,
+        name: 'العقدة الأولى',
+        representativeQuranExcerpt: null,
+        description: null,
+        siblingOrder: 0,
+        aliases: ['مرادف'],
+      },
+      {
+        templateNodeId: 'node-2',
+        parentTemplateNodeId: 'node-1',
+        name: 'العقدة الثانية',
+        representativeQuranExcerpt: null,
+        description: 'وصف',
+        siblingOrder: 0,
+        aliases: [],
+      },
+    ],
+  };
+}
+
+function templateApplicationPayload(): TemplateApplicationRenderPayload {
+  return {
+    changeSetId: 'changeset-9',
+    doorTemplateId: 'template-1',
+    templateName: 'قالب الأبواب',
+    templateSnapshot: templateSnapshot(),
+    targetCategoryId: 'category-1',
+    targetPath: ['أبواب الفقه', 'باب المعاملات'],
+    createdTree: [
+      {
+        categoryId: 'created-1',
+        name: 'العقدة الأولى',
+        representativeQuranExcerpt: null,
+        description: null,
+        level: 1,
+        siblingOrder: 0,
+        aliases: ['مرادف'],
+        children: [
+          {
+            categoryId: 'created-2',
+            name: 'العقدة الثانية',
+            representativeQuranExcerpt: null,
+            description: 'وصف',
+            level: 2,
+            siblingOrder: 0,
+            aliases: [],
+            children: [],
+          },
+        ],
+      },
+    ],
+    countsByLevel: [
+      { level: 1, count: 1 },
+      { level: 2, count: 1 },
+    ],
+  };
+}
+
+function templateHistoryPayload(): TemplateHistoryRenderPayload {
+  const before = templateSnapshot();
+  return {
+    changeSetId: 'changeset-10',
+    doorTemplateId: 'template-1',
+    action: 'node_edited',
+    actorSubject: 'مشرف',
+    actedAtUtc: '2026-07-25T00:00:00Z',
+    before,
+    after: {
+      ...before,
+      nodes: [{ ...before.nodes[0], name: 'اسم معدّل' }, before.nodes[1]],
+    },
+    changedNodes: [{ ...before.nodes[0], name: 'اسم معدّل' }],
+    changedFields: [
+      { templateNodeId: before.nodes[0].templateNodeId, field: 'Name', before: before.nodes[0].name, after: 'اسم معدّل' },
+    ],
+  };
 }
 
 // Synthetic Arabic fixture data only (source-safe) — no real Quran text.
@@ -171,6 +274,272 @@ describe('Abwab §6.3 audit render payloads', () => {
     expect(text(effects[1])).toContain('موروثة');
   });
 
+  function endpoint(
+    categoryId: string,
+    name: string,
+    overrides: Partial<RelationshipEndpointRenderView> = {},
+  ): RelationshipEndpointRenderView {
+    return {
+      categoryId,
+      name,
+      sectionName: 'أبواب الأخلاق',
+      historicalPath: ['أبواب الأخلاق', name],
+      currentName: null,
+      currentPath: null,
+      isCurrentlyDeleted: false,
+      ...overrides,
+    };
+  }
+
+  function renderRelationship(payload: RelationshipRenderPayload): HTMLElement {
+    const fixture = TestBed.createComponent(RelationshipRenderComponent);
+    fixture.componentRef.setInput('payload', payload);
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  const mutualBefore: RelationshipStateRenderView = {
+    relationshipType: RELATIONSHIP_TYPE_SIMILAR,
+    isDirectional: false,
+    from: endpoint('cat-1', 'باب الصبر'),
+    to: endpoint('cat-2', 'باب الشكر'),
+  };
+
+  const directionalState: RelationshipStateRenderView = {
+    relationshipType: RELATIONSHIP_TYPE_BROADER_NARROWER,
+    isDirectional: true,
+    from: endpoint('cat-3', 'باب العبادات', { sectionName: 'أبواب الفقه', historicalPath: ['أبواب الفقه', 'باب العبادات'] }),
+    to: endpoint('cat-4', 'باب الصلاة', { sectionName: 'أبواب الفقه', historicalPath: ['أبواب الفقه', 'باب الصلاة'] }),
+  };
+
+  const mutualRetyped: RelationshipStateRenderView = { ...mutualBefore, relationshipType: RELATIONSHIP_TYPE_OPPOSITE };
+
+  it.each([
+    ['added', null, directionalState, 'إضافة علاقة'],
+    ['edited', mutualBefore, mutualRetyped, 'تعديل علاقة'],
+    ['deleted', directionalState, null, 'حذف علاقة'],
+    ['restored', null, mutualBefore, 'استعادة علاقة'],
+  ] as const)(
+    'relationship %s: renders the action label and the direct-structure reviewer «غير مطلوب»',
+    (action, before, after, actionLabel) => {
+      const root = renderRelationship({
+        changeSetId: 'changeset-1',
+        categoryRelationshipId: 'relationship-1',
+        action,
+        before,
+        after,
+      });
+
+      expect(text(root.querySelector('.qd-section-title')!)).toContain(actionLabel);
+      expect(text(root.querySelector('[data-testid=relationship-render-reviewer]')!)).toContain('غير مطلوب');
+    },
+  );
+
+  it('relationship edit (mutual): the changed value carries BOTH colour and a non-colour marker, anchored to the value itself', () => {
+    const root = renderRelationship({
+      changeSetId: 'changeset-1',
+      categoryRelationshipId: 'relationship-1',
+      action: 'edited',
+      before: mutualBefore,
+      after: mutualRetyped,
+    });
+
+    const afterTypeCell = root.querySelector('[data-testid=relationship-render-after-type]')!;
+    expect(text(root.querySelector('[data-testid=relationship-render-before-type]')!)).toContain('مشابه');
+    expect(text(afterTypeCell)).toContain('مقابل');
+
+    // The marker must live INSIDE the changed value, not in a detached block — one anchor carrying
+    // both signals is what makes the change readable without colour.
+    expect(afterTypeCell.querySelector('[data-testid=relationship-render-changed-type]')).not.toBeNull();
+    expect(afterTypeCell.closest('.relationship-diff__row')!.className).toContain('relationship-diff__row--changed');
+    expect(root.querySelector('[data-testid=relationship-render-changed-from]')).toBeNull();
+  });
+
+  it('relationship edit: each row pairs the previous state and the current state as sibling cells (previous first, RTL-rightmost)', () => {
+    const root = renderRelationship({
+      changeSetId: 'changeset-1',
+      categoryRelationshipId: 'relationship-1',
+      action: 'edited',
+      before: mutualBefore,
+      after: { ...mutualBefore, to: endpoint('cat-9', 'باب الرضا') },
+    });
+
+    const row = root.querySelector('[data-testid=relationship-render-before-to]')!.closest('.relationship-diff__row')!;
+    const cells = [...row.children].map((cell) => cell.getAttribute('data-testid'));
+    expect(cells).toEqual([null, 'relationship-render-before-to', 'relationship-render-after-to']);
+    expect(text(root.querySelector('[data-testid=relationship-render-before-to]')!)).toContain('باب الشكر');
+    expect(text(root.querySelector('[data-testid=relationship-render-after-to]')!)).toContain('باب الرضا');
+  });
+
+  it('relationship delete: the live current door name/path/deleted state renders from the BEFORE state even though there is no after', () => {
+    const root = renderRelationship({
+      changeSetId: 'changeset-4',
+      categoryRelationshipId: 'relationship-4',
+      action: 'deleted',
+      before: {
+        ...directionalState,
+        to: endpoint('cat-4', 'باب الصلاة', {
+          sectionName: 'أبواب الفقه',
+          historicalPath: ['أبواب الفقه', 'باب الصلاة'],
+          currentName: 'باب الصلوات',
+          currentPath: ['أبواب الفقه', 'باب الصلوات'],
+          isCurrentlyDeleted: true,
+        }),
+      },
+      after: null,
+    });
+
+    const beforeToCell = root.querySelector('[data-testid=relationship-render-before-to]')!;
+    expect(beforeToCell.querySelector('[data-testid=relationship-render-current]')).not.toBeNull();
+    expect(text(beforeToCell)).toContain('باب الصلوات');
+    expect(beforeToCell.querySelector('[data-testid=relationship-render-current-deleted]')).not.toBeNull();
+  });
+
+  it('relationship add (directional): derives the Broader/Narrower inverse label for display instead of storing a reversed row', () => {
+    const root = renderRelationship({
+      changeSetId: 'changeset-2',
+      categoryRelationshipId: 'relationship-2',
+      action: 'added',
+      before: null,
+      after: directionalState,
+    });
+
+    expect(text(root.querySelector('[data-testid=relationship-render-inverse]')!)).toContain('باب الصلاة أخص من باب العبادات');
+    expect(text(root.querySelector('[data-testid=relationship-render-before-from]')!)).toBe('');
+    expect(text(root)).toContain('الأعم');
+    expect(text(root)).toContain('الأخص');
+  });
+
+  // A committed relationship event can never carry a protection blocker: applicable Relationship
+  // protection aborts the mutation before a ChangeSet exists, so the block reaches the operator as
+  // the abwab.manual_protection conflict instead (audit-render-contract.md §1, recorded ruling).
+  it('relationship: the payload exposes no protection-blocker facet, since a blocked mutation is never audited', () => {
+    const root = renderRelationship({
+      changeSetId: 'changeset-5',
+      categoryRelationshipId: 'relationship-5',
+      action: 'added',
+      before: null,
+      after: mutualBefore,
+    });
+
+    expect(root.querySelector('[data-testid=relationship-render-blockers]')).toBeNull();
+    expect(Object.keys(mutualBefore)).not.toContain('effectiveProtectionBlockers');
+  });
+
+  it('relationship dormancy: the contributed counts name the relationship type and leave the dormant badge to the 029 seam', () => {
+    const counts = toDormantDependentCounts(
+      {
+        totalDormant: 3,
+        byType: [
+          { relationshipType: RELATIONSHIP_TYPE_SIMILAR, count: 2 },
+          { relationshipType: RELATIONSHIP_TYPE_OPPOSITE, count: 0 },
+          { relationshipType: RELATIONSHIP_TYPE_BROADER_NARROWER, count: 1 },
+        ],
+      },
+      RELATIONSHIP_TYPE_LABELS,
+    );
+
+    expect(counts).toHaveLength(2);
+    expect(counts.map((entry) => entry.count)).toEqual([2, 1]);
+    expect(counts.map((entry) => entry.label)).toEqual(['علاقات (مشابه)', 'علاقات (أعم / أخص)']);
+    // The 029-owned row stamps «خامل» itself; contributing it again would render the word twice.
+    for (const entry of counts) {
+      expect(entry.label).not.toContain('خامل');
+      expect(entry.label).not.toContain('محذوف');
+    }
+
+    const fixture = TestBed.createComponent(SubtreeDeleteRenderComponent);
+    const payload: SubtreeDeleteRenderPayload = {
+      changeSetId: 'changeset-3',
+      deletionOperationId: 'operation-1',
+      rootName: 'باب المعاملات',
+      historicalPath: ['أبواب الفقه', 'باب المعاملات'],
+      affectedCategoryCount: 4,
+      dormantDependentCounts: counts,
+      isRestored: false,
+      currentPath: null,
+    };
+    fixture.componentRef.setInput('payload', payload);
+    fixture.detectChanges();
+
+    const entries = (fixture.nativeElement as HTMLElement).querySelectorAll('[data-testid=subtree-delete-dormant-entry]');
+    expect(entries).toHaveLength(2);
+    expect(text(entries[0])).toBe('خامل علاقات (مشابه): 2');
+  });
+
+  it('template application: renders the frozen snapshot, target path, created tree and level counts', () => {
+    const fixture = TestBed.createComponent(TemplateApplicationRenderComponent);
+    fixture.componentRef.setInput('payload', templateApplicationPayload());
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    expect(text(host.querySelector('[data-testid=template-application-render-template]')!)).toContain('قالب الأبواب');
+    expect(text(host.querySelector('[data-testid=template-application-render-target]')!)).toContain('أبواب الفقه ← باب المعاملات');
+    expect(host.querySelectorAll('[data-testid=template-application-render-snapshot-node]')).toHaveLength(2);
+    expect(host.querySelectorAll('[data-testid=template-application-render-created-node]')).toHaveLength(2);
+    expect(text(host.querySelector('[data-testid=template-application-render-total]')!)).toBe('الإجمالي: 2');
+    expect(text(host.querySelector('[data-testid=template-application-render-reviewer]')!)).toBe('المراجع: غير مطلوب');
+  });
+
+  it('template history: renders actor/time, the complete before and after trees, and the changed nodes', () => {
+    const fixture = TestBed.createComponent(TemplateHistoryRenderComponent);
+    fixture.componentRef.setInput('payload', templateHistoryPayload());
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    expect(text(host.querySelector('[data-testid=template-history-render-actor]')!)).toContain('مشرف');
+    expect(host.querySelectorAll('[data-testid=template-history-render-before-node]')).toHaveLength(2);
+    expect(host.querySelectorAll('[data-testid=template-history-render-after-node]')).toHaveLength(2);
+    expect(host.querySelectorAll('[data-testid=template-history-render-changed-node]')).toHaveLength(1);
+  });
+
+  it('template history: the changed FIELDS render as 029 field-diff rows, naming the node and both values', () => {
+    const fixture = TestBed.createComponent(TemplateHistoryRenderComponent);
+    fixture.componentRef.setInput('payload', templateHistoryPayload());
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    const rows = host.querySelectorAll('[data-testid=template-history-render-changed-fields] [data-testid=field-diff-row]');
+    expect(rows).toHaveLength(1);
+    expect(text(rows[0])).toContain('الاسم');
+    expect(text(rows[0])).toContain('العقدة الأولى');
+    expect(text(rows[0])).toContain('اسم معدّل');
+  });
+
+  it('template history: a payload with no changed field renders the empty-value label rather than an empty section', () => {
+    const fixture = TestBed.createComponent(TemplateHistoryRenderComponent);
+    fixture.componentRef.setInput('payload', { ...templateHistoryPayload(), changedFields: [] });
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('[data-testid=template-history-render-changed-fields-empty]'),
+    ).toHaveLength(1);
+    expect(host.querySelectorAll('[data-testid=field-diff-row]')).toHaveLength(0);
+  });
+
+  it('template history: a changed node carries a NON-colour marker alongside the colour class', () => {
+    const fixture = TestBed.createComponent(TemplateHistoryRenderComponent);
+    fixture.componentRef.setInput('payload', templateHistoryPayload());
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    const markers = host.querySelectorAll('[data-testid=template-history-render-after-changed]');
+    expect(markers).toHaveLength(1);
+    expect(text(markers[0])).toContain('تغيير');
+    expect(host.querySelectorAll('.template-render__changed').length).toBeGreaterThan(0);
+  });
+
+  it('template history: a create with no previous tree renders the empty-value label rather than dropping the row', () => {
+    const fixture = TestBed.createComponent(TemplateHistoryRenderComponent);
+    fixture.componentRef.setInput('payload', { ...templateHistoryPayload(), action: 'created', before: null, changedNodes: [] });
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelectorAll('[data-testid=template-history-render-before-empty]')).toHaveLength(1);
+    expect(host.querySelectorAll('[data-testid=template-history-render-changed-empty]')).toHaveLength(1);
+  });
+
   it('§6.3 defines NO standalone "ordering" render component — order data only appears inside bulk-move and category-edit', () => {
     // Every render component the audit/ folder publishes (T073). Every one of them is imported
     // above by name; a future "ordering" component would have to be imported here too to render
@@ -181,10 +550,13 @@ describe('Abwab §6.3 audit render payloads', () => {
       BulkMoveRenderComponent,
       SubtreeDeleteRenderComponent,
       ManualProtectionRenderComponent,
+      RelationshipRenderComponent,
+      TemplateApplicationRenderComponent,
+      TemplateHistoryRenderComponent,
       FieldDiffRowComponent,
     ];
 
-    expect(publishedComponents).toHaveLength(6);
+    expect(publishedComponents).toHaveLength(9);
 
     for (const component of publishedComponents) {
       const mirror = reflectComponentType(component);

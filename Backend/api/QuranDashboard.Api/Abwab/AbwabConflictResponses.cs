@@ -19,6 +19,10 @@ public static class AbwabConflictResponses
         [AbwabConflictCodes.ManualProtection] = ApiMessages.AbwabManualProtection,
         [AbwabConflictCodes.ManualProtectionScopeConflict] = ApiMessages.AbwabManualProtectionScopeConflict,
         [AbwabConflictCodes.OrdinaryProtection] = ApiMessages.AbwabOrdinaryProtection,
+        [AbwabConflictCodes.RelationshipDuplicate] = ApiMessages.AbwabRelationshipDuplicate,
+        [AbwabConflictCodes.RelationshipCycle] = ApiMessages.AbwabRelationshipCycle,
+        [AbwabConflictCodes.TemplateCycle] = ApiMessages.AbwabTemplateCycle,
+        [AbwabConflictCodes.TemplateRevisionStale] = ApiMessages.AbwabTemplateRevisionStale,
         [AbwabConflictCodes.RowStale] = ApiMessages.AbwabRowStale,
         [AbwabConflictCodes.TreeRevisionStale] = ApiMessages.AbwabTreeRevisionStale,
     };

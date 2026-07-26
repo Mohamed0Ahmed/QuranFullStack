@@ -29,6 +29,10 @@
           <button type="submit" class="qd-btn qd-btn-primary" data-testid="abwab-tree-new-root-submit">إضافة</button>
         </form>
       }
+
+      @if (permissions.canViewTemplate()) {
+        <a class="qd-btn qd-btn-ghost" data-testid="abwab-tree-templates-link" [routerLink]="['templates']">قوالب الأبواب</a>
+      }
     </div>
 
     <div class="abwab-tree-page__body">
@@ -48,6 +52,16 @@
 
       @if (facade.selectedCategory(); as selected) {
         <aside class="abwab-tree-page__detail">
+          @if (permissions.canViewRelationship()) {
+            <a
+              class="qd-btn qd-btn-ghost"
+              data-testid="abwab-tree-relationships-link"
+              [routerLink]="['relationships', selected.categoryId]"
+            >
+              علاقات هذا الباب
+            </a>
+          }
+
           <qd-abwab-category-editor
             [category]="selected"
             [canEdit]="permissions.canEditCategory()"

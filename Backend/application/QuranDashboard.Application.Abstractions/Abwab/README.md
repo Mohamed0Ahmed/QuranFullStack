@@ -1,6 +1,7 @@
-# Abwab core contracts (application abstractions) — `029`
+# Abwab contracts (application abstractions) — `029` core, `030` relationships + templates
 
-**Layer:** Application.Abstractions · **Feature:** `029-abwab-core` · **HOW rules:**
+**Layer:** Application.Abstractions · **Features:** `029-abwab-core`,
+`030-abwab-relationships-templates` · **HOW rules:**
 `Backend/.architecture/CLEAN_ARCHITECTURE.md`
 
 Ports, commands, and DTOs the `029` core vertical is built from. This project has no
@@ -42,11 +43,68 @@ under `Core/` and `Restore/`.
 - DTOs (`*SnapshotDto`, `*ProfileDto`, `*SummaryDto`, …) are the wire/contract shapes the frontend
   core mock and HTTP adapter both target for parity (`specs/029-abwab-core/contracts/`).
 
+## `Relationships/` — the `030` relationship contracts
+
+- **`IAbwabRelationshipWritePort`** — add/edit/delete/restore. Every command under
+  `RelationshipCommands.cs` carries `ExpectedTimelineGeneration`, and edit/delete/restore also carry
+  the relationship row's expected `xmin`; **add carries no row expectation** because no row exists
+  yet and endpoint validity/protection are revalidated under the transaction. `FirstCategoryId`/
+  `SecondCategoryId` are shape-relative: for `BroaderNarrower` First is the broader (source) and
+  Second the narrower (target); for the mutual types the writer canonicalizes the pair.
+- **`IAbwabRelationshipReadPort`** — the actionable per-category projection (which **filters dormant
+  rows**, i.e. any row with a soft-deleted endpoint) plus the dormant-count projection over an
+  affected-category set, which feeds the `029` subtree render payload's generic
+  `dormantDependentCounts` seam.
+- **`ICategoryRelationshipStore`** — the narrow persistence seam the writer uses instead of EF.
+  `GetActiveDirectionalTargetsAsync` returns **one breadth-first layer** of the broader→narrower
+  graph so cycle validation walks only the reachable subgraph.
+
+## `Templates/` — the `030` template contracts
+
+- **`IAbwabTemplateWritePort`** — aggregate CRUD, the node internals (add/edit/reparent/reorder/
+  remove), the alias internals (add/edit/remove/restore), and `apply`-to-one-category. Every command
+  in `TemplateCommands.cs` carries `ExpectedTimelineGeneration`. **Structural** node commands also
+  carry the expected `TemplateRevision`; content-only commands (node edit, every alias command) carry
+  the row's expected `xmin` alone, because they change no structure and bump no counter. `apply`
+  carries all four expectations: `TemplateRevision`, `TreeRevision`, the target category's `xmin`,
+  and the generation. **No command names a real category except `apply`'s target**, and none
+  references a second template — there is no create-from-real-door and no cross-door copy path.
+- **`IAbwabTemplateReadPort`** — the template list, the template detail (nodes + aliases + the
+  `TreeRevision` the apply command needs), and the **separate template-history** projection (§6.3:
+  template CRUD never appears in the main product-audit list). `MaxHistoryEntries` (100) caps that
+  projection; `TemplateHistoryDto.HasMore` reports truncation so a capped history is never mistaken
+  for the complete record.
+- **`TemplateNodeOrderRules`** — the single definition of a well-formed reorder list (non-empty, no
+  repeated id). The API request validates against it to produce the framework 400, and
+  `TemplateNodeHandler` re-checks it because the write port is reachable without the controller. Two
+  enforcement points, one rule: a repeated id would otherwise satisfy the sibling-count check while
+  leaving a real sibling un-reordered.
+- **`TemplateAuditActions`** — the audited action strings for the whole template aggregate: the
+  `template.history.` prefix and its thirteen CRUD actions, plus the main-log-eligible
+  `template.applied`. They live here, not beside the writer, because **three** layers match on them —
+  the Application writer stamps them, the Infrastructure history read port filters on the prefix, and
+  the Infrastructure restore interpreter keys on the applied kind — and Infrastructure cannot
+  reference Application. A private copy on either side would drift silently: a changed prefix empties
+  every history read, a changed applied kind breaks application inversion, and neither fails to
+  compile.
+- **`TemplateParentChainRules`** — the single §7.4 acyclicity walk (`FindCycleNodeId`), shared by the
+  Application node writer (`TemplateTreeGuards.GuardAcyclic`) and the Infrastructure
+  `DoorTemplateRestoreAdapter`. Same "two enforcement points, one rule" reason as
+  `TemplateNodeOrderRules`: §7.4 requires that no cyclic template can be **saved, applied, rendered,
+  or restored**, so a walk that drifted on either side would let one path persist a structure the
+  other rejects. Each caller still raises its own message under the same `abwab.template_cycle` code.
+- **`IDoorTemplateStore` / `ITemplateNodeStore` / `ITemplateNodeAliasStore`** — the narrow
+  persistence seams the handlers use instead of EF. `FindTrackedForTemplateAsync` returns the whole
+  template's nodes in one in-transaction read, which is what lets reparent/reorder validate the
+  parent chain and rewrite sibling orders without a query per level.
+
 ## `Restore/` — the §8 registry contracts
 
 `IAbwabRestoreAdapter<TSnapshot>` (capture/reconstruct a versioned, schema-tagged snapshot) and
 `IAbwabRestoreAdapterDescriptor` (the DI-discoverable `PersistedType`/`SnapshotSchemaVersion` used by
-the static registry test). Implementations, the registered adapter list, and the acceptance status
+the static registry test). `IAbwabRestoreEventInterpreter` (`030`) is deliberately **not** a
+descriptor: an event-kind interpreter owns no persisted type and adds **no** registry entry — it maps
+one audited event kind onto the adapters that already own the rows the event created. Implementations, the registered adapter list, and the acceptance status
 live in `Infrastructure/Abwab/Restore/README.md` — this folder only defines the shape.
 
 ## Related

@@ -1,0 +1,47 @@
+<div class="qd-card qd-card--bordered audit-render" data-testid="template-application-render">
+  <h3 class="qd-section-title">تطبيق قالب باب</h3>
+
+  <p class="audit-render__meta" data-testid="template-application-render-reviewer">المراجع: {{ reviewerLabel }}</p>
+
+  <p class="audit-render__meta" data-testid="template-application-render-template">
+    القالب: {{ payload().templateName }}
+  </p>
+
+  <p class="audit-render__meta" data-testid="template-application-render-target">
+    الباب الهدف: {{ payload().targetPath.join(' ← ') }}
+  </p>
+
+  <h4 class="audit-render__subtitle">لقطة القالب وقت التطبيق</h4>
+  <ul class="template-render__list" data-testid="template-application-render-snapshot">
+    @for (node of payload().templateSnapshot.nodes; track node.templateNodeId) {
+      <li data-testid="template-application-render-snapshot-node">
+        {{ node.name }} — الترتيب: {{ node.siblingOrder }} — المقطع التمثيلي:
+        {{ node.representativeQuranExcerpt ?? emptyValueLabel }} — الوصف: {{ node.description ?? emptyValueLabel }}
+        @if (node.aliases.length > 0) {
+          — المرادفات: {{ node.aliases.join('، ') }}
+        }
+      </li>
+    }
+  </ul>
+
+  <h4 class="audit-render__subtitle">الشجرة المُنشأة</h4>
+  <ul class="template-render__list" data-testid="template-application-render-created">
+    @for (row of createdRows(); track row.view.categoryId) {
+      <li data-testid="template-application-render-created-node" [style.padding-inline-start.rem]="row.depth">
+        {{ row.view.name }} — المستوى: {{ row.view.level }} — الترتيب: {{ row.view.siblingOrder }} — المقطع التمثيلي:
+        {{ row.view.representativeQuranExcerpt ?? emptyValueLabel }} — الوصف: {{ row.view.description ?? emptyValueLabel }}
+        @if (row.view.aliases.length > 0) {
+          — المرادفات: {{ row.view.aliases.join('، ') }}
+        }
+      </li>
+    }
+  </ul>
+
+  <h4 class="audit-render__subtitle">الأعداد حسب المستوى</h4>
+  <ul class="template-render__list" data-testid="template-application-render-counts">
+    @for (entry of payload().countsByLevel; track entry.level) {
+      <li data-testid="template-application-render-count">المستوى {{ entry.level }}: {{ entry.count }}</li>
+    }
+    <li data-testid="template-application-render-total">الإجمالي: {{ totalCreated() }}</li>
+  </ul>
+</div>
