@@ -5,7 +5,6 @@ using QuranDashboard.Domain.Abwab.Sections;
 using QuranDashboard.Domain.Abwab.Tree;
 using QuranDashboard.Infrastructure.Abwab.Persistence;
 using QuranDashboard.Tests.Abwab._Fixtures;
-using QuranDashboard.Tests.Abwab.Kernel._Support;
 
 namespace QuranDashboard.Tests.Abwab._Support;
 
@@ -80,11 +79,16 @@ internal static class AbwabTreeSeeding
         AppliedAtUtc = appliedAtUtc ?? DateTimeOffset.UnixEpoch,
     };
 
-    public static async Task InsertAsync(PostgresFixture fixture, params object[] entities)
+    public static Task InsertAsync(PostgresFixture fixture, params object[] entities) =>
+        InsertAsync(fixture.ConnectionString, entities);
+
+    public static async Task InsertAsync(string connectionString, params object[] entities)
     {
-        await using var context = AbwabKernelHarness.CreateProductionContext(
-            fixture,
-            new AbwabWriteGuardInterceptor(AbwabPersonalDeletePolicy.Default));
+        var options = new DbContextOptionsBuilder<QuranDashboardDbContext>()
+            .UseNpgsql(connectionString)
+            .AddInterceptors(new AbwabWriteGuardInterceptor(AbwabPersonalDeletePolicy.Default))
+            .Options;
+        await using var context = new QuranDashboardDbContext(options);
 
         foreach (var entity in entities)
         {

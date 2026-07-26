@@ -15,7 +15,10 @@ internal static class SecurityTestHarness
     public static readonly IServerClock Clock = new FixedClock(DateTimeOffset.UnixEpoch);
 
     public static QuranDashboardDbContext CreateContext(PostgresFixture fixture) =>
-        new(new DbContextOptionsBuilder<QuranDashboardDbContext>().UseNpgsql(fixture.ConnectionString).Options);
+        CreateContext(fixture.ConnectionString);
+
+    public static QuranDashboardDbContext CreateContext(string connectionString) =>
+        new(new DbContextOptionsBuilder<QuranDashboardDbContext>().UseNpgsql(connectionString).Options);
 
     public static Task ResetAsync(PostgresFixture fixture) => AbwabSubstrateReset.FullResetAsync(fixture);
 
@@ -33,17 +36,25 @@ internal static class SecurityTestHarness
         await Exec(connection, $"UPDATE abwab_revision_state SET timeline_generation = {generation} WHERE id = 1");
     }
 
+    public static Task<SecurityAuditCommitResult> GrantAsync(
+        PostgresFixture fixture, GrantPermissionCommand command, IEffectivePermissionCache? cache = null) =>
+        GrantAsync(fixture.ConnectionString, command, cache);
+
     public static async Task<SecurityAuditCommitResult> GrantAsync(
-        PostgresFixture fixture, GrantPermissionCommand command, IEffectivePermissionCache? cache = null)
+        string connectionString, GrantPermissionCommand command, IEffectivePermissionCache? cache = null)
     {
-        await using var db = CreateContext(fixture);
+        await using var db = CreateContext(connectionString);
         return await BuildPermissions(db, cache).GrantAsync(command, CancellationToken.None);
     }
 
+    public static Task<SecurityAuditCommitResult> RevokeAsync(
+        PostgresFixture fixture, RevokePermissionCommand command, IEffectivePermissionCache? cache = null) =>
+        RevokeAsync(fixture.ConnectionString, command, cache);
+
     public static async Task<SecurityAuditCommitResult> RevokeAsync(
-        PostgresFixture fixture, RevokePermissionCommand command, IEffectivePermissionCache? cache = null)
+        string connectionString, RevokePermissionCommand command, IEffectivePermissionCache? cache = null)
     {
-        await using var db = CreateContext(fixture);
+        await using var db = CreateContext(connectionString);
         return await BuildPermissions(db, cache).RevokeAsync(command, CancellationToken.None);
     }
 
@@ -59,9 +70,12 @@ internal static class SecurityTestHarness
         return await BuildOwners(db).RemoveAsync(command, CancellationToken.None);
     }
 
-    public static async Task<SecurityAuditCommitResult> BootstrapOwnerAsync(PostgresFixture fixture, BootstrapSystemOwnerCommand command)
+    public static Task<SecurityAuditCommitResult> BootstrapOwnerAsync(PostgresFixture fixture, BootstrapSystemOwnerCommand command) =>
+        BootstrapOwnerAsync(fixture.ConnectionString, command);
+
+    public static async Task<SecurityAuditCommitResult> BootstrapOwnerAsync(string connectionString, BootstrapSystemOwnerCommand command)
     {
-        await using var db = CreateContext(fixture);
+        await using var db = CreateContext(connectionString);
         return await BuildOwners(db).BootstrapAsync(command, CancellationToken.None);
     }
 

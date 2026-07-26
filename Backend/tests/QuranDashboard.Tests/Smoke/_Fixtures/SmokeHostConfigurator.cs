@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using QuranDashboard.Tests.Api.Access;
+using QuranDashboard.Tests.Smoke._Support;
 
 namespace QuranDashboard.Tests.Smoke._Fixtures;
 
@@ -18,7 +19,7 @@ internal static class SmokeHostConfigurator
                 ["ConnectionStrings:QuranDashboardDb"] = connectionString,
                 ["Auth:Authority"] = TestJwtTokens.TestIssuer,
                 ["Auth:Audience"] = TestJwtTokens.TestAudience,
-                ["Auth:BootstrapOwnerEmail"] = "smoke-owner@example.test",
+                ["Auth:BootstrapOwnerEmail"] = SmokePersonas.OwnerEmail,
                 ["Cors:AllowedOrigins:0"] = "https://localhost",
                 ["RateLimiting:Enabled"] = "false",
                 ["RateLimiting:PermissionAdminPermitLimit"] = "100000",
