@@ -29,11 +29,19 @@ public sealed class QuranDataSmokeTests(QuranDataSmokeFixture fixture)
 
     [QuranDumpFact]
     public async Task Mushaf_study_sources_load()
-        => await ReadDataAsync("api/mushaf/study-sources");
+    {
+        var data = await ReadDataAsync("api/mushaf/study-sources");
+        data.GetProperty("tafsirSources").GetArrayLength().Should().BeGreaterThan(0);
+        data.GetProperty("translationSources").GetArrayLength().Should().BeGreaterThan(0);
+        data.GetProperty("fullI3rabSources").GetArrayLength().Should().BeGreaterThan(0);
+    }
 
     [QuranDumpFact]
     public async Task Ayah_study_loads_for_first_ayah()
-        => await ReadDataAsync("api/mushaf/ayahs/1:1/study");
+    {
+        var data = await ReadDataAsync("api/mushaf/ayahs/1:1/study");
+        data.GetProperty("ayah").GetProperty("textUthmani").GetString().Should().NotBeNullOrWhiteSpace();
+    }
 
     [QuranDumpFact]
     public async Task Ayah_similarities_load_for_first_ayah()
@@ -45,7 +53,10 @@ public sealed class QuranDataSmokeTests(QuranDataSmokeFixture fixture)
 
     [QuranDumpFact]
     public async Task Word_analysis_loads_for_first_word()
-        => await ReadDataAsync("api/mushaf/words/1:1:1/analysis");
+    {
+        var data = await ReadDataAsync("api/mushaf/words/1:1:1/analysis");
+        data.GetProperty("renderedWordSegments").GetArrayLength().Should().BeGreaterThan(0);
+    }
 
     [QuranDumpFact]
     public async Task Roots_explorer_pages_the_full_corpus()
@@ -65,7 +76,7 @@ public sealed class QuranDataSmokeTests(QuranDataSmokeFixture fixture)
     public async Task Stems_explorer_pages_the_full_corpus()
     {
         var data = await ReadDataAsync("api/words/stems");
-        data.GetProperty("totalCount").GetInt32().Should().BeGreaterThan(11000);
+        data.GetProperty("totalCount").GetInt32().Should().BeGreaterThan(11800);
     }
 
     [QuranDumpFact]
@@ -77,11 +88,17 @@ public sealed class QuranDataSmokeTests(QuranDataSmokeFixture fixture)
 
     [QuranDumpFact]
     public async Task Word_types_tree_loads()
-        => await ReadDataAsync("api/words/word-types/tree");
+    {
+        var data = await ReadDataAsync("api/words/word-types/tree");
+        data.GetProperty("mainTypes").GetArrayLength().Should().BeGreaterThan(0);
+    }
 
     [QuranDumpFact]
     public async Task Word_types_grouped_summary_loads_for_first_root()
-        => await ReadDataAsync("api/words/word-types/table/roots/1");
+    {
+        var data = await ReadDataAsync("api/words/word-types/table/roots/1");
+        data.GetProperty("occurrencesCount").GetInt32().Should().BeGreaterThan(0);
+    }
 
     private async Task<JsonElement> ReadDataAsync(string path)
     {

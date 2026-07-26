@@ -13,10 +13,12 @@ internal static class SmokeHostConfigurator
     internal static void Configure(IWebHostBuilder builder, string connectionString)
     {
         builder.UseEnvironment("Testing");
+        // AddPersistence reads the connection string eagerly during registration; UseSetting is the
+        // only override that reaches builder.Configuration before Program's top-level statements run.
+        builder.UseSetting("ConnectionStrings:QuranDashboardDb", connectionString);
         builder.ConfigureAppConfiguration((_, configuration) =>
             configuration.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["ConnectionStrings:QuranDashboardDb"] = connectionString,
                 ["Auth:Authority"] = TestJwtTokens.TestIssuer,
                 ["Auth:Audience"] = TestJwtTokens.TestAudience,
                 ["Auth:BootstrapOwnerEmail"] = SmokePersonas.OwnerEmail,
@@ -27,10 +29,6 @@ internal static class SmokeHostConfigurator
 
         builder.ConfigureTestServices(services =>
         {
-            services.RemoveAll<QuranDashboardDbContext>();
-            services.RemoveAll<DbContextOptions<QuranDashboardDbContext>>();
-            services.AddDbContext<QuranDashboardDbContext>(options => options.UseNpgsql(connectionString));
-
             services.RemoveAll<IExternalUserProfileSource>();
             services.AddSingleton<IExternalUserProfileSource, FakeExternalUserProfileSource>();
 

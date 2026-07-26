@@ -806,3 +806,19 @@ GET `api/access/me` AU · GET `api/security/permissions` SO · POST `api/securit
 ### Misc (2)
 
 GET `api/health` A · GET `api/dashboard/info` A
+
+---
+
+## Post-review amendment (2026-07-26)
+
+Engineering review found that the Phase 1 `SmokeHostConfigurator` snippet above (the
+`RemoveAll`/`AddDbContext` swap at lines 194–196) silently dropped `AbwabWriteGuardInterceptor`
+from the smoke hosts: production wires the interceptor only inside `AddPersistence`'s options
+action, so re-registering the context with bare `UseNpgsql` lost it — a real-composition parity
+gap on a Quran-data-safety guard. Fixed post-review: the swap is removed entirely and the connection string moved from
+`ConfigureAppConfiguration` to `builder.UseSetting` — `AddPersistence` reads the string eagerly
+during registration, and `UseSetting` is the only override that reaches `builder.Configuration`
+before Program's top-level statements run (`ConfigureAppConfiguration` proved too late: health
+went 503 against the appsettings placeholder). The production registration now binds to the test
+container with its interceptor intact, and a new guard test asserts the interceptor is present
+in the smoke host's `DbContextOptions`.

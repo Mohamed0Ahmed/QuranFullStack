@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Hosting;
+using QuranDashboard.Infrastructure.Abwab.Persistence;
 using QuranDashboard.Tests.Smoke._Fixtures;
 
 namespace QuranDashboard.Tests.Smoke.Guards;
@@ -32,6 +34,18 @@ public sealed class SmokeHostGuardTests(SmokeApiFixture fixture)
         var scheme = schemes.Should().ContainSingle().Subject;
         scheme.Name.Should().Be(JwtBearerDefaults.AuthenticationScheme);
         scheme.HandlerType.Should().Be(typeof(JwtBearerHandler));
+    }
+
+    [Fact]
+    public void DbContext_options_keep_the_production_write_guard_interceptor()
+    {
+        var options = fixture.InMemoryServices.GetRequiredService<DbContextOptions<QuranDashboardDbContext>>();
+        var coreOptions = options.FindExtension<CoreOptionsExtension>();
+
+        coreOptions.Should().NotBeNull();
+        coreOptions!.Interceptors.Should().NotBeNull();
+        coreOptions.Interceptors!.OfType<AbwabWriteGuardInterceptor>().Should().NotBeEmpty(
+            "the smoke host must run the real persistence composition, including the write-kernel guard");
     }
 
     [Fact]

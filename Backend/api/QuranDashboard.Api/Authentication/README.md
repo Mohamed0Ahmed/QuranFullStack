@@ -51,8 +51,9 @@ It is wired through `JwtBearerEvents.OnChallenge`, which suppresses the default 
 
 - There is no fallback policy: endpoints are anonymous unless a controller opts in. Applied today:
   plain `[Authorize]` on `api/access/me`; `SystemOwner` (+ the `PermissionAdmin` rate-limit policy) on
-  `api/security/permissions/*`; per-action permission-code policies on all Abwab write surfaces
-  (sections, categories, relationships, templates, protection). The three role policies
+  `api/security/permissions/*`; per-action permission-code policies on all Abwab admin surfaces —
+  every write action (sections, categories, relationships, templates, protection) plus the
+  `relationship.view`/`template.view`/`protection.view` read actions. The three role policies
   (`Owner`/`Admin`/`Editor`) remain registered but are not applied to any endpoint by name.
 - This folder owns auth wiring only. User provisioning and role resolution live in Application /
   Infrastructure behind `ICurrentUser` and `IUserRoleResolver`.

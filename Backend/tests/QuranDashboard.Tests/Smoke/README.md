@@ -32,7 +32,9 @@ Run: `dotnet test … --filter "FullyQualifiedName~QuranDashboard.Tests.Smoke"` 
   join `AbwabDbCollection` — its classes full-reset the substrate per test and would wipe smoke state.
 - **Seed-once tolerance contract.** `SmokeSeed` seeds once per fixture; pipeline passes tolerate
   domain 400/404/409 from accumulated writes but NEVER tolerate 401/403 (when authorized) or any 5xx.
-  Destructive cases target the `Expendable*` seed entities only.
+  Destructive cases must never target the primary section/category/template rows — those use the
+  `Expendable*` seed entities; deleting the seeded alias/relationship/node/node-alias rows is an
+  acceptable casualty because their remaining cases tolerate 404.
 - **Every route needs a catalog entry.** `SmokeCoverageParityTests` compares `SmokeRouteCatalog`
   against the live `ApiExplorer` endpoint table in both directions and needs no DB — it always runs,
   including CI. Add/rename an endpoint ⇒ update the catalog in the same change.
@@ -41,6 +43,11 @@ Run: `dotnet test … --filter "FullyQualifiedName~QuranDashboard.Tests.Smoke"` 
   DB seeded by the documented DataImporter chain — a derived cache of the canonical import, never
   synthetic, never committed (`resources/` is gitignored). Missing dump ⇒ data-smoke SKIPS (normal in
   CI); present-but-corrupt/stale dump (sha256 or migration mismatch) ⇒ FAIL LOUD, never skip.
+- **Data-smoke floors come from the documented inventory.** Thresholds in
+  `Data/QuranDataSmokeTests.cs` are lower bounds on endpoint `totalCount`s, set just under the counts
+  in `Backend/report/database-inventory/current-database-inventory.md` (roots 1,642 / lemmas 4,790 /
+  unique 21,294). Stems asserts > 11,800 because the stems list endpoint's default count filter
+  yields `totalCount` 11,843 — below the raw `quran_stems` table's 12,108 rows.
 - **Restore mechanics.** The data fixture migrates first (schema incl. `__EFMigrationsHistory` comes
   from EF migrations; the dump is data-only), then runs HOST `pg_restore --data-only
   --disable-triggers` against the container's mapped port. The data container runs `postgres:18`
