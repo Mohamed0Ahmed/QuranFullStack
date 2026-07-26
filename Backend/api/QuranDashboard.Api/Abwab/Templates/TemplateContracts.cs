@@ -4,12 +4,12 @@ using QuranDashboard.Application.Abstractions.Abwab.Templates;
 namespace QuranDashboard.Api.Abwab.Templates;
 
 public sealed record AddDoorTemplateRequest(
-    [property: Required] string Name,
+    string Name,
     string? Description,
     long ExpectedTimelineGeneration);
 
 public sealed record EditDoorTemplateRequest(
-    [property: Required] string Name,
+    string Name,
     string? Description,
     uint ExpectedVersion,
     long ExpectedTimelineGeneration);
@@ -20,14 +20,14 @@ public sealed record RestoreDoorTemplateRequest(uint ExpectedVersion, long Expec
 
 public sealed record AddTemplateNodeRequest(
     Guid? ParentTemplateNodeId,
-    [property: Required] string Name,
+    string Name,
     string? RepresentativeQuranExcerpt,
     string? Description,
     long ExpectedTemplateRevision,
     long ExpectedTimelineGeneration);
 
 public sealed record EditTemplateNodeRequest(
-    [property: Required] string Name,
+    string Name,
     string? RepresentativeQuranExcerpt,
     string? Description,
     uint ExpectedVersion,
@@ -47,7 +47,7 @@ public sealed record ReparentTemplateNodeRequest(
 // The rule itself lives in TemplateNodeOrderRules so this layer and the handler cannot drift apart.
 public sealed record ReorderTemplateNodesRequest(
     Guid? ParentTemplateNodeId,
-    [property: Required] IReadOnlyList<Guid> OrderedTemplateNodeIds,
+    IReadOnlyList<Guid> OrderedTemplateNodeIds,
     long ExpectedTemplateRevision,
     long ExpectedTimelineGeneration) : IValidatableObject
 {
@@ -67,11 +67,11 @@ public sealed record RemoveTemplateNodeRequest(
     long ExpectedTimelineGeneration);
 
 public sealed record AddTemplateNodeAliasRequest(
-    [property: Required] string Value,
+    string Value,
     long ExpectedTimelineGeneration);
 
 public sealed record EditTemplateNodeAliasRequest(
-    [property: Required] string Value,
+    string Value,
     uint ExpectedVersion,
     long ExpectedTimelineGeneration);
 

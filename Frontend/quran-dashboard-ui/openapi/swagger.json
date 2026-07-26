@@ -5975,7 +5975,6 @@
         "type": "object",
         "properties": {
           "name": {
-            "minLength": 1,
             "type": "string"
           },
           "description": {
@@ -6050,7 +6049,6 @@
         "type": "object",
         "properties": {
           "value": {
-            "minLength": 1,
             "type": "string"
           },
           "expectedTimelineGeneration": {
@@ -6077,7 +6075,6 @@
             "nullable": true
           },
           "name": {
-            "minLength": 1,
             "type": "string"
           },
           "representativeQuranExcerpt": {
@@ -7402,7 +7399,6 @@
         "type": "object",
         "properties": {
           "name": {
-            "minLength": 1,
             "type": "string"
           },
           "description": {
@@ -7492,7 +7488,6 @@
         "type": "object",
         "properties": {
           "value": {
-            "minLength": 1,
             "type": "string"
           },
           "expectedVersion": {
@@ -7517,7 +7512,6 @@
         "type": "object",
         "properties": {
           "name": {
-            "minLength": 1,
             "type": "string"
           },
           "representativeQuranExcerpt": {
