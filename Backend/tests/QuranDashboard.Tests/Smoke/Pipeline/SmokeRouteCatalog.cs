@@ -42,11 +42,9 @@ internal static class SmokeRouteCatalog
 
     private static List<SmokeRouteCase> BuildCases() =>
     [
-        // ---- misc ----
         AnonymousGet("api/health"),
         AnonymousGet("api/dashboard/info"),
 
-        // ---- mushaf reader (all anonymous GET) ----
         AnonymousGet("api/mushaf/pages/{pageNumber}", "api/mushaf/pages/1"),
         AnonymousGet("api/mushaf/surahs"),
         AnonymousGet("api/mushaf/study-sources"),
@@ -55,7 +53,6 @@ internal static class SmokeRouteCatalog
         AnonymousGet("api/mushaf/ayahs/{verseKey}/mutashabihat", "api/mushaf/ayahs/2:6/mutashabihat"),
         AnonymousGet("api/mushaf/words/{wordLocation}/analysis", "api/mushaf/words/1:1:1/analysis"),
 
-        // ---- words: roots ----
         AnonymousGet("api/words/roots"),
         AnonymousGet("api/words/roots/{id}", "api/words/roots/1"),
         AnonymousGet("api/words/roots/{id}/ayahs", "api/words/roots/1/ayahs"),
@@ -65,7 +62,6 @@ internal static class SmokeRouteCatalog
         AnonymousGet("api/words/roots/{id}/lemmas", "api/words/roots/1/lemmas"),
         AnonymousGet("api/words/roots/{id}/stems", "api/words/roots/1/stems"),
 
-        // ---- words: lemmas ----
         AnonymousGet("api/words/lemmas"),
         AnonymousGet("api/words/lemmas/{id}", "api/words/lemmas/1"),
         AnonymousGet("api/words/lemmas/{id}/words/{wordKind}", "api/words/lemmas/1/words/tashkeel"),
@@ -74,7 +70,6 @@ internal static class SmokeRouteCatalog
         AnonymousGet("api/words/lemmas/{id}/missing-surahs", "api/words/lemmas/1/missing-surahs"),
         AnonymousGet("api/words/lemmas/{id}/stems", "api/words/lemmas/1/stems"),
 
-        // ---- words: stems ----
         AnonymousGet("api/words/stems"),
         AnonymousGet("api/words/stems/{id}", "api/words/stems/1"),
         AnonymousGet("api/words/stems/{id}/words/{wordKind}", "api/words/stems/1/words/tashkeel"),
@@ -83,14 +78,12 @@ internal static class SmokeRouteCatalog
         AnonymousGet("api/words/stems/{id}/missing-surahs", "api/words/stems/1/missing-surahs"),
         AnonymousGet("api/words/stems/{id}/lemmas", "api/words/stems/1/lemmas"),
 
-        // ---- words: unique ----
         AnonymousGet("api/words/unique/{kind}", "api/words/unique/tashkeel"),
         AnonymousGet("api/words/unique/{kind}/{id}", "api/words/unique/tashkeel/1"),
         AnonymousGet("api/words/unique/{kind}/{id}/surahs", "api/words/unique/tashkeel/1/surahs"),
         AnonymousGet("api/words/unique/{kind}/{id}/missing-surahs", "api/words/unique/tashkeel/1/missing-surahs"),
         AnonymousGet("api/words/unique/{kind}/{id}/ayahs", "api/words/unique/tashkeel/1/ayahs"),
 
-        // ---- words: word types ----
         AnonymousGet("api/words/word-types/tree"),
         AnonymousGet("api/words/word-types/words"),
         AnonymousGet("api/words/word-types/table"),
@@ -103,7 +96,6 @@ internal static class SmokeRouteCatalog
         AnonymousGet("api/words/word-types/table/{kind}/{dimensionId}/ayahs", "api/words/word-types/table/roots/1/ayahs"),
         AnonymousGet("api/words/word-types/table/{kind}/{dimensionId}/surahs", "api/words/word-types/table/roots/1/surahs"),
 
-        // ---- access / security ----
         new(HttpMethod.Get, "api/access/me", _ => "api/access/me", SmokeAuth.Authenticated),
         new(HttpMethod.Get, "api/security/permissions", _ => "api/security/permissions", SmokeAuth.SystemOwner),
         new(HttpMethod.Post, "api/security/permissions/grant", _ => "api/security/permissions/grant", SmokeAuth.SystemOwner,
@@ -113,11 +105,9 @@ internal static class SmokeRouteCatalog
             ValidBody: _ => """{"targetKind":"Subject","targetKey":"smoke-unused","permissionCode":"attribution.view","expectedTimelineGeneration":0,"expectedVersion":0}""",
             InvalidBody: _ => """{"targetKey":"smoke-unused","permissionCode":"attribution.view","expectedTimelineGeneration":0,"expectedVersion":0}"""),
 
-        // ---- abwab: tree (anonymous/unpermissioned callers get an in-body 403) ----
         new(HttpMethod.Get, "api/abwab/tree", _ => "api/abwab/tree", SmokeAuth.TreeRedacted),
         new(HttpMethod.Get, "api/abwab/tree/search", _ => "api/abwab/tree/search?query=باب", SmokeAuth.TreeRedacted),
 
-        // ---- abwab: sections ----
         new(HttpMethod.Post, "api/abwab/sections", _ => "api/abwab/sections", Permission("section.add"),
             ValidBody: _ => """{"name":"قسم جديد","expectedTreeRevision":0,"expectedTimelineGeneration":0}""",
             InvalidBody: _ => """{"expectedTreeRevision":0,"expectedTimelineGeneration":0}"""),
@@ -131,7 +121,6 @@ internal static class SmokeRouteCatalog
             ValidBody: _ => """{"expectedVersion":1,"expectedTreeRevision":0,"expectedTimelineGeneration":0}""",
             InvalidBody: _ => "{"),
 
-        // ---- abwab: categories ----
         new(HttpMethod.Post, "api/abwab/categories", ctx => "api/abwab/categories", Permission("category.add"),
             ValidBody: ctx => $$"""{"name":"باب جديد","description":null,"representativeQuranExcerpt":null,"parentCategoryId":null,"sectionId":"{{ctx.SectionId}}","expectedTreeRevision":0,"expectedTimelineGeneration":0}""",
             InvalidBody: ctx => $$"""{"description":null,"representativeQuranExcerpt":null,"parentCategoryId":null,"sectionId":"{{ctx.SectionId}}","expectedTreeRevision":0,"expectedTimelineGeneration":0}"""),
@@ -160,7 +149,6 @@ internal static class SmokeRouteCatalog
             ValidBody: _ => """{"expectedVersion":1,"expectedTimelineGeneration":0}""",
             InvalidBody: _ => "{"),
 
-        // ---- abwab: relationships ----
         new(HttpMethod.Get, "api/abwab/relationships/{categoryId}", ctx => $"api/abwab/relationships/{ctx.RootCategoryId}", Permission("relationship.view")),
         new(HttpMethod.Post, "api/abwab/relationships", _ => "api/abwab/relationships", Permission("relationship.add"),
             ValidBody: ctx => $$"""{"relationshipType":0,"firstCategoryId":"{{ctx.RootCategoryId}}","secondCategoryId":"{{ctx.ExpendableCategoryId}}","expectedTimelineGeneration":0}""",
@@ -175,7 +163,6 @@ internal static class SmokeRouteCatalog
             ValidBody: _ => """{"expectedVersion":1,"expectedTimelineGeneration":0}""",
             InvalidBody: _ => "{"),
 
-        // ---- abwab: templates ----
         new(HttpMethod.Get, "api/abwab/templates", _ => "api/abwab/templates", Permission("template.view")),
         new(HttpMethod.Get, "api/abwab/templates/{doorTemplateId}", ctx => $"api/abwab/templates/{ctx.TemplateId}", Permission("template.view")),
         new(HttpMethod.Get, "api/abwab/templates/{doorTemplateId}/history", ctx => $"api/abwab/templates/{ctx.TemplateId}/history", Permission("template.view")),
@@ -222,7 +209,6 @@ internal static class SmokeRouteCatalog
             ValidBody: ctx => $$"""{"targetCategoryId":"{{ctx.ExpendableCategoryId}}","expectedTemplateRevision":0,"expectedTreeRevision":0,"expectedTargetVersion":1,"expectedTimelineGeneration":0}""",
             InvalidBody: _ => "{"),
 
-        // ---- abwab: protection ----
         new(HttpMethod.Get, "api/abwab/protection/{categoryId}", ctx => $"api/abwab/protection/{ctx.RootCategoryId}", Permission("protection.view")),
         new(HttpMethod.Post, "api/abwab/protection/{categoryId}/{protectionType}/apply", ctx => $"api/abwab/protection/{ctx.RootCategoryId}/QuranContent/apply", Permission("protection.apply"),
             ValidBody: _ => """{"scope":0,"expectedVersion":null,"expectedTimelineGeneration":0}""",

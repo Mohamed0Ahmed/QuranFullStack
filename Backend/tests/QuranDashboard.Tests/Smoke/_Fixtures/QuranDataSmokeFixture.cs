@@ -21,8 +21,6 @@ public sealed class QuranDataSmokeFixture : IAsyncLifetime
 
     public HttpClient Client { get; private set; } = null!;
 
-    public TimeSpan RestoreDuration { get; private set; }
-
     public async Task InitializeAsync()
     {
         if (QuranDumpGate.IsMissing)
@@ -38,9 +36,7 @@ public sealed class QuranDataSmokeFixture : IAsyncLifetime
         await MigrateAsync(connectionString);
         await VerifyManifestMatchesMigratedSchemaAsync(manifest, connectionString);
 
-        var stopwatch = Stopwatch.StartNew();
         RunHostPgRestore(connectionString);
-        RestoreDuration = stopwatch.Elapsed;
 
         await VerifyRestoredCountsAsync(manifest, connectionString);
 

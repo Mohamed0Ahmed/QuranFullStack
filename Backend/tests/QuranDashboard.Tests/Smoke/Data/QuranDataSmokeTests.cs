@@ -10,9 +10,6 @@ namespace QuranDashboard.Tests.Smoke.Data;
 public sealed class QuranDataSmokeTests(QuranDataSmokeFixture fixture)
 {
     [QuranDumpFact]
-    public void Gate_reports_dump_present() => QuranDumpGate.IsMissing.Should().BeFalse();
-
-    [QuranDumpFact]
     public async Task Mushaf_page_1_has_surah_content()
     {
         var data = await ReadDataAsync("api/mushaf/pages/1");
