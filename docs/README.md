@@ -12,6 +12,7 @@ Where things live now:
   changing an area. `docs/contracts/` indexes these READMEs and **defers to them — the README/code wins.**
 - **Feature plans** → `specs/<feature>/` hosts per-feature Spec-Kit planning (spec/plan/tasks/contracts) for open features plus the N-2 buffer. Current contract index → `docs/contracts/`.
 - **How to work / how to write code** → `AGENTS.md` / `CLAUDE.md` / `.architecture/*`.
+- **Which tests to run and when** → `TESTING_STRATEGY.md` (workspace root) — execution tiers A–E, pipeline triggers, and the PR/release gates. Not a planning doc and not superseded by anything here.
 - **Evidence / reference** (audits, imports, diagnostics, DB inventory) → `Backend/report/`.
 
 Add a new `docs/feature-XXX-<name>/` folder only for genuinely new pre-spec planning; do

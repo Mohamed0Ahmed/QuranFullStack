@@ -50,6 +50,8 @@ context for those.
 **Always read:**
 
 - `CODING_PRINCIPLES.md`
+- `TESTING_STRATEGY.md` — when judging whether the executed tests were sufficient
+  for the changed scope (the Verification Check below).
 
 **For deep code-quality review, also consult the clean-code reference pack** (naming
 and functions, comments and formatting, SOLID, DRY/KISS/YAGNI, and AI-generated-code
@@ -375,6 +377,28 @@ Keep this distinct from build/test verification below:
 - Data-related work includes a validation/report path.
 - Any skipped verification is clearly stated. If build/test status is unknown, say
   unknown — do not assume success.
+- Judge verification *sufficiency* against `TESTING_STRATEGY.md` (workspace root),
+  the single source of truth for test selection tiers:
+  - verify the executed tier matches the changed scope and risk;
+  - do not demand a full or exhaustive suite when the strategy accepts focused
+    (Tier A/B) evidence for the change under review;
+  - a change hitting a Tier D trigger (`DataPipelines`, importer/data-generation
+    tools, pipeline tables/migrations, canonical resources, shared persistence
+    infrastructure) with no affected pipeline family run is a **BLOCKING** finding;
+  - required canonical tests that skipped because `resources/import-sources/` was
+    absent are missing evidence, not passing evidence (`TESTING_STRATEGY.md` §3
+    Tier E and §9);
+  - there is no CI (`TESTING_STRATEGY.md` §8) — never accept "CI is green" as
+    evidence, and never assume a gate ran because a workflow would have run it;
+  - there is no route-parity/smoke gate in this tree. For route, contract, auth,
+    middleware, or binding changes, expect the `Tests.Api.*` families plus focused
+    endpoint tests, and expect the evidence to *say* no route-parity gate ran
+    (`TESTING_STRATEGY.md` §3 Tier C and §4). The smoke tier is planned only
+    (`TESTING_STRATEGY.md` §13) — do not raise a finding that demands it, and flag
+    any command carrying a `Tests.Smoke` filter term as stale.
+
+  (Section numbers above refer to `TESTING_STRATEGY.md`, not this skill's own
+  numbered output sections.)
 
 ## Severity Levels
 
@@ -479,7 +503,10 @@ changed, omit it. When present, report:
 
 ## 9. Verification Check
 
-Report build/test evidence if provided. If no build/test was run, say so clearly.
+Report build/test evidence if provided, and state the executed verification tier
+versus the tier `TESTING_STRATEGY.md` requires for the changed scope (sufficient /
+insufficient / stale). If no build/test was run, say so clearly. Skipped required
+canonical tests count as missing evidence.
 
 ## Commit workflow reminder
 

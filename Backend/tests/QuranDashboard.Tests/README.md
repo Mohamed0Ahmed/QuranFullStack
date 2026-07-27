@@ -41,3 +41,10 @@ Folders are clustered by Quran domain/use case, not by project layer.
 
 - Backend map: `../../README.md`
 - Report/evidence conventions: `../../report/README.md`
+- Which tests to run and when: `../../../TESTING_STRATEGY.md` — execution tiers A–E, the
+  dot-bounded namespace filters, and the pipeline triggers. Note §8: there is no CI, so
+  every tier is a local gate.
+- `resources/db-dumps/quran-canonical/` is an **orphaned local artifact** — no test or
+  script in this tree reads it. It is the restore input for the planned smoke-harness data
+  tier (`TESTING_STRATEGY.md` §13) and is kept for that return; do not wire it into a
+  fixture or delete it as dead weight without reading §13 first.

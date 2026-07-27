@@ -13,6 +13,25 @@ Before adding or changing logging, exception handling, diagnostics, DataPipeline
 
 - `.architecture/LOGGING_GUIDELINES.md`
 
+## Backend Test Selection
+
+Before selecting or running Backend tests, read:
+
+- `../TESTING_STRATEGY.md` (workspace root)
+
+Use the tier required by the changed scope (§3, §4). Do not run the full Backend suite or
+the slow Quran data-pipeline families after every phase unless a Tier D trigger fires —
+`DataPipelines` code, importer tools, canonical packages under `resources/import-sources/`,
+pipeline entities/migrations, or shared persistence that can reach pipeline tables. The
+validated `dotnet test` filters live in §5; the ten pipeline namespaces are dot-bounded, so
+keep the leading and trailing dots and list the enriched morphology family explicitly.
+
+- There is no CI (§8) — every tier is a local gate, and "CI is green" is never evidence.
+- No route-parity/smoke gate exists in this tree. For route, contract, auth, middleware, or
+  binding changes, cover with the `Tests.Api.*` families and state in the evidence that no
+  route-parity gate ran (§3 Tier C, §4). The smoke tier is planned only (§13); do not add a
+  `Tests.Smoke` term to any filter.
+
 ## Backend Local READMEs
 
 - Before touching a backend area, read the nearest `README.md` (e.g.

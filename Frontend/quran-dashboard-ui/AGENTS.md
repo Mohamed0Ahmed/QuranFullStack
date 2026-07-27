@@ -17,6 +17,24 @@ read and follow:
 
 - `.architecture/FRONTEND_STRUCTURE.md`
 
+## Frontend Test Selection
+
+Before selecting or running Frontend tests, read:
+
+- `../../TESTING_STRATEGY.md` (workspace root)
+
+Use the tier required by the changed scope: focused `--include` globs for ordinary phases
+(Tier A), the full Frontend suite at milestones that complete a feature integration or
+touch `core/`, `shared/`, routing, the app shell, or theming (Tier B), and the full suite
+plus `npm run build` before a PR that changed Frontend code (Tier C). The validated
+commands are in §6.
+
+- Preserve the Vitest fork cap (`VITEST_MIN_FORKS=1 VITEST_MAX_FORKS=2`) baked into the
+  `npm test` script; direct `ng test` calls must prefix it themselves. Nothing enforces it
+  automatically — there is no CI (§8), so it is a review obligation.
+- There is no browser E2E layer (no Playwright dependency, config, or `e2e` script). Never
+  cite an E2E run as evidence (§3 Tier E).
+
 ## Frontend Local READMEs
 
 - Before touching a frontend feature, read the nearest `README.md`

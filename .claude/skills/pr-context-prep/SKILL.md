@@ -93,6 +93,20 @@ exists, say so plainly and state what should be run — do not claim green.
 - Frontend: the Angular build and the touched `*.spec.ts` (respect the test worker
   cap; the Angular builder ignores `vitest.config.ts`).
 
+State the executed tier against the tier `TESTING_STRATEGY.md` requires for the changed
+scope (its §3, §4) — an ordinary PR is Tier C; a change touching `DataPipelines`, importer
+tools, canonical resources, pipeline tables/migrations, or shared persistence adds Tier D.
+Three things this tree does **not** have, which the package must never imply (section
+numbers refer to `TESTING_STRATEGY.md`, not this skill's own steps):
+
+- **CI** (its §8). There is no workflow; every gate is local and unverified. Never write
+  "CI will catch it" or present a green pipeline.
+- **A route-parity/smoke gate.** For route, contract, auth, middleware, or binding
+  changes, list the `Tests.Api.*` evidence and say plainly that no route-parity gate ran
+  (its §3 Tier C and §4). The smoke tier is planned only (its §13) — never cite it as a
+  required gate, and treat a `Tests.Smoke` filter in supplied evidence as stale.
+- **Browser E2E.** No Playwright dependency, config, or `e2e` script exists (its §3 Tier E).
+
 Recommend the relevant skill for missing evidence (`deploy-smoke` for build/migrate/
 run, `test-guard` for test quality) rather than running it yourself here.
 

@@ -155,6 +155,27 @@ Notes:
 - `engineering-review` remains the formal post-implementation review skill.
 - `test-guard` is only for test-code quality.
 
+### Test selection
+
+Before selecting or running tests, read:
+
+- `TESTING_STRATEGY.md`
+
+It is the single source of truth for which tests to run and when (§1). Use the tier
+required by the changed scope — Tier A focused per-phase, Tier B no-pipeline milestone
+regression, Tier C ordinary pre-PR, Tier D pipeline-triggered, Tier E release/canonical
+acceptance (§3), with the change-to-tier matrix in §4 and the validated command catalogs
+in §5 (Backend) and §6 (Frontend). Do not run the full Backend suite or the slow Quran
+data-pipeline families after every phase unless the strategy's Tier D triggers require it.
+
+Two facts the strategy fixes that agents get wrong here:
+
+- **There is no CI** (§8). Every tier is a local gate that nothing verifies ran; "CI is
+  green" is never available as evidence.
+- **There is no route-parity/smoke gate** in this tree (§3 Tier C, §4). The smoke tier is
+  planned, not active (§13) — never cite it as a gate, and never add a `Tests.Smoke`
+  filter term to a command.
+
 ## Design Context
 
 This is an **Arabic-first (RTL)**, **scholarly and calm** product dashboard for
