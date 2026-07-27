@@ -23,3 +23,5 @@ Thumbs.db
 *.tmp
 *.swp
 .impeccable/
+.playwright-mcp/
+Frontend/quran-dashboard-ui/test-results/
