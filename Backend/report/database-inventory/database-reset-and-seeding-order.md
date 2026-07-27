@@ -138,8 +138,9 @@ the exact ones verified in the Phase 7 report; the remaining verbs are shown in 
   `sources=4, entries=14513, ayahMappings=24944, distinctAyahs=6236, contentWarnings=0`. Post-run DB
   checks: 4 source rows, 14,513 entry rows, 24,944 junction rows, 6,236 mappings per source
   (`daas`, `darwish`, `jadwal`, `muyassar`). Importer report: `verdict=pass`, `persisted=true`,
-  `forced=false`, 21/21 hard checks green, provenance warning present. Canonical report at
-  `report/feature-010-quran-full-i3rab-foundation/full-i3rab-import-report.{md,json}`.
+  `forced=false`, 21/21 hard checks green, provenance warning present. The generated
+  full-i3rab import report was swept with its feature folder; the counts above are the
+  surviving record — regenerate by re-running the verb, or recover from git history.
   Note: same caveat as 008/009 — migration + import on an existing foundation-seeded DB, not a full
   reset→reseed of the whole chain.
 - **Feature 013 (deterministic unique word ids):** migration `20260621181644_DeterministicUniqueWordIds`

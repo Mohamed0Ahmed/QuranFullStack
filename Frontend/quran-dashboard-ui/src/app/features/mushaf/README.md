@@ -137,5 +137,6 @@ ayahs, and متشابهات groups. State (page, selected ayah/word, source sele
 ## Related
 
 - Backend: `Backend/.../Persistence/Reads/Quran/MushafReader/*`, MushafReader handlers.
-- Specs: `specs/011-mushaf-reader-study-context/`, `012-mushaf-ayah-similarities/`.
-  (Prior docs evidence reports for feature 011/012 were purged.)
+- Contracts: this README + the components/services here are the truth; the thin index is
+  `docs/contracts/mushaf-reader.md`. The planning artifacts of the reader/similarities
+  features were swept per the planning-artifact lifecycle rule and live in git history.

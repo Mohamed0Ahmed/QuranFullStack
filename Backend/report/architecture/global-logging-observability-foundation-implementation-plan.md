@@ -66,7 +66,7 @@ Duplicate exception logging:
 
 Existing Words logging audit:
 
-- `Backend/report/feature-014-words-explorer/logging-observability-audit-report.md` was not present during planning.
+- None. No Words-area logging/observability audit existed when this plan was written.
 
 ## 3. Proposed Global Logging Standard
 

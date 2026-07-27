@@ -410,6 +410,6 @@ main type clears them (the snapshot belonged to the previous type), refresh/dire
 ## Related
 
 - Backend read models: `Backend/.../Persistence/Reads/Quran/Words/README.md`.
-- Specs: `specs/015-roots-explorer/`, `016-lemmas-stems-explorer/`, `019-word-types-explorer/`,
-  `014-words-hub-unique-words/`.
-  (Prior frontend/docs evidence reports were purged — recover from git history if needed.)
+- Contracts: this README + the components/services here are the truth; the thin index is
+  `docs/contracts/words-explorers.md`. The planning artifacts of the features that built
+  the explorers were swept per the planning-artifact lifecycle rule and live in git history.

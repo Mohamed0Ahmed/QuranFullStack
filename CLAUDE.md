@@ -46,9 +46,33 @@ Canonical workspace paths:
 - Feature planning documents, capability reports, decision addendums, and pre-Spec Kit reports live under `docs/feature-XXX-feature-name/`.
 - Spec Kit artifacts live under `specs/<feature>/`, the per-feature planning workspace. For an **active** feature its `spec`/`plan`/`tasks`/`contracts` are live planning inputs (the Spec-Kit implementation-review checks the work against `specs/<feature>/contracts/`). Do not confuse `docs/` planning reports with `specs/` feature specifications, plans, tasks, or quickstarts.
 - Current contract index (thin, pointer-only) → `docs/contracts/`; it defers to code + the nearest `README.md`.
-- Merged features 001–019 are historical and their `contracts/` were removed; the current/steady-state contract truth is the code + nearest README, indexed by `docs/contracts/`. New features still populate `specs/<feature>/contracts/` during development.
+- The current/steady-state contract truth is the code + nearest README, indexed by `docs/contracts/`. New features still populate `specs/<feature>/contracts/` during development.
 - Backend implementation, import, engineering review, real-run, validation, and completion reports live under `Backend/report/feature-XXX-feature-name/`.
 - Frontend report conventions are not established yet; do not invent frontend report folders unless the task explicitly asks for that decision.
+- **Planning artifacts are feature-scoped and die when the feature closes.** At feature
+  close, delete that feature's `specs/<feature>/`, `docs/feature-XXX-*/`, and
+  `Backend/report/feature-XXX-*/` from the working tree. Git history is the archive; the
+  deletion is hygiene so agents stop grepping decisions that no longer bind.
+  - **N-2 buffer.** Keep the planning artifacts of the **two most recently closed**
+    features (by merge date into `dev`) plus **every currently open** feature. Closing a
+    third feature evicts the oldest buffered one.
+  - **Never deleted by this rule:**
+    - Live non-feature folders: `Backend/report/architecture/`, `report/database/`,
+      `report/database-inventory/`, `docs/contracts/`, `docs/api-reference/`,
+      `docs/deployment-railway/`, `docs/design-preview/`, and the `README.md` of
+      `specs/`, `docs/`, and `Backend/report/`.
+    - **Umbrella plans still governing unbuilt work** — a master plan spanning several
+      unfinished features outlives any one of them.
+    - **Evidence** whose facts are not restated by a live document: import/source
+      verification, canonical counts and hashes, measured performance budgets that back a
+      live assertion, destructive-path and Quran-safety inventories, cross-cutting audits.
+      Evidence is judged **per file**, not per folder — a feature folder may lose its
+      completion report and keep its import report.
+  - **Repoint before you delete.** `grep -rn` the whole repo (code, tests, skills, data
+    files, READMEs, `.specify/`) for every path being removed. A referenced artifact may
+    not be deleted until the reference is repointed to code + the nearest `README.md`, or
+    the fact is folded into that README. Dangling links are a defect, not an acceptable
+    cost.
 
 ## Local README Context (read before you change a folder)
 
@@ -57,7 +81,8 @@ Canonical workspace paths:
   current truth, boundaries, and invariants of that area.
 - Local `README.md` = WHAT an area does now and what must not break.
   `AGENTS.md` / `CLAUDE.md` / `.architecture/*` = HOW to work and how to write code.
-  `specs/<feature>/` = per-feature Spec-Kit planning (active features live; 001–019 historical, contracts removed). Reports = evidence only.
+  `specs/<feature>/` = per-feature Spec-Kit planning for open features plus the N-2 buffer;
+  closed features are deleted from the tree and live in git history. Reports = evidence only.
 - If your change alters behavior, commands, boundaries, routes, data invariants,
   import behavior, API contracts, URL state, or tests described in a README, UPDATE
   that README in the SAME change.
@@ -149,8 +174,9 @@ enterprise greige.
 
 ## Active Spec Kit Feature
 
-- Feature: `026-words-explorers-enhancements` — Words explorers enhancements (Word Types parity, filters, statistics).
-- Plan: `specs/026-words-explorers-enhancements/plan.md` (spec, research, data-model, contracts/, quickstart alongside).
-- Decision record (locked, authoritative): `docs/feature-026-words-explorers-enhancements/plan.md`.
+- None. No feature is open; `dev` sits at the 033-auth-roles-permissions release boundary.
+- When a feature opens, record it here as: feature slug, its `specs/<feature>/plan.md`, and
+  its `docs/feature-XXX-*/` decision record. Clear this section back to "None" when the
+  feature closes and its planning artifacts are swept per the lifecycle rule above.
 
 <!-- SPECKIT END -->

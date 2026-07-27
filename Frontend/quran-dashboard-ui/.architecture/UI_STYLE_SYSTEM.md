@@ -552,8 +552,7 @@ component-by-component color decisions. New and changed UI must conform to this
 section. The token set it depends on (`--qd-accent-fg`, `--qd-border-accent`,
 `--qd-surface-hover`, `--qd-selected-bg`, `--qd-danger-tint`, `--qd-success-tint`,
 `--qd-warning-tint`) is live in `_tokens.scss` / `_themes.scss`. Rolling every
-existing call-site onto this doctrine was a phased migration tracked in
-`docs/feature-028-color-doctrine-unification/plan.md` (P1–P7); the migration is
+existing call-site onto this doctrine was a phased migration; the migration is
 **complete** — no *new* code may reintroduce a pattern this section bans.
 
 ### 16.1 Role → color table
@@ -661,12 +660,12 @@ fills, resting borders — stays **banned as solid green**: use a tint,
 
 > **Status: implemented.** This section is the **live contract** for the shared
 > primitives below. `qd-tabs`, `qd-chip`, `qd-state`, and the skeleton primitives
-> (`qd-skeleton-rows`, `qd-panel-skeleton`) are Angular components shipped in P2 of
-> `docs/feature-028-color-doctrine-unification/plan.md`; `.qd-explorer-table` and
-> `.qd-detail-list` are CSS class-family collapses shipped in P3/P4. Chip/tab
-> call-sites and the solid-accent-fill ban landed in P5; density/motion/radius/ladder
-> cleanup in P6; the remaining ad-hoc text-loading states (dashboard-home,
-> mushaf-page-area) moved onto `qd-skeleton-rows`/`qd-panel-skeleton` in P7 — the
+> (`qd-skeleton-rows`, `qd-panel-skeleton`) are shipped Angular components;
+> `.qd-explorer-table` and `.qd-detail-list` are shipped CSS class-family collapses.
+> The chip/tab call-site unification, the solid-accent-fill ban, the
+> density/motion/radius/ladder cleanup, and the move of the remaining ad-hoc
+> text-loading states (dashboard-home, mushaf-page-area) onto
+> `qd-skeleton-rows`/`qd-panel-skeleton` all landed — the
 > `selected-ayah-section` and `selected-word-section` loading states already used
 > `.qd-skeleton` + an sr-only `role="status"` label before P7 and needed no change.
 > The phased migration (P1–P7) is complete. Once a contract exists for a pattern,

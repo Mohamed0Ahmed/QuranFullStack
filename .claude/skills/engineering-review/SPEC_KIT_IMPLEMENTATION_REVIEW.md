@@ -16,8 +16,9 @@ contracts** — not just against good engineering taste.
 
 You cannot judge scope without knowing what was asked. First pin down:
 
-1. **Which feature** — the `specs/<feature>/` directory under review (e.g.
-   `specs/001-layout-foundation/`).
+1. **Which feature** — the `specs/<feature>/` directory under review. Only open features
+   and the two most recently closed ones have a folder there; closed features are swept
+   per the planning-artifact lifecycle rule in `CLAUDE.md`.
 2. **Which phase / tasks were requested** — read it from the user's request
    ("implemented Phase 3", "did T013–T018", "User Story 2"). If the request is vague,
    infer the intended scope from `tasks.md` and **state the assumption** you made.
