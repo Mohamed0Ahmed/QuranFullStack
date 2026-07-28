@@ -106,4 +106,12 @@ public static class ApiMessages
     public const string WordTypesGroupedNotFound = "التجميع المحدد غير موجود";
 
     public const string CurrentUserLoaded = "تم تحميل بيانات المستخدم الحالي";
+
+    public const string AbwabSectionCreated = "تم إنشاء القسم";
+    public const string AbwabSectionRenamed = "تم تعديل اسم القسم";
+    public const string AbwabSectionInvalidName = "اسم القسم غير صالح";
+    public const string AbwabSectionNotFound = "القسم غير موجود";
+    public const string AbwabSectionDuplicateName = "يوجد قسم آخر بنفس الاسم";
+    public const string AbwabSectionHasLiveDoors = "لا يمكن حذف القسم لاحتوائه على أبواب حالية";
+    public const string AbwabSectionStaleVersion = "تم تعديل القسم من مستخدم آخر، يرجى التحديث والمحاولة مرة أخرى";
 }

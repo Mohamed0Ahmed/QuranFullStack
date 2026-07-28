@@ -83,6 +83,17 @@ public sealed class SmokeApiFixture : IAsyncLifetime
         }
     }
 
+    // Separate from ResetAsync on purpose: that one truncates users only, and is depended on by
+    // SmokeAuthPipelineTests and the Api/Access tests for exactly that scope — widening it would change
+    // behavior for every existing caller. Abwab writes need their own tables reset, nothing else.
+    public async Task ResetAbwabAsync()
+    {
+        await using var scope = QueryProvider.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+        await db.Database.ExecuteSqlRawAsync(
+            "TRUNCATE abwab_door_aliases, abwab_doors, abwab_sections RESTART IDENTITY CASCADE;");
+    }
+
     private void EvictRoleCache(string logtoSub)
     {
         using var scope = ApiServices.CreateScope();

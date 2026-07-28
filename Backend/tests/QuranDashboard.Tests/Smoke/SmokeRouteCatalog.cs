@@ -220,11 +220,34 @@ internal static class SmokeRouteCatalog
         new("api/health", "/api/health", HttpStatusCode.OK),
         new("api/dashboard/info", "/api/dashboard/info", HttpStatusCode.OK),
         new("api/access/me", "/api/access/me", HttpStatusCode.Unauthorized, SmokeRouteAccess.RequiresAuthentication),
+
+        // api/abwab/sections — AbwabSectionsController. ParityOnly: these write, so the generic sweep
+        // (which sends no body and shares the migrated-but-empty schema across every other case) must
+        // not dispatch them — see SmokeAbwabWriteTests for their dedicated coverage. DerivedStatus
+        // documents what a well-formed call answers against that empty schema, for reference only.
+        new("api/abwab/sections", "/api/abwab/sections", HttpStatusCode.Created)
+        {
+            Method = HttpMethod.Post, ParityOnly = true,
+        },
+        new("api/abwab/sections/{id:int}", "/api/abwab/sections/1", HttpStatusCode.NotFound)
+        {
+            Method = HttpMethod.Put, ParityOnly = true,
+        },
+        new("api/abwab/sections/{id:int}", "/api/abwab/sections/1", HttpStatusCode.NotFound)
+        {
+            Method = HttpMethod.Delete, ParityOnly = true,
+        },
     ];
 
     // The sweep's theory data is the Path alone (a string is serializable, so every route is an
-    // individually addressable test case); this resolves it back to its entry. Single rather than a
-    // dictionary lookup so a duplicated Path fails loudly instead of silently shadowing an entry.
+    // individually addressable test case); this resolves it back to its entry. Scoped to non-ParityOnly
+    // entries because write routes legitimately share a Path across methods (PUT/DELETE on the same
+    // {id} route) — the loud-duplicate guarantee still holds within the set the sweep actually dispatches.
     public static SmokeRoute ByPath(string path) =>
-        Routes.Single(route => route.Path == path);
+        Routes.Single(route => !route.ParityOnly && route.Path == path);
+
+    // For write smokes, which address a route by both Method and Path since ParityOnly entries can
+    // collide on Path alone.
+    public static SmokeRoute ByMethodAndPath(HttpMethod method, string path) =>
+        Routes.Single(route => route.Method == method && route.Path == path);
 }

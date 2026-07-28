@@ -1,4 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
+using QuranDashboard.Application.Abwab.Commands.Sections.CreateSection;
+using QuranDashboard.Application.Abwab.Commands.Sections.RenameSection;
+using QuranDashboard.Application.Abwab.Commands.Sections.DeleteSection;
 using QuranDashboard.Application.Access.Commands.ProvisionCurrentUser;
 using QuranDashboard.Application.Quran.DataPipelines.Foundation;
 using QuranDashboard.Application.Quran.DataPipelines.Foundation.Validation;
@@ -120,6 +123,10 @@ public static class DependencyInjection
         services.AddScoped<GetWordTypeSurahsHandler>();
 
         services.AddScoped<ProvisionCurrentUserHandler>();
+
+        services.AddScoped<CreateSectionHandler>();
+        services.AddScoped<RenameSectionHandler>();
+        services.AddScoped<DeleteSectionHandler>();
 
         return services;
     }
