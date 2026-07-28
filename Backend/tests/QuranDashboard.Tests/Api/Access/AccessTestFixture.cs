@@ -1,8 +1,6 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using QuranDashboard.Api.Controllers.Access;
 using QuranDashboard.Domain.Access;
 
@@ -141,8 +139,11 @@ public sealed class AccessTestFixture : IAsyncLifetime
                     {
                         ["ConnectionStrings:QuranDashboardDb"] = ConnectionString,
                         // A valid-shaped https authority the options validator accepts. No metadata is ever
-                        // fetched from it because JwtBearerOptions.Configuration is seeded below.
+                        // fetched from it: TestJwtTokens.ConfigureOfflineValidation seeds
+                        // JwtBearerOptions.Configuration instead.
                         ["Auth:Authority"] = "https://test-issuer.example/oidc",
+                        // Required non-blank by the validator; inert otherwise, since the effective
+                        // audience is pinned by TestJwtTokens.ConfigureOfflineValidation.
                         ["Auth:Audience"] = TestJwtTokens.TestAudience,
                         // Enables the Owner-bootstrap path for OwnerSub only (its fake profile email).
                         ["Auth:BootstrapOwnerEmail"] = OwnerEmail,
@@ -160,21 +161,7 @@ public sealed class AccessTestFixture : IAsyncLifetime
                     services.RemoveAll<IExternalUserProfileSource>();
                     services.AddSingleton<IExternalUserProfileSource>(ProfileSource);
 
-                    // Make token validation fully offline: seed the trusted signing key + issuer directly.
-                    // Setting Configuration short-circuits the metadata fetch to the (fake) authority.
-                    services.PostConfigure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, options =>
-                    {
-                        options.Configuration = new OpenIdConnectConfiguration { Issuer = TestJwtTokens.TestIssuer };
-                        options.Configuration.SigningKeys.Add(TestJwtTokens.SigningKey);
-                        options.TokenValidationParameters.ValidIssuer = TestJwtTokens.TestIssuer;
-                        options.TokenValidationParameters.IssuerSigningKey = TestJwtTokens.SigningKey;
-                        // Pin the audience here rather than via in-memory config: production
-                        // (AddApiAuthentication) binds Auth:Audience eagerly during service registration,
-                        // which runs before WebApplicationFactory applies its ConfigureAppConfiguration
-                        // override. PostConfigure materializes when the handler resolves the options, so it
-                        // authoritatively sets the audience the minted tokens target.
-                        options.TokenValidationParameters.ValidAudience = TestJwtTokens.TestAudience;
-                    });
+                    TestJwtTokens.ConfigureOfflineValidation(services);
                 });
             });
     }

@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using QuranDashboard.Domain.Access;
+using QuranDashboard.Tests.TestSupport.Http;
 
 namespace QuranDashboard.Tests.Api.Access;
 
@@ -7,7 +8,6 @@ namespace QuranDashboard.Tests.Api.Access;
 public sealed class AccessMeEndpointTests(AccessTestFixture fixture)
 {
     private const string MePath = "/api/access/me";
-    private static readonly string[] EnvelopeKeys = ["isSuccess", "message", "data", "errors"];
 
     [Fact]
     public async Task ValidToken_FirstCall_ProvisionsPendingUserAndReturnsEnvelope()
@@ -24,7 +24,8 @@ public sealed class AccessMeEndpointTests(AccessTestFixture fixture)
 
         using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         var envelope = document.RootElement;
-        envelope.EnumerateObject().Select(property => property.Name).Should().BeEquivalentTo(EnvelopeKeys);
+        envelope.EnumerateObject().Select(property => property.Name)
+            .Should().BeEquivalentTo(ApiEnvelope.PropertyNames);
         envelope.GetProperty("isSuccess").GetBoolean().Should().BeTrue();
         envelope.GetProperty("message").GetString().Should().Be(ApiMessages.CurrentUserLoaded);
 
@@ -89,19 +90,9 @@ public sealed class AccessMeEndpointTests(AccessTestFixture fixture)
 
         using var response = await client.SendAsync(request);
 
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-        response.Content.Headers.ContentType!.MediaType.Should().Be("application/json");
-
-        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        var envelope = document.RootElement;
-        // Assert the exact ApiResponse envelope, NOT ASP.NET problem-details.
-        envelope.EnumerateObject().Select(property => property.Name).Should().BeEquivalentTo(EnvelopeKeys);
-        envelope.GetProperty("isSuccess").GetBoolean().Should().BeFalse();
-        envelope.GetProperty("message").GetString().Should().Be(ApiMessages.Unauthorized);
-        envelope.GetProperty("data").ValueKind.Should().Be(JsonValueKind.Null);
-        var errors = envelope.GetProperty("errors");
-        errors.ValueKind.Should().Be(JsonValueKind.Array);
-        errors.GetArrayLength().Should().Be(0);
+        // The exact ApiResponse envelope, NOT ASP.NET problem-details.
+        await ApiEnvelope.AssertFailureEnvelopeAsync(
+            response, HttpStatusCode.Unauthorized, ApiMessages.Unauthorized);
     }
 
     [Fact]
@@ -115,16 +106,8 @@ public sealed class AccessMeEndpointTests(AccessTestFixture fixture)
 
         using var response = await GetMeAsync(client, token);
 
-        response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
-        response.Content.Headers.ContentType!.MediaType.Should().Be("application/json");
-
-        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        var envelope = document.RootElement;
-        envelope.EnumerateObject().Select(property => property.Name).Should().BeEquivalentTo(EnvelopeKeys);
-        envelope.GetProperty("isSuccess").GetBoolean().Should().BeFalse();
-        envelope.GetProperty("message").GetString().Should().Be(ApiMessages.UnexpectedError);
-        envelope.GetProperty("data").ValueKind.Should().Be(JsonValueKind.Null);
-        envelope.GetProperty("errors").GetArrayLength().Should().Be(0);
+        await ApiEnvelope.AssertFailureEnvelopeAsync(
+            response, HttpStatusCode.InternalServerError, ApiMessages.UnexpectedError);
 
         // Provisioning aborted before any insert, so no partial row leaks.
         (await fixture.GetUsersAsync()).Should().BeEmpty();
@@ -154,16 +137,8 @@ public sealed class AccessMeEndpointTests(AccessTestFixture fixture)
 
         using var response = await GetMeAsync(client, token);
 
-        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
-        response.Content.Headers.ContentType!.MediaType.Should().Be("application/json");
-
-        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        var envelope = document.RootElement;
-        envelope.EnumerateObject().Select(property => property.Name).Should().BeEquivalentTo(EnvelopeKeys);
-        envelope.GetProperty("isSuccess").GetBoolean().Should().BeFalse();
-        envelope.GetProperty("message").GetString().Should().Be(ApiMessages.EmailAlreadyRegistered);
-        envelope.GetProperty("data").ValueKind.Should().Be(JsonValueKind.Null);
-        envelope.GetProperty("errors").GetArrayLength().Should().Be(0);
+        await ApiEnvelope.AssertFailureEnvelopeAsync(
+            response, HttpStatusCode.Conflict, ApiMessages.EmailAlreadyRegistered);
 
         // The failed insert under the new sub leaves no partial row; only the pre-existing user remains.
         (await fixture.GetUsersAsync()).Should().ContainSingle(u => u.LogtoSub == existingSub);

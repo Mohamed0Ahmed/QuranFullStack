@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using QuranDashboard.Domain.Access;
+using QuranDashboard.Tests.TestSupport.Http;
 
 namespace QuranDashboard.Tests.Api.Access;
 
@@ -30,7 +31,7 @@ public sealed class AccessRolesTests(AccessTestFixture fixture)
         using var response = await GetMeAsync(client, token);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var data = await DataAsync(response);
+        var data = await ApiEnvelope.ReadDataAsync(response);
         data.GetProperty("status").GetString().Should().Be("active");
         data.GetProperty("roleName").GetString().Should().Be(RoleNames.Owner);
         data.GetProperty("roleId").GetInt32().Should().Be(ownerRoleId);
@@ -86,7 +87,7 @@ public sealed class AccessRolesTests(AccessTestFixture fixture)
         using var response = await GetMeAsync(client, token);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var data = await DataAsync(response);
+        var data = await ApiEnvelope.ReadDataAsync(response);
         data.GetProperty("status").GetString().Should().Be("active");
         data.GetProperty("roleName").GetString().Should().Be(RoleNames.Owner);
 
@@ -113,11 +114,5 @@ public sealed class AccessRolesTests(AccessTestFixture fixture)
         using var request = new HttpRequestMessage(HttpMethod.Get, MePath);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         return await client.SendAsync(request);
-    }
-
-    private static async Task<JsonElement> DataAsync(HttpResponseMessage response)
-    {
-        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        return document.RootElement.GetProperty("data").Clone();
     }
 }
