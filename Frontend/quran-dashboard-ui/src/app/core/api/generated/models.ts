@@ -5,6 +5,8 @@ export type { AbwabBulkDoorRef } from './models/abwab-bulk-door-ref';
 export type { AbwabDoorDto } from './models/abwab-door-dto';
 export type { AbwabDoorDtoApiResponse } from './models/abwab-door-dto-api-response';
 export type { AbwabDoorDtoIReadOnlyListApiResponse } from './models/abwab-door-dto-i-read-only-list-api-response';
+export type { AbwabRestoredDoorDto } from './models/abwab-restored-door-dto';
+export type { AbwabRestoredDoorDtoApiResponse } from './models/abwab-restored-door-dto-api-response';
 export type { AbwabSectionDto } from './models/abwab-section-dto';
 export type { AbwabSectionDtoApiResponse } from './models/abwab-section-dto-api-response';
 export type { AbwabTreeDoorDto } from './models/abwab-tree-door-dto';

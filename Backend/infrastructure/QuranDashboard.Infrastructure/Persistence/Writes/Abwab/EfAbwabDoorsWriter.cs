@@ -307,7 +307,7 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
         return true;
     }
 
-    public async Task<AbwabDoorDto?> RestoreAsync(int id, uint expectedVersion, CancellationToken cancellationToken)
+    public async Task<AbwabRestoredDoorDto?> RestoreAsync(int id, uint expectedVersion, CancellationToken cancellationToken)
     {
         var door = await db.AbwabDoors.FirstOrDefaultAsync(d => d.Id == id, cancellationToken);
         if (door is null)
@@ -387,7 +387,7 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
         // real 23505 risk here, not a structurally-impossible one.
         await SaveTranslatingWriteExceptionsAsync(door.Name, cancellationToken);
 
-        return await ToDtoAsync(door, cancellationToken);
+        return new AbwabRestoredDoorDto(await ToDtoAsync(door, cancellationToken), sectionWasArchived);
     }
 
     private async Task EnsureParentAndSectionExistAsync(int? parentId, int? sectionId, CancellationToken cancellationToken)

@@ -59,6 +59,7 @@ public interface IAbwabDoorsWriter
     // AbwabDuplicateNameException. Restores the door plus exactly the descendants its OWN archive swept
     // in (matched on the archive's timestamp) — never one archived by an earlier, separate operation.
     // Renumbers the scope it lands back in to 1..N, and detaches the door (and everything restored with
-    // it) to "outside every section" when its section was archived meanwhile.
-    Task<AbwabDoorDto?> RestoreAsync(int id, uint expectedVersion, CancellationToken cancellationToken);
+    // it) to "outside every section" when its section was archived meanwhile. DetachedFromArchivedSection
+    // reports that detach, and covers the whole restored subtree, not just the named door.
+    Task<AbwabRestoredDoorDto?> RestoreAsync(int id, uint expectedVersion, CancellationToken cancellationToken);
 }

@@ -234,7 +234,7 @@ dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
 | POST | `api/abwab/doors/bulk-move` | 200 / 400 / 404 / 409 |
 | POST | `api/abwab/doors/bulk-archive` | 200 / 400 / 404 / 409 |
 | DELETE | `api/abwab/doors/{id:int}` | 204 / 404 / 409 stale — archives the subtree |
-| POST | `api/abwab/doors/{id:int}/restore` | 200 / 404 / 409 stale, parent still archived |
+| POST | `api/abwab/doors/{id:int}/restore` | 200 `AbwabRestoredDoorDto` (see §13.4) / 404 / 409 stale, parent still archived |
 
 **Files** — `Backend/application/QuranDashboard.Application/Abwab/Commands/**`,
 `Backend/application/QuranDashboard.Application.Abstractions/Abwab/**`,
@@ -549,3 +549,15 @@ concurrent rename makes it affect zero rows. That surfaced as an untranslated `D
 → `500` — the one write of eleven leaking an EF type past the Infrastructure seam. It now answers `409`
 with `AbwabSectionStaleVersion` like every other conflict. The route still takes **no** client token: the
 race is between the writer's own read and its save, so there is nothing for a caller to send.
+
+### 13.4 The detach of §13.2 is reported, not silent
+
+The detach was correct but invisible: `section_id` came back `null`, which is exactly what a door that never
+belonged to a section looks like, and the caller holds no prior state to tell the two apart. Restore's `200`
+payload is now `AbwabRestoredDoorDto { door, detachedFromArchivedSection }` — the door under a `door` key
+plus an explicit boolean. A localized `message` would not do: the indicator has to be machine-readable for
+the tree to decide whether to warn.
+
+This changes the restore route's wire shape (`data` was the door itself), so it is a real contract delta and
+the regenerated OpenAPI/model output ships with it. There is no bulk restore in Slice A — only bulk move and
+bulk archive — so the indicator has exactly one carrier.

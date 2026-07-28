@@ -11,7 +11,10 @@ and the `ApiResponse<T>` envelope; application handlers own use-case logic.
   aliases, per-door direct-child count and per-section live-doors count, no paging). All routes are
   `Open` — this is the repository's first write surface and it ships without authentication in Slice A
   (see feature plan §9/§10); it must not reach production before a write policy attaches. Optimistic
-  concurrency is `uint xmin`, surfaced as `409` in the shared envelope. `AbwabSectionsController` and
+  concurrency is `uint xmin`, surfaced as `409` in the shared envelope. Restore is the one write whose
+  `200` body is not the entity alone: it returns `AbwabRestoredDoorDto { door, detachedFromArchivedSection }`,
+  because a door restored out of a section archived meanwhile comes back with `sectionId: null` and no
+  caller can tell that from a door that never had a section. `AbwabSectionsController` and
   `AbwabDoorsController` carry no `///` XML docs (root `CLAUDE.md` comment policy — see "Generated
   contract artifacts" below for what that means for the exported spec).
 - `Access/` — `api/access/me`; the authenticated caller's provisioned user. Carries `[Authorize]`

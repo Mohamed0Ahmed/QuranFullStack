@@ -249,9 +249,32 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
         var archivedParent = await ReloadAsync(scope, parent.Id);
         var restored = await writer.RestoreAsync(parent.Id, archivedParent.Version, CancellationToken.None);
 
-        restored!.SectionId.Should().BeNull();
+        restored!.Door.SectionId.Should().BeNull();
+        restored.DetachedFromArchivedSection
+            .Should().BeTrue("a null SectionId alone cannot be told apart from a door that never had one");
         (await ReloadAsync(scope, child.Id)).SectionId
             .Should().BeNull("a nested door inherits its parent's section, so the subtree detaches whole");
+    }
+
+    // The negative half of the indicator: a door restored into a section that is still live keeps that
+    // section and reports no detach. Without this, a writer that always reported false would still pass.
+    [Fact]
+    public async Task RestoreAsync_WhenSectionIsStillLive_KeepsTheSectionAndReportsNoDetach()
+    {
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
+        var sections = scope.ServiceProvider.GetRequiredService<IAbwabSectionsWriter>();
+
+        var section = await sections.CreateAsync("سلوك: قسم يبقى حيًّا", CancellationToken.None);
+        var door = await writer.CreateAsync(section.Id, null, "سلوك: باب يعود إلى قسمه", null, null, [], CancellationToken.None);
+
+        await writer.DeleteAsync(door.Id, door.Version, CancellationToken.None);
+
+        var archived = await ReloadAsync(scope, door.Id);
+        var restored = await writer.RestoreAsync(door.Id, archived.Version, CancellationToken.None);
+
+        restored!.Door.SectionId.Should().Be(section.Id);
+        restored.DetachedFromArchivedSection.Should().BeFalse();
     }
 
     [Fact]

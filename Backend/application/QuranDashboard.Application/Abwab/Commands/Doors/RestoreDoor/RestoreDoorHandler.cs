@@ -15,15 +15,17 @@ public sealed class RestoreDoorHandler(
 
         try
         {
-            var door = await writer.RestoreAsync(command.Id, command.Version, cancellationToken);
-            if (door is null)
+            var restored = await writer.RestoreAsync(command.Id, command.Version, cancellationToken);
+            if (restored is null)
             {
                 logger.LogWarning("Not found {feature} {operation} {doorId}", FeatureName, OperationName, command.Id);
                 return new RestoreDoorOutcome.NotFound();
             }
 
-            logger.LogInformation("Completed {feature} {operation} {doorId}", FeatureName, OperationName, command.Id);
-            return new RestoreDoorOutcome.Success(door);
+            logger.LogInformation(
+                "Completed {feature} {operation} {doorId} {detachedFromArchivedSection}",
+                FeatureName, OperationName, command.Id, restored.DetachedFromArchivedSection);
+            return new RestoreDoorOutcome.Success(restored.Door, restored.DetachedFromArchivedSection);
         }
         catch (AbwabParentStillArchivedException)
         {

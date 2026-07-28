@@ -520,17 +520,17 @@
             "content": {
               "text/plain": {
                 "schema": {
-                  "$ref": "#/components/schemas/AbwabDoorDtoApiResponse"
+                  "$ref": "#/components/schemas/AbwabRestoredDoorDtoApiResponse"
                 }
               },
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AbwabDoorDtoApiResponse"
+                  "$ref": "#/components/schemas/AbwabRestoredDoorDtoApiResponse"
                 }
               },
               "text/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AbwabDoorDtoApiResponse"
+                  "$ref": "#/components/schemas/AbwabRestoredDoorDtoApiResponse"
                 }
               }
             }
@@ -3906,6 +3906,60 @@
             "items": {
               "$ref": "#/components/schemas/AbwabDoorDto"
             },
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "AbwabRestoredDoorDto": {
+        "required": [
+          "detachedFromArchivedSection",
+          "door"
+        ],
+        "type": "object",
+        "properties": {
+          "door": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AbwabDoorDto"
+              }
+            ]
+          },
+          "detachedFromArchivedSection": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AbwabRestoredDoorDtoApiResponse": {
+        "required": [
+          "data",
+          "errors",
+          "isSuccess",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AbwabRestoredDoorDto"
+              }
+            ],
             "nullable": true
           },
           "errors": {

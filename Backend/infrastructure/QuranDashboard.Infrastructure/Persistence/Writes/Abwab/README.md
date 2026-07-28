@@ -51,6 +51,9 @@ incidentally.
   holds no live doors, and sections have no restore route in this slice, so refusing would strand the door
   permanently. It is moved to "outside every section" (`section_id = null`) — a first-class state, plan
   §R8 — along with everything restored with it, because a nested door always inherits its parent's section.
+  The detach is **reported, not silent**: `RestoreAsync` returns `AbwabRestoredDoorDto`, whose
+  `DetachedFromArchivedSection` is the caller's only signal. A null `section_id` on its own is ambiguous —
+  a door that never belonged to a section looks identical — and the caller does not hold the prior state.
 - **Aliases are replaced wholesale under the door's own token** and soft-deleted, never hard-deleted.
   `AbwabDoorAlias` deliberately has no `xmin` of its own.
 - **Descendant walks share one parent map per operation.** `LoadChildrenByParentAsync` projects

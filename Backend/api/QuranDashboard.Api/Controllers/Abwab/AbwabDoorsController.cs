@@ -181,7 +181,7 @@ public sealed class AbwabDoorsController(
     }
 
     [HttpPost("{id:int}/restore")]
-    public async Task<ActionResult<ApiResponse<AbwabDoorDto>>> Restore(
+    public async Task<ActionResult<ApiResponse<AbwabRestoredDoorDto>>> Restore(
         int id, [FromBody] RestoreDoorBody body, CancellationToken cancellationToken)
     {
         var outcome = await restoreHandler.HandleAsync(new RestoreDoorCommand(id, body.Version), cancellationToken);
@@ -189,15 +189,17 @@ public sealed class AbwabDoorsController(
         return outcome switch
         {
             RestoreDoorOutcome.Success success =>
-                Ok(ApiResponse<AbwabDoorDto>.Ok(success.Door, ApiMessages.AbwabDoorRestored)),
+                Ok(ApiResponse<AbwabRestoredDoorDto>.Ok(
+                    new AbwabRestoredDoorDto(success.Door, success.DetachedFromArchivedSection),
+                    ApiMessages.AbwabDoorRestored)),
             RestoreDoorOutcome.NotFound =>
-                NotFound(ApiResponse<AbwabDoorDto>.Fail(ApiMessages.AbwabDoorNotFound)),
+                NotFound(ApiResponse<AbwabRestoredDoorDto>.Fail(ApiMessages.AbwabDoorNotFound)),
             RestoreDoorOutcome.StaleVersion =>
-                Conflict(ApiResponse<AbwabDoorDto>.Fail(ApiMessages.AbwabDoorStaleVersion)),
+                Conflict(ApiResponse<AbwabRestoredDoorDto>.Fail(ApiMessages.AbwabDoorStaleVersion)),
             RestoreDoorOutcome.ParentStillArchived =>
-                Conflict(ApiResponse<AbwabDoorDto>.Fail(ApiMessages.AbwabDoorParentStillArchived)),
+                Conflict(ApiResponse<AbwabRestoredDoorDto>.Fail(ApiMessages.AbwabDoorParentStillArchived)),
             RestoreDoorOutcome.DuplicateName =>
-                Conflict(ApiResponse<AbwabDoorDto>.Fail(ApiMessages.AbwabDoorDuplicateName)),
+                Conflict(ApiResponse<AbwabRestoredDoorDto>.Fail(ApiMessages.AbwabDoorDuplicateName)),
             _ => throw new InvalidOperationException($"Unhandled {nameof(RestoreDoorOutcome)} variant."),
         };
     }

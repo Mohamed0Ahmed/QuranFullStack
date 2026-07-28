@@ -791,6 +791,52 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
         orderValues.Values.Order().Should().BeEquivalentTo([1, 2, 3], options => options.WithStrictOrdering());
     }
 
+    // The detach is a silent mutation unless the response says so: SectionId comes back null either way,
+    // and no caller can tell "was never in a section" from "its section was retired meanwhile".
+    [Fact]
+    public async Task RestoreDoor_WhenSectionWasArchivedMeanwhile_ReportsTheDetachInThePayload()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        var (sectionId, _) = await CreateSectionAsync(client, "قسم يُؤرشف بعد بابه");
+        var (doorId, doorVersion) = await CreateDoorAsync(client, "باب يعود بلا قسم", sectionId: sectionId);
+        using var archiveResponse = await SendWithBodyAsync(
+            client, HttpMethod.Delete, $"/api/abwab/doors/{doorId}", new { version = doorVersion });
+        archiveResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        using var sectionDeleteResponse = await client.DeleteAsync($"/api/abwab/sections/{sectionId}");
+        sectionDeleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var archivedVersion = (await GetDoorAsync(doorId)).Version;
+
+        using var response = await client.PostAsJsonAsync($"/api/abwab/doors/{doorId}/restore", new { version = archivedVersion });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var data = await ApiEnvelope.ReadDataAsync(response);
+        data.GetProperty("detachedFromArchivedSection").GetBoolean().Should().BeTrue();
+        data.GetProperty("door").GetProperty("sectionId").ValueKind.Should().Be(JsonValueKind.Null);
+    }
+
+    [Fact]
+    public async Task RestoreDoor_IntoALiveSection_ReportsNoDetachAndKeepsTheSection()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        var (sectionId, _) = await CreateSectionAsync(client, "قسم يبقى حيًّا بعد الاستعادة");
+        var (doorId, doorVersion) = await CreateDoorAsync(client, "باب يعود إلى قسمه", sectionId: sectionId);
+        using var archiveResponse = await SendWithBodyAsync(
+            client, HttpMethod.Delete, $"/api/abwab/doors/{doorId}", new { version = doorVersion });
+        archiveResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var archivedVersion = (await GetDoorAsync(doorId)).Version;
+
+        using var response = await client.PostAsJsonAsync($"/api/abwab/doors/{doorId}/restore", new { version = archivedVersion });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var data = await ApiEnvelope.ReadDataAsync(response);
+        data.GetProperty("detachedFromArchivedSection").GetBoolean().Should().BeFalse();
+        data.GetProperty("door").GetProperty("sectionId").GetInt32().Should().Be(sectionId);
+    }
+
     [Fact]
     public async Task RestoreDoor_WithNullVersion_ReturnsBadRequestBindingLevel()
     {
