@@ -214,6 +214,26 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
         await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.NotFound, ApiMessages.AbwabDoorParentNotFound);
     }
 
+    // A real id that exists but is archived. The 999999 case above cannot tell "missing" from "archived":
+    // every parent lookup filters on DeletedAtUtc == null, and a query that dropped that filter would
+    // still pass it. Nesting under an archived parent would author a live door into a dead subtree.
+    [Fact]
+    public async Task CreateDoor_UnderAnArchivedParent_ReturnsNotFound()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        var (parentId, parentVersion) = await CreateDoorAsync(client, "أب يُؤرشف قبل إضافة ابنه");
+        using var archiveResponse = await SendWithBodyAsync(
+            client, HttpMethod.Delete, $"/api/abwab/doors/{parentId}", new { version = parentVersion });
+        archiveResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        using var response = await client.PostAsJsonAsync("/api/abwab/doors",
+            new { parentId, name = "ابن تحت أب مؤرشف", aliases = Array.Empty<string>() });
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.NotFound, ApiMessages.AbwabDoorParentNotFound);
+    }
+
     [Fact]
     public async Task CreateDoor_WithUnknownSection_ReturnsNotFound()
     {
