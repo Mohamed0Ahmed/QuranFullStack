@@ -542,6 +542,38 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
         await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.NotFound, ApiMessages.AbwabDoorNotFound);
     }
 
+    // ---- Tree read (T304 data-tier smoke) ----
+
+    [Fact]
+    public async Task GetAbwabTree_AfterWritesThroughRealEndpoints_ReflectsArchivedFlagAndCounts()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        var (sectionId, _) = await CreateSectionAsync(client, "قسم شجرة القراءة");
+        var (parentId, _) = await CreateDoorAsync(client, "أب لقراءة الشجرة", sectionId: sectionId);
+        var (childId, childVersion) = await CreateDoorAsync(client, "ابن يُؤرشف لقراءة الشجرة", sectionId: sectionId, parentId: parentId);
+
+        using var archiveResponse = await SendWithBodyAsync(client, HttpMethod.Delete, $"/api/abwab/doors/{childId}", new { version = childVersion });
+        archiveResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        using var treeResponse = await client.GetAsync("/api/abwab/tree");
+
+        var envelope = await ApiEnvelope.AssertEnvelopeMatchesStatusAsync(treeResponse);
+        var data = envelope.GetProperty("data");
+
+        var sectionEntry = data.GetProperty("sections").EnumerateArray()
+            .Single(s => s.GetProperty("id").GetInt32() == sectionId);
+        sectionEntry.GetProperty("doorsInScopeCount").GetInt32()
+            .Should().Be(1, "the archived child no longer counts toward the section's live total");
+
+        var doors = data.GetProperty("doors").EnumerateArray().ToList();
+        doors.Single(d => d.GetProperty("id").GetInt32() == childId)
+            .GetProperty("isArchived").GetBoolean().Should().BeTrue("archived doors are included and flagged, never omitted");
+        doors.Single(d => d.GetProperty("id").GetInt32() == parentId)
+            .GetProperty("directChildCount").GetInt32().Should().Be(0, "its only child is archived, so it does not count live");
+    }
+
     private static async Task<(int Id, uint Version)> CreateSectionAsync(HttpClient client, string name)
     {
         using var response = await client.PostAsJsonAsync("/api/abwab/sections", new { name });

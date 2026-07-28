@@ -5,6 +5,15 @@ and the `ApiResponse<T>` envelope; application handlers own use-case logic.
 
 ## Route families
 
+- `Abwab/` — `api/abwab/sections` and `api/abwab/doors` (eleven write routes: create/rename/delete on
+  sections; create/edit/move/reorder/bulk-move/bulk-archive/delete/restore on doors) plus the read
+  `api/abwab/tree` (one versioned snapshot: sections + doors, archived doors included and flagged,
+  aliases, per-door direct-child count and per-section live-doors count, no paging). All routes are
+  `Open` — this is the repository's first write surface and it ships without authentication in Slice A
+  (see feature plan §9/§10); it must not reach production before a write policy attaches. Optimistic
+  concurrency is `uint xmin`, surfaced as `409` in the shared envelope. `AbwabSectionsController` and
+  `AbwabDoorsController` carry no `///` XML docs (root `CLAUDE.md` comment policy — see "Generated
+  contract artifacts" below for what that means for the exported spec).
 - `Access/` — `api/access/me`; the authenticated caller's provisioned user. Carries `[Authorize]`
   (authenticated-only) and get-or-create provisions the local user on first login (email verified
   server-side via the Logto Management API). The response includes `roleName` (null when no role);
@@ -69,7 +78,13 @@ are in use, and they are not interchangeable:
 
 - The OpenAPI spec for this API is exported offline to
   `Frontend/quran-dashboard-ui/openapi/swagger.json` by `Backend/scripts/export-swagger`
-  (Swashbuckle CLI; no running server). Controller (endpoint) XML docs are the source of the endpoint descriptions in that spec; response DTO schemas are intentionally undocumented (bare typed schemas). Keep the controller docs accurate.
+  (Swashbuckle CLI; no running server). Controller (endpoint) XML docs, where present, are the source of
+  the endpoint descriptions in that spec; response DTO schemas are intentionally undocumented (bare typed
+  schemas). Keep the controller docs accurate where they exist. **Resolved conflict:** the root `CLAUDE.md`
+  comment policy (no `///` XML docs on controllers) wins over this convention where the two disagree — the
+  `Abwab/` controllers carry none, so their exported `summary`/`description` fields are blank. This is
+  accepted, not a defect: there is no external contract consumer, and the frontend generates payload types
+  from the spec, never descriptions.
 - Frontend payload types are generated from that spec into
   `Frontend/quran-dashboard-ui/src/app/core/api/generated/` (models-only consumption), and a
   static human-browsable reference is generated at `docs/api-reference/index.html`.

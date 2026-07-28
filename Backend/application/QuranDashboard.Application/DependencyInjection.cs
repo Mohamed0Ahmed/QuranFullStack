@@ -10,6 +10,7 @@ using QuranDashboard.Application.Abwab.Commands.Doors.BulkMoveDoors;
 using QuranDashboard.Application.Abwab.Commands.Doors.BulkArchiveDoors;
 using QuranDashboard.Application.Abwab.Commands.Doors.DeleteDoor;
 using QuranDashboard.Application.Abwab.Commands.Doors.RestoreDoor;
+using QuranDashboard.Application.Abwab.Queries.GetAbwabTree;
 using QuranDashboard.Application.Access.Commands.ProvisionCurrentUser;
 using QuranDashboard.Application.Quran.DataPipelines.Foundation;
 using QuranDashboard.Application.Quran.DataPipelines.Foundation.Validation;
@@ -144,6 +145,7 @@ public static class DependencyInjection
         services.AddScoped<BulkArchiveDoorsHandler>();
         services.AddScoped<DeleteDoorHandler>();
         services.AddScoped<RestoreDoorHandler>();
+        services.AddScoped<GetAbwabTreeHandler>();
 
         return services;
     }

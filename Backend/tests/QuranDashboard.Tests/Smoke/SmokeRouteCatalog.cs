@@ -271,6 +271,12 @@ internal static class SmokeRouteCatalog
         {
             Method = HttpMethod.Post, ParityOnly = true,
         },
+
+        // api/abwab/tree — AbwabTreeController. Unlike its sibling write routes, this one IS dispatched
+        // by the generic sweep: GetAbwabTreeHandler has no NotFound branch at all, so it derives 200 with
+        // an empty snapshot against the migrated-but-empty schema regardless of what any other test left
+        // behind — order-independent by construction, not by convention like the write routes above.
+        new("api/abwab/tree", "/api/abwab/tree", HttpStatusCode.OK),
     ];
 
     // The sweep's theory data is the Path alone (a string is serializable, so every route is an
