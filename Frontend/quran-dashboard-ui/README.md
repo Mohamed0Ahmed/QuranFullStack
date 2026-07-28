@@ -52,6 +52,11 @@ Local HTTPS needs `mkcert localhost` in the project root (see `Backend/scripts/R
   must be set the way `package.json` already sets it; do not "clean it up".
 - **jsdom lacks `matchMedia` / `ResizeObserver`** under the builder — guard them in
   components and default to desktop.
+- **Browser E2E (opt-in):** `npm run e2e` (headless), `npm run e2e:headed`, `npm run e2e:ui`.
+  Chromium only. It boots the Angular dev server *and* the backend `https` profile, so it needs
+  mkcert certificates, a migrated local `quran_dashboard`, and a prior
+  `dotnet build Backend/QuranDashboard.sln`. Specs live in `e2e/` and MUST be named `*.e2e.ts` —
+  a `*.spec.ts` there would be collected by the Vitest builder. See `e2e/README.md`.
 
 ## Invariants
 

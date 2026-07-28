@@ -20,6 +20,7 @@
             aria-haspopup="true"
             aria-controls="words-menu"
             [attr.aria-expanded]="wordsOpen"
+            data-testid="nav-words-trigger"
           >
             {{ item.labelAr }}
             <svg
@@ -65,6 +66,7 @@
             [routerLink]="item.route"
             routerLinkActive="active"
             [routerLinkActiveOptions]="{ exact: item.route === '/dashboard' }"
+            [attr.data-testid]="'nav-link--' + item.key"
           >
             {{ item.labelAr }}
           </a>
@@ -80,6 +82,7 @@
         aria-haspopup="true"
         aria-controls="more-menu"
         [attr.aria-expanded]="moreOpen"
+        data-testid="nav-more-trigger"
       >
         المزيد
         <svg
@@ -108,6 +111,7 @@
                 class="qd-btn qd-btn-ghost dropdown-link"
                 [routerLink]="item.route"
                 routerLinkActive="active"
+                [attr.data-testid]="'nav-menu-link--' + item.key"
                 (click)="closeMore()"
               >
                 {{ item.labelAr }}

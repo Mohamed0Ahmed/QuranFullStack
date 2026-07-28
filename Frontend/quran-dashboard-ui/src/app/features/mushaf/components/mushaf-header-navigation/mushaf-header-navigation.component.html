@@ -5,6 +5,7 @@
         <button
           class="qd-btn qd-btn-ghost"
           type="button"
+          data-testid="mushaf-prev-page"
           [disabled]="page().previousPageNumber === null"
           (click)="onPrevious()"
         >
@@ -13,6 +14,7 @@
         <button
           class="qd-btn qd-btn-ghost"
           type="button"
+          data-testid="mushaf-next-page"
           [disabled]="page().nextPageNumber === null"
           (click)="onNext()"
         >

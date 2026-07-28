@@ -176,6 +176,11 @@ Two facts the strategy fixes that agents get wrong here:
   planned, not active (§13) — never cite it as a gate, and never add a `Tests.Smoke`
   filter term to a command.
 
+A third fact, new: a browser E2E layer now exists
+(`Frontend/quran-dashboard-ui/e2e/`, `npm run e2e`), but it is **opt-in and not a required
+tier** — do not present an E2E run as a Tier C or release gate, and do not confuse it with the
+still-absent backend route-smoke tier (§13).
+
 ## Design Context
 
 This is an **Arabic-first (RTL)**, **scholarly and calm** product dashboard for

@@ -32,8 +32,10 @@ commands are in §6.
 - Preserve the Vitest fork cap (`VITEST_MIN_FORKS=1 VITEST_MAX_FORKS=2`) baked into the
   `npm test` script; direct `ng test` calls must prefix it themselves. Nothing enforces it
   automatically — there is no CI (§8), so it is a review obligation.
-- There is no browser E2E layer (no Playwright dependency, config, or `e2e` script). Never
-  cite an E2E run as evidence (§3 Tier E).
+- A browser E2E layer exists: Playwright (chromium only) at `playwright.config.ts` + `e2e/`,
+  run with `npm run e2e`. It is opt-in and is NOT a required gate — never cite it in place of
+  the Vitest suite or a build, and never let an E2E run substitute for Tier C evidence. Specs
+  are named `*.e2e.ts`; a `*.spec.ts` under `e2e/` would be swallowed by the Vitest glob.
 
 ## Frontend Local READMEs
 

@@ -198,9 +198,12 @@ morphology artifact) is staged:
 - canonical-source acceptance (Quran.Import canonical tests, WordsDisplay
   real-import tests) and enriched-artifact acceptance when applicable.
 
-There is **no browser E2E layer in this tree** — no Playwright dependency, config, or
-`e2e` npm script exists. Do not cite an E2E run as release evidence; the release gate is
-the full Backend and Frontend suites plus both production builds.
+A browser E2E layer exists (`Frontend/quran-dashboard-ui/playwright.config.ts` + `e2e/`,
+chromium only, `npm run e2e`). It is an **opt-in local gate, not part of any required tier**:
+it is not required for Tier C and not required for this release gate, which remains the full
+Backend and Frontend suites plus both production builds. Promoting it into a required tier is a
+separate decision, to be made only after it has proven stable across several runs. An E2E run
+MAY be reported as supplementary evidence, and MUST then state that it is supplementary.
 
 The release gate MUST verify that required canonical tests did not silently skip:
 check the run summary's `Skipped:` count and account for every skipped test. **A
@@ -223,6 +226,7 @@ pipeline provides this gate — see §8.
 | Model-wide `QuranDashboardDbContext` / shared persistence change that can affect pipeline tables or execution | B | C + D | Yes |
 | API endpoint added/changed, or auth/middleware/binding/contract change | A + `Tests.Api.*` | C + `Tests.Api.*` | No. No route-parity gate exists — state that in the evidence (§13) |
 | Release candidate (`dev → main`) | — | E | Yes (staged resources, zero unexplained skips) |
+| Frontend routing, app shell, or a public browse surface (optional extra confidence) | A | C (E2E optional, never a blocker) | No |
 
 ## 5. Backend command catalog (validated)
 
@@ -304,10 +308,23 @@ npm test
 
 # Production build (separate from tests — the test builder ignores dist/):
 npm run build
+
+# Browser E2E — opt-in, chromium only, boots both servers (see e2e/README.md):
+npm run e2e                       # headless
+npm run e2e:headed                # visible browser
+npm run e2e:ui                    # Playwright UI mode
+npm run e2e -- e2e/mushaf-reader.e2e.ts   # one flow file
 ```
 
 The frontend features are `auth`, `dashboard`, `mushaf`, and `words`; shared code lives
 in `src/app/core/` and `src/app/shared/`, with app-shell specs at `src/app/*.spec.ts`.
+
+The E2E suite boots the Angular dev server **and** the backend `https` launch profile
+(`ASPNETCORE_ENVIRONMENT=Development`), so it reads the real local `quran_dashboard` database.
+Every flow is read-only and every count assertion is loose; do not add write flows to it without
+first moving it onto an isolated database. It requires `dotnet build Backend/QuranDashboard.sln`
+beforehand (the backend boots with `--no-build`) and mkcert certificates in the frontend project
+root. It is **not** the §13 route-smoke tier and does not restore it.
 
 ## 7. Build requirements
 
