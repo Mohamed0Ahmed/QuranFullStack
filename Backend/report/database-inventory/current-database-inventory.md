@@ -1,27 +1,67 @@
 # Current Local PostgreSQL Database Inventory
 
-Date: 2026-06-29 *(full live-catalog regeneration through Feature 018; prior snapshot 2026-06-13 was Feature 005-era / 17 tables)*
+Date: 2026-07-28 *(targeted staleness refresh over the 2026-06-29 full regeneration; that pass covered Features 002–018 and 32 tables)*
 Database: `quran_dashboard` on `localhost:5432`
-Scope: read-only PostgreSQL catalog/data inventory plus EF mapping inspection, covering Features 002–018.
-Password handling: connection password was supplied to `psql` via the `PGPASSWORD` environment variable and is **not** written to this report.
+Scope: read-only PostgreSQL catalog/data inventory plus EF mapping inspection, covering Features 002–033.
+Password handling: connection password was resolved from the API's user secrets and supplied to `psql` via the `PGPASSWORD` environment variable; it is **not** written to this report.
+
+### What this refresh re-measured vs carried forward
+
+**Re-measured live on 2026-07-28** (all read-only `SELECT`s — see *Verification*): the summary
+metrics in §1 (tables, columns, indexes, partial indexes, foreign keys, unique constraints,
+explicit and information_schema check constraints, applied migrations); the exact row count of
+every base table in §2; the applied-migration list; and the full column / constraint / index
+detail of the three tables this refresh adds (`quran_lemma_analyses`, `users`, `roles`) plus the
+two columns that migration `20260701194034_AddUniqueWordSearchIndexes` added
+(`quran_words_unique_simple.search_text_normalized`,
+`quran_words_unique_tashkeel.search_text_normalized`) and their two GIN trigram indexes.
+
+**Carried forward unverified from 2026-06-29**: the per-column type / nullability / default
+tables in §3 for the 29 pre-existing `quran_*` tables, and the per-table constraint and index
+listings in §4 for those same tables. The §1 aggregate counts above reconcile exactly with the
+additions this refresh measured (+21 columns from the three new tables, +2 from
+`search_text_normalized`; +11 indexes from the new tables, +2 GIN; +3 foreign keys), so the
+carried-forward detail is consistent with the live catalog — but it was not re-read row by row.
+§6 (cleanup candidates) and §7 (schema-split proposal) are analysis carried forward untouched;
+the null-distribution profiling they depend on is still from the 2026-06-13 revision.
 
 ## 1. Executive summary
 
 | Metric | Count | Notes |
 |---|---:|---|
 | Application schemas currently used | 1 | Only `public` for application tables. |
-| Tables | 32 | 31 Quran/domain tables + EF `__EFMigrationsHistory`. |
-| Columns | 329 | Includes EF migration history columns. |
-| Indexes | 130 | Includes PK-backed indexes and 7 partial indexes. |
-| Foreign keys | 52 | All are within `public`. |
+| Tables | 35 | 32 `quran_*` tables + 2 access tables (`users`, `roles`) + EF `__EFMigrationsHistory`. |
+| Columns | 352 | Includes EF migration history columns. |
+| Indexes | 143 | Includes PK-backed indexes, 7 partial indexes, and 2 GIN trigram indexes. |
+| Foreign keys | 55 | All are within `public`. |
 | Unique constraints | 0 | Uniqueness is enforced through unique indexes, not separate `UNIQUE` table constraints. |
 | Check constraints (explicit) | 27 | Domain/value checks on i3rab status, source enums, coverage counts, non-empty text, and the self-link guard. |
-| Check constraints (information_schema, incl. `NOT NULL`) | 320 | Mostly PostgreSQL/EF-reported `NOT NULL`; the 27 above are the explicit domain checks. |
-| EF migrations applied | 15 | Rows in `__EFMigrationsHistory`; see `database-reset-and-seeding-order.md` §2. |
+| Check constraints (information_schema, incl. `NOT NULL`) | 411 | Mostly PostgreSQL/EF-reported `NOT NULL`; the 27 above are the explicit domain checks. |
+| EF migrations applied | 19 | Rows in `__EFMigrationsHistory`. `database-reset-and-seeding-order.md` §2 orders the first **15** (through `AddSegmentStemId`); the four after it are listed below and are not yet in that runbook. |
 
-Growth since the 2026-06-13 snapshot (17 → 32 tables): mutashabihat (006), tafsir (007), translations (008),
-navigation divisions + ayah nav columns (009), full-i3rab (010), ayah-similarities (012), and segment
-`root_id`/`lemma_id`/`stem_id` columns (017–018).
+Growth from the 2026-06-13 snapshot to the 2026-06-29 revision (17 → 32 tables): mutashabihat (006),
+tafsir (007), translations (008), navigation divisions + ayah nav columns (009), full-i3rab (010),
+ayah-similarities (012), and segment `root_id`/`lemma_id`/`stem_id` columns (017–018).
+
+Growth since the 2026-06-29 revision (32 → 35 tables), the four migrations applied after
+`AddSegmentStemId`:
+
+- `20260701194034_AddUniqueWordSearchIndexes` — adds `search_text_normalized` to both
+  `quran_words_unique_simple` and `quran_words_unique_tashkeel`, each backed by a GIN
+  `gin_trgm_ops` index for substring search. No new table.
+- `20260704102858_AddQuranLemmaAnalyses` — adds `quran_lemma_analyses` (4,832 rows), the
+  per-lemma analysis dimension keyed by `lemma_buckwalter`.
+- `20260718115014_AddAccessUsers` — adds `users`, the local identity record keyed by the Logto
+  `sub` (Feature 033 auth/roles). Empty on this machine (0 rows): users are provisioned on first
+  login, not seeded.
+- `20260718142612_AddAccessRoles` — adds `roles` (3 rows: `Owner` / `Admin` / `Editor`, seeded by
+  the migration) and the nullable `users.role_id` FK.
+
+Recomputed dimension counts since 2026-06-29: `quran_lemmas` 4,790 → **4,817** and `quran_stems`
+12,108 → **11,843**. The cause is the **Feature 026 enriched morphology import**, which the
+2026-06-29 inventory predates — not new scripture data and not a loss. `docs/deployment-railway/plan.md`
+§5 carries the same three values as its deploy-verification baseline, and this report now agrees with
+it; the canonical dump manifest at `resources/db-dumps/quran-canonical/manifest.json` records them too.
 
 Very large / high-volume tables by exact row count:
 
@@ -35,7 +75,9 @@ Very large / high-volume tables by exact row count:
 
 Naming / structural observations (not necessarily defects):
 
-- All domain tables are in `public` and carry a `quran_` prefix.
+- All tables are in `public`. The 32 Quran/domain tables carry a `quran_` prefix; the two access tables
+  added by Feature 033 (`users`, `roles`) deliberately do not — they are identity/authorization records,
+  not Quran data, and no importer pipeline touches them.
 - Three content families share the same `*_sources` → `*_entries` → `*_ayah_entries` shape: tafsir (007),
   full-i3rab (010), and translations (008, two-table variant `*_sources` → `*_ayah_entries`). They repeat
   columns such as `source_key`, `direction`, `content_coverage_count` (`= 6236` check), `sha256`,
@@ -52,7 +94,7 @@ Naming / structural observations (not necessarily defects):
 
 | Schema | Table | Rows | Primary key | Columns | Short inferred purpose |
 |---|---|---:|---|---:|---|
-| public | `__EFMigrationsHistory` | 15 | `MigrationId` | 2 | EF Core migration tracking table. |
+| public | `__EFMigrationsHistory` | 19 | `MigrationId` | 2 | EF Core migration tracking table. |
 | public | `quran_ayahs` | 6,236 | `id` | 12 | Canonical ayah metadata/text, page span, and juz/hizb/rub tags. |
 | public | `quran_full_i3rab_ayah_entries` | 24,944 | `id` | 9 | Ayah→full-i3rab-entry junction per source. |
 | public | `quran_full_i3rab_entries` | 14,513 | `id` | 9 | Distinct full-i3rab HTML entries (grouped-leader or flat). |
@@ -60,7 +102,8 @@ Naming / structural observations (not necessarily defects):
 | public | `quran_hizbs` | 60 | `hizb_number` | 7 | Hizb division ranges. |
 | public | `quran_i3rab_rules` | 142 | `id` | 7 | Rule catalogue for generated simple i'rab labels. |
 | public | `quran_juzs` | 30 | `juz_number` | 6 | Juz division ranges. |
-| public | `quran_lemmas` | 4,790 | `id` | 6 | Morphology lemma dimension, optionally linked to roots. |
+| public | `quran_lemma_analyses` | 4,832 | `id` | 8 | Per-lemma analysis row keyed by Buckwalter lemma, with optional root and head POS. |
+| public | `quran_lemmas` | 4,817 | `id` | 6 | Morphology lemma dimension, optionally linked to roots. |
 | public | `quran_mushaf_lines` | 9,046 | `id` | 9 | Mushaf page-line layout and word range anchors. |
 | public | `quran_mushaf_pages` | 604 | `page_number` | 6 | Mushaf page ranges and line counts. |
 | public | `quran_mutashabihat_groups` | 814 | `id` | 9 | Similar-passage (mutashabihat) groups + representative span. |
@@ -70,7 +113,7 @@ Naming / structural observations (not necessarily defects):
 | public | `quran_rubs` | 240 | `rub_number` | 7 | Rub' division ranges. |
 | public | `quran_sajdas` | 15 | `sajdah_number` | 4 | Sajda ayah markers (obligatory/recommended). |
 | public | `quran_similar_ayah_links` | 3,552 | `id` | 7 | Directed ayah-similarity links + score/coverage. |
-| public | `quran_stems` | 12,108 | `id` | 4 | Morphology stem dimension and usage stats. |
+| public | `quran_stems` | 11,843 | `id` | 4 | Morphology stem dimension and usage stats. |
 | public | `quran_surahs` | 114 | `surah_number` | 8 | Canonical surah metadata. |
 | public | `quran_tafsir_ayah_entries` | 523,824 | `id` | 9 | Ayah→tafsir-entry junction per source. |
 | public | `quran_tafsir_entries` | 382,704 | `id` | 9 | Distinct tafsir text entries (grouped-leader or flat). |
@@ -82,10 +125,16 @@ Naming / structural observations (not necessarily defects):
 | public | `quran_words` | 83,668 | `id` | 17 | Canonical word/token stream, including ayah markers. |
 | public | `quran_words_ordered_simple` | 77,432 | `word_order_in_mushaf` | 16 | Derived readable word ordering grouped by simple/imlaei key. |
 | public | `quran_words_ordered_tashkeel` | 77,432 | `word_order_in_mushaf` | 16 | Derived readable word ordering grouped by tashkeel/Uthmani text. |
-| public | `quran_words_unique_simple` | 14,783 | `id` | 16 | Derived unique simple/imlaei word identities and first occurrence metadata. |
-| public | `quran_words_unique_tashkeel` | 21,294 | `id` | 14 | Derived unique tashkeel/Uthmani word identities and first occurrence metadata. |
+| public | `quran_words_unique_simple` | 14,783 | `id` | 17 | Derived unique simple/imlaei word identities and first occurrence metadata. |
+| public | `quran_words_unique_tashkeel` | 21,294 | `id` | 15 | Derived unique tashkeel/Uthmani word identities and first occurrence metadata. |
+| public | `roles` | 3 | `id` | 3 | Fixed seeded role set (`Owner` / `Admin` / `Editor`) backing authorization. |
+| public | `users` | 0 | `id` | 10 | Local user record keyed by the Logto `sub`; provisioned on first login, never seeded. |
 
 ## 3. Columns inventory
+
+*Carried forward from the 2026-06-29 regeneration and not re-read on 2026-07-28, except
+`quran_lemma_analyses`, `roles`, `users`, and the two `search_text_normalized` columns, which were
+measured live — see “What this refresh re-measured vs carried forward” above.*
 
 Legend for `Role`: `PK` = primary key, `FK` = foreign key, `IDX` = covered by a non-PK index.
 (The prior revision's speculative per-column "category" tags were dropped in favor of factual role flags.)
@@ -204,6 +253,19 @@ Legend for `Role`: `PK` = primary key, `FK` = foreign key, `IDX` = covered by a 
 | `last_ayah_id` | `integer` | NOT NULL | — | FK, IDX |
 | `first_verse_key` | `text` | NOT NULL | — | — |
 | `last_verse_key` | `text` | NOT NULL | — | — |
+
+### `public.quran_lemma_analyses`
+
+| Column | Type | Nullability | Default | Role |
+|---|---|---|---|---|
+| `id` | `integer` | NOT NULL | — | PK |
+| `lemma_id` | `integer` | NOT NULL | — | FK, IDX |
+| `lemma_buckwalter` | `text` | NOT NULL | — | IDX |
+| `root_id` | `integer` | NULL | — | FK, IDX |
+| `head_pos` | `text` | NULL | — | — |
+| `words_count` | `integer` | NOT NULL | — | — |
+| `first_word_order_in_mushaf` | `integer` | NOT NULL | — | IDX |
+| `first_location` | `text` | NOT NULL | — | — |
 
 ### `public.quran_lemmas`
 
@@ -559,6 +621,7 @@ Legend for `Role`: `PK` = primary key, `FK` = foreign key, `IDX` = covered by a 
 | `qpc_glyph` | `text` | NOT NULL | `''::text` | — |
 | `text_uthmani` | `text` | NOT NULL | `''::text` | — |
 | `word_key_imlaei_simple` | `text` | NOT NULL | `''::text` | IDX |
+| `search_text_normalized` | `text` | NULL | — | IDX (GIN trigram) |
 
 ### `public.quran_words_unique_tashkeel`
 
@@ -578,11 +641,40 @@ Legend for `Role`: `PK` = primary key, `FK` = foreign key, `IDX` = covered by a 
 | `first_word_order_in_mushaf` | `integer` | NOT NULL | — | IDX |
 | `first_page_number` | `smallint` | NOT NULL | — | — |
 | `first_line_number` | `smallint` | NOT NULL | — | — |
+| `search_text_normalized` | `text` | NULL | — | IDX (GIN trigram) |
+
+### `public.roles`
+
+| Column | Type | Nullability | Default | Role |
+|---|---|---|---|---|
+| `id` | `integer` | NOT NULL | — | PK |
+| `name` | `varchar(64)` | NOT NULL | — | IDX |
+| `display_name` | `varchar(128)` | NOT NULL | — | — |
+
+### `public.users`
+
+| Column | Type | Nullability | Default | Role |
+|---|---|---|---|---|
+| `id` | `integer` | NOT NULL | — | PK |
+| `logto_sub` | `text` | NOT NULL | — | IDX |
+| `email` | `text` | NOT NULL | — | IDX |
+| `user_name` | `text` | NULL | — | — |
+| `display_name` | `text` | NULL | — | — |
+| `title` | `text` | NULL | — | — |
+| `role_id` | `integer` | NULL | — | FK, IDX |
+| `status` | `integer` | NOT NULL | — | — |
+| `created_at` | `timestamptz` | NOT NULL | — | — |
+| `updated_at` | `timestamptz` | NOT NULL | — | — |
 
 ## 4. Constraints and indexes
 
+*Carried forward from the 2026-06-29 regeneration and not re-read on 2026-07-28, except
+`quran_lemma_analyses`, `roles`, `users`, and the two GIN trigram indexes, which were measured live —
+see “What this refresh re-measured vs carried forward” above.*
+
 `NOT NULL` is represented in the column inventory (§3). Below: primary keys, foreign keys (with on-delete
-action), explicit domain checks, and indexes (unique/partial noted). 130 indexes total; 7 are partial.
+action), explicit domain checks, and indexes (unique/partial noted). 143 indexes total; 7 are partial and
+2 are GIN trigram.
 
 ### `__EFMigrationsHistory`
 - PK: `MigrationId`. FKs: none. Checks: none. Indexes: PK only.
@@ -628,6 +720,12 @@ action), explicit domain checks, and indexes (unique/partial noted). 130 indexes
 - FKs: `first_ayah_id → quran_ayahs` (restrict); `last_ayah_id → quran_ayahs` (restrict).
 - Checks: none.
 - Indexes: PK; (`first_ayah_id`); (`last_ayah_id`).
+
+### `quran_lemma_analyses`
+- PK: `id`.
+- FKs: `lemma_id → quran_lemmas` (cascade); `root_id → quran_roots` (no action).
+- Checks: none.
+- Indexes: PK; unique (`lemma_buckwalter`); (`lemma_id`); (`root_id`); (`first_word_order_in_mushaf`).
 
 ### `quran_lemmas`
 - PK: `id`.
@@ -752,20 +850,33 @@ action), explicit domain checks, and indexes (unique/partial noted). 130 indexes
 - PK: `id`.
 - FKs: `first_quran_word_id → quran_words` (cascade).
 - Checks: none.
-- Indexes: PK; unique (`word_key_imlaei_simple`); unique (`first_word_order_in_mushaf`); (`first_quran_word_id`).
+- Indexes: PK; unique (`word_key_imlaei_simple`); unique (`first_word_order_in_mushaf`); (`first_quran_word_id`); GIN `gin_trgm_ops` (`search_text_normalized`).
 
 ### `quran_words_unique_tashkeel`
 - PK: `id`.
 - FKs: `first_quran_word_id → quran_words` (cascade).
 - Checks: none.
-- Indexes: PK; unique (`text_uthmani`); unique (`first_word_order_in_mushaf`); (`first_quran_word_id`).
+- Indexes: PK; unique (`text_uthmani`); unique (`first_word_order_in_mushaf`); (`first_quran_word_id`); GIN `gin_trgm_ops` (`search_text_normalized`).
+
+### `roles`
+- PK: `id`. FKs: none. Checks: none. Indexes: PK; unique (`name`).
+
+### `users`
+- PK: `id`.
+- FKs: `role_id → roles` (restrict).
+- Checks: none.
+- Indexes: PK; unique (`logto_sub`); unique (`email`); (`role_id`).
 
 ## 5. EF mapping cross-check
 
-- All 31 application tables resolve to the `public` schema (EF `ToTable(...)` calls do not specify a schema);
+- All 34 application tables resolve to the `public` schema (EF `ToTable(...)` calls do not specify a schema);
   `__EFMigrationsHistory` is EF infrastructure, not a domain `DbSet`.
-- `__EFMigrationsHistory` holds **15** rows — one per applied migration (`QuranFoundationSchema` … `AddSegmentStemId`).
-  See `database-reset-and-seeding-order.md` §2 for the ordered migration list and feature attribution.
+- `__EFMigrationsHistory` holds **19** rows — one per applied migration (`QuranFoundationSchema` … `AddAccessRoles`).
+  `database-reset-and-seeding-order.md` §2 carries the ordered list and feature attribution for the first 15
+  only; the four post-`AddSegmentStemId` migrations are enumerated in §1 of this report.
+- The two access tables are outside every importer pipeline: `roles` is seeded by its own migration and
+  `users` is written only by the `/api/access/me` get-or-create provisioning path. No `quran_*` pipeline
+  reads or writes them.
 - Raw SQL ownership by importer pipeline (unchanged verb set; see the seeding runbook §3):
   - Foundation import writes `quran_surahs`, `quran_ayahs`, `quran_mushaf_pages`, `quran_words`, `quran_mushaf_lines`.
   - Display word rebuild derives `quran_words_ordered_*`, `quran_words_unique_*`, and updates `quran_words.unique_*_word_id` (Feature 013 assigns the unique ids deterministically — no `IDENTITY`).
@@ -790,7 +901,9 @@ new (006–018) tables; candidates that depend on value distribution are carried
 | `quran_words_ordered_*` / `quran_words_unique_*` denormalized columns | Read-model duplication of `quran_words`/`quran_ayahs` plus computed counts. | High | Identify read-path latency/rebuild-cost needs before touching. |
 | `quran_words.unique_simple_word_id` / `unique_tashkeel_word_id` | Link-cache columns to derived unique tables; null for ayah markers (6,236 of 83,668). | High | Confirm no O(1) canonical→unique jump is needed. |
 
-Zero-row tables: none. Smallest populated tables are `quran_full_i3rab_sources` (4) and `quran_sajdas` (15).
+Zero-row tables: `users` only — expected, since users are provisioned at first login rather than seeded, and
+this machine has never completed one. Smallest populated tables are `roles` (3), `quran_full_i3rab_sources`
+(4), and `quran_sajdas` (15).
 
 ## 7. Potential schema split proposal
 
@@ -823,8 +936,14 @@ names; cross-schema FKs to `quran_ayahs`/`quran_words` would all need qualificat
 
 ### Commands used
 
-All database commands were read-only catalog/data reads (`SELECT` only); the password was passed via the
-`PGPASSWORD` environment variable, not embedded in any command or written to this report:
+All database commands were read-only catalog/data reads (`SELECT` only); the password was resolved from the
+`ConnectionStrings:QuranDashboardDb` user secret of `Backend/api/QuranDashboard.Api` (UserSecretsId
+`9b57d4a2-68cf-421c-9970-b3a323c1e927`; the secrets file carries a UTF-8 BOM and must be parsed as
+`utf-8-sig`) and passed via the `PGPASSWORD` environment variable, not embedded in any command or written
+to this report.
+
+The 2026-07-28 refresh re-ran the summary-metric, row-count, and migration-list reads below, plus targeted
+column / constraint / index reads for `quran_lemma_analyses`, `users`, `roles`, and `search_text_normalized`:
 
 ```bash
 PGPASSWORD=[REDACTED] psql -h localhost -p 5432 -U postgres -d quran_dashboard -A -F '|' -t -c "SELECT ... base tables + pk + column counts ..."

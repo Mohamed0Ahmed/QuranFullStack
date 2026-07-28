@@ -172,9 +172,17 @@ Two facts the strategy fixes that agents get wrong here:
 
 - **There is no CI** (§8). Every tier is a local gate that nothing verifies ran; "CI is
   green" is never available as evidence.
-- **There is no route-parity/smoke gate** in this tree (§3 Tier C, §4). The smoke tier is
-  planned, not active (§13) — never cite it as a gate, and never add a `Tests.Smoke`
-  filter term to a command.
+- **The route-parity/smoke gate is active** (`QuranDashboard.Tests.Smoke`, §3 Tier A/C, §5).
+  Any change touching `Backend/api/` routes, request/response contracts, auth, middleware,
+  or model binding MUST run it, and the evidence MUST say whether the data tier ran or
+  skipped. Adding or changing a route also requires the matching `SmokeRouteCatalog` entry
+  in the same change (§10). The namespace **is** excluded from the fast Tier B/C
+  no-pipeline filter — `&FullyQualifiedName!~QuranDashboard.Tests.Smoke.` belongs there.
+
+A third fact: a browser E2E layer exists (`Frontend/quran-dashboard-ui/e2e/`,
+`npm run e2e`), but it is **opt-in and not a required tier** — do not present an E2E run as a
+Tier C or release gate, and do not confuse it with the backend route-smoke tier, which is
+required for route/contract/auth changes.
 
 ## Design Context
 

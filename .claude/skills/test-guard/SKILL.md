@@ -126,12 +126,19 @@ against the workspace policy — do not invent your own bar:
 4. Treat a required canonical test that skipped for missing `resources/import-sources/`
    as missing evidence, never as a pass (§9).
 
-Three tree-specific facts that change the verdict:
+Three tree-specific facts that change the verdict (section numbers refer to
+`TESTING_STRATEGY.md`):
 
 - **No CI exists** (§8). "CI is green" is not available as evidence here.
-- **No route-parity/smoke gate exists.** Do not ask for one. The smoke tier is planned
-  only (§13); a command carrying a `Tests.Smoke` filter term is stale, not thorough.
-- **No browser E2E layer exists.** An E2E claim in evidence is a red flag (§3 Tier E).
+- **The route-parity/smoke gate is active** (`QuranDashboard.Tests.Smoke`, §3 Tier A/C, §5).
+  When the test changes under review touch API routes, request/response contracts, auth,
+  middleware, or binding, ask for a
+  `--filter "FullyQualifiedName~QuranDashboard.Tests.Smoke."` run and for evidence that
+  says whether the `Tests.Smoke.Data` tier ran or skipped. A new or changed route also
+  needs its `SmokeRouteCatalog` entry in the same change (§10).
+- **The browser E2E layer is opt-in, never a required tier** (§3 Tier E, §6). An E2E run
+  may be offered as supplementary evidence and must say so; it does not substitute for the
+  smoke tier or for any required tier.
 
 Selecting the tier is not this skill's call to override — `engineering-review` owns the
 final verification verdict. Report the mismatch; don't block on it alone.

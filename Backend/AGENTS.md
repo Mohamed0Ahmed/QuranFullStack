@@ -27,10 +27,14 @@ validated `dotnet test` filters live in §5; the ten pipeline namespaces are dot
 keep the leading and trailing dots and list the enriched morphology family explicitly.
 
 - There is no CI (§8) — every tier is a local gate, and "CI is green" is never evidence.
-- No route-parity/smoke gate exists in this tree. For route, contract, auth, middleware, or
-  binding changes, cover with the `Tests.Api.*` families and state in the evidence that no
-  route-parity gate ran (§3 Tier C, §4). The smoke tier is planned only (§13); do not add a
-  `Tests.Smoke` term to any filter.
+- The route-parity/smoke gate is active: `QuranDashboard.Tests.Smoke` (§3 Tier A/C, §4, §5).
+  Route, contract, auth, middleware, or binding changes MUST run
+  `--filter "FullyQualifiedName~QuranDashboard.Tests.Smoke."` alongside the `Tests.Api.*`
+  families, and the evidence MUST state whether the `Tests.Smoke.Data` tier ran or skipped
+  (it self-skips when `resources/db-dumps/quran-canonical/` is absent; a stale dump fails
+  loud). Adding or changing a route requires the matching `SmokeRouteCatalog` entry in the
+  same change — `SmokeCoverageParityTests` fails otherwise (§10). The namespace is excluded
+  from the Tier B/C no-pipeline filter via `&FullyQualifiedName!~QuranDashboard.Tests.Smoke.`.
 
 ## Backend Local READMEs
 
