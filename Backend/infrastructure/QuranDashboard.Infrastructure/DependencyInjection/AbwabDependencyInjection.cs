@@ -8,6 +8,7 @@ internal static class AbwabDependencyInjection
     public static IServiceCollection AddAbwab(this IServiceCollection services)
     {
         services.AddScoped<IAbwabSectionsWriter, EfAbwabSectionsWriter>();
+        services.AddScoped<IAbwabDoorsWriter, EfAbwabDoorsWriter>();
 
         return services;
     }

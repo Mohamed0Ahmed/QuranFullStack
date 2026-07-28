@@ -237,6 +237,40 @@ internal static class SmokeRouteCatalog
         {
             Method = HttpMethod.Delete, ParityOnly = true,
         },
+
+        // api/abwab/doors — AbwabDoorsController. Same ParityOnly rationale as sections above.
+        new("api/abwab/doors", "/api/abwab/doors", HttpStatusCode.Created)
+        {
+            Method = HttpMethod.Post, ParityOnly = true,
+        },
+        new("api/abwab/doors/{id:int}", "/api/abwab/doors/1", HttpStatusCode.NotFound)
+        {
+            Method = HttpMethod.Put, ParityOnly = true,
+        },
+        new("api/abwab/doors/{id:int}/move", "/api/abwab/doors/1/move", HttpStatusCode.NotFound)
+        {
+            Method = HttpMethod.Post, ParityOnly = true,
+        },
+        new("api/abwab/doors/{id:int}/order", "/api/abwab/doors/1/order", HttpStatusCode.NotFound)
+        {
+            Method = HttpMethod.Post, ParityOnly = true,
+        },
+        new("api/abwab/doors/bulk-move", "/api/abwab/doors/bulk-move", HttpStatusCode.NotFound)
+        {
+            Method = HttpMethod.Post, ParityOnly = true,
+        },
+        new("api/abwab/doors/bulk-archive", "/api/abwab/doors/bulk-archive", HttpStatusCode.NotFound)
+        {
+            Method = HttpMethod.Post, ParityOnly = true,
+        },
+        new("api/abwab/doors/{id:int}", "/api/abwab/doors/1", HttpStatusCode.NotFound)
+        {
+            Method = HttpMethod.Delete, ParityOnly = true,
+        },
+        new("api/abwab/doors/{id:int}/restore", "/api/abwab/doors/1/restore", HttpStatusCode.NotFound)
+        {
+            Method = HttpMethod.Post, ParityOnly = true,
+        },
     ];
 
     // The sweep's theory data is the Path alone (a string is serializable, so every route is an

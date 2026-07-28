@@ -2,6 +2,14 @@ using Microsoft.Extensions.DependencyInjection;
 using QuranDashboard.Application.Abwab.Commands.Sections.CreateSection;
 using QuranDashboard.Application.Abwab.Commands.Sections.RenameSection;
 using QuranDashboard.Application.Abwab.Commands.Sections.DeleteSection;
+using QuranDashboard.Application.Abwab.Commands.Doors.CreateDoor;
+using QuranDashboard.Application.Abwab.Commands.Doors.EditDoor;
+using QuranDashboard.Application.Abwab.Commands.Doors.MoveDoor;
+using QuranDashboard.Application.Abwab.Commands.Doors.ReorderDoor;
+using QuranDashboard.Application.Abwab.Commands.Doors.BulkMoveDoors;
+using QuranDashboard.Application.Abwab.Commands.Doors.BulkArchiveDoors;
+using QuranDashboard.Application.Abwab.Commands.Doors.DeleteDoor;
+using QuranDashboard.Application.Abwab.Commands.Doors.RestoreDoor;
 using QuranDashboard.Application.Access.Commands.ProvisionCurrentUser;
 using QuranDashboard.Application.Quran.DataPipelines.Foundation;
 using QuranDashboard.Application.Quran.DataPipelines.Foundation.Validation;
@@ -127,6 +135,15 @@ public static class DependencyInjection
         services.AddScoped<CreateSectionHandler>();
         services.AddScoped<RenameSectionHandler>();
         services.AddScoped<DeleteSectionHandler>();
+
+        services.AddScoped<CreateDoorHandler>();
+        services.AddScoped<EditDoorHandler>();
+        services.AddScoped<MoveDoorHandler>();
+        services.AddScoped<ReorderDoorHandler>();
+        services.AddScoped<BulkMoveDoorsHandler>();
+        services.AddScoped<BulkArchiveDoorsHandler>();
+        services.AddScoped<DeleteDoorHandler>();
+        services.AddScoped<RestoreDoorHandler>();
 
         return services;
     }

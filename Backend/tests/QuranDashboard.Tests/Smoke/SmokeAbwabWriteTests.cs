@@ -1,6 +1,5 @@
 using System.Net.Http.Json;
 using System.Text;
-using QuranDashboard.Domain.Abwab;
 using QuranDashboard.Tests.TestSupport.Http;
 
 namespace QuranDashboard.Tests.Smoke;
@@ -158,11 +157,389 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
         using var client = fixture.CreateClient();
 
         var (id, _) = await CreateSectionAsync(client, "قسم يحوي بابًا حيًا");
-        await InsertLiveDoorAsync(id);
+        await CreateDoorAsync(client, "باب حي", sectionId: id);
 
         using var response = await client.DeleteAsync($"/api/abwab/sections/{id}");
 
         await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.Conflict, ApiMessages.AbwabSectionHasLiveDoors);
+    }
+
+    // ---- Doors ----
+
+    [Fact]
+    public async Task CreateDoor_WithValidData_ReturnsCreatedWithAliases()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        using var response = await client.PostAsJsonAsync("/api/abwab/doors",
+            new { name = "باب الإيمان", aliases = new[] { "إيمان", "عقيدة" } });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var envelope = await ApiEnvelope.AssertEnvelopeMatchesStatusAsync(response);
+        var data = envelope.GetProperty("data");
+        data.GetProperty("name").GetString().Should().Be("باب الإيمان");
+        data.GetProperty("aliases").EnumerateArray().Select(a => a.GetString())
+            .Should().BeEquivalentTo(["إيمان", "عقيدة"]);
+    }
+
+    [Fact]
+    public async Task CreateDoor_WithNullName_ReturnsBadRequestBindingLevel()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+        using var content = new StringContent("{\"name\": null}", Encoding.UTF8, "application/json");
+
+        using var response = await client.PostAsync("/api/abwab/doors", content);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var envelope = await ApiEnvelope.AssertEnvelopeMatchesStatusAsync(response);
+        envelope.GetProperty("message").GetString().Should().Be(ApiMessages.ValidationFailed);
+        envelope.GetProperty("errors").GetArrayLength().Should().BeGreaterThan(0);
+    }
+
+    [Fact]
+    public async Task CreateDoor_WithUnknownParent_ReturnsNotFound()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        using var response = await client.PostAsJsonAsync("/api/abwab/doors", new { name = "باب يتيم", parentId = 999999 });
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.NotFound, ApiMessages.AbwabDoorParentNotFound);
+    }
+
+    [Fact]
+    public async Task CreateDoor_WithDuplicateNameAtRoot_ReturnsConflict()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        await CreateDoorAsync(client, "باب مكرر");
+
+        using var response = await client.PostAsJsonAsync("/api/abwab/doors", new { name = "باب مكرر" });
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.Conflict, ApiMessages.AbwabDoorDuplicateName);
+    }
+
+    [Fact]
+    public async Task EditDoor_RoundTripsVersionAcrossTwoConsecutiveEdits()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        var (id, version) = await CreateDoorAsync(client, "باب قابل للتعديل");
+
+        using var firstEdit = await client.PutAsJsonAsync($"/api/abwab/doors/{id}",
+            new { name = "تعديل أول", description = (string?)null, representativeAyahText = (string?)null, aliases = Array.Empty<string>(), version });
+        firstEdit.StatusCode.Should().Be(HttpStatusCode.OK);
+        var firstData = await ApiEnvelope.ReadDataAsync(firstEdit);
+        var versionAfterFirstEdit = firstData.GetProperty("version").GetUInt32();
+
+        // Proves the version returned by a write is itself usable for the NEXT write — if Npgsql/EF
+        // weren't round-tripping the post-update xmin correctly, this second edit would 409 instead.
+        using var secondEdit = await client.PutAsJsonAsync($"/api/abwab/doors/{id}",
+            new { name = "تعديل ثانٍ", description = (string?)null, representativeAyahText = (string?)null, aliases = Array.Empty<string>(), version = versionAfterFirstEdit });
+
+        secondEdit.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task EditDoor_WithUnknownId_ReturnsNotFound()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        using var response = await client.PutAsJsonAsync("/api/abwab/doors/999999",
+            new { name = "لا يوجد", description = (string?)null, representativeAyahText = (string?)null, aliases = Array.Empty<string>(), version = 0u });
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.NotFound, ApiMessages.AbwabDoorNotFound);
+    }
+
+    [Fact]
+    public async Task EditDoor_ReplacesAliasesWholesale()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        var (id, version) = await CreateDoorAsync(client, "باب له اسماء بديلة", aliases: ["قديم١", "قديم٢"]);
+
+        using var response = await client.PutAsJsonAsync($"/api/abwab/doors/{id}",
+            new { name = "باب له اسماء بديلة", description = (string?)null, representativeAyahText = (string?)null, aliases = new[] { "قديم٢", "جديد" }, version });
+
+        var envelope = await ApiEnvelope.AssertEnvelopeMatchesStatusAsync(response);
+        envelope.GetProperty("data").GetProperty("aliases").EnumerateArray().Select(a => a.GetString())
+            .Should().BeEquivalentTo(["قديم٢", "جديد"]);
+    }
+
+    [Fact]
+    public async Task MoveDoor_UnderAnotherSectionsDoor_InheritsThatSection()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        var (sectionId, _) = await CreateSectionAsync(client, "قسم الوجهة");
+        var (targetParentId, _) = await CreateDoorAsync(client, "باب في القسم", sectionId: sectionId);
+        var (movedId, movedVersion) = await CreateDoorAsync(client, "باب منقول");
+
+        using var response = await client.PostAsJsonAsync($"/api/abwab/doors/{movedId}/move",
+            new { targetParentId, version = movedVersion });
+
+        var envelope = await ApiEnvelope.AssertEnvelopeMatchesStatusAsync(response);
+        var data = envelope.GetProperty("data");
+        data.GetProperty("parentId").GetInt32().Should().Be(targetParentId);
+        data.GetProperty("sectionId").GetInt32().Should().Be(sectionId);
+    }
+
+    [Fact]
+    public async Task MoveDoor_IntoOwnDescendant_ReturnsConflict()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        var (parentId, parentVersion) = await CreateDoorAsync(client, "الباب الأب");
+        var (childId, _) = await CreateDoorAsync(client, "الباب الابن", parentId: parentId);
+
+        using var response = await client.PostAsJsonAsync($"/api/abwab/doors/{parentId}/move",
+            new { targetParentId = childId, version = parentVersion });
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.Conflict, ApiMessages.AbwabDoorWouldCycle);
+    }
+
+    [Fact]
+    public async Task MoveDoor_WithUnknownId_ReturnsNotFound()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        using var response = await client.PostAsJsonAsync("/api/abwab/doors/999999/move",
+            new { targetParentId = (int?)null, targetSectionId = (int?)null, version = 0u });
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.NotFound, ApiMessages.AbwabDoorNotFound);
+    }
+
+    [Fact]
+    public async Task ReorderDoor_ToValidPosition_ResequencesSiblings()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        var (firstId, _) = await CreateDoorAsync(client, "الأول");
+        var (secondId, secondVersion) = await CreateDoorAsync(client, "الثاني");
+        await CreateDoorAsync(client, "الثالث");
+
+        using var response = await client.PostAsJsonAsync($"/api/abwab/doors/{secondId}/order",
+            new { position = 1, version = secondVersion });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var orderValues = await GetDoorOrderValuesAsync(null, null);
+        orderValues[secondId].Should().Be(1);
+        orderValues[firstId].Should().Be(2);
+        orderValues.Values.Order().Should().BeEquivalentTo([1, 2, 3], options => options.WithStrictOrdering());
+    }
+
+    [Fact]
+    public async Task ReorderDoor_OutOfRange_ReturnsBadRequest()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        var (id, version) = await CreateDoorAsync(client, "باب وحيد");
+
+        using var response = await client.PostAsJsonAsync($"/api/abwab/doors/{id}/order", new { position = 5, version });
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.BadRequest, ApiMessages.AbwabDoorInvalidPosition);
+    }
+
+    [Fact]
+    public async Task BulkMoveDoors_MovesBothDoorsAndResequencesDestination()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        var (targetSectionId, _) = await CreateSectionAsync(client, "قسم وجهة النقل الجماعي");
+        var (existingId, _) = await CreateDoorAsync(client, "باب موجود مسبقًا في الوجهة", sectionId: targetSectionId);
+        var (firstId, firstVersion) = await CreateDoorAsync(client, "أول باب لنقل جماعي ناجح");
+        var (secondId, secondVersion) = await CreateDoorAsync(client, "ثاني باب لنقل جماعي ناجح");
+
+        using var response = await client.PostAsJsonAsync("/api/abwab/doors/bulk-move", new
+        {
+            doors = new object[]
+            {
+                new { doorId = firstId, version = firstVersion },
+                new { doorId = secondId, version = secondVersion },
+            },
+            targetSectionId,
+            targetParentId = (int?)null,
+        });
+
+        var envelope = await ApiEnvelope.AssertEnvelopeMatchesStatusAsync(response);
+        var movedDtos = envelope.GetProperty("data").EnumerateArray().ToList();
+        movedDtos.Should().HaveCount(2);
+        movedDtos.Should().OnlyContain(dto => dto.GetProperty("sectionId").GetInt32() == targetSectionId);
+
+        var orderValues = await GetDoorOrderValuesAsync(targetSectionId, null);
+        orderValues.Should().ContainKey(existingId).WhoseValue.Should().Be(1);
+        orderValues.Values.Order().Should().BeEquivalentTo([1, 2, 3], options => options.WithStrictOrdering());
+    }
+
+    [Fact]
+    public async Task BulkMoveDoors_WithNullElement_ReturnsBadRequest()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+        using var content = new StringContent(
+            "{\"doors\":[null],\"targetSectionId\":null,\"targetParentId\":null}", Encoding.UTF8, "application/json");
+
+        using var response = await client.PostAsync("/api/abwab/doors/bulk-move", content);
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.BadRequest, ApiMessages.AbwabDoorsBulkInvalidRequest);
+    }
+
+    [Fact]
+    public async Task BulkMoveDoors_WithOneStaleVersion_FailsWholeBatch()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        var (firstId, firstVersion) = await CreateDoorAsync(client, "أول باب دفعي");
+        var (secondId, _) = await CreateDoorAsync(client, "ثاني باب دفعي");
+        var (targetSectionId, _) = await CreateSectionAsync(client, "قسم الدفعة");
+        const uint staleVersion = 999_999;
+
+        using var response = await client.PostAsJsonAsync("/api/abwab/doors/bulk-move", new
+        {
+            doors = new object[] { new { doorId = firstId, version = firstVersion }, new { doorId = secondId, version = staleVersion } },
+            targetSectionId,
+            targetParentId = (int?)null,
+        });
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.Conflict, ApiMessages.AbwabDoorStaleVersion);
+
+        var firstAfter = await GetDoorAsync(firstId);
+        firstAfter.SectionId.Should().BeNull("the whole batch must fail — the valid-version door must not have moved either");
+    }
+
+    [Fact]
+    public async Task BulkArchiveDoors_ArchivesSubtreeAndResequencesSiblings()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        var (parentId, parentVersion) = await CreateDoorAsync(client, "أب للأرشفة الجماعية");
+        var (childId, _) = await CreateDoorAsync(client, "ابن للأرشفة الجماعية", parentId: parentId);
+        var (siblingId, _) = await CreateDoorAsync(client, "شقيق يبقى حيًا");
+
+        using var response = await client.PostAsJsonAsync("/api/abwab/doors/bulk-archive",
+            new { doors = new object[] { new { doorId = parentId, version = parentVersion } } });
+
+        var envelope = await ApiEnvelope.AssertEnvelopeMatchesStatusAsync(response);
+        envelope.GetProperty("data").EnumerateArray().Select(e => e.GetInt32())
+            .Should().BeEquivalentTo([parentId, childId]);
+
+        var sibling = await GetDoorAsync(siblingId);
+        sibling.OrderValue.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task BulkArchiveDoors_WithNullElement_ReturnsBadRequest()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+        using var content = new StringContent("{\"doors\":[null]}", Encoding.UTF8, "application/json");
+
+        using var response = await client.PostAsync("/api/abwab/doors/bulk-archive", content);
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.BadRequest, ApiMessages.AbwabDoorsBulkInvalidRequest);
+    }
+
+    [Fact]
+    public async Task DeleteDoor_ArchivesSubtree_ReturnsNoContent()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        var (parentId, parentVersion) = await CreateDoorAsync(client, "أب للحذف");
+        var (childId, _) = await CreateDoorAsync(client, "ابن يُؤرشف تلقائيًا", parentId: parentId);
+
+        using var response = await SendWithBodyAsync(client, HttpMethod.Delete, $"/api/abwab/doors/{parentId}", new { version = parentVersion });
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await response.Content.ReadAsByteArrayAsync()).Should().BeEmpty();
+
+        var child = await GetDoorAsync(childId);
+        child.DeletedAtUtc.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task DeleteDoor_WithStaleVersion_ReturnsConflict()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        var (id, _) = await CreateDoorAsync(client, "باب لحذف متزامن");
+
+        using var response = await SendWithBodyAsync(client, HttpMethod.Delete, $"/api/abwab/doors/{id}", new { version = 999_999u });
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.Conflict, ApiMessages.AbwabDoorStaleVersion);
+    }
+
+    [Fact]
+    public async Task DeleteDoor_WithUnknownId_ReturnsNotFound()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        using var response = await SendWithBodyAsync(client, HttpMethod.Delete, "/api/abwab/doors/999999", new { version = 0u });
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.NotFound, ApiMessages.AbwabDoorNotFound);
+    }
+
+    [Fact]
+    public async Task RestoreDoor_RestoresWholeArchivedSubtree()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        var (parentId, parentVersion) = await CreateDoorAsync(client, "أب للاستعادة");
+        var (childId, _) = await CreateDoorAsync(client, "ابن يُستعاد معه", parentId: parentId);
+        using var deleteResponse = await SendWithBodyAsync(client, HttpMethod.Delete, $"/api/abwab/doors/{parentId}", new { version = parentVersion });
+        deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var archivedParentVersion = (await GetDoorAsync(parentId)).Version;
+
+        using var response = await client.PostAsJsonAsync($"/api/abwab/doors/{parentId}/restore", new { version = archivedParentVersion });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var child = await GetDoorAsync(childId);
+        child.DeletedAtUtc.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task RestoreDoor_WhileParentStillArchived_ReturnsConflict()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        var (parentId, parentVersion) = await CreateDoorAsync(client, "أب يبقى مؤرشفًا");
+        var (childId, _) = await CreateDoorAsync(client, "ابن يحاول الاستعادة منفردًا", parentId: parentId);
+        using var deleteResponse = await SendWithBodyAsync(client, HttpMethod.Delete, $"/api/abwab/doors/{parentId}", new { version = parentVersion });
+        deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var archivedChildVersion = (await GetDoorAsync(childId)).Version;
+
+        using var response = await client.PostAsJsonAsync($"/api/abwab/doors/{childId}/restore", new { version = archivedChildVersion });
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.Conflict, ApiMessages.AbwabDoorParentStillArchived);
+    }
+
+    [Fact]
+    public async Task RestoreDoor_WithUnknownId_ReturnsNotFound()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        using var response = await client.PostAsJsonAsync("/api/abwab/doors/999999/restore", new { version = 0u });
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.NotFound, ApiMessages.AbwabDoorNotFound);
     }
 
     private static async Task<(int Id, uint Version)> CreateSectionAsync(HttpClient client, string name)
@@ -172,21 +549,35 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
         return (data.GetProperty("id").GetInt32(), data.GetProperty("version").GetUInt32());
     }
 
-    // Doors has no write endpoint yet in this commit (phase 2b lands doors next), so a live door for the
-    // section-delete-conflict case is seeded directly through the DbContext rather than the API.
-    private async Task InsertLiveDoorAsync(int sectionId)
+    private static async Task<(int Id, uint Version)> CreateDoorAsync(
+        HttpClient client, string name, int? sectionId = null, int? parentId = null, string[]? aliases = null)
+    {
+        using var response = await client.PostAsJsonAsync("/api/abwab/doors",
+            new { sectionId, parentId, name, aliases = aliases ?? [] });
+        var data = await ApiEnvelope.ReadDataAsync(response);
+        return (data.GetProperty("id").GetInt32(), data.GetProperty("version").GetUInt32());
+    }
+
+    private static Task<HttpResponseMessage> SendWithBodyAsync(HttpClient client, HttpMethod method, string path, object body)
+    {
+        var request = new HttpRequestMessage(method, path) { Content = JsonContent.Create(body) };
+        return client.SendAsync(request);
+    }
+
+    private async Task<(int? SectionId, int? ParentId, int OrderValue, uint Version, DateTimeOffset? DeletedAtUtc)> GetDoorAsync(int id)
     {
         using var scope = fixture.ApiServices.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
-        var now = DateTimeOffset.UtcNow;
-        db.AbwabDoors.Add(new AbwabDoor
-        {
-            SectionId = sectionId,
-            Name = "باب حي",
-            OrderValue = 1,
-            CreatedAtUtc = now,
-            UpdatedAtUtc = now,
-        });
-        await db.SaveChangesAsync();
+        var door = await db.AbwabDoors.AsNoTracking().SingleAsync(d => d.Id == id);
+        return (door.SectionId, door.ParentId, door.OrderValue, door.Version, door.DeletedAtUtc);
+    }
+
+    private async Task<IReadOnlyDictionary<int, int>> GetDoorOrderValuesAsync(int? sectionId, int? parentId)
+    {
+        using var scope = fixture.ApiServices.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+        return await db.AbwabDoors.AsNoTracking()
+            .Where(d => d.SectionId == sectionId && d.ParentId == parentId && d.DeletedAtUtc == null)
+            .ToDictionaryAsync(d => d.Id, d => d.OrderValue);
     }
 }
