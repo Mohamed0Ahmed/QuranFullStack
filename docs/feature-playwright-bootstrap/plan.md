@@ -1497,6 +1497,35 @@ git commit -m "docs: wire the browser E2E layer into the testing strategy and in
    becomes a required Tier C gate for frontend routing / shell changes.
 4. **Testids for the tafsir / translation / full-إعراب tabs**, if the index-based tab selection
    proves brittle.
+5. **The words-dropdown hover/click defect** (deviation 2 below) is a real user-facing bug, not a
+   test-infrastructure item: a pointer user who hovers "الكلمات والجذور" and then clicks its label
+   sees the menu snap shut, because the button's `(click)="toggleWords()"` inverts the state
+   `mouseenter` just set. Keyboard activation is unaffected. It needs its own decision and its own
+   unit coverage; the e2e spec hovers instead, with a comment pinning why.
+
+---
+
+## Deviations found during implementation
+
+The task bodies above are left as written; these are the premises implementation disproved.
+
+1. **The reader does not drop `page=1` after paging back.** `changePage` writes the page key
+   unconditionally (`src/app/features/mushaf/data-access/mushaf-reader.facade.ts`); only session
+   restoration omits the default. The spec asserts `page=1`.
+2. **The words dropdown does not open on `.click()`.** The item opens on `mouseenter` and the
+   button's own click handler toggles it shut, so the spec hovers instead. **This is a real UX
+   defect in the app** — a pointer user who hovers "الكلمات والجذور" then clicks its label sees
+   the menu snap shut; keyboard activation is unaffected. Not fixed here (application changes
+   were limited to testids), and it is worth its own decision.
+3. **Word-types rows are not clickable**, and they appear only after a subtype is chosen. The
+   spec picks a subtype first, then clicks a row's count chip — the chips are a row's only
+   interactive elements.
+4. **Lemma search must query `كتب`, not `كتاب`.** Lemma text is Uthmani, and the backend
+   normalizer strips the superscript alef (U+0670) rather than folding it, so a plain-alef query
+   cannot match.
+5. **The source-selector test skips when the DB seeds a single tafsir source**, and proves the
+   switch by picking a row with `aria-selected="false"` — the trigger label unmounts during the
+   reload, so it is not a usable witness.
 
 ---
 
@@ -1509,4 +1538,5 @@ git commit -m "docs: wire the browser E2E layer into the testing strategy and in
 | 3 — Explorers | 3 | words hub, five explorer flows, placeholder + wildcard | `npm run e2e` (28 passed), `npm run e2e:headed`, `npm test` count unchanged |
 | 4 — Docs | 5 | TESTING_STRATEGY §3/§4/§6, frontend CLAUDE.md + AGENTS.md, frontend README, root CLAUDE.md, `e2e/README.md` | grep proves no doc still denies the layer; §13 diff is empty; full e2e + Vitest + build |
 
-**4 phases, 18 tasks, 8 spec files, 28 tests, 3 `data-testid` additions.**
+**4 phases, 18 tasks, 8 spec files, 28 tests, 7 `data-testid` attributes** across the three
+elements the scope named (four navbar bindings, reader prev/next, reader page root).
