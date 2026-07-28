@@ -57,38 +57,36 @@ public sealed class AbwabSchemaTests(AbwabSchemaFixture fixture)
     ];
 
     [Fact]
-    public async Task Sections_table_has_the_expected_columns()
+    public async Task Sections_table_has_exactly_the_expected_columns()
     {
+        // Exact-set, not a subset check: T105's proof is the ABSENCE of a concurrency-token
+        // column (Version/xmin is never a real column — see AbwabSectionConfiguration), and a
+        // subset assertion would not fail if one leaked in.
         await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
         var connection = await OpenConnectionAsync(scope.ServiceProvider);
 
         var columns = await QueryColumnsAsync(connection, "abwab_sections");
-        columns.Should().Contain(ExpectedSectionColumns);
-
-        // xmin is Postgres's own hidden system column, never a migration-created one — proven
-        // separately by the concurrency test below, not by its presence in information_schema.
-        columns.Should().NotContain("version");
+        columns.Should().BeEquivalentTo(ExpectedSectionColumns);
     }
 
     [Fact]
-    public async Task Doors_table_has_the_expected_columns()
+    public async Task Doors_table_has_exactly_the_expected_columns()
     {
         await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
         var connection = await OpenConnectionAsync(scope.ServiceProvider);
 
         var columns = await QueryColumnsAsync(connection, "abwab_doors");
-        columns.Should().Contain(ExpectedDoorColumns);
-        columns.Should().NotContain("version");
+        columns.Should().BeEquivalentTo(ExpectedDoorColumns);
     }
 
     [Fact]
-    public async Task Door_aliases_table_has_the_expected_columns()
+    public async Task Door_aliases_table_has_exactly_the_expected_columns()
     {
         await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
         var connection = await OpenConnectionAsync(scope.ServiceProvider);
 
         var columns = await QueryColumnsAsync(connection, "abwab_door_aliases");
-        columns.Should().Contain(ExpectedDoorAliasColumns);
+        columns.Should().BeEquivalentTo(ExpectedDoorAliasColumns);
     }
 
     [Fact]
@@ -162,6 +160,69 @@ public sealed class AbwabSchemaTests(AbwabSchemaFixture fixture)
         dbContext.AbwabDoors.Add(new AbwabDoor
         {
             Name = "soft-delete-filtered-door",
+            OrderValue = 1,
+            CreatedAtUtc = now,
+            UpdatedAtUtc = now
+        });
+
+        var act = async () => await dbContext.SaveChangesAsync();
+        await act.Should().NotThrowAsync();
+    }
+
+    [Fact]
+    public async Task Live_sections_with_the_same_name_are_rejected_by_the_unique_index()
+    {
+        // Not in T102's index list, but required by phase 2b's "409 duplicate name" outcome for
+        // sections — added here since sections have no parent to scope siblings by.
+        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+
+        var now = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        dbContext.AbwabSections.Add(new AbwabSection
+        {
+            Name = "duplicate-section",
+            OrderValue = 1,
+            CreatedAtUtc = now,
+            UpdatedAtUtc = now
+        });
+        await dbContext.SaveChangesAsync();
+
+        dbContext.AbwabSections.Add(new AbwabSection
+        {
+            Name = "duplicate-section",
+            OrderValue = 2,
+            CreatedAtUtc = now,
+            UpdatedAtUtc = now
+        });
+
+        var act = async () => await dbContext.SaveChangesAsync();
+        await act.Should().ThrowAsync<DbUpdateException>();
+    }
+
+    [Fact]
+    public async Task Archived_section_does_not_block_a_new_section_with_the_same_name()
+    {
+        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+
+        var now = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var archived = new AbwabSection
+        {
+            Name = "soft-delete-filtered-section",
+            OrderValue = 1,
+            CreatedAtUtc = now,
+            UpdatedAtUtc = now
+        };
+        dbContext.AbwabSections.Add(archived);
+        await dbContext.SaveChangesAsync();
+
+        archived.DeletedAtUtc = now;
+        archived.UpdatedAtUtc = now;
+        await dbContext.SaveChangesAsync();
+
+        dbContext.AbwabSections.Add(new AbwabSection
+        {
+            Name = "soft-delete-filtered-section",
             OrderValue = 1,
             CreatedAtUtc = now,
             UpdatedAtUtc = now
