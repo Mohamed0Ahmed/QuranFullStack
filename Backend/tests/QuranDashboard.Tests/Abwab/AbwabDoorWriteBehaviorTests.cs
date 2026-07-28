@@ -277,6 +277,89 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
         restored.DetachedFromArchivedSection.Should().BeFalse();
     }
 
+    // Reads group and count by SectionId at any depth (`Reads/Abwab/README.md`) and nothing re-derives a
+    // nested door's section, so a door that changes section has to take its subtree with it. The archived
+    // grandchild is the discriminating row: a live-only cascade satisfies every assertion that ignores it,
+    // and then restores that grandchild into a section its parent left.
+    [Fact]
+    public async Task MoveAsync_AcrossSections_CarriesEveryDescendantIncludingArchivedOnes()
+    {
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
+        var sections = scope.ServiceProvider.GetRequiredService<IAbwabSectionsWriter>();
+
+        var origin = await sections.CreateAsync("سلوك: قسم المصدر للنقل الشجري", CancellationToken.None);
+        var destination = await sections.CreateAsync("سلوك: قسم الوجهة للنقل الشجري", CancellationToken.None);
+        var parent = await writer.CreateAsync(origin.Id, null, "سلوك: أب ينتقل بقسمه", null, null, [], CancellationToken.None);
+        var child = await writer.CreateAsync(origin.Id, parent.Id, "سلوك: ابن ينتقل مع أبيه", null, null, [], CancellationToken.None);
+        var grandchild = await writer.CreateAsync(origin.Id, child.Id, "سلوك: حفيد مؤرشف ينتقل مع جده", null, null, [], CancellationToken.None);
+        await writer.DeleteAsync(grandchild.Id, grandchild.Version, CancellationToken.None);
+
+        var moved = await writer.MoveAsync(
+            parent.Id, destination.Id, null, (await ReloadAsync(scope, parent.Id)).Version, CancellationToken.None);
+
+        moved!.SectionId.Should().Be(destination.Id);
+        (await ReloadAsync(scope, child.Id)).SectionId.Should().Be(destination.Id);
+        (await ReloadAsync(scope, grandchild.Id)).SectionId
+            .Should().Be(destination.Id, "an archived descendant keeps its parent_id through soft-delete, so it must follow too");
+    }
+
+    [Fact]
+    public async Task BulkMoveAsync_AcrossSections_CarriesEachMovedDoorsSubtree()
+    {
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
+        var sections = scope.ServiceProvider.GetRequiredService<IAbwabSectionsWriter>();
+
+        var origin = await sections.CreateAsync("سلوك: قسم المصدر للنقل الجماعي الشجري", CancellationToken.None);
+        var destination = await sections.CreateAsync("سلوك: قسم الوجهة للنقل الجماعي الشجري", CancellationToken.None);
+        var first = await writer.CreateAsync(origin.Id, null, "سلوك: أول باب لنقل جماعي عبر الأقسام", null, null, [], CancellationToken.None);
+        var firstChild = await writer.CreateAsync(origin.Id, first.Id, "سلوك: ابن الأول في نقل جماعي", null, null, [], CancellationToken.None);
+        var second = await writer.CreateAsync(origin.Id, null, "سلوك: ثاني باب لنقل جماعي عبر الأقسام", null, null, [], CancellationToken.None);
+
+        await writer.BulkMoveAsync(
+            [new AbwabBulkDoorRef(first.Id, first.Version), new AbwabBulkDoorRef(second.Id, second.Version)],
+            destination.Id, null, CancellationToken.None);
+
+        (await ReloadAsync(scope, firstChild.Id)).SectionId
+            .Should().Be(destination.Id, "the bulk path owes the same subtree guarantee as the single move");
+    }
+
+    // `int?` cannot tell an omitted sectionId from an explicit null, so null has to mean "unspecified" and
+    // derive — otherwise creating a child under a sectioned parent writes null and breaks the invariant
+    // just as loudly as a disagreeing value would.
+    [Fact]
+    public async Task CreateAsync_UnderAParent_DerivesTheSectionWhenNoneIsStated()
+    {
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
+        var sections = scope.ServiceProvider.GetRequiredService<IAbwabSectionsWriter>();
+
+        var section = await sections.CreateAsync("سلوك: قسم يُشتق للابن", CancellationToken.None);
+        var parent = await writer.CreateAsync(section.Id, null, "سلوك: أب يمنح قسمه", null, null, [], CancellationToken.None);
+
+        var child = await writer.CreateAsync(null, parent.Id, "سلوك: ابن بلا قسم مذكور", null, null, [], CancellationToken.None);
+
+        child.SectionId.Should().Be(section.Id);
+    }
+
+    [Fact]
+    public async Task CreateAsync_UnderAParentInAnotherSection_ThrowsSectionParentMismatchException()
+    {
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
+        var sections = scope.ServiceProvider.GetRequiredService<IAbwabSectionsWriter>();
+
+        var parentSection = await sections.CreateAsync("سلوك: قسم الأب للتعارض", CancellationToken.None);
+        var otherSection = await sections.CreateAsync("سلوك: قسم مخالف للتعارض", CancellationToken.None);
+        var parent = await writer.CreateAsync(parentSection.Id, null, "سلوك: أب في قسم محدد", null, null, [], CancellationToken.None);
+
+        var act = async () => await writer.CreateAsync(
+            otherSection.Id, parent.Id, "سلوك: ابن بقسم مخالف", null, null, [], CancellationToken.None);
+
+        await act.Should().ThrowAsync<AbwabSectionParentMismatchException>();
+    }
+
     [Fact]
     public async Task BulkArchiveAsync_WithOneStaleVersion_LeavesBothDoorsLive()
     {

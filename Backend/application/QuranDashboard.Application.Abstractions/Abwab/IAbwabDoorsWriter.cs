@@ -4,7 +4,9 @@ namespace QuranDashboard.Application.Abstractions.Abwab;
 
 public interface IAbwabDoorsWriter
 {
-    // Throws AbwabParentNotFoundException, AbwabSectionNotFoundException, AbwabDuplicateNameException.
+    // Throws AbwabParentNotFoundException, AbwabSectionNotFoundException, AbwabDuplicateNameException,
+    // AbwabSectionParentMismatchException. Under a parent the section is DERIVED from that parent; a null
+    // sectionId means "unspecified", and a stated one that disagrees is refused rather than overwritten.
     Task<AbwabDoorDto> CreateAsync(
         int? sectionId,
         int? parentId,
@@ -28,7 +30,8 @@ public interface IAbwabDoorsWriter
     // Null = door missing or archived. Throws AbwabStaleVersionException, AbwabParentNotFoundException,
     // AbwabSectionNotFoundException, AbwabCycleException, AbwabDuplicateNameException. targetSectionId
     // is only honored when targetParentId is null — nesting under a parent always inherits that
-    // parent's section, so the two can never disagree.
+    // parent's section, so the two can never disagree. A section change carries the door's whole subtree
+    // with it, archived descendants included.
     Task<AbwabDoorDto?> MoveAsync(
         int id,
         int? targetSectionId,
@@ -41,6 +44,7 @@ public interface IAbwabDoorsWriter
 
     // Throws AbwabNotFoundException, AbwabParentNotFoundException, AbwabSectionNotFoundException,
     // AbwabCycleException, AbwabDuplicateNameException, AbwabStaleVersionException. All-or-nothing.
+    // Like MoveAsync, a section change carries each moved door's whole subtree with it.
     Task<IReadOnlyList<AbwabDoorDto>> BulkMoveAsync(
         IReadOnlyList<AbwabBulkDoorRef> doors,
         int? targetSectionId,

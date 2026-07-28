@@ -54,6 +54,25 @@ incidentally.
   The detach is **reported, not silent**: `RestoreAsync` returns `AbwabRestoredDoorDto`, whose
   `DetachedFromArchivedSection` is the caller's only signal. A null `section_id` on its own is ambiguous —
   a door that never belonged to a section looks identical — and the caller does not hold the prior state.
+- **A nested door's section is its parent's, and every write that can change a section must maintain that.**
+  Reads group and count by `SectionId` at any depth (`../../Reads/Abwab/README.md`) and nothing re-derives
+  it, so this is an invariant the write side owes, not a convention:
+  - `CreateAsync` **derives** the section from the parent. A null `sectionId` means *unspecified* — `int?`
+    cannot tell an omitted field from an explicit null — and a stated one that disagrees with the parent
+    is refused (`AbwabSectionParentMismatchException` → `400`), not silently overwritten.
+  - `MoveAsync` and `BulkMoveAsync` **cascade** a section change to the moved door's whole subtree,
+    `CascadeSectionToDescendantsAsync`. **Archived descendants included** — they keep their `parent_id`
+    through soft-delete, and one left behind would later restore into a section its parent has left.
+    A live-only cascade passes every test that ignores archived rows, so the discriminating test asserts
+    an archived grandchild's `SectionId`.
+  - Descendants keep their `parent_id`, so their sibling scope's membership does not change and they need
+    no resequencing. For the same reason a descendant can never collide on the unique index: only subtree
+    members share that `parent_id`, so `SaveTranslatingWriteExceptionsAsync(door.Name, …)` still names the
+    only row that can actually conflict.
+  - Deliberate asymmetry: create **rejects** a disagreeing section, move **ignores** `targetSectionId`
+    whenever `targetParentId` is set (plan §4, §13.5). Move's pair describes a destination where the plan
+    locks parent-wins; create's body is an authored record, where a disagreement is a caller bug worth
+    reporting. Do not "harmonize" one into the other.
 - **Aliases are replaced wholesale under the door's own token** and soft-deleted, never hard-deleted.
   `AbwabDoorAlias` deliberately has no `xmin` of its own.
 - **Descendant walks share one parent map per operation.** `LoadChildrenByParentAsync` projects

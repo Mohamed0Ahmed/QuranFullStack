@@ -74,6 +74,34 @@ public sealed class AbwabTreeReadTests(AbwabSchemaFixture fixture)
         sectionEntry.DoorsInScopeCount.Should().Be(2, "parent + live child; the archived child does not inflate the section's live total");
     }
 
+    // DoorsInScopeCount counts every live door carrying that SectionId regardless of depth. A move that
+    // left descendants behind would therefore show one subtree under BOTH sections. Asserting only the
+    // moved root is the non-discriminating version of this — the child is what proves the cascade.
+    [Fact]
+    public async Task GetTreeAsync_AfterCrossSectionMove_CountsTheWholeSubtreeUnderTheDestination()
+    {
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var sections = scope.ServiceProvider.GetRequiredService<IAbwabSectionsWriter>();
+        var doors = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
+        var reader = scope.ServiceProvider.GetRequiredService<IAbwabTreeReader>();
+
+        var origin = await sections.CreateAsync("قراءة: قسم المصدر للعد بعد النقل", CancellationToken.None);
+        var destination = await sections.CreateAsync("قراءة: قسم الوجهة للعد بعد النقل", CancellationToken.None);
+        var parent = await doors.CreateAsync(origin.Id, null, "قراءة: أب ينتقل بعدّه", null, null, [], CancellationToken.None);
+        await doors.CreateAsync(origin.Id, parent.Id, "قراءة: ابن ينتقل بعدّ أبيه", null, null, [], CancellationToken.None);
+
+        var before = await reader.GetTreeAsync(CancellationToken.None);
+        before.Sections.Single(s => s.Id == origin.Id).DoorsInScopeCount.Should().Be(2);
+
+        await doors.MoveAsync(parent.Id, destination.Id, null, parent.Version, CancellationToken.None);
+
+        var after = await reader.GetTreeAsync(CancellationToken.None);
+        after.Sections.Single(s => s.Id == origin.Id).DoorsInScopeCount
+            .Should().Be(0, "both rows left — the section is not left counting a child whose parent moved");
+        after.Sections.Single(s => s.Id == destination.Id).DoorsInScopeCount
+            .Should().Be(2, "the child followed its parent, so the destination gained the whole subtree");
+    }
+
     [Fact]
     public async Task GetTreeAsync_OrdersDoorsByOrderValue_EvenWithAGap()
     {

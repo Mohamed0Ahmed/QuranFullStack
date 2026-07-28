@@ -38,6 +38,8 @@ public sealed class AbwabDoorsController(
                 NotFound(ApiResponse<AbwabDoorDto>.Fail(ApiMessages.AbwabDoorParentNotFound)),
             CreateDoorOutcome.SectionNotFound =>
                 NotFound(ApiResponse<AbwabDoorDto>.Fail(ApiMessages.AbwabDoorSectionNotFound)),
+            CreateDoorOutcome.SectionParentMismatch =>
+                BadRequest(ApiResponse<AbwabDoorDto>.Fail(ApiMessages.AbwabDoorSectionParentMismatch)),
             CreateDoorOutcome.DuplicateName =>
                 Conflict(ApiResponse<AbwabDoorDto>.Fail(ApiMessages.AbwabDoorDuplicateName)),
             _ => throw new InvalidOperationException($"Unhandled {nameof(CreateDoorOutcome)} variant."),

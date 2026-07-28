@@ -11,7 +11,9 @@ and the `ApiResponse<T>` envelope; application handlers own use-case logic.
   aliases, per-door direct-child count and per-section live-doors count, no paging). All routes are
   `Open` — this is the repository's first write surface and it ships without authentication in Slice A
   (see feature plan §9/§10); it must not reach production before a write policy attaches. Optimistic
-  concurrency is `uint xmin`, surfaced as `409` in the shared envelope. Restore is the one write whose
+  concurrency is `uint xmin`, surfaced as `409` in the shared envelope. Creating a door under a parent
+  derives its section from that parent; a stated section that disagrees is a `400`, not a silent
+  overwrite. Restore is the one write whose
   `200` body is not the entity alone: it returns `AbwabRestoredDoorDto { door, detachedFromArchivedSection }`,
   because a door restored out of a section archived meanwhile comes back with `sectionId: null` and no
   caller can tell that from a door that never had a section. `AbwabSectionsController` and

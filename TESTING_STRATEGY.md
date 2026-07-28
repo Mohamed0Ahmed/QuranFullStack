@@ -13,29 +13,29 @@ its own scope. Test *quality* rules (test-guard, CODING_PRINCIPLES) and Quranic 
 safety rules are unaffected and always apply.
 
 The **Backend** baselines below were re-taken **2026-07-29** (Abwab feature, Slice A — last
-re-measured after the restore-detach indicator, which added one `Tests.Abwab` case and two
-write smokes on top of the pre-merge engineering review) on a developer machine with Docker up,
+re-measured after the section-inheritance fix, which added five `Tests.Abwab` cases and two
+write smokes on top of the restore-detach indicator) on a developer machine with Docker up,
 `resources/import-sources/` staged, and the canonical dump at
 `resources/db-dumps/quran-canonical/` present, against this tree. The **Frontend** row is
 carried forward from the 2026-07-27 measurement and was NOT re-run on 2026-07-29 — no Frontend
 spec file changed (only generated API model files were added, unconsumed by any component in
 this Backend-only slice), so it is reproduced rather than re-measured (§2: no success claim
 without fresh output; this row is a carried baseline, not evidence for any gate). The pipeline
-row is likewise **derived, not re-run** on 2026-07-29: `1,819 − 1,071 − 131 = 617`, unchanged,
+row is likewise **derived, not re-run** on 2026-07-29: `1,826 − 1,076 − 133 = 617`, unchanged,
 which is what the partition identity below is for:
 
 | Run | Tests | Duration | Skipped |
 | --- | --- | --- | --- |
-| Backend full suite | 1,819 | 6 m 1 s | 0 |
-| Backend no-pipeline (Tier B/C) | 1,071 | 18 s | 0 |
+| Backend full suite | 1,826 | 6 m 3 s | 0 |
+| Backend no-pipeline (Tier B/C) | 1,076 | 20 s | 0 |
 | Backend ten pipeline families (Tier D) — derived, last timed 2026-07-28 | 617 | 3 m 54 s | 0 |
-| Backend route smoke (§3 Tier A/C route gate) | 131 | 46-51 s | 0 |
+| Backend route smoke (§3 Tier A/C route gate) | 133 | 51-52 s | 0 |
 | Frontend full suite (169 spec files) — carried from 2026-07-27 | 1,938 | 171 s | 0 |
 
 Counts and durations are indicative, not contractual. The zero-skip column holds only
 because the staged canonical resources *and* the canonical dump were present; on a machine
 without them the canonical families self-skip (§3 Tier D, §3 Tier E) and the data-smoke rows
-self-skip, leaving 118 passed on the smoke tier (§3 Tier A/C).
+self-skip, leaving 120 passed on the smoke tier (§3 Tier A/C).
 
 ## 2. Core principles
 
@@ -89,7 +89,7 @@ dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
   --no-build \
   --filter "FullyQualifiedName~QuranDashboard.Tests.Quran.WordsWordTypes"
 
-# Route smoke tier (131 tests, ~46-51 s) — REQUIRED at Tier A when the phase touched an API
+# Route smoke tier (133 tests, ~51-52 s) — REQUIRED at Tier A when the phase touched an API
 # route, a request/response contract, authentication/authorization, middleware, or binding:
 dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
   --no-build --filter "FullyQualifiedName~QuranDashboard.Tests.Smoke."
@@ -105,7 +105,7 @@ The complete Backend or Frontend suite MUST NOT be demanded for an ordinary phas
 
 Run after a vertical slice, a substantial User Story, or a related group of phases.
 
-Backend broad regression — the **no-pipeline** run (~18 s, 1,071 tests):
+Backend broad regression — the **no-pipeline** run (~20 s, 1,076 tests):
 
 ```bash
 dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
@@ -118,7 +118,7 @@ the `Quran.MushafReader`, `Quran.Words`, `Quran.WordsMorphologyExplorers`,
 `Quran.WordsRoots`, and `Quran.WordsWordTypes` read-model families, and
 `Tests.TestSupport.Logging`. It excludes the ten pipeline namespaces **completely —
 including the fast unit tests that live inside them** (617 tests) — and it excludes
-`QuranDashboard.Tests.Smoke.` (131 tests), which has its own gate below. It is a fast broad
+`QuranDashboard.Tests.Smoke.` (133 tests), which has its own gate below. It is a fast broad
 regression tier, not full coverage; the excluded families run under the Tier A/C route gate
 and the Tier D/E gates.
 
@@ -176,11 +176,11 @@ route through routing, authorization, model binding, and serialization; a bidire
 
 The evidence MUST state **whether the data tier ran or skipped**. `Tests.Smoke.Data`
 restores the canonical Quran dump from `resources/db-dumps/quran-canonical/` and self-skips
-when that dump is absent (131 passed with it; **118 reasoned, not freshly re-measured** —
-131 minus the 13 data-tier tests that self-skip without the dump, none of which are among
+when that dump is absent (133 passed with it; **120 reasoned, not freshly re-measured** —
+133 minus the 13 data-tier tests that self-skip without the dump, none of which are among
 the Abwab additions, so the pre-existing 74/61 split's 13-test gap carries forward
 unchanged). A present dump that is corrupt or stale — sha256 or migration-head mismatch —
-fails loud rather than skipping. "131 passed, 0 skipped" and "118 passed, data tier skipped"
+fails loud rather than skipping. "133 passed, 0 skipped" and "120 passed, data tier skipped"
 are both valid evidence; an unqualified "smoke passed" is not.
 
 ### Tier D — Slow pipeline / canonical acceptance (trigger-based)
@@ -307,17 +307,17 @@ dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
 dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
   --no-build --filter "FullyQualifiedName~QuranDashboard.Tests.Api"
 
-# Broad no-pipeline regression (1,071 tests, ~18 s; excludes the ten pipeline namespaces
+# Broad no-pipeline regression (1,076 tests, ~20 s; excludes the ten pipeline namespaces
 # and the smoke namespace entirely):
 dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
   --no-build \
   --filter "FullyQualifiedName!~.Quran.Import.&FullyQualifiedName!~.Quran.WordsDisplay.&FullyQualifiedName!~.Quran.WordsMorphology.&FullyQualifiedName!~.Quran.WordsMorphologyEnriched.&FullyQualifiedName!~.Quran.WordsSimpleI3rab.&FullyQualifiedName!~.Quran.Mutashabihat.&FullyQualifiedName!~.Quran.Navigation.&FullyQualifiedName!~.Quran.Tafsirs.&FullyQualifiedName!~.Quran.Translations.&FullyQualifiedName!~.Quran.FullI3rab.&FullyQualifiedName!~QuranDashboard.Tests.Smoke."
 
-# Route smoke tier (131 tests, ~46-51 s; boots the real API composition over Testcontainers):
+# Route smoke tier (133 tests, ~51-52 s; boots the real API composition over Testcontainers):
 dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
   --no-build --filter "FullyQualifiedName~QuranDashboard.Tests.Smoke."
 
-# Full Backend suite (1,819 tests, ~6 m 1 s):
+# Full Backend suite (1,826 tests, ~6 m 3 s):
 dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj --no-build
 
 # One pipeline family (example — Translations):
@@ -335,10 +335,10 @@ current code state (§7).
 
 **Partition check (re-measured 2026-07-29, not asserted):** the no-pipeline filter, the
 all-pipeline filter, and the smoke filter partition the suite losslessly —
-**1,071 + 617 + 131 = 1,819**, exactly the full-suite total, with zero failures and zero
+**1,076 + 617 + 133 = 1,826**, exactly the full-suite total, with zero failures and zero
 skips. Three of the four runs were fresh on 2026-07-29; the pipeline term is the identity's
 remainder rather than a fourth run, which is legitimate only because the other three were
-measured against this same tree. `Tests.Abwab` (31 tests: schema, write
+measured against this same tree. `Tests.Abwab` (36 tests: schema, write
 behavior, and tree-read tests) landed in the no-pipeline set by default, exactly as this
 paragraph predicts a new top-level namespace will; no pipeline filter needed a change since
 Abwab tables are non-pipeline. No test family falls outside all three tiers, and none is

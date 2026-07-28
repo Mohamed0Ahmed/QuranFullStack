@@ -227,7 +227,7 @@ dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
 | POST | `api/abwab/sections` | 201 / 400 / 409 duplicate name |
 | PUT | `api/abwab/sections/{id:int}` | 200 / 400 / 404 / 409 stale, duplicate |
 | DELETE | `api/abwab/sections/{id:int}` | 204 / 404 / 409 section holds live doors, stale (see §13.3) |
-| POST | `api/abwab/doors` | 201 / 400 / 404 parent or section / 409 duplicate sibling name |
+| POST | `api/abwab/doors` | 201 / 400 invalid name, section disagrees with parent (see §13.5) / 404 parent or section / 409 duplicate sibling name |
 | PUT | `api/abwab/doors/{id:int}` | 200 / 400 / 404 / 409 stale, duplicate |
 | POST | `api/abwab/doors/{id:int}/move` | 200 / 400 / 404 / 409 stale, cycle, duplicate at target |
 | POST | `api/abwab/doors/{id:int}/order` | 200 / 400 / 404 / 409 stale |
@@ -561,3 +561,29 @@ the tree to decide whether to warn.
 This changes the restore route's wire shape (`data` was the door itself), so it is a real contract delta and
 the regenerated OpenAPI/model output ships with it. There is no bulk restore in Slice A — only bulk move and
 bulk archive — so the indicator has exactly one carrier.
+
+### 13.5 Section inheritance is enforced on every write, not just documented
+
+§13.2 and the tree reader both lean on "a nested door's section is its parent's". Two write paths did not
+actually maintain it: `MoveAsync`/`BulkMoveAsync` changed only the moved door's `section_id`, leaving its
+descendants pointing at the section it left; and `CreateAsync` validated `parentId` and `sectionId`
+independently, so a child could be authored into a section its parent was not in — or, with `sectionId`
+omitted, into no section at all. `DoorsInScopeCount` counts live doors by `section_id` at any depth, so a
+stranded subtree was counted under both sections at once.
+
+Now:
+
+- **Move** (single and bulk) cascades the new section to the whole subtree, **archived descendants
+  included** — they keep their `parent_id` through soft-delete and would otherwise restore into the old
+  section.
+- **Create under a parent derives** the section from that parent. A null `sectionId` means *unspecified*
+  (`int?` cannot distinguish an omitted field from an explicit null). A stated section that disagrees with
+  the parent's is refused with `400` (`AbwabDoorSectionParentMismatch`), a new outcome on the create route.
+
+**Deliberate asymmetry, recorded so nobody harmonizes it away:** create *rejects* a disagreeing section
+while move *ignores* `targetSectionId` whenever `targetParentId` is set (§4). Move's two parameters describe
+one destination and §4 locks parent-wins there; create's body is an authored record, where two fields
+disagreeing is a caller bug worth reporting rather than silently resolving — the same reasoning as §13.4.
+
+The route table's create row gains `400 section disagrees with parent`. No route was added or changed, so
+`SmokeRouteCatalog` is untouched and the exported spec is unchanged (it documents only success responses).

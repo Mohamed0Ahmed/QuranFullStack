@@ -15,15 +15,15 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
         IReadOnlyList<string> aliases,
         CancellationToken cancellationToken)
     {
-        await EnsureParentAndSectionExistAsync(parentId, sectionId, cancellationToken);
+        var resolvedSectionId = await ResolveCreateSectionAsync(parentId, sectionId, cancellationToken);
 
         var now = DateTimeOffset.UtcNow;
         var nextOrder = await db.AbwabDoors.CountAsync(
-            d => d.SectionId == sectionId && d.ParentId == parentId && d.DeletedAtUtc == null, cancellationToken) + 1;
+            d => d.SectionId == resolvedSectionId && d.ParentId == parentId && d.DeletedAtUtc == null, cancellationToken) + 1;
 
         var door = new AbwabDoor
         {
-            SectionId = sectionId,
+            SectionId = resolvedSectionId,
             ParentId = parentId,
             Name = name,
             Description = description,
@@ -96,9 +96,10 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
         }
 
         var resolvedSectionId = await ResolveTargetSectionAsync(targetSectionId, targetParentId, cancellationToken);
+        var childrenByParent = await LoadChildrenByParentAsync(cancellationToken);
         if (targetParentId.HasValue)
         {
-            EnsureNotCycle(await LoadChildrenByParentAsync(cancellationToken), id, targetParentId.Value);
+            EnsureNotCycle(childrenByParent, id, targetParentId.Value);
         }
 
         var oldSectionId = door.SectionId;
@@ -117,9 +118,15 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
             .OrderBy(d => d.OrderValue)
             .ToListAsync(cancellationToken);
 
+        var now = DateTimeOffset.UtcNow;
         door.SectionId = resolvedSectionId;
         door.ParentId = targetParentId;
-        door.UpdatedAtUtc = DateTimeOffset.UtcNow;
+        door.UpdatedAtUtc = now;
+
+        if (oldSectionId != resolvedSectionId)
+        {
+            await CascadeSectionToDescendantsAsync(childrenByParent, [id], resolvedSectionId, now, cancellationToken);
+        }
 
         if (!scopeIsUnchanged)
         {
@@ -185,9 +192,9 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
         }
 
         var resolvedSectionId = await ResolveTargetSectionAsync(targetSectionId, targetParentId, cancellationToken);
+        var childrenByParent = await LoadChildrenByParentAsync(cancellationToken);
         if (targetParentId.HasValue)
         {
-            var childrenByParent = await LoadChildrenByParentAsync(cancellationToken);
             foreach (var door in loaded)
             {
                 EnsureNotCycle(childrenByParent, door.Id, targetParentId.Value);
@@ -196,6 +203,7 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
 
         var now = DateTimeOffset.UtcNow;
         var movedIds = loaded.Select(d => d.Id).ToHashSet();
+        var sectionChanged = loaded.Any(d => d.SectionId != resolvedSectionId);
 
         // Queried BEFORE any door is mutated, and excluding movedIds defensively: a moved door whose
         // OLD scope already equals the destination would otherwise be double-counted by a plain
@@ -220,6 +228,11 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
             door.SectionId = resolvedSectionId;
             door.ParentId = targetParentId;
             door.UpdatedAtUtc = now;
+        }
+
+        if (sectionChanged)
+        {
+            await CascadeSectionToDescendantsAsync(childrenByParent, movedIds, resolvedSectionId, now, cancellationToken);
         }
 
         foreach (var (sectionId, parentId) in oldScopes)
@@ -390,24 +403,73 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
         return new AbwabRestoredDoorDto(await ToDtoAsync(door, cancellationToken), sectionWasArchived);
     }
 
-    private async Task EnsureParentAndSectionExistAsync(int? parentId, int? sectionId, CancellationToken cancellationToken)
+    // A nested door's section IS its parent's; no read re-derives it. A null sectionId means "unspecified"
+    // — `int?` cannot tell an omitted field from an explicit null — so it derives from the parent. A stated
+    // one that disagrees is a caller bug and is refused, not silently overwritten. Deliberately unlike
+    // MoveAsync, which ignores a disagreeing targetSectionId (plan §4, §13.5): move's pair describes a
+    // destination where the plan locks parent-wins, create's body is an authored record.
+    private async Task<int?> ResolveCreateSectionAsync(int? parentId, int? sectionId, CancellationToken cancellationToken)
     {
-        if (parentId.HasValue)
+        if (!parentId.HasValue)
         {
-            var parentExists = await db.AbwabDoors.AnyAsync(d => d.Id == parentId.Value && d.DeletedAtUtc == null, cancellationToken);
-            if (!parentExists)
-            {
-                throw new AbwabParentNotFoundException();
-            }
+            await EnsureSectionExistsAsync(sectionId, cancellationToken);
+            return sectionId;
+        }
+
+        var parent = await db.AbwabDoors.FirstOrDefaultAsync(d => d.Id == parentId.Value && d.DeletedAtUtc == null, cancellationToken);
+        if (parent is null)
+        {
+            throw new AbwabParentNotFoundException();
         }
 
         if (sectionId.HasValue)
         {
-            var sectionExists = await db.AbwabSections.AnyAsync(s => s.Id == sectionId.Value && s.DeletedAtUtc == null, cancellationToken);
-            if (!sectionExists)
+            await EnsureSectionExistsAsync(sectionId, cancellationToken);
+            if (sectionId != parent.SectionId)
             {
-                throw new AbwabSectionNotFoundException();
+                throw new AbwabSectionParentMismatchException();
             }
+        }
+
+        return parent.SectionId;
+    }
+
+    private async Task EnsureSectionExistsAsync(int? sectionId, CancellationToken cancellationToken)
+    {
+        if (sectionId.HasValue
+            && !await db.AbwabSections.AnyAsync(s => s.Id == sectionId.Value && s.DeletedAtUtc == null, cancellationToken))
+        {
+            throw new AbwabSectionNotFoundException();
+        }
+    }
+
+    // A nested door's section is its parent's, and no read re-derives it — so any write that changes a
+    // door's section carries its whole subtree along. Archived descendants included: they keep their
+    // parent_id through soft-delete, and one left behind would restore into a section its parent has left.
+    private async Task CascadeSectionToDescendantsAsync(
+        IReadOnlyDictionary<int, List<int>> childrenByParent,
+        IEnumerable<int> movedIds,
+        int? sectionId,
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
+    {
+        var descendantIds = movedIds
+            .SelectMany(movedId => CollectDescendantIds(childrenByParent, movedId))
+            .Distinct()
+            .ToList();
+        if (descendantIds.Count == 0)
+        {
+            return;
+        }
+
+        var descendants = await db.AbwabDoors
+            .Where(d => descendantIds.Contains(d.Id))
+            .ToListAsync(cancellationToken);
+
+        foreach (var descendant in descendants.Where(d => d.SectionId != sectionId))
+        {
+            descendant.SectionId = sectionId;
+            descendant.UpdatedAtUtc = now;
         }
     }
 
@@ -421,15 +483,7 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
     {
         if (!targetParentId.HasValue)
         {
-            if (targetSectionId.HasValue)
-            {
-                var sectionExists = await db.AbwabSections.AnyAsync(s => s.Id == targetSectionId.Value && s.DeletedAtUtc == null, cancellationToken);
-                if (!sectionExists)
-                {
-                    throw new AbwabSectionNotFoundException();
-                }
-            }
-
+            await EnsureSectionExistsAsync(targetSectionId, cancellationToken);
             return targetSectionId;
         }
 

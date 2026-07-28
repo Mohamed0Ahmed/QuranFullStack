@@ -33,9 +33,12 @@ entities are `Backend/domain/QuranDashboard.Domain/Abwab/` (`AbwabSection`, `Abw
   door is still individually visible via `IsArchived`; it simply does not count toward a parent's or a
   section's live total. `DoorsInScopeCount` counts every live door with that `SectionId` regardless of
   nesting depth — this is correct only because every write path inherits a nested door's section from
-  its parent, so `SectionId` is never wrong on a non-root door. Restoring a door whose section was archived
-  meanwhile detaches the whole restored subtree to `SectionId = null` for exactly this reason
-  (`../../Writes/Abwab/README.md`) — a live door can never point at a section this reader filters out.
+  its parent, so `SectionId` is never wrong on a non-root door. That is enforced, not assumed:
+  `EfAbwabDoorsWriter.ResolveCreateSectionAsync` derives a child's section from its parent (and refuses a
+  disagreeing one), and `CascadeSectionToDescendantsAsync` carries a section change down the whole subtree
+  on both move paths, archived rows included (`../../Writes/Abwab/README.md`). Restoring a door whose
+  section was archived meanwhile detaches the whole restored subtree to `SectionId = null` for the same
+  reason — a live door can never point at a section this reader filters out.
 - **Aliases are live-only**, matching the write side's own DTO projection (`EfAbwabDoorsWriter.ToDtoAsync`)
   — a soft-deleted alias is gone from every read, not just the write response.
   **Snapshot `Version`** is `max(updated_at, deleted_at)` across `abwab_sections`, `abwab_doors`, and

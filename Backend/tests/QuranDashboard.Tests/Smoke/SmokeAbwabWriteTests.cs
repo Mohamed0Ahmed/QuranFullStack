@@ -226,6 +226,41 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     }
 
     [Fact]
+    public async Task CreateDoor_UnderAParentInAnotherSection_ReturnsBadRequest()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        var (parentSectionId, _) = await CreateSectionAsync(client, "قسم الأب");
+        var (otherSectionId, _) = await CreateSectionAsync(client, "قسم مخالف");
+        var (parentId, _) = await CreateDoorAsync(client, "أب في قسمه", sectionId: parentSectionId);
+
+        using var response = await client.PostAsJsonAsync("/api/abwab/doors",
+            new { sectionId = otherSectionId, parentId, name = "ابن بقسم مخالف", aliases = Array.Empty<string>() });
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(
+            response, HttpStatusCode.BadRequest, ApiMessages.AbwabDoorSectionParentMismatch);
+    }
+
+    // The other half of the create rule: an omitted section under a parent derives, it does not write null.
+    [Fact]
+    public async Task CreateDoor_UnderAParentWithNoSectionStated_InheritsTheParentsSection()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        var (sectionId, _) = await CreateSectionAsync(client, "قسم يُورَّث للابن");
+        var (parentId, _) = await CreateDoorAsync(client, "أب يورّث قسمه", sectionId: sectionId);
+
+        using var response = await client.PostAsJsonAsync("/api/abwab/doors",
+            new { parentId, name = "ابن بلا قسم مذكور", aliases = Array.Empty<string>() });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var data = await ApiEnvelope.ReadDataAsync(response);
+        data.GetProperty("sectionId").GetInt32().Should().Be(sectionId);
+    }
+
+    [Fact]
     public async Task CreateDoor_WithDuplicateNameAtRoot_ReturnsConflict()
     {
         await fixture.ResetAbwabAsync();

@@ -44,6 +44,11 @@ public sealed class CreateDoorHandler(
             logger.LogWarning("Rejected {feature} {operation} {reason}", FeatureName, OperationName, "sectionNotFound");
             return new CreateDoorOutcome.SectionNotFound();
         }
+        catch (AbwabSectionParentMismatchException)
+        {
+            logger.LogWarning("Rejected {feature} {operation} {reason}", FeatureName, OperationName, "sectionParentMismatch");
+            return new CreateDoorOutcome.SectionParentMismatch();
+        }
         catch (AbwabDuplicateNameException)
         {
             logger.LogWarning("Rejected {feature} {operation} {reason} {name}", FeatureName, OperationName, "duplicateName", name);
