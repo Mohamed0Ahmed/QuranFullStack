@@ -106,4 +106,33 @@ public static class ApiMessages
     public const string WordTypesGroupedNotFound = "التجميع المحدد غير موجود";
 
     public const string CurrentUserLoaded = "تم تحميل بيانات المستخدم الحالي";
+
+    public const string AbwabSectionCreated = "تم إنشاء القسم";
+    public const string AbwabSectionRenamed = "تم تعديل اسم القسم";
+    public const string AbwabSectionInvalidName = "اسم القسم غير صالح";
+    public const string AbwabSectionNotFound = "القسم غير موجود";
+    public const string AbwabSectionDuplicateName = "يوجد قسم آخر بنفس الاسم";
+    public const string AbwabSectionHasLiveDoors = "لا يمكن حذف القسم لاحتوائه على أبواب حالية";
+    public const string AbwabSectionStaleVersion = "تم تعديل القسم من مستخدم آخر، يرجى التحديث والمحاولة مرة أخرى";
+
+    public const string AbwabDoorCreated = "تم إنشاء الباب";
+    public const string AbwabDoorEdited = "تم تعديل الباب";
+    public const string AbwabDoorMoved = "تم نقل الباب";
+    public const string AbwabDoorReordered = "تم إعادة ترتيب الباب";
+    public const string AbwabDoorsBulkMoved = "تم نقل الأبواب المحددة";
+    public const string AbwabDoorsBulkArchived = "تم أرشفة الأبواب المحددة";
+    public const string AbwabDoorRestored = "تم استعادة الباب";
+    public const string AbwabDoorInvalidName = "اسم الباب غير صالح";
+    public const string AbwabDoorsBulkInvalidRequest = "يجب تحديد باب واحد على الأقل";
+    public const string AbwabDoorNotFound = "الباب غير موجود";
+    public const string AbwabDoorParentNotFound = "الباب الأب غير موجود";
+    public const string AbwabDoorSectionNotFound = "القسم غير موجود";
+    public const string AbwabDoorSectionParentMismatch = "الباب الفرعي يتبع قسم الباب الأب، والقسم المحدد يخالفه";
+    public const string AbwabDoorDuplicateName = "يوجد باب آخر بنفس الاسم في هذا الموضع";
+    public const string AbwabDoorStaleVersion = "تم تعديل الباب من مستخدم آخر، يرجى التحديث والمحاولة مرة أخرى";
+    public const string AbwabDoorWouldCycle = "لا يمكن نقل الباب إلى داخل فرعه الخاص";
+    public const string AbwabDoorInvalidPosition = "الترتيب المطلوب خارج نطاق الأبواب المجاورة";
+    public const string AbwabDoorParentStillArchived = "لا يمكن استعادة الباب لأن الباب الأب ما زال مؤرشفًا";
+
+    public const string AbwabTreeLoaded = "تم تحميل شجرة الأبواب";
 }

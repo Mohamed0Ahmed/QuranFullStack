@@ -97,7 +97,8 @@ Domain/
     MushafPages/
     Words/
 
-  Gates/
+  Abwab/
+  Access/
   Approvals/
   Audit/
 ```

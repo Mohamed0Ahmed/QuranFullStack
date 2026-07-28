@@ -71,6 +71,14 @@ internal sealed record SmokeRoute(
     SmokeRouteAccess Access = SmokeRouteAccess.Open)
 {
     public SmokeSeededExpectation? Seeded { get; init; }
+
+    // Defaults to GET so all pre-existing entries stay untouched. A write route sets this explicitly.
+    public HttpMethod Method { get; init; } = HttpMethod.Get;
+
+    // The route is catalogued so the parity gate sees it, and is deliberately not dispatched by the
+    // generic sweep, because the sweep's premise is that it never writes. Do not "fix" this by
+    // dispatching it — a write route run twice by the sweep is the bug, not the missing dispatch.
+    public bool ParityOnly { get; init; }
 }
 
 internal static class SmokeRouteCatalog
@@ -212,11 +220,69 @@ internal static class SmokeRouteCatalog
         new("api/health", "/api/health", HttpStatusCode.OK),
         new("api/dashboard/info", "/api/dashboard/info", HttpStatusCode.OK),
         new("api/access/me", "/api/access/me", HttpStatusCode.Unauthorized, SmokeRouteAccess.RequiresAuthentication),
+
+        // api/abwab/sections — AbwabSectionsController. ParityOnly: these write, so the generic sweep
+        // (which sends no body and shares the migrated-but-empty schema across every other case) must
+        // not dispatch them — see SmokeAbwabWriteTests for their dedicated coverage. DerivedStatus
+        // documents what a well-formed call answers against that empty schema, for reference only.
+        new("api/abwab/sections", "/api/abwab/sections", HttpStatusCode.Created)
+        {
+            Method = HttpMethod.Post, ParityOnly = true,
+        },
+        new("api/abwab/sections/{id:int}", "/api/abwab/sections/1", HttpStatusCode.NotFound)
+        {
+            Method = HttpMethod.Put, ParityOnly = true,
+        },
+        new("api/abwab/sections/{id:int}", "/api/abwab/sections/1", HttpStatusCode.NotFound)
+        {
+            Method = HttpMethod.Delete, ParityOnly = true,
+        },
+
+        // api/abwab/doors — AbwabDoorsController. Same ParityOnly rationale as sections above.
+        new("api/abwab/doors", "/api/abwab/doors", HttpStatusCode.Created)
+        {
+            Method = HttpMethod.Post, ParityOnly = true,
+        },
+        new("api/abwab/doors/{id:int}", "/api/abwab/doors/1", HttpStatusCode.NotFound)
+        {
+            Method = HttpMethod.Put, ParityOnly = true,
+        },
+        new("api/abwab/doors/{id:int}/move", "/api/abwab/doors/1/move", HttpStatusCode.NotFound)
+        {
+            Method = HttpMethod.Post, ParityOnly = true,
+        },
+        new("api/abwab/doors/{id:int}/order", "/api/abwab/doors/1/order", HttpStatusCode.NotFound)
+        {
+            Method = HttpMethod.Post, ParityOnly = true,
+        },
+        new("api/abwab/doors/bulk-move", "/api/abwab/doors/bulk-move", HttpStatusCode.NotFound)
+        {
+            Method = HttpMethod.Post, ParityOnly = true,
+        },
+        new("api/abwab/doors/bulk-archive", "/api/abwab/doors/bulk-archive", HttpStatusCode.NotFound)
+        {
+            Method = HttpMethod.Post, ParityOnly = true,
+        },
+        new("api/abwab/doors/{id:int}", "/api/abwab/doors/1", HttpStatusCode.NotFound)
+        {
+            Method = HttpMethod.Delete, ParityOnly = true,
+        },
+        new("api/abwab/doors/{id:int}/restore", "/api/abwab/doors/1/restore", HttpStatusCode.NotFound)
+        {
+            Method = HttpMethod.Post, ParityOnly = true,
+        },
+
+        // api/abwab/tree — AbwabTreeController. Unlike its sibling write routes, this one IS dispatched
+        // by the generic sweep: GetAbwabTreeHandler has no NotFound branch at all, so it derives 200 with
+        // an empty snapshot against the migrated-but-empty schema regardless of what any other test left
+        // behind — order-independent by construction, not by convention like the write routes above.
+        new("api/abwab/tree", "/api/abwab/tree", HttpStatusCode.OK),
     ];
 
     // The sweep's theory data is the Path alone (a string is serializable, so every route is an
-    // individually addressable test case); this resolves it back to its entry. Single rather than a
-    // dictionary lookup so a duplicated Path fails loudly instead of silently shadowing an entry.
+    // individually addressable test case); this resolves it back to its entry. Scoped to non-ParityOnly
+    // entries because write routes legitimately share a Path across methods (PUT/DELETE on the same
+    // {id} route) — the loud-duplicate guarantee still holds within the set the sweep actually dispatches.
     public static SmokeRoute ByPath(string path) =>
-        Routes.Single(route => route.Path == path);
+        Routes.Single(route => !route.ParityOnly && route.Path == path);
 }

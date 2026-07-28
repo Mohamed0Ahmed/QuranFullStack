@@ -28,17 +28,18 @@ public sealed class SmokeCoverageParityTests(SmokeApiFixture fixture)
         var uncovered = LiveRouteKeys()
             .Where(key => !catalogued.Contains(key))
             .Select(key => $"registered route '{key}' has no SmokeRouteCatalog entry — add one in the same change " +
-                           "(a non-GET route also needs SmokeRoute to carry its method)")
+                           "(a non-GET route sets Method, and ParityOnly if the sweep must not dispatch it)")
             .ToArray();
 
         uncovered.Should().BeEmpty();
     }
 
-    // Every catalogued route is a GET, so the method is supplied here rather than stored 48 times. A
-    // non-GET endpoint would still be keyed by its own method on the live side and fail parity by name,
-    // which is when the method earns a place on SmokeRoute.
+    // Each entry keys by its own Method (GET by default) rather than a hardcoded one, so a non-GET
+    // route registered without a matching catalog entry fails parity by name instead of passing by
+    // accident. ParityOnly entries are included here — they must be seen by the gate — but excluded
+    // from the sweep in SmokeRoutePipelineTests.
     private static IEnumerable<string> CatalogRouteKeys() =>
-        SmokeRouteCatalog.Routes.Select(route => RouteKey(HttpMethod.Get.Method, route.Template));
+        SmokeRouteCatalog.Routes.Select(route => RouteKey(route.Method.Method, route.Template));
 
     // An endpoint with no HttpMethodMetadata is keyed under this rather than dropped: every route the
     // host composes has to reach the comparison, because an unexplained exclusion filter is how a parity

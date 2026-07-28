@@ -5,6 +5,20 @@ and the `ApiResponse<T>` envelope; application handlers own use-case logic.
 
 ## Route families
 
+- `Abwab/` — `api/abwab/sections` and `api/abwab/doors` (eleven write routes: create/rename/delete on
+  sections; create/edit/move/reorder/bulk-move/bulk-archive/delete/restore on doors) plus the read
+  `api/abwab/tree` (one versioned snapshot: sections + doors, archived doors included and flagged,
+  aliases, per-door direct-child count and per-section live-doors count, no paging). All routes are
+  `Open` — this is the repository's first write surface and it ships without authentication in Slice A
+  (see feature plan §9/§10); it must not reach production before a write policy attaches. Optimistic
+  concurrency is `uint xmin`, surfaced as `409` in the shared envelope. Creating a door under a parent
+  derives its section from that parent; a stated section that disagrees is a `400`, not a silent
+  overwrite. Restore is the one write whose
+  `200` body is not the entity alone: it returns `AbwabRestoredDoorDto { door, detachedFromArchivedSection }`,
+  because a door restored out of a section archived meanwhile comes back with `sectionId: null` and no
+  caller can tell that from a door that never had a section. `AbwabSectionsController` and
+  `AbwabDoorsController` carry no `///` XML docs (root `CLAUDE.md` comment policy — see "Generated
+  contract artifacts" below for what that means for the exported spec).
 - `Access/` — `api/access/me`; the authenticated caller's provisioned user. Carries `[Authorize]`
   (authenticated-only) and get-or-create provisions the local user on first login (email verified
   server-side via the Logto Management API). The response includes `roleName` (null when no role);
@@ -69,7 +83,16 @@ are in use, and they are not interchangeable:
 
 - The OpenAPI spec for this API is exported offline to
   `Frontend/quran-dashboard-ui/openapi/swagger.json` by `Backend/scripts/export-swagger`
-  (Swashbuckle CLI; no running server). Controller (endpoint) XML docs are the source of the endpoint descriptions in that spec; response DTO schemas are intentionally undocumented (bare typed schemas). Keep the controller docs accurate.
+  (Swashbuckle CLI; no running server). Controller (endpoint) XML docs, where present, are the source of
+  the endpoint descriptions in that spec; response DTO schemas are intentionally undocumented (bare typed
+  schemas). Keep the controller docs accurate where they exist. **Resolved conflict:** the root `CLAUDE.md`
+  comment policy (no `///` XML docs on controllers) wins over this convention where the two disagree. As of
+  the Abwab slice **no controller in the tree carries `///` at all** — `78d70f04` stripped the last of them
+  — so every exported `summary`/`description` is blank, not just `Abwab/`'s. This is accepted, not a defect:
+  there is no external contract consumer, and the frontend generates payload types from the spec, never
+  descriptions. Note the committed spec stayed stale for several commits after that strip, because
+  `check-api-contract` compares regenerated-against-committed and cannot see a spec that nothing has
+  regenerated; run it after any change that alters what the exporter reads.
 - Frontend payload types are generated from that spec into
   `Frontend/quran-dashboard-ui/src/app/core/api/generated/` (models-only consumption), and a
   static human-browsable reference is generated at `docs/api-reference/index.html`.
