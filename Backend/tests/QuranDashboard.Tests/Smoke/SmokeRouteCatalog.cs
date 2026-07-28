@@ -71,6 +71,14 @@ internal sealed record SmokeRoute(
     SmokeRouteAccess Access = SmokeRouteAccess.Open)
 {
     public SmokeSeededExpectation? Seeded { get; init; }
+
+    // Defaults to GET so all pre-existing entries stay untouched. A write route sets this explicitly.
+    public HttpMethod Method { get; init; } = HttpMethod.Get;
+
+    // The route is catalogued so the parity gate sees it, and is deliberately not dispatched by the
+    // generic sweep, because the sweep's premise is that it never writes. Do not "fix" this by
+    // dispatching it — a write route run twice by the sweep is the bug, not the missing dispatch.
+    public bool ParityOnly { get; init; }
 }
 
 internal static class SmokeRouteCatalog
