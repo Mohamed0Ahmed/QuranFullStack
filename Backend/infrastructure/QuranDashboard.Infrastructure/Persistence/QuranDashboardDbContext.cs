@@ -11,6 +11,7 @@ using QuranDashboard.Domain.Quran.Tafsirs;
 using QuranDashboard.Domain.Quran.Translations;
 using QuranDashboard.Domain.Quran.Words.Morphology.Irab;
 using QuranDashboard.Domain.Access;
+using QuranDashboard.Domain.Abwab;
 
 namespace QuranDashboard.Infrastructure.Persistence;
 
@@ -51,6 +52,10 @@ public sealed class QuranDashboardDbContext(DbContextOptions<QuranDashboardDbCon
 
     public DbSet<User> AccessUsers => Set<User>();
     public DbSet<Role> AccessRoles => Set<Role>();
+
+    public DbSet<AbwabSection> AbwabSections => Set<AbwabSection>();
+    public DbSet<AbwabDoor> AbwabDoors => Set<AbwabDoor>();
+    public DbSet<AbwabDoorAlias> AbwabDoorAliases => Set<AbwabDoorAlias>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
