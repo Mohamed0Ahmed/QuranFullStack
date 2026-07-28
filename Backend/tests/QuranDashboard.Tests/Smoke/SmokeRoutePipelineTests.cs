@@ -3,7 +3,7 @@ using QuranDashboard.Tests.TestSupport.Http;
 namespace QuranDashboard.Tests.Smoke;
 
 // One case per sweepable catalogued route, so a break names the single route that broke rather than
-// collapsing 48 routes into one red test. ParityOnly routes are excluded here on purpose — they write,
+// collapsing every route into one red test. ParityOnly routes are excluded here on purpose — they write,
 // and the sweep's premise (a migrated-but-empty schema stays that way for every other case) would not
 // survive dispatching one. Every dispatched case requests anonymously and uses the entry's own Method —
 // see SmokeRouteCatalog for how a route's DerivedStatus is derived.

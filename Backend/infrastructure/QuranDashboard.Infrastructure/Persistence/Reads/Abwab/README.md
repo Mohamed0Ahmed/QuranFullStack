@@ -33,7 +33,9 @@ entities are `Backend/domain/QuranDashboard.Domain/Abwab/` (`AbwabSection`, `Abw
   door is still individually visible via `IsArchived`; it simply does not count toward a parent's or a
   section's live total. `DoorsInScopeCount` counts every live door with that `SectionId` regardless of
   nesting depth — this is correct only because every write path inherits a nested door's section from
-  its parent, so `SectionId` is never wrong on a non-root door.
+  its parent, so `SectionId` is never wrong on a non-root door. Restoring a door whose section was archived
+  meanwhile detaches the whole restored subtree to `SectionId = null` for exactly this reason
+  (`../../Writes/Abwab/README.md`) — a live door can never point at a section this reader filters out.
 - **Aliases are live-only**, matching the write side's own DTO projection (`EfAbwabDoorsWriter.ToDtoAsync`)
   — a soft-deleted alias is gone from every read, not just the write response.
   **Snapshot `Version`** is `max(updated_at, deleted_at)` across `abwab_sections`, `abwab_doors`, and
@@ -49,7 +51,7 @@ entities are `Backend/domain/QuranDashboard.Domain/Abwab/` (`AbwabSection`, `Abw
 
 ## Related
 
-- Write side: `../../Writes/Abwab/` (`EfAbwabSectionsWriter`, `EfAbwabDoorsWriter`).
+- Write side: `../../Writes/Abwab/` (`EfAbwabSectionsWriter`, `EfAbwabDoorsWriter`) and its `README.md`.
 - Domain entities: `Backend/domain/QuranDashboard.Domain/Abwab/`.
 - Handler: `application/QuranDashboard.Application/Abwab/Queries/GetAbwabTree/`.
 - Controller: `api/QuranDashboard.Api/Controllers/Abwab/AbwabTreeController.cs` (`../../../../api/QuranDashboard.Api/Controllers/README.md`).

@@ -7,4 +7,5 @@ public abstract record DeleteSectionOutcome
     public sealed record Success : DeleteSectionOutcome;
     public sealed record NotFound : DeleteSectionOutcome;
     public sealed record HasLiveDoors : DeleteSectionOutcome;
+    public sealed record StaleVersion : DeleteSectionOutcome;
 }

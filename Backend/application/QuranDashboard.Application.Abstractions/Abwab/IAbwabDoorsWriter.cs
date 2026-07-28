@@ -55,7 +55,10 @@ public interface IAbwabDoorsWriter
     // and its whole live subtree in one transaction.
     Task<bool> DeleteAsync(int id, uint expectedVersion, CancellationToken cancellationToken);
 
-    // Null = door missing. Throws AbwabStaleVersionException, AbwabParentStillArchivedException.
-    // Restores the door and whatever of its subtree is currently archived alongside it.
+    // Null = door missing. Throws AbwabStaleVersionException, AbwabParentStillArchivedException,
+    // AbwabDuplicateNameException. Restores the door plus exactly the descendants its OWN archive swept
+    // in (matched on the archive's timestamp) — never one archived by an earlier, separate operation.
+    // Renumbers the scope it lands back in to 1..N, and detaches the door (and everything restored with
+    // it) to "outside every section" when its section was archived meanwhile.
     Task<AbwabDoorDto?> RestoreAsync(int id, uint expectedVersion, CancellationToken cancellationToken);
 }

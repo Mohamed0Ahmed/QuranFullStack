@@ -96,23 +96,37 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
         }
 
         var resolvedSectionId = await ResolveTargetSectionAsync(targetSectionId, targetParentId, cancellationToken);
-        await EnsureNotCycleAsync(id, targetParentId, cancellationToken);
+        if (targetParentId.HasValue)
+        {
+            EnsureNotCycle(await LoadChildrenByParentAsync(cancellationToken), id, targetParentId.Value);
+        }
 
         var oldSectionId = door.SectionId;
         var oldParentId = door.ParentId;
+        var scopeIsUnchanged = oldSectionId == resolvedSectionId && oldParentId == targetParentId;
 
         db.Entry(door).Property(d => d.Version).OriginalValue = expectedVersion;
 
-        var now = DateTimeOffset.UtcNow;
-        var newSiblingCount = await db.AbwabDoors.CountAsync(
-            d => d.SectionId == resolvedSectionId && d.ParentId == targetParentId && d.DeletedAtUtc == null, cancellationToken);
+        // Queried BEFORE the door is mutated and with the door itself excluded. The database row still
+        // shows its OLD scope until SaveChanges, so a move whose destination IS the door's current scope
+        // would otherwise count the door twice and leave {1..N-1, N+1} — the single-door twin of the
+        // overlap case BulkMoveAsync handles below.
+        var destinationSiblings = await db.AbwabDoors
+            .Where(d => d.SectionId == resolvedSectionId && d.ParentId == targetParentId
+                        && d.DeletedAtUtc == null && d.Id != id)
+            .OrderBy(d => d.OrderValue)
+            .ToListAsync(cancellationToken);
 
         door.SectionId = resolvedSectionId;
         door.ParentId = targetParentId;
-        door.OrderValue = newSiblingCount + 1;
-        door.UpdatedAtUtc = now;
+        door.UpdatedAtUtc = DateTimeOffset.UtcNow;
 
-        await ResequenceSiblingsExcludingAsync(oldSectionId, oldParentId, new HashSet<int> { id }, cancellationToken);
+        if (!scopeIsUnchanged)
+        {
+            await ResequenceSiblingsExcludingAsync(oldSectionId, oldParentId, new HashSet<int> { id }, cancellationToken);
+        }
+
+        Resequence(destinationSiblings.Append(door));
 
         await SaveTranslatingWriteExceptionsAsync(door.Name, cancellationToken);
 
@@ -141,11 +155,7 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
 
         siblings.RemoveAll(s => s.Id == id);
         siblings.Insert(position - 1, door);
-
-        for (var i = 0; i < siblings.Count; i++)
-        {
-            siblings[i].OrderValue = i + 1;
-        }
+        Resequence(siblings);
 
         door.UpdatedAtUtc = DateTimeOffset.UtcNow;
 
@@ -177,9 +187,10 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
         var resolvedSectionId = await ResolveTargetSectionAsync(targetSectionId, targetParentId, cancellationToken);
         if (targetParentId.HasValue)
         {
+            var childrenByParent = await LoadChildrenByParentAsync(cancellationToken);
             foreach (var door in loaded)
             {
-                await EnsureNotCycleAsync(door.Id, targetParentId, cancellationToken);
+                EnsureNotCycle(childrenByParent, door.Id, targetParentId.Value);
             }
         }
 
@@ -219,13 +230,8 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
         // The moved doors are appended after the destination's existing (untouched) siblings, in the
         // batch's own order, then the whole destination scope is renumbered 1..N together — the only
         // way to keep it contiguous when a moved door's old scope is also the destination.
-        var destinationFinalOrder = existingDestinationSiblings
-            .Concat(doors.Select(doorRef => loaded.Single(d => d.Id == doorRef.DoorId)))
-            .ToList();
-        for (var i = 0; i < destinationFinalOrder.Count; i++)
-        {
-            destinationFinalOrder[i].OrderValue = i + 1;
-        }
+        Resequence(existingDestinationSiblings
+            .Concat(doors.Select(doorRef => loaded.Single(d => d.Id == doorRef.DoorId))));
 
         await SaveTranslatingWriteExceptionsAsync(null, cancellationToken);
 
@@ -255,13 +261,18 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
         }
 
         var now = DateTimeOffset.UtcNow;
-        var archivedIds = new List<int>();
+
+        // A set, not a list: selecting a door AND one of its own descendants in the same batch is legal
+        // (the UI selects rows, not subtrees), and the descendant is then reached twice — once swept in by
+        // its ancestor, once as a top-level entry. It was archived once; it is reported once.
+        var archivedIds = new HashSet<int>();
         var oldScopes = loaded.Select(d => (d.SectionId, d.ParentId)).Distinct().ToList();
         var topLevelIds = loaded.Select(d => d.Id).ToHashSet();
+        var childrenByParent = await LoadChildrenByParentAsync(cancellationToken);
 
         foreach (var door in loaded)
         {
-            archivedIds.AddRange(await ArchiveSubtreeAsync(door, now, cancellationToken));
+            archivedIds.UnionWith(await ArchiveSubtreeAsync(door, childrenByParent, now, cancellationToken));
         }
 
         foreach (var (sectionId, parentId) in oldScopes)
@@ -271,7 +282,7 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
 
         await SaveTranslatingConcurrencyAsync(cancellationToken);
 
-        return archivedIds;
+        return [.. archivedIds];
     }
 
     public async Task<bool> DeleteAsync(int id, uint expectedVersion, CancellationToken cancellationToken)
@@ -288,7 +299,7 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
         var oldSectionId = door.SectionId;
         var oldParentId = door.ParentId;
 
-        await ArchiveSubtreeAsync(door, now, cancellationToken);
+        await ArchiveSubtreeAsync(door, await LoadChildrenByParentAsync(cancellationToken), now, cancellationToken);
         await ResequenceSiblingsExcludingAsync(oldSectionId, oldParentId, new HashSet<int> { id }, cancellationToken);
 
         await SaveTranslatingConcurrencyAsync(cancellationToken);
@@ -315,23 +326,60 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
 
         db.Entry(door).Property(d => d.Version).OriginalValue = expectedVersion;
 
+        // Captured BEFORE DeletedAtUtc is cleared: it is the only discriminator between the rows this
+        // door's own archive swept in and rows an earlier, separate archive claimed. Archive only ever
+        // takes LIVE descendants, so restore may only give back what that same archive took — resurrecting
+        // a descendant the user archived deliberately days earlier is not symmetry, it is data coming back
+        // unasked.
+        var archivedAt = door.DeletedAtUtc;
+
         var now = DateTimeOffset.UtcNow;
         door.DeletedAtUtc = null;
         door.UpdatedAtUtc = now;
 
-        var descendantIds = await GetDescendantIdsAsync(id, cancellationToken);
-        if (descendantIds.Count > 0)
+        // A section can only be archived once it holds no LIVE doors, so an archived section here means it
+        // was retired while this door sat archived. Sections have no restore route in this slice, so a 409
+        // would strand the door permanently; it is detached to "outside every section" instead — a
+        // first-class state (plan §R8, what makes «كل الأبواب» a real superset), not an invented home.
+        var sectionWasArchived = await IsSectionArchivedAsync(door.SectionId, cancellationToken);
+        if (sectionWasArchived)
         {
-            var archivedDescendants = await db.AbwabDoors
-                .Where(d => descendantIds.Contains(d.Id) && d.DeletedAtUtc != null)
-                .ToListAsync(cancellationToken);
+            door.SectionId = null;
+        }
 
-            foreach (var descendant in archivedDescendants)
+        if (archivedAt.HasValue)
+        {
+            var descendantIds = CollectDescendantIds(await LoadChildrenByParentAsync(cancellationToken), id);
+            var sweptInDescendants = descendantIds.Count == 0
+                ? []
+                : await db.AbwabDoors
+                    .Where(d => descendantIds.Contains(d.Id) && d.DeletedAtUtc == archivedAt.Value)
+                    .ToListAsync(cancellationToken);
+
+            foreach (var descendant in sweptInDescendants)
             {
                 descendant.DeletedAtUtc = null;
                 descendant.UpdatedAtUtc = now;
+
+                // A nested door always inherits its parent's section (ResolveTargetSectionAsync), so a
+                // detached subtree has to be detached whole or that invariant breaks on the read side.
+                if (sectionWasArchived)
+                {
+                    descendant.SectionId = null;
+                }
             }
         }
+
+        // Restore is the only write that moves a row back INTO a scope. That scope was renumbered 1..N-1
+        // when the door left it, so it needs renumbering again with the door back in — the same 1..N rule
+        // every other write follows. Read against the door's FINAL scope, which the detach above may have
+        // just changed.
+        var scopeSiblings = await db.AbwabDoors
+            .Where(d => d.SectionId == door.SectionId && d.ParentId == door.ParentId
+                        && d.DeletedAtUtc == null && d.Id != id)
+            .OrderBy(d => d.OrderValue)
+            .ToListAsync(cancellationToken);
+        Resequence(scopeSiblings.Append(door));
 
         // Not SaveTranslatingConcurrencyAsync: restore moves rows back INTO the unique index's live
         // scope (unlike archive/reorder, which only ever move rows out of it), so a live sibling
@@ -363,6 +411,10 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
         }
     }
 
+    private async Task<bool> IsSectionArchivedAsync(int? sectionId, CancellationToken cancellationToken) =>
+        sectionId.HasValue
+        && await db.AbwabSections.AnyAsync(s => s.Id == sectionId.Value && s.DeletedAtUtc != null, cancellationToken);
+
     // targetSectionId is only honored when targetParentId is null — nesting under a parent always
     // inherits that parent's own section, so the two inputs can never disagree.
     private async Task<int?> ResolveTargetSectionAsync(int? targetSectionId, int? targetParentId, CancellationToken cancellationToken)
@@ -390,20 +442,14 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
         return parent.SectionId;
     }
 
-    private async Task EnsureNotCycleAsync(int doorId, int? targetParentId, CancellationToken cancellationToken)
+    private static void EnsureNotCycle(IReadOnlyDictionary<int, List<int>> childrenByParent, int doorId, int targetParentId)
     {
-        if (!targetParentId.HasValue)
-        {
-            return;
-        }
-
-        if (targetParentId.Value == doorId)
+        if (targetParentId == doorId)
         {
             throw new AbwabCycleException();
         }
 
-        var descendantIds = await GetDescendantIdsAsync(doorId, cancellationToken);
-        if (descendantIds.Contains(targetParentId.Value))
+        if (CollectDescendantIds(childrenByParent, doorId).Contains(targetParentId))
         {
             throw new AbwabCycleException();
         }
@@ -411,13 +457,17 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
 
     // Archives door + its whole live subtree (unlimited depth — plan §4 sets no depth limit). Returns
     // every id archived by this call, including swept-in descendants, for BulkArchive's response.
-    private async Task<List<int>> ArchiveSubtreeAsync(AbwabDoor door, DateTimeOffset now, CancellationToken cancellationToken)
+    private async Task<List<int>> ArchiveSubtreeAsync(
+        AbwabDoor door,
+        IReadOnlyDictionary<int, List<int>> childrenByParent,
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
     {
         var archived = new List<int> { door.Id };
         door.DeletedAtUtc = now;
         door.UpdatedAtUtc = now;
 
-        var descendantIds = await GetDescendantIdsAsync(door.Id, cancellationToken);
+        var descendantIds = CollectDescendantIds(childrenByParent, door.Id);
         if (descendantIds.Count == 0)
         {
             return archived;
@@ -437,19 +487,24 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
         return archived;
     }
 
-    // BFS over every door's parent pointer, regardless of archived state — a cycle guard must see
-    // archived descendants too, since their parent_id survives soft-delete.
-    private async Task<List<int>> GetDescendantIdsAsync(int doorId, CancellationToken cancellationToken)
+    // One projection of every (id, parent_id) pair, built ONCE per operation and shared by every descendant
+    // walk inside it. Loading it per call turned a 50-door bulk move into 50 full reads of abwab_doors.
+    private async Task<Dictionary<int, List<int>>> LoadChildrenByParentAsync(CancellationToken cancellationToken)
     {
         var all = await db.AbwabDoors
             .Select(d => new { d.Id, d.ParentId })
             .ToListAsync(cancellationToken);
 
-        var childrenByParent = all
+        return all
             .Where(d => d.ParentId.HasValue)
             .GroupBy(d => d.ParentId!.Value)
             .ToDictionary(g => g.Key, g => g.Select(d => d.Id).ToList());
+    }
 
+    // BFS over the parent map regardless of archived state — a cycle guard must see archived descendants
+    // too, since their parent_id survives soft-delete.
+    private static List<int> CollectDescendantIds(IReadOnlyDictionary<int, List<int>> childrenByParent, int doorId)
+    {
         var result = new List<int>();
         var queue = new Queue<int>();
         queue.Enqueue(doorId);
@@ -483,10 +538,15 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
             .OrderBy(d => d.OrderValue)
             .ToListAsync(cancellationToken);
 
-        var remaining = siblings.Where(d => !excludeIds.Contains(d.Id)).ToList();
-        for (var i = 0; i < remaining.Count; i++)
+        Resequence(siblings.Where(d => !excludeIds.Contains(d.Id)));
+    }
+
+    private static void Resequence(IEnumerable<AbwabDoor> orderedSiblings)
+    {
+        var position = 1;
+        foreach (var door in orderedSiblings)
         {
-            remaining[i].OrderValue = i + 1;
+            door.OrderValue = position++;
         }
     }
 
@@ -545,7 +605,7 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
         return result;
     }
 
-    // Shared by every write that touches Name's uniqueness scope (create/edit/move/bulk-move).
+    // Shared by every write that touches Name's uniqueness scope (create/edit/move/bulk-move/restore).
     private async Task SaveTranslatingWriteExceptionsAsync(string? name, CancellationToken cancellationToken)
     {
         try
@@ -562,8 +622,8 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
         }
     }
 
-    // Shared by writes that only ever move a row out of the unique index's live scope (archive,
-    // restore, reorder) — a duplicate-name violation is structurally impossible for these.
+    // Shared by writes that only ever move a row out of the unique index's live scope (archive, reorder)
+    // — a duplicate-name violation is structurally impossible for these.
     private async Task SaveTranslatingConcurrencyAsync(CancellationToken cancellationToken)
     {
         try

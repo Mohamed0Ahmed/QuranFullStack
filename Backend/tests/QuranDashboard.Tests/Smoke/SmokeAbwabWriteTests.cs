@@ -35,14 +35,7 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
 
         using var response = await client.PostAsync("/api/abwab/sections", content);
 
-        // Not AssertFailureEnvelopeAsync: that helper asserts an empty errors array, which fits handler
-        // outcomes but not this one — [ApiController]'s own model-state 400 populates errors with the
-        // per-field binding message (the "binding-level null-item" bug class this test exists to catch).
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var envelope = await ApiEnvelope.AssertEnvelopeMatchesStatusAsync(response);
-        envelope.GetProperty("isSuccess").GetBoolean().Should().BeFalse();
-        envelope.GetProperty("message").GetString().Should().Be(ApiMessages.ValidationFailed);
-        envelope.GetProperty("errors").GetArrayLength().Should().BeGreaterThan(0);
+        await AssertBindingLevelBadRequestAsync(response);
     }
 
     [Fact]
@@ -126,6 +119,21 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     }
 
     [Fact]
+    public async Task RenameSection_WithNullName_ReturnsBadRequestBindingLevel()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        var (id, version) = await CreateSectionAsync(client, "قسم لفحص الربط");
+        using var content = new StringContent(
+            $"{{\"name\": null, \"version\": {version}}}", Encoding.UTF8, "application/json");
+
+        using var response = await client.PutAsync($"/api/abwab/sections/{id}", content);
+
+        await AssertBindingLevelBadRequestAsync(response);
+    }
+
+    [Fact]
     public async Task DeleteSection_WithNoLiveDoors_ReturnsNoContentAndNoBody()
     {
         await fixture.ResetAbwabAsync();
@@ -192,10 +200,7 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
 
         using var response = await client.PostAsync("/api/abwab/doors", content);
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var envelope = await ApiEnvelope.AssertEnvelopeMatchesStatusAsync(response);
-        envelope.GetProperty("message").GetString().Should().Be(ApiMessages.ValidationFailed);
-        envelope.GetProperty("errors").GetArrayLength().Should().BeGreaterThan(0);
+        await AssertBindingLevelBadRequestAsync(response);
     }
 
     [Fact]
@@ -207,6 +212,17 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
         using var response = await client.PostAsJsonAsync("/api/abwab/doors", new { name = "باب يتيم", parentId = 999999 });
 
         await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.NotFound, ApiMessages.AbwabDoorParentNotFound);
+    }
+
+    [Fact]
+    public async Task CreateDoor_WithUnknownSection_ReturnsNotFound()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        using var response = await client.PostAsJsonAsync("/api/abwab/doors", new { name = "باب بلا قسم", sectionId = 999999 });
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.NotFound, ApiMessages.AbwabDoorSectionNotFound);
     }
 
     [Fact]
@@ -254,6 +270,38 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
             new { name = "لا يوجد", description = (string?)null, representativeAyahText = (string?)null, aliases = Array.Empty<string>(), version = 0u });
 
         await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.NotFound, ApiMessages.AbwabDoorNotFound);
+    }
+
+    [Fact]
+    public async Task EditDoor_WithStaleVersion_ReturnsConflict()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        var (id, staleVersion) = await CreateDoorAsync(client, "باب لتعديل متزامن");
+        using var firstEdit = await client.PutAsJsonAsync($"/api/abwab/doors/{id}",
+            new { name = "تعديل أول", aliases = Array.Empty<string>(), version = staleVersion });
+        firstEdit.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using var response = await client.PutAsJsonAsync($"/api/abwab/doors/{id}",
+            new { name = "تعديل ثانٍ", aliases = Array.Empty<string>(), version = staleVersion });
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.Conflict, ApiMessages.AbwabDoorStaleVersion);
+    }
+
+    [Fact]
+    public async Task EditDoor_WithNullName_ReturnsBadRequestBindingLevel()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        var (id, version) = await CreateDoorAsync(client, "باب لفحص الربط");
+        using var content = new StringContent(
+            $"{{\"name\": null, \"version\": {version}}}", Encoding.UTF8, "application/json");
+
+        using var response = await client.PutAsync($"/api/abwab/doors/{id}", content);
+
+        await AssertBindingLevelBadRequestAsync(response);
     }
 
     [Fact]
@@ -319,6 +367,36 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     }
 
     [Fact]
+    public async Task MoveDoor_WithStaleVersion_ReturnsConflict()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        var (sectionId, _) = await CreateSectionAsync(client, "قسم لنقل متزامن");
+        var (id, _) = await CreateDoorAsync(client, "باب لنقل متزامن");
+
+        using var response = await client.PostAsJsonAsync($"/api/abwab/doors/{id}/move",
+            new { targetSectionId = sectionId, version = 999_999u });
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.Conflict, ApiMessages.AbwabDoorStaleVersion);
+    }
+
+    [Fact]
+    public async Task MoveDoor_WithNullVersion_ReturnsBadRequestBindingLevel()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        var (id, _) = await CreateDoorAsync(client, "باب لفحص ربط النقل");
+        using var content = new StringContent(
+            "{\"targetSectionId\":null,\"targetParentId\":null,\"version\":null}", Encoding.UTF8, "application/json");
+
+        using var response = await client.PostAsync($"/api/abwab/doors/{id}/move", content);
+
+        await AssertBindingLevelBadRequestAsync(response);
+    }
+
+    [Fact]
     public async Task ReorderDoor_ToValidPosition_ResequencesSiblings()
     {
         await fixture.ResetAbwabAsync();
@@ -349,6 +427,64 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
         using var response = await client.PostAsJsonAsync($"/api/abwab/doors/{id}/order", new { position = 5, version });
 
         await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.BadRequest, ApiMessages.AbwabDoorInvalidPosition);
+    }
+
+    // §6's move row lists "duplicate at target" as its own 409, distinct from stale and cycle: two doors
+    // may legally share a name in DIFFERENT scopes, and the collision only exists once one lands in the
+    // other's scope. Nothing else in this suite puts the unique index under a move.
+    [Fact]
+    public async Task MoveDoor_IntoAScopeHoldingThatName_ReturnsConflict()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        var (sectionId, _) = await CreateSectionAsync(client, "قسم يحمل الاسم مسبقًا");
+        await CreateDoorAsync(client, "باب الإيمان", sectionId: sectionId);
+        var (movedId, movedVersion) = await CreateDoorAsync(client, "باب الإيمان");
+
+        using var response = await client.PostAsJsonAsync($"/api/abwab/doors/{movedId}/move",
+            new { targetSectionId = sectionId, version = movedVersion });
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.Conflict, ApiMessages.AbwabDoorDuplicateName);
+    }
+
+    [Fact]
+    public async Task ReorderDoor_WithNullVersion_ReturnsBadRequestBindingLevel()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        var (id, _) = await CreateDoorAsync(client, "باب لفحص ربط الترتيب");
+        using var content = new StringContent("{\"position\":1,\"version\":null}", Encoding.UTF8, "application/json");
+
+        using var response = await client.PostAsync($"/api/abwab/doors/{id}/order", content);
+
+        await AssertBindingLevelBadRequestAsync(response);
+    }
+
+    [Fact]
+    public async Task ReorderDoor_WithUnknownId_ReturnsNotFound()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        using var response = await client.PostAsJsonAsync("/api/abwab/doors/999999/order", new { position = 1, version = 0u });
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.NotFound, ApiMessages.AbwabDoorNotFound);
+    }
+
+    [Fact]
+    public async Task ReorderDoor_WithStaleVersion_ReturnsConflict()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        var (id, _) = await CreateDoorAsync(client, "باب لإعادة ترتيب متزامنة");
+
+        using var response = await client.PostAsJsonAsync($"/api/abwab/doors/{id}/order",
+            new { position = 1, version = 999_999u });
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.Conflict, ApiMessages.AbwabDoorStaleVersion);
     }
 
     [Fact]
@@ -421,6 +557,50 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     }
 
     [Fact]
+    public async Task BulkMoveDoors_WithUnknownDoorId_ReturnsNotFound()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        using var response = await client.PostAsJsonAsync("/api/abwab/doors/bulk-move", new
+        {
+            doors = new object[] { new { doorId = 999999, version = 0u } },
+            targetSectionId = (int?)null,
+            targetParentId = (int?)null,
+        });
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.NotFound, ApiMessages.AbwabDoorNotFound);
+    }
+
+    [Fact]
+    public async Task BulkMoveDoors_IntoAScopeHoldingOneOfTheirNames_ReturnsConflict()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        var (sectionId, _) = await CreateSectionAsync(client, "قسم وجهة يحمل اسمًا مكررًا");
+        await CreateDoorAsync(client, "باب التوحيد", sectionId: sectionId);
+        var (firstId, firstVersion) = await CreateDoorAsync(client, "باب التوحيد");
+        var (secondId, secondVersion) = await CreateDoorAsync(client, "باب لا يتعارض");
+
+        using var response = await client.PostAsJsonAsync("/api/abwab/doors/bulk-move", new
+        {
+            doors = new object[]
+            {
+                new { doorId = firstId, version = firstVersion },
+                new { doorId = secondId, version = secondVersion },
+            },
+            targetSectionId = sectionId,
+            targetParentId = (int?)null,
+        });
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.Conflict, ApiMessages.AbwabDoorDuplicateName);
+
+        // All-or-nothing: the door that would NOT have collided must not have moved either.
+        (await GetDoorAsync(secondId)).SectionId.Should().BeNull();
+    }
+
+    [Fact]
     public async Task BulkArchiveDoors_ArchivesSubtreeAndResequencesSiblings()
     {
         await fixture.ResetAbwabAsync();
@@ -454,6 +634,32 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     }
 
     [Fact]
+    public async Task BulkArchiveDoors_WithUnknownDoorId_ReturnsNotFound()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        using var response = await client.PostAsJsonAsync("/api/abwab/doors/bulk-archive",
+            new { doors = new object[] { new { doorId = 999999, version = 0u } } });
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.NotFound, ApiMessages.AbwabDoorNotFound);
+    }
+
+    [Fact]
+    public async Task BulkArchiveDoors_WithStaleVersion_ReturnsConflict()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        var (id, _) = await CreateDoorAsync(client, "باب لأرشفة جماعية متزامنة");
+
+        using var response = await client.PostAsJsonAsync("/api/abwab/doors/bulk-archive",
+            new { doors = new object[] { new { doorId = id, version = 999_999u } } });
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.Conflict, ApiMessages.AbwabDoorStaleVersion);
+    }
+
+    [Fact]
     public async Task DeleteDoor_ArchivesSubtree_ReturnsNoContent()
     {
         await fixture.ResetAbwabAsync();
@@ -482,6 +688,23 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
         using var response = await SendWithBodyAsync(client, HttpMethod.Delete, $"/api/abwab/doors/{id}", new { version = 999_999u });
 
         await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.Conflict, ApiMessages.AbwabDoorStaleVersion);
+    }
+
+    [Fact]
+    public async Task DeleteDoor_WithNullVersion_ReturnsBadRequestBindingLevel()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        var (id, _) = await CreateDoorAsync(client, "باب لفحص ربط الحذف");
+        var request = new HttpRequestMessage(HttpMethod.Delete, $"/api/abwab/doors/{id}")
+        {
+            Content = new StringContent("{\"version\": null}", Encoding.UTF8, "application/json"),
+        };
+
+        using var response = await client.SendAsync(request);
+
+        await AssertBindingLevelBadRequestAsync(response);
     }
 
     [Fact]
@@ -532,6 +755,57 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     }
 
     [Fact]
+    public async Task RestoreDoor_WithStaleVersion_ReturnsConflict()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        var (id, version) = await CreateDoorAsync(client, "باب لاستعادة متزامنة");
+        using var deleteResponse = await SendWithBodyAsync(client, HttpMethod.Delete, $"/api/abwab/doors/{id}", new { version });
+        deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        using var response = await client.PostAsJsonAsync($"/api/abwab/doors/{id}/restore", new { version = 999_999u });
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.Conflict, ApiMessages.AbwabDoorStaleVersion);
+    }
+
+    [Fact]
+    public async Task RestoreDoor_AfterArchive_ReturnsDoorToAContiguousScope()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        await CreateDoorAsync(client, "الأول");
+        var (secondId, secondVersion) = await CreateDoorAsync(client, "الثاني");
+        await CreateDoorAsync(client, "الثالث");
+
+        using var deleteResponse = await SendWithBodyAsync(
+            client, HttpMethod.Delete, $"/api/abwab/doors/{secondId}", new { version = secondVersion });
+        deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var archivedVersion = (await GetDoorAsync(secondId)).Version;
+
+        using var response = await client.PostAsJsonAsync($"/api/abwab/doors/{secondId}/restore", new { version = archivedVersion });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var orderValues = await GetDoorOrderValuesAsync(null, null);
+        orderValues.Values.Order().Should().BeEquivalentTo([1, 2, 3], options => options.WithStrictOrdering());
+    }
+
+    [Fact]
+    public async Task RestoreDoor_WithNullVersion_ReturnsBadRequestBindingLevel()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        var (id, _) = await CreateDoorAsync(client, "باب لفحص ربط الاستعادة");
+        using var content = new StringContent("{\"version\": null}", Encoding.UTF8, "application/json");
+
+        using var response = await client.PostAsync($"/api/abwab/doors/{id}/restore", content);
+
+        await AssertBindingLevelBadRequestAsync(response);
+    }
+
+    [Fact]
     public async Task RestoreDoor_WithUnknownId_ReturnsNotFound()
     {
         await fixture.ResetAbwabAsync();
@@ -572,6 +846,20 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
             .GetProperty("isArchived").GetBoolean().Should().BeTrue("archived doors are included and flagged, never omitted");
         doors.Single(d => d.GetProperty("id").GetInt32() == parentId)
             .GetProperty("directChildCount").GetInt32().Should().Be(0, "its only child is archived, so it does not count live");
+    }
+
+    // Not AssertFailureEnvelopeAsync: that helper asserts an EMPTY errors array, which fits a handler
+    // outcome but not this one — [ApiController]'s own model-state 400 fires before any handler runs and
+    // populates errors with the per-field binding message. That distinction is the whole point of these
+    // cases: a body that fails at the binding layer must still come back in the shared failure envelope,
+    // not as a framework ProblemDetails and not as a 500.
+    private static async Task AssertBindingLevelBadRequestAsync(HttpResponseMessage response)
+    {
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var envelope = await ApiEnvelope.AssertEnvelopeMatchesStatusAsync(response);
+        envelope.GetProperty("isSuccess").GetBoolean().Should().BeFalse();
+        envelope.GetProperty("message").GetString().Should().Be(ApiMessages.ValidationFailed);
+        envelope.GetProperty("errors").GetArrayLength().Should().BeGreaterThan(0);
     }
 
     private static async Task<(int Id, uint Version)> CreateSectionAsync(HttpClient client, string name)

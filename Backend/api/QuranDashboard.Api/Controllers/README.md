@@ -81,10 +81,13 @@ are in use, and they are not interchangeable:
   (Swashbuckle CLI; no running server). Controller (endpoint) XML docs, where present, are the source of
   the endpoint descriptions in that spec; response DTO schemas are intentionally undocumented (bare typed
   schemas). Keep the controller docs accurate where they exist. **Resolved conflict:** the root `CLAUDE.md`
-  comment policy (no `///` XML docs on controllers) wins over this convention where the two disagree — the
-  `Abwab/` controllers carry none, so their exported `summary`/`description` fields are blank. This is
-  accepted, not a defect: there is no external contract consumer, and the frontend generates payload types
-  from the spec, never descriptions.
+  comment policy (no `///` XML docs on controllers) wins over this convention where the two disagree. As of
+  the Abwab slice **no controller in the tree carries `///` at all** — `78d70f04` stripped the last of them
+  — so every exported `summary`/`description` is blank, not just `Abwab/`'s. This is accepted, not a defect:
+  there is no external contract consumer, and the frontend generates payload types from the spec, never
+  descriptions. Note the committed spec stayed stale for several commits after that strip, because
+  `check-api-contract` compares regenerated-against-committed and cannot see a spec that nothing has
+  regenerated; run it after any change that alters what the exporter reads.
 - Frontend payload types are generated from that spec into
   `Frontend/quran-dashboard-ui/src/app/core/api/generated/` (models-only consumption), and a
   static human-browsable reference is generated at `docs/api-reference/index.html`.

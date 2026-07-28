@@ -226,7 +226,7 @@ dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
 |---|---|---|
 | POST | `api/abwab/sections` | 201 / 400 / 409 duplicate name |
 | PUT | `api/abwab/sections/{id:int}` | 200 / 400 / 404 / 409 stale, duplicate |
-| DELETE | `api/abwab/sections/{id:int}` | 204 / 404 / 409 section holds live doors |
+| DELETE | `api/abwab/sections/{id:int}` | 204 / 404 / 409 section holds live doors, stale (see §13.3) |
 | POST | `api/abwab/doors` | 201 / 400 / 404 parent or section / 409 duplicate sibling name |
 | PUT | `api/abwab/doors/{id:int}` | 200 / 400 / 404 / 409 stale, duplicate |
 | POST | `api/abwab/doors/{id:int}/move` | 200 / 400 / 404 / 409 stale, cycle, duplicate at target |
@@ -514,3 +514,38 @@ eleven write routes. Record the same in the PR description.
 | 6 — e2e flows + docs | ~7 |
 | **Slice B estimate** | **~24** |
 | **Full feature** | **~51** |
+
+---
+
+## 13. Post-review amendments (whole-branch engineering review)
+
+Three points the phases left open or got wrong, resolved at the pre-merge review. Recorded here because
+§5's conflict rule requires a conflict to be reported, never silently resolved.
+
+### 13.1 Restore returns only what the matching archive claimed
+
+§4 locks "archiving a door archives its whole subtree", and the implementation correctly archives only
+**live** descendants — a descendant archived earlier on its own was never part of that claim. Restore
+originally gave back *every* archived descendant, resurrecting rows the user had archived deliberately.
+Restore now matches descendants on the archive's own `deleted_at` timestamp, captured before the door's is
+cleared. Symmetry is per-operation, not per-subtree.
+
+### 13.2 Restore renumbers, and detaches from an archived section
+
+Two consequences of restore being the only write that moves a row back **into** a scope:
+
+- It renumbers that scope to `1..N`, like every other write (§4). Without this the restored door collided
+  with whichever sibling inherited its `OrderValue` when archive renumbered the scope to `1..N-1`.
+- If the door's section was archived meanwhile — legal, since a section is deletable once it holds no
+  *live* doors — the door and everything restored with it are detached to `SectionId = null` rather than
+  refused. **This is a decision, not a mechanical fix:** sections have no restore route in Slice A, so a
+  `409` would strand the door permanently, and "outside every section" is already a first-class state
+  (§R8). Revisit if Slice B adds section restore.
+
+### 13.3 Section delete answers 409 on a lost concurrency check
+
+`AbwabSection.Version` is rowversion-mapped, so the soft-delete UPDATE carries `AND xmin = @original` and a
+concurrent rename makes it affect zero rows. That surfaced as an untranslated `DbUpdateConcurrencyException`
+→ `500` — the one write of eleven leaking an EF type past the Infrastructure seam. It now answers `409`
+with `AbwabSectionStaleVersion` like every other conflict. The route still takes **no** client token: the
+race is between the writer's own read and its save, so there is nothing for a caller to send.

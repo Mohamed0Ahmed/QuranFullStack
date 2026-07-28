@@ -66,12 +66,17 @@ internal sealed class EfAbwabSectionsWriter(QuranDashboardDbContext db) : IAbwab
         var now = DateTimeOffset.UtcNow;
         section.DeletedAtUtc = now;
         section.UpdatedAtUtc = now;
-        await db.SaveChangesAsync(cancellationToken);
+
+        // Not a bare SaveChangesAsync: Version is rowversion-mapped, so this UPDATE carries
+        // `AND xmin = @original` and a rename landing between the query above and this save affects zero
+        // rows. Without the translation that surfaces as a raw DbUpdateConcurrencyException crossing the
+        // Infrastructure seam into a 500, while the other ten writes answer 409.
+        await SaveTranslatingConcurrencyAsync(cancellationToken);
 
         return AbwabSectionDeleteResult.Deleted;
     }
 
-    // Shared by every write above: DbUpdateConcurrencyException never carries a Postgres inner
+    // Shared by create/rename: DbUpdateConcurrencyException never carries a Postgres inner
     // exception (EF raises it itself on a zero-row affected count), so the `when` filter below never
     // intercepts it — it propagates to the concurrency catch instead.
     private async Task SaveTranslatingWriteExceptionsAsync(string name, CancellationToken cancellationToken)
@@ -87,6 +92,20 @@ internal sealed class EfAbwabSectionsWriter(QuranDashboardDbContext db) : IAbwab
         catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: "23505" })
         {
             throw new AbwabDuplicateNameException(name);
+        }
+    }
+
+    // Delete's counterpart, mirroring EfAbwabDoorsWriter: a soft delete only ever moves a row OUT of the
+    // unique index's live scope, so 23505 is structurally impossible and only the token can fail.
+    private async Task SaveTranslatingConcurrencyAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new AbwabStaleVersionException();
         }
     }
 

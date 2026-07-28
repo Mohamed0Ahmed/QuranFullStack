@@ -6,22 +6,15 @@ public sealed class AbwabSchemaFixture : IAsyncLifetime
         .WithImage("postgres:16-alpine")
         .Build();
 
+    // Built once and owned by the fixture. Each caller takes its own scope, which is what actually gives a
+    // test an isolated DbContext — a provider per call gave the same isolation and leaked one undisposed
+    // provider (with its connection pool) per call for the whole run.
+    private ServiceProvider? serviceProvider;
+
     public async Task InitializeAsync()
     {
         await postgresContainer.StartAsync();
 
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
-        await dbContext.Database.MigrateAsync();
-    }
-
-    public Task DisposeAsync()
-    {
-        return postgresContainer.DisposeAsync().AsTask();
-    }
-
-    public ServiceProvider CreateServiceProvider()
-    {
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
@@ -29,12 +22,28 @@ public sealed class AbwabSchemaFixture : IAsyncLifetime
             })
             .Build();
 
-        var services = new ServiceCollection()
+        serviceProvider = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
-            .AddInfrastructure(configuration);
+            .AddInfrastructure(configuration)
+            .BuildServiceProvider();
 
-        return services.BuildServiceProvider();
+        await using var scope = Services.CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+        await dbContext.Database.MigrateAsync();
     }
+
+    public async Task DisposeAsync()
+    {
+        if (serviceProvider is not null)
+        {
+            await serviceProvider.DisposeAsync();
+        }
+
+        await postgresContainer.DisposeAsync();
+    }
+
+    public ServiceProvider Services =>
+        serviceProvider ?? throw new InvalidOperationException($"{nameof(InitializeAsync)} has not run yet.");
 }
 
 [CollectionDefinition(nameof(AbwabSchemaTestCollection))]

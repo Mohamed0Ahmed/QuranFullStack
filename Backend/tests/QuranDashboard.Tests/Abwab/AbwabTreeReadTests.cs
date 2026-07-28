@@ -16,7 +16,7 @@ public sealed class AbwabTreeReadTests(AbwabSchemaFixture fixture)
         await freshFixture.InitializeAsync();
         try
         {
-            await using var scope = freshFixture.CreateServiceProvider().CreateAsyncScope();
+            await using var scope = freshFixture.Services.CreateAsyncScope();
             var reader = scope.ServiceProvider.GetRequiredService<IAbwabTreeReader>();
 
             var tree = await reader.GetTreeAsync(CancellationToken.None);
@@ -34,7 +34,7 @@ public sealed class AbwabTreeReadTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task GetTreeAsync_IncludesArchivedDoorAndItsLiveSiblingCount()
     {
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.Services.CreateAsyncScope();
         var doors = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var reader = scope.ServiceProvider.GetRequiredService<IAbwabTreeReader>();
 
@@ -50,7 +50,7 @@ public sealed class AbwabTreeReadTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task GetTreeAsync_DirectChildCountAndSectionCount_CountLiveOnly()
     {
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.Services.CreateAsyncScope();
         var sections = scope.ServiceProvider.GetRequiredService<IAbwabSectionsWriter>();
         var doors = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var reader = scope.ServiceProvider.GetRequiredService<IAbwabTreeReader>();
@@ -77,7 +77,7 @@ public sealed class AbwabTreeReadTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task GetTreeAsync_OrdersDoorsByOrderValue_EvenWithAGap()
     {
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.Services.CreateAsyncScope();
         var doors = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var reader = scope.ServiceProvider.GetRequiredService<IAbwabTreeReader>();
         var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
@@ -109,7 +109,7 @@ public sealed class AbwabTreeReadTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task GetTreeAsync_VersionAdvances_WhenAnyRowIsLaterMutated()
     {
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.Services.CreateAsyncScope();
         var doors = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var reader = scope.ServiceProvider.GetRequiredService<IAbwabTreeReader>();
 

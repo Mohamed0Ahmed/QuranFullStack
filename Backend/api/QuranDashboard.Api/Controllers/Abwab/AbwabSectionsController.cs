@@ -69,6 +69,8 @@ public sealed class AbwabSectionsController(
                 NotFound(ApiResponse<object>.Fail(ApiMessages.AbwabSectionNotFound)),
             DeleteSectionOutcome.HasLiveDoors =>
                 Conflict(ApiResponse<object>.Fail(ApiMessages.AbwabSectionHasLiveDoors)),
+            DeleteSectionOutcome.StaleVersion =>
+                Conflict(ApiResponse<object>.Fail(ApiMessages.AbwabSectionStaleVersion)),
             _ => throw new InvalidOperationException($"Unhandled {nameof(DeleteSectionOutcome)} variant."),
         };
     }

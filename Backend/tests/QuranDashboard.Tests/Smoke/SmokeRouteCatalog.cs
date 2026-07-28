@@ -285,9 +285,4 @@ internal static class SmokeRouteCatalog
     // {id} route) — the loud-duplicate guarantee still holds within the set the sweep actually dispatches.
     public static SmokeRoute ByPath(string path) =>
         Routes.Single(route => !route.ParityOnly && route.Path == path);
-
-    // For write smokes, which address a route by both Method and Path since ParityOnly entries can
-    // collide on Path alone.
-    public static SmokeRoute ByMethodAndPath(HttpMethod method, string path) =>
-        Routes.Single(route => route.Method == method && route.Path == path);
 }

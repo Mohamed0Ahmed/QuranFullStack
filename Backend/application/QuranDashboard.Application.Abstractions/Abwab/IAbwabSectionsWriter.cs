@@ -11,6 +11,8 @@ public interface IAbwabSectionsWriter
     // stale expectedVersion, AbwabDuplicateNameException on a name collision.
     Task<AbwabSectionDto?> RenameAsync(int id, string name, uint expectedVersion, CancellationToken cancellationToken);
 
+    // Throws AbwabStaleVersionException when the section is mutated between this call's own read and its
+    // save — the route takes no client token, so that race is the only way the check can fail.
     Task<AbwabSectionDeleteResult> DeleteAsync(int id, CancellationToken cancellationToken);
 }
 

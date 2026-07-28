@@ -13,7 +13,19 @@ public sealed class DeleteSectionHandler(
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        var result = await writer.DeleteAsync(command.Id, cancellationToken);
+        AbwabSectionDeleteResult result;
+        try
+        {
+            result = await writer.DeleteAsync(command.Id, cancellationToken);
+        }
+        catch (AbwabStaleVersionException)
+        {
+            // The route carries no client token (plan §6), so this is only reachable when another request
+            // mutates the section between the writer's own read and its save. It is still a conflict, not
+            // a server fault: the section was not deleted and the caller should re-read and retry.
+            logger.LogWarning("Rejected {feature} {operation} {reason} {sectionId}", FeatureName, OperationName, "staleVersion", command.Id);
+            return new DeleteSectionOutcome.StaleVersion();
+        }
 
         switch (result)
         {
