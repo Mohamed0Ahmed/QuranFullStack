@@ -4,7 +4,7 @@ namespace QuranDashboard.Tests.TestSupport.Http;
 // shape is spelled out once here rather than re-copied into each suite that asserts it.
 internal static class ApiEnvelope
 {
-    public static readonly string[] PropertyNames = ["isSuccess", "message", "data", "errors"];
+    public static readonly IReadOnlyList<string> PropertyNames = ["isSuccess", "message", "data", "errors"];
 
     public static async Task<JsonElement> ReadDataAsync(HttpResponseMessage response)
     {
@@ -15,7 +15,7 @@ internal static class ApiEnvelope
     // The envelope shape every response shares: the four properties, the media type, a message, and an
     // isSuccess that agrees with the status class — a 200 carrying isSuccess=false, or a 404 carrying
     // true, is a contract break no status-code assertion can see. Callers that own an exact message pin
-    // it themselves; the route sweep asserts 48 different messages and pins only that one is present.
+    // it themselves; the route sweep spans routes whose messages differ, so it pins only that one is present.
     // Returns the parsed envelope, detached from the JsonDocument, so a caller adding its own assertions
     // does not read and parse the same body a second time.
     public static async Task<JsonElement> AssertEnvelopeMatchesStatusAsync(HttpResponseMessage response)

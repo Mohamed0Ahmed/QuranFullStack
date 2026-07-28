@@ -45,5 +45,7 @@ npm run e2e:typecheck                    # tsc over e2e/ + playwright.config.ts
 
 ## Not this suite
 
-This is not the backend route-smoke tier (`TESTING_STRATEGY.md` §13), and running it does not
-restore that tier. It is also not a required gate — see §3 Tier E.
+This is not the backend route-smoke tier (`QuranDashboard.Tests.Smoke`,
+`TESTING_STRATEGY.md` §3 Tier A/C and §5), and running it never substitutes for it: that tier
+is a required gate for route, contract, auth, middleware, and binding changes, while this suite
+is not a required gate at all — see §3 Tier E.

@@ -61,8 +61,10 @@ public sealed class SmokeApiFixture : IAsyncLifetime
         return client;
     }
 
-    // The host's own container, not a parallel one: a test resolving through this sees exactly the
-    // service instances the request pipeline used.
+    // The host's own container, not a parallel one: a scope taken here shares the host's singletons —
+    // the IMemoryCache CachedUserRoleResolver writes through, so an Evict from a test invalidates what
+    // the request pipeline cached. Scoped services (DbContext, IUserRoleResolver) are still fresh
+    // instances; only the singleton state is shared.
     public IServiceProvider ApiServices => Factory.Services;
 
     // The persona subs are fixed across tests, so every one of them is evicted from the shared role

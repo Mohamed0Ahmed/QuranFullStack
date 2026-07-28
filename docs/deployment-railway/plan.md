@@ -262,11 +262,13 @@ not repoint the frontend.
 
   Also verify: `content_coverage_count = 6236` on the tafsir/translation/full-i3rab source families;
   52 FKs resolve (0 orphans on cascade FKs); `quran_lemma_analyses` present (migration 17).
-- **⚠ Baseline supersedes the inventory for the enriched tables.** The 2026-06-29 inventory predates the
-  feature-026 enriched import and lists `quran_lemmas` = 4,790, `quran_stems` = 12,108, and no
-  `quran_lemma_analyses`. The enriched baseline above (`quran_lemmas` 4,817, `quran_stems` 11,843,
-  `quran_lemma_analyses` 4,832) is **authoritative** for those three; the inventory remains the reference
-  for all other (unchanged) tables. A difference in those three rows is EXPECTED, not a data-loss signal.
+- **Baseline and inventory now agree on the enriched tables.** The
+  `Backend/report/database-inventory/current-database-inventory.md` refresh of 2026-07-28 re-measured
+  these against the live database and carries the post-feature-026 values — `quran_lemmas` 4,817,
+  `quran_stems` 11,843, and `quran_lemma_analyses` 4,832 — matching the enriched baseline above. The
+  earlier caveat that the inventory contradicted this baseline (it listed 4,790 / 12,108 and no
+  `quran_lemma_analyses`) no longer applies. A difference in these three rows is now a real signal, not
+  an expected staleness artifact.
 
 ## 6. Configuration & runtime rules
 

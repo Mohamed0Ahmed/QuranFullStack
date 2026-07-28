@@ -27,7 +27,8 @@ public sealed class SmokeCoverageParityTests(SmokeApiFixture fixture)
 
         var uncovered = LiveRouteKeys()
             .Where(key => !catalogued.Contains(key))
-            .Select(key => $"registered route '{key}' has no SmokeRouteCatalog entry — add one in the same change")
+            .Select(key => $"registered route '{key}' has no SmokeRouteCatalog entry — add one in the same change " +
+                           "(a non-GET route also needs SmokeRoute to carry its method)")
             .ToArray();
 
         uncovered.Should().BeEmpty();
