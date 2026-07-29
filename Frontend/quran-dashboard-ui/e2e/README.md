@@ -8,18 +8,29 @@ ayah study — tafsir / translation / full-إعراب / similar-ayahs / متشا
 analysis panel, the words hub, the five explorers (roots, lemmas, stems, word types, unique
 words), and the placeholder / wildcard-fallback routes — **plus the Abwab doors/sections flows**
 (`abwab-structure.e2e.ts`, `abwab-operations.e2e.ts`, `abwab-archive.e2e.ts`,
-`abwab-url-and-a11y.e2e.ts`), which are the one deliberate exception to the read-only invariant
-below.
+`abwab-url-and-a11y.e2e.ts`, `abwab-global-order.e2e.ts`), which are the one deliberate exception
+to the read-only invariant below.
 
 ## Commands
 
 ```bash
-npm run e2e                              # headless (the gate)
-npm run e2e:headed                       # visible browser
-npm run e2e:ui                           # Playwright UI mode
-npm run e2e -- e2e/mushaf-reader.e2e.ts  # one flow file
-npm run e2e:typecheck                    # tsc over e2e/ + playwright.config.ts
+npm run e2e                                        # headless (the gate) — two sequential runs, see below
+npm run e2e:headed                                 # visible browser
+npm run e2e:ui                                      # Playwright UI mode
+npx playwright test e2e/mushaf-reader.e2e.ts        # one flow file, any worker count
+npm run e2e:typecheck                               # tsc over e2e/ + playwright.config.ts
 ```
+
+`npm run e2e` runs two Playwright projects in sequence: `default` (every non-Abwab spec, 2
+workers) then `abwab` (the five `abwab-*.e2e.ts` specs, 1 worker — see the parallelism note
+below). Both share the same `webServer` config and `reuseExistingServer`, so the second
+invocation does not re-pay startup cost when the first left the servers up. To run only one
+group at a custom worker count: `npx playwright test --project=abwab --workers=1`.
+
+`npm run e2e:headed` and `npm run e2e:ui` do **not** apply the split — both run every project at
+the top-level `workers: 2`, which puts the Abwab specs back under the parallelism hazard below.
+They are debug commands, not the gate; to debug an Abwab flow specifically, scope both the
+project and the worker count yourself: `npx playwright test --project=abwab --workers=1 --headed`.
 
 ## Prerequisites
 
@@ -39,9 +50,31 @@ npm run e2e:typecheck                    # tsc over e2e/ + playwright.config.ts
   theme; leaking either between tests makes results order-dependent.
 - **Zero external network calls.** `fixtures/app-test.ts` stubs the Logto origin and fails any
   test whose browser context talked to a non-localhost host.
+- **The five Abwab specs run single-worker, in their own `abwab` Playwright project.** A `Global`
+  reorder resequences `global_order_value` on **every live root in the database**, not just the
+  sandbox's own doors — so two Abwab specs racing in different workers can both hold a version of
+  a root the other worker's write (or teardown archive) just invalidated, and the second one either
+  `409`s or, worse, computes a target position against a live-root list that changed underneath it
+  between the read and the write. Retry-on-409 is not the fix: this feature's own policy is that
+  `409`s are always surfaced, never swallowed or auto-retried (`features/abwab/README.md`).
+  Measured directly: at the default 2 workers, `abwab-global-order.e2e.ts` failed on a
+  wrong-position assertion (not even a `409` — a silently different result) after another worker's
+  teardown resequenced the global order mid-test; at 1 worker, all 20 Abwab tests pass repeatably.
+  `playwright.config.ts` therefore splits `projects` into `default` (`testIgnore` on
+  `abwab-*.e2e.ts`, 2 workers) and `abwab` (`testMatch` on `abwab-*.e2e.ts`, 1 worker), and
+  `npm run e2e` runs both in sequence. This costs real wall-clock time (the full gate went from
+  47 tests/~1.6 m to 48 tests/~2.7 m — one new flow plus a serialized phase that used to overlap
+  with everything else) in exchange for not shipping a suite that can pass or fail depending on
+  scheduling luck.
+- **A `Global` reorder's residue reaches outside the sandbox, and that is accepted.** Every root
+  in the local dev database gets renumbered by `global_order_value`, sandbox or not — resequencing
+  is order-preserving for untouched rows, and teardown removes the sandbox's own roots again
+  afterward, so the residue is a permutation of nothing observable. It is still a write outside the
+  sandbox's blast radius, same class as the archived-doors residue below, and is accepted on the
+  same terms: a local, disposable dev DB, not a shared one.
 - **Read-only flows and loose count assertions, except for Abwab.** Every suite but Abwab reads
   the live local dev DB without writing to it; exact row counts would break on the next reseed.
-  The four Abwab specs are a deliberate, named exception (`docs/feature-abwab-doors/plan-slice-b2.md`
+  The five Abwab specs are a deliberate, named exception (`docs/feature-abwab-doors/plan-slice-b2.md`
   §2, and `TESTING_STRATEGY.md` §6, which this amendment mirrors): each test creates its own
   uniquely-named sandbox section over the API (`fixtures/abwab.ts`) and drives real writes
   against it through the UI. Teardown archives **every live door in that section** — swept from

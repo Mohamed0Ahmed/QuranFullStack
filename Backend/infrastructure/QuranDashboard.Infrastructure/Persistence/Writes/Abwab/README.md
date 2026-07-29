@@ -81,6 +81,31 @@ incidentally.
 - **Create needs an explicit transaction**; nothing else does. It is the only path with two
   `SaveChangesAsync` calls (the door, then aliases keyed by its generated id), and EF's implicit
   transaction covers one call only.
+- **Two independent root orders, zero coupling.** `OrderValue` is per-scope
+  (`(section_id, parent_id)`); `GlobalOrderValue` is a second, independent order over **live root
+  doors only** — `NULL` at every depth > 0 and for archived doors. Invariant:
+  `global_order_value IS NOT NULL ⟺ (parent_id IS NULL AND deleted_at IS NULL)`.
+  `ReorderAsync`'s `scope` (`Section` \| `Global`) picks which order a write renumbers — `Section`
+  never touches `GlobalOrderValue`, `Global` never touches `OrderValue` — and every other
+  root-affecting write (`CreateAsync`, `MoveAsync`, `BulkMoveAsync`, `DeleteAsync`,
+  `BulkArchiveAsync`, `RestoreAsync`) maintains the global sequence alongside its own per-scope
+  resequence via `MaintainGlobalOrderAsync`/`ResequenceGlobal`. A root moving between sections
+  without leaving the root set (`MoveAsync`/`BulkMoveAsync`) leaves `GlobalOrderValue` untouched —
+  membership in the root set changed nothing.
+- **`ResequenceGlobal` reads every live root on any root-affecting write** — an accepted cost, not
+  a violation of "one parent map per operation" above: the sequence is global by definition, so its
+  scope query cannot be narrowed the way a `(section_id, parent_id)` scope query narrows.
+- **No `UNIQUE` index on `global_order_value`**, for the same reason `order_value` has none:
+  renumbering issues one `UPDATE` per row, and a per-statement unique index would transiently
+  violate mid-resequence. Do not "harden" this with a unique index.
+- **`MaintainGlobalOrderAsync`'s departures and arrivals are handled asymmetrically**, like the
+  per-scope resequence above. Its read still shows pre-`SaveChanges` state: a door being archived
+  or moved-to-nested still comes back from the read, so it is dropped via `excludeIds`; a door
+  being restored or moved nested→root does **not** come back (the read still shows its old
+  `deleted_at`/`parent_id`), so it is appended in code, never inferred from the read.
+- **Restore appends, in both spaces.** A restored root goes to the end of its per-scope order
+  (existing) and the end of the global sequence (new) — never back to a remembered position, since
+  resequencing already destroyed it.
 
 ## Related
 

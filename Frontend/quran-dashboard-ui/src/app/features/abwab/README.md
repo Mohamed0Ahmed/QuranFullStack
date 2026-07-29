@@ -130,11 +130,30 @@ in scope, which is exactly what §6.2's M22 cell forbids.
 ## Gotchas / invariants (read before changing)
 
 - **Refresh-after-write is an invariant, not an optimization.** Every write
-  resequences its scope to `1..N`, which bumps every sibling's `xmin` too — so after
-  *any* write, every cached version token in that scope is stale, including rows the
-  user never touched. `abwab-write.controller.ts` refetches the snapshot and rebinds
-  every cached version (`abwab-selection.store.ts#rebindTo`) after every success.
-  Skipping this reproduces spurious `409`s on the very next write.
+  resequences its scope to `1..N`, which bumps every sibling's `xmin` too. A root-affecting
+  write additionally maintains the global order (below) in the same request, which resequences
+  **every live root everywhere** — so after any such write, the stale version tokens are not
+  confined to one scope at all. `abwab-write.controller.ts` refetches the whole snapshot and
+  rebinds every cached version (`abwab-selection.store.ts#rebindTo`) after every success
+  regardless of scope, so no frontend code changes because of this — but it does mean a narrower,
+  scope-only refresh would no longer be safe. Skipping the refresh reproduces spurious `409`s on
+  the very next write.
+- **Two independent root orders: superset vs section.** Root doors carry a second, independent
+  order, `globalOrderValue`, used **only** by «كل الأبواب» (the superset —
+  `activeSectionId() === null`); every section tab keeps ordering and editing by `orderValue`, and
+  nested doors at any depth always render/edit `orderValue` regardless of which tab is active.
+  `abwab-page.component.ts` derives `orderScope` (`'global' | 'section'`) from `activeSectionId()`
+  and passes it to both `qd-abwab-tree` and `qd-abwab-cards`; the inline reorder editor commits
+  against whichever space the row is currently displaying, and the `reorderDoor` wire body carries
+  an explicit `scope` — `ABWAB_ORDER_SCOPE_TO_WIRE` in `abwab.models.ts` is the only place that
+  maps it to the backend's numeric `AbwabReorderScope`. A `Section` write never touches the
+  superset's order and a `Global` write never touches any section's order.
+- **The move picker's destination list follows the superset's global order, not a per-section
+  re-sort.** `AbwabMovePickerComponent` builds its flat destination list straight from
+  `liveRoots`, so once the superset sorts by `globalOrderValue` the picker's destination order
+  does too, even when picking a destination within one section. Deliberate: the picker is a
+  destination list, not an ordered outline, so following the superset's own order there is
+  coherent — pinned by a spec case in `abwab-move-picker.component.spec.ts`, not a side effect.
 - **`AbwabTreeDto.version` is diagnostics only.** Per-row `xmin` tokens are the only
   concurrency currency; do not build snapshot-level conflict detection on it.
 - **`createDoor` omits `sectionId` from the wire body whenever `parentId` is set** —
@@ -213,13 +232,15 @@ in scope, which is exactly what §6.2's M22 cell forbids.
 ## Browser e2e (Slice B2)
 
 `Frontend/quran-dashboard-ui/e2e/abwab-structure.e2e.ts`, `abwab-operations.e2e.ts`,
-`abwab-archive.e2e.ts`, and `abwab-url-and-a11y.e2e.ts` drive this page end to end —
-sections, root/child doors with alias chips, the dirty guard, inline reorder, single and
-bulk move, bulk archive, the row context menu, archive/restore including the
-parent-must-restore-first rule and the detach announcement, all six URL query keys, and
-the tree's ARIA/roving-tabindex/RTL keyboard model, plus both halves of the section-delete
-contract (409 while a live door remains, and the `204 No Content` success once its doors are
-archived).
+`abwab-archive.e2e.ts`, `abwab-url-and-a11y.e2e.ts`, and `abwab-global-order.e2e.ts` drive this
+page end to end — sections, root/child doors with alias chips, the dirty guard, inline reorder,
+single and bulk move, bulk archive, the row context menu, archive/restore including the
+parent-must-restore-first rule and the detach announcement, all six URL query keys, the tree's
+ARIA/roving-tabindex/RTL keyboard model, both halves of the section-delete contract (409 while a
+live door remains, and the `204 No Content` success once its doors are archived), and the
+superset/section order independence (a `Global` reorder leaves a section's `orderValue` untouched
+and vice versa). Because a `Global` reorder resequences every live root in the database, these
+five specs run in their own single-worker Playwright project — see `e2e/README.md`.
 
 `e2e/fixtures/abwab.ts` is the shared sandbox: each test creates its own uniquely-named
 section over the API, and tears down by archiving **every live door in that section** — not

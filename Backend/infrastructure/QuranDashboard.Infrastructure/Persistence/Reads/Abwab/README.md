@@ -48,6 +48,12 @@ entities are `Backend/domain/QuranDashboard.Domain/Abwab/` (`AbwabSection`, `Abw
 - **Reads tolerate gaps.** Every write resequences its scope to `1..N`, but this reader does not assume
   or require contiguity — it orders by the raw `OrderValue` (plus `Id` as a pure tie-break hardening,
   never a meaningful ordering signal on its own).
+- **`GlobalOrderValue` is `NULL` for nested and archived doors** — it is meaningful for live root
+  doors only (`../../Writes/Abwab/README.md`'s invariant). The reader projects it verbatim onto
+  `AbwabTreeDoorDto`/`AbwabDoorDto` and does **not** order by it: this reader stays scope-ordered
+  (`OrderValue`, `Id`) exactly as before, and the client is the one that sorts the superset by
+  `GlobalOrderValue` — consistent with "flat, not nested" above, where shaping the outline is a
+  consumer job, not this reader's.
 - **No caching.** Unlike the Words explorers' readers, this one is not wrapped in a caching decorator:
   Abwab is live admin-authored data with no invalidation story yet, and caching a snapshot an admin is
   actively editing would be a correctness risk, not a convenience.
