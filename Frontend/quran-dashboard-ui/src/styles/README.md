@@ -29,6 +29,10 @@ Compiled through `../styles.scss`; component-specific styling stays beside each 
   fixed `--qd-checkbox-size` box plus a fixed-gap label row; call-sites compose them and
   never re-declare box size or accent locally.
 - `_components.scss` — global cards, buttons, badges, modal, detail-panel, and skeleton patterns.
+  Also holds `.qd-modal--fixed` (`.architecture/UI_STYLE_SYSTEM.md` §17) — the opt-in fixed
+  block-size modifier for `.qd-modal`, plus its `.qd-modal__head` / `.qd-modal__body` /
+  `.qd-modal__foot` slots; the bare `.qd-modal` base stays width-only and scroller-less, so
+  compose the modifier rather than adding a block-size to a call-site.
 - `_utilities.scss` — small utility classes such as screen-reader-only, flex, spacing, and stable scrollbars.
 - `_words-explorer-layout.scss` — shared layout pieces for words explorer intro/toolbar surfaces.
 - `_words-explainer.scss` — shared visual primitives for the Words explainer hero example regions

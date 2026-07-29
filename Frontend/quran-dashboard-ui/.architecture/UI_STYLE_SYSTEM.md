@@ -918,3 +918,62 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   the modal geometry work).
 - Compose, do not re-style — a call-site needing a different box size or accent is
   a signal to extend this contract, not fork it.
+
+### `.qd-modal` / `.qd-modal--fixed`
+- **The base is width-only and scroller-less, and stays that way.** `.qd-modal`
+  (`_components.scss`) sets surface/border/radius/shadow/padding and
+  `width: min(100%, 36rem)` — no block-size, no scroller, no `overflow`. It is
+  what the six abwab modals compose today and must keep composing unmodified.
+- **`--fixed` is the opt-in that carries this section's geometry rule** (a fixed
+  block-size, never `max-block-size`): `display: flex; flex-direction: column;
+  block-size: min(92dvh, 44rem); padding: 0; overflow: hidden`. `dvh`, not `vh`,
+  matching every other modal block-size in the app. `44rem` is
+  `qd-detail-modal-shell`'s own value — reused deliberately so the app converges
+  on one fixed modal height instead of gaining a fourth geometry.
+- **Slot contract:** `.qd-modal__head` / `.qd-modal__foot` are `flex-shrink: 0`
+  with their own `--qd-space-5` padding (the same step the base's uniform
+  padding uses, so composing surfaces keep today's rhythm); `.qd-modal__body`
+  is `flex: 1; min-block-size: 0; overflow-y: auto` — the **only** scroller —
+  with `padding-inline: var(--qd-space-5)` and `scrollbar-gutter: stable` so
+  the reserved scrollbar track cannot reflow content width once the list
+  crosses the scroll threshold (the same class of defect as audit item 3, one
+  level down). **`__body` has no block padding by design** — the gap at the
+  head/body and body/foot seams comes entirely from `__head`'s
+  `padding-block-end` and `__foot`'s `padding-block-start`, so `__foot` is
+  load-bearing for that gap, not an optional slot. A `--fixed` dialog composed
+  without a foot must give `__body` its own `padding-block-end` or its last
+  content line sits flush against the dialog's bottom edge. Phone
+  (≤ `$qd-bp-phone-max`) tightens to `--qd-space-3` padding and
+  `block-size: min(94dvh, 44rem)`, mirroring `qd-detail-modal-shell`'s own
+  phone rule — but **not** its backdrop padding: `.qd-modal-backdrop` is the
+  shared base for all twelve modal consumers, so `--fixed` does not touch it.
+- **Why opt-in and not a base change:** `.qd-modal.explorer-detail-modal` sets
+  `max-height: min(90vh, 36rem)` but never `height`/`block-size`. A block-size
+  added to the base would therefore also apply to it — silently clamping the
+  five shipped words detail modals that use that variant. `--fixed` is how a
+  consumer reaches this section's geometry rule without that collision; the
+  base must never gain a block-size.
+- **Specificity trap when composing:** the same trap named in the `.qd-checkbox`
+  entry above — an existing call-site rule can outrank `.qd-modal--fixed`
+  under Angular emulated encapsulation. Three abwab modals already set an
+  inner `max-block-size` that becomes redundant, and arguably wrong, once the
+  modal body is the single scroller:
+  `abwab-sections-modal.component.scss:14` (14rem list),
+  `abwab-template-copy-modal.component.scss:52` (13rem pick-list), and
+  `abwab-relations-modal.component.scss:221` (11rem pick-list — measured at
+  T401 to be doing the scrolling `__body` is supposed to do). Composing the
+  modifier means **deleting** these local caps, not adding the class beside
+  them.
+- **Convergence trigger for `.qd-modal.explorer-detail-modal` (required, not
+  optional):** `--fixed` deliberately reuses `qd-detail-modal-shell`'s own
+  `44rem` rather than introducing a new height, so no new modal height enters
+  the system by this change. `.qd-modal.explorer-detail-modal` is therefore
+  the **one remaining** violation of this section's rule — `max-height` on
+  desktop instead of a fixed block-size. This section tolerates
+  `qd-detail-modal-shell` as a genuinely separate component; it must not
+  silently tolerate a second, permanent exception. **The next change that
+  touches any of the five words detail modals' geometry converges all five
+  onto `--fixed` and deletes the `vh` hold-out.**
+- **Zero consumers at ship time:** this slice adds `--fixed` and its slots with
+  no call-site changes and no markup restructuring (plan §2, out of scope
+  here); applying it to the six abwab modals is Slice C's job.

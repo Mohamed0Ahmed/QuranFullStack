@@ -63,8 +63,44 @@ satisfies plan §9's "T203 either done or explicitly deferred in writing".
 
 ## T401 block-size
 
-**User decided 2026-07-30 that the in-browser measurement against the relations modal is
-performed by the orchestrator at phase 4, not guessed.**
+**Measured 2026-07-30** via a temporary Playwright harness against the real app
+(Chromium, 1440×900, root font-size 16px), against the relations modal — the
+tallest abwab dialog — with comprehensiveness type selected (so the direction
+row renders) and the picker populated with 12 candidate doors:
+
+- Viewport 900px → `92dvh` = 828px.
+- Relations modal computed `block-size: 662.16px` (= **41.4rem**), with
+  `max-block-size: none` and `overflow-y: visible` — confirming plan §5.1's
+  claim that the bare `.qd-modal` base has neither a block-size nor a
+  scroller.
+- Modal `padding: 24px` (`--qd-space-5`), matching §5.3.
+- Fixed-chrome parts, measured: `h3` 24px · `.abwab-relations-modal__desc`
+  19px · `__divider` 1px · `__add-title` 20px · `__types` row 40px ·
+  `__direction` row 73px · search input 38px · `__selected` 20px · foot 41px.
+  Sum 276px + 48px padding = 324px ≈ **20.25rem** of non-scrolling chrome
+  before inter-element gaps.
+- `.abwab-relations-modal__pick-list` rendered 176px against a natural
+  `scrollHeight` of 798px — i.e. today's 11rem inner cap
+  (`abwab-relations-modal.component.scss:221`) is doing the scrolling that
+  plan §5.2 assigns to Slice C.
+- The measured door had zero relations, so the four relation-chip groups did
+  not render; four groups add roughly 220px, putting the fully populated
+  dialog near 880px ≈ 55rem.
+
+**Conclusion: `<N>` = `44rem`.** 41.4rem (the un-populated natural height)
+already fits inside 44rem, so the common case does not scroll at all; the
+populated case exceeds it and scrolls in the body, which is the point of a
+fixed single-scroller geometry; and 44rem is `qd-detail-modal-shell`'s
+existing value, so the app converges on **one** modal height instead of
+gaining a fourth geometry. At a 900px viewport `min(92dvh, 44rem)` resolves to
+44rem (704px), so the rem term governs on desktop.
+
+**Observation outside Slice A's scope, not a defect this slice fixes:**
+relations POSTed directly to `POST /api/abwab/doors/{id}/relations` did not
+appear in the relations modal's read on a subsequent page load (count badge
+stayed `0`, empty state rendered). May be a genuine read/cache issue or a
+harness error; it is unrelated to any Slice A change and belongs to whoever
+owns abwab relations next.
 
 ## Phase 2 verification
 
@@ -304,6 +340,149 @@ plan predicted (plan §3, §7 — no new tests until phase 5's T502).
   same initial-bundle-over-budget warning, now **567.71 kB** (over budget by 67.71 kB, vs
   phase 2's 567.39 kB / 67.39 kB) — a further ~0.3 kB drift from the new `--qd-checkbox-size`
   token and `.qd-checkbox`/`.qd-check-row` rules, not a regression. No build errors.
+
+## Phase 4 verification
+
+**Measured:** 2026-07-30, branch `ux-audit-slice-a`, immediately after the phase 4 edits
+(T401–T403), before commit.
+
+### Selectors added (`src/styles/_components.scss`, immediately after the `.qd-modal`
+base rule, before `.qd-skeleton`)
+
+```scss
+.qd-modal--fixed {
+  display: flex;
+  flex-direction: column;
+  block-size: min(92dvh, 44rem);
+  padding: 0;
+  overflow: hidden;
+}
+
+.qd-modal__head,
+.qd-modal__foot {
+  flex-shrink: 0;
+  padding: var(--qd-space-5);
+}
+
+.qd-modal__body {
+  flex: 1;
+  min-block-size: 0;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  padding-inline: var(--qd-space-5);
+}
+
+@media (max-width: bp.$qd-bp-phone-max) {
+  .qd-modal--fixed {
+    block-size: min(94dvh, 44rem);
+  }
+
+  .qd-modal__head,
+  .qd-modal__foot {
+    padding: var(--qd-space-3);
+  }
+
+  .qd-modal__body {
+    padding-inline: var(--qd-space-3);
+  }
+}
+```
+
+`44rem` is the T401-measured value (see above). Head/foot padding uses `--qd-space-5` —
+the same step the base `.qd-modal` padding uses — per plan §5.3/T401; body carries only
+`padding-inline` (block spacing comes from the head/foot's own padding, avoiding a doubled
+gap at the head/body and body/foot seams). Phone override mirrors
+`detail-modal-shell.component.scss:134-151`'s own phone rule (94dvh bump, tightened
+padding step).
+
+### `.qd-modal` base rule — unchanged, proven
+
+Before (still current, `_components.scss:554-564`):
+
+```scss
+.qd-modal {
+  background: var(--qd-surface);
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-lg);
+  box-shadow: var(--qd-shadow-lg);
+  padding: var(--qd-space-5);
+  width: min(100%, 36rem);
+}
+```
+
+`git diff` on `_components.scss` confirms the new rules are a pure insertion **after**
+line 564's closing brace — no line inside the base rule (554–564) appears in the diff.
+The base still has no `block-size`/`height`, matching plan §5.1/§8's concern: a
+block-size on the base would apply to `.qd-modal.explorer-detail-modal` too (it sets
+`max-height` but never `height`/`block-size`) and clamp the five shipped words modals.
+`--fixed` stays an opt-in modifier, never merged into the base.
+
+### Zero-consumers grep
+
+```bash
+$ grep -rn "qd-modal--fixed\|qd-modal__head\|qd-modal__body\|qd-modal__foot" src/ \
+    --include="*.html" --include="*.ts"
+(no output)
+
+$ grep -rln "qd-modal--fixed\|qd-modal__head\|qd-modal__body\|qd-modal__foot" src/ --include="*.scss"
+src/styles/_components.scss
+```
+
+No `.html`/`.ts` file references any of the four new selectors, and the only `.scss` hit
+is the definition file itself. This phase is provably zero visual change — it adds a
+primitive nobody composes yet (Slice C's job, plan §2).
+
+### §17 entry location
+
+`.architecture/UI_STYLE_SYSTEM.md` §17, new `### .qd-modal` / `.qd-modal--fixed`
+entry appended after the existing `### .qd-checkbox / .qd-check-row` entry (the
+section's last entry before this phase — that entry already forward-referenced "the
+same specificity trap §17's `.qd-modal` entry names for the modal geometry work",
+confirming this is where the next agent expected it). States: the base stays
+width-only and scroller-less; `--fixed` carries the fixed-block-size rule (`dvh`, never
+`vh`; `44rem`, matching `qd-detail-modal-shell`); the head/body/foot slot contract; the
+opt-in-not-base rationale with the `explorer-detail-modal` collision risk; the
+composing specificity trap; **and the required convergence trigger** — the next change
+touching any of the five words detail modals' geometry converges all five onto
+`--fixed` and deletes the `vh` hold-out; and that this phase ships zero consumers.
+
+### `styles/README.md`
+
+`_components.scss` bullet now names `.qd-modal--fixed` and its `__head`/`__body`/`__foot`
+slots, and states the base stays width-only/scroller-less so the modifier is composed
+rather than a call-site adding its own block-size.
+
+### Commands run
+
+```bash
+cd Frontend/quran-dashboard-ui
+npm test
+npm run build
+```
+
+`npm test` ran unmodified — the `VITEST_MIN_FORKS=1 VITEST_MAX_FORKS=2` cap baked into
+`package.json`'s `test` script was not overridden or bypassed.
+
+### Vitest suite result
+
+- Test files: **191 passed (191)**
+- Tests: **2161 passed (2161)**
+- Failed: **0**, Skipped: **0**
+- Duration (Vitest-reported): **168.21 s**
+
+Identical file/test counts to T101's baseline and phases 2/3's (191 / 2161), **+0** as
+the plan predicted — this phase adds no tests, and no existing spec asserts `.qd-modal`'s
+computed geometry (plan §5.6), so the unchanged count also confirms the base rule was not
+touched.
+
+### Build result
+
+- Result: **success** — `Application bundle generation complete.` (14.844 s)
+- Same three pre-existing SCSS-budget warnings as baseline/phase 2/phase 3
+  (`abwab-relations-modal`, `selected-word-section`, `selected-ayah-section`), plus the
+  same initial-bundle-over-budget warning, now **568.18 kB** (over budget by 68.18 kB, vs
+  phase 3's 567.71 kB / 67.71 kB) — a further ~0.47 kB drift from the new
+  `.qd-modal--fixed` rule block, not a regression. No build errors.
 
 ## T605 e2e evidence
 
