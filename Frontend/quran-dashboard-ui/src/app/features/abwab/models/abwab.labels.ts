@@ -22,6 +22,22 @@ function doorCountPhrase(count: number): string {
   return `${count} بابًا`;
 }
 
+/** Same Arabic number forms again, for «عنصر» — a template node. Zero is «0 عناصر» rather than
+ * `doorCountPhrase`'s «لا أبواب» shape: it is a chip on a freshly created template, where the
+ * numeral is the point. */
+function elementCountPhrase(count: number): string {
+  if (count === 1) {
+    return 'عنصر واحد';
+  }
+  if (count === 2) {
+    return 'عنصرين';
+  }
+  if (count === 0 || count <= 10) {
+    return `${count} عناصر`;
+  }
+  return `${count} عنصرًا`;
+}
+
 /** Same Arabic number forms as `doorCountPhrase`, for the feminine «علاقة». */
 function relationCountPhrase(count: number): string {
   if (count === 1) {
@@ -173,6 +189,72 @@ export const ABWAB_LABELS = {
   relationsBulkDirectionAnchorLess: 'الباب المختار أقل شمولية',
   relationsBulkDirectionPreview: (count: number, doorName: string, anchorIsMore: boolean): string =>
     `الأبواب المحددة (${count}) هتبقى ${anchorIsMore ? 'أقل شمولية' : 'أكثر شمولية'} من «${doorName}»`,
+
+  // Templates workshop. Copy is the approved contract's
+  // (docs/design-preview/abwab-templates-concept.html) except where plan §9 names a line the
+  // decisions overrule: «إعادة تسمية» (`:127`) becomes «تعديل القالب», because the root is edited
+  // through the full authoring modal like every other node. No conflict copy is authored here —
+  // the write path prefers the backend's own Arabic message, so a duplicate string would be dead.
+  templatesButton: 'القوالب',
+  templatesPageTitle: 'قوالب الأبواب',
+  templatesPageSubtitle: 'هياكل جاهزة تُنسخ داخل أي باب — للمشرفين فقط، لا تظهر للزوار.',
+  backToDoorsButton: '↩ العودة للأبواب',
+
+  newTemplateButton: '+ قالب جديد',
+  newTemplateNameLabel: 'اسم القالب',
+  newTemplateNamePlaceholder: 'اسم القالب… (Enter)',
+  templateElementCount: (count: number): string => elementCountPhrase(count),
+  editTemplateButton: 'تعديل القالب',
+  deleteTemplateButton: 'حذف القالب',
+  copyToDoorsButton: 'نسخ إلى أبواب…',
+  templatesListAriaLabel: 'قائمة القوالب',
+  templateTreeAriaLabel: 'شجرة القالب',
+
+  templatesEmptyMessage: 'لا توجد قوالب بعد — أنشئ أول قالب من الأعلى.',
+  templateNoneSelectedMessage: 'اختر قالبًا من القائمة أو أنشئ قالبًا جديدًا.',
+  templatesLoadingMessage: 'جارٍ تحميل القوالب...',
+  templatesLoadError: 'تعذر تحميل القوالب. حاول مرة أخرى.',
+  templateLoadError: 'تعذر تحميل القالب.',
+
+  templateAddChildAriaLabel: (nodeName: string): string => `إضافة عنصر تحت «${nodeName}»`,
+  templateNodeMenuAriaLabel: (nodeName: string): string => `عمليات «${nodeName}»`,
+  templateAddChildPlaceholder: 'إضافة عنصر… (Enter)',
+  templateNodeEditOp: 'تعديل العنصر',
+  templateNodeAddChildOp: 'إضافة عنصر فرعي',
+  templateNodeDeleteOp: 'حذف العنصر',
+  templateNodeDeleteConfirm: (nodeName: string): string =>
+    `سيتم حذف «${nodeName}» وكل العناصر التي تحته.`,
+  templateDeleteConfirm: 'سيتم حذف القالب نهائيًا. الأبواب المنسوخة منه لن تتأثر.',
+  deleteConfirmButton: 'حذف',
+
+  addTemplateNodeTitle: 'إضافة عنصر للقالب',
+  editTemplateNodeTitle: 'تعديل عنصر القالب',
+  templateNodeContextRoot: 'جذر القالب — اسمه هو اسم القالب',
+  templateNodeContextParent: (parentName: string): string => `سيُضاف تحت: «${parentName}»`,
+  templateNodeContextEdit: (nodeName: string): string => `تعديل «${nodeName}»`,
+  templateNodeNameFieldLabel: 'اسم العنصر',
+  templateNodeNameRequiredError: 'اسم العنصر مطلوب',
+
+  templateCopyTitle: (templateName: string): string => `نسخ «${templateName}»`,
+  templateCopyDescription: 'اختر الأبواب المستهدفة — القالب سيُنسخ كاملًا (بجذره وكل فروعه) داخل كل باب تختاره.',
+  templateCopyPreview: (templateName: string, count: number): string =>
+    `كل باب مستهدف سيكسب ابنًا جديدًا: «${templateName}» وبداخله ${elementCountPhrase(count)} بكامل تفرعها.`,
+  templateCopyPreviewNoRoot: 'لا يمكن النسخ كباب رئيسي — الهدف بابٌ موجود دائمًا.',
+  // The single most likely wrong expectation this feature invites (plan §5.6), so it is stated
+  // before the copy happens rather than discovered afterwards.
+  templateCopyPreviewDetached: 'النسخ مستقلة عن القالب: تعديل القالب لاحقًا أو حذفه لا يغيّر الأبواب المنسوخة.',
+  templateCopySearchPlaceholder: 'ابحث واختر بابًا أو أكثر…',
+  templateCopyExpandAriaLabel: (doorName: string): string => `عرض الأبواب الفرعية لـ«${doorName}»`,
+  templateCopyCollapseAriaLabel: (doorName: string): string => `إخفاء الأبواب الفرعية لـ«${doorName}»`,
+  templateCopyNoneSelected: 'لم تختر شيئًا بعد',
+  templateCopySelectedSummary: (names: readonly string[]): string => `${names.length} مستهدف: ${names.join('، ')}`,
+  templateCopyConfirmButton: (count: number): string =>
+    count <= 1 ? 'انسخ القالب' : `انسخ إلى ${doorCountPhrase(count)}`,
+  templateCopyEmptyDoors: 'لا توجد أبواب حية لنسخ القالب إليها.',
+
+  templateCreatedAnnouncement: 'أُنشئ القالب',
+  templateDeletedAnnouncement: 'حُذف القالب',
+  templateAppliedAnnouncement: (count: number): string => `تم النسخ إلى ${doorCountPhrase(count)}`,
 
   writeConflictFallback: 'حدث تعارض أثناء الحفظ. يرجى تحديث البيانات والمحاولة مرة أخرى.',
   writeInvalidFallback: 'تعذر تنفيذ العملية. تحقق من البيانات وحاول مرة أخرى.',
