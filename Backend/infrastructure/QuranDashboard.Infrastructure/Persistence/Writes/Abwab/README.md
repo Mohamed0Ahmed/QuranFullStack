@@ -5,10 +5,10 @@
 ## What this area does
 
 `Persistence/Writes/` is the repository's **first** write area, and this folder is its only occupant:
-`EfAbwabSectionsWriter`, `EfAbwabDoorsWriter`, and `EfAbwabRelationsWriter` back the thirteen
-`/api/abwab` write endpoints (`api/QuranDashboard.Api/Controllers/Abwab/`). The read sibling is
-`../../Reads/Abwab/`. Conventions established here are the precedent for every later write feature —
-change them deliberately, not incidentally.
+five writers back the twenty `/api/abwab` write endpoints
+(`api/QuranDashboard.Api/Controllers/Abwab/`). The read sibling is `../../Reads/Abwab/`. Conventions
+established here are the precedent for every later write feature — change them deliberately, not
+incidentally.
 
 ## Key pieces
 
@@ -17,11 +17,16 @@ change them deliberately, not incidentally.
   Implements `IAbwabDoorsWriter`.
 - `EfAbwabRelationsWriter` — add N relations in one call / soft-delete one. Implements
   `IAbwabRelationsWriter`.
+- `EfAbwabTemplatesWriter` — template create / soft-delete, and node add / edit / reorder / delete.
+  Implements `IAbwabTemplatesWriter`.
+- `EfAbwabTemplateApplyWriter` — copies a template subtree into N target doors. Implements
+  `IAbwabTemplateApplyWriter`. **The one writer whose seam crosses two aggregates** — see below.
+- `AbwabAliasNormalization` — the one alias rule, shared. Not a writer.
 
 ## Conventions and invariants (read before changing)
 
-- **One seam per aggregate, no EF types cross it.** Application never references EF Core, so each of the
-  three writers catches `DbUpdateConcurrencyException` and `PostgresException` `23505` itself and rethrows
+- **One seam per aggregate, no EF types cross it.** Application never references EF Core, so each
+  writer catches `DbUpdateConcurrencyException` and `PostgresException` `23505` itself and rethrows
   the plain types in `Application.Abstractions/Abwab/` (`AbwabStaleVersionException`,
   `AbwabDuplicateNameException`, `AbwabRelationDuplicateException`, …). **Every** `SaveChangesAsync` in this
   folder goes through a translating helper — a bare save is how a raw EF exception reaches the global
@@ -34,6 +39,24 @@ change them deliberately, not incidentally.
     one of the two above. Those are keyed to the doors/sections duplicate-**name** message and would
     report the wrong constraint entirely; the relations index is `(door_a_id, door_b_id, relation_type)`.
     Relation writes carry no version token (see below), so a stale-token branch would be unreachable code.
+  - `EfAbwabTemplatesWriter.SaveTranslatingDuplicateNameAsync` — same shape, keyed to the **node** name
+    under its parent. No stale-token branch either: no templates route carries a version token.
+  - `EfAbwabTemplateApplyWriter.SaveTranslatingDuplicateNameAsync` — here the duplicate genuinely **is**
+    a door name, the inverse of the relations case. It is still its own helper because it is only ever
+    a race backstop: the pre-check below already refused every collision it could see.
+- **The one exception to "per aggregate" is a use-case seam.** `EfAbwabTemplateApplyWriter` reads
+  `abwab_template_nodes` and writes `abwab_doors`, so it belongs to neither aggregate's writer. That
+  is the rule bending to `BACKEND_STRUCTURE.md` §4's own instruction to "split large repositories by
+  aggregate, feature, read model, **or use case**": the copy is a use case, and `EfAbwabDoorsWriter`
+  is already 816 lines against that section's 600-line hard threshold, so hanging it there was never
+  available. Every other writer here stays one-aggregate.
+- **Aliases are normalized once, at the write seam, by `AbwabAliasNormalization`.** Trim, drop the
+  empties, de-duplicate — and every alias write in this folder goes through it: the doors writer's
+  `ReplaceAliasesAsync` diff, the template node writes that store a `text[]`, and the apply's alias
+  inserts. It is one helper because the alternative is measurable, not theoretical: template nodes
+  once stored `"  دمج  "` and `""` verbatim while the copy silently dropped them, so a template and
+  the doors copied from it disagreed about their own aliases. A stricter rule later (case folding,
+  Unicode normalization) has to land in one place or that divergence comes back.
 - **Optimistic concurrency is Postgres `xmin`.** The client's last-seen token is applied as
   `db.Entry(x).Property(x => x.Version).OriginalValue`, never `CurrentValue` — overriding `CurrentValue`
   would compare the row against the value the writer's own query just re-read, which can never conflict.
@@ -142,9 +165,44 @@ change them deliberately, not incidentally.
   `deleted_at IS NULL`, so the old one no longer occupies the pair. A `DbUpdateConcurrencyException`
   here means a concurrent delete won; the row is gone either way, so it reports `false` rather than 500.
 
+- **A template is a door subtree, and applying it is a plain door create repeated.** The template root
+  becomes a **new child** of each target — never a root door — with the whole subtree beneath it, all
+  four authoring fields, and sibling order carried through verbatim. What the copy therefore does
+  **not** need, each a mechanism that would be wrong here rather than merely unused:
+  - **no global-order maintenance** — a copy is never a root, so it never joins that sequence;
+  - **no resequencing** — every insert appends into a scope it either just created or is the newest
+    member of, so every touched scope is `1..N` by construction;
+  - **no per-node section resolution** — the section is read once off each target and carried down the
+    whole subtree, which is the cascade invariant above stated directly instead of re-derived.
+- **The copy descends one level per `SaveChanges`, inside one transaction.** `AbwabDoor` has no parent
+  navigation property, so a child's `ParentId` can only be set once its parent's generated id exists.
+  Level-order inserts are the consequence; the enclosing transaction is what keeps the batch
+  all-or-nothing, and each level's alias rows are flushed with the next level's doors. **Do not
+  "optimize" this into a single save** — it would need a navigation property this entity deliberately
+  does not have.
+- **Applying is all-or-nothing, and the only collision is at the root.** The target's live children are
+  checked for the root node's name **before** anything is inserted, so the `409` can name every target
+  that blocked it; the template's own `(template_id, parent_node_id, name)` unique index makes an
+  internal collision unrepresentable, which is what confines the failure to that one comprehensible
+  case. An archived target is refused `400`; an empty target list is refused `400`, and that refusal
+  **is** the "never a root door" rule — no wire shape expresses root-level application.
+- **A copy is detached at birth.** No provenance column, no back-link. Editing or deleting the template
+  later never touches doors copied from it, and no door write consults a template. Do not add a link
+  "so copies can be updated" — the modal's own copy promises the opposite.
+- **Template deletion is soft and touches one row — but its nodes stop being addressable.** Both
+  reads filter by the template's own `deleted_at`, so cascading into node rows would write rows
+  nothing looks at. The three node writes keyed by `nodeId` alone (edit, reorder, delete) still join
+  that flag and answer `404` once the template is gone: `/api/abwab` ships without authentication, so
+  a node id is enough to reach a write, and a write that succeeded where the read answers `404` would
+  be an asymmetry with no caller. Node deletion, by
+  contrast, **does** claim the node's subtree — a template child has no meaning without its parent —
+  and resequences the remaining siblings. The root refuses deletion and reordering alike: deleting the
+  template is the way, and a single root has no siblings to order among.
+
 ## Related
 
-- Read side: `../../Reads/Abwab/` (`EfAbwabTreeReader`, `EfAbwabRelationsReader`) and its `README.md`.
+- Read side: `../../Reads/Abwab/` (`EfAbwabTreeReader`, `EfAbwabRelationsReader`,
+  `EfAbwabTemplatesReader`) and its `README.md`.
 - Contracts and exception types: `application/QuranDashboard.Application.Abstractions/Abwab/`.
 - Handlers: `application/QuranDashboard.Application/Abwab/Commands/`.
 - Controllers and status mapping: `api/QuranDashboard.Api/Controllers/Abwab/`
@@ -152,6 +210,9 @@ change them deliberately, not incidentally.
 - Domain entities: `Backend/domain/QuranDashboard.Domain/Abwab/`.
 - Tests: `Backend/tests/QuranDashboard.Tests/Abwab/` (writer behavior) and
   `Backend/tests/QuranDashboard.Tests/Smoke/SmokeAbwabWriteTests.cs` (status/envelope contract).
-  **`EfAbwabRelationsWriter` has none of either** — the relations feature wrote no tests by decision;
-  its three routes are catalogued `ParityOnly`, and the gap plus what pays it is recorded in
-  `docs/TESTING_DEBT.md`.
+  **`EfAbwabRelationsWriter`, `EfAbwabTemplatesWriter`, and `EfAbwabTemplateApplyWriter` have none of
+  either** — both features wrote no tests by decision, and their twelve routes are catalogued
+  `ParityOnly`. The relations gaps and what pays them are in `docs/TESTING_DEBT.md`; the templates
+  rows land with that feature's frontend slice. The apply writer is the highest-value gap of the
+  set: it is the only path in the repository that creates door rows outside
+  `EfAbwabDoorsWriter.CreateAsync`.

@@ -4,14 +4,17 @@
 
 ## What this area does
 
-Two readers back the Abwab feature's two read endpoints. `EfAbwabTreeReader` serves
+Three readers back the Abwab feature's four read endpoints. `EfAbwabTreeReader` serves
 `GET api/abwab/tree` (`GetAbwabTreeHandler`, `AbwabTreeController`) — one complete, versioned
 snapshot of the doors/sections outline: no paging, no filtering. `EfAbwabRelationsReader` serves
 `GET api/abwab/doors/{doorId}/relations` (`GetDoorRelationsHandler`,
 `AbwabDoorRelationsController`) — one door's visible relations, always stated from that door's side.
+`EfAbwabTemplatesReader` serves `GET api/abwab/templates` and `GET api/abwab/templates/{templateId}`
+(`GetTemplatesHandler` / `GetTemplateHandler`, `AbwabTemplatesController`) — the admin-only door
+templates, which live in their own tables and are invisible to the snapshot above.
 The write side lives beside it at `../../Writes/Abwab/`; the domain entities are
 `Backend/domain/QuranDashboard.Domain/Abwab/` (`AbwabSection`, `AbwabDoor`, `AbwabDoorAlias`,
-`AbwabDoorRelation`).
+`AbwabDoorRelation`, `AbwabTemplate`, `AbwabTemplateNode`).
 
 ## Key pieces
 
@@ -19,6 +22,8 @@ The write side lives beside it at `../../Writes/Abwab/`; the domain entities are
 - `EfAbwabRelationsReader.GetForDoorAsync` — one door's relations. Returns `null` for an unknown
   door so the handler can answer `404`; an **empty list** means the door exists and has nothing
   visible. Those two are not interchangeable (the `IAyahStudyReader` convention).
+- `EfAbwabTemplatesReader.GetAllAsync` / `.GetAsync` — the templates list and one template's node
+  subtree.
 
 ## Shape and invariants (read before changing)
 
@@ -85,6 +90,19 @@ The write side lives beside it at `../../Writes/Abwab/`; the domain entities are
   the snapshot's `RelationCount` values without moving `Version`. That is safe **because `Version` is
   diagnostics-only** — nothing does conflict detection with it (`features/abwab/README.md` says so on
   the client side too). Widening it to a fourth table would imply a guarantee it does not make.
+- **Templates are flat too, and a rootless template is not-found.** `AbwabTemplateDto.Nodes` carries
+  `ParentNodeId` per node for the same reason the doors list does. Each template's display name is
+  its **root node's** name — `abwab_templates` has no name column — so a template with no live root
+  has nothing to return for the one field the list renders, and both reads treat it as not-found
+  rather than emitting an empty name. Unreachable today (create always writes the root), stated
+  because node rows are soft-deleted and this reader is what filters them.
+- **The templates list is one query, not one per template, and it aggregates in SQL.** Root name and
+  live descendant count are correlated subqueries inside one statement — the `GetLiveRelationCountsAsync`
+  rule, plus the second half of it: what crosses the wire is one row per template, never one per node.
+- **Templates never touch the snapshot.** `abwab_templates` / `abwab_template_nodes` are separate
+  admin tables, so no `AbwabTreeDoorDto` field, no `Version` term, and no filter here changes because
+  of them. An applied template shows up as ordinary doors on the next snapshot read, with nothing
+  marking them as template-derived.
 - **No caching.** Unlike the Words explorers' readers, this one is not wrapped in a caching decorator:
   Abwab is live admin-authored data with no invalidation story yet, and caching a snapshot an admin is
   actively editing would be a correctness risk, not a convenience.
@@ -92,12 +110,16 @@ The write side lives beside it at `../../Writes/Abwab/`; the domain entities are
 ## Related
 
 - Write side: `../../Writes/Abwab/` (`EfAbwabSectionsWriter`, `EfAbwabDoorsWriter`,
-  `EfAbwabRelationsWriter`) and its `README.md`.
+  `EfAbwabRelationsWriter`, `EfAbwabTemplatesWriter`, `EfAbwabTemplateApplyWriter`) and its
+  `README.md`.
 - Domain entities: `Backend/domain/QuranDashboard.Domain/Abwab/`.
-- Handlers: `application/QuranDashboard.Application/Abwab/Queries/GetAbwabTree/` and
-  `.../Queries/GetDoorRelations/`.
+- Handlers: `application/QuranDashboard.Application/Abwab/Queries/GetAbwabTree/`,
+  `.../Queries/GetDoorRelations/`, `.../Queries/GetTemplates/`, `.../Queries/GetTemplate/`.
 - Controllers: `api/QuranDashboard.Api/Controllers/Abwab/AbwabTreeController.cs`,
-  `AbwabDoorRelationsController.cs` (`../../../../api/QuranDashboard.Api/Controllers/README.md`).
+  `AbwabDoorRelationsController.cs`, `AbwabTemplatesController.cs`
+  (`../../../../api/QuranDashboard.Api/Controllers/README.md`).
 - Response DTOs: `application/QuranDashboard.Application.Abstractions/Abwab/Responses/AbwabTreeDto.cs`,
-  `AbwabDoorRelationDto.cs`.
-- Tests: the relations reader has none — see `docs/TESTING_DEBT.md` for the gap and its trigger.
+  `AbwabDoorRelationDto.cs`, `AbwabTemplateDto.cs`, `AbwabTemplateSummaryDto.cs`,
+  `AbwabTemplateNodeDto.cs`.
+- Tests: the relations and templates readers have none. The relations gap and its trigger are in
+  `docs/TESTING_DEBT.md`; the templates rows land with that feature's frontend slice.

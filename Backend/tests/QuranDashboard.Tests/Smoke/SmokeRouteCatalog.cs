@@ -305,6 +305,54 @@ internal static class SmokeRouteCatalog
         // an empty snapshot against the migrated-but-empty schema regardless of what any other test left
         // behind — order-independent by construction, not by convention like the write routes above.
         new("api/abwab/tree", "/api/abwab/tree", HttpStatusCode.OK),
+
+        // api/abwab/templates — AbwabTemplatesController. BOTH reads are ParityOnly, unlike
+        // api/abwab/tree above. The tree read is order-independent by construction; these are not.
+        // The templates workshop is the first feature whose own future smoke tests would create
+        // templates in this shared schema, at which point a dispatched list would answer 200 with a
+        // non-empty body and /templates/1 could flip from 404 to 200 — the same order-dependence
+        // that keeps the relations GET undispatched. DerivedStatus documents what a well-formed call
+        // answers against the empty schema; it is not an assertion that the sweep runs.
+        new("api/abwab/templates", "/api/abwab/templates", HttpStatusCode.OK)
+        {
+            ParityOnly = true,
+        },
+        new("api/abwab/templates/{templateId:int}", "/api/abwab/templates/1", HttpStatusCode.NotFound)
+        {
+            ParityOnly = true,
+        },
+        new("api/abwab/templates", "/api/abwab/templates", HttpStatusCode.Created)
+        {
+            Method = HttpMethod.Post, ParityOnly = true,
+        },
+        new("api/abwab/templates/{templateId:int}", "/api/abwab/templates/1", HttpStatusCode.NotFound)
+        {
+            Method = HttpMethod.Delete, ParityOnly = true,
+        },
+
+        // api/abwab/templates/{templateId:int}/nodes and api/abwab/template-nodes/{nodeId:int} —
+        // AbwabTemplateNodesController. ParityOnly for the sibling write routes' own reason: these
+        // write, so the generic sweep must not dispatch them.
+        new("api/abwab/templates/{templateId:int}/nodes", "/api/abwab/templates/1/nodes", HttpStatusCode.NotFound)
+        {
+            Method = HttpMethod.Post, ParityOnly = true,
+        },
+        new("api/abwab/template-nodes/{nodeId:int}", "/api/abwab/template-nodes/1", HttpStatusCode.NotFound)
+        {
+            Method = HttpMethod.Put, ParityOnly = true,
+        },
+        new("api/abwab/template-nodes/{nodeId:int}/order", "/api/abwab/template-nodes/1/order", HttpStatusCode.NotFound)
+        {
+            Method = HttpMethod.Post, ParityOnly = true,
+        },
+        new("api/abwab/template-nodes/{nodeId:int}", "/api/abwab/template-nodes/1", HttpStatusCode.NotFound)
+        {
+            Method = HttpMethod.Delete, ParityOnly = true,
+        },
+        new("api/abwab/templates/{templateId:int}/apply", "/api/abwab/templates/1/apply", HttpStatusCode.NotFound)
+        {
+            Method = HttpMethod.Post, ParityOnly = true,
+        },
     ];
 
     // The sweep's theory data is the Path alone (a string is serializable, so every route is an

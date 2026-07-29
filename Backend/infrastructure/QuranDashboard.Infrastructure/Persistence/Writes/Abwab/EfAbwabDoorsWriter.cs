@@ -731,11 +731,7 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
     // Reused by both Create (existingLive is empty, so every alias is an insert) and Edit (a full diff).
     private async Task ReplaceAliasesAsync(int doorId, IReadOnlyList<string> newAliases, DateTimeOffset now, CancellationToken cancellationToken)
     {
-        var normalizedNew = newAliases
-            .Select(a => a.Trim())
-            .Where(a => a.Length > 0)
-            .Distinct()
-            .ToList();
+        var normalizedNew = AbwabAliasNormalization.Normalize(newAliases);
 
         var existingLive = await db.AbwabDoorAliases
             .Where(a => a.DoorId == doorId && a.DeletedAtUtc == null)

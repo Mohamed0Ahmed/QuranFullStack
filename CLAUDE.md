@@ -203,8 +203,9 @@ enterprise greige.
 
 ## Active Spec Kit Feature
 
-- Open: `abwab-relations` — `docs/feature-abwab-relations/plan.md` (plan + decision record; this
-  feature does not populate `specs/`, following `abwab-doors` and `abwab-global-order`).
+- Open: `abwab-templates` — `docs/feature-abwab-templates/plan.md` (plan + decision record; this
+  feature does not populate `specs/`, following `abwab-doors`, `abwab-global-order`, and
+  `abwab-relations`).
 - When a feature opens, record it here as: feature slug, its `specs/<feature>/plan.md`, and
   its `docs/feature-XXX-*/` decision record. Clear this section back to "None" when the
   feature closes and its planning artifacts are swept per the lifecycle rule above.
