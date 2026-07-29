@@ -13,7 +13,8 @@ its own scope. Test *quality* rules (test-guard, CODING_PRINCIPLES) and Quranic 
 safety rules are unaffected and always apply.
 
 The **Backend** baselines below were re-taken **2026-07-29** at the close of the
-`abwab-relations` feature (phase 7, T704) on a developer machine with Docker up,
+`abwab-relations` feature (phase 7, T704) and re-verified at the `abwab-templates` Slice A PR
+boundary, on a developer machine with Docker up,
 `resources/import-sources/` staged, and the canonical dump at
 `resources/db-dumps/quran-canonical/` present (regenerated against this tree's migration head
 when `abwab-relations` added its migration — a stale dump fails loud rather than skipping, per
@@ -30,6 +31,18 @@ it would grow: all three new relations routes are catalogued **`ParityOnly`**, s
 `SmokeCoverageParityTests` — which is two `[Fact]`s over the whole catalog, not a per-route
 theory — without adding a dispatched case. Recorded here because the plan's prediction, not the
 measurement, was wrong.
+
+**`abwab-templates` (2026-07-29) moved none of them either, and that is again the finding.**
+The same no-new-tests posture, a second time: `Tests.Abwab` **46**, the full Backend suite
+**1,843**, no-pipeline **1,086**, route smoke **140 passed / 0 skipped with the data tier having
+run** (all **nine** new templates routes are `ParityOnly`, so the parity gate's two set-comparison
+`[Fact]`s absorb them without adding a dispatched case), and the Frontend suite re-measured at
+**190 spec files / 2,158 tests / 0 failures** after the Slice B work — the identical figure. The
+Frontend number is the load-bearing one here: Slice B extracted the door modal's four authoring
+fields into a shared form, and an unchanged count is the evidence that
+`abwab-door-modal.component.spec.ts` kept passing **unchanged** rather than being adjusted to fit
+the refactor. The partition identity re-verifies as **1,086 + 617 + 140 = 1,843**. The canonical
+dump was regenerated in Slice A against migration head `20260729162330_AddAbwabTemplates`.
 
 The pipeline row is **derived, not re-run** — this feature touches no pipeline namespace:
 `1,843 − 1,086 − 140 = 617`, which is what the partition identity below is for:

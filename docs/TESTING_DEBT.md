@@ -34,3 +34,27 @@ this feature's evidence claims behavioral coverage.
 Rows 1 and 2 are the ones with no cover **anywhere** — not a spec, not a smoke case, not an e2e
 flow. Row 5 is the single cheapest thing that would cover the most: it crosses the read, the
 write, the count, and the flag in one pass.
+
+## abwab-templates (branches `abwab-templates-a` / `abwab-templates-b`, 2026-07-29)
+
+Posture: **no new tests in the feature**, the second consecutive feature under it. Verification
+was the existing suites staying green (Frontend: 190 spec files / 2,158 tests, unchanged) plus a
+manual pass over the feature's own interaction checklist. Nothing in this feature's evidence
+claims behavioral coverage.
+
+| # | Uncovered area | Where | Pays it |
+|---|---|---|---|
+| 6 | Backend template/node write behavior — one root per template, sibling-name uniqueness inside a template, node delete taking its whole subtree, sibling resequencing to `1..N`, the root's refusal to reorder or delete, template delete touching one row | `Persistence/Writes/Abwab/EfAbwabTemplatesWriter.cs` | The next change to the templates writer — it has to re-derive every one of these rules anyway |
+| 7 | **The deep copy** — depth, sibling-order preservation, `section_id` inheritance at every depth, alias rows, all-or-nothing across N targets, and the root-name collision that is the only `409` it can produce | `Persistence/Writes/Abwab/EfAbwabTemplateApplyWriter.cs` | The next change to the apply path **or to `abwab_doors`' per-sibling unique index**. This is the highest-value row in the file: it is the only place in the repo where door rows are created by something other than `CreateAsync`, so the doors' own write invariants are enforced here by a second, separately-written path that nothing compares against the first |
+| 8 | Templates smoke — the `200`/`201`/`204`/`400`/`404`/`409` status and envelope contract of all nine routes (all nine are catalogued `ParityOnly`, i.e. listed but not dispatched) | `Tests/Smoke/`, `SmokeRouteCatalog.cs` | When write protection lands and `/api/abwab` stops being `Open`: the auth cases force a dispatched test per route regardless |
+| 9 | Frontend workshop behavior — the flat→tree build for nodes, the tree editor's collapse/order-edit/quick-add, the node modal over the shared authoring form, and the copy modal's picker (search auto-expand, multi-select, the targets-not-union count, and the selection surviving a `409`) | `features/abwab/components/abwab-template-tree/`, `abwab-template-node-modal/`, `abwab-template-copy-modal/`, `pages/abwab-templates-page/` | The next time the workshop changes shape. It shares the relations modal's trigger for the picker specifically: both pickers unify when either gets its specs |
+| 10 | One e2e flow — author a two-level template, copy it into two doors, see the subtree under both, then edit the template and watch the copies **not** change | `Frontend/quran-dashboard-ui/e2e/` | Same trigger as row 9; it is the only check that would catch a detachment regression end to end, and detachment is the cell this feature is most likely to have misunderstood |
+
+Row 7 is the one with no cover **anywhere**. Row 10 is the cheapest thing that would cover the
+most: it crosses the template writes, the deep copy, the doors read, and detachment in one pass.
+
+**Not debt, and not deferrable:** the `abwab-door-fields-form` extraction is covered by
+`abwab-door-modal.component.spec.ts` running green **unchanged** (11/11) — the extraction
+preserved every `data-testid` through a `testIdPrefix` input precisely so that spec keeps
+pinning the behavior it always pinned. The form has no spec of its own, and does not need one
+while that remains true.

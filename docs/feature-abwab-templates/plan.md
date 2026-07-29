@@ -1035,15 +1035,31 @@ dev DB with at least two sections and one section-less door so those cases are r
       two targets preserved order/section/aliases/description/ayah, every refusal answered its
       designed status, the failed apply created nothing, and the copies survived deleting the
       template (2026-07-29; sandbox torn down)
-- [ ] Full Frontend suite + `npm run build` before the Slice B PR (T705, phases 7–8)
-- [ ] `abwab-door-modal.component.spec.ts` green **unchanged** after the form extraction — the
-      verified claim T703 rests on
-- [ ] `docs/TESTING_DEBT.md` gains its second section, each row naming its paying trigger (T903)
+- [x] Full Frontend suite + `npm run build` before the Slice B PR (T705, phases 7–8) —
+      **190 spec files / 2,158 tests / 0 failures** (183.91 s) and a clean production build;
+      the focused Tier A abwab glob ran green at every phase boundary (21 files / 216 tests)
+- [x] `abwab-door-modal.component.spec.ts` green **unchanged** after the form extraction — the
+      verified claim T703 rests on: **11/11 passed, zero diff to the spec file**. The
+      extraction kept every `data-testid` through a `testIdPrefix` input defaulting to
+      `abwab-door-modal`, which is also what keeps `abwab-operations.e2e.ts`'s nine door-modal
+      selectors resolving
+- [x] T705 had **nothing to repair** — the measured finding, not an assumption: the abwab glob
+      held at 216 tests across the route addition and the form extraction, because
+      `abwab.routes.spec.ts` asserts `ABWAB_ROUTES[0]` and navigates `/abwab`, so appending a
+      second entry leaves it untouched
+- [x] `docs/TESTING_DEBT.md` gains its second section, each row naming its paying trigger (T903)
+      — rows 6–10, with the deep copy (row 7) called out as the only one with no cover anywhere
 - [x] `Writes/Abwab/README.md` + `Reads/Abwab/README.md` updated **in Slice A**, counts measured off
       the controllers: **five writers / twenty write endpoints**, three readers / four read
       endpoints, plus the use-case-seam exception to "one seam per aggregate" and the level-order
       copy (T901, moved forward — see phase 9)
-- [ ] `features/abwab/README.md`, including the **"Zero dead controls"** correction (T902, Slice B)
+- [x] `features/abwab/README.md`, including the **"Zero dead controls"** correction (T902, Slice B)
+      — counts measured off the two data-access files, **not** off Slice A's backend figures:
+      **twenty-four endpoints (15 + 9), four reads, twenty writes**. Plus the render-chain
+      entries, the no-URL-state decision for `/abwab/templates`, why the templates controller is
+      not `AbwabWriteController`, the apply refreshing nothing, detachment, the targets-not-union
+      count, the duplicated picker and its unification trigger, the list-not-`role="tree"`
+      choice, and the M10/M33 trap staying in the door modal's shell
 - [x] `TESTING_STRATEGY.md` counts re-measured and the partition identity re-verified (T904) —
       `1,086 + 617 + 140 = 1,843`, every term unchanged, which is itself the finding. All nine new
       catalog entries are `ParityOnly`, so the parity gate's two set-comparison `[Fact]`s absorb them
@@ -1051,10 +1067,16 @@ dev DB with at least two sections and one section-less door so those cases are r
 - [x] Root `CLAUDE.md` Active-Feature line → `abwab-templates`; N-2 arithmetic verified against
       `git log`, not this document (T101) — `abwab-relations` merged as #52, so
       `docs/feature-abwab-doors/` is the eviction now due; **deferred to its own chore PR** (§11)
-- [ ] The §10 manual pass walked by the user before the Slice B merge (T905)
-- [ ] Clean-code self-check (`.claude/skills/engineering-review/references/clean-code-guard/`)
-      before delivery, per the root `CLAUDE.md`. The test-code self-check applies **narrowly to
-      T705's repair pass** — test files are edited, so it is in scope, but there is no new
-      coverage for it to judge
-- [ ] Branches `abwab-templates-a` and `abwab-templates-b` off `dev`; PRs into `dev`. **Never
-      `main`**
+- [ ] The §10 manual pass walked by the user before the Slice B merge (T905) — **outstanding.
+      This is the feature's behavioral acceptance and nothing in Slice B substitutes for it**
+- [x] Clean-code self-check (`.claude/skills/engineering-review/references/clean-code-guard/`)
+      before delivery, per the root `CLAUDE.md`. Two guards for states the types allow but the
+      UI cannot reach (`submitNode`/`applyTemplate` with no selected template) are kept and
+      commented rather than answered with a fabricated id. The test-code self-check had **no
+      subject**: T705 turned out to need no repair, so no test file was edited
+- [x] `TESTING_STRATEGY.md` §1 frontend counts re-measured at the Slice B boundary (T904's
+      remaining half) — 190 files / 2,158 tests, unchanged, which is the evidence that the form
+      extraction did not adjust a spec to fit itself
+- [ ] Branches `abwab-templates-a` (merged as **#53**) and `abwab-templates-b` off `dev`; PRs
+      into `dev`. **Never `main`.** Slice B's branch exists and is committed; **the PR is not
+      opened** — that is the user's call

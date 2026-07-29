@@ -3,22 +3,25 @@
 **HOW rules:** `.architecture/UI_STYLE_SYSTEM.md`, `.architecture/FRONTEND_STRUCTURE.md`,
 `.architecture/API_INTEGRATION_GUIDELINES.md` (project root). This file is the WHAT.
 
-**Status: Slice B2 complete**, plus the superset's global order and door relations — the
-full page (tree, cards, bulk mode, move, reorder, search, archive view, sections
-management, row context menu — Slice B1, phases 4 + 5), the browser e2e flows and the two
-test-doc amendments (`docs/feature-abwab-doors/plan-slice-b2.md`), and the relations modal
-with its three entry points. The routes are `Open` (no auth) per `plan.md` §10 — **do not**
-include this feature in a `dev → main` release until write protection lands; that block now
-covers three more write-capable routes.
+**Status: Slice B2 complete**, plus the superset's global order, door relations, and the
+templates workshop — the full page (tree, cards, bulk mode, move, reorder, search, archive
+view, sections management, row context menu — Slice B1, phases 4 + 5), the browser e2e flows
+and the two test-doc amendments (`docs/feature-abwab-doors/plan-slice-b2.md`), the relations
+modal with its three entry points, and `/abwab/templates`. The routes are `Open` (no auth)
+per `plan.md` §10 — **do not** include this feature in a `dev → main` release until write
+protection lands; that block now covers **seven** more write-capable routes (template
+create/delete, node add/edit/reorder/delete, and the apply).
 
 ## What this feature does
 
 Renders the `GET api/abwab/tree` snapshot as a tree and as drill-down cards at `/abwab`,
-reads a door's relations from `GET api/abwab/doors/{doorId}/relations`, and drives the
-thirteen write endpoints — create, edit, move, reorder, bulk move, bulk archive, archive,
-restore, the three section commands, and relations add/delete — with optimistic-concurrency
-conflicts (`409`) always surfaced, never swallowed or auto-retried. Fifteen endpoints in
-all.
+reads a door's relations from `GET api/abwab/doors/{doorId}/relations`, authors reusable door
+subtrees at `/abwab/templates`, and drives the **twenty** write endpoints — create, edit,
+move, reorder, bulk move, bulk archive, archive, restore, the three section commands,
+relations add/delete, template create/delete, template-node add/edit/reorder/delete, and the
+apply — with optimistic-concurrency conflicts (`409`) always surfaced, never swallowed or
+auto-retried. **Twenty-four** endpoints in all across the two data-access files (fifteen +
+nine), four of them reads.
 
 ## Render chain & key pieces
 
@@ -82,10 +85,33 @@ all.
   exercises the 409/success outcomes without the facade/controller chain. Rename always
   reads the section's row from the live `sections` input at submit time, never a value
   captured when edit mode opened.
-- `components/abwab-door-modal/` — add/edit door: name/description/ayah-text/alias
-  chips (composing the extended `qd-chip` with its `removable` affordance — the second
-  allowed-green fix), a dirty guard on close, and an inline error surface for the
-  backend message. Composes `.qd-modal`/`.qd-modal-backdrop` + `qdModalScrollLock`.
+- `components/abwab-door-fields-form/` — the four authoring fields shared by a door and
+  a template node (name/description/ayah-text/alias chips, composing the extended
+  `qd-chip` with its `removable` affordance — the second allowed-green fix), their dirty
+  tracking, and the inline error surface. Presentational: it injects nothing, and its
+  `testIdPrefix` input is what keeps the door modal's ids byte-identical through the
+  extraction. Its field labels are the door's in **both** shells, deliberately — a
+  template node exists to become a door, and the locked requirement is the *same*
+  authoring modal, not a parallel vocabulary.
+- `components/abwab-door-modal/` — the door's shell around that form: title, context
+  line, the tracking-data box, the dirty guard's confirm strip, and the write dispatch.
+  Composes `.qd-modal`/`.qd-modal-backdrop` + `qdModalScrollLock`.
+- `components/abwab-template-node-modal/` — the template node's shell around the same
+  form. Its submit is a **function input** bound by the workshop page to
+  `AbwabTemplatesController` (the `abwab-sections-modal` precedent), and it renders no
+  tracking box: a node has no archive status and no audit seed to show, which is why the
+  door modal's box stayed in *its* shell rather than becoming a flag on the form.
+- `components/abwab-template-tree/` — the workshop's editor tree: the doors tree's
+  *language* (chevrons at any depth, an order chip, the root marked `◆` with a bold
+  name, hover `＋`/`⋯`, the inline «إضافة عنصر…» row) but not its component. It renders
+  a list rather than `role="tree"` — see Gotchas.
+- `components/abwab-template-copy-modal/` — «نسخ إلى أبواب…»: the preview block, a
+  live-doors-only expandable picker with checkbox multi-select and search auto-expand,
+  and one all-or-nothing apply. Takes the doors tree and the apply function as inputs.
+- `pages/abwab-templates-page/` — the `/abwab/templates` shell: the template list with
+  «+ قالب جديد», the editor panel, the node/template actions, the row context menu, and
+  the two confirms. It owns the overlay state itself (page-scoped) while the caches stay
+  root-scoped.
 - `components/abwab-relations-modal/` — the door's relations: four display groups
   (تشابه · تضاد · «أبواب أكثر شمولية» · «أبواب أقل شمولية», empty ones dropped), the type
   segment, the direction pill with its live preview, and an expandable/searchable door
@@ -125,8 +151,15 @@ all.
   mapping of both enums) and forwards both writes to the shared write controller, so the
   409 policy and the refresh-after-write invariant stay in one place for all three
   aggregates.
+- `state/abwab-templates.facade.ts` — the template list and the selected template's tree,
+  on the snapshot facade's contract (`refresh` always refetches; a failure leaves the
+  previous value in place). Root-scoped: it is a cache.
+- `state/abwab-templates.controller.ts` — every templates write, its refresh target, and
+  the announcement. **Not** `AbwabWriteController` — see Gotchas.
 - `state/abwab-url-sync.ts` — parses/builds the six query keys below, fail-closed.
-- `data-access/abwab.api.ts` — the fifteen endpoints under `/api/abwab`.
+- `data-access/abwab.api.ts` — the fifteen doors/sections/relations endpoints under
+  `/api/abwab`; `data-access/abwab-templates.api.ts` — the nine templates endpoints.
+  Two files, not one: a separate route family, and nine of them.
 - `models/abwab.models.ts` / `models/abwab.labels.ts` — view models and every Arabic
   string (read via TDZ-safe getters in consumers, never `readonly` field
   initialisers).
@@ -141,6 +174,11 @@ all.
 | `door` | positive int | no selection |
 | `card` | positive int (the drilled-into parent — the breadcrumb chain is derived from it, not stored as an array) | the top card level |
 | `q` | free text | no search |
+
+**`/abwab/templates` carries no URL state at all** — no selected-template key, no expanded
+set. Deliberate: every key above is a documented contract with a fail-closed parse and a
+scope-invalidation rule, and the workshop has no deep link anyone asked for. Entering the
+route always starts with nothing selected.
 
 Fails closed to the defaults on anything invalid. Switching `section`, or turning
 `archive` on, clears `door` and `card` (a selection is not meaningful across scopes);
@@ -241,10 +279,12 @@ in scope, which is exactly what §6.2's M22 cell forbids.
 - **Labels use the TDZ getter pattern**, same as `features/words/README.md`: read
   `abwab.labels.ts` consts via component **getters**, never `readonly` field
   initialisers, or they resolve to `undefined` in the bundled test build.
-- **Zero dead controls.** Nothing for protection, templates, or the «الأبواب الرئيسية»
-  tab, anywhere in this feature. Relations became real controls with `abwab-relations`;
-  the tree's `.flag.rel` chip is the one deliberate non-control — it is a chip, not a
-  button, with no tab stop and no click handler.
+- **Zero dead controls.** Nothing for protection or the «الأبواب الرئيسية» tab, anywhere
+  in this feature. Relations became real controls with `abwab-relations`, and **templates
+  became real with `abwab-templates`**: «القوالب» in the doors header routes to a
+  workshop backed by nine live endpoints, so the rule now holds by the entry existing
+  rather than by its absence. The tree's `.flag.rel` chip is the one deliberate
+  non-control — it is a chip, not a button, with no tab stop and no click handler.
 - **Relations get no entry point and no flag in the archive view — derived, not decided.** Every
   archived door's visible relation count is always 0 (the backend hides a relation whose endpoint
   is archived, `Reads/Abwab/README.md`), so a flag there would be permanently absent and a menu
@@ -256,10 +296,50 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   pair. They still go through `abwab-write.controller.ts` rather than around it, because they
   change `relationCount` on **two** rows of the snapshot and the refresh-after-write invariant is
   what keeps those honest. Do not add a token "for consistency" with the door writes.
+- **The templates controller is deliberately not `AbwabWriteController`.** That controller's
+  core invariant is refresh-the-doors-snapshot-and-rebind-every-version-token; templates carry
+  no version tokens (nothing on the nine routes sends one) and are not in that snapshot. Two
+  different refresh targets, so two controllers. What the two must **not** fork is the 409
+  policy, so both call the module-scope `toAbwabWriteFailure` in `abwab-write.controller.ts` —
+  one status→outcome mapping, two refresh targets. Do not "reunify" them by making the
+  templates writes go through the doors controller; do not copy the policy either.
+- **The apply refreshes nothing, on purpose.** It writes door rows, but
+  `AbwabPageComponent.ngOnInit` calls `facade.load()` on every entry, so returning to `/abwab`
+  is what makes the copies visible. Coupling the workshop to the doors facade would buy a
+  fetch nobody sees. The doors snapshot *is* fetched when the copy modal opens — the picker
+  is its only consumer, and the workshop is reachable directly by URL, so it cannot assume
+  `/abwab` was visited first.
+- **A template copy is detached at birth.** No `templateId` column, no provenance, no
+  back-link, nothing marking a door as template-derived. Editing or deleting the template
+  later never touches earlier copies, and the copy modal's preview says so *before* the write
+  because it is the expectation this feature is most likely to invite wrongly. Do not add a
+  badge, a count, or an "update all copies" path.
+- **The copy modal's confirm count is the number of targets, always — never a union.**
+  Selecting a door and its own descendant produces two independent copies. This is the
+  deliberate opposite of bulk-archive's union count above, where archiving an ancestor already
+  claims its descendants; applying a template claims nothing. Do not "fix" one into the other.
+- **The copy picker duplicates `abwab-relations-modal`'s picker rather than sharing it.**
+  That component has **no spec at all** (`docs/TESTING_DEBT.md` row 4), so unifying the two
+  under a no-new-tests posture would mean refactoring untested code to save ~30 lines. The
+  unification trigger is row 4's own: when the relations modal next changes shape and gets its
+  specs, both pickers become one. Recorded so this does not silently become two divergent
+  pickers.
+- **The template tree renders a list, not `role="tree"`.** `AbwabTreeComponent` earns that
+  role with a full RTL-mirrored keyboard model (`abwab-tree-keyboard.controller.ts`); claiming
+  the role without the arrow-key model would promise a navigation contract the workshop does
+  not implement. `aria-level` still conveys depth and every control is a real tab stop.
+  Reusing `AbwabTreeComponent` itself was rejected up front, not discovered mid-work: it is
+  typed on `AbwabNode` and carries selection/bulk/roving-tabindex/URL concerns this page has
+  none of, plus a spec suite pinned to that behavior.
+- **The M10/M33 `sectionId` defense-in-depth stays in the door modal's shell**, not in the
+  extracted `abwab-door-fields-form`. The form has no concept of a section and must not
+  acquire one; the shell is the layer that decides *whether* a section applies.
 - **A `204 No Content` arrives as a `null` envelope, not `{isSuccess, data}`.** Single-door
   archive (`DELETE api/abwab/doors/{id}`), a successful section delete
-  (`DELETE api/abwab/sections/{id}`), and a relation delete
-  (`DELETE api/abwab/relations/{id}`) are the routes that answer 204, and Angular's
+  (`DELETE api/abwab/sections/{id}`), a relation delete
+  (`DELETE api/abwab/relations/{id}`), and **both templates deletes**
+  (`DELETE api/abwab/templates/{id}`, `DELETE api/abwab/template-nodes/{id}`) are the routes
+  that answer 204, and Angular's
   `HttpClient` parses an empty body as `null`. `abwab-write.controller.ts#handleSuccess`
   therefore treats a null response as a payload-less success: only a success is ever a 204,
   since every failure arrives as a 4xx through `catchError`. Dereferencing `response.isSuccess`
@@ -298,5 +378,6 @@ residue that legitimately remains.
 - Plan: `docs/feature-abwab-doors/plan-slice-b.md` (Slice B1/B2 interaction matrix),
   `docs/feature-abwab-doors/plan-slice-b2.md` (Slice B2, this e2e slice), and
   `docs/feature-abwab-doors/plan.md` (Slice A, backend).
-- Design contract: `docs/design-preview/abwab-tree-concept.html`.
+- Design contracts: `docs/design-preview/abwab-tree-concept.html`,
+  `abwab-relations-concept.html`, and `abwab-templates-concept.html`.
 - Shared UI primitives: `../../shared/README.md`.
