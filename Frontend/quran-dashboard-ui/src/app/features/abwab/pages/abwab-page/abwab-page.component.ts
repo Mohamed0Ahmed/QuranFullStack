@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { AbwabSnapshotFacade } from '../../state/abwab-snapshot.facade';
@@ -20,6 +20,7 @@ import { AbwabDoorModalComponent } from '../../components/abwab-door-modal/abwab
 import { AbwabMovePickerComponent } from '../../components/abwab-move-picker/abwab-move-picker.component';
 import { AbwabSectionsModalComponent } from '../../components/abwab-sections-modal/abwab-sections-modal.component';
 import { AbwabRelationsModalComponent } from '../../components/abwab-relations-modal/abwab-relations-modal.component';
+import { ABWAB_ROUTE_PATH } from '../../../../core/navigation/route-paths';
 
 /**
  * Route shell for `/abwab` (plan-slice-b.md T415/T501-T511): URL ⇄ state wiring,
@@ -35,6 +36,7 @@ import { AbwabRelationsModalComponent } from '../../components/abwab-relations-m
   selector: 'qd-abwab-page',
   standalone: true,
   imports: [
+    RouterLink,
     AbwabToolbarComponent,
     AbwabTreeComponent,
     AbwabCardsComponent,
@@ -60,6 +62,8 @@ export class AbwabPageComponent implements OnInit {
   protected readonly selection = inject(AbwabSelectionStore);
   protected readonly writeController = inject(AbwabWriteController);
   protected readonly overlays = inject(AbwabPageOverlaysController);
+
+  protected readonly templatesRoutePath = `/${ABWAB_ROUTE_PATH}/templates`;
 
   private readonly doorParam = signal<number | null>(null);
   protected readonly activeSectionId = signal<number | null>(null);
@@ -111,6 +115,7 @@ export class AbwabPageComponent implements OnInit {
   protected get addRootGhostLabel(): string { return ABWAB_LABELS.addRootGhost; }
   protected get archiveButtonLabel(): string { return ABWAB_LABELS.archiveButton; }
   protected get manageSectionsLabel(): string { return ABWAB_LABELS.manageSectionsButton; }
+  protected get templatesLabel(): string { return ABWAB_LABELS.templatesButton; }
   protected get treeAriaLabel(): string { return ABWAB_LABELS.treeAriaLabel; }
   protected get archiveTreeAriaLabel(): string { return ABWAB_LABELS.archiveTreeAriaLabel; }
   protected get emptyLabel(): string { return ABWAB_LABELS.emptyTreeMessage; }

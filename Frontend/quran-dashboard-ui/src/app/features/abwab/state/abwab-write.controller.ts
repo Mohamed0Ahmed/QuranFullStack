@@ -21,12 +21,30 @@ import { AbwabRestoredDoorDto } from '../../../core/api/generated/models/abwab-r
 import { AbwabDoorRelationDto } from '../../../core/api/generated/models/abwab-door-relation-dto';
 import { AddDoorRelationsBody } from '../../../core/api/generated/models/add-door-relations-body';
 
-type AbwabWriteFailureOutcome =
+export type AbwabWriteFailureOutcome =
   | { readonly kind: 'conflict'; readonly message: string }
   | { readonly kind: 'invalid'; readonly message: string }
   | { readonly kind: 'error'; readonly message: string };
 
 export type AbwabWriteOutcome<T> = { readonly kind: 'success'; readonly data: T } | AbwabWriteFailureOutcome;
+
+/** The 409 policy, at module scope so the templates controller — which cannot reuse this
+ * controller, having no snapshot to refresh and no version tokens to rebind — still shares one
+ * status→outcome mapping instead of forking a second one that could drift. */
+export function toAbwabWriteFailure(err: unknown): AbwabWriteFailureOutcome {
+  if (err instanceof HttpErrorResponse) {
+    const body = err.error as ApiResponse<unknown> | null | undefined;
+    const backendMessage = typeof body?.message === 'string' && body.message.length > 0 ? body.message : null;
+
+    if (err.status === 409) {
+      return { kind: 'conflict', message: backendMessage ?? ABWAB_LABELS.writeConflictFallback };
+    }
+    if (err.status === 400 || err.status === 404) {
+      return { kind: 'invalid', message: backendMessage ?? ABWAB_LABELS.writeInvalidFallback };
+    }
+  }
+  return { kind: 'error', message: ABWAB_LABELS.writeTransportFallback };
+}
 
 /** Counts a door plus every live descendant — the live tree only ever holds live nodes
  * (abwab-tree.builder.ts partitions archived ones out), so no extra `isArchived` guard is
@@ -241,17 +259,6 @@ export class AbwabWriteController {
   }
 
   private toFailureOutcome(err: unknown): AbwabWriteFailureOutcome {
-    if (err instanceof HttpErrorResponse) {
-      const body = err.error as ApiResponse<unknown> | null | undefined;
-      const backendMessage = typeof body?.message === 'string' && body.message.length > 0 ? body.message : null;
-
-      if (err.status === 409) {
-        return { kind: 'conflict', message: backendMessage ?? ABWAB_LABELS.writeConflictFallback };
-      }
-      if (err.status === 400 || err.status === 404) {
-        return { kind: 'invalid', message: backendMessage ?? ABWAB_LABELS.writeInvalidFallback };
-      }
-    }
-    return { kind: 'error', message: ABWAB_LABELS.writeTransportFallback };
+    return toAbwabWriteFailure(err);
   }
 }

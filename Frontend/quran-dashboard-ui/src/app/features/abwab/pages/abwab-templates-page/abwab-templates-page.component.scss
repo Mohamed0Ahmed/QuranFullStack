@@ -1,0 +1,202 @@
+.abwab-templates-page__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--qd-space-4);
+}
+
+.abwab-templates-page__layout {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--qd-space-4);
+  margin-block-start: var(--qd-space-4);
+}
+
+.abwab-templates-page__list {
+  inline-size: 15.5rem;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--qd-space-2);
+}
+
+.abwab-templates-page__item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  text-align: start;
+  background: var(--qd-surface);
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-md);
+  padding: var(--qd-space-3);
+  font-family: inherit;
+  color: var(--qd-text);
+  cursor: pointer;
+}
+
+.abwab-templates-page__item:hover {
+  border-color: var(--qd-border-strong);
+}
+
+/* The selected template reads as a tint plus an accent hairline, never a solid fill — the
+   allowed-green rule the side panel's bulk toggle already follows. */
+.abwab-templates-page__item--active {
+  border-color: var(--qd-border-accent);
+  background: var(--qd-selected-bg);
+  color: var(--qd-accent-text);
+}
+
+.abwab-templates-page__item-name {
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.abwab-templates-page__item-count {
+  font-size: 0.7rem;
+  color: var(--qd-text-muted);
+}
+
+.abwab-templates-page__add {
+  border: 1px dashed var(--qd-border-strong);
+  background: transparent;
+  color: var(--qd-text-muted);
+  border-radius: var(--qd-radius-md);
+  padding: var(--qd-space-3);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.abwab-templates-page__add:hover {
+  color: var(--qd-accent-text);
+  background: var(--qd-accent-tint);
+}
+
+.abwab-templates-page__new input {
+  inline-size: 100%;
+  border: 1px solid var(--qd-border-accent);
+  border-radius: var(--qd-radius-md);
+  padding: var(--qd-space-2) var(--qd-space-3);
+  background: var(--qd-surface);
+  color: var(--qd-text);
+  font-family: inherit;
+  font-size: 0.85rem;
+}
+
+.abwab-templates-page__new input:focus-visible {
+  outline: 2px solid var(--qd-focus-ring);
+  outline-offset: -1px;
+}
+
+.abwab-templates-page__editor {
+  flex: 1;
+  min-inline-size: 0;
+  min-block-size: 22rem;
+}
+
+.abwab-templates-page__editor-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--qd-space-2);
+  margin-block-end: var(--qd-space-3);
+}
+
+.abwab-templates-page__editor-title {
+  display: flex;
+  align-items: center;
+  gap: var(--qd-space-2);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.abwab-templates-page__count {
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: var(--qd-text-muted);
+  background: var(--qd-section-bg);
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-pill);
+  padding: 1px var(--qd-space-2);
+}
+
+.abwab-templates-page__editor-actions {
+  display: flex;
+  gap: var(--qd-space-2);
+}
+
+.abwab-templates-page__confirm {
+  border: 1px solid var(--qd-border-accent);
+  background: var(--qd-selected-bg);
+  border-radius: var(--qd-radius-md);
+  padding: var(--qd-space-3);
+  margin-block-start: var(--qd-space-3);
+}
+
+.abwab-templates-page__confirm-actions {
+  display: flex;
+  gap: var(--qd-space-2);
+  margin-block-start: var(--qd-space-3);
+}
+
+.abwab-templates-page__ctx-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 49;
+  background: transparent;
+}
+
+.abwab-templates-page__ctx-menu {
+  position: fixed;
+  z-index: 50;
+  min-inline-size: 11rem;
+  background: var(--qd-surface);
+  border: 1px solid var(--qd-border-strong);
+  border-radius: var(--qd-radius-md);
+  box-shadow: var(--qd-shadow-lg);
+  padding: var(--qd-space-1);
+  display: flex;
+  flex-direction: column;
+}
+
+.abwab-templates-page__ctx-menu button {
+  display: flex;
+  inline-size: 100%;
+  border: none;
+  background: transparent;
+  text-align: start;
+  padding: var(--qd-space-2) var(--qd-space-3);
+  border-radius: var(--qd-radius-sm);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  color: var(--qd-text);
+  cursor: pointer;
+}
+
+.abwab-templates-page__ctx-menu button:hover {
+  background: var(--qd-surface-hover);
+}
+
+.abwab-templates-page__ctx-menu button:focus-visible {
+  outline: 2px solid var(--qd-focus-ring);
+  outline-offset: -2px;
+}
+
+.abwab-templates-page__ctx-item--danger {
+  color: var(--qd-danger);
+}
+
+@media (max-width: 60rem) {
+  .abwab-templates-page__layout {
+    flex-direction: column;
+  }
+
+  .abwab-templates-page__list {
+    inline-size: 100%;
+  }
+
+  .abwab-templates-page__editor {
+    inline-size: 100%;
+  }
+}

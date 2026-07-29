@@ -13,13 +13,16 @@ its own scope. Test *quality* rules (test-guard, CODING_PRINCIPLES) and Quranic 
 safety rules are unaffected and always apply.
 
 The **Backend** baselines below were re-taken **2026-07-29** at the close of the
-`abwab-relations` feature (phase 7, T704) on a developer machine with Docker up,
+`abwab-relations` feature (phase 7, T704) and re-verified at the `abwab-templates` Slice A PR
+boundary, on a developer machine with Docker up,
 `resources/import-sources/` staged, and the canonical dump at
 `resources/db-dumps/quran-canonical/` present (regenerated against this tree's migration head
 when `abwab-relations` added its migration — a stale dump fails loud rather than skipping, per
 §3 Tier A/C).
 
-**Every number below is unchanged from the previous re-measurement, and that is the finding.**
+**Every Backend number below is unchanged from the previous re-measurement, and that is the
+finding — the Frontend row moved once, at the end of `abwab-templates` Slice B, and only there
+(see the review-fix paragraph two below).**
 `abwab-relations` wrote **no tests at all**, by explicit decision (the gaps and their paying
 triggers are in `docs/TESTING_DEBT.md`), so `Tests.Abwab` stayed at **46** and the Frontend suite
 stayed at 190 files / 2,158 tests — the phase-6 work repaired existing fixtures rather than adding
@@ -31,6 +34,26 @@ it would grow: all three new relations routes are catalogued **`ParityOnly`**, s
 theory — without adding a dispatched case. Recorded here because the plan's prediction, not the
 measurement, was wrong.
 
+**`abwab-templates` (2026-07-29) moved none of them either, and that is again the finding.**
+The same no-new-tests posture, a second time: `Tests.Abwab` **46**, the full Backend suite
+**1,843**, no-pipeline **1,086**, route smoke **140 passed / 0 skipped with the data tier having
+run** (all **nine** new templates routes are `ParityOnly`, so the parity gate's two set-comparison
+`[Fact]`s absorb them without adding a dispatched case), and the Frontend suite re-measured at
+**190 spec files / 2,158 tests / 0 failures** after the Slice B work — the identical figure. The
+Frontend number is the load-bearing one here: Slice B extracted the door modal's four authoring
+fields into a shared form, and an unchanged count is the evidence that
+`abwab-door-modal.component.spec.ts` kept passing **unchanged** rather than being adjusted to fit
+the refactor. The partition identity re-verifies as **1,086 + 617 + 140 = 1,843**. The canonical
+dump was regenerated in Slice A against migration head `20260729162330_AddAbwabTemplates`.
+
+The Slice B **review-fix round (2026-07-30) then moved the Frontend count for the first time in
+three features: 191 spec files / 2,161 tests / 0 failures (205.45 s)**. The three cases are one
+new file, `abwab-templates.facade.spec.ts`, pinning the correctness fix that round exists for —
+the selected template's identity, i.e. that a failed switch shows no template rather than the
+previous one, while a failed *refresh* of the same template keeps it on screen. The no-new-tests
+posture is otherwise intact; nothing else in the round adjusted an existing spec, and no Backend
+number moved (the round is frontend + docs only).
+
 The pipeline row is **derived, not re-run** — this feature touches no pipeline namespace:
 `1,843 − 1,086 − 140 = 617`, which is what the partition identity below is for:
 
@@ -40,7 +63,7 @@ The pipeline row is **derived, not re-run** — this feature touches no pipeline
 | Backend no-pipeline (Tier B/C) | 1,086 | ~23 s | 0 |
 | Backend ten pipeline families (Tier D) — derived, last timed 2026-07-28 | 617 | 3 m 54 s | 0 |
 | Backend route smoke (§3 Tier A/C route gate) | 140 | ~45 s | 0 |
-| Frontend full suite (190 spec files) | 2,158 | 185.39 s | 0 |
+| Frontend full suite (191 spec files) | 2,161 | 205.45 s | 0 |
 
 Counts and durations are indicative, not contractual. The zero-skip column holds only
 because the staged canonical resources *and* the canonical dump were present; on a machine
@@ -384,7 +407,7 @@ npm test -- --include="src/app/features/words/data-access/*.spec.ts"
 # Focused feature glob (93 files, 1,384 tests, ~98 s):
 npm test -- --include="src/app/features/words/**/*.spec.ts"
 
-# Full Frontend suite (190 files, 2,158 tests, ~185 s):
+# Full Frontend suite (191 files, 2,161 tests, ~205 s):
 npm test
 
 # Production build (separate from tests — the test builder ignores dist/):
